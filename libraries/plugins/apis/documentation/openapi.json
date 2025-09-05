@@ -2817,7 +2817,7 @@
                     "condenser_api"
                 ],
                 "summary": "Returns a list of discussions based on payout. (Supported by Hivemind)",
-                "operationId": "condenser_get_discussions_by",
+                "operationId": "condenser_get_comment_discussions_by_payout",
                 "requestBody": {
                     "content": {
                         "application/json": {
@@ -8319,6 +8319,936 @@
                                         "title": "What is Beekeeping All About?",
                                         "updated": "2016-08-16T16:34:09",
                                         "url": "/tutorial/@joshglen/what-is-beekeeping-all-about"
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "tags_api.get_comment_discussions_by_payout": {
+            "post": {
+                "tags": [
+                    "tags_api"
+                ],
+                "summary": "Returns a list of discussions based on payout. (Supported by Hivemind)",
+                "operationId": "tags_get_comment_discussions_by_payout",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/condenser_get_discussions_by"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/condenser_get_discussions_by_response"
+                                },
+                                "example": [
+                                    {
+                                        "active_votes": [
+                                            {
+                                                "percent": "10000",
+                                                "reputation": 31197627261276,
+                                                "rshares": 13081280967,
+                                                "voter": "ferbu"
+                                            },
+                                            {
+                                                "percent": "4950",
+                                                "reputation": 355586177992570,
+                                                "rshares": 9795724243,
+                                                "voter": "josdelmi"
+                                            },
+                                            {
+                                                "percent": "10000",
+                                                "reputation": 48120095142290,
+                                                "rshares": 4859584947,
+                                                "voter": "elentogether"
+                                            },
+                                            {
+                                                "percent": "10000",
+                                                "reputation": 807234681729,
+                                                "rshares": 649620066,
+                                                "voter": "knightmarey"
+                                            }
+                                        ],
+                                        "author": "hiveio",
+                                        "author_reputation": 298927146213106,
+                                        "beneficiaries": [
+                                            {
+                                                "account": "pettycash",
+                                                "weight": 10000
+                                            }
+                                        ],
+                                        "body": "![image.png](https://images.hive.blog/DQmaJaewnEu4wVKaPYMx7gpkwuSy4aiYdqLb87ncMRQnHku/image.png)\n\n\nChanges are happening all over the world. As we celebrate our 5th anniversary as Hive and are approaching a decade as a community we continue to push the boundaries of blockchain possibilities and technical excellence. Over the years through dedication, ingenuity and perseverance, the Hive community has built a true beacon of Web3. The Hive ecosystem is a vibrant embodiment of decentralization and accessibility and it is all of us here on Hive who have collectively made it happen. \n\nOn this special day even the Hive Whale has come out of hibernation after a chilly winter! https://hivewhale.com/ \n\n![image.png](https://images.hive.blog/DQmNf7kJ3n7gtB4NACuzCurrJQATD7N98dsW4BZNevUyVYx/image.png)\n\n## Collect Raffle Tickets & Win! 🎟️🎟️🎟️\nTo help mark this special occasion there are mini-contests throughout this post. Participate in them to collect Raffle Tickets. Each ticket gets you one entry in the Hive5 Raffle which will take place LIVE at Talent Land Mexico. The prize pool is **500 HBD**, divided between 5 lucky winners plus more mystery prizes. Entries for this round are due within 7 days so act fast!\n\n## Revolutionary Web3\n\nHive was created out of the love for decentralization and digital freedom. Unlike its competitors, Hive was never about the money. Hive is all about the vision. About true Web3. \n\nAll of us take special pride in Hive. Hive is built by its users for its users with no corporate influence. It rose out of the flames of an unprecedented attack on decentralization and open source principles and has from that time vowed to champion those key tenets and ensure that corporate greed has no place in its segment of Web3. The Hive community was not for sale five years ago and it never will be. No single entity has control of Hive -- it is decentralized, auditable, transparent, and barrier-less. It is a beacon of creativity, innovation and endurance among the greater blockchain-based technologies landscape and the cryptosphere. Its ecosystem has flourished organically, with myriad dapps, services and solutions for every need, from sharing videos to buying dinner.\n\nHive is built to last. Growth on Hive has never been about financial gains but always about exploring new opportunities to pursue innovation and build the best Web3 experience possible. Integrations, partnerships and onboarding all constitute the key milestones required to promote mass adoption. Not only do they allow new users to discover Hive but they also provide a gateway into data ownership and personal freedom and actualization.\n\n> “Hive makes an escape route possible,” wrote one Hive community member. “Not just from being an early adopter, but also because you can earn it by participating in the game. You make a post, you might get some HIVE. Once you have some Hive Power, you can vote that power and earn HIVE. This is what makes Hive different than most any of the other cryptos on offer, distribution is built into the first layer. You don't need a rack of servers or 4 digit electric bills to mine some hive, just something to say, the ability to type it out, and some networking for friends.”\n\n#### 🎟️ Contest!\n*Guess which Hiver wrote this quote. Tag them. Every correct guess will get **1 Raffle Ticket**. But choose wisely, its 1 guess per person!*\n\n![Five_Years_Hive_Card.png](https://images.hive.blog/DQmQ1ZApmrTG6DGmbEPW48uX2oWQdJxj6Ky7bQL5a5zNH24/Five_Years_Hive_Card.png)\n<sup>*Active accounts and accounts rewarded figures are based on partial estimates due to queries.*</sup>\n\n## Hive Changes Lives\nHive has consistently remained resilient despite being faced first with COVID-related challenges and then a highly-volatile market, which still persists. Despite this, it is listed on over 40 exchanges and both HBD and HIVE are used as currency for B2B and B2C transactions worldwide. Hive has come from wondering what can be done with it in terms of use-cases to being welcomed in everything from grocery stores to entertainment venues to real-estate as the preferred cryptocurrency. Purchases can already be made without delay with only a phone with the help of the Hive Keychain and Distriator and now Hive Debit Cards are becoming available. The Virtual Smart Chain (VSC) is also currently in the final stages just edging towards launch, making integrations even more seamless.\n\nHive brought tangible change to the world. Freedom of expression is a universal human right along with an adequate standard of living. The Hive community does not wait for change to happen; it makes change happen. Hive community members brought water to remote villages in Ghana, Venezuela and Nigeria. In Ghana, the twentieth well is presently being constructed. Ordinary people who had no understanding of the true capabilities of blockchain technology and parallel economies are seeing their effects when their own neighbors have successfully used Hive to resolve problems in weeks that the local governments failed to tackle over decades.\n\n#### 🎟️ Contest!\n*What’s your favorite Hive project? We invite you to celebrate by writing a post about it. Every post of a minimum 1,000 words will get **10 Raffle Tickets**.*\n\n## Feeless and Limitless\nHive is currently positioned as one of the most accessible blockchains to develop on. It makes development simple and fast. It has been transformed from the baseline DPoS blockchain technology it started out as into a light-weight solution suitable for any project or industry application. It did this while improving on security mechanisms to ensure that data integrity and decentralization remain paramount. \n\nHive has not only improved on existing DPoS technology but has made it truly limitless by crafting an extensive layer-2 capability and supporting cross-chain integrations. The HAF API Note Suite now bundles together the innovative Hive Application Framework (HAF) with HAF Account History (HAFAH), Hived (core protocol), Hivemind, a block explorer and more. While Hive sports 3 second blocks, its one block irreversibility (OBI) means that confirmation is near-instant, making transactions final without any waiting. Every part of Hive has been continuously optimized to limit the required resources in relation to all types of transactions and to lower the infrastructure requirements to run the most complex of operations. Everything is designed for scalability and efficiency.\n\n\n![image.png](https://images.hive.blog/DQmZjJcHu7K9ZusxswhSJ1X36Bc3D3FgiJ3kZJxG1SqsiDs/image.png)\n\n\n#### 🎟️ Contest!\n*What types of innovative ideas would you like to see on Hive? Write a post and link it in the comments below describing your desired idea in 400-500 words. Every post that fits the brief will get **5 Raffle Tickets**.*\n\nChanges are happening and changes are also sought after here on Hive too. We look forward to the next five years as we make those changes and pave new roads through Web3. Hive on!",
+                                        "body_length": 6976,
+                                        "cashout_time": "1969-12-31T23:59:59",
+                                        "category": "hive5",
+                                        "children": 184,
+                                        "created": "2025-03-20T16:39:33",
+                                        "curator_payout_value": "109.403 HBD",
+                                        "depth": 0,
+                                        "json_metadata": "{\"tags\":[\"hive5\",\"hive\",\"anniversary\"],\"image\":[\"https://images.hive.blog/DQmaJaewnEu4wVKaPYMx7gpkwuSy4aiYdqLb87ncMRQnHku/image.png\",\"https://images.hive.blog/DQmNf7kJ3n7gtB4NACuzCurrJQATD7N98dsW4BZNevUyVYx/image.png\",\"https://images.hive.blog/DQmQ1ZApmrTG6DGmbEPW48uX2oWQdJxj6Ky7bQL5a5zNH24/Five_Years_Hive_Card.png\",\"https://images.hive.blog/DQmZjJcHu7K9ZusxswhSJ1X36Bc3D3FgiJ3kZJxG1SqsiDs/image.png\"],\"links\":[\"https://hivewhale.com/\"],\"app\":\"hiveblog/0.1\",\"format\":\"markdown\"}",
+                                        "last_payout": "2025-03-27T16:39:33",
+                                        "last_update": "2025-03-20T16:39:33",
+                                        "max_accepted_payout": "1000000.000 HBD",
+                                        "net_rshares": 623550720229968,
+                                        "parent_author": "",
+                                        "parent_permlink": "hive5",
+                                        "pending_payout_value": "0.000 HBD",
+                                        "percent_hbd": 10000,
+                                        "permlink": "hive-5-celebrating-our-5th-anniversary-as-hive",
+                                        "post_id": 141560746,
+                                        "replies": [],
+                                        "root_title": "Hive 5: Celebrating our 5th Anniversary as Hive",
+                                        "title": "Hive 5: Celebrating our 5th Anniversary as Hive",
+                                        "total_payout_value": "109.585 HBD",
+                                        "url": "/hive5/@hiveio/hive-5-celebrating-our-5th-anniversary-as-hive"
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "tags_api.get_content_replies": {
+            "post": {
+                "tags": [
+                    "tags_api"
+                ],
+                "summary": "Returns a list of replies. (Supported by Hivemind)",
+                "description": "Parameters:\n\n- `author`: A string representing the author of the content.\n\n- `permlink`: A string representing the permlink of the content.\n\nExamples:\n\n- `author = \"hiveio\"`, `permlink = \"firstpost\"` — queries content with the slug @hiveio/firstpost.\n\n- `author = \"alice\"`, `permlink = \"a-post-by-alice\"` — queries content with the slug @alice/a-post-by-alice.\n",
+                "operationId": "tags_get_content_replies",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/condenser_get_content_replies"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/tags_get_content_replies_response"
+                                },
+                                "example": [
+                                    {
+                                        "active_votes": [
+                                            {
+                                                "percent": "10000",
+                                                "reputation": 31197627261276,
+                                                "rshares": 13081280967,
+                                                "voter": "ferbu"
+                                            },
+                                            {
+                                                "percent": "4950",
+                                                "reputation": 355586177992570,
+                                                "rshares": 9795724243,
+                                                "voter": "josdelmi"
+                                            },
+                                            {
+                                                "percent": "10000",
+                                                "reputation": 48120095142290,
+                                                "rshares": 4859584947,
+                                                "voter": "elentogether"
+                                            },
+                                            {
+                                                "percent": "10000",
+                                                "reputation": 807234681729,
+                                                "rshares": 649620066,
+                                                "voter": "knightmarey"
+                                            }
+                                        ],
+                                        "author": "hiveio",
+                                        "author_reputation": 298927146213106,
+                                        "beneficiaries": [
+                                            {
+                                                "account": "pettycash",
+                                                "weight": 10000
+                                            }
+                                        ],
+                                        "body": "![image.png](https://images.hive.blog/DQmaJaewnEu4wVKaPYMx7gpkwuSy4aiYdqLb87ncMRQnHku/image.png)\n\n\nChanges are happening all over the world. As we celebrate our 5th anniversary as Hive and are approaching a decade as a community we continue to push the boundaries of blockchain possibilities and technical excellence. Over the years through dedication, ingenuity and perseverance, the Hive community has built a true beacon of Web3. The Hive ecosystem is a vibrant embodiment of decentralization and accessibility and it is all of us here on Hive who have collectively made it happen. \n\nOn this special day even the Hive Whale has come out of hibernation after a chilly winter! https://hivewhale.com/ \n\n![image.png](https://images.hive.blog/DQmNf7kJ3n7gtB4NACuzCurrJQATD7N98dsW4BZNevUyVYx/image.png)\n\n## Collect Raffle Tickets & Win! 🎟️🎟️🎟️\nTo help mark this special occasion there are mini-contests throughout this post. Participate in them to collect Raffle Tickets. Each ticket gets you one entry in the Hive5 Raffle which will take place LIVE at Talent Land Mexico. The prize pool is **500 HBD**, divided between 5 lucky winners plus more mystery prizes. Entries for this round are due within 7 days so act fast!\n\n## Revolutionary Web3\n\nHive was created out of the love for decentralization and digital freedom. Unlike its competitors, Hive was never about the money. Hive is all about the vision. About true Web3. \n\nAll of us take special pride in Hive. Hive is built by its users for its users with no corporate influence. It rose out of the flames of an unprecedented attack on decentralization and open source principles and has from that time vowed to champion those key tenets and ensure that corporate greed has no place in its segment of Web3. The Hive community was not for sale five years ago and it never will be. No single entity has control of Hive -- it is decentralized, auditable, transparent, and barrier-less. It is a beacon of creativity, innovation and endurance among the greater blockchain-based technologies landscape and the cryptosphere. Its ecosystem has flourished organically, with myriad dapps, services and solutions for every need, from sharing videos to buying dinner.\n\nHive is built to last. Growth on Hive has never been about financial gains but always about exploring new opportunities to pursue innovation and build the best Web3 experience possible. Integrations, partnerships and onboarding all constitute the key milestones required to promote mass adoption. Not only do they allow new users to discover Hive but they also provide a gateway into data ownership and personal freedom and actualization.\n\n> “Hive makes an escape route possible,” wrote one Hive community member. “Not just from being an early adopter, but also because you can earn it by participating in the game. You make a post, you might get some HIVE. Once you have some Hive Power, you can vote that power and earn HIVE. This is what makes Hive different than most any of the other cryptos on offer, distribution is built into the first layer. You don't need a rack of servers or 4 digit electric bills to mine some hive, just something to say, the ability to type it out, and some networking for friends.”\n\n#### 🎟️ Contest!\n*Guess which Hiver wrote this quote. Tag them. Every correct guess will get **1 Raffle Ticket**. But choose wisely, its 1 guess per person!*\n\n![Five_Years_Hive_Card.png](https://images.hive.blog/DQmQ1ZApmrTG6DGmbEPW48uX2oWQdJxj6Ky7bQL5a5zNH24/Five_Years_Hive_Card.png)\n<sup>*Active accounts and accounts rewarded figures are based on partial estimates due to queries.*</sup>\n\n## Hive Changes Lives\nHive has consistently remained resilient despite being faced first with COVID-related challenges and then a highly-volatile market, which still persists. Despite this, it is listed on over 40 exchanges and both HBD and HIVE are used as currency for B2B and B2C transactions worldwide. Hive has come from wondering what can be done with it in terms of use-cases to being welcomed in everything from grocery stores to entertainment venues to real-estate as the preferred cryptocurrency. Purchases can already be made without delay with only a phone with the help of the Hive Keychain and Distriator and now Hive Debit Cards are becoming available. The Virtual Smart Chain (VSC) is also currently in the final stages just edging towards launch, making integrations even more seamless.\n\nHive brought tangible change to the world. Freedom of expression is a universal human right along with an adequate standard of living. The Hive community does not wait for change to happen; it makes change happen. Hive community members brought water to remote villages in Ghana, Venezuela and Nigeria. In Ghana, the twentieth well is presently being constructed. Ordinary people who had no understanding of the true capabilities of blockchain technology and parallel economies are seeing their effects when their own neighbors have successfully used Hive to resolve problems in weeks that the local governments failed to tackle over decades.\n\n#### 🎟️ Contest!\n*What’s your favorite Hive project? We invite you to celebrate by writing a post about it. Every post of a minimum 1,000 words will get **10 Raffle Tickets**.*\n\n## Feeless and Limitless\nHive is currently positioned as one of the most accessible blockchains to develop on. It makes development simple and fast. It has been transformed from the baseline DPoS blockchain technology it started out as into a light-weight solution suitable for any project or industry application. It did this while improving on security mechanisms to ensure that data integrity and decentralization remain paramount. \n\nHive has not only improved on existing DPoS technology but has made it truly limitless by crafting an extensive layer-2 capability and supporting cross-chain integrations. The HAF API Note Suite now bundles together the innovative Hive Application Framework (HAF) with HAF Account History (HAFAH), Hived (core protocol), Hivemind, a block explorer and more. While Hive sports 3 second blocks, its one block irreversibility (OBI) means that confirmation is near-instant, making transactions final without any waiting. Every part of Hive has been continuously optimized to limit the required resources in relation to all types of transactions and to lower the infrastructure requirements to run the most complex of operations. Everything is designed for scalability and efficiency.\n\n\n![image.png](https://images.hive.blog/DQmZjJcHu7K9ZusxswhSJ1X36Bc3D3FgiJ3kZJxG1SqsiDs/image.png)\n\n\n#### 🎟️ Contest!\n*What types of innovative ideas would you like to see on Hive? Write a post and link it in the comments below describing your desired idea in 400-500 words. Every post that fits the brief will get **5 Raffle Tickets**.*\n\nChanges are happening and changes are also sought after here on Hive too. We look forward to the next five years as we make those changes and pave new roads through Web3. Hive on!",
+                                        "body_length": 6976,
+                                        "cashout_time": "1969-12-31T23:59:59",
+                                        "category": "hive5",
+                                        "children": 184,
+                                        "created": "2025-03-20T16:39:33",
+                                        "curator_payout_value": "109.403 HBD",
+                                        "depth": 0,
+                                        "json_metadata": "{\"tags\":[\"hive5\",\"hive\",\"anniversary\"],\"image\":[\"https://images.hive.blog/DQmaJaewnEu4wVKaPYMx7gpkwuSy4aiYdqLb87ncMRQnHku/image.png\",\"https://images.hive.blog/DQmNf7kJ3n7gtB4NACuzCurrJQATD7N98dsW4BZNevUyVYx/image.png\",\"https://images.hive.blog/DQmQ1ZApmrTG6DGmbEPW48uX2oWQdJxj6Ky7bQL5a5zNH24/Five_Years_Hive_Card.png\",\"https://images.hive.blog/DQmZjJcHu7K9ZusxswhSJ1X36Bc3D3FgiJ3kZJxG1SqsiDs/image.png\"],\"links\":[\"https://hivewhale.com/\"],\"app\":\"hiveblog/0.1\",\"format\":\"markdown\"}",
+                                        "last_payout": "2025-03-27T16:39:33",
+                                        "last_update": "2025-03-20T16:39:33",
+                                        "max_accepted_payout": "1000000.000 HBD",
+                                        "net_rshares": 623550720229968,
+                                        "parent_author": "",
+                                        "parent_permlink": "hive5",
+                                        "pending_payout_value": "0.000 HBD",
+                                        "percent_hbd": 10000,
+                                        "permlink": "hive-5-celebrating-our-5th-anniversary-as-hive",
+                                        "post_id": 141560746,
+                                        "replies": [],
+                                        "root_title": "Hive 5: Celebrating our 5th Anniversary as Hive",
+                                        "title": "Hive 5: Celebrating our 5th Anniversary as Hive",
+                                        "total_payout_value": "109.585 HBD",
+                                        "url": "/hive5/@hiveio/hive-5-celebrating-our-5th-anniversary-as-hive"
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "tags_api.get_discussion": {
+            "post": {
+                "tags": [
+                    "tags_api"
+                ],
+                "summary": "Returns the content (post or comment). (Supported by Hivemind)",
+                "description": "Parameters:\n\n- `author`: A string representing the author of the content.\n\n- `permlink`: A string representing the permlink of the content.\n\nExamples:\n\n- `author = \"hiveio\"`, `permlink = \"firstpost\"` — queries content with the slug @hiveio/firstpost.\n\n- `author = \"alice\"`, `permlink = \"a-post-by-alice\"` — queries content with the slug @alice/a-post-by-alice.\n",
+                "operationId": "tags_get_discussion",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/condenser_get_content"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/tags_get_content_response"
+                                },
+                                "example": {
+                                    "active_votes": [
+                                        {
+                                            "percent": "10000",
+                                            "reputation": 31197627261276,
+                                            "rshares": 13081280967,
+                                            "voter": "ferbu"
+                                        },
+                                        {
+                                            "percent": "4950",
+                                            "reputation": 355586177992570,
+                                            "rshares": 9795724243,
+                                            "voter": "josdelmi"
+                                        },
+                                        {
+                                            "percent": "10000",
+                                            "reputation": 48120095142290,
+                                            "rshares": 4859584947,
+                                            "voter": "elentogether"
+                                        },
+                                        {
+                                            "percent": "10000",
+                                            "reputation": 807234681729,
+                                            "rshares": 649620066,
+                                            "voter": "knightmarey"
+                                        }
+                                    ],
+                                    "author": "hiveio",
+                                    "author_reputation": 298927146213106,
+                                    "beneficiaries": [
+                                        {
+                                            "account": "pettycash",
+                                            "weight": 10000
+                                        }
+                                    ],
+                                    "body": "![image.png](https://images.hive.blog/DQmaJaewnEu4wVKaPYMx7gpkwuSy4aiYdqLb87ncMRQnHku/image.png)\n\n\nChanges are happening all over the world. As we celebrate our 5th anniversary as Hive and are approaching a decade as a community we continue to push the boundaries of blockchain possibilities and technical excellence. Over the years through dedication, ingenuity and perseverance, the Hive community has built a true beacon of Web3. The Hive ecosystem is a vibrant embodiment of decentralization and accessibility and it is all of us here on Hive who have collectively made it happen. \n\nOn this special day even the Hive Whale has come out of hibernation after a chilly winter! https://hivewhale.com/ \n\n![image.png](https://images.hive.blog/DQmNf7kJ3n7gtB4NACuzCurrJQATD7N98dsW4BZNevUyVYx/image.png)\n\n## Collect Raffle Tickets & Win! 🎟️🎟️🎟️\nTo help mark this special occasion there are mini-contests throughout this post. Participate in them to collect Raffle Tickets. Each ticket gets you one entry in the Hive5 Raffle which will take place LIVE at Talent Land Mexico. The prize pool is **500 HBD**, divided between 5 lucky winners plus more mystery prizes. Entries for this round are due within 7 days so act fast!\n\n## Revolutionary Web3\n\nHive was created out of the love for decentralization and digital freedom. Unlike its competitors, Hive was never about the money. Hive is all about the vision. About true Web3. \n\nAll of us take special pride in Hive. Hive is built by its users for its users with no corporate influence. It rose out of the flames of an unprecedented attack on decentralization and open source principles and has from that time vowed to champion those key tenets and ensure that corporate greed has no place in its segment of Web3. The Hive community was not for sale five years ago and it never will be. No single entity has control of Hive -- it is decentralized, auditable, transparent, and barrier-less. It is a beacon of creativity, innovation and endurance among the greater blockchain-based technologies landscape and the cryptosphere. Its ecosystem has flourished organically, with myriad dapps, services and solutions for every need, from sharing videos to buying dinner.\n\nHive is built to last. Growth on Hive has never been about financial gains but always about exploring new opportunities to pursue innovation and build the best Web3 experience possible. Integrations, partnerships and onboarding all constitute the key milestones required to promote mass adoption. Not only do they allow new users to discover Hive but they also provide a gateway into data ownership and personal freedom and actualization.\n\n> “Hive makes an escape route possible,” wrote one Hive community member. “Not just from being an early adopter, but also because you can earn it by participating in the game. You make a post, you might get some HIVE. Once you have some Hive Power, you can vote that power and earn HIVE. This is what makes Hive different than most any of the other cryptos on offer, distribution is built into the first layer. You don't need a rack of servers or 4 digit electric bills to mine some hive, just something to say, the ability to type it out, and some networking for friends.”\n\n#### 🎟️ Contest!\n*Guess which Hiver wrote this quote. Tag them. Every correct guess will get **1 Raffle Ticket**. But choose wisely, its 1 guess per person!*\n\n![Five_Years_Hive_Card.png](https://images.hive.blog/DQmQ1ZApmrTG6DGmbEPW48uX2oWQdJxj6Ky7bQL5a5zNH24/Five_Years_Hive_Card.png)\n<sup>*Active accounts and accounts rewarded figures are based on partial estimates due to queries.*</sup>\n\n## Hive Changes Lives\nHive has consistently remained resilient despite being faced first with COVID-related challenges and then a highly-volatile market, which still persists. Despite this, it is listed on over 40 exchanges and both HBD and HIVE are used as currency for B2B and B2C transactions worldwide. Hive has come from wondering what can be done with it in terms of use-cases to being welcomed in everything from grocery stores to entertainment venues to real-estate as the preferred cryptocurrency. Purchases can already be made without delay with only a phone with the help of the Hive Keychain and Distriator and now Hive Debit Cards are becoming available. The Virtual Smart Chain (VSC) is also currently in the final stages just edging towards launch, making integrations even more seamless.\n\nHive brought tangible change to the world. Freedom of expression is a universal human right along with an adequate standard of living. The Hive community does not wait for change to happen; it makes change happen. Hive community members brought water to remote villages in Ghana, Venezuela and Nigeria. In Ghana, the twentieth well is presently being constructed. Ordinary people who had no understanding of the true capabilities of blockchain technology and parallel economies are seeing their effects when their own neighbors have successfully used Hive to resolve problems in weeks that the local governments failed to tackle over decades.\n\n#### 🎟️ Contest!\n*What’s your favorite Hive project? We invite you to celebrate by writing a post about it. Every post of a minimum 1,000 words will get **10 Raffle Tickets**.*\n\n## Feeless and Limitless\nHive is currently positioned as one of the most accessible blockchains to develop on. It makes development simple and fast. It has been transformed from the baseline DPoS blockchain technology it started out as into a light-weight solution suitable for any project or industry application. It did this while improving on security mechanisms to ensure that data integrity and decentralization remain paramount. \n\nHive has not only improved on existing DPoS technology but has made it truly limitless by crafting an extensive layer-2 capability and supporting cross-chain integrations. The HAF API Note Suite now bundles together the innovative Hive Application Framework (HAF) with HAF Account History (HAFAH), Hived (core protocol), Hivemind, a block explorer and more. While Hive sports 3 second blocks, its one block irreversibility (OBI) means that confirmation is near-instant, making transactions final without any waiting. Every part of Hive has been continuously optimized to limit the required resources in relation to all types of transactions and to lower the infrastructure requirements to run the most complex of operations. Everything is designed for scalability and efficiency.\n\n\n![image.png](https://images.hive.blog/DQmZjJcHu7K9ZusxswhSJ1X36Bc3D3FgiJ3kZJxG1SqsiDs/image.png)\n\n\n#### 🎟️ Contest!\n*What types of innovative ideas would you like to see on Hive? Write a post and link it in the comments below describing your desired idea in 400-500 words. Every post that fits the brief will get **5 Raffle Tickets**.*\n\nChanges are happening and changes are also sought after here on Hive too. We look forward to the next five years as we make those changes and pave new roads through Web3. Hive on!",
+                                    "body_length": 6976,
+                                    "cashout_time": "1969-12-31T23:59:59",
+                                    "category": "hive5",
+                                    "children": 184,
+                                    "created": "2025-03-20T16:39:33",
+                                    "curator_payout_value": "109.403 HBD",
+                                    "depth": 0,
+                                    "json_metadata": "{\"tags\":[\"hive5\",\"hive\",\"anniversary\"],\"image\":[\"https://images.hive.blog/DQmaJaewnEu4wVKaPYMx7gpkwuSy4aiYdqLb87ncMRQnHku/image.png\",\"https://images.hive.blog/DQmNf7kJ3n7gtB4NACuzCurrJQATD7N98dsW4BZNevUyVYx/image.png\",\"https://images.hive.blog/DQmQ1ZApmrTG6DGmbEPW48uX2oWQdJxj6Ky7bQL5a5zNH24/Five_Years_Hive_Card.png\",\"https://images.hive.blog/DQmZjJcHu7K9ZusxswhSJ1X36Bc3D3FgiJ3kZJxG1SqsiDs/image.png\"],\"links\":[\"https://hivewhale.com/\"],\"app\":\"hiveblog/0.1\",\"format\":\"markdown\"}",
+                                    "last_payout": "2025-03-27T16:39:33",
+                                    "last_update": "2025-03-20T16:39:33",
+                                    "max_accepted_payout": "1000000.000 HBD",
+                                    "net_rshares": 623550720229968,
+                                    "parent_author": "",
+                                    "parent_permlink": "hive5",
+                                    "pending_payout_value": "0.000 HBD",
+                                    "percent_hbd": 10000,
+                                    "permlink": "hive-5-celebrating-our-5th-anniversary-as-hive",
+                                    "post_id": 141560746,
+                                    "replies": [],
+                                    "root_title": "Hive 5: Celebrating our 5th Anniversary as Hive",
+                                    "title": "Hive 5: Celebrating our 5th Anniversary as Hive",
+                                    "total_payout_value": "109.585 HBD",
+                                    "url": "/hive5/@hiveio/hive-5-celebrating-our-5th-anniversary-as-hive"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "tags_api.get_discussions_by_author_before_date": {
+            "post": {
+                "tags": [
+                    "tags_api"
+                ],
+                "summary": "Returns a list of discussions based on author before date. (Supported by Hivemind)",
+                "operationId": "tags_get_discussions_by_author_before_date",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/condenser_get_discussions_by_author_before_date"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/condenser_get_discussions_by_response"
+                                },
+                                "example": [
+                                    {
+                                        "active_votes": [
+                                            {
+                                                "percent": "10000",
+                                                "reputation": 31197627261276,
+                                                "rshares": 13081280967,
+                                                "voter": "ferbu"
+                                            },
+                                            {
+                                                "percent": "4950",
+                                                "reputation": 355586177992570,
+                                                "rshares": 9795724243,
+                                                "voter": "josdelmi"
+                                            },
+                                            {
+                                                "percent": "10000",
+                                                "reputation": 48120095142290,
+                                                "rshares": 4859584947,
+                                                "voter": "elentogether"
+                                            },
+                                            {
+                                                "percent": "10000",
+                                                "reputation": 807234681729,
+                                                "rshares": 649620066,
+                                                "voter": "knightmarey"
+                                            }
+                                        ],
+                                        "author": "hiveio",
+                                        "author_reputation": 298927146213106,
+                                        "beneficiaries": [
+                                            {
+                                                "account": "pettycash",
+                                                "weight": 10000
+                                            }
+                                        ],
+                                        "body": "![image.png](https://images.hive.blog/DQmaJaewnEu4wVKaPYMx7gpkwuSy4aiYdqLb87ncMRQnHku/image.png)\n\n\nChanges are happening all over the world. As we celebrate our 5th anniversary as Hive and are approaching a decade as a community we continue to push the boundaries of blockchain possibilities and technical excellence. Over the years through dedication, ingenuity and perseverance, the Hive community has built a true beacon of Web3. The Hive ecosystem is a vibrant embodiment of decentralization and accessibility and it is all of us here on Hive who have collectively made it happen. \n\nOn this special day even the Hive Whale has come out of hibernation after a chilly winter! https://hivewhale.com/ \n\n![image.png](https://images.hive.blog/DQmNf7kJ3n7gtB4NACuzCurrJQATD7N98dsW4BZNevUyVYx/image.png)\n\n## Collect Raffle Tickets & Win! 🎟️🎟️🎟️\nTo help mark this special occasion there are mini-contests throughout this post. Participate in them to collect Raffle Tickets. Each ticket gets you one entry in the Hive5 Raffle which will take place LIVE at Talent Land Mexico. The prize pool is **500 HBD**, divided between 5 lucky winners plus more mystery prizes. Entries for this round are due within 7 days so act fast!\n\n## Revolutionary Web3\n\nHive was created out of the love for decentralization and digital freedom. Unlike its competitors, Hive was never about the money. Hive is all about the vision. About true Web3. \n\nAll of us take special pride in Hive. Hive is built by its users for its users with no corporate influence. It rose out of the flames of an unprecedented attack on decentralization and open source principles and has from that time vowed to champion those key tenets and ensure that corporate greed has no place in its segment of Web3. The Hive community was not for sale five years ago and it never will be. No single entity has control of Hive -- it is decentralized, auditable, transparent, and barrier-less. It is a beacon of creativity, innovation and endurance among the greater blockchain-based technologies landscape and the cryptosphere. Its ecosystem has flourished organically, with myriad dapps, services and solutions for every need, from sharing videos to buying dinner.\n\nHive is built to last. Growth on Hive has never been about financial gains but always about exploring new opportunities to pursue innovation and build the best Web3 experience possible. Integrations, partnerships and onboarding all constitute the key milestones required to promote mass adoption. Not only do they allow new users to discover Hive but they also provide a gateway into data ownership and personal freedom and actualization.\n\n> “Hive makes an escape route possible,” wrote one Hive community member. “Not just from being an early adopter, but also because you can earn it by participating in the game. You make a post, you might get some HIVE. Once you have some Hive Power, you can vote that power and earn HIVE. This is what makes Hive different than most any of the other cryptos on offer, distribution is built into the first layer. You don't need a rack of servers or 4 digit electric bills to mine some hive, just something to say, the ability to type it out, and some networking for friends.”\n\n#### 🎟️ Contest!\n*Guess which Hiver wrote this quote. Tag them. Every correct guess will get **1 Raffle Ticket**. But choose wisely, its 1 guess per person!*\n\n![Five_Years_Hive_Card.png](https://images.hive.blog/DQmQ1ZApmrTG6DGmbEPW48uX2oWQdJxj6Ky7bQL5a5zNH24/Five_Years_Hive_Card.png)\n<sup>*Active accounts and accounts rewarded figures are based on partial estimates due to queries.*</sup>\n\n## Hive Changes Lives\nHive has consistently remained resilient despite being faced first with COVID-related challenges and then a highly-volatile market, which still persists. Despite this, it is listed on over 40 exchanges and both HBD and HIVE are used as currency for B2B and B2C transactions worldwide. Hive has come from wondering what can be done with it in terms of use-cases to being welcomed in everything from grocery stores to entertainment venues to real-estate as the preferred cryptocurrency. Purchases can already be made without delay with only a phone with the help of the Hive Keychain and Distriator and now Hive Debit Cards are becoming available. The Virtual Smart Chain (VSC) is also currently in the final stages just edging towards launch, making integrations even more seamless.\n\nHive brought tangible change to the world. Freedom of expression is a universal human right along with an adequate standard of living. The Hive community does not wait for change to happen; it makes change happen. Hive community members brought water to remote villages in Ghana, Venezuela and Nigeria. In Ghana, the twentieth well is presently being constructed. Ordinary people who had no understanding of the true capabilities of blockchain technology and parallel economies are seeing their effects when their own neighbors have successfully used Hive to resolve problems in weeks that the local governments failed to tackle over decades.\n\n#### 🎟️ Contest!\n*What’s your favorite Hive project? We invite you to celebrate by writing a post about it. Every post of a minimum 1,000 words will get **10 Raffle Tickets**.*\n\n## Feeless and Limitless\nHive is currently positioned as one of the most accessible blockchains to develop on. It makes development simple and fast. It has been transformed from the baseline DPoS blockchain technology it started out as into a light-weight solution suitable for any project or industry application. It did this while improving on security mechanisms to ensure that data integrity and decentralization remain paramount. \n\nHive has not only improved on existing DPoS technology but has made it truly limitless by crafting an extensive layer-2 capability and supporting cross-chain integrations. The HAF API Note Suite now bundles together the innovative Hive Application Framework (HAF) with HAF Account History (HAFAH), Hived (core protocol), Hivemind, a block explorer and more. While Hive sports 3 second blocks, its one block irreversibility (OBI) means that confirmation is near-instant, making transactions final without any waiting. Every part of Hive has been continuously optimized to limit the required resources in relation to all types of transactions and to lower the infrastructure requirements to run the most complex of operations. Everything is designed for scalability and efficiency.\n\n\n![image.png](https://images.hive.blog/DQmZjJcHu7K9ZusxswhSJ1X36Bc3D3FgiJ3kZJxG1SqsiDs/image.png)\n\n\n#### 🎟️ Contest!\n*What types of innovative ideas would you like to see on Hive? Write a post and link it in the comments below describing your desired idea in 400-500 words. Every post that fits the brief will get **5 Raffle Tickets**.*\n\nChanges are happening and changes are also sought after here on Hive too. We look forward to the next five years as we make those changes and pave new roads through Web3. Hive on!",
+                                        "body_length": 6976,
+                                        "cashout_time": "1969-12-31T23:59:59",
+                                        "category": "hive5",
+                                        "children": 184,
+                                        "created": "2025-03-20T16:39:33",
+                                        "curator_payout_value": "109.403 HBD",
+                                        "depth": 0,
+                                        "json_metadata": "{\"tags\":[\"hive5\",\"hive\",\"anniversary\"],\"image\":[\"https://images.hive.blog/DQmaJaewnEu4wVKaPYMx7gpkwuSy4aiYdqLb87ncMRQnHku/image.png\",\"https://images.hive.blog/DQmNf7kJ3n7gtB4NACuzCurrJQATD7N98dsW4BZNevUyVYx/image.png\",\"https://images.hive.blog/DQmQ1ZApmrTG6DGmbEPW48uX2oWQdJxj6Ky7bQL5a5zNH24/Five_Years_Hive_Card.png\",\"https://images.hive.blog/DQmZjJcHu7K9ZusxswhSJ1X36Bc3D3FgiJ3kZJxG1SqsiDs/image.png\"],\"links\":[\"https://hivewhale.com/\"],\"app\":\"hiveblog/0.1\",\"format\":\"markdown\"}",
+                                        "last_payout": "2025-03-27T16:39:33",
+                                        "last_update": "2025-03-20T16:39:33",
+                                        "max_accepted_payout": "1000000.000 HBD",
+                                        "net_rshares": 623550720229968,
+                                        "parent_author": "",
+                                        "parent_permlink": "hive5",
+                                        "pending_payout_value": "0.000 HBD",
+                                        "percent_hbd": 10000,
+                                        "permlink": "hive-5-celebrating-our-5th-anniversary-as-hive",
+                                        "post_id": 141560746,
+                                        "replies": [],
+                                        "root_title": "Hive 5: Celebrating our 5th Anniversary as Hive",
+                                        "title": "Hive 5: Celebrating our 5th Anniversary as Hive",
+                                        "total_payout_value": "109.585 HBD",
+                                        "url": "/hive5/@hiveio/hive-5-celebrating-our-5th-anniversary-as-hive"
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "tags_api.get_discussions_by_blog": {
+            "post": {
+                "tags": [
+                    "tags_api"
+                ],
+                "summary": "Returns a list of discussions based on blog. (Supported by Hivemind)",
+                "operationId": "tags_get_discussions_by_blog",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/condenser_get_discussions_by_blog_or_feed"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/condenser_get_discussions_by_response"
+                                },
+                                "example": [
+                                    {
+                                        "active_votes": [
+                                            {
+                                                "percent": "10000",
+                                                "reputation": 31197627261276,
+                                                "rshares": 13081280967,
+                                                "voter": "ferbu"
+                                            },
+                                            {
+                                                "percent": "4950",
+                                                "reputation": 355586177992570,
+                                                "rshares": 9795724243,
+                                                "voter": "josdelmi"
+                                            },
+                                            {
+                                                "percent": "10000",
+                                                "reputation": 48120095142290,
+                                                "rshares": 4859584947,
+                                                "voter": "elentogether"
+                                            },
+                                            {
+                                                "percent": "10000",
+                                                "reputation": 807234681729,
+                                                "rshares": 649620066,
+                                                "voter": "knightmarey"
+                                            }
+                                        ],
+                                        "author": "hiveio",
+                                        "author_reputation": 298927146213106,
+                                        "beneficiaries": [
+                                            {
+                                                "account": "pettycash",
+                                                "weight": 10000
+                                            }
+                                        ],
+                                        "body": "![image.png](https://images.hive.blog/DQmaJaewnEu4wVKaPYMx7gpkwuSy4aiYdqLb87ncMRQnHku/image.png)\n\n\nChanges are happening all over the world. As we celebrate our 5th anniversary as Hive and are approaching a decade as a community we continue to push the boundaries of blockchain possibilities and technical excellence. Over the years through dedication, ingenuity and perseverance, the Hive community has built a true beacon of Web3. The Hive ecosystem is a vibrant embodiment of decentralization and accessibility and it is all of us here on Hive who have collectively made it happen. \n\nOn this special day even the Hive Whale has come out of hibernation after a chilly winter! https://hivewhale.com/ \n\n![image.png](https://images.hive.blog/DQmNf7kJ3n7gtB4NACuzCurrJQATD7N98dsW4BZNevUyVYx/image.png)\n\n## Collect Raffle Tickets & Win! 🎟️🎟️🎟️\nTo help mark this special occasion there are mini-contests throughout this post. Participate in them to collect Raffle Tickets. Each ticket gets you one entry in the Hive5 Raffle which will take place LIVE at Talent Land Mexico. The prize pool is **500 HBD**, divided between 5 lucky winners plus more mystery prizes. Entries for this round are due within 7 days so act fast!\n\n## Revolutionary Web3\n\nHive was created out of the love for decentralization and digital freedom. Unlike its competitors, Hive was never about the money. Hive is all about the vision. About true Web3. \n\nAll of us take special pride in Hive. Hive is built by its users for its users with no corporate influence. It rose out of the flames of an unprecedented attack on decentralization and open source principles and has from that time vowed to champion those key tenets and ensure that corporate greed has no place in its segment of Web3. The Hive community was not for sale five years ago and it never will be. No single entity has control of Hive -- it is decentralized, auditable, transparent, and barrier-less. It is a beacon of creativity, innovation and endurance among the greater blockchain-based technologies landscape and the cryptosphere. Its ecosystem has flourished organically, with myriad dapps, services and solutions for every need, from sharing videos to buying dinner.\n\nHive is built to last. Growth on Hive has never been about financial gains but always about exploring new opportunities to pursue innovation and build the best Web3 experience possible. Integrations, partnerships and onboarding all constitute the key milestones required to promote mass adoption. Not only do they allow new users to discover Hive but they also provide a gateway into data ownership and personal freedom and actualization.\n\n> “Hive makes an escape route possible,” wrote one Hive community member. “Not just from being an early adopter, but also because you can earn it by participating in the game. You make a post, you might get some HIVE. Once you have some Hive Power, you can vote that power and earn HIVE. This is what makes Hive different than most any of the other cryptos on offer, distribution is built into the first layer. You don't need a rack of servers or 4 digit electric bills to mine some hive, just something to say, the ability to type it out, and some networking for friends.”\n\n#### 🎟️ Contest!\n*Guess which Hiver wrote this quote. Tag them. Every correct guess will get **1 Raffle Ticket**. But choose wisely, its 1 guess per person!*\n\n![Five_Years_Hive_Card.png](https://images.hive.blog/DQmQ1ZApmrTG6DGmbEPW48uX2oWQdJxj6Ky7bQL5a5zNH24/Five_Years_Hive_Card.png)\n<sup>*Active accounts and accounts rewarded figures are based on partial estimates due to queries.*</sup>\n\n## Hive Changes Lives\nHive has consistently remained resilient despite being faced first with COVID-related challenges and then a highly-volatile market, which still persists. Despite this, it is listed on over 40 exchanges and both HBD and HIVE are used as currency for B2B and B2C transactions worldwide. Hive has come from wondering what can be done with it in terms of use-cases to being welcomed in everything from grocery stores to entertainment venues to real-estate as the preferred cryptocurrency. Purchases can already be made without delay with only a phone with the help of the Hive Keychain and Distriator and now Hive Debit Cards are becoming available. The Virtual Smart Chain (VSC) is also currently in the final stages just edging towards launch, making integrations even more seamless.\n\nHive brought tangible change to the world. Freedom of expression is a universal human right along with an adequate standard of living. The Hive community does not wait for change to happen; it makes change happen. Hive community members brought water to remote villages in Ghana, Venezuela and Nigeria. In Ghana, the twentieth well is presently being constructed. Ordinary people who had no understanding of the true capabilities of blockchain technology and parallel economies are seeing their effects when their own neighbors have successfully used Hive to resolve problems in weeks that the local governments failed to tackle over decades.\n\n#### 🎟️ Contest!\n*What’s your favorite Hive project? We invite you to celebrate by writing a post about it. Every post of a minimum 1,000 words will get **10 Raffle Tickets**.*\n\n## Feeless and Limitless\nHive is currently positioned as one of the most accessible blockchains to develop on. It makes development simple and fast. It has been transformed from the baseline DPoS blockchain technology it started out as into a light-weight solution suitable for any project or industry application. It did this while improving on security mechanisms to ensure that data integrity and decentralization remain paramount. \n\nHive has not only improved on existing DPoS technology but has made it truly limitless by crafting an extensive layer-2 capability and supporting cross-chain integrations. The HAF API Note Suite now bundles together the innovative Hive Application Framework (HAF) with HAF Account History (HAFAH), Hived (core protocol), Hivemind, a block explorer and more. While Hive sports 3 second blocks, its one block irreversibility (OBI) means that confirmation is near-instant, making transactions final without any waiting. Every part of Hive has been continuously optimized to limit the required resources in relation to all types of transactions and to lower the infrastructure requirements to run the most complex of operations. Everything is designed for scalability and efficiency.\n\n\n![image.png](https://images.hive.blog/DQmZjJcHu7K9ZusxswhSJ1X36Bc3D3FgiJ3kZJxG1SqsiDs/image.png)\n\n\n#### 🎟️ Contest!\n*What types of innovative ideas would you like to see on Hive? Write a post and link it in the comments below describing your desired idea in 400-500 words. Every post that fits the brief will get **5 Raffle Tickets**.*\n\nChanges are happening and changes are also sought after here on Hive too. We look forward to the next five years as we make those changes and pave new roads through Web3. Hive on!",
+                                        "body_length": 6976,
+                                        "cashout_time": "1969-12-31T23:59:59",
+                                        "category": "hive5",
+                                        "children": 184,
+                                        "created": "2025-03-20T16:39:33",
+                                        "curator_payout_value": "109.403 HBD",
+                                        "depth": 0,
+                                        "json_metadata": "{\"tags\":[\"hive5\",\"hive\",\"anniversary\"],\"image\":[\"https://images.hive.blog/DQmaJaewnEu4wVKaPYMx7gpkwuSy4aiYdqLb87ncMRQnHku/image.png\",\"https://images.hive.blog/DQmNf7kJ3n7gtB4NACuzCurrJQATD7N98dsW4BZNevUyVYx/image.png\",\"https://images.hive.blog/DQmQ1ZApmrTG6DGmbEPW48uX2oWQdJxj6Ky7bQL5a5zNH24/Five_Years_Hive_Card.png\",\"https://images.hive.blog/DQmZjJcHu7K9ZusxswhSJ1X36Bc3D3FgiJ3kZJxG1SqsiDs/image.png\"],\"links\":[\"https://hivewhale.com/\"],\"app\":\"hiveblog/0.1\",\"format\":\"markdown\"}",
+                                        "last_payout": "2025-03-27T16:39:33",
+                                        "last_update": "2025-03-20T16:39:33",
+                                        "max_accepted_payout": "1000000.000 HBD",
+                                        "net_rshares": 623550720229968,
+                                        "parent_author": "",
+                                        "parent_permlink": "hive5",
+                                        "pending_payout_value": "0.000 HBD",
+                                        "percent_hbd": 10000,
+                                        "permlink": "hive-5-celebrating-our-5th-anniversary-as-hive",
+                                        "post_id": 141560746,
+                                        "replies": [],
+                                        "root_title": "Hive 5: Celebrating our 5th Anniversary as Hive",
+                                        "title": "Hive 5: Celebrating our 5th Anniversary as Hive",
+                                        "total_payout_value": "109.585 HBD",
+                                        "url": "/hive5/@hiveio/hive-5-celebrating-our-5th-anniversary-as-hive"
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "tags_api.get_discussions_by_comments": {
+            "post": {
+                "tags": [
+                    "tags_api"
+                ],
+                "summary": "Returns a list of discussions based on comments. (Supported by Hivemind)",
+                "operationId": "tags_get_discussions_by_comments",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/condenser_get_discussions_by_comments"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/condenser_get_discussions_by_response"
+                                },
+                                "example": [
+                                    {
+                                        "active_votes": [
+                                            {
+                                                "percent": "10000",
+                                                "reputation": 31197627261276,
+                                                "rshares": 13081280967,
+                                                "voter": "ferbu"
+                                            },
+                                            {
+                                                "percent": "4950",
+                                                "reputation": 355586177992570,
+                                                "rshares": 9795724243,
+                                                "voter": "josdelmi"
+                                            },
+                                            {
+                                                "percent": "10000",
+                                                "reputation": 48120095142290,
+                                                "rshares": 4859584947,
+                                                "voter": "elentogether"
+                                            },
+                                            {
+                                                "percent": "10000",
+                                                "reputation": 807234681729,
+                                                "rshares": 649620066,
+                                                "voter": "knightmarey"
+                                            }
+                                        ],
+                                        "author": "hiveio",
+                                        "author_reputation": 298927146213106,
+                                        "beneficiaries": [
+                                            {
+                                                "account": "pettycash",
+                                                "weight": 10000
+                                            }
+                                        ],
+                                        "body": "![image.png](https://images.hive.blog/DQmaJaewnEu4wVKaPYMx7gpkwuSy4aiYdqLb87ncMRQnHku/image.png)\n\n\nChanges are happening all over the world. As we celebrate our 5th anniversary as Hive and are approaching a decade as a community we continue to push the boundaries of blockchain possibilities and technical excellence. Over the years through dedication, ingenuity and perseverance, the Hive community has built a true beacon of Web3. The Hive ecosystem is a vibrant embodiment of decentralization and accessibility and it is all of us here on Hive who have collectively made it happen. \n\nOn this special day even the Hive Whale has come out of hibernation after a chilly winter! https://hivewhale.com/ \n\n![image.png](https://images.hive.blog/DQmNf7kJ3n7gtB4NACuzCurrJQATD7N98dsW4BZNevUyVYx/image.png)\n\n## Collect Raffle Tickets & Win! 🎟️🎟️🎟️\nTo help mark this special occasion there are mini-contests throughout this post. Participate in them to collect Raffle Tickets. Each ticket gets you one entry in the Hive5 Raffle which will take place LIVE at Talent Land Mexico. The prize pool is **500 HBD**, divided between 5 lucky winners plus more mystery prizes. Entries for this round are due within 7 days so act fast!\n\n## Revolutionary Web3\n\nHive was created out of the love for decentralization and digital freedom. Unlike its competitors, Hive was never about the money. Hive is all about the vision. About true Web3. \n\nAll of us take special pride in Hive. Hive is built by its users for its users with no corporate influence. It rose out of the flames of an unprecedented attack on decentralization and open source principles and has from that time vowed to champion those key tenets and ensure that corporate greed has no place in its segment of Web3. The Hive community was not for sale five years ago and it never will be. No single entity has control of Hive -- it is decentralized, auditable, transparent, and barrier-less. It is a beacon of creativity, innovation and endurance among the greater blockchain-based technologies landscape and the cryptosphere. Its ecosystem has flourished organically, with myriad dapps, services and solutions for every need, from sharing videos to buying dinner.\n\nHive is built to last. Growth on Hive has never been about financial gains but always about exploring new opportunities to pursue innovation and build the best Web3 experience possible. Integrations, partnerships and onboarding all constitute the key milestones required to promote mass adoption. Not only do they allow new users to discover Hive but they also provide a gateway into data ownership and personal freedom and actualization.\n\n> “Hive makes an escape route possible,” wrote one Hive community member. “Not just from being an early adopter, but also because you can earn it by participating in the game. You make a post, you might get some HIVE. Once you have some Hive Power, you can vote that power and earn HIVE. This is what makes Hive different than most any of the other cryptos on offer, distribution is built into the first layer. You don't need a rack of servers or 4 digit electric bills to mine some hive, just something to say, the ability to type it out, and some networking for friends.”\n\n#### 🎟️ Contest!\n*Guess which Hiver wrote this quote. Tag them. Every correct guess will get **1 Raffle Ticket**. But choose wisely, its 1 guess per person!*\n\n![Five_Years_Hive_Card.png](https://images.hive.blog/DQmQ1ZApmrTG6DGmbEPW48uX2oWQdJxj6Ky7bQL5a5zNH24/Five_Years_Hive_Card.png)\n<sup>*Active accounts and accounts rewarded figures are based on partial estimates due to queries.*</sup>\n\n## Hive Changes Lives\nHive has consistently remained resilient despite being faced first with COVID-related challenges and then a highly-volatile market, which still persists. Despite this, it is listed on over 40 exchanges and both HBD and HIVE are used as currency for B2B and B2C transactions worldwide. Hive has come from wondering what can be done with it in terms of use-cases to being welcomed in everything from grocery stores to entertainment venues to real-estate as the preferred cryptocurrency. Purchases can already be made without delay with only a phone with the help of the Hive Keychain and Distriator and now Hive Debit Cards are becoming available. The Virtual Smart Chain (VSC) is also currently in the final stages just edging towards launch, making integrations even more seamless.\n\nHive brought tangible change to the world. Freedom of expression is a universal human right along with an adequate standard of living. The Hive community does not wait for change to happen; it makes change happen. Hive community members brought water to remote villages in Ghana, Venezuela and Nigeria. In Ghana, the twentieth well is presently being constructed. Ordinary people who had no understanding of the true capabilities of blockchain technology and parallel economies are seeing their effects when their own neighbors have successfully used Hive to resolve problems in weeks that the local governments failed to tackle over decades.\n\n#### 🎟️ Contest!\n*What’s your favorite Hive project? We invite you to celebrate by writing a post about it. Every post of a minimum 1,000 words will get **10 Raffle Tickets**.*\n\n## Feeless and Limitless\nHive is currently positioned as one of the most accessible blockchains to develop on. It makes development simple and fast. It has been transformed from the baseline DPoS blockchain technology it started out as into a light-weight solution suitable for any project or industry application. It did this while improving on security mechanisms to ensure that data integrity and decentralization remain paramount. \n\nHive has not only improved on existing DPoS technology but has made it truly limitless by crafting an extensive layer-2 capability and supporting cross-chain integrations. The HAF API Note Suite now bundles together the innovative Hive Application Framework (HAF) with HAF Account History (HAFAH), Hived (core protocol), Hivemind, a block explorer and more. While Hive sports 3 second blocks, its one block irreversibility (OBI) means that confirmation is near-instant, making transactions final without any waiting. Every part of Hive has been continuously optimized to limit the required resources in relation to all types of transactions and to lower the infrastructure requirements to run the most complex of operations. Everything is designed for scalability and efficiency.\n\n\n![image.png](https://images.hive.blog/DQmZjJcHu7K9ZusxswhSJ1X36Bc3D3FgiJ3kZJxG1SqsiDs/image.png)\n\n\n#### 🎟️ Contest!\n*What types of innovative ideas would you like to see on Hive? Write a post and link it in the comments below describing your desired idea in 400-500 words. Every post that fits the brief will get **5 Raffle Tickets**.*\n\nChanges are happening and changes are also sought after here on Hive too. We look forward to the next five years as we make those changes and pave new roads through Web3. Hive on!",
+                                        "body_length": 6976,
+                                        "cashout_time": "1969-12-31T23:59:59",
+                                        "category": "hive5",
+                                        "children": 184,
+                                        "created": "2025-03-20T16:39:33",
+                                        "curator_payout_value": "109.403 HBD",
+                                        "depth": 0,
+                                        "json_metadata": "{\"tags\":[\"hive5\",\"hive\",\"anniversary\"],\"image\":[\"https://images.hive.blog/DQmaJaewnEu4wVKaPYMx7gpkwuSy4aiYdqLb87ncMRQnHku/image.png\",\"https://images.hive.blog/DQmNf7kJ3n7gtB4NACuzCurrJQATD7N98dsW4BZNevUyVYx/image.png\",\"https://images.hive.blog/DQmQ1ZApmrTG6DGmbEPW48uX2oWQdJxj6Ky7bQL5a5zNH24/Five_Years_Hive_Card.png\",\"https://images.hive.blog/DQmZjJcHu7K9ZusxswhSJ1X36Bc3D3FgiJ3kZJxG1SqsiDs/image.png\"],\"links\":[\"https://hivewhale.com/\"],\"app\":\"hiveblog/0.1\",\"format\":\"markdown\"}",
+                                        "last_payout": "2025-03-27T16:39:33",
+                                        "last_update": "2025-03-20T16:39:33",
+                                        "max_accepted_payout": "1000000.000 HBD",
+                                        "net_rshares": 623550720229968,
+                                        "parent_author": "",
+                                        "parent_permlink": "hive5",
+                                        "pending_payout_value": "0.000 HBD",
+                                        "percent_hbd": 10000,
+                                        "permlink": "hive-5-celebrating-our-5th-anniversary-as-hive",
+                                        "post_id": 141560746,
+                                        "replies": [],
+                                        "root_title": "Hive 5: Celebrating our 5th Anniversary as Hive",
+                                        "title": "Hive 5: Celebrating our 5th Anniversary as Hive",
+                                        "total_payout_value": "109.585 HBD",
+                                        "url": "/hive5/@hiveio/hive-5-celebrating-our-5th-anniversary-as-hive"
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "tags_api.get_discussions_by_created": {
+            "post": {
+                "tags": [
+                    "tags_api"
+                ],
+                "summary": "Returns a list of discussions based on created timestamp. (Supported by Hivemind)",
+                "operationId": "tags_get_discussions_by_created",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/condenser_get_discussions_by"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/condenser_get_discussions_by_response"
+                                },
+                                "example": [
+                                    {
+                                        "active_votes": [
+                                            {
+                                                "percent": "10000",
+                                                "reputation": 31197627261276,
+                                                "rshares": 13081280967,
+                                                "voter": "ferbu"
+                                            },
+                                            {
+                                                "percent": "4950",
+                                                "reputation": 355586177992570,
+                                                "rshares": 9795724243,
+                                                "voter": "josdelmi"
+                                            },
+                                            {
+                                                "percent": "10000",
+                                                "reputation": 48120095142290,
+                                                "rshares": 4859584947,
+                                                "voter": "elentogether"
+                                            },
+                                            {
+                                                "percent": "10000",
+                                                "reputation": 807234681729,
+                                                "rshares": 649620066,
+                                                "voter": "knightmarey"
+                                            }
+                                        ],
+                                        "author": "hiveio",
+                                        "author_reputation": 298927146213106,
+                                        "beneficiaries": [
+                                            {
+                                                "account": "pettycash",
+                                                "weight": 10000
+                                            }
+                                        ],
+                                        "body": "![image.png](https://images.hive.blog/DQmaJaewnEu4wVKaPYMx7gpkwuSy4aiYdqLb87ncMRQnHku/image.png)\n\n\nChanges are happening all over the world. As we celebrate our 5th anniversary as Hive and are approaching a decade as a community we continue to push the boundaries of blockchain possibilities and technical excellence. Over the years through dedication, ingenuity and perseverance, the Hive community has built a true beacon of Web3. The Hive ecosystem is a vibrant embodiment of decentralization and accessibility and it is all of us here on Hive who have collectively made it happen. \n\nOn this special day even the Hive Whale has come out of hibernation after a chilly winter! https://hivewhale.com/ \n\n![image.png](https://images.hive.blog/DQmNf7kJ3n7gtB4NACuzCurrJQATD7N98dsW4BZNevUyVYx/image.png)\n\n## Collect Raffle Tickets & Win! 🎟️🎟️🎟️\nTo help mark this special occasion there are mini-contests throughout this post. Participate in them to collect Raffle Tickets. Each ticket gets you one entry in the Hive5 Raffle which will take place LIVE at Talent Land Mexico. The prize pool is **500 HBD**, divided between 5 lucky winners plus more mystery prizes. Entries for this round are due within 7 days so act fast!\n\n## Revolutionary Web3\n\nHive was created out of the love for decentralization and digital freedom. Unlike its competitors, Hive was never about the money. Hive is all about the vision. About true Web3. \n\nAll of us take special pride in Hive. Hive is built by its users for its users with no corporate influence. It rose out of the flames of an unprecedented attack on decentralization and open source principles and has from that time vowed to champion those key tenets and ensure that corporate greed has no place in its segment of Web3. The Hive community was not for sale five years ago and it never will be. No single entity has control of Hive -- it is decentralized, auditable, transparent, and barrier-less. It is a beacon of creativity, innovation and endurance among the greater blockchain-based technologies landscape and the cryptosphere. Its ecosystem has flourished organically, with myriad dapps, services and solutions for every need, from sharing videos to buying dinner.\n\nHive is built to last. Growth on Hive has never been about financial gains but always about exploring new opportunities to pursue innovation and build the best Web3 experience possible. Integrations, partnerships and onboarding all constitute the key milestones required to promote mass adoption. Not only do they allow new users to discover Hive but they also provide a gateway into data ownership and personal freedom and actualization.\n\n> “Hive makes an escape route possible,” wrote one Hive community member. “Not just from being an early adopter, but also because you can earn it by participating in the game. You make a post, you might get some HIVE. Once you have some Hive Power, you can vote that power and earn HIVE. This is what makes Hive different than most any of the other cryptos on offer, distribution is built into the first layer. You don't need a rack of servers or 4 digit electric bills to mine some hive, just something to say, the ability to type it out, and some networking for friends.”\n\n#### 🎟️ Contest!\n*Guess which Hiver wrote this quote. Tag them. Every correct guess will get **1 Raffle Ticket**. But choose wisely, its 1 guess per person!*\n\n![Five_Years_Hive_Card.png](https://images.hive.blog/DQmQ1ZApmrTG6DGmbEPW48uX2oWQdJxj6Ky7bQL5a5zNH24/Five_Years_Hive_Card.png)\n<sup>*Active accounts and accounts rewarded figures are based on partial estimates due to queries.*</sup>\n\n## Hive Changes Lives\nHive has consistently remained resilient despite being faced first with COVID-related challenges and then a highly-volatile market, which still persists. Despite this, it is listed on over 40 exchanges and both HBD and HIVE are used as currency for B2B and B2C transactions worldwide. Hive has come from wondering what can be done with it in terms of use-cases to being welcomed in everything from grocery stores to entertainment venues to real-estate as the preferred cryptocurrency. Purchases can already be made without delay with only a phone with the help of the Hive Keychain and Distriator and now Hive Debit Cards are becoming available. The Virtual Smart Chain (VSC) is also currently in the final stages just edging towards launch, making integrations even more seamless.\n\nHive brought tangible change to the world. Freedom of expression is a universal human right along with an adequate standard of living. The Hive community does not wait for change to happen; it makes change happen. Hive community members brought water to remote villages in Ghana, Venezuela and Nigeria. In Ghana, the twentieth well is presently being constructed. Ordinary people who had no understanding of the true capabilities of blockchain technology and parallel economies are seeing their effects when their own neighbors have successfully used Hive to resolve problems in weeks that the local governments failed to tackle over decades.\n\n#### 🎟️ Contest!\n*What’s your favorite Hive project? We invite you to celebrate by writing a post about it. Every post of a minimum 1,000 words will get **10 Raffle Tickets**.*\n\n## Feeless and Limitless\nHive is currently positioned as one of the most accessible blockchains to develop on. It makes development simple and fast. It has been transformed from the baseline DPoS blockchain technology it started out as into a light-weight solution suitable for any project or industry application. It did this while improving on security mechanisms to ensure that data integrity and decentralization remain paramount. \n\nHive has not only improved on existing DPoS technology but has made it truly limitless by crafting an extensive layer-2 capability and supporting cross-chain integrations. The HAF API Note Suite now bundles together the innovative Hive Application Framework (HAF) with HAF Account History (HAFAH), Hived (core protocol), Hivemind, a block explorer and more. While Hive sports 3 second blocks, its one block irreversibility (OBI) means that confirmation is near-instant, making transactions final without any waiting. Every part of Hive has been continuously optimized to limit the required resources in relation to all types of transactions and to lower the infrastructure requirements to run the most complex of operations. Everything is designed for scalability and efficiency.\n\n\n![image.png](https://images.hive.blog/DQmZjJcHu7K9ZusxswhSJ1X36Bc3D3FgiJ3kZJxG1SqsiDs/image.png)\n\n\n#### 🎟️ Contest!\n*What types of innovative ideas would you like to see on Hive? Write a post and link it in the comments below describing your desired idea in 400-500 words. Every post that fits the brief will get **5 Raffle Tickets**.*\n\nChanges are happening and changes are also sought after here on Hive too. We look forward to the next five years as we make those changes and pave new roads through Web3. Hive on!",
+                                        "body_length": 6976,
+                                        "cashout_time": "1969-12-31T23:59:59",
+                                        "category": "hive5",
+                                        "children": 184,
+                                        "created": "2025-03-20T16:39:33",
+                                        "curator_payout_value": "109.403 HBD",
+                                        "depth": 0,
+                                        "json_metadata": "{\"tags\":[\"hive5\",\"hive\",\"anniversary\"],\"image\":[\"https://images.hive.blog/DQmaJaewnEu4wVKaPYMx7gpkwuSy4aiYdqLb87ncMRQnHku/image.png\",\"https://images.hive.blog/DQmNf7kJ3n7gtB4NACuzCurrJQATD7N98dsW4BZNevUyVYx/image.png\",\"https://images.hive.blog/DQmQ1ZApmrTG6DGmbEPW48uX2oWQdJxj6Ky7bQL5a5zNH24/Five_Years_Hive_Card.png\",\"https://images.hive.blog/DQmZjJcHu7K9ZusxswhSJ1X36Bc3D3FgiJ3kZJxG1SqsiDs/image.png\"],\"links\":[\"https://hivewhale.com/\"],\"app\":\"hiveblog/0.1\",\"format\":\"markdown\"}",
+                                        "last_payout": "2025-03-27T16:39:33",
+                                        "last_update": "2025-03-20T16:39:33",
+                                        "max_accepted_payout": "1000000.000 HBD",
+                                        "net_rshares": 623550720229968,
+                                        "parent_author": "",
+                                        "parent_permlink": "hive5",
+                                        "pending_payout_value": "0.000 HBD",
+                                        "percent_hbd": 10000,
+                                        "permlink": "hive-5-celebrating-our-5th-anniversary-as-hive",
+                                        "post_id": 141560746,
+                                        "replies": [],
+                                        "root_title": "Hive 5: Celebrating our 5th Anniversary as Hive",
+                                        "title": "Hive 5: Celebrating our 5th Anniversary as Hive",
+                                        "total_payout_value": "109.585 HBD",
+                                        "url": "/hive5/@hiveio/hive-5-celebrating-our-5th-anniversary-as-hive"
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "tags_api.get_discussions_by_hot": {
+            "post": {
+                "tags": [
+                    "tags_api"
+                ],
+                "summary": "Returns a list of discussions based on recent popularity. (Supported by Hivemind)",
+                "operationId": "tags_get_discussions_by_hot",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/condenser_get_discussions_by"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/condenser_get_discussions_by_response"
+                                },
+                                "example": [
+                                    {
+                                        "active_votes": [
+                                            {
+                                                "percent": "10000",
+                                                "reputation": 31197627261276,
+                                                "rshares": 13081280967,
+                                                "voter": "ferbu"
+                                            },
+                                            {
+                                                "percent": "4950",
+                                                "reputation": 355586177992570,
+                                                "rshares": 9795724243,
+                                                "voter": "josdelmi"
+                                            },
+                                            {
+                                                "percent": "10000",
+                                                "reputation": 48120095142290,
+                                                "rshares": 4859584947,
+                                                "voter": "elentogether"
+                                            },
+                                            {
+                                                "percent": "10000",
+                                                "reputation": 807234681729,
+                                                "rshares": 649620066,
+                                                "voter": "knightmarey"
+                                            }
+                                        ],
+                                        "author": "hiveio",
+                                        "author_reputation": 298927146213106,
+                                        "beneficiaries": [
+                                            {
+                                                "account": "pettycash",
+                                                "weight": 10000
+                                            }
+                                        ],
+                                        "body": "![image.png](https://images.hive.blog/DQmaJaewnEu4wVKaPYMx7gpkwuSy4aiYdqLb87ncMRQnHku/image.png)\n\n\nChanges are happening all over the world. As we celebrate our 5th anniversary as Hive and are approaching a decade as a community we continue to push the boundaries of blockchain possibilities and technical excellence. Over the years through dedication, ingenuity and perseverance, the Hive community has built a true beacon of Web3. The Hive ecosystem is a vibrant embodiment of decentralization and accessibility and it is all of us here on Hive who have collectively made it happen. \n\nOn this special day even the Hive Whale has come out of hibernation after a chilly winter! https://hivewhale.com/ \n\n![image.png](https://images.hive.blog/DQmNf7kJ3n7gtB4NACuzCurrJQATD7N98dsW4BZNevUyVYx/image.png)\n\n## Collect Raffle Tickets & Win! 🎟️🎟️🎟️\nTo help mark this special occasion there are mini-contests throughout this post. Participate in them to collect Raffle Tickets. Each ticket gets you one entry in the Hive5 Raffle which will take place LIVE at Talent Land Mexico. The prize pool is **500 HBD**, divided between 5 lucky winners plus more mystery prizes. Entries for this round are due within 7 days so act fast!\n\n## Revolutionary Web3\n\nHive was created out of the love for decentralization and digital freedom. Unlike its competitors, Hive was never about the money. Hive is all about the vision. About true Web3. \n\nAll of us take special pride in Hive. Hive is built by its users for its users with no corporate influence. It rose out of the flames of an unprecedented attack on decentralization and open source principles and has from that time vowed to champion those key tenets and ensure that corporate greed has no place in its segment of Web3. The Hive community was not for sale five years ago and it never will be. No single entity has control of Hive -- it is decentralized, auditable, transparent, and barrier-less. It is a beacon of creativity, innovation and endurance among the greater blockchain-based technologies landscape and the cryptosphere. Its ecosystem has flourished organically, with myriad dapps, services and solutions for every need, from sharing videos to buying dinner.\n\nHive is built to last. Growth on Hive has never been about financial gains but always about exploring new opportunities to pursue innovation and build the best Web3 experience possible. Integrations, partnerships and onboarding all constitute the key milestones required to promote mass adoption. Not only do they allow new users to discover Hive but they also provide a gateway into data ownership and personal freedom and actualization.\n\n> “Hive makes an escape route possible,” wrote one Hive community member. “Not just from being an early adopter, but also because you can earn it by participating in the game. You make a post, you might get some HIVE. Once you have some Hive Power, you can vote that power and earn HIVE. This is what makes Hive different than most any of the other cryptos on offer, distribution is built into the first layer. You don't need a rack of servers or 4 digit electric bills to mine some hive, just something to say, the ability to type it out, and some networking for friends.”\n\n#### 🎟️ Contest!\n*Guess which Hiver wrote this quote. Tag them. Every correct guess will get **1 Raffle Ticket**. But choose wisely, its 1 guess per person!*\n\n![Five_Years_Hive_Card.png](https://images.hive.blog/DQmQ1ZApmrTG6DGmbEPW48uX2oWQdJxj6Ky7bQL5a5zNH24/Five_Years_Hive_Card.png)\n<sup>*Active accounts and accounts rewarded figures are based on partial estimates due to queries.*</sup>\n\n## Hive Changes Lives\nHive has consistently remained resilient despite being faced first with COVID-related challenges and then a highly-volatile market, which still persists. Despite this, it is listed on over 40 exchanges and both HBD and HIVE are used as currency for B2B and B2C transactions worldwide. Hive has come from wondering what can be done with it in terms of use-cases to being welcomed in everything from grocery stores to entertainment venues to real-estate as the preferred cryptocurrency. Purchases can already be made without delay with only a phone with the help of the Hive Keychain and Distriator and now Hive Debit Cards are becoming available. The Virtual Smart Chain (VSC) is also currently in the final stages just edging towards launch, making integrations even more seamless.\n\nHive brought tangible change to the world. Freedom of expression is a universal human right along with an adequate standard of living. The Hive community does not wait for change to happen; it makes change happen. Hive community members brought water to remote villages in Ghana, Venezuela and Nigeria. In Ghana, the twentieth well is presently being constructed. Ordinary people who had no understanding of the true capabilities of blockchain technology and parallel economies are seeing their effects when their own neighbors have successfully used Hive to resolve problems in weeks that the local governments failed to tackle over decades.\n\n#### 🎟️ Contest!\n*What’s your favorite Hive project? We invite you to celebrate by writing a post about it. Every post of a minimum 1,000 words will get **10 Raffle Tickets**.*\n\n## Feeless and Limitless\nHive is currently positioned as one of the most accessible blockchains to develop on. It makes development simple and fast. It has been transformed from the baseline DPoS blockchain technology it started out as into a light-weight solution suitable for any project or industry application. It did this while improving on security mechanisms to ensure that data integrity and decentralization remain paramount. \n\nHive has not only improved on existing DPoS technology but has made it truly limitless by crafting an extensive layer-2 capability and supporting cross-chain integrations. The HAF API Note Suite now bundles together the innovative Hive Application Framework (HAF) with HAF Account History (HAFAH), Hived (core protocol), Hivemind, a block explorer and more. While Hive sports 3 second blocks, its one block irreversibility (OBI) means that confirmation is near-instant, making transactions final without any waiting. Every part of Hive has been continuously optimized to limit the required resources in relation to all types of transactions and to lower the infrastructure requirements to run the most complex of operations. Everything is designed for scalability and efficiency.\n\n\n![image.png](https://images.hive.blog/DQmZjJcHu7K9ZusxswhSJ1X36Bc3D3FgiJ3kZJxG1SqsiDs/image.png)\n\n\n#### 🎟️ Contest!\n*What types of innovative ideas would you like to see on Hive? Write a post and link it in the comments below describing your desired idea in 400-500 words. Every post that fits the brief will get **5 Raffle Tickets**.*\n\nChanges are happening and changes are also sought after here on Hive too. We look forward to the next five years as we make those changes and pave new roads through Web3. Hive on!",
+                                        "body_length": 6976,
+                                        "cashout_time": "1969-12-31T23:59:59",
+                                        "category": "hive5",
+                                        "children": 184,
+                                        "created": "2025-03-20T16:39:33",
+                                        "curator_payout_value": "109.403 HBD",
+                                        "depth": 0,
+                                        "json_metadata": "{\"tags\":[\"hive5\",\"hive\",\"anniversary\"],\"image\":[\"https://images.hive.blog/DQmaJaewnEu4wVKaPYMx7gpkwuSy4aiYdqLb87ncMRQnHku/image.png\",\"https://images.hive.blog/DQmNf7kJ3n7gtB4NACuzCurrJQATD7N98dsW4BZNevUyVYx/image.png\",\"https://images.hive.blog/DQmQ1ZApmrTG6DGmbEPW48uX2oWQdJxj6Ky7bQL5a5zNH24/Five_Years_Hive_Card.png\",\"https://images.hive.blog/DQmZjJcHu7K9ZusxswhSJ1X36Bc3D3FgiJ3kZJxG1SqsiDs/image.png\"],\"links\":[\"https://hivewhale.com/\"],\"app\":\"hiveblog/0.1\",\"format\":\"markdown\"}",
+                                        "last_payout": "2025-03-27T16:39:33",
+                                        "last_update": "2025-03-20T16:39:33",
+                                        "max_accepted_payout": "1000000.000 HBD",
+                                        "net_rshares": 623550720229968,
+                                        "parent_author": "",
+                                        "parent_permlink": "hive5",
+                                        "pending_payout_value": "0.000 HBD",
+                                        "percent_hbd": 10000,
+                                        "permlink": "hive-5-celebrating-our-5th-anniversary-as-hive",
+                                        "post_id": 141560746,
+                                        "replies": [],
+                                        "root_title": "Hive 5: Celebrating our 5th Anniversary as Hive",
+                                        "title": "Hive 5: Celebrating our 5th Anniversary as Hive",
+                                        "total_payout_value": "109.585 HBD",
+                                        "url": "/hive5/@hiveio/hive-5-celebrating-our-5th-anniversary-as-hive"
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "tags_api.get_discussions_by_trending": {
+            "post": {
+                "tags": [
+                    "tags_api"
+                ],
+                "summary": "Returns a list of discussions based on popularity. (Supported by Hivemind)",
+                "operationId": "tags_get_discussions_by_trending",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/condenser_get_discussions_by"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/condenser_get_discussions_by_response"
+                                },
+                                "example": [
+                                    {
+                                        "active_votes": [
+                                            {
+                                                "percent": "10000",
+                                                "reputation": 31197627261276,
+                                                "rshares": 13081280967,
+                                                "voter": "ferbu"
+                                            },
+                                            {
+                                                "percent": "4950",
+                                                "reputation": 355586177992570,
+                                                "rshares": 9795724243,
+                                                "voter": "josdelmi"
+                                            },
+                                            {
+                                                "percent": "10000",
+                                                "reputation": 48120095142290,
+                                                "rshares": 4859584947,
+                                                "voter": "elentogether"
+                                            },
+                                            {
+                                                "percent": "10000",
+                                                "reputation": 807234681729,
+                                                "rshares": 649620066,
+                                                "voter": "knightmarey"
+                                            }
+                                        ],
+                                        "author": "hiveio",
+                                        "author_reputation": 298927146213106,
+                                        "beneficiaries": [
+                                            {
+                                                "account": "pettycash",
+                                                "weight": 10000
+                                            }
+                                        ],
+                                        "body": "![image.png](https://images.hive.blog/DQmaJaewnEu4wVKaPYMx7gpkwuSy4aiYdqLb87ncMRQnHku/image.png)\n\n\nChanges are happening all over the world. As we celebrate our 5th anniversary as Hive and are approaching a decade as a community we continue to push the boundaries of blockchain possibilities and technical excellence. Over the years through dedication, ingenuity and perseverance, the Hive community has built a true beacon of Web3. The Hive ecosystem is a vibrant embodiment of decentralization and accessibility and it is all of us here on Hive who have collectively made it happen. \n\nOn this special day even the Hive Whale has come out of hibernation after a chilly winter! https://hivewhale.com/ \n\n![image.png](https://images.hive.blog/DQmNf7kJ3n7gtB4NACuzCurrJQATD7N98dsW4BZNevUyVYx/image.png)\n\n## Collect Raffle Tickets & Win! 🎟️🎟️🎟️\nTo help mark this special occasion there are mini-contests throughout this post. Participate in them to collect Raffle Tickets. Each ticket gets you one entry in the Hive5 Raffle which will take place LIVE at Talent Land Mexico. The prize pool is **500 HBD**, divided between 5 lucky winners plus more mystery prizes. Entries for this round are due within 7 days so act fast!\n\n## Revolutionary Web3\n\nHive was created out of the love for decentralization and digital freedom. Unlike its competitors, Hive was never about the money. Hive is all about the vision. About true Web3. \n\nAll of us take special pride in Hive. Hive is built by its users for its users with no corporate influence. It rose out of the flames of an unprecedented attack on decentralization and open source principles and has from that time vowed to champion those key tenets and ensure that corporate greed has no place in its segment of Web3. The Hive community was not for sale five years ago and it never will be. No single entity has control of Hive -- it is decentralized, auditable, transparent, and barrier-less. It is a beacon of creativity, innovation and endurance among the greater blockchain-based technologies landscape and the cryptosphere. Its ecosystem has flourished organically, with myriad dapps, services and solutions for every need, from sharing videos to buying dinner.\n\nHive is built to last. Growth on Hive has never been about financial gains but always about exploring new opportunities to pursue innovation and build the best Web3 experience possible. Integrations, partnerships and onboarding all constitute the key milestones required to promote mass adoption. Not only do they allow new users to discover Hive but they also provide a gateway into data ownership and personal freedom and actualization.\n\n> “Hive makes an escape route possible,” wrote one Hive community member. “Not just from being an early adopter, but also because you can earn it by participating in the game. You make a post, you might get some HIVE. Once you have some Hive Power, you can vote that power and earn HIVE. This is what makes Hive different than most any of the other cryptos on offer, distribution is built into the first layer. You don't need a rack of servers or 4 digit electric bills to mine some hive, just something to say, the ability to type it out, and some networking for friends.”\n\n#### 🎟️ Contest!\n*Guess which Hiver wrote this quote. Tag them. Every correct guess will get **1 Raffle Ticket**. But choose wisely, its 1 guess per person!*\n\n![Five_Years_Hive_Card.png](https://images.hive.blog/DQmQ1ZApmrTG6DGmbEPW48uX2oWQdJxj6Ky7bQL5a5zNH24/Five_Years_Hive_Card.png)\n<sup>*Active accounts and accounts rewarded figures are based on partial estimates due to queries.*</sup>\n\n## Hive Changes Lives\nHive has consistently remained resilient despite being faced first with COVID-related challenges and then a highly-volatile market, which still persists. Despite this, it is listed on over 40 exchanges and both HBD and HIVE are used as currency for B2B and B2C transactions worldwide. Hive has come from wondering what can be done with it in terms of use-cases to being welcomed in everything from grocery stores to entertainment venues to real-estate as the preferred cryptocurrency. Purchases can already be made without delay with only a phone with the help of the Hive Keychain and Distriator and now Hive Debit Cards are becoming available. The Virtual Smart Chain (VSC) is also currently in the final stages just edging towards launch, making integrations even more seamless.\n\nHive brought tangible change to the world. Freedom of expression is a universal human right along with an adequate standard of living. The Hive community does not wait for change to happen; it makes change happen. Hive community members brought water to remote villages in Ghana, Venezuela and Nigeria. In Ghana, the twentieth well is presently being constructed. Ordinary people who had no understanding of the true capabilities of blockchain technology and parallel economies are seeing their effects when their own neighbors have successfully used Hive to resolve problems in weeks that the local governments failed to tackle over decades.\n\n#### 🎟️ Contest!\n*What’s your favorite Hive project? We invite you to celebrate by writing a post about it. Every post of a minimum 1,000 words will get **10 Raffle Tickets**.*\n\n## Feeless and Limitless\nHive is currently positioned as one of the most accessible blockchains to develop on. It makes development simple and fast. It has been transformed from the baseline DPoS blockchain technology it started out as into a light-weight solution suitable for any project or industry application. It did this while improving on security mechanisms to ensure that data integrity and decentralization remain paramount. \n\nHive has not only improved on existing DPoS technology but has made it truly limitless by crafting an extensive layer-2 capability and supporting cross-chain integrations. The HAF API Note Suite now bundles together the innovative Hive Application Framework (HAF) with HAF Account History (HAFAH), Hived (core protocol), Hivemind, a block explorer and more. While Hive sports 3 second blocks, its one block irreversibility (OBI) means that confirmation is near-instant, making transactions final without any waiting. Every part of Hive has been continuously optimized to limit the required resources in relation to all types of transactions and to lower the infrastructure requirements to run the most complex of operations. Everything is designed for scalability and efficiency.\n\n\n![image.png](https://images.hive.blog/DQmZjJcHu7K9ZusxswhSJ1X36Bc3D3FgiJ3kZJxG1SqsiDs/image.png)\n\n\n#### 🎟️ Contest!\n*What types of innovative ideas would you like to see on Hive? Write a post and link it in the comments below describing your desired idea in 400-500 words. Every post that fits the brief will get **5 Raffle Tickets**.*\n\nChanges are happening and changes are also sought after here on Hive too. We look forward to the next five years as we make those changes and pave new roads through Web3. Hive on!",
+                                        "body_length": 6976,
+                                        "cashout_time": "1969-12-31T23:59:59",
+                                        "category": "hive5",
+                                        "children": 184,
+                                        "created": "2025-03-20T16:39:33",
+                                        "curator_payout_value": "109.403 HBD",
+                                        "depth": 0,
+                                        "json_metadata": "{\"tags\":[\"hive5\",\"hive\",\"anniversary\"],\"image\":[\"https://images.hive.blog/DQmaJaewnEu4wVKaPYMx7gpkwuSy4aiYdqLb87ncMRQnHku/image.png\",\"https://images.hive.blog/DQmNf7kJ3n7gtB4NACuzCurrJQATD7N98dsW4BZNevUyVYx/image.png\",\"https://images.hive.blog/DQmQ1ZApmrTG6DGmbEPW48uX2oWQdJxj6Ky7bQL5a5zNH24/Five_Years_Hive_Card.png\",\"https://images.hive.blog/DQmZjJcHu7K9ZusxswhSJ1X36Bc3D3FgiJ3kZJxG1SqsiDs/image.png\"],\"links\":[\"https://hivewhale.com/\"],\"app\":\"hiveblog/0.1\",\"format\":\"markdown\"}",
+                                        "last_payout": "2025-03-27T16:39:33",
+                                        "last_update": "2025-03-20T16:39:33",
+                                        "max_accepted_payout": "1000000.000 HBD",
+                                        "net_rshares": 623550720229968,
+                                        "parent_author": "",
+                                        "parent_permlink": "hive5",
+                                        "pending_payout_value": "0.000 HBD",
+                                        "percent_hbd": 10000,
+                                        "permlink": "hive-5-celebrating-our-5th-anniversary-as-hive",
+                                        "post_id": 141560746,
+                                        "replies": [],
+                                        "root_title": "Hive 5: Celebrating our 5th Anniversary as Hive",
+                                        "title": "Hive 5: Celebrating our 5th Anniversary as Hive",
+                                        "total_payout_value": "109.585 HBD",
+                                        "url": "/hive5/@hiveio/hive-5-celebrating-our-5th-anniversary-as-hive"
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "tags_api.get_post_discussions_by_payout": {
+            "post": {
+                "tags": [
+                    "tags_api"
+                ],
+                "summary": "Returns a list of posts based on payout. (Supported by Hivemind)",
+                "operationId": "tags_get_post_discussions_by_payout",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/condenser_get_discussions_by"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/condenser_get_discussions_by_response"
+                                },
+                                "example": [
+                                    {
+                                        "active_votes": [
+                                            {
+                                                "percent": "10000",
+                                                "reputation": 31197627261276,
+                                                "rshares": 13081280967,
+                                                "voter": "ferbu"
+                                            },
+                                            {
+                                                "percent": "4950",
+                                                "reputation": 355586177992570,
+                                                "rshares": 9795724243,
+                                                "voter": "josdelmi"
+                                            },
+                                            {
+                                                "percent": "10000",
+                                                "reputation": 48120095142290,
+                                                "rshares": 4859584947,
+                                                "voter": "elentogether"
+                                            },
+                                            {
+                                                "percent": "10000",
+                                                "reputation": 807234681729,
+                                                "rshares": 649620066,
+                                                "voter": "knightmarey"
+                                            }
+                                        ],
+                                        "author": "hiveio",
+                                        "author_reputation": 298927146213106,
+                                        "beneficiaries": [
+                                            {
+                                                "account": "pettycash",
+                                                "weight": 10000
+                                            }
+                                        ],
+                                        "body": "![image.png](https://images.hive.blog/DQmaJaewnEu4wVKaPYMx7gpkwuSy4aiYdqLb87ncMRQnHku/image.png)\n\n\nChanges are happening all over the world. As we celebrate our 5th anniversary as Hive and are approaching a decade as a community we continue to push the boundaries of blockchain possibilities and technical excellence. Over the years through dedication, ingenuity and perseverance, the Hive community has built a true beacon of Web3. The Hive ecosystem is a vibrant embodiment of decentralization and accessibility and it is all of us here on Hive who have collectively made it happen. \n\nOn this special day even the Hive Whale has come out of hibernation after a chilly winter! https://hivewhale.com/ \n\n![image.png](https://images.hive.blog/DQmNf7kJ3n7gtB4NACuzCurrJQATD7N98dsW4BZNevUyVYx/image.png)\n\n## Collect Raffle Tickets & Win! 🎟️🎟️🎟️\nTo help mark this special occasion there are mini-contests throughout this post. Participate in them to collect Raffle Tickets. Each ticket gets you one entry in the Hive5 Raffle which will take place LIVE at Talent Land Mexico. The prize pool is **500 HBD**, divided between 5 lucky winners plus more mystery prizes. Entries for this round are due within 7 days so act fast!\n\n## Revolutionary Web3\n\nHive was created out of the love for decentralization and digital freedom. Unlike its competitors, Hive was never about the money. Hive is all about the vision. About true Web3. \n\nAll of us take special pride in Hive. Hive is built by its users for its users with no corporate influence. It rose out of the flames of an unprecedented attack on decentralization and open source principles and has from that time vowed to champion those key tenets and ensure that corporate greed has no place in its segment of Web3. The Hive community was not for sale five years ago and it never will be. No single entity has control of Hive -- it is decentralized, auditable, transparent, and barrier-less. It is a beacon of creativity, innovation and endurance among the greater blockchain-based technologies landscape and the cryptosphere. Its ecosystem has flourished organically, with myriad dapps, services and solutions for every need, from sharing videos to buying dinner.\n\nHive is built to last. Growth on Hive has never been about financial gains but always about exploring new opportunities to pursue innovation and build the best Web3 experience possible. Integrations, partnerships and onboarding all constitute the key milestones required to promote mass adoption. Not only do they allow new users to discover Hive but they also provide a gateway into data ownership and personal freedom and actualization.\n\n> “Hive makes an escape route possible,” wrote one Hive community member. “Not just from being an early adopter, but also because you can earn it by participating in the game. You make a post, you might get some HIVE. Once you have some Hive Power, you can vote that power and earn HIVE. This is what makes Hive different than most any of the other cryptos on offer, distribution is built into the first layer. You don't need a rack of servers or 4 digit electric bills to mine some hive, just something to say, the ability to type it out, and some networking for friends.”\n\n#### 🎟️ Contest!\n*Guess which Hiver wrote this quote. Tag them. Every correct guess will get **1 Raffle Ticket**. But choose wisely, its 1 guess per person!*\n\n![Five_Years_Hive_Card.png](https://images.hive.blog/DQmQ1ZApmrTG6DGmbEPW48uX2oWQdJxj6Ky7bQL5a5zNH24/Five_Years_Hive_Card.png)\n<sup>*Active accounts and accounts rewarded figures are based on partial estimates due to queries.*</sup>\n\n## Hive Changes Lives\nHive has consistently remained resilient despite being faced first with COVID-related challenges and then a highly-volatile market, which still persists. Despite this, it is listed on over 40 exchanges and both HBD and HIVE are used as currency for B2B and B2C transactions worldwide. Hive has come from wondering what can be done with it in terms of use-cases to being welcomed in everything from grocery stores to entertainment venues to real-estate as the preferred cryptocurrency. Purchases can already be made without delay with only a phone with the help of the Hive Keychain and Distriator and now Hive Debit Cards are becoming available. The Virtual Smart Chain (VSC) is also currently in the final stages just edging towards launch, making integrations even more seamless.\n\nHive brought tangible change to the world. Freedom of expression is a universal human right along with an adequate standard of living. The Hive community does not wait for change to happen; it makes change happen. Hive community members brought water to remote villages in Ghana, Venezuela and Nigeria. In Ghana, the twentieth well is presently being constructed. Ordinary people who had no understanding of the true capabilities of blockchain technology and parallel economies are seeing their effects when their own neighbors have successfully used Hive to resolve problems in weeks that the local governments failed to tackle over decades.\n\n#### 🎟️ Contest!\n*What’s your favorite Hive project? We invite you to celebrate by writing a post about it. Every post of a minimum 1,000 words will get **10 Raffle Tickets**.*\n\n## Feeless and Limitless\nHive is currently positioned as one of the most accessible blockchains to develop on. It makes development simple and fast. It has been transformed from the baseline DPoS blockchain technology it started out as into a light-weight solution suitable for any project or industry application. It did this while improving on security mechanisms to ensure that data integrity and decentralization remain paramount. \n\nHive has not only improved on existing DPoS technology but has made it truly limitless by crafting an extensive layer-2 capability and supporting cross-chain integrations. The HAF API Note Suite now bundles together the innovative Hive Application Framework (HAF) with HAF Account History (HAFAH), Hived (core protocol), Hivemind, a block explorer and more. While Hive sports 3 second blocks, its one block irreversibility (OBI) means that confirmation is near-instant, making transactions final without any waiting. Every part of Hive has been continuously optimized to limit the required resources in relation to all types of transactions and to lower the infrastructure requirements to run the most complex of operations. Everything is designed for scalability and efficiency.\n\n\n![image.png](https://images.hive.blog/DQmZjJcHu7K9ZusxswhSJ1X36Bc3D3FgiJ3kZJxG1SqsiDs/image.png)\n\n\n#### 🎟️ Contest!\n*What types of innovative ideas would you like to see on Hive? Write a post and link it in the comments below describing your desired idea in 400-500 words. Every post that fits the brief will get **5 Raffle Tickets**.*\n\nChanges are happening and changes are also sought after here on Hive too. We look forward to the next five years as we make those changes and pave new roads through Web3. Hive on!",
+                                        "body_length": 6976,
+                                        "cashout_time": "1969-12-31T23:59:59",
+                                        "category": "hive5",
+                                        "children": 184,
+                                        "created": "2025-03-20T16:39:33",
+                                        "curator_payout_value": "109.403 HBD",
+                                        "depth": 0,
+                                        "json_metadata": "{\"tags\":[\"hive5\",\"hive\",\"anniversary\"],\"image\":[\"https://images.hive.blog/DQmaJaewnEu4wVKaPYMx7gpkwuSy4aiYdqLb87ncMRQnHku/image.png\",\"https://images.hive.blog/DQmNf7kJ3n7gtB4NACuzCurrJQATD7N98dsW4BZNevUyVYx/image.png\",\"https://images.hive.blog/DQmQ1ZApmrTG6DGmbEPW48uX2oWQdJxj6Ky7bQL5a5zNH24/Five_Years_Hive_Card.png\",\"https://images.hive.blog/DQmZjJcHu7K9ZusxswhSJ1X36Bc3D3FgiJ3kZJxG1SqsiDs/image.png\"],\"links\":[\"https://hivewhale.com/\"],\"app\":\"hiveblog/0.1\",\"format\":\"markdown\"}",
+                                        "last_payout": "2025-03-27T16:39:33",
+                                        "last_update": "2025-03-20T16:39:33",
+                                        "max_accepted_payout": "1000000.000 HBD",
+                                        "net_rshares": 623550720229968,
+                                        "parent_author": "",
+                                        "parent_permlink": "hive5",
+                                        "pending_payout_value": "0.000 HBD",
+                                        "percent_hbd": 10000,
+                                        "permlink": "hive-5-celebrating-our-5th-anniversary-as-hive",
+                                        "post_id": 141560746,
+                                        "replies": [],
+                                        "root_title": "Hive 5: Celebrating our 5th Anniversary as Hive",
+                                        "title": "Hive 5: Celebrating our 5th Anniversary as Hive",
+                                        "total_payout_value": "109.585 HBD",
+                                        "url": "/hive5/@hiveio/hive-5-celebrating-our-5th-anniversary-as-hive"
                                     }
                                 ]
                             }
@@ -17068,6 +17998,15 @@
                 },
                 "minItems": 4,
                 "maxItems": 4
+            },
+            "tags_get_content_replies_response": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/post_condenser_api"
+                }
+            },
+            "tags_get_content_response": {
+                "$ref": "#/components/schemas/post_condenser_api"
             },
             "team_array": {
                 "type": "array",
