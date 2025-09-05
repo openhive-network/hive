@@ -4218,7 +4218,7 @@
                     "condenser_api"
                 ],
                 "summary": "Returns the expiring vesting delegations for an account.",
-                "description": "Parameters:\n\n- account: A string representing the account name to query for expiring vesting.\n- after: A timestamp to filter expiring vesting entries after a specified date.\n\nExamples:\n- account = \"hiveio\", after = \"2018-01-01T00:00:00\" — Queries for expiring vesting after January 1st, 2018.\n- account = \"alice\", after = \"2017-12-01T00:00:00\" — Queries for expiring vesting after December 1st, 2017.",
+                "description": "Parameters:\n\n- `account`: A string representing the account name to query for expiring vesting.\n- `after`: A timestamp to filter expiring vesting entries after a specified date.\n\nExamples:\n- `account = \"hiveio\"`, `after = \"2018-01-01T00:00:00\"` — Queries for expiring vesting after January 1st, 2018.\n- `account = \"alice\"`, `after = \"2017-12-01T00:00:00\"` — Queries for expiring vesting after December 1st, 2017.",
                 "operationId": "condenser_get_expiring_vesting_delegations",
                 "requestBody": {
                     "content": {
@@ -4318,7 +4318,7 @@
                     "condenser_api"
                 ],
                 "summary": "Returns the count of followers/following for an account. (Supported by Hivemind)",
-                "description": "Parameters:\n\n- account: A string representing the account name to query.\n\nExamples:\n- account = \"hiveio\" — Queries the account named hiveio.\n- account = \"alice\" — Queries the account named alice.",
+                "description": "Parameters:\n\n- `account`: A string representing the account name to query.\n\nExamples:\n- `account = \"hiveio\"` — Queries the account named hiveio.\n- `account = \"alice\"` — Queries the account named alice.",
                 "operationId": "condenser_get_follow_count",
                 "requestBody": {
                     "content": {
@@ -4355,7 +4355,7 @@
                     "condenser_api"
                 ],
                 "summary": "Returns the list of followers for an account. (Supported by Hivemind)",
-                "description": "Parameters:\n\n- account: A string representing the account name to query.\n- start: A string indicating the account to start from (optional).\n- type: A string specifying the type of data, e.g., 'blog' or 'ignore'.\n- limit: An integer up to 1000 specifying the maximum number of results.\n\nExamples:\n- account = \"hiveio\", type = \"blog\", limit = 10 — Queries for follows of 'hiveio', up to 10 results.\n- account = \"alice\", type = \"ignore\", limit = 100 — Queries for mutes of 'alice', up to 100 results.",
+                "description": "Parameters:\n\n- `account`: A string representing the account name to query.\n- `start`: A string indicating the account to start from (optional).\n- `type`: A string specifying the type of data, e.g., 'blog' or 'ignore'.\n- `limit`: An integer up to 1000 specifying the maximum number of results.\n\nExamples:\n- `account = \"hiveio\"`, `type = \"blog\"`, `limit = 10` — Queries for follows of 'hiveio', up to 10 results.\n- `account = \"alice\"`, `type = \"ignore\"`, `limit = 100` — Queries for mutes of 'alice', up to 100 results.",
                 "operationId": "condenser_get_followers",
                 "requestBody": {
                     "content": {
@@ -4403,7 +4403,7 @@
                     "condenser_api"
                 ],
                 "summary": "Returns the list of accounts that are following an account. (Supported by Hivemind)",
-                "description": "Parameters:\n\n- account: A string representing the account name to query.\n- start: A string specifying the account to start from (optional).\n- type: A string indicating the relationship type, e.g., 'blog' for followers or 'ignore' for mutes.\n- limit: An integer up to 1000 defining the maximum number of results.\n\nExamples:\n- account = \"hiveio\", type = \"blog\", limit = 10 — Queries for follows of 'hiveio', up to 10 results.\n- account = \"alice\", type = \"ignore\", limit = 100 — Queries for mutes of 'alice', up to 100 results.",
+                "description": "Parameters:\n\n- `account`: A string representing the account name to query.\n- `start`: A string specifying the account to start from (optional).\n- `type`: A string indicating the relationship type, e.g., 'blog' for followers or 'ignore' for mutes.\n- `limit`: An integer up to 1000 defining the maximum number of results.\n\nExamples:\n- `account = \"hiveio\"`, `type = \"blog\"`, `limit = 10` — Queries for follows of 'hiveio', up to 10 results.\n- `account = \"alice\"`, `type = \"ignore\"`, `limit = 100` — Queries for mutes of 'alice', up to 100 results.",
                 "operationId": "condenser_get_following",
                 "requestBody": {
                     "content": {
@@ -4519,7 +4519,7 @@
                     "condenser_api"
                 ],
                 "summary": "Returns the market history for the internal HBD:HIVE market.",
-                "description": "Parameters:\n\n- bucket_seconds: An integer representing the segment size in seconds for market history data.\n- start: A timestamp indicating the start of the query period.\n- end: A timestamp indicating the end of the query period.\n\nExamples:\n- bucket_seconds = 15, start = \"2018-01-01T00:00:00\", end = \"2018-01-02T00:00:00\" — Queries market history segmented by 15 seconds.\n- bucket_seconds = 60, start = \"2018-01-01T00:00:00\", end = \"2018-01-02T00:00:00\" — Queries market history segmented by one minute.\n- bucket_seconds = 300, start = \"2018-01-01T00:00:00\", end = \"2018-01-02T00:00:00\" — Queries market history segmented by five minutes.\n- bucket_seconds = 3600, start = \"2018-01-01T00:00:00\", end = \"2018-01-02T00:00:00\" — Queries market history segmented by one hour.\n- bucket_seconds = 86400, start = \"2018-01-01T00:00:00\", end = \"2018-01-02T00:00:00\" — Queries market history segmented by one day.",
+                "description": "Parameters:\n\n- `bucket_seconds`: An integer representing the segment size in seconds for market history data.\n- `start`: A timestamp indicating the start of the query period.\n- `end`: A timestamp indicating the end of the query period.\n\nExamples:\n- `bucket_seconds = 15`, `start = \"2018-01-01T00:00:00\"`, `end = \"2018-01-02T00:00:00\"` — Queries market history segmented by 15 seconds.\n- `bucket_seconds = 60`, `start = \"2018-01-01T00:00:00\"`, `end = \"2018-01-02T00:00:00\"` — Queries market history segmented by one minute.\n- `bucket_seconds = 300`, `start = \"2018-01-01T00:00:00\"`, `end = \"2018-01-02T00:00:00\"` — Queries market history segmented by five minutes.\n- `bucket_seconds = 3600`, `start = \"2018-01-01T00:00:00\"`, `end = \"2018-01-02T00:00:00\"` — Queries market history segmented by one hour.\n- `bucket_seconds = 86400`, `start = \"2018-01-01T00:00:00\"`, `end = \"2018-01-02T00:00:00\"` — Queries market history segmented by one day.",
                 "operationId": "condenser_get_market_history",
                 "requestBody": {
                     "content": {
@@ -4665,7 +4665,7 @@
                     "condenser_api"
                 ],
                 "summary": "Returns a list of authors that have reblogged a post. (Supported by Hivemind)",
-                "description": "Parameters:\n\n- author: A string representing the author's username.\n- permlink: A string representing the unique identifier of the content (permalink).\n\nExamples:\n- author = \"hiveio\", permlink = \"firstpost\" — Queries reblogs for content with a slug @hiveio/firstpost.\n- author = \"alice\", permlink = \"a-post-by-alice\" — Queries reblogs for content with a slug @alice/a-post-by-alice.",
+                "description": "Parameters:\n\n- `author`: A string representing the author's username.\n- `permlink`: A string representing the unique identifier of the content (permalink).\n\nExamples:\n- `author = \"hiveio\"`, `permlink = \"firstpost\"` — Queries reblogs for content with a slug @hiveio/firstpost.\n- `author = \"alice\"`, `permlink = \"a-post-by-alice\"` — Queries reblogs for content with a slug @alice/a-post-by-alice.",
                 "operationId": "condenser_get_reblogged_by",
                 "requestBody": {
                     "content": {
@@ -8291,7 +8291,7 @@
                     "follow_api"
                 ],
                 "summary": "Returns the list of followers for an account. (Supported by Hivemind)",
-                "description": "Parameters:\n\n- account: A string representing the account name to query.\n- start: A string indicating the account to start from (optional).\n- type: A string specifying the type of data, e.g., 'blog' or 'ignore'.\n- limit: An integer up to 1000 specifying the maximum number of results.\n\nExamples:\n- account = \"hiveio\", type = \"blog\", limit = 10 — Queries for follows of 'hiveio', up to 10 results.\n- account = \"alice\", type = \"ignore\", limit = 100 — Queries for mutes of 'alice', up to 100 results.",
+                "description": "Parameters:\n\n- `account`: A string representing the account name to query.\n- `start`: A string indicating the account to start from (optional).\n- `type`: A string specifying the type of data, e.g., 'blog' or 'ignore'.\n- `limit`: An integer up to 1000 specifying the maximum number of results.\n\nExamples:\n- `account = \"hiveio\"`, `type = \"blog\"`, `limit = 10` — Queries for follows of 'hiveio', up to 10 results.\n- `account = \"alice\"`, `type = \"ignore\"`, `limit = 100` — Queries for mutes of 'alice', up to 100 results.",
                 "operationId": "follow_get_followers",
                 "requestBody": {
                     "content": {
@@ -8339,7 +8339,7 @@
                     "follow_api"
                 ],
                 "summary": "Returns the list of accounts that are following an account. (Supported by Hivemind)",
-                "description": "Parameters:\n\n- account: A string representing the account name to query.\n- start: A string specifying the account to start from (optional).\n- type: A string indicating the relationship type, e.g., 'blog' for followers or 'ignore' for mutes.\n- limit: An integer up to 1000 defining the maximum number of results.\n\nExamples:\n- account = \"hiveio\", type = \"blog\", limit = 10 — Queries for follows of 'hiveio', up to 10 results.\n- account = \"alice\", type = \"ignore\", limit = 100 — Queries for mutes of 'alice', up to 100 results.",
+                "description": "Parameters:\n\n- `account`: A string representing the account name to query.\n- `start`: A string specifying the account to start from (optional).\n- `type`: A string indicating the relationship type, e.g., 'blog' for followers or 'ignore' for mutes.\n- `limit`: An integer up to 1000 defining the maximum number of results.\n\nExamples:\n- `account = \"hiveio\"`, `type = \"blog\"`, `limit = 10` — Queries for follows of 'hiveio', up to 10 results.\n- `account = \"alice\"`, `type = \"ignore\"`, `limit = 100` — Queries for mutes of 'alice', up to 100 results.",
                 "operationId": "follow_get_following",
                 "requestBody": {
                     "content": {
@@ -8387,7 +8387,7 @@
                     "follow_api"
                 ],
                 "summary": "Returns the count of followers/following for an account. (Supported by Hivemind)",
-                "description": "Parameters:\n\n- account: A string representing the account name to query.\n\nExamples:\n- account = \"hiveio\" — Queries the account named hiveio.\n- account = \"alice\" — Queries the account named alice.",
+                "description": "Parameters:\n\n- `account`: A string representing the account name to query.\n\nExamples:\n- `account = \"hiveio\"` — Queries the account named hiveio.\n- `account = \"alice\"` — Queries the account named alice.",
                 "operationId": "follow_get_follow_count",
                 "requestBody": {
                     "content": {
@@ -8424,7 +8424,7 @@
                     "follow_api"
                 ],
                 "summary": "Returns a list of authors that have reblogged a post. (Supported by Hivemind)",
-                "description": "Parameters:\n\n- author: A string representing the author's username.\n- permlink: A string representing the unique identifier of the content (permalink).\n\nExamples:\n- author = \"hiveio\", permlink = \"firstpost\" — Queries reblogs for content with a slug @hiveio/firstpost.\n- author = \"alice\", permlink = \"a-post-by-alice\" — Queries reblogs for content with a slug @alice/a-post-by-alice.",
+                "description": "Parameters:\n\n- `author`: A string representing the author's username.\n- `permlink`: A string representing the unique identifier of the content (permalink).\n\nExamples:\n- `author = \"hiveio\"`, `permlink = \"firstpost\"` — Queries reblogs for content with a slug @hiveio/firstpost.\n- `author = \"alice\"`, `permlink = \"a-post-by-alice\"` — Queries reblogs for content with a slug @alice/a-post-by-alice.",
                 "operationId": "follow_get_reblogged_by",
                 "requestBody": {
                     "content": {
