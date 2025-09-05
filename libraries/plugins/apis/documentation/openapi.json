@@ -16720,27 +16720,27 @@
                 "type": "object",
                 "properties": {
                     "close": {
-                        "type": "integer",
+                        "$ref": "#/components/schemas/hive_int",
                         "example": 1691,
                         "description": "The closing price of the asset."
                     },
                     "high": {
-                        "type": "integer",
+                        "$ref": "#/components/schemas/hive_int",
                         "example": 1,
                         "description": "The highest price of the asset."
                     },
                     "low": {
-                        "type": "integer",
+                        "$ref": "#/components/schemas/hive_int",
                         "example": 5,
                         "description": "The lowest price of the asset."
                     },
                     "open": {
-                        "type": "integer",
+                        "$ref": "#/components/schemas/hive_int",
                         "example": 25650,
                         "description": "The opening price of the asset."
                     },
                     "volume": {
-                        "type": "integer",
+                        "$ref": "#/components/schemas/hive_int",
                         "example": 111698586,
                         "description": "The trading volume of the asset."
                     }
