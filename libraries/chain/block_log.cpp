@@ -245,15 +245,9 @@ namespace hive { namespace chain {
       }
       else
       {
-        my->_flock = boost::interprocess::file_lock(file_str.c_str());
-
-        if (read_only)
+        if (!read_only)
         {
-          if (!my->_flock.try_lock_sharable())
-            FC_THROW("Unable to get sharable access to block_log file: ${file_cstr} (some other process opened block_log in RW mode probably)", ("file_cstr", file_str.c_str()));
-        }
-        else
-        {
+          my->_flock = boost::interprocess::file_lock(file_str.c_str());
           if (!my->_flock.try_lock())
             FC_THROW("Unable to get read & write access to block_log file: ${file_cstr} (some other process opened block_log probably)", ("file_cstr", file_str.c_str()));
         }

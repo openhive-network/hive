@@ -374,12 +374,6 @@ void block_log_artifacts::impl::open(const fc::path& block_log_file_path,
       else
         elog( "Error determining possibility to write to block log artifacts file ${file_cstr} (errno = ${e}) - treating as read-only. Skipping advisory file lock initiation.", ( "file_cstr", file_str.c_str() )( e ) );
     }
-    else
-    {
-      _flock = boost::interprocess::file_lock(file_str.c_str());
-      if (!_flock.try_lock_sharable())
-        FC_THROW("Unable to get sharable access to artifacts file: ${file_cstr} (some other process opened artifacts in RW mode probably)", ("file_cstr", file_str.c_str()));
-    }
     
     if (!load_header())
     {
