@@ -1,5 +1,6 @@
 
 #include <hive/chain/external_storage/rocksdb_storage_provider.hpp>
+#include <hive/chain/external_storage/rocksdb_comparators.hpp>
 
 #include <hive/chain/external_storage/comment_rocksdb_objects.hpp>
 #include <hive/chain/external_storage/utilities.hpp>
@@ -13,6 +14,7 @@ rocksdb_storage_provider::rocksdb_storage_provider( const bfs::path& blockchain_
   : _storagePath( storage_path ), _blockchainStoragePath( blockchain_storage_path ), theApp( app )
 {
   _cached_irreversible_block.store(0);
+  registerHiveComparators();
   if( !bfs::exists( _storagePath ) )
     bfs::create_directories( _storagePath );
 }
