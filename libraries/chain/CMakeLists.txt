@@ -86,6 +86,7 @@ set( SOURCES
 
              external_storage/memory_comment_archive.cpp
              external_storage/placeholder_comment_archive.cpp
+             external_storage/rocksdb_comparators.cpp
              external_storage/rocksdb_storage_provider.cpp
              external_storage/rocksdb_comment_storage_provider.cpp
              external_storage/rocksdb_comment_archive.cpp
