@@ -424,6 +424,7 @@ namespace hive { namespace chain {
       const account_id_type& get_account_id() const { return account_id; }
       const account_name_type& get_name() const { return name; }
       account_id_type get_proxy() const { return proxy; }
+      bool has_proxy() const { return proxy != account_id_type(); }
       time_point_sec get_next_vesting_withdrawal() const { return next_vesting_withdrawal; }
       time_point_sec get_governance_vote_expiration_ts() const { return governance_vote_expiration_ts; }
 

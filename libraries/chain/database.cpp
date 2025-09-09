@@ -2212,7 +2212,8 @@ void database::process_vesting_withdrawals()
     _benchmark_dumper.begin();
   while( current != widx.end() && current->get_next_vesting_withdrawal() <= now )
   {
-    const auto from_account = get_account( current->get_name() );
+    auto from_account = get_account( current->get_name() );
+    auto _from_name = current->get_name();
     ++current;
     ++count;
 
@@ -2320,6 +2321,8 @@ void database::process_vesting_withdrawals()
     // Do two passes, the first for VESTS, the second for HIVE. Try to maintain as much accuracy for VESTS as possible.
     process_routing( true/*auto_vest_mode*/ );
     process_routing( false/*auto_vest_mode*/ );
+
+    from_account = get_account( _from_name );
 
     share_type to_convert = to_withdraw - vests_deposited;
     FC_ASSERT( to_convert >= 0, "Deposited more vests than were supposed to be withdrawn" );
@@ -4210,16 +4213,15 @@ void database::process_genesis_accounts()
   // create virtual operations for accounts created in genesis
   const int32_t trx_in_block_prev{ _current_trx_in_block };
   _current_trx_in_block = -1;
-
-  auto _func = [&]( const account_object& obj ){
+  const auto& account_idx = get_index< chain::tiny_account_index >().indices().get< chain::by_id >();
+  std::for_each(
+      account_idx.begin()
+    , account_idx.end()
+    , [&]( const tiny_account_object& obj ){
         push_virtual_operation(
           account_created_operation( obj.get_name(), obj.get_name(), asset(0, VESTS_SYMBOL), asset(0, VESTS_SYMBOL) ) );
-      };
-
-  auto account_idx = get_iterator<by_name>();
-  for( auto _current = account_idx->begin(); !account_idx->end(); account_idx->next(), _current = account_idx->get() )
-    _func( *_current );
-
+      }
+  );
   _current_trx_in_block = trx_in_block_prev;
 }
 
@@ -6252,10 +6254,11 @@ void database::apply_hardfork( uint32_t hardfork )
         create< rc_stats_object >( RC_PENDING_STATS_ID.get_value() );
         create< rc_stats_object >( RC_ARCHIVE_STATS_ID.get_value() );
 
-        auto idx = get_iterator<by_name>();
-        for( auto current = idx->begin(); !idx->end(); idx->next(), current = idx->get() )
+        const auto& idx = get_index< tiny_account_index, by_id >();
+        for( auto it = idx.begin(); it != idx.end(); ++it )
         {
-          modify( *current, [&]( account_object& account )
+          const auto account = get_account( it->get_name() );
+          modify( *account, [&]( account_object& account )
           {
             account.set_rc_adjustment( HIVE_RC_HISTORICAL_ACCOUNT_CREATION_ADJUSTMENT );
             account.get_rc_manabar().last_update_time = now.sec_since_epoch();
@@ -6423,6 +6426,7 @@ void database::validate_invariants()const
 {
   try
   {
+    const auto& account_idx = get_index< tiny_account_index, by_name >();
     asset total_supply = asset( 0, HIVE_SYMBOL );
     asset total_hbd = asset( 0, HBD_SYMBOL );
     asset total_vesting = asset( 0, VESTS_SYMBOL );
@@ -6450,29 +6454,29 @@ void database::validate_invariants()const
       ++witness_no;
     }
 
-    auto account_idx = get_iterator<by_name>();
-    for( auto itr = account_idx->begin(); !account_idx->end(); account_idx->next(), itr = account_idx->get() )
+    for( auto itr = account_idx.begin(); itr != account_idx.end(); ++itr )
     {
-      total_supply += itr->get_balance();
-      total_supply += itr->get_savings();
-      total_supply += itr->get_rewards();
-      total_hbd += itr->get_hbd_balance();
-      total_hbd += itr->get_hbd_savings();
-      total_hbd += itr->get_hbd_rewards();
-      total_vesting += itr->get_vesting();
-      total_vesting += itr->get_vest_rewards();
-      pending_vesting_hive += itr->get_vest_rewards_as_hive();
-      total_vsf_votes += ( !itr->has_proxy() ?
-                      itr->get_governance_vote_power() :
+      const auto account = get_account( itr->get_name() );
+      total_supply += account->get_balance();
+      total_supply += account->get_savings();
+      total_supply += account->get_rewards();
+      total_hbd += account->get_hbd_balance();
+      total_hbd += account->get_hbd_savings();
+      total_hbd += account->get_hbd_rewards();
+      total_vesting += account->get_vesting();
+      total_vesting += account->get_vest_rewards();
+      pending_vesting_hive += account->get_vest_rewards_as_hive();
+      total_vsf_votes += ( !account->has_proxy() ?
+                      account->get_governance_vote_power() :
                       ( HIVE_MAX_PROXY_RECURSION_DEPTH > 0 ?
-                          itr->get_proxied_vsf_votes()[HIVE_MAX_PROXY_RECURSION_DEPTH - 1] :
-                          itr->get_direct_governance_vote_power() ) );
-      total_delayed_votes += itr->get_sum_delayed_votes();
+                          account->get_proxied_vsf_votes()[HIVE_MAX_PROXY_RECURSION_DEPTH - 1] :
+                          account->get_direct_governance_vote_power() ) );
+      total_delayed_votes += account->get_sum_delayed_votes();
       ushare_type sum_delayed_votes{ 0ul };
-      for( auto& dv : itr->get_delayed_votes() )
+      for( auto& dv : account->get_delayed_votes() )
         sum_delayed_votes += dv.val;
-      FC_ASSERT( sum_delayed_votes == itr->get_sum_delayed_votes(), "", ("sum_delayed_votes",sum_delayed_votes)("itr->sum_delayed_votes",itr->get_sum_delayed_votes()) );
-      FC_ASSERT( sum_delayed_votes.value <= itr->get_vesting().amount, "", ("sum_delayed_votes",sum_delayed_votes)("itr->vesting_shares.amount",itr->get_vesting().amount)("account",itr->get_name()) );
+      FC_ASSERT( sum_delayed_votes == account->get_sum_delayed_votes(), "", ("sum_delayed_votes",sum_delayed_votes)("itr->sum_delayed_votes",account->get_sum_delayed_votes()) );
+      FC_ASSERT( sum_delayed_votes.value <= account->get_vesting().amount, "", ("sum_delayed_votes",sum_delayed_votes)("itr->vesting_shares.amount",account->get_vesting().amount)("account",itr->get_name()) );
       ++account_no;
     }
 
@@ -6711,9 +6715,9 @@ void database::perform_vesting_share_split( uint32_t magnitude )
     } );
 
     // Need to update all VESTS in accounts and the total VESTS in the dgpo
-    const auto account_idx = get_iterator<by_name>();
-    for( auto account = account_idx->begin(); !account_idx->end(); account_idx->next(), account = account_idx->get() )
+    for( const auto& tiny_account : get_index< tiny_account_index, by_id >() )
     {
+      const auto account = get_account( tiny_account.get_name() );
       asset old_vesting_shares = account->get_vesting();
       asset new_vesting_shares = old_vesting_shares;
       modify( *account, [&]( account_object& a )
@@ -6781,17 +6785,20 @@ void database::retally_witness_votes()
     } );
   }
 
+  const auto& account_idx = get_index< tiny_account_index >().indices();
+
   // Apply all existing votes by account
-  auto account_idx = get_iterator<by_name>();
-  for( auto itr = account_idx->begin(); !account_idx->end(); account_idx->next(), itr = account_idx->get() )
+  for( auto itr = account_idx.begin(); itr != account_idx.end(); ++itr )
   {
     if( itr->has_proxy() ) continue;
 
+    const auto account = get_account( itr->get_name() );
+
     const auto& vidx = get_index<witness_vote_index>().indices().get<by_account_witness>();
-    auto wit_itr = vidx.lower_bound( boost::make_tuple( itr->get_name(), account_name_type() ) );
-    while( wit_itr != vidx.end() && wit_itr->account == itr->get_name() )
+    auto wit_itr = vidx.lower_bound( boost::make_tuple( account->get_name(), account_name_type() ) );
+    while( wit_itr != vidx.end() && wit_itr->account == account->get_name() )
     {
-      adjust_witness_vote( get< witness_object, by_name >(wit_itr->witness), itr->get_governance_vote_power() );
+      adjust_witness_vote( get< witness_object, by_name >(wit_itr->witness), account->get_governance_vote_power() );
       ++wit_itr;
     }
   }
@@ -6799,24 +6806,27 @@ void database::retally_witness_votes()
 
 void database::retally_witness_vote_counts( bool force )
 {
+  const auto& account_idx = get_index< tiny_account_index >().indices();
+
   // Check all existing votes by account
-  auto account_idx = get_iterator<by_name>();
-  for( auto itr = account_idx->begin(); !account_idx->end(); account_idx->next(), itr = account_idx->get() )
+  for( auto itr = account_idx.begin(); itr != account_idx.end(); ++itr )
   {
+    const auto account = get_account( itr->get_name() );
+
     uint16_t witnesses_voted_for = 0;
-    if( force || itr->has_proxy() )
+    if( force || account->has_proxy() )
     {
       const auto& vidx = get_index< witness_vote_index >().indices().get< by_account_witness >();
-      auto wit_itr = vidx.lower_bound( boost::make_tuple( itr->get_name(), account_name_type() ) );
-      while( wit_itr != vidx.end() && wit_itr->account == itr->get_name() )
+      auto wit_itr = vidx.lower_bound( boost::make_tuple( account->get_name(), account_name_type() ) );
+      while( wit_itr != vidx.end() && wit_itr->account == account->get_name() )
       {
         ++witnesses_voted_for;
         ++wit_itr;
       }
     }
-    if( itr->get_witnesses_voted_for() != witnesses_voted_for )
+    if( account->get_witnesses_voted_for() != witnesses_voted_for )
     {
-      modify( *itr, [&]( account_object& account )
+      modify( *account, [&]( account_object& account )
       {
         account.set_witnesses_voted_for( witnesses_voted_for );
       } );
