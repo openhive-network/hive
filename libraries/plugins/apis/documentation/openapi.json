@@ -44,6 +44,10 @@
             "description": "Used to lookup information related to reputation and account follow operations.\nThese AppBase API methods are still under development and subject to change."
         },
         {
+            "name": "jsonrpc",
+            "description": "Used to lookup information about the JSON RPC API."
+        },
+        {
             "name": "hive",
             "description": "Returns the current status information of the Hivemind app."
         },
@@ -64,10 +68,6 @@
             "description": "Needed by condenser_api to optionally use follow_api or reputation_api for account reputations"
         },
         {
-            "name": "rewards_api",
-            "description": "Returns the simulated curve for payouts"
-        },
-        {
             "name": "search-api",
             "description": "Allows to perform full-text searches across root posts, retrieving relevant content based on keywords and phrases."
         },
@@ -78,10 +78,6 @@
         {
             "name": "transaction_status_api",
             "description": "This API is intended to evaluate a transaction status after calling condenser_api.broadcast_transaction."
-        },
-        {
-            "name": "wallet_bridge_api",
-            "description": "Required for cli_wallet interactions."
         },
         {
             "name": "witness_api",
