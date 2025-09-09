@@ -62,6 +62,12 @@ def generate_blocklog_for_denser(input_block_log_directory: Path) -> None:
 
     wallet = tt.Wallet(attach_to=node)
 
+    # This account does not exist in the 5M block_log.
+    # It is used as the default account for hive.blog when fetching
+    # ranked posts for non-logged-in users. Its muted/blocked lists
+    # are applied to filter out certain posts.
+    wallet.create_account("hive.blog", creator="blocktrades", hives=tt.Asset.Test(100), vests=tt.Asset.Test(100))
+
     create_accounts(wallet, ACCOUNT_DETAILS)
     fund_accounts(wallet, ACCOUNT_DETAILS)
 
