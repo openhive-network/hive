@@ -10151,6 +10151,333 @@
                 }
             }
         },
+        "market_history_api.get_market_history": {
+            "post": {
+                "tags": [
+                    "market_history_api"
+                ],
+                "summary": "Returns the market history for the internal HBD:HIVE market.",
+                "operationId": "get_market_history",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/get_market_history"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/get_market_history_response"
+                                },
+                                "example": {
+                                    "buckets": [
+                                        {
+                                            "hive": {
+                                                "close": 1691,
+                                                "high": 1,
+                                                "low": 5,
+                                                "open": 25650,
+                                                "volume": 111698586
+                                            },
+                                            "id": 793307,
+                                            "non_hive": {
+                                                "close": 801,
+                                                "high": 1,
+                                                "low": 1,
+                                                "open": 10192,
+                                                "volume": 46183343
+                                            },
+                                            "open": "2018-01-01T00:00:00",
+                                            "seconds": 86400
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "market_history_api.get_market_history_buckets": {
+            "post": {
+                "tags": [
+                    "market_history_api"
+                ],
+                "summary": "Returns the bucket seconds being tracked by the plugin.",
+                "operationId": "get_market_history_buckets",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/get_market_history_buckets_response"
+                                },
+                                "example": {
+                                    "bucket_sizes": [
+                                        15,
+                                        60,
+                                        300,
+                                        3600,
+                                        86400
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "market_history_api.get_order_book": {
+            "post": {
+                "tags": [
+                    "market_history_api"
+                ],
+                "summary": "Returns the internal market order book.",
+                "operationId": "market_history_get_order_book",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/market_history_get_order_book"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/market_history_get_order_book_response"
+                                },
+                                "example": {
+                                    "asks": [
+                                        {
+                                            "created": "2025-09-09T12:00:03",
+                                            "hbd": 4577,
+                                            "hive": 21876,
+                                            "order_price": {
+                                                "base": {
+                                                    "amount": "21876",
+                                                    "nai": "@@000000021",
+                                                    "precision": 3
+                                                },
+                                                "quote": {
+                                                    "amount": "4577",
+                                                    "nai": "@@000000013",
+                                                    "precision": 3
+                                                }
+                                            },
+                                            "real_price": "0.20922472115560431"
+                                        }
+                                    ],
+                                    "bids": [
+                                        {
+                                            "created": "2025-09-09T11:44:36",
+                                            "hbd": 2088,
+                                            "hive": 10000,
+                                            "order_price": {
+                                                "base": {
+                                                    "amount": "2088",
+                                                    "nai": "@@000000013",
+                                                    "precision": 3
+                                                },
+                                                "quote": {
+                                                    "amount": "10000",
+                                                    "nai": "@@000000021",
+                                                    "precision": 3
+                                                }
+                                            },
+                                            "real_price": "0.20880000000000001"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "market_history_api.get_recent_trades": {
+            "post": {
+                "tags": [
+                    "market_history_api"
+                ],
+                "summary": "Returns the most recent trades for the internal HBD:HIVE market.",
+                "operationId": "get_recent_trades",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/get_recent_trades"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/get_recent_trades_response"
+                                },
+                                "example": {
+                                    "trades": [
+                                        {
+                                            "current_pays": {
+                                                "amount": "65190",
+                                                "nai": "@@000000013",
+                                                "precision": 3
+                                            },
+                                            "date": "2025-09-09T12:15:18",
+                                            "maker": "droida",
+                                            "open_pays": {
+                                                "amount": "311324",
+                                                "nai": "@@000000021",
+                                                "precision": 3
+                                            },
+                                            "taker": "ecency"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "market_history_api.get_ticker": {
+            "post": {
+                "tags": [
+                    "market_history_api"
+                ],
+                "summary": "Returns the market ticker for the internal HBD:HIVE market.",
+                "operationId": "get_ticker",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/get_ticker_response"
+                                },
+                                "example": {
+                                    "hbd_volume": {
+                                        "amount": "28918602",
+                                        "nai": "@@000000013",
+                                        "precision": 3
+                                    },
+                                    "highest_bid": "0.20881186051367717",
+                                    "hive_volume": {
+                                        "amount": "140574194",
+                                        "nai": "@@000000021",
+                                        "precision": 3
+                                    },
+                                    "latest": "0.20881203467720896",
+                                    "lowest_ask": "0.20881192834537626",
+                                    "percent_change": "2.61977238841450344"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "market_history_api.get_trade_history": {
+            "post": {
+                "tags": [
+                    "market_history_api"
+                ],
+                "summary": "Returns the trade history for the internal HBD:HIVE market.",
+                "operationId": "get_trade_history",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/get_trade_history"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/get_trade_history_response"
+                                },
+                                "example": {
+                                    "trades": [
+                                        {
+                                            "current_pays": {
+                                                "amount": "10192",
+                                                "nai": "@@000000013",
+                                                "precision": 3
+                                            },
+                                            "date": "2018-01-01T00:00:09",
+                                            "maker": "amayag",
+                                            "open_pays": {
+                                                "amount": "25650",
+                                                "nai": "@@000000021",
+                                                "precision": 3
+                                            },
+                                            "taker": "yassinos19"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "market_history_api.get_volume": {
+            "post": {
+                "tags": [
+                    "market_history_api"
+                ],
+                "summary": "Returns the market volume for the past 24 hours.",
+                "operationId": "get_volume",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/get_volume_response"
+                                },
+                                "example": {
+                                    "hive_volume": {
+                                        "amount": "0",
+                                        "precision": 3,
+                                        "nai": "@@000000021"
+                                    },
+                                    "hbd_volume": {
+                                        "amount": "0",
+                                        "precision": 3,
+                                        "nai": "@@000000013"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "network_broadcast_api.broadcast_transaction": {
             "post": {
                 "tags": [
@@ -17905,6 +18232,58 @@
                     "accounts"
                 ]
             },
+            "get_market_history":{
+                "type": "object",
+                "properties": {
+                    "bucket_seconds": {
+                        "type": "integer",
+                        "example": 0
+                    },
+                    "start": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "1970-01-01T00:00:00"
+                    },
+                    "end": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "1970-01-01T00:00:00"
+                    }
+                },
+                "required": [
+                    "bucket_seconds",
+                    "start",
+                    "end"
+                ]
+            },
+            "get_market_history_response":{
+                "type": "object",
+                "properties": {
+                    "buckets": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/market_history"
+                        }
+                    }
+                },
+                "required": [
+                    "buckets"
+                ]
+            },
+            "get_market_history_buckets_response":{
+                "type": "object",
+                "properties": {
+                    "bucket_sizes": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        }
+                    }
+                },
+                "required": [
+                    "bucket_sizes"
+                ]
+            },
             "get_ops_in_block": {
                 "type": "object",
                 "properties": {
@@ -18151,6 +18530,29 @@
                     "$ref": "#/components/schemas/profile"
                 }
             },
+            "get_recent_trades": {
+                "type": "object",
+                "properties": {
+                    "limit": {
+                        "type": "integer",
+                        "example": 100
+                    }
+                }
+            },
+            "get_recent_trades_response": {
+                "type": "object",
+                "properties": {
+                    "trades": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/trade_default"
+                        }
+                    }
+                },
+                "required": [
+                    "trades"
+                ]
+            },
             "get_ranked_posts": {
                 "type": "object",
                 "properties": {
@@ -18257,6 +18659,46 @@
                 },
                 "required": [
                     "funds"
+                ]
+            },
+            "get_ticker_response": {
+                "$ref": "#/components/schemas/ticker_default"
+            },
+            "get_trade_history": {
+                "type": "object",
+                "properties": {
+                    "start": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "1970-01-01T00:00:00"
+                    },
+                    "end": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "1970-01-01T00:00:00"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "example": 1000
+                    }
+                },
+                "required": [
+                    "start",
+                    "end"
+                ]
+            },
+            "get_trade_history_response": {
+                "type": "object",
+                "properties": {
+                    "trades": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/trade_default"
+                        }
+                    }
+                },
+                "required": [
+                    "trades"
                 ]
             },
             "get_transaction": {
@@ -18370,6 +18812,9 @@
             },
             "get_witness_schedule_response": {
                 "$ref": "#/components/schemas/witness_schedule_default"
+            },
+            "get_volume_response": {
+                "$ref": "#/components/schemas/volume_default"
             },
             "hbd_conversion": {
                 "type": "object",
@@ -19117,6 +19562,19 @@
                     "open",
                     "seconds"
                 ]
+            },
+            "market_history_get_order_book": {
+                "type": "object",
+                "properties": {
+                    "limit": {
+                        "type": "integer",
+                        "example": 100,
+                        "description": "The maximum number of orders to return."
+                    }
+                }
+            },
+            "market_history_get_order_book_response": {
+                "$ref": "#/components/schemas/bids_and_asks_default"
             },
             "nai_decimal": {
                 "type": "object",
