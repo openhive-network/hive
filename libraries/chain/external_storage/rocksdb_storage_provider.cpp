@@ -1,6 +1,5 @@
 
 #include <hive/chain/external_storage/rocksdb_storage_provider.hpp>
-#include <hive/chain/external_storage/rocksdb_comparators.hpp>
 
 #include <hive/chain/external_storage/comment_rocksdb_objects.hpp>
 #include <hive/chain/external_storage/utilities.hpp>
