@@ -5,6 +5,7 @@
 #include <hive/protocol/hive_operations.hpp>
 #include <hive/protocol/get_config.hpp>
 #include <hive/protocol/transaction_util.hpp>
+#include <hive/protocol/hive_interest.hpp>
 
 #include <hive/chain/block_summary_object.hpp>
 #include <hive/chain/compound.hpp>
@@ -5458,18 +5459,18 @@ void database::modify_balance( const account_object& a, const asset& delta, bool
       /// Starting from HF 25 HBD interest will be paid only from saving balance.
       if( has_hardfork(HIVE_HARDFORK_1_25) == false && a.hbd_seconds_last_update != head_block_time() )
       {
-        acnt.hbd_seconds += fc::uint128_t(a.get_hbd_balance().amount.value) * (head_block_time() - a.hbd_seconds_last_update).to_seconds();
-        acnt.hbd_seconds_last_update = head_block_time();
-        if( acnt.hbd_seconds > 0 &&
-            (acnt.hbd_seconds_last_update - acnt.hbd_last_interest_payment).to_seconds() > HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC )
+        const auto _head_block_time = head_block_time();
+        const bool update_hdb_balance = (_head_block_time - a.hbd_last_interest_payment).to_seconds() > HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC;
+        const auto interest = hive::protocol::hive_interest::evaluate_current_interest(acnt.hbd_seconds, _head_block_time, a.get_hbd_balance(), a.hbd_seconds_last_update,
+          get_dynamic_global_properties().get_hbd_interest_rate(), update_hdb_balance);
+        acnt.hbd_seconds_last_update = _head_block_time;
+
+        if( acnt.hbd_seconds > 0 && update_hdb_balance )
         {
-          auto interest = acnt.hbd_seconds / HIVE_SECONDS_PER_YEAR;
-          interest *= get_dynamic_global_properties().get_hbd_interest_rate();
-          interest /= HIVE_100_PERCENT;
           asset interest_paid(fc::uint128_to_uint64(interest), HBD_SYMBOL);
           acnt.hbd_balance += interest_paid;
           acnt.hbd_seconds = 0;
-          acnt.hbd_last_interest_payment = head_block_time();
+          acnt.hbd_last_interest_payment = _head_block_time;
 
           if(interest > 0)
             push_virtual_operation( interest_operation( a.get_name(), interest_paid, true ) );
@@ -5602,19 +5603,18 @@ void database::adjust_savings_balance( const account_object& a, const asset& del
       FC_ASSERT( delta.symbol.asset_num == HIVE_ASSET_NUM_HBD && "invalid symbol" );
       if( a.savings_hbd_seconds_last_update != head_block_time() )
       {
-        acnt.savings_hbd_seconds += fc::uint128_t(a.get_hbd_savings().amount.value) * (head_block_time() - a.savings_hbd_seconds_last_update).to_seconds();
-        acnt.savings_hbd_seconds_last_update = head_block_time();
+        const auto _head_block_time = head_block_time();
+        const bool update_savings_hdb_balance = (_head_block_time - a.savings_hbd_last_interest_payment).to_seconds() > HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC;
+        const auto interest = hive::protocol::hive_interest::evaluate_current_interest(acnt.savings_hbd_seconds, _head_block_time, a.get_hbd_savings(), a.savings_hbd_seconds_last_update,
+          get_dynamic_global_properties().get_hbd_interest_rate(), update_savings_hdb_balance);
+        acnt.savings_hbd_seconds_last_update = _head_block_time;
 
-        if( acnt.savings_hbd_seconds > 0 &&
-            (acnt.savings_hbd_seconds_last_update - acnt.savings_hbd_last_interest_payment).to_seconds() > HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC )
+        if( acnt.savings_hbd_seconds > 0 && update_savings_hdb_balance )
         {
-          auto interest = acnt.savings_hbd_seconds / HIVE_SECONDS_PER_YEAR;
-          interest *= get_dynamic_global_properties().get_hbd_interest_rate();
-          interest /= HIVE_100_PERCENT;
           asset interest_paid(fc::uint128_to_uint64(interest), HBD_SYMBOL);
           acnt.savings_hbd_balance += interest_paid;
           acnt.savings_hbd_seconds = 0;
-          acnt.savings_hbd_last_interest_payment = head_block_time();
+          acnt.savings_hbd_last_interest_payment = _head_block_time;
 
           if(interest > 0)
             push_virtual_operation( interest_operation( a.get_name(), interest_paid, false ) );
