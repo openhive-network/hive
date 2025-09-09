@@ -1203,7 +1203,23 @@ authority_tests:
   tags:
     - public-runner-docker
 
+generate_hived_flattened_openapi_definition:
+  extends: .node_based_job_base
+  stage: build
+  script:
+    - npm install @apidevtools/json-schema-ref-parser json-schema-merge-allof
+    - touch "${CI_PROJECT_DIR}/libraries/plugins/apis/documentation/flattened.json"
+    - node "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/flatten_swagger.js" "${CI_PROJECT_DIR}/libraries/plugins/apis/documentation/openapi.json" > "${CI_PROJECT_DIR}/libraries/plugins/apis/documentation/flattened.json"
+  artifacts:
+    paths:
+      - "${CI_PROJECT_DIR}/libraries/plugins/apis/documentation/flattened.json"
+  tags:
+    - public-runner-docker
+
 generate_python_api_clients:
+  needs:
+    - job: generate_hived_flattened_openapi_definition
+      artifacts: true
   extends: .project_develop_configuration_template
   variables:
     API_GENERATION_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation"
