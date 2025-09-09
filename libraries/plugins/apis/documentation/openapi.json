@@ -10135,6 +10135,19 @@
                     }
                 }
             },
+            "recurrent_transfer": {
+              "type": "object",
+              "properties": {
+                "account_lower_bound": {
+                  "type": "string",
+                  "example": "hiveio"
+                },
+                "limit": {
+                  "type": "integer",
+                  "example": 10
+                }
+              }
+            },
             "condenser_find_rc_accounts_response": {
                 "type": "array",
                 "items": {
