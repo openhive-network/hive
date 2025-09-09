@@ -247,6 +247,8 @@ typedef std::pair<uint32_t, uint32_t> block_no_tx_in_block_pair;
 typedef PrimitiveTypeSlice<block_no_tx_in_block_pair> block_no_tx_in_block_slice_t;
 
 void registerHiveComparators();
+void registerSnapshotComparators();
+void registerAccountHistoryComparators();
 
 const Comparator* by_Hash_Comparator();
 const Comparator* by_id_Comparator();
