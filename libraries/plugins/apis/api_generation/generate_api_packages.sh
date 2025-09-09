@@ -10,7 +10,27 @@ API_GENERATION_PACKAGE_DIR="${BASE_DIR}/api_generation"
 if [ "$#" -gt 0 ]; then
   API_LIST=("$@")
 else
-  API_LIST=("bridge" "condenser_api" "database_api" "block_api" "rc_api" "network_broadcast_api" "account_by_key_api" "bridge" "account_history_api")
+  API_LIST=(
+    "account_by_key_api"
+    "account_history_api"
+    "block_api"
+    "bridge"
+    "condenser_api"
+    "database_api"
+    "debug_node_api"
+    "follow_api"
+    "hive"
+    "market_history_api"
+    "network_broadcast_api"
+    "rc_api"
+    "reputation_api"
+    "rewards_api"
+    "search-api"
+    "tags_api"
+    "transaction_status_api"
+    "wallet_bridge_api"
+    "witness_api"
+)
 fi
 
 for d in "${API_LIST[@]}"; do
