@@ -246,6 +246,8 @@ typedef PrimitiveTypeSlice< ah_op_id_pair > ah_op_by_id_slice_t;
 typedef std::pair<uint32_t, uint32_t> block_no_tx_in_block_pair;
 typedef PrimitiveTypeSlice<block_no_tx_in_block_pair> block_no_tx_in_block_slice_t;
 
+void registerHiveComparators();
+
 const Comparator* by_Hash_Comparator();
 const Comparator* by_id_Comparator();
 const Comparator* op_by_block_num_Comparator();
