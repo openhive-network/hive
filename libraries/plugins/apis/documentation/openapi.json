@@ -12230,6 +12230,41 @@
                     }
                 }
             }
+        },
+        "transaction_status_api.find_transaction": {
+            "post": {
+                "tags": [
+                    "transaction_status_api"
+                ],
+                "summary": "Returns the status of a given transaction id.",
+                "description": "Parameters:\n\n- `trx_id`: A string representing the transaction ID to query.\n- `expiration`: A timestamp indicating the expiration time of the transaction (optional).\n\nThe result will contain one of the following status values:\n- `unknown`: Expiration time in future, transaction not included in block or mempool.\n- `within_mempool`: Transaction in mempool.\n- `within_reversible_block`: Transaction has been included in block, block not irreversible.\n- `within_irreversible_block`: Transaction has been included in block, block is irreversible.\n- `expired_reversible`: Transaction has expired, transaction is not irreversible (transaction could be in a fork).\n- `expired_irreversible`: Transaction has expired, transaction is irreversible (transaction cannot be in a fork).\n- `too_old`: Transaction is too old, I don’t know about it.",
+                "operationId": "find_transaction",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/find_transaction"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/find_transaction_response"
+                                },
+                                "example": {
+                                    "status": "unknown"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
     "components": {
@@ -16629,6 +16664,38 @@
                 },
                 "required": [
                     "requests"
+                ]
+            },
+            "find_transaction": {
+                "type": "object",
+                "properties": {
+                    "transaction_id": {
+                        "type": "string",
+                        "example": "0000000000000000000000000000000000000000",
+                        "description": "The transaction ID to query."
+                    },
+                    "expiration": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2020-11-05T13:48:39",
+                        "description": "The expiration time of the transaction."
+                    }
+                },
+                "required": [
+                    "transaction_id",
+                    "expiration"
+                ]
+            },
+            "find_transaction_response": {
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "type": "string",
+                        "description": "The status of the transaction."
+                    }
+                },
+                "required": [
+                    "status"
                 ]
             },
             "follow": {
