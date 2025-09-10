@@ -18,6 +18,7 @@ def generate_description(api: AvailableApis, base_directory: Path) -> Path:
 
     api_generation_path = base_directory 
     openapi_json_path = base_directory.parent / "documentation" / "openapi.json"
+    openapi_flattened_json_path = base_directory.parent / "documentation" / "openapi_flattened.json"
 
     print(f"Attempting to process {api} from Swagger file: {openapi_json_path}")
 
@@ -27,6 +28,7 @@ def generate_description(api: AvailableApis, base_directory: Path) -> Path:
         api_description_dict_name,
         openapi_json_path,
         output_path,
+        openapi_flattened_json_path,
         apis_to_skip=apis_to_skip,
     )
 
