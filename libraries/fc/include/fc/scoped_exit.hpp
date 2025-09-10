@@ -10,7 +10,16 @@ namespace fc {
          scoped_exit( scoped_exit&& mv ):callback( std::move( mv.callback ) ){}
 
          ~scoped_exit() {
-            try { callback(); } catch( ... ) {}
+            try { callback(); }
+            catch (std::exception& e) {
+               elog("scoped_exit callback failed with std::exception: ${e}", ("e", e.what()));
+            }
+            catch (fc::exception& e) {
+               elog("scoped_exit callback failed with fc::exception: ${e}", ("e", e.to_detail_string()));
+            }
+            catch ( ... ) {
+               elog("scoped_exit callback failed with unknown exception");
+            }
          }
 
          scoped_exit& operator = ( scoped_exit&& mv ) {
