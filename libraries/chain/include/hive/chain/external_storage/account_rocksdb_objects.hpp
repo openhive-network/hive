@@ -7,6 +7,8 @@
 #include <hive/chain/external_storage/allocator_helper.hpp>
 #include <hive/chain/external_storage/utilities.hpp>
 
+#include <hive/chain/external_storage/custom_cache.hpp>
+
 #ifndef HIVE_ACCOUNT_ROCKSDB_SPACE_ID
 #define HIVE_ACCOUNT_ROCKSDB_SPACE_ID 24
 #endif
@@ -74,7 +76,18 @@ class volatile_account_object : public object< volatile_account_object_type, vol
 
     uint32_t                                block_number = 0;
 
-    std::shared_ptr<account_object> read() const;
+    template<typename Deleter_Type>
+    std::shared_ptr<account_object> read() const
+    {
+      return std::shared_ptr<account_object>( new account_object(
+                                                      account_id,
+                                                      recovery,
+                                                      assets,
+                                                      mrc,
+                                                      time,
+                                                      misc,
+                                                      shared_delayed_votes), Deleter_Type() );
+    }
 
 };
 
@@ -146,6 +159,7 @@ class rocksdb_account_object
     }
   }
 
+  template<typename Deleter_Type>
   std::shared_ptr<account_object> build( const chainbase::database& db )
   {
     return std::shared_ptr<account_object>( new account_object(
@@ -156,7 +170,7 @@ class rocksdb_account_object
                                                       mrc,
                                                       time,
                                                       misc,
-                                                      delayed_votes) );
+                                                      delayed_votes), Deleter_Type() );
   }
 
   account_id_type                         id;

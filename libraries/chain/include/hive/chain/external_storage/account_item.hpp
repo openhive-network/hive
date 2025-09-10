@@ -22,6 +22,7 @@ public:
   Item& operator*() { return const_cast<Item&>( *ptr ); }
 
   operator bool() const { return ptr != nullptr; }
+  std::shared_ptr<Item> get_ptr() const { return external; };
 };
 
 using account_metadata  = account_item<account_metadata_object>;

@@ -12,10 +12,15 @@
 #include <hive/chain/external_storage/account_authority_rocksdb_objects.hpp>
 #include <hive/chain/external_storage/account_rocksdb_objects.hpp>
 #include <hive/chain/external_storage/allocator_helper.hpp>
+#include <hive/chain/external_storage/custom_cache.hpp>
 
 #include <boost/scope_exit.hpp>
 
 namespace hive { namespace chain {
+
+  using custom_deleter_account_metadata_object  = custom_deleter<account_metadata_object>;
+  using custom_deleter_account_authority_object = custom_deleter<account_authority_object>;
+  using custom_deleter_account_object           = custom_deleter<account_object>;
 
 //#define DBG_INFO
 //#define DBG_MOVE_INFO
@@ -174,7 +179,9 @@ struct rocksdb_reader<account_metadata_object, account_metadata_index, account_n
 
     return std::shared_ptr<account_metadata_object>( new account_metadata_object(
                                                         allocator_helper::get_allocator<account_metadata_object, account_metadata_index>( db ),
-                                                        _obj.id, _obj.account, _obj.json_metadata, _obj.posting_json_metadata ) );
+                                                        _obj.id, _obj.account, _obj.json_metadata, _obj.posting_json_metadata ),
+                                                        custom_deleter_account_metadata_object()
+                                                    );
   }
 };
 
@@ -197,7 +204,9 @@ struct rocksdb_reader<account_authority_object, account_authority_index, account
                                                         allocator_helper::get_allocator<account_authority_object, account_authority_index>( db ),
                                                       _obj.id, _obj.account,
                                                   _obj.owner, _obj.active, _obj.posting,
-                                  _obj.previous_owner_update, _obj.last_owner_update) );
+                                  _obj.previous_owner_update, _obj.last_owner_update),
+                                                      custom_deleter_account_authority_object()
+                                                    );
   }
 };
 
@@ -216,7 +225,7 @@ struct rocksdb_reader<account_object, account_index, account_name_type>
 
     load( _obj, _buffer.data(), _buffer.size() );
 
-    return _obj.build( db );
+    return _obj.build<custom_deleter_account_object>( db );
   }
 };
 
@@ -248,7 +257,7 @@ struct rocksdb_reader<account_object, account_index, account_id_type>
     rocksdb_account_object _obj;
     load( _obj, _buffer.data(), _buffer.size() );
 
-    return _obj.build( db );
+    return _obj.build<custom_deleter_account_object>( db );
   }
 };
 
@@ -265,7 +274,9 @@ struct volatile_reader<volatile_account_metadata_object, account_metadata_object
   {
     return std::shared_ptr<account_metadata_object>( new account_metadata_object(
                                                         allocator_helper::get_allocator<account_metadata_object, account_metadata_index>( db ),
-                                                        obj.account_metadata_id, obj.account, obj.json_metadata, obj.posting_json_metadata ) );
+                                                        obj.account_metadata_id, obj.account, obj.json_metadata, obj.posting_json_metadata ),
+                                                        custom_deleter_account_metadata_object()
+                                                      );
   }
 };
 
@@ -278,7 +289,9 @@ struct volatile_reader<volatile_account_authority_object, account_authority_obje
                                                         allocator_helper::get_allocator<account_authority_object, account_authority_index>( db ),
                                                         obj.account_authority_id, obj.account,
                                                         obj.owner, obj.active, obj.posting,
-                                                        obj.previous_owner_update, obj.last_owner_update) );
+                                                        obj.previous_owner_update, obj.last_owner_update),
+                                                        custom_deleter_account_authority_object()
+                                                    );
   }
 };
 
@@ -287,7 +300,7 @@ struct volatile_reader<volatile_account_object, account_object, account_index>
 {
   static std::shared_ptr<account_object> read( const volatile_account_object& obj, chainbase::database& db )
   {
-    return obj.read();
+    return obj.read<custom_deleter_account_object>();
   }
 };
 
@@ -430,6 +443,8 @@ external_storage_reader_writer::ptr rocksdb_account_archive::get_external_storag
   return provider;
 }
 
+//std::vector<account_name_type> names;
+
 template<typename Volatile_Index_Type, typename Volatile_Object_Type, typename SHM_Object_Type,
         typename RocksDB_Object_Type,
         typename RocksDB_Object_Type2 = RocksDB_Object_Type,
@@ -438,6 +453,8 @@ template<typename Volatile_Index_Type, typename Volatile_Object_Type, typename S
         typename RocksDB_Object_Type5 = RocksDB_Object_Type>
 bool rocksdb_account_archive::on_irreversible_block_impl( uint32_t block_num, const std::vector<ColumnTypes>& column_types )
 {
+  //names.clear();
+
   const auto& _volatile_idx = db.get_index<Volatile_Index_Type, by_block>();
 
   if( _volatile_idx.size() < volatile_objects_limit )
@@ -461,6 +478,8 @@ bool rocksdb_account_archive::on_irreversible_block_impl( uint32_t block_num, co
     ++_cnt;
 
     transporter<Volatile_Object_Type, RocksDB_Object_Type, RocksDB_Object_Type2, RocksDB_Object_Type3, RocksDB_Object_Type4, RocksDB_Object_Type5>::move_to_external_storage( provider, _current, column_types );
+
+    //names.push_back( _current.get_name() );
 
     if( !_do_flush )
       _do_flush = true;
@@ -497,6 +516,14 @@ void rocksdb_account_archive::on_irreversible_block( uint32_t block_num )
   if( _do_flush_meta || _do_flush_authority || _do_flush_account )
   {
     provider->flush();
+    // if( _do_flush_account )
+    // {
+    //   for( const auto& acc : names )
+    //   {
+    //     //ilog("created: ${n}", ("n", acc) );
+    //     get_account( acc, true );
+    //   }
+    // }
   }
 }
 
@@ -510,11 +537,16 @@ Object_Type rocksdb_account_archive::get_object( const Key_Type& key, const std:
   }
   else
   {
+    auto _found_in_cache = custom_cache<SHM_Object_Type>::get( key );
+    if( _found_in_cache )
+      return Object_Type( _found_in_cache );
+
     const auto& _volatile_idx = db.get_index<Volatile_Index_Type, Volatile_Sub_Index_Type>();
     auto _volatile_found = _volatile_idx.find( key );
     if( _volatile_found != _volatile_idx.end() )
     {
       const auto _external_found = volatile_reader<Volatile_Object_Type, SHM_Object_Type, SHM_Object_Index>::read( *_volatile_found, db );
+      custom_cache<SHM_Object_Type>::add( _external_found );
       return Object_Type( _external_found );
     }
     else
@@ -522,8 +554,9 @@ Object_Type rocksdb_account_archive::get_object( const Key_Type& key, const std:
       const auto _external_found = rocksdb_reader<SHM_Object_Type, SHM_Object_Index, Key_Type>::read( db, provider, key, column_types );
       if( !_external_found )
       {
-        FC_ASSERT( !is_required, "Account data not found" );
+        FC_ASSERT( !is_required, "Account with data `${key}` not found", ("key", key) );
       }
+      custom_cache<SHM_Object_Type>::add( _external_found );
       return Object_Type( _external_found );
     }
   }

@@ -1,9 +1,12 @@
 #include <hive/chain/external_storage/rocksdb_column_family_iterator.hpp>
 #include <hive/chain/external_storage/account_rocksdb_objects.hpp>
 #include <hive/chain/external_storage/types.hpp>
+#include <hive/chain/external_storage/custom_cache.hpp>
 
 //#define DBG_INFO
 namespace hive { namespace chain {
+
+using custom_deleter_account_object = custom_deleter<account_object>;
 
 rocksdb_column_family_iterator::rocksdb_column_family_iterator( const chainbase::database& db, ColumnTypes column_type,
               rocksdb_account_column_family_iterator_provider::ptr _provider, external_storage_reader_writer::ptr reader )
@@ -46,7 +49,7 @@ std::shared_ptr<account_object> rocksdb_column_family_iterator::get_account( con
   rocksdb_account_object _main_obj;
 
   load( _main_obj, _buffer.data(), _buffer.size() );
-  return _main_obj.build( db );
+  return _main_obj.build<custom_deleter_account_object>( db );
 }
 
 rocksdb_column_family_iterator_by_next_vesting_withdrawal::rocksdb_column_family_iterator_by_next_vesting_withdrawal( const chainbase::database& db, ColumnTypes column_type,
@@ -110,7 +113,7 @@ std::shared_ptr<account_object> rocksdb_column_family_iterator_by_name::get()
   load( _obj, it->value().data(), it->value().size() );
 
   static const std::string _message = "rocksdb_account_object_by_name";
-  return _obj.build( db );
+  return _obj.build<custom_deleter_account_object>( db );
 }
 
 }}
