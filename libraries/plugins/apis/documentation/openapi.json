@@ -10909,6 +10909,45 @@
                 }
             }
         },
+        "reputation_api.get_account_reputations": {
+            "post": {
+                "tags": [
+                    "reputation_api"
+                ],
+                "summary": "Returns the reputation of accounts.",
+                "operationId": "get_account_reputations",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/get_account_reputations"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/get_account_reputations_response"
+                                },
+                                "example": {
+                                    "reputations": [
+                                        {
+                                            "account": "gtg",
+                                            "reputation": 100000
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "search-api.find_text": {
             "post": {
                 "tags": [
@@ -19334,6 +19373,37 @@
                     "ignores"
                 ]
             },
+            "get_account_reputations": {
+                "type": "object",
+                "properties": {
+                    "account_lower_bound": {
+                        "type": "string",
+                        "example": ""
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "example": 10
+                    }
+                },
+                "required": [
+                    "account_lower_bound",
+                    "limit"
+                ]
+            },
+            "get_account_reputations_response": {
+                "type": "object",
+                "properties": {
+                    "reputations": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/account_reputation"
+                        }
+                    }
+                },
+                "required": [
+                    "reputations"
+                ]
+            },
             "get_required_signatures": {
                 "type": "object",
                 "properties": {
@@ -21712,6 +21782,40 @@
                     "pool"
                 ]
             },
+            "rc_price_curve_params": {
+                "type": "object",
+                "properties": {
+                    "coeff_a": {
+                        "$ref": "#/components/schemas/hive_int"
+                    },
+                    "coeff_b": {
+                        "$ref": "#/components/schemas/hive_int"
+                    },
+                    "shift": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "coeff_a",
+                    "coeff_b",
+                    "shift"
+                ]
+            },
+            "rc_resource_type": {
+                "type": "object",
+                "properties": {
+                    "price_curve_params": {
+                        "$ref": "#/components/schemas/rc_price_curve_params"
+                    },
+                    "resource_dynamics_params": {
+                        "$ref": "#/components/schemas/rd_dynamics_params"
+                    }
+                },
+                "required": [
+                    "price_curve_params",
+                    "resource_dynamics_params"
+                ]
+            },
             "rd_decay_params": {
                 "type": "object",
                 "properties": {
@@ -21756,40 +21860,6 @@
                     "min_decay",
                     "pool_eq",
                     "resource_unit"
-                ]
-            },
-            "rc_price_curve_params": {
-                "type": "object",
-                "properties": {
-                    "coeff_a": {
-                        "$ref": "#/components/schemas/hive_int"
-                    },
-                    "coeff_b": {
-                        "$ref": "#/components/schemas/hive_int"
-                    },
-                    "shift": {
-                        "type": "integer"
-                    }
-                },
-                "required": [
-                    "coeff_a",
-                    "coeff_b",
-                    "shift"
-                ]
-            },
-            "rc_resource_type": {
-                "type": "object",
-                "properties": {
-                    "price_curve_params": {
-                        "$ref": "#/components/schemas/rc_price_curve_params"
-                    },
-                    "resource_dynamics_params": {
-                        "$ref": "#/components/schemas/rd_dynamics_params"
-                    }
-                },
-                "required": [
-                    "price_curve_params",
-                    "resource_dynamics_params"
                 ]
             },
             "recurrent_transfer_template": {
