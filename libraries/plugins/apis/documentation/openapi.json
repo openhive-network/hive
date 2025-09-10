@@ -78,10 +78,6 @@
         {
             "name": "transaction_status_api",
             "description": "This API is intended to evaluate a transaction status after calling condenser_api.broadcast_transaction."
-        },
-        {
-            "name": "witness_api",
-            "description": "Returns the available bandwidth of an account."
         }
     ],
     "paths": {
