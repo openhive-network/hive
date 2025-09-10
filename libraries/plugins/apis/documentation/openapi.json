@@ -10559,6 +10559,221 @@
                 }
             }
         },
+        "rc_api.get_resource_params": {
+            "post": {
+                "tags": [
+                    "rc_api"
+                ],
+                "summary": "Exports all relevant resource size constants, in particular the measurement-based execution time parameters.",
+                "operationId": "get_resource_params",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/get_resource_params_response"
+                                },
+                                "example": {
+                                    "rc_accounts": {
+                                        "resource_names": [
+                                            "resource_history_bytes",
+                                            "resource_new_accounts",
+                                            "resource_market_bytes",
+                                            "resource_state_bytes",
+                                            "resource_execution_time"
+                                        ],
+                                        "resource_params": {
+                                            "resource_execution_time": {
+                                                "price_curve_params": {
+                                                    "coeff_a": "14969827235074865152",
+                                                    "coeff_b": 541062725,
+                                                    "shift": 59
+                                                },
+                                                "resource_dynamics_params": {
+                                                    "budget_per_time_unit": 40000000,
+                                                    "decay_params": {
+                                                        "decay_per_time_unit": 2539677724,
+                                                        "decay_per_time_unit_denom_shift": 42
+                                                    },
+                                                    "max_pool_size": 138512057687,
+                                                    "min_decay": 0,
+                                                    "pool_eq": 69256028844,
+                                                    "resource_unit": 1
+                                                }
+                                            },
+                                            "resource_history_bytes": {
+                                                "price_curve_params": {
+                                                    "coeff_a": "10525659774662010880",
+                                                    "coeff_b": 211332338,
+                                                    "shift": 50
+                                                },
+                                                "resource_dynamics_params": {
+                                                    "budget_per_time_unit": 43403,
+                                                    "decay_params": {
+                                                        "decay_per_time_unit": 3613026481,
+                                                        "decay_per_time_unit_denom_shift": 51
+                                                    },
+                                                    "max_pool_size": 54101078501,
+                                                    "min_decay": 0,
+                                                    "pool_eq": 27050539251,
+                                                    "resource_unit": 1
+                                                }
+                                            },
+                                            "resource_market_bytes": {
+                                                "price_curve_params": {
+                                                    "coeff_a": "14969827235074865152",
+                                                    "coeff_b": 15654337,
+                                                    "shift": 55
+                                                },
+                                                "resource_dynamics_params": {
+                                                    "budget_per_time_unit": 72338,
+                                                    "decay_params": {
+                                                        "decay_per_time_unit": 2540365427,
+                                                        "decay_per_time_unit_denom_shift": 46
+                                                    },
+                                                    "max_pool_size": 4007510337,
+                                                    "min_decay": 0,
+                                                    "pool_eq": 2003755169,
+                                                    "resource_unit": 10
+                                                }
+                                            },
+                                            "resource_new_accounts": {
+                                                "price_curve_params": {
+                                                    "coeff_a": "16484671763857882971",
+                                                    "coeff_b": 1231961,
+                                                    "shift": 51
+                                                },
+                                                "resource_dynamics_params": {
+                                                    "budget_per_time_unit": 797,
+                                                    "decay_params": {
+                                                        "decay_per_time_unit": 347321,
+                                                        "decay_per_time_unit_denom_shift": 36
+                                                    },
+                                                    "max_pool_size": 157691079,
+                                                    "min_decay": 0,
+                                                    "pool_eq": 157691079,
+                                                    "resource_unit": 10000
+                                                }
+                                            },
+                                            "resource_state_bytes": {
+                                                "price_curve_params": {
+                                                    "coeff_a": "10525659774662010880",
+                                                    "coeff_b": 212030656091,
+                                                    "shift": 50
+                                                },
+                                                "resource_dynamics_params": {
+                                                    "budget_per_time_unit": 43546196,
+                                                    "decay_params": {
+                                                        "decay_per_time_unit": 3613026481,
+                                                        "decay_per_time_unit_denom_shift": 51
+                                                    },
+                                                    "max_pool_size": 54279847959383,
+                                                    "min_decay": 0,
+                                                    "pool_eq": 27139923979692,
+                                                    "resource_unit": 1
+                                                }
+                                            }
+                                        },
+                                        "size_info": {
+                                            "resource_execution_time": {
+                                                "account_create_time": 38710,
+                                                "account_create_with_delegation_time": 40591,
+                                                "account_update2_time": 13648,
+                                                "account_update_time": 13322,
+                                                "account_witness_proxy_time": 58126,
+                                                "account_witness_vote_time": 14741,
+                                                "cancel_transfer_from_savings_time": 3154,
+                                                "change_recovery_account_time": 10470,
+                                                "claim_account_time": 8781,
+                                                "claim_reward_balance_time": 27561,
+                                                "collateralized_convert_time": 23663,
+                                                "comment_options_time": 6202,
+                                                "comment_time": 66178,
+                                                "convert_time": 20563,
+                                                "create_claimed_account_time": 58415,
+                                                "create_proposal_time": 32988,
+                                                "custom_binary_time": 100000,
+                                                "custom_json_time": 1509,
+                                                "custom_time": 674,
+                                                "decline_voting_rights_time": 29091,
+                                                "delegate_rc_time": 75000,
+                                                "delegate_vesting_shares_time": 16727,
+                                                "delete_comment_time": 18050,
+                                                "escrow_approve_time": 9663,
+                                                "escrow_dispute_time": 6574,
+                                                "escrow_release_time": 15340,
+                                                "escrow_transfer_time": 19586,
+                                                "feed_publish_time": 3059,
+                                                "limit_order_cancel_time": 6739,
+                                                "limit_order_create2_time": 24391,
+                                                "limit_order_create_time": 14703,
+                                                "pow2_time": 103827,
+                                                "pow_time": 201001,
+                                                "recover_account_time": 18955,
+                                                "recurrent_transfer_base_time": 13908,
+                                                "recurrent_transfer_processing_time": 14347,
+                                                "remove_proposal_time": 135428,
+                                                "request_account_recovery_time": 7947,
+                                                "set_withdraw_vesting_route_time": 10257,
+                                                "transaction_time": 6622,
+                                                "transfer_from_savings_time": 17550,
+                                                "transfer_time": 5999,
+                                                "transfer_to_savings_time": 6523,
+                                                "transfer_to_vesting_time": 42245,
+                                                "update_proposal_time": 16781,
+                                                "update_proposal_votes_time": 17304,
+                                                "verify_authority_time": 94165,
+                                                "vote_time": 18312,
+                                                "withdraw_vesting_time": 221526,
+                                                "witness_set_properties_time": 9450,
+                                                "witness_update_time": 4237
+                                            },
+                                            "resource_state_bytes": {
+                                                "LASTING_STATE_BYTE": 21900,
+                                                "PERSISTENT_STATE_BYTE": 43800,
+                                                "TEMPORARY_STATE_BYTE": 1,
+                                                "account_create_base_size": 46953600,
+                                                "account_witness_vote_size": 1191360,
+                                                "authority_account_member_size": 1051200,
+                                                "authority_key_member_size": 1576800,
+                                                "change_recovery_account_size": 97920,
+                                                "collateralized_convert_size": 10752,
+                                                "comment_base_size": 4237056,
+                                                "comment_beneficiaries_member_size": 1344,
+                                                "comment_permlink_char_size": 168,
+                                                "convert_size": 10080,
+                                                "create_proposal_base_size": 336,
+                                                "create_proposal_subject_permlink_char_size": 1,
+                                                "decline_voting_rights_size": 92160,
+                                                "delegate_rc_base_size": 1927200,
+                                                "delegate_vesting_shares_size": 1927200,
+                                                "escrow_transfer_size": 4730400,
+                                                "limit_order_create_size": 139776,
+                                                "owner_authority_history_object_size": 120960,
+                                                "recurrent_transfer_base_size": 200,
+                                                "recurrent_transfer_memo_char_size": 1,
+                                                "request_account_recovery_size": 4608,
+                                                "set_withdraw_vesting_route_size": 3153600,
+                                                "transaction_base_size": 128,
+                                                "transfer_from_savings_size": 16704,
+                                                "transfer_to_vesting_size": 11520,
+                                                "update_proposal_votes_member_size": 1121280,
+                                                "vesting_delegation_expiration_object_size": 14400,
+                                                "vesting_delegation_object_size": 1927200,
+                                                "vote_size": 24192,
+                                                "witness_update_base_size": 23827200,
+                                                "witness_update_url_char_size": 43800
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "search-api.find_text": {
             "post": {
                 "tags": [
@@ -15479,6 +15694,354 @@
                     }
                 ]
             },
+            "exec_info": {
+                "type": "object",
+                "properties": {
+                    "account_create_time": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 1000,
+                        "description": "Time taken to process account creation operations in microseconds."
+                    },
+                    "account_create_with_delegation_time": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 2000,
+                        "description": "Time taken to process account creation with delegation operations in microseconds."
+                    },
+                    "account_witness_vote_time": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 300,
+                        "description": "Time taken to process account witness vote operations in microseconds."
+                    },
+                    "comment_time": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 1500,
+                        "description": "Time taken to process comment operations in microseconds."
+                    },
+                    "comment_options_time": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 400,
+                        "description": "Time taken to process comment options operations in microseconds."
+                    },
+                    "convert_time": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 600,
+                        "description": "Time taken to process convert operations in microseconds."
+                    },
+                    "collateralized_convert_time": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 700,
+                        "description": "Time taken to process collateralized convert operations in microseconds."
+                    },
+                    "create_claimed_account_time": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 2500,
+                        "description": "Time taken to process create claimed account operations in microseconds."
+                    },
+                    "decline_voting_rights_time": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 350,
+                        "description": "Time taken to process decline voting rights operations in microseconds."
+                    },
+                    "delegate_vesting_shares_time": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 800,
+                        "description": "Time taken to process delegate vesting shares operations in microseconds."
+                    },
+                    "escrow_transfer_time": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 1200,
+                        "description": "Time taken to process escrow transfer operations in microseconds."
+                    },
+                    "limit_order_create_time": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 900,
+                        "description": "Time taken to process limit order creation operations in microseconds."
+                    },
+                    "limit_order_create2_time": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 950,
+                        "description": "Time taken to process limit order creation (version 2) operations in microseconds."
+                    },
+                    "request_account_recovery_time": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 1100,
+                        "description": "Time taken to process account recovery request operations in microseconds."
+                    },
+                    "set_withdraw_vesting_route_time": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 500,
+                        "description": "Time taken to process set withdraw vesting route operations in microseconds."
+                    },
+                    "vote_time": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 450,
+                        "description": "Time taken to process vote operations in microseconds."
+                    },
+                    "witness_update_time": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 1300,
+                        "description": "Time taken to process witness update operations in microseconds."
+                    },
+                    "transfer_time": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 700,
+                        "description": "Time taken to process transfer operations in microseconds."
+                    },
+                    "transfer_to_vesting_time": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 600,
+                        "description": "Time taken to process transfer to vesting operations in microseconds."
+                    },
+                    "transfer_to_savings_time": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 650,
+                        "description": "Time taken to process transfer to savings operations in microseconds."
+                    },
+                    "transfer_from_savings_time": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 750,
+                        "description": "Time taken to process transfer from savings operations in microseconds."
+                    },
+                    "claim_reward_balance_time": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 850,
+                        "description": "Time taken to process claim reward balance operations in microseconds."
+                    },
+                    "withdraw_vesting_time": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 400,
+                        "description": "Time taken to process withdraw vesting operations in microseconds."
+                    },
+                    "account_update_time": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 550,
+                        "description": "Time taken to process account update operations in microseconds."
+                    },
+                    "account_update2_time": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 600,
+                        "description": "Time taken to process account update (version 2) operations in microseconds."
+                    },
+                    "account_witness_proxy_time": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 300,
+                        "description": "Time taken to process account witness proxy operations in microseconds."
+                    },
+                    "cancel_transfer_from_savings_time": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 500,
+                        "description": "Time taken to process cancel transfer from savings operations in microseconds."
+                    },
+                    "change_recovery_account_time": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 1200,
+                        "description": "Time taken to process change recovery account operations in microseconds."
+                    },
+                    "claim_account_time": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 2000,
+                        "description": "Time taken to process claim account operations in microseconds."
+                    },
+                    "custom_time": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 300,
+                        "description": "Time taken to process custom operations in microseconds."
+                    },
+                    "custom_json_time": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 400,
+                        "description": "Time taken to process custom JSON operations in microseconds."
+                    },
+                    "custom_binary_time": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 450,
+                        "description": "Time taken to process custom binary operations in microseconds."
+                    },
+                    "delete_comment_time": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 800,
+                        "description": "Time taken to process delete comment operations in microseconds."
+                    },
+                    "escrow_approve_time": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 600,
+                        "description": "Time taken to process escrow approve operations in microseconds."
+                    },
+                    "escrow_dispute_time": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 700,
+                        "description": "Time taken to process escrow dispute operations in microseconds."
+                    },
+                    "escrow_release_time": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 800,
+                        "description": "Time taken to process escrow release operations in microseconds."
+                    },
+                    "feed_publish_time": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 350,
+                        "description": "Time taken to process feed publish operations in microseconds."
+                    },
+                    "limit_order_cancel_time": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 300,
+                        "description": "Time taken to process limit order cancel operations in microseconds."
+                    },
+                    "witness_set_properties_time": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 900,
+                        "description": "Time taken to process witness set properties operations in microseconds."
+                    },
+                    "create_proposal_time": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 1000,
+                        "description": "Time taken to process create proposal operations in microseconds."
+                    },
+                    "update_proposal_time": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 800,
+                        "description": "Time taken to process update proposal operations in microseconds."
+                    },
+                    "update_proposal_votes_time": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 600,
+                        "description": "Time taken to process update proposal votes operations in microseconds."
+                    },
+                    "remove_proposal_time": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 700,
+                        "description": "Time taken to process remove proposal operations in microseconds."
+                    },
+                    "recurrent_transfer_base_time": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 400,
+                        "description": "Base time taken to process recurrent transfer operations in microseconds."
+                    },
+                    "recurrent_transfer_processing_time": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 200,
+                        "description": "Additional time taken to process each recurrent transfer in microseconds."
+                    },
+                    "delegate_rc_time": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 500,
+                        "description": "Time taken to process delegate resource credit operations in microseconds."
+                    },
+                    "verify_authority_time": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 100,
+                        "description": "Time taken to verify authority signatures in microseconds."
+                    },
+                    "transaction_time": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 200,
+                        "description": "Time taken to process the overall transaction in microseconds."
+                    },
+                    "recover_account_time": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 1500,
+                        "description": "Time taken to process account recovery operations in microseconds."
+                    },
+                    "pow_time": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 2500,
+                        "description": "Time taken to process proof-of-work operations in microseconds."
+                    },
+                    "pow2_time": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 3000,
+                        "description": "Time taken to process proof-of-work version 2 operations in microseconds."
+                    },
+                    "claim_reward_balance2_time": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 900,
+                        "description": "Time taken to process claim reward balance version 2 operations in microseconds."
+                    },
+                    "smt_setup_time": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 4000,
+                        "description": "Time taken to process SMT setup operations in microseconds."
+                    },
+                    "smt_setup_emissions_time": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 4500,
+                        "description": "Time taken to process SMT setup emissions operations in microseconds."
+                    },
+                    "smt_set_setup_parameters_time": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 3500,
+                        "description": "Time taken to process SMT set setup parameters operations in microseconds."
+                    },
+                    "smt_set_runtime_parameters_time": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 3000,
+                        "description": "Time taken to process SMT set runtime parameters operations in microseconds."
+                    },
+                    "smt_create_time": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 5000,
+                        "description": "Time taken to process SMT create operations in microseconds."
+                    },
+                    "smt_contribute_time": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 6000,
+                        "description": "Time taken to process SMT contribute operations in microseconds."
+                    }
+                },
+                "required": [
+                    "account_create_time",
+                    "account_create_with_delegation_time",
+                    "account_witness_vote_time",
+                    "comment_time",
+                    "comment_options_time",
+                    "convert_time",
+                    "collateralized_convert_time",
+                    "create_claimed_account_time",
+                    "decline_voting_rights_time",
+                    "delegate_vesting_shares_time",
+                    "escrow_transfer_time",
+                    "limit_order_create_time",
+                    "limit_order_create2_time",
+                    "request_account_recovery_time",
+                    "set_withdraw_vesting_route_time",
+                    "vote_time",
+                    "witness_update_time",
+                    "transfer_time",
+                    "transfer_to_vesting_time",
+                    "transfer_to_savings_time",
+                    "transfer_from_savings_time",
+                    "claim_reward_balance_time",
+                    "withdraw_vesting_time",
+                    "account_update_time",
+                    "account_update2_time",
+                    "account_witness_proxy_time",
+                    "cancel_transfer_from_savings_time",
+                    "change_recovery_account_time",
+                    "claim_account_time",
+                    "custom_time",
+                    "custom_json_time",
+                    "custom_binary_time",
+                    "delete_comment_time",
+                    "escrow_approve_time",
+                    "escrow_dispute_time",
+                    "escrow_release_time",
+                    "feed_publish_time",
+                    "limit_order_cancel_time",
+                    "witness_set_properties_time",
+                    "create_proposal_time",
+                    "update_proposal_time",
+                    "update_proposal_votes_time",
+                    "remove_proposal_time",
+                    "recurrent_transfer_base_time",
+                    "recurrent_transfer_processing_time",
+                    "delegate_rc_time",
+                    "verify_authority_time",
+                    "transaction_time",
+                    "recover_account_time",
+                    "pow_time",
+                    "pow2_time"
+                ]
+            },
             "extensions": {
                 "type": "array",
                 "items": {
@@ -18647,6 +19210,53 @@
                     "trx"
                 ]
             },
+            "get_resource_params_response": {
+                "type": "object",
+                "properties": {
+                    "resource_names": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "resource_params": {
+                        "type": "object",
+                        "properties": {
+                            "resource_execution_time": {
+                                "$ref": "#/components/schemas/rc_resource_type"
+                            },
+                            "resource_history_bytes": {
+                                "$ref": "#/components/schemas/rc_resource_type"
+                            },
+                            "resource_market_bytes": {
+                                "$ref": "#/components/schemas/rc_resource_type"
+                            },
+                            "resource_new_accounts": {
+                                "$ref": "#/components/schemas/rc_resource_type"
+                            },
+                            "resource_state_bytes": {
+                                "$ref": "#/components/schemas/rc_resource_type"
+                            }
+                        }
+                    },
+                    "size_info":{
+                        "type": "object",
+                        "properties": {
+                            "resource_execution_time": {
+                                "$ref": "#/components/schemas/exec_info"
+                            },
+                            "resource_state_bytes": {
+                                "$ref": "#/components/schemas/state_size_info"
+                            }
+                        }
+                    }
+                },
+                "required": [
+                    "resource_names",
+                    "resource_params",
+                    "size_info"
+                ]
+            },
             "get_reward_funds_response": {
                 "type": "object",
                 "properties": {
@@ -20849,6 +21459,86 @@
                     "to"
                 ]
             },
+            "rd_decay_params": {
+                "type": "object",
+                "properties": {
+                    "decay_per_time_unit": {
+                        "type": "integer"
+                    },
+                    "decay_per_time_unit_denom_shift": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "decay_per_time_unit",
+                    "decay_per_time_unit_denom_shift"
+                ]
+            },
+            "rd_dynamics_params": {
+                "type": "object",
+                "properties": {
+                    "budget_per_time_unit": {
+                        "type": "integer"
+                    },
+                    "decay_params": {
+                        "$ref": "#/components/schemas/rd_decay_params"
+                    },
+                    "max_pool_size": {
+                        "$ref": "#/components/schemas/hive_int"
+                    },
+                    "min_decay": {
+                        "$ref": "#/components/schemas/hive_int"
+                    },
+                    "pool_eq": {
+                        "$ref": "#/components/schemas/hive_int"
+                    },
+                    "resource_unit": {
+                        "$ref": "#/components/schemas/hive_int"
+                    }
+                },
+                "required": [
+                    "budget_per_time_unit",
+                    "decay_params",
+                    "max_pool_size",
+                    "min_decay",
+                    "pool_eq",
+                    "resource_unit"
+                ]
+            },
+            "rc_price_curve_params": {
+                "type": "object",
+                "properties": {
+                    "coeff_a": {
+                        "$ref": "#/components/schemas/hive_int"
+                    },
+                    "coeff_b": {
+                        "$ref": "#/components/schemas/hive_int"
+                    },
+                    "shift": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "coeff_a",
+                    "coeff_b",
+                    "shift"
+                ]
+            },
+            "rc_resource_type": {
+                "type": "object",
+                "properties": {
+                    "price_curve_params": {
+                        "$ref": "#/components/schemas/rc_price_curve_params"
+                    },
+                    "resource_dynamics_params": {
+                        "$ref": "#/components/schemas/rd_dynamics_params"
+                    }
+                },
+                "required": [
+                    "price_curve_params",
+                    "resource_dynamics_params"
+                ]
+            },
             "recurrent_transfer_template": {
                 "type": "object",
                 "properties": {
@@ -21226,6 +21916,217 @@
                     "order",
                     "order_direction",
                     "status"
+                ]
+            },
+            "state_size_info": {
+                "type": "object",
+                "properties": {
+                    "LASTING_STATE_BYTE": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 21900,
+                        "description": "The size of the lasting state in bytes."
+                    },
+                    "PERSISTENT_STATE_BYTE": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 43800,
+                        "description": "The size of the persistent state in bytes."
+                    },
+                    "TEMPORARY_STATE_BYTE": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 1,
+                        "description": "The size of the temporary state in bytes."
+                    },
+                    "account_create_base_size": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 46953600,
+                        "description": "The base size for account creation in bytes."
+                    },
+                    "account_witness_vote_size": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 1191360,
+                        "description": "The size of an account witness vote in bytes."
+                    },
+                    "authority_account_member_size": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 1051200,
+                        "description": "The size of an authority account member in bytes."
+                    },
+                    "authority_key_member_size": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 1576800,
+                        "description": "The size of an authority key member in bytes."
+                    },
+                    "change_recovery_account_size": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 97920,
+                        "description": "The size of a change recovery account operation in bytes."
+                    },
+                    "collateralized_convert_size": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 10752,
+                        "description": "The size of a collateralized convert operation in bytes."
+                    },
+                    "comment_base_size": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 4237056,
+                        "description": "The base size for a comment operation in bytes."
+                    },
+                    "comment_beneficiaries_member_size": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 1344,
+                        "description": "The size of a comment beneficiaries member in bytes."
+                    },
+                    "comment_permlink_char_size": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 168,
+                        "description": "The size per character for a comment permlink in bytes."
+                    },
+                    "convert_size": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 10080,
+                        "description": "The size of a convert operation in bytes."
+                    },
+                    "create_proposal_base_size": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 336,
+                        "description": "The base size for creating a proposal in bytes."
+                    },
+                    "create_proposal_subject_permlink_char_size": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 1,
+                        "description": "The size per character for a proposal subject permlink in bytes."
+                    },
+                    "decline_voting_rights_size": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 92160,
+                        "description": "The size of a decline voting rights operation in bytes."
+                    },
+                    "delegate_rc_base_size": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 1927200,
+                        "description": "The base size for delegating resource credits in bytes."
+                    },
+                    "delegate_vesting_shares_size": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 1927200,
+                        "description": "The size of a delegate vesting shares operation in bytes."
+                    },
+                    "escrow_transfer_size": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 4730400,
+                        "description": "The size of an escrow transfer operation in bytes."
+                    },
+                    "limit_order_create_size": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 139776,
+                        "description": "The size of a limit order create operation in bytes."
+                    },
+                    "owner_authority_history_object_size": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 120960,
+                        "description": "The size of an owner authority history object in bytes."
+                    },
+                    "recurrent_transfer_base_size": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 200,
+                        "description": "The base size for a recurrent transfer operation in bytes."
+                    },
+                    "recurrent_transfer_memo_char_size": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 1,
+                        "description": "The size per character for a recurrent transfer memo in bytes."
+                    },
+                    "request_account_recovery_size": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 4608,
+                        "description": "The size of a request account recovery operation in bytes."
+                    },
+                    "set_withdraw_vesting_route_size": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 3153600,
+                        "description": "The size of a set withdraw vesting route operation in bytes."
+                    },
+                    "transaction_base_size": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 128,
+                        "description": "The base size for a transaction in bytes."
+                    },
+                    "transfer_from_savings_size": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 16704,
+                        "description": "The size of a transfer from savings operation in bytes."
+                    },
+                    "transfer_to_vesting_size": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 11520,
+                        "description": "The size of a transfer to vesting operation in bytes."
+                    },
+                    "update_proposal_votes_member_size": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 1121280,
+                        "description": "The size of an update proposal votes member in bytes."
+                    },
+                    "vesting_delegation_expiration_object_size": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 14400,
+                        "description": "The size of a vesting delegation expiration object in bytes."
+                    },
+                    "vesting_delegation_object_size": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 1927200,
+                        "description": "The size of a vesting delegation object in bytes."
+                    },
+                    "vote_size": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 24192,
+                        "description": "The size of a vote operation in bytes."
+                    },
+                    "witness_update_base_size": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 23827200,
+                        "description": "The base size for a witness update operation in bytes."
+                    },
+                    "witness_update_url_char_size": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 43800,
+                        "description": "The size per character for a witness update URL in bytes."
+                    }
+                },
+                "required": [
+                    "LASTING_STATE_BYTE",
+                    "PERSISTENT_STATE_BYTE",
+                    "TEMPORARY_STATE_BYTE",
+                    "account_create_base_size",
+                    "account_witness_vote_size",
+                    "authority_account_member_size",
+                    "authority_key_member_size",
+                    "change_recovery_account_size",
+                    "collateralized_convert_size",
+                    "comment_base_size",
+                    "comment_beneficiaries_member_size",
+                    "comment_permlink_char_size",
+                    "convert_size",
+                    "create_proposal_base_size",
+                    "create_proposal_subject_permlink_char_size",
+                    "decline_voting_rights_size",
+                    "delegate_rc_base_size",
+                    "delegate_vesting_shares_size",
+                    "escrow_transfer_size",
+                    "limit_order_create_size",
+                    "owner_authority_history_object_size",
+                    "recurrent_transfer_base_size",
+                    "recurrent_transfer_memo_char_size",
+                    "request_account_recovery_size",
+                    "set_withdraw_vesting_route_size",
+                    "transaction_base_size",
+                    "transfer_from_savings_size",
+                    "transfer_to_vesting_size",
+                    "update_proposal_votes_member_size",
+                    "vesting_delegation_expiration_object_size",
+                    "vesting_delegation_object_size",
+                    "vote_size",
+                    "witness_update_base_size",
+                    "witness_update_url_char_size"
                 ]
             },
             "stats": {
