@@ -10096,6 +10096,273 @@
                 }
             }
         },
+        "jsonrpc.get_methods": {
+            "post": {
+                "tags": [
+                    "jsonrpc"
+                ],
+                "summary": "Returns a list of methods supported by the JSON RPC API.",
+                "operationId": "get_methods",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/get_methods_response"
+                                },
+                                "example": [
+                                    "account_by_key_api.get_key_references",
+                                    "block_api.get_block",
+                                    "block_api.get_block_header",
+                                    "block_api.get_block_range",
+                                    "condenser_api.broadcast_transaction",
+                                    "condenser_api.broadcast_transaction_synchronous",
+                                    "condenser_api.find_proposals",
+                                    "condenser_api.find_rc_accounts",
+                                    "condenser_api.find_recurrent_transfers",
+                                    "condenser_api.get_account_count",
+                                    "condenser_api.get_account_history",
+                                    "condenser_api.get_account_references",
+                                    "condenser_api.get_account_reputations",
+                                    "condenser_api.get_account_votes",
+                                    "condenser_api.get_accounts",
+                                    "condenser_api.get_active_votes",
+                                    "condenser_api.get_active_witnesses",
+                                    "condenser_api.get_block",
+                                    "condenser_api.get_block_header",
+                                    "condenser_api.get_blog",
+                                    "condenser_api.get_blog_authors",
+                                    "condenser_api.get_blog_entries",
+                                    "condenser_api.get_chain_properties",
+                                    "condenser_api.get_collateralized_conversion_requests",
+                                    "condenser_api.get_comment_discussions_by_payout",
+                                    "condenser_api.get_config",
+                                    "condenser_api.get_content",
+                                    "condenser_api.get_content_replies",
+                                    "condenser_api.get_conversion_requests",
+                                    "condenser_api.get_current_median_history_price",
+                                    "condenser_api.get_discussions_by_active",
+                                    "condenser_api.get_discussions_by_author_before_date",
+                                    "condenser_api.get_discussions_by_blog",
+                                    "condenser_api.get_discussions_by_cashout",
+                                    "condenser_api.get_discussions_by_children",
+                                    "condenser_api.get_discussions_by_comments",
+                                    "condenser_api.get_discussions_by_created",
+                                    "condenser_api.get_discussions_by_feed",
+                                    "condenser_api.get_discussions_by_hot",
+                                    "condenser_api.get_discussions_by_promoted",
+                                    "condenser_api.get_discussions_by_trending",
+                                    "condenser_api.get_discussions_by_votes",
+                                    "condenser_api.get_dynamic_global_properties",
+                                    "condenser_api.get_escrow",
+                                    "condenser_api.get_expiring_vesting_delegations",
+                                    "condenser_api.get_feed",
+                                    "condenser_api.get_feed_entries",
+                                    "condenser_api.get_feed_history",
+                                    "condenser_api.get_follow_count",
+                                    "condenser_api.get_followers",
+                                    "condenser_api.get_following",
+                                    "condenser_api.get_hardfork_version",
+                                    "condenser_api.get_key_references",
+                                    "condenser_api.get_market_history",
+                                    "condenser_api.get_market_history_buckets",
+                                    "condenser_api.get_next_scheduled_hardfork",
+                                    "condenser_api.get_open_orders",
+                                    "condenser_api.get_ops_in_block",
+                                    "condenser_api.get_order_book",
+                                    "condenser_api.get_owner_history",
+                                    "condenser_api.get_post_discussions_by_payout",
+                                    "condenser_api.get_potential_signatures",
+                                    "condenser_api.get_reblogged_by",
+                                    "condenser_api.get_recent_trades",
+                                    "condenser_api.get_recovery_request",
+                                    "condenser_api.get_replies_by_last_update",
+                                    "condenser_api.get_required_signatures",
+                                    "condenser_api.get_reward_fund",
+                                    "condenser_api.get_savings_withdraw_from",
+                                    "condenser_api.get_savings_withdraw_to",
+                                    "condenser_api.get_state",
+                                    "condenser_api.get_tags_used_by_author",
+                                    "condenser_api.get_ticker",
+                                    "condenser_api.get_trade_history",
+                                    "condenser_api.get_transaction",
+                                    "condenser_api.get_transaction_hex",
+                                    "condenser_api.get_trending_tags",
+                                    "condenser_api.get_version",
+                                    "condenser_api.get_vesting_delegations",
+                                    "condenser_api.get_volume",
+                                    "condenser_api.get_withdraw_routes",
+                                    "condenser_api.get_witness_by_account",
+                                    "condenser_api.get_witness_count",
+                                    "condenser_api.get_witness_schedule",
+                                    "condenser_api.get_witnesses",
+                                    "condenser_api.get_witnesses_by_vote",
+                                    "condenser_api.is_known_transaction",
+                                    "condenser_api.list_proposal_votes",
+                                    "condenser_api.list_proposals",
+                                    "condenser_api.list_rc_accounts",
+                                    "condenser_api.list_rc_direct_delegations",
+                                    "condenser_api.lookup_account_names",
+                                    "condenser_api.lookup_accounts",
+                                    "condenser_api.lookup_witness_accounts",
+                                    "condenser_api.verify_account_authority",
+                                    "condenser_api.verify_authority",
+                                    "database_api.find_account_recovery_requests",
+                                    "database_api.find_accounts",
+                                    "database_api.find_change_recovery_account_requests",
+                                    "database_api.find_collateralized_conversion_requests",
+                                    "database_api.find_comments",
+                                    "database_api.find_decline_voting_rights_requests",
+                                    "database_api.find_escrows",
+                                    "database_api.find_hbd_conversion_requests",
+                                    "database_api.find_limit_orders",
+                                    "database_api.find_owner_histories",
+                                    "database_api.find_proposals",
+                                    "database_api.find_recurrent_transfers",
+                                    "database_api.find_savings_withdrawals",
+                                    "database_api.find_vesting_delegation_expirations",
+                                    "database_api.find_vesting_delegations",
+                                    "database_api.find_votes",
+                                    "database_api.find_withdraw_vesting_routes",
+                                    "database_api.find_witnesses",
+                                    "database_api.get_active_witnesses",
+                                    "database_api.get_comment_pending_payouts",
+                                    "database_api.get_config",
+                                    "database_api.get_current_price_feed",
+                                    "database_api.get_dynamic_global_properties",
+                                    "database_api.get_feed_history",
+                                    "database_api.get_hardfork_properties",
+                                    "database_api.get_order_book",
+                                    "database_api.get_potential_signatures",
+                                    "database_api.get_required_signatures",
+                                    "database_api.get_reward_funds",
+                                    "database_api.get_transaction_hex",
+                                    "database_api.get_version",
+                                    "database_api.get_witness_schedule",
+                                    "database_api.is_known_transaction",
+                                    "database_api.list_account_recovery_requests",
+                                    "database_api.list_accounts",
+                                    "database_api.list_change_recovery_account_requests",
+                                    "database_api.list_collateralized_conversion_requests",
+                                    "database_api.list_decline_voting_rights_requests",
+                                    "database_api.list_escrows",
+                                    "database_api.list_hbd_conversion_requests",
+                                    "database_api.list_limit_orders",
+                                    "database_api.list_owner_histories",
+                                    "database_api.list_proposal_votes",
+                                    "database_api.list_proposals",
+                                    "database_api.list_savings_withdrawals",
+                                    "database_api.list_vesting_delegation_expirations",
+                                    "database_api.list_vesting_delegations",
+                                    "database_api.list_votes",
+                                    "database_api.list_withdraw_vesting_routes",
+                                    "database_api.list_witness_votes",
+                                    "database_api.list_witnesses",
+                                    "database_api.verify_account_authority",
+                                    "database_api.verify_authority",
+                                    "database_api.verify_signatures",
+                                    "jsonrpc.get_methods",
+                                    "jsonrpc.get_signature",
+                                    "market_history_api.get_market_history",
+                                    "market_history_api.get_market_history_buckets",
+                                    "market_history_api.get_order_book",
+                                    "market_history_api.get_recent_trades",
+                                    "market_history_api.get_ticker",
+                                    "market_history_api.get_trade_history",
+                                    "market_history_api.get_volume",
+                                    "network_broadcast_api.broadcast_transaction",
+                                    "node_status_api.get_node_status",
+                                    "rc_api.find_rc_accounts",
+                                    "rc_api.get_rc_operation_stats",
+                                    "rc_api.get_rc_stats",
+                                    "rc_api.get_resource_params",
+                                    "rc_api.get_resource_pool",
+                                    "rc_api.list_rc_accounts",
+                                    "rc_api.list_rc_direct_delegations",
+                                    "transaction_status_api.find_transaction",
+                                    "wallet_bridge_api.broadcast_transaction",
+                                    "wallet_bridge_api.broadcast_transaction_synchronous",
+                                    "wallet_bridge_api.find_proposals",
+                                    "wallet_bridge_api.find_rc_accounts",
+                                    "wallet_bridge_api.find_recurrent_transfers",
+                                    "wallet_bridge_api.get_account",
+                                    "wallet_bridge_api.get_account_history",
+                                    "wallet_bridge_api.get_accounts",
+                                    "wallet_bridge_api.get_active_witnesses",
+                                    "wallet_bridge_api.get_block",
+                                    "wallet_bridge_api.get_chain_properties",
+                                    "wallet_bridge_api.get_collateralized_conversion_requests",
+                                    "wallet_bridge_api.get_conversion_requests",
+                                    "wallet_bridge_api.get_current_median_history_price",
+                                    "wallet_bridge_api.get_dynamic_global_properties",
+                                    "wallet_bridge_api.get_feed_history",
+                                    "wallet_bridge_api.get_hardfork_version",
+                                    "wallet_bridge_api.get_open_orders",
+                                    "wallet_bridge_api.get_ops_in_block",
+                                    "wallet_bridge_api.get_order_book",
+                                    "wallet_bridge_api.get_owner_history",
+                                    "wallet_bridge_api.get_reward_fund",
+                                    "wallet_bridge_api.get_transaction",
+                                    "wallet_bridge_api.get_version",
+                                    "wallet_bridge_api.get_withdraw_routes",
+                                    "wallet_bridge_api.get_witness",
+                                    "wallet_bridge_api.get_witness_schedule",
+                                    "wallet_bridge_api.is_known_transaction",
+                                    "wallet_bridge_api.list_accounts",
+                                    "wallet_bridge_api.list_my_accounts",
+                                    "wallet_bridge_api.list_proposal_votes",
+                                    "wallet_bridge_api.list_proposals",
+                                    "wallet_bridge_api.list_rc_accounts",
+                                    "wallet_bridge_api.list_rc_direct_delegations",
+                                    "wallet_bridge_api.list_witnesses"
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "jsonrpc.get_signature": {
+            "post": {
+                "tags": [
+                    "jsonrpc"
+                ],
+                "summary": "Returns the signature information for a JSON RPC method including the arguments and expected response JSON.",
+                "operationId": "get_signature",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/get_signature"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/get_signature_response"
+                                },
+                                "example": {
+                                    "args": {
+                                        "method": ""
+                                    },
+                                    "ret": {
+                                        "args": null,
+                                        "ret": null
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "hive.db_head_state": {
             "post": {
                 "tags": [
@@ -19021,6 +19288,12 @@
                     "bucket_sizes"
                 ]
             },
+            "get_methods_response": {
+                "type": "array",
+                "items": {
+                    "type": "string"
+                }
+            },
             "get_ops_in_block": {
                 "type": "object",
                 "properties": {
@@ -19495,6 +19768,36 @@
                 },
                 "required": [
                     "resource_pool"
+                ]
+            },
+            "get_signature": {
+                "type": "object",
+                "properties": {
+                    "method": {
+                        "type": "string",
+                        "example": "condenser_api.get_dynamic_global_properties",
+                        "description": "The name of the JSON RPC method to retrieve the signature for."
+                    }
+                },
+                "required": [
+                    "method"
+                ]
+            },
+            "get_signature_response": {
+                "type": "object",
+                "properties": {
+                    "args": {
+                        "type": "object",
+                        "description": "The arguments required by the specified method."
+                    },
+                    "ret": {
+                        "type": "object",
+                        "description": "The expected return structure of the specified method."
+                    }
+                },
+                "required": [
+                    "args",
+                    "ret"
                 ]
             },
             "get_reward_funds_response": {
