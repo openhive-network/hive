@@ -10826,6 +10826,279 @@
                 }
             }
         },
+        "rc_api.get_rc_operation_stats": {
+            "post": {
+                "tags": [
+                    "rc_api"
+                ],
+                "summary": "Returns rc operation statistics.",
+                "operationId": "get_rc_operation_stats",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/get_rc_operation_stats"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/get_rc_operation_stats_response"
+                                },
+                                "example": {}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "rc_api.get_rc_stats": {
+            "post": {
+                "tags": [
+                    "rc_api"
+                ],
+                "summary": "Returns rc statistics.",
+                "operationId": "get_rc_stats",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/get_rc_stats_response"
+                                },
+                                "example": {
+                                    "rc_stats": {
+                                        "block": 99273600,
+                                        "budget": [
+                                            43403,
+                                            797,
+                                            72338,
+                                            43546196,
+                                            40000000
+                                        ],
+                                        "comment": 1347217793,
+                                        "ops": {
+                                            "account_create_operation": {
+                                                "avg_cost": 12951568037,
+                                                "count": 57
+                                            },
+                                            "account_update2_operation": {
+                                                "avg_cost": 228355824,
+                                                "count": 179
+                                            },
+                                            "account_update_operation": {
+                                                "avg_cost": 759873105,
+                                                "count": 489
+                                            },
+                                            "account_witness_vote_operation": {
+                                                "avg_cost": 280917737,
+                                                "count": 54
+                                            },
+                                            "cancel_transfer_from_savings_operation": {
+                                                "avg_cost": 54625807,
+                                                "count": 4
+                                            },
+                                            "claim_account_operation": {
+                                                "avg_cost": 14642420544758,
+                                                "count": 1011
+                                            },
+                                            "claim_reward_balance_operation": {
+                                                "avg_cost": 74394495,
+                                                "count": 27249
+                                            },
+                                            "collateralized_convert_operation": {
+                                                "avg_cost": 67047158,
+                                                "count": 14
+                                            },
+                                            "comment_operation": {
+                                                "avg_cost": 1467818452,
+                                                "count": 12856
+                                            },
+                                            "comment_options_operation": {
+                                                "avg_cost": 80580754,
+                                                "count": 16
+                                            },
+                                            "convert_operation": {
+                                                "avg_cost": 65493039,
+                                                "count": 140
+                                            },
+                                            "create_claimed_account_operation": {
+                                                "avg_cost": 13231921275,
+                                                "count": 275
+                                            },
+                                            "custom_json_operation": {
+                                                "avg_cost": 131057773,
+                                                "count": 322444
+                                            },
+                                            "delegate_vesting_shares_operation": {
+                                                "avg_cost": 393986497,
+                                                "count": 172
+                                            },
+                                            "delete_comment_operation": {
+                                                "avg_cost": 67049725,
+                                                "count": 38
+                                            },
+                                            "feed_publish_operation": {
+                                                "avg_cost": 63276646,
+                                                "count": 2291
+                                            },
+                                            "limit_order_cancel_operation": {
+                                                "avg_cost": 53583662,
+                                                "count": 4353
+                                            },
+                                            "limit_order_create_operation": {
+                                                "avg_cost": 135749998,
+                                                "count": 5905
+                                            },
+                                            "multiop": {
+                                                "avg_cost": 126006919618,
+                                                "count": 21781
+                                            },
+                                            "recurrent_transfer_operation": {
+                                                "avg_cost": 251555992,
+                                                "count": 7
+                                            },
+                                            "transfer_from_savings_operation": {
+                                                "avg_cost": 71318617,
+                                                "count": 31
+                                            },
+                                            "transfer_operation": {
+                                                "avg_cost": 139181256,
+                                                "count": 10775
+                                            },
+                                            "transfer_to_savings_operation": {
+                                                "avg_cost": 64034261,
+                                                "count": 366
+                                            },
+                                            "transfer_to_vesting_operation": {
+                                                "avg_cost": 101121034,
+                                                "count": 223
+                                            },
+                                            "update_proposal_votes_operation": {
+                                                "avg_cost": 283448103,
+                                                "count": 55
+                                            },
+                                            "vote_operation": {
+                                                "avg_cost": 80737922,
+                                                "count": 279229
+                                            },
+                                            "withdraw_vesting_operation": {
+                                                "avg_cost": 97941982,
+                                                "count": 54
+                                            },
+                                            "witness_set_properties_operation": {
+                                                "avg_cost": 87364644,
+                                                "count": 846
+                                            },
+                                            "witness_update_operation": {
+                                                "avg_cost": 117474922,
+                                                "count": 2
+                                            }
+                                        },
+                                        "payers": [
+                                            {
+                                                "cant_afford": {
+                                                    "comment": 681,
+                                                    "transfer": 321,
+                                                    "vote": 258
+                                                },
+                                                "count": 12742,
+                                                "lt10": 521,
+                                                "lt20": 643,
+                                                "lt5": 430,
+                                                "rank": 0
+                                            },
+                                            {
+                                                "cant_afford": {
+                                                    "comment": 1452,
+                                                    "transfer": 851,
+                                                    "vote": 723
+                                                },
+                                                "count": 62915,
+                                                "lt10": 1846,
+                                                "lt20": 2553,
+                                                "lt5": 1461,
+                                                "rank": 1
+                                            },
+                                            {
+                                                "cant_afford": {
+                                                    "comment": 792,
+                                                    "transfer": 404,
+                                                    "vote": 373
+                                                },
+                                                "count": 180721,
+                                                "lt10": 1225,
+                                                "lt20": 1588,
+                                                "lt5": 999,
+                                                "rank": 2
+                                            },
+                                            {
+                                                "count": 288045,
+                                                "lt20": 27426,
+                                                "rank": 3
+                                            },
+                                            {
+                                                "count": 115999,
+                                                "lt10": 183,
+                                                "lt20": 708,
+                                                "lt5": 88,
+                                                "rank": 4
+                                            },
+                                            {
+                                                "count": 22946,
+                                                "lt10": 120,
+                                                "lt20": 231,
+                                                "lt5": 67,
+                                                "rank": 5
+                                            },
+                                            {
+                                                "count": 6767,
+                                                "lt10": 500,
+                                                "lt20": 568,
+                                                "lt5": 500,
+                                                "rank": 6
+                                            },
+                                            {
+                                                "count": 781,
+                                                "lt10": 46,
+                                                "lt20": 127,
+                                                "lt5": 29,
+                                                "rank": 7
+                                            }
+                                        ],
+                                        "pool": [
+                                            23209173060,
+                                            4500555,
+                                            1965951984,
+                                            24431706720637,
+                                            64953409331
+                                        ],
+                                        "regen": 2182356237432,
+                                        "share": [
+                                            4513,
+                                            10000,
+                                            591,
+                                            2742,
+                                            2153
+                                        ],
+                                        "stamp": "0f649346f62ebb24a6fbb49e2c9a9dc7e80a84a589aa91618ddf4d948c461f3c",
+                                        "transfer": 147357209,
+                                        "vote": 84076692
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "rc_api.get_resource_params": {
             "post": {
                 "tags": [
@@ -19660,6 +19933,252 @@
                 "items": {
                     "$ref": "#/components/schemas/post_bridge_api"
                 }
+            },
+            "get_rc_operation_stats": {
+                "type": "object",
+                "properties": {
+                    "operation": {
+                        "type": "string",
+                        "example": ""
+                    }
+                },
+                "required": [
+                    "operation"
+                ]
+            },
+            "get_rc_operation_stats_response": {
+                "type": "object",
+                "properties": {
+                    "rc_operation_stats": {
+                        "type": "object",
+                        "properties": {
+                            "count": {
+                                "type": "integer"
+                            },
+                            "avg_cost_rc": {
+                                "$ref": "#/components/schemas/hive_int"
+                            },
+                            "resource_cost": {
+                                "$ref": "#/components/schemas/get_rc_operation_stats_return_cost"
+                            },
+                            "resource_cost_share": {
+                                "$ref": "#/components/schemas/get_rc_operation_stats_return_share"
+                            },
+                            "resource_usage": {
+                                "$ref": "#/components/schemas/get_rc_operation_stats_return_usage"
+                            }
+                        },
+                        "required": [
+                            "count",
+                            "avg_cost_rc",
+                            "resource_cost",
+                            "resource_cost_share",
+                            "resource_usage"
+                        ]
+                    }
+                },
+                "required": [
+                    "rc_operation_stats"
+                ]
+            },
+            "get_rc_operation_stats_return_cost": {
+                "type": "object",
+                "properties": {
+                    "history_rc": {
+                        "$ref": "#/components/schemas/hive_int"
+                    },
+                    "tokens_rc": {
+                        "$ref": "#/components/schemas/hive_int"
+                    },
+                    "market_rc": {
+                        "$ref": "#/components/schemas/hive_int"
+                    },
+                    "state_rc": {
+                        "$ref": "#/components/schemas/hive_int"
+                    },
+                    "exec_rc": {
+                        "$ref": "#/components/schemas/hive_int"
+                    }
+                },
+                "required": [
+                    "history_rc",
+                    "tokens_rc",
+                    "market_rc",
+                    "state_rc",
+                    "exec_rc"
+                ]
+            },
+            "get_rc_operation_stats_return_share": {
+                "type": "object",
+                "properties": {
+                    "history_bp": {
+                        "type": "integer"
+                    },
+                    "tokens_bp": {
+                        "type": "integer"
+                    },
+                    "market_bp": {
+                        "type": "integer"
+                    },
+                    "state_bp": {
+                        "type": "integer"
+                    },
+                    "exec_bp": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "history_bp",
+                    "tokens_bp",
+                    "market_bp",
+                    "state_bp",
+                    "exec_bp"
+                ]
+            },
+            "get_rc_operation_stats_return_usage": {
+                "type": "object",
+                "properties": {
+                    "history_bytes": {
+                        "$ref": "#/components/schemas/hive_int"
+                    },
+                    "tokens": {
+                        "type": "string"
+                    },
+                    "market_bytes": {
+                        "$ref": "#/components/schemas/hive_int"
+                    },
+                    "state_hbytes": {
+                        "$ref": "#/components/schemas/hive_int"
+                    },
+                    "exec_ns": {
+                        "$ref": "#/components/schemas/hive_int"
+                    }
+                },
+                "required": [
+                    "history_bytes",
+                    "tokens",
+                    "market_bytes",
+                    "state_bp",
+                    "exec_bp"
+                ]
+            },
+            "get_rc_stats_response": {
+                "type": "object",
+                "properties": {
+                    "rc_stats": {
+                        "type": "object",
+                        "properties": {
+                            "block": {
+                                "type": "integer"
+                            },
+                            "budget": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/hive_int"
+                                }
+                            },
+                            "comment": {
+                                "$ref": "#/components/schemas/hive_int"
+                            },
+                            "transfer": {
+                                "$ref": "#/components/schemas/hive_int"
+                            },
+                            "regen": {
+                                "$ref": "#/components/schemas/hive_int"
+                            },
+                            "vote": {
+                                "$ref": "#/components/schemas/hive_int"
+                            },
+                            "ops": {
+                                "type": "object"
+                            },
+                            "payers": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/get_rc_stats_payers"
+                                }
+                            },
+                            "pool": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/hive_int"
+                                }
+                            },
+                            "share": {
+                                "type": "array",
+                                "items": {
+                                    "type": "integer"
+                                }
+                            },
+                            "stamp": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "block",
+                            "budget",
+                            "comment",
+                            "transfer",
+                            "regen",
+                            "vote",
+                            "ops",
+                            "payers",
+                            "pool",
+                            "share",
+                            "stamp"
+                        ]
+                    }
+                },
+                "required": [
+                    "rc_stats"
+                ]
+            },
+            "get_rc_stats_payers": {
+                "type": "object",
+                "properties": {
+                    "cant_afford": {
+                        "type": "object",
+                        "properties": {
+                            "comment": {
+                                "type": "integer"
+                            },
+                            "transfer": {
+                                "type": "integer"
+                            },
+                            "vote": {
+                                "type": "integer"
+                            }
+                        },
+                        "required": [
+                            "comment",
+                            "transfer",
+                            "vote"
+                        ]
+                    },
+                    "count": {
+                        "type": "integer"
+                    },
+                    "lt10": {
+                        "type": "integer"
+                    },
+                    "lt20": {
+                        "type": "integer"
+                    },
+                    "lt5": {
+                        "type": "integer"
+                    },
+                    "rank": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "cant_afford",
+                    "count",
+                    "lt10",
+                    "lt20",
+                    "lt5",
+                    "rank"
+                ]
             },
             "get_relationship_between_accounts": {
                 "type": "object",
