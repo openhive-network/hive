@@ -30,6 +30,7 @@ def generate_description(api: AvailableApis, base_directory: Path) -> Path:
         output_path,
         openapi_flattened_json_path,
         apis_to_skip=apis_to_skip,
+        allow_passing_item_suffix=False,
     )
 
     return output_path
