@@ -81,6 +81,18 @@ libraries/plugins/apis/api_generation/database_api/
 libraries/plugins/apis/api_generation/rc_api/
 libraries/plugins/apis/api_generation/block_api/
 libraries/plugins/apis/api_generation/network_broadcast_api/
+libraries/plugins/apis/api_generation/bridge/
+libraries/plugins/apis/api_generation/account_history_api/
+libraries/plugins/apis/api_generation/condenser_api/
+libraries/plugins/apis/api_generation/hive/
+libraries/plugins/apis/api_generation/follow_api/
+libraries/plugins/apis/api_generation/jsonrpc/
+libraries/plugins/apis/api_generation/market_history_api/
+libraries/plugins/apis/api_generation/reputation_api/
+libraries/plugins/apis/api_generation/tags_api/
+libraries/plugins/apis/api_generation/transaction_status_api/
+libraries/plugins/apis/api_generation/debug_node_api/
+libraries/plugins/apis/api_generation/search_api/
 
 programs/build_helpers/hive_build_helpers/__pycache__/
 programs/util/dump_hive_schema
