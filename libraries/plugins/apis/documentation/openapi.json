@@ -18152,7 +18152,7 @@
                     "recurrent_transfers": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/recurrent_transfer"
+                            "$ref": "#/components/schemas/recurrent_transfer_default"
                         }
                     }
                 },
@@ -21779,7 +21779,6 @@
                     }
                 },
                 "required": [
-                    "start",
                     "limit"
                 ]
             },
@@ -21801,11 +21800,11 @@
                 "type": "object",
                 "properties": {
                     "start": {
-                        "type": [
-                            "string",
-                            "null"
-                        ],
-                        "example": null
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "example": ["gtg", "blocktrades"]
                     },
                     "limit": {
                         "type": "integer",
