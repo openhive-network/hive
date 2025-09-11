@@ -167,13 +167,13 @@ trio = ["trio (>=0.26.1)"]
 
 [[package]]
 name = "api-client-generator"
-version = "1.3.1.dev12+f5aa5c1"
+version = "1.4.1.dev3+cce2a9d"
 description = ""
 optional = false
 python-versions = ">=3.12,<4.0"
 groups = ["main"]
 files = [
-    {file = "api_client_generator-1.3.1.dev12+f5aa5c1-py3-none-any.whl", hash = "sha256:8ad437a101ac8ae7d66916c2467c09f1f1634a2037f92be82935a2711fb27698"},
+    {file = "api_client_generator-1.4.1.dev3+cce2a9d-py3-none-any.whl", hash = "sha256:e10613df326d9a627624aaacd1f43df9eb949d46c29f62cb0acfd67c9982a034"},
 ]
 
 [package.dependencies]
@@ -223,13 +223,13 @@ tests-mypy = ["mypy (>=1.11.1) ; platform_python_implementation == \"CPython\" a
 
 [[package]]
 name = "beekeepy"
-version = "0.0.1.dev422+15ab8c7"
+version = "0.0.1.dev414+2be9929"
 description = "All in one package for beekeeper interaction via Python interface."
 optional = false
 python-versions = ">=3.12,<4.0"
 groups = ["main"]
 files = [
-    {file = "beekeepy-0.0.1.dev422+15ab8c7-py3-none-any.whl", hash = "sha256:21097c92d2f18d2571ba2cff437dbd115562d477e0eb57be012d267637c5b927"},
+    {file = "beekeepy-0.0.1.dev414+2be9929-py3-none-any.whl", hash = "sha256:1d823e1ed7caeb27b080cdcb3885b1665e3d74034f2db20b737461d6bcabe4d6"},
 ]
 
 [package.dependencies]
@@ -239,7 +239,7 @@ loguru = "0.7.2"
 psutil = "7.0.0"
 python-dateutil = "2.8.2"
 requests = "2.32.3"
-schemas = "0.0.1.dev429+933dde6"
+schemas = "0.0.1.dev426+0dea163"
 
 [package.source]
 type = "legacy"
@@ -1504,13 +1504,13 @@ files = [
 
 [[package]]
 name = "schemas"
-version = "0.0.1.dev429+933dde6"
+version = "0.0.1.dev426+0dea163"
 description = "Tools for checking if message fits expected format"
 optional = false
 python-versions = ">=3.12,<4.0"
 groups = ["main"]
 files = [
-    {file = "schemas-0.0.1.dev429+933dde6-py3-none-any.whl", hash = "sha256:03f1bb06d11f9c4ff03651c2c899484e23c280b9b42e2edf8df9196eb526b5ff"},
+    {file = "schemas-0.0.1.dev426+0dea163-py3-none-any.whl", hash = "sha256:783301368543c6643b71fcb449060ce1c489a15a140e894e37c1d60e59f6399a"},
 ]
 
 [package.dependencies]
@@ -1755,4 +1755,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "d7b575ce2e06aa0d16335c96d99a5c0eb194c8b7d8022de14e6fc4f88f1f8eb4"
+content-hash = "6945f7e5797ee08e9130cc0dac6a9a696c4a2e77822f399798c497bdb309b6f6"
