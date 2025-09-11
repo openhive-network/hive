@@ -14,7 +14,9 @@ if TYPE_CHECKING:
 
 
 def generate_client(api: AvailableApis, api_description: dict[str, Any], base_directory: Path) -> None:
-    generated_client_output_path = base_directory / api /api / f"{api}_client.py"
+
+    api = api.replace("-", "_")
+    generated_client_output_path = base_directory / api / api / f"{api}_client.py"
 
     generate_api_client(
         api_description,
