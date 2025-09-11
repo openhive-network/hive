@@ -58,6 +58,8 @@ def create_api_directory_structure(
         template_directory: The directory containing the template files for the API.
     """
 
+    api_name = api_name.replace("-", "_")
+
     api_root_directory = base_directory / api_name
     api_package_path = api_root_directory / api_name
 
@@ -106,7 +108,7 @@ if __name__ == "__main__":
     create_api_directory_structure(api, base_directory, template_api_path)
 
     api_description_file = generate_description(api, base_directory)
-    description_symbol_name = f"{api}_description"
+    description_symbol_name = f"{api.replace("-", "_")}_description"
 
     print(
         f"Loading generated API descriptor: {description_symbol_name} from generated file: {api_description_file}"
@@ -119,10 +121,10 @@ if __name__ == "__main__":
 
     pyproject_path = base_directory / "api_generation" /"pyproject.toml"
     pyproject_content = create_pyproject_content_for_api_package(
-        api, pyproject_path, template_api_path
+        api.replace("-", "_"), pyproject_path, template_api_path
     )
 
-    api_pyproject_path = base_directory / f"{api}" / "pyproject.toml"
+    api_pyproject_path = base_directory / f"{api.replace("-", "_")}" / "pyproject.toml"
 
     with open(api_pyproject_path, "w") as f:
         f.write(pyproject_content)

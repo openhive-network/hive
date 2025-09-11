@@ -15,6 +15,7 @@ def generate_description(api: AvailableApis, base_directory: Path) -> Path:
     apis_to_skip.remove(api)
 
     api_description_dict_name = f"{api}_description"
+    api = api.replace("-", "_")
 
     api_generation_path = base_directory 
     openapi_json_path = base_directory.parent / "documentation" / "openapi.json"
