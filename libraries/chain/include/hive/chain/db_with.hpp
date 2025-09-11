@@ -87,7 +87,7 @@ struct pending_transactions_restorer
     }
     _db._pending_tx.reserve( _db._popped_tx.size() + _pending_transactions.size() );
 
-    auto start = fc::time_point::now();
+    [[maybe_unused]] auto start = fc::time_point::now();
 #if !defined IS_TEST_NET
     bool in_sync = ( start - _block_ctrl.get_block_timestamp() ) < HIVE_UP_TO_DATE_MARGIN__PENDING_TXS;
 #else
