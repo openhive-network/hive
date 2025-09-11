@@ -9721,6 +9721,492 @@
                 }
             }
         },
+        "debug_node_api.debug_generate_blocks": {
+            "post": {
+                "tags": [
+                    "debug_node_api"
+                ],
+                "summary": "Generate blocks locally.",
+                "operationId": "debug_generate_blocks",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/debug_generate_blocks"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/debug_generate_blocks_response"
+                                },
+                                "example": {
+                                    "blocks": 10000
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "debug_node_api.debug_generate_blocks_until": {
+            "post": {
+                "tags": [
+                    "debug_node_api"
+                ],
+                "summary": "Generate blocks locally until a specified head block time. Can generate them sparsely.",
+                "operationId": "debug_generate_blocks_until",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/debug_generate_blocks_until"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/debug_generate_blocks_until_response"
+                                },
+                                "example": {
+                                    "blocks": 10000
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "debug_node_api.debug_get_future_witness_schedule": {
+            "post": {
+                "tags": [
+                    "debug_node_api"
+                ],
+                "summary": "Returns the future witness schedule.",
+                "operationId": "debug_get_future_witness_schedule",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/debug_get_future_witness_schedule_response"
+                                },
+                                "example": {
+                                    "account_subsidy_rd": {
+                                        "budget_per_time_unit": 797,
+                                        "decay_params": {
+                                            "decay_per_time_unit": 347321,
+                                            "decay_per_time_unit_denom_shift": 36
+                                        },
+                                        "max_pool_size": 157691079,
+                                        "min_decay": 0,
+                                        "pool_eq": 157691079,
+                                        "resource_unit": 10000
+                                    },
+                                    "account_subsidy_witness_rd": {
+                                        "budget_per_time_unit": 996,
+                                        "decay_params": {
+                                            "decay_per_time_unit": 7293741,
+                                            "decay_per_time_unit_denom_shift": 36
+                                        },
+                                        "max_pool_size": 9384019,
+                                        "min_decay": 179,
+                                        "pool_eq": 9384019,
+                                        "resource_unit": 10000
+                                    },
+                                    "current_shuffled_witnesses": [
+                                        "threespeak",
+                                        "mahdiyari",
+                                        "yabapmatt",
+                                        "quochuy",
+                                        "themarkymark",
+                                        "guiltyparties",
+                                        "pharesim",
+                                        "arcange",
+                                        "smooth.witness",
+                                        "ausbitbank",
+                                        "abit",
+                                        "ocd-witness",
+                                        "roelandp",
+                                        "therealwolf",
+                                        "deathwing",
+                                        "stoodkev",
+                                        "blocktrades",
+                                        "gtg",
+                                        "emrebeyler",
+                                        "steempeak",
+                                        "good-karma"
+                                    ],
+                                    "current_virtual_time": "965626696637118176548648739",
+                                    "elected_weight": 1,
+                                    "hardfork_required_witnesses": 17,
+                                    "id": 0,
+                                    "majority_version": "1.27.3",
+                                    "max_miner_witnesses": 0,
+                                    "max_runner_witnesses": 1,
+                                    "max_voted_witnesses": 20,
+                                    "median_props": {
+                                        "account_creation_fee": {
+                                            "amount": "3000",
+                                            "nai": "@@000000021",
+                                            "precision": 3
+                                        },
+                                        "account_subsidy_budget": 797,
+                                        "account_subsidy_decay": 347321,
+                                        "hbd_interest_rate": 1500,
+                                        "maximum_block_size": 65536
+                                    },
+                                    "min_witness_account_subsidy_decay": 0,
+                                    "miner_weight": 1,
+                                    "next_shuffle_block_num": 96113997,
+                                    "num_scheduled_witnesses": 21,
+                                    "timeshare_weight": 5,
+                                    "witness_pay_normalization_factor": 25
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "debug_node_api.debug_get_hardfork_property_object": {
+            "post": {
+                "tags": [
+                    "debug_node_api"
+                ],
+                "summary": "Returns the current hardfork property object.",
+                "operationId": "debug_get_hardfork_property_object",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/debug_get_hardfork_property_object_response"
+                                },
+                                "example": {
+                                    "current_hardfork_version": "1.27.0",
+                                    "id": 0,
+                                    "last_hardfork": 27,
+                                    "next_hardfork": "1.27.0",
+                                    "next_hardfork_time": "2022-10-24T12:00:00",
+                                    "processed_hardforks": [
+                                        "2016-03-24T16:00:00",
+                                        "2016-04-25T17:30:00",
+                                        "2016-04-26T18:00:00",
+                                        "2016-04-27T13:00:00",
+                                        "2016-04-30T15:00:00",
+                                        "2016-05-31T17:00:00",
+                                        "2016-06-30T14:00:00",
+                                        "2016-07-04T00:00:00",
+                                        "2016-07-04T01:00:00",
+                                        "2016-07-14T00:00:00",
+                                        "2016-07-15T12:00:00",
+                                        "2016-07-17T15:00:00",
+                                        "2016-07-26T15:00:00",
+                                        "2016-08-15T14:00:00",
+                                        "2016-09-20T15:00:00",
+                                        "2016-11-08T16:00:00",
+                                        "2016-12-06T16:00:00",
+                                        "2017-03-30T15:00:00",
+                                        "2017-03-30T15:00:00",
+                                        "2017-06-20T15:00:00",
+                                        "2018-09-25T15:00:00",
+                                        "2019-08-27T15:00:00",
+                                        "2019-08-29T15:00:00",
+                                        "2020-03-20T14:00:00",
+                                        "2020-10-06T14:00:00",
+                                        "2021-06-30T14:00:00",
+                                        "2022-10-11T12:00:00",
+                                        "2022-10-24T12:00:00"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "debug_node_api.debug_get_head_block": {
+            "post": {
+                "tags": [
+                    "debug_node_api"
+                ],
+                "summary": "Returns the current head block.",
+                "operationId": "debug_get_head_block",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/debug_get_head_block_response"
+                                },
+                                "example": null
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "debug_node_api.debug_get_json_schema": {
+            "post": {
+                "tags": [
+                    "debug_node_api"
+                ],
+                "summary": "Returns the JSON schema.",
+                "operationId": "debug_get_json_schema",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/debug_get_json_schema_response"
+                                },
+                                "example": {
+                                    "schema": ""
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "debug_node_api.debug_get_witness_schedule": {
+            "post": {
+                "tags": [
+                    "debug_node_api"
+                ],
+                "summary": "Returns the witness schedule.",
+                "operationId": "debug_get_witness_schedule",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/debug_get_witness_schedule_response"
+                                },
+                                "example": {
+                                    "account_subsidy_rd": {
+                                        "budget_per_time_unit": 797,
+                                        "decay_params": {
+                                            "decay_per_time_unit": 347321,
+                                            "decay_per_time_unit_denom_shift": 36
+                                        },
+                                        "max_pool_size": 157691079,
+                                        "min_decay": 0,
+                                        "pool_eq": 157691079,
+                                        "resource_unit": 10000
+                                    },
+                                    "account_subsidy_witness_rd": {
+                                        "budget_per_time_unit": 996,
+                                        "decay_params": {
+                                            "decay_per_time_unit": 7293741,
+                                            "decay_per_time_unit_denom_shift": 36
+                                        },
+                                        "max_pool_size": 9384019,
+                                        "min_decay": 179,
+                                        "pool_eq": 9384019,
+                                        "resource_unit": 10000
+                                    },
+                                    "current_shuffled_witnesses": [
+                                        "threespeak",
+                                        "mahdiyari",
+                                        "yabapmatt",
+                                        "quochuy",
+                                        "themarkymark",
+                                        "guiltyparties",
+                                        "pharesim",
+                                        "arcange",
+                                        "smooth.witness",
+                                        "ausbitbank",
+                                        "abit",
+                                        "ocd-witness",
+                                        "roelandp",
+                                        "therealwolf",
+                                        "deathwing",
+                                        "stoodkev",
+                                        "blocktrades",
+                                        "gtg",
+                                        "emrebeyler",
+                                        "steempeak",
+                                        "good-karma"
+                                    ],
+                                    "current_virtual_time": "965626696637118176548648739",
+                                    "elected_weight": 1,
+                                    "hardfork_required_witnesses": 17,
+                                    "id": 0,
+                                    "majority_version": "1.27.3",
+                                    "max_miner_witnesses": 0,
+                                    "max_runner_witnesses": 1,
+                                    "max_voted_witnesses": 20,
+                                    "median_props": {
+                                        "account_creation_fee": {
+                                            "amount": "3000",
+                                            "nai": "@@000000021",
+                                            "precision": 3
+                                        },
+                                        "account_subsidy_budget": 797,
+                                        "account_subsidy_decay": 347321,
+                                        "hbd_interest_rate": 1500,
+                                        "maximum_block_size": 65536
+                                    },
+                                    "min_witness_account_subsidy_decay": 0,
+                                    "miner_weight": 1,
+                                    "next_shuffle_block_num": 96113997,
+                                    "num_scheduled_witnesses": 21,
+                                    "timeshare_weight": 5,
+                                    "witness_pay_normalization_factor": 25
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "debug_node_api.debug_has_hardfork": {
+            "post": {
+                "tags": [
+                    "debug_node_api"
+                ],
+                "summary": "Returns true if the specified hardfork has been applied.",
+                "operationId": "debug_has_hardfork",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/debug_has_hardfork"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/debug_has_hardfork_response"
+                                },
+                                "example": false
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "debug_node_api.debug_set_hardfork": {
+            "post": {
+                "tags": [
+                    "debug_node_api"
+                ],
+                "summary": "Sets the hardfork to the specified version.",
+                "operationId": "debug_set_hardfork",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/debug_set_hardfork"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/debug_set_hardfork_response"
+                                },
+                                "example": {}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "debug_node_api.debug_set_vest_price": {
+            "post": {
+                "tags": [
+                    "debug_node_api"
+                ],
+                "summary": "Sets the price feed used to convert VESTS to HIVE.",
+                "operationId": "debug_set_vest_price",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/debug_set_vest_price"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/debug_set_vest_price_response"
+                                },
+                                "example": {}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "debug_node_api.debug_throw_exception": {
+            "post": {
+                "tags": [
+                    "debug_node_api"
+                ],
+                "summary": "Throws an exception.",
+                "operationId": "debug_throw_exception",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/debug_throw_exception"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/debug_throw_exception_response"
+                                },
+                                "example": {}
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "follow_api.get_account_reputations": {
             "post": {
                 "tags": [
@@ -15836,6 +16322,206 @@
                     "db_head_block",
                     "db_head_time"
                 ]
+            },
+            "debug_generate_blocks": {
+                "type": "object",
+                "properties": {
+                    "debug_key": {
+                        "type": "string",
+                        "example": "initminer",
+                        "description": "The name of the witness account that will generate the blocks."
+                    },
+                    "count": {
+                        "type": "integer",
+                        "example": 10,
+                        "description": "The number of blocks to generate."
+                    },
+                    "skip": {
+                        "type": "integer",
+                        "example": 10
+                    },
+                    "miss_blocks": {
+                        "type": "integer",
+                        "example": 10
+                    }
+                },
+                "required": [
+                    "debug_key",
+                    "count",
+                    "skip",
+                    "miss_blocks"
+                ]
+            },
+            "debug_generate_blocks_response": {
+                "type": "object",
+                "properties": {
+                    "blocks": {
+                        "type": "integer",
+                        "example": 10
+                    }
+                },
+                "required": [
+                    "blocks"
+                ]
+            },
+            "debug_generate_blocks_until": {
+                "type": "object",
+                "properties": {
+                    "debug_key": {
+                        "type": "string",
+                        "example": "initminer",
+                        "description": "The name of the witness account that will generate the blocks."
+                    },
+                    "head_block_time": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2016-09-15T19:48:33",
+                        "description": "The target head block time to generate blocks until."
+                    },
+                    "generate_sparsely": {
+                        "type": "boolean",
+                        "example": 10
+                    }
+                },
+                "required": [
+                    "debug_key",
+                    "head_block_time",
+                    "generate_sparsely"
+                ]
+            },
+            "debug_generate_blocks_until_response": {
+                "type": "object",
+                "properties": {
+                    "blocks": {
+                        "type": "integer",
+                        "example": 10
+                    }
+                },
+                "required": [
+                    "blocks"
+                ]
+            },
+            "debug_get_future_witness_schedule_response": {
+                "$ref": "#/components/schemas/witness_schedule_default"
+            },
+            "debug_get_hardfork_property_object_response": {
+                "$ref": "#/components/schemas/get_hardfork_properties_response"
+            },
+            "debug_get_head_block_response": {
+                "anyOf": [
+                    {
+                        "type": "null"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/transaction_short"
+                        }
+                    }
+                ]
+            },
+            "debug_get_json_schema_response": {
+                "type": "object",
+                "properties": {
+                    "schema": {
+                        "type": "string",
+                        "example": ""
+                    }
+                },
+                "required": [
+                    "schema"
+                ]
+            },
+            "debug_get_witness_schedule_response": {
+                "$ref": "#/components/schemas/witness_schedule_default"
+            },
+            "debug_has_hardfork": {
+                "type": "object",
+                "properties": {
+                    "hardfork_id": {
+                        "type": "integer",
+                        "example": 26
+                    }
+                },
+                "required": [
+                    "hardfork_id"
+                ]
+            },
+            "debug_has_hardfork_response": {
+                "type": "object",
+                "properties": {
+                    "has_hardfork": {
+                        "type": "boolean",
+                        "example": false
+                    }
+                },
+                "required": [
+                    "has_hardfork"
+                ]
+            },
+            "debug_set_hardfork": {
+                "type": "object",
+                "properties": {
+                    "hardfork_id": {
+                        "type": "integer",
+                        "example": 26
+                    },
+                    "hook_to_tx": {
+                        "type": "string",
+                        "example": ""
+                    }
+                },
+                "required": [
+                    "hardfork_id"
+                ]
+            },
+            "debug_set_hardfork_response": {
+                "type": "object"
+            },
+            "debug_set_vest_price": {
+                "type": "object",
+                "properties": {
+                    "vest_price": {
+                        "$ref": "#/components/schemas/base_and_quote",
+                        "example": {
+                            "base": {
+                                "amount": "100000",
+                                "nai": "@@000000021",
+                                "precision": 3
+                            },
+                            "quote": {
+                                "amount": "27009",
+                                "nai": "@@000000013",
+                                "precision": 3
+                            }
+                        }
+                    },
+                    "hook_to_tx": {
+                        "type": "string",
+                        "example": ""
+                    }
+                },
+                "required": [
+                    "vest_price"
+                ]
+            },
+            "debug_set_vest_price_response": {
+                "type": "object"
+            },
+            "debug_throw_exception": {
+                "type": "object",
+                "properties": {
+                    "throw_exception": {
+                        "type": "boolean",
+                        "example": true
+                    }
+                },
+                "required": [
+                    "throw_exception"
+                ]
+            },
+            "debug_throw_exception_response": {
+                "type": "object"
             },
             "decline_voting_rights": {
                 "type": "object",
