@@ -78,8 +78,7 @@ struct pending_transactions_restorer
       elog( "NOTIFYALERT! ${x} transactions in pending (size ${s}) when there should be none (example tx: ${tx})",
         ( "x", _db._pending_tx.size() )( "s", _db._pending_tx_size )( "tx", _db._pending_tx.front()->get_transaction() ) );
 #ifdef USE_ALTERNATE_CHAIN_ID
-      FC_ASSERT( not pending_condition, "${x} transactions in pending (size ${s}) when there should be none (example tx: ${tx})",
-        ( "x", _db._pending_tx.size() )( "s", _db._pending_tx_size )( "tx", _db._pending_tx.front()->get_transaction() ) );
+      std::abort(); // bad things happened, terminate the app
 #endif
       _db._pending_tx.clear();
       _db._pending_tx_size = 0;
