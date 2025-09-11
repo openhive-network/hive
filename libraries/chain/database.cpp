@@ -2182,14 +2182,14 @@ void database::adjust_rshares2( fc::uint128_t old_rshares2, fc::uint128_t new_rs
   } );
 }
 
-void database::update_owner_authority( const account_object& account, const account_authority_object& account_authority, const authority& owner_authority )
+void database::update_owner_authority( const account_object& account, const authority& owner_authority )
 {
   if( head_block_num() >= HIVE_OWNER_AUTH_HISTORY_TRACKING_START_BLOCK_NUM )
   {
-    create< owner_authority_history_object >( account, account_authority.owner, head_block_time() );
+    create< owner_authority_history_object >( account, get_account_authority( account.get_name() )->owner, head_block_time() );
   }
 
-  modify<account_authority_object>( account_authority, [&]( account_authority_object& auth )
+  modify<account_authority_object>( *get_account_authority( account.get_name() ), [&]( account_authority_object& auth )
   {
     auth.owner = owner_authority;
     auth.previous_owner_update = auth.last_owner_update;
@@ -2321,8 +2321,6 @@ void database::process_vesting_withdrawals()
     // Do two passes, the first for VESTS, the second for HIVE. Try to maintain as much accuracy for VESTS as possible.
     process_routing( true/*auto_vest_mode*/ );
     process_routing( false/*auto_vest_mode*/ );
-
-    from_account = get_account( _from_name );
 
     share_type to_convert = to_withdraw - vests_deposited;
     FC_ASSERT( to_convert >= 0, "Deposited more vests than were supposed to be withdrawn" );
@@ -5999,9 +5997,9 @@ void database::apply_hardfork( uint32_t hardfork )
           wlog("Setting key: ${k} as an owner authority for account: ${a}", ("k", HIVE_HF_9_COMPROMISED_ACCOUNTS_PUBLIC_KEY_STR)("a", acc));
 
           auto _authority = get_account_authority( account->get_name() );
-          update_owner_authority( *account, *_authority, authority( 1, public_key_type(HIVE_HF_9_COMPROMISED_ACCOUNTS_PUBLIC_KEY_STR), 1 ) );
+          update_owner_authority( *account, authority( 1, public_key_type(HIVE_HF_9_COMPROMISED_ACCOUNTS_PUBLIC_KEY_STR), 1 ) );
 
-          modify<account_authority_object>( *_authority, [&]( account_authority_object& auth )
+          modify<account_authority_object>( *get_account_authority( account->get_name() ), [&]( account_authority_object& auth )
           {
             auth.active  = authority( 1, public_key_type(HIVE_HF_9_COMPROMISED_ACCOUNTS_PUBLIC_KEY_STR), 1 );
             auth.posting = authority( 1, public_key_type(HIVE_HF_9_COMPROMISED_ACCOUNTS_PUBLIC_KEY_STR), 1 );

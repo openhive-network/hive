@@ -641,7 +641,7 @@ void account_update_evaluator::do_apply( const account_update_operation& o )
         _auth_owner = &_corrected_owner;
     }
 
-    _db.update_owner_authority( *account, *account_auth, **_auth_owner );
+    _db.update_owner_authority( *account, **_auth_owner );
   }
   if( o.active )
   {
@@ -728,7 +728,7 @@ void account_update2_evaluator::do_apply( const account_update2_operation& o )
 
     verify_authority_accounts_exist( _db, *o.owner, o.account, authority::owner );
 
-    _db.update_owner_authority( *account, *account_auth, *o.owner );
+    _db.update_owner_authority( *account, *o.owner );
   }
   if( o.active )
     verify_authority_accounts_exist( _db, *o.active, o.account, authority::active );
@@ -2780,7 +2780,7 @@ void recover_account_evaluator::do_apply( const recover_account_operation& o )
   FC_ASSERT( found, "Recent authority not found in authority history." );
 
   _db.remove( *request ); // Remove first, update_owner_authority may invalidate iterator
-  _db.update_owner_authority( *account, *_db.get_account_authority( o.account_to_recover ), o.new_owner_authority );
+  _db.update_owner_authority( *account, o.new_owner_authority );
   _db.modify( *account, [&]( account_object& a )
   {
     a.set_last_account_recovery_time( _db.head_block_time() );
