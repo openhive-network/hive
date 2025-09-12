@@ -415,6 +415,28 @@ struct volatile_supporter<volatile_account_index, volatile_account_object, accou
   }
 };
 
+template<typename Object_Type>
+class custom_cache_helper
+{
+  public:
+
+    static void add( std::shared_ptr<Object_Type> obj )
+    {
+      custom_cache<Object_Type>::add( obj );
+    }
+};
+
+template<>
+class custom_cache_helper<account_object>
+{
+  public:
+
+    static void add( std::shared_ptr<account_object> obj )
+    {
+      custom_cache<account_object>::add_complex( obj );
+    }
+};
+
 rocksdb_account_archive::rocksdb_account_archive( database& db, const bfs::path& blockchain_storage_path,
   const bfs::path& storage_path, appbase::application& app, bool destroy_on_startup, bool destroy_on_shutdown )
   : db( db ), destroy_database_on_startup( destroy_on_startup ), destroy_database_on_shutdown( destroy_on_shutdown )
@@ -546,7 +568,7 @@ Object_Type rocksdb_account_archive::get_object( const Key_Type& key, const std:
     if( _volatile_found != _volatile_idx.end() )
     {
       const auto _external_found = volatile_reader<Volatile_Object_Type, SHM_Object_Type, SHM_Object_Index>::read( *_volatile_found, db );
-      custom_cache<SHM_Object_Type>::add( _external_found );
+      custom_cache_helper<SHM_Object_Type>::add( _external_found );
       return Object_Type( _external_found );
     }
     else
@@ -556,7 +578,7 @@ Object_Type rocksdb_account_archive::get_object( const Key_Type& key, const std:
       {
         FC_ASSERT( !is_required, "Account with data `${key}` not found", ("key", key) );
       }
-      custom_cache<SHM_Object_Type>::add( _external_found );
+      custom_cache_helper<SHM_Object_Type>::add( _external_found );
       return Object_Type( _external_found );
     }
   }
