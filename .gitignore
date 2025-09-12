@@ -93,6 +93,9 @@ libraries/plugins/apis/api_generation/tags_api/
 libraries/plugins/apis/api_generation/transaction_status_api/
 libraries/plugins/apis/api_generation/debug_node_api/
 libraries/plugins/apis/api_generation/search_api/
+libraries/plugins/apis/documentation/openapi_flattened.json
+libraries/plugins/apis/api_generation/package-lock.json
+libraries/plugins/apis/api_generation/package.json
 
 programs/build_helpers/hive_build_helpers/__pycache__/
 programs/util/dump_hive_schema
