@@ -15,12 +15,6 @@ function flattenSchema(schema) {
     schema = mergeAllOf(schema, { resolvers: {} });
   }
 
-  // Handle oneOf (keep the first option for now)
-  if (schema.oneOf) {
-    schema = { ...schema, ...schema.oneOf[0] };
-    delete schema.oneOf;
-  }
-
   // Handle anyOf (keep the first option for now)
   if (schema.anyOf) {
     schema = { ...schema, ...schema.anyOf[0] };
