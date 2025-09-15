@@ -2213,7 +2213,6 @@ void database::process_vesting_withdrawals()
   while( current != widx.end() && current->get_next_vesting_withdrawal() <= now )
   {
     auto from_account = get_account( current->get_name() );
-    auto _from_name = current->get_name();
     ++current;
     ++count;
 

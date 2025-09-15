@@ -140,8 +140,8 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create_apply )
     signed_transaction tx;
     asset_symbol_type alice_symbol = create_smt( "alice", alice_private_key, 3 );
 
-    const account_object& alice_account = db->get_account( "alice" );
-    const account_object& bob_account = db->get_account( "bob" );
+    const auto& alice_account = db->get_account( "alice" );
+    const auto& bob_account = db->get_account( "bob" );
 
     asset alice_0 = asset( 0, alice_symbol );
 
@@ -151,9 +151,9 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create_apply )
     asset alice_smt_balance = asset( 1000000, alice_symbol );
     asset bob_smt_balance = asset( 1000000, alice_symbol );
 
-    asset alice_balance = alice_account.get_balance();
+    asset alice_balance = alice_account->get_balance();
 
-    asset bob_balance = bob_account.get_balance();
+    asset bob_balance = bob_account->get_balance();
 
     ISSUE_FUNDS( "alice", alice_smt_balance );
     ISSUE_FUNDS( "bob", bob_smt_balance );
@@ -402,7 +402,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create_apply )
 
     BOOST_TEST_MESSAGE( "--- Test filling limit order with better order when partial order is worse." );
 
-    //auto& gpo = db->get_dynamic_global_properties();
+    //auto& gpo = db.get_dynamic_global_properties();
     //auto start_hbd = gpo.get_current_hbd_supply();
 
     op.owner = "alice";
@@ -519,12 +519,12 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_cancel_apply )
     signed_transaction tx;
     asset_symbol_type alice_symbol = create_smt( "alice", alice_private_key, 3 );
 
-    const account_object& alice_account = db->get_account( "alice" );
+    const auto& alice_account = db->get_account( "alice" );
 
     tx.operations.clear();
 
     asset alice_smt_balance = asset( 1000000, alice_symbol );
-    asset alice_balance = alice_account.get_balance();
+    asset alice_balance = alice_account->get_balance();
 
     ISSUE_FUNDS( "alice", alice_smt_balance );
 
@@ -578,8 +578,8 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create2_apply )
     signed_transaction tx;
     asset_symbol_type alice_symbol = create_smt( "alice", alice_private_key, 3 );
 
-    const account_object& alice_account = db->get_account( "alice" );
-    const account_object& bob_account = db->get_account( "bob" );
+    const auto& alice_account = db->get_account( "alice" );
+    const auto& bob_account = db->get_account( "bob" );
 
     asset alice_0 = asset( 0, alice_symbol );
 
@@ -589,9 +589,9 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create2_apply )
     asset alice_smt_balance = asset( 1000000, alice_symbol );
     asset bob_smt_balance = asset( 1000000, alice_symbol );
 
-    asset alice_balance = alice_account.get_balance();
+    asset alice_balance = alice_account->get_balance();
 
-    asset bob_balance = bob_account.get_balance();
+    asset bob_balance = bob_account->get_balance();
 
     ISSUE_FUNDS( "alice", alice_smt_balance );
     ISSUE_FUNDS( "bob", bob_smt_balance );
@@ -841,7 +841,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create2_apply )
 
     BOOST_TEST_MESSAGE( "--- Test filling limit order with better order when partial order is worse." );
 
-    //auto& gpo = db->get_dynamic_global_properties();
+    //auto& gpo = db.get_dynamic_global_properties();
     //auto start_hbd = gpo.get_current_hbd_supply();
 
     op.owner = "alice";
@@ -1290,7 +1290,7 @@ BOOST_AUTO_TEST_CASE( smt_create_validate )
     BOOST_TEST_MESSAGE( " -- A valid smt_create_operation" );
     smt_create_operation op;
     op.control_account = "alice";
-    op.smt_creation_fee = db->get_dynamic_global_properties().smt_creation_fee;
+    op.smt_creation_fee = db.get_dynamic_global_properties().smt_creation_fee;
     op.symbol = get_new_smt_symbol( 3, db );
     op.precision = op.symbol.decimals();
     op.validate();
@@ -1316,7 +1316,7 @@ BOOST_AUTO_TEST_CASE( smt_create_validate )
     BOOST_TEST_MESSAGE( " -- Invalid currency for SMT creation fee (VESTS)" );
     op.smt_creation_fee = ASSET( "1.000000 VESTS" );
     HIVE_REQUIRE_THROW( op.validate(), fc::assert_exception );
-    op.smt_creation_fee = db->get_dynamic_global_properties().smt_creation_fee;
+    op.smt_creation_fee = db.get_dynamic_global_properties().smt_creation_fee;
 
     BOOST_TEST_MESSAGE( " -- Invalid SMT creation fee: differing decimals" );
     op.precision = 0;
@@ -1356,7 +1356,7 @@ BOOST_AUTO_TEST_CASE( smt_create_authorities )
     smt_create_operation op;
     op.control_account = "alice";
     op.symbol = alice_symbol;
-    op.smt_creation_fee = db->get_dynamic_global_properties().smt_creation_fee;
+    op.smt_creation_fee = db.get_dynamic_global_properties().smt_creation_fee;
 
     flat_set< account_name_type > auths;
     flat_set< account_name_type > expected;
@@ -1444,7 +1444,7 @@ BOOST_AUTO_TEST_CASE( smt_create_with_hive_funds )
     BOOST_TEST_MESSAGE( "Testing: smt_create_with_hive_funds" );
 
     // This test expects 1.000 TBD smt_creation_fee
-    db->modify( db->get_dynamic_global_properties(), [&] ( dynamic_global_property_object& dgpo )
+    db->modify( db.get_dynamic_global_properties(), [&] ( dynamic_global_property_object& dgpo )
     {
       dgpo.smt_creation_fee = asset( 1000, HBD_SYMBOL );
     } );
@@ -1485,7 +1485,7 @@ BOOST_AUTO_TEST_CASE( smt_create_with_hbd_funds )
     BOOST_TEST_MESSAGE( "Testing: smt_create_with_hbd_funds" );
 
     // This test expects 1.000 TBD smt_creation_fee
-    db->modify( db->get_dynamic_global_properties(), [&] ( dynamic_global_property_object& dgpo )
+    db->modify( db.get_dynamic_global_properties(), [&] ( dynamic_global_property_object& dgpo )
     {
       dgpo.smt_creation_fee = asset( 1000, HBD_SYMBOL );
     } );
@@ -1555,7 +1555,7 @@ BOOST_AUTO_TEST_CASE( smt_creation_fee_test )
     set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "2.000 TESTS" ) ) );
 
     // This ensures that our actual smt_creation_fee is sane in production (either HIVE or HBD)
-    const dynamic_global_property_object& dgpo = db->get_dynamic_global_properties();
+    const dynamic_global_property_object& dgpo = db.get_dynamic_global_properties();
     FC_ASSERT( dgpo.smt_creation_fee.symbol == HIVE_SYMBOL || dgpo.smt_creation_fee.symbol == HBD_SYMBOL,
             "Unexpected symbol for the SMT creation fee on the dynamic global properties object: ${s}", ("s", dgpo.smt_creation_fee.symbol) );
 
@@ -1822,7 +1822,7 @@ BOOST_AUTO_TEST_CASE( smt_nai_pool_count )
 
       op.symbol = get_new_smt_symbol( 0, db );
       op.precision = op.symbol.decimals();
-      op.smt_creation_fee = db->get_dynamic_global_properties().smt_creation_fee;
+      op.smt_creation_fee = db.get_dynamic_global_properties().smt_creation_fee;
       op.control_account = "alice";
 
       tx.operations.push_back( op );

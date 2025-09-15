@@ -139,7 +139,7 @@ do {                                                              \
 #define ACTOR(name) \
   PREP_ACTOR(name) \
   const auto& name = account_create(BOOST_PP_STRINGIZE(name), name ## _public_key, name ## _post_key.get_public_key()); \
-  account_id_type name ## _id = name.get_id(); (void)name ## _id;
+  account_id_type name ## _id = name->get_id(); (void)name ## _id;
 
 #define ACTORS_IMPL(r, data, elem) ACTOR(elem)
 #define ACTORS(names) BOOST_PP_SEQ_FOR_EACH(ACTORS_IMPL, ~, names) \
@@ -150,7 +150,7 @@ do {                                                              \
 #define ACTOR_DEFAULT_FEE(name) \
   PREP_ACTOR(name) \
   const auto& name = account_create_default_fee(BOOST_PP_STRINGIZE(name), name ## _public_key, name ## _post_key.get_public_key()); \
-  account_id_type name ## _id = name.get_id(); (void)name ## _id;
+  account_id_type name ## _id = name->get_id(); (void)name ## _id;
 
 #define ACTORS_DEFAULT_FEE_IMPL(r, data, elem) ACTOR_DEFAULT_FEE(elem)
 #define ACTORS_DEFAULT_FEE(names) BOOST_PP_SEQ_FOR_EACH(ACTORS_DEFAULT_FEE_IMPL, ~, names) \
@@ -164,7 +164,7 @@ do {                                                              \
 #define ACTOR_EXT(object, name) \
   PREP_ACTOR_EXT(object, name) \
   const auto& name = object.account_create(BOOST_PP_STRINGIZE(name), name ## _public_key, name ## _post_key.get_public_key()); \
-  account_id_type name ## _id = name.get_id(); (void)name ## _id;
+  account_id_type name ## _id = name->get_id(); (void)name ## _id;
 
 #define ACTORS_EXT_IMPL(r, data, elem) ACTOR_EXT(data, elem)
 #define ACTORS_EXT(object, names) BOOST_PP_SEQ_FOR_EACH(ACTORS_EXT_IMPL, object, names) \
@@ -298,7 +298,7 @@ struct database_fixture {
 
   fc::string get_current_time_iso_string() const;
 
-  const account_object& account_create(
+    account account_create(
     const string& name,
     const string& creator,
     const private_key_type& creator_key,
@@ -308,19 +308,19 @@ struct database_fixture {
     const string& json_metadata
   );
 
-  const account_object& account_create(
+    account account_create(
     const string& name,
     const public_key_type& key,
     const public_key_type& post_key
   );
 
-  const account_object& account_create_default_fee(
+    account account_create_default_fee(
     const string& name,
     const public_key_type& key,
     const public_key_type& post_key
   );
 
-  const account_object& account_create(
+    account account_create(
     const string& name,
     const public_key_type& key
   );

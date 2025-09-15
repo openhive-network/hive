@@ -198,7 +198,7 @@ fc::string database_fixture::get_current_time_iso_string() const
   return current_time.to_iso_string();
 }
 
-const account_object& database_fixture::account_create(
+account database_fixture::account_create(
   const string& name,
   const string& creator,
   const private_key_type& creator_key,
@@ -230,14 +230,12 @@ const account_object& database_fixture::account_create(
       vest( name, asset( fee_remainder, HIVE_SYMBOL ) );
     }
 
-    const account_object& acct = db->get_account( name );
-
-    return acct;
+    return db->get_account( name );
   }
   FC_CAPTURE_AND_RETHROW( (name)(creator) )
 }
 
-const account_object& database_fixture::account_create(
+account database_fixture::account_create(
   const string& name,
   const public_key_type& key,
   const public_key_type& post_key
@@ -257,7 +255,7 @@ const account_object& database_fixture::account_create(
   FC_CAPTURE_AND_RETHROW( (name) );
 }
 
-const account_object& database_fixture::account_create_default_fee(
+account database_fixture::account_create_default_fee(
   const string& name,
   const public_key_type& key,
   const public_key_type& post_key
@@ -277,7 +275,7 @@ const account_object& database_fixture::account_create_default_fee(
   FC_CAPTURE_AND_RETHROW( (name) );
 }
 
-const account_object& database_fixture::account_create(
+account database_fixture::account_create(
   const string& name,
   const public_key_type& key
 )
@@ -416,7 +414,7 @@ void database_fixture::issue_funds(
         } );
       }
 
-      db.modify( db.get_account( account_name ), [&]( account_object& a )
+      db.modify( *db.get_account( account_name ), [&]( account_object& a )
       {
         if( amount.symbol == HIVE_SYMBOL )
           a.set_balance( a.get_balance() + amount );
@@ -966,52 +964,52 @@ uint64_t database_fixture::get_nr_blocks_until_daily_proposal_maintenance_block(
 
 account_id_type database_fixture::get_account_id( const string& account_name )const
 {
-  return db->get_account( account_name ).get_id();
+  return db->get_account( account_name )->get_id();
 }
 
 asset database_fixture::get_balance( const string& account_name )const
 {
-  return db->get_account( account_name ).get_balance();
+  return db->get_account( account_name )->get_balance();
 }
 
 asset database_fixture::get_hbd_balance( const string& account_name )const
 {
-  return db->get_account( account_name ).get_hbd_balance();
+  return db->get_account( account_name )->get_hbd_balance();
 }
 
 asset database_fixture::get_savings( const string& account_name )const
 {
-  return db->get_account( account_name ).get_savings();
+  return db->get_account( account_name )->get_savings();
 }
 
 asset database_fixture::get_hbd_savings( const string& account_name )const
 {
-  return db->get_account( account_name ).get_hbd_savings();
+  return db->get_account( account_name )->get_hbd_savings();
 }
 
 asset database_fixture::get_rewards( const string& account_name )const
 {
-  return db->get_account( account_name ).get_rewards();
+  return db->get_account( account_name )->get_rewards();
 }
 
 asset database_fixture::get_hbd_rewards( const string& account_name )const
 {
-  return db->get_account( account_name ).get_hbd_rewards();
+  return db->get_account( account_name )->get_hbd_rewards();
 }
 
 asset database_fixture::get_vesting( const string& account_name )const
 {
-  return db->get_account( account_name ).get_vesting();
+  return db->get_account( account_name )->get_vesting();
 }
 
 asset database_fixture::get_vest_rewards( const string& account_name )const
 {
-  return db->get_account( account_name ).get_vest_rewards();
+  return db->get_account( account_name )->get_vest_rewards();
 }
 
 asset database_fixture::get_vest_rewards_as_hive( const string& account_name )const
 {
-  return db->get_account( account_name ).get_vest_rewards_as_hive();
+  return db->get_account( account_name )->get_vest_rewards_as_hive();
 }
 
 comment database_fixture::get_comment( const std::string& author, const std::string& permlink )const
@@ -1242,7 +1240,7 @@ void database_fixture::recover_account( const std::string& account_to_recover, c
 
 bool database_fixture::compare_delayed_vote_count( const account_name_type& name, const std::vector<uint64_t>& data_to_compare )
 {
-  const auto& idx = db->get_index< account_index, by_delayed_voting >();
+  const auto& idx = db->get_index< tiny_account_index, by_delayed_voting >();
   for(const auto& usr : idx)
     if(usr.get_name() == name)
     {

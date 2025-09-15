@@ -42,10 +42,10 @@ uint32_t nr_intervals_in_delayed_voting()
   return configuration_data.get_hive_delayed_voting_total_interval_seconds() / configuration_data.get_hive_delayed_voting_interval_seconds();
 }
 
-#define VOTING_POWER( account ) db->get_account( account ).get_governance_vote_power().value
-#define PROXIED_VSF( account ) db->get_account( account ).proxied_vsf_votes_total().value
-#define DELAYED_VOTES( account ) static_cast<int64_t>( db->get_account( account ).get_sum_delayed_votes().value )
-#define CAN_VOTE( account ) db->get_account( account ).can_vote()
+#define VOTING_POWER( account ) db->get_account( account )->get_governance_vote_power().value
+#define PROXIED_VSF( account ) db->get_account( account )->proxied_vsf_votes_total().value
+#define DELAYED_VOTES( account ) static_cast<int64_t>( db->get_account( account )->get_sum_delayed_votes().value )
+#define CAN_VOTE( account ) db->get_account( account )->can_vote()
 
 namespace
 {
@@ -284,7 +284,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
 
     auto fill = [ this ]( proxy_data& proxy, const std::string& account_name, size_t nr_interval, size_t seconds )
     {
-      auto dq = db->get_account( account_name ).get_delayed_votes();
+      auto dq = db->get_account( account_name )->get_delayed_votes();
 
       fc::optional< size_t > idx = get_position_in_delayed_voting_array( dq, nr_interval, seconds );
       if( !idx.valid() )
@@ -300,7 +300,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
 
     auto cmp = [ this ]( proxy_data& proxy, const std::string& account_name, size_t val, size_t nr_interval, size_t seconds )
     {
-      auto dq = db->get_account( account_name ).get_delayed_votes();
+      auto dq = db->get_account( account_name )->get_delayed_votes();
 
       fc::optional< size_t > idx = get_position_in_delayed_voting_array( dq, nr_interval, seconds );
       if( !idx.valid() )
@@ -1319,14 +1319,14 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_06 )
         const uint64_t pre_size{ withdraw_items->size() };
         for(int j = 0; j < 10; j++)
         {
-          dv.add_delayed_value( db->get_account( item ), start_time + fc::days(1), 10'000 );
+          dv.add_delayed_value( *db->get_account( item ), start_time + fc::days(1), 10'000 );
           start_time = move_forward_with_update( fc::days( 1 ), withdraw_items );
 
           const bool withdraw_executor = cnt == accs.size() - 1;
-          dv.add_votes( withdraw_items, withdraw_executor, 10'000, db->get_account( item ) );
+          dv.add_votes( withdraw_items, withdraw_executor, 10'000, *db->get_account( item ) );
 
           if( withdraw_executor )
-            dv.add_votes( withdraw_items, withdraw_executor, -10'000, db->get_account( item ) );
+            dv.add_votes( withdraw_items, withdraw_executor, -10'000, *db->get_account( item ) );
           
           BOOST_REQUIRE( i == 0 || pre_size == withdraw_items->size());
         }
@@ -1383,13 +1383,13 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_05 )
         size_t cnt = 0;
         for( auto& item : accs )
         {
-          dv.add_delayed_value( db->get_account( item ), start_time + fc::days(1), 10'000 );
+          dv.add_delayed_value( *db->get_account( item ), start_time + fc::days(1), 10'000 );
 
           const bool withdraw_executor = cnt == accs.size() - 1;
-          dv.add_votes( withdraw_items, withdraw_executor, 10'000, db->get_account( item ) );
+          dv.add_votes( withdraw_items, withdraw_executor, 10'000, *db->get_account( item ) );
 
           if( withdraw_executor )
-            dv.add_votes( withdraw_items, withdraw_executor, -10'000, db->get_account( item ) );
+            dv.add_votes( withdraw_items, withdraw_executor, -10'000, *db->get_account( item ) );
           ++cnt;
         }
         start_time = move_forward_with_update( fc::days( 1 ), withdraw_items );
@@ -1543,7 +1543,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_04 )
       for( uint32_t i = 0; i < 36; ++i )
       {
         for( auto& item : accs )
-          dv.add_delayed_value( db->get_account( item ), start_time + fc::hours( i ), ( i + 1 ) * 1'000'000/*milion*/ );
+          dv.add_delayed_value( *db->get_account( item ), start_time + fc::hours( i ), ( i + 1 ) * 1'000'000/*milion*/ );
       }
 
       move_forward( fc::days( 4 ) );
@@ -1556,10 +1556,10 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_04 )
       {
         bool withdraw_executor = cnt == accs.size() - 1;
 
-        dv.add_votes( withdraw_items, withdraw_executor, ( cnt + 1 ) * 10, db->get_account( item ) );
+        dv.add_votes( withdraw_items, withdraw_executor, ( cnt + 1 ) * 10, *db->get_account( item ) );
 
         if( withdraw_executor )
-          dv.add_votes( withdraw_items, withdraw_executor, -8888, db->get_account( item ) );
+          dv.add_votes( withdraw_items, withdraw_executor, -8888, *db->get_account( item ) );
 
         ++cnt;
       }
@@ -1621,63 +1621,63 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_02 )
 
   fc::time_point_sec time = db->head_block_time() + fc::minutes( 5 );
 
-  auto& __alice = db->get_account( "alice" );
-  auto alice_dv = __alice.get_delayed_votes();
-  auto alice_sum = __alice.get_sum_delayed_votes();
+  auto __alice = db->get_account( "alice" );
+  auto alice_dv = __alice->get_delayed_votes();
+  auto alice_sum = __alice->get_sum_delayed_votes();
 
-  auto& __bob = db->get_account( "bob" );
-  auto bob_dv = __bob.get_delayed_votes();
-  auto bob_sum = __bob.get_sum_delayed_votes();
+  auto __bob = db->get_account( "bob" );
+  auto bob_dv = __bob->get_delayed_votes();
+  auto bob_sum = __bob->get_sum_delayed_votes();
 
   {
     delayed_voting::opt_votes_update_data_items _items;
     dv.update_votes( _items, time );
-    auto& _alice = db->get_account( "alice" );
-    BOOST_REQUIRE( vcmp( { { alice_dv[0].time, alice_dv[0].val } }, _alice.get_delayed_votes() ) );
-    BOOST_REQUIRE( alice_sum == _alice.get_sum_delayed_votes() );
+    auto _alice = db->get_account( "alice" );
+    BOOST_REQUIRE( vcmp( { { alice_dv[0].time, alice_dv[0].val } }, _alice->get_delayed_votes() ) );
+    BOOST_REQUIRE( alice_sum == _alice->get_sum_delayed_votes() );
   }
   {
     dv.update_votes( items, time );
-    auto& _alice = db->get_account( "alice" );
-    BOOST_REQUIRE( vcmp( { { alice_dv[0].time, alice_dv[0].val } }, _alice.get_delayed_votes() ) );
-    BOOST_REQUIRE( alice_sum == _alice.get_sum_delayed_votes() );
+    auto _alice = db->get_account( "alice" );
+    BOOST_REQUIRE( vcmp( { { alice_dv[0].time, alice_dv[0].val } }, _alice->get_delayed_votes() ) );
+    BOOST_REQUIRE( alice_sum == _alice->get_sum_delayed_votes() );
   }
   {
-    dv.add_votes( items, false/*withdraw_executor*/, 0/*val*/, db->get_account( "alice" ) );
+    dv.add_votes( items, false/*withdraw_executor*/, 0/*val*/, *db->get_account( "alice" ) );
     dv.update_votes( items, time );
-    auto& _alice = db->get_account( "alice" );
-    BOOST_REQUIRE( vcmp( { { alice_dv[0].time, alice_dv[0].val } }, _alice.get_delayed_votes() ) );
-    BOOST_REQUIRE( alice_sum == _alice.get_sum_delayed_votes() );
+    auto _alice = db->get_account( "alice" );
+    BOOST_REQUIRE( vcmp( { { alice_dv[0].time, alice_dv[0].val } }, _alice->get_delayed_votes() ) );
+    BOOST_REQUIRE( alice_sum == _alice->get_sum_delayed_votes() );
   }
   {
-    dv.add_votes( items, false/*withdraw_executor*/, -5/*val*/, db->get_account( "alice" ) );
+    dv.add_votes( items, false/*withdraw_executor*/, -5/*val*/, *db->get_account( "alice" ) );
     //delayed_voting_messages::incorrect_votes_update
     HIVE_REQUIRE_THROW( dv.update_votes( items, time ), fc::exception );
     items->clear();
 
-    dv.add_votes( items, true/*withdraw_executor*/, 1/*val*/, db->get_account( "alice" ) );
+    dv.add_votes( items, true/*withdraw_executor*/, 1/*val*/, *db->get_account( "alice" ) );
     //delayed_voting_messages::incorrect_votes_update
     HIVE_REQUIRE_THROW( dv.update_votes( items, time ), fc::exception );
     items->clear();
   }
   {
-    auto& alice = db->get_account( "alice" );
-    auto& bob = db->get_account( "bob" );
+    auto alice = db->get_account( "alice" );
+    auto bob = db->get_account( "bob" );
 
-    dv.add_delayed_value( alice, time, 70 );
-    dv.add_delayed_value( bob, time, 88 );
+    dv.add_delayed_value( *alice, time, 70 );
+    dv.add_delayed_value( *bob, time, 88 );
 
-    dv.add_votes( items, false/*withdraw_executor*/, 7/*val*/, db->get_account( "alice" ) );
-    dv.add_votes( items, true/*withdraw_executor*/, -8/*val*/, db->get_account( "bob" ) );
+    dv.add_votes( items, false/*withdraw_executor*/, 7/*val*/, *db->get_account( "alice" ) );
+    dv.add_votes( items, true/*withdraw_executor*/, -8/*val*/, *db->get_account( "bob" ) );
     dv.update_votes( items, time );
 
-    auto& alice2 = db->get_account( "alice" );
-    BOOST_REQUIRE( vcmp( { { alice_dv[0].time, alice_dv[0].val + 70 + 7 } }, alice2.get_delayed_votes() ) );
-    BOOST_REQUIRE( alice_sum + 70 + 7 == alice2.get_sum_delayed_votes() );
+    auto alice2 = db->get_account( "alice" );
+    BOOST_REQUIRE( vcmp( { { alice_dv[0].time, alice_dv[0].val + 70 + 7 } }, alice2->get_delayed_votes() ) );
+    BOOST_REQUIRE( alice_sum + 70 + 7 == alice2->get_sum_delayed_votes() );
 
-    auto& bob2 = db->get_account( "bob" );
-    BOOST_REQUIRE( vcmp( { { bob_dv[0].time, bob_dv[0].val + 88 - 8 } }, bob2.get_delayed_votes() ) );
-    BOOST_REQUIRE( bob_sum + 88 - 8 == bob2.get_sum_delayed_votes() );
+    auto bob2 = db->get_account( "bob" );
+    BOOST_REQUIRE( vcmp( { { bob_dv[0].time, bob_dv[0].val + 88 - 8 } }, bob2->get_delayed_votes() ) );
+    BOOST_REQUIRE( bob_sum + 88 - 8 == bob2->get_sum_delayed_votes() );
   }
 
 }
@@ -1695,7 +1695,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_01 )
   */
   delayed_voting::opt_votes_update_data_items items = delayed_voting::votes_update_data_items();
 
-  auto cmp = [ &items, this ]( bool withdraw_executor, int64_t val, const account_object& obj )
+  auto cmp = [ &items, this ]( bool withdraw_executor, int64_t val, const auto& obj )
   {
     return check_collection( items, withdraw_executor, val, obj );
   };
@@ -1704,9 +1704,9 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_01 )
 
   ACTORS( (alice)(bob)(celine) )
 
-  std::array< const account_object*, 3 > accs{ &db->get_account( "alice" ),
-                                &db->get_account( "bob" ),
-                                &db->get_account( "celine" )
+  std::array< const account_object*, 3 > accs{ &( *db->get_account( "alice" ) ),
+                                &( *db->get_account( "bob" ) ),
+                                &( *db->get_account( "celine" ) )
                                 };
 
   delayed_voting dv = delayed_voting( *db );

@@ -388,7 +388,7 @@ time_point_sec delayed_vote_database_fixture::move_forward_with_update( const fc
   for(const auto& var : tmp)
   {
     auto x = var.second;
-    x.account = &db->get_account(var.first);
+    x.account = &( *db->get_account(var.first) );
     items->insert(x);
   }
 

@@ -379,7 +379,7 @@ BOOST_AUTO_TEST_CASE( switch_forks_undo_create )
     auto b = GENERATE_BLOCK( bp1, db1.get_slot_time(1), db1.get_scheduled_witness(1),
       init_account_priv_key, database::skip_nothing );
 
-    auto alice_id = db1.get_account( "alice" ).get_id();
+    auto alice_id = db1.get_account( "alice" )->get_id();
     BOOST_CHECK( db1.get(alice_id).get_name() == "alice" );
 
     b = GENERATE_BLOCK( bp2, db2.get_slot_time(1), db2.get_scheduled_witness(1),
@@ -871,7 +871,7 @@ BOOST_FIXTURE_TEST_CASE( optional_tapos, clean_database_fixture )
 {
   try
   {
-    idump((db->get_account("initminer")));
+    idump((*db->get_account("initminer")));
     ACTORS( (alice)(bob) );
 
     generate_block();

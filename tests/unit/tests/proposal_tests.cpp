@@ -184,28 +184,28 @@ BOOST_AUTO_TEST_CASE( inactive_proposals_have_votes )
     auto old_hbd_supply = dgpo.current_hbd_supply;
 
 
-    const account_object& _creator = db->get_account( creator );
-    const account_object& _receiver = db->get_account( receiver );
-    const account_object& _voter_01 = db->get_account( voter_01 );
-    const account_object& _treasury = db->get_treasury();
+    const auto& _creator = db->get_account( creator );
+    const auto& _receiver = db->get_account( receiver );
+    const auto& _voter_01 = db->get_account( voter_01 );
+    const auto& _treasury = db->get_treasury();
 
     {
       BOOST_TEST_MESSAGE( "---Payment---" );
 
-      auto before_creator_hbd_balance = _creator.get_hbd_balance();
-      auto before_receiver_hbd_balance = _receiver.get_hbd_balance();
-      auto before_voter_01_hbd_balance = _voter_01.get_hbd_balance();
-      auto before_treasury_hbd_balance = _treasury.get_hbd_balance();
+      auto before_creator_hbd_balance = _creator->get_hbd_balance();
+      auto before_receiver_hbd_balance = _receiver->get_hbd_balance();
+      auto before_voter_01_hbd_balance = _voter_01->get_hbd_balance();
+      auto before_treasury_hbd_balance = _treasury->get_hbd_balance();
 
       auto next_block = get_nr_blocks_until_proposal_maintenance_block();
       generate_blocks( next_block - 1 );
       generate_block();
 
       auto treasury_hbd_inflation = dgpo.current_hbd_supply - old_hbd_supply;
-      auto after_creator_hbd_balance = _creator.get_hbd_balance();
-      auto after_receiver_hbd_balance = _receiver.get_hbd_balance();
-      auto after_voter_01_hbd_balance = _voter_01.get_hbd_balance();
-      auto after_treasury_hbd_balance = _treasury.get_hbd_balance();
+      auto after_creator_hbd_balance = _creator->get_hbd_balance();
+      auto after_receiver_hbd_balance = _receiver->get_hbd_balance();
+      auto after_voter_01_hbd_balance = _voter_01->get_hbd_balance();
+      auto after_treasury_hbd_balance = _treasury->get_hbd_balance();
 
       BOOST_REQUIRE( before_creator_hbd_balance == after_creator_hbd_balance );
       BOOST_REQUIRE( before_receiver_hbd_balance == after_receiver_hbd_balance - hourly_pay );
@@ -336,32 +336,32 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
     generate_days_blocks(25);
     proxy("acc6", "pxy", acc6_private_key); //51 days before HF25
     {
-      time_point_sec acc_6_vote_expiration_ts_before_proxy_action = db->get_account( "acc6" ).get_governance_vote_expiration_ts();
+      time_point_sec acc_6_vote_expiration_ts_before_proxy_action = db->get_account( "acc6" )->get_governance_vote_expiration_ts();
       //being set as someone's proxy does not affect expiration
-      BOOST_REQUIRE( db->get_account( "pxy" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum() );
+      BOOST_REQUIRE( db->get_account( "pxy" )->get_governance_vote_expiration_ts() == fc::time_point_sec::maximum() );
       generate_days_blocks(25);
       witness_vote("pxy", "accw2", pxy_private_key); //26 days before HF25
-      time_point_sec acc_6_vote_expiration_ts_after_proxy_action = db->get_account( "acc6" ).get_governance_vote_expiration_ts();
+      time_point_sec acc_6_vote_expiration_ts_after_proxy_action = db->get_account( "acc6" )->get_governance_vote_expiration_ts();
       //governance action on a proxy does not affect expiration on account that uses that proxy...
       BOOST_REQUIRE( acc_6_vote_expiration_ts_before_proxy_action == acc_6_vote_expiration_ts_after_proxy_action );
       proxy("acc6", "", acc6_private_key); //26 days before HF25
-      time_point_sec acc_6_vote_expiration_ts_after_proxy_removal = db->get_account( "acc6" ).get_governance_vote_expiration_ts();
+      time_point_sec acc_6_vote_expiration_ts_after_proxy_removal = db->get_account( "acc6" )->get_governance_vote_expiration_ts();
       //...but clearing proxy does
-      BOOST_REQUIRE( acc_6_vote_expiration_ts_after_proxy_removal == db->get_account( "pxy" ).get_governance_vote_expiration_ts() );
+      BOOST_REQUIRE( acc_6_vote_expiration_ts_after_proxy_removal == db->get_account( "pxy" )->get_governance_vote_expiration_ts() );
     }
     //unvoting proposal (even the one that the account did not vote for before) also resets expiration (same with witness, but you can't unvote witness you didn't vote for)
     vote_proposal("acc7", {proposal_2}, false, acc7_private_key); //26 days before HF25
     generate_block();
 
     {
-      time_point_sec acc_1_vote_expiration_ts = db->get_account( "acc1" ).get_governance_vote_expiration_ts();
-      time_point_sec acc_2_vote_expiration_ts = db->get_account( "acc2" ).get_governance_vote_expiration_ts();
-      time_point_sec acc_3_vote_expiration_ts = db->get_account( "acc3" ).get_governance_vote_expiration_ts();
-      time_point_sec acc_4_vote_expiration_ts = db->get_account( "acc4" ).get_governance_vote_expiration_ts();
-      time_point_sec acc_5_vote_expiration_ts = db->get_account( "acc5" ).get_governance_vote_expiration_ts();
-      time_point_sec acc_6_vote_expiration_ts = db->get_account( "acc6" ).get_governance_vote_expiration_ts();
-      time_point_sec acc_7_vote_expiration_ts = db->get_account( "acc7" ).get_governance_vote_expiration_ts();
-      time_point_sec pxy_vote_expiration_ts   = db->get_account( "pxy" ).get_governance_vote_expiration_ts();
+      time_point_sec acc_1_vote_expiration_ts = db->get_account( "acc1" )->get_governance_vote_expiration_ts();
+      time_point_sec acc_2_vote_expiration_ts = db->get_account( "acc2" )->get_governance_vote_expiration_ts();
+      time_point_sec acc_3_vote_expiration_ts = db->get_account( "acc3" )->get_governance_vote_expiration_ts();
+      time_point_sec acc_4_vote_expiration_ts = db->get_account( "acc4" )->get_governance_vote_expiration_ts();
+      time_point_sec acc_5_vote_expiration_ts = db->get_account( "acc5" )->get_governance_vote_expiration_ts();
+      time_point_sec acc_6_vote_expiration_ts = db->get_account( "acc6" )->get_governance_vote_expiration_ts();
+      time_point_sec acc_7_vote_expiration_ts = db->get_account( "acc7" )->get_governance_vote_expiration_ts();
+      time_point_sec pxy_vote_expiration_ts   = db->get_account( "pxy" )->get_governance_vote_expiration_ts();
 
       BOOST_REQUIRE(acc_1_vote_expiration_ts > HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP && acc_1_vote_expiration_ts <= LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS);
       BOOST_REQUIRE(acc_2_vote_expiration_ts > HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP && acc_2_vote_expiration_ts <= LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS);
@@ -389,14 +389,14 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
     generate_blocks(LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS);
 
     {
-      BOOST_REQUIRE(db->get_account( "acc1" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc2" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc3" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc4" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc5" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc6" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc7" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc8" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc1" )->get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc2" )->get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc3" )->get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc4" )->get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc5" )->get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc6" )->get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc7" )->get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc8" )->get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
 
       const auto& witness_votes = db->get_index<witness_vote_index, by_account_witness>();
       BOOST_REQUIRE(witness_votes.empty());
@@ -422,14 +422,14 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
     generate_blocks( expected_expiration_time - fc::seconds( HIVE_BLOCK_INTERVAL ) );
 
     {
-      BOOST_REQUIRE(db->get_account( "acc1" ).get_governance_vote_expiration_ts() == expected_expiration_time);
-      BOOST_REQUIRE(db->get_account( "acc2" ).get_governance_vote_expiration_ts() == expected_expiration_time);
-      BOOST_REQUIRE(db->get_account( "acc3" ).get_governance_vote_expiration_ts() == expected_expiration_time_2);
-      BOOST_REQUIRE(db->get_account( "acc4" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc5" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc6" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc7" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc8" ).get_governance_vote_expiration_ts() == expected_expiration_time_2 + fc::days(1));
+      BOOST_REQUIRE(db->get_account( "acc1" )->get_governance_vote_expiration_ts() == expected_expiration_time);
+      BOOST_REQUIRE(db->get_account( "acc2" )->get_governance_vote_expiration_ts() == expected_expiration_time);
+      BOOST_REQUIRE(db->get_account( "acc3" )->get_governance_vote_expiration_ts() == expected_expiration_time_2);
+      BOOST_REQUIRE(db->get_account( "acc4" )->get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc5" )->get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc6" )->get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc7" )->get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc8" )->get_governance_vote_expiration_ts() == expected_expiration_time_2 + fc::days(1));
 
       const auto& witness_votes = db->get_index<witness_vote_index, by_account_witness>();
       BOOST_REQUIRE(witness_votes.count("acc1") == 2);
@@ -442,15 +442,15 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
     }
     generate_block();
     {
-      BOOST_REQUIRE(db->get_account( "acc1" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc2" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc3" ).get_governance_vote_expiration_ts() == expected_expiration_time_2);
-      BOOST_REQUIRE(db->get_account( "acc8" ).get_governance_vote_expiration_ts() == expected_expiration_time_2 + fc::days(1));
+      BOOST_REQUIRE(db->get_account( "acc1" )->get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc2" )->get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc3" )->get_governance_vote_expiration_ts() == expected_expiration_time_2);
+      BOOST_REQUIRE(db->get_account( "acc8" )->get_governance_vote_expiration_ts() == expected_expiration_time_2 + fc::days(1));
     }
     generate_block();
     {
-      BOOST_REQUIRE(db->get_account( "acc3" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc8" ).get_governance_vote_expiration_ts() == expected_expiration_time_2 + fc::days(1));
+      BOOST_REQUIRE(db->get_account( "acc3" )->get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc8" )->get_governance_vote_expiration_ts() == expected_expiration_time_2 + fc::days(1));
 
       const auto& witness_votes = db->get_index<witness_vote_index,by_account_witness>();
       BOOST_REQUIRE(witness_votes.count("acc8") == 1);
@@ -458,7 +458,7 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
     }
     generate_days_blocks(1, false);
     {
-      BOOST_REQUIRE(db->get_account( "acc8" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc8" )->get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
       const auto& witness_votes = db->get_index<witness_vote_index,by_account_witness>();
       BOOST_REQUIRE(witness_votes.empty());
     }
@@ -485,14 +485,14 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
     generate_blocks( expected_expiration_time - fc::seconds( HIVE_BLOCK_INTERVAL ) );
 
     {
-      BOOST_REQUIRE(db->get_account( "acc1" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc2" ).get_governance_vote_expiration_ts() == expected_expiration_time_2);
-      BOOST_REQUIRE(db->get_account( "acc3" ).get_governance_vote_expiration_ts() == expected_expiration_time);
-      BOOST_REQUIRE(db->get_account( "acc4" ).get_governance_vote_expiration_ts() == expected_expiration_time);
-      BOOST_REQUIRE(db->get_account( "acc5" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc6" ).get_governance_vote_expiration_ts() == expected_expiration_time_2);
-      BOOST_REQUIRE(db->get_account( "acc7" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc8" ).get_governance_vote_expiration_ts() == expected_expiration_time_2 + fc::days(1));
+      BOOST_REQUIRE(db->get_account( "acc1" )->get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc2" )->get_governance_vote_expiration_ts() == expected_expiration_time_2);
+      BOOST_REQUIRE(db->get_account( "acc3" )->get_governance_vote_expiration_ts() == expected_expiration_time);
+      BOOST_REQUIRE(db->get_account( "acc4" )->get_governance_vote_expiration_ts() == expected_expiration_time);
+      BOOST_REQUIRE(db->get_account( "acc5" )->get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc6" )->get_governance_vote_expiration_ts() == expected_expiration_time_2);
+      BOOST_REQUIRE(db->get_account( "acc7" )->get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc8" )->get_governance_vote_expiration_ts() == expected_expiration_time_2 + fc::days(1));
 
       const auto& witness_votes = db->get_index<witness_vote_index, by_account_witness>();
       BOOST_REQUIRE(witness_votes.empty());
@@ -505,17 +505,17 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
     }
     generate_block();
     {
-      BOOST_REQUIRE(db->get_account( "acc2" ).get_governance_vote_expiration_ts() == expected_expiration_time_2);
-      BOOST_REQUIRE(db->get_account( "acc3" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc4" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc6" ).get_governance_vote_expiration_ts() == expected_expiration_time_2);
-      BOOST_REQUIRE(db->get_account( "acc8" ).get_governance_vote_expiration_ts() == expected_expiration_time_2 + fc::days(1));
+      BOOST_REQUIRE(db->get_account( "acc2" )->get_governance_vote_expiration_ts() == expected_expiration_time_2);
+      BOOST_REQUIRE(db->get_account( "acc3" )->get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc4" )->get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc6" )->get_governance_vote_expiration_ts() == expected_expiration_time_2);
+      BOOST_REQUIRE(db->get_account( "acc8" )->get_governance_vote_expiration_ts() == expected_expiration_time_2 + fc::days(1));
     }
     generate_block();
     {
-      BOOST_REQUIRE(db->get_account( "acc2" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc6" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc8" ).get_governance_vote_expiration_ts() == expected_expiration_time_2 + fc::days(1));
+      BOOST_REQUIRE(db->get_account( "acc2" )->get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc6" )->get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc8" )->get_governance_vote_expiration_ts() == expected_expiration_time_2 + fc::days(1));
 
       const auto& proposal_votes = db->get_index<proposal_vote_index, by_voter_proposal>();
       BOOST_REQUIRE(proposal_votes.count("acc8") == 1);
@@ -523,7 +523,7 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
     }
     generate_days_blocks(1, false);
     {
-      BOOST_REQUIRE(db->get_account( "acc8" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc8" )->get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
       const auto& proposal_votes = db->get_index<proposal_vote_index, by_voter_proposal>();
       BOOST_REQUIRE(proposal_votes.empty());
     }
@@ -542,14 +542,14 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
     generate_blocks( expected_expiration_time - fc::seconds( HIVE_BLOCK_INTERVAL ) );
 
     {
-      BOOST_REQUIRE(db->get_account( "acc1" ).get_governance_vote_expiration_ts() == expected_expiration_time);
-      BOOST_REQUIRE(db->get_account( "acc2" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc3" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc4" ).get_governance_vote_expiration_ts() == expected_expiration_time);
-      BOOST_REQUIRE(db->get_account( "acc5" ).get_governance_vote_expiration_ts() == expected_expiration_time);
-      BOOST_REQUIRE(db->get_account( "acc6" ).get_governance_vote_expiration_ts() == expected_expiration_time);
-      BOOST_REQUIRE(db->get_account( "acc7" ).get_governance_vote_expiration_ts() == expected_expiration_time);
-      BOOST_REQUIRE(db->get_account( "acc8" ).get_governance_vote_expiration_ts() == expected_expiration_time);
+      BOOST_REQUIRE(db->get_account( "acc1" )->get_governance_vote_expiration_ts() == expected_expiration_time);
+      BOOST_REQUIRE(db->get_account( "acc2" )->get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc3" )->get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc4" )->get_governance_vote_expiration_ts() == expected_expiration_time);
+      BOOST_REQUIRE(db->get_account( "acc5" )->get_governance_vote_expiration_ts() == expected_expiration_time);
+      BOOST_REQUIRE(db->get_account( "acc6" )->get_governance_vote_expiration_ts() == expected_expiration_time);
+      BOOST_REQUIRE(db->get_account( "acc7" )->get_governance_vote_expiration_ts() == expected_expiration_time);
+      BOOST_REQUIRE(db->get_account( "acc8" )->get_governance_vote_expiration_ts() == expected_expiration_time);
 
       const auto& witness_votes = db->get_index<witness_vote_index, by_account_witness>();
       BOOST_REQUIRE(witness_votes.count("acc1") == 1);
@@ -575,14 +575,14 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
     }
     generate_block();
     {
-      BOOST_REQUIRE(db->get_account( "acc1" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc2" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc3" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc4" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc5" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc6" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc7" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc8" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc1" )->get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc2" )->get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc3" )->get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc4" )->get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc5" )->get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc6" )->get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc7" )->get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE(db->get_account( "acc8" )->get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
 
       const auto& witness_votes = db->get_index<witness_vote_index, by_account_witness>();
       BOOST_REQUIRE(witness_votes.empty());
@@ -599,16 +599,16 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
       BOOST_REQUIRE(last_operations[4].get<expired_account_notification_operation>().account == "acc4");
       BOOST_REQUIRE(last_operations[5].get<expired_account_notification_operation>().account == "acc1");
 
-      BOOST_REQUIRE(db->get_account( "acc1" ).get_witnesses_voted_for() == 0);
-      BOOST_REQUIRE(db->get_account( "acc2" ).get_witnesses_voted_for() == 0);
-      BOOST_REQUIRE(db->get_account( "acc3" ).get_witnesses_voted_for() == 0);
-      BOOST_REQUIRE(db->get_account( "acc4" ).get_witnesses_voted_for() == 0);
-      BOOST_REQUIRE(db->get_account( "acc5" ).get_witnesses_voted_for() == 0);
-      BOOST_REQUIRE(db->get_account( "acc6" ).get_witnesses_voted_for() == 0);
-      BOOST_REQUIRE(db->get_account( "acc7" ).get_witnesses_voted_for() == 0);
-      BOOST_REQUIRE(db->get_account( "acc8" ).get_witnesses_voted_for() == 0);
+      BOOST_REQUIRE(db->get_account( "acc1" )->get_witnesses_voted_for() == 0);
+      BOOST_REQUIRE(db->get_account( "acc2" )->get_witnesses_voted_for() == 0);
+      BOOST_REQUIRE(db->get_account( "acc3" )->get_witnesses_voted_for() == 0);
+      BOOST_REQUIRE(db->get_account( "acc4" )->get_witnesses_voted_for() == 0);
+      BOOST_REQUIRE(db->get_account( "acc5" )->get_witnesses_voted_for() == 0);
+      BOOST_REQUIRE(db->get_account( "acc6" )->get_witnesses_voted_for() == 0);
+      BOOST_REQUIRE(db->get_account( "acc7" )->get_witnesses_voted_for() == 0);
+      BOOST_REQUIRE(db->get_account( "acc8" )->get_witnesses_voted_for() == 0);
 
-      time_point_sec first_expiring_ts = db->get_index<account_index, by_governance_vote_expiration_ts>().begin()->get_governance_vote_expiration_ts();
+      time_point_sec first_expiring_ts = db->get_index<tiny_account_index, by_governance_vote_expiration_ts>().begin()->get_governance_vote_expiration_ts();
       BOOST_REQUIRE(first_expiring_ts == fc::time_point_sec::maximum());
     }
 
@@ -622,12 +622,12 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
     proxy("acc1", "acc2", acc1_private_key);
 
     generate_blocks(2);
-    BOOST_REQUIRE(!db->get_account("acc3").has_proxy());
-    BOOST_REQUIRE(!db->get_account("acc4").has_proxy());
-    BOOST_REQUIRE(db->get_account("acc5").get_proxy() == db->get_account("acc1").get_id());
-    BOOST_REQUIRE(db->get_account("acc1").get_proxy() == db->get_account("acc2").get_id());
-    BOOST_REQUIRE(db->get_account("acc1").proxied_vsf_votes_total() == db->get_account("acc5").get_direct_governance_vote_power());
-    BOOST_REQUIRE(db->get_account("acc2").proxied_vsf_votes_total() == (db->get_account("acc1").get_direct_governance_vote_power() + db->get_account("acc5").get_direct_governance_vote_power()));
+    BOOST_REQUIRE(!db->get_account("acc3")->has_proxy());
+    BOOST_REQUIRE(!db->get_account("acc4")->has_proxy());
+    BOOST_REQUIRE(db->get_account("acc5")->get_proxy() == db->get_account("acc1")->get_id());
+    BOOST_REQUIRE(db->get_account("acc1")->get_proxy() == db->get_account("acc2")->get_id());
+    BOOST_REQUIRE(db->get_account("acc1")->proxied_vsf_votes_total() == db->get_account("acc5")->get_direct_governance_vote_power());
+    BOOST_REQUIRE(db->get_account("acc2")->proxied_vsf_votes_total() == (db->get_account("acc1")->get_direct_governance_vote_power() + db->get_account("acc5")->get_direct_governance_vote_power()));
 
     validate_database();
   }
@@ -712,8 +712,8 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes_with_proxy )
       BOOST_REQUIRE_EQUAL( calc_total_votes( _proposal_idx, _id_proposal_01 ), get_vesting( "bobproxy" ).amount.value + get_vesting( "carol" ).amount.value );
     }
     {
-      BOOST_REQUIRE( db->get_account( "alice" ).get_governance_vote_expiration_ts() != fc::time_point_sec::maximum() );
-      BOOST_REQUIRE( db->get_account( "bobproxy" ).get_governance_vote_expiration_ts() != fc::time_point_sec::maximum() );
+      BOOST_REQUIRE( db->get_account( "alice" )->get_governance_vote_expiration_ts() != fc::time_point_sec::maximum() );
+      BOOST_REQUIRE( db->get_account( "bobproxy" )->get_governance_vote_expiration_ts() != fc::time_point_sec::maximum() );
     }
     {
       generate_blocks( LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS );
@@ -727,8 +727,8 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes_with_proxy )
       BOOST_REQUIRE_EQUAL( calc_total_votes( _proposal_idx, _id_proposal_01 ), get_vesting( "bobproxy" ).amount.value + get_vesting( "carol" ).amount.value );
     }
     {
-      BOOST_REQUIRE( db->get_account( "alice" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum() );
-      BOOST_REQUIRE( db->get_account( "bobproxy" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum() );
+      BOOST_REQUIRE( db->get_account( "alice" )->get_governance_vote_expiration_ts() == fc::time_point_sec::maximum() );
+      BOOST_REQUIRE( db->get_account( "bobproxy" )->get_governance_vote_expiration_ts() == fc::time_point_sec::maximum() );
     }
     {
       auto _next_block = get_nr_blocks_until_proposal_maintenance_block();
@@ -780,7 +780,7 @@ BOOST_AUTO_TEST_CASE( proposals_with_decline_voting_rights )
       tx.operations.push_back( op );
       push_transaction( tx, dwr_private_key );
       generate_block();
-      time_point_sec dwr_vote_expiration_ts = db->get_account( "dwr" ).get_governance_vote_expiration_ts();
+      time_point_sec dwr_vote_expiration_ts = db->get_account( "dwr" )->get_governance_vote_expiration_ts();
       //it takes only 60 seconds in testnet to finish declining, but it is not finished yet
       BOOST_REQUIRE( dwr_vote_expiration_ts > HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP && dwr_vote_expiration_ts <= LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS );
     }
@@ -788,9 +788,9 @@ BOOST_AUTO_TEST_CASE( proposals_with_decline_voting_rights )
     //TODO: check balance of acc1 (0) and acc2 (50 days worth of proposal pay, maybe more if it caught one more payout before decline finalized)
 
     //at this point dwr successfully declined voting rights (long ago) - his expiration should be set in stone even if he tries to clear his (nonexisting) votes
-    BOOST_REQUIRE( db->get_account( "dwr" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum() );
+    BOOST_REQUIRE( db->get_account( "dwr" )->get_governance_vote_expiration_ts() == fc::time_point_sec::maximum() );
     vote_proposal( "dwr", { proposal_2 }, false, dwr_private_key );
-    BOOST_REQUIRE( db->get_account( "dwr" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum() );
+    BOOST_REQUIRE( db->get_account( "dwr" )->get_governance_vote_expiration_ts() == fc::time_point_sec::maximum() );
     //TODO: decide if finalization of decline should remove existing proposal votes (and if so add tests on number of active votes)
 
     generate_blocks( LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS );
@@ -798,7 +798,7 @@ BOOST_AUTO_TEST_CASE( proposals_with_decline_voting_rights )
 
     generate_days_blocks( 25 );
     //TODO: check balance of acc1 and acc2 (no change since last time)
-    BOOST_REQUIRE( db->get_account( "dwr" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum() );
+    BOOST_REQUIRE( db->get_account( "dwr" )->get_governance_vote_expiration_ts() == fc::time_point_sec::maximum() );
 
     validate_database();
   }
@@ -858,7 +858,7 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes_threshold_exceeded )
 
     const auto& proposal_vote_idx = db->get_index< proposal_vote_index, by_id >();
     const auto& witness_vote_idx = db->get_index< witness_vote_index, by_id >();
-    const auto& account_idx = db->get_index<account_index, by_governance_vote_expiration_ts>();
+    const auto& account_idx = db->get_index<tiny_account_index, by_governance_vote_expiration_ts>();
 
     const fc::time_point_sec LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS = HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP + HIVE_HARDFORK_1_25_MAX_OLD_GOVERNANCE_VOTE_EXPIRE_SHIFT;
     generate_blocks(LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS);
@@ -1090,28 +1090,28 @@ BOOST_AUTO_TEST_CASE( generating_payments )
     auto old_hbd_supply = dgpo.get_current_hbd_supply();
 
 
-    const account_object& _creator = db->get_account( creator );
-    const account_object& _receiver = db->get_account( receiver );
-    const account_object& _voter_01 = db->get_account( voter_01 );
-    const account_object& _treasury = db->get_treasury();
+    const auto& _creator = db->get_account( creator );
+    const auto& _receiver = db->get_account( receiver );
+    const auto& _voter_01 = db->get_account( voter_01 );
+    const auto& _treasury = db->get_treasury();
 
     {
       BOOST_TEST_MESSAGE( "---Payment---" );
 
-      auto before_creator_hbd_balance = _creator.get_hbd_balance();
-      auto before_receiver_hbd_balance = _receiver.get_hbd_balance();
-      auto before_voter_01_hbd_balance = _voter_01.get_hbd_balance();
-      auto before_treasury_hbd_balance = _treasury.get_hbd_balance();
+      auto before_creator_hbd_balance = _creator->get_hbd_balance();
+      auto before_receiver_hbd_balance = _receiver->get_hbd_balance();
+      auto before_voter_01_hbd_balance = _voter_01->get_hbd_balance();
+      auto before_treasury_hbd_balance = _treasury->get_hbd_balance();
 
       auto next_block = get_nr_blocks_until_proposal_maintenance_block();
       generate_blocks( next_block - 1 );
       generate_blocks( 1 );
 
       auto treasury_hbd_inflation = dgpo.get_current_hbd_supply() - old_hbd_supply;
-      auto after_creator_hbd_balance = _creator.get_hbd_balance();
-      auto after_receiver_hbd_balance = _receiver.get_hbd_balance();
-      auto after_voter_01_hbd_balance = _voter_01.get_hbd_balance();
-      auto after_treasury_hbd_balance = _treasury.get_hbd_balance();
+      auto after_creator_hbd_balance = _creator->get_hbd_balance();
+      auto after_receiver_hbd_balance = _receiver->get_hbd_balance();
+      auto after_voter_01_hbd_balance = _voter_01->get_hbd_balance();
+      auto after_treasury_hbd_balance = _treasury->get_hbd_balance();
 
       BOOST_REQUIRE( before_creator_hbd_balance == after_creator_hbd_balance );
       BOOST_REQUIRE( before_receiver_hbd_balance == after_receiver_hbd_balance - hourly_pay );
@@ -1193,16 +1193,16 @@ BOOST_AUTO_TEST_CASE( generating_payments_01 )
 
     for( auto item : inits )
     {
-      const account_object& account = db->get_account( item.account );
-      before_tbds[ item.account ] = account.get_hbd_balance();
+      const auto& account = db->get_account( item.account );
+      before_tbds[ item.account ] = account->get_hbd_balance();
     }
 
     generate_blocks( start_date + end_time_shift + fc::seconds( 10 ), false );
 
     for( auto item : inits )
     {
-      const account_object& account = db->get_account( item.account );
-      auto after_tbd = account.get_hbd_balance();
+      const auto& account = db->get_account( item.account );
+      auto after_tbd = account->get_hbd_balance();
       auto before_tbd = before_tbds[ item.account ];
       BOOST_REQUIRE( before_tbd == after_tbd - paid );
     }
@@ -1279,8 +1279,8 @@ BOOST_AUTO_TEST_CASE( generating_payments_02 )
       vote_proposal( item.account, {0}, true/*approve*/, item.active_key );
       generate_block();
 
-      const account_object& account = db->get_account( item.account );
-      before_tbds[ item.account ] = account.get_hbd_balance();
+      const auto& account = db->get_account( item.account );
+      before_tbds[ item.account ] = account->get_hbd_balance();
     }
 
     generate_blocks( start_date, false );
@@ -1312,8 +1312,8 @@ BOOST_AUTO_TEST_CASE( generating_payments_02 )
 
     for( auto item : inits )
     {
-      const account_object& account = db->get_account( item.account );
-      auto after_tbd = account.get_hbd_balance();
+      const auto& account = db->get_account( item.account );
+      auto after_tbd = account->get_hbd_balance();
       auto before_tbd = before_tbds[ item.account ];
       BOOST_REQUIRE( before_tbd == after_tbd );
     }
@@ -1402,8 +1402,8 @@ BOOST_AUTO_TEST_CASE( generating_payments_03 )
 
     for( auto item : inits )
     {
-      const account_object& account = db->get_account( item.first );
-      before_tbds[ item.first ] = account.get_hbd_balance();
+      const auto& account = db->get_account( item.first );
+      before_tbds[ item.first ] = account->get_hbd_balance();
     }
 
     auto payment_checker = [&]( const std::vector< asset >& payouts )
@@ -1413,8 +1413,8 @@ BOOST_AUTO_TEST_CASE( generating_payments_03 )
       uint16_t i = 0;
       for( const auto& item : inits )
       {
-        const account_object& account = db->get_account( item.first );
-        auto after_tbd = account.get_hbd_balance();
+        const auto& account = db->get_account( item.first );
+        auto after_tbd = account->get_hbd_balance();
         auto before_tbd = before_tbds[ item.first ];
         idump( (before_tbd) );
         idump( (after_tbd) );
@@ -1538,28 +1538,28 @@ try
     auto old_hbd_supply = dgpo.get_current_hbd_supply();
 
 
-    const account_object& _creator = db->get_account( creator );
-    const account_object& _receiver = db->get_account( receiver );
-    const account_object& _voter_01 = db->get_account( voter_01 );
-    const account_object& _treasury = db->get_treasury();
+    const auto& _creator = db->get_account( creator );
+    const auto& _receiver = db->get_account( receiver );
+    const auto& _voter_01 = db->get_account( voter_01 );
+    const auto& _treasury = db->get_treasury();
 
     {
       BOOST_TEST_MESSAGE( "---Payment---" );
 
-      auto before_creator_hbd_balance = _creator.get_hbd_balance();
-      auto before_receiver_hbd_balance = _receiver.get_hbd_balance();
-      auto before_voter_01_hbd_balance = _voter_01.get_hbd_balance();
-      auto before_treasury_hbd_balance = _treasury.get_hbd_balance();
+      auto before_creator_hbd_balance = _creator->get_hbd_balance();
+      auto before_receiver_hbd_balance = _receiver->get_hbd_balance();
+      auto before_voter_01_hbd_balance = _voter_01->get_hbd_balance();
+      auto before_treasury_hbd_balance = _treasury->get_hbd_balance();
 
       auto next_block = get_nr_blocks_until_proposal_maintenance_block();
       generate_blocks( next_block - 1 );
       generate_block();
 
       auto treasury_hbd_inflation = dgpo.get_current_hbd_supply() - old_hbd_supply;
-      auto after_creator_hbd_balance = _creator.get_hbd_balance();
-      auto after_receiver_hbd_balance = _receiver.get_hbd_balance();
-      auto after_voter_01_hbd_balance = _voter_01.get_hbd_balance();
-      auto after_treasury_hbd_balance = _treasury.get_hbd_balance();
+      auto after_creator_hbd_balance = _creator->get_hbd_balance();
+      auto after_receiver_hbd_balance = _receiver->get_hbd_balance();
+      auto after_voter_01_hbd_balance = _voter_01->get_hbd_balance();
+      auto after_treasury_hbd_balance = _treasury->get_hbd_balance();
 
       BOOST_REQUIRE( before_creator_hbd_balance == after_creator_hbd_balance );
 
@@ -1626,28 +1626,28 @@ try
     auto old_hbd_supply = dgpo.get_current_hbd_supply();
 
 
-    const account_object& _creator = db->get_account( creator );
-    const account_object& _receiver = db->get_account( receiver );
-    const account_object& _voter_01 = db->get_account( voter_01 );
-    const account_object& _treasury = db->get_treasury();
+    const auto& _creator = db->get_account( creator );
+    const auto& _receiver = db->get_account( receiver );
+    const auto& _voter_01 = db->get_account( voter_01 );
+    const auto& _treasury = db->get_treasury();
 
     {
       BOOST_TEST_MESSAGE( "---Payment---" );
 
-      auto before_creator_hbd_balance = _creator.get_hbd_balance();
-      auto before_receiver_hbd_balance = _receiver.get_hbd_balance();
-      auto before_voter_01_hbd_balance = _voter_01.get_hbd_balance();
-      auto before_treasury_hbd_balance = _treasury.get_hbd_balance();
+      auto before_creator_hbd_balance = _creator->get_hbd_balance();
+      auto before_receiver_hbd_balance = _receiver->get_hbd_balance();
+      auto before_voter_01_hbd_balance = _voter_01->get_hbd_balance();
+      auto before_treasury_hbd_balance = _treasury->get_hbd_balance();
 
       auto next_block = get_nr_blocks_until_proposal_maintenance_block();
       generate_blocks( next_block - 1 );
       generate_block();
 
       auto treasury_hbd_inflation = dgpo.get_current_hbd_supply() - old_hbd_supply;
-      auto after_creator_hbd_balance = _creator.get_hbd_balance();
-      auto after_receiver_hbd_balance = _receiver.get_hbd_balance();
-      auto after_voter_01_hbd_balance = _voter_01.get_hbd_balance();
-      auto after_treasury_hbd_balance = _treasury.get_hbd_balance();
+      auto after_creator_hbd_balance = _creator->get_hbd_balance();
+      auto after_receiver_hbd_balance = _receiver->get_hbd_balance();
+      auto after_voter_01_hbd_balance = _voter_01->get_hbd_balance();
+      auto after_treasury_hbd_balance = _treasury->get_hbd_balance();
 
       BOOST_REQUIRE( before_creator_hbd_balance == after_creator_hbd_balance );
       BOOST_REQUIRE( before_receiver_hbd_balance == after_receiver_hbd_balance - hourly_pay );
@@ -1857,13 +1857,13 @@ BOOST_AUTO_TEST_CASE( proposal_object_apply )
 
     signed_transaction tx;
 
-    const account_object& before_treasury_account = db->get_treasury();
-    const account_object& before_alice_account = db->get_account( creator );
-    const account_object& before_bob_account = db->get_account( receiver );
+    const auto& before_treasury_account = db->get_treasury();
+    const auto& before_alice_account = db->get_account( creator );
+    const auto& before_bob_account = db->get_account( receiver );
 
-    auto before_alice_hbd_balance = before_alice_account.get_hbd_balance();
-    auto before_bob_hbd_balance = before_bob_account.get_hbd_balance();
-    auto before_treasury_balance = before_treasury_account.get_hbd_balance();
+    auto before_alice_hbd_balance = before_alice_account->get_hbd_balance();
+    auto before_bob_hbd_balance = before_bob_account->get_hbd_balance();
+    auto before_treasury_balance = before_treasury_account->get_hbd_balance();
 
     create_proposal_operation op;
 
@@ -1884,12 +1884,12 @@ BOOST_AUTO_TEST_CASE( proposal_object_apply )
     tx.operations.clear();
 
     const auto& after_treasury_account = db->get_treasury();
-    const account_object& after_alice_account = db->get_account( creator );
-    const account_object& after_bob_account = db->get_account( receiver );
+    const auto& after_alice_account = db->get_account( creator );
+    const auto& after_bob_account = db->get_account( receiver );
 
-    auto after_alice_hbd_balance = after_alice_account.get_hbd_balance();
-    auto after_bob_hbd_balance = after_bob_account.get_hbd_balance();
-    auto after_treasury_balance = after_treasury_account.get_hbd_balance();
+    auto after_alice_hbd_balance = after_alice_account->get_hbd_balance();
+    auto after_bob_hbd_balance = after_bob_account->get_hbd_balance();
+    auto after_treasury_balance = after_treasury_account->get_hbd_balance();
 
     generate_block();
 
@@ -1955,13 +1955,13 @@ BOOST_AUTO_TEST_CASE( proposal_object_apply_fee_increase )
 
     signed_transaction tx;
 
-    const account_object& before_treasury_account = db->get_treasury();
-    const account_object& before_alice_account = db->get_account( creator );
-    const account_object& before_bob_account = db->get_account( receiver );
+    const auto& before_treasury_account = db->get_treasury();
+    const auto& before_alice_account = db->get_account( creator );
+    const auto& before_bob_account = db->get_account( receiver );
 
-    auto before_alice_hbd_balance = before_alice_account.get_hbd_balance();
-    auto before_bob_hbd_balance = before_bob_account.get_hbd_balance();
-    auto before_treasury_balance = before_treasury_account.get_hbd_balance();
+    auto before_alice_hbd_balance = before_alice_account->get_hbd_balance();
+    auto before_bob_hbd_balance = before_bob_account->get_hbd_balance();
+    auto before_treasury_balance = before_treasury_account->get_hbd_balance();
 
     create_proposal_operation op;
 
@@ -1982,12 +1982,12 @@ BOOST_AUTO_TEST_CASE( proposal_object_apply_fee_increase )
     tx.operations.clear();
 
     const auto& after_treasury_account = db->get_treasury();
-    const account_object& after_alice_account = db->get_account( creator );
-    const account_object& after_bob_account = db->get_account( receiver );
+    const auto& after_alice_account = db->get_account( creator );
+    const auto& after_bob_account = db->get_account( receiver );
 
-    auto after_alice_hbd_balance = after_alice_account.get_hbd_balance();
-    auto after_bob_hbd_balance = after_bob_account.get_hbd_balance();
-    auto after_treasury_balance = after_treasury_account.get_hbd_balance();
+    auto after_alice_hbd_balance = after_alice_account->get_hbd_balance();
+    auto after_bob_hbd_balance = after_bob_account->get_hbd_balance();
+    auto after_treasury_balance = after_treasury_account->get_hbd_balance();
 
     generate_block();
 
@@ -4659,8 +4659,8 @@ BOOST_AUTO_TEST_CASE( generating_payments )
     for( int32_t i = 0; i < nr_proposals; ++i )
     {
       auto item = inits[ i % inits.size() ];
-      const account_object& account = db->get_account( item.account );
-      before_tbds[ item.account ] = account.get_hbd_balance();
+      const auto& account = db->get_account( item.account );
+      before_tbds[ item.account ] = account->get_hbd_balance();
     }
 
     generate_blocks( start_time + ( start_time_shift - block_interval ) );
@@ -4670,9 +4670,9 @@ BOOST_AUTO_TEST_CASE( generating_payments )
     for( int32_t i = 0; i < nr_proposals; ++i )
     {
       auto item = inits[ i % inits.size() ];
-      const account_object& account = db->get_account( item.account );
+      const auto& account = db->get_account( item.account );
 
-      auto after_tbd = account.get_hbd_balance();
+      auto after_tbd = account->get_hbd_balance();
       auto before_tbd = before_tbds[ item.account ];
       idump( (before_tbd) );
       idump( (after_tbd) );
@@ -4691,18 +4691,18 @@ BOOST_AUTO_TEST_CASE( converting_hive_to_dhf )
   {
     BOOST_TEST_MESSAGE( "Testing: converting hive to hbd in the dhf" );
     const auto& dgpo = db->get_dynamic_global_properties();
-    const account_object& _treasury = db->get_treasury();
+    const auto& _treasury = db->get_treasury();
     set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
 
-    auto before_inflation_treasury_hbd_balance =  _treasury.get_hbd_balance();
+    auto before_inflation_treasury_hbd_balance =  _treasury->get_hbd_balance();
     generate_block();
-    auto treasury_per_block_inflation =  _treasury.get_hbd_balance() - before_inflation_treasury_hbd_balance;
+    auto treasury_per_block_inflation =  _treasury->get_hbd_balance() - before_inflation_treasury_hbd_balance;
 
     ISSUE_FUNDS( db->get_treasury_name(), ASSET( "100.000 TESTS" ) );
     generate_block();
 
-    auto before_treasury_hbd_balance =  _treasury.get_hbd_balance();
-    auto before_treasury_hive_balance =  _treasury.get_balance();
+    auto before_treasury_hbd_balance =  _treasury->get_hbd_balance();
+    auto before_treasury_hive_balance =  _treasury->get_balance();
 
     const auto hive_converted = asset(HIVE_PROPOSAL_CONVERSION_RATE * before_treasury_hive_balance.amount / HIVE_100_PERCENT, HIVE_SYMBOL);
     // Same because of the 1:1 tests to tbd ratio
@@ -4712,13 +4712,13 @@ BOOST_AUTO_TEST_CASE( converting_hive_to_dhf )
     auto before_daily_maintenance_time = dgpo.next_daily_maintenance_time;
     generate_blocks( next_block - 1);
 
-    auto treasury_hbd_inflation =  _treasury.get_hbd_balance() - before_treasury_hbd_balance;
+    auto treasury_hbd_inflation =  _treasury->get_hbd_balance() - before_treasury_hbd_balance;
     generate_block();
 
     treasury_hbd_inflation += treasury_per_block_inflation;
     auto after_daily_maintenance_time = dgpo.next_daily_maintenance_time;
-    auto after_treasury_hbd_balance =  _treasury.get_hbd_balance();
-    auto after_treasury_hive_balance =  _treasury.get_balance();
+    auto after_treasury_hbd_balance =  _treasury->get_hbd_balance();
+    auto after_treasury_hive_balance =  _treasury->get_balance();
 
     BOOST_REQUIRE( before_treasury_hbd_balance == after_treasury_hbd_balance - treasury_hbd_inflation - hbd_converted );
     BOOST_REQUIRE( before_treasury_hive_balance == after_treasury_hive_balance + hive_converted );

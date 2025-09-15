@@ -381,8 +381,8 @@ BOOST_AUTO_TEST_CASE( declined_voting_rights_between_hf27_and_hf28 )
         }
       }
       {
-        auto& _account = executor->db->get_account( "alice0" );
-        executor->db->modify( _account, [&]( account_object& account )
+        auto _account = executor->db->get_account( "alice0" );
+        executor->db->modify( *_account, [&]( account_object& account )
         {
           account.set_can_vote( false );
         } );
@@ -403,15 +403,15 @@ BOOST_AUTO_TEST_CASE( declined_voting_rights_between_hf27_and_hf28 )
         }
       }
       {
-        auto& _account = executor->db->get_account( "alice1" );
-        executor->db->modify( _account, [&]( account_object& account )
+        auto _account = executor->db->get_account( "alice1" );
+        executor->db->modify( *_account, [&]( account_object& account )
         {
           account.set_can_vote( false );
         } );
       }
       {
-        auto& _account = executor->db->get_account( "alice2" );
-        executor->db->modify( _account, [&]( account_object& account )
+        auto _account = executor->db->get_account( "alice2" );
+        executor->db->modify( *_account, [&]( account_object& account )
         {
           account.set_can_vote( false );
         } );
@@ -458,15 +458,15 @@ BOOST_AUTO_TEST_CASE( declined_voting_rights_between_hf27_and_hf28 )
         }
       }
       {
-        auto& _account = executor->db->get_account( "alice4" );
-        executor->db->modify( _account, [&]( account_object& account )
+        auto _account = executor->db->get_account( "alice4" );
+        executor->db->modify( *_account, [&]( account_object& account )
         {
           account.set_can_vote( false );
         } );
       }
       {
-        auto& _account = executor->db->get_account( "alice5" );
-        executor->db->modify( _account, [&]( account_object& account )
+        auto _account = executor->db->get_account( "alice5" );
+        executor->db->modify( *_account, [&]( account_object& account )
         {
           account.set_can_vote( false );
         } );
@@ -554,15 +554,15 @@ BOOST_AUTO_TEST_CASE( declined_voting_rights_between_hf27_and_hf28_2 )
       }
       BOOST_TEST_MESSAGE( "Change `can_vote` in some `decline_voting_rights_request_object` objects" );
       {
-        auto& _account = executor->db->get_account( _actors[0].name );
-        executor->db->modify( _account, [&]( account_object& account )
+        auto _account = executor->db->get_account( _actors[0].name );
+        executor->db->modify( *_account, [&]( account_object& account )
         {
           account.set_can_vote( false );
         } );
       }
       {
-        auto& _account = executor->db->get_account( _actors[2].name );
-        executor->db->modify( _account, [&]( account_object& account )
+        auto _account = executor->db->get_account( _actors[2].name );
+        executor->db->modify( *_account, [&]( account_object& account )
         {
           account.set_can_vote( false );
         } );
@@ -1510,8 +1510,8 @@ BOOST_AUTO_TEST_CASE( disturbed_power_down )
     int start_block = db->head_block_num();
     withdraw_vesting( "bob", get_vesting( "bob" ), bob_private_key );
     withdraw_vesting( "gil", get_vesting( "gil" ), gil_private_key );
-    BOOST_CHECK_EQUAL( db->get_account( "bob" ).get_active_next_vesting_withdrawal().value, bob_rate );
-    BOOST_CHECK_EQUAL( db->get_account( "gil" ).get_active_next_vesting_withdrawal().value, gil_rate );
+    BOOST_CHECK_EQUAL( db->get_account( "bob" )->get_active_next_vesting_withdrawal().value, bob_rate );
+    BOOST_CHECK_EQUAL( db->get_account( "gil" )->get_active_next_vesting_withdrawal().value, gil_rate );
 
     generate_blocks( week_blocks );
     BOOST_CHECK_EQUAL( start_block + week_blocks, db->head_block_num() );
@@ -1545,8 +1545,8 @@ BOOST_AUTO_TEST_CASE( disturbed_power_down )
     // down rate was not multiplied but recalculated, disturbing the flow
     bob_rate = bob_amount * split / 104;
     gil_rate = gil_amount * split / 104;
-    BOOST_CHECK_EQUAL( db->get_account( "bob" ).get_active_next_vesting_withdrawal().value, bob_rate );
-    BOOST_CHECK_EQUAL( db->get_account( "gil" ).get_active_next_vesting_withdrawal().value, gil_rate );
+    BOOST_CHECK_EQUAL( db->get_account( "bob" )->get_active_next_vesting_withdrawal().value, bob_rate );
+    BOOST_CHECK_EQUAL( db->get_account( "gil" )->get_active_next_vesting_withdrawal().value, gil_rate );
 
     BOOST_CHECK_EQUAL( bob_vests % bob_rate, 0 );
     BOOST_CHECK_EQUAL( gil_vests - 102 * gil_rate, 769270 );
@@ -1569,9 +1569,9 @@ BOOST_AUTO_TEST_CASE( disturbed_power_down )
     }
     BOOST_CHECK_EQUAL( get_vesting( "bob" ).amount.value, 0 );
     BOOST_CHECK_EQUAL( get_vesting( "gil" ).amount.value, 769270 );
-    BOOST_CHECK_EQUAL( db->get_account( "bob" ).get_active_next_vesting_withdrawal().value, 0 );
+    BOOST_CHECK_EQUAL( db->get_account( "bob" )->get_active_next_vesting_withdrawal().value, 0 );
     // officially whole remainder of gil's power down is for next week, but that's not the case prior HF28
-    BOOST_CHECK_EQUAL( db->get_account( "gil" ).get_active_next_vesting_withdrawal().value, 769270 );
+    BOOST_CHECK_EQUAL( db->get_account( "gil" )->get_active_next_vesting_withdrawal().value, 769270 );
 
     BOOST_TEST_MESSAGE( "Bob finished power down, but not gil" );
     gil_rate = 40;
@@ -1588,19 +1588,19 @@ BOOST_AUTO_TEST_CASE( disturbed_power_down )
       BOOST_CHECK_EQUAL( get_vesting( "gil" ).amount.value, gil_vests );
     }
     BOOST_CHECK_EQUAL( get_vesting( "gil" ).amount.value, 769270 - 30*40 );
-    BOOST_CHECK_EQUAL( db->get_account( "gil" ).get_active_next_vesting_withdrawal().value, 769270 - 30*40 );
+    BOOST_CHECK_EQUAL( db->get_account( "gil" )->get_active_next_vesting_withdrawal().value, 769270 - 30*40 );
 
     BOOST_TEST_MESSAGE( "Activate fix" );
     inject_hardfork( HIVE_HARDFORK_1_28 );
 
     BOOST_TEST_MESSAGE( "Check innediately after HF28 - nothing changed yet for gil" );
     BOOST_CHECK_EQUAL( get_vesting( "gil" ).amount.value, 769270 - 30 * 40 );
-    BOOST_CHECK_EQUAL( db->get_account( "gil" ).get_active_next_vesting_withdrawal().value, 769270 - 30 * 40 );
+    BOOST_CHECK_EQUAL( db->get_account( "gil" )->get_active_next_vesting_withdrawal().value, 769270 - 30 * 40 );
 
     generate_blocks( week_blocks );
     BOOST_TEST_MESSAGE( "Check week after activation of HF28 - should fix power down on gil" );
     BOOST_CHECK_EQUAL( get_vesting( "gil" ).amount.value, 0 );
-    BOOST_CHECK_EQUAL( db->get_account( "gil" ).get_active_next_vesting_withdrawal().value, 0 );
+    BOOST_CHECK_EQUAL( db->get_account( "gil" )->get_active_next_vesting_withdrawal().value, 0 );
 
     validate_database();
   }
@@ -1684,11 +1684,11 @@ BOOST_AUTO_TEST_CASE( artificial_1_on_power_down )
 
     // vesting shares split puts artificial 1 on vesting withdraw rate on accounts with no power down
     inject_hardfork( HIVE_HARDFORK_0_1 );
-    BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).get_vesting_withdraw_rate().amount.value, 1 );
-    BOOST_REQUIRE_EQUAL( db->get_account( "bob" ).get_vesting_withdraw_rate().amount.value, 1 );
-    BOOST_REQUIRE_EQUAL( db->get_account( "carol" ).get_vesting_withdraw_rate().amount.value, 1 );
-    BOOST_REQUIRE_EQUAL( db->get_account( "dave" ).get_vesting_withdraw_rate().amount.value, 1 );
-    BOOST_REQUIRE_EQUAL( db->get_account( "eric" ).get_vesting_withdraw_rate().amount.value, 1 );
+    BOOST_REQUIRE_EQUAL( db->get_account( "alice" )->get_vesting_withdraw_rate().amount.value, 1 );
+    BOOST_REQUIRE_EQUAL( db->get_account( "bob" )->get_vesting_withdraw_rate().amount.value, 1 );
+    BOOST_REQUIRE_EQUAL( db->get_account( "carol" )->get_vesting_withdraw_rate().amount.value, 1 );
+    BOOST_REQUIRE_EQUAL( db->get_account( "dave" )->get_vesting_withdraw_rate().amount.value, 1 );
+    BOOST_REQUIRE_EQUAL( db->get_account( "eric" )->get_vesting_withdraw_rate().amount.value, 1 );
 
     // HF5 activates "no op" check during power down and cancel power down
     inject_hardfork( HIVE_HARDFORK_0_5 );
@@ -1706,18 +1706,18 @@ BOOST_AUTO_TEST_CASE( artificial_1_on_power_down )
     generate_block();
 
     // since 'alice' and 'bob' are now no longer affected by a bug, we can use them to check the power down with natural 1 withdraw rate
-    BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).get_vesting_withdraw_rate().amount.value, 0 );
-    BOOST_REQUIRE_EQUAL( db->get_account( "bob" ).get_vesting_withdraw_rate().amount.value, 0 );
+    BOOST_REQUIRE_EQUAL( db->get_account( "alice" )->get_vesting_withdraw_rate().amount.value, 0 );
+    BOOST_REQUIRE_EQUAL( db->get_account( "bob" )->get_vesting_withdraw_rate().amount.value, 0 );
 
     withdraw_vesting( "alice", asset( HIVE_VESTING_WITHDRAW_INTERVALS_PRE_HF_16 - 1, VESTS_SYMBOL ), alice_private_key);
     // above power down truncates down to zero, that is corrected to 1
-    BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).get_vesting_withdraw_rate().amount.value, 1 );
+    BOOST_REQUIRE_EQUAL( db->get_account( "alice" )->get_vesting_withdraw_rate().amount.value, 1 );
 
     // HF16 switches from 104 weeks to 13 weeks of power down
     inject_hardfork( HIVE_HARDFORK_0_16 );
 
     withdraw_vesting( "bob", asset( HIVE_VESTING_WITHDRAW_INTERVALS * 2 - 1, VESTS_SYMBOL ), bob_private_key );
-    BOOST_REQUIRE_EQUAL( db->get_account( "bob" ).get_vesting_withdraw_rate().amount.value, 1 );
+    BOOST_REQUIRE_EQUAL( db->get_account( "bob" )->get_vesting_withdraw_rate().amount.value, 1 );
 
     // make sure code behaves "properly" (I mean in unchanged way) right before HF28 too
     inject_hardfork( HIVE_HARDFORK_1_27 );
@@ -1730,7 +1730,7 @@ BOOST_AUTO_TEST_CASE( artificial_1_on_power_down )
     // also since HF21 there is different rate correction mechanism, so the same operation as for 'bob'
     // before results in different rate
     withdraw_vesting( "carol", asset( HIVE_VESTING_WITHDRAW_INTERVALS * 2 - 1, VESTS_SYMBOL ), carol_private_key );
-    BOOST_REQUIRE_EQUAL( db->get_account( "carol" ).get_vesting_withdraw_rate().amount.value, 2 );
+    BOOST_REQUIRE_EQUAL( db->get_account( "carol" )->get_vesting_withdraw_rate().amount.value, 2 );
 
     // HF28 activates code that prevents bug from affecting new power down cancels
     inject_hardfork( HIVE_HARDFORK_1_28 );
@@ -2383,7 +2383,7 @@ BOOST_AUTO_TEST_CASE(treasury_hbd_does_not_affect_inflation_advanced)
             auto new_hive = (props.virtual_supply.amount * current_inflation_rate) / (int64_t(HIVE_100_PERCENT) * int64_t(HIVE_BLOCKS_PER_YEAR));
             if (db->has_hardfork(HIVE_HARDFORK_1_28_NO_DHF_HBD_IN_INFLATION)) {
               const auto &treasury_account = db->get_treasury();
-              const auto hbd_supply_without_treasury = (props.get_current_hbd_supply() - treasury_account.get_hbd_balance()).amount < 0 ? asset(0, HBD_SYMBOL) : (props.get_current_hbd_supply() - treasury_account.get_hbd_balance());
+              const auto hbd_supply_without_treasury = (props.get_current_hbd_supply() - treasury_account->get_hbd_balance()).amount < 0 ? asset(0, HBD_SYMBOL) : (props.get_current_hbd_supply() - treasury_account->get_hbd_balance());
               const auto virtual_supply_without_treasury = hbd_supply_without_treasury * db->get_feed_history().current_median_history + props.current_supply;
 
               new_hive = (virtual_supply_without_treasury.amount * current_inflation_rate) / (int64_t(HIVE_100_PERCENT) * int64_t(HIVE_BLOCKS_PER_YEAR));

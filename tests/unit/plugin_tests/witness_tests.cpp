@@ -817,8 +817,8 @@ BOOST_AUTO_TEST_CASE( multiple_feeding_threads_test )
         account_id_type alice_id, carol_id;
         db->with_read_lock( [&]()
         {
-          alice_id = db->get_account( "alice" ).get_id();
-          carol_id = db->get_account( "carol" ).get_id();
+          alice_id = db->get_account( "alice" )->get_id();
+          carol_id = db->get_account( "carol" )->get_id();
         } );
 
         const auto& comment_idx = db->get_index< comment_index, by_id >();
@@ -838,7 +838,7 @@ BOOST_AUTO_TEST_CASE( multiple_feeding_threads_test )
               last_comment = commentI->get_id();
               const auto& comment_cashout = *db->find_comment_cashout( last_comment );
               auto author_id = comment_cashout.get_author_id();
-              author = db->get_account( author_id ).get_name();
+              author = db->get_account( author_id )->get_name();
               permlink = comment_cashout.get_permlink();
               send = author_id == alice_id || author_id == carol_id;
             }

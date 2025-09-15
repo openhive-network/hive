@@ -39,7 +39,7 @@ BOOST_AUTO_TEST_CASE( undo_basic )
 
     undo_db udb( *db );
     undo_scenario< account_object > ao( *db );
-    const account_object& pxy = ao.create( "proxy00", time );
+    const auto& pxy = ao.create( "proxy00", time );
 
     BOOST_TEST_MESSAGE( "--- No object added" );
     ao.remember_old_values< account_index >();
@@ -51,7 +51,7 @@ BOOST_AUTO_TEST_CASE( undo_basic )
     ao.remember_old_values< account_index >();
     udb.undo_begin();
 
-    const account_object& obj0 = ao.create( "name00", time );
+    const auto& obj0 = ao.create( "name00", time );
     BOOST_REQUIRE( std::string( obj0.get_name() ) == "name00" );
 
     udb.undo_end();
@@ -61,9 +61,9 @@ BOOST_AUTO_TEST_CASE( undo_basic )
     ao.remember_old_values< account_index >();
     udb.undo_begin();
 
-    const account_object& obj1 = ao.create( "name00", time );
+    const auto& obj1 = ao.create( "name00", time );
     BOOST_REQUIRE( std::string( obj1.get_name() ) == "name00" );
-    const account_object& obj2 = ao.modify( obj1, [&]( account_object& obj ){ obj.set_name( "name01" ); } );
+    const auto& obj2 = ao.modify( obj1, [&]( account_object& obj ){ obj.set_name( "name01" ); } );
     BOOST_REQUIRE( std::string( obj2.get_name() ) == "name01" );
 
     udb.undo_end();
@@ -73,7 +73,7 @@ BOOST_AUTO_TEST_CASE( undo_basic )
     ao.remember_old_values< account_index >();
     udb.undo_begin();
 
-    const account_object& obj3 = ao.create( "name00", time );
+    const auto& obj3 = ao.create( "name00", time );
     ao.remove( obj3 );
 
     udb.undo_end();
@@ -83,7 +83,7 @@ BOOST_AUTO_TEST_CASE( undo_basic )
     ao.remember_old_values< account_index >();
     udb.undo_begin();
 
-    const account_object& obj4 = ao.create( "name00", time );
+    const auto& obj4 = ao.create( "name00", time );
     ao.modify( obj4, [&]( account_object& obj ){ obj.set_proxy(pxy); } );
     ao.remove( obj4 );
 
@@ -94,7 +94,7 @@ BOOST_AUTO_TEST_CASE( undo_basic )
     ao.remember_old_values< account_index >();
     udb.undo_begin();
 
-    const account_object& obj5 = ao.create( "name00", time );
+    const auto& obj5 = ao.create( "name00", time );
     ao.remove( obj5 );
     ao.create( "name00", time );
 
@@ -105,7 +105,7 @@ BOOST_AUTO_TEST_CASE( undo_basic )
     ao.remember_old_values< account_index >();
     udb.undo_begin();
 
-    const account_object& obj6 = ao.create( "name00", time );
+    const auto& obj6 = ao.create( "name00", time );
     ao.modify( obj6, [&]( account_object& obj ){ obj.set_proxy(pxy); } );
     ao.remove( obj6 );
     ao.create( "name00", time );
@@ -117,15 +117,15 @@ BOOST_AUTO_TEST_CASE( undo_basic )
     ao.remember_old_values< account_index >();
     udb.undo_begin();
 
-    const account_object& obj_c = ao.create( "name00", time );
+    const auto& obj_c = ao.create( "name00", time );
     BOOST_REQUIRE( std::string( obj_c.get_name() ) == "name00" );
 
-    const account_object& obj_cm = ao.create( "name01", time );
+    const auto& obj_cm = ao.create( "name01", time );
     BOOST_REQUIRE( std::string( obj_cm.get_name() ) == "name01" );
     ao.modify( obj_cm, [&]( account_object& obj ){ obj.set_name( "name02" ); } );
     BOOST_REQUIRE( std::string( obj_cm.get_name() ) == "name02" );
 
-    const account_object& obj_cr = ao.create( "name03", time );
+    const auto& obj_cr = ao.create( "name03", time );
     BOOST_REQUIRE( std::string( obj_cr.get_name() ) == "name03" );
     ao.remove( obj_cr );
 
@@ -229,15 +229,15 @@ BOOST_AUTO_TEST_CASE( undo_object_disappear )
     undo_db udb( *db );
     undo_scenario< account_object > ao( *db );
 
-    const account_object& pxy0 = ao.create( "proxy00", time );
-    const account_object& pxy1 = ao.create( "proxy01", time );
+    const auto& pxy0 = ao.create( "proxy00", time );
+    const auto& pxy1 = ao.create( "proxy01", time );
 
     uint32_t old_size = ao.size< account_index >();
 
-    const account_object& obj0 = ao.create( "name00", time ); ao.modify( obj0, [&]( account_object& obj ){ obj.set_proxy(pxy0); } );
+    const auto& obj0 = ao.create( "name00", time ); ao.modify( obj0, [&]( account_object& obj ){ obj.set_proxy(pxy0); } );
     BOOST_REQUIRE( old_size + 1 == ao.size< account_index >() );
 
-    const account_object& obj1 = ao.create( "name01", time ); ao.modify( obj1, [&]( account_object& obj ){ obj.set_proxy(pxy1); } );
+    const auto& obj1 = ao.create( "name01", time ); ao.modify( obj1, [&]( account_object& obj ){ obj.set_proxy(pxy1); } );
     BOOST_REQUIRE( old_size + 2 == ao.size< account_index >() );
 
     ao.remember_old_values< account_index >();
@@ -288,7 +288,7 @@ BOOST_AUTO_TEST_CASE( undo_key_collision )
     BOOST_TEST_MESSAGE( "--- 2 objects. Object 'obj0' is created before 'undo' and has modified key in next step." );
     BOOST_TEST_MESSAGE( "--- Object 'obj1' retrieves old key from object 'obj0'." );
 
-    const account_object& obj0 = ao.create( "name00", time );
+    const auto& obj0 = ao.create( "name00", time );
 
     ao.remember_old_values< account_index >();
     udb.undo_begin();
@@ -384,7 +384,7 @@ BOOST_AUTO_TEST_CASE( undo_different_indexes )
     old_size_co = co.size< comment_index >();
     udb.undo_begin();
 
-    const account_object& obja0 = ao.create( "name00", time );
+    const auto& obja0 = ao.create( "name00", time );
     BOOST_REQUIRE( std::string( obja0.get_name() ) == "name00" );
     BOOST_REQUIRE( old_size_ao + 1 == ao.size< account_index >() );
 
@@ -407,9 +407,9 @@ BOOST_AUTO_TEST_CASE( undo_different_indexes )
     old_size_co_cashout = co.size< comment_cashout_index >();
     udb.undo_begin();
 
-    const account_object& pxy = ao.create( "name00", time );
-    const account_object& obja1 = ao.create( "name01", time );
-    const account_object& obja2 = ao.create( "name02", time );
+    const auto& pxy = ao.create( "name00", time );
+    const auto& obja1 = ao.create( "name01", time );
+    const auto& obja2 = ao.create( "name02", time );
     BOOST_REQUIRE( old_size_ao + 3 == ao.size< account_index >() );
     ao.modify( obja1, [&]( account_object& obj ){ obj.set_proxy(pxy); } );
     ao.remove( obja2 );
@@ -463,7 +463,7 @@ BOOST_AUTO_TEST_CASE( undo_different_indexes )
 
     const comment_object& co1 = co.create( fake_account_object, "12", fake_parent_comment );
     const comment_cashout_object& co1_cashout = co_cashout.create( co1, fake_account_object, "12", time_point_sec( 10 ), time_point_sec( 20 ) );
-    const account_object& ao1 = ao.create( std::to_string(0), time );
+    const auto& ao1 = ao.create( std::to_string(0), time );
 
     ao.remember_old_values< account_index >();
     co.remember_old_values< comment_index >();
@@ -1608,7 +1608,7 @@ BOOST_AUTO_TEST_CASE( debug_update_undo_bug )
     generate_block();
 
     const auto& alice_account = db->get_account( "alice" );
-    BOOST_REQUIRE_EQUAL( alice_account.get_balance().amount.value, 0 );
+    BOOST_REQUIRE_EQUAL( alice_account->get_balance().amount.value, 0 );
 
     db->clear_pending();
     auto revision = db->revision();
@@ -1618,17 +1618,17 @@ BOOST_AUTO_TEST_CASE( debug_update_undo_bug )
     BOOST_REQUIRE_EQUAL( db->get_index< account_index >().get_undo_depth(), 0 );
 
     // increase claimed tokens when undo stack is empty
-    BOOST_REQUIRE_EQUAL( alice_account.get_pending_claimed_accounts().value, 0 );
+    BOOST_REQUIRE_EQUAL( alice_account->get_pending_claimed_accounts().value, 0 );
     db_plugin->debug_update( [&]( database& db )
     {
-      db.modify( alice_account, [&]( account_object& a )
+      db.modify( *alice_account, [&]( account_object& a )
       {
         a.set_pending_claimed_accounts( a.get_pending_claimed_accounts() + 1 );
       } );
     } );
-    BOOST_REQUIRE_EQUAL( alice_account.get_pending_claimed_accounts().value, 1 );
+    BOOST_REQUIRE_EQUAL( alice_account->get_pending_claimed_accounts().value, 1 );
     generate_block();
-    BOOST_REQUIRE_EQUAL( alice_account.get_pending_claimed_accounts().value, 1 );
+    BOOST_REQUIRE_EQUAL( alice_account->get_pending_claimed_accounts().value, 1 );
 
     db->clear_pending();
     revision = db->revision();
@@ -1638,21 +1638,21 @@ BOOST_AUTO_TEST_CASE( debug_update_undo_bug )
     BOOST_REQUIRE_EQUAL( db->get_index< account_index >().get_undo_depth(), 1 );
 
     // increase claimed tokens when undo stack has block session
-    BOOST_REQUIRE_EQUAL( alice_account.get_pending_claimed_accounts().value, 1 );
+    BOOST_REQUIRE_EQUAL( alice_account->get_pending_claimed_accounts().value, 1 );
     db_plugin->debug_update( [&]( database& db )
     {
-      db.modify( alice_account, [&]( account_object& a )
+      db.modify( *alice_account, [&]( account_object& a )
       {
         a.set_pending_claimed_accounts( a.get_pending_claimed_accounts() + 1 );
       } );
     } );
-    BOOST_REQUIRE_EQUAL( alice_account.get_pending_claimed_accounts().value, 2 );
+    BOOST_REQUIRE_EQUAL( alice_account->get_pending_claimed_accounts().value, 2 );
     generate_block();
-    BOOST_REQUIRE_EQUAL( alice_account.get_pending_claimed_accounts().value, 2 );
+    BOOST_REQUIRE_EQUAL( alice_account->get_pending_claimed_accounts().value, 2 );
 
     fund( "alice", ASSET( "1.000 TESTS" ) ); // this makes sure there is pending session open - normally
       // it could happen that it is open when there are some reapplied transactions, but not in unit tests
-    BOOST_REQUIRE_EQUAL( alice_account.get_balance().amount.value, 1000 );
+    BOOST_REQUIRE_EQUAL( alice_account->get_balance().amount.value, 1000 );
     revision = db->revision();
     ilog( "Undo revision is ${r}", ( "r", revision ) );
     ilog( "Undo stack contains block and pending tx sessions" );
@@ -1662,19 +1662,19 @@ BOOST_AUTO_TEST_CASE( debug_update_undo_bug )
     // increase claimed tokens when undo stack has pending tx session
     db_plugin->debug_update( [&]( database& db )
     {
-      db.modify( alice_account, [&]( account_object& a )
+      db.modify( *alice_account, [&]( account_object& a )
       {
         a.set_pending_claimed_accounts( a.get_pending_claimed_accounts() + 1 );
       } );
     } );
-    BOOST_REQUIRE_EQUAL( alice_account.get_pending_claimed_accounts().value, 3 );
-    BOOST_REQUIRE_EQUAL( alice_account.get_balance().amount.value, 1000 );
+    BOOST_REQUIRE_EQUAL( alice_account->get_pending_claimed_accounts().value, 3 );
+    BOOST_REQUIRE_EQUAL( alice_account->get_balance().amount.value, 1000 );
     generate_block();
-    BOOST_REQUIRE_EQUAL( alice_account.get_pending_claimed_accounts().value, 3 );
-    BOOST_REQUIRE_EQUAL( alice_account.get_balance().amount.value, 1000 );
+    BOOST_REQUIRE_EQUAL( alice_account->get_pending_claimed_accounts().value, 3 );
+    BOOST_REQUIRE_EQUAL( alice_account->get_balance().amount.value, 1000 );
 
     fund( "alice", ASSET( "1.000 TESTS" ) );
-    BOOST_REQUIRE_EQUAL( alice_account.get_balance().amount.value, 2000 );
+    BOOST_REQUIRE_EQUAL( alice_account->get_balance().amount.value, 2000 );
     revision = db->revision();
     ilog( "Undo revision is ${r}", ( "r", revision ) );
     ilog( "Undo stack contains block and pending tx sessions" );
@@ -1684,20 +1684,20 @@ BOOST_AUTO_TEST_CASE( debug_update_undo_bug )
     // increase claimed tokens when undo stack has pending tx session but then cause exception with another transaction
     db_plugin->debug_update( [&]( database& db )
     {
-      db.modify( alice_account, [&]( account_object& a )
+      db.modify( *alice_account, [&]( account_object& a )
       {
         a.set_pending_claimed_accounts( a.get_pending_claimed_accounts() + 1 );
       } );
     } );
     HIVE_REQUIRE_THROW( transfer( "alice", "bob", ASSET( "1.000 TESTS" ), "", alice_private_key ), fc::exception );
-    BOOST_REQUIRE_EQUAL( alice_account.get_pending_claimed_accounts().value, 4 );
-    BOOST_REQUIRE_EQUAL( alice_account.get_balance().amount.value, 2000 );
+    BOOST_REQUIRE_EQUAL( alice_account->get_pending_claimed_accounts().value, 4 );
+    BOOST_REQUIRE_EQUAL( alice_account->get_balance().amount.value, 2000 );
     generate_block();
-    BOOST_REQUIRE_EQUAL( alice_account.get_pending_claimed_accounts().value, 4 );
-    BOOST_REQUIRE_EQUAL( alice_account.get_balance().amount.value, 2000 );
+    BOOST_REQUIRE_EQUAL( alice_account->get_pending_claimed_accounts().value, 4 );
+    BOOST_REQUIRE_EQUAL( alice_account->get_balance().amount.value, 2000 );
 
     fund( "alice", ASSET( "1.000 TESTS" ) );
-    BOOST_REQUIRE_EQUAL( alice_account.get_balance().amount.value, 3000 );
+    BOOST_REQUIRE_EQUAL( alice_account->get_balance().amount.value, 3000 );
     revision = db->revision();
     ilog( "Undo revision is ${r}", ( "r", revision ) );
     ilog( "Undo stack contains block and pending tx sessions" );
@@ -1707,17 +1707,17 @@ BOOST_AUTO_TEST_CASE( debug_update_undo_bug )
     // increase claimed tokens when undo stack has pending tx session but then cause exception within debug_update itself
     HIVE_REQUIRE_THROW( db_plugin->debug_update( [&]( database& db )
     {
-      db.modify( alice_account, [&]( account_object& a )
+      db.modify( *alice_account, [&]( account_object& a )
       {
         a.set_pending_claimed_accounts( a.get_pending_claimed_accounts() + 1 );
       } );
       FC_ASSERT( false );
     } ), fc::exception );
-    BOOST_REQUIRE_EQUAL( alice_account.get_pending_claimed_accounts().value, 4 );
-    BOOST_REQUIRE_EQUAL( alice_account.get_balance().amount.value, 3000 );
+    BOOST_REQUIRE_EQUAL( alice_account->get_pending_claimed_accounts().value, 4 );
+    BOOST_REQUIRE_EQUAL( alice_account->get_balance().amount.value, 3000 );
     generate_block();
-    BOOST_REQUIRE_EQUAL( alice_account.get_pending_claimed_accounts().value, 4 );
-    BOOST_REQUIRE_EQUAL( alice_account.get_balance().amount.value, 3000 );
+    BOOST_REQUIRE_EQUAL( alice_account->get_pending_claimed_accounts().value, 4 );
+    BOOST_REQUIRE_EQUAL( alice_account->get_balance().amount.value, 3000 );
   }
   FC_LOG_AND_RETHROW()
 }
