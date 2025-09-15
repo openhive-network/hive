@@ -99,6 +99,10 @@ class witness_plugin_impl
 
     std::atomic<bool> _enable_fast_confirm = true;
 
+#ifdef IS_TEST_NET
+    bool _verbose_startup = true; // print something on each round of main loop until first successful production
+#endif
+
     appbase::application& theApp;
   };
 
@@ -413,17 +417,29 @@ class witness_plugin_impl
     switch(result)
     {
       case block_production_condition::produced:
+#ifdef IS_TEST_NET
+        _verbose_startup = false;
+#endif
         ilog( "Generated block #${n} with timestamp ${t} at time ${c}",
           ( "n", capture["n"] )( "t", capture["t"] )( "c", capture["c"] ) );
         break;
       case block_production_condition::not_synced:
-        //ilog( "Not producing block because production is disabled until we receive a recent block (see: --enable-stale-production)" );
+#ifdef IS_TEST_NET
+        if( _verbose_startup )
+          ilog( "Not producing block because production is disabled until we receive a recent block (see: --enable-stale-production)" );
+#endif
         break;
       case block_production_condition::not_my_turn:
-        //ilog( "Not producing block because it isn't my turn" );
+#ifdef IS_TEST_NET
+        if( _verbose_startup )
+          ilog( "Not producing block because it isn't my turn" );
+#endif
         break;
       case block_production_condition::not_time_yet:
-        //ilog( "Not producing block because slot has not yet arrived" );
+#ifdef IS_TEST_NET
+        if( _verbose_startup )
+          ilog( "Not producing block because slot has not yet arrived" );
+#endif
         break;
       case block_production_condition::no_private_key:
         break;
@@ -491,6 +507,10 @@ class witness_plugin_impl
 
     const auto generate_block_ctrl = std::make_shared< witness_generate_block_flow_control >( data.next_slot_time,
       data.scheduled_witness, data.scheduled_private_key, _production_skip_flags, theApp );
+#ifdef IS_TEST_NET
+    if( _verbose_startup )
+      ilog( "Pushing block production request to queue" );
+#endif
     _chain_plugin.push_generate_block_request( generate_block_ctrl );
     const std::shared_ptr<full_block_type>& full_block = generate_block_ctrl->get_full_block();
     capture("n", full_block->get_block_num())("t", full_block->get_block_header().timestamp)("c", now);
@@ -549,6 +569,14 @@ void witness_plugin::enable_queen_mode()
   my->_production_enabled = true;
   // ignore configured witnesses (represent them all) and just check if you have private key
   my->_queen_mode = true;
+  disable_verbose_startup();
+}
+
+void witness_plugin::disable_verbose_startup()
+{
+#ifdef IS_TEST_NET
+  my->_verbose_startup = false;
+#endif
 }
 
 void witness_plugin::set_witnesses( const t_witnesses& witnesses )
@@ -643,6 +671,7 @@ void witness_plugin::plugin_startup()
   else
   {
     elog( "No witnesses configured! Please add witness IDs and private keys to configuration." );
+    disable_verbose_startup();
   }
   ilog( "witness plugin:  plugin_startup() end" );
 } FC_CAPTURE_AND_RETHROW() }

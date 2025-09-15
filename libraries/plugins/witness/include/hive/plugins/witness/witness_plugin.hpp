@@ -69,6 +69,7 @@ public:
   const t_signing_keys& get_signing_keys() const;
 
   void enable_queen_mode(); // turned on when queen_plugin is active
+  void disable_verbose_startup(); // unit tests don't need extra logging on startup
 
   typedef std::set< hive::protocol::account_name_type > t_witnesses;
   // for unit tests - overrides list of represented witnesses
