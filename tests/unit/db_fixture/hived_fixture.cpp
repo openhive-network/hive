@@ -141,6 +141,7 @@ void hived_fixture::postponed_init_impl( bool remove_db_files, config_arg_overri
 
       witness_plugin = app.find_plugin< hive::plugins::witness::witness_plugin >();
       BOOST_REQUIRE( witness_plugin );
+      witness_plugin->disable_verbose_startup();
 
       _chain = &( app.get_plugin< hive::plugins::chain::chain_plugin >() );
       if( _disable_p2p )
