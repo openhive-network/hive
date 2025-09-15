@@ -35,6 +35,7 @@ class debug_node_api_impl
       (debug_has_hardfork)
       (debug_get_json_schema)
       (debug_throw_exception)
+      (debug_fail_transaction)
     )
 
     fc::optional<fc::ecc::private_key> get_debug_private_key( const std::string& debug_key_str ) const;
@@ -111,6 +112,7 @@ DEFINE_API_IMPL( debug_node_api_impl, debug_has_hardfork )
   return { _db.has_hardfork( args.hardfork_id ) };
 }
 
+
 DEFINE_API_IMPL( debug_node_api_impl, debug_set_vest_price )
 {
   _debug_node.debug_set_vest_price( args.vest_price, args.hook_to_tx );
@@ -129,6 +131,18 @@ DEFINE_API_IMPL( debug_node_api_impl, debug_throw_exception )
   return {};
 }
 
+DEFINE_API_IMPL( debug_node_api_impl, debug_fail_transaction )
+{
+  // the transaction will fail during applying an already produced block
+  _debug_node.debug_update(
+      [args]( chain::database& db ){ FC_ASSERT(db.is_validating_block() == false, "Artificial exception was thrown for tx ${t}", ("t", args.tx_id ) ); }
+    , hive::chain::database::skip_nothing
+    , args.tx_id
+  );
+
+  return {};
+}
+
 } // detail
 
 debug_node_api::debug_node_api( appbase::application& app): my( new detail::debug_node_api_impl( app ) )
@@ -143,6 +157,7 @@ DEFINE_WRITE_APIS( debug_node_api,
   (debug_generate_blocks_until)
   (debug_set_hardfork)
   (debug_set_vest_price)
+  (debug_fail_transaction)
 )
 DEFINE_READ_APIS( debug_node_api,
   (debug_get_head_block)
