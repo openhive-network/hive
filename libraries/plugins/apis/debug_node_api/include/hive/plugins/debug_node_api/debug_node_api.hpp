@@ -146,6 +146,13 @@ struct debug_throw_exception_args
 
 typedef void_type debug_throw_exception_return;
 
+struct debug_fail_transaction_args
+{
+    chain::transaction_id_type tx_id;
+};
+
+typedef void_type debug_fail_transaction_return;
+
 class debug_node_api
 {
   public:
@@ -173,6 +180,7 @@ class debug_node_api
       (debug_get_json_schema)
       (debug_throw_exception)
       (debug_set_vest_price)
+      (debug_fail_transaction)
     )
 
   private:
@@ -231,3 +239,6 @@ FC_REFLECT( hive::plugins::debug_node::debug_get_json_schema_return,
 
 FC_REFLECT( hive::plugins::debug_node::debug_throw_exception_args,
         (throw_exception) )
+
+FC_REFLECT( hive::plugins::debug_node::debug_fail_transaction_args,
+        (tx_id) )
