@@ -59,6 +59,7 @@ public:
     counter_t account_create_rocksdb;
     counter_t account_create_volatile;
     counter_t account_moved_to_storage;
+    counter_t account_flush_to_storage;
     counter_t account_cmp;
     counter_t account_get;
   };
@@ -170,6 +171,7 @@ FC_REFLECT( hive::utilities::benchmark_dumper::account_archive_details_t,
         (account_next_basic)(account_next_skip_the_same)(account_next_skip_obsolete)(account_no_skip_obsolete)
         (account_create_rocksdb)(account_create_volatile)
         (account_moved_to_storage)
+        (account_flush_to_storage)
         (account_cmp)
         (account_get)
        )

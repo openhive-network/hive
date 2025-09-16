@@ -45,6 +45,7 @@ void operator -= ( benchmark_dumper::account_archive_details_t& current, const b
   current.account_create_rocksdb              -= previous.account_create_rocksdb;
   current.account_create_volatile             -= previous.account_create_volatile;
   current.account_moved_to_storage            -= previous.account_moved_to_storage;
+  current.account_flush_to_storage            -= previous.account_flush_to_storage;
   current.account_cmp                         -= previous.account_cmp;
   current.account_get                         -= previous.account_get;
 }

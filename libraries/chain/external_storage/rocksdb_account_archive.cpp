@@ -475,8 +475,6 @@ template<typename Volatile_Index_Type, typename Volatile_Object_Type, typename S
         typename RocksDB_Object_Type5 = RocksDB_Object_Type>
 bool rocksdb_account_archive::on_irreversible_block_impl( uint32_t block_num, const std::vector<ColumnTypes>& column_types )
 {
-  //names.clear();
-
   const auto& _volatile_idx = db.get_index<Volatile_Index_Type, by_block>();
 
   auto time_start = std::chrono::high_resolution_clock::now();
@@ -497,8 +495,6 @@ bool rocksdb_account_archive::on_irreversible_block_impl( uint32_t block_num, co
     ++_cnt;
 
     transporter<Volatile_Object_Type, RocksDB_Object_Type, RocksDB_Object_Type2, RocksDB_Object_Type3, RocksDB_Object_Type4, RocksDB_Object_Type5>::move_to_external_storage( provider, _current, column_types );
-
-    //names.push_back( _current.get_name() );
 
     if( !_do_flush )
       _do_flush = true;
@@ -542,15 +538,12 @@ void rocksdb_account_archive::on_irreversible_block( uint32_t block_num )
 
   if( _do_flush_meta || _do_flush_authority || _do_flush_account )
   {
+    auto time_start = std::chrono::high_resolution_clock::now();
+
     provider->flush();
-    // if( _do_flush_account )
-    // {
-    //   for( const auto& acc : names )
-    //   {
-    //     //ilog("created: ${n}", ("n", acc) );
-    //     get_account( acc, true );
-    //   }
-    // }
+
+    accounts_stats::stats.account_flush_to_storage.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+    ++accounts_stats::stats.account_flush_to_storage.count;
   }
 }
 
