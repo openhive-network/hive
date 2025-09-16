@@ -185,13 +185,13 @@ tests-no-zope = ["cloudpickle ; platform_python_implementation == \"CPython\"", 
 
 [[package]]
 name = "beekeepy"
-version = "0.0.1.dev423+07cd1cb"
+version = "0.0.1.dev429+8a918a3"
 description = "All in one package for beekeeper interaction via Python interface."
 optional = false
 python-versions = ">=3.12,<4.0"
 groups = ["main"]
 files = [
-    {file = "beekeepy-0.0.1.dev423+07cd1cb-py3-none-any.whl", hash = "sha256:4b47d10dd033f5a15cca1b12a301280796e80e24925696560f0bbd1642b224ff"},
+    {file = "beekeepy-0.0.1.dev429+8a918a3-py3-none-any.whl", hash = "sha256:860d1abd367f189a9e191de98699d9024fa2bccf750ce55636546dce197ce60e"},
 ]
 
 [package.dependencies]
@@ -325,17 +325,17 @@ markers = {main = "sys_platform == \"win32\"", black = "platform_system == \"Win
 
 [[package]]
 name = "database-api"
-version = "1.27.12rc2.dev84+fa16723f4"
+version = "1.27.12rc2.dev86+bda8d9d49"
 description = ""
 optional = false
 python-versions = ">=3.12,<4.0"
 groups = ["main"]
 files = [
-    {file = "database_api-1.27.12rc2.dev84+fa16723f4-py3-none-any.whl", hash = "sha256:5d60ebc400ee6e75793d57b48280c7459eaf50948a9bf45116f6e15476a2f87b"},
+    {file = "database_api-1.27.12rc2.dev86+bda8d9d49-py3-none-any.whl", hash = "sha256:7cd2fc60477392259971c61cec37be964e5d6ac0020d948fe1403faedbb02e3e"},
 ]
 
 [package.dependencies]
-beekeepy = "0.0.1.dev423+07cd1cb"
+beekeepy = "0.0.1.dev429+8a918a3"
 
 [package.source]
 type = "legacy"
@@ -893,17 +893,17 @@ files = [
 
 [[package]]
 name = "network-broadcast-api"
-version = "1.27.12rc2.dev84+fa16723f4"
+version = "1.27.12rc2.dev86+bda8d9d49"
 description = ""
 optional = false
 python-versions = ">=3.12,<4.0"
 groups = ["main"]
 files = [
-    {file = "network_broadcast_api-1.27.12rc2.dev84+fa16723f4-py3-none-any.whl", hash = "sha256:7f4824dd441d7635cf00f40f54b59af6c7bc456bc694ef7d9bc2f1ea9ec8cf3e"},
+    {file = "network_broadcast_api-1.27.12rc2.dev86+bda8d9d49-py3-none-any.whl", hash = "sha256:c0a314ab2539a36bab5f8cde580b6b6ed3ae541fc496df4692e32ebd7ec0ce4d"},
 ]
 
 [package.dependencies]
-beekeepy = "0.0.1.dev423+07cd1cb"
+beekeepy = "0.0.1.dev429+8a918a3"
 
 [package.source]
 type = "legacy"
@@ -1875,7 +1875,7 @@ develop = true
 abstractcp = "0.9.9"
 loguru = "0.7.2"
 python-dateutil = "2.8.2"
-wax = "0.3.10.dev894+98c1edda"
+wax = "0.3.10.dev896+7fc5c927"
 
 [package.source]
 type = "directory"
@@ -1993,20 +1993,20 @@ test = ["covdefaults (>=2.3)", "coverage (>=7.2.7)", "coverage-enable-subprocess
 
 [[package]]
 name = "wax"
-version = "0.3.10.dev894+98c1edda"
+version = "0.3.10.dev896+7fc5c927"
 description = ""
 optional = false
 python-versions = ">=3.12,<4.0"
 groups = ["main"]
 files = [
-    {file = "wax-0.3.10.dev894+98c1edda-cp312-cp312-manylinux_2_39_x86_64.whl", hash = "sha256:0cad7c350ee36fdf27a6f886e935512d870bc36111fe5c7560190de805076329"},
+    {file = "wax-0.3.10.dev896+7fc5c927-cp312-cp312-manylinux_2_39_x86_64.whl", hash = "sha256:8cd1b8a9a1c2868da1a2cd647ff8f3135a69e3d453f9501bcc16934228d26133"},
 ]
 
 [package.dependencies]
-database-api = "1.27.12rc2.dev84+fa16723f4"
+database-api = "1.27.12rc2.dev86+bda8d9d49"
 httpx = {version = "0.23.3", extras = ["http2"]}
 loguru = "0.7.2"
-network-broadcast-api = "1.27.12rc2.dev84+fa16723f4"
+network-broadcast-api = "1.27.12rc2.dev86+bda8d9d49"
 protobuf = "4.24.4"
 python-dateutil = "2.8.2"
 requests = "2.32.3"
