@@ -587,34 +587,70 @@ Object_Type rocksdb_account_archive::get_object( const Key_Type& key, const std:
 //==========================================account_metadata_object==========================================
 void rocksdb_account_archive::create_object( const account_metadata_object& obj )
 {
+  auto time_start = std::chrono::high_resolution_clock::now();
+
   volatile_supporter<volatile_account_metadata_index, volatile_account_metadata_object, account_metadata_object>::create_or_update_volatile( db, obj );
+
+  accounts_stats::stats.account_metadata_created.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+  ++accounts_stats::stats.account_metadata_created.count;
 }
 
 account_metadata rocksdb_account_archive::get_account_metadata( const account_name_type& account_name ) const
 {
+  auto time_start = std::chrono::high_resolution_clock::now();
+
+  BOOST_SCOPE_EXIT_ALL(&)
+  {
+    accounts_stats::stats.account_metadata_accessed_by_name.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+    ++accounts_stats::stats.account_metadata_accessed_by_name.count;
+  };
+
   return get_object<account_name_type, volatile_account_metadata_object, volatile_account_metadata_index, by_name, account_metadata, account_metadata_object, account_metadata_index, by_name>( account_name, { ColumnTypes::ACCOUNT_METADATA }, true/*is_required*/ );
 }
 
 void rocksdb_account_archive::modify_object( const account_metadata_object& obj, std::function<void(account_metadata_object&)>&& modifier )
 {
+  auto time_start = std::chrono::high_resolution_clock::now();
+
   volatile_supporter<volatile_account_metadata_index, volatile_account_metadata_object, account_metadata_object>::modify( db, obj, modifier );
+
+  accounts_stats::stats.account_metadata_modified.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+  ++accounts_stats::stats.account_metadata_modified.count;
 }
 //==========================================account_metadata_object==========================================
 
 //==========================================account_authority_object==========================================
 void rocksdb_account_archive::create_object( const account_authority_object& obj )
 {
+  auto time_start = std::chrono::high_resolution_clock::now();
+
   volatile_supporter<volatile_account_authority_index, volatile_account_authority_object, account_authority_object>::create_or_update_volatile( db, obj );
+
+  accounts_stats::stats.account_authority_created.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+  ++accounts_stats::stats.account_authority_created.count;
 }
 
 account_authority rocksdb_account_archive::get_account_authority( const account_name_type& account_name ) const
 {
+  auto time_start = std::chrono::high_resolution_clock::now();
+
+  BOOST_SCOPE_EXIT_ALL(&)
+  {
+    accounts_stats::stats.account_authority_accessed_by_name.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+    ++accounts_stats::stats.account_authority_accessed_by_name.count;
+  };
+
   return get_object<account_name_type, volatile_account_authority_object, volatile_account_authority_index, by_name, account_authority, account_authority_object, account_authority_index, by_name>( account_name, { ColumnTypes::ACCOUNT_AUTHORITY }, true/*is_required*/ );
 }
 
 void rocksdb_account_archive::modify_object( const account_authority_object& obj, std::function<void(account_authority_object&)>&& modifier )
 {
+  auto time_start = std::chrono::high_resolution_clock::now();
+
   volatile_supporter<volatile_account_authority_index, volatile_account_authority_object, account_authority_object>::modify( db, obj, modifier );
+
+  accounts_stats::stats.account_authority_modified.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+  ++accounts_stats::stats.account_authority_modified.count;
 }
 //==========================================account_authority_object==========================================
 
