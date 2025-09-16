@@ -106,7 +106,7 @@ struct transporter
 {
   static void move_to_external_storage( const external_storage_reader_writer::ptr& provider, const Volatile_Object_Type& volatile_object, const std::vector<ColumnTypes>& column_types )
   {
-    FC_ASSERT( column_types.size() );
+    FC_ASSERT( column_types.size() && "move to external storage" );
     transporter_impl<Volatile_Object_Type, RocksDB_Object_Type, account_name_slice_t>::move_to_external_storage( provider, account_name_slice_t( volatile_object.get_name().data ), volatile_object, column_types[0] );
   }
 };
@@ -169,7 +169,7 @@ struct rocksdb_reader<account_metadata_object, account_metadata_index, account_n
   {
     PinnableSlice _buffer;
 
-    FC_ASSERT( column_types.size() );
+    FC_ASSERT( column_types.size() && "read account metadata from rocksdb storage" );
     if( !rocksdb_reader_helper::read<account_name_slice_t, account_name_type::Storage>( provider, key.data, column_types[0], _buffer ) )
       return std::shared_ptr<account_metadata_object>();
 
@@ -192,7 +192,7 @@ struct rocksdb_reader<account_authority_object, account_authority_index, account
   {
     PinnableSlice _buffer;
 
-    FC_ASSERT( column_types.size() );
+    FC_ASSERT( column_types.size() && "read account authority from rocksdb storage" );
     if( !rocksdb_reader_helper::read<account_name_slice_t, account_name_type::Storage>( provider, key.data, column_types[0], _buffer ) )
       return std::shared_ptr<account_authority_object>();
 
@@ -217,7 +217,7 @@ struct rocksdb_reader<account_object, account_index, account_name_type>
   {
     PinnableSlice _buffer;
 
-    FC_ASSERT( column_types.size() );
+    FC_ASSERT( column_types.size() && "read account from rocksdb storage" );
     if( !rocksdb_reader_helper::read<account_name_slice_t, account_name_type::Storage>( provider, key.data, column_types[0], _buffer ) )
       return std::shared_ptr<account_object>();
 
@@ -438,8 +438,8 @@ class custom_cache_helper<account_object>
 };
 
 rocksdb_account_archive::rocksdb_account_archive( database& db, const bfs::path& blockchain_storage_path,
-  const bfs::path& storage_path, appbase::application& app, bool destroy_on_startup, bool destroy_on_shutdown )
-  : db( db ), destroy_database_on_startup( destroy_on_startup ), destroy_database_on_shutdown( destroy_on_shutdown )
+  const bfs::path& storage_path, appbase::application& app )
+  : db( db )
 {
   provider = std::make_shared<rocksdb_account_storage_provider>( blockchain_storage_path, storage_path, app );
   snapshot = std::make_shared<rocksdb_snapshot>( "Accounts RocksDB", "accounts_rocksdb_data", db, storage_path, provider );
@@ -725,12 +725,13 @@ void rocksdb_account_archive::load_snapshot( const hive::chain::load_snapshot_su
 
 void rocksdb_account_archive::open()
 {
-  provider->init( destroy_database_on_startup );
+  // volatile_comment_index is registered in database, so it is handled automatically
+  provider->openDb( db.get_last_irreversible_block_num() );
 }
 
 void rocksdb_account_archive::close()
 {
-  provider->shutdownDb( destroy_database_on_shutdown );
+  provider->shutdownDb();
 }
 
 void rocksdb_account_archive::wipe()

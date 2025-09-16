@@ -479,9 +479,9 @@ void account_create_with_delegation_evaluator::do_apply( const account_create_wi
   const auto& props = _db.get_dynamic_global_properties();
   const witness_schedule_object& wso = _db.get_witness_schedule_object();
 
-  FC_ASSERT( creator.get_balance() >= o.fee && "Can't create",
+  FC_ASSERT( creator->get_balance() >= o.fee && "Can't create",
     "Insufficient balance to create account.",
-    ( "creator.balance", creator.get_balance() )
+    ( "creator.balance", creator->get_balance() )
     ( "required", o.fee ) );
 
   FC_ASSERT( creator->get_vesting().to_asset() - creator->get_delegated_vesting() - asset( creator->get_total_vesting_withdrawal(), VESTS_SYMBOL ) >= o.delegation, "Insufficient vesting shares to delegate to new account.",
@@ -623,7 +623,7 @@ void account_update_evaluator::do_apply( const account_update_operation& o )
 # ifndef HIVE_CONVERTER_BUILD
     if( _db.has_hardfork( HIVE_HARDFORK_0_11 ) )
       FC_ASSERT( util::owner_update_limit_mgr::check( _db.has_hardfork( HIVE_HARDFORK_1_26_AUTH_UPDATE ), _db.head_block_time(),
-                                                                        account_auth.previous_owner_update, account_auth.last_owner_update ) && "update",
+                                                                        account_auth->previous_owner_update, account_auth->last_owner_update ) && "update",
                                                       "${m}", ("m", util::owner_update_limit_mgr::msg( _db.has_hardfork( HIVE_HARDFORK_1_26_AUTH_UPDATE ) )) );
 # endif
 
@@ -721,7 +721,7 @@ void account_update2_evaluator::do_apply( const account_update2_operation& o )
   if( o.owner )
   {
     FC_ASSERT( util::owner_update_limit_mgr::check( _db.has_hardfork( HIVE_HARDFORK_1_26_AUTH_UPDATE ), _db.head_block_time(),
-                                                                      account_auth.previous_owner_update, account_auth.last_owner_update ) && "update2",
+                                                                      account_auth->previous_owner_update, account_auth->last_owner_update ) && "update2",
                                                     "${m}", ("m", util::owner_update_limit_mgr::msg( _db.has_hardfork( HIVE_HARDFORK_1_26_AUTH_UPDATE ) ) ) );
 
     verify_authority_accounts_exist( _db, *o.owner, o.account, authority::owner );
@@ -944,7 +944,7 @@ void comment_evaluator::do_apply( const comment_operation& o )
     if( _db.has_hardfork( HIVE_HARDFORK_0_20__2019 ) )
     {
       if( !parent )
-        FC_ASSERT( ( _now - auth.last_root_post ) > HIVE_MIN_ROOT_COMMENT_INTERVAL && "Post HF20", "You may only post once every 5 minutes.", ("now",_now)("last_root_post", auth.last_root_post) );
+        FC_ASSERT( ( _now - auth->get_last_root_post() ) > HIVE_MIN_ROOT_COMMENT_INTERVAL && "Post HF20", "You may only post once every 5 minutes.", ("now",_now)("last_root_post", auth->get_last_root_post()) );
       else
         FC_ASSERT( ( _now - auth->get_last_post() ) >= HIVE_MIN_REPLY_INTERVAL_HF20, "You may only comment once every 3 seconds.", ("now",_now)("auth.last_post",auth->get_last_post()) );
     }
@@ -953,7 +953,7 @@ void comment_evaluator::do_apply( const comment_operation& o )
       if( !parent )
         FC_ASSERT( ( _now - auth->get_last_root_post() ) > HIVE_MIN_ROOT_COMMENT_INTERVAL, "You may only post once every 5 minutes.", ("now",_now)("last_root_post", auth->get_last_root_post()) );
       else
-        FC_ASSERT( ( _now - auth.last_post ) > HIVE_MIN_REPLY_INTERVAL && "Post HF12", "You may only comment once every 20 seconds.", ("now",_now)("auth.last_post",auth.last_post) );
+        FC_ASSERT( ( _now - auth->get_last_post() ) > HIVE_MIN_REPLY_INTERVAL && "Post HF12", "You may only comment once every 20 seconds.", ("now",_now)("auth.last_post",auth->get_last_post()) );
     }
     else if( _db.has_hardfork( HIVE_HARDFORK_0_6__113 ) )
     {
@@ -1455,9 +1455,9 @@ void set_withdraw_vesting_route_evaluator::do_apply( const set_withdraw_vesting_
 
 void account_witness_proxy_evaluator::do_apply( const account_witness_proxy_operation& o )
 {
-  const auto& account = _db.get_account( o.account );
-  FC_ASSERT( account.can_vote && "Account has declined the ability to vote and cannot proxy votes." );
-  _db.modify( account, [&]( account_object& a) { a.update_governance_vote_expiration_ts(_db.head_block_time()); });
+  const auto account = _db.get_account( o.account );
+  FC_ASSERT( account->can_vote() && "Account has declined the ability to vote and cannot proxy votes." );
+  _db.modify( *account, [&]( account_object& a) { a.update_governance_vote_expiration_ts(_db.head_block_time()); });
 
   _db.nullify_proxied_witness_votes( *account );
 
@@ -1509,10 +1509,10 @@ void account_witness_proxy_evaluator::do_apply( const account_witness_proxy_oper
 
 void account_witness_vote_evaluator::do_apply( const account_witness_vote_operation& o )
 {
-  const auto& voter = _db.get_account( o.account );
-  FC_ASSERT( !voter.has_proxy(), "A proxy is currently set, please clear the proxy before voting for a witness." );
-  FC_ASSERT( voter.can_vote && "Account has declined its voting rights." );
-  _db.modify( voter, [&]( account_object& a) { a.update_governance_vote_expiration_ts(_db.head_block_time()); });
+  const auto voter = _db.get_account( o.account );
+  FC_ASSERT( !voter->has_proxy(), "A proxy is currently set, please clear the proxy before voting for a witness." );
+  FC_ASSERT( voter->can_vote() && "Account has declined its voting rights." );
+  _db.modify( *voter, [&]( account_object& a) { a.update_governance_vote_expiration_ts(_db.head_block_time()); });
 
   const auto& witness = _db.get_witness( o.witness );
 
@@ -1580,7 +1580,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
 
   auto voter = _db.get_account( o.voter );
 
-  FC_ASSERT( voter.can_vote && "Voter has declined their voting rights." );
+  FC_ASSERT( voter->can_vote() && "Voter has declined their voting rights." );
 
   if( comment_cashout )
   {
@@ -2591,9 +2591,9 @@ void claim_account_evaluator::do_apply( const claim_account_operation& o )
   auto creator = _db.get_account( o.creator );
   const auto& wso = _db.get_witness_schedule_object();
 
-  FC_ASSERT( creator.get_balance() >= o.fee && "Can't claim",
+  FC_ASSERT( creator->get_balance() >= o.fee && "Can't claim",
     "Insufficient balance to create account.",
-    ( "creator.balance", creator.get_balance() )( "required", o.fee ) );
+    ( "creator.balance", creator->get_balance() )( "required", o.fee ) );
 
   if( o.fee.amount == 0 )
   {
@@ -2872,7 +2872,7 @@ void decline_voting_rights_evaluator::do_apply( const decline_voting_rights_oper
   auto account = _db.get_account( o.account );
 
   if( _db.is_in_control() || _db.has_hardfork( HIVE_HARDFORK_1_28 ) )
-    FC_ASSERT( account.can_vote && "Voter declined voting rights already, therefore trying to decline voting rights again is forbidden." );
+    FC_ASSERT( account->can_vote() && "Voter declined voting rights already, therefore trying to decline voting rights again is forbidden." );
 
   const auto& request_idx = _db.get_index< decline_voting_rights_request_index >().indices().get< by_account >();
   auto itr = request_idx.find( account->get_name() );
@@ -3343,8 +3343,8 @@ void recurrent_transfer_evaluator::do_apply( const recurrent_transfer_operation&
     _db.remove( *itr );
     _db.modify( *from_account, [&]( account_object& a )
     {
-      FC_ASSERT( a.open_recurrent_transfers > 0 && "No (more) open recurrent transfers" );
-      a.open_recurrent_transfers--;
+      FC_ASSERT( a.get_open_recurrent_transfers() > 0 && "No (more) open recurrent transfers" );
+      a.set_open_recurrent_transfers( a.get_open_recurrent_transfers() - 1 );
     } );
   }
   else

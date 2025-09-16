@@ -19,14 +19,14 @@ std::unique_ptr<DB>& rocksdb_base_storage_provider::getStorage()
   return rocksdb_storage_provider::getStorage();
 }
 
-void rocksdb_base_storage_provider::openDb( bool cleanDatabase )
+void rocksdb_base_storage_provider::openDb( uint32_t expected_lib )
 {
-  rocksdb_storage_provider::openDb( cleanDatabase );
+  rocksdb_storage_provider::openDb( expected_lib );
 }
 
-void rocksdb_base_storage_provider::shutdownDb( bool removeDB )
+void rocksdb_base_storage_provider::shutdownDb()
 {
-  rocksdb_storage_provider::shutdownDb( removeDB );
+  rocksdb_storage_provider::shutdownDb();
 }
 
 void rocksdb_base_storage_provider::wipeDb()
@@ -42,11 +42,6 @@ void rocksdb_base_storage_provider::flush()
 void rocksdb_base_storage_provider::update_lib( uint32_t lib )
 {
   rocksdb_storage_provider::update_lib( lib );
-}
-
-void rocksdb_base_storage_provider::update_reindex_point( uint32_t rp )
-{
-  rocksdb_storage_provider::update_reindex_point( rp );
 }
 
 }}

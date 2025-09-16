@@ -253,6 +253,14 @@ typedef PrimitiveTypeSlice< ah_op_id_pair > ah_op_by_id_slice_t;
 typedef std::pair<uint32_t, uint32_t> block_no_tx_in_block_pair;
 typedef PrimitiveTypeSlice<block_no_tx_in_block_pair> block_no_tx_in_block_slice_t;
 
+typedef std::pair< uint32_t, account_name_type::Storage > time_account_name_pair;
+typedef PrimitiveTypeSlice<time_account_name_pair> time_account_name_pair_slice_t;
+typedef PrimitiveTypeComparatorImpl< time_account_name_pair > time_account_name_pair_ComparatorImpl;
+
+typedef std::pair< uint32_t, uint32_t > time_account_id_pair;
+typedef PrimitiveTypeSlice<time_account_id_pair> time_account_id_pair_slice_t;
+typedef PrimitiveTypeComparatorImpl< time_account_id_pair > time_account_id_pair_ComparatorImpl;
+
 void registerHiveComparators();
 void registerSnapshotComparators();
 void registerAccountHistoryComparators();

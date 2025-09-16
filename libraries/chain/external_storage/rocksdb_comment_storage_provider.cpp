@@ -30,42 +30,7 @@ void rocksdb_comment_storage_provider::save( ColumnTypes column_type, const Slic
 
 bool rocksdb_comment_storage_provider::read( ColumnTypes column_type, const Slice& key, PinnableSlice& value )
 {
-  return rocksdb_storage_provider::getStorage();
-}
-
-void rocksdb_comment_storage_provider::openDb( uint32_t expected_lib )
-{
-  rocksdb_storage_provider::openDb( expected_lib );
-}
-
-void rocksdb_comment_storage_provider::shutdownDb()
-{
-  rocksdb_storage_provider::shutdownDb();
-}
-
-void rocksdb_comment_storage_provider::wipeDb()
-{
-  rocksdb_storage_provider::wipeDb();
-}
-
-void rocksdb_comment_storage_provider::save( const Slice& key, const Slice& value )
-{
-  rocksdb_storage_provider::save( key, value );
-}
-
-bool rocksdb_comment_storage_provider::read( const Slice& key, PinnableSlice& value )
-{
-  return rocksdb_storage_provider::read( key, value );
-}
-
-void rocksdb_comment_storage_provider::flush()
-{
-  rocksdb_storage_provider::flush();
-}
-
-void rocksdb_comment_storage_provider::update_lib( uint32_t lib )
-{
-  rocksdb_storage_provider::update_lib( lib );
+  return rocksdb_storage_provider::read( column_type, key, value );
 }
 
 }}

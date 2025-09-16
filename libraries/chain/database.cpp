@@ -5463,10 +5463,10 @@ void database::modify_balance( const account_object& a, const asset& delta, bool
   {
     if( delta.symbol.asset_num == HIVE_ASSET_NUM_HIVE )
     {
-      auto b = acnt.balance;
-      acnt.balance += delta;
+      auto b = acnt.get_balance();
+      acnt.set_balance( acnt.get_balance() + delta );
       if(trace_balance_change)
-        ilog("${a} HIVE balance changed to ${nb} (previous: ${b} ) at block: ${block}. Operation context: ${c}", ("a", a.get_name())("b", b.amount)("nb", acnt.balance.amount)("block", _current_block_num)("c", op_context));
+        ilog("${a} HIVE balance changed to ${nb} (previous: ${b} ) at block: ${block}. Operation context: ${c}", ("a", a.get_name())("b", b.amount)("nb", acnt.get_balance().amount)("block", _current_block_num)("c", op_context));
 
       if( check_balance )
       {
@@ -5476,20 +5476,20 @@ void database::modify_balance( const account_object& a, const asset& delta, bool
     else if( delta.symbol.asset_num == HIVE_ASSET_NUM_HBD )
     {
       /// Starting from HF 25 HBD interest will be paid only from saving balance.
-      if( has_hardfork(HIVE_HARDFORK_1_25) == false && a.hbd_seconds_last_update != head_block_time() )
+      if( has_hardfork(HIVE_HARDFORK_1_25) == false && a.get_hbd_seconds_last_update() != head_block_time() )
       {
-        acnt.hbd_seconds += fc::uint128_t(a.get_hbd_balance().amount.value) * (head_block_time() - a.hbd_seconds_last_update).to_seconds();
-        acnt.hbd_seconds_last_update = head_block_time();
-        if( acnt.hbd_seconds > 0 &&
-            (acnt.hbd_seconds_last_update - acnt.hbd_last_interest_payment).to_seconds() > HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC )
+        acnt.set_hbd_seconds( acnt.get_hbd_seconds() + fc::uint128_t(a.get_hbd_balance().amount.value) * (head_block_time() - a.get_hbd_seconds_last_update()).to_seconds() );
+        acnt.set_hbd_seconds_last_update( head_block_time() );
+        if( acnt.get_hbd_seconds() > 0 &&
+            (acnt.get_hbd_seconds_last_update() - acnt.get_hbd_last_interest_payment()).to_seconds() > HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC )
         {
-          auto interest = acnt.hbd_seconds / HIVE_SECONDS_PER_YEAR;
+          auto interest = acnt.get_hbd_seconds() / HIVE_SECONDS_PER_YEAR;
           interest *= get_dynamic_global_properties().get_hbd_interest_rate();
           interest /= HIVE_100_PERCENT;
           asset interest_paid(fc::uint128_to_uint64(interest), HBD_SYMBOL);
-          acnt.hbd_balance += interest_paid;
-          acnt.hbd_seconds = 0;
-          acnt.hbd_last_interest_payment = head_block_time();
+          acnt.set_hbd_balance( acnt.get_hbd_balance() + HBD_asset( interest_paid ) );
+          acnt.set_hbd_seconds( 0 );
+          acnt.set_hbd_last_interest_payment( head_block_time() );
 
           if(interest > 0)
             push_virtual_operation( interest_operation( a.get_name(), interest_paid, true ) );
@@ -5502,11 +5502,11 @@ void database::modify_balance( const account_object& a, const asset& delta, bool
         }
       }
 
-      auto b = acnt.hbd_balance;
-      acnt.hbd_balance += delta;
+      auto b = acnt.get_hbd_balance();
+      acnt.set_hbd_balance( acnt.get_hbd_balance() + HBD_asset( delta ) );
 
       if(trace_balance_change)
-        ilog("${a} HBD balance changed to ${nb} (previous: ${b} ) at block: ${block}. Operation context: ${c}", ("a", a.get_name())("b", b.amount)("nb", acnt.hbd_balance.amount)("block", _current_block_num)("c", op_context));
+        ilog("${a} HBD balance changed to ${nb} (previous: ${b} ) at block: ${block}. Operation context: ${c}", ("a", a.get_name())("b", b.amount)("nb", acnt.get_hbd_balance().amount)("block", _current_block_num)("c", op_context));
 
       if( check_balance )
       {
@@ -5517,7 +5517,7 @@ void database::modify_balance( const account_object& a, const asset& delta, bool
     {
       FC_ASSERT( delta.symbol.asset_num == HIVE_ASSET_NUM_VESTS, "invalid symbol" );
 
-      acnt.vesting_shares += delta;
+      acnt.set_vesting( acnt.get_vesting() + delta );
       if( check_balance )
       {
         FC_ASSERT( acnt.get_vesting().amount.value >= 0, "Insufficient VESTS funds" );
@@ -5534,7 +5534,7 @@ void database::modify_reward_balance( const account_object& a, const asset& valu
     {
       if( share_delta.amount.value == 0 )
       {
-        acnt.reward_hive_balance += value_delta;
+        acnt.set_rewards( acnt.get_rewards() + value_delta );
         if( check_balance )
         {
           FC_ASSERT( acnt.get_rewards().amount.value >= 0, "Insufficient reward HIVE funds" );
@@ -5542,8 +5542,8 @@ void database::modify_reward_balance( const account_object& a, const asset& valu
       }
       else
       {
-        acnt.reward_vesting_hive += value_delta;
-        acnt.reward_vesting_balance += share_delta;
+        acnt.set_vest_rewards_as_hive( acnt.get_vest_rewards_as_hive() + HIVE_asset( value_delta ) );
+        acnt.set_vest_rewards( acnt.get_vest_rewards() + VEST_asset( share_delta ) );
         if( check_balance )
         {
           FC_ASSERT( acnt.get_vest_rewards().amount.value >= 0, "Insufficient reward VESTS funds" );
@@ -5554,7 +5554,7 @@ void database::modify_reward_balance( const account_object& a, const asset& valu
     {
       FC_ASSERT( value_delta.symbol.asset_num == HIVE_ASSET_NUM_HBD, "invalid symbol" );
       FC_ASSERT( share_delta.amount.value == 0 );
-      acnt.reward_hbd_balance += value_delta;
+      acnt.set_hbd_rewards( acnt.get_hbd_rewards() + HBD_asset( value_delta ) );
       if( check_balance )
       {
         FC_ASSERT( acnt.get_hbd_rewards().amount.value >= 0, "Insufficient reward HBD funds" );
@@ -5611,7 +5611,7 @@ void database::adjust_savings_balance( const account_object& a, const asset& del
   {
     if( delta.symbol.asset_num == HIVE_ASSET_NUM_HIVE )
     {
-      acnt.savings_balance += delta;
+      acnt.set_savings( acnt.get_savings() + delta );
       if( check_balance )
       {
         FC_ASSERT( acnt.get_savings().amount.value >= 0, "Insufficient savings HIVE funds" );
@@ -5620,21 +5620,21 @@ void database::adjust_savings_balance( const account_object& a, const asset& del
     else
     {
       FC_ASSERT( delta.symbol.asset_num == HIVE_ASSET_NUM_HBD && "invalid symbol" );
-      if( a.savings_hbd_seconds_last_update != head_block_time() )
+      if( a.get_savings_hbd_seconds_last_update() != head_block_time() )
       {
-        acnt.savings_hbd_seconds += fc::uint128_t(a.get_hbd_savings().amount.value) * (head_block_time() - a.savings_hbd_seconds_last_update).to_seconds();
-        acnt.savings_hbd_seconds_last_update = head_block_time();
+        acnt.set_savings_hbd_seconds( acnt.get_savings_hbd_seconds() + fc::uint128_t(a.get_hbd_savings().amount.value) * (head_block_time() - a.get_savings_hbd_seconds_last_update()).to_seconds() );
+        acnt.set_savings_hbd_seconds_last_update( head_block_time() );
 
-        if( acnt.savings_hbd_seconds > 0 &&
-            (acnt.savings_hbd_seconds_last_update - acnt.savings_hbd_last_interest_payment).to_seconds() > HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC )
+        if( acnt.get_savings_hbd_seconds() > 0 &&
+            (acnt.get_savings_hbd_seconds_last_update() - acnt.get_savings_hbd_last_interest_payment()).to_seconds() > HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC )
         {
-          auto interest = acnt.savings_hbd_seconds / HIVE_SECONDS_PER_YEAR;
+          auto interest = acnt.get_savings_hbd_seconds() / HIVE_SECONDS_PER_YEAR;
           interest *= get_dynamic_global_properties().get_hbd_interest_rate();
           interest /= HIVE_100_PERCENT;
           asset interest_paid(fc::uint128_to_uint64(interest), HBD_SYMBOL);
-          acnt.savings_hbd_balance += interest_paid;
-          acnt.savings_hbd_seconds = 0;
-          acnt.savings_hbd_last_interest_payment = head_block_time();
+          acnt.set_hbd_savings( acnt.get_hbd_savings() + interest_paid );
+          acnt.set_savings_hbd_seconds( 0 );
+          acnt.set_savings_hbd_last_interest_payment( head_block_time() );
 
           if(interest > 0)
             push_virtual_operation( interest_operation( a.get_name(), interest_paid, false ) );
@@ -5646,7 +5646,7 @@ void database::adjust_savings_balance( const account_object& a, const asset& del
           } );
         }
       }
-      acnt.savings_hbd_balance += delta;
+      acnt.set_hbd_savings( acnt.get_hbd_savings() + delta );
       if( check_balance )
       {
         FC_ASSERT( acnt.get_hbd_savings().amount.value >= 0, "Insufficient savings HBD funds" );

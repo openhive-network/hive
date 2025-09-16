@@ -813,6 +813,11 @@ void chain_plugin_impl::initial_settings()
       ( "csp", comments_storage_path.c_str() ) );
     comment_archive = std::make_shared<rocksdb_comment_archive>( db, shared_memory_dir,
       comments_storage_path, theApp );
+
+    ilog( "'ROCKSDB' - accounts will be archived in RocksDB at ${csp}",
+      ( "csp", accounts_storage_path.c_str() ) );
+    account_archive = std::make_shared<rocksdb_account_archive>( db, shared_memory_dir,
+      accounts_storage_path, theApp );
     break;
   }
   db.set_comments_handler( comment_archive );

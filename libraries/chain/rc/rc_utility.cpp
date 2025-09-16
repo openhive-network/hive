@@ -359,7 +359,7 @@ void resource_credits::update_account_after_rc_delegation( const account_object&
     }
     else
     {
-      bool regenerate_condition_rc = (acc.rc_manabar.last_update_time != now.sec_since_epoch());
+      bool regenerate_condition_rc = (acc.get_rc_manabar().last_update_time != now.sec_since_epoch());
       if( regenerate_condition_rc )
       {
         //most likely cause: there is no regenerate_rc_mana() call before operation changing vests
@@ -384,7 +384,7 @@ void resource_credits::update_account_after_rc_delegation( const account_object&
 void resource_credits::update_account_after_vest_change( const account_object& account,
   const fc::time_point_sec now, bool _fill_new_mana, bool _check_for_rc_delegation_overflow ) const
 {
-  bool regenerate_condition = (account.rc_manabar.last_update_time != now.sec_since_epoch());
+  bool regenerate_condition = (account.get_rc_manabar().last_update_time != now.sec_since_epoch());
   if( regenerate_condition )
   {
     //most likely cause: there is no regenerate_rc_mana() call before operation changing vests

@@ -26,13 +26,10 @@ class rocksdb_account_archive : public accounts_handler
     const size_t volatile_objects_limit = 1'000;
 #endif
 
-    chainbase::database& db;
+    database& db;
 
     rocksdb_account_storage_provider::ptr   provider;
     external_storage_snapshot::ptr          snapshot;
-
-    bool destroy_database_on_startup = false;
-    bool destroy_database_on_shutdown = false;
 
     template<typename Key_Type, typename Volatile_Object_Type, typename Volatile_Index_Type, typename Volatile_Sub_Index_Type, typename Object_Type, typename SHM_Object_Type, typename SHM_Object_Index, typename SHM_Object_Sub_Index>
     Object_Type get_object( const Key_Type& key, const std::vector<ColumnTypes>& column_types, bool is_required ) const;
@@ -44,7 +41,7 @@ class rocksdb_account_archive : public accounts_handler
   public:
 
     rocksdb_account_archive( database& db, const bfs::path& blockchain_storage_path, const bfs::path& storage_path,
-      appbase::application& app, bool destroy_on_startup, bool destroy_on_shutdown );
+      appbase::application& app );
     virtual ~rocksdb_account_archive();
 
     void on_irreversible_block( uint32_t block_num ) override;
