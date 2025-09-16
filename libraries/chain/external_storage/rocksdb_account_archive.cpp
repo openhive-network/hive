@@ -119,28 +119,29 @@ struct transporter<volatile_account_object, rocksdb_account_object, rocksdb_acco
     FC_ASSERT( column_types.size() == 5 );
     transporter_impl<volatile_account_object, rocksdb_account_object, account_name_slice_t>::move_to_external_storage( provider, account_name_slice_t( volatile_object.get_name().data ), volatile_object, column_types[0] );
     transporter_impl<volatile_account_object, rocksdb_account_object_by_id, uint32_slice_t>::move_to_external_storage( provider, uint32_slice_t( volatile_object.account_id ), volatile_object, column_types[1] );
-    transporter_impl<volatile_account_object, rocksdb_account_object_by_next_vesting_withdrawal, time_account_name_pair_slice_t>::move_to_external_storage( provider, time_account_name_pair_slice_t( std::make_pair( volatile_object.get_next_vesting_withdrawal().sec_since_epoch(), volatile_object.get_name().data ) ), volatile_object, column_types[2] );
-    transporter_impl<volatile_account_object, rocksdb_account_object_by_delayed_voting, time_account_id_pair_slice_t>::move_to_external_storage( provider, time_account_id_pair_slice_t( std::make_pair( volatile_object.get_oldest_delayed_vote_time().sec_since_epoch(), volatile_object.get_account_id().get_value() ) ), volatile_object, column_types[3] );
-    transporter_impl<volatile_account_object, rocksdb_account_object_by_governance_vote_expiration_ts, time_account_id_pair_slice_t>::move_to_external_storage( provider, time_account_id_pair_slice_t( std::make_pair( volatile_object.get_governance_vote_expiration_ts().sec_since_epoch(), volatile_object.get_account_id().get_value() ) ), volatile_object, column_types[4] );
 
-    /*
-      Remove old records.
-      We need to have previous values in order to calculate a valid key.
-    */
-    if( volatile_object.get_previous_next_vesting_withdrawal() )
-    {
-      transporter_impl<volatile_account_object, rocksdb_account_object_by_next_vesting_withdrawal, time_account_name_pair_slice_t>::remove_from_external_storage( provider, time_account_name_pair_slice_t( std::make_pair( volatile_object.get_previous_next_vesting_withdrawal()->sec_since_epoch(), volatile_object.get_name().data ) ), column_types[2] );
-    }
+    // transporter_impl<volatile_account_object, rocksdb_account_object_by_next_vesting_withdrawal, time_account_name_pair_slice_t>::move_to_external_storage( provider, time_account_name_pair_slice_t( std::make_pair( volatile_object.get_next_vesting_withdrawal().sec_since_epoch(), volatile_object.get_name().data ) ), volatile_object, column_types[2] );
+    // transporter_impl<volatile_account_object, rocksdb_account_object_by_delayed_voting, time_account_id_pair_slice_t>::move_to_external_storage( provider, time_account_id_pair_slice_t( std::make_pair( volatile_object.get_oldest_delayed_vote_time().sec_since_epoch(), volatile_object.get_account_id().get_value() ) ), volatile_object, column_types[3] );
+    // transporter_impl<volatile_account_object, rocksdb_account_object_by_governance_vote_expiration_ts, time_account_id_pair_slice_t>::move_to_external_storage( provider, time_account_id_pair_slice_t( std::make_pair( volatile_object.get_governance_vote_expiration_ts().sec_since_epoch(), volatile_object.get_account_id().get_value() ) ), volatile_object, column_types[4] );
 
-    if( volatile_object.get_previous_oldest_delayed_vote_time() )
-    {
-      transporter_impl<volatile_account_object, rocksdb_account_object_by_delayed_voting, time_account_id_pair_slice_t>::remove_from_external_storage( provider, time_account_id_pair_slice_t( std::make_pair( volatile_object.get_previous_oldest_delayed_vote_time()->sec_since_epoch(), volatile_object.get_account_id().get_value() ) ), column_types[3] );
-    }
+    // /*
+    //   Remove old records.
+    //   We need to have previous values in order to calculate a valid key.
+    // */
+    // if( volatile_object.get_previous_next_vesting_withdrawal() )
+    // {
+    //   transporter_impl<volatile_account_object, rocksdb_account_object_by_next_vesting_withdrawal, time_account_name_pair_slice_t>::remove_from_external_storage( provider, time_account_name_pair_slice_t( std::make_pair( volatile_object.get_previous_next_vesting_withdrawal()->sec_since_epoch(), volatile_object.get_name().data ) ), column_types[2] );
+    // }
 
-    if( volatile_object.get_previous_governance_vote_expiration_ts() )
-    {
-      transporter_impl<volatile_account_object, rocksdb_account_object_by_governance_vote_expiration_ts, time_account_id_pair_slice_t>::remove_from_external_storage( provider, time_account_id_pair_slice_t( std::make_pair( volatile_object.get_previous_governance_vote_expiration_ts()->sec_since_epoch(), volatile_object.get_account_id().get_value() ) ), column_types[4] );
-    }
+    // if( volatile_object.get_previous_oldest_delayed_vote_time() )
+    // {
+    //   transporter_impl<volatile_account_object, rocksdb_account_object_by_delayed_voting, time_account_id_pair_slice_t>::remove_from_external_storage( provider, time_account_id_pair_slice_t( std::make_pair( volatile_object.get_previous_oldest_delayed_vote_time()->sec_since_epoch(), volatile_object.get_account_id().get_value() ) ), column_types[3] );
+    // }
+
+    // if( volatile_object.get_previous_governance_vote_expiration_ts() )
+    // {
+    //   transporter_impl<volatile_account_object, rocksdb_account_object_by_governance_vote_expiration_ts, time_account_id_pair_slice_t>::remove_from_external_storage( provider, time_account_id_pair_slice_t( std::make_pair( volatile_object.get_previous_governance_vote_expiration_ts()->sec_since_epoch(), volatile_object.get_account_id().get_value() ) ), column_types[4] );
+    // }
   }
 };
 
