@@ -702,16 +702,34 @@ void rocksdb_account_archive::modify_object( const account_object& obj, std::fun
 {
   auto time_start = std::chrono::high_resolution_clock::now();
 
+  auto _previous_proxy  = obj.get_proxy();
+  auto _previous_next_vesting_withdrawal  = obj.get_next_vesting_withdrawal();
+  auto _previous_governance_vote_expiration_ts  = obj.get_governance_vote_expiration_ts();
+  auto _previous_get_oldest_delayed_vote_time = obj.get_oldest_delayed_vote_time();
+
   volatile_supporter<volatile_account_index, volatile_account_object, account_object>::modify( db, obj, modifier );
 
-  const auto& _idx = db.get_index<tiny_account_index, by_name>();
-  auto _found = _idx.find( obj.get_name() );
-  FC_ASSERT( _found != _idx.end() );
+  auto _new_proxy = obj.get_proxy();
+  auto _new_next_vesting_withdrawal = obj.get_next_vesting_withdrawal();
+  auto _new_governance_vote_expiration_ts = obj.get_governance_vote_expiration_ts();
+  auto _new_get_oldest_delayed_vote_time = obj.get_oldest_delayed_vote_time();
 
-  db.modify( *_found, [&]( tiny_account_object& o )
+  if(
+      _previous_proxy != _new_proxy ||
+      _previous_next_vesting_withdrawal != _new_next_vesting_withdrawal ||
+      _previous_governance_vote_expiration_ts != _new_governance_vote_expiration_ts ||
+      _previous_get_oldest_delayed_vote_time != _new_get_oldest_delayed_vote_time
+    )
   {
-    o.modify( obj );
-  } );
+    const auto& _idx = db.get_index<tiny_account_index, by_name>();
+    auto _found = _idx.find( obj.get_name() );
+    FC_ASSERT( _found != _idx.end() );
+
+    db.modify( *_found, [&]( tiny_account_object& o )
+    {
+      o.modify( obj );
+    } );
+  }
 
   accounts_stats::stats.account_modified.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
   ++accounts_stats::stats.account_modified.count;
