@@ -479,9 +479,6 @@ bool rocksdb_account_archive::on_irreversible_block_impl( uint32_t block_num, co
 
   const auto& _volatile_idx = db.get_index<Volatile_Index_Type, by_block>();
 
-  if( _volatile_idx.size() < volatile_objects_limit )
-    return false;
-
   auto time_start = std::chrono::high_resolution_clock::now();
 
   auto _itr = _volatile_idx.begin();
@@ -522,6 +519,14 @@ bool rocksdb_account_archive::on_irreversible_block_impl( uint32_t block_num, co
 void rocksdb_account_archive::on_irreversible_block( uint32_t block_num )
 {
   provider->update_lib( block_num );
+
+  size_t _nr_elements = 0;
+  _nr_elements += db.get_index<volatile_account_metadata_index, by_block>().size();
+  _nr_elements += db.get_index<volatile_account_authority_index, by_block>().size();
+  _nr_elements += db.get_index<volatile_account_index, by_block>().size();
+
+  if( _nr_elements < volatile_objects_limit )
+    return;
 
   bool _do_flush_meta = on_irreversible_block_impl<
                           volatile_account_metadata_index, volatile_account_metadata_object, account_metadata_object, rocksdb_account_metadata_object>
