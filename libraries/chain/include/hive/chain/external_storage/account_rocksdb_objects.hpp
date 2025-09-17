@@ -152,10 +152,11 @@ class rocksdb_account_object
     time        = obj.time;
     misc        = obj.misc;
 
-    delayed_votes.resize( obj.shared_delayed_votes.delayed_votes.size() );
-    for( auto& item : delayed_votes )
+    if( obj.shared_delayed_votes.delayed_votes.size() )
     {
-      delayed_votes.push_back( item );
+      delayed_votes.reserve( obj.shared_delayed_votes.delayed_votes.size() );
+      for( const auto& item : delayed_votes )
+        delayed_votes.push_back( item );
     }
   }
 

@@ -382,10 +382,11 @@ namespace hive { namespace chain {
                       std::vector< delayed_votes_data > _delayed_votes )
         : id( _id ), recovery( _recovery ), assets( _assets ), mrc( _mrc ), time( _time ), misc( _misc ), shared_delayed_votes( a )
       {
-        shared_delayed_votes.delayed_votes.resize( _delayed_votes.size() );
-        for( auto& item : _delayed_votes )
+        if( _delayed_votes.size() )
         {
-          shared_delayed_votes.delayed_votes.push_back( item );
+          shared_delayed_votes.delayed_votes.reserve( _delayed_votes.size() );
+          for( const auto& item : _delayed_votes )
+            shared_delayed_votes.delayed_votes.push_back( item );
         }
       }
 
