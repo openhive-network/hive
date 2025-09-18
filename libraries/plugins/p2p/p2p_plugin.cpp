@@ -115,6 +115,7 @@ public:
   virtual fc::time_point_sec get_block_time(const graphene::net::item_hash_t& ) override;
   virtual fc::time_point_sec get_blockchain_now() override;
   virtual graphene::net::item_hash_t get_head_block_id() const override;
+  virtual uint32_t get_tail_block_num() const override;
   virtual uint32_t estimate_last_known_fork_from_git_revision_timestamp( uint32_t ) const override;
   virtual void error_encountered( const std::string& message, const fc::oexception& error ) override;
   virtual std::deque<block_id_type>::const_iterator find_first_item_not_in_blockchain(const std::deque<block_id_type>& item_hashes_received) override;
@@ -328,6 +329,11 @@ fc::time_point_sec p2p_plugin_impl::get_block_time( const graphene::net::item_ha
 graphene::net::item_hash_t p2p_plugin_impl::get_head_block_id() const
 { try {
   return chain.block_reader().head_block_id();
+} FC_CAPTURE_AND_RETHROW() }
+
+uint32_t p2p_plugin_impl::get_tail_block_num() const
+{ try {
+  return chain.block_reader().tail_block_num();
 } FC_CAPTURE_AND_RETHROW() }
 
 uint32_t p2p_plugin_impl::estimate_last_known_fork_from_git_revision_timestamp(uint32_t) const
