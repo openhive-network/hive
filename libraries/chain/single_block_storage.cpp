@@ -55,6 +55,13 @@ uint32_t single_block_storage::head_block_num(
   return lib ? lib->get_block_num() : 0;
 }
 
+uint32_t single_block_storage::tail_block_num( 
+  fc::microseconds wait_for_microseconds /*= fc::microseconds()*/ ) const
+{
+  const auto lib = head_block();
+  return lib ? lib->get_block_num() : 0;
+}
+
 block_id_type single_block_storage::head_block_id( 
   fc::microseconds wait_for_microseconds /*= fc::microseconds()*/ ) const
 {

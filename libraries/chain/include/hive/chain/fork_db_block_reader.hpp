@@ -16,6 +16,8 @@ namespace hive { namespace chain {
 
     virtual uint32_t head_block_num( 
       fc::microseconds wait_for_microseconds = fc::microseconds() ) const override;
+    virtual uint32_t tail_block_num( 
+      fc::microseconds wait_for_microseconds = fc::microseconds() ) const override;
     virtual block_id_type head_block_id( 
       fc::microseconds wait_for_microseconds = fc::microseconds() ) const override;
 
