@@ -22,6 +22,8 @@ namespace hive { namespace chain {
     virtual std::shared_ptr<full_block_type> head_block() const = 0;
     virtual uint32_t head_block_num( 
       fc::microseconds wait_for_microseconds = fc::microseconds() ) const = 0;
+    virtual uint32_t tail_block_num( 
+      fc::microseconds wait_for_microseconds = fc::microseconds() ) const = 0;
     virtual block_id_type head_block_id( 
       fc::microseconds wait_for_microseconds = fc::microseconds() ) const = 0;
 
