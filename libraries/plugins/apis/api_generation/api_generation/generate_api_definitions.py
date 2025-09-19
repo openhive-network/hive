@@ -92,7 +92,7 @@ def create_pyproject_content_for_api_package(
     env = Environment(loader=FileSystemLoader(template_directory))
     template = env.get_template("pyproject.toml.j2")
 
-    return template.render(api_name=api_name, api_generation_pyproject=api_generation_pyproject)
+    return template.render(api_name=api_name, api_name_kebab=api_name.replace("_", "-"), api_generation_pyproject=api_generation_pyproject)
 
 
 if __name__ == "__main__":

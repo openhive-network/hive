@@ -222,31 +222,6 @@ tests = ["cloudpickle ; platform_python_implementation == \"CPython\"", "hypothe
 tests-mypy = ["mypy (>=1.11.1) ; platform_python_implementation == \"CPython\" and python_version >= \"3.10\"", "pytest-mypy-plugins ; platform_python_implementation == \"CPython\" and python_version >= \"3.10\""]
 
 [[package]]
-name = "beekeepy"
-version = "0.0.1.dev429+8a918a3"
-description = "All in one package for beekeeper interaction via Python interface."
-optional = false
-python-versions = ">=3.12,<4.0"
-groups = ["main"]
-files = [
-    {file = "beekeepy-0.0.1.dev429+8a918a3-py3-none-any.whl", hash = "sha256:860d1abd367f189a9e191de98699d9024fa2bccf750ce55636546dce197ce60e"},
-]
-
-[package.dependencies]
-aiohttp = "3.11.15"
-httpx = {version = "0.23.3", extras = ["http2"]}
-loguru = "0.7.2"
-psutil = "7.0.0"
-python-dateutil = "2.8.2"
-requests = "2.32.3"
-schemas = "0.0.1.dev430+47552ae"
-
-[package.source]
-type = "legacy"
-url = "https://gitlab.syncad.com/api/v4/projects/434/packages/pypi/simple"
-reference = "gitlab-beekeepy"
-
-[[package]]
 name = "black"
 version = "25.1.0"
 description = "The uncompromising code formatter."
@@ -617,6 +592,50 @@ files = [
 [package.dependencies]
 hpack = ">=4.1,<5"
 hyperframe = ">=6.1,<7"
+
+[[package]]
+name = "hiveio-beekeepy"
+version = "0.0.1.dev430+d766238"
+description = "All in one package for beekeeper interaction via Python interface."
+optional = false
+python-versions = ">=3.12,<4.0"
+groups = ["main"]
+files = [
+    {file = "hiveio_beekeepy-0.0.1.dev430+d766238-py3-none-any.whl", hash = "sha256:530af9ac95801e50f41e714f00b533a22c75ab313b53d075062872961c350434"},
+]
+
+[package.dependencies]
+aiohttp = "3.11.15"
+hiveio-schemas = "0.0.1.dev431+2255381"
+httpx = {version = "0.23.3", extras = ["http2"]}
+loguru = "0.7.2"
+psutil = "7.0.0"
+python-dateutil = "2.8.2"
+requests = "2.32.3"
+
+[package.source]
+type = "legacy"
+url = "https://gitlab.syncad.com/api/v4/projects/434/packages/pypi/simple"
+reference = "gitlab-beekeepy"
+
+[[package]]
+name = "hiveio-schemas"
+version = "0.0.1.dev431+2255381"
+description = "Tools for checking if message fits expected format"
+optional = false
+python-versions = ">=3.12,<4.0"
+groups = ["main"]
+files = [
+    {file = "hiveio_schemas-0.0.1.dev431+2255381-py3-none-any.whl", hash = "sha256:fc3cc4c51cd668ce4691398074e093eaef8439436476ad5e5bcbf1b02242f4bf"},
+]
+
+[package.dependencies]
+msgspec = "0.18.6"
+
+[package.source]
+type = "legacy"
+url = "https://gitlab.syncad.com/api/v4/projects/362/packages/pypi/simple"
+reference = "gitlab-schemas"
 
 [[package]]
 name = "hpack"
@@ -1503,25 +1522,6 @@ files = [
 ]
 
 [[package]]
-name = "schemas"
-version = "0.0.1.dev430+47552ae"
-description = "Tools for checking if message fits expected format"
-optional = false
-python-versions = ">=3.12,<4.0"
-groups = ["main"]
-files = [
-    {file = "schemas-0.0.1.dev430+47552ae-py3-none-any.whl", hash = "sha256:7215c87bee4f3c8dc082a8e935a03ce646683bf779ecca19b172240007d1140a"},
-]
-
-[package.dependencies]
-msgspec = "0.18.6"
-
-[package.source]
-type = "legacy"
-url = "https://gitlab.syncad.com/api/v4/projects/362/packages/pypi/simple"
-reference = "gitlab-schemas"
-
-[[package]]
 name = "six"
 version = "1.17.0"
 description = "Python 2 and 3 compatibility utilities"
@@ -1755,4 +1755,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "2cbfbecbe8bb6fa79234e1e364da84b37266517addad6df811beeb520fdfded7"
+content-hash = "6101efee5098b7c98a33ead334f3282dacd268960201981cea1546332ba9af3c"

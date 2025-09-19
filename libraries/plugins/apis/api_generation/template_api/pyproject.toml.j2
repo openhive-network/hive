@@ -7,7 +7,7 @@ build-backend = "poetry_dynamic_versioning.backend"
 
 
 [tool.poetry]
-name = "{{ api_name }}"
+name = "hiveio-{{ api_name_kebab }}"
 version = "0.0.0"
 description = ""
 authors = []
@@ -27,7 +27,7 @@ source = [
 
 [tool.poetry.dependencies]
 python = "^3.12"
-beekeepy="{{ api_generation_pyproject.tool.poetry.dependencies.beekeepy }}"
+hiveio-beekeepy="{{ api_generation_pyproject.tool.poetry.dependencies['hiveio-beekeepy'] }}"
 
 [tool.poetry-dynamic-versioning]
 enable = true
