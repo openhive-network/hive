@@ -1,4 +1,4 @@
-import { beekeeper_api, MainModule, StringList } from "../../build/beekeeper_wasm.web";
+import { beekeeper_api, MainModule, StringList } from "../../dist/build/beekeeper_wasm.common.js";
 
 export declare class ExtractError extends Error {
   constructor(parsed: object);
