@@ -34,12 +34,10 @@ test.describe('Beekeeper factory tests for Node.js', () => {
     });
 
     expect(retVal).toHaveProperty('now');
-    expect(retVal).toHaveProperty('timeout_time');
+    expect(retVal).toHaveProperty('timeoutTime');
 
-    const timeMatch = /\d+-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d/;
-
-    expect(retVal.now).toMatch(timeMatch);
-    expect(retVal.timeout_time).toMatch(timeMatch);
+    expect(retVal.now).toBeInstanceOf(Date);
+    expect(retVal.timeoutTime).toBeInstanceOf(Date);
   });
 
   test('Should set a proper timeout', async ({ beekeeperTest }) => {
@@ -51,8 +49,8 @@ test.describe('Beekeeper factory tests for Node.js', () => {
       const sesInfo = session.getInfo();
 
       const data = {
-        actual: new Date(sesInfo.timeout_time).getTime(),
-        expected: new Date(sesInfo.now).getTime() + (5 * 1000)
+        actual: sesInfo.timeoutTime.getTime(),
+        expected: sesInfo.now.getTime() + (5 * 1000)
       };
 
       return data.actual === data.expected;

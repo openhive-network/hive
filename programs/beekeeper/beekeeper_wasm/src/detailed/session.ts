@@ -19,6 +19,11 @@ interface IBeekeeperWallets {
   }>;
 }
 
+interface IBeekeeperSessionInfo {
+  now: string;
+  timeout_time: string;
+}
+
 export class BeekeeperSession implements IBeekeeperSession {
   public constructor(
     private readonly api: BeekeeperApi,
@@ -28,9 +33,12 @@ export class BeekeeperSession implements IBeekeeperSession {
   public readonly wallets: Map<string, BeekeeperLockedWallet> = new Map();
 
   public getInfo(): IBeekeeperInfo {
-    const result = this.api.extract(safeWasmCall(() => this.api.api.get_info(this.token) as string, "session info retrieval")) as IBeekeeperInfo;
+    const result = this.api.extract(safeWasmCall(() => this.api.api.get_info(this.token) as string, "session info retrieval")) as IBeekeeperSessionInfo;
 
-    return result;
+    return {
+      now: new Date(`${result.now}Z`),
+      timeoutTime: new Date(`${result.timeout_time}Z`)
+    };
   }
 
   public listWallets(): Array<IBeekeeperWallet> {
