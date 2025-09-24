@@ -55,7 +55,7 @@ export interface IBeekeeperOptions {
   /**
    * The path of the wallet files (absolute path or relative to application data dir). Parent of the `.beekeeper` directory
    *
-   * Defaults to "/storage_root" for web and "." for web
+   * Defaults to "/storage_root" for web and "./storage_root-node" for Node.js
    *
    * @type {string}
    */
@@ -65,7 +65,7 @@ export interface IBeekeeperOptions {
    * The path to the WASM file. It can be a relative path or an absolute URL
    * If not specified, the default path is used: "./build/beekeeper_wasm.common.wasm" (may change if bundled)
    *
-   * Note: You can also specify a base64 encoded string of the WASM file to be used directly when inlining
+   * This option also accepts an inlined base64 encoded string of the WASM file as a value (`data:application/wasm;base64,...`)
    *
    * @type {string}
    */
@@ -73,7 +73,10 @@ export interface IBeekeeperOptions {
 
   /**
    * Disables filesystem support (persistent storage) per this beekeeper instance and runs in-memory only.
-   * By default, filesystem support is enabled
+   * By default, filesystem support is enabled.
+   *
+   * This option can be useful in environments where filesystem access is not available
+   * (e.g. browsers, sandbox environments or Node.js process ran by user without write permissions).
    *
    * @type {boolean}
    * @default false
@@ -82,6 +85,8 @@ export interface IBeekeeperOptions {
 
   /**
    * Whether internal Beekeeper core logs can be written. By default verbose Beekeeper core logs are disabled.
+   *
+   * Having this option disabled doesn't prevent you from seeing logs or catching detailed Beekeeper errors in your application.
    *
    * @default false
    */
@@ -109,11 +114,11 @@ export interface IBeekeeperUnlockedWallet extends IWallet {
   lock(): IBeekeeperWallet;
 
   /**
-   * Imports given private key to this wallet
+   * Imports given private key to this wallet and returns the associated public key for further use
    *
    * @param {string} wifKey private key in WIF format to import
    *
-   * @returns {Promise<TPublicKey>} Public key generated from the imported private key
+   * @returns {Promise<TPublicKey>} Public key associated with the imported private key in WIF format with 'STM' prefix
    *
    * @throws {BeekeeperError} on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
    */
@@ -124,7 +129,7 @@ export interface IBeekeeperUnlockedWallet extends IWallet {
    *
    * @param {TPublicKey} publicKey public key in WIF format to match the private key in the wallet to remove
    *
-   * @throws {BeekeeperError} on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
+   * @throws {BeekeeperError} if key not found or on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
    */
   removeKey(publicKey: TPublicKey): Promise<void>;
 
@@ -132,7 +137,7 @@ export interface IBeekeeperUnlockedWallet extends IWallet {
    * Signs a transaction by signing a digest of the transaction
    *
    * @param {TPublicKey} publicKey public key in WIF format to match the private key in the wallet. It will be used to sign the provided data
-   * @param {string} sigDigest digest of a transaction in hex format
+   * @param {string} sigDigest digest of a transaction in hex format to be signed
    *
    * @returns {TSignature} signed data in hex format
    *
@@ -143,10 +148,10 @@ export interface IBeekeeperUnlockedWallet extends IWallet {
   /**
    * Encrypts given data for a specific entity and returns the encrypted message
    *
-   * @param {string} content Content to be encrypted
-   * @param {TPublicKey} key public key to find the private key in the wallet and encrypt the data
-   * @param {?TPublicKey} anotherKey other public key to find the private key in the wallet and encrypt the data (optional - use if the message is to encrypt for somebody else)
-   * @param {?number} nonce optional nonce to be explicitly specified for encryption
+   * @param {string} content Content to be encrypted. Does not have to be in any specific format. Can contain any characters encodable by JS string (UTF-16 characters)
+   * @param {TPublicKey} key public key in WIF format to find the private key in the wallet and encrypt the data
+   * @param {?TPublicKey} anotherKey other public key in WIF format to find the private key in the wallet and encrypt the data (optional - use if the message is to encrypt for somebody else)
+   * @param {?number} nonce optional nonce to be explicitly specified for encryption. Used for reproducible results. If not provided, random nonce is generated internally
    * @returns {string} base58 encrypted buffer
    *
    * @throws {BeekeeperError} on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
@@ -160,7 +165,7 @@ export interface IBeekeeperUnlockedWallet extends IWallet {
    * @param {TPublicKey} key public key to find the private key in the wallet and decrypt the data
    * @param {?TPublicKey} anotherKey other public key to find the private key in the wallet and decrypt the data (optional - use if the message was encrypted for somebody else)
    *
-   * @returns {string} decrypted buffer
+   * @returns {string} decrypted buffer as a JS string
    *
    * @throws {BeekeeperError} on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
    */
@@ -247,7 +252,8 @@ export interface IBeekeeperSession {
    * Creates a new Beekeeper wallet object owned by this session
    *
    * @param {string} name name of wallet
-   * @param {?string} password password used for creation of a wallet. Not required and in this case a password is automatically generated and returned
+   * @param {?string} password password used for creation of a wallet. Should be strong enough to protect your keys.
+   *                           If not provided, safe password is automatically generated and returned.
    *
    * @returns {Promise<IWalletCreated>} the created unlocked Beekeeper wallet object
    *
@@ -259,8 +265,8 @@ export interface IBeekeeperSession {
    * Creates a new Beekeeper wallet object owned by this session
    *
    * @param {string} name name of wallet
-   * @param {?string} password password used for creation of a wallet. Not required and in this case a password is automatically generated and returned
-   * @param {?boolean} isTemporary If `true` the wallet exists only in memory otherwise is saved into a file. (defaults to `false`)
+   * @param {string} password password used for creation of a wallet. Should be strong enough to protect your keys.
+   * @param {boolean} isTemporary If `true` the wallet exists only in memory otherwise is saved into a file. (defaults to `false`)
    *
    * @returns {Promise<IWalletCreated>} the created unlocked Beekeeper wallet object
    *
@@ -302,7 +308,8 @@ export interface IBeekeeperInstance {
   /**
    * Creation of a session
    *
-   * @param {string} salt a salt used for creation of a token
+   * @param {string} salt a salt used for creation of a token. It can be any string but should be random and unique per session
+   *                      (for example: crypto.randomUUID() or Math.random())
    *
    * @returns {IBeekeeperSession} a beekeeper session created explicitly. It can be used for further work for example: creating/closing wallets, importing keys, signing transactions etc.
    *
