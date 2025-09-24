@@ -1,8 +1,8 @@
 // We only want to import types here!!
-import { MainModule } from '../../build/beekeeper_wasm.web';
-import { IBeekeeperInstance } from '../../dist/bundle/web';
-import * as BeekeeperModule from '../../dist/bundle/web';
-import { BeekeeperInstanceHelper, ExtractError } from './run_node_helper.js';
+import type { MainModule } from '../../dist/build/beekeeper_wasm.common.js';
+import type { IBeekeeperInstance } from '../../src/index.js';
+import type * as BeekeeperModule from '../../src/index.js';
+import type { BeekeeperInstanceHelper, ExtractError } from './run_node_helper.js';
 
 export type TEnvType = 'web' | 'node';
 
