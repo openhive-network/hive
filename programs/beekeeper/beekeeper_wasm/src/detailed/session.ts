@@ -58,7 +58,9 @@ export class BeekeeperSession implements IBeekeeperSession {
 
   public async createWallet(name: string, password: string | undefined, isTemporary: boolean = false): Promise<IWalletCreated> {
     if (!isTemporary && this.api.fs === undefined)
-      throw new BeekeeperError("Cannot create a permanent wallet without a filesystem (consider disabling the 'inMemory' option)");
+      throw new BeekeeperError(
+        "Trying to create persistent wallet without a filesystem (consider disabling the 'inMemory' Beekeeper option or setting 'isTemporary' function argument to true)."
+      );
 
     if(typeof password === 'string')
       this.api.extract(safeWasmCall(() => this.api.api.create(this.token, name, password as string, isTemporary) as string, `${isTemporary ? 'temporary ' : ''}wallet '${name}' creation`));
