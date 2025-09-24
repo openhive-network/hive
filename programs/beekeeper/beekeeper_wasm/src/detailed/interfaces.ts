@@ -35,20 +35,16 @@ export interface IBeekeeperInfo {
   /**
    * Current server's time
    *
-   * Note: Time is in format: YYYY-MM-DDTHH:mm:ss
-   *
-   * @type {string}
+   * @type {Date}
    */
-  now: string;
+  now: Date;
 
   /**
    * Time when wallets will be automatically closed
    *
-   * Note: Time is in format: YYYY-MM-DDTHH:mm:ss
-   *
-   * @type {string}
+   * @type {Date}
    */
-  timeout_time: string;
+  timeoutTime: Date;
 }
 
 export interface IBeekeeperOptions {
