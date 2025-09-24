@@ -133,13 +133,13 @@ export interface IBeekeeperUnlockedWallet extends IWallet {
    * Signs a transaction by signing a digest of the transaction
    *
    * @param {TPublicKey} publicKey public key in WIF format to match the private key in the wallet. It will be used to sign the provided data
-   * @param {string} sigDigest digest of a transaction in hex format to be signed
+   * @param {string | Uint8Array} sigDigest digest of a transaction in hex format or as an array of bytes to be signed
    *
    * @returns {TSignature} signed data in hex format
    *
    * @throws {BeekeeperError} on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
    */
-  signDigest(publicKey: TPublicKey, sigDigest: string): TSignature;
+  signDigest(publicKey: TPublicKey, sigDigest: string | Uint8Array): TSignature;
 
   /**
    * Encrypts given data for a specific entity and returns the encrypted message

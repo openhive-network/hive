@@ -61,7 +61,12 @@ export class BeekeeperUnlockedWallet implements IBeekeeperUnlockedWallet {
     await this.api.fs?.sync();
   }
 
-  public signDigest(publicKey: string, sigDigest: string): TSignature {
+  public signDigest(publicKey: string, sigDigest: string | Uint8Array): TSignature {
+    if (sigDigest instanceof Uint8Array) {
+      // Convert Uint8Array to hex string
+      sigDigest = Array.from(sigDigest).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
     const result = this.api.extract(safeWasmCall(() => this.api.api.sign_digest(this.session.token, sigDigest, publicKey) as string, `signing digest with key '${publicKey}' using wallet '${this.locked.name}'`)) as IBeekeeperSignature;
 
     return result.signature;
