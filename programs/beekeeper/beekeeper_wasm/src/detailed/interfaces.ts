@@ -81,9 +81,9 @@ export interface IBeekeeperOptions {
   inMemory: boolean;
 
   /**
-   * Whether logs can be written. By default logs are enabled
+   * Whether internal Beekeeper core logs can be written. By default verbose Beekeeper core logs are disabled.
    *
-   * @default true
+   * @default false
    */
   enableLogs: boolean;
 

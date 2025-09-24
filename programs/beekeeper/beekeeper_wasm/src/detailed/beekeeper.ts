@@ -5,7 +5,7 @@ import { IBeekeeperInstance, IBeekeeperOptions } from "./interfaces.js";
 import { safeAsyncWasmCall } from "./util/wasm_error.js";
 
 const DEFAULT_BEEKEEPER_OPTIONS: Omit<IBeekeeperOptions, 'storageRoot' | 'wasmLocation'> = {
-  enableLogs: true,
+  enableLogs: false,
   unlockTimeout: 900,
   inMemory: false
 };
