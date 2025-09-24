@@ -155,7 +155,7 @@ test.describe('Beekeeper factory tests for Node.js', () => {
     expect(retVal).toStrictEqual(['w0','w1','w2']);
   });
 
-  test('Shold be able to encrypt and decrypt messages', async ({ beekeeperTest }) => {
+  test('Should be able to encrypt and decrypt messages', async ({ beekeeperTest }) => {
     const retVal = await beekeeperTest(async ({ beekeeper }) => {
       const input = "Big Brother is Watching You";
 
@@ -172,6 +172,35 @@ test.describe('Beekeeper factory tests for Node.js', () => {
     });
 
     expect(retVal).toBe("Big Brother is Watching You");
+  });
+
+  test('Should be able to sign digest', async ({ beekeeperTest }) => {
+    const retVal = await beekeeperTest(async ({ beekeeper }) => {
+      const digestStr = "390f34297cfcb8fa4b37353431ecbab05b8dc0c9c15fb9ca1a3d510c52177542";
+      // Convert hex string to Uint8Array
+      const uint8Array = new Uint8Array(digestStr.match(/.{1,2}/g)!.map(byte => parseInt(byte, 16)));
+
+      const session = beekeeper.createSession("my.salt");
+
+      const { wallet } = await session.createWallet('w0', 'mypassword');
+
+      const publicKey = await wallet.importKey('5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n');
+
+      const signatureStr = wallet.signDigest(publicKey, digestStr);
+      const signatureHex = wallet.signDigest(publicKey, uint8Array);
+
+      return {
+        fromString: signatureStr,
+        fromHex: signatureHex
+      };
+    });
+
+    const expected = "1f17cc07f7c769073d39fac3385220b549e261fb33c5f619c5dced7f5b0fe9c0954f2684e703710840b7ea01ad7238b8db1d8a9309d03e93de212f86de38d66f21";
+
+    expect(retVal).toStrictEqual({
+      fromString: expected,
+      fromHex: expected
+    });
   });
 
   test.afterAll(async () => {
