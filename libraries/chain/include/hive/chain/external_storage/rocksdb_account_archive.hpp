@@ -22,7 +22,7 @@ class rocksdb_account_archive : public accounts_handler
 #ifdef IS_TEST_NET
     size_t objects_limit = 0;
 #else
-    const size_t objects_limit = 100'000;
+    size_t objects_limit = 100'000;
 #endif
 
     database& db;
@@ -71,6 +71,8 @@ class rocksdb_account_archive : public accounts_handler
     void open() override;
     void close() override;
     void wipe() override;
+
+    void remove_objects_limit() override;
 };
 
 } }

@@ -116,6 +116,8 @@ class accounts_handler : public executor_interface, public external_storage_snap
   #ifdef IS_TEST_NET
     virtual void set_limit( size_t new_limit ) = 0;
   #endif
+
+    virtual void remove_objects_limit() = 0;
 };
 
 } } // hive::chain

@@ -227,6 +227,7 @@ class chain_plugin_impl
     block_log_open_args                 bl_open_args;
     get_stat_details_t                  get_stat_details;
     boost::signals2::connection         dumper_post_apply_block;
+    boost::signals2::connection         end_of_sync_conn;
 
     state_snapshot_provider*            snapshot_provider = nullptr;
     bool                                is_p2p_enabled = true;
@@ -280,6 +281,18 @@ class chain_plugin_impl
       */
     bool is_reindex_complete( uint64_t* head_block_num_origin, uint64_t* head_block_num_state,
                               const block_read_i& block_reader ) const;
+
+  private:
+
+    accounts_handler::ptr account_archive;
+
+  public:
+
+    void update_account_archive()
+    {
+      if( account_archive )
+        account_archive->remove_objects_limit();
+    }
 };
 
 struct chain_plugin_impl::write_request_visitor
@@ -794,9 +807,6 @@ void chain_plugin_impl::initial_settings()
 
   ilog( "Preparing comment archive..." );
   comments_handler::ptr comment_archive;
-
-  ilog( "Preparing account archive..." );
-  accounts_handler::ptr account_archive;
 
   switch( comment_archive_choice )
   {
@@ -1852,6 +1862,8 @@ void chain_plugin::plugin_initialize(const variables_map& options)
 
   my->max_mempool_size = fc::parse_size( options.at( "max-mempool-size" ).as< string >() );
 
+  my->end_of_sync_conn = db().add_end_of_syncing_handler( [&]()
+    { my->update_account_archive(); }, *this, 0 );
 } FC_LOG_AND_RETHROW() }
 
 void chain_plugin::plugin_startup()
@@ -1941,6 +1953,8 @@ void chain_plugin::plugin_shutdown()
   my->default_block_writer->close();
   my->block_storage->close_storage();
 
+  hive::utilities::disconnect_signal( my->end_of_sync_conn );
+ 
   ilog("database closed successfully");
   get_app().notify_status("finished syncing");
 }

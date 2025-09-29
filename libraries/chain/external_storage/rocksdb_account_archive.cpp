@@ -292,13 +292,16 @@ void rocksdb_account_archive::on_irreversible_block( uint32_t block_num )
 {
   provider->update_lib( block_num );
 
-  size_t _nr_elements = 0;
-  _nr_elements += db.get_index<account_metadata_index, by_block>().size();
-  _nr_elements += db.get_index<account_authority_index, by_block>().size();
-  _nr_elements += db.get_index<account_index, by_block>().size();
+  if( objects_limit )
+  {
+    size_t _nr_elements = 0;
+    _nr_elements += db.get_index<account_metadata_index, by_block>().size();
+    _nr_elements += db.get_index<account_authority_index, by_block>().size();
+    _nr_elements += db.get_index<account_index, by_block>().size();
 
-  if( _nr_elements < objects_limit )
-    return;
+    if( _nr_elements < objects_limit )
+      return;
+  }
 
   bool _do_flush_meta = on_irreversible_block_impl<
                           account_metadata_index, account_metadata_object, rocksdb_account_metadata_object>
@@ -512,6 +515,11 @@ void rocksdb_account_archive::close()
 void rocksdb_account_archive::wipe()
 {
   provider->wipeDb();
+}
+
+void rocksdb_account_archive::remove_objects_limit()
+{
+  objects_limit = 0;
 }
 
 } }
