@@ -49,19 +49,8 @@ public:
     counter_t account_accessed_by_name;
     counter_t account_accessed_by_id;
 
-    counter_t account_total_next;
-    counter_t account_total_begin;
-    counter_t account_begin;
-    counter_t account_next_basic;
-    counter_t account_next_skip_the_same;
-    counter_t account_next_skip_obsolete;
-    counter_t account_no_skip_obsolete;
-    counter_t account_create_rocksdb;
-    counter_t account_create_volatile;
     counter_t account_moved_to_storage;
     counter_t account_flush_to_storage;
-    counter_t account_cmp;
-    counter_t account_get;
   };
 
   struct index_memory_details_t
@@ -166,14 +155,8 @@ FC_REFLECT( hive::utilities::benchmark_dumper::account_archive_details_t,
         (account_authority_created)(account_authority_modified)(account_authority_accessed_by_name)
         (account_created)(account_modified)
         (account_accessed_by_name)(account_accessed_by_id)
-        (account_total_next)(account_total_begin)
-        (account_begin)
-        (account_next_basic)(account_next_skip_the_same)(account_next_skip_obsolete)(account_no_skip_obsolete)
-        (account_create_rocksdb)(account_create_volatile)
         (account_moved_to_storage)
         (account_flush_to_storage)
-        (account_cmp)
-        (account_get)
        )
 
 FC_REFLECT( hive::utilities::benchmark_dumper::index_memory_details_t,
