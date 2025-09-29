@@ -154,6 +154,7 @@ class chain_plugin_impl
     bool                             force_replay = false;
     bool                             validate_during_replay = false;
     uint32_t                         benchmark_interval = 0;
+    uint32_t                         live_benchmark_interval = 0;
     uint32_t                         flush_interval = 0;
     bool                             replay_in_memory = false;
     std::vector< std::string >       replay_memory_indices{};
@@ -288,10 +289,16 @@ class chain_plugin_impl
 
   public:
 
-    void update_account_archive()
+    bool live_mode = false;
+
+    void end_of_syncing()
     {
+      live_mode = true;
       if( account_archive )
+      {
+        ilog("Remove a limit for account objects");
         account_archive->remove_objects_limit();
+      }
     }
 };
 
@@ -1528,6 +1535,7 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
       ("validate-during-replay", bpo::bool_switch()->default_value(false), "Runs all validations that are normally turned off during replay")
       ("advanced-benchmark", "Make profiling for every plugin.")
       ("set-benchmark-interval", bpo::value<uint32_t>(), "Print time and memory usage every given number of blocks")
+      ("set-live-benchmark-interval", bpo::value<uint32_t>(), "Print time and memory usage every given number of blocks for LIVE mode")
       ("dump-memory-details", bpo::bool_switch()->default_value(false), "Dump database objects memory usage info. Use set-benchmark-interval to set dump interval.")
       ("check-locks", bpo::bool_switch()->default_value(false), "Check correctness of chainbase locking" )
       ("validate-database-invariants", bpo::bool_switch()->default_value(false), "Validate all supply invariants check out" )
@@ -1615,6 +1623,8 @@ void chain_plugin::plugin_initialize(const variables_map& options)
   my->exit_before_sync    = options.count( "exit-before-sync" ) ? options.at( "exit-before-sync" ).as<bool>() : false;
   my->benchmark_interval  =
     options.count( "set-benchmark-interval" ) ? options.at( "set-benchmark-interval" ).as<uint32_t>() : 0;
+  my->live_benchmark_interval  =
+    options.count( "set-live-benchmark-interval" ) ? options.at( "set-live-benchmark-interval" ).as<uint32_t>() : 0;
   my->check_locks         = options.at( "check-locks" ).as< bool >();
   my->validate_invariants = options.at( "validate-database-invariants" ).as<bool>();
   my->dump_memory_details = options.at( "dump-memory-details" ).as<bool>();
@@ -1838,7 +1848,7 @@ void chain_plugin::plugin_initialize(const variables_map& options)
   resource_credits::set_flood_limiters(options.at("rc-flood-level").as<uint16_t>(),
                                        options.at("rc-flood-surcharge").as<uint16_t>());
 
-  if(my->benchmark_interval > 0)
+  if(my->benchmark_interval > 0 || my->live_benchmark_interval > 0)
   {
     my->dumper_post_apply_block = db().add_post_apply_block_handler([&](const hive::chain::block_notification& note) noexcept {
       const uint32_t current_block_number = note.block_num;
@@ -1857,13 +1867,21 @@ void chain_plugin::plugin_initialize(const variables_map& options)
 
         get_app().notify_information("hived_benchmark", "multiindex_stats", fc::variant{measure});
       }
+      if( my->live_mode && my->live_benchmark_interval && ( current_block_number % my->live_benchmark_interval == 0 ) )
+      {
+        const hive::utilities::benchmark_dumper::measurement& measure =
+          my->dumper.measure( current_block_number, my->get_stat_details );
+
+        ilog("Accounts report at block ${n}. ${log}",
+          ("n", current_block_number)("log", fc::json::to_string(measure.account_archive_stats)));
+      }
     }, *this, 0);
   }
 
   my->max_mempool_size = fc::parse_size( options.at( "max-mempool-size" ).as< string >() );
 
   my->end_of_sync_conn = db().add_end_of_syncing_handler( [&]()
-    { my->update_account_archive(); }, *this, 0 );
+    { my->end_of_syncing(); }, *this, 0 );
 } FC_LOG_AND_RETHROW() }
 
 void chain_plugin::plugin_startup()
