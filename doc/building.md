@@ -89,3 +89,18 @@ Or if you want to build only specific binary targets use:
   Intel and Microsoft compilers. These compilers may work, but the
   developers do not use them. Pull requests fixing warnings / errors from
   these compilers are accepted.
+- Support for ARM:
+  To target aarch64 architecture, we need to build cross toolchain operating on x64 host and building for aarch64 target. To do it let's use a buildroot in version `2025.02.4`.
+  - get buildroot: `git clone https://github.com/buildroot/buildroot.git`
+  - checkout given tag: `git checkout tags/2025.02.4`
+  - copy ./aarch64/buildroot/.config into <src-root>/buildroot/.config
+  - copy ./aarch64/buildroot/glibc_downgrade.patch into <src-root>/buildroot/glibc_downgrade.patch
+  - copy ./aarch64/buildroot/snappy_static_build.patch <src-root>/buildroot/snappy_static_build.patch
+  - go into <src-root>/buildroot/
+  - Optionally execute make menuconfig to review configuration
+  - execute make to build toolchain
+  - copy ./aarch64/Toolchain.cmake to <src-root>/buildroot/output/host
+  - pack built toolchain located in: <src-root>/buildroot/output/host for futher use
+  - build hived using <src-root>/scripts/build_arm.sh script (specify actual toolchain path first as `CROSS_ROOT` variable in the script
+  Hived was initially tested on Raspberry Pi 4B, 8GB RAM, 128GB SD-CARD storage using Raspian OS 64 bit, https://downloads.raspberrypi.com/raspios_full_arm64/images/raspios_full_arm64-2024-11-19/2024-11-19-raspios-bookworm-arm64-full.img.xz
+  Preferred usage scenario is to generate a hived snapshot on x64 platform (using regular x64 build), then copy it into ARM machine and load to continue syncing to reach head block.
