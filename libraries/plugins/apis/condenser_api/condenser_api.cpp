@@ -379,7 +379,7 @@ namespace detail
     if( args.size() == 2 )
       delayed_votes_active = args.at(1).as< bool >();
 
-    const auto& idx  = _db.get_index< account_index >().indices().get< by_name >();
+    const auto& idx  = _db.get_index< tiny_account_index >().indices().get< by_name >();
     const auto& vidx = _db.get_index< witness_vote_index >().indices().get< by_account_witness >();
     vector< extended_account > results;
     results.reserve(names.size());
@@ -389,7 +389,7 @@ namespace detail
       auto itr = idx.find( name );
       if ( itr != idx.end() )
       {
-        results.emplace_back( extended_account( database_api::api_account_object( *itr, _db, delayed_votes_active ) ) );
+        results.emplace_back( extended_account( database_api::api_account_object( _db.get_account( itr->get_name() ), _db, delayed_votes_active ) ) );
 
         if(_reputation_api)
         {
@@ -448,7 +448,7 @@ namespace detail
     uint32_t limit = args.at(1).as< uint32_t >();
 
     FC_ASSERT( limit <= 1000 );
-    const auto& accounts_by_name = _db.get_index< account_index, by_name >();
+    const auto& accounts_by_name = _db.get_index< tiny_account_index, by_name >();
     set<string> result;
 
     for( auto itr = accounts_by_name.lower_bound( lower_bound_name );
@@ -464,7 +464,7 @@ namespace detail
   DEFINE_API_IMPL( condenser_api_impl, get_account_count )
   {
     CHECK_ARG_SIZE( 0 )
-    return _db.get_index<account_index>().indices().size();
+    return _db.get_index<tiny_account_index>().indices().size();
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_owner_history )

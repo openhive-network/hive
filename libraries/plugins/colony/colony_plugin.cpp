@@ -647,7 +647,7 @@ void colony_plugin_impl::start( uint32_t block_num )
   _use_posting = !active_needed;
   if( _use_posting )
     posting_needed = true; // custom jsons will use posting even if there are no comments/votes
-  const auto& accounts = _db.get_index< account_index, by_name >();
+  const auto& accounts = _db.get_index< tiny_account_index, by_name >();
   const auto& comments = _db.get_index< comment_cashout_index, by_id >();
   _fill_comment_buffers = _params[ REPLY ].weight > 0 || _params[ VOTE ].weight > 0;
   if( _fill_comment_buffers )
@@ -698,8 +698,10 @@ void colony_plugin_impl::start( uint32_t block_num )
     if( lib.get() != nullptr )
       lib_ts = lib->get_block_header().timestamp;
   }
-  for( const auto& account : accounts )
+  for( const auto& _account : accounts )
   {
+    const auto& account = _db.get_account( _account.get_name() );
+
     if( account.get_block_creation_time() > lib_ts )
     {
       dlog( "Account ${a} is too fresh to be safely used as colony worker.", ( "a", account.get_name() ) );
