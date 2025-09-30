@@ -650,7 +650,14 @@ string json_rpc_plugin::call( const string& message )
   STATSD_START_TIMER( "jsonrpc", "overhead", "call", 1.0f, get_app() );
   try
   {
+    auto time_start = std::chrono::high_resolution_clock::now();
+
+    ilog("@@@ from_string_to_variant");
+
     fc::variant v = fc::json::from_string( message, fc::json::format_validation_mode::full );
+
+    auto time = std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+    ilog("KONIEC: @@@ from_string_to_variant ${time}", (time));
 
     if( v.is_array() )
     {

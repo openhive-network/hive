@@ -2059,6 +2059,8 @@ void chain_plugin::queue_transaction( const std::shared_ptr<transaction_flow_con
 void chain_plugin::determine_encoding_and_accept_transaction( full_transaction_ptr& result, const hive::protocol::signed_transaction& trx,
   std::function< void( bool hf26_auth_fail )> on_full_trx, const lock_type lock /* = lock_type::boost */)
 { try {
+  auto time_start = std::chrono::high_resolution_clock::now();
+  ilog(" ### Trying to accept transaction using hf26 serialization");
   result = full_transaction_type::create_from_signed_transaction( trx, hive::protocol::pack_type::hf26, true /* cache this transaction */);
   on_full_trx( false );
   // the only reason we'd be getting something in singed_transaction form is from the API, coming in as json
@@ -2066,6 +2068,8 @@ void chain_plugin::determine_encoding_and_accept_transaction( full_transaction_p
   try
   {
     accept_transaction(result, lock);
+    auto time = std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+    ilog("KONIEC: ### Transaction accepted using hf26 serialization ${time}", (time));
   }
   catch (const hive::protocol::transaction_auth_exception&)
   {
@@ -2075,6 +2079,7 @@ void chain_plugin::determine_encoding_and_accept_transaction( full_transaction_p
     get_thread_pool().enqueue_work(result, blockchain_worker_thread_pool::data_source_type::standalone_transaction_received_from_api);
     try
     {
+      ilog("EROR BAD SERIALIZATION -> PO STAREMU: Trying to accept transaction using legacy serialization");
       accept_transaction(result, lock);
     }
     catch (hive::protocol::transaction_auth_exception& legacy_e)

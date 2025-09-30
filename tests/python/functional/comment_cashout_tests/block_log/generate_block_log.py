@@ -62,6 +62,7 @@ def prepare_blocklog_with_comments_and_votes(output_block_log_directory: Path) -
     4) Voting takes place (each account casts a vote). The time from the beginning to the end of voting does not exceed
        one hour.
     5) To get all the votes at the required cashout time ( 1h ), you need to slow down node "x0.5"
+    6) Force start on CI
     """
     output_block_log_directory.mkdir(parents=True, exist_ok=True)
 
