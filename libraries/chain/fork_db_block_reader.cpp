@@ -25,12 +25,6 @@ uint32_t fork_db_block_reader::head_block_num(
   return head ? head->get_block_num() : _block_reader.head_block_num( wait_for_microseconds );
 }
 
-uint32_t fork_db_block_reader::tail_block_num(
-  fc::microseconds wait_for_microseconds /*= fc::microseconds()*/ ) const
-{
-  return _block_reader.tail_block_num();
-}
-
 block_id_type fork_db_block_reader::head_block_id( 
   fc::microseconds wait_for_microseconds /*= fc::microseconds()*/ ) const
 {

@@ -214,12 +214,6 @@ uint32_t block_log_wrapper::head_block_num(
   return hb ? hb->get_block_num() : 0;
 }
 
-uint32_t block_log_wrapper::tail_block_num( 
-  fc::microseconds wait_for_microseconds /*= fc::microseconds()*/ ) const
-{
-  return get_actual_tail_block_num();
-}
-
 block_id_type block_log_wrapper::head_block_id( 
   fc::microseconds wait_for_microseconds /*= fc::microseconds()*/ ) const
 {
@@ -707,7 +701,6 @@ void block_log_wrapper::common_open_and_init( bool read_only, bool allow_splitti
         std::min<uint32_t>( actual_tail_number_needed, head_part_number - _block_log_split);
     }
   }
-
   force_parts_exist( head_part_number, actual_tail_number_needed, part_file_names,
                       allow_splitting_monolithic_log, state_head_block );
 
