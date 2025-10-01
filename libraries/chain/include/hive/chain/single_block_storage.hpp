@@ -30,8 +30,6 @@ namespace hive { namespace chain {
     virtual full_block_ptr_t head_block() const override;
     virtual uint32_t head_block_num( 
       fc::microseconds wait_for_microseconds = fc::microseconds() ) const override;
-    virtual uint32_t tail_block_num( 
-      fc::microseconds wait_for_microseconds = fc::microseconds() ) const override;
     virtual block_id_type head_block_id( 
       fc::microseconds wait_for_microseconds = fc::microseconds() ) const override;
     virtual full_block_ptr_t read_block_by_num( uint32_t block_num ) const override;
