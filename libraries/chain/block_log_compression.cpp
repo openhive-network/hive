@@ -140,7 +140,7 @@ std::tuple<std::unique_ptr<char[]>, size_t> compress_block_zstd_helper(const cha
                                                          uncompressed_block_data.get(), HIVE_MAX_BLOCK_SIZE,
                                                          compressed_block_data, compressed_block_size);
     if (ZSTD_isError(uncompressed_block_size))
-      FC_THROW("Error decompressing block with zstd");
+      FC_THROW("Error decompressing block with zstd: ${error}", ("error", ZSTD_getErrorName(uncompressed_block_size)));
     
     FC_ASSERT(uncompressed_block_size <= HIVE_MAX_BLOCK_SIZE);
 
