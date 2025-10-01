@@ -189,12 +189,13 @@ void full_block_type::decompress_block() const
     assert(has_compressed_block);
     FC_ASSERT(has_compressed_block.load(std::memory_order_consume), "Nothing to decompress");
 
-    decoded_block_storage = std::make_shared<decoded_block_storage_type>();
-    std::tie(decoded_block_storage->uncompressed_block.raw_bytes, decoded_block_storage->uncompressed_block.raw_size) = 
+    std::shared_ptr<decoded_block_storage_type> temp_decoded_block_storage = std::make_shared<decoded_block_storage_type>();
+    std::tie(temp_decoded_block_storage->uncompressed_block.raw_bytes, temp_decoded_block_storage->uncompressed_block.raw_size) = 
       block_log_compression::decompress_raw_block(compressed_block.compressed_bytes.get(), 
                                                   compressed_block.compressed_size, 
                                                   compressed_block.compression_attributes);
 
+    decoded_block_storage = std::move(temp_decoded_block_storage);
     has_uncompressed_block.store(true, std::memory_order_release);
   }
 }
