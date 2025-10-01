@@ -6256,8 +6256,11 @@ void database::apply_hardfork( uint32_t hardfork )
 
       // Create the treasury account if it does not exist
       // This may sometimes happen in the mirrornet, when we do not have the account created upon the HF 21 application or any dependent operation
-      if( find_account(treasury_name) == nullptr )
-        create< account_object >( treasury_name, head_block_time() );
+      if( find_account(treasury_name) == nullptr ) {
+          create<account_object>(treasury_name, head_block_time());
+          push_virtual_operation(
+            account_created_operation( treasury_name, treasury_name, asset(0, VESTS_SYMBOL), asset(0, VESTS_SYMBOL) ) );
+      }
 
       lock_account( get_treasury() );
 
@@ -6361,8 +6364,11 @@ void database::apply_hardfork( uint32_t hardfork )
   {
     const auto treasury_name = get_treasury_name();
 
-    if( find_account(treasury_name) == nullptr )
-      create< account_object >( treasury_name, head_block_time() );
+    if( find_account(treasury_name) == nullptr ) {
+        create<account_object>(treasury_name, head_block_time());
+        push_virtual_operation(
+          account_created_operation( treasury_name, treasury_name, asset(0, VESTS_SYMBOL), asset(0, VESTS_SYMBOL) ) );
+    }
 
     lock_account( get_treasury() );
     //the following routine can only be called effectively after hardfork was marked as applied
