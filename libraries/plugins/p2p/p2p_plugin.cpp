@@ -208,9 +208,9 @@ bool p2p_plugin_impl::handle_block(const std::shared_ptr<hive::chain::full_block
     catch (const chain::unlinkable_block_exception& e)
     {
       // translate to a graphene::net exception
-      fc_elog(fc::logger::get("sync"), "Error when pushing block:\n${e}",
-              ("e", e.to_detail_string()));
-      elog("Error when pushing block:\n${e}", ("e", e.to_detail_string()));
+      // this is already dlogged() to the default logger inside fork_database::push_block(),
+      // additionally, we log it to the sync logger here
+      fc_dlog(fc::logger::get("sync"), "Error when pushing block:\n${e}", ("e", e.to_detail_string()));
       FC_THROW_EXCEPTION(graphene::net::unlinkable_block_exception, "Error when pushing block:\n${e}", ("e", e.to_detail_string()));
     }
     catch (const fc::exception& e)

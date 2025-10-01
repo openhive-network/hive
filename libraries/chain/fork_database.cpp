@@ -49,8 +49,20 @@ shared_ptr<fork_item> fork_database::push_block(const std::shared_ptr<full_block
     }
     catch (const unlinkable_block_exception&)
     {
-      wlog("Pushing block to fork database that failed to link: ${id}, ${num}", ("id", item->get_block_id())("num", item->get_block_num()));
-      wlog("Head: ${num}, ${id}", ("num", _head->get_block_num())("id", _head->get_block_id()));
+      // this was originally logged at warning level, since in the past it typically happened when you were seeing
+      // blocks from other forks, or when your node missed a block (received blocks 10, 11, 13,  block 13 would be
+      // unlinkable).  While the code was designed to handle both of those cases, it might be nice for the node
+      // operator to know if they started happening a lot.  But with the introduction of nodes that don't keep
+      // full block logs, this will also be triggered in a more common situation.  If we're in the process of
+      // syncing, and some of our peers have truncated block logs so they can't currently send us sync blocks, they
+      // will instead give us current blocks as they're generated, one every three seconds.  Since we're syncing,
+      // these blocks are from our future and are expected to be unlinkable.  This is harmless, and would flood
+      // the logs with warnings if left at the wlog() level
+      // A different solution to the problem would have been to modify the p2p layer to avoid fetching these future
+      // blocks in the first place; that would slightly reduce network usage in this case, but would need more
+      // careful analysis to be sure we didn't break something in the process.
+      dlog("Pushing block to fork database that failed to link: ${id}, ${num}", ("id", item->get_block_id())("num", item->get_block_num()));
+      dlog("Head: ${num}, ${id}", ("num", _head->get_block_num())("id", _head->get_block_id()));
       _unlinked_index.insert(item);
       throw;
     }
