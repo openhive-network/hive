@@ -319,7 +319,6 @@ namespace graphene { namespace net {
                                    (get_block_number) \
                                    (get_block_time) \
                                    (get_head_block_id) \
-                                   (get_tail_block_num) \
                                    (estimate_last_known_fork_from_git_revision_timestamp) \
                                    (error_encountered) \
                                    (find_first_item_not_in_blockchain) \
@@ -423,7 +422,6 @@ namespace graphene { namespace net {
       fc::time_point_sec get_block_time(const item_hash_t& block_id) override;
       fc::time_point_sec get_blockchain_now() override;
       item_hash_t get_head_block_id() const override;
-      uint32_t get_tail_block_num() const override;
       uint32_t estimate_last_known_fork_from_git_revision_timestamp(uint32_t unix_timestamp) const override;
       void error_encountered(const std::string& message, const fc::oexception& error) override;
       std::deque<block_id_type>::const_iterator find_first_item_not_in_blockchain(const std::deque<block_id_type>& item_hashes_received) override;
@@ -2486,19 +2484,7 @@ namespace graphene { namespace net {
       // a list containing the last item the peer requested
       //wdump((reply_message)(fetch_blockchain_item_ids_message_received.blockchain_synopsis));
       if( reply_message.item_hashes_available.empty() )
-      {
-        // Get a lowest available block number and check, if delegate should has such blocks which are given in received blockchain_synopsis.
-        // If delegate has no block_log or just part of it, item_hashes_available will be empty if block numbers in received blockchain synopsis are lower that available
-        const uint32_t lowest_available_block_num = _delegate->get_tail_block_num();
-        bool node_should_have_blocks = false;
-        for (const auto block_id : fetch_blockchain_item_ids_message_received.blockchain_synopsis)
-        {
-          if (_delegate->get_block_number(block_id) >= lowest_available_block_num)
-            node_should_have_blocks = true;
-        }
-        if (node_should_have_blocks)
-          originating_peer->peer_needs_sync_items_from_us = false; /* I have no items in my blockchain */
-      }
+        originating_peer->peer_needs_sync_items_from_us = false; /* I have no items in my blockchain */
       else if( !fetch_blockchain_item_ids_message_received.blockchain_synopsis.empty() &&
                reply_message.item_hashes_available.size() == 1 &&
                std::find(fetch_blockchain_item_ids_message_received.blockchain_synopsis.begin(),
@@ -6292,10 +6278,6 @@ namespace graphene { namespace net {
     item_hash_t statistics_gathering_node_delegate_wrapper::get_head_block_id() const
     {
       INVOKE_AND_COLLECT_STATISTICS(get_head_block_id);
-    }
-    uint32_t statistics_gathering_node_delegate_wrapper::get_tail_block_num() const
-    {
-      INVOKE_AND_COLLECT_STATISTICS(get_tail_block_num);
     }
 
     uint32_t statistics_gathering_node_delegate_wrapper::estimate_last_known_fork_from_git_revision_timestamp(uint32_t unix_timestamp) const

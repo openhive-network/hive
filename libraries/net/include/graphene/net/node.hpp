@@ -181,8 +181,6 @@ namespace graphene { namespace net {
 
          virtual item_hash_t get_head_block_id() const = 0;
 
-         virtual uint32_t get_tail_block_num() const = 0;
-
          virtual uint32_t estimate_last_known_fork_from_git_revision_timestamp(uint32_t unix_timestamp) const = 0;
 
          virtual void error_encountered(const std::string& message, const fc::oexception& error) = 0;
