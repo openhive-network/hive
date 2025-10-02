@@ -131,7 +131,7 @@ BOOST_AUTO_TEST_CASE( account_create_apply )
     push_transaction( tx, init_account_priv_key );
 
     const auto& acct = db->get_account( "alice" );
-    const account_authority_object& acct_auth = db->get< account_authority_object, by_name >( "alice" );
+    const account_authority_object& acct_auth = db->get_account_authority( "alice" );
 
     BOOST_REQUIRE( acct.get_name() == "alice" );
     BOOST_REQUIRE( acct_auth.owner == authority( 1, priv_key.get_public_key(), 1 ) );
@@ -341,7 +341,7 @@ BOOST_AUTO_TEST_CASE( account_update_apply )
     push_transaction( tx, alice_private_key );
 
     const auto& acct = db->get_account( "alice" );
-    const account_authority_object& acct_auth = db->get< account_authority_object, by_name >( "alice" );
+    const account_authority_object& acct_auth = db->get_account_authority( "alice" );
 
     BOOST_REQUIRE( acct.get_name() == "alice" );
     BOOST_REQUIRE( acct_auth.owner == authority( 1, new_private_key.get_public_key(), 1 ) );
@@ -3005,7 +3005,7 @@ BOOST_AUTO_TEST_CASE( custom_binary_authorities )
   op.required_owner_auths.insert( "alice" );
   op.required_active_auths.insert( "bob" );
   op.required_posting_auths.insert( "sam" );
-  op.required_auths.push_back( db->get< account_authority_object, by_name >( "alice" ).posting );
+  op.required_auths.push_back( db->get_account_authority( "alice" ).posting );
 
   flat_set< account_name_type > acc_auths;
   flat_set< account_name_type > acc_expected;
@@ -3028,7 +3028,7 @@ BOOST_AUTO_TEST_CASE( custom_binary_authorities )
   op.get_required_posting_authorities( acc_auths );
   BOOST_REQUIRE( acc_auths == acc_expected );
 
-  expected.push_back( db->get< account_authority_object, by_name >( "alice" ).posting );
+  expected.push_back( db->get_account_authority( "alice" ).posting );
   op.get_required_authorities( auths );
   BOOST_REQUIRE( auths == expected );
 }
@@ -4676,7 +4676,7 @@ BOOST_AUTO_TEST_CASE( account_recovery )
 
     vest( "bob", ASSET( "1.000 TESTS" ) );
 
-    const auto& bob_auth = db->get< account_authority_object, by_name >( "bob" );
+    const auto& bob_auth = db->get_account_authority( "bob" );
     BOOST_REQUIRE( bob_auth.owner == acc_create.owner );
 
 
@@ -4724,7 +4724,7 @@ BOOST_AUTO_TEST_CASE( account_recovery )
 
     tx.operations.push_back( recover );
     push_transaction( tx, {generate_private_key( "bob_owner" ), generate_private_key( "new_key" )} );
-    const auto& owner1 = db->get< account_authority_object, by_name >("bob").owner;
+    const auto& owner1 = db->get_account_authority("bob").owner;
 
     BOOST_REQUIRE( owner1 == recover.new_owner_authority );
 
@@ -4749,7 +4749,7 @@ BOOST_AUTO_TEST_CASE( account_recovery )
 
     tx.operations.push_back( recover );
     HIVE_REQUIRE_THROW( push_transaction( tx, {generate_private_key( "bob_owner" ), generate_private_key( "idontknow" )} ), fc::exception );
-    const auto& owner2 = db->get< account_authority_object, by_name >("bob").owner;
+    const auto& owner2 = db->get_account_authority("bob").owner;
     BOOST_REQUIRE( owner2 == authority( 1, generate_private_key( "new_key" ).get_public_key(), 1 ) );
 
 
@@ -4762,7 +4762,7 @@ BOOST_AUTO_TEST_CASE( account_recovery )
 
     tx.operations.push_back( recover );
     HIVE_REQUIRE_THROW( push_transaction( tx, {generate_private_key( "foo bar" ), generate_private_key( "idontknow" )} ), fc::exception );
-    const auto& owner3 = db->get< account_authority_object, by_name >("bob").owner;
+    const auto& owner3 = db->get_account_authority("bob").owner;
     BOOST_REQUIRE( owner3 == authority( 1, generate_private_key( "new_key" ).get_public_key(), 1 ) );
 
 
@@ -4776,7 +4776,7 @@ BOOST_AUTO_TEST_CASE( account_recovery )
     tx.operations.push_back( recover );
     push_transaction( tx, {generate_private_key( "bob_owner" ), generate_private_key( "foo bar" )} );
 
-    const auto& owner4 = db->get< account_authority_object, by_name >("bob").owner;
+    const auto& owner4 = db->get_account_authority("bob").owner;
     BOOST_REQUIRE( owner4 == recover.new_owner_authority );
 
     BOOST_TEST_MESSAGE( "Creating a recovery request that will expire" );
@@ -4815,7 +4815,7 @@ BOOST_AUTO_TEST_CASE( account_recovery )
     tx.operations.push_back( recover );
     tx.set_expiration( db->head_block_time() );
     HIVE_REQUIRE_THROW( push_transaction( tx, {generate_private_key( "expire" ), generate_private_key( "bob_owner" )} ), fc::exception );
-    const auto& owner5 = db->get< account_authority_object, by_name >("bob").owner;
+    const auto& owner5 = db->get_account_authority("bob").owner;
     BOOST_REQUIRE( owner5 == authority( 1, generate_private_key( "foo bar" ).get_public_key(), 1 ) );
 
     BOOST_TEST_MESSAGE( "Expiring owner authority history" );
@@ -4847,7 +4847,7 @@ BOOST_AUTO_TEST_CASE( account_recovery )
     tx.operations.push_back( recover );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     HIVE_REQUIRE_THROW( push_transaction( tx, {generate_private_key( "bob_owner" ), generate_private_key( "last key" )} ), fc::exception );
-    const auto& owner6 = db->get< account_authority_object, by_name >("bob").owner;
+    const auto& owner6 = db->get_account_authority("bob").owner;
     BOOST_REQUIRE( owner6 == authority( 1, generate_private_key( "new_key" ).get_public_key(), 1 ) );
 
     recover.recent_owner_authority = authority( 1, generate_private_key( "foo bar" ).get_public_key(), 1 );
@@ -4857,7 +4857,7 @@ BOOST_AUTO_TEST_CASE( account_recovery )
     tx.operations.push_back( recover );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     push_transaction( tx, {generate_private_key( "foo bar" ), generate_private_key( "last key" )} );
-    const auto& owner7 = db->get< account_authority_object, by_name >("bob").owner;
+    const auto& owner7 = db->get_account_authority("bob").owner;
     BOOST_REQUIRE( owner7 == authority( 1, generate_private_key( "last key" ).get_public_key(), 1 ) );
   }
   FC_LOG_AND_RETHROW()
@@ -9062,7 +9062,7 @@ BOOST_AUTO_TEST_CASE( create_claimed_account_apply )
     push_transaction( tx, alice_private_key );
 
     const auto& bob = db->get_account( "bob" );
-    const auto& bob_auth = db->get< account_authority_object, by_name >( "bob" );
+    const auto& bob_auth = db->get_account_authority( "bob" );
 
     BOOST_REQUIRE( bob.get_name() == "bob" );
     BOOST_REQUIRE( bob_auth.owner == authority( 1, priv_key.get_public_key(), 1 ) );
@@ -9070,7 +9070,7 @@ BOOST_AUTO_TEST_CASE( create_claimed_account_apply )
     BOOST_REQUIRE( bob_auth.posting == authority( 3, priv_key.get_public_key(), 3 ) );
     BOOST_REQUIRE( bob.get_memo_key() == priv_key.get_public_key() );
 #ifdef COLLECT_ACCOUNT_METADATA // json_metadata is stored conditionally
-    const auto& bob_meta = db->get< account_metadata_object, by_name >( bob.get_name() );
+    const auto& bob_meta = db->get_account_metadata( bob.get_name() );
     BOOST_REQUIRE( bob_meta.json_metadata == "{\"foo\":\"bar\"}" );
 #endif
     CHECK_NO_PROXY( bob );
@@ -9135,18 +9135,18 @@ BOOST_AUTO_TEST_CASE( account_auth_tests )
 
     db_plugin->debug_update( [=]( database& db )
     {
-      db.modify( db.get< account_authority_object, by_name >( "alice"), [&]( account_authority_object& auth )
+      db.modify( db.get_account_authority( "alice"), [&]( account_authority_object& auth )
       {
         auth.active.add_authority( "bob", 1 );
         auth.posting.add_authority( "charlie", 1 );
       });
 
-      db.modify( db.get< account_authority_object, by_name >( "bob" ), [&]( account_authority_object& auth )
+      db.modify( db.get_account_authority( "bob" ), [&]( account_authority_object& auth )
       {
         auth.posting = authority( 1, bob_posting_private_key.get_public_key(), 1 );
       });
 
-      db.modify( db.get< account_authority_object, by_name >( "charlie" ), [&]( account_authority_object& auth )
+      db.modify( db.get_account_authority( "charlie" ), [&]( account_authority_object& auth )
       {
         auth.posting = authority( 1, charlie_posting_private_key.get_public_key(), 1 );
       });
@@ -9509,7 +9509,7 @@ BOOST_AUTO_TEST_CASE( account_update2_apply )
     push_transaction( tx, alice_private_key );
 
     const auto& acct = db->get_account( "alice" );
-    const account_authority_object& acct_auth = db->get< account_authority_object, by_name >( "alice" );
+    const account_authority_object& acct_auth = db->get_account_authority( "alice" );
 
     BOOST_REQUIRE( acct.get_name() == "alice" );
     BOOST_REQUIRE( acct_auth.owner == authority( 1, new_private_key.get_public_key(), 1 ) );
@@ -9517,7 +9517,7 @@ BOOST_AUTO_TEST_CASE( account_update2_apply )
     BOOST_REQUIRE( acct.get_memo_key() == new_private_key.get_public_key() );
 
 #ifdef COLLECT_ACCOUNT_METADATA
-    const account_metadata_object& acct_metadata = db->get< account_metadata_object, by_name >( acct.get_name() );
+    const account_metadata_object& acct_metadata = db->get_account_metadata( acct.get_name() );
     BOOST_REQUIRE( acct_metadata.json_metadata == "{\"bar\":\"foo\"}" );
     BOOST_REQUIRE( acct_metadata.posting_json_metadata == "{\"success\":true}" );
 #endif

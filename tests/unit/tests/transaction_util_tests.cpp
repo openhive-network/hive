@@ -44,7 +44,7 @@ public:
   {
     for( const auto& name : accounts )
     {
-      const auto* authorities = db.find< account_authority_object, by_name >( name );
+      const auto* authorities = db.find_account_authority( name );
       FC_ASSERT( authorities != nullptr, "Account ${name} not found", ( name ) );
       approving_account_lut.emplace( name, account_authorities{ authorities->active, authorities->owner, authorities->posting } );
     }

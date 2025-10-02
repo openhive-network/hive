@@ -48,7 +48,7 @@ struct count_differential_operation_visitor
 
   bool operator()( const account_update_operation& op )const
   {
-    const auto* auth_ptr = _db.find< account_authority_object, by_name >( op.account );
+    const auto* auth_ptr = _db.find_account_authority( op.account );
     if( auth_ptr == nullptr )
       return false;
 
@@ -68,7 +68,7 @@ struct count_differential_operation_visitor
 
   bool operator()( const account_update2_operation& op )const
   {
-    const auto* auth_ptr = _db.find< account_authority_object, by_name >( op.account );
+    const auto* auth_ptr = _db.find_account_authority( op.account );
     if( auth_ptr == nullptr )
       return false;
 
@@ -88,7 +88,7 @@ struct count_differential_operation_visitor
 
   bool operator()( const recover_account_operation& op ) const
   {
-    const auto* auth_ptr = _db.find< account_authority_object, by_name >( op.account_to_recover );
+    const auto* auth_ptr = _db.find_account_authority( op.account_to_recover );
     if( auth_ptr == nullptr )
       return false;
 
