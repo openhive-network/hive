@@ -1880,8 +1880,11 @@ void chain_plugin::plugin_initialize(const variables_map& options)
 
   my->max_mempool_size = fc::parse_size( options.at( "max-mempool-size" ).as< string >() );
 
-  my->end_of_sync_conn = db().add_end_of_syncing_handler( [&]()
-    { my->end_of_syncing(); }, *this, 0 );
+  #ifndef IS_TEST_NET
+    my->end_of_sync_conn = db().add_end_of_syncing_handler( [&]()
+      { my->end_of_syncing(); }, *this, 0 );
+  #endif
+
 } FC_LOG_AND_RETHROW() }
 
 void chain_plugin::plugin_startup()
