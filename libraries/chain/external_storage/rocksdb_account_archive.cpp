@@ -264,7 +264,11 @@ bool rocksdb_account_archive::on_irreversible_block_impl( uint32_t block_num, co
   bool _do_flush = false;
   uint32_t _cnt = 0;
 
-  while( _itr != _idx.end() && _itr->get_block_number() <= block_num )
+  /*
+    Regarding: `itr->get_block_number() < block_num`
+    Here must be `<` not `<=` because `get_block_number` is a number of last block, but `block_num` is the current block.
+  */
+  while( _itr != _idx.end() && _itr->get_block_number() < block_num )
   {
     const auto& _current = *_itr;
     ++_itr;
