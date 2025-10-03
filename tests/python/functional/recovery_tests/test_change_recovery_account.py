@@ -6,7 +6,7 @@ import test_tools as tt
 from hive_local_tools import run_for
 from hive_local_tools.constants import OWNER_AUTH_RECOVERY_PERIOD
 from hive_local_tools.functional.python.recovery import get_recovery_agent
-from beekeepy.exceptions.overseer import ErrorInResponseError
+from beekeepy.exceptions import ErrorInResponseError
 from schemas.errors import ValidationError
 
 
