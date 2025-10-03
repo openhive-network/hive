@@ -21,10 +21,11 @@ namespace hive { namespace chain {
 //#define DBG_MOVE_INFO
 //#define DBG_MOVE_DETAILS_INFO
 
-template<typename Object_Type, typename RocksDB_Object_Type, typename Slice_Type>
-struct transporter_impl
+
+struct rocksdb_storage_writer
 {
-  static void move_to_external_storage( const external_storage_reader_writer::ptr& provider, const Slice_Type& key, const Object_Type& object, ColumnTypes column_type )
+  template<typename SHM_Object_Type, typename RocksDB_Object_Type, typename Slice_Type>
+  static void write_to_storage( const external_storage_reader_writer::ptr& provider, const Slice_Type& key, const SHM_Object_Type& object, ColumnTypes column_type )
   {
     RocksDB_Object_Type _obj( object );
 
@@ -36,36 +37,35 @@ struct transporter_impl
 };
 
 template<typename SHM_Object_Type, typename RocksDB_Object_Type, typename RocksDB_Object_Type2>
-struct transporter
+struct rocksdb_writer
 {
-  static void move_to_external_storage( const external_storage_reader_writer::ptr& provider, const SHM_Object_Type& object, const std::vector<ColumnTypes>& column_types )
+  static void write_to_storage( const external_storage_reader_writer::ptr& provider, const SHM_Object_Type& object, const std::vector<ColumnTypes>& column_types )
   {
     FC_ASSERT( column_types.size() && "move to external storage" );
-    transporter_impl<SHM_Object_Type, RocksDB_Object_Type, account_name_slice_t>::move_to_external_storage( provider, account_name_slice_t( object.get_name().data ), object, column_types[0] );
+    rocksdb_storage_writer::write_to_storage<SHM_Object_Type, RocksDB_Object_Type, account_name_slice_t>( provider, account_name_slice_t( object.get_name().data ), object, column_types[0] );
   }
 };
 
 template<>
-struct transporter<account_object, rocksdb_account_object, rocksdb_account_object_by_id>
+struct rocksdb_writer<account_object, rocksdb_account_object, rocksdb_account_object_by_id>
 {
-  static void move_to_external_storage( const external_storage_reader_writer::ptr& provider, const account_object& object, const std::vector<ColumnTypes>& column_types )
+  static void write_to_storage( const external_storage_reader_writer::ptr& provider, const account_object& object, const std::vector<ColumnTypes>& column_types )
   {
     FC_ASSERT( column_types.size() == 2 && "move an account to rocksdb storage" );
-    transporter_impl<account_object, rocksdb_account_object, account_name_slice_t>::move_to_external_storage( provider, account_name_slice_t( object.get_name().data ), object, column_types[0] );
-    transporter_impl<account_object, rocksdb_account_object_by_id, uint32_slice_t>::move_to_external_storage( provider, uint32_slice_t( object.get_account_id() ), object, column_types[1] );
+    rocksdb_storage_writer::write_to_storage<account_object, rocksdb_account_object, account_name_slice_t>( provider, account_name_slice_t( object.get_name().data ), object, column_types[0] );
+    rocksdb_storage_writer::write_to_storage<account_object, rocksdb_account_object_by_id, uint32_slice_t>( provider, uint32_slice_t( object.get_account_id() ), object, column_types[1] );
   }
 };
 
-struct rocksdb_reader_helper
+struct rocksdb_storage_reader
 {
   template<typename Slice_Type, typename Key_Type>
-  static bool read( const external_storage_reader_writer::ptr& provider, const Key_Type& key, ColumnTypes column_type, PinnableSlice& buffer )
+  static bool read_from_storage( const external_storage_reader_writer::ptr& provider, const Key_Type& key, ColumnTypes column_type, PinnableSlice& buffer )
   {
     Slice_Type _key( key );
 
     return provider->read( column_type, _key, buffer );
   }
-
 };
 
 template<typename SHM_Object_Type, typename Key_Type>
@@ -81,7 +81,7 @@ struct rocksdb_reader<account_metadata_object, account_name_type>
     PinnableSlice _buffer;
 
     FC_ASSERT( column_types.size() && "read account metadata from rocksdb storage" );
-    if( !rocksdb_reader_helper::read<account_name_slice_t, account_name_type::Storage>( provider, key.data, column_types[0], _buffer ) )
+    if( !rocksdb_storage_reader::read_from_storage<account_name_slice_t, account_name_type::Storage>( provider, key.data, column_types[0], _buffer ) )
       return nullptr;
 
     rocksdb_account_metadata_object _obj;
@@ -100,7 +100,7 @@ struct rocksdb_reader<account_authority_object, account_name_type>
     PinnableSlice _buffer;
 
     FC_ASSERT( column_types.size() && "read account authority from rocksdb storage" );
-    if( !rocksdb_reader_helper::read<account_name_slice_t, account_name_type::Storage>( provider, key.data, column_types[0], _buffer ) )
+    if( !rocksdb_storage_reader::read_from_storage<account_name_slice_t, account_name_type::Storage>( provider, key.data, column_types[0], _buffer ) )
       return nullptr;
 
     rocksdb_account_authority_object _obj;
@@ -119,7 +119,7 @@ struct rocksdb_reader<account_object, account_name_type>
     PinnableSlice _buffer;
 
     FC_ASSERT( column_types.size() && "read account from rocksdb storage" );
-    if( !rocksdb_reader_helper::read<account_name_slice_t, account_name_type::Storage>( provider, key.data, column_types[0], _buffer ) )
+    if( !rocksdb_storage_reader::read_from_storage<account_name_slice_t, account_name_type::Storage>( provider, key.data, column_types[0], _buffer ) )
       return nullptr;
 
     rocksdb_account_object _obj;
@@ -142,7 +142,7 @@ struct rocksdb_reader<account_object, account_id_type>
     {
       PinnableSlice _buffer;
 
-      if( !rocksdb_reader_helper::read<uint32_slice_t, uint32_t>( provider, key, column_types[0], _buffer ) )
+      if( !rocksdb_storage_reader::read_from_storage<uint32_slice_t, uint32_t>( provider, key, column_types[0], _buffer ) )
         return nullptr;
 
       rocksdb_account_object_by_id _obj;
@@ -152,7 +152,7 @@ struct rocksdb_reader<account_object, account_id_type>
 
     PinnableSlice _buffer;
 
-    if( !rocksdb_reader_helper::read<account_name_slice_t, account_name_type::Storage>( provider, _name.data, column_types[1], _buffer ) )
+    if( !rocksdb_storage_reader::read_from_storage<account_name_slice_t, account_name_type::Storage>( provider, _name.data, column_types[1], _buffer ) )
       return nullptr;
 
     rocksdb_account_object _obj;
@@ -163,30 +163,34 @@ struct rocksdb_reader<account_object, account_id_type>
 };
 
 template<typename SHM_Object_Type>
-struct updater
+class updater
 {
-  static uint32_t get_block_num( const chainbase::database& db )
-  {
-    auto _found_dgpo = db.find< dynamic_global_property_object >();
-    return _found_dgpo ? _found_dgpo->head_block_number : 0;
-  }
+  private:
 
-  static void modify( chainbase::database& db, const SHM_Object_Type& obj )
-  {
-    db.modify<SHM_Object_Type>( obj, [&]( SHM_Object_Type& o )
+    static uint32_t get_block_num( const chainbase::database& db )
     {
-      o.set_block_number( get_block_num( db ) );
-    } );
-  }
+      auto _found_dgpo = db.find< dynamic_global_property_object >();
+      return _found_dgpo ? _found_dgpo->head_block_number : 0;
+    }
 
-  static void modify( chainbase::database& db, const SHM_Object_Type& obj, std::function<void(SHM_Object_Type&)> modifier )
-  {
-    db.modify<SHM_Object_Type>( obj, [&]( SHM_Object_Type& o )
+  public:
+
+    static void modify( chainbase::database& db, const SHM_Object_Type& obj )
     {
-      modifier( o );
-      o.set_block_number( get_block_num( db ) );
-    } );
-  }
+      db.modify<SHM_Object_Type>( obj, [&]( SHM_Object_Type& o )
+      {
+        o.set_block_number( get_block_num( db ) );
+      } );
+    }
+
+    static void modify( chainbase::database& db, const SHM_Object_Type& obj, std::function<void(SHM_Object_Type&)> modifier )
+    {
+      db.modify<SHM_Object_Type>( obj, [&]( SHM_Object_Type& o )
+      {
+        modifier( o );
+        o.set_block_number( get_block_num( db ) );
+      } );
+    }
 };
 
 template<typename Key_Type, typename SHM_Object_Type>
@@ -277,7 +281,7 @@ bool rocksdb_account_archive::on_irreversible_block_impl( uint32_t block_num, co
     {
       ++_cnt;
 
-      transporter<SHM_Object_Type, RocksDB_Object_Type, RocksDB_Object_Type2>::move_to_external_storage( provider, _current, column_types );
+      rocksdb_writer<SHM_Object_Type, RocksDB_Object_Type, RocksDB_Object_Type2>::write_to_storage( provider, _current, column_types );
 
       if( !_do_flush )
         _do_flush = true;
