@@ -1357,6 +1357,17 @@ deploy_database_api_wheel_to_gitlab:
     - public-runner-docker
   when: on_success
 
+deploy_database_api_wheel_to_pypi:
+  stage: deploy
+  needs:
+    - job: build_database_api_wheel
+      artifacts: true
+  extends: .deploy_wheel_to_pypi_template
+  variables:
+    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/database_api"
+  tags:
+    - public-runner-docker
+
 build_rc_api_wheel:
   extends: .build_python_api_client_wheel
   variables:
@@ -1373,6 +1384,17 @@ deploy_rc_api_wheel_to_gitlab:
   tags:
     - public-runner-docker
   when: on_success
+
+deploy_rc_api_wheel_to_pypi:
+  stage: deploy
+  extends: .deploy_wheel_to_pypi_template
+  variables:
+    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/rc_api"
+  needs:
+    - job: build_rc_api_wheel
+      artifacts: true
+  tags:
+    - public-runner-docker
 
 build_block_api_wheel:
   extends: .build_python_api_client_wheel
@@ -1391,6 +1413,17 @@ deploy_block_api_wheel_to_gitlab:
     - public-runner-docker
   when: on_success
 
+deploy_block_api_wheel_to_pypi:
+  stage: deploy
+  extends: .deploy_wheel_to_pypi_template
+  variables:
+    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/block_api"
+  needs:
+    - job: build_block_api_wheel
+      artifacts: true
+  tags:
+    - public-runner-docker
+
 build_network_broadcast_api_wheel:
   extends: .build_python_api_client_wheel
   variables:
@@ -1407,6 +1440,18 @@ deploy_network_broadcast_api_wheel_to_gitlab:
   tags:
     - public-runner-docker
   when: on_success
+
+deploy_network_broadcast_api_wheel_to_pypi:
+  stage: deploy
+  extends: .deploy_wheel_to_pypi_template
+  variables:
+    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/network_broadcast_api"
+  needs:
+    - job: build_network_broadcast_api_wheel
+      artifacts: true
+  tags:
+    - public-runner-docker
+
 
 build_account_by_key_api_wheel:
   extends: .build_python_api_client_wheel
@@ -1425,12 +1470,23 @@ deploy_account_by_key_api_wheel_to_gitlab:
     - public-runner-docker
   when: on_success
 
+deploy_account_by_key_api_wheel_to_pypi:
+  stage: deploy
+  extends: .deploy_wheel_to_pypi_template
+  variables:
+    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/account_by_key_api"
+  needs:
+    - job: build_account_by_key_api_wheel
+      artifacts: true
+  tags:
+    - public-runner-docker
+
 build_bridge_wheel:
   extends: .build_python_api_client_wheel
   variables:
     API_NAME: "bridge"
 
-deploy_account_bridge_wheel_to_gitlab:
+deploy_bridge_wheel_to_gitlab:
   stage: deploy
   extends: .deploy_wheel_to_gitlab_template
   variables:
@@ -1441,6 +1497,17 @@ deploy_account_bridge_wheel_to_gitlab:
   tags:
     - public-runner-docker
   when: on_success
+
+deploy_bridge_wheel_to_pypi:
+  stage: deploy
+  extends: .deploy_wheel_to_pypi_template
+  variables:
+    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/bridge"
+  needs:
+    - job: build_bridge_wheel
+      artifacts: true
+  tags:
+    - public-runner-docker
 
 build_account_history_api_wheel:
   extends: .build_python_api_client_wheel
@@ -1459,6 +1526,17 @@ deploy_account_history_api_wheel_to_gitlab:
     - public-runner-docker
   when: on_success
 
+deploy_account_history_api_wheel_to_pypi:
+  stage: deploy
+  extends: .deploy_wheel_to_pypi_template
+  variables:
+    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/account_history_api"
+  needs:
+    - job: build_account_history_api_wheel
+      artifacts: true
+  tags:
+    - public-runner-docker
+
 build_condenser_api_wheel:
   extends: .build_python_api_client_wheel
   variables:
@@ -1475,6 +1553,17 @@ deploy_condenser_api_wheel_to_gitlab:
   tags:
     - public-runner-docker
   when: on_success
+
+deploy_condenser_api_wheel_to_pypi:
+  stage: deploy
+  needs:
+    - job: build_condenser_api_wheel
+      artifacts: true
+  extends: .deploy_wheel_to_pypi_template
+  variables:
+    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/condenser_api"
+  tags:
+    - public-runner-docker
 
 build_hive_api_wheel:
   extends: .build_python_api_client_wheel
@@ -1493,6 +1582,17 @@ deploy_hive_api_wheel_to_gitlab:
     - public-runner-docker
   when: on_success
 
+deploy_hive_api_wheel_to_pypi:
+  stage: deploy
+  needs:
+    - job: build_hive_api_wheel
+      artifacts: true
+  extends: .deploy_wheel_to_pypi_template
+  variables:
+    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/hive"
+  tags:
+    - public-runner-docker
+
 build_follow_api_wheel:
   extends: .build_python_api_client_wheel
   variables:
@@ -1509,6 +1609,17 @@ deploy_follow_api_wheel_to_gitlab:
   tags:
     - public-runner-docker
   when: on_success
+
+deploy_follow_api_wheel_to_pypi:
+  stage: deploy
+  extends: .deploy_wheel_to_pypi_template
+  variables:
+    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/follow_api"
+  needs:
+    - job: build_follow_api_wheel
+      artifacts: true
+  tags:
+    - public-runner-docker
 
 build_jsonrpc_wheel:
   extends: .build_python_api_client_wheel
@@ -1544,6 +1655,17 @@ deploy_market_history_api_wheel_to_gitlab:
     - public-runner-docker
   when: on_success
 
+deploy_market_history_api_wheel_to_pypi:
+  stage: deploy
+  extends: .deploy_wheel_to_pypi_template
+  variables:
+    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/market_history_api"
+  needs:
+    - job: build_market_history_api_wheel
+      artifacts: true
+  tags:
+    - public-runner-docker
+
 build_reputation_api_wheel:
   extends: .build_python_api_client_wheel
   variables:
@@ -1560,6 +1682,17 @@ deploy_reputation_api_wheel_to_gitlab:
   tags:
     - public-runner-docker
   when: on_success
+
+deploy_reputation_api_wheel_to_pypi:
+  stage: deploy
+  extends: .deploy_wheel_to_pypi_template
+  variables:
+    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/reputation_api"
+  needs:
+    - job: build_reputation_api_wheel
+      artifacts: true
+  tags:
+    - public-runner-docker
 
 build_transaction_status_api_wheel:
   extends: .build_python_api_client_wheel
@@ -1578,6 +1711,17 @@ deploy_transaction_status_api_wheel_to_gitlab:
     - public-runner-docker
   when: on_success
 
+deploy_transaction_status_api_wheel_to_pypi:
+  stage: deploy
+  extends: .deploy_wheel_to_pypi_template
+  variables:
+    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/transaction_status_api"
+  needs:
+    - job: build_transaction_status_api_wheel
+      artifacts: true
+  tags:
+    - public-runner-docker
+
 build_debug_node_api_wheel:
   extends: .build_python_api_client_wheel
   variables:
@@ -1595,6 +1739,17 @@ deploy_debug_node_api_wheel_to_gitlab:
     - public-runner-docker
   when: on_success
 
+deploy_debug_node_api_wheel_to_pypi:
+  stage: deploy
+  extends: .deploy_wheel_to_pypi_template
+  variables:
+    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/debug_node_api"
+  needs:
+    - job: build_debug_node_api_wheel
+      artifacts: true
+  tags:
+    - public-runner-docker
+
 build_search_api_wheel:
   extends: .build_python_api_client_wheel
   variables:
@@ -1611,6 +1766,17 @@ deploy_search_api_wheel_to_gitlab:
   tags:
     - public-runner-docker
   when: on_success
+
+deploy_search_api_wheel_to_pypi:
+  stage: deploy
+  extends: .deploy_wheel_to_pypi_template
+  variables:
+    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/search_api"
+  needs:
+    - job: build_search_api_wheel
+      artifacts: true
+  tags:
+    - public-runner-docker
 
 generate_testing_block_logs:
   stage: build
