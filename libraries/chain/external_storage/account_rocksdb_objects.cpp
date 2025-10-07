@@ -6,7 +6,7 @@ hive::utilities::benchmark_dumper::account_archive_details_t accounts_stats::sta
 
 rocksdb_account_object::rocksdb_account_object( const account_object& obj )
 {
-  id          = obj.get_account_id();
+  id          = obj.get_id();
 
   recovery    = obj.get_recovery();
   assets      = obj.get_assets();
@@ -36,7 +36,7 @@ const account_object* rocksdb_account_object::build( chainbase::database& db )
 
 rocksdb_account_object_by_id::rocksdb_account_object_by_id( const account_object& obj )
 {
-  id   = obj.get_account_id();
+  id   = obj.get_id();
   name = obj.get_name();
 }
 

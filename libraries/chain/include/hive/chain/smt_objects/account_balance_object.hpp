@@ -21,7 +21,7 @@ public:
   template < typename Allocator>
   account_regular_balance_object( allocator< Allocator > a, uint64_t _id,
     const account_object& _owner, asset_symbol_type liquid_symbol )
-    : id( _id ), owner( _owner.get_account_id() ), liquid( 0, liquid_symbol ), vesting( 0, liquid_symbol.get_paired_symbol() )
+    : id( _id ), owner( _owner.get_id() ), liquid( 0, liquid_symbol ), vesting( 0, liquid_symbol.get_paired_symbol() )
   {}
 
   bool is_empty() const
@@ -55,7 +55,7 @@ public:
   template < typename Allocator >
   account_rewards_balance_object( allocator< Allocator > a, uint64_t _id,
     const account_object& _owner, asset_symbol_type _liquid_symbol )
-    : id( _id ), owner( _owner.get_account_id() ), pending_liquid( 0, _liquid_symbol ),
+    : id( _id ), owner( _owner.get_id() ), pending_liquid( 0, _liquid_symbol ),
     pending_vesting_shares( 0, _liquid_symbol.get_paired_symbol() ), pending_vesting_value( 0, _liquid_symbol )
   {}
 

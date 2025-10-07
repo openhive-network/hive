@@ -462,7 +462,7 @@ bool delayed_vote_database_fixture::check_collection( const COLLECTION& collecti
 
   if( !found->account )
     return false;
-  return ( found->withdraw_executor == withdraw_executor ) && ( found->val == val ) && ( found->account->get_account_id() == obj.get_account_id() );
+  return ( found->withdraw_executor == withdraw_executor ) && ( found->val == val ) && ( found->account->get_id() == obj.get_id() );
 }
 
 using dvd_vector = std::vector< delayed_votes_data >;

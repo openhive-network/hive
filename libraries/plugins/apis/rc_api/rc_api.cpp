@@ -148,16 +148,16 @@ DEFINE_API_IMPL( rc_api_impl, list_rc_direct_delegations )
   if (key[1].as< account_name_type >() != "") {
     auto delegatee = _db.find_account( key[1].as< account_name_type >() );
     FC_ASSERT( delegatee, "Account ${a} does not exist", ("a", key[1].as< account_name_type >()) );
-    delegatee_id = delegatee->get_account_id();
+    delegatee_id = delegatee->get_id();
   }
 
   FC_ASSERT( delegator, "Account ${a} does not exist", ("a", key[0].as< account_name_type >()) );
 
   auto& idx  = _db.get_index< rc_direct_delegation_index, by_from_to >();
-  auto itr = idx.lower_bound( boost::make_tuple( delegator->get_account_id(), delegatee_id));
+  auto itr = idx.lower_bound( boost::make_tuple( delegator->get_id(), delegatee_id));
   auto end = idx.end();
 
-  while( result.rc_direct_delegations.size() < args.limit && itr != end && itr->from == delegator->get_account_id())
+  while( result.rc_direct_delegations.size() < args.limit && itr != end && itr->from == delegator->get_id())
   {
     const rc_direct_delegation_object& rcdd = *itr;
     const auto& to_account = _db.get_account( rcdd.to );

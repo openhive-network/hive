@@ -394,7 +394,7 @@ BOOST_AUTO_TEST_CASE( undo_different_indexes )
     BOOST_REQUIRE( old_size_ao + 1 == ao.size< account_index >() );
 
     const comment_object& objc0 = co.create( fake_account_object, "11", fake_parent_comment );
-    BOOST_CHECK_EQUAL( objc0.get_author_and_permlink_hash(), comment_object::compute_author_and_permlink_hash( fake_account_object.get_account_id(), "11" ) );
+    BOOST_CHECK_EQUAL( objc0.get_author_and_permlink_hash(), comment_object::compute_author_and_permlink_hash( fake_account_object.get_id(), "11" ) );
     BOOST_REQUIRE( old_size_co + 1 == co.size< comment_index >() );
 
     udb.undo_end();

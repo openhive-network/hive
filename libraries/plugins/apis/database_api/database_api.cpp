@@ -523,7 +523,7 @@ DEFINE_API_IMPL( database_api_impl, list_accounts )
       {
         auto proxy = _db.find_account( key.first );
         FC_ASSERT( proxy, "Given proxy account does not exist." );
-        proxy_id = proxy->get_account_id();
+        proxy_id = proxy->get_id();
       }
       iterate_results< chain::tiny_account_index, chain::by_proxy >(
         boost::make_tuple( proxy_id, key.second ),
@@ -947,10 +947,10 @@ DEFINE_API_IMPL( database_api_impl, list_vesting_delegations )
       {
         auto delegatee = _db.find_account( key.second );
         FC_ASSERT( delegatee, "Given account does not exist." );
-        delegatee_id = delegatee->get_account_id();
+        delegatee_id = delegatee->get_id();
       }
       iterate_results< chain::vesting_delegation_index, chain::by_delegation >(
-        boost::make_tuple( delegator->get_account_id(), delegatee_id ),
+        boost::make_tuple( delegator->get_id(), delegatee_id ),
         result.delegations,
         args.limit,
         &database_api_impl::on_push_default< api_vesting_delegation_object, vesting_delegation_object >,
@@ -970,7 +970,7 @@ DEFINE_API_IMPL( database_api_impl, find_vesting_delegations )
   const auto& delegation_idx = _db.get_index< chain::vesting_delegation_index, chain::by_delegation >();
   auto delegator = _db.find_account( args.account );
   FC_ASSERT( delegator, "Given account does not exist." );
-  account_id_type delegator_id = delegator->get_account_id();
+  account_id_type delegator_id = delegator->get_id();
   auto itr = delegation_idx.lower_bound( delegator_id );
 
   while( itr != delegation_idx.end() && itr->get_delegator() == delegator_id && result.delegations.size() <= DATABASE_API_SINGLE_QUERY_LIMIT )
@@ -1015,7 +1015,7 @@ DEFINE_API_IMPL( database_api_impl, list_vesting_delegation_expirations )
       {
         auto delegator = _db.find_account( delegator_name );
         FC_ASSERT( delegator, "Given account does not exist." );
-        delegator_id = delegator->get_account_id();
+        delegator_id = delegator->get_id();
       }
       iterate_results< chain::vesting_delegation_expiration_index, chain::by_account_expiration >(
         boost::make_tuple( delegator_id, key[1].as< time_point_sec >(), key[2].as< vesting_delegation_expiration_id_type >() ),
@@ -1038,7 +1038,7 @@ DEFINE_API_IMPL( database_api_impl, find_vesting_delegation_expirations )
   const auto& del_exp_idx = _db.get_index< chain::vesting_delegation_expiration_index, chain::by_account_expiration >();
   auto delegator = _db.find_account( args.account );
   FC_ASSERT( delegator, "Given account does not exist." );
-  account_id_type delegator_id = delegator->get_account_id();
+  account_id_type delegator_id = delegator->get_id();
   auto itr = del_exp_idx.lower_bound( delegator_id );
 
   while( itr != del_exp_idx.end() && itr->get_delegator() == delegator_id && result.delegations.size() <= DATABASE_API_SINGLE_QUERY_LIMIT )
@@ -1081,7 +1081,7 @@ DEFINE_API_IMPL( database_api_impl, list_hbd_conversion_requests )
       {
         auto owner = _db.find_account( key.first );
         FC_ASSERT( owner, "Given account does not exist." );
-        owner_id = owner->get_account_id();
+        owner_id = owner->get_id();
       }
       iterate_results< chain::convert_request_index, chain::by_owner >(
         boost::make_tuple( owner_id, key.second ),
@@ -1104,7 +1104,7 @@ DEFINE_API_IMPL( database_api_impl, find_hbd_conversion_requests )
 
   auto owner = _db.find_account( args.account );
   FC_ASSERT( owner, "Given account does not exist." );
-  account_id_type owner_id = owner->get_account_id();
+  account_id_type owner_id = owner->get_id();
 
   const auto& convert_idx = _db.get_index< chain::convert_request_index, chain::by_owner >();
   auto itr = convert_idx.lower_bound( owner_id );
@@ -1148,7 +1148,7 @@ DEFINE_API_IMPL( database_api_impl, list_collateralized_conversion_requests )
       {
         auto owner = _db.find_account( key.first );
         FC_ASSERT( owner, "Given account does not exist." );
-        owner_id = owner->get_account_id();
+        owner_id = owner->get_id();
       }
       iterate_results< chain::collateralized_convert_request_index, chain::by_owner >(
         boost::make_tuple( owner_id, key.second ),
@@ -1171,7 +1171,7 @@ DEFINE_API_IMPL( database_api_impl, find_collateralized_conversion_requests )
 
   auto owner = _db.find_account( args.account );
   FC_ASSERT( owner, "Given account does not exist." );
-  account_id_type owner_id = owner->get_account_id();
+  account_id_type owner_id = owner->get_id();
 
   const auto& convert_idx = _db.get_index< chain::collateralized_convert_request_index, chain::by_owner >();
   auto itr = convert_idx.lower_bound( owner_id );
@@ -1701,7 +1701,7 @@ DEFINE_API_IMPL( database_api_impl, find_recurrent_transfers ) {
 
   const auto* from_account = _db.find_account( args.from );
   FC_ASSERT( from_account, "Given 'from' account does not exist." );
-  auto from_account_id = from_account->get_account_id();
+  auto from_account_id = from_account->get_id();
 
   const auto &idx = _db.get_index<chain::recurrent_transfer_index, chain::by_from_id>();
   auto itr = idx.find(from_account_id);

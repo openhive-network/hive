@@ -22,12 +22,9 @@ namespace hive { namespace chain {
 
     private:
 
-      account_id_type account_id;
       std::optional<uint32_t> block_number;
 
     public:
-
-      const account_id_type& get_account_id() const { return account_id; }
 
       void set_block_number( uint32_t _block_number ) { block_number = _block_number; }
       uint32_t get_block_number() const { return block_number ? (*block_number) : 0; }
@@ -292,7 +289,7 @@ namespace hive { namespace chain {
       void set_proxy(const account_object& new_proxy)
       {
         FC_ASSERT( &new_proxy != this );
-        misc.proxy = new_proxy.get_account_id();
+        misc.proxy = new_proxy.get_id();
       }
 
       time_point_sec get_governance_vote_expiration_ts() const
@@ -371,8 +368,8 @@ namespace hive { namespace chain {
         const time_point_sec& _creation_time, const time_point_sec& _block_creation_time, bool _mined,
         const account_object* _recovery_account,
         bool _fill_mana, const asset& incoming_delegation, int64_t _rc_adjustment = 0 )
-      : id( _id ), account_id( id ),
-        recovery( _recovery_account ? _recovery_account->get_account_id() : account_id_type() ),
+      : id( _id ),
+        recovery( _recovery_account ? _recovery_account->get_id() : account_id_type() ),
         assets( incoming_delegation ),
         mrc( _creation_time, _fill_mana, _rc_adjustment, get_effective_vesting_shares() ),
         time(),
@@ -385,7 +382,7 @@ namespace hive { namespace chain {
       template< typename Allocator >
       account_object( allocator< Allocator > a, uint64_t _id,
         const account_name_type& _name, const time_point_sec& _creation_time, const public_key_type& _memo_key = public_key_type() )
-        : id( _id ), account_id( id ), misc( _name, _creation_time, _creation_time, true/*mined*/, _memo_key ),
+        : id( _id ), misc( _name, _creation_time, _creation_time, true/*mined*/, _memo_key ),
           delayed_votes( a )
       {}
 
@@ -398,7 +395,7 @@ namespace hive { namespace chain {
                       const account_details::time& _time,
                       const account_details::misc& _misc,
                       const Delayed_Votes_Items& _delayed_votes )
-        : id( _id ), account_id( _account_id ), recovery( _recovery ), assets( _assets ), mrc( _mrc ), time( _time ), misc( _misc ), delayed_votes( a )
+        : id( _account_id ), recovery( _recovery ), assets( _assets ), mrc( _mrc ), time( _time ), misc( _misc ), delayed_votes( a )
       {
         if( _delayed_votes.size() )
         {
@@ -470,7 +467,7 @@ namespace hive { namespace chain {
       tiny_account_object( allocator< Allocator > a, uint64_t _id, const account_object& obj )
       : id( _id ), delayed_votes( a )
       {
-        account_id  = obj.get_account_id();
+        account_id  = obj.get_id();
         name        = obj.get_name();
 
         modify( obj );
@@ -596,7 +593,7 @@ namespace hive { namespace chain {
       vesting_delegation_object( allocator< Allocator > a, uint64_t _id,
         const account_object& _from, const account_object& _to,
         const VEST_asset& _amount, const time_point_sec& _min_delegation_time )
-      : id( _id ), delegator( _from.get_account_id() ), delegatee( _to.get_account_id() ),
+      : id( _id ), delegator( _from.get_id() ), delegatee( _to.get_id() ),
         min_delegation_time( _min_delegation_time ), vesting_shares( _amount )
       {}
 
@@ -631,7 +628,7 @@ namespace hive { namespace chain {
       template< typename Allocator >
       vesting_delegation_expiration_object( allocator< Allocator > a, uint64_t _id,
         const account_object& _delegator, const VEST_asset& _amount, const time_point_sec& _expiration )
-      : id( _id ), delegator( _delegator.get_account_id() ), vesting_shares( _amount ), expiration( _expiration )
+      : id( _id ), delegator( _delegator.get_id() ), vesting_shares( _amount ), expiration( _expiration )
       {}
 
       //id of "delegation sender" where VESTs are to be returned
@@ -767,14 +764,12 @@ namespace hive { namespace chain {
     indexed_by<
       ordered_unique< tag< by_id >,
         const_mem_fun< account_object, account_object::id_type, &account_object::get_id > >,
-      ordered_unique< tag< by_account_id >,
-        const_mem_fun< account_object, const account_id_type&, &account_object::get_account_id > >,
       ordered_unique< tag< by_name >,
         const_mem_fun< account_object, const account_name_type&, &account_object::get_name > >,
       ordered_unique< tag< by_block >,
         composite_key< account_object,
           const_mem_fun< account_object, uint32_t, &account_object::get_block_number>,
-          const_mem_fun< account_object, const account_id_type&, &account_object::get_account_id >
+          const_mem_fun< account_object, account_object::id_type, &account_object::get_id >
         >
       >
     >,
@@ -961,7 +956,7 @@ namespace hive { namespace chain {
 
 FC_REFLECT( hive::chain::account_object,
           (id)
-          (account_id)(block_number)
+          (block_number)
           (recovery)(assets)(mrc)(time)(misc)(delayed_votes)
         )
 

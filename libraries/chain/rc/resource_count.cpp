@@ -118,7 +118,7 @@ struct count_differential_operation_visitor
         return false;
 
       const auto* delegation_ptr = _db.find< rc_direct_delegation_object, by_from_to >(
-        boost::make_tuple( from_ptr->get_account_id(), to_ptr->get_account_id() ) );
+        boost::make_tuple( from_ptr->get_id(), to_ptr->get_id() ) );
       if( delegation_ptr != nullptr )
         usage += _w.delegate_rc_base_size;
     }

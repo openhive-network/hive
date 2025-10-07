@@ -34,7 +34,7 @@ using fc::string;
 
 #define VOTING_MANABAR( account_name ) db->get_account( account_name ).get_voting_manabar()
 #define DOWNVOTE_MANABAR( account_name ) db->get_account( account_name ).get_downvote_manabar()
-#define CHECK_PROXY( account, proxy ) BOOST_REQUIRE( account.get_proxy() == proxy.get_account_id() )
+#define CHECK_PROXY( account, proxy ) BOOST_REQUIRE( account.get_proxy() == proxy.get_id() )
 #define CHECK_NO_PROXY( account ) BOOST_REQUIRE( account.has_proxy() == false )
 
 inline uint16_t get_voting_power( const account_object& a )
@@ -141,7 +141,7 @@ BOOST_AUTO_TEST_CASE( account_create_apply )
     BOOST_REQUIRE( acct.get_creation_time() == db->head_block_time() );
     BOOST_REQUIRE( acct.get_balance().amount.value == ASSET( "0.000 TESTS" ).amount.value );
     BOOST_REQUIRE( acct.get_hbd_balance().amount.value == ASSET( "0.000 TBD" ).amount.value );
-    BOOST_REQUIRE( acct.get_account_id().get_value() == db->get_account( acct_auth.get_name() ).get_account_id().get_value() );
+    BOOST_REQUIRE( acct.get_id().get_value() == db->get_account( acct_auth.get_name() ).get_id().get_value() );
 
     BOOST_REQUIRE( acct.get_vesting().amount.value == 0 );
     BOOST_REQUIRE( acct.get_vesting_withdraw_rate().amount.value == ASSET( "0.000000 VESTS" ).amount.value );
@@ -460,10 +460,10 @@ BOOST_AUTO_TEST_CASE( comment_apply )
     const auto alice_comment = db->get_comment( "alice", string( "lorem" ) );
     const comment_cashout_object* alice_comment_cashout = db->find_comment_cashout( *alice_comment );
 
-    BOOST_REQUIRE( alice_comment.get_author_and_permlink_hash() == comment_object::compute_author_and_permlink_hash( get_account_id( "alice" ), "lorem" ) );
+    BOOST_REQUIRE( alice_comment.get_author_and_permlink_hash() == comment_object::compute_author_and_permlink_hash( get_id( "alice" ), "lorem" ) );
     BOOST_REQUIRE( alice_comment_cashout != nullptr );
     BOOST_CHECK_EQUAL( alice_comment_cashout->get_comment_id(), alice_comment.get_id() );
-    BOOST_CHECK_EQUAL( alice_comment_cashout->get_author_id(), get_account_id( op.author ) );
+    BOOST_CHECK_EQUAL( alice_comment_cashout->get_author_id(), get_id( op.author ) );
     BOOST_CHECK_EQUAL( to_string( alice_comment_cashout->get_permlink() ), "lorem" );
     BOOST_REQUIRE( alice_comment.is_root() );
     BOOST_REQUIRE( alice_comment_cashout->get_creation_time() == db->head_block_time() );
@@ -492,10 +492,10 @@ BOOST_AUTO_TEST_CASE( comment_apply )
     const auto bob_comment = db->get_comment( "bob", string( "ipsum" ) );
     const comment_cashout_object* bob_comment_cashout = db->find_comment_cashout( *bob_comment );
 
-    BOOST_CHECK_EQUAL( bob_comment.get_author_and_permlink_hash(), comment_object::compute_author_and_permlink_hash( get_account_id( "bob" ), "ipsum" ) );
+    BOOST_CHECK_EQUAL( bob_comment.get_author_and_permlink_hash(), comment_object::compute_author_and_permlink_hash( get_id( "bob" ), "ipsum" ) );
     BOOST_REQUIRE( bob_comment_cashout != nullptr );
     BOOST_CHECK_EQUAL( bob_comment_cashout->get_comment_id(), bob_comment.get_id() );
-    BOOST_CHECK_EQUAL( bob_comment_cashout->get_author_id(), get_account_id( "bob" ) );
+    BOOST_CHECK_EQUAL( bob_comment_cashout->get_author_id(), get_id( "bob" ) );
     BOOST_CHECK_EQUAL( to_string( bob_comment_cashout->get_permlink() ), "ipsum" );
     BOOST_REQUIRE( bob_comment.get_parent_id() == alice_comment.get_id() );
     BOOST_REQUIRE( bob_comment_cashout->get_creation_time() == db->head_block_time() );
@@ -517,10 +517,10 @@ BOOST_AUTO_TEST_CASE( comment_apply )
     const auto sam_comment = db->get_comment( "sam", string( "dolor" ) );
     const comment_cashout_object* sam_comment_cashout = db->find_comment_cashout( *sam_comment );
 
-    BOOST_REQUIRE( sam_comment.get_author_and_permlink_hash() == comment_object::compute_author_and_permlink_hash( get_account_id( "sam" ), "dolor" ) );
+    BOOST_REQUIRE( sam_comment.get_author_and_permlink_hash() == comment_object::compute_author_and_permlink_hash( get_id( "sam" ), "dolor" ) );
     BOOST_REQUIRE( sam_comment_cashout != nullptr );
     BOOST_CHECK_EQUAL( sam_comment_cashout->get_comment_id(), sam_comment.get_id() );
-    BOOST_CHECK_EQUAL( sam_comment_cashout->get_author_id(), get_account_id( "sam" ) );
+    BOOST_CHECK_EQUAL( sam_comment_cashout->get_author_id(), get_id( "sam" ) );
     BOOST_CHECK_EQUAL( to_string( sam_comment_cashout->get_permlink() ), "dolor" );
     BOOST_REQUIRE( sam_comment.get_parent_id() == bob_comment.get_id() );
     BOOST_REQUIRE( sam_comment_cashout->get_creation_time() == db->head_block_time() );
@@ -562,10 +562,10 @@ BOOST_AUTO_TEST_CASE( comment_apply )
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     push_transaction( tx, sam_post_key );
 
-    BOOST_REQUIRE( mod_sam_comment.get_author_and_permlink_hash() == comment_object::compute_author_and_permlink_hash( get_account_id( "sam" ), "dolor" ) );
+    BOOST_REQUIRE( mod_sam_comment.get_author_and_permlink_hash() == comment_object::compute_author_and_permlink_hash( get_id( "sam" ), "dolor" ) );
     BOOST_REQUIRE( mod_sam_comment_cashout != nullptr );
     BOOST_CHECK_EQUAL( mod_sam_comment_cashout->get_comment_id(), mod_sam_comment.get_id() );
-    BOOST_CHECK_EQUAL( mod_sam_comment_cashout->get_author_id(), get_account_id( "sam" ) );
+    BOOST_CHECK_EQUAL( mod_sam_comment_cashout->get_author_id(), get_id( "sam" ) );
     BOOST_CHECK_EQUAL( to_string( mod_sam_comment_cashout->get_permlink() ), "dolor" );
     BOOST_REQUIRE( mod_sam_comment.get_parent_id() == mod_bob_comment.get_id() );
     BOOST_REQUIRE( mod_sam_comment_cashout->get_creation_time() == created );
@@ -1169,7 +1169,7 @@ BOOST_AUTO_TEST_CASE( vote_weights )
         const auto& cashout = *( db->find_comment_cashout( *comment ) );
         const auto& voter = db->get_account( voters[i].name );
         voterObjs.emplace_back( &voter );
-        const auto& vote = *( vote_idx.find( boost::make_tuple( comment.get_id(), voter.get_account_id() ) ) );
+        const auto& vote = *( vote_idx.find( boost::make_tuple( comment.get_id(), voter.get_id() ) ) );
         voteObjs.emplace_back( &vote );
         BOOST_REQUIRE_EQUAL( vote.get_weight(), cashout.get_total_vote_weight() );
       }
@@ -2315,7 +2315,7 @@ BOOST_AUTO_TEST_CASE( account_witness_proxy_authorities )
 
     BOOST_TEST_MESSAGE( "--- Up to HF28 it was a test failure when signed by an additional signature not in the creator's authority. Now is a failure because of logic of given operation." );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION - HIVE_BLOCK_INTERVAL );
-    HIVE_REQUIRE_ASSERT( push_transaction( tx, { bob_private_key, alice_private_key } ), "account.get_proxy() != new_proxy.get_account_id()" );
+    HIVE_REQUIRE_ASSERT( push_transaction( tx, { bob_private_key, alice_private_key } ), "account.get_proxy() != new_proxy.get_id()" );
 
     BOOST_TEST_MESSAGE( "--- Test failure with proxy signature" );
     HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key ), tx_missing_active_auth );
@@ -2423,12 +2423,12 @@ BOOST_AUTO_TEST_CASE( proxy_cleared_operation_basic )
 
       generate_block();
 
-      BOOST_REQUIRE( db->get_account( "bob" ).get_proxy() == db->get_account( "carol" ).get_account_id() );
+      BOOST_REQUIRE( db->get_account( "bob" ).get_proxy() == db->get_account( "carol" ).get_id() );
       BOOST_REQUIRE( db->get_account( "carol" ).has_proxy() == false );
 
       generate_blocks( db->head_block_time() + HIVE_OWNER_AUTH_RECOVERY_PERIOD - fc::seconds( HIVE_BLOCK_INTERVAL ) - fc::seconds( HIVE_BLOCK_INTERVAL ), false );
 
-      BOOST_REQUIRE( db->get_account( "bob" ).get_proxy() == db->get_account( "carol" ).get_account_id() );
+      BOOST_REQUIRE( db->get_account( "bob" ).get_proxy() == db->get_account( "carol" ).get_id() );
       BOOST_REQUIRE( db->get_account( "carol" ).has_proxy() == false );
 
       generate_blocks( db->head_block_time() + fc::seconds( HIVE_BLOCK_INTERVAL ) );
@@ -2462,7 +2462,7 @@ BOOST_AUTO_TEST_CASE( proxy_cleared_operation_basic )
 
       generate_block();
 
-      BOOST_REQUIRE( db->get_account( "carol" ).get_proxy() == db->get_account( "dan" ).get_account_id() );
+      BOOST_REQUIRE( db->get_account( "carol" ).get_proxy() == db->get_account( "dan" ).get_id() );
       BOOST_REQUIRE( db->get_account( "dan" ).has_proxy() == false );
 
       generate_blocks( db->head_block_time() + HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD );
@@ -3253,9 +3253,9 @@ BOOST_AUTO_TEST_CASE( convert_apply )
     BOOST_REQUIRE( new_bob.get_balance().amount.value == ASSET( "3.000 TESTS" ).amount.value );
     BOOST_REQUIRE( new_bob.get_hbd_balance().amount.value == ASSET( "4.000 TBD" ).amount.value );
 
-    auto convert_request = convert_request_idx.find( boost::make_tuple( get_account_id( op.owner ), op.requestid ) );
+    auto convert_request = convert_request_idx.find( boost::make_tuple( get_id( op.owner ), op.requestid ) );
     BOOST_REQUIRE( convert_request != convert_request_idx.end() );
-    BOOST_REQUIRE( convert_request->get_owner() == get_account_id( op.owner ) );
+    BOOST_REQUIRE( convert_request->get_owner() == get_id( op.owner ) );
     BOOST_REQUIRE( convert_request->get_request_id() == op.requestid );
     BOOST_REQUIRE( convert_request->get_convert_amount().amount.value == op.amount.amount.value );
     //BOOST_REQUIRE( convert_request->premium == 100000 );
@@ -3270,9 +3270,9 @@ BOOST_AUTO_TEST_CASE( convert_apply )
     BOOST_REQUIRE( new_bob.get_balance().amount.value == ASSET( "3.000 TESTS" ).amount.value );
     BOOST_REQUIRE( new_bob.get_hbd_balance().amount.value == ASSET( "4.000 TBD" ).amount.value );
 
-    convert_request = convert_request_idx.find( boost::make_tuple( get_account_id( op.owner ), op.requestid ) );
+    convert_request = convert_request_idx.find( boost::make_tuple( get_id( op.owner ), op.requestid ) );
     BOOST_REQUIRE( convert_request != convert_request_idx.end() );
-    BOOST_REQUIRE( convert_request->get_owner() == get_account_id( op.owner ) );
+    BOOST_REQUIRE( convert_request->get_owner() == get_id( op.owner ) );
     BOOST_REQUIRE( convert_request->get_request_id() == op.requestid );
     BOOST_REQUIRE( convert_request->get_convert_amount().amount.value == ASSET( "3.000 TBD" ).amount.value );
     //BOOST_REQUIRE( convert_request->premium == 100000 );
@@ -7163,7 +7163,7 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_apply )
     tx.operations.push_back( witness_vote );
     HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::exception );
 
-    db->get< comment_vote_object, by_comment_voter >( boost::make_tuple( db->get_comment( "alice", string( "test" ) ).get_id(), get_account_id( "alice" ) ) );
+    db->get< comment_vote_object, by_comment_voter >( boost::make_tuple( db->get_comment( "alice", string( "test" ) ).get_id(), get_id( "alice" ) ) );
 
     vote.weight = 0;
     tx.clear();
@@ -7545,11 +7545,11 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
     BOOST_REQUIRE( bob_acc.get_downvote_manabar().current_mana == old_bob_downvote_manabar.current_mana + op.vesting_shares.amount.value / 4 );
 
     BOOST_TEST_MESSAGE( "--- Test that the delegation object is correct. " );
-    auto delegation = db->find< vesting_delegation_object, by_delegation >( boost::make_tuple( alice_acc.get_account_id(), bob_acc.get_account_id() ) );
+    auto delegation = db->find< vesting_delegation_object, by_delegation >( boost::make_tuple( alice_acc.get_id(), bob_acc.get_id() ) );
 
 
     BOOST_REQUIRE( delegation != nullptr );
-    BOOST_REQUIRE( delegation->get_delegator() == alice_acc.get_account_id() );
+    BOOST_REQUIRE( delegation->get_delegator() == alice_acc.get_id() );
     BOOST_REQUIRE( delegation->get_vesting() == ASSET( "10000000.000000 VESTS"));
 
     old_manabar = VOTING_MANABAR( "alice" );
@@ -7579,7 +7579,7 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
     generate_blocks(1);
 
     BOOST_REQUIRE( delegation != nullptr );
-    BOOST_REQUIRE( delegation->get_delegator() == alice_acc.get_account_id() );
+    BOOST_REQUIRE( delegation->get_delegator() == alice_acc.get_id() );
     BOOST_REQUIRE( delegation->get_vesting() == ASSET( "20000000.000000 VESTS"));
     BOOST_REQUIRE( alice_acc.get_delegated_vesting() == ASSET( "20000000.000000 VESTS"));
     BOOST_REQUIRE( alice_acc.get_voting_manabar().current_mana == old_manabar.current_mana - delta );
@@ -7629,7 +7629,7 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
 
     auto alice_comment = db->get_comment( "alice", string( "foo" ) );
     const comment_cashout_object* alice_comment_cashout = db->find_comment_cashout( *alice_comment );
-    auto itr = vote_idx.find( boost::make_tuple( alice_comment.get_id(), bob_acc.get_account_id() ) );
+    auto itr = vote_idx.find( boost::make_tuple( alice_comment.get_id(), bob_acc.get_id() ) );
     BOOST_REQUIRE( alice_comment_cashout->get_net_rshares() == old_manabar.current_mana - db->get_account( "bob" ).get_voting_manabar().current_mana - HIVE_VOTE_DUST_THRESHOLD );
     BOOST_REQUIRE( itr->get_rshares() == old_manabar.current_mana - db->get_account( "bob" ).get_voting_manabar().current_mana - HIVE_VOTE_DUST_THRESHOLD );
 
@@ -7764,7 +7764,7 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
     BOOST_REQUIRE( exp_obj->get_expiration_time() == db->head_block_time() + gpo.delegation_return_period );
     BOOST_REQUIRE( db->get_account( "sam" ).get_delegated_vesting() == sam_vest );
     BOOST_REQUIRE( db->get_account( "dave" ).get_received_vesting() == ASSET( "0.000000 VESTS" ) );
-    delegation = db->find< vesting_delegation_object, by_delegation >( boost::make_tuple( sam_acc.get_account_id(), dave_acc.get_account_id() ) );
+    delegation = db->find< vesting_delegation_object, by_delegation >( boost::make_tuple( sam_acc.get_id(), dave_acc.get_id() ) );
     BOOST_REQUIRE( delegation == nullptr );
 
     old_sam_manabar.regenerate_mana( sam_params, db->head_block_time() );
@@ -9079,7 +9079,7 @@ BOOST_AUTO_TEST_CASE( create_claimed_account_apply )
     BOOST_REQUIRE( bob.get_balance().amount.value == ASSET( "0.000 TESTS" ).amount.value );
     BOOST_REQUIRE( bob.get_hbd_balance().amount.value == ASSET( "0.000 TBD" ).amount.value );
     BOOST_REQUIRE( bob.get_vesting().amount.value == ASSET( "0.000000 VESTS" ).amount.value );
-    BOOST_REQUIRE( bob.get_account_id().get_value() == bob_auth.get_id().get_value() );
+    BOOST_REQUIRE( bob.get_id().get_value() == bob_auth.get_id().get_value() );
 
     BOOST_REQUIRE( db->get_account( "alice" ).get_pending_claimed_accounts() == 1 );
     validate_database();

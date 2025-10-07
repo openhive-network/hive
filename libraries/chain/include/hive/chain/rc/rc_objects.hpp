@@ -183,7 +183,7 @@ class rc_direct_delegation_object : public object< rc_direct_delegation_object_t
     template< typename Allocator >
     rc_direct_delegation_object( allocator< Allocator > a, uint64_t _id,
       const account_object& _from, const account_object& _to, uint64_t _delegated_rc )
-    : id( _id ), from( _from.get_account_id() ), to( _to.get_account_id() ), delegated_rc( _delegated_rc ) {}
+    : id( _id ), from( _from.get_id() ), to( _to.get_id() ), delegated_rc( _delegated_rc ) {}
 
     account_id_type from;
     account_id_type to;
@@ -205,7 +205,7 @@ class rc_expired_delegation_object : public object< rc_expired_delegation_object
   template< typename Allocator >
     rc_expired_delegation_object( allocator< Allocator > a, uint64_t _id,
       const account_object& _from, const uint64_t& _expired_delegation )
-    : id( _id ), from( _from.get_account_id() ), expired_delegation( _expired_delegation ) {}
+    : id( _id ), from( _from.get_id() ), expired_delegation( _expired_delegation ) {}
 
     account_id_type from;
     uint64_t        expired_delegation = 0;

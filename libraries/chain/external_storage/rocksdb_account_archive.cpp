@@ -53,7 +53,7 @@ struct rocksdb_writer<account_object, rocksdb_account_object, rocksdb_account_ob
   {
     FC_ASSERT( column_types.size() == 2 && "move an account to rocksdb storage" );
     rocksdb_storage_writer::write_to_storage<account_object, rocksdb_account_object, account_name_slice_t>( provider, account_name_slice_t( object.get_name().data ), object, column_types[0] );
-    rocksdb_storage_writer::write_to_storage<account_object, rocksdb_account_object_by_id, uint32_slice_t>( provider, uint32_slice_t( object.get_account_id() ), object, column_types[1] );
+    rocksdb_storage_writer::write_to_storage<account_object, rocksdb_account_object_by_id, uint32_slice_t>( provider, uint32_slice_t( object.get_id() ), object, column_types[1] );
   }
 };
 
@@ -458,7 +458,7 @@ const account_object* rocksdb_account_archive::get_account( const account_id_typ
     ++accounts_stats::stats.account_accessed_by_id.count;
   };
 
-  return get_object<account_id_type, account_object, by_account_id>( account_id, { ColumnTypes::ACCOUNT_BY_ID, ColumnTypes::ACCOUNT }, account_is_required );
+  return get_object<account_id_type, account_object, by_id>( account_id, { ColumnTypes::ACCOUNT_BY_ID, ColumnTypes::ACCOUNT }, account_is_required );
 }
 
 void rocksdb_account_archive::modify_object( const account_object& obj, std::function<void(account_object&)>&& modifier )

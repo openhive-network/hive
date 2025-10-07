@@ -139,7 +139,7 @@ do {                                                              \
 #define ACTOR(name) \
   PREP_ACTOR(name) \
   const auto& name = account_create(BOOST_PP_STRINGIZE(name), name ## _public_key, name ## _post_key.get_public_key()); \
-  account_id_type name ## _id = name.get_account_id(); (void)name ## _id;
+  account_id_type name ## _id = name.get_id(); (void)name ## _id;
 
 #define ACTORS_IMPL(r, data, elem) ACTOR(elem)
 #define ACTORS(names) BOOST_PP_SEQ_FOR_EACH(ACTORS_IMPL, ~, names) \
@@ -150,7 +150,7 @@ do {                                                              \
 #define ACTOR_DEFAULT_FEE(name) \
   PREP_ACTOR(name) \
   const auto& name = account_create_default_fee(BOOST_PP_STRINGIZE(name), name ## _public_key, name ## _post_key.get_public_key()); \
-  account_id_type name ## _id = name.get_account_id(); (void)name ## _id;
+  account_id_type name ## _id = name.get_id(); (void)name ## _id;
 
 #define ACTORS_DEFAULT_FEE_IMPL(r, data, elem) ACTOR_DEFAULT_FEE(elem)
 #define ACTORS_DEFAULT_FEE(names) BOOST_PP_SEQ_FOR_EACH(ACTORS_DEFAULT_FEE_IMPL, ~, names) \
@@ -164,7 +164,7 @@ do {                                                              \
 #define ACTOR_EXT(object, name) \
   PREP_ACTOR_EXT(object, name) \
   const auto& name = object.account_create(BOOST_PP_STRINGIZE(name), name ## _public_key, name ## _post_key.get_public_key()); \
-  account_id_type name ## _id = name.get_account_id(); (void)name ## _id;
+  account_id_type name ## _id = name.get_id(); (void)name ## _id;
 
 #define ACTORS_EXT_IMPL(r, data, elem) ACTOR_EXT(data, elem)
 #define ACTORS_EXT(object, names) BOOST_PP_SEQ_FOR_EACH(ACTORS_EXT_IMPL, object, names) \
@@ -428,7 +428,7 @@ struct database_fixture {
   uint64_t get_nr_blocks_until_proposal_maintenance_block();
   uint64_t get_nr_blocks_until_daily_proposal_maintenance_block();
 
-  account_id_type get_account_id( const string& account_name )const;
+  account_id_type get_id( const string& account_name )const;
   asset get_balance( const string& account_name )const;
   asset get_hbd_balance( const string& account_name )const;
   asset get_savings( const string& account_name )const;

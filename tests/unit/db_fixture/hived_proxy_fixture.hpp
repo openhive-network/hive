@@ -425,10 +425,10 @@ public:
     return fixture->get_nr_blocks_until_daily_proposal_maintenance_block();
   }
 
-  account_id_type get_account_id( const fc::string& account_name )const
+  account_id_type get_id( const fc::string& account_name )const
   {
     FC_ASSERT(fixture);
-    return fixture->get_account_id(account_name);
+    return fixture->get_id(account_name);
   }
   asset get_balance( const fc::string& account_name )const
   {

@@ -1794,7 +1794,7 @@ BOOST_AUTO_TEST_CASE( vote_stabilization )
       auto permlink = "reply" + std::to_string( i );
       vote( "alice", permlink, voter, weight, key );
       auto reply_id = db->get_comment( "alice", permlink ).get_id();
-      const auto& vote_obj = *vote_idx.find( boost::make_tuple( reply_id, get_account_id( voter ) ) );
+      const auto& vote_obj = *vote_idx.find( boost::make_tuple( reply_id, get_id( voter ) ) );
       return vote_obj.get_rshares();
     };
 

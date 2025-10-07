@@ -55,7 +55,7 @@ void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )
     _db.rc.regenerate_rc_mana( to_account, now );
 
     const rc_direct_delegation_object* delegation = _db.find<rc_direct_delegation_object, by_from_to>(
-      boost::make_tuple( from_account.get_account_id(), to_account.get_account_id() ) );
+      boost::make_tuple( from_account.get_id(), to_account.get_id() ) );
 
     int64_t delta = op.max_rc;
     if( delegation == nullptr ) // delegation is being created
@@ -409,13 +409,13 @@ void resource_credits::update_account_after_vest_change( const account_object& a
     {
       int16_t remove_limit = db.get_remove_threshold();
       remove_guard obj_perf( remove_limit );
-      remove_delegations( delegation_overflow, account.get_account_id(), now, obj_perf );
+      remove_delegations( delegation_overflow, account.get_id(), now, obj_perf );
 
       if( delegation_overflow > 0 )
       {
         // there are still active delegations that need to be cleared, but we've already exhausted the object removal limit;
         // set an object to continue removals in following blocks while blocking explicit changes in RC delegations on account
-        auto* expired = db.find< rc_expired_delegation_object, by_account >( account.get_account_id() );
+        auto* expired = db.find< rc_expired_delegation_object, by_account >( account.get_id() );
         if( expired != nullptr )
         {
           // supplement existing object from still unfinished previous delegation removal...
@@ -588,7 +588,7 @@ bool resource_credits::use_account_rcs( int64_t rc )
 
 bool resource_credits::has_expired_delegation( const account_object& account ) const
 {
-  auto* expired = db.find< rc_expired_delegation_object, by_account >( account.get_account_id() );
+  auto* expired = db.find< rc_expired_delegation_object, by_account >( account.get_id() );
   return expired != nullptr;
 }
 

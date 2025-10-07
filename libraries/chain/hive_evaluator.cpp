@@ -914,7 +914,7 @@ void comment_evaluator::do_apply( const comment_operation& o )
 
   const auto& auth = _db.get_account( o.author ); /// prove it exists
 
-  auto _comment = _db.find_comment( auth.get_account_id(), o.permlink );
+  auto _comment = _db.find_comment( auth.get_id(), o.permlink );
   auto _now = _db.head_block_time();
 
   comment parent;
@@ -1461,8 +1461,8 @@ void account_witness_proxy_evaluator::do_apply( const account_witness_proxy_oper
 
   if( !o.is_clearing_proxy() ) {
     const auto& new_proxy = _db.get_account( o.proxy );
-    FC_ASSERT( account.get_proxy() != new_proxy.get_account_id(), "Proxy must change." );
-    flat_set<account_id_type> proxy_chain( { account.get_account_id(), new_proxy.get_account_id() } );
+    FC_ASSERT( account.get_proxy() != new_proxy.get_id(), "Proxy must change." );
+    flat_set<account_id_type> proxy_chain( { account.get_id(), new_proxy.get_id() } );
     proxy_chain.reserve( HIVE_MAX_PROXY_RECURSION_DEPTH + 1 );
 
     /// check for proxy loops and fail to update the proxy if it would create a loop
@@ -1470,7 +1470,7 @@ void account_witness_proxy_evaluator::do_apply( const account_witness_proxy_oper
     while( cprox->has_proxy() )
     {
       const auto& next_proxy = _db.get_account( cprox->get_proxy() );
-      FC_ASSERT( proxy_chain.insert( next_proxy.get_account_id() ).second, "This proxy would create a proxy loop." );
+      FC_ASSERT( proxy_chain.insert( next_proxy.get_id() ).second, "This proxy would create a proxy loop." );
       cprox = &next_proxy;
       FC_ASSERT( proxy_chain.size() <= HIVE_MAX_PROXY_RECURSION_DEPTH, "Proxy chain is too long." );
     }
@@ -1636,7 +1636,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
   }
 
   const auto& comment_vote_idx = _db.get_index< comment_vote_index, by_comment_voter >();
-  auto itr = comment_vote_idx.find( boost::make_tuple( comment.get_id(), voter.get_account_id() ) );
+  auto itr = comment_vote_idx.find( boost::make_tuple( comment.get_id(), voter.get_id() ) );
 
   /// this is the rshares voting for or against the post
   int64_t rshares = o.weight < 0 ? -abs_rshares : abs_rshares;
@@ -1890,7 +1890,7 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
     FC_ASSERT( ( _now - voter.get_last_vote_time() ).to_seconds() >= HIVE_MIN_VOTE_INTERVAL_SEC, "Can only vote once every 3 seconds." );
 
   const auto& comment_vote_idx = _db.get_index< comment_vote_index, by_comment_voter >();
-  auto itr = comment_vote_idx.find( boost::make_tuple( comment.get_id(), voter.get_account_id() ) );
+  auto itr = comment_vote_idx.find( boost::make_tuple( comment.get_id(), voter.get_id() ) );
 
   int16_t previous_vote_percent = 0;
   int64_t previous_rshares = 0;
@@ -2800,7 +2800,7 @@ void change_recovery_account_evaluator::do_apply( const change_recovery_account_
     //ABW: it is possible to request change to currently set recovery agent (empty operation)
     _db.create< change_recovery_account_request_object >( account_to_recover, new_recovery_account, _db.head_block_time() + HIVE_OWNER_AUTH_RECOVERY_PERIOD );
   }
-  else if( account_to_recover.get_recovery_account() != new_recovery_account.get_account_id() ) // Change existing request
+  else if( account_to_recover.get_recovery_account() != new_recovery_account.get_id() ) // Change existing request
   {
     //ABW: it is possible to request change to already requested new recovery agent (operation only resets timer)
     _db.modify( *request, [&]( change_recovery_account_request_object& req )
@@ -3063,7 +3063,7 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
 
   const auto& delegator = _db.get_account( op.delegator );
   const auto& delegatee = _db.get_account( op.delegatee );
-  auto* delegation = _db.find< vesting_delegation_object, by_delegation >( boost::make_tuple( delegator.get_account_id(), delegatee.get_account_id() ) );
+  auto* delegation = _db.find< vesting_delegation_object, by_delegation >( boost::make_tuple( delegator.get_id(), delegatee.get_id() ) );
 
   const auto& gpo = _db.get_dynamic_global_properties();
   auto now = gpo.time;
@@ -3320,7 +3320,7 @@ void recurrent_transfer_evaluator::do_apply( const recurrent_transfer_operation&
     "recurrent_transfer_pair_id extension requires hardfork ${hf}", ( "hf", HIVE_HARDFORK_1_28 ) );
 
   const auto& rt_idx = _db.get_index< recurrent_transfer_index, by_from_to_id >();
-  auto itr = rt_idx.find( boost::make_tuple( from_account.get_account_id(), to_account.get_account_id(), rtp_id ) );
+  auto itr = rt_idx.find( boost::make_tuple( from_account.get_id(), to_account.get_id(), rtp_id ) );
 
   if( itr == rt_idx.end() )
   {

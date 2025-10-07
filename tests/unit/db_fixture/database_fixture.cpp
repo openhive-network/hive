@@ -962,9 +962,9 @@ uint64_t database_fixture::get_nr_blocks_until_daily_proposal_maintenance_block(
   return ret;
 }
 
-account_id_type database_fixture::get_account_id( const string& account_name )const
+account_id_type database_fixture::get_id( const string& account_name )const
 {
-  return db->get_account( account_name ).get_account_id();
+  return db->get_account( account_name ).get_id();
 }
 
 asset database_fixture::get_balance( const string& account_name )const

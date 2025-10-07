@@ -461,7 +461,7 @@ comment database::get_comment( const account_id_type& author, const shared_strin
 comment database::get_comment( const account_name_type& author, const shared_string& permlink )const
 {
   const auto& _account = get_account( author );
-  return get_comments_handler().get_comment( _account.get_account_id(), to_string( permlink ), true /*comment_is_required*/ );
+  return get_comments_handler().get_comment( _account.get_id(), to_string( permlink ), true /*comment_is_required*/ );
 }
 
 comment database::find_comment( const account_id_type& author, const shared_string& permlink )const
@@ -476,7 +476,7 @@ comment database::find_comment( const account_name_type& author, const shared_st
   if( !_account )
     return comment();
 
-  return get_comments_handler().get_comment( _account->get_account_id(), to_string( permlink ), false /*comment_is_required*/ );
+  return get_comments_handler().get_comment( _account->get_id(), to_string( permlink ), false /*comment_is_required*/ );
 }
 
 #ifndef ENABLE_STD_ALLOCATOR
@@ -489,7 +489,7 @@ comment database::get_comment( const account_id_type& author, const string& perm
 comment database::get_comment( const account_name_type& author, const string& permlink )const
 {
   const auto& _account = get_account( author );
-  return get_comments_handler().get_comment( _account.get_account_id(), permlink, true /*comment_is_required*/ );
+  return get_comments_handler().get_comment( _account.get_id(), permlink, true /*comment_is_required*/ );
 }
 
 comment database::find_comment( const account_id_type& author, const string& permlink )const
@@ -504,7 +504,7 @@ comment database::find_comment( const account_name_type& author, const string& p
   if( !_account )
     return comment();
 
-  return get_comments_handler().get_comment( _account->get_account_id(), permlink, false /*comment_is_required*/ );
+  return get_comments_handler().get_comment( _account->get_id(), permlink, false /*comment_is_required*/ );
 }
 
 #endif
@@ -1667,7 +1667,7 @@ void database::lock_account( const account_object& account )
 
   modify( account, []( account_object& a )
   {
-    a.set_recovery_account( a.get_account_id() );
+    a.set_recovery_account( a.get_id() );
     a.set_memo_key( public_key_type() );
   } );
 
@@ -1766,8 +1766,8 @@ void database::clear_account( const account_object& account )
     VEST_asset freed_delegations( 0 );
 
     const auto& delegation_idx = get_index< vesting_delegation_index, by_delegation >();
-    auto delegation_itr = delegation_idx.lower_bound( account.get_account_id() );
-    while( delegation_itr != delegation_idx.end() && delegation_itr->get_delegator() == account.get_account_id() )
+    auto delegation_itr = delegation_idx.lower_bound( account.get_id() );
+    while( delegation_itr != delegation_idx.end() && delegation_itr->get_delegator() == account.get_id() )
     {
       const auto& delegation = *delegation_itr;
       const auto& delegatee = get_account( delegation_itr->get_delegatee() );
@@ -1796,8 +1796,8 @@ void database::clear_account( const account_object& account )
 
     // Remove pending expired delegations
     const auto& exp_delegation_idx = get_index< vesting_delegation_expiration_index, by_account_expiration >();
-    auto exp_delegation_itr = exp_delegation_idx.lower_bound( account.get_account_id() );
-    while( exp_delegation_itr != exp_delegation_idx.end() && exp_delegation_itr->get_delegator() == account.get_account_id() )
+    auto exp_delegation_itr = exp_delegation_idx.lower_bound( account.get_id() );
+    while( exp_delegation_itr != exp_delegation_idx.end() && exp_delegation_itr->get_delegator() == account.get_id() )
     {
       auto& delegation = *exp_delegation_itr;
       ++exp_delegation_itr;
@@ -1876,8 +1876,8 @@ void database::clear_account( const account_object& account )
 
   // Remove pending convert requests (return balance to account)
   const auto& request_idx = get_index< chain::convert_request_index, chain::by_owner >();
-  auto request_itr = request_idx.lower_bound( account.get_account_id() );
-  while( request_itr != request_idx.end() && request_itr->get_owner() == account.get_account_id() )
+  auto request_itr = request_idx.lower_bound( account.get_id() );
+  while( request_itr != request_idx.end() && request_itr->get_owner() == account.get_id() )
   {
     auto& request = *request_itr;
     ++request_itr;
@@ -1890,8 +1890,8 @@ void database::clear_account( const account_object& account )
   // (if we decided to handle them anyway, in case we wanted to reuse this routine outsede HF23 code,
   // we should most likely destroy collateral balance instead of putting it into treasury)
   const auto& collateralized_request_idx = get_index< chain::collateralized_convert_request_index, chain::by_owner >();
-  auto collateralized_request_itr = collateralized_request_idx.lower_bound( account.get_account_id() );
-  FC_ASSERT( collateralized_request_itr == collateralized_request_idx.end() || collateralized_request_itr->get_owner() != account.get_account_id(),
+  auto collateralized_request_itr = collateralized_request_idx.lower_bound( account.get_id() );
+  FC_ASSERT( collateralized_request_itr == collateralized_request_idx.end() || collateralized_request_itr->get_owner() != account.get_id(),
     "Collateralized convert requests not handled by clear_account" );
 
   // Remove ongoing saving withdrawals (return/pass balance to account)
@@ -2304,7 +2304,7 @@ void database::process_vesting_withdrawals()
                 FC_ASSERT( dv.valid(), "The object processing `delayed votes` must exist" );
 
                 dv->add_votes( _votes_update_data_items,
-                          to_account.get_account_id() == from_account.get_account_id()/*withdraw_executor*/,
+                          to_account.get_id() == from_account.get_id()/*withdraw_executor*/,
                           routed.amount.value/*val*/,
                           to_account/*account*/
                         );
@@ -3289,7 +3289,7 @@ void database::account_recovery_processing()
     const auto& new_recovery_account = get_account( change_req->get_recovery_account() );
     modify( account, [&]( account_object& a )
     {
-      a.set_recovery_account( new_recovery_account.get_account_id() );
+      a.set_recovery_account( new_recovery_account.get_id() );
     });
 
     push_virtual_operation(changed_recovery_account_operation( account.get_name(), old_recovery_account_name, new_recovery_account.get_name() ));
@@ -5274,7 +5274,7 @@ FC_TODO( " Remove if(), do assert unconditionally after HF20 occurs" )
 void database::adjust_liquidity_reward( const account_object& owner, const asset& volume, bool is_hbd )
 {
   const auto& ridx = get_index< liquidity_reward_balance_index >().indices().get< by_owner >();
-  auto itr = ridx.find( owner.get_account_id() );
+  auto itr = ridx.find( owner.get_id() );
   if( itr != ridx.end() )
   {
     modify<liquidity_reward_balance_object>( *itr, [&]( liquidity_reward_balance_object& r )
@@ -5299,7 +5299,7 @@ void database::adjust_liquidity_reward( const account_object& owner, const asset
   {
     create<liquidity_reward_balance_object>( [&](liquidity_reward_balance_object& r )
     {
-      r.owner = owner.get_account_id();
+      r.owner = owner.get_id();
       if( is_hbd )
         r.hbd_volume = volume.amount.value;
       else
@@ -5433,7 +5433,7 @@ template< typename smt_balance_object_type, typename modifier_type >
 void database::adjust_smt_balance( const account_object& owner, const asset& delta, modifier_type&& modifier )
 {
   asset_symbol_type liquid_symbol = delta.symbol.is_vesting() ? delta.symbol.get_paired_symbol() : delta.symbol;
-  const smt_balance_object_type* bo = find< smt_balance_object_type, by_owner_liquid_symbol >( boost::make_tuple( owner.get_account_id(), liquid_symbol ) );
+  const smt_balance_object_type* bo = find< smt_balance_object_type, by_owner_liquid_symbol >( boost::make_tuple( owner.get_id(), liquid_symbol ) );
   // Note that SMT related code, being post-20-hf needs no hf-guard to do balance checks.
   if( bo == nullptr )
   {
@@ -5770,7 +5770,7 @@ asset database::get_balance( const account_object& a, asset_symbol_type symbol )
     else
     {
       FC_ASSERT( symbol.space() == asset_symbol_type::smt_nai_space, "Invalid symbol: ${s}", ("s", symbol) );
-      auto key = boost::make_tuple( a.get_account_id(), symbol.is_vesting() ? symbol.get_paired_symbol() : symbol );
+      auto key = boost::make_tuple( a.get_id(), symbol.is_vesting() ? symbol.get_paired_symbol() : symbol );
       const account_regular_balance_object* arbo = find< account_regular_balance_object, by_owner_liquid_symbol >( key );
       if( arbo == nullptr )
       {

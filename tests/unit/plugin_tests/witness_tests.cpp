@@ -819,8 +819,8 @@ BOOST_AUTO_TEST_CASE( multiple_feeding_threads_test )
         account_id_type alice_id, carol_id;
         db->with_read_lock( [&]()
         {
-          alice_id = db->get_account( "alice" ).get_account_id();
-          carol_id = db->get_account( "carol" ).get_account_id();
+          alice_id = db->get_account( "alice" ).get_id();
+          carol_id = db->get_account( "carol" ).get_id();
         } );
 
         const auto& comment_idx = db->get_index< comment_index, by_id >();
