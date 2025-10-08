@@ -387,7 +387,7 @@ namespace hive { namespace chain {
       {}
 
       template< typename Allocator, typename Delayed_Votes_Items >
-      account_object( allocator< Allocator > a, uint64_t _id,
+      account_object( allocator< Allocator > a,
                       account_id_type _account_id,
                       const account_details::recovery& _recovery,
                       const account_details::assets& _assets,
