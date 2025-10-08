@@ -685,7 +685,7 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
   //permanent objects (no operation to remove)
   BOOST_CHECK_EQUAL( alignof( account_object ), 16u );
   BOOST_CHECK_EQUAL( sizeof( account_object ), 496u ); //1.3M+
-  BOOST_CHECK_EQUAL( sizeof( account_index::MULTIINDEX_NODE_TYPE ), 624u );
+  BOOST_CHECK_EQUAL( sizeof( account_index::MULTIINDEX_NODE_TYPE ), 592u );
   BOOST_CHECK_EQUAL( sizeof( tiny_account_object ), 72u ); //1.3M+
   BOOST_CHECK_EQUAL( sizeof( tiny_account_index::MULTIINDEX_NODE_TYPE ), 264u );
   BOOST_CHECK_EQUAL( sizeof( account_metadata_object ), 96u ); //as many as account_object, but only FatNode (also to be moved to HiveMind)
@@ -1147,7 +1147,7 @@ BOOST_AUTO_TEST_CASE( decoding_types_mechanism_test )
     BOOST_CHECK( decoded_account_object.reflected );
     BOOST_CHECK( !decoded_account_object.enum_values );
     BOOST_CHECK( decoded_account_object.members );
-    BOOST_CHECK_EQUAL( decoded_account_object.members->size(), 9 );
+    BOOST_CHECK_EQUAL( decoded_account_object.members->size(), 8 );
   }
 
   BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 33 ); // decoded types map size shouldn't change.
@@ -1494,7 +1494,7 @@ BOOST_AUTO_TEST_CASE( chain_object_checksum )
 {
   hive::chain::util::decoded_types_data_storage dtds;
 
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::account_object>(dtds), "f138a52bfb14ab6afbca9b2c50707d445f4e6998" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::account_object>(dtds), "5ed5ca35e37a3340ffac404371d934add27bd22a" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::tiny_account_object>(dtds), "01932752723874ba653eff8b0641d005ed8ec65c" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::account_metadata_object>(dtds), "3be41be5376d4d40d20dc6a39033b872d9334f43" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::account_authority_object>(dtds), "a8d46da870fa6d9f015bf1eb9c213702f512f445" );
