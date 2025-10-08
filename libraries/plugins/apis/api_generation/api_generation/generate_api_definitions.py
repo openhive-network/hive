@@ -94,6 +94,31 @@ def create_pyproject_content_for_api_package(
 
     return template.render(api_name=api_name, api_name_kebab=api_name.replace("_", "-"), api_generation_pyproject=api_generation_pyproject)
 
+def create_readme_for_api_package(
+    api_snake_case: str,
+    api_kebab_case: str,
+    template_directory: Path,
+) -> str:
+    """
+    Create a README.md content file for the API package.
+
+    Args:
+        api_snake_case: The name of the API in snake_case.
+        api_kebab_case: The name of the API in kebab-case.
+        template_directory: The directory containing the template files for the API.
+
+    Returns:
+        The content of the README.md file as a string.
+    """
+    env = Environment(loader=FileSystemLoader(template_directory))
+    template = env.get_template("README.md.j2")
+
+    return template.render(
+        api_name_snake_case=api_snake_case,
+        api_name_kebab_case=api_kebab_case,
+        api_name_pascal_case="".join(word.capitalize() for word in api_snake_case.split("_")),
+    )
+
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
@@ -119,12 +144,18 @@ if __name__ == "__main__":
     )
     generate_client(api, api_descriptor, base_directory)
 
+    api_name_kebab_case = api.replace("_", "-")
+    api_name_snake_case = api.replace("-", "_")
     pyproject_path = base_directory / "api_generation" /"pyproject.toml"
     pyproject_content = create_pyproject_content_for_api_package(
-        api.replace("-", "_"), pyproject_path, template_api_path
+        api_name_snake_case, pyproject_path, template_api_path
     )
 
-    api_pyproject_path = base_directory / f"{api.replace("-", "_")}" / "pyproject.toml"
+    api_pyproject_path = base_directory / api_name_snake_case / "pyproject.toml"
+    api_readme_path = base_directory / api_name_snake_case / api_name_snake_case /"README.md"
 
     with open(api_pyproject_path, "w") as f:
         f.write(pyproject_content)
+
+    with open(api_readme_path, "w") as f:
+        f.write(create_readme_for_api_package(api_name_snake_case, api_name_kebab_case, template_api_path))
