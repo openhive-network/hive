@@ -18,7 +18,8 @@ rocksdb_account_authority_object::rocksdb_account_authority_object( const accoun
 
 const account_authority_object* rocksdb_account_authority_object::build( chainbase::database& db )
 {
-  return &db.create<account_authority_object>(
+  return &db.pure_create<account_authority_object>(
+                      id,
                       account,
                       owner,
                       active,

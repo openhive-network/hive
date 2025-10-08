@@ -12,7 +12,8 @@ rocksdb_account_metadata_object::rocksdb_account_metadata_object( const account_
 
 const account_metadata_object* rocksdb_account_metadata_object::build( chainbase::database& db )
 {
-  return &db.create<account_metadata_object>(
+  return &db.pure_create<account_metadata_object>(
+                      id,
                       account,
                       json_metadata,
                       posting_json_metadata
