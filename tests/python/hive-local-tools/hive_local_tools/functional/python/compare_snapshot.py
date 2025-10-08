@@ -94,6 +94,10 @@ def compare_snapshots_contents(snapshot_1: Snapshot, snapshot_2: Snapshot) -> No
     # assert len(snap1) == len(snap2), "Amount of files does not match between snapshots."
     # assert set(snap1.keys()) == set(snap2.keys()), "Files in both snapshots does not match"
 
+    # Because of an internal implementation that stores account objects in rocksdb, don't process acccount_objects/*.sst
+    # In c++ there is moving all accounts into `account_index` in `validate_invariants` method
+    # Above method is called from `state_snapshot_plugin::impl::load_snapshot_impl` method
+
     smaller_snap = None
     bigger_snap = None
     if len(snap1) > len(snap2):
@@ -104,6 +108,11 @@ def compare_snapshots_contents(snapshot_1: Snapshot, snapshot_2: Snapshot) -> No
         bigger_snap = snap2
 
     for file_name, file_content_1 in smaller_snap.items():
+        if file_name not in bigger_snap:
+            index = file_name.find("account_object")
+            if index == 0:
+                continue
+
         file_content_2 = bigger_snap[file_name]
         assert len(file_content_1) == len(file_content_2), f"Amount of entities does not match in `{file_name}`"
         assert set(file_content_1.keys()) == set(file_content_2.keys()), f"Keys in `{file_name}` does not match"
