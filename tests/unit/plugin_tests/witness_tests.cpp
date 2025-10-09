@@ -92,7 +92,7 @@ struct witness_fixture : public hived_fixture
 
     postponed_init( config_args );
 
-    db->get_accounts_handler().set_limit( std::numeric_limits<size_t>::max() );
+    db->get_accounts_handler().accounts_always_in_shm();
 
     init_account_pub_key = init_account_priv_key.get_public_key();
   }

@@ -66,6 +66,7 @@ def test_colony_on_basic_network_structure(
     witness_node = tt.WitnessNode(witnesses=["initminer", *WITNESSES])
     nodes.append(witness_node)
     witness_node.config.shared_file_size = "4G"
+    witness_node.config.accounts_always_in_shm=True
     for witness in WITNESSES:
         witness_node.config.private_key.append(tt.Account(witness).private_key)
     witness_node.config.private_key.append(tt.Account("initminer").private_key)
@@ -73,6 +74,7 @@ def test_colony_on_basic_network_structure(
     colony_node = tt.ApiNode()
     nodes.append(colony_node)
     colony_node.config.shared_file_size = "4G"
+    colony_node.config.accounts_always_in_shm=True
 
     # connect nodes
     colony_node.config.p2p_endpoint = generate_free_addresses(1)[0]
@@ -166,6 +168,7 @@ def test_multiple_colony_nodes_communication_with_single_witness_node(
     witness_node.config.shared_file_size = "4G"
     witness_node.config.witness.append("initminer")
     witness_node.config.private_key.append(tt.PrivateKey("initminer"))
+    witness_node.config.accounts_always_in_shm=True
 
     witness_node_p2p_endpoint = generate_free_addresses(1)
     witness_node.config.p2p_endpoint = witness_node_p2p_endpoint[0]
@@ -174,6 +177,7 @@ def test_multiple_colony_nodes_communication_with_single_witness_node(
         nodes.append(tt.ApiNode())
         nodes[num].config.shared_file_size = "4G"
         nodes[num].config.p2p_seed_node = witness_node_p2p_endpoint
+        nodes[num].config.accounts_always_in_shm=True
 
         prepare_colony_config(nodes[num])
         nodes[num].config.colony_start_at_block = block_log_single_sign.get_head_block_number()
@@ -207,6 +211,7 @@ def test_colony_with_unknown_colony_signer(
     node.config.shared_file_size = "4G"
     prepare_colony_config(node)
     node.config.colony_start_at_block = block_log_single_sign.get_head_block_number()
+    node.config.accounts_always_in_shm=True
 
     node.config.colony_sign_with = [tt.PrivateKey("unknown-sig-acc")]
 

@@ -114,7 +114,7 @@ class accounts_handler : public executor_interface, public external_storage_snap
     virtual void wipe() = 0;
 
   #ifdef IS_TEST_NET
-    virtual void set_limit( size_t new_limit ) = 0;
+    virtual void accounts_always_in_shm() = 0;
   #endif
 
     virtual void remove_objects_limit() = 0;

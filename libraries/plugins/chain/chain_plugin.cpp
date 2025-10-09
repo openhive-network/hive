@@ -1545,6 +1545,9 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
       ("chain-id", bpo::value< std::string >()->default_value( HIVE_CHAIN_ID ), "chain ID to connect to")
       ("skeleton-key", bpo::value< std::string >()->default_value(default_skeleton_privkey), "WIF PRIVATE key to be used as skeleton key for all accounts")
 #endif
+#ifdef IS_TEST_NET
+      ("accounts-always-in-shm", bpo::bool_switch()->default_value(false), "Don't move accounts into the rocksdb storage. By default false." )
+#endif
       ;
 }
 
@@ -1880,7 +1883,10 @@ void chain_plugin::plugin_initialize(const variables_map& options)
 
   my->max_mempool_size = fc::parse_size( options.at( "max-mempool-size" ).as< string >() );
 
-  #ifndef IS_TEST_NET
+  #ifdef IS_TEST_NET
+    if( options.at("accounts-always-in-shm").as<bool>() )
+      db().get_accounts_handler().accounts_always_in_shm();
+  #else
     my->end_of_sync_conn = db().add_end_of_syncing_handler( [&]()
       { my->end_of_syncing(); }, *this, 0 );
   #endif

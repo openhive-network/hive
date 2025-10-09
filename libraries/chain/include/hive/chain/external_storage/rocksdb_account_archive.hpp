@@ -43,13 +43,6 @@ class rocksdb_account_archive : public accounts_handler
       appbase::application& app );
     virtual ~rocksdb_account_archive();
 
-  #ifdef IS_TEST_NET
-    void set_limit( size_t new_limit ) override
-    {
-      objects_limit = new_limit;
-    }
-  #endif
-
     void on_irreversible_block( uint32_t block_num ) override;
 
     void create_object( const account_metadata_object& obj ) override;
@@ -71,6 +64,13 @@ class rocksdb_account_archive : public accounts_handler
     void open() override;
     void close() override;
     void wipe() override;
+
+  #ifdef IS_TEST_NET
+    void accounts_always_in_shm() override
+    {
+      objects_limit = std::numeric_limits<size_t>::max();
+    }
+  #endif
 
     void remove_objects_limit() override;
 };
