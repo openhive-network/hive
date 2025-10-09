@@ -1,0 +1,12 @@
+diff --git a/package/snappy/snappy.mk b/package/snappy/snappy.mk
+index 21c76cd50d..f101f26dbb 100644
+--- a/package/snappy/snappy.mk
++++ b/package/snappy/snappy.mk
+@@ -10,6 +10,6 @@ SNAPPY_LICENSE = BSD-3-Clause
+ SNAPPY_LICENSE_FILES = COPYING
+ SNAPPY_CPE_ID_VENDOR = google
+ SNAPPY_INSTALL_STAGING = YES
+-SNAPPY_CONF_OPTS = -DSNAPPY_BUILD_BENCHMARKS=OFF -DSNAPPY_BUILD_TESTS=OFF
++SNAPPY_CONF_OPTS = -DSNAPPY_BUILD_BENCHMARKS=OFF -DSNAPPY_BUILD_TESTS=OFF -DBUILD_SHARED_LIBS=OFF
+ 
+ $(eval $(cmake-package))
