@@ -580,13 +580,13 @@ msgspec = "0.18.6"
 
 [[package]]
 name = "hiveio-wax"
-version = "1.27.12rc2.dev7+daf5a82a"
+version = "1.27.12rc2.dev8+41416d3f"
 description = ""
 optional = false
 python-versions = ">=3.12,<4.0"
 groups = ["main"]
 files = [
-    {file = "hiveio_wax-1.27.12rc2.dev7+daf5a82a-cp312-cp312-manylinux_2_39_x86_64.whl", hash = "sha256:567b4b4f2d3091a9ea99488cb82215d2634d6d462e51c416af1cbf2aaeca7ab4"},
+    {file = "hiveio_wax-1.27.12rc2.dev8+41416d3f-cp312-cp312-manylinux_2_39_x86_64.whl", hash = "sha256:5f3e87d30b9b4fbacc738302f6a06ccb796cbad84295f0ce512a430961f31e49"},
 ]
 
 [package.dependencies]
@@ -1892,7 +1892,7 @@ develop = true
 
 [package.dependencies]
 abstractcp = "0.9.9"
-hiveio-wax = "1.27.12rc2.dev7+daf5a82a"
+hiveio-wax = "1.27.12rc2.dev8+41416d3f"
 loguru = "0.7.2"
 python-dateutil = "2.8.2"
 
