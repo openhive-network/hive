@@ -1464,7 +1464,7 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
   cfg.add_options()
       ("shared-file-dir", bpo::value<bfs::path>()->default_value("blockchain")->value_name("dir"), // NOLINT(clang-analyzer-optin.cplusplus.VirtualCall)
         "the location of the chain shared memory files (absolute path or relative to application data dir)")
-      ("shared-file-size", bpo::value<string>()->default_value("24G"), "Size of the shared memory file. Default: 24G. If running with many plugins, increase this value to 28G.")
+      ("shared-file-size", bpo::value<string>()->default_value("7G"), "Size of the shared memory file. Default: 7G. If running with many plugins, increase this value to 11G.")
       ("shared-file-full-threshold", bpo::value<uint16_t>()->default_value(0),
         "A 2 precision percentage (0-10000) that defines the threshold for when to autoscale the shared memory file. Setting this to 0 disables autoscaling. Recommended value for consensus node is 9500 (95%)." )
       ("shared-file-scale-rate", bpo::value<uint16_t>()->default_value(0),
