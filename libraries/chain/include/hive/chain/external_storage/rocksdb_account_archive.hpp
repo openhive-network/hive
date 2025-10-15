@@ -19,6 +19,8 @@ class rocksdb_account_archive : public accounts_handler
 
   private:
 
+    uint32_t _temp_block_num = 0;
+
 #ifdef IS_TEST_NET
     size_t objects_limit = 0;
 #else

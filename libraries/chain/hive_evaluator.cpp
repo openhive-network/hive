@@ -932,7 +932,7 @@ void comment_evaluator::do_apply( const comment_operation& o )
 
   if ( !_comment )
   {
-    //if( _db.head_block_num() >= 100'315'000 )
+    if( _db.head_block_num() >= 100'340'000 )
       ilog("yyy: CREATE COMMENT ${db} ${n} ${b} now: ${now} last_post: ${last_post}",
             ("db", _db.get_name())
             ("n", _db.head_block_num())
@@ -1037,7 +1037,7 @@ void comment_evaluator::do_apply( const comment_operation& o )
   }
   else // start edit case
   {
-    //if( _db.head_block_num() >= 100'315'000 )
+    if( _db.head_block_num() >= 100'340'000 )
       ilog("yyy: UPDATE COMMENT ${db} ${n} ${b}",
         ("db", _db.get_name())("n", _db.head_block_num())
         ("b", o.body) );

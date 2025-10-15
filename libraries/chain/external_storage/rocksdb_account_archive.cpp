@@ -172,10 +172,10 @@ struct logger<account_metadata_object>
 {
   static void log( const chainbase::database& db, const std::string& message, const account_metadata_object& obj, const std::string& type, uint32_t block_num )
   {
-    if( obj.get_name() != "initminer" )
+    // if( obj.get_name() != "initminer" )
+    //   return;
+    if( block_num < 100'340'000 )
       return;
-    //if( block_num < 100'315'000 )
-      //return;
 
     ilog("${m}: AM ${db} MY-LAST-BLOCK-NUMBER: ${b} NAME: ${n} CHANGED: ${c} ${type}: ${b2}",
       ("db", db.get_name())
@@ -190,10 +190,10 @@ struct logger<account_authority_object>
 {
   static void log( const chainbase::database& db, const std::string& message, const account_authority_object& obj, const std::string& type, uint32_t block_num )
   {
-    if( obj.get_name() != "initminer" )
+    // if( obj.get_name() != "initminer" )
+    //   return;
+    if( block_num < 100'340'000 )
       return;
-    //if( block_num < 100'315'000 )
-      //return;
 
     ilog("${m}: AA ${db} MY-LAST-BLOCK-NUMBER: ${b} NAME: ${n} CHANGED: ${c} ${type}: ${b2}",
       ("db", db.get_name())
@@ -208,10 +208,10 @@ struct logger<account_object>
 {
   static void log( const chainbase::database& db, const std::string& message, const account_object& obj, const std::string& type, uint32_t block_num )
   {
-    if( obj.get_name() != "initminer" )
-      return;
-    // if( block_num < 100'315'000 )
+    // if( obj.get_name() != "initminer" )
     //   return;
+    if( block_num < 100'340'000 )
+      return;
 
     ilog("${m}: A  ${db} MY-LAST-BLOCK-NUMBER: ${b} NAME: ${n} CHANGED: ${c} ${type}: ${b2}",
       ("db", db.get_name())
@@ -376,6 +376,8 @@ void rocksdb_account_archive::on_irreversible_block( uint32_t block_num )
       return;
   }
 
+  _temp_block_num = block_num;
+
   bool _do_flush_meta = on_irreversible_block_impl<
                           account_metadata_index, account_metadata_object, rocksdb_account_metadata_object>
                           ( block_num, { ColumnTypes::ACCOUNT_METADATA } );
@@ -388,7 +390,7 @@ void rocksdb_account_archive::on_irreversible_block( uint32_t block_num )
                           <account_index, account_object, rocksdb_account_object, rocksdb_account_object_by_id>
                           ( block_num, { ColumnTypes::ACCOUNT, ColumnTypes::ACCOUNT_BY_ID } );
 
-  //if( block_num >= 100'315'000 )
+  if( block_num >= 100'340'000 )
   {
     ilog("xxx: irr: ${db} LIB: ${b2}",
       ("db", db.get_name())
@@ -413,7 +415,7 @@ const SHM_Object_Type* rocksdb_account_archive::get_object( const Key_Type& key,
   const auto* _found = db.find<SHM_Object_Type, SHM_Object_Sub_Index>( key );
   if( _found )
   {
-    logger<SHM_Object_Type>::log( db, "get_object-SHM", *_found, "_", 0 );
+    logger<SHM_Object_Type>::log( db, "get_object-SHM", *_found, "_", _temp_block_num );
     return _found;
   }
   else
@@ -425,7 +427,7 @@ const SHM_Object_Type* rocksdb_account_archive::get_object( const Key_Type& key,
     }
     else
     {
-      logger<SHM_Object_Type>::log( db, "get_object-RB", *_external_found, "_", 0 );
+      logger<SHM_Object_Type>::log( db, "get_object-RB", *_external_found, "_", _temp_block_num );
     }
     return _external_found;
   }
