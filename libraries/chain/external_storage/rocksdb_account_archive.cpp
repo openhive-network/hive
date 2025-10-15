@@ -352,7 +352,7 @@ bool rocksdb_account_archive::on_irreversible_block_impl( uint32_t block_num, co
         _do_flush = true;
     }
 
-    db.remove( _current );
+    db.remove_no_undo( _current );
   }
 
   accounts_stats::stats.account_moved_to_storage.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();

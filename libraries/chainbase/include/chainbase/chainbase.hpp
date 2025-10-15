@@ -426,7 +426,7 @@ namespace chainbase {
             "could not insert object, most likely a uniqueness constraint was violated inside index holding types: " + get_type_name()));
         }
 
-        on_create( *insert_result.first );
+        //on_create( *insert_result.first );
         if constexpr( value_type::has_dynamic_alloc_t::value )
           _item_additional_allocation += insert_result.first->get_dynamic_alloc();
         return *insert_result.first;
