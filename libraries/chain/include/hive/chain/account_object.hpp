@@ -16,7 +16,7 @@ namespace hive { namespace chain {
 
   using hive::protocol::authority;
 
-  class account_object : public object< account_object_type, account_object, std::true_type >
+  class account_object : public object< account_object_type, account_object, std::true_type, std::true_type /* enable no undo remove */>
   {
     CHAINBASE_OBJECT( account_object );
 
@@ -484,7 +484,7 @@ namespace hive { namespace chain {
     CHAINBASE_UNPACK_CONSTRUCTOR(tiny_account_object, (delayed_votes));
   };
 
-  class account_metadata_object : public object< account_metadata_object_type, account_metadata_object, std::true_type >
+  class account_metadata_object : public object< account_metadata_object_type, account_metadata_object, std::true_type, std::true_type /* enable no undo remove */ >
   {
     CHAINBASE_OBJECT( account_metadata_object );
 
@@ -529,7 +529,7 @@ namespace hive { namespace chain {
     CHAINBASE_UNPACK_CONSTRUCTOR(account_metadata_object, (json_metadata)(posting_json_metadata));
   };
 
-  class account_authority_object : public object< account_authority_object_type, account_authority_object, std::true_type >
+  class account_authority_object : public object< account_authority_object_type, account_authority_object, std::true_type, std::true_type /* enable no undo remove */ >
   {
     CHAINBASE_OBJECT( account_authority_object );
 

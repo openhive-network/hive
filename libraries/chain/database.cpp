@@ -806,7 +806,13 @@ void database::_push_transaction(const std::shared_ptr<full_transaction_type>& f
     for( const auto& op : full_transaction->get_transaction().operations )
       op.visit( visitor );
 
+    //if( head_block_num() >= 100'315'000 )
+      ilog("${db} ################APPLY-TRANSACTION-FROM-PUSH-TRANSACTION################", ("db", get_name()));
+
     _apply_transaction(full_transaction);
+
+    //if( head_block_num() >= 100'315'000 )
+      ilog("${db} ################APPLY-TRANSACTION-FROM-PUSH-TRANSACTION-END################", ("db", get_name()));
 
     // since transaction was accepted, consolidate custom op counters for that transaction with all pending counters
     for( const auto& counter : _current_tx_custom_op_count )
@@ -4075,6 +4081,8 @@ void database::_apply_block( const std::shared_ptr<full_block_type>& full_block,
               (witness)(block.witness)(hardfork_state));
   }
 
+  //if( head_block_num() >= 100'315'000 )
+    ilog("${db} ################APPLY-TRANSACTION-FROM-APPLY_BLOCK################ ${b}", ("db", get_name())("b", block_num) );
   for( const std::shared_ptr<full_transaction_type>& trx : full_block->get_full_transactions() )
   {
     /* We do not need to push the undo state for each transaction
@@ -4086,7 +4094,8 @@ void database::_apply_block( const std::shared_ptr<full_block_type>& full_block,
     apply_transaction( trx, skip );
     ++_current_trx_in_block;
   }
-
+  //if( head_block_num() >= 100'315'000 )
+    ilog("${db} ################APPLY-TRANSACTION-FROM-APPLY_BLOCK-END################ ${b}", ("db", get_name())("b", block_num) );
   _current_trx_in_block = -1;
   _current_op_in_trx = 0;
 
@@ -4148,7 +4157,11 @@ void database::_apply_block( const std::shared_ptr<full_block_type>& full_block,
   // and commits irreversible state to the database. This should always be the
   // last call of applying a block because it is the only thing that is not
   // reversible.
+  //if( head_block_num() >= 100'315'000 )
+    ilog("*************Block application*************");
   migrate_irreversible_state(old_last_irreversible);
+  //if( head_block_num() >= 100'315'000 )
+    ilog("*************Block application - END*************");
 
   _my->_last_pushed_block_number.store(gprops.head_block_number, std::memory_order_release);
   _my->_last_pushed_block_time.store(gprops.time.sec_since_epoch(), std::memory_order_release);
@@ -5011,7 +5024,11 @@ void database::process_fast_confirm_transaction(const std::shared_ptr<full_trans
 
   uint32_t old_last_irreversible_block = update_last_irreversible_block( std::optional<switch_forks_t>( sf ) );
 
+  //if( head_block_num() >= 100'315'000 )
+    ilog("*************FC application*************");
   migrate_irreversible_state(old_last_irreversible_block);
+  //if( head_block_num() >= 100'315'000 )
+    ilog("*************FC application - END*************");
 } FC_CAPTURE_AND_RETHROW() }
 
 uint32_t database::update_last_irreversible_block( std::optional<switch_forks_t> sf )
@@ -5136,6 +5153,9 @@ void database::migrate_irreversible_state(uint32_t old_last_irreversible)
 
     // This deletes undo state (when present)
     commit( new_last_irreversible );
+
+    //if( head_block_num() >= 100'315'000 )
+      ilog("*************OLD: ${old} NEW: ${new}*************", ("old", old_last_irreversible)("new", new_last_irreversible));
 
     if( old_last_irreversible < new_last_irreversible )
     {

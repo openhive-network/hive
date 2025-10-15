@@ -101,13 +101,19 @@ BOOST_AUTO_TEST_CASE( basic_checks )
       push_transaction( _tx, { alice_post_key, alice_private_key } );
     };
 
-    generate_blocks( 1 );
+    generate_blocks( 2 );
 
+    BOOST_TEST_MESSAGE( "Before a bad transfer" );
     _trx_comment_with_bad_transfer();
+    BOOST_TEST_MESSAGE( "After a bad transfer" );
     generate_blocks( 1 );
+    BOOST_TEST_MESSAGE( "Generate a block after a bad transfer" );
 
+    BOOST_TEST_MESSAGE( "Before a good transfer" );
     _trx_comment_with_good_transfer();
+    BOOST_TEST_MESSAGE( "After a good transfer" );
     generate_blocks( 1 );
+    BOOST_TEST_MESSAGE( "Generate a block after a good transfer" );
 
     const auto& _alice = db->get_account( "alice" );
     const auto& _bob = db->get_account( "bob" );

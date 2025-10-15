@@ -932,6 +932,15 @@ void comment_evaluator::do_apply( const comment_operation& o )
 
   if ( !_comment )
   {
+    //if( _db.head_block_num() >= 100'315'000 )
+      ilog("yyy: CREATE COMMENT ${db} ${n} ${b} now: ${now} last_post: ${last_post}",
+            ("db", _db.get_name())
+            ("n", _db.head_block_num())
+            ("b", o.body)
+            ("now", _now)
+            ("last_post", auth.get_last_post())
+          );
+
     if( parent )
     {
       if( _db.has_hardfork( HIVE_HARDFORK_0_12__177 ) && !_db.has_hardfork( HIVE_HARDFORK_0_17__869 ) )
@@ -1028,6 +1037,11 @@ void comment_evaluator::do_apply( const comment_operation& o )
   }
   else // start edit case
   {
+    //if( _db.head_block_num() >= 100'315'000 )
+      ilog("yyy: UPDATE COMMENT ${db} ${n} ${b}",
+        ("db", _db.get_name())("n", _db.head_block_num())
+        ("b", o.body) );
+
     if( _db.has_hardfork( HIVE_HARDFORK_0_21__3313 ) )
     {
       FC_ASSERT( _now - auth.get_last_post_edit() >= HIVE_MIN_COMMENT_EDIT_INTERVAL, "Can only perform one comment edit per block." );

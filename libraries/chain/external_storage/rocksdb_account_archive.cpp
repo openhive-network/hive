@@ -163,6 +163,67 @@ struct rocksdb_reader<account_object, account_id_type>
 };
 
 template<typename SHM_Object_Type>
+struct logger
+{
+};
+
+template<>
+struct logger<account_metadata_object>
+{
+  static void log( const chainbase::database& db, const std::string& message, const account_metadata_object& obj, const std::string& type, uint32_t block_num )
+  {
+    if( obj.get_name() != "initminer" )
+      return;
+    //if( block_num < 100'315'000 )
+      //return;
+
+    ilog("${m}: AM ${db} MY-LAST-BLOCK-NUMBER: ${b} NAME: ${n} CHANGED: ${c} ${type}: ${b2}",
+      ("db", db.get_name())
+      ("m", message)
+      ("b", obj.get_block_number())("n", obj.get_name())("c", obj.changed())("b2", block_num)
+      ("type", type)
+    );
+  }
+};
+template<>
+struct logger<account_authority_object>
+{
+  static void log( const chainbase::database& db, const std::string& message, const account_authority_object& obj, const std::string& type, uint32_t block_num )
+  {
+    if( obj.get_name() != "initminer" )
+      return;
+    //if( block_num < 100'315'000 )
+      //return;
+
+    ilog("${m}: AA ${db} MY-LAST-BLOCK-NUMBER: ${b} NAME: ${n} CHANGED: ${c} ${type}: ${b2}",
+      ("db", db.get_name())
+      ("m", message)
+      ("b", obj.get_block_number())("n", obj.get_name())("c", obj.changed())("b2", block_num)
+      ("type", type)
+    );
+  }
+};
+template<>
+struct logger<account_object>
+{
+  static void log( const chainbase::database& db, const std::string& message, const account_object& obj, const std::string& type, uint32_t block_num )
+  {
+    if( obj.get_name() != "initminer" )
+      return;
+    // if( block_num < 100'315'000 )
+    //   return;
+
+    ilog("${m}: A  ${db} MY-LAST-BLOCK-NUMBER: ${b} NAME: ${n} CHANGED: ${c} ${type}: ${b2}",
+      ("db", db.get_name())
+      ("m", message)
+      ("b", obj.get_block_number())("n", obj.get_name())("c", obj.changed())("b2", block_num)
+      ("type", type)
+      );
+  }
+};
+
+
+template<typename SHM_Object_Type>
 class updater
 {
   private:
@@ -180,6 +241,7 @@ class updater
       db.modify<SHM_Object_Type>( obj, [&]( SHM_Object_Type& o )
       {
         o.set_block_number( get_block_num( db ) );
+        logger<SHM_Object_Type>::log( db, "modify", obj, "HEAD", get_block_num( db ) );
       } );
     }
 
@@ -189,6 +251,7 @@ class updater
       {
         modifier( o );
         o.set_block_number( get_block_num( db ) );
+        logger<SHM_Object_Type>::log( db, "modify", obj, "HEAD", get_block_num( db ) );
       } );
     }
 };
@@ -277,6 +340,8 @@ bool rocksdb_account_archive::on_irreversible_block_impl( uint32_t block_num, co
     const auto& _current = *_itr;
     ++_itr;
 
+    logger<SHM_Object_Type>::log( db, "irr", _current, "LIB", block_num );
+
     if( _current.changed() )
     {
       ++_cnt;
@@ -323,6 +388,14 @@ void rocksdb_account_archive::on_irreversible_block( uint32_t block_num )
                           <account_index, account_object, rocksdb_account_object, rocksdb_account_object_by_id>
                           ( block_num, { ColumnTypes::ACCOUNT, ColumnTypes::ACCOUNT_BY_ID } );
 
+  //if( block_num >= 100'315'000 )
+  {
+    ilog("xxx: irr: ${db} LIB: ${b2}",
+      ("db", db.get_name())
+      ("b2", block_num)
+      );
+  }
+
   if( _do_flush_meta || _do_flush_authority || _do_flush_account )
   {
     auto time_start = std::chrono::high_resolution_clock::now();
@@ -340,6 +413,7 @@ const SHM_Object_Type* rocksdb_account_archive::get_object( const Key_Type& key,
   const auto* _found = db.find<SHM_Object_Type, SHM_Object_Sub_Index>( key );
   if( _found )
   {
+    logger<SHM_Object_Type>::log( db, "get_object-SHM", *_found, "_", 0 );
     return _found;
   }
   else
@@ -348,6 +422,10 @@ const SHM_Object_Type* rocksdb_account_archive::get_object( const Key_Type& key,
     if( !_external_found )
     {
       message<Key_Type, SHM_Object_Type>::check( is_required, key );
+    }
+    else
+    {
+      logger<SHM_Object_Type>::log( db, "get_object-RB", *_external_found, "_", 0 );
     }
     return _external_found;
   }

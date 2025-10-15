@@ -1024,6 +1024,20 @@ namespace chainbase {
     */
   class database
   {
+    std::string _name; 
+
+    public:
+
+      void set_name( const std::string& name )
+      {
+        _name = name;
+      }
+
+      const std::string& get_name() const
+      {
+        return _name;
+      }
+
     private:
       class abstract_index_type
       {
