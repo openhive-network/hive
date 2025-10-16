@@ -24,7 +24,7 @@ rocksdb_account_object::rocksdb_account_object( const account_object& obj )
 
 const account_object* rocksdb_account_object::build( chainbase::database& db )
 {
-  return &db.pure_create<account_object>(
+  return &db.create_no_undo<account_object>(
                   id,
                   recovery,
                   assets,

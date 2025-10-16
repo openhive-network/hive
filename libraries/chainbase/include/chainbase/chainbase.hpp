@@ -416,8 +416,8 @@ namespace chainbase {
       /**
         * Construct a new element in the multi_index_container.
         */
-      template<typename ...Args>
-      const value_type& pure_emplace( Args&&... args ) {
+      template< typename U = value_type, typename ...Args, typename std::enable_if_t< U::enable_no_undo_t::value, bool > = true >
+      const value_type& emplace_no_undo( Args&&... args ) {
         auto a = _indices.get_allocator();
         auto insert_result = _indices.emplace( get_allocator_helper_t<value_type>::get_generic_allocator(a), std::forward<Args>( args )... );
 
@@ -1354,11 +1354,11 @@ namespace chainbase {
       }
 
       template<typename ObjectType, typename ... Args>
-      const ObjectType& pure_create( Args&&... args )
+      const ObjectType& create_no_undo( Args&&... args )
       {
         CHAINBASE_REQUIRE_WRITE_LOCK("create", ObjectType);
         typedef typename get_index_type<ObjectType>::type index_type;
-        return get_mutable_index<index_type>().pure_emplace( std::forward<Args>( args )... );
+        return get_mutable_index<index_type>(). template emplace_no_undo<ObjectType>( std::forward<Args>( args )... );
       }
 
       template< typename ObjectType >
