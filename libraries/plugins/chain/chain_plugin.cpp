@@ -1884,8 +1884,8 @@ void chain_plugin::plugin_initialize(const variables_map& options)
   my->max_mempool_size = fc::parse_size( options.at( "max-mempool-size" ).as< string >() );
 
   #ifdef IS_TEST_NET
-    if( options.at("accounts-always-in-shm").as<bool>() )
-      db().get_accounts_handler().accounts_always_in_shm();
+    //if( options.at("accounts-always-in-shm").as<bool>() )
+    //  db().get_accounts_handler().accounts_always_in_shm();
   #else
     my->end_of_sync_conn = db().add_end_of_syncing_handler( [&]()
       { my->end_of_syncing(); }, *this, 0 );
