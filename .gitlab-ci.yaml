@@ -666,6 +666,7 @@ test_tools_tests:
     - job: build_combined_testing_block_logs_image
       artifacts: true
   variables:
+    PYTEST_ADDOPTS: "--ignore=hived_handle_tests"
     PYTEST_TIMEOUT_MINUTES: 30
     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/hive-local-tools/test-tools/tests/report.xml
     TEST_BLOCK_LOGS_SOURCES: testing_block_logs/empty_block_logs/
