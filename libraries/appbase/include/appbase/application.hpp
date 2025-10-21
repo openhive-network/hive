@@ -7,11 +7,15 @@
 #include <boost/filesystem/path.hpp>
 #include <boost/core/demangle.hpp>
 #include <boost/asio.hpp>
+#include <boost/signals2.hpp>
 #include <hive/utilities/notifications.hpp>
 #include <hive/utilities/data_collector.hpp>
 #include <boost/throw_exception.hpp>
 
 #include <atomic>
+#include <functional>
+#include <vector>
+#include <mutex>
 
 #define APPBASE_VERSION_STRING ("appbase 1.0")
 
@@ -107,6 +111,9 @@ namespace appbase {
       void wait( bool log = false );
       bool is_thread_closed();
 
+      using finish_request_type = std::function<void()>;
+      using interrupt_signal_t = boost::signals2::signal<void()>;
+
       template< typename Plugin >
       auto& register_plugin()
       {
@@ -165,13 +172,12 @@ namespace appbase {
       void generate_interrupt_request();
 
       bool is_interrupt_request() const { return _is_interrupt_request.load(std::memory_order_relaxed); }
+      boost::signals2::connection register_interrupt_handler(interrupt_signal_t::slot_type slot);
 
       std::set< std::string > get_plugins_names() const;
 
       void kill();
       bool quit( bool log = false );
-
-      using finish_request_type = std::function<void()>;
 
     protected:
       template< typename Impl >
@@ -216,6 +222,7 @@ namespace appbase {
       signals_handler_wrapper                 handler_wrapper;
 
       std::atomic_bool _is_interrupt_request{false};
+      interrupt_signal_t interrupt_signal;
 
       mutable hive::utilities::notifications::notification_handler_wrapper notification_handler;
 

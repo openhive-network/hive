@@ -79,6 +79,16 @@ void application::generate_interrupt_request()
 {
   notify_status("interrupted");
   _is_interrupt_request = true;
+  try {
+    interrupt_signal();
+  } catch (const std::exception& e) {
+    elog("Exception thrown from interrupt signal handler: ${e}", ("e", e.what()));
+  }
+}
+
+boost::signals2::connection application::register_interrupt_handler(interrupt_signal_t::slot_type slot)
+{
+  return interrupt_signal.connect(std::move(slot));
 }
 
 fc::optional< fc::logging_config > application::load_logging_config()
