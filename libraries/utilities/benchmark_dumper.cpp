@@ -37,6 +37,7 @@ void operator -= ( benchmark_dumper::account_archive_details_t& current, const b
 
   current.account_moved_to_storage            -= previous.account_moved_to_storage;
   current.account_flush_to_storage            -= previous.account_flush_to_storage;
+  current.compact_storage                     -= previous.compact_storage;
 }
 
 const benchmark_dumper::measurement& benchmark_dumper::measure( uint32_t block_number, get_stat_details_t get_stat_details )
