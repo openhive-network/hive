@@ -69,6 +69,14 @@ class rocksdb_account_archive : public accounts_handler
     void wipe() override;
 
     void remove_objects_limit() override;
+
+#ifdef IS_TEST_NET
+    void objects_always_in_shm() override
+    {
+      objects_limit = std::numeric_limits<size_t>::max();
+    }
+#endif
+
 };
 
 } }
