@@ -51,6 +51,7 @@ public:
 
     counter_t account_moved_to_storage;
     counter_t account_flush_to_storage;
+    counter_t compact_storage;
   };
 
   struct index_memory_details_t
@@ -157,6 +158,7 @@ FC_REFLECT( hive::utilities::benchmark_dumper::account_archive_details_t,
         (account_accessed_by_name)(account_accessed_by_id)
         (account_moved_to_storage)
         (account_flush_to_storage)
+        (compact_storage)
        )
 
 FC_REFLECT( hive::utilities::benchmark_dumper::index_memory_details_t,

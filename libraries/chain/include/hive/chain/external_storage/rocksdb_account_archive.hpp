@@ -25,6 +25,9 @@ class rocksdb_account_archive : public accounts_handler
     size_t objects_limit = 100'000;
 #endif
 
+    size_t compaction_frequency_counter  = 0;
+    size_t compaction_frequency          = 1'200;//about once per hour (assuming 3s blocks)
+
     database& db;
 
     rocksdb_account_storage_provider::ptr   provider;

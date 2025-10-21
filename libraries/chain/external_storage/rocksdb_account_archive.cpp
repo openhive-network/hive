@@ -319,6 +319,28 @@ void rocksdb_account_archive::on_irreversible_block( uint32_t block_num )
 
     accounts_stats::stats.account_flush_to_storage.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
     ++accounts_stats::stats.account_flush_to_storage.count;
+
+    /*
+      Do compact only when there is no limit on objects, i.e we are in live mode.
+      In testnet compaction is not needed it only slows down tests.
+    */
+#ifndef IS_TEST_NET
+    if( objects_limit == 0 )
+    {
+      ++compaction_frequency_counter;
+      if( compaction_frequency_counter >= compaction_frequency )
+      {
+        auto _time_start_for_compaction = std::chrono::high_resolution_clock::now();
+
+        provider->compaction();
+        compaction_frequency_counter = 0;
+
+        accounts_stats::stats.compact_storage.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - _time_start_for_compaction ).count();
+        ++accounts_stats::stats.compact_storage.count;
+      }
+    }
+#endif
+
   }
 }
 

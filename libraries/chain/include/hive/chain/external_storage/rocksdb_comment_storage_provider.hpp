@@ -31,6 +31,7 @@ class rocksdb_comment_storage_provider: public rocksdb_base_storage_provider
     void save( ColumnTypes column_type, const Slice& key, const Slice& value ) override;
     bool read( ColumnTypes column_type, const Slice& key, PinnableSlice& value ) override;
     void remove( ColumnTypes column_type, const Slice& key ) override { /*Not supported here.*/ };
+    void compaction() override { /*Not supported here.*/ };
 };
 
 }}
