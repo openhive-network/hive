@@ -28,6 +28,8 @@ class rocksdb_account_archive : public accounts_handler
     size_t compaction_frequency_counter  = 0;
     size_t compaction_frequency          = 1'200;//about once per hour (assuming 3s blocks)
 
+    uint32_t retention_blocks = 0; //default 0 blocks
+
     database& db;
 
     rocksdb_account_storage_provider::ptr   provider;
@@ -42,7 +44,7 @@ class rocksdb_account_archive : public accounts_handler
 
   public:
 
-    rocksdb_account_archive( database& db, const bfs::path& blockchain_storage_path, const bfs::path& storage_path,
+    rocksdb_account_archive( database& db, const bfs::path& blockchain_storage_path, const bfs::path& storage_path, uint32_t retention_blocks,
       appbase::application& app );
     virtual ~rocksdb_account_archive();
 
@@ -69,14 +71,6 @@ class rocksdb_account_archive : public accounts_handler
     void wipe() override;
 
     void remove_objects_limit() override;
-
-#ifdef IS_TEST_NET
-    void objects_always_in_shm() override
-    {
-      objects_limit = std::numeric_limits<size_t>::max();
-    }
-#endif
-
 };
 
 } }

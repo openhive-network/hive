@@ -216,7 +216,7 @@ class updater
     {
       db.modify<SHM_Object_Type>( obj, [&]( SHM_Object_Type& o )
       {
-        o.set_block_number( get_block_num( db ) );
+        o.set_last_access_block( get_block_num( db ) );
       } );
     }
 
@@ -225,7 +225,7 @@ class updater
       db.modify<SHM_Object_Type>( obj, [&]( SHM_Object_Type& o )
       {
         modifier( o );
-        o.set_block_number( get_block_num( db ) );
+        o.set_last_access_block( get_block_num( db ) );
       } );
     }
 };
@@ -263,8 +263,8 @@ struct message<Key_Type, account_object>
 };
 
 rocksdb_account_archive::rocksdb_account_archive( database& db, const bfs::path& blockchain_storage_path,
-  const bfs::path& storage_path, appbase::application& app )
-  : db( db )
+  const bfs::path& storage_path, uint32_t retention_blocks, appbase::application& app )
+  : retention_blocks( retention_blocks ), db( db )
 {
   provider = std::make_shared<rocksdb_account_storage_provider>( blockchain_storage_path, storage_path, app );
   snapshot = std::make_shared<rocksdb_snapshot>( "Accounts RocksDB", "accounts_rocksdb_data", db, storage_path, provider );
@@ -300,10 +300,10 @@ bool rocksdb_account_archive::on_irreversible_block_impl( uint32_t block_num, co
   uint32_t _cnt = 0;
 
   /*
-    Regarding: `itr->get_block_number() < block_num`
-    Here must be `<` not `<=` because `get_block_number` is a number of last block, but `block_num` is the current block.
+    Regarding: `itr->get_last_access_block() < block_num`
+    Here must be `<` not `<=` because `get_last_access_block` is a number of last block, but `block_num` is the current block.
   */
-  while( _itr != _idx.end() && _itr->get_block_number() < block_num )
+  while( _itr != _idx.end() && _itr->get_last_access_block() + retention_blocks < block_num )
   {
     const auto& _current = *_itr;
     ++_itr;
@@ -321,8 +321,8 @@ bool rocksdb_account_archive::on_irreversible_block_impl( uint32_t block_num, co
     db.remove_no_undo( _current );
   }
 
-  accounts_stats::stats.account_moved_to_storage.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
-  accounts_stats::stats.account_moved_to_storage.count += _cnt;
+  accounts_stats::stats.item_moved_to_storage.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+  accounts_stats::stats.item_moved_to_storage.count += _cnt;
 
   return _do_flush;
 }
@@ -360,8 +360,8 @@ void rocksdb_account_archive::on_irreversible_block( uint32_t block_num )
 
     provider->flush();
 
-    accounts_stats::stats.account_flush_to_storage.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
-    ++accounts_stats::stats.account_flush_to_storage.count;
+    accounts_stats::stats.item_flush_to_storage.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+    ++accounts_stats::stats.item_flush_to_storage.count;
 
     /*
       Do compact only when there is no limit on objects, i.e we are in live mode.

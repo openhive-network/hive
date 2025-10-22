@@ -139,6 +139,7 @@ class chain_plugin_impl
     bfs::path                        shared_memory_dir;
     bfs::path                        comments_storage_path;
     bfs::path                        accounts_storage_path;
+    uint32_t                         retention_blocks = 0;
     bool                             replay = false;
     bool                             resync   = false;
     bool                             readonly = false;
@@ -837,7 +838,7 @@ void chain_plugin_impl::initial_settings()
   ilog( "'ROCKSDB' - accounts will be archived in RocksDB at ${csp}",
     ( "csp", accounts_storage_path.c_str() ) );
   account_archive = std::make_shared<rocksdb_account_archive>( db, shared_memory_dir,
-    accounts_storage_path, theApp );
+    accounts_storage_path, retention_blocks, theApp );
 
   db.set_comments_handler( comment_archive );
   db.set_accounts_handler( account_archive );
@@ -1541,6 +1542,7 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
       ("validate-database-invariants", bpo::bool_switch()->default_value(false), "Validate all supply invariants check out" )
       ("comments-rocksdb-path", bpo::value<bfs::path>()->default_value("comments-rocksdb-storage"), "the location of the comments data files" )
       ("accounts-rocksdb-path", bpo::value<bfs::path>()->default_value("accounts-rocksdb-storage"), "the location of the accounts data files" )
+      ("rocksdb-retention-blocks", bpo::value<uint32_t>()->default_value(1200), "How long to retain account's data in shared memory after last access before moving it to RocksDB storage. Default is 1200 blocks (1 hour).")
 #ifdef USE_ALTERNATE_CHAIN_ID
       ("chain-id", bpo::value< std::string >()->default_value( HIVE_CHAIN_ID ), "chain ID to connect to")
       ("skeleton-key", bpo::value< std::string >()->default_value(default_skeleton_privkey), "WIF PRIVATE key to be used as skeleton key for all accounts")
@@ -1592,6 +1594,8 @@ void chain_plugin::plugin_initialize(const variables_map& options)
 
   _set_rocksdb_directory( my->comments_storage_path, "comments-rocksdb-storage", "comments-rocksdb-path" );
   _set_rocksdb_directory( my->accounts_storage_path, "accounts-rocksdb-storage", "accounts-rocksdb-path" );
+
+  my->retention_blocks = options.at( "rocksdb-retention-blocks" ).as< uint32_t >();
 
   std::string comment_archive_type_str( "ROCKSDB" );
   if( options.count( "comment-archive" ) )

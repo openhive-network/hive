@@ -108,7 +108,7 @@ void open_test_database( database& db, block_storage_i& block_storage,
   const fc::path& dir, appbase::application& app, bool log_hardforks = false )
 {
   auto comment_archive = std::make_shared<placeholder_comment_archive>( db );
-  auto account_archive = std::make_shared<rocksdb_account_archive>( db, dir, dir / "accounts-rocksdb-storage", app );
+  auto account_archive = std::make_shared<rocksdb_account_archive>( db, dir, dir / "accounts-rocksdb-storage", 1200, app );
 
   db.set_comments_handler( comment_archive );
   db.set_accounts_handler( account_archive );
