@@ -235,6 +235,18 @@ void rocksdb_storage_provider::remove( ColumnTypes column_type, const Slice& key
   checkStatus(s);
 }
 
+void rocksdb_storage_provider::put_entity( ColumnTypes column_type, const Slice& key, const WideColumns& wide_columns )
+{
+  auto s = getWriteBuffer().PutEntity( getColumnHandle(column_type), key, wide_columns );
+  checkStatus(s);
+}
+
+bool rocksdb_storage_provider::get_entity( ColumnTypes column_type, const Slice& key, PinnableWideColumns& wide_columns )
+{
+  auto s = getStorage()->GetEntity( ReadOptions(), getColumnHandle(column_type), key, &wide_columns );
+  return s.ok();
+}
+
 void rocksdb_storage_provider::flush()
 {
   flushWriteBuffer();

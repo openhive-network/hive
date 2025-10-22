@@ -30,6 +30,9 @@ class rocksdb_account_storage_provider: public rocksdb_base_storage_provider
     bool read( ColumnTypes column_type, const Slice& key, PinnableSlice& value ) override;
     void remove( ColumnTypes column_type, const Slice& key ) override;
 
+    void put_entity( ColumnTypes column_type, const Slice& key, const WideColumns& wide_columns ) override;
+    bool get_entity( ColumnTypes column_type, const Slice& key, PinnableWideColumns& wide_columns ) override;
+
     void compaction() override;
 };
 

@@ -16,9 +16,9 @@
 
 namespace hive { namespace chain {
 
+template<typename SHM_Object_Type, typename RocksDB_Object_Type, typename Slice_Type>
 struct rocksdb_storage_writer
 {
-  template<typename SHM_Object_Type, typename RocksDB_Object_Type, typename Slice_Type>
   static void write_to_storage( const external_storage_reader_writer::ptr& provider, const Slice_Type& key, const SHM_Object_Type& object, ColumnTypes column_type )
   {
     RocksDB_Object_Type _obj( object );
@@ -30,13 +30,41 @@ struct rocksdb_storage_writer
   }
 };
 
+template<>
+struct rocksdb_storage_writer<account_object, rocksdb_account_object, account_name_slice_t>
+{
+  static void write_to_storage( const external_storage_reader_writer::ptr& provider, const account_name_slice_t& key, const account_object& object, ColumnTypes column_type )
+  {
+    rocksdb_account_object _obj( object );
+
+    auto _serialized_buffer_id = dump( _obj.id );
+    auto _serialized_buffer_recovery = dump( _obj.recovery );
+    auto _serialized_buffer_assets = dump( _obj.assets );
+    auto _serialized_buffer_mrc = dump( _obj.mrc );
+    auto _serialized_buffer_time = dump( _obj.time );
+    auto _serialized_buffer_misc = dump( _obj.misc );
+    auto _serialized_buffer_delayed_votes = dump( _obj.delayed_votes );
+
+    rocksdb::WideColumns _columns;
+    _columns.emplace_back( "id", Slice( _serialized_buffer_id.data(), _serialized_buffer_id.size() ) );
+    _columns.emplace_back( "recovery", Slice( _serialized_buffer_recovery.data(), _serialized_buffer_recovery.size() ) );
+    _columns.emplace_back( "assets", Slice( _serialized_buffer_assets.data(), _serialized_buffer_assets.size() ) );
+    _columns.emplace_back( "mrc", Slice( _serialized_buffer_mrc.data(), _serialized_buffer_mrc.size() ) );
+    _columns.emplace_back( "time", Slice( _serialized_buffer_time.data(), _serialized_buffer_time.size() ) );
+    _columns.emplace_back( "misc", Slice( _serialized_buffer_misc.data(), _serialized_buffer_misc.size() ) );
+    _columns.emplace_back( "delayed_votes", Slice( _serialized_buffer_delayed_votes.data(), _serialized_buffer_delayed_votes.size() ) );
+
+    provider->put_entity( column_type, key, _columns );
+  }
+};
+
 template<typename SHM_Object_Type, typename RocksDB_Object_Type, typename RocksDB_Object_Type2>
 struct rocksdb_writer
 {
   static void write_to_storage( const external_storage_reader_writer::ptr& provider, const SHM_Object_Type& object, const std::vector<ColumnTypes>& column_types )
   {
     FC_ASSERT( column_types.size() && "move to external storage" );
-    rocksdb_storage_writer::write_to_storage<SHM_Object_Type, RocksDB_Object_Type, account_name_slice_t>( provider, account_name_slice_t( object.get_name().data ), object, column_types[0] );
+    rocksdb_storage_writer<SHM_Object_Type, RocksDB_Object_Type, account_name_slice_t>::write_to_storage( provider, account_name_slice_t( object.get_name().data ), object, column_types[0] );
   }
 };
 
@@ -46,19 +74,30 @@ struct rocksdb_writer<account_object, rocksdb_account_object, rocksdb_account_ob
   static void write_to_storage( const external_storage_reader_writer::ptr& provider, const account_object& object, const std::vector<ColumnTypes>& column_types )
   {
     FC_ASSERT( column_types.size() == 2 && "move an account to rocksdb storage" );
-    rocksdb_storage_writer::write_to_storage<account_object, rocksdb_account_object, account_name_slice_t>( provider, account_name_slice_t( object.get_name().data ), object, column_types[0] );
-    rocksdb_storage_writer::write_to_storage<account_object, rocksdb_account_object_by_id, uint32_slice_t>( provider, uint32_slice_t( object.get_id() ), object, column_types[1] );
+    rocksdb_storage_writer<account_object, rocksdb_account_object, account_name_slice_t>::write_to_storage( provider, account_name_slice_t( object.get_name().data ), object, column_types[0] );
+    rocksdb_storage_writer<account_object, rocksdb_account_object_by_id, uint32_slice_t>::write_to_storage( provider, uint32_slice_t( object.get_id() ), object, column_types[1] );
   }
 };
 
+template<typename Slice_Type, typename Key_Type, typename Pinnable_Type = PinnableSlice>
 struct rocksdb_storage_reader
 {
-  template<typename Slice_Type, typename Key_Type>
-  static bool read_from_storage( const external_storage_reader_writer::ptr& provider, const Key_Type& key, ColumnTypes column_type, PinnableSlice& buffer )
+  static bool read_from_storage( const external_storage_reader_writer::ptr& provider, const Key_Type& key, ColumnTypes column_type, Pinnable_Type& buffer )
   {
     Slice_Type _key( key );
 
     return provider->read( column_type, _key, buffer );
+  }
+};
+
+template<>
+struct rocksdb_storage_reader<account_name_slice_t, account_name_type::Storage, PinnableWideColumns>
+{
+  static bool read_from_storage( const external_storage_reader_writer::ptr& provider, const account_name_type::Storage& key, ColumnTypes column_type, PinnableWideColumns& wide_columns )
+  {
+    account_name_slice_t _key( key );
+
+    return provider->get_entity( column_type, _key, wide_columns );
   }
 };
 
@@ -75,7 +114,7 @@ struct rocksdb_reader<account_metadata_object, account_name_type>
     PinnableSlice _buffer;
 
     FC_ASSERT( column_types.size() && "read account metadata from rocksdb storage" );
-    if( !rocksdb_storage_reader::read_from_storage<account_name_slice_t, account_name_type::Storage>( provider, key.data, column_types[0], _buffer ) )
+    if( !rocksdb_storage_reader<account_name_slice_t, account_name_type::Storage>::read_from_storage( provider, key.data, column_types[0], _buffer ) )
       return nullptr;
 
     rocksdb_account_metadata_object _obj;
@@ -94,7 +133,7 @@ struct rocksdb_reader<account_authority_object, account_name_type>
     PinnableSlice _buffer;
 
     FC_ASSERT( column_types.size() && "read account authority from rocksdb storage" );
-    if( !rocksdb_storage_reader::read_from_storage<account_name_slice_t, account_name_type::Storage>( provider, key.data, column_types[0], _buffer ) )
+    if( !rocksdb_storage_reader<account_name_slice_t, account_name_type::Storage>::read_from_storage( provider, key.data, column_types[0], _buffer ) )
       return nullptr;
 
     rocksdb_account_authority_object _obj;
@@ -110,15 +149,31 @@ struct rocksdb_reader<account_object, account_name_type>
 {
   static const account_object* read( chainbase::database& db, const external_storage_reader_writer::ptr& provider, const account_name_type& key, const std::vector<ColumnTypes>& column_types )
   {
-    PinnableSlice _buffer;
+    PinnableWideColumns _wide_columns;
 
     FC_ASSERT( column_types.size() && "read account from rocksdb storage" );
-    if( !rocksdb_storage_reader::read_from_storage<account_name_slice_t, account_name_type::Storage>( provider, key.data, column_types[0], _buffer ) )
+    if( !rocksdb_storage_reader<account_name_slice_t, account_name_type::Storage, PinnableWideColumns>::read_from_storage( provider, key.data, column_types[0], _wide_columns ) )
       return nullptr;
 
     rocksdb_account_object _obj;
 
-    load( _obj, _buffer.data(), _buffer.size() );
+    for( const auto& column : _wide_columns.columns() )
+    {
+      if( column.name() == "id" )
+        load( _obj.id, column.value().data(), column.value().size() );
+      else if ( column.name() == "recovery" )
+        load( _obj.recovery, column.value().data(), column.value().size() );
+      else if ( column.name() == "assets" )
+        load( _obj.assets, column.value().data(), column.value().size() );
+      else if ( column.name() == "mrc" )
+        load( _obj.mrc, column.value().data(), column.value().size() );
+      else if ( column.name() == "time" )
+        load( _obj.time, column.value().data(), column.value().size() );
+      else if ( column.name() == "misc" )
+        load( _obj.misc, column.value().data(), column.value().size() );
+      else if ( column.name() == "delayed_votes" )
+        load( _obj.delayed_votes, column.value().data(), column.value().size() );
+    }
 
     return _obj.build( db );
   }
@@ -136,7 +191,7 @@ struct rocksdb_reader<account_object, account_id_type>
     {
       PinnableSlice _buffer;
 
-      if( !rocksdb_storage_reader::read_from_storage<uint32_slice_t, uint32_t>( provider, key, column_types[0], _buffer ) )
+      if( !rocksdb_storage_reader<uint32_slice_t, uint32_t>::read_from_storage( provider, key, column_types[0], _buffer ) )
         return nullptr;
 
       rocksdb_account_object_by_id _obj;
@@ -144,15 +199,7 @@ struct rocksdb_reader<account_object, account_id_type>
       _name = _obj.name;
     }
 
-    PinnableSlice _buffer;
-
-    if( !rocksdb_storage_reader::read_from_storage<account_name_slice_t, account_name_type::Storage>( provider, _name.data, column_types[1], _buffer ) )
-      return nullptr;
-
-    rocksdb_account_object _obj;
-    load( _obj, _buffer.data(), _buffer.size() );
-
-    return _obj.build( db );
+    return rocksdb_reader<account_object, account_name_type>::read( db, provider, _name, { column_types[1] } );
   }
 };
 

@@ -28,6 +28,8 @@ using ::rocksdb::ColumnFamilyDescriptor;
 using ::rocksdb::ColumnFamilyOptions;
 using ::rocksdb::ColumnFamilyHandle;
 using ::rocksdb::WriteBatch;
+using ::rocksdb::WideColumns;
+using ::rocksdb::PinnableWideColumns;
 
 class rocksdb_storage_provider
 {
@@ -103,6 +105,9 @@ class rocksdb_storage_provider
     void save( ColumnTypes column_type, const Slice& key, const Slice& value );
     bool read( ColumnTypes column_type, const Slice& key, PinnableSlice& value );
     void remove( ColumnTypes column_type, const Slice& key );
+
+    void put_entity( ColumnTypes column_type, const Slice& key, const WideColumns& wide_columns );
+    bool get_entity( ColumnTypes column_type, const Slice& key, PinnableWideColumns& wide_columns );
 
   public:
 
