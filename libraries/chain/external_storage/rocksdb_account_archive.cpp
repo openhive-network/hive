@@ -79,25 +79,21 @@ struct rocksdb_writer<account_object, rocksdb_account_object, rocksdb_account_ob
   }
 };
 
-template<typename Slice_Type, typename Key_Type, typename Pinnable_Type = PinnableSlice>
+template<typename Slice_Type, typename Pinnable_Type = PinnableSlice>
 struct rocksdb_storage_reader
 {
-  static bool read_from_storage( const external_storage_reader_writer::ptr& provider, const Key_Type& key, ColumnTypes column_type, Pinnable_Type& buffer )
+  static bool read_from_storage( const external_storage_reader_writer::ptr& provider, const Slice_Type& key, ColumnTypes column_type, Pinnable_Type& buffer )
   {
-    Slice_Type _key( key );
-
-    return provider->read( column_type, _key, buffer );
+    return provider->read( column_type, key, buffer );
   }
 };
 
 template<>
-struct rocksdb_storage_reader<account_name_slice_t, account_name_type::Storage, PinnableWideColumns>
+struct rocksdb_storage_reader<account_name_slice_t, PinnableWideColumns>
 {
-  static bool read_from_storage( const external_storage_reader_writer::ptr& provider, const account_name_type::Storage& key, ColumnTypes column_type, PinnableWideColumns& wide_columns )
+  static bool read_from_storage( const external_storage_reader_writer::ptr& provider, const account_name_slice_t& key, ColumnTypes column_type, PinnableWideColumns& wide_columns )
   {
-    account_name_slice_t _key( key );
-
-    return provider->get_entity( column_type, _key, wide_columns );
+    return provider->get_entity( column_type, key, wide_columns );
   }
 };
 
@@ -114,7 +110,7 @@ struct rocksdb_reader<account_metadata_object, account_name_type>
     PinnableSlice _buffer;
 
     FC_ASSERT( column_types.size() && "read account metadata from rocksdb storage" );
-    if( !rocksdb_storage_reader<account_name_slice_t, account_name_type::Storage>::read_from_storage( provider, key.data, column_types[0], _buffer ) )
+    if( !rocksdb_storage_reader<account_name_slice_t>::read_from_storage( provider, account_name_slice_t( key.data ), column_types[0], _buffer ) )
       return nullptr;
 
     rocksdb_account_metadata_object _obj;
@@ -133,7 +129,7 @@ struct rocksdb_reader<account_authority_object, account_name_type>
     PinnableSlice _buffer;
 
     FC_ASSERT( column_types.size() && "read account authority from rocksdb storage" );
-    if( !rocksdb_storage_reader<account_name_slice_t, account_name_type::Storage>::read_from_storage( provider, key.data, column_types[0], _buffer ) )
+    if( !rocksdb_storage_reader<account_name_slice_t>::read_from_storage( provider, account_name_slice_t( key.data ), column_types[0], _buffer ) )
       return nullptr;
 
     rocksdb_account_authority_object _obj;
@@ -152,7 +148,7 @@ struct rocksdb_reader<account_object, account_name_type>
     PinnableWideColumns _wide_columns;
 
     FC_ASSERT( column_types.size() && "read account from rocksdb storage" );
-    if( !rocksdb_storage_reader<account_name_slice_t, account_name_type::Storage, PinnableWideColumns>::read_from_storage( provider, key.data, column_types[0], _wide_columns ) )
+    if( !rocksdb_storage_reader<account_name_slice_t, PinnableWideColumns>::read_from_storage( provider, account_name_slice_t( key.data ), column_types[0], _wide_columns ) )
       return nullptr;
 
     rocksdb_account_object _obj;
@@ -191,7 +187,7 @@ struct rocksdb_reader<account_object, account_id_type>
     {
       PinnableSlice _buffer;
 
-      if( !rocksdb_storage_reader<uint32_slice_t, uint32_t>::read_from_storage( provider, key, column_types[0], _buffer ) )
+      if( !rocksdb_storage_reader<uint32_slice_t>::read_from_storage( provider, uint32_slice_t( key ), column_types[0], _buffer ) )
         return nullptr;
 
       rocksdb_account_object_by_id _obj;
