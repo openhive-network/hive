@@ -58,6 +58,16 @@ void rocksdb_account_storage_provider::remove( ColumnTypes column_type, const Sl
   rocksdb_storage_provider::remove( column_type, key );
 }
 
+void rocksdb_account_storage_provider::put_entity( ColumnTypes column_type, const Slice& key, const WideColumns& wide_columns )
+{
+  rocksdb_storage_provider::put_entity( column_type, key, wide_columns );
+}
+
+bool rocksdb_account_storage_provider::get_entity( ColumnTypes column_type, const Slice& key, PinnableWideColumns& wide_columns )
+{
+  return rocksdb_storage_provider::get_entity( column_type, key, wide_columns );
+}
+
 void rocksdb_account_storage_provider::compaction()
 {
   getStorage()->CompactRange(rocksdb::CompactRangeOptions(), nullptr, nullptr );

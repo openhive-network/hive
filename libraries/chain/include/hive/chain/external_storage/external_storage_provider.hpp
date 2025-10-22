@@ -13,6 +13,8 @@ using ::rocksdb::DB;
 using ::rocksdb::Slice;
 using ::rocksdb::PinnableSlice;
 using ::rocksdb::ColumnFamilyHandle;
+using ::rocksdb::WideColumns;
+using ::rocksdb::PinnableWideColumns;
 
 class external_snapshot_storage_provider
 {
@@ -41,6 +43,9 @@ class external_storage_reader_writer
     virtual void save( ColumnTypes column_type, const Slice& key, const Slice& value ) = 0;
     virtual bool read( ColumnTypes column_type, const Slice& key, PinnableSlice& value ) = 0;
     virtual void remove( ColumnTypes column_type, const Slice& key ) = 0;
+
+    virtual void put_entity( ColumnTypes column_type, const Slice& key, const WideColumns& wide_columns ) = 0;
+    virtual bool get_entity( ColumnTypes column_type, const Slice& key, PinnableWideColumns& wide_columns ) = 0;
 
     virtual void compaction() = 0;
 };
