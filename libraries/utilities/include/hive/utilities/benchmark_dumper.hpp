@@ -49,8 +49,9 @@ public:
     counter_t account_accessed_by_name;
     counter_t account_accessed_by_id;
 
-    counter_t account_moved_to_storage;
-    counter_t account_flush_to_storage;
+    counter_t item_moved_to_storage;
+    counter_t item_flush_to_storage;
+
     counter_t compact_storage;
   };
 
@@ -156,8 +157,8 @@ FC_REFLECT( hive::utilities::benchmark_dumper::account_archive_details_t,
         (account_authority_created)(account_authority_modified)(account_authority_accessed_by_name)
         (account_created)(account_modified)
         (account_accessed_by_name)(account_accessed_by_id)
-        (account_moved_to_storage)
-        (account_flush_to_storage)
+        (item_moved_to_storage)
+        (item_flush_to_storage)
         (compact_storage)
        )
 

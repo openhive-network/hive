@@ -35,8 +35,9 @@ void operator -= ( benchmark_dumper::account_archive_details_t& current, const b
   current.account_accessed_by_name            -= previous.account_accessed_by_name;
   current.account_accessed_by_id              -= previous.account_accessed_by_id;
 
-  current.account_moved_to_storage            -= previous.account_moved_to_storage;
-  current.account_flush_to_storage            -= previous.account_flush_to_storage;
+  current.item_moved_to_storage               -= previous.item_moved_to_storage;
+  current.item_flush_to_storage               -= previous.item_flush_to_storage;
+
   current.compact_storage                     -= previous.compact_storage;
 }
 

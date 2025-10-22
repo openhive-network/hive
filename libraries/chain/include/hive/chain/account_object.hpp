@@ -26,8 +26,8 @@ namespace hive { namespace chain {
 
     public:
 
-      void set_block_number( uint32_t _block_number ) { block_number = _block_number; }
-      uint32_t get_block_number() const { return block_number ? (*block_number) : 0; }
+      void set_last_access_block( uint32_t _block_number ) { block_number = _block_number; }
+      uint32_t get_last_access_block() const { return block_number ? (*block_number) : 0; }
       bool changed() const { return block_number.has_value(); }
 
     private:
@@ -494,8 +494,8 @@ namespace hive { namespace chain {
 
     public:
 
-      void set_block_number( uint32_t _block_number ) { block_number = _block_number; }
-      uint32_t get_block_number() const { return block_number ? (*block_number) : 0; }
+      void set_last_access_block( uint32_t _block_number ) { block_number = _block_number; }
+      uint32_t get_last_access_block() const { return block_number ? (*block_number) : 0; }
       bool changed() const { return block_number.has_value(); }
 
     public:
@@ -539,8 +539,8 @@ namespace hive { namespace chain {
 
     public:
 
-      void set_block_number( uint32_t _block_number ) { block_number = _block_number; }
-      uint32_t get_block_number() const { return block_number ? (*block_number) : 0; }
+      void set_last_access_block( uint32_t _block_number ) { block_number = _block_number; }
+      uint32_t get_last_access_block() const { return block_number ? (*block_number) : 0; }
       bool changed() const { return block_number.has_value(); }
 
     public:
@@ -768,7 +768,7 @@ namespace hive { namespace chain {
         const_mem_fun< account_object, const account_name_type&, &account_object::get_name > >,
       ordered_unique< tag< by_block >,
         composite_key< account_object,
-          const_mem_fun< account_object, uint32_t, &account_object::get_block_number>,
+          const_mem_fun< account_object, uint32_t, &account_object::get_last_access_block>,
           const_mem_fun< account_object, account_object::id_type, &account_object::get_id >
         >
       >
@@ -820,7 +820,7 @@ namespace hive { namespace chain {
         const_mem_fun< account_metadata_object, const account_name_type&, &account_metadata_object::get_name > >,
       ordered_unique< tag< by_block >,
         composite_key< account_metadata_object,
-          const_mem_fun< account_metadata_object, uint32_t, &account_metadata_object::get_block_number>,
+          const_mem_fun< account_metadata_object, uint32_t, &account_metadata_object::get_last_access_block>,
           const_mem_fun< account_metadata_object, const account_name_type&, &account_metadata_object::get_name >
         >
       >
@@ -861,7 +861,7 @@ namespace hive { namespace chain {
       >,
       ordered_unique< tag< by_block >,
         composite_key< account_authority_object,
-          const_mem_fun< account_authority_object, uint32_t, &account_authority_object::get_block_number>,
+          const_mem_fun< account_authority_object, uint32_t, &account_authority_object::get_last_access_block>,
           const_mem_fun< account_authority_object, const account_name_type&, &account_authority_object::get_name >
         >
       >

@@ -92,9 +92,6 @@ struct witness_fixture : public hived_fixture
 
     postponed_init( config_args );
 
-    //Due to performance, for this tests turn off moving objects to an external storage
-    db->get_accounts_handler().objects_always_in_shm();
-
     init_account_pub_key = init_account_priv_key.get_public_key();
   }
 
