@@ -321,8 +321,8 @@ bool rocksdb_account_archive::on_irreversible_block_impl( uint32_t block_num, co
     db.remove_no_undo( _current );
   }
 
-  accounts_stats::stats.account_moved_to_storage.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
-  accounts_stats::stats.account_moved_to_storage.count += _cnt;
+  accounts_stats::stats.item_moved_to_storage.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+  accounts_stats::stats.item_moved_to_storage.count += _cnt;
 
   return _do_flush;
 }
@@ -360,8 +360,8 @@ void rocksdb_account_archive::on_irreversible_block( uint32_t block_num )
 
     provider->flush();
 
-    accounts_stats::stats.account_flush_to_storage.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
-    ++accounts_stats::stats.account_flush_to_storage.count;
+    accounts_stats::stats.item_flush_to_storage.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+    ++accounts_stats::stats.item_flush_to_storage.count;
 
     /*
       Do compact only when there is no limit on objects, i.e we are in live mode.
