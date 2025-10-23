@@ -528,13 +528,13 @@ reference = "gitlab-beekeepy"
 
 [[package]]
 name = "hiveio-database-api"
-version = "1.27.12rc4.dev16+b487bd9a1"
+version = "1.27.12rc4.dev33+9342af461"
 description = ""
 optional = false
 python-versions = ">=3.12,<4.0"
 groups = ["main"]
 files = [
-    {file = "hiveio_database_api-1.27.12rc4.dev16+b487bd9a1-py3-none-any.whl", hash = "sha256:e31fd8c1646b49bc3d2c05b6d4c0a606bc369214e13b4eaa20a913e1b6c1a465"},
+    {file = "hiveio_database_api-1.27.12rc4.dev33+9342af461-py3-none-any.whl", hash = "sha256:c820f6e73d451d1d000d6239767fa149ac4d85a473f6fc90c79512fc24a5f243"},
 ]
 
 [package.dependencies]
@@ -547,13 +547,13 @@ reference = "gitlab-database_api"
 
 [[package]]
 name = "hiveio-network-broadcast-api"
-version = "1.27.12rc4.dev16+b487bd9a1"
+version = "1.27.12rc4.dev33+9342af461"
 description = ""
 optional = false
 python-versions = ">=3.12,<4.0"
 groups = ["main"]
 files = [
-    {file = "hiveio_network_broadcast_api-1.27.12rc4.dev16+b487bd9a1-py3-none-any.whl", hash = "sha256:7c9c6b9a32b92433425abcbdae2d159383d457547d67d799d97d410954390084"},
+    {file = "hiveio_network_broadcast_api-1.27.12rc4.dev33+9342af461-py3-none-any.whl", hash = "sha256:3a72767e4a4f0c0725f4bdcdf33eb75fd88b68f3b1d793268d4f0a7300c105f7"},
 ]
 
 [package.dependencies]
@@ -580,18 +580,18 @@ msgspec = "0.18.6"
 
 [[package]]
 name = "hiveio-wax"
-version = "1.27.12rc2.dev7+daf5a82a"
+version = "1.27.12rc4.dev4+0c5db92c"
 description = ""
 optional = false
 python-versions = ">=3.12,<4.0"
 groups = ["main"]
 files = [
-    {file = "hiveio_wax-1.27.12rc2.dev7+daf5a82a-cp312-cp312-manylinux_2_39_x86_64.whl", hash = "sha256:567b4b4f2d3091a9ea99488cb82215d2634d6d462e51c416af1cbf2aaeca7ab4"},
+    {file = "hiveio_wax-1.27.12rc4.dev4+0c5db92c-cp312-cp312-manylinux_2_39_x86_64.whl", hash = "sha256:a538dfc6be310e28e4b02a5303b2e4e8f869e013b69e160494fad62e6cd704b2"},
 ]
 
 [package.dependencies]
-hiveio-database-api = "1.27.12rc4.dev16+b487bd9a1"
-hiveio-network-broadcast-api = "1.27.12rc4.dev16+b487bd9a1"
+hiveio-database-api = "1.27.12rc4.dev33+9342af461"
+hiveio-network-broadcast-api = "1.27.12rc4.dev33+9342af461"
 httpx = {version = "0.23.3", extras = ["http2"]}
 loguru = "0.7.2"
 protobuf = "4.24.4"
@@ -1892,7 +1892,7 @@ develop = true
 
 [package.dependencies]
 abstractcp = "0.9.9"
-hiveio-wax = "1.27.12rc2.dev7+daf5a82a"
+hiveio-wax = "1.27.12rc4.dev4+0c5db92c"
 loguru = "0.7.2"
 python-dateutil = "2.8.2"
 
