@@ -73,7 +73,7 @@ export class BeekeeperUnlockedWallet implements IBeekeeperUnlockedWallet {
   }
 
   public getPublicKeys(): TPublicKey[] {
-    const result = this.api.extract(safeWasmCall(() => this.api.api.get_public_keys(this.session.token) as string, `public keys retrieval from wallet '${this.locked.name}'`)) as IBeekeeperKeys;
+    const result = this.api.extract(safeWasmCall(() => this.api.api.get_public_keys(this.session.token, this.locked.name) as string, `public keys retrieval from wallet '${this.locked.name}'`)) as IBeekeeperKeys;
 
     return result.keys.map(value => value.public_key);
   }
