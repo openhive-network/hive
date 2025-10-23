@@ -83,17 +83,17 @@ namespace hive { namespace chain {
       void set_savings( const HIVE_asset& value ) { assets.set_savings( value ); }
       //unclaimed HIVE rewards
       const HIVE_asset& get_rewards() const { return assets.get_rewards(); }
-      const void set_rewards( const HIVE_asset& value ) { assets.set_rewards( value ); }
+      void set_rewards( const HIVE_asset& value ) { assets.set_rewards( value ); }
 
       //liquid HBD balance
       const HBD_asset& get_hbd_balance() const { return assets.get_hbd_balance(); }
       void set_hbd_balance( const HBD_asset& value ) { assets.set_hbd_balance( value ); }
       //HBD balance in savings
       const HBD_asset& get_hbd_savings() const { return assets.get_hbd_savings(); }
-      const void set_hbd_savings( const HBD_asset& value ) { assets.set_hbd_savings( value ); }
+      void set_hbd_savings( const HBD_asset& value ) { assets.set_hbd_savings( value ); }
       //unclaimed HBD rewards
       const HBD_asset& get_hbd_rewards() const { return assets.get_hbd_rewards(); }
-      const void set_hbd_rewards( const HBD_asset& value ) { assets.set_hbd_rewards( value ); }
+      void set_hbd_rewards( const HBD_asset& value ) { assets.set_hbd_rewards( value ); }
 
       //all VESTS held by the account - use other routines to get active VESTS for specific uses
       const VEST_asset& get_vesting() const { return assets.get_vesting(); }
@@ -101,21 +101,21 @@ namespace hive { namespace chain {
 
       //VESTS that were delegated to other accounts
       const VEST_asset& get_delegated_vesting() const { return assets.get_delegated_vesting(); }
-      const void set_delegated_vesting( const VEST_asset& value ) { assets.set_delegated_vesting( value ); }
+      void set_delegated_vesting( const VEST_asset& value ) { assets.set_delegated_vesting( value ); }
       //VESTS that were borrowed from other accounts
       const VEST_asset& get_received_vesting() const { return assets.get_received_vesting(); }
-      const void set_received_vesting( const VEST_asset& value ) { assets.set_received_vesting( value ); }
+      void set_received_vesting( const VEST_asset& value ) { assets.set_received_vesting( value ); }
       //whole remainder of active power down (zero when not active)
       share_type get_total_vesting_withdrawal() const { return assets.get_total_vesting_withdrawal(); }
       const VEST_asset& get_vesting_withdraw_rate() const { return assets.get_vesting_withdraw_rate(); }
-      const void set_vesting_withdraw_rate( const VEST_asset& value ) { assets.set_vesting_withdraw_rate( value ); }
+      void set_vesting_withdraw_rate( const VEST_asset& value ) { assets.set_vesting_withdraw_rate( value ); }
 
       //unclaimed VESTS rewards
       const VEST_asset& get_vest_rewards() const { return assets.get_vest_rewards(); }
-      const void set_vest_rewards( const VEST_asset& value ) { assets.set_vest_rewards( value ); }
+      void set_vest_rewards( const VEST_asset& value ) { assets.set_vest_rewards( value ); }
       //value of unclaimed VESTS rewards in HIVE (HIVE held on global balance)
       const HIVE_asset& get_vest_rewards_as_hive() const { return assets.get_vest_rewards_as_hive(); }
-      const void set_vest_rewards_as_hive( const HIVE_asset& value ) { assets.set_vest_rewards_as_hive( value ); }
+      void set_vest_rewards_as_hive( const HIVE_asset& value ) { assets.set_vest_rewards_as_hive( value ); }
 
       const HIVE_asset& get_curation_rewards() const { return assets.get_curation_rewards(); }
       void set_curation_rewards( const HIVE_asset& value ) { assets.set_curation_rewards( value ); }
@@ -123,9 +123,9 @@ namespace hive { namespace chain {
       void set_posting_rewards( const HIVE_asset& value ) { assets.set_posting_rewards( value ); }
 
       const VEST_asset& get_withdrawn() const { return assets.get_withdrawn(); }
-      const void set_withdrawn( const VEST_asset& value ) { assets.set_withdrawn( value ); }
+      void set_withdrawn( const VEST_asset& value ) { assets.set_withdrawn( value ); }
       const VEST_asset& get_to_withdraw() const { return assets.get_to_withdraw(); }
-      const void set_to_withdraw( const VEST_asset& value ) { assets.set_to_withdraw( value ); }
+      void set_to_withdraw( const VEST_asset& value ) { assets.set_to_withdraw( value ); }
 
     private:
 
