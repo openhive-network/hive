@@ -163,6 +163,43 @@ namespace hive { namespace chain { namespace account_details {
     fc::array<share_type, HIVE_MAX_PROXY_RECURSION_DEPTH> proxied_vsf_votes; ///< the total VFS votes proxied to this account
   };
 
+  struct delayed_votes_wrapper
+  {
+    t_delayed_votes delayed_votes;
+
+    template< typename Allocator >
+    delayed_votes_wrapper( allocator< Allocator > a )
+      : delayed_votes( a ) {}
+
+    bool has_delayed_votes() const { return !delayed_votes.empty(); }
+
+    // start time of oldest delayed vote bucket (the one closest to activation)
+    time_point_sec get_oldest_delayed_vote_time() const
+    {
+      if( has_delayed_votes() )
+        return ( delayed_votes.begin() )->time;
+      else
+        return time_point_sec::maximum();
+    }
+
+    void fill( const std::vector< delayed_votes_data >& src )
+    {
+      if( src.size() )
+      {
+        delayed_votes.reserve( src.size() );
+        for( const auto& item : src )
+          delayed_votes.push_back( item );
+      }
+    }
+
+    size_t get_dynamic_alloc() const
+    {
+      size_t size = 0;
+      size += delayed_votes.capacity() * sizeof( decltype( delayed_votes )::value_type );
+      return size;
+    }
+  };
+
 }}}
 
 FC_REFLECT( hive::chain::account_details::recovery,
@@ -207,3 +244,7 @@ FC_REFLECT( hive::chain::account_details::misc,
           (memo_key)
           (proxied_vsf_votes)
         )
+
+FC_REFLECT( hive::chain::account_details::delayed_votes_wrapper,
+            (delayed_votes)
+          )

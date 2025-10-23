@@ -342,22 +342,19 @@ namespace hive { namespace chain {
 
     private:
 
-      account_details::t_delayed_votes delayed_votes;
+      account_details::delayed_votes_wrapper dvw;
 
     public:
 
-      account_details::t_delayed_votes& get_delayed_votes() { return delayed_votes; }
-      const account_details::t_delayed_votes& get_delayed_votes() const { return delayed_votes; }
+      account_details::t_delayed_votes& get_delayed_votes() { return dvw.delayed_votes; }
+      const account_details::t_delayed_votes& get_delayed_votes() const { return dvw.delayed_votes; }
 
-      bool has_delayed_votes() const { return !delayed_votes.empty(); }
+      bool has_delayed_votes() const { return dvw.has_delayed_votes(); }
 
       // start time of oldest delayed vote bucket (the one closest to activation)
       time_point_sec get_oldest_delayed_vote_time() const
       {
-        if( has_delayed_votes() )
-          return ( delayed_votes.begin() )->time;
-        else
-          return time_point_sec::maximum();
+        return dvw.get_oldest_delayed_vote_time();
       }
 
     public:
@@ -374,7 +371,7 @@ namespace hive { namespace chain {
         mrc( _creation_time, _fill_mana, _rc_adjustment, get_effective_vesting_shares() ),
         time(),
         misc( _name, _creation_time, _block_creation_time, _mined, _memo_key ),
-        delayed_votes( a )
+        dvw( a )
       {
       }
 
@@ -383,10 +380,10 @@ namespace hive { namespace chain {
       account_object( allocator< Allocator > a, uint64_t _id,
         const account_name_type& _name, const time_point_sec& _creation_time, const public_key_type& _memo_key = public_key_type() )
         : id( _id ), misc( _name, _creation_time, _creation_time, true/*mined*/, _memo_key ),
-          delayed_votes( a )
+          dvw( a )
       {}
 
-      template< typename Allocator, typename Delayed_Votes_Items >
+      template< typename Allocator>
       account_object( allocator< Allocator > a,
                       account_id_type _account_id,
                       const account_details::recovery& _recovery,
@@ -394,27 +391,20 @@ namespace hive { namespace chain {
                       const account_details::manabars_rc& _mrc,
                       const account_details::time& _time,
                       const account_details::misc& _misc,
-                      const Delayed_Votes_Items& _delayed_votes )
-        : id( _account_id ), recovery( _recovery ), assets( _assets ), mrc( _mrc ), time( _time ), misc( _misc ), delayed_votes( a )
+                      const std::vector< delayed_votes_data >& _dvw )
+        : id( _account_id ), recovery( _recovery ), assets( _assets ), mrc( _mrc ), time( _time ), misc( _misc ), dvw( a )
       {
-        if( _delayed_votes.size() )
-        {
-          delayed_votes.reserve( _delayed_votes.size() );
-          for( const auto& item : _delayed_votes )
-            delayed_votes.push_back( item );
-        }
+        dvw.fill( _dvw );
       }
 
     public:
 
       size_t get_dynamic_alloc() const
       {
-        size_t size = 0;
-        size += delayed_votes.capacity() * sizeof( decltype( delayed_votes )::value_type );
-        return size;
+        return dvw.get_dynamic_alloc();
       }
 
-    CHAINBASE_UNPACK_CONSTRUCTOR(account_object, (delayed_votes));
+    CHAINBASE_UNPACK_CONSTRUCTOR(account_object, (dvw));
   };
 
   class tiny_account_object : public object< tiny_account_object_type, tiny_account_object, std::true_type >
@@ -438,34 +428,29 @@ namespace hive { namespace chain {
 
     private:
 
-      account_details::t_delayed_votes delayed_votes;
+      account_details::delayed_votes_wrapper dvw;
 
     public:
 
-      account_details::t_delayed_votes& get_delayed_votes() { return delayed_votes; }
-      const account_details::t_delayed_votes& get_delayed_votes() const { return delayed_votes; }
+      account_details::t_delayed_votes& get_delayed_votes() { return dvw.delayed_votes; }
+      const account_details::t_delayed_votes& get_delayed_votes() const { return dvw.delayed_votes; }
 
-      bool has_delayed_votes() const { return !delayed_votes.empty(); }
+      bool has_delayed_votes() const { return dvw.has_delayed_votes(); }
 
       // start time of oldest delayed vote bucket (the one closest to activation)
       time_point_sec get_oldest_delayed_vote_time() const
       {
-        if( has_delayed_votes() )
-          return ( delayed_votes.begin() )->time;
-        else
-          return time_point_sec::maximum();
+        return dvw.get_oldest_delayed_vote_time();
       }
 
       size_t get_dynamic_alloc() const
       {
-        size_t size = 0;
-        size += delayed_votes.capacity() * sizeof( decltype( delayed_votes )::value_type );
-        return size;
+        return dvw.get_dynamic_alloc();
       }
 
       template< typename Allocator >
       tiny_account_object( allocator< Allocator > a, uint64_t _id, const account_object& obj )
-      : id( _id ), delayed_votes( a )
+      : id( _id ), dvw( a )
       {
         account_id  = obj.get_id();
         name        = obj.get_name();
@@ -478,10 +463,10 @@ namespace hive { namespace chain {
         proxy                         = obj.get_proxy();
         next_vesting_withdrawal       = obj.get_next_vesting_withdrawal();
         governance_vote_expiration_ts = obj.get_governance_vote_expiration_ts();
-        delayed_votes                 = obj.get_delayed_votes();
+        dvw.delayed_votes             = obj.get_delayed_votes();
       }
 
-    CHAINBASE_UNPACK_CONSTRUCTOR(tiny_account_object, (delayed_votes));
+    CHAINBASE_UNPACK_CONSTRUCTOR(tiny_account_object, (dvw));
   };
 
   class account_metadata_object : public object< account_metadata_object_type, account_metadata_object, std::true_type, std::true_type /* enable no undo remove */ >
@@ -957,13 +942,13 @@ namespace hive { namespace chain {
 FC_REFLECT( hive::chain::account_object,
           (id)
           (block_number)
-          (recovery)(assets)(mrc)(time)(misc)(delayed_votes)
+          (recovery)(assets)(mrc)(time)(misc)(dvw)
         )
 
 CHAINBASE_SET_INDEX_TYPE( hive::chain::account_object, hive::chain::account_index )
 
 FC_REFLECT( hive::chain::tiny_account_object,
-          (id)(account_id)(name)(proxy)(next_vesting_withdrawal)(governance_vote_expiration_ts)(delayed_votes)
+          (id)(account_id)(name)(proxy)(next_vesting_withdrawal)(governance_vote_expiration_ts)(dvw)
         )
 
 CHAINBASE_SET_INDEX_TYPE( hive::chain::tiny_account_object, hive::chain::tiny_account_index )
