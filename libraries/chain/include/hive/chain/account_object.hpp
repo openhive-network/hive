@@ -39,32 +39,32 @@ namespace hive { namespace chain {
       const account_details::recovery& get_recovery() const { return recovery; }
 
       //tells if account has some designated account that can initiate recovery (if not, top witness can)
-      bool has_recovery_account() const { return recovery.recovery_account != account_id_type(); }
+      bool has_recovery_account() const { return recovery.has_recovery_account(); }
 
       //account's recovery account (if any), that is, an account that can authorize request_account_recovery_operation
-      account_id_type get_recovery_account() const { return recovery.recovery_account; }
+      account_id_type get_recovery_account() const { return recovery.get_recovery_account(); }
 
       //sets new recovery account
       void set_recovery_account(const account_id_type& new_recovery_account)
       {
-        recovery.recovery_account = new_recovery_account;
+        recovery.set_recovery_account( new_recovery_account );
       }
 
       //timestamp of last time account owner authority was successfully recovered
-      time_point_sec get_last_account_recovery_time() const { return recovery.last_account_recovery; }
+      time_point_sec get_last_account_recovery_time() const { return recovery.get_last_account_recovery_time(); }
 
       //sets time of owner authority recovery
       void set_last_account_recovery_time( time_point_sec recovery_time )
       {
-        recovery.last_account_recovery = recovery_time;
+        recovery.set_last_account_recovery_time( recovery_time );
       }
 
       //time from a current block
-      time_point_sec get_block_last_account_recovery_time() const { return recovery.block_last_account_recovery; }
+      time_point_sec get_block_last_account_recovery_time() const { return recovery.get_block_last_account_recovery_time(); }
 
       void set_block_last_account_recovery_time( time_point_sec block_recovery_time )
       {
-        recovery.block_last_account_recovery = block_recovery_time;
+        recovery.set_block_last_account_recovery_time( block_recovery_time );
       }
 
     private:
@@ -76,56 +76,56 @@ namespace hive { namespace chain {
       const account_details::assets& get_assets() const { return assets; }
 
       //liquid HIVE balance
-      const HIVE_asset& get_balance() const { return assets.balance; }
-      void set_balance( const HIVE_asset& value ) { assets.balance = value; }
+      const HIVE_asset& get_balance() const { return assets.get_balance(); }
+      void set_balance( const HIVE_asset& value ) { assets.set_balance( value ); }
       //HIVE balance in savings
-      const HIVE_asset& get_savings() const { return assets.savings_balance; }
-      void set_savings( const HIVE_asset& value ) { assets.savings_balance = value; }
+      const HIVE_asset& get_savings() const { return assets.get_savings(); }
+      void set_savings( const HIVE_asset& value ) { assets.set_savings( value ); }
       //unclaimed HIVE rewards
-      const HIVE_asset& get_rewards() const { return assets.reward_hive_balance; }
-      const void set_rewards( const HIVE_asset& value ) { assets.reward_hive_balance = value; }
+      const HIVE_asset& get_rewards() const { return assets.get_rewards(); }
+      const void set_rewards( const HIVE_asset& value ) { assets.set_rewards( value ); }
 
       //liquid HBD balance
-      const HBD_asset& get_hbd_balance() const { return assets.hbd_balance; }
-      void set_hbd_balance( const HBD_asset& value ) { assets.hbd_balance = value; }
+      const HBD_asset& get_hbd_balance() const { return assets.get_hbd_balance(); }
+      void set_hbd_balance( const HBD_asset& value ) { assets.set_hbd_balance( value ); }
       //HBD balance in savings
-      const HBD_asset& get_hbd_savings() const { return assets.savings_hbd_balance; }
-      const void set_hbd_savings( const HBD_asset& value ) { assets.savings_hbd_balance = value; }
+      const HBD_asset& get_hbd_savings() const { return assets.get_hbd_savings(); }
+      const void set_hbd_savings( const HBD_asset& value ) { assets.set_hbd_savings( value ); }
       //unclaimed HBD rewards
-      const HBD_asset& get_hbd_rewards() const { return assets.reward_hbd_balance; }
-      const void set_hbd_rewards( const HBD_asset& value ) { assets.reward_hbd_balance = value; }
+      const HBD_asset& get_hbd_rewards() const { return assets.get_hbd_rewards(); }
+      const void set_hbd_rewards( const HBD_asset& value ) { assets.set_hbd_rewards( value ); }
 
       //all VESTS held by the account - use other routines to get active VESTS for specific uses
-      const VEST_asset& get_vesting() const { return assets.vesting_shares; }
-      void set_vesting( const VEST_asset& value ) { assets.vesting_shares = value; }
+      const VEST_asset& get_vesting() const { return assets.get_vesting(); }
+      void set_vesting( const VEST_asset& value ) { assets.set_vesting( value ); }
 
       //VESTS that were delegated to other accounts
-      const VEST_asset& get_delegated_vesting() const { return assets.delegated_vesting_shares; }
-      const void set_delegated_vesting( const VEST_asset& value ) { assets.delegated_vesting_shares = value; }
+      const VEST_asset& get_delegated_vesting() const { return assets.get_delegated_vesting(); }
+      const void set_delegated_vesting( const VEST_asset& value ) { assets.set_delegated_vesting( value ); }
       //VESTS that were borrowed from other accounts
-      const VEST_asset& get_received_vesting() const { return assets.received_vesting_shares; }
-      const void set_received_vesting( const VEST_asset& value ) { assets.received_vesting_shares = value; }
+      const VEST_asset& get_received_vesting() const { return assets.get_received_vesting(); }
+      const void set_received_vesting( const VEST_asset& value ) { assets.set_received_vesting( value ); }
       //whole remainder of active power down (zero when not active)
-      share_type get_total_vesting_withdrawal() const { return assets.to_withdraw.amount - assets.withdrawn.amount; }
-      const VEST_asset& get_vesting_withdraw_rate() const { return assets.vesting_withdraw_rate; }
-      const void set_vesting_withdraw_rate( const VEST_asset& value ) { assets.vesting_withdraw_rate = value; }
+      share_type get_total_vesting_withdrawal() const { return assets.get_total_vesting_withdrawal(); }
+      const VEST_asset& get_vesting_withdraw_rate() const { return assets.get_vesting_withdraw_rate(); }
+      const void set_vesting_withdraw_rate( const VEST_asset& value ) { assets.set_vesting_withdraw_rate( value ); }
 
       //unclaimed VESTS rewards
-      const VEST_asset& get_vest_rewards() const { return assets.reward_vesting_balance; }
-      const void set_vest_rewards( const VEST_asset& value ) { assets.reward_vesting_balance = value; }
+      const VEST_asset& get_vest_rewards() const { return assets.get_vest_rewards(); }
+      const void set_vest_rewards( const VEST_asset& value ) { assets.set_vest_rewards( value ); }
       //value of unclaimed VESTS rewards in HIVE (HIVE held on global balance)
-      const HIVE_asset& get_vest_rewards_as_hive() const { return assets.reward_vesting_hive; }
-      const void set_vest_rewards_as_hive( const HIVE_asset& value ) { assets.reward_vesting_hive = value; }
+      const HIVE_asset& get_vest_rewards_as_hive() const { return assets.get_vest_rewards_as_hive(); }
+      const void set_vest_rewards_as_hive( const HIVE_asset& value ) { assets.set_vest_rewards_as_hive( value ); }
 
-      const HIVE_asset& get_curation_rewards() const { return assets.curation_rewards; }
-      void set_curation_rewards( const HIVE_asset& value ) { assets.curation_rewards = value; }
-      const HIVE_asset& get_posting_rewards() const { return assets.posting_rewards; }
-      void set_posting_rewards( const HIVE_asset& value ) { assets.posting_rewards = value; }
+      const HIVE_asset& get_curation_rewards() const { return assets.get_curation_rewards(); }
+      void set_curation_rewards( const HIVE_asset& value ) { assets.set_curation_rewards( value ); }
+      const HIVE_asset& get_posting_rewards() const { return assets.get_posting_rewards(); }
+      void set_posting_rewards( const HIVE_asset& value ) { assets.set_posting_rewards( value ); }
 
-      const VEST_asset& get_withdrawn() const { return assets.withdrawn; }
-      const void set_withdrawn( const VEST_asset& value ) { assets.withdrawn = value; }
-      const VEST_asset& get_to_withdraw() const { return assets.to_withdraw; }
-      const void set_to_withdraw( const VEST_asset& value ) { assets.to_withdraw = value; }
+      const VEST_asset& get_withdrawn() const { return assets.get_withdrawn(); }
+      const void set_withdrawn( const VEST_asset& value ) { assets.set_withdrawn( value ); }
+      const VEST_asset& get_to_withdraw() const { return assets.get_to_withdraw(); }
+      const void set_to_withdraw( const VEST_asset& value ) { assets.set_to_withdraw( value ); }
 
     private:
 
@@ -135,17 +135,17 @@ namespace hive { namespace chain {
 
       const account_details::manabars_rc& get_mrc() const { return mrc; }
 
-      share_type  get_rc_adjustment() const { return mrc.rc_adjustment; }
-      void set_rc_adjustment( const share_type& value ) { mrc.rc_adjustment = value; }
+      share_type get_rc_adjustment() const { return mrc.get_rc_adjustment(); }
+      void set_rc_adjustment( const share_type& value ) { mrc.set_rc_adjustment( value ); }
 
-      share_type  get_delegated_rc() const { return mrc.delegated_rc; }
-      void set_delegated_rc( const share_type& value ) { mrc.delegated_rc = value; }
+      share_type get_delegated_rc() const { return mrc.get_delegated_rc(); }
+      void set_delegated_rc( const share_type& value ) { mrc.set_delegated_rc( value ); }
 
-      share_type  get_received_rc() const { return mrc.received_rc; }
-      void set_received_rc( const share_type& value ) { mrc.received_rc = value; }
+      share_type get_received_rc() const { return mrc.get_received_rc(); }
+      void set_received_rc( const share_type& value ) { mrc.set_received_rc( value ); }
 
-      share_type  get_last_max_rc() const { return mrc.last_max_rc; }
-      void set_last_max_rc( const share_type& value ) { mrc.last_max_rc = value; }
+      share_type get_last_max_rc() const { return mrc.get_last_max_rc(); }
+      void set_last_max_rc( const share_type& value ) { mrc.set_last_max_rc( value ); }
 
       //effective balance of VESTS for RC calculation optionally excluding part that cannot be delegated
       share_type get_maximum_rc( bool only_delegable = false ) const
@@ -153,14 +153,14 @@ namespace hive { namespace chain {
         return mrc.get_maximum_rc( get_effective_vesting_shares(), only_delegable );
       }
 
-      util::manabar& get_rc_manabar() { return mrc.rc_manabar; };
-      const util::manabar& get_rc_manabar() const { return mrc.rc_manabar; };
+      util::manabar& get_rc_manabar() { return mrc.get_rc_manabar(); };
+      const util::manabar& get_rc_manabar() const { return mrc.get_rc_manabar(); };
 
-      util::manabar& get_voting_manabar() { return mrc.voting_manabar; };
-      const util::manabar& get_voting_manabar() const { return mrc.voting_manabar; };
+      util::manabar& get_voting_manabar() { return mrc.get_voting_manabar(); };
+      const util::manabar& get_voting_manabar() const { return mrc.get_voting_manabar(); };
 
-      util::manabar& get_downvote_manabar() { return mrc.downvote_manabar; };
-      const util::manabar& get_downvote_manabar() const { return mrc.downvote_manabar; };
+      util::manabar& get_downvote_manabar() { return mrc.get_downvote_manabar(); };
+      const util::manabar& get_downvote_manabar() const { return mrc.get_downvote_manabar(); };
 
     private:
 
@@ -170,41 +170,45 @@ namespace hive { namespace chain {
 
       const account_details::time& get_time() const { return time; }
 
-      uint128_t get_hbd_seconds() const { return time.hbd_seconds; }
-      void set_hbd_seconds( const uint128_t& value ) { time.hbd_seconds = value; }
+      uint128_t get_hbd_seconds() const { return time.get_hbd_seconds(); }
+      void set_hbd_seconds( const uint128_t& value ) { time.set_hbd_seconds( value ); }
 
-      uint128_t get_savings_hbd_seconds() const { return time.savings_hbd_seconds; }
-      void set_savings_hbd_seconds( const uint128_t& value ) { time.savings_hbd_seconds = value; }
+      uint128_t get_savings_hbd_seconds() const { return time.get_savings_hbd_seconds(); }
+      void set_savings_hbd_seconds( const uint128_t& value ) { time.set_savings_hbd_seconds( value ); }
 
-      time_point_sec get_hbd_seconds_last_update() const { return time.hbd_seconds_last_update; }
-      void set_hbd_seconds_last_update( const time_point_sec& value ) { time.hbd_seconds_last_update = value; }
+      time_point_sec get_hbd_seconds_last_update() const { return time.get_hbd_seconds_last_update(); }
+      void set_hbd_seconds_last_update( const time_point_sec& value ) { time.set_hbd_seconds_last_update( value ); }
 
-      time_point_sec get_hbd_last_interest_payment() const { return time.hbd_last_interest_payment; }
-      void set_hbd_last_interest_payment( const time_point_sec& value ) { time.hbd_last_interest_payment = value; }
+      time_point_sec get_hbd_last_interest_payment() const { return time.get_hbd_last_interest_payment(); }
+      void set_hbd_last_interest_payment( const time_point_sec& value ) { time.set_hbd_last_interest_payment( value ); }
 
-      time_point_sec get_savings_hbd_seconds_last_update() const { return time.savings_hbd_seconds_last_update; }
-      void set_savings_hbd_seconds_last_update( const time_point_sec& value ) { time.savings_hbd_seconds_last_update = value; }
+      time_point_sec get_savings_hbd_seconds_last_update() const { return time.get_savings_hbd_seconds_last_update(); }
+      void set_savings_hbd_seconds_last_update( const time_point_sec& value ) { time.set_savings_hbd_seconds_last_update( value ); }
 
-      time_point_sec get_savings_hbd_last_interest_payment() const { return time.savings_hbd_last_interest_payment; }
-      void set_savings_hbd_last_interest_payment( const time_point_sec& value ) { time.savings_hbd_last_interest_payment = value; }
+      time_point_sec get_savings_hbd_last_interest_payment() const { return time.get_savings_hbd_last_interest_payment(); }
+      void set_savings_hbd_last_interest_payment( const time_point_sec& value ) { time.set_savings_hbd_last_interest_payment( value ); }
 
-      time_point_sec get_last_account_update() const { return time.last_account_update; }
-      void set_last_account_update( const time_point_sec& value ) { time.last_account_update = value; }
+      time_point_sec get_last_account_update() const { return time.get_last_account_update(); }
+      void set_last_account_update( const time_point_sec& value ) { time.set_last_account_update( value ); }
 
-      time_point_sec get_last_post() const { return time.last_post; }
-      void set_last_post( const time_point_sec& value ) { time.last_post = value; }
+      time_point_sec get_last_post() const { return time.get_last_post(); }
+      void set_last_post( const time_point_sec& value ) { time.set_last_post( value ); }
 
-      time_point_sec get_last_root_post() const { return time.last_root_post; }
-      void set_last_root_post( const time_point_sec& value ) { time.last_root_post = value; }
+      time_point_sec get_last_root_post() const { return time.get_last_root_post(); }
+      void set_last_root_post( const time_point_sec& value ) { time.set_last_root_post( value ); }
 
-      time_point_sec get_last_post_edit() const { return time.last_post_edit; }
-      void set_last_post_edit( const time_point_sec& value ) { time.last_post_edit = value; }
+      time_point_sec get_last_post_edit() const { return time.get_last_post_edit(); }
+      void set_last_post_edit( const time_point_sec& value ) { time.set_last_post_edit( value ); }
 
-      time_point_sec get_last_vote_time() const { return time.last_vote_time; }
-      void set_last_vote_time( const time_point_sec& value ) { time.last_vote_time = value; }
+      time_point_sec get_last_vote_time() const { return time.get_last_vote_time(); }
+      void set_last_vote_time( const time_point_sec& value ) { time.set_last_vote_time( value ); }
 
       //tells if account has active power down
-      bool has_active_power_down() const { return time.next_vesting_withdrawal != fc::time_point_sec::maximum(); }
+      bool has_active_power_down() const { return time.has_active_power_down(); }
+
+      time_point_sec get_next_vesting_withdrawal() const { return time.get_next_vesting_withdrawal(); }
+      void set_next_vesting_withdrawal( const time_point_sec& value ) { time.set_next_vesting_withdrawal( value ); }
+
       //value of active step of pending power down (or zero)
       share_type get_active_next_vesting_withdrawal() const
       {
@@ -213,8 +217,6 @@ namespace hive { namespace chain {
         else
           return 0;
       }
-      time_point_sec get_next_vesting_withdrawal() const { return time.next_vesting_withdrawal; }
-      void set_next_vesting_withdrawal( const time_point_sec& value ) { time.next_vesting_withdrawal = value; }
 
     private:
 
@@ -224,121 +226,91 @@ namespace hive { namespace chain {
 
       const account_details::misc& get_misc() const { return misc; }
 
-      bool can_vote() const { return misc.can_vote; }
-      void set_can_vote( const bool& value ) { misc.can_vote = value; }
+      bool can_vote() const { return misc.can_vote(); }
+      void set_can_vote( const bool& value ) { misc.set_can_vote( value ); }
 
-      uint16_t get_witnesses_voted_for() const { return misc.witnesses_voted_for; }
-      void set_witnesses_voted_for( const uint16_t& value ) { misc.witnesses_voted_for = value; }
+      uint16_t get_witnesses_voted_for() const { return misc.get_witnesses_voted_for(); }
+      void set_witnesses_voted_for( const uint16_t& value ) { misc.set_witnesses_voted_for( value ); }
 
-      fc::array<share_type, HIVE_MAX_PROXY_RECURSION_DEPTH>& get_proxied_vsf_votes() { return misc.proxied_vsf_votes; }
-      const fc::array<share_type, HIVE_MAX_PROXY_RECURSION_DEPTH>& get_proxied_vsf_votes() const { return misc.proxied_vsf_votes; }
+      fc::array<share_type, HIVE_MAX_PROXY_RECURSION_DEPTH>& get_proxied_vsf_votes() { return misc.get_proxied_vsf_votes(); }
+      const fc::array<share_type, HIVE_MAX_PROXY_RECURSION_DEPTH>& get_proxied_vsf_votes() const { return misc.get_proxied_vsf_votes(); }
 
-      ushare_type get_sum_delayed_votes() const { return misc.sum_delayed_votes; }
-      ushare_type& get_sum_delayed_votes() { return misc.sum_delayed_votes; }
-      void set_sum_delayed_votes( const ushare_type& value ) { misc.sum_delayed_votes = value; }
+      ushare_type get_sum_delayed_votes() const { return misc.get_sum_delayed_votes(); }
+      ushare_type& get_sum_delayed_votes() { return misc.get_sum_delayed_votes(); }
+      void set_sum_delayed_votes( const ushare_type& value ) { misc.set_sum_delayed_votes( value ); }
 
-      uint8_t get_savings_withdraw_requests() const { return misc.savings_withdraw_requests; }
-      void set_savings_withdraw_requests( const uint8_t& value ) { misc.savings_withdraw_requests = value; }
+      uint8_t get_savings_withdraw_requests() const { return misc.get_savings_withdraw_requests(); }
+      void set_savings_withdraw_requests( const uint8_t& value ) { misc.set_savings_withdraw_requests( value ); }
 
-      uint16_t get_pending_escrow_transfers() const { return misc.pending_escrow_transfers; }
-      void set_pending_escrow_transfers( const uint16_t& value ) { misc.pending_escrow_transfers = value; }
+      uint16_t get_pending_escrow_transfers() const { return misc.get_pending_escrow_transfers(); }
+      void set_pending_escrow_transfers( const uint16_t& value ) { misc.set_pending_escrow_transfers( value ); }
 
-      uint32_t get_post_bandwidth() const { return misc.post_bandwidth; }
-      void set_post_bandwidth( const uint32_t& value ) { misc.post_bandwidth = value; }
+      uint32_t get_post_bandwidth() const { return misc.get_post_bandwidth(); }
+      void set_post_bandwidth( const uint32_t& value ) { misc.set_post_bandwidth( value ); }
 
-      share_type get_pending_claimed_accounts() const { return misc.pending_claimed_accounts; }
-      void set_pending_claimed_accounts( const share_type& value ) { misc.pending_claimed_accounts = value; }
+      share_type get_pending_claimed_accounts() const { return misc.get_pending_claimed_accounts(); }
+      void set_pending_claimed_accounts( const share_type& value ) { misc.set_pending_claimed_accounts( value ); }
 
-      uint16_t get_open_recurrent_transfers() const { return misc.open_recurrent_transfers; }
-      void set_open_recurrent_transfers( const uint16_t& value ) { misc.open_recurrent_transfers = value; }
+      uint16_t get_open_recurrent_transfers() const { return misc.get_open_recurrent_transfers(); }
+      void set_open_recurrent_transfers( const uint16_t& value ) { misc.set_open_recurrent_transfers( value ); }
 
-      uint32_t get_post_count() const { return misc.post_count; }
-      void set_post_count( const uint32_t& value ) { misc.post_count = value; }
+      uint32_t get_post_count() const { return misc.get_post_count(); }
+      void set_post_count( const uint32_t& value ) { misc.set_post_count( value ); }
 
-      uint16_t get_withdraw_routes() const { return misc.withdraw_routes; }
-      void set_withdraw_routes( const uint16_t& value ) { misc.withdraw_routes = value; }
+      uint16_t get_withdraw_routes() const { return misc.get_withdraw_routes(); }
+      void set_withdraw_routes( const uint16_t& value ) { misc.set_withdraw_routes( value ); }
 
-      public_key_type get_memo_key() const { return misc.memo_key; }
-      void set_memo_key( const public_key_type& value ) { misc.memo_key = value; }
+      public_key_type get_memo_key() const { return misc.get_memo_key(); }
+      void set_memo_key( const public_key_type& value ) { misc.set_memo_key( value ); }
+
+      //gives name of the account
+      const account_name_type& get_name() const { return misc.get_name(); }
+      //account creation time
+      time_point_sec get_creation_time() const { return misc.get_creation_time(); }
+      //tells if account was created through pow/pow2 mining operation or is one of builtin accounts created during genesis
+      //account creation time according to a block
+      time_point_sec get_block_creation_time() const { return misc.get_block_creation_time(); }
+      bool was_mined() const { return misc.was_mined(); }
+
+      //tells if account has some other account casting governance votes in its name
+      bool has_proxy() const { return misc.get_proxy() != account_id_type(); }
+      //account's proxy (if any)
+      account_id_type get_proxy() const { return misc.get_proxy(); }
+      //sets proxy to neutral (account will vote for itself)
+      void clear_proxy() { misc.clear_proxy(); }
+      //sets proxy to given account
+      void set_proxy(const account_object& new_proxy)
+      {
+        FC_ASSERT( &new_proxy != this );
+        misc.set_proxy( new_proxy.get_id() );
+      }
+
+      time_point_sec get_governance_vote_expiration_ts() const{ return misc.get_governance_vote_expiration_ts(); }
+
+      void set_governance_vote_expired() { misc.set_governance_vote_expired(); }
+
+      void update_governance_vote_expiration_ts(const time_point_sec vote_time) { misc.update_governance_vote_expiration_ts( vote_time ); }
+
+      // governance vote power of this account does not include "delayed votes"
+      share_type get_direct_governance_vote_power() const{ return misc.get_direct_governance_vote_power( get_vesting() ); }
+
+      /// This function should be used only when the account votes for a witness directly
+      share_type get_governance_vote_power() const { return misc.get_governance_vote_power( get_vesting() ); }
+      share_type proxied_vsf_votes_total() const { return misc.proxied_vsf_votes_total(); }
+
+#ifdef IS_TEST_NET
+      //ABW: it is needed for some low level tests (they would need to be rewritten)
+      void set_name( const account_name_type& new_name ) { misc.set_name( new_name ); }
+#endif
 
       //effective balance of VESTS including delegations and optionally excluding active step of pending power down
       share_type get_effective_vesting_shares( bool excludeWeeklyPowerDown = true ) const
       {
         share_type total = get_vesting().amount - get_delegated_vesting().amount + get_received_vesting().amount;
-        if( excludeWeeklyPowerDown && time.next_vesting_withdrawal != fc::time_point_sec::maximum() )
+        if( excludeWeeklyPowerDown && time.get_next_vesting_withdrawal() != fc::time_point_sec::maximum() )
           total -= get_active_next_vesting_withdrawal();
         return total;
       }
-
-      //gives name of the account
-      const account_name_type& get_name() const { return misc.name; }
-      //account creation time
-      time_point_sec get_creation_time() const { return misc.created; }
-      //tells if account was created through pow/pow2 mining operation or is one of builtin accounts created during genesis
-      //account creation time according to a block
-      time_point_sec get_block_creation_time() const { return misc.block_created; }
-      bool was_mined() const { return misc.mined; }
-
-      //tells if account has some other account casting governance votes in its name
-      bool has_proxy() const { return misc.proxy != account_id_type(); }
-      //account's proxy (if any)
-      account_id_type get_proxy() const { return misc.proxy; }
-      //sets proxy to neutral (account will vote for itself)
-      void clear_proxy() { misc.proxy = account_id_type(); }
-      //sets proxy to given account
-      void set_proxy(const account_object& new_proxy)
-      {
-        FC_ASSERT( &new_proxy != this );
-        misc.proxy = new_proxy.get_id();
-      }
-
-      time_point_sec get_governance_vote_expiration_ts() const
-      {
-        return misc.governance_vote_expiration_ts;
-      }
-
-      void set_governance_vote_expired()
-      {
-        misc.governance_vote_expiration_ts = time_point_sec::maximum();
-      }
-
-      void update_governance_vote_expiration_ts(const time_point_sec vote_time)
-      {
-        misc.governance_vote_expiration_ts = vote_time + HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD;
-        if (misc.governance_vote_expiration_ts < HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP)
-        {
-          const int64_t DIVIDER = HIVE_HARDFORK_1_25_MAX_OLD_GOVERNANCE_VOTE_EXPIRE_SHIFT.to_seconds();
-          misc.governance_vote_expiration_ts = HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP + fc::seconds(misc.governance_vote_expiration_ts.sec_since_epoch() % DIVIDER);
-        }
-      }
-
-      // governance vote power of this account does not include "delayed votes"
-      share_type get_direct_governance_vote_power() const
-      {
-        FC_ASSERT( misc.sum_delayed_votes.value <= get_vesting().amount, "",
-                ( "sum_delayed_votes",     misc.sum_delayed_votes )
-                ( "vesting_shares.amount", get_vesting().amount )
-                ( "account",               misc.name ) );
-  
-        return asset( get_vesting().amount - misc.sum_delayed_votes.value, VESTS_SYMBOL ).amount;
-      }
-
-      /// This function should be used only when the account votes for a witness directly
-      share_type get_governance_vote_power() const
-      {
-        return std::accumulate( misc.proxied_vsf_votes.begin(), misc.proxied_vsf_votes.end(),
-          get_direct_governance_vote_power() );
-      }
-      share_type proxied_vsf_votes_total() const
-      {
-        return std::accumulate( misc.proxied_vsf_votes.begin(), misc.proxied_vsf_votes.end(),
-          share_type() );
-      }
-
-#ifdef IS_TEST_NET
-      //ABW: it is needed for some low level tests (they would need to be rewritten)
-      void set_name( const account_name_type& new_name ) { misc.name = new_name; }
-#endif
 
     private:
 
@@ -346,8 +318,8 @@ namespace hive { namespace chain {
 
     public:
 
-      account_details::t_delayed_votes& get_delayed_votes() { return dvw.delayed_votes; }
-      const account_details::t_delayed_votes& get_delayed_votes() const { return dvw.delayed_votes; }
+      account_details::t_delayed_votes& get_delayed_votes() { return dvw.get_delayed_votes(); }
+      const account_details::t_delayed_votes& get_delayed_votes() const { return dvw.get_delayed_votes(); }
 
       bool has_delayed_votes() const { return dvw.has_delayed_votes(); }
 
