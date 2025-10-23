@@ -168,9 +168,9 @@ export interface IBeekeeperUnlockedWallet extends IWallet {
   decryptData(content: string, key: TPublicKey, anotherKey?: TPublicKey): string;
 
   /**
-   * Lists all of the public keys
+   * Lists all of the public keys inside this wallet
    *
-   * @returns {TPublicKey[]} a set of all keys for all unlocked wallets
+   * @returns {TPublicKey[]} a set of all keys for this wallet
    *
    * @throws {BeekeeperError} on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
    */
