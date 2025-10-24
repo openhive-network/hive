@@ -37,22 +37,53 @@ struct rocksdb_storage_writer<account_object, rocksdb_account_object, account_na
   {
     rocksdb_account_object _obj( object );
 
-    auto _serialized_buffer_id = dump( _obj.id );
-    auto _serialized_buffer_recovery = dump( _obj.recovery );
-    auto _serialized_buffer_assets = dump( _obj.assets );
-    auto _serialized_buffer_mrc = dump( _obj.mrc );
-    auto _serialized_buffer_time = dump( _obj.time );
-    auto _serialized_buffer_misc = dump( _obj.misc );
-    auto _serialized_buffer_delayed_votes = dump( _obj.delayed_votes );
-
     rocksdb::WideColumns _columns;
+
+    auto _serialized_buffer_id = dump( _obj.id );
     _columns.emplace_back( "id", Slice( _serialized_buffer_id.data(), _serialized_buffer_id.size() ) );
-    _columns.emplace_back( "recovery", Slice( _serialized_buffer_recovery.data(), _serialized_buffer_recovery.size() ) );
-    _columns.emplace_back( "assets", Slice( _serialized_buffer_assets.data(), _serialized_buffer_assets.size() ) );
-    _columns.emplace_back( "mrc", Slice( _serialized_buffer_mrc.data(), _serialized_buffer_mrc.size() ) );
-    _columns.emplace_back( "time", Slice( _serialized_buffer_time.data(), _serialized_buffer_time.size() ) );
-    _columns.emplace_back( "misc", Slice( _serialized_buffer_misc.data(), _serialized_buffer_misc.size() ) );
-    _columns.emplace_back( "delayed_votes", Slice( _serialized_buffer_delayed_votes.data(), _serialized_buffer_delayed_votes.size() ) );
+
+    serialize_buffer_t _serialized_buffer_recovery;
+    serialize_buffer_t _serialized_buffer_assets;
+    serialize_buffer_t _serialized_buffer_mrc;
+    serialize_buffer_t _serialized_buffer_time;
+    serialize_buffer_t _serialized_buffer_misc;
+    serialize_buffer_t _serialized_buffer_delayed_votes;
+
+    if( _obj.recovery.changed )
+    {
+      _serialized_buffer_recovery = dump( _obj.recovery );
+      _columns.emplace_back( "recovery", Slice( _serialized_buffer_recovery.data(), _serialized_buffer_recovery.size() ) );
+    }
+
+    if( _obj.recovery.changed )
+    {
+      _serialized_buffer_assets = dump( _obj.assets );
+      _columns.emplace_back( "assets", Slice( _serialized_buffer_assets.data(), _serialized_buffer_assets.size() ) );
+    }
+
+    if( _obj.recovery.changed )
+    {
+      _serialized_buffer_mrc = dump( _obj.mrc );
+      _columns.emplace_back( "mrc", Slice( _serialized_buffer_mrc.data(), _serialized_buffer_mrc.size() ) );
+    }
+
+    if( _obj.recovery.changed )
+    {
+      _serialized_buffer_time = dump( _obj.time );
+      _columns.emplace_back( "time", Slice( _serialized_buffer_time.data(), _serialized_buffer_time.size() ) );
+    }
+
+    if( _obj.recovery.changed )
+    {
+      _serialized_buffer_misc = dump( _obj.misc );
+      _columns.emplace_back( "misc", Slice( _serialized_buffer_misc.data(), _serialized_buffer_misc.size() ) );
+    }
+
+    if( _obj.recovery.changed )
+    {
+      _serialized_buffer_delayed_votes = dump( _obj.delayed_votes );
+      _columns.emplace_back( "delayed_votes", Slice( _serialized_buffer_delayed_votes.data(), _serialized_buffer_delayed_votes.size() ) );
+    }
 
     provider->put_entity( column_type, key, _columns );
   }

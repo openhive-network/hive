@@ -29,8 +29,6 @@ namespace hive { namespace chain { namespace account_details {
     void maybe_changed() const
     {
     }
-
-    bool is_changed() const { return changed; }
   };
 
   struct recovery: public changeable
