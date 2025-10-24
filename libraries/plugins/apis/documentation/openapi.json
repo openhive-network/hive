@@ -21227,7 +21227,6 @@
                     "hive_revision",
                     "fc_revision",
                     "chain_id",
-                    "haf_revision",
                     "node_type"
                 ]
             },
