@@ -44,7 +44,7 @@ The technical development of the Hive blockchain is carried out by a founding de
 
 # Installation
 
-Getting started with Hive is fairly simple. You can either choose to use pre-built Docker images, build with Docker manually, or build from source directly. All steps have been documented and while many different OSes are supported, the easiest one is Ubuntu 22.04 LTS.
+Getting started with Hive is fairly simple. You can either choose to use pre-built Docker images, build with Docker manually, or build from source directly. All steps have been documented and while many different OSes are supported, the easiest one is Ubuntu 24.04 LTS.
 
 ## Quickstart
 
@@ -60,10 +60,10 @@ However, if you prefer to build from source, we also provide [build instructions
 
 Building a `hived` docker image is described in detail here: [Building under Docker](doc/building.md#building-under-docker).
 
-If you'd like to use our pre-built official binary images, download them from the Docker Hub registry with the specific version tag. For example, to use version 1.27.7, run:
+If you'd like to use our pre-built official binary images, download them from the Docker Hub registry with the specific version tag. For example, to use version 1.28.0, run:
 
 ```
-docker pull hiveio/hive:1.27.7
+docker pull hiveio/hive:1.28.0
 ```
 
 Please note that the `latest` tag is not supported; you must explicitly specify the version tag to avoid issues with new versions that require replay.
@@ -111,8 +111,8 @@ command option set to a whitespace-delimited list of seed nodes (with port).
 ## System Requirements
 
 Running a Hive consensus node requires the following hardware resources:
-- data directory to hold a blockchain file(s) (~550GB of disk storage is required)
-- storage to hold a shared memory file (~30GB of memory is required at the moment to store state data)
+- data directory to hold a blockchain file(s) (~600GB of disk storage is required)
+- storage to hold a shared memory file (~12GB of memory is required at the moment to store state data)
 
 # No Support & No Warranty
 
