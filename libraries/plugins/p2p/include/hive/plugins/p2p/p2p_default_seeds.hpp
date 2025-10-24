@@ -14,7 +14,6 @@ const std::vector< std::string > default_seeds = {
   "hive-seed.arcange.eu:2001",           // arcange
   "anyx.io:2001",                        // anyx
   "hived.splinterlands.com:2001",        // splinterlands
-  "hive-api.3speak.tv:2001",             // threespeak
   "node.mahdiyari.info:2001",            // mahdiyari
   "hive-seed.lukestokes.info:2001",      // lukestokes.mhth
   "seed.deathwing.me:2001",              // deathwing
