@@ -1,13 +1,13 @@
 Exchange Quickstart
 -------------------
 
-System Requirements: A dedicated server or virtual machine with a minimum of 24GB of RAM, and at least 600GB of fast **local**  storage (such as SSD or NVMe). Hive is one of the most active blockchains in the world and handles an incredibly large amount of transactions per second, as such, it requires fast storage to run efficiently.
+System Requirements: A dedicated server or virtual machine with a minimum of 12GB of RAM, and at least 600GB of fast **local**  storage (such as SSD or NVMe). Hive is one of the most active blockchains in the world and handles an incredibly large amount of transactions per second, as such, it requires fast storage to run efficiently.
 
 With the right equipment and technical configuration a replay should take **no longer than 36 hours**.  If recommendations are not followed precisely, the replay can drag on for days or even weeks with significant slowdowns towards the end.
 
 Physically attached NVMe will ensure an optimal replay time. NVMe over a NAS or some kind of network storage backed by NVMe will often have much higher latency. As an example, AWS EBS is not performant enough. A good recommended instance in AWS is the `i3.xlarge`, it comes with a physically attached NVMe drive (it must be formatted and mounted on instance launch).
 
-You can save a lot of time by replaying from an existing `block_log`. If you don't have one already, you can download a recent `block_log` from [here](https://gtg.openhive.network/get/blockchain)
+You can save some time by replaying from an existing `block_log`. If you don't have one already, you can download a recent `block_log` from [here](https://gtg.openhive.network/get/blockchain)
 Put it in the `blockchain` directory within data dir, and use the `--replay-blockchain` command line option.
 
 We recommend using docker to both build and run Hive for exchanges. Docker is the world's leading containerization platform and using it guarantees that your build and run environment is identical to what our developers use. You can still build from source and you can keep both the blockchain data and wallet data outside of the docker container. The instructions below will show you how to do this in just a few easy steps.

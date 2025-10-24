@@ -8,7 +8,7 @@ By default, Ninja is used as the build executor. Ninja supports parallel compila
 
 If your build system has a lot of cores and not a lot of memory, you may need to explicitly limit the number of parallel build steps allowed (e.g `ninja -j4` to limit to 4 simultaneous compiles).
 
-Only Linux-based systems are supported as a build and runtime platform. Currently Ubuntu 22.04 LTS is the minimum base OS supported by the build and runtime processes. The build process requires tools available in the default Ubuntu package repository.
+Only Linux-based systems are supported as a build and runtime platform. Currently Ubuntu 24.04 LTS is the minimum base OS supported by the build and runtime processes. The build process requires tools available in the default Ubuntu package repository.
 
 ## Getting hive source code
 
