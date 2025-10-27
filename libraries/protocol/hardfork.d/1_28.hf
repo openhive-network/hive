@@ -7,7 +7,7 @@ long next_hf_time();
 #define HIVE_HARDFORK_1_28_TIME (hive::protocol::testnet_blockchain_configuration::configuration_data.get_hf_time(HIVE_HARDFORK_1_28, next_hf_time()))
 #else
 #define HIVE_HARDFORK_1_28_TIME next_hf_time()
-#endif // Saturday, February 8, 2025 13:00:00 UTC
+#endif // Wed Nov 19 2025 13:00:00 GMT+0000
 
 #define HIVE_HARDFORK_1_28_VERSION hive::protocol::hardfork_version( 1, 28 )
 
