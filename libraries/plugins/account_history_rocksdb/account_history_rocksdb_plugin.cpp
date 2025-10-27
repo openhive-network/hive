@@ -131,6 +131,7 @@ public:
 
     _mainDb.add_snapshot_supplement_handler([&](const hive::chain::prepare_snapshot_supplement_notification& note) -> void
     {
+      init();
       _snapshot->save_snapshot(note);
     }, _self, 0);
 
