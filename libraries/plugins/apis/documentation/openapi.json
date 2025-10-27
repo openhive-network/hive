@@ -18796,6 +18796,10 @@
                         "type": "boolean",
                         "description": "Indicates if the node is using an alternate chain ID."
                     },
+                    "HIVE_CUSTOM_OP_BLOCK_LIMIT": {
+                        "type": "integer",
+                        "description": "Custom operation block limit."
+                    },
                     "HIVE_INIT_PRIVATE_KEY": {
                         "type": "string",
                         "description": "The initial private key for the blockchain."
