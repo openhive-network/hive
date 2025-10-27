@@ -1867,7 +1867,7 @@ void chain_plugin::plugin_startup()
 
   if( replay )
   {
-    if (my->load_snapshot)
+    if (my->replay && my->load_snapshot)
     {
       ilog("Looking for snapshot processing requests...");
       my->process_snapshot();
@@ -1878,7 +1878,7 @@ void chain_plugin::plugin_startup()
     ilog( "Replaying..." );
     start = !my->start_replay_processing( reindex_block_writer, get_thread_pool() );
 
-    if (my->dump_snapshot)
+    if (my->replay && my->dump_snapshot)
     {
       ilog("Looking for snapshot processing requests...");
       my->process_snapshot();
