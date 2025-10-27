@@ -18886,11 +18886,11 @@
                         "description": "Constant for 1 percent (basis points)."
                     },
                     "HIVE_ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD": {
-                        "type": "integer",
+                        "$ref": "#/components/schemas/hive_int",
                         "description": "Expiration period for account recovery requests."
                     },
                     "HIVE_ACTIVE_CHALLENGE_COOLDOWN": {
-                        "type": "string",
+                        "$ref": "#/components/schemas/hive_int",
                         "description": "Cooldown period for active authority challenge (in microseconds)."
                     },
                     "HIVE_ADDRESS_PREFIX": {
@@ -19010,11 +19010,11 @@
                         "description": "Content reward percent for HF21."
                     },
                     "HIVE_CONVERSION_DELAY": {
-                        "type": "string",
+                        "$ref": "#/components/schemas/hive_int",
                         "description": "Conversion delay for HBD to HIVE (in microseconds)."
                     },
                     "HIVE_CONVERSION_DELAY_PRE_HF_16": {
-                        "type": "string",
+                        "$ref": "#/components/schemas/hive_int",
                         "description": "Pre-HF16 conversion delay (in microseconds)."
                     },
                     "HIVE_CREATE_ACCOUNT_DELEGATION_RATIO": {
@@ -19294,19 +19294,19 @@
                         "description": "Minimum permlink length."
                     },
                     "HIVE_MIN_REPLY_INTERVAL": {
-                        "type": "integer",
+                        "$ref": "#/components/schemas/hive_int",
                         "description": "Minimum reply interval (microseconds)."
                     },
                     "HIVE_MIN_REPLY_INTERVAL_HF20": {
-                        "type": "integer",
+                        "$ref": "#/components/schemas/hive_int",
                         "description": "Minimum reply interval for HF20 (microseconds)."
                     },
                     "HIVE_MIN_ROOT_COMMENT_INTERVAL": {
-                        "type": "integer",
+                        "$ref": "#/components/schemas/hive_int",
                         "description": "Minimum root comment interval (microseconds)."
                     },
                     "HIVE_MIN_COMMENT_EDIT_INTERVAL": {
-                        "type": "integer",
+                        "$ref": "#/components/schemas/hive_int",
                         "description": "Minimum comment edit interval (microseconds)."
                     },
                     "HIVE_MIN_VOTE_INTERVAL_SEC": {
@@ -19438,7 +19438,7 @@
                         "description": "Savings withdraw request limit."
                     },
                     "HIVE_SAVINGS_WITHDRAW_TIME": {
-                        "type": "string",
+                        "$ref": "#/components/schemas/hive_int",
                         "description": "Savings withdraw time (microseconds)."
                     },
                     "HIVE_HBD_START_PERCENT_HF14": {
@@ -19478,7 +19478,7 @@
                         "description": "Temporary account name."
                     },
                     "HIVE_UPVOTE_LOCKOUT_HF7": {
-                        "type": "integer",
+                        "$ref": "#/components/schemas/hive_int",
                         "description": "Upvote lockout for HF7 (microseconds)."
                     },
                     "HIVE_UPVOTE_LOCKOUT_HF17": {
@@ -19686,7 +19686,7 @@
                         "description": "Global threshold for account removal (basis points)."
                     },
                     "HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD": {
-                        "type": "integer",
+                        "$ref": "#/components/schemas/hive_int",
                         "description": "Governance vote expiration period (in microseconds)."
                     },
                     "HIVE_HBD_HARD_LIMIT": {
@@ -19798,15 +19798,15 @@
                         "description": "Reverse auction window for HF25 in seconds."
                     },
                     "HIVE_UP_TO_DATE_MARGIN__BLOCK_STATS": {
-                        "type": "integer",
+                        "$ref": "#/components/schemas/hive_int",
                         "description": "Margin for block stats to be considered up-to-date."
                     },
                     "HIVE_UP_TO_DATE_MARGIN__FAST_CONFIRM": {
-                        "type": "integer",
+                        "$ref": "#/components/schemas/hive_int",
                         "description": "Margin for fast confirmation to be considered up-to-date."
                     },
                     "HIVE_UP_TO_DATE_MARGIN__PENDING_TXS": {
-                        "type": "integer",
+                        "$ref": "#/components/schemas/hive_int",
                         "description": "Margin for pending transactions to be considered up-to-date."
                     },
                     "HIVE_WITNESS_SHUTDOWN_THRESHOLD": {
