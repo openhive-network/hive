@@ -565,6 +565,25 @@ url = "https://gitlab.syncad.com/api/v4/projects/198/packages/pypi/simple"
 reference = "gitlab-database_api"
 
 [[package]]
+name = "hiveio-rc-api"
+version = "1.27.12rc4.dev16+b487bd9a1"
+description = ""
+optional = false
+python-versions = ">=3.12,<4.0"
+groups = ["main"]
+files = [
+    {file = "hiveio_rc_api-1.27.12rc4.dev16+b487bd9a1-py3-none-any.whl", hash = "sha256:f30a80c28d3c6e1df63acc079fd6e7fd2b92844b7bef76dbcb826e2ff796af92"},
+]
+
+[package.dependencies]
+hiveio-beekeepy = "1.27.12rc1.dev5+843b775"
+
+[package.source]
+type = "legacy"
+url = "https://gitlab.syncad.com/api/v4/projects/198/packages/pypi/simple"
+reference = "gitlab-database_api"
+
+[[package]]
 name = "hiveio-schemas"
 version = "1.27.12rc0"
 description = "Tools for checking if message fits expected format"
@@ -580,18 +599,19 @@ msgspec = "0.18.6"
 
 [[package]]
 name = "hiveio-wax"
-version = "1.27.12rc2.dev7+daf5a82a"
+version = "1.27.12rc4.dev15+f6c9cedf"
 description = ""
 optional = false
 python-versions = ">=3.12,<4.0"
 groups = ["main"]
 files = [
-    {file = "hiveio_wax-1.27.12rc2.dev7+daf5a82a-cp312-cp312-manylinux_2_39_x86_64.whl", hash = "sha256:567b4b4f2d3091a9ea99488cb82215d2634d6d462e51c416af1cbf2aaeca7ab4"},
+    {file = "hiveio_wax-1.27.12rc4.dev15+f6c9cedf-cp312-cp312-manylinux_2_39_x86_64.whl", hash = "sha256:b7f700d99fdc5bf15673eb478377b990f0d77ad18b46ec36816b7b8c2017e3be"},
 ]
 
 [package.dependencies]
 hiveio-database-api = "1.27.12rc4.dev16+b487bd9a1"
 hiveio-network-broadcast-api = "1.27.12rc4.dev16+b487bd9a1"
+hiveio-rc-api = "1.27.12rc4.dev16+b487bd9a1"
 httpx = {version = "0.23.3", extras = ["http2"]}
 loguru = "0.7.2"
 protobuf = "4.24.4"
@@ -1892,7 +1912,7 @@ develop = true
 
 [package.dependencies]
 abstractcp = "0.9.9"
-hiveio-wax = "1.27.12rc2.dev7+daf5a82a"
+hiveio-wax = "1.27.12rc4.dev15+f6c9cedf"
 loguru = "0.7.2"
 python-dateutil = "2.8.2"
 
