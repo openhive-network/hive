@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import os
-import subprocess
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Final
 
 import pytest
 
 import test_tools as tt
+from hive_local_tools.constants import BASE_ACCOUNTS
 from hive_local_tools.functional.python.compare_snapshot import compare_snapshots_contents
 from beekeepy.exceptions import FailedToStartExecutableError
 
@@ -136,3 +136,34 @@ def test_snapshots_has_less_plugins(block_log: Path, block_log_length: int) -> N
     log = (node.directory / "stderr.log").read_text()
     assert error_msg_1 in log
     assert error_msg_2 in log
+
+
+def test_dump_snapshot_on_enabled_account_history_plugin_node() -> None:
+    number_of_accounts: Final[int] = 10
+
+    orig_node = tt.InitNode()
+    orig_node.config.plugin.append("account_history_api")
+    orig_node.run()
+
+    wallet = tt.Wallet(attach_to=orig_node)
+    wallet.create_accounts(number_of_accounts=number_of_accounts, name_base="account")
+
+    assert (
+        len(orig_node.api.database.list_accounts(start="", limit=100, order="by_name").accounts)
+        == len(BASE_ACCOUNTS) + number_of_accounts
+    )
+
+    hb = orig_node.get_last_block_number()
+    orig_node.wait_for_irreversible_block(hb)
+
+    snap_0 = orig_node.dump_snapshot(close=True)
+
+    snap_node = tt.InitNode()
+    snap_node.config.plugin.append("account_history_api")
+    snap_node.run(load_snapshot_from=snap_0)
+    snap_node.wait_for_block_with_number(hb + 5)
+
+    assert (
+        len(snap_node.api.database.list_accounts(start="", limit=100, order="by_name").accounts)
+        == len(BASE_ACCOUNTS) + number_of_accounts
+    )
