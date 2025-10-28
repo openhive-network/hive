@@ -2971,7 +2971,7 @@ BOOST_AUTO_TEST_CASE( account_subsidy_witness_limits )
   {
     BOOST_TEST_MESSAGE( "Testing: account_subsidy_witness_limits" );
 
-    ACTORS( (alice) )
+    ACTORS( (alice)(bob) )
     generate_block();
 
     set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
@@ -3015,21 +3015,37 @@ BOOST_AUTO_TEST_CASE( account_subsidy_witness_limits )
     BOOST_CHECK( db->get_account( "alice" ).pending_claimed_accounts == 1 );
     BOOST_CHECK( db->_pending_tx.size() == 1 );
 
+    // Same with bob
+    op.creator = "bob";
+    tx.operations.clear();
+    tx.operations.push_back( op );
+    BOOST_CHECK( db->get_account( "bob" ).pending_claimed_accounts == 0 );
+    push_transaction( tx, bob_private_key );
+    BOOST_CHECK( db->get_account( "bob" ).pending_claimed_accounts == 1 );
+    BOOST_CHECK( db->_pending_tx.size() == 2 );
+
+    // We are doing two claims to replicate the bug, where setting current witness for block production
+    // was enclosed in undo session for individual transaction (instead of in collective pending tx session)
+    // It caused situation where if first produced transaction failed, second claim would pass and cause
+    // block to be invalid
+
     do
     {
       generate_block();
 
-      // The transaction fails to be included in new block (due to witness::schedule not being elected),
+      // The transactions fail to be included in new block (due to witness::schedule not being elected),
       // but it is successfully reapplied as pending
       BOOST_CHECK_EQUAL( get_block_reader().get_block_by_number( db->head_block_num() )->get_block().transactions.size(), 0u );
       BOOST_CHECK( db->get_account( "alice" ).pending_claimed_accounts == 1 );
-      BOOST_CHECK_EQUAL( db->_pending_tx.size(), 1u );
+      BOOST_CHECK( db->get_account( "bob" ).pending_claimed_accounts == 1 );
+      BOOST_CHECK_EQUAL( db->_pending_tx.size(), 2u );
     } while( db->get< witness_object, by_name >( db->get_scheduled_witness( 1 ) ).schedule == witness_object::timeshare );
 
     // But generate another block, as a non-time-share witness, and it works
     generate_block();
-    BOOST_CHECK_EQUAL( get_block_reader().get_block_by_number( db->head_block_num() )->get_block().transactions.size(), 1u );
+    BOOST_CHECK_EQUAL( get_block_reader().get_block_by_number( db->head_block_num() )->get_block().transactions.size(), 2u );
     BOOST_CHECK( db->get_account( "alice" ).pending_claimed_accounts == 1 );
+    BOOST_CHECK( db->get_account( "bob" ).pending_claimed_accounts == 1 );
     BOOST_CHECK_EQUAL( db->_pending_tx.size(), 0u );
 
     while( db->get< witness_object, by_name >( db->get_scheduled_witness( 1 ) ).schedule == witness_object::timeshare )
@@ -3041,6 +3057,9 @@ BOOST_AUTO_TEST_CASE( account_subsidy_witness_limits )
     size_t n = size_t( db->get< witness_object, by_name >( db->get_scheduled_witness( 1 ) ).available_witness_account_subsidies / HIVE_ACCOUNT_SUBSIDY_PRECISION );
 
     ilog( "Creating ${np1} transactions", ("np1", n+1) );
+    op.creator = "alice";
+    tx.operations.clear();
+    tx.operations.push_back( op );
     // Create n+1 transactions
     for( size_t i=0; i<=n; i++ )
     {
