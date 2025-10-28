@@ -139,6 +139,8 @@ void block_producer::apply_pending_transactions(const chain::account_name_type& 
   {
     dgp.current_witness = witness_owner;
   } );
+  // add above change to common pending tx session, otherwise it would be undone when first transaction failed
+  _pending_tx_session->second.squash( true );
 
   BOOST_SCOPE_EXIT( &_db ) { _db.clear_tx_status(); } BOOST_SCOPE_EXIT_END
   // the flag also covers time of processing of required and optional actions
