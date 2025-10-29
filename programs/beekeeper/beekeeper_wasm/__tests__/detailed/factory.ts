@@ -121,6 +121,20 @@ test.describe('Beekeeper factory tests for Node.js', () => {
     expect(retVal).toStrictEqual(['STM5RqVBAVNp5ufMCetQtvLGLJo7unX9nyCBMMrTXRWQ9i1Zzzizh']);
   });
 
+  test('Should be able to create a wallet, import keys and check if matching key exists', async ({ beekeeperTest }) => {
+    const retVal = await beekeeperTest(async ({ beekeeper }) => {
+      const session = beekeeper.createSession("my.salt");
+
+      const { wallet: unlocked } = await session.createWallet('w0', 'mypassword');
+
+      await unlocked.importKey('5JkFnXrLM2ap9t3AmAxBJvQHF7xSKtnTrCTginQCkhzU5S7ecPT');
+
+      return unlocked.hasMatchingPrivateKey('STM5RqVBAVNp5ufMCetQtvLGLJo7unX9nyCBMMrTXRWQ9i1Zzzizh');
+    });
+
+    expect(retVal).toBeTruthy();
+  });
+
   test('Should wallet be a temporary wallet', async ({ beekeeperTest }) => {
     const retVal = await beekeeperTest(async ({ beekeeper }) => {
       const session = beekeeper.createSession("my.salt");
