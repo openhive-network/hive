@@ -65,8 +65,16 @@ class beekeeper_api final
     std::string close_session( const std::string& token );
 
     std::string create( const std::string& token, const std::string& wallet_name );
-    std::string create( const std::string& token, const std::string& wallet_name, const std::string& password );
-    std::string create( const std::string& token, const std::string& wallet_name, const std::string& password, bool is_temporary );
+    std::string create( const std::string& token, const std::string& wallet_name, bool is_temporary );
+    std::string create( const std::string& token, const std::string& wallet_name, bool is_temporary, const std::string& password );
+    std::string create(const std::string& token, const std::string& wallet_name, const std::string& password)
+    {
+      return create(token, wallet_name, false, password);
+    }
+    std::string create(const std::string& token, const std::string& wallet_name, const char* password)
+    {
+      return create(token, wallet_name, false, std::string(password));
+    }
 
     std::string unlock( const std::string& token, const std::string& wallet_name, const std::string& password );
     std::string open( const std::string& token, const std::string& wallet_name );

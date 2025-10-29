@@ -158,12 +158,12 @@ namespace beekeeper {
     return create_impl( token, wallet_name, std::optional<std::string>(), false/*is_temporary*/ );
   }
 
-  std::string beekeeper_api::create( const std::string& token, const std::string& wallet_name, const std::string& password )
+  std::string beekeeper_api::create( const std::string& token, const std::string& wallet_name, bool is_temporary )
   {
-    return create_impl( token, wallet_name, std::optional<std::string>( password ), false/*is_temporary*/ );
+    return create_impl( token, wallet_name, std::optional<std::string>(), is_temporary );
   }
 
-  std::string beekeeper_api::create( const std::string& token, const std::string& wallet_name, const std::string& password, bool is_temporary )
+  std::string beekeeper_api::create( const std::string& token, const std::string& wallet_name, bool is_temporary, const std::string& password )
   {
     return create_impl( token, wallet_name, std::optional<std::string>( password ), is_temporary );
   }

@@ -133,6 +133,24 @@ test.describe('Beekeeper factory tests for Node.js', () => {
     expect(retVal).toBeTruthy();
   });
 
+  test('Should automatically deduce wallet type based on the inMemory setting', async ({ beekeeperTest }) => {
+    const retVal = await beekeeperTest(async ({ provider }) => {
+      const bkInFs = await provider.default({ inMemory: false, enableLogs: false });
+      const bkInMemory = await provider.default({ inMemory: true, enableLogs: false });
+
+      const sessionFs = bkInFs.createSession("my.salt");
+      const sessionInMemory = bkInMemory.createSession("my.salt");
+
+      const { wallet: unlockedInMemory } = await sessionInMemory.createWallet('w0_inmemory');
+      const { wallet: unlockedFs } = await sessionFs.createWallet('w0_infs');
+
+      return [unlockedInMemory.isTemporary, unlockedFs.isTemporary];
+    });
+
+    expect(retVal[0]).toBeTruthy();
+    expect(retVal[1]).toBeFalsy();
+  });
+
   test('Should have a temporary wallet', async ({ beekeeperTest }) => {
     const retVal = await beekeeperTest(async ({ beekeeper }) => {
       const session = beekeeper.createSession("my.salt");

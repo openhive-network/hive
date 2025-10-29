@@ -76,8 +76,8 @@ EMSCRIPTEN_BINDINGS(beekeeper_api_instance) {
         password: a password of newly created a wallet
     */
     .function("create(token, wallet_name)", select_overload<std::string(const std::string&, const std::string&)>(&beekeeper_api::create))                     //(1)
-    .function("create(token, wallet_name, password)", select_overload<std::string(const std::string&, const std::string&, const std::string&)>(&beekeeper_api::create)) //(2)
-    .function("create(token, wallet_name, password, is_temporary)", select_overload<std::string(const std::string&, const std::string&, const std::string&, bool)>(&beekeeper_api::create)) //(3)
+    .function("create(token, wallet_name, is_temporary)", select_overload<std::string(const std::string&, const std::string&, bool)>(&beekeeper_api::create)) //(2)
+    .function("create(token, wallet_name, is_temporary, password)", select_overload<std::string(const std::string&, const std::string&, bool, const std::string&)>(&beekeeper_api::create)) //(3)
 
     /*
       ****unlocking of a wallet****
