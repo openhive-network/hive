@@ -7,27 +7,14 @@ Hive Beekeeper functionality exposed to TypeScript/JavaScript environments
 
 ## 📥 Installation
 
-This is a [Node.js](https://nodejs.org/en/) module available through the
-[npm registry](https://www.npmjs.com/).
-
-Before installing, [download and install Node.js](https://nodejs.org/en/download/).
-Node.js 20 or higher is required.
-
-Installation is done using the
-[`npm install` command](https://docs.npmjs.com/getting-started/installing-npm-packages-locally):
+This is a [Node.js](https://nodejs.org/en/) (version 20 or higher) module available through the
+[npm registry](https://www.npmjs.com/):
 
 ```bash
 npm install @hiveio/beekeeper
 ```
 
-**beekeeper** is written in TypeScript, so out of the box it gives you clear API spec.
-
-If you want to use development versions of our packages, set `@hiveio` scope to use our GitLab registry:
-
-```bash
-echo @hiveio:registry=https://gitlab.syncad.com/api/v4/groups/136/-/packages/npm/ >> .npmrc
-npm install @hiveio/beekeeper
-```
+Beekeeper is written in TypeScript, so out of the box it gives you clear API spec.
 
 ## 💡 Example usage
 
@@ -37,7 +24,7 @@ As a an example you can check [`examples`](https://gitlab.syncad.com/hive/hive/-
 
 Note: between different beekeeper instances, session names can be repeated, but not the wallet names!
 
-For salts, you should always use strong random values, such as `crypto.randomUUID()`. Also, remember to always use strong passwords for wallets!
+For salts, you should always use strong random values, such as `crypto.randomUUID()`. Also, remember to always use strong passwords for wallets! If you provide `undefined` as a password when creating a wallet, a strong random password will be generated for you and returned in the result.
 
 For simplicity, and as `crypto` API may not be available in all environments, we are using `Math.random()` for salt generation. As for passwords, we are using simple strings. **Do not use this approach in production!**
 
@@ -59,7 +46,7 @@ const publicKey2 = await wallet.importKey('5KGKYWMXReJewfj5M29APNMqGEu173DzvHv5T
 
 await wallet.removeKey(publicKey1);
 
-console.log(wallet.hasMatchingKey(publicKey1)); // false
+console.log(wallet.hasMatchingPrivateKey(publicKey1)); // false
 
 console.log(wallet.getPublicKeys()); // [publicKey2]
 
@@ -117,6 +104,7 @@ const session = beekeeper.createSession("salt_" + Math.random());
 
 // Note: We are providing `true` as the third argument to create a wallet.
 // This means that the wallet will be created in "in-memory" mode, and will not be persisted to disk.
+// When using inMemory mode in Beekeeper options, this argument is optional, as all wallets will be created as temporary.
 const { wallet } = await session.createWallet('wallet1', 'password', true);
 
 console.log(wallet.isTemporary); // true
@@ -233,6 +221,13 @@ console.log(sessionInfo);
 For a detailed API definition, please see our [Wiki](${GEN_DOC_URL}).
 
 ## 🛠️ Development and Testing
+
+If you want to use development versions of our packages, set `@hiveio` scope to use our GitLab registry:
+
+```bash
+echo @hiveio:registry=https://gitlab.syncad.com/api/v4/groups/136/-/packages/npm/ >> .npmrc
+npm install @hiveio/beekeeper
+```
 
 ### Environment Setup
 
