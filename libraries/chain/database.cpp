@@ -976,6 +976,8 @@ void database::notify_comment_reward(const comment_reward_notification& note)
 
 void database::notify_end_of_syncing()
 {
+  chainbase::database::flush();
+  get_comments_handler().flush();
   HIVE_TRY_NOTIFY(_end_of_syncing_signal)
 }
 
