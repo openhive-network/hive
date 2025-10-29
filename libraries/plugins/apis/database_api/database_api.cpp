@@ -511,7 +511,7 @@ DEFINE_API_IMPL( database_api_impl, list_accounts )
         args.start.as< protocol::account_name_type >(),
         result.accounts,
         args.limit,
-        [&]( const tiny_account_object& a, const database& db ){ return api_account_object( db.get_account( a.get_name() ), db, args.delayed_votes_active ); },
+        [&]( const tiny_account_object& a, const database& db ){ return api_account_object( *db.get_volatile_account( a.get_name() ), db, args.delayed_votes_active ); },
         &database_api_impl::filter_default< tiny_account_object > );
       break;
     }
@@ -529,7 +529,7 @@ DEFINE_API_IMPL( database_api_impl, list_accounts )
         boost::make_tuple( proxy_id, key.second ),
         result.accounts,
         args.limit,
-        [&]( const tiny_account_object& a, const database& db ){ return api_account_object( db.get_account( a.get_name() ), db, args.delayed_votes_active ); },
+        [&]( const tiny_account_object& a, const database& db ){ return api_account_object( *db.get_volatile_account( a.get_name() ), db, args.delayed_votes_active ); },
         &database_api_impl::filter_default< tiny_account_object > );
       break;
     }
@@ -540,7 +540,7 @@ DEFINE_API_IMPL( database_api_impl, list_accounts )
         boost::make_tuple( key.first, key.second ),
         result.accounts,
         args.limit,
-        [&]( const tiny_account_object& a, const database& db ){ return api_account_object( db.get_account( a.get_name() ), db, args.delayed_votes_active ); },
+        [&]( const tiny_account_object& a, const database& db ){ return api_account_object( *db.get_volatile_account( a.get_name() ), db, args.delayed_votes_active ); },
         &database_api_impl::filter_default< tiny_account_object > );
       break;
     }

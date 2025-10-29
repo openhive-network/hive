@@ -124,7 +124,7 @@ DEFINE_API_IMPL( rc_api_impl, list_rc_accounts )
     while( result.rc_accounts.size() < args.limit && itr != end )
     {
       if( filter( *itr ) )
-        result.rc_accounts.emplace_back( _db.get_account( itr->get_name() ), _db );
+        result.rc_accounts.emplace_back( *_db.get_volatile_account( itr->get_name() ), _db );
 
       ++itr;
     }
