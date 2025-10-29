@@ -130,6 +130,17 @@ export interface IBeekeeperUnlockedWallet extends IWallet {
   removeKey(publicKey: TPublicKey): Promise<void>;
 
   /**
+   * Checks if this wallet has a private key matching the given public key
+   *
+   * @param {TPublicKey} publicKey public key in WIF format to match the private key in the wallet
+   *
+   * @returns {boolean} `true` if a matching private key is found otherwise `false`
+   *
+   * @throws {BeekeeperError} on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.)
+   */
+  hasMatchingPrivateKey(publicKey: TPublicKey): boolean;
+
+  /**
    * Signs a transaction by signing a digest of the transaction
    *
    * @param {TPublicKey} publicKey public key in WIF format to match the private key in the wallet. It will be used to sign the provided data

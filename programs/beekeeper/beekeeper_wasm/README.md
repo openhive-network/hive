@@ -59,6 +59,8 @@ const publicKey2 = await wallet.importKey('5KGKYWMXReJewfj5M29APNMqGEu173DzvHv5T
 
 await wallet.removeKey(publicKey1);
 
+console.log(wallet.hasMatchingKey(publicKey1)); // false
+
 console.log(wallet.getPublicKeys()); // [publicKey2]
 
 // Close the session when done. This will also safely close all wallets created in this session.

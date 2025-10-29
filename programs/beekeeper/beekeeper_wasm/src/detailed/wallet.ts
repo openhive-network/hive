@@ -25,6 +25,10 @@ interface IDecryptData {
   decrypted_content: string;
 }
 
+interface IHasMatchingPrivateKey {
+  exists: boolean;
+}
+
 export class BeekeeperUnlockedWallet implements IBeekeeperUnlockedWallet {
   public constructor(
     private readonly api: BeekeeperApi,
@@ -53,6 +57,12 @@ export class BeekeeperUnlockedWallet implements IBeekeeperUnlockedWallet {
     await this.api.fs?.sync();
 
     return public_key;
+  }
+
+  public hasMatchingPrivateKey(publicKey: TPublicKey): boolean {
+    const result = this.api.extract(safeWasmCall(() => this.api.api.has_matching_private_key(this.session.token, this.locked.name, publicKey) as string, `checking for matching key '${publicKey}' in wallet '${this.locked.name}'`)) as IHasMatchingPrivateKey;
+
+    return result.exists;
   }
 
   public async removeKey(publicKey: TPublicKey): Promise<void> {
