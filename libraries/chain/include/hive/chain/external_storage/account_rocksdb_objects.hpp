@@ -3,6 +3,8 @@
 #include <hive/utilities/benchmark_dumper.hpp>
 #include <hive/chain/account_object.hpp>
 
+#include <hive/chain/external_storage/allocator_helper.hpp>
+
 namespace hive { namespace chain {
 
 struct accounts_stats
@@ -34,7 +36,18 @@ class rocksdb_account_object
     }
     else
     {
-      return Return_Type( std::shared_ptr<account_object>() );
+      return Return_Type(
+        std::make_shared<account_object>(
+                          allocator_helper::get_allocator<account_object, account_index>( db ),
+                          id,
+                          recovery,
+                          assets,
+                          mrc,
+                          time,
+                          misc,
+                          delayed_votes
+                        )
+      );
     }
   }
 

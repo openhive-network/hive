@@ -2,6 +2,8 @@
 
 #include <hive/chain/account_object.hpp>
 
+#include <hive/chain/external_storage/allocator_helper.hpp>
+
 namespace hive { namespace chain {
 
 class rocksdb_account_authority_object
@@ -40,7 +42,18 @@ class rocksdb_account_authority_object
       }
       else
       {
-        return Return_Type( std::shared_ptr<account_authority_object>() );
+        return Return_Type(
+          std::make_shared<account_authority_object>(
+                            allocator_helper::get_allocator<account_authority_object, account_authority_index>( db ),
+                            id,
+                            account,
+                            owner,
+                            active,
+                            posting,
+                            previous_owner_update,
+                            last_owner_update
+                          )
+        );
       }
     }
 };

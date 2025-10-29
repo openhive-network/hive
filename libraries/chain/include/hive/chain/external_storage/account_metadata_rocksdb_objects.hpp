@@ -2,6 +2,8 @@
 
 #include <hive/chain/account_object.hpp>
 
+#include <hive/chain/external_storage/allocator_helper.hpp>
+
 namespace hive { namespace chain {
 
 class rocksdb_account_metadata_object
@@ -31,7 +33,15 @@ class rocksdb_account_metadata_object
       }
       else
       {
-        return Return_Type( std::shared_ptr<account_metadata_object>() );
+        return Return_Type(
+          std::make_shared<account_metadata_object>(
+                            allocator_helper::get_allocator<account_metadata_object, account_metadata_index>( db ),
+                            id,
+                            account,
+                            json_metadata,
+                            posting_json_metadata
+                          )
+        );
       }
     }
 };
