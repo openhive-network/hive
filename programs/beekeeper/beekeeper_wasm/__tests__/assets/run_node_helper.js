@@ -154,7 +154,7 @@ export class BeekeeperInstanceHelper {
   }
 
   create_with_password(sessionToken, walletName, explicitPassword) {
-    const returnedValue = this.instance.create(sessionToken, walletName, explicitPassword);
+    const returnedValue = this.instance.create(sessionToken, walletName, false, explicitPassword);
 
     if( this.#acceptError )
     {
@@ -170,7 +170,7 @@ export class BeekeeperInstanceHelper {
   }
 
   create_temporary_wallet_with_password(sessionToken, walletName, explicitPassword, isTemporary) {
-    const returnedValue = this.instance.create(sessionToken, walletName, explicitPassword, isTemporary);
+    const returnedValue = this.instance.create(sessionToken, walletName, isTemporary, explicitPassword);
 
     if( this.#acceptError )
     {

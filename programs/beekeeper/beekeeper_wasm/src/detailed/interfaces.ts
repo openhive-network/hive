@@ -245,7 +245,9 @@ export interface IBeekeeperSession {
   listWallets(): Array<IBeekeeperWallet>;
 
   /**
-   * Creates a new Beekeeper wallet object owned by this session
+   * Creates a new Beekeeper wallet object owned by this session.
+   * When used in {@link IBeekeeperOptions inMemory} mode, the wallet will be implicitly created as temporary.
+   * The wallet will be created as persistent otherwise.
    *
    * @param {string} name name of wallet
    * @param {?string} password password used for creation of a wallet. Should be strong enough to protect your keys.
@@ -261,14 +263,14 @@ export interface IBeekeeperSession {
    * Creates a new Beekeeper wallet object owned by this session
    *
    * @param {string} name name of wallet
-   * @param {string} password password used for creation of a wallet. Should be strong enough to protect your keys.
-   * @param {boolean} isTemporary If `true` the wallet exists only in memory otherwise is saved into a file. (defaults to `false`)
+   * @param {string | undefined} password password used for creation of a wallet. Should be strong enough to protect your keys. Provide undefined to auto-generate a safe password.
+   * @param {?boolean} isTemporary If `true` the wallet exists only in memory otherwise is saved into a file. (defaults to `true` when filesystem is not available - see {@link IBeekeeperOptions inMemory}, and `false` otherwise)
    *
    * @returns {Promise<IWalletCreated>} the created unlocked Beekeeper wallet object
    *
    * @throws {BeekeeperError} on any beekeeper API-related error (error parsing response, invalid input, timeout error, fs sync error etc.) or when trying to create a persistent wallet with {@link IBeekeeperOptions inMemory} option Enabled
    */
-  createWallet(name: string, password: string, isTemporary: boolean): Promise<IWalletCreated>;
+  createWallet(name: string, password: string | undefined, isTemporary?: boolean): Promise<IWalletCreated>;
 
   /**
    * Opens Beekeeper wallet object owned by this session
