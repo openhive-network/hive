@@ -90,6 +90,7 @@ class memory_comment_archive final : public comments_handler
 
     virtual void open() override;
     virtual void close() override;
+    virtual void flush() override;
     virtual void wipe() override;
 };
 

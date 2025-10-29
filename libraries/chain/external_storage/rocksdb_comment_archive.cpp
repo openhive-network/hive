@@ -203,6 +203,11 @@ void rocksdb_comment_archive::wipe()
   provider->wipeDb();
 }
 
+void rocksdb_comment_archive::flush()
+{
+  provider->flush();
+}
+
 } }
 
 HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE( hive::chain::volatile_comment_index )

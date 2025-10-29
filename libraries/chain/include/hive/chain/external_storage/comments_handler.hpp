@@ -24,6 +24,7 @@ class comments_handler : public external_storage_snapshot
 
     virtual void open() = 0;
     virtual void close() = 0;
+    virtual void flush() = 0;
     virtual void wipe() = 0;
 
     static hive::utilities::benchmark_dumper::comment_archive_details_t stats; // note: times should be measured in nanoseconds

@@ -63,5 +63,10 @@ void placeholder_comment_archive::wipe()
   // do nothing - there is no extra data
 }
 
+void placeholder_comment_archive::flush()
+{
+  // do nothing - there is no extra data
+}
+
 } } // hive::chain
 

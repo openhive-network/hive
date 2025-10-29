@@ -42,6 +42,7 @@ class rocksdb_comment_archive : public comments_handler
 
     void open() override;
     void close() override;
+    void flush() override;
     void wipe() override;
 };
 
