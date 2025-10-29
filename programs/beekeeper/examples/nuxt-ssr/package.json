@@ -8,8 +8,8 @@
     "test": "rm -rf ./.nuxt ./.output ./node_modules/.cache && unset CI && DEBUG=pw:webserver playwright test --workers 1 --max-failures 1 --project=beekeeper_nuxt_vite_testsuite"
   },
   "devDependencies": {
-    "@playwright/test": "1.50.1",
-    "playwright": "1.50.1"
+    "@playwright/test": "1.56.1",
+    "playwright": "1.56.1"
   },
   "dependencies": {
     "@hiveio/beekeeper": "file:../../beekeeper_wasm",
