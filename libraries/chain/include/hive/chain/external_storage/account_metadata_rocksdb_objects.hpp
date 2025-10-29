@@ -31,7 +31,7 @@ class rocksdb_account_metadata_object
       }
       else
       {
-        return std::shared_ptr<account_metadata_object>();
+        return Return_Type( std::shared_ptr<account_metadata_object>() );
       }
     }
 };

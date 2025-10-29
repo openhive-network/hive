@@ -40,7 +40,7 @@ class rocksdb_account_authority_object
       }
       else
       {
-        return std::shared_ptr<account_authority_object>();
+        return Return_Type( std::shared_ptr<account_authority_object>() );
       }
     }
 };

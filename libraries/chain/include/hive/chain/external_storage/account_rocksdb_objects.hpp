@@ -34,7 +34,7 @@ class rocksdb_account_object
     }
     else
     {
-      return std::shared_ptr<account_object>();
+      return Return_Type( std::shared_ptr<account_object>() );
     }
   }
 
