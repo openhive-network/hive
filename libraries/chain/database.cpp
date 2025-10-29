@@ -448,6 +448,11 @@ const account_object* database::find_account( const account_name_type& name )con
   return get_accounts_handler().get_account( name, false /*account_is_required*/ );
 }
 
+account database::get_volatile_account( const account_name_type& name )const
+{
+  return get_accounts_handler().get_volatile_account( name, false /*account_is_required*/ );
+}
+
 const comment_object* database::find_comment( comment_id_type comment_id )const
 {
   return find< comment_object, by_id >( comment_id );

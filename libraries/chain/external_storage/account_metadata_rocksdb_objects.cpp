@@ -10,14 +10,4 @@ rocksdb_account_metadata_object::rocksdb_account_metadata_object( const account_
   posting_json_metadata = obj.posting_json_metadata.c_str();
 }
 
-const account_metadata_object* rocksdb_account_metadata_object::build( chainbase::database& db )
-{
-  return &db.create_no_undo<account_metadata_object>(
-                      id,
-                      account,
-                      json_metadata,
-                      posting_json_metadata
-                    );
-}
-
 } } // hive::chain

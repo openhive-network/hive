@@ -18,7 +18,25 @@ class rocksdb_account_object
 
   rocksdb_account_object( const account_object& obj );
 
-  const account_object* build( chainbase::database& db );
+  template<typename Return_Type>
+  Return_Type build( chainbase::database& db )
+  {
+    if constexpr ( std::is_same_v<Return_Type, const account_object*> )
+    {
+      return &db.create_no_undo<account_object>(
+                      id,
+                      recovery,
+                      assets,
+                      mrc,
+                      time,
+                      misc,
+                      delayed_votes );
+    }
+    else
+    {
+      return std::shared_ptr<account_object>();
+    }
+  }
 
   account_id_type                         id;
 
