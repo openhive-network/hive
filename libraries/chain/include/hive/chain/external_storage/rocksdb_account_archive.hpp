@@ -35,8 +35,8 @@ class rocksdb_account_archive : public accounts_handler
     rocksdb_account_storage_provider::ptr   provider;
     external_storage_snapshot::ptr          snapshot;
 
-    template<typename Key_Type, typename SHM_Object_Type, typename SHM_Object_Sub_Index>
-    const SHM_Object_Type* get_object( const Key_Type& key, const std::vector<ColumnTypes>& column_types, bool is_required ) const;
+    template<typename Key_Type, typename SHM_Object_Type, typename SHM_Object_Sub_Index, typename Return_Type>
+    Return_Type get_object( const Key_Type& key, const std::vector<ColumnTypes>& column_types, bool is_required ) const;
 
     template<typename SHM_Index_Type, typename SHM_Object_Type,
             typename RocksDB_Object_Type, typename RocksDB_Object_Type2>
@@ -62,6 +62,8 @@ class rocksdb_account_archive : public accounts_handler
     const account_object* get_account( const account_name_type& account_name, bool account_is_required ) const override;
     const account_object* get_account( const account_id_type& account_id, bool account_is_required ) const override;
     void modify_object( const account_object& obj, std::function<void(account_object&)>&& modifier ) override;
+
+    account get_volatile_account( const account_name_type& account_name, bool account_is_required ) const override;
 
     void save_snapshot( const prepare_snapshot_supplement_notification& note ) override;
     void load_snapshot( const load_snapshot_supplement_notification& note ) override;

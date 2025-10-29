@@ -276,6 +276,8 @@ namespace chain {
       const account_object& get_account(  const account_name_type& name )const;
       const account_object* find_account( const account_name_type& name )const;
 
+      account get_volatile_account( const account_name_type& name )const;
+
       const comment_object*  find_comment( comment_id_type comment_id )const;
 
       comment get_comment( const account_id_type& author, const shared_string& permlink )const;

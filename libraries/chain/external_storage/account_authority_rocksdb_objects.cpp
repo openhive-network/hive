@@ -16,17 +16,4 @@ rocksdb_account_authority_object::rocksdb_account_authority_object( const accoun
   last_owner_update     = obj.last_owner_update;
 }
 
-const account_authority_object* rocksdb_account_authority_object::build( chainbase::database& db )
-{
-  return &db.create_no_undo<account_authority_object>(
-                      id,
-                      account,
-                      owner,
-                      active,
-                      posting,
-                      previous_owner_update,
-                      last_owner_update
-                    );
-}
-
 } } // hive::chain

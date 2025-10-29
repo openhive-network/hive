@@ -22,18 +22,6 @@ rocksdb_account_object::rocksdb_account_object( const account_object& obj )
   }
 }
 
-const account_object* rocksdb_account_object::build( chainbase::database& db )
-{
-  return &db.create_no_undo<account_object>(
-                  id,
-                  recovery,
-                  assets,
-                  mrc,
-                  time,
-                  misc,
-                  delayed_votes );
-}
-
 rocksdb_account_object_by_id::rocksdb_account_object_by_id( const account_object& obj )
 {
   id   = obj.get_id();

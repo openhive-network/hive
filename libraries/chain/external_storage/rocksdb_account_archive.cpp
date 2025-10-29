@@ -97,15 +97,15 @@ struct rocksdb_storage_reader<account_name_slice_t, PinnableWideColumns>
   }
 };
 
-template<typename SHM_Object_Type, typename Key_Type>
+template<typename SHM_Object_Type, typename Key_Type, typename Return_Type>
 struct rocksdb_reader
 {
 };
 
-template<>
-struct rocksdb_reader<account_metadata_object, account_name_type>
+template<typename Return_Type>
+struct rocksdb_reader<account_metadata_object, account_name_type, Return_Type>
 {
-  static const account_metadata_object* read( chainbase::database& db, const external_storage_reader_writer::ptr& provider, const account_name_type& key, const std::vector<ColumnTypes>& column_types )
+  static Return_Type read( chainbase::database& db, const external_storage_reader_writer::ptr& provider, const account_name_type& key, const std::vector<ColumnTypes>& column_types )
   {
     PinnableSlice _buffer;
 
@@ -117,14 +117,14 @@ struct rocksdb_reader<account_metadata_object, account_name_type>
 
     load( _obj, _buffer.data(), _buffer.size() );
 
-    return _obj.build( db );
+    return _obj.build<Return_Type>( db );
   }
 };
 
-template<>
-struct rocksdb_reader<account_authority_object, account_name_type>
+template<typename Return_Type>
+struct rocksdb_reader<account_authority_object, account_name_type, Return_Type>
 {
-  static const account_authority_object* read( chainbase::database& db, const external_storage_reader_writer::ptr& provider, const account_name_type& key, const std::vector<ColumnTypes>& column_types )
+  static Return_Type read( chainbase::database& db, const external_storage_reader_writer::ptr& provider, const account_name_type& key, const std::vector<ColumnTypes>& column_types )
   {
     PinnableSlice _buffer;
 
@@ -136,14 +136,14 @@ struct rocksdb_reader<account_authority_object, account_name_type>
 
     load( _obj, _buffer.data(), _buffer.size() );
 
-    return _obj.build( db );
+    return _obj.build<Return_Type>( db );
   }
 };
 
-template<>
-struct rocksdb_reader<account_object, account_name_type>
+template<typename Return_Type>
+struct rocksdb_reader<account_object, account_name_type, Return_Type>
 {
-  static const account_object* read( chainbase::database& db, const external_storage_reader_writer::ptr& provider, const account_name_type& key, const std::vector<ColumnTypes>& column_types )
+  static Return_Type read( chainbase::database& db, const external_storage_reader_writer::ptr& provider, const account_name_type& key, const std::vector<ColumnTypes>& column_types )
   {
     PinnableWideColumns _wide_columns;
 
@@ -171,14 +171,14 @@ struct rocksdb_reader<account_object, account_name_type>
         load( _obj.delayed_votes, column.value().data(), column.value().size() );
     }
 
-    return _obj.build( db );
+    return _obj.build<Return_Type>( db );
   }
 };
 
-template<>
-struct rocksdb_reader<account_object, account_id_type>
+template<typename Return_Type>
+struct rocksdb_reader<account_object, account_id_type, Return_Type>
 {
-  static const account_object* read( chainbase::database& db, const external_storage_reader_writer::ptr& provider, const account_id_type& key, const std::vector<ColumnTypes>& column_types )
+  static Return_Type read( chainbase::database& db, const external_storage_reader_writer::ptr& provider, const account_id_type& key, const std::vector<ColumnTypes>& column_types )
   {
     account_name_type _name;
 
@@ -195,7 +195,7 @@ struct rocksdb_reader<account_object, account_id_type>
       _name = _obj.name;
     }
 
-    return rocksdb_reader<account_object, account_name_type>::read( db, provider, _name, { column_types[1] } );
+    return rocksdb_reader<account_object, account_name_type, Return_Type>::read( db, provider, _name, { column_types[1] } );
   }
 };
 
@@ -387,17 +387,20 @@ void rocksdb_account_archive::on_irreversible_block( uint32_t block_num )
   }
 }
 
-template<typename Key_Type, typename SHM_Object_Type, typename SHM_Object_Sub_Index>
-const SHM_Object_Type* rocksdb_account_archive::get_object( const Key_Type& key, const std::vector<ColumnTypes>& column_types, bool is_required ) const
+template<typename Key_Type, typename SHM_Object_Type, typename SHM_Object_Sub_Index, typename Return_Type>
+Return_Type rocksdb_account_archive::get_object( const Key_Type& key, const std::vector<ColumnTypes>& column_types, bool is_required ) const
 {
   const auto* _found = db.find<SHM_Object_Type, SHM_Object_Sub_Index>( key );
   if( _found )
   {
-    return _found;
+    if constexpr ( std::is_same_v<Return_Type, const SHM_Object_Type*> )
+      return _found;
+    else
+      return Return_Type( _found );
   }
   else
   {
-    const auto* _external_found = rocksdb_reader<SHM_Object_Type, Key_Type>::read( db, provider, key, column_types );
+    Return_Type _external_found = rocksdb_reader<SHM_Object_Type, Key_Type, Return_Type>::read( db, provider, key, column_types );
     if( !_external_found )
     {
       message<Key_Type, SHM_Object_Type>::check( is_required, key );
@@ -427,7 +430,7 @@ const account_metadata_object* rocksdb_account_archive::get_account_metadata( co
     ++accounts_stats::stats.account_metadata_accessed_by_name.count;
   };
 
-  return get_object<account_name_type, account_metadata_object, by_name>( account_name, { ColumnTypes::ACCOUNT_METADATA }, account_metadata_is_required );
+  return get_object<account_name_type, account_metadata_object, by_name, const account_metadata_object*>( account_name, { ColumnTypes::ACCOUNT_METADATA }, account_metadata_is_required );
 }
 
 void rocksdb_account_archive::modify_object( const account_metadata_object& obj, std::function<void(account_metadata_object&)>&& modifier )
@@ -462,7 +465,7 @@ const account_authority_object* rocksdb_account_archive::get_account_authority( 
     ++accounts_stats::stats.account_authority_accessed_by_name.count;
   };
 
-  return get_object<account_name_type, account_authority_object, by_name>( account_name, { ColumnTypes::ACCOUNT_AUTHORITY }, account_authority_is_required );
+  return get_object<account_name_type, account_authority_object, by_name, const account_authority_object*>( account_name, { ColumnTypes::ACCOUNT_AUTHORITY }, account_authority_is_required );
 }
 
 void rocksdb_account_archive::modify_object( const account_authority_object& obj, std::function<void(account_authority_object&)>&& modifier )
@@ -498,7 +501,7 @@ const account_object* rocksdb_account_archive::get_account( const account_name_t
     ++accounts_stats::stats.account_accessed_by_name.count;
   };
 
-  return get_object<account_name_type, account_object, by_name>( account_name, { ColumnTypes::ACCOUNT }, account_is_required );
+  return get_object<account_name_type, account_object, by_name, const account_object*>( account_name, { ColumnTypes::ACCOUNT }, account_is_required );
 }
 
 const account_object* rocksdb_account_archive::get_account( const account_id_type& account_id, bool account_is_required ) const
@@ -511,7 +514,12 @@ const account_object* rocksdb_account_archive::get_account( const account_id_typ
     ++accounts_stats::stats.account_accessed_by_id.count;
   };
 
-  return get_object<account_id_type, account_object, by_id>( account_id, { ColumnTypes::ACCOUNT_BY_ID, ColumnTypes::ACCOUNT }, account_is_required );
+  return get_object<account_id_type, account_object, by_id, const account_object*>( account_id, { ColumnTypes::ACCOUNT_BY_ID, ColumnTypes::ACCOUNT }, account_is_required );
+}
+
+account rocksdb_account_archive::get_volatile_account( const account_name_type& account_name, bool account_is_required ) const
+{
+  return get_object<account_name_type, account_object, by_name, account>( account_name, { ColumnTypes::ACCOUNT }, account_is_required );
 }
 
 void rocksdb_account_archive::modify_object( const account_object& obj, std::function<void(account_object&)>&& modifier )

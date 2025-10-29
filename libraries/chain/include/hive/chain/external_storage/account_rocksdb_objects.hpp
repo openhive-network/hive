@@ -3,6 +3,8 @@
 #include <hive/utilities/benchmark_dumper.hpp>
 #include <hive/chain/account_object.hpp>
 
+#include <hive/chain/external_storage/allocator_helper.hpp>
+
 namespace hive { namespace chain {
 
 struct accounts_stats
@@ -18,7 +20,36 @@ class rocksdb_account_object
 
   rocksdb_account_object( const account_object& obj );
 
-  const account_object* build( chainbase::database& db );
+  template<typename Return_Type>
+  Return_Type build( chainbase::database& db )
+  {
+    if constexpr ( std::is_same_v<Return_Type, const account_object*> )
+    {
+      return &db.create_no_undo<account_object>(
+                      id,
+                      recovery,
+                      assets,
+                      mrc,
+                      time,
+                      misc,
+                      delayed_votes );
+    }
+    else
+    {
+      return Return_Type(
+        std::make_shared<account_object>(
+                          allocator_helper::get_allocator<account_object, account_index>( db ),
+                          id,
+                          recovery,
+                          assets,
+                          mrc,
+                          time,
+                          misc,
+                          delayed_votes
+                        )
+      );
+    }
+  }
 
   account_id_type                         id;
 

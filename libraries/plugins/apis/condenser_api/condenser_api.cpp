@@ -389,7 +389,7 @@ namespace detail
       auto itr = idx.find( name );
       if ( itr != idx.end() )
       {
-        results.emplace_back( extended_account( database_api::api_account_object( _db.get_account( itr->get_name() ), _db, delayed_votes_active ) ) );
+        results.emplace_back( extended_account( database_api::api_account_object( *_db.get_volatile_account( itr->get_name() ), _db, delayed_votes_active ) ) );
 
         if(_reputation_api)
         {
