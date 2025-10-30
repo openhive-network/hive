@@ -27,7 +27,7 @@ namespace hive { namespace protocol {
 
     asset& operator += ( const asset& o )
     {
-      FC_ASSERT( symbol == o.symbol; "asset symbol mismatch +=" );
+      FC_ASSERT( symbol == o.symbol, "asset symbol mismatch +=" );
       amount += o.amount;
       return *this;
     }
