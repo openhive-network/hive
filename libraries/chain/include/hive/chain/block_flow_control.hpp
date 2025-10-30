@@ -249,7 +249,7 @@ class p2p_block_flow_control : public block_flow_control
 {
 public:
   p2p_block_flow_control( const std::shared_ptr<full_block_type>& _block, uint32_t _skip )
-    : block_flow_control( _block ), skip( _skip ) { FC_ASSERT( _block && "No block provided" ); }
+    : block_flow_control( _block ), skip( _skip ) { FC_ASSERT( _block, "No block provided" ); }
   virtual ~p2p_block_flow_control() = default;
 
   void attach_promise( const fc::promise<void>::ptr& _p ) { prom = _p; }
@@ -293,7 +293,7 @@ class existing_block_flow_control : public block_flow_control
 {
 public:
   existing_block_flow_control( const std::shared_ptr<full_block_type>& _block )
-    : block_flow_control( _block ) { FC_ASSERT( _block && "Missing block" ); }
+    : block_flow_control( _block ) { FC_ASSERT( _block, "Missing block" ); }
   virtual ~existing_block_flow_control() = default;
 
   virtual void on_end_of_apply_block() const override;

@@ -26,7 +26,7 @@ std::shared_ptr<full_block_type> block_data_type::create_full_block() const
 
   try
   {
-    FC_ASSERT( _byte_size > 0 && "Data mismatch in last_irreversible_block_data!" );
+    FC_ASSERT( _byte_size > 0, "Data mismatch in last_irreversible_block_data!" );
 
     std::unique_ptr<char[]> compressed_block_data( new char[_byte_size] );
     memcpy( compressed_block_data.get(), _block_bytes.data(), _byte_size );

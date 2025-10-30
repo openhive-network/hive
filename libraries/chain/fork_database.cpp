@@ -306,13 +306,13 @@ pair<fork_database::branch_type,fork_database::branch_type> fork_database::fetch
     {
       result.first.push_back(first_branch);
       first_branch = first_branch->prev.lock();
-      FC_ASSERT(first_branch && "Can't lock");
+      FC_ASSERT(first_branch, "Can't lock");
     }
     while( second_branch->get_block_num() > first_branch->get_block_num() )
     {
       result.second.push_back( second_branch );
       second_branch = second_branch->prev.lock();
-      FC_ASSERT(second_branch && "Can't lock");
+      FC_ASSERT(second_branch, "Can't lock");
     }
     while( first_branch->previous_id() != second_branch->previous_id() )
     {

@@ -53,7 +53,7 @@ void create_proposal_evaluator::do_apply( const create_proposal_operation& o )
     if(!commentObject)
     {
       commentObject = _db.find_comment(o.receiver, o.permlink);
-      FC_ASSERT(commentObject && "Proposal permlink must point to the article posted by creator or receiver");
+      FC_ASSERT(commentObject, "Proposal permlink must point to the article posted by creator or receiver");
     }
 
     uint32_t proposal_id = 0;
@@ -98,7 +98,7 @@ void update_proposal_evaluator::do_apply( const update_proposal_operation& o )
     if(!commentObject)
     {
       commentObject = _db.find_comment(proposal.receiver, o.permlink);
-      FC_ASSERT(commentObject && "Proposal permlink must point to the article posted by creator or the receiver");
+      FC_ASSERT(commentObject, "Proposal permlink must point to the article posted by creator or the receiver");
     }
 
     FC_ASSERT(o.daily_pay <= proposal.daily_pay, "You cannot increase the daily pay");
@@ -143,7 +143,7 @@ void update_proposal_votes_evaluator::do_apply( const update_proposal_votes_oper
     const auto& voter = _db.get_account(o.voter);
 
     if( _db.is_in_control() || _db.has_hardfork( HIVE_HARDFORK_1_28 ) )
-      FC_ASSERT( voter.can_vote && "Voter declined voting rights, therefore casting votes is forbidden." );
+      FC_ASSERT( voter.can_vote, "Voter declined voting rights, therefore casting votes is forbidden." );
 
     _db.modify( voter, [&](account_object& a) { a.update_governance_vote_expiration_ts(_db.head_block_time()); });
 
@@ -154,7 +154,7 @@ void update_proposal_votes_evaluator::do_apply( const update_proposal_votes_oper
       if( found_id == pidx.end() || found_id->removed )
       {
         if( _db.is_in_control() || _db.has_hardfork( HIVE_HARDFORK_1_28_DONT_TRY_VOTE_FOR_NONEXISTENT_PROPOSAL ) )
-          FC_ASSERT( false && "proposal not found", "Can't vote for nonexistent proposal with id: ${pid}",(pid) );
+          FC_ASSERT( false, "Can't vote for nonexistent proposal with id: ${pid}",(pid) );
         continue;
       }
 

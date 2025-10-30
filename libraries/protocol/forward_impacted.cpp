@@ -690,7 +690,7 @@ namespace /// anonymous
     template< typename T >
     result_type operator()( [[maybe_unused]] const T& op )const
     {
-      FC_ASSERT( false && "Visitor meant to be used only with the account_created_operation" );
+      FC_ASSERT( false, "Visitor meant to be used only with the account_created_operation" );
     }
   };
 }

@@ -151,7 +151,7 @@ namespace hive { namespace chain {
       std::unique_ptr<char[]> serialized_data(new char[size]);
       auto total_read = pread_with_retry(block_log_fd, serialized_data.get(), size, offset);
 
-      FC_ASSERT(total_read == size && "Invalid block read from offset and size");
+      FC_ASSERT(total_read == size, "Invalid block read from offset and size");
 
       signed_block block;
       fc::raw::unpack_from_char_array(serialized_data.get(), size, block);
@@ -164,7 +164,7 @@ namespace hive { namespace chain {
       std::unique_ptr<char[]> serialized_data(new char[size]);
       auto total_read = pread_with_retry(block_log_fd, serialized_data.get(), size, offset);
 
-      FC_ASSERT(total_read == size && "Invalid header read");
+      FC_ASSERT(total_read == size, "Invalid header read");
 
       signed_block_header block_header;
       fc::raw::unpack_from_char_array(serialized_data.get(), size, block_header);
@@ -516,7 +516,7 @@ namespace hive { namespace chain {
   {
     std::unique_ptr<char[]> serialized_data(new char[size]);
     size_t total_read = detail::block_log_impl::pread_with_retry(my->block_log_fd, serialized_data.get(), size, offset);
-    FC_ASSERT(total_read == size && "Invalid block read by offset");
+    FC_ASSERT(total_read == size, "Invalid block read by offset");
 
     return attributes.flags == block_flags::uncompressed ? 
       full_block_type::create_from_uncompressed_block_data(std::move(serialized_data), size) : 

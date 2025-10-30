@@ -129,7 +129,7 @@ void full_transaction_type::compute_signature_keys() const
     {
       const contained_in_block_info& contained_in_block = std::get<contained_in_block_info>(storage);
       assert(contained_in_block.block_storage->block);
-      FC_ASSERT(contained_in_block.block_storage->block && "block should have already been decoded");
+      FC_ASSERT(contained_in_block.block_storage->block, "block should have already been decoded");
       validation_rules = &get_transaction_signature_validation_rules_at_time(contained_in_block.block_storage->block->timestamp);
     }
     else

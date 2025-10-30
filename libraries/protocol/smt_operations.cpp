@@ -81,13 +81,13 @@ void smt_generation_unit::validate()const
   for(const std::pair< account_name_type, uint16_t >& e : hive_unit )
   {
     FC_ASSERT( is_valid_unit_target( e.first ) && "hive_unit must be valid unit target" );
-    FC_ASSERT( e.second > 0 && "hive_unit amount must be positive" );
+    FC_ASSERT( e.second > 0, "hive_unit amount must be positive" );
   }
   FC_ASSERT( token_unit.size() <= SMT_MAX_UNIT_ROUTES );
   for(const std::pair< account_name_type, uint16_t >& e : token_unit )
   {
-    FC_ASSERT( is_valid_unit_target( e.first ) && "token_unit must be valid unit target" );
-    FC_ASSERT( e.second > 0 && "token_unit amount must be positive" );
+    FC_ASSERT( is_valid_unit_target( e.first ), "token_unit must be valid unit target" );
+    FC_ASSERT( e.second > 0, "token_unit amount must be positive" );
   }
 }
 
@@ -142,7 +142,7 @@ void smt_setup_emissions_operation::validate()const
   {
     FC_ASSERT( is_valid_smt_emissions_unit_destination( e.first ),
       "Emissions token unit destination ${n} is invalid", ("n", e.first) );
-    FC_ASSERT( e.second > 0 && "Emissions token unit must be greater than 0" );
+    FC_ASSERT( e.second > 0, "Emissions token unit must be greater than 0" );
   }
 
   FC_ASSERT( interval_seconds >= SMT_EMISSION_MIN_INTERVAL_SECONDS,

@@ -55,7 +55,7 @@ void rocksdb_storage_provider::openDb( uint32_t expected_lib )
   {
     elog("RocksDB cannot open database at location: `${p}'.\nReturned error: ${e}",
       ("p", strPath)("e", status.ToString()));
-    FC_ASSERT( false && "Opening database failed." );
+    FC_ASSERT( false, "Opening database failed." );
   }
 }
 
@@ -118,7 +118,7 @@ std::tuple<bool, bool> rocksdb_storage_provider::createDbSchema(const bfs::path&
     {
       elog("RocksDB cannot create column definitions at location: `${p}'.\nReturned error: ${e}",
         ("p", strPath)("e", s.ToString()));
-      FC_ASSERT( false && "Creation of columns failed" );
+      FC_ASSERT( false, "Creation of columns failed" );
     }
 
     delete db;
@@ -129,7 +129,7 @@ std::tuple<bool, bool> rocksdb_storage_provider::createDbSchema(const bfs::path&
   {
     elog("RocksDB can not create storage at location: `${p}'.\nReturned error: ${e}",
       ("p", strPath)("e", s.ToString()));
-    FC_ASSERT( false && "Creation of database failed" );
+    FC_ASSERT( false, "Creation of database failed" );
 
     return { false, false };/// { DB does not need data import, an application is closed }
   }
@@ -149,7 +149,7 @@ void rocksdb_storage_provider::cleanupColumnHandles(::rocksdb::DB* db)
     if(s.ok() == false)
     {
       elog("Cannot destroy column family handle. Error: `${e}'", ("e", s.ToString()));
-      FC_ASSERT( false && "Cleaning up database definition failed" );
+      FC_ASSERT( false, "Cleaning up database definition failed" );
     }
   }
   _columnHandles.clear();

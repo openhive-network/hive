@@ -96,7 +96,7 @@ namespace hive { namespace chain {
 
     static uint32_t get_number_of_first_block_in_part( uint32_t part_number, int block_log_split )
     {
-      FC_ASSERT( part_number > 0 && "Invalid part number" );
+      FC_ASSERT( part_number > 0, "Invalid part number" );
       return 1 + (part_number -1) * determine_max_blocks_in_log_file( block_log_split );
     }
 

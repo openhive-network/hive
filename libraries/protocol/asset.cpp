@@ -177,7 +177,7 @@ bool asset_symbol_type::is_vesting() const
   }
   else
   {
-    FC_ASSERT( space() == smt_nai_space && "Unknown asset symbol (is_vesting)" );
+    FC_ASSERT( space() == smt_nai_space, "Unknown asset symbol (is_vesting)" );
 
     // 6th bit of asset_num is used as vesting/liquid variant indicator.
     return asset_num & SMT_ASSET_NUM_VESTING_MASK;
@@ -391,7 +391,7 @@ uint32_t string_to_asset_num( const char* p, uint8_t decimals )
         case OBD_SYMBOL_U64:
 #endif ///IS_TEST_NET
         case HBD_SYMBOL_U64:
-          FC_ASSERT( decimals == 3 && "Incorrect decimal places" );
+          FC_ASSERT( decimals == 3, "Incorrect decimal places" );
           asset_num = HIVE_ASSET_NUM_HBD;
           break;
         case VESTS_SYMBOL_U64:

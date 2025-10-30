@@ -384,7 +384,7 @@ void account_create_evaluator::do_apply( const account_create_operation& o )
   }
   else if( _db.has_hardfork( HIVE_HARDFORK_0_1 ) )
   {
-    FC_ASSERT( o.fee >= wso.median_props.account_creation_fee && "Can't create", "Insufficient Fee: ${f} required, ${p} provided.",
+    FC_ASSERT( o.fee >= wso.median_props.account_creation_fee, "Can't create. Insufficient Fee: ${f} required, ${p} provided.",
             ("f", wso.median_props.account_creation_fee)
             ("p", o.fee) );
   }
@@ -701,7 +701,7 @@ void account_update_evaluator::do_apply( const account_update_operation& o )
 void account_update2_evaluator::do_apply( const account_update2_operation& o )
 {
   FC_ASSERT( _db.has_hardfork( HIVE_HARDFORK_0_21__3274 ), "Operation 'account_update2' is not enabled until HF 21" );
-  FC_ASSERT( o.account != HIVE_TEMP_ACCOUNT && "Cannot update temp account." );
+  FC_ASSERT( o.account != HIVE_TEMP_ACCOUNT, "Cannot update temp account." );
 
   if( o.posting )
     o.posting->validate();
@@ -779,7 +779,7 @@ void delete_comment_evaluator::do_apply( const delete_comment_operation& o )
     Before `HF19`: `comment_cashout` exists for sure -  following assertion always is true
     After  `HF19`: when `comment_cashout` doesn't exist( it's possible ), then assertion should be triggered
   */
-  FC_ASSERT( comment_cashout && "Cannot delete comment after payout." );
+  FC_ASSERT( comment_cashout, "Cannot delete comment after payout." );
 
   if( _db.has_hardfork( HIVE_HARDFORK_0_19__977 ) )
     FC_ASSERT( comment_cashout->get_net_rshares() <= 0, "Cannot delete a comment with net positive votes." );
@@ -835,7 +835,7 @@ struct comment_options_extension_visitor
   {
     FC_ASSERT( !_c.has_votes(), "Comment must not have been voted on before specifying allowed vote assets." );
     auto remaining_asset_number = SMT_MAX_VOTABLE_ASSETS;
-    FC_ASSERT( remaining_asset_number > 0 && "Votable assets limit must be positive" );
+    FC_ASSERT( remaining_asset_number > 0, "Votable assets limit must be positive" );
     _db.modify( _c, [&]( comment_cashout_object& c )
     {
       for( const auto& a : va.votable_assets )
@@ -1036,7 +1036,7 @@ void comment_evaluator::do_apply( const comment_operation& o )
     if( !_db.has_hardfork( HIVE_HARDFORK_0_17__772 ) )
     {
       const comment_cashout_object* comment_cashout = _db.find_comment_cashout( *_comment );
-      FC_ASSERT( comment_cashout && "Comment cashout object must exist" );
+      FC_ASSERT( comment_cashout, "Comment cashout object must exist" );
       if( _db.has_hardfork( HIVE_HARDFORK_0_14__306 ) )
         FC_ASSERT( _db.calculate_discussion_payout_time( *_comment, *comment_cashout ) != fc::time_point_sec::maximum(), "The comment is archived." );
       else if( _db.has_hardfork( HIVE_HARDFORK_0_10 ) )
@@ -1173,10 +1173,10 @@ void escrow_dispute_evaluator::do_apply( const escrow_dispute_operation& o )
 
     const auto& e = _db.get_escrow( o.from, o.escrow_id );
     FC_ASSERT( _db.head_block_time() < e.escrow_expiration, "Disputing the escrow must happen before expiration." );
-    FC_ASSERT( e.to_approved && e.agent_approved && "The escrow must be approved by all parties before a dispute can be raised." );
+    FC_ASSERT( e.to_approved && e.agent_approved, "The escrow must be approved by all parties before a dispute can be raised." );
     FC_ASSERT( !e.disputed, "The escrow is already under dispute." );
-    FC_ASSERT( e.to == o.to && "dispute", "Operation 'to' (${o}) does not match escrow 'to' (${e}).", ("o", o.to)("e", e.to) );
-    FC_ASSERT( e.agent == o.agent && "dispute", "Operation 'agent' (${a}) does not match escrow 'agent' (${e}).", ("o", o.agent)("e", e.agent) );
+    FC_ASSERT( e.to == o.to, "'to' (${o}) does not match escrow 'to' (${e}).", ("o", o.to)("e", e.to) );
+    FC_ASSERT( e.agent == o.agent, "'agent' (${a}) does not match escrow 'agent' (${e}).", ("o", o.agent)("e", e.agent) );
 
     _db.modify( e, [&]( escrow_object& esc )
     {
@@ -1195,10 +1195,10 @@ void escrow_release_evaluator::do_apply( const escrow_release_operation& o )
     const auto& e = _db.get_escrow( o.from, o.escrow_id );
     FC_ASSERT( e.get_hive_balance() >= o.hive_amount, "Release amount exceeds escrow balance. Amount: ${a}, Balance: ${b}", ("a", o.hive_amount)("b", e.get_hive_balance()) );
     FC_ASSERT( e.get_hbd_balance() >= o.hbd_amount, "Release amount exceeds escrow balance. Amount: ${a}, Balance: ${b}", ("a", o.hbd_amount)("b", e.get_hbd_balance()) );
-    FC_ASSERT( e.to == o.to && "release", "Operation 'to' (${o}) does not match escrow 'to' (${e}).", ("o", o.to)("e", e.to) );
-    FC_ASSERT( e.agent == o.agent && "release", "Operation 'agent' (${a}) does not match escrow 'agent' (${e}).", ("o", o.agent)("e", e.agent) );
+    FC_ASSERT( e.to == o.to, "'to' (${o}) does not match escrow 'to' (${e}).", ("o", o.to)("e", e.to) );
+    FC_ASSERT( e.agent == o.agent, "'agent' (${a}) does not match escrow 'agent' (${e}).", ("o", o.agent)("e", e.agent) );
     FC_ASSERT( o.receiver == e.from || o.receiver == e.to, "Funds must be released to 'from' (${f}) or 'to' (${t})", ("f", e.from)("t", e.to) );
-    FC_ASSERT( e.to_approved && e.agent_approved && "Funds cannot be released prior to escrow approval." );
+    FC_ASSERT( e.to_approved && e.agent_approved, "Funds cannot be released prior to escrow approval." );
 
     // If there is a dispute regardless of expiration, the agent can release funds to either party
     if( e.disputed )
@@ -1454,7 +1454,7 @@ void set_withdraw_vesting_route_evaluator::do_apply( const set_withdraw_vesting_
 void account_witness_proxy_evaluator::do_apply( const account_witness_proxy_operation& o )
 {
   const auto& account = _db.get_account( o.account );
-  FC_ASSERT( account.can_vote && "Account has declined the ability to vote and cannot proxy votes." );
+  FC_ASSERT( account.can_vote, "Account has declined the ability to vote and cannot proxy votes." );
   _db.modify( account, [&]( account_object& a) { a.update_governance_vote_expiration_ts(_db.head_block_time()); });
 
   _db.nullify_proxied_witness_votes( account );
@@ -1509,7 +1509,7 @@ void account_witness_vote_evaluator::do_apply( const account_witness_vote_operat
 {
   const auto& voter = _db.get_account( o.account );
   FC_ASSERT( !voter.has_proxy(), "A proxy is currently set, please clear the proxy before voting for a witness." );
-  FC_ASSERT( voter.can_vote && "Account has declined its voting rights." );
+  FC_ASSERT( voter.can_vote, "Account has declined its voting rights." );
   _db.modify( voter, [&]( account_object& a) { a.update_governance_vote_expiration_ts(_db.head_block_time()); });
 
   const auto& witness = _db.get_witness( o.witness );
@@ -1578,7 +1578,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
 
   const auto& voter = _db.get_account( o.voter );
 
-  FC_ASSERT( voter.can_vote && "Voter has declined their voting rights." );
+  FC_ASSERT( voter.can_vote, "Voter has declined their voting rights." );
 
   if( comment_cashout )
   {
@@ -1611,7 +1611,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
 
   // The second multiplication is rounded up as of HF14#259
   int64_t max_vote_denom = dgpo.vote_power_reserve_rate * HIVE_VOTING_MANA_REGENERATION_SECONDS;
-  FC_ASSERT( max_vote_denom > 0 && "Pre HF20" );
+  FC_ASSERT( max_vote_denom > 0, "Pre HF20" );
 
   if( !_db.has_hardfork( HIVE_HARDFORK_0_14__259 ) )
   {
@@ -1898,12 +1898,12 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
   uint64_t previous_vote_weight = 0;
   if( itr == comment_vote_idx.end() )
   {
-    FC_ASSERT( o.weight != 0 && "Vote weight cannot be 0." );
+    FC_ASSERT( o.weight != 0, "Vote weight cannot be 0." );
   }
   else
   {
     if( !_db.has_hardfork( HIVE_HARDFORK_1_28_NO_VOTE_LIMIT ) )
-      FC_ASSERT( itr->get_number_of_changes() < HIVE_MAX_VOTE_CHANGES && "Voter has used the maximum number of vote changes on this comment." );
+      FC_ASSERT( itr->get_number_of_changes() < HIVE_MAX_VOTE_CHANGES, "Voter has used the maximum number of vote changes on this comment." );
     FC_ASSERT( itr->get_vote_percent() != o.weight && "Your current vote on this comment is identical to this vote." );
     previous_vote_percent = itr->get_vote_percent();
     previous_rshares = itr->get_rshares();
@@ -2197,8 +2197,8 @@ void custom_binary_evaluator::do_apply( const custom_binary_operation& o )
   FC_TODO( "Check when this soft-fork was added and change to appropriate hardfork" );
   if( _db.is_in_control() || _db.has_hardfork( HIVE_HARDFORK_1_26_SOLIDIFY_OLD_SOFTFORKS ) )
   {
-    FC_ASSERT( false && "custom_binary_operation is deprecated" );
-    FC_ASSERT( o.data.size() <= HIVE_CUSTOM_OP_DATA_MAX_LENGTH && "Too large",
+    FC_ASSERT( false, "custom_binary_operation is deprecated" );
+    FC_ASSERT( o.data.size() <= HIVE_CUSTOM_OP_DATA_MAX_LENGTH,
       "Operation data must be less than ${bytes} bytes.", ("bytes", HIVE_CUSTOM_OP_DATA_MAX_LENGTH) );
   }
   FC_ASSERT( _db.has_hardfork( HIVE_HARDFORK_0_14__317 ) );
@@ -2586,7 +2586,7 @@ void limit_order_cancel_evaluator::do_apply( const limit_order_cancel_operation&
 
 void claim_account_evaluator::do_apply( const claim_account_operation& o )
 {
-  FC_ASSERT( _db.has_hardfork( HIVE_HARDFORK_0_20__1771 ) && "claim_account_operation is not enabled until hardfork 20." );
+  FC_ASSERT( _db.has_hardfork( HIVE_HARDFORK_0_20__1771 ), "claim_account_operation is not enabled until hardfork 20." );
 
   const auto& creator = _db.get_account( o.creator );
   const auto& wso = _db.get_witness_schedule_object();
@@ -2629,7 +2629,7 @@ void claim_account_evaluator::do_apply( const claim_account_operation& o )
   }
   else
   {
-    FC_ASSERT( o.fee == wso.median_props.account_creation_fee && "Wrong fee",
+    FC_ASSERT( o.fee == wso.median_props.account_creation_fee,
       "Must pay the exact account creation fee (or zero if subsidy is to be used). paid: ${p} fee: ${f}",
       ("p", o.fee.amount.value)
       ("f", wso.median_props.account_creation_fee) );
@@ -2872,7 +2872,7 @@ void decline_voting_rights_evaluator::do_apply( const decline_voting_rights_oper
   const auto& account = _db.get_account( o.account );
 
   if( _db.is_in_control() || _db.has_hardfork( HIVE_HARDFORK_1_28 ) )
-    FC_ASSERT( account.can_vote && "Voter declined voting rights already, therefore trying to decline voting rights again is forbidden." );
+    FC_ASSERT( account.can_vote, "Voter declined voting rights already, therefore trying to decline voting rights again is forbidden." );
 
   const auto& request_idx = _db.get_index< decline_voting_rights_request_index >().indices().get< by_account >();
   auto itr = request_idx.find( account.get_name() );
@@ -2896,7 +2896,7 @@ void decline_voting_rights_evaluator::do_apply( const decline_voting_rights_oper
 
 void reset_account_evaluator::do_apply( const reset_account_operation& op )
 {
-  FC_ASSERT( false && "Reset Account Operation is currently disabled." );
+  FC_ASSERT( false, "Reset Account Operation is currently disabled." );
   //ABW: see discussion in https://github.com/steemit/steem/issues/240
   //apparently the idea was never put in active use and it does not seem it ever will
   //related member of account_object was removed as it was taking space with no purpose
@@ -2913,7 +2913,7 @@ void reset_account_evaluator::do_apply( const reset_account_operation& op )
 
 void set_reset_account_evaluator::do_apply( const set_reset_account_operation& op )
 {
-  FC_ASSERT( false && "Set Reset Account Operation is currently disabled." );
+  FC_ASSERT( false, "Set Reset Account Operation is currently disabled." );
   //related to reset_account_operation
 /*
   const auto& acnt = _db.get_account( op.account );
@@ -3005,7 +3005,7 @@ void claim_reward_balance2_evaluator::do_apply( const claim_reward_balance2_oper
       if( a == nullptr )
       {
         a = _db.find_account( op.account );
-        FC_ASSERT( a != nullptr && "Not found", "Could NOT find account ${a}", ("a", op.account) );
+        FC_ASSERT( a != nullptr, "Could NOT find account ${a}", ("a", op.account) );
       }
 
       if( token.symbol == VESTS_SYMBOL )
@@ -3053,7 +3053,7 @@ void claim_reward_balance2_evaluator::do_apply( const claim_reward_balance2_oper
         _db.adjust_balance( *a, token );
       }
       else
-        FC_ASSERT( false && "Unknown asset symbol" );
+        FC_ASSERT( false, "Unknown asset symbol" );
     } // non-SMT token
   } // for( const auto& token : op.reward_tokens )
 }
@@ -3240,7 +3240,7 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
 
     if( op.vesting_shares.amount > 0 )
     {
-      FC_ASSERT( delta >= min_update && "Wrong decrease", "Hive Power decrease is not enough of a difference. min_update: ${min}", ("min", min_update) );
+      FC_ASSERT( delta >= min_update, "Hive Power decrease is not enough of a difference. min_update: ${min}", ("min", min_update) );
       FC_ASSERT( op.vesting_shares >= min_delegation, "Delegation must be removed or leave minimum delegation amount of ${v}", ("v", min_delegation) );
     }
     else
@@ -3343,7 +3343,7 @@ void recurrent_transfer_evaluator::do_apply( const recurrent_transfer_operation&
     _db.remove( *itr );
     _db.modify( from_account, [&](account_object& a )
     {
-      FC_ASSERT( a.open_recurrent_transfers > 0 && "No (more) open recurrent transfers" );
+      FC_ASSERT( a.open_recurrent_transfers > 0, "No (more) open recurrent transfers" );
       a.open_recurrent_transfers--;
     } );
   }
@@ -3366,7 +3366,7 @@ void witness_block_approve_evaluator::do_apply(const witness_block_approve_opera
 {
   // This transaction si /updait's handled in database::process_fast_confirm_transaction
   // and never reaches the 
-  FC_ASSERT( false && "This operation may not be included in a block");
+  FC_ASSERT( false, "This operation may not be included in a block");
 }
 
 } } // hive::chain

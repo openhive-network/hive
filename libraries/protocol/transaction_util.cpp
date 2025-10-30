@@ -131,7 +131,7 @@ FC_EXPAND_MACRO(                                                \
   {
     if constexpr (IS_TRACED)
     {
-      FC_ASSERT(tracer && "Can't trace without tracer");
+      FC_ASSERT(tracer, "Can't trace without tracer");
       tracer->set_role("active");
     }
       

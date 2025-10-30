@@ -82,13 +82,13 @@ comment memory_comment_archive::get_comment( const account_id_type& author, cons
 void memory_comment_archive::save_snapshot( const prepare_snapshot_supplement_notification& note )
 {
   // TODO: supplement
-  FC_ASSERT( false && "save_snapshot not implemented yet" );
+  FC_ASSERT( false, "save_snapshot not implemented yet" );
 }
 
 void memory_comment_archive::load_snapshot( const load_snapshot_supplement_notification& note )
 {
   // TODO: supplement
-  FC_ASSERT( false && "load_snapshot not implemented yet" );
+  FC_ASSERT( false, "load_snapshot not implemented yet" );
 }
 
 void memory_comment_archive::open()

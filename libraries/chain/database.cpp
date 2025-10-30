@@ -416,7 +416,7 @@ const account_object* database::find_account( const account_id_type& id )const
 const account_object& database::get_account( const account_name_type& name )const
 { try {
     const auto* _account = find_account( name );
-    FC_ASSERT( _account != nullptr && "By name", "Account ${acc} doesn't exist", ("acc", name) );
+    FC_ASSERT( _account != nullptr, "By name", "Account ${acc} doesn't exist", ("acc", name) );
     return *_account;
 } FC_CAPTURE_AND_RETHROW( (name) ) }
 
@@ -2755,7 +2755,7 @@ void database::process_comment_cashout()
         const comment_object* comment = find_comment( comment_cashout_ex.get_comment_id() );
         FC_ASSERT( comment );
         const comment_cashout_object* comment_cashout = find_comment_cashout( comment_cashout_ex.get_comment_id() );
-        FC_ASSERT( comment_cashout && "Not found" );
+        FC_ASSERT( comment_cashout, "Not found" );
         auto reward = cashout_comment_helper( ctx, *comment, *comment_cashout, &comment_cashout_ex );
         ++count;
 
@@ -3401,7 +3401,7 @@ void database::set_last_irreversible_block_data(std::shared_ptr<full_block_type>
 
 std::shared_ptr<full_block_type> database::get_last_irreversible_block_data() const
 {
-  FC_ASSERT(last_irreversible_object && "Premature access to non-initialized irreversible object data.");
+  FC_ASSERT(last_irreversible_object, "Premature access to non-initialized irreversible object data.");
 
   return cached_lib;
 }
@@ -3545,7 +3545,7 @@ void database::verify_match_of_blockchain_configuration()
 
 std::string database::get_current_decoded_types_data_json()
 {
-  FC_ASSERT(_my->_decoded_types_data_storage && "No storage - no types");
+  FC_ASSERT(_my->_decoded_types_data_storage, "No storage - no types");
   const std::string decoded_types_data_json = _my->_decoded_types_data_storage->generate_decoded_types_data_json_string();
   _my->delete_decoded_types_data_storage();
   return decoded_types_data_json;
@@ -5605,7 +5605,7 @@ void database::adjust_savings_balance( const account_object& a, const asset& del
     }
     else
     {
-      FC_ASSERT( delta.symbol.asset_num == HIVE_ASSET_NUM_HBD && "invalid symbol" );
+      FC_ASSERT( delta.symbol.asset_num == HIVE_ASSET_NUM_HBD, "invalid symbol" );
       if( a.savings_hbd_seconds_last_update != head_block_time() )
       {
         const auto _head_block_time = head_block_time();
@@ -5764,7 +5764,7 @@ asset database::get_savings_balance( const account_object& a, asset_symbol_type 
   }
   else
   {
-    FC_ASSERT( symbol.asset_num == HIVE_ASSET_NUM_HBD && "invalid symbol" );
+    FC_ASSERT( symbol.asset_num == HIVE_ASSET_NUM_HBD, "invalid symbol" );
     return a.get_hbd_savings();
   }
 }
