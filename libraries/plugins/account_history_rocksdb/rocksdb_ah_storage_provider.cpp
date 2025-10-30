@@ -40,6 +40,11 @@ void rocksdb_ah_storage_provider::update_lib( uint32_t lib )
   rocksdb_storage_provider::update_lib( lib );
 }
 
+uint32_t rocksdb_ah_storage_provider::get_lib() const
+{
+  return rocksdb_storage_provider::get_lib();
+}
+
 WriteBatch& rocksdb_ah_storage_provider::getWriteBuffer()
 {
   return _writeBuffer;
@@ -126,11 +131,6 @@ void rocksdb_ah_storage_provider::shutdownDb()
 void rocksdb_ah_storage_provider::wipeDb()
 {
   rocksdb_storage_provider::wipeDb();
-}
-
-const std::atomic_uint& rocksdb_ah_storage_provider::get_cached_irreversible_block() const
-{
-  return _cached_irreversible_block;
 }
 
 uint64_t rocksdb_ah_storage_provider::get_operationSeqId() const

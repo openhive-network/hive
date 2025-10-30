@@ -44,7 +44,9 @@ void rocksdb_snapshot::save_snapshot( const hive::chain::prepare_snapshot_supple
 
   backupEngine.reset(_backupEngine);
 
-  ilog( "Attempting to create ${_name} backup in the location: `${p}'", ( _name ) ( "p", pathString ) );
+  ilog( "Attempting to create ${_name} backup in the location: `${p}' (stored LIB is ${l})",
+    (_name)( "p", pathString )( "l", _provider->get_lib() ) );
+  FC_ASSERT( _provider->get_lib() == _mainDb.get_last_irreversible_block_num(), "Inconsistency between state and Rocksdb data" );
 
   std::string meta_data = _name + " data. Current head block: ";
   meta_data += std::to_string(_mainDb.head_block_num());

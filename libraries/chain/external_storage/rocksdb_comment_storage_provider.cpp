@@ -68,4 +68,9 @@ void rocksdb_comment_storage_provider::update_lib( uint32_t lib )
   rocksdb_storage_provider::update_lib( lib );
 }
 
+uint32_t rocksdb_comment_storage_provider::get_lib() const
+{
+  return rocksdb_storage_provider::get_lib();
+}
+
 }}
