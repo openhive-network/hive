@@ -25,5 +25,5 @@ source = [
 python = "^3.12"
 toml = "0.10.2"
 jinja2 = "3.1.6"
-hiveio-beekeepy = "1.27.12rc1.dev5+843b775" # Please remember that this version is copied to the generated API packages.
+hiveio-beekeepy = "1.28.0" # Please remember that this version is copied to the generated API packages.
 api_client_generator = " 1.4.1.dev4+26e1eaa"
