@@ -1093,7 +1093,7 @@ void account_history_rocksdb_plugin::impl::on_post_reindex(const hive::chain::re
   ilog("Reindex completed up to block: ${b}. Setting back write limit to non-massive level.",
     ("b", note.last_block_number));
 
-  _provider->flushStorage();
+  _provider->flushDb();
   _collectedOpsWriteLimit = 1;
   _reindexing = false;
   uint32_t last_irreversible_block_num = _mainDb.get_last_irreversible_block_num();
@@ -1264,7 +1264,7 @@ void account_history_rocksdb_plugin::impl::on_irreversible_block( uint32_t block
   );
 
   _provider->update_lib(block_num);
-  //flushStorage(); it is apparently needed to properly write LIB so it can be read later, however it kills performance - alternative solution used currently just masks problem
+  //flushDb(); it is apparently needed to properly write LIB so it can be read later, however it kills performance - alternative solution used currently just masks problem
 }
 
 void account_history_rocksdb_plugin::impl::on_post_apply_block(const block_notification& bn)

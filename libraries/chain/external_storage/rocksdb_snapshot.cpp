@@ -52,6 +52,7 @@ void rocksdb_snapshot::save_snapshot( const hive::chain::prepare_snapshot_supple
   meta_data += std::to_string(_mainDb.head_block_num());
 
   FC_ASSERT( _provider->getStorage() && "Rocksdb database is not correctly prepared" );
+  _provider->flushDb();
   status = _backupEngine->CreateNewBackupWithMetadata( _provider->getStorage().get(), meta_data, true);
   checkStatus(status);
 

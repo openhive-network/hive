@@ -63,7 +63,7 @@ void rocksdb_storage_provider::shutdownDb()
 {
   if(getStorage())
   {
-    flushStorage();
+    flushDb();
     cleanupColumnHandles();
     getStorage()->Close();
     getStorage().reset();
@@ -170,7 +170,7 @@ void rocksdb_storage_provider::flushWriteBuffer(DB* storage)
   afterFlushWriteBuffer();
 }
 
-void rocksdb_storage_provider::flushStorage()
+void rocksdb_storage_provider::flushDb()
 {
   if(getStorage() == nullptr)
     return;
@@ -227,11 +227,6 @@ bool rocksdb_storage_provider::read( const Slice& key, PinnableSlice& value )
 
   ::rocksdb::Status s = getStorage()->Get( rOptions, _columnHandles[CommentsColumns::COMMENT], key, &value );
   return s.ok();
-}
-
-void rocksdb_storage_provider::flush()
-{
-  flushWriteBuffer();
 }
 
 void rocksdb_storage_provider::load_lib()

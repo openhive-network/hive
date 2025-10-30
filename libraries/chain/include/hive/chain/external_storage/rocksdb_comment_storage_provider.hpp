@@ -41,11 +41,11 @@ class rocksdb_comment_storage_provider: public rocksdb_storage_provider, public 
 
     void openDb( uint32_t expected_lib ) override;
     void shutdownDb() override;
+    void flushDb() override;
     void wipeDb() override;
 
     void save( const Slice& key, const Slice& value ) override;
     bool read( const Slice& key, PinnableSlice& value ) override;
-    void flush() override;
 
     void update_lib( uint32_t ) override;
     uint32_t get_lib() const override;
