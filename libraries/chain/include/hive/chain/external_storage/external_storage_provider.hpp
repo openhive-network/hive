@@ -26,6 +26,7 @@ class external_snapshot_storage_provider
 
     virtual void openDb( uint32_t expected_lib ) = 0;
     virtual void shutdownDb() = 0;
+    virtual void flushDb() = 0;
     virtual void wipeDb() = 0;
 
     virtual void update_lib( uint32_t ) = 0;
@@ -40,7 +41,6 @@ class external_comment_storage_provider: public external_snapshot_storage_provid
 
     virtual void save( const Slice& key, const Slice& value ) = 0;
     virtual bool read( const Slice& key, PinnableSlice& value ) = 0;
-    virtual void flush() = 0;
 };
 
 }}

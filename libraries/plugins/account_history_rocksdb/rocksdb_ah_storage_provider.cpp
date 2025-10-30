@@ -50,9 +50,9 @@ WriteBatch& rocksdb_ah_storage_provider::getWriteBuffer()
   return _writeBuffer;
 }
 
-void rocksdb_ah_storage_provider::flushStorage()
+void rocksdb_ah_storage_provider::flushDb()
 {
-  rocksdb_storage_provider::flushStorage();
+  rocksdb_storage_provider::flushDb();
 }
 
 void rocksdb_ah_storage_provider::flushWriteBuffer(DB* storage)

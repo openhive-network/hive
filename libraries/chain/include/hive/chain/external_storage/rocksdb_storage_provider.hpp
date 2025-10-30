@@ -83,9 +83,8 @@ class rocksdb_storage_provider
 
     void openDb( uint32_t expected_lib );
     void shutdownDb();
+    void flushDb();
     void wipeDb();
-
-    void flushStorage();
 
     virtual void beforeFlushWriteBuffer(){}
     void flushWriteBuffer(DB* storage = nullptr);
@@ -100,7 +99,6 @@ class rocksdb_storage_provider
 
     void save( const Slice& key, const Slice& value );
     bool read( const Slice& key, PinnableSlice& value );
-    void flush();
 };
 
 }}

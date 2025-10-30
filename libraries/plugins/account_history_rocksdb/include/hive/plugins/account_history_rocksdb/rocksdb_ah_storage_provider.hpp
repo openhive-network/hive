@@ -45,6 +45,7 @@ class rocksdb_ah_storage_provider: public rocksdb_storage_provider, public exter
 
     void openDb( uint32_t expected_lib ) override;
     void shutdownDb() override;
+    void flushDb() override;
     void wipeDb() override;
 
     uint64_t get_operationSeqId() const override;
@@ -60,8 +61,6 @@ class rocksdb_ah_storage_provider: public rocksdb_storage_provider, public exter
     //stores new value of last irreversible block in DB and _cached_irreversible_block
     void update_lib( uint32_t ) override;
     uint32_t get_lib() const override;
-
-    void flushStorage() override;
 
     void flushWriteBuffer(DB* storage = nullptr) override;
 
