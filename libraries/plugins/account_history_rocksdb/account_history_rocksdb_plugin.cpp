@@ -524,7 +524,7 @@ account_history_rocksdb_plugin::impl::collectReversibleOps(uint32_t* blockRangeB
 
   return _mainDb.with_read_lock([this, blockRangeBegin, blockRangeEnd, collectedIrreversibleBlock]() -> std::vector<rocksdb_operation_object>
   {
-    *collectedIrreversibleBlock = _provider->get_cached_irreversible_block();
+    *collectedIrreversibleBlock = _provider->get_lib();
 
     if( *blockRangeEnd < *collectedIrreversibleBlock )
       return std::vector<rocksdb_operation_object>();
@@ -642,7 +642,7 @@ uint32_t account_history_rocksdb_plugin::impl::find_reversible_account_history_d
   if(number_of_irreversible_ops <= start)
   {
     uint32_t collectedIrreversibleBlock = 0;
-    uint32_t rangeBegin = _provider->get_cached_irreversible_block();
+    uint32_t rangeBegin = _provider->get_lib();
     if( BOOST_UNLIKELY( rangeBegin == 0) )
       rangeBegin = 1;
     uint32_t rangeEnd = _mainDb.head_block_num() + 1;
@@ -1234,7 +1234,7 @@ void account_history_rocksdb_plugin::impl::on_irreversible_block( uint32_t block
   const auto& volatile_idx = _mainDb.get_index< volatile_operation_index, by_block >();
 
   /// Range of reversible (volatile) ops to be processed should come from blocks (_cached_irreversible_block, block_num]
-  auto moveRangeBeginI = volatile_idx.upper_bound( _provider->get_cached_irreversible_block() );
+  auto moveRangeBeginI = volatile_idx.upper_bound( _provider->get_lib() );
 
   FC_ASSERT(moveRangeBeginI == volatile_idx.begin() || moveRangeBeginI == volatile_idx.end(), "All volatile ops processed by previous irreversible blocks should be already flushed");
 

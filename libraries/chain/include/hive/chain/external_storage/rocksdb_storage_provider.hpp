@@ -53,6 +53,7 @@ class rocksdb_storage_provider
 
     //stores new value of last irreversible block in DB and _cached_irreversible_block
     void update_lib( uint32_t );
+    uint32_t get_lib() const { return _cached_irreversible_block; }
 
   private:
 
