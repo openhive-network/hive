@@ -3,7 +3,7 @@ from __future__ import annotations
 import test_tools as tt
 from hive_local_tools import run_for
 from wax import calculate_sig_digest
-from wax._private.result_tools import expose_result_as_python_string, to_cpp_string
+from wax._private.result_tools import expose_result_as_python_string
 
 
 # verify_signatures tests cannot be performed on 5 million and live_mainnet. Generate_sig_digest function requires
@@ -15,8 +15,8 @@ def test_verify_signatures_in_testnet(node: tt.InitNode) -> None:
     transaction = wallet.api.create_account("initminer", "alice", "{}")
     node_config = node.api.database.get_config()
     sig_digest = calculate_sig_digest(
-        to_cpp_string(transaction.json()),
-        to_cpp_string(node_config.HIVE_CHAIN_ID),
+        transaction.json(),
+        str(node_config.HIVE_CHAIN_ID),
     )
 
     node.api.database.verify_signatures(
