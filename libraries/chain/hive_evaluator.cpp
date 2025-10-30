@@ -2197,7 +2197,7 @@ void custom_binary_evaluator::do_apply( const custom_binary_operation& o )
   FC_TODO( "Check when this soft-fork was added and change to appropriate hardfork" );
   if( _db.is_in_control() || _db.has_hardfork( HIVE_HARDFORK_1_26_SOLIDIFY_OLD_SOFTFORKS ) )
   {
-    FC_ASSERT( false, "custom_binary_operation is deprecated" );
+    FC_ASSERT( false && "custom_binary_operation is deprecated" );
     FC_ASSERT( o.data.size() <= HIVE_CUSTOM_OP_DATA_MAX_LENGTH,
       "Operation data must be less than ${bytes} bytes.", ("bytes", HIVE_CUSTOM_OP_DATA_MAX_LENGTH) );
   }
@@ -2896,7 +2896,7 @@ void decline_voting_rights_evaluator::do_apply( const decline_voting_rights_oper
 
 void reset_account_evaluator::do_apply( const reset_account_operation& op )
 {
-  FC_ASSERT( false, "Reset Account Operation is currently disabled." );
+  FC_ASSERT( false && "Reset Account Operation is currently disabled." );
   //ABW: see discussion in https://github.com/steemit/steem/issues/240
   //apparently the idea was never put in active use and it does not seem it ever will
   //related member of account_object was removed as it was taking space with no purpose
@@ -2913,7 +2913,7 @@ void reset_account_evaluator::do_apply( const reset_account_operation& op )
 
 void set_reset_account_evaluator::do_apply( const set_reset_account_operation& op )
 {
-  FC_ASSERT( false, "Set Reset Account Operation is currently disabled." );
+  FC_ASSERT( false && "Set Reset Account Operation is currently disabled." );
   //related to reset_account_operation
 /*
   const auto& acnt = _db.get_account( op.account );
@@ -3053,7 +3053,7 @@ void claim_reward_balance2_evaluator::do_apply( const claim_reward_balance2_oper
         _db.adjust_balance( *a, token );
       }
       else
-        FC_ASSERT( false, "Unknown asset symbol" );
+        FC_ASSERT( false && "Unknown asset symbol" );
     } // non-SMT token
   } // for( const auto& token : op.reward_tokens )
 }
@@ -3366,7 +3366,7 @@ void witness_block_approve_evaluator::do_apply(const witness_block_approve_opera
 {
   // This transaction si /updait's handled in database::process_fast_confirm_transaction
   // and never reaches the 
-  FC_ASSERT( false, "This operation may not be included in a block");
+  FC_ASSERT( false && "This operation may not be included in a block");
 }
 
 } } // hive::chain

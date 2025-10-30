@@ -26,7 +26,7 @@ void dhf_helper::remove_proposals( database& db, const flat_set<int64_t>& propos
     if(foundPosI == byPropIdIdx.end())
     {
       if( db.is_in_control() || db.has_hardfork( HIVE_HARDFORK_1_28_DONT_TRY_REMOVE_NONEXISTENT_PROPOSAL ) )
-        FC_ASSERT( false, "Can't remove nonexistent proposal with id: ${pid}", ("pid", _pid) );
+        FC_ASSERT( false && "proposal doesn't exist", "Can't remove nonexistent proposal with id: ${pid}", ("pid", _pid) );
       continue;
     }
 
@@ -45,7 +45,7 @@ void dhf_helper::remove_proposals( database& db, const flat_set<int64_t>& propos
 
       if(foundPosI == byPropIdIdx.end())
       {
-        FC_ASSERT( false, "Can't remove nonexistent proposal with id: ${pid}", ("pid", *_iter_pid) );
+        FC_ASSERT( false && "nonexistent proposal", "Can't remove nonexistent proposal with id: ${pid}", ("pid", *_iter_pid) );
       }
 
       ++_iter_pid;
