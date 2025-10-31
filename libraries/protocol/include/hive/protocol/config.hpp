@@ -65,7 +65,7 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #ifdef HIVE_ENABLE_SMT
   #define HIVE_BLOCKCHAIN_VERSION             ( version(1, 29, 0) )
 #else
-  #define HIVE_BLOCKCHAIN_VERSION             ( version(1, 28, 0) )
+  #define HIVE_BLOCKCHAIN_VERSION             ( version(1, 28, 3) )
 #endif
 
 #define OLD_CHAIN_ID                          (fc::sha256::hash("testnet"))
