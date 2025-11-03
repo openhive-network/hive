@@ -21,7 +21,7 @@ public:
   operator bool() const { return ptr != nullptr; }
 
   const Object_Type& operator*() const { return *ptr; }
-  const Object_Type* get() const { return ptr; }
+  const Object_Type* operator->() const { return ptr; }
 };
 
 using account           = account_item<account_object>;

@@ -426,7 +426,7 @@ namespace detail
 
     for( auto& name : account_names )
     {
-      auto itr = _db.find_account( name );
+      auto itr = _db.find_volatile_account( name );
 
       if( itr )
       {
@@ -821,9 +821,9 @@ namespace detail
 
     while( itr != idx.end() && itr->get_comment() == cid )
     {
-      const auto& vo = _db.get_account( itr->get_voter() );
+      const auto& vo = _db.get_volatile_account( itr->get_voter() );
       vote_state vstate;
-      vstate.voter = vo.get_name();
+      vstate.voter = vo->get_name();
       vstate.weight = itr->get_weight();
       vstate.rshares = itr->get_rshares();
       vstate.percent = itr->get_vote_percent();

@@ -521,7 +521,7 @@ DEFINE_API_IMPL( database_api_impl, list_accounts )
       account_id_type proxy_id;
       if( key.first != HIVE_PROXY_TO_SELF_ACCOUNT )
       {
-        auto proxy = _db.find_account( key.first );
+        auto proxy = _db.find_volatile_account( key.first );
         FC_ASSERT( proxy, "Given proxy account does not exist." );
         proxy_id = proxy->get_id();
       }
@@ -559,8 +559,8 @@ DEFINE_API_IMPL( database_api_impl, find_accounts )
 
   for( auto& a : args.accounts )
   {
-    auto acct = _db.find_account( a );
-    if( acct != nullptr )
+    auto acct = _db.find_volatile_account( a );
+    if( acct )
       result.accounts.emplace_back( *acct, _db, args.delayed_votes_active );
   }
 
@@ -940,12 +940,12 @@ DEFINE_API_IMPL( database_api_impl, list_vesting_delegations )
     case( by_delegation ):
     {
       auto key = args.start.as< std::pair< account_name_type, account_name_type > >();
-      auto delegator = _db.find_account( key.first );
+      auto delegator = _db.find_volatile_account( key.first );
       FC_ASSERT( delegator, "Given account does not exist." );
       account_id_type delegatee_id;
       if( key.second != "" )
       {
-        auto delegatee = _db.find_account( key.second );
+        auto delegatee = _db.find_volatile_account( key.second );
         FC_ASSERT( delegatee, "Given account does not exist." );
         delegatee_id = delegatee->get_id();
       }
@@ -968,7 +968,7 @@ DEFINE_API_IMPL( database_api_impl, find_vesting_delegations )
 {
   find_vesting_delegations_return result;
   const auto& delegation_idx = _db.get_index< chain::vesting_delegation_index, chain::by_delegation >();
-  auto delegator = _db.find_account( args.account );
+  auto delegator = _db.find_volatile_account( args.account );
   FC_ASSERT( delegator, "Given account does not exist." );
   account_id_type delegator_id = delegator->get_id();
   auto itr = delegation_idx.lower_bound( delegator_id );
@@ -1013,7 +1013,7 @@ DEFINE_API_IMPL( database_api_impl, list_vesting_delegation_expirations )
       account_id_type delegator_id;
       if( delegator_name != "" )
       {
-        auto delegator = _db.find_account( delegator_name );
+        auto delegator = _db.find_volatile_account( delegator_name );
         FC_ASSERT( delegator, "Given account does not exist." );
         delegator_id = delegator->get_id();
       }
@@ -1036,7 +1036,7 @@ DEFINE_API_IMPL( database_api_impl, find_vesting_delegation_expirations )
 {
   find_vesting_delegation_expirations_return result;
   const auto& del_exp_idx = _db.get_index< chain::vesting_delegation_expiration_index, chain::by_account_expiration >();
-  auto delegator = _db.find_account( args.account );
+  auto delegator = _db.find_volatile_account( args.account );
   FC_ASSERT( delegator, "Given account does not exist." );
   account_id_type delegator_id = delegator->get_id();
   auto itr = del_exp_idx.lower_bound( delegator_id );
@@ -1079,7 +1079,7 @@ DEFINE_API_IMPL( database_api_impl, list_hbd_conversion_requests )
       account_id_type owner_id;
       if( key.first != "" )
       {
-        auto owner = _db.find_account( key.first );
+        auto owner = _db.find_volatile_account( key.first );
         FC_ASSERT( owner, "Given account does not exist." );
         owner_id = owner->get_id();
       }
@@ -1102,7 +1102,7 @@ DEFINE_API_IMPL( database_api_impl, find_hbd_conversion_requests )
 {
   find_hbd_conversion_requests_return result;
 
-  auto owner = _db.find_account( args.account );
+  auto owner = _db.find_volatile_account( args.account );
   FC_ASSERT( owner, "Given account does not exist." );
   account_id_type owner_id = owner->get_id();
 
@@ -1146,7 +1146,7 @@ DEFINE_API_IMPL( database_api_impl, list_collateralized_conversion_requests )
       account_id_type owner_id;
       if( key.first != "" )
       {
-        auto owner = _db.find_account( key.first );
+        auto owner = _db.find_volatile_account( key.first );
         FC_ASSERT( owner, "Given account does not exist." );
         owner_id = owner->get_id();
       }
@@ -1169,7 +1169,7 @@ DEFINE_API_IMPL( database_api_impl, find_collateralized_conversion_requests )
 {
   find_collateralized_conversion_requests_return result;
 
-  auto owner = _db.find_account( args.account );
+  auto owner = _db.find_volatile_account( args.account );
   FC_ASSERT( owner, "Given account does not exist." );
   account_id_type owner_id = owner->get_id();
 
@@ -1699,7 +1699,7 @@ DEFINE_API_IMPL( database_api_impl, list_proposal_votes )
 DEFINE_API_IMPL( database_api_impl, find_recurrent_transfers ) {
   find_recurrent_transfers_return result;
 
-  const auto* from_account = _db.find_account( args.from );
+  const auto from_account = _db.find_volatile_account( args.from );
   FC_ASSERT( from_account, "Given 'from' account does not exist." );
   auto from_account_id = from_account->get_id();
 
@@ -1708,8 +1708,8 @@ DEFINE_API_IMPL( database_api_impl, find_recurrent_transfers ) {
 
   while (itr != idx.end() && itr->from_id == from_account_id && result.recurrent_transfers.size() <= DATABASE_API_SINGLE_QUERY_LIMIT)
   {
-    const auto& to_account = _db.get_account( itr->to_id );
-    result.recurrent_transfers.emplace_back( *itr, from_account->get_name(), to_account.get_name() );
+    const auto& to_account = _db.get_volatile_account( itr->to_id );
+    result.recurrent_transfers.emplace_back( *itr, from_account->get_name(), to_account->get_name() );
     ++itr;
   }
 
@@ -1735,9 +1735,9 @@ DEFINE_API_IMPL( database_api_impl, get_required_signatures )
     _db.has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
     _db.get_chain_id(),
     args.available_keys,
-    [&]( string account_name ){ return authority( _db.get_account_authority( account_name ).active  ); },
-    [&]( string account_name ){ return authority( _db.get_account_authority( account_name ).owner   ); },
-    [&]( string account_name ){ return authority( _db.get_account_authority( account_name ).posting ); },
+    [&]( string account_name ){ return authority( _db.get_volatile_account_authority( account_name )->active  ); },
+    [&]( string account_name ){ return authority( _db.get_volatile_account_authority( account_name )->owner   ); },
+    [&]( string account_name ){ return authority( _db.get_volatile_account_authority( account_name )->posting ); },
     [&]( string witness_name ){ return _db.get_witness(witness_name).signing_key; }, // note: reflect any changes here in database::apply_transaction
     HIVE_MAX_SIG_CHECK_DEPTH );
 
@@ -1754,21 +1754,21 @@ DEFINE_API_IMPL( database_api_impl, get_potential_signatures )
     flat_set< public_key_type >(),
     [&]( account_name_type account_name )
     {
-      const auto& auth = _db.get_account_authority( account_name ).active;
+      const auto& auth = _db.get_volatile_account_authority( account_name )->active;
       for( const auto& k : auth.get_keys() )
         result.keys.insert( k );
       return authority( auth );
     },
     [&]( account_name_type account_name )
     {
-      const auto& auth = _db.get_account_authority( account_name ).owner;
+      const auto& auth = _db.get_volatile_account_authority( account_name )->owner;
       for( const auto& k : auth.get_keys() )
         result.keys.insert( k );
       return authority( auth );
     },
     [&]( account_name_type account_name )
     {
-      const auto& auth = _db.get_account_authority( account_name ).posting;
+      const auto& auth = _db.get_volatile_account_authority( account_name )->posting;
       for( const auto& k : auth.get_keys() )
         result.keys.insert( k );
       return authority( auth );
@@ -1789,9 +1789,9 @@ DEFINE_API_IMPL( database_api_impl, verify_authority )
     _db.has_hardfork( HIVE_HARDFORK_1_28_ALLOW_STRICT_AND_MIXED_AUTHORITIES ),
     _db.has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
     _db.get_chain_id(),
-    [&]( string account_name ){ return authority( _db.get_account_authority( account_name ).active  ); },
-    [&]( string account_name ){ return authority( _db.get_account_authority( account_name ).owner   ); },
-    [&]( string account_name ){ return authority( _db.get_account_authority( account_name ).posting ); },
+    [&]( string account_name ){ return authority( _db.get_volatile_account_authority( account_name )->active  ); },
+    [&]( string account_name ){ return authority( _db.get_volatile_account_authority( account_name )->owner   ); },
+    [&]( string account_name ){ return authority( _db.get_volatile_account_authority( account_name )->posting ); },
     [&]( string witness_name ){ return _db.get_witness(witness_name).signing_key; }, // note: reflect any changes here in database::apply_transaction
     args.pack,
     HIVE_MAX_SIG_CHECK_DEPTH,
@@ -1802,8 +1802,8 @@ DEFINE_API_IMPL( database_api_impl, verify_authority )
 
 DEFINE_API_IMPL( database_api_impl, verify_account_authority )
 {
-  auto account = _db.find_account( args.account );
-  FC_ASSERT( account != nullptr, "no such account" );
+  auto account = _db.find_volatile_account( args.account );
+  FC_ASSERT( account, "no such account" );
 
   hive::protocol::required_authorities_type required_authorities;
   switch( args.level )
@@ -1824,9 +1824,9 @@ DEFINE_API_IMPL( database_api_impl, verify_account_authority )
     _db.has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
     required_authorities,
     args.signers,
-    [&]( string account_name ) { return authority( _db.get_account_authority( account_name ).active ); },
-    [&]( string account_name ) { return authority( _db.get_account_authority( account_name ).owner ); },
-    [&]( string account_name ) { return authority( _db.get_account_authority( account_name ).posting ); },
+    [&]( string account_name ) { return authority( _db.get_volatile_account_authority( account_name )->active ); },
+    [&]( string account_name ) { return authority( _db.get_volatile_account_authority( account_name )->owner ); },
+    [&]( string account_name ) { return authority( _db.get_volatile_account_authority( account_name )->posting ); },
     [&]( string witness_name ) { return _db.get_witness( witness_name ).signing_key; } );
 
   return verify_account_authority_return( { ok } );
@@ -1855,9 +1855,9 @@ DEFINE_API_IMPL( database_api_impl, verify_signatures )
       _db.has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
       { args },
       sig_keys,
-      [this]( const string& name ) { return authority( _db.get_account_authority( name ).owner ); },
-      [this]( const string& name ) { return authority( _db.get_account_authority( name ).active ); },
-      [this]( const string& name ) { return authority( _db.get_account_authority( name ).posting ); },
+      [this]( const string& name ) { return authority( _db.get_volatile_account_authority( name )->owner ); },
+      [this]( const string& name ) { return authority( _db.get_volatile_account_authority( name )->active ); },
+      [this]( const string& name ) { return authority( _db.get_volatile_account_authority( name )->posting ); },
       [this]( string witness_name ){ return _db.get_witness(witness_name).signing_key; }, // note: reflect any changes here in database::apply_transaction
       HIVE_MAX_SIG_CHECK_DEPTH );
   }

@@ -428,7 +428,7 @@ const account_metadata_object* database::find_account_metadata( const account_na
   return get_accounts_handler().get_account_metadata( account_name, false /*account_metadata_is_required*/ );
 }
 
-const account_object& database::get_account( const account_id_type id )const
+const account_object& database::get_account( const account_id_type& id )const
 {
   return *( get_accounts_handler().get_account( id, true /*account_is_required*/ ) );
 }
@@ -448,7 +448,42 @@ const account_object* database::find_account( const account_name_type& name )con
   return get_accounts_handler().get_account( name, false /*account_is_required*/ );
 }
 
-account database::get_volatile_account( const account_name_type& name )const
+account_authority database::get_volatile_account_authority( const account_name_type& account_name )const
+{
+  return get_accounts_handler().get_volatile_account_authority( account_name, true /*account_authority_is_required*/ );
+}
+
+account_authority database::find_volatile_account_authority( const account_name_type& account_name )const
+{
+  return get_accounts_handler().get_volatile_account_authority( account_name, false /*account_authority_is_required*/ );
+}
+
+account_metadata database::get_volatile_account_metadata( const account_name_type& account_name )const
+{
+  return get_accounts_handler().get_volatile_account_metadata( account_name, true /*account_metadata_is_required*/ );
+}
+
+account_metadata database::find_volatile_account_metadata( const account_name_type& account_name )const
+{
+  return get_accounts_handler().get_volatile_account_metadata( account_name, false /*account_metadata_is_required*/ );
+}
+
+account database::get_volatile_account(  const account_id_type& id )const
+{
+  return get_accounts_handler().get_volatile_account( id, true /*account_is_required*/ );
+}
+
+account database::find_volatile_account( const account_id_type& id )const
+{
+  return get_accounts_handler().get_volatile_account( id, false /*account_is_required*/ );
+}
+
+account database::get_volatile_account(  const account_name_type& name )const
+{
+  return get_accounts_handler().get_volatile_account( name, true /*account_is_required*/ );
+}
+
+account database::find_volatile_account( const account_name_type& name )const
 {
   return get_accounts_handler().get_volatile_account( name, false /*account_is_required*/ );
 }

@@ -270,13 +270,23 @@ namespace chain {
       const account_metadata_object& get_account_metadata( const account_name_type& account_name )const;
       const account_metadata_object* find_account_metadata( const account_name_type& account_name )const;
 
-      const account_object& get_account(  const account_id_type      id )const;
+      const account_object& get_account(  const account_id_type&     id )const;
       const account_object* find_account( const account_id_type&     id )const;
 
       const account_object& get_account(  const account_name_type& name )const;
       const account_object* find_account( const account_name_type& name )const;
 
-      account get_volatile_account( const account_name_type& name )const;
+      account_authority get_volatile_account_authority( const account_name_type& account_name )const;
+      account_authority find_volatile_account_authority( const account_name_type& account_name )const;
+
+      account_metadata get_volatile_account_metadata( const account_name_type& account_name )const;
+      account_metadata find_volatile_account_metadata( const account_name_type& account_name )const;
+
+      account get_volatile_account(  const account_id_type&     id )const;
+      account find_volatile_account( const account_id_type&     id )const;
+
+      account get_volatile_account(  const account_name_type& name )const;
+      account find_volatile_account( const account_name_type& name )const;
 
       const comment_object*  find_comment( comment_id_type comment_id )const;
 

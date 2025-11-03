@@ -110,7 +110,10 @@ class accounts_handler : public executor_interface, public external_storage_snap
     virtual const account_object* get_account( const account_name_type& account_name, bool account_is_required ) const = 0;
     virtual const account_object* get_account( const account_id_type& account_id, bool account_is_required ) const = 0;
 
+    virtual account_metadata get_volatile_account_metadata( const account_name_type& account_name, bool account_metadata_is_required ) const = 0;
+    virtual account_authority get_volatile_account_authority( const account_name_type& account_name, bool account_authority_is_required ) const = 0;
     virtual account get_volatile_account( const account_name_type& account_name, bool account_is_required ) const = 0;
+    virtual account get_volatile_account( const account_id_type& account_id, bool account_is_required ) const = 0;
 
     virtual void open() = 0;
     virtual void close() = 0;
