@@ -7,6 +7,7 @@ LIST(APPEND BOOST_COMPONENTS
   program_options
   system)
 include( ${CMAKE_CURRENT_LIST_DIR}/../../../../cmake/hive_targets.cmake )
+add_compile_definitions( FC_DISABLE_LOGGING FC_LOG_MESSAGE_DISABLED )
 add_subdirectory( ${CMAKE_CURRENT_LIST_DIR}/../../../../libraries/fc build_fc_minimal )
 
 set(WASM_RUNTIME_COMPONENT_NAME "wasm_runtime_components")
@@ -30,6 +31,9 @@ function( DEFINE_WASM_TARGET_FOR wasm_target_basename )
     -sEXPORT_EXCEPTION_HANDLING_HELPERS=1
     -sEXCEPTION_STACK_TRACES=1
     -sELIMINATE_DUPLICATE_FUNCTIONS=1
+    -sASSERTIONS=0
+    -sSTACK_OVERFLOW_CHECK=0
+    -sMALLOC=emmalloc
   )
 
   set( exec_wasm_name "${wasm_target_basename}.${arg_TARGET_ENVIRONMENT}" )
