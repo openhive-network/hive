@@ -57,7 +57,7 @@ function( DEFINE_WASM_TARGET_FOR wasm_target_basename )
   target_link_options( ${exec_wasm_name} PUBLIC
     -sMODULARIZE=1 -sSINGLE_FILE=0 -sUSE_ES6_IMPORT_META=1
     -sEXPORT_ES6=1 -sINITIAL_MEMORY=67108864 -sWASM_ASYNC_COMPILATION=1
-    --minify=0 --emit-symbol-map -sENVIRONMENT="${WASM_ENV}"
+    --minify=0 --emit-symbol-map -sENVIRONMENT=${WASM_ENV}
     --emit-tsd "${CMAKE_CURRENT_BINARY_DIR}/${exec_common_name}.d.ts"
   )
 
