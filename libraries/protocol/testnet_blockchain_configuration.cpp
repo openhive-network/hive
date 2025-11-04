@@ -36,9 +36,9 @@ void configuration::set_hardfork_schedule( const fc::time_point_sec& genesis_tim
     size_t current_hf_index = hardfork_schedule[ i ].hardfork;
     uint32_t current_block_num = hardfork_schedule[ i ].block_num;
 
-    FC_ASSERT( current_hf_index > 0, "You cannot specify the hardfork 0 block. Use 'genesis-time' option instead" );
-    FC_ASSERT( current_hf_index <= HIVE_NUM_HARDFORKS, "You are not allowed to specify future hardfork times" );
-    FC_ASSERT( current_hf_index > last_hf_index, "The hardfork schedule items must be in ascending order, no repetitions" );
+    HIVE_PROTOCOL_HARDFORK_ASSERT( current_hf_index > 0, "You cannot specify the hardfork 0 block. Use 'genesis-time' option instead" );
+    HIVE_PROTOCOL_HARDFORK_ASSERT( current_hf_index <= HIVE_NUM_HARDFORKS, "You are not allowed to specify future hardfork times" );
+    HIVE_PROTOCOL_HARDFORK_ASSERT( current_hf_index > last_hf_index, "The hardfork schedule items must be in ascending order, no repetitions" );
 
     // Set provided hardfork time filling the gaps if needed.
     while( last_hf_index < current_hf_index )
@@ -62,7 +62,7 @@ void configuration::reset_hardfork_schedule()
 
 uint32_t configuration::get_hf_time(uint32_t hf_num, uint32_t default_time_sec)const
 {
-  FC_ASSERT( hf_num < hf_times.size(), "Trying to retrieve hardfork of a non-existing hardfork ${hf}", ("hf", hf_num) );
+  HIVE_PROTOCOL_VALIDATION_ASSERT( hf_num < hf_times.size(), "Trying to retrieve hardfork of a non-existing hardfork ${hf}", ("hf", hf_num) );
 
   return hf_times[hf_num] != 0 ? hf_times[hf_num] : default_time_sec; // No hardfork schedule specified, use default time sec
 }
@@ -92,7 +92,7 @@ void configuration::set_skeleton_key(const private_key_type& private_key)
 
 void configuration::set_hive_owner_update_limit( uint16_t limit )
 {
-  FC_ASSERT( ( limit >= 2 * HIVE_BLOCK_INTERVAL ) && ( limit % HIVE_BLOCK_INTERVAL == 0 ),
+  HIVE_PROTOCOL_VALIDATION_ASSERT( ( limit >= 2 * HIVE_BLOCK_INTERVAL ) && ( limit % HIVE_BLOCK_INTERVAL == 0 ),
     "`hive_owner_update_limit` must be multiple of whole block interval and at least two blocks long. Got ${limit}", ( "limit", limit ) );
 
   hive_owner_update_limit = limit;
@@ -100,8 +100,8 @@ void configuration::set_hive_owner_update_limit( uint16_t limit )
 
 void configuration::set_initial_asset_supply( uint64_t hive, uint64_t hbd, uint64_t to_vest, const price& vest_price )
 {
-  FC_ASSERT( hive >= to_vest, "Too much HIVE requested for vesting compared to given supply" );
-  FC_ASSERT( vest_price.base.symbol == VESTS_SYMBOL && vest_price.quote.symbol == HIVE_SYMBOL,
+  HIVE_PROTOCOL_VALIDATION_ASSERT( hive >= to_vest, "Too much HIVE requested for vesting compared to given supply" );
+  HIVE_PROTOCOL_ASSET_ASSERT( vest_price.base.symbol == VESTS_SYMBOL && vest_price.quote.symbol == HIVE_SYMBOL,
     "Invalid price of vests - expected VESTS on HIVE" );
 
   init_hive_supply = hive;

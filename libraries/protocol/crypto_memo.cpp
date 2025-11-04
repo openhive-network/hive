@@ -1,3 +1,4 @@
+#include <hive/protocol/hive_specialised_exceptions.hpp>
 #include <hive/protocol/crypto_memo.hpp>
 
 namespace hive { namespace protocol {
@@ -14,13 +15,13 @@ crypto_memo::memo_content crypto_memo::build_from_encrypted_content( const crypt
 crypto_memo::memo_content crypto_memo::build_from_base58_content( const crypto_data::public_key_type& from, const crypto_data::public_key_type& to, const std::string& content )
 {
   auto _c = from_string_impl<crypto_data::content>( content );
-  FC_ASSERT( _c, "Build from `base58` content failed");
+  HIVE_PROTOCOL_CRYPTO_ASSERT( _c, "Build from `base58` content failed");
   return build_from_encrypted_content( from, to, std::move( _c.value() ) );
 }
 
 std::optional<crypto_memo::memo_content> crypto_memo::load_from_string( const std::string& data )
 {
-  FC_ASSERT( data.size() > 0 && data[0] == marker );
+  HIVE_PROTOCOL_CRYPTO_ASSERT( data.size() > 0 && data[0] == marker );
   return from_string_impl<memo_content>( data.substr(1) );
 }
 
@@ -31,7 +32,7 @@ std::string crypto_memo::dump_to_string( const memo_content& content )
 
 std::string crypto_memo::encrypt( const crypto_data::private_key_type& from, const crypto_data::public_key_type& to, const std::string& memo, std::optional<uint64_t> nonce /*= std::optional<uint64_t>()*/ )
 {
-  FC_ASSERT( memo.size() > 0 && memo[0] == marker );
+  HIVE_PROTOCOL_CRYPTO_ASSERT( memo.size() > 0 && memo[0] == marker );
   return dump_to_string( build_from_encrypted_content( from.get_public_key(), to, encrypt_impl( from, to, memo.substr(1), nonce ) ) );
 }
 

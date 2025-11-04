@@ -20,13 +20,13 @@ bool authority_verification_tracer::detect_cycle(std::string account) const
 
 authority_verification_trace::path_entry& authority_verification_tracer::get_root_entry()
 {
-  FC_ASSERT( not _trace.root.empty() && "get_root_entry()" );
+  HIVE_PROTOCOL_AUTHORITY_ASSERT( not _trace.root.empty() && "get_root_entry()" );
   return _trace.root.back();
 }
 
 const authority_verification_trace::path_entry& authority_verification_tracer::get_root_entry() const
 {
-  FC_ASSERT( not _trace.root.empty() && "get_root_entry() const" );
+  HIVE_PROTOCOL_AUTHORITY_ASSERT( not _trace.root.empty() && "get_root_entry() const" );
   return _trace.root.back();
 }
 
@@ -43,13 +43,13 @@ void authority_verification_tracer::push_parent_entry()
 {
   path_entry& parent_entry = get_parent_entry();
   size_t aux = parent_entry.visited_entries.size();
-  FC_ASSERT(aux > 0, "Push parent entry AFTER putting it into visited_entries!");
+  HIVE_PROTOCOL_AUTHORITY_ASSERT(aux > 0, "Push parent entry AFTER putting it into visited_entries!");
   _current_authority_path.push_back( aux -1 );
 }
 
 void authority_verification_tracer::pop_parent_entry()
 {
-  FC_ASSERT(not _current_authority_path.empty());
+  HIVE_PROTOCOL_AUTHORITY_ASSERT(not _current_authority_path.empty());
   _current_authority_path.pop_back();
 }
 
@@ -248,7 +248,7 @@ void authority_verification_tracer::on_leaving_account_entry( unsigned int effec
 
 void authority_verification_tracer::trim_final_authority_path()
 {
-  FC_ASSERT(not _trace.final_authority_path.empty());
+  HIVE_PROTOCOL_AUTHORITY_ASSERT(not _trace.final_authority_path.empty());
   _trace.final_authority_path.pop_back();
 }
 

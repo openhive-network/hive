@@ -248,15 +248,15 @@ struct smt_set_runtime_parameters_operation_visitor
 
   void operator()( const smt_param_rewards_v1& param_rewards )const
   {
-    FC_ASSERT( param_rewards.percent_curation_rewards <= HIVE_100_PERCENT,
+    HIVE_PROTOCOL_REWARD_ASSERT( param_rewards.percent_curation_rewards <= HIVE_100_PERCENT,
       "Percent Curation Rewards must not exceed 10000. Was ${n}",
       ("n", param_rewards.percent_curation_rewards) );
 
-    FC_ASSERT( param_rewards.author_reward_curve == linear ||
+    HIVE_PROTOCOL_REWARD_ASSERT( param_rewards.author_reward_curve == linear ||
                param_rewards.author_reward_curve == quadratic,
                "Author Reward Curve must be linear or quadratic" );
 
-    FC_ASSERT( param_rewards.curation_reward_curve == linear ||
+    HIVE_PROTOCOL_REWARD_ASSERT( param_rewards.curation_reward_curve == linear ||
                param_rewards.curation_reward_curve == square_root ||
                param_rewards.curation_reward_curve == bounded_curation,
                "Curation Reward Curve must be linear, square_root, or bounded_curation." );

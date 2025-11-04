@@ -1,3 +1,5 @@
+#include <hive/protocol/hive_specialised_exceptions.hpp>
+
 #include <hive/protocol/config.hpp>
 #include <hive/protocol/types.hpp>
 
@@ -79,7 +81,7 @@ namespace hive { namespace protocol {
     auto bin = fc::from_base58( base58str.substr( prefix_len ) );
     binary_key bin_key;
     fc::raw::unpack_from_vector(bin, bin_key);
-    FC_ASSERT( fc::ripemd160::hash( bin_key.data.data, bin_key.data.size() )._hash[0] == bin_key.check &&
+    HIVE_PROTOCOL_CRYPTO_ASSERT( fc::ripemd160::hash( bin_key.data.data, bin_key.data.size() )._hash[0] == bin_key.check &&
                "extended_public_key_type" );
     key_data = bin_key.data;
   }
@@ -135,7 +137,7 @@ namespace hive { namespace protocol {
     auto bin = fc::from_base58( base58str.substr( prefix_len ) );
     binary_key bin_key;
     fc::raw::unpack_from_vector(bin, bin_key);
-    FC_ASSERT( fc::ripemd160::hash( bin_key.data.data, bin_key.data.size() )._hash[0] == bin_key.check &&
+    HIVE_PROTOCOL_CRYPTO_ASSERT( fc::ripemd160::hash( bin_key.data.data, bin_key.data.size() )._hash[0] == bin_key.check &&
                "extended_private_key_type" );
     key_data = bin_key.data;
   }

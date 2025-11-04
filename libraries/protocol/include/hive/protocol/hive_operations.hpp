@@ -185,8 +185,8 @@ namespace hive { namespace protocol {
       */
     void validate() const
     {
-      FC_ASSERT(votable_assets.size() <= SMT_MAX_VOTABLE_ASSETS, "Too much votable assets specified");
-      FC_ASSERT(is_allowed(HIVE_SYMBOL) == false,
+      HIVE_PROTOCOL_OPERATIONS_ASSERT(votable_assets.size() <= SMT_MAX_VOTABLE_ASSETS, "Too much votable assets specified");
+      HIVE_PROTOCOL_OPERATIONS_ASSERT(is_allowed(HIVE_SYMBOL) == false,
         "HIVE can not be explicitly specified as one of allowed_vote_assets");
     }
 
@@ -484,9 +484,9 @@ namespace hive { namespace protocol {
     {
       if( force_canon )
       {
-        FC_ASSERT( account_creation_fee.symbol.is_canon() );
+        HIVE_PROTOCOL_OPERATIONS_ASSERT( account_creation_fee.symbol.is_canon() );
       }
-      FC_ASSERT( account_creation_fee.amount >= HIVE_MIN_ACCOUNT_CREATION_FEE);
+      HIVE_PROTOCOL_OPERATIONS_ASSERT( account_creation_fee.amount >= HIVE_MIN_ACCOUNT_CREATION_FEE);
       FC_ASSERT( maximum_block_size >= HIVE_MIN_BLOCK_SIZE_LIMIT);
       FC_ASSERT( hbd_interest_rate >= 0 );
       FC_ASSERT( hbd_interest_rate <= HIVE_100_PERCENT );

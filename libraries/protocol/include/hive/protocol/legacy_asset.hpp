@@ -31,7 +31,7 @@ struct legacy_hive_asset
     {
       if( force_canon )
       {
-        FC_ASSERT( symbol.is_canon(), "Must use canonical HIVE symbol serialization" );
+        HIVE_PROTOCOL_ASSET_ASSERT( symbol.is_canon(), "Must use canonical HIVE symbol serialization" );
       }
       return asset( amount, HIVE_SYMBOL );
     }
@@ -45,7 +45,7 @@ struct legacy_hive_asset
 
     static legacy_hive_asset from_asset( const asset& a )
     {
-      FC_ASSERT( a.symbol == HIVE_SYMBOL );
+      HIVE_PROTOCOL_ASSET_ASSERT( a.symbol == HIVE_SYMBOL );
       return from_amount( a.amount );
     }
 
@@ -71,7 +71,7 @@ inline void pack( Stream& s, const hive::protocol::legacy_hive_asset_symbol_type
     return;
   }
 
-  FC_ASSERT( sym.ser == OBSOLETE_SYMBOL_SER, "Cannot serialize legacy symbol ${s}", ("s", sym.ser) );
+  HIVE_PROTOCOL_ASSET_ASSERT( sym.ser == OBSOLETE_SYMBOL_SER, "Cannot serialize legacy symbol ${s}", ("s", sym.ser) );
 
   if( hive::protocol::serialization_mode_controller::get_current_pack() == hive::protocol::pack_type::legacy )
     pack( s, sym.ser );
@@ -100,7 +100,7 @@ inline void unpack( Stream& s, hive::protocol::legacy_hive_asset_symbol_type& sy
   }
   s.read( ((char*) &ser)+4, 4 );
 
-  FC_ASSERT( ser == OBSOLETE_SYMBOL_LEGACY_SER_1 ||
+  HIVE_PROTOCOL_ASSET_ASSERT( ser == OBSOLETE_SYMBOL_LEGACY_SER_1 ||
              ser == OBSOLETE_SYMBOL_LEGACY_SER_2 ||
              ser == OBSOLETE_SYMBOL_LEGACY_SER_3 ||
              ser == OBSOLETE_SYMBOL_LEGACY_SER_4 ||
