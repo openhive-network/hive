@@ -88,7 +88,7 @@ namespace chain {
     fc::path data_dir;
     fc::path shared_mem_dir;
     fc::path comments_storage_path;
-    fc::path accounts_storage_path;
+    fc::path state_storage_path;
     uint64_t shared_file_size = 0;
     uint16_t shared_file_full_threshold = 0;
     uint16_t shared_file_scale_rate = 0;
