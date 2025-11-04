@@ -319,6 +319,7 @@ BOOST_AUTO_TEST_CASE( declined_voting_rights_between_hf27_and_hf28 )
       BOOST_REQUIRE_EQUAL( (bool)executor, true );
 
       auto _ht = executor->db->head_block_time();
+      auto _hn = executor->db->head_block_num();
 
       {
         if( level == 0 )
@@ -334,7 +335,7 @@ BOOST_AUTO_TEST_CASE( declined_voting_rights_between_hf27_and_hf28 )
 
         BOOST_TEST_MESSAGE("Create accounts.");
         for( auto& account : _accounts )
-          executor->db->create< account_object >( account, _ht );
+          executor->db->create< account_object >( account, _ht, _hn );
       }
       {
         if( level == 1 )

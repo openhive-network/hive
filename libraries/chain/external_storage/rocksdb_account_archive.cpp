@@ -212,14 +212,6 @@ class updater
 
   public:
 
-    static void modify( chainbase::database& db, const SHM_Object_Type& obj )
-    {
-      db.modify<SHM_Object_Type>( obj, [&]( SHM_Object_Type& o )
-      {
-        o.set_last_access_block( get_block_num( db ) );
-      } );
-    }
-
     static void modify( chainbase::database& db, const SHM_Object_Type& obj, std::function<void(SHM_Object_Type&)> modifier )
     {
       db.modify<SHM_Object_Type>( obj, [&]( SHM_Object_Type& o )
@@ -414,8 +406,6 @@ void rocksdb_account_archive::create_object( const account_metadata_object& obj 
 {
   auto time_start = std::chrono::high_resolution_clock::now();
 
-  updater<account_metadata_object>::modify( db, obj );
-
   accounts_stats::stats.account_metadata_created.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
   ++accounts_stats::stats.account_metadata_created.count;
 }
@@ -461,8 +451,6 @@ void rocksdb_account_archive::modify_object( const account_metadata_object& obj,
 void rocksdb_account_archive::create_object( const account_authority_object& obj )
 {
   auto time_start = std::chrono::high_resolution_clock::now();
-
-  updater<account_authority_object>::modify( db, obj );
 
   accounts_stats::stats.account_authority_created.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
   ++accounts_stats::stats.account_authority_created.count;
@@ -510,7 +498,6 @@ void rocksdb_account_archive::create_object( const account_object& obj )
 {
   auto time_start = std::chrono::high_resolution_clock::now();
 
-  updater<account_object>::modify( db, obj );
   db.create< tiny_account_object >( obj );
 
   accounts_stats::stats.account_created.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();

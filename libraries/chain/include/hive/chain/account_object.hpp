@@ -365,10 +365,11 @@ namespace hive { namespace chain {
       template< typename Allocator >
       account_object( allocator< Allocator > a, uint64_t _id,
         const account_name_type& _name, const public_key_type& _memo_key,
-        const time_point_sec& _creation_time, const time_point_sec& _block_creation_time, bool _mined,
+        const time_point_sec& _creation_time, const time_point_sec& _block_creation_time, uint32_t _block_creation, bool _mined,
         const account_object* _recovery_account,
         bool _fill_mana, const asset& incoming_delegation, int64_t _rc_adjustment = 0 )
       : id( _id ),
+        block_number( _block_creation ),
         recovery( _recovery_account ? _recovery_account->get_id() : account_id_type() ),
         assets( incoming_delegation ),
         mrc( _creation_time, _fill_mana, _rc_adjustment, get_effective_vesting_shares() ),
@@ -381,8 +382,10 @@ namespace hive { namespace chain {
       //minimal constructor used for creation of accounts at genesis and in tests
       template< typename Allocator >
       account_object( allocator< Allocator > a, uint64_t _id,
-        const account_name_type& _name, const time_point_sec& _creation_time, const public_key_type& _memo_key = public_key_type() )
-        : id( _id ), misc( _name, _creation_time, _creation_time, true/*mined*/, _memo_key ),
+        const account_name_type& _name, const time_point_sec& _creation_time, uint32_t _block_creation, const public_key_type& _memo_key = public_key_type() )
+        : id( _id ), 
+          block_number( _block_creation ),
+          misc( _name, _creation_time, _creation_time, true/*mined*/, _memo_key ),
           delayed_votes( a )
       {}
 
@@ -505,8 +508,9 @@ namespace hive { namespace chain {
       account_metadata_object( allocator< Allocator > a, account_metadata_id_type _id,
                                 const std::string& account,
                                 const std::string& json_metadata,
-                                const std::string& posting_json_metadata )
-      : id( _id ), account( account), json_metadata( a ), posting_json_metadata( a )
+                                const std::string& posting_json_metadata,
+                                std::optional<uint32_t> _block_creation )
+      : id( _id ), block_number( _block_creation ), account( account), json_metadata( a ), posting_json_metadata( a )
       {
         from_string( this->json_metadata, json_metadata );
         from_string( this->posting_json_metadata, posting_json_metadata );
@@ -553,8 +557,9 @@ namespace hive { namespace chain {
                                 const authority& active,
                                 const authority& posting,
                                 const time_point_sec& previous_owner_update,
-                                const time_point_sec& last_owner_update )
-      : id( _id ), account( account ), owner( a ), active( a ), posting( a ),
+                                const time_point_sec& last_owner_update,
+                                std::optional<uint32_t> _block_creation )
+      : id( _id ), block_number( _block_creation ), account( account ), owner( a ), active( a ), posting( a ),
         previous_owner_update( previous_owner_update ), last_owner_update( last_owner_update )
       {
         this->owner = owner;

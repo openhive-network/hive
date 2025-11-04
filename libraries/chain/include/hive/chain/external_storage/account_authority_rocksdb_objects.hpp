@@ -37,7 +37,8 @@ class rocksdb_account_authority_object
                             active,
                             posting,
                             previous_owner_update,
-                            last_owner_update
+                            last_owner_update,
+                            std::optional<uint32_t>()
                           );
       }
       else
@@ -51,7 +52,8 @@ class rocksdb_account_authority_object
                             active,
                             posting,
                             previous_owner_update,
-                            last_owner_update
+                            last_owner_update,
+                            std::optional<uint32_t>()
                           )
         );
       }

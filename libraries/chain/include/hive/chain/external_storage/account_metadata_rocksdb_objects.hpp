@@ -28,7 +28,8 @@ class rocksdb_account_metadata_object
                             id,
                             account,
                             json_metadata,
-                            posting_json_metadata
+                            posting_json_metadata,
+                            std::optional<uint32_t>()
                           );
       }
       else
@@ -39,7 +40,8 @@ class rocksdb_account_metadata_object
                             id,
                             account,
                             json_metadata,
-                            posting_json_metadata
+                            posting_json_metadata,
+                            std::optional<uint32_t>()
                           )
         );
       }

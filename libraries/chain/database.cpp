@@ -1690,6 +1690,7 @@ void database::lock_account( const account_object& account )
       auth.owner.weight_threshold = 1;
       auth.active.weight_threshold = 1;
       auth.posting.weight_threshold = 1;
+      auth.set_last_access_block( head_block_num() );
     } );
   }
   else
@@ -3701,55 +3702,60 @@ void database::init_genesis()
     // Create blockchain accounts
     public_key_type      init_public_key(HIVE_INIT_PUBLIC_KEY);
 
-    create< account_object >( HIVE_MINER_ACCOUNT, HIVE_GENESIS_TIME );
+    create< account_object >( HIVE_MINER_ACCOUNT, HIVE_GENESIS_TIME, 0 );
     create< account_authority_object >( [&]( account_authority_object& auth )
     {
       auth.account = HIVE_MINER_ACCOUNT;
       auth.owner.weight_threshold = 1;
       auth.active.weight_threshold = 1;
       auth.posting.weight_threshold = 1;
+      auth.set_last_access_block( 0 );
     });
 
-    create< account_object >( HIVE_NULL_ACCOUNT, HIVE_GENESIS_TIME );
+    create< account_object >( HIVE_NULL_ACCOUNT, HIVE_GENESIS_TIME, 0 );
     create< account_authority_object >( [&]( account_authority_object& auth )
     {
       auth.account = HIVE_NULL_ACCOUNT;
       auth.owner.weight_threshold = 1;
       auth.active.weight_threshold = 1;
       auth.posting.weight_threshold = 1;
+      auth.set_last_access_block( 0 );
     });
 
 #if defined(IS_TEST_NET) || defined(HIVE_CONVERTER_ICEBERG_PLUGIN_ENABLED)
-    create< account_object >( OBSOLETE_TREASURY_ACCOUNT, HIVE_GENESIS_TIME );
+    create< account_object >( OBSOLETE_TREASURY_ACCOUNT, HIVE_GENESIS_TIME, 0 );
     create< account_authority_object >([&]( account_authority_object& auth )
     {
       auth.account = OBSOLETE_TREASURY_ACCOUNT;
       auth.owner.weight_threshold = 1;
       auth.active.weight_threshold = 1;
       auth.posting.weight_threshold = 1;
+      auth.set_last_access_block( 0 );
     } );
-    create< account_object >( NEW_HIVE_TREASURY_ACCOUNT, HIVE_GENESIS_TIME );
+    create< account_object >( NEW_HIVE_TREASURY_ACCOUNT, HIVE_GENESIS_TIME, 0 );
     create< account_authority_object >([&]( account_authority_object& auth )
     {
       auth.account = NEW_HIVE_TREASURY_ACCOUNT;
       auth.owner.weight_threshold = 1;
       auth.active.weight_threshold = 1;
       auth.posting.weight_threshold = 1;
+      auth.set_last_access_block( 0 );
     } );
 #endif
 
-    create< account_object >( HIVE_TEMP_ACCOUNT, HIVE_GENESIS_TIME );
+    create< account_object >( HIVE_TEMP_ACCOUNT, HIVE_GENESIS_TIME, 0 );
     create< account_authority_object >( [&]( account_authority_object& auth )
     {
       auth.account = HIVE_TEMP_ACCOUNT;
       auth.owner.weight_threshold = 0;
       auth.active.weight_threshold = 0;
       auth.posting.weight_threshold = 0;
+      auth.set_last_access_block( 0 );
     });
 
     const auto init_witness = [&]( const account_name_type& account_name )
     {
-      create< account_object >( account_name, HIVE_GENESIS_TIME, init_public_key );
+      create< account_object >( account_name, HIVE_GENESIS_TIME, 0, init_public_key );
 
       create< account_authority_object >( [&]( account_authority_object& auth )
       {
@@ -3758,6 +3764,7 @@ void database::init_genesis()
         auth.owner.weight_threshold = 1;
         auth.active  = auth.owner;
         auth.posting = auth.active;
+        auth.set_last_access_block( 0 );
       });
 
       create< witness_object >( [&]( witness_object& w )
@@ -3785,7 +3792,7 @@ void database::init_genesis()
     {
       const char* STEEM_ACCOUNT_NAME = "steem";
       auto STEEM_PUBLIC_KEY = public_key_type( HIVE_STEEM_PUBLIC_KEY_STR );
-      create< account_object >( STEEM_ACCOUNT_NAME, STEEM_PUBLIC_KEY, HIVE_GENESIS_TIME, HIVE_GENESIS_TIME, true, nullptr, true, asset( 0, VESTS_SYMBOL ) );
+      create< account_object >( STEEM_ACCOUNT_NAME, STEEM_PUBLIC_KEY, HIVE_GENESIS_TIME, HIVE_GENESIS_TIME, 0, true, nullptr, true, asset( 0, VESTS_SYMBOL ) );
       create< account_authority_object >( [&]( account_authority_object& auth )
       {
         auth.account = STEEM_ACCOUNT_NAME;
@@ -3796,6 +3803,7 @@ void database::init_genesis()
 #endif
         auth.active = auth.owner;
         auth.posting = auth.owner;
+        auth.set_last_access_block( 0 );
       } );
     }
 
@@ -6331,7 +6339,7 @@ void database::apply_hardfork( uint32_t hardfork )
       // Create the treasury account if it does not exist
       // This may sometimes happen in the mirrornet, when we do not have the account created upon the HF 21 application or any dependent operation
       if( find_account(treasury_name) == nullptr ) {
-          create<account_object>(treasury_name, head_block_time());
+          create<account_object>(treasury_name, head_block_time(), head_block_num() );
           push_virtual_operation(
             account_created_operation( treasury_name, treasury_name, asset(0, VESTS_SYMBOL), asset(0, VESTS_SYMBOL) ) );
       }
@@ -6439,7 +6447,7 @@ void database::apply_hardfork( uint32_t hardfork )
     const auto treasury_name = get_treasury_name();
 
     if( find_account(treasury_name) == nullptr ) {
-        create<account_object>(treasury_name, head_block_time());
+        create<account_object>(treasury_name, head_block_time(), head_block_num());
         push_virtual_operation(
           account_created_operation( treasury_name, treasury_name, asset(0, VESTS_SYMBOL), asset(0, VESTS_SYMBOL) ) );
     }
