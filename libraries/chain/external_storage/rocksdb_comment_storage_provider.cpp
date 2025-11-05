@@ -33,9 +33,4 @@ bool rocksdb_comment_storage_provider::read( ColumnTypes column_type, const Slic
   return rocksdb_storage_provider::read( column_type, key, value );
 }
 
-uint32_t rocksdb_comment_storage_provider::get_lib() const
-{
-  return rocksdb_storage_provider::get_lib();
-}
-
 }}

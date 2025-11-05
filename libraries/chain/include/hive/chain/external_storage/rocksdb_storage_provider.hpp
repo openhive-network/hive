@@ -111,8 +111,6 @@ class rocksdb_storage_provider
 
   public:
 
-    void flush();
-
     ColumnFamilyHandle* getColumnHandle( ColumnTypes column );
 };
 

@@ -15,7 +15,7 @@
 
 namespace hive { namespace chain {
 
-class rocksdb_comment_storage_provider: public rocksdb_base_storage_provider
+class rocksdb_comment_storage_provider: public rocksdb_base_storage_provider, public external_storage_reader_writer
 {
   private:
 

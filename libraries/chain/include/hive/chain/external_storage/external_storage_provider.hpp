@@ -26,8 +26,8 @@ class external_snapshot_storage_provider
 
     virtual void openDb( uint32_t expected_lib ) = 0;
     virtual void shutdownDb() = 0;
-    virtual void flushDb() = 0;
     virtual void wipeDb() = 0;
+    virtual void flushDb() = 0;
 
     virtual void update_lib( uint32_t ) = 0;
     virtual uint32_t get_lib() const = 0;
@@ -48,15 +48,6 @@ class external_storage_reader_writer
     virtual bool get_entity( ColumnTypes column_type, const Slice& key, PinnableWideColumns& wide_columns ) = 0;
 
     virtual void compaction() = 0;
-};
-
-class external_storage_provider: public external_storage_reader_writer, public external_snapshot_storage_provider
-{
-  public:
-
-    virtual void flush() = 0;
-
-    virtual void update_lib( uint32_t ) = 0;
 };
 
 }}

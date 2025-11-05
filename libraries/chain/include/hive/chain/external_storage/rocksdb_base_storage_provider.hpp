@@ -14,7 +14,7 @@
 
 namespace hive { namespace chain {
 
-class rocksdb_base_storage_provider: public rocksdb_storage_provider, public external_storage_provider
+class rocksdb_base_storage_provider: public rocksdb_storage_provider, public external_snapshot_storage_provider
 {
   private:
 
@@ -35,11 +35,11 @@ class rocksdb_base_storage_provider: public rocksdb_storage_provider, public ext
 
     void openDb( uint32_t expected_lib ) override;
     void shutdownDb() override;
+    void flushDb() override;
     void wipeDb() override;
 
-    void flush() override;
-
     void update_lib( uint32_t ) override;
+    uint32_t get_lib() const override;
 };
 
 }}

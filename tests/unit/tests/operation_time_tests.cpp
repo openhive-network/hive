@@ -3019,9 +3019,9 @@ BOOST_AUTO_TEST_CASE( account_subsidy_witness_limits )
     op.creator = "bob";
     tx.operations.clear();
     tx.operations.push_back( op );
-    BOOST_CHECK( db->get_account( "bob" ).pending_claimed_accounts == 0 );
+    BOOST_CHECK( db->get_account( "bob" ).get_pending_claimed_accounts() == 0 );
     push_transaction( tx, bob_private_key );
-    BOOST_CHECK( db->get_account( "bob" ).pending_claimed_accounts == 1 );
+    BOOST_CHECK( db->get_account( "bob" ).get_pending_claimed_accounts() == 1 );
     BOOST_CHECK( db->_pending_tx.size() == 2 );
 
     // We are doing two claims to replicate the bug, where setting current witness for block production

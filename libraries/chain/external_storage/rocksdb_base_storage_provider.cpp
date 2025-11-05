@@ -34,14 +34,19 @@ void rocksdb_base_storage_provider::wipeDb()
   rocksdb_storage_provider::wipeDb();
 }
 
-void rocksdb_base_storage_provider::flush()
+void rocksdb_base_storage_provider::flushDb()
 {
-  rocksdb_storage_provider::flush();
+  rocksdb_storage_provider::flushDb();
 }
 
 void rocksdb_base_storage_provider::update_lib( uint32_t lib )
 {
   rocksdb_storage_provider::update_lib( lib );
+}
+
+uint32_t rocksdb_base_storage_provider::get_lib() const
+{
+  return rocksdb_storage_provider::get_lib();
 }
 
 }}

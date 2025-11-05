@@ -247,11 +247,6 @@ bool rocksdb_storage_provider::get_entity( ColumnTypes column_type, const Slice&
   return s.ok();
 }
 
-void rocksdb_storage_provider::flush()
-{
-  flushWriteBuffer();
-}
-
 ColumnFamilyHandle* rocksdb_storage_provider::getColumnHandle( ColumnTypes column_type )
 {
   FC_ASSERT( column_type < _columnHandles.size() );

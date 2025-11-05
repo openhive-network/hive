@@ -350,7 +350,7 @@ void rocksdb_account_archive::on_irreversible_block( uint32_t block_num )
   {
     auto time_start = std::chrono::high_resolution_clock::now();
 
-    provider->flush();
+    provider->flushDb();
 
     accounts_stats::stats.item_flush_to_storage.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
     ++accounts_stats::stats.item_flush_to_storage.count;
