@@ -196,26 +196,6 @@ console.log('Decrypted message:', decrypted); // 'Hello, Hive!'
 session.close();
 ```
 
-### Use beekeeper on Vite-bundled project
-
-Some users may want to use beekeeper in a Vite-bundled project, such as Next / Nuxt projects.
-And as we are using WebAssembly (WASM) under the hood, we need to ensure that the WASM file is properly loaded.
-To do so, we prepared a special import path that points to a Beekeeper build with special Vite `?url` WASM import.
-
-Note: This only applies for browser environments if you are using Vite as your bundler. If you are using Webpack or other bundlers, you can use the default import path.
-
-```js
-import beekeeperFactory from '@hiveio/beekeeper/vite';
-
-const beekeeper = await beekeeperFactory();
-
-const session = beekeeper.createSession("my.salt");
-
-const sessionInfo = session.getInfo();
-
-console.log(sessionInfo);
-```
-
 ## 📖 API Reference
 
 For a detailed API definition, please see our [Wiki](${GEN_DOC_URL}).

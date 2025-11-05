@@ -44,24 +44,6 @@
         }
       }
     },
-    "./web": {
-      "import": {
-        "types": "./dist/bundle/index.d.ts",
-        "default": "./dist/bundle/web.js"
-      }
-    },
-    "./vite": {
-      "import": {
-        "types": "./dist/bundle/index.d.ts",
-        "default": "./dist/bundle/vite.js"
-      }
-    },
-    "./node": {
-      "import": {
-        "types": "./dist/bundle/index.d.ts",
-        "default": "./dist/bundle/node.js"
-      }
-    },
     "./package.json": "./package.json"
   },
   "files": [

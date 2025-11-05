@@ -13,7 +13,7 @@ self.onconnect = event => {
     if (!isBkInitialized) {
       try { // We import here asyncronously to retrieve any potential loading errors
         isBkInitialized = true;
-        const { default: createBeekeeper } = await import('@hiveio/beekeeper/web');
+        const { default: createBeekeeper } = await import('@hiveio/beekeeper');
         const instance = await createBeekeeper({ inMemory: true, enableLogs: false });
         bkResolve(instance);
       } catch (error) {
