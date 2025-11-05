@@ -91,7 +91,7 @@ set -euo pipefail
 
 /home/hived/bin/hived --webserver-ws-endpoint=0.0.0.0:${WS_PORT} --webserver-http-endpoint=0.0.0.0:${HTTP_PORT} --p2p-endpoint=0.0.0.0:${P2P_PORT} \
   --data-dir="$DATADIR" --shared-file-dir="$SHM_DIR" --comments-rocksdb-path="$ROCKSDB_DIR"  \
-  ${HIVED_ARGS[@]} 2>&1 | tee -i "$DATADIR/hived.log"
+  ${HIVED_ARGS[@]} 2>&1"
 hived_return_code="\$?"
 echo "\$hived_return_code Hived process finished execution."
 EOF
