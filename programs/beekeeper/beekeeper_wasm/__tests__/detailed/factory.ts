@@ -148,9 +148,9 @@ test.describe('Beekeeper factory tests for Node.js', () => {
   });
 
   test('Should automatically deduce wallet type based on the inMemory setting', async ({ beekeeperTest }) => {
-    const retVal = await beekeeperTest(async ({ provider }) => {
-      const bkInFs = await provider.default({ inMemory: false, enableLogs: false });
-      const bkInMemory = await provider.default({ inMemory: true, enableLogs: false });
+    const retVal = await beekeeperTest(async ({ provider, storageRoot }) => {
+      const bkInFs = await provider.default({ storageRoot, inMemory: false, enableLogs: false });
+      const bkInMemory = await provider.default({ storageRoot, inMemory: true, enableLogs: false });
 
       const sessionFs = bkInFs.createSession("my.salt");
       const sessionInMemory = bkInMemory.createSession("my.salt");

@@ -4,7 +4,7 @@ const { data } = useFetch('/api/get-version');
 const version = ref("loading...");
 
 if (import.meta.client) {
-  import("@hiveio/beekeeper/vite").then(async ({ createBeekeeper }) => {
+  import("@hiveio/beekeeper").then(async ({ createBeekeeper }) => {
     const bk = await createBeekeeper({ inMemory: true, enableLogs: false });
     version.value = bk.getVersion();
   });

@@ -7,11 +7,14 @@ import type { BeekeeperInstanceHelper, ExtractError } from './run_node_helper.js
 export type TEnvType = 'web' | 'node';
 
 export interface IBeekeeperGlobals {
+  env: TEnvType;
+  storageRoot: string;
   provider: typeof BeekeeperModule;
   beekeeper: IBeekeeperInstance;
 }
 
 export interface IBeekeeperWasmGlobals {
+  env: TEnvType;
   provider: MainModule & { FS: any };
   ExtractError: typeof ExtractError;
   BeekeeperInstanceHelper: typeof BeekeeperInstanceHelper;
