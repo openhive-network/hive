@@ -41,6 +41,10 @@ then
     exit 1
 fi
 
+# Append comments-rocksdb-storage to mimic the default hived behavior
+ROCKSDB_DIR=$ROCKSDB_DIR/comments-rocksdb-storage
+sudo -Enu hived mkdir --mode=775 -p "$ROCKSDB_DIR"
+
 LOG_FILE="${DATADIR}/${LOG_FILE:=docker_entrypoint.log}"
 sudo -n touch "$LOG_FILE"
 sudo -n chown -Rc hived:users "$LOG_FILE"
