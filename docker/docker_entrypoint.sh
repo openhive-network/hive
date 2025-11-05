@@ -35,6 +35,12 @@ then
     exit 1
 fi
 
+if sudo -Enu hived test ! -d "$ROCKSDB_DIR"
+then
+    echo "Rocksdb storage directory (ROCKSDB_DIR) $ROCKSDB_DIR does not exist. Exiting."
+    exit 1
+fi
+
 LOG_FILE="${DATADIR}/${LOG_FILE:=docker_entrypoint.log}"
 sudo -n touch "$LOG_FILE"
 sudo -n chown -Rc hived:users "$LOG_FILE"
@@ -80,7 +86,7 @@ echo "Attempting to execute hived using additional command line arguments: ${HIV
 set -euo pipefail
 
 /home/hived/bin/hived --webserver-ws-endpoint=0.0.0.0:${WS_PORT} --webserver-http-endpoint=0.0.0.0:${HTTP_PORT} --p2p-endpoint=0.0.0.0:${P2P_PORT} \
-  --data-dir="$DATADIR" --shared-file-dir="$SHM_DIR"  \
+  --data-dir="$DATADIR" --shared-file-dir="$SHM_DIR" --comments-rocksdb-path="$ROCKSDB_DIR"  \
   ${HIVED_ARGS[@]} 2>&1 | tee -i "$DATADIR/hived.log"
 hived_return_code="\$?"
 echo "\$hived_return_code Hived process finished execution."

@@ -173,6 +173,8 @@ ENV HIVED_UID=1000
 ENV DATADIR=/home/hived/datadir
 # Use default location (inside datadir) of shm file. If SHM should be placed on some different device, then set it to mapped volume `/home/hived/shm_dir` and map it in docker run
 ENV SHM_DIR=${DATADIR}/blockchain
+# By default put comments-rocksdb-storage in shm_dir
+ENV ROCKSDB_DIR=${SHM_DIR}
 
 STOPSIGNAL SIGINT
 
