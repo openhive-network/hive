@@ -233,10 +233,6 @@ namespace hive { namespace chain {
       fc::array<share_type, HIVE_MAX_PROXY_RECURSION_DEPTH>& get_proxied_vsf_votes() { return misc.proxied_vsf_votes; }
       const fc::array<share_type, HIVE_MAX_PROXY_RECURSION_DEPTH>& get_proxied_vsf_votes() const { return misc.proxied_vsf_votes; }
 
-      ushare_type get_sum_delayed_votes() const { return misc.sum_delayed_votes; }
-      ushare_type& get_sum_delayed_votes() { return misc.sum_delayed_votes; }
-      void set_sum_delayed_votes( const ushare_type& value ) { misc.sum_delayed_votes = value; }
-
       uint8_t get_savings_withdraw_requests() const { return misc.savings_withdraw_requests; }
       void set_savings_withdraw_requests( const uint8_t& value ) { misc.savings_withdraw_requests = value; }
 
@@ -315,12 +311,12 @@ namespace hive { namespace chain {
       // governance vote power of this account does not include "delayed votes"
       share_type get_direct_governance_vote_power() const
       {
-        FC_ASSERT( misc.sum_delayed_votes.value <= get_vesting().amount, "",
-                ( "sum_delayed_votes",     misc.sum_delayed_votes )
+        FC_ASSERT( dvw.get_sum_delayed_votes().value <= get_vesting().amount, "",
+                ( "sum_delayed_votes",     dvw.get_sum_delayed_votes() )
                 ( "vesting_shares.amount", get_vesting().amount )
                 ( "account",               misc.name ) );
   
-        return asset( get_vesting().amount - misc.sum_delayed_votes.value, VESTS_SYMBOL ).amount;
+        return asset( get_vesting().amount - dvw.get_sum_delayed_votes().value, VESTS_SYMBOL ).amount;
       }
 
       /// This function should be used only when the account votes for a witness directly
@@ -345,6 +341,10 @@ namespace hive { namespace chain {
       account_details::delayed_votes_wrapper dvw;
 
     public:
+
+      ushare_type get_sum_delayed_votes() const { return dvw.sum_delayed_votes; }
+      ushare_type& get_sum_delayed_votes() { return dvw.sum_delayed_votes; }
+      void set_sum_delayed_votes( const ushare_type& value ) { dvw.sum_delayed_votes = value; }
 
       const account_details::delayed_votes_wrapper& delayed_votes_wrapper() const { return dvw; }
 

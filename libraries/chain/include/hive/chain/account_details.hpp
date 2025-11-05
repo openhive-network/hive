@@ -138,8 +138,6 @@ namespace hive { namespace chain { namespace account_details {
 
     share_type        pending_claimed_accounts = 0; ///< claimed and not yet used account creation tokens (could be 32bit)
 
-    ushare_type       sum_delayed_votes = 0; ///< sum of delayed_votes (should be changed to VEST_asset)
-
     time_point_sec    created; //(not read by consensus code)
     time_point_sec    block_created;
 
@@ -165,12 +163,18 @@ namespace hive { namespace chain { namespace account_details {
 
   struct delayed_votes_wrapper
   {
+    ushare_type       sum_delayed_votes = 0; ///< sum of delayed_votes (should be changed to VEST_asset)
+
     account_details::t_delayed_votes delayed_votes;
 
     template< typename Allocator >
     delayed_votes_wrapper( allocator< Allocator > a ): delayed_votes( a )
     {
     }
+
+    ushare_type get_sum_delayed_votes() const { return sum_delayed_votes; }
+    ushare_type& get_sum_delayed_votes() { return sum_delayed_votes; }
+    void set_sum_delayed_votes( const ushare_type& value ) { sum_delayed_votes = value; }
 
     account_details::t_delayed_votes& get_delayed_votes() { return delayed_votes; }
     const account_details::t_delayed_votes& get_delayed_votes() const { return delayed_votes; }
@@ -243,7 +247,7 @@ FC_REFLECT( hive::chain::account_details::time,
 FC_REFLECT( hive::chain::account_details::misc,
           (proxy)
           (name)
-          (pending_claimed_accounts)(sum_delayed_votes)
+          (pending_claimed_accounts)
           (created)(block_created)
           (governance_vote_expiration_ts)
           (post_count)(post_bandwidth)(withdraw_routes)(pending_escrow_transfers)(open_recurrent_transfers)(witnesses_voted_for)
@@ -253,5 +257,5 @@ FC_REFLECT( hive::chain::account_details::misc,
         )
 
 FC_REFLECT( hive::chain::account_details::delayed_votes_wrapper,
-          (delayed_votes)
+          (sum_delayed_votes)(delayed_votes)
         )
