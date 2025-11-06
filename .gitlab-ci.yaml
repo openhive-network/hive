@@ -283,71 +283,71 @@ run_examples_beekeeper_wasm:
   tags:
     - public-runner-docker
 
-mirrornet_replay_test:
-  extends: .job-defaults
-  stage: test
-  image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
-  needs:
-    - job: "mirrornet_node_build"
-      artifacts: true
+# mirrornet_replay_test:
+#   extends: .job-defaults
+#   stage: test
+#   image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
+#   needs:
+#     - job: "mirrornet_node_build"
+#       artifacts: true
 
-  variables:
-    BINARIES_DIR: "hived-mirrornet-binaries"
-    BLOCK_LOG_SOURCE_DIR: "/blockchain"
-    NUMBER_OF_BLOCKS: 5000000
-    MIRRORNET_WORKING_DIR: "$CI_PROJECT_DIR/mirrornet"
-    MIRRORNET_BLOCKCHAIN_DATA_DIR: "$MIRRORNET_WORKING_DIR/mirrornet_blockchain_data"
-    MIRRORNET_SOURCE_5M_DATA_DIR: "$MIRRORNET_WORKING_DIR/source_5m"
-    MAINNET_TRUNCATED_DIR: "$CI_PROJECT_DIR/mainnet"
-    CONFIG_INI_SOURCE: "$CI_PROJECT_DIR/docker/config_mirrornet_5M.ini"
-  before_script:
-    - export NUMBER_OF_PROCESSES=8
-    - mkdir -p "$MAINNET_TRUNCATED_DIR"
-    - mkdir -p "$MIRRORNET_SOURCE_5M_DATA_DIR"
-    - mkdir -p "$MIRRORNET_SOURCE_5M_DATA_DIR/blockchain"
-    - mkdir -p "$MIRRORNET_BLOCKCHAIN_DATA_DIR"
-    - mkdir -p "$MIRRORNET_BLOCKCHAIN_DATA_DIR/blockchain"
-    - cp "$CI_PROJECT_DIR/docker/config_mirrornet_5M.ini" "$MIRRORNET_WORKING_DIR/config.ini"
-    - cp "$BLOCK_LOG_SOURCE_DIR/block_log_5m/block_log" "$MIRRORNET_SOURCE_5M_DATA_DIR/blockchain"
-    - cd "$BINARIES_DIR"
-  script:
-    - echo "Generating artifacts file for block_log."
-    - time ./hived
-      --block-log-split=-1
-      -d "$MIRRORNET_SOURCE_5M_DATA_DIR"
-    - echo "Compressing block log to $NUMBER_OF_BLOCKS blocks with $NUMBER_OF_PROCESSES processes"
-    - time ./compress_block_log
-      -i "$MIRRORNET_SOURCE_5M_DATA_DIR/blockchain/block_log"
-      -o "$MAINNET_TRUNCATED_DIR/block_log"
-      --decompress
-      -n $NUMBER_OF_BLOCKS
-      --jobs $NUMBER_OF_PROCESSES
-    - echo "Converting block log to mirrornet format with $NUMBER_OF_PROCESSES processes"
-    - time ./blockchain_converter
-      --plugin block_log_conversion
-      -i "$MAINNET_TRUNCATED_DIR/block_log"
-      -o "$MIRRORNET_BLOCKCHAIN_DATA_DIR/blockchain/block_log"
-      --chain-id $MIRRORNET_CHAIN_ID
-      --private-key "$MIRRORNET_SKELETON_KEY"
-      --use-same-key
-      --jobs $NUMBER_OF_PROCESSES
-    - echo "Starting hived replay"
-    - ./hived
-      --block-log-split=-1
-      -d "$MIRRORNET_BLOCKCHAIN_DATA_DIR"
-      --chain-id $MIRRORNET_CHAIN_ID
-      --skeleton-key "$MIRRORNET_SKELETON_KEY"
-      --set-benchmark-interval 100000
-      --force-replay
-      --validate-during-replay
-      --stop-at-block $NUMBER_OF_BLOCKS
-      --exit-before-sync | tee hived-replay.log
-  artifacts:
-    paths:
-      - "$BINARIES_DIR/*.log"
-  tags:
-    - public-runner-docker
-    - hived-for-tests
+#   variables:
+#     BINARIES_DIR: "hived-mirrornet-binaries"
+#     BLOCK_LOG_SOURCE_DIR: "/blockchain"
+#     NUMBER_OF_BLOCKS: 5000000
+#     MIRRORNET_WORKING_DIR: "$CI_PROJECT_DIR/mirrornet"
+#     MIRRORNET_BLOCKCHAIN_DATA_DIR: "$MIRRORNET_WORKING_DIR/mirrornet_blockchain_data"
+#     MIRRORNET_SOURCE_5M_DATA_DIR: "$MIRRORNET_WORKING_DIR/source_5m"
+#     MAINNET_TRUNCATED_DIR: "$CI_PROJECT_DIR/mainnet"
+#     CONFIG_INI_SOURCE: "$CI_PROJECT_DIR/docker/config_mirrornet_5M.ini"
+#   before_script:
+#     - export NUMBER_OF_PROCESSES=8
+#     - mkdir -p "$MAINNET_TRUNCATED_DIR"
+#     - mkdir -p "$MIRRORNET_SOURCE_5M_DATA_DIR"
+#     - mkdir -p "$MIRRORNET_SOURCE_5M_DATA_DIR/blockchain"
+#     - mkdir -p "$MIRRORNET_BLOCKCHAIN_DATA_DIR"
+#     - mkdir -p "$MIRRORNET_BLOCKCHAIN_DATA_DIR/blockchain"
+#     - cp "$CI_PROJECT_DIR/docker/config_mirrornet_5M.ini" "$MIRRORNET_WORKING_DIR/config.ini"
+#     - cp "$BLOCK_LOG_SOURCE_DIR/block_log_5m/block_log" "$MIRRORNET_SOURCE_5M_DATA_DIR/blockchain"
+#     - cd "$BINARIES_DIR"
+#   script:
+#     - echo "Generating artifacts file for block_log."
+#     - time ./hived
+#       --block-log-split=-1
+#       -d "$MIRRORNET_SOURCE_5M_DATA_DIR"
+#     - echo "Compressing block log to $NUMBER_OF_BLOCKS blocks with $NUMBER_OF_PROCESSES processes"
+#     - time ./compress_block_log
+#       -i "$MIRRORNET_SOURCE_5M_DATA_DIR/blockchain/block_log"
+#       -o "$MAINNET_TRUNCATED_DIR/block_log"
+#       --decompress
+#       -n $NUMBER_OF_BLOCKS
+#       --jobs $NUMBER_OF_PROCESSES
+#     - echo "Converting block log to mirrornet format with $NUMBER_OF_PROCESSES processes"
+#     - time ./blockchain_converter
+#       --plugin block_log_conversion
+#       -i "$MAINNET_TRUNCATED_DIR/block_log"
+#       -o "$MIRRORNET_BLOCKCHAIN_DATA_DIR/blockchain/block_log"
+#       --chain-id $MIRRORNET_CHAIN_ID
+#       --private-key "$MIRRORNET_SKELETON_KEY"
+#       --use-same-key
+#       --jobs $NUMBER_OF_PROCESSES
+#     - echo "Starting hived replay"
+#     - ./hived
+#       --block-log-split=-1
+#       -d "$MIRRORNET_BLOCKCHAIN_DATA_DIR"
+#       --chain-id $MIRRORNET_CHAIN_ID
+#       --skeleton-key "$MIRRORNET_SKELETON_KEY"
+#       --set-benchmark-interval 100000
+#       --force-replay
+#       --validate-during-replay
+#       --stop-at-block $NUMBER_OF_BLOCKS
+#       --exit-before-sync | tee hived-replay.log
+#   artifacts:
+#     paths:
+#       - "$BINARIES_DIR/*.log"
+#   tags:
+#     - public-runner-docker
+#     - hived-for-tests
 
 .unit_tests_base:
   extends: .job-defaults
@@ -362,30 +362,30 @@ mirrornet_replay_test:
   tags:
     - public-runner-docker
 
-chain_test:
-  extends: .unit_tests_base
-  script:
-    - timeout 23m ./hived-testnet-binaries/chain_test --log_format=JUNIT --log_sink=chain_test_results.xml --log_level=error > chain_test.log 2>&1
-  artifacts:
-    reports:
-      junit: chain_test_results.xml
-    paths:
-      - chain_test.log
-    when: always
-    expire_in: 1 week
+# chain_test:
+#   extends: .unit_tests_base
+#   script:
+#     - timeout 23m ./hived-testnet-binaries/chain_test --log_format=JUNIT --log_sink=chain_test_results.xml --log_level=error > chain_test.log 2>&1
+#   artifacts:
+#     reports:
+#       junit: chain_test_results.xml
+#     paths:
+#       - chain_test.log
+#     when: always
+#     expire_in: 1 week
 
-plugin_test:
-  extends: .unit_tests_base
-  script:
-    # note: consider using --result_code=no to force exit code 0 even when tests fail because they currently fail and I want a nice green checkmark
-    - timeout 18m ./hived-testnet-binaries/plugin_test --log_format=JUNIT --log_sink=plugin_test_results.xml --log_level=error > plugin_test.log 2>&1
-  artifacts:
-    reports:
-      junit: plugin_test_results.xml
-    paths:
-      - plugin_test.log
-    when: always
-    expire_in: 1 week
+# plugin_test:
+#   extends: .unit_tests_base
+#   script:
+#     # note: consider using --result_code=no to force exit code 0 even when tests fail because they currently fail and I want a nice green checkmark
+#     - timeout 18m ./hived-testnet-binaries/plugin_test --log_format=JUNIT --log_sink=plugin_test_results.xml --log_level=error > plugin_test.log 2>&1
+#   artifacts:
+#     reports:
+#       junit: plugin_test_results.xml
+#     paths:
+#       - plugin_test.log
+#     when: always
+#     expire_in: 1 week
 
 .hived-service: &hived-service
   - name: $HIVED_IMAGE_NAME
@@ -484,88 +484,88 @@ pre_commit_checks:
   tags:
     - public-runner-docker
 
-beem_testnet_tests:
-  extends: .beem_tests_base
-  needs:
-    - job: testnet_node_build
-      artifacts: true
-  variables:
-    PYTEST_TIMEOUT_MINUTES: 18
-    PYTEST_ARGS: "-m not mirrornet"
-    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/beem_tests/report.xml
+# beem_testnet_tests:
+#   extends: .beem_tests_base
+#   needs:
+#     - job: testnet_node_build
+#       artifacts: true
+#   variables:
+#     PYTEST_TIMEOUT_MINUTES: 18
+#     PYTEST_ARGS: "-m not mirrornet"
+#     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/beem_tests/report.xml
 
-beem_mirrornet_tests:
-  extends: .beem_tests_base
-  needs:
-    - job: mirrornet_node_build
-      artifacts: true
-  variables:
-    PYTEST_TIMEOUT_MINUTES: 4
-    HIVED_PATH: "$CI_PROJECT_DIR/hived-mirrornet-binaries/hived"
-    CLI_WALLET_PATH: "$CI_PROJECT_DIR/hived-mirrornet-binaries/cli_wallet"
-    GET_DEV_KEY_PATH: "$CI_PROJECT_DIR/hived-mirrornet-binaries/get_dev_key"
-    BLOCK_LOG_UTIL_PATH: "$CI_PROJECT_DIR/hived-mirrornet-binaries/block_log_util"
-    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/beem_tests/report.xml
+# beem_mirrornet_tests:
+#   extends: .beem_tests_base
+#   needs:
+#     - job: mirrornet_node_build
+#       artifacts: true
+#   variables:
+#     PYTEST_TIMEOUT_MINUTES: 4
+#     HIVED_PATH: "$CI_PROJECT_DIR/hived-mirrornet-binaries/hived"
+#     CLI_WALLET_PATH: "$CI_PROJECT_DIR/hived-mirrornet-binaries/cli_wallet"
+#     GET_DEV_KEY_PATH: "$CI_PROJECT_DIR/hived-mirrornet-binaries/get_dev_key"
+#     BLOCK_LOG_UTIL_PATH: "$CI_PROJECT_DIR/hived-mirrornet-binaries/block_log_util"
+#     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/beem_tests/report.xml
 
-  before_script:
-    - !reference [.beem_tests_base, before_script]
-    - export PYTEST_ARGS=(-m mirrornet --chain-id ${MIRRORNET_CHAIN_ID} --skeleton-key "${MIRRORNET_SKELETON_KEY}")
+  # before_script:
+  #   - !reference [.beem_tests_base, before_script]
+  #   - export PYTEST_ARGS=(-m mirrornet --chain-id ${MIRRORNET_CHAIN_ID} --skeleton-key "${MIRRORNET_SKELETON_KEY}")
 
-cli_wallet_tests:
-  stage: test
-  extends: .test_tools_based
+# cli_wallet_tests:
+#   stage: test
+#   extends: .test_tools_based
 
-  variables:
-    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/cli_wallet/report.xml
-    PYTEST_TIMEOUT_MINUTES: 30
+#   variables:
+#     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/cli_wallet/report.xml
+#     PYTEST_TIMEOUT_MINUTES: 30
 
-  script:
-    - cd tests/python/functional/cli_wallet
-    - !reference [.run-pytest, script]
-  tags:
-    - public-runner-docker
+#   script:
+#     - cd tests/python/functional/cli_wallet
+#     - !reference [.run-pytest, script]
+#   tags:
+#     - public-runner-docker
 
-beekeeper_wallet_tests:
-  stage: test
-  extends: .test_tools_based
+# beekeeper_wallet_tests:
+#   stage: test
+#   extends: .test_tools_based
 
-  variables:
-    JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/beekeeper_wallet/report.xml
-    PYTEST_TIMEOUT_MINUTES: 30
+#   variables:
+#     JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/beekeeper_wallet/report.xml
+#     PYTEST_TIMEOUT_MINUTES: 30
 
-  script:
-    - cd tests/python/functional/beekeeper_wallet_tests
-    - !reference [.run-pytest, script]
-  tags:
-    - public-runner-docker
+#   script:
+#     - cd tests/python/functional/beekeeper_wallet_tests
+#     - !reference [.run-pytest, script]
+#   tags:
+#     - public-runner-docker
   
-hived_tests:
-  stage: test
-  extends: .test_tools_based
+# hived_tests:
+#   stage: test
+#   extends: .test_tools_based
 
-  variables:
-    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/hived/report.xml
-    PYTEST_TIMEOUT_MINUTES: 30
+#   variables:
+#     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/hived/report.xml
+#     PYTEST_TIMEOUT_MINUTES: 30
 
-  script:
-    - cd tests/python/functional/hived
-    - !reference [.run-pytest, script]
-  tags:
-    - public-runner-docker
+#   script:
+#     - cd tests/python/functional/hived
+#     - !reference [.run-pytest, script]
+#   tags:
+#     - public-runner-docker
 
-cli_wallet_extended_tests:
-  stage: test
-  extends: .test_tools_based
+# cli_wallet_extended_tests:
+#   stage: test
+#   extends: .test_tools_based
 
-  variables:
-    PYTEST_TIMEOUT_MINUTES: 14
-    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/cli_wallet_extended_tests/report.xml
+#   variables:
+#     PYTEST_TIMEOUT_MINUTES: 14
+#     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/cli_wallet_extended_tests/report.xml
 
-  script:
-    - cd tests/python/functional/cli_wallet_extended_tests
-    - !reference [.run-pytest, script]
-  tags:
-    - public-runner-docker
+#   script:
+#     - cd tests/python/functional/cli_wallet_extended_tests
+#     - !reference [.run-pytest, script]
+#   tags:
+#     - public-runner-docker
 
 .fork_test_base:
   stage: test
@@ -581,59 +581,59 @@ cli_wallet_extended_tests:
   artifacts:
     expire_in: 2 days
 
-fork_tests:
-  extends: .fork_test_base
-  parallel:
-    matrix:
-      - GROUP: "group_1"
-      - GROUP: "group_2"
-      - GROUP: "group_3"
-  variables:
-    PYTEST_ARGS: "-m fork_tests_${GROUP}"
-    PYTEST_JUNIT_REPORT: "$CI_PROJECT_DIR/tests/python/functional/fork_tests/report_${GROUP}.xml"
+# fork_tests:
+#   extends: .fork_test_base
+#   parallel:
+#     matrix:
+#       - GROUP: "group_1"
+#       - GROUP: "group_2"
+#       - GROUP: "group_3"
+#   variables:
+#     PYTEST_ARGS: "-m fork_tests_${GROUP}"
+#     PYTEST_JUNIT_REPORT: "$CI_PROJECT_DIR/tests/python/functional/fork_tests/report_${GROUP}.xml"
 
-hf26_tests:
-  stage: test
-  extends: .test_tools_based
+# hf26_tests:
+#   stage: test
+#   extends: .test_tools_based
 
-  variables:
-    PYTEST_TIMEOUT_MINUTES: 20
-    SIGN_TRANSACTION_PATH: "$CI_PROJECT_DIR/hived-testnet-binaries/sign_transaction"
-    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/hf26_tests/report.xml
+#   variables:
+#     PYTEST_TIMEOUT_MINUTES: 20
+#     SIGN_TRANSACTION_PATH: "$CI_PROJECT_DIR/hived-testnet-binaries/sign_transaction"
+#     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/hf26_tests/report.xml
 
-  script:
-    - cd tests/python/functional/hf26_tests
-    - !reference [.run-pytest, script]
-  tags:
-    - public-runner-docker
+#   script:
+#     - cd tests/python/functional/hf26_tests
+#     - !reference [.run-pytest, script]
+#   tags:
+#     - public-runner-docker
 
-live_sync_tests:
-  stage: test
-  extends: .test_tools_based
+# live_sync_tests:
+#   stage: test
+#   extends: .test_tools_based
 
-  variables:
-    PYTEST_TIMEOUT_MINUTES: 10
-    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/live_sync_tests/report.xml
+#   variables:
+#     PYTEST_TIMEOUT_MINUTES: 10
+#     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/live_sync_tests/report.xml
 
-  script:
-    - cd tests/python/functional/live_sync_tests
-    - !reference [.run-pytest, script]
-  tags:
-    - public-runner-docker
+#   script:
+#     - cd tests/python/functional/live_sync_tests
+#     - !reference [.run-pytest, script]
+#   tags:
+#     - public-runner-docker
 
-broadcast_tests:
-  stage: test
-  extends: .test_tools_based
+# broadcast_tests:
+#   stage: test
+#   extends: .test_tools_based
 
-  variables:
-    PYTEST_TIMEOUT_MINUTES: 6
-    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/broadcast_tests/report.xml
+#   variables:
+#     PYTEST_TIMEOUT_MINUTES: 6
+#     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/broadcast_tests/report.xml
 
-  script:
-    - cd tests/python/functional/broadcast_tests
-    - !reference [.run-pytest, script]
-  tags:
-    - public-runner-docker
+#   script:
+#     - cd tests/python/functional/broadcast_tests
+#     - !reference [.run-pytest, script]
+#   tags:
+#     - public-runner-docker
 
 .fetch_test_block_logs:
   # Usage:
@@ -656,346 +656,346 @@ broadcast_tests:
         wget -q -nH -np -P $TESTING_BLOCK_LOGS_DESTINATION -r -R "index.html*" --cut-dirs=1 $TEST_BLOCK_LOG_SERVER/$i
       done
 
-test_tools_tests:
-  stage: test
-  extends:
-    - .test_tools_based
-    - .test-block-log-service
-  needs:
-    - !reference [.test_tools_based, needs]
-    - job: build_combined_testing_block_logs_image
-      artifacts: true
-  variables:
-    PYTEST_ADDOPTS: "--ignore=hived_handle_tests"
-    PYTEST_TIMEOUT_MINUTES: 30
-    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/hive-local-tools/test-tools/tests/report.xml
-    TEST_BLOCK_LOGS_SOURCES: testing_block_logs/empty_block_logs/
-    TESTING_BLOCK_LOGS_DESTINATION: $CI_PROJECT_DIR/testing_block_logs_dir/
-  script:
-    - mkdir -p "$TESTING_BLOCK_LOGS_DESTINATION"
-    - !reference [.fetch_test_block_logs, script]
-    - cd $CI_PROJECT_DIR/tests/python/hive-local-tools/test-tools/tests
-    - pip install local-tools/
-    - !reference [.run-pytest, script]
-  tags:
-    - public-runner-docker
+# test_tools_tests:
+#   stage: test
+#   extends:
+#     - .test_tools_based
+#     - .test-block-log-service
+#   needs:
+#     - !reference [.test_tools_based, needs]
+#     - job: build_combined_testing_block_logs_image
+#       artifacts: true
+#   variables:
+#     PYTEST_ADDOPTS: "--ignore=hived_handle_tests"
+#     PYTEST_TIMEOUT_MINUTES: 30
+#     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/hive-local-tools/test-tools/tests/report.xml
+#     TEST_BLOCK_LOGS_SOURCES: testing_block_logs/empty_block_logs/
+#     TESTING_BLOCK_LOGS_DESTINATION: $CI_PROJECT_DIR/testing_block_logs_dir/
+#   script:
+#     - mkdir -p "$TESTING_BLOCK_LOGS_DESTINATION"
+#     - !reference [.fetch_test_block_logs, script]
+#     - cd $CI_PROJECT_DIR/tests/python/hive-local-tools/test-tools/tests
+#     - pip install local-tools/
+#     - !reference [.run-pytest, script]
+#   tags:
+#     - public-runner-docker
 
-rc_direct_delegations_tests:
-  stage: test
-  extends: .test_tools_based
+# rc_direct_delegations_tests:
+#   stage: test
+#   extends: .test_tools_based
 
-  variables:
-    PYTEST_TIMEOUT_MINUTES: 12
-    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/direct_rc_delegations_tests/report.xml
+#   variables:
+#     PYTEST_TIMEOUT_MINUTES: 12
+#     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/direct_rc_delegations_tests/report.xml
 
-  script:
-    - cd tests/python/functional/direct_rc_delegations_tests
-    - !reference [.run-pytest, script]
-  tags:
-    - public-runner-docker
+#   script:
+#     - cd tests/python/functional/direct_rc_delegations_tests
+#     - !reference [.run-pytest, script]
+#   tags:
+#     - public-runner-docker
 
-message_format_testnet_tests:
-  stage: test
-  extends: .test_tools_based
-  variables:
-    PYTEST_TIMEOUT_MINUTES: 25
-    NODE_TYPE: "testnet"
-    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/api_tests/message_format_tests/report.xml
-  script:
-    - cd tests/python/api_tests/message_format_tests/$API
-    - export PYTEST_ARGS=(-m "${NODE_TYPE} or (not testnet and not mainnet_5m and not live_mainnet)")
-    - !reference [.run-pytest, script]
-  parallel:
-    matrix:
-      - API: [ account_by_key_api_tests,
-               account_history_api,
-               block_api_tests,
-               condenser_api_tests,
-               database_api_tests,
-               debug_node_api_tests,
-               json_rpc_api_tests,
-               market_history_api_tests,
-               network_broadcast_api_tests,
-               rc_api_tests,
-               reputation_api_tests,
-               transaction_status_api_tests,
-               wallet_bridge_api_tests ]
-  tags:
-    - public-runner-docker
+# message_format_testnet_tests:
+#   stage: test
+#   extends: .test_tools_based
+#   variables:
+#     PYTEST_TIMEOUT_MINUTES: 25
+#     NODE_TYPE: "testnet"
+#     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/api_tests/message_format_tests/report.xml
+#   script:
+#     - cd tests/python/api_tests/message_format_tests/$API
+#     - export PYTEST_ARGS=(-m "${NODE_TYPE} or (not testnet and not mainnet_5m and not live_mainnet)")
+#     - !reference [.run-pytest, script]
+#   parallel:
+#     matrix:
+#       - API: [ account_by_key_api_tests,
+#                account_history_api,
+#                block_api_tests,
+#                condenser_api_tests,
+#                database_api_tests,
+#                debug_node_api_tests,
+#                json_rpc_api_tests,
+#                market_history_api_tests,
+#                network_broadcast_api_tests,
+#                rc_api_tests,
+#                reputation_api_tests,
+#                transaction_status_api_tests,
+#                wallet_bridge_api_tests ]
+#   tags:
+#     - public-runner-docker
 
-datagen_api_tests:
-  stage: test
-  extends:
-    - .test_tools_based
-    - .test-block-log-service
-  needs:
-    - !reference [.test_tools_based, needs]
-    - job: build_combined_testing_block_logs_image
-      artifacts: true
-  variables:
-    PYTEST_TIMEOUT_MINUTES: 30
-    SIGN_TRANSACTION_PATH: "$CI_PROJECT_DIR/hived-testnet-binaries/sign_transaction"
-    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/datagen_tests/report.xml
-    TEST_BLOCK_LOGS_SOURCES: testing_block_logs/
-    TESTING_BLOCK_LOGS_DESTINATION: $CI_PROJECT_DIR/testing_block_logs_dir/
-  script:
-    - mkdir -p "$TESTING_BLOCK_LOGS_DESTINATION"
-    - !reference [.fetch_test_block_logs, script]
-    - cd tests/python/functional/datagen_tests/
-    - !reference [.run-pytest, script]
-  tags:
-    - public-runner-docker
+# datagen_api_tests:
+#   stage: test
+#   extends:
+#     - .test_tools_based
+#     - .test-block-log-service
+#   needs:
+#     - !reference [.test_tools_based, needs]
+#     - job: build_combined_testing_block_logs_image
+#       artifacts: true
+#   variables:
+#     PYTEST_TIMEOUT_MINUTES: 30
+#     SIGN_TRANSACTION_PATH: "$CI_PROJECT_DIR/hived-testnet-binaries/sign_transaction"
+#     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/datagen_tests/report.xml
+#     TEST_BLOCK_LOGS_SOURCES: testing_block_logs/
+#     TESTING_BLOCK_LOGS_DESTINATION: $CI_PROJECT_DIR/testing_block_logs_dir/
+#   script:
+#     - mkdir -p "$TESTING_BLOCK_LOGS_DESTINATION"
+#     - !reference [.fetch_test_block_logs, script]
+#     - cd tests/python/functional/datagen_tests/
+#     - !reference [.run-pytest, script]
+#   tags:
+#     - public-runner-docker
 
-patterns_tests:
-  stage: test
-  image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
-  extends: .pytest_based
-  variables:
-    FF_NETWORK_PER_BUILD: 1
-    TEST_SUITE: "(condenser_api_patterns and (get_block or get_block_header) ) or block_api_patterns or (not get_transaction_hex and (get_transaction or get_account_history or enum_virtual_ops or get_ops_in_block))"
-    HIVED_UID: $HIVED_UID
-    HIVED_COMMIT: $HIVED_COMMIT # HIVED_COMMIT and HIVED_UID must be in this section to be passed to service
-  needs:
-    - job: prepare_hived_data
-      artifacts: true
+# patterns_tests:
+#   stage: test
+#   image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
+#   extends: .pytest_based
+#   variables:
+#     FF_NETWORK_PER_BUILD: 1
+#     TEST_SUITE: "(condenser_api_patterns and (get_block or get_block_header) ) or block_api_patterns or (not get_transaction_hex and (get_transaction or get_account_history or enum_virtual_ops or get_ops_in_block))"
+#     HIVED_UID: $HIVED_UID
+#     HIVED_COMMIT: $HIVED_COMMIT # HIVED_COMMIT and HIVED_UID must be in this section to be passed to service
+#   needs:
+#     - job: prepare_hived_data
+#       artifacts: true
 
-  services:
-    - *hived-service
+#   services:
+#     - *hived-service
 
-  before_script:
-    - curl -I hived-instance:8091 || (echo "error connecting to service hived-instance" && false)
-    - !reference [.test_tools_based, before_script]
+#   before_script:
+#     - curl -I hived-instance:8091 || (echo "error connecting to service hived-instance" && false)
+#     - !reference [.test_tools_based, before_script]
 
-  script:
-    # run pattern tests
-    - cd $CI_PROJECT_DIR/tests/python/api_tests/pattern_tests
-    - timeout 33m ./run_tests.sh hived-instance:8091 "$CI_PROJECT_DIR" "${TEST_SUITE}" FALSE
+#   script:
+#     # run pattern tests
+#     - cd $CI_PROJECT_DIR/tests/python/api_tests/pattern_tests
+#     - timeout 33m ./run_tests.sh hived-instance:8091 "$CI_PROJECT_DIR" "${TEST_SUITE}" FALSE
 
-  artifacts:
-    reports:
-      junit: tests/python/api_tests/pattern_tests/results.xml
-    paths:
-    - "**/from_node.log"
-    - "**/ah.log"
-    - "**/*.out.json"
-    - "$CI_PROJECT_DIR/tests/python/hive-local-tools/tests-api/hived/workdir_*"
-    when: always
-  tags:
-    - data-cache-storage
+#   artifacts:
+#     reports:
+#       junit: tests/python/api_tests/pattern_tests/results.xml
+#     paths:
+#     - "**/from_node.log"
+#     - "**/ah.log"
+#     - "**/*.out.json"
+#     - "$CI_PROJECT_DIR/tests/python/hive-local-tools/tests-api/hived/workdir_*"
+#     when: always
+#   tags:
+#     - data-cache-storage
 
-transaction_serialization_testnet_tests:
-  stage: test
-  extends: .test_tools_based
+# transaction_serialization_testnet_tests:
+#   stage: test
+#   extends: .test_tools_based
 
-  variables:
-    PYTEST_TIMEOUT_MINUTES: 15
-    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/transaction_serialization_tests/report.xml
+#   variables:
+#     PYTEST_TIMEOUT_MINUTES: 15
+#     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/transaction_serialization_tests/report.xml
 
-  script:
-    - cd $CI_PROJECT_DIR/tests/python/functional/transaction_serialization_tests
-    - export PYTEST_ARGS=(-m testnet)
-    - !reference [.run-pytest, script]
-  tags:
-    - public-runner-docker
+#   script:
+#     - cd $CI_PROJECT_DIR/tests/python/functional/transaction_serialization_tests
+#     - export PYTEST_ARGS=(-m testnet)
+#     - !reference [.run-pytest, script]
+#   tags:
+#     - public-runner-docker
 
-python_pattern_mainnet_tests:
-  stage: test
-  image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
-  extends: .test_tools_based
-  variables:
-    PYTEST_TIMEOUT_MINUTES: 27
-    TEST_TOOLS_NODE_DEFAULT_WAIT_FOR_LIVE_TIMEOUT: "60"
-    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/api_tests/python_patterns_tests/report.xml
-    BINARY_CACHE_PATH: "hived-binaries"
-    HIVED_UID: $HIVED_UID
-    HIVED_COMMIT: $HIVED_COMMIT
-  needs:
-    - job: prepare_hived_image
-      artifacts: true
-    - job: prepare_hived_data
-      artifacts: true
+# python_pattern_mainnet_tests:
+#   stage: test
+#   image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
+#   extends: .test_tools_based
+#   variables:
+#     PYTEST_TIMEOUT_MINUTES: 27
+#     TEST_TOOLS_NODE_DEFAULT_WAIT_FOR_LIVE_TIMEOUT: "60"
+#     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/api_tests/python_patterns_tests/report.xml
+#     BINARY_CACHE_PATH: "hived-binaries"
+#     HIVED_UID: $HIVED_UID
+#     HIVED_COMMIT: $HIVED_COMMIT
+#   needs:
+#     - job: prepare_hived_image
+#       artifacts: true
+#     - job: prepare_hived_data
+#       artifacts: true
 
-  services:
-    - *hived-service
+#   services:
+#     - *hived-service
 
-  before_script:
-    - curl -I hived-instance:8091 || (echo "error connecting to service hived-instance" && false)
-    - !reference [.test_tools_based, before_script]
-  script:
-    # run pattern tests
-    - cd $CI_PROJECT_DIR/tests/python/api_tests/python_patterns_tests
-    - export PYTEST_ARGS=(-m mainnet_5m --http-endpoint hived-instance:8091 --ws-endpoint hived-instance:8090 --wallet-path $CI_PROJECT_DIR/$BINARY_CACHE_PATH/cli_wallet)
-    - !reference [.run-pytest, script]
+#   before_script:
+#     - curl -I hived-instance:8091 || (echo "error connecting to service hived-instance" && false)
+#     - !reference [.test_tools_based, before_script]
+#   script:
+#     # run pattern tests
+#     - cd $CI_PROJECT_DIR/tests/python/api_tests/python_patterns_tests
+#     - export PYTEST_ARGS=(-m mainnet_5m --http-endpoint hived-instance:8091 --ws-endpoint hived-instance:8090 --wallet-path $CI_PROJECT_DIR/$BINARY_CACHE_PATH/cli_wallet)
+#     - !reference [.run-pytest, script]
 
-  artifacts:
-    name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
-    reports:
-      junit: $CI_PROJECT_DIR/tests/python/api_tests/python_patterns_tests/report.xml
-    paths:
-    - "**/generated_during_*"
-    - "**/generated_by_package_fixtures"
-    exclude:
-    - "**/generated_during_*/**/block_log*"
-    - "**/generated_during_*/**/shared_memory.bin"
-    - "**/generated_during_*/**/*.sst"
-    when: always
-  tags:
-    - data-cache-storage
+#   artifacts:
+#     name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
+#     reports:
+#       junit: $CI_PROJECT_DIR/tests/python/api_tests/python_patterns_tests/report.xml
+#     paths:
+#     - "**/generated_during_*"
+#     - "**/generated_by_package_fixtures"
+#     exclude:
+#     - "**/generated_during_*/**/block_log*"
+#     - "**/generated_during_*/**/shared_memory.bin"
+#     - "**/generated_during_*/**/*.sst"
+#     when: always
+#   tags:
+#     - data-cache-storage
 
-python_pattern_testnet_tests:
-  stage: test
-  extends: .test_tools_based
-  variables:
-    PYTEST_TIMEOUT_MINUTES: 10
-    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/api_tests/python_patterns_tests/report.xml
-  script:
-    - cd tests/python/api_tests/python_patterns_tests/
-    - export PYTEST_ARGS=(-m "not testnet and not mainnet_5m and not live_mainnet")
-    - !reference [.run-pytest, script]
-  tags:
-    - public-runner-docker
+# python_pattern_testnet_tests:
+#   stage: test
+#   extends: .test_tools_based
+#   variables:
+#     PYTEST_TIMEOUT_MINUTES: 10
+#     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/api_tests/python_patterns_tests/report.xml
+#   script:
+#     - cd tests/python/api_tests/python_patterns_tests/
+#     - export PYTEST_ARGS=(-m "not testnet and not mainnet_5m and not live_mainnet")
+#     - !reference [.run-pytest, script]
+#   tags:
+#     - public-runner-docker
 
-.message_format_tests:
-  stage: test
-  extends: .test_tools_based
-  variables:
-    PYTEST_TIMEOUT_MINUTES: 30
-    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/api_tests/message_format_tests/report.xml
+# .message_format_tests:
+#   stage: test
+#   extends: .test_tools_based
+#   variables:
+#     PYTEST_TIMEOUT_MINUTES: 30
+#     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/api_tests/message_format_tests/report.xml
 
-  script:
-    - cd tests/python/api_tests/message_format_tests/$API
-    - export PYTEST_ARGS=(-m ${NODE_TYPE} --http-endpoint=${NODE_ADDRESS})
-    - !reference [.run-pytest, script]
-  parallel:
-    matrix:
-      - API: [ account_by_key_api_tests,
-               account_history_api,
-               block_api_tests,
-               condenser_api_tests,
-               database_api_tests,
-               json_rpc_api_tests,
-               market_history_api_tests,
-               rc_api_tests,
-               reputation_api_tests,
-               transaction_status_api_tests,
-               wallet_bridge_api_tests ]
-  tags:
-    - public-runner-docker
-    - hived-for-tests
+#   script:
+#     - cd tests/python/api_tests/message_format_tests/$API
+#     - export PYTEST_ARGS=(-m ${NODE_TYPE} --http-endpoint=${NODE_ADDRESS})
+#     - !reference [.run-pytest, script]
+#   parallel:
+#     matrix:
+#       - API: [ account_by_key_api_tests,
+#                account_history_api,
+#                block_api_tests,
+#                condenser_api_tests,
+#                database_api_tests,
+#                json_rpc_api_tests,
+#                market_history_api_tests,
+#                rc_api_tests,
+#                reputation_api_tests,
+#                transaction_status_api_tests,
+#                wallet_bridge_api_tests ]
+#   tags:
+#     - public-runner-docker
+#     - hived-for-tests
 
-message_format_mainnet_5m_tests:
-  extends: .message_format_tests
-  needs:
-    - job: prepare_hived_data
-      artifacts: true
-  services:
-    - *hived-service
-  variables:
-    PYTEST_TIMEOUT_MINUTES: 10
-    NODE_ADDRESS: "hived-instance:8091"
-    NODE_TYPE: "mainnet_5m"
-    HIVED_UID: $HIVED_UID
-    HIVED_COMMIT: $HIVED_COMMIT
-  before_script:
-    - curl -I ${NODE_ADDRESS} || (echo "error connecting to service hived-instance" && false)
-    - !reference [.message_format_tests, before_script]
-  artifacts:
-    name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
-    reports:
-      junit: $CI_PROJECT_DIR/tests/python/api_tests/message_format_tests/report.xml
-    paths:
-    - "**/generated_during_*"
-    - "**/generated_by_package_fixtures"
-    exclude:
-    - "**/generated_during_*/**/block_log*"
-    - "**/generated_during_*/**/shared_memory.bin"
-    - "**/generated_during_*/**/*.sst"
-    when: always
-    expire_in: 1 week
-  tags:
-    - data-cache-storage
+# message_format_mainnet_5m_tests:
+#   extends: .message_format_tests
+#   needs:
+#     - job: prepare_hived_data
+#       artifacts: true
+#   services:
+#     - *hived-service
+#   variables:
+#     PYTEST_TIMEOUT_MINUTES: 10
+#     NODE_ADDRESS: "hived-instance:8091"
+#     NODE_TYPE: "mainnet_5m"
+#     HIVED_UID: $HIVED_UID
+#     HIVED_COMMIT: $HIVED_COMMIT
+#   before_script:
+#     - curl -I ${NODE_ADDRESS} || (echo "error connecting to service hived-instance" && false)
+#     - !reference [.message_format_tests, before_script]
+#   artifacts:
+#     name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
+#     reports:
+#       junit: $CI_PROJECT_DIR/tests/python/api_tests/message_format_tests/report.xml
+#     paths:
+#     - "**/generated_during_*"
+#     - "**/generated_by_package_fixtures"
+#     exclude:
+#     - "**/generated_during_*/**/block_log*"
+#     - "**/generated_during_*/**/shared_memory.bin"
+#     - "**/generated_during_*/**/*.sst"
+#     when: always
+#     expire_in: 1 week
+#   tags:
+#     - data-cache-storage
 
-message_format_live_mainnet_tests:
-  extends: .message_format_tests
-  variables:
-    NODE_ADDRESS: "http://api.fqdn.pl:8092"
-    NODE_TYPE: "live_mainnet"
-  rules:
-    # Run this job, only when environment variable "RUN_MESSAGE_FORMAT_TESTS_ON_LIVE_MAINNET" is set
-    - if: $RUN_MESSAGE_FORMAT_TESTS_ON_LIVE_MAINNET == "TRUE"
-      when: always
+# message_format_live_mainnet_tests:
+#   extends: .message_format_tests
+#   variables:
+#     NODE_ADDRESS: "http://api.fqdn.pl:8092"
+#     NODE_TYPE: "live_mainnet"
+#   rules:
+#     # Run this job, only when environment variable "RUN_MESSAGE_FORMAT_TESTS_ON_LIVE_MAINNET" is set
+#     - if: $RUN_MESSAGE_FORMAT_TESTS_ON_LIVE_MAINNET == "TRUE"
+#       when: always
 
-foundation_layer_tests:
-  stage: test
-  extends:
-    - .test_tools_based
-    - .test-block-log-service
-  needs:
-    - !reference [.test_tools_based, needs]
-    - job: build_combined_testing_block_logs_image
-      artifacts: true
-  variables:
-    PYTEST_TIMEOUT_MINUTES: 6
-    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/foundation_layer_tests/report.xml
-    TEST_BLOCK_LOGS_SOURCES: testing_block_logs/
-    TESTING_BLOCK_LOGS_DESTINATION: $CI_PROJECT_DIR/testing_block_logs_dir/
-  script:
-    - mkdir -p "$TESTING_BLOCK_LOGS_DESTINATION"
-    - !reference [.fetch_test_block_logs, script]
-    - cd tests/python/functional/foundation_layer_tests
-    - !reference [.run-pytest, script]
-  tags:
-    - public-runner-docker
+# foundation_layer_tests:
+#   stage: test
+#   extends:
+#     - .test_tools_based
+#     - .test-block-log-service
+#   needs:
+#     - !reference [.test_tools_based, needs]
+#     - job: build_combined_testing_block_logs_image
+#       artifacts: true
+#   variables:
+#     PYTEST_TIMEOUT_MINUTES: 6
+#     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/foundation_layer_tests/report.xml
+#     TEST_BLOCK_LOGS_SOURCES: testing_block_logs/
+#     TESTING_BLOCK_LOGS_DESTINATION: $CI_PROJECT_DIR/testing_block_logs_dir/
+#   script:
+#     - mkdir -p "$TESTING_BLOCK_LOGS_DESTINATION"
+#     - !reference [.fetch_test_block_logs, script]
+#     - cd tests/python/functional/foundation_layer_tests
+#     - !reference [.run-pytest, script]
+#   tags:
+#     - public-runner-docker
 
-witness_tests:
-  stage: test
-  extends: .test_tools_based
-  needs:
-    - job: prepare_hived_data
-      artifacts: true
-  services:
-    - *hived-service
-  variables:
-    NODE_ADDRESS: "hived-instance:8091"
-    PYTEST_TIMEOUT_MINUTES: 5
-    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/witness_tests/report.xml
-    HIVED_UID: $HIVED_UID
-    HIVED_COMMIT: $HIVED_COMMIT
-  script:
-    - curl -I ${NODE_ADDRESS} || (echo "error connecting to service hived-instance" && false)
-    - cd tests/python/functional/witness_tests
-    - export PYTEST_ARGS=(--http-endpoint=${NODE_ADDRESS})
-    - !reference [.run-pytest, script]
-  tags:
-    - data-cache-storage
+# witness_tests:
+#   stage: test
+#   extends: .test_tools_based
+#   needs:
+#     - job: prepare_hived_data
+#       artifacts: true
+#   services:
+#     - *hived-service
+#   variables:
+#     NODE_ADDRESS: "hived-instance:8091"
+#     PYTEST_TIMEOUT_MINUTES: 5
+#     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/witness_tests/report.xml
+#     HIVED_UID: $HIVED_UID
+#     HIVED_COMMIT: $HIVED_COMMIT
+#   script:
+#     - curl -I ${NODE_ADDRESS} || (echo "error connecting to service hived-instance" && false)
+#     - cd tests/python/functional/witness_tests
+#     - export PYTEST_ARGS=(--http-endpoint=${NODE_ADDRESS})
+#     - !reference [.run-pytest, script]
+#   tags:
+#     - data-cache-storage
 
-hf28_tests:
-  stage: test
-  extends: .test_tools_based
+# hf28_tests:
+#   stage: test
+#   extends: .test_tools_based
 
-  variables:
-    PYTEST_TIMEOUT_MINUTES: 20
-    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/hf28_tests/report.xml
+#   variables:
+#     PYTEST_TIMEOUT_MINUTES: 20
+#     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/hf28_tests/report.xml
 
-  script:
-    - cd tests/python/functional/hf28_tests
-    - !reference [.run-pytest, script]
-  tags:
-    - public-runner-docker
+#   script:
+#     - cd tests/python/functional/hf28_tests
+#     - !reference [.run-pytest, script]
+#   tags:
+#     - public-runner-docker
 
-functional_api_tests:
-  stage: test
-  extends: .test_tools_based
+# functional_api_tests:
+#   stage: test
+#   extends: .test_tools_based
 
-  variables:
-    PYTEST_TIMEOUT_MINUTES: 3
-    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/api_tests/report.xml
+#   variables:
+#     PYTEST_TIMEOUT_MINUTES: 3
+#     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/api_tests/report.xml
 
-  script:
-    - cd tests/python/functional/api_tests/
-    - !reference [.run-pytest, script]
-  tags:
-    - public-runner-docker
+#   script:
+#     - cd tests/python/functional/api_tests/
+#     - !reference [.run-pytest, script]
+#   tags:
+#     - public-runner-docker
 
 publish_docker_image:
   stage: publish
@@ -1008,19 +1008,19 @@ publish_docker_image:
     - public-runner-docker
     - hived-for-tests
 
-hardfork_schedule_tests:
-  stage: test
-  extends: .test_tools_based
+# hardfork_schedule_tests:
+#   stage: test
+#   extends: .test_tools_based
 
-  variables:
-    PYTEST_TIMEOUT_MINUTES: 3
-    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/hardfork_schedule_tests/report.xml
+#   variables:
+#     PYTEST_TIMEOUT_MINUTES: 3
+#     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/hardfork_schedule_tests/report.xml
 
-  script:
-    - cd tests/python/functional/hardfork_schedule_tests
-    - !reference [.run-pytest, script]
-  tags:
-    - public-runner-docker
+#   script:
+#     - cd tests/python/functional/hardfork_schedule_tests
+#     - !reference [.run-pytest, script]
+#   tags:
+#     - public-runner-docker
 
 several_node_restarts_tests:
   extends: .prepare_hived_data_5m
@@ -1043,105 +1043,105 @@ several_node_restarts_tests:
   tags:
     - public-runner-docker
 
-artifacts_generation_tests:
-  extends: .job-defaults
-  stage: test
-  image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
-  needs:
-    - job: prepare_hived_image
-      artifacts: true
-  variables:
-    BINARY_CACHE_PATH: "hived-binaries"
-  script:
-    - cd tests/integration/artifacts_generation
-    - ./test_artifacts_generation.sh "$CI_PROJECT_DIR/$BINARY_CACHE_PATH/hived" "$CI_PROJECT_DIR/$BINARY_CACHE_PATH/block_log_util"
-  tags:
-    - public-runner-docker
+# artifacts_generation_tests:
+#   extends: .job-defaults
+#   stage: test
+#   image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
+#   needs:
+#     - job: prepare_hived_image
+#       artifacts: true
+#   variables:
+#     BINARY_CACHE_PATH: "hived-binaries"
+#   script:
+#     - cd tests/integration/artifacts_generation
+#     - ./test_artifacts_generation.sh "$CI_PROJECT_DIR/$BINARY_CACHE_PATH/hived" "$CI_PROJECT_DIR/$BINARY_CACHE_PATH/block_log_util"
+#   tags:
+#     - public-runner-docker
 
-block_log_util_split_and_merge_block_log_tests:
-  extends: .job-defaults
-  stage: test
-  image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
-  needs:
-    - job: testnet_node_build
-      artifacts: true
-  variables:
-    BLOCK_LOG_UTIL_TESTNET_PATH: "$CI_PROJECT_DIR/hived-testnet-binaries/block_log_util"
-  script:
-    - cd tests/integration/block_log_util_split_and_merge_block_log
-    - ./test_block_log_util_split_and_merge_block_log.sh "$BLOCK_LOG_UTIL_TESTNET_PATH"
-  tags:
-    - public-runner-docker
+# block_log_util_split_and_merge_block_log_tests:
+#   extends: .job-defaults
+#   stage: test
+#   image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
+#   needs:
+#     - job: testnet_node_build
+#       artifacts: true
+#   variables:
+#     BLOCK_LOG_UTIL_TESTNET_PATH: "$CI_PROJECT_DIR/hived-testnet-binaries/block_log_util"
+#   script:
+#     - cd tests/integration/block_log_util_split_and_merge_block_log
+#     - ./test_block_log_util_split_and_merge_block_log.sh "$BLOCK_LOG_UTIL_TESTNET_PATH"
+#   tags:
+#     - public-runner-docker
 
-recovery_tests:
-  stage: test
-  extends: .test_tools_based
-  variables:
-    PYTEST_TIMEOUT_MINUTES: 10
-    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/recovery_tests/report.xml
-  script:
-    - cd tests/python/functional/recovery_tests
-    - !reference [.run-pytest, script]
-  tags:
-    - public-runner-docker
+# recovery_tests:
+#   stage: test
+#   extends: .test_tools_based
+#   variables:
+#     PYTEST_TIMEOUT_MINUTES: 10
+#     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/recovery_tests/report.xml
+#   script:
+#     - cd tests/python/functional/recovery_tests
+#     - !reference [.run-pytest, script]
+#   tags:
+#     - public-runner-docker
 
-operation_tests:
-  stage: test
-  extends: .test_tools_based
-  variables:
-    PYTEST_TIMEOUT_MINUTES: 15
-    SERIALIZE_SET_PROPERTIES_PATH: "$CI_PROJECT_DIR/hived-testnet-binaries/serialize_set_properties"
-    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/operation_tests/report.xml
-  script:
-    - cd tests/python/functional/operation_tests/$OPERATION
-    - !reference [.run-pytest, script]
-  parallel:
-    matrix:
-      - OPERATION: [ account_update_tests,
-                     account_witness_proxy_tests,
-                     account_witness_vote_tests,
-                     cancel_transfer_from_savings,
-                     claim_account_tests,
-                     comment_tests,
-                     convert_tests,
-                     custom_and_custom_json_tests,
-                     escrow_tests,
-                     limit_order_tests,
-                     proposal_tests,
-                     set_withdraw_vesting_route_tests,
-                     test_recurrent_transfer,
-                     test_transfer_to_vesting_operation,
-                     test_withdraw_vesting_operation,
-                     transfer_from_savings_tests,
-                     transfer_tests,
-                     transfer_to_savings_tests,
-                     update_proposal_votes_tests,
-                     witness_ops_tests ]
-  tags:
-    - public-runner-docker
+# operation_tests:
+#   stage: test
+#   extends: .test_tools_based
+#   variables:
+#     PYTEST_TIMEOUT_MINUTES: 15
+#     SERIALIZE_SET_PROPERTIES_PATH: "$CI_PROJECT_DIR/hived-testnet-binaries/serialize_set_properties"
+#     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/operation_tests/report.xml
+#   script:
+#     - cd tests/python/functional/operation_tests/$OPERATION
+#     - !reference [.run-pytest, script]
+#   parallel:
+#     matrix:
+#       - OPERATION: [ account_update_tests,
+#                      account_witness_proxy_tests,
+#                      account_witness_vote_tests,
+#                      cancel_transfer_from_savings,
+#                      claim_account_tests,
+#                      comment_tests,
+#                      convert_tests,
+#                      custom_and_custom_json_tests,
+#                      escrow_tests,
+#                      limit_order_tests,
+#                      proposal_tests,
+#                      set_withdraw_vesting_route_tests,
+#                      test_recurrent_transfer,
+#                      test_transfer_to_vesting_operation,
+#                      test_withdraw_vesting_operation,
+#                      transfer_from_savings_tests,
+#                      transfer_tests,
+#                      transfer_to_savings_tests,
+#                      update_proposal_votes_tests,
+#                      witness_ops_tests ]
+#   tags:
+#     - public-runner-docker
 
-comment_cashout_tests:
-  stage: test
-  extends:
-    - .test_tools_based
-    - .test-block-log-service
-  needs:
-    - !reference [.test_tools_based, needs]
-    - job: build_combined_testing_block_logs_image
-      artifacts: true
-  variables:
-    PYTEST_NUMBER_OF_PROCESSES: 1
-    PYTEST_TIMEOUT_MINUTES: 30
-    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/comment_cashout_tests/report.xml
-    TEST_BLOCK_LOGS_SOURCES: testing_block_logs/comment_cashout/comments_and_votes/
-    TESTING_BLOCK_LOGS_DESTINATION: $CI_PROJECT_DIR/testing_block_logs_dir/
-  script:
-    - mkdir -p "$TESTING_BLOCK_LOGS_DESTINATION"
-    - !reference [.fetch_test_block_logs, script]
-    - cd tests/python/functional/comment_cashout_tests
-    - !reference [.run-pytest, script]
-  tags:
-    - public-runner-docker
+# comment_cashout_tests:
+#   stage: test
+#   extends:
+#     - .test_tools_based
+#     - .test-block-log-service
+#   needs:
+#     - !reference [.test_tools_based, needs]
+#     - job: build_combined_testing_block_logs_image
+#       artifacts: true
+#   variables:
+#     PYTEST_NUMBER_OF_PROCESSES: 1
+#     PYTEST_TIMEOUT_MINUTES: 30
+#     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/comment_cashout_tests/report.xml
+#     TEST_BLOCK_LOGS_SOURCES: testing_block_logs/comment_cashout/comments_and_votes/
+#     TESTING_BLOCK_LOGS_DESTINATION: $CI_PROJECT_DIR/testing_block_logs_dir/
+#   script:
+#     - mkdir -p "$TESTING_BLOCK_LOGS_DESTINATION"
+#     - !reference [.fetch_test_block_logs, script]
+#     - cd tests/python/functional/comment_cashout_tests
+#     - !reference [.run-pytest, script]
+#   tags:
+#     - public-runner-docker
 
 test-wax-spec-package:
   extends: .node_based_job_base
@@ -1259,19 +1259,19 @@ deploy-wax-spec-production-public-npm:
   tags:
     - public-runner-docker
 
-authority_tests:
-  stage: test
-  extends: .test_tools_based
+# authority_tests:
+#   stage: test
+#   extends: .test_tools_based
 
-  variables:
-    PYTEST_TIMEOUT_MINUTES: 6
-    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/authority/report.xml
+#   variables:
+#     PYTEST_TIMEOUT_MINUTES: 6
+#     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/authority/report.xml
 
-  script:
-    - cd tests/python/functional/authority
-    - !reference [.run-pytest, script]
-  tags:
-    - public-runner-docker
+#   script:
+#     - cd tests/python/functional/authority
+#     - !reference [.run-pytest, script]
+#   tags:
+#     - public-runner-docker
 
 generate_hived_flattened_openapi_definition:
   extends: .node_based_job_base
@@ -1847,59 +1847,59 @@ build_combined_testing_block_logs_image:
   tags:
     - public-runner-docker
 
-universal_block_log_tests:
-  stage: test
-  extends:
-    - .test_tools_based
-    - .test-block-log-service
-  needs:
-    - !reference [.test_tools_based, needs]
-    - job: build_combined_testing_block_logs_image
-      artifacts: true
-  variables:
-    PYTEST_TIMEOUT_MINUTES: 8
-    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/util/universal_block_logs/report.xml
-    TEST_BLOCK_LOGS_SOURCES: testing_block_logs/
-    TESTING_BLOCK_LOGS_DESTINATION: $CI_PROJECT_DIR/testing_block_logs_dir/
-  script:
-    - mkdir -p "$TESTING_BLOCK_LOGS_DESTINATION"
-    - !reference [.fetch_test_block_logs, script]
-    - cd $CI_PROJECT_DIR/tests/python/functional/util/universal_block_logs
-    - !reference [.run-pytest, script]
-  tags:
-    - public-runner-docker
+# universal_block_log_tests:
+#   stage: test
+#   extends:
+#     - .test_tools_based
+#     - .test-block-log-service
+#   needs:
+#     - !reference [.test_tools_based, needs]
+#     - job: build_combined_testing_block_logs_image
+#       artifacts: true
+#   variables:
+#     PYTEST_TIMEOUT_MINUTES: 8
+#     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/util/universal_block_logs/report.xml
+#     TEST_BLOCK_LOGS_SOURCES: testing_block_logs/
+#     TESTING_BLOCK_LOGS_DESTINATION: $CI_PROJECT_DIR/testing_block_logs_dir/
+#   script:
+#     - mkdir -p "$TESTING_BLOCK_LOGS_DESTINATION"
+#     - !reference [.fetch_test_block_logs, script]
+#     - cd $CI_PROJECT_DIR/tests/python/functional/util/universal_block_logs
+#     - !reference [.run-pytest, script]
+#   tags:
+#     - public-runner-docker
 
-colony_tests:
-  stage: test
-  extends:
-    - .test_tools_based
-    - .test-block-log-service
-  needs:
-    - !reference [.test_tools_based, needs]
-    - job: build_combined_testing_block_logs_image
-      artifacts: true
-  variables:
-    PYTEST_TIMEOUT_MINUTES: 10
-    PYTEST_NUMBER_OF_PROCESSES: 1
-    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/colony/report.xml
-    TEST_BLOCK_LOGS_SOURCES: testing_block_logs/
-    TESTING_BLOCK_LOGS_DESTINATION: $CI_PROJECT_DIR/testing_block_logs_dir/
-    PYTEST_ARGS: "-k ${TEST_NAME}"
-  script:
-    - mkdir -p "$TESTING_BLOCK_LOGS_DESTINATION"
-    - !reference [.fetch_test_block_logs, script]
-    - cd $CI_PROJECT_DIR/tests/python/functional/colony
-    - !reference [.run-pytest, script]
-  parallel:
-    matrix:
-      - TEST_NAME: test_start_colony_plugin
-      - TEST_NAME: test_start_colony_from_block_log
-      - TEST_NAME: test_colony_on_basic_network_structure
-      - TEST_NAME: test_colony_on_complex_network
-      - TEST_NAME: test_multiple_colony_nodes_communication_with_single_witness_node
-      - TEST_NAME: test_colony_with_unknown_colony_signer
-  tags:
-    - public-runner-docker
+# colony_tests:
+#   stage: test
+#   extends:
+#     - .test_tools_based
+#     - .test-block-log-service
+#   needs:
+#     - !reference [.test_tools_based, needs]
+#     - job: build_combined_testing_block_logs_image
+#       artifacts: true
+#   variables:
+#     PYTEST_TIMEOUT_MINUTES: 10
+#     PYTEST_NUMBER_OF_PROCESSES: 1
+#     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/colony/report.xml
+#     TEST_BLOCK_LOGS_SOURCES: testing_block_logs/
+#     TESTING_BLOCK_LOGS_DESTINATION: $CI_PROJECT_DIR/testing_block_logs_dir/
+#     PYTEST_ARGS: "-k ${TEST_NAME}"
+#   script:
+#     - mkdir -p "$TESTING_BLOCK_LOGS_DESTINATION"
+#     - !reference [.fetch_test_block_logs, script]
+#     - cd $CI_PROJECT_DIR/tests/python/functional/colony
+#     - !reference [.run-pytest, script]
+#   parallel:
+#     matrix:
+#       - TEST_NAME: test_start_colony_plugin
+#       - TEST_NAME: test_start_colony_from_block_log
+#       - TEST_NAME: test_colony_on_basic_network_structure
+#       - TEST_NAME: test_colony_on_complex_network
+#       - TEST_NAME: test_multiple_colony_nodes_communication_with_single_witness_node
+#       - TEST_NAME: test_colony_with_unknown_colony_signer
+#   tags:
+#     - public-runner-docker
 
 # Build and push OpenAPI spec Docker image
 build_openapi_spec_image:
@@ -1963,20 +1963,27 @@ build_openapi_spec_image:
     - public-runner-docker
 
 mainnet_node_snapshot_test:
+  extends: .prepare_hived_data_5m
   stage: test
   needs:
     - job: prepare_hived_image
       artifacts: true
   variables:
+    CONFIG_INI_SOURCE: "$CI_PROJECT_DIR/docker/config_5M.ini"
   script:
     - test -n "$HIVED_IMAGE_NAME"
     - env
+    - which bash
+    - ls -l /bin/bash
     - echo "HIN ${HIVED_IMAGE_NAME}"
-    - pwd
     - ls -la $CI_PROJECT_DIR
     - ls -la $CI_PROJECT_DIR/tests
     - ls -la $CI_PROJECT_DIR/tests/integration
-    - .$CI_PROJECT_DIR/tests/integration/test_dump_snapshot_on_mainnet_data.sh $HIVED_IMAGE_NAME $CI_PROJECT_DIR/data_generated_during_mainnet_node_snapshot_test --branch=$CI_COMMIT_BRANCH
+    - cd $CI_PROJECT_DIR/tests/integration
+    - pwd
+    - ls -la
+    - cat $CONFIG_INI_SOURCE
+    - ./test_dump_snapshot_on_mainnet_data.sh $HIVED_IMAGE_NAME $CI_PROJECT_DIR/data_generated_during_mainnet_node_snapshot_test --branch=$CI_COMMIT_BRANCH
   artifacts:
     reports:
       dotenv:

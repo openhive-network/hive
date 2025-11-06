@@ -5,7 +5,6 @@ echo "$SCRIPTPATH"
 
 export LOG_FILE=run_hived_img.log
 # shellcheck source=common.sh
-source "$SCRIPTPATH/common.sh"
 
 log_exec_params "$@"
 
