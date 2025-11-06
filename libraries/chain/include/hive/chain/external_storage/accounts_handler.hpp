@@ -82,11 +82,6 @@ namespace
 
 class accounts_handler : public executor_interface, public external_storage_snapshot
 {
-  protected:
-
-    virtual const chainbase::database& get_db() const = 0;
-    virtual external_storage_reader_writer::ptr get_external_storage_reader_writer() const = 0;
-
   public:
 
     using ptr = std::shared_ptr<accounts_handler>;

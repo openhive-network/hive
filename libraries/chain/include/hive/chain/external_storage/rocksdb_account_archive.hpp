@@ -12,11 +12,6 @@ namespace bfs = boost::filesystem;
 
 class rocksdb_account_archive : public accounts_handler
 {
-  protected:
-
-    const chainbase::database& get_db() const override;
-    external_storage_reader_writer::ptr get_external_storage_reader_writer() const override;
-
   private:
 
 #ifdef IS_TEST_NET

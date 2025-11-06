@@ -267,16 +267,6 @@ rocksdb_account_archive::~rocksdb_account_archive()
   close();
 }
 
-const chainbase::database& rocksdb_account_archive::get_db() const
-{
-  return db;
-}
-
-external_storage_reader_writer::ptr rocksdb_account_archive::get_external_storage_reader_writer() const
-{
-  return provider;
-}
-
 template<typename SHM_Index_Type, typename SHM_Object_Type,
         typename RocksDB_Object_Type,
         typename RocksDB_Object_Type2 = RocksDB_Object_Type>
