@@ -1954,10 +1954,30 @@ build_openapi_spec_image:
           --tag "$CI_REGISTRY_IMAGE/$OPENAPI_IMAGE_NAME:$CI_COMMIT_SHORT_SHA" \
           --push \
           "$OPENAPI_BUILD_CONTEXT"
-        
+
         if [ -n "$CI_COMMIT_TAG" ]; then
           echo "Tag $CI_COMMIT_TAG does not match protected version patterns, skipping version tagging"
         fi
       fi
+  tags:
+    - public-runner-docker
+
+mainnet_node_snapshot_test:
+  stage: test
+  needs:
+    - job: prepare_hived_image
+      artifacts: true
+  variables:
+  script:
+    - test -n "$HIVED_IMAGE_NAME"
+    - env
+    - echo "HIN ${HIVED_IMAGE_NAME}"
+    - ./tests/integration/test_dump_snapshot_on_mainnet_data.sh $HIVED_IMAGE_NAME $CI_PROJECT_DIR/data_generated_during_mainnet_node_snapshot_test
+  artifacts:
+    reports:
+      dotenv:
+        - docker_image_name.env
+    paths:
+      - $CI_PROJECT_DIR/data_generated_during_hive_replay/datadir/docker_entrypoint.log
   tags:
     - public-runner-docker
