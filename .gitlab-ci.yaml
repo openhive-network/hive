@@ -1921,18 +1921,18 @@ build_openapi_spec_image:
   script:
     # Login to GitLab registry
     - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" "$CI_REGISTRY" --password-stdin
-    
+
     ## Setup buildx with docker-container driver for registry cache support
     - docker buildx create --driver docker-container --use
-    
+
     # Check if this is a protected version tag
     - |
       if [ -n "$CI_COMMIT_TAG" ] && [[ "$CI_COMMIT_TAG" =~ ^[01v].* ]]; then
         echo "This is a protected version tag: $CI_COMMIT_TAG"
-        
+
         # Login to registry.hive.blog for versioned releases
         echo "$BLOG_REGISTRY_PASSWORD" | docker login -u "$BLOG_REGISTRY_USER" "registry.hive.blog" --password-stdin
-        
+
         # Build and push to multiple registries with multiple tags in one command
         docker buildx build \
           --file "$OPENAPI_DOCKERFILE_PATH" \
