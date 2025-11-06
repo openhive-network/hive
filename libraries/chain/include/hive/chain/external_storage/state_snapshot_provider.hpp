@@ -27,7 +27,8 @@ class state_snapshot_provider
   public:
     /** Allows to process explicit snapshot requests specified at application command line.
     */
-    virtual void process_explicit_snapshot_requests(const hive::chain::open_args& openArgs) = 0;
+    virtual void process_explicit_snapshot_dump_requests(const hive::chain::open_args& openArgs) = 0;
+    virtual void process_explicit_snapshot_load_requests(const hive::chain::open_args& openArgs) = 0;
 
   protected:
     virtual ~state_snapshot_provider() = default;

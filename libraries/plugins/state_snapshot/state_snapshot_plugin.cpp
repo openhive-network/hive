@@ -883,7 +883,8 @@ class state_snapshot_plugin::impl final : protected chain::state_snapshot_provid
 
   protected:
     /// chain::state_snapshot_provider implementation:
-    virtual void process_explicit_snapshot_requests(const hive::chain::open_args& openArgs) override;
+    virtual void process_explicit_snapshot_dump_requests(const hive::chain::open_args& openArgs) override;
+    virtual void process_explicit_snapshot_load_requests(const hive::chain::open_args& openArgs) override;
 
     private:
       void collectOptions(const bpo::variables_map& options);
@@ -904,7 +905,8 @@ class state_snapshot_plugin::impl final : protected chain::state_snapshot_provid
       database&               _mainDb;
       bfs::path               _storagePath;
       std::unique_ptr<DB>     _storage;
-      std::string             _snapshot_name;
+      std::string             _snapshot_load_name;
+      std::string             _snapshot_dump_name;
       uint32_t                _num_threads = 0;
       bool                    _do_immediate_load = false;
       bool                    _do_immediate_dump = false;
@@ -930,18 +932,17 @@ void state_snapshot_plugin::impl::collectOptions(const bpo::variables_map& optio
 
   _do_immediate_load = options.count("load-snapshot");
   if(_do_immediate_load)
-    _snapshot_name = options.at("load-snapshot").as<std::string>();
+    _snapshot_load_name = options.at("load-snapshot").as<std::string>();
 
   _do_immediate_dump = options.count("dump-snapshot");
   if(_do_immediate_dump)
-    _snapshot_name = options.at("dump-snapshot").as<std::string>();
+    _snapshot_dump_name = options.at("dump-snapshot").as<std::string>();
 
   if (options.count("process-snapshot-threads-num"))
   {
     _num_threads = options.at("process-snapshot-threads-num").as<unsigned>();
     FC_ASSERT(_num_threads, "You have to assing at least one thread for snapshot processing");
   }
-  FC_ASSERT(!_do_immediate_load || !_do_immediate_dump, "You can only dump or load snapshot at once.");
 
   fc::mutable_variant_object state_opts;
 
@@ -1690,20 +1691,22 @@ void state_snapshot_plugin::impl::load_snapshot(const std::string& snapshotName,
     FC_CAPTURE_LOG_AND_RETHROW( (snapshotName) );
   }
 
-void state_snapshot_plugin::impl::process_explicit_snapshot_requests(const hive::chain::open_args& openArgs)
+void state_snapshot_plugin::impl::process_explicit_snapshot_dump_requests(const hive::chain::open_args& openArgs)
+  {
+    if(_do_immediate_dump)
+    {
+      _self.get_app().notify_status("dumping snapshot");
+      prepare_snapshot(_snapshot_dump_name);
+      _self.get_app().notify_status("finished dumping snapshot");
+    }
+  }
+void state_snapshot_plugin::impl::process_explicit_snapshot_load_requests(const hive::chain::open_args& openArgs)
   {
     if(_do_immediate_load)
     {
       _self.get_app().notify_status("loading snapshot");
-      load_snapshot(_snapshot_name, openArgs);
+      load_snapshot(_snapshot_load_name, openArgs);
       _self.get_app().notify_status("finished loading snapshot");
-    }
-
-    if(_do_immediate_dump)
-    {
-      _self.get_app().notify_status("dumping snapshot");
-      prepare_snapshot(_snapshot_name);
-      _self.get_app().notify_status("finished dumping snapshot");
     }
   }
 

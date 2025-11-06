@@ -111,7 +111,8 @@ class chain_plugin_impl
     void initial_settings();
     void open();
     bool replay_blockchain( const block_read_i& block_reader, hive::chain::blockchain_worker_thread_pool& thread_pool );
-    void process_snapshot();
+    void process_snapshot_dump_request();
+    void process_snapshot_load_request();
     bool check_data_consistency( const block_read_i& block_reader );
 
     void prepare_work( bool started, synchronization_type& on_sync );
@@ -1338,10 +1339,16 @@ bool chain_plugin_impl::replay_blockchain( const block_read_i& block_reader, hiv
   return true;
 }
 
-void chain_plugin_impl::process_snapshot()
+void chain_plugin_impl::process_snapshot_dump_request()
 {
   if( snapshot_provider != nullptr )
-    snapshot_provider->process_explicit_snapshot_requests( db_open_args );
+    snapshot_provider->process_explicit_snapshot_dump_requests( db_open_args );
+}
+
+void chain_plugin_impl::process_snapshot_load_request()
+{
+  if( snapshot_provider != nullptr )
+    snapshot_provider->process_explicit_snapshot_load_requests( db_open_args );
 }
 
 void chain_plugin_impl::prepare_work( bool started, synchronization_type& on_sync )
@@ -1843,11 +1850,23 @@ void chain_plugin::plugin_startup()
 
   bool start = false;
   bool replay = my->replay;
+  bool snapshot_was_loaded = false;
+  bool snapshot_was_dumped = false;
 
   if( not replay )
   {
-    ilog("Looking for snapshot processing requests...");
-    my->process_snapshot();
+    if (my->dump_snapshot)
+    {
+      ilog("Looking for snapshot processing dump requests...");
+      my->process_snapshot_dump_request();
+      snapshot_was_dumped = true;
+    }
+    if (my->load_snapshot)
+    {
+      ilog("Looking for snapshot processing load requests...");
+      my->process_snapshot_load_request();
+      snapshot_was_loaded = true;
+    }
 
     ilog( "Consistency data checking..." );
     if( my->check_data_consistency( my->default_block_writer->get_block_reader() ) )
@@ -1867,10 +1886,10 @@ void chain_plugin::plugin_startup()
 
   if( replay )
   {
-    if (my->replay && my->load_snapshot)
+    if (!snapshot_was_loaded && my->load_snapshot)
     {
-      ilog("Looking for snapshot processing requests...");
-      my->process_snapshot();
+      ilog("Looking for snapshot processing load requests before replay...");
+      my->process_snapshot_load_request();
     }
 
     std::shared_ptr< block_write_i > reindex_block_writer =
@@ -1878,10 +1897,10 @@ void chain_plugin::plugin_startup()
     ilog( "Replaying..." );
     start = !my->start_replay_processing( reindex_block_writer, get_thread_pool() );
 
-    if (my->replay && my->dump_snapshot)
+    if (!snapshot_was_dumped && my->dump_snapshot)
     {
-      ilog("Looking for snapshot processing requests...");
-      my->process_snapshot();
+      ilog("Looking for snapshot processing requests after replay ...");
+      my->process_snapshot_dump_request();
     }
   }
   if( start )
