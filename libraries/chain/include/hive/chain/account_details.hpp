@@ -161,20 +161,14 @@ namespace hive { namespace chain { namespace account_details {
     fc::array<share_type, HIVE_MAX_PROXY_RECURSION_DEPTH> proxied_vsf_votes; ///< the total VFS votes proxied to this account
   };
 
-  struct delayed_votes_wrapper
+  struct shared_delayed_votes_wrapper
   {
-    ushare_type       sum_delayed_votes = 0; ///< sum of delayed_votes (should be changed to VEST_asset)
-
     account_details::t_delayed_votes delayed_votes;
 
     template< typename Allocator >
-    delayed_votes_wrapper( allocator< Allocator > a ): delayed_votes( a )
+    shared_delayed_votes_wrapper( allocator< Allocator > a ): delayed_votes( a )
     {
     }
-
-    ushare_type get_sum_delayed_votes() const { return sum_delayed_votes; }
-    ushare_type& get_sum_delayed_votes() { return sum_delayed_votes; }
-    void set_sum_delayed_votes( const ushare_type& value ) { sum_delayed_votes = value; }
 
     account_details::t_delayed_votes& get_delayed_votes() { return delayed_votes; }
     const account_details::t_delayed_votes& get_delayed_votes() const { return delayed_votes; }
@@ -190,23 +184,72 @@ namespace hive { namespace chain { namespace account_details {
         return time_point_sec::maximum();
     }
 
-    void clone( const std::vector<delayed_votes_data>& src )
-    {
-      if( src.size() )
+    private:
+
+      template<typename DEST_COLLECTION_TYPE, typename SRC_COLLECTION_TYPE>
+      static void copy( DEST_COLLECTION_TYPE& dst, const SRC_COLLECTION_TYPE& src )
       {
-        delayed_votes.reserve( src.size() );
-        for( const auto& item : src )
-          delayed_votes.push_back( item );
+        dst.clear();
+        if( src.size() )
+        {
+          dst.reserve( src.size() );
+          for( const auto& item : src )
+            dst.push_back( item );
+        }
       }
-      else
-        delayed_votes.clear();
-    }
+
+    public:
+
+      template<typename COLLECTION_TYPE>
+      void clone( const COLLECTION_TYPE& src )
+      {
+        copy( delayed_votes, src );
+      }
+
+      template<typename COLLECTION_TYPE>
+      static std::vector< delayed_votes_data > convert( const COLLECTION_TYPE& src )
+      {
+        std::vector< delayed_votes_data > _result;
+
+        copy( _result, src );
+
+        return _result;
+      }
 
     size_t get_dynamic_alloc() const
     {
       size_t size = 0;
       size += delayed_votes.capacity() * sizeof( decltype( delayed_votes )::value_type );
       return size;
+    }
+
+  };
+
+  struct shared_delayed_votes_wrapper_ex: public shared_delayed_votes_wrapper
+  {
+    template< typename Allocator >
+    shared_delayed_votes_wrapper_ex( allocator< Allocator > a ): shared_delayed_votes_wrapper( a )
+    {
+    }
+
+    ushare_type sum_delayed_votes = 0; ///< sum of delayed_votes (should be changed to VEST_asset)
+
+    ushare_type get_sum_delayed_votes() const { return sum_delayed_votes; }
+    ushare_type& get_sum_delayed_votes() { return sum_delayed_votes; }
+    void set_sum_delayed_votes( const ushare_type& value ) { sum_delayed_votes = value; }
+  };
+
+  struct delayed_votes_wrapper
+  {
+    delayed_votes_wrapper(){}
+
+    ushare_type                       sum_delayed_votes;
+    std::vector< delayed_votes_data > delayed_votes;
+
+    delayed_votes_wrapper( const ushare_type& _sum_delayed_votes, const account_details::t_delayed_votes& _delayed_votes )
+    {
+      sum_delayed_votes = _sum_delayed_votes;
+      delayed_votes = shared_delayed_votes_wrapper::convert( _delayed_votes );
     }
 
   };
@@ -255,7 +298,13 @@ FC_REFLECT( hive::chain::account_details::misc,
           (memo_key)
           (proxied_vsf_votes)
         )
-
-FC_REFLECT( hive::chain::account_details::delayed_votes_wrapper,
-          (sum_delayed_votes)(delayed_votes)
+FC_REFLECT( hive::chain::account_details::shared_delayed_votes_wrapper,
+          (delayed_votes)
         )
+
+FC_REFLECT_DERIVED( hive::chain::account_details::shared_delayed_votes_wrapper_ex,
+                    (hive::chain::account_details::shared_delayed_votes_wrapper),
+                    (sum_delayed_votes)
+                  )
+
+FC_REFLECT( hive::chain::account_details::delayed_votes_wrapper, (sum_delayed_votes)(delayed_votes) )

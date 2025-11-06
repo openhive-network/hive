@@ -5,6 +5,7 @@ namespace hive { namespace chain {
 hive::utilities::benchmark_dumper::account_archive_details_t accounts_stats::stats;
 
 rocksdb_account_object::rocksdb_account_object( const account_object& obj )
+                      : dvw( obj.get_sum_delayed_votes(), obj.get_delayed_votes() )
 {
   id          = obj.get_id();
 
@@ -13,13 +14,6 @@ rocksdb_account_object::rocksdb_account_object( const account_object& obj )
   mrc         = obj.get_mrc();
   time        = obj.get_time();
   misc        = obj.get_misc();
-
-  if( obj.get_delayed_votes().size() )
-  {
-    delayed_votes.reserve( obj.get_delayed_votes().size() );
-    for( const auto& item : obj.get_delayed_votes() )
-      delayed_votes.push_back( item );
-  }
 }
 
 rocksdb_account_object_by_id::rocksdb_account_object_by_id( const account_object& obj )

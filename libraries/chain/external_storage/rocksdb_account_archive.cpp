@@ -43,7 +43,7 @@ struct rocksdb_storage_writer<account_object, rocksdb_account_object, account_na
     auto _serialized_buffer_mrc = dump( _obj.mrc );
     auto _serialized_buffer_time = dump( _obj.time );
     auto _serialized_buffer_misc = dump( _obj.misc );
-    auto _serialized_buffer_delayed_votes = dump( _obj.delayed_votes );
+    auto _serialized_buffer_dvw = dump( _obj.dvw );
 
     rocksdb::WideColumns _columns;
     _columns.emplace_back( "id", Slice( _serialized_buffer_id.data(), _serialized_buffer_id.size() ) );
@@ -52,7 +52,7 @@ struct rocksdb_storage_writer<account_object, rocksdb_account_object, account_na
     _columns.emplace_back( "mrc", Slice( _serialized_buffer_mrc.data(), _serialized_buffer_mrc.size() ) );
     _columns.emplace_back( "time", Slice( _serialized_buffer_time.data(), _serialized_buffer_time.size() ) );
     _columns.emplace_back( "misc", Slice( _serialized_buffer_misc.data(), _serialized_buffer_misc.size() ) );
-    _columns.emplace_back( "delayed_votes", Slice( _serialized_buffer_delayed_votes.data(), _serialized_buffer_delayed_votes.size() ) );
+    _columns.emplace_back( "dvw", Slice( _serialized_buffer_dvw.data(), _serialized_buffer_dvw.size() ) );
 
     provider->put_entity( column_type, key, _columns );
   }
@@ -167,8 +167,8 @@ struct rocksdb_reader<account_object, account_name_type, Return_Type>
         load( _obj.time, column.value().data(), column.value().size() );
       else if ( column.name() == "misc" )
         load( _obj.misc, column.value().data(), column.value().size() );
-      else if ( column.name() == "delayed_votes" )
-        load( _obj.delayed_votes, column.value().data(), column.value().size() );
+      else if ( column.name() == "dvw" )
+        load( _obj.dvw, column.value().data(), column.value().size() );
     }
 
     return _obj.build<Return_Type>( db );

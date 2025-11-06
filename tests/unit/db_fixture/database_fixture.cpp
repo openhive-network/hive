@@ -1241,9 +1241,11 @@ void database_fixture::recover_account( const std::string& account_to_recover, c
 bool database_fixture::compare_delayed_vote_count( const account_name_type& name, const std::vector<uint64_t>& data_to_compare )
 {
   const auto& idx = db->get_index< tiny_account_index, by_delayed_voting >();
-  for(const auto& usr : idx)
-    if(usr.get_name() == name)
+  for(const auto& _usr : idx)
+    if(_usr.get_name() == name)
     {
+      const auto& usr = db->get_account( _usr.get_name() );
+
       if (usr.get_delayed_votes().size() != data_to_compare.size()) {
         BOOST_TEST_MESSAGE("Incorrect delayed votes size: expected: " << data_to_compare.size() << ", actual: " << usr.get_delayed_votes().size());
         return false;

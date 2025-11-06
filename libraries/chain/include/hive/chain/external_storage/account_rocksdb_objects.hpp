@@ -32,7 +32,7 @@ class rocksdb_account_object
                       mrc,
                       time,
                       misc,
-                      delayed_votes );
+                      dvw );
     }
     else
     {
@@ -45,8 +45,7 @@ class rocksdb_account_object
                           mrc,
                           time,
                           misc,
-                          delayed_votes
-                        )
+                          dvw )
       );
     }
   }
@@ -59,7 +58,7 @@ class rocksdb_account_object
   account_details::time                   time;
   account_details::misc                   misc;
 
-  std::vector< delayed_votes_data >       delayed_votes;
+  account_details::delayed_votes_wrapper  dvw;
 };
 
 class rocksdb_account_object_by_id
@@ -76,5 +75,5 @@ class rocksdb_account_object_by_id
 
 } } // hive::chain
 
-FC_REFLECT( hive::chain::rocksdb_account_object, (id)(recovery)(assets)(mrc)(time)(misc)(delayed_votes) )
+FC_REFLECT( hive::chain::rocksdb_account_object, (id)(recovery)(assets)(mrc)(time)(misc)(dvw) )
 FC_REFLECT( hive::chain::rocksdb_account_object_by_id, (id)(name) )

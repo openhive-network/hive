@@ -338,15 +338,13 @@ namespace hive { namespace chain {
 
     private:
 
-      account_details::delayed_votes_wrapper dvw;
+      account_details::shared_delayed_votes_wrapper_ex dvw;
 
     public:
 
       ushare_type get_sum_delayed_votes() const { return dvw.sum_delayed_votes; }
       ushare_type& get_sum_delayed_votes() { return dvw.sum_delayed_votes; }
       void set_sum_delayed_votes( const ushare_type& value ) { dvw.sum_delayed_votes = value; }
-
-      const account_details::delayed_votes_wrapper& delayed_votes_wrapper() const { return dvw; }
 
       account_details::t_delayed_votes& get_delayed_votes() { return dvw.get_delayed_votes(); }
       const account_details::t_delayed_votes& get_delayed_votes() const { return dvw.get_delayed_votes(); }
@@ -393,10 +391,11 @@ namespace hive { namespace chain {
                       const account_details::manabars_rc& _mrc,
                       const account_details::time& _time,
                       const account_details::misc& _misc,
-                      const std::vector<delayed_votes_data>& _delayed_votes )
+                      const account_details::delayed_votes_wrapper& _dvw )
         : id( _account_id ), recovery( _recovery ), assets( _assets ), mrc( _mrc ), time( _time ), misc( _misc ), dvw( a )
       {
-        dvw.clone( _delayed_votes );
+        dvw.set_sum_delayed_votes( _dvw.sum_delayed_votes );
+        dvw.clone( _dvw.delayed_votes );
       }
 
     public:
@@ -430,12 +429,9 @@ namespace hive { namespace chain {
 
     private:
 
-      account_details::delayed_votes_wrapper dvw;
+      account_details::shared_delayed_votes_wrapper dvw;
 
     public:
-
-      account_details::t_delayed_votes& get_delayed_votes() { return dvw.get_delayed_votes(); }
-      const account_details::t_delayed_votes& get_delayed_votes() const { return dvw.get_delayed_votes(); }
 
       bool has_delayed_votes() const { return dvw.has_delayed_votes(); }
 
@@ -462,7 +458,7 @@ namespace hive { namespace chain {
         proxy                         = obj.get_proxy();
         next_vesting_withdrawal       = obj.get_next_vesting_withdrawal();
         governance_vote_expiration_ts = obj.get_governance_vote_expiration_ts();
-        dvw                           = obj.delayed_votes_wrapper();
+        dvw.clone( obj.get_delayed_votes() );
       }
 
     CHAINBASE_UNPACK_CONSTRUCTOR(tiny_account_object, (dvw));
