@@ -1972,7 +1972,11 @@ mainnet_node_snapshot_test:
     - test -n "$HIVED_IMAGE_NAME"
     - env
     - echo "HIN ${HIVED_IMAGE_NAME}"
-    - ./tests/integration/test_dump_snapshot_on_mainnet_data.sh $HIVED_IMAGE_NAME $CI_PROJECT_DIR/data_generated_during_mainnet_node_snapshot_test
+    - pwd
+    - ls -la $CI_PROJECT_DIR
+    - ls -la $CI_PROJECT_DIR/tests
+    - ls -la $CI_PROJECT_DIR/tests/integration
+    - .$CI_PROJECT_DIR/tests/integration/test_dump_snapshot_on_mainnet_data.sh $HIVED_IMAGE_NAME $CI_PROJECT_DIR/data_generated_during_mainnet_node_snapshot_test --branch=$CI_COMMIT_BRANCH
   artifacts:
     reports:
       dotenv:
