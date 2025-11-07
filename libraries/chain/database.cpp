@@ -317,8 +317,8 @@ void database::close()
     // DB state (issue #336).
     clear_pending();
 
+    flush();
     get_comments_handler().close();
-    chainbase::database::flush();
 
     auto lib = this->get_last_irreversible_block_num();
 
@@ -978,8 +978,9 @@ void database::notify_comment_reward(const comment_reward_notification& note)
 
 void database::notify_end_of_syncing()
 {
-  chainbase::database::flush();
-  get_comments_handler().flush();
+  flush();
+  get_comments_handler().on_end_of_syncing();
+
   HIVE_TRY_NOTIFY(_end_of_syncing_signal)
 }
 
@@ -1001,6 +1002,11 @@ void database::notify_finish_push_block( const block_notification& note )
 void database::notify_wipe()
 {
   HIVE_TRY_NOTIFY(_wipe_signal)
+}
+
+void database::notify_flush()
+{
+  HIVE_TRY_NOTIFY( _flush_signal )
 }
 
 account_name_type database::get_scheduled_witness( uint32_t slot_num )const
@@ -3870,7 +3876,7 @@ void database::apply_block( const std::shared_ptr<full_block_type>& full_block, 
     {
       _next_flush_block = 0;
       //ilog( "Flushing database shared memory at block ${b}", ("b", block_num) );
-      chainbase::database::flush();
+      flush();
     }
   }
 
@@ -4767,6 +4773,20 @@ boost::signals2::connection database::add_end_of_syncing_handler(const end_of_sy
 boost::signals2::connection database::add_wipe_handler(const wipe_notification_handler_t& func, const abstract_plugin& plugin, int32_t group)
 {
   return connect_impl<false>(_wipe_signal, func, plugin, group, "wipe storages");
+}
+
+boost::signals2::connection database::add_flush_handler( const flush_handler_t& func,
+  const abstract_plugin& plugin, int32_t group )
+{
+  return connect_impl<false>(_flush_signal, func, plugin, group, "flush");
+}
+
+void database::flush()
+{
+  chainbase::database::flush();
+  get_comments_handler().flush();
+
+  notify_flush();
 }
 
 const witness_object& database::validate_block_header( uint32_t skip, const std::shared_ptr<full_block_type>& full_block )const
