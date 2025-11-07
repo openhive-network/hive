@@ -138,7 +138,7 @@ void rocksdb_comment_archive::on_irreversible_block( uint32_t block_num )
   }
 
   if( _do_flush )
-    provider->flushDb();
+    db.flush();
 
   stats.comment_lib_processing.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
   stats.comment_lib_processing.count += count;
@@ -206,6 +206,12 @@ void rocksdb_comment_archive::wipe()
 void rocksdb_comment_archive::flush()
 {
   provider->flushDb();
+}
+
+void rocksdb_comment_archive::on_end_of_syncing()
+{
+  ilog("Remove a limit for comment objects");
+  volatile_objects_limit = 0;
 }
 
 } }

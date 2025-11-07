@@ -360,6 +360,7 @@ namespace chain {
       void notify_pre_apply_custom_operation( const custom_operation_notification& note );
       void notify_post_apply_custom_operation( const custom_operation_notification& note );
       void notify_finish_push_block( const block_notification& note );
+      void notify_flush();
 
       using apply_operation_handler_t = std::function< void(const operation_notification&) >;
       using apply_transaction_handler_t = std::function< void(const transaction_notification&) >;
@@ -367,6 +368,7 @@ namespace chain {
       using push_block_handler_t = std::function< void(const block_notification&) >;
       using apply_custom_operation_handler_t = std::function< void(const custom_operation_notification&) >;
       using irreversible_block_handler_t = std::function< void(uint32_t) >;
+      using flush_handler_t = std::function< void() >;
       using switch_fork_handler_t = std::function< void(uint32_t) >;
       using reindex_handler_t = std::function< void(const reindex_notification&) >;
       using prepare_snapshot_handler_t = std::function < void(const database&, const database::abstract_index_cntr_t&)>;
@@ -431,7 +433,10 @@ namespace chain {
 
       boost::signals2::connection add_end_of_syncing_handler            (const end_of_syncing_notification_handler_t& func, const abstract_plugin& plugin, int32_t group = -1);
 
+      boost::signals2::connection add_flush_handler                     ( const flush_handler_t& func, const abstract_plugin& plugin, int32_t group = -1 );
       //////////////////// db_witness_schedule.cpp ////////////////////
+
+      void flush();
 
       /**
         * @brief Get the witness scheduled for block production in a slot.
@@ -954,6 +959,10 @@ namespace chain {
         *  This signal is emitted when pushing block is completely finished
         */
       fc::signal<void(const block_notification&)>           _finish_push_block_signal;
+      /**
+        *  This signal is emitted when storages have to be flushed
+        */
+      fc::signal<void()>                            _flush_signal;
 
       appbase::application& theApp;
 
