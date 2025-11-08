@@ -734,8 +734,8 @@ void webserver_plugin::set_program_options( options_description&, options_descri
     ("webserver-ws-endpoint", bpo::value< string >(), "Local websocket endpoint for webserver requests.")
     // TODO: maybe add a flag to make this optional
     ("webserver-ws-deflate", bpo::value<bool>()->default_value( false ), "Enable the RFC-7692 permessage-deflate extension for the WebSocket server (only used if the client requests it).  This may save bandwidth at the expense of CPU")
-    ("webserver-thread-pool-size", bpo::value<thread_pool_size_t>()->default_value(32),
-      "Number of threads used to handle queries. Default: 32.")
+    ("webserver-thread-pool-size", bpo::value<thread_pool_size_t>()->default_value(16),
+      "Number of threads used to handle queries. Default: 16.")
     ("webserver-https-certificate-file-name", bpo::value< string >(), "File name with a server's certificate." )
     ("webserver-https-key-file-name", bpo::value< string >(), "File name with a server's private key." );
     ;
