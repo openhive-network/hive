@@ -54,13 +54,13 @@ To run the given image, you can use a helper script:
 
     ../hive/scripts/run_hived_img.sh registry.gitlab.syncad.com/hive/hive:my-tag --name=hived-instance --data-dir=/home/hive/datadir --shared-file-dir=/home/hive/datadir
 
-## Building native binaries on Ubuntu 22.04 LTS
+## Building native binaries on Ubuntu 24.04 LTS
 
 ### Prerequisites
 
 Run the script below, or based on its contents, manually install the required packages:
 
-    sudo ../hive/scripts/setup_ubuntu.sh --dev
+    sudo hive/scripts/setup_ubuntu.sh --dev
 
 ### Configure cmake
 
