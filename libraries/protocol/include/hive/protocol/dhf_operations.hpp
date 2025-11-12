@@ -127,7 +127,11 @@ namespace fc {
       if( !vo.empty() )
       {
         T last = *( vo.rbegin() );
-        FC_ASSERT( tmp > last, "Items should be unique and sorted" );
+        HIVE_PROTOCOL_VALIDATION_ASSERT(
+          tmp > last, 
+          "Items should be unique and sorted", 
+          ("subject", vars)("current", tmp)("previous", last) 
+        );
       }
 
       vo.insert( tmp );

@@ -1,4 +1,5 @@
 #pragma once
+#include <hive/protocol/hive_specialised_exceptions.hpp>
 #include <hive/protocol/types.hpp>
 #include <hive/protocol/asset_symbol.hpp>
 
@@ -25,68 +26,19 @@ namespace hive { namespace protocol {
     share_type        amount;
     asset_symbol_type symbol;
 
-    asset& operator += ( const asset& o )
-    {
-      HIVE_PROTOCOL_ASSET_ASSERT( symbol == o.symbol && "asset symbol mismatch +=" );
-      amount += o.amount;
-      return *this;
-    }
+    asset& operator += ( const asset& o );
+    asset& operator -= ( const asset& o );
+    asset operator -()const;
 
-    asset& operator -= ( const asset& o )
-    {
-      HIVE_PROTOCOL_ASSET_ASSERT( symbol == o.symbol && "asset symbol mismatch -=" );
-      amount -= o.amount;
-      return *this;
-    }
+    friend bool operator == ( const asset& a, const asset& b );
+    friend bool operator < ( const asset& a, const asset& b );
+    friend bool operator <= ( const asset& a, const asset& b );
+    friend bool operator != ( const asset& a, const asset& b );
+    friend bool operator > ( const asset& a, const asset& b );
+    friend bool operator >= ( const asset& a, const asset& b );
+    friend asset operator - ( const asset& a, const asset& b );
+    friend asset operator + ( const asset& a, const asset& b );
 
-    asset operator -()const { return asset( -amount, symbol ); }
-
-    friend bool operator == ( const asset& a, const asset& b )
-    {
-      return std::tie( a.symbol, a.amount ) == std::tie( b.symbol, b.amount );
-    }
-
-    friend bool operator < ( const asset& a, const asset& b )
-    {
-      HIVE_PROTOCOL_ASSET_ASSERT( a.symbol == b.symbol && "asset symbol mismatch <" );
-      return a.amount < b.amount;
-    }
-
-    friend bool operator <= ( const asset& a, const asset& b )
-    {
-      HIVE_PROTOCOL_ASSET_ASSERT( a.symbol == b.symbol && "asset symbol mismatch <=" );
-      return a.amount <= b.amount;
-    }
-
-    friend bool operator != ( const asset& a, const asset& b )
-    {
-      HIVE_PROTOCOL_ASSET_ASSERT( a.symbol == b.symbol && "asset symbol mismatch !=" );
-      return a.amount != b.amount;
-    }
-
-    friend bool operator > ( const asset& a, const asset& b )
-    {
-      HIVE_PROTOCOL_ASSET_ASSERT( a.symbol == b.symbol && "asset symbol mismatch >" );
-      return a.amount > b.amount;
-    }
-
-    friend bool operator >= ( const asset& a, const asset& b )
-    {
-      HIVE_PROTOCOL_ASSET_ASSERT( a.symbol == b.symbol && "asset symbol mismatch >=" );
-      return a.amount >= b.amount;
-    }
-
-    friend asset operator - ( const asset& a, const asset& b )
-    {
-      HIVE_PROTOCOL_ASSET_ASSERT( a.symbol == b.symbol && "asset symbol mismatch -" );
-      return asset( a.amount - b.amount, a.symbol );
-    }
-
-    friend asset operator + ( const asset& a, const asset& b )
-    {
-      HIVE_PROTOCOL_ASSET_ASSERT( a.symbol == b.symbol && "asset symbol mismatch +" );
-      return asset( a.amount + b.amount, a.symbol );
-    }
   };
 
   struct legacy_asset
@@ -264,7 +216,7 @@ namespace hive { namespace protocol {
   private:
 
     void set( const asset& val ) { check( val ); amount = val.amount; }
-    void check( const asset& val ) const { HIVE_PROTOCOL_ASSET_ASSERT( val.symbol.asset_num == _SYMBOL ); }
+    void check( const asset& val ) const { HIVE_PROTOCOL_ASSET_ASSERT(val.symbol == get_symbol(), "asset symbol mismatch in tiny_asset", ("subject", *this)("incoming", val)); }
   };
 
 

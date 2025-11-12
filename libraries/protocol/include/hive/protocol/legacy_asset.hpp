@@ -1,6 +1,7 @@
 #pragma once
 
 #include <hive/protocol/asset.hpp>
+#include <hive/protocol/validation.hpp>
 
 #define OBSOLETE_SYMBOL_LEGACY_SER_1   (uint64_t(1) | (OBSOLETE_SYMBOL_U64 << 8))
 #define OBSOLETE_SYMBOL_LEGACY_SER_2   (uint64_t(2) | (OBSOLETE_SYMBOL_U64 << 8))
@@ -31,7 +32,7 @@ struct legacy_hive_asset
     {
       if( force_canon )
       {
-        HIVE_PROTOCOL_ASSET_ASSERT( symbol.is_canon(), "Must use canonical HIVE symbol serialization" );
+        HIVE_PROTOCOL_ASSET_ASSERT( symbol.is_canon(), "Must use canonical HIVE symbol serialization", ("subject", symbol.is_canon()) );
       }
       return asset( amount, HIVE_SYMBOL );
     }
@@ -45,7 +46,7 @@ struct legacy_hive_asset
 
     static legacy_hive_asset from_asset( const asset& a )
     {
-      HIVE_PROTOCOL_ASSET_ASSERT( a.symbol == HIVE_SYMBOL );
+      validate_asset_type(a, HIVE_SYMBOL, "conversion from asset to legacy_hive_asset failed", a);
       return from_amount( a.amount );
     }
 

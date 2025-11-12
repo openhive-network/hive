@@ -48,7 +48,9 @@ void authority::validate()const
 {
   for( const auto& item : account_auths )
   {
-    HIVE_PROTOCOL_AUTHORITY_ASSERT( is_valid_account_name( item.first ) );
+    HIVE_PROTOCOL_VALIDATION_ASSERT( is_valid_account_name( item.first ), "Given account name is invalid", 
+    ("subject", *this)("account", item.first) 
+  );
   }
 }
 

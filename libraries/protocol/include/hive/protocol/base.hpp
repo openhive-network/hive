@@ -4,6 +4,8 @@
 #include <hive/protocol/authority.hpp>
 #include <hive/protocol/version.hpp>
 
+#include <hive/protocol/hive_specialised_exceptions.hpp>
+
 #include <fc/time.hpp>
 
 namespace hive { namespace protocol {
@@ -23,7 +25,7 @@ namespace hive { namespace protocol {
   struct virtual_operation : public base_operation
   {
     bool is_virtual()const { return true; }
-    void validate()const { FC_ASSERT( false && "This is a virtual operation" ); }
+    void validate()const { HIVE_PROTOCOL_OPERATIONS_ASSERT( false && "virtual_operation::validate()", "This is a virtual operation" ); }
   };
 
   typedef static_variant<

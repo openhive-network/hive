@@ -53,7 +53,7 @@ pack_type serialization_mode_controller::get_another_pack()
     return pack_type::hf26;
   }
 
-  HIVE_PROTOCOL_VALIDATION_ASSERT( cp == pack_type::hf26, "an incorrect value of pack mode" );
+  HIVE_PROTOCOL_VALIDATION_ASSERT( cp == pack_type::hf26, "an incorrect value of pack mode", ("expected", "hf26") );
 
   return pack_type::legacy;
 }

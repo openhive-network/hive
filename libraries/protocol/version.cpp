@@ -1,5 +1,7 @@
 #include <hive/protocol/version.hpp>
 
+#include <hive/protocol/hive_specialised_exceptions.hpp>
+
 #include <fc/exception/exception.hpp>
 #include <fc/variant.hpp>
 
@@ -60,11 +62,20 @@ namespace fc
     s >> major >> dot_a >> hardfork >> dot_b >> revision;
 
     // We'll accept either m.h.v or m_h_v as canonical version strings
-    FC_ASSERT( ( dot_a == '.' || dot_a == '_' ) && dot_a == dot_b, "Variant does not contain proper dotted decimal format" );
-    FC_ASSERT( major <= 0xFF, "Major version is out of range" );
-    FC_ASSERT( hardfork <= 0xFF, "Hardfork version is out of range" );
-    FC_ASSERT( revision <= 0xFFFF, "Revision version is out of range" );
-    FC_ASSERT( s.eof(), "Extra information at end of version string" );
+    HIVE_PROTOCOL_VALIDATION_ASSERT( 
+      ( dot_a == '.' || dot_a == '_' ) && dot_a == dot_b, 
+      "Variant does not contain proper dotted decimal format",
+      ("subject", var)(dot_a)(dot_b)("expected_alternative_1", ".")("expected_alternative_2", "_")
+    );
+
+    const size_t max_major_version = 0xFF;
+    const size_t max_hardfork_version = 0xFF;
+    const size_t max_revision_version = 0xFFFF;
+
+    HIVE_PROTOCOL_VALIDATION_ASSERT( major <= max_major_version, "Major version is out of range", ("subject", major)("max", max_major_version) );
+    HIVE_PROTOCOL_VALIDATION_ASSERT( hardfork <= max_hardfork_version, "Hardfork version is out of range", ("subject", hardfork)("max", max_hardfork_version) );
+    HIVE_PROTOCOL_VALIDATION_ASSERT( revision <= max_revision_version, "Revision version is out of range", ("subject", revision)("max", max_revision_version) );
+    HIVE_PROTOCOL_VALIDATION_ASSERT( s.eof(), "Extra information at end of version string", ("subject", s.str()) );
 
     v.v_num = 0 | ( major << 24 ) | ( hardfork << 16 ) | revision;
   }

@@ -2,6 +2,8 @@
 
 #include <hive/protocol/forward_impacted.hpp>
 
+#include <hive/protocol/hive_specialised_exceptions.hpp>
+
 #include <fc/utility.hpp>
 
 namespace hive { namespace app {
@@ -690,7 +692,11 @@ namespace /// anonymous
     template< typename T >
     result_type operator()( [[maybe_unused]] const T& op )const
     {
-      FC_ASSERT( false && "Visitor meant to be used only with the account_created_operation" );
+      HIVE_PROTOCOL_VALIDATION_ASSERT(
+        false && "get_created_from_account_create_operations_visitor", 
+        "Visitor meant to be used only with the account_created_operation",
+        ("subject", op)
+      );
     }
   };
 }

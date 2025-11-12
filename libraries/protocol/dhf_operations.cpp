@@ -9,46 +9,54 @@ void create_proposal_operation::validate()const
   validate_account_name( creator );
   validate_account_name( receiver );
 
-  FC_ASSERT( end_date > start_date, "end date must be greater than start date" );
+  HIVE_PROTOCOL_DHF_OPERATIONS_ASSERT( end_date > start_date, "end date must be greater than start date" );
 
-  FC_ASSERT( daily_pay.amount >= 0, "Daily pay can't be negative value" );
-  FC_ASSERT( daily_pay.symbol.asset_num == HIVE_ASSET_NUM_HBD, "Daily pay should be expressed in HBD");
+  validate_asset_not_negative(daily_pay, "Daily pay can't be negative value", *this);
+  validate_asset_type(daily_pay, HBD_SYMBOL, "Daily pay should be expressed in HBD", *this);
 
-  FC_ASSERT( !subject.empty(), "subject is required" );
-  FC_ASSERT( subject.size() <= HIVE_PROPOSAL_SUBJECT_MAX_LENGTH, "Subject is too long");
-  FC_ASSERT( fc::is_utf8( subject ), "Subject is not valid UTF8" );
+  validate_string_is_not_empty(subject, "subject is required", *this);
+  validate_string_max_size(subject, HIVE_PROPOSAL_SUBJECT_MAX_LENGTH, "Subject is too long", *this);
+  validate_is_string_in_utf8(subject, "Subject is not valid UTF8", *this);
 
-  FC_ASSERT( !permlink.empty(), "permlink is required" );
+  validate_string_is_not_empty(permlink, "permlink is required", *this);
   validate_permlink(permlink);
 }
 
 void update_proposal_operation::validate()const
 {
   validate_account_name( creator );
-  FC_ASSERT( proposal_id >= 0, "The proposal id can't be negative" );
-  FC_ASSERT( daily_pay.amount >= 0 && "Daily pay can't be negative value" );
-  FC_ASSERT( daily_pay.symbol.asset_num == HIVE_ASSET_NUM_HBD && "Daily pay should be expressed in HBD");
+  HIVE_PROTOCOL_DHF_OPERATIONS_ASSERT( proposal_id >= 0, "The proposal id can't be negative" );
+  validate_asset_not_negative(daily_pay, "Daily pay can't be negative value", *this);
+  validate_asset_type(daily_pay, HBD_SYMBOL, "Daily pay should be expressed in HBD", *this);
 
-  FC_ASSERT( not subject.empty(), "subject is required" );
-  FC_ASSERT( subject.size() <= HIVE_PROPOSAL_SUBJECT_MAX_LENGTH && "Subject is too long");
-  FC_ASSERT( fc::is_utf8( subject ) && "Subject is not valid UTF8" );
-
-  FC_ASSERT( not permlink.empty(), "permlink is required" );
+  validate_string_is_not_empty( subject, "subject is required", *this );
+  validate_string_max_size(subject, HIVE_PROPOSAL_SUBJECT_MAX_LENGTH, "Subject is too long", *this);
+  validate_is_string_in_utf8(subject, "Subject is not valid UTF8", *this);
+  
+  validate_string_is_not_empty( permlink, "permlink is required", *this );
   validate_permlink(permlink);
 }
 
 void update_proposal_votes_operation::validate()const
 {
   validate_account_name( voter );
-  FC_ASSERT(proposal_ids.empty() == false, "Proposal id must be provided");
-  FC_ASSERT(proposal_ids.size() <= HIVE_PROPOSAL_MAX_IDS_NUMBER, "Too many ids");
+  HIVE_PROTOCOL_DHF_OPERATIONS_ASSERT(
+    proposal_ids.empty() == false && "update_proposal_votes_operation", 
+    "Proposal id must be provided", 
+    ("subject", *this)
+  );
+  HIVE_PROTOCOL_DHF_OPERATIONS_ASSERT(proposal_ids.size() <= HIVE_PROPOSAL_MAX_IDS_NUMBER, "Too many ids");
 }
 
 void remove_proposal_operation::validate() const
 {
   validate_account_name(proposal_owner);
-  FC_ASSERT(proposal_ids.empty() == false && "Proposal id must be provided");
-  FC_ASSERT(proposal_ids.size() <= HIVE_PROPOSAL_MAX_IDS_NUMBER && "Too many ids");
+  HIVE_PROTOCOL_DHF_OPERATIONS_ASSERT(
+    proposal_ids.empty() == false && "remove_proposal_operation", 
+    "Proposal id must be provided", 
+    ("subject", *this)
+  );
+  HIVE_PROTOCOL_DHF_OPERATIONS_ASSERT(proposal_ids.size() <= HIVE_PROPOSAL_MAX_IDS_NUMBER && "Too many ids");
 }
 
 } } //hive::protocol

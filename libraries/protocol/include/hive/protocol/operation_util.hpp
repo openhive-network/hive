@@ -4,6 +4,7 @@
 #include <hive/protocol/authority.hpp>
 #include <hive/protocol/base.hpp>
 #include <hive/protocol/misc_utilities.hpp>
+#include <hive/protocol/hive_specialised_exceptions.hpp>
 
 #include <fc/variant.hpp>
 
@@ -117,8 +118,8 @@ struct extended_serialization_functor
     else
     {
       auto itr = to_legacy_tag.find(ar[0].as_string());
-      FC_ASSERT( itr != to_legacy_tag.end() && "Unknown legacy operation",
-        "Invalid operation name: ${n}", ("n", ar[0]) );
+      HIVE_PROTOCOL_VALIDATION_ASSERT( itr != to_legacy_tag.end() && "extended_serialization_functor",
+        "Invalid operation name: ${n}", ("n", ar[0])("subject", ar));
       s = static_variant( itr->second, visitor );
     }
 

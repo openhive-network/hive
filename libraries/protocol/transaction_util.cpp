@@ -1,4 +1,5 @@
 #include <hive/protocol/transaction_util.hpp>
+#include <hive/protocol/hive_specialised_exceptions.hpp>
 
 namespace hive { namespace protocol {
 
@@ -78,7 +79,11 @@ FC_EXPAND_MACRO(                                                \
     {
       if constexpr (IS_TRACED)
       {
-        FC_ASSERT(tracer, "Can't trace without tracer");
+        HIVE_PROTOCOL_VALIDATION_ASSERT(
+          tracer && "required_posting", 
+          "Can't trace without tracer", 
+          ("subject", required_authorities.required_posting)(id)
+        );
         tracer->set_role("posting");
       }
 
@@ -91,7 +96,11 @@ FC_EXPAND_MACRO(                                                \
         auto check_with_role_upgrade = [&](const authority& auth, const string& role) -> bool {
           if constexpr (IS_TRACED)
           {
-            FC_ASSERT(tracer != nullptr, "Can't trace without tracer");
+            HIVE_PROTOCOL_AUTHORITY_ASSERT(
+              (tracer != nullptr) && "required_posting", 
+              "Can't trace without tracer", 
+              ("subject", auth)("id", id)("role", role)
+            );
             tracer->trim_final_authority_path();
           }
 
@@ -131,7 +140,11 @@ FC_EXPAND_MACRO(                                                \
   {
     if constexpr (IS_TRACED)
     {
-      FC_ASSERT(tracer && "Can't trace without tracer");
+      HIVE_PROTOCOL_VALIDATION_ASSERT(
+        tracer && "required_active", 
+        "Can't trace without tracer", 
+        ("subject", required_authorities.required_active)(id)
+      );
       tracer->set_role("active");
     }
       
@@ -145,7 +158,11 @@ FC_EXPAND_MACRO(                                                \
       auto check_with_role_upgrade = [&]() -> bool {
         if constexpr (IS_TRACED)
         {
-          FC_ASSERT((tracer != nullptr) && "Can't trace without tracer");
+          HIVE_PROTOCOL_AUTHORITY_ASSERT(
+            (tracer != nullptr) && "required_active", 
+            "Can't trace without tracer",
+            ("subject", required_authorities.required_active)("id", id)
+          );
           tracer->trim_final_authority_path();
         }
 

@@ -10,7 +10,11 @@ namespace hive { namespace protocol {
     {
       //must reflect calculations from collateralized_convert_evaluator::do_apply
 
-      HIVE_PROTOCOL_VALIDATION_ASSERT( !static_cast<price>( current_median_history ).is_null(), "Cannot estimate conversion collateral because there is no price feed." );
+      HIVE_PROTOCOL_VALIDATION_ASSERT( 
+        !static_cast<price>( current_median_history ).is_null(), 
+        "Cannot estimate conversion collateral because there is no price feed.",
+        ("subject", current_median_history)
+      );
 
       auto needed_hive = multiply_with_fee( hbd_amount_to_get, current_min_history,
         HIVE_COLLATERALIZED_CONVERSION_FEE, HIVE_SYMBOL );

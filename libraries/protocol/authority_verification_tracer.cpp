@@ -1,4 +1,5 @@
 #include <hive/protocol/authority_verification_tracer.hpp>
+#include <hive/protocol/hive_specialised_exceptions.hpp>
 
 namespace hive { namespace protocol {
 
@@ -20,13 +21,13 @@ bool authority_verification_tracer::detect_cycle(std::string account) const
 
 authority_verification_trace::path_entry& authority_verification_tracer::get_root_entry()
 {
-  HIVE_PROTOCOL_AUTHORITY_ASSERT( not _trace.root.empty() && "get_root_entry()" );
+  HIVE_PROTOCOL_VALIDATION_ASSERT( not _trace.root.empty() && "get_root_entry()", "trace root is empty" );
   return _trace.root.back();
 }
 
 const authority_verification_trace::path_entry& authority_verification_tracer::get_root_entry() const
 {
-  HIVE_PROTOCOL_AUTHORITY_ASSERT( not _trace.root.empty() && "get_root_entry() const" );
+  HIVE_PROTOCOL_VALIDATION_ASSERT( not _trace.root.empty() && "get_root_entry() const", "trace root is empty" );
   return _trace.root.back();
 }
 
@@ -43,13 +44,13 @@ void authority_verification_tracer::push_parent_entry()
 {
   path_entry& parent_entry = get_parent_entry();
   size_t aux = parent_entry.visited_entries.size();
-  HIVE_PROTOCOL_AUTHORITY_ASSERT(aux > 0, "Push parent entry AFTER putting it into visited_entries!");
+  HIVE_PROTOCOL_VALIDATION_ASSERT(aux > 0, "Push parent entry AFTER putting it into visited_entries!");
   _current_authority_path.push_back( aux -1 );
 }
 
 void authority_verification_tracer::pop_parent_entry()
 {
-  HIVE_PROTOCOL_AUTHORITY_ASSERT(not _current_authority_path.empty());
+  HIVE_PROTOCOL_VALIDATION_ASSERT(not _current_authority_path.empty(), "Pop parent entry on empty stack!");
   _current_authority_path.pop_back();
 }
 
@@ -248,7 +249,7 @@ void authority_verification_tracer::on_leaving_account_entry( unsigned int effec
 
 void authority_verification_tracer::trim_final_authority_path()
 {
-  HIVE_PROTOCOL_AUTHORITY_ASSERT(not _trace.final_authority_path.empty());
+  HIVE_PROTOCOL_VALIDATION_ASSERT(not _trace.final_authority_path.empty(), "trim on empty final authority path!");
   _trace.final_authority_path.pop_back();
 }
 

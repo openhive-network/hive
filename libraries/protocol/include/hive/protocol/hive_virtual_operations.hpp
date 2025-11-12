@@ -561,7 +561,7 @@ struct account_created_operation : public virtual_operation
   account_created_operation( const account_name_type& new_account_name, const account_name_type& creator, const VEST_asset& _initial_vesting, const VEST_asset& _delegation )
     : new_account_name( new_account_name ), creator( creator ), initial_vesting_shares( _initial_vesting ), initial_delegation( _delegation )
   {
-    HIVE_PROTOCOL_OPERATIONS_ASSERT( creator != account_name_type(), "Every account should have a creator" );
+    HIVE_PROTOCOL_OPERATIONS_ASSERT( creator != account_name_type(), "Every account should have a creator", ("subject", *this) ); // ??? PROBLEM ??? assertion in constructor
   }
 
   account_name_type new_account_name; //newly created account (receiver of initial_vesting_shares)

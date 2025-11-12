@@ -11,7 +11,9 @@ namespace hive { namespace protocol {
 std::pair<public_key_type, std::string> generate_private_key_from_password(const std::string& account, const std::string& role, const std::string& password)
 {
   auto seed = account + role + password;
-  HIVE_PROTOCOL_CRYPTO_ASSERT(seed.size());
+  HIVE_PROTOCOL_VALIDATION_ASSERT(seed.size(), "Cannot generate private key from empty seed",
+    ("account", account)("role", role)("password", password)("subject", seed.size())
+  );
   auto secret = fc::sha256::hash(seed.c_str(), seed.size());
   auto priv = fc::ecc::private_key::regenerate(secret);
   return std::make_pair(public_key_type(priv.get_public_key()), priv.key_to_wif());

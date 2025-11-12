@@ -10,6 +10,16 @@
 
 namespace hive { namespace protocol {
 
+  template<typename KeyType>
+  void validate_hash_of_unpacked_key( const fc::ripemd160& hash, const KeyType& bin_key, const std::string& base58str )
+  {
+    HIVE_PROTOCOL_VALIDATION_ASSERT( hash._hash[0] == bin_key.check,
+               "First character in hash does not match bin_key.check. '${subject}' != '${expected}'", 
+               ("subject", hash._hash[0])("hash", hash)
+               ("expected", bin_key.check)("base58str", base58str) 
+              );
+  }
+
   public_key_type::public_key_type():key_data(){};
 
   public_key_type::public_key_type( const fc::ecc::public_key_data& data )
@@ -76,13 +86,21 @@ namespace hive { namespace protocol {
     std::string prefix( HIVE_ADDRESS_PREFIX );
 
     const size_t prefix_len = prefix.size();
-    FC_ASSERT( base58str.size() > prefix_len );
-    FC_ASSERT( base58str.substr( 0, prefix_len ) == prefix, "", ("base58str", base58str) );
+    HIVE_PROTOCOL_VALIDATION_ASSERT( 
+      (base58str.size() > prefix_len) && "extended_public_key_type", 
+      "incoming string is too short", 
+      ("subject", base58str)("min", prefix_len) 
+    );
+    HIVE_PROTOCOL_VALIDATION_ASSERT( 
+      (base58str.substr( 0, prefix_len ) == prefix) && "extended_public_key_type", 
+      "prefix does not match", 
+      ("subject", base58str)("expected", prefix) 
+    );
     auto bin = fc::from_base58( base58str.substr( prefix_len ) );
     binary_key bin_key;
     fc::raw::unpack_from_vector(bin, bin_key);
-    HIVE_PROTOCOL_CRYPTO_ASSERT( fc::ripemd160::hash( bin_key.data.data, bin_key.data.size() )._hash[0] == bin_key.check &&
-               "extended_public_key_type" );
+    const auto hash = fc::ripemd160::hash( bin_key.data.data, bin_key.data.size() );
+    validate_hash_of_unpacked_key( hash, bin_key, base58str );
     key_data = bin_key.data;
   }
 
@@ -132,13 +150,21 @@ namespace hive { namespace protocol {
     std::string prefix( HIVE_ADDRESS_PREFIX );
 
     const size_t prefix_len = prefix.size();
-    FC_ASSERT( prefix_len < base58str.size() );
-    FC_ASSERT( prefix == base58str.substr( 0, prefix_len ), "", ("base58str", base58str) );
+    HIVE_PROTOCOL_VALIDATION_ASSERT( 
+      (base58str.size() > prefix_len) && "extended_private_key_type", 
+      "incoming string is too short", 
+      ("subject", base58str)("min", prefix_len) 
+    );
+    HIVE_PROTOCOL_VALIDATION_ASSERT( 
+      (base58str.substr( 0, prefix_len ) == prefix) && "extended_private_key_type", 
+      "prefix does not match", 
+      ("subject", base58str)("expected", prefix) 
+    );
     auto bin = fc::from_base58( base58str.substr( prefix_len ) );
     binary_key bin_key;
     fc::raw::unpack_from_vector(bin, bin_key);
-    HIVE_PROTOCOL_CRYPTO_ASSERT( fc::ripemd160::hash( bin_key.data.data, bin_key.data.size() )._hash[0] == bin_key.check &&
-               "extended_private_key_type" );
+    const auto hash = fc::ripemd160::hash( bin_key.data.data, bin_key.data.size() );
+    validate_hash_of_unpacked_key( hash, bin_key, base58str );
     key_data = bin_key.data;
   }
 
