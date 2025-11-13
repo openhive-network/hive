@@ -96,11 +96,10 @@ namespace chain {
     fc::variant database_cfg;
     bool replay_in_memory = false;
     std::vector< std::string > replay_memory_indices{};
-    bool load_snapshot = false;
+    bool wipe_database = false;
 
     // The following fields are only used on reindexing
     uint32_t stop_replay_at = 0;
-    bool force_replay = false;
     bool validate_during_replay = false;
   };
 
@@ -969,7 +968,7 @@ namespace chain {
   {
     reindex_notification( const open_args& a ) : args( a ) {}
 
-    bool force_replay = false;
+    bool wipe_database = false;
     bool validate_during_replay = false;
     bool reindex_success = false;
     uint32_t last_block_number = 0;

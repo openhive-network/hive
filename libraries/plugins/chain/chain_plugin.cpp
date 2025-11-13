@@ -862,13 +862,13 @@ void chain_plugin_impl::initial_settings()
   db_open_args.chainbase_flags = chainbase_flags;
   db_open_args.do_validate_invariants = validate_invariants;
   db_open_args.stop_replay_at = stop_replay_at;
-  db_open_args.force_replay = force_replay;
   db_open_args.validate_during_replay = validate_during_replay;
   db_open_args.benchmark_is_enabled = benchmark_is_enabled;
   db_open_args.database_cfg = database_config;
   db_open_args.replay_in_memory = replay_in_memory;
   db_open_args.replay_memory_indices = replay_memory_indices;
-  db_open_args.load_snapshot = load_snapshot;
+  // we want to wipe db when opening it if we force replay or load snapshot
+  db_open_args.wipe_database = force_replay || (load_snapshot && !dump_snapshot);
 
   bl_open_args.data_dir = db_open_args.data_dir;
   bl_open_args.enable_block_log_compression = enable_block_log_compression;
@@ -889,21 +889,23 @@ bool chain_plugin_impl::check_data_consistency( const block_read_i& block_reader
 
   if( !_is_reindex_complete )
   {
-    if( head_block_num_state > head_block_num_origin )
+    if (db.get_snapshot_loaded())
     {
-      theApp.generate_interrupt_request();
-      return false;
-    }
-    if( db.get_snapshot_loaded() )
-    {
-      wlog( "Replaying has to be forced, after snapshot's loading. { \"block_log-head\": ${b1}, \"state-head\": ${b2} }", ( "b1", head_block_num_origin )( "b2", head_block_num_state ) );
+      if( head_block_num_state > head_block_num_origin )
+        elog( "Error: Headblock and statefile are inconsistent. Loaded snapshot has bigger head block number than block log. { \"block_log-head\": ${b1}, \"state-head\": ${b2} }", ( "b1", head_block_num_origin )( "b2", head_block_num_state ) );
+      else
+        elog( "Error: Headblock and statefile are inconsistent. Replaying has to be forced, after snapshot's loading. { \"block_log-head\": ${b1}, \"state-head\": ${b2} }", ( "b1", head_block_num_origin )( "b2", head_block_num_state ) );
     }
     else
     {
-      elog( "Error: Headblock and statefile are inconsistent, need to start hived with --replay-blockchain. Aborting hived! { \"block_log-head\": ${b1}, \"state-head\": ${b2} }", ( "b1", head_block_num_origin )( "b2", head_block_num_state ) );
-      theApp.generate_interrupt_request();
-      return false;
+      if( head_block_num_state > head_block_num_origin )
+        elog( "Error: Headblock and statefile are inconsistent. Aborting hived! { \"block_log-head\": ${b1}, \"state-head\": ${b2} }", ( "b1", head_block_num_origin )( "b2", head_block_num_state ) );
+      else
+        elog( "Error: Headblock and statefile are inconsistent, need to start hived with --replay-blockchain. Aborting hived! { \"block_log-head\": ${b1}, \"state-head\": ${b2} }", ( "b1", head_block_num_origin )( "b2", head_block_num_state ) );
     }
+
+    theApp.generate_interrupt_request();
+    return false;
   }
 
   return true;
@@ -1140,7 +1142,7 @@ uint32_t chain_plugin_impl::reindex( const open_args& args, const block_read_i& 
     else
       note.max_block_number = 0;//anyway later an assert is triggered
 
-    note.force_replay = args.force_replay || _head_block_num == 0;
+    note.wipe_database = args.wipe_database || _head_block_num == 0;
     note.validate_during_replay = args.validate_during_replay;
 
     HIVE_TRY_NOTIFY(db._pre_reindex_signal, note);
@@ -1183,7 +1185,7 @@ uint32_t chain_plugin_impl::reindex( const open_args& args, const block_read_i& 
       if( replay_required )
       {
         auto _last_block_number = start_block->get_block_num();
-        if( _last_block_number && !args.force_replay )
+        if( _last_block_number && !args.wipe_database )
           ilog("Resume of replaying. Last applied block: ${n}", ( "n", _last_block_number - 1 ) );
 
         note.last_block_number = reindex_internal( args, start_block, block_reader, thread_pool );
@@ -1849,32 +1851,23 @@ void chain_plugin::plugin_startup()
   my->prepare_work( get_state() == appbase::abstract_plugin::started, on_sync );
 
   bool start = false;
-  bool replay = my->replay;
-  bool snapshot_was_loaded = false;
-  bool snapshot_was_dumped = false;
 
-  if( not replay )
+  if( not my->replay )
   {
     if (my->dump_snapshot)
     {
       ilog("Looking for snapshot processing dump requests...");
       my->process_snapshot_dump_request();
-      snapshot_was_dumped = true;
     }
     if (my->load_snapshot)
     {
       ilog("Looking for snapshot processing load requests...");
       my->process_snapshot_load_request();
-      snapshot_was_loaded = true;
     }
 
     ilog( "Consistency data checking..." );
     if( my->check_data_consistency( my->default_block_writer->get_block_reader() ) )
-    {
       start = true;
-      if( my->db.get_snapshot_loaded() )
-        replay = true; //Replaying is forced, because after snapshot loading, node should work in synchronization mode.
-    }
   }
 
   if( !my->checkpoints.empty() )
@@ -1884,9 +1877,9 @@ void chain_plugin::plugin_startup()
       ( "block_num", my->checkpoints.rbegin()->first )( "block_id", my->checkpoints.rbegin()->second ) );
   }
 
-  if( replay )
+  if( my->replay )
   {
-    if (!snapshot_was_loaded && my->load_snapshot)
+    if (my->load_snapshot)
     {
       ilog("Looking for snapshot processing load requests before replay...");
       my->process_snapshot_load_request();
@@ -1897,7 +1890,7 @@ void chain_plugin::plugin_startup()
     ilog( "Replaying..." );
     start = !my->start_replay_processing( reindex_block_writer, get_thread_pool() );
 
-    if (!snapshot_was_dumped && my->dump_snapshot)
+    if (my->dump_snapshot)
     {
       ilog("Looking for snapshot processing requests after replay ...");
       my->process_snapshot_dump_request();
@@ -1905,7 +1898,7 @@ void chain_plugin::plugin_startup()
   }
   if( start )
   {
-    std::string str = replay ? " after replaying" : "";
+    std::string str = my->replay ? " after replaying" : "";
     if( my->is_work_enabled )
     {
       if( my->is_p2p_enabled )

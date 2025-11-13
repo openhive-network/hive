@@ -1065,7 +1065,7 @@ void account_history_rocksdb_plugin::impl::on_pre_reindex(const hive::chain::rei
   _provider->shutdownDb();
   std::string strPath = _storagePath.string();
 
-  if( note.force_replay )
+  if( note.wipe_database )
   {
     ilog("Received onReindexStart request, attempting to clean database storage.");
     auto s = ::rocksdb::DestroyDB(strPath, ::rocksdb::Options());
