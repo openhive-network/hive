@@ -13,11 +13,7 @@ class rocksdb_comment_archive : public comments_handler
 {
   private:
 
-#ifdef IS_TEST_NET
-    size_t volatile_objects_limit = 0;
-#else
     size_t volatile_objects_limit = 10'000;
-#endif
 
     database& db;
 

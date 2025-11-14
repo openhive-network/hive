@@ -51,7 +51,7 @@ BOOST_AUTO_TEST_CASE( basic_checks )
       push_transaction( tx, post_key );
     };
 
-    auto _check_comments = [this]( const account_id_type& author, bool before_payout )
+    auto _check_comments = [this]( const account_id_type& author, bool before_payout, bool before_flush_to_rocksdb )
     {
       const auto& _alice_comment = db->get_comment( author, string( "test" ) );
       const comment_cashout_object* _alice_comment_cashout = db->find_comment_cashout( *_alice_comment );
@@ -67,37 +67,43 @@ BOOST_AUTO_TEST_CASE( basic_checks )
       else
       {
         BOOST_REQUIRE( _alice_comment_cashout == nullptr );
-        BOOST_REQUIRE( _alice_shm_comment == nullptr );
+        if( before_flush_to_rocksdb )
+          BOOST_REQUIRE( _alice_shm_comment != nullptr );
+        else
+          BOOST_REQUIRE( _alice_shm_comment == nullptr );
       }
     };
 
-    _create_or_update_comments( "alice", alice_post_key );
-    _check_comments( alice_id, true/*before_payout*/ );
-
     auto _number_blocks = HIVE_CASHOUT_WINDOW_SECONDS / HIVE_BLOCK_INTERVAL;
 
-    generate_blocks( _number_blocks / 2 );
-
     _create_or_update_comments( "alice", alice_post_key );
-    _check_comments( alice_id, true/*before_payout*/ );
+
+    generate_blocks( 5 );
 
     _create_or_update_comments( "bob", bob_post_key );
-    _check_comments( bob_id, true/*before_payout*/ );
 
-    generate_blocks( _number_blocks / 2 );
-    generate_blocks( 100 );
+    generate_blocks( _number_blocks - 5 - 1 );
 
-    _create_or_update_comments( "alice", alice_post_key );
-    _check_comments( alice_id, false/*before_payout*/ );
+    //Set artificially a limit to zero in order to check if flushing to rocksdb correctly works
+    db->get_comments_handler().on_end_of_syncing();
 
-    _create_or_update_comments( "bob", bob_post_key );
-    _check_comments( bob_id, true/*before_payout*/ );
+    _check_comments( alice_id, true/*before_payout*/, true/*before_flush_to_rocksdb*/ );
+    _check_comments( bob_id, true/*before_payout*/, true/*before_flush_to_rocksdb*/ );
 
-    generate_blocks( _number_blocks / 2 );
-    generate_blocks( 100 );
+    generate_blocks( 1 );
 
-    _create_or_update_comments( "bob", bob_post_key );
-    _check_comments( bob_id, false/*before_payout*/ );
+    _check_comments( alice_id, false/*before_payout*/, true/*before_flush_to_rocksdb*/ );
+
+    _check_comments( bob_id, true/*before_payout*/, true/*before_flush_to_rocksdb*/ );
+
+    generate_blocks( 5 );
+
+    _check_comments( alice_id, false/*before_payout*/, true/*before_flush_to_rocksdb*/ );
+    _check_comments( bob_id, false/*before_payout*/, true/*before_flush_to_rocksdb*/ );
+
+    generate_blocks( 26 );
+    _check_comments( alice_id, false/*before_payout*/, false/*before_flush_to_rocksdb*/ );
+    _check_comments( bob_id, false/*before_payout*/, false/*before_flush_to_rocksdb*/ );
   }
   FC_LOG_AND_RETHROW()
 }
@@ -145,8 +151,6 @@ BOOST_AUTO_TEST_CASE( nested_comments )
       tx.operations.clear();
       tx.operations.push_back( comment_op );
       push_transaction( tx, dave_post_key );
-
-      generate_blocks( 1 );
     };
 
     auto _check_comments = [this, &alice_id, &bob_id, &sam_id, &dave_id ]( bool before_payout )
@@ -180,21 +184,25 @@ BOOST_AUTO_TEST_CASE( nested_comments )
         BOOST_REQUIRE( _dave_comment_cashout == nullptr );
     };
 
-    _create_or_update_comments();
-    _check_comments( true/*before_payout*/ );
-
     auto _number_blocks = HIVE_CASHOUT_WINDOW_SECONDS / HIVE_BLOCK_INTERVAL;
 
-    generate_blocks( _number_blocks / 2 );
+    _create_or_update_comments();
+    _check_comments( true/*before_payout*/ );
+
+    generate_blocks( _number_blocks - 1 );
+
+    //Set artificially a limit to zero in order to check if flushing to rocksdb correctly works
+    db->get_comments_handler().on_end_of_syncing();
 
     _create_or_update_comments();
     _check_comments( true/*before_payout*/ );
 
-    generate_blocks( _number_blocks / 2 );
-    generate_blocks( 100 );
+    generate_blocks( 1 );
 
     _create_or_update_comments();
     _check_comments( false/*before_payout*/ );
+
+    generate_blocks( 21 );
   }
   FC_LOG_AND_RETHROW()
 }
@@ -213,6 +221,9 @@ void fork_reverts_cashout_scanario( const std::string& comment_archive_type, boo
   test.db->set_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
   test.generate_block();
   test.db->_log_hardforks = true;
+
+  //Set artificially a limit to zero in order to check if flushing to rocksdb correctly works
+  test.db->get_comments_handler().on_end_of_syncing();
 
   test.vest( HIVE_INIT_MINER_NAME, ASSET( "10.000 TESTS" ) );
 
@@ -398,6 +409,8 @@ BOOST_FIXTURE_TEST_CASE( inconsistent_comment_archive, empty_fixture )
     fc::path comment_archive_dir;
     {
       clean_database_fixture fixture( 512U, fc::optional<uint32_t>(), false ); // don't init AH (there is separate test for that)
+      //Set artificially a limit to zero in order to check if flushing to rocksdb correctly works
+      fixture.db->get_comments_handler().on_end_of_syncing();
       comment_archive_dir = fixture.get_chain_plugin().comment_storage_dir();
       fixture.account_create( "alice", fixture.init_account_pub_key );
       fixture.account_create( "bob", fixture.init_account_pub_key );
@@ -411,6 +424,8 @@ BOOST_FIXTURE_TEST_CASE( inconsistent_comment_archive, empty_fixture )
     {
       hived_fixture fixture( false );
       fixture.postponed_init();
+      //Set artificially a limit to zero in order to check if flushing to rocksdb correctly works
+      fixture.db->get_comments_handler().on_end_of_syncing();
       // check comment exists
       fixture.vote( "alice", "test", "bob", HIVE_100_PERCENT, fixture.init_account_priv_key );
       fixture.generate_block();
@@ -434,6 +449,8 @@ BOOST_FIXTURE_TEST_CASE( inconsistent_comment_archive, empty_fixture )
     {
       hived_fixture fixture( false );
       fixture.postponed_init();
+      //Set artificially a limit to zero in order to check if flushing to rocksdb correctly works
+      fixture.db->get_comments_handler().on_end_of_syncing();
       // check both comments exist
       fixture.vote( "bob", "test", "alice", 50 * HIVE_1_PERCENT, fixture.init_account_priv_key );
       fixture.post_comment_to_comment( "bob", "reply", "reply", "I'm replying", "alice", "test", fixture.init_account_priv_key );
