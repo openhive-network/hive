@@ -115,8 +115,6 @@ void rocksdb_comment_archive::on_irreversible_block( uint32_t block_num )
   ilog( "rocksdb_comment_archive: volatile index size: ${size} for block: ${block_num}", (block_num)("size", _volatile_idx.size()) );
 #endif
 
-  bool _do_flush = false;
-
   uint64_t count = 0;
   while( _itr != _volatile_idx.end() && _itr->block_number <= block_num )
   {
@@ -124,9 +122,6 @@ void rocksdb_comment_archive::on_irreversible_block( uint32_t block_num )
     ++_itr;
 
     move_to_external_storage_impl( block_num, _current );
-
-    if( !_do_flush )
-      _do_flush = true;
 
     const auto* _comment = db.find_comment( _current.comment_id );
     FC_ASSERT( _comment );
@@ -137,8 +132,7 @@ void rocksdb_comment_archive::on_irreversible_block( uint32_t block_num )
     ++count;
   }
 
-  if( _do_flush )
-    db.flush();
+  db.flush();
 
   stats.comment_lib_processing.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
   stats.comment_lib_processing.count += count;
