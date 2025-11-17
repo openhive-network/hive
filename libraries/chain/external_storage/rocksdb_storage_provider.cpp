@@ -63,7 +63,7 @@ void rocksdb_storage_provider::shutdownDb()
 {
   if(getStorage())
   {
-    flushDb();
+    flushDb(getStorage().get());
     cleanupColumnHandles();
     getStorage()->Close();
     getStorage().reset();
@@ -95,6 +95,8 @@ std::tuple<bool, bool> rocksdb_storage_provider::createDbSchema(const bfs::path&
   if(s.ok())
   {
     cleanupColumnHandles(db);
+    auto s = db->Close();
+    FC_ASSERT(s.ok(), "Database close failed");
     delete db;
     return { false, true }; /// { DB does not need data import, an application is not closed }
   }
@@ -109,16 +111,18 @@ std::tuple<bool, bool> rocksdb_storage_provider::createDbSchema(const bfs::path&
     if(s.ok())
     {
       ilog("RocksDB column definitions created successfully.");
-      saveStoreVersion();
+      saveStoreVersion(db);
       /// Store initial values of Seq-IDs for held objects.
-      flushWriteBuffer(db);
+      flushDb(db);
       cleanupColumnHandles(db);
+      auto s = db->Close();
+      FC_ASSERT(s.ok(), "Database close failed");
     }
     else
     {
       elog("RocksDB cannot create column definitions at location: `${p}'.\nReturned error: ${e}",
         ("p", strPath)("e", s.ToString()));
-      FC_ASSERT( false && "Creation of columns failed" );
+      FC_ASSERT( false && "Creation of columns failed" ); /// this is a memory leak (not deleted db object) in case of storage access error
     }
 
     delete db;
@@ -157,8 +161,6 @@ void rocksdb_storage_provider::cleanupColumnHandles(::rocksdb::DB* db)
 
 void rocksdb_storage_provider::flushWriteBuffer(DB* storage)
 {
-  beforeFlushWriteBuffer();
-
   if(storage == nullptr)
     storage = getStorage().get();
 
@@ -166,34 +168,33 @@ void rocksdb_storage_provider::flushWriteBuffer(DB* storage)
   auto s = storage->Write(wOptions, getWriteBuffer().GetWriteBatch());
   checkStatus(s);
   getWriteBuffer().Clear();
-
-  afterFlushWriteBuffer();
 }
 
-void rocksdb_storage_provider::flushDb()
+void rocksdb_storage_provider::flushDb(DB* storage)
 {
-  if(getStorage() == nullptr)
-    return;
+  if(storage == nullptr)
+     return;
 
   // lib (last irreversible block) has not been saved so far
-  flushWriteBuffer();
+  flushWriteBuffer(storage);
 
   ::rocksdb::FlushOptions fOptions;
   for(const auto& cf : _columnHandles)
   {
-    auto s = getStorage()->Flush(fOptions, cf);
+    auto s = storage->Flush(fOptions, cf);
     checkStatus(s);
   }
 }
 
-void rocksdb_storage_provider::saveStoreVersion()
+void rocksdb_storage_provider::saveStoreVersion(DB* storageDb)
 {
   PrimitiveTypeSlice<uint32_t> majorVSlice(STORE_MAJOR_VERSION);
   PrimitiveTypeSlice<uint32_t> minorVSlice(STORE_MINOR_VERSION);
 
-  auto s = getWriteBuffer().Put(Slice("STORE_MAJOR_VERSION"), majorVSlice);
+  ::rocksdb::WriteOptions wOptions;
+  auto s = storageDb->Put(wOptions, Slice("STORE_MAJOR_VERSION"), majorVSlice);
   checkStatus(s);
-  s = getWriteBuffer().Put(Slice("STORE_MINOR_VERSION"), minorVSlice);
+  s = storageDb->Put(wOptions, Slice("STORE_MINOR_VERSION"), minorVSlice);
   checkStatus(s);
 }
 

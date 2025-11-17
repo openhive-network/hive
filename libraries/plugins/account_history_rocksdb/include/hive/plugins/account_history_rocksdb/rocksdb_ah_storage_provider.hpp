@@ -22,7 +22,7 @@ class rocksdb_ah_storage_provider: public rocksdb_storage_provider, public exter
 
     CachableWriteBatch _writeBuffer;
 
-    void storeSequenceIds();
+    void storeSequenceIds(DB* storageDb);
 
     void loadSeqIdentifiers(DB* storageDb) override;
 
@@ -31,9 +31,6 @@ class rocksdb_ah_storage_provider: public rocksdb_storage_provider, public exter
   protected:
 
     ColumnDefinitions prepareColumnDefinitions(bool addDefaultColumn) override;
-
-    void beforeFlushWriteBuffer() override;
-    void afterFlushWriteBuffer() override;
 
   public:
     using ptr = std::shared_ptr<rocksdb_ah_storage_provider>;

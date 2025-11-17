@@ -64,7 +64,7 @@ class rocksdb_storage_provider
     void cleanupColumnHandles();
     void cleanupColumnHandles(DB* db);
 
-    void saveStoreVersion();
+    void saveStoreVersion(DB* storageDb);
     void verifyStoreVersion(DB* storageDb);
 
   protected:
@@ -83,12 +83,10 @@ class rocksdb_storage_provider
 
     void openDb( uint32_t expected_lib );
     void shutdownDb();
-    void flushDb();
+    void flushDb(DB* storage);
     void wipeDb();
 
-    virtual void beforeFlushWriteBuffer(){}
-    void flushWriteBuffer(DB* storage = nullptr);
-    virtual void afterFlushWriteBuffer(){}
+    virtual void flushWriteBuffer(DB* storage = nullptr);
 
     virtual WriteBatch& getWriteBuffer() = 0;
 

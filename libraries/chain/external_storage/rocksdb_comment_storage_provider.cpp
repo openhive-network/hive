@@ -60,7 +60,7 @@ bool rocksdb_comment_storage_provider::read( const Slice& key, PinnableSlice& va
 
 void rocksdb_comment_storage_provider::flushDb()
 {
-  rocksdb_storage_provider::flushDb();
+  rocksdb_storage_provider::flushDb(getStorage().get());
 }
 
 void rocksdb_comment_storage_provider::update_lib( uint32_t lib )

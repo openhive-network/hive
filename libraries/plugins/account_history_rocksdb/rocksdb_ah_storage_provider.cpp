@@ -8,14 +8,22 @@ rocksdb_ah_storage_provider::rocksdb_ah_storage_provider( const bfs::path& block
 {
 }
 
-void rocksdb_ah_storage_provider::storeSequenceIds()
+void rocksdb_ah_storage_provider::storeSequenceIds(DB* storageDb)
 {
   Slice ahSeqIdName("AH_SEQ_ID");
-
   hive::chain::id_slice_t ahId( get_accountHistorySeqId() );
 
-  auto s = getWriteBuffer().Put(ahSeqIdName, ahId);
-  checkStatus(s);
+  if (storageDb == nullptr)
+  {
+    auto s = getWriteBuffer().Put(ahSeqIdName, ahId);
+    checkStatus(s);
+  }
+  else
+  {
+    ::rocksdb::WriteOptions wOptions;
+    auto s = storageDb->Put(wOptions, ahSeqIdName, ahId);
+    checkStatus(s);
+  }
 }
 
 void rocksdb_ah_storage_provider::loadSeqIdentifiers(DB* storageDb)
@@ -52,12 +60,14 @@ WriteBatch& rocksdb_ah_storage_provider::getWriteBuffer()
 
 void rocksdb_ah_storage_provider::flushDb()
 {
-  rocksdb_storage_provider::flushDb();
+  rocksdb_storage_provider::flushDb(getStorage().get());
 }
 
 void rocksdb_ah_storage_provider::flushWriteBuffer(DB* storage)
 {
+  storeSequenceIds(storage);
   rocksdb_storage_provider::flushWriteBuffer( storage );
+  _collectedOps = 0;
 }
 
 ColumnFamilyHandle* rocksdb_ah_storage_provider::getColumnHandle( Columns column )
@@ -101,16 +111,6 @@ rocksdb_storage_provider::ColumnDefinitions rocksdb_ah_storage_provider::prepare
   byTxIdColumn.options.comparator = by_txId_Comparator();
 
   return columnDefs;
-}
-
-void rocksdb_ah_storage_provider::beforeFlushWriteBuffer()
-{
-  storeSequenceIds();
-}
-
-void rocksdb_ah_storage_provider::afterFlushWriteBuffer()
-{
-  _collectedOps = 0;
 }
 
 std::unique_ptr<DB>& rocksdb_ah_storage_provider::getStorage()
