@@ -162,10 +162,26 @@ void rocksdb_storage_provider::flushWriteBuffer(DB* storage)
   if(storage == nullptr)
     storage = getStorage().get();
 
+  for( const auto& item : buffer_contents )
+  {
+    if( item.column == Columns::NONE )
+    {
+      auto s = getWriteBuffer().Put( Slice( item.key ), PrimitiveTypeSlice<uint64_t>( item.value ) );
+      checkStatus(s);
+    }
+    else
+    {
+      auto s = getWriteBuffer().Put( _columnHandles[item.column], Slice( item.key ), PrimitiveTypeSlice<uint64_t>( item.value ) );
+      checkStatus(s);
+    }
+  }
+
   ::rocksdb::WriteOptions wOptions;
   auto s = storage->Write(wOptions, getWriteBuffer().GetWriteBatch());
   checkStatus(s);
   getWriteBuffer().Clear();
+
+  buffer_contents.clear();
 
   afterFlushWriteBuffer();
 }
@@ -188,13 +204,8 @@ void rocksdb_storage_provider::flushDb()
 
 void rocksdb_storage_provider::saveStoreVersion()
 {
-  PrimitiveTypeSlice<uint32_t> majorVSlice(STORE_MAJOR_VERSION);
-  PrimitiveTypeSlice<uint32_t> minorVSlice(STORE_MINOR_VERSION);
-
-  auto s = getWriteBuffer().Put(Slice("STORE_MAJOR_VERSION"), majorVSlice);
-  checkStatus(s);
-  s = getWriteBuffer().Put(Slice("STORE_MINOR_VERSION"), minorVSlice);
-  checkStatus(s);
+  buffer_contents.push_back( { Columns::NONE, "STORE_MAJOR_VERSION", STORE_MAJOR_VERSION } );
+  buffer_contents.push_back( { Columns::NONE, "STORE_MINOR_VERSION", STORE_MINOR_VERSION } );
 }
 
 void rocksdb_storage_provider::verifyStoreVersion(DB* storageDb)
@@ -204,13 +215,13 @@ void rocksdb_storage_provider::verifyStoreVersion(DB* storageDb)
   std::string buffer;
   auto s = storageDb->Get(rOptions, "STORE_MAJOR_VERSION", &buffer);
   checkStatus(s);
-  const auto major = PrimitiveTypeSlice<uint32_t>::unpackSlice(buffer);
+  const auto major = PrimitiveTypeSlice<uint64_t>::unpackSlice(buffer);
 
-  FC_ASSERT(major == STORE_MAJOR_VERSION, "Store major version mismatch");
+  FC_ASSERT(major == STORE_MAJOR_VERSION, "Store major version mismatch" "${a} ${b}", ("a", major)("b", STORE_MAJOR_VERSION));
 
   s = storageDb->Get(rOptions, "STORE_MINOR_VERSION", &buffer);
   checkStatus(s);
-  const auto minor = PrimitiveTypeSlice<uint32_t>::unpackSlice(buffer);
+  const auto minor = PrimitiveTypeSlice<uint64_t>::unpackSlice(buffer);
 
   FC_ASSERT(minor == STORE_MINOR_VERSION, "Store minor version mismatch");
 }
@@ -232,7 +243,7 @@ bool rocksdb_storage_provider::read( const Slice& key, PinnableSlice& value )
 void rocksdb_storage_provider::load_lib()
 {
   std::string data;
-  auto s = getStorage()->Get(ReadOptions(), _columnHandles[Columns::CURRENT_LIB], LIB_ID, &data );
+  auto s = getStorage()->Get(ReadOptions(), _columnHandles[Columns::CURRENT_LIB], "LIB", &data );
 
   if(s.code() == ::rocksdb::Status::kNotFound)
   {
@@ -245,7 +256,7 @@ void rocksdb_storage_provider::load_lib()
 
   FC_ASSERT( s.ok() && "Not found irreversible", "Could not find last irreversible block. Error msg: `${e}'", ("e", s.ToString()) );
 
-  uint32_t lib = lib_slice_t::unpackSlice(data);
+  uint32_t lib = PrimitiveTypeSlice<uint64_t>::unpackSlice(data);
 
   FC_ASSERT( lib == _cached_irreversible_block, "Inconsistency in last irreversible block - expected ${c}, stored ${s}",
     ( "c", static_cast< uint32_t >( _cached_irreversible_block ) )( "s", lib ) );
@@ -256,8 +267,7 @@ void rocksdb_storage_provider::update_lib( uint32_t lib )
 {
   //dlog( "RocksDB LIB set to ${l}.", ( "l", lib ) ); //too frequent
   _cached_irreversible_block.store(lib);
-  auto s = getWriteBuffer().Put( _columnHandles[Columns::CURRENT_LIB], LIB_ID, lib_slice_t( lib ) );
-  checkStatus( s );
+  buffer_contents.push_back( { Columns::CURRENT_LIB, "LIB", lib } );
 }
 
 void rocksdb_storage_provider::loadAdditionalData()

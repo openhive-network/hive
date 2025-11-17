@@ -10,12 +10,7 @@ rocksdb_ah_storage_provider::rocksdb_ah_storage_provider( const bfs::path& block
 
 void rocksdb_ah_storage_provider::storeSequenceIds()
 {
-  Slice ahSeqIdName("AH_SEQ_ID");
-
-  hive::chain::id_slice_t ahId( get_accountHistorySeqId() );
-
-  auto s = getWriteBuffer().Put(ahSeqIdName, ahId);
-  checkStatus(s);
+  buffer_contents.push_back( { Columns::NONE, "AH_SEQ_ID", get_accountHistorySeqId() } );
 }
 
 void rocksdb_ah_storage_provider::loadSeqIdentifiers(DB* storageDb)
@@ -30,7 +25,7 @@ void rocksdb_ah_storage_provider::loadSeqIdentifiers(DB* storageDb)
 
   auto s = storageDb->Get(rOptions, ahSeqIdName, &buffer);
   checkStatus(s);
-  _accountHistorySeqId = id_slice_t::unpackSlice(buffer);
+  _accountHistorySeqId = PrimitiveTypeSlice<uint64_t>::unpackSlice(buffer);
 
   ilog("Loaded AccountHistoryObject seqId: ${ah}.", ("ah", _accountHistorySeqId));
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <hive/chain/database.hpp>
+#include <hive/chain/external_storage/types.hpp>
 
 #include <rocksdb/options.h>
 #include <rocksdb/slice.h>
@@ -28,6 +29,15 @@ using ::rocksdb::ColumnFamilyOptions;
 using ::rocksdb::ColumnFamilyHandle;
 using ::rocksdb::WriteBatch;
 
+struct buffer_content
+{
+  Columns column;
+  std::string key;
+  uint64_t value;
+};
+
+using buffer_content_type = std::list<buffer_content>;
+
 class rocksdb_storage_provider
 {
   public:
@@ -50,6 +60,8 @@ class rocksdb_storage_provider
     void load_lib();
 
   protected:
+
+    buffer_content_type buffer_contents;
 
     //stores new value of last irreversible block in DB and _cached_irreversible_block
     void update_lib( uint32_t );

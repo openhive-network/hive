@@ -37,7 +37,8 @@ enum CommentsColumns
 
 enum Columns
 {
-  CURRENT_LIB = 1,
+  NONE = 0,
+  CURRENT_LIB,
   OPERATION_BY_ID,
   OPERATION_BY_BLOCK,
   AH_INFO_BY_NAME,
@@ -97,8 +98,6 @@ class TransactionIdSlice : public Slice
 typedef PrimitiveTypeSlice< int64_t > id_slice_t;
 typedef PrimitiveTypeSlice< uint32_t > lib_id_slice_t;
 typedef PrimitiveTypeSlice< uint32_t > lib_slice_t;
-
-#define LIB_ID lib_id_slice_t( 0 )
 
 /** Helper base class to cover all common functionality across defined comparators.
   *
