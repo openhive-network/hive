@@ -317,7 +317,7 @@ void database::close()
     // DB state (issue #336).
     clear_pending();
 
-    flush();
+    flush_to_all_storages();
     get_comments_handler().close();
 
     auto lib = this->get_last_irreversible_block_num();
@@ -978,7 +978,7 @@ void database::notify_comment_reward(const comment_reward_notification& note)
 
 void database::notify_end_of_syncing()
 {
-  flush();
+  flush_to_all_storages();
   get_comments_handler().on_end_of_syncing();
 
   HIVE_TRY_NOTIFY(_end_of_syncing_signal)
@@ -3876,7 +3876,7 @@ void database::apply_block( const std::shared_ptr<full_block_type>& full_block, 
     {
       _next_flush_block = 0;
       //ilog( "Flushing database shared memory at block ${b}", ("b", block_num) );
-      flush();
+      flush_to_all_storages();
     }
   }
 
@@ -4781,12 +4781,13 @@ boost::signals2::connection database::add_flush_handler( const flush_handler_t& 
   return connect_impl<false>(_flush_signal, func, plugin, group, "flush");
 }
 
-void database::flush()
+void database::flush_to_all_storages()
 {
-  chainbase::database::flush();
   get_comments_handler().flush();
 
   notify_flush();
+
+  chainbase::database::flush();
 }
 
 const witness_object& database::validate_block_header( uint32_t skip, const std::shared_ptr<full_block_type>& full_block )const

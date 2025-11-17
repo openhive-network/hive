@@ -439,7 +439,7 @@ namespace chain {
       boost::signals2::connection add_flush_handler                     ( const flush_handler_t& func, const abstract_plugin& plugin, int32_t group = -1 );
       //////////////////// db_witness_schedule.cpp ////////////////////
 
-      void flush();
+      void flush_to_all_storages();
 
       /**
         * @brief Get the witness scheduled for block production in a slot.
