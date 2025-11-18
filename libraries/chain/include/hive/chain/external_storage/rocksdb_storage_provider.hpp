@@ -51,6 +51,8 @@ class rocksdb_storage_provider
 
   protected:
 
+    const std::string name;
+
     //stores new value of last irreversible block in DB and _cached_irreversible_block
     void update_lib( uint32_t );
     uint32_t get_lib() const { return _cached_irreversible_block; }
@@ -94,7 +96,7 @@ class rocksdb_storage_provider
 
   public:
 
-    rocksdb_storage_provider( const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application& app );
+    rocksdb_storage_provider( const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application& app, const std::string& name );
     virtual ~rocksdb_storage_provider(){}
 
     void save( const Slice& key, const Slice& value );

@@ -9,8 +9,8 @@
 
 namespace hive { namespace chain {
 
-rocksdb_storage_provider::rocksdb_storage_provider( const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application& app )
-  : _storagePath( storage_path ), _blockchainStoragePath( blockchain_storage_path ), theApp( app )
+rocksdb_storage_provider::rocksdb_storage_provider( const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application& app, const std::string& name )
+  : _storagePath( storage_path ), _blockchainStoragePath( blockchain_storage_path ), theApp( app ), name( name )
 {
   _cached_irreversible_block.store(0);
   registerHiveComparators();
