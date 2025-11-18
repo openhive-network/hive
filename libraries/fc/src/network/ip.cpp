@@ -8,25 +8,86 @@
 namespace fc { namespace ip {
 
   address::address( uint32_t ip )
+#ifndef ENABLE_IPV6
   :_ip(ip){}
+#else
+  {
+      _ip = { ip, 0, 0, 0 };
+  }
 
-  address::address( const fc::string& s ) 
+  address::address(std::array<uint32_t, 4> ip )
+  {
+      _ip = ip;
+  }
+#endif
+  address::address( const fc::string& s )
+#ifndef ENABLE_IPV6
+  {
+      try
+      {
+          _ip = boost::asio::ip::address_v4::from_string(s.c_str()).to_ulong();
+      }
+      FC_RETHROW_EXCEPTIONS(error, "Error parsing IP address ${address}", ("address", s))
+  }
+#else
   {
     try
     {
-      _ip = boost::asio::ip::address_v4::from_string(s.c_str()).to_ulong();
+      boost::system::error_code ec;
+      // First try IPv4
+      auto v4 = boost::asio::ip::address_v4::from_string(s.c_str(), ec);
+      if (!ec)
+      {
+        // IPv4 → store in _ip[0]
+        _ip[0] = v4.to_ulong();
+        _ip[1] = 0;
+        _ip[2] = 0;
+        _ip[3] = 0;
+        return;
+      }
+      // Now try IPv6
+      ec = boost::system::error_code{};
+      auto v6 = boost::asio::ip::address_v6::from_string(s.c_str(), ec);
+      if (!ec)
+      {
+        auto bytes = v6.to_bytes();    // std::array<uint8_t,16>
+        // Fill uint32_t words in network byte order
+        _ip[0] = (bytes[0]  << 24) | (bytes[1]  << 16) | (bytes[2]  << 8) | bytes[3];
+        _ip[1] = (bytes[4]  << 24) | (bytes[5]  << 16) | (bytes[6]  << 8) | bytes[7];
+        _ip[2] = (bytes[8]  << 24) | (bytes[9]  << 16) | (bytes[10] << 8) | bytes[11];
+        _ip[3] = (bytes[12] << 24) | (bytes[13] << 16) | (bytes[14] << 8) | bytes[15];
+        return;
+      }
+      // Both IPv4 and IPv6 failed
+      FC_THROW_EXCEPTION(fc::parse_error_exception, "Error parsing IP address ${address}", ("address", s));
     }
     FC_RETHROW_EXCEPTIONS(error, "Error parsing IP address ${address}", ("address", s))
   }
+#endif
 
-  bool operator==( const address& a, const address& b ) {
+  bool operator==( const address& a, const address& b )
+#ifndef ENABLE_IPV6
+  {
     return uint32_t(a) == uint32_t(b);
   }
-  bool operator!=( const address& a, const address& b ) {
+#else
+  {
+    return a.raw() == b.raw();
+  }
+#endif
+  bool operator!=( const address& a, const address& b )
+#ifndef ENABLE_IPV6
+  {
     return uint32_t(a) != uint32_t(b);
   }
+#else
+  {
+    return !(a == b);
+  }
+#endif
 
-  address& address::operator=( const fc::string& s ) 
+  address& address::operator=( const fc::string& s )
+#ifndef ENABLE_IPV6
   {
     try
     {
@@ -35,8 +96,54 @@ namespace fc { namespace ip {
     FC_RETHROW_EXCEPTIONS(error, "Error parsing IP address ${address}", ("address", s))
     return *this;
   }
+#else
+  {
+    try
+    {
+      boost::system::error_code ec;
+      //
+      // 1. Try IPv4
+      //
+      auto v4 = boost::asio::ip::address_v4::from_string(s.c_str(), ec);
+      if (!ec)
+      {
+        // IPv4 stored in _ip[0], rest zero
+        _ip[0] = v4.to_ulong();
+        _ip[1] = _ip[2] = _ip[3] = 0;
+        return *this;
+      }
+      //
+      // 2. Try IPv6
+      //
+      ec = boost::system::error_code{};
+      auto v6 = boost::asio::ip::address_v6::from_string(s.c_str(), ec);
+      if (!ec)
+      {
+        auto bytes = v6.to_bytes();   // std::array<uint8_t,16>
+        // Convert 16 bytes → 4× uint32_t using network byte order
+        _ip[0] = (uint32_t(bytes[0])  << 24) | (uint32_t(bytes[1])  << 16) |
+                 (uint32_t(bytes[2])  << 8)  |  uint32_t(bytes[3]);
+        _ip[1] = (uint32_t(bytes[4])  << 24) | (uint32_t(bytes[5])  << 16) |
+                 (uint32_t(bytes[6])  << 8)  |  uint32_t(bytes[7]);
+        _ip[2] = (uint32_t(bytes[8])  << 24) | (uint32_t(bytes[9])  << 16) |
+                 (uint32_t(bytes[10]) << 8)  |  uint32_t(bytes[11]);
+        _ip[3] = (uint32_t(bytes[12]) << 24) | (uint32_t(bytes[13]) << 16) |
+                 (uint32_t(bytes[14]) << 8)  |  uint32_t(bytes[15]);
+         return *this;
+      }
 
-  address::operator fc::string()const 
+      //
+      // If both failed → throw
+      //
+      FC_THROW_EXCEPTION(fc::parse_error_exception, "Error parsing IP address ${address}", ("address", s));
+    }
+    FC_RETHROW_EXCEPTIONS(error, "Error parsing IP address ${address}", ("address", s))
+  }
+#endif
+
+
+  address::operator fc::string()const
+#ifndef ENABLE_IPV6
   {
     try
     {
@@ -44,9 +151,36 @@ namespace fc { namespace ip {
     }
     FC_RETHROW_EXCEPTIONS(error, "Error parsing IP address to string")
   }
-  address::operator uint32_t()const {
+#else
+  {
+    try
+    {
+      std::array<uint8_t,16> bytes;
+      for (int i = 0; i < 4; i++) {
+        bytes[i*4]   = (_ip[i] >> 24) & 0xFF;
+        bytes[i*4+1] = (_ip[i] >> 16) & 0xFF;
+        bytes[i*4+2] = (_ip[i] >> 8)  & 0xFF;
+        bytes[i*4+3] =  _ip[i]        & 0xFF;
+      }
+      boost::asio::ip::address_v6 v6(bytes);
+      return v6.to_string();
+    }
+    FC_RETHROW_EXCEPTIONS(error, "Error rendering IPv6 address to string")
+  }
+#endif
+
+  address::operator uint32_t()const
+#ifndef ENABLE_IPV6
+  {
     return _ip;
   }
+#else
+  {
+    if(_ip[1] == 0 && _ip[2] == 0 && _ip[3] == 0)
+      return _ip[0];
+    FC_THROW_EXCEPTION(fc::parse_error_exception, "Cannot convert IPv6 address to uint32");
+  }
+#endif
 
 
   endpoint::endpoint()

@@ -6,35 +6,14 @@
 #include <fc/reflect/reflect.hpp>
 
 namespace fc {
-
   namespace ip {
     class address {
       public:
         address( uint32_t _ip = 0 );
-        address( const fc::string& s );
 #ifdef ENABLE_IPV6
-        bool is_v4() const { return !_is_v6; }
-        bool is_v6() const { return _is_v6; }
-
-        void set_v4(uint32_t v) {
-          _is_v6 = false;
-          _ip_v4 = v;
-        }
-
-        void set_v6(const std::array<uint8_t,16>& v6) {
-          _is_v6 = true;
-          _ip_v6 = v6;
-        }
-
-        uint32_t to_v4() const {
-          return _ip_v4;
-        }
-
-        std::array<uint8_t,16> to_v6() const {
-          return _ip_v6;
-        }
-
+        address( std::array<uint32_t, 4> _ip);
 #endif
+        address( const fc::string& s );
         address& operator=( const fc::string& s );
         operator fc::string()const;
         operator uint32_t()const;
@@ -59,13 +38,13 @@ namespace fc {
 
         /** !private & !multicast */
         bool is_public_address()const;
+#ifndef ENABLE_IPV6
       private:
-#ifdef ENABLE_IPV6
-        bool     _is_v6 = false;
-        uint32_t _ip_v4 = 0;
-        std::array<uint8_t, 16> _ip_v6{};
-#else
         uint32_t _ip;
+#else
+        const std::array<uint32_t,4>& raw() const { return _ip; }
+      private:
+        std::array<uint32_t, 4> _ip;
 #endif
     };
 
@@ -73,15 +52,6 @@ namespace fc {
       public:
         endpoint();
         endpoint( const address& i, uint16_t p = 0);
-#ifdef ENABLE_IPV6
-        void set_address_v4(uint32_t v4) {
-          _ip.set_v4(v4);
-        }
-
-        void set_address_v6(const std::array<uint8_t, 16>& v6) {
-          _ip.set_v6(v6);
-        }
-#endif
         /** Converts "IP:PORT" to an endpoint */
         static endpoint from_string( const string& s );
         /** returns "IP:PORT" */
