@@ -90,9 +90,7 @@ class rocksdb_storage_provider
     void flushDb();
     void wipeDb();
 
-    virtual void beforeFlushWriteBuffer(){}
-    void flushWriteBuffer(DB* storage = nullptr);
-    virtual void afterFlushWriteBuffer(){}
+    virtual void flushWriteBuffer(DB* storage = nullptr);
 
     virtual WriteBatch& getWriteBuffer() = 0;
 

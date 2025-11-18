@@ -164,8 +164,6 @@ void rocksdb_storage_provider::cleanupColumnHandles(::rocksdb::DB* db)
 
 void rocksdb_storage_provider::flushWriteBuffer(DB* storage)
 {
-  beforeFlushWriteBuffer();
-
   if(storage == nullptr)
     storage = getStorage().get();
 
@@ -173,8 +171,6 @@ void rocksdb_storage_provider::flushWriteBuffer(DB* storage)
   auto s = storage->Write(wOptions, getWriteBuffer().GetWriteBatch());
   checkStatus(s);
   getWriteBuffer().Clear();
-
-  afterFlushWriteBuffer();
 }
 
 void rocksdb_storage_provider::flushDb()
