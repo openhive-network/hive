@@ -7,6 +7,8 @@
 
 #include <appbase/application.hpp>
 
+#include <boost/scope_exit.hpp>
+
 namespace hive { namespace chain {
 
 rocksdb_storage_provider::rocksdb_storage_provider( const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application& app, const std::string& name )
@@ -20,6 +22,11 @@ rocksdb_storage_provider::rocksdb_storage_provider( const bfs::path& blockchain_
 
 void rocksdb_storage_provider::openDb( uint32_t expected_lib )
 {
+  BOOST_SCOPE_EXIT( &_initialized )
+  {
+    _initialized = true;
+  } BOOST_SCOPE_EXIT_END
+
   _cached_irreversible_block.store( expected_lib );
 
   //Very rare case -  when a synchronization starts from the scratch and a node has AH plugin with rocksdb enabled and directories don't exist yet
@@ -254,7 +261,12 @@ void rocksdb_storage_provider::load_lib()
 
 void rocksdb_storage_provider::update_lib( uint32_t lib )
 {
-  //dlog( "RocksDB LIB set to ${l}.", ( "l", lib ) ); //too frequent
+  /*
+    We need to have certainity that DB has been initialized before we allow updating LIB.
+  */
+  if( !_initialized )
+    return;
+
   _cached_irreversible_block.store(lib);
   auto s = getWriteBuffer().Put( _columnHandles[Columns::CURRENT_LIB], LIB_ID, lib_slice_t( lib ) );
   checkStatus( s );
