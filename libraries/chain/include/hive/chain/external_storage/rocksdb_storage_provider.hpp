@@ -36,6 +36,8 @@ class rocksdb_storage_provider
 
   private:
 
+    bool _initialized = false;
+
     bfs::path             _storagePath;
     bfs::path             _blockchainStoragePath;
 
