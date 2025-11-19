@@ -46,7 +46,7 @@ class rocksdb_storage_provider
     /// std::tuple<A, B>
     /// A - returns true if database will need data import.
     /// B - returns false if problems with opening db appeared.
-    std::tuple<bool, bool> createDbSchema(const bfs::path& path);
+    std::tuple<bool, bool> createDbSchema( const bfs::path& path );
 
     //loads last irreversible block from DB to _cached_irreversible_block
     void load_lib();
@@ -63,13 +63,15 @@ class rocksdb_storage_provider
 
     void loadAdditionalData();
 
-    virtual ColumnDefinitions prepareColumnDefinitions(bool addDefaultColumn) = 0;
+    virtual ColumnDefinitions prepareColumnDefinitions( bool addDefaultColumn ) = 0;
 
     void cleanupColumnHandles();
-    void cleanupColumnHandles(DB* db);
+    void cleanupColumnHandles( DB* storageDb );
 
     void saveStoreVersion();
-    void verifyStoreVersion(DB* storageDb);
+    void verifyStoreVersion( DB* storageDb );
+
+    void flushDb( DB* storageDb );
 
   protected:
 
@@ -78,7 +80,7 @@ class rocksdb_storage_provider
     /// </summary>
     std::atomic_uint                 _cached_irreversible_block;
 
-    virtual void loadSeqIdentifiers(DB* storageDb) = 0;
+    virtual void loadSeqIdentifiers( DB* storageDb ) = 0;
 
     std::unique_ptr<DB>               _storage;
     std::vector<ColumnFamilyHandle*>  _columnHandles;
@@ -90,7 +92,7 @@ class rocksdb_storage_provider
     void flushDb();
     void wipeDb();
 
-    virtual void flushWriteBuffer(DB* storage = nullptr);
+    virtual void flushWriteBuffer( DB* storage = nullptr );
 
     virtual WriteBatch& getWriteBuffer() = 0;
 
