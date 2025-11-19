@@ -123,76 +123,96 @@ std::tuple<bool, bool> rocksdb_storage_provider::createDbSchema( const bfs::path
     }
   };
 
-  ilog( "Create schema in `${name}` RocksDB database.", ("name", name) );
-
-  auto columnDefs = prepareColumnDefinitions(true);
   auto strPath = path.string();
+
   Options options;
   /// Optimize RocksDB. This is the easiest way to get RocksDB to perform well
   options.IncreaseParallelism();
   options.OptimizeLevelStyleCompaction();
   options.max_open_files = OPEN_FILE_LIMIT;
 
+  std::tuple<bool, bool> _result{ false, false };
+
+  ilog( "Create schema in `${name}` RocksDB database.", ("name", name) );
+
+  auto open_read_only_db = [&strPath, &options, this]( std::tuple<bool, bool>& result )
   {
-    db_wrapper read_only_db;
-    ilog( "Open database in read only mode." );
-    auto status = DB::OpenForReadOnly( options, strPath, columnDefs, &_columnHandles, &read_only_db.db );
+    auto _columnDefs = prepareColumnDefinitions(true);
 
-    ilog( "Database is ${status}.", ("status", status.ok() ? "opened" : "not opened") );
-    if( status.ok() )
     {
-      ilog( "Cleanup column handles." );
-      cleanupColumnHandles( read_only_db.db );
+      ilog( "Open database in read only mode." );
 
-      return { false, true }; /// { DB does not need data import, an application is not closed }
+      db_wrapper _db;
+      auto _status = DB::OpenForReadOnly( options, strPath, _columnDefs, &_columnHandles, &_db.db );
+
+      ilog( "Database is ${status}.", ("status", _status.ok() ? "opened" : "not opened") );
+      if( _status.ok() )
+      {
+        ilog( "Cleanup column handles." );
+        cleanupColumnHandles( _db.db );
+
+        result = std::make_tuple( false, true );/// { DB does not need data import, an application is not closed }
+      }
+      return _status.ok();
     }
-  }
+  };
 
-  options.create_if_missing = true;
-
-  ilog( "Open database." );
-  db_wrapper preparation_db;
-  auto status = DB::Open( options, strPath, &preparation_db.db );
-  ilog( "Database is ${status}.", ("status", status.ok() ? "opened" : "not opened") );
-
-  if( status.ok() )
+  auto open_db = [&strPath, &options, this]( std::tuple<bool, bool>& result )
   {
-    ilog( "Prepare column definitions." );
-    columnDefs = prepareColumnDefinitions(false);
+    ilog( "Open database." );
 
-    ilog( "Create column families." );
-    status = preparation_db.db->CreateColumnFamilies( columnDefs, &_columnHandles );
+    options.create_if_missing = true;
 
-    if( status.ok() )
+    db_wrapper _db;
+    auto _status = DB::Open( options, strPath, &_db.db );
+    ilog( "Database is ${status}.", ("status", _status.ok() ? "opened" : "not opened") );
+
+    if( _status.ok() )
     {
-      ilog( "Save store version." );
-      saveStoreVersion();
+      ilog( "Prepare column definitions." );
+      auto _columnDefs = prepareColumnDefinitions(false);
 
-      ilog( "Flush database." );
-      flushDb( preparation_db.db );
+      ilog( "Create column families." );
+      _status = _db.db->CreateColumnFamilies( _columnDefs, &_columnHandles );
 
-      ilog( "Cleanup column handles." );
-      cleanupColumnHandles( preparation_db.db );
+      if( _status.ok() )
+      {
+        ilog( "Save store version." );
+        saveStoreVersion();
+
+        ilog( "Flush database." );
+        flushDb( _db.db );
+
+        ilog( "Cleanup column handles." );
+        cleanupColumnHandles( _db.db );
+      }
+      else
+      {
+        elog("RocksDB cannot create column definitions at location: `${p}'.\nReturned error: ${e}",
+          ("p", strPath)("e", _status.ToString()));
+        FC_ASSERT( false && "Creation of columns failed" );
+      }
+
+      result = std::make_tuple( true, true );/// { DB needs data import, an application is not closed }
+
+      return true;
     }
     else
     {
-      elog("RocksDB cannot create column definitions at location: `${p}'.\nReturned error: ${e}",
-        ("p", strPath)("e", status.ToString()));
-      FC_ASSERT( false && "Creation of columns failed" );
+      elog("RocksDB can not create storage at location: `${p}'.\nReturned error: ${e}",
+        ("p", strPath)("e", _status.ToString()));
+      FC_ASSERT( false && "Creation of database failed" );
     }
+  };
 
-    return { true, true }; /// { DB needs data import, an application is not closed }
-  }
-  else
-  {
-    elog("RocksDB can not create storage at location: `${p}'.\nReturned error: ${e}",
-      ("p", strPath)("e", status.ToString()));
-    FC_ASSERT( false && "Creation of database failed" );
-  }
+  if( open_read_only_db( _result ) )
+    return _result;
+
+  open_db( _result );
 
   ilog( "Schema in `${name}` RocksDB database has been created successfully.", ("name", name) );
 
-  return { false, false };/// { DB does not need data import, an application is closed }
+  return _result;/// { DB does not need data import, an application is closed }
 }
 
 void rocksdb_storage_provider::cleanupColumnHandles()
@@ -333,7 +353,7 @@ void rocksdb_storage_provider::update_lib( uint32_t lib )
 
 void rocksdb_storage_provider::loadAdditionalData()
 {
-  loadSeqIdentifiers(getStorage().get());
+  loadSeqIdentifiers( getStorage().get() );
   load_lib();
 }
 
