@@ -57,6 +57,7 @@ public:
   virtual void plugin_initialize( const variables_map& options ) override;
   virtual void plugin_startup() override;
   virtual void plugin_shutdown() override;
+  virtual void plugin_finalize_startup() override;
 
   void register_snapshot_provider(state_snapshot_provider& provider);
 
