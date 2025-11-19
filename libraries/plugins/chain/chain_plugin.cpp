@@ -227,6 +227,7 @@ class chain_plugin_impl
     state_snapshot_provider*            snapshot_provider = nullptr;
     bool                                is_p2p_enabled = true;
     bool                                is_work_enabled = true;
+    bool                                allow_syncing = false; 
     std::atomic<uint32_t>               peer_count = {0};
 
     fc::time_point cumulative_times_last_reported_time;
@@ -1893,7 +1894,7 @@ void chain_plugin::plugin_startup()
         ilog( "P2P enabling${str}...", ( str ) );
       else
         ilog( "P2P is disabled${str}. Starting writer loop in API mode.", ( str ) );
-      my->work( on_sync );
+      my->allow_syncing = true;
     }
     else
     {
@@ -1906,6 +1907,12 @@ void chain_plugin::plugin_startup()
   ilog("Chain plugin initialization finished...");
   if( get_app().is_interrupt_request() )
     get_app().kill();
+}
+
+void chain_plugin::plugin_finalize_startup()
+{
+  if( my->allow_syncing )
+    my->work( on_sync );
 }
 
 void chain_plugin::plugin_shutdown()

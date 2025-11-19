@@ -455,6 +455,11 @@ void p2p_plugin::plugin_initialize(const boost::program_options::variables_map& 
 
 void p2p_plugin::plugin_startup()
 {
+//Everything was moved to `plugin_finalize_startup` to ensure that chain_plugin is fully started before p2p_plugin starts.
+}
+
+void p2p_plugin::plugin_finalize_startup()
+{
   ilog("P2P plugin startup...");
 
   if( !my->chain.is_p2p_enabled() )

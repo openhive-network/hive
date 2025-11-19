@@ -45,6 +45,7 @@ public:
   virtual void plugin_startup() override;
   virtual void plugin_pre_shutdown() override;
   virtual void plugin_shutdown() override;
+  virtual void plugin_finalize_startup() override;
 
   void broadcast_block(const std::shared_ptr<hive::chain::full_block_type>& full_block);
   void broadcast_transaction(const std::shared_ptr<hive::chain::full_transaction_type>& full_transaction);
