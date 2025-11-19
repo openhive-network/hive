@@ -39,7 +39,7 @@ void rocksdb_storage_provider::openDb( uint32_t expected_lib )
   auto _result = createDbSchema(_storagePath);
   if( !std::get<1>( _result ) )
   {
-    ilog("Exit because of errors during a database schema creation.");
+    ilog("Exit because of errors during database schema creation.");
     return;
   }
 
@@ -83,13 +83,13 @@ void rocksdb_storage_provider::shutdownDb()
   {
     ilog("Shutdown `${name}` RocksDB database.", ("name", name));
 
-    ilog("Flush a database.");
+    ilog("Flush database.");
     flushDb();
 
     ilog("Cleanup column handles.");
     cleanupColumnHandles();
 
-    ilog("Close a database.");
+    ilog("Close database.");
     getStorage()->Close();
     getStorage().reset();
 
@@ -321,7 +321,7 @@ void rocksdb_storage_provider::load_lib()
     ilog( "RocksDB LIB not present in `${name}` RocksDB database.", ("name", name) );
     FC_ASSERT( 0 == _cached_irreversible_block, "Inconsistency in last irreversible block - expected ${c}",
       ( "c", static_cast<uint32_t>( _cached_irreversible_block ) ) );
-    update_lib( 0 ); ilog( "RocksDB LIB set to 0." );
+    update_lib_internal( 0 ); ilog( "RocksDB LIB set to 0." );
     return;
   }
 
@@ -335,20 +335,20 @@ void rocksdb_storage_provider::load_lib()
   ilog( "`${name}` RocksDB database LIB loaded with value ${l}.", ("name", name)( "l", _lib ) );
 }
 
+void rocksdb_storage_provider::update_lib_internal( uint32_t lib )
+{
+  _cached_irreversible_block.store( lib );
+  auto s = getWriteBuffer().Put( _columnHandles[Columns::CURRENT_LIB], LIB_ID, lib_slice_t( lib ) );
+  checkStatus( s );
+}
+
 void rocksdb_storage_provider::update_lib( uint32_t lib )
 {
   /*
     We need to have certainity that DB has been initialized before we allow updating LIB.
   */
-  if( !_initialized )
-  {
-    ilog("writing before open: provider name: ${name} LIB: ${lib}", ("name", name)("lib", lib));
-    //return;
-  }
-
-  _cached_irreversible_block.store(lib );
-  auto s = getWriteBuffer().Put( _columnHandles[Columns::CURRENT_LIB], LIB_ID, lib_slice_t( lib ) );
-  checkStatus( s );
+  FC_ASSERT( _initialized, "Trying to update LIB in `${name}` RocksDB database before initialization.", ("name", name) );
+  update_lib_internal( lib );
 }
 
 void rocksdb_storage_provider::loadAdditionalData()

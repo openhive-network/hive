@@ -51,6 +51,8 @@ class rocksdb_storage_provider
     //loads last irreversible block from DB to _cached_irreversible_block
     void load_lib();
 
+    void update_lib_internal( uint32_t );
+
   protected:
 
     const std::string name;
