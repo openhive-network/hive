@@ -55,10 +55,10 @@ void rocksdb_ah_storage_provider::flushDb()
   rocksdb_storage_provider::flushDb();
 }
 
-void rocksdb_ah_storage_provider::flushWriteBuffer(DB* storage)
+void rocksdb_ah_storage_provider::flushWriteBuffer()
 {
   storeSequenceIds();
-  rocksdb_storage_provider::flushWriteBuffer( storage );
+  rocksdb_storage_provider::flushWriteBuffer();
   _collectedOps = 0;
 }
 

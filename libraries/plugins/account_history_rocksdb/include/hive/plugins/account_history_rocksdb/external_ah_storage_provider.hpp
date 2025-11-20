@@ -32,7 +32,7 @@ class external_ah_storage_provider: public external_snapshot_storage_provider
     virtual unsigned int get_collectedOps() const = 0;
     virtual void set_collectedOps( unsigned int value ) = 0;
 
-    virtual void flushWriteBuffer(DB* storage = nullptr) = 0;
+    virtual void flushWriteBuffer() = 0;
 
     virtual ColumnFamilyHandle* getColumnHandle( Columns column ) = 0;
 
