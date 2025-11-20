@@ -160,6 +160,11 @@ public:
       on_post_apply_block(bn);
     }, _self );
 
+    _on_wipe_conn = _mainDb.add_wipe_handler( [&]()
+    {
+      on_wipe();
+    }, _self );
+
     HIVE_ADD_PLUGIN_INDEX(_mainDb, volatile_operation_index);
   }
 
@@ -178,6 +183,7 @@ public:
     hive::utilities::disconnect_signal(_on_irreversible_block_conn);
     hive::utilities::disconnect_signal(_on_post_apply_block_conn);
     hive::utilities::disconnect_signal(_on_fail_apply_block_conn);
+    hive::utilities::disconnect_signal(_on_wipe_conn);
 
     _provider->shutdownDb();
     _initialized = false;
@@ -291,6 +297,8 @@ private:
 
   void on_post_apply_block(const block_notification& bn);
 
+  void on_wipe();
+
   void collectOptions(const bpo::variables_map& options);
 
   /** Returns true if given account is tracked.
@@ -329,6 +337,7 @@ private:
   boost::signals2::connection      _on_irreversible_block_conn;
   boost::signals2::connection      _on_post_apply_block_conn;
   boost::signals2::connection      _on_fail_apply_block_conn;
+  boost::signals2::connection      _on_wipe_conn;
 
   /// Helper member to be able to detect another incomming tx and increment tx-counter.
   transaction_id_type              _lastTx;
@@ -1377,6 +1386,11 @@ void account_history_rocksdb_plugin::impl::on_post_apply_block(const block_notif
   }
 
   _provider->set_operationSeqId(0);
+}
+
+void account_history_rocksdb_plugin::impl::on_wipe()
+{
+  _provider->wipeDb();
 }
 
 account_history_rocksdb_plugin::account_history_rocksdb_plugin()
