@@ -59,7 +59,7 @@ class rocksdb_ah_storage_provider: public rocksdb_storage_provider, public exter
     void update_lib( uint32_t ) override;
     uint32_t get_lib() const override;
 
-    void flushWriteBuffer(DB* storage = nullptr) override;
+    void flushWriteBuffer() override;
 
     ColumnFamilyHandle* getColumnHandle( Columns column ) override;
 
