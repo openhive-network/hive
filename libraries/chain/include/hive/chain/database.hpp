@@ -101,6 +101,7 @@ namespace chain {
     // The following fields are only used on reindexing
     uint32_t stop_replay_at = 0;
     bool force_replay = false;
+    bool resync = false;
     bool validate_during_replay = false;
   };
 
@@ -374,11 +375,13 @@ namespace chain {
       using load_snapshot_data_supplement_handler_t = std::function < void(const load_snapshot_supplement_notification&) >;
       using comment_reward_notification_handler_t = std::function < void(const comment_reward_notification&) >;
       using end_of_syncing_notification_handler_t = std::function < void(void) >;
+      using wipe_notification_handler_t = std::function < void(void) >;
 
       void notify_prepare_snapshot_data_supplement(const prepare_snapshot_supplement_notification& n);
       void notify_load_snapshot_data_supplement(const load_snapshot_supplement_notification& n);
       void notify_comment_reward(const comment_reward_notification& note);
       void notify_end_of_syncing();
+      void notify_wipe();
 
     private:
       template < bool IS_PRE_OPERATION, typename TSignal,
@@ -431,6 +434,7 @@ namespace chain {
 
       boost::signals2::connection add_end_of_syncing_handler            (const end_of_syncing_notification_handler_t& func, const abstract_plugin& plugin, int32_t group = -1);
 
+      boost::signals2::connection add_wipe_handler                      (const wipe_notification_handler_t& func, const abstract_plugin& plugin, int32_t group = -1);
       //////////////////// db_witness_schedule.cpp ////////////////////
 
       /**
@@ -954,6 +958,10 @@ namespace chain {
         *  This signal is emitted when pushing block is completely finished
         */
       fc::signal<void(const block_notification&)>           _finish_push_block_signal;
+      /**
+        *  This signal is emitted when all storages have to be wiped
+        */
+      fc::signal<void()> _wipe_signal;
 
       appbase::application& theApp;
 
