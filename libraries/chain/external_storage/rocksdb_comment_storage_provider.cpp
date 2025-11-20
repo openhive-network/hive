@@ -48,6 +48,11 @@ void rocksdb_comment_storage_provider::wipeDb()
   rocksdb_storage_provider::wipeDb();
 }
 
+void rocksdb_comment_storage_provider::flushWriteBuffer()
+{
+  rocksdb_storage_provider::flushWriteBuffer();
+}
+
 void rocksdb_comment_storage_provider::save( const Slice& key, const Slice& value )
 {
   rocksdb_storage_provider::save( key, value );

@@ -132,6 +132,8 @@ void rocksdb_comment_archive::on_irreversible_block( uint32_t block_num )
     ++count;
   }
 
+  provider->flushWriteBuffer();
+
   stats.comment_lib_processing.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
   stats.comment_lib_processing.count += count;
 }
