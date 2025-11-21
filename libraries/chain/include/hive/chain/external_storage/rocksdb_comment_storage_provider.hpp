@@ -1,6 +1,6 @@
 #pragma once
 
-#include <hive/chain/external_storage/external_storage_provider.hpp>
+#include <hive/chain/external_storage/external_comment_storage_provider.hpp>
 #include <hive/chain/external_storage/rocksdb_storage_provider.hpp>
 
 #include <hive/chain/database.hpp>
@@ -37,19 +37,8 @@ class rocksdb_comment_storage_provider: public rocksdb_storage_provider, public 
     rocksdb_comment_storage_provider( const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application& app );
     ~rocksdb_comment_storage_provider() override{}
 
-    std::unique_ptr<DB>& getStorage() override;
-
-    void openDb( uint32_t expected_lib ) override;
-    void shutdownDb() override;
-    void flushDb() override;
-    void wipeDb() override;
-    void flushWriteBuffer() override;
-
     void save( const Slice& key, const Slice& value ) override;
     bool read( const Slice& key, PinnableSlice& value ) override;
-
-    void update_lib( uint32_t ) override;
-    uint32_t get_lib() const override;
 };
 
 }}

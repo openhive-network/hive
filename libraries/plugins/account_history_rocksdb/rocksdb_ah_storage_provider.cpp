@@ -35,31 +35,9 @@ void rocksdb_ah_storage_provider::loadSeqIdentifiers(DB* storageDb)
   ilog("Loaded AccountHistoryObject seqId: ${ah}.", ("ah", _accountHistorySeqId));
 }
 
-void rocksdb_ah_storage_provider::update_lib( uint32_t lib )
-{
-  rocksdb_storage_provider::update_lib( lib );
-}
-
-uint32_t rocksdb_ah_storage_provider::get_lib() const
-{
-  return rocksdb_storage_provider::get_lib();
-}
-
 WriteBatch& rocksdb_ah_storage_provider::getWriteBuffer()
 {
   return _writeBuffer;
-}
-
-void rocksdb_ah_storage_provider::flushDb()
-{
-  rocksdb_storage_provider::flushDb();
-}
-
-void rocksdb_ah_storage_provider::flushWriteBuffer()
-{
-  storeSequenceIds();
-  rocksdb_storage_provider::flushWriteBuffer();
-  _collectedOps = 0;
 }
 
 ColumnFamilyHandle* rocksdb_ah_storage_provider::getColumnHandle( Columns column )
@@ -103,26 +81,6 @@ rocksdb_storage_provider::ColumnDefinitions rocksdb_ah_storage_provider::prepare
   byTxIdColumn.options.comparator = by_txId_Comparator();
 
   return columnDefs;
-}
-
-std::unique_ptr<DB>& rocksdb_ah_storage_provider::getStorage()
-{
-  return rocksdb_storage_provider::getStorage();
-}
-
-void rocksdb_ah_storage_provider::openDb( uint32_t expected_lib )
-{
-  rocksdb_storage_provider::openDb( expected_lib );
-}
-
-void rocksdb_ah_storage_provider::shutdownDb()
-{
-  rocksdb_storage_provider::shutdownDb();
-}
-
-void rocksdb_ah_storage_provider::wipeDb()
-{
-  rocksdb_storage_provider::wipeDb();
 }
 
 uint64_t rocksdb_ah_storage_provider::get_operationSeqId() const

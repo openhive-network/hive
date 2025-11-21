@@ -1079,7 +1079,7 @@ void account_history_rocksdb_plugin::impl::prunePotentiallyTooOldItems(account_h
 
 void account_history_rocksdb_plugin::impl::on_pre_reindex(const hive::chain::reindex_notification& note)
 {
-  _provider->shutdownDb();
+  shutdownDb();
   std::string strPath = _storagePath.string();
 
   _provider->openDb( _mainDb.get_last_irreversible_block_num() );
