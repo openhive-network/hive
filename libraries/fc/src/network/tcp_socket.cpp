@@ -74,11 +74,31 @@ namespace fc {
     return (_write_in_progress = fc::asio::write_some(socket, buffer, length, offset)).wait();
   }
 
-
   void tcp_socket::open()
   {
+#ifdef ENABLE_IPV6
+    /***
+     * By default Hive uses a single socket.
+     * Have to adapt everything to use dual-stack.
+     */
+    my->_sock.open(boost::asio::ip::tcp::v6());
+#else
     my->_sock.open(boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), 0).protocol());
+#endif
   }
+#ifdef ENABLE_IPV6
+  void tcp_socket::open(const fc::ip::endpoint& ep)
+  {
+    if (ep.get_address().is_v4())
+      my->_sock.open(boost::asio::ip::tcp::v4());
+    else {
+      my->_sock.open(boost::asio::ip::tcp::v6());
+      // allow dual-stack unless you want v6-only
+      boost::asio::ip::v6_only option(false);
+      my->_sock.set_option(option);
+    }
+  }
+#endif
 
   bool tcp_socket::is_open()const {
     return my->_sock.is_open();
@@ -113,7 +133,7 @@ namespace fc {
     return my->_io_hooks->writesome(my->_sock, buf, len, offset);
   }
 
-  fc::ip::endpoint tcp_socket::remote_endpoint()const
+  fc::ip::endpoint tcp_socket::remote_endpoint() const
   {
     try
     {
@@ -121,6 +141,38 @@ namespace fc {
       return  fc::ip::endpoint(rep.address().to_v4().to_ulong(), rep.port() );
     }
     FC_RETHROW_EXCEPTIONS( warn, "error getting socket's remote endpoint" );
+    try
+    {
+      auto rep = my->_sock.remote_endpoint();
+      const auto& addr = rep.address();
+
+#ifndef ENABLE_IPV6
+      return fc::ip::endpoint(addr.to_v4().to_ulong(), rep.port());
+#else
+      fc::ip::address fcaddr;
+      if (addr.is_v4())
+        {
+          fcaddr = fc::ip::address(addr.to_v4().to_ulong());
+        }
+        else
+        {
+          // Convert IPv6 address to 4× uint32 words
+          auto bytes = addr.to_v6().to_bytes();
+          std::array<uint32_t,4> words;
+          for (int i = 0; i < 4; i++)
+          {
+              words[i] =
+                  (uint32_t(bytes[i*4])   << 24) |
+                  (uint32_t(bytes[i*4+1]) << 16) |
+                  (uint32_t(bytes[i*4+2]) << 8)  |
+                   uint32_t(bytes[i*4+3]);
+          }
+          fcaddr = fc::ip::address(words);
+        }
+      return fc::ip::endpoint(fcaddr, rep.port());
+#endif
+    }
+    FC_RETHROW_EXCEPTIONS(warn, "error getting socket's remote endpoint");
   }
 
 
@@ -181,14 +233,14 @@ namespace fc {
       // This should work for modern Linuxes and for OSX >= Mountain Lion
       int timeout_sec = interval.count() / fc::seconds(1).count();
       if (setsockopt(my->_sock.native_handle(), IPPROTO_TCP,
-      #if defined( __APPLE__ )
+#if defined( __APPLE__ )
                      TCP_KEEPALIVE,
-       #else
+#else
                      TCP_KEEPIDLE,
-       #endif
+#endif
                      (char*)&timeout_sec, sizeof(timeout_sec)) < 0)
         wlog("Error setting TCP keepalive idle time");
-# if !defined(__APPLE__) || defined(TCP_KEEPINTVL) // TCP_KEEPINTVL not defined before 10.9
+#if !defined(__APPLE__) || defined(TCP_KEEPINTVL) // TCP_KEEPINTVL not defined before 10.9
       if (setsockopt(my->_sock.native_handle(), IPPROTO_TCP, TCP_KEEPINTVL,
                      (char*)&timeout_sec, sizeof(timeout_sec)) < 0)
         wlog("Error setting TCP keepalive interval");

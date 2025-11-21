@@ -51,7 +51,10 @@ namespace fc {
       virtual void     close();
       /// @}
 
-      void open();
+      void   open();
+#ifdef ENABLE_IPV6
+      void   open(const fc::ip::endpoint& ep);
+#endif
       bool   is_open()const;
 
     private:

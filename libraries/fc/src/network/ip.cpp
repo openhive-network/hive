@@ -153,6 +153,14 @@ namespace fc { namespace ip {
   }
 #else
   {
+    if(_ip[1] == 0 && _ip[2] == 0 && _ip[3] == 0)
+    {
+      try
+      {
+        return boost::asio::ip::address_v4(_ip[0]).to_string().c_str();
+      }
+      FC_RETHROW_EXCEPTIONS(error, "Error parsing IP address to string")
+    }
     try
     {
       std::array<uint8_t,16> bytes;
@@ -181,8 +189,6 @@ namespace fc { namespace ip {
     FC_THROW_EXCEPTION(fc::parse_error_exception, "Cannot convert IPv6 address to uint32");
   }
 #endif
-
-
   endpoint::endpoint()
   :_port(0){  }
   endpoint::endpoint(const address& a, uint16_t p)
@@ -207,6 +213,7 @@ namespace fc { namespace ip {
 
   endpoint endpoint::from_string( const string& endpoint_string )
   {
+#ifndef ENABLE_IPV6
     try
     {
       endpoint ep;
@@ -216,15 +223,71 @@ namespace fc { namespace ip {
       return ep;
     }
     FC_RETHROW_EXCEPTIONS(warn, "error converting string to IP endpoint")
+#else
+    try
+    {
+      endpoint ep;
+      // IPv6: "[addr]:port"
+      if (!endpoint_string.empty() && endpoint_string[0] == '[')
+      {
+        auto end = endpoint_string.find(']');
+        FC_ASSERT(end != string::npos, "Malformed IPv6 endpoint: ${endpoint_string}",
+                 ("endpoint_string", endpoint_string));
+
+        string ip_str = endpoint_string.substr(1, end - 1);
+
+        FC_ASSERT(end + 2 <= endpoint_string.size(),
+                 "Missing port in IPv6 endpoint: ${endpoint_string}",
+                 ("endpoint_string", endpoint_string));
+
+        string port_str = endpoint_string.substr(end + 2);
+
+        ep._ip = fc::ip::address(ip_str);
+        ep._port = boost::lexical_cast<uint16_t>(port_str);
+        return ep;
+      }
+
+      // IPv4: "IP:port"
+      auto pos = endpoint_string.rfind(':');
+      FC_ASSERT(pos != string::npos,
+                "Missing port in endpoint: ${endpoint_string}",
+                ("endpoint_string", endpoint_string));
+
+      string ip_str = endpoint_string.substr(0, pos);
+      string port_str = endpoint_string.substr(pos + 1);
+
+      ep._ip = fc::ip::address(ip_str);
+      ep._port = boost::lexical_cast<uint16_t>(port_str);
+      return ep;
+    }
+    FC_RETHROW_EXCEPTIONS(warn, "error converting string to IP endpoint")
+#endif
   }
+
+#ifdef ENABLE_IPV6
+  bool address::is_v4() const {
+    return _ip[1] == 0 && _ip[2] == 0 && _ip[3] == 0;
+  }
+#endif
 
   endpoint::operator string()const 
   {
+#ifndef ENABLE_IPV6
     try
     {
       return string(_ip) + ':' + fc::string(boost::lexical_cast<std::string>(_port).c_str());
     }
     FC_RETHROW_EXCEPTIONS(warn, "error converting IP endpoint to string")
+#else
+    try
+    {
+      string ip_str = (string)_ip;
+      if (!_ip.is_v4())
+        return "[" + ip_str + "]:" + std::to_string(_port);
+      return ip_str + ":" + std::to_string(_port);
+    }
+    FC_RETHROW_EXCEPTIONS(warn, "error converting IP endpoint to string")
+#endif
   }
 
   /**
@@ -273,11 +336,11 @@ namespace fc { namespace ip {
 
   void to_variant( const ip::endpoint& var,  variant& vo )
   {
-      vo = fc::string(var);
+    vo = fc::string(var);
   }
   void from_variant( const variant& var,  ip::endpoint& vo )
   {
-     vo = ip::endpoint::from_string(var.as_string());
+    vo = ip::endpoint::from_string(var.as_string());
   }
 
   void to_variant( const ip::address& var,  variant& vo )

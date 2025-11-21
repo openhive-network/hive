@@ -42,6 +42,7 @@ namespace fc {
       private:
         uint32_t _ip;
 #else
+        bool is_v4() const;
         const std::array<uint32_t,4>& raw() const { return _ip; }
       private:
         std::array<uint32_t, 4> _ip;
