@@ -2,6 +2,8 @@
 
 #include <hive/chain/database.hpp>
 
+#include <hive/chain/external_storage/external_basic_provider.hpp>
+
 #include <rocksdb/options.h>
 #include <rocksdb/slice.h>
 #include <rocksdb/db.h>
@@ -28,7 +30,7 @@ using ::rocksdb::ColumnFamilyOptions;
 using ::rocksdb::ColumnFamilyHandle;
 using ::rocksdb::WriteBatch;
 
-class rocksdb_storage_provider
+class rocksdb_storage_provider: public external_basic_provider
 {
   public:
 
@@ -50,16 +52,6 @@ class rocksdb_storage_provider
 
     //loads last irreversible block from DB to _cached_irreversible_block
     void load_lib();
-
-    void update_lib_internal( uint32_t );
-
-  protected:
-
-    const std::string name;
-
-    //stores new value of last irreversible block in DB and _cached_irreversible_block
-    void update_lib( uint32_t );
-    uint32_t get_lib() const { return _cached_irreversible_block; }
 
   private:
 
@@ -87,21 +79,24 @@ class rocksdb_storage_provider
     std::unique_ptr<DB>               _storage;
     std::vector<ColumnFamilyHandle*>  _columnHandles;
 
-    std::unique_ptr<DB>& getStorage() { return _storage; }
-
-    void openDb( uint32_t expected_lib );
-    void shutdownDb();
-    void flushDb();
-    void wipeDb();
-
-    virtual void flushWriteBuffer( DB* storage = nullptr );
-
     virtual WriteBatch& getWriteBuffer() = 0;
 
   public:
 
     rocksdb_storage_provider( const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application& app, const std::string& name );
     virtual ~rocksdb_storage_provider(){}
+
+    std::unique_ptr<DB>& getStorage() override { return _storage; }
+
+    void openDb( uint32_t expected_lib ) override;
+    void shutdownDb() override;
+    void flushDb() override;
+    void flushWriteBuffer( DB* storage = nullptr ) override;
+    void wipeDb() override;
+
+    //stores new value of last irreversible block in DB and _cached_irreversible_block
+    void update_lib( uint32_t ) override;
+    uint32_t get_lib() const override { return _cached_irreversible_block; }
 
     void save( const Slice& key, const Slice& value );
     bool read( const Slice& key, PinnableSlice& value );

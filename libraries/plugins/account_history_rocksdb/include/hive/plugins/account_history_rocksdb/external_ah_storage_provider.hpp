@@ -1,7 +1,6 @@
 #pragma once
 
 #include <hive/chain/external_storage/types.hpp>
-#include <hive/chain/external_storage/external_storage_provider.hpp>
 
 #include<hive/chain/database.hpp>
 
@@ -17,7 +16,7 @@ using ::rocksdb::Slice;
 using ::rocksdb::PinnableSlice;
 using ::rocksdb::ColumnFamilyHandle;
 
-class external_ah_storage_provider: public external_snapshot_storage_provider
+class external_ah_storage_provider
 {
   public:
 
@@ -31,8 +30,6 @@ class external_ah_storage_provider: public external_snapshot_storage_provider
 
     virtual unsigned int get_collectedOps() const = 0;
     virtual void set_collectedOps( unsigned int value ) = 0;
-
-    virtual void flushWriteBuffer() = 0;
 
     virtual ColumnFamilyHandle* getColumnHandle( Columns column ) = 0;
 

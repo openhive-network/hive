@@ -1,11 +1,14 @@
 #pragma once
 
 #include <hive/chain/external_storage/external_storage_snapshot.hpp>
-#include <hive/chain/external_storage/external_storage_provider.hpp>
+#include <hive/chain/external_storage/external_basic_provider.hpp>
+#include <hive/chain/database.hpp>
 
 #include <rocksdb/db.h>
 
 #include<string>
+
+#include <boost/filesystem.hpp>
 
 namespace hive { namespace chain {
 
@@ -24,12 +27,12 @@ class rocksdb_snapshot: public external_storage_snapshot
 
     const bfs::path _storagePath;
 
-    external_snapshot_storage_provider::ptr _provider;
+    external_basic_provider::ptr _provider;
 
   public:
 
     rocksdb_snapshot( std::string name, std::string storage_name, database& db,
-                      const bfs::path& storage_path, const external_snapshot_storage_provider::ptr& provider );
+                      const bfs::path& storage_path, const external_basic_provider::ptr& provider );
 
     void save_snapshot( const prepare_snapshot_supplement_notification& note ) override;
     void load_snapshot( const load_snapshot_supplement_notification& note ) override;
