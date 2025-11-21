@@ -38,13 +38,6 @@ class rocksdb_ah_storage_provider: public rocksdb_storage_provider, public exter
     rocksdb_ah_storage_provider( const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application& app );
     ~rocksdb_ah_storage_provider() override{}
 
-    std::unique_ptr<DB>& getStorage() override;
-
-    void openDb( uint32_t expected_lib ) override;
-    void shutdownDb() override;
-    void flushDb() override;
-    void wipeDb() override;
-
     uint64_t get_operationSeqId() const override;
     void set_operationSeqId( uint64_t value ) override;
 
@@ -54,12 +47,6 @@ class rocksdb_ah_storage_provider: public rocksdb_storage_provider, public exter
     /// Number of data-chunks for ops being stored inside _writeBuffer. To decide when to flush.
     unsigned int get_collectedOps() const override;
     void set_collectedOps( unsigned int value ) override;
-
-    //stores new value of last irreversible block in DB and _cached_irreversible_block
-    void update_lib( uint32_t ) override;
-    uint32_t get_lib() const override;
-
-    void flushWriteBuffer() override;
 
     ColumnFamilyHandle* getColumnHandle( Columns column ) override;
 

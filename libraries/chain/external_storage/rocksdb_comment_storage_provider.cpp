@@ -1,4 +1,5 @@
 
+#include <hive/chain/external_storage/types.hpp>
 #include <hive/chain/external_storage/rocksdb_comment_storage_provider.hpp>
 
 namespace hive { namespace chain {
@@ -28,31 +29,6 @@ WriteBatch& rocksdb_comment_storage_provider::getWriteBuffer()
   return _writeBuffer;
 }
 
-std::unique_ptr<DB>& rocksdb_comment_storage_provider::getStorage()
-{
-  return rocksdb_storage_provider::getStorage();
-}
-
-void rocksdb_comment_storage_provider::openDb( uint32_t expected_lib )
-{
-  rocksdb_storage_provider::openDb( expected_lib );
-}
-
-void rocksdb_comment_storage_provider::shutdownDb()
-{
-  rocksdb_storage_provider::shutdownDb();
-}
-
-void rocksdb_comment_storage_provider::wipeDb()
-{
-  rocksdb_storage_provider::wipeDb();
-}
-
-void rocksdb_comment_storage_provider::flushWriteBuffer()
-{
-  rocksdb_storage_provider::flushWriteBuffer();
-}
-
 void rocksdb_comment_storage_provider::save( const Slice& key, const Slice& value )
 {
   rocksdb_storage_provider::save( key, value );
@@ -61,21 +37,6 @@ void rocksdb_comment_storage_provider::save( const Slice& key, const Slice& valu
 bool rocksdb_comment_storage_provider::read( const Slice& key, PinnableSlice& value )
 {
   return rocksdb_storage_provider::read( key, value );
-}
-
-void rocksdb_comment_storage_provider::flushDb()
-{
-  rocksdb_storage_provider::flushDb();
-}
-
-void rocksdb_comment_storage_provider::update_lib( uint32_t lib )
-{
-  rocksdb_storage_provider::update_lib( lib );
-}
-
-uint32_t rocksdb_comment_storage_provider::get_lib() const
-{
-  return rocksdb_storage_provider::get_lib();
 }
 
 }}
