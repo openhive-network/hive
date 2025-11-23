@@ -3,6 +3,9 @@
 #include <hive/protocol/misc_utilities.hpp>
 #include <hive/protocol/config.hpp>
 
+#include <hive/protocol/asset_symbol.hpp>
+#include <hive/protocol/validation.hpp>
+
 #include <fc/io/json.hpp>
 
 #include <boost/rational.hpp>
@@ -23,6 +26,13 @@ index : field
 */
 
 namespace hive { namespace protocol {
+
+void validate_nai_space( asset_symbol_type::asset_symbol_space space, const char* context )
+{
+  HIVE_PROTOCOL_ASSET_ASSERT( space == asset_symbol_type::asset_symbol_space::smt_nai_space,
+    "Invalid asset symbol space: ${subject} (${context})" , ("subject", space)("asset_symbol_space", asset_symbol_type::asset_symbol_space::smt_nai_space)(context) );
+}
+
 
 std::string asset_symbol_type::to_string()const
 {
@@ -56,9 +66,12 @@ asset_symbol_type asset_symbol_type::from_nai_string( const char* p, uint8_t dec
 {
   try
   {
-    FC_ASSERT( p != nullptr, "NAI string cannot be a null" );
-    FC_ASSERT( std::strlen( p ) == HIVE_ASSET_SYMBOL_NAI_STRING_LENGTH - 1, "Incorrect NAI string length" );
-    FC_ASSERT( p[0] == '@' && p[1] == '@', "Invalid NAI string prefix" );
+    HIVE_PROTOCOL_VALIDATION_ASSERT( p != nullptr, "NAI string cannot be a null", ("subject", p) );
+    const size_t p_len = std::strlen( p );
+    HIVE_PROTOCOL_ASSET_ASSERT( p_len == HIVE_ASSET_SYMBOL_NAI_STRING_LENGTH - 1, "Incorrect NAI string length, should be: ${desired_length}", 
+      ("subject",p)("actual", p_len)("expected", HIVE_ASSET_SYMBOL_NAI_STRING_LENGTH - 1 ) 
+    );
+    HIVE_PROTOCOL_ASSET_ASSERT( p[0] == '@' && p[1] == '@', "Invalid NAI string prefix, it should be '@@'", ("subject", p)("expected", "@@") );
     uint32_t nai = boost::lexical_cast< uint32_t >( p + 2 );
     return asset_symbol_type::from_nai( nai, decimal_places );
   } FC_CAPTURE_AND_RETHROW();
@@ -68,7 +81,10 @@ asset_symbol_type asset_symbol_type::from_nai_string( const char* p, uint8_t dec
 // https://en.wikipedia.org/wiki/Damm_algorithm
 uint8_t asset_symbol_type::damm_checksum_8digit(uint32_t value)
 {
-  FC_ASSERT( value < 100000000 );
+  const uint32_t MAX_DAMM_VALUE = 100000000;
+  HIVE_PROTOCOL_VALIDATION_ASSERT( value < MAX_DAMM_VALUE, "Cannot process value greater than or equal to ${max}.", 
+    ("subject", value)("max", MAX_DAMM_VALUE) 
+  );
 
   const uint8_t t[] = {
       0, 30, 10, 70, 50, 90, 80, 60, 40, 20,
@@ -115,22 +131,35 @@ uint32_t asset_symbol_type::asset_num_from_nai( uint32_t nai, uint8_t decimal_pl
   uint32_t nai_check_digit = nai % 10;
   uint32_t nai_data_digits = nai / 10;
 
-  FC_ASSERT( (nai_data_digits >= SMT_MIN_NAI) & (nai_data_digits <= SMT_MAX_NAI), "NAI out of range" );
-  FC_ASSERT( nai_check_digit == damm_checksum_8digit(nai_data_digits), "Invalid check digit" );
+  HIVE_PROTOCOL_ASSET_ASSERT( (nai_data_digits >= SMT_MIN_NAI) & (nai_data_digits <= SMT_MAX_NAI), "NAI out of range", 
+    ("subject", nai)(nai_data_digits)(nai_check_digit)("min", SMT_MIN_NAI)("max", SMT_MAX_NAI)
+  );
+  const auto calculated_check_digit = damm_checksum_8digit(nai_data_digits);
+  HIVE_PROTOCOL_ASSET_ASSERT( nai_check_digit == calculated_check_digit, "Invalid check digit",
+    ("subject", nai_check_digit)("expected", calculated_check_digit)
+  );
 
   switch( nai_data_digits )
   {
     case HIVE_NAI_HIVE:
-      FC_ASSERT( decimal_places == HIVE_PRECISION_HIVE );
+      HIVE_PROTOCOL_ASSET_ASSERT( decimal_places == HIVE_PRECISION_HIVE, "Invalid decimal places in HIVE asset",
+        ("subject", decimal_places)("expected", HIVE_PRECISION_HIVE)(nai)
+      );
       return HIVE_ASSET_NUM_HIVE;
     case HIVE_NAI_HBD:
-      FC_ASSERT( decimal_places == HIVE_PRECISION_HBD );
+      HIVE_PROTOCOL_ASSET_ASSERT( decimal_places == HIVE_PRECISION_HBD, "Invalid decimal places in HBD asset",
+        ("subject", decimal_places)("expected", HIVE_PRECISION_HBD)(nai)
+      );
       return HIVE_ASSET_NUM_HBD;
     case HIVE_NAI_VESTS:
-      FC_ASSERT( decimal_places == HIVE_PRECISION_VESTS );
+      HIVE_PROTOCOL_ASSET_ASSERT( decimal_places == HIVE_PRECISION_VESTS, "Invalid decimal places in VESTS asset",
+        ("subject", decimal_places)("expected", HIVE_PRECISION_VESTS)(nai)
+      );
       return HIVE_ASSET_NUM_VESTS;
     default:
-      FC_ASSERT( decimal_places <= HIVE_ASSET_MAX_DECIMALS, "Invalid decimal_places" );
+      HIVE_PROTOCOL_ASSET_ASSERT( decimal_places <= HIVE_ASSET_MAX_DECIMALS, "Invalid decimal places in unknown asset",
+        ("subject", decimal_places)("expected", HIVE_ASSET_MAX_DECIMALS)(nai)
+      );
       return (nai_data_digits << HIVE_NAI_SHIFT) | SMT_ASSET_NUM_CONTROL_MASK | decimal_places;
   }
 }
@@ -152,7 +181,7 @@ uint32_t asset_symbol_type::to_nai()const
       nai_data_digits = HIVE_NAI_VESTS;
       break;
     default:
-      FC_ASSERT( space() == smt_nai_space && "Unknown asset symbol (to_nai)" );
+      validate_nai_space(space(), "to_nai");
       nai_data_digits = (asset_num >> HIVE_NAI_SHIFT);
   }
 
@@ -170,14 +199,15 @@ bool asset_symbol_type::is_vesting() const
     }
     else
     {
-      FC_ASSERT( asset_num == HIVE_ASSET_NUM_HIVE || asset_num == HIVE_ASSET_NUM_HBD,
-                 "Unknown asset symbol" );
+      HIVE_PROTOCOL_ASSET_ASSERT( asset_num == HIVE_ASSET_NUM_HIVE || asset_num == HIVE_ASSET_NUM_HBD,
+        "Unknown asset symbol", ("subject", asset_num)(HIVE_ASSET_NUM_HIVE)(HIVE_ASSET_NUM_HBD) 
+      );
       return false;
     }
   }
   else
   {
-    FC_ASSERT( space() == smt_nai_space && "Unknown asset symbol (is_vesting)" );
+    validate_nai_space(space(), "is_vesting");
 
     // 6th bit of asset_num is used as vesting/liquid variant indicator.
     return asset_num & SMT_ASSET_NUM_VESTING_MASK;
@@ -198,13 +228,13 @@ asset_symbol_type asset_symbol_type::get_paired_symbol() const
     }
     else
     {
-      FC_ASSERT( asset_num == HIVE_ASSET_NUM_VESTS, "Unknown asset symbol" );
+      HIVE_PROTOCOL_ASSET_ASSERT( asset_num == HIVE_ASSET_NUM_VESTS, "Unknown asset symbol, should be VESTS", ("subject", asset_num)(HIVE_ASSET_NUM_VESTS) );
       return from_asset_num( HIVE_ASSET_NUM_HIVE );
     }
   }
   else
   {
-    FC_ASSERT( space() == smt_nai_space && "Unknown asset symbol (get_paired_symbol)" );
+    validate_nai_space(space(), "get_paired_symbol");
 
     // Toggle 6th bit of this asset_num.
     auto paired_asset_num = asset_num ^ ( SMT_ASSET_NUM_VESTING_MASK );
@@ -241,15 +271,18 @@ void asset_symbol_type::validate()const
       uint32_t nai_data_digits = (asset_num >> HIVE_NAI_SHIFT);
       uint32_t nai_1bit = (asset_num & SMT_ASSET_NUM_CONTROL_MASK);
       uint32_t nai_decimal_places = (asset_num & SMT_ASSET_NUM_PRECISION_MASK);
-      FC_ASSERT( (nai_data_digits >= SMT_MIN_NAI) &
+      HIVE_PROTOCOL_ASSET_ASSERT( (nai_data_digits >= SMT_MIN_NAI) &
               (nai_data_digits <= SMT_MAX_NAI) &
               (nai_1bit == SMT_ASSET_NUM_CONTROL_MASK) &
               (nai_decimal_places <= HIVE_ASSET_MAX_DECIMALS),
-              "Cannot determine space for asset ${n}", ("n", asset_num) );
+              "Cannot determine space for asset ${n}", 
+              ("subject",  *this)("n", asset_num)(nai_data_digits)(nai_1bit)(nai_decimal_places)
+              (SMT_MIN_NAI)(SMT_MAX_NAI)(SMT_ASSET_NUM_CONTROL_MASK)(HIVE_ASSET_MAX_DECIMALS)
+      );
     }
   }
   // this assert is duplicated by above code in all cases
-  // FC_ASSERT( decimals() <= HIVE_ASSET_MAX_DECIMALS );
+  // HIVE_PROTOCOL_ASSET_ASSERT( decimals() <= HIVE_ASSET_MAX_DECIMALS );
 }
 
 #define BQ(a) \
@@ -285,7 +318,7 @@ asset operator * ( const asset& a, const price& b )
   }
   else
   {
-    FC_ASSERT( a.symbol == b.quote.symbol, "invalid ${asset} * ${price}", ( "asset", a )( "price", b ) );
+    HIVE_PROTOCOL_ASSET_ASSERT( a.symbol == b.quote.symbol, "invalid ${subject} * ${price}", ( "subject",  a )( "price", b ) );
     result = ( result * b.base.amount.value ) / b.quote.amount.value;
     return asset( is_negative ? -fc::uint128_to_uint64(result) : fc::uint128_to_uint64(result), b.base.symbol );
   }
@@ -295,9 +328,10 @@ bool price::is_null() const { return *this == price(); }
 
 void price::validate() const
 { try {
-  FC_ASSERT( base.amount > share_type(0) );
-  FC_ASSERT( quote.amount > share_type(0) );
-  FC_ASSERT( base.symbol != quote.symbol );
+  validate_asset_greater_than_zero(base, "Base amount must be > 0", *this);
+  validate_asset_greater_than_zero(quote, "Quote amount must be > 0", *this);
+  HIVE_PROTOCOL_ASSET_ASSERT( base.symbol != quote.symbol, "Base and quote symbols cannot be the same",
+    ( "subject",  base )( "quote", quote ) );
 } FC_CAPTURE_AND_RETHROW( (base)(quote) ) }
 
 share_type price::max_satoshis()
@@ -316,7 +350,7 @@ asset multiply_with_fee( const asset& a, const price& p, uint16_t fee, asset_sym
   }
   else
   {
-    FC_ASSERT( apply_fee_to == p.get_quote().symbol, "Invalid fee symbol ${at} for price ${p}", ( "at", apply_fee_to )( "p", p ) );
+    HIVE_PROTOCOL_ASSET_ASSERT( apply_fee_to == p.get_quote().symbol, "Invalid fee symbol ${subject} for price ${p}", ( "subject", apply_fee_to )( "p", p ) );
     scale_q += fee;
   }
 
@@ -327,7 +361,7 @@ asset multiply_with_fee( const asset& a, const price& p, uint16_t fee, asset_sym
   }
   else 
   {
-    FC_ASSERT( a.symbol == p.get_quote().symbol, "invalid ${asset} * ${price}", ( "asset", a )( "price", p ) );
+    HIVE_PROTOCOL_ASSET_ASSERT( a.symbol == p.get_quote().symbol, "invalid ${subject} * ${price}", ( "subject", a )( "price", p ) );
     result = ( result * p.get_base().get_amount() * scale_b ) / ( uint128_t( p.get_quote().get_amount() ) * scale_q );
     return asset( is_negative ? -fc::uint128_to_uint64( result ) : fc::uint128_to_uint64( result ), p.get_base().symbol );
   }
@@ -417,7 +451,7 @@ uint32_t string_to_asset_num( const char* p, uint8_t decimals )
       {
         if( ((*p) >= 'A') && ((*p) <= 'Z') )
         {
-          FC_ASSERT( shift < 64, "Cannot parse asset symbol" );
+          HIVE_PROTOCOL_ASSET_ASSERT( shift < 64, "Cannot parse asset symbol: ${subject}", ("subject", p)(shift));
           name_u64 |= uint64_t(*p) << shift;
           shift += 8;
           ++p;
@@ -432,7 +466,7 @@ uint32_t string_to_asset_num( const char* p, uint8_t decimals )
         case OBSOLETE_SYMBOL_U64:
 #endif /// IS_TEST_NET
         case HIVE_SYMBOL_U64:
-          FC_ASSERT( decimals == 3, "Incorrect decimal places" );
+          HIVE_PROTOCOL_ASSET_ASSERT( decimals == 3 && "HIVE", "Incorrect decimal places for HIVE asset", (decimals)("subject",  p) );
           asset_num = HIVE_ASSET_NUM_HIVE;
           break;
 #ifndef IS_TEST_NET
@@ -440,20 +474,20 @@ uint32_t string_to_asset_num( const char* p, uint8_t decimals )
         case OBD_SYMBOL_U64:
 #endif ///IS_TEST_NET
         case HBD_SYMBOL_U64:
-          FC_ASSERT( decimals == 3 && "Incorrect decimal places" );
+          HIVE_PROTOCOL_ASSET_ASSERT( decimals == 3 && "HBD", "Incorrect decimal places for HBD asset", (decimals)("subject",  p) );
           asset_num = HIVE_ASSET_NUM_HBD;
           break;
         case VESTS_SYMBOL_U64:
-          FC_ASSERT( decimals == 6, "Incorrect decimal places" );
+          HIVE_PROTOCOL_ASSET_ASSERT( decimals == 6, "Incorrect decimal places for VESTS asset", (decimals)("subject",  p) );
           asset_num = HIVE_ASSET_NUM_VESTS;
           break;
         default:
-          FC_ASSERT( false, "Cannot parse asset symbol" );
+          HIVE_PROTOCOL_ASSET_ASSERT( false, "Cannot parse asset symbol", ("subject", p) );
       }
       break;
     }
     default:
-      FC_ASSERT( !true, "Cannot parse asset symbol" );
+      HIVE_PROTOCOL_ASSET_ASSERT( !true, "Cannot parse asset symbol", ("subject", p) );
   }
 
   // \s*\0
@@ -465,7 +499,7 @@ uint32_t string_to_asset_num( const char* p, uint8_t decimals )
         ++p;
         continue;
       default:
-        FC_ASSERT( *p == '\0', "Cannot parse asset symbol" );
+        HIVE_PROTOCOL_ASSET_ASSERT( *p == '\0', "Cannot parse asset symbol", ("subject", p) );
         break;
     }
     break;
@@ -533,7 +567,7 @@ legacy_asset legacy_asset::from_string( const string& from )
     auto space_pos = s.find( ' ' );
     auto dot_pos = s.find( '.' );
 
-    FC_ASSERT( space_pos != std::string::npos );
+    HIVE_PROTOCOL_ASSET_ASSERT( space_pos != std::string::npos, "Space not found in: ${input_str}", ("subject", from));
 
     legacy_asset result;
 
@@ -541,7 +575,7 @@ legacy_asset legacy_asset::from_string( const string& from )
 
     if( dot_pos != std::string::npos )
     {
-      FC_ASSERT( space_pos > dot_pos );
+      HIVE_PROTOCOL_ASSET_ASSERT( space_pos > dot_pos, "Space is before dot", ("space_pos", space_pos)("dot_pos", dot_pos)("subject", from) );
 
       auto intpart = s.substr( 0, dot_pos );
       auto fractpart = "1" + s.substr( dot_pos + 1, space_pos - dot_pos - 1 );
@@ -618,19 +652,18 @@ namespace fc {
       }
       else
       {
-        FC_ASSERT( var.is_object() && "Asset has to be treated as object." );
+        HIVE_PROTOCOL_ASSET_ASSERT( var.is_object() && "asset is not object", "Asset has to be treated as object.", ("subject", var) );
 
         const auto& v_object = var.get_object();
 
-        FC_ASSERT( v_object.contains( ASSET_AMOUNT_KEY ), "Amount field doesn't exist." );
-        FC_ASSERT( v_object[ ASSET_AMOUNT_KEY ].is_string(), "Expected a string type for value '${key}'.", ("key", ASSET_AMOUNT_KEY) );
+        HIVE_PROTOCOL_ASSET_ASSERT( v_object.contains( ASSET_AMOUNT_KEY ), "Amount field doesn't exist.", ("subject", var) );
+        HIVE_PROTOCOL_ASSET_ASSERT( v_object[ ASSET_AMOUNT_KEY ].is_string(), "Expected a string type for value '${key}'.", ("key", ASSET_AMOUNT_KEY)("subject", var) );
         vo.amount = boost::lexical_cast< int64_t >( v_object[ ASSET_AMOUNT_KEY ].as< std::string >() );
 
-        FC_ASSERT( v_object.contains( ASSET_PRECISION_KEY ), "Precision field doesn't exist." );
-        FC_ASSERT( v_object[ ASSET_PRECISION_KEY ].is_uint64(), "Expected an unsigned integer type for value '${key}'.", ("key", ASSET_PRECISION_KEY) );
-
-        FC_ASSERT( v_object.contains( ASSET_NAI_KEY ), "NAI field doesn't exist." );
-        FC_ASSERT( v_object[ ASSET_NAI_KEY ].is_string(), "Expected a string type for value '${key}'.", ("key", ASSET_NAI_KEY) );
+        HIVE_PROTOCOL_ASSET_ASSERT( v_object.contains( ASSET_PRECISION_KEY ), "Precision field doesn't exist.", ("subject", var) );
+        HIVE_PROTOCOL_ASSET_ASSERT( v_object[ ASSET_PRECISION_KEY ].is_uint64(), "Expected an unsigned integer type for value '${key}'.", ("key", ASSET_PRECISION_KEY)("subject", var) );
+        HIVE_PROTOCOL_ASSET_ASSERT( v_object.contains( ASSET_NAI_KEY ), "NAI field doesn't exist.", ("subject", var) );
+        HIVE_PROTOCOL_ASSET_ASSERT( v_object[ ASSET_NAI_KEY ].is_string(), "Expected a string type for value '${key}'.", ("key", ASSET_NAI_KEY)("subject", var) );
 
         vo.symbol = hive::protocol::asset_symbol_type::from_nai_string( v_object[ ASSET_NAI_KEY ].as< std::string >().c_str(), v_object[ ASSET_PRECISION_KEY ].as< uint8_t >() );
       }

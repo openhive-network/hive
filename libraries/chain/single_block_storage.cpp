@@ -13,7 +13,7 @@ void single_block_storage::open_and_init( const block_log_open_args& bl_open_arg
   bool write_fallback, database* db )
 {
   FC_ASSERT(db);
-  
+
   _open_args = bl_open_args;
   _db = db;
 }
@@ -48,14 +48,14 @@ std::shared_ptr<full_block_type> single_block_storage::head_block() const
   return _db->get_last_irreversible_block_data();
 }
 
-uint32_t single_block_storage::head_block_num( 
+uint32_t single_block_storage::head_block_num(
   fc::microseconds wait_for_microseconds /*= fc::microseconds()*/ ) const
 {
   const auto lib = head_block();
   return lib ? lib->get_block_num() : 0;
 }
 
-block_id_type single_block_storage::head_block_id( 
+block_id_type single_block_storage::head_block_id(
   fc::microseconds wait_for_microseconds /*= fc::microseconds()*/ ) const
 {
   const auto lib = head_block();
@@ -73,7 +73,7 @@ void single_block_storage::process_blocks(uint32_t starting_block_number,
   hive::chain::blockchain_worker_thread_pool& thread_pool) const
 {
   const auto lib = head_block();
-  if( lib && 
+  if( lib &&
       lib->get_block_num() >= starting_block_number &&
       lib->get_block_num() <= ending_block_number )
   {
@@ -81,7 +81,7 @@ void single_block_storage::process_blocks(uint32_t starting_block_number,
   }
 }
 
-std::shared_ptr<full_block_type> single_block_storage::fetch_block_by_id( 
+std::shared_ptr<full_block_type> single_block_storage::fetch_block_by_id(
   const block_id_type& id ) const
 {
   try {
@@ -97,12 +97,9 @@ std::shared_ptr<full_block_type> single_block_storage::get_block_by_number( uint
   fc::microseconds wait_for_microseconds ) const
 {
   const auto lib = head_block();
-  FC_ASSERT( lib, "Internal error - last irreversible block was NOT set." );
+  FC_ASSERT( lib && "get_block_by_number", "Internal error - last irreversible block was NOT set." );
   uint32_t head_block_num = lib->get_block_num();
 
-  // For the time being we'll silently return empty pointer for requests of future blocks.
-  // FC_ASSERT( block_num <= head_block_num(),
-  //           "Got no block with number greater than ${num}.", ("num", head_block_num()) );
   if( block_num > head_block_num )
     return full_block_ptr_t();
 
@@ -118,13 +115,13 @@ std::shared_ptr<full_block_type> single_block_storage::get_block_by_number( uint
   return lib;
 }
 
-std::vector<std::shared_ptr<full_block_type>> single_block_storage::fetch_block_range( 
-  const uint32_t starting_block_num, const uint32_t count, 
+std::vector<std::shared_ptr<full_block_type>> single_block_storage::fetch_block_range(
+  const uint32_t starting_block_num, const uint32_t count,
   fc::microseconds wait_for_microseconds /*= fc::microseconds()*/ ) const
-{ 
+{
   std::vector<std::shared_ptr<full_block_type>> result;
   const auto lib = head_block();
-  if( lib && 
+  if( lib &&
       lib->get_block_num() >= starting_block_num &&
       lib->get_block_num() < starting_block_num + count )
   {
@@ -157,7 +154,7 @@ block_id_type single_block_storage::find_block_id_for_num( uint32_t block_num ) 
   return lib->get_block_id();
 }
 
-std::vector<block_id_type> single_block_storage::get_blockchain_synopsis( 
+std::vector<block_id_type> single_block_storage::get_blockchain_synopsis(
   const block_id_type& reference_point, uint32_t number_of_blocks_after_reference_point ) const
 {
   const auto lib = head_block();

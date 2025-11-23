@@ -1,5 +1,7 @@
 #pragma once
 
+#include <hive/protocol/hive_specialised_exceptions.hpp>
+
 #include <fc/uint128.hpp>
 #include <fc/io/raw_fwd.hpp>
 
@@ -148,7 +150,11 @@ class fixed_string_impl : public details::truncation_controller
     {
       if( is_verifying_enabled() )
       {
-        FC_ASSERT(in_len <= sizeof(data), "Input too large: `${in}` (${is}) for fixed size string: (${fs})", (in)("is", in_len)("fs", sizeof(data)));
+        HIVE_PROTOCOL_VALIDATION_ASSERT(
+          in_len <= sizeof(data), 
+          "Input too large: `${subject}` (${subject_len}) for fixed size string: (${max})", 
+          ("subject", in)("subject_len", in_len)("max", sizeof(data))
+        );
         memcpy( (char*)&storage, in, in_len );
       }
       else

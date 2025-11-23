@@ -1,4 +1,5 @@
 #pragma once
+#include <hive/protocol/hive_specialised_exceptions.hpp>
 #include <hive/protocol/base.hpp>
 #include <hive/protocol/block_header.hpp>
 #include <hive/protocol/asset.hpp>
@@ -418,11 +419,18 @@ namespace hive { namespace protocol {
     {
       if( force_canon )
       {
-        FC_ASSERT( account_creation_fee.symbol.is_canon() );
+        HIVE_PROTOCOL_VALIDATION_ASSERT( account_creation_fee.symbol.is_canon(), "Account creation fee must be in canonical form", ("subject", *this) );
       }
-      FC_ASSERT( account_creation_fee.amount >= HIVE_MIN_ACCOUNT_CREATION_FEE && account_creation_fee.amount <= HIVE_MAX_ACCOUNT_CREATION_FEE );
-      FC_ASSERT( maximum_block_size >= HIVE_MIN_BLOCK_SIZE_LIMIT && maximum_block_size <= HIVE_MAX_BLOCK_SIZE );
-      FC_ASSERT( hbd_interest_rate >= 0 && hbd_interest_rate <= HIVE_100_PERCENT );
+      HIVE_PROTOCOL_VALIDATION_ASSERT( account_creation_fee.amount >= HIVE_MIN_ACCOUNT_CREATION_FEE, "Account creation fee must be at least the minimum",
+        ("subject", account_creation_fee)("min", HIVE_MIN_ACCOUNT_CREATION_FEE)
+      );
+      HIVE_PROTOCOL_VALIDATION_ASSERT( account_creation_fee.amount <= HIVE_MAX_ACCOUNT_CREATION_FEE, "Account creation fee cannot be too large",
+        ("subject", account_creation_fee)("max", HIVE_MAX_ACCOUNT_CREATION_FEE)
+      );
+      HIVE_PROTOCOL_VALIDATION_ASSERT( maximum_block_size >= HIVE_MIN_BLOCK_SIZE_LIMIT, "Maximum block size is set too low", ("subject", maximum_block_size)("min", HIVE_MIN_BLOCK_SIZE_LIMIT) );
+      HIVE_PROTOCOL_VALIDATION_ASSERT( maximum_block_size <= HIVE_MAX_BLOCK_SIZE, "Maximum block size is set too high", ("subject", maximum_block_size)("max", HIVE_MAX_BLOCK_SIZE) );
+      HIVE_PROTOCOL_VALIDATION_ASSERT( hbd_interest_rate >= 0, "HBD interest rate cannot be negative", ("subject", hbd_interest_rate)("min", 0) );
+      validate_number_in_100_percent_range(hbd_interest_rate, "HBD interest rate ub legacy chain properties exceeds 100%");
     }
 
     HIVE_asset get_account_creation_fee() const { return HIVE_asset( account_creation_fee.amount ); }

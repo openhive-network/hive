@@ -1,4 +1,9 @@
+#include <hive/protocol/config.hpp>
+#include <hive/protocol/asset_symbol.hpp>
 #include <hive/protocol/hive_operations.hpp>
+
+#include <hive/protocol/validation.hpp>
+#include <hive/protocol/hive_specialised_exceptions.hpp>
 
 #include <fc/macros.hpp>
 #include <fc/io/json.hpp>
@@ -18,8 +23,12 @@ namespace hive { namespace protocol {
     {
       if (!fc::json::fast_is_valid(json))
       {
-        FC_ASSERT(fc::is_utf8(json), "JSON not formatted in UTF8");
-        FC_ASSERT(fc::json::is_valid(json, fc::json::format_validation_mode::relaxed /* json_validation_mode */), "JSON is not valid JSON");
+        validate_is_string_in_utf8(json, "JSON not formatted in UTF8");
+        HIVE_PROTOCOL_VALIDATION_ASSERT(
+          fc::json::is_valid(json, fc::json::format_validation_mode::relaxed /* json_validation_mode */),
+          "JSON is not valid JSON",
+          ("subject", json)
+        );
       }
     }
   }
@@ -27,14 +36,16 @@ namespace hive { namespace protocol {
   void validate_auth_size( const authority& a )
   {
     size_t size = a.account_auths.size() + a.key_auths.size();
-    FC_ASSERT( size <= HIVE_MAX_AUTHORITY_MEMBERSHIP,
-      "Authority membership exceeded. Max: ${max} Current: ${n}", ("max", HIVE_MAX_AUTHORITY_MEMBERSHIP)("n", size) );
+    HIVE_PROTOCOL_AUTHORITY_ASSERT( size <= HIVE_MAX_AUTHORITY_MEMBERSHIP,
+      "Authority membership exceeded. Max: ${max} Current: ${n}",
+      ("max", HIVE_MAX_AUTHORITY_MEMBERSHIP)("n", size)("subject", a)
+    );
   }
 
   void account_create_operation::validate() const
   {
     validate_account_name( new_account_name );
-    FC_ASSERT( is_asset_type( fee, HIVE_SYMBOL ), "Account creation fee must be HIVE" );
+    validate_asset_type( fee, HIVE_SYMBOL, "Account creation fee must be HIVE" );
     owner.validate();
     active.validate();
     posting.validate();
@@ -46,16 +57,20 @@ namespace hive { namespace protocol {
     if (!json_metadata.empty())
       validate_json_with_fallback(json_metadata);
 
-    FC_ASSERT( fee >= asset( 0, HIVE_SYMBOL ), "Account creation fee cannot be negative" );
-    FC_ASSERT( fee <= asset( HIVE_MAX_ACCOUNT_CREATION_FEE, HIVE_SYMBOL ), "Account creation fee cannot be too large" );
+    validate_asset_not_negative(fee, "Account creation fee cannot be negative", *this);
+    HIVE_PROTOCOL_ASSET_ASSERT(
+      fee <= asset( HIVE_MAX_ACCOUNT_CREATION_FEE, HIVE_SYMBOL ) && "account_create_operation",
+      "Account creation fee cannot be too large",
+      (fee)("max", HIVE_MAX_ACCOUNT_CREATION_FEE)("subject", *this)
+    );
   }
 
   void account_create_with_delegation_operation::validate() const
   {
     validate_account_name( new_account_name );
     validate_account_name( creator );
-    FC_ASSERT( is_asset_type( fee, HIVE_SYMBOL ) && "Account creation fee must be HIVE" );
-    FC_ASSERT( is_asset_type( delegation, VESTS_SYMBOL ), "Delegation must be VESTS" );
+    validate_asset_type( fee, HIVE_SYMBOL, "Account creation fee must be HIVE", *this );
+    validate_asset_type( delegation, VESTS_SYMBOL, "Delegation must be VESTS", *this);
 
     owner.validate();
     active.validate();
@@ -68,9 +83,13 @@ namespace hive { namespace protocol {
     if (!json_metadata.empty())
       validate_json_with_fallback(json_metadata);
 
-    FC_ASSERT( fee >= asset( 0, HIVE_SYMBOL ) && "Account creation fee cannot be negative" );
-    FC_ASSERT( fee <= asset( HIVE_MAX_ACCOUNT_CREATION_FEE, HIVE_SYMBOL ) && "Account creation fee cannot be too large" );
-    FC_ASSERT( delegation >= asset( 0, VESTS_SYMBOL ), "Delegation cannot be negative" );
+    validate_asset_not_negative( fee, "Account creation fee cannot be negative", *this);
+    HIVE_PROTOCOL_ASSET_ASSERT(
+      fee <= asset( HIVE_MAX_ACCOUNT_CREATION_FEE, HIVE_SYMBOL ) && "account_create_with_delegation_operation",
+      "Account creation fee cannot be too large",
+      (fee)("max", HIVE_MAX_ACCOUNT_CREATION_FEE)("subject", *this)
+    );
+    validate_asset_not_negative( delegation, "Delegation cannot be negative", *this);
   }
 
   void account_update_operation::validate() const
@@ -103,11 +122,10 @@ namespace hive { namespace protocol {
 
   void comment_operation::validate() const
   {
-    FC_ASSERT( title.size() < HIVE_COMMENT_TITLE_LIMIT,
-      "Title size limit exceeded. Max: ${max} Current: ${n}", ("max", HIVE_COMMENT_TITLE_LIMIT - 1)("n", title.size()) );
-    FC_ASSERT( fc::is_utf8( title ), "Title not formatted in UTF8" );
-    FC_ASSERT( body.size() > 0, "Body is empty" );
-    FC_ASSERT( fc::is_utf8( body ), "Body not formatted in UTF8" );
+    validate_string_max_size(title, HIVE_COMMENT_TITLE_LIMIT - 1, "Title size limit exceeded.", *this);
+    validate_is_string_in_utf8(title, "Title not formatted in UTF8", *this);
+    validate_string_is_not_empty(body, "Body is empty", *this);
+    validate_is_string_in_utf8(body, "Body not formatted in UTF8", *this);
 
     if( parent_author.size() )
       validate_account_name( parent_author );
@@ -131,33 +149,37 @@ namespace hive { namespace protocol {
 
   void comment_payout_beneficiaries::validate()const
   {
+    const char* exceed_100_percent_error_message = "Cannot allocate more than 100% of rewards to a comment";
     uint32_t sum = 0;
 
-    FC_ASSERT( beneficiaries.size(), "Must specify at least one beneficiary" );
-    FC_ASSERT( beneficiaries.size() < HIVE_BENEFICIARY_LIMIT,
-      "Cannot specify more than ${max} beneficiaries.", ("max", HIVE_BENEFICIARY_LIMIT - 1) ); // Require size serialization fits in one byte.
+    HIVE_PROTOCOL_OPERATIONS_ASSERT( beneficiaries.size(), "Must specify at least one beneficiary", ("subject", *this));
+    HIVE_PROTOCOL_OPERATIONS_ASSERT( beneficiaries.size() < HIVE_BENEFICIARY_LIMIT,
+      "Cannot specify more than ${max} beneficiaries.", ("max", HIVE_BENEFICIARY_LIMIT - 1)
+      ("amount_of_beneficiaries", beneficiaries.size())("subject", *this)
+    ); // Require size serialization fits in one byte.
 
     validate_account_name( beneficiaries[0].account );
-    FC_ASSERT( beneficiaries[0].weight <= HIVE_100_PERCENT, "Cannot allocate more than 100% of rewards to one account" );
+    validate_number_in_100_percent_range(beneficiaries[0].weight, exceed_100_percent_error_message, *this);
     sum += beneficiaries[0].weight;
-    FC_ASSERT( sum <= HIVE_100_PERCENT && "Cannot allocate more than 100% of rewards to a comment" ); // Have to check incrementally to avoid overflow
+    validate_number_in_100_percent_range(sum, exceed_100_percent_error_message, *this);
 
     for( size_t i = 1; i < beneficiaries.size(); i++ )
     {
       validate_account_name( beneficiaries[i].account );
-      FC_ASSERT( beneficiaries[i].weight <= HIVE_100_PERCENT, "Cannot allocate more than 100% of rewards to one account" );
+      validate_number_in_100_percent_range(beneficiaries[i].weight, exceed_100_percent_error_message, *this);
+
       sum += beneficiaries[i].weight;
-      FC_ASSERT( sum <= HIVE_100_PERCENT, "Cannot allocate more than 100% of rewards to a comment" ); // Have to check incrementally to avoid overflow
-      FC_ASSERT( beneficiaries[i - 1] < beneficiaries[i], "Beneficiaries must be specified in sorted order (account ascending)" );
+      validate_number_in_100_percent_range(sum, exceed_100_percent_error_message, *this);
+      HIVE_PROTOCOL_OPERATIONS_ASSERT( beneficiaries[i - 1] < beneficiaries[i], "Beneficiaries must be specified in sorted order (account ascending)" );
     }
   }
 
   void comment_options_operation::validate()const
   {
     validate_account_name( author );
-    FC_ASSERT( percent_hbd <= HIVE_100_PERCENT, "Percent cannot exceed 100%" );
-    FC_ASSERT( max_accepted_payout.symbol == HBD_SYMBOL, "Max accepted payout must be in HBD" );
-    FC_ASSERT( max_accepted_payout.amount.value >= 0, "Cannot accept less than 0 payout" );
+    validate_number_in_100_percent_range(percent_hbd, "Percent cannot exceed 100%", *this);
+    validate_asset_type(max_accepted_payout, HBD_SYMBOL, "Max accepted payout must be in HBD", *this );
+    validate_asset_not_negative(max_accepted_payout, "Cannot accept less than 0 payout", *this);
     validate_permlink( permlink );
     for( auto& e : extensions )
       e.visit( comment_options_extension_validate_visitor() );
@@ -172,11 +194,19 @@ namespace hive { namespace protocol {
   void claim_account_operation::validate()const
   {
     validate_account_name( creator );
-    FC_ASSERT( is_asset_type( fee, HIVE_SYMBOL ) && "Account claiming fee must be HIVE" );
-    FC_ASSERT( fee >= asset( 0, HIVE_SYMBOL ) && "Account claiming fee cannot be negative" );
-    FC_ASSERT( fee <= asset( HIVE_MAX_ACCOUNT_CREATION_FEE, HIVE_SYMBOL ) && "Account claiming fee cannot be too large" );
+    validate_asset_type(fee, HIVE_SYMBOL, "Account claiming fee must be HIVE", *this);
+    validate_asset_not_negative(fee, "Account claiming fee cannot be negative", *this);
+    HIVE_PROTOCOL_ASSET_ASSERT(
+      fee <= asset( HIVE_MAX_ACCOUNT_CREATION_FEE, HIVE_SYMBOL ),
+      "Account claiming fee cannot be too large",
+      (fee)("max", HIVE_MAX_ACCOUNT_CREATION_FEE)("subject", *this)
+    );
 
-    FC_ASSERT( extensions.size() == 0, "There are no extensions for claim_account_operation." );
+    HIVE_PROTOCOL_OPERATIONS_ASSERT(
+      extensions.size() == 0 && "claim_account_operation",
+      "There are no extensions for claim_account_operation.",
+      ("subject", *this)
+    );
   }
 
   void create_claimed_account_operation::validate()const
@@ -193,14 +223,18 @@ namespace hive { namespace protocol {
     if (!json_metadata.empty())
       validate_json_with_fallback(json_metadata);
 
-    FC_ASSERT( extensions.size() == 0 && "There are no extensions for create_claimed_account_operation." );
+    HIVE_PROTOCOL_OPERATIONS_ASSERT(
+      extensions.size() == 0 && "create_claimed_account_operation",
+      "There are no extensions for create_claimed_account_operation.",
+      ("subject", *this)
+    );
   }
 
   void vote_operation::validate() const
   {
     validate_account_name( voter );
     validate_account_name( author );
-    FC_ASSERT( abs(weight) <= HIVE_100_PERCENT, "Weight is not a HIVE percentage" );
+    validate_number_in_100_percent_range(abs(weight), "Weight is not a HIVE percentage", *this);
     validate_permlink( permlink );
   }
 
@@ -208,42 +242,45 @@ namespace hive { namespace protocol {
   { try {
     validate_account_name( from );
     validate_account_name( to );
-    FC_ASSERT( amount.symbol.is_vesting() == false && "Transfer of vesting is not allowed." );
-    FC_ASSERT( amount.amount > 0 && "Cannot transfer a negative amount (aka: stealing)" );
-    FC_ASSERT( memo.size() < HIVE_MAX_MEMO_SIZE && "Transfer memo is too large" );
-    FC_ASSERT( fc::is_utf8( memo ) && "Transfer memo is not UTF8" );
+    validate_asset_is_not_vesting(amount, "Transfer of vesting is not allowed.", *this);
+    validate_asset_greater_than_zero(amount, "Cannot transfer a negative amount (aka: stealing)", *this);
+    validate_string_max_size(memo, HIVE_MAX_MEMO_SIZE - 1, "Transfer memo is too large", *this);
+    validate_is_string_in_utf8(memo, "Transfer memo is not UTF8", *this);
   } FC_CAPTURE_AND_RETHROW( (*this) ) }
 
   void transfer_to_vesting_operation::validate() const
   {
     validate_account_name( from );
-    FC_ASSERT( amount.symbol == HIVE_SYMBOL, "Amount must be HIVE" );
+    HIVE_PROTOCOL_OPERATIONS_ASSERT( amount.symbol == HIVE_SYMBOL, "Amount must be HIVE", (amount)("subject", *this) );
     if ( to != account_name_type() ) validate_account_name( to );
-    FC_ASSERT( amount.amount > 0 && "Must transfer a nonzero amount" );
+    validate_asset_greater_than_zero(amount, "Must transfer a nonzero amount", *this);
   }
 
   void withdraw_vesting_operation::validate() const
   {
     validate_account_name( account );
-    FC_ASSERT( is_asset_type( vesting_shares, VESTS_SYMBOL ) && "Amount to withdraw must be VESTS" );
+    validate_asset_type(vesting_shares, VESTS_SYMBOL, "Amount must be VESTS", *this);
   }
 
   void set_withdraw_vesting_route_operation::validate() const
   {
     validate_account_name( from_account );
     validate_account_name( to_account );
-    FC_ASSERT( 0 <= percent && percent <= HIVE_100_PERCENT, "Percent must be valid HIVE percent" );
+    HIVE_PROTOCOL_OPERATIONS_ASSERT(
+      0 <= percent && percent <= HIVE_100_PERCENT,
+      "Percent must be valid HIVE percent",
+      (percent)("subject", *this)
+    );
   }
 
   void witness_update_operation::validate() const
   {
     validate_account_name( owner );
 
-    FC_ASSERT( url.size() <= HIVE_MAX_WITNESS_URL_LENGTH, "URL is too long" );
-
-    FC_ASSERT( url.size() > 0, "URL size must be greater than 0" );
-    FC_ASSERT( fc::is_utf8( url ), "URL is not valid UTF8" );
-    FC_ASSERT( fee >= asset( 0, HIVE_SYMBOL ) && "Fee cannot be negative" );
+    validate_string_max_size(url, HIVE_MAX_WITNESS_URL_LENGTH, "URL is too long", *this);
+    validate_string_is_not_empty(url,  "URL size must be greater than 0", *this);
+    validate_is_string_in_utf8(url, "URL is not valid UTF8", *this);
+    validate_asset_not_negative(fee, "Fee cannot be negative", *this);
     props.validate< false >();
   }
 
@@ -252,16 +289,24 @@ namespace hive { namespace protocol {
     validate_account_name( owner );
 
     // current signing key must be present
-    FC_ASSERT( props.find( "key" ) != props.end(), "No signing key provided" );
+    HIVE_PROTOCOL_OPERATIONS_ASSERT( props.find( "key" ) != props.end(), "No signing key provided", ("subject", *this)(props) );
 
     auto itr = props.find( "account_creation_fee" );
     if( itr != props.end() )
     {
       asset account_creation_fee;
       fc::raw::unpack_from_vector( itr->second, account_creation_fee );
-      FC_ASSERT( account_creation_fee.symbol == HIVE_SYMBOL, "account_creation_fee must be in HIVE" );
-      FC_ASSERT( account_creation_fee.amount >= HIVE_MIN_ACCOUNT_CREATION_FEE && "account_creation_fee smaller than minimum account creation fee" );
-      FC_ASSERT( account_creation_fee.amount <= HIVE_MAX_ACCOUNT_CREATION_FEE && "account_creation_fee greater than maximum account creation fee" );
+      validate_asset_type(account_creation_fee, HIVE_SYMBOL, "account_creation_fee must be in HIVE", *this);
+      HIVE_PROTOCOL_OPERATIONS_ASSERT(
+        account_creation_fee.amount >= HIVE_MIN_ACCOUNT_CREATION_FEE && "witness_set_properties_operation",
+        "account_creation_fee smaller than minimum account creation fee",
+        ("subject", *this)(props) ("min", HIVE_MIN_ACCOUNT_CREATION_FEE)
+      );
+      HIVE_PROTOCOL_OPERATIONS_ASSERT(
+        account_creation_fee.amount <= HIVE_MAX_ACCOUNT_CREATION_FEE && "witness_set_properties_operation",
+        "account_creation_fee greater than maximum account creation fee",
+        ("subject", *this)(props) ("max", HIVE_MAX_ACCOUNT_CREATION_FEE)
+      );
     }
 
     itr = props.find( "maximum_block_size" );
@@ -269,8 +314,14 @@ namespace hive { namespace protocol {
     {
       uint32_t maximum_block_size = 0u;
       fc::raw::unpack_from_vector( itr->second, maximum_block_size );
-      FC_ASSERT( maximum_block_size >= HIVE_MIN_BLOCK_SIZE_LIMIT && "maximum_block_size smaller than minimum max block size" );
-      FC_ASSERT( maximum_block_size <= HIVE_MAX_BLOCK_SIZE && "Max block size cannot be more than 2MiB" );
+      HIVE_PROTOCOL_OPERATIONS_ASSERT( maximum_block_size >= HIVE_MIN_BLOCK_SIZE_LIMIT && "witness_set_properties_operation",
+        "maximum_block_size smaller than minimum max block size" ,
+        ("subject", *this)(maximum_block_size)("min", HIVE_MIN_BLOCK_SIZE_LIMIT)
+      );
+      HIVE_PROTOCOL_OPERATIONS_ASSERT( maximum_block_size <= HIVE_MAX_BLOCK_SIZE && "witness_set_properties_operation",
+        "Max block size cannot be more than 2MiB",
+        ("subject", *this)(maximum_block_size)("max", HIVE_MAX_BLOCK_SIZE)
+      );
     }
 
     itr = props.find( "sbd_interest_rate" );
@@ -281,8 +332,12 @@ namespace hive { namespace protocol {
     {
       uint16_t hbd_interest_rate = 0u;
       fc::raw::unpack_from_vector( itr->second, hbd_interest_rate );
-      FC_ASSERT( hbd_interest_rate >= 0 && "hbd_interest_rate must be positive" );
-      FC_ASSERT( hbd_interest_rate <= HIVE_100_PERCENT && "hbd_interest_rate must not exceed 100%" );
+      HIVE_PROTOCOL_OPERATIONS_ASSERT(
+        hbd_interest_rate >= 0 && "witness_set_properties_operation",
+        "hbd_interest_rate must be positive",
+        ("subject", *this)(hbd_interest_rate)
+      );
+      validate_number_in_100_percent_range(hbd_interest_rate, "hbd_interest_rate must not exceed 100%", *this);
     }
 
     itr = props.find( "new_signing_key" );
@@ -301,8 +356,8 @@ namespace hive { namespace protocol {
     {
       price hbd_exchange_rate;
       fc::raw::unpack_from_vector( itr->second, hbd_exchange_rate );
-      FC_ASSERT( ( is_asset_type( hbd_exchange_rate.base, HBD_SYMBOL ) && is_asset_type( hbd_exchange_rate.quote, HIVE_SYMBOL ) ),
-        "Price feed must be a HIVE/HBD price" );
+      validate_asset_type(hbd_exchange_rate.base, HBD_SYMBOL, "Base part of price feed must be in HBD", *this);
+      validate_asset_type(hbd_exchange_rate.quote, HIVE_SYMBOL, "Quote part of price feed must be in HIVE", *this);
       hbd_exchange_rate.validate();
     }
 
@@ -312,9 +367,9 @@ namespace hive { namespace protocol {
       std::string url;
       fc::raw::unpack_from_vector< std::string >( itr->second, url );
 
-      FC_ASSERT( url.size() <= HIVE_MAX_WITNESS_URL_LENGTH && "URL is too long" );
-      FC_ASSERT( url.size() > 0 && "URL size must be greater than 0" );
-      FC_ASSERT( fc::is_utf8( url ) && "URL is not valid UTF8" );
+      validate_string_max_size(url, HIVE_MAX_WITNESS_URL_LENGTH, "URL is too long", *this);
+      validate_string_is_not_empty(url, "URL size must be greater than 0", *this);
+      validate_is_string_in_utf8(url, "URL is not valid UTF8", *this);
     }
 
     itr = props.find( "account_subsidy_budget" );
@@ -322,8 +377,8 @@ namespace hive { namespace protocol {
     {
       int32_t account_subsidy_budget  = 0u;
       fc::raw::unpack_from_vector( itr->second, account_subsidy_budget ); // Checks that the value can be deserialized
-      FC_ASSERT( account_subsidy_budget >= HIVE_RD_MIN_BUDGET, "Budget must be at least ${n}", ("n", HIVE_RD_MIN_BUDGET) );
-      FC_ASSERT( account_subsidy_budget <= HIVE_RD_MAX_BUDGET, "Budget must be at most ${n}", ("n", HIVE_RD_MAX_BUDGET) );
+      HIVE_PROTOCOL_OPERATIONS_ASSERT( account_subsidy_budget >= HIVE_RD_MIN_BUDGET, "Budget must be at least ${n}", ("n", HIVE_RD_MIN_BUDGET)("subject", *this) );
+      HIVE_PROTOCOL_OPERATIONS_ASSERT( account_subsidy_budget <= HIVE_RD_MAX_BUDGET, "Budget must be at most ${n}", ("n", HIVE_RD_MAX_BUDGET)("subject", *this) );
     }
 
     itr = props.find( "account_subsidy_decay" );
@@ -331,8 +386,12 @@ namespace hive { namespace protocol {
     {
       uint32_t account_subsidy_decay = 0u;
       fc::raw::unpack_from_vector( itr->second, account_subsidy_decay ); // Checks that the value can be deserialized
-      FC_ASSERT( account_subsidy_decay >= HIVE_RD_MIN_DECAY, "Decay must be at least ${n}", ("n", HIVE_RD_MIN_DECAY) );
-      FC_ASSERT( account_subsidy_decay <= HIVE_RD_MAX_DECAY, "Decay must be at most ${n}", ("n", HIVE_RD_MAX_DECAY) );
+      HIVE_PROTOCOL_OPERATIONS_ASSERT( account_subsidy_decay >= HIVE_RD_MIN_DECAY, "Decay must be at least ${n}",
+        ("n", HIVE_RD_MIN_DECAY)("min", HIVE_RD_MIN_DECAY)("subject", *this)
+      );
+      HIVE_PROTOCOL_OPERATIONS_ASSERT( account_subsidy_decay <= HIVE_RD_MAX_DECAY, "Decay must be at most ${n}",
+        ("n", HIVE_RD_MAX_DECAY)("max", HIVE_RD_MAX_DECAY)("subject", *this)
+      );
     }
   }
 
@@ -347,46 +406,52 @@ namespace hive { namespace protocol {
     validate_account_name( account );
     if( !is_clearing_proxy() )
       validate_account_name( proxy );
-    FC_ASSERT( proxy != account, "Cannot proxy to self" );
+    HIVE_PROTOCOL_OPERATIONS_ASSERT( proxy != account, "Cannot proxy to self", ("subject", *this)(account) );
   }
 
   void custom_operation::validate() const
   {
     /// required auth accounts are the ones whose bandwidth is consumed
-    FC_ASSERT( required_auths.size() > 0, "at least one account must be specified" );
-    FC_ASSERT( required_auths.size() <= HIVE_MAX_AUTHORITY_MEMBERSHIP,
-      "Authority membership exceeded. Max: ${max} Current: ${n}", ( "max", HIVE_MAX_AUTHORITY_MEMBERSHIP )( "n", required_auths.size() ) );
+    HIVE_PROTOCOL_OPERATIONS_ASSERT( required_auths.size() > 0, "at least one account must be specified", (required_auths)("subject", *this) );
+    HIVE_PROTOCOL_AUTHORITY_ASSERT( required_auths.size() <= HIVE_MAX_AUTHORITY_MEMBERSHIP,
+      "Authority membership exceeded. Max: ${max} Current: ${n}", ("max", HIVE_MAX_AUTHORITY_MEMBERSHIP)("n", required_auths.size())("subject", *this)
+    );
   }
 
   void custom_json_operation::validate() const
   {
     /// required auth accounts are the ones whose bandwidth is consumed
     size_t num_auths = required_auths.size() + required_posting_auths.size();
-    FC_ASSERT( num_auths > 0, "at least one account must be specified" );
-    FC_ASSERT( num_auths <= HIVE_MAX_AUTHORITY_MEMBERSHIP,
-      "Authority membership exceeded. Max: ${max} Current: ${n}", ( "max", HIVE_MAX_AUTHORITY_MEMBERSHIP )( "n", num_auths ) );
-
-    FC_ASSERT( id.size() <= HIVE_CUSTOM_OP_ID_MAX_LENGTH,
-      "Operation ID length exceeded. Max: ${max} Current: ${n}", ( "max", HIVE_CUSTOM_OP_ID_MAX_LENGTH )( "n", id.size() ) );
-    validate_json_with_fallback( json );
+    HIVE_PROTOCOL_AUTHORITY_ASSERT( num_auths > 0, "at least one account must be specified",
+      ("subject", *this)("required_auths_size", required_auths.size())("required_posting_auths_size", required_posting_auths.size())
+    );
+    HIVE_PROTOCOL_AUTHORITY_ASSERT( num_auths <= HIVE_MAX_AUTHORITY_MEMBERSHIP,
+      "Authority membership exceeded. Max: ${max} Current: ${n}", ("max", HIVE_MAX_AUTHORITY_MEMBERSHIP)("n", num_auths)("subject", *this)
+    );
+    HIVE_PROTOCOL_OPERATIONS_ASSERT( id.size() <= HIVE_CUSTOM_OP_ID_MAX_LENGTH,
+      "Operation ID length exceeded. Max: ${max} Current: ${n}", ("max", HIVE_CUSTOM_OP_ID_MAX_LENGTH)("n", id.size())("subject", *this) );
+    validate_json_with_fallback(json);
   }
 
   void custom_binary_operation::validate() const
   {
     size_t num_auths = required_owner_auths.size() + required_active_auths.size() + required_posting_auths.size();
-    FC_ASSERT( num_auths > 0 && "binary", "at least one account must be specified" ); // ABW: that limit has to hold at least until
+    HIVE_PROTOCOL_AUTHORITY_ASSERT( num_auths > 0 && "binary", "at least one account must be specified",
+      ("subject", *this)("num_auths", num_auths)
+    ); // ABW: that limit has to hold at least until
       // https://gitlab.syncad.com/hive/hive/-/issues/675#note_159315 is implemented - someone has to pay RC
     for( const auto& auth : required_auths )
     {
       auth.validate();
       num_auths += auth.key_auths.size() + auth.account_auths.size();
     }
-    FC_ASSERT( num_auths <= HIVE_MAX_AUTHORITY_MEMBERSHIP && "binary",
-      "Authority membership exceeded. Max: ${max} Current: ${n}", ( "max", HIVE_MAX_AUTHORITY_MEMBERSHIP )( "n", num_auths ) );
-    FC_ASSERT( HIVE_CUSTOM_OP_ID_MAX_LENGTH >= id.size(),
-      "Operation ID length exceeded. Max: ${max} Current: ${n}", ("max", HIVE_CUSTOM_OP_ID_MAX_LENGTH)("n", id.size()) );
-    FC_ASSERT( data.size() <= HIVE_CUSTOM_OP_DATA_MAX_LENGTH && "Too large",
-      "Operation data must be less than ${bytes} bytes.", ( "bytes", HIVE_CUSTOM_OP_DATA_MAX_LENGTH ) );
+    HIVE_PROTOCOL_AUTHORITY_ASSERT( num_auths <= HIVE_MAX_AUTHORITY_MEMBERSHIP && "binary",
+      "Authority membership exceeded. Max: ${max} Current: ${n}", ("max", HIVE_MAX_AUTHORITY_MEMBERSHIP)("n", num_auths)("subject", *this)
+    );
+    HIVE_PROTOCOL_OPERATIONS_ASSERT( HIVE_CUSTOM_OP_ID_MAX_LENGTH >= id.size(),
+      "Operation ID length exceeded. Max: ${max} Current: ${n}", ("max", HIVE_CUSTOM_OP_ID_MAX_LENGTH)("n", id.size())("subject", *this) );
+    HIVE_PROTOCOL_OPERATIONS_ASSERT( data.size() <= HIVE_CUSTOM_OP_DATA_MAX_LENGTH && "Too large",
+      "Operation data must be less than ${bytes} bytes.", ("bytes", HIVE_CUSTOM_OP_DATA_MAX_LENGTH)("subject", *this) );
   }
 
 
@@ -402,7 +467,10 @@ namespace hive { namespace protocol {
 #ifndef HIVE_CONVERTER_BUILD
     props.validate< true >();
     validate_account_name( worker_account );
-    FC_ASSERT( work_input() == work.input, "Determninistic input does not match recorded input" );
+    const auto winput = work_input();
+    HIVE_PROTOCOL_OPERATIONS_ASSERT( winput == work.input, "Determninistic input does not match recorded input",
+      ("subject", *this)("expected", winput)("actual", work.input)
+    );
     work.validate();
 #endif /// HIVE_CONVERTER_BUILD
   }
@@ -493,12 +561,12 @@ namespace hive { namespace protocol {
 
   void pow::validate()const
   {
-    FC_ASSERT( work != fc::sha256() );
+    HIVE_PROTOCOL_OPERATIONS_ASSERT( work != fc::sha256(), "work cannot consist of only zeroes", ("subject", *this)(work) );
     /// Code eliminated due to hard switch to only bip0062 working mode - all such operations are VALID since they are already in blocks. Creation of new ops is disallowed.
-    //FC_ASSERT( public_key_type(fc::ecc::public_key( signature, input, fc::ecc::non_canonical) ) == worker );
+    //HIVE_PROTOCOL_VALIDATION_ASSERT( public_key_type(fc::ecc::public_key( signature, input, fc::ecc::non_canonical) ) == worker );
     //auto sig_hash = fc::sha256::hash( signature );
     //public_key_type recover  = fc::ecc::public_key( signature, sig_hash, fc::ecc::non_canonical);
-    //FC_ASSERT( work == fc::sha256::hash(recover) );
+    //HIVE_PROTOCOL_OPERATIONS_ASSERT( work == fc::sha256::hash(recover) );
   }
 
   void pow2::validate()const
@@ -506,26 +574,27 @@ namespace hive { namespace protocol {
     validate_account_name( input.worker_account );
     /// Code eliminated due to hard switch to only bip0062 working mode - all such operations are VALID since they are already in blocks. Creation of new ops is disallowed.
     //pow2 tmp; tmp.create( input.prev_block, input.worker_account, input.nonce );
-    //FC_ASSERT( pow_summary == tmp.pow_summary, "reported work does not match calculated work" );
+    //HIVE_PROTOCOL_OPERATIONS_ASSERT( pow_summary == tmp.pow_summary, "reported work does not match calculated work" );
   }
 
   void equihash_pow::validate() const
   {
     validate_account_name( input.worker_account );
     auto seed = fc::sha256::hash( input );
-    FC_ASSERT( proof.n == HIVE_EQUIHASH_N, "proof of work 'n' value is incorrect" );
-    FC_ASSERT( proof.k == HIVE_EQUIHASH_K, "proof of work 'k' value is incorrect" );
-    FC_ASSERT( proof.seed == seed, "proof of work seed does not match expected seed" );
-    FC_ASSERT( proof.is_valid(), "proof of work is not a solution", ("block_id", input.prev_block)("worker_account", input.worker_account)("nonce", input.nonce) );
-    FC_ASSERT( pow_summary == fc::sha256::hash( proof.inputs ).approx_log_32() );
+    HIVE_PROTOCOL_OPERATIONS_ASSERT( proof.n == HIVE_EQUIHASH_N, "proof of work 'n' value is incorrect", ("proof_n", proof.n)("expected", HIVE_EQUIHASH_N)("subject", *this) );
+    HIVE_PROTOCOL_OPERATIONS_ASSERT( proof.k == HIVE_EQUIHASH_K, "proof of work 'k' value is incorrect", ("proof_k", proof.k)("expected", HIVE_EQUIHASH_K)("subject", *this) );
+    HIVE_PROTOCOL_OPERATIONS_ASSERT( proof.seed == seed, "proof of work seed does not match expected seed", ("proof_seed", proof.seed)("expected", seed)("subject", *this) );
+    HIVE_PROTOCOL_OPERATIONS_ASSERT( proof.is_valid(), "proof of work is not a solution", ("block_id", input.prev_block)("worker_account", input.worker_account)("nonce", input.nonce)("subject", *this) );
+    const auto calculated_summary = fc::sha256::hash( proof.inputs ).approx_log_32();
+    HIVE_PROTOCOL_OPERATIONS_ASSERT( pow_summary == calculated_summary, "invalid proof summary", ("expected", calculated_summary)("actual", pow_summary)("subject", *this) );
   }
 
   void feed_publish_operation::validate()const
   {
     validate_account_name( publisher );
-    FC_ASSERT( ( is_asset_type( exchange_rate.base, HIVE_SYMBOL ) && is_asset_type( exchange_rate.quote, HBD_SYMBOL ) )
+    HIVE_PROTOCOL_ASSET_ASSERT( ( is_asset_type( exchange_rate.base, HIVE_SYMBOL ) && is_asset_type( exchange_rate.quote, HBD_SYMBOL ) )
       || ( is_asset_type( exchange_rate.base, HBD_SYMBOL ) && is_asset_type( exchange_rate.quote, HIVE_SYMBOL ) ),
-      "Price feed must be a HIVE/HBD price" );
+      "Price feed must be a HIVE/HBD price", (exchange_rate)("subject", *this) );
     exchange_rate.validate();
   }
 
@@ -533,7 +602,7 @@ namespace hive { namespace protocol {
   {
     validate_account_name( owner );
 
-    FC_ASSERT(  ( is_asset_type( amount_to_sell, HIVE_SYMBOL ) && is_asset_type( min_to_receive, HBD_SYMBOL ) )
+    HIVE_PROTOCOL_OPERATIONS_ASSERT(  ( is_asset_type( amount_to_sell, HIVE_SYMBOL ) && is_asset_type( min_to_receive, HBD_SYMBOL ) )
           || ( is_asset_type( amount_to_sell, HBD_SYMBOL ) && is_asset_type( min_to_receive, HIVE_SYMBOL ) )
           || (
               amount_to_sell.symbol.space() == asset_symbol_type::smt_nai_space
@@ -543,7 +612,7 @@ namespace hive { namespace protocol {
               is_asset_type( amount_to_sell, HIVE_SYMBOL )
               && min_to_receive.symbol.space() == asset_symbol_type::smt_nai_space
             ),
-          "Limit order must be for the HIVE:HBD market" );
+          "Limit order must be for the HIVE:HBD market", (amount_to_sell)(min_to_receive)("subject", *this) );
 
     price( amount_to_sell, min_to_receive ).validate();
   }
@@ -551,11 +620,10 @@ namespace hive { namespace protocol {
   void limit_order_create2_operation::validate()const
   {
     validate_account_name( owner );
-
-    FC_ASSERT( amount_to_sell.symbol == exchange_rate.base.symbol, "Sell asset must be the base of the price" );
+    validate_asset_type(amount_to_sell, exchange_rate.base.symbol, "Sell asset must be the base of the price", *this);
     exchange_rate.validate();
 
-    FC_ASSERT(  ( is_asset_type( amount_to_sell, HIVE_SYMBOL ) && is_asset_type( exchange_rate.quote, HBD_SYMBOL ) )
+    HIVE_PROTOCOL_OPERATIONS_ASSERT(  ( is_asset_type( amount_to_sell, HIVE_SYMBOL ) && is_asset_type( exchange_rate.quote, HBD_SYMBOL ) )
           || ( is_asset_type( amount_to_sell, HBD_SYMBOL ) && is_asset_type( exchange_rate.quote, HIVE_SYMBOL ) )
           || (
               amount_to_sell.symbol.space() == asset_symbol_type::smt_nai_space
@@ -565,9 +633,10 @@ namespace hive { namespace protocol {
               is_asset_type( amount_to_sell, HIVE_SYMBOL )
               && exchange_rate.quote.symbol.space() == asset_symbol_type::smt_nai_space
             ),
-          "Limit order must be for the HIVE:HBD market" );
+          "Limit order must be for the HIVE:HBD market", (amount_to_sell)(exchange_rate)("subject", *this) );
 
-    FC_ASSERT( ( amount_to_sell * exchange_rate ).amount > 0, "Amount to sell cannot round to 0 when traded" );
+    const auto amount_to_sell_in_quote = amount_to_sell * exchange_rate;
+    validate_asset_greater_than_zero(amount_to_sell_in_quote, "Amount to sell cannot round to 0 when traded", *this);
   }
 
   void limit_order_cancel_operation::validate()const
@@ -580,16 +649,16 @@ namespace hive { namespace protocol {
     validate_account_name( owner );
     /// only allow conversion from HBD to HIVE, allowing the opposite can enable traders to abuse
     /// market fluxuations through converting large quantities without moving the price.
-    FC_ASSERT( is_asset_type( amount, HBD_SYMBOL ), "Can only convert HBD to HIVE" );
-    FC_ASSERT( amount.amount > 0 && "Must convert some HBD" );
+    validate_asset_type(amount, HBD_SYMBOL, "Can only convert HBD to HIVE", *this);
+    validate_asset_greater_than_zero(amount, "Must convert some HBD", *this);
   }
 
   void collateralized_convert_operation::validate()const
   {
     validate_account_name( owner );
     /// only allow conversion from HIVE to HBD (at least for now)
-    FC_ASSERT( is_asset_type( amount, HIVE_SYMBOL ), "Can only convert HIVE to HBD" );
-    FC_ASSERT( amount.amount > 0 && "Must convert some HIVE" );
+    validate_asset_type(amount, HIVE_SYMBOL, "Can only convert HIVE to HBD", *this);
+    validate_asset_greater_than_zero(amount, "Must convert some HIVE", *this);
   }
 
   void escrow_transfer_operation::validate()const
@@ -597,15 +666,19 @@ namespace hive { namespace protocol {
     validate_account_name( from );
     validate_account_name( to );
     validate_account_name( agent );
-    FC_ASSERT( fee.amount >= 0, "fee cannot be negative" );
-    FC_ASSERT( hbd_amount.amount >= 0, "HBD amount cannot be negative" );
-    FC_ASSERT( hive_amount.amount >= 0, "HIVE amount cannot be negative" );
-    FC_ASSERT( hbd_amount.amount > 0 || hive_amount.amount > 0, "escrow must transfer a non-zero amount" );
-    FC_ASSERT( from != agent && to != agent, "agent must be a third party" );
-    FC_ASSERT( (fee.symbol == HIVE_SYMBOL) || (fee.symbol == HBD_SYMBOL), "fee must be HIVE or HBD" );
-    FC_ASSERT( hbd_amount.symbol == HBD_SYMBOL, "HBD amount must contain HBD asset" );
-    FC_ASSERT( hive_amount.symbol == HIVE_SYMBOL, "HIVE amount must contain HIVE asset" );
-    FC_ASSERT( ratification_deadline < escrow_expiration, "ratification deadline must be before escrow expiration" );
+    validate_asset_not_negative(fee, "fee cannot be negative", *this);
+
+    validate_asset_not_negative(hbd_amount, "hbd_amount cannot be negative", *this);
+    validate_asset_not_negative(hive_amount, "hive_amount cannot be negative", *this);
+
+    HIVE_PROTOCOL_OPERATIONS_ASSERT( hbd_amount.amount > 0 || hive_amount.amount > 0, "escrow must transfer a non-zero amount", ("subject", *this) );
+    HIVE_PROTOCOL_OPERATIONS_ASSERT( from != agent && to != agent, "agent must be a third party", ("subject", *this) );
+
+    validate_asset_type_one_of(fee, {HIVE_SYMBOL, HBD_SYMBOL}, "fee must be HIVE or HBD", *this);
+    validate_asset_type(hbd_amount, HBD_SYMBOL, "HBD amount must contain HBD asset", *this);
+    validate_asset_type(hive_amount, HIVE_SYMBOL, "HIVE amount must contain HIVE asset", *this);
+
+    HIVE_PROTOCOL_OPERATIONS_ASSERT( ratification_deadline < escrow_expiration, "ratification deadline must be before escrow expiration", ("subject", *this) );
     if (!json_meta.empty())
       validate_json_with_fallback(json_meta);
   }
@@ -616,7 +689,7 @@ namespace hive { namespace protocol {
     validate_account_name( to );
     validate_account_name( agent );
     validate_account_name( who );
-    FC_ASSERT( who == to || who == agent, "to or agent must approve escrow" );
+    HIVE_PROTOCOL_OPERATIONS_ASSERT( who == to || who == agent, "to or agent must approve escrow", ("subject", *this) );
   }
 
   void escrow_dispute_operation::validate()const
@@ -625,7 +698,7 @@ namespace hive { namespace protocol {
     validate_account_name( to );
     validate_account_name( agent );
     validate_account_name( who );
-    FC_ASSERT( who == from || who == to, "who must be from or to" );
+    HIVE_PROTOCOL_OPERATIONS_ASSERT( who == from || who == to, "who must be from or to", ("subject", *this) );
   }
 
   void escrow_release_operation::validate()const
@@ -635,13 +708,13 @@ namespace hive { namespace protocol {
     validate_account_name( agent );
     validate_account_name( who );
     validate_account_name( receiver );
-    FC_ASSERT( who == from || who == to || who == agent, "who must be from or to or agent" );
-    FC_ASSERT( receiver == from || receiver == to, "receiver must be from or to" );
-    FC_ASSERT( hbd_amount.amount >= 0 && "HBD amount cannot be negative" );
-    FC_ASSERT( hive_amount.amount >= 0 && "HIVE amount cannot be negative" );
-    FC_ASSERT( (hbd_amount.amount > 0 || hive_amount.amount > 0) && "escrow must release a non-zero amount" );
-    FC_ASSERT( hbd_amount.symbol == HBD_SYMBOL && "HBD amount must contain HBD asset" );
-    FC_ASSERT( hive_amount.symbol == HIVE_SYMBOL && "HIVE amount must contain HIVE asset" );
+    HIVE_PROTOCOL_OPERATIONS_ASSERT( who == from || who == to || who == agent, "who must be from or to or agent", ("subject", *this) );
+    HIVE_PROTOCOL_OPERATIONS_ASSERT( receiver == from || receiver == to, "receiver must be from or to", ("subject", *this) );
+    validate_asset_not_negative(hbd_amount, "HBD amount cannot be negative", *this);
+    validate_asset_not_negative(hive_amount, "HIVE amount cannot be negative", *this);
+    HIVE_PROTOCOL_OPERATIONS_ASSERT( (hbd_amount.amount > 0 || hive_amount.amount > 0) && "escrow_release_operation", "escrow must release a non-zero amount", ("subject", *this) );
+    validate_asset_type(hbd_amount, HBD_SYMBOL, "HBD amount must contain HBD asset", *this);
+    validate_asset_type(hive_amount, HIVE_SYMBOL, "HIVE amount must contain HIVE asset", *this);
   }
 
   void request_account_recovery_operation::validate()const
@@ -654,10 +727,10 @@ namespace hive { namespace protocol {
   void recover_account_operation::validate()const
   {
     validate_account_name( account_to_recover );
-    FC_ASSERT( !( new_owner_authority == recent_owner_authority ), "Cannot set new owner authority to the recent owner authority" );
-    FC_ASSERT( !new_owner_authority.is_impossible(), "new owner authority cannot be impossible" );
-    FC_ASSERT( !recent_owner_authority.is_impossible(), "recent owner authority cannot be impossible" );
-    FC_ASSERT( new_owner_authority.weight_threshold, "new owner authority cannot be trivial" );
+    HIVE_PROTOCOL_AUTHORITY_ASSERT( !( new_owner_authority == recent_owner_authority ), "Cannot set new owner authority to the recent owner authority", ("subject", *this) );
+    HIVE_PROTOCOL_AUTHORITY_ASSERT( !new_owner_authority.is_impossible(), "new owner authority cannot be impossible", ("subject", *this) );
+    HIVE_PROTOCOL_AUTHORITY_ASSERT( !recent_owner_authority.is_impossible(), "recent owner authority cannot be impossible", ("subject", *this) );
+    HIVE_PROTOCOL_AUTHORITY_ASSERT( new_owner_authority.weight_threshold, "new owner authority cannot be trivial", ("subject", *this) );
     new_owner_authority.validate();
     recent_owner_authority.validate();
   }
@@ -672,20 +745,20 @@ namespace hive { namespace protocol {
   {
     validate_account_name( from );
     validate_account_name( to );
-    FC_ASSERT( amount.amount > 0 && "Must transfer to savings some amount" );
-    FC_ASSERT( amount.symbol == HIVE_SYMBOL || amount.symbol == HBD_SYMBOL );
-    FC_ASSERT( memo.size() < HIVE_MAX_MEMO_SIZE && "Transfer to savings memo is too large" );
-    FC_ASSERT( fc::is_utf8( memo ) && "Transfer to savings memo is not UTF8" );
+    validate_asset_greater_than_zero(amount, "Must transfer to savings some amount", *this);
+    validate_asset_type_one_of(amount, {HIVE_SYMBOL, HBD_SYMBOL}, "Must transfer HIVE or HBD", *this);
+    validate_string_max_size(memo, HIVE_MAX_MEMO_SIZE - 1,"Transfer to savings memo is too large", *this);
+    validate_is_string_in_utf8(memo, "Transfer to savings memo is not UTF8", *this);
   }
 
   void transfer_from_savings_operation::validate()const
   {
     validate_account_name( from );
     validate_account_name( to );
-    FC_ASSERT( amount.amount > 0 && "Must transfer from savings some amount" );
-    FC_ASSERT( (amount.symbol == HIVE_SYMBOL ||  amount.symbol == HBD_SYMBOL) && "Must transfer HIVE or HBD" );
-    FC_ASSERT( memo.size() < HIVE_MAX_MEMO_SIZE && "Transfer from savings memo is too large" );
-    FC_ASSERT( fc::is_utf8( memo ), "Transfer from savings memo is not UTF8" );
+    validate_asset_greater_than_zero(amount, "Must transfer from savings some amount", *this);
+    validate_asset_type_one_of(amount, {HIVE_SYMBOL, HBD_SYMBOL}, "Must transfer HIVE or HBD", *this);
+    validate_string_max_size(memo, HIVE_MAX_MEMO_SIZE - 1, "Transfer from savings memo is too large", *this);
+    validate_is_string_in_utf8(memo, "Transfer from savings memo is not UTF8", *this);
   }
 
   void cancel_transfer_from_savings_operation::validate()const
@@ -711,36 +784,46 @@ namespace hive { namespace protocol {
   void claim_reward_balance_operation::validate()const
   {
     validate_account_name( account );
-    FC_ASSERT( is_asset_type( reward_hive, HIVE_SYMBOL ), "Reward HIVE must be expressed in HIVE" );
-    FC_ASSERT( is_asset_type( reward_hbd, HBD_SYMBOL ), "Reward HBD must be expressed in HBD" );
-    FC_ASSERT( is_asset_type( reward_vests, VESTS_SYMBOL ), "Reward VESTS must be expressed in VESTS" );
-    FC_ASSERT( reward_hbd.amount >= 0, "Cannot claim a negative amount" );
-    FC_ASSERT( reward_hive.amount >= 0, "Cannot claim a negative amount" );
-    FC_ASSERT( reward_vests.amount >= 0, "Cannot claim a negative amount" );
-    FC_ASSERT( reward_hive.amount > 0 || reward_hbd.amount > 0 || reward_vests.amount > 0, "Must claim something." );
+    validate_asset_type(reward_hive, HIVE_SYMBOL, "Reward HIVE must be expressed in HIVE", *this);
+    validate_asset_type(reward_hbd, HBD_SYMBOL, "Reward HBD must be expressed in HBD", *this);
+    validate_asset_type(reward_vests, VESTS_SYMBOL, "Reward VESTS must be expressed in VESTS", *this);
+    validate_asset_not_negative(reward_hbd, "Cannot claim a negative amount", *this);
+    validate_asset_not_negative(reward_hive, "Cannot claim a negative amount", *this);
+    validate_asset_not_negative(reward_vests, "Cannot claim a negative amount", *this);
+    HIVE_PROTOCOL_OPERATIONS_ASSERT( reward_hive.amount > 0 || reward_hbd.amount > 0 || reward_vests.amount > 0, "Must claim something.",
+      ("subject", *this)
+      ("min", 0)
+    );
   }
 
   void delegate_vesting_shares_operation::validate()const
   {
     validate_account_name( delegator );
     validate_account_name( delegatee );
-    FC_ASSERT( delegator != delegatee, "You cannot delegate VESTS to yourself" );
-    FC_ASSERT( is_asset_type( vesting_shares, VESTS_SYMBOL ), "Delegation must be VESTS" );
-    FC_ASSERT( vesting_shares >= asset( 0, VESTS_SYMBOL ), "Delegation cannot be negative" );
+    HIVE_PROTOCOL_OPERATIONS_ASSERT( delegator != delegatee, "You cannot delegate VESTS to yourself", ("subject", *this)("account", delegator) );
+    validate_asset_type( vesting_shares, VESTS_SYMBOL, "Delegation must be VESTS", *this );
+    validate_asset_not_negative( vesting_shares, "Delegation cannot be negative", *this );
   }
 
   void recurrent_transfer_operation::validate()const
   { try {
-    validate_account_name( from );
-    validate_account_name( to );
-    FC_ASSERT( amount.symbol.is_vesting() == false && "Recurrent transfer of vesting is not allowed." );
-    FC_ASSERT( amount.amount >= 0 && "Cannot transfer a negative amount (aka: stealing)" );
-    FC_ASSERT( recurrence >= HIVE_MIN_RECURRENT_TRANSFERS_RECURRENCE, "Cannot set a transfer recurrence that is less than ${recurrence} hours", ("recurrence", HIVE_MIN_RECURRENT_TRANSFERS_RECURRENCE) );
-    FC_ASSERT( memo.size() < HIVE_MAX_MEMO_SIZE && "Recurrent transfer memo is too large" );
-    FC_ASSERT( fc::is_utf8( memo ) && "Recurrent transfer memo is not UTF8" );
-    FC_ASSERT( from != to, "Cannot set a transfer to yourself" );
-    FC_ASSERT(executions >= 2, "Executions must be at least 2, if you set executions to 1 the recurrent transfer will execute immediately and delete itself. You should use a normal transfer operation");
-  } FC_CAPTURE_AND_RETHROW( (*this) ) }
+      const size_t minimum_amount_of_executions{2};
+
+      validate_account_name( from );
+      validate_account_name( to );
+      validate_asset_is_not_vesting(amount, "Recurrent transfer amount cannot be VESTS", *this);
+      validate_asset_not_negative(amount, "Recurrent transfer amount cannot be negative", *this);
+      HIVE_PROTOCOL_OPERATIONS_ASSERT( recurrence >= HIVE_MIN_RECURRENT_TRANSFERS_RECURRENCE, "Cannot set a transfer recurrence that is less than ${recurrence} hours", ("recurrence", HIVE_MIN_RECURRENT_TRANSFERS_RECURRENCE) );
+      validate_string_max_size(memo, HIVE_MAX_MEMO_SIZE - 1, "Recurrent transfer memo is too large", *this);
+      validate_is_string_in_utf8(memo, "Recurrent transfer memo is not UTF8", *this);
+      HIVE_PROTOCOL_OPERATIONS_ASSERT( from != to, "Cannot set a transfer to yourself" );
+      HIVE_PROTOCOL_OPERATIONS_ASSERT(
+        executions >= minimum_amount_of_executions,
+        "Executions must be at least 2, if you set executions to 1 the recurrent transfer will execute immediately and delete itself. You should use a normal transfer operation",
+        ("subject", *this)(executions)("min", minimum_amount_of_executions)
+      );
+    } FC_CAPTURE_AND_RETHROW( (*this) )
+  }
 
   void witness_block_approve_operation::validate()const
   { try {

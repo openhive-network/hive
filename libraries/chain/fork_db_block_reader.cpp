@@ -7,7 +7,7 @@
 
 namespace hive { namespace chain {
 
-fork_db_block_reader::fork_db_block_reader( fork_database& fork_db, 
+fork_db_block_reader::fork_db_block_reader( fork_database& fork_db,
                                             const block_read_i& block_reader )
   : _fork_db( fork_db ), _block_reader( block_reader )
 {}
@@ -25,7 +25,7 @@ uint32_t fork_db_block_reader::head_block_num(
   return head ? head->get_block_num() : _block_reader.head_block_num( wait_for_microseconds );
 }
 
-block_id_type fork_db_block_reader::head_block_id( 
+block_id_type fork_db_block_reader::head_block_id(
   fc::microseconds wait_for_microseconds /*= fc::microseconds()*/ ) const
 {
   auto head = _fork_db.head();
@@ -48,12 +48,9 @@ void fork_db_block_reader::process_blocks( uint32_t starting_block_number,
 std::shared_ptr<full_block_type> fork_db_block_reader::get_block_by_number( uint32_t block_num,
   fc::microseconds wait_for_microseconds ) const
 {
-  // For the time being we'll silently return empty pointer for requests of future blocks.
-  // FC_ASSERT( block_num <= head_block_num(), "Got no block with number greater than ${num}.", ("num", head_block_num()) );
-
   std::shared_ptr<full_block_type> blk;
 
-  shared_ptr<fork_item> forkdb_item = 
+  shared_ptr<fork_item> forkdb_item =
     _fork_db.fetch_block_on_main_branch_by_number(block_num, wait_for_microseconds);
   if (forkdb_item)
     blk = forkdb_item->full_block;
@@ -63,7 +60,7 @@ std::shared_ptr<full_block_type> fork_db_block_reader::get_block_by_number( uint
   return blk;
 }
 
-std::shared_ptr<full_block_type> fork_db_block_reader::fetch_block_by_id( 
+std::shared_ptr<full_block_type> fork_db_block_reader::fetch_block_by_id(
   const block_id_type& id ) const
 {
   try {
@@ -87,7 +84,7 @@ bool fork_db_block_reader::is_known_block( const block_id_type& id ) const
 }
 
 bool fork_db_block_reader::is_known_block_unlocked( const block_id_type& id ) const
-{ 
+{
   try {
     if (_fork_db.fetch_block_unlocked(id, true /* only search linked blocks */))
       return true;
@@ -135,16 +132,16 @@ block_id_type fork_db_block_reader::find_block_id_for_num( uint32_t block_num )c
   return result;
 }
 
-std::vector<std::shared_ptr<full_block_type>> fork_db_block_reader::fetch_block_range( 
-  const uint32_t starting_block_num, const uint32_t count, 
+std::vector<std::shared_ptr<full_block_type>> fork_db_block_reader::fetch_block_range(
+  const uint32_t starting_block_num, const uint32_t count,
   fc::microseconds wait_for_microseconds /*= fc::microseconds()*/ ) const
-{ 
+{
   try {
     // for debugging, put the head block back so it should straddle the last irreversible
     // const uint32_t starting_block_num = head_block_num() - 30;
-    FC_ASSERT(starting_block_num > 0, "Invalid starting block number");
-    FC_ASSERT(count > 0, "Why ask for zero blocks?");
-    FC_ASSERT(count <= 1000, "You can only ask for 1000 blocks at a time");
+    FC_ASSERT(starting_block_num > 0 && "fetch_block_range", "Invalid starting block number");
+    FC_ASSERT(count > 0 && "fetch_block_range", "Why ask for zero blocks?");
+    FC_ASSERT(count <= 1000 && "fetch_block_range", "You can only ask for 1000 blocks at a time");
     idump((starting_block_num)(count));
 
     vector<fork_item> fork_items = _fork_db.fetch_block_range_on_main_branch_by_number( starting_block_num, count, wait_for_microseconds );
@@ -170,11 +167,11 @@ std::vector<std::shared_ptr<full_block_type>> fork_db_block_reader::fetch_block_
   } FC_LOG_AND_RETHROW()
 }
 
-std::vector<block_id_type> fork_db_block_reader::get_blockchain_synopsis( 
+std::vector<block_id_type> fork_db_block_reader::get_blockchain_synopsis(
   const block_id_type& reference_point, uint32_t number_of_blocks_after_reference_point ) const
 {
   fc::optional<uint32_t> block_number_needed_from_block_log;
-  std::vector<block_id_type> synopsis = 
+  std::vector<block_id_type> synopsis =
     _fork_db.get_blockchain_synopsis(reference_point, number_of_blocks_after_reference_point,
                                      block_number_needed_from_block_log);
 
@@ -304,7 +301,7 @@ std::vector<block_id_type> fork_db_block_reader::get_block_ids(
 
 // requires forkdb read lock, does not require chainbase lock
 bool fork_db_block_reader::is_included_block_unlocked(const block_id_type& block_id) const
-{ 
+{
   try {
     uint32_t block_num = block_header::num_from_id(block_id);
     if (block_num == 0)

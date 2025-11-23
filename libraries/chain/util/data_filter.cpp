@@ -251,7 +251,7 @@ bool operation_body_filter::is_tracked_operation( const operation& op ) const
         }
       }
       else
-        FC_ASSERT( false, "Filter-Error: incorrect operation" );
+        FC_ASSERT( false && "is_tracked_operation", "Filter-Error: incorrect operation" );
     }FC_CAPTURE_AND_RETHROW()
   }
 

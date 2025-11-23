@@ -1,8 +1,11 @@
 #ifdef USE_ALTERNATE_CHAIN_ID
 
+#include <hive/protocol/validation.hpp>
+
 #include <hive/protocol/testnet_blockchain_configuration.hpp>
 
 #include <hive/protocol/config.hpp>
+
 
 namespace hive { namespace protocol { namespace testnet_blockchain_configuration {
 
@@ -36,9 +39,9 @@ void configuration::set_hardfork_schedule( const fc::time_point_sec& genesis_tim
     size_t current_hf_index = hardfork_schedule[ i ].hardfork;
     uint32_t current_block_num = hardfork_schedule[ i ].block_num;
 
-    FC_ASSERT( current_hf_index > 0, "You cannot specify the hardfork 0 block. Use 'genesis-time' option instead" );
-    FC_ASSERT( current_hf_index <= HIVE_NUM_HARDFORKS, "You are not allowed to specify future hardfork times" );
-    FC_ASSERT( current_hf_index > last_hf_index, "The hardfork schedule items must be in ascending order, no repetitions" );
+    HIVE_PROTOCOL_HARDFORK_ASSERT( current_hf_index > 0, "You cannot specify the hardfork 0 block. Use 'genesis-time' option instead", ("subject", current_hf_index)("min", 0) );
+    HIVE_PROTOCOL_HARDFORK_ASSERT( current_hf_index <= HIVE_NUM_HARDFORKS, "You are not allowed to specify future hardfork times", ("subject", current_hf_index)("max", HIVE_NUM_HARDFORKS) );
+    HIVE_PROTOCOL_HARDFORK_ASSERT( current_hf_index > last_hf_index, "The hardfork schedule items must be in ascending order, no repetitions", ("subject", current_hf_index)("min", last_hf_index) );
 
     // Set provided hardfork time filling the gaps if needed.
     while( last_hf_index < current_hf_index )
@@ -62,7 +65,11 @@ void configuration::reset_hardfork_schedule()
 
 uint32_t configuration::get_hf_time(uint32_t hf_num, uint32_t default_time_sec)const
 {
-  FC_ASSERT( hf_num < hf_times.size(), "Trying to retrieve hardfork of a non-existing hardfork ${hf}", ("hf", hf_num) );
+  HIVE_PROTOCOL_VALIDATION_ASSERT( 
+    hf_num < hf_times.size(), 
+    "Trying to retrieve hardfork of a non-existing hardfork ${subject}", 
+    ("subject", hf_num)("expected", hf_times.size()) 
+  );
 
   return hf_times[hf_num] != 0 ? hf_times[hf_num] : default_time_sec; // No hardfork schedule specified, use default time sec
 }
@@ -92,8 +99,12 @@ void configuration::set_skeleton_key(const private_key_type& private_key)
 
 void configuration::set_hive_owner_update_limit( uint16_t limit )
 {
-  FC_ASSERT( ( limit >= 2 * HIVE_BLOCK_INTERVAL ) && ( limit % HIVE_BLOCK_INTERVAL == 0 ),
-    "`hive_owner_update_limit` must be multiple of whole block interval and at least two blocks long. Got ${limit}", ( "limit", limit ) );
+  const size_t minimum_limit = 2 * HIVE_BLOCK_INTERVAL;
+  HIVE_PROTOCOL_VALIDATION_ASSERT( 
+    ( limit >= minimum_limit ) && ( limit % HIVE_BLOCK_INTERVAL == 0 ),
+    "`hive_owner_update_limit` must be multiple of whole block interval and at least two blocks long. Got ${subject}", 
+    ( "subject", limit )("min", minimum_limit)("multiple_of", HIVE_BLOCK_INTERVAL) 
+  );
 
   hive_owner_update_limit = limit;
 }
@@ -101,7 +112,11 @@ void configuration::set_hive_owner_update_limit( uint16_t limit )
 void configuration::set_initial_asset_supply( const HIVE_asset& hive, const HBD_asset& hbd,
   const HIVE_asset& to_vest, const VEST_price& vest_price )
 {
-  FC_ASSERT( hive >= to_vest, "Too much HIVE requested for vesting compared to given supply" );
+  HIVE_PROTOCOL_VALIDATION_ASSERT(
+    hive >= to_vest,
+    "Too much HIVE requested for vesting compared to given supply",
+    ("subject", hive)("max", to_vest)
+  );
 
   init_hive_supply = hive;
   init_hbd_supply = hbd;

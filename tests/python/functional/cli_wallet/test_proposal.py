@@ -81,7 +81,7 @@ def test_create_proposal_fail_negative_payment(
         wallet.api.create_proposal(**prepared_proposal.create_proposal_arguments)
 
     response = exception.value.get_response_error_messages()[0]
-    assert "daily_pay.amount >= 0" in response
+    assert "Asset amount cannot be negative" in response
     assert "Daily pay can't be negative value" in response
 
     assert len(list_proposals_by_creator(wallet, creator.name)) == 0

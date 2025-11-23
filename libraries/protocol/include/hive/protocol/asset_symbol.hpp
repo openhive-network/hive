@@ -4,6 +4,8 @@
 #include <hive/protocol/types_fwd.hpp>
 #include <hive/protocol/misc_utilities.hpp>
 
+#include <hive/protocol/hive_specialised_exceptions.hpp>
+
 #define HIVE_ASSET_SYMBOL_PRECISION_BITS     4
 #define HIVE_ASSET_CONTROL_BITS              1
 #define HIVE_NAI_SHIFT                       ( HIVE_ASSET_SYMBOL_PRECISION_BITS + HIVE_ASSET_CONTROL_BITS )
@@ -155,9 +157,9 @@ namespace fc { namespace raw {
 template< typename Stream >
 inline void pack( Stream& s, const hive::protocol::asset_symbol_type& sym )
 {
-  FC_ASSERT( sym.space() == hive::protocol::asset_symbol_type::legacy_space ||
+  HIVE_PROTOCOL_ASSET_ASSERT( sym.space() == hive::protocol::asset_symbol_type::legacy_space ||
              sym.space() == hive::protocol::asset_symbol_type::smt_nai_space,
-             "Cannot serialize unknown asset symbol" );
+             "Cannot serialize unknown asset symbol", ("subject", sym));
 
   if( sym.space() == hive::protocol::asset_symbol_type::legacy_space  && 
       hive::protocol::serialization_mode_controller::get_current_pack() == hive::protocol::pack_type::legacy )
@@ -172,7 +174,9 @@ inline void pack( Stream& s, const hive::protocol::asset_symbol_type& sym )
     }
     else
     {
-      FC_ASSERT( sym.asset_num == HIVE_ASSET_NUM_VESTS, "Cannot serialize unknown asset symbol" );
+      HIVE_PROTOCOL_ASSET_ASSERT( sym.asset_num == HIVE_ASSET_NUM_VESTS, "Cannot serialize unknown asset symbol", 
+        ("subject", sym)("expected", HIVE_ASSET_NUM_VESTS) 
+      );
       pack( s, VESTS_SYMBOL_SER );
     }
 
@@ -192,17 +196,17 @@ inline void unpack( Stream& s, hive::protocol::asset_symbol_type& sym, uint32_t,
   {
     case OBSOLETE_SYMBOL_SER & 0xFFFFFFFF:
       s.read( ((char*) &ser)+4, 4 );
-      FC_ASSERT( ser == OBSOLETE_SYMBOL_SER, "invalid asset bits" );
+      HIVE_PROTOCOL_ASSET_ASSERT( ser == OBSOLETE_SYMBOL_SER, "invalid asset bits", ("subject", sym)("expected", OBSOLETE_SYMBOL_SER) );
       sym.asset_num = HIVE_ASSET_NUM_HIVE;
       break;
     case OBD_SYMBOL_SER & 0xFFFFFFFF:
       s.read( ((char*) &ser)+4, 4 );
-      FC_ASSERT( ser == OBD_SYMBOL_SER, "invalid asset bits" );
+      HIVE_PROTOCOL_ASSET_ASSERT( ser == OBD_SYMBOL_SER, "invalid asset bits", ("subject", sym)("expected", OBD_SYMBOL_SER) );
       sym.asset_num = HIVE_ASSET_NUM_HBD;
       break;
     case VESTS_SYMBOL_SER & 0xFFFFFFFF:
       s.read( ((char*) &ser)+4, 4 );
-      FC_ASSERT( ser == VESTS_SYMBOL_SER, "invalid asset bits" );
+      HIVE_PROTOCOL_ASSET_ASSERT( ser == VESTS_SYMBOL_SER, "invalid asset bits", ("subject", sym)("expected", VESTS_SYMBOL_SER) );
       sym.asset_num = HIVE_ASSET_NUM_VESTS;
       break;
     default:
@@ -230,22 +234,25 @@ inline void from_variant( const fc::variant& var, hive::protocol::asset_symbol_t
 
   try
   {
-    FC_ASSERT( var.is_object() && "Asset symbol is expected to be an object." );
+    HIVE_PROTOCOL_ASSET_ASSERT( var.is_object() && "Asset symbol is expected to be an object.", "", ("subject", var) );
 
     auto& o = var.get_object();
 
     auto nai = o.find( ASSET_SYMBOL_NAI_KEY );
-    FC_ASSERT( nai != o.end(), "Expected key '${key}'.", ("key", ASSET_SYMBOL_NAI_KEY) );
-    FC_ASSERT( nai->value().is_string(), "Expected a string type for value '${key}'.", ("key", ASSET_SYMBOL_NAI_KEY) );
+    HIVE_PROTOCOL_ASSET_ASSERT( nai != o.end(), "Expected key '${key}'.", ("key", ASSET_SYMBOL_NAI_KEY)("subject", var) );
+    HIVE_PROTOCOL_ASSET_ASSERT( nai->value().is_string(), "Expected a string type for value '${key}'.", ("key", ASSET_SYMBOL_NAI_KEY)("subject", var) );
 
     auto decimals = o.find( ASSET_SYMBOL_DECIMALS_KEY );
-    FC_ASSERT( decimals != o.end(), "Expected key '${key}'.", ("key", ASSET_SYMBOL_DECIMALS_KEY) );
-    FC_ASSERT( decimals->value().is_uint64(), "Expected an unsigned integer type for value '${key}'.", ("key", ASSET_SYMBOL_DECIMALS_KEY) );
-    FC_ASSERT( decimals->value().as_uint64() <= HIVE_ASSET_MAX_DECIMALS,
-      "Expected decimals to be less than or equal to ${num}", ("num", HIVE_ASSET_MAX_DECIMALS) );
+    HIVE_PROTOCOL_ASSET_ASSERT( decimals != o.end(), "Expected key '${key}'.", ("key", ASSET_SYMBOL_DECIMALS_KEY)("subject", var) );
+    HIVE_PROTOCOL_ASSET_ASSERT( decimals->value().is_uint64(), "Expected an unsigned integer type for value '${key}'.", ("key", ASSET_SYMBOL_DECIMALS_KEY)("subject", var) );
+    HIVE_PROTOCOL_ASSET_ASSERT( decimals->value().as_uint64() <= HIVE_ASSET_MAX_DECIMALS,
+      "Expected decimals to be less than or equal to ${num}", ("num", HIVE_ASSET_MAX_DECIMALS)("subject", var) );
 
     sym = asset_symbol_type::from_nai_string( nai->value().as_string().c_str(), decimals->value().as< uint8_t >() );
   } FC_CAPTURE_AND_RETHROW()
 }
 
 } // fc
+
+
+FC_REFLECT_ENUM( hive::protocol::asset_symbol_type::asset_symbol_space, (legacy_space)(smt_nai_space) )

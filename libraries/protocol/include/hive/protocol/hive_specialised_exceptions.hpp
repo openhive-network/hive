@@ -45,9 +45,6 @@
 #define HIVE_PROTOCOL_ASSET_ASSERT( expr, ... )           HIVE_SPECIALISED_ASSERT( expr, "protocol", "asset",      #expr, __VA_ARGS__ );
 #define HIVE_PROTOCOL_AUTHORITY_ASSERT( expr, ... )       HIVE_SPECIALISED_ASSERT( expr, "protocol", "authority",  #expr, __VA_ARGS__ );
 #define HIVE_PROTOCOL_OPERATIONS_ASSERT( expr, ... )      HIVE_SPECIALISED_ASSERT( expr, "protocol", "operation",  #expr, __VA_ARGS__ );
-#define HIVE_PROTOCOL_TRANSACTION_ASSERT( expr, ... )     HIVE_SPECIALISED_ASSERT( expr, "protocol", "transaction",  #expr, __VA_ARGS__ );
-#define HIVE_PROTOCOL_DHF_OPERATIONS_ASSERT( expr, ... )  HIVE_SPECIALISED_ASSERT( expr, "protocol", "dhf_operation",  #expr, __VA_ARGS__ );
 #define HIVE_PROTOCOL_VALIDATION_ASSERT( expr, ... )      HIVE_SPECIALISED_ASSERT( expr, "protocol", "any", #expr, __VA_ARGS__ );
-#define HIVE_PROTOCOL_PERMLINK_ASSERT( expr, ... )        HIVE_SPECIALISED_ASSERT( expr, "protocol", "permlink",  #expr, __VA_ARGS__ );
 #define HIVE_PROTOCOL_ACCOUNT_NAME_ASSERT( expr, ... )    HIVE_SPECIALISED_ASSERT( expr, "protocol", "account_name", #expr, __VA_ARGS__ );
 #define HIVE_PROTOCOL_HARDFORK_ASSERT( expr, ... )        HIVE_SPECIALISED_ASSERT( expr, "protocol", "hardfork",   #expr, __VA_ARGS__ );

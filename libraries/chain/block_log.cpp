@@ -66,7 +66,7 @@ namespace hive { namespace chain {
     // "^block_log_part\\.\\d{4}$"
     size_t padding = _split_file_name_extension_length;
     std::string part_number_str = std::to_string( part_number );
-    std::string result = _split_file_name_core + "." + 
+    std::string result = _split_file_name_core + "." +
       std::string(padding - std::min(padding, part_number_str.length()), '0') + part_number_str;
     return result;
   }
@@ -114,10 +114,10 @@ namespace hive { namespace chain {
         bool compression_enabled = true;
         bool auto_fixing_enabled = true;
 
-        // during testing (around block 63M) we found level 15 to be a good balance between ratio 
-        // and compression/decompression times of ~3.5ms & 65μs, so we're making level 15 the default, and the 
+        // during testing (around block 63M) we found level 15 to be a good balance between ratio
+        // and compression/decompression times of ~3.5ms & 65μs, so we're making level 15 the default, and the
         // dictionaries are optimized for level 15
-        int zstd_level = 15; 
+        int zstd_level = 15;
 
         signed_block read_block_from_offset_and_size(uint64_t offset, uint64_t size);
         signed_block_header read_block_header_from_offset_and_size(uint64_t offset, uint64_t size);
@@ -129,7 +129,7 @@ namespace hive { namespace chain {
       {
         ssize_t bytes_written = write(fd, buf, nbyte);
         if (bytes_written == -1)
-          FC_THROW("Error writing ${nbytes} to file: ${error}", 
+          FC_THROW("Error writing ${nbytes} to file: ${error}",
                    ("nbytes", nbyte)("error", strerror(errno)));
         if (bytes_written == (ssize_t)nbyte)
           return;
@@ -289,7 +289,7 @@ namespace hive { namespace chain {
       }
 
       if (auto_open_artifacts)
-          my->_artifacts = block_log_artifacts::open(file, *this, read_only, write_fallback, 
+          my->_artifacts = block_log_artifacts::open(file, *this, read_only, write_fallback,
                                                      false /*full_match_verification*/,
                                                      not file_existed /*log_file_created*/,
                                                      theApp, thread_pool);
@@ -420,7 +420,7 @@ namespace hive { namespace chain {
     }
     else
     {
-      std::tuple<std::unique_ptr<char[]>, size_t, hive::chain::block_log_artifacts::artifacts_t> data_with_artifacts = 
+      std::tuple<std::unique_ptr<char[]>, size_t, hive::chain::block_log_artifacts::artifacts_t> data_with_artifacts =
         read_raw_block_data_by_num(block_num);
       return std::make_tuple(std::get<0>(std::move(data_with_artifacts)), std::get<1>(data_with_artifacts), std::get<2>(data_with_artifacts).attributes);
     }
@@ -428,7 +428,7 @@ namespace hive { namespace chain {
 
   // threading guarantees:
   // - this function may only be called by one thread at a time
-  // - It is safe to call `append` while any number of other threads 
+  // - It is safe to call `append` while any number of other threads
   //   are reading the block log.
   // There is no real use-case for multiple writers so it's not worth
   // adding a lock to allow it.
@@ -507,7 +507,7 @@ namespace hive { namespace chain {
       std::tuple<std::unique_ptr<char[]>, size_t, block_log_artifacts::artifacts_t> raw_block_data = read_raw_block_data_by_num(block_num);
       block_log_artifacts::artifacts_t artifacts = std::get<2>(std::move(raw_block_data));
 
-      return artifacts.attributes.flags == block_flags::uncompressed ? 
+      return artifacts.attributes.flags == block_flags::uncompressed ?
         full_block_type::create_from_uncompressed_block_data(std::get<0>(std::move(raw_block_data)), std::get<1>(raw_block_data), artifacts.block_id) :
         full_block_type::create_from_compressed_block_data(std::get<0>(std::move(raw_block_data)), std::get<1>(raw_block_data), artifacts.attributes, artifacts.block_id);
     }
@@ -520,8 +520,8 @@ namespace hive { namespace chain {
     size_t total_read = detail::block_log_impl::pread_with_retry(my->block_log_fd, serialized_data.get(), size, offset);
     FC_ASSERT(total_read == size && "Invalid block read by offset");
 
-    return attributes.flags == block_flags::uncompressed ? 
-      full_block_type::create_from_uncompressed_block_data(std::move(serialized_data), size) : 
+    return attributes.flags == block_flags::uncompressed ?
+      full_block_type::create_from_uncompressed_block_data(std::move(serialized_data), size) :
       full_block_type::create_from_compressed_block_data(std::move(serialized_data), size, attributes);
   }
 
@@ -554,7 +554,7 @@ namespace hive { namespace chain {
 
       uint32_t last_block_num = first_block_num + count - 1;
 
-      // first, check if the last block we want is the current head block; if so, we can 
+      // first, check if the last block we want is the current head block; if so, we can
       // will use it and then load the previous blocks from the block log
       std::shared_ptr<full_block_type> head_block = my->head;
       if (!head_block || first_block_num > head_block->get_block_num())
@@ -587,15 +587,15 @@ namespace hive { namespace chain {
         {
           // full_block_type expects to take ownership of a unique_ptr for the memory, so create one
           std::unique_ptr<char[]> compressed_block_data(new char[block_artifacts.block_serialized_data_size]);
-          memcpy(compressed_block_data.get(), block_data.get() + block_artifacts.block_log_file_pos - first_block_offset, 
+          memcpy(compressed_block_data.get(), block_data.get() + block_artifacts.block_log_file_pos - first_block_offset,
                  block_artifacts.block_serialized_data_size);
           if (block_artifacts.attributes.flags == block_flags::uncompressed)
-            result.push_back(full_block_type::create_from_uncompressed_block_data(std::move(compressed_block_data), 
-                                                                                  block_artifacts.block_serialized_data_size, 
+            result.push_back(full_block_type::create_from_uncompressed_block_data(std::move(compressed_block_data),
+                                                                                  block_artifacts.block_serialized_data_size,
                                                                                   block_artifacts.block_id));
           else
-            result.push_back(full_block_type::create_from_compressed_block_data(std::move(compressed_block_data), 
-                                                                                block_artifacts.block_serialized_data_size, 
+            result.push_back(full_block_type::create_from_compressed_block_data(std::move(compressed_block_data),
+                                                                                block_artifacts.block_serialized_data_size,
                                                                                 block_artifacts.attributes, block_artifacts.block_id));
         }
       }
@@ -611,11 +611,11 @@ namespace hive { namespace chain {
   {
     ssize_t block_log_size = get_file_stats(my->block_log_fd).st_size;
 
-    // read the last int64 of the block log into `head_block_offset`, 
+    // read the last int64 of the block log into `head_block_offset`,
     // that's the index of the start of the head block
-    FC_ASSERT(block_log_size >= (ssize_t)sizeof(uint64_t));
+    FC_ASSERT(block_log_size >= (ssize_t)sizeof(uint64_t) && "read_raw_head_block");
     uint64_t head_block_offset_with_flags;
-    detail::block_log_impl::pread_with_retry(my->block_log_fd, &head_block_offset_with_flags, sizeof(head_block_offset_with_flags), 
+    detail::block_log_impl::pread_with_retry(my->block_log_fd, &head_block_offset_with_flags, sizeof(head_block_offset_with_flags),
                                              block_log_size - sizeof(head_block_offset_with_flags));
     uint64_t head_block_offset;
 
@@ -623,7 +623,7 @@ namespace hive { namespace chain {
     std::tie(head_block_offset, attributes) = detail::split_block_start_pos_with_flags(head_block_offset_with_flags);
     size_t raw_data_size = block_log_size - head_block_offset - sizeof(head_block_offset);
 
-    FC_ASSERT(raw_data_size <= HIVE_MAX_BLOCK_SIZE, "block log file is corrupted, head block has invalid size: ${raw_data_size} bytes", (raw_data_size));
+    FC_ASSERT(raw_data_size <= HIVE_MAX_BLOCK_SIZE && "read_raw_head_block", "block log file is corrupted, head block has invalid size: ${raw_data_size} bytes", (raw_data_size));
 
     FC_ASSERT((head_block_offset < sizeof(head_block_offset)) /*e.g. single empty block in log*/ ||
               ((size_t)(block_log_size) > (head_block_offset - sizeof(head_block_offset))),
@@ -645,7 +645,7 @@ namespace hive { namespace chain {
       std::tuple<std::unique_ptr<char[]>, size_t, block_log::block_attributes_t> raw_block_data = read_raw_head_block();
       block_log::block_attributes_t attributes = std::get<2>(raw_block_data);
 
-      return attributes.flags == block_flags::uncompressed ? 
+      return attributes.flags == block_flags::uncompressed ?
         full_block_type::create_from_uncompressed_block_data(std::get<0>(std::move(raw_block_data)), std::get<1>(raw_block_data)) :
         full_block_type::create_from_compressed_block_data(std::get<0>(std::move(raw_block_data)), std::get<1>(raw_block_data), attributes);
     }
@@ -669,7 +669,7 @@ namespace hive { namespace chain {
 
   void block_log::for_each_block_position(block_info_processor_t processor) const
   {
-    FC_ASSERT(is_open(), "Open block log first !");
+    FC_ASSERT(is_open() && "for_each_block_position", "Open block log first !");
 
     if (my->block_log_size == 0)
       return; /// Nothing to do for empty block log.
@@ -691,7 +691,7 @@ namespace hive { namespace chain {
 
     // now walk backwards through the block log reading the starting positions of the blocks
     uint64_t block_pos = my->block_log_size - sizeof(uint64_t);
-    
+
     ilog("Attempting to walk over block position list starting from block: ${b}...", ("b", head_block_num));
 
     for (uint32_t block_num = head_block_num; block_num >= 1; --block_num)
@@ -734,7 +734,7 @@ namespace hive { namespace chain {
   {
     FC_ASSERT(target_block_number < starting_block_number);
     FC_ASSERT(target_block_number != 0);
-    FC_ASSERT(is_open(), "Open block log first!");
+    FC_ASSERT(is_open() && "read_blocks_data_for_artifacts_generation", "Open block log first!");
     FC_ASSERT(my->block_log_size, "Cannot process blocks from empty block_log.");
 
     const std::shared_ptr<full_block_type> head_block = my->head;
@@ -766,7 +766,7 @@ namespace hive { namespace chain {
 
     ilog("Processing blocks in reverse order for artifact file from block: ${starting_block_number} (position: ${block_position}, is head: ${starting_from_head_block} ) to ${target_block_number} ...",
       (starting_block_number)(block_position)(starting_from_head_block)(target_block_number));
-    
+
     block_position -= sizeof(uint64_t);
     const fc::time_point start_time = fc::time_point::now();
 
@@ -778,17 +778,17 @@ namespace hive { namespace chain {
       uint64_t block_position_with_flags = *(uint64_t*)(block_log_ptr + block_position);
       block_attributes_t attributes;
       std::tie(block_position, attributes) = detail::split_block_start_pos_with_flags(block_position_with_flags);
-    
+
       if (higher_block_position <= block_position) //this is a sanity check on index values stored in the block log
         FC_THROW("bad block offset at block ${current_block_num} because higher block pos: ${higher_block_pos} <= lower block pos: ${block_position}",
                  (current_block_num)(higher_block_position)(block_position));
-    
+
       uint32_t block_serialized_data_size = higher_block_position - block_position;
-    
+
       std::unique_ptr<char[]> serialized_data(new char[block_serialized_data_size]);
       memcpy(serialized_data.get(), block_log_ptr + block_position, block_serialized_data_size);
-      std::shared_ptr<full_block_type> full_block = attributes.flags == block_flags::uncompressed ? 
-          full_block_type::create_from_uncompressed_block_data(std::move(serialized_data), block_serialized_data_size) : 
+      std::shared_ptr<full_block_type> full_block = attributes.flags == block_flags::uncompressed ?
+          full_block_type::create_from_uncompressed_block_data(std::move(serialized_data), block_serialized_data_size) :
           full_block_type::create_from_compressed_block_data(std::move(serialized_data), block_serialized_data_size, attributes);
 
       if (!processor(full_block, block_position, current_block_num, attributes))
@@ -796,15 +796,15 @@ namespace hive { namespace chain {
         ilog("Block log reading for artifacts stopped on caller request. Last read block: ${current_block_num}", (current_block_num));
         break;
       }
-    
+
       /// Move to the offset of previous block
       block_position -= sizeof(uint64_t);
       --current_block_num;
     }
-    
+
     if (munmap(block_log_ptr, my->block_log_size) == -1)
       elog("error unmapping block_log: ${error}", ("error", strerror(errno)));
-    
+
     const fc::time_point end_time = fc::time_point::now();
     const fc::microseconds iteration_duration = end_time - start_time;
     ilog("Block log reading for artifacts finished in time: ${iteration_duration} s.", ("iteration_duration", iteration_duration.count() / 1000000));
@@ -855,7 +855,7 @@ namespace hive { namespace chain {
         }
         thread_pool.enqueue_work(full_block, worker_thread_processing);
       }
-    
+
       ilog("Exiting the queue thread");
     });
 
@@ -868,7 +868,7 @@ namespace hive { namespace chain {
           block_queue_condition.wait(lock);
 
         if(!stop_requested)
-        { 
+        {
           full_block = block_queue.front();
           block_queue.pop();
         }
@@ -918,17 +918,17 @@ namespace hive { namespace chain {
     const uint32_t current_head_block_num = head_block ? head_block->get_block_num() : 0;
 
     if (new_head_block_num > current_head_block_num)
-      FC_THROW("Unable to truncate block log to ${new_head_block_num}, it only has ${current_head_block_num} blocks in it", 
+      FC_THROW("Unable to truncate block log to ${new_head_block_num}, it only has ${current_head_block_num} blocks in it",
                (new_head_block_num)(current_head_block_num));
     if (current_head_block_num == new_head_block_num)
       return; // nothing to do
 
     // else, we're really being asked to shorten the block log
     block_log_artifacts::artifacts_t new_head_block_artifacts = my->_artifacts->read_block_artifacts(new_head_block_num);
-    dlog("new head block starts at offset ${offset} and is ${bytes} bytes long", 
+    dlog("new head block starts at offset ${offset} and is ${bytes} bytes long",
          ("offset", new_head_block_artifacts.block_log_file_pos)("bytes", new_head_block_artifacts.block_serialized_data_size));
     off_t final_block_log_size = new_head_block_artifacts.block_log_file_pos + new_head_block_artifacts.block_serialized_data_size + sizeof(uint64_t);;
-    FC_ASSERT(ftruncate(my->block_log_fd, final_block_log_size) == 0, 
+    FC_ASSERT(ftruncate(my->block_log_fd, final_block_log_size) == 0,
               "failed to truncate block log, ${error}", ("error", strerror(errno)));
     my->_artifacts->truncate(new_head_block_num);
     std::atomic_store(&my->head, read_head());
@@ -940,7 +940,7 @@ namespace hive { namespace chain {
     // that's the index of the start of the head block
     const ssize_t block_log_size = my->block_log_size;
 
-    FC_ASSERT(block_log_size >= (ssize_t)sizeof(uint64_t));
+    FC_ASSERT(block_log_size >= (ssize_t)sizeof(uint64_t) && "sanity_check");
     uint64_t head_block_offset_with_flags;
     detail::block_log_impl::pread_with_retry(my->block_log_fd, &head_block_offset_with_flags, sizeof(head_block_offset_with_flags), block_log_size - sizeof(head_block_offset_with_flags));
     uint64_t head_block_offset;
@@ -949,7 +949,7 @@ namespace hive { namespace chain {
     std::tie(head_block_offset, attributes) = detail::split_block_start_pos_with_flags(head_block_offset_with_flags);
     size_t raw_data_size = block_log_size - head_block_offset - sizeof(head_block_offset);
     if (read_only)
-      FC_ASSERT(raw_data_size <= HIVE_MAX_BLOCK_SIZE, "block log file is corrupted, head block has invalid size: ${raw_data_size} bytes. Cannot modify block_log, opened in read_only mode.", (raw_data_size));
+      FC_ASSERT(raw_data_size <= HIVE_MAX_BLOCK_SIZE && "sanity_check-1", "block log file is corrupted, head block has invalid size: ${raw_data_size} bytes. Cannot modify block_log, opened in read_only mode.", (raw_data_size));
     else
     {
       if (my->auto_fixing_enabled && raw_data_size > HIVE_MAX_BLOCK_SIZE)
@@ -1061,7 +1061,7 @@ namespace hive { namespace chain {
         FC_CAPTURE_AND_RETHROW()
       }
       else
-        FC_ASSERT(raw_data_size <= HIVE_MAX_BLOCK_SIZE, "block log file is corrupted, head block has invalid size: ${raw_data_size} bytes. "
+        FC_ASSERT(raw_data_size <= HIVE_MAX_BLOCK_SIZE && "sanity_check-2", "block log file is corrupted, head block has invalid size: ${raw_data_size} bytes. "
                                                         "Use --enable-block-log-auto-fixing, manually truncate block_log or delete block_log", (raw_data_size));
     }
   }
