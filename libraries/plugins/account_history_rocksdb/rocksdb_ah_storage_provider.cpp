@@ -40,6 +40,13 @@ WriteBatch& rocksdb_ah_storage_provider::getWriteBuffer()
   return _writeBuffer;
 }
 
+void rocksdb_ah_storage_provider::flushWriteBuffer( DB* storageDB )
+{
+  storeSequenceIds();
+  rocksdb_storage_provider::flushWriteBuffer( storageDB );
+  _collectedOps = 0;
+}
+
 ColumnFamilyHandle* rocksdb_ah_storage_provider::getColumnHandle( Columns column )
 {
   FC_ASSERT( column < _columnHandles.size() );
