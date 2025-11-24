@@ -167,6 +167,8 @@ void hived_fixture::postponed_init_impl( bool remove_db_files, config_arg_overri
       }
 
       app.startup();
+
+      db->notify_end_of_syncing();
     } );
 
     FC_ASSERT( _data_dir != fc::path() );
