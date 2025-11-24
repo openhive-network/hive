@@ -67,12 +67,16 @@ class rocksdb_storage_provider: public external_basic_provider
 
     void flushDb( DB* storageDb );
 
+    void update_lib_internal( uint32_t );
+
   protected:
 
     /// <summary>
     /// Block being irreversible atm.
     /// </summary>
     std::atomic_uint                 _cached_irreversible_block;
+
+    const std::string name;
 
     virtual void loadSeqIdentifiers( DB* storageDb ) = 0;
 
@@ -91,7 +95,7 @@ class rocksdb_storage_provider: public external_basic_provider
     void openDb( uint32_t expected_lib ) override;
     void shutdownDb() override;
     void flushDb() override;
-    void flushWriteBuffer( DB* storage = nullptr ) override;
+    void flushWriteBuffer( DB* storageDB = nullptr ) override;
     void wipeDb() override;
 
     //stores new value of last irreversible block in DB and _cached_irreversible_block
