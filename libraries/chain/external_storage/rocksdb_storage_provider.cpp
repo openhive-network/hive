@@ -7,8 +7,6 @@
 
 #include <appbase/application.hpp>
 
-#include <boost/scope_exit.hpp>
-
 namespace hive { namespace chain {
 
 rocksdb_storage_provider::rocksdb_storage_provider( const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application& app, const std::string& name )
@@ -25,11 +23,6 @@ rocksdb_storage_provider::rocksdb_storage_provider( const bfs::path& blockchain_
 
 void rocksdb_storage_provider::openDb( uint32_t expected_lib )
 {
-  BOOST_SCOPE_EXIT( &_initialized )
-  {
-    _initialized = true;
-  } BOOST_SCOPE_EXIT_END
-
   ilog("Open `${name}` RocksDB database at location: `${p}'.", ("name", name)("p", _storagePath.string()));
   _cached_irreversible_block.store( expected_lib );
 
@@ -75,6 +68,8 @@ void rocksdb_storage_provider::openDb( uint32_t expected_lib )
   }
 
   ilog("`${name}` RocksDB database opened successfully storage at location: `${p}'.", ("name", name)("p", strPath));
+
+  _initialized = true;
 }
 
 void rocksdb_storage_provider::shutdownDb()
@@ -327,12 +322,12 @@ void rocksdb_storage_provider::load_lib()
 
   FC_ASSERT( s.ok() && "Not found irreversible", "Could not find last irreversible block. Error msg: `${e}'", ("e", s.ToString()) );
 
-  uint32_t _lib = lib_slice_t::unpackSlice( _value );
+  uint32_t lib = lib_slice_t::unpackSlice( _value );
 
-  FC_ASSERT( _lib == _cached_irreversible_block, "Inconsistency in last irreversible block - expected ${c}, stored ${s}",
-    ( "c", static_cast< uint32_t >( _cached_irreversible_block ) )( "s", _lib ) );
+  FC_ASSERT( lib == _cached_irreversible_block, "Inconsistency in last irreversible block - expected ${c}, stored ${s}",
+    ( "c", static_cast< uint32_t >( _cached_irreversible_block ) )( "s", lib ) );
 
-  ilog( "`${name}` RocksDB database LIB loaded with value ${l}.", ("name", name)( "l", _lib ) );
+  ilog( "`${name}` RocksDB database LIB loaded with value ${l}.", ("name", name)( "l", lib ) );
 }
 
 void rocksdb_storage_provider::update_lib_internal( uint32_t lib )
