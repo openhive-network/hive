@@ -9,9 +9,9 @@ namespace fc {
   namespace ip {
     class address {
       public:
-        address( uint32_t _ip = 0 );
+        address(uint32_t ipv4 = 0 );
 #ifdef ENABLE_IPV6
-        address( std::array<uint32_t, 4> _ip);
+        address( std::array<uint8_t, 16> _ip);
 #endif
         address( const fc::string& s );
         address& operator=( const fc::string& s );
@@ -43,9 +43,9 @@ namespace fc {
         uint32_t _ip;
 #else
         bool is_v4() const;
-        const std::array<uint32_t,4>& raw() const { return _ip; }
-      private:
-        std::array<uint32_t, 4> _ip;
+        const std::array<uint8_t,16>& raw() const { return _ip; }
+    private:
+        std::array<uint8_t, 16> _ip;
 #endif
     };
 

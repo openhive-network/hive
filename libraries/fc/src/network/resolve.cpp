@@ -12,34 +12,16 @@ namespace fc
     for( auto itr = ep.begin(); itr != ep.end(); ++itr )
     {
       const auto& addr = itr->address();
+
+#ifndef ENABLE_IPV6
       if( addr.is_v4() )
       {
-#ifndef ENABLE_IPV6
         // IPv4-only FC legacy build
         eps.push_back(fc::ip::endpoint(addr.to_v4().to_ulong(), itr->port()));
+      }
 #else
-        // IPv4 address stored in IPv6-capable structure
-        fc::ip::address a(addr.to_v4().to_ulong());
-        eps.push_back(fc::ip::endpoint(a, itr->port()));
-#endif
-      }
-#ifdef ENABLE_IPV6
-      else if (addr.is_v6())
-      {
-      // Convert IPv6 to std::array<uint32_t,4>
-      auto bytes = addr.to_v6().to_bytes();
-      std::array<uint32_t,4> words;
-      for (int i = 0; i < 4; i++)
-      {
-          words[i] =
-              (uint32_t(bytes[i*4])   << 24) |
-              (uint32_t(bytes[i*4+1]) << 16) |
-              (uint32_t(bytes[i*4+2]) << 8)  |
-              uint32_t(bytes[i*4+3]);
-      }
-      fc::ip::address a(words);
+      fc::ip::address a(addr.to_string());
       eps.push_back(fc::ip::endpoint(a, itr->port()));
-      }
 #endif
     }
     return eps;
