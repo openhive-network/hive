@@ -141,7 +141,7 @@ BOOST_FIXTURE_TEST_CASE( inconsistent_ah_rocksdb_storage, empty_fixture )
       HIVE_REQUIRE_ASSERT( fixture.postponed_init( {
         hived_fixture::config_line_t( { "plugin", { HIVE_ACCOUNT_HISTORY_ROCKSDB_PLUGIN_NAME } } ),
         hived_fixture::config_line_t( { "account-history-rocksdb-path", { ah_copy_dir.path().generic_string() }} )
-      } ), "_lib == _cached_irreversible_block" );
+      } ), "lib == _cached_irreversible_block" );
     }
     // try to open with AH in completely new directory - LIB will be fresh 0 so also inconsistent
     {

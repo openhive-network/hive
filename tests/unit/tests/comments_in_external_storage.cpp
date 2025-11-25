@@ -421,7 +421,7 @@ BOOST_FIXTURE_TEST_CASE( inconsistent_comment_archive, empty_fixture )
     {
       hived_fixture fixture( false );
       HIVE_REQUIRE_ASSERT( fixture.postponed_init( { hived_fixture::config_line_t( { "comments-rocksdb-path", { ca_copy_dir.path().generic_string() }} ) } ),
-        "_lib == _cached_irreversible_block" );
+        "lib == _cached_irreversible_block" );
     }
     // try to open with comment archive in completely new directory - LIB will be fresh 0 so also inconsistent
     {
