@@ -756,7 +756,7 @@ class WitnessAccount(Account):
         serialized_props = wax.serialize_witness_set_properties(
             wax.python_witness_set_properties_data(**props_to_serialize)
         )
-        serialized_props = [[key.decode("utf-8"), value.decode("utf-8")] for key, value in serialized_props.items()]
+        serialized_props = [[key, value] for key, value in serialized_props.items()]
 
         return create_transaction_with_any_operation(
             wallet=self._wallet,
