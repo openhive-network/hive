@@ -33,22 +33,30 @@ namespace fc
     {
       string host;
       string port_string;
-      size_t pos = 0;
 #ifdef ENABLE_IPV6
-      // IPv6 literal: [2001:db8::1]:8080
       if (!endpoint_string.empty() && endpoint_string[0] == '[')
       {
         size_t end = endpoint_string.find(']');
         if (end == string::npos)
           FC_THROW("Invalid IPv6 endpoint string: ${s}", ("s", endpoint_string));
-
         host = endpoint_string.substr(1, end - 1);
-
-        // Must have "]:"
         if (endpoint_string.size() <= end + 2 || endpoint_string[end+1] != ':')
           FC_THROW("Invalid IPv6 endpoint string (missing port): ${s}", ("s", endpoint_string));
-
         port_string = endpoint_string.substr(end + 2);
+        uint16_t port = 0;
+        try
+        {
+          port = boost::lexical_cast<uint16_t>(port_string);
+        }
+        catch (const boost::bad_lexical_cast&)
+        {
+          FC_THROW("Bad port: ${port}", ("port", port_string));
+        }
+        auto endpoints = resolve(host, port);
+        if (endpoints.empty())
+          FC_THROW_EXCEPTION(unknown_host_exception,
+                             "Host name could not be resolved: ${host}", ("host", host));
+        return endpoints;
       }
       else
 #endif
@@ -75,6 +83,6 @@ namespace fc
         return endpoints;
       }
     }
-    FC_CAPTURE_AND_RETHROW( (endpoint_string) )
+    FC_CAPTURE_AND_RETHROW( (endpoint_string) );
   }
 }
