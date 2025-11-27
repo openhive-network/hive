@@ -86,7 +86,6 @@ class chain_plugin_impl
     ~chain_plugin_impl()
     {
       hive::utilities::disconnect_signal( dumper_post_apply_block );
-      hive::utilities::disconnect_signal( on_wipe_conn );
 
       stop_write_processing();
 
@@ -129,8 +128,6 @@ class chain_plugin_impl
     bool test_checkpoint( const std::shared_ptr<full_block_type>& block );
 
     void finish_request();
-
-    void on_wipe();
 
     using block_log_open_args=block_storage_i::block_log_open_args;
 
@@ -228,7 +225,6 @@ class chain_plugin_impl
     block_log_open_args                 bl_open_args;
     get_stat_details_t                  get_stat_details;
     boost::signals2::connection         dumper_post_apply_block;
-    boost::signals2::connection         on_wipe_conn;
 
     state_snapshot_provider*            snapshot_provider = nullptr;
     bool                                is_p2p_enabled = true;
@@ -860,7 +856,6 @@ void chain_plugin_impl::initial_settings()
   db_open_args.do_validate_invariants = validate_invariants;
   db_open_args.stop_replay_at = stop_replay_at;
   db_open_args.force_replay = force_replay;
-  db_open_args.resync = resync;
   db_open_args.validate_during_replay = validate_during_replay;
   db_open_args.benchmark_is_enabled = benchmark_is_enabled;
   db_open_args.database_cfg = database_config;
@@ -925,6 +920,17 @@ void chain_plugin_impl::open()
 
   try
   {
+    if(resync)
+    {
+      wlog("resync requested: deleting block log and shared memory");
+      default_block_writer->close();
+      block_storage->close_storage();
+      block_storage->wipe_storage_files( theApp.data_dir() / "blockchain" );
+    }
+
+    if( force_replay || load_snapshot || resync )
+      db.wipe( shared_memory_dir );
+
     db.pre_open( db_open_args );
     db.with_write_lock([&]()
     {
@@ -1002,18 +1008,6 @@ void chain_plugin_impl::finish_request()
 {
   std::unique_lock<std::mutex> _guard( finish.mtx );
   finish.cv.wait( _guard, [this](){ return finish.status.load(); } );
-}
-
-void chain_plugin_impl::on_wipe()
-{
-  if( resync )
-  {
-    wlog("resync requested: deleting block log");
-    default_block_writer->close();
-    block_storage->close_storage();
-    block_storage->wipe_storage_files( theApp.data_dir() / "blockchain" );
-  }
-
 }
 
 bool chain_plugin_impl::test_checkpoint( const std::shared_ptr<full_block_type>& block )
@@ -1834,11 +1828,6 @@ void chain_plugin::plugin_initialize(const variables_map& options)
       }
     }, *this, 0);
   }
-
-  my->on_wipe_conn = db().add_wipe_handler( [&]()
-  {
-    my->on_wipe();
-  }, *this  );
 
   my->max_mempool_size = fc::parse_size( options.at( "max-mempool-size" ).as< string >() );
 

@@ -173,11 +173,7 @@ void database::pre_open( const open_args& args )
                                                 theApp.get_plugins_names(),
                                                 []( const std::string& message ){ wlog( message.c_str() ); }
                                               );
-    if( args.force_replay | args.load_snapshot | args.resync )
-      wipe( args.shared_mem_dir );
-
     ilog("Opening/creating shared memory from ${path}", ("path", args.shared_mem_dir.generic_string()));
-
     chainbase::database::open( args.shared_mem_dir, args.chainbase_flags, args.shared_file_size, args.database_cfg, &environment_extension );
     initialize_irreversible_storage();
   }

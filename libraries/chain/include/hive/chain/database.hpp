@@ -101,7 +101,6 @@ namespace chain {
     // The following fields are only used on reindexing
     uint32_t stop_replay_at = 0;
     bool force_replay = false;
-    bool resync = false;
     bool validate_during_replay = false;
   };
 
