@@ -18,7 +18,7 @@ AvailableApis = Literal[
     "network_broadcast_api",
     "rc_api",
     "reputation_api",
-    "search-api",
+    "search_api",
     "tags_api",
     "transaction_status_api",
 ]
@@ -38,7 +38,7 @@ available_apis: Final[list[AvailableApis]] = [
     "network_broadcast_api",
     "rc_api",
     "reputation_api",
-    "search-api",
+    "search_api",
     "tags_api",
     "transaction_status_api",
 ]
