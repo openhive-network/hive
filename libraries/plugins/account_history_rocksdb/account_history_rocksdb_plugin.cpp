@@ -1074,13 +1074,6 @@ void account_history_rocksdb_plugin::impl::on_pre_reindex(const hive::chain::rei
   _provider->shutdownDb();
   std::string strPath = _storagePath.string();
 
-  if( note.force_replay )
-  {
-    ilog("Received onReindexStart request, attempting to clean database storage.");
-    auto s = ::rocksdb::DestroyDB(strPath, ::rocksdb::Options());
-    checkStatus(s);
-  }
-
   _provider->openDb( _mainDb.get_last_irreversible_block_num() );
   _initialized = true; // prevent reopening of database during plugin_startup
 
