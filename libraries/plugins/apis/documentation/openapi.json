@@ -68,7 +68,7 @@
             "description": "Needed by condenser_api to optionally use follow_api or reputation_api for account reputations"
         },
         {
-            "name": "search-api",
+            "name": "search_api",
             "description": "Allows to perform full-text searches across root posts, retrieving relevant content based on keywords and phrases."
         },
         {
@@ -11970,10 +11970,10 @@
                 }
             }
         },
-        "search-api.find_text": {
+        "search_api.find_text": {
             "post": {
                 "tags": [
-                    "search-api"
+                    "search_api"
                 ],
                 "summary": "Finds posts related to entry pattern.",
                 "operationId": "find_text",
