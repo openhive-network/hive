@@ -42,8 +42,7 @@ using std::cout;
 class application_impl {
   public:
     application_impl() :
-      _app_options("Application Options"),
-      _logging_thread("logging_thread")
+      _app_options("Application Options")
     {}
     const variables_map*    _options = nullptr;
     options_description_ex  _app_options;
@@ -52,7 +51,7 @@ class application_impl {
 
     bfs::path               _data_dir;
 
-    fc::thread              _logging_thread;
+    std::unique_ptr<fc::thread> _logging_thread;
 };
 
 application::application()
@@ -81,11 +80,20 @@ void application::generate_interrupt_request()
   _is_interrupt_request = true;
 }
 
+void application::init_logging_thread()
+{
+  FC_ASSERT( !my->_logging_thread, "Logging thread is already initialized" );
+  // Initialize logging thread AFTER signals are blocked
+  // so it inherits the blocked signal mask
+  my->_logging_thread = std::make_unique<fc::thread>("logging_thread");
+}
+
 fc::optional< fc::logging_config > application::load_logging_config()
 {
   fc::optional< fc::logging_config > logging_config;
   const variables_map& args = get_args();
-  my->_logging_thread.async( [this, args, &logging_config]{
+
+  my->_logging_thread->async( [this, args, &logging_config]{
     try
     {
       logging_config =
@@ -376,7 +384,11 @@ void application::finish()
       pre_shutdown( _actual_plugin_name );
       shutdown( _actual_plugin_name );
 
-      my->_logging_thread.quit();
+      if( my->_logging_thread )
+      {
+        my->_logging_thread->quit();
+        my->_logging_thread.reset();
+      }
 
       is_finished = true;
     }
