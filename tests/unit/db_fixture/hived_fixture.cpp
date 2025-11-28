@@ -163,6 +163,7 @@ void hived_fixture::postponed_init_impl( bool remove_db_files, config_arg_overri
       {
         // Load configuration file into logging config structure, used to create loggers & appenders.
         // Store the structure for further examination (in tests).
+        app.init_logging_thread();
         _logging_config = app.load_logging_config();
       }
 

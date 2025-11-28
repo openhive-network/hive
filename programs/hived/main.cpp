@@ -87,6 +87,7 @@ int main( int argc, char** argv )
     bool _started_loop = false;
 
     theApp.init_signals_handler();
+    theApp.init_logging_thread();
 
     BOOST_SCOPE_EXIT(&theApp, &_started_loop)
     {

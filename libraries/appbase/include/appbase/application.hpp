@@ -91,6 +91,7 @@ namespace appbase {
         return initialize_impl( argc, argv, { find_plugin( Plugin::name() )... }, arg_overrides );
       }
 
+      void init_logging_thread();
       fc::optional< fc::logging_config > load_logging_config();
 
       void startup();
