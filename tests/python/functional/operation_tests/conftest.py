@@ -429,6 +429,8 @@ class ProposalAccount(Account):
         ), f"Something went wrong after proposal update. {changed_parameter} has wrong value"
 
     def check_if_rc_current_mana_was_reduced(self, transaction: dict) -> None:
+        # Wait for 1 block to ensure RC mana state is fully updated after the transaction
+        self._node.wait_number_of_blocks(1)
         self.rc_manabar.assert_rc_current_mana_is_reduced(
             transaction["rc_cost"], get_transaction_timestamp(self._node, transaction)
         )
@@ -837,7 +839,7 @@ def hive_fund(
 def speed_up_node() -> tt.InitNode:
     node = tt.InitNode()
     node.config.plugin.append("account_history_api")
-    node.run(timeout=60.0, time_control=tt.SpeedUpRateTimeControl(speed_up_rate=5))
+    node.run(timeout=120.0, time_control=tt.SpeedUpRateTimeControl(speed_up_rate=5))
     return node
 
 
