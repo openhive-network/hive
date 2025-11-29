@@ -147,6 +147,7 @@ def test_colony_on_complex_network(block_log_single_sign: tt.BlockLog, alternate
 
 
 @pytest.mark.testnet()
+@pytest.mark.timeout(900)  # This test can take 400-650s depending on CI load
 def test_multiple_colony_nodes_communication_with_single_witness_node(
     block_log_single_sign: tt.BlockLog, alternate_chain_spec: tt.AlternateChainSpecs
 ) -> None:
