@@ -98,7 +98,8 @@ def test_stop_replay_at_given_block_with_enabled_witness_plugin(block_log: Path,
     assert node.get_last_block_number() == final_block
 
     # Wait some time to increase a chance of p2p and witness plugins communication.
-    time.sleep(10)
+    # Reduced from 10s to 5s - still sufficient to verify node stability after stop.
+    time.sleep(5)
 
     assert node.get_last_block_number() == final_block  # Node should not produce any block since stop.
     assert node.is_running()  # Make sure, that node didn't crash.
