@@ -114,34 +114,10 @@ BOOST_FIXTURE_TEST_CASE( inconsistent_ah_rocksdb_storage, empty_fixture )
     configuration_data.set_cashout_related_values( 0, 9, 9 * 2, 9 * 7, 3 );
     autoscope( []() { configuration_data.reset_cashout_values(); } );
 
-    // Create a shared data directory for all fixtures in this test.
-    // This is needed because temp_directory_path() now returns unique paths per call,
-    // but this test needs multiple fixtures to share the same blockchain state.
-    fc::temp_directory shared_data_dir( hive::utilities::temp_directory_path() );
-    fc::path shared_data_path = shared_data_dir.path();
-
     fc::path ah_rocksdb_dir;
     {
-      hived_fixture fixture( true, true, shared_data_path );
-      fixture.postponed_init( {
-        hived_fixture::config_line_t( { "plugin", { HIVE_ACCOUNT_HISTORY_ROCKSDB_PLUGIN_NAME } } ),
-        hived_fixture::config_line_t( { "shared-file-size", { std::to_string( 1024 * 1024 * 24 ) } } )
-      }, &fixture.ah_plugin );
+      clean_database_fixture fixture;
       ah_rocksdb_dir = fixture.ah_plugin->storage_dir();
-      // Replicate clean_database_fixture initialization
-      fixture.init_account_pub_key = fixture.init_account_priv_key.get_public_key();
-      // Inline inject_hardfork since hived_fixture doesn't have this method
-      fixture.generate_block();
-      fixture.db->set_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
-      fixture.generate_block();
-      fixture.db->_log_hardforks = true;
-      fixture.vest( HIVE_INIT_MINER_NAME, ASSET( "10.000 TESTS" ) );
-      for( int i = HIVE_NUM_INIT_MINERS; i < HIVE_MAX_WITNESSES; i++ )
-      {
-        fixture.account_create( HIVE_INIT_MINER_NAME + fc::to_string( i ), fixture.init_account_pub_key );
-        fixture.fund( HIVE_INIT_MINER_NAME + fc::to_string( i ), HIVE_MIN_PRODUCER_REWARD );
-        fixture.witness_create( HIVE_INIT_MINER_NAME + fc::to_string( i ), fixture.init_account_priv_key, "foo.bar", fixture.init_account_pub_key, HIVE_MIN_PRODUCER_REWARD.amount );
-      }
       fixture.account_create_default_fee( "alice", fixture.init_account_pub_key, fixture.init_account_pub_key );
       fixture.account_create_default_fee( "bob", fixture.init_account_pub_key, fixture.init_account_pub_key );
       fixture.post_comment( "alice", "test", "test", "test body", "category", fixture.init_account_priv_key );
@@ -152,7 +128,7 @@ BOOST_FIXTURE_TEST_CASE( inconsistent_ah_rocksdb_storage, empty_fixture )
     BOOST_REQUIRE( ah_copy_dir.path().is_absolute() ); // if it wasn't absolute, it would later "try to place itself" inside data_dir
     fc::copy( ah_rocksdb_dir, ah_copy_dir.path() );
     {
-      hived_fixture fixture( false, true, shared_data_path );
+      hived_fixture fixture( false );
       fixture.postponed_init( { hived_fixture::config_line_t( { "plugin", { HIVE_ACCOUNT_HISTORY_ROCKSDB_PLUGIN_NAME } } ) } );
       fixture.vote( "alice", "test", "bob", HIVE_100_PERCENT, fixture.init_account_priv_key );
       fixture.generate_block();
@@ -161,7 +137,7 @@ BOOST_FIXTURE_TEST_CASE( inconsistent_ah_rocksdb_storage, empty_fixture )
     }
     // try to open with AH copied before - LIB will be inconsistent (and content as well)
     {
-      hived_fixture fixture( false, true, shared_data_path );
+      hived_fixture fixture( false );
       HIVE_REQUIRE_ASSERT( fixture.postponed_init( {
         hived_fixture::config_line_t( { "plugin", { HIVE_ACCOUNT_HISTORY_ROCKSDB_PLUGIN_NAME } } ),
         hived_fixture::config_line_t( { "account-history-rocksdb-path", { ah_copy_dir.path().generic_string() }} )
@@ -170,7 +146,7 @@ BOOST_FIXTURE_TEST_CASE( inconsistent_ah_rocksdb_storage, empty_fixture )
     // try to open with AH in completely new directory - LIB will be fresh 0 so also inconsistent
     {
       fc::temp_directory ah_empty_dir( hive::utilities::temp_directory_path() );
-      hived_fixture fixture( false, true, shared_data_path );
+      hived_fixture fixture( false );
       HIVE_REQUIRE_ASSERT( fixture.postponed_init( {
         hived_fixture::config_line_t( { "plugin", { HIVE_ACCOUNT_HISTORY_ROCKSDB_PLUGIN_NAME } } ),
         hived_fixture::config_line_t( { "account-history-rocksdb-path", { ah_empty_dir.path().generic_string() }} )
@@ -178,7 +154,7 @@ BOOST_FIXTURE_TEST_CASE( inconsistent_ah_rocksdb_storage, empty_fixture )
     }
     // restart node with AH in normal location and continue (previous tries should not break anything in state)
     {
-      hived_fixture fixture( false, true, shared_data_path );
+      hived_fixture fixture( false );
       fixture.postponed_init( { hived_fixture::config_line_t( { "plugin", { HIVE_ACCOUNT_HISTORY_ROCKSDB_PLUGIN_NAME } } ) } );
       fixture.vote( "bob", "test", "alice", 50 * HIVE_1_PERCENT, fixture.init_account_priv_key );
       fixture.post_comment_to_comment( "bob", "reply", "reply", "I'm replying", "alice", "test", fixture.init_account_priv_key );

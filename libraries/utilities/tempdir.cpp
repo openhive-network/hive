@@ -24,9 +24,7 @@
 
 #include <hive/utilities/tempdir.hpp>
 
-#include <atomic>
 #include <cstdlib>
-#include <string>
 
 namespace hive { namespace utilities {
 
@@ -35,10 +33,7 @@ fc::path temp_directory_path()
   const char* hive_tempdir = getenv("HIVE_TEMPDIR");
   if( hive_tempdir != nullptr )
     return fc::path( hive_tempdir );
-  // Use unique directory per process/thread to avoid race conditions between tests
-  static std::atomic<uint64_t> instance_counter{0};
-  uint64_t instance_id = instance_counter.fetch_add(1, std::memory_order_relaxed);
-  return fc::temp_directory_path() / ("hive-tmp-" + std::to_string(instance_id));
+  return fc::temp_directory_path() / "hive-tmp";
 }
 
 } } // hive::utilities
