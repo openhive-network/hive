@@ -4,6 +4,7 @@ import time
 from typing import TYPE_CHECKING
 
 import pytest
+from beekeepy._exceptions.executable import FailedToStartExecutableError
 from beekeepy.exceptions import CommunicationError
 
 import test_tools as tt
@@ -36,14 +37,14 @@ def _create_and_run_node() -> tt.InitNode:
 
 @pytest.fixture()
 def node() -> tt.InitNode:
-    # Retry node startup to handle intermittent CommunicationError during port discovery.
-    # When running parallel tests, nodes may bind ports but not be ready to accept
-    # connections immediately, causing beekeepy's get_app_status call to fail.
+    # Retry node startup to handle intermittent startup failures during parallel tests.
+    # FailedToStartExecutableError: hived may fail to start due to resource contention
+    # CommunicationError: nodes may bind ports but not be ready to accept connections
     max_retries = 3
     for attempt in range(max_retries):
         try:
             return _create_and_run_node()
-        except CommunicationError:
+        except (FailedToStartExecutableError, CommunicationError):
             if attempt == max_retries - 1:
                 raise
             tt.logger.warning(f"Node startup failed (attempt {attempt + 1}/{max_retries}), retrying...")
