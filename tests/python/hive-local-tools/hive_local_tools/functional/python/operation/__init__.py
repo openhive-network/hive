@@ -286,8 +286,11 @@ class _RcManabar(_BaseManabar):
     ) -> None:
         err = f"The account {self._name} did not incur the operation cost."
         if operation_timestamp:
-            mana_before_operation = self.calculate_current_value(operation_timestamp - tt.Time.seconds(3))
-            assert mana_before_operation == get_rc_current_mana(self._node, self._name) + operation_rc_cost, err
+            # Calculate what the mana would have been at operation time using the pre-operation manabar state.
+            # The blockchain regenerates mana from last_update_time to operation_timestamp, then deducts rc_cost.
+            # So: get_rc_current_mana() + rc_cost should equal the regenerated mana at operation_timestamp.
+            mana_at_operation_time = self.calculate_current_value(operation_timestamp)
+            assert mana_at_operation_time == get_rc_current_mana(self._node, self._name) + operation_rc_cost, err
         else:
             assert get_rc_current_mana(self._node, self._name) + operation_rc_cost == self.current_mana, err
 
