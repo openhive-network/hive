@@ -598,6 +598,7 @@ hf26_tests:
 
   variables:
     PYTEST_TIMEOUT_MINUTES: 20
+    PYTEST_NUMBER_OF_PROCESSES: 8
     SIGN_TRANSACTION_PATH: "$CI_PROJECT_DIR/hived-testnet-binaries/sign_transaction"
     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/hf26_tests/report.xml
 
@@ -976,6 +977,7 @@ hf28_tests:
 
   variables:
     PYTEST_TIMEOUT_MINUTES: 20
+    PYTEST_NUMBER_OF_PROCESSES: 8
     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/hf28_tests/report.xml
 
   script:
@@ -1079,6 +1081,7 @@ recovery_tests:
   extends: .test_tools_based
   variables:
     PYTEST_TIMEOUT_MINUTES: 10
+    PYTEST_NUMBER_OF_PROCESSES: 8
     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/recovery_tests/report.xml
   script:
     - cd tests/python/functional/recovery_tests
@@ -1266,6 +1269,7 @@ authority_tests:
 
   variables:
     PYTEST_TIMEOUT_MINUTES: 6
+    PYTEST_NUMBER_OF_PROCESSES: 8
     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/authority/report.xml
 
   script:
