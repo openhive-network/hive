@@ -130,7 +130,10 @@ BOOST_FIXTURE_TEST_CASE( inconsistent_ah_rocksdb_storage, empty_fixture )
       ah_rocksdb_dir = fixture.ah_plugin->storage_dir();
       // Replicate clean_database_fixture initialization
       fixture.init_account_pub_key = fixture.init_account_priv_key.get_public_key();
-      fixture.inject_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
+      // Inline inject_hardfork since hived_fixture doesn't have this method
+      fixture.generate_block();
+      fixture.db->set_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
+      fixture.generate_block();
       fixture.db->_log_hardforks = true;
       fixture.vest( HIVE_INIT_MINER_NAME, ASSET( "10.000 TESTS" ) );
       for( int i = HIVE_NUM_INIT_MINERS; i < HIVE_MAX_WITNESSES; i++ )
