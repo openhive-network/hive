@@ -36,6 +36,7 @@ include:
 prepare_hived_image:
   extends: .prepare_hived_image
   stage: build
+  needs: []
   variables:
     REGISTRY_USER: "$HIVED_CI_IMGBUILDER_USER"
     REGISTRY_PASS: $HIVED_CI_IMGBUILDER_PASSWORD
@@ -87,7 +88,7 @@ cleanup_old_hived_cache:
 testnet_node_build:
   extends: .prepare_hived_image
   stage: build
-
+  needs: []
   variables:
     REGISTRY_USER: "$HIVED_CI_IMGBUILDER_USER"
     REGISTRY_PASS: $HIVED_CI_IMGBUILDER_PASSWORD
@@ -103,7 +104,7 @@ testnet_node_build:
 beekeeper_tsc_build:
   extends: .npm_build_template
   stage: build
-
+  needs: []
   variables:
     SOURCE_DIR: "${CI_PROJECT_DIR}/programs/beekeeper/beekeeper_wasm"
     DIST_DIR: "${CI_PROJECT_DIR}/programs/beekeeper/beekeeper_wasm/dist"
@@ -140,6 +141,7 @@ beekeeper_tsc_build:
 generate-wax-spec:
   extends: .generate_swagger_package
   stage: build
+  needs: []
   variables:
     INPUT_JSON_SWAGGER_FILE: "${CI_PROJECT_DIR}/libraries/plugins/apis/documentation/openapi.json"
     NAMESPACE: "" # Leave empty not to disable generation of nested API structure
@@ -195,7 +197,7 @@ push_to_wiki:
 mirrornet_node_build:
   stage: build
   extends: .prepare_hived_image
-
+  needs: []
   variables:
     REGISTRY_USER: "$HIVED_CI_IMGBUILDER_USER"
     REGISTRY_PASS: $HIVED_CI_IMGBUILDER_PASSWORD
@@ -1276,6 +1278,7 @@ authority_tests:
 generate_hived_flattened_openapi_definition:
   extends: .node_based_job_base
   stage: build
+  needs: []
   script:
     - npm install @apidevtools/json-schema-ref-parser@14.2.1 json-schema-merge-allof@0.8.1
     - touch "${CI_PROJECT_DIR}/libraries/plugins/apis/documentation/flattened.json"
@@ -1904,6 +1907,7 @@ colony_tests:
 # Build and push OpenAPI spec Docker image
 build_openapi_spec_image:
   stage: build
+  needs: []
   image: registry.gitlab.syncad.com/hive/common-ci-configuration/docker:28.3.3
   services:
     - name: registry.gitlab.syncad.com/hive/common-ci-configuration/docker:28.3.3-dind
