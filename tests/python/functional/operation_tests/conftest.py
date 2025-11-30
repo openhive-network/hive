@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any, Literal
 
 import pytest
 from beekeepy._exceptions.executable import FailedToStartExecutableError
+from beekeepy.exceptions import CommunicationError
 from loguru import logger
 
 import test_tools as tt
@@ -847,7 +848,7 @@ def speed_up_node() -> tt.InitNode:
         try:
             node.run(timeout=120.0, time_control=tt.SpeedUpRateTimeControl(speed_up_rate=5))
             return node
-        except FailedToStartExecutableError:
+        except (FailedToStartExecutableError, CommunicationError):
             if attempt < max_retries - 1:
                 logger.warning(f"Node startup failed (attempt {attempt + 1}/{max_retries}), retrying...")
                 time.sleep(1)
