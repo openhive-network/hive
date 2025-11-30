@@ -614,6 +614,7 @@ live_sync_tests:
 
   variables:
     PYTEST_TIMEOUT_MINUTES: 10
+    PYTEST_NUMBER_OF_PROCESSES: 6
     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/live_sync_tests/report.xml
 
   script:
@@ -628,6 +629,7 @@ broadcast_tests:
 
   variables:
     PYTEST_TIMEOUT_MINUTES: 6
+    PYTEST_NUMBER_OF_PROCESSES: 6
     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/broadcast_tests/report.xml
 
   script:
@@ -687,6 +689,7 @@ rc_direct_delegations_tests:
 
   variables:
     PYTEST_TIMEOUT_MINUTES: 12
+    PYTEST_NUMBER_OF_PROCESSES: 8
     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/direct_rc_delegations_tests/report.xml
 
   script:
