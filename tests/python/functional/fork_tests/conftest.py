@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+import time
+
 import pytest
+from beekeepy._exceptions.executable import FailedToStartExecutableError
+from loguru import logger
 
 import shared_tools.networks_architecture as networks
 from shared_tools.complex_networks import create_block_log_directory_name, prepare_network, prepare_time_offsets
@@ -14,9 +18,19 @@ def prepare_with_many_witnesses() -> networks.NetworksBuilder:
             {"FullApiNode": True, "WitnessNodes": [3, 3, 2, 2]},
         ]
     }
-    architecture = networks.NetworksArchitecture()
-    architecture.load(config)
-    return prepare_network(architecture, create_block_log_directory_name("block_log_10_10"))
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            architecture = networks.NetworksArchitecture()
+            architecture.load(config)
+            return prepare_network(architecture, create_block_log_directory_name("block_log_10_10"))
+        except FailedToStartExecutableError:
+            if attempt < max_retries - 1:
+                logger.warning(f"Network startup failed (attempt {attempt + 1}/{max_retries}), retrying...")
+                time.sleep(1)
+            else:
+                raise
+    raise RuntimeError("Failed to start network after retries")  # Should not reach here
 
 
 @pytest.fixture()
