@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import functools
 import operator
+import time
 from typing import TYPE_CHECKING, NoReturn
 
 import pytest
+from beekeepy._exceptions.executable import FailedToStartExecutableError
 from loguru import logger
 
 import test_tools as tt
@@ -53,15 +55,25 @@ def node(request: pytest.FixtureRequest) -> tt.InitNode | tt.RemoteNode:  # noqa
     """
 
     def __create_init_node() -> tt.InitNode:
-        init_node = tt.InitNode()
-        init_node.config.plugin.extend([plugin for plugin in __get_plugins() if plugin not in ["condenser_api"]])
-        # init_node.config.plugin.extend(__get_plugins())
-        init_node.config.plugin.append(
-            "condenser_api"
-        )  # FIXME eliminate condenser_api usage from other tests than this API specific
-        init_node.config.block_log_split = -1
-        init_node.run()
-        return init_node
+        max_retries = 3
+        for attempt in range(max_retries):
+            init_node = tt.InitNode()
+            init_node.config.plugin.extend([plugin for plugin in __get_plugins() if plugin not in ["condenser_api"]])
+            # init_node.config.plugin.extend(__get_plugins())
+            init_node.config.plugin.append(
+                "condenser_api"
+            )  # FIXME eliminate condenser_api usage from other tests than this API specific
+            init_node.config.block_log_split = -1
+            try:
+                init_node.run()
+                return init_node
+            except FailedToStartExecutableError:
+                if attempt < max_retries - 1:
+                    logger.warning(f"Node startup failed (attempt {attempt + 1}/{max_retries}), retrying...")
+                    time.sleep(1)
+                else:
+                    raise
+        raise RuntimeError("Failed to start node after retries")  # Should not reach here
 
     def __create_remote_node() -> tt.RemoteNode:
         http_endpoint = request.config.getoption("--http-endpoint")
