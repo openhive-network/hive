@@ -89,19 +89,15 @@ def test_create_proposal_fail_negative_payment(
 
 
 @run_for("testnet", enable_plugins=["account_history_api"])
-def test_update_proposal(wallet: tt.Wallet, funded_account: FundedAccountInfo) -> None:
+def test_update_proposal(node: tt.InitNode, wallet: tt.Wallet, funded_account: FundedAccountInfo) -> None:
     from datetime import datetime as date_type
 
-    def check_is_proposal_update_exists(block_number: int, end_date: date_type) -> bool:
-        from time import sleep
-
+    def check_is_proposal_update_exists(node: tt.InitNode, block_number: int, end_date: date_type) -> bool:
         if not isinstance(end_date, str):
             end_date = format_datetime(end_date)
 
-        time_to_make_blocks_irreverrsibble = 3 * 22
-
-        tt.logger.info(f"Awaiting for making current reversible - irreversible: {time_to_make_blocks_irreverrsibble} s")
-        sleep(time_to_make_blocks_irreverrsibble)
+        tt.logger.info("Awaiting for making current reversible - irreversible using wait_for_irreversible_block()")
+        node.wait_for_irreversible_block()
         tt.logger.info("End of waiting")
 
         for bn in range(block_number, block_number + 5):
@@ -138,7 +134,7 @@ def test_update_proposal(wallet: tt.Wallet, funded_account: FundedAccountInfo) -
         "end_date": format_datetime(prepared_proposal.end_date - timedelta(days=2)),
     }
     block = wallet.api.update_proposal(**update_args)["ref_block_num"] + 1
-    assert check_is_proposal_update_exists(block, update_args["end_date"])
+    assert check_is_proposal_update_exists(node, block, update_args["end_date"])
 
     proposal = wallet.api.find_proposals([proposal_id], True)[0]
 
