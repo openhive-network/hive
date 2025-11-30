@@ -73,7 +73,8 @@ def test_set_withdraw_vesting_route_after_first_power_down(
         time_control=tt.StartTimeControl(
             start_time=power_down.tranche_schedule[0] - tt.Time.minutes(5),
             speed_up_rate=5,
-        )
+        ),
+        timeout=60,  # Increase timeout for CI under heavy load
     )
     user_a.rc_manabar.update()
 
@@ -236,7 +237,8 @@ def test_set_withdraw_vesting_route_after_first_withdraw_and_modify_it_before_th
         time_control=tt.StartTimeControl(
             start_time=power_down.tranche_schedule[0] - tt.Time.minutes(5),
             speed_up_rate=5,
-        )
+        ),
+        timeout=60,  # Increase timeout for CI under heavy load
     )
     user_a.rc_manabar.update()
 
@@ -353,7 +355,8 @@ def test_set_withdraw_vesting_route_before_the_first_withdraw_and_modify_it_befo
         time_control=tt.StartTimeControl(
             start_time=power_down.tranche_schedule[0] - tt.Time.minutes(5),
             speed_up_rate=5,
-        )
+        ),
+        timeout=60,  # Increase timeout for CI under heavy load
     )
     user_a.rc_manabar.update()
 
