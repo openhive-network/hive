@@ -1900,6 +1900,7 @@ colony_tests:
       - TEST_NAME: test_colony_on_basic_network_structure
       - TEST_NAME: test_colony_on_complex_network
       - TEST_NAME: test_multiple_colony_nodes_communication_with_single_witness_node
+        PYTEST_TIMEOUT_MINUTES: 15  # This test creates 5 nodes and can take 400-650s
       - TEST_NAME: test_colony_with_unknown_colony_signer
   tags:
     - public-runner-docker
