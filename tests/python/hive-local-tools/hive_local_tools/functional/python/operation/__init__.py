@@ -300,9 +300,16 @@ class _RcManabar(_BaseManabar):
             actual_pre_op_mana = post_op_mana_at_op_time + operation_rc_cost
 
             # Calculate expected pre-op mana from cached state projected to operation time.
-            # Due to timing gaps between when we cached state and when operation ran,
-            # mana may have regenerated, so actual_pre_op >= cached_pre_op.
-            cached_pre_op_mana = self.calculate_current_value(operation_timestamp)
+            # Use post_op_manabar.maximum for consistency - max_mana affects regeneration rate,
+            # and using different max_mana values for cached vs actual calculations causes flakiness.
+            cached_pre_op_mana = int(
+                wax.calculate_current_manabar_value(
+                    now=int(operation_timestamp.timestamp()),
+                    max_mana=int(post_op_manabar.maximum),
+                    current_mana=self.current_mana,
+                    last_update_time=int(self.last_update_time),
+                ).result
+            )
 
             # Verify the rc_cost was charged: cached pre-op should not exceed actual pre-op
             # (mana only regenerates, never decreases spontaneously)
