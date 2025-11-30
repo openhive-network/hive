@@ -80,7 +80,7 @@ def create_posts(node, accounts):
             self_vote=False,
             parse_body=False,
         )
-        hive_utils.common.wait_n_blocks(node.rpc.url, 1)
+    # Wait once at end instead of after each post - optimized to reduce total wait time
     hive_utils.common.wait_n_blocks(node.rpc.url, 5)
 
 
