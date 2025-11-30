@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 from functools import partial
@@ -25,10 +26,8 @@ def _warmup_msgspec_decoders() -> None:
     This function triggers decoder initialization for common response types
     before any threads are spawned, ensuring thread-safe operation.
     """
-    try:
+    with contextlib.suppress(Exception):
         get_response_model(str, '{"jsonrpc":"2.0","id":0,"result":"warmup"}', "hf26")
-    except Exception:
-        pass
 
 
 def wait_for_current_hardfork(node: tt.InitNode, current_hardfork_number: int) -> None:
