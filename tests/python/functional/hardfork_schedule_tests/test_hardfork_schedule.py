@@ -36,6 +36,7 @@ def test_simply_hardfork_schedule() -> None:
     )
 
     # verify are hardforks 0-2 were applied correctly
+    init_node.wait_for_block_with_number(blocks_delay_margin)
     assert is_hardfork_applied(init_node, hf_number=2)
 
     # verify are hardforks 3-5 were applied correctly
