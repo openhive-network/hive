@@ -11,7 +11,8 @@ if TYPE_CHECKING:
 
 @run_for("testnet", enable_plugins=["transaction_status_api"])
 def test_find_existing_transaction(node: tt.ApiNode, wallet: tt.Wallet) -> None:
-    wallet.api.set_transaction_expiration(90)
+    # Reduced expiration from 90s to 30s to speed up the test
+    wallet.api.set_transaction_expiration(30)
     transaction = wallet.api.create_account("initminer", "alice", "{}", broadcast=False)
     transaction_id = transaction["transaction_id"]
     node.api.network_broadcast.broadcast_transaction(trx=transaction)
@@ -30,7 +31,8 @@ def test_find_existing_transaction(node: tt.ApiNode, wallet: tt.Wallet) -> None:
         == "within_irreversible_block"
     )
 
-    time.sleep(90)
+    # Reduced sleep from 90s to 30s to match the reduced expiration time
+    time.sleep(30)
     """
         In this test case we can't really use find_transaction from transaction_status API to check status of
         transaction (after expiration) because it holds transactions for one hour before it flag it as expired. Instead
