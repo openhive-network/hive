@@ -4,8 +4,7 @@ import time
 from typing import TYPE_CHECKING
 
 import pytest
-from beekeepy._exceptions.executable import FailedToStartExecutableError
-from beekeepy.exceptions import CommunicationError
+from beekeepy.exceptions import CommunicationError, FailedToStartExecutableError
 
 import test_tools as tt
 from hive_local_tools.functional.python.operation.withdrawe_vesting import PowerDownAccount
