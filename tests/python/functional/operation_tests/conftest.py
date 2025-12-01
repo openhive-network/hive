@@ -1,10 +1,14 @@
 from __future__ import annotations
 
 import json
+import time
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Literal
 
 import pytest
+from beekeepy._exceptions.executable import FailedToStartExecutableError
+from beekeepy.exceptions import CommunicationError
+from loguru import logger
 
 import test_tools as tt
 import wax
@@ -429,6 +433,8 @@ class ProposalAccount(Account):
         ), f"Something went wrong after proposal update. {changed_parameter} has wrong value"
 
     def check_if_rc_current_mana_was_reduced(self, transaction: dict) -> None:
+        # Wait for 1 block to ensure RC mana state is fully updated after the transaction
+        self._node.wait_number_of_blocks(1)
         self.rc_manabar.assert_rc_current_mana_is_reduced(
             transaction["rc_cost"], get_transaction_timestamp(self._node, transaction)
         )
@@ -835,10 +841,20 @@ def hive_fund(
 
 @pytest.fixture()
 def speed_up_node() -> tt.InitNode:
-    node = tt.InitNode()
-    node.config.plugin.append("account_history_api")
-    node.run(timeout=60.0, time_control=tt.SpeedUpRateTimeControl(speed_up_rate=5))
-    return node
+    max_retries = 3
+    for attempt in range(max_retries):
+        node = tt.InitNode()
+        node.config.plugin.append("account_history_api")
+        try:
+            node.run(timeout=120.0, time_control=tt.SpeedUpRateTimeControl(speed_up_rate=5))
+            return node
+        except (FailedToStartExecutableError, CommunicationError):
+            if attempt < max_retries - 1:
+                logger.warning(f"Node startup failed (attempt {attempt + 1}/{max_retries}), retrying...")
+                time.sleep(1)
+            else:
+                raise
+    raise RuntimeError("Failed to start node after retries")  # Should not reach here
 
 
 @pytest.fixture()
