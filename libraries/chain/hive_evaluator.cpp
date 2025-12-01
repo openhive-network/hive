@@ -2987,7 +2987,7 @@ void claim_reward_balance2_evaluator::do_apply( const claim_reward_balance2_oper
   //TODO: can be removed once SMT hardfork activates
   FC_ASSERT( _db.has_hardfork( HIVE_SMT_HARDFORK ) && "Premature", "claim_reward_balance2_operation requires hardfork ${x}",
     ( "x", HIVE_SMT_HARDFORK ) );
-  const auto* a = nullptr; // Lazily initialized below because it may turn out unnecessary.
+  const account_object* a = nullptr; // Lazily initialized below because it may turn out unnecessary.
 
   for( const asset& token : op.reward_tokens )
   {
