@@ -6,8 +6,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Literal
 
 import pytest
-from beekeepy._exceptions.executable import FailedToStartExecutableError
-from beekeepy.exceptions import CommunicationError
+from beekeepy.exceptions import CommunicationError, FailedToStartExecutableError
 from loguru import logger
 
 import test_tools as tt
