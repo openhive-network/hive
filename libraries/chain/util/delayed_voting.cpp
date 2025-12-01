@@ -89,7 +89,7 @@ void delayed_voting::run( const fc::time_point_sec& head_time )
   {
     const ushare_type _val{ current->get_delayed_votes().begin()->val };
 
-    //dlog( "account: ${acc} delayed_votes: ${dv} time: ${time}", ( "acc", current->name )( "dv", _val )( "time", account->delayed_votes.begin()->time.to_iso_string() ) );
+    //dlog( "account: ${acc} delayed_votes: ${dv} time: ${time}", ( "acc", current->get_name() )( "dv", _val )( "time", current->get_delayed_votes().begin()->time.to_iso_string() ) );
 
     operation vop = hive::protocol::delayed_voting_operation( current->get_name(), _val );
     /// Push vop to be recorded by other parts (like AH plugin etc.)

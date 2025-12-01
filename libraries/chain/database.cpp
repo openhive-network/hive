@@ -2346,7 +2346,7 @@ void database::process_vesting_withdrawals()
 
     modify( from_account, [&]( account_object& a )
     {
-      a.set_vesting( a.get_vesting() - asset( to_withdraw, VESTS_SYMBOL ) );
+      a.set_vesting( a.get_vesting() - VEST_asset( to_withdraw ) );
       a.set_balance( a.get_balance() + converted_hive );
       a.set_withdrawn( a.get_withdrawn() + VEST_asset( to_withdraw ) );
 
@@ -6743,7 +6743,7 @@ void database::perform_vesting_share_split( uint32_t magnitude )
         new_vesting_shares = a.get_vesting();
         a.set_withdrawn( a.get_withdrawn() * magnitude );
         a.set_to_withdraw( a.get_to_withdraw() * magnitude );
-        a.set_vesting_withdraw_rate( asset( a.get_to_withdraw().amount / HIVE_VESTING_WITHDRAW_INTERVALS_PRE_HF_16, VESTS_SYMBOL ) );
+        a.set_vesting_withdraw_rate( VEST_asset( a.get_to_withdraw().amount / HIVE_VESTING_WITHDRAW_INTERVALS_PRE_HF_16 ) );
         if( a.get_vesting_withdraw_rate().amount == 0 )
           a.set_vesting_withdraw_rate( VEST_asset( 1 ) );
         //ABW: above setting to 1 is unnecessary and a bug, but it is also a bug that is very hard to fix;
