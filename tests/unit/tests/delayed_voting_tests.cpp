@@ -1695,7 +1695,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_01 )
   */
   delayed_voting::opt_votes_update_data_items items = delayed_voting::votes_update_data_items();
 
-  auto cmp = [ &items, this ]( bool withdraw_executor, int64_t val, const auto& obj )
+  auto cmp = [ &items, this ]( bool withdraw_executor, int64_t val, const account_object& obj )
   {
     return check_collection( items, withdraw_executor, val, obj );
   };

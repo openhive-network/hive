@@ -1342,10 +1342,10 @@ void withdraw_vesting_evaluator::do_apply( const withdraw_vesting_operation& o )
 
     _db.modify( account, [&]( account_object& a )
     {
-      a.set_vesting_withdraw_rate( asset( 0, VESTS_SYMBOL ) );
+      a.set_vesting_withdraw_rate( VEST_asset( 0 ) );
       a.set_next_vesting_withdrawal( time_point_sec::maximum() );
-      a.set_to_withdraw( asset( 0, VESTS_SYMBOL ) );
-      a.set_withdrawn( asset( 0, VESTS_SYMBOL ) );
+      a.set_to_withdraw( VEST_asset( 0 ) );
+      a.set_withdrawn( VEST_asset( 0 ) );
     } );
   }
   else
@@ -1378,7 +1378,7 @@ void withdraw_vesting_evaluator::do_apply( const withdraw_vesting_operation& o )
       a.set_vesting_withdraw_rate( new_vesting_withdraw_rate );
       a.set_next_vesting_withdrawal( now + fc::seconds( HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS ) );
       a.set_to_withdraw( o.vesting_shares );
-      a.set_withdrawn( asset( 0, VESTS_SYMBOL ) );
+      a.set_withdrawn( VEST_asset( 0 ) );
     } );
   }
   if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
