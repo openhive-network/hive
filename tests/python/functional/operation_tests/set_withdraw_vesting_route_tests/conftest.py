@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import time
 from typing import TYPE_CHECKING
 
 import pytest
+from beekeepy._exceptions.executable import FailedToStartExecutableError
+from beekeepy.exceptions import CommunicationError
 
 import test_tools as tt
 from hive_local_tools.functional.python.operation.withdrawe_vesting import PowerDownAccount
@@ -11,8 +14,8 @@ if TYPE_CHECKING:
     from hive_local_tools.functional.python.operation.set_withdraw_vesting_route_tests import VestingRouteParameters
 
 
-@pytest.fixture()
-def node() -> tt.InitNode:
+def _create_and_run_node() -> tt.InitNode:
+    """Create and start a new InitNode with the required configuration."""
     node = tt.InitNode()
     node.config.plugin.append("account_history_api")
     node.run(
@@ -30,6 +33,25 @@ def node() -> tt.InitNode:
         ),
     )
     return node
+
+
+@pytest.fixture()
+def node() -> tt.InitNode:
+    # Retry node startup to handle intermittent startup failures during parallel tests.
+    # FailedToStartExecutableError: hived may fail to start due to resource contention
+    # CommunicationError: nodes may bind ports but not be ready to accept connections
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            return _create_and_run_node()
+        except (FailedToStartExecutableError, CommunicationError):
+            if attempt == max_retries - 1:
+                raise
+            tt.logger.warning(f"Node startup failed (attempt {attempt + 1}/{max_retries}), retrying...")
+            time.sleep(1)
+
+    # This should never be reached, but satisfies type checker
+    raise RuntimeError("Failed to start node after all retries")
 
 
 @pytest.fixture()

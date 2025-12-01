@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 from functools import partial
@@ -7,10 +8,26 @@ from typing import Callable
 
 import test_tools as tt
 from schemas.fields.hive_int import HiveInt
+from schemas.jsonrpc import get_response_model
 from schemas.operation import Operation
 from test_tools.__private.wallet.constants import SimpleTransaction, SimpleTransactionLegacy
 from wax import get_tapos_data
 from wax._private.result_tools import to_cpp_string
+
+
+def _warmup_msgspec_decoders() -> None:
+    """
+    Pre-initialize msgspec decoders in the main thread to avoid race conditions.
+
+    msgspec's decoder initialization involves Python's typing module internals
+    (ForwardRef creation) which are not thread-safe. When multiple threads
+    simultaneously create decoders for the first time, a segfault can occur.
+
+    This function triggers decoder initialization for common response types
+    before any threads are spawned, ensuring thread-safe operation.
+    """
+    with contextlib.suppress(Exception):
+        get_response_model(str, '{"jsonrpc":"2.0","id":0,"result":"warmup"}', "hf26")
 
 
 def wait_for_current_hardfork(node: tt.InitNode, current_hardfork_number: int) -> None:
@@ -32,6 +49,9 @@ def simultaneous_node_startup(
     time_control: tt.StartTimeControl = None,
     exit_before_synchronization: bool = False,
 ) -> None:
+    # Warm up msgspec decoders before spawning threads to avoid race conditions
+    _warmup_msgspec_decoders()
+
     with ThreadPoolExecutor(max_workers=len(nodes)) as executor:
         tasks = []
         for node in nodes:

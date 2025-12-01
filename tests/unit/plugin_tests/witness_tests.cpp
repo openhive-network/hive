@@ -1480,13 +1480,16 @@ BOOST_AUTO_TEST_CASE( block_lock_test )
             ( "t", block_header->timestamp )( "w", block_header->witness ) );
           next_block_time += HIVE_BLOCK_INTERVAL;
           ilog( "Adding slow transaction to pending" );
-          // generate marker transaction that takes 1.5s to process
+          // generate marker transaction that takes 1.5s to process during block reapplication;
           // it will be waiting as pending for next block to pick it up
           db_plugin->debug_update( [&]( database& db )
           {
-            ilog( "Slow transaction start - tx status is ${s}", ( "s", (int)db.get_tx_status() ) );
-            fc::usleep( fc::milliseconds( 1500 ) );
-            ilog( "Slow transaction end" );
+            if( db.get_tx_status() == database::TX_STATUS_P2P_BLOCK )
+            {
+              ilog( "Slow transaction start - tx status is ${s}", ( "s", (int)db.get_tx_status() ) );
+              fc::usleep( fc::milliseconds( 1500 ) );
+              ilog( "Slow transaction end" );
+            }
           } );
         }
         fc::sleep_until( next_block_time );
