@@ -777,12 +777,6 @@ bool chain_plugin_impl::start_replay_processing(
       theApp.generate_interrupt_request();
     }
   }
-  else
-  {
-    //if `stop_replay_at` > 0 stay in API node context( without synchronization )
-    if( stop_replay_at > 0 )
-      disable_p2p( false );
-  }
 
   return replay_is_last_operation;
 }
@@ -1889,7 +1883,11 @@ void chain_plugin::plugin_startup()
   }
   if( start )
   {
+    if( my->stop_at_block > 0 && my->db.head_block_num() >= my->stop_at_block )
+      disable_p2p( false );
+
     std::string str = replay ? " after replaying" : "";
+
     if( my->is_work_enabled )
     {
       if( my->is_p2p_enabled )
