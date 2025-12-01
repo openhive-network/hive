@@ -186,6 +186,7 @@ namespace hive { namespace chain {
       }
 
       //members are organized in such a way that the object takes up as little space as possible (note that object starts with 4byte id).
+      using t_delayed_votes = t_vector< delayed_votes_data >;
 
     private:
       account_id_type   proxy;
@@ -196,7 +197,6 @@ namespace hive { namespace chain {
 
       account_name_type name;
 
-    public:
       uint128_t         hbd_seconds = 0; ///< liquid HBD * how long it has been held
       uint128_t         savings_hbd_seconds = 0; ///< savings HBD * how long it has been held
 
@@ -238,10 +238,10 @@ namespace hive { namespace chain {
       time_point_sec    hbd_last_interest_payment; ///< used to pay interest at most once per month
       time_point_sec    savings_hbd_seconds_last_update; ///< the last time the hbd_seconds was updated
       time_point_sec    savings_hbd_last_interest_payment; ///< used to pay interest at most once per month
-    private:
+
       time_point_sec    created; //(not read by consensus code)
       time_point_sec    block_created;
-    public:
+
       time_point_sec    last_account_update; //(only used by outdated consensus checks - up to HF17)
       time_point_sec    last_post; //(we could probably remove limit on posting replies)
       time_point_sec    last_root_post; //influenced root comment reward between HF12 and HF17
@@ -249,10 +249,8 @@ namespace hive { namespace chain {
       time_point_sec    last_vote_time; //(only used by outdated consensus checks - up to HF26)
       time_point_sec    next_vesting_withdrawal = fc::time_point_sec::maximum(); ///< after every withdrawal this is incremented by 1 week
 
-    private:
       time_point_sec    governance_vote_expiration_ts = fc::time_point_sec::maximum();
 
-    public:
       uint32_t          post_count = 0; //(not read by consensus code)
       uint32_t          post_bandwidth = 0; //influenced root comment reward between HF12 and HF17
 
@@ -263,21 +261,19 @@ namespace hive { namespace chain {
 
       uint8_t           savings_withdraw_requests = 0;
       bool              can_vote_status = true;
-    private:
       bool              mined = true; //(not read by consensus code)
 
-    public:
       public_key_type   memo_key; //33 bytes with alignment of 1; (it belongs to metadata as it is not used by consensus, but witnesses need it here since they don't COLLECT_ACCOUNT_METADATA)
 
       fc::array<share_type, HIVE_MAX_PROXY_RECURSION_DEPTH> proxied_vsf_votes; ///< the total VFS votes proxied to this account
 
-      using t_delayed_votes = t_vector< delayed_votes_data >;
       /*
         Holds sum of VESTS per day.
         VESTS from day `X` will be matured after `X` + 30 days ( because `HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS` == 30 days )
       */
       t_delayed_votes   delayed_votes;
 
+    public:
       //methods
 
       time_point_sec get_governance_vote_expiration_ts() const
@@ -436,7 +432,6 @@ namespace hive { namespace chain {
 
       time_point_sec get_last_vote_time() const { return last_vote_time; }
       void set_last_vote_time( const time_point_sec& value ) { last_vote_time = value; }
-
 
       size_t get_dynamic_alloc() const
       {
@@ -683,7 +678,7 @@ namespace hive { namespace chain {
       >,
       ordered_unique< tag< by_next_vesting_withdrawal >,
         composite_key< account_object,
-          member< account_object, time_point_sec, &account_object::next_vesting_withdrawal >,
+          const_mem_fun< account_object, time_point_sec, &account_object::get_next_vesting_withdrawal >,
           const_mem_fun< account_object, const account_name_type&, &account_object::get_name >
         > /// composite key by_next_vesting_withdrawal
       >,
