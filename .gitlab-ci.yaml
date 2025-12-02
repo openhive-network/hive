@@ -67,19 +67,12 @@ test_build_memory_20jobs:
       done) > memory_usage.log 2>&1 &
       echo $! > /tmp/memmon.pid
   script:
-    - |
-      echo "=== Host memory info ==="
-      free -h
-      echo "=== CPU info ==="
-      nproc
-      cat /proc/cpuinfo | grep "model name" | head -1
-      echo "========================"
+    - echo "=== Host memory info ===" && free -h
+    - echo "=== CPU info ===" && nproc && grep "model name" /proc/cpuinfo | head -1 || true
+    - echo "========================"
     - echo "$REGISTRY_PASS" | docker login -u "$REGISTRY_USER" registry.gitlab.syncad.com --password-stdin
-    # Force a fresh build by using a unique tag
-    - |
-      BUILD_TAG="memtest-$(date +%s)"
-      echo "Building with tag: $BUILD_TAG"
-      $SCRIPTS_PATH/ci-helpers/build_instance.sh "$BUILD_TAG" "$SUBMODULE_DIR" "registry.gitlab.syncad.com/hive/hive" --network-type="$HIVE_NETWORK_TYPE" --export-binaries="$BINARY_CACHE_PATH"
+    - BUILD_TAG="memtest-$(date +%s)" && echo "Building with tag $BUILD_TAG"
+    - $SCRIPTS_PATH/ci-helpers/build_instance.sh "$BUILD_TAG" "$SUBMODULE_DIR" "registry.gitlab.syncad.com/hive/hive" --network-type="$HIVE_NETWORK_TYPE" --export-binaries="$BINARY_CACHE_PATH"
   after_script:
     - |
       # Stop memory monitoring
