@@ -44,6 +44,7 @@ prepare_hived_image:
   tags:
     - public-runner-docker
     - hived-for-tests
+    - hived
 
 prepare_hived_data:
   extends: .prepare_hived_data_5m
@@ -99,6 +100,7 @@ testnet_node_build:
   tags:
     - public-runner-docker
     - hived-for-tests
+    - hived
 
 beekeeper_tsc_build:
   extends: .npm_build_template
@@ -224,6 +226,7 @@ mirrornet_node_build:
   tags:
     - public-runner-docker
     - hived-for-tests
+    - hived
 
 extended_block_log_creation:
   extends: .extended_block_log_creation
