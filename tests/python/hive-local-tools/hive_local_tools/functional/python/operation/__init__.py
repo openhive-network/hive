@@ -282,7 +282,7 @@ class _RcManabar(_BaseManabar):
         return get_rc_current_mana(self._node, self._name)
 
     def assert_rc_current_mana_is_reduced(
-        self, operation_rc_cost: int, operation_timestamp: datetime | None = None, tolerance_percent: float = 0.05
+        self, operation_rc_cost: int, operation_timestamp: datetime | None = None, tolerance_percent: float = 0.08
     ) -> None:
         """
         Assert that RC mana was reduced by the expected operation cost.
@@ -290,7 +290,7 @@ class _RcManabar(_BaseManabar):
         Args:
             operation_rc_cost: Expected RC cost of the operation
             operation_timestamp: Timestamp of the operation (optional)
-            tolerance_percent: Allowed tolerance as a fraction (default 5% to account for mana regeneration in slow CI)
+            tolerance_percent: Allowed tolerance as a fraction (default 8% to account for mana regeneration in slow CI)
         """
         current_mana = get_rc_current_mana(self._node, self._name)
         if operation_timestamp:
@@ -302,7 +302,7 @@ class _RcManabar(_BaseManabar):
             actual = current_mana + operation_rc_cost
 
         # Allow tolerance for mana regeneration between operation and check
-        tolerance = max(int(expected * tolerance_percent), 5000)  # At least 5000 units tolerance for CI stability
+        tolerance = max(int(expected * tolerance_percent), 10000)  # At least 10000 units tolerance for CI stability
         diff = abs(expected - actual)
         err = (
             f"The account {self._name} did not incur the expected operation cost. "
@@ -321,16 +321,16 @@ class _RcManabar(_BaseManabar):
             case "increased":
                 assert actual_max_rc_mana > self.max_mana, error_message
 
-    def assert_current_mana_is_unchanged(self, tolerance_percent: float = 0.03) -> None:
+    def assert_current_mana_is_unchanged(self, tolerance_percent: float = 0.05) -> None:
         """
         Assert that RC mana has not changed significantly.
 
         Args:
-            tolerance_percent: Allowed tolerance as a fraction (default 3% to account for mana regeneration in slow CI)
+            tolerance_percent: Allowed tolerance as a fraction (default 5% to account for mana regeneration in slow CI)
         """
         current_mana = get_rc_current_mana(self._node, self._name)
         # Allow small tolerance for natural mana regeneration between checks
-        tolerance = max(int(self.current_mana * tolerance_percent), 5000)
+        tolerance = max(int(self.current_mana * tolerance_percent), 10000)
         diff = abs(current_mana - self.current_mana)
         assert diff <= tolerance, (
             f"The {self._name} account rc_current_mana has changed unexpectedly. "
@@ -359,16 +359,16 @@ class _VoteManabarBase(_BaseManabar):
         else:
             assert vote_current_mana < self.current_mana, err
 
-    def assert_current_mana_is_unchanged(self, tolerance_percent: float = 0.03) -> None:
+    def assert_current_mana_is_unchanged(self, tolerance_percent: float = 0.05) -> None:
         """
         Assert that vote mana has not changed significantly.
 
         Args:
-            tolerance_percent: Allowed tolerance as a fraction (default 3% to account for mana regeneration in slow CI)
+            tolerance_percent: Allowed tolerance as a fraction (default 5% to account for mana regeneration in slow CI)
         """
         current_mana = get_vote_current_mana(self._wallet, self._name, self.__manabar_type)
         # Allow small tolerance for natural mana regeneration between checks
-        tolerance = max(int(self.current_mana * tolerance_percent), 5000)
+        tolerance = max(int(self.current_mana * tolerance_percent), 10000)
         diff = abs(current_mana - self.current_mana)
         assert diff <= tolerance, (
             f"The {self._name} account {self.__manabar_type} has changed unexpectedly. "

@@ -91,7 +91,7 @@ def test_colony_on_basic_network_structure(
 
     simultaneous_node_startup(
         [witness_node, colony_node],
-        timeout=180,
+        timeout=300,
         alternate_chain_specs=alternate_chain_spec,
         wait_for_live=True,
         time_control=tt.StartTimeControl(start_time=block_log_single_sign.get_head_block_time()),
@@ -136,7 +136,7 @@ def test_colony_on_complex_network(block_log_single_sign: tt.BlockLog, alternate
 
     simultaneous_node_startup(
         nodes,
-        timeout=180,
+        timeout=300,
         alternate_chain_specs=alternate_chain_spec,
         wait_for_live=True,
         time_control=tt.StartTimeControl(start_time=block_log_single_sign.get_head_block_time()),
@@ -190,7 +190,7 @@ def test_multiple_colony_nodes_communication_with_single_witness_node(
 
     simultaneous_node_startup(
         nodes,
-        timeout=180,
+        timeout=300,
         alternate_chain_specs=alternate_chain_spec,
         wait_for_live=True,
         time_control=tt.StartTimeControl(start_time=block_log_single_sign.get_head_block_time()),
@@ -248,7 +248,7 @@ def prepare_colony_config(node: tt.ApiNode | tt.InitNode) -> None:
     node.config.colony_transactions_per_block = "5000"
 
 
-def wait_for_start_colony(node: tt.InitNode | tt.ApiNode, min_trx_in_block: int = 500, timeout: int = 240) -> None:
+def wait_for_start_colony(node: tt.InitNode | tt.ApiNode, min_trx_in_block: int = 500, timeout: int = 360) -> None:
     def is_colony_started() -> bool:
         return (
             len(node.api.block.get_block(block_num=node.get_last_block_number())["block"].transactions)

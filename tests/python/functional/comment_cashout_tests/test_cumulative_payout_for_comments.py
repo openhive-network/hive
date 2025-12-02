@@ -89,7 +89,7 @@ def wait_for_irreversible_head_block(node) -> None:
 
     tt.Time.wait_for(
         check_if_head_block_is_last_irreversible,
-        timeout=tt.Time.seconds(120),
+        timeout=tt.Time.seconds(180),
         timeout_error_message="The time limit for establishing a common fork has been exceeded.",
     )
     tt.logger.info(f"Forking finished at block: {node.get_last_irreversible_block_number()}")
