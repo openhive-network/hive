@@ -4785,9 +4785,9 @@ void database::flush_to_all_storages()
 {
   get_comments_handler().flush();
 
-  notify_flush();
-
   chainbase::database::flush();
+
+  notify_flush();
 }
 
 const witness_object& database::validate_block_header( uint32_t skip, const std::shared_ptr<full_block_type>& full_block )const
