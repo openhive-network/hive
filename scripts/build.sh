@@ -42,7 +42,6 @@ HAF_BUILD=""
 CMAKE_ARGS=()
 
 JOBS=$(nproc)
-JOBS=$(( JOBS > 20 ? 20 : JOBS ))
 echo "Build will use $JOBS concurrent jobs..."
 
 add_cmake_arg () {
