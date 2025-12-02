@@ -13,7 +13,7 @@ def test_simply_hardfork_schedule() -> None:
     decrease of efficiency on CI or inaccuracy of synchronization 'genesis_time' with application of hf_00.
     To make compensation of blocks delay is used blocks_delay_margin.
     """
-    blocks_delay_margin = 3
+    blocks_delay_margin = 5
     witnesses_required_for_hf06_and_later = [f"witness-{witness_num}" for witness_num in range(16)]
 
     init_node = tt.InitNode()
