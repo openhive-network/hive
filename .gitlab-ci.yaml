@@ -45,6 +45,67 @@ prepare_hived_image:
     - public-runner-docker
     - hived-for-tests
 
+# Temporary job to measure memory usage during build with 20 parallel jobs
+test_build_memory_20jobs:
+  extends: .docker_image_builder_job
+  stage: build
+  variables:
+    SUBMODULE_DIR: "$CI_PROJECT_DIR"
+    SCRIPTS_PATH: "$SUBMODULE_DIR/scripts"
+    REGISTRY_USER: "$HIVED_CI_IMGBUILDER_USER"
+    REGISTRY_PASS: $HIVED_CI_IMGBUILDER_PASSWORD
+    BINARY_CACHE_PATH: "$CI_PROJECT_DIR/hived-binaries"
+    HIVE_NETWORK_TYPE: mainnet
+  before_script:
+    - !reference [.docker_image_builder_job, before_script]
+    - |
+      # Start memory monitoring in background
+      echo "Starting memory monitoring (every 5 seconds)..."
+      (while true; do
+        echo "$(date '+%Y-%m-%d %H:%M:%S') $(free -g | grep Mem | awk '{print "Total:" $2 "G Used:" $3 "G Free:" $4 "G Available:" $7 "G"}')"
+        sleep 5
+      done) > memory_usage.log 2>&1 &
+      echo $! > /tmp/memmon.pid
+  script:
+    - |
+      echo "=== Host memory info ==="
+      free -h
+      echo "=== CPU info ==="
+      nproc
+      cat /proc/cpuinfo | grep "model name" | head -1
+      echo "========================"
+    - echo "$REGISTRY_PASS" | docker login -u "$REGISTRY_USER" registry.gitlab.syncad.com --password-stdin
+    # Force a fresh build by using a unique tag
+    - |
+      BUILD_TAG="memtest-$(date +%s)"
+      echo "Building with tag: $BUILD_TAG"
+      $SCRIPTS_PATH/ci-helpers/build_instance.sh "$BUILD_TAG" "$SUBMODULE_DIR" "registry.gitlab.syncad.com/hive/hive" --network-type="$HIVE_NETWORK_TYPE" --export-binaries="$BINARY_CACHE_PATH"
+  after_script:
+    - |
+      # Stop memory monitoring
+      if [ -f /tmp/memmon.pid ]; then
+        kill $(cat /tmp/memmon.pid) 2>/dev/null || true
+      fi
+      echo "=== Memory usage summary ==="
+      if [ -f memory_usage.log ]; then
+        echo "Peak memory usage during build:"
+        sort -t':' -k4 -n memory_usage.log | tail -5
+        echo ""
+        echo "Full log saved as artifact"
+      fi
+  artifacts:
+    paths:
+      - memory_usage.log
+      - $BINARY_CACHE_PATH/*
+    when: always
+    expire_in: 1 week
+  tags:
+    - hive-builder-10
+  rules:
+    - if: $CI_COMMIT_BRANCH == "test-build-memory-20jobs"
+      when: always
+    - when: never
+
 prepare_hived_data:
   extends: .prepare_hived_data_5m
   needs:
