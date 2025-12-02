@@ -1159,8 +1159,25 @@ test-wax-spec-package:
       cat <<EOT > "index.ts"
       import WaxExtendedData from '@hiveio/wax-api-jsonrpc';
       import { createHiveChain } from '@hiveio/wax';
-      const chainExtended = (await createHiveChain()).extend(WaxExtendedData);
-      console.log(await chainExtended.api.block_api.get_block_range({ starting_block_num: 1, count: 10 }));
+
+      // Retry wrapper for flaky external API calls
+      async function withRetry<T>(fn: () => Promise<T>, retries: number = 3, delay: number = 2000): Promise<T> {
+        for (let i = 0; i < retries; i++) {
+          try {
+            return await fn();
+          } catch (error) {
+            if (i === retries - 1) throw error;
+            console.log(\`Attempt \${i + 1} failed, retrying in \${delay}ms...\`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+          }
+        }
+        throw new Error('Unreachable');
+      }
+
+      // Use longer timeout (10s instead of 2s) for slow CI environments
+      const chainExtended = (await createHiveChain({ apiEndpoint: 'https://api.hive.blog', timeout: 10000 })).extend(WaxExtendedData);
+      const result = await withRetry(() => chainExtended.api.block_api.get_block_range({ starting_block_num: 1, count: 10 }));
+      console.log(result);
       EOT
     - pnpm exec tsc -t esnext -m esnext --moduleResolution bundler index.ts # Test if it compiles
     - node index.js # Test if it runs without errors
