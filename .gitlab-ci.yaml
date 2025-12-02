@@ -436,6 +436,25 @@ pre_commit_checks:
     paths:
       - tests/python/hive-local-tools/poetry.lock
 
+validate_openapi_schemas:
+  stage: static_code_analysis
+  image: node:20-alpine
+  script:
+    - npm install -g @redocly/cli
+    - echo "Validating API documentation OpenAPI schema..."
+    - redocly lint libraries/plugins/apis/documentation/openapi.json --extends minimal
+    - echo "Validating Beekeeper OpenAPI schema..."
+    - redocly lint programs/beekeeper/beekeeper/documentation/api/openapi.json --extends minimal
+  tags:
+    - public-runner-docker
+  rules:
+    - changes:
+        - libraries/plugins/apis/documentation/openapi.json
+        - programs/beekeeper/beekeeper/documentation/api/openapi.json
+      when: always
+    - when: manual
+      allow_failure: true
+
 .pytest_based:
   extends: .python_based
   variables:
