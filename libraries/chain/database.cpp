@@ -1659,7 +1659,7 @@ void database::lock_account( const account_object& account )
 
   modify( account, []( account_object& a )
   {
-    a.set_recovery_account( a );
+    a.set_recovery_account( a.get_id() );
     a.set_memo_key( public_key_type() );
   } );
 
@@ -3278,7 +3278,7 @@ void database::account_recovery_processing()
     const auto& new_recovery_account = get_account( change_req->get_recovery_account() );
     modify( account, [&]( account_object& a )
     {
-      a.set_recovery_account( new_recovery_account );
+      a.set_recovery_account( new_recovery_account.get_id() );
     });
 
     push_virtual_operation(changed_recovery_account_operation( account.get_name(), old_recovery_account_name, new_recovery_account.get_name() ));
