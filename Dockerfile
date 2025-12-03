@@ -80,6 +80,10 @@ ENV HIVE_LINT=${HIVE_LINT}
 ARG HIVE_SUBDIR=.
 ENV HIVE_SUBDIR=${HIVE_SUBDIR}
 
+# Build optimization: use mold linker with shared boost for faster linking
+ARG USE_SHARED_BOOST=ON
+ARG USE_ALTERNATE_LINKER=mold
+
 USER hived_admin
 WORKDIR /home/hived_admin
 SHELL ["/bin/bash", "-c"]
@@ -90,6 +94,9 @@ COPY --chown=hived_admin:users . /home/hived_admin/source
 RUN <<-EOF
   set -e
 
+  # Install mold linker for faster builds
+  sudo apt-get update && sudo apt-get install -y mold
+
   INSTALLATION_DIR="/home/hived/bin"
   sudo --user=hived mkdir -p "${INSTALLATION_DIR}"
 
@@ -98,6 +105,8 @@ RUN <<-EOF
   --cmake-arg="-DENABLE_SMT_SUPPORT=${ENABLE_SMT_SUPPORT}" \
   --cmake-arg="-DHIVE_CONVERTER_BUILD=${HIVE_CONVERTER_BUILD}" \
   --cmake-arg="-DHIVE_LINT=${HIVE_LINT}" \
+  --cmake-arg="-DUSE_SHARED_BOOST=${USE_SHARED_BOOST}" \
+  --cmake-arg="-DUSE_ALTERNATE_LINKER=${USE_ALTERNATE_LINKER}" \
   --flat-binary-directory="${INSTALLATION_DIR}" \
   --clean-after-build
 

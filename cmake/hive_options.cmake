@@ -146,3 +146,12 @@ endif()
 # fc/src/compress/miniz.c breaks strict aliasing. The Linux kernel builds with no strict aliasing
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-strict-aliasing -DBOOST_THREAD_DONT_PROVIDE_PROMISE_LAZY" )
 SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-strict-aliasing -DBOOST_THREAD_DONT_PROVIDE_PROMISE_LAZY" )
+
+# Shared library linking options (enables faster linkers like mold/lld)
+OPTION( USE_SHARED_BOOST "Link executables against shared Boost libraries (enables mold/lld linker)" OFF )
+MESSAGE( STATUS "USE_SHARED_BOOST: ${USE_SHARED_BOOST}" )
+
+SET( USE_ALTERNATE_LINKER "" CACHE STRING "Use alternate linker: mold, lld, or gold" )
+if( USE_ALTERNATE_LINKER )
+  MESSAGE( STATUS "USE_ALTERNATE_LINKER: ${USE_ALTERNATE_LINKER}" )
+endif()

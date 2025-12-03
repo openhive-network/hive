@@ -40,7 +40,12 @@ install_all_runtime_packages() {
   echo "Attempting to install all runtime packages..."
   assert_is_root
 
-  apt-get update && apt-get install -y language-pack-en && apt-get install -y sudo screen libsnappy1v5 libreadline8 wget && apt-get clean && rm -r /var/lib/apt/lists/*
+  apt-get update && apt-get install -y language-pack-en && apt-get install -y sudo screen libsnappy1v5 libreadline8 wget \
+    libboost-atomic1.83.0 libboost-chrono1.83.0 libboost-context1.83.0 libboost-coroutine1.83.0 \
+    libboost-date-time1.83.0 libboost-filesystem1.83.0 libboost-iostreams1.83.0 libboost-locale1.83.0 \
+    libboost-program-options1.83.0 libboost-regex1.83.0 libboost-system1.83.0 libboost-thread1.83.0 \
+    libicu74 \
+    && apt-get clean && rm -r /var/lib/apt/lists/*
 
   #Additionally fix OpenSSL configuration issues caused by OpenSSL 3.0
   # TODO REMOVE the additional openssl configuaration when OpenSSL 3.0.7 or above will be distributed by Ubuntu.

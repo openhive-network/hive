@@ -140,14 +140,15 @@ MACRO( ADD_HIVE_EXECUTABLE)
     LIST( APPEND PLATFORM_SPECIFIC_LIBS tcmalloc )
   endif()
 
-  TARGET_LINK_LIBRARIES( ${HIVE_EXE_NAME} PUBLIC
-     "-static-libstdc++ -static-libgcc"
-
-     ${HIVE_EXE_LIBRARIES}
-
-#     ${CMAKE_DL_LIBS}
-#     ${PLATFORM_SPECIFIC_LIBS}
+  IF( USE_SHARED_BOOST )
+    # Shared boost requires dynamic libstdc++/libgcc for proper symbol resolution
+    TARGET_LINK_LIBRARIES( ${HIVE_EXE_NAME} PUBLIC ${HIVE_EXE_LIBRARIES} )
+  ELSE()
+    TARGET_LINK_LIBRARIES( ${HIVE_EXE_NAME} PUBLIC
+       "-static-libstdc++ -static-libgcc"
+       ${HIVE_EXE_LIBRARIES}
     )
+  ENDIF()
 
   set(_libs )
 
