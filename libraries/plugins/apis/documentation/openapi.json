@@ -18481,12 +18481,12 @@
             "get_block_header_response": {
                 "type": "object",
                 "properties": {
-                    "block": {
+                    "header": {
                         "$ref": "#/components/schemas/block_header"
                     }
                 },
                 "required": [
-                    "block"
+                    "header"
                 ]
             },
             "get_block_range": {
