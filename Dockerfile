@@ -90,6 +90,9 @@ COPY --chown=hived_admin:users . /home/hived_admin/source
 RUN <<-EOF
   set -e
 
+  # Install lld linker (LLVM's linker - faster than GNU ld, more compatible than mold)
+  sudo apt-get update && sudo apt-get install -y lld
+
   INSTALLATION_DIR="/home/hived/bin"
   sudo --user=hived mkdir -p "${INSTALLATION_DIR}"
 
@@ -98,6 +101,7 @@ RUN <<-EOF
   --cmake-arg="-DENABLE_SMT_SUPPORT=${ENABLE_SMT_SUPPORT}" \
   --cmake-arg="-DHIVE_CONVERTER_BUILD=${HIVE_CONVERTER_BUILD}" \
   --cmake-arg="-DHIVE_LINT=${HIVE_LINT}" \
+  --cmake-arg="-DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=lld" \
   --flat-binary-directory="${INSTALLATION_DIR}" \
   --clean-after-build
 
