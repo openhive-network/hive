@@ -105,7 +105,13 @@ echo "$REGISTRY_PASSWORD" | docker login -u "$REGISTRY_USER" "$REGISTRY" --passw
 
 image_exists=0
 
-docker_image_exists "$img_instance" image_exists
+# Check for FORCE_REBUILD environment variable to skip cache
+if [ "${FORCE_REBUILD:-0}" -eq 1 ]; then
+  echo "FORCE_REBUILD=1: Skipping image cache check, forcing rebuild..."
+  image_exists=0
+else
+  docker_image_exists "$img_instance" image_exists
+fi
 
 if [ "$image_exists" -eq 1 ];
 then

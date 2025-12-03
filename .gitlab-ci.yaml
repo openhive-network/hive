@@ -23,6 +23,7 @@ prepare_hived_image:
     REGISTRY_PASS: $HIVED_CI_IMGBUILDER_PASSWORD
     BINARY_CACHE_PATH: "$CI_PROJECT_DIR/hived-binaries"
     HIVE_NETWORK_TYPE: mainnet
+    FORCE_REBUILD: 1  # Force full rebuild for build time testing
   tags:
     - public-runner-docker
     - hived-for-tests
