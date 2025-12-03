@@ -55,8 +55,6 @@ class rocksdb_storage_provider: public external_basic_provider
 
   private:
 
-    void loadAdditionalData();
-
     virtual ColumnDefinitions prepareColumnDefinitions( bool addDefaultColumn ) = 0;
 
     void cleanupColumnHandles();
@@ -75,7 +73,7 @@ class rocksdb_storage_provider: public external_basic_provider
 
     const std::string name;
 
-    virtual void loadSeqIdentifiers() = 0;
+    virtual void loadSeqIdentifiers(){}
 
     std::unique_ptr<DB>               _storage;
     std::vector<ColumnFamilyHandle*>  _columnHandles;

@@ -26,10 +26,6 @@ class rocksdb_comment_storage_provider: public rocksdb_storage_provider, public 
 
     WriteBatch& getWriteBuffer() override;
 
-  protected:
-
-    void loadSeqIdentifiers() override{};
-
   public:
 
     using ptr = std::shared_ptr<rocksdb_comment_storage_provider>;
