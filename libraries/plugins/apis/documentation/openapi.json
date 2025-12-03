@@ -13738,6 +13738,23 @@
                     "reputation"
                 ]
             },
+            "follow_account_reputation": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "example": "hiveio"
+                    },
+                    "reputation": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 0
+                    }
+                },
+                "required": [
+                    "name",
+                    "reputation"
+                ]
+            },
             "account_subsidy_rd": {
                 "type": "object",
                 "properties": {
@@ -17681,7 +17698,7 @@
                     "reputations": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/account_reputation"
+                            "$ref": "#/components/schemas/follow_account_reputation"
                         }
                     }
                 },
