@@ -20815,25 +20815,9 @@
                             "stamp": {
                                 "type": "string"
                             }
-                        },
-                        "required": [
-                            "block",
-                            "budget",
-                            "comment",
-                            "transfer",
-                            "regen",
-                            "vote",
-                            "ops",
-                            "payers",
-                            "pool",
-                            "share",
-                            "stamp"
-                        ]
+                        }
                     }
-                },
-                "required": [
-                    "rc_stats"
-                ]
+                }
             },
             "get_rc_stats_payers": {
                 "type": "object",
@@ -20850,12 +20834,7 @@
                             "vote": {
                                 "type": "integer"
                             }
-                        },
-                        "required": [
-                            "comment",
-                            "transfer",
-                            "vote"
-                        ]
+                        }
                     },
                     "count": {
                         "type": "integer"
@@ -20872,15 +20851,7 @@
                     "rank": {
                         "type": "integer"
                     }
-                },
-                "required": [
-                    "cant_afford",
-                    "count",
-                    "lt10",
-                    "lt20",
-                    "lt5",
-                    "rank"
-                ]
+                }
             },
             "get_relationship_between_accounts": {
                 "type": "object",
