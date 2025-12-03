@@ -18525,12 +18525,12 @@
             "get_block_response": {
                 "type": "object",
                 "properties": {
-                    "header": {
+                    "block": {
                         "$ref": "#/components/schemas/block_default"
                     }
                 },
                 "required": [
-                    "header"
+                    "block"
                 ]
             },
             "get_comment_pending_payouts": {
