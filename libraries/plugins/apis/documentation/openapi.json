@@ -20641,7 +20641,7 @@
                 "properties": {
                     "operation": {
                         "type": "string",
-                        "example": ""
+                        "example": "account_create_operation"
                     }
                 },
                 "required": [
