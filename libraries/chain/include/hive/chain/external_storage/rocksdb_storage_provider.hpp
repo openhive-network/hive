@@ -100,6 +100,8 @@ class rocksdb_storage_provider: public external_basic_provider
 
     void save( const Slice& key, const Slice& value );
     bool read( const Slice& key, PinnableSlice& value );
+
+    void finalizeStorage();
 };
 
 }}

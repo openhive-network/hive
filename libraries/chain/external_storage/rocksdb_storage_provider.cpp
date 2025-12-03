@@ -86,9 +86,8 @@ void rocksdb_storage_provider::shutdownDb()
     ilog("Cleanup column handles.");
     cleanupColumnHandles();
 
-    ilog("Close database.");
-    getStorage()->Close();
-    getStorage().reset();
+    ilog("Finalize database.");
+    finalizeStorage();
 
     ilog("`${name}` RocksDB database has been shutdowned.", ("name", name));
   }
@@ -113,12 +112,8 @@ std::tuple<bool, bool> rocksdb_storage_provider::createDbSchema( const bfs::path
 
     ~db_wrapper()
     {
-      if( provider->getStorage() )
-      {
-        ilog("Close database.");
-        provider->getStorage()->Close();
-        provider->getStorage().reset();
-      }
+      ilog("Finalize database.");
+      provider->finalizeStorage();
     }
   };
 
@@ -335,6 +330,15 @@ void rocksdb_storage_provider::update_lib( uint32_t lib )
   */
   FC_ASSERT( _initialized, "Trying to update LIB in `${name}` RocksDB database before initialization.", ("name", name) );
   update_lib_internal( lib );
+}
+
+void rocksdb_storage_provider::finalizeStorage()
+{
+  if( getStorage() )
+  {
+    getStorage()->Close();
+    getStorage().reset();
+  }
 }
 
 }}
