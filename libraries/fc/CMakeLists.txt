@@ -393,6 +393,11 @@ ELSE(MSVC)
 ENDIF(MSVC)
 ENDIF()
 
+# When using shared Boost libraries, tests need BOOST_TEST_DYN_LINK
+IF(USE_SHARED_BOOST)
+  add_definitions(-DBOOST_TEST_DYN_LINK)
+ENDIF()
+
 if(WIN32)
    # add addtional import library on windows platform
    target_link_libraries( fc_core PUBLIC crypt32.lib)
