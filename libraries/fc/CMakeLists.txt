@@ -371,12 +371,6 @@ if(NOT HIVE_BUILD_ON_MINIMAL_FC)
 
   include_directories( vendor/websocketpp )
 
-  # When using shared Boost libraries, tests need BOOST_TEST_DYN_LINK
-  # This must be set before add_subdirectory(tests) to apply to test targets
-  IF(USE_SHARED_BOOST)
-    add_definitions(-DBOOST_TEST_DYN_LINK)
-  ENDIF()
-
   add_subdirectory(tests)
 endif()
 

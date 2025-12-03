@@ -151,6 +151,12 @@ SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-strict-aliasing -DBOOST_THREAD_DONT_PRO
 OPTION( USE_SHARED_BOOST "Link executables against shared Boost libraries (enables mold/lld linker)" OFF )
 MESSAGE( STATUS "USE_SHARED_BOOST: ${USE_SHARED_BOOST}" )
 
+# When using shared Boost libraries, tests using Boost.Test need BOOST_TEST_DYN_LINK
+# This must be set globally to affect all test targets throughout the project
+if( USE_SHARED_BOOST )
+  add_definitions(-DBOOST_TEST_DYN_LINK)
+endif()
+
 SET( USE_ALTERNATE_LINKER "" CACHE STRING "Use alternate linker: mold, lld, or gold" )
 if( USE_ALTERNATE_LINKER )
   MESSAGE( STATUS "USE_ALTERNATE_LINKER: ${USE_ALTERNATE_LINKER}" )
