@@ -84,6 +84,7 @@ ENV HIVE_SUBDIR=${HIVE_SUBDIR}
 ARG USE_SHARED_BOOST=ON
 ARG USE_ALTERNATE_LINKER=mold
 ARG USE_CCACHE=ON
+ARG USE_SPLIT_DWARF=ON
 
 USER hived_admin
 WORKDIR /home/hived_admin
@@ -118,6 +119,7 @@ RUN <<-EOF
   --cmake-arg="-DUSE_SHARED_BOOST=${USE_SHARED_BOOST}" \
   --cmake-arg="-DUSE_ALTERNATE_LINKER=${USE_ALTERNATE_LINKER}" \
   --cmake-arg="-DUSE_CCACHE=${USE_CCACHE}" \
+  --cmake-arg="-DUSE_SPLIT_DWARF=${USE_SPLIT_DWARF}" \
   --flat-binary-directory="${INSTALLATION_DIR}" \
   --clean-after-build
 

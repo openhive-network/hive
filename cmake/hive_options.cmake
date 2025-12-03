@@ -173,3 +173,15 @@ SET( USE_ALTERNATE_LINKER "" CACHE STRING "Use alternate linker: mold, lld, or g
 if( USE_ALTERNATE_LINKER )
   MESSAGE( STATUS "USE_ALTERNATE_LINKER: ${USE_ALTERNATE_LINKER}" )
 endif()
+
+# Split DWARF debug info to speed up linking (reduces data linker processes)
+OPTION( USE_SPLIT_DWARF "Use split DWARF debug info (-gsplit-dwarf) for faster linking" OFF )
+if( USE_SPLIT_DWARF )
+  # Only enable for GCC/Clang on non-Windows platforms
+  if( NOT WIN32 AND (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang") )
+    message( STATUS "Using split DWARF debug info for faster linking" )
+    SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -gsplit-dwarf" )
+    SET( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -gsplit-dwarf" )
+    # Use -Wl,--gdb-index for faster debugging startup (optional, mold handles this automatically)
+  endif()
+endif()
