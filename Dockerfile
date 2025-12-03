@@ -96,8 +96,10 @@ COPY --chown=hived_admin:users . /home/hived_admin/source
 RUN <<-EOF
   set -e
 
-  # Install mold linker for faster builds
-  sudo apt-get update && sudo apt-get install -y mold
+  # Install mold linker if not already in base image
+  if ! command -v mold &> /dev/null; then
+    sudo apt-get update && sudo apt-get install -y mold
+  fi
 
   # Configure ccache for build optimization
   if [ "${USE_CCACHE}" = "ON" ]; then
