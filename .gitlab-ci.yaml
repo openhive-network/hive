@@ -25,6 +25,4 @@ prepare_hived_image:
     HIVE_NETWORK_TYPE: mainnet
     FORCE_REBUILD: 1  # Force full rebuild for build time testing
   tags:
-    - public-runner-docker
-    - hived-for-tests
-    - hived
+    - hive-builder-10  # Pin to specific fast runner for consistent timing
