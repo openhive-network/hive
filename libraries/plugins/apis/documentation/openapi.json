@@ -14232,7 +14232,7 @@
                             "transactions": {
                                 "type": "array",
                                 "items": {
-                                    "$ref": "#/components/schemas/operation_body"
+                                    "$ref": "#/components/schemas/transaction_short"
                                 },
                                 "example": [],
                                 "description": "An array of transactions included in the block."
@@ -14255,7 +14255,7 @@
                             "transactions": {
                                 "type": "array",
                                 "items": {
-                                    "$ref": "#/components/schemas/operation_body_condenser_api"
+                                    "$ref": "#/components/schemas/transaction_condenser_api"
                                 },
                                 "example": [],
                                 "description": "An array of transactions included in the block."
