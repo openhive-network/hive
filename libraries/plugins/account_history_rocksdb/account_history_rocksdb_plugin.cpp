@@ -1274,7 +1274,6 @@ void account_history_rocksdb_plugin::impl::on_irreversible_block( uint32_t block
   );
 
   _provider->update_lib(block_num);
-  //flushDb(); it is apparently needed to properly write LIB so it can be read later, however it kills performance - alternative solution used currently just masks problem
 }
 
 void account_history_rocksdb_plugin::impl::on_flush()

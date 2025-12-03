@@ -17,7 +17,7 @@ class external_basic_provider
     virtual void openDb( uint32_t expected_lib ) = 0;
     virtual void shutdownDb() = 0;
     virtual void flushDb() = 0;
-    virtual void flushWriteBuffer( DB* storageDB = nullptr ) = 0;
+    virtual void flushWriteBuffer() = 0;
     virtual void wipeDb() = 0;
 
     virtual void update_lib( uint32_t ) = 0;

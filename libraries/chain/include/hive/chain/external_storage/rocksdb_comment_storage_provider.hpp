@@ -28,7 +28,7 @@ class rocksdb_comment_storage_provider: public rocksdb_storage_provider, public 
 
   protected:
 
-    void loadSeqIdentifiers(DB* storageDb) override{};
+    void loadSeqIdentifiers() override{};
 
   public:
 
