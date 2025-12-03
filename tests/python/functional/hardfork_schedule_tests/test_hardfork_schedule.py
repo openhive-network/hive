@@ -9,7 +9,7 @@ from hive_local_tools.functional.python import generate_to_block
 
 def test_simply_hardfork_schedule() -> None:
     """
-    Hardfork schedule depends on time. Therefore, possible is situation the hard works will be applying in other
+    Hardfork schedule depends on time. Therefore, possible is situation the hardforks will be applying in other
     blocks in different runs. Slight delays are caused by a.o. using in this test faketime to increase speed of test,
     decrease of efficiency on CI or inaccuracy of synchronization 'genesis_time' with application of hf_00.
     """
