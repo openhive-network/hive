@@ -1,3 +1,15 @@
+# ccache support for faster rebuilds
+OPTION( USE_CCACHE "Use ccache compiler cache for faster rebuilds" OFF )
+if( USE_CCACHE )
+  find_program( CCACHE_PROGRAM ccache )
+  if( CCACHE_PROGRAM )
+    message( STATUS "Using ccache: ${CCACHE_PROGRAM}" )
+    set( CMAKE_C_COMPILER_LAUNCHER "${CCACHE_PROGRAM}" )
+    set( CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PROGRAM}" )
+  else()
+    message( WARNING "USE_CCACHE enabled but ccache not found" )
+  endif()
+endif()
 
 OPTION( BUILD_HIVE_TESTNET "Build source for test network (ON OR OFF)" OFF )
 MESSAGE( STATUS "BUILD_HIVE_TESTNET: ${BUILD_HIVE_TESTNET}" )

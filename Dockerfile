@@ -83,6 +83,7 @@ ENV HIVE_SUBDIR=${HIVE_SUBDIR}
 # Build optimization: use mold linker with shared boost for faster linking
 ARG USE_SHARED_BOOST=ON
 ARG USE_ALTERNATE_LINKER=mold
+ARG USE_CCACHE=ON
 
 USER hived_admin
 WORKDIR /home/hived_admin
@@ -97,6 +98,15 @@ RUN <<-EOF
   # Install mold linker for faster builds
   sudo apt-get update && sudo apt-get install -y mold
 
+  # Configure ccache for build optimization
+  if [ "${USE_CCACHE}" = "ON" ]; then
+    export CCACHE_DIR="/home/hived_admin/.ccache"
+    export CCACHE_MAXSIZE="5G"
+    export CCACHE_COMPRESS="1"
+    export CCACHE_COMPRESSLEVEL="6"
+    mkdir -p "${CCACHE_DIR}"
+  fi
+
   INSTALLATION_DIR="/home/hived/bin"
   sudo --user=hived mkdir -p "${INSTALLATION_DIR}"
 
@@ -107,8 +117,14 @@ RUN <<-EOF
   --cmake-arg="-DHIVE_LINT=${HIVE_LINT}" \
   --cmake-arg="-DUSE_SHARED_BOOST=${USE_SHARED_BOOST}" \
   --cmake-arg="-DUSE_ALTERNATE_LINKER=${USE_ALTERNATE_LINKER}" \
+  --cmake-arg="-DUSE_CCACHE=${USE_CCACHE}" \
   --flat-binary-directory="${INSTALLATION_DIR}" \
   --clean-after-build
+
+  # Show ccache stats if enabled
+  if [ "${USE_CCACHE}" = "ON" ]; then
+    ccache -s || true
+  fi
 
   sudo chown -R hived "${INSTALLATION_DIR}/"*
 EOF
