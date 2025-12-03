@@ -55,6 +55,13 @@ class rocksdb_storage_provider: public external_basic_provider
 
   private:
 
+    /// <summary>
+    /// Block being irreversible atm.
+    /// </summary>
+    std::atomic_uint                  _cached_irreversible_block;
+    std::unique_ptr<DB>               _storage;
+    std::vector<ColumnFamilyHandle*>  _columnHandles;
+
     virtual ColumnDefinitions prepareColumnDefinitions( bool addDefaultColumn ) = 0;
 
     void cleanupColumnHandles();
@@ -66,19 +73,13 @@ class rocksdb_storage_provider: public external_basic_provider
 
   protected:
 
-    /// <summary>
-    /// Block being irreversible atm.
-    /// </summary>
-    std::atomic_uint                 _cached_irreversible_block;
-
     const std::string name;
 
     virtual void loadSeqIdentifiers(){}
 
-    std::unique_ptr<DB>               _storage;
-    std::vector<ColumnFamilyHandle*>  _columnHandles;
-
     virtual WriteBatch& getWriteBuffer() = 0;
+
+    const std::vector<ColumnFamilyHandle*>& getColumnHandles() const { return _columnHandles; }
 
   public:
 

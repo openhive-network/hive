@@ -4,7 +4,7 @@
 namespace hive { namespace chain {
 
 rocksdb_ah_storage_provider::rocksdb_ah_storage_provider( const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application& app )
-  : rocksdb_storage_provider( blockchain_storage_path, storage_path, app, "AH" ), _writeBuffer( getStorage(), _columnHandles )
+  : rocksdb_storage_provider( blockchain_storage_path, storage_path, app, "AH" ), _writeBuffer( getStorage(), getColumnHandles() )
 {
 }
 
@@ -49,8 +49,8 @@ void rocksdb_ah_storage_provider::flushWriteBuffer()
 
 ColumnFamilyHandle* rocksdb_ah_storage_provider::getColumnHandle( Columns column )
 {
-  FC_ASSERT( column < _columnHandles.size() );
-  return _columnHandles[ column ];
+  FC_ASSERT( column < getColumnHandles().size() );
+  return getColumnHandles()[ column ];
 }
 
 CachableWriteBatch& rocksdb_ah_storage_provider::getCachableWriteBuffer()
