@@ -20651,36 +20651,28 @@
             "get_rc_operation_stats_response": {
                 "type": "object",
                 "properties": {
-                    "rc_operation_stats": {
-                        "type": "object",
-                        "properties": {
-                            "count": {
-                                "type": "integer"
-                            },
-                            "avg_cost_rc": {
-                                "$ref": "#/components/schemas/hive_int"
-                            },
-                            "resource_cost": {
-                                "$ref": "#/components/schemas/get_rc_operation_stats_return_cost"
-                            },
-                            "resource_cost_share": {
-                                "$ref": "#/components/schemas/get_rc_operation_stats_return_share"
-                            },
-                            "resource_usage": {
-                                "$ref": "#/components/schemas/get_rc_operation_stats_return_usage"
-                            }
-                        },
-                        "required": [
-                            "count",
-                            "avg_cost_rc",
-                            "resource_cost",
-                            "resource_cost_share",
-                            "resource_usage"
-                        ]
+                    "count": {
+                        "type": "integer"
+                    },
+                    "avg_cost_rc": {
+                        "$ref": "#/components/schemas/hive_int"
+                    },
+                    "resource_cost": {
+                        "$ref": "#/components/schemas/get_rc_operation_stats_return_cost"
+                    },
+                    "resource_cost_share": {
+                        "$ref": "#/components/schemas/get_rc_operation_stats_return_share"
+                    },
+                    "resource_usage": {
+                        "$ref": "#/components/schemas/get_rc_operation_stats_return_usage"
                     }
                 },
                 "required": [
-                    "rc_operation_stats"
+                    "count",
+                    "avg_cost_rc",
+                    "resource_cost",
+                    "resource_cost_share",
+                    "resource_usage"
                 ]
             },
             "get_rc_operation_stats_return_cost": {
