@@ -14,6 +14,16 @@ MACRO( ADD_TARGET_BOOST_LIBRARIES target_name components )
 
     MESSAGE( STATUS "Setting up Boost libraries for target: ${target_name} defined as: ${_target_type}" )
 
+    # Clear cached Boost library paths to force fresh detection
+    UNSET(Boost_LIBRARIES CACHE)
+    UNSET(Boost_INCLUDE_DIRS CACHE)
+    FOREACH(_comp ${BOOST_COMPONENTS})
+      STRING(TOUPPER ${_comp} _comp_upper)
+      UNSET(Boost_${_comp_upper}_LIBRARY CACHE)
+      UNSET(Boost_${_comp_upper}_LIBRARY_DEBUG CACHE)
+      UNSET(Boost_${_comp_upper}_LIBRARY_RELEASE CACHE)
+    ENDFOREACH()
+
     IF (_target_type  STREQUAL "EXECUTABLE")
       # Executable can always link against static Boost libraries, to reduce binary dependencies
       SET( Boost_USE_STATIC_LIBS ON CACHE STRING "ON or OFF" FORCE )
@@ -24,7 +34,7 @@ MACRO( ADD_TARGET_BOOST_LIBRARIES target_name components )
       SET( Boost_USE_STATIC_LIBS OFF CACHE STRING "ON or OFF" FORCE )
       SET( CMAKE_FIND_LIBRARY_SUFFIXES ".so")
 
-    ELSE() 
+    ELSE()
       # Nothing to do for static libraries - they does not need to know dependencies at library level, since all symbols must be finally solved at .so or exec level
       #FIND_PACKAGE( Boost 1.74 REQUIRED COMPONENTS ${BOOST_COMPONENTS} )
       GET_TARGET_PROPERTY(_target_PIC ${target_name} POSITION_INDEPENDENT_CODE)
@@ -44,6 +54,17 @@ MACRO( ADD_TARGET_BOOST_LIBRARIES target_name components )
     FIND_PACKAGE( Boost 1.74 REQUIRED COMPONENTS ${BOOST_COMPONENTS} )
 
     TARGET_LINK_LIBRARIES( ${target_name} INTERFACE ${Boost_LIBRARIES} )
+
+    # When using shared Boost libraries, boost_locale requires ICU
+    IF ( NOT Boost_USE_STATIC_LIBS )
+      IF ( "locale" IN_LIST BOOST_COMPONENTS )
+        FIND_PACKAGE( ICU COMPONENTS uc i18n data )
+        IF ( ICU_FOUND )
+          MESSAGE( STATUS "Adding ICU libraries for shared boost_locale: ${ICU_LIBRARIES}" )
+          TARGET_LINK_LIBRARIES( ${target_name} INTERFACE ${ICU_LIBRARIES} )
+        ENDIF()
+      ENDIF()
+    ENDIF()
 
     MESSAGE ( STATUS "Detected boost libs: ${Boost_LIBRARIES}" )
 

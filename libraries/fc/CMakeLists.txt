@@ -500,12 +500,23 @@ ADD_LIBRARY ( STATIC_OPENSSL INTERFACE )
 ADD_TARGET_OPENSSL_LIBRARIES (STATIC_OPENSSL TRUE)
 
 add_library ( fc STATIC )
-target_link_libraries ( fc PUBLIC fc_core STATIC_BOOST STATIC_OPENSSL )
+
+# When USE_SHARED_BOOST is enabled, use shared Boost/OpenSSL libraries for the main fc target
+# This enables using faster linkers like mold/lld which have issues with some static libraries
+if(USE_SHARED_BOOST)
+  MESSAGE( STATUS "Building fc with shared Boost and OpenSSL libraries (USE_SHARED_BOOST=ON)" )
+  target_link_libraries ( fc PUBLIC fc_core SHARED_BOOST SHARED_OPENSSL )
+  ADD_TARGET_PACKAGE_LIBRARIES( fc ZLIB FALSE )
+  ADD_TARGET_PACKAGE_LIBRARIES( fc BZip2 FALSE )
+else()
+  target_link_libraries ( fc PUBLIC fc_core STATIC_BOOST STATIC_OPENSSL )
+  if(NOT HIVE_BUILD_ON_MINIMAL_FC)
+    ADD_TARGET_PACKAGE_LIBRARIES( fc ZLIB TRUE )
+    ADD_TARGET_PACKAGE_LIBRARIES( fc BZip2 TRUE )
+  endif()
+endif()
 
 if(NOT HIVE_BUILD_ON_MINIMAL_FC OR USE_SHARED_BOOST)
-  ADD_TARGET_PACKAGE_LIBRARIES( fc ZLIB TRUE )
-  ADD_TARGET_PACKAGE_LIBRARIES( fc BZip2 TRUE )
-
   add_library ( fc_shared_boost STATIC )
   target_link_libraries ( fc_shared_boost PUBLIC fc_core SHARED_BOOST SHARED_OPENSSL )
   ADD_TARGET_PACKAGE_LIBRARIES( fc_shared_boost ZLIB FALSE )
