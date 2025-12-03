@@ -19,7 +19,8 @@ const std::vector< std::string > default_seeds = {
   "seed.deathwing.me:2001",              // deathwing
   "hive-seed.actifit.io:2001",           // actifit
   "seed.shmoogleosukami.co.uk:2001",     // shmoogleosukami
-  "hiveseed.rishipanthee.com:2001"       // rishi556
+  "hiveseed.rishipanthee.com:2001",      // rishi556
+  "seed.engrave.dev:2001"                // engrave
 };
 #endif
 
