@@ -19,6 +19,7 @@ class external_basic_provider
     virtual void flushDb() = 0;
     virtual void flushWriteBuffer() = 0;
     virtual void wipeDb() = 0;
+    virtual void finalizeStorage() = 0;
 
     virtual void update_lib( uint32_t ) = 0;
     virtual uint32_t get_lib() const = 0;
