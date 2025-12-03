@@ -57,8 +57,10 @@ void rocksdb_storage_provider::openDb( uint32_t expected_lib )
     ilog("Verify store version.");
     verifyStoreVersion();
 
-    ilog("Load additional data.");
-    loadAdditionalData();
+    ilog("Load sequence identifiers.");
+    loadSeqIdentifiers();
+    ilog("Load lib.");
+    load_lib();
   }
   else
   {
@@ -333,12 +335,6 @@ void rocksdb_storage_provider::update_lib( uint32_t lib )
   */
   FC_ASSERT( _initialized, "Trying to update LIB in `${name}` RocksDB database before initialization.", ("name", name) );
   update_lib_internal( lib );
-}
-
-void rocksdb_storage_provider::loadAdditionalData()
-{
-  loadSeqIdentifiers();
-  load_lib();
 }
 
 }}
