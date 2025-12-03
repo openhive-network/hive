@@ -18,7 +18,7 @@ void rocksdb_ah_storage_provider::storeSequenceIds()
   checkStatus(s);
 }
 
-void rocksdb_ah_storage_provider::loadSeqIdentifiers(DB* storageDb)
+void rocksdb_ah_storage_provider::loadSeqIdentifiers()
 {
   Slice ahSeqIdName("AH_SEQ_ID");
 
@@ -28,7 +28,7 @@ void rocksdb_ah_storage_provider::loadSeqIdentifiers(DB* storageDb)
   /// OP-seq-id is local to block num
   _operationSeqId = 0; /// id_slice_t::unpackSlice(buffer);
 
-  auto s = storageDb->Get(rOptions, ahSeqIdName, &buffer);
+  auto s = getStorage()->Get(rOptions, ahSeqIdName, &buffer);
   checkStatus(s);
   _accountHistorySeqId = id_slice_t::unpackSlice(buffer);
 
@@ -40,10 +40,10 @@ WriteBatch& rocksdb_ah_storage_provider::getWriteBuffer()
   return _writeBuffer;
 }
 
-void rocksdb_ah_storage_provider::flushWriteBuffer( DB* storageDB )
+void rocksdb_ah_storage_provider::flushWriteBuffer()
 {
   storeSequenceIds();
-  rocksdb_storage_provider::flushWriteBuffer( storageDB );
+  rocksdb_storage_provider::flushWriteBuffer();
   _collectedOps = 0;
 }
 

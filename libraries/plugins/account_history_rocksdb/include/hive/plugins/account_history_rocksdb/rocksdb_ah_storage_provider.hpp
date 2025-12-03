@@ -24,7 +24,7 @@ class rocksdb_ah_storage_provider: public rocksdb_storage_provider, public exter
 
     void storeSequenceIds();
 
-    void loadSeqIdentifiers(DB* storageDb) override;
+    void loadSeqIdentifiers() override;
 
     WriteBatch& getWriteBuffer() override;
 
@@ -48,7 +48,7 @@ class rocksdb_ah_storage_provider: public rocksdb_storage_provider, public exter
     unsigned int get_collectedOps() const override;
     void set_collectedOps( unsigned int value ) override;
 
-    void flushWriteBuffer( DB* storageDB = nullptr ) override;
+    void flushWriteBuffer() override;
 
     ColumnFamilyHandle* getColumnHandle( Columns column ) override;
 

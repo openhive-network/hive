@@ -39,7 +39,7 @@ void rocksdb_storage_provider::openDb( uint32_t expected_lib )
   ilog("Prepare column definitions." );
   auto columnDefs = prepareColumnDefinitions(true);
 
-  DB* storageDb = nullptr;
+  DB* _db = nullptr;
   auto strPath = _storagePath.string();
   Options options;
   /// Optimize RocksDB. This is the easiest way to get RocksDB to perform well
@@ -47,15 +47,15 @@ void rocksdb_storage_provider::openDb( uint32_t expected_lib )
   options.OptimizeLevelStyleCompaction();
   options.max_open_files = OPEN_FILE_LIMIT;
 
-  auto status = DB::Open( DBOptions( options ), strPath, columnDefs, &_columnHandles, &storageDb );
+  auto status = DB::Open( DBOptions( options ), strPath, columnDefs, &_columnHandles, &_db );
   ilog( "Database is ${status}.", ("status", status.ok() ? "opened" : "not opened") );
 
   if( status.ok() )
   {
-    ilog("Verify store version.");
-    verifyStoreVersion( storageDb );
+    getStorage().reset( _db );
 
-    getStorage().reset( storageDb );
+    ilog("Verify store version.");
+    verifyStoreVersion();
 
     ilog("Load additional data.");
     loadAdditionalData();
@@ -104,16 +104,18 @@ std::tuple<bool, bool> rocksdb_storage_provider::createDbSchema( const bfs::path
 {
   struct db_wrapper
   {
+    external_basic_provider* provider = nullptr;
     DB* db = nullptr;
+
+    db_wrapper( external_basic_provider* provider ): provider( provider ){}
 
     ~db_wrapper()
     {
-      if( db )
+      if( provider->getStorage() )
       {
-        ilog( "Close database." );
-
-        db->Close();
-        delete db;
+        ilog("Close database.");
+        provider->getStorage()->Close();
+        provider->getStorage().reset();
       }
     }
   };
@@ -137,14 +139,16 @@ std::tuple<bool, bool> rocksdb_storage_provider::createDbSchema( const bfs::path
     {
       ilog( "Open database in read only mode." );
 
-      db_wrapper _db;
+      db_wrapper _db{ this };
       auto _status = DB::OpenForReadOnly( options, strPath, _columnDefs, &_columnHandles, &_db.db );
 
       ilog( "Database is ${status}.", ("status", _status.ok() ? "opened" : "not opened") );
       if( _status.ok() )
       {
+        getStorage().reset( _db.db );
+
         ilog( "Cleanup column handles." );
-        cleanupColumnHandles( _db.db );
+        cleanupColumnHandles();
 
         result = std::make_tuple( false, true );/// { DB does not need data import, an application is not closed }
       }
@@ -158,17 +162,19 @@ std::tuple<bool, bool> rocksdb_storage_provider::createDbSchema( const bfs::path
 
     options.create_if_missing = true;
 
-    db_wrapper _db;
+    db_wrapper _db{ this };
     auto _status = DB::Open( options, strPath, &_db.db );
     ilog( "Database is ${status}.", ("status", _status.ok() ? "opened" : "not opened") );
 
     if( _status.ok() )
     {
+      getStorage().reset( _db.db );
+
       ilog( "Prepare column definitions." );
       auto _columnDefs = prepareColumnDefinitions(false);
 
       ilog( "Create column families." );
-      _status = _db.db->CreateColumnFamilies( _columnDefs, &_columnHandles );
+      _status = getStorage()->CreateColumnFamilies( _columnDefs, &_columnHandles );
 
       if( _status.ok() )
       {
@@ -176,10 +182,10 @@ std::tuple<bool, bool> rocksdb_storage_provider::createDbSchema( const bfs::path
         saveStoreVersion();
 
         ilog( "Flush database." );
-        flushDb( _db.db );
+        flushDb();
 
         ilog( "Cleanup column handles." );
-        cleanupColumnHandles( _db.db );
+        cleanupColumnHandles();
       }
       else
       {
@@ -212,15 +218,9 @@ std::tuple<bool, bool> rocksdb_storage_provider::createDbSchema( const bfs::path
 
 void rocksdb_storage_provider::cleanupColumnHandles()
 {
-  if( getStorage() )
-    cleanupColumnHandles( getStorage().get() );
-}
-
-void rocksdb_storage_provider::cleanupColumnHandles( DB* storageDB )
-{
   for( auto* h : _columnHandles )
   {
-    auto s = storageDB->DestroyColumnFamilyHandle(h);
+    auto s = getStorage()->DestroyColumnFamilyHandle(h);
     if(s.ok() == false)
     {
       elog("Cannot destroy column family handle in `${name}` RocksDB database. Error: `${e}`", ("name", name)("e", s.ToString()));
@@ -230,38 +230,27 @@ void rocksdb_storage_provider::cleanupColumnHandles( DB* storageDB )
   _columnHandles.clear();
 }
 
-void rocksdb_storage_provider::flushWriteBuffer( DB* storageDB )
+void rocksdb_storage_provider::flushWriteBuffer()
 {
-  if( storageDB == nullptr )
-    storageDB = getStorage().get();
-
   ::rocksdb::WriteOptions wOptions;
-  auto s = storageDB->Write(wOptions, getWriteBuffer().GetWriteBatch());
+  auto s = getStorage()->Write(wOptions, getWriteBuffer().GetWriteBatch());
   checkStatus(s);
 
   getWriteBuffer().Clear();
 }
 
-void rocksdb_storage_provider::flushDb( DB* storageDb )
+void rocksdb_storage_provider::flushDb()
 {
-  FC_ASSERT( storageDb != nullptr && "Database pointer is null" );
+  FC_ASSERT( getStorage() != nullptr && "Database pointer is null" );
 
-  flushWriteBuffer( storageDb );
+  flushWriteBuffer();
 
   ::rocksdb::FlushOptions fOptions;
   for( const auto& cf : _columnHandles )
   {
-    auto s = storageDb->Flush( fOptions, cf );
+    auto s = getStorage()->Flush( fOptions, cf );
     checkStatus(s);
   }
-}
-
-void rocksdb_storage_provider::flushDb()
-{
-  if( getStorage() == nullptr )
-    return;
-
-  flushDb( getStorage().get() );
 }
 
 void rocksdb_storage_provider::saveStoreVersion()
@@ -273,14 +262,14 @@ void rocksdb_storage_provider::saveStoreVersion()
   checkStatus(s);
 }
 
-void rocksdb_storage_provider::verifyStoreVersion( DB* storageDb )
+void rocksdb_storage_provider::verifyStoreVersion()
 {
-  auto _verifier =[ &storageDb ]( const std::string & key, uint32_t expected_value )
+  auto _verifier =[this]( const std::string & key, uint32_t expected_value )
   {
     ReadOptions rOptions;
 
     std::string _buffer;
-    auto s = storageDb->Get(rOptions, key, &_buffer);
+    auto s = getStorage()->Get(rOptions, key, &_buffer);
     checkStatus(s);
     const auto _value = PrimitiveTypeSlice<uint32_t>::unpackSlice(_buffer);
 
@@ -348,7 +337,7 @@ void rocksdb_storage_provider::update_lib( uint32_t lib )
 
 void rocksdb_storage_provider::loadAdditionalData()
 {
-  loadSeqIdentifiers( getStorage().get() );
+  loadSeqIdentifiers();
   load_lib();
 }
 

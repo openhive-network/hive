@@ -60,12 +60,9 @@ class rocksdb_storage_provider: public external_basic_provider
     virtual ColumnDefinitions prepareColumnDefinitions( bool addDefaultColumn ) = 0;
 
     void cleanupColumnHandles();
-    void cleanupColumnHandles( DB* storageDb );
 
     void saveStoreVersion();
-    void verifyStoreVersion( DB* storageDb );
-
-    void flushDb( DB* storageDb );
+    void verifyStoreVersion();
 
     void update_lib_internal( uint32_t );
 
@@ -78,7 +75,7 @@ class rocksdb_storage_provider: public external_basic_provider
 
     const std::string name;
 
-    virtual void loadSeqIdentifiers( DB* storageDb ) = 0;
+    virtual void loadSeqIdentifiers() = 0;
 
     std::unique_ptr<DB>               _storage;
     std::vector<ColumnFamilyHandle*>  _columnHandles;
@@ -95,7 +92,7 @@ class rocksdb_storage_provider: public external_basic_provider
     void openDb( uint32_t expected_lib ) override;
     void shutdownDb() override;
     void flushDb() override;
-    void flushWriteBuffer( DB* storageDB = nullptr ) override;
+    void flushWriteBuffer() override;
     void wipeDb() override;
 
     //stores new value of last irreversible block in DB and _cached_irreversible_block
