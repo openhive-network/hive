@@ -1,4 +1,5 @@
 """Scenarios description: https://gitlab.syncad.com/hive/hive/-/issues/523"""
+
 from __future__ import annotations
 
 import pytest
@@ -79,9 +80,7 @@ def test_recurrent_transfer_with_extension_cases_3_and_4(
 
     for recurrent_transfer in (rtd1, rtd2):
         recurrent_transfer.cancel()
-        sender.rc_manabar.assert_rc_current_mana_is_reduced(
-            operation_rc_cost=recurrent_transfer.rc_cost, operation_timestamp=recurrent_transfer.timestamp
-        )
+        sender.rc_manabar.assert_rc_current_mana_is_reduced(transaction=recurrent_transfer.transaction)
         sender.update_account_info()
 
     rtd1.assert_fill_recurrent_transfer_operation_was_generated(expected_vop=3)
@@ -120,15 +119,11 @@ def test_recurrent_transfer_with_extension_cases_5_and_6(
     sender.top_up(asset(100))
 
     rtd1.update(amount=rtd1.amount + asset(5))
-    sender.rc_manabar.assert_rc_current_mana_is_reduced(
-        operation_rc_cost=rtd1.rc_cost, operation_timestamp=rtd1.timestamp
-    )
+    sender.rc_manabar.assert_rc_current_mana_is_reduced(transaction=rtd1.transaction)
     sender.update_account_info()
 
     rtd2.update(amount=rtd2.amount - asset(5))
-    sender.rc_manabar.assert_rc_current_mana_is_reduced(
-        operation_rc_cost=rtd2.rc_cost, operation_timestamp=rtd2.timestamp
-    )
+    sender.rc_manabar.assert_rc_current_mana_is_reduced(transaction=rtd2.transaction)
     rtd1.assert_fill_recurrent_transfer_operation_was_generated(expected_vop=3)
     sender.update_account_info()
 
@@ -165,15 +160,11 @@ def test_recurrent_transfer_with_extension_cases_7_and_8(
     sender.top_up(asset(100))
 
     rtd1.update(new_executions_number=3)
-    sender.rc_manabar.assert_rc_current_mana_is_reduced(
-        operation_rc_cost=rtd1.rc_cost, operation_timestamp=rtd1.timestamp
-    )
+    sender.rc_manabar.assert_rc_current_mana_is_reduced(transaction=rtd1.transaction)
     sender.update_account_info()
 
     rtd2.update(new_executions_number=2)
-    sender.rc_manabar.assert_rc_current_mana_is_reduced(
-        operation_rc_cost=rtd2.rc_cost, operation_timestamp=rtd2.timestamp
-    )
+    sender.rc_manabar.assert_rc_current_mana_is_reduced(transaction=rtd2.transaction)
 
     rtd1.assert_fill_recurrent_transfer_operation_was_generated(expected_vop=3)
     sender.update_account_info()
@@ -221,15 +212,11 @@ def test_recurrent_transfer_with_extension_cases_9_and_10(
     sender.top_up(asset(100))
 
     rtd1.update(new_recurrence_time=24)
-    sender.rc_manabar.assert_rc_current_mana_is_reduced(
-        operation_rc_cost=rtd1.rc_cost, operation_timestamp=rtd1.timestamp
-    )
+    sender.rc_manabar.assert_rc_current_mana_is_reduced(transaction=rtd1.transaction)
     sender.update_account_info()
 
     rtd2.update(new_recurrence_time=48)
-    sender.rc_manabar.assert_rc_current_mana_is_reduced(
-        operation_rc_cost=rtd2.rc_cost, operation_timestamp=rtd2.timestamp
-    )
+    sender.rc_manabar.assert_rc_current_mana_is_reduced(transaction=rtd2.transaction)
 
     rtd1.assert_fill_recurrent_transfer_operation_was_generated(expected_vop=3)
     sender.update_account_info()
@@ -297,9 +284,7 @@ def test_recurrent_transfer_with_extension_cases_11_and_12(
 
     sender.assert_balance_is_reduced_by_transfer(rtd1_amount)
     receiver.assert_balance_is_increased_by_transfer(rtd1_amount)
-    sender.rc_manabar.assert_rc_current_mana_is_reduced(
-        operation_rc_cost=rtd1.rc_cost, operation_timestamp=rtd1.timestamp
-    )
+    sender.rc_manabar.assert_rc_current_mana_is_reduced(transaction=rtd1.transaction)
     rtd1.assert_fill_recurrent_transfer_operation_was_generated(expected_vop=1)
     sender.update_account_info()
     receiver.update_account_info()
@@ -334,9 +319,7 @@ def test_recurrent_transfer_with_extension_cases_11_and_12(
 
     sender.assert_balance_is_reduced_by_transfer(rtd3_amount)
     receiver.assert_balance_is_increased_by_transfer(rtd3_amount)
-    sender.rc_manabar.assert_rc_current_mana_is_reduced(
-        operation_rc_cost=rtd3.rc_cost, operation_timestamp=rtd3.timestamp
-    )
+    sender.rc_manabar.assert_rc_current_mana_is_reduced(transaction=rtd3.transaction)
     rtd3.assert_fill_recurrent_transfer_operation_was_generated(expected_vop=2)
     sender.update_account_info()
     receiver.update_account_info()

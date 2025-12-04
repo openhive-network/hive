@@ -208,7 +208,9 @@ class EscrowAccount(Account):
         self.update_account_info()
 
     def check_account_balance(
-        self, trx: dict, mode: Literal["escrow_creation_operation", "escrow_rejection_operation", "escrow_release_operation"]
+        self,
+        trx: dict,
+        mode: Literal["escrow_creation_operation", "escrow_rejection_operation", "escrow_release_operation"],
     ) -> None:
         old_hive_amount = self.hive
         old_hbd_amount = self.hbd
@@ -532,9 +534,7 @@ class UpdateAccount(Account):
             ), f"Posting json metadata of account {self._name} wasn't changed."
 
     def assert_if_rc_current_mana_was_reduced(self, transaction):
-        self.rc_manabar.assert_rc_current_mana_is_reduced(
-            transaction["rc_cost"], get_transaction_timestamp(self._node, transaction)
-        )
+        self.rc_manabar.assert_rc_current_mana_is_reduced(transaction)
 
     def assert_if_rc_current_mana_was_unchanged(self):
         self.rc_manabar.assert_current_mana_is_unchanged()
@@ -642,9 +642,7 @@ class WitnessAccount(Account):
         raise AssertionError("Feed_publish operation wasn't found.")
 
     def assert_if_rc_current_mana_was_reduced(self, transaction: dict) -> None:
-        self.rc_manabar.assert_rc_current_mana_is_reduced(
-            transaction["rc_cost"], get_transaction_timestamp(self._node, transaction)
-        )
+        self.rc_manabar.assert_rc_current_mana_is_reduced(transaction)
         self.rc_manabar.update()
 
     def assert_rc_current_mana_was_unchanged(self) -> None:

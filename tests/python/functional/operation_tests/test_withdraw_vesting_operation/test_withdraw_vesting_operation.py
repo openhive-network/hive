@@ -1,4 +1,5 @@
 """Tests - operation in Hive - Power down - https://gitlab.syncad.com/hive/hive/-/issues/474"""
+
 from __future__ import annotations
 
 import pytest
@@ -19,9 +20,9 @@ def test_power_down(prepared_node: tt.InitNode, wallet: tt.Wallet, alice: PowerD
     alice.assert_hive_power_is_unchanged()
     alice.rc_manabar.assert_max_rc_mana_state("reduced")
     alice.rc_manabar.assert_rc_current_mana_is_reduced(
-        operation_rc_cost=power_down.rc_cost + int(power_down.weekly_vest_reduction.amount),
-        operation_timestamp=power_down.timestamp,
+        transaction=power_down.transaction, additional_rc_cost=int(power_down.weekly_vest_reduction.amount)
     )
+
     alice.update_account_info()
     prepared_node.wait_for_irreversible_block()
 
@@ -54,8 +55,7 @@ def test_cancel_power_down(prepared_node: tt.InitNode, wallet: tt.Wallet, alice:
     alice.assert_hive_power_is_unchanged()
     alice.rc_manabar.assert_max_rc_mana_state("reduced")
     alice.rc_manabar.assert_rc_current_mana_is_reduced(
-        operation_rc_cost=power_down.rc_cost + int(power_down.weekly_vest_reduction.amount),
-        operation_timestamp=power_down.timestamp,
+        transaction=power_down.transaction, additional_rc_cost=int(power_down.weekly_vest_reduction.amount)
     )
     alice.update_account_info()
     prepared_node.wait_for_irreversible_block()
@@ -96,8 +96,7 @@ def test_modify_power_down_amount(
     alice.assert_hive_power_is_unchanged()
     alice.rc_manabar.assert_max_rc_mana_state("reduced")
     alice.rc_manabar.assert_rc_current_mana_is_reduced(
-        operation_rc_cost=power_down.rc_cost + int(power_down.weekly_vest_reduction.amount),
-        operation_timestamp=power_down.timestamp,
+        transaction=power_down.transaction, additional_rc_cost=int(power_down.weekly_vest_reduction.amount)
     )
     alice.update_account_info()
     prepared_node.wait_for_irreversible_block()

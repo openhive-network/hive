@@ -16,15 +16,11 @@ def test_proxy_before_waiving_voting_rights(
 ) -> None:
     node, wallet = prepare_environment
     transaction = wallet.api.set_voting_proxy(voter.name, proxy.name)
-    voter.rc_manabar.assert_rc_current_mana_is_reduced(
-        transaction["rc_cost"], get_transaction_timestamp(node, transaction)
-    )
+    voter.rc_manabar.assert_rc_current_mana_is_reduced(transaction)
     voter.rc_manabar.update()
 
     transaction = wallet.api.decline_voting_rights(voter.name, True)
-    voter.rc_manabar.assert_rc_current_mana_is_reduced(
-        transaction["rc_cost"], get_transaction_timestamp(node, transaction)
-    )
+    voter.rc_manabar.assert_rc_current_mana_is_reduced(transaction)
     assert (voter := node.api.wallet_bridge.get_account(voter.name)) is not None
     assert voter.proxy == proxy.name
 
@@ -52,9 +48,7 @@ def test_set_proxy_after_waiving_voting_rights(
     node, wallet = prepare_environment
 
     transaction = wallet.api.decline_voting_rights(voter.name, True)
-    voter.rc_manabar.assert_rc_current_mana_is_reduced(
-        transaction["rc_cost"], get_transaction_timestamp(node, transaction)
-    )
+    voter.rc_manabar.assert_rc_current_mana_is_reduced(transaction)
     assert len(node.api.database.find_decline_voting_rights_requests(accounts=[voter.name])["requests"]) == 1
 
     node.wait_number_of_blocks(TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS)
@@ -78,18 +72,14 @@ def test_set_proxy_when_decline_voting_rights_is_in_progress(
     node, wallet = prepare_environment
 
     transaction = wallet.api.decline_voting_rights(voter.name, True)
-    voter.rc_manabar.assert_rc_current_mana_is_reduced(
-        transaction["rc_cost"], get_transaction_timestamp(node, transaction)
-    )
+    voter.rc_manabar.assert_rc_current_mana_is_reduced(transaction)
     voter.rc_manabar.update()
     assert len(node.api.database.find_decline_voting_rights_requests(accounts=[voter.name])["requests"]) == 1
 
     node.wait_for_block_with_number(transaction["block_num"] + (TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS // 2))
 
     transaction = wallet.api.set_voting_proxy(voter.name, proxy.name)
-    voter.rc_manabar.assert_rc_current_mana_is_reduced(
-        transaction["rc_cost"], get_transaction_timestamp(node, transaction)
-    )
+    voter.rc_manabar.assert_rc_current_mana_is_reduced(transaction)
     node.wait_for_block_with_number(transaction["block_num"] + TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS)
 
     assert node.api.database.find_accounts(accounts=[voter.name]).accounts[0].can_vote is False
@@ -113,9 +103,7 @@ def test_proxied_vsf_votes_when_principal_account_declined_its_voting_rights(
     node, wallet = prepare_environment
 
     transaction = wallet.api.set_voting_proxy(voter.name, proxy.name)
-    voter.rc_manabar.assert_rc_current_mana_is_reduced(
-        transaction["rc_cost"], get_transaction_timestamp(node, transaction)
-    )
+    voter.rc_manabar.assert_rc_current_mana_is_reduced(transaction)
     voter.rc_manabar.update()
     node.wait_for_irreversible_block()
     node.restart(time_control=tt.OffsetTimeControl(offset="+25h", speed_up_rate=5))
@@ -124,9 +112,7 @@ def test_proxied_vsf_votes_when_principal_account_declined_its_voting_rights(
     assert int(proxy.proxied_vsf_votes[0]) > 0
 
     transaction = wallet.api.decline_voting_rights(voter.name, True)
-    voter.rc_manabar.assert_rc_current_mana_is_reduced(
-        transaction["rc_cost"], get_transaction_timestamp(node, transaction)
-    )
+    voter.rc_manabar.assert_rc_current_mana_is_reduced(transaction)
 
     assert len(node.api.database.find_decline_voting_rights_requests(accounts=[voter.name])["requests"]) == 1
 

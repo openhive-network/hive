@@ -1,4 +1,5 @@
 """Tests account witness proxy operation - https://gitlab.syncad.com/hive/hive/-/issues/497"""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -33,7 +34,7 @@ def test_set_account_witness_proxy(
     set_proxy = AccountWitnessProxy(node, wallet, bob.name, alice.name)
 
     assert bob.get_proxy() == alice.name
-    bob.rc_manabar.assert_rc_current_mana_is_reduced(set_proxy.rc_cost, set_proxy.timestamp)
+    bob.rc_manabar.assert_rc_current_mana_is_reduced(set_proxy.transaction)
 
     move_to_next_maintenance_time(node)
     alice.update_account_info()
@@ -59,7 +60,7 @@ def test_remove_account_witness_proxy(
     remove_proxy = AccountWitnessProxy(node, wallet, bob.name, "")
     assert bob.get_proxy() == ""
     assert len(get_virtual_operations(node, ProxyClearedOperation)) == 1
-    bob.rc_manabar.assert_rc_current_mana_is_reduced(remove_proxy.rc_cost, remove_proxy.timestamp)
+    bob.rc_manabar.assert_rc_current_mana_is_reduced(remove_proxy.transaction)
 
     move_to_next_maintenance_time(node)
     [proposal.update_proposal_info() for proposal in [proposal_x, proposal_y]]
@@ -91,18 +92,12 @@ def test_account_witness_proxy(
     # User B votes for witness-z.
     bob_vote_for_witness = wallet.api.vote_for_witness(bob.name, "witness-z", True)
     assert len(node.api.database.list_witness_votes(start=["", ""], limit=10, order="by_account_witness")["votes"]) == 2
-    bob.rc_manabar.assert_rc_current_mana_is_reduced(
-        operation_rc_cost=bob_vote_for_witness["rc_cost"],
-        operation_timestamp=get_transaction_timestamp(node, bob_vote_for_witness),
-    )
+    bob.rc_manabar.assert_rc_current_mana_is_reduced(bob_vote_for_witness)
     bob.update_account_info()
 
     # User votes for proposal-z.
     bob_vote_for_proposal_z = wallet.api.update_proposal_votes(bob.name, [proposal_z.id], True)
-    bob.rc_manabar.assert_rc_current_mana_is_reduced(
-        operation_rc_cost=bob_vote_for_proposal_z["rc_cost"],
-        operation_timestamp=get_transaction_timestamp(node, bob_vote_for_proposal_z),
-    )
+    bob.rc_manabar.assert_rc_current_mana_is_reduced(bob_vote_for_proposal_z)
 
     assert get_number_of_proposal_votes(node) == 2
 
@@ -118,10 +113,7 @@ def test_account_witness_proxy(
     set_proxy = AccountWitnessProxy(node, wallet, bob.name, alice.name)
 
     assert bob.get_proxy() == alice.name
-    bob.rc_manabar.assert_rc_current_mana_is_reduced(
-        operation_rc_cost=set_proxy.rc_cost,
-        operation_timestamp=set_proxy.timestamp,
-    )
+    bob.rc_manabar.assert_rc_current_mana_is_reduced(set_proxy.transaction)
     move_to_next_maintenance_time(node)
     [proposal.update_proposal_info() for proposal in [proposal_x, proposal_y, proposal_z]]
 
@@ -159,10 +151,7 @@ def test_remove_proxy_with_active_votes(
 
     assert bob.get_proxy() == ""
     assert len(get_virtual_operations(node, ProxyClearedOperation)) == 1
-    bob.rc_manabar.assert_rc_current_mana_is_reduced(
-        operation_rc_cost=remove_proxy.rc_cost,
-        operation_timestamp=remove_proxy.timestamp,
-    )
+    bob.rc_manabar.assert_rc_current_mana_is_reduced(remove_proxy.transaction)
 
     move_to_next_maintenance_time(node)
     [proposal.update_proposal_info() for proposal in [proposal_x, proposal_y, proposal_z]]

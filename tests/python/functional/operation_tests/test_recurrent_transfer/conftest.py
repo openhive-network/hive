@@ -100,10 +100,7 @@ def recurrent_transfer_setup(
         )
         sender.assert_balance_is_reduced_by_transfer(recurrent_transfers[iteration].amount)
         receiver.assert_balance_is_increased_by_transfer(recurrent_transfers[iteration].amount)
-        sender.rc_manabar.assert_rc_current_mana_is_reduced(
-            operation_rc_cost=recurrent_transfers[iteration].rc_cost,
-            operation_timestamp=recurrent_transfers[iteration].timestamp,
-        )
+        sender.rc_manabar.assert_rc_current_mana_is_reduced(transaction=recurrent_transfers[iteration].transaction)
         recurrent_transfers[iteration].assert_fill_recurrent_transfer_operation_was_generated(
             expected_vop=iteration + 1
         )

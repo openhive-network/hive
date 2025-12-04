@@ -1,4 +1,5 @@
 """Scenarios description: https://gitlab.syncad.com/hive/hive/-/issues/539"""
+
 from __future__ import annotations
 
 from typing import Callable
@@ -81,10 +82,7 @@ def test_set_withdraw_vesting_route_after_first_power_down(
         set_vesting_route = SetWithdrawVestingRoute(
             node, wallet, user_a.name, user.name, parameter.percent, parameter.auto_vest
         )
-        user_a.rc_manabar.assert_rc_current_mana_is_reduced(
-            operation_rc_cost=set_vesting_route.rc_cost,
-            operation_timestamp=set_vesting_route.timestamp,
-        )
+        user_a.rc_manabar.assert_rc_current_mana_is_reduced(transaction=set_vesting_route.transaction)
         node.wait_for_irreversible_block()
 
     assert len(wallet.api.get_withdraw_routes(user_a.name, "outgoing")) == len(
@@ -154,10 +152,7 @@ def test_set_withdraw_vesting_route_when_the_power_down_doesnt_exist(
         set_vesting_route = SetWithdrawVestingRoute(
             node, wallet, user_a.name, user.name, parameter.percent, parameter.auto_vest
         )
-        user_a.rc_manabar.assert_rc_current_mana_is_reduced(
-            operation_rc_cost=set_vesting_route.rc_cost,
-            operation_timestamp=set_vesting_route.timestamp,
-        )
+        user_a.rc_manabar.assert_rc_current_mana_is_reduced(transaction=set_vesting_route.transaction)
 
     assert len(wallet.api.get_withdraw_routes(user_a.name, "outgoing")) == len(
         vesting_route_init_parameters
@@ -244,9 +239,7 @@ def test_set_withdraw_vesting_route_after_first_withdraw_and_modify_it_before_th
         set_vesting_route = SetWithdrawVestingRoute(
             node, wallet, user_a.name, user.name, parameter.percent, parameter.auto_vest
         )
-        user_a.rc_manabar.assert_rc_current_mana_is_reduced(
-            operation_rc_cost=set_vesting_route.rc_cost, operation_timestamp=set_vesting_route.timestamp
-        )
+        user_a.rc_manabar.assert_rc_current_mana_is_reduced(transaction=set_vesting_route.transaction)
     node.wait_for_irreversible_block()
 
     assert len(wallet.api.get_withdraw_routes(user_a.name, "outgoing")) == len(
@@ -272,9 +265,7 @@ def test_set_withdraw_vesting_route_after_first_withdraw_and_modify_it_before_th
             modify_vesting_route.percent,
             modify_vesting_route.auto_vest,
         )
-        user_a.rc_manabar.assert_rc_current_mana_is_reduced(
-            operation_rc_cost=modify.rc_cost, operation_timestamp=modify.timestamp
-        )
+        user_a.rc_manabar.assert_rc_current_mana_is_reduced(transaction=modify.transaction)
 
     node.wait_for_irreversible_block()
     user_a.update_account_info()
@@ -361,9 +352,7 @@ def test_set_withdraw_vesting_route_before_the_first_withdraw_and_modify_it_befo
         set_vesting_route = SetWithdrawVestingRoute(
             node, wallet, user_a.name, user.name, parameter.percent, parameter.auto_vest
         )
-        user_a.rc_manabar.assert_rc_current_mana_is_reduced(
-            operation_rc_cost=set_vesting_route.rc_cost, operation_timestamp=set_vesting_route.timestamp
-        )
+        user_a.rc_manabar.assert_rc_current_mana_is_reduced(transaction=set_vesting_route.transaction)
 
     assert len(wallet.api.get_withdraw_routes(user_a.name, "outgoing")) == len(
         vesting_route_init_parameters
@@ -386,9 +375,7 @@ def test_set_withdraw_vesting_route_before_the_first_withdraw_and_modify_it_befo
             modify_vesting_route.percent,
             modify_vesting_route.auto_vest,
         )
-        user_a.rc_manabar.assert_rc_current_mana_is_reduced(
-            operation_rc_cost=modify.rc_cost, operation_timestamp=modify.timestamp
-        )
+        user_a.rc_manabar.assert_rc_current_mana_is_reduced(transaction=modify.transaction)
 
     node.wait_for_irreversible_block()
     user_a.update_account_info()

@@ -20,9 +20,7 @@ def test_decline_voting_rights(prepare_environment: tuple[tt.InitNode, tt.Wallet
 
     transaction = wallet.api.decline_voting_rights(voter.name, True)
     assert transaction["rc_cost"] > 0, "Rc cost of operation should be greater than 0."
-    voter.rc_manabar.assert_rc_current_mana_is_reduced(
-        transaction["rc_cost"], get_transaction_timestamp(node, transaction)
-    )
+    voter.rc_manabar.assert_rc_current_mana_is_reduced(transaction)
 
     assert len(node.api.database.find_decline_voting_rights_requests(accounts=[voter.name])["requests"]) == 1
     assert node.api.database.find_accounts(accounts=[voter.name]).accounts[0].can_vote is True
@@ -39,9 +37,7 @@ def test_decline_voting_rights_more_than_once(
     node, wallet = prepare_environment
 
     transaction = wallet.api.decline_voting_rights(voter.name, True)
-    voter.rc_manabar.assert_rc_current_mana_is_reduced(
-        transaction["rc_cost"], get_transaction_timestamp(node, transaction)
-    )
+    voter.rc_manabar.assert_rc_current_mana_is_reduced(transaction)
     assert len(node.api.database.find_decline_voting_rights_requests(accounts=[voter.name])["requests"]) == 1
     assert node.api.database.find_accounts(accounts=[voter.name]).accounts[0].can_vote is True
 
@@ -66,9 +62,7 @@ def test_create_two_decline_voting_rights_requests(
     node, wallet = prepare_environment
 
     transaction = wallet.api.decline_voting_rights(voter.name, True)
-    voter.rc_manabar.assert_rc_current_mana_is_reduced(
-        transaction["rc_cost"], get_transaction_timestamp(node, transaction)
-    )
+    voter.rc_manabar.assert_rc_current_mana_is_reduced(transaction)
     assert len(node.api.database.find_decline_voting_rights_requests(accounts=[voter.name])["requests"]) == 1
 
     with pytest.raises(ErrorInResponseError) as exception:
@@ -106,16 +100,12 @@ def test_remove_decline_voting_rights_request(
     node, wallet = prepare_environment
 
     transaction = wallet.api.decline_voting_rights(voter.name, True)
-    voter.rc_manabar.assert_rc_current_mana_is_reduced(
-        transaction["rc_cost"], get_transaction_timestamp(node, transaction)
-    )
+    voter.rc_manabar.assert_rc_current_mana_is_reduced(transaction)
     voter.rc_manabar.update()
 
     node.wait_number_of_blocks(1)
     transaction = wallet.api.decline_voting_rights(voter.name, False)
-    voter.rc_manabar.assert_rc_current_mana_is_reduced(
-        transaction["rc_cost"], get_transaction_timestamp(node, transaction)
-    )
+    voter.rc_manabar.assert_rc_current_mana_is_reduced(transaction)
     node.wait_number_of_blocks(1)
     assert len(node.api.database.find_decline_voting_rights_requests(accounts=[voter.name]).requests) == 0
     assert node.api.database.find_accounts(accounts=[voter.name]).accounts[0].can_vote is True
