@@ -26,3 +26,21 @@ def generate_block(node: tt.InitNode, number: int, miss_blocks: int = 0) -> None
         miss_blocks=miss_blocks,
         edit_if_needed=False,
     )
+
+
+def generate_to_block(node: tt.InitNode, target_block_num: int, miss_blocks: int = 0) -> None:
+    """Generate blocks until reaching the target block number (inclusive).
+
+    Args:
+        node: The node to generate blocks on
+        target_block_num: The target block number to reach (inclusive)
+        miss_blocks: Number of blocks to miss (default: 0)
+        key: Private key to use for block generation (default: initminer's key)
+    """
+    current_block_num = node.get_last_block_number()
+    blocks_to_generate = target_block_num - current_block_num
+
+    if blocks_to_generate <= 0:
+        return
+
+    generate_block(node, blocks_to_generate, miss_blocks)
