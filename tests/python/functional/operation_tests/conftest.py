@@ -1,13 +1,10 @@
 from __future__ import annotations
 
 import json
-import time
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Literal
 
 import pytest
-from beekeepy.exceptions import CommunicationError, FailedToStartExecutableError
-from loguru import logger
 
 import test_tools as tt
 import wax
@@ -186,7 +183,7 @@ class ConvertAccount(Account):
             hives_before_operation == hives_after_operation + to_convert
         ), f"Hives weren't subtracted from {self._name}'s balance after making collateralized convert request."
 
-        hbd_tolerance = tt.Asset.Tbd(1.0)
+        hbd_tolerance = tt.Asset.Tbd(0.6)
         assert (
             hbds_after_operation - hbd_tolerance
             <= hbds_before_operation + hbds_to_add
@@ -432,11 +429,7 @@ class ProposalAccount(Account):
         ), f"Something went wrong after proposal update. {changed_parameter} has wrong value"
 
     def check_if_rc_current_mana_was_reduced(self, transaction: dict) -> None:
-        # Wait for 1 block to ensure RC mana state is fully updated after the transaction
-        self._node.wait_number_of_blocks(1)
-        self.rc_manabar.assert_rc_current_mana_is_reduced(
-            transaction["rc_cost"], get_transaction_timestamp(self._node, transaction)
-        )
+        self.rc_manabar.assert_rc_current_mana_is_reduced(transaction)
 
     def check_if_hive_treasury_fee_was_substracted_from_account(self) -> None:
         # for each day over 60 days HIVE_PROPOSAL_FEE_INCREASE_AMOUNT (1 HBD) is added to fee
@@ -840,20 +833,10 @@ def hive_fund(
 
 @pytest.fixture()
 def speed_up_node() -> tt.InitNode:
-    max_retries = 3
-    for attempt in range(max_retries):
-        node = tt.InitNode()
-        node.config.plugin.append("account_history_api")
-        try:
-            node.run(timeout=120.0, time_control=tt.SpeedUpRateTimeControl(speed_up_rate=5))
-            return node
-        except (FailedToStartExecutableError, CommunicationError, TimeoutError):
-            if attempt < max_retries - 1:
-                logger.warning(f"Node startup failed (attempt {attempt + 1}/{max_retries}), retrying...")
-                time.sleep(1)
-            else:
-                raise
-    raise RuntimeError("Failed to start node after retries")  # Should not reach here
+    node = tt.InitNode()
+    node.config.plugin.append("account_history_api")
+    node.run(timeout=60.0, time_control=tt.SpeedUpRateTimeControl(speed_up_rate=5))
+    return node
 
 
 @pytest.fixture()

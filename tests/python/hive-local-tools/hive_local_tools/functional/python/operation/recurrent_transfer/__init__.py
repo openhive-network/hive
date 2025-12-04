@@ -115,6 +115,10 @@ class RecurrentTransfer:
     def timestamp(self):
         return self._timestamp
 
+    @property
+    def transaction(self) -> dict:
+        return self._transaction
+
     def __get_transfer_schedule(self, start_timestamp: datetime):
         return [
             start_timestamp + tt.Time.hours(self._recurrence * execution_number)

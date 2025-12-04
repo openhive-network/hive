@@ -699,7 +699,6 @@ def test_recurrent_transfer_cases_21_and_22(
 
 
 @pytest.mark.testnet()
-@pytest.mark.flaky(reruns=3)
 @pytest.mark.parametrize("amount", [(tt.Asset.Test(10)), (tt.Asset.Tbd(10))])
 def test_recurrent_transfer_cases_23_and_24(
     node: tt.InitNode, wallet: tt.Wallet, receiver: RecurrentTransferAccount, amount: tt.Asset.TestT | tt.Asset.TbdT
