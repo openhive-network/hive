@@ -1,11 +1,9 @@
 from __future__ import annotations
 
 import datetime
-import time
 from typing import Literal
 
 import pytest
-from beekeepy.exceptions import CommunicationError, FailedToStartExecutableError
 
 import test_tools as tt
 from hive_local_tools.functional.python.operation import (
@@ -21,37 +19,25 @@ from hive_local_tools.functional.python.operation.comment import Comment, Commen
 def node():
     witnesses_required_for_hf06_and_later = [f"witness-{witness_num}" for witness_num in range(20)]
 
-    # Retry logic for flaky node startup in CI environments
-    max_retries = 3
-    for attempt in range(max_retries):
-        init_node = tt.InitNode()
+    init_node = tt.InitNode()
 
-        for witness in witnesses_required_for_hf06_and_later:
-            init_node.config.witness.append(witness)
+    for witness in witnesses_required_for_hf06_and_later:
+        init_node.config.witness.append(witness)
 
-        init_node.config.plugin.append("account_history_api")
+    init_node.config.plugin.append("account_history_api")
 
-        try:
-            init_node.run(
-                timeout=60.0,
-                time_control=tt.SpeedUpRateTimeControl(speed_up_rate=10),
-                alternate_chain_specs=tt.AlternateChainSpecs(
-                    genesis_time=int(tt.Time.now(serialize=False).timestamp()),
-                    hardfork_schedule=[tt.HardforkSchedule(hardfork=28, block_num=1)],
-                    init_witnesses=witnesses_required_for_hf06_and_later,
-                    hbd_init_supply=100000000000,
-                    init_supply=20000000000,
-                    initial_vesting=tt.InitialVesting(hive_amount=10000000000, vests_per_hive=1800),
-                ),
-            )
-            break
-        except (FailedToStartExecutableError, CommunicationError, TimeoutError):
-            if attempt < max_retries - 1:
-                tt.logger.warning(f"Node startup failed (attempt {attempt + 1}/{max_retries}), retrying...")
-                time.sleep(1)
-            else:
-                raise
-
+    init_node.run(
+        timeout=60.0,
+        time_control=tt.SpeedUpRateTimeControl(speed_up_rate=10),
+        alternate_chain_specs=tt.AlternateChainSpecs(
+            genesis_time=int(tt.Time.now(serialize=False).timestamp()),
+            hardfork_schedule=[tt.HardforkSchedule(hardfork=28, block_num=1)],
+            init_witnesses=witnesses_required_for_hf06_and_later,
+            hbd_init_supply=100000000000,
+            init_supply=20000000000,
+            initial_vesting=tt.InitialVesting(hive_amount=10000000000, vests_per_hive=1800),
+        ),
+    )
     init_node.wait_number_of_blocks(100)
 
     return init_node
@@ -60,20 +46,6 @@ def node():
 @pytest.fixture()
 def wallet(node):
     return tt.Wallet(attach_to=node)
-
-
-def _restart_node_with_retry(node: tt.InitNode, time_control, max_retries: int = 3) -> None:
-    """Restart node with retry logic for flaky CI environments."""
-    for attempt in range(max_retries):
-        try:
-            node.restart(time_control=time_control)
-            return
-        except (FailedToStartExecutableError, CommunicationError, TimeoutError):
-            if attempt < max_retries - 1:
-                tt.logger.warning(f"Node restart failed (attempt {attempt + 1}/{max_retries}), retrying...")
-                time.sleep(1)
-            else:
-                raise
 
 
 def prepare_account_with_reward_balance(
@@ -90,12 +62,12 @@ def prepare_account_with_reward_balance(
     vote_0.vote(100)
 
     start_time = node.get_head_block_time() + datetime.timedelta(seconds=40 * 60)
-    _restart_node_with_retry(node, tt.StartTimeControl(start_time=start_time, speed_up_rate=5))
+    node.restart(time_control=tt.StartTimeControl(start_time=start_time, speed_up_rate=5))
     time_before_publish_feed = node.get_head_block_time()
     publish_feeds_with_confirmation(node, wallet, 1, 4)
 
     start_time = time_before_publish_feed + datetime.timedelta(seconds=20 * 60)
-    _restart_node_with_retry(node, tt.StartTimeControl(start_time=start_time, speed_up_rate=5))
+    node.restart(time_control=tt.StartTimeControl(start_time=start_time, speed_up_rate=5))
 
     assert get_reward_hbd_balance(node, comment_0.author) == tt.Asset.Tbd(0)
     assert get_reward_vesting_balance(node, comment_0.author) != tt.Asset.Vest(0)
@@ -112,14 +84,14 @@ def prepare_account_with_reward_balance(
     vote_1.vote(90)
 
     start_time = node.get_head_block_time() + datetime.timedelta(seconds=40 * 60)
-    _restart_node_with_retry(node, tt.StartTimeControl(start_time=start_time, speed_up_rate=5))
+    node.restart(time_control=tt.StartTimeControl(start_time=start_time, speed_up_rate=5))
 
     # To receive a reward in HIVE instead of HBD, you must publish new feed and therefore change the median price.
     time_before_publish_feed = node.get_head_block_time()
     publish_feeds_with_confirmation(node, wallet, 25, 1)
 
     start_time = time_before_publish_feed + datetime.timedelta(seconds=20 * 60)
-    _restart_node_with_retry(node, tt.StartTimeControl(start_time=start_time))
+    node.restart(time_control=tt.StartTimeControl(start_time=start_time))
 
     assert get_reward_hive_balance(node, comment_0.author) != tt.Asset.Hive(0)
     assert get_reward_hbd_balance(node, comment_0.author) != tt.Asset.Tbd(0)

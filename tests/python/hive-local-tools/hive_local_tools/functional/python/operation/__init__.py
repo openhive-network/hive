@@ -37,10 +37,15 @@ class Operation:
     _node: tt.InitNode
     _wallet: tt.Wallet
     _rc_cost: int = field(init=False, default=None)
+    _transaction: dict = field(init=False, default=None)
 
     @property
     def rc_cost(self) -> int:
         return self._rc_cost
+
+    @property
+    def transaction(self) -> dict:
+        return self._transaction
 
     def assert_minimal_operation_rc_cost(self, minimal_cost: int | None = None) -> None:
         if minimal_cost:
@@ -212,7 +217,7 @@ class Account:
         self._acc_info.delayed_votes.clear()
 
     def check_if_current_rc_mana_was_reduced(self, trx) -> None:
-        self.rc_manabar.assert_rc_current_mana_is_reduced(trx["rc_cost"], get_transaction_timestamp(self._node, trx))
+        self.rc_manabar.assert_rc_current_mana_is_reduced(trx)
         self.rc_manabar.update()
 
     def check_if_rc_mana_was_unchanged(self) -> None:
@@ -281,69 +286,17 @@ class _RcManabar(_BaseManabar):
     def _get_specific_current_mana(self) -> int:
         return get_rc_current_mana(self._node, self._name)
 
-    def assert_rc_current_mana_is_reduced(
-        self, operation_rc_cost: int, operation_timestamp: datetime | None = None
-    ) -> None:
-        """Assert that the RC mana was reduced by the operation cost.
-
-        The verification approach: We check that after the operation, the account's mana
-        is consistent with having paid the rc_cost. Due to mana regeneration and timing
-        complexities with accelerated time in tests, we verify that:
-        1. The post-op mana (after adding back rc_cost) represents a valid pre-op state
-        2. This pre-op state is reachable from the cached state through regeneration
-
-        The tolerance accounts for minor discrepancies from regeneration calculation
-        differences between the blockchain and the wax library.
-        """
+    def assert_rc_current_mana_is_reduced(self, transaction: dict, additional_rc_cost: int = 0) -> None:
         err = f"The account {self._name} did not incur the operation cost."
-        if operation_timestamp:
-            # Get the actual pre-op mana by adding rc_cost to post-op mana at operation time.
-            # This is the ground truth from the blockchain.
-            post_op_manabar = get_rc_manabar(self._node, self._name)
-            op_ts = int(operation_timestamp.timestamp())
-
-            post_op_mana_at_op_time = int(
-                wax.calculate_current_manabar_value(
-                    now=op_ts,
-                    max_mana=int(post_op_manabar.maximum),
-                    current_mana=int(post_op_manabar.current_mana),
-                    last_update_time=int(post_op_manabar.last_update_time),
-                ).result
-            )
-            actual_pre_op_mana = post_op_mana_at_op_time + operation_rc_cost
-
-            # Calculate expected pre-op mana from cached state projected to operation time.
-            # Use post_op_manabar.maximum for consistency - max_mana affects regeneration rate.
-            cached_last_update = int(self.last_update_time)
-            cached_pre_op_mana = int(
-                wax.calculate_current_manabar_value(
-                    now=op_ts,
-                    max_mana=int(post_op_manabar.maximum),
-                    current_mana=self.current_mana,
-                    last_update_time=cached_last_update,
-                ).result
-            )
-
-            # Calculate time-based tolerance: mana regenerates continuously, and with
-            # accelerated time (5x in tests), even small timing gaps cause measurable
-            # regeneration differences. Allow for up to 3 seconds of timing discrepancy.
-            # Regeneration per second = max_mana / (5 days in seconds) = max_mana / 432000
-            max_timing_gap_seconds = 3
-            regen_per_second = int(post_op_manabar.maximum) // 432000
-            timing_tolerance = regen_per_second * max_timing_gap_seconds
-
-            # Also allow 0.1% of the operation cost as tolerance for rounding differences
-            rounding_tolerance = max(operation_rc_cost // 1000, 1)
-
-            tolerance = timing_tolerance + rounding_tolerance
-
-            assert cached_pre_op_mana <= actual_pre_op_mana + tolerance, (
-                f"{err} cached_pre_op={cached_pre_op_mana}, actual_pre_op={actual_pre_op_mana}, "
-                f"diff={cached_pre_op_mana - actual_pre_op_mana}, tolerance={tolerance}, "
-                f"rc_cost={operation_rc_cost}, cached_time={cached_last_update}, op_time={op_ts}"
-            )
+        if transaction:
+            operation_rc_cost = transaction["rc_cost"] + additional_rc_cost
+            previous_block_timestamp = get_previous_block_timestamp(self._node, transaction["block_num"])
+            mana_before_operation = self.calculate_current_value(previous_block_timestamp)
+            assert mana_before_operation == get_rc_current_mana(self._node, self._name) + operation_rc_cost, err
         else:
-            assert get_rc_current_mana(self._node, self._name) + operation_rc_cost == self.current_mana, err
+            # If no transaction provided, compare current mana with stored mana
+            # This case is used when we don't have transaction details
+            raise ValueError("Transaction must be provided to assert RC mana reduction")
 
     def assert_max_rc_mana_state(self, state: Literal["reduced", "unchanged", "increased"]) -> None:
         actual_max_rc_mana = get_rc_max_mana(self._node, self._name)
@@ -374,11 +327,12 @@ class _VoteManabarBase(_BaseManabar):
     def _get_specific_current_mana(self) -> int:
         return get_vote_current_mana(self._wallet, self._name, self.__manabar_type)
 
-    def assert_current_mana_is_reduced(self, operation_timestamp=None) -> None:
+    def assert_current_mana_is_reduced(self, transaction=None) -> None:
         err = f"The account {self._name} did not incur the operation cost."
         vote_current_mana = self._get_specific_current_mana()
-        if operation_timestamp:
-            mana_before_operation = self.calculate_current_value(operation_timestamp - tt.Time.seconds(3))
+        if transaction:
+            previous_block_timestamp = get_previous_block_timestamp(self._node, transaction["block_num"])
+            mana_before_operation = self.calculate_current_value(previous_block_timestamp)
             assert vote_current_mana < mana_before_operation, err
         else:
             assert vote_current_mana < self.current_mana, err
@@ -567,6 +521,12 @@ def get_rc_max_mana(node: tt.InitNode, account_name: str) -> int:
 
 def get_transaction_timestamp(node: tt.InitNode, transaction) -> datetime:
     return tt.Time.parse(node.api.block.get_block(block_num=transaction["block_num"])["block"]["timestamp"])
+
+
+def get_previous_block_timestamp(node: tt.InitNode, block_num: int) -> datetime:
+    """Get timestamp of the block immediately before the given block number."""
+    prev_block = node.api.block.get_block(block_num=block_num - 1)
+    return tt.Time.parse(prev_block["block"]["timestamp"])
 
 
 def jump_to_date(node: tt.InitNode, time_control: datetime, wait_for_irreversible: bool = False) -> None:

@@ -10,11 +10,14 @@ import wax
 from hive_local_tools.functional.python.operation import (
     Account,
     create_transaction_with_any_operation,
+    get_previous_block_timestamp,
     get_rc_current_mana,
     get_reward_hbd_balance,
     get_reward_vesting_balance,
-    get_transaction_timestamp,
     get_virtual_operations,
+)
+from hive_local_tools.functional.python.operation import (
+    get_transaction_timestamp as get_transaction_timestamp,
 )
 from schemas.fields.assets import AssetHive
 from schemas.operations import (
@@ -355,9 +358,7 @@ class Comment:
 
     def assert_is_rc_mana_decreased_after_post_or_update(self) -> None:
         self.assert_comment_exists()
-        comment_rc_cost = int(self.comment_trx.rc_cost)
-        comment_timestamp = get_transaction_timestamp(self.__node, self.__comment_transaction)
-        self.author_obj.rc_manabar.assert_rc_current_mana_is_reduced(comment_rc_cost, comment_timestamp)
+        self.author_obj.rc_manabar.assert_rc_current_mana_is_reduced(self.__comment_transaction)
 
     def delete(self) -> None:
         self.author_obj.update_account_info()  # Refresh RC mana before update
@@ -383,9 +384,7 @@ class Comment:
 
     def assert_rc_mana_after_change_comment_options(self, mode: Literal["decrease", "is_unchanged"]) -> None:
         if mode == "decrease":
-            comment_option_rc_cost = int(self.__comment_option_transaction.rc_cost)
-            comment_option_timestamp = get_transaction_timestamp(self.__node, self.__comment_option_transaction)
-            self.__author.rc_manabar.assert_rc_current_mana_is_reduced(comment_option_rc_cost, comment_option_timestamp)
+            self.__author.rc_manabar.assert_rc_current_mana_is_reduced(self.__comment_option_transaction)
         elif mode == "is_unchanged":
             self.__author.rc_manabar.assert_current_mana_is_unchanged()
         else:
@@ -438,9 +437,7 @@ class Comment:
 
     def assert_is_rc_mana_decreased_after_comment_delete(self) -> None:
         self.assert_comment_exists()
-        delete_rc_cost = int(self.__delete_transaction.rc_cost)
-        delete_timestamp = get_transaction_timestamp(self.__node, self.__delete_transaction)
-        self.author_obj.rc_manabar.assert_rc_current_mana_is_reduced(delete_rc_cost, delete_timestamp)
+        self.author_obj.rc_manabar.assert_rc_current_mana_is_reduced(self.__delete_transaction)
 
     def assert_comment(self, mode: Literal["deleted", "not_deleted"]) -> None:
         voter = self.__create_comment_account()
@@ -598,9 +595,7 @@ class Vote:
 
     def assert_rc_mana_after_vote_or_downvote(self, mode: Literal["decrease", "is_unchanged"]) -> None:
         if mode == "decrease":
-            vote_rc_cost = int(self.__vote_transaction.rc_cost)
-            vote_timestamp = get_transaction_timestamp(self.__comment_obj.node, self.__vote_transaction)
-            self.__voter_obj.rc_manabar.assert_rc_current_mana_is_reduced(vote_rc_cost, vote_timestamp)
+            self.__voter_obj.rc_manabar.assert_rc_current_mana_is_reduced(self.__vote_transaction)
         elif mode == "is_unchanged":
             self.__voter_obj.rc_manabar.assert_current_mana_is_unchanged()
         else:
@@ -611,8 +606,7 @@ class Vote:
     ) -> None:
         assert manabar_type in ("vote_manabar", "downvote_manabar"), "Wrong manabar type"
         if mode == "decrease":
-            vote_timestamp = get_transaction_timestamp(self.__comment_obj.node, self.__vote_transaction)
-            getattr(self.__voter_obj, manabar_type).assert_current_mana_is_reduced(vote_timestamp)
+            getattr(self.__voter_obj, manabar_type).assert_current_mana_is_reduced(self.__vote_transaction)
         elif mode == "is_unchanged":
             getattr(self.__voter_obj, manabar_type).assert_current_mana_is_unchanged()
         else:
@@ -770,10 +764,12 @@ class CommentAccount(Account):
 
     def assert_is_rc_mana_decreased_after_claiming_available_rewards(self) -> None:
         claim_reward_rc_cost = self.__claim_reward_transaction["rc_cost"]
-        claim_reward_timestamp = get_transaction_timestamp(self._node, self.__claim_reward_transaction)
         incoming_rc = self.__claim_reward_transaction.operations[0].value.reward_vests.as_nai()
         err = f"The account {self._name} did not incur the operation cost."
-        mana_before_operation = self.rc_manabar.calculate_current_value(claim_reward_timestamp - tt.Time.seconds(3))
+        previous_block_timestamp = get_previous_block_timestamp(
+            self._node, self.__claim_reward_transaction["block_num"]
+        )
+        mana_before_operation = self.rc_manabar.calculate_current_value(previous_block_timestamp)
         assert mana_before_operation == get_rc_current_mana(self._node, self._name) + claim_reward_rc_cost - int(
             incoming_rc["amount"]
         ), err

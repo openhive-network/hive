@@ -43,8 +43,8 @@ class CreateClaimedAccount(Operation):
         self, node: tt.InitNode, wallet: tt.Wallet, creator: AccountName, new_account_name: AccountName
     ) -> None:
         super().__init__(node, wallet)
-        self._trx = self.generate_transaction(creator, new_account_name)
-        self._rc_cost: int = self._trx["rc_cost"]
+        self._transaction = self.generate_transaction(creator, new_account_name)
+        self._rc_cost: int = self._transaction["rc_cost"]
 
     def generate_transaction(self, creator: AccountName, new_account_name: AccountName) -> dict:
         public_key = tt.Account(new_account_name).public_key
@@ -66,4 +66,4 @@ class CreateClaimedAccount(Operation):
 
     @property
     def trx(self) -> dict:
-        return self._trx
+        return self.transaction
