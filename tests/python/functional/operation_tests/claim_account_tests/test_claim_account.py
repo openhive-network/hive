@@ -1,4 +1,5 @@
 """https://gitlab.syncad.com/hive/hive/-/issues/693"""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -25,10 +26,7 @@ def test_crate_claim_account_token_by_hive(
 
     assert alice.get_pending_claimed_accounts() == 1, "Claim token was not created."
     create_token.assert_minimal_operation_rc_cost()
-    alice.rc_manabar.assert_rc_current_mana_is_reduced(
-        operation_rc_cost=create_token.rc_cost,
-        operation_timestamp=create_token.timestamp,
-    )
+    alice.rc_manabar.assert_rc_current_mana_is_reduced(create_token.transaction)
     assert alice.get_hive_balance() == alice.hive - fee, "The token creation fee was not charged."
     assert alice.get_hive_balance() == tt.Asset.Test(0)
 

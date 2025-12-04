@@ -1,6 +1,7 @@
 """
 Test scenarios: https://gitlab.syncad.com/hive/hive/-/issues/484
 """
+
 from __future__ import annotations
 
 import pytest
@@ -41,7 +42,7 @@ def test_recurrent_transfer_cases_1_and_2(
                 recurrence=MIN_RECURRENT_TRANSFERS_RECURRENCE,
                 executions=executions,
             )
-            sender.rc_manabar.assert_rc_current_mana_is_reduced(operation_rc_cost=recurrent_transfer.rc_cost)
+            sender.rc_manabar.assert_rc_current_mana_is_reduced(transaction=recurrent_transfer.transaction)
         else:
             node.wait_for_irreversible_block()
             recurrent_transfer.execute_future_transfer()
@@ -83,7 +84,7 @@ def test_recurrent_transfer_cases_3_and_4(
         executions=executions,
     )
 
-    sender.rc_manabar.assert_rc_current_mana_is_reduced(operation_rc_cost=recurrent_transfer.rc_cost)
+    sender.rc_manabar.assert_rc_current_mana_is_reduced(transaction=recurrent_transfer.transaction)
     sender.assert_balance_is_reduced_by_transfer(amount)
     receiver.assert_balance_is_increased_by_transfer(amount)
     recurrent_transfer.assert_fill_recurrent_transfer_operation_was_generated(expected_vop=1)
@@ -101,9 +102,7 @@ def test_recurrent_transfer_cases_3_and_4(
 
     recurrent_transfer.cancel()
 
-    sender.rc_manabar.assert_rc_current_mana_is_reduced(
-        operation_rc_cost=recurrent_transfer.rc_cost, operation_timestamp=recurrent_transfer.timestamp
-    )
+    sender.rc_manabar.assert_rc_current_mana_is_reduced(transaction=recurrent_transfer.transaction)
     sender.assert_hives_and_hbds_are_not_changed()
     receiver.assert_hives_and_hbds_are_not_changed()
     recurrent_transfer.assert_fill_recurrent_transfer_operation_was_generated(expected_vop=2)
@@ -147,7 +146,7 @@ def test_recurrent_transfer_cases_5_6_7_8(
                 executions=executions_1,
             )
 
-            sender.rc_manabar.assert_rc_current_mana_is_reduced(operation_rc_cost=recurrent_transfer.rc_cost)
+            sender.rc_manabar.assert_rc_current_mana_is_reduced(transaction=recurrent_transfer.transaction)
         else:
             recurrent_transfer.execute_future_transfer()
             sender.rc_manabar.assert_current_mana_is_unchanged()
@@ -161,9 +160,7 @@ def test_recurrent_transfer_cases_5_6_7_8(
     for execution in range(executions_2):
         if execution == 0:
             recurrent_transfer.update(amount=amount_2, new_executions_number=executions_2)
-            sender.rc_manabar.assert_rc_current_mana_is_reduced(
-                operation_rc_cost=recurrent_transfer.rc_cost, operation_timestamp=recurrent_transfer.timestamp
-            )
+            sender.rc_manabar.assert_rc_current_mana_is_reduced(transaction=recurrent_transfer.transaction)
             sender.assert_hives_and_hbds_are_not_changed()
             receiver.assert_hives_and_hbds_are_not_changed()
             recurrent_transfer.assert_fill_recurrent_transfer_operation_was_generated(expected_vop=2)
@@ -213,7 +210,7 @@ def test_recurrent_transfer_cases_9_and_10(
 
     for execution in range(recurrent_transfer.executions - 1):
         if execution == 0:
-            sender.rc_manabar.assert_rc_current_mana_is_reduced(operation_rc_cost=recurrent_transfer.rc_cost)
+            sender.rc_manabar.assert_rc_current_mana_is_reduced(transaction=recurrent_transfer.transaction)
         else:
             sender.rc_manabar.assert_current_mana_is_unchanged()
         sender.assert_balance_is_reduced_by_transfer(amount)
@@ -232,9 +229,7 @@ def test_recurrent_transfer_cases_9_and_10(
 
     for execution in range(recurrent_transfer.executions):
         if execution == 0:
-            sender.rc_manabar.assert_rc_current_mana_is_reduced(
-                operation_rc_cost=recurrent_transfer.rc_cost, operation_timestamp=recurrent_transfer.timestamp
-            )
+            sender.rc_manabar.assert_rc_current_mana_is_reduced(transaction=recurrent_transfer.transaction)
         else:
             sender.rc_manabar.assert_current_mana_is_unchanged()
         sender.assert_balance_is_reduced_by_transfer(amount)
@@ -288,7 +283,7 @@ def test_recurrent_transfer_cases_11_and_12(
         executions=executions,
     )
 
-    sender.rc_manabar.assert_rc_current_mana_is_reduced(operation_rc_cost=recurrent_transfer.rc_cost)
+    sender.rc_manabar.assert_rc_current_mana_is_reduced(transaction=recurrent_transfer.transaction)
     sender.assert_balance_is_reduced_by_transfer(amount)
     receiver.assert_balance_is_increased_by_transfer(amount)
     recurrent_transfer.assert_fill_recurrent_transfer_operation_was_generated(expected_vop=1)
@@ -305,9 +300,7 @@ def test_recurrent_transfer_cases_11_and_12(
 
     # After 2 of 4 executions - user decrease to 3 the number of execution in an existing recurrent transfer.
     recurrent_transfer.update(new_executions_number=update_executions)
-    sender.rc_manabar.assert_rc_current_mana_is_reduced(
-        operation_rc_cost=recurrent_transfer.rc_cost, operation_timestamp=recurrent_transfer.timestamp
-    )
+    sender.rc_manabar.assert_rc_current_mana_is_reduced(transaction=recurrent_transfer.transaction)
     sender.update_account_info()
 
     recurrent_transfer.execute_future_transfer()
@@ -405,7 +398,7 @@ def test_recurrent_transfer_cases_13_14_15_16(
         recurrence=base_recurrence_time,
         executions=executions,
     )
-    sender.rc_manabar.assert_rc_current_mana_is_reduced(operation_rc_cost=recurrent_transfer.rc_cost)
+    sender.rc_manabar.assert_rc_current_mana_is_reduced(transaction=recurrent_transfer.transaction)
     sender.assert_balance_is_reduced_by_transfer(amount)
     receiver.assert_balance_is_increased_by_transfer(amount)
     recurrent_transfer.assert_fill_recurrent_transfer_operation_was_generated(expected_vop=1)
@@ -423,9 +416,7 @@ def test_recurrent_transfer_cases_13_14_15_16(
     # Update recurrence after second transfer and before third one.
     node.restart(time_control=tt.StartTimeControl(start_time=node.get_head_block_time() + offset))
     recurrent_transfer.update(new_recurrence_time=update_recurrence_time)
-    sender.rc_manabar.assert_rc_current_mana_is_reduced(
-        operation_rc_cost=recurrent_transfer.rc_cost, operation_timestamp=recurrent_transfer.timestamp
-    )
+    sender.rc_manabar.assert_rc_current_mana_is_reduced(transaction=recurrent_transfer.transaction)
     sender.assert_hives_and_hbds_are_not_changed()
     receiver.assert_hives_and_hbds_are_not_changed()
     recurrent_transfer.assert_fill_recurrent_transfer_operation_was_generated(expected_vop=2)
@@ -491,7 +482,7 @@ def test_recurrent_transfer_cases_17_and_18(
         executions=executions,
     )
 
-    sender.rc_manabar.assert_rc_current_mana_is_reduced(operation_rc_cost=recurrent_transfer.rc_cost)
+    sender.rc_manabar.assert_rc_current_mana_is_reduced(transaction=recurrent_transfer.transaction)
     sender.assert_balance_is_reduced_by_transfer(amount_1)
     receiver.assert_balance_is_increased_by_transfer(amount_1)
     recurrent_transfer.assert_fill_recurrent_transfer_operation_was_generated(expected_vop=1)
@@ -515,9 +506,7 @@ def test_recurrent_transfer_cases_17_and_18(
         new_recurrence_time=2 * MIN_RECURRENT_TRANSFERS_RECURRENCE,
     )
 
-    sender.rc_manabar.assert_rc_current_mana_is_reduced(
-        operation_rc_cost=recurrent_transfer.rc_cost, operation_timestamp=recurrent_transfer.timestamp
-    )
+    sender.rc_manabar.assert_rc_current_mana_is_reduced(transaction=recurrent_transfer.transaction)
     sender.assert_hives_and_hbds_are_not_changed()
     receiver.assert_hives_and_hbds_are_not_changed()
     recurrent_transfer.assert_fill_recurrent_transfer_operation_was_generated(expected_vop=2)
@@ -546,9 +535,7 @@ def test_recurrent_transfer_cases_17_and_18(
         new_recurrence_time=4 * MIN_RECURRENT_TRANSFERS_RECURRENCE,
     )
 
-    sender.rc_manabar.assert_rc_current_mana_is_reduced(
-        operation_rc_cost=recurrent_transfer.rc_cost, operation_timestamp=recurrent_transfer.timestamp
-    )
+    sender.rc_manabar.assert_rc_current_mana_is_reduced(transaction=recurrent_transfer.transaction)
     sender.assert_hives_and_hbds_are_not_changed()
     receiver.assert_hives_and_hbds_are_not_changed()
     recurrent_transfer.assert_fill_recurrent_transfer_operation_was_generated(expected_vop=2 + 4)
@@ -605,10 +592,9 @@ def test_recurrent_transfer_cases_19_and_20(
         )
         wallet.api.transfer(sender.name, receiver.name, transfer_amount, "{}")
 
-    transaction_rc_cost = transaction.get_response()["rc_cost"]
     sender.assert_balance_is_reduced_by_transfer(transfer_amount)
     receiver.assert_balance_is_increased_by_transfer(transfer_amount)
-    sender.rc_manabar.assert_rc_current_mana_is_reduced(operation_rc_cost=transaction_rc_cost)
+    sender.rc_manabar.assert_rc_current_mana_is_reduced(transaction=transaction.get_response())
 
     error_message = "Virtual operation - `failed_recurrent_transfer_operation` has not been generated."
     assert len(get_virtual_operations(node, FailedRecurrentTransferOperation)) == 1, error_message
@@ -664,7 +650,7 @@ def test_recurrent_transfer_cases_21_and_22(
         executions=executions,
     )
 
-    sender.rc_manabar.assert_rc_current_mana_is_reduced(operation_rc_cost=recurrent_transfer.rc_cost)
+    sender.rc_manabar.assert_rc_current_mana_is_reduced(transaction=recurrent_transfer.transaction)
     sender.assert_balance_is_reduced_by_transfer(amount)
     receiver.assert_balance_is_increased_by_transfer(amount)
     recurrent_transfer.assert_fill_recurrent_transfer_operation_was_generated(expected_vop=1)
@@ -727,7 +713,7 @@ def test_recurrent_transfer_cases_23_and_24(
     )
 
     recurrent_transfer.assert_fill_recurrent_transfer_operation_was_generated(expected_vop=1)
-    sender.rc_manabar.assert_rc_current_mana_is_reduced(operation_rc_cost=recurrent_transfer.rc_cost)
+    sender.rc_manabar.assert_rc_current_mana_is_reduced(transaction=recurrent_transfer.transaction)
     sender.assert_balance_is_reduced_by_transfer(amount)
     receiver.assert_balance_is_increased_by_transfer(amount)
 
@@ -779,7 +765,7 @@ def test_recurrent_transfer_cases_25_and_26(
 
     for execution in range(executions):
         if execution == 0:
-            sender.rc_manabar.assert_rc_current_mana_is_reduced(operation_rc_cost=recurrent_transfer.rc_cost)
+            sender.rc_manabar.assert_rc_current_mana_is_reduced(transaction=recurrent_transfer.transaction)
         else:
             sender.rc_manabar.assert_current_mana_is_unchanged()
         sender.assert_balance_is_reduced_by_transfer(amount)

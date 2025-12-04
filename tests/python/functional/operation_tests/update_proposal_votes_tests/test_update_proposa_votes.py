@@ -1,5 +1,6 @@
 """https://gitlab.syncad.com/hive/hive/-/issues/496
 These tests based on the block-log with existing proposals."""
+
 from __future__ import annotations
 
 import pytest
@@ -16,7 +17,7 @@ def test_update_proposal_votes(node: tt.InitNode, wallet: tt.Wallet, voter: Acco
     for proposal_id in range(2):
         vote_for_proposal = UpdateProposalVotes(node, wallet, voter.name, proposal_id=proposal_id)
 
-        voter.rc_manabar.assert_rc_current_mana_is_reduced(vote_for_proposal.rc_cost, vote_for_proposal.timestamp)
+        voter.rc_manabar.assert_rc_current_mana_is_reduced(vote_for_proposal.transaction)
         assert len(list_votes_for_all_proposals(node)) == proposal_id + 1
         voter.update_account_info()
 
@@ -27,12 +28,12 @@ def test_cancellation_of_update_proposal_vote(node: tt.InitNode, wallet: tt.Wall
     for proposal_id in range(2):
         vote_for_proposal = UpdateProposalVotes(node, wallet, voter.name, proposal_id=proposal_id)
 
-        voter.rc_manabar.assert_rc_current_mana_is_reduced(vote_for_proposal.rc_cost, vote_for_proposal.timestamp)
+        voter.rc_manabar.assert_rc_current_mana_is_reduced(vote_for_proposal.transaction)
         assert len(list_votes_for_all_proposals(node)) == proposal_id + 1
         voter.update_account_info()
 
     vote_for_proposal.delete()
-    voter.rc_manabar.assert_rc_current_mana_is_reduced(vote_for_proposal.rc_cost, vote_for_proposal.timestamp)
+    voter.rc_manabar.assert_rc_current_mana_is_reduced(vote_for_proposal.transaction)
     assert len(list_votes_for_all_proposals(node)) == 1
 
 
@@ -42,7 +43,7 @@ def test_expiration_of_update_proposal_vote(node: tt.InitNode, wallet: tt.Wallet
     for proposal_id in range(2):
         vote_for_proposal = UpdateProposalVotes(node, wallet, voter.name, proposal_id=proposal_id)
 
-        voter.rc_manabar.assert_rc_current_mana_is_reduced(vote_for_proposal.rc_cost, vote_for_proposal.timestamp)
+        voter.rc_manabar.assert_rc_current_mana_is_reduced(vote_for_proposal.transaction)
         assert len(list_votes_for_all_proposals(node)) == proposal_id + 1
         voter.update_account_info()
 
