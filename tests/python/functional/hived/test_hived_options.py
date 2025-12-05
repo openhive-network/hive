@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any, Final
 
 import pytest
+from beekeepy.exceptions import FailedToStartExecutableError
 
 import test_tools as tt
 from hive_local_tools.functional import connect_nodes
@@ -56,7 +57,21 @@ def test_stop_after_replay(way_to_stop: dict[str, Any], block_log: Path, block_l
 def test_stop_after_replay_in_load_from_snapshot(way_to_stop: dict[str, Any], block_log: Path) -> None:
     node = tt.ApiNode()
     node.run(replay_from=block_log, **way_to_stop)
-    snap = node.dump_snapshot(close=True)
+
+    # Retry logic for flaky snapshot dumps in CI environments
+    max_retries = 3
+    snap = None
+    for attempt in range(max_retries):
+        try:
+            snap = node.dump_snapshot(close=True)
+            break
+        except FailedToStartExecutableError:
+            if attempt < max_retries - 1:
+                tt.logger.warning(f"Snapshot dump failed (attempt {attempt + 1}/{max_retries}), retrying...")
+                time.sleep(1)
+            else:
+                raise
+
     Path(node.directory / "blockchain" / "shared_memory.bin").unlink()
     node.run(load_snapshot_from=snap, **way_to_stop)
     assert not node.is_running()
