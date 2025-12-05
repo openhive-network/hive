@@ -43,7 +43,7 @@ def node() -> tt.InitNode:
     for attempt in range(max_retries):
         try:
             return _create_and_run_node()
-        except (FailedToStartExecutableError, CommunicationError):
+        except (FailedToStartExecutableError, CommunicationError, TimeoutError):
             if attempt == max_retries - 1:
                 raise
             tt.logger.warning(f"Node startup failed (attempt {attempt + 1}/{max_retries}), retrying...")

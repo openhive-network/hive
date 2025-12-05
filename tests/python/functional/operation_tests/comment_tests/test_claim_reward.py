@@ -45,7 +45,7 @@ def node():
                 ),
             )
             break
-        except (FailedToStartExecutableError, CommunicationError):
+        except (FailedToStartExecutableError, CommunicationError, TimeoutError):
             if attempt < max_retries - 1:
                 tt.logger.warning(f"Node startup failed (attempt {attempt + 1}/{max_retries}), retrying...")
                 time.sleep(1)
@@ -62,6 +62,20 @@ def wallet(node):
     return tt.Wallet(attach_to=node)
 
 
+def _restart_node_with_retry(node: tt.InitNode, time_control, max_retries: int = 3) -> None:
+    """Restart node with retry logic for flaky CI environments."""
+    for attempt in range(max_retries):
+        try:
+            node.restart(time_control=time_control)
+            return
+        except (FailedToStartExecutableError, CommunicationError, TimeoutError):
+            if attempt < max_retries - 1:
+                tt.logger.warning(f"Node restart failed (attempt {attempt + 1}/{max_retries}), retrying...")
+                time.sleep(1)
+            else:
+                raise
+
+
 def prepare_account_with_reward_balance(
     node: tt.InitNode, wallet: tt.Wallet, balance_assets: Literal["hive, hbd, vest", "vest"]
 ) -> CommentAccount:
@@ -76,12 +90,12 @@ def prepare_account_with_reward_balance(
     vote_0.vote(100)
 
     start_time = node.get_head_block_time() + datetime.timedelta(seconds=40 * 60)
-    node.restart(time_control=tt.StartTimeControl(start_time=start_time, speed_up_rate=5))
+    _restart_node_with_retry(node, tt.StartTimeControl(start_time=start_time, speed_up_rate=5))
     time_before_publish_feed = node.get_head_block_time()
     publish_feeds_with_confirmation(node, wallet, 1, 4)
 
     start_time = time_before_publish_feed + datetime.timedelta(seconds=20 * 60)
-    node.restart(time_control=tt.StartTimeControl(start_time=start_time, speed_up_rate=5))
+    _restart_node_with_retry(node, tt.StartTimeControl(start_time=start_time, speed_up_rate=5))
 
     assert get_reward_hbd_balance(node, comment_0.author) == tt.Asset.Tbd(0)
     assert get_reward_vesting_balance(node, comment_0.author) != tt.Asset.Vest(0)
@@ -98,14 +112,14 @@ def prepare_account_with_reward_balance(
     vote_1.vote(90)
 
     start_time = node.get_head_block_time() + datetime.timedelta(seconds=40 * 60)
-    node.restart(time_control=tt.StartTimeControl(start_time=start_time, speed_up_rate=5))
+    _restart_node_with_retry(node, tt.StartTimeControl(start_time=start_time, speed_up_rate=5))
 
     # To receive a reward in HIVE instead of HBD, you must publish new feed and therefore change the median price.
     time_before_publish_feed = node.get_head_block_time()
     publish_feeds_with_confirmation(node, wallet, 25, 1)
 
     start_time = time_before_publish_feed + datetime.timedelta(seconds=20 * 60)
-    node.restart(time_control=tt.StartTimeControl(start_time=start_time))
+    _restart_node_with_retry(node, tt.StartTimeControl(start_time=start_time))
 
     assert get_reward_hive_balance(node, comment_0.author) != tt.Asset.Hive(0)
     assert get_reward_hbd_balance(node, comment_0.author) != tt.Asset.Tbd(0)
