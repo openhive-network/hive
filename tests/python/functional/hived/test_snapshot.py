@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import time
 from typing import TYPE_CHECKING, Final
 
 import pytest
@@ -9,6 +10,19 @@ import test_tools as tt
 from hive_local_tools.constants import BASE_ACCOUNTS
 from hive_local_tools.functional.python.compare_snapshot import compare_snapshots_contents
 from beekeepy.exceptions import FailedToStartExecutableError
+
+
+def _dump_snapshot_with_retry(node: tt.InitNode | tt.ApiNode, name: str = "snapshot", close: bool = False, max_retries: int = 3):
+    """Dump snapshot with retry logic for flaky CI environments."""
+    for attempt in range(max_retries):
+        try:
+            return node.dump_snapshot(name=name, close=close)
+        except FailedToStartExecutableError:
+            if attempt < max_retries - 1:
+                tt.logger.warning(f"Snapshot dump failed (attempt {attempt + 1}/{max_retries}), retrying...")
+                time.sleep(1)
+            else:
+                raise
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -116,7 +130,7 @@ def test_snapshots_has_less_plugins(block_log: Path, block_log_length: int) -> N
     node.run(exit_before_synchronization=True, replay_from=block_log)
     node.close()
 
-    snap_0 = node.dump_snapshot(close=True)
+    snap_0 = _dump_snapshot_with_retry(node, close=True)
 
     clear_state(node)
     # add extra plugin to node - now snapshot has less plugins
