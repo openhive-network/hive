@@ -192,7 +192,7 @@ namespace decoders
       }
 
       template <typename Member, class Class>
-      void operator()(Member Class::*member, const char *name) const
+      void operator()( Member Class::*member, const char *name ) const
       {
         decoders::main_decoder<Member> decoder;
         decoder.decode(dtds);
