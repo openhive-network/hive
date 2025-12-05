@@ -11,6 +11,8 @@
 #include <hive/protocol/exceptions.hpp>
 #include <hive/protocol/transaction_util.hpp>
 
+#include <hive/plugins/metadata_api/metadata_api_plugin.hpp>
+
 #include <hive/chain/database.hpp>
 #include <hive/chain/dhf_objects.hpp>
 
@@ -207,6 +209,8 @@ class database_api_impl
     }
 
     chain::database& _db;
+
+    std::shared_ptr< metadata::metadata_api > _metadata_api;
 };
 
 // Helper function for proposal status - used by api_proposal_object constructor and content filtering

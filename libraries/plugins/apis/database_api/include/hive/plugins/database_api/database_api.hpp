@@ -166,7 +166,13 @@ class database_api
     )
 
   private:
+
+    friend class database_api_plugin;
+    void api_startup();
+
     std::unique_ptr< database_api_impl > my;
+
+    appbase::application& theApp;
 };
 
 } } } //hive::plugins::database_api
