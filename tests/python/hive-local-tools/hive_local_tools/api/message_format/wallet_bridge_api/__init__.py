@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+import time
+
+from beekeepy.exceptions import CommunicationError, FailedToStartExecutableError
+
 import test_tools as tt
 
 
@@ -51,7 +55,19 @@ def prepare_node_with_witnesses(node: tt.InitNode, witnesses_names: list[str]) -
         node.config.witness.append(witness.name)
         node.config.private_key.append(witness.private_key)
 
-    node.restart(time_control=tt.SpeedUpRateTimeControl(speed_up_rate=10))
+    # Retry logic for flaky node restarts with fake time in CI environments
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            node.restart(time_control=tt.SpeedUpRateTimeControl(speed_up_rate=10))
+            break
+        except (FailedToStartExecutableError, CommunicationError):
+            if attempt < max_retries - 1:
+                tt.logger.warning(f"Node restart failed (attempt {attempt + 1}/{max_retries}), retrying...")
+                time.sleep(1)
+            else:
+                raise
+
     wallet = tt.Wallet(attach_to=node)
 
     with wallet.in_single_transaction():

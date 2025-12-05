@@ -250,7 +250,7 @@ def prepare_colony_config(node: tt.ApiNode | tt.InitNode) -> None:
     node.config.colony_transactions_per_block = "5000"
 
 
-def wait_for_start_colony(node: tt.InitNode | tt.ApiNode, min_trx_in_block: int = 500, timeout: int = 240) -> None:
+def wait_for_start_colony(node: tt.InitNode | tt.ApiNode, min_trx_in_block: int = 500, timeout: int = 300) -> None:
     def is_colony_started() -> bool:
         return (
             len(node.api.block.get_block(block_num=node.get_last_block_number())["block"].transactions)
