@@ -33,7 +33,7 @@ def test_no_duplicates_in_account_history_plugin_after_restart(prepare_with_many
         try:
             api_node.restart(time_control=tt.StartTimeControl(start_time=absolute_start_time))
             break
-        except (FailedToStartExecutableError, CommunicationError):
+        except (FailedToStartExecutableError, CommunicationError, TimeoutError):
             if attempt < max_retries - 1:
                 tt.logger.warning(f"Node restart failed (attempt {attempt + 1}/{max_retries}), retrying...")
                 time.sleep(1)

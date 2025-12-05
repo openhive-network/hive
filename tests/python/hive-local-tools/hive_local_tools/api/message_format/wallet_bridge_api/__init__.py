@@ -61,7 +61,7 @@ def prepare_node_with_witnesses(node: tt.InitNode, witnesses_names: list[str]) -
         try:
             node.restart(time_control=tt.SpeedUpRateTimeControl(speed_up_rate=10))
             break
-        except (FailedToStartExecutableError, CommunicationError):
+        except (FailedToStartExecutableError, CommunicationError, TimeoutError):
             if attempt < max_retries - 1:
                 tt.logger.warning(f"Node restart failed (attempt {attempt + 1}/{max_retries}), retrying...")
                 time.sleep(1)

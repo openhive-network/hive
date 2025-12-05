@@ -847,7 +847,7 @@ def speed_up_node() -> tt.InitNode:
         try:
             node.run(timeout=120.0, time_control=tt.SpeedUpRateTimeControl(speed_up_rate=5))
             return node
-        except (FailedToStartExecutableError, CommunicationError):
+        except (FailedToStartExecutableError, CommunicationError, TimeoutError):
             if attempt < max_retries - 1:
                 logger.warning(f"Node startup failed (attempt {attempt + 1}/{max_retries}), retrying...")
                 time.sleep(1)

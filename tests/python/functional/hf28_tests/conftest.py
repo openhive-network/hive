@@ -26,7 +26,7 @@ def prepare_environment(node: tt.InitNode) -> tuple[tt.InitNode, tt.Wallet]:
             # price stabilization prevents zero payout for comment votes.
             node.set_vest_price(tt.Asset.Vest(1800))
             return node, wallet
-        except (FailedToStartExecutableError, CommunicationError):
+        except (FailedToStartExecutableError, CommunicationError, TimeoutError):
             if attempt < max_retries - 1:
                 logger.warning(f"Node startup failed (attempt {attempt + 1}/{max_retries}), retrying...")
                 time.sleep(1)
