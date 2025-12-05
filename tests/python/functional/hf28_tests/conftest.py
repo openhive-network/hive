@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import time
 from pathlib import Path
 
 import pytest
+from beekeepy.exceptions import CommunicationError, FailedToStartExecutableError
+from loguru import logger
 
 import test_tools as tt
 from hive_local_tools.functional.python.hf28.constants import PROXY_ACCOUNT, VOTER_ACCOUNT
@@ -11,16 +14,25 @@ from hive_local_tools.functional.python.operation import Account
 
 @pytest.fixture()
 def prepare_environment(node: tt.InitNode) -> tuple[tt.InitNode, tt.Wallet]:
-    node = tt.InitNode()
-    node.config.plugin.append("account_history_api")
-    node.config.plugin.append("condenser_api")
-    node.config.plugin.append("transaction_status_api")
-    node.run(time_control=tt.SpeedUpRateTimeControl(speed_up_rate=5))
-    wallet = tt.Wallet(attach_to=node)
-
-    # price stabilization prevents zero payout for comment votes.
-    node.set_vest_price(tt.Asset.Vest(1800))
-    return node, wallet
+    max_retries = 3
+    for attempt in range(max_retries):
+        node = tt.InitNode()
+        node.config.plugin.append("account_history_api")
+        node.config.plugin.append("condenser_api")
+        node.config.plugin.append("transaction_status_api")
+        try:
+            node.run(timeout=120.0, time_control=tt.SpeedUpRateTimeControl(speed_up_rate=5))
+            wallet = tt.Wallet(attach_to=node)
+            # price stabilization prevents zero payout for comment votes.
+            node.set_vest_price(tt.Asset.Vest(1800))
+            return node, wallet
+        except (FailedToStartExecutableError, CommunicationError):
+            if attempt < max_retries - 1:
+                logger.warning(f"Node startup failed (attempt {attempt + 1}/{max_retries}), retrying...")
+                time.sleep(1)
+            else:
+                raise
+    raise RuntimeError("Failed to start node after retries")  # Should not reach here
 
 
 @pytest.fixture()
