@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import datetime
+import time
 from typing import Literal
 
 import pytest
+from beekeepy.exceptions import CommunicationError, FailedToStartExecutableError
 
 import test_tools as tt
 from hive_local_tools.functional.python.operation import (
@@ -19,25 +21,37 @@ from hive_local_tools.functional.python.operation.comment import Comment, Commen
 def node():
     witnesses_required_for_hf06_and_later = [f"witness-{witness_num}" for witness_num in range(20)]
 
-    init_node = tt.InitNode()
+    # Retry logic for flaky node startup in CI environments
+    max_retries = 3
+    for attempt in range(max_retries):
+        init_node = tt.InitNode()
 
-    for witness in witnesses_required_for_hf06_and_later:
-        init_node.config.witness.append(witness)
+        for witness in witnesses_required_for_hf06_and_later:
+            init_node.config.witness.append(witness)
 
-    init_node.config.plugin.append("account_history_api")
+        init_node.config.plugin.append("account_history_api")
 
-    init_node.run(
-        timeout=60.0,
-        time_control=tt.SpeedUpRateTimeControl(speed_up_rate=10),
-        alternate_chain_specs=tt.AlternateChainSpecs(
-            genesis_time=int(tt.Time.now(serialize=False).timestamp()),
-            hardfork_schedule=[tt.HardforkSchedule(hardfork=28, block_num=1)],
-            init_witnesses=witnesses_required_for_hf06_and_later,
-            hbd_init_supply=100000000000,
-            init_supply=20000000000,
-            initial_vesting=tt.InitialVesting(hive_amount=10000000000, vests_per_hive=1800),
-        ),
-    )
+        try:
+            init_node.run(
+                timeout=60.0,
+                time_control=tt.SpeedUpRateTimeControl(speed_up_rate=10),
+                alternate_chain_specs=tt.AlternateChainSpecs(
+                    genesis_time=int(tt.Time.now(serialize=False).timestamp()),
+                    hardfork_schedule=[tt.HardforkSchedule(hardfork=28, block_num=1)],
+                    init_witnesses=witnesses_required_for_hf06_and_later,
+                    hbd_init_supply=100000000000,
+                    init_supply=20000000000,
+                    initial_vesting=tt.InitialVesting(hive_amount=10000000000, vests_per_hive=1800),
+                ),
+            )
+            break
+        except (FailedToStartExecutableError, CommunicationError):
+            if attempt < max_retries - 1:
+                tt.logger.warning(f"Node startup failed (attempt {attempt + 1}/{max_retries}), retrying...")
+                time.sleep(1)
+            else:
+                raise
+
     init_node.wait_number_of_blocks(100)
 
     return init_node

@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import time
 from typing import TYPE_CHECKING
 
 import pytest
+from beekeepy.exceptions import CommunicationError, FailedToStartExecutableError
 
 import test_tools as tt
 from shared_tools.complex_networks_helper_functions import assert_no_duplicates
@@ -24,7 +26,19 @@ def test_no_duplicates_in_account_history_plugin_after_restart(prepare_with_many
     absolute_start_time -= tt.Time.seconds(5)  # Node starting and entering live mode takes some time to complete
 
     tt.logger.info(f"Restarting api node with time offset: {head_block_timestamp}")
-    api_node.restart(time_control=tt.StartTimeControl(start_time=absolute_start_time))
+
+    # Retry logic for flaky node restarts in CI environments
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            api_node.restart(time_control=tt.StartTimeControl(start_time=absolute_start_time))
+            break
+        except (FailedToStartExecutableError, CommunicationError):
+            if attempt < max_retries - 1:
+                tt.logger.warning(f"Node restart failed (attempt {attempt + 1}/{max_retries}), retrying...")
+                time.sleep(1)
+            else:
+                raise
 
     # VERIFY
     # Expected behaviour is that restarted node will enter live sync
