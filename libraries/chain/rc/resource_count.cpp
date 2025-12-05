@@ -61,7 +61,7 @@ struct count_differential_operation_visitor
       usage += get_authority_dynamic_size( auth_ptr->posting );
 
     //metadata not handled by differential usage because it could be a source of RC differences
-    //on different nodes, since its existence depends on COLLECT_ACCOUNT_METADATA
+    //on different nodes, since its existence depends on metadata plugin is attached
     state_bytes_count += usage;
     return usage != 0;
   }
@@ -81,7 +81,7 @@ struct count_differential_operation_visitor
       usage += get_authority_dynamic_size( auth_ptr->posting );
 
     //metadata not handled by differential usage because it could be a source of RC differences
-    //on different nodes, since its existence depends on COLLECT_ACCOUNT_METADATA
+    //on different nodes, since its existence depends on metadata plugin is attached
     state_bytes_count += usage;
     return usage != 0;
   }

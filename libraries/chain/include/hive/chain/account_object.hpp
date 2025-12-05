@@ -333,27 +333,6 @@ namespace hive { namespace chain {
     CHAINBASE_UNPACK_CONSTRUCTOR(account_object, (delayed_votes));
   };
 
-  class account_metadata_object : public object< account_metadata_object_type, account_metadata_object, std::true_type >
-  {
-    CHAINBASE_OBJECT( account_metadata_object );
-    public:
-      CHAINBASE_DEFAULT_CONSTRUCTOR( account_metadata_object, (json_metadata)(posting_json_metadata) )
-
-      account_id_type   account;
-      shared_string     json_metadata;
-      shared_string     posting_json_metadata;
-
-      size_t get_dynamic_alloc() const
-      {
-        size_t size = 0;
-        size += json_metadata.capacity() * sizeof( decltype( json_metadata )::value_type );
-        size += posting_json_metadata.capacity() * sizeof( decltype( posting_json_metadata )::value_type );
-        return size;
-      }
-
-    CHAINBASE_UNPACK_CONSTRUCTOR(account_metadata_object, (json_metadata)(posting_json_metadata));
-  };
-
   class account_authority_object : public object< account_authority_object_type, account_authority_object, std::true_type >
   {
     CHAINBASE_OBJECT( account_authority_object );
@@ -589,18 +568,6 @@ namespace hive { namespace chain {
   > account_index;
 
   struct by_account {};
-
-  typedef multi_index_container <
-    account_metadata_object,
-    indexed_by<
-      ordered_unique< tag< by_id >,
-        const_mem_fun< account_metadata_object, account_metadata_object::id_type, &account_metadata_object::get_id > >,
-      ordered_unique< tag< by_account >,
-        member< account_metadata_object, account_id_type, &account_metadata_object::account > >
-    >,
-    multi_index_allocator< account_metadata_object >
-  > account_metadata_index;
-
   typedef multi_index_container <
     owner_authority_history_object,
     indexed_by <
@@ -749,10 +716,6 @@ FC_REFLECT( hive::chain::account_object,
         )
 
 CHAINBASE_SET_INDEX_TYPE( hive::chain::account_object, hive::chain::account_index )
-
-FC_REFLECT( hive::chain::account_metadata_object,
-          (id)(account)(json_metadata)(posting_json_metadata) )
-CHAINBASE_SET_INDEX_TYPE( hive::chain::account_metadata_object, hive::chain::account_metadata_index )
 
 FC_REFLECT( hive::chain::account_authority_object,
           (id)(account)(owner)(active)(posting)(previous_owner_update)(last_owner_update)

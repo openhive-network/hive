@@ -8,6 +8,7 @@
 #include <hive/chain/rc/rc_objects.hpp>
 #include <hive/plugins/reputation/reputation_objects.hpp>
 #include <hive/plugins/transaction_status/transaction_status_objects.hpp>
+#include <hive/plugins/metadata/metadata_objects.hpp>
 #include <hive/chain/block_summary_object.hpp>
 #include <hive/chain/dhf_objects.hpp>
 #include <hive/chain/transaction_object.hpp>
@@ -36,7 +37,7 @@ void do_job()
     auto begin = std::chrono::steady_clock::now();
 
     dtds.register_new_type<hive::chain::account_object>();
-    dtds.register_new_type<hive::chain::account_metadata_object>();
+    dtds.register_new_type<hive::plugins::metadata::account_metadata_object>();
     dtds.register_new_type<hive::chain::account_authority_object>();
     dtds.register_new_type<hive::chain::vesting_delegation_object>();
     dtds.register_new_type<hive::chain::vesting_delegation_expiration_object>();
