@@ -684,13 +684,21 @@ beekeeper_wallet_tests:
   
 hived_tests:
   stage: test
-  extends: .test_tools_based
-
+  extends:
+    - .test_tools_based
+    - .test-block-log-service
+  needs:
+    - !reference [.test_tools_based, needs]
+    - job: build_combined_testing_block_logs_image
+      artifacts: true
   variables:
     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/hived/report.xml
     PYTEST_TIMEOUT_MINUTES: 30
-
+    TEST_BLOCK_LOGS_SOURCES: testing_block_logs/empty_block_logs/
+    TESTING_BLOCK_LOGS_DESTINATION: $CI_PROJECT_DIR/testing_block_logs_dir/
   script:
+    - mkdir -p "$TESTING_BLOCK_LOGS_DESTINATION"
+    - !reference [.fetch_test_block_logs, script]
     - cd tests/python/functional/hived
     - !reference [.run-pytest, script]
   tags:
