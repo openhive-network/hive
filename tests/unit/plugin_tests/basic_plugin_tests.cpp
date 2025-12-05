@@ -5,6 +5,7 @@
 #include <hive/plugins/account_history_rocksdb/account_history_rocksdb_objects.hpp>
 #include <hive/plugins/block_log_info/block_log_info_objects.hpp>
 #include <hive/plugins/market_history/market_history_plugin.hpp>
+#include <hive/plugins/metadata/metadata_objects.hpp>
 #include <hive/plugins/reputation/reputation_objects.hpp>
 #include <hive/plugins/transaction_status/transaction_status_objects.hpp>
 
@@ -45,6 +46,9 @@ BOOST_AUTO_TEST_CASE( plugin_object_size )
   BOOST_CHECK_EQUAL( sizeof( reputation::reputation_object ), 32u ); //lasting, as many as account_object, 1.3M atm
   BOOST_CHECK_EQUAL( sizeof( reputation::reputation_index::MULTIINDEX_NODE_TYPE ), 96u );
 
+  BOOST_CHECK_EQUAL( sizeof( metadata::account_metadata_object ), 72u ); //as many as account_object, but only FatNode (also to be moved to HiveMind)
+  BOOST_CHECK_EQUAL( sizeof( metadata::account_metadata_index::MULTIINDEX_NODE_TYPE ), 136u );
+
   BOOST_CHECK_EQUAL( sizeof( transaction_status::transaction_status_object ), 40u ); //temporary, depends on tracking flag, cuts out data from too old blocks
   BOOST_CHECK_EQUAL( sizeof( transaction_status::transaction_status_index::MULTIINDEX_NODE_TYPE ), 136u );
 }
@@ -66,6 +70,7 @@ BOOST_AUTO_TEST_CASE( plugin_object_checksum )
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::block_log_info::block_log_pending_message_object>(dtds), "b7da18e0b992b242d903ac255ca3023151db5e16" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::market_history::order_history_object>(dtds), "d44984762f037d0a93007dfc3f172c0cca5cf8f2" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::reputation::reputation_object>(dtds), "cacdc6e0294f4098f4cef0c3e0bc06e4d7ede488" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::metadata::account_metadata_object>(dtds), "55cadd90e77ed413f6536756f6708632a53a818e" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::transaction_status::transaction_status_object>(dtds), "cb9ceb3c9d94912d0e5326d6ebfcd6110bd9c953" );
 
   #ifdef HIVE_ENABLE_SMT

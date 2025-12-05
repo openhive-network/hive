@@ -48,17 +48,6 @@ namespace hive { namespace chain {
   struct by_account {};
 
   typedef multi_index_container <
-    account_metadata_object,
-    indexed_by<
-      ordered_unique< tag< by_id >,
-        const_mem_fun< account_metadata_object, account_metadata_object::id_type, &account_metadata_object::get_id > >,
-      ordered_unique< tag< by_account >,
-        member< account_metadata_object, account_id_type, &account_metadata_object::account > >
-    >,
-    multi_index_allocator< account_metadata_object >
-  > account_metadata_index;
-
-  typedef multi_index_container <
     owner_authority_history_object,
     indexed_by <
       ordered_unique< tag< by_id >,
@@ -175,7 +164,6 @@ namespace hive { namespace chain {
 } }
 
 CHAINBASE_SET_INDEX_TYPE( hive::chain::account_object, hive::chain::account_index )
-CHAINBASE_SET_INDEX_TYPE( hive::chain::account_metadata_object, hive::chain::account_metadata_index )
 CHAINBASE_SET_INDEX_TYPE( hive::chain::account_authority_object, hive::chain::account_authority_index )
 CHAINBASE_SET_INDEX_TYPE( hive::chain::vesting_delegation_object, hive::chain::vesting_delegation_index )
 CHAINBASE_SET_INDEX_TYPE( hive::chain::vesting_delegation_expiration_object, hive::chain::vesting_delegation_expiration_index )

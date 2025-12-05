@@ -896,6 +896,11 @@ void database::notify_post_reindex( const reindex_notification& note )
   HIVE_TRY_NOTIFY( _my->_post_reindex_signal, note )
 }
 
+void database::notify_metadata( const metadata_notification& note )
+{
+  HIVE_TRY_NOTIFY( _my->_metadata_signal, note )
+}
+
 account_name_type database::get_scheduled_witness( uint32_t slot_num )const
 {
   const dynamic_global_property_object& dpo = get_dynamic_global_properties();

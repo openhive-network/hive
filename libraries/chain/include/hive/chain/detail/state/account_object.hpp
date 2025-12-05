@@ -336,27 +336,6 @@ namespace hive { namespace chain {
     CHAINBASE_UNPACK_CONSTRUCTOR(account_object, (delayed_votes));
   };
 
-  class account_metadata_object : public object< account_metadata_object_type, account_metadata_object, std::true_type >
-  {
-    CHAINBASE_OBJECT( account_metadata_object );
-    public:
-      CHAINBASE_DEFAULT_CONSTRUCTOR( account_metadata_object, (json_metadata)(posting_json_metadata) )
-
-      account_id_type   account;
-      shared_string     json_metadata;
-      shared_string     posting_json_metadata;
-
-      size_t get_dynamic_alloc() const
-      {
-        size_t size = 0;
-        size += json_metadata.capacity() * sizeof( decltype( json_metadata )::value_type );
-        size += posting_json_metadata.capacity() * sizeof( decltype( posting_json_metadata )::value_type );
-        return size;
-      }
-
-    CHAINBASE_UNPACK_CONSTRUCTOR(account_metadata_object, (json_metadata)(posting_json_metadata));
-  };
-
   class account_authority_object : public object< account_authority_object_type, account_authority_object, std::true_type >
   {
     CHAINBASE_OBJECT( account_authority_object );
@@ -579,9 +558,6 @@ FC_REFLECT( hive::chain::account_object,
           (proxied_vsf_votes)
           (delayed_votes)
         )
-
-FC_REFLECT( hive::chain::account_metadata_object,
-          (id)(account)(json_metadata)(posting_json_metadata) )
 
 FC_REFLECT( hive::chain::account_authority_object,
           (id)(account)(owner)(active)(posting)(previous_owner_update)(last_owner_update)

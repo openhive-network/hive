@@ -583,6 +583,12 @@ database::signal_connection_ptr database::add_flush_handler( const flush_handler
   return connect_signal_impl<false>(_my->_flush_signal, func, _benchmark_dumper, plugin, group, "flush");
 }
 
+database::signal_connection_ptr database::add_metadata_handler( const metadata_handler_t& func,
+  const abstract_plugin& plugin, int32_t group )
+{
+  return connect_signal_impl<false>(_my->_metadata_signal, func, _benchmark_dumper, plugin, group, "metadata");
+}
+
 database::signal_connection_ptr database::add_plugin_index_handler( const std::function<void()>& func )
 {
   return hive::utilities::make_signal_connection_ptr( _my->_plugin_index_signal.connect( func ) );

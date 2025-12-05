@@ -10,7 +10,7 @@ add_library( database_api_plugin
              ${HEADERS}
            )
 
-target_link_libraries( database_api_plugin chain_plugin json_rpc_plugin )
+target_link_libraries( database_api_plugin chain_plugin json_rpc_plugin metadata_api_plugin )
 target_include_directories( database_api_plugin
                             PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" )
 
