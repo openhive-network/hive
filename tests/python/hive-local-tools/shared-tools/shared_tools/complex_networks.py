@@ -32,6 +32,7 @@ def _warmup_msgspec_decoders() -> None:
     with contextlib.suppress(Exception):
         get_response_model(str, '{"jsonrpc":"2.0","id":0,"result":"warmup"}', "hf26")
 
+
 if TYPE_CHECKING:
     import datetime
 
