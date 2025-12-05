@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import os
 import re
 import socket
@@ -11,9 +12,25 @@ from typing import TYPE_CHECKING, Any, Iterable
 
 import shared_tools.networks_architecture as networks
 import test_tools as tt
+from schemas.jsonrpc import get_response_model
 from wax.helpy import OffsetTimeControl, StartTimeControl
 
 from .complex_networks_helper_functions import connect_sub_networks
+
+
+def _warmup_msgspec_decoders() -> None:
+    """
+    Pre-initialize msgspec decoders in the main thread to avoid race conditions.
+
+    msgspec's decoder initialization involves Python's typing module internals
+    (ForwardRef creation) which are not thread-safe. When multiple threads
+    simultaneously create decoders for the first time, a segfault can occur.
+
+    This function triggers decoder initialization for common response types
+    before any threads are spawned, ensuring thread-safe operation.
+    """
+    with contextlib.suppress(Exception):
+        get_response_model(str, '{"jsonrpc":"2.0","id":0,"result":"warmup"}', "hf26")
 
 if TYPE_CHECKING:
     import datetime
@@ -175,6 +192,9 @@ def run_networks(
 
     for network in networks:
         network.is_running = True
+
+    # Warm up msgspec decoders before spawning threads to avoid race conditions
+    _warmup_msgspec_decoders()
 
     with ThreadPoolExecutor() as executor:
         tasks = []
