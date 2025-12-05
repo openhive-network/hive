@@ -9,6 +9,8 @@
 #include <hive/plugins/wallet_bridge_api/wallet_bridge_api.hpp>
 #include <hive/plugins/wallet_bridge_api/wallet_bridge_api_plugin.hpp>
 #include <hive/plugins/rc_api/rc_api.hpp>
+#include <hive/plugins/metadata_api/metadata_api_plugin.hpp>
+#include <hive/plugins/metadata_api/metadata_api.hpp>
 
 #include <hive/chain/detail/state/feed_history_object_multiindex.hpp>
 #include <hive/chain/detail/state/limit_order_object_multiindex.hpp>
@@ -66,6 +68,7 @@ class wallet_bridge_api_impl
         (find_rc_accounts)
         (list_rc_accounts)
         (list_rc_direct_delegations)
+        (get_metadata)
     )
 
     chain::chain_plugin&                                            _chain;
@@ -77,6 +80,7 @@ class wallet_bridge_api_impl
     std::shared_ptr< market_history::market_history_api >           _market_history_api;
     std::shared_ptr< network_broadcast_api::network_broadcast_api>  _network_broadcast_api;
     std::shared_ptr< rc::rc_api>                                    _rc_api;
+    std::shared_ptr< metadata::metadata_api >                       _metadata_api;
     p2p::p2p_plugin*                                                _p2p = nullptr;
     map< protocol::transaction_id_type, confirmation_callback >     _callbacks;
     map< time_point_sec, vector< protocol::transaction_id_type > >  _callback_expirations;
@@ -157,6 +161,11 @@ void wallet_bridge_api::api_startup()
     my->_rc_api = rc_api->api;
   else
     not_enabled_plugins += "rc_api_plugin";
+
+  //=====
+  auto metadata_api = theApp.find_plugin< metadata::metadata_api_plugin >();
+  if (metadata_api)
+    my->_metadata_api = metadata_api->api;
 
   //=====
   auto p2p = theApp.find_plugin< p2p::p2p_plugin >();
@@ -418,7 +427,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_account )
   const chain::account_object* account = _db.find_account(acc_name);
   get_account_return result;
   if (account)
-    result = database_api::api_account_object(*account, _db, true);
+    result = database_api::api_account_object(*account, _db, _metadata_api, true);
 
   return result;
 }
@@ -445,7 +454,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_accounts )
   {
     const chain::account_object* account = _db.find_account( acc_name );
     if (account)
-      result.push_back(database_api::api_account_object( *account, _db, delayed_votes_active ) );
+      result.push_back(database_api::api_account_object( *account, _db, _metadata_api, delayed_votes_active ) );
   }
 
   result.shrink_to_fit();
@@ -832,6 +841,20 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, list_rc_direct_delegations )
   return _rc_api->list_rc_direct_delegations(api_lrdd_args).rc_direct_delegations;
 }
 
+DEFINE_API_IMPL( wallet_bridge_api_impl, get_metadata )
+{
+  FC_ASSERT( _metadata_api, "metadata_api_plugin not enabled." );
+  verify_args( args, 1 );
+  FC_ASSERT(args.get_array().at(0).is_array(), "get_metadata needs at least one argument");
+  const auto arguments = args.get_array().at(0);
+  verify_args( arguments, 1 );
+
+  metadata::get_metadata_args api_gma_args;
+  api_gma_args.account = arguments.get_array().at(0).as<protocol::account_name_type>();
+
+  return _metadata_api->get_metadata(api_gma_args);
+}
+
 DEFINE_LOCKLESS_APIS(
   wallet_bridge_api, 
   (get_version)
@@ -873,6 +896,7 @@ DEFINE_READ_APIS(
   (find_rc_accounts)
   (list_rc_accounts)
   (list_rc_direct_delegations)
+  (get_metadata)
 )
 
 } } } // hive::plugins::wallet_bridge_api

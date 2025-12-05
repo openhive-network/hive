@@ -60,6 +60,7 @@ namespace chain {
 
   struct prepare_snapshot_supplement_notification;
   struct load_snapshot_supplement_notification;
+  struct metadata_notification;
 
   class database;
 
@@ -381,6 +382,7 @@ namespace chain {
       void notify_post_apply_custom_operation( const custom_operation_notification& note );
       void notify_finish_push_block( const block_notification& note );
       void notify_flush();
+      void notify_metadata( const metadata_notification& note );
 
       using apply_operation_handler_t = std::function< void(const operation_notification&) >;
       using apply_transaction_handler_t = std::function< void(const transaction_notification&) >;
@@ -397,6 +399,7 @@ namespace chain {
       using comment_reward_notification_handler_t = std::function < void(const comment_reward_notification&) >;
       using end_of_syncing_notification_handler_t = std::function < void(void) >;
       using wipe_notification_handler_t = std::function < void(void) >;
+      using metadata_handler_t = std::function < void(const metadata_notification&) >;
 
       void notify_prepare_snapshot_data_supplement(const prepare_snapshot_supplement_notification& n);
       void notify_load_snapshot_data_supplement(const load_snapshot_supplement_notification& n);
@@ -455,6 +458,7 @@ namespace chain {
       /// Register a callback for plugin index initialization (called during initialize_indexes)
       signal_connection_ptr add_plugin_index_handler( const std::function<void()>& func );
 
+      signal_connection_ptr add_metadata_handler                  ( const metadata_handler_t& func, const abstract_plugin& plugin, int32_t group = -1 );
       //////////////////// db_witness_schedule.cpp ////////////////////
 
       void flush_to_all_storages();
@@ -918,5 +922,28 @@ namespace chain {
       load_helper(_load_helper) {}
 
     hive::plugins::chain::snapshot_load_helper& load_helper;
+  };
+
+  enum class metadata_action
+  {
+    account_create,
+    account_create_with_delegation,
+    account_update,
+    account_update2,
+    pow,
+    pow2,
+    create_claimed_account
+  };
+
+  struct metadata_notification
+  {
+    metadata_notification( const account_id_type& account, const std::string& json_metadata, const std::string& posting_json_metadata, metadata_action action ):
+      account( account ), json_metadata( json_metadata ), posting_json_metadata( posting_json_metadata ), action( action ) {}
+
+    account_id_type account;
+    std::string json_metadata;
+    std::string posting_json_metadata;
+
+    metadata_action action;
   };
 } }

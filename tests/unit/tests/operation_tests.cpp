@@ -9094,10 +9094,7 @@ BOOST_AUTO_TEST_CASE( create_claimed_account_apply )
     BOOST_REQUIRE( bob_auth.active == authority( 2, priv_key.get_public_key(), 2 ) );
     BOOST_REQUIRE( bob_auth.posting == authority( 3, priv_key.get_public_key(), 3 ) );
     BOOST_REQUIRE( bob.memo_key == priv_key.get_public_key() );
-#ifdef COLLECT_ACCOUNT_METADATA // json_metadata is stored conditionally
-    const auto& bob_meta = db->get< account_metadata_object, by_account >( bob.get_id() );
-    BOOST_REQUIRE( bob_meta.json_metadata == "{\"foo\":\"bar\"}" );
-#endif
+
     CHECK_NO_PROXY( bob );
     BOOST_REQUIRE( bob.get_recovery_account() == alice_id );
     BOOST_REQUIRE( bob.get_creation_time() == db->head_block_time() );
