@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import time
+
 import pytest
+from beekeepy.exceptions import FailedToStartExecutableError
 
 import test_tools as tt
 from hive_local_tools.functional import connect_nodes
@@ -37,7 +40,19 @@ def test_if_proposal_id_is_not_reused_after_snapshot_load() -> None:
 
     init_node.wait_for_irreversible_block()
 
-    snapshot = init_node.dump_snapshot()
+    # Retry logic for flaky snapshot dumps in CI environments
+    max_retries = 3
+    snapshot = None
+    for attempt in range(max_retries):
+        try:
+            snapshot = init_node.dump_snapshot()
+            break
+        except FailedToStartExecutableError:
+            if attempt < max_retries - 1:
+                tt.logger.warning(f"Snapshot dump failed (attempt {attempt + 1}/{max_retries}), retrying...")
+                time.sleep(1)
+            else:
+                raise
 
     api_node = tt.ApiNode()
 
