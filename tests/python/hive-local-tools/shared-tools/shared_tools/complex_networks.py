@@ -5,7 +5,6 @@ import os
 import re
 import socket
 import sys
-from collections.abc import Iterable
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from pathlib import Path
@@ -47,6 +46,7 @@ def _warmup_msgspec_decoders() -> None:
 
 if TYPE_CHECKING:
     import datetime
+    from collections.abc import Iterable
 
 last_used_port_number = 0
 

@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import contextlib
-from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 from functools import partial
+from typing import TYPE_CHECKING
 
 import test_tools as tt
 from schemas.fields.hive_int import HiveInt
@@ -13,6 +13,9 @@ from schemas.operation import Operation
 from test_tools.__private.wallet.constants import SimpleTransaction, SimpleTransactionLegacy
 from wax import get_tapos_data
 from wax._private.result_tools import to_cpp_string
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 
 def _warmup_msgspec_decoders() -> None:
