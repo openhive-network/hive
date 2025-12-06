@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import functools
 import inspect
-from typing import Callable, Iterable
+from collections.abc import Callable, Iterable
 
 import pytest
 from beekeepy.exceptions import CommunicationError
