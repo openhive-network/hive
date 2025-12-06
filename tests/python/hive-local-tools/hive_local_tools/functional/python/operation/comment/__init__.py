@@ -619,6 +619,8 @@ class Vote:
             raise ValueError(f"Unexpected value for 'mode': '{mode}'")
 
     def assert_effective_comment_vote_operation(self, mode: Literal["generated", "not_generated"]) -> None:
+        # Wait for block containing the vote transaction to be processed
+        self.__comment_obj.node.wait_number_of_blocks(1)
         vops = get_virtual_operations(self.__comment_obj.node, EffectiveCommentVoteOperation)
         effective_comment_vote_operations = [vop.op.value for vop in vops]
         voter_and_comment_permlink = [(vop.voter, vop.permlink) for vop in effective_comment_vote_operations]
