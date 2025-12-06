@@ -40,4 +40,4 @@ def perform_test_preparation(node: tt.InitNode, wallet: tt.OldWallet) -> None:
     wallet.close()
     node.close()
     node.run(time_control=tt.OffsetTimeControl(offset="+1h"))
-    wallet.run()
+    wallet.run(timeout=20)
