@@ -4,8 +4,9 @@ import filecmp
 import json
 import os
 import shutil
+from collections.abc import Callable
 from distutils.util import strtobool
-from typing import TYPE_CHECKING, Callable, Final
+from typing import TYPE_CHECKING, Final
 
 import test_tools as tt
 from hive_local_tools import PYTHON_TESTS_DIR

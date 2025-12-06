@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Callable, Iterable, Sequence
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import TYPE_CHECKING, Callable, Iterable, Protocol, Sequence
+from typing import TYPE_CHECKING, Protocol
 
 import test_tools as tt
 
