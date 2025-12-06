@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import contextlib
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 from functools import partial
-from typing import Callable
 
 import test_tools as tt
 from schemas.fields.hive_int import HiveInt
@@ -31,8 +31,8 @@ def _warmup_msgspec_decoders() -> None:
         # This ensures msgspec decoders are initialized before parallel operations
         import schemas.apis.database_api.fundaments_of_reponses  # noqa: F401
         import schemas.apis.database_api.response_schemas  # noqa: F401
-        import schemas.apis.wallet_bridge_api  # noqa: F401
         import schemas.apis.network_node_api  # noqa: F401
+        import schemas.apis.wallet_bridge_api  # noqa: F401
         import schemas.transaction  # noqa: F401
 
         # Warm up the decoder cache by parsing sample responses

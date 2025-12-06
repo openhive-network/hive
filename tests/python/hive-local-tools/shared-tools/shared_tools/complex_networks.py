@@ -5,10 +5,11 @@ import os
 import re
 import socket
 import sys
+from collections.abc import Iterable
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Iterable
+from typing import TYPE_CHECKING, Any
 
 import shared_tools.networks_architecture as networks
 import test_tools as tt
@@ -34,8 +35,8 @@ def _warmup_msgspec_decoders() -> None:
         # This ensures msgspec decoders are initialized before parallel operations
         import schemas.apis.database_api.fundaments_of_reponses  # noqa: F401
         import schemas.apis.database_api.response_schemas  # noqa: F401
-        import schemas.apis.wallet_bridge_api  # noqa: F401
         import schemas.apis.network_node_api  # noqa: F401
+        import schemas.apis.wallet_bridge_api  # noqa: F401
         import schemas.transaction  # noqa: F401
 
         # Warm up the decoder cache by parsing sample responses
