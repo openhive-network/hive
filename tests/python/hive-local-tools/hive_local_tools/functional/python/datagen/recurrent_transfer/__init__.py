@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import math
-from collections.abc import Callable, Iterable, Sequence
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import TYPE_CHECKING, Protocol
 
 import test_tools as tt
 
 if TYPE_CHECKING:
+    from collections.abc import Callable, Iterable, Sequence
     from datetime import datetime
     from pathlib import Path
 
