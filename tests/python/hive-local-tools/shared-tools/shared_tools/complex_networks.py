@@ -30,7 +30,18 @@ def _warmup_msgspec_decoders() -> None:
     before any threads are spawned, ensuring thread-safe operation.
     """
     with contextlib.suppress(Exception):
+        # Import and access schemas types to trigger annotation resolution
+        # This ensures msgspec decoders are initialized before parallel operations
+        import schemas.apis.database_api.fundaments_of_reponses  # noqa: F401
+        import schemas.apis.database_api.response_schemas  # noqa: F401
+        import schemas.apis.wallet_bridge_api  # noqa: F401
+        import schemas.apis.network_node_api  # noqa: F401
+        import schemas.transaction  # noqa: F401
+
+        # Warm up the decoder cache by parsing sample responses
         get_response_model(str, '{"jsonrpc":"2.0","id":0,"result":"warmup"}', "hf26")
+        get_response_model(dict, '{"jsonrpc":"2.0","id":0,"result":{}}', "hf26")
+        get_response_model(list, '{"jsonrpc":"2.0","id":0,"result":[]}', "hf26")
 
 
 if TYPE_CHECKING:
