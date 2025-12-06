@@ -2,12 +2,15 @@ from __future__ import annotations
 
 import functools
 import inspect
-from collections.abc import Callable, Iterable
+from typing import TYPE_CHECKING
 
 import pytest
 from beekeepy.exceptions import CommunicationError
 
 import test_tools as tt
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Iterable
 
 
 def __serialize_legacy(assets: Iterable[tt.Asset.AnyT]) -> Iterable[str]:
