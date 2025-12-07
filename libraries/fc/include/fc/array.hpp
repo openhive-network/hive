@@ -45,19 +45,22 @@ namespace fc {
     array(){ memset( data, 0, sizeof(data) ); }
     /**
      *  Checked indexing (when in debug build) that also simplifies dereferencing
-     *  when you have an array<T,N>*.    
+     *  when you have an array<T,N>*.
      */
     ///@{
     T&       at( size_t pos )      { assert( pos < N); return data[pos]; }
     const T& at( size_t pos )const { assert( pos < N); return data[pos]; }
     ///@}
-    
+
+    T&       operator[]( size_t pos )      { assert( pos < N); return data[pos]; }
+    const T& operator[]( size_t pos )const { assert( pos < N); return data[pos]; }
+
     T*           begin()       {  return &data[0]; }
     const T*     begin()const  {  return &data[0]; }
     const T*     end()const    {  return &data[N]; }
 
     size_t       size()const { return N; }
-    
+
     T data[N];
   };
 
@@ -70,19 +73,22 @@ namespace fc {
     array(){ memset( data, 0, sizeof(data) ); }
     /**
      *  Checked indexing (when in debug build) that also simplifies dereferencing
-     *  when you have an array<T,N>*.    
+     *  when you have an array<T,N>*.
      */
     ///@{
     T&       at( size_t pos )      { assert( pos < N); return data[pos]; }
     const T& at( size_t pos )const { assert( pos < N); return data[pos]; }
     ///@}
-    
+
+    T&       operator[]( size_t pos )      { assert( pos < N); return data[pos]; }
+    const T& operator[]( size_t pos )const { assert( pos < N); return data[pos]; }
+
     T*           begin()       {  return &data[0]; }
     const T*     begin()const  {  return &data[0]; }
     const T*     end()const    {  return &data[N]; }
 
     size_t       size()const { return N; }
-    
+
     T data[N];
   };
 

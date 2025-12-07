@@ -5,7 +5,32 @@
 
 
 namespace fc {
-  
+
+namespace {
+  // Helper to convert fc::ip::address to boost::asio::ip::address
+  boost::asio::ip::address to_asio_address(const fc::ip::address& addr) {
+    if (addr.is_ipv4()) {
+      return boost::asio::ip::address_v4(addr.get_ipv4().addr);
+    } else {
+      boost::asio::ip::address_v6::bytes_type bytes;
+      const auto& v6 = addr.get_ipv6();
+      std::copy(v6.addr.begin(), v6.addr.end(), bytes.begin());
+      return boost::asio::ip::address_v6(bytes);
+    }
+  }
+
+  fc::ip::address from_asio_address(const boost::asio::ip::address& addr) {
+    if (addr.is_v4()) {
+      return fc::ip::address(ip::ipv4_address(addr.to_v4().to_ulong()));
+    } else {
+      auto bytes = addr.to_v6().to_bytes();
+      std::array<uint8_t, 16> arr;
+      std::copy(bytes.begin(), bytes.end(), arr.begin());
+      return fc::ip::address(ip::ipv6_address(arr));
+    }
+  }
+}
+
   class udp_socket::impl : public fc::retainable {
     public:
       impl():_sock( fc::asio::default_io_service() ){}
@@ -17,10 +42,10 @@ namespace fc {
   };
 
   boost::asio::ip::udp::endpoint to_asio_ep( const fc::ip::endpoint& e ) {
-    return boost::asio::ip::udp::endpoint(boost::asio::ip::address_v4(e.get_address()), e.port() );
+    return boost::asio::ip::udp::endpoint(to_asio_address(e.get_address()), e.port() );
   }
   fc::ip::endpoint to_fc_ep( const boost::asio::ip::udp::endpoint& e ) {
-    return fc::ip::endpoint( e.address().to_v4().to_ulong(), e.port() );
+    return fc::ip::endpoint( from_asio_address(e.address()), e.port() );
   }
 
   udp_socket::udp_socket()
@@ -167,7 +192,7 @@ namespace fc {
   }
   void   udp_socket::join_multicast_group( const fc::ip::address& a )
   {
-    my->_sock.set_option( boost::asio::ip::multicast::join_group( boost::asio::ip::address_v4(a) ) );
+    my->_sock.set_option( boost::asio::ip::multicast::join_group( to_asio_address(a) ) );
   }
 
 }

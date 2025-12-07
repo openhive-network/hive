@@ -16,6 +16,39 @@
 
 namespace fc {
 
+namespace {
+  // Helper to convert fc::ip::address to boost::asio::ip::address
+  boost::asio::ip::address to_asio_address(const fc::ip::address& addr) {
+    if (addr.is_ipv4()) {
+      return boost::asio::ip::address_v4(addr.get_ipv4().addr);
+    } else {
+      boost::asio::ip::address_v6::bytes_type bytes;
+      const auto& v6 = addr.get_ipv6();
+      std::copy(v6.addr.begin(), v6.addr.end(), bytes.begin());
+      return boost::asio::ip::address_v6(bytes);
+    }
+  }
+
+  fc::ip::address from_asio_address(const boost::asio::ip::address& addr) {
+    if (addr.is_v4()) {
+      return fc::ip::address(ip::ipv4_address(addr.to_v4().to_ulong()));
+    } else {
+      auto bytes = addr.to_v6().to_bytes();
+      std::array<uint8_t, 16> arr;
+      std::copy(bytes.begin(), bytes.end(), arr.begin());
+      return fc::ip::address(ip::ipv6_address(arr));
+    }
+  }
+
+  boost::asio::ip::tcp::endpoint to_asio_endpoint(const fc::ip::endpoint& ep) {
+    return boost::asio::ip::tcp::endpoint(to_asio_address(ep.get_address()), ep.port());
+  }
+
+  fc::ip::endpoint from_asio_endpoint(const boost::asio::ip::tcp::endpoint& ep) {
+    return fc::ip::endpoint(from_asio_address(ep.address()), ep.port());
+  }
+}
+
   class tcp_ssl_socket::impl : public tcp_ssl_socket_io_hooks {
     public:
       impl() :
@@ -152,7 +185,7 @@ namespace fc {
     try
     {
       auto rep = my->_sock.next_layer().remote_endpoint();
-      return  fc::ip::endpoint(rep.address().to_v4().to_ulong(), rep.port() );
+      return from_asio_endpoint(rep);
     }
     FC_RETHROW_EXCEPTIONS( warn, "error getting socket's remote endpoint" );
   }
@@ -163,7 +196,7 @@ namespace fc {
     try
     {
       auto boost_local_endpoint = my->_sock.next_layer().local_endpoint();
-      return fc::ip::endpoint(boost_local_endpoint.address().to_v4().to_ulong(), boost_local_endpoint.port() );
+      return from_asio_endpoint(boost_local_endpoint);
     }
     FC_RETHROW_EXCEPTIONS( warn, "error getting socket's local endpoint" );
   }
@@ -178,7 +211,7 @@ namespace fc {
   }
 
   void tcp_ssl_socket::connect_to( const fc::ip::endpoint& remote_endpoint, const std::string& hostname ) {
-    fc::asio::tcp::connect(my->_sock.next_layer(), fc::asio::tcp::endpoint( boost::asio::ip::address_v4(remote_endpoint.get_address()), remote_endpoint.port() ) );
+    fc::asio::tcp::connect(my->_sock.next_layer(), to_asio_endpoint(remote_endpoint));
     my->_sock.set_verify_callback(boost::asio::ssl::rfc2818_verification(hostname));
     my->_sock.set_verify_depth(10);
 		if (!SSL_set_tlsext_host_name(my->_sock.native_handle(), hostname.c_str()))
@@ -193,8 +226,7 @@ namespace fc {
   {
     try
     {
-      my->_sock.next_layer().bind(boost::asio::ip::tcp::endpoint(boost::asio::ip::address_v4(local_endpoint.get_address()),
-                                                                                local_endpoint.port()));
+      my->_sock.next_layer().bind(to_asio_endpoint(local_endpoint));
     }
     catch (const std::exception& except)
     {

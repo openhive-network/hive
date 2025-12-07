@@ -14,6 +14,42 @@
 
 namespace fc {
 
+  namespace {
+    // Helper to convert fc::ip::address to boost::asio::ip::address
+    boost::asio::ip::address to_asio_address(const fc::ip::address& addr) {
+      if (addr.is_ipv4()) {
+        return boost::asio::ip::address_v4(addr.get_ipv4().addr);
+      } else {
+        boost::asio::ip::address_v6::bytes_type bytes;
+        const auto& v6 = addr.get_ipv6();
+        std::copy(v6.addr.begin(), v6.addr.end(), bytes.begin());
+        return boost::asio::ip::address_v6(bytes);
+      }
+    }
+
+    // Helper to convert boost::asio::ip::address to fc::ip::address
+    fc::ip::address from_asio_address(const boost::asio::ip::address& addr) {
+      if (addr.is_v4()) {
+        return fc::ip::address(ip::ipv4_address(addr.to_v4().to_ulong()));
+      } else {
+        auto bytes = addr.to_v6().to_bytes();
+        std::array<uint8_t, 16> arr;
+        std::copy(bytes.begin(), bytes.end(), arr.begin());
+        return fc::ip::address(ip::ipv6_address(arr));
+      }
+    }
+
+    // Helper to convert fc::ip::endpoint to boost::asio::ip::tcp::endpoint
+    boost::asio::ip::tcp::endpoint to_asio_endpoint(const fc::ip::endpoint& ep) {
+      return boost::asio::ip::tcp::endpoint(to_asio_address(ep.get_address()), ep.port());
+    }
+
+    // Helper to convert boost::asio::ip::tcp::endpoint to fc::ip::endpoint
+    fc::ip::endpoint from_asio_endpoint(const boost::asio::ip::tcp::endpoint& ep) {
+      return fc::ip::endpoint(from_asio_address(ep.address()), ep.port());
+    }
+  } // anonymous namespace
+
   class tcp_socket::impl : public tcp_socket_io_hooks {
     public:
       impl() :
@@ -77,7 +113,8 @@ namespace fc {
 
   void tcp_socket::open()
   {
-    my->_sock.open(boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), 0).protocol());
+    // Default to IPv4 for backward compatibility
+    my->_sock.open(boost::asio::ip::tcp::v4());
   }
 
   bool tcp_socket::is_open()const {
@@ -118,7 +155,7 @@ namespace fc {
     try
     {
       auto rep = my->_sock.remote_endpoint();
-      return  fc::ip::endpoint(rep.address().to_v4().to_ulong(), rep.port() );
+      return from_asio_endpoint(rep);
     }
     FC_RETHROW_EXCEPTIONS( warn, "error getting socket's remote endpoint" );
   }
@@ -129,7 +166,7 @@ namespace fc {
     try
     {
       auto boost_local_endpoint = my->_sock.local_endpoint();
-      return fc::ip::endpoint(boost_local_endpoint.address().to_v4().to_ulong(), boost_local_endpoint.port() );
+      return from_asio_endpoint(boost_local_endpoint);
     }
     FC_RETHROW_EXCEPTIONS( warn, "error getting socket's local endpoint" );
   }
@@ -144,15 +181,28 @@ namespace fc {
   }
 
   void tcp_socket::connect_to( const fc::ip::endpoint& remote_endpoint ) {
-    fc::asio::tcp::connect(my->_sock, fc::asio::tcp::endpoint( boost::asio::ip::address_v4(remote_endpoint.get_address()), remote_endpoint.port() ) );
+    // Open socket with appropriate protocol based on address family
+    if (remote_endpoint.get_address().is_ipv6()) {
+      my->_sock.open(boost::asio::ip::tcp::v6());
+    } else {
+      my->_sock.open(boost::asio::ip::tcp::v4());
+    }
+    fc::asio::tcp::connect(my->_sock, to_asio_endpoint(remote_endpoint));
   }
 
   void tcp_socket::bind(const fc::ip::endpoint& local_endpoint)
   {
     try
     {
-      my->_sock.bind(boost::asio::ip::tcp::endpoint(boost::asio::ip::address_v4(local_endpoint.get_address()),
-                                                                                local_endpoint.port()));
+      // Open socket with appropriate protocol if not already open
+      if (!my->_sock.is_open()) {
+        if (local_endpoint.get_address().is_ipv6()) {
+          my->_sock.open(boost::asio::ip::tcp::v6());
+        } else {
+          my->_sock.open(boost::asio::ip::tcp::v4());
+        }
+      }
+      my->_sock.bind(to_asio_endpoint(local_endpoint));
     }
     catch (const std::exception& except)
     {
@@ -285,7 +335,18 @@ namespace fc {
       impl()
       :_accept( fc::asio::default_io_service() )
       {
-        _accept.open(boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), 0).protocol());
+        // Default to IPv4 for backward compatibility
+        _accept.open(boost::asio::ip::tcp::v4());
+      }
+
+      impl(bool use_ipv6)
+      :_accept( fc::asio::default_io_service() )
+      {
+        if (use_ipv6) {
+          _accept.open(boost::asio::ip::tcp::v6());
+        } else {
+          _accept.open(boost::asio::ip::tcp::v4());
+        }
       }
 
       ~impl(){
@@ -300,6 +361,7 @@ namespace fc {
 
       boost::asio::ip::tcp::acceptor _accept;
   };
+
   void tcp_server::close() {
     if( my && my->_accept.is_open() )
       my->_accept.close();
@@ -409,13 +471,25 @@ namespace fc {
     }
     FC_RETHROW_EXCEPTIONS(warn, "error listening on socket");
   }
+
   void tcp_server::listen( const fc::ip::endpoint& ep )
   {
-    if( !my )
-      my = std::make_shared< impl >();
     try
     {
-      my->_accept.bind(boost::asio::ip::tcp::endpoint(boost::asio::ip::address_v4::from_string((string)ep.get_address()), ep.port()));
+      // Create impl with appropriate protocol based on address family
+      bool use_ipv6 = ep.get_address().is_ipv6();
+      if (!my) {
+        my = std::make_shared<impl>(use_ipv6);
+      } else {
+        // Close and reopen with correct protocol if needed
+        my->_accept.close();
+        if (use_ipv6) {
+          my->_accept.open(boost::asio::ip::tcp::v6());
+        } else {
+          my->_accept.open(boost::asio::ip::tcp::v4());
+        }
+      }
+      my->_accept.bind(to_asio_endpoint(ep));
       my->_accept.listen();
     }
     FC_RETHROW_EXCEPTIONS(warn, "error listening on socket");
@@ -424,8 +498,7 @@ namespace fc {
   fc::ip::endpoint tcp_server::get_local_endpoint() const
   {
     FC_ASSERT( my != nullptr );
-    return fc::ip::endpoint(my->_accept.local_endpoint().address().to_v4().to_ulong(),
-                            my->_accept.local_endpoint().port() );
+    return from_asio_endpoint(my->_accept.local_endpoint());
   }
 
   uint16_t tcp_server::get_port()const
