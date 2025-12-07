@@ -13,6 +13,7 @@ IMG=""
 DATA_CACHE=""
 CONFIG_INI_SOURCE=""
 BLOCK_LOG_SOURCE_DIR=""
+SHARED_FILE_SIZE=""
 
 print_help () {
     echo "Usage: $0 <image> [OPTION[=VALUE]]..."
@@ -22,6 +23,7 @@ print_help () {
     echo "  --data-cache=PATH             Allows to specify a directory where data and shared memory file should be stored."
     echo "  --block-log-source-dir=PATH   Allows to specify a directory of block_log used to perform initial replay."
     echo "  --config-ini-source=PATH      Allows to specify a path of config.ini configuration file used for building data."
+    echo "  --shared-file-size=SIZE       Allows to specify the shared memory file size (e.g., 1G, 8G)."
     echo "  --help                        Display this help screen and exit"
     echo
 }
@@ -39,6 +41,10 @@ while [ $# -gt 0 ]; do
     --config-ini-source=*)
         CONFIG_INI_SOURCE="${1#*=}"
         echo "using CONFIG_INI_SOURCE $CONFIG_INI_SOURCE"
+        ;;
+    --shared-file-size=*)
+        SHARED_FILE_SIZE="${1#*=}"
+        echo "using SHARED_FILE_SIZE $SHARED_FILE_SIZE"
         ;;
     --help)
         print_help
@@ -90,13 +96,19 @@ echo "Preparing datadir and shm_dir in location ${DATA_CACHE}"
 
 echo "Attempting to perform replay basing on image ${IMG}..."
 
+# Build hived arguments
+HIVED_EXTRA_ARGS="--replay-blockchain --stop-at-block=5000000 --exit-before-sync"
+if [ -n "$SHARED_FILE_SIZE" ]; then
+    HIVED_EXTRA_ARGS="$HIVED_EXTRA_ARGS --shared-file-size=$SHARED_FILE_SIZE"
+fi
+
 "$SCRIPTSDIR/run_hived_img.sh" --name=hived_instance \
     --detach \
     --docker-option=--volume="$DATA_CACHE":"$DATA_CACHE" \
     --data-dir="$DATA_CACHE/datadir" \
     --shared-file-dir="$DATA_CACHE/shm_dir" \
     --docker-option=--env=HIVED_UID="$(id -u)" \
-    "$IMG" --replay-blockchain --stop-at-block=5000000 --exit-before-sync
+    "$IMG" $HIVED_EXTRA_ARGS
 
 echo "Logs from container hived_instance:"
 docker logs -f hived_instance &
