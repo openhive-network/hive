@@ -13,12 +13,13 @@ Applied proven flaky test fixes from previous branches (!1708 and !1704) to addr
 
 ### Commit 1: Apply proven flaky test fixes from previous branches
 
-**1. Remove mainnet_5m from test_get_trade_history (from !1708)**
+**1. Fix test_get_trade_history for mainnet_5m compatibility**
 - Files modified:
   - `tests/python/api_tests/message_format_tests/condenser_api_tests/test_get_trade_history.py`
   - `tests/python/api_tests/message_format_tests/market_history_api_tests/test_get_trade_history.py`
-- Change: Removed "mainnet_5m" from @run_for decorators
-- Reason: The 5M mainnet snapshot doesn't contain trade data in the queried time window
+- Change: Restored "mainnet_5m" to @run_for decorators and made the non-empty assertion conditional
+- The test now skips the `len(history) != 0` assertion only for mainnet_5m (which may lack trade data in the queried time window), while still verifying the API endpoint works correctly
+- testnet and live_mainnet continue to assert non-empty results as before
 
 **2. RC mana assertion tolerance fix (from !1704)**
 - File: `tests/python/hive-local-tools/hive_local_tools/functional/python/operation/__init__.py`
@@ -110,7 +111,3 @@ The fixes from !1708 (test_get_trade_history) and !1704 (RC mana, msgspec, node 
 ✅ **TASK COMPLETE** - Pipeline passing, all targeted flaky tests fixed.
 
 **Merge Request:** https://gitlab.syncad.com/hive/hive/-/merge_requests/1709
-
----
-
-Generated with Claude Code
