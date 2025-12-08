@@ -19,9 +19,10 @@ namespace fc {
       udp_socket( const udp_socket& s );
       ~udp_socket();
 
-      void   open();
+      void   open();  // Opens with IPv4 for backward compatibility
+      void   open_for_endpoint( const fc::ip::endpoint& );  // Opens with appropriate protocol for the endpoint
       void   set_receive_buffer_size( size_t s );
-      void   bind( const fc::ip::endpoint& );
+      void   bind( const fc::ip::endpoint& );  // Opens with appropriate protocol if not already open
       size_t receive_from( char* b, size_t l, fc::ip::endpoint& from );
       size_t receive_from( const std::shared_ptr<char>& b, size_t l, fc::ip::endpoint& from );
       size_t send_to( const char* b, size_t l, const fc::ip::endpoint& to ); 

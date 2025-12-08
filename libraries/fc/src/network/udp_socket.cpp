@@ -109,13 +109,33 @@ namespace {
   }
 
   void udp_socket::open() {
+    // Default to IPv4 for backward compatibility
     my->_sock.open( boost::asio::ip::udp::v4() );
     my->_sock.non_blocking(true);
   }
+
+  void udp_socket::open_for_endpoint(const fc::ip::endpoint& ep) {
+    if (ep.get_address().is_ipv6()) {
+      my->_sock.open( boost::asio::ip::udp::v6() );
+    } else {
+      my->_sock.open( boost::asio::ip::udp::v4() );
+    }
+    my->_sock.non_blocking(true);
+  }
+
   void udp_socket::set_receive_buffer_size( size_t s ) {
     my->_sock.set_option(boost::asio::socket_base::receive_buffer_size(s) );
   }
   void udp_socket::bind( const fc::ip::endpoint& e ) {
+    // Open socket with appropriate protocol if not already open
+    if (!my->_sock.is_open()) {
+      if (e.get_address().is_ipv6()) {
+        my->_sock.open( boost::asio::ip::udp::v6() );
+      } else {
+        my->_sock.open( boost::asio::ip::udp::v4() );
+      }
+      my->_sock.non_blocking(true);
+    }
     my->_sock.bind( to_asio_ep(e) );
   }
 

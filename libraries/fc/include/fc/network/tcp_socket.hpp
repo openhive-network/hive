@@ -99,7 +99,8 @@ namespace fc {
       virtual void     close();
       /// @}
 
-      void open();
+      void open();  // Opens with IPv4 for backward compatibility
+      void open_for_endpoint(const fc::ip::endpoint& ep);  // Opens with appropriate protocol for the endpoint
       bool   is_open()const;
 
     private:

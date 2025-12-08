@@ -149,7 +149,17 @@ namespace {
 
   void tcp_ssl_socket::open()
   {
-    my->_sock.next_layer().open(boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), 0).protocol());
+    // Default to IPv4 for backward compatibility
+    my->_sock.next_layer().open(boost::asio::ip::tcp::v4());
+  }
+
+  void tcp_ssl_socket::open_for_endpoint(const fc::ip::endpoint& ep)
+  {
+    if (ep.get_address().is_ipv6()) {
+      my->_sock.next_layer().open(boost::asio::ip::tcp::v6());
+    } else {
+      my->_sock.next_layer().open(boost::asio::ip::tcp::v4());
+    }
   }
 
   bool tcp_ssl_socket::is_open()const {
@@ -211,6 +221,12 @@ namespace {
   }
 
   void tcp_ssl_socket::connect_to( const fc::ip::endpoint& remote_endpoint, const std::string& hostname ) {
+    // Open socket with appropriate protocol based on address family
+    if (remote_endpoint.get_address().is_ipv6()) {
+      my->_sock.next_layer().open(boost::asio::ip::tcp::v6());
+    } else {
+      my->_sock.next_layer().open(boost::asio::ip::tcp::v4());
+    }
     fc::asio::tcp::connect(my->_sock.next_layer(), to_asio_endpoint(remote_endpoint));
     my->_sock.set_verify_callback(boost::asio::ssl::rfc2818_verification(hostname));
     my->_sock.set_verify_depth(10);
@@ -226,6 +242,14 @@ namespace {
   {
     try
     {
+      // Open socket with appropriate protocol if not already open
+      if (!my->_sock.next_layer().is_open()) {
+        if (local_endpoint.get_address().is_ipv6()) {
+          my->_sock.next_layer().open(boost::asio::ip::tcp::v6());
+        } else {
+          my->_sock.next_layer().open(boost::asio::ip::tcp::v4());
+        }
+      }
       my->_sock.next_layer().bind(to_asio_endpoint(local_endpoint));
     }
     catch (const std::exception& except)
