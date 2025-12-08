@@ -11,14 +11,16 @@ then
     then
         echo "Creating copy of ${DATA_SOURCE}/datadir inside ${DATADIR}"
         sudo -Enu hived mkdir -p "${DATADIR}"
-        flock "${DATA_SOURCE}/datadir" sudo -En cp -pr "${DATA_SOURCE}/datadir"/*  "${DATADIR}"
+        # Use cp without -p to avoid "Operation not supported" errors when copying from NFS
+        flock "${DATA_SOURCE}/datadir" sudo -En cp -r --no-preserve=mode,ownership "${DATA_SOURCE}/datadir"/*  "${DATADIR}"
         sudo chmod -R a+w "${DATA_SOURCE}/datadir/blockchain"
         ls -al "${DATA_SOURCE}/datadir/blockchain"
         if [[ -e "${DATA_SOURCE}/shm_dir" && "$(realpath "${DATA_SOURCE}/shm_dir")" != "$(realpath "${SHM_DIR}")" ]]
         then
             echo "Creating copy of ${DATA_SOURCE}/shm_dir inside ${SHM_DIR}"
             sudo -Enu hived mkdir -p "${SHM_DIR}"
-            flock "${DATA_SOURCE}/datadir" sudo -En cp -pr "${DATA_SOURCE}/shm_dir"/* "${SHM_DIR}"
+            # Use cp without -p to avoid "Operation not supported" errors when copying from NFS
+            flock "${DATA_SOURCE}/datadir" sudo -En cp -r --no-preserve=mode,ownership "${DATA_SOURCE}/shm_dir"/* "${SHM_DIR}"
             sudo chmod -R a+w "${SHM_DIR}"
             ls -al "${SHM_DIR}"
         else
