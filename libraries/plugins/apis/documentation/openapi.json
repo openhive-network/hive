@@ -7,7 +7,7 @@
     },
     "servers": [
         {
-            "url": "http://proxy_url:7777"
+            "url": "/"
         }
     ],
     "tags": [
@@ -14611,7 +14611,7 @@
                         "type": "integer"
                     },
                     "json_metadata": {
-                        "type": "object"
+                        "type": "string"
                     },
                     "last_payout": {
                         "type": "string",
