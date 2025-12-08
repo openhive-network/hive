@@ -23,7 +23,8 @@
  */
 #pragma once
 
-#define GRAPHENE_NET_PROTOCOL_VERSION                              107
+#define GRAPHENE_NET_PROTOCOL_VERSION                              108
+#define GRAPHENE_NET_PROTOCOL_IPV6_VERSION                         108 // IPv6 support added in 108
 #define GRAPHENE_NET_PROTOCOL_COMPRESSED_BLOCKS_VERSION            107 // support for compressed blocks added in 107
 #define GRAPHENE_NET_PROTOCOL_ADVERTISE_BLOCKS_BY_BLOCK_ID_VERSION 107 // share blocks by block_id instead of by block_message hash added in 107
 #define GRAPHENE_NET_PROTOCOL_FIREWALL_CHECK_VERSION               106 // support for the firewall check was added in 106

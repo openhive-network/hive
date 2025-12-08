@@ -1946,19 +1946,20 @@ namespace graphene { namespace net {
       switch (received_message.msg_type)
       {
       case core_message_type_enum::hello_message_type:
-        on_hello_message(originating_peer, received_message.as<hello_message>());
+        // hello_message contains protocol version before the address, so we can auto-detect the format
+        on_hello_message(originating_peer, unpack_hello_message(received_message.data));
         break;
       case core_message_type_enum::connection_accepted_message_type:
         on_connection_accepted_message(originating_peer, received_message.as<connection_accepted_message>());
         break;
       case core_message_type_enum::connection_rejected_message_type:
-        on_connection_rejected_message(originating_peer, received_message.as<connection_rejected_message>());
+        on_connection_rejected_message(originating_peer, unpack_connection_rejected_message(received_message.data, originating_peer->supports_ipv6()));
         break;
       case core_message_type_enum::address_request_message_type:
         on_address_request_message(originating_peer, received_message.as<address_request_message>());
         break;
       case core_message_type_enum::address_message_type:
-        on_address_message(originating_peer, received_message.as<address_message>());
+        on_address_message(originating_peer, unpack_address_message(received_message.data, originating_peer->supports_ipv6()));
         break;
       case core_message_type_enum::fetch_blockchain_item_ids_message_type:
         on_fetch_blockchain_item_ids_message(originating_peer, received_message.as<fetch_blockchain_item_ids_message>());
@@ -1992,10 +1993,10 @@ namespace graphene { namespace net {
         on_current_time_reply_message(originating_peer, received_message.as<current_time_reply_message>());
         break;
       case core_message_type_enum::check_firewall_message_type:
-        on_check_firewall_message(originating_peer, received_message.as<check_firewall_message>());
+        on_check_firewall_message(originating_peer, unpack_check_firewall_message(received_message.data, originating_peer->supports_ipv6()));
         break;
       case core_message_type_enum::check_firewall_reply_message_type:
-        on_check_firewall_reply_message(originating_peer, received_message.as<check_firewall_reply_message>());
+        on_check_firewall_reply_message(originating_peer, unpack_check_firewall_reply_message(received_message.data, originating_peer->supports_ipv6()));
         break;
       case core_message_type_enum::get_current_connections_request_message_type:
         on_get_current_connections_request_message(originating_peer, received_message.as<get_current_connections_request_message>());
@@ -2135,7 +2136,7 @@ namespace graphene { namespace net {
                                                           rejection_message);
 
           originating_peer->their_state = peer_connection::their_connection_state::connection_rejected;
-          originating_peer->send_message( message(connection_rejected ) );
+          originating_peer->send_message(create_connection_rejected_message_for_peer(connection_rejected, originating_peer->supports_ipv6()));
           // for this type of message, we're immediately disconnecting this peer
           fc::exception detailed_error(FC_LOG_MESSAGE(warn, "Invalid signature in hello message"));
           disconnect_from_peer(originating_peer, "Invalid signature in hello message", true, detailed_error);
@@ -2164,7 +2165,7 @@ namespace graphene { namespace net {
                                                               rejection_message.str() );
 
               originating_peer->their_state = peer_connection::their_connection_state::connection_rejected;
-              originating_peer->send_message(message(connection_rejected));
+              originating_peer->send_message(create_connection_rejected_message_for_peer(connection_rejected, originating_peer->supports_ipv6()));
               // for this type of message, we're immediately disconnecting this peer, instead of trying to
               // allowing her to ask us for peers (any of our peers will be on the same chain as us, so there's no
               // benefit of sharing them)
@@ -2188,7 +2189,7 @@ namespace graphene { namespace net {
                                                             rejection_message.str() );
 
             originating_peer->their_state = peer_connection::their_connection_state::connection_rejected;
-            originating_peer->send_message( message( connection_rejected ) );
+            originating_peer->send_message(create_connection_rejected_message_for_peer(connection_rejected, originating_peer->supports_ipv6()));
             // for this type of message, we're immediately disconnecting this peer, instead of trying to
             // allowing her to ask us for peers (any of our peers will be on the same chain as us, so there's no
             // benefit of sharing them)
@@ -2211,7 +2212,7 @@ namespace graphene { namespace net {
                                                               rejection_reason_code::already_connected,
                                                               "I'm already connected to you");
           originating_peer->their_state = peer_connection::their_connection_state::connection_rejected;
-          originating_peer->send_message(message(connection_rejected));
+          originating_peer->send_message(create_connection_rejected_message_for_peer(connection_rejected, originating_peer->supports_ipv6()));
           wlog("Received a hello_message from peer ${peer} that I'm already connected to (with id ${id}), rejection",
                ("peer", originating_peer->get_remote_endpoint())
                ("id", originating_peer->node_id));
@@ -2225,7 +2226,7 @@ namespace graphene { namespace net {
                                                           rejection_reason_code::blocked,
                                                           "you are not in my allowed_peers list");
           originating_peer->their_state = peer_connection::their_connection_state::connection_rejected;
-          originating_peer->send_message( message(connection_rejected ) );
+          originating_peer->send_message(create_connection_rejected_message_for_peer(connection_rejected, originating_peer->supports_ipv6()));
           wlog( "Received a hello_message from peer ${peer} who isn't in my allowed_peers list, rejection", ("peer", originating_peer->get_remote_endpoint() ) );
         }
 #endif // ENABLE_P2P_DEBUGGING_API
@@ -2273,7 +2274,7 @@ namespace graphene { namespace net {
                                                             rejection_reason_code::not_accepting_connections,
                                                             "not accepting any more incoming connections");
             originating_peer->their_state = peer_connection::their_connection_state::connection_rejected;
-            originating_peer->send_message(message(connection_rejected));
+            originating_peer->send_message(create_connection_rejected_message_for_peer(connection_rejected, originating_peer->supports_ipv6()));
             wlog("Received a hello_message from peer ${peer}, but I'm not accepting any more connections, rejection",
                  ("peer", originating_peer->get_remote_endpoint()));
           }
@@ -2321,7 +2322,7 @@ namespace graphene { namespace net {
              ("peer", originating_peer->get_remote_endpoint()));
         originating_peer->firewall_check_state = new firewall_check_state_data;
 
-        originating_peer->send_message(check_firewall_message());
+        originating_peer->send_message(create_check_firewall_message_for_peer(check_firewall_message(), originating_peer->supports_ipv6()));
         _last_firewall_check_message_sent = now;
       }
     }
@@ -2388,7 +2389,8 @@ namespace graphene { namespace net {
                                                     active_peer->is_firewalled));
         }
       }
-      originating_peer->send_message(reply);
+      // Use version-aware serialization - IPv6 addresses will be filtered for v107 peers
+      originating_peer->send_message(create_address_message_for_peer(reply, originating_peer->supports_ipv6()));
     }
 
     void node_impl::on_address_message(peer_connection* originating_peer, const address_message& address_message_received)
@@ -4064,7 +4066,7 @@ namespace graphene { namespace net {
           check_firewall_message check_request;
           check_request.endpoint_to_check = firewall_check_state->endpoint_to_test;
           check_request.node_id = firewall_check_state->expected_node_id;
-          peer->send_message(check_request);
+          peer->send_message(create_check_firewall_message_for_peer(check_request, peer->supports_ipv6()));
           return;
         }
       }
@@ -4078,7 +4080,7 @@ namespace graphene { namespace net {
         reply.node_id = firewall_check_state->expected_node_id;
         reply.endpoint_checked = firewall_check_state->endpoint_to_test;
         reply.result = firewall_check_result::unable_to_check;
-        originating_peer->send_message(reply);
+        originating_peer->send_message(create_check_firewall_reply_message_for_peer(reply, originating_peer->supports_ipv6()));
       }
       delete firewall_check_state;
     }
@@ -4176,7 +4178,7 @@ namespace graphene { namespace net {
                 }
               }
             }
-            original_peer->send_message(check_firewall_reply_message_received);
+            original_peer->send_message(create_check_firewall_reply_message_for_peer(check_firewall_reply_message_received, original_peer->supports_ipv6()));
           }
           delete originating_peer->firewall_check_state;
           originating_peer->firewall_check_state = nullptr;
@@ -4723,7 +4725,9 @@ namespace graphene { namespace net {
                           signature,
                           generate_hello_user_data());
 
-      peer->send_message(message(hello));
+      // When sending hello, we may not know the peer's protocol version yet.
+      // Use the version-aware serialization which defaults to legacy format if unknown.
+      peer->send_message(create_hello_message_for_peer(hello, peer->supports_ipv6()));
     }
 
     void node_impl::connect_to_task(const peer_connection_ptr& new_peer,

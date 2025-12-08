@@ -310,6 +310,67 @@ namespace fc {
       v = ip::endpoint(a, p);
     }
 
+    //
+    // Legacy format serialization for backward compatibility with protocol v107 and earlier.
+    // Legacy format: address is just uint32_t (4 bytes), endpoint is uint32_t + uint16_t (6 bytes).
+    // These functions are used by the P2P layer when communicating with older nodes.
+    //
+
+    /**
+     * @brief Pack an IP address in legacy format (IPv4 only, no family byte).
+     * @throws fc::exception if the address is IPv6
+     */
+    template<typename Stream>
+    inline void pack_legacy(Stream& s, const ip::address& v)
+    {
+      FC_ASSERT(v.is_ipv4(), "Cannot pack IPv6 address in legacy format");
+      fc::raw::pack(s, v.get_ipv4().addr);
+    }
+
+    /**
+     * @brief Unpack an IP address from legacy format (IPv4 only, no family byte).
+     */
+    template<typename Stream>
+    inline void unpack_legacy(Stream& s, ip::address& v, uint32_t depth)
+    {
+      depth++;
+      uint32_t ip;
+      fc::raw::unpack(s, ip, depth);
+      v = ip::address(ip);
+    }
+
+    /**
+     * @brief Pack an endpoint in legacy format (IPv4 only).
+     * @throws fc::exception if the address is IPv6
+     *
+     * Legacy format: uint32_t address + uint16_t port (network packs port as 16-bit)
+     * Note: The original format actually packed a uint32_t port followed by uint32_t address,
+     * but only 16 bits of port were meaningful.
+     */
+    template<typename Stream>
+    inline void pack_legacy(Stream& s, const ip::endpoint& v)
+    {
+      FC_ASSERT(v.get_address().is_ipv4(), "Cannot pack IPv6 endpoint in legacy format");
+      // Original format was: uint32_t _port, uint32_t _ip (address)
+      // But looking at the reflect and old pack, it was: pack(port as uint32), pack(address as uint32)
+      fc::raw::pack(s, static_cast<uint32_t>(v.port()));
+      fc::raw::pack(s, v.get_address().get_ipv4().addr);
+    }
+
+    /**
+     * @brief Unpack an endpoint from legacy format (IPv4 only).
+     */
+    template<typename Stream>
+    inline void unpack_legacy(Stream& s, ip::endpoint& v, uint32_t depth)
+    {
+      depth++;
+      uint32_t port;
+      uint32_t ip;
+      fc::raw::unpack(s, port, depth);
+      fc::raw::unpack(s, ip, depth);
+      v = ip::endpoint(ip::address(ip), static_cast<uint16_t>(port));
+    }
+
   } // namespace raw
 
 } // namespace fc

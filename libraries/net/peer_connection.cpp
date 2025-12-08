@@ -546,6 +546,11 @@ namespace graphene { namespace net
       return core_protocol_version >= GRAPHENE_NET_PROTOCOL_ADVERTISE_BLOCKS_BY_BLOCK_ID_VERSION;
     }
 
+    bool peer_connection::supports_ipv6() const
+    {
+      return core_protocol_version >= GRAPHENE_NET_PROTOCOL_IPV6_VERSION;
+    }
+
     bool peer_connection::requires_alternate_compression_for_block(const std::shared_ptr<full_block_type>& full_block) const
     {
       assert(supports_compressed_blocks());

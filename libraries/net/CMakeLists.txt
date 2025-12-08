@@ -9,6 +9,12 @@ set(SOURCES node.cpp
 
 add_library( graphene_net ${SOURCES} ${HEADERS} )
 
+# Tests
+add_executable(message_serialization_test tests/message_serialization_tests.cpp)
+target_link_libraries(message_serialization_test graphene_net hive_chain fc ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY})
+target_include_directories(message_serialization_test PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include")
+add_test(NAME message_serialization_test COMMAND message_serialization_test)
+
 target_link_libraries( graphene_net
   PUBLIC hive_protocol statsd_plugin fc )
 target_include_directories( graphene_net

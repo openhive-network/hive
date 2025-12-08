@@ -327,6 +327,7 @@ namespace graphene { namespace net
 
       bool supports_compressed_blocks() const;
       bool advertise_blocks_by_block_id() const;
+      bool supports_ipv6() const;
       bool requires_alternate_compression_for_block(const std::shared_ptr<full_block_type>& full_block) const;
     private:
       void send_queued_messages_task();

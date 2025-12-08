@@ -25,9 +25,321 @@
 #include <graphene/net/message.hpp>
 #include <hive/chain/full_block.hpp>
 #include <hive/chain/blockchain_worker_thread_pool.hpp>
-
+#include <fc/io/raw.hpp>
 
 namespace graphene { namespace net {
+
+  //
+  // Legacy serialization helpers for backward compatibility with protocol v107.
+  // These pack messages using the old IP address format (no family byte).
+  //
+
+  namespace {
+    // Pack hello_message in legacy format
+    void pack_hello_message_legacy(std::vector<char>& buffer, const hello_message& msg)
+    {
+      fc::datastream<size_t> ps;
+      fc::raw::pack(ps, msg.user_agent);
+      fc::raw::pack(ps, msg.core_protocol_version);
+      fc::raw::pack_legacy(ps, msg.inbound_address);
+      fc::raw::pack(ps, msg.inbound_port);
+      fc::raw::pack(ps, msg.outbound_port);
+      fc::raw::pack(ps, msg.node_public_key);
+      fc::raw::pack(ps, msg.signed_shared_secret);
+      fc::raw::pack(ps, msg.user_data);
+      buffer.resize(ps.tellp());
+
+      fc::datastream<char*> ds(buffer.data(), buffer.size());
+      fc::raw::pack(ds, msg.user_agent);
+      fc::raw::pack(ds, msg.core_protocol_version);
+      fc::raw::pack_legacy(ds, msg.inbound_address);
+      fc::raw::pack(ds, msg.inbound_port);
+      fc::raw::pack(ds, msg.outbound_port);
+      fc::raw::pack(ds, msg.node_public_key);
+      fc::raw::pack(ds, msg.signed_shared_secret);
+      fc::raw::pack(ds, msg.user_data);
+    }
+
+    // Pack address_info in legacy format
+    template<typename Stream>
+    void pack_address_info_legacy(Stream& s, const address_info& info)
+    {
+      fc::raw::pack_legacy(s, info.remote_endpoint);
+      fc::raw::pack(s, info.last_seen_time);
+      fc::raw::pack(s, info.latency);
+      fc::raw::pack(s, info.node_id);
+      fc::raw::pack(s, info.direction);
+      fc::raw::pack(s, info.firewalled);
+    }
+
+    // Pack address_message in legacy format (only includes IPv4 addresses)
+    void pack_address_message_legacy(std::vector<char>& buffer, const address_message& msg)
+    {
+      // First, filter to only IPv4 addresses
+      std::vector<address_info> ipv4_addresses;
+      for (const auto& addr : msg.addresses) {
+        if (addr.remote_endpoint.get_address().is_ipv4()) {
+          ipv4_addresses.push_back(addr);
+        }
+      }
+
+      // Calculate size
+      fc::datastream<size_t> ps;
+      fc::raw::pack(ps, fc::unsigned_int(ipv4_addresses.size()));
+      for (const auto& addr : ipv4_addresses) {
+        pack_address_info_legacy(ps, addr);
+      }
+      buffer.resize(ps.tellp());
+
+      // Pack data
+      fc::datastream<char*> ds(buffer.data(), buffer.size());
+      fc::raw::pack(ds, fc::unsigned_int(ipv4_addresses.size()));
+      for (const auto& addr : ipv4_addresses) {
+        pack_address_info_legacy(ds, addr);
+      }
+    }
+
+    // Pack connection_rejected_message in legacy format
+    void pack_connection_rejected_message_legacy(std::vector<char>& buffer, const connection_rejected_message& msg)
+    {
+      fc::datastream<size_t> ps;
+      fc::raw::pack(ps, msg.user_agent);
+      fc::raw::pack(ps, msg.core_protocol_version);
+      fc::raw::pack_legacy(ps, msg.remote_endpoint);
+      fc::raw::pack(ps, msg.reason_code);
+      fc::raw::pack(ps, msg.reason_string);
+      buffer.resize(ps.tellp());
+
+      fc::datastream<char*> ds(buffer.data(), buffer.size());
+      fc::raw::pack(ds, msg.user_agent);
+      fc::raw::pack(ds, msg.core_protocol_version);
+      fc::raw::pack_legacy(ds, msg.remote_endpoint);
+      fc::raw::pack(ds, msg.reason_code);
+      fc::raw::pack(ds, msg.reason_string);
+    }
+
+    // Pack check_firewall_message in legacy format
+    void pack_check_firewall_message_legacy(std::vector<char>& buffer, const check_firewall_message& msg)
+    {
+      fc::datastream<size_t> ps;
+      fc::raw::pack(ps, msg.node_id);
+      fc::raw::pack_legacy(ps, msg.endpoint_to_check);
+      buffer.resize(ps.tellp());
+
+      fc::datastream<char*> ds(buffer.data(), buffer.size());
+      fc::raw::pack(ds, msg.node_id);
+      fc::raw::pack_legacy(ds, msg.endpoint_to_check);
+    }
+
+    // Pack check_firewall_reply_message in legacy format
+    void pack_check_firewall_reply_message_legacy(std::vector<char>& buffer, const check_firewall_reply_message& msg)
+    {
+      fc::datastream<size_t> ps;
+      fc::raw::pack(ps, msg.node_id);
+      fc::raw::pack_legacy(ps, msg.endpoint_checked);
+      fc::raw::pack(ps, msg.result);
+      buffer.resize(ps.tellp());
+
+      fc::datastream<char*> ds(buffer.data(), buffer.size());
+      fc::raw::pack(ds, msg.node_id);
+      fc::raw::pack_legacy(ds, msg.endpoint_checked);
+      fc::raw::pack(ds, msg.result);
+    }
+
+  } // anonymous namespace
+
+  //
+  // Legacy deserialization helpers - for parsing messages from v107 peers
+  //
+
+  hello_message unpack_hello_message(const std::vector<char>& data)
+  {
+    hello_message result;
+    fc::datastream<const char*> ds(data.data(), data.size());
+
+    // Parse fields up to and including core_protocol_version
+    fc::raw::unpack(ds, result.user_agent, 0);
+    fc::raw::unpack(ds, result.core_protocol_version, 0);
+
+    // Now we know the version - use appropriate format for the rest
+    if (result.core_protocol_version >= GRAPHENE_NET_PROTOCOL_IPV6_VERSION) {
+      // New format with family byte
+      fc::raw::unpack(ds, result.inbound_address, 0);
+    } else {
+      // Legacy format - just uint32_t
+      fc::raw::unpack_legacy(ds, result.inbound_address, 0);
+    }
+
+    fc::raw::unpack(ds, result.inbound_port, 0);
+    fc::raw::unpack(ds, result.outbound_port, 0);
+    fc::raw::unpack(ds, result.node_public_key, 0);
+    fc::raw::unpack(ds, result.signed_shared_secret, 0);
+    fc::raw::unpack(ds, result.user_data, 0);
+
+    return result;
+  }
+
+  address_info unpack_address_info_legacy(fc::datastream<const char*>& ds)
+  {
+    address_info result;
+    fc::raw::unpack_legacy(ds, result.remote_endpoint, 0);
+    fc::raw::unpack(ds, result.last_seen_time, 0);
+    fc::raw::unpack(ds, result.latency, 0);
+    fc::raw::unpack(ds, result.node_id, 0);
+    fc::raw::unpack(ds, result.direction, 0);
+    fc::raw::unpack(ds, result.firewalled, 0);
+    return result;
+  }
+
+  address_message unpack_address_message(const std::vector<char>& data, bool peer_supports_ipv6)
+  {
+    address_message result;
+    fc::datastream<const char*> ds(data.data(), data.size());
+
+    if (peer_supports_ipv6) {
+      // New format
+      fc::raw::unpack(ds, result, 0);
+    } else {
+      // Legacy format
+      fc::unsigned_int count;
+      fc::raw::unpack(ds, count, 0);
+      result.addresses.reserve(count.value);
+      for (uint32_t i = 0; i < count.value; ++i) {
+        result.addresses.push_back(unpack_address_info_legacy(ds));
+      }
+    }
+
+    return result;
+  }
+
+  connection_rejected_message unpack_connection_rejected_message(const std::vector<char>& data, bool peer_supports_ipv6)
+  {
+    connection_rejected_message result;
+    fc::datastream<const char*> ds(data.data(), data.size());
+
+    fc::raw::unpack(ds, result.user_agent, 0);
+    fc::raw::unpack(ds, result.core_protocol_version, 0);
+
+    if (peer_supports_ipv6) {
+      fc::raw::unpack(ds, result.remote_endpoint, 0);
+    } else {
+      fc::raw::unpack_legacy(ds, result.remote_endpoint, 0);
+    }
+
+    fc::raw::unpack(ds, result.reason_code, 0);
+    fc::raw::unpack(ds, result.reason_string, 0);
+
+    return result;
+  }
+
+  check_firewall_message unpack_check_firewall_message(const std::vector<char>& data, bool peer_supports_ipv6)
+  {
+    check_firewall_message result;
+    fc::datastream<const char*> ds(data.data(), data.size());
+
+    fc::raw::unpack(ds, result.node_id, 0);
+
+    if (peer_supports_ipv6) {
+      fc::raw::unpack(ds, result.endpoint_to_check, 0);
+    } else {
+      fc::raw::unpack_legacy(ds, result.endpoint_to_check, 0);
+    }
+
+    return result;
+  }
+
+  check_firewall_reply_message unpack_check_firewall_reply_message(const std::vector<char>& data, bool peer_supports_ipv6)
+  {
+    check_firewall_reply_message result;
+    fc::datastream<const char*> ds(data.data(), data.size());
+
+    fc::raw::unpack(ds, result.node_id, 0);
+
+    if (peer_supports_ipv6) {
+      fc::raw::unpack(ds, result.endpoint_checked, 0);
+    } else {
+      fc::raw::unpack_legacy(ds, result.endpoint_checked, 0);
+    }
+
+    fc::raw::unpack(ds, result.result, 0);
+
+    return result;
+  }
+
+  message create_hello_message_for_peer(const hello_message& msg, bool peer_supports_ipv6)
+  {
+    message result;
+    result.msg_type = hello_message::type;
+    if (peer_supports_ipv6 && msg.inbound_address.is_ipv4()) {
+      // New format - use standard serialization
+      result.data = fc::raw::pack_to_vector(msg);
+    } else if (msg.inbound_address.is_ipv4()) {
+      // Legacy format for v107 peers
+      pack_hello_message_legacy(result.data, msg);
+    } else {
+      // IPv6 address but peer doesn't support it - should not happen in practice
+      // as we filter IPv6 when talking to old peers, but handle gracefully
+      FC_ASSERT(peer_supports_ipv6, "Cannot send IPv6 address to peer that doesn't support IPv6");
+      result.data = fc::raw::pack_to_vector(msg);
+    }
+    result.size = result.data.size();
+    return result;
+  }
+
+  message create_address_message_for_peer(const address_message& msg, bool peer_supports_ipv6)
+  {
+    message result;
+    result.msg_type = address_message::type;
+    if (peer_supports_ipv6) {
+      // New format - use standard serialization
+      result.data = fc::raw::pack_to_vector(msg);
+    } else {
+      // Legacy format - filter out IPv6 and use old serialization
+      pack_address_message_legacy(result.data, msg);
+    }
+    result.size = result.data.size();
+    return result;
+  }
+
+  message create_connection_rejected_message_for_peer(const connection_rejected_message& msg, bool peer_supports_ipv6)
+  {
+    message result;
+    result.msg_type = connection_rejected_message::type;
+    if (peer_supports_ipv6 || !msg.remote_endpoint.get_address().is_ipv4()) {
+      // For new peers or if we somehow have an IPv6 endpoint (shouldn't happen for old peers)
+      result.data = fc::raw::pack_to_vector(msg);
+    } else {
+      pack_connection_rejected_message_legacy(result.data, msg);
+    }
+    result.size = result.data.size();
+    return result;
+  }
+
+  message create_check_firewall_message_for_peer(const check_firewall_message& msg, bool peer_supports_ipv6)
+  {
+    message result;
+    result.msg_type = check_firewall_message::type;
+    if (peer_supports_ipv6 || !msg.endpoint_to_check.get_address().is_ipv4()) {
+      result.data = fc::raw::pack_to_vector(msg);
+    } else {
+      pack_check_firewall_message_legacy(result.data, msg);
+    }
+    result.size = result.data.size();
+    return result;
+  }
+
+  message create_check_firewall_reply_message_for_peer(const check_firewall_reply_message& msg, bool peer_supports_ipv6)
+  {
+    message result;
+    result.msg_type = check_firewall_reply_message::type;
+    if (peer_supports_ipv6 || !msg.endpoint_checked.get_address().is_ipv4()) {
+      result.data = fc::raw::pack_to_vector(msg);
+    } else {
+      pack_check_firewall_reply_message_legacy(result.data, msg);
+    }
+    result.size = result.data.size();
+    return result;
+  }
 
   const core_message_type_enum trx_message::type                             = core_message_type_enum::trx_message_type;
   const core_message_type_enum block_message::type                           = core_message_type_enum::block_message_type;

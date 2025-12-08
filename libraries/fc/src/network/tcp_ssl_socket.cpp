@@ -221,11 +221,13 @@ namespace {
   }
 
   void tcp_ssl_socket::connect_to( const fc::ip::endpoint& remote_endpoint, const std::string& hostname ) {
-    // Open socket with appropriate protocol based on address family
-    if (remote_endpoint.get_address().is_ipv6()) {
-      my->_sock.next_layer().open(boost::asio::ip::tcp::v6());
-    } else {
-      my->_sock.next_layer().open(boost::asio::ip::tcp::v4());
+    // Open socket with appropriate protocol if not already open (e.g., from bind())
+    if (!my->_sock.next_layer().is_open()) {
+      if (remote_endpoint.get_address().is_ipv6()) {
+        my->_sock.next_layer().open(boost::asio::ip::tcp::v6());
+      } else {
+        my->_sock.next_layer().open(boost::asio::ip::tcp::v4());
+      }
     }
     fc::asio::tcp::connect(my->_sock.next_layer(), to_asio_endpoint(remote_endpoint));
     my->_sock.set_verify_callback(boost::asio::ssl::rfc2818_verification(hostname));

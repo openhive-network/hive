@@ -181,11 +181,13 @@ namespace fc {
   }
 
   void tcp_socket::connect_to( const fc::ip::endpoint& remote_endpoint ) {
-    // Open socket with appropriate protocol based on address family
-    if (remote_endpoint.get_address().is_ipv6()) {
-      my->_sock.open(boost::asio::ip::tcp::v6());
-    } else {
-      my->_sock.open(boost::asio::ip::tcp::v4());
+    // Open socket with appropriate protocol if not already open (e.g., from bind())
+    if (!my->_sock.is_open()) {
+      if (remote_endpoint.get_address().is_ipv6()) {
+        my->_sock.open(boost::asio::ip::tcp::v6());
+      } else {
+        my->_sock.open(boost::asio::ip::tcp::v4());
+      }
     }
     fc::asio::tcp::connect(my->_sock, to_asio_endpoint(remote_endpoint));
   }

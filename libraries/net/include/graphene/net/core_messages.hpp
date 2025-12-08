@@ -427,6 +427,91 @@ namespace graphene { namespace net {
     std::vector<current_connection_data> current_connections;
   };
 
+  // Forward declaration
+  struct message;
+
+  //
+  // Version-aware message serialization/deserialization functions.
+  // These handle backward compatibility with protocol v107 which uses
+  // different IP address serialization format.
+  //
+
+  /**
+   * @brief Unpack a hello_message, auto-detecting format based on protocol version.
+   *
+   * The hello_message contains core_protocol_version before the address field,
+   * so we can parse it first and then use the appropriate format for the rest.
+   */
+  hello_message unpack_hello_message(const std::vector<char>& data);
+
+  /**
+   * @brief Unpack an address_message from a peer.
+   * @param data Raw message data
+   * @param peer_supports_ipv6 Whether the peer supports IPv6 (protocol >= 108)
+   */
+  address_message unpack_address_message(const std::vector<char>& data, bool peer_supports_ipv6);
+
+  /**
+   * @brief Unpack a connection_rejected_message from a peer.
+   * @param data Raw message data
+   * @param peer_supports_ipv6 Whether the peer supports IPv6 (protocol >= 108)
+   */
+  connection_rejected_message unpack_connection_rejected_message(const std::vector<char>& data, bool peer_supports_ipv6);
+
+  /**
+   * @brief Unpack a check_firewall_message from a peer.
+   * @param data Raw message data
+   * @param peer_supports_ipv6 Whether the peer supports IPv6 (protocol >= 108)
+   */
+  check_firewall_message unpack_check_firewall_message(const std::vector<char>& data, bool peer_supports_ipv6);
+
+  /**
+   * @brief Unpack a check_firewall_reply_message from a peer.
+   * @param data Raw message data
+   * @param peer_supports_ipv6 Whether the peer supports IPv6 (protocol >= 108)
+   */
+  check_firewall_reply_message unpack_check_firewall_reply_message(const std::vector<char>& data, bool peer_supports_ipv6);
+
+  /**
+   * @brief Create a hello_message for sending to a peer.
+   * @param msg The message to send
+   * @param peer_supports_ipv6 Whether the peer supports IPv6 (protocol >= 108)
+   * @return Serialized message ready to send
+   */
+  message create_hello_message_for_peer(const hello_message& msg, bool peer_supports_ipv6);
+
+  /**
+   * @brief Create an address_message for sending to a peer.
+   * @param msg The message to send
+   * @param peer_supports_ipv6 Whether the peer supports IPv6 (protocol >= 108)
+   * @return Serialized message ready to send (IPv6 addresses filtered for v107 peers)
+   */
+  message create_address_message_for_peer(const address_message& msg, bool peer_supports_ipv6);
+
+  /**
+   * @brief Create a connection_rejected_message for sending to a peer.
+   * @param msg The message to send
+   * @param peer_supports_ipv6 Whether the peer supports IPv6 (protocol >= 108)
+   * @return Serialized message ready to send
+   */
+  message create_connection_rejected_message_for_peer(const connection_rejected_message& msg, bool peer_supports_ipv6);
+
+  /**
+   * @brief Create a check_firewall_message for sending to a peer.
+   * @param msg The message to send
+   * @param peer_supports_ipv6 Whether the peer supports IPv6 (protocol >= 108)
+   * @return Serialized message ready to send
+   */
+  message create_check_firewall_message_for_peer(const check_firewall_message& msg, bool peer_supports_ipv6);
+
+  /**
+   * @brief Create a check_firewall_reply_message for sending to a peer.
+   * @param msg The message to send
+   * @param peer_supports_ipv6 Whether the peer supports IPv6 (protocol >= 108)
+   * @return Serialized message ready to send
+   */
+  message create_check_firewall_reply_message_for_peer(const check_firewall_reply_message& msg, bool peer_supports_ipv6);
+
 } } // graphene::net
 
 FC_REFLECT_ENUM( graphene::net::core_message_type_enum,
