@@ -81,8 +81,9 @@ touch "$DATA_CACHE/replay_running"
 echo "Didn't find valid previous replay, performing fresh replay"
 ls "$DATA_CACHE" -lath
 ls "$DATA_CACHE/datadir" -lath
-sudo rm "$DATA_CACHE/datadir" -rf
-sudo rm "$DATA_CACHE/shm_dir" -rf
+# Use rm without sudo - sudo fails on NFS due to root_squash
+rm "$DATA_CACHE/datadir" -rf || sudo rm "$DATA_CACHE/datadir" -rf || true
+rm "$DATA_CACHE/shm_dir" -rf || sudo rm "$DATA_CACHE/shm_dir" -rf || true
 
 echo "Preparing datadir and shm_dir in location ${DATA_CACHE}"
 "$SCRIPTPATH/prepare_data_and_shm_dir.sh" --data-base-dir="$DATA_CACHE" \
