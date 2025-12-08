@@ -293,7 +293,8 @@ mirrornet_replay_test:
 
   variables:
     BINARIES_DIR: "hived-mirrornet-binaries"
-    BLOCK_LOG_SOURCE_DIR: "/blockchain"
+    # Use NFS cache path - mainnet 5M block_log part files are cached here
+    BLOCK_LOG_SOURCE_DIR: "/nfs/ci-cache/hive/block_log_5m"
     NUMBER_OF_BLOCKS: 5000000
     MIRRORNET_WORKING_DIR: "$CI_PROJECT_DIR/mirrornet"
     MIRRORNET_BLOCKCHAIN_DATA_DIR: "$MIRRORNET_WORKING_DIR/mirrornet_blockchain_data"
@@ -308,7 +309,9 @@ mirrornet_replay_test:
     - mkdir -p "$MIRRORNET_BLOCKCHAIN_DATA_DIR"
     - mkdir -p "$MIRRORNET_BLOCKCHAIN_DATA_DIR/blockchain"
     - cp "$CI_PROJECT_DIR/docker/config_mirrornet_5M.ini" "$MIRRORNET_WORKING_DIR/config.ini"
-    - cp "$BLOCK_LOG_SOURCE_DIR/block_log_5m/block_log" "$MIRRORNET_SOURCE_5M_DATA_DIR/blockchain"
+    # Copy mainnet 5M block_log part files from NFS cache
+    - cp "$BLOCK_LOG_SOURCE_DIR/block_log_part".* "$MIRRORNET_SOURCE_5M_DATA_DIR/blockchain/"
+    - ls -la "$MIRRORNET_SOURCE_5M_DATA_DIR/blockchain/"
     - cd "$BINARIES_DIR"
   script:
     - echo "Generating artifacts file for block_log."
