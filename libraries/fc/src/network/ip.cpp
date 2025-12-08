@@ -167,12 +167,14 @@ address::operator fc::string() const
   }
 #endif
 
-  address::operator uint32_t()const
+
 #ifndef ENABLE_IPV6
+  address::operator uint32_t()const
   {
     return _ip;
   }
 #else
+  address::operator uint32_t()const
   {
     if(this->is_v4())
     {
@@ -183,7 +185,8 @@ address::operator fc::string() const
                 uint32_t(_ip[15]);
       return ipv4;
     }
-    FC_THROW_EXCEPTION(fc::parse_error_exception, "Cannot convert IPv6 address to uint32");
+    return 0;
+    // FC_THROW_EXCEPTION(fc::parse_error_exception, "Cannot convert IPv6 address to uint32");
   }
 #endif
   endpoint::endpoint()

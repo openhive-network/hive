@@ -77,10 +77,8 @@ size_t tcp_socket::impl::writesome(boost::asio::ip::tcp::socket& socket, const s
 void tcp_socket::open()
 {
 #ifdef ENABLE_IPV6
-    /***
-     * By default Hive uses a single socket.
-     * Have to adapt everything to use dual-stack.
-     */
+    boost::asio::ip::v6_only option(false);
+    my->_sock.set_option(option);
     my->_sock.open(boost::asio::ip::tcp::v6());
 #else
     my->_sock.open(boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), 0).protocol());
@@ -89,7 +87,7 @@ void tcp_socket::open()
 #ifdef ENABLE_IPV6
 void tcp_socket::open(const fc::ip::endpoint& ep)
 {
-    if (ep.get_address().is_v4())
+    if (ep.get_address().is_v4() && false)
         my->_sock.open(boost::asio::ip::tcp::v4());
     else {
         my->_sock.open(boost::asio::ip::tcp::v6());
@@ -150,7 +148,7 @@ fc::ip::endpoint tcp_socket::remote_endpoint() const
         return fc::ip::endpoint(addr.to_v4().to_ulong(), rep.port());
 #else
         fc::ip::address fcaddr;
-        if (addr.is_v4())
+        if (addr.is_v4() && false)
         {
             fcaddr = fc::ip::address(addr.to_v4().to_ulong());
         }
@@ -218,11 +216,12 @@ void tcp_socket::bind(const fc::ip::endpoint& local_endpoint)
         ip[14],
         ip[15]
       };
-        addr = boost::asio::ip::address_v4(v4bytes);
+    addr = boost::asio::ip::address_v4(v4bytes);
     }
     else
     {
       addr = boost::asio::ip::address_v6(ip);
+      my->_sock.set_option(boost::asio::ip::v6_only(false));
     }
 
     my->_sock.bind(
@@ -480,6 +479,7 @@ void tcp_server::set_no_delay(bool no_delay_flag)
 }
 
 void tcp_server::listen( uint16_t port )
+#ifndef ENABLE_IPV6
 {
     if( !my )
         my = std::make_shared< impl >();
@@ -490,7 +490,25 @@ void tcp_server::listen( uint16_t port )
     }
     FC_RETHROW_EXCEPTIONS(warn, "error listening on socket");
 }
+#else
+{
+  if (!my)
+    my = std::make_shared<impl>();
+  try
+  {
+    boost::asio::ip::tcp::endpoint ep(boost::asio::ip::tcp::v6(), port);
+    boost::asio::ip::v6_only option(false);
+    my->_accept.open(boost::asio::ip::tcp::v6());
+
+    my->_accept.set_option(option);
+    my->_accept.bind(ep);
+    my->_accept.listen(256);
+  }
+  FC_RETHROW_EXCEPTIONS(warn, "error listening on socket");
+}
+#endif
 void tcp_server::listen( const fc::ip::endpoint& ep )
+#ifndef ENABLE_IPV6
 {
     if( !my )
         my = std::make_shared< impl >();
@@ -501,11 +519,52 @@ void tcp_server::listen( const fc::ip::endpoint& ep )
     }
     FC_RETHROW_EXCEPTIONS(warn, "error listening on socket");
 }
+#else
+{
+    if (!my)
+        my = std::make_shared<impl>();
+    try
+    {
+        boost::asio::ip::address addr =
+            boost::asio::ip::address::from_string(ep.get_address());
+        boost::asio::ip::tcp::endpoint endpoint(addr, ep.port());
+        if (my->_accept.is_open())
+        {
+            try {
+                my->_accept.cancel();
+            } catch (const fc::exception& e)
+            {
+                elog("fc::exception caught at cancel: ${e}", ("e", e.to_detail_string()));
+            }
+            try {
+                my->_accept.close();
+            } catch (const fc::exception& e)
+            {
+                elog("fc::exception caught at close: ${e}", ("e", e.to_detail_string()));
+            }
+        }
+        my->_accept.open(endpoint.protocol());
+        my->_accept.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
+        if (addr.is_v6())
+        {
+            boost::asio::ip::v6_only v6opt(false);
+            boost::system::error_code ec;
+            my->_accept.set_option(v6opt, ec);   // ignore failure on kernels w/o dual-stack
+        }
+        ilog("Now binding ${addr}, port ${port}",
+             ("addr",endpoint.address().to_string())("port",endpoint.port()));
+        if(my->_accept.local_endpoint().port() != 0)
+            my->_accept.bind(endpoint);
+        my->_accept.listen(boost::asio::socket_base::max_listen_connections);
+    }
+    FC_RETHROW_EXCEPTIONS(warn, "error listening on socket");
+}
+#endif
 
 fc::ip::endpoint tcp_server::get_local_endpoint() const
 {
     FC_ASSERT( my != nullptr );
-    return fc::ip::endpoint(my->_accept.local_endpoint().address().to_v4().to_ulong(),
+    return fc::ip::endpoint(my->_accept.local_endpoint().address().to_string(),
                             my->_accept.local_endpoint().port() );
 }
 
