@@ -4,7 +4,7 @@
 namespace hive { namespace chain {
 
 rocksdb_ah_storage_provider::rocksdb_ah_storage_provider( const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application& app )
-  : rocksdb_storage_provider( blockchain_storage_path, storage_path, app ), _writeBuffer( getStorage(), _columnHandles )
+  : rocksdb_storage_provider( blockchain_storage_path, storage_path, app, "AH" ), _writeBuffer( getStorage(), _columnHandles )
 {
 }
 
@@ -57,7 +57,9 @@ void rocksdb_ah_storage_provider::flushDb()
 
 void rocksdb_ah_storage_provider::flushWriteBuffer(DB* storage)
 {
+  storeSequenceIds();
   rocksdb_storage_provider::flushWriteBuffer( storage );
+  _collectedOps = 0;
 }
 
 ColumnFamilyHandle* rocksdb_ah_storage_provider::getColumnHandle( Columns column )
@@ -101,16 +103,6 @@ rocksdb_storage_provider::ColumnDefinitions rocksdb_ah_storage_provider::prepare
   byTxIdColumn.options.comparator = by_txId_Comparator();
 
   return columnDefs;
-}
-
-void rocksdb_ah_storage_provider::beforeFlushWriteBuffer()
-{
-  storeSequenceIds();
-}
-
-void rocksdb_ah_storage_provider::afterFlushWriteBuffer()
-{
-  _collectedOps = 0;
 }
 
 std::unique_ptr<DB>& rocksdb_ah_storage_provider::getStorage()

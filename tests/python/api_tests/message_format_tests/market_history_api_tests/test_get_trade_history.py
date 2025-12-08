@@ -18,6 +18,6 @@ def test_get_trade_history(node: tt.InitNode | tt.RemoteNode, should_prepare: bo
             "bob", 0, tt.Asset.Tbd(100), tt.Asset.Test(100), False, 3600
         )  # Buy 100 HIVE for 100 HBD
     history = node.api.market_history.get_trade_history(
-        start=tt.Time.from_now(weeks=-480), end=tt.Time.now(), limit=10
+        start="2016-03-24T16:05:00", end=tt.Time.now(), limit=10
     ).trades
     assert len(history) != 0

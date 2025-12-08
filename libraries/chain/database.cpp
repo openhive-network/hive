@@ -173,10 +173,8 @@ void database::pre_open( const open_args& args )
                                                 theApp.get_plugins_names(),
                                                 []( const std::string& message ){ wlog( message.c_str() ); }
                                               );
-    bool wipe_shared_file = args.force_replay | args.load_snapshot;
-    if( wipe_shared_file )
-      get_comments_handler().wipe();
-    chainbase::database::open( args.shared_mem_dir, args.chainbase_flags, args.shared_file_size, args.database_cfg, &environment_extension, wipe_shared_file );
+    ilog("Opening/creating shared memory from ${path}", ("path", args.shared_mem_dir.generic_string()));
+    chainbase::database::open( args.shared_mem_dir, args.chainbase_flags, args.shared_file_size, args.database_cfg, &environment_extension );
     initialize_irreversible_storage();
   }
   FC_CAPTURE_LOG_AND_RETHROW( (args.data_dir)(args.shared_mem_dir)(args.shared_file_size) )
@@ -297,7 +295,11 @@ void database::wipe(const fc::path& shared_mem_dir)
 {
   if( get_is_open() )
     close();
+
   get_comments_handler().wipe();
+
+  notify_wipe();
+
   chainbase::database::wipe( shared_mem_dir );
 }
 
@@ -994,6 +996,11 @@ void database::notify_post_apply_custom_operation( const custom_operation_notifi
 void database::notify_finish_push_block( const block_notification& note )
 {
   HIVE_TRY_NOTIFY( _finish_push_block_signal, note )
+}
+
+void database::notify_wipe()
+{
+  HIVE_TRY_NOTIFY(_wipe_signal)
 }
 
 account_name_type database::get_scheduled_witness( uint32_t slot_num )const
@@ -4755,6 +4762,11 @@ boost::signals2::connection database::add_comment_reward_handler(const comment_r
 boost::signals2::connection database::add_end_of_syncing_handler(const end_of_syncing_notification_handler_t& func, const abstract_plugin& plugin, int32_t group)
 {
   return connect_impl<false>(_end_of_syncing_signal, func, plugin, group, "->syncing_end");
+}
+
+boost::signals2::connection database::add_wipe_handler(const wipe_notification_handler_t& func, const abstract_plugin& plugin, int32_t group)
+{
+  return connect_impl<false>(_wipe_signal, func, plugin, group, "wipe storages");
 }
 
 const witness_object& database::validate_block_header( uint32_t skip, const std::shared_ptr<full_block_type>& full_block )const

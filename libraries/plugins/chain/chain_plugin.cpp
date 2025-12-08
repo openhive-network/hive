@@ -85,6 +85,8 @@ class chain_plugin_impl
 
     ~chain_plugin_impl()
     {
+      hive::utilities::disconnect_signal( dumper_post_apply_block );
+
       stop_write_processing();
 
       if( chain_sync_con.connected() )
@@ -227,6 +229,7 @@ class chain_plugin_impl
     state_snapshot_provider*            snapshot_provider = nullptr;
     bool                                is_p2p_enabled = true;
     bool                                is_work_enabled = true;
+    bool                                allow_syncing = false; 
     std::atomic<uint32_t>               peer_count = {0};
 
     fc::time_point cumulative_times_last_reported_time;
@@ -821,15 +824,6 @@ void chain_plugin_impl::initial_settings()
 
   ilog( "Starting chain with shared_file_size: ${n} bytes", ("n", shared_memory_size) );
 
-  if(resync)
-  {
-    wlog("resync requested: deleting block log and shared memory");
-    db.wipe( shared_memory_dir );
-    default_block_writer->close();
-    block_storage->close_storage();
-    block_storage->wipe_storage_files( theApp.data_dir() / "blockchain" );
-  }
-
   db.set_flush_interval( flush_interval );
   if( !checkpoints.empty() )
     thread_pool.set_last_checkpoint( checkpoints.rbegin()->first );
@@ -926,7 +920,16 @@ void chain_plugin_impl::open()
 
   try
   {
-    ilog("Opening shared memory from ${path}", ("path",shared_memory_dir.generic_string()));
+    if(resync)
+    {
+      wlog("resync requested: deleting block log and shared memory");
+      default_block_writer->close();
+      block_storage->close_storage();
+      block_storage->wipe_storage_files( theApp.data_dir() / "blockchain" );
+    }
+
+    if( force_replay || load_snapshot || resync )
+      db.wipe( shared_memory_dir );
 
     db.pre_open( db_open_args );
     db.with_write_lock([&]()
@@ -1893,7 +1896,7 @@ void chain_plugin::plugin_startup()
         ilog( "P2P enabling${str}...", ( str ) );
       else
         ilog( "P2P is disabled${str}. Starting writer loop in API mode.", ( str ) );
-      my->work( on_sync );
+      my->allow_syncing = true;
     }
     else
     {
@@ -1906,6 +1909,12 @@ void chain_plugin::plugin_startup()
   ilog("Chain plugin initialization finished...");
   if( get_app().is_interrupt_request() )
     get_app().kill();
+}
+
+void chain_plugin::plugin_finalize_startup()
+{
+  if( my->allow_syncing )
+    my->work( on_sync );
 }
 
 void chain_plugin::plugin_shutdown()

@@ -8,7 +8,7 @@ from hive_local_tools import run_for
 def test_get_trade_history(node: tt.InitNode | tt.RemoteNode, should_prepare: bool) -> None:
     preparation_for_testnet_node(node, should_prepare)
 
-    history = node.api.condenser.get_trade_history(tt.Time.from_now(weeks=-480), tt.Time.now(), 10)
+    history = node.api.condenser.get_trade_history("2016-03-24T16:05:00", tt.Time.now(), 10)
     assert len(history) != 0
 
 
@@ -16,7 +16,7 @@ def test_get_trade_history(node: tt.InitNode | tt.RemoteNode, should_prepare: bo
 def test_get_trade_history_with_default_third_argument(node: tt.InitNode | tt.RemoteNode, should_prepare: bool) -> None:
     preparation_for_testnet_node(node, should_prepare)
 
-    history = node.api.condenser.get_trade_history(tt.Time.from_now(weeks=-480), tt.Time.now())
+    history = node.api.condenser.get_trade_history("2016-03-24T16:05:00", tt.Time.now())
     assert len(history) != 0
 
 
