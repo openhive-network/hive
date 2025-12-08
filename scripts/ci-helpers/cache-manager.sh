@@ -17,7 +17,7 @@
 #   Replay/build jobs should use: tags: [data-cache-storage, fast]
 #   Fast builders (AMD 5950): hive-builder-8, hive-builder-9, hive-builder-10
 #
-# Cache types: haf, balance_tracker, hivemind, etc.
+# Cache types: hive, haf, balance_tracker, hivemind, etc.
 #
 # Environment variables:
 #   CACHE_NFS_PATH      - NFS mount point (default: /nfs/ci-cache)
@@ -28,6 +28,40 @@
 #   CACHE_QUIET         - Suppress verbose output (default: false)
 
 set -euo pipefail
+
+# Detect flock capabilities (BusyBox vs GNU coreutils)
+# BusyBox flock doesn't support -w (timeout), only -n (nonblock)
+_flock_supports_timeout() {
+    flock --help 2>&1 | grep -q -- '-w' 2>/dev/null
+}
+
+# Wrapper for flock that handles BusyBox compatibility
+# Usage: _flock_with_timeout <timeout> <mode> <lockfile> <command...>
+#   mode: -s (shared) or -x (exclusive)
+_flock_with_timeout() {
+    local timeout="$1"
+    local mode="$2"
+    local lockfile="$3"
+    shift 3
+
+    if _flock_supports_timeout; then
+        # GNU coreutils flock - use -w for timeout
+        flock "$mode" -w "$timeout" "$lockfile" "$@"
+    else
+        # BusyBox flock - no timeout support, use -n (non-blocking) with retry loop
+        local elapsed=0
+        local interval=5
+        while [[ $elapsed -lt $timeout ]]; do
+            if flock "$mode" -n "$lockfile" "$@" 2>/dev/null; then
+                return 0
+            fi
+            sleep "$interval"
+            elapsed=$((elapsed + interval))
+        done
+        _error "Timeout waiting for lock after ${timeout}s"
+        return 1
+    fi
+}
 
 # Configuration with defaults
 CACHE_NFS_PATH="${CACHE_NFS_PATH:-/nfs/ci-cache}"
@@ -103,7 +137,7 @@ _update_lru() {
 
     # Acquire global lock for index update
     touch "$GLOBAL_LOCK"
-    flock -w 30 "$GLOBAL_LOCK" -c "
+    _flock_with_timeout 30 -x "$GLOBAL_LOCK" -c "
         # Create or update LRU index (simple format: timestamp|path per line)
         if [[ -f '$LRU_INDEX' ]]; then
             # Remove old entry and add new one
@@ -139,6 +173,87 @@ _write_metadata() {
 EOF
 }
 
+# Relax PostgreSQL pgdata permissions for caching
+# Makes pgdata readable so it can be copied to NFS
+_relax_pgdata_permissions() {
+    local source_dir="$1"
+    local pgdata_path="${source_dir}/datadir/haf_db_store/pgdata"
+
+    if [[ -d "$pgdata_path" ]]; then
+        _log "Relaxing pgdata permissions for caching"
+        # Make readable for copying (PostgreSQL creates mode 700)
+        sudo chmod -R a+rX "$pgdata_path" 2>/dev/null || chmod -R a+rX "$pgdata_path" 2>/dev/null || true
+    fi
+}
+
+# Restore PostgreSQL pgdata permissions after cache retrieval
+# pgdata must be mode 700 or 750, owned by postgres user for PostgreSQL to start
+_restore_pgdata_permissions() {
+    local dest_dir="$1"
+    local pgdata_path="${dest_dir}/datadir/haf_db_store/pgdata"
+
+    if [[ -d "$pgdata_path" ]]; then
+        _log "Restoring pgdata permissions to mode 700"
+        # Restore strict permissions required by PostgreSQL
+        sudo chmod 700 "$pgdata_path" 2>/dev/null || chmod 700 "$pgdata_path" 2>/dev/null || true
+        # Restore ownership to postgres user (uid 105 in HAF containers)
+        sudo chown -R 105:105 "$pgdata_path" 2>/dev/null || true
+    fi
+}
+
+# Build tar exclusion arguments for HAF caches to reduce size
+# Excludes: unnecessary pg_wal files, blockchain (use shared block_log)
+# Saves ~7.5GB (38%) on typical HAF cache
+_build_haf_tar_excludes() {
+    local source_dir="$1"
+    local excludes=""
+
+    # Exclude blockchain directory - tests should use /cache/blockchain/block_log_5m
+    # Saves ~1.7GB
+    if [[ -d "${source_dir}/datadir/blockchain" ]]; then
+        excludes="--exclude=./datadir/blockchain"
+        _log "Excluding datadir/blockchain (use shared block_log instead)"
+    fi
+
+    # Exclude pg_wal files except the checkpoint WAL file
+    # PostgreSQL only needs the WAL file containing the latest checkpoint
+    # Saves ~5.8GB (375 files × 16MB)
+    local pgdata_path="${source_dir}/datadir/haf_db_store/pgdata"
+    local pg_wal_path="${pgdata_path}/pg_wal"
+
+    if [[ -d "$pg_wal_path" ]]; then
+        # Find checkpoint WAL file using pg_controldata via docker
+        local checkpoint_wal=""
+        if command -v docker &>/dev/null; then
+            checkpoint_wal=$(docker run --rm -v "${pgdata_path}:/pgdata:ro" postgres:17 \
+                pg_controldata /pgdata 2>/dev/null | \
+                grep "REDO WAL file" | awk '{print $NF}')
+        fi
+
+        if [[ -n "$checkpoint_wal" ]]; then
+            _log "Keeping checkpoint WAL: $checkpoint_wal, excluding others"
+            # Build exclusions for all WAL files except checkpoint
+            local wal_count=0
+            local excluded_count=0
+            for wal_file in "$pg_wal_path"/0*; do
+                if [[ -f "$wal_file" ]]; then
+                    wal_count=$((wal_count + 1))
+                    local wal_name=$(basename "$wal_file")
+                    if [[ "$wal_name" != "$checkpoint_wal" ]]; then
+                        excludes="$excludes --exclude=./datadir/haf_db_store/pgdata/pg_wal/$wal_name"
+                        excluded_count=$((excluded_count + 1))
+                    fi
+                fi
+            done
+            _log "Excluding $excluded_count of $wal_count WAL files"
+        else
+            _log "Could not determine checkpoint WAL, keeping all WAL files"
+        fi
+    fi
+
+    echo "$excludes"
+}
+
 # GET: Check local, then NFS, copy to local if found on NFS
 cmd_get() {
     local cache_type="$1"
@@ -156,9 +271,15 @@ cmd_get() {
         if [[ "$LOCAL_CACHE_DIR" != "$local_dest" ]]; then
             _log "Copying to destination: $local_dest"
             mkdir -p "$(dirname "$local_dest")"
-            cp -a "$LOCAL_CACHE_DIR" "$local_dest"
+            # Use cp -r instead of cp -a to avoid permission issues on NFS
+            # (cp -a tries to preserve ownership which can fail on NFS)
+            cp -r "$LOCAL_CACHE_DIR" "$local_dest"
         else
             _log "Destination is cache dir, no copy needed"
+        fi
+        # Restore pgdata permissions for HAF caches
+        if [[ "$cache_type" == "haf" ]]; then
+            _restore_pgdata_permissions "$local_dest"
         fi
         # Update LRU if NFS available
         if _nfs_available; then
@@ -179,30 +300,62 @@ cmd_get() {
         return 1
     fi
 
-    if [[ ! -d "$NFS_CACHE_DIR" ]]; then
-        _log "NFS cache miss: $NFS_CACHE_DIR"
+    # Check for tar archive first (new format), then directory (legacy format)
+    local NFS_TAR_FILE="${NFS_CACHE_DIR}.tar"
+    local use_tar=false
+
+    if [[ -f "$NFS_TAR_FILE" ]]; then
+        use_tar=true
+        _log "NFS cache hit (tar archive): $NFS_TAR_FILE"
+    elif [[ -d "$NFS_CACHE_DIR" ]]; then
+        _log "NFS cache hit (directory): $NFS_CACHE_DIR"
+    else
+        _log "NFS cache miss: $NFS_CACHE_DIR (no tar or dir)"
         return 1
     fi
 
-    # 3. Copy from NFS to local (with shared lock) - NFS clients only
-    _log "NFS cache hit: $NFS_CACHE_DIR"
-    mkdir -p "$(dirname "$LOCK_FILE")"
-    touch "$LOCK_FILE"
+    # 3. Copy from NFS to local - NFS clients only
+    mkdir -p "$local_dest"
 
-    # Acquire shared lock and copy
-    if flock -s -w "$CACHE_LOCK_TIMEOUT" "$LOCK_FILE" -c "
-        echo '[cache-manager] Copying from NFS to local: $local_dest' >&2
-        mkdir -p '$(dirname "$local_dest")'
-        rsync -a '$NFS_CACHE_DIR/' '$local_dest/' 2>/dev/null || cp -a '$NFS_CACHE_DIR' '$local_dest'
-    "; then
-        # Also cache locally for future use
-        if [[ "$LOCAL_CACHE_DIR" != "$local_dest" ]]; then
-            mkdir -p "$(dirname "$LOCAL_CACHE_DIR")"
-            cp -a "$local_dest" "$LOCAL_CACHE_DIR" 2>/dev/null || true
+    if [[ "$use_tar" == "true" ]]; then
+        # Extract tar archive to local (fast: reading single file from NFS)
+        local NFS_TAR_LOCK="${NFS_TAR_FILE}.lock"
+        touch "$NFS_TAR_LOCK" 2>/dev/null || true
+
+        if _flock_with_timeout "$CACHE_LOCK_TIMEOUT" -s "$NFS_TAR_LOCK" -c "
+            echo '[cache-manager] Extracting tar archive to local: $local_dest' >&2
+            tar xf '$NFS_TAR_FILE' -C '$local_dest'
+        "; then
+            _log "Extracted tar archive successfully"
+        else
+            _error "Failed to extract tar archive"
+            return 1
         fi
     else
-        _error "Failed to acquire shared lock"
-        return 1
+        # Legacy directory format - use tar pipe for faster reads
+        mkdir -p "$(dirname "$LOCK_FILE")"
+        touch "$LOCK_FILE"
+
+        if _flock_with_timeout "$CACHE_LOCK_TIMEOUT" -s "$LOCK_FILE" -c "
+            echo '[cache-manager] Copying from NFS directory to local: $local_dest' >&2
+            (cd '$NFS_CACHE_DIR' && tar cf - .) | (cd '$local_dest' && tar xf -)
+        "; then
+            _log "Copied from directory successfully"
+        else
+            _error "Failed to acquire shared lock"
+            return 1
+        fi
+    fi
+
+    # Cache locally for future use (symlink to avoid copy)
+    if [[ "$LOCAL_CACHE_DIR" != "$local_dest" && ! -e "$LOCAL_CACHE_DIR" ]]; then
+        mkdir -p "$(dirname "$LOCAL_CACHE_DIR")"
+        ln -sf "$local_dest" "$LOCAL_CACHE_DIR" 2>/dev/null || true
+    fi
+
+    # Restore pgdata permissions for HAF caches
+    if [[ "$cache_type" == "haf" ]]; then
+        _restore_pgdata_permissions "$local_dest"
     fi
 
     _update_lru "$cache_type" "$cache_key"
@@ -220,6 +373,11 @@ cmd_put() {
         return 1
     fi
 
+    # Relax pgdata permissions for HAF caches so they can be copied
+    if [[ "$cache_type" == "haf" ]]; then
+        _relax_pgdata_permissions "$local_source"
+    fi
+
     _get_paths "$cache_type" "$cache_key"
 
     local is_nfs_host=false
@@ -235,12 +393,13 @@ cmd_put() {
         fi
 
         # Copy directly to NFS path (which is local storage on this host)
+        # Use tar streaming for consistency (though local-to-local is already fast)
         if [[ "$local_source" != "$NFS_CACHE_DIR" ]]; then
             _log "Storing cache on NFS host: $NFS_CACHE_DIR"
             mkdir -p "$NFS_CACHE_DIR"
             touch "$LOCK_FILE"
-            flock -x -w "$CACHE_LOCK_TIMEOUT" "$LOCK_FILE" -c "
-                rsync -a '$local_source/' '$NFS_CACHE_DIR/' 2>/dev/null || cp -a '$local_source'/* '$NFS_CACHE_DIR/'
+            _flock_with_timeout "$CACHE_LOCK_TIMEOUT" -x "$LOCK_FILE" -c "
+                (cd '$local_source' && tar cf - .) | (cd '$NFS_CACHE_DIR' && tar xf -)
             " || { _error "Failed to store cache"; return 1; }
         else
             _log "Source is already at NFS path, no copy needed"
@@ -254,49 +413,88 @@ cmd_put() {
         return 0
     fi
 
-    # NFS client path: store locally AND on NFS
-
-    # Store in local cache
-    if [[ "$LOCAL_CACHE_DIR" != "$local_source" ]]; then
-        _log "Caching locally: $LOCAL_CACHE_DIR"
-        mkdir -p "$(dirname "$LOCAL_CACHE_DIR")"
-        cp -a "$local_source" "$LOCAL_CACHE_DIR" 2>/dev/null || true
-    fi
+    # NFS client path: prefer NFS, use local cache only as fallback
+    # Rationale: Local cache is only useful on THIS builder. NFS is shared across all builders.
+    # We skip local copy to save time - if NFS push succeeds, create symlink for local reference.
 
     if ! _nfs_available; then
-        _log "NFS not available, cached locally only"
+        # NFS unavailable - use local cache as fallback
+        if [[ "$LOCAL_CACHE_DIR" != "$local_source" ]]; then
+            _log "NFS not available, caching locally: $LOCAL_CACHE_DIR"
+            mkdir -p "$(dirname "$LOCAL_CACHE_DIR")"
+            cp -a "$local_source" "$LOCAL_CACHE_DIR" 2>/dev/null || true
+        fi
+        _log "Cached locally only (NFS unavailable)"
         return 0
     fi
 
-    # Check if already exists on NFS
-    if [[ -d "$NFS_CACHE_DIR" && -f "$METADATA_FILE" ]]; then
+    # Check if already exists on NFS (either as directory or tar archive)
+    local NFS_TAR_FILE="${NFS_CACHE_DIR}.tar"
+    if [[ -f "$NFS_TAR_FILE" ]] || { [[ -d "$NFS_CACHE_DIR" ]] && [[ -f "$METADATA_FILE" ]]; }; then
         _log "Cache already exists on NFS, updating timestamp"
         _update_lru "$cache_type" "$cache_key"
         return 0
     fi
 
-    # Copy to NFS with exclusive lock
-    mkdir -p "$NFS_CACHE_DIR"
-    touch "$LOCK_FILE"
+    # Copy to NFS as single tar archive for 3x faster writes
+    # Benchmark: cp -a 19GB/1844 files = 74s, tar archive = 25s
+    # Writing single large file to NFS is much faster than many small files
+    mkdir -p "$(dirname "$NFS_TAR_FILE")"
+    local NFS_TAR_LOCK="${NFS_TAR_FILE}.lock"
+    touch "$NFS_TAR_LOCK"
 
-    if ! flock -x -w "$CACHE_LOCK_TIMEOUT" "$LOCK_FILE" -c "
+    # Build exclusions for HAF caches (saves ~7.5GB by excluding unnecessary WAL and blockchain)
+    local tar_excludes=""
+    if [[ "$cache_type" == "haf" || "$cache_type" == "haf_sync" ]]; then
+        tar_excludes=$(_build_haf_tar_excludes "$local_source")
+    fi
+
+    # Write exclusions to temp file for use in subshell
+    local excludes_file=""
+    if [[ -n "$tar_excludes" ]]; then
+        excludes_file=$(mktemp)
+        echo "$tar_excludes" > "$excludes_file"
+    fi
+
+    if ! _flock_with_timeout "$CACHE_LOCK_TIMEOUT" -x "$NFS_TAR_LOCK" -c "
         # Double-check after acquiring lock
-        if [[ -f '$METADATA_FILE' ]]; then
+        if [[ -f '$NFS_TAR_FILE' ]]; then
             echo '[cache-manager] Cache was created while waiting for lock' >&2
             exit 0
         fi
 
-        echo '[cache-manager] Copying to NFS: $NFS_CACHE_DIR' >&2
-        rsync -a '$local_source/' '$NFS_CACHE_DIR/' 2>/dev/null || cp -a '$local_source'/* '$NFS_CACHE_DIR/'
+        echo '[cache-manager] Creating tar archive on NFS: $NFS_TAR_FILE' >&2
+        # Read exclusions from temp file if present
+        excludes=''
+        if [[ -f '$excludes_file' ]]; then
+            excludes=\$(cat '$excludes_file')
+        fi
+        # Write tar archive directly to NFS (single file = fast)
+        # shellcheck disable=SC2086
+        tar cf '$NFS_TAR_FILE.tmp' \$excludes -C '$local_source' .
+        mv '$NFS_TAR_FILE.tmp' '$NFS_TAR_FILE'
     "; then
+        [[ -n "$excludes_file" ]] && rm -f "$excludes_file"
         _error "Failed to acquire exclusive lock"
         return 1
     fi
+    [[ -n "$excludes_file" ]] && rm -f "$excludes_file"
 
-    _write_metadata "$cache_type" "$cache_key" "$NFS_CACHE_DIR"
+    # Write metadata next to tar file
+    local TAR_METADATA="${NFS_TAR_FILE%.tar}/.metadata"
+    mkdir -p "$(dirname "$TAR_METADATA")"
+    _write_metadata "$cache_type" "$cache_key" "$local_source"
+    mv "$METADATA_FILE" "$TAR_METADATA" 2>/dev/null || true
+
+    # Create local symlink to source for future local hits (instant, no copy)
+    if [[ "$LOCAL_CACHE_DIR" != "$local_source" && ! -e "$LOCAL_CACHE_DIR" ]]; then
+        mkdir -p "$(dirname "$LOCAL_CACHE_DIR")"
+        ln -sf "$local_source" "$LOCAL_CACHE_DIR" 2>/dev/null || true
+        _log "Created local cache symlink: $LOCAL_CACHE_DIR -> $local_source"
+    fi
 
     _update_lru "$cache_type" "$cache_key"
-    _log "Cache stored successfully"
+    _log "Cache stored successfully (tar archive)"
 
     # Trigger async cleanup check
     _maybe_cleanup &
@@ -409,11 +607,13 @@ _maybe_cleanup() {
         return 0
     fi
 
-    local total_size=$(du -sb "$CACHE_NFS_PATH" 2>/dev/null | cut -f1 || echo 0)
+    local total_size
+    total_size=$(du -sb "$CACHE_NFS_PATH" 2>/dev/null | awk '{print $1}') || total_size=0
+    [[ -z "$total_size" ]] && total_size=0
     local max_bytes=$((CACHE_MAX_SIZE_GB * 1024 * 1024 * 1024))
     local threshold=$((max_bytes * 90 / 100))  # 90% threshold
 
-    if [[ $total_size -gt $threshold ]]; then
+    if [[ "$total_size" =~ ^[0-9]+$ ]] && [[ $total_size -gt $threshold ]]; then
         _log "Cache size at 90% capacity, triggering cleanup"
         cmd_cleanup "" --max-size-gb "$CACHE_MAX_SIZE_GB" --max-age-days "$CACHE_MAX_AGE_DAYS"
     fi
