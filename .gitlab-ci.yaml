@@ -57,6 +57,7 @@ prepare_hived_data:
     CONFIG_INI_SOURCE: "$CI_PROJECT_DIR/docker/config_5M.ini"
   tags:
     - data-cache-storage
+    - fast
 
 cleanup_hived_cache_manual:
   extends: .cleanup_cache_manual_template
@@ -248,6 +249,7 @@ extended_block_log_creation:
       when: always
   tags:
     - data-cache-storage
+    - fast
 
 test_beekeeper_wasm:
   extends: .npm_test_template
@@ -357,6 +359,7 @@ mirrornet_replay_test:
       - "$BINARIES_DIR/*.log"
   tags:
     - data-cache-storage
+    - fast
 
 .unit_tests_base:
   extends: .job-defaults
