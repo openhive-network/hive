@@ -236,7 +236,8 @@ extended_block_log_creation:
     IMAGE_TAG: "${CI_COMMIT_SHORT_SHA}"
     HIVE_SRC: "${CI_PROJECT_DIR}"
     HIVE_COMMIT: "${CI_COMMIT_SHORT_SHA}"
-    BLOCK_LOG_SOURCE_DIR: "/blockchain/block_log_5m"
+    # Use NFS cache path - mainnet 5M block_log part files are cached here
+    BLOCK_LOG_SOURCE_DIR: "/nfs/ci-cache/hive/block_log_5m"
     BINARY_PATH: "${CI_PROJECT_DIR}/hived-mirrornet-binaries"
   rules:
     - if: $CI_COMMIT_TAG
@@ -246,8 +247,7 @@ extended_block_log_creation:
     - if: $CI_COMMIT_BRANCH
       when: always
   tags:
-    - public-runner-docker
-    - hived-for-tests
+    - data-cache-storage
 
 test_beekeeper_wasm:
   extends: .npm_test_template
@@ -310,7 +310,7 @@ mirrornet_replay_test:
     - mkdir -p "$MIRRORNET_BLOCKCHAIN_DATA_DIR/blockchain"
     - cp "$CI_PROJECT_DIR/docker/config_mirrornet_5M.ini" "$MIRRORNET_WORKING_DIR/config.ini"
     # Copy mainnet 5M block_log part files from NFS cache
-    - cp "$BLOCK_LOG_SOURCE_DIR/block_log_part".* "$MIRRORNET_SOURCE_5M_DATA_DIR/blockchain/"
+    - cp ${BLOCK_LOG_SOURCE_DIR}/block_log_part.* "$MIRRORNET_SOURCE_5M_DATA_DIR/blockchain/"
     - ls -la "$MIRRORNET_SOURCE_5M_DATA_DIR/blockchain/"
     - cd "$BINARIES_DIR"
   script:
