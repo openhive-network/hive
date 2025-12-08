@@ -353,8 +353,7 @@ mirrornet_replay_test:
     paths:
       - "$BINARIES_DIR/*.log"
   tags:
-    - public-runner-docker
-    - hived-for-tests
+    - data-cache-storage
 
 .unit_tests_base:
   extends: .job-defaults
