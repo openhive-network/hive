@@ -342,6 +342,13 @@ mirrornet_replay_test:
       --validate-during-replay
       --stop-at-block $NUMBER_OF_BLOCKS
       --exit-before-sync | tee hived-replay.log
+    # Push generated mirrornet block_log to NFS cache for HAF CI
+    - echo "Pushing mirrornet block_log to NFS cache..."
+    - NFS_CACHE_DIR="/nfs/ci-cache/hive/block_log_5m_mirrornet"
+    - mkdir -p "$NFS_CACHE_DIR"
+    - cp "$MIRRORNET_BLOCKCHAIN_DATA_DIR/blockchain/block_log" "$NFS_CACHE_DIR/"
+    - cp "$MIRRORNET_BLOCKCHAIN_DATA_DIR/blockchain/block_log.artifacts" "$NFS_CACHE_DIR/"
+    - ls -lAh "$NFS_CACHE_DIR"
   artifacts:
     paths:
       - "$BINARIES_DIR/*.log"
