@@ -36,7 +36,13 @@ include:
  
       echo -e "\e[0Ksection_start:$(date +%s):prepare[collapsed=true]\r\e[0KPreparing block log..."
       mkdir -p "${MIRRORNET_SOURCE_5M_DATA_DIR}"
-      cp "${BLOCK_LOG_SOURCE_DIR}/block_log" "${MIRRORNET_SOURCE_5M_DATA_DIR}"
+      # Copy block_log (monolithic or part files)
+      if ls ${BLOCK_LOG_SOURCE_DIR}/block_log_part.* 1>/dev/null 2>&1; then
+        cp ${BLOCK_LOG_SOURCE_DIR}/block_log_part.* "${MIRRORNET_SOURCE_5M_DATA_DIR}/"
+      else
+        cp "${BLOCK_LOG_SOURCE_DIR}/block_log" "${MIRRORNET_SOURCE_5M_DATA_DIR}/"
+      fi
+      ls -la "${MIRRORNET_SOURCE_5M_DATA_DIR}/"
       echo -e "\e[0Ksection_end:$(date +%s):prepare\r\e[0K"
   script:
     - "${HIVE_SRC}/scripts/ci-helpers/prepare_extended_mirrornet_block_log_for_commit.sh"
