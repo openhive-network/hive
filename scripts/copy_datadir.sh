@@ -3,7 +3,8 @@
 set -xeuo pipefail
 
 # Default shared block_log location (used when blockchain not in cache)
-SHARED_BLOCK_LOG_DIR="${SHARED_BLOCK_LOG_DIR:-/cache/blockchain/block_log_5m}"
+# Try NFS cache first, fall back to local cache
+SHARED_BLOCK_LOG_DIR="${SHARED_BLOCK_LOG_DIR:-/nfs/ci-cache/hive/block_log_5m}"
 
 if [ -n "${DATA_SOURCE+x}" ]
 then

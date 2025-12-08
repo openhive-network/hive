@@ -208,7 +208,7 @@ _build_haf_tar_excludes() {
     local source_dir="$1"
     local excludes=""
 
-    # Exclude blockchain directory - tests should use /cache/blockchain/block_log_5m
+    # Exclude blockchain directory - tests should use /nfs/ci-cache/hive/block_log_5m
     # Saves ~1.7GB
     if [[ -d "${source_dir}/datadir/blockchain" ]]; then
         excludes="--exclude=./datadir/blockchain"
