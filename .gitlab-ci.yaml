@@ -236,8 +236,8 @@ extended_block_log_creation:
     IMAGE_TAG: "${CI_COMMIT_SHORT_SHA}"
     HIVE_SRC: "${CI_PROJECT_DIR}"
     HIVE_COMMIT: "${CI_COMMIT_SHORT_SHA}"
-    # Use NFS cache path - mainnet 5M block_log part files are cached here
-    BLOCK_LOG_SOURCE_DIR: "/nfs/ci-cache/hive/block_log_5m"
+    # Use NFS cache path - monolithic mainnet 5M block_log is required for this job
+    BLOCK_LOG_SOURCE_DIR: "/nfs/ci-cache/hive/block_log_5m_monolithic"
     BINARY_PATH: "${CI_PROJECT_DIR}/hived-mirrornet-binaries"
   rules:
     - if: $CI_COMMIT_TAG
