@@ -444,6 +444,8 @@ cmd_put() {
     touch "$NFS_TAR_LOCK"
 
     # Build exclusions for HAF caches (saves ~7.5GB by excluding unnecessary WAL and blockchain)
+    # Note: hive caches currently include blockchain because docker service containers
+    # may not have access to the shared NFS block_log path for symlinking
     local tar_excludes=""
     if [[ "$cache_type" == "haf" || "$cache_type" == "haf_sync" ]]; then
         tar_excludes=$(_build_haf_tar_excludes "$local_source")
