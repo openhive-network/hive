@@ -417,6 +417,19 @@ cmd_put() {
     # Rationale: Local cache is only useful on THIS builder. NFS is shared across all builders.
     # We skip local copy to save time - if NFS push succeeds, create symlink for local reference.
 
+    # Check if source is already on NFS - no need to copy/tar
+    if [[ "$local_source" == "$CACHE_NFS_PATH"/* ]]; then
+        _log "Source is already on NFS: $local_source"
+        # Create symlink from expected cache path to actual location if different
+        if [[ "$local_source" != "$NFS_CACHE_DIR" && ! -e "$NFS_CACHE_DIR" ]]; then
+            ln -sf "$local_source" "$NFS_CACHE_DIR" 2>/dev/null || true
+        fi
+        _write_metadata "$cache_type" "$cache_key" "$local_source"
+        _update_lru "$cache_type" "$cache_key"
+        _log "Cache registered (source already on NFS)"
+        return 0
+    fi
+
     if ! _nfs_available; then
         # NFS unavailable - use local cache as fallback
         if [[ "$LOCAL_CACHE_DIR" != "$local_source" ]]; then
@@ -443,11 +456,17 @@ cmd_put() {
     local NFS_TAR_LOCK="${NFS_TAR_FILE}.lock"
     touch "$NFS_TAR_LOCK"
 
-    # Build exclusions for HAF caches (saves ~7.5GB by excluding unnecessary WAL and blockchain)
-    # Note: hive caches currently include blockchain because docker service containers
-    # may not have access to the shared NFS block_log path for symlinking
+    # Build exclusions for caches to reduce size and speed up NFS writes
+    # - hive caches: exclude blockchain (~1.7GB) - services use /blockchain/block_log_5m (local mount)
+    # - HAF caches: exclude blockchain + unnecessary WAL files (~7.5GB total)
     local tar_excludes=""
-    if [[ "$cache_type" == "haf" || "$cache_type" == "haf_sync" ]]; then
+    if [[ "$cache_type" == "hive" ]]; then
+        # Exclude blockchain - CI runners mount /blockchain locally via services_volumes
+        if [[ -d "${local_source}/datadir/blockchain" ]]; then
+            tar_excludes="--exclude=./datadir/blockchain"
+            _log "Excluding datadir/blockchain (services use local /blockchain/block_log_5m)"
+        fi
+    elif [[ "$cache_type" == "haf" || "$cache_type" == "haf_sync" ]]; then
         tar_excludes=$(_build_haf_tar_excludes "$local_source")
     fi
 
