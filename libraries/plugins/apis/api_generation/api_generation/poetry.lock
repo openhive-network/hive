@@ -129,7 +129,6 @@ files = [
 
 [package.dependencies]
 frozenlist = ">=1.1.0"
-typing-extensions = {version = ">=4.2", markers = "python_version < \"3.13\""}
 
 [[package]]
 name = "annotated-types"
@@ -145,18 +144,17 @@ files = [
 
 [[package]]
 name = "api-client-generator"
-version = "1.7.1.dev1+285429f"
+version = "1.7.1.dev11+7075dcf"
 description = ""
 optional = false
-python-versions = ">=3.12,<4.0"
+python-versions = ">=3.14,<4"
 groups = ["main"]
 files = [
-    {file = "api_client_generator-1.7.1.dev1+285429f-py3-none-any.whl", hash = "sha256:d7a7c235a1531ea2dd2877e505d9c6fb5f051ebb4129dcd9b7bc1ee1236ba923"},
-    {file = "api_client_generator-1.7.1.dev1+285429f.tar.gz", hash = "sha256:88f342f27f5c57d3a199e2eb6634578396fab40a754f8bc731cf2144be58aecb"},
+    {file = "api_client_generator-1.7.1.dev11+7075dcf-py3-none-any.whl", hash = "sha256:51758471b72cd6bf99f48a028e31dacb3e123e48b35239630cf3818687c4ffd7"},
 ]
 
 [package.dependencies]
-datamodel-code-generator = "0.32.0"
+datamodel-code-generator = "0.49.0"
 msgspec = "0.20.0"
 ruff = "0.11.5"
 
@@ -408,14 +406,14 @@ files = [
 
 [[package]]
 name = "datamodel-code-generator"
-version = "0.32.0"
+version = "0.49.0"
 description = "Datamodel Code Generator"
 optional = false
-python-versions = ">=3.9"
+python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "datamodel_code_generator-0.32.0-py3-none-any.whl", hash = "sha256:48f3cabbb792398112ee756b23a319e17b001ee534896b324893a98ff10e0a55"},
-    {file = "datamodel_code_generator-0.32.0.tar.gz", hash = "sha256:c6f84a6a7683ef9841940b0931aa1ee338b19950ba5b10c920f9c7ad6f5e5b72"},
+    {file = "datamodel_code_generator-0.49.0-py3-none-any.whl", hash = "sha256:0c24d21b7a3103a89a324be48bbcac3fed1fd2f22804de8589e589f2c93d9dc0"},
+    {file = "datamodel_code_generator-0.49.0.tar.gz", hash = "sha256:eb4a95ee21c10f7675982f8b7d92344971b9a5e4c34c89b54652f8576b3a604b"},
 ]
 
 [package.dependencies]
@@ -423,19 +421,20 @@ argcomplete = ">=2.10.1,<4"
 black = ">=19.10b0"
 genson = ">=1.2.1,<2"
 inflect = ">=4.1,<8"
-isort = ">=4.3.21,<7"
+isort = ">=4.3.21,<8"
 jinja2 = ">=2.10.1,<4"
 packaging = "*"
 pydantic = ">=1.5"
 pyyaml = ">=6.0.1"
 
 [package.extras]
-all = ["graphql-core (>=3.2.3)", "httpx (>=0.24.1)", "openapi-spec-validator (>=0.2.8,<0.7)", "prance (>=0.18.2)", "pysnooper (>=0.4.1,<2)", "ruff (>=0.9.10)"]
+all = ["graphql-core (>=3.2.3)", "httpx (>=0.24.1)", "openapi-spec-validator (>=0.2.8,<0.8)", "prance (>=0.18.2)", "pysnooper (>=0.4.1,<2)", "ruff (>=0.9.10)", "watchfiles (>=1.1)"]
 debug = ["pysnooper (>=0.4.1,<2)"]
 graphql = ["graphql-core (>=3.2.3)"]
 http = ["httpx (>=0.24.1)"]
 ruff = ["ruff (>=0.9.10)"]
-validation = ["openapi-spec-validator (>=0.2.8,<0.7)", "prance (>=0.18.2)"]
+validation = ["openapi-spec-validator (>=0.2.8,<0.8)", "prance (>=0.18.2)"]
+watch = ["watchfiles (>=1.1)"]
 
 [[package]]
 name = "frozenlist"
@@ -1838,5 +1837,5 @@ propcache = ">=0.2.1"
 
 [metadata]
 lock-version = "2.1"
-python-versions = "^3.12"
-content-hash = "ea8a987fdf907872777e0e7fa12f507a5c7b38d663f01f4ed81cf204a1166c9e"
+python-versions = "^3.14"
+content-hash = "9758192b672dbaff6b0a4ca27d303047d1b16aa61fe5b344ecc83aa63eac3fc5"
