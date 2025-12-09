@@ -28,15 +28,15 @@ resolve_data_source() {
 
         if [[ -d "${nfs_path}/datadir" ]]; then
             echo "FALLBACK: Local cache not found at ${source}, using NFS: ${nfs_path}" >&2
-            USING_NFS_SOURCE=1
             echo "$nfs_path"
-            return 0
+            return 1  # Return 1 to indicate NFS fallback was used
         fi
     fi
 
-    # Check if source is already an NFS path
+    # Check if source is already an NFS path - return 1 to indicate NFS
     if [[ "$source" =~ ^/nfs/ ]]; then
-        USING_NFS_SOURCE=1
+        echo "$source"
+        return 1
     fi
 
     # No fallback available, return original (will fail later with clear error)
@@ -47,7 +47,9 @@ resolve_data_source() {
 if [ -n "${DATA_SOURCE+x}" ]
 then
     # Resolve DATA_SOURCE with NFS fallback if needed
-    DATA_SOURCE=$(resolve_data_source "$DATA_SOURCE")
+    # Use return code to detect NFS source (return 1 = NFS, return 0 = local)
+    # This avoids the subshell variable scope issue
+    DATA_SOURCE=$(resolve_data_source "$DATA_SOURCE") || USING_NFS_SOURCE=1
 
     echo "DATA_SOURCE: ${DATA_SOURCE}"
     echo "DATADIR: ${DATADIR}"
