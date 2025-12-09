@@ -496,13 +496,9 @@ void tcp_server::listen( uint16_t port )
     my = std::make_shared<impl>();
   try
   {
-    boost::asio::ip::tcp::endpoint ep(boost::asio::ip::tcp::v6(), port);
-    boost::asio::ip::v6_only option(false);
-    my->_accept.open(boost::asio::ip::tcp::v6());
-
-    my->_accept.set_option(option);
-    my->_accept.bind(ep);
-    my->_accept.listen(256);
+    fc::ip::address addr("[::]");
+    fc::ip::endpoint ep(addr, port);
+    listen(ep);
   }
   FC_RETHROW_EXCEPTIONS(warn, "error listening on socket");
 }
@@ -525,37 +521,44 @@ void tcp_server::listen( const fc::ip::endpoint& ep )
         my = std::make_shared<impl>();
     try
     {
-        boost::asio::ip::address addr =
-            boost::asio::ip::address::from_string(ep.get_address());
+        fc::ip::address fcaddr = ep.get_address();
+        std::string addr_str   = fc::string(fcaddr);
+
+        boost::asio::ip::address addr;
+        std::array<uint8_t, 16> _ip = ep.get_address().raw();
+        bool isAny = std::all_of(_ip.begin(), _ip.end(), [](uint8_t b) {
+                return b == 0;
+            });
+        if (isAny) {
+            addr = boost::asio::ip::address_v6::any();
+        } else if (ep.get_address().is_v4()) {
+            addr = boost::asio::ip::address_v4(ep.get_address());
+        } else {
+            addr = boost::asio::ip::address_v6(ep.get_address().raw());
+        }
         boost::asio::ip::tcp::endpoint endpoint(addr, ep.port());
         if (my->_accept.is_open())
         {
-            try {
-                my->_accept.cancel();
-            } catch (const fc::exception& e)
-            {
-                elog("fc::exception caught at cancel: ${e}", ("e", e.to_detail_string()));
-            }
-            try {
-                my->_accept.close();
-            } catch (const fc::exception& e)
-            {
-                elog("fc::exception caught at close: ${e}", ("e", e.to_detail_string()));
-            }
-        }
-        my->_accept.open(endpoint.protocol());
-        my->_accept.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
-        if (addr.is_v6())
-        {
-            boost::asio::ip::v6_only v6opt(false);
             boost::system::error_code ec;
-            my->_accept.set_option(v6opt, ec);   // ignore failure on kernels w/o dual-stack
+            my->_accept.close(ec);
+            ilog("Closed existing acceptor: ${err}", ("err", ec.message()));
         }
+        ilog("Before Open to ${addr}", ("addr", addr_str));
+        boost::system::error_code err;
+        my->_accept.open(endpoint.protocol(),err);
+        ilog("After Open: ${err}",("err",err.message()));
+        if (!fcaddr.is_v4())
+        {
+            my->_accept.set_option(boost::asio::ip::v6_only(false));
+        }
+        my->_accept.set_option(boost::asio::socket_base::reuse_address(true),err);
+        ilog("After set option to reuse address: ${err}",("err",err.message()));
+        ilog("before Bind to ${addr}",("addr",endpoint.address().to_string()));
+        my->_accept.bind(endpoint);
         ilog("Now binding ${addr}, port ${port}",
-             ("addr",endpoint.address().to_string())("port",endpoint.port()));
-        if(my->_accept.local_endpoint().port() != 0)
-            my->_accept.bind(endpoint);
-        my->_accept.listen(boost::asio::socket_base::max_listen_connections);
+             ("addr",endpoint.address().to_string())
+             ("port",endpoint.port()));
+        my->_accept.listen(256);
     }
     FC_RETHROW_EXCEPTIONS(warn, "error listening on socket");
 }
