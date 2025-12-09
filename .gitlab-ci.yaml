@@ -44,6 +44,7 @@ prepare_hived_image:
   tags:
     - public-runner-docker
     - hived-for-tests
+    - haf-build-mainnet
 
 prepare_hived_data:
   extends: .prepare_hived_data_5m
@@ -99,6 +100,7 @@ testnet_node_build:
   tags:
     - public-runner-docker
     - hived-for-tests
+    - haf-build-testnet
 
 beekeeper_tsc_build:
   extends: .npm_build_template
@@ -224,6 +226,7 @@ mirrornet_node_build:
   tags:
     - public-runner-docker
     - hived-for-tests
+    - haf-build-mirrornet
 
 extended_block_log_creation:
   extends: .extended_block_log_creation
@@ -236,8 +239,8 @@ extended_block_log_creation:
     IMAGE_TAG: "${CI_COMMIT_SHORT_SHA}"
     HIVE_SRC: "${CI_PROJECT_DIR}"
     HIVE_COMMIT: "${CI_COMMIT_SHORT_SHA}"
-    # Use NFS cache path - monolithic mainnet 5M block_log is required for this job
-    BLOCK_LOG_SOURCE_DIR: "/nfs/ci-cache/hive/block_log_5m_monolithic"
+    # Use local block_log - all CI runners mount /blockchain read-only via services_volumes
+    BLOCK_LOG_SOURCE_DIR: "$BLOCK_LOG_SOURCE_DIR_5M"
     BINARY_PATH: "${CI_PROJECT_DIR}/hived-mirrornet-binaries"
   rules:
     - if: $CI_COMMIT_TAG
@@ -293,8 +296,9 @@ mirrornet_replay_test:
 
   variables:
     BINARIES_DIR: "hived-mirrornet-binaries"
-    # Use NFS cache path - mainnet 5M block_log part files are cached here
-    BLOCK_LOG_SOURCE_DIR: "/nfs/ci-cache/hive/block_log_5m"
+    SCRIPTS_PATH: "$CI_PROJECT_DIR/scripts"
+    # Use local block_log - all CI runners mount /blockchain read-only via services_volumes
+    BLOCK_LOG_SOURCE_DIR: "$BLOCK_LOG_SOURCE_DIR_5M"
     NUMBER_OF_BLOCKS: 5000000
     MIRRORNET_WORKING_DIR: "$CI_PROJECT_DIR/mirrornet"
     MIRRORNET_BLOCKCHAIN_DATA_DIR: "$MIRRORNET_WORKING_DIR/mirrornet_blockchain_data"
@@ -309,15 +313,12 @@ mirrornet_replay_test:
     - mkdir -p "$MIRRORNET_BLOCKCHAIN_DATA_DIR"
     - mkdir -p "$MIRRORNET_BLOCKCHAIN_DATA_DIR/blockchain"
     - cp "$CI_PROJECT_DIR/docker/config_mirrornet_5M.ini" "$MIRRORNET_WORKING_DIR/config.ini"
-    # Copy mainnet 5M block_log part files from NFS cache
-    - cp ${BLOCK_LOG_SOURCE_DIR}/block_log_part.* "$MIRRORNET_SOURCE_5M_DATA_DIR/blockchain/"
+    # Copy monolithic block_log from local mount (no merge step needed)
+    - cp "${BLOCK_LOG_SOURCE_DIR}/block_log" "$MIRRORNET_SOURCE_5M_DATA_DIR/blockchain/"
+    - cp "${BLOCK_LOG_SOURCE_DIR}/block_log.artifacts" "$MIRRORNET_SOURCE_5M_DATA_DIR/blockchain/"
     - ls -la "$MIRRORNET_SOURCE_5M_DATA_DIR/blockchain/"
     - cd "$BINARIES_DIR"
   script:
-    - echo "Generating artifacts file for block_log."
-    - time ./hived
-      --block-log-split=-1
-      -d "$MIRRORNET_SOURCE_5M_DATA_DIR"
     - echo "Compressing block log to $NUMBER_OF_BLOCKS blocks with $NUMBER_OF_PROCESSES processes"
     - time ./compress_block_log
       -i "$MIRRORNET_SOURCE_5M_DATA_DIR/blockchain/block_log"
@@ -345,13 +346,15 @@ mirrornet_replay_test:
       --validate-during-replay
       --stop-at-block $NUMBER_OF_BLOCKS
       --exit-before-sync | tee hived-replay.log
-    # Push generated mirrornet block_log to NFS cache for HAF CI
+    # Push generated mirrornet block_log to NFS cache for HAF CI using cache-manager
+    # Uses tar archive for atomic writes and metadata tracking
     - echo "Pushing mirrornet block_log to NFS cache..."
-    - NFS_CACHE_DIR="/nfs/ci-cache/hive/block_log_5m_mirrornet"
-    - mkdir -p "$NFS_CACHE_DIR"
-    - cp "$MIRRORNET_BLOCKCHAIN_DATA_DIR/blockchain/block_log" "$NFS_CACHE_DIR/"
-    - cp "$MIRRORNET_BLOCKCHAIN_DATA_DIR/blockchain/block_log.artifacts" "$NFS_CACHE_DIR/"
-    - ls -lAh "$NFS_CACHE_DIR"
+    - CACHE_MANAGER="$SCRIPTS_PATH/ci-helpers/cache-manager.sh"
+    - |
+      if [[ -x "$CACHE_MANAGER" ]]; then
+        "$CACHE_MANAGER" put hive block_log_5m_mirrornet "$MIRRORNET_BLOCKCHAIN_DATA_DIR/blockchain" || echo "Warning: cache-manager put failed, using direct copy"
+      fi
+    - ls -lAh /nfs/ci-cache/hive/
   artifacts:
     paths:
       - "$BINARIES_DIR/*.log"
