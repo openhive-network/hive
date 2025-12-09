@@ -17,6 +17,13 @@ then
         # Use cp without -p to avoid "Operation not supported" errors when copying from NFS
         flock "${DATA_SOURCE}/datadir" sudo -En cp -r --no-preserve=mode,ownership "${DATA_SOURCE}/datadir"/*  "${DATADIR}"
 
+        # Restore pgdata permissions - PostgreSQL requires 700 or 750
+        PGDATA_DIR="${DATADIR}/haf_db_store/pgdata"
+        if [[ -d "$PGDATA_DIR" ]]; then
+            sudo chmod 700 "$PGDATA_DIR"
+            sudo chown -R postgres:postgres "${DATADIR}/haf_db_store"
+        fi
+
         # Handle blockchain directory - may be excluded from cache for efficiency
         if [[ -d "${DATA_SOURCE}/datadir/blockchain" ]]; then
             sudo chmod -R a+w "${DATA_SOURCE}/datadir/blockchain"
