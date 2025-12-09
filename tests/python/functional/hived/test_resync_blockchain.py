@@ -64,3 +64,39 @@ def test_clears_state_with_resync_blockchain_option(
     head_block_num = node.get_last_block_number()
     assert head_block_num <= 30, f"Head block should be at most 30, got {head_block_num}"
     tt.logger.info(f"Head block is {head_block_num} (stopped at 10 approx)")
+
+
+def test_resync_blockchain_fails_with_mixed_mode(
+    block_log_empty_30_mono: tt.BlockLog,
+) -> None:
+    """
+    Test that using a monolithic block log with a split configuration raises an exception.
+    """
+    node = tt.InitNode()
+    # Configure split mode (9999) but provide monolithic block log
+    node.config.block_log_split = 9999
+
+    # First run should succeed (auto-split happens here)
+    node.run(replay_from=block_log_empty_30_mono, wait_for_live=True)
+    node.close()
+
+    # Expected failure description:
+    # The --resync-blockchain option removes the generated split block log files (because config is split)
+    # but DOES NOT remove the original monolithic block log file (which is still there).
+    # When the node restarts, it sees an empty state (cleaned by resync) but finds the monolithic block log.
+    # It attempts to use it, but since state is empty and block log is present, it likely causes a mismatch
+    # or re-initialization error (head block mismatch with state).
+
+    with pytest.raises(FailedToStartExecutableError):
+        # Restart with --resync-blockchain
+        node.run(stop_at_block=10, arguments=["--resync-blockchain"])
+
+    # Verify the specific error message in log
+    # The error confirms that the node found an inconsistency between the block log (which was not removed)
+    # and the state (which was reset).
+    log_content = (node.directory / "stderr.log").read_text()
+    expected_error = "Error: Headblock and statefile are inconsistent"
+    assert expected_error in log_content, f"Expected '{expected_error}' in stderr"
+
+    tt.logger.info("Successfully verified 'Headblock and statefile are inconsistent' error in logs.")
+    node.close()
