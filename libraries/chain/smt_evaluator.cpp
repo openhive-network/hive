@@ -6,11 +6,29 @@
 #include <hive/chain/smt_objects.hpp>
 #include <hive/chain/util/reward.hpp>
 #include <hive/chain/util/smt_token.hpp>
+#include <hive/chain/evaluator_registry.hpp>
 
 #include <hive/protocol/smt_operations.hpp>
 
 #ifdef HIVE_ENABLE_SMT
 namespace hive { namespace chain {
+
+HIVE_DEFINE_EVALUATOR( smt_setup )
+HIVE_DEFINE_EVALUATOR( smt_setup_emissions )
+HIVE_DEFINE_EVALUATOR( smt_set_setup_parameters )
+HIVE_DEFINE_EVALUATOR( smt_set_runtime_parameters )
+HIVE_DEFINE_EVALUATOR( smt_create )
+HIVE_DEFINE_EVALUATOR( smt_contribute )
+
+void register_smt_evaluators( evaluator_registry<operation>& registry )
+{
+  registry.register_evaluator< smt_setup_evaluator                  >();
+  registry.register_evaluator< smt_setup_emissions_evaluator        >();
+  registry.register_evaluator< smt_set_setup_parameters_evaluator   >();
+  registry.register_evaluator< smt_set_runtime_parameters_evaluator >();
+  registry.register_evaluator< smt_create_evaluator                 >();
+  registry.register_evaluator< smt_contribute_evaluator             >();
+}
 
 namespace {
 
