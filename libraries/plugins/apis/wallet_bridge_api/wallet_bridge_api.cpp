@@ -10,6 +10,8 @@
 #include <hive/plugins/wallet_bridge_api/wallet_bridge_api_plugin.hpp>
 #include <hive/plugins/rc_api/rc_api.hpp>
 
+#include <hive/chain/hive_objects.hpp>
+
 namespace hive { namespace plugins { namespace wallet_bridge_api {
 
 typedef std::function< void( const broadcast_transaction_synchronous_return& ) > confirmation_callback;
