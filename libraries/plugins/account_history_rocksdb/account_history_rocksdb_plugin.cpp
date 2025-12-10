@@ -26,8 +26,6 @@
 #include <rocksdb/db.h>
 #include <rocksdb/options.h>
 #include <rocksdb/slice.h>
-#include <rocksdb/utilities/backup_engine.h>
-#include <rocksdb/utilities/write_batch_with_index.h>
 
 #include <boost/type.hpp>
 #include <boost/algorithm/string.hpp>
