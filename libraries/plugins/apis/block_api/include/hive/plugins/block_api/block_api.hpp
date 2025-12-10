@@ -6,6 +6,10 @@
 
 #define BLOCK_API_SINGLE_QUERY_LIMIT 1000
 
+namespace appbase {
+  class application;
+}
+
 namespace hive { namespace plugins { namespace block_api {
 
 class block_api_impl;
