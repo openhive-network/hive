@@ -4,13 +4,46 @@
 
 #include <hive/chain/rc/resource_sizes.hpp>
 #include <hive/chain/rc/rc_utility.hpp>
+#include <hive/chain/rc/rc_objects.hpp>
 
 #include <hive/chain/account_object.hpp>
+#include <hive/chain/database.hpp>
 
 #include <fc/variant_object.hpp>
 #include <fc/reflect/variant.hpp>
 
 namespace hive { namespace plugins { namespace rc {
+
+using namespace hive::chain;
+
+//////////////////////////////////////////////////////////////////////
+//                                                                  //
+// rc_account_api_object constructor                               //
+//                                                                  //
+//////////////////////////////////////////////////////////////////////
+
+rc_account_api_object::rc_account_api_object( const hive::chain::account_object& a, const hive::chain::database& db ) :
+  account( a.get_name() ),
+  rc_manabar( a.rc_manabar ),
+  max_rc_creation_adjustment( a.get_rc_adjustment(), VESTS_SYMBOL ),
+  max_rc( a.get_maximum_rc().value ),
+  delegated_rc( a.get_delegated_rc().value ),
+  received_delegated_rc( a.get_received_rc().value )
+{}
+
+//////////////////////////////////////////////////////////////////////
+//                                                                  //
+// rc_direct_delegation_api_object constructor                     //
+//                                                                  //
+//////////////////////////////////////////////////////////////////////
+
+rc_direct_delegation_api_object::rc_direct_delegation_api_object( const hive::chain::rc_direct_delegation_object& rcdd, const account_name_type& _from, account_name_type _to ) :
+  from_id( rcdd.from ),
+  to_id( rcdd.to ),
+  from(_from),
+  to(_to),
+  delegated_rc( rcdd.delegated_rc )
+{}
 
 namespace detail {
 

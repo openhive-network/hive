@@ -1,8 +1,11 @@
 #pragma once
 #include <hive/plugins/json_rpc/utility.hpp>
-#include <hive/chain/rc/rc_objects.hpp>
 
 #include <hive/protocol/types.hpp>
+#include <hive/protocol/asset.hpp>
+#include <hive/chain/hive_fwd.hpp>
+#include <hive/chain/hive_object_types.hpp>
+#include <hive/chain/util/manabar.hpp>
 
 #include <fc/optional.hpp>
 #include <fc/variant.hpp>
@@ -11,9 +14,17 @@
 #define RC_API_DEFAULT_QUERY_LIMIT 0
 #define RC_API_SINGLE_QUERY_LIMIT 1000
 
+namespace hive { namespace chain {
+  class account_object;
+  class database;
+  class rc_direct_delegation_object;
+} }
+
 namespace hive { namespace plugins { namespace rc {
 
-using namespace hive::chain;
+using hive::protocol::account_name_type;
+using hive::chain::account_id_type;
+using hive::protocol::asset;
 
 namespace detail
 {
@@ -54,14 +65,7 @@ struct rc_account_api_object
 {
   rc_account_api_object(){}
 
-  rc_account_api_object( const account_object& a, const database& db ) :
-    account( a.get_name() ),
-    rc_manabar( a.rc_manabar ),
-    max_rc_creation_adjustment( a.get_rc_adjustment(), VESTS_SYMBOL ),
-    max_rc( a.get_maximum_rc().value ),
-    delegated_rc( a.get_delegated_rc().value ),
-    received_delegated_rc( a.get_received_rc().value )
-  {}
+  rc_account_api_object( const hive::chain::account_object& a, const hive::chain::database& db );
 
   account_name_type     account;
   hive::chain::util::manabar   rc_manabar;
@@ -86,12 +90,7 @@ struct rc_direct_delegation_api_object
 {
   rc_direct_delegation_api_object(){}
 
-  rc_direct_delegation_api_object( const rc_direct_delegation_object& rcdd, const account_name_type& _from, account_name_type _to ) :
-    from_id( rcdd.from ),
-    to_id( rcdd.to ),
-    from(_from),
-    to(_to),
-    delegated_rc( rcdd.delegated_rc ) {}
+  rc_direct_delegation_api_object( const hive::chain::rc_direct_delegation_object& rcdd, const account_name_type& _from, account_name_type _to );
 
   account_id_type from_id;
   account_id_type to_id;
