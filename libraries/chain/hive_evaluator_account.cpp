@@ -6,12 +6,42 @@
 #include <hive/chain/database.hpp>
 #include <hive/chain/hive_objects.hpp>
 #include <hive/chain/witness_objects.hpp>
+#include <hive/chain/evaluator_registry.hpp>
 
 #include <hive/chain/util/owner_update_limit_mgr.hpp>
 
 #include <fc/uint128.hpp>
 
 namespace hive { namespace chain {
+
+HIVE_DEFINE_EVALUATOR( account_create )
+HIVE_DEFINE_EVALUATOR( account_create_with_delegation )
+HIVE_DEFINE_EVALUATOR( account_update )
+HIVE_DEFINE_EVALUATOR( account_update2 )
+HIVE_DEFINE_EVALUATOR( claim_account )
+HIVE_DEFINE_EVALUATOR( create_claimed_account )
+HIVE_DEFINE_EVALUATOR( request_account_recovery )
+HIVE_DEFINE_EVALUATOR( recover_account )
+HIVE_DEFINE_EVALUATOR( change_recovery_account )
+HIVE_DEFINE_EVALUATOR( decline_voting_rights )
+HIVE_DEFINE_EVALUATOR( reset_account )
+HIVE_DEFINE_EVALUATOR( set_reset_account )
+
+void register_account_evaluators( evaluator_registry<operation>& registry )
+{
+  registry.register_evaluator< account_create_evaluator                 >();
+  registry.register_evaluator< account_create_with_delegation_evaluator >();
+  registry.register_evaluator< account_update_evaluator                 >();
+  registry.register_evaluator< account_update2_evaluator                >();
+  registry.register_evaluator< claim_account_evaluator                  >();
+  registry.register_evaluator< create_claimed_account_evaluator         >();
+  registry.register_evaluator< request_account_recovery_evaluator       >();
+  registry.register_evaluator< recover_account_evaluator                >();
+  registry.register_evaluator< change_recovery_account_evaluator        >();
+  registry.register_evaluator< decline_voting_rights_evaluator          >();
+  registry.register_evaluator< reset_account_evaluator                  >();
+  registry.register_evaluator< set_reset_account_evaluator              >();
+}
 
 std::list<account_name_type> verify_authority_accounts_exist_impl(
   const database& db,
