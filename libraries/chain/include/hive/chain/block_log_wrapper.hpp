@@ -106,6 +106,10 @@ namespace hive { namespace chain {
       return part_number * determine_max_blocks_in_log_file( block_log_split );
     }
 
+    /// Returns the number of oldest stored block.
+    uint32_t get_actual_tail_block_num() const;
+    block_id_type read_block_id_by_num( uint32_t block_num ) const;
+
   private:
     static uint32_t determine_max_blocks_in_log_file( int block_log_split );
 
@@ -147,7 +151,6 @@ namespace hive { namespace chain {
     block_log_ptr_t get_head_log() const;
     const block_log_ptr_t get_block_log_corresponding_to( uint32_t block_num ) const;
     const full_block_ptr_t get_head_block() const;
-    block_id_type read_block_id_by_num( uint32_t block_num ) const;
     full_block_range_t read_block_range_by_num( uint32_t starting_block_num, uint32_t count ) const;
 
     using append_t = std::function< void( block_log_ptr_t log ) >;
@@ -177,9 +180,6 @@ namespace hive { namespace chain {
       // 1 000 001: 1 000 001 % 1 000 000 == 1 / false
       // 1 000 002: 1 000 002 % 1 000 000 == 2 / false
     }
-
-    /// Returns the number of oldest stored block.
-    uint32_t get_actual_tail_block_num() const;
 
     void dispose_garbage( bool closing_time );
 

@@ -38,6 +38,19 @@
 #include <atomic>
 #include <algorithm>
 
+enum ExitCode
+{
+  Ok = 0,
+  LogFileError = 1,
+  InvalidArgumentError = 2,
+  BlocksRangeError = 3,
+  ArtifactsFileNotValid = 4,
+  BlockLogInvalid = 5,
+  FailToOpenInWriteMode = 6,
+  ExceptionOccured = 7,
+  OperationFailed = 8
+};
+
 struct shutdown_executor
 {
   shutdown_executor(uint32_t threads_num) :
@@ -71,6 +84,118 @@ void print_version()
   ss << "mainnet";
 #endif
   std::cout << ss.str() << "\n";
+}
+
+std::string generate_json_output(const std::initializer_list<std::pair<std::string, fc::variant>> &elements)
+{
+  fc::variant_object_builder builder;
+  for (const auto& el : elements)
+    builder.append(el.first, el.second);
+  return fc::json::to_string(builder.get());
+}
+
+void print_and_log_error(const std::string err, const bool json_output)
+{
+  elog("${err}", (err));
+  if (json_output)
+    std::cerr << generate_json_output({
+      {"Error", fc::variant(err)}
+    });
+  else
+    std::cerr << err << "\n";
+}
+
+bool artifacts_file_is_not_valid(const fc::path& block_log_file_path, const bool json_output)
+{
+  const fc::path artifacts_file = fc::path(block_log_file_path.generic_string() + hive::chain::block_log_file_name_info::_artifacts_extension.c_str());
+  if (fc::is_directory(artifacts_file))
+  {
+    print_and_log_error(artifacts_file.string() + " is directory - artifacts should be a file", json_output);
+    return true;
+  }
+  if (!fc::exists(artifacts_file))
+  {
+    print_and_log_error(artifacts_file.string() + " does not exist - expected to have artifacts file for operation.", json_output);
+    return true;
+  }
+  if (fc::file_size(artifacts_file) == 0)
+  {
+    print_and_log_error(artifacts_file.string() + " is an empty file!", json_output);
+    return true;
+  }
+
+  return false;
+}
+
+hive::chain::block_log_wrapper::block_log_wrapper_t get_block_log_wrapper(const fc::path &block_log_path, appbase::application &app, hive::chain::blockchain_worker_thread_pool &thread_pool, bool read_only)
+{
+  if (fc::is_directory(block_log_path))
+  {
+    auto wrapper = hive::chain::block_log_wrapper::create_limited_wrapper(block_log_path, app, thread_pool);
+    hive::chain::block_log_wrapper::block_log_open_args args;
+    args.data_dir = block_log_path;
+    wrapper->open_and_init(args, read_only, nullptr);
+    return wrapper;
+  }
+  else
+    return hive::chain::block_log_wrapper::create_opened_wrapper(block_log_path, app, thread_pool, read_only);
+}
+
+void print_simple_error_or_result_message(const std::string message, const fc::path &block_log_path, const bool json_output, const bool is_error)
+{
+  if (json_output)
+    std::cerr << generate_json_output(
+      {
+        {is_error ? "Error" : "Result", fc::variant(message)},
+        {"block_log_path", fc::variant(block_log_path)}
+      }
+    );
+  else if (is_error)
+    std::cout << "Error: " << message << "\n";
+  else
+    std::cout << message << "\n";
+}
+
+bool validate_first_and_last_block_and_print_error_if_necessary(
+  const fc::path &block_log_path,
+  const uint32_t first_block,
+  const uint32_t last_block,
+  const uint32_t tail_block_num,
+  const uint32_t head_block_num,
+  const bool json_output
+) {
+  if (first_block < tail_block_num)
+    {
+      if (json_output)
+        std::cerr << generate_json_output(
+          {
+            {"Error", fc::variant("first block must be bigger than than tail block number")},
+            {"first_block", fc::variant(first_block)},
+            {"tail_block_num", fc::variant(tail_block_num)},
+            {"block_log_path", fc::variant(block_log_path)}
+          }
+        );
+      else
+        std::cout << "Cannot operate on empty block_log\n";
+      return false;
+    }
+    if (head_block_num < last_block)
+    {
+      if (json_output)
+        std::cerr << generate_json_output(
+          {
+            {"Error", fc::variant("head_block_num must be bigger than than last_block")},
+            {"head_block_num", fc::variant(head_block_num)},
+            {"last_block", fc::variant(last_block)},
+            {"block_log_path", fc::variant(block_log_path)}
+          }
+        );
+      else
+        std::cout << "Error: Cannot operate on empty block_log\n";
+      return false;
+    }
+
+    return true;
 }
 
 struct extended_signed_block_header : public hive::protocol::signed_block_header
@@ -113,14 +238,14 @@ std::pair<uint32_t, uint32_t> get_effective_range_of_blocks(const int32_t given_
   if (given_last_block >= 0)
   {
     const uint32_t lb = static_cast<uint32_t>(given_last_block);
-    FC_ASSERT(lb <= given_head_block, "--to ${lb} must be below or equal to head_block: ${given_head_block}",(lb)(given_head_block));
+    //FC_ASSERT(lb <= given_head_block, "--to ${lb} must be below or equal to head_block: ${given_head_block}",(lb)(given_head_block));
     last_block = lb;
   }
   else
     last_block = std::min(head_block, head_block + given_last_block + 1);
 
-  FC_ASSERT(first_block <= last_block, "Calculated effective range is: [${first_block}:${last_block}] which is wrong. Parameters: given_first_block: ${given_first_block}, given_last_block:${given_last_block}, head_block: ${head_block}, tail_block: ${tail_block}",
-            (first_block)(last_block)(given_first_block)(given_last_block)(head_block)(tail_block));
+  //FC_ASSERT(first_block <= last_block, "Calculated effective range is: [${first_block}:${last_block}] which is wrong. Parameters: given_first_block: ${given_first_block}, given_last_block:${given_last_block}, head_block: ${head_block}, tail_block: ${tail_block}",
+  //          (first_block)(last_block)(given_first_block)(given_last_block)(head_block)(tail_block));
 
   return std::make_pair(first_block, last_block);
 }
@@ -134,7 +259,7 @@ void append_full_block_data(const std::shared_ptr<hive::chain::full_block_type> 
   start_offset += uncompressed.raw_size + sizeof(start_offset);
 }
 
-void checksum_block_log(const fc::path &block_log, fc::optional<uint32_t> checkpoint_every_n_blocks, appbase::application &app, hive::chain::blockchain_worker_thread_pool &thread_pool)
+ExitCode checksum_block_log(const fc::path &block_log, fc::optional<uint32_t> checkpoint_every_n_blocks, appbase::application &app, hive::chain::blockchain_worker_thread_pool &thread_pool, const bool json_output)
 {
   try
   {
@@ -154,7 +279,7 @@ void checksum_block_log(const fc::path &block_log, fc::optional<uint32_t> checkp
 
       append_full_block_data(full_block, uncompressed_block_start_offset, block_log_sha256_encoder);
 
-      if (checkpoint_every_n_blocks && full_block->get_block_num() % *checkpoint_every_n_blocks == 0 && full_block->get_block_num() != head_block_num)
+      if (!json_output && checkpoint_every_n_blocks && full_block->get_block_num() % *checkpoint_every_n_blocks == 0 && full_block->get_block_num() != head_block_num)
       {
         fc::sha256::encoder block_log_encoder_up_to_this_block(block_log_sha256_encoder);
         ilog("${result} ${block_log}@${block_num}", ("result", block_log_encoder_up_to_this_block.result().str())(block_log)("block_num", full_block->get_block_num()));
@@ -169,16 +294,18 @@ void checksum_block_log(const fc::path &block_log, fc::optional<uint32_t> checkp
 
     fc::sha256 final_hash = block_log_sha256_encoder.result();
 
-    if (checkpoint_every_n_blocks)
+    ilog("Final hash: ${final_hash} ${block_log}", ("final_hash", final_hash.str())(block_log));
+    if (json_output)
     {
-      ilog("Final hash: ${final_hash} ${block_log} @${head_block_num}", ("final_hash", final_hash.str())(block_log)(head_block_num));
-      std::cout << final_hash.str() << " " << block_log.generic_string() << "@" << head_block_num << "\n";
+      std::cout << generate_json_output({
+        { "final_hash", fc::variant(final_hash) },
+        { "block_log", fc::variant("block_log") }
+      });
     }
     else
-    {
-      ilog("Final hash: ${final_hash} ${block_log}", ("final_hash", final_hash.str())(block_log));
       std::cout << final_hash.str() << " " << block_log.generic_string() << "\n";
-    }
+
+    return ExitCode::Ok;
   }
   FC_LOG_AND_RETHROW()
 }
@@ -315,7 +442,7 @@ block_logs_and_hashes_type parse_checkpoints(const fc::path &checkpoints_file)
   FC_CAPTURE_AND_RETHROW()
 }
 
-bool validate_block_log_checksums_from_file(const fc::path &checksums_file, appbase::application &app, hive::chain::blockchain_worker_thread_pool &thread_pool)
+ExitCode validate_block_log_checksums_from_file(const fc::path &checksums_file, appbase::application &app, hive::chain::blockchain_worker_thread_pool &thread_pool, const bool json_output)
 {
   try
   {
@@ -326,48 +453,95 @@ bool validate_block_log_checksums_from_file(const fc::path &checksums_file, appb
         ++fail_count;
     if (fail_count)
     {
-      std::cerr << "checksums file had " << fail_count << " checksums that did NOT match\n";
+      print_simple_error_or_result_message("checksums file had " + std::to_string(fail_count) + " checksums that did NOT match", checksums_file, json_output, true);
       elog("checksums file had ${fail_count} checksums that did NOT match", (fail_count));
     }
     else
     {
-      std::cout << "All checksums from file match\n";
+      print_simple_error_or_result_message("All checksums from file match", checksums_file, json_output, false);
       ilog("All checksums from file match");
     }
-    return fail_count == 0;
+    return ExitCode::Ok;
   }
   FC_CAPTURE_AND_RETHROW()
 }
 
-bool compare_block_logs(const fc::path &first_filename, const fc::path &second_filename,
-                        const int32_t first_block_arg, const int32_t last_block_arg, appbase::application &app, hive::chain::blockchain_worker_thread_pool &thread_pool)
+ExitCode compare_block_logs(const fc::path &first_bl_path, const fc::path &second_bl_path,
+                        const int32_t first_block_arg, const int32_t last_block_arg, appbase::application &app, hive::chain::blockchain_worker_thread_pool &thread_pool, const bool json_output)
 {
   try
   {
     // open both block log files
-    hive::chain::block_log first_block_log(app);
-    first_block_log.open(first_filename, thread_pool, true);
-    FC_ASSERT(first_block_log.head(), "Cannot operate on empty block_log");
-    const uint32_t first_head_block_num = first_block_log.head()->get_block_num();
-    const uint32_t first_tail_block_num = block_log_info::get_first_block_num_for_file_name(first_filename);
+    auto first_block_log_wrapper = get_block_log_wrapper(first_bl_path, app, thread_pool, true);
+    const uint32_t first_head_block_num = first_block_log_wrapper->head_block_num();
+    if (!first_head_block_num)
+    {
+      print_simple_error_or_result_message("First block log is empty. Cannot perform compare operation", first_bl_path, json_output, true);
+      return ExitCode::BlockLogInvalid;
+    }
+    
+    const uint32_t first_tail_block_num = first_block_log_wrapper->get_actual_tail_block_num();
     const auto [first_log_first_block_num, first_log_last_block_num] = get_effective_range_of_blocks(first_block_arg, last_block_arg, first_head_block_num, first_tail_block_num);
 
-    hive::chain::block_log second_block_log(app);
-    second_block_log.open(second_filename, thread_pool, true);
-    FC_ASSERT(second_block_log.head(), "Cannot operate on empty block_log");
-    const uint32_t second_head_block_num = second_block_log.head()->get_block_num();
-    const uint32_t second_tail_block_num = block_log_info::get_first_block_num_for_file_name(second_filename);
+    auto second_block_log_wrapper = get_block_log_wrapper(second_bl_path, app, thread_pool, true);
+    const uint32_t second_head_block_num = second_block_log_wrapper->head_block_num();
+
+    if (!second_head_block_num)
+    {
+      print_simple_error_or_result_message("Second block log is empty. Cannot perform compare operation", second_bl_path, json_output, true);
+      return ExitCode::BlockLogInvalid;
+    }
+
+    const uint32_t second_tail_block_num = second_block_log_wrapper->get_actual_tail_block_num();
     const auto [second_log_first_block_num, second_log_last_block_num] = get_effective_range_of_blocks(first_block_arg, last_block_arg, second_head_block_num, second_tail_block_num);
 
-    FC_ASSERT(first_log_first_block_num == second_log_first_block_num, "Difference found when comparing starting block number in given block logs.\n"
-              "First block_log: ${first_filename}, first block number in block_log: ${first_tail_block_num}, first block number to compare: ${first_log_first_block_num},\n"
-              "Second block_log: ${second_filename}, first block number in block_log: ${second_tail_block_num}, first block number to compare: ${second_log_first_block_num}.",
-              (first_filename)(first_tail_block_num)(first_log_first_block_num)(second_filename)(second_tail_block_num)(second_log_first_block_num));
+    if (first_log_first_block_num != second_log_first_block_num)
+    {
+      if (json_output)
+        std::cerr << generate_json_output(
+            {
+              {"Result", fc::variant("Difference found when comparing starting block number in given block logs")},
+              {"first_block_log_path", fc::variant(first_bl_path)},
+              {"first block number in first block_log", fc::variant(first_tail_block_num)},
+              {"first block number to compare in first block_log", fc::variant(first_log_first_block_num)},
+              {"second_block_log_path", fc::variant(second_bl_path)},
+              {"first block number in second block_log", fc::variant(second_tail_block_num)},
+              {"first block number to compare in second block_log", fc::variant(second_log_first_block_num)},
+            }
+          );
+      else
+      {
+        std::cerr << "Difference found when comparing starting block number in given block logs.\n First block_log: " << first_bl_path.string() << ", first block number in block_log: " << std::to_string(first_tail_block_num)
+          << ", first block number to compare: " << std::to_string(first_log_first_block_num) << "\nSecond block_log: " << second_bl_path.string() << ", first block number in block_log: " << std::to_string(second_tail_block_num)
+          << ", first block number to compare: " << std::to_string(second_log_first_block_num) << "\n";
+      }
 
-    FC_ASSERT(first_log_last_block_num == second_log_last_block_num, "Difference found comparing ending block number in given block logs.\n"
-              "First block_log: ${first_filename}, head block number in block_log: ${first_head_block_num}, last block number to compare: ${first_log_last_block_num},\n"
-              "Second block_log: ${second_filename}, head block number in block_log: ${second_head_block_num}, last block number to compare: ${second_log_last_block_num}.",
-              (first_filename)(first_head_block_num)(first_log_last_block_num)(second_filename)(second_head_block_num)(second_log_last_block_num));
+      return ExitCode::Ok;
+    }
+
+    if (first_log_last_block_num != second_log_last_block_num)
+    {
+      if (json_output)
+        std::cerr << generate_json_output(
+            {
+              {"Result", fc::variant("Difference found comparing ending block number in given block logs.")},
+              {"first_block_log_path", fc::variant(first_bl_path)},
+              {"head block number in first block_log", fc::variant(first_head_block_num)},
+              {"head block number to compare in first block_log", fc::variant(first_log_last_block_num)},
+              {"second_block_log_path", fc::variant(second_bl_path)},
+              {"head block number in second block_log", fc::variant(second_head_block_num)},
+              {"head block number to compare in second block_log", fc::variant(second_log_last_block_num)},
+            }
+          );
+      else
+      {
+        std::cerr << "Difference found comparing ending block number in given block logs..\nFirst block_log: " << first_bl_path.string() << ", head block number in block_log: " << std::to_string(first_tail_block_num)
+          << ", last block number to compare: " << std::to_string(first_log_first_block_num) << "\nSecond block_log: " << second_bl_path.string() << ", head block number in block_log: " << std::to_string(second_tail_block_num)
+          << ", last block number to compare: " << std::to_string(second_log_first_block_num) << "\n";
+      }
+
+      return ExitCode::Ok;
+    }
 
     const uint32_t first_block_to_compare = first_log_first_block_num;
     const uint32_t last_block_to_compare = first_log_last_block_num;
@@ -414,13 +588,13 @@ bool compare_block_logs(const fc::path &first_filename, const fc::path &second_f
                                         {
       fc::set_thread_name("compare_1"); // tells the OS the thread's name
       fc::thread::current().set_name("compare_1"); // tells fc the thread's name for logging
-      first_block_log.for_each_block(first_block_to_compare, last_block_to_compare, generate_block_processor(first_full_block), hive::chain::block_log::for_each_purpose::decompressing, thread_pool); });
+        first_block_log_wrapper->process_blocks(first_block_to_compare, last_block_to_compare, generate_block_processor(first_full_block), thread_pool); });
 
     std::thread second_enumerator_thread([&]()
                                          {
       fc::set_thread_name("compare_2"); // tells the OS the thread's name
       fc::thread::current().set_name("compare_2"); // tells fc the thread's name for logging
-      second_block_log.for_each_block(first_block_to_compare, last_block_to_compare, generate_block_processor(second_full_block), hive::chain::block_log::for_each_purpose::decompressing, thread_pool); });
+        second_block_log_wrapper->process_blocks(first_block_to_compare, last_block_to_compare, generate_block_processor(second_full_block), thread_pool); });
 
     first_enumerator_thread.join();
     second_enumerator_thread.join();
@@ -428,21 +602,39 @@ bool compare_block_logs(const fc::path &first_filename, const fc::path &second_f
     // check the results
     if (mismatch_detected.load(std::memory_order_relaxed))
     {
-      elog("${first_filename} and ${second_filename} differ at block: ${mismatch_on_block_number}", (first_filename)(second_filename)(mismatch_on_block_number));
-      std::cerr << "Both block_logs differ at block: " << *mismatch_on_block_number << "\n";
-      return false;
+      elog("${first_bl_path} and ${second_bl_path} differ at block: ${mismatch_on_block_number}", (first_bl_path)(second_bl_path)(mismatch_on_block_number));
+      if (json_output)
+        std::cerr << generate_json_output(
+          {
+            {"Result", fc::variant("Difference detected")},
+            {"Block number", fc::variant(mismatch_on_block_number)},
+            {"first_block_log_path", fc::variant(first_bl_path)},
+            {"second_block_log_path", fc::variant(second_bl_path)}
+          }
+        );
+      else
+        std::cerr << "Both block_logs differ at block: " << *mismatch_on_block_number << "\n";
     }
     else
     {
-      ilog("No difference detected between block_logs");
-      std::cout << "No difference detected between block_logs\n";
-      return true;
+      if (json_output)
+        std::cerr << generate_json_output(
+          {
+            {"Result", fc::variant("No difference detected")},
+            {"first_block_log_path", fc::variant(first_bl_path)},
+            {"second_block_log_path", fc::variant(second_bl_path)}
+          }
+        );
+      else
+        std::cout << "No difference detected between block_logs\n";
     }
+
+    return ExitCode::Ok;
   }
   FC_CAPTURE_AND_RETHROW()
 }
 
-bool truncate_block_log(const fc::path &block_log_filename, uint32_t new_head_block_num, bool force, appbase::application &app, hive::chain::blockchain_worker_thread_pool &thread_pool)
+ExitCode truncate_block_log(const fc::path &block_log_filename, uint32_t new_head_block_num, bool force, appbase::application &app, hive::chain::blockchain_worker_thread_pool &thread_pool, const bool json_output)
 {
   try
   {
@@ -455,21 +647,66 @@ bool truncate_block_log(const fc::path &block_log_filename, uint32_t new_head_bl
       if (response != "yes")
       {
         std::cout << "aborting\n";
-        return false;
+        return ExitCode::Ok;
       }
     }
     std::cout << "\n";
     hive::chain::block_log log(app);
     log.open(block_log_filename, thread_pool, false);
-    FC_ASSERT(log.head(), "Cannot operate on empty block_log");
+    if (!log.head())
+    {
+      print_simple_error_or_result_message("Block log is empty.", block_log_filename, json_output, true);
+      return ExitCode::BlockLogInvalid;
+    }
     const uint32_t head_block_num = log.read_head()->get_block_num();
-    FC_ASSERT(head_block_num > new_head_block_num);
-    FC_ASSERT(block_log_info::get_first_block_num_for_file_name(block_log_filename) <= new_head_block_num);
+    if (head_block_num <= new_head_block_num)
+    {
+      if (json_output)
+        std::cerr << generate_json_output(
+          {
+            {"Error", fc::variant("Truncation impossible, head block number is smaller than requested")},
+            {"block_log_path", fc::variant(block_log_filename)},
+            {"head_block_num", fc::variant(head_block_num)},
+            {"new_head_block_num", fc::variant(new_head_block_num)}
+          }
+        );
+
+      else
+        std::cerr << "Truncation impossible, head block number is smaller (" << std::to_string(head_block_num) << ") than requested: " << std::to_string(new_head_block_num) << "\n";
+      return ExitCode::BlocksRangeError;
+    }
+
+    const auto lowest_possible_block = block_log_info::get_first_block_num_for_file_name(block_log_filename);
+    if (lowest_possible_block > new_head_block_num)
+    {
+      if (json_output)
+        std::cerr << generate_json_output(
+          {
+            {"Error", fc::variant("Truncation impossible, new head block number is too small")},
+            {"block_log_path", fc::variant(block_log_filename)},
+            {"lowest_possible_head_block_num", fc::variant(lowest_possible_block)},
+            {"new_head_block_num", fc::variant(new_head_block_num)}
+          }
+        );
+      else
+        std::cerr << "Truncation impossible, head block number is smaller (" << std::to_string(head_block_num) << ") than requested: " << std::to_string(new_head_block_num) << "\n";
+      return ExitCode::BlocksRangeError;
+    }
     ilog("Original block_log head_block_num: ${head_block_num}", (head_block_num));
     log.truncate(new_head_block_num);
     ilog("Truncating finished.");
-    std::cout << "Truncating finished\n";
-    return true;
+    if (json_output)
+      std::cerr << generate_json_output(
+          {
+            {"Result", fc::variant("Truncation finished")},
+            {"block_log_path", fc::variant(block_log_filename)},
+            {"old_head_block_num", fc::variant(head_block_num)},
+            {"new_head_block_num", fc::variant(new_head_block_num)}
+          }
+        );
+      else
+        std::cerr << "Truncating finished\n";
+    return ExitCode::Ok;
   }
   FC_CAPTURE_AND_RETHROW()
 }
@@ -508,7 +745,7 @@ fc::optional<uint64_t> is_data_at_file_position_a_plausible_offset_and_flags(int
   return offset_is_plausible && flags_are_plausible && dictionary_is_plausible ? offset : fc::optional<uint64_t>();
 }
 
-bool find_end(const fc::path &block_log_filename)
+ExitCode find_end(const fc::path &block_log_filename, bool json_output)
 {
   try
   {
@@ -516,13 +753,25 @@ bool find_end(const fc::path &block_log_filename)
 
     int block_log_fd = open(block_log_filename.string().c_str(), O_RDONLY | O_CLOEXEC, 0644);
     if (block_log_fd == -1)
-      FC_THROW("Error opening block log file ${block_log_filename}: ${error}", (block_log_filename)("error", strerror(errno)));
+    {
+      print_simple_error_or_result_message("failed to open block log file: " + std::string(strerror(errno)), block_log_filename, json_output, true);
+      return ExitCode::BlockLogInvalid;
+    }
 
     struct stat file_stats;
     if (fstat(block_log_fd, &file_stats) == -1)
-      FC_THROW("Error getting size of file: ${error}", ("error", strerror(errno)));
+    {
+      print_simple_error_or_result_message("failed to get block log file size: " + std::string(strerror(errno)), block_log_filename, json_output, true);
+      return ExitCode::BlockLogInvalid;
+    }
     const uint64_t block_log_size = file_stats.st_size;
-    FC_ASSERT(block_log_size >= (ssize_t)sizeof(uint64_t));
+    const auto minimum_size = (ssize_t)sizeof(uint64_t);
+
+    if (block_log_size < minimum_size)
+    {
+      print_simple_error_or_result_message("Block log size should be at least: " + std::to_string(minimum_size), block_log_filename, json_output, true);
+      return ExitCode::BlockLogInvalid;
+    }
 
     uint64_t offset_of_pos_and_flags = block_log_size - sizeof(uint64_t);
     for (int i = 0; i < HIVE_MAX_BLOCK_SIZE; ++i)
@@ -577,7 +826,18 @@ bool find_end(const fc::path &block_log_filename)
       if (new_file_size == block_log_size)
       {
         ilog("The block log already appears to end in a full block, no truncation is necessary");
-        std::cout << "The block log already appears to end in a full block, no truncation is necessary\n";
+        print_simple_error_or_result_message("The block log already appears to end in a full block, no truncation is necessary", block_log_filename, json_output, true);
+        return ExitCode::Ok;
+      }
+      else if (json_output)
+      {
+        std::cerr << generate_json_output(
+          {
+            {"Result", fc::variant("Likely end detected, block log size should be reduced.")},
+            {"new_block_log_size", fc::variant(new_file_size)},
+            {"block_log_path", fc::variant(block_log_filename)}
+          }
+        );
       }
       else
       {
@@ -594,9 +854,15 @@ bool find_end(const fc::path &block_log_filename)
           close(block_log_fd);
           block_log_fd = open(block_log_filename.string().c_str(), O_RDWR | O_APPEND | O_CREAT | O_CLOEXEC, 0644);
           if (block_log_fd == -1)
-            FC_THROW("Unable to reopen the block log file ${block_log_filename} in write mode for truncating: ${error}", (block_log_filename)("error", strerror(errno)));
-          FC_ASSERT(ftruncate(block_log_fd, new_file_size) == 0,
-                    "failed to truncate block log, ${error}", ("error", strerror(errno)));
+          {
+            std::cerr << "Unable to reopen the block log file in write mode for truncating: " << strerror(errno) << "\n";
+            return ExitCode::OperationFailed;
+          }
+          if (ftruncate(block_log_fd, new_file_size) != 0)
+          {
+            std::cerr << "failed to truncate block log: " << strerror(errno) << "\n";
+            return ExitCode::OperationFailed;
+          }
           ilog("Block log truncated");
           std::cout << "Block log truncated\n";
         }
@@ -607,77 +873,121 @@ bool find_end(const fc::path &block_log_filename)
     else
     {
       elog("Unable to detect the end of the block log");
-      std::cerr << "Unable to detect the end of the block log\n";
+      print_simple_error_or_result_message("Unable to detect the end of the block log", block_log_filename, json_output, true);
     }
 
     close(block_log_fd);
-    return possible_end_found;
+    return ExitCode::Ok;
   }
   FC_CAPTURE_AND_RETHROW()
 }
 
-void get_head_block_number(const fc::path &block_log_filename, appbase::application &app, hive::chain::blockchain_worker_thread_pool &thread_pool)
+ExitCode get_head_block_number(const fc::path &block_log_path, appbase::application &app, hive::chain::blockchain_worker_thread_pool &thread_pool, const bool json_output)
 {
   try
   {
-    hive::chain::block_log log(app);
-    log.open(block_log_filename, thread_pool, true /*read_only*/, false /*write_fallback*/, false /*auto_open_artifacts*/);
-    FC_ASSERT(log.head(), "Cannot operate on empty block_log");
-    const uint32_t head_block_num = log.head()->get_block_num();
-    ilog("${block_log_filename} head block number: ${head_block_num}", (block_log_filename)(head_block_num));
-    std::cout << head_block_num << "\n";
-    log.close();
+    auto block_log_wrapper = get_block_log_wrapper(block_log_path, app, thread_pool, true);
+    const uint32_t head_block_num = block_log_wrapper->head_block_num();
+    ilog("${block_log_filename} head block number: ${head_block_num}", (block_log_path)(head_block_num));
+    if (json_output)
+      std::cerr << generate_json_output(
+        {
+          {"head_block_number", fc::variant(head_block_num)},
+          {"block_log_path", fc::variant(block_log_path)}
+        }
+      );
+    else
+      std::cout << head_block_num << "\n";
+    block_log_wrapper->close_storage();
+    return ExitCode::Ok;
   }
   FC_CAPTURE_AND_RETHROW()
 }
 
-bool get_block_ids(const fc::path &block_log_filename, const int32_t first_block_arg, const int32_t last_block_arg, bool print_block_numbers, appbase::application &app, hive::chain::blockchain_worker_thread_pool &thread_pool)
+ExitCode get_block_ids(const fc::path &block_log_path, const int32_t first_block_arg, const int32_t last_block_arg, bool print_block_numbers, appbase::application &app, hive::chain::blockchain_worker_thread_pool &thread_pool, const bool json_output)
 {
   try
   {
-    hive::chain::block_log log(app);
-    log.open(block_log_filename, thread_pool, true);
-    FC_ASSERT(log.head(), "Cannot operate on empty block_log");
-    const uint32_t head_block_num = log.head() ? log.head()->get_block_num() : 0;
-    const uint32_t tail_block_num = block_log_info::get_first_block_num_for_file_name(block_log_filename);
-    const auto [first_block, last_block] = get_effective_range_of_blocks(first_block_arg, last_block_arg, head_block_num, tail_block_num);
-    FC_ASSERT(first_block >= tail_block_num, "first block: ${first_block} must be bigger than than tail block number: ${tail_block_num}", (first_block)(tail_block_num));
-    FC_ASSERT(head_block_num >= last_block, "last head_block_num: ${head_block_num} must be bigger than than last_block: ${last_block}", (head_block_num)(last_block));
-
-    for (unsigned i = first_block; i <= last_block; ++i)
+    auto block_log_wrapper = get_block_log_wrapper(block_log_path, app, thread_pool, true);
+    const uint32_t head_block_num = block_log_wrapper->head_block_num();
+    if (!head_block_num)
     {
-      if (print_block_numbers)
-        std::cout << "block num:" << i << ", block_id: " << log.read_block_id_by_num(i).str() << "\n";
-      else
-        std::cout << "block_id: " << log.read_block_id_by_num(i).str() << "\n";
+      print_simple_error_or_result_message("Cannot operate on empty block_log", block_log_path, json_output, true);
+      return ExitCode::BlockLogInvalid;
     }
-    return true;
+    const uint32_t tail_block_num = block_log_wrapper->get_actual_tail_block_num();
+    const auto [first_block, last_block] = get_effective_range_of_blocks(first_block_arg, last_block_arg, head_block_num, tail_block_num);
+    if (!validate_first_and_last_block_and_print_error_if_necessary(block_log_path, first_block, last_block, tail_block_num, head_block_num, json_output))
+      return ExitCode::BlocksRangeError;
+
+    if (json_output)
+    {
+        std::vector<fc::variant> ids;
+        ids.reserve(last_block - first_block);
+        for (unsigned i = first_block; i <= last_block; ++i)
+        {
+          if (print_block_numbers)
+          {
+            fc::variant_object vo(std::to_string(i), fc::variant(block_log_wrapper->read_block_id_by_num(i).str()));
+            fc::variant v;
+            fc::to_variant(vo, v);
+            ids.push_back(v);
+          }
+          else
+            ids.push_back(fc::variant(block_log_wrapper->read_block_id_by_num(i).str()));
+        }
+        std::cout << fc::json::to_string(ids);
+    }
+    else
+    {
+      for (unsigned i = first_block; i <= last_block; ++i)
+      {
+        if (print_block_numbers)
+          std::cout << "block num:" << i << ", block_id: " << block_log_wrapper->read_block_id_by_num(i).str() << "\n";
+        else
+          std::cout << "block_id: " << block_log_wrapper->read_block_id_by_num(i).str() << "\n";
+      }
+    }
+    return ExitCode::Ok;
   }
   FC_CAPTURE_AND_RETHROW()
 }
 
-bool get_block_range(const fc::path &block_log_filename, const int32_t first_block_arg, const int32_t last_block_arg,
+ExitCode get_block_range(const fc::path &block_log_path, const int32_t first_block_arg, const int32_t last_block_arg,
                      fc::optional<fc::path> output_dir, bool header_only, bool pretty_print, bool binary,
-                     appbase::application &app, hive::chain::blockchain_worker_thread_pool &thread_pool)
+                     appbase::application &app, hive::chain::blockchain_worker_thread_pool &thread_pool, const bool json_output)
 {
   if (binary)
   {
-    FC_ASSERT(!header_only, "unable to write only the header in binary mode");
-    FC_ASSERT(output_dir, "If requested block in binary form, output_dir is obligatory");
+    if (header_only)
+    {
+      print_simple_error_or_result_message("unable to write only the header in binary mod", block_log_path, json_output, true);
+      return ExitCode::InvalidArgumentError;
+    }
+    if (!output_dir)
+    {
+      print_simple_error_or_result_message("If requested block in binary form, output_dir is obligatory", block_log_path, json_output, true);
+      return ExitCode::InvalidArgumentError;
+    }
   }
 
   try
   {
-    hive::chain::block_log log(app);
-    log.open(block_log_filename, thread_pool, true);
-    const uint32_t head_block_num = log.head() ? log.head()->get_block_num() : 0;
-    FC_ASSERT(head_block_num, "block_log is empty");
+    auto block_log_wrapper = get_block_log_wrapper(block_log_path, app, thread_pool, true);
+    const uint32_t head_block_num = block_log_wrapper->head_block_num();
+    if (!head_block_num)
+    {
+      print_simple_error_or_result_message("Block log is empty", block_log_path, json_output, true);
+      return ExitCode::BlockLogInvalid;
+    }
 
-    const uint32_t tail_block_num = block_log_info::get_first_block_num_for_file_name(block_log_filename);
+    const uint32_t tail_block_num = block_log_wrapper->get_actual_tail_block_num();
     const auto [first_block, last_block] = get_effective_range_of_blocks(first_block_arg, last_block_arg, head_block_num, tail_block_num);
-    FC_ASSERT(first_block >= tail_block_num, "first block: ${first_block} must be bigger than than tail block number: ${tail_block_num}", (first_block)(tail_block_num));
-    FC_ASSERT(head_block_num >= last_block, "last head_block_num: ${head_block_num} must be bigger than than last_block: ${last_block}", (head_block_num)(last_block));
+    if (!validate_first_and_last_block_and_print_error_if_necessary(block_log_path, first_block, last_block, tail_block_num, head_block_num, json_output))
+      return ExitCode::BlocksRangeError;
 
+    std::vector<fc::variant> blocks;
+    blocks.reserve(last_block - first_block);
     std::stringstream ss;
     std::fstream fs;
 
@@ -689,7 +999,7 @@ bool get_block_range(const fc::path &block_log_filename, const int32_t first_blo
 
     for (uint32_t current_block_num = first_block; current_block_num <= last_block; ++current_block_num)
     {
-      std::shared_ptr<hive::chain::full_block_type> full_block = log.read_block_by_num(current_block_num);
+      std::shared_ptr<hive::chain::full_block_type> full_block = block_log_wrapper->read_block_by_num(current_block_num);
 
       if (output_dir)
       {
@@ -713,7 +1023,10 @@ bool get_block_range(const fc::path &block_log_filename, const int32_t first_blo
         const std::string filename = output_dir->generic_string() + "/block_" + filename_pattern.replace(filename_pattern.length() - block_num_as_string_length, block_num_as_string_length, block_num_as_string) + ".txt";
         fs.open(filename, std::ios::out | std::ios::trunc);
         if (!fs.is_open())
-          FC_THROW("Failed to create file: ${filename}", (filename));
+        {
+          print_simple_error_or_result_message("Failed to create file: " + filename, block_log_path, json_output, true);
+          return ExitCode::OperationFailed;
+        }
       }
 
       if (binary)
@@ -734,6 +1047,12 @@ bool get_block_range(const fc::path &block_log_filename, const int32_t first_blo
             else
               fs << fc::json::to_string(ebh) << "\n";
           }
+          else if (json_output)
+          {
+            fc::variant v;
+            fc::to_variant(ebh, v);
+            blocks.push_back(v);
+          }
           else
           {
             if (pretty_print)
@@ -753,6 +1072,12 @@ bool get_block_range(const fc::path &block_log_filename, const int32_t first_blo
             else
               fs << fc::json::to_string(esb) << "\n";
           }
+          else if (json_output)
+          {
+            fc::variant v;
+            fc::to_variant(esb, v);
+            blocks.push_back(v);
+          }
           else
           {
             if (pretty_print)
@@ -766,22 +1091,31 @@ bool get_block_range(const fc::path &block_log_filename, const int32_t first_blo
       if (output_dir)
         fs.close();
     }
-    if (!output_dir)
+    if (!output_dir && !json_output)
       std::cout << ss.str() << "\n";
+    else if (pretty_print)
+      std::cout << fc::json::to_pretty_string(blocks) << "\n";
+    else
+      std::cout << fc::json::to_string(blocks) << "\n";
 
-    return true;
+    block_log_wrapper->close_storage();
+    return ExitCode::Ok;
   }
   FC_CAPTURE_AND_RETHROW()
 }
 
-bool get_block_artifacts(const fc::path &block_log_path, const int32_t first_block_arg, const int32_t last_block_arg, const bool header_only, const bool full_match_verification, appbase::application &app, hive::chain::blockchain_worker_thread_pool &thread_pool)
+ExitCode get_block_artifacts(const fc::path &block_log_path, const int32_t first_block_arg, const int32_t last_block_arg, const bool header_only, const bool full_match_verification, appbase::application &app, hive::chain::blockchain_worker_thread_pool &thread_pool, const bool json_output)
 {
   try
   {
     hive::chain::block_log block_log(app);
     bool block_log_existed = fc::exists(block_log_path);
     block_log.open(block_log_path, thread_pool, true, false);
-    FC_ASSERT(block_log.head(), "Cannot operate on empty block_log");
+    if (!block_log.head())
+    {
+      print_simple_error_or_result_message("Cannot operate on empty block_log", block_log_path, json_output, true);
+      return ExitCode::BlockLogInvalid;
+    }
     if (full_match_verification)
       ilog("Opening artifacts file with full artifacts match verification ...");
 
@@ -794,35 +1128,47 @@ bool get_block_artifacts(const fc::path &block_log_path, const int32_t first_blo
       ilog("Artifacts file match verification done");
 
     const uint32_t artifacts_block_head_num = artifacts->read_head_block_num();
-    FC_ASSERT(artifacts_block_head_num, "${file} is empty", ("file", artifacts->get_artifacts_file()));
+    if (!artifacts_block_head_num)
+    {
+      print_simple_error_or_result_message(artifacts->get_artifacts_file().string() + " is empty", block_log_path, json_output, true);
+      return ExitCode::ArtifactsFileNotValid;
+    }
 
     const uint32_t tail_block_num = block_log_info::get_first_block_num_for_file_name(block_log_path);
     const auto [first_block, last_block] = get_effective_range_of_blocks(first_block_arg, last_block_arg, artifacts_block_head_num - 1 /* it's not possible to read head block artifacts*/, tail_block_num);
-    FC_ASSERT(first_block >= tail_block_num, "first block: ${first_block} must be bigger than than tail block number: ${tail_block_num}", (first_block)(tail_block_num));
-    FC_ASSERT(artifacts_block_head_num >= last_block, "last head_block_num: ${head_block_num} must be bigger than than last_block: ${last_block}", (artifacts_block_head_num)(last_block));
+    if (!validate_first_and_last_block_and_print_error_if_necessary(block_log_path, first_block, last_block, tail_block_num, artifacts_block_head_num, json_output))
+      return ExitCode::BlocksRangeError;
 
     block_log.close();
-    std::cout << artifacts->get_artifacts_contents(first_block, last_block, header_only) << "\n";
-    return true;
+
+    if (json_output)
+      std::cout << generate_json_output({
+        {"artifacts_file", fc::variant(artifacts->get_artifacts_file().string())},
+        {"artifacts", artifacts->get_artifacts_contents(first_block, last_block, header_only)}
+    });
+    else
+      std::cout << fc::json::to_pretty_string(artifacts->get_artifacts_contents(first_block, last_block, header_only)) << "\n";
+    return ExitCode::Ok;
   }
   FC_CAPTURE_AND_RETHROW()
 }
 
-bool generate_artifacts(const fc::path &block_log_path, appbase::application &app, hive::chain::blockchain_worker_thread_pool &thread_pool)
+ExitCode generate_artifacts(const fc::path &block_log_path, appbase::application &app, hive::chain::blockchain_worker_thread_pool &thread_pool, const bool json_output)
 {
   try
   {
-    hive::chain::block_log block_log(app);
-    block_log.open(block_log_path, thread_pool, true, true);
-    FC_ASSERT(block_log.head(), "Cannot operate on empty block_log");
-    block_log.close();
-    std::cout << "Opened and closed block log file. Artifacts were generated if needed\n";
-    return true;
+    auto block_log_reader = get_block_log_wrapper(block_log_path, app, thread_pool, false);
+    block_log_reader->close_storage();
+    if (json_output)
+      print_simple_error_or_result_message("Opened and closed block log file. Artifacts were generated if needed", block_log_path, json_output, false);
+    else
+      std::cout << "Opened and closed block log file. Artifacts were generated if needed\n";
+    return ExitCode::Ok;
   }
   FC_CAPTURE_AND_RETHROW()
 }
 
-bool split_block_log(const fc::path &block_log_filename, const int32_t first_block_arg, const int32_t last_block_arg, const fc::path &output_dir, const int32_t files_count_arg, appbase::application &app, hive::chain::blockchain_worker_thread_pool &thread_pool)
+ExitCode split_block_log(const fc::path &block_log_filename, const int32_t first_block_arg, const int32_t last_block_arg, const fc::path &output_dir, const int32_t files_count_arg, appbase::application &app, hive::chain::blockchain_worker_thread_pool &thread_pool, const bool json_output)
 {
   try
   {
@@ -831,9 +1177,15 @@ bool split_block_log(const fc::path &block_log_filename, const int32_t first_blo
     {
       hive::chain::block_log log(app);
       log.open(block_log_filename, thread_pool, true);
-      FC_ASSERT(log.head(), "Cannot operate on empty block_log");
-      return log.head()->get_block_num();
+      auto head_block = log.head();
+      return head_block ? head_block->get_block_num() : 0;
     }();
+
+    if (!head_block_num)
+    {
+      print_simple_error_or_result_message("Cannot operate on empty block_log", block_log_filename, json_output, true);
+      return ExitCode::BlockLogInvalid;
+    }
 
     if (!fc::exists(output_dir))
     {
@@ -845,8 +1197,9 @@ bool split_block_log(const fc::path &block_log_filename, const int32_t first_blo
 
     const uint32_t tail_block_num = block_log_info::get_first_block_num_for_file_name(block_log_filename);
     const auto [first_block, last_block] = get_effective_range_of_blocks(first_block_arg, last_block_arg, head_block_num, tail_block_num);
-    FC_ASSERT(first_block >= tail_block_num, "first block: ${first_block} must be bigger than than tail block number: ${tail_block_num}", (first_block)(tail_block_num));
-    FC_ASSERT(head_block_num >= last_block, "last head_block_num: ${head_block_num} must be bigger than than last_block: ${last_block}", (head_block_num)(last_block));
+    if (!validate_first_and_last_block_and_print_error_if_necessary(block_log_filename, first_block, last_block, tail_block_num, head_block_num, json_output))
+      return ExitCode::BlocksRangeError;
+
     const bool last_block_is_head_block = (last_block == head_block_num);
 
     if (first_block != 1)
@@ -882,21 +1235,45 @@ bool split_block_log(const fc::path &block_log_filename, const int32_t first_blo
           head_part_num = static_cast<size_t>(files_count_arg) + (first_block / BLOCKS_IN_SPLIT_BLOCK_LOG_FILE);
       }
 
-      FC_ASSERT(max_files_limit >= part_count, "Requested to create more files: ${part_count} than it's possible: ${max_files_limit} from given block_log with specific parameters", (part_count)(max_files_limit));
+      if (max_files_limit < part_count)
+      {
+        if (json_output)
+          std::cout << generate_json_output({
+            {"Error", fc::variant("Requested to create more files than possible")},
+            {"max_files_limit", fc::variant(max_files_limit)},
+            {"requested_files_count", fc::variant(part_count)},
+            {"block_log_path", fc::variant(block_log_filename)}
+          });
+        else
+          std::cout << "Requested to create more files: " << std::to_string(part_count) << " than it's possible: " << std::to_string(max_files_limit) << " from given block_log with specific parameters\n";
+        return ExitCode::BlocksRangeError;
+      }
     }
 
     uint32_t head_block_number = head_part_num == 0 ? 0 :
       hive::chain::block_log_wrapper::get_number_of_last_block_in_part( head_part_num, MAX_FILES_OF_SPLIT_BLOCK_LOG );
-    std::cout << "Splitting block_log ...\n";
+    if (!json_output)
+      std::cout << "Splitting block_log ...\n";
     hive::chain::split_block_log(block_log_filename, head_block_number, part_count, app, thread_pool, output_dir);
-    std::cout << "Splitting block_log finished\n";
+    if (!json_output)
+      std::cout << "Splitting block_log finished\n";
+    else
+    {
+      std::cout << generate_json_output({
+        {"Result", fc::variant("Splitting block_log finished")},
+        {"output_dir", fc::variant(output_dir)},
+        {"block_log_path", fc::variant(block_log_filename)}
+      });
+    }
     if (!last_block_is_head_block && (last_block % BLOCKS_IN_SPLIT_BLOCK_LOG_FILE != 0))
     {
       const std::string block_log_part_filename_pattern = "block_log_part.0000";
       const std::string last_part_num_as_str = std::to_string(hive::chain::block_log_wrapper::get_part_number_for_block(last_block, MAX_FILES_OF_SPLIT_BLOCK_LOG));
       const size_t lpnas_size = last_part_num_as_str.size();
       const fc::path block_log_file_to_truncate = output_dir / fc::path(std::string("block_log_part.0000").replace(block_log_part_filename_pattern.size() - lpnas_size, lpnas_size, last_part_num_as_str));
-      std::cout << "Requested block_log with head_block_num: " << last_block << " ... truncating " << block_log_file_to_truncate.generic_string() << " to " << last_block << " blocks...\n";
+      ilog("Truncating ${block_log_file_to_truncate} to block: ${last_block}", (block_log_file_to_truncate)(last_block));
+      if (!json_output)
+        std::cout << "Requested block_log with head_block_num: " << last_block << " ... truncating " << block_log_file_to_truncate.generic_string() << " to " << last_block << " blocks...\n";
       hive::chain::block_log log(app);
       log.open(block_log_file_to_truncate, thread_pool, false);
       FC_ASSERT(log.head(), "Cannot operate on empty block_log");
@@ -908,10 +1285,10 @@ bool split_block_log(const fc::path &block_log_filename, const int32_t first_blo
     }
   }
   FC_CAPTURE_AND_RETHROW()
-  return true;
+  return ExitCode::Ok;
 }
 
-bool merge_block_logs(const fc::path &input_block_log_dir, const fc::path &output_block_log_dir, const int32_t block_number_arg, appbase::application &app, hive::chain::blockchain_worker_thread_pool &thread_pool)
+ExitCode merge_block_logs(const fc::path &input_block_log_dir, const fc::path &output_block_log_dir, const int32_t block_number_arg, appbase::application &app, hive::chain::blockchain_worker_thread_pool &thread_pool, const bool json_output)
 {
   try
   {
@@ -920,9 +1297,17 @@ bool merge_block_logs(const fc::path &input_block_log_dir, const fc::path &outpu
     args.data_dir = input_block_log_dir;
     block_log_reader->open_and_init(args, true, nullptr);
     const uint32_t head_block_num = block_log_reader->head_block_num();
-    FC_ASSERT(head_block_num, "No block_logs detected in input directory");
+    if (head_block_num == 0)
+    {
+      print_and_log_error("No block_logs detected in input directory", json_output);
+      return ExitCode::BlockLogInvalid;
+    }
     const uint32_t highest_block_limit = get_effective_range_of_blocks(1, block_number_arg, head_block_num, 1).second;
-    FC_ASSERT(head_block_num >= highest_block_limit, "last head_block_num: ${head_block_num} must be bigger than than last_block: ${highest_block_limit}", (head_block_num)(highest_block_limit));
+    if (head_block_num < highest_block_limit)
+    {
+      print_and_log_error("last head_block_num: " + std::to_string(head_block_num) + " must be bigger than than last_block: " + std::to_string(highest_block_limit), json_output);
+      return ExitCode::BlocksRangeError;
+    }
     if (!fc::exists(output_block_log_dir))
     {
       dlog("Creating directories: ${output_block_log_dir}", (output_block_log_dir));
@@ -936,10 +1321,22 @@ bool merge_block_logs(const fc::path &input_block_log_dir, const fc::path &outpu
       block_log_writer->append(full_block, false /* is_at_live_sync */);
       return true;
     };
+
+    if (!json_output)
+      std::cout << "Merging process began.\n";
     block_log_reader->process_blocks(1, highest_block_limit, writer_processor, thread_pool);
+
+    if (json_output)
+      std::cout << generate_json_output({
+        {"Result", fc::variant("Merging process finished")},
+        {"output_dir", fc::variant(output_block_log_dir)},
+        {"block_log_path", fc::variant(input_block_log_dir)}
+      });
+    else
+      std::cout << "Merging process finished.\n";
   }
   FC_CAPTURE_AND_RETHROW()
-  return true;
+  return ExitCode::Ok;
 }
 
 int main(int argc, char **argv)
@@ -949,19 +1346,20 @@ int main(int argc, char **argv)
   minor_options.add_options()("help,h", "Print usage instructions");
   minor_options.add_options()("version,v", "Print version info.");
   minor_options.add_options()("log-path,l", boost::program_options::value<boost::filesystem::path>()->value_name("filename")->default_value("./block_log_util.log"), "Path to log file. All logs are saved into this file.");
+  minor_options.add_options()("json", "Output will give just a json response with result of operation.");
 
   boost::program_options::options_description block_log_operations("block_log operations");
-  block_log_operations.add_options()("block-log,i", boost::program_options::value<boost::filesystem::path>()->value_name("filename"), "Path to input block-log for processing, depending on the operation opening in read only (RO) or read & write (RW) mode.");
-  block_log_operations.add_options()("compare", "Compare input block_log with another block_log. (Both block_logs opened in RO mode)");
-  block_log_operations.add_options()("find-end", "Check if input block_log is not corrupted. Finds out place where last full block is successfully stored in block_log and proposes block_log truncation if recommended.");
-  block_log_operations.add_options()("generate-artifacts", "Open input block_log in read & write mode and generate artifacts file if necessary.");
-  block_log_operations.add_options()("get-block", "Get range of blocks, (Block_log opened in RO mode)");
-  block_log_operations.add_options()("get-block-artifacts", "Get range of artifacts. Allows to run full artifacts verification, (Block_log opened in RO mode)");
-  block_log_operations.add_options()("get-block-ids", "Get range of blocks ids. (Block_log opened in RO mode)");
-  block_log_operations.add_options()("get-head-block-number", "Get block_log head block number. (Block_log opened in RO mode)");
-  block_log_operations.add_options()("sha256sum", "Verify sha256 checksums in block-log. (Block_log opened in RO mode)");
+  block_log_operations.add_options()("block-log,i", boost::program_options::value<boost::filesystem::path>(), "Path to input block-log or directory with split block log for processing, depending on the operation opening in read only (RO) or read & write (RW) mode. Artifacts are required for all operations, expect 'generate-artifacts', 'find-end', 'get-head-block-number'");
+  block_log_operations.add_options()("compare", "Compare input block_log with another block_log. (Both block_logs opened in RO mode) (operate both on sigle block log or directory with split block log)");
+  block_log_operations.add_options()("find-end", "Check if input block_log is not corrupted. Finds out place where last full block is successfully stored in block_log and proposes block_log truncation if recommended. (single block_log operation)");
+  block_log_operations.add_options()("generate-artifacts", "Open input block_log in read & write mode and generate artifacts file if necessary. (operate both on sigle block log or directory with split block log)");
+  block_log_operations.add_options()("get-block", "Get range of blocks, (Block_log opened in RO mode) (operate both on sigle block log or directory with split block log)");
+  block_log_operations.add_options()("get-block-artifacts", "Get range of artifacts. Allows to run full artifacts verification, (Block_log opened in RO mode) (single block_log operation)");
+  block_log_operations.add_options()("get-block-ids", "Get range of blocks ids. (Block_log opened in RO mode) (operate both on sigle block log or directory with split block log)");
+  block_log_operations.add_options()("get-head-block-number", "Get block_log head block number. (Block_log opened in RO mode) (operate both on sigle block log or directory with split block log");
+  block_log_operations.add_options()("sha256sum", "Verify sha256 checksums in block-log. (Block_log opened in RO mode) (single block_log operation)");
   block_log_operations.add_options()("split", "Split legacy monolithic block log file into new-style multiple part files.");
-  block_log_operations.add_options()("truncate", "Truncate block log to given block number.");
+  block_log_operations.add_options()("truncate", "Truncate block log to given block number. (single block_log operation)");
 
   boost::program_options::options_description additional_operations("additional operations");
   additional_operations.add_options()("verify-checksums-from-file", boost::program_options::value<boost::filesystem::path>()->value_name("filename"), "Verify sha256 from text file.");
@@ -978,7 +1376,7 @@ int main(int argc, char **argv)
 
   // args for compare subcommand
   boost::program_options::options_description cmp_options("compare options");
-  cmp_options.add_options()("second-block-log", boost::program_options::value<boost::filesystem::path>()->value_name("filename")->required(), "The second block log");
+  cmp_options.add_options()("second-block-log", boost::program_options::value<boost::filesystem::path>(), "The second block log");
   cmp_options.add_options()("from", boost::program_options::value<int32_t>()->value_name("n"), "Start comparison at block n, assume all blocks below n are equivalent without checking. Negative numbers mean distance from end (-1 is head block). Defaults to 1.");
   cmp_options.add_options()("to", boost::program_options::value<int32_t>()->value_name("m"), "End comparison at block m, assume all blocks above m are equivalent without checking. Negative numbers mean distance from end (-1 is head block). Defaults to -1.");
 
@@ -1028,6 +1426,9 @@ int main(int argc, char **argv)
   const auto print_usage = [&]() {
     print_version();
     std::cout << "\n";
+    std::cout << "Exit codes:\n0 - Success\n1 - log file couldn not be created\n2 - Invalid argument - used or passed wrong arguments or their value is wrong\n" <<
+    "3 - Specified blocks range is wrong - block log doesn't have required block(s) or is empty\n4 - artifacts file is not valid\5 - block_log is invalid\n" <<
+    "6 - operation required to switch from read only to write mode, but it failed\n7 - some exception during work occured\n8 - block_log operation failed for some reason, for example no right to create file\n\n";
     std::cout << minor_options << "\n";
     std::cout << block_log_operations << "\n";
     std::cout << additional_operations << "\n";
@@ -1078,17 +1479,16 @@ int main(int argc, char **argv)
     update_options_map(block_log_operations);
     update_options_map(additional_operations);
 
-    const unsigned threads_num = options_map["jobs"].as<unsigned>();
-    FC_ASSERT(threads_num <= 16, "jobs limit is 16, cannot use ${threads_num}", (threads_num));
-    options_map.erase("jobs");
-
     fc::logging_config logging_config;
     fc::file_appender::config file_config;
     {
       const fc::path log_path = options_map["log-path"].as<boost::filesystem::path>();
       options_map.erase("log-path");
-      if (fc::exists(log_path))
-        FC_ASSERT(!fc::is_directory(log_path), "${log_path} points to directory. You must specify a file", (log_path));
+      if (fc::exists(log_path) && fc::is_directory(log_path))
+      {
+        std::cerr << log_path.string() << " points to directory. You must specify a file for place for logs (--log-path/-l)\n";
+        return ExitCode::LogFileError;
+      }
 
       file_config.filename = log_path;
     }
@@ -1099,20 +1499,35 @@ int main(int argc, char **argv)
     logging_config.loggers = {fc::logger_config("default")};
     logging_config.loggers.front().level = fc::log_level::all;
     logging_config.loggers.front().appenders = {"default"};
+    fc::configure_logging(logging_config);
+
+    const bool json_output = options_map.count("json") ? true : false;
+    options_map.erase("json");
+
+    const unsigned threads_num = options_map["jobs"].as<unsigned>();
+    if (threads_num > 16)
+    {
+      print_and_log_error("jobs limit is 16, cannot use " + std::to_string(threads_num), json_output);
+      return ExitCode::InvalidArgumentError;
+    }
+
+    options_map.erase("jobs");
 
     if (options_map.count("version"))
     {
       print_version();
-      return 0;
+      return ExitCode::Ok;
     }
-    else if (options_map.count("help") || options_map.empty())
+    else if (options_map.count("help"))
     {
       print_usage();
-      return options_map.count("help") ? 0 : 1;
+      return ExitCode::Ok;
     }
-
-    fc::configure_logging(logging_config);
-
+    else if (options_map.empty())
+    {
+      print_and_log_error("Not valid arguments were passed via command line. Use --help or -h to get help", json_output);
+      return ExitCode::InvalidArgumentError;
+    }
     // that's additional available operation, which doesn't request block_log file
     if (options_map.count("verify-checksums-from-file"))
     {
@@ -1121,27 +1536,47 @@ int main(int argc, char **argv)
       options_map.erase("verify-checksums-from-file");
       if (!options_map.empty())
       {
-        std::cerr << "You cannot perform block_log operation if you requested to perform one of additional operations (ambiguous arguments). Unnecessary arguments: " << get_arguments_as_string(options_map) << "\n";
-        elog("You cannot perform block_log operation if you requested to perform one of additional operations (ambiguous arguments). Unnecessary arguments: ${args}", ("args", get_arguments_as_string(options_map)));
-        return 1;
+        print_and_log_error("You cannot perform block_log operation if you requested to perform one of additional operations (ambiguous arguments). Unnecessary arguments: " + get_arguments_as_string(options_map), json_output);
+        return ExitCode::InvalidArgumentError;
       }
 
       shutdown_executor se(threads_num);
 
       dlog("block_log_util will perform verify-checksums-from-file operation on file: ${path_to_file}", (path_to_file));
-      return validate_block_log_checksums_from_file(path_to_file, se.the_app, se.thread_pool) ? 0 : 1;
+      return validate_block_log_checksums_from_file(path_to_file, se.the_app, se.thread_pool, json_output);
     }
     else if (options_map.count("merge-block-logs"))
     {
       update_options_map(merge_block_logs_options);
       options_map.erase("merge-block-logs");
 
-      FC_ASSERT(options_map.count("input") && options_map.count("output"), "input directory with split block_log and output directory for new block_log must be specified");
+      if (!options_map.count("input") || !options_map.count("output"))
+      {
+        print_and_log_error("input directory with split block_log and output directory for new block_log must be specified for merge block logs operation", json_output);
+        return ExitCode::InvalidArgumentError;
+      }
+
       const fc::path input_block_log_files_dir = options_map["input"].as<boost::filesystem::path>();
       const fc::path output_block_log_file_dir = options_map["output"].as<boost::filesystem::path>();
       options_map.erase("input");
       options_map.erase("output");
       options_map.erase("block-log"); // because -i is used for main block_log operations, using -i for merging will add `input` and `block-log` to options map.
+
+      if (!fc::is_directory(input_block_log_files_dir))
+      {
+        print_and_log_error("input for merge block logs operation must be a directory", json_output);
+        return ExitCode::InvalidArgumentError;
+      }
+      if (!fc::is_directory(output_block_log_file_dir))
+      {
+        print_and_log_error("output for merge block logs operation must be a directory", json_output);
+        return ExitCode::InvalidArgumentError;
+      }
+      if (fc::directory_size(input_block_log_files_dir) == 0)
+      {
+        print_and_log_error("input directory size for merge block logs operation is 0 - looks like there are no files inside", json_output);
+        return ExitCode::InvalidArgumentError;
+      }
 
       const int32_t max_block_number = options_map.count("block-number") ? options_map["block-number"].as<int32_t>() : -1;
 
@@ -1150,35 +1585,63 @@ int main(int argc, char **argv)
 
       if (!options_map.empty())
       {
-        std::cerr << "You cannot perform block_log operation if you requested to perform one of additional operations (ambiguous arguments). Unnecessary arguments: " << get_arguments_as_string(options_map) << "\n";
-        elog("You cannot perform block_log operation if you requested to perform one of additional operations (ambiguous arguments). Unnecessary arguments: ${args}", ("args", get_arguments_as_string(options_map)));
-        return 1;
+        print_and_log_error("You cannot perform block_log operation if you requested to perform one of additional operations (ambiguous arguments). Unnecessary arguments: " + get_arguments_as_string(options_map), json_output);
+        return ExitCode::InvalidArgumentError;
       }
 
       shutdown_executor se(threads_num);
 
       dlog("block_log_util will perform merge block logs operation. Input directory: ${input_block_log_files_dir}, output directory: ${output_block_log_file_dir}, block-number: ${max_block_number}", (input_block_log_files_dir)(output_block_log_file_dir)(max_block_number));
-      return merge_block_logs(input_block_log_files_dir, output_block_log_file_dir, max_block_number, se.the_app, se.thread_pool) ? 0 : 1;
+      return merge_block_logs(input_block_log_files_dir, output_block_log_file_dir, max_block_number, se.the_app, se.thread_pool, json_output);
     }
     // we should handle operation which request block_log file
     else
     {
       if (!options_map.count("block-log"))
       {
-        std::cerr << "--block-log with path to block_log file is requested\n";
-        elog("--block-log with path to block_log file is requested");
-        return 1;
+        print_and_log_error("--block-log with path to block_log file is requested", json_output);
+        return ExitCode::InvalidArgumentError;
       }
 
       const fc::path block_log_path = options_map["block-log"].as<boost::filesystem::path>();
-
       options_map.erase("block-log");
+
+      if (!fc::exists(block_log_path))
+      {
+        print_and_log_error(block_log_path.string() + " does not exist (input block_log)", json_output);
+        return ExitCode::InvalidArgumentError;
+      }
+
+      auto blocks_range_options_is_wrong = [&options_map, json_output]() -> bool {
+        if ((options_map.count("from") || options_map.count("to")) && options_map.count("block-number"))
+        {
+          print_and_log_error("'--from' and '--to' cannot be specified with --block-number", json_output);
+          return true;
+        }
+        
+        if (options_map.count("from") && options_map["from"].as<int32_t>() == 0)
+        {
+          print_and_log_error("'--from' cannot be 0", json_output);
+          return true;
+        }
+        
+        if (options_map.count("to") && options_map["to"].as<int32_t>() == 0)
+        {
+          print_and_log_error("'--to' cannot be 0", json_output);
+          return true;
+        }
+
+        if (options_map.count("block-number") && options_map["block-number"].as<int32_t>() == 0)
+        {
+          print_and_log_error("'--block-number' cannot be 0", json_output);
+          return true;
+        }
+        
+        return false;
+      };
 
       auto get_first_and_last_block_from_options = [&options_map]() -> std::pair<int32_t, int32_t>
       {
-        if (options_map.count("from") || options_map.count("to"))
-          FC_ASSERT(!options_map.count("block-number"), "'--from' and '--to' cannot be specified with --block-number");
-
         int32_t first_block, last_block;
         if (options_map.count("block-number"))
           first_block = last_block = options_map["block-number"].as<int32_t>();
@@ -1188,56 +1651,119 @@ int main(int argc, char **argv)
           last_block = options_map.count("to") ? options_map["to"].as<int32_t>() : -1;
         }
 
-        FC_ASSERT(first_block != 0);
-        FC_ASSERT(last_block != 0);
         return std::make_pair(first_block, last_block);
       };
 
       if (options_map.empty())
       {
-        std::cerr << "Could not recognize which operation should be performed on block_log\n";
-        elog("Could not recognize which operation should be performed on block_log");
-        return 1;
+        print_and_log_error("Could not recognize which operation should be performed on block_log", json_output);
+        return ExitCode::InvalidArgumentError;
       }
       else if (options_map.size() > 1)
       {
-        std::cerr << "You specified more than one block_log operation. One one at once is allowed. Passed arguments: " << get_arguments_as_string(options_map) << "\n";
-        elog("You specified more than one block_log operation. One one at once is allowed. Passed arguments: ${args}", ("args", get_arguments_as_string(options_map)));
-        return 1;
+        print_and_log_error("You specified more than one block_log operation. One one at once is allowed. Passed arguments: " + get_arguments_as_string(options_map), json_output);
+        return ExitCode::InvalidArgumentError;
       }
 
       shutdown_executor se(threads_num);
 
+      const bool input_block_log_is_directory = fc::is_directory(block_log_path);
+
+      if (!input_block_log_is_directory)
+      {
+        if (fc::file_size(block_log_path) == 0)
+        {
+          print_and_log_error(block_log_path.string() + " is an empty file!", json_output);
+          return ExitCode::InvalidArgumentError;
+        }
+        if (!hive::chain::block_log_file_name_info::is_block_log_file_name(block_log_path))
+        {
+          print_and_log_error(block_log_path.string() + " file has not valid block_log file name!", json_output);
+          return ExitCode::InvalidArgumentError;
+        }
+      }
+      else if (fc::directory_size(block_log_path) == 0)
+      {
+        print_and_log_error("input directory with split block_log size is 0 - looks like there are no files inside", json_output);
+        return ExitCode::InvalidArgumentError;
+      }
+
+      auto validate_last_block_in_split_block_log = [&block_log_path, &se, json_output](const uint32_t last_block) -> bool
+      {
+        uint32_t head_block_num;
+        if (fc::is_directory(block_log_path))
+        {
+          const auto block_log_reader = hive::chain::block_log_wrapper::create_limited_wrapper(block_log_path, se.the_app, se.thread_pool);
+          hive::chain::block_log_wrapper::block_log_open_args args;
+          args.data_dir = block_log_path;
+          block_log_reader->open_and_init(args, true, nullptr);
+          head_block_num = block_log_reader->head_block_num();
+        }
+        else
+        {
+          hive::chain::block_log block_log(se.the_app);
+          block_log.open(block_log_path, se.thread_pool, true, false);
+          head_block_num = block_log.head() ? block_log.head()->get_block_num() : 0;
+        }
+        if (head_block_num == 0)
+        {
+          print_and_log_error("No block_logs detected in input directory", json_output);
+          return false;
+        }
+        const uint32_t highest_block_limit = get_effective_range_of_blocks(1, last_block, head_block_num, 1).second;
+        if (head_block_num < highest_block_limit)
+        {
+          print_and_log_error("Arguments specified that operation will require block: " + std::to_string(highest_block_limit) + " while head block in split block log is: " + std::to_string(head_block_num), json_output);
+          return false;
+        }
+
+        return true;
+      };
+
       if (options_map.count("compare"))
       {
+        if (!input_block_log_is_directory && artifacts_file_is_not_valid(block_log_path, json_output))
+          return ExitCode::ArtifactsFileNotValid;
         update_options_map(cmp_options);
         if (!options_map.count("second-block-log"))
         {
-          std::cerr << "Missing \'--second-block-log\' for compare operation\n";
-          elog("Missing \'--second-block-log\' for compare operation");
-          return 1;
+          print_and_log_error("Missing \'--second-block-log\' for compare operation", json_output);
+          return ExitCode::InvalidArgumentError;
         }
 
         const fc::path second_block_log_path = options_map["second-block-log"].as<boost::filesystem::path>();
+
         const auto [first_block, last_block] = get_first_and_last_block_from_options();
         dlog("block_log_util will perform compare operation between block_log: ${block_log_path} and ${second_block_log_path}, from: ${first_block}, to: ${last_block}", (block_log_path)(second_block_log_path)(first_block)(last_block));
-        return compare_block_logs(block_log_path, second_block_log_path, first_block, last_block, se.the_app, se.thread_pool) ? 0 : 1;
+        return compare_block_logs(block_log_path, second_block_log_path, first_block, last_block, se.the_app, se.thread_pool, json_output);
       }
       else if (options_map.count("find-end"))
       {
+        if (!input_block_log_is_directory && input_block_log_is_directory)
+        {
+          print_and_log_error("find-end operation accepts only single block_log", json_output);
+          return ExitCode::InvalidArgumentError;
+        }
         dlog("block_log_util will perform find-end operation on block_log: ${block_log_path}", (block_log_path));
-        return find_end(block_log_path) ? 0 : 1;
+        return find_end(block_log_path, json_output);
       }
       else if (options_map.count("generate-artifacts"))
       {
         dlog("block_log_util will open block_log: ${block_log_path} and generate artifacts file if necessary", (block_log_path));
-        return generate_artifacts(block_log_path, se.the_app, se.thread_pool) ? 0 : 1;
+        return generate_artifacts(block_log_path, se.the_app, se.thread_pool, json_output);
       }
       else if (options_map.count("get-block"))
       {
+        if (!input_block_log_is_directory && artifacts_file_is_not_valid(block_log_path, json_output))
+          return ExitCode::ArtifactsFileNotValid;
+  
         update_options_map(get_block_options);
-
+        if (blocks_range_options_is_wrong())
+          return ExitCode::InvalidArgumentError;
         const auto [first_block, last_block] = get_first_and_last_block_from_options();
+        if (!validate_last_block_in_split_block_log(last_block))
+          return ExitCode::BlocksRangeError;
+
         const fc::optional<fc::path> output_dir = options_map.count("output-dir") ? options_map["output-dir"].as<boost::filesystem::path>() : fc::optional<fc::path>();
         const bool header_only = options_map.count("header-only") != 0;
         const bool pretty = options_map.count("pretty") != 0;
@@ -1245,42 +1771,78 @@ int main(int argc, char **argv)
         ilog("block_log_util will perform get_block operation on block_log: ${block_log_path}, parameters - first_block: ${first_block}, last_block: ${last_block}, header_only: ${header_only}, pretty: ${pretty}, binary: ${binary}, output_dir: ${output_dir} ",
              (block_log_path)(first_block)(last_block)(header_only)(pretty)(binary)(output_dir));
 
-        return get_block_range(block_log_path, first_block, last_block, output_dir, header_only, pretty, binary, se.the_app, se.thread_pool) ? 0 : 1;
+        return get_block_range(block_log_path, first_block, last_block, output_dir, header_only, pretty, binary, se.the_app, se.thread_pool, json_output);
       }
       else if (options_map.count("get-block-artifacts"))
       {
+        if (input_block_log_is_directory)
+        {
+          print_and_log_error("get block artifacts operation accepts only single block_log", json_output);
+          return ExitCode::InvalidArgumentError;
+        }
+  
+        if (artifacts_file_is_not_valid(block_log_path, json_output))
+          return ExitCode::ArtifactsFileNotValid;
+
         update_options_map(get_block_artifacts_options);
         const bool header_only = options_map.count("header-only") != 0;
         const bool full_match_verification = options_map.count("do-full-artifacts-verification-match-check") != 0;
 
-        if (header_only)
-          FC_ASSERT(!options_map.count("from") && !options_map.count("to") && !options_map.count("block-number"), "'--get-block-artifacts' with header-only option cannot accept '--from', '--to' and '--block-number' parameters.");
+        if (header_only && (options_map.count("from") || options_map.count("to") || options_map.count("block-number")))
+        {
+          print_and_log_error("'--get-block-artifacts' with header-only option cannot accept '--from', '--to' or '--block-number' parameters.", json_output);
+          return ExitCode::InvalidArgumentError;
+        }
 
+        if (blocks_range_options_is_wrong())
+          return ExitCode::InvalidArgumentError;
         const auto [first_block, last_block] = get_first_and_last_block_from_options();
         dlog("block_log_util will perform get-block-artifacts operation on block_log: ${block_log_path}, parameters - first_block: ${first_block}, last_block: ${last_block}, header_only: ${header_only}, full_match_verification: ${full_match_verification}",
              (block_log_path)(first_block)(last_block)(header_only)(full_match_verification));
-        return get_block_artifacts(block_log_path, first_block, last_block, header_only, full_match_verification, se.the_app, se.thread_pool) ? 0 : 1;
+        return get_block_artifacts(block_log_path, first_block, last_block, header_only, full_match_verification, se.the_app, se.thread_pool, json_output);
       }
       else if (options_map.count("get-block-ids"))
       {
-        update_options_map(get_block_ids_options);
+        if (!input_block_log_is_directory && artifacts_file_is_not_valid(block_log_path, json_output))
+          return ExitCode::ArtifactsFileNotValid;
 
+        update_options_map(get_block_ids_options);
+        if (blocks_range_options_is_wrong())
+          return ExitCode::InvalidArgumentError;
         const auto [first_block, last_block] = get_first_and_last_block_from_options();
+        if (!validate_last_block_in_split_block_log(last_block))
+          return ExitCode::BlocksRangeError;
         const bool print_block_numbers = options_map.count("print-block-numbers") != 0;
 
         dlog("block_log_util will perform get-block-ids operation on ${block_log_path} - parameters - first_block: ${first_block}, last_block: ${last_block}, print_block_numbers: ${print_block_numbers}",
              (block_log_path)(first_block)(last_block)(print_block_numbers));
-        return get_block_ids(block_log_path, first_block, last_block, print_block_numbers, se.the_app, se.thread_pool) ? 0 : 1;
+        return get_block_ids(block_log_path, first_block, last_block, print_block_numbers, se.the_app, se.thread_pool, json_output);
       }
       else if (options_map.count("sha256sum"))
       {
+        if (input_block_log_is_directory)
+        {
+          print_and_log_error("split operation accepts only single block_log", json_output);
+          return ExitCode::InvalidArgumentError;
+        }
+        if (artifacts_file_is_not_valid(block_log_path, json_output))
+          return ExitCode::ArtifactsFileNotValid;
+
         update_options_map(sha256sum_options);
         const fc::optional<uint32_t> checkpoint_every_n_blocks = options_map.count("checkpoint") ? options_map["checkpoint"].as<uint32_t>() : fc::optional<uint32_t>();
         dlog("block_log_util will perform sha256sum operation on block_log: ${block_log_path}, checkpoint_every_n_blocks: ${checkpoint_every_n_blocks}", (block_log_path)(checkpoint_every_n_blocks));
-        checksum_block_log(block_log_path, checkpoint_every_n_blocks, se.the_app, se.thread_pool);
+        return checksum_block_log(block_log_path, checkpoint_every_n_blocks, se.the_app, se.thread_pool, json_output);
       }
       else if (options_map.count("split"))
       {
+        if (input_block_log_is_directory)
+        {
+          print_and_log_error("split operation accepts only single block_log", json_output);
+          return ExitCode::InvalidArgumentError;
+        }
+        if (artifacts_file_is_not_valid(block_log_path, json_output))
+          return ExitCode::ArtifactsFileNotValid;
+
         update_options_map(split_block_log_options);
 
         int32_t files_count = 0;
@@ -1288,64 +1850,102 @@ int main(int argc, char **argv)
         {
           const bool from_given = options_map.count("from");
           const bool to_given = options_map.count("to");
-          FC_ASSERT(!(from_given && to_given), "--files-count cannot be specified together with from and to");
+          if (from_given && to_given)
+          {
+            print_and_log_error("--files-count cannot be specified together with both from and to in split operation", json_output);
+            return ExitCode::InvalidArgumentError;
+          }
+
           files_count = options_map["files-count"].as<int32_t>();
-          if (files_count < 0)
-            FC_ASSERT(!from_given && !to_given, "if --files-count is negative, cannot use --from or --to");
+          if (files_count < 0 && (from_given || to_given))
+          {
+            print_and_log_error("if --files-count is negative, cannot use --from or --to in split operation", json_output);
+            return ExitCode::InvalidArgumentError;
+          }
         }
 
+        if (!options_map.count("output-dir"))
+        {
+          print_and_log_error("output_dir is necessary when splitting block_log in order to know where new block_log files should be stored.", json_output);
+          return ExitCode::InvalidArgumentError;
+        }
+        
+        if (blocks_range_options_is_wrong())
+          return ExitCode::InvalidArgumentError;
         const auto [first_block, last_block] = get_first_and_last_block_from_options();
-        FC_ASSERT(first_block > 0 && (first_block == 1 || first_block % BLOCKS_IN_SPLIT_BLOCK_LOG_FILE == 0), "first block should be 1 or multiplicity of BLOCKS_IN_SPLIT_BLOCK_LOG_FILE");
-        FC_ASSERT(options_map.count("output-dir"), "output_dir is necessary when splitting block_log in order to know where new block_log files should be stored.");
+        if (!validate_last_block_in_split_block_log(last_block))
+          return ExitCode::BlocksRangeError;
+        if (!(first_block == 1 || first_block % BLOCKS_IN_SPLIT_BLOCK_LOG_FILE == 0))
+        {
+          print_and_log_error("first block should be 1 or multiplicity of " + std::to_string(BLOCKS_IN_SPLIT_BLOCK_LOG_FILE), json_output);
+          return ExitCode::InvalidArgumentError;
+        }
+
         const fc::path output_dir = options_map["output-dir"].as<boost::filesystem::path>();
         dlog("block_log_util will perform split block_log operation on ${block_log_path} - parameters - first_block: ${first_block}, last_block: ${last_block}, output_dir: ${output_dir}, files_count: ${files_count}",
              (block_log_path)(first_block)(last_block)(output_dir)(files_count));
-        return split_block_log(block_log_path, first_block, last_block, output_dir, files_count, se.the_app, se.thread_pool) ? 0 : 1;
+        return split_block_log(block_log_path, first_block, last_block, output_dir, files_count, se.the_app, se.thread_pool, json_output);
       }
       else if (options_map.count("truncate"))
       {
+        if (input_block_log_is_directory)
+        {
+          print_and_log_error("split operation accepts only single block_log", json_output);
+          return ExitCode::InvalidArgumentError;
+        }
+        if (artifacts_file_is_not_valid(block_log_path, json_output))
+          return ExitCode::ArtifactsFileNotValid;
+
         update_options_map(truncate_options);
-        FC_ASSERT(options_map.count("block-number"), "\"--block-number\" is mandatory");
+        if (!options_map.count("block-number"))
+        {
+          print_and_log_error("\"--block-number\" is mandatory for truncate operation", json_output);
+          return ExitCode::InvalidArgumentError;
+        }
+
         const uint32_t block_number = options_map["block-number"].as<uint32_t>();
         const bool force = options_map.count("force") ? true : false;
         dlog("block_log_util will perform truncate operation on block_log: ${block_log_path}, block_number: ${block_number}, force: ${force}", (block_log_path)(block_number)(force));
-        truncate_block_log(block_log_path, block_number, force, se.the_app, se.thread_pool);
+        return truncate_block_log(block_log_path, block_number, force, se.the_app, se.thread_pool, json_output);
       }
       else if (options_map.count("get-head-block-number"))
       {
         dlog("block_log_util will perform get-head-block-number operation on block_log: ${block_log_path}", (block_log_path));
-        get_head_block_number(block_log_path, se.the_app, se.thread_pool);
+        return get_head_block_number(block_log_path, se.the_app, se.thread_pool, json_output);
       }
       else
-        FC_THROW("block_log operation was not recognized. cmd arguments: ${args}", ("args", get_arguments_as_string(options_map)));
+      {
+        print_and_log_error("block_log operation was not recognized. cmd arguments: " + get_arguments_as_string(options_map), json_output);
+        return ExitCode::InvalidArgumentError;
+      }
     }
   }
   catch (const fc::exception& e)
   {
     elog("fc error occured: ${error}", ("error", e.to_detail_string()));
     std::cerr << "\n\nFC Error occured: " << e.to_detail_string() << "\n";
-    return 1;
+    return ExitCode::ExceptionOccured;
   }
   catch (const boost::program_options::error& e)
   {
     elog("boost error occured: ${error}", ("error", e.what()));
     std::cerr << "\n\n boost program options error occured: " << e.what() << "\n";
-    return 1;
+    return ExitCode::ExceptionOccured;
   }
   catch (const std::exception& e)
   {
     elog("std error occured: ${error}", ("error", e.what()));
     std::cerr << "\n\nstd error occured: " << e.what() << "\n";
-    return 1;
+    return ExitCode::ExceptionOccured;
   }
   catch(...)
   {
     elog("An unknown error occured");
     std::cerr << "\n\nAn unknown error occured\n";
-    return 1;
+    return ExitCode::ExceptionOccured;
   }
 
-  return 0;
+  return ExitCode::Ok;
 }
 
 FC_REFLECT_DERIVED(extended_signed_block_header, (hive::protocol::signed_block_header),

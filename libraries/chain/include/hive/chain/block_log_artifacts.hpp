@@ -113,7 +113,7 @@ public:
   void flush();
 
   // for block_log_util
-  std::string get_artifacts_contents(const fc::optional<uint32_t>& starting_block_number, const fc::optional<uint32_t>& ending_block_number, bool header_only) const;
+ fc::variant get_artifacts_contents(const fc::optional<uint32_t>& starting_block_number, const fc::optional<uint32_t>& ending_block_number, bool header_only) const;
 
 private:
   class impl;
