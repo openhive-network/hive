@@ -209,7 +209,7 @@ public:
   void store_block_artifacts(artifact_data_container_t& artifacts_data);
 
   block_log_artifacts::artifacts_t read_block_artifacts(uint32_t block_num) const;
-  std::string get_artifacts_contents(const fc::optional<uint32_t>& starting_block_number, const fc::optional<uint32_t>& ending_block_number, bool header_only) const;
+  fc::variant get_artifacts_contents(const fc::optional<uint32_t>& starting_block_number, const fc::optional<uint32_t>& ending_block_number, bool header_only) const;
 
   void update_head_block(uint32_t block_num)
   {
@@ -869,7 +869,7 @@ block_log_artifacts::artifacts_t block_log_artifacts::impl::read_block_artifacts
 }
 
 
-std::string block_log_artifacts::impl::get_artifacts_contents(const fc::optional<uint32_t>& starting_block_number, const fc::optional<uint32_t>& ending_block_number, bool header_only) const
+fc::variant block_log_artifacts::impl::get_artifacts_contents(const fc::optional<uint32_t>& starting_block_number, const fc::optional<uint32_t>& ending_block_number, bool header_only) const
 {
   try
   {
@@ -915,7 +915,10 @@ std::string block_log_artifacts::impl::get_artifacts_contents(const fc::optional
 
       result["artifacts"] = artifacts_data;
     }
-    return fc::json::to_pretty_string(result);
+
+    fc::variant v;
+    fc::to_variant(result, v);
+    return v;
   }
   FC_CAPTURE_AND_RETHROW()
 }
@@ -1050,7 +1053,7 @@ void block_log_artifacts::flush()
   _impl->flush_header();
 }
 
-std::string block_log_artifacts::get_artifacts_contents(const fc::optional<uint32_t>& starting_block_number, const fc::optional<uint32_t>& ending_block_number, bool header_only) const
+fc::variant block_log_artifacts::get_artifacts_contents(const fc::optional<uint32_t>& starting_block_number, const fc::optional<uint32_t>& ending_block_number, bool header_only) const
 {
   return _impl->get_artifacts_contents(starting_block_number, ending_block_number, header_only);
 }
