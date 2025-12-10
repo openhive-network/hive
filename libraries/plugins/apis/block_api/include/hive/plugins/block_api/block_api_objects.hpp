@@ -1,29 +1,27 @@
 #pragma once
-#include <hive/chain/account_object.hpp>
-#include <hive/chain/block_summary_object.hpp>
-#include <hive/chain/comment_object.hpp>
-#include <hive/chain/global_property_object.hpp>
-#include <hive/chain/hive_objects.hpp>
-#include <hive/chain/transaction_object.hpp>
-#include <hive/chain/witness_objects.hpp>
-#include <hive/chain/database.hpp>
+#include <hive/protocol/block.hpp>
+#include <hive/protocol/types.hpp>
+
+#include <memory>
+#include <vector>
+
+namespace hive { namespace chain {
+  // Forward declarations
+  class full_block_type;
+  class full_transaction_type;
+} }
 
 namespace hive { namespace plugins { namespace block_api {
 
-using namespace hive::chain;
+using hive::protocol::signed_block;
+using hive::protocol::block_id_type;
+using hive::protocol::public_key_type;
+using hive::protocol::transaction_id_type;
+using std::vector;
 
 struct api_signed_block_object : public signed_block
 {
-  api_signed_block_object(const std::shared_ptr<full_block_type>& full_block) : 
-    signed_block(full_block->get_block()),
-    block_id(full_block->get_block_id()),
-    signing_key(full_block->get_signing_key())
-  {
-    const std::vector<std::shared_ptr<full_transaction_type>>& full_transactions = full_block->get_full_transactions();
-    transaction_ids.reserve(transactions.size());
-    for (const std::shared_ptr<full_transaction_type>& full_transaction : full_transactions)
-      transaction_ids.push_back(full_transaction->get_transaction_id());
-  }
+  api_signed_block_object(const std::shared_ptr<hive::chain::full_block_type>& full_block);
   api_signed_block_object() {}
 
   block_id_type                 block_id;

@@ -1,4 +1,5 @@
 #include <hive/chain/hive_fwd.hpp>
+#include <hive/chain/database.hpp>
 #include <appbase/application.hpp>
 
 #include <hive/plugins/block_api/block_api.hpp>
@@ -7,6 +8,23 @@
 #include <hive/protocol/get_config.hpp>
 
 namespace hive { namespace plugins { namespace block_api {
+
+//////////////////////////////////////////////////////////////////////
+//                                                                  //
+// api_signed_block_object constructor                              //
+//                                                                  //
+//////////////////////////////////////////////////////////////////////
+
+api_signed_block_object::api_signed_block_object(const std::shared_ptr<hive::chain::full_block_type>& full_block) :
+  signed_block(full_block->get_block()),
+  block_id(full_block->get_block_id()),
+  signing_key(full_block->get_signing_key())
+{
+  const std::vector<std::shared_ptr<hive::chain::full_transaction_type>>& full_transactions = full_block->get_full_transactions();
+  transaction_ids.reserve(transactions.size());
+  for (const std::shared_ptr<hive::chain::full_transaction_type>& full_transaction : full_transactions)
+    transaction_ids.push_back(full_transaction->get_transaction_id());
+}
 
 class block_api_impl
 {
@@ -51,7 +69,7 @@ block_api_impl::~block_api_impl() {}
 DEFINE_API_IMPL( block_api_impl, get_block_header )
 {
   get_block_header_return result;
-  std::shared_ptr<full_block_type> block = 
+  std::shared_ptr<hive::chain::full_block_type> block =
     _block_reader.get_block_by_number(args.block_num, fc::seconds(1) );
   if( block )
     result.header = block->get_block_header();
@@ -61,10 +79,10 @@ DEFINE_API_IMPL( block_api_impl, get_block_header )
 DEFINE_API_IMPL( block_api_impl, get_block )
 {
   get_block_return result;
-  std::shared_ptr<full_block_type> full_block = 
+  std::shared_ptr<hive::chain::full_block_type> full_block =
     _block_reader.get_block_by_number(args.block_num, fc::seconds(1));
   if( full_block )
-    result.block = full_block;
+    result.block = api_signed_block_object(full_block);
   return result;
 }
 
@@ -79,11 +97,11 @@ DEFINE_API_IMPL( block_api_impl, get_block_range )
     count = head - args.starting_block_num + 1;
   if( count )
   {
-    std::vector<std::shared_ptr<full_block_type>> full_blocks = 
+    std::vector<std::shared_ptr<hive::chain::full_block_type>> full_blocks =
       _block_reader.fetch_block_range(args.starting_block_num, count, fc::seconds(1));
     result.blocks.reserve(full_blocks.size());
-    for (const std::shared_ptr<full_block_type>& full_block : full_blocks)
-      result.blocks.push_back(full_block);
+    for (const std::shared_ptr<hive::chain::full_block_type>& full_block : full_blocks)
+      result.blocks.push_back(api_signed_block_object(full_block));
   }
   return result;
 }
