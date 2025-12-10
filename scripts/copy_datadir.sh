@@ -6,8 +6,47 @@ set -xeuo pipefail
 # Try NFS cache first, fall back to local cache
 SHARED_BLOCK_LOG_DIR="${SHARED_BLOCK_LOG_DIR:-/nfs/ci-cache/hive/block_log_5m}"
 
+# NFS fallback for cross-builder scenarios in CI pipelines
+# When DATA_SOURCE points to a local cache path that doesn't exist (because the
+# local_copy job ran on a different builder), fall back to NFS source
+resolve_data_source() {
+    local source="$1"
+
+    # If source exists, use it directly
+    if [[ -d "${source}/datadir" ]]; then
+        echo "$source"
+        return 0
+    fi
+
+    # Try NFS fallback: convert /cache/haf_pipeline_XXX to /nfs/ci-cache/haf/pipeline_XXX
+    if [[ "$source" =~ ^/cache/haf_pipeline_([0-9]+)(_filtered)?$ ]]; then
+        local pipeline_id="${BASH_REMATCH[1]}"
+        local suffix="${BASH_REMATCH[2]}"
+        local nfs_path="/nfs/ci-cache/haf/pipeline_${pipeline_id}${suffix}"
+
+        if [[ -d "${nfs_path}/datadir" ]]; then
+            echo "FALLBACK: Local cache not found at ${source}, using NFS: ${nfs_path}" >&2
+            echo "$nfs_path"
+            return 0
+        fi
+    fi
+
+    # Check if source is already an NFS path
+    if [[ "$source" =~ ^/nfs/ ]]; then
+        echo "$source"
+        return 0
+    fi
+
+    # No fallback available, return original (will fail later with clear error)
+    echo "$source"
+    return 0
+}
+
 if [ -n "${DATA_SOURCE+x}" ]
 then
+    # Resolve DATA_SOURCE with NFS fallback if needed
+    DATA_SOURCE=$(resolve_data_source "$DATA_SOURCE")
+
     echo "DATA_SOURCE: ${DATA_SOURCE}"
     echo "DATADIR: ${DATADIR}"
     if [ "$(realpath "${DATA_SOURCE}/datadir")" != "$(realpath "${DATADIR}")" ]
