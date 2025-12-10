@@ -21,53 +21,10 @@ namespace hive { namespace chain {
 
 void database::initialize_evaluators()
 {
-  _my->_evaluator_registry.register_evaluator< vote_evaluator                           >();
-  _my->_evaluator_registry.register_evaluator< comment_evaluator                        >();
-  _my->_evaluator_registry.register_evaluator< comment_options_evaluator                >();
-  _my->_evaluator_registry.register_evaluator< delete_comment_evaluator                 >();
-  _my->_evaluator_registry.register_evaluator< transfer_evaluator                       >();
-  _my->_evaluator_registry.register_evaluator< transfer_to_vesting_evaluator            >();
-  _my->_evaluator_registry.register_evaluator< withdraw_vesting_evaluator               >();
-  _my->_evaluator_registry.register_evaluator< set_withdraw_vesting_route_evaluator     >();
-  _my->_evaluator_registry.register_evaluator< account_create_evaluator                 >();
-  _my->_evaluator_registry.register_evaluator< account_update_evaluator                 >();
-  _my->_evaluator_registry.register_evaluator< account_update2_evaluator                >();
-  _my->_evaluator_registry.register_evaluator< witness_update_evaluator                 >();
-  _my->_evaluator_registry.register_evaluator< account_witness_vote_evaluator           >();
-  _my->_evaluator_registry.register_evaluator< account_witness_proxy_evaluator          >();
-  _my->_evaluator_registry.register_evaluator< custom_evaluator                         >();
-  _my->_evaluator_registry.register_evaluator< custom_binary_evaluator                  >();
-  _my->_evaluator_registry.register_evaluator< custom_json_evaluator                    >();
-  _my->_evaluator_registry.register_evaluator< pow_evaluator                            >();
-  _my->_evaluator_registry.register_evaluator< pow2_evaluator                           >();
-  _my->_evaluator_registry.register_evaluator< feed_publish_evaluator                   >();
-  _my->_evaluator_registry.register_evaluator< convert_evaluator                        >();
-  _my->_evaluator_registry.register_evaluator< collateralized_convert_evaluator         >();
-  _my->_evaluator_registry.register_evaluator< limit_order_create_evaluator             >();
-  _my->_evaluator_registry.register_evaluator< limit_order_create2_evaluator            >();
-  _my->_evaluator_registry.register_evaluator< limit_order_cancel_evaluator             >();
-  _my->_evaluator_registry.register_evaluator< claim_account_evaluator                  >();
-  _my->_evaluator_registry.register_evaluator< create_claimed_account_evaluator         >();
-  _my->_evaluator_registry.register_evaluator< request_account_recovery_evaluator       >();
-  _my->_evaluator_registry.register_evaluator< recover_account_evaluator                >();
-  _my->_evaluator_registry.register_evaluator< change_recovery_account_evaluator        >();
-  _my->_evaluator_registry.register_evaluator< escrow_transfer_evaluator                >();
-  _my->_evaluator_registry.register_evaluator< escrow_approve_evaluator                 >();
-  _my->_evaluator_registry.register_evaluator< escrow_dispute_evaluator                 >();
-  _my->_evaluator_registry.register_evaluator< escrow_release_evaluator                 >();
-  _my->_evaluator_registry.register_evaluator< transfer_to_savings_evaluator            >();
-  _my->_evaluator_registry.register_evaluator< transfer_from_savings_evaluator          >();
-  _my->_evaluator_registry.register_evaluator< cancel_transfer_from_savings_evaluator   >();
-  _my->_evaluator_registry.register_evaluator< decline_voting_rights_evaluator          >();
-  _my->_evaluator_registry.register_evaluator< reset_account_evaluator                  >();
-  _my->_evaluator_registry.register_evaluator< set_reset_account_evaluator              >();
-  _my->_evaluator_registry.register_evaluator< claim_reward_balance_evaluator           >();
-#ifdef HIVE_ENABLE_SMT
-  _my->_evaluator_registry.register_evaluator< claim_reward_balance2_evaluator          >();
-#endif
-  _my->_evaluator_registry.register_evaluator< account_create_with_delegation_evaluator >();
-  _my->_evaluator_registry.register_evaluator< delegate_vesting_shares_evaluator        >();
-  _my->_evaluator_registry.register_evaluator< witness_set_properties_evaluator         >();
+  register_social_evaluators( _my->_evaluator_registry );
+  register_transfer_evaluators( _my->_evaluator_registry );
+  register_account_evaluators( _my->_evaluator_registry );
+  register_witness_evaluators( _my->_evaluator_registry );
 
 #ifdef HIVE_ENABLE_SMT
   _my->_evaluator_registry.register_evaluator< smt_setup_evaluator                      >();
@@ -82,8 +39,6 @@ void database::initialize_evaluators()
   _my->_evaluator_registry.register_evaluator< update_proposal_evaluator                >();
   _my->_evaluator_registry.register_evaluator< update_proposal_votes_evaluator          >();
   _my->_evaluator_registry.register_evaluator< remove_proposal_evaluator                >();
-  _my->_evaluator_registry.register_evaluator< recurrent_transfer_evaluator             >();
-  _my->_evaluator_registry.register_evaluator< witness_block_approve_evaluator          >();
 
   rc.initialize_evaluators();
 }
