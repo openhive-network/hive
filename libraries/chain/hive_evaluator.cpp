@@ -8,6 +8,7 @@
 #include <hive/chain/hive_objects.hpp>
 #include <hive/chain/witness_objects.hpp>
 #include <hive/chain/block_summary_object.hpp>
+#include <hive/chain/evaluator_registry.hpp>
 
 #include <fc/macros.hpp>
 
@@ -19,6 +20,33 @@
 
 namespace hive { namespace chain {
   using fc::uint128_t;
+
+HIVE_DEFINE_EVALUATOR( witness_update )
+HIVE_DEFINE_EVALUATOR( witness_set_properties )
+HIVE_DEFINE_EVALUATOR( account_witness_proxy )
+HIVE_DEFINE_EVALUATOR( account_witness_vote )
+HIVE_DEFINE_EVALUATOR( custom )
+HIVE_DEFINE_EVALUATOR( custom_json )
+HIVE_DEFINE_EVALUATOR( custom_binary )
+HIVE_DEFINE_EVALUATOR( pow )
+HIVE_DEFINE_EVALUATOR( pow2 )
+HIVE_DEFINE_EVALUATOR( feed_publish )
+HIVE_DEFINE_EVALUATOR( witness_block_approve )
+
+void register_witness_evaluators( evaluator_registry<operation>& registry )
+{
+  registry.register_evaluator< witness_update_evaluator         >();
+  registry.register_evaluator< witness_set_properties_evaluator >();
+  registry.register_evaluator< account_witness_proxy_evaluator  >();
+  registry.register_evaluator< account_witness_vote_evaluator   >();
+  registry.register_evaluator< custom_evaluator                 >();
+  registry.register_evaluator< custom_json_evaluator            >();
+  registry.register_evaluator< custom_binary_evaluator          >();
+  registry.register_evaluator< pow_evaluator                    >();
+  registry.register_evaluator< pow2_evaluator                   >();
+  registry.register_evaluator< feed_publish_evaluator           >();
+  registry.register_evaluator< witness_block_approve_evaluator  >();
+}
 
 template< bool force_canon >
 void copy_legacy_chain_properties( chain_properties& dest, const legacy_chain_properties& src )
