@@ -9,6 +9,10 @@
 
 namespace hive { namespace plugins { namespace block_api {
 
+using hive::protocol::block_header;
+using fc::optional;
+using std::vector;
+
 /* get_block_header */
 
 struct get_block_header_args
