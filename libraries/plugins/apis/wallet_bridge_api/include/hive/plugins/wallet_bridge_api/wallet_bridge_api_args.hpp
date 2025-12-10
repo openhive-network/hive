@@ -1,6 +1,9 @@
 #pragma once
 
-#include <hive/chain/hive_objects.hpp>
+namespace hive { namespace chain {
+  struct chain_properties;
+} }
+
 #include <hive/plugins/account_by_key_api/account_by_key_api.hpp>
 #include <hive/plugins/account_history_api/account_history_api.hpp>
 #include <hive/plugins/account_history_api/annotated_signed_transaction.hpp>

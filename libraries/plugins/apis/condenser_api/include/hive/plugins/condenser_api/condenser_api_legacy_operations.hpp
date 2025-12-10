@@ -4,7 +4,9 @@
 #include <hive/protocol/operations.hpp>
 #include <hive/protocol/dhf_operations.hpp>
 
-#include <hive/chain/witness_objects.hpp>
+namespace hive { namespace chain {
+  struct chain_properties;
+} }
 
 #include <hive/protocol/asset.hpp>
 
@@ -48,13 +50,7 @@ namespace hive { namespace plugins { namespace condenser_api {
   struct api_chain_properties
   {
     api_chain_properties() {}
-    api_chain_properties( const hive::chain::chain_properties& c ) :
-      account_creation_fee( legacy_asset::from_asset( c.account_creation_fee ) ),
-      maximum_block_size( c.maximum_block_size ),
-      hbd_interest_rate( c.hbd_interest_rate ),
-      account_subsidy_budget( c.account_subsidy_budget ),
-      account_subsidy_decay( c.account_subsidy_decay )
-    {}
+    api_chain_properties( const hive::chain::chain_properties& c );
 
     operator legacy_chain_properties() const
     {
