@@ -5,6 +5,7 @@
 #include <hive/chain/hive_evaluator.hpp>
 #include <hive/chain/database.hpp>
 #include <hive/chain/hive_objects.hpp>
+#include <hive/chain/evaluator_registry.hpp>
 
 #include <hive/chain/util/reward.hpp>
 #include <hive/chain/util/manabar.hpp>
@@ -13,6 +14,19 @@
 #include <fc/utf8.hpp>
 
 namespace hive { namespace chain {
+
+HIVE_DEFINE_EVALUATOR( comment )
+HIVE_DEFINE_EVALUATOR( comment_options )
+HIVE_DEFINE_EVALUATOR( delete_comment )
+HIVE_DEFINE_EVALUATOR( vote )
+
+void register_social_evaluators( evaluator_registry<operation>& registry )
+{
+  registry.register_evaluator< vote_evaluator            >();
+  registry.register_evaluator< comment_evaluator         >();
+  registry.register_evaluator< comment_options_evaluator >();
+  registry.register_evaluator< delete_comment_evaluator  >();
+}
 
 inline void validate_permlink_0_1( const string& permlink )
 {

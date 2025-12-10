@@ -6,6 +6,7 @@
 #include <hive/chain/database.hpp>
 #include <hive/chain/hive_objects.hpp>
 #include <hive/chain/witness_objects.hpp>
+#include <hive/chain/evaluator_registry.hpp>
 
 #include <hive/chain/util/reward.hpp>
 #include <hive/chain/util/manabar.hpp>
@@ -14,6 +15,55 @@
 #include <fc/uint128.hpp>
 
 namespace hive { namespace chain {
+
+HIVE_DEFINE_EVALUATOR( transfer )
+HIVE_DEFINE_EVALUATOR( transfer_to_vesting )
+HIVE_DEFINE_EVALUATOR( withdraw_vesting )
+HIVE_DEFINE_EVALUATOR( set_withdraw_vesting_route )
+HIVE_DEFINE_EVALUATOR( convert )
+HIVE_DEFINE_EVALUATOR( collateralized_convert )
+HIVE_DEFINE_EVALUATOR( limit_order_create )
+HIVE_DEFINE_EVALUATOR( limit_order_create2 )
+HIVE_DEFINE_EVALUATOR( limit_order_cancel )
+HIVE_DEFINE_EVALUATOR( escrow_transfer )
+HIVE_DEFINE_EVALUATOR( escrow_approve )
+HIVE_DEFINE_EVALUATOR( escrow_dispute )
+HIVE_DEFINE_EVALUATOR( escrow_release )
+HIVE_DEFINE_EVALUATOR( transfer_to_savings )
+HIVE_DEFINE_EVALUATOR( transfer_from_savings )
+HIVE_DEFINE_EVALUATOR( cancel_transfer_from_savings )
+HIVE_DEFINE_EVALUATOR( claim_reward_balance )
+#ifdef HIVE_ENABLE_SMT
+HIVE_DEFINE_EVALUATOR( claim_reward_balance2 )
+#endif
+HIVE_DEFINE_EVALUATOR( delegate_vesting_shares )
+HIVE_DEFINE_EVALUATOR( recurrent_transfer )
+
+void register_transfer_evaluators( evaluator_registry<operation>& registry )
+{
+  registry.register_evaluator< transfer_evaluator                       >();
+  registry.register_evaluator< transfer_to_vesting_evaluator            >();
+  registry.register_evaluator< withdraw_vesting_evaluator               >();
+  registry.register_evaluator< set_withdraw_vesting_route_evaluator     >();
+  registry.register_evaluator< convert_evaluator                        >();
+  registry.register_evaluator< collateralized_convert_evaluator         >();
+  registry.register_evaluator< limit_order_create_evaluator             >();
+  registry.register_evaluator< limit_order_create2_evaluator            >();
+  registry.register_evaluator< limit_order_cancel_evaluator             >();
+  registry.register_evaluator< escrow_transfer_evaluator                >();
+  registry.register_evaluator< escrow_approve_evaluator                 >();
+  registry.register_evaluator< escrow_dispute_evaluator                 >();
+  registry.register_evaluator< escrow_release_evaluator                 >();
+  registry.register_evaluator< transfer_to_savings_evaluator            >();
+  registry.register_evaluator< transfer_from_savings_evaluator          >();
+  registry.register_evaluator< cancel_transfer_from_savings_evaluator   >();
+  registry.register_evaluator< claim_reward_balance_evaluator           >();
+#ifdef HIVE_ENABLE_SMT
+  registry.register_evaluator< claim_reward_balance2_evaluator          >();
+#endif
+  registry.register_evaluator< delegate_vesting_shares_evaluator        >();
+  registry.register_evaluator< recurrent_transfer_evaluator             >();
+}
 
 void escrow_transfer_evaluator::do_apply( const escrow_transfer_operation& o )
 {
