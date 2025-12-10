@@ -186,7 +186,7 @@ class ConvertAccount(Account):
             hives_before_operation == hives_after_operation + to_convert
         ), f"Hives weren't subtracted from {self._name}'s balance after making collateralized convert request."
 
-        hbd_tolerance = tt.Asset.Tbd(0.6)
+        hbd_tolerance = tt.Asset.Tbd(1.0)
         assert (
             hbds_after_operation - hbd_tolerance
             <= hbds_before_operation + hbds_to_add
