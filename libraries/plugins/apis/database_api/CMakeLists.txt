@@ -3,6 +3,7 @@ file(GLOB HEADERS "include/hive/plugins/database_api/*.hpp")
 add_library( database_api_plugin
              database_api.cpp
              database_api_plugin.cpp
+             database_api_objects_constructors.cpp
              ${HEADERS}
            )
 
