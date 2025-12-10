@@ -16033,27 +16033,41 @@
             },
             "condenser_list_proposal_votes": {
                 "type": "array",
-                "items": {
-                    "oneOf": [
-                        {
-                            "type": "string"
-                        },
-                        {
-                            "type": "integer"
-                        },
-                        {
-                            "type": "null"
-                        },
-                        {
-                            "type": "array"
-                        }
-                    ]
-                },
-                "minItems": 1,
+                "description": "Positional arguments: [start, limit, order, order_direction?, status?]. order_direction defaults to ascending, status defaults to all.",
+                "prefixItems": [
+                    {
+                        "$ref": "#/components/schemas/list_proposal_votes_start",
+                        "description": "Starting point for pagination"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Maximum number of results to return"
+                    },
+                    {
+                        "$ref": "#/components/schemas/list_proposal_votes_order",
+                        "description": "Sort order"
+                    },
+                    {
+                        "oneOf": [
+                            {"$ref": "#/components/schemas/order_direction_type"},
+                            {"type": "null"}
+                        ],
+                        "description": "Sort direction (optional, default: ascending)"
+                    },
+                    {
+                        "oneOf": [
+                            {"$ref": "#/components/schemas/proposal_status"},
+                            {"type": "null"}
+                        ],
+                        "description": "Filter by proposal status (optional, default: all)"
+                    }
+                ],
+                "minItems": 3,
                 "maxItems": 5,
                 "example": [
                     [
-                        "alice"
+                        "alice",
+                        null
                     ],
                     10,
                     "by_voter_proposal",
@@ -16069,24 +16083,44 @@
             },
             "condenser_list_proposals": {
                 "type": "array",
-                "items": {
-                    "oneOf": [
-                        {
-                            "type": "string"
-                        },
-                        {
-                            "type": "integer"
-                        },
-                        {
-                            "type": "null"
-                        },
-                        {
-                            "type": "array"
-                        }
-                    ]
-                },
-                "minItems": 1,
-                "maxItems": 5,
+                "description": "Positional arguments: [start, limit, order, order_direction?, status?, last_id?]. order_direction defaults to ascending, status defaults to all.",
+                "prefixItems": [
+                    {
+                        "$ref": "#/components/schemas/list_proposals_start",
+                        "description": "Starting point for pagination"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Maximum number of results to return"
+                    },
+                    {
+                        "$ref": "#/components/schemas/list_proposals_order",
+                        "description": "Sort order"
+                    },
+                    {
+                        "oneOf": [
+                            {"$ref": "#/components/schemas/order_direction_type"},
+                            {"type": "null"}
+                        ],
+                        "description": "Sort direction (optional, default: ascending)"
+                    },
+                    {
+                        "oneOf": [
+                            {"$ref": "#/components/schemas/proposal_status"},
+                            {"type": "null"}
+                        ],
+                        "description": "Filter by proposal status (optional, default: all)"
+                    },
+                    {
+                        "oneOf": [
+                            {"$ref": "#/components/schemas/hive_int"},
+                            {"type": "null"}
+                        ],
+                        "description": "Last ID for pagination (optional)"
+                    }
+                ],
+                "minItems": 3,
+                "maxItems": 6,
                 "example": [
                     [
                         "alice"
@@ -21431,7 +21465,24 @@
                 "maxItems": 2
             },
             "list_account_recovery_requests": {
-                "$ref": "#/components/schemas/start_limit_order"
+                "type": "object",
+                "properties": {
+                    "start": {
+                        "$ref": "#/components/schemas/list_account_recovery_requests_start"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of results to return.",
+                        "default": 100,
+                        "example": 10
+                    },
+                    "order": {
+                        "$ref": "#/components/schemas/list_account_recovery_requests_order",
+                        "description": "Sort order for results.",
+                        "default": "by_account"
+                    }
+                },
+                "required": ["start", "limit", "order"]
             },
             "list_account_recovery_requests_response": {
                 "type": "object",
@@ -21508,7 +21559,24 @@
                 }
             },
             "list_change_recovery_account_requests": {
-                "$ref": "#/components/schemas/start_limit_order"
+                "type": "object",
+                "properties": {
+                    "start": {
+                        "$ref": "#/components/schemas/list_change_recovery_account_requests_start"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of results to return.",
+                        "default": 100,
+                        "example": 10
+                    },
+                    "order": {
+                        "$ref": "#/components/schemas/list_change_recovery_account_requests_order",
+                        "description": "Sort order for results.",
+                        "default": "by_account"
+                    }
+                },
+                "required": ["start", "limit", "order"]
             },
             "list_change_recovery_account_requests_response": {
                 "type": "object",
@@ -21525,7 +21593,24 @@
                 ]
             },
             "list_collateralized_conversion_requests": {
-                "$ref": "#/components/schemas/start_limit_order"
+                "type": "object",
+                "properties": {
+                    "start": {
+                        "$ref": "#/components/schemas/list_collateralized_conversion_requests_start"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of results to return.",
+                        "default": 100,
+                        "example": 10
+                    },
+                    "order": {
+                        "$ref": "#/components/schemas/list_collateralized_conversion_requests_order",
+                        "description": "Sort order for results.",
+                        "default": "by_conversion_date"
+                    }
+                },
+                "required": ["start", "limit", "order"]
             },
             "list_collateralized_conversion_requests_response": {
                 "type": "object",
@@ -21607,7 +21692,24 @@
                 }
             },
             "list_decline_voting_rights_requests": {
-                "$ref": "#/components/schemas/start_limit_order"
+                "type": "object",
+                "properties": {
+                    "start": {
+                        "$ref": "#/components/schemas/list_decline_voting_rights_requests_start"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of results to return.",
+                        "default": 100,
+                        "example": 10
+                    },
+                    "order": {
+                        "$ref": "#/components/schemas/list_decline_voting_rights_requests_order",
+                        "description": "Sort order for results.",
+                        "default": "by_account"
+                    }
+                },
+                "required": ["start", "limit", "order"]
             },
             "list_decline_voting_rights_requests_response": {
                 "type": "object",
@@ -21624,7 +21726,24 @@
                 ]
             },
             "list_escrows": {
-                "$ref": "#/components/schemas/start_limit_order"
+                "type": "object",
+                "properties": {
+                    "start": {
+                        "$ref": "#/components/schemas/list_escrows_start"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of results to return.",
+                        "default": 100,
+                        "example": 10
+                    },
+                    "order": {
+                        "$ref": "#/components/schemas/list_escrows_order",
+                        "description": "Sort order for results.",
+                        "default": "by_from_id"
+                    }
+                },
+                "required": ["start", "limit", "order"]
             },
             "list_escrows_response": {
                 "type": "object",
@@ -21641,7 +21760,24 @@
                 ]
             },
             "list_hbd_conversion_requests": {
-                "$ref": "#/components/schemas/start_limit_order"
+                "type": "object",
+                "properties": {
+                    "start": {
+                        "$ref": "#/components/schemas/list_hbd_conversion_requests_start"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of results to return.",
+                        "default": 100,
+                        "example": 10
+                    },
+                    "order": {
+                        "$ref": "#/components/schemas/list_hbd_conversion_requests_order",
+                        "description": "Sort order for results.",
+                        "default": "by_conversion_date"
+                    }
+                },
+                "required": ["start", "limit", "order"]
             },
             "list_hbd_conversion_requests_response": {
                 "type": "object",
@@ -21661,7 +21797,24 @@
                 "type": "object"
             },
             "list_limit_orders": {
-                "$ref": "#/components/schemas/start_limit_order"
+                "type": "object",
+                "properties": {
+                    "start": {
+                        "$ref": "#/components/schemas/list_limit_orders_start"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of results to return.",
+                        "default": 100,
+                        "example": 10
+                    },
+                    "order": {
+                        "$ref": "#/components/schemas/list_limit_orders_order",
+                        "description": "Sort order for results.",
+                        "default": "by_price"
+                    }
+                },
+                "required": ["start", "limit", "order"]
             },
             "list_limit_orders_response": {
                 "type": "object",
@@ -21678,7 +21831,19 @@
                 ]
             },
             "list_owner_histories": {
-                "$ref": "#/components/schemas/start_limit"
+                "type": "object",
+                "properties": {
+                    "start": {
+                        "$ref": "#/components/schemas/list_owner_histories_start"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of results to return.",
+                        "default": 100,
+                        "example": 10
+                    }
+                },
+                "required": ["start", "limit"]
             },
             "list_owner_histories_response": {
                 "type": "object",
@@ -21713,7 +21878,37 @@
                 }
             },
             "list_proposal_votes": {
-                "$ref": "#/components/schemas/start_limit_proposals_votes"
+                "type": "object",
+                "properties": {
+                    "start": {
+                        "$ref": "#/components/schemas/list_proposal_votes_start"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of results to return.",
+                        "example": 10
+                    },
+                    "order": {
+                        "$ref": "#/components/schemas/list_proposal_votes_order"
+                    },
+                    "order_direction": {
+                        "$ref": "#/components/schemas/order_direction_type",
+                        "description": "Sort direction. Default: ascending.",
+                        "default": "ascending"
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/proposal_status",
+                        "description": "Filter by proposal status. Default: all.",
+                        "default": "all"
+                    }
+                },
+                "required": [
+                    "start",
+                    "limit",
+                    "order",
+                    "order_direction",
+                    "status"
+                ]
             },
             "list_proposal_votes_response": {
                 "type": "object",
@@ -21730,7 +21925,41 @@
                 ]
             },
             "list_proposals": {
-                "$ref": "#/components/schemas/start_limit_proposals"
+                "type": "object",
+                "properties": {
+                    "start": {
+                        "$ref": "#/components/schemas/list_proposals_start"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of results to return.",
+                        "example": 10
+                    },
+                    "order": {
+                        "$ref": "#/components/schemas/list_proposals_order"
+                    },
+                    "order_direction": {
+                        "$ref": "#/components/schemas/order_direction_type",
+                        "description": "Sort direction. Default: ascending.",
+                        "default": "ascending"
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/proposal_status",
+                        "description": "Filter by proposal status. Default: all.",
+                        "default": "all"
+                    },
+                    "last_id": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "description": "Optional. The last ID of the proposal from previous page for pagination."
+                    }
+                },
+                "required": [
+                    "start",
+                    "limit",
+                    "order",
+                    "order_direction",
+                    "status"
+                ]
             },
             "list_proposals_response": {
                 "type": "object",
@@ -21843,7 +22072,24 @@
                 }
             },
             "list_savings_withdrawals": {
-                "$ref": "#/components/schemas/start_limit_order"
+                "type": "object",
+                "properties": {
+                    "start": {
+                        "$ref": "#/components/schemas/list_savings_withdrawals_start"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of results to return.",
+                        "default": 100,
+                        "example": 10
+                    },
+                    "order": {
+                        "$ref": "#/components/schemas/list_savings_withdrawals_order",
+                        "description": "Sort order for results.",
+                        "default": "by_from_id"
+                    }
+                },
+                "required": ["start", "limit", "order"]
             },
             "list_savings_withdrawals_response": {
                 "type": "object",
@@ -21860,7 +22106,24 @@
                 ]
             },
             "list_vesting_delegation_expirations": {
-                "$ref": "#/components/schemas/start_limit_order"
+                "type": "object",
+                "properties": {
+                    "start": {
+                        "$ref": "#/components/schemas/list_vesting_delegation_expirations_start"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of results to return.",
+                        "default": 100,
+                        "example": 10
+                    },
+                    "order": {
+                        "$ref": "#/components/schemas/list_vesting_delegation_expirations_order",
+                        "description": "Sort order for results.",
+                        "default": "by_expiration"
+                    }
+                },
+                "required": ["start", "limit", "order"]
             },
             "list_vesting_delegation_expirations_response": {
                 "type": "object",
@@ -21877,7 +22140,24 @@
                 ]
             },
             "list_vesting_delegations": {
-                "$ref": "#/components/schemas/start_limit_order"
+                "type": "object",
+                "properties": {
+                    "start": {
+                        "$ref": "#/components/schemas/list_vesting_delegations_start"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of results to return.",
+                        "default": 100,
+                        "example": 10
+                    },
+                    "order": {
+                        "$ref": "#/components/schemas/list_vesting_delegations_order",
+                        "description": "Sort order for results.",
+                        "default": "by_delegation"
+                    }
+                },
+                "required": ["start", "limit", "order"]
             },
             "list_vesting_delegations_response": {
                 "type": "object",
@@ -21894,7 +22174,24 @@
                 ]
             },
             "list_votes": {
-                "$ref": "#/components/schemas/start_limit_order"
+                "type": "object",
+                "properties": {
+                    "start": {
+                        "$ref": "#/components/schemas/list_votes_start"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of results to return.",
+                        "default": 100,
+                        "example": 10
+                    },
+                    "order": {
+                        "$ref": "#/components/schemas/list_votes_order",
+                        "description": "Sort order for results.",
+                        "default": "by_comment_voter"
+                    }
+                },
+                "required": ["start", "limit", "order"]
             },
             "list_votes_response": {
                 "type": "object",
@@ -21911,7 +22208,24 @@
                 ]
             },
             "list_withdraw_vesting_routes": {
-                "$ref": "#/components/schemas/start_limit_order"
+                "type": "object",
+                "properties": {
+                    "start": {
+                        "$ref": "#/components/schemas/list_withdraw_vesting_routes_start"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of results to return.",
+                        "default": 100,
+                        "example": 10
+                    },
+                    "order": {
+                        "$ref": "#/components/schemas/list_withdraw_vesting_routes_order",
+                        "description": "Sort order for results.",
+                        "default": "by_withdraw_route"
+                    }
+                },
+                "required": ["start", "limit", "order"]
             },
             "list_withdraw_vesting_routes_response": {
                 "type": "object",
@@ -21928,7 +22242,24 @@
                 ]
             },
             "list_witness_votes": {
-                "$ref": "#/components/schemas/start_limit_order"
+                "type": "object",
+                "properties": {
+                    "start": {
+                        "$ref": "#/components/schemas/list_witness_votes_start"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of results to return.",
+                        "default": 100,
+                        "example": 10
+                    },
+                    "order": {
+                        "$ref": "#/components/schemas/list_witness_votes_order",
+                        "description": "Sort order for results.",
+                        "default": "by_account_witness"
+                    }
+                },
+                "required": ["start", "limit", "order"]
             },
             "list_witness_votes_response": {
                 "type": "object",
@@ -21945,7 +22276,24 @@
                 ]
             },
             "list_witnesses": {
-                "$ref": "#/components/schemas/start_limit_order"
+                "type": "object",
+                "properties": {
+                    "start": {
+                        "$ref": "#/components/schemas/list_witnesses_start"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of results to return.",
+                        "default": 100,
+                        "example": 10
+                    },
+                    "order": {
+                        "$ref": "#/components/schemas/list_witnesses_order",
+                        "description": "Sort order for results.",
+                        "default": "by_name"
+                    }
+                },
+                "required": ["start", "limit", "order"]
             },
             "list_witnesses_response": {
                 "type": "object",
@@ -23682,117 +24030,610 @@
                     }
                 ]
             },
-            "start_limit": {
-                "type": "object",
-                "properties": {
-                    "start": {
-                        "type": "object",
-                        "example": []
-                    },
-                    "limit": {
-                        "type": "integer",
-                        "example": 10
-                    }
-                },
-                "required": [
-                    "start",
-                    "limit"
-                ]
+            "order_direction_type": {
+                "type": "string",
+                "enum": ["ascending", "descending"],
+                "description": "Sort direction for results. ascending: sort from lowest to highest value. descending: sort from highest to lowest value."
             },
-            "start_limit_order": {
-                "type": "object",
-                "properties": {
-                    "start": {
-                        "type": "object",
-                        "example": []
-                    },
-                    "limit": {
-                        "type": "integer",
-                        "example": 10
-                    },
-                    "order": {
-                        "type": "string",
-                        "example": "order_name"
-                    }
-                },
-                "required": [
-                    "start",
-                    "limit",
-                    "order"
-                ]
+            "proposal_status": {
+                "type": "string",
+                "enum": ["all", "inactive", "active", "expired", "votable"],
+                "description": "Filter proposals by status. all: no filtering. inactive: proposals that haven't started yet. active: proposals currently in voting period. expired: proposals past their end date. votable: includes both active and inactive proposals."
             },
-            "start_limit_proposals": {
-                "type": "object",
-                "properties": {
-                    "start": {
-                        "type": "object",
-                        "example": [
-                            10
-                        ]
-                    },
-                    "limit": {
-                        "type": "integer",
-                        "example": 10
-                    },
-                    "order": {
-                        "type": "string",
-                        "example": "by_voter_proposal"
-                    },
-                    "order_direction": {
-                        "type": "string",
-                        "example": "ascending"
-                    },
-                    "status": {
-                        "type": "string",
-                        "example": "all"
-                    },
-                    "last_id": {
-                        "$ref": "#/components/schemas/hive_int",
-                        "example": 0,
-                        "description": "The last ID of the proposal to start from."
-                    }
-                },
-                "required": [
-                    "start",
-                    "limit",
-                    "order",
-                    "order_direction",
-                    "status"
-                ]
+            "list_proposals_order": {
+                "type": "string",
+                "enum": ["by_creator", "by_start_date", "by_end_date", "by_total_votes"],
+                "description": "Sort order for list_proposals. by_creator: sort by proposal creator account name. by_start_date: sort by proposal start date. by_end_date: sort by proposal end date. by_total_votes: sort by total votes received."
             },
-            "start_limit_proposals_votes": {
-                "type": "object",
-                "properties": {
-                    "start": {
-                        "type": "object",
-                        "example": [
-                            10
-                        ]
+            "list_proposal_votes_order": {
+                "type": "string",
+                "enum": ["by_voter_proposal", "by_proposal_voter"],
+                "description": "Sort order for list_proposal_votes. by_voter_proposal: sort by voter account then proposal id. by_proposal_voter: sort by proposal id then voter account."
+            },
+            "list_witnesses_order": {
+                "type": "string",
+                "enum": ["by_name", "by_vote_name", "by_schedule_time"],
+                "description": "Sort order for list_witnesses. by_name: sort alphabetically by witness account name. by_vote_name: sort by total votes then name. by_schedule_time: sort by next scheduled block time."
+            },
+            "list_witness_votes_order": {
+                "type": "string",
+                "enum": ["by_account_witness", "by_witness_account"],
+                "description": "Sort order for list_witness_votes. by_account_witness: sort by voter account then witness. by_witness_account: sort by witness then voter account."
+            },
+            "list_account_recovery_requests_order": {
+                "type": "string",
+                "enum": ["by_account", "by_expiration"],
+                "description": "Sort order for list_account_recovery_requests. by_account: sort by account name. by_expiration: sort by request expiration time."
+            },
+            "list_change_recovery_account_requests_order": {
+                "type": "string",
+                "enum": ["by_account", "by_effective_date"],
+                "description": "Sort order for list_change_recovery_account_requests. by_account: sort by account name. by_effective_date: sort by date when the change becomes effective."
+            },
+            "list_escrows_order": {
+                "type": "string",
+                "enum": ["by_from_id", "by_ratification_deadline"],
+                "description": "Sort order for list_escrows. by_from_id: sort by sender account then escrow id. by_ratification_deadline: sort by ratification deadline."
+            },
+            "list_withdraw_vesting_routes_order": {
+                "type": "string",
+                "enum": ["by_withdraw_route", "by_destination"],
+                "description": "Sort order for list_withdraw_vesting_routes. by_withdraw_route: sort by source account then destination. by_destination: sort by destination account then source."
+            },
+            "list_savings_withdrawals_order": {
+                "type": "string",
+                "enum": ["by_from_id", "by_complete_from_id", "by_to_complete"],
+                "description": "Sort order for list_savings_withdrawals. by_from_id: sort by sender then request id. by_complete_from_id: sort by completion time then sender and id. by_to_complete: sort by recipient then completion time."
+            },
+            "list_vesting_delegations_order": {
+                "type": "string",
+                "enum": ["by_delegation"],
+                "description": "Sort order for list_vesting_delegations. by_delegation: sort by delegator then delegatee account name."
+            },
+            "list_vesting_delegation_expirations_order": {
+                "type": "string",
+                "enum": ["by_expiration", "by_account_expiration"],
+                "description": "Sort order for list_vesting_delegation_expirations. by_expiration: sort by expiration time globally. by_account_expiration: sort by account then expiration time."
+            },
+            "list_hbd_conversion_requests_order": {
+                "type": "string",
+                "enum": ["by_conversion_date", "by_account"],
+                "description": "Sort order for list_hbd_conversion_requests. by_conversion_date: sort by conversion completion date. by_account: sort by account name then request id."
+            },
+            "list_collateralized_conversion_requests_order": {
+                "type": "string",
+                "enum": ["by_conversion_date", "by_account"],
+                "description": "Sort order for list_collateralized_conversion_requests. by_conversion_date: sort by conversion completion date. by_account: sort by account name then request id."
+            },
+            "list_decline_voting_rights_requests_order": {
+                "type": "string",
+                "enum": ["by_account", "by_effective_date"],
+                "description": "Sort order for list_decline_voting_rights_requests. by_account: sort by account name. by_effective_date: sort by date when the decline becomes effective."
+            },
+            "list_limit_orders_order": {
+                "type": "string",
+                "enum": ["by_price", "by_account"],
+                "description": "Sort order for list_limit_orders. by_price: sort by order price. by_account: sort by account name then order id."
+            },
+            "list_votes_order": {
+                "type": "string",
+                "enum": ["by_comment_voter", "by_voter_comment"],
+                "description": "Sort order for list_votes. by_comment_voter: sort by comment (author+permlink) then voter. by_voter_comment: sort by voter then comment."
+            },
+            "list_witnesses_start": {
+                "description": "Starting point for pagination based on order parameter.",
+                "oneOf": [
+                    {
+                        "type": "array",
+                        "maxItems": 0,
+                        "description": "Empty array to start from beginning"
                     },
-                    "limit": {
-                        "type": "integer",
-                        "example": 10
-                    },
-                    "order": {
+                    {
                         "type": "string",
-                        "example": "by_voter_proposal"
+                        "description": "For by_name: account name to start from"
                     },
-                    "order_direction": {
-                        "type": "string",
-                        "example": "ascending"
+                    {
+                        "type": "array",
+                        "prefixItems": [
+                            {"type": "integer", "description": "Vote count (share_type)"},
+                            {"type": "string", "description": "Account name"}
+                        ],
+                        "minItems": 2,
+                        "maxItems": 2,
+                        "description": "For by_vote_name: [vote_count, account_name]"
                     },
-                    "status": {
-                        "type": "string",
-                        "example": "all"
+                    {
+                        "type": "array",
+                        "prefixItems": [
+                            {"type": "integer", "description": "Schedule time"},
+                            {"type": "string", "description": "Account name"}
+                        ],
+                        "minItems": 2,
+                        "maxItems": 2,
+                        "description": "For by_schedule_time: [schedule_time, account_name]"
                     }
-                },
-                "required": [
-                    "start",
-                    "limit",
-                    "order",
-                    "order_direction",
-                    "status"
-                ]
+                ],
+                "example": []
+            },
+            "list_witness_votes_start": {
+                "description": "Starting point for pagination. Same format for both orders.",
+                "oneOf": [
+                    {
+                        "type": "array",
+                        "maxItems": 0,
+                        "description": "Empty array to start from beginning"
+                    },
+                    {
+                        "type": "array",
+                        "prefixItems": [
+                            {"type": "string", "description": "First account name"},
+                            {"type": "string", "description": "Second account name"}
+                        ],
+                        "minItems": 2,
+                        "maxItems": 2,
+                        "description": "For by_account_witness: [voter_account, witness_account]. For by_witness_account: [witness_account, voter_account]"
+                    }
+                ],
+                "example": []
+            },
+            "list_account_recovery_requests_start": {
+                "description": "Starting point for pagination based on order parameter.",
+                "oneOf": [
+                    {
+                        "type": "array",
+                        "maxItems": 0,
+                        "description": "Empty array to start from beginning"
+                    },
+                    {
+                        "type": "string",
+                        "description": "For by_account: account name to start from"
+                    },
+                    {
+                        "type": "array",
+                        "prefixItems": [
+                            {"type": "string", "format": "date-time", "description": "Expiration datetime"},
+                            {"type": "string", "description": "Account name"}
+                        ],
+                        "minItems": 2,
+                        "maxItems": 2,
+                        "description": "For by_expiration: [expiration_datetime, account_name]"
+                    }
+                ],
+                "example": []
+            },
+            "list_change_recovery_account_requests_start": {
+                "description": "Starting point for pagination based on order parameter.",
+                "oneOf": [
+                    {
+                        "type": "array",
+                        "maxItems": 0,
+                        "description": "Empty array to start from beginning"
+                    },
+                    {
+                        "type": "string",
+                        "description": "For by_account: account name to start from"
+                    },
+                    {
+                        "type": "array",
+                        "prefixItems": [
+                            {"type": "string", "format": "date-time", "description": "Effective date datetime"},
+                            {"type": "string", "description": "Account name"}
+                        ],
+                        "minItems": 2,
+                        "maxItems": 2,
+                        "description": "For by_effective_date: [effective_datetime, account_name]"
+                    }
+                ],
+                "example": []
+            },
+            "list_escrows_start": {
+                "description": "Starting point for pagination based on order parameter.",
+                "oneOf": [
+                    {
+                        "type": "array",
+                        "maxItems": 0,
+                        "description": "Empty array to start from beginning"
+                    },
+                    {
+                        "type": "array",
+                        "prefixItems": [
+                            {"type": "string", "description": "Account name (from)"},
+                            {"type": "integer", "description": "Escrow ID"}
+                        ],
+                        "minItems": 2,
+                        "maxItems": 2,
+                        "description": "For by_from_id: [account_name, escrow_id]"
+                    },
+                    {
+                        "type": "array",
+                        "prefixItems": [
+                            {"type": "boolean", "description": "Ratification status"},
+                            {"type": "string", "format": "date-time", "description": "Ratification deadline datetime"},
+                            {"type": "integer", "description": "Escrow ID"}
+                        ],
+                        "minItems": 3,
+                        "maxItems": 3,
+                        "description": "For by_ratification_deadline: [ratified_bool, deadline_datetime, escrow_id]"
+                    }
+                ],
+                "example": []
+            },
+            "list_withdraw_vesting_routes_start": {
+                "description": "Starting point for pagination based on order parameter.",
+                "oneOf": [
+                    {
+                        "type": "array",
+                        "maxItems": 0,
+                        "description": "Empty array to start from beginning"
+                    },
+                    {
+                        "type": "array",
+                        "prefixItems": [
+                            {"type": "string", "description": "From account name"},
+                            {"type": "string", "description": "To account name"}
+                        ],
+                        "minItems": 2,
+                        "maxItems": 2,
+                        "description": "For by_withdraw_route: [from_account, to_account]"
+                    },
+                    {
+                        "type": "array",
+                        "prefixItems": [
+                            {"type": "string", "description": "Destination account name"},
+                            {"type": "integer", "description": "Route ID"}
+                        ],
+                        "minItems": 2,
+                        "maxItems": 2,
+                        "description": "For by_destination: [destination_account, route_id]"
+                    }
+                ],
+                "example": []
+            },
+            "list_savings_withdrawals_start": {
+                "description": "Starting point for pagination based on order parameter.",
+                "oneOf": [
+                    {
+                        "type": "array",
+                        "maxItems": 0,
+                        "description": "Empty array to start from beginning"
+                    },
+                    {
+                        "type": "array",
+                        "prefixItems": [
+                            {"type": "string", "description": "From account name"},
+                            {"type": "integer", "description": "Request ID"}
+                        ],
+                        "minItems": 2,
+                        "maxItems": 2,
+                        "description": "For by_from_id: [from_account, request_id]"
+                    },
+                    {
+                        "type": "array",
+                        "prefixItems": [
+                            {"type": "string", "format": "date-time", "description": "Complete datetime"},
+                            {"type": "string", "description": "From account name"},
+                            {"type": "integer", "description": "Request ID"}
+                        ],
+                        "minItems": 3,
+                        "maxItems": 3,
+                        "description": "For by_complete_from_id: [complete_datetime, from_account, request_id]"
+                    },
+                    {
+                        "type": "array",
+                        "prefixItems": [
+                            {"type": "string", "description": "To account name"},
+                            {"type": "string", "format": "date-time", "description": "Complete datetime"},
+                            {"type": "integer", "description": "Withdrawal ID"}
+                        ],
+                        "minItems": 3,
+                        "maxItems": 3,
+                        "description": "For by_to_complete: [to_account, complete_datetime, withdrawal_id]"
+                    }
+                ],
+                "example": []
+            },
+            "list_vesting_delegations_start": {
+                "description": "Starting point for pagination.",
+                "oneOf": [
+                    {
+                        "type": "array",
+                        "maxItems": 0,
+                        "description": "Empty array to start from beginning"
+                    },
+                    {
+                        "type": "array",
+                        "prefixItems": [
+                            {"type": "string", "description": "Delegator account name"},
+                            {"type": "string", "description": "Delegatee account name (can be empty string)"}
+                        ],
+                        "minItems": 2,
+                        "maxItems": 2,
+                        "description": "For by_delegation: [delegator_account, delegatee_account]"
+                    }
+                ],
+                "example": []
+            },
+            "list_vesting_delegation_expirations_start": {
+                "description": "Starting point for pagination based on order parameter.",
+                "oneOf": [
+                    {
+                        "type": "array",
+                        "maxItems": 0,
+                        "description": "Empty array to start from beginning"
+                    },
+                    {
+                        "type": "array",
+                        "prefixItems": [
+                            {"type": "string", "format": "date-time", "description": "Expiration datetime"},
+                            {"type": "integer", "description": "Delegation expiration ID"}
+                        ],
+                        "minItems": 2,
+                        "maxItems": 2,
+                        "description": "For by_expiration: [expiration_datetime, delegation_id]"
+                    },
+                    {
+                        "type": "array",
+                        "prefixItems": [
+                            {"type": "string", "description": "Account name (can be empty string)"},
+                            {"type": "string", "format": "date-time", "description": "Expiration datetime"},
+                            {"type": "integer", "description": "Delegation expiration ID"}
+                        ],
+                        "minItems": 3,
+                        "maxItems": 3,
+                        "description": "For by_account_expiration: [account_name, expiration_datetime, delegation_id]"
+                    }
+                ],
+                "example": []
+            },
+            "list_hbd_conversion_requests_start": {
+                "description": "Starting point for pagination based on order parameter.",
+                "oneOf": [
+                    {
+                        "type": "array",
+                        "maxItems": 0,
+                        "description": "Empty array to start from beginning"
+                    },
+                    {
+                        "type": "array",
+                        "prefixItems": [
+                            {"type": "string", "format": "date-time", "description": "Conversion datetime"},
+                            {"type": "integer", "description": "Request ID"}
+                        ],
+                        "minItems": 2,
+                        "maxItems": 2,
+                        "description": "For by_conversion_date: [conversion_datetime, request_id]"
+                    },
+                    {
+                        "type": "array",
+                        "prefixItems": [
+                            {"type": "string", "description": "Account name (can be empty string)"},
+                            {"type": "integer", "description": "Request ID"}
+                        ],
+                        "minItems": 2,
+                        "maxItems": 2,
+                        "description": "For by_account: [account_name, request_id]"
+                    }
+                ],
+                "example": []
+            },
+            "list_collateralized_conversion_requests_start": {
+                "description": "Starting point for pagination based on order parameter.",
+                "oneOf": [
+                    {
+                        "type": "array",
+                        "maxItems": 0,
+                        "description": "Empty array to start from beginning"
+                    },
+                    {
+                        "type": "array",
+                        "prefixItems": [
+                            {"type": "string", "format": "date-time", "description": "Conversion datetime"},
+                            {"type": "integer", "description": "Request ID"}
+                        ],
+                        "minItems": 2,
+                        "maxItems": 2,
+                        "description": "For by_conversion_date: [conversion_datetime, request_id]"
+                    },
+                    {
+                        "type": "array",
+                        "prefixItems": [
+                            {"type": "string", "description": "Account name (can be empty string)"},
+                            {"type": "integer", "description": "Request ID"}
+                        ],
+                        "minItems": 2,
+                        "maxItems": 2,
+                        "description": "For by_account: [account_name, request_id]"
+                    }
+                ],
+                "example": []
+            },
+            "list_decline_voting_rights_requests_start": {
+                "description": "Starting point for pagination based on order parameter.",
+                "oneOf": [
+                    {
+                        "type": "array",
+                        "maxItems": 0,
+                        "description": "Empty array to start from beginning"
+                    },
+                    {
+                        "type": "string",
+                        "description": "For by_account: account name to start from"
+                    },
+                    {
+                        "type": "array",
+                        "prefixItems": [
+                            {"type": "string", "format": "date-time", "description": "Effective date datetime"},
+                            {"type": "string", "description": "Account name"}
+                        ],
+                        "minItems": 2,
+                        "maxItems": 2,
+                        "description": "For by_effective_date: [effective_datetime, account_name]"
+                    }
+                ],
+                "example": []
+            },
+            "list_limit_orders_start": {
+                "description": "Starting point for pagination based on order parameter.",
+                "oneOf": [
+                    {
+                        "type": "array",
+                        "maxItems": 0,
+                        "description": "Empty array to start from beginning"
+                    },
+                    {
+                        "type": "array",
+                        "prefixItems": [
+                            {"$ref": "#/components/schemas/base_and_quote", "description": "Price object (base/quote)"},
+                            {"type": "integer", "description": "Order ID"}
+                        ],
+                        "minItems": 2,
+                        "maxItems": 2,
+                        "description": "For by_price: [price_object, order_id]"
+                    },
+                    {
+                        "type": "array",
+                        "prefixItems": [
+                            {"type": "string", "description": "Account name"},
+                            {"type": "integer", "description": "Order ID"}
+                        ],
+                        "minItems": 2,
+                        "maxItems": 2,
+                        "description": "For by_account: [account_name, order_id]"
+                    }
+                ],
+                "example": []
+            },
+            "list_votes_start": {
+                "description": "Starting point for pagination based on order parameter.",
+                "oneOf": [
+                    {
+                        "type": "array",
+                        "maxItems": 0,
+                        "description": "Empty array to start from beginning"
+                    },
+                    {
+                        "type": "array",
+                        "prefixItems": [
+                            {"type": "string", "description": "Author account name"},
+                            {"type": "string", "description": "Permlink"},
+                            {"type": "string", "description": "Voter account name"}
+                        ],
+                        "minItems": 3,
+                        "maxItems": 3,
+                        "description": "For by_comment_voter: [author, permlink, voter]"
+                    },
+                    {
+                        "type": "array",
+                        "prefixItems": [
+                            {"type": "string", "description": "Voter account name"},
+                            {"type": "string", "description": "Author account name"},
+                            {"type": "string", "description": "Permlink"}
+                        ],
+                        "minItems": 3,
+                        "maxItems": 3,
+                        "description": "For by_voter_comment: [voter, author, permlink]"
+                    }
+                ],
+                "example": []
+            },
+            "list_owner_histories_start": {
+                "description": "Starting point for pagination.",
+                "oneOf": [
+                    {
+                        "type": "array",
+                        "maxItems": 0,
+                        "description": "Empty array to start from beginning"
+                    },
+                    {
+                        "type": "array",
+                        "prefixItems": [
+                            {"type": "string", "description": "Account name"},
+                            {"type": "string", "format": "date-time", "description": "Last valid datetime"}
+                        ],
+                        "minItems": 2,
+                        "maxItems": 2,
+                        "description": "[account_name, last_valid_datetime]"
+                    }
+                ],
+                "example": []
+            },
+            "list_proposals_start": {
+                "type": "array",
+                "description": "Starting point for pagination. Content depends on the order parameter: empty array [] starts from beginning, by_creator: [account_name], by_start_date/by_end_date: [datetime], by_total_votes: [vote_count].",
+                "oneOf": [
+                    {
+                        "type": "array",
+                        "maxItems": 0,
+                        "description": "Empty array to start from beginning"
+                    },
+                    {
+                        "type": "array",
+                        "prefixItems": [
+                            {
+                                "type": "string",
+                                "description": "Account name for by_creator, or datetime string for by_start_date/by_end_date"
+                            }
+                        ],
+                        "minItems": 1,
+                        "maxItems": 1
+                    },
+                    {
+                        "type": "array",
+                        "prefixItems": [
+                            {
+                                "$ref": "#/components/schemas/hive_int",
+                                "description": "Vote count for by_total_votes"
+                            }
+                        ],
+                        "minItems": 1,
+                        "maxItems": 1
+                    }
+                ],
+                "example": []
+            },
+            "list_proposal_votes_start": {
+                "type": "array",
+                "description": "Starting point for pagination. Content depends on the order parameter: empty array [] starts from beginning, by_voter_proposal: [account_name|null, proposal_id|null], by_proposal_voter: [proposal_id|null, account_name|null].",
+                "oneOf": [
+                    {
+                        "type": "array",
+                        "maxItems": 0,
+                        "description": "Empty array to start from beginning"
+                    },
+                    {
+                        "type": "array",
+                        "prefixItems": [
+                            {
+                                "type": ["string", "null"],
+                                "description": "Account name (nullable) for by_voter_proposal"
+                            },
+                            {
+                                "type": ["integer", "null"],
+                                "description": "Proposal ID (nullable) for by_voter_proposal"
+                            }
+                        ],
+                        "minItems": 2,
+                        "maxItems": 2,
+                        "description": "For by_voter_proposal: [account_name|null, proposal_id|null]"
+                    },
+                    {
+                        "type": "array",
+                        "prefixItems": [
+                            {
+                                "type": ["integer", "null"],
+                                "description": "Proposal ID (nullable) for by_proposal_voter"
+                            },
+                            {
+                                "type": ["string", "null"],
+                                "description": "Account name (nullable) for by_proposal_voter"
+                            }
+                        ],
+                        "minItems": 2,
+                        "maxItems": 2,
+                        "description": "For by_proposal_voter: [proposal_id|null, account_name|null]"
+                    }
+                ],
+                "example": []
             },
             "state_size_info": {
                 "type": "object",
