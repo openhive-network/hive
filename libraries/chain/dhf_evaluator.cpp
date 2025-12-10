@@ -5,13 +5,25 @@
 #include <hive/chain/database.hpp>
 #include <hive/chain/hive_evaluator.hpp>
 #include <hive/chain/dhf_objects.hpp>
+#include <hive/chain/evaluator_registry.hpp>
 
 #include <hive/chain/util/dhf_helper.hpp>
 
 
 namespace hive { namespace chain {
 
-using hive::chain::create_proposal_evaluator;
+HIVE_DEFINE_EVALUATOR( create_proposal )
+HIVE_DEFINE_EVALUATOR( update_proposal )
+HIVE_DEFINE_EVALUATOR( update_proposal_votes )
+HIVE_DEFINE_EVALUATOR( remove_proposal )
+
+void register_dhf_evaluators( evaluator_registry<operation>& registry )
+{
+  registry.register_evaluator< create_proposal_evaluator       >();
+  registry.register_evaluator< update_proposal_evaluator       >();
+  registry.register_evaluator< update_proposal_votes_evaluator >();
+  registry.register_evaluator< remove_proposal_evaluator       >();
+}
 
 void create_proposal_evaluator::do_apply( const create_proposal_operation& o )
 {
