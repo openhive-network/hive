@@ -1,9 +1,27 @@
 from __future__ import annotations
 
+import time
+
 import pytest
 
 import test_tools as tt
-from beekeepy.exceptions import FailedToStartExecutableError
+from beekeepy.exceptions import CommunicationError, FailedToStartExecutableError
+
+
+def _run_node_with_retry(node: tt.InitNode, max_retries: int = 3, **kwargs) -> None:
+    """Run node with retry logic for flaky CI environments."""
+    for attempt in range(max_retries):
+        try:
+            node.run(**kwargs)
+            return
+        except (CommunicationError, FailedToStartExecutableError) as e:
+            if attempt < max_retries - 1:
+                tt.logger.warning(f"Node startup failed (attempt {attempt + 1}/{max_retries}): {e}, retrying...")
+                time.sleep(2)
+                # Need to recreate node for retry
+                node.close()
+            else:
+                raise
 
 
 def test_simply_hardfork_schedule() -> None:
@@ -20,7 +38,8 @@ def test_simply_hardfork_schedule() -> None:
     for witness in witnesses_required_for_hf06_and_later:
         init_node.config.witness.append(witness)
 
-    init_node.run(
+    _run_node_with_retry(
+        init_node,
         time_control=tt.SpeedUpRateTimeControl(speed_up_rate=20),
         alternate_chain_specs=tt.AlternateChainSpecs(
             genesis_time=int(tt.Time.now(serialize=False).timestamp()),

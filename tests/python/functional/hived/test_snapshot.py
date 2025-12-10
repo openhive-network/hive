@@ -24,6 +24,25 @@ def _dump_snapshot_with_retry(node: tt.InitNode | tt.ApiNode, name: str = "snaps
             else:
                 raise
 
+
+def _run_node_with_retry(node: tt.InitNode | tt.ApiNode, max_retries: int = 3, **kwargs) -> None:
+    """Run node with retry logic for flaky CI environments."""
+    from beekeepy.exceptions import CommunicationError
+    for attempt in range(max_retries):
+        try:
+            node.run(**kwargs)
+            return
+        except (FailedToStartExecutableError, CommunicationError) as e:
+            if attempt < max_retries - 1:
+                tt.logger.warning(f"Node startup failed (attempt {attempt + 1}/{max_retries}): {e}, retrying...")
+                time.sleep(2)
+                try:
+                    node.close()
+                except Exception:
+                    pass
+            else:
+                raise
+
 if TYPE_CHECKING:
     from pathlib import Path
 
@@ -36,14 +55,14 @@ def test_snapshots_content_binary(block_log: Path) -> None:
 
     node.append(tt.ApiNode())
     node[0].config.plugin.append("state_snapshot")
-    node[0].run(exit_before_synchronization=True, replay_from=block_log)
+    _run_node_with_retry(node[0], exit_before_synchronization=True, replay_from=block_log)
 
-    snap.append(node[0].dump_snapshot(name="snapshot1", close=True))
+    snap.append(_dump_snapshot_with_retry(node[0], name="snapshot1", close=True))
 
     node.append(tt.ApiNode())
-    node[1].run(load_snapshot_from=snap[0], exit_before_synchronization=True)
+    _run_node_with_retry(node[1], load_snapshot_from=snap[0], exit_before_synchronization=True)
 
-    snap.append(node[1].dump_snapshot(name="snapshot2", close=True))
+    snap.append(_dump_snapshot_with_retry(node[1], name="snapshot2", close=True))
 
     compare_snapshots_contents(snap[0], snap[1])
 
