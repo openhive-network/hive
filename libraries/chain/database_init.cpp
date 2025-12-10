@@ -25,20 +25,10 @@ void database::initialize_evaluators()
   register_transfer_evaluators( _my->_evaluator_registry );
   register_account_evaluators( _my->_evaluator_registry );
   register_witness_evaluators( _my->_evaluator_registry );
-
+  register_dhf_evaluators( _my->_evaluator_registry );
 #ifdef HIVE_ENABLE_SMT
-  _my->_evaluator_registry.register_evaluator< smt_setup_evaluator                      >();
-  _my->_evaluator_registry.register_evaluator< smt_setup_emissions_evaluator            >();
-  _my->_evaluator_registry.register_evaluator< smt_set_setup_parameters_evaluator       >();
-  _my->_evaluator_registry.register_evaluator< smt_set_runtime_parameters_evaluator     >();
-  _my->_evaluator_registry.register_evaluator< smt_create_evaluator                     >();
-  _my->_evaluator_registry.register_evaluator< smt_contribute_evaluator                 >();
+  register_smt_evaluators( _my->_evaluator_registry );
 #endif
-
-  _my->_evaluator_registry.register_evaluator< create_proposal_evaluator                >();
-  _my->_evaluator_registry.register_evaluator< update_proposal_evaluator                >();
-  _my->_evaluator_registry.register_evaluator< update_proposal_votes_evaluator          >();
-  _my->_evaluator_registry.register_evaluator< remove_proposal_evaluator                >();
 
   rc.initialize_evaluators();
 }
