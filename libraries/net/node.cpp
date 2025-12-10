@@ -4725,8 +4725,10 @@ namespace graphene { namespace net {
                           signature,
                           generate_hello_user_data());
 
-      // When sending hello, we may not know the peer's protocol version yet.
-      // Use the version-aware serialization which defaults to legacy format if unknown.
+      // When sending hello, we may not know the peer's protocol version yet (this is
+      // the first message exchanged). However, if we have an IPv6 inbound_address,
+      // that means we're connected via IPv6, and v107 peers can't accept IPv6 connections,
+      // so the peer must be v108+. For IPv4 addresses, we default to legacy format.
       peer->send_message(create_hello_message_for_peer(hello, peer->supports_ipv6()));
     }
 
@@ -5074,7 +5076,12 @@ namespace graphene { namespace net {
 
     void node_impl::initiate_connect_to(const peer_connection_ptr& new_peer)
     {
-      new_peer->get_socket().open();
+      // Open socket with the appropriate address family based on the remote endpoint
+      fc::optional<fc::ip::endpoint> remote_ep = new_peer->get_remote_endpoint();
+      if (remote_ep)
+        new_peer->get_socket().open_for_endpoint(*remote_ep);
+      else
+        new_peer->get_socket().open();  // Fallback to IPv4 for backward compatibility
       new_peer->get_socket().set_reuse_address();
       int peer_send_buffer_size = new_peer->get_socket().set_send_buffer_size(MAX_MESSAGE_SIZE);
       idump((peer_send_buffer_size));

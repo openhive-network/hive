@@ -343,32 +343,32 @@ namespace fc {
      * @brief Pack an endpoint in legacy format (IPv4 only).
      * @throws fc::exception if the address is IPv6
      *
-     * Legacy format: uint32_t address + uint16_t port (network packs port as 16-bit)
-     * Note: The original format actually packed a uint32_t port followed by uint32_t address,
-     * but only 16 bits of port were meaningful.
+     * Legacy format (v107): uint32_t address + uint16_t port = 6 bytes total
+     * This matches the original fc::ip::endpoint serialization format.
      */
     template<typename Stream>
     inline void pack_legacy(Stream& s, const ip::endpoint& v)
     {
       FC_ASSERT(v.get_address().is_ipv4(), "Cannot pack IPv6 endpoint in legacy format");
-      // Original format was: uint32_t _port, uint32_t _ip (address)
-      // But looking at the reflect and old pack, it was: pack(port as uint32), pack(address as uint32)
-      fc::raw::pack(s, static_cast<uint32_t>(v.port()));
+      // Original format: address (4 bytes) then port (2 bytes)
       fc::raw::pack(s, v.get_address().get_ipv4().addr);
+      fc::raw::pack(s, v.port());
     }
 
     /**
      * @brief Unpack an endpoint from legacy format (IPv4 only).
+     *
+     * Legacy format (v107): uint32_t address + uint16_t port = 6 bytes total
      */
     template<typename Stream>
     inline void unpack_legacy(Stream& s, ip::endpoint& v, uint32_t depth)
     {
       depth++;
-      uint32_t port;
       uint32_t ip;
-      fc::raw::unpack(s, port, depth);
+      uint16_t port;
       fc::raw::unpack(s, ip, depth);
-      v = ip::endpoint(ip::address(ip), static_cast<uint16_t>(port));
+      fc::raw::unpack(s, port, depth);
+      v = ip::endpoint(ip::address(ip), port);
     }
 
   } // namespace raw

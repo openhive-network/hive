@@ -117,6 +117,15 @@ namespace fc {
     my->_sock.open(boost::asio::ip::tcp::v4());
   }
 
+  void tcp_socket::open_for_endpoint(const fc::ip::endpoint& ep)
+  {
+    if (ep.get_address().is_ipv6()) {
+      my->_sock.open(boost::asio::ip::tcp::v6());
+    } else {
+      my->_sock.open(boost::asio::ip::tcp::v4());
+    }
+  }
+
   bool tcp_socket::is_open()const {
     return my->_sock.is_open();
   }
@@ -208,7 +217,7 @@ namespace fc {
     }
     catch (const std::exception& except)
     {
-      elog("Exception binding outgoing connection to desired local endpoint ${endpoint}: ${what}", ("endpoint", local_endpoint)("what", except.what()));
+      // Don't log here - caller will handle and log appropriately
       FC_THROW("error binding to ${endpoint}: ${what}", ("endpoint", local_endpoint)("what", except.what()));
     }
   }

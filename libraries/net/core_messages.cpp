@@ -270,17 +270,19 @@ namespace graphene { namespace net {
   {
     message result;
     result.msg_type = hello_message::type;
-    if (peer_supports_ipv6 && msg.inbound_address.is_ipv4()) {
-      // New format - use standard serialization
+    if (msg.inbound_address.is_ipv6()) {
+      // If our inbound_address is IPv6, we are communicating over an IPv6 socket.
+      // A v107 peer cannot accept IPv6 connections (they only listen on IPv4),
+      // so if we're connected via IPv6, the peer MUST be v108+ and support the new format.
+      // This resolves the apparent chicken-and-egg problem: we don't need to know the
+      // peer's protocol version from their hello because the transport layer tells us.
       result.data = fc::raw::pack_to_vector(msg);
-    } else if (msg.inbound_address.is_ipv4()) {
-      // Legacy format for v107 peers
-      pack_hello_message_legacy(result.data, msg);
+    } else if (peer_supports_ipv6) {
+      // IPv4 address to known v108+ peer - use new format for consistency
+      result.data = fc::raw::pack_to_vector(msg);
     } else {
-      // IPv6 address but peer doesn't support it - should not happen in practice
-      // as we filter IPv6 when talking to old peers, but handle gracefully
-      FC_ASSERT(peer_supports_ipv6, "Cannot send IPv6 address to peer that doesn't support IPv6");
-      result.data = fc::raw::pack_to_vector(msg);
+      // IPv4 address to legacy v107 peer (or unknown peer on first hello) - use legacy format
+      pack_hello_message_legacy(result.data, msg);
     }
     result.size = result.data.size();
     return result;

@@ -245,17 +245,22 @@ namespace graphene { namespace net
           // This depends on the ip/port being unused, and on being able to set the
           // SO_REUSEADDR/SO_REUSEPORT flags, and either of these might fail, so we need to
           // detect if this fails.
-          try
+          // Also, we can only bind if the address families match (can't bind IPv6 local to IPv4 remote)
+          bool families_match = (local_endpoint->get_address().is_ipv4() == remote_endpoint.get_address().is_ipv4());
+          if( families_match )
           {
-            _message_connection.bind( *local_endpoint );
-          }
-          catch ( const fc::canceled_exception& )
-          {
-            throw;
-          }
-          catch ( const fc::exception& except )
-          {
-            wlog( "Failed to bind to desired local endpoint ${endpoint}, will connect using an OS-selected endpoint: ${except}", ("endpoint", *local_endpoint )("except", except ) );
+            try
+            {
+              _message_connection.bind( *local_endpoint );
+            }
+            catch ( const fc::canceled_exception& )
+            {
+              throw;
+            }
+            catch ( const fc::exception& except )
+            {
+              wlog( "Failed to bind to desired local endpoint ${endpoint}, will connect using an OS-selected endpoint: ${except}", ("endpoint", *local_endpoint )("except", except ) );
+            }
           }
         }
         negotiation_status = connection_negotiation_status::connecting;
