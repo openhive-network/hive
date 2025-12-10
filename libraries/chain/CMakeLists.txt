@@ -41,7 +41,11 @@ set( SOURCES
 
              smt_objects/smt_market_maker.cpp
              smt_objects/nai_pool.cpp
+             # hive_evaluator split into multiple files for faster parallel compilation
              hive_evaluator.cpp
+             hive_evaluator_transfer.cpp
+             hive_evaluator_account.cpp
+             hive_evaluator_social.cpp
              hive_objects.cpp
 
              witness_schedule.cpp
