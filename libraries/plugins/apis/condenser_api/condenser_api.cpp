@@ -19,6 +19,8 @@
 #include <hive/chain/util/reward.hpp>
 #include <hive/chain/util/uint256.hpp>
 #include <hive/chain/witness_objects.hpp>
+#include <hive/chain/hive_objects.hpp>
+#include <hive/chain/dhf_objects.hpp>
 
 #include <fc/git_revision.hpp>
 
