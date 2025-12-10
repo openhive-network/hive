@@ -13,8 +13,10 @@ endif()
 
 ## SORT .cpp by most likely to change / break compile
 set( SOURCES
-             # As database takes the longest to compile, start it first
+             # Database split into multiple files for faster parallel compilation
              database.cpp
+             database_init.cpp
+             database_hardfork.cpp
              index.cpp
              index-01.cpp
              index-02.cpp
