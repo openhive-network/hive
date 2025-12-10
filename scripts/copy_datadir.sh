@@ -61,7 +61,7 @@ then
         if [[ "$USING_NFS_SOURCE" -eq 1 ]]; then
             echo "Using NFS-safe copy (no permission preservation)"
             flock "${DATA_SOURCE}/datadir" sudo -En cp -r "${DATA_SOURCE}/datadir"/*  "${DATADIR}"
-            sudo chown -R hived:hived "${DATADIR}"
+            sudo chown -R hived:users "${DATADIR}"
         else
             flock "${DATA_SOURCE}/datadir" sudo -En cp -pr "${DATA_SOURCE}/datadir"/*  "${DATADIR}"
         fi
@@ -93,7 +93,7 @@ then
             # Use cp -r (not -pr) for NFS sources to avoid permission preservation errors
             if [[ "$USING_NFS_SOURCE" -eq 1 ]]; then
                 flock "${DATA_SOURCE}/datadir" sudo -En cp -r "${DATA_SOURCE}/shm_dir"/* "${SHM_DIR}"
-                sudo chown -R hived:hived "${SHM_DIR}"
+                sudo chown -R hived:users "${SHM_DIR}"
             else
                 flock "${DATA_SOURCE}/datadir" sudo -En cp -pr "${DATA_SOURCE}/shm_dir"/* "${SHM_DIR}"
             fi
