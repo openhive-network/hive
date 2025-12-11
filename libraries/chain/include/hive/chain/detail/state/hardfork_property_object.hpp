@@ -1,0 +1,65 @@
+#pragma once
+#include <hive/chain/hive_fwd.hpp>
+
+#include <hive/protocol/version.hpp>
+
+#include <hive/chain/hive_object_types.hpp>
+
+#include <hive/chain/util/hf23_helper.hpp>
+
+namespace hive { namespace chain {
+
+  using chainbase::t_vector;
+  using chainbase::t_flat_map;
+
+  class hardfork_property_object : public object< hardfork_property_object_type, hardfork_property_object, std::true_type >
+  {
+    CHAINBASE_OBJECT( hardfork_property_object );
+    public:
+      template< typename Allocator >
+      hardfork_property_object( allocator< Allocator > a, uint64_t _id, fc::time_point_sec genesis_time )
+        : id( _id ), processed_hardforks( a ), h23_balances( a )
+      {
+        processed_hardforks.push_back( genesis_time );
+      }
+
+      using t_processed_hardforks = t_vector< fc::time_point_sec >;
+      using t_hf23_items          = t_flat_map< account_name_type, hf23_item >;
+
+      t_processed_hardforks       processed_hardforks;
+      uint32_t                    last_hardfork = 0;
+      protocol::hardfork_version  current_hardfork_version;
+      protocol::hardfork_version  next_hardfork;
+      fc::time_point_sec          next_hardfork_time;
+
+      //Here are saved balances for given accounts, that were cleared during HF23
+      t_hf23_items                h23_balances;
+
+      size_t get_dynamic_alloc() const
+      {
+        size_t size = 0;
+        size += processed_hardforks.capacity() * sizeof( decltype( processed_hardforks )::value_type );
+        size += h23_balances.capacity() * sizeof( decltype( h23_balances )::value_type );
+        return size;
+      }
+
+    CHAINBASE_UNPACK_CONSTRUCTOR(hardfork_property_object, (processed_hardforks)(h23_balances));
+  };
+
+  typedef multi_index_container<
+    hardfork_property_object,
+    indexed_by<
+      ordered_unique< tag< by_id >,
+        const_mem_fun< hardfork_property_object, hardfork_property_object::id_type, &hardfork_property_object::get_id > >
+    >,
+    multi_index_allocator< hardfork_property_object, 2 > // singleton (plus one internal)
+  > hardfork_property_index;
+
+} } // hive::chain
+
+FC_REFLECT_TYPENAME( hive::chain::hardfork_property_object::t_hf23_items)
+
+FC_REFLECT( hive::chain::hardfork_property_object,
+  (id)(processed_hardforks)(last_hardfork)(current_hardfork_version)
+  (next_hardfork)(next_hardfork_time)(h23_balances) )
+CHAINBASE_SET_INDEX_TYPE( hive::chain::hardfork_property_object, hive::chain::hardfork_property_index )

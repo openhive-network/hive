@@ -8,9 +8,15 @@
 #include <hive/chain/rc/rc_objects.hpp>
 #include <hive/plugins/reputation/reputation_objects.hpp>
 #include <hive/plugins/transaction_status/transaction_status_objects.hpp>
+#include <hive/chain/account_object.hpp>
 #include <hive/chain/block_summary_object.hpp>
+#include <hive/chain/comment_object.hpp>
 #include <hive/chain/dhf_objects.hpp>
+#include <hive/chain/global_property_object.hpp>
+#include <hive/chain/hardfork_property_object.hpp>
+#include <hive/chain/hive_objects.hpp>
 #include <hive/chain/transaction_object.hpp>
+#include <hive/chain/witness_objects.hpp>
 
 #ifdef HIVE_ENABLE_SMT
 
