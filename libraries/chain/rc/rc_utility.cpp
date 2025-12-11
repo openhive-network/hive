@@ -3,6 +3,7 @@
 #include <hive/chain/rc/rc_curve.hpp>
 #include <hive/chain/database.hpp>
 #include <hive/chain/database_exceptions.hpp>
+#include <hive/chain/witness_objects.hpp>
 #include <hive/chain/generic_custom_operation_interpreter.hpp>
 #include <hive/chain/util/remove_guard.hpp>
 
