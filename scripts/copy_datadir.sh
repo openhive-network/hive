@@ -6,11 +6,13 @@ set -xeuo pipefail
 # Try NFS cache first, fall back to local cache
 SHARED_BLOCK_LOG_DIR="${SHARED_BLOCK_LOG_DIR:-/nfs/ci-cache/hive/block_log_5m}"
 
-# NFS fallback for cross-builder scenarios in CI pipelines
-# When DATA_SOURCE points to a local cache path that doesn't exist (because the
-# local_copy job ran on a different builder), fall back to NFS source
+# Wait for local cache with NFS fallback for cross-builder scenarios
+# When DATA_SOURCE points to a local cache path that doesn't exist yet,
+# wait briefly for another job's before_script to populate it, then fall back to NFS
 resolve_data_source() {
     local source="$1"
+    local max_wait="${LOCAL_CACHE_WAIT_SECONDS:-30}"
+    local wait_interval=5
 
     # If source exists, use it directly
     if [[ -d "${source}/datadir" ]]; then
@@ -18,14 +20,31 @@ resolve_data_source() {
         return 0
     fi
 
-    # Try NFS fallback: convert /cache/haf_pipeline_XXX to /nfs/ci-cache/haf/pipeline_XXX
+    # For local cache paths, wait briefly for another job to populate it
+    # This allows jobs running in parallel on the same builder to share cache
     if [[ "$source" =~ ^/cache/haf_pipeline_([0-9]+)(_filtered)?$ ]]; then
         local pipeline_id="${BASH_REMATCH[1]}"
         local suffix="${BASH_REMATCH[2]}"
         local nfs_path="/nfs/ci-cache/haf/pipeline_${pipeline_id}${suffix}"
+        local waited=0
 
+        echo "Local cache not found at ${source}, waiting up to ${max_wait}s for another job to populate it..." >&2
+
+        while [[ $waited -lt $max_wait ]]; do
+            sleep "$wait_interval"
+            waited=$((waited + wait_interval))
+
+            if [[ -d "${source}/datadir" ]]; then
+                echo "Local cache appeared after ${waited}s, using: ${source}" >&2
+                echo "$source"
+                return 0
+            fi
+            echo "Still waiting for local cache... (${waited}s/${max_wait}s)" >&2
+        done
+
+        # Fall back to NFS
         if [[ -d "${nfs_path}/datadir" ]]; then
-            echo "FALLBACK: Local cache not found at ${source}, using NFS: ${nfs_path}" >&2
+            echo "FALLBACK: Local cache not populated after ${max_wait}s, using NFS: ${nfs_path}" >&2
             echo "$nfs_path"
             return 0
         fi
