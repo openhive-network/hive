@@ -1,6 +1,6 @@
-#include <hive/chain/block_summary_object.hpp>
-#include <hive/chain/comment_object.hpp>
-#include <hive/chain/witness_objects.hpp>
+#include <hive/chain/block_summary_object_multiindex.hpp>
+#include <hive/chain/comment_object_multiindex.hpp>
+#include <hive/chain/witness_objects_multiindex.hpp>
 
 #include <hive/chain/index.hpp>
 

@@ -1,6 +1,6 @@
-#include <hive/chain/comment_object.hpp>
-#include <hive/chain/dhf_objects.hpp>
-#include <hive/chain/hive_objects.hpp>
+#include <hive/chain/comment_object_multiindex.hpp>
+#include <hive/chain/dhf_objects_multiindex.hpp>
+#include <hive/chain/hive_objects_multiindex.hpp>
 
 #include <hive/chain/index.hpp>
 

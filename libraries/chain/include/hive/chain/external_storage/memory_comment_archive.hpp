@@ -1,6 +1,7 @@
 #pragma once
 
 #include <hive/chain/external_storage/comments_handler.hpp>
+#include <hive/chain/comment_object_multiindex.hpp>
 
 #include <chainbase/allocator_helpers.hpp>
 

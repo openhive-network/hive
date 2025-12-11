@@ -7,6 +7,7 @@
 #include <hive/chain/hive_objects.hpp>
 #include <hive/chain/smt_objects.hpp>
 #include <hive/chain/dhf_objects.hpp>
+#include <hive/chain/dhf_objects_multiindex.hpp>
 #include <hive/chain/transaction_object.hpp>
 #include <hive/chain/witness_objects.hpp>
 #include <hive/chain/database.hpp>
