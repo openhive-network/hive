@@ -2,6 +2,7 @@
 
 #include <hive/chain/database.hpp>
 #include <hive/chain/dhf_objects.hpp>
+#include <hive/chain/account_object.hpp>
 #include <hive/chain/util/remove_guard.hpp>
 
 #include <boost/container/flat_set.hpp>

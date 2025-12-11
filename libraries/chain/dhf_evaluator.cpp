@@ -5,6 +5,7 @@
 #include <hive/chain/database.hpp>
 #include <hive/chain/hive_evaluator.hpp>
 #include <hive/chain/dhf_objects.hpp>
+#include <hive/chain/account_object.hpp>
 #include <hive/chain/evaluator_registry.hpp>
 
 #include <hive/chain/util/dhf_helper.hpp>

@@ -5,6 +5,7 @@
 
 #include <hive/protocol/fixed_string.hpp>
 #include <hive/protocol/authority.hpp>
+#include <hive/protocol/asset.hpp>
 
 #include <hive/chain/hive_object_types.hpp>
 #include <hive/chain/shared_authority.hpp>
@@ -18,6 +19,10 @@ namespace hive { namespace chain {
 
   using chainbase::t_vector;
   using hive::protocol::authority;
+  using hive::protocol::asset;
+  using hive::protocol::HBD_asset;
+  using hive::protocol::HIVE_asset;
+  using hive::protocol::VEST_asset;
 
   class account_object : public object< account_object_type, account_object, std::true_type >
   {

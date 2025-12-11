@@ -16,6 +16,7 @@
 #include <hive/chain/smt_objects.hpp>
 #include <hive/chain/hive_evaluator.hpp>
 #include <hive/chain/hive_objects.hpp>
+#include <hive/chain/witness_objects.hpp>
 #include <hive/chain/transaction_object.hpp>
 #include <hive/chain/shared_db_merkle.hpp>
 #include <hive/chain/witness_schedule.hpp>
