@@ -8,13 +8,13 @@ SHARED_BLOCK_LOG_DIR="${SHARED_BLOCK_LOG_DIR:-/nfs/ci-cache/hive/block_log_5m}"
 
 # Wait for local cache with NFS fallback for cross-builder scenarios
 # When DATA_SOURCE points to a local cache path that doesn't exist yet,
-# wait briefly for another job's before_script to populate it, then fall back to NFS
+# wait briefly for another job's before_script to populate it, then fall back to NFS tar
 resolve_data_source() {
     local source="$1"
     local max_wait="${LOCAL_CACHE_WAIT_SECONDS:-30}"
     local wait_interval=5
 
-    # If source exists, use it directly
+    # If source directory exists, use it directly
     if [[ -d "${source}/datadir" ]]; then
         echo "$source"
         return 0
@@ -25,7 +25,7 @@ resolve_data_source() {
     if [[ "$source" =~ ^/cache/haf_pipeline_([0-9]+)(_filtered)?$ ]]; then
         local pipeline_id="${BASH_REMATCH[1]}"
         local suffix="${BASH_REMATCH[2]}"
-        local nfs_path="/nfs/ci-cache/haf/pipeline_${pipeline_id}${suffix}"
+        local nfs_tar="/nfs/ci-cache/haf/pipeline_${pipeline_id}${suffix}.tar"
         local waited=0
 
         echo "Local cache not found at ${source}, waiting up to ${max_wait}s for another job to populate it..." >&2
@@ -42,16 +42,27 @@ resolve_data_source() {
             echo "Still waiting for local cache... (${waited}s/${max_wait}s)" >&2
         done
 
-        # Fall back to NFS
-        if [[ -d "${nfs_path}/datadir" ]]; then
-            echo "FALLBACK: Local cache not populated after ${max_wait}s, using NFS: ${nfs_path}" >&2
-            echo "$nfs_path"
+        # Fall back to NFS tar file - extract to local cache
+        if [[ -f "${nfs_tar}" ]]; then
+            echo "FALLBACK: Extracting NFS tar ${nfs_tar} to ${source}..." >&2
+            sudo mkdir -p "${source}"
+            sudo tar xf "${nfs_tar}" -C "${source}"
+            echo "$source"
             return 0
         fi
     fi
 
-    # Check if source is already an NFS path
+    # Check if source is already an NFS path (directory or tar)
     if [[ "$source" =~ ^/nfs/ ]]; then
+        # Check for tar file
+        if [[ -f "${source}.tar" ]]; then
+            local extract_dir="${source}"
+            echo "Extracting NFS tar ${source}.tar to ${extract_dir}..." >&2
+            sudo mkdir -p "${extract_dir}"
+            sudo tar xf "${source}.tar" -C "${extract_dir}"
+            echo "$extract_dir"
+            return 0
+        fi
         echo "$source"
         return 0
     fi
