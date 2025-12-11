@@ -11,6 +11,8 @@
 #include <hive/chain/util/manabar.hpp>
 #include <hive/chain/util/asset.hpp>
 #include <hive/chain/util/delayed_voting.hpp>
+#include <hive/chain/util/rd_dynamics.hpp>
+#include <hive/chain/witness_objects.hpp>
 
 #include <fc/optional.hpp>
 #include <fc/container/flat.hpp>
