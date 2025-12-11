@@ -382,7 +382,7 @@ void database::process_comment_cashout()
   /// don't allow any content to get paid out until the website is ready to launch
   /// and people have had a week to start posting.  The first cashout will be the biggest because it
   /// will represent 2+ months of rewards.
-  if( !has_hardfork( HIVE_FIRST_CASHOUT_TIME ) )
+  if( !has_hardfork( HIVE_HARDFORK_0_7_FIRST_CASHOUT_TIME ) )
     return;
 
   const auto& gpo = get_dynamic_global_properties();
