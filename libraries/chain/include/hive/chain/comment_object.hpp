@@ -2,10 +2,11 @@
 #include <hive/chain/hive_fwd.hpp>
 
 #include <hive/protocol/authority.hpp>
+#include <hive/protocol/asset.hpp>
+#include <hive/protocol/config.hpp>
 #include <hive/protocol/comment_types.hpp>
 
 #include <hive/chain/hive_object_types.hpp>
-#include <hive/chain/account_object.hpp>
 
 #include <fc/crypto/ripemd160.hpp>
 
@@ -13,8 +14,12 @@
 
 namespace hive { namespace chain {
 
+  class account_object;
+
   using chainbase::t_vector;
   using chainbase::t_pair;
+  using hive::protocol::asset;
+  using hive::protocol::HBD_asset;
 #ifdef HIVE_ENABLE_SMT
   using protocol::votable_asset_info;
 #endif
@@ -38,6 +43,8 @@ namespace hive { namespace chain {
 
       static author_and_permlink_hash_type compute_author_and_permlink_hash(
         account_id_type author_account_id, const std::string& permlink );
+      static author_and_permlink_hash_type compute_author_and_permlink_hash(
+        const account_object& author, const std::string& permlink );
 
       //returns id of parent comment (null_id() when top comment)
       comment_id_type get_parent_id() const { return parent_comment; }
@@ -66,7 +73,7 @@ namespace hive { namespace chain {
   )
     : id ( _id )
   {
-    author_and_permlink_hash = compute_author_and_permlink_hash( _author.get_id(), _permlink );
+    author_and_permlink_hash = compute_author_and_permlink_hash( _author, _permlink );
 
     if( _parent_comment != nullptr )
     {
@@ -104,9 +111,10 @@ namespace hive { namespace chain {
       struct stored_beneficiary_route_type
       {
         stored_beneficiary_route_type() {}
-        stored_beneficiary_route_type( const account_object& a, const uint16_t& w )
-          : account_id( a.get_id() ), weight( w )
+        stored_beneficiary_route_type( account_id_type _account_id, const uint16_t& w )
+          : account_id( _account_id ), weight( w )
         {}
+        stored_beneficiary_route_type( const account_object& a, const uint16_t& w );
 
         account_id_type account_id;
         uint16_t        weight;
@@ -120,15 +128,13 @@ namespace hive { namespace chain {
       comment_cashout_object( allocator< Allocator > a, uint64_t _id,
         const comment_object& _comment, const account_object& _author, const std::string& _permlink,
         const time_point_sec& _creation_time, const time_point_sec& _cashout_time )
-      : id( _comment.get_id() ), //note that it is possible because relation is 1->{0,1} so we can share id
-        author_id( _author.get_id() ), permlink( a ), created( _creation_time ),
+      : id( _comment.get_id() ), permlink( a ), created( _creation_time ),
         cashout_time( _cashout_time ), beneficiaries( a )
 #ifdef HIVE_ENABLE_SMT
         , allowed_vote_assets( a )
 #endif
       {
-        from_string( permlink, _permlink );
-        FC_ASSERT( _creation_time <= _cashout_time );
+        init( _author, _permlink, _creation_time, _cashout_time );
       }
 
       void configure_options( uint16_t _percent_hbd, const HBD_asset& _max_accepted_payout, bool _allow_votes, bool _allow_curation )
@@ -138,10 +144,7 @@ namespace hive { namespace chain {
         allow_votes = _allow_votes;
         allow_curation_rewards = _allow_curation;
       }
-      void add_beneficiary( const account_object& beneficiary, uint16_t weight )
-      {
-        beneficiaries.emplace_back( beneficiary, weight );
-      }
+      void add_beneficiary( const account_object& beneficiary, uint16_t weight );
 
       //returns id of associated comment
       comment_id_type get_comment_id() const { return comment_object::id_type( id ); }
@@ -231,6 +234,9 @@ namespace hive { namespace chain {
       }
 
     private:
+      void init( const account_object& _author, const std::string& _permlink,
+        const time_point_sec& _creation_time, const time_point_sec& _cashout_time );
+
       account_id_type   author_id;
       shared_string     permlink;
 
@@ -389,10 +395,7 @@ namespace hive { namespace chain {
       template< typename Allocator >
       comment_vote_object( allocator< Allocator > a, uint64_t _id,
         const account_object& _voter, const comment_object& _comment,
-        const time_point_sec& _creation_time, int16_t _vote_percent, uint64_t _weight, int64_t _rshares )
-      : id( _id ), voter( _voter.get_id() ), comment( _comment.get_id() ), weight( _weight ),
-        rshares( _rshares ), vote_percent( _vote_percent ), last_update( _creation_time )
-      {}
+        const time_point_sec& _creation_time, int16_t _vote_percent, uint64_t _weight, int64_t _rshares );
 
       void set( const time_point_sec& _edit_time, int16_t _vote_percent, uint64_t _weight, int64_t _rshares )
       {
@@ -412,6 +415,9 @@ namespace hive { namespace chain {
       int8_t          get_number_of_changes() const { return num_changes; }
 
     private:
+      comment_vote_object( uint64_t _id, const account_object& _voter, const comment_object& _comment,
+        const time_point_sec& _creation_time, int16_t _vote_percent, uint64_t _weight, int64_t _rshares );
+
       account_id_type   voter;
       comment_id_type   comment;
       uint64_t          weight = 0; ///< defines the score this vote receives, used by vote payout calc. 0 if a negative vote or changed votes.
@@ -422,6 +428,13 @@ namespace hive { namespace chain {
 
     CHAINBASE_UNPACK_CONSTRUCTOR(comment_vote_object);
   };
+
+  template< typename Allocator >
+  inline comment_vote_object::comment_vote_object( allocator< Allocator > a, uint64_t _id,
+    const account_object& _voter, const comment_object& _comment,
+    const time_point_sec& _creation_time, int16_t _vote_percent, uint64_t _weight, int64_t _rshares )
+  : comment_vote_object( _id, _voter, _comment, _creation_time, _vote_percent, _weight, _rshares )
+  {}
 
   struct by_comment_voter {};
   struct by_voter_comment;
