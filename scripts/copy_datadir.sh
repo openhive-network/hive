@@ -6,6 +6,18 @@ set -xeuo pipefail
 # Try NFS cache first, fall back to local cache
 SHARED_BLOCK_LOG_DIR="${SHARED_BLOCK_LOG_DIR:-/nfs/ci-cache/hive/block_log_5m}"
 
+# Validate that a cache directory contains essential PostgreSQL data
+# Returns 0 if valid, 1 if incomplete or missing
+is_cache_valid() {
+    local source="$1"
+    # Check for datadir and PostgreSQL data directory
+    # haf_db_store/pgdata must exist and contain pg_version (indicates complete PG data)
+    if [[ -d "${source}/datadir" && -d "${source}/datadir/haf_db_store/pgdata" && -f "${source}/datadir/haf_db_store/pgdata/PG_VERSION" ]]; then
+        return 0
+    fi
+    return 1
+}
+
 # Wait for local cache with NFS fallback for cross-builder scenarios
 # When DATA_SOURCE points to a local cache path that doesn't exist yet,
 # wait briefly for another job's before_script to populate it, then fall back to NFS tar
@@ -17,8 +29,8 @@ resolve_data_source() {
     local max_wait="${LOCAL_CACHE_WAIT_SECONDS:-30}"
     local wait_interval=5
 
-    # If source directory exists, use it directly
-    if [[ -d "${source}/datadir" ]]; then
+    # If source directory exists with valid PostgreSQL data, use it directly
+    if is_cache_valid "$source"; then
         echo "$source"
         return 0
     fi
@@ -34,18 +46,22 @@ resolve_data_source() {
         local nfs_tar="/nfs/ci-cache/${cache_type}/${cache_key}.tar"
         local waited=0
 
-        echo "Local cache not found at ${source}, waiting up to ${max_wait}s for another job to populate it..." >&2
+        if [[ -d "${source}/datadir" ]]; then
+            echo "Local cache at ${source} exists but is incomplete, waiting up to ${max_wait}s for it to be ready..." >&2
+        else
+            echo "Local cache not found at ${source}, waiting up to ${max_wait}s for another job to populate it..." >&2
+        fi
 
         while [[ $waited -lt $max_wait ]]; do
             sleep "$wait_interval"
             waited=$((waited + wait_interval))
 
-            if [[ -d "${source}/datadir" ]]; then
-                echo "Local cache appeared after ${waited}s, using: ${source}" >&2
+            if is_cache_valid "$source"; then
+                echo "Local cache ready after ${waited}s, using: ${source}" >&2
                 echo "$source"
                 return 0
             fi
-            echo "Still waiting for local cache... (${waited}s/${max_wait}s)" >&2
+            echo "Still waiting for valid local cache... (${waited}s/${max_wait}s)" >&2
         done
 
         # Fall back to NFS tar file - extract to local cache
