@@ -25,13 +25,13 @@ resolve_data_source() {
 
     # For local cache paths, wait briefly for another job to populate it
     # This allows jobs running in parallel on the same builder to share cache
-    # Pattern: /cache/haf_pipeline_${PIPELINE_ID} or /cache/haf_pipeline_${PIPELINE_ID}_filtered
-    if [[ "$source" =~ ^/cache/haf_pipeline_([0-9]+)(_filtered)?$ ]]; then
-        local pipeline_id="${BASH_REMATCH[1]}"
-        local suffix="${BASH_REMATCH[2]}"
-        # NFS tar path follows cache-manager structure: /nfs/ci-cache/haf_pipeline/${key}.tar
-        local cache_key="${pipeline_id}${suffix}"
-        local nfs_tar="/nfs/ci-cache/haf_pipeline/${cache_key}.tar"
+    # Supports cache-manager format: /cache/{cache_type}_{cache_key}
+    # Examples: /cache/haf_pipeline_142820, /cache/haf_sync_abc123, /cache/haf_pipeline_142820_filtered
+    if [[ "$source" =~ ^/cache/([a-z_]+)_(.+)$ ]]; then
+        local cache_type="${BASH_REMATCH[1]}"
+        local cache_key="${BASH_REMATCH[2]}"
+        # NFS tar path follows cache-manager structure: /nfs/ci-cache/{cache_type}/{key}.tar
+        local nfs_tar="/nfs/ci-cache/${cache_type}/${cache_key}.tar"
         local waited=0
 
         echo "Local cache not found at ${source}, waiting up to ${max_wait}s for another job to populate it..." >&2
