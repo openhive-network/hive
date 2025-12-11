@@ -1,6 +1,6 @@
 #ifndef HIVE_HARDFORK_0_21
 #define HIVE_HARDFORK_0_21 21
-#define HIVE_PROPOSALS_HARDFORK HIVE_HARDFORK_0_21
+#define HIVE_HARDFORK_0_21_PROPOSALS (HIVE_HARDFORK_0_21)
 
 #ifdef USE_ALTERNATE_CHAIN_ID
 #define HIVE_HARDFORK_0_21_TIME (hive::protocol::testnet_blockchain_configuration::configuration_data.get_hf_time(HIVE_HARDFORK_0_21, 1566918000))
