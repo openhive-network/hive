@@ -50,11 +50,19 @@ resolve_data_source() {
             echo "$source"
             return 0
         fi
+
+        # Fall back to NFS directory (for jobs that create directory directly)
+        local nfs_dir="/nfs/ci-cache/haf/pipeline_${pipeline_id}${suffix}"
+        if [[ -d "${nfs_dir}/datadir" ]]; then
+            echo "FALLBACK: Using NFS directory ${nfs_dir}..." >&2
+            echo "$nfs_dir"
+            return 0
+        fi
     fi
 
     # Check if source is already an NFS path (directory or tar)
     if [[ "$source" =~ ^/nfs/ ]]; then
-        # Check for tar file
+        # Check for tar file first
         if [[ -f "${source}.tar" ]]; then
             local extract_dir="${source}"
             echo "Extracting NFS tar ${source}.tar to ${extract_dir}..." >&2
@@ -63,6 +71,7 @@ resolve_data_source() {
             echo "$extract_dir"
             return 0
         fi
+        # Otherwise use directory directly
         echo "$source"
         return 0
     fi
