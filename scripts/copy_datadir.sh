@@ -14,11 +14,11 @@ is_cache_valid() {
     # - datadir with PostgreSQL data (haf_db_store/pgdata/PG_VERSION)
     # - config.ini (hived configuration)
     # - haf_postgresql_conf.d (PostgreSQL config directory)
+    # Note: pgdata may have restrictive permissions (700), so use sudo for that check
     if [[ -d "${source}/datadir" \
-          && -d "${source}/datadir/haf_db_store/pgdata" \
-          && -f "${source}/datadir/haf_db_store/pgdata/PG_VERSION" \
           && -f "${source}/datadir/config.ini" \
-          && -d "${source}/datadir/haf_postgresql_conf.d" ]]; then
+          && -d "${source}/datadir/haf_postgresql_conf.d" ]] \
+       && sudo test -f "${source}/datadir/haf_db_store/pgdata/PG_VERSION"; then
         return 0
     fi
     return 1
