@@ -3,13 +3,11 @@
 #include <appbase/application.hpp>
 
 #include <hive/protocol/hive_operations.hpp>
-#include <hive/protocol/get_config.hpp>
 #include <hive/protocol/transaction_util.hpp>
 #include <hive/protocol/hbd_interest.hpp>
 
 #include <hive/chain/block_summary_object.hpp>
 #include <hive/chain/compound.hpp>
-#include <hive/chain/custom_operation_interpreter.hpp>
 #include <hive/chain/database.hpp>
 #include <hive/chain/database_exceptions.hpp>
 #include <hive/chain/db_with.hpp>
@@ -21,29 +19,21 @@
 #include <hive/chain/transaction_object.hpp>
 #include <hive/chain/shared_db_merkle.hpp>
 #include <hive/chain/witness_schedule.hpp>
-#include <hive/chain/blockchain_worker_thread_pool.hpp>
 
 #include "database_impl.hpp"
 
 #include <hive/chain/util/asset.hpp>
 #include <hive/chain/util/reward.hpp>
 #include <hive/chain/util/uint256.hpp>
-#include <hive/chain/util/reward.hpp>
 #include <hive/chain/util/manabar.hpp>
 #include <hive/chain/util/rd_setup.hpp>
-#include <hive/chain/util/nai_generator.hpp>
 #include <hive/chain/util/dhf_processor.hpp>
 #include <hive/chain/util/delayed_voting.hpp>
 #include <hive/chain/util/decoded_types_data_storage.hpp>
-#include <hive/chain/util/state_checker_tools.hpp>
 #include <hive/chain/util/impacted.hpp>
 
 #include <hive/chain/rc/rc_objects.hpp>
-#include <hive/chain/rc/resource_count.hpp>
 
-#include <hive/jsonball/jsonball.hpp>
-
-#include <fc/smart_ref_impl.hpp>
 #include <fc/uint128.hpp>
 
 #include <fc/container/deque.hpp>

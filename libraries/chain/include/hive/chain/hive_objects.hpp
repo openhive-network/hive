@@ -2,7 +2,7 @@
 #include <hive/chain/hive_fwd.hpp>
 
 #include <hive/protocol/authority.hpp>
-#include <hive/protocol/hive_operations.hpp>
+#include <hive/protocol/asset.hpp>
 #include <hive/protocol/misc_utilities.hpp>
 
 #include <hive/chain/hive_object_types.hpp>
