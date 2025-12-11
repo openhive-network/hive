@@ -338,4 +338,5 @@ CHAINBASE_SET_INDEX_TYPE( hive::chain::smt_ico_object, hive::chain::smt_ico_inde
 CHAINBASE_SET_INDEX_TYPE( hive::chain::smt_token_emissions_object, hive::chain::smt_token_emissions_index )
 CHAINBASE_SET_INDEX_TYPE( hive::chain::smt_contribution_object, hive::chain::smt_contribution_index )
 
+
 #endif

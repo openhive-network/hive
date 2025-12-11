@@ -15,3 +15,4 @@ namespace hive { namespace chain {
 } } // hive::chain
 
 CHAINBASE_SET_INDEX_TYPE( hive::chain::block_summary_object, hive::chain::block_summary_index )
+

@@ -115,6 +115,34 @@ if ( HAS_COMPRESSION_DICTIONARIES )
   target_compile_definitions( hive_chain PUBLIC -DHAS_COMPRESSION_DICTIONARIES )
 endif()
 
+# Disable implicit template instantiation to speed up compilation
+# Templates will only be instantiated where explicitly used
+#if( NOT MSVC )
+#  target_compile_options( hive_chain PRIVATE -fno-implicit-templates )
+#endif()
+
+# Precompiled header for heavy Boost headers
+# Note: chainbase.hpp is excluded because it has complex dependencies on fc types
+# that require specific header ordering for boost::hash specializations
+target_precompile_headers( hive_chain
+  PRIVATE
+    <fc/crypto/ripemd160.hpp>
+    <boost/multi_index_container.hpp>
+    <boost/multi_index/member.hpp>
+    <boost/multi_index/composite_key.hpp>
+    <boost/multi_index/mem_fun.hpp>
+    <boost/multi_index/tag.hpp>
+    <boost/multi_index/ordered_index.hpp>
+    <boost/multi_index/hashed_index.hpp>
+    <boost/interprocess/managed_mapped_file.hpp>
+    <boost/interprocess/containers/map.hpp>
+    <boost/interprocess/containers/set.hpp>
+    <boost/interprocess/containers/deque.hpp>
+    <boost/interprocess/containers/string.hpp>
+    <boost/interprocess/allocators/allocator.hpp>
+    <chainbase/chainbase.hpp>
+)
+
 if( CLANG_TIDY_EXE )
    set_target_properties(
       hive_chain PROPERTIES
