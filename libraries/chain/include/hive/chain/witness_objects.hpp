@@ -4,7 +4,9 @@
 #include <hive/chain/hive_fwd.hpp>
 
 #include <hive/protocol/authority.hpp>
-#include <hive/protocol/hive_operations.hpp>
+#include <hive/protocol/asset.hpp>
+#include <hive/protocol/version.hpp>
+#include <hive/protocol/config.hpp>
 
 #include <hive/chain/util/rd_dynamics.hpp>
 

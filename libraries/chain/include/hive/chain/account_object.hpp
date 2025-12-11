@@ -5,7 +5,6 @@
 
 #include <hive/protocol/fixed_string.hpp>
 #include <hive/protocol/authority.hpp>
-#include <hive/protocol/hive_operations.hpp>
 
 #include <hive/chain/hive_object_types.hpp>
 #include <hive/chain/witness_objects.hpp>
