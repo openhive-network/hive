@@ -9,6 +9,9 @@ SHARED_BLOCK_LOG_DIR="${SHARED_BLOCK_LOG_DIR:-/nfs/ci-cache/hive/block_log_5m}"
 # Wait for local cache with NFS fallback for cross-builder scenarios
 # When DATA_SOURCE points to a local cache path that doesn't exist yet,
 # wait briefly for another job's before_script to populate it, then fall back to NFS tar
+#
+# NFS path structure (via cache-manager): /nfs/ci-cache/haf_pipeline/${PIPELINE_ID}.tar
+# Local path structure: /cache/haf_pipeline_${PIPELINE_ID}
 resolve_data_source() {
     local source="$1"
     local max_wait="${LOCAL_CACHE_WAIT_SECONDS:-30}"
@@ -22,10 +25,13 @@ resolve_data_source() {
 
     # For local cache paths, wait briefly for another job to populate it
     # This allows jobs running in parallel on the same builder to share cache
+    # Pattern: /cache/haf_pipeline_${PIPELINE_ID} or /cache/haf_pipeline_${PIPELINE_ID}_filtered
     if [[ "$source" =~ ^/cache/haf_pipeline_([0-9]+)(_filtered)?$ ]]; then
         local pipeline_id="${BASH_REMATCH[1]}"
         local suffix="${BASH_REMATCH[2]}"
-        local nfs_tar="/nfs/ci-cache/haf/pipeline_${pipeline_id}${suffix}.tar"
+        # NFS tar path follows cache-manager structure: /nfs/ci-cache/haf_pipeline/${key}.tar
+        local cache_key="${pipeline_id}${suffix}"
+        local nfs_tar="/nfs/ci-cache/haf_pipeline/${cache_key}.tar"
         local waited=0
 
         echo "Local cache not found at ${source}, waiting up to ${max_wait}s for another job to populate it..." >&2
@@ -48,14 +54,6 @@ resolve_data_source() {
             sudo mkdir -p "${source}"
             sudo tar xf "${nfs_tar}" -C "${source}"
             echo "$source"
-            return 0
-        fi
-
-        # Fall back to NFS directory (for jobs that create directory directly)
-        local nfs_dir="/nfs/ci-cache/haf/pipeline_${pipeline_id}${suffix}"
-        if [[ -d "${nfs_dir}/datadir" ]]; then
-            echo "FALLBACK: Using NFS directory ${nfs_dir}..." >&2
-            echo "$nfs_dir"
             return 0
         fi
     fi
