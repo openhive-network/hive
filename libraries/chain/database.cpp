@@ -13,7 +13,7 @@
 #include <hive/chain/database.hpp>
 #include <hive/chain/database_exceptions.hpp>
 #include <hive/chain/db_with.hpp>
-#include <hive/chain/dhf_objects_multiindex.hpp>
+#include <hive/chain/dhf_objects.hpp>
 #include <hive/chain/evaluator_registry.hpp>
 #include <hive/chain/smt_objects.hpp>
 #include <hive/chain/hive_evaluator.hpp>
@@ -360,11 +360,6 @@ const witness_object& database::get_witness( const account_name_type& name ) con
   return *_witness;
 } FC_CAPTURE_AND_RETHROW( (name) ) }
 
-const witness_object* database::find_witness( const account_name_type& name ) const
-{
-  return find< witness_object, by_name >( name );
-}
-
 std::string database::get_treasury_name( uint32_t hardfork ) const
 {
   if( hardfork >= HIVE_HARDFORK_1_24_TREASURY_RENAME )
@@ -400,11 +395,6 @@ const account_object& database::get_account( const account_name_type& name )cons
 const account_object* database::find_account( const account_name_type& name )const
 {
   return find< account_object, by_name >( name );
-}
-
-const comment_object* database::find_comment( comment_id_type comment_id )const
-{
-  return find< comment_object, by_id >( comment_id );
 }
 
 comment database::get_comment( const account_id_type& author, const shared_string& permlink )const
@@ -485,25 +475,12 @@ const limit_order_object& database::get_limit_order( const account_name_type& na
   return *_limit_order;
 } FC_CAPTURE_AND_RETHROW( (name)(orderid) ) }
 
-const limit_order_object* database::find_limit_order( const account_name_type& name, uint32_t orderid )const
-{
-  if( !has_hardfork( HIVE_HARDFORK_0_6__127 ) )
-    orderid = orderid & 0x0000FFFF;
-
-  return find< limit_order_object, by_account >( boost::make_tuple( name, orderid ) );
-}
-
 const savings_withdraw_object& database::get_savings_withdraw( const account_name_type& owner, uint32_t request_id )const
 { try {
   const auto* _savings_withdraw = find_savings_withdraw( owner, request_id );
   FC_ASSERT( _savings_withdraw != nullptr, "Savings withdraw for `owner` ${owner} and 'request_id' ${request_id} doesn't exist.", (owner)(request_id) );
   return *_savings_withdraw;
 } FC_CAPTURE_AND_RETHROW( (owner)(request_id) ) }
-
-const savings_withdraw_object* database::find_savings_withdraw( const account_name_type& owner, uint32_t request_id )const
-{
-  return find< savings_withdraw_object, by_from_rid >( boost::make_tuple( owner, request_id ) );
-}
 
 const dynamic_global_property_object&database::get_dynamic_global_properties() const
 { try {
@@ -525,35 +502,10 @@ const feed_history_object& database::get_feed_history()const
   return get< feed_history_object >();
 } FC_CAPTURE_AND_RETHROW() }
 
-const witness_schedule_object& database::get_witness_schedule_object()const
-{ try {
-  return get< witness_schedule_object >();
-} FC_CAPTURE_AND_RETHROW() }
-
-const witness_schedule_object& database::get_future_witness_schedule_object() const
-{
-  try
-  {
-    return get<witness_schedule_object>(witness_schedule_object::id_type(1));
-  }
-  catch (const std::out_of_range&)
-  {
-    FC_THROW_EXCEPTION(fc::key_not_found_exception, "Future witness schedule does not exist");
-  }
-}
-
 const hardfork_property_object& database::get_hardfork_property_object()const
 { try {
   return get< hardfork_property_object >();
 } FC_CAPTURE_AND_RETHROW() }
-
-const comment_object& database::get_comment_for_payout_time( const comment_object& comment )const
-{
-  if( has_hardfork( HIVE_HARDFORK_0_17__769 ) || comment.is_root() )
-    return comment;
-  else
-    return get< comment_object >( find_comment_cashout_ex( comment )->get_root_id() );
-}
 
 const time_point_sec database::calculate_discussion_payout_time( const comment_object& comment )const
 {
@@ -594,66 +546,11 @@ const comment_cashout_object* database::find_comment_cashout( const comment_obje
   return find_comment_cashout( comment.get_id() );
 }
 
-const comment_cashout_object* database::find_comment_cashout( comment_id_type comment_id ) const
-{
-  const auto& idx = get_index< comment_cashout_index, by_id >();
-  comment_cashout_object::id_type ccid( comment_id );
-  auto found = idx.find( ccid );
-
-  if( found == idx.end() )
-    return nullptr;
-  else
-    return &( *found );
-}
-
 const comment_cashout_ex_object* database::find_comment_cashout_ex( const comment_object& comment ) const
 {
   return find_comment_cashout_ex( comment.get_id() );
 }
 
-const comment_cashout_ex_object* database::find_comment_cashout_ex( comment_id_type comment_id ) const
-{
-  if( has_hardfork( HIVE_HARDFORK_0_19 ) )
-    return nullptr;
-
-  const auto& idx = get_index< comment_cashout_ex_index, by_id >();
-  comment_cashout_ex_object::id_type ccid( comment_id );
-  auto found = idx.find( ccid );
-
-  FC_ASSERT( found != idx.end() && "by id" );
-  return &( *found );
-}
-
-const comment_object& database::get_comment( const comment_cashout_object& comment_cashout ) const
-{
-  const auto& idx = get_index< comment_index >().indices().get< by_id >();
-  auto found = idx.find( comment_cashout.get_comment_id() );
-
-  FC_ASSERT( found != idx.end() && "by cashout object" );
-
-  return *found;
-}
-
-void database::remove_old_cashouts()
-{
-  // Remove all cashout extras
-  auto& comment_cashout_ex_idx = get_mutable_index< comment_cashout_ex_index >();
-  comment_cashout_ex_idx.clear();
-
-  // Remove regular cashouts for paid comments
-  const auto& idx = get_index< comment_cashout_index, by_cashout_time >();
-  auto itr = idx.find( fc::time_point_sec::maximum() );
-
-  auto block_num = head_block_num();
-  while( itr != idx.end() )
-  {
-    const auto& current = *itr;
-    const auto& comment = get_comment( current );
-    ++itr;
-    get_comments_handler().on_cashout( block_num, comment, current );
-    remove( current );
-  }
-}
 
 uint32_t database::witness_participation_rate()const
 {

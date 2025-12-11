@@ -373,3 +373,4 @@ FC_REFLECT( hive::chain::rc_usage_bucket_object,
   (usage)
 )
 CHAINBASE_SET_INDEX_TYPE( hive::chain::rc_usage_bucket_object, hive::chain::rc_usage_bucket_index )
+
