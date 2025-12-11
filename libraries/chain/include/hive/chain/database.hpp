@@ -4,8 +4,8 @@
 #pragma once
 #include <hive/chain/block_flow_control.hpp>
 #include <hive/chain/block_write_interface.hpp>
-#include <hive/chain/global_property_object.hpp>
-#include <hive/chain/hardfork_property_object.hpp>
+#include <hive/chain/global_property_object_multiindex.hpp>
+#include <hive/chain/hardfork_property_object_multiindex.hpp>
 #include <hive/chain/irreversible_block_data.hpp>
 #include <hive/chain/node_property_object.hpp>
 #include <hive/chain/notifications.hpp>

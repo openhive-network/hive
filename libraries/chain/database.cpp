@@ -6,18 +6,20 @@
 #include <hive/protocol/transaction_util.hpp>
 #include <hive/protocol/hbd_interest.hpp>
 
-#include <hive/chain/block_summary_object.hpp>
+#include <hive/chain/account_object_multiindex.hpp>
+#include <hive/chain/block_summary_object_multiindex.hpp>
+#include <hive/chain/comment_object_multiindex.hpp>
 #include <hive/chain/compound.hpp>
 #include <hive/chain/database.hpp>
 #include <hive/chain/database_exceptions.hpp>
 #include <hive/chain/db_with.hpp>
+#include <hive/chain/dhf_objects_multiindex.hpp>
 #include <hive/chain/evaluator_registry.hpp>
-#include <hive/chain/global_property_object.hpp>
 #include <hive/chain/smt_objects.hpp>
 #include <hive/chain/hive_evaluator.hpp>
-#include <hive/chain/hive_objects.hpp>
-#include <hive/chain/witness_objects.hpp>
-#include <hive/chain/transaction_object.hpp>
+#include <hive/chain/hive_objects_multiindex.hpp>
+#include <hive/chain/witness_objects_multiindex.hpp>
+#include <hive/chain/transaction_object_multiindex.hpp>
 #include <hive/chain/shared_db_merkle.hpp>
 #include <hive/chain/witness_schedule.hpp>
 

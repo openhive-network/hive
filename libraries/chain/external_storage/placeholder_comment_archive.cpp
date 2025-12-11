@@ -1,4 +1,5 @@
 #include <hive/chain/database.hpp>
+#include <hive/chain/comment_object_multiindex.hpp>
 
 #include <hive/chain/external_storage/placeholder_comment_archive.hpp>
 
