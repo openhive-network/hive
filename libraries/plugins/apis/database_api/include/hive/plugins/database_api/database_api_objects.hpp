@@ -5,6 +5,7 @@
 #include <hive/protocol/asset.hpp>
 #include <hive/protocol/block.hpp>
 #include <hive/protocol/misc_utilities.hpp>
+#include <hive/protocol/comment_types.hpp>
 
 #include <hive/chain/hive_object_types.hpp>
 #include <hive/chain/util/manabar.hpp>
