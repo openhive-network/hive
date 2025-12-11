@@ -2,7 +2,7 @@
 #include <hive/chain/hive_fwd.hpp>
 
 #include <hive/protocol/authority.hpp>
-#include <hive/protocol/hive_operations.hpp>
+#include <hive/protocol/comment_types.hpp>
 
 #include <hive/chain/hive_object_types.hpp>
 #include <hive/chain/witness_objects.hpp>
@@ -14,7 +14,6 @@
 
 namespace hive { namespace chain {
 
-  using protocol::beneficiary_route_type;
   using chainbase::t_vector;
   using chainbase::t_pair;
 #ifdef HIVE_ENABLE_SMT

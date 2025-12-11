@@ -5,6 +5,7 @@
 #include <hive/protocol/validation.hpp>
 #include <hive/protocol/legacy_asset.hpp>
 #include <hive/protocol/json_string.hpp>
+#include <hive/protocol/comment_types.hpp>
 
 #include <fc/crypto/equihash.hpp>
 
@@ -104,18 +105,6 @@ namespace hive { namespace protocol {
     void get_required_posting_authorities( flat_set<account_name_type>& a )const{ a.insert(author); }
   };
 
-  struct beneficiary_route_type
-  {
-    beneficiary_route_type() {}
-    beneficiary_route_type( const account_name_type& a, const uint16_t& w ) : account( a ), weight( w ){}
-
-    account_name_type account;
-    uint16_t          weight;
-
-    // For use by std::sort such that the route is sorted first by name (ascending)
-    bool operator < ( const beneficiary_route_type& o )const { return account < o.account; }
-  };
-
   struct comment_payout_beneficiaries
   {
     vector< beneficiary_route_type > beneficiaries;
@@ -124,18 +113,6 @@ namespace hive { namespace protocol {
   };
 
 #ifdef HIVE_ENABLE_SMT
-  struct votable_asset_info_v1
-  {
-    votable_asset_info_v1() = default;
-    votable_asset_info_v1(const share_type& max_payout, bool allow_rewards) :
-      max_accepted_payout(max_payout), allow_curation_rewards(allow_rewards) {}
-
-    share_type        max_accepted_payout    = 0;
-    bool              allow_curation_rewards = false;
-  };
-
-  typedef static_variant< votable_asset_info_v1 > votable_asset_info;
-
   /** Allows to store all SMT tokens being allowed to use during voting process.
     *  Maps asset symbol (SMT) to the vote info.
     *  @see SMT spec for details: https://gitlab.syncad.com/hive/smt-whitepaper/blob/master/smt-manual/manual.md
@@ -1262,11 +1239,9 @@ FC_REFLECT( hive::protocol::limit_order_cancel_operation, (owner)(orderid) )
 
 FC_REFLECT( hive::protocol::delete_comment_operation, (author)(permlink) );
 
-FC_REFLECT( hive::protocol::beneficiary_route_type, (account)(weight) )
 FC_REFLECT( hive::protocol::comment_payout_beneficiaries, (beneficiaries) )
 
 #ifdef HIVE_ENABLE_SMT
-FC_REFLECT( hive::protocol::votable_asset_info_v1, (max_accepted_payout)(allow_curation_rewards) )
 FC_REFLECT( hive::protocol::allowed_vote_assets, (votable_assets) )
 #endif
 
