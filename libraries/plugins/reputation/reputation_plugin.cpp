@@ -11,7 +11,7 @@
 #include <hive/chain/database.hpp>
 #include <hive/chain/index.hpp>
 #include <hive/chain/account_object.hpp>
-#include <hive/chain/comment_object.hpp>
+#include <hive/chain/comment_object_multiindex.hpp>
 #include <hive/chain/util/type_registrar_definition.hpp>
 
 #include <hive/utilities/signal.hpp>

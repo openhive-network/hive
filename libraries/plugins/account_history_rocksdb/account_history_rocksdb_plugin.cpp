@@ -4,7 +4,8 @@
 #include <hive/plugins/account_history_rocksdb/account_history_rocksdb_plugin.hpp>
 
 #include <hive/chain/database.hpp>
-#include <hive/chain/hive_objects.hpp>
+#include <hive/chain/account_object_multiindex.hpp>
+#include <hive/chain/hive_objects_multiindex.hpp>
 #include <hive/chain/index.hpp>
 #include <hive/chain/util/impacted.hpp>
 #include <hive/chain/util/supplement_operations.hpp>

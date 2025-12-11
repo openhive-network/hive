@@ -4,7 +4,7 @@
 #include <hive/plugins/account_by_key/account_by_key_plugin.hpp>
 #include <hive/plugins/account_by_key/account_by_key_objects.hpp>
 
-#include <hive/chain/account_object.hpp>
+#include <hive/chain/account_object_multiindex.hpp>
 #include <hive/chain/database.hpp>
 #include <hive/chain/index.hpp>
 

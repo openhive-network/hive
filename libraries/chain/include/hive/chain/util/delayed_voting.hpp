@@ -2,7 +2,7 @@
 
 #include <chainbase/allocators.hpp>
 
-#include <hive/chain/account_object.hpp>
+#include <hive/chain/account_object_multiindex.hpp>
 #include <hive/chain/database.hpp>
 #include <hive/chain/index.hpp>
 

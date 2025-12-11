@@ -46,15 +46,6 @@ namespace hive { namespace chain {
     CHAINBASE_UNPACK_CONSTRUCTOR(hardfork_property_object, (processed_hardforks)(h23_balances));
   };
 
-  typedef multi_index_container<
-    hardfork_property_object,
-    indexed_by<
-      ordered_unique< tag< by_id >,
-        const_mem_fun< hardfork_property_object, hardfork_property_object::id_type, &hardfork_property_object::get_id > >
-    >,
-    multi_index_allocator< hardfork_property_object, 2 > // singleton (plus one internal)
-  > hardfork_property_index;
-
 } } // hive::chain
 
 FC_REFLECT_TYPENAME( hive::chain::hardfork_property_object::t_hf23_items)
@@ -62,4 +53,3 @@ FC_REFLECT_TYPENAME( hive::chain::hardfork_property_object::t_hf23_items)
 FC_REFLECT( hive::chain::hardfork_property_object,
   (id)(processed_hardforks)(last_hardfork)(current_hardfork_version)
   (next_hardfork)(next_hardfork_time)(h23_balances) )
-CHAINBASE_SET_INDEX_TYPE( hive::chain::hardfork_property_object, hive::chain::hardfork_property_index )

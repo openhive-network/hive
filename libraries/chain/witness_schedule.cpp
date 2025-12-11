@@ -1,7 +1,7 @@
 
 #include <hive/chain/hive_fwd.hpp>
 #include <hive/chain/database.hpp>
-#include <hive/chain/witness_objects.hpp>
+#include <hive/chain/witness_objects_multiindex.hpp>
 #include <hive/chain/witness_schedule.hpp>
 
 #include <hive/chain/rc/rc_utility.hpp>

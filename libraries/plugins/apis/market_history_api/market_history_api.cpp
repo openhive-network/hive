@@ -2,6 +2,7 @@
 #include <hive/plugins/market_history_api/market_history_api.hpp>
 
 #include <hive/chain/hive_objects.hpp>
+#include <hive/chain/hive_objects_multiindex.hpp>
 
 #define ASSET_TO_REAL( asset ) (double)( asset.amount.value )
 

@@ -13,14 +13,23 @@
 #include <hive/chain/util/decoded_types_data_storage.hpp>
 
 #include <hive/chain/account_object.hpp>
+#include <hive/chain/account_object_multiindex.hpp>
 #include <hive/chain/block_summary_object.hpp>
+#include <hive/chain/block_summary_object_multiindex.hpp>
 #include <hive/chain/comment_object.hpp>
+#include <hive/chain/comment_object_multiindex.hpp>
 #include <hive/chain/dhf_objects.hpp>
+#include <hive/chain/dhf_objects_multiindex.hpp>
 #include <hive/chain/global_property_object.hpp>
+#include <hive/chain/global_property_object_multiindex.hpp>
 #include <hive/chain/hardfork_property_object.hpp>
+#include <hive/chain/hardfork_property_object_multiindex.hpp>
 #include <hive/chain/hive_objects.hpp>
+#include <hive/chain/hive_objects_multiindex.hpp>
 #include <hive/chain/transaction_object.hpp>
+#include <hive/chain/transaction_object_multiindex.hpp>
 #include <hive/chain/witness_objects.hpp>
+#include <hive/chain/witness_objects_multiindex.hpp>
 #include <hive/chain/rc/rc_objects.hpp>
 #include <hive/chain/smt_objects/account_balance_object.hpp>
 #include <hive/chain/smt_objects/nai_pool_object.hpp>
