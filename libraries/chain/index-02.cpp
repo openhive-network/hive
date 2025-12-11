@@ -1,6 +1,6 @@
-#include <hive/chain/account_object.hpp>
-#include <hive/chain/witness_objects.hpp>
-#include <hive/chain/transaction_object.hpp>
+#include <hive/chain/account_object_multiindex.hpp>
+#include <hive/chain/witness_objects_multiindex.hpp>
+#include <hive/chain/transaction_object_multiindex.hpp>
 
 #include <hive/chain/index.hpp>
 

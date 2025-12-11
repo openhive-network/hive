@@ -1,6 +1,7 @@
 
 #include <hive/chain/hive_object_types.hpp>
 #include <hive/chain/index.hpp>
+#include <hive/chain/comment_object_multiindex.hpp>
 
 #include <hive/chain/util/type_registrar_definition.hpp>
 

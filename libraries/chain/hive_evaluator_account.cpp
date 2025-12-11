@@ -4,8 +4,9 @@
 
 #include <hive/chain/hive_evaluator.hpp>
 #include <hive/chain/database.hpp>
-#include <hive/chain/hive_objects.hpp>
-#include <hive/chain/witness_objects.hpp>
+#include <hive/chain/hive_objects_multiindex.hpp>
+#include <hive/chain/witness_objects_multiindex.hpp>
+#include <hive/chain/account_object_multiindex.hpp>
 #include <hive/chain/evaluator_registry.hpp>
 
 #include <hive/chain/util/owner_update_limit_mgr.hpp>

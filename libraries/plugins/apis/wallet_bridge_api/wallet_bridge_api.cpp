@@ -11,6 +11,7 @@
 #include <hive/plugins/rc_api/rc_api.hpp>
 
 #include <hive/chain/hive_objects.hpp>
+#include <hive/chain/hive_objects_multiindex.hpp>
 
 namespace hive { namespace plugins { namespace wallet_bridge_api {
 
