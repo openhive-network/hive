@@ -1666,7 +1666,7 @@ void database::clear_account( const account_object& account )
 
 void database::process_proposals( const block_notification& note )
 {
-  if( has_hardfork( HIVE_PROPOSALS_HARDFORK ) )
+  if( has_hardfork( HIVE_HARDFORK_0_21_PROPOSALS ) )
   {
     dhf_processor dhf( *this );
     dhf.run( note );
