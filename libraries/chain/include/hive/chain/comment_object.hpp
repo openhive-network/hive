@@ -5,7 +5,6 @@
 #include <hive/protocol/comment_types.hpp>
 
 #include <hive/chain/hive_object_types.hpp>
-#include <hive/chain/witness_objects.hpp>
 #include <hive/chain/account_object.hpp>
 
 #include <fc/crypto/ripemd160.hpp>
