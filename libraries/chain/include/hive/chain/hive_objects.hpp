@@ -665,9 +665,6 @@ namespace hive { namespace chain {
 
 } } // hive::chain
 
-#include <hive/chain/comment_object.hpp>
-#include <hive/chain/account_object.hpp>
-
 FC_REFLECT( hive::chain::limit_order_object,
           (id)(created)(expiration)(seller)(orderid)(for_sale)(sell_price) )
 CHAINBASE_SET_INDEX_TYPE( hive::chain::limit_order_object, hive::chain::limit_order_index )

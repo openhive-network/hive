@@ -7,7 +7,6 @@
 #include <hive/protocol/authority.hpp>
 
 #include <hive/chain/hive_object_types.hpp>
-#include <hive/chain/witness_objects.hpp>
 #include <hive/chain/shared_authority.hpp>
 #include <hive/chain/util/manabar.hpp>
 
