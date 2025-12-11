@@ -6,13 +6,19 @@ set -xeuo pipefail
 # Try NFS cache first, fall back to local cache
 SHARED_BLOCK_LOG_DIR="${SHARED_BLOCK_LOG_DIR:-/nfs/ci-cache/hive/block_log_5m}"
 
-# Validate that a cache directory contains essential PostgreSQL data
+# Validate that a cache directory contains essential HAF data
 # Returns 0 if valid, 1 if incomplete or missing
 is_cache_valid() {
     local source="$1"
-    # Check for datadir and PostgreSQL data directory
-    # haf_db_store/pgdata must exist and contain pg_version (indicates complete PG data)
-    if [[ -d "${source}/datadir" && -d "${source}/datadir/haf_db_store/pgdata" && -f "${source}/datadir/haf_db_store/pgdata/PG_VERSION" ]]; then
+    # Check for all essential HAF files:
+    # - datadir with PostgreSQL data (haf_db_store/pgdata/PG_VERSION)
+    # - config.ini (hived configuration)
+    # - haf_postgresql_conf.d (PostgreSQL config directory)
+    if [[ -d "${source}/datadir" \
+          && -d "${source}/datadir/haf_db_store/pgdata" \
+          && -f "${source}/datadir/haf_db_store/pgdata/PG_VERSION" \
+          && -f "${source}/datadir/config.ini" \
+          && -d "${source}/datadir/haf_postgresql_conf.d" ]]; then
         return 0
     fi
     return 1
