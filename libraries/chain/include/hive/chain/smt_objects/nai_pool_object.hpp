@@ -47,4 +47,5 @@ FC_REFLECT( hive::chain::nai_pool_object, (id)(num_available_nais)(nais) )
 
 CHAINBASE_SET_INDEX_TYPE( hive::chain::nai_pool_object, hive::chain::nai_pool_index )
 
+
 #endif

@@ -11,10 +11,27 @@ void initialize_core_indexes_08( database& db )
   HIVE_ADD_CORE_INDEX(db, escrow_index);
   HIVE_ADD_CORE_INDEX(db, savings_withdraw_index);
   HIVE_ADD_CORE_INDEX(db, decline_voting_rights_request_index);
+  HIVE_ADD_CORE_INDEX(db, limit_order_index);
+
 }
+
+const savings_withdraw_object* database::find_savings_withdraw( const account_name_type& owner, uint32_t request_id )const
+{
+  return find< savings_withdraw_object, by_from_rid >( boost::make_tuple( owner, request_id ) );
+}
+
+const limit_order_object* database::find_limit_order( const account_name_type& name, uint32_t orderid )const
+{
+  if( !has_hardfork( HIVE_HARDFORK_0_6__127 ) )
+    orderid = orderid & 0x0000FFFF;
+
+  return find< limit_order_object, by_account >( boost::make_tuple( name, orderid ) );
+}
+
 
 } }
 
 HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::chain::escrow_index)
 HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::chain::savings_withdraw_index)
 HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::chain::decline_voting_rights_request_index)
+HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::chain::limit_order_index)
