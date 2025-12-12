@@ -1,5 +1,12 @@
 #pragma once
-#include <hive/chain/hive_objects.hpp>
+#include <hive/chain/detail/state/convert_request_object.hpp>
+#include <hive/chain/detail/state/collateralized_convert_request_object.hpp>
+#include <hive/chain/detail/state/escrow_object.hpp>
+#include <hive/chain/detail/state/savings_withdraw_object.hpp>
+#include <hive/chain/detail/state/feed_history_object.hpp>
+#include <hive/chain/detail/state/limit_order_object.hpp>
+#include <hive/chain/detail/state/reward_fund_object.hpp>
+#include <hive/chain/detail/state/recurrent_transfer_object.hpp>
 #include <hive/chain/dhf_objects.hpp>
 
 #include <hive/plugins/database_api/database_api.hpp>
