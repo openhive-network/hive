@@ -225,7 +225,7 @@ image_exists=0
 ACTUAL_TAG="${HIVED_IMAGE_TAG##*:}"
 img_name=$( build_image_name "${ACTUAL_TAG}" "${REGISTRY}" "${HIVED_IMAGE_NAME}" )
 
-docker_image_exists "${img_name}" image_exists 0
+docker_image_exists "${img_name}" image_exists
 
 if [ "$image_exists" -eq 1 ];
 then
