@@ -2,7 +2,6 @@
 
 #include <appbase/application.hpp>
 
-#include <hive/protocol/hive_operations.hpp>
 #include <hive/protocol/transaction_util.hpp>
 #include <hive/protocol/hbd_interest.hpp>
 
