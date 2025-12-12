@@ -547,6 +547,8 @@ namespace chain {
       void expire_escrow_ratification();
       void remove_pending_escrows( const account_object& account, const account_name_type& account_name );
       void get_escrow_totals( asset& total_hive, asset& total_hbd, uint64_t& escrow_count ) const;
+      void remove_pending_savings_withdraws( const account_object& account, const account_name_type& account_name );
+      void get_savings_withdraw_totals( asset& total_hive, asset& total_hbd, uint64_t& withdrawal_count ) const;
       void process_decline_voting_rights();
       void update_median_feed();
 
