@@ -1,7 +1,6 @@
 #pragma once
 
 #include <hive/chain/dhf_objects.hpp>
-#include <hive/chain/hive_objects.hpp>
 #include <hive/chain/notifications.hpp>
 #include <hive/chain/database.hpp>
 #include <hive/chain/index.hpp>

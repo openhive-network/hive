@@ -1,6 +1,10 @@
-#include <hive/chain/hive_objects_multiindex.hpp>
+#include <hive/chain/detail/state/escrow_object_multiindex.hpp>
+#include <hive/chain/detail/state/savings_withdraw_object_multiindex.hpp>
+#include <hive/chain/detail/state/decline_voting_rights_request_object_multiindex.hpp>
+#include <hive/chain/detail/state/limit_order_object_multiindex.hpp>
 
 #include <hive/chain/index.hpp>
+#include <chainbase/chainbase.inl>
 
 #include <hive/chain/util/type_registrar_definition.hpp>
 
@@ -35,3 +39,16 @@ HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::chain::escrow_index)
 HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::chain::savings_withdraw_index)
 HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::chain::decline_voting_rights_request_index)
 HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::chain::limit_order_index)
+
+// Explicit template instantiations for chainbase::database methods
+template const chainbase::generic_index<hive::chain::escrow_index>& chainbase::database::get_index<hive::chain::escrow_index>() const;
+template chainbase::generic_index<hive::chain::escrow_index>& chainbase::database::get_mutable_index<hive::chain::escrow_index>();
+
+template const chainbase::generic_index<hive::chain::savings_withdraw_index>& chainbase::database::get_index<hive::chain::savings_withdraw_index>() const;
+template chainbase::generic_index<hive::chain::savings_withdraw_index>& chainbase::database::get_mutable_index<hive::chain::savings_withdraw_index>();
+
+template const chainbase::generic_index<hive::chain::decline_voting_rights_request_index>& chainbase::database::get_index<hive::chain::decline_voting_rights_request_index>() const;
+template chainbase::generic_index<hive::chain::decline_voting_rights_request_index>& chainbase::database::get_mutable_index<hive::chain::decline_voting_rights_request_index>();
+
+template const chainbase::generic_index<hive::chain::limit_order_index>& chainbase::database::get_index<hive::chain::limit_order_index>() const;
+template chainbase::generic_index<hive::chain::limit_order_index>& chainbase::database::get_mutable_index<hive::chain::limit_order_index>();

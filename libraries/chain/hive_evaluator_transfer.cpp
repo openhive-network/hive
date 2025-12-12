@@ -5,7 +5,14 @@
 #include <hive/chain/hive_evaluator.hpp>
 #include <hive/chain/database.hpp>
 #include <hive/chain/account_object_multiindex.hpp>
-#include <hive/chain/hive_objects_multiindex.hpp>
+#include <hive/chain/detail/state/convert_request_object_multiindex.hpp>
+#include <hive/chain/detail/state/collateralized_convert_request_object_multiindex.hpp>
+#include <hive/chain/detail/state/feed_history_object.hpp>
+#include <hive/chain/detail/state/escrow_object_multiindex.hpp>
+#include <hive/chain/detail/state/limit_order_object_multiindex.hpp>
+#include <hive/chain/detail/state/savings_withdraw_object_multiindex.hpp>
+#include <hive/chain/detail/state/withdraw_vesting_route_object_multiindex.hpp>
+#include <hive/chain/detail/state/recurrent_transfer_object_multiindex.hpp>
 #include <hive/chain/witness_objects.hpp>
 #include <hive/chain/evaluator_registry.hpp>
 

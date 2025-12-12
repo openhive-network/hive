@@ -3,7 +3,8 @@
 #include <hive/protocol/asset.hpp>
 
 #include <hive/chain/database.hpp>
-#include <hive/chain/hive_objects.hpp>
+#include <hive/chain/detail/state/reward_fund_object.hpp>
+#include <hive/chain/detail/state/feed_history_object.hpp>
 #include <hive/chain/util/reward.hpp>
 #include <hive/chain/util/uint256.hpp>
 
