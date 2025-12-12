@@ -1,6 +1,7 @@
 #include <hive/chain/witness_objects_multiindex.hpp>
 
 #include <hive/chain/index.hpp>
+#include <chainbase/chainbase.inl>
 
 #include <hive/chain/util/type_registrar_definition.hpp>
 
@@ -43,3 +44,13 @@ const witness_schedule_object& database::get_future_witness_schedule_object() co
 HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::chain::witness_schedule_index)
 HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::chain::witness_vote_index)
 HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::chain::witness_index)
+
+// Explicit template instantiations for chainbase::database methods
+template const chainbase::generic_index<hive::chain::witness_index>& chainbase::database::get_index<hive::chain::witness_index>() const;
+template chainbase::generic_index<hive::chain::witness_index>& chainbase::database::get_mutable_index<hive::chain::witness_index>();
+
+template const chainbase::generic_index<hive::chain::witness_vote_index>& chainbase::database::get_index<hive::chain::witness_vote_index>() const;
+template chainbase::generic_index<hive::chain::witness_vote_index>& chainbase::database::get_mutable_index<hive::chain::witness_vote_index>();
+
+template const chainbase::generic_index<hive::chain::witness_schedule_index>& chainbase::database::get_index<hive::chain::witness_schedule_index>() const;
+template chainbase::generic_index<hive::chain::witness_schedule_index>& chainbase::database::get_mutable_index<hive::chain::witness_schedule_index>();

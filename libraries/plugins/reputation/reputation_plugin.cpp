@@ -10,6 +10,7 @@
 
 #include <hive/chain/database.hpp>
 #include <hive/chain/index.hpp>
+#include <chainbase/chainbase.inl>
 #include <hive/chain/account_object.hpp>
 #include <hive/chain/comment_object_multiindex.hpp>
 #include <hive/chain/util/type_registrar_definition.hpp>
@@ -226,3 +227,7 @@ void reputation_plugin::plugin_shutdown()
 } } } // hive::plugins::reputation
 
 HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::plugins::reputation::reputation_index)
+
+// Explicit template instantiations for chainbase::database methods
+template const chainbase::generic_index<hive::plugins::reputation::reputation_index>& chainbase::database::get_index<hive::plugins::reputation::reputation_index>() const;
+template chainbase::generic_index<hive::plugins::reputation::reputation_index>& chainbase::database::get_mutable_index<hive::plugins::reputation::reputation_index>();
