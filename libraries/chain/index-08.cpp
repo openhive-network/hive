@@ -116,6 +116,95 @@ void database::get_escrow_totals( asset& total_hive, asset& total_hbd, uint64_t&
   }
 }
 
+const savings_withdraw_object& database::get_savings_withdraw( const account_name_type& owner, uint32_t request_id )const
+{ try {
+  const auto* _savings_withdraw = find_savings_withdraw( owner, request_id );
+  FC_ASSERT( _savings_withdraw != nullptr, "Savings withdraw for `owner` ${owner} and 'request_id' ${request_id} doesn't exist.", (owner)(request_id) );
+  return *_savings_withdraw;
+} FC_CAPTURE_AND_RETHROW( (owner)(request_id) ) }
+
+void database::process_savings_withdraws()
+{
+  const auto& idx = get_index< savings_withdraw_index >().indices().get< by_complete_from_rid >();
+  auto itr = idx.begin();
+
+  int count = 0;
+  if( _benchmark_dumper.is_enabled() )
+    _benchmark_dumper.begin();
+  while( itr != idx.end() )
+  {
+    if( itr->complete > head_block_time() )
+      break;
+    adjust_balance( get_account( itr->to ), itr->amount );
+
+    modify( get_account( itr->from ), [&]( account_object& a )
+    {
+      a.savings_withdraw_requests--;
+    });
+
+    push_virtual_operation( fill_transfer_from_savings_operation( itr->from, itr->to, itr->amount, itr->request_id, to_string( itr->memo) ) );
+
+    remove( *itr );
+    itr = idx.begin();
+    ++count;
+  }
+  if( _benchmark_dumper.is_enabled() && count )
+    _benchmark_dumper.end( "processing", "hive::protocol::transfer_from_savings_operation", count );
+}
+
+void database::remove_pending_savings_withdraws( const account_object& account, const account_name_type& account_name )
+{
+  // Remove ongoing saving withdrawals (return/pass balance to account)
+  const auto& withdraw_from_idx = get_index< savings_withdraw_index, by_from_rid >();
+  auto withdraw_from_itr = withdraw_from_idx.lower_bound( account_name );
+  while( withdraw_from_itr != withdraw_from_idx.end() && withdraw_from_itr->from == account_name )
+  {
+    auto& withdrawal = *withdraw_from_itr;
+    ++withdraw_from_itr;
+
+    adjust_balance( account, withdrawal.amount );
+    modify( account, []( account_object& a )
+    {
+      a.savings_withdraw_requests--;
+    } );
+
+    remove( withdrawal );
+  }
+
+  const auto& withdraw_to_idx = get_index< savings_withdraw_index, by_to_complete >();
+  auto withdraw_to_itr = withdraw_to_idx.lower_bound( account_name );
+  while( withdraw_to_itr != withdraw_to_idx.end() && withdraw_to_itr->to == account_name )
+  {
+    auto& withdrawal = *withdraw_to_itr;
+    ++withdraw_to_itr;
+
+    adjust_balance( account, withdrawal.amount );
+    modify( get_account( withdrawal.from ), []( account_object& a )
+    {
+      a.savings_withdraw_requests--;
+    } );
+
+    remove( withdrawal );
+  }
+}
+
+void database::get_savings_withdraw_totals( asset& total_hive, asset& total_hbd, uint64_t& withdrawal_count ) const
+{
+  const auto& savings_withdraw_idx = get_index< savings_withdraw_index >().indices().get< by_id >();
+
+  for( auto itr = savings_withdraw_idx.begin(); itr != savings_withdraw_idx.end(); ++itr )
+  {
+    if( itr->amount.symbol == HIVE_SYMBOL )
+      total_hive += itr->amount;
+    else
+    {
+      FC_ASSERT( itr->amount.symbol == HBD_SYMBOL, "found savings withdraw that is not HBD or HIVE" );
+      total_hbd += itr->amount;
+    }
+    ++withdrawal_count;
+  }
+}
+
 } }
 
 HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::chain::escrow_index)
