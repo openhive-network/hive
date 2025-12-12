@@ -90,9 +90,6 @@ class database_api
       // Comments //
       //////////////
       (get_comment_pending_payouts)
-      (find_comments)
-      (list_votes)
-      (find_votes)
 
       ////////////
       // Market //

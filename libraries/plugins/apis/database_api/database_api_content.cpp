@@ -39,25 +39,6 @@ DEFINE_API_IMPL(database_api_impl, get_comment_pending_payouts)
   return retval;
 }
 
-/* Comments */
-DEFINE_API_IMPL( database_api_impl, find_comments )
-{
-  FC_ASSERT( false, "Supported by Hivemind" );
-}
-
-/* Votes */
-
-DEFINE_API_IMPL( database_api_impl, list_votes )
-{
-  FC_ASSERT( false, "Supported by Hivemind" );
-}
-
-DEFINE_API_IMPL( database_api_impl, find_votes )
-{
-    FC_ASSERT( false, "Supported by Hivemind" );
-}
-
-
 //////////////////////////////////////////////////////////////////////
 //                                                                  //
 // DHF                                                              //

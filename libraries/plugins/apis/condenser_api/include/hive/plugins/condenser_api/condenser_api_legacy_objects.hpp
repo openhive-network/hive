@@ -9,7 +9,6 @@ namespace hive { namespace plugins { namespace condenser_api {
 
 using hive::plugins::account_history::annotated_signed_transaction;
 
-FC_TODO( "Remove when automated actions are created" )
 typedef static_variant<
       void_t,
       version,
