@@ -5,8 +5,8 @@
 
 #include <hive/chain/database.hpp>
 #include <hive/chain/account_object_multiindex.hpp>
-#include <hive/chain/hive_objects_multiindex.hpp>
 #include <hive/chain/index.hpp>
+#include <chainbase/chainbase.inl>
 #include <hive/chain/util/impacted.hpp>
 #include <hive/chain/util/supplement_operations.hpp>
 #include <hive/chain/util/data_filter.hpp>
@@ -1495,3 +1495,7 @@ bfs::path account_history_rocksdb_plugin::storage_dir() const
 } } }
 
 HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::plugins::account_history_rocksdb::volatile_operation_index)
+
+// Explicit template instantiations for chainbase::database methods
+template const chainbase::generic_index<hive::plugins::account_history_rocksdb::volatile_operation_index>& chainbase::database::get_index<hive::plugins::account_history_rocksdb::volatile_operation_index>() const;
+template chainbase::generic_index<hive::plugins::account_history_rocksdb::volatile_operation_index>& chainbase::database::get_mutable_index<hive::plugins::account_history_rocksdb::volatile_operation_index>();

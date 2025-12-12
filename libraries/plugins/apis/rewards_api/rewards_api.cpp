@@ -1,5 +1,4 @@
 #include <chainbase/chainbase.hpp>
-#include <hive/chain/hive_objects.hpp>
 #include <hive/chain/util/reward.hpp>
 #include <hive/chain/util/uint256.hpp>
 #include <hive/plugins/chain/chain_plugin.hpp>
