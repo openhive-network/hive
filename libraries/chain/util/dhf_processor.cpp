@@ -1,4 +1,5 @@
 #include <hive/chain/util/dhf_processor.hpp>
+#include <hive/chain/global_property_object_multiindex.hpp>
 #include <hive/chain/detail/state/feed_history_object.hpp>
 
 namespace hive { namespace chain {
