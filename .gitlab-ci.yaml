@@ -19,6 +19,7 @@ variables:
   PYTHON_DATEUTIL_VERSION: "2.8.2"
 
   DATA_CACHE_HIVE_PREFIX: "/nfs/ci-cache/hive/replay_data_hive"
+  DATA_CACHE_HIVE_CLEANUP_PATTERN: "/nfs/ci-cache/hive/replay_data_hive_*"
   BLOCK_LOG_SOURCE_DIR_5M: /blockchain/block_log_5m
   BLOCK_LOG_SOURCE_DIR_MIRRORNET_5M: /blockchain/block_log_5m_mirrornet
 
@@ -62,7 +63,7 @@ cleanup_hived_cache_manual:
   extends: .cleanup_cache_manual_template
   stage: cleanup
   variables:
-    CLEANUP_PATH_PATTERN: "/nfs/ci-cache/hive/replay_data_hive_*"
+    CLEANUP_PATH_PATTERN: "$DATA_CACHE_HIVE_CLEANUP_PATTERN"
   tags:
     - data-cache-storage
 
@@ -70,7 +71,7 @@ cleanup_cache_on_hived_builders:
   extends: .cleanup_cache_manual_template
   stage: cleanup
   variables:
-    CLEANUP_PATH_PATTERN: "/nfs/ci-cache/hive/replay_data_hive_*"
+    CLEANUP_PATH_PATTERN: "$DATA_CACHE_HIVE_CLEANUP_PATTERN"
   tags:
     - public-runner-docker
 
@@ -78,7 +79,7 @@ cleanup_old_hived_cache:
   extends: .cleanup_old_cache_template
   stage: cleanup
   variables:
-    CLEANUP_PATH_PATTERN: "/nfs/ci-cache/hive/replay_data_hive_*"
+    CLEANUP_PATH_PATTERN: "$DATA_CACHE_HIVE_CLEANUP_PATTERN"
   tags:
     - data-cache-storage
 
