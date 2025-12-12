@@ -4,7 +4,7 @@
 #pragma once
 #include <hive/chain/block_flow_control.hpp>
 #include <hive/chain/block_write_interface.hpp>
-#include <hive/chain/global_property_object_multiindex.hpp>
+#include <hive/chain/global_property_object.hpp>
 #include <hive/chain/irreversible_block_data.hpp>
 #include <hive/chain/node_property_object.hpp>
 #include <hive/chain/notifications.hpp>
@@ -763,18 +763,8 @@ namespace chain {
         return _current_op_in_trx;
       }
 
-      int16_t get_remove_threshold() const
-      {
-        return get_dynamic_global_properties().current_remove_threshold;
-      }
-
-      void set_remove_threshold( int16_t val )
-      {
-        modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
-        {
-          gpo.current_remove_threshold = val;
-        } );
-      }
+      int16_t get_remove_threshold() const;
+      void set_remove_threshold( int16_t val );
 
       bool get_snapshot_loaded() const
       {

@@ -7,6 +7,7 @@
 
 #include <hive/chain/account_object_multiindex.hpp>
 #include <hive/chain/block_summary_object_multiindex.hpp>
+#include <hive/chain/global_property_object_multiindex.hpp>
 #include <hive/chain/hardfork_property_object_multiindex.hpp>
 #include <hive/chain/compound.hpp>
 #include <hive/chain/database.hpp>
@@ -465,6 +466,19 @@ const dynamic_global_property_object&database::get_dynamic_global_properties() c
 { try {
   return get< dynamic_global_property_object >();
 } FC_CAPTURE_AND_RETHROW() }
+
+int16_t database::get_remove_threshold() const
+{
+  return get_dynamic_global_properties().current_remove_threshold;
+}
+
+void database::set_remove_threshold( int16_t val )
+{
+  modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
+  {
+    gpo.current_remove_threshold = val;
+  } );
+}
 
 uint32_t database::get_node_skip_flags() const
 {
