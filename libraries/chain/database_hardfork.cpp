@@ -4,7 +4,9 @@
 #include <hive/chain/database_exceptions.hpp>
 #include <hive/chain/account_object_multiindex.hpp>
 #include <hive/chain/comment_object_multiindex.hpp>
-#include <hive/chain/hive_objects_multiindex.hpp>
+#include <hive/chain/detail/state/feed_history_object_multiindex.hpp>
+#include <hive/chain/detail/state/liquidity_reward_balance_object_multiindex.hpp>
+#include <hive/chain/detail/state/reward_fund_object_multiindex.hpp>
 #include <hive/chain/witness_objects_multiindex.hpp>
 #include <hive/chain/witness_schedule.hpp>
 #include <hive/chain/smt_objects.hpp>

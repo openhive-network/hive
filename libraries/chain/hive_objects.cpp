@@ -1,5 +1,4 @@
 #include <hive/chain/hive_fwd.hpp>
-#include <hive/chain/hive_objects.hpp>
 #include <hive/chain/comment_object.hpp>
 #include <hive/chain/account_object.hpp>
 

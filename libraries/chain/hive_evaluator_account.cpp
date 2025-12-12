@@ -4,7 +4,7 @@
 
 #include <hive/chain/hive_evaluator.hpp>
 #include <hive/chain/database.hpp>
-#include <hive/chain/hive_objects_multiindex.hpp>
+#include <hive/chain/detail/state/decline_voting_rights_request_object_multiindex.hpp>
 #include <hive/chain/witness_objects_multiindex.hpp>
 #include <hive/chain/account_object_multiindex.hpp>
 #include <hive/chain/evaluator_registry.hpp>

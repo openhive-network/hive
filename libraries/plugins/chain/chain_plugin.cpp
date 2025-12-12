@@ -6,7 +6,6 @@
 #include <hive/chain/block_storage_interface.hpp>
 #include <hive/chain/database_exceptions.hpp>
 #include <hive/chain/db_with.hpp>
-#include <hive/chain/hive_objects.hpp>
 #include <hive/chain/irreversible_block_writer.hpp>
 #include <hive/chain/sync_block_writer.hpp>
 

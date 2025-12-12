@@ -10,8 +10,10 @@
 #include <hive/plugins/wallet_bridge_api/wallet_bridge_api_plugin.hpp>
 #include <hive/plugins/rc_api/rc_api.hpp>
 
-#include <hive/chain/hive_objects.hpp>
-#include <hive/chain/hive_objects_multiindex.hpp>
+#include <hive/chain/detail/state/feed_history_object_multiindex.hpp>
+#include <hive/chain/detail/state/limit_order_object_multiindex.hpp>
+#include <hive/chain/detail/state/reward_fund_object_multiindex.hpp>
+#include <hive/chain/detail/state/recurrent_transfer_object_multiindex.hpp>
 
 namespace hive { namespace plugins { namespace wallet_bridge_api {
 
