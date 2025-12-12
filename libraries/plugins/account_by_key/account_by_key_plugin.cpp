@@ -7,6 +7,7 @@
 #include <hive/chain/account_object_multiindex.hpp>
 #include <hive/chain/database.hpp>
 #include <hive/chain/index.hpp>
+#include <chainbase/chainbase.inl>
 
 #include <hive/chain/util/type_registrar_definition.hpp>
 
@@ -316,3 +317,7 @@ void account_by_key_plugin::plugin_shutdown()
 } } } // hive::plugins::account_by_key
 
 HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::plugins::account_by_key::key_lookup_index)
+
+// Explicit template instantiations for chainbase::database methods
+template const chainbase::generic_index<hive::plugins::account_by_key::key_lookup_index>& chainbase::database::get_index<hive::plugins::account_by_key::key_lookup_index>() const;
+template chainbase::generic_index<hive::plugins::account_by_key::key_lookup_index>& chainbase::database::get_mutable_index<hive::plugins::account_by_key::key_lookup_index>();
