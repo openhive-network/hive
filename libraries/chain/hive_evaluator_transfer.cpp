@@ -14,6 +14,7 @@
 #include <hive/chain/detail/state/withdraw_vesting_route_object_multiindex.hpp>
 #include <hive/chain/detail/state/recurrent_transfer_object_multiindex.hpp>
 #include <hive/chain/witness_objects.hpp>
+#include <hive/chain/global_property_object_multiindex.hpp>
 #include <hive/chain/evaluator_registry.hpp>
 
 #include <hive/chain/util/reward.hpp>

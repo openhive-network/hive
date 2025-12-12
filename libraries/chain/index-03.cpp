@@ -12,7 +12,7 @@
 
 #include <hive/chain/util/type_registrar_definition.hpp>
 #include <hive/chain/util/reward.hpp>
-#include <hive/chain/global_property_object.hpp>
+#include <hive/chain/global_property_object_multiindex.hpp>
 
 #include <hive/protocol/hive_operations.hpp>
 
