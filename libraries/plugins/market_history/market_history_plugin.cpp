@@ -5,6 +5,7 @@
 
 #include <hive/chain/database.hpp>
 #include <hive/chain/index.hpp>
+#include <chainbase/chainbase.inl>
 #include <hive/chain/util/type_registrar_definition.hpp>
 
 #include <hive/utilities/signal.hpp>
@@ -223,3 +224,10 @@ uint32_t market_history_plugin::get_max_history_per_bucket() const
 
 HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::plugins::market_history::order_history_index)
 HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::plugins::market_history::bucket_index)
+
+// Explicit template instantiations for chainbase::database methods
+template const chainbase::generic_index<hive::plugins::market_history::bucket_index>& chainbase::database::get_index<hive::plugins::market_history::bucket_index>() const;
+template chainbase::generic_index<hive::plugins::market_history::bucket_index>& chainbase::database::get_mutable_index<hive::plugins::market_history::bucket_index>();
+
+template const chainbase::generic_index<hive::plugins::market_history::order_history_index>& chainbase::database::get_index<hive::plugins::market_history::order_history_index>() const;
+template chainbase::generic_index<hive::plugins::market_history::order_history_index>& chainbase::database::get_mutable_index<hive::plugins::market_history::order_history_index>();

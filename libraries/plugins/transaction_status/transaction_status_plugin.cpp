@@ -5,6 +5,7 @@
 #include <hive/plugins/transaction_status/transaction_status_objects.hpp>
 #include <hive/chain/database.hpp>
 #include <hive/chain/index.hpp>
+#include <chainbase/chainbase.inl>
 #include <hive/chain/util/type_registrar_definition.hpp>
 #include <hive/protocol/config.hpp>
 
@@ -255,3 +256,10 @@ fc::time_point_sec transaction_status_plugin::get_last_irreversible_block_timest
 
 HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::plugins::transaction_status::transaction_status_index)
 HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::plugins::transaction_status::transaction_status_block_index)
+
+// Explicit template instantiations for chainbase::database methods
+template const chainbase::generic_index<hive::plugins::transaction_status::transaction_status_index>& chainbase::database::get_index<hive::plugins::transaction_status::transaction_status_index>() const;
+template chainbase::generic_index<hive::plugins::transaction_status::transaction_status_index>& chainbase::database::get_mutable_index<hive::plugins::transaction_status::transaction_status_index>();
+
+template const chainbase::generic_index<hive::plugins::transaction_status::transaction_status_block_index>& chainbase::database::get_index<hive::plugins::transaction_status::transaction_status_block_index>() const;
+template chainbase::generic_index<hive::plugins::transaction_status::transaction_status_block_index>& chainbase::database::get_mutable_index<hive::plugins::transaction_status::transaction_status_block_index>();
