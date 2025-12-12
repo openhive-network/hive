@@ -2,6 +2,7 @@
 
 #include <hive/chain/account_object.hpp>
 #include <hive/chain/block_summary_object.hpp>
+#include <hive/chain/hardfork_property_object.hpp>
 #include <hive/chain/comment_object.hpp>
 #include <hive/chain/global_property_object.hpp>
 #include <hive/chain/detail/state/convert_request_object.hpp>
