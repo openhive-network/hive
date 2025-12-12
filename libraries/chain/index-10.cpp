@@ -2,6 +2,7 @@
 #include <hive/chain/smt_objects.hpp>
 
 #include <hive/chain/index.hpp>
+#include <chainbase/chainbase.inl>
 
 #include <hive/chain/util/type_registrar_definition.hpp>
 
@@ -32,4 +33,31 @@ HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::chain::nai_pool_index)
 HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::chain::smt_token_emissions_index)
 HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::chain::smt_contribution_index)
 HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::chain::smt_ico_index)
+#endif
+
+// Explicit template instantiations for chainbase::database methods
+template const chainbase::generic_index<hive::chain::proposal_index>& chainbase::database::get_index<hive::chain::proposal_index>() const;
+template chainbase::generic_index<hive::chain::proposal_index>& chainbase::database::get_mutable_index<hive::chain::proposal_index>();
+
+#ifdef HIVE_ENABLE_SMT
+template const chainbase::generic_index<hive::chain::smt_token_index>& chainbase::database::get_index<hive::chain::smt_token_index>() const;
+template chainbase::generic_index<hive::chain::smt_token_index>& chainbase::database::get_mutable_index<hive::chain::smt_token_index>();
+
+template const chainbase::generic_index<hive::chain::account_regular_balance_index>& chainbase::database::get_index<hive::chain::account_regular_balance_index>() const;
+template chainbase::generic_index<hive::chain::account_regular_balance_index>& chainbase::database::get_mutable_index<hive::chain::account_regular_balance_index>();
+
+template const chainbase::generic_index<hive::chain::account_rewards_balance_index>& chainbase::database::get_index<hive::chain::account_rewards_balance_index>() const;
+template chainbase::generic_index<hive::chain::account_rewards_balance_index>& chainbase::database::get_mutable_index<hive::chain::account_rewards_balance_index>();
+
+template const chainbase::generic_index<hive::chain::nai_pool_index>& chainbase::database::get_index<hive::chain::nai_pool_index>() const;
+template chainbase::generic_index<hive::chain::nai_pool_index>& chainbase::database::get_mutable_index<hive::chain::nai_pool_index>();
+
+template const chainbase::generic_index<hive::chain::smt_token_emissions_index>& chainbase::database::get_index<hive::chain::smt_token_emissions_index>() const;
+template chainbase::generic_index<hive::chain::smt_token_emissions_index>& chainbase::database::get_mutable_index<hive::chain::smt_token_emissions_index>();
+
+template const chainbase::generic_index<hive::chain::smt_contribution_index>& chainbase::database::get_index<hive::chain::smt_contribution_index>() const;
+template chainbase::generic_index<hive::chain::smt_contribution_index>& chainbase::database::get_mutable_index<hive::chain::smt_contribution_index>();
+
+template const chainbase::generic_index<hive::chain::smt_ico_index>& chainbase::database::get_index<hive::chain::smt_ico_index>() const;
+template chainbase::generic_index<hive::chain::smt_ico_index>& chainbase::database::get_mutable_index<hive::chain::smt_ico_index>();
 #endif

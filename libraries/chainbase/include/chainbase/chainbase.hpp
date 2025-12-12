@@ -1160,8 +1160,10 @@ namespace chainbase {
         return _file_size;
       }
 
+      // Template method declarations - implementations in chainbase.inl
+      // has_index kept inline since it's called by inline get_index<MultiIndexType, ByIndex>
       template<typename MultiIndexType>
-      bool has_index()const
+      bool has_index() const
       {
         CHAINBASE_REQUIRE_READ_LOCK("get_index", typename MultiIndexType::value_type);
         typedef generic_index<MultiIndexType> index_type;
@@ -1169,37 +1171,11 @@ namespace chainbase {
       }
 
       template<typename MultiIndexType>
-      const generic_index<MultiIndexType>& get_index()const
-      {
-        CHAINBASE_REQUIRE_READ_LOCK("get_index", typename MultiIndexType::value_type);
-        typedef generic_index<MultiIndexType> index_type;
-        typedef index_type*                   index_type_ptr;
+      const generic_index<MultiIndexType>& get_index() const;
 
-        if( !has_index< MultiIndexType >() )
-        {
-          std::string type_name = boost::core::demangle( typeid( typename index_type::value_type ).name() );
-          CHAINBASE_THROW_EXCEPTION( std::runtime_error( "unable to find index for " + type_name + " in database" ) );
-        }
-
-        return *index_type_ptr( _index_map[index_type::value_type::type_id]->get() );
-      }
-
-      template<typename MultiIndexType>
-      void add_index_extension( std::shared_ptr< index_extension > ext )
-      {
-        typedef generic_index<MultiIndexType> index_type;
-
-        if( !has_index< MultiIndexType >() )
-        {
-          std::string type_name = boost::core::demangle( typeid( typename index_type::value_type ).name() );
-          CHAINBASE_THROW_EXCEPTION( std::runtime_error( "unable to find index for " + type_name + " in database" ) );
-        }
-
-        _index_map[index_type::value_type::type_id]->add_index_extension( ext );
-      }
-
+      // Two-parameter version kept inline - too many ByIndex tag combinations to explicitly instantiate
       template<typename MultiIndexType, typename ByIndex>
-      auto get_index()const -> decltype( ((generic_index<MultiIndexType>*)( nullptr ))->indicies().template get<ByIndex>() )
+      auto get_index() const -> decltype( ((generic_index<MultiIndexType>*)( nullptr ))->indicies().template get<ByIndex>() )
       {
         CHAINBASE_REQUIRE_READ_LOCK("get_index", typename MultiIndexType::value_type);
         typedef generic_index<MultiIndexType> index_type;
@@ -1215,11 +1191,12 @@ namespace chainbase {
       }
 
       template<typename MultiIndexType>
-      generic_index<MultiIndexType>& get_mutable_index()
+      generic_index<MultiIndexType>& get_mutable_index();
+
+      template<typename MultiIndexType>
+      void add_index_extension( std::shared_ptr< index_extension > ext )
       {
-        CHAINBASE_REQUIRE_WRITE_LOCK("get_mutable_index", typename MultiIndexType::value_type);
         typedef generic_index<MultiIndexType> index_type;
-        typedef index_type*                   index_type_ptr;
 
         if( !has_index< MultiIndexType >() )
         {
@@ -1227,7 +1204,7 @@ namespace chainbase {
           CHAINBASE_THROW_EXCEPTION( std::runtime_error( "unable to find index for " + type_name + " in database" ) );
         }
 
-        return *index_type_ptr( _index_map[index_type::value_type::type_id]->get() );
+        _index_map[index_type::value_type::type_id]->add_index_extension( ext );
       }
 
       template< typename ObjectType, typename IndexedByType, typename CompatibleKey >

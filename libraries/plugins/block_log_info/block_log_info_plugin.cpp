@@ -8,6 +8,7 @@
 #include <hive/chain/database.hpp>
 #include <hive/chain/global_property_object.hpp>
 #include <hive/chain/index.hpp>
+#include <chainbase/chainbase.inl>
 #include <hive/chain/util/type_registrar_definition.hpp>
 
 #include <hive/utilities/signal.hpp>
@@ -184,3 +185,10 @@ void block_log_info_plugin::plugin_shutdown()
 
 HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::plugins::block_log_info::block_log_hash_state_index)
 HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::plugins::block_log_info::block_log_pending_message_index);
+
+// Explicit template instantiations for chainbase::database methods
+template const chainbase::generic_index<hive::plugins::block_log_info::block_log_hash_state_index>& chainbase::database::get_index<hive::plugins::block_log_info::block_log_hash_state_index>() const;
+template chainbase::generic_index<hive::plugins::block_log_info::block_log_hash_state_index>& chainbase::database::get_mutable_index<hive::plugins::block_log_info::block_log_hash_state_index>();
+
+template const chainbase::generic_index<hive::plugins::block_log_info::block_log_pending_message_index>& chainbase::database::get_index<hive::plugins::block_log_info::block_log_pending_message_index>() const;
+template chainbase::generic_index<hive::plugins::block_log_info::block_log_pending_message_index>& chainbase::database::get_mutable_index<hive::plugins::block_log_info::block_log_pending_message_index>();
