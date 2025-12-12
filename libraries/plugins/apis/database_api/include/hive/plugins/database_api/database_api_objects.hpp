@@ -287,74 +287,6 @@ struct api_commment_cashout_info
   bool           was_voted_on = false;
 };
 
-struct api_comment_object
-{
-  api_comment_object( const comment_object& o, const database& db );
-  api_comment_object() = default;
-
-  comment_id_type   id;
-  string            category;
-  string            parent_author;
-  string            parent_permlink;
-  string            author;
-  string            permlink;
-
-  string            title;
-  string            body;
-  string            json_metadata;
-  time_point_sec    last_update;
-  time_point_sec    created;
-  time_point_sec    last_payout;
-
-  uint8_t           depth = 0;
-  uint32_t          children = 0;
-
-  share_type        net_rshares;
-  share_type        abs_rshares;
-  share_type        vote_rshares;
-
-  share_type        children_abs_rshares;
-  time_point_sec    cashout_time;
-  time_point_sec    max_cashout_time;
-  uint64_t          total_vote_weight = 0;
-
-  uint16_t          reward_weight = 0;
-
-  asset             total_payout_value = HBD_asset(); // since HF19 it was either default 0 or cc did not exist
-  asset             curator_payout_value = HBD_asset(); // since HF19 it was either default 0 or cc did not exist
-
-  share_type        author_rewards;
-
-  int32_t           net_votes = 0;
-
-  account_name_type root_author;
-  string            root_permlink;
-
-  asset             max_accepted_payout = HBD_asset();
-  uint16_t          percent_hbd = 0;
-  bool              allow_replies = false;
-  bool              allow_votes = false;
-  bool              allow_curation_rewards = false;
-  bool              was_voted_on = false;
-  vector< protocol::beneficiary_route_type > beneficiaries;
-};
-
-struct api_comment_vote_object
-{
-  api_comment_vote_object( const comment_vote_object& cv, const database& db );
-
-  comment_vote_id_type id;
-
-  account_name_type    voter;
-  account_name_type    author;
-  string               permlink;
-  uint64_t             weight = 0;
-  int64_t              rshares = 0;
-  int16_t              vote_percent = 0;
-  time_point_sec       last_update;
-  int8_t               num_changes = 0;
-};
-
 struct api_account_object
 {
   api_account_object( const account_object& a, const database& db, bool delayed_votes_active );
@@ -829,23 +761,6 @@ FC_REFLECT( hive::plugins::database_api::api_dynamic_global_property_object,
 
 FC_REFLECT( hive::plugins::database_api::api_change_recovery_account_request_object,
           (id)(account_to_recover)(recovery_account)(effective_on)
-        )
-
-FC_REFLECT( hive::plugins::database_api::api_comment_object,
-          (id)(author)(permlink)
-          (category)(parent_author)(parent_permlink)
-          (title)(body)(json_metadata)(last_update)(created)(last_payout)
-          (depth)(children)
-          (net_rshares)(abs_rshares)(vote_rshares)
-          (children_abs_rshares)(cashout_time)(max_cashout_time)
-          (total_vote_weight)(reward_weight)(total_payout_value)(curator_payout_value)(author_rewards)(net_votes)
-          (root_author)(root_permlink)
-          (max_accepted_payout)(percent_hbd)(allow_replies)(allow_votes)(allow_curation_rewards)(was_voted_on)
-          (beneficiaries)
-        )
-
-FC_REFLECT( hive::plugins::database_api::api_comment_vote_object,
-          (id)(voter)(author)(permlink)(weight)(rshares)(vote_percent)(last_update)(num_changes)
         )
 
 FC_REFLECT( hive::plugins::database_api::api_account_object,

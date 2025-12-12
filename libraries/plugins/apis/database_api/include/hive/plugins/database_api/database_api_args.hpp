@@ -406,19 +406,6 @@ typedef list_decline_voting_rights_requests_return find_decline_voting_rights_re
 
 /* Comments */
 
-typedef list_object_args_type list_comments_args;
-
-struct list_comments_return
-{
-  vector< api_comment_object > comments;
-};
-
-
-struct find_comments_args
-{
-  vector< std::pair< account_name_type, string > > comments;
-};
-
 struct get_comment_pending_payouts_args
 {
   vector< std::pair< account_name_type, string > > comments;
@@ -435,28 +422,6 @@ struct get_comment_pending_payouts_return
 {
   vector< comment_pending_payout_info > cashout_infos;
 };
-
-typedef list_comments_return find_comments_return;
-
-
-/* Votes */
-
-typedef list_object_args_type list_votes_args;
-
-struct list_votes_return
-{
-  vector< api_comment_vote_object > votes;
-};
-
-
-struct find_votes_args
-{
-  account_name_type author;
-  string            permlink;
-};
-
-typedef list_votes_return find_votes_return;
-
 
 /* Limit Orders */
 
@@ -864,12 +829,6 @@ FC_REFLECT( hive::plugins::database_api::list_decline_voting_rights_requests_ret
 FC_REFLECT( hive::plugins::database_api::find_decline_voting_rights_requests_args,
   (accounts) )
 
-FC_REFLECT( hive::plugins::database_api::list_comments_return,
-  (comments) )
-
-FC_REFLECT( hive::plugins::database_api::find_comments_args,
-  (comments) )
-
 FC_REFLECT(hive::plugins::database_api::get_comment_pending_payouts_args,
   (comments)
 )
@@ -883,12 +842,6 @@ FC_REFLECT(hive::plugins::database_api::comment_pending_payout_info,
 FC_REFLECT(hive::plugins::database_api::get_comment_pending_payouts_return,
   (cashout_infos)
 )
-
-FC_REFLECT( hive::plugins::database_api::list_votes_return,
-  (votes) )
-
-FC_REFLECT( hive::plugins::database_api::find_votes_args,
-  (author)(permlink) )
 
 FC_REFLECT( hive::plugins::database_api::list_limit_orders_return,
   (orders) )

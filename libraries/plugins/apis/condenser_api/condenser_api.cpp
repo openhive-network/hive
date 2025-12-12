@@ -92,8 +92,6 @@ namespace detail
 
       DECLARE_API_IMPL(
         (get_version)
-        (get_trending_tags)
-        (get_state)
         (get_active_witnesses)
         (get_block_header)
         (get_block)
@@ -136,37 +134,10 @@ namespace detail
         (verify_authority)
         (verify_account_authority)
         (get_active_votes)
-        (get_account_votes)
-        (get_content)
-        (get_content_replies)
-        (get_tags_used_by_author)
-        (get_post_discussions_by_payout)
-        (get_comment_discussions_by_payout)
-        (get_discussions_by_trending)
-        (get_discussions_by_created)
-        (get_discussions_by_active)
-        (get_discussions_by_cashout)
-        (get_discussions_by_votes)
-        (get_discussions_by_children)
-        (get_discussions_by_hot)
-        (get_discussions_by_feed)
-        (get_discussions_by_blog)
-        (get_discussions_by_comments)
-        (get_discussions_by_promoted)
-        (get_replies_by_last_update)
-        (get_discussions_by_author_before_date)
         (get_account_history)
         (broadcast_transaction)
         (broadcast_transaction_synchronous)
-        (get_followers)
-        (get_following)
-        (get_follow_count)
-        (get_feed_entries)
-        (get_feed)
-        (get_blog_entries)
-        (get_blog)
         (get_account_reputations)
-        (get_reblogged_by)
         (get_ticker)
         (get_volume)
         (get_order_book)
@@ -232,16 +203,6 @@ namespace detail
   {
     CHECK_ARG_SIZE( 0 )
     return _database_api->get_version( {} );
-  }
-
-  DEFINE_API_IMPL( condenser_api_impl, get_trending_tags )
-  {
-    FC_ASSERT( false, "Supported by hivemind" );
-  }
-
-  DEFINE_API_IMPL( condenser_api_impl, get_state )
-  {
-    FC_ASSERT( false, "Supported by hivemind" );
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_active_witnesses )
@@ -860,101 +821,6 @@ namespace detail
     return votes;
   }
 
-  DEFINE_API_IMPL( condenser_api_impl, get_account_votes )
-  {
-    FC_ASSERT( false, "Supported by hivemind" );
-  }
-
-  DEFINE_API_IMPL( condenser_api_impl, get_content )
-  {
-    FC_ASSERT( false, "Supported by hivemind" );
-  }
-
-  DEFINE_API_IMPL( condenser_api_impl, get_content_replies )
-  {
-    FC_ASSERT( false, "Supported by hivemind" );
-  }
-
-  DEFINE_API_IMPL( condenser_api_impl, get_tags_used_by_author )
-  {
-    FC_ASSERT( false, "Supported by hivemind" );
-  }
-
-  DEFINE_API_IMPL( condenser_api_impl, get_post_discussions_by_payout )
-  {
-    FC_ASSERT( false, "Supported by hivemind" );
-  }
-
-  DEFINE_API_IMPL( condenser_api_impl, get_comment_discussions_by_payout )
-  {
-    FC_ASSERT( false, "Supported by hivemind" );
-  }
-
-  DEFINE_API_IMPL( condenser_api_impl, get_discussions_by_trending )
-  {
-    FC_ASSERT( false, "Supported by hivemind" );
-  }
-
-  DEFINE_API_IMPL( condenser_api_impl, get_discussions_by_created )
-  {
-    FC_ASSERT( false, "Supported by hivemind" );
-  }
-
-  DEFINE_API_IMPL( condenser_api_impl, get_discussions_by_active )
-  {
-    FC_ASSERT( false, "Supported by hivemind" );
-  }
-
-  DEFINE_API_IMPL( condenser_api_impl, get_discussions_by_cashout )
-  {
-    FC_ASSERT( false, "Supported by hivemind" );
-  }
-
-  DEFINE_API_IMPL( condenser_api_impl, get_discussions_by_votes )
-  {
-    FC_ASSERT( false, "Supported by hivemind" );
-  }
-
-  DEFINE_API_IMPL( condenser_api_impl, get_discussions_by_children )
-  {
-    FC_ASSERT( false, "Supported by hivemind" );
-  }
-
-  DEFINE_API_IMPL( condenser_api_impl, get_discussions_by_hot )
-  {
-    FC_ASSERT( false, "Supported by hivemind" );
-  }
-
-  DEFINE_API_IMPL( condenser_api_impl, get_discussions_by_feed )
-  {
-    FC_ASSERT( false, "Supported by hivemind" );
-  }
-
-  DEFINE_API_IMPL( condenser_api_impl, get_discussions_by_blog )
-  {
-    FC_ASSERT( false, "Supported by hivemind" );
-  }
-
-  DEFINE_API_IMPL( condenser_api_impl, get_discussions_by_comments )
-  {
-    FC_ASSERT( false, "Supported by hivemind" );
-  }
-
-  DEFINE_API_IMPL( condenser_api_impl, get_discussions_by_promoted )
-  {
-    FC_ASSERT( false, "Supported by hivemind" );
-  }
-
-  DEFINE_API_IMPL( condenser_api_impl, get_replies_by_last_update )
-  {
-    FC_ASSERT( false, "Supported by hivemind" );
-  }
-
-  DEFINE_API_IMPL( condenser_api_impl, get_discussions_by_author_before_date )
-  {
-    FC_ASSERT( false, "Supported by hivemind" );
-  }
-
   DEFINE_API_IMPL( condenser_api_impl, get_account_history )
   {
     FC_ASSERT( args.size() == 3 || args.size() == 4 || args.size() == 5, "Expected 3, 4, or 5 argument(s), was ${n}", ("n", args.size()) );
@@ -1064,52 +930,12 @@ namespace detail
     return p.get_future().get();
   }
 
-  DEFINE_API_IMPL( condenser_api_impl, get_followers )
-  {
-    FC_ASSERT( false, "Supported by hivemind" );
-  }
-
-  DEFINE_API_IMPL( condenser_api_impl, get_following )
-  {
-    FC_ASSERT( false, "Supported by hivemind" );
-  }
-
-  DEFINE_API_IMPL( condenser_api_impl, get_follow_count )
-  {
-    FC_ASSERT( false, "Supported by hivemind" );
-  }
-
-  DEFINE_API_IMPL( condenser_api_impl, get_feed_entries )
-  {
-    FC_ASSERT( false, "Supported by hivemind" );
-  }
-
-  DEFINE_API_IMPL( condenser_api_impl, get_feed )
-  {
-    FC_ASSERT( false, "Supported by hivemind" );
-  }
-
-  DEFINE_API_IMPL( condenser_api_impl, get_blog_entries )
-  {
-    FC_ASSERT( false, "Supported by hivemind" );
-  }
-
-  DEFINE_API_IMPL( condenser_api_impl, get_blog )
-  {
-    FC_ASSERT( false, "Supported by hivemind" );
-  }
-
   DEFINE_API_IMPL( condenser_api_impl, get_account_reputations )
   {
     FC_ASSERT( args.size() == 1 || args.size() == 2, "Expected 1-2 arguments, was ${n}", ("n", args.size()) );
     FC_ASSERT( _reputation_api, "reputation_api_plugin not enabled." );
 
     return _reputation_api->get_account_reputations( { args.at(0).as< account_name_type >(), args.size() == 2 ? args.at(1).as< uint32_t >() : 1000 } ).reputations;
-  }
-
-  DEFINE_API_IMPL( condenser_api_impl, get_reblogged_by )
-  {
-    FC_ASSERT( false, "Supported by hivemind" );
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_ticker )
@@ -1454,8 +1280,6 @@ DEFINE_LOCKLESS_APIS( condenser_api,
 )
 
 DEFINE_READ_APIS( condenser_api,
-  (get_trending_tags)
-  (get_state)
   (get_active_witnesses)
   (get_block_header)
   (get_block)
@@ -1494,34 +1318,7 @@ DEFINE_READ_APIS( condenser_api,
   (verify_authority)
   (verify_account_authority)
   (get_active_votes)
-  (get_account_votes)
-  (get_content)
-  (get_content_replies)
-  (get_tags_used_by_author)
-  (get_post_discussions_by_payout)
-  (get_comment_discussions_by_payout)
-  (get_discussions_by_trending)
-  (get_discussions_by_created)
-  (get_discussions_by_active)
-  (get_discussions_by_cashout)
-  (get_discussions_by_votes)
-  (get_discussions_by_children)
-  (get_discussions_by_hot)
-  (get_discussions_by_feed)
-  (get_discussions_by_blog)
-  (get_discussions_by_comments)
-  (get_discussions_by_promoted)
-  (get_replies_by_last_update)
-  (get_discussions_by_author_before_date)
-  (get_followers)
-  (get_following)
-  (get_follow_count)
-  (get_feed_entries)
-  (get_feed)
-  (get_blog_entries)
-  (get_blog)
   (get_account_reputations)
-  (get_reblogged_by)
   (get_ticker)
   (get_volume)
   (get_order_book)

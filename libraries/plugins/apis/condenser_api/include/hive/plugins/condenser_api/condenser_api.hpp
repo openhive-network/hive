@@ -885,8 +885,6 @@ typedef arg_type api_name ## _args;                         \
 typedef return_type api_name ## _return;
 
 /*               API,                                    args,                return */
-DEFINE_API_ARGS( get_trending_tags,                      vector< variant >,   no_return ) // see Hivemind - placeholder
-DEFINE_API_ARGS( get_state,                              vector< variant >,   no_return ) // see Hivemind - placeholder
 DEFINE_API_ARGS( get_active_witnesses,                   vector< variant >,   vector< account_name_type > )
 DEFINE_API_ARGS( get_block_header,                       vector< variant >,   optional< hive::protocol::serializer_wrapper<block_header> > )
 DEFINE_API_ARGS( get_block,                              vector< variant >,   optional< hive::protocol::serializer_wrapper<legacy_signed_block> > )
@@ -929,36 +927,9 @@ DEFINE_API_ARGS( get_potential_signatures,               vector< variant >,   se
 DEFINE_API_ARGS( verify_authority,                       vector< variant >,   bool )
 DEFINE_API_ARGS( verify_account_authority,               vector< variant >,   bool )
 DEFINE_API_ARGS( get_active_votes,                       vector< variant >,   vector< vote_state > )
-DEFINE_API_ARGS( get_account_votes,                      vector< variant >,   no_return ) // see Hivemind - placeholder
-DEFINE_API_ARGS( get_content,                            vector< variant >,   no_return ) // see Hivemind - placeholder
-DEFINE_API_ARGS( get_content_replies,                    vector< variant >,   no_return ) // see Hivemind - placeholder
-DEFINE_API_ARGS( get_tags_used_by_author,                vector< variant >,   no_return ) // see Hivemind - placeholder
-DEFINE_API_ARGS( get_post_discussions_by_payout,         vector< variant >,   no_return ) // see Hivemind - placeholder
-DEFINE_API_ARGS( get_comment_discussions_by_payout,      vector< variant >,   no_return ) // see Hivemind - placeholder
-DEFINE_API_ARGS( get_discussions_by_trending,            vector< variant >,   no_return ) // see Hivemind - placeholder
-DEFINE_API_ARGS( get_discussions_by_created,             vector< variant >,   no_return ) // see Hivemind - placeholder
-DEFINE_API_ARGS( get_discussions_by_active,              vector< variant >,   no_return ) // see Hivemind - placeholder
-DEFINE_API_ARGS( get_discussions_by_cashout,             vector< variant >,   no_return ) // see Hivemind - placeholder
-DEFINE_API_ARGS( get_discussions_by_votes,               vector< variant >,   no_return ) // see Hivemind - placeholder
-DEFINE_API_ARGS( get_discussions_by_children,            vector< variant >,   no_return ) // see Hivemind - placeholder
-DEFINE_API_ARGS( get_discussions_by_hot,                 vector< variant >,   no_return ) // see Hivemind - placeholder
-DEFINE_API_ARGS( get_discussions_by_feed,                vector< variant >,   no_return ) // see Hivemind - placeholder
-DEFINE_API_ARGS( get_discussions_by_blog,                vector< variant >,   no_return ) // see Hivemind - placeholder
-DEFINE_API_ARGS( get_discussions_by_comments,            vector< variant >,   no_return ) // see Hivemind - placeholder
-DEFINE_API_ARGS( get_discussions_by_promoted,            vector< variant >,   no_return ) // see Hivemind - placeholder
-DEFINE_API_ARGS( get_replies_by_last_update,             vector< variant >,   no_return ) // see Hivemind - placeholder
-DEFINE_API_ARGS( get_discussions_by_author_before_date,  vector< variant >,   no_return ) // see Hivemind - placeholder
 DEFINE_API_ARGS( get_account_history,                    vector< variant >,   get_account_history_return_type )
 DEFINE_API_ARGS( broadcast_transaction,                  vector< variant >,   json_rpc::void_type )
-DEFINE_API_ARGS( get_followers,                          vector< variant >,   no_return ) // see Hivemind - placeholder
-DEFINE_API_ARGS( get_following,                          vector< variant >,   no_return ) // see Hivemind - placeholder
-DEFINE_API_ARGS( get_follow_count,                       vector< variant >,   no_return ) // see Hivemind - placeholder
-DEFINE_API_ARGS( get_feed_entries,                       vector< variant >,   no_return ) // see Hivemind - placeholder
-DEFINE_API_ARGS( get_feed,                               vector< variant >,   no_return ) // see Hivemind - placeholder
-DEFINE_API_ARGS( get_blog_entries,                       vector< variant >,   no_return ) // see Hivemind - placeholder
-DEFINE_API_ARGS( get_blog,                               vector< variant >,   no_return ) // see Hivemind - placeholder
 DEFINE_API_ARGS( get_account_reputations,                vector< variant >,   vector< reputation::account_reputation > )
-DEFINE_API_ARGS( get_reblogged_by,                       vector< variant >,   no_return ) // see Hivemind - placeholder
 DEFINE_API_ARGS( get_ticker,                             vector< variant >,   ticker )
 DEFINE_API_ARGS( get_volume,                             vector< variant >,   volume )
 DEFINE_API_ARGS( get_order_book,                         vector< variant >,   order_book )
@@ -985,8 +956,6 @@ public:
 
   DECLARE_API(
     (get_version)
-    (get_trending_tags)
-    (get_state)
     (get_active_witnesses)
     (get_block_header)
     (get_block)
@@ -1029,37 +998,10 @@ public:
     (verify_authority)
     (verify_account_authority)
     (get_active_votes)
-    (get_account_votes)
-    (get_content)
-    (get_content_replies)
-    (get_tags_used_by_author)
-    (get_post_discussions_by_payout)
-    (get_comment_discussions_by_payout)
-    (get_discussions_by_trending)
-    (get_discussions_by_created)
-    (get_discussions_by_active)
-    (get_discussions_by_cashout)
-    (get_discussions_by_votes)
-    (get_discussions_by_children)
-    (get_discussions_by_hot)
-    (get_discussions_by_feed)
-    (get_discussions_by_blog)
-    (get_discussions_by_comments)
-    (get_discussions_by_promoted)
-    (get_replies_by_last_update)
-    (get_discussions_by_author_before_date)
     (get_account_history)
     (broadcast_transaction)
     (broadcast_transaction_synchronous)
-    (get_followers)
-    (get_following)
-    (get_follow_count)
-    (get_feed_entries)
-    (get_feed)
-    (get_blog_entries)
-    (get_blog)
     (get_account_reputations)
-    (get_reblogged_by)
     (get_ticker)
     (get_volume)
     (get_order_book)
