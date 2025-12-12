@@ -3203,7 +3203,7 @@ void database::adjust_smt_balance( const account_object& owner, const asset& del
 }
 #endif
 
-void database::modify_balance( const account_object& a, const asset& delta, bool check_balance )
+void database::modify_balance( const account_object& a, const asset& delta )
 {
   const bool trace_balance_change = false; //a.get_name() == "X";
   std::string op_context;
@@ -3225,10 +3225,7 @@ void database::modify_balance( const account_object& a, const asset& delta, bool
       if(trace_balance_change)
         ilog("${a} HIVE balance changed to ${nb} (previous: ${b} ) at block: ${block}. Operation context: ${c}", ("a", a.get_name())("b", b.amount)("nb", acnt.balance.amount)("block", _current_block_num)("c", op_context));
 
-      if( check_balance )
-      {
-        FC_ASSERT( acnt.get_balance().amount.value >= 0, "Insufficient HIVE funds" );
-      }
+      FC_ASSERT( acnt.get_balance().amount.value >= 0, "Insufficient HIVE funds" );
     }
     else if( delta.symbol.asset_num == HIVE_ASSET_NUM_HBD )
     {
@@ -3265,25 +3262,19 @@ void database::modify_balance( const account_object& a, const asset& delta, bool
       if(trace_balance_change)
         ilog("${a} HBD balance changed to ${nb} (previous: ${b} ) at block: ${block}. Operation context: ${c}", ("a", a.get_name())("b", b.amount)("nb", acnt.hbd_balance.amount)("block", _current_block_num)("c", op_context));
 
-      if( check_balance )
-      {
-        FC_ASSERT( acnt.get_hbd_balance().amount.value >= 0, "Insufficient HBD funds" );
-      }
+      FC_ASSERT( acnt.get_hbd_balance().amount.value >= 0, "Insufficient HBD funds" );
     }
     else
     {
       FC_ASSERT( delta.symbol.asset_num == HIVE_ASSET_NUM_VESTS, "invalid symbol" );
 
       acnt.vesting_shares += delta;
-      if( check_balance )
-      {
-        FC_ASSERT( acnt.get_vesting().amount.value >= 0, "Insufficient VESTS funds" );
-      }
+      FC_ASSERT( acnt.get_vesting().amount.value >= 0, "Insufficient VESTS funds" );
     }
   } );
 }
 
-void database::modify_reward_balance( const account_object& a, const asset& value_delta, const asset& share_delta, bool check_balance )
+void database::modify_reward_balance( const account_object& a, const asset& value_delta, const asset& share_delta )
 {
   modify( a, [&]( account_object& acnt )
   {
@@ -3292,19 +3283,13 @@ void database::modify_reward_balance( const account_object& a, const asset& valu
       if( share_delta.amount.value == 0 )
       {
         acnt.reward_hive_balance += value_delta;
-        if( check_balance )
-        {
-          FC_ASSERT( acnt.get_rewards().amount.value >= 0, "Insufficient reward HIVE funds" );
-        }
+        FC_ASSERT( acnt.get_rewards().amount.value >= 0, "Insufficient reward HIVE funds" );
       }
       else
       {
         acnt.reward_vesting_hive += value_delta;
         acnt.reward_vesting_balance += share_delta;
-        if( check_balance )
-        {
-          FC_ASSERT( acnt.get_vest_rewards().amount.value >= 0, "Insufficient reward VESTS funds" );
-        }
+        FC_ASSERT( acnt.get_vest_rewards().amount.value >= 0, "Insufficient reward VESTS funds" );
       }
     }
     else
@@ -3312,10 +3297,7 @@ void database::modify_reward_balance( const account_object& a, const asset& valu
       FC_ASSERT( value_delta.symbol.asset_num == HIVE_ASSET_NUM_HBD, "invalid symbol" );
       FC_ASSERT( share_delta.amount.value == 0 );
       acnt.reward_hbd_balance += value_delta;
-      if( check_balance )
-      {
-        FC_ASSERT( acnt.get_hbd_rewards().amount.value >= 0, "Insufficient reward HBD funds" );
-      }
+      FC_ASSERT( acnt.get_hbd_rewards().amount.value >= 0, "Insufficient reward HBD funds" );
     }
   });
 }
@@ -3329,8 +3311,6 @@ void database::adjust_balance( const account_object& a, const asset& delta )
       "Account ${acc} does not have sufficient funds for balance adjustment. Required: ${r}, Available: ${a}",
         ("acc", a.get_name())("r", delta)("a", available) );
   }
-
-  bool check_balance = has_hardfork( HIVE_HARDFORK_0_20__1811 );
 
 #ifdef HIVE_ENABLE_SMT
   if( delta.symbol.space() == asset_symbol_type::smt_nai_space )
@@ -3356,23 +3336,18 @@ void database::adjust_balance( const account_object& a, const asset& delta )
   else
 #endif
   {
-    modify_balance( a, delta, check_balance );
+    modify_balance( a, delta );
   }
 }
 
 void database::adjust_savings_balance( const account_object& a, const asset& delta )
 {
-  bool check_balance = has_hardfork( HIVE_HARDFORK_0_20__1811 );
-
   modify( a, [&]( account_object& acnt )
   {
     if( delta.symbol.asset_num == HIVE_ASSET_NUM_HIVE )
     {
       acnt.savings_balance += delta;
-      if( check_balance )
-      {
-        FC_ASSERT( acnt.get_savings().amount.value >= 0, "Insufficient savings HIVE funds" );
-      }
+      FC_ASSERT( acnt.get_savings().amount.value >= 0, "Insufficient savings HIVE funds" );
     }
     else
     {
@@ -3403,10 +3378,7 @@ void database::adjust_savings_balance( const account_object& a, const asset& del
         }
       }
       acnt.savings_hbd_balance += delta;
-      if( check_balance )
-      {
-        FC_ASSERT( acnt.get_hbd_savings().amount.value >= 0, "Insufficient savings HBD funds" );
-      }
+      FC_ASSERT( acnt.get_hbd_savings().amount.value >= 0, "Insufficient savings HBD funds" );
     }
   } );
 }
@@ -3414,7 +3386,6 @@ void database::adjust_savings_balance( const account_object& a, const asset& del
 void database::adjust_reward_balance( const account_object& a, const asset& value_delta,
                           const asset& share_delta /*= asset(0,VESTS_SYMBOL)*/ )
 {
-  bool check_balance = has_hardfork( HIVE_HARDFORK_0_20__1811 );
   FC_ASSERT( value_delta.symbol.is_vesting() == false && share_delta.symbol.is_vesting() );
 
 #ifdef HIVE_ENABLE_SMT
@@ -3442,7 +3413,7 @@ void database::adjust_reward_balance( const account_object& a, const asset& valu
   else
 #endif
   {
-    modify_reward_balance( a, value_delta, share_delta, check_balance );
+    modify_reward_balance( a, value_delta, share_delta );
   }
 }
 
@@ -3462,8 +3433,6 @@ void database::adjust_supply( const asset& delta, bool adjust_vesting )
   }
 #endif
 
-  bool check_supply = has_hardfork( HIVE_HARDFORK_0_20__1811 );
-
   const auto& props = get_dynamic_global_properties();
   if( props.head_block_number < HIVE_BLOCKS_PER_DAY*7 )
     adjust_vesting = false;
@@ -3476,20 +3445,14 @@ void database::adjust_supply( const asset& delta, bool adjust_vesting )
       props.current_supply += delta + new_vesting;
       props.virtual_supply += delta + new_vesting;
       props.total_vesting_fund_hive += new_vesting;
-      if( check_supply )
-      {
-        FC_ASSERT( props.current_supply.amount.value >= 0 );
-      }
+      FC_ASSERT( props.current_supply.amount.value >= 0 );
     }
     else
     {
       FC_ASSERT( delta.symbol.asset_num == HIVE_ASSET_NUM_HBD, "invalid symbol" );
       props.current_hbd_supply += delta;
       props.virtual_supply = props.get_current_hbd_supply() * get_feed_history().current_median_history + props.current_supply;
-      if( check_supply )
-      {
-        FC_ASSERT( props.get_current_hbd_supply().amount.value >= 0 );
-      }
+      FC_ASSERT( props.get_current_hbd_supply().amount.value >= 0 );
     }
   } );
 }

@@ -282,7 +282,7 @@ void database::process_vesting_withdrawals()
 
     if( has_hardfork( HIVE_HARDFORK_1_24 ) )
     {
-      FC_ASSERT( dv.valid() && "Sincd HF24 the object processing `delayed votes` must exist" );
+      FC_ASSERT( dv.valid() && "Since HF24 the object processing `delayed votes` must exist" );
 
       fc::optional< ushare_type > leftover = dv->update_votes( _votes_update_data_items, now );
       FC_ASSERT( leftover.valid(), "Something went wrong" );
