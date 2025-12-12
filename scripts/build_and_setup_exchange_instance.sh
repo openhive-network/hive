@@ -221,7 +221,9 @@ source "${HIVED_SOURCE_DIR}/scripts/ci-helpers/docker_image_utils.sh"
 
 image_exists=0
 
-img_name=$( build_image_name "${HIVED_IMAGE_TAG}" "${REGISTRY}" "${HIVED_IMAGE_NAME}" )
+# Extract only the tag part if HIVED_IMAGE_TAG contains full URL (format: registry/image:tag)
+ACTUAL_TAG="${HIVED_IMAGE_TAG##*:}"
+img_name=$( build_image_name "${ACTUAL_TAG}" "${REGISTRY}" "${HIVED_IMAGE_NAME}" )
 
 docker_image_exists "${img_name}" image_exists 0
 
