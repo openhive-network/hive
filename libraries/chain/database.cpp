@@ -16,7 +16,6 @@
 #include <hive/chain/evaluator_registry.hpp>
 #include <hive/chain/smt_objects.hpp>
 #include <hive/chain/hive_evaluator.hpp>
-#include <hive/chain/detail/state/savings_withdraw_object_multiindex.hpp>
 #include <hive/chain/detail/state/liquidity_reward_balance_object_multiindex.hpp>
 #include <hive/chain/detail/state/feed_history_object_multiindex.hpp>
 #include <hive/chain/detail/state/limit_order_object_multiindex.hpp>
@@ -462,13 +461,6 @@ const limit_order_object& database::get_limit_order( const account_name_type& na
   FC_ASSERT( _limit_order != nullptr, "Limit order with 'name' ${name} 'order_id' ${orderid} doesn't exist.", (name)(orderid) );
   return *_limit_order;
 } FC_CAPTURE_AND_RETHROW( (name)(orderid) ) }
-
-const savings_withdraw_object& database::get_savings_withdraw( const account_name_type& owner, uint32_t request_id )const
-{ try {
-  const auto* _savings_withdraw = find_savings_withdraw( owner, request_id );
-  FC_ASSERT( _savings_withdraw != nullptr, "Savings withdraw for `owner` ${owner} and 'request_id' ${request_id} doesn't exist.", (owner)(request_id) );
-  return *_savings_withdraw;
-} FC_CAPTURE_AND_RETHROW( (owner)(request_id) ) }
 
 const dynamic_global_property_object&database::get_dynamic_global_properties() const
 { try {
@@ -1648,38 +1640,7 @@ void database::clear_account( const account_object& account )
 
   remove_pending_conversion_requests( account );
 
-  // Remove ongoing saving withdrawals (return/pass balance to account)
-  const auto& withdraw_from_idx = get_index< savings_withdraw_index, by_from_rid >();
-  auto withdraw_from_itr = withdraw_from_idx.lower_bound( account_name );
-  while( withdraw_from_itr != withdraw_from_idx.end() && withdraw_from_itr->from == account_name )
-  {
-    auto& withdrawal = *withdraw_from_itr;
-    ++withdraw_from_itr;
-
-    adjust_balance( account, withdrawal.amount );
-    modify( account, []( account_object& a )
-    {
-      a.savings_withdraw_requests--;
-    } );
-
-    remove( withdrawal );
-  }
-
-  const auto& withdraw_to_idx = get_index< savings_withdraw_index, by_to_complete >();
-  auto withdraw_to_itr = withdraw_to_idx.lower_bound( account_name );
-  while( withdraw_to_itr != withdraw_to_idx.end() && withdraw_to_itr->to == account_name )
-  {
-    auto& withdrawal = *withdraw_to_itr;
-    ++withdraw_to_itr;
-
-    adjust_balance( account, withdrawal.amount );
-    modify( get_account( withdrawal.from ), []( account_object& a )
-    {
-      a.savings_withdraw_requests--;
-    } );
-
-    remove( withdrawal );
-  }
+  remove_pending_savings_withdraws( account, account_name );
 
   // Touch HBD balances (to be sure all interests are added to balances)
   if( has_hardfork( HIVE_HARDFORK_1_24 ) )
@@ -2277,35 +2238,6 @@ void database::process_funds()
         p.virtual_supply += content_reward + witness_pay + vesting_reward;
     } );
   }
-}
-
-void database::process_savings_withdraws()
-{
-  const auto& idx = get_index< savings_withdraw_index >().indices().get< by_complete_from_rid >();
-  auto itr = idx.begin();
-
-  int count = 0;
-  if( _benchmark_dumper.is_enabled() )
-    _benchmark_dumper.begin();
-  while( itr != idx.end() )
-  {
-    if( itr->complete > head_block_time() )
-      break;
-    adjust_balance( get_account( itr->to ), itr->amount );
-
-    modify( get_account( itr->from ), [&]( account_object& a )
-    {
-      a.savings_withdraw_requests--;
-    });
-
-    push_virtual_operation( fill_transfer_from_savings_operation( itr->from, itr->to, itr->amount, itr->request_id, to_string( itr->memo) ) );
-
-    remove( *itr );
-    itr = idx.begin();
-    ++count;
-  }
-  if( _benchmark_dumper.is_enabled() && count )
-    _benchmark_dumper.end( "processing", "hive::protocol::transfer_from_savings_operation", count );
 }
 
 void database::process_subsidized_accounts()
@@ -4737,18 +4669,12 @@ void database::validate_invariants()const
       total_hbd += escrow_hbd;
     }
 
-    const auto& savings_withdraw_idx = get_index< savings_withdraw_index >().indices().get< by_id >();
-
-    for( auto itr = savings_withdraw_idx.begin(); itr != savings_withdraw_idx.end(); ++itr )
     {
-      if( itr->amount.symbol == HIVE_SYMBOL )
-        total_supply += itr->amount;
-      else
-      {
-        FC_ASSERT( itr->amount.symbol == HBD_SYMBOL, "found savings withdraw that is not HBD or HIVE" );
-        total_hbd += itr->amount;
-      }
-      ++withdrawal_no;
+      asset withdraw_hive( 0, HIVE_SYMBOL );
+      asset withdraw_hbd( 0, HBD_SYMBOL );
+      get_savings_withdraw_totals( withdraw_hive, withdraw_hbd, withdrawal_no );
+      total_supply += withdraw_hive;
+      total_hbd += withdraw_hbd;
     }
 
     const auto& reward_idx = get_index< reward_fund_index, by_id >();
