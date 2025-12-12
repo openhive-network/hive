@@ -3,6 +3,7 @@
 #include <hive/chain/database.hpp>
 #include <hive/chain/database_exceptions.hpp>
 #include <hive/chain/account_object_multiindex.hpp>
+#include <hive/chain/hardfork_property_object_multiindex.hpp>
 #include <hive/chain/comment_object_multiindex.hpp>
 #include <hive/chain/detail/state/feed_history_object_multiindex.hpp>
 #include <hive/chain/detail/state/liquidity_reward_balance_object_multiindex.hpp>
