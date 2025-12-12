@@ -16,7 +16,6 @@
 #include <hive/chain/evaluator_registry.hpp>
 #include <hive/chain/smt_objects.hpp>
 #include <hive/chain/hive_evaluator.hpp>
-#include <hive/chain/detail/state/escrow_object_multiindex.hpp>
 #include <hive/chain/detail/state/savings_withdraw_object_multiindex.hpp>
 #include <hive/chain/detail/state/liquidity_reward_balance_object_multiindex.hpp>
 #include <hive/chain/detail/state/feed_history_object_multiindex.hpp>
@@ -453,18 +452,6 @@ comment database::find_comment( const account_name_type& author, const string& p
 }
 
 #endif
-
-const escrow_object& database::get_escrow( const account_name_type& name, uint32_t escrow_id )const
-{ try {
-  const auto* _escrow = find_escrow( name, escrow_id );
-  FC_ASSERT( _escrow != nullptr, "Escrow balance with 'name' ${name} 'escrow_id' ${escrow_id} doesn't exist.", (name)(escrow_id) );
-  return *_escrow;
-} FC_CAPTURE_AND_RETHROW( (name)(escrow_id) ) }
-
-const escrow_object* database::find_escrow( const account_name_type& name, uint32_t escrow_id )const
-{
-  return find< escrow_object, by_from_id >( boost::make_tuple( name, escrow_id ) );
-}
 
 const limit_order_object& database::get_limit_order( const account_name_type& name, uint32_t orderid )const
 { try {
@@ -1646,25 +1633,7 @@ void database::clear_account( const account_object& account )
     } );
   }
 
-  // Remove pending escrows (return balance to account - compare with expire_escrow_ratification())
-  const auto& escrow_idx = get_index< chain::escrow_index, chain::by_from_id >();
-  auto escrow_itr = escrow_idx.lower_bound( account_name );
-  while( escrow_itr != escrow_idx.end() && escrow_itr->from == account_name )
-  {
-    auto& escrow = *escrow_itr;
-    ++escrow_itr;
-
-    adjust_balance( account, escrow.get_hive_balance() );
-    adjust_balance( account, escrow.get_hbd_balance() );
-    adjust_balance( account, escrow.get_fee() );
-
-    modify( account, []( account_object& a )
-    {
-      a.pending_escrow_transfers--;
-    } );
-
-    remove( escrow );
-  }
+  remove_pending_escrows( account, account_name );
 
   // Remove open limit orders (return balance to account - compare with clear_expired_orders())
   const auto& order_idx = get_index< chain::limit_order_index, chain::by_account >();
@@ -2562,32 +2531,6 @@ void database::account_recovery_processing()
 
     remove( *change_req );
     change_req = change_req_idx.begin();
-  }
-}
-
-void database::expire_escrow_ratification()
-{
-  const auto& escrow_idx = get_index< escrow_index >().indices().get< by_ratification_deadline >();
-  auto escrow_itr = escrow_idx.lower_bound( false );
-
-  while( escrow_itr != escrow_idx.end() && !escrow_itr->is_approved() && escrow_itr->ratification_deadline <= head_block_time() )
-  {
-    const auto& old_escrow = *escrow_itr;
-    ++escrow_itr;
-
-    adjust_balance( old_escrow.from, old_escrow.get_hive_balance() );
-    adjust_balance( old_escrow.from, old_escrow.get_hbd_balance() );
-    adjust_balance( old_escrow.from, old_escrow.get_fee() );
-
-    push_virtual_operation( escrow_rejected_operation( old_escrow.from, old_escrow.to, old_escrow.agent, old_escrow.escrow_id,
-      old_escrow.get_hbd_balance(), old_escrow.get_hive_balance(), old_escrow.get_fee() ) );
-
-    modify( get_account( old_escrow.from ), []( account_object& a )
-    {
-      a.pending_escrow_transfers--;
-    } );
-
-    remove( old_escrow );
   }
 }
 
@@ -4786,21 +4729,12 @@ void database::validate_invariants()const
       ++order_no;
     }
 
-    const auto& escrow_idx = get_index< escrow_index >().indices().get< by_id >();
-
-    for( auto itr = escrow_idx.begin(); itr != escrow_idx.end(); ++itr )
     {
-      total_supply += itr->get_hive_balance();
-      total_hbd += itr->get_hbd_balance();
-
-      if( itr->get_fee().symbol == HIVE_SYMBOL )
-        total_supply += itr->get_fee();
-      else
-      {
-        FC_ASSERT( itr->get_fee().symbol == HBD_SYMBOL, "found escrow pending fee that is not HBD or HIVE" );
-        total_hbd += itr->get_fee();
-      }
-      ++escrow_no;
+      asset escrow_hive( 0, HIVE_SYMBOL );
+      asset escrow_hbd( 0, HBD_SYMBOL );
+      get_escrow_totals( escrow_hive, escrow_hbd, escrow_no );
+      total_supply += escrow_hive;
+      total_hbd += escrow_hbd;
     }
 
     const auto& savings_withdraw_idx = get_index< savings_withdraw_index >().indices().get< by_id >();
