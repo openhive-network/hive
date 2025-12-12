@@ -16,8 +16,6 @@
 #include <hive/chain/evaluator_registry.hpp>
 #include <hive/chain/smt_objects.hpp>
 #include <hive/chain/hive_evaluator.hpp>
-#include <hive/chain/detail/state/convert_request_object_multiindex.hpp>
-#include <hive/chain/detail/state/collateralized_convert_request_object_multiindex.hpp>
 #include <hive/chain/detail/state/escrow_object_multiindex.hpp>
 #include <hive/chain/detail/state/savings_withdraw_object_multiindex.hpp>
 #include <hive/chain/detail/state/liquidity_reward_balance_object_multiindex.hpp>
@@ -1679,25 +1677,7 @@ void database::clear_account( const account_object& account )
     cancel_order( order, true );
   }
 
-  // Remove pending convert requests (return balance to account)
-  const auto& request_idx = get_index< chain::convert_request_index, chain::by_owner >();
-  auto request_itr = request_idx.lower_bound( account.get_id() );
-  while( request_itr != request_idx.end() && request_itr->get_owner() == account.get_id() )
-  {
-    auto& request = *request_itr;
-    ++request_itr;
-
-    adjust_balance( account, request.get_convert_amount() );
-    remove( request );
-  }
-
-  // Make sure there are no pending collateralized convert requests
-  // (if we decided to handle them anyway, in case we wanted to reuse this routine outsede HF23 code,
-  // we should most likely destroy collateral balance instead of putting it into treasury)
-  const auto& collateralized_request_idx = get_index< chain::collateralized_convert_request_index, chain::by_owner >();
-  auto collateralized_request_itr = collateralized_request_idx.lower_bound( account.get_id() );
-  FC_ASSERT( collateralized_request_itr == collateralized_request_idx.end() || collateralized_request_itr->get_owner() != account.get_id(),
-    "Collateralized convert requests not handled by clear_account" );
+  remove_pending_conversion_requests( account );
 
   // Remove ongoing saving withdrawals (return/pass balance to account)
   const auto& withdraw_from_idx = get_index< savings_withdraw_index, by_from_rid >();
@@ -4783,19 +4763,12 @@ void database::validate_invariants()const
       ++account_no;
     }
 
-    const auto& convert_request_idx = get_index< convert_request_index >().indices();
-    for( auto itr = convert_request_idx.begin(); itr != convert_request_idx.end(); ++itr )
     {
-      total_hbd += itr->get_convert_amount();
-      ++convert_no;
-    }
-
-    const auto& collateralized_convert_request_idx = get_index< collateralized_convert_request_index >().indices();
-    for( auto itr = collateralized_convert_request_idx.begin(); itr != collateralized_convert_request_idx.end(); ++itr )
-    {
-      total_supply += itr->get_collateral_amount();
-      // don't collect get_converted_amount() - it is not balance object; that tokens are already on owner's balance
-      ++collateralized_convert_no;
+      asset convert_hbd( 0, HBD_SYMBOL );
+      asset collateral_hive( 0, HIVE_SYMBOL );
+      get_convert_request_totals( convert_hbd, collateral_hive, convert_no, collateralized_convert_no );
+      total_hbd += convert_hbd;
+      total_supply += collateral_hive;
     }
 
     const auto& limit_order_idx = get_index< limit_order_index >().indices();

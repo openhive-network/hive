@@ -127,6 +127,47 @@ void database::process_conversions()
   }
 }
 
+void database::remove_pending_conversion_requests( const account_object& account )
+{
+  // Remove pending convert requests (return balance to account)
+  const auto& request_idx = get_index< convert_request_index, by_owner >();
+  auto request_itr = request_idx.lower_bound( account.get_id() );
+  while( request_itr != request_idx.end() && request_itr->get_owner() == account.get_id() )
+  {
+    auto& request = *request_itr;
+    ++request_itr;
+
+    adjust_balance( account, request.get_convert_amount() );
+    remove( request );
+  }
+
+  // Make sure there are no pending collateralized convert requests
+  // (if we decided to handle them anyway, in case we wanted to reuse this routine outside HF23 code,
+  // we should most likely destroy collateral balance instead of putting it into treasury)
+  const auto& collateralized_request_idx = get_index< collateralized_convert_request_index, by_owner >();
+  auto collateralized_request_itr = collateralized_request_idx.lower_bound( account.get_id() );
+  FC_ASSERT( collateralized_request_itr == collateralized_request_idx.end() || collateralized_request_itr->get_owner() != account.get_id(),
+    "Collateralized convert requests not handled by clear_account" );
+}
+
+void database::get_convert_request_totals( asset& total_hbd, asset& total_collateral, uint64_t& convert_count, uint64_t& collateralized_count ) const
+{
+  const auto& convert_request_idx = get_index< convert_request_index >().indices();
+  for( auto itr = convert_request_idx.begin(); itr != convert_request_idx.end(); ++itr )
+  {
+    total_hbd += itr->get_convert_amount();
+    ++convert_count;
+  }
+
+  const auto& collateralized_convert_request_idx = get_index< collateralized_convert_request_index >().indices();
+  for( auto itr = collateralized_convert_request_idx.begin(); itr != collateralized_convert_request_idx.end(); ++itr )
+  {
+    total_collateral += itr->get_collateral_amount();
+    // don't collect get_converted_amount() - it is not balance object; that tokens are already on owner's balance
+    ++collateralized_count;
+  }
+}
+
 } }
 
 HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::chain::feed_history_index)
