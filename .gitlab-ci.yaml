@@ -43,7 +43,6 @@ prepare_hived_image:
     HIVE_NETWORK_TYPE: mainnet
   tags:
     - public-runner-docker
-    - hived-for-tests
     - haf-build-mainnet
 
 prepare_hived_data:
@@ -74,7 +73,6 @@ cleanup_cache_on_hived_builders:
     CLEANUP_PATH_PATTERN: "/nfs/ci-cache/hive/replay_data_hive_*"
   tags:
     - public-runner-docker
-    - hived-for-tests
 
 cleanup_old_hived_cache:
   extends: .cleanup_old_cache_template
@@ -99,7 +97,6 @@ testnet_node_build:
       - "$BINARY_CACHE_PATH"
   tags:
     - public-runner-docker
-    - hived-for-tests
     - haf-build-testnet
 
 beekeeper_tsc_build:
@@ -225,7 +222,6 @@ mirrornet_node_build:
 
   tags:
     - public-runner-docker
-    - hived-for-tests
     - haf-build-mirrornet
 
 extended_block_log_creation:
@@ -893,7 +889,6 @@ python_pattern_testnet_tests:
                wallet_bridge_api_tests ]
   tags:
     - public-runner-docker
-    - hived-for-tests
 
 message_format_mainnet_5m_tests:
   extends: .message_format_tests
@@ -1018,7 +1013,6 @@ publish_docker_image:
     - scripts/ci-helpers/build_and_publish_instance.sh
   tags:
     - public-runner-docker
-    - hived-for-tests
 
 hardfork_schedule_tests:
   stage: test
@@ -1837,7 +1831,7 @@ generate_testing_block_logs:
     paths:
       - $TESTING_BLOCK_LOGS_DIR/checksums/
   tags:
-    - hived-for-tests
+    - public-runner-docker
 
 build_combined_testing_block_logs_image:
   stage: build
