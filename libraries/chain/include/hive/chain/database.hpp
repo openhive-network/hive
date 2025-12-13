@@ -120,9 +120,6 @@ namespace chain {
   class database : public chainbase::database
   {
       friend class database_impl;
-      friend void push_virtual_operation( database& db, const protocol::operation& op );
-      friend void pre_push_virtual_operation( database& db, const protocol::operation& op );
-      friend void post_push_virtual_operation( database& db, const protocol::operation& op, const fc::optional<uint64_t>& op_in_trx );
 
     public:
       database( appbase::application& app );
@@ -360,6 +357,11 @@ namespace chain {
         */
       void notify_pre_apply_operation( const operation_notification& note );
       void notify_post_apply_operation( const operation_notification& note );
+
+      /// Fill operation notification with current database context (block, trx, timestamp, etc.)
+      /// and optionally increment the operation counter (for pre-push virtual operations)
+      void fill_operation_notification( operation_notification& note, bool increment_op_counter = false );
+
       void notify_pre_apply_block( const block_notification& note );
       void notify_post_apply_block( const block_notification& note );
       void notify_fail_apply_block( const block_notification& note );
