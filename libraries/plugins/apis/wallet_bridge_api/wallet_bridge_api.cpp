@@ -14,6 +14,7 @@
 #include <hive/chain/detail/state/limit_order_object_multiindex.hpp>
 #include <hive/chain/detail/state/reward_fund_object_multiindex.hpp>
 #include <hive/chain/detail/state/recurrent_transfer_object_multiindex.hpp>
+#include <hive/chain/notifications.hpp>
 
 namespace hive { namespace plugins { namespace wallet_bridge_api {
 

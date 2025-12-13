@@ -6,6 +6,7 @@
 
 #include <hive/chain/account_object.hpp>
 #include <hive/chain/database.hpp>
+#include <hive/chain/notifications.hpp>
 #include <hive/chain/global_property_object.hpp>
 #include <hive/chain/index.hpp>
 #include <chainbase/chainbase.inl>

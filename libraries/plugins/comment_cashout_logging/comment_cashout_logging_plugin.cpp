@@ -1,5 +1,6 @@
 #include <hive/plugins/comment_cashout_logging/comment_cashout_logging_plugin.hpp>
 
+#include <hive/chain/notifications.hpp>
 #include <hive/chain/util/impacted.hpp>
 #include <hive/protocol/config.hpp>
 

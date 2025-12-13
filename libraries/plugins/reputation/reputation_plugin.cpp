@@ -9,6 +9,7 @@
 #include <hive/protocol/config.hpp>
 
 #include <hive/chain/database.hpp>
+#include <hive/chain/notifications.hpp>
 #include <hive/chain/index.hpp>
 #include <chainbase/chainbase.inl>
 #include <hive/chain/account_object.hpp>

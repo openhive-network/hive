@@ -21,6 +21,7 @@
 #include <hive/chain/transaction_object.hpp>
 #include <hive/chain/witness_objects.hpp>
 #include <hive/chain/database.hpp>
+#include <hive/chain/notifications.hpp>
 
 namespace hive { namespace plugins { namespace database_api {
 
