@@ -32,7 +32,7 @@ void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )
     return;
   }
 
-  _db.rc.handle_operation_discount< rc_custom_operation >( op );
+  _db.rc().handle_operation_discount< rc_custom_operation >( op );
 
   const dynamic_global_property_object& gpo = _db.get_dynamic_global_properties();
   if( op.max_rc != 0 && _db.is_in_control() )
@@ -45,8 +45,8 @@ void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )
 
   auto now = gpo.time;
   const account_object& from_account = _db.get_account( op.from );
-  _db.rc.regenerate_rc_mana( from_account, now );
-  FC_ASSERT( !_db.is_in_control() || !_db.rc.has_expired_delegation( from_account ), "Cannot delegate RC while processing of previous delegation has not finished." );
+  _db.rc().regenerate_rc_mana( from_account, now );
+  FC_ASSERT( !_db.is_in_control() || !_db.rc().has_expired_delegation( from_account ), "Cannot delegate RC while processing of previous delegation has not finished." );
     // above is not strictly needed - we can handle new delegations during delayed undelegating just fine, however we want to discourage users
     // from using the scheme to temporarily "pump" amount of RC, also if it is not intentional they might be confused about fresh delegations
     // disappearing right after being formed (which might happen if we allow fresh delegations while previous were not yet cleared)
@@ -55,7 +55,7 @@ void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )
   for (const account_name_type& to:op.delegatees)
   {
     const account_object& to_account = _db.get_account( to );
-    _db.rc.regenerate_rc_mana( to_account, now );
+    _db.rc().regenerate_rc_mana( to_account, now );
 
     const rc_direct_delegation_object* delegation = _db.find<rc_direct_delegation_object, by_from_to>(
       boost::make_tuple( from_account.get_id(), to_account.get_id() ) );
@@ -86,7 +86,7 @@ void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )
         } );
       }
     }
-    _db.rc.update_account_after_rc_delegation( to_account, now, delta );
+    _db.rc().update_account_after_rc_delegation( to_account, now, delta );
     delta_total += delta;
   }
 
@@ -107,7 +107,7 @@ void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )
     acc.last_max_rc = acc.get_maximum_rc();
   } );
 
-  _db.rc.handle_custom_op_usage( op, gpo.time ); //we have to handle it here because later we'd have to reinterpret json into concrete custom op
+  _db.rc().handle_custom_op_usage( op, gpo.time ); //we have to handle it here because later we'd have to reinterpret json into concrete custom op
 }
 
 void resource_credits::set_auto_report( const std::string& _option_type, const std::string& _option_output )

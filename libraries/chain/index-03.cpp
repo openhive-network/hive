@@ -18,12 +18,20 @@
 #include <hive/chain/global_property_object_multiindex.hpp>
 
 #include <hive/protocol/hive_operations.hpp>
+#include <hive/protocol/hive_virtual_operations.hpp>
 
 #include "database_vesting_helpers.hpp"
 
 #include <set>
 
 namespace hive { namespace chain {
+
+using hive::protocol::author_reward_operation;
+using hive::protocol::comment_benefactor_reward_operation;
+using hive::protocol::comment_reward_operation;
+using hive::protocol::comment_payout_update_operation;
+using hive::protocol::curation_reward_operation;
+using hive::protocol::vesting_shares_split_operation;
 
 // Local struct for process_comment_cashout
 struct reward_fund_context

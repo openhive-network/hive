@@ -10,8 +10,12 @@
 #include <hive/chain/util/type_registrar_definition.hpp>
 
 #include <hive/protocol/hive_operations.hpp>
+#include <hive/protocol/hive_virtual_operations.hpp>
 
 namespace hive { namespace chain {
+
+using hive::protocol::escrow_rejected_operation;
+using hive::protocol::fill_transfer_from_savings_operation;
 
 void initialize_core_indexes_08( database& db )
 {

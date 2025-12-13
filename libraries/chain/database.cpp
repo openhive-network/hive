@@ -114,7 +114,7 @@ FC_REFLECT( hive::chain::db_schema, (types)(object_types)(operation_type)(custom
 
 namespace hive { namespace chain {
 
-database_impl::database_impl( database& self ) : _self(self), _evaluator_registry(self) {}
+database_impl::database_impl( database& self ) : _self(self), _evaluator_registry(self), _rc(self) {}
 
 void database_impl::register_new_type(util::abstract_type_registrar& r)
 {
@@ -128,8 +128,18 @@ void database_impl::delete_decoded_types_data_storage()
 }
 
 database::database( appbase::application& app )
-  : rc(*this), _my( new database_impl(*this) ), theApp( app )
+  : _my( new database_impl(*this) ), theApp( app )
 {}
+
+resource_credits& database::rc()
+{
+  return _my->_rc;
+}
+
+const resource_credits& database::rc() const
+{
+  return _my->_rc;
+}
 
 void database::begin_type_register_process(util::abstract_type_registrar& r)
 {
@@ -1045,11 +1055,11 @@ asset database::adjust_account_vesting_balance(const account_object& to_account,
         {
           util::update_manabar( cprops, a, new_vesting.amount.value );
         });
-        rc.regenerate_rc_mana( to_account, _now );
+        rc().regenerate_rc_mana( to_account, _now );
       }
       adjust_balance( to_account, new_vesting );
       if( has_hardfork( HIVE_HARDFORK_0_20 ) )
-        rc.update_account_after_vest_change( to_account, _now );
+        rc().update_account_after_vest_change( to_account, _now );
     }
     // Update global vesting pool numbers.
     modify( cprops, [&]( dynamic_global_property_object& props )
@@ -1299,7 +1309,7 @@ void database::clear_null_account_balance()
     });
 
     if( has_hardfork( HIVE_HARDFORK_0_20 ) )
-      rc.regenerate_rc_mana( null_account, _now ); //we could just always set RC value on 'null' to 0
+      rc().regenerate_rc_mana( null_account, _now ); //we could just always set RC value on 'null' to 0
     modify( null_account, [&]( account_object& a )
     {
       a.vesting_shares.amount = 0;
@@ -1307,7 +1317,7 @@ void database::clear_null_account_balance()
       a.delayed_votes.clear();
     });
     if( has_hardfork( HIVE_HARDFORK_0_20 ) )
-      rc.update_account_after_vest_change( null_account, _now );
+      rc().update_account_after_vest_change( null_account, _now );
   }
 
   if( null_account.get_rewards().amount > 0 )
@@ -1581,7 +1591,7 @@ void database::clear_account( const account_object& account )
 
   if( account.get_vesting().amount > 0 )
   {
-    rc.regenerate_rc_mana( account, now );
+    rc().regenerate_rc_mana( account, now );
 
     // Remove all active delegations
     VEST_asset freed_delegations( 0 );
@@ -1596,7 +1606,7 @@ void database::clear_account( const account_object& account )
 
       vop.other_affected_accounts.emplace_back( delegatee.get_name() );
 
-      rc.regenerate_rc_mana( delegatee, now );
+      rc().regenerate_rc_mana( delegatee, now );
       modify( delegatee, [&]( account_object& a )
       {
         util::update_manabar( cprops, a );
@@ -1612,7 +1622,7 @@ void database::clear_account( const account_object& account )
 
       remove( delegation );
 
-      rc.update_account_after_vest_change( delegatee, now, true, true );
+      rc().update_account_after_vest_change( delegatee, now, true, true );
     }
 
     // Remove pending expired delegations
@@ -1653,7 +1663,7 @@ void database::clear_account( const account_object& account )
         a.sum_delayed_votes = 0;
       }
 
-      rc.update_account_after_vest_change( account, now, true, true );
+      rc().update_account_after_vest_change( account, now, true, true );
     } );
 
     adjust_balance( treasury_account, converted_hive );
@@ -1923,7 +1933,7 @@ void database::process_vesting_withdrawals()
               if( auto_vest_mode )
               {
                 if( has_hardfork( HIVE_HARDFORK_0_20 ) )
-                  rc.regenerate_rc_mana( a, now );
+                  rc().regenerate_rc_mana( a, now );
                 a.vesting_shares += routed;
               }
               else
@@ -1935,7 +1945,7 @@ void database::process_vesting_withdrawals()
             if( auto_vest_mode )
             {
               if( has_hardfork( HIVE_HARDFORK_0_20 ) )
-                rc.update_account_after_vest_change( to_account, now );
+                rc().update_account_after_vest_change( to_account, now );
 
               if( has_hardfork( HIVE_HARDFORK_1_24 ) )
               {
@@ -1981,7 +1991,7 @@ void database::process_vesting_withdrawals()
     pre_push_virtual_operation( vop );
 
     if( has_hardfork( HIVE_HARDFORK_0_20 ) )
-      rc.regenerate_rc_mana( from_account, now );
+      rc().regenerate_rc_mana( from_account, now );
     if( has_hardfork( HIVE_HARDFORK_1_24 ) )
     {
       FC_ASSERT( dv.valid() && "The object processing `delayed votes` must exist" );
@@ -2013,7 +2023,7 @@ void database::process_vesting_withdrawals()
     });
 
     if( has_hardfork( HIVE_HARDFORK_0_20 ) )
-      rc.update_account_after_vest_change( from_account, now, true, true );
+      rc().update_account_after_vest_change( from_account, now, true, true );
 
     modify( cprops, [&]( dynamic_global_property_object& o )
     {
@@ -2636,7 +2646,7 @@ void database::_apply_block( const std::shared_ptr<full_block_type>& full_block,
 
   try {
   notify_pre_apply_block( note );
-  rc.reset_block_info();
+  rc().reset_block_info();
 
   BOOST_SCOPE_EXIT( this_ )
   {
@@ -2811,8 +2821,8 @@ void database::_apply_block( const std::shared_ptr<full_block_type>& full_block,
 
   process_recurrent_transfers();
 
-  rc.handle_expired_delegations();
-  rc.finalize_block();
+  rc().handle_expired_delegations();
+  rc().finalize_block();
 
   process_hardforks();
 
@@ -3213,7 +3223,7 @@ void database::_apply_transaction(const std::shared_ptr<full_transaction_type>& 
   }
 
   notify_pre_apply_transaction( note );
-  rc.reset_tx_info( trx );
+  rc().reset_tx_info( trx );
 
   //Finally process the operations
   _current_op_in_trx = 0;
@@ -3223,7 +3233,7 @@ void database::_apply_transaction(const std::shared_ptr<full_transaction_type>& 
     ++_current_op_in_trx;
   } FC_CAPTURE_AND_RETHROW( (op) ) }
 
-  rc.finalize_transaction( *full_transaction.get() );
+  rc().finalize_transaction( *full_transaction.get() );
   notify_post_apply_transaction( note );
 
 } FC_CAPTURE_AND_RETHROW( (full_transaction->get_transaction()) ) }
@@ -3262,7 +3272,7 @@ void database::apply_operation(const operation& op)
   }
 
   if( has_hardfork( HIVE_HARDFORK_0_20 ) )
-    rc.handle_operation_discount< operation >( op );
+    rc().handle_operation_discount< operation >( op );
 
   _my->_evaluator_registry.get_evaluator( op ).apply( op );
 
@@ -3913,13 +3923,13 @@ void database::clear_expired_delegations()
       if( has_hardfork( HIVE_HARDFORK_0_20 ) )
       {
         util::update_manabar( gpo, a, itr->get_vesting().amount.value );
-        rc.regenerate_rc_mana( a, now );
+        rc().regenerate_rc_mana( a, now );
       }
 
       a.delegated_vesting_shares -= itr->get_vesting();
     });
     if( has_hardfork( HIVE_HARDFORK_0_20 ) )
-      rc.update_account_after_vest_change( delegator, now );
+      rc().update_account_after_vest_change( delegator, now );
 
     post_push_virtual_operation( vop );
 

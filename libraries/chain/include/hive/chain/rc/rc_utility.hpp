@@ -164,9 +164,10 @@ class resource_credits
     // generates RC stats report and rotates data
     void handle_auto_report( uint32_t block_num, int64_t global_regen, const rc_pool_object& rc_pool ) const;
 
-    resource_credits( database& _db ) : db( _db ) {} //can only be used by database
+    resource_credits( database& _db ) : db( _db ) {} //can only be used by database or database_impl
     database& db;
     friend class database;
+    friend class database_impl;
 
     // information collected for current transaction
     rc_transaction_info tx_info;

@@ -9,8 +9,14 @@
 #include <hive/chain/util/type_registrar_definition.hpp>
 
 #include <hive/protocol/hive_operations.hpp>
+#include <hive/protocol/hive_virtual_operations.hpp>
 
 namespace hive { namespace chain {
+
+using hive::protocol::failed_recurrent_transfer_operation;
+using hive::protocol::fill_recurrent_transfer_operation;
+using hive::protocol::recurrent_transfer_extensions_type;
+using hive::protocol::recurrent_transfer_pair_id;
 
 void initialize_core_indexes_11( database& db )
 {
