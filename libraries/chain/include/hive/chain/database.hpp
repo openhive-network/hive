@@ -738,6 +738,7 @@ namespace chain {
       void init_hardforks();
       void process_hardforks();
       void apply_hardfork( uint32_t hardfork );
+      void apply_hardfork_12_comment_cashout_fix();
 
       ///@}
 #ifdef HIVE_ENABLE_SMT
