@@ -764,14 +764,16 @@ void database::clear_pending()
   FC_CAPTURE_AND_RETHROW()
 }
 
-operation_notification database::create_operation_notification( const operation& op )const
+static operation_notification create_operation_notification( const operation& op,
+  const transaction_id_type& trx_id, uint32_t block_num, time_point_sec timestamp,
+  int32_t trx_in_block, uint16_t op_in_trx )
 {
   operation_notification note(op);
-  note.trx_id       = _current_trx_id;
-  note.block        = _current_block_num;
-  note.timestamp    = get_current_timestamp();
-  note.trx_in_block = _current_trx_in_block;
-  note.op_in_trx    = _current_op_in_trx;
+  note.trx_id       = trx_id;
+  note.block        = block_num;
+  note.timestamp    = timestamp;
+  note.trx_in_block = trx_in_block;
+  note.op_in_trx    = op_in_trx;
   note.virtual_op   = hive::protocol::is_virtual_operation(op);
   return note;
 }
@@ -780,7 +782,8 @@ void database::push_virtual_operation( const operation& op )
 {
   FC_ASSERT( is_virtual_operation( op ) && "on push" );
   _current_op_in_trx++;
-  operation_notification note = create_operation_notification( op );
+  operation_notification note = create_operation_notification( op, _current_trx_id, _current_block_num,
+    get_current_timestamp(), _current_trx_in_block, _current_op_in_trx );
   notify_pre_apply_operation( note );
   notify_post_apply_operation( note );
 }
@@ -789,14 +792,16 @@ void database::pre_push_virtual_operation( const operation& op )
 {
   FC_ASSERT( is_virtual_operation( op ) && "on pre-push" );
   _current_op_in_trx++;
-  operation_notification note = create_operation_notification( op );
+  operation_notification note = create_operation_notification( op, _current_trx_id, _current_block_num,
+    get_current_timestamp(), _current_trx_in_block, _current_op_in_trx );
   notify_pre_apply_operation( note );
 }
 
 void database::post_push_virtual_operation( const operation& op, const fc::optional<uint64_t>& op_in_trx )
 {
   FC_ASSERT( is_virtual_operation( op ) && "on post-push" );
-  operation_notification note = create_operation_notification( op );
+  operation_notification note = create_operation_notification( op, _current_trx_id, _current_block_num,
+    get_current_timestamp(), _current_trx_in_block, _current_op_in_trx );
   if(op_in_trx.valid()) note.op_in_trx = *op_in_trx;
   notify_post_apply_operation( note );
 }
@@ -3244,7 +3249,8 @@ private:
 
 void database::apply_operation(const operation& op)
 {
-  operation_notification note = create_operation_notification( op );
+  operation_notification note = create_operation_notification( op, _current_trx_id, _current_block_num,
+    get_current_timestamp(), _current_trx_in_block, _current_op_in_trx );
 
   applied_operation_info_controller ctrlr(&_current_applied_operation_info, note);
 
