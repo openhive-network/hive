@@ -66,8 +66,8 @@ class debug_node_plugin_impl
     current_debug_update_transactions         _current_debug_update_txs;
     bool                                      _force_new_artificial_transaction_for_debug_update = true;
 
-    boost::signals2::connection               _pre_apply_transaction_conn;
-    boost::signals2::connection               _post_apply_block_conn;
+    chain::database::signal_connection_ptr    _pre_apply_transaction_conn;
+    chain::database::signal_connection_ptr    _post_apply_block_conn;
 
     appbase::application&                     theApp;
 };

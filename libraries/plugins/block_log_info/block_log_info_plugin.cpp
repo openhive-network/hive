@@ -33,7 +33,7 @@ class block_log_info_plugin_impl
 
     database&                     _db;
     block_log_info_plugin&        _self;
-    boost::signals2::connection   _post_apply_block_conn;
+    chain::database::signal_connection_ptr   _post_apply_block_conn;
     int32_t                       print_interval_seconds = 0;
     bool                          print_irreversible = true;
     std::string                   output_name;

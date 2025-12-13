@@ -55,9 +55,9 @@ public:
   uint32_t                      actual_block_depth = 0;        //!< Calculated block-depth
   fc::time_point_sec            estimated_starting_timestamp;
   bool                          tracking = false;
-  boost::signals2::connection   post_apply_transaction_connection;
-  boost::signals2::connection   pre_apply_block_connection;
-  boost::signals2::connection   post_apply_block_connection;
+  chain::database::signal_connection_ptr   post_apply_transaction_connection;
+  chain::database::signal_connection_ptr   pre_apply_block_connection;
+  chain::database::signal_connection_ptr   post_apply_block_connection;
   fc::time_point_sec            estimate_starting_timestamp();
 };
 
