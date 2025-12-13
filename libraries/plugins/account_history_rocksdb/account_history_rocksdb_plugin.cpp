@@ -4,6 +4,7 @@
 #include <hive/plugins/account_history_rocksdb/account_history_rocksdb_plugin.hpp>
 
 #include <hive/chain/database.hpp>
+#include <hive/chain/notifications.hpp>
 #include <hive/chain/account_object_multiindex.hpp>
 #include <hive/chain/index.hpp>
 #include <chainbase/chainbase.inl>

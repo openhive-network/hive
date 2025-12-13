@@ -5,7 +5,6 @@
 #include <hive/chain/global_property_object.hpp>
 #include <hive/chain/irreversible_block_data.hpp>
 #include <hive/chain/node_property_object.hpp>
-#include <hive/chain/notifications.hpp>
 
 #include <hive/chain/rc/rc_utility.hpp>
 
@@ -69,6 +68,11 @@ namespace chain {
   class hardfork_property_object;
   class block_write_i;
   class block_flow_control;
+
+  struct block_notification;
+  struct transaction_notification;
+  struct operation_notification;
+  struct comment_reward_notification;
 
   class blockchain_worker_thread_pool;
 
@@ -741,17 +745,7 @@ namespace chain {
       void modify_balance( const account_object& a, const asset& delta, bool check_balance );
       void modify_reward_balance( const account_object& a, const asset& value_delta, const asset& share_delta, bool check_balance );
 
-      operation_notification create_operation_notification( const operation& op )const
-      {
-        operation_notification note(op);
-        note.trx_id       = _current_trx_id;
-        note.block        = _current_block_num;
-        note.timestamp    = get_current_timestamp();//_current_timestamp;
-        note.trx_in_block = _current_trx_in_block;
-        note.op_in_trx    = _current_op_in_trx;
-        note.virtual_op   = hive::protocol::is_virtual_operation(op);
-        return note;
-      }
+      operation_notification create_operation_notification( const operation& op )const;
 
     public:
 
