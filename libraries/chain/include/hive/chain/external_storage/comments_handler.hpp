@@ -3,6 +3,7 @@
 
 #include <hive/chain/external_storage/external_storage_snapshot.hpp>
 #include <hive/chain/external_storage/comment.hpp>
+#include <hive/chain/external_storage/comments_handler_ptr.hpp>
 
 #include <hive/chain/hive_object_types.hpp>
 #include <hive/chain/comment_object.hpp>
@@ -15,7 +16,7 @@ class comments_handler : public external_storage_snapshot
 {
   public:
 
-    using ptr = std::shared_ptr<comments_handler>;
+    using ptr = comments_handler_ptr;
 
     virtual void on_cashout( uint32_t _block_num, const comment_object& _comment, const comment_cashout_object& _comment_cashout ) = 0;
     virtual void on_irreversible_block( uint32_t block_num ) = 0;
