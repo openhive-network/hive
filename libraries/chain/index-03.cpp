@@ -1,6 +1,8 @@
 
 #include <hive/chain/detail/state/account_object.hpp>
 
+#include <hive/chain/external_storage/comments_handler.hpp>
+
 #include <hive/chain/account_object_multiindex.hpp>
 #include <hive/chain/block_summary_object_multiindex.hpp>
 #include <hive/chain/comment_object_multiindex.hpp>

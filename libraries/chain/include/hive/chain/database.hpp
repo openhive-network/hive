@@ -11,7 +11,8 @@
 
 #include <hive/chain/util/advanced_benchmark_dumper.hpp>
 #include <hive/chain/util/type_registrar.hpp>
-#include <hive/chain/external_storage/comments_handler.hpp>
+#include <hive/chain/external_storage/comments_handler_ptr.hpp>
+#include <hive/chain/external_storage/comment.hpp>
 
 #include <hive/protocol/protocol.hpp>
 #include <hive/protocol/hardfork.hpp>
@@ -828,7 +829,7 @@ namespace chain {
 
       std::optional<time_point_sec> _current_timestamp;
 
-      comments_handler::ptr         _comments_handler;
+      comments_handler_ptr          _comments_handler;
 
     public:
 
@@ -840,7 +841,7 @@ namespace chain {
           return get_dynamic_global_properties().time;
       }
 
-      void set_comments_handler( comments_handler::ptr obj )
+      void set_comments_handler( comments_handler_ptr obj )
       {
         _comments_handler = obj;
       }

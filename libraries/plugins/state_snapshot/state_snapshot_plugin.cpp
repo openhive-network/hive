@@ -1,5 +1,7 @@
 #include <hive/chain/hive_fwd.hpp>
 
+#include <hive/chain/external_storage/comments_handler.hpp>
+
 #include <hive/plugins/state_snapshot/state_snapshot_plugin.hpp>
 
 #include <hive/utilities/benchmark_dumper.hpp>
