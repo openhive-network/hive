@@ -19,9 +19,7 @@
 #include <hive/chain/db_with.hpp>
 #include <hive/chain/irreversible_block_data.hpp>
 #include <hive/chain/dhf_objects.hpp>
-#include <hive/chain/evaluator_registry.hpp>
 #include <hive/chain/smt_objects.hpp>
-#include <hive/chain/hive_evaluator.hpp>
 #include <hive/chain/detail/state/liquidity_reward_balance_object_multiindex.hpp>
 #include <hive/chain/detail/state/feed_history_object_multiindex.hpp>
 #include <hive/chain/detail/state/limit_order_object_multiindex.hpp>
