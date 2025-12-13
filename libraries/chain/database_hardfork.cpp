@@ -1,6 +1,7 @@
 #include <hive/chain/hive_fwd.hpp>
 
 #include <hive/chain/database.hpp>
+#include <hive/chain/database_virtual_operations.hpp>
 #include <hive/chain/database_exceptions.hpp>
 #include <hive/chain/account_object_multiindex.hpp>
 #include <hive/chain/global_property_object_multiindex.hpp>
@@ -189,7 +190,7 @@ void database::apply_hardfork( uint32_t hardfork )
     elog( "HARDFORK ${hf} at block ${b}", ("hf", hardfork)("b", head_block_num()) );
   operation hardfork_vop = hardfork_operation( hardfork );
 
-  pre_push_virtual_operation( hardfork_vop );
+  pre_push_virtual_operation( *this, hardfork_vop );
   const auto _op_in_trx = _current_op_in_trx;
 
   switch( hardfork )
@@ -439,7 +440,7 @@ void database::apply_hardfork( uint32_t hardfork )
       // This may sometimes happen in the mirrornet, when we do not have the account created upon the HF 21 application or any dependent operation
       if( find_account(treasury_name) == nullptr ) {
           create<account_object>(treasury_name, head_block_time());
-          push_virtual_operation(
+          push_virtual_operation( *this,
             account_created_operation( treasury_name, treasury_name, asset(0, VESTS_SYMBOL), asset(0, VESTS_SYMBOL) ) );
       }
 
@@ -547,7 +548,7 @@ void database::apply_hardfork( uint32_t hardfork )
 
     if( find_account(treasury_name) == nullptr ) {
         create<account_object>(treasury_name, head_block_time());
-        push_virtual_operation(
+        push_virtual_operation( *this,
           account_created_operation( treasury_name, treasury_name, asset(0, VESTS_SYMBOL), asset(0, VESTS_SYMBOL) ) );
     }
 
@@ -566,7 +567,7 @@ void database::apply_hardfork( uint32_t hardfork )
     set_blockchain_config(fc::json::to_string(current_blockchain_config_as_variant));
   }
 
-  post_push_virtual_operation( hardfork_vop, _op_in_trx );
+  post_push_virtual_operation( *this, hardfork_vop, _op_in_trx );
 }
 
 const hardfork_property_object& database::get_hardfork_property_object()const

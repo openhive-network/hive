@@ -4,6 +4,7 @@
 
 #include <hive/chain/hive_evaluator.hpp>
 #include <hive/chain/database.hpp>
+#include <hive/chain/database_virtual_operations.hpp>
 #include <hive/chain/detail/state/reward_fund_object.hpp>
 #include <hive/chain/comment_object_multiindex.hpp>
 #include <hive/chain/account_object_multiindex.hpp>
@@ -68,7 +69,7 @@ void delete_comment_evaluator::do_apply( const delete_comment_operation& o )
 
   if( comment_cashout->get_net_rshares() > 0 )
   {
-    _db.push_virtual_operation( ineffective_delete_comment_operation( o.author, o.permlink ) );
+    push_virtual_operation( _db,  ineffective_delete_comment_operation( o.author, o.permlink ) );
     return;
   }
 
@@ -637,7 +638,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
     _db.adjust_rshares2( old_rshares, new_rshares );
   }
 
-  _db.push_virtual_operation( effective_comment_vote_operation( o.voter, o.author, o.permlink, vote_weight, rshares, comment_cashout->get_total_vote_weight() ) );
+  push_virtual_operation( _db,  effective_comment_vote_operation( o.voter, o.author, o.permlink, vote_weight, rshares, comment_cashout->get_total_vote_weight() ) );
 }
 
 void hf20_vote_evaluator( const vote_operation& o, database& _db )
@@ -888,7 +889,7 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
     });
   }
 
-  _db.push_virtual_operation( effective_comment_vote_operation( o.voter, o.author, o.permlink, vote_weight, rshares, comment_cashout->get_total_vote_weight() ) );
+  push_virtual_operation( _db,  effective_comment_vote_operation( o.voter, o.author, o.permlink, vote_weight, rshares, comment_cashout->get_total_vote_weight() ) );
 }
 
 void vote_evaluator::do_apply( const vote_operation& o )

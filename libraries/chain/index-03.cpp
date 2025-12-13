@@ -1,6 +1,7 @@
 
 #include <hive/chain/detail/state/account_object.hpp>
 
+#include <hive/chain/database_virtual_operations.hpp>
 #include <hive/chain/external_storage/comments_handler.hpp>
 #include <hive/chain/notifications.hpp>
 
@@ -173,14 +174,14 @@ share_type database::pay_curators( const comment_object& comment, const comment_
             [&]( const asset& reward )
             {
               vop.get< curation_reward_operation >().reward = reward;
-              pre_push_virtual_operation( vop );
+              pre_push_virtual_operation( *this, vop );
             } );
 
             modify( voter, [&]( account_object& a )
             {
               a.curation_rewards.amount += claim;
             });
-          post_push_virtual_operation( vop );
+          post_push_virtual_operation( *this, vop );
         }
       } FC_CAPTURE_AND_RETHROW( (*item) ) }
     }
@@ -265,10 +266,10 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
           [&]( const asset& reward )
           {
             vop.vesting_payout = reward;
-            pre_push_virtual_operation( vop );
+            pre_push_virtual_operation( *this, vop );
           });
 
-          post_push_virtual_operation( vop );
+          post_push_virtual_operation( *this, vop );
           total_beneficiary += benefactor_tokens;
         }
 
@@ -292,9 +293,9 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
           [&]( const asset& vesting_payout )
           {
             vop.get< author_reward_operation >().vesting_payout = vesting_payout;
-            pre_push_virtual_operation( vop );
+            pre_push_virtual_operation( *this, vop );
           } );
-        post_push_virtual_operation( vop );
+        post_push_virtual_operation( *this, vop );
 
         asset payout = hbd_payout.first + to_hbd( hbd_payout.second + asset( vesting_hive, HIVE_SYMBOL ) );
         asset curator_payout = to_hbd( asset( curation_tokens, HIVE_SYMBOL ) );
@@ -311,8 +312,8 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
         }
         vop = comment_reward_operation( comment_author, to_string( comment_cashout.get_permlink() ),
           to_hbd( asset( claimed_reward, HIVE_SYMBOL ) ), author_tokens, payout, curator_payout, beneficiary_payout );
-        pre_push_virtual_operation( vop );
-        post_push_virtual_operation( vop );
+        pre_push_virtual_operation( *this, vop );
+        post_push_virtual_operation( *this, vop );
 
         modify( author, [&]( account_object& a )
         {
@@ -358,7 +359,7 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
 
     if( has_hardfork( HIVE_HARDFORK_0_17__769 ) || calculate_discussion_payout_time( comment, comment_cashout ) == fc::time_point_sec::maximum() )
     {
-      push_virtual_operation( comment_payout_update_operation( get_account( comment_cashout.get_author_id() ).get_name(), to_string( comment_cashout.get_permlink() ) ) );
+      push_virtual_operation( *this, comment_payout_update_operation( get_account( comment_cashout.get_author_id() ).get_name(), to_string( comment_cashout.get_permlink() ) ) );
     }
 
     const auto& vote_idx = get_index< comment_vote_index, by_comment_voter >();
@@ -645,7 +646,7 @@ void database::perform_vesting_share_split( uint32_t magnitude )
           a.proxied_vsf_votes[i] *= magnitude;
       } );
       if (old_vesting_shares != new_vesting_shares)
-        push_virtual_operation( vesting_shares_split_operation(account.get_name(), old_vesting_shares, new_vesting_shares) );
+        push_virtual_operation( *this, vesting_shares_split_operation(account.get_name(), old_vesting_shares, new_vesting_shares) );
     }
 
     const auto& comments = get_index< comment_cashout_index >().indices();

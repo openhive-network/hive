@@ -4,6 +4,7 @@
 
 #include <hive/chain/hive_evaluator.hpp>
 #include <hive/chain/database.hpp>
+#include <hive/chain/database_virtual_operations.hpp>
 #include <hive/chain/custom_operation_interpreter.hpp>
 #include <hive/chain/account_object_multiindex.hpp>
 #include <hive/chain/global_property_object_multiindex.hpp>
@@ -73,7 +74,7 @@ void witness_update_evaluator::do_apply( const witness_update_operation& o )
   else if( !o.props.account_creation_fee.symbol.is_canon() )
   {
     // after HF, above check can be moved to validate() if reindex doesn't show this warning
-    _db.push_virtual_operation( system_warning_operation( FC_LOG_MESSAGE( warn,
+    push_virtual_operation( _db,  system_warning_operation( FC_LOG_MESSAGE( warn,
       "Wrong fee symbol in block ${b}", ( "b", _db.head_block_num() + 1 ) ).get_message() ) );
   }
 
@@ -287,7 +288,7 @@ void account_witness_proxy_evaluator::do_apply( const account_witness_proxy_oper
     _db.modify( account, [&]( account_object& a ) {
       if( account.has_proxy() )
       {
-        _db.push_virtual_operation( proxy_cleared_operation( account.get_name(), _db.get_account( account.get_proxy() ).get_name()) );
+        push_virtual_operation( _db,  proxy_cleared_operation( account.get_name(), _db.get_account( account.get_proxy() ).get_name()) );
       }
 
       a.set_proxy( new_proxy );
@@ -302,7 +303,7 @@ void account_witness_proxy_evaluator::do_apply( const account_witness_proxy_oper
   } else { /// we are clearing the proxy which means we simply update the account
     FC_ASSERT( account.has_proxy(), "Proxy must change." );
 
-    _db.push_virtual_operation( proxy_cleared_operation( account.get_name(), _db.get_account( account.get_proxy() ).get_name()) );
+    push_virtual_operation( _db,  proxy_cleared_operation( account.get_name(), _db.get_account( account.get_proxy() ).get_name()) );
 
     _db.modify( account, [&]( account_object& a ) {
       a.clear_proxy();
@@ -527,7 +528,7 @@ void pow_apply( database& db, Operation o )
       auth.posting = auth.owner;
     });
 
-    db.push_virtual_operation( account_created_operation(new_account.get_name(), o.get_worker_account(), asset(0, VESTS_SYMBOL), asset(0, VESTS_SYMBOL) ) );
+    push_virtual_operation( db,  account_created_operation(new_account.get_name(), o.get_worker_account(), asset(0, VESTS_SYMBOL), asset(0, VESTS_SYMBOL) ) );
   }
 
   const auto& worker_account = db.get_account( o.get_worker_account() ); // verify it exists
@@ -589,7 +590,7 @@ void pow_apply( database& db, Operation o )
   }
   else
     actual_reward = db.create_vesting( inc_witness, pow_reward );
-  db.push_virtual_operation( pow_reward_operation( dgp.current_witness, actual_reward ) );
+  push_virtual_operation( db,  pow_reward_operation( dgp.current_witness, actual_reward ) );
 }
 
 void pow_evaluator::do_apply( const pow_operation& o ) {
@@ -677,7 +678,7 @@ void pow2_evaluator::do_apply( const pow2_operation& o )
         w.pow_worker        = dgp.total_pow;
     });
 
-    _db.push_virtual_operation( account_created_operation(new_account.get_name(), worker_account, asset(0, VESTS_SYMBOL), asset(0, VESTS_SYMBOL) ) );
+    push_virtual_operation( _db,  account_created_operation(new_account.get_name(), worker_account, asset(0, VESTS_SYMBOL), asset(0, VESTS_SYMBOL) ) );
   }
   else
   {
@@ -700,7 +701,7 @@ void pow2_evaluator::do_apply( const pow2_operation& o )
 
     const auto& inc_witness = db.get_account( dgp.current_witness );
     asset actual_reward = db.create_vesting( inc_witness, inc_reward );
-    db.push_virtual_operation( pow_reward_operation( dgp.current_witness, actual_reward ) );
+    push_virtual_operation( db,  pow_reward_operation( dgp.current_witness, actual_reward ) );
   }
 }
 
