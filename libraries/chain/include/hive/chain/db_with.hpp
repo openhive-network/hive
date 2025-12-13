@@ -1,6 +1,7 @@
 #pragma once
 
 #include <hive/chain/database.hpp>
+#include <hive/chain/block_flow_control.hpp>
 #include <boost/scope_exit.hpp>
 
 /*
