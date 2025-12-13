@@ -4,6 +4,7 @@
 #include <hive/plugins/market_history/market_history_plugin.hpp>
 
 #include <hive/chain/database.hpp>
+#include <hive/chain/notifications.hpp>
 #include <hive/chain/index.hpp>
 #include <chainbase/chainbase.inl>
 #include <hive/chain/util/type_registrar_definition.hpp>

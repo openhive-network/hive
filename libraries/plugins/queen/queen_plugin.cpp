@@ -6,6 +6,7 @@
 #include <hive/plugins/queen/queen_plugin.hpp>
 #include <hive/plugins/p2p/p2p_plugin.hpp>
 
+#include <hive/chain/notifications.hpp>
 #include <hive/chain/database_exceptions.hpp>
 #include <hive/chain/witness_objects.hpp>
 

@@ -1,0 +1,1411 @@
+
+╭─── Claude Code v2.0.62 ──────────────────────────────────────────────────────╮
+│                           │ Tips for getting started                         │
+│    Welcome back vogel!    │ Run /init to create a CLAUDE.md file with instr… │
+│                           │ ──────────────────────────────────────────────── │
+│          ▐▛███▜▌          │ Recent activity                                  │
+│         ▝▜█████▛▘         │ No recent activity                               │
+│           ▘▘ ▝▝           │                                                  │
+│                           │                                                  │
+│   Opus 4.5 · Claude Max   │                                                  │
+│    /storage1/src/hive     │                                                  │
+╰──────────────────────────────────────────────────────────────────────────────╯
+══════════════════ Conversation compacted · ctrl+o for history ═════════════════
+  ⎿  Read libraries/chain/include/hive/chain/index.hpp (66 lines)
+  ⎿  Referenced file libraries/chain/database_init.cpp
+  ⎿  Referenced file libraries/chain/include/hive/chain/database.hpp
+  ⎿  Read libraries/chain/database_impl.hpp (134 lines)
+  ⎿  Read libraries/utilities/include/hive/utilities/signal.hpp (25 lines)
+
+● Let me check how chain_plugin.cpp uses the reindex signals to fix the
+  build errors.
+
+● Read(libraries/plugins/chain/chain_plugin.cpp)
+  ⎿  Read 50 lines
+
+● I can see that chain_plugin.cpp is directly calling the reindex signals
+  via HIVE_TRY_NOTIFY macro. I need to add public accessor methods for these
+   signals in the database class. Let me check what other signals might be
+  accessed externally, and then add appropriate public methods.
+
+● Search(pattern: "db\._\w+_signal", path: "libraries/plugins", output_mode:
+        "content")
+  ⎿  Found 2 lines (ctrl+o to expand)
+
+● Only the reindex signals are accessed externally. I need to add public
+  methods to trigger these signals. Let me check the database.hpp to see the
+   current notify methods pattern:
+
+● Read(libraries/chain/include/hive/chain/database.hpp)
+  ⎿  Read 100 lines
+
+● Search(pattern: "notify_pre_reindex|notify_post_reindex", path:
+        "libraries/chain", output_mode: "content")
+  ⎿  Found 0 lines 
+
+● There are no existing notify methods for reindex signals. I need to add
+  them. Let me search for how notify methods are declared:
+
+● Search(pattern: "void notify_", path:
+        "libraries/chain/include/hive/chain/database.hpp", output_mode:
+        "content")
+  ⎿  Found 18 lines (ctrl+o to expand)
+
+● I need to add notify_pre_reindex and notify_post_reindex methods. Let me
+  add them to database.hpp:
+
+● Read(libraries/chain/include/hive/chain/database.hpp)
+  ⎿  Read 20 lines
+
+● Update(libraries/chain/include/hive/chain/database.hpp)
+  ⎿  Updated libraries/chain/include/hive/chain/database.hpp with 2        
+     additions
+       385          void notify_comment_reward(const 
+             comment_reward_notification& note);
+       386          void notify_end_of_syncing();
+       387          void notify_wipe();
+       388 +        void notify_pre_reindex(const reindex_notification& 
+           + note);
+       389 +        void notify_post_reindex(const reindex_notification& 
+           + note);
+       390    
+       391        public:
+       392    
+
+● Now let me add the implementations to database.cpp. First, let me find the
+   other notify implementations:
+
+● Search(pattern: "void database::notify_wipe", path:
+        "libraries/chain/database.cpp", output_mode: "content")
+  ⎿  Found 1 line (ctrl+o to expand)
+
+● Read(libraries/chain/database.cpp)
+  ⎿  Read 20 lines
+
+● Update(libraries/chain/database.cpp)
+  ⎿  Updated libraries/chain/database.cpp with 10 additions              
+       875      HIVE_TRY_NOTIFY( _my->_flush_signal )
+       876    }
+       877    
+       878 +  void database::notify_pre_reindex( const 
+           + reindex_notification& note )
+       879 +  {
+       880 +    HIVE_TRY_NOTIFY( _my->_pre_reindex_signal, note )
+       881 +  }
+       882 +  
+       883 +  void database::notify_post_reindex( const 
+           + reindex_notification& note )
+       884 +  {
+       885 +    HIVE_TRY_NOTIFY( _my->_post_reindex_signal, note )
+       886 +  }
+       887 +  
+       888    account_name_type database::get_scheduled_witness( uint32_t
+              slot_num )const
+       889    {
+       890      const dynamic_global_property_object& dpo = 
+             get_dynamic_global_properties();
+
+● Now let me update chain_plugin.cpp to use the notify methods:
+
+● Update(libraries/plugins/chain/chain_plugin.cpp)
+  ⎿  Updated libraries/plugins/chain/chain_plugin.cpp with 1 addition and 1
+     removal
+
+       1111      reindex_notification note( args );
+       1112    
+       1113      BOOST_SCOPE_EXIT(this_,&note) {
+       1114 -      HIVE_TRY_NOTIFY(this_->db._post_reindex_signal, note);
+       1114 +      this_->db.notify_post_reindex(note);
+       1115      } BOOST_SCOPE_EXIT_END
+       1116    
+       1117      try
+
+● Update(libraries/plugins/chain/chain_plugin.cpp)
+  ⎿  Updated libraries/plugins/chain/chain_plugin.cpp with 1 addition and 1
+     removal
+
+       1138        note.force_replay = args.force_replay || 
+              _head_block_num == 0;
+       1139        note.validate_during_replay = 
+              args.validate_during_replay;
+       1140    
+       1141 -      HIVE_TRY_NOTIFY(db._pre_reindex_signal, note);
+       1141 +      db.notify_pre_reindex(note);
+       1142    
+       1143        default_block_writer->on_reindex_start();
+       1144    
+
+● Now let me build to verify the changes:
+
+● Bash(ninja -j$(nproc) hived 2>&1 | head -200) timeout: 5m 0s
+  ⎿  Error: Exit code 2
+     /bin/bash: eval: line 1: syntax error near unexpected token `('
+     /bin/bash: eval: line 1: `ninja -j\$ ( nproc ) hived 2>&1 < /dev/null | head
+      -200'
+
+● Bash(ninja -j8 hived 2>&1 | head -200) timeout: 5m 0s
+  ⎿ [1/135] Performing build step for 'project_secp256k1'                  
+    make  all-am
+    make[1]: Entering directory '/storage1/src/hive/build/libraries/fc/vend
+    … +365 lines (ctrl+o to expand)
+
+
+● The build succeeded. Let me update the todo list and commit the changes:
+
+● Bash(cd /storage1/src/hive && git status)
+  ⎿  On branch optimize-block-api-compilation                    
+     Changes not staged for commit:
+       (use "git add <file>..." to update what will be committed)
+     … +9 lines (ctrl+o to expand)
+
+● Bash(git diff --stat)
+  ⎿  libraries/chain/database.cpp                    |  48 ++++++----      
+     libraries/chain/database_impl.hpp               |  94 ++++++++++++++++
+    +++
+    … +6 lines (ctrl+o to expand)
+
+
+● Bash(git log --oneline -5)
+  ⎿  5f754607f Add signal_connection_ptr type and update signal.hpp        
+     9673dd2ae Convert connect_impl and any_apply_operation_handler_impl to
+     local functions
+     … +4 lines (ctrl+o to expand)
+
+● Bash(git add libraries/chain/database.cpp libraries/chain/database_impl.hpp
+      libraries/chain/database_init.cpp
+      libraries/chain/include/hive/chain/database.hpp librari…)
+  ⎿ [optimize-block-api-compilation 0d7463342] Move fc::signal members from
+     database class to database_impl
+     6 files changed, 159 insertions(+), 153 deletions(-)
+
+
+● Successfully moved all fc::signal members from the database class to
+  database_impl. The changes include:
+
+  1. database_impl.hpp: Added all 20+ signal members with their original
+  documentation comments
+  2. database.cpp: Updated all notify_* methods to access signals through
+  _my-> prefix
+  3. database_init.cpp: Updated all add_*_handler methods to use _my->
+  prefix
+  4. database.hpp: Removed signal members, added
+  notify_pre_reindex/notify_post_reindex and add_plugin_index_handler public
+   methods
+  5. index.hpp: Updated to use add_plugin_index_handler instead of friend
+  function
+  6. chain_plugin.cpp: Updated to use notify methods instead of direct
+  signal access
+
+  The build succeeded and changes have been committed as 0d7463342.
+
+> now change all database class methods returning 
+boost::signals2::connection to return signal_connection_ptr 
+
+● I'll change all database class methods that return
+  boost::signals2::connection to return signal_connection_ptr instead.
+
+● Search(pattern: "boost::signals2::connection", path:
+        "libraries/chain/include/hive/chain/database.hpp", output_mode:
+        "content")
+  ⎿  Found 22 lines (ctrl+o to expand)
+
+● Read(libraries/chain/include/hive/chain/database.hpp)
+  ⎿  Read 55 lines
+
+● I need to check the signal_connection_ptr type definition to understand
+  how it's used:
+
+● Read(libraries/utilities/include/hive/utilities/signal_connection_ptr.hpp)
+  ⎿  Read 14 lines
+
+● Now let me update database.hpp to replace all boost::signals2::connection
+  return types with hive::utilities::signal_connection_ptr:
+
+● Update(libraries/chain/include/hive/chain/database.hpp)
+  ⎿  Updated libraries/chain/include/hive/chain/database.hpp with 24       
+     additions and 22 removals
+       390    
+       391        public:
+       392    
+       393 -        boost::signals2::connection 
+           - add_pre_apply_operation_handler       ( const 
+           - apply_operation_handler_t&           func, const 
+           - abstract_plugin& plugin, int32_t group = -1 );
+       394 -        boost::signals2::connection 
+           - add_post_apply_operation_handler      ( const 
+           - apply_operation_handler_t&           func, const 
+           - abstract_plugin& plugin, int32_t group = -1 );
+       395 -        boost::signals2::connection 
+           - add_pre_apply_transaction_handler     ( const 
+           - apply_transaction_handler_t&         func, const 
+           - abstract_plugin& plugin, int32_t group = -1 );
+       396 -        boost::signals2::connection 
+           - add_post_apply_transaction_handler    ( const 
+           - apply_transaction_handler_t&         func, const 
+           - abstract_plugin& plugin, int32_t group = -1 );
+       397 -        boost::signals2::connection 
+           - add_pre_apply_block_handler           ( const 
+           - apply_block_handler_t&               func, const 
+           - abstract_plugin& plugin, int32_t group = -1 );
+       398 -        boost::signals2::connection 
+           - add_post_apply_block_handler          ( const 
+           - apply_block_handler_t&               func, const 
+           - abstract_plugin& plugin, int32_t group = -1 );
+       399 -        boost::signals2::connection 
+           - add_fail_apply_block_handler          ( const 
+           - apply_block_handler_t&               func, const 
+           - abstract_plugin& plugin, int32_t group = -1 );
+       400 -        boost::signals2::connection 
+           - add_irreversible_block_handler        ( const 
+           - irreversible_block_handler_t&        func, const 
+           - abstract_plugin& plugin, int32_t group = -1 );
+       401 -        boost::signals2::connection add_switch_fork_handler  
+           -              ( const switch_fork_handler_t&        func, 
+           - const abstract_plugin& plugin, int32_t group = -1 );
+       402 -        boost::signals2::connection add_pre_reindex_handler  
+           -              ( const reindex_handler_t&                   
+           - func, const abstract_plugin& plugin, int32_t group = -1 );
+       403 -        boost::signals2::connection add_post_reindex_handler 
+           -              ( const reindex_handler_t&                   
+           - func, const abstract_plugin& plugin, int32_t group = -1 );
+       404 -        boost::signals2::connection 
+           - add_pre_apply_custom_operation_handler ( const 
+           - apply_custom_operation_handler_t&    func, const 
+           - abstract_plugin& plugin, int32_t group = -1 );
+       405 -        boost::signals2::connection 
+           - add_post_apply_custom_operation_handler( const 
+           - apply_custom_operation_handler_t&    func, const 
+           - abstract_plugin& plugin, int32_t group = -1 );
+       406 -        boost::signals2::connection 
+           - add_finish_push_block_handler          ( const 
+           - push_block_handler_t&                func, const 
+           - abstract_plugin& plugin, int32_t group = -1 );
+       393 +        using signal_connection_ptr = 
+           + hive::utilities::signal_connection_ptr;
+       394    
+       395 -        boost::signals2::connection 
+           - add_prepare_snapshot_handler          (const 
+           - prepare_snapshot_handler_t& func, const abstract_plugin& 
+           - plugin, int32_t group = -1);
+       395 +        signal_connection_ptr add_pre_apply_operation_handler
+           +        ( const apply_operation_handler_t&           func, 
+           + const abstract_plugin& plugin, int32_t group = -1 );
+       396 +        signal_connection_ptr 
+           + add_post_apply_operation_handler      ( const 
+           + apply_operation_handler_t&           func, const 
+           + abstract_plugin& plugin, int32_t group = -1 );
+       397 +        signal_connection_ptr 
+           + add_pre_apply_transaction_handler     ( const 
+           + apply_transaction_handler_t&         func, const 
+           + abstract_plugin& plugin, int32_t group = -1 );
+       398 +        signal_connection_ptr 
+           + add_post_apply_transaction_handler    ( const 
+           + apply_transaction_handler_t&         func, const 
+           + abstract_plugin& plugin, int32_t group = -1 );
+       399 +        signal_connection_ptr add_pre_apply_block_handler    
+           +        ( const apply_block_handler_t&               func, 
+           + const abstract_plugin& plugin, int32_t group = -1 );
+       400 +        signal_connection_ptr add_post_apply_block_handler   
+           +        ( const apply_block_handler_t&               func, 
+           + const abstract_plugin& plugin, int32_t group = -1 );
+       401 +        signal_connection_ptr add_fail_apply_block_handler   
+           +        ( const apply_block_handler_t&               func, 
+           + const abstract_plugin& plugin, int32_t group = -1 );
+       402 +        signal_connection_ptr add_irreversible_block_handler 
+           +        ( const irreversible_block_handler_t&        func, 
+           + const abstract_plugin& plugin, int32_t group = -1 );
+       403 +        signal_connection_ptr add_switch_fork_handler        
+           +        ( const switch_fork_handler_t&        func, const 
+           + abstract_plugin& plugin, int32_t group = -1 );
+       404 +        signal_connection_ptr add_pre_reindex_handler        
+           +        ( const reindex_handler_t&                   func, 
+           + const abstract_plugin& plugin, int32_t group = -1 );
+       405 +        signal_connection_ptr add_post_reindex_handler       
+           +        ( const reindex_handler_t&                   func, 
+           + const abstract_plugin& plugin, int32_t group = -1 );
+       406 +        signal_connection_ptr 
+           + add_pre_apply_custom_operation_handler ( const 
+           + apply_custom_operation_handler_t&    func, const 
+           + abstract_plugin& plugin, int32_t group = -1 );
+       407 +        signal_connection_ptr 
+           + add_post_apply_custom_operation_handler( const 
+           + apply_custom_operation_handler_t&    func, const 
+           + abstract_plugin& plugin, int32_t group = -1 );
+       408 +        signal_connection_ptr add_finish_push_block_handler  
+           +         ( const push_block_handler_t&                func, 
+           + const abstract_plugin& plugin, int32_t group = -1 );
+       409 +  
+       410 +        signal_connection_ptr add_prepare_snapshot_handler   
+           +        (const prepare_snapshot_handler_t& func, const 
+           + abstract_plugin& plugin, int32_t group = -1);
+       411          /// <summary>
+       412          ///  All plugins storing data in different way than 
+             chainbase::generic_index (wrapping
+       413          ///  a multi_index) should register to this handler 
+             to add its own data to the prepared snapshot.
+     ...
+       414          /// <param name="plugin">the plugin be registering 
+             its handler</param>
+       415          /// <param name="group"></param>
+       416          /// <returns></returns>
+       417 -        boost::signals2::connection
+           -   add_snapshot_supplement_handler       (const 
+           -  prepare_snapshot_data_supplement_handler_t& func, const 
+           -  abstract_plugin& plugin, int32_t group = -1);
+       417 +        signal_connection_ptr
+           +   add_snapshot_supplement_handler       (const 
+           +  prepare_snapshot_data_supplement_handler_t& func, const 
+           +  abstract_plugin& plugin, int32_t group = -1);
+       418          /// <summary>
+       419          ///  All plugins storing data in different way than 
+             chainbase::generic_index (wrapping
+       420          ///  a multi_index) should register to this handler 
+             to load its own data from the loaded snapshot.
+     ...
+       423          /// <param name="plugin"></param>
+       424          /// <param name="group"></param>
+       425          /// <returns></returns>
+       426 -        boost::signals2::connection
+           -   add_snapshot_supplement_handler       (const 
+           -  load_snapshot_data_supplement_handler_t& func, const 
+           -  abstract_plugin& plugin, int32_t group = -1);
+       426 +        signal_connection_ptr
+           +   add_snapshot_supplement_handler       (const 
+           +  load_snapshot_data_supplement_handler_t& func, const 
+           +  abstract_plugin& plugin, int32_t group = -1);
+       427    
+       428 -        boost::signals2::connection
+           -   add_comment_reward_handler            (const 
+           -  comment_reward_notification_handler_t& func, const 
+           -  abstract_plugin& plugin, int32_t group = -1);
+       428 +        signal_connection_ptr
+           +   add_comment_reward_handler            (const 
+           +  comment_reward_notification_handler_t& func, const 
+           +  abstract_plugin& plugin, int32_t group = -1);
+       429    
+       430 -        boost::signals2::connection
+           -   add_end_of_syncing_handler            (const 
+           -  end_of_syncing_notification_handler_t& func, const 
+           -  abstract_plugin& plugin, int32_t group = -1);
+       430 +        signal_connection_ptr
+           +   add_end_of_syncing_handler            (const 
+           +  end_of_syncing_notification_handler_t& func, const 
+           +  abstract_plugin& plugin, int32_t group = -1);
+       431    
+       432 -        boost::signals2::connection
+           -   add_wipe_handler                      (const 
+           -  wipe_notification_handler_t& func, const abstract_plugin& 
+           -  plugin, int32_t group = -1);
+       433 -        boost::signals2::connection
+           -   add_flush_handler                     ( const 
+           -  flush_handler_t& func, const abstract_plugin& plugin, 
+           -  int32_t group = -1 );
+       432 +        signal_connection_ptr
+           +   add_wipe_handler                      (const 
+           +  wipe_notification_handler_t& func, const abstract_plugin& 
+           +  plugin, int32_t group = -1);
+       433 +        signal_connection_ptr
+           +   add_flush_handler                     ( const 
+           +  flush_handler_t& func, const abstract_plugin& plugin, 
+           +  int32_t group = -1 );
+       434    
+       435          /// Register a callback for plugin index 
+             initialization (called during initialize_indexes)
+       436 -        boost::signals2::connection
+           -   add_plugin_index_handler( const std::function<void()>& 
+           -  func );
+       436 +        signal_connection_ptr
+           +   add_plugin_index_handler( const std::function<void()>& 
+           +  func );
+       437    
+       438          //////////////////// db_witness_schedule.cpp 
+             ////////////////////
+       439    
+
+● Now I need to update database_init.cpp to return signal_connection_ptr:
+
+● Read(libraries/chain/database_init.cpp)
+  ⎿  Read 100 lines
+
+● Let me search for the add_*_handler implementations in database_init.cpp:
+
+● Search(pattern: "boost::signals2::connection database::", path:
+        "libraries/chain/database_init.cpp", output_mode: "content")
+  ⎿  Found 22 lines (ctrl+o to expand)
+
+● Read(libraries/chain/database_init.cpp)
+  ⎿  Read 170 lines
+
+● I see the pattern. The functions return boost::signals2::connection
+  directly from signal.connect(). To return signal_connection_ptr (which is
+  std::unique_ptr<boost::signals2::connection>), I need to wrap the return
+  value.
+
+  Let me also check the connect_signal_impl function:
+
+● Read(libraries/chain/database_init.cpp)
+  ⎿  Read 30 lines
+
+● I need to update the connect_signal_impl template function and all the
+  add_*_handler functions to return signal_connection_ptr. The key is to
+  wrap the boost::signals2::connection in a std::make_unique.
+
+  Let me update the helper function first:
+
+● Update(libraries/chain/database_init.cpp)
+  ⎿  Updated libraries/chain/database_init.cpp with 2 additions and 2      
+     removals
+       416    
+       417    // Local helper function for connecting signal handlers 
+             with benchmarking support
+       418    template <bool IS_PRE_OPERATION, typename TSignal, typename
+              TNotification>
+       419 -  boost::signals2::connection
+           -   connect_signal_impl( TSignal& signal, const TNotification&
+           -   func,
+       419 +  database::signal_connection_ptr
+           +   connect_signal_impl( TSignal& signal, const TNotification&
+           +   func,
+       420      util::advanced_benchmark_dumper& benchmark_dumper,
+       421      const abstract_plugin& plugin, int32_t group, const 
+             std::string& item_name )
+       422    {
+       423      fcall<TNotification> fcall_wrapper( func, 
+             benchmark_dumper, plugin,
+       424        util::advanced_benchmark_dumper::generate_context_desc<
+             IS_PRE_OPERATION>( plugin.get_name() ), item_name );
+       425    
+       426 -    return signal.connect(group, fcall_wrapper);
+       426 +    return std::make_unique<boost::signals2::connection>( 
+           +  signal.connect(group, fcall_wrapper) );
+       427    }
+       428    
+       429    boost::signals2::connection 
+             database::add_pre_apply_operation_handler( const 
+             apply_operation_handler_t& func,
+
+● Now I need to update all the add_*_handler function signatures and their
+  return statements. Let me do them one by one:
+
+● Update(libraries/chain/database_init.cpp)
+  ⎿  Updated libraries/chain/database_init.cpp with 2 additions and 2      
+     removals
+       426      return std::make_unique<boost::signals2::connection>( 
+             signal.connect(group, fcall_wrapper) );
+       427    }
+       428    
+       429 -  boost::signals2::connection
+           -   database::add_pre_apply_operation_handler( const 
+           -  apply_operation_handler_t& func,
+       429 +  database::signal_connection_ptr
+           +   database::add_pre_apply_operation_handler( const 
+           +  apply_operation_handler_t& func,
+       430      const abstract_plugin& plugin, int32_t group )
+       431    {
+       432      std::string context = 
+             util::advanced_benchmark_dumper::generate_context_desc< true
+              >( plugin.get_name() );
+     ...
+       446          _benchmark_dumper.end( context, name );
+       447      };
+       448    
+       449 -    return _my->_pre_apply_operation_signal.connect(group, 
+           -  complex_func);
+       449 +    return std::make_unique<boost::signals2::connection>( 
+           +  _my->_pre_apply_operation_signal.connect(group, 
+           +  complex_func) );
+       450    }
+       451    
+       452    boost::signals2::connection 
+             database::add_post_apply_operation_handler( const 
+             apply_operation_handler_t& func,
+
+● Update(libraries/chain/database_init.cpp)
+  ⎿  Updated libraries/chain/database_init.cpp with 2 additions and 2      
+     removals
+       449      return std::make_unique<boost::signals2::connection>( 
+             _my->_pre_apply_operation_signal.connect(group, 
+             complex_func) );
+       450    }
+       451    
+       452 -  boost::signals2::connection
+           -   database::add_post_apply_operation_handler( const 
+           -  apply_operation_handler_t& func,
+       452 +  database::signal_connection_ptr
+           +   database::add_post_apply_operation_handler( const 
+           +  apply_operation_handler_t& func,
+       453      const abstract_plugin& plugin, int32_t group )
+       454    {
+       455      std::string context = 
+             util::advanced_benchmark_dumper::generate_context_desc< 
+             false >( plugin.get_name() );
+     ...
+       469          _benchmark_dumper.end( context, name );
+       470      };
+       471    
+       472 -    return _my->_post_apply_operation_signal.connect(group, 
+           -  complex_func);
+       472 +    return std::make_unique<boost::signals2::connection>( 
+           +  _my->_post_apply_operation_signal.connect(group, 
+           +  complex_func) );
+       473    }
+       474    
+       475    boost::signals2::connection 
+             database::add_pre_apply_transaction_handler( const 
+             apply_transaction_handler_t& func,
+
+● Update(libraries/chain/database_init.cpp)
+  ⎿  Updated libraries/chain/database_init.cpp with 21 additions and 21    
+     removals
+       472      return std::make_unique<boost::signals2::connection>( 
+             _my->_post_apply_operation_signal.connect(group, 
+             complex_func) );
+       473    }
+       474    
+       475 -  boost::signals2::connection
+           -   database::add_pre_apply_transaction_handler( const 
+           -  apply_transaction_handler_t& func,
+       475 +  database::signal_connection_ptr
+           +   database::add_pre_apply_transaction_handler( const 
+           +  apply_transaction_handler_t& func,
+       476      const abstract_plugin& plugin, int32_t group )
+       477    {
+       478      return connect_signal_impl<true>(_my->_pre_apply_transact
+             ion_signal, func, _benchmark_dumper, plugin, group, 
+             "transaction");
+       479    }
+       480    
+       481 -  boost::signals2::connection
+           -   database::add_post_apply_transaction_handler( const 
+           -  apply_transaction_handler_t& func,
+       481 +  database::signal_connection_ptr
+           +   database::add_post_apply_transaction_handler( const 
+           +  apply_transaction_handler_t& func,
+       482      const abstract_plugin& plugin, int32_t group )
+       483    {
+       484      return connect_signal_impl<false>(_my->_post_apply_transa
+             ction_signal, func, _benchmark_dumper, plugin, group, 
+             "transaction");
+       485    }
+       486    
+       487 -  boost::signals2::connection
+           -   database::add_pre_apply_custom_operation_handler ( const 
+           -  apply_custom_operation_handler_t& func,
+       487 +  database::signal_connection_ptr
+           +   database::add_pre_apply_custom_operation_handler ( const 
+           +  apply_custom_operation_handler_t& func,
+       488      const abstract_plugin& plugin, int32_t group )
+       489    {
+       490      return connect_signal_impl< true 
+             >(_my->_pre_apply_custom_operation_signal, func, 
+             _benchmark_dumper, plugin, group, "custom");
+       491    }
+       492    
+       493 -  boost::signals2::connection
+           -   database::add_post_apply_custom_operation_handler( const 
+           -  apply_custom_operation_handler_t& func,
+       493 +  database::signal_connection_ptr
+           +   database::add_post_apply_custom_operation_handler( const 
+           +  apply_custom_operation_handler_t& func,
+       494      const abstract_plugin& plugin, int32_t group )
+       495    {
+       496      return connect_signal_impl< false 
+             >(_my->_post_apply_custom_operation_signal, func, 
+             _benchmark_dumper, plugin, group, "custom");
+       497    }
+       498    
+       499 -  boost::signals2::connection
+           -   database::add_pre_apply_block_handler( const 
+           -  apply_block_handler_t& func,
+       499 +  database::signal_connection_ptr
+           +   database::add_pre_apply_block_handler( const 
+           +  apply_block_handler_t& func,
+       500      const abstract_plugin& plugin, int32_t group )
+       501    {
+       502      return 
+             connect_signal_impl<true>(_my->_pre_apply_block_signal, 
+             func, _benchmark_dumper, plugin, group, "block");
+       503    }
+       504    
+       505 -  boost::signals2::connection
+           -   database::add_post_apply_block_handler( const 
+           -  apply_block_handler_t& func,
+       505 +  database::signal_connection_ptr
+           +   database::add_post_apply_block_handler( const 
+           +  apply_block_handler_t& func,
+       506      const abstract_plugin& plugin, int32_t group )
+       507    {
+       508      return 
+             connect_signal_impl<false>(_my->_post_apply_block_signal, 
+             func, _benchmark_dumper, plugin, group, "block");
+       509    }
+       510    
+       511 -  boost::signals2::connection
+           -   database::add_fail_apply_block_handler( const 
+           -  apply_block_handler_t& func,
+       511 +  database::signal_connection_ptr
+           +   database::add_fail_apply_block_handler( const 
+           +  apply_block_handler_t& func,
+       512      const abstract_plugin& plugin, int32_t group )
+       513    {
+       514      return 
+             connect_signal_impl<false>(_my->_fail_apply_block_signal, 
+             func, _benchmark_dumper, plugin, group, "failed block");
+       515    }
+       516    
+       517 -  boost::signals2::connection
+           -   database::add_irreversible_block_handler( const 
+           -  irreversible_block_handler_t& func,
+       517 +  database::signal_connection_ptr
+           +   database::add_irreversible_block_handler( const 
+           +  irreversible_block_handler_t& func,
+       518      const abstract_plugin& plugin, int32_t group )
+       519    {
+       520      return 
+             connect_signal_impl<false>(_my->_on_irreversible_block, 
+             func, _benchmark_dumper, plugin, group, "irreversible");
+       521    }
+       522    
+       523 -  boost::signals2::connection
+           -   database::add_switch_fork_handler( const 
+           -  switch_fork_handler_t& func,
+       523 +  database::signal_connection_ptr
+           +   database::add_switch_fork_handler( const 
+           +  switch_fork_handler_t& func,
+       524                                                               
+                        const abstract_plugin& plugin, int32_t group )
+       525    {
+       526      return 
+             connect_signal_impl<false>(_my->_switch_fork_signal, func, 
+             _benchmark_dumper, plugin, group, "switch_fork");
+       527    }
+       528    
+       529 -  boost::signals2::connection
+           -   database::add_pre_reindex_handler(const reindex_handler_t&
+           -   func,
+       529 +  database::signal_connection_ptr
+           +   database::add_pre_reindex_handler(const reindex_handler_t&
+           +   func,
+       530      const abstract_plugin& plugin, int32_t group )
+       531    {
+       532      return 
+             connect_signal_impl<true>(_my->_pre_reindex_signal, func, 
+             _benchmark_dumper, plugin, group, "reindex");
+       533    }
+       534    
+       535 -  boost::signals2::connection
+           -   database::add_post_reindex_handler(const 
+           -  reindex_handler_t& func,
+       535 +  database::signal_connection_ptr
+           +   database::add_post_reindex_handler(const 
+           +  reindex_handler_t& func,
+       536      const abstract_plugin& plugin, int32_t group )
+       537    {
+       538      return 
+             connect_signal_impl<false>(_my->_post_reindex_signal, func, 
+             _benchmark_dumper, plugin, group, "reindex");
+       539    }
+       540    
+       541 -  boost::signals2::connection
+           -   database::add_finish_push_block_handler( const 
+           -  push_block_handler_t& func,
+       541 +  database::signal_connection_ptr
+           +   database::add_finish_push_block_handler( const 
+           +  push_block_handler_t& func,
+       542      const abstract_plugin& plugin, int32_t group )
+       543    {
+       544      return 
+             connect_signal_impl<false>(_my->_finish_push_block_signal, 
+             func, _benchmark_dumper, plugin, group, "block");
+       545    }
+       546    
+       547 -  boost::signals2::connection
+           -   database::add_prepare_snapshot_handler(const 
+           -  prepare_snapshot_handler_t& func, const abstract_plugin& 
+           -  plugin, int32_t group)
+       547 +  database::signal_connection_ptr
+           +   database::add_prepare_snapshot_handler(const 
+           +  prepare_snapshot_handler_t& func, const abstract_plugin& 
+           +  plugin, int32_t group)
+       548    {
+       549      return 
+             connect_signal_impl<true>(_my->_prepare_snapshot_signal, 
+             func, _benchmark_dumper, plugin, group, "prepare_snapshot");
+       550    }
+       551    
+       552 -  boost::signals2::connection
+           -   database::add_snapshot_supplement_handler(const 
+           -  prepare_snapshot_data_supplement_handler_t& func, const 
+           -  abstract_plugin& plugin, int32_t group)
+       552 +  database::signal_connection_ptr
+           +   database::add_snapshot_supplement_handler(const 
+           +  prepare_snapshot_data_supplement_handler_t& func, const 
+           +  abstract_plugin& plugin, int32_t group)
+       553    {
+       554      return connect_signal_impl<true>(_my->_prepare_snapshot_s
+             upplement_signal, func, _benchmark_dumper, plugin, group, 
+             "prepare_snapshot_data_supplement");
+       555    }
+       556    
+       557 -  boost::signals2::connection
+           -   database::add_snapshot_supplement_handler(const 
+           -  load_snapshot_data_supplement_handler_t& func, const 
+           -  abstract_plugin& plugin, int32_t group)
+       557 +  database::signal_connection_ptr
+           +   database::add_snapshot_supplement_handler(const 
+           +  load_snapshot_data_supplement_handler_t& func, const 
+           +  abstract_plugin& plugin, int32_t group)
+       558    {
+       559      return connect_signal_impl<true>(_my->_load_snapshot_supp
+             lement_signal, func, _benchmark_dumper, plugin, group, 
+             "load_snapshot_data_supplement");
+       560    }
+       561    
+       562 -  boost::signals2::connection
+           -   database::add_comment_reward_handler(const 
+           -  comment_reward_notification_handler_t& func, const 
+           -  abstract_plugin& plugin, int32_t group)
+       562 +  database::signal_connection_ptr
+           +   database::add_comment_reward_handler(const 
+           +  comment_reward_notification_handler_t& func, const 
+           +  abstract_plugin& plugin, int32_t group)
+       563    {
+       564      return 
+             connect_signal_impl<true>(_my->_comment_reward_signal, func,
+              _benchmark_dumper, plugin, group, "comment_reward");
+       565    }
+       566    
+       567 -  boost::signals2::connection
+           -   database::add_end_of_syncing_handler(const 
+           -  end_of_syncing_notification_handler_t& func, const 
+           -  abstract_plugin& plugin, int32_t group)
+       567 +  database::signal_connection_ptr
+           +   database::add_end_of_syncing_handler(const 
+           +  end_of_syncing_notification_handler_t& func, const 
+           +  abstract_plugin& plugin, int32_t group)
+       568    {
+       569      return 
+             connect_signal_impl<false>(_my->_end_of_syncing_signal, 
+             func, _benchmark_dumper, plugin, group, "->syncing_end");
+       570    }
+       571    
+       572 -  boost::signals2::connection
+           -   database::add_wipe_handler(const 
+           -  wipe_notification_handler_t& func, const abstract_plugin& 
+           -  plugin, int32_t group)
+       572 +  database::signal_connection_ptr
+           +   database::add_wipe_handler(const 
+           +  wipe_notification_handler_t& func, const abstract_plugin& 
+           +  plugin, int32_t group)
+       573    {
+       574      return connect_signal_impl<false>(_my->_wipe_signal, 
+             func, _benchmark_dumper, plugin, group, "wipe storages");
+       575    }
+       576    
+       577 -  boost::signals2::connection
+           -   database::add_flush_handler( const flush_handler_t& func,
+       577 +  database::signal_connection_ptr
+           +   database::add_flush_handler( const flush_handler_t& func,
+       578      const abstract_plugin& plugin, int32_t group )
+       579    {
+       580      return connect_signal_impl<false>(_my->_flush_signal, 
+             func, _benchmark_dumper, plugin, group, "flush");
+       581    }
+       582    
+       583 -  boost::signals2::connection
+           -   database::add_plugin_index_handler( const 
+           -  std::function<void()>& func )
+       583 +  database::signal_connection_ptr
+           +   database::add_plugin_index_handler( const 
+           +  std::function<void()>& func )
+       584    {
+       585 -    return _my->_plugin_index_signal.connect( func );
+       585 +    return std::make_unique<boost::signals2::connection>( 
+           +  _my->_plugin_index_signal.connect( func ) );
+       586    }
+       587    
+       588    } } // hive::chain
+
+● Now let me update the todos and find the callers that need to be updated:
+
+● Let me try a build first to see what callers need to be updated:
+
+● Bash(ninja -j8 hived 2>&1 | head -300) timeout: 5m 0s
+  ⎿  ninja: error: loading 'build.ninja': No such file or directory
+
+● Bash(cd /storage1/src/hive/build && ninja -j8 hived 2>&1 | head  timeout: 5m 
+      -300)                                                        0s
+  ⎿ [0/1] Re-running CMake...                                              
+    -- CMAKE_C_FLAGS_ASAN value is based on: CMAKE_C_FLAGS_RELWITHDEBINFO a
+    nd points to value: -O2 -g -DNDEBUG
+    … +441 lines (ctrl+o to expand)
+
+
+● Let me wait for the build to continue:
+
+● Bash(ninja -j8 hived 2>&1 | tail -300) timeout: 5m 0s
+  ⎿  -- Adding condenser_api/get_version to test list            
+     -- Adding condenser_api/get_vesting_delegations to test list
+     -- Adding condenser_api/get_volume to test list
+     … +575 lines (ctrl+o to expand)
+
+● I see the problem. The callers are storing boost::signals2::connection
+  objects directly and need to be updated to use signal_connection_ptr. Let
+  me search for all the files that store connections:
+
+● Search(pattern: "boost::signals2::connection\s+_", path: "libraries/plugins")
+  ⎿  Found 14 files (ctrl+o to expand)
+
+● Search(pattern: "boost::signals2::connection\s+_", path: "libraries/plugins",
+        output_mode: "content")
+  ⎿  Found 28 lines (ctrl+o to expand)
+
+● I need to replace boost::signals2::connection with signal_connection_ptr
+  in all of these files. Let me also check if there are others that use
+  db.add_*_handler:
+
+● Search(pattern: "\.add_\w+_handler\(", path: "libraries/plugins")
+  ⎿  Found 18 files (ctrl+o to expand)
+
+● This is a lot of files. The most straightforward approach is to replace
+  boost::signals2::connection with
+  hive::chain::database::signal_connection_ptr in all the plugin files. Let
+  me do this in batches.
+
+● Update(libraries/plugins/block_log_info/block_log_info_plugin.cpp)
+  ⎿  File must be read first
+
+● Read(libraries/plugins/block_log_info/block_log_info_plugin.cpp)
+  ⎿  Read 30 lines
+
+● Update(libraries/plugins/block_log_info/block_log_info_plugin.cpp)
+  ⎿  Updated libraries/plugins/block_log_info/block_log_info_plugin.cpp wit
+      1 addition and 1 removal
+       33    
+       34        database&                     _db;
+       35        block_log_info_plugin&        _self;
+       36 -      boost::signals2::connection   _post_apply_block_conn;
+       36 +      chain::database::signal_connection_ptr   
+          + _post_apply_block_conn;
+       37        int32_t                       print_interval_seconds = 
+            0;
+       38        bool                          print_irreversible = true;
+       39        std::string                   output_name;
+
+● I need to also update the usage of the connection. Since
+  signal_connection_ptr is a unique_ptr, I need to dereference it when
+  disconnecting. Let me check how these connections are used:
+
+● Search(pattern: "_post_apply_block_conn", path:
+        "libraries/plugins/block_log_info/block_log_info_plugin.cpp",
+        output_mode: "content")
+  ⎿  Found 3 lines (ctrl+o to expand)
+
+● The disconnect_signal function already has an overload for
+  signal_connection_ptr that I added earlier. Let me continue updating the
+  other files. Let me read and update each file one by one:
+
+● Read(libraries/plugins/comment_cashout_logging/comment_cashout_logging_plugin.
+      cpp)
+  ⎿  Read 15 lines
+
+● Update(libraries/plugins/comment_cashout_logging/comment_cashout_logging_plugi
+        n.cpp)
+  ⎿  Updated libraries/plugins/comment_cashout_logging/comment_cashout_logg
+     ng_plugin.cpp with 1 addition and 1 removal
+       41          std::string make_file_name(bool &changed);
+       42    
+       43          database&                        _db;
+       44 -        boost::signals2::connection      
+          - _pre_apply_operation_conn;
+       44 +        chain::database::signal_connection_ptr      
+          + _pre_apply_operation_conn;
+       45    
+       46          optional<uint64_t> _starting_block;
+       47          optional<uint64_t> _ending_block;
+
+● Read(libraries/plugins/queen/queen_plugin.cpp)
+  ⎿  Read 15 lines
+
+● Update(libraries/plugins/queen/queen_plugin.cpp)
+  ⎿  Updated libraries/plugins/queen/queen_plugin.cpp with 3 additions and 
+      removals
+       63      fc::microseconds              max_full_block_cycle_time;
+       64      fc::microseconds              total_full_block_cycle_time;
+       65    
+       66 -    boost::signals2::connection   
+          - _post_apply_transaction_conn;
+       67 -    boost::signals2::connection   _finish_push_block_conn;
+       68 -    boost::signals2::connection   _fail_apply_block_conn;
+       66 +    chain::database::signal_connection_ptr   
+          + _post_apply_transaction_conn;
+       67 +    chain::database::signal_connection_ptr   
+          + _finish_push_block_conn;
+       68 +    chain::database::signal_connection_ptr   
+          + _fail_apply_block_conn;
+       69    };
+       70    
+       71    class queen_generate_block_flow_control final : public 
+            generate_block_flow_control
+
+● Read(libraries/plugins/reputation/reputation_plugin.cpp)
+  ⎿  Read 15 lines
+
+● Update(libraries/plugins/reputation/reputation_plugin.cpp)
+  ⎿  Updated libraries/plugins/reputation/reputation_plugin.cpp with 2     
+     additions and 2 removals
+       41    
+       42        chain::database&              _db;
+       43        reputation_plugin&            _self;
+       44 -      boost::signals2::connection   _pre_apply_operation_conn;
+       45 -      boost::signals2::connection   
+          - _post_apply_operation_conn;
+       44 +      chain::database::signal_connection_ptr   
+          + _pre_apply_operation_conn;
+       45 +      chain::database::signal_connection_ptr   
+          + _post_apply_operation_conn;
+       46    };
+       47    
+       48    struct pre_operation_visitor
+
+● Read(libraries/plugins/market_history/market_history_plugin.cpp)
+  ⎿  Read 10 lines
+
+● Update(libraries/plugins/market_history/market_history_plugin.cpp)
+  ⎿  Updated libraries/plugins/market_history/market_history_plugin.cpp wit
+      1 addition and 1 removal
+       38        flat_set<uint32_t>            _tracked_buckets = 
+            flat_set<uint32_t>  { 15, 60, 300, 3600, 86400 };
+       39        int32_t                       
+            _maximum_history_per_bucket_size = 86400 / 15; // smallest 
+            buckets should
+       40          // cover at least 24 hours, otherwise 
+            get_ticker/get_volume api calls won't work properly
+       41 -      boost::signals2::connection   
+          - _post_apply_operation_conn;
+       41 +      chain::database::signal_connection_ptr   
+          + _post_apply_operation_conn;
+       42    };
+       43    
+       44    void market_history_plugin_impl::on_post_apply_operation( 
+            const operation_notification& o )
+
+● Read(libraries/plugins/witness/witness_plugin.cpp)
+  ⎿  Read 15 lines
+
+● Update(libraries/plugins/witness/witness_plugin.cpp)
+  ⎿  Updated libraries/plugins/witness/witness_plugin.cpp with 2 additions 
+     and 2 removals
+       90        plugins::chain::chain_plugin& _chain_plugin;
+       91        chain::database&              _db;
+       92        const chain::block_read_i&    _block_reader;
+       93 -      boost::signals2::connection   _pre_apply_operation_conn;
+       94 -      boost::signals2::connection   _finish_push_block_conn;
+       93 +      chain::database::signal_connection_ptr   
+          + _pre_apply_operation_conn;
+       94 +      chain::database::signal_connection_ptr   
+          + _finish_push_block_conn;
+       95    
+       96        std::shared_ptr< witness::block_producer >              
+                      _block_producer;
+       97        uint32_t _last_fast_confirmation_block_number = 0;
+
+● Read(libraries/plugins/block_data_export/block_data_export_plugin.cpp)
+  ⎿  Read 15 lines
+
+● Update(libraries/plugins/block_data_export/block_data_export_plugin.cpp)
+  ⎿  Updated                                                               
+     libraries/plugins/block_data_export/block_data_export_plugin.cpp with 2
+      additions and 2 removals
+       88    
+       89        database&                     _db;
+       90        block_data_export_plugin&     _self;
+       91 -      boost::signals2::connection   _pre_apply_block_conn;
+       92 -      boost::signals2::connection   _post_apply_block_conn;
+       91 +      chain::database::signal_connection_ptr   
+          + _pre_apply_block_conn;
+       92 +      chain::database::signal_connection_ptr   
+          + _post_apply_block_conn;
+       93        std::shared_ptr< api_export_data_object >
+       94                            _edo;
+       95        std::vector< std::pair<
+
+● Read(libraries/plugins/apis/wallet_bridge_api/wallet_bridge_api.cpp)
+  ⎿  Read 15 lines
+
+● Update(libraries/plugins/apis/wallet_bridge_api/wallet_bridge_api.cpp)
+  ⎿  Updated libraries/plugins/apis/wallet_bridge_api/wallet_bridge_api.cpp
+     with 1 addition and 1 removal
+
+       79        p2p::p2p_plugin*                                        
+                    _p2p = nullptr;
+       80        map< protocol::transaction_id_type, 
+            confirmation_callback >     _callbacks;
+       81        map< time_point_sec, vector< 
+            protocol::transaction_id_type > >  _callback_expirations;
+       82 -      boost::signals2::connection                             
+          -         _on_post_apply_block_conn;
+       82 +      chain::database::signal_connection_ptr                  
+          +         _on_post_apply_block_conn;
+       83        boost::mutex                                            
+                    _mtx;
+       84    
+       85      private:
+
+● Read(libraries/plugins/colony/colony_plugin.cpp)
+  ⎿  Read 15 lines
+
+● Update(libraries/plugins/colony/colony_plugin.cpp)
+  ⎿  Updated libraries/plugins/colony/colony_plugin.cpp with 3 additions an
+      3 removals
+       154        colony_plugin&                _self;
+       155        appbase::application&         theApp;
+       156    
+       157 -      boost::signals2::connection   _end_of_sync_conn;
+       158 -      boost::signals2::connection   
+           - _post_apply_transaction_conn;
+       159 -      boost::signals2::connection   _post_apply_block_conn;
+       157 +      chain::database::signal_connection_ptr   
+           + _end_of_sync_conn;
+       158 +      chain::database::signal_connection_ptr   
+           + _post_apply_transaction_conn;
+       159 +      chain::database::signal_connection_ptr   
+           + _post_apply_block_conn;
+       160    
+       161        std::vector< fc::ecc::private_key >                  
+             _sign_with;
+       162        std::array< operation_params, NUMBER_OF_OPERATIONS > 
+             _params;
+
+● Read(libraries/plugins/account_by_key/account_by_key_plugin.cpp)
+  ⎿  Read 15 lines
+
+● Update(libraries/plugins/account_by_key/account_by_key_plugin.cpp)
+  ⎿  Updated libraries/plugins/account_by_key/account_by_key_plugin.cpp wit
+      2 additions and 2 removals
+       37        flat_set< public_key_type >   cached_keys;
+       38        database&                     _db;
+       39        account_by_key_plugin&        _self;
+       40 -      boost::signals2::connection   _pre_apply_operation_conn;
+       41 -      boost::signals2::connection   
+          - _post_apply_operation_conn;
+       40 +      chain::database::signal_connection_ptr   
+          + _pre_apply_operation_conn;
+       41 +      chain::database::signal_connection_ptr   
+          + _post_apply_operation_conn;
+       42    };
+       43    
+       44    struct pre_operation_visitor
+
+● Read(libraries/plugins/debug_node/debug_node_plugin.cpp)
+  ⎿  Read 15 lines
+
+● Update(libraries/plugins/debug_node/debug_node_plugin.cpp)
+  ⎿  Updated libraries/plugins/debug_node/debug_node_plugin.cpp with 2     
+     additions and 2 removals
+       66        current_debug_update_transactions         
+            _current_debug_update_txs;
+       67        bool                                      
+            _force_new_artificial_transaction_for_debug_update = true;
+       68    
+       69 -      boost::signals2::connection               
+          - _pre_apply_transaction_conn;
+       70 -      boost::signals2::connection               
+          - _post_apply_block_conn;
+       69 +      chain::database::signal_connection_ptr    
+          + _pre_apply_transaction_conn;
+       70 +      chain::database::signal_connection_ptr    
+          + _post_apply_block_conn;
+       71    
+       72        appbase::application&                     theApp;
+       73    };
+
+● Read(libraries/plugins/stats_export/stats_export_plugin.cpp)
+  ⎿  Read 15 lines
+
+● Update(libraries/plugins/stats_export/stats_export_plugin.cpp)
+  ⎿  Updated libraries/plugins/stats_export/stats_export_plugin.cpp with 1 
+     addition and 1 removal
+       76    
+       77        database&                     _db;
+       78        stats_export_plugin&          _self;
+       79 -      boost::signals2::connection   _post_apply_block_conn;
+       79 +      chain::database::signal_connection_ptr   
+          + _post_apply_block_conn;
+       80    
+       81        block_data_export_plugin&     _export_plugin;
+       82    };
+
+● Read(libraries/plugins/account_history_rocksdb/account_history_rocksdb_plugin.
+      cpp)
+  ⎿  Read 20 lines
+
+● Update(libraries/plugins/account_history_rocksdb/account_history_rocksdb_plugi
+        n.cpp)
+  ⎿  Updated libraries/plugins/account_history_rocksdb/account_history_rock
+     db_plugin.cpp with 6 additions and 6 removals
+       339      bfs::path                        _storagePath;
+       340      const hive::chain::block_read_i& _block_reader;
+       341    
+       342 -    boost::signals2::connection      
+           - _on_pre_apply_operation_con;
+       343 -    boost::signals2::connection      
+           - _on_irreversible_block_conn;
+       344 -    boost::signals2::connection      
+           - _on_post_apply_block_conn;
+       345 -    boost::signals2::connection      
+           - _on_fail_apply_block_conn;
+       346 -    boost::signals2::connection      _on_wipe_conn;
+       347 -    boost::signals2::connection      _on_flush_conn;
+       342 +    chain::database::signal_connection_ptr      
+           + _on_pre_apply_operation_con;
+       343 +    chain::database::signal_connection_ptr      
+           + _on_irreversible_block_conn;
+       344 +    chain::database::signal_connection_ptr      
+           + _on_post_apply_block_conn;
+       345 +    chain::database::signal_connection_ptr      
+           + _on_fail_apply_block_conn;
+       346 +    chain::database::signal_connection_ptr      
+           + _on_wipe_conn;
+       347 +    chain::database::signal_connection_ptr      
+           + _on_flush_conn;
+       348    
+       349      /// Helper member to be able to detect another incomming 
+             tx and increment tx-counter.
+       350      transaction_id_type              _lastTx;
+
+● Read(libraries/plugins/apis/condenser_api/condenser_api.cpp)
+  ⎿  Read 15 lines
+
+● Update(libraries/plugins/apis/condenser_api/condenser_api.cpp)
+  ⎿  Updated libraries/plugins/apis/condenser_api/condenser_api.cpp with 1 
+     addition and 1 removal
+       200          std::shared_ptr< rc::rc_api >                        
+                          _rc_api;
+       201          map< transaction_id_type, confirmation_callback >    
+                          _callbacks;
+       202          map< time_point_sec, vector< transaction_id_type > > 
+                          _callback_expirations;
+       203 -        boost::signals2::connection                          
+           -              _on_post_apply_block_conn;
+       203 +        chain::database::signal_connection_ptr               
+           +              _on_post_apply_block_conn;
+       204    
+       205          boost::mutex                                         
+                          _mtx;
+       206      };
+
+● Now let me check the remaining files that call add_*_handler but might not
+   have connection members that need updating (chain_plugin.cpp,
+  transaction_status_plugin.cpp, state_snapshot_plugin.cpp,
+  app_status_api.cpp):
+
+● Search(pattern: "boost::signals2::connection", path:
+        "libraries/plugins/chain/chain_plugin.cpp", output_mode: "content")
+  ⎿  Found 2 lines (ctrl+o to expand)
+
+● Read(libraries/plugins/chain/chain_plugin.cpp)
+  ⎿  Read 10 lines
+
+● Read(libraries/plugins/chain/chain_plugin.cpp)
+  ⎿  Read 10 lines
+
+● Update(libraries/plugins/chain/chain_plugin.cpp)
+  ⎿  Updated libraries/plugins/chain/chain_plugin.cpp with 1 addition and 1
+     removal
+
+       223        hive::chain::open_args              db_open_args;
+       224        block_log_open_args                 bl_open_args;
+       225        get_stat_details_t                  get_stat_details;
+       226 -      boost::signals2::connection         
+           - dumper_post_apply_block;
+       226 +      chain::database::signal_connection_ptr  
+           + dumper_post_apply_block;
+       227    
+       228        state_snapshot_provider*            snapshot_provider =
+              nullptr;
+       229        bool                                is_p2p_enabled = 
+             true;
+
+● Update(libraries/plugins/chain/chain_plugin.cpp)
+  ⎿  Updated libraries/plugins/chain/chain_plugin.cpp with 1 addition and 1
+     removal
+
+       255    
+       256        class write_request_visitor;
+       257    
+       258 -      boost::signals2::connection                 
+           - chain_sync_con;
+       258 +      chain::database::signal_connection_ptr      
+           + chain_sync_con;
+       259        hive::plugins::webserver::webserver_plugin& webserver;
+       260    
+       261        appbase::application& theApp;
+
+● Search(pattern: "boost::signals2::connection", path:
+        "libraries/plugins/transaction_status/transaction_status_plugin.cpp",
+        output_mode: "content")
+  ⎿  Found 3 lines (ctrl+o to expand)
+
+● Read(libraries/plugins/transaction_status/transaction_status_plugin.cpp)
+  ⎿  Read 15 lines
+
+● Update(libraries/plugins/transaction_status/transaction_status_plugin.cpp)
+  ⎿  Updated                                                               
+     libraries/plugins/transaction_status/transaction_status_plugin.cpp with
+      3 additions and 3 removals
+       55      uint32_t                      actual_block_depth = 0;     
+               //!< Calculated block-depth
+       56      fc::time_point_sec            
+            estimated_starting_timestamp;
+       57      bool                          tracking = false;
+       58 -    boost::signals2::connection
+          -     post_apply_transaction_connection;
+       59 -    boost::signals2::connection   pre_apply_block_connection;
+       60 -    boost::signals2::connection   post_apply_block_connection;
+       58 +    chain::database::signal_connection_ptr
+          +     post_apply_transaction_connection;
+       59 +    chain::database::signal_connection_ptr   
+          + pre_apply_block_connection;
+       60 +    chain::database::signal_connection_ptr   
+          + post_apply_block_connection;
+       61      fc::time_point_sec            
+            estimate_starting_timestamp();
+       62    };
+       63    
+
+● Search(pattern: "boost::signals2::connection", path:
+        "libraries/plugins/state_snapshot/state_snapshot_plugin.cpp",
+        output_mode: "content")
+  ⎿  Found 0 lines 
+
+● Search(pattern: "boost::signals2::connection", path:
+        "libraries/plugins/apis/app_status_api/app_status_api.cpp", output_mode:
+         "content")
+  ⎿  Found 0 lines 
+
+● Good, those files don't have connection members. Now let me build to
+  verify:
+
+● Bash(ninja -j8 hived 2>&1 | tail -200) timeout: 5m 0s
+  ⎿ [1/90] Performing build step for 'project_secp256k1'                   
+    make  all-am
+    make[1]: Entering directory '/storage1/src/hive/build/libraries/fc/vend
+    … +253 lines (ctrl+o to expand)
+
+
+● There are a few more places where the code is directly using the
+  connection methods. I need to fix chain_plugin.cpp. Let me check these
+  locations:
+
+● Read(libraries/plugins/chain/chain_plugin.cpp)
+  ⎿  Read 15 lines
+
+● I need to use the disconnect_signal helper function with the
+  signal_connection_ptr:
+
+● Update(libraries/plugins/chain/chain_plugin.cpp)
+  ⎿  Updated libraries/plugins/chain/chain_plugin.cpp with 1 addition and 2
+     removals
+
+       88    
+       89          stop_write_processing();
+       90    
+       91 -        if( chain_sync_con.connected() )
+       92 -          chain_sync_con.disconnect();
+       91 +        hive::utilities::disconnect_signal( chain_sync_con );
+       92        }
+       93    
+       94        void register_snapshot_provider(state_snapshot_provider&
+             provider)
+
+● Now let me check the second error at line 1351:
+
+● Read(libraries/plugins/chain/chain_plugin.cpp)
+  ⎿  Read 15 lines
+
+● The on_sync.connect returns boost::signals2::connection directly. This is
+  not a database signal, so I need to wrap it in make_unique:
+
+● Update(libraries/plugins/chain/chain_plugin.cpp)
+  ⎿  Updated libraries/plugins/chain/chain_plugin.cpp with 2 additions and 
+      removals
+       1344      if( !started )
+       1345      {
+       1346        ilog( "Waiting for chain plugin to start" );
+       1347 -      chain_sync_con = on_sync.connect( 0, [this]()
+       1347 +      chain_sync_con = 
+            +  std::make_unique<boost::signals2::connection>( 
+            +  on_sync.connect( 0, [this]()
+       1348        {
+       1349          webserver.start_webserver();
+       1350 -      });
+       1350 +      }) );
+       1351      }
+       1352      else
+       1353      {
+
+● Now let me rebuild:
+
+● Bash(ninja -j8 hived 2>&1 | tail -150) timeout: 5m 0s
+  ⎿ [1/50] Performing build step for 'project_secp256k1'                   
+    make  all-am
+    make[1]: Entering directory '/storage1/src/hive/build/libraries/fc/vend
+    … +131 lines (ctrl+o to expand)
+
+
+● The build succeeded. Let me update the todo list and commit the changes:
+
+● Bash(cd /storage1/src/hive && git status)
+  ⎿  On branch optimize-block-api-compilation                    
+     Changes not staged for commit:
+       (use "git add <file>..." to update what will be committed)
+     … +26 lines (ctrl+o to expand)
+
+● Bash(git diff --stat)
+  ⎿  libraries/chain/database_init.cpp                  | 54 +++++++++++---
+    --------
+     libraries/chain/include/hive/chain/database.hpp    | 48 ++++++++++----
+    … +18 lines (ctrl+o to expand)
+
+
+
+● Bash(git add libraries/chain/database_init.cpp
+      libraries/chain/include/hive/chain/database.hpp
+      libraries/plugins/account_by_key/account_by_key_plugin.cpp libraries/p…)
+  ⎿ [optimize-block-api-compilation e3a1ae581] Change add_*_handler methods
+     to return signal_connection_ptr
+     18 files changed, 88 insertions(+), 87 deletions(-)
+
+
+● Successfully changed all database class methods returning
+  boost::signals2::connection to return signal_connection_ptr instead. The
+  changes include:
+
+  1. database.hpp: Added signal_connection_ptr type alias and changed all
+  add_*_handler method return types (22 methods total)
+  2. database_init.cpp: Updated all add_*_handler implementations and the
+  connect_signal_impl helper function to return signal_connection_ptr by
+  wrapping connections in std::make_unique
+  3. Plugin files updated (16 files):
+    - account_by_key_plugin.cpp
+    - account_history_rocksdb_plugin.cpp
+    - condenser_api.cpp
+    - wallet_bridge_api.cpp
+    - block_data_export_plugin.cpp
+    - block_log_info_plugin.cpp
+    - chain_plugin.cpp
+    - colony_plugin.cpp
+    - comment_cashout_logging_plugin.cpp
+    - debug_node_plugin.cpp
+    - market_history_plugin.cpp
+    - queen_plugin.cpp
+    - reputation_plugin.cpp
+    - stats_export_plugin.cpp
+    - transaction_status_plugin.cpp
+    - witness_plugin.cpp
+
+  The commit has been created as e3a1ae581.
+
+
+

@@ -1,6 +1,7 @@
 #include <hive/chain/hive_fwd.hpp>
 
 #include <hive/chain/database.hpp>
+#include <hive/chain/notifications.hpp>
 #include <hive/chain/hive_evaluator.hpp>
 #include <hive/chain/evaluator_registry.hpp>
 #include <hive/chain/custom_operation_interpreter.hpp>

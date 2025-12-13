@@ -6,6 +6,7 @@
 #include <hive/plugins/chain/chain_plugin.hpp>
 
 #include <hive/chain/database.hpp>
+#include <hive/chain/notifications.hpp>
 #include <hive/chain/database_exceptions.hpp>
 #include <hive/chain/index.hpp>
 #include <hive/chain/account_object.hpp>

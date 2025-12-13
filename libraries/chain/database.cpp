@@ -6,6 +6,7 @@
 #include <hive/protocol/hbd_interest.hpp>
 
 #include <hive/chain/external_storage/comments_handler.hpp>
+#include <hive/chain/notifications.hpp>
 
 #include <hive/chain/account_object_multiindex.hpp>
 #include <hive/chain/block_summary_object_multiindex.hpp>
@@ -757,6 +758,18 @@ void database::clear_pending()
     _pending_tx_custom_op_count.clear();
   }
   FC_CAPTURE_AND_RETHROW()
+}
+
+operation_notification database::create_operation_notification( const operation& op )const
+{
+  operation_notification note(op);
+  note.trx_id       = _current_trx_id;
+  note.block        = _current_block_num;
+  note.timestamp    = get_current_timestamp();
+  note.trx_in_block = _current_trx_in_block;
+  note.op_in_trx    = _current_op_in_trx;
+  note.virtual_op   = hive::protocol::is_virtual_operation(op);
+  return note;
 }
 
 void database::push_virtual_operation( const operation& op )
