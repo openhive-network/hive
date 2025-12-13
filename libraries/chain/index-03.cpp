@@ -525,6 +525,39 @@ void database::process_comment_cashout()
   }
 }
 
+void database::apply_hardfork_12_comment_cashout_fix()
+{
+  const auto& comment_idx = get_index< comment_cashout_index >().indices();
+
+  for( auto itr = comment_idx.begin(); itr != comment_idx.end(); ++itr )
+  {
+    // At the hardfork time, all new posts with no votes get their cashout time set to +12 hrs from head block time.
+    // All posts with a payout get their cashout time set to +30 days. This hardfork takes place within 30 days
+    // initial payout so we don't have to handle the case of posts that should be frozen that aren't
+    const comment_object& comment = get_comment( *itr );
+    const comment_cashout_ex_object* c_ex = find_comment_cashout_ex( comment );
+    if( comment.is_root() )
+    {
+      // Post has not been paid out and has no votes (cashout_time == 0 === net_rshares == 0, under current semantics)
+      if( !c_ex->was_paid() && itr->get_cashout_time() == fc::time_point_sec::maximum() )
+      {
+        modify( *itr, [&]( comment_cashout_object & c )
+        {
+          c.set_cashout_time( head_block_time() + HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF17 );
+        });
+      }
+      // Has been paid out, needs to be on second cashout window
+      else if( c_ex->was_paid() )
+      {
+        modify( *itr, [&]( comment_cashout_object& c )
+        {
+          c.set_cashout_time( c_ex->get_last_payout() + HIVE_SECOND_CASHOUT_WINDOW );
+        });
+      }
+    }
+  }
+}
+
 void database::perform_vesting_share_split( uint32_t magnitude )
 {
   try
