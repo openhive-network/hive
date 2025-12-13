@@ -5,6 +5,8 @@
 #include <hive/protocol/transaction_util.hpp>
 #include <hive/protocol/hbd_interest.hpp>
 
+#include <hive/chain/external_storage/comments_handler.hpp>
+
 #include <hive/chain/account_object_multiindex.hpp>
 #include <hive/chain/block_summary_object_multiindex.hpp>
 #include <hive/chain/global_property_object_multiindex.hpp>
