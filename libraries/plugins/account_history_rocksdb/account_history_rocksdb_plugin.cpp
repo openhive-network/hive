@@ -339,12 +339,12 @@ private:
   bfs::path                        _storagePath;
   const hive::chain::block_read_i& _block_reader;
 
-  boost::signals2::connection      _on_pre_apply_operation_con;
-  boost::signals2::connection      _on_irreversible_block_conn;
-  boost::signals2::connection      _on_post_apply_block_conn;
-  boost::signals2::connection      _on_fail_apply_block_conn;
-  boost::signals2::connection      _on_wipe_conn;
-  boost::signals2::connection      _on_flush_conn;
+  chain::database::signal_connection_ptr      _on_pre_apply_operation_con;
+  chain::database::signal_connection_ptr      _on_irreversible_block_conn;
+  chain::database::signal_connection_ptr      _on_post_apply_block_conn;
+  chain::database::signal_connection_ptr      _on_fail_apply_block_conn;
+  chain::database::signal_connection_ptr      _on_wipe_conn;
+  chain::database::signal_connection_ptr      _on_flush_conn;
 
   /// Helper member to be able to detect another incomming tx and increment tx-counter.
   transaction_id_type              _lastTx;

@@ -390,22 +390,24 @@ namespace chain {
 
     public:
 
-      boost::signals2::connection add_pre_apply_operation_handler       ( const apply_operation_handler_t&           func, const abstract_plugin& plugin, int32_t group = -1 );
-      boost::signals2::connection add_post_apply_operation_handler      ( const apply_operation_handler_t&           func, const abstract_plugin& plugin, int32_t group = -1 );
-      boost::signals2::connection add_pre_apply_transaction_handler     ( const apply_transaction_handler_t&         func, const abstract_plugin& plugin, int32_t group = -1 );
-      boost::signals2::connection add_post_apply_transaction_handler    ( const apply_transaction_handler_t&         func, const abstract_plugin& plugin, int32_t group = -1 );
-      boost::signals2::connection add_pre_apply_block_handler           ( const apply_block_handler_t&               func, const abstract_plugin& plugin, int32_t group = -1 );
-      boost::signals2::connection add_post_apply_block_handler          ( const apply_block_handler_t&               func, const abstract_plugin& plugin, int32_t group = -1 );
-      boost::signals2::connection add_fail_apply_block_handler          ( const apply_block_handler_t&               func, const abstract_plugin& plugin, int32_t group = -1 );
-      boost::signals2::connection add_irreversible_block_handler        ( const irreversible_block_handler_t&        func, const abstract_plugin& plugin, int32_t group = -1 );
-      boost::signals2::connection add_switch_fork_handler               ( const switch_fork_handler_t&        func, const abstract_plugin& plugin, int32_t group = -1 );
-      boost::signals2::connection add_pre_reindex_handler               ( const reindex_handler_t&                   func, const abstract_plugin& plugin, int32_t group = -1 );
-      boost::signals2::connection add_post_reindex_handler              ( const reindex_handler_t&                   func, const abstract_plugin& plugin, int32_t group = -1 );
-      boost::signals2::connection add_pre_apply_custom_operation_handler ( const apply_custom_operation_handler_t&    func, const abstract_plugin& plugin, int32_t group = -1 );
-      boost::signals2::connection add_post_apply_custom_operation_handler( const apply_custom_operation_handler_t&    func, const abstract_plugin& plugin, int32_t group = -1 );
-      boost::signals2::connection add_finish_push_block_handler          ( const push_block_handler_t&                func, const abstract_plugin& plugin, int32_t group = -1 );
+      using signal_connection_ptr = hive::utilities::signal_connection_ptr;
 
-      boost::signals2::connection add_prepare_snapshot_handler          (const prepare_snapshot_handler_t& func, const abstract_plugin& plugin, int32_t group = -1);
+      signal_connection_ptr add_pre_apply_operation_handler       ( const apply_operation_handler_t&           func, const abstract_plugin& plugin, int32_t group = -1 );
+      signal_connection_ptr add_post_apply_operation_handler      ( const apply_operation_handler_t&           func, const abstract_plugin& plugin, int32_t group = -1 );
+      signal_connection_ptr add_pre_apply_transaction_handler     ( const apply_transaction_handler_t&         func, const abstract_plugin& plugin, int32_t group = -1 );
+      signal_connection_ptr add_post_apply_transaction_handler    ( const apply_transaction_handler_t&         func, const abstract_plugin& plugin, int32_t group = -1 );
+      signal_connection_ptr add_pre_apply_block_handler           ( const apply_block_handler_t&               func, const abstract_plugin& plugin, int32_t group = -1 );
+      signal_connection_ptr add_post_apply_block_handler          ( const apply_block_handler_t&               func, const abstract_plugin& plugin, int32_t group = -1 );
+      signal_connection_ptr add_fail_apply_block_handler          ( const apply_block_handler_t&               func, const abstract_plugin& plugin, int32_t group = -1 );
+      signal_connection_ptr add_irreversible_block_handler        ( const irreversible_block_handler_t&        func, const abstract_plugin& plugin, int32_t group = -1 );
+      signal_connection_ptr add_switch_fork_handler               ( const switch_fork_handler_t&        func, const abstract_plugin& plugin, int32_t group = -1 );
+      signal_connection_ptr add_pre_reindex_handler               ( const reindex_handler_t&                   func, const abstract_plugin& plugin, int32_t group = -1 );
+      signal_connection_ptr add_post_reindex_handler              ( const reindex_handler_t&                   func, const abstract_plugin& plugin, int32_t group = -1 );
+      signal_connection_ptr add_pre_apply_custom_operation_handler ( const apply_custom_operation_handler_t&    func, const abstract_plugin& plugin, int32_t group = -1 );
+      signal_connection_ptr add_post_apply_custom_operation_handler( const apply_custom_operation_handler_t&    func, const abstract_plugin& plugin, int32_t group = -1 );
+      signal_connection_ptr add_finish_push_block_handler          ( const push_block_handler_t&                func, const abstract_plugin& plugin, int32_t group = -1 );
+
+      signal_connection_ptr add_prepare_snapshot_handler          (const prepare_snapshot_handler_t& func, const abstract_plugin& plugin, int32_t group = -1);
       /// <summary>
       ///  All plugins storing data in different way than chainbase::generic_index (wrapping
       ///  a multi_index) should register to this handler to add its own data to the prepared snapshot.
@@ -414,7 +416,7 @@ namespace chain {
       /// <param name="plugin">the plugin be registering its handler</param>
       /// <param name="group"></param>
       /// <returns></returns>
-      boost::signals2::connection add_snapshot_supplement_handler       (const prepare_snapshot_data_supplement_handler_t& func, const abstract_plugin& plugin, int32_t group = -1);
+      signal_connection_ptr add_snapshot_supplement_handler       (const prepare_snapshot_data_supplement_handler_t& func, const abstract_plugin& plugin, int32_t group = -1);
       /// <summary>
       ///  All plugins storing data in different way than chainbase::generic_index (wrapping
       ///  a multi_index) should register to this handler to load its own data from the loaded snapshot.
@@ -423,17 +425,17 @@ namespace chain {
       /// <param name="plugin"></param>
       /// <param name="group"></param>
       /// <returns></returns>
-      boost::signals2::connection add_snapshot_supplement_handler       (const load_snapshot_data_supplement_handler_t& func, const abstract_plugin& plugin, int32_t group = -1);
+      signal_connection_ptr add_snapshot_supplement_handler       (const load_snapshot_data_supplement_handler_t& func, const abstract_plugin& plugin, int32_t group = -1);
 
-      boost::signals2::connection add_comment_reward_handler            (const comment_reward_notification_handler_t& func, const abstract_plugin& plugin, int32_t group = -1);
+      signal_connection_ptr add_comment_reward_handler            (const comment_reward_notification_handler_t& func, const abstract_plugin& plugin, int32_t group = -1);
 
-      boost::signals2::connection add_end_of_syncing_handler            (const end_of_syncing_notification_handler_t& func, const abstract_plugin& plugin, int32_t group = -1);
+      signal_connection_ptr add_end_of_syncing_handler            (const end_of_syncing_notification_handler_t& func, const abstract_plugin& plugin, int32_t group = -1);
 
-      boost::signals2::connection add_wipe_handler                      (const wipe_notification_handler_t& func, const abstract_plugin& plugin, int32_t group = -1);
-      boost::signals2::connection add_flush_handler                     ( const flush_handler_t& func, const abstract_plugin& plugin, int32_t group = -1 );
+      signal_connection_ptr add_wipe_handler                      (const wipe_notification_handler_t& func, const abstract_plugin& plugin, int32_t group = -1);
+      signal_connection_ptr add_flush_handler                     ( const flush_handler_t& func, const abstract_plugin& plugin, int32_t group = -1 );
 
       /// Register a callback for plugin index initialization (called during initialize_indexes)
-      boost::signals2::connection add_plugin_index_handler( const std::function<void()>& func );
+      signal_connection_ptr add_plugin_index_handler( const std::function<void()>& func );
 
       //////////////////// db_witness_schedule.cpp ////////////////////
 

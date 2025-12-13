@@ -63,9 +63,9 @@ public:
   fc::microseconds              max_full_block_cycle_time;
   fc::microseconds              total_full_block_cycle_time;
 
-  boost::signals2::connection   _post_apply_transaction_conn;
-  boost::signals2::connection   _finish_push_block_conn;
-  boost::signals2::connection   _fail_apply_block_conn;
+  chain::database::signal_connection_ptr   _post_apply_transaction_conn;
+  chain::database::signal_connection_ptr   _finish_push_block_conn;
+  chain::database::signal_connection_ptr   _fail_apply_block_conn;
 };
 
 class queen_generate_block_flow_control final : public generate_block_flow_control
