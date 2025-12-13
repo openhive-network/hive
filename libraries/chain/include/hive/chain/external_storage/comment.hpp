@@ -1,10 +1,9 @@
-
 #pragma once
-
-#include <hive/chain/hive_object_types.hpp>
-#include <hive/chain/comment_object.hpp>
+#include <memory>
 
 namespace hive { namespace chain {
+
+class comment_object;
 
 class comment
 {
@@ -12,7 +11,7 @@ class comment
   std::shared_ptr<comment_object> external;
 
 public:
-  comment(){}
+  comment() = default;
   comment( const comment_object* from_shm ) : ptr( from_shm ) {}
   comment( const std::shared_ptr<comment_object>& from_archive )
     : ptr( from_archive.get() ), external( from_archive ) {}
