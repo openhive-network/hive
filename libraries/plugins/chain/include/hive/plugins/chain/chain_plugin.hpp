@@ -2,6 +2,7 @@
 #include <hive/chain/hive_fwd.hpp>
 #include <appbase/application.hpp>
 #include <hive/chain/database.hpp>
+#include <hive/chain/block_read_interface.hpp>
 #include <hive/chain/full_block.hpp>
 #include <hive/chain/block_flow_control.hpp>
 #include <hive/chain/transaction_flow_control.hpp>
