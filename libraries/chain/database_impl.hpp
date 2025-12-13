@@ -6,6 +6,8 @@
 
 #include <hive/protocol/types.hpp>
 
+#include <hive/utilities/signal.hpp>
+
 #include <atomic>
 #include <map>
 #include <memory>
@@ -34,6 +36,98 @@ class database_impl
     // will happen if we get mismatched values
     std::atomic<uint32_t>                             _last_pushed_block_number = {0};
     std::atomic<uint32_t>                             _last_pushed_block_time = {0}; // the value from a time_point_sec
+
+    // Signals for plugin notifications
+    fc::signal<void(const operation_notification&)>       _pre_apply_operation_signal;
+    /**
+      *  This signal is emitted for plugins to process every operation after it has been fully applied.
+      */
+    fc::signal<void(const operation_notification&)>       _post_apply_operation_signal;
+
+    fc::signal<void(const custom_operation_notification&)> _pre_apply_custom_operation_signal;
+    fc::signal<void(const custom_operation_notification&)> _post_apply_custom_operation_signal;
+
+    /**
+      *  This signal is emitted when we start processing a block.
+      *
+      *  You may not yield from this callback because the blockchain is holding
+      *  the write lock and may be in an "inconstant state" until after it is
+      *  released.
+      */
+    fc::signal<void(const block_notification&)>           _pre_apply_block_signal;
+
+    fc::signal<void(uint32_t)>                            _on_irreversible_block;
+
+    fc::signal<void(uint32_t)>                            _switch_fork_signal;
+
+    /**
+      *  This signal is emitted after all operations and virtual operation for a
+      *  block have been applied but before the get_applied_operations() are cleared.
+      *
+      *  You may not yield from this callback because the blockchain is holding
+      *  the write lock and may be in an "inconstant state" until after it is
+      *  released.
+      */
+    fc::signal<void(const block_notification&)>           _post_apply_block_signal;
+
+    /**
+      *  This signal is emitted when any problems occured during block processing
+      */
+    fc::signal<void(const block_notification&)>           _fail_apply_block_signal;
+
+    /**
+      * This signal is emitted any time a new transaction is about to be applied
+      * to the chain state.
+      */
+    fc::signal<void(const transaction_notification&)>     _pre_apply_transaction_signal;
+
+    /**
+      * This signal is emitted any time a new transaction has been applied to the
+      * chain state.
+      */
+    fc::signal<void(const transaction_notification&)>     _post_apply_transaction_signal;
+
+    /**
+      * Emitted when reindexing starts
+      */
+    fc::signal<void(const reindex_notification&)>         _pre_reindex_signal;
+
+    /**
+      * Emitted when reindexing finishes
+      */
+    fc::signal<void(const reindex_notification&)>         _post_reindex_signal;
+
+    fc::signal<void(const database&, const database::abstract_index_cntr_t&)> _prepare_snapshot_signal;
+
+    /// Emitted by snapshot plugin implementation to allow all registered plugins to include theirs custom-stored data in the snapshot
+    fc::signal<void(const prepare_snapshot_supplement_notification&)> _prepare_snapshot_supplement_signal;
+    /// Emitted by snapshot plugin implementation to allow all registered plugins to load theirs custom-stored data from the snapshot
+    fc::signal<void(const load_snapshot_supplement_notification&)> _load_snapshot_supplement_signal;
+
+    /**
+      * Internal signal to execute deferred registration of plugin indexes.
+      */
+    fc::signal<void()>                                    _plugin_index_signal;
+
+    /// Emitted when rewards for author and curators are paid out.
+    fc::signal<void(const comment_reward_notification&)>  _comment_reward_signal;
+
+    fc::signal<void()>                                    _end_of_syncing_signal;
+
+    /**
+      *  This signal is emitted when pushing block is completely finished
+      */
+    fc::signal<void(const block_notification&)>           _finish_push_block_signal;
+
+    /**
+      *  This signal is emitted when all storages have to be wiped
+      */
+    fc::signal<void()>                                    _wipe_signal;
+
+    /**
+      *  This signal is emitted when storages have to be flushed
+      */
+    fc::signal<void()>                                    _flush_signal;
 };
 
 } } // hive::chain

@@ -385,6 +385,8 @@ namespace chain {
       void notify_comment_reward(const comment_reward_notification& note);
       void notify_end_of_syncing();
       void notify_wipe();
+      void notify_pre_reindex(const reindex_notification& note);
+      void notify_post_reindex(const reindex_notification& note);
 
     public:
 
@@ -429,6 +431,10 @@ namespace chain {
 
       boost::signals2::connection add_wipe_handler                      (const wipe_notification_handler_t& func, const abstract_plugin& plugin, int32_t group = -1);
       boost::signals2::connection add_flush_handler                     ( const flush_handler_t& func, const abstract_plugin& plugin, int32_t group = -1 );
+
+      /// Register a callback for plugin index initialization (called during initialize_indexes)
+      boost::signals2::connection add_plugin_index_handler( const std::function<void()>& func );
+
       //////////////////// db_witness_schedule.cpp ////////////////////
 
       void flush_to_all_storages();
@@ -795,9 +801,6 @@ namespace chain {
 
       block_write_i*                _block_writer;
 
-      // this function needs access to _plugin_index_signal
-      template< typename MultiIndexType >
-      friend void add_plugin_index( database& db );
 
       transaction_status            _current_tx_status = TX_STATUS_NONE;
       transaction_id_type           _current_trx_id;
@@ -852,112 +855,6 @@ namespace chain {
       std::string                   _json_schema;
 
       util::advanced_benchmark_dumper  _benchmark_dumper;
-
-      fc::signal<void(const operation_notification&)>       _pre_apply_operation_signal;
-      /**
-        *  This signal is emitted for plugins to process every operation after it has been fully applied.
-        */
-      fc::signal<void(const operation_notification&)>       _post_apply_operation_signal;
-
-      fc::signal<void(const custom_operation_notification&)> _pre_apply_custom_operation_signal;
-      fc::signal<void(const custom_operation_notification&)> _post_apply_custom_operation_signal;
-
-    /**
-        *  This signal is emitted when we start processing a block.
-        *
-        *  You may not yield from this callback because the blockchain is holding
-        *  the write lock and may be in an "inconstant state" until after it is
-        *  released.
-        */
-      fc::signal<void(const block_notification&)>           _pre_apply_block_signal;
-
-      fc::signal<void(uint32_t)>                            _on_irreversible_block;
-
-      fc::signal<void(uint32_t)>                            _switch_fork_signal;
-
-      /**
-        *  This signal is emitted after all operations and virtual operation for a
-        *  block have been applied but before the get_applied_operations() are cleared.
-        *
-        *  You may not yield from this callback because the blockchain is holding
-        *  the write lock and may be in an "inconstant state" until after it is
-        *  released.
-        */
-      fc::signal<void(const block_notification&)>           _post_apply_block_signal;
-
-      /**
-        *  This signal is emitted when any problems occured during block processing
-        */
-      fc::signal<void(const block_notification&)>           _fail_apply_block_signal;
-
-      /**
-        * This signal is emitted any time a new transaction is about to be applied
-        * to the chain state.
-        */
-      fc::signal<void(const transaction_notification&)>     _pre_apply_transaction_signal;
-
-      /**
-        * This signal is emitted any time a new transaction has been applied to the
-        * chain state.
-        */
-      fc::signal<void(const transaction_notification&)>     _post_apply_transaction_signal;
-
-  public:
-      /**
-        * Emitted when reindexing starts
-        */
-      fc::signal<void(const reindex_notification&)>         _pre_reindex_signal;
-
-      /**
-        * Emitted when reindexing finishes
-        */
-      fc::signal<void(const reindex_notification&)>         _post_reindex_signal;
-  private:
-      fc::signal<void(const database&, const database::abstract_index_cntr_t&)> _prepare_snapshot_signal;
-
-      /// <summary>
-      ///  Emitted by snapshot plugin implementation to allow all registered plugins to include theirs custom-stored data in the snapshot
-      /// </summary>
-      fc::signal<void(const prepare_snapshot_supplement_notification&)> _prepare_snapshot_supplement_signal;
-      /// <summary>
-      /// Emitted by snapshot plugin implementation to allow all registered plugins to load theirs custom-stored data from the snapshot
-      /// </summary>
-      fc::signal<void(const load_snapshot_supplement_notification&)> _load_snapshot_supplement_signal;
-
-      /**
-        *  Emitted After a block has been applied and committed.  The callback
-        *  should not yield and should execute quickly.
-        */
-      //fc::signal<void(const vector< object_id_type >&)> changed_objects;
-
-      /** this signal is emitted any time an object is removed and contains a
-        * pointer to the last value of every object that was removed.
-        */
-      //fc::signal<void(const vector<const object*>&)>  removed_objects;
-
-      /**
-        * Internal signal to execute deferred registration of plugin indexes.
-        */
-      fc::signal<void()>                                    _plugin_index_signal;
-
-      /// <summary>
-      ///  Emitted when rewards for author and curators are paid out.
-      /// </summary>
-      fc::signal<void(const comment_reward_notification&)>          _comment_reward_signal;
-
-      fc::signal<void()> _end_of_syncing_signal;
-      /**
-        *  This signal is emitted when pushing block is completely finished
-        */
-      fc::signal<void(const block_notification&)>           _finish_push_block_signal;
-      /**
-        *  This signal is emitted when all storages have to be wiped
-        */
-      fc::signal<void()> _wipe_signal;
-      /**
-        *  This signal is emitted when storages have to be flushed
-        */
-      fc::signal<void()>                            _flush_signal;
 
       appbase::application& theApp;
 

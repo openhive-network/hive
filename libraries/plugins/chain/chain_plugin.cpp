@@ -1111,7 +1111,7 @@ uint32_t chain_plugin_impl::reindex( const open_args& args, const block_read_i& 
   reindex_notification note( args );
 
   BOOST_SCOPE_EXIT(this_,&note) {
-    HIVE_TRY_NOTIFY(this_->db._post_reindex_signal, note);
+    this_->db.notify_post_reindex(note);
   } BOOST_SCOPE_EXIT_END
 
   try
@@ -1138,7 +1138,7 @@ uint32_t chain_plugin_impl::reindex( const open_args& args, const block_read_i& 
     note.force_replay = args.force_replay || _head_block_num == 0;
     note.validate_during_replay = args.validate_during_replay;
 
-    HIVE_TRY_NOTIFY(db._pre_reindex_signal, note);
+    db.notify_pre_reindex(note);
 
     default_block_writer->on_reindex_start();
 
