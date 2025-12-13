@@ -1,6 +1,7 @@
 #include <hive/chain/hive_fwd.hpp>
 
 #include <hive/chain/database.hpp>
+#include <hive/chain/irreversible_block_data.hpp>
 #include <hive/chain/notifications.hpp>
 #include <hive/chain/rc/rc_utility.hpp>
 #include <hive/chain/hive_evaluator.hpp>
