@@ -26,6 +26,7 @@ class database_impl
     void register_new_type(util::abstract_type_registrar&);
     void delete_decoded_types_data_storage();
     void create_new_decoded_types_data_storage() { _decoded_types_data_storage = std::make_unique<util::decoded_types_data_storage>(); }
+    operation_notification create_operation_notification( const operation& op ) const;
 
     database&                                         _self;
     evaluator_registry< operation >                   _evaluator_registry;
