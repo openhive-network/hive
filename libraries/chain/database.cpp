@@ -777,11 +777,23 @@ operation_notification database_impl::create_operation_notification( const opera
   return note;
 }
 
+void database::fill_operation_notification( operation_notification& note, bool increment_op_counter )
+{
+  if( increment_op_counter )
+    ++_current_op_in_trx;
+  note.trx_id       = _current_trx_id;
+  note.block        = _current_block_num;
+  note.timestamp    = get_current_timestamp();
+  note.trx_in_block = _current_trx_in_block;
+  note.op_in_trx    = _current_op_in_trx;
+}
+
 void push_virtual_operation( database& db, const operation& op )
 {
   FC_ASSERT( is_virtual_operation( op ) && "on push" );
-  db._current_op_in_trx++;
-  operation_notification note = db._my->create_operation_notification( op );
+  operation_notification note( op );
+  note.virtual_op = true;
+  db.fill_operation_notification( note, true );
   db.notify_pre_apply_operation( note );
   db.notify_post_apply_operation( note );
 }
@@ -789,16 +801,20 @@ void push_virtual_operation( database& db, const operation& op )
 void pre_push_virtual_operation( database& db, const operation& op )
 {
   FC_ASSERT( is_virtual_operation( op ) && "on pre-push" );
-  db._current_op_in_trx++;
-  operation_notification note = db._my->create_operation_notification( op );
+  operation_notification note( op );
+  note.virtual_op = true;
+  db.fill_operation_notification( note, true );
   db.notify_pre_apply_operation( note );
 }
 
 void post_push_virtual_operation( database& db, const operation& op, const fc::optional<uint64_t>& op_in_trx )
 {
   FC_ASSERT( is_virtual_operation( op ) && "on post-push" );
-  operation_notification note = db._my->create_operation_notification( op );
-  if(op_in_trx.valid()) note.op_in_trx = *op_in_trx;
+  operation_notification note( op );
+  note.virtual_op = true;
+  db.fill_operation_notification( note, false );
+  if( op_in_trx.valid() )
+    note.op_in_trx = *op_in_trx;
   db.notify_post_apply_operation( note );
 }
 
