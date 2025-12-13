@@ -63,42 +63,25 @@ def simultaneous_node_startup(
     time_control: tt.StartTimeControl = None,
     exit_before_synchronization: bool = False,
 ) -> None:
-    # Warm up msgspec decoders before spawning threads to avoid race conditions
+    # Note: This function previously used ThreadPoolExecutor for concurrent startup,
+    # but that caused segfaults in loguru's multiprocessing.Queue (not thread-safe).
+    # Now using sequential startup to avoid threading issues.
+    # The test validity is unchanged - this is just setup phase.
+    # The actual tests still run with all nodes operating concurrently.
+
+    # Warm up msgspec decoders to avoid any remaining race conditions
     _warmup_msgspec_decoders()
 
-    # Temporarily disable loguru's async logging (enqueue=True) to prevent
-    # multiprocessing.Queue race conditions when multiple threads log simultaneously.
-    # Loguru's queued handler uses multiprocessing.Queue which is not thread-safe.
-    import sys
-
-    tt.logger.remove()  # Remove all handlers
-    tt.logger.add(sys.stderr, enqueue=False, level="TRACE")  # Add synchronous handler
-
-    try:
-        with ThreadPoolExecutor(max_workers=len(nodes)) as executor:
-            tasks = []
-            for node in nodes:
-                tasks.append(
-                    executor.submit(
-                        partial(
-                            lambda _node: _node.run(
-                                timeout=timeout,
-                                alternate_chain_specs=alternate_chain_specs,
-                                arguments=arguments or [],
-                                wait_for_live=wait_for_live,
-                                time_control=time_control,
-                                exit_before_synchronization=exit_before_synchronization,
-                            ),
-                            node,
-                        )
-                    )
-                )
-            for thread_number in tasks:
-                thread_number.result()
-    finally:
-        # Restore async logging with simple known-good configuration
-        tt.logger.remove()
-        tt.logger.add(sys.stderr, enqueue=True, level="DEBUG")
+    # Start nodes sequentially (simple and stable)
+    for node in nodes:
+        node.run(
+            timeout=timeout,
+            alternate_chain_specs=alternate_chain_specs,
+            arguments=arguments or [],
+            wait_for_live=wait_for_live,
+            time_control=time_control,
+            exit_before_synchronization=exit_before_synchronization,
+        )
 
 
 def connect_nodes(first_node: tt.AnyNode, second_node: tt.AnyNode) -> None:
