@@ -74,17 +74,17 @@ void delete_comment_evaluator::do_apply( const delete_comment_operation& o )
 
   const auto& vote_idx = _db.get_index<comment_vote_index, by_comment_voter>();
 
-  auto vote_itr = vote_idx.lower_bound( comment.get_id() );
-  while( vote_itr != vote_idx.end() && vote_itr->get_comment() == comment.get_id() )
+  auto vote_itr = vote_idx.lower_bound( comment->get_id() );
+  while( vote_itr != vote_idx.end() && vote_itr->get_comment() == comment->get_id() )
   {
     const auto& cur_vote = *vote_itr;
     ++vote_itr;
     _db.remove(cur_vote);
   }
 
-  if( !comment.is_root() )
+  if( !comment->is_root() )
   {
-    const comment_cashout_object* parent = _db.find_comment_cashout( comment.get_parent_id() );
+    const comment_cashout_object* parent = _db.find_comment_cashout( comment->get_parent_id() );
     if( parent )
     {
       _db.modify( *parent, [&]( comment_cashout_object& p )
@@ -206,8 +206,8 @@ void comment_evaluator::do_apply( const comment_operation& o )
     uint16_t depth_limit = !_db.has_hardfork( HIVE_HARDFORK_0_17__767 ) ? HIVE_MAX_COMMENT_DEPTH_PRE_HF17 : HIVE_MAX_COMMENT_DEPTH;
     if( _db.is_in_control() && depth_limit > HIVE_SOFT_MAX_COMMENT_DEPTH )
       depth_limit = HIVE_SOFT_MAX_COMMENT_DEPTH; // soft check moved from witness plugin
-    FC_ASSERT( parent.get_depth() < depth_limit,
-      "Comment is nested ${x} posts deep, maximum depth is ${y}.", ( "x", parent.get_depth() )( "y", depth_limit ) );
+    FC_ASSERT( parent->get_depth() < depth_limit,
+      "Comment is nested ${x} posts deep, maximum depth is ${y}.", ( "x", parent->get_depth() )( "y", depth_limit ) );
   }
 
   FC_ASSERT( fc::is_utf8( o.json_metadata ), "JSON Metadata must be UTF-8" );
@@ -327,7 +327,7 @@ void comment_evaluator::do_apply( const comment_operation& o )
 
     if( !parent )
     {
-      FC_ASSERT( _comment.is_root(), "The parent of a comment cannot change." );
+      FC_ASSERT( _comment->is_root(), "The parent of a comment cannot change." );
       //note for HiveMind: if someone tries to change 'category' (that no longer is part of consensus)
       //by providing different 'o.parent_permlink' than before, such change should be silently ignored
     }
@@ -335,7 +335,7 @@ void comment_evaluator::do_apply( const comment_operation& o )
     {
       //ABW: see creation tx 11ad62ee8f8e892cd5bd75fc2d3098427f7e47ac and edit tx dca209592c7129be36b069d033dfdb0f1f143b4e
       //both happened prior to HF21 when check was slightly more relaxed
-      FC_ASSERT( _comment.get_parent_id() == parent.get_id(), "The parent of a comment cannot change." );
+      FC_ASSERT( _comment->get_parent_id() == parent->get_id(), "The parent of a comment cannot change." );
     }
 
     _db.modify( auth, [&]( account_object& a )
@@ -412,7 +412,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
   }
 
   const auto& comment_vote_idx = _db.get_index< comment_vote_index, by_comment_voter >();
-  auto itr = comment_vote_idx.find( boost::make_tuple( comment.get_id(), voter.get_id() ) );
+  auto itr = comment_vote_idx.find( boost::make_tuple( comment->get_id(), voter.get_id() ) );
 
   /// this is the rshares voting for or against the post
   int64_t rshares = o.weight < 0 ? -abs_rshares : abs_rshares;
@@ -666,7 +666,7 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
     FC_ASSERT( ( _now - voter.last_vote_time ).to_seconds() >= HIVE_MIN_VOTE_INTERVAL_SEC, "Can only vote once every 3 seconds." );
 
   const auto& comment_vote_idx = _db.get_index< comment_vote_index, by_comment_voter >();
-  auto itr = comment_vote_idx.find( boost::make_tuple( comment.get_id(), voter.get_id() ) );
+  auto itr = comment_vote_idx.find( boost::make_tuple( comment->get_id(), voter.get_id() ) );
 
   int16_t previous_vote_percent = 0;
   int64_t previous_rshares = 0;
