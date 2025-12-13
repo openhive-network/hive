@@ -6,6 +6,7 @@
 #include <hive/chain/account_object.hpp>
 #include <hive/chain/account_object_multiindex.hpp>
 #include <hive/chain/global_property_object_multiindex.hpp>
+#include <hive/chain/notifications.hpp>
 #include <hive/chain/witness_objects.hpp>
 #include <hive/chain/database_exceptions.hpp>
 

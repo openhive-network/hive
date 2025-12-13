@@ -1,6 +1,7 @@
 #include <hive/plugins/witness/witness_plugin.hpp>
 
 #include <hive/chain/database_exceptions.hpp>
+#include <hive/chain/notifications.hpp>
 #include <hive/chain/account_object.hpp>
 #include <hive/chain/account_object_multiindex.hpp>
 #include <hive/chain/comment_object.hpp>

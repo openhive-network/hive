@@ -4,6 +4,7 @@
 
 #include <hive/chain/blockchain_worker_thread_pool.hpp>
 #include <hive/chain/block_storage_interface.hpp>
+#include <hive/chain/notifications.hpp>
 #include <hive/chain/database_exceptions.hpp>
 #include <hive/chain/db_with.hpp>
 #include <hive/chain/irreversible_block_writer.hpp>

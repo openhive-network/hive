@@ -4,6 +4,7 @@
 #include <hive/plugins/transaction_status/transaction_status_plugin.hpp>
 #include <hive/plugins/transaction_status/transaction_status_objects.hpp>
 #include <hive/chain/database.hpp>
+#include <hive/chain/notifications.hpp>
 #include <hive/chain/index.hpp>
 #include <chainbase/chainbase.inl>
 #include <hive/chain/util/type_registrar_definition.hpp>
