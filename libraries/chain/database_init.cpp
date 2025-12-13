@@ -60,7 +60,7 @@ void initialize_core_indexes( database& db );
 void database::initialize_indexes()
 {
   initialize_core_indexes( *this );
-  _plugin_index_signal();
+  _my->_plugin_index_signal();
 }
 
 void database::initialize_irreversible_storage()
@@ -446,7 +446,7 @@ boost::signals2::connection database::add_pre_apply_operation_handler( const app
       _benchmark_dumper.end( context, name );
   };
 
-  return _pre_apply_operation_signal.connect(group, complex_func);
+  return _my->_pre_apply_operation_signal.connect(group, complex_func);
 }
 
 boost::signals2::connection database::add_post_apply_operation_handler( const apply_operation_handler_t& func,
@@ -469,115 +469,120 @@ boost::signals2::connection database::add_post_apply_operation_handler( const ap
       _benchmark_dumper.end( context, name );
   };
 
-  return _post_apply_operation_signal.connect(group, complex_func);
+  return _my->_post_apply_operation_signal.connect(group, complex_func);
 }
 
 boost::signals2::connection database::add_pre_apply_transaction_handler( const apply_transaction_handler_t& func,
   const abstract_plugin& plugin, int32_t group )
 {
-  return connect_signal_impl<true>(_pre_apply_transaction_signal, func, _benchmark_dumper, plugin, group, "transaction");
+  return connect_signal_impl<true>(_my->_pre_apply_transaction_signal, func, _benchmark_dumper, plugin, group, "transaction");
 }
 
 boost::signals2::connection database::add_post_apply_transaction_handler( const apply_transaction_handler_t& func,
   const abstract_plugin& plugin, int32_t group )
 {
-  return connect_signal_impl<false>(_post_apply_transaction_signal, func, _benchmark_dumper, plugin, group, "transaction");
+  return connect_signal_impl<false>(_my->_post_apply_transaction_signal, func, _benchmark_dumper, plugin, group, "transaction");
 }
 
 boost::signals2::connection database::add_pre_apply_custom_operation_handler ( const apply_custom_operation_handler_t& func,
   const abstract_plugin& plugin, int32_t group )
 {
-  return connect_signal_impl< true >(_pre_apply_custom_operation_signal, func, _benchmark_dumper, plugin, group, "custom");
+  return connect_signal_impl< true >(_my->_pre_apply_custom_operation_signal, func, _benchmark_dumper, plugin, group, "custom");
 }
 
 boost::signals2::connection database::add_post_apply_custom_operation_handler( const apply_custom_operation_handler_t& func,
   const abstract_plugin& plugin, int32_t group )
 {
-  return connect_signal_impl< false >(_post_apply_custom_operation_signal, func, _benchmark_dumper, plugin, group, "custom");
+  return connect_signal_impl< false >(_my->_post_apply_custom_operation_signal, func, _benchmark_dumper, plugin, group, "custom");
 }
 
 boost::signals2::connection database::add_pre_apply_block_handler( const apply_block_handler_t& func,
   const abstract_plugin& plugin, int32_t group )
 {
-  return connect_signal_impl<true>(_pre_apply_block_signal, func, _benchmark_dumper, plugin, group, "block");
+  return connect_signal_impl<true>(_my->_pre_apply_block_signal, func, _benchmark_dumper, plugin, group, "block");
 }
 
 boost::signals2::connection database::add_post_apply_block_handler( const apply_block_handler_t& func,
   const abstract_plugin& plugin, int32_t group )
 {
-  return connect_signal_impl<false>(_post_apply_block_signal, func, _benchmark_dumper, plugin, group, "block");
+  return connect_signal_impl<false>(_my->_post_apply_block_signal, func, _benchmark_dumper, plugin, group, "block");
 }
 
 boost::signals2::connection database::add_fail_apply_block_handler( const apply_block_handler_t& func,
   const abstract_plugin& plugin, int32_t group )
 {
-  return connect_signal_impl<false>(_fail_apply_block_signal, func, _benchmark_dumper, plugin, group, "failed block");
+  return connect_signal_impl<false>(_my->_fail_apply_block_signal, func, _benchmark_dumper, plugin, group, "failed block");
 }
 
 boost::signals2::connection database::add_irreversible_block_handler( const irreversible_block_handler_t& func,
   const abstract_plugin& plugin, int32_t group )
 {
-  return connect_signal_impl<false>(_on_irreversible_block, func, _benchmark_dumper, plugin, group, "irreversible");
+  return connect_signal_impl<false>(_my->_on_irreversible_block, func, _benchmark_dumper, plugin, group, "irreversible");
 }
 
 boost::signals2::connection database::add_switch_fork_handler( const switch_fork_handler_t& func,
                                                                       const abstract_plugin& plugin, int32_t group )
 {
-  return connect_signal_impl<false>(_switch_fork_signal, func, _benchmark_dumper, plugin, group, "switch_fork");
+  return connect_signal_impl<false>(_my->_switch_fork_signal, func, _benchmark_dumper, plugin, group, "switch_fork");
 }
 
 boost::signals2::connection database::add_pre_reindex_handler(const reindex_handler_t& func,
   const abstract_plugin& plugin, int32_t group )
 {
-  return connect_signal_impl<true>(_pre_reindex_signal, func, _benchmark_dumper, plugin, group, "reindex");
+  return connect_signal_impl<true>(_my->_pre_reindex_signal, func, _benchmark_dumper, plugin, group, "reindex");
 }
 
 boost::signals2::connection database::add_post_reindex_handler(const reindex_handler_t& func,
   const abstract_plugin& plugin, int32_t group )
 {
-  return connect_signal_impl<false>(_post_reindex_signal, func, _benchmark_dumper, plugin, group, "reindex");
+  return connect_signal_impl<false>(_my->_post_reindex_signal, func, _benchmark_dumper, plugin, group, "reindex");
 }
 
 boost::signals2::connection database::add_finish_push_block_handler( const push_block_handler_t& func,
   const abstract_plugin& plugin, int32_t group )
 {
-  return connect_signal_impl<false>(_finish_push_block_signal, func, _benchmark_dumper, plugin, group, "block");
+  return connect_signal_impl<false>(_my->_finish_push_block_signal, func, _benchmark_dumper, plugin, group, "block");
 }
 
 boost::signals2::connection database::add_prepare_snapshot_handler(const prepare_snapshot_handler_t& func, const abstract_plugin& plugin, int32_t group)
 {
-  return connect_signal_impl<true>(_prepare_snapshot_signal, func, _benchmark_dumper, plugin, group, "prepare_snapshot");
+  return connect_signal_impl<true>(_my->_prepare_snapshot_signal, func, _benchmark_dumper, plugin, group, "prepare_snapshot");
 }
 
 boost::signals2::connection database::add_snapshot_supplement_handler(const prepare_snapshot_data_supplement_handler_t& func, const abstract_plugin& plugin, int32_t group)
 {
-  return connect_signal_impl<true>(_prepare_snapshot_supplement_signal, func, _benchmark_dumper, plugin, group, "prepare_snapshot_data_supplement");
+  return connect_signal_impl<true>(_my->_prepare_snapshot_supplement_signal, func, _benchmark_dumper, plugin, group, "prepare_snapshot_data_supplement");
 }
 
 boost::signals2::connection database::add_snapshot_supplement_handler(const load_snapshot_data_supplement_handler_t& func, const abstract_plugin& plugin, int32_t group)
 {
-  return connect_signal_impl<true>(_load_snapshot_supplement_signal, func, _benchmark_dumper, plugin, group, "load_snapshot_data_supplement");
+  return connect_signal_impl<true>(_my->_load_snapshot_supplement_signal, func, _benchmark_dumper, plugin, group, "load_snapshot_data_supplement");
 }
 
 boost::signals2::connection database::add_comment_reward_handler(const comment_reward_notification_handler_t& func, const abstract_plugin& plugin, int32_t group)
 {
-  return connect_signal_impl<true>(_comment_reward_signal, func, _benchmark_dumper, plugin, group, "comment_reward");
+  return connect_signal_impl<true>(_my->_comment_reward_signal, func, _benchmark_dumper, plugin, group, "comment_reward");
 }
 
 boost::signals2::connection database::add_end_of_syncing_handler(const end_of_syncing_notification_handler_t& func, const abstract_plugin& plugin, int32_t group)
 {
-  return connect_signal_impl<false>(_end_of_syncing_signal, func, _benchmark_dumper, plugin, group, "->syncing_end");
+  return connect_signal_impl<false>(_my->_end_of_syncing_signal, func, _benchmark_dumper, plugin, group, "->syncing_end");
 }
 
 boost::signals2::connection database::add_wipe_handler(const wipe_notification_handler_t& func, const abstract_plugin& plugin, int32_t group)
 {
-  return connect_signal_impl<false>(_wipe_signal, func, _benchmark_dumper, plugin, group, "wipe storages");
+  return connect_signal_impl<false>(_my->_wipe_signal, func, _benchmark_dumper, plugin, group, "wipe storages");
 }
 
 boost::signals2::connection database::add_flush_handler( const flush_handler_t& func,
   const abstract_plugin& plugin, int32_t group )
 {
-  return connect_signal_impl<false>(_flush_signal, func, _benchmark_dumper, plugin, group, "flush");
+  return connect_signal_impl<false>(_my->_flush_signal, func, _benchmark_dumper, plugin, group, "flush");
+}
+
+boost::signals2::connection database::add_plugin_index_handler( const std::function<void()>& func )
+{
+  return _my->_plugin_index_signal.connect( func );
 }
 
 } } // hive::chain

@@ -53,7 +53,7 @@ void add_core_index( database& db )
 template< typename MultiIndexType >
 void add_plugin_index( database& db )
 {
-  db._plugin_index_signal.connect( [&db](){ _add_index_impl< MultiIndexType >(db); } );
+  db.add_plugin_index_handler( [&db](){ _add_index_impl< MultiIndexType >(db); } );
 }
 
 } }
