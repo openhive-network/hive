@@ -525,6 +525,56 @@ void database::process_comment_cashout()
   }
 }
 
+void database::apply_hardfork_17_comment_cashout_fix()
+{
+  /*
+  * For all current comments we will either keep their current cashout time, or extend it to 1 week
+  * after creation.
+  *
+  * We cannot do a simple iteration by cashout time because we are editting cashout time.
+  * More specifically, we will be adding an explicit cashout time to all comments with parents.
+  * To find all discussions that have not been paid out we fir iterate over posts by cashout time.
+  * Before the hardfork these are all root posts. Iterate over all of their children, adding each
+  * to a specific list. Next, update payout times for all discussions on the root post. This defines
+  * the min cashout time for each child in the discussion. Then iterate over the children and set
+  * their cashout time in a similar way, grabbing the root post as their inherent cashout time.
+  */
+  const auto& comment_idx = get_index< comment_cashout_index, by_cashout_time >();
+  const auto& by_root_idx = get_index< comment_cashout_ex_index, by_root >();
+  vector< const comment_cashout_object* > root_posts;
+  root_posts.reserve( HIVE_HF_17_NUM_POSTS );
+  vector< const comment_cashout_object* > replies;
+  replies.reserve( HIVE_HF_17_NUM_REPLIES );
+
+  for( auto itr = comment_idx.begin(); itr != comment_idx.end() && itr->get_cashout_time() < fc::time_point_sec::maximum(); ++itr )
+  {
+    root_posts.push_back( &(*itr) );
+    auto root_id = itr->get_comment_id();
+
+    for( auto reply_itr = by_root_idx.lower_bound( root_id ); reply_itr != by_root_idx.end() && reply_itr->get_root_id() == root_id; ++reply_itr )
+    {
+      const comment_cashout_object* comment_cashout = find_comment_cashout( reply_itr->get_comment_id() );
+      replies.push_back( comment_cashout );
+    }
+  }
+
+  for( const auto& itr : root_posts )
+  {
+    modify( *itr, [&]( comment_cashout_object& c )
+    {
+      c.set_cashout_time( std::max( c.get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS, c.get_cashout_time() ) );
+    });
+  }
+
+  for( const auto& itr : replies )
+  {
+    modify( *itr, [&]( comment_cashout_object& c )
+    {
+      c.set_cashout_time( std::max( calculate_discussion_payout_time( get_comment( c ), c ), c.get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS ) );
+    });
+  }
+}
+
 void database::apply_hardfork_12_comment_cashout_fix()
 {
   const auto& comment_idx = get_index< comment_cashout_index >().indices();
