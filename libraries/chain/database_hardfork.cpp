@@ -643,4 +643,17 @@ void database::apply_hardfork( uint32_t hardfork )
   post_push_virtual_operation( hardfork_vop, _op_in_trx );
 }
 
+const hardfork_property_object& database::get_hardfork_property_object()const
+{ try {
+  return get< hardfork_property_object >();
+} FC_CAPTURE_AND_RETHROW() }
+
+void database::gather_balance( const std::string& name, const asset& balance, const asset& hbd_balance )
+{
+  modify( get_hardfork_property_object(), [&]( hardfork_property_object& hfp )
+  {
+    hfp.h23_balances.emplace( std::make_pair( name, hf23_item{ balance, hbd_balance } ) );
+  } );
+}
+
 } } // hive::chain
