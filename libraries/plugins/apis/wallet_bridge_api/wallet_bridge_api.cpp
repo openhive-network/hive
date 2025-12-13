@@ -79,7 +79,7 @@ class wallet_bridge_api_impl
     p2p::p2p_plugin*                                                _p2p = nullptr;
     map< protocol::transaction_id_type, confirmation_callback >     _callbacks;
     map< time_point_sec, vector< protocol::transaction_id_type > >  _callback_expirations;
-    boost::signals2::connection                                     _on_post_apply_block_conn;
+    chain::database::signal_connection_ptr                          _on_post_apply_block_conn;
     boost::mutex                                                    _mtx;
 
   private:

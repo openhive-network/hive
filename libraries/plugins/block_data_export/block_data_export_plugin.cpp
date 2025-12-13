@@ -88,8 +88,8 @@ class block_data_export_plugin_impl
 
     database&                     _db;
     block_data_export_plugin&     _self;
-    boost::signals2::connection   _pre_apply_block_conn;
-    boost::signals2::connection   _post_apply_block_conn;
+    chain::database::signal_connection_ptr   _pre_apply_block_conn;
+    chain::database::signal_connection_ptr   _post_apply_block_conn;
     std::shared_ptr< api_export_data_object >
                         _edo;
     std::vector< std::pair<

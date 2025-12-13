@@ -154,9 +154,9 @@ class colony_plugin_impl
     colony_plugin&                _self;
     appbase::application&         theApp;
 
-    boost::signals2::connection   _end_of_sync_conn;
-    boost::signals2::connection   _post_apply_transaction_conn;
-    boost::signals2::connection   _post_apply_block_conn;
+    chain::database::signal_connection_ptr   _end_of_sync_conn;
+    chain::database::signal_connection_ptr   _post_apply_transaction_conn;
+    chain::database::signal_connection_ptr   _post_apply_block_conn;
 
     std::vector< fc::ecc::private_key >                  _sign_with;
     std::array< operation_params, NUMBER_OF_OPERATIONS > _params;

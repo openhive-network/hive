@@ -88,8 +88,7 @@ class chain_plugin_impl
 
       stop_write_processing();
 
-      if( chain_sync_con.connected() )
-        chain_sync_con.disconnect();
+      hive::utilities::disconnect_signal( chain_sync_con );
     }
 
     void register_snapshot_provider(state_snapshot_provider& provider)
@@ -223,7 +222,7 @@ class chain_plugin_impl
     hive::chain::open_args              db_open_args;
     block_log_open_args                 bl_open_args;
     get_stat_details_t                  get_stat_details;
-    boost::signals2::connection         dumper_post_apply_block;
+    chain::database::signal_connection_ptr  dumper_post_apply_block;
 
     state_snapshot_provider*            snapshot_provider = nullptr;
     bool                                is_p2p_enabled = true;
@@ -255,7 +254,7 @@ class chain_plugin_impl
 
     class write_request_visitor;
 
-    boost::signals2::connection                 chain_sync_con;
+    chain::database::signal_connection_ptr      chain_sync_con;
     hive::plugins::webserver::webserver_plugin& webserver;
 
     appbase::application& theApp;
@@ -1345,10 +1344,10 @@ void chain_plugin_impl::prepare_work( bool started, synchronization_type& on_syn
   if( !started )
   {
     ilog( "Waiting for chain plugin to start" );
-    chain_sync_con = on_sync.connect( 0, [this]()
+    chain_sync_con = std::make_unique<boost::signals2::connection>( on_sync.connect( 0, [this]()
     {
       webserver.start_webserver();
-    });
+    }) );
   }
   else
   {

@@ -41,7 +41,7 @@ class comment_cashout_logging_plugin_impl
       std::string make_file_name(bool &changed);
 
       database&                        _db;
-      boost::signals2::connection      _pre_apply_operation_conn;
+      chain::database::signal_connection_ptr      _pre_apply_operation_conn;
 
       optional<uint64_t> _starting_block;
       optional<uint64_t> _ending_block;
