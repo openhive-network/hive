@@ -16,7 +16,8 @@
 #include <hive/protocol/protocol.hpp>
 #include <hive/protocol/hardfork.hpp>
 
-#include <fc/signals.hpp>
+#include <hive/utilities/signal.hpp>
+
 #include <fc/reflect/reflect.hpp>
 
 #include <fc/log/logger.hpp>
