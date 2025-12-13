@@ -18,22 +18,6 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
 
-def _warmup_loguru_handlers() -> None:
-    """
-    Pre-initialize loguru's multiprocessing queue handlers to avoid race conditions.
-
-    Loguru's queued handler uses multiprocessing queues for async logging.
-    When multiple threads simultaneously trigger logging for the first time,
-    the queue initialization can segfault due to thread-unsafe multiprocessing code.
-
-    This function triggers a log message to ensure loguru's queue is initialized
-    before any threads are spawned.
-    """
-    with contextlib.suppress(Exception):
-        # Trigger loguru initialization by logging in main thread
-        tt.logger.opt(depth=1).trace("Warming up loguru handlers for thread-safe operation")
-
-
 def _warmup_msgspec_decoders() -> None:
     """
     Pre-initialize msgspec decoders in the main thread to avoid race conditions.
@@ -79,30 +63,44 @@ def simultaneous_node_startup(
     time_control: tt.StartTimeControl = None,
     exit_before_synchronization: bool = False,
 ) -> None:
-    # Warm up loguru and msgspec before spawning threads to avoid race conditions
-    _warmup_loguru_handlers()
+    # Warm up msgspec decoders before spawning threads to avoid race conditions
     _warmup_msgspec_decoders()
 
-    with ThreadPoolExecutor(max_workers=len(nodes)) as executor:
-        tasks = []
-        for node in nodes:
-            tasks.append(
-                executor.submit(
-                    partial(
-                        lambda _node: _node.run(
-                            timeout=timeout,
-                            alternate_chain_specs=alternate_chain_specs,
-                            arguments=arguments or [],
-                            wait_for_live=wait_for_live,
-                            time_control=time_control,
-                            exit_before_synchronization=exit_before_synchronization,
-                        ),
-                        node,
+    # Temporarily disable loguru's async logging (enqueue=True) to prevent
+    # multiprocessing.Queue race conditions when multiple threads log simultaneously.
+    # Loguru's queued handler uses multiprocessing.Queue which is not thread-safe.
+    import sys
+
+    saved_handlers = tt.logger._core.handlers.copy()
+    tt.logger.remove()  # Remove all handlers
+    tt.logger.add(sys.stderr, enqueue=False, level="TRACE")  # Add synchronous handler
+
+    try:
+        with ThreadPoolExecutor(max_workers=len(nodes)) as executor:
+            tasks = []
+            for node in nodes:
+                tasks.append(
+                    executor.submit(
+                        partial(
+                            lambda _node: _node.run(
+                                timeout=timeout,
+                                alternate_chain_specs=alternate_chain_specs,
+                                arguments=arguments or [],
+                                wait_for_live=wait_for_live,
+                                time_control=time_control,
+                                exit_before_synchronization=exit_before_synchronization,
+                            ),
+                            node,
+                        )
                     )
                 )
-            )
-        for thread_number in tasks:
-            thread_number.result()
+            for thread_number in tasks:
+                thread_number.result()
+    finally:
+        # Restore original loguru configuration
+        tt.logger.remove()
+        for handler_id, handler in saved_handlers.items():
+            tt.logger.add(**handler._sink)
 
 
 def connect_nodes(first_node: tt.AnyNode, second_node: tt.AnyNode) -> None:
