@@ -2,6 +2,7 @@
 #include <hive/chain/detail/state/convert_request_object_multiindex.hpp>
 #include <hive/chain/detail/state/collateralized_convert_request_object_multiindex.hpp>
 
+#include <hive/chain/database_virtual_operations.hpp>
 #include <hive/chain/index.hpp>
 #include <chainbase/chainbase.inl>
 
@@ -58,7 +59,7 @@ void database::process_conversions()
       net_hbd  -= itr->get_convert_amount();
       net_hive += amount_to_issue;
 
-      push_virtual_operation( fill_convert_request_operation( owner.get_name(), itr->get_request_id(),
+      push_virtual_operation( *this, fill_convert_request_operation( owner.get_name(), itr->get_request_id(),
         itr->get_convert_amount(), amount_to_issue ) );
 
       remove( *itr );
@@ -93,7 +94,7 @@ void database::process_conversions()
       auto excess_collateral = itr->get_collateral_amount() - required_hive;
       if( excess_collateral.amount < 0 )
       {
-        push_virtual_operation( system_warning_operation( FC_LOG_MESSAGE( warn,
+        push_virtual_operation( *this, system_warning_operation( FC_LOG_MESSAGE( warn,
           "Insufficient collateral on conversion ${id} by ${o} - shortfall of ${ec}",
           ( "id", itr->get_request_id() )( "o", owner.get_name() )( "ec", -excess_collateral ) ).get_message() ) );
 
@@ -107,7 +108,7 @@ void database::process_conversions()
 
       net_hive -= required_hive;
       //note that HBD was created immediately, so we don't need to correct its supply here
-      push_virtual_operation( fill_collateralized_convert_request_operation( owner.get_name(), itr->get_request_id(),
+      push_virtual_operation( *this, fill_collateralized_convert_request_operation( owner.get_name(), itr->get_request_id(),
         required_hive, itr->get_converted_amount(), excess_collateral ) );
 
       remove( *itr );

@@ -3,6 +3,7 @@
 #include <hive/chain/detail/state/recurrent_transfer_object_multiindex.hpp>
 #include <hive/chain/account_object_multiindex.hpp>
 
+#include <hive/chain/database_virtual_operations.hpp>
 #include <hive/chain/index.hpp>
 #include <chainbase/chainbase.inl>
 
@@ -89,7 +90,7 @@ void database::process_recurrent_transfers()
         });
       }
 
-      push_virtual_operation(fill_recurrent_transfer_operation(from_account.get_name(), to_account.get_name(), current_recurrent_transfer.amount, to_string(current_recurrent_transfer.memo), remaining_executions, _extensions));
+      push_virtual_operation( *this, fill_recurrent_transfer_operation(from_account.get_name(), to_account.get_name(), current_recurrent_transfer.amount, to_string(current_recurrent_transfer.memo), remaining_executions, _extensions));
     }
     else
     {
@@ -112,14 +113,14 @@ void database::process_recurrent_transfers()
           });
         }
         // false means the recurrent transfer was not deleted
-        push_virtual_operation(failed_recurrent_transfer_operation(from_account.get_name(), to_account.get_name(), current_recurrent_transfer.amount, consecutive_failures, to_string(current_recurrent_transfer.memo), remaining_executions, remove_recurrent_transfer, _extensions));
+        push_virtual_operation( *this, failed_recurrent_transfer_operation(from_account.get_name(), to_account.get_name(), current_recurrent_transfer.amount, consecutive_failures, to_string(current_recurrent_transfer.memo), remaining_executions, remove_recurrent_transfer, _extensions));
       }
       else
       {
         // if we had too many consecutive failures, remove the recurrent payment object
         remove_recurrent_transfer = true;
         // true means the recurrent transfer was deleted
-        push_virtual_operation(failed_recurrent_transfer_operation(from_account.get_name(), to_account.get_name(), current_recurrent_transfer.amount, consecutive_failures, to_string(current_recurrent_transfer.memo), remaining_executions, true, _extensions));
+        push_virtual_operation( *this, failed_recurrent_transfer_operation(from_account.get_name(), to_account.get_name(), current_recurrent_transfer.amount, consecutive_failures, to_string(current_recurrent_transfer.memo), remaining_executions, true, _extensions));
       }
     }
 

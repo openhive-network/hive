@@ -1,4 +1,5 @@
 #include <hive/chain/util/dhf_processor.hpp>
+#include <hive/chain/database_virtual_operations.hpp>
 #include <hive/chain/notifications.hpp>
 #include <hive/chain/global_property_object_multiindex.hpp>
 #include <hive/chain/detail/state/feed_history_object.hpp>
@@ -175,7 +176,7 @@ void dhf_processor::transfer_payments( const time_point_sec& head_time, asset& m
 
     operation vop = proposal_pay_operation( _item.proposal_id, _item.receiver, db.get_treasury_name(), payment );
     /// Push vop to be recorded by other parts (like AH plugin etc.)
-    db.push_virtual_operation(vop);
+    push_virtual_operation( db, vop);
     /// Virtual ops have no evaluators, so operation must be immediately "evaluated"
     db.adjust_balance( treasury_account, -payment );
     db.adjust_balance( receiver_account, payment );
@@ -316,7 +317,7 @@ void dhf_processor::record_funding( const block_notification& note )
     return;
 
   operation vop = dhf_funding_operation( db.get_treasury_name(), props.dhf_interval_ledger );
-  db.push_virtual_operation( vop );
+  push_virtual_operation( db,  vop );
 
   db.modify( props, []( dynamic_global_property_object& dgpo )
   {
@@ -359,7 +360,7 @@ void dhf_processor::convert_funds( const block_notification& note )
   db.adjust_supply( converted_hbd );
 
   operation vop = dhf_conversion_operation( treasury_account.get_name(), to_convert, converted_hbd );
-  db.push_virtual_operation( vop );
+  push_virtual_operation( db,  vop );
 }
 
 } } // namespace hive::chain

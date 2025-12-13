@@ -3,6 +3,7 @@
 #include <hive/protocol/dhf_operations.hpp>
 
 #include <hive/chain/database.hpp>
+#include <hive/chain/database_virtual_operations.hpp>
 #include <hive/chain/hive_evaluator.hpp>
 #include <hive/chain/account_object_multiindex.hpp>
 #include <hive/chain/dhf_objects_multiindex.hpp>
@@ -92,7 +93,7 @@ void create_proposal_evaluator::do_apply( const create_proposal_operation& o )
     /// Fee shall be paid to the treasury
     _db.adjust_balance(treasury_account, fee_hbd );
 
-    _db.push_virtual_operation( proposal_fee_operation( o.creator, treasury_account.get_name(), proposal_id, fee_hbd ) );
+    push_virtual_operation( _db,  proposal_fee_operation( o.creator, treasury_account.get_name(), proposal_id, fee_hbd ) );
   }
   FC_CAPTURE_AND_RETHROW( (o) )
 }

@@ -1,6 +1,7 @@
 
 #include <hive/chain/hive_fwd.hpp>
 #include <hive/chain/database.hpp>
+#include <hive/chain/database_virtual_operations.hpp>
 #include <hive/chain/global_property_object_multiindex.hpp>
 #include <hive/chain/hardfork_property_object_multiindex.hpp>
 #include <hive/chain/witness_objects_multiindex.hpp>
@@ -43,7 +44,7 @@ void update_global_witness_properties( database& db, const witness_schedule_obje
   const dynamic_global_property_object& dgpo = db.get_dynamic_global_properties();
   if( dgpo.maximum_block_size != wso.median_props.maximum_block_size )
   {
-    db.push_virtual_operation( hive::protocol::system_warning_operation( FC_LOG_MESSAGE( warn,
+    push_virtual_operation( db,  hive::protocol::system_warning_operation( FC_LOG_MESSAGE( warn,
       "Changing maximum block size from ${old} to ${new}",
       ( "old", dgpo.maximum_block_size )( "new", wso.median_props.maximum_block_size ) ).get_message() ) );
   }
