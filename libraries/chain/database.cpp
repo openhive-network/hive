@@ -3215,7 +3215,7 @@ void database::_apply_transaction(const std::shared_ptr<full_transaction_type>& 
   _current_op_in_trx = 0;
   for (const auto& op : trx.operations)
   { try {
-    apply_operation(op);
+    _my->apply_operation(op);
     ++_current_op_in_trx;
   } FC_CAPTURE_AND_RETHROW( (op) ) }
 
@@ -3242,30 +3242,30 @@ private:
   const struct operation_notification** _storage = nullptr;
 };
 
-void database::apply_operation(const operation& op)
+void database_impl::apply_operation(const operation& op)
 {
-  operation_notification note = _my->create_operation_notification( op );
+  operation_notification note = create_operation_notification( op );
 
-  applied_operation_info_controller ctrlr(&_current_applied_operation_info, note);
+  applied_operation_info_controller ctrlr(&_self._current_applied_operation_info, note);
 
-  notify_pre_apply_operation( note );
+  _self.notify_pre_apply_operation( note );
 
   std::string name;
-  if( _benchmark_dumper.is_enabled() )
+  if( _self._benchmark_dumper.is_enabled() )
   {
-    name = _my->_evaluator_registry.get_evaluator( op ).get_name( op );
-    _benchmark_dumper.begin();
+    name = _evaluator_registry.get_evaluator( op ).get_name( op );
+    _self._benchmark_dumper.begin();
   }
 
-  if( has_hardfork( HIVE_HARDFORK_0_20 ) )
-    rc().handle_operation_discount< operation >( op );
+  if( _self.has_hardfork( HIVE_HARDFORK_0_20 ) )
+    _self.rc().handle_operation_discount< operation >( op );
 
-  _my->_evaluator_registry.get_evaluator( op ).apply( op );
+  _evaluator_registry.get_evaluator( op ).apply( op );
 
-  if( _benchmark_dumper.is_enabled() )
-    _benchmark_dumper.end( name );
+  if( _self._benchmark_dumper.is_enabled() )
+    _self._benchmark_dumper.end( name );
 
-  notify_post_apply_operation( note );
+  _self.notify_post_apply_operation( note );
 }
 
 void database::flush_to_all_storages()
