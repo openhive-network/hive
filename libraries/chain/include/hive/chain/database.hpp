@@ -6,8 +6,6 @@
 #include <hive/chain/irreversible_block_data.hpp>
 #include <hive/chain/node_property_object.hpp>
 
-#include <hive/chain/rc/rc_utility.hpp>
-
 #include <hive/chain/util/advanced_benchmark_dumper.hpp>
 #include <hive/chain/util/type_registrar.hpp>
 #include <hive/chain/external_storage/comments_handler_ptr.hpp>
@@ -43,6 +41,7 @@ namespace plugins {namespace chain
 namespace chain {
 
   using hive::protocol::signed_transaction;
+  using hive::protocol::signed_block;
   using hive::protocol::operation;
   using hive::protocol::authority;
   using hive::protocol::asset;
@@ -75,6 +74,9 @@ namespace chain {
   struct comment_reward_notification;
 
   class blockchain_worker_thread_pool;
+  class resource_credits;
+  struct full_transaction_type;
+  struct full_block_type;
 
   namespace util {
     struct comment_reward_context;
@@ -789,7 +791,8 @@ namespace chain {
       }
 
     public:
-      resource_credits              rc;
+      resource_credits& rc();
+      const resource_credits& rc() const;
     private:
 
       std::unique_ptr< database_impl > _my;

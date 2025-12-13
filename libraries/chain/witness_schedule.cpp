@@ -434,7 +434,7 @@ void update_witness_schedule(database& db)
         update_witness_schedule4(db, wso);
       }
       if( db.has_hardfork( HIVE_HARDFORK_0_20 ) )
-        db.rc.set_pool_params( wso );
+        db.rc().set_pool_params( wso );
       return;
     }
 

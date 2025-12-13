@@ -4,6 +4,7 @@
 
 #include <hive/chain/hive_evaluator.hpp>
 #include <hive/chain/database.hpp>
+#include <hive/chain/rc/rc_utility.hpp>
 #include <hive/chain/account_object_multiindex.hpp>
 #include <hive/chain/detail/state/convert_request_object_multiindex.hpp>
 #include <hive/chain/detail/state/collateralized_convert_request_object_multiindex.hpp>
@@ -337,7 +338,7 @@ void withdraw_vesting_evaluator::do_apply( const withdraw_vesting_operation& o )
   FC_ASSERT( static_cast<asset>(account.get_vesting()) - account.delegated_vesting_shares >= o.vesting_shares, "Account does not have sufficient Hive Power for withdraw." );
 
   if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
-    _db.rc.regenerate_rc_mana( account, now );
+    _db.rc().regenerate_rc_mana( account, now );
   if( o.vesting_shares.amount == 0 )
   {
     //TODO: fix after HF28 along with problem in perform_vesting_share_split()
@@ -391,7 +392,7 @@ void withdraw_vesting_evaluator::do_apply( const withdraw_vesting_operation& o )
     } );
   }
   if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
-    _db.rc.update_account_after_vest_change( account, now, false, true );
+    _db.rc().update_account_after_vest_change( account, now, false, true );
 }
 
 void set_withdraw_vesting_route_evaluator::do_apply( const set_withdraw_vesting_route_operation& o )
@@ -655,7 +656,7 @@ void claim_reward_balance_evaluator::do_apply( const claim_reward_balance_operat
     if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
     {
       util::update_manabar( dgpo, a, op.reward_vests.amount.value );
-      _db.rc.regenerate_rc_mana( a, now );
+      _db.rc().regenerate_rc_mana( a, now );
     }
 
     a.vesting_shares += op.reward_vests;
@@ -663,7 +664,7 @@ void claim_reward_balance_evaluator::do_apply( const claim_reward_balance_operat
     a.reward_vesting_hive -= reward_vesting_hive_to_move;
   } );
   if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
-    _db.rc.update_account_after_vest_change( acnt, now );
+    _db.rc().update_account_after_vest_change( acnt, now );
 
   _db.modify( dgpo, [&]( dynamic_global_property_object& gpo )
   {
@@ -719,14 +720,14 @@ void claim_reward_balance2_evaluator::do_apply( const claim_reward_balance2_oper
           reward_vesting_hive_to_move = asset( fc::uint128_to_uint64( ( uint128_t( token.amount.value ) * uint128_t( a->get_vest_rewards_as_hive().amount.value ) )
             / uint128_t( a->get_vest_rewards().amount.value ) ), HIVE_SYMBOL );
 
-        _db.rc.regenerate_rc_mana( *a, now );
+        _db.rc().regenerate_rc_mana( *a, now );
         _db.modify( *a, [&]( account_object& a )
         {
           a.vesting_shares += token;
           a.reward_vesting_balance -= token;
           a.reward_vesting_hive -= reward_vesting_hive_to_move;
         } );
-        _db.rc.update_account_after_vest_change( *a, now );
+        _db.rc().update_account_after_vest_change( *a, now );
 
         _db.modify( dgpo, [&]( dynamic_global_property_object& gpo )
         {
@@ -771,8 +772,8 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
 
   if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
   {
-    _db.rc.regenerate_rc_mana( delegator, now );
-    _db.rc.regenerate_rc_mana( delegatee, now );
+    _db.rc().regenerate_rc_mana( delegator, now );
+    _db.rc().regenerate_rc_mana( delegatee, now );
   }
 
   if( _db.has_hardfork( HIVE_HARDFORK_0_20__2539 ) )
@@ -989,8 +990,8 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
 
   if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
   {
-    _db.rc.update_account_after_vest_change( delegator, now, true, true );
-    _db.rc.update_account_after_vest_change( delegatee, now, true, true );
+    _db.rc().update_account_after_vest_change( delegator, now, true, true );
+    _db.rc().update_account_after_vest_change( delegatee, now, true, true );
   }
 }
 
