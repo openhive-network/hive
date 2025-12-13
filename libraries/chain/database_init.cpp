@@ -423,7 +423,7 @@ database::signal_connection_ptr connect_signal_impl( TSignal& signal, const TNot
   fcall<TNotification> fcall_wrapper( func, benchmark_dumper, plugin,
     util::advanced_benchmark_dumper::generate_context_desc<IS_PRE_OPERATION>( plugin.get_name() ), item_name );
 
-  return std::make_unique<boost::signals2::connection>( signal.connect(group, fcall_wrapper) );
+  return hive::utilities::make_signal_connection_ptr( signal.connect(group, fcall_wrapper) );
 }
 
 database::signal_connection_ptr database::add_pre_apply_operation_handler( const apply_operation_handler_t& func,
@@ -446,7 +446,7 @@ database::signal_connection_ptr database::add_pre_apply_operation_handler( const
       _benchmark_dumper.end( context, name );
   };
 
-  return std::make_unique<boost::signals2::connection>( _my->_pre_apply_operation_signal.connect(group, complex_func) );
+  return hive::utilities::make_signal_connection_ptr( _my->_pre_apply_operation_signal.connect(group, complex_func) );
 }
 
 database::signal_connection_ptr database::add_post_apply_operation_handler( const apply_operation_handler_t& func,
@@ -469,7 +469,7 @@ database::signal_connection_ptr database::add_post_apply_operation_handler( cons
       _benchmark_dumper.end( context, name );
   };
 
-  return std::make_unique<boost::signals2::connection>( _my->_post_apply_operation_signal.connect(group, complex_func) );
+  return hive::utilities::make_signal_connection_ptr( _my->_post_apply_operation_signal.connect(group, complex_func) );
 }
 
 database::signal_connection_ptr database::add_pre_apply_transaction_handler( const apply_transaction_handler_t& func,
@@ -582,7 +582,7 @@ database::signal_connection_ptr database::add_flush_handler( const flush_handler
 
 database::signal_connection_ptr database::add_plugin_index_handler( const std::function<void()>& func )
 {
-  return std::make_unique<boost::signals2::connection>( _my->_plugin_index_signal.connect( func ) );
+  return hive::utilities::make_signal_connection_ptr( _my->_plugin_index_signal.connect( func ) );
 }
 
 } } // hive::chain

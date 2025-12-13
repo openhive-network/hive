@@ -1344,7 +1344,7 @@ void chain_plugin_impl::prepare_work( bool started, synchronization_type& on_syn
   if( !started )
   {
     ilog( "Waiting for chain plugin to start" );
-    chain_sync_con = std::make_unique<boost::signals2::connection>( on_sync.connect( 0, [this]()
+    chain_sync_con = hive::utilities::make_signal_connection_ptr( on_sync.connect( 0, [this]()
     {
       webserver.start_webserver();
     }) );
