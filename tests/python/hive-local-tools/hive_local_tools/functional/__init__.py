@@ -18,6 +18,22 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
 
+def _warmup_loguru_handlers() -> None:
+    """
+    Pre-initialize loguru's multiprocessing queue handlers to avoid race conditions.
+
+    Loguru's queued handler uses multiprocessing queues for async logging.
+    When multiple threads simultaneously trigger logging for the first time,
+    the queue initialization can segfault due to thread-unsafe multiprocessing code.
+
+    This function triggers a log message to ensure loguru's queue is initialized
+    before any threads are spawned.
+    """
+    with contextlib.suppress(Exception):
+        # Trigger loguru initialization by logging in main thread
+        tt.logger.opt(depth=1).trace("Warming up loguru handlers for thread-safe operation")
+
+
 def _warmup_msgspec_decoders() -> None:
     """
     Pre-initialize msgspec decoders in the main thread to avoid race conditions.
@@ -63,7 +79,8 @@ def simultaneous_node_startup(
     time_control: tt.StartTimeControl = None,
     exit_before_synchronization: bool = False,
 ) -> None:
-    # Warm up msgspec decoders before spawning threads to avoid race conditions
+    # Warm up loguru and msgspec before spawning threads to avoid race conditions
+    _warmup_loguru_handlers()
     _warmup_msgspec_decoders()
 
     with ThreadPoolExecutor(max_workers=len(nodes)) as executor:
