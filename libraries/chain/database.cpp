@@ -188,7 +188,7 @@ void database::initialize_state_independent_data(const open_args& args)
 
   _benchmark_dumper.set_enabled(args.benchmark_is_enabled);
   if( _benchmark_dumper.is_enabled() &&
-      ( !_pre_apply_operation_signal.empty() || !_post_apply_operation_signal.empty() ) )
+      ( !_my->_pre_apply_operation_signal.empty() || !_my->_post_apply_operation_signal.empty() ) )
   {
     wlog( "BENCHMARK will run into nested measurements - data on operations that emit vops will be lost!!!" );
   }
@@ -784,62 +784,62 @@ void database::post_push_virtual_operation( const operation& op, const fc::optio
 
 void database::notify_pre_apply_operation( const operation_notification& note )
 {
-  HIVE_TRY_NOTIFY( _pre_apply_operation_signal, note )
+  HIVE_TRY_NOTIFY( _my->_pre_apply_operation_signal, note )
 }
 
 void database::notify_post_apply_operation( const operation_notification& note )
 {
-  HIVE_TRY_NOTIFY( _post_apply_operation_signal, note )
+  HIVE_TRY_NOTIFY( _my->_post_apply_operation_signal, note )
 }
 
 void database::notify_pre_apply_block( const block_notification& note )
 {
-  HIVE_TRY_NOTIFY( _pre_apply_block_signal, note )
+  HIVE_TRY_NOTIFY( _my->_pre_apply_block_signal, note )
 }
 
 void database::notify_irreversible_block( uint32_t block_num )
 {
-  HIVE_TRY_NOTIFY( _on_irreversible_block, block_num )
+  HIVE_TRY_NOTIFY( _my->_on_irreversible_block, block_num )
 }
 
 void database::notify_switch_fork( uint32_t block_num )
 {
-  HIVE_TRY_NOTIFY( _switch_fork_signal, block_num )
+  HIVE_TRY_NOTIFY( _my->_switch_fork_signal, block_num )
 }
 
 void database::notify_post_apply_block( const block_notification& note )
 {
-  HIVE_TRY_NOTIFY( _post_apply_block_signal, note )
+  HIVE_TRY_NOTIFY( _my->_post_apply_block_signal, note )
 }
 
 void database::notify_fail_apply_block( const block_notification& note )
 {
-  HIVE_TRY_NOTIFY( _fail_apply_block_signal, note )
+  HIVE_TRY_NOTIFY( _my->_fail_apply_block_signal, note )
 }
 
 void database::notify_pre_apply_transaction( const transaction_notification& note )
 {
-  HIVE_TRY_NOTIFY( _pre_apply_transaction_signal, note )
+  HIVE_TRY_NOTIFY( _my->_pre_apply_transaction_signal, note )
 }
 
 void database::notify_post_apply_transaction( const transaction_notification& note )
 {
-  HIVE_TRY_NOTIFY( _post_apply_transaction_signal, note )
+  HIVE_TRY_NOTIFY( _my->_post_apply_transaction_signal, note )
 }
 
 void database::notify_prepare_snapshot_data_supplement(const prepare_snapshot_supplement_notification& note)
 {
-  HIVE_TRY_NOTIFY(_prepare_snapshot_supplement_signal, note)
+  HIVE_TRY_NOTIFY(_my->_prepare_snapshot_supplement_signal, note)
 }
 
 void database::notify_load_snapshot_data_supplement(const load_snapshot_supplement_notification& note)
 {
-  HIVE_TRY_NOTIFY(_load_snapshot_supplement_signal, note)
+  HIVE_TRY_NOTIFY(_my->_load_snapshot_supplement_signal, note)
 }
 
 void database::notify_comment_reward(const comment_reward_notification& note)
 {
-  HIVE_TRY_NOTIFY(_comment_reward_signal, note)
+  HIVE_TRY_NOTIFY(_my->_comment_reward_signal, note)
 }
 
 void database::notify_end_of_syncing()
@@ -847,32 +847,42 @@ void database::notify_end_of_syncing()
   flush_to_all_storages();
   get_comments_handler().on_end_of_syncing();
 
-  HIVE_TRY_NOTIFY(_end_of_syncing_signal)
+  HIVE_TRY_NOTIFY(_my->_end_of_syncing_signal)
 }
 
 void database::notify_pre_apply_custom_operation( const custom_operation_notification& note )
 {
-  HIVE_TRY_NOTIFY( _pre_apply_custom_operation_signal, note )
+  HIVE_TRY_NOTIFY( _my->_pre_apply_custom_operation_signal, note )
 }
 
 void database::notify_post_apply_custom_operation( const custom_operation_notification& note )
 {
-  HIVE_TRY_NOTIFY( _post_apply_custom_operation_signal, note )
+  HIVE_TRY_NOTIFY( _my->_post_apply_custom_operation_signal, note )
 }
 
 void database::notify_finish_push_block( const block_notification& note )
 {
-  HIVE_TRY_NOTIFY( _finish_push_block_signal, note )
+  HIVE_TRY_NOTIFY( _my->_finish_push_block_signal, note )
 }
 
 void database::notify_wipe()
 {
-  HIVE_TRY_NOTIFY(_wipe_signal)
+  HIVE_TRY_NOTIFY(_my->_wipe_signal)
 }
 
 void database::notify_flush()
 {
-  HIVE_TRY_NOTIFY( _flush_signal )
+  HIVE_TRY_NOTIFY( _my->_flush_signal )
+}
+
+void database::notify_pre_reindex( const reindex_notification& note )
+{
+  HIVE_TRY_NOTIFY( _my->_pre_reindex_signal, note )
+}
+
+void database::notify_post_reindex( const reindex_notification& note )
+{
+  HIVE_TRY_NOTIFY( _my->_post_reindex_signal, note )
 }
 
 account_name_type database::get_scheduled_witness( uint32_t slot_num )const
