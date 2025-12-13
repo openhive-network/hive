@@ -3,7 +3,6 @@
   */
 #pragma once
 #include <hive/chain/block_flow_control.hpp>
-#include <hive/chain/block_write_interface.hpp>
 #include <hive/chain/global_property_object.hpp>
 #include <hive/chain/irreversible_block_data.hpp>
 #include <hive/chain/node_property_object.hpp>
@@ -66,6 +65,7 @@ namespace chain {
   class custom_operation_interpreter;
   class custom_operation_notification;
   class hardfork_property_object;
+  class block_write_i;
 
   class blockchain_worker_thread_pool;
 
