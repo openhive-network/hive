@@ -3,7 +3,6 @@
   */
 #pragma once
 #include <hive/chain/global_property_object.hpp>
-#include <hive/chain/irreversible_block_data.hpp>
 #include <hive/chain/node_property_object.hpp>
 
 #include <hive/chain/util/advanced_benchmark_dumper.hpp>
@@ -77,6 +76,7 @@ namespace chain {
   class resource_credits;
   struct full_transaction_type;
   struct full_block_type;
+  struct irreversible_block_data_type;
 
   namespace util {
     struct comment_reward_context;
