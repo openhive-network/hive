@@ -9,8 +9,13 @@
 #include <hive/chain/global_property_object_multiindex.hpp>
 
 #include <hive/protocol/hive_operations.hpp>
+#include <hive/protocol/hive_virtual_operations.hpp>
 
 namespace hive { namespace chain {
+
+using hive::protocol::fill_collateralized_convert_request_operation;
+using hive::protocol::fill_convert_request_operation;
+using hive::protocol::system_warning_operation;
 
 void initialize_core_indexes_05( database& db )
 {

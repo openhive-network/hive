@@ -2,6 +2,7 @@
 
 #include <hive/chain/database.hpp>
 #include <hive/chain/evaluator_registry.hpp>
+#include <hive/chain/rc/rc_utility.hpp>
 #include <hive/chain/util/decoded_types_data_storage.hpp>
 
 #include <hive/protocol/types.hpp>
@@ -28,6 +29,7 @@ class database_impl
 
     database&                                         _self;
     evaluator_registry< operation >                   _evaluator_registry;
+    resource_credits                                  _rc;
     std::map<account_name_type, block_id_type>        _last_fast_approved_block_by_witness;
     std::unique_ptr<util::decoded_types_data_storage> _decoded_types_data_storage;
 

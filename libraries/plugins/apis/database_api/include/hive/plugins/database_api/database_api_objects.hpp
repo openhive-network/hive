@@ -332,7 +332,7 @@ struct api_comment_object
   bool              allow_votes = false;
   bool              allow_curation_rewards = false;
   bool              was_voted_on = false;
-  vector< beneficiary_route_type > beneficiaries;
+  vector< protocol::beneficiary_route_type > beneficiaries;
 };
 
 struct api_comment_vote_object

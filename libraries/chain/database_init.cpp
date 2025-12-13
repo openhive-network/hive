@@ -2,6 +2,7 @@
 
 #include <hive/chain/database.hpp>
 #include <hive/chain/notifications.hpp>
+#include <hive/chain/rc/rc_utility.hpp>
 #include <hive/chain/hive_evaluator.hpp>
 #include <hive/chain/evaluator_registry.hpp>
 #include <hive/chain/custom_operation_interpreter.hpp>
@@ -36,7 +37,7 @@ void database::initialize_evaluators()
   register_smt_evaluators( _my->_evaluator_registry );
 #endif
 
-  rc.initialize_evaluators();
+  rc().initialize_evaluators();
 }
 
 
