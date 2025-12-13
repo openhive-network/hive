@@ -1,9 +1,7 @@
 from __future__ import annotations
 
 import contextlib
-from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
-from functools import partial
 from typing import TYPE_CHECKING
 
 import test_tools as tt
