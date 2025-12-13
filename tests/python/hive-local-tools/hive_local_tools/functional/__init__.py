@@ -71,7 +71,7 @@ def simultaneous_node_startup(
     # Loguru's queued handler uses multiprocessing.Queue which is not thread-safe.
     import sys
 
-    saved_handlers = tt.logger._core.handlers.copy()
+    saved_handlers = tt.logger._core.handlers.copy()  # noqa: SLF001 - No public API for this
     tt.logger.remove()  # Remove all handlers
     tt.logger.add(sys.stderr, enqueue=False, level="TRACE")  # Add synchronous handler
 
@@ -99,8 +99,8 @@ def simultaneous_node_startup(
     finally:
         # Restore original loguru configuration
         tt.logger.remove()
-        for handler_id, handler in saved_handlers.items():
-            tt.logger.add(**handler._sink)
+        for handler in saved_handlers.values():  # Only need values, not keys
+            tt.logger.add(**handler._sink)  # noqa: SLF001 - No public API for handler config
 
 
 def connect_nodes(first_node: tt.AnyNode, second_node: tt.AnyNode) -> None:
