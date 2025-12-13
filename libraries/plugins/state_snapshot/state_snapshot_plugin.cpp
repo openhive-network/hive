@@ -10,6 +10,7 @@
 
 #include <hive/chain/database.hpp>
 #include <hive/chain/database_exceptions.hpp>
+#include <hive/chain/irreversible_block_data.hpp>
 #include <hive/chain/util/decoded_types_data_storage.hpp>
 #include <hive/chain/util/state_checker_tools.hpp>
 

@@ -17,6 +17,7 @@
 #include <hive/chain/database.hpp>
 #include <hive/chain/database_exceptions.hpp>
 #include <hive/chain/db_with.hpp>
+#include <hive/chain/irreversible_block_data.hpp>
 #include <hive/chain/dhf_objects.hpp>
 #include <hive/chain/evaluator_registry.hpp>
 #include <hive/chain/smt_objects.hpp>
