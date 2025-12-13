@@ -18,8 +18,6 @@
 #include <hive/protocol/protocol.hpp>
 #include <hive/protocol/hardfork.hpp>
 
-#include <appbase/plugin.hpp>
-
 #include <fc/signals.hpp>
 #include <fc/reflect/reflect.hpp>
 
@@ -27,6 +25,11 @@
 
 #include <functional>
 #include <map>
+
+namespace appbase {
+  class application;
+  class abstract_plugin;
+}
 
 namespace hive {
 
