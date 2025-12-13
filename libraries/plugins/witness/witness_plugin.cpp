@@ -90,8 +90,8 @@ class witness_plugin_impl
     plugins::chain::chain_plugin& _chain_plugin;
     chain::database&              _db;
     const chain::block_read_i&    _block_reader;
-    boost::signals2::connection   _pre_apply_operation_conn;
-    boost::signals2::connection   _finish_push_block_conn;
+    chain::database::signal_connection_ptr   _pre_apply_operation_conn;
+    chain::database::signal_connection_ptr   _finish_push_block_conn;
 
     std::shared_ptr< witness::block_producer >                        _block_producer;
     uint32_t _last_fast_confirmation_block_number = 0;

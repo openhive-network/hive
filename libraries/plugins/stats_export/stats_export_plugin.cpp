@@ -76,7 +76,7 @@ class stats_export_plugin_impl
 
     database&                     _db;
     stats_export_plugin&          _self;
-    boost::signals2::connection   _post_apply_block_conn;
+    chain::database::signal_connection_ptr   _post_apply_block_conn;
 
     block_data_export_plugin&     _export_plugin;
 };

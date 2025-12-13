@@ -41,8 +41,8 @@ class reputation_plugin_impl
 
     chain::database&              _db;
     reputation_plugin&            _self;
-    boost::signals2::connection   _pre_apply_operation_conn;
-    boost::signals2::connection   _post_apply_operation_conn;
+    chain::database::signal_connection_ptr   _pre_apply_operation_conn;
+    chain::database::signal_connection_ptr   _post_apply_operation_conn;
 };
 
 struct pre_operation_visitor
