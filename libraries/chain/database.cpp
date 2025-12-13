@@ -11,7 +11,7 @@
 #include <hive/chain/account_object_multiindex.hpp>
 #include <hive/chain/block_summary_object_multiindex.hpp>
 #include <hive/chain/global_property_object_multiindex.hpp>
-#include <hive/chain/hardfork_property_object_multiindex.hpp>
+#include <hive/chain/hardfork_property_object.hpp>
 #include <hive/chain/block_write_interface.hpp>
 #include <hive/chain/compound.hpp>
 #include <hive/chain/database.hpp>
@@ -508,11 +508,6 @@ void database::set_node_skip_flags( uint32_t skip_flags )
 const feed_history_object& database::get_feed_history()const
 { try {
   return get< feed_history_object >();
-} FC_CAPTURE_AND_RETHROW() }
-
-const hardfork_property_object& database::get_hardfork_property_object()const
-{ try {
-  return get< hardfork_property_object >();
 } FC_CAPTURE_AND_RETHROW() }
 
 const time_point_sec database::calculate_discussion_payout_time( const comment_object& comment )const
@@ -1549,14 +1544,6 @@ void database::restore_accounts( const std::set< std::string >& restored_account
 
     ilog( "Balances ${hbd} and ${hive} for the account ${acc} were restored", ( "hbd", found->second.hbd_balance )( "hive", found->second.balance )( "acc", name ) );
   }
-}
-
-void database::gather_balance( const std::string& name, const asset& balance, const asset& hbd_balance )
-{
-  modify( get_hardfork_property_object(), [&]( hardfork_property_object& hfp )
-  {
-    hfp.h23_balances.emplace( std::make_pair( name, hf23_item{ balance, hbd_balance } ) );
-  } );
 }
 
 void database::clear_accounts( const std::set< std::string >& cleared_accounts )
