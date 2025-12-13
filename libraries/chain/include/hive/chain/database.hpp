@@ -119,6 +119,8 @@ namespace chain {
     */
   class database : public chainbase::database
   {
+      friend class database_impl;
+
     public:
       database( appbase::application& app );
       ~database();
