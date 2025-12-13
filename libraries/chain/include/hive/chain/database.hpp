@@ -120,6 +120,9 @@ namespace chain {
   class database : public chainbase::database
   {
       friend class database_impl;
+      friend void push_virtual_operation( database& db, const protocol::operation& op );
+      friend void pre_push_virtual_operation( database& db, const protocol::operation& op );
+      friend void post_push_virtual_operation( database& db, const protocol::operation& op, const fc::optional<uint64_t>& op_in_trx );
 
     public:
       database( appbase::application& app );
@@ -348,10 +351,6 @@ namespace chain {
       /// Returns number of block on head after popping.
       uint32_t pop_block_extended( const block_id_type end_block );
       void clear_pending();
-
-      void push_virtual_operation( const operation& op );
-      void pre_push_virtual_operation( const operation& op );
-      void post_push_virtual_operation( const operation& op, const fc::optional<uint64_t>& op_in_trx = fc::optional<uint64_t>() );
 
       /**
         *  This method is used to track applied operations during the evaluation of a block, these

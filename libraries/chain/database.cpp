@@ -33,6 +33,7 @@
 
 #include "database_impl.hpp"
 #include "database_vesting_helpers.hpp"
+#include <hive/chain/database_virtual_operations.hpp>
 
 #include <hive/chain/util/asset.hpp>
 #include <hive/chain/util/reward.hpp>
@@ -776,29 +777,29 @@ operation_notification database_impl::create_operation_notification( const opera
   return note;
 }
 
-void database::push_virtual_operation( const operation& op )
+void push_virtual_operation( database& db, const operation& op )
 {
   FC_ASSERT( is_virtual_operation( op ) && "on push" );
-  _current_op_in_trx++;
-  operation_notification note = _my->create_operation_notification( op );
-  notify_pre_apply_operation( note );
-  notify_post_apply_operation( note );
+  db._current_op_in_trx++;
+  operation_notification note = db._my->create_operation_notification( op );
+  db.notify_pre_apply_operation( note );
+  db.notify_post_apply_operation( note );
 }
 
-void database::pre_push_virtual_operation( const operation& op )
+void pre_push_virtual_operation( database& db, const operation& op )
 {
   FC_ASSERT( is_virtual_operation( op ) && "on pre-push" );
-  _current_op_in_trx++;
-  operation_notification note = _my->create_operation_notification( op );
-  notify_pre_apply_operation( note );
+  db._current_op_in_trx++;
+  operation_notification note = db._my->create_operation_notification( op );
+  db.notify_pre_apply_operation( note );
 }
 
-void database::post_push_virtual_operation( const operation& op, const fc::optional<uint64_t>& op_in_trx )
+void post_push_virtual_operation( database& db, const operation& op, const fc::optional<uint64_t>& op_in_trx )
 {
   FC_ASSERT( is_virtual_operation( op ) && "on post-push" );
-  operation_notification note = _my->create_operation_notification( op );
+  operation_notification note = db._my->create_operation_notification( op );
   if(op_in_trx.valid()) note.op_in_trx = *op_in_trx;
-  notify_post_apply_operation( note );
+  db.notify_post_apply_operation( note );
 }
 
 void database::notify_pre_apply_operation( const operation_notification& note )
@@ -1267,7 +1268,7 @@ void database::clear_null_account_balance()
     vop.total_cleared.push_back( total_vests );
   if( total_hbd.amount.value > 0 )
     vop.total_cleared.push_back( total_hbd );
-  pre_push_virtual_operation( vop_op );
+  pre_push_virtual_operation( *this, vop_op );
 
   /////////////////////////////////////////////////////////////////////////////////////
 
@@ -1349,7 +1350,7 @@ void database::clear_null_account_balance()
   if( total_hbd.amount > 0 )
     adjust_supply( -total_hbd );
 
-  post_push_virtual_operation( vop_op );
+  post_push_virtual_operation( *this, vop_op );
 }
 
 void database::consolidate_treasury_balance()
@@ -1377,7 +1378,7 @@ void database::consolidate_treasury_balance()
     vop.total_moved.push_back( total_vests );
   if( total_hbd.amount.value > 0 )
     vop.total_moved.push_back( total_hbd );
-  pre_push_virtual_operation( vop_op );
+  pre_push_virtual_operation( *this, vop_op );
 
   /////////////////////////////////////////////////////////////////////////////////////
 
@@ -1459,7 +1460,7 @@ void database::consolidate_treasury_balance()
 
   //////////////////////////////////////////////////////////////
 
-  post_push_virtual_operation( vop_op );
+  post_push_virtual_operation( *this, vop_op );
 }
 
 void database::lock_account( const account_object& account )
@@ -1538,7 +1539,7 @@ void database::restore_accounts( const std::set< std::string >& restored_account
     adjust_balance( *account_ptr, found->second.balance );
 
     operation vop = hardfork_hive_restore_operation( name, treasury_name, found->second.hbd_balance, found->second.balance );
-    push_virtual_operation( vop );
+    push_virtual_operation( *this, vop );
 
     ilog( "Balances ${hbd} and ${hive} for the account ${acc} were restored", ( "hbd", found->second.hbd_balance )( "hive", found->second.balance )( "acc", name ) );
   }
@@ -1733,7 +1734,7 @@ void database::clear_account( const account_object& account )
 
   gather_balance( account_name, vop.hive_transferred, vop.hbd_transferred );
 
-  push_virtual_operation( vop );
+  push_virtual_operation( *this, vop );
 }
 
 void database::process_proposals( const block_notification& note )
@@ -1912,7 +1913,7 @@ void database::process_vesting_withdrawals()
             asset routed = auto_vest_mode ? vests : ( vests * cprops.get_vesting_share_price() );
             operation vop = fill_vesting_withdraw_operation( from_account.get_name(), to_account.get_name(), vests, routed );
 
-            pre_push_virtual_operation( vop );
+            pre_push_virtual_operation( *this, vop );
 
             modify( to_account, [&]( account_object& a )
             {
@@ -1957,7 +1958,7 @@ void database::process_vesting_withdrawals()
               });
             }
 
-            post_push_virtual_operation( vop );
+            post_push_virtual_operation( *this, vop );
           }
         }
       }
@@ -1974,7 +1975,7 @@ void database::process_vesting_withdrawals()
     operation vop = fill_vesting_withdraw_operation( from_account.get_name(), from_account.get_name(), asset( to_convert, VESTS_SYMBOL ), converted_hive );
     //note: it has to be generated even if to_convert is zero because we've accumulated change on from_account
     //and only now we are going to update that account's VESTS (see issue #337)
-    pre_push_virtual_operation( vop );
+    pre_push_virtual_operation( *this, vop );
 
     if( has_hardfork( HIVE_HARDFORK_0_20 ) )
       rc().regenerate_rc_mana( from_account, now );
@@ -2032,7 +2033,7 @@ void database::process_vesting_withdrawals()
         adjust_proxied_witness_votes( from_account, -to_withdraw );
     }
 
-    post_push_virtual_operation( vop );
+    post_push_virtual_operation( *this, vop );
   }
   if( _benchmark_dumper.is_enabled() && count )
     _benchmark_dumper.end( "processing", "hive::protocol::withdraw_vesting_operation", count );
@@ -2102,7 +2103,7 @@ void database::process_funds()
       witness_reward *= wso.elected_weight;
     else
     {
-      push_virtual_operation( system_warning_operation( FC_LOG_MESSAGE( warn,
+      push_virtual_operation( *this, system_warning_operation( FC_LOG_MESSAGE( warn,
         "Encountered unknown witness type for witness: ${w}", ( "w", cwit.owner ) ).get_message() ) );
     }
 
@@ -2134,9 +2135,9 @@ void database::process_funds()
       [&]( const asset& vesting_shares )
       {
         vop.get< producer_reward_operation >().vesting_shares = vesting_shares;
-        pre_push_virtual_operation( vop );
+        pre_push_virtual_operation( *this, vop );
       } );
-    post_push_virtual_operation( vop );
+    post_push_virtual_operation( *this, vop );
   }
   else
   {
@@ -2232,9 +2233,9 @@ asset database::get_producer_reward()
       [&]( const asset& vesting_shares )
       {
         vop.get< producer_reward_operation >().vesting_shares = vesting_shares;
-        pre_push_virtual_operation( vop );
+        pre_push_virtual_operation( *this, vop );
       } );
-    post_push_virtual_operation( vop );
+    post_push_virtual_operation( *this, vop );
   }
   else
   {
@@ -2242,7 +2243,7 @@ asset database::get_producer_reward()
     {
       a.balance += pay;
     } );
-    push_virtual_operation( producer_reward_operation( witness_account.get_name(), pay ) );
+    push_virtual_operation( *this, producer_reward_operation( witness_account.get_name(), pay ) );
   }
 
   return pay;
@@ -2294,7 +2295,7 @@ void database::pay_liquidity_reward()
         obj.weight      = 0;
       } );
 
-      push_virtual_operation( liquidity_reward_operation( get(itr->owner).get_name(), reward ) );
+      push_virtual_operation( *this, liquidity_reward_operation( get(itr->owner).get_name(), reward ) );
     }
   }
 }
@@ -2381,7 +2382,7 @@ void database::account_recovery_processing()
       a.set_recovery_account( new_recovery_account );
     });
 
-    push_virtual_operation(changed_recovery_account_operation( account.get_name(), old_recovery_account_name, new_recovery_account.get_name() ));
+    push_virtual_operation( *this, changed_recovery_account_operation( account.get_name(), old_recovery_account_name, new_recovery_account.get_name() ));
 
     remove( *change_req );
     change_req = change_req_idx.begin();
@@ -2410,9 +2411,9 @@ void database::process_decline_voting_rights()
       clear_witness_votes( account );
 
       if( account.has_proxy() )
-        push_virtual_operation( proxy_cleared_operation( account.get_name(), get_account( account.get_proxy() ).get_name()) );
+        push_virtual_operation( *this, proxy_cleared_operation( account.get_name(), get_account( account.get_proxy() ).get_name()) );
 
-      push_virtual_operation( declined_voting_rights_operation( itr->account ) );
+      push_virtual_operation( *this, declined_voting_rights_operation( itr->account ) );
 
       modify( account, [&]( account_object& a )
       {
@@ -2898,7 +2899,7 @@ void database::process_genesis_accounts()
       account_idx.begin()
     , account_idx.end()
     , [&]( const account_object& obj ){
-        push_virtual_operation(
+        push_virtual_operation( *this,
           account_created_operation( obj.get_name(), obj.get_name(), asset(0, VESTS_SYMBOL), asset(0, VESTS_SYMBOL) ) );
       }
   );
@@ -3017,7 +3018,7 @@ try {
 
             if( min_price > fho.current_median_history )
             {
-              push_virtual_operation( system_warning_operation( FC_LOG_MESSAGE( warn,
+              push_virtual_operation( *this, system_warning_operation( FC_LOG_MESSAGE( warn,
                 "HIVE price corrected upward due to ${limit}% HBD cutoff rule, from ${actual} to ${corrected}",
                 ( "limit", limit )( "actual", fho.current_median_history )( "corrected", min_price )).get_message()));
 
@@ -3339,10 +3340,10 @@ void database::update_global_dynamic_data( const signed_block& b )
             if( head_block_num() - w.last_confirmed_block_num  > HIVE_WITNESS_SHUTDOWN_THRESHOLD )
             {
               w.signing_key = public_key_type();
-              push_virtual_operation( shutdown_witness_operation( w.owner ) );
+              push_virtual_operation( *this, shutdown_witness_operation( w.owner ) );
             }
           }
-          push_virtual_operation( producer_missed_operation( w.owner ) );
+          push_virtual_operation( *this, producer_missed_operation( w.owner ) );
         } );
       }
     }
@@ -3749,7 +3750,7 @@ FC_TODO( " Remove if(), do assert unconditionally after HF20 occurs" )
     }
   }
 
-  push_virtual_operation( fill_order_operation( new_order.seller, new_order.orderid, new_order_pays, old_order.seller, old_order.orderid, old_order_pays ) );
+  push_virtual_operation( *this, fill_order_operation( new_order.seller, new_order.orderid, new_order_pays, old_order.seller, old_order.orderid, old_order_pays ) );
 
   int result = 0;
   result |= fill_order( new_order, new_order_pays, new_order_receives );
@@ -3862,7 +3863,7 @@ void database::cancel_order( const limit_order_object& order, bool suppress_vop 
 
   adjust_balance( order.seller, amount_back );
   if( !suppress_vop )
-    push_virtual_operation(limit_order_cancelled_operation(order.seller, order.orderid, amount_back));
+    push_virtual_operation( *this, limit_order_cancelled_operation(order.seller, order.orderid, amount_back));
 
   remove(order);
 }
@@ -3902,7 +3903,7 @@ void database::clear_expired_delegations()
     auto& delegator = get_account( itr->get_delegator() );
     operation vop = return_vesting_delegation_operation( delegator.get_name(), itr->get_vesting() );
     try{
-    pre_push_virtual_operation( vop );
+    pre_push_virtual_operation( *this, vop );
 
     modify( delegator, [&]( account_object& a )
     {
@@ -3917,7 +3918,7 @@ void database::clear_expired_delegations()
     if( has_hardfork( HIVE_HARDFORK_0_20 ) )
       rc().update_account_after_vest_change( delegator, now );
 
-    post_push_virtual_operation( vop );
+    post_push_virtual_operation( *this, vop );
 
     remove( *itr );
     itr = delegations_by_exp.begin();
@@ -3998,7 +3999,7 @@ void database::modify_balance( const account_object& a, const asset& delta, bool
           acnt.hbd_last_interest_payment = _head_block_time;
 
           if(interest > 0)
-            push_virtual_operation( interest_operation( a.get_name(), interest_paid, true ) );
+            push_virtual_operation( *this, interest_operation( a.get_name(), interest_paid, true ) );
 
           modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& props)
           {
@@ -4142,7 +4143,7 @@ void database::adjust_savings_balance( const account_object& a, const asset& del
           acnt.savings_hbd_last_interest_payment = _head_block_time;
 
           if(interest > 0)
-            push_virtual_operation( interest_operation( a.get_name(), interest_paid, false ) );
+            push_virtual_operation( *this, interest_operation( a.get_name(), interest_paid, false ) );
 
           modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& props)
           {
@@ -4658,14 +4659,14 @@ void database::remove_expired_governance_votes()
       clear_witness_votes( account );
 
       if( account.has_proxy() )
-        push_virtual_operation( proxy_cleared_operation( account.get_name(), get_account( account.get_proxy() ).get_name()) );
+        push_virtual_operation( *this, proxy_cleared_operation( account.get_name(), get_account( account.get_proxy() ).get_name()) );
 
       modify( account, [&]( account_object& a )
       {
         a.clear_proxy();
         a.set_governance_vote_expired();
       } );
-      push_virtual_operation( expired_account_notification_operation( account.get_name() ) );
+      push_virtual_operation( *this, expired_account_notification_operation( account.get_name() ) );
     }
     else
     {

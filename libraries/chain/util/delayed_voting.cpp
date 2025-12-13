@@ -1,5 +1,6 @@
 #include <hive/chain/util/delayed_voting.hpp>
 #include <hive/chain/util/delayed_voting_processor.hpp>
+#include <hive/chain/database_virtual_operations.hpp>
 
 namespace hive { namespace chain {
 
@@ -93,7 +94,7 @@ void delayed_voting::run( const fc::time_point_sec& head_time )
 
     operation vop = hive::protocol::delayed_voting_operation( current->get_name(), _val );
     /// Push vop to be recorded by other parts (like AH plugin etc.)
-    db.push_virtual_operation( vop );
+    push_virtual_operation( db, vop );
 
     db.adjust_proxied_witness_votes( *current, _val.value );
 

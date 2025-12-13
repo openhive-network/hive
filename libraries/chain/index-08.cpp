@@ -4,6 +4,7 @@
 #include <hive/chain/detail/state/limit_order_object_multiindex.hpp>
 
 #include <hive/chain/account_object_multiindex.hpp>
+#include <hive/chain/database_virtual_operations.hpp>
 #include <hive/chain/index.hpp>
 #include <chainbase/chainbase.inl>
 
@@ -65,7 +66,7 @@ void database::expire_escrow_ratification()
     adjust_balance( old_escrow.from, old_escrow.get_hbd_balance() );
     adjust_balance( old_escrow.from, old_escrow.get_fee() );
 
-    push_virtual_operation( escrow_rejected_operation( old_escrow.from, old_escrow.to, old_escrow.agent, old_escrow.escrow_id,
+    push_virtual_operation( *this, escrow_rejected_operation( old_escrow.from, old_escrow.to, old_escrow.agent, old_escrow.escrow_id,
       old_escrow.get_hbd_balance(), old_escrow.get_hive_balance(), old_escrow.get_fee() ) );
 
     modify( get_account( old_escrow.from ), []( account_object& a )
@@ -146,7 +147,7 @@ void database::process_savings_withdraws()
       a.savings_withdraw_requests--;
     });
 
-    push_virtual_operation( fill_transfer_from_savings_operation( itr->from, itr->to, itr->amount, itr->request_id, to_string( itr->memo) ) );
+    push_virtual_operation( *this, fill_transfer_from_savings_operation( itr->from, itr->to, itr->amount, itr->request_id, to_string( itr->memo) ) );
 
     remove( *itr );
     itr = idx.begin();
