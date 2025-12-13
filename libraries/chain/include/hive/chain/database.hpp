@@ -385,16 +385,6 @@ namespace chain {
       void notify_end_of_syncing();
       void notify_wipe();
 
-    private:
-      template < bool IS_PRE_OPERATION, typename TSignal,
-                 typename TNotification = std::function<typename TSignal::signature_type> >
-      boost::signals2::connection connect_impl( TSignal& signal, const TNotification& func,
-        const abstract_plugin& plugin, int32_t group, const std::string& item_name = "" );
-
-      template< bool IS_PRE_OPERATION >
-      boost::signals2::connection any_apply_operation_handler_impl( const apply_operation_handler_t& func,
-        const abstract_plugin& plugin, int32_t group );
-
     public:
 
       boost::signals2::connection add_pre_apply_operation_handler       ( const apply_operation_handler_t&           func, const abstract_plugin& plugin, int32_t group = -1 );
