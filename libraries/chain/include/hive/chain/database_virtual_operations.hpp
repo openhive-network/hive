@@ -5,6 +5,8 @@
 
 namespace hive { namespace chain {
 
+using hive::protocol::operation;
+
 /// Push a complete virtual operation (pre + post notifications)
 void push_virtual_operation( database& db, const protocol::operation& op );
 
