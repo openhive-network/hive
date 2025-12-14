@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import contextlib
+from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
+from functools import partial
 from typing import TYPE_CHECKING
 
 import test_tools as tt
@@ -61,25 +63,33 @@ def simultaneous_node_startup(
     time_control: tt.StartTimeControl = None,
     exit_before_synchronization: bool = False,
 ) -> None:
-    # Note: This function previously used ThreadPoolExecutor for concurrent startup,
-    # but that caused segfaults in loguru's multiprocessing.Queue (not thread-safe).
-    # Now using sequential startup to avoid threading issues.
-    # The test validity is unchanged - this is just setup phase.
-    # The actual tests still run with all nodes operating concurrently.
-
-    # Warm up msgspec decoders to avoid any remaining race conditions
+    # Warm up msgspec decoders to avoid race conditions
+    # Loguru threading issues are now handled by global configuration in conftest.py
+    # (enqueue=False set at session scope before tests run)
     _warmup_msgspec_decoders()
 
-    # Start nodes sequentially (simple and stable)
-    for node in nodes:
-        node.run(
-            timeout=timeout,
-            alternate_chain_specs=alternate_chain_specs,
-            arguments=arguments or [],
-            wait_for_live=wait_for_live,
-            time_control=time_control,
-            exit_before_synchronization=exit_before_synchronization,
-        )
+    # Start nodes concurrently using ThreadPoolExecutor
+    # This is safe now because loguru is configured for synchronous mode globally
+    with ThreadPoolExecutor(max_workers=len(nodes)) as executor:
+        tasks = []
+        for node in nodes:
+            tasks.append(
+                executor.submit(
+                    partial(
+                        lambda _node: _node.run(
+                            timeout=timeout,
+                            alternate_chain_specs=alternate_chain_specs,
+                            arguments=arguments or [],
+                            wait_for_live=wait_for_live,
+                            time_control=time_control,
+                            exit_before_synchronization=exit_before_synchronization,
+                        ),
+                        node,
+                    )
+                )
+            )
+        for task in tasks:
+            task.result()
 
 
 def connect_nodes(first_node: tt.AnyNode, second_node: tt.AnyNode) -> None:
