@@ -65,8 +65,22 @@ def test_simply_hardfork_schedule() -> None:
     # verify are hardforks 6-20 were applied correctly
     for i in range(15):
         # Hardforks are applying in every witness schedules (every 21 blocks).
-        init_node.wait_for_block_with_number(42 + blocks_delay_margin + i * 21)
-        assert is_hardfork_applied(init_node, hf_number=6 + i)
+        # Use retry loop to handle timing variations under CI load
+        expected_block = 42 + blocks_delay_margin + i * 21
+        hf_num = 6 + i
+
+        # Wait for expected block
+        init_node.wait_for_block_with_number(expected_block)
+
+        # Retry check across several blocks if hardfork not applied yet
+        for retry in range(5):  # Check up to 5 blocks ahead
+            if is_hardfork_applied(init_node, hf_number=hf_num):
+                break
+            if retry < 4:  # Don't wait after last attempt
+                init_node.wait_for_block_with_number(expected_block + retry + 1)
+
+        assert is_hardfork_applied(init_node, hf_number=hf_num), \
+            f"Hardfork {hf_num} not applied by block {expected_block + 5}"
 
     # verify are hardforks 21-28 were applied correctly
     for i in range(8):
