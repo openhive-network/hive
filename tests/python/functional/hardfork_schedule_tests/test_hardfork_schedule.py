@@ -66,7 +66,7 @@ def test_simply_hardfork_schedule() -> None:
 
     _run_node_with_retry(
         init_node,
-        time_control=tt.SpeedUpRateTimeControl(speed_up_rate=20),
+        time_control=tt.SpeedUpRateTimeControl(speed_up_rate=5),  # Reduced from 20 to minimize cumulative timing drift
         alternate_chain_specs=tt.AlternateChainSpecs(
             genesis_time=int(tt.Time.now(serialize=False).timestamp()),
             hardfork_schedule=[
