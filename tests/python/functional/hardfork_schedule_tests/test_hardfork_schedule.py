@@ -50,6 +50,7 @@ def _wait_for_hardfork_with_retry(node: tt.InitNode, hf_number: int, expected_bl
     )
 
 
+@pytest.mark.timeout(600)  # Extended timeout for slower speed_up_rate=5
 def test_simply_hardfork_schedule() -> None:
     """
     Hardfork schedule depends on time. Therefore, possible is situation the hard works will be applying in other
