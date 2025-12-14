@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import logging
 import os
 from pathlib import Path
@@ -8,6 +9,31 @@ import pytest
 
 import test_tools as tt
 from test_tools.__private.scope.scope_fixtures import *  # noqa: F403
+
+
+def pytest_configure(config) -> None:
+    """
+    Warm up msgspec decoders early in each pytest-xdist worker process.
+
+    msgspec's decoder initialization involves Python's typing module internals
+    which are not thread-safe. When tests run in parallel (via pytest-xdist),
+    each worker process needs its own warmup to avoid segfaults during
+    concurrent API calls that trigger decoder initialization.
+    """
+    with contextlib.suppress(Exception):
+        from schemas.jsonrpc import get_response_model
+
+        # Import schema modules to trigger annotation resolution
+        import schemas.apis.database_api.fundaments_of_reponses  # noqa: F401
+        import schemas.apis.database_api.response_schemas  # noqa: F401
+        import schemas.apis.network_node_api  # noqa: F401
+        import schemas.apis.wallet_bridge_api  # noqa: F401
+        import schemas.transaction  # noqa: F401
+
+        # Warm up the decoder cache
+        get_response_model(str, '{"jsonrpc":"2.0","id":0,"result":"warmup"}', "hf26")
+        get_response_model(dict, '{"jsonrpc":"2.0","id":0,"result":{}}', "hf26")
+        get_response_model(list, '{"jsonrpc":"2.0","id":0,"result":[]}', "hf26")
 
 
 def pytest_sessionstart() -> None:
