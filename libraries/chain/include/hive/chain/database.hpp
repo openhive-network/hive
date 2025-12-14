@@ -10,8 +10,15 @@
 #include <hive/chain/external_storage/comments_handler_ptr.hpp>
 #include <hive/chain/external_storage/comment.hpp>
 
-#include <hive/protocol/protocol.hpp>
+#include <hive/protocol/asset.hpp>
 #include <hive/protocol/hardfork.hpp>
+
+namespace hive { namespace protocol {
+  struct signed_block;
+  struct signed_transaction;
+  struct authority;
+  struct price;
+} }
 
 #include <hive/utilities/signal_connection_ptr.hpp>
 
@@ -41,7 +48,6 @@ namespace chain {
 
   using hive::protocol::signed_transaction;
   using hive::protocol::signed_block;
-  using hive::protocol::operation;
   using hive::protocol::authority;
   using hive::protocol::asset;
   using hive::protocol::asset_symbol_type;
