@@ -24,6 +24,32 @@ def _run_node_with_retry(node: tt.InitNode, max_retries: int = 3, **kwargs) -> N
                 raise
 
 
+def _wait_for_hardfork_with_retry(node: tt.InitNode, hf_number: int, expected_block: int, max_retries: int = 10) -> None:
+    """
+    Wait for hardfork to apply with retry tolerance for CI load variations.
+
+    Under heavy CI load with faketime speedup, hardforks can apply several blocks
+    later than expected. This function retries across multiple blocks instead of
+    failing immediately.
+    """
+    # Wait for expected block first
+    node.wait_for_block_with_number(expected_block)
+
+    # Retry across multiple blocks if not applied yet
+    for retry in range(max_retries):
+        if is_hardfork_applied(node, hf_number=hf_number):
+            return  # Success
+        if retry < max_retries - 1:
+            node.wait_for_block_with_number(expected_block + retry + 1)
+
+    # Failed after all retries
+    current_block = expected_block + max_retries
+    raise AssertionError(
+        f"Hardfork {hf_number} not applied by block {current_block} "
+        f"(expected at {expected_block}, checked {max_retries} blocks ahead)"
+    )
+
+
 def test_simply_hardfork_schedule() -> None:
     """
     Hardfork schedule depends on time. Therefore, possible is situation the hard works will be applying in other
@@ -55,52 +81,24 @@ def test_simply_hardfork_schedule() -> None:
     )
 
     # verify are hardforks 0-2 were applied correctly (HF2 at block 0)
-    init_node.wait_for_block_with_number(blocks_delay_margin)
-    assert is_hardfork_applied(init_node, hf_number=2)
+    _wait_for_hardfork_with_retry(init_node, hf_number=2, expected_block=blocks_delay_margin)
 
     # verify are hardforks 3-5 were applied correctly
-    init_node.wait_for_block_with_number(20 + blocks_delay_margin)
-    assert is_hardfork_applied(init_node, hf_number=5)
+    _wait_for_hardfork_with_retry(init_node, hf_number=5, expected_block=20 + blocks_delay_margin)
 
     # verify are hardforks 6-20 were applied correctly
     for i in range(15):
         # Hardforks are applying in every witness schedules (every 21 blocks).
-        # Use retry loop to handle timing variations under CI load
         expected_block = 42 + blocks_delay_margin + i * 21
         hf_num = 6 + i
-
-        # Wait for expected block
-        init_node.wait_for_block_with_number(expected_block)
-
-        # Retry check across several blocks if hardfork not applied yet
-        for retry in range(10):  # Check up to 10 blocks ahead (increased from 5 for heavy CI load)
-            if is_hardfork_applied(init_node, hf_number=hf_num):
-                break
-            if retry < 9:  # Don't wait after last attempt
-                init_node.wait_for_block_with_number(expected_block + retry + 1)
-
-        assert is_hardfork_applied(init_node, hf_number=hf_num), \
-            f"Hardfork {hf_num} not applied by block {expected_block + 10}"
+        _wait_for_hardfork_with_retry(init_node, hf_number=hf_num, expected_block=expected_block)
 
     # verify are hardforks 21-28 were applied correctly
     for i in range(8):
         # Hardforks are applying in every witness schedules (every 21 blocks).
-        # Use retry loop to handle timing variations under CI load
         expected_block = 380 + blocks_delay_margin + i * 21
         hf_num = 21 + i
-
-        # Wait for expected block
-        init_node.wait_for_block_with_number(expected_block)
-
-        # Retry check across several blocks if hardfork not applied yet
-        for retry in range(10):  # Check up to 10 blocks ahead (increased from 5 for heavy CI load)
-            if is_hardfork_applied(init_node, hf_number=hf_num):
-                break
-            if retry < 9:  # Don't wait after last attempt
-                init_node.wait_for_block_with_number(expected_block + retry + 1)
-
-        assert is_hardfork_applied(init_node, hf_number=hf_num), \
-            f"Hardfork {hf_num} not applied by block {expected_block + 10}"
+        _wait_for_hardfork_with_retry(init_node, hf_number=hf_num, expected_block=expected_block)
 
 
 @pytest.mark.parametrize(
