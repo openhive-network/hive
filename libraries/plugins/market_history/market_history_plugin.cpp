@@ -4,6 +4,7 @@
 #include <hive/plugins/market_history/market_history_plugin.hpp>
 
 #include <hive/chain/database.hpp>
+#include <hive/protocol/operations.hpp>
 #include <hive/chain/notifications.hpp>
 #include <hive/chain/index.hpp>
 #include <chainbase/chainbase.inl>
@@ -21,6 +22,7 @@ namespace hive { namespace plugins { namespace market_history {
 namespace detail {
 
 using hive::protocol::fill_order_operation;
+using hive::protocol::operation;
 
 class market_history_plugin_impl
 {
