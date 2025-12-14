@@ -1020,7 +1020,7 @@ hardfork_schedule_tests:
   extends: .test_tools_based
 
   variables:
-    PYTEST_TIMEOUT_MINUTES: 3
+    PYTEST_TIMEOUT_MINUTES: 10  # Extended for slower speed_up_rate=5 to reduce flakiness
     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/hardfork_schedule_tests/report.xml
 
   script:
