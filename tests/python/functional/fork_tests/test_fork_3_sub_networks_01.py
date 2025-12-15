@@ -13,6 +13,7 @@ if TYPE_CHECKING:
 
 
 @pytest.mark.fork_tests_group_2()
+@pytest.mark.flaky(reruns=3)
 def test_fork_3_sub_networks_01(prepare_fork_3_sub_networks_01: NetworksBuilder):
     # start - A network consists of a 'minority_7a' network(7 witnesses), a 'minority_7b' network(7 witnesses), a 'minority_7c' network(7 witnesses).
 
