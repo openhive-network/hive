@@ -27,14 +27,14 @@ namespace hive { namespace protocol {
 
     asset& operator += ( const asset& o )
     {
-      FC_ASSERT( symbol == o.symbol && "asset symbol mismatch +=" );
+      FC_ASSERT( symbol == o.symbol && "asset symbol mismatch +=", "${l} != ${r}", ( "l", symbol )( "r", o.symbol ) );
       amount += o.amount;
       return *this;
     }
 
     asset& operator -= ( const asset& o )
     {
-      FC_ASSERT( symbol == o.symbol && "asset symbol mismatch -=" );
+      FC_ASSERT( symbol == o.symbol && "asset symbol mismatch -=", "${l} != ${r}", ( "l", symbol )( "r", o.symbol ) );
       amount -= o.amount;
       return *this;
     }
@@ -48,43 +48,43 @@ namespace hive { namespace protocol {
 
     friend bool operator < ( const asset& a, const asset& b )
     {
-      FC_ASSERT( a.symbol == b.symbol && "asset symbol mismatch <" );
+      FC_ASSERT( a.symbol == b.symbol && "asset symbol mismatch <", "${a} != ${b}", ( "a", a.symbol )( "b", b.symbol ) );
       return a.amount < b.amount;
     }
 
     friend bool operator <= ( const asset& a, const asset& b )
     {
-      FC_ASSERT( a.symbol == b.symbol && "asset symbol mismatch <=" );
+      FC_ASSERT( a.symbol == b.symbol && "asset symbol mismatch <=", "${a} != ${b}", ( "a", a.symbol )( "b", b.symbol ) );
       return a.amount <= b.amount;
     }
 
     friend bool operator != ( const asset& a, const asset& b )
     {
-      FC_ASSERT( a.symbol == b.symbol && "asset symbol mismatch !=" );
+      FC_ASSERT( a.symbol == b.symbol && "asset symbol mismatch !=", "${a} != ${b}", ( "a", a.symbol )( "b", b.symbol ) );
       return a.amount != b.amount;
     }
 
     friend bool operator > ( const asset& a, const asset& b )
     {
-      FC_ASSERT( a.symbol == b.symbol && "asset symbol mismatch >" );
+      FC_ASSERT( a.symbol == b.symbol && "asset symbol mismatch >", "${a} != ${b}", ( "a", a.symbol )( "b", b.symbol ) );
       return a.amount > b.amount;
     }
 
     friend bool operator >= ( const asset& a, const asset& b )
     {
-      FC_ASSERT( a.symbol == b.symbol && "asset symbol mismatch >=" );
+      FC_ASSERT( a.symbol == b.symbol && "asset symbol mismatch >=", "${a} != ${b}", ( "a", a.symbol )( "b", b.symbol ) );
       return a.amount >= b.amount;
     }
 
     friend asset operator - ( const asset& a, const asset& b )
     {
-      FC_ASSERT( a.symbol == b.symbol && "asset symbol mismatch -" );
+      FC_ASSERT( a.symbol == b.symbol && "asset symbol mismatch -", "${a} != ${b}", ( "a", a.symbol )( "b", b.symbol ) );
       return asset( a.amount - b.amount, a.symbol );
     }
 
     friend asset operator + ( const asset& a, const asset& b )
     {
-      FC_ASSERT( a.symbol == b.symbol && "asset symbol mismatch +" );
+      FC_ASSERT( a.symbol == b.symbol && "asset symbol mismatch +", "${a} != ${b}", ( "a", a.symbol )( "b", b.symbol ) );
       return asset( a.amount + b.amount, a.symbol );
     }
   };
