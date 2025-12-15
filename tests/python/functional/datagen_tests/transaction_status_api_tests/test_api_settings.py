@@ -28,18 +28,21 @@ Real default transaction_status_block_depth = 64000 + 1200
 
 
 @pytest.mark.transaction_status_block_depth("64000")
+@pytest.mark.xdist_group(name="transaction_status_api_blocklog")
 def test_transaction_status_default_block_depth(replayed_node: tt.ApiNode) -> None:
     transactions = read_transaction_ids(__PATTERNS_DIRECTORY)
     verify_transaction_status_in_block_range(replayed_node, 0, 101, transactions, "within_irreversible_block")
 
 
 @pytest.mark.transaction_status_block_depth("100")
+@pytest.mark.xdist_group(name="transaction_status_api_blocklog")
 def test_transaction_status_1300_block_depth(replayed_node: tt.ApiNode) -> None:
     transactions = read_transaction_ids(__PATTERNS_DIRECTORY)
     verify_transaction_status_in_block_range(replayed_node, 0, 191, transactions, "unknown")
 
 
 @pytest.mark.transaction_status_block_depth("300")
+@pytest.mark.xdist_group(name="transaction_status_api_blocklog")
 def test_transaction_status_1500_block_depth(replayed_node: tt.ApiNode) -> None:
     transactions = read_transaction_ids(__PATTERNS_DIRECTORY)
     verify_transaction_status_in_block_range(replayed_node, 0, 191, transactions, "within_irreversible_block")

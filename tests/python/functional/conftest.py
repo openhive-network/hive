@@ -22,18 +22,40 @@ def pytest_configure(config) -> None:
     """
     with contextlib.suppress(Exception):
         from schemas.jsonrpc import get_response_model
+        from schemas import decoders
 
-        # Import schema modules to trigger annotation resolution
+        # Import ALL schema modules to trigger annotation resolution
+        # This forces all typing annotations to be resolved in the main thread
+        # before any xdist workers start making concurrent API calls
+        import schemas.apis.account_by_key_api  # noqa: F401
+        import schemas.apis.account_history_api  # noqa: F401
+        import schemas.apis.block_api  # noqa: F401
+        import schemas.apis.condenser_api  # noqa: F401
         import schemas.apis.database_api.fundaments_of_reponses  # noqa: F401
         import schemas.apis.database_api.response_schemas  # noqa: F401
+        import schemas.apis.debug_node_api  # noqa: F401
+        import schemas.apis.follow_api  # noqa: F401
+        import schemas.apis.jsonrpc  # noqa: F401
+        import schemas.apis.market_history_api  # noqa: F401
+        import schemas.apis.network_broadcast_api  # noqa: F401
         import schemas.apis.network_node_api  # noqa: F401
+        import schemas.apis.rc_api  # noqa: F401
+        import schemas.apis.reputation_api  # noqa: F401
+        import schemas.apis.test_api  # noqa: F401
         import schemas.apis.wallet_bridge_api  # noqa: F401
+        import schemas.fields.basic  # noqa: F401
+        import schemas.fields.hex  # noqa: F401
+        import schemas.operations  # noqa: F401
         import schemas.transaction  # noqa: F401
 
-        # Warm up the decoder cache
-        get_response_model(str, '{"jsonrpc":"2.0","id":0,"result":"warmup"}', "hf26")
-        get_response_model(dict, '{"jsonrpc":"2.0","id":0,"result":{}}', "hf26")
-        get_response_model(list, '{"jsonrpc":"2.0","id":0,"result":[]}', "hf26")
+        # Pre-build all decoders to avoid lazy initialization during tests
+        for hf in ["hf26"]:
+            decoders.get_hf26_decoder.cache_clear()  # Clear any existing cache
+            get_response_model(str, '{"jsonrpc":"2.0","id":0,"result":"warmup"}', hf)
+            get_response_model(dict, '{"jsonrpc":"2.0","id":0,"result":{}}', hf)
+            get_response_model(list, '{"jsonrpc":"2.0","id":0,"result":[]}', hf)
+            get_response_model(int, '{"jsonrpc":"2.0","id":0,"result":0}', hf)
+            get_response_model(bool, '{"jsonrpc":"2.0","id":0,"result":true}', hf)
 
 
 def pytest_sessionstart() -> None:
