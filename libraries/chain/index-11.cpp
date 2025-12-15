@@ -1,9 +1,11 @@
-#include <hive/chain/comment_object_multiindex.hpp>
 #include <hive/chain/dhf_objects_multiindex.hpp>
 #include <hive/chain/detail/state/recurrent_transfer_object_multiindex.hpp>
+#include <hive/chain/detail/state/decline_voting_rights_request_object_multiindex.hpp>
 #include <hive/chain/account_object_multiindex.hpp>
 
 #include <hive/chain/database_virtual_operations.hpp>
+#include <hive/chain/util/dhf_helper.hpp>
+#include <hive/chain/util/remove_guard.hpp>
 #include <hive/chain/index.hpp>
 #include <chainbase/chainbase.inl>
 
@@ -18,12 +20,13 @@ using hive::protocol::failed_recurrent_transfer_operation;
 using hive::protocol::fill_recurrent_transfer_operation;
 using hive::protocol::recurrent_transfer_extensions_type;
 using hive::protocol::recurrent_transfer_pair_id;
+using hive::protocol::proxy_cleared_operation;
+using hive::protocol::declined_voting_rights_operation;
 
 void initialize_core_indexes_11( database& db )
 {
+  HIVE_ADD_CORE_INDEX(db, proposal_index);
   HIVE_ADD_CORE_INDEX(db, proposal_vote_index);
-  HIVE_ADD_CORE_INDEX(db, comment_cashout_index);
-  HIVE_ADD_CORE_INDEX(db, comment_cashout_ex_index);
   HIVE_ADD_CORE_INDEX(db, recurrent_transfer_index);
 }
 
@@ -140,22 +143,126 @@ void database::process_recurrent_transfers()
     _benchmark_dumper.end( "processing", "hive::protocol::recurrent_transfer_operation", processed_transfers );
 }
 
+void database::remove_proposal_votes_for_accounts_without_voting_rights()
+{
+  std::vector<account_name_type> voters;
+
+  const auto& proposal_votes_idx = get_index< proposal_vote_index, by_voter_proposal >();
+
+  auto itr = proposal_votes_idx.begin();
+  while( itr != proposal_votes_idx.end() )
+  {
+    voters.push_back( itr->voter );
+    ++itr;
+  }
+
+  //Lack of voters.
+  if( voters.empty() )
+    return;
+
+  std::vector<account_name_type> accounts;
+
+  for( auto& voter : voters )
+  {
+    const auto& account = get_account( voter );
+    if( !account.can_vote )
+      accounts.push_back( account.get_name() );
+  }
+
+  //Lack of voters who declined voting rights.
+  if( accounts.empty() )
+    return;
+
+  /*
+    For every account set a request to remove proposal votes.
+    Current time is set, because we want to start removing proposal votes as soon as possible.
+  */
+  const auto& request_idx = get_index< decline_voting_rights_request_index, by_account >();
+
+  for( auto& account : accounts )
+  {
+    auto found = request_idx.find( account );
+    if( found !=request_idx.end() )
+    {
+      /*
+        Before HF28 it was possible to create `decline_voting_rights` operation again, even if an account had `can_vote` set to false.
+        In this case `effective_date` must be changed otherwise a new object is created.
+      */
+      modify( *found, [&]( decline_voting_rights_request_object& req )
+      {
+        req.effective_date = head_block_time();
+      });
+    }
+    else
+    {
+      create< decline_voting_rights_request_object >( [&]( decline_voting_rights_request_object& req )
+      {
+        req.account = account;
+        req.effective_date = head_block_time();
+      });
+    }
+  }
+}
+
+void database::process_decline_voting_rights()
+{
+  const auto& request_idx = get_index< decline_voting_rights_request_index >().indices().get< by_effective_date >();
+  auto itr = request_idx.begin();
+
+  int count = 0;
+  if( _benchmark_dumper.is_enabled() )
+    _benchmark_dumper.begin();
+
+  const auto& proposal_votes = get_index< proposal_vote_index, by_voter_proposal >();
+  remove_guard obj_perf( get_remove_threshold() );
+
+  while( itr != request_idx.end() && itr->effective_date <= head_block_time() )
+  {
+    const auto& account = get< account_object, by_name >( itr->account );
+
+    if( !has_hardfork( HIVE_HARDFORK_1_28 ) || dhf_helper::remove_proposal_votes( account, proposal_votes, *this, obj_perf ) )
+    {
+      nullify_proxied_witness_votes( account );
+      clear_witness_votes( account );
+
+      if( account.has_proxy() )
+        push_virtual_operation( *this, proxy_cleared_operation( account.get_name(), get_account( account.get_proxy() ).get_name()) );
+
+      push_virtual_operation( *this, declined_voting_rights_operation( itr->account ) );
+
+      modify( account, [&]( account_object& a )
+      {
+        a.can_vote = false;
+        a.clear_proxy();
+      });
+
+      remove( *itr );
+      itr = request_idx.begin();
+      ++count;
+    }
+    else
+    {
+      ilog("Threshold exceeded while deleting proposal votes for account ${account}.",
+        ("account", account.get_name())); // to be continued in next block
+      break;
+    }
+  }
+  if( _benchmark_dumper.is_enabled() && count )
+    _benchmark_dumper.end( "processing", "hive::protocol::decline_voting_rights_operation", count );
+}
+
 } }
 
+HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::chain::proposal_index)
 HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::chain::proposal_vote_index)
-HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::chain::comment_cashout_index)
-HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::chain::comment_cashout_ex_index)
 HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::chain::recurrent_transfer_index)
 
 // Explicit template instantiations for chainbase::database methods
+template const chainbase::generic_index<hive::chain::proposal_index>& chainbase::database::get_index<hive::chain::proposal_index>() const;
+template chainbase::generic_index<hive::chain::proposal_index>& chainbase::database::get_mutable_index<hive::chain::proposal_index>();
+
 template const chainbase::generic_index<hive::chain::proposal_vote_index>& chainbase::database::get_index<hive::chain::proposal_vote_index>() const;
 template chainbase::generic_index<hive::chain::proposal_vote_index>& chainbase::database::get_mutable_index<hive::chain::proposal_vote_index>();
-
-template const chainbase::generic_index<hive::chain::comment_cashout_index>& chainbase::database::get_index<hive::chain::comment_cashout_index>() const;
-template chainbase::generic_index<hive::chain::comment_cashout_index>& chainbase::database::get_mutable_index<hive::chain::comment_cashout_index>();
-
-template const chainbase::generic_index<hive::chain::comment_cashout_ex_index>& chainbase::database::get_index<hive::chain::comment_cashout_ex_index>() const;
-template chainbase::generic_index<hive::chain::comment_cashout_ex_index>& chainbase::database::get_mutable_index<hive::chain::comment_cashout_ex_index>();
 
 template const chainbase::generic_index<hive::chain::recurrent_transfer_index>& chainbase::database::get_index<hive::chain::recurrent_transfer_index>() const;
 template chainbase::generic_index<hive::chain::recurrent_transfer_index>& chainbase::database::get_mutable_index<hive::chain::recurrent_transfer_index>();

@@ -47,6 +47,8 @@ void initialize_core_indexes_03( database& db )
   HIVE_ADD_CORE_INDEX(db, block_summary_index);
   HIVE_ADD_CORE_INDEX(db, comment_index);
   HIVE_ADD_CORE_INDEX(db, comment_vote_index);
+  HIVE_ADD_CORE_INDEX(db, comment_cashout_index);
+  HIVE_ADD_CORE_INDEX(db, comment_cashout_ex_index);
 }
 
 const comment_object* database::find_comment( comment_id_type comment_id )const
@@ -680,6 +682,8 @@ void database::perform_vesting_share_split( uint32_t magnitude )
 HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::chain::block_summary_index)
 HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::chain::comment_index)
 HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::chain::comment_vote_index)
+HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::chain::comment_cashout_index)
+HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::chain::comment_cashout_ex_index)
 
 // Explicit template instantiations for chainbase::database methods
 template const chainbase::generic_index<hive::chain::block_summary_index>& chainbase::database::get_index<hive::chain::block_summary_index>() const;
@@ -690,3 +694,9 @@ template chainbase::generic_index<hive::chain::comment_index>& chainbase::databa
 
 template const chainbase::generic_index<hive::chain::comment_vote_index>& chainbase::database::get_index<hive::chain::comment_vote_index>() const;
 template chainbase::generic_index<hive::chain::comment_vote_index>& chainbase::database::get_mutable_index<hive::chain::comment_vote_index>();
+
+template const chainbase::generic_index<hive::chain::comment_cashout_index>& chainbase::database::get_index<hive::chain::comment_cashout_index>() const;
+template chainbase::generic_index<hive::chain::comment_cashout_index>& chainbase::database::get_mutable_index<hive::chain::comment_cashout_index>();
+
+template const chainbase::generic_index<hive::chain::comment_cashout_ex_index>& chainbase::database::get_index<hive::chain::comment_cashout_ex_index>() const;
+template chainbase::generic_index<hive::chain::comment_cashout_ex_index>& chainbase::database::get_mutable_index<hive::chain::comment_cashout_ex_index>();

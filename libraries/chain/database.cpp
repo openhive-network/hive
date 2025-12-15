@@ -11,6 +11,7 @@
 #include <hive/chain/account_object_multiindex.hpp>
 #include <hive/chain/block_summary_object_multiindex.hpp>
 #include <hive/chain/global_property_object_multiindex.hpp>
+#include <hive/chain/witness_objects.hpp>
 #include <hive/chain/hardfork_property_object.hpp>
 #include <hive/chain/block_write_interface.hpp>
 #include <hive/chain/compound.hpp>
@@ -20,13 +21,8 @@
 #include <hive/chain/irreversible_block_data.hpp>
 #include <hive/chain/dhf_objects.hpp>
 #include <hive/chain/smt_objects.hpp>
-#include <hive/chain/detail/state/liquidity_reward_balance_object_multiindex.hpp>
 #include <hive/chain/detail/state/feed_history_object_multiindex.hpp>
-#include <hive/chain/detail/state/limit_order_object_multiindex.hpp>
-#include <hive/chain/detail/state/withdraw_vesting_route_object_multiindex.hpp>
-#include <hive/chain/detail/state/decline_voting_rights_request_object_multiindex.hpp>
 #include <hive/chain/detail/state/reward_fund_object_multiindex.hpp>
-#include <hive/chain/witness_objects_multiindex.hpp>
 #include <hive/chain/transaction_object_multiindex.hpp>
 #include <hive/chain/shared_db_merkle.hpp>
 #include <hive/chain/witness_schedule.hpp>
@@ -458,16 +454,6 @@ comment database::find_comment( const account_name_type& author, const string& p
 }
 
 #endif
-
-const limit_order_object& database::get_limit_order( const account_name_type& name, uint32_t orderid )const
-{ try {
-  if( !has_hardfork( HIVE_HARDFORK_0_6__127 ) )
-    orderid = orderid & 0x0000FFFF;
-
-  const auto* _limit_order = find_limit_order( name, orderid );
-  FC_ASSERT( _limit_order != nullptr, "Limit order with 'name' ${name} 'order_id' ${orderid} doesn't exist.", (name)(orderid) );
-  return *_limit_order;
-} FC_CAPTURE_AND_RETHROW( (name)(orderid) ) }
 
 const dynamic_global_property_object&database::get_dynamic_global_properties() const
 { try {
@@ -1617,15 +1603,7 @@ void database::clear_account( const account_object& account )
   remove_pending_escrows( account, account_name );
 
   // Remove open limit orders (return balance to account - compare with clear_expired_orders())
-  const auto& order_idx = get_index< chain::limit_order_index, chain::by_account >();
-  auto order_itr = order_idx.lower_bound( account_name );
-  while( order_itr != order_idx.end() && order_itr->seller == account_name )
-  {
-    auto& order = *order_itr;
-    ++order_itr;
-
-    cancel_order( order, true );
-  }
+  remove_pending_limit_orders( account, account_name );
 
   remove_pending_conversion_requests( account );
 
@@ -1708,67 +1686,6 @@ void database::process_delayed_voting( const block_notification& note )
   }
 }
 
-void database::remove_proposal_votes_for_accounts_without_voting_rights()
-{
-  std::vector<account_name_type> voters;
-
-  const auto& proposal_votes_idx = get_index< proposal_vote_index, by_voter_proposal >();
-
-  auto itr = proposal_votes_idx.begin();
-  while( itr != proposal_votes_idx.end() )
-  {
-    voters.push_back( itr->voter );
-    ++itr;
-  }
-
-  //Lack of voters.
-  if( voters.empty() )
-    return;
-
-  std::vector<account_name_type> accounts;
-
-  for( auto& voter : voters )
-  {
-    const auto& account = get_account( voter );
-    if( !account.can_vote )
-      accounts.push_back( account.get_name() );
-  }
-
-  //Lack of voters who declined voting rights.
-  if( accounts.empty() )
-    return;
-
-  /*
-    For every account set a request to remove proposal votes.
-    Current time is set, because we want to start removing proposal votes as soon as possible.
-  */
-  const auto& request_idx = get_index< decline_voting_rights_request_index, by_account >();
-
-  for( auto& account : accounts )
-  {
-    auto found = request_idx.find( account );
-    if( found !=request_idx.end() )
-    {
-      /*
-        Before HF28 it was possible to create `decline_voting_rights` operation again, even if an account had `can_vote` set to false.
-        In this case `effective_date` must be changed otherwise a new object is created.
-      */
-      modify( *found, [&]( decline_voting_rights_request_object& req )
-      {
-        req.effective_date = head_block_time();
-      });
-    }
-    else
-    {
-      create< decline_voting_rights_request_object >( [&]( decline_voting_rights_request_object& req )
-      {
-        req.account = account;
-        req.effective_date = head_block_time();
-      });
-    }
-  }
-}
-
 /**
   * This method updates total_reward_shares2 on DGPO, and children_rshares2 on comments, when a comment's rshares2 changes
   * from old_rshares2 to new_rshares2.  Maintaining invariants that children_rshares2 is the sum of all descendants' rshares2,
@@ -1799,198 +1716,6 @@ void database::update_owner_authority( const account_object& account, const auth
   });
 }
 
-void database::process_vesting_withdrawals()
-{
-  const auto& widx = get_index< account_index, by_next_vesting_withdrawal >();
-  const auto& didx = get_index< withdraw_vesting_route_index, by_withdraw_route >();
-  auto current = widx.begin();
-
-  const auto& cprops = get_dynamic_global_properties();
-  auto now = cprops.time;
-
-  int count = 0;
-  if( _benchmark_dumper.is_enabled() )
-    _benchmark_dumper.begin();
-  while( current != widx.end() && current->next_vesting_withdrawal <= now )
-  {
-    const auto& from_account = *current; ++current; ++count;
-
-    share_type to_withdraw = from_account.get_next_vesting_withdrawal();
-    if( !has_hardfork( HIVE_HARDFORK_1_28_FIX_POWER_DOWN ) && to_withdraw < from_account.vesting_withdraw_rate.amount )
-      to_withdraw = from_account.to_withdraw.amount % from_account.vesting_withdraw_rate.amount;
-    // see history of first (and so far the only) power down of 'gil' account: https://hiveblocks.com/@gil
-    // the situation was caused by HF1, where vesting_withdraw_rate changed from 9615 before split to 9615.384615
-    // (instead of correct 9615.000000); that is the source of nonequivalence between taking all the rest of power down
-    // (0.769270 VESTS) and modulo of "all % weekly rate" (0.000040 VESTS);
-    // it is possible that other accounts were also affected in similar way, 'gil' was just the first where the difference
-    // occurred
-    bool invalid_power_down = to_withdraw > from_account.get_vesting().amount;
-    if( invalid_power_down )
-    {
-      elog( "NOTIFYALERT! somehow account was scheduled to power down more than it has on balance (${s} vs ${h})",
-        ( "s", to_withdraw )( "h", from_account.get_vesting().amount ) );
-#ifdef USE_ALTERNATE_CHAIN_ID
-      FC_ASSERT( not invalid_power_down, "Somehow account was scheduled to power down more than it has on balance (${s} vs ${h})",
-        ( "s", to_withdraw )( "h", from_account.get_vesting().amount ) );
-#endif
-      to_withdraw = from_account.get_vesting().amount;
-    }
-
-    optional< delayed_voting > dv;
-    delayed_voting::opt_votes_update_data_items _votes_update_data_items;
-
-    if( has_hardfork( HIVE_HARDFORK_1_24 ) )
-    {
-      dv = delayed_voting( *this );
-      _votes_update_data_items = delayed_voting::votes_update_data_items();
-    }
-
-    share_type vests_deposited = 0;
-
-    auto process_routing = [ &, this ]( bool auto_vest_mode )
-    {
-      for( auto itr = didx.upper_bound( boost::make_tuple( from_account.get_name(), account_name_type() ) );
-        itr != didx.end() && itr->from_account == from_account.get_name();
-        ++itr )
-      {
-        if( !( auto_vest_mode ^ itr->auto_vest ) )
-        {
-          share_type to_deposit = fc::uint128_to_uint64( ( fc::uint128_t ( to_withdraw.value ) * itr->percent ) / HIVE_100_PERCENT );
-          vests_deposited += to_deposit;
-
-          if( to_deposit > 0 )
-          {
-            const auto& to_account = get< account_object, by_name >( itr->to_account );
-
-            asset vests = asset( to_deposit, VESTS_SYMBOL );
-            asset routed = auto_vest_mode ? vests : ( vests * cprops.get_vesting_share_price() );
-            operation vop = fill_vesting_withdraw_operation( from_account.get_name(), to_account.get_name(), vests, routed );
-
-            pre_push_virtual_operation( *this, vop );
-
-            modify( to_account, [&]( account_object& a )
-            {
-              if( auto_vest_mode )
-              {
-                if( has_hardfork( HIVE_HARDFORK_0_20 ) )
-                  rc().regenerate_rc_mana( a, now );
-                a.vesting_shares += routed;
-              }
-              else
-              {
-                a.balance += routed;
-              }
-            });
-
-            if( auto_vest_mode )
-            {
-              if( has_hardfork( HIVE_HARDFORK_0_20 ) )
-                rc().update_account_after_vest_change( to_account, now );
-
-              if( has_hardfork( HIVE_HARDFORK_1_24 ) )
-              {
-                FC_ASSERT( dv.valid(), "The object processing `delayed votes` must exist" );
-
-                dv->add_votes( _votes_update_data_items,
-                          to_account.get_id() == from_account.get_id()/*withdraw_executor*/,
-                          routed.amount.value/*val*/,
-                          to_account/*account*/
-                        );
-              }
-              else
-              {
-                adjust_proxied_witness_votes( to_account, to_deposit );
-              }
-            }
-            else
-            {
-              modify( cprops, [&]( dynamic_global_property_object& o )
-              {
-                o.total_vesting_fund_hive     -= routed;
-                o.total_vesting_shares.amount -= to_deposit;
-              });
-            }
-
-            post_push_virtual_operation( *this, vop );
-          }
-        }
-      }
-    };
-
-    // Do two passes, the first for VESTS, the second for HIVE. Try to maintain as much accuracy for VESTS as possible.
-    process_routing( true/*auto_vest_mode*/ );
-    process_routing( false/*auto_vest_mode*/ );
-
-    share_type to_convert = to_withdraw - vests_deposited;
-    FC_ASSERT( to_convert >= 0, "Deposited more vests than were supposed to be withdrawn" );
-
-    auto converted_hive = asset( to_convert, VESTS_SYMBOL ) * cprops.get_vesting_share_price();
-    operation vop = fill_vesting_withdraw_operation( from_account.get_name(), from_account.get_name(), asset( to_convert, VESTS_SYMBOL ), converted_hive );
-    //note: it has to be generated even if to_convert is zero because we've accumulated change on from_account
-    //and only now we are going to update that account's VESTS (see issue #337)
-    pre_push_virtual_operation( *this, vop );
-
-    if( has_hardfork( HIVE_HARDFORK_0_20 ) )
-      rc().regenerate_rc_mana( from_account, now );
-    if( has_hardfork( HIVE_HARDFORK_1_24 ) )
-    {
-      FC_ASSERT( dv.valid() && "The object processing `delayed votes` must exist" );
-
-      dv->add_votes( _votes_update_data_items,
-                true/*withdraw_executor*/,
-                -to_withdraw.value/*val*/,
-                from_account/*account*/
-              );
-    }
-
-    modify( from_account, [&]( account_object& a )
-    {
-      a.vesting_shares.amount -= to_withdraw;
-      a.balance += converted_hive;
-      a.withdrawn.amount += to_withdraw;
-
-      if( a.get_total_vesting_withdrawal() <= 0 || a.get_vesting().amount == 0 )
-      {
-        a.vesting_withdraw_rate.amount = 0;
-        a.next_vesting_withdrawal = fc::time_point_sec::maximum();
-        a.to_withdraw.amount = 0;
-        a.withdrawn.amount = 0;
-      }
-      else
-      {
-        a.next_vesting_withdrawal += fc::seconds( HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS );
-      }
-    });
-
-    if( has_hardfork( HIVE_HARDFORK_0_20 ) )
-      rc().update_account_after_vest_change( from_account, now, true, true );
-
-    modify( cprops, [&]( dynamic_global_property_object& o )
-    {
-      o.total_vesting_fund_hive -= converted_hive;
-      o.total_vesting_shares.amount -= to_convert;
-    });
-
-    if( has_hardfork( HIVE_HARDFORK_1_24 ) )
-    {
-      FC_ASSERT( dv.valid() && "Sincd HF24 the object processing `delayed votes` must exist" );
-
-      fc::optional< ushare_type > leftover = dv->update_votes( _votes_update_data_items, now );
-      FC_ASSERT( leftover.valid(), "Something went wrong" );
-      if( leftover.valid() && ( *leftover ) > 0 )
-        adjust_proxied_witness_votes( from_account, -( ( *leftover ).value ) );
-    }
-    else
-    {
-      if( to_withdraw > 0 )
-        adjust_proxied_witness_votes( from_account, -to_withdraw );
-    }
-
-    post_push_virtual_operation( *this, vop );
-  }
-  if( _benchmark_dumper.is_enabled() && count )
-    _benchmark_dumper.end( "processing", "hive::protocol::withdraw_vesting_operation", count );
-}
 
 /**
   *  Overall the network has an inflation rate of 102% of virtual hive per year
@@ -2129,13 +1854,7 @@ void database::process_subsidized_accounts()
 
   // Update per-witness pool for current witness.
   const witness_object& current_witness = get_witness( gpo.current_witness );
-  if( current_witness.schedule == witness_object::elected )
-  {
-    modify( current_witness, [&]( witness_object& w )
-    {
-      w.available_witness_account_subsidies = rd_apply( wso.account_subsidy_witness_rd, w.available_witness_account_subsidies );
-    } );
-  }
+  update_witness_schedule_for_elected( current_witness, wso.account_subsidy_witness_rd );
 }
 
 asset database::get_liquidity_reward()const
@@ -2220,38 +1939,6 @@ asset database::get_pow_reward()const
 }
 
 
-void database::pay_liquidity_reward()
-{
-#ifdef IS_TEST_NET
-  if( !liquidity_rewards_enabled )
-    return;
-#endif
-
-  if( (head_block_num() % HIVE_LIQUIDITY_REWARD_BLOCKS) == 0 )
-  {
-    auto reward = get_liquidity_reward();
-
-    if( reward.amount == 0 )
-      return;
-
-    const auto& ridx = get_index< liquidity_reward_balance_index >().indices().get< by_volume_weight >();
-    auto itr = ridx.begin();
-    if( itr != ridx.end() && itr->volume_weight() > 0 )
-    {
-      adjust_supply( reward, true );
-      adjust_balance( get(itr->owner), reward );
-      modify( *itr, [&]( liquidity_reward_balance_object& obj )
-      {
-        obj.hive_volume = 0;
-        obj.hbd_volume  = 0;
-        obj.last_update = head_block_time();
-        obj.weight      = 0;
-      } );
-
-      push_virtual_operation( *this, liquidity_reward_operation( get(itr->owner).get_name(), reward ) );
-    }
-  }
-}
 
 uint16_t database::get_curation_rewards_percent() const
 {
@@ -2340,53 +2027,6 @@ void database::account_recovery_processing()
     remove( *change_req );
     change_req = change_req_idx.begin();
   }
-}
-
-void database::process_decline_voting_rights()
-{
-  const auto& request_idx = get_index< decline_voting_rights_request_index >().indices().get< by_effective_date >();
-  auto itr = request_idx.begin();
-
-  int count = 0;
-  if( _benchmark_dumper.is_enabled() )
-    _benchmark_dumper.begin();
-
-  const auto& proposal_votes = get_index< proposal_vote_index, by_voter_proposal >();
-  remove_guard obj_perf( get_remove_threshold() );
-
-  while( itr != request_idx.end() && itr->effective_date <= head_block_time() )
-  {
-    const auto& account = get< account_object, by_name >( itr->account );
-
-    if( !has_hardfork( HIVE_HARDFORK_1_28 ) || dhf_helper::remove_proposal_votes( account, proposal_votes, *this, obj_perf ) )
-    {
-      nullify_proxied_witness_votes( account );
-      clear_witness_votes( account );
-
-      if( account.has_proxy() )
-        push_virtual_operation( *this, proxy_cleared_operation( account.get_name(), get_account( account.get_proxy() ).get_name()) );
-
-      push_virtual_operation( *this, declined_voting_rights_operation( itr->account ) );
-
-      modify( account, [&]( account_object& a )
-      {
-        a.can_vote = false;
-        a.clear_proxy();
-      });
-
-      remove( *itr );
-      itr = request_idx.begin();
-      ++count;
-    }
-    else
-    {
-      ilog("Threshold exceeded while deleting proposal votes for account ${account}.",
-        ("account", account.get_name())); // to be continued in next block
-      break;
-    }
-  }
-  if( _benchmark_dumper.is_enabled() && count )
-    _benchmark_dumper.end( "processing", "hive::protocol::decline_voting_rights_operation", count );
 }
 
 time_point_sec database::head_block_time()const
@@ -2628,20 +2268,7 @@ void database::_apply_block( const std::shared_ptr<full_block_type>& full_block,
       const hardfork_property_object& hardfork_state = get_hardfork_property_object();
       FC_ASSERT( hardfork_state.current_hardfork_version == _hardfork_versions.versions[n], "Unexpected genesis hardfork state" );
 
-      const auto& witness_idx = get_index<witness_index>().indices().get<by_id>();
-      vector<witness_id_type> wit_ids_to_update;
-      for( auto it=witness_idx.begin(); it!=witness_idx.end(); ++it )
-        wit_ids_to_update.push_back( it->get_id() );
-
-      for( witness_id_type wit_id : wit_ids_to_update )
-      {
-        modify( get( wit_id ), [&]( witness_object& wit )
-        {
-          wit.running_version = _hardfork_versions.versions[n];
-          wit.hardfork_version_vote = _hardfork_versions.versions[n];
-          wit.hardfork_time_vote = _hardfork_versions.times[n];
-        } );
-      }
+      update_witness_hardfork_version_votes( _hardfork_versions.versions[n], _hardfork_versions.times[n] );
     }
   }
 
@@ -2779,56 +2406,20 @@ void database::_apply_block( const std::shared_ptr<full_block_type>& full_block,
   _my->_last_pushed_block_time.store(gprops.time.sec_since_epoch(), std::memory_order_release);
 } FC_CAPTURE_CALL_LOG_AND_RETHROW( std::bind( &database::notify_fail_apply_block, this, note ), (block_num) ) }
 
-struct process_header_visitor
-{
-  process_header_visitor( const std::string& witness, database& db ) :
-    _witness( witness ),
-    _db( db ) {}
-
-  typedef void result_type;
-
-  const std::string& _witness;
-  database& _db;
-
-  void operator()( const void_t& obj ) const
-  {
-    //Nothing to do.
-  }
-
-  void operator()( const version& reported_version ) const
-  {
-    const auto& signing_witness = _db.get_witness( _witness );
-    //idump( (next_block.witness)(signing_witness.running_version)(reported_version) );
-
-    if( reported_version != signing_witness.running_version )
-    {
-      _db.modify( signing_witness, [&]( witness_object& wo )
-      {
-        wo.running_version = reported_version;
-      });
-    }
-  }
-
-  void operator()( const hardfork_version_vote& hfv ) const
-  {
-    const auto& signing_witness = _db.get_witness( _witness );
-    //idump( (next_block.witness)(signing_witness.running_version)(hfv) );
-
-    if( hfv.hf_version != signing_witness.hardfork_version_vote || hfv.hf_time != signing_witness.hardfork_time_vote )
-      _db.modify( signing_witness, [&]( witness_object& wo )
-      {
-        wo.hardfork_version_vote = hfv.hf_version;
-        wo.hardfork_time_vote = hfv.hf_time;
-      });
-  }
-};
-
 void database::process_header_extensions( const signed_block& next_block )
 {
-  process_header_visitor _v( next_block.witness, *this );
+  fc::optional<block_header_extensions> version_ext;
+  fc::optional<block_header_extensions> hf_vote_ext;
 
   for( const auto& e : next_block.extensions )
-    e.visit( _v );
+  {
+    if( e.which() == block_header_extensions::tag<version>::value )
+      version_ext = e;
+    else if( e.which() == block_header_extensions::tag<hardfork_version_vote>::value )
+      hf_vote_ext = e;
+  }
+
+  process_header_witness_updates( next_block.witness, version_ext, hf_vote_ext );
 }
 
 void database::process_genesis_accounts()
@@ -3277,37 +2868,14 @@ void database::update_global_dynamic_data( const signed_block& b )
   // is optional and configurable, see comments to configuration::generate_missed_block_operations
   if( configuration_data.get_generate_missed_block_operations() )
 #endif
-  if( head_block_num() != 0 )
+  if( head_block_num() != 0 && missed_blocks != 0 )
   {
     auto start_time = fc::time_point::now();
-    for( uint32_t i = 0; i < missed_blocks; ++i )
-    {
-      const auto& witness_missed = get_witness( get_scheduled_witness( i + 1 ) );
-      if(  witness_missed.owner != b.witness )
-      {
-        modify( witness_missed, [&]( witness_object& w )
-        {
-          w.total_missed++;
-          if( has_hardfork( HIVE_HARDFORK_0_14__278 ) && !has_hardfork( HIVE_HARDFORK_0_20__SP190 ) )
-          {
-            if( head_block_num() - w.last_confirmed_block_num  > HIVE_WITNESS_SHUTDOWN_THRESHOLD )
-            {
-              w.signing_key = public_key_type();
-              push_virtual_operation( *this, shutdown_witness_operation( w.owner ) );
-            }
-          }
-          push_virtual_operation( *this, producer_missed_operation( w.owner ) );
-        } );
-      }
-    }
-    
-    if (missed_blocks != 0)
-    {
-      fc::microseconds loop_time = fc::time_point::now() - start_time;
-      if( loop_time.count() > 1000000ll ) // Report delay longer than 1s.
-        ilog("Missed blocks: ${missed_blocks}, time spent in loop: ${ms} ms (${us} us)", 
-          (missed_blocks)("ms", loop_time.count()/1000)("us", loop_time) );
-    }
+    update_witness_missed_blocks( b.witness, missed_blocks );
+    fc::microseconds loop_time = fc::time_point::now() - start_time;
+    if( loop_time.count() > 1000000ll ) // Report delay longer than 1s.
+      ilog("Missed blocks: ${missed_blocks}, time spent in loop: ${ms} ms (${us} us)",
+        (missed_blocks)("ms", loop_time.count()/1000)("us", loop_time) );
   }
 
   _current_timestamp.reset();
@@ -3385,18 +2953,6 @@ void database::update_virtual_supply()
         dgp.hbd_print_rate = ( ( dgp.hbd_stop_percent - percent_hbd ) * HIVE_100_PERCENT ) / ( dgp.hbd_stop_percent - dgp.hbd_start_percent );
     }
   });
-} FC_CAPTURE_AND_RETHROW() }
-
-void database::update_signing_witness(const witness_object& signing_witness, const signed_block& new_block)
-{ try {
-  const dynamic_global_property_object& dpo = get_dynamic_global_properties();
-  uint64_t new_block_aslot = dpo.current_aslot + get_slot_at_time( new_block.timestamp );
-
-  modify( signing_witness, [&]( witness_object& _wit )
-  {
-    _wit.last_aslot = new_block_aslot;
-    _wit.last_confirmed_block_num = new_block.block_num();
-  } );
 } FC_CAPTURE_AND_RETHROW() }
 
 const witness_schedule_object& database::get_witness_schedule_object_for_irreversibility() const
@@ -3608,220 +3164,6 @@ void database::migrate_irreversible_state(uint32_t old_last_irreversible)
 }
 
 
-bool database::apply_order( const limit_order_object& new_order_object )
-{
-  auto order_id = new_order_object.get_id();
-
-  const auto& limit_price_idx = get_index<limit_order_index>().indices().get<by_price>();
-
-  auto max_price = ~new_order_object.sell_price;
-  auto limit_itr = limit_price_idx.lower_bound(max_price.max());
-  auto limit_end = limit_price_idx.upper_bound(max_price);
-
-  bool finished = false;
-  while( !finished && limit_itr != limit_end )
-  {
-    auto old_limit_itr = limit_itr;
-    ++limit_itr;
-    // match returns 2 when only the old order was fully filled. In this case, we keep matching; otherwise, we stop.
-    finished = ( match(new_order_object, *old_limit_itr, old_limit_itr->sell_price) & 0x1 );
-  }
-
-  return find< limit_order_object >( order_id ) == nullptr;
-}
-
-int database::match( const limit_order_object& new_order, const limit_order_object& old_order, const price& match_price )
-{
-  bool has_hf_20__1815 = has_hardfork( HIVE_HARDFORK_0_20__1815 );
-
-FC_TODO( " Remove if(), do assert unconditionally after HF20 occurs" )
-  if( has_hf_20__1815 )
-  {
-    HIVE_ASSERT( new_order.sell_price.quote.symbol == old_order.sell_price.base.symbol,
-      order_match_exception, "error matching orders: ${new_order} ${old_order} ${match_price}",
-      ("new_order", new_order)("old_order", old_order)("match_price", match_price) );
-    HIVE_ASSERT( new_order.sell_price.base.symbol  == old_order.sell_price.quote.symbol,
-      order_match_exception, "error matching orders: ${new_order} ${old_order} ${match_price}",
-      ("new_order", new_order)("old_order", old_order)("match_price", match_price) );
-    HIVE_ASSERT( new_order.for_sale > 0 && old_order.for_sale > 0,
-      order_match_exception, "error matching orders: ${new_order} ${old_order} ${match_price}",
-      ("new_order", new_order)("old_order", old_order)("match_price", match_price) );
-    HIVE_ASSERT( match_price.quote.symbol == new_order.sell_price.base.symbol,
-      order_match_exception, "error matching orders: ${new_order} ${old_order} ${match_price}",
-      ("new_order", new_order)("old_order", old_order)("match_price", match_price) );
-    HIVE_ASSERT( match_price.base.symbol == old_order.sell_price.base.symbol,
-      order_match_exception, "error matching orders: ${new_order} ${old_order} ${match_price}",
-      ("new_order", new_order)("old_order", old_order)("match_price", match_price) );
-  }
-
-  auto new_order_for_sale = new_order.amount_for_sale();
-  auto old_order_for_sale = old_order.amount_for_sale();
-
-  asset new_order_pays, new_order_receives, old_order_pays, old_order_receives;
-
-  if( new_order_for_sale <= old_order_for_sale * match_price )
-  {
-    old_order_receives = new_order_for_sale;
-    new_order_receives  = new_order_for_sale * match_price;
-  }
-  else
-  {
-    //This line once read: assert( old_order_for_sale < new_order_for_sale * match_price );
-    //This assert is not always true -- see trade_amount_equals_zero in operation_tests.cpp
-    //Although new_order_for_sale is greater than old_order_for_sale * match_price, old_order_for_sale == new_order_for_sale * match_price
-    //Removing the assert seems to be safe -- apparently no asset is created or destroyed.
-    new_order_receives = old_order_for_sale;
-    old_order_receives = old_order_for_sale * match_price;
-  }
-
-  old_order_pays = new_order_receives;
-  new_order_pays = old_order_receives;
-
-FC_TODO( " Remove if(), do assert unconditionally after HF20 occurs" )
-  if( has_hf_20__1815 )
-  {
-    HIVE_ASSERT( new_order_pays == new_order.amount_for_sale() ||
-              old_order_pays == old_order.amount_for_sale(),
-      order_match_exception, "error matching orders: ${new_order} ${old_order} ${match_price}",
-      ("new_order", new_order)("old_order", old_order)("match_price", match_price) );
-  }
-
-  auto age = head_block_time() - old_order.created;
-  if( !has_hardfork( HIVE_HARDFORK_0_12__178 ) &&
-      ( (age >= HIVE_MIN_LIQUIDITY_REWARD_PERIOD_SEC && !has_hardfork( HIVE_HARDFORK_0_10__149)) ||
-      (age >= HIVE_MIN_LIQUIDITY_REWARD_PERIOD_SEC_HF10 && has_hardfork( HIVE_HARDFORK_0_10__149) ) ) )
-  {
-    if( old_order_receives.symbol == HIVE_SYMBOL )
-    {
-      adjust_liquidity_reward( get_account( old_order.seller ), old_order_receives, false );
-      adjust_liquidity_reward( get_account( new_order.seller ), -old_order_receives, false );
-    }
-    else
-    {
-      adjust_liquidity_reward( get_account( old_order.seller ), new_order_receives, true );
-      adjust_liquidity_reward( get_account( new_order.seller ), -new_order_receives, true );
-    }
-  }
-
-  push_virtual_operation( *this, fill_order_operation( new_order.seller, new_order.orderid, new_order_pays, old_order.seller, old_order.orderid, old_order_pays ) );
-
-  int result = 0;
-  result |= fill_order( new_order, new_order_pays, new_order_receives );
-  result |= fill_order( old_order, old_order_pays, old_order_receives ) << 1;
-
-FC_TODO( " Remove if(), do assert unconditionally after HF20 occurs" )
-  if( has_hf_20__1815 )
-  {
-    HIVE_ASSERT( result != 0,
-      order_match_exception, "error matching orders: ${new_order} ${old_order} ${match_price}",
-      ("new_order", new_order)("old_order", old_order)("match_price", match_price) );
-  }
-  return result;
-}
-
-
-void database::adjust_liquidity_reward( const account_object& owner, const asset& volume, bool is_hbd )
-{
-  const auto& ridx = get_index< liquidity_reward_balance_index >().indices().get< by_owner >();
-  auto itr = ridx.find( owner.get_id() );
-  if( itr != ridx.end() )
-  {
-    modify<liquidity_reward_balance_object>( *itr, [&]( liquidity_reward_balance_object& r )
-    {
-      if( head_block_time() - r.last_update >= HIVE_LIQUIDITY_TIMEOUT_SEC )
-      {
-        r.hbd_volume = 0;
-        r.hive_volume = 0;
-        r.weight = 0;
-      }
-
-      if( is_hbd )
-        r.hbd_volume += volume.amount.value;
-      else
-        r.hive_volume += volume.amount.value;
-
-      r.update_weight( has_hardfork( HIVE_HARDFORK_0_10__141 ) );
-      r.last_update = head_block_time();
-    } );
-  }
-  else
-  {
-    create<liquidity_reward_balance_object>( [&](liquidity_reward_balance_object& r )
-    {
-      r.owner = owner.get_id();
-      if( is_hbd )
-        r.hbd_volume = volume.amount.value;
-      else
-        r.hive_volume = volume.amount.value;
-
-      r.update_weight( has_hardfork( HIVE_HARDFORK_0_9__141 ) );
-      r.last_update = head_block_time();
-    } );
-  }
-}
-
-
-bool database::fill_order( const limit_order_object& order, const asset& pays, const asset& receives )
-{
-  try
-  {
-    HIVE_ASSERT( order.amount_for_sale().symbol == pays.symbol,
-      order_fill_exception, "error filling orders: ${order} ${pays} ${receives}",
-      ("order", order)("pays", pays)("receives", receives) );
-    HIVE_ASSERT( pays.symbol != receives.symbol,
-      order_fill_exception, "error filling orders: ${order} ${pays} ${receives}",
-      ("order", order)("pays", pays)("receives", receives) );
-
-    adjust_balance( order.seller, receives );
-
-    if( pays == order.amount_for_sale() )
-    {
-      remove( order );
-      return true;
-    }
-    else
-    {
-FC_TODO( " Remove if(), do assert unconditionally after HF20 occurs" )
-      if( has_hardfork( HIVE_HARDFORK_0_20__1815 ) )
-      {
-        HIVE_ASSERT( pays < order.amount_for_sale(),
-          order_fill_exception, "error filling orders: ${order} ${pays} ${receives}",
-          ("order", order)("pays", pays)("receives", receives) );
-      }
-
-      modify( order, [&]( limit_order_object& b )
-      {
-        b.for_sale -= pays.amount;
-      } );
-      /**
-        *  There are times when the AMOUNT_FOR_SALE * SALE_PRICE == 0 which means that we
-        *  have hit the limit where the seller is asking for nothing in return.  When this
-        *  happens we must refund any balance back to the seller, it is too small to be
-        *  sold at the sale price.
-        */
-      if( order.amount_to_receive().amount == 0 )
-      {
-        cancel_order(order);
-        return true;
-      }
-      return false;
-    }
-  }
-  FC_CAPTURE_AND_RETHROW( (order)(pays)(receives) )
-}
-
-void database::cancel_order( const limit_order_object& order, bool suppress_vop )
-{
-  auto amount_back = order.amount_for_sale();
-
-  adjust_balance( order.seller, amount_back );
-  if( !suppress_vop )
-    push_virtual_operation( *this, limit_order_cancelled_operation(order.seller, order.orderid, amount_back));
-
-  remove(order);
-}
-
-
 void database::clear_expired_transactions()
 {
   //Look for expired transactions in the deduplication list, and remove them.
@@ -3830,18 +3172,6 @@ void database::clear_expired_transactions()
   const auto& dedupe_index = transaction_idx.indices().get< by_expiration >();
   while( ( !dedupe_index.empty() ) && ( head_block_time() > dedupe_index.begin()->expiration ) )
     remove( *dedupe_index.begin() );
-}
-
-void database::clear_expired_orders()
-{
-  auto now = head_block_time();
-  const auto& orders_by_exp = get_index<limit_order_index>().indices().get<by_expiration>();
-  auto itr = orders_by_exp.begin();
-  while( itr != orders_by_exp.end() && itr->expiration < now )
-  {
-    cancel_order( *itr );
-    itr = orders_by_exp.begin();
-  }
 }
 
 void database::clear_expired_delegations()
@@ -4250,14 +3580,6 @@ asset database::get_savings_balance( const account_object& a, asset_symbol_type 
 // - get_hardfork()
 // - set_hardfork()
 // - apply_hardfork()
-void database::retally_liquidity_weight() {
-  const auto& ridx = get_index< liquidity_reward_balance_index >().indices().get< by_owner >();
-  for( const auto& i : ridx ) {
-    modify( i, []( liquidity_reward_balance_object& o ){
-      o.update_weight(true/*HAS HARDFORK10 if this method is called*/);
-    });
-  }
-}
 
 /**
   * Verifies all supply invariantes check out
@@ -4287,12 +3609,7 @@ void database::validate_invariants()const
     auto& gpo = get_dynamic_global_properties();
 
     /// verify no witness has too many votes
-    const auto& witness_idx = get_index< witness_index >().indices();
-    for( auto itr = witness_idx.begin(); itr != witness_idx.end(); ++itr )
-    {
-      FC_ASSERT( itr->votes <= gpo.total_vesting_shares.amount, "", ("itr",*itr) );
-      ++witness_no;
-    }
+    witness_no = validate_witness_votes_invariant();
 
     for( auto itr = account_idx.begin(); itr != account_idx.end(); ++itr )
     {
@@ -4327,19 +3644,12 @@ void database::validate_invariants()const
       total_supply += collateral_hive;
     }
 
-    const auto& limit_order_idx = get_index< limit_order_index >().indices();
-
-    for( auto itr = limit_order_idx.begin(); itr != limit_order_idx.end(); ++itr )
     {
-      if( itr->sell_price.base.symbol == HIVE_SYMBOL )
-      {
-        total_supply += asset( itr->for_sale, HIVE_SYMBOL );
-      }
-      else if ( itr->sell_price.base.symbol == HBD_SYMBOL )
-      {
-        total_hbd += asset( itr->for_sale, HBD_SYMBOL );
-      }
-      ++order_no;
+      asset order_hive( 0, HIVE_SYMBOL );
+      asset order_hbd( 0, HBD_SYMBOL );
+      get_limit_order_totals( order_hive, order_hbd );
+      total_supply += order_hive;
+      total_hbd += order_hbd;
     }
 
     {
@@ -4470,20 +3780,7 @@ void database::validate_smt_invariants()const
     });
 
     // - Market orders
-    const auto& limit_order_idx = get_index< limit_order_index >().indices();
-    for( auto itr = limit_order_idx.begin(); itr != limit_order_idx.end(); ++itr )
-    {
-      if( itr->sell_price.base.symbol.space() == asset_symbol_type::smt_nai_space )
-      {
-        asset a( itr->for_sale, itr->sell_price.base.symbol );
-        FC_ASSERT( a.symbol.is_vesting() == false );
-        asset zero_liquid = asset( 0, a.symbol );
-        asset zero_vesting = asset( 0, a.symbol.get_paired_symbol() );
-        auto insertInfo = theMap.emplace( a.symbol, TCombinedBalance( { a, zero_vesting, zero_liquid, zero_vesting, zero_liquid } ) );
-        if( insertInfo.second == false )
-          insertInfo.first->second.liquid += a;
-      }
-    }
+    get_limit_order_smt_totals( theMap );
 
     // - Reward funds
 FC_TODO( "Add reward_fund_object iteration here once they support SMTs." )
