@@ -1926,9 +1926,22 @@ build_openapi_spec_image:
     GIT_DEPTH: "1"
     GIT_SUBMODULE_STRATEGY: "none"
   script:
+    # Wait for Docker daemon to be ready (workaround for DinD health check issues)
+    - |
+      echo "Waiting for Docker daemon..."
+      for i in $(seq 1 30); do
+        if docker info >/dev/null 2>&1; then
+          echo "Docker daemon is ready"
+          break
+        fi
+        echo "Waiting for Docker daemon (attempt $i/30)..."
+        sleep 2
+      done
+      docker info || (echo "Docker daemon failed to start" && exit 1)
+
     # Login to GitLab registry
     - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" "$CI_REGISTRY" --password-stdin
-    
+
     ## Setup buildx with docker-container driver for registry cache support
     - docker buildx create --driver docker-container --use
     
