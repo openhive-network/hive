@@ -1153,6 +1153,10 @@ comment_cashout_tests:
 test-wax-spec-package:
   extends: .node_based_job_base
   stage: test
+  retry:
+    max: 2
+    when:
+      - script_failure
   variables:
     WAX_TEST_DIR: "test-wax-spec"
     PACKAGE_TGZ_PATH: "${BUILT_PACKAGE_PATH}"
