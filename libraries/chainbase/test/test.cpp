@@ -2,6 +2,7 @@
 
 #include <boost/test/unit_test.hpp>
 #include <chainbase/chainbase.hpp>
+#include <chainbase/chainbase.inl>
 
 #include <fc/io/raw.hpp>
 
@@ -152,5 +153,9 @@ BOOST_AUTO_TEST_CASE( open_and_create ) {
     throw;
   }
 }
+
+// Explicit template instantiations for chainbase::database methods
+template const chainbase::generic_index<book_index>& chainbase::database::get_index<book_index>() const;
+template chainbase::generic_index<book_index>& chainbase::database::get_mutable_index<book_index>();
 
 // BOOST_AUTO_TEST_SUITE_END()
