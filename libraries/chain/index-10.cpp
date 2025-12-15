@@ -1,4 +1,3 @@
-#include <hive/chain/dhf_objects_multiindex.hpp>
 #include <hive/chain/smt_objects.hpp>
 
 #include <hive/chain/index.hpp>
@@ -19,12 +18,10 @@ void initialize_core_indexes_10( database& db )
   HIVE_ADD_CORE_INDEX(db, smt_contribution_index);
   HIVE_ADD_CORE_INDEX(db, smt_ico_index);
 #endif
-  HIVE_ADD_CORE_INDEX(db, proposal_index);
 }
 
 } }
 
-HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::chain::proposal_index)
 #ifdef HIVE_ENABLE_SMT
 HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::chain::smt_token_index)
 HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::chain::account_regular_balance_index)
@@ -33,13 +30,8 @@ HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::chain::nai_pool_index)
 HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::chain::smt_token_emissions_index)
 HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::chain::smt_contribution_index)
 HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::chain::smt_ico_index)
-#endif
 
 // Explicit template instantiations for chainbase::database methods
-template const chainbase::generic_index<hive::chain::proposal_index>& chainbase::database::get_index<hive::chain::proposal_index>() const;
-template chainbase::generic_index<hive::chain::proposal_index>& chainbase::database::get_mutable_index<hive::chain::proposal_index>();
-
-#ifdef HIVE_ENABLE_SMT
 template const chainbase::generic_index<hive::chain::smt_token_index>& chainbase::database::get_index<hive::chain::smt_token_index>() const;
 template chainbase::generic_index<hive::chain::smt_token_index>& chainbase::database::get_mutable_index<hive::chain::smt_token_index>();
 

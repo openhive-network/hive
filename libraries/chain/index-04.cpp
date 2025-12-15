@@ -1,12 +1,21 @@
 #include <hive/chain/witness_objects_multiindex.hpp>
 #include <hive/chain/account_object_multiindex.hpp>
+#include <hive/chain/global_property_object_multiindex.hpp>
+#include <hive/chain/database_virtual_operations.hpp>
 
 #include <hive/chain/index.hpp>
 #include <chainbase/chainbase.inl>
 
 #include <hive/chain/util/type_registrar_definition.hpp>
+#include <hive/chain/util/rd_setup.hpp>
+#include <hive/protocol/block.hpp>
+#include <hive/protocol/hardfork.hpp>
 
 namespace hive { namespace chain {
+
+using hive::protocol::hardfork_version_vote;
+using hive::protocol::shutdown_witness_operation;
+using hive::protocol::producer_missed_operation;
 
 void initialize_core_indexes_04( database& db )
 {
@@ -159,6 +168,118 @@ void database::retally_witness_vote_counts( bool force )
       modify( a, [&]( account_object& account )
       {
         account.witnesses_voted_for = witnesses_voted_for;
+      } );
+    }
+  }
+}
+
+void database::update_signing_witness(const witness_object& signing_witness, const signed_block& new_block)
+{ try {
+  const dynamic_global_property_object& dpo = get_dynamic_global_properties();
+  uint64_t new_block_aslot = dpo.current_aslot + get_slot_at_time( new_block.timestamp );
+
+  modify( signing_witness, [&]( witness_object& _wit )
+  {
+    _wit.last_aslot = new_block_aslot;
+    _wit.last_confirmed_block_num = new_block.block_num();
+  } );
+} FC_CAPTURE_AND_RETHROW() }
+
+void database::update_witness_hardfork_version_votes(
+  const hardfork_version& hardfork_version,
+  const fc::time_point_sec& hardfork_time )
+{
+  const auto& witness_idx = get_index<witness_index>().indices().get<by_id>();
+  vector<witness_id_type> wit_ids_to_update;
+  for( auto it=witness_idx.begin(); it!=witness_idx.end(); ++it )
+    wit_ids_to_update.push_back( it->get_id() );
+
+  for( witness_id_type wit_id : wit_ids_to_update )
+  {
+    modify( get( wit_id ), [&]( witness_object& wit )
+    {
+      wit.running_version = hardfork_version;
+      wit.hardfork_version_vote = hardfork_version;
+      wit.hardfork_time_vote = hardfork_time;
+    } );
+  }
+}
+
+void database::update_witness_schedule_for_elected( const witness_object& current_witness,
+  const rd_dynamics_params& account_subsidy_rd )
+{
+  if( current_witness.schedule == witness_object::elected )
+  {
+    modify( current_witness, [&]( witness_object& w )
+    {
+      w.available_witness_account_subsidies = rd_apply( account_subsidy_rd, w.available_witness_account_subsidies );
+    } );
+  }
+}
+
+void database::process_header_witness_updates(
+  const account_name_type& witness_name,
+  const fc::optional<block_header_extensions>& version_ext,
+  const fc::optional<block_header_extensions>& hf_vote_ext )
+{
+  if( version_ext.valid() )
+  {
+    const auto& signing_witness = get_witness( witness_name );
+    const version& reported_version = version_ext->get<version>();
+    if( reported_version != signing_witness.running_version )
+    {
+      modify( signing_witness, [&]( witness_object& wo )
+      {
+        wo.running_version = reported_version;
+      });
+    }
+  }
+
+  if( hf_vote_ext.valid() )
+  {
+    const auto& signing_witness = get_witness( witness_name );
+    const hardfork_version_vote& hfv = hf_vote_ext->get<hardfork_version_vote>();
+    if( hfv.hf_version != signing_witness.hardfork_version_vote || hfv.hf_time != signing_witness.hardfork_time_vote )
+      modify( signing_witness, [&]( witness_object& wo )
+      {
+        wo.hardfork_version_vote = hfv.hf_version;
+        wo.hardfork_time_vote = hfv.hf_time;
+      });
+  }
+}
+
+uint64_t database::validate_witness_votes_invariant() const
+{
+  uint64_t witness_no = 0;
+  const auto& gpo = get_dynamic_global_properties();
+  const auto& witness_idx = get_index< witness_index >().indices();
+  for( auto itr = witness_idx.begin(); itr != witness_idx.end(); ++itr )
+  {
+    FC_ASSERT( itr->votes <= gpo.total_vesting_shares.amount, "", ("itr",*itr) );
+    ++witness_no;
+  }
+  return witness_no;
+}
+
+void database::update_witness_missed_blocks( const account_name_type& block_witness, uint32_t missed_blocks )
+{
+  for( uint32_t i = 0; i < missed_blocks; ++i )
+  {
+    const auto& witness_missed = get_witness( get_scheduled_witness( i + 1 ) );
+    if( witness_missed.owner != block_witness )
+    {
+      modify( witness_missed, [&]( witness_object& w )
+      {
+        w.total_missed++;
+        if( has_hardfork( HIVE_HARDFORK_0_14__278 ) && !has_hardfork( HIVE_HARDFORK_0_20__SP190 ) )
+        {
+          if( head_block_num() - w.last_confirmed_block_num > HIVE_WITNESS_SHUTDOWN_THRESHOLD )
+          {
+            w.signing_key = public_key_type();
+            push_virtual_operation( *this, shutdown_witness_operation( w.owner ) );
+          }
+        }
+        push_virtual_operation( *this, producer_missed_operation( w.owner ) );
       } );
     }
   }

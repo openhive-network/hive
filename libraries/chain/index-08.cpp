@@ -5,6 +5,7 @@
 
 #include <hive/chain/account_object_multiindex.hpp>
 #include <hive/chain/database_virtual_operations.hpp>
+#include <hive/chain/database_exceptions.hpp>
 #include <hive/chain/index.hpp>
 #include <chainbase/chainbase.inl>
 
@@ -17,6 +18,8 @@ namespace hive { namespace chain {
 
 using hive::protocol::escrow_rejected_operation;
 using hive::protocol::fill_transfer_from_savings_operation;
+using hive::protocol::fill_order_operation;
+using hive::protocol::limit_order_cancelled_operation;
 
 void initialize_core_indexes_08( database& db )
 {
@@ -209,6 +212,249 @@ void database::get_savings_withdraw_totals( asset& total_hive, asset& total_hbd,
     ++withdrawal_count;
   }
 }
+
+const limit_order_object& database::get_limit_order( const account_name_type& name, uint32_t orderid )const
+{ try {
+  if( !has_hardfork( HIVE_HARDFORK_0_6__127 ) )
+    orderid = orderid & 0x0000FFFF;
+
+  const auto* _limit_order = find_limit_order( name, orderid );
+  FC_ASSERT( _limit_order != nullptr, "Limit order with 'name' ${name} 'order_id' ${orderid} doesn't exist.", (name)(orderid) );
+  return *_limit_order;
+} FC_CAPTURE_AND_RETHROW( (name)(orderid) ) }
+
+bool database::apply_order( const limit_order_object& new_order_object )
+{
+  auto order_id = new_order_object.get_id();
+
+  const auto& limit_price_idx = get_index<limit_order_index>().indices().get<by_price>();
+
+  auto max_price = ~new_order_object.sell_price;
+  auto limit_itr = limit_price_idx.lower_bound(max_price.max());
+  auto limit_end = limit_price_idx.upper_bound(max_price);
+
+  bool finished = false;
+  while( !finished && limit_itr != limit_end )
+  {
+    auto old_limit_itr = limit_itr;
+    ++limit_itr;
+    // match returns 2 when only the old order was fully filled. In this case, we keep matching; otherwise, we stop.
+    finished = ( match(new_order_object, *old_limit_itr, old_limit_itr->sell_price) & 0x1 );
+  }
+
+  return find< limit_order_object >( order_id ) == nullptr;
+}
+
+int database::match( const limit_order_object& new_order, const limit_order_object& old_order, const price& match_price )
+{
+  bool has_hf_20__1815 = has_hardfork( HIVE_HARDFORK_0_20__1815 );
+
+FC_TODO( " Remove if(), do assert unconditionally after HF20 occurs" )
+  if( has_hf_20__1815 )
+  {
+    HIVE_ASSERT( new_order.sell_price.quote.symbol == old_order.sell_price.base.symbol,
+      order_match_exception, "error matching orders: ${new_order} ${old_order} ${match_price}",
+      ("new_order", new_order)("old_order", old_order)("match_price", match_price) );
+    HIVE_ASSERT( new_order.sell_price.base.symbol  == old_order.sell_price.quote.symbol,
+      order_match_exception, "error matching orders: ${new_order} ${old_order} ${match_price}",
+      ("new_order", new_order)("old_order", old_order)("match_price", match_price) );
+    HIVE_ASSERT( new_order.for_sale > 0 && old_order.for_sale > 0,
+      order_match_exception, "error matching orders: ${new_order} ${old_order} ${match_price}",
+      ("new_order", new_order)("old_order", old_order)("match_price", match_price) );
+    HIVE_ASSERT( match_price.quote.symbol == new_order.sell_price.base.symbol,
+      order_match_exception, "error matching orders: ${new_order} ${old_order} ${match_price}",
+      ("new_order", new_order)("old_order", old_order)("match_price", match_price) );
+    HIVE_ASSERT( match_price.base.symbol == old_order.sell_price.base.symbol,
+      order_match_exception, "error matching orders: ${new_order} ${old_order} ${match_price}",
+      ("new_order", new_order)("old_order", old_order)("match_price", match_price) );
+  }
+
+  auto new_order_for_sale = new_order.amount_for_sale();
+  auto old_order_for_sale = old_order.amount_for_sale();
+
+  asset new_order_pays, new_order_receives, old_order_pays, old_order_receives;
+
+  if( new_order_for_sale <= old_order_for_sale * match_price )
+  {
+    old_order_receives = new_order_for_sale;
+    new_order_receives  = new_order_for_sale * match_price;
+  }
+  else
+  {
+    //This line once read: assert( old_order_for_sale < new_order_for_sale * match_price );
+    //This assert is not always true -- see trade_amount_equals_zero in operation_tests.cpp
+    //Although new_order_for_sale is greater than old_order_for_sale * match_price, old_order_for_sale == new_order_for_sale * match_price
+    //Removing the assert seems to be safe -- apparently no asset is created or destroyed.
+    new_order_receives = old_order_for_sale;
+    old_order_receives = old_order_for_sale * match_price;
+  }
+
+  old_order_pays = new_order_receives;
+  new_order_pays = old_order_receives;
+
+FC_TODO( " Remove if(), do assert unconditionally after HF20 occurs" )
+  if( has_hf_20__1815 )
+  {
+    HIVE_ASSERT( new_order_pays == new_order.amount_for_sale() ||
+              old_order_pays == old_order.amount_for_sale(),
+      order_match_exception, "error matching orders: ${new_order} ${old_order} ${match_price}",
+      ("new_order", new_order)("old_order", old_order)("match_price", match_price) );
+  }
+
+  auto age = head_block_time() - old_order.created;
+  if( !has_hardfork( HIVE_HARDFORK_0_12__178 ) &&
+      ( (age >= HIVE_MIN_LIQUIDITY_REWARD_PERIOD_SEC && !has_hardfork( HIVE_HARDFORK_0_10__149)) ||
+      (age >= HIVE_MIN_LIQUIDITY_REWARD_PERIOD_SEC_HF10 && has_hardfork( HIVE_HARDFORK_0_10__149) ) ) )
+  {
+    if( old_order_receives.symbol == HIVE_SYMBOL )
+    {
+      adjust_liquidity_reward( get_account( old_order.seller ), old_order_receives, false );
+      adjust_liquidity_reward( get_account( new_order.seller ), -old_order_receives, false );
+    }
+    else
+    {
+      adjust_liquidity_reward( get_account( old_order.seller ), new_order_receives, true );
+      adjust_liquidity_reward( get_account( new_order.seller ), -new_order_receives, true );
+    }
+  }
+
+  push_virtual_operation( *this, fill_order_operation( new_order.seller, new_order.orderid, new_order_pays, old_order.seller, old_order.orderid, old_order_pays ) );
+
+  int result = 0;
+  result |= fill_order( new_order, new_order_pays, new_order_receives );
+  result |= fill_order( old_order, old_order_pays, old_order_receives ) << 1;
+
+FC_TODO( " Remove if(), do assert unconditionally after HF20 occurs" )
+  if( has_hf_20__1815 )
+  {
+    HIVE_ASSERT( result != 0,
+      order_match_exception, "error matching orders: ${new_order} ${old_order} ${match_price}",
+      ("new_order", new_order)("old_order", old_order)("match_price", match_price) );
+  }
+  return result;
+}
+
+bool database::fill_order( const limit_order_object& order, const asset& pays, const asset& receives )
+{
+  try
+  {
+    HIVE_ASSERT( order.amount_for_sale().symbol == pays.symbol,
+      order_fill_exception, "error filling orders: ${order} ${pays} ${receives}",
+      ("order", order)("pays", pays)("receives", receives) );
+    HIVE_ASSERT( pays.symbol != receives.symbol,
+      order_fill_exception, "error filling orders: ${order} ${pays} ${receives}",
+      ("order", order)("pays", pays)("receives", receives) );
+
+    adjust_balance( order.seller, receives );
+
+    if( pays == order.amount_for_sale() )
+    {
+      remove( order );
+      return true;
+    }
+    else
+    {
+FC_TODO( " Remove if(), do assert unconditionally after HF20 occurs" )
+      if( has_hardfork( HIVE_HARDFORK_0_20__1815 ) )
+      {
+        HIVE_ASSERT( pays < order.amount_for_sale(),
+          order_fill_exception, "error filling orders: ${order} ${pays} ${receives}",
+          ("order", order)("pays", pays)("receives", receives) );
+      }
+
+      modify( order, [&]( limit_order_object& b )
+      {
+        b.for_sale -= pays.amount;
+      } );
+      /**
+        *  There are times when the AMOUNT_FOR_SALE * SALE_PRICE == 0 which means that we
+        *  have hit the limit where the seller is asking for nothing in return.  When this
+        *  happens we must refund any balance back to the seller, it is too small to be
+        *  sold at the sale price.
+        */
+      if( order.amount_to_receive().amount == 0 )
+      {
+        cancel_order(order);
+        return true;
+      }
+      return false;
+    }
+  }
+  FC_CAPTURE_AND_RETHROW( (order)(pays)(receives) )
+}
+
+void database::cancel_order( const limit_order_object& order, bool suppress_vop )
+{
+  auto amount_back = order.amount_for_sale();
+
+  adjust_balance( order.seller, amount_back );
+  if( !suppress_vop )
+    push_virtual_operation( *this, limit_order_cancelled_operation(order.seller, order.orderid, amount_back));
+
+  remove(order);
+}
+
+void database::clear_expired_orders()
+{
+  auto now = head_block_time();
+  const auto& orders_by_exp = get_index<limit_order_index>().indices().get<by_expiration>();
+  auto itr = orders_by_exp.begin();
+  while( itr != orders_by_exp.end() && itr->expiration < now )
+  {
+    cancel_order( *itr );
+    itr = orders_by_exp.begin();
+  }
+}
+
+void database::get_limit_order_totals( asset& total_hive, asset& total_hbd ) const
+{
+  const auto& limit_order_idx = get_index< limit_order_index >().indices();
+
+  for( auto itr = limit_order_idx.begin(); itr != limit_order_idx.end(); ++itr )
+  {
+    if( itr->sell_price.base.symbol == HIVE_SYMBOL )
+    {
+      total_hive += asset( itr->for_sale, HIVE_SYMBOL );
+    }
+    else if ( itr->sell_price.base.symbol == HBD_SYMBOL )
+    {
+      total_hbd += asset( itr->for_sale, HBD_SYMBOL );
+    }
+  }
+}
+
+void database::remove_pending_limit_orders( const account_object& account, const account_name_type& account_name )
+{
+  const auto& order_idx = get_index< limit_order_index, by_account >();
+  auto order_itr = order_idx.lower_bound( account_name );
+  while( order_itr != order_idx.end() && order_itr->seller == account_name )
+  {
+    auto& order = *order_itr;
+    ++order_itr;
+
+    cancel_order( order, true );
+  }
+}
+
+#ifdef HIVE_ENABLE_SMT
+void database::get_limit_order_smt_totals( std::map< asset_symbol_type, TCombinedBalance >& theMap ) const
+{
+  const auto& limit_order_idx = get_index< limit_order_index >().indices();
+  for( auto itr = limit_order_idx.begin(); itr != limit_order_idx.end(); ++itr )
+  {
+    if( itr->sell_price.base.symbol.space() == asset_symbol_type::smt_nai_space )
+    {
+      asset a( itr->for_sale, itr->sell_price.base.symbol );
+      FC_ASSERT( a.symbol.is_vesting() == false );
+      asset zero_liquid = asset( 0, a.symbol );
+      asset zero_vesting = asset( 0, a.symbol.get_paired_symbol() );
+      auto insertInfo = theMap.emplace( a.symbol, TCombinedBalance( { a, zero_vesting, zero_liquid, zero_vesting, zero_liquid } ) );
+      if( insertInfo.second == false )
+        insertInfo.first->second.liquid_balance += a;
+    }
+  }
+}
+#endif
 
 } }
 

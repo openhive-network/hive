@@ -12,6 +12,7 @@
 
 #include <hive/protocol/asset.hpp>
 #include <hive/protocol/hardfork.hpp>
+#include <hive/protocol/block_header.hpp>
 
 namespace hive { namespace protocol {
   struct signed_block;
@@ -53,6 +54,8 @@ namespace chain {
   using hive::protocol::asset_symbol_type;
   using hive::protocol::custom_id_type;
   using hive::protocol::price;
+  using hive::protocol::hardfork_version;
+  using hive::protocol::block_header_extensions;
   using abstract_plugin = appbase::abstract_plugin;
 
   struct prepare_snapshot_supplement_notification;
@@ -72,6 +75,7 @@ namespace chain {
   class hardfork_property_object;
   class block_write_i;
   class block_flow_control;
+  namespace util { struct rd_dynamics_params; }
 
   struct block_notification;
   struct transaction_notification;
@@ -565,6 +569,11 @@ namespace chain {
       void get_escrow_totals( asset& total_hive, asset& total_hbd, uint64_t& escrow_count ) const;
       void remove_pending_savings_withdraws( const account_object& account, const account_name_type& account_name );
       void get_savings_withdraw_totals( asset& total_hive, asset& total_hbd, uint64_t& withdrawal_count ) const;
+      void get_limit_order_totals( asset& total_hive, asset& total_hbd ) const;
+      void remove_pending_limit_orders( const account_object& account, const account_name_type& account_name );
+#ifdef HIVE_ENABLE_SMT
+      void get_limit_order_smt_totals( std::map< asset_symbol_type, TCombinedBalance >& theMap ) const;
+#endif
       void process_decline_voting_rights();
       void update_median_feed();
 
@@ -735,6 +744,13 @@ namespace chain {
 
       void update_global_dynamic_data( const signed_block& b );
       void update_signing_witness(const witness_object& signing_witness, const signed_block& new_block);
+      void update_witness_hardfork_version_votes( const hardfork_version& hardfork_version, const fc::time_point_sec& hardfork_time );
+      void update_witness_schedule_for_elected( const witness_object& current_witness, const util::rd_dynamics_params& account_subsidy_rd );
+      void process_header_witness_updates( const account_name_type& witness_name,
+        const fc::optional<block_header_extensions>& version_ext,
+        const fc::optional<block_header_extensions>& hf_vote_ext );
+      uint64_t validate_witness_votes_invariant() const;
+      void update_witness_missed_blocks( const account_name_type& block_witness, uint32_t missed_blocks );
       uint32_t update_last_irreversible_block(std::optional<switch_forks_t> sf);
       void migrate_irreversible_state(uint32_t old_last_irreversible);
       void clear_expired_transactions();
