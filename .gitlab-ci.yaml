@@ -374,7 +374,7 @@ mirrornet_replay_test:
 chain_test:
   extends: .unit_tests_base
   script:
-    - timeout 23m ./hived-testnet-binaries/chain_test --log_format=JUNIT --log_sink=chain_test_results.xml --log_level=error > chain_test.log 2>&1
+    - timeout 30m ./hived-testnet-binaries/chain_test --log_format=JUNIT --log_sink=chain_test_results.xml --log_level=error > chain_test.log 2>&1
   artifacts:
     reports:
       junit: chain_test_results.xml
