@@ -352,8 +352,34 @@ const account_object& create_account( database& db, const account_name_type& nam
   }
 
   FC_ASSERT( db.find_account( name ) == nullptr, "Account ${name} already exists.", ( name ) );
-  return db.create< account_object >( name, key, _creation_time, _block_creation_time, mined, recovery_account,
-    !db.has_hardfork( HIVE_HARDFORK_0_20__2539 ) /*voting mana 100%*/, initial_delegation, rc_adjustment_from_fee );
+
+  // Create account_object (now only contains misc members)
+  const auto& new_account = db.create< account_object >( name, key, _creation_time, _block_creation_time, mined, recovery_account );
+
+  // Get the account_id to link all split objects
+  account_id_type account_id = new_account.get_id();
+
+  // Create recovery_object
+  db.create< recovery_object >( account_id, recovery_account ? recovery_account->get_id() : account_id_type() );
+
+  // Create assets_object with initial delegation
+  db.create< assets_object >( account_id, initial_delegation );
+
+  // Calculate effective vesting shares for manabars initialization (initially 0 + received delegation)
+  share_type effective_vesting_shares = initial_delegation.amount;
+
+  // Create manabars_rc_object
+  db.create< manabars_rc_object >( account_id, _creation_time,
+    !db.has_hardfork( HIVE_HARDFORK_0_20__2539 ) /*voting mana 100%*/,
+    rc_adjustment_from_fee, effective_vesting_shares );
+
+  // Create time_object
+  db.create< time_object >( account_id );
+
+  // Create delayed_votes_object
+  db.create< delayed_votes_object >( account_id );
+
+  return new_account;
 }
 
 void account_create_evaluator::do_apply( const account_create_operation& o )
