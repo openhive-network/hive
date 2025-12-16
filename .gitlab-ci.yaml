@@ -1991,23 +1991,23 @@ full_mainnet_replay_and_snapshot_manual:
   when: manual
   variables:
     BLOCK_LOG_BASE_URL: "http://termit.pl.syncad.com:3000/block_log_sources/mainnet_full"
-    LAST_PART: "5"  # Number of 1M block parts to process (override when triggering manually)
-                    # Examples: 5 = 5M blocks (~17h), 10 = 10M blocks (~34h), 101 = full data
+    LAST_PART: ""  # Number of 1M block parts to process (empty = auto-detect, override when triggering manually)
+                   # Examples: 5 = 5M blocks (~50min), 10 = 10M blocks (~1.7h), empty/101 = full ~17h
     CONFIG_INI_SOURCE: "$CI_PROJECT_DIR/docker/config_5M.ini"
     HIVE_NETWORK_TYPE: mainnet
   script:
     - test -n "$HIVED_IMAGE_NAME"
     - echo "Preparing test environment..."
     - |
-      # Download block_log parts from termit
+      # Download block_log parts from termit (auto-detect if LAST_PART empty)
+      LAST_PART_VALUE="${LAST_PART:-auto}"
       $CI_PROJECT_DIR/scripts/ci-helpers/download_block_log_parts.sh \
         "$BLOCK_LOG_BASE_URL" \
-        "$LAST_PART" \
+        "$LAST_PART_VALUE" \
         "$CI_PROJECT_DIR/data_generated_during_hive_replay/block_logs"
     - echo "Running test..."
     - cd $CI_PROJECT_DIR/tests/integration
     - export BLOCK_LOG_SOURCE_DIR="$CI_PROJECT_DIR/data_generated_during_hive_replay/block_logs"
-    - export LAST_PART=$LAST_PART
     - ./test_pruned_block_log_on_full_mainnet_replay_and_snapshot_start.sh $HIVED_IMAGE_NAME $CI_PROJECT_DIR/data_generated_during_hive_replay
     - echo "Test completed, artifacts:"
     - ls -lah "$CI_PROJECT_DIR/data_generated_during_hive_replay"
