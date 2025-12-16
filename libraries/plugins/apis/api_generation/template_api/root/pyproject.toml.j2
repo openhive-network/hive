@@ -7,26 +7,37 @@ build-backend = "poetry_dynamic_versioning.backend"
 
 
 [tool.poetry]
-name = "hiveio-{{ api_name_kebab }}"
+name = "hiveio-api"
 version = "0.0.0"
-description = ""
+description = "Hive JSON-RPC API client package with lazy-loaded submodules for all Hive APIs"
 authors = []
+package-mode = true
+readme = "hiveio_api/README.md"
 
 packages = [
-    { include = "{{ api_name }}" },
+    { include = "hiveio_api" },
 ]
 include = [
-    { path =  "{{ api_name }}/*", format = ["wheel", "sdist"] }
+    { path = "hiveio_api/**/*", format = ["wheel", "sdist"] }
 ]
-source = [
-    { name = "PyPI", priority = "primary" },
-    { name = "gitlab-schemas", url = "https://gitlab.syncad.com/api/v4/projects/362/packages/pypi/simple", priority = "supplemental" },
-    { name = "gitlab-beekeepy", url = "https://gitlab.syncad.com/api/v4/projects/434/packages/pypi/simple", priority = "supplemental" },
-]
+
+[[tool.poetry.source]]
+name = "PyPI"
+priority = "primary"
+
+[[tool.poetry.source]]
+name = "gitlab-schemas"
+url = "https://gitlab.syncad.com/api/v4/projects/362/packages/pypi/simple"
+priority = "supplemental"
+
+[[tool.poetry.source]]
+name = "gitlab-beekeepy"
+url = "https://gitlab.syncad.com/api/v4/projects/434/packages/pypi/simple"
+priority = "supplemental"
 
 [tool.poetry.dependencies]
 python = "^3.12"
-hiveio-beekeepy="{{ api_generation_pyproject.tool.poetry.dependencies['hiveio-beekeepy'] }}"
+hiveio-beekeepy = "{{ api_generation_pyproject.tool.poetry.dependencies['hiveio-beekeepy'] }}"
 
 [tool.poetry-dynamic-versioning]
 enable = true
@@ -46,5 +57,5 @@ format-jinja = """
 
 [tool.poetry-dynamic-versioning.substitution]
 files = [
-    "{{ api_name }}/__init__.py",
+    "hiveio_api/__init__.py",
 ]

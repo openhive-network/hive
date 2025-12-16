@@ -1,21 +1,28 @@
-### Hive JSON-RPC API package
+### {{ api_name_pascal_case }} - Hive JSON-RPC API subpackage
+
+This is a subpackage of `hiveio-api` providing the {{ api_name_pascal_case }} client.
 
 ### Installation
 
 ```bash
-    pip install hiveio-{{ api_name_kebab_case }}
+pip install hiveio-api
 ```
 
 ### Usage
 
 ```python
-    from wax import create_hive_chain
-    from {{ api_name_snake_case }}.{{ api_name_snake_case }}_client import {{ api_name_pascal_case }}
+from wax import create_hive_chain
+from hiveio_api.{{ api_name_snake_case }} import {{ api_name_pascal_case }}
 
-    class MyApiCollection:
-        def __init__(self):
-            self.{{ api_name_snake_case }} = {{ api_name_pascal_case }}
+class MyApiCollection:
+    def __init__(self):
+        self.{{ api_name_snake_case }} = {{ api_name_pascal_case }}
 
+chain = create_hive_chain().extends(MyApiCollection)
+```
 
-    chain = create_hive_chain().extends(MyApiCollection)
+### Running Example
+
+```bash
+python3 -m hiveio_api.{{ api_name_snake_case }}
 ```
