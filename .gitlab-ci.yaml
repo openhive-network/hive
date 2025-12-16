@@ -8,11 +8,6 @@ stages:
 
 variables:
   PYTEST_NUMBER_OF_PROCESSES: 8
-
-  # Docker image tags from common-ci-configuration with util-linux for NFS flock support
-  DOCKER_BUILDER_TAG: "3dd346380da7f28cdaf3ef3955559c905d94bd1c"
-  DOCKER_DIND_TAG: "3dd346380da7f28cdaf3ef3955559c905d94bd1c"
-
   # Fetch strategy reuses workspace between jobs, reducing GitLab server load.
   # Full clone (depth 0) enables efficient incremental fetches - shallow clones
   # don't reduce server CPU and make fetch less effective.
@@ -60,11 +55,78 @@ include:
   # Skip rules for docs-only changes optimization
   - local: '/scripts/ci-helpers/skip_rules.yml'
 
-# Use common git cleanup template from common-ci-configuration
-# Includes: corrupt repo/submodule cleanup, directory-to-submodule transitions
 default:
   hooks:
-    pre_get_sources_script: !reference [.pre_get_sources_with_submodules, pre_get_sources_script]
+    pre_get_sources_script:
+      # Clean corrupt git state left by cancelled pipelines (see GitLab #296638, #4600)
+      # Also handles directory-to-submodule transitions when switching branches
+      # Wrapped in subshell to avoid changing working directory for subsequent git operations
+      - |
+        (
+        cd "${CI_PROJECT_DIR:-/builds}" 2>/dev/null || exit 0
+        echo "pre_get_sources: checking $(pwd) for corrupt git state"
+        if [ -d ".git" ]; then
+          # Remove stale lock files that block git operations
+          find .git -name "*.lock" -delete 2>/dev/null || true
+
+          # Check if main repo is corrupt - if so, remove .git to force fresh clone
+          if ! git rev-parse HEAD >/dev/null 2>&1; then
+            echo "pre_get_sources: main repository corrupt, forcing fresh clone"
+            rm -rf .git
+          else
+            # Main repo OK - check and clean corrupt submodules
+            # Check both the working dir and .git/modules/ since either can be corrupt
+            if [ -f ".gitmodules" ]; then
+              git config --file .gitmodules --get-regexp path 2>/dev/null | awk '{print $2}' | while read submod; do
+                needs_clean=false
+                [ -z "$submod" ] && continue
+                # Check if submodule working directory exists but is corrupt
+                if [ -d "$submod" ] && [ -f "$submod/.git" ]; then
+                  if ! git -C "$submod" rev-parse HEAD >/dev/null 2>&1; then
+                    needs_clean=true
+                  fi
+                fi
+                # Check if .git/modules exists but is corrupt (even if working dir is gone)
+                if [ -d ".git/modules/$submod" ]; then
+                  if ! git --git-dir=".git/modules/$submod" rev-parse HEAD >/dev/null 2>&1; then
+                    echo "pre_get_sources: $submod corrupt (rev-parse failed)"
+                    needs_clean=true
+                  fi
+                fi
+                if [ "$needs_clean" = true ]; then
+                  echo "pre_get_sources: cleaning corrupt submodule: $submod"
+                  rm -rf "$submod" ".git/modules/$submod"
+                fi
+              done
+            fi
+
+            # Handle directory-to-submodule transitions: fetch target ref's .gitmodules
+            # and remove any paths that exist as regular directories (not submodules)
+            if [ -n "$CI_COMMIT_REF_NAME" ]; then
+              echo "pre_get_sources: checking for directory-to-submodule transitions (ref: $CI_COMMIT_REF_NAME)"
+              # Fetch the target ref first (it may not exist locally yet)
+              git fetch origin "$CI_COMMIT_REF_NAME" --depth=1 2>&1 || true
+              target_gitmodules=$(git show "origin/$CI_COMMIT_REF_NAME:.gitmodules" 2>/dev/null) || true
+              if [ -n "$target_gitmodules" ]; then
+                echo "$target_gitmodules" | grep "path = " | sed 's/.*path = //' | while read submod; do
+                  [ -z "$submod" ] && continue
+                  # If path exists as a regular directory (not a submodule), remove it
+                  if [ -d "$submod" ] && [ ! -f "$submod/.git" ]; then
+                    echo "pre_get_sources: removing directory for submodule transition: $submod"
+                    rm -rf "$submod"
+                  fi
+                done
+              else
+                echo "pre_get_sources: no target gitmodules found"
+              fi
+            fi
+
+            echo "pre_get_sources: existing repo OK"
+          fi
+        else
+          echo "pre_get_sources: no .git directory (fresh workspace)"
+        fi
+        )
 
 prepare_hived_image:
   extends:
@@ -80,25 +142,8 @@ prepare_hived_image:
     BINARY_CACHE_PATH: "$CI_PROJECT_DIR/hived-binaries"
     HIVE_NETWORK_TYPE: mainnet
   tags:
+    - public-runner-docker
     - bigjob
-  after_script:
-    - |
-      source docker_image_name.env
-      echo "Adding latest/stable/version tags for mainnet image..."
-      # Pull image to local daemon (may not be loaded when using cached builds)
-      docker pull $HIVED_INSTANCE || echo "Warning: docker pull failed"
-      docker images
-      if [[ "$CI_COMMIT_BRANCH" == "develop" ]]; then
-        docker tag $HIVED_INSTANCE ${CI_REGISTRY_IMAGE}:latest
-        docker push ${CI_REGISTRY_IMAGE}:latest
-      elif [[ "$CI_COMMIT_BRANCH" == "master" ]]; then
-        docker tag $HIVED_INSTANCE ${CI_REGISTRY_IMAGE}:stable
-        docker push ${CI_REGISTRY_IMAGE}:stable
-      fi
-      if [[ -n "$CI_COMMIT_TAG" && "$CI_COMMIT_REF_PROTECTED" == "true" ]]; then
-        docker tag $HIVED_INSTANCE ${CI_REGISTRY_IMAGE}:${CI_COMMIT_TAG}
-        docker push ${CI_REGISTRY_IMAGE}:${CI_COMMIT_TAG}
-      fi
 
 prepare_hived_data:
   extends:
@@ -117,7 +162,6 @@ prepare_hived_data:
     CONFIG_INI_SOURCE: "$CI_PROJECT_DIR/docker/config_5M.ini"
   tags:
     - data-cache-storage
-    - standard
     - fastest
 
 cleanup_hived_cache_manual:
@@ -127,7 +171,6 @@ cleanup_hived_cache_manual:
     CLEANUP_PATH_PATTERN: "$DATA_CACHE_HIVE_CLEANUP_PATTERN"
   tags:
     - data-cache-storage
-    - standard
 
 cleanup_cache_on_hived_builders:
   extends: .cleanup_cache_manual_template
@@ -136,7 +179,6 @@ cleanup_cache_on_hived_builders:
     CLEANUP_PATH_PATTERN: "$DATA_CACHE_HIVE_CLEANUP_PATTERN"
   tags:
     - public-runner-docker
-    - standard
 
 cleanup_old_hived_cache:
   extends: .cleanup_old_cache_template
@@ -145,7 +187,6 @@ cleanup_old_hived_cache:
     CLEANUP_PATH_PATTERN: "$DATA_CACHE_HIVE_CLEANUP_PATTERN"
   tags:
     - data-cache-storage
-    - standard
 
 
 testnet_node_build:
@@ -165,26 +206,51 @@ testnet_node_build:
     paths:
       - "$BINARY_CACHE_PATH"
   tags:
+    - public-runner-docker
     - bigjob
-  after_script:
-    - |
-      source docker_image_name.env
-      echo "Adding latest/stable/version tags for testnet image..."
-      # Pull image to local daemon (may not be loaded when using cached builds)
-      docker pull $HIVED_INSTANCE || echo "Warning: docker pull failed"
-      docker images
-      IMAGE_NAME_PREFIX="${CI_REGISTRY_IMAGE}/testnet:"
-      if [[ "$CI_COMMIT_BRANCH" == "develop" ]]; then
-        docker tag $HIVED_INSTANCE ${IMAGE_NAME_PREFIX}latest
-        docker push ${IMAGE_NAME_PREFIX}latest
-      elif [[ "$CI_COMMIT_BRANCH" == "master" ]]; then
-        docker tag $HIVED_INSTANCE ${IMAGE_NAME_PREFIX}stable
-        docker push ${IMAGE_NAME_PREFIX}stable
-      fi
-      if [[ -n "$CI_COMMIT_TAG" && "$CI_COMMIT_REF_PROTECTED" == "true" ]]; then
-        docker tag $HIVED_INSTANCE ${IMAGE_NAME_PREFIX}${CI_COMMIT_TAG}
-        docker push ${IMAGE_NAME_PREFIX}${CI_COMMIT_TAG}
-      fi
+
+beekeeper_tsc_build:
+  extends: .npm_build_template
+  stage: build
+  rules:
+    # Run in QUICK_TEST mode if this job or its dependents are requested
+    - if: $QUICK_TEST == "true" && $QUICK_TEST_JOBS =~ /beekeeper/
+      when: on_success
+    - if: $QUICK_TEST == "true"
+      when: never
+    - when: on_success
+  variables:
+    SOURCE_DIR: "${CI_PROJECT_DIR}/programs/beekeeper/beekeeper_wasm"
+    DIST_DIR: "${CI_PROJECT_DIR}/programs/beekeeper/beekeeper_wasm/dist"
+
+    # Since beekeeper shares repo with Hived, we can't overwrite Wiki home here
+    PROJECT_URL: "https://gitlab.syncad.com/hive/beekeeper-doc"
+
+    NPM_PACKAGE_SCOPE: "@hiveio"
+    NPM_PACKAGE_NAME: "beekeeper"
+    REPLACE_DOC_URL_ENV: "GEN_DOC_URL"
+    REPLACE_FILE_PATH: "${SOURCE_DIR}/README.md"
+
+  artifacts:
+    paths:
+      - "${SOURCE_DIR}/dist/*.tgz"
+      - "${REPLACE_FILE_PATH}"  # Modified README
+      - "${SOURCE_DIR}/src/build/*.wasm"
+      - "${SOURCE_DIR}/src/build/*.js"
+      - "${SOURCE_DIR}/src/build/*.d.ts"
+      - "${SOURCE_DIR}/src/build/node"
+      - "${SOURCE_DIR}/src/build/web"
+    reports:
+      dotenv:
+        - "${SOURCE_DIR}/gen_doc.env"  # contains URL to generated documentation pointed by `GEN_DOC_URL` variable
+        - "${SOURCE_DIR}/built_package_info.env"  # contains path to produced tgz
+        - "${SOURCE_DIR}/built_package_version_info.env"  # contains information related to generated package version and git revision
+
+    when: always
+    expire_in: 1 week
+
+  tags:
+    - public-runner-docker
 
 generate-wax-spec:
   extends: .generate_swagger_package
@@ -204,7 +270,49 @@ generate-wax-spec:
     API_TYPE: "jsonrpc"
   tags:
     - public-runner-docker
-    - standard
+
+generate_beekeeper_docs:
+  stage: build
+  extends: .npm_based_job_base
+  variables:
+    SOURCE_DIR: "${CI_PROJECT_DIR}/programs/beekeeper/beekeeper_wasm"
+    DIST_DIR: "$CI_PROJECT_DIR/programs/beekeeper/beekeeper_wasm/dist"
+
+  script:
+    - $CI_PROJECT_DIR/scripts/generate_api_docs.sh "${CI_PROJECT_URL}" "${CI_COMMIT_SHA}"
+
+  needs:
+    - job: beekeeper_tsc_build
+      artifacts: true
+
+  artifacts:
+    paths:
+      - "${DIST_DIR}/docs"
+
+    when: always
+    expire_in: 1 week
+  tags:
+    - public-runner-docker
+
+push_to_wiki:
+  extends: .npm_push_doc_template
+  stage: build
+  needs:
+    - job: generate_beekeeper_docs
+      artifacts: true
+    - job: beekeeper_tsc_build
+      artifacts: true
+
+  variables:
+    SOURCE_DIR: "${CI_PROJECT_DIR}/programs/beekeeper/beekeeper_wasm"
+    WIKI_PUSH_TOKEN: "$BEEKEEPER_DOC_WIKI_PUSH_TOKEN"
+    DIST_DIR: "$CI_PROJECT_DIR/programs/beekeeper/beekeeper_wasm/dist"
+    # Since beekeeper shares repo with Hived, we can't overwrite Wiki home here
+    PROJECT_URL: "https://gitlab.syncad.com/hive/beekeeper-doc"
+    PACKAGE_TGZ_PATH: "${BUILT_PACKAGE_PATH}"
+
+  tags:
+    - public-runner-docker
 
 mirrornet_node_build:
   stage: build
@@ -219,27 +327,29 @@ mirrornet_node_build:
     REGISTRY_PASS: $HIVED_CI_IMGBUILDER_PASSWORD
     BINARY_CACHE_PATH: "$CI_PROJECT_DIR/hived-mirrornet-binaries"
     HIVE_NETWORK_TYPE: mirrornet
-  tags:
-    - bigjob
   after_script:
     - |
       source docker_image_name.env
-      echo "Adding latest/stable/version tags for mirrornet image..."
-      # Pull image to local daemon (may not be loaded when using cached builds)
-      docker pull $HIVED_INSTANCE || echo "Warning: docker pull failed"
+      echo "Pushing hived image for commits on develop, master and tagged"
       docker images
-      IMAGE_NAME_PREFIX="${CI_REGISTRY_IMAGE}/mirrornet:"
-      if [[ "$CI_COMMIT_BRANCH" == "develop" ]]; then
+      IMAGE_NAME_PREFIX="$CI_REGISTRY_IMAGE/mirrornet:"
+      if [[ "$CI_COMMIT_BRANCH" == "develop" ]];
+      then
         docker tag $HIVED_INSTANCE ${IMAGE_NAME_PREFIX}latest
         docker push ${IMAGE_NAME_PREFIX}latest
-      elif [[ "$CI_COMMIT_BRANCH" == "master" ]]; then
+      elif [[ "$CI_COMMIT_BRANCH" == "master" ]];
+      then
         docker tag $HIVED_INSTANCE ${IMAGE_NAME_PREFIX}stable
         docker push ${IMAGE_NAME_PREFIX}stable
-      fi
-      if [[ -n "$CI_COMMIT_TAG" && "$CI_COMMIT_REF_PROTECTED" == "true" ]]; then
+      elif [[ -n "$CI_COMMIT_TAG" ]];
+      then
         docker tag $HIVED_INSTANCE ${IMAGE_NAME_PREFIX}${CI_COMMIT_TAG}
         docker push ${IMAGE_NAME_PREFIX}${CI_COMMIT_TAG}
       fi
+
+  tags:
+    - public-runner-docker
+    - bigjob
 
 extended_block_log_creation:
   extends: .extended_block_log_creation
@@ -284,7 +394,82 @@ extended_block_log_creation:
     - when: never
   tags:
     - data-cache-storage
-    - standard
+
+test_beekeeper_wasm:
+  extends: .npm_test_template
+  rules:
+    # Run in QUICK_TEST mode if requested in QUICK_TEST_JOBS
+    - if: $QUICK_TEST == "true" && $QUICK_TEST_JOBS =~ /test_beekeeper_wasm/
+      when: on_success
+    - if: $QUICK_TEST == "true"
+      when: never
+    - when: on_success
+
+  before_script:
+    - !reference [.npm_based_job_base, before_script]
+    # Fix BUILT_PACKAGE_PATH to use current job's workspace (path contains build job's workspace)
+    - |
+      if [[ -n "$BUILT_PACKAGE_PATH" && "$BUILT_PACKAGE_PATH" == /builds/* ]]; then
+        RELATIVE_PATH="${BUILT_PACKAGE_PATH#*/hive/hive/}"
+        PACKAGE_TGZ_PATH="${CI_PROJECT_DIR}/${RELATIVE_PATH}"
+        echo "Transformed PACKAGE_TGZ_PATH to: $PACKAGE_TGZ_PATH"
+      fi
+    - echo -e "\e[0Ksection_start:$(date +%s):package_tgz_unpack[collapsed=true]\r\e[0KAttempting to unpack ${PACKAGE_TGZ_PATH}"
+    - cd "${CI_PROJECT_DIR}"
+    - tar -xf "${PACKAGE_TGZ_PATH}" -C "${SOURCE_DIR}" --strip-components=1
+    - echo -e "\e[0Ksection_end:$(date +%s):package_tgz_unpack\r\e[0K"
+
+  needs:
+    - job: beekeeper_tsc_build
+      artifacts: true
+
+  variables:
+    SOURCE_DIR: "programs/beekeeper/beekeeper_wasm"
+    PACKAGE_TGZ_PATH: "${BUILT_PACKAGE_PATH}"
+
+  tags:
+    - public-runner-docker
+
+run_examples_beekeeper_wasm:
+  extends: .npm_process_built_package_tarball
+  rules:
+    # Run in QUICK_TEST mode if requested in QUICK_TEST_JOBS
+    - if: $QUICK_TEST == "true" && $QUICK_TEST_JOBS =~ /run_examples_beekeeper_wasm/
+      when: on_success
+    - if: $QUICK_TEST == "true"
+      when: never
+    - when: on_success
+
+  before_script:
+    - !reference [.npm_based_job_base, before_script]
+    # Fix BUILT_PACKAGE_PATH to use current job's workspace (path contains build job's workspace)
+    - |
+      if [[ -n "$BUILT_PACKAGE_PATH" && "$BUILT_PACKAGE_PATH" == /builds/* ]]; then
+        RELATIVE_PATH="${BUILT_PACKAGE_PATH#*/hive/hive/}"
+        PACKAGE_TGZ_PATH="${CI_PROJECT_DIR}/${RELATIVE_PATH}"
+        echo "Transformed PACKAGE_TGZ_PATH to: $PACKAGE_TGZ_PATH"
+      fi
+    - echo -e "\e[0Ksection_start:$(date +%s):package_tgz_unpack[collapsed=true]\r\e[0KAttempting to unpack ${PACKAGE_TGZ_PATH}"
+    - cd "${CI_PROJECT_DIR}"
+    - tar -xf "${PACKAGE_TGZ_PATH}" -C "${SOURCE_DIR}" --strip-components=1
+    - echo -e "\e[0Ksection_end:$(date +%s):package_tgz_unpack\r\e[0K"
+
+  script:
+    - echo -e "\e[0Ksection_start:$(date +%s):testing[collapsed=false]\r\e[0KAttempting to start examples..."
+    - cd "${SOURCE_DIR}"
+    - pnpm examples
+    - echo -e "\e[0Ksection_end:$(date +%s):testing\r\e[0K"
+
+  needs:
+    - job: beekeeper_tsc_build
+      artifacts: true
+
+  variables:
+    SOURCE_DIR: "programs/beekeeper/beekeeper_wasm"
+    PACKAGE_TGZ_PATH: "${BUILT_PACKAGE_PATH}"
+
+  tags:
+    - public-runner-docker
 
 mirrornet_replay_test:
   extends:
@@ -364,7 +549,6 @@ mirrornet_replay_test:
       - "$BINARIES_DIR/*.log"
   tags:
     - data-cache-storage
-    - standard
 
 .unit_tests_base:
   extends:
@@ -384,7 +568,6 @@ mirrornet_replay_test:
     FF_NETWORK_PER_BUILD: "true"
   tags:
     - public-runner-docker
-    - standard
 
 chain_test:
   extends: .unit_tests_base
@@ -481,7 +664,6 @@ plugin_test_api:
     - cd $CI_PROJECT_DIR/tests/python/hive-local-tools
   tags:
     - public-runner-docker
-    - standard
 
 pre_commit_checks:
   stage: static_code_analysis
@@ -501,7 +683,6 @@ detect_changes:
   extends: .detect_changes
   tags:
     - public-runner-docker
-    - standard
 
 # Quick Test Setup - retrieves cached binaries from previous successful pipeline
 # Runs when QUICK_TEST=true (manual) or TESTS_ONLY=true (auto-detected)
@@ -577,7 +758,6 @@ quick_test_setup:
     - !reference [.run-pytest, script]
   tags:
     - public-runner-docker
-    - standard
 
 .beem_tests_base:
   stage: test
@@ -596,7 +776,6 @@ quick_test_setup:
     - !reference [.run-pytest, script]
   tags:
     - public-runner-docker
-    - standard
 
 beem_testnet_tests:
   extends: .beem_tests_base
@@ -631,6 +810,12 @@ cli_wallet_tests:
     PYTEST_DIR: tests/python/functional/cli_wallet
     PYTEST_TIMEOUT_MINUTES: 30
 
+beekeeper_wallet_tests:
+  extends: .simple_pytest_job
+  variables:
+    PYTEST_DIR: tests/python/functional/beekeeper_wallet_tests
+    PYTEST_TIMEOUT_MINUTES: 30
+  
 hived_tests:
   stage: test
   extends:
@@ -652,7 +837,6 @@ hived_tests:
     - !reference [.run-pytest, script]
   tags:
     - public-runner-docker
-    - standard
 
 cli_wallet_extended_tests:
   extends: .simple_pytest_job
@@ -670,6 +854,7 @@ cli_wallet_extended_tests:
     - cd tests/python/functional/fork_tests
     - !reference [.run-pytest, script]
   tags:
+    - public-runner-docker
     - bigjob
   artifacts:
     expire_in: 2 days
@@ -783,7 +968,6 @@ test_tools_tests:
     - !reference [.run-pytest, script]
   tags:
     - public-runner-docker
-    - standard
 
 rc_direct_delegations_tests:
   extends: .simple_pytest_job
@@ -818,6 +1002,7 @@ message_format_testnet_tests:
                transaction_status_api_tests,
                wallet_bridge_api_tests ]
   tags:
+    - public-runner-docker
     - bigjob
 
 datagen_api_tests:
@@ -844,7 +1029,6 @@ datagen_api_tests:
     - !reference [.run-pytest, script]
   tags:
     - public-runner-docker
-    - standard
 
 patterns_tests:
   stage: test
@@ -884,7 +1068,6 @@ patterns_tests:
     when: always
   tags:
     - data-cache-storage
-    - standard
 
 transaction_serialization_testnet_tests:
   stage: test
@@ -900,7 +1083,6 @@ transaction_serialization_testnet_tests:
     - !reference [.run-pytest, script]
   tags:
     - public-runner-docker
-    - standard
 
 python_pattern_mainnet_tests:
   stage: test
@@ -948,7 +1130,6 @@ python_pattern_mainnet_tests:
     when: always
   tags:
     - data-cache-storage
-    - standard
 
 python_pattern_testnet_tests:
   stage: test
@@ -962,7 +1143,6 @@ python_pattern_testnet_tests:
     - !reference [.run-pytest, script]
   tags:
     - public-runner-docker
-    - standard
 
 .message_format_tests:
   stage: test
@@ -989,6 +1169,7 @@ python_pattern_testnet_tests:
                transaction_status_api_tests,
                wallet_bridge_api_tests ]
   tags:
+    - public-runner-docker
     - bigjob
 
 message_format_mainnet_5m_tests:
@@ -1058,7 +1239,6 @@ foundation_layer_tests:
     - !reference [.run-pytest, script]
   tags:
     - public-runner-docker
-    - standard
 
 witness_tests:
   stage: test
@@ -1083,7 +1263,6 @@ witness_tests:
     - !reference [.run-pytest, script]
   tags:
     - data-cache-storage
-    - standard
 
 hf28_tests:
   extends: .simple_pytest_job
@@ -1097,12 +1276,15 @@ functional_api_tests:
     PYTEST_DIR: tests/python/functional/api_tests
     PYTEST_TIMEOUT_MINUTES: 3
 
-publish_images:
-  extends: .docker_publish_job_template
-  variables:
-    # Publish mainnet (root) and mirrornet images to registry.hive.blog
-    # Note: testnet is not published externally (internal use only)
-    PUBLISH_IMAGES: "hive mirrornet"
+publish_docker_image:
+  stage: publish
+  extends: .publish_docker_image_template
+  before_script:
+    - !reference [.publish_docker_image_template, before_script]
+  script:
+    - scripts/ci-helpers/build_and_publish_instance.sh
+  tags:
+    - public-runner-docker
 
 hardfork_schedule_tests:
   extends: .simple_pytest_job
@@ -1133,7 +1315,6 @@ several_node_restarts_tests:
       - $CI_PROJECT_DIR/data_generated_during_hive_replay/datadir/docker_entrypoint.log
   tags:
     - public-runner-docker
-    - standard
 
 artifacts_generation_tests:
   extends:
@@ -1152,7 +1333,6 @@ artifacts_generation_tests:
     - ./test_artifacts_generation.sh "$CI_PROJECT_DIR/$BINARY_CACHE_PATH/hived" "$CI_PROJECT_DIR/$BINARY_CACHE_PATH/block_log_util"
   tags:
     - public-runner-docker
-    - standard
 
 block_log_util_split_and_merge_block_log_tests:
   extends:
@@ -1171,7 +1351,6 @@ block_log_util_split_and_merge_block_log_tests:
     - ./test_block_log_util_split_and_merge_block_log.sh "$BLOCK_LOG_UTIL_TESTNET_PATH"
   tags:
     - public-runner-docker
-    - standard
 
 recovery_tests:
   extends: .simple_pytest_job
@@ -1212,6 +1391,7 @@ operation_tests:
                      update_proposal_votes_tests,
                      witness_ops_tests ]
   tags:
+    - public-runner-docker
     - bigjob
 
 comment_cashout_tests:
@@ -1236,7 +1416,6 @@ comment_cashout_tests:
     - !reference [.run-pytest, script]
   tags:
     - public-runner-docker
-    - standard
 
 test-wax-spec-package:
   extends: .node_based_job_base
@@ -1282,7 +1461,6 @@ test-wax-spec-package:
       artifacts: true
   tags:
     - public-runner-docker
-    - standard
 
 Trigger-full-mirrornet-conversion:
   stage: deploy
@@ -1304,6 +1482,73 @@ Trigger-full-mirrornet-conversion:
   trigger:
     include:
       - local: scripts/ci-helpers/full-mirrornet-conversion.yml
+
+deploy_beekeeper_wasm_dev_package:
+  extends: .npm_deploy_package_template
+  stage: publish
+
+  before_script:
+    - !reference [.npm_based_job_base, before_script]
+    # Fix BUILT_PACKAGE_PATH to use current job's workspace (path contains build job's workspace)
+    - |
+      if [[ -n "$BUILT_PACKAGE_PATH" && "$BUILT_PACKAGE_PATH" == /builds/* ]]; then
+        RELATIVE_PATH="${BUILT_PACKAGE_PATH#*/hive/hive/}"
+        PACKAGE_TGZ_PATH="${CI_PROJECT_DIR}/${RELATIVE_PATH}"
+        echo "Transformed PACKAGE_TGZ_PATH to: $PACKAGE_TGZ_PATH"
+      fi
+    - echo -e "\e[0Ksection_start:$(date +%s):package_tgz_unpack[collapsed=true]\r\e[0KAttempting to unpack ${PACKAGE_TGZ_PATH}"
+    - cd "${CI_PROJECT_DIR}"
+    - tar -xf "${PACKAGE_TGZ_PATH}" -C "${SOURCE_DIR}" --strip-components=1
+    - echo -e "\e[0Ksection_end:$(date +%s):package_tgz_unpack\r\e[0K"
+
+  variables:
+    SOURCE_DIR: "${CI_PROJECT_DIR}/programs/beekeeper/beekeeper_wasm"
+    PACKAGE_TGZ_PATH: "${BUILT_PACKAGE_PATH}"
+    NPM_PACKAGE_SCOPE: "@hiveio"
+
+  needs:
+    - job: test_beekeeper_wasm
+    - job: run_examples_beekeeper_wasm
+    - job: beekeeper_tsc_build
+    - job: push_to_wiki
+      artifacts: true
+
+  tags:
+    - public-runner-docker
+
+deploy_beekeeper_wasm_production_public_npm:
+  extends: .registry_npmjs_org_deploy_package_template
+  stage: publish
+
+  before_script:
+    - !reference [.npm_based_job_base, before_script]
+    # Fix BUILT_PACKAGE_PATH to use current job's workspace (path contains build job's workspace)
+    - |
+      if [[ -n "$BUILT_PACKAGE_PATH" && "$BUILT_PACKAGE_PATH" == /builds/* ]]; then
+        RELATIVE_PATH="${BUILT_PACKAGE_PATH#*/hive/hive/}"
+        PACKAGE_TGZ_PATH="${CI_PROJECT_DIR}/${RELATIVE_PATH}"
+        echo "Transformed PACKAGE_TGZ_PATH to: $PACKAGE_TGZ_PATH"
+      fi
+    - echo -e "\e[0Ksection_start:$(date +%s):package_tgz_unpack[collapsed=true]\r\e[0KAttempting to unpack ${PACKAGE_TGZ_PATH}"
+    - cd "${CI_PROJECT_DIR}"
+    - tar -xf "${PACKAGE_TGZ_PATH}" -C "${SOURCE_DIR}" --strip-components=1
+    - echo -e "\e[0Ksection_end:$(date +%s):package_tgz_unpack\r\e[0K"
+
+  variables:
+    SOURCE_DIR: "${CI_PROJECT_DIR}/programs/beekeeper/beekeeper_wasm"
+    NPM_PUBLISH_TOKEN: "$INTERNAL_HIDDEN_PUBLISH_TOKEN"
+    NPM_PACKAGE_NAME: "beekeeper"
+    PACKAGE_TGZ_PATH: "${BUILT_PACKAGE_PATH}"
+
+  needs:
+    - job: test_beekeeper_wasm
+    - job: run_examples_beekeeper_wasm
+    - job: beekeeper_tsc_build
+    - job: push_to_wiki
+      artifacts: true
+
+  tags:
+    - public-runner-docker
 
 deploy-wax-spec-dev-package:
   extends: .npm_deploy_package_template
@@ -1339,7 +1584,6 @@ deploy-wax-spec-dev-package:
       artifacts: true
   tags:
   - public-runner-docker
-  - standard
 
 deploy-wax-spec-production-public-npm:
   extends: .registry_npmjs_org_deploy_package_template
@@ -1371,7 +1615,6 @@ deploy-wax-spec-production-public-npm:
       artifacts: true
   tags:
     - public-runner-docker
-    - standard
 
 authority_tests:
   extends: .simple_pytest_job
@@ -1391,144 +1634,75 @@ generate_hived_flattened_openapi_definition:
       - "${CI_PROJECT_DIR}/libraries/plugins/apis/documentation/openapi_flattened.json"
   tags:
     - public-runner-docker
-    - standard
 
-generate_python_api_clients:
+# Unified hiveio-api package: generate, build, test (via examples), and deploy to GitLab
+hiveio_api_package:
   needs:
     - job: generate_hived_flattened_openapi_definition
       artifacts: true
-  extends: .project_develop_configuration_template
+  extends: .build_wheel_template
   # Override image to Python 3.12 - api_client_generator doesn't support Python 3.14 yet
   image: registry.gitlab.syncad.com/hive/common-ci-configuration/python:3.12.9-1
   variables:
     API_GENERATION_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation"
     PYPROJECT_DIR: "${API_GENERATION_DIR}/api_generation"
+    DEPENDENCY_SOURCE_DIR: "${CI_PROJECT_DIR}/tests/python/hive-local-tools"
+  stage: build
   script:
-    - $API_GENERATION_DIR/generate_api_packages.sh
+    # Generate the hiveio_api package
+    - echo -e "${TXT_BLUE}Generating hiveio_api package...${TXT_CLEAR}"
+    - cd "${API_GENERATION_DIR}"
+    - poetry -C "${PYPROJECT_DIR}" install
+    - "${API_GENERATION_DIR}/generate_api_packages.sh"
+
+    # Switch PYPROJECT_DIR and DIST_DIR to the generated package
+    - export PYPROJECT_DIR="${API_GENERATION_DIR}/hiveio_api"
+    - export DIST_DIR="${PYPROJECT_DIR}/dist"
+
+    # Build the wheel
+    - echo -e "${TXT_BLUE}Building hiveio-api wheel...${TXT_CLEAR}"
+    - !reference [.build_wheel_template, script]
+
+    # Install dependencies for testing
+    - echo -e "${TXT_BLUE}Installing dependencies for testing...${TXT_CLEAR}"
+    - poetry -C "${DEPENDENCY_SOURCE_DIR}" install --no-root
+    - poetry -C "${PYPROJECT_DIR}" install --only-root
+
+    # Verify by running examples for all APIs (dynamically from __all__)
+    - echo -e "${TXT_BLUE}Verifying package by running examples for all APIs...${TXT_CLEAR}"
+    - |
+      API_LIST=$(python3 -c "import hiveio_api; print(' '.join(hiveio_api.__all__))")
+      echo "APIs to test: ${API_LIST}"
+      for api in ${API_LIST}; do
+        echo "Testing hiveio_api.${api}..."
+        python3 -m hiveio_api.${api}
+        echo -e "${TXT_GREEN}Example verification passed for ${api}${TXT_CLEAR}"
+      done
+    - echo -e "${TXT_GREEN}All API examples passed!${TXT_CLEAR}"
+
+    # Deploy to GitLab PyPI registry
+    - !reference [.deploy_wheel_to_gitlab_template, script]
   artifacts:
     expire_in: 1 week
     paths:
-      - "${API_GENERATION_DIR}/database_api"
-      - "${API_GENERATION_DIR}/rc_api"
-      - "${API_GENERATION_DIR}/block_api"
-      - "${API_GENERATION_DIR}/network_broadcast_api"
-      - "${API_GENERATION_DIR}/account_by_key_api"
-      - "${API_GENERATION_DIR}/bridge"
-      - "${API_GENERATION_DIR}/account_history_api"
-      - "${API_GENERATION_DIR}/condenser_api"
-      - "${API_GENERATION_DIR}/hive"
-      - "${API_GENERATION_DIR}/follow_api"
-      - "${API_GENERATION_DIR}/jsonrpc"
-      - "${API_GENERATION_DIR}/market_history_api"
-      - "${API_GENERATION_DIR}/reputation_api"
-      - "${API_GENERATION_DIR}/tags_api"
-      - "${API_GENERATION_DIR}/transaction_status_api"
-      - "${API_GENERATION_DIR}/debug_node_api"
-      - "${API_GENERATION_DIR}/search_api"
-  stage: build
-  tags:
-    - public-runner-docker
-    - standard
-
-# =============================================================================
-# Python API Client Wheel Jobs (consolidated using parallel:matrix)
-# =============================================================================
-# These jobs build and deploy Python wheel packages for all generated API clients.
-# Using parallel:matrix reduces ~460 lines to ~60 lines while maintaining the same behavior.
-
-# List of all API packages to build/deploy
-.api_wheel_matrix: &api_wheel_matrix
-  parallel:
-    matrix:
-      - API_NAME:
-          - database_api
-          - rc_api
-          - block_api
-          - network_broadcast_api
-          - account_by_key_api
-          - bridge
-          - account_history_api
-          - condenser_api
-          - hive
-          - follow_api
-          - jsonrpc
-          - market_history_api
-          - reputation_api
-          - transaction_status_api
-          - debug_node_api
-          - search_api
-
-# APIs to deploy to public PyPI (excludes jsonrpc which is internal/meta API)
-.api_wheel_pypi_matrix: &api_wheel_pypi_matrix
-  parallel:
-    matrix:
-      - API_NAME:
-          - database_api
-          - rc_api
-          - block_api
-          - network_broadcast_api
-          - account_by_key_api
-          - bridge
-          - account_history_api
-          - condenser_api
-          - hive
-          - follow_api
-          - market_history_api
-          - reputation_api
-          - transaction_status_api
-          - debug_node_api
-          - search_api
-
-# Build wheel for each API package
-build_api_wheel:
-  extends: .build_wheel_template
-  <<: *api_wheel_matrix
-  stage: build
-  # Use same image as generate_python_api_clients to avoid permission issues
-  image: registry.gitlab.syncad.com/hive/common-ci-configuration/python:3.12.9-1
-  variables:
-    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/${API_NAME}"
-    DIST_DIR: "${PYPROJECT_DIR}/dist"
-  needs:
-    - job: generate_python_api_clients
-      artifacts: true
-  tags:
-    - public-runner-docker
-    - standard
-  artifacts:
-    paths:
-      - "${PYPROJECT_DIR}/dist"
-      - "${PYPROJECT_DIR}/pyproject.toml"
-      - "${PYPROJECT_DIR}/${API_NAME}"
+      - "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/hiveio_api"
       - "build_wheel.env"
-
-# Deploy wheel to internal GitLab registry for each API package
-deploy_api_wheel_to_gitlab:
-  extends: .deploy_wheel_to_gitlab_template
-  <<: *api_wheel_matrix
-  stage: deploy
-  variables:
-    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/${API_NAME}"
-  needs:
-    - job: build_api_wheel
-      artifacts: true
+    reports:
+      dotenv: build_wheel.env
   tags:
     - public-runner-docker
-    - standard
 
-# Deploy wheel to public PyPI registry (excludes jsonrpc)
-deploy_api_wheel_to_pypi:
+# Deploy hiveio-api wheel to PyPI
+deploy_hiveio_api_to_pypi:
+  stage: deploy
   extends: .deploy_wheel_to_pypi_template
-  <<: *api_wheel_pypi_matrix
-  stage: deploy
   variables:
-    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/${API_NAME}"
+    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/hiveio_api"
   needs:
-    - job: build_api_wheel
+    - job: hiveio_api_package
       artifacts: true
   tags:
     - public-runner-docker
-    - standard
 
 generate_testing_block_logs:
   stage: build
@@ -1584,6 +1758,7 @@ generate_testing_block_logs:
     paths:
       - $TESTING_BLOCK_LOGS_DIR/checksums/
   tags:
+    - public-runner-docker
     - bigjob
 
 build_combined_testing_block_logs_image:
@@ -1609,7 +1784,6 @@ build_combined_testing_block_logs_image:
       dotenv: testing_block_log_latest_version.env
   tags:
     - public-runner-docker
-    - standard
 
 universal_block_log_tests:
   stage: test
@@ -1632,7 +1806,6 @@ universal_block_log_tests:
     - !reference [.run-pytest, script]
   tags:
     - public-runner-docker
-    - standard
 
 colony_tests:
   stage: test
@@ -1665,7 +1838,6 @@ colony_tests:
       - TEST_NAME: test_colony_with_unknown_colony_signer
   tags:
     - public-runner-docker
-    - standard
 
 # Build and push OpenAPI spec Docker image
 build_openapi_spec_image:
@@ -1717,7 +1889,6 @@ build_openapi_spec_image:
       fi
   tags:
     - public-runner-docker
-    - standard
 
 exchange_node_block_log_pruning_test:
   extends: .docker_image_builder_job
@@ -1742,4 +1913,3 @@ exchange_node_block_log_pruning_test:
   - when: on_success
   tags:
     - public-runner-docker
-    - standard
