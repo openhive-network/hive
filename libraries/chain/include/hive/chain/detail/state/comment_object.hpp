@@ -21,6 +21,7 @@ namespace hive { namespace chain {
   using hive::protocol::asset;
   using hive::protocol::HBD_asset;
 #ifdef HIVE_ENABLE_SMT
+  using hive::protocol::asset_symbol_type;
   using protocol::votable_asset_info;
 #endif
 

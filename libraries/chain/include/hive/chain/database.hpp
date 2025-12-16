@@ -572,6 +572,13 @@ namespace chain {
       void get_limit_order_totals( asset& total_hive, asset& total_hbd ) const;
       void remove_pending_limit_orders( const account_object& account, const account_name_type& account_name );
 #ifdef HIVE_ENABLE_SMT
+      struct TCombinedBalance {
+        asset liquid;
+        asset vesting;
+        asset pending_liquid;
+        asset pending_vesting_shares;
+        asset pending_vesting_value;
+      };
       void get_limit_order_smt_totals( std::map< asset_symbol_type, TCombinedBalance >& theMap ) const;
 #endif
       void process_decline_voting_rights();
