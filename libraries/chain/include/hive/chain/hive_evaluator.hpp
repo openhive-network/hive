@@ -9,6 +9,14 @@ namespace hive { namespace chain {
 
 using namespace hive::protocol;
 
+class account_object;
+class database;
+
+/// Helper function for creating accounts with proper recovery account handling (pre-HF11 uses "steem")
+const account_object& create_account( database& db, const account_name_type& name, const public_key_type& key,
+  const time_point_sec& _creation_time, const time_point_sec& _block_creation_time, bool mined, asset fee_for_rc_adjustment,
+  const account_object* recovery_account = nullptr, asset initial_delegation = asset( 0, VESTS_SYMBOL ) );
+
 // Registration functions for evaluators defined in split cpp files
 void register_transfer_evaluators( evaluator_registry<operation>& registry );
 void register_account_evaluators( evaluator_registry<operation>& registry );
