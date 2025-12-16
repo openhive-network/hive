@@ -43,8 +43,6 @@ bool dhf_processor::is_daily_maintenance_period( const time_point_sec& head_time
 
 void dhf_processor::remove_proposals( const time_point_sec& head_time )
 {
-  FC_TODO("implement proposal removal based on automatic actions")
-
   auto& byEndDateIdx = db.get_index< proposal_index, by_end_date >();
   auto& byVoterIdx = db.get_index< proposal_vote_index, by_proposal_voter >();
 

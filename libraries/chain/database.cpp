@@ -2286,7 +2286,7 @@ void database::_apply_block( const std::shared_ptr<full_block_type>& full_block,
 
   const auto& gprops = get_dynamic_global_properties();
   uint32_t block_size = full_block->get_uncompressed_block().raw_size;
-  if( has_hardfork( HIVE_HARDFORK_0_12 ) )
+  if( has_hardfork( HIVE_HARDFORK_0_12 ) ) // block 1798604 was twice the allowed max due to megasized comment
     FC_ASSERT(block_size <= gprops.maximum_block_size, "Block size is larger than voted on block size", (block_num)(block_size)("max",gprops.maximum_block_size));
 
   if( block_size < HIVE_MIN_BLOCK_SIZE )
@@ -2411,7 +2411,7 @@ void database::process_genesis_accounts()
     , account_idx.end()
     , [&]( const account_object& obj ){
         push_virtual_operation( *this,
-          account_created_operation( obj.get_name(), obj.get_name(), asset(0, VESTS_SYMBOL), asset(0, VESTS_SYMBOL) ) );
+          account_created_operation( obj.get_name(), obj.get_name(), VEST_asset( 0 ), VEST_asset( 0 ) ) );
       }
   );
   _current_trx_in_block = trx_in_block_prev;
@@ -2621,9 +2621,6 @@ void database::validate_transaction(const std::shared_ptr<full_transaction_type>
     {
       full_transaction->validate();
     }
-
-    if (!has_hardfork(HIVE_HARDFORK_1_26_ENABLE_NEW_SERIALIZATION))
-      HIVE_ASSERT(full_transaction->is_legacy_pack(), hive::protocol::transaction_auth_exception, "legacy serialization must be used until hardfork 26");
   }
 
   if (!(skip & (skip_transaction_signatures | skip_authority_check)))
