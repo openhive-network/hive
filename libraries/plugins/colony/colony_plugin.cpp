@@ -573,10 +573,11 @@ void transaction_builder::build_vote( const account_object& actor, uint64_t nonc
 
 void transaction_builder::build_transfer( const account_object& actor, uint64_t nonce )
 {
+  const auto& actor_assets = _common._db.get< assets_object, by_account_id >( actor.get_id() );
   bool use_hive = false;
-  if( actor.get_hbd_balance().amount.value == 0 )
+  if( actor_assets.get_hbd_balance().amount.value == 0 )
   {
-    if( actor.get_balance().amount.value == 0 )
+    if( actor_assets.get_balance().amount.value == 0 )
     {
       ++_transfer_substitutions;
       build_custom( actor, nonce );

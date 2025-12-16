@@ -414,7 +414,9 @@ void database_fixture::issue_funds(
         } );
       }
 
-      db.modify( db.get_account( account_name ), [&]( account_object& a )
+      const auto& acnt = db.get_account( account_name );
+      const auto& acnt_assets = db.get< assets_object, by_account_id >( acnt.get_id() );
+      db.modify( acnt_assets, [&]( assets_object& a )
       {
         if( amount.symbol == HIVE_SYMBOL )
           a.set_balance( a.get_balance() + amount );
@@ -969,47 +971,94 @@ account_id_type database_fixture::get_account_id( const string& account_name )co
 
 asset database_fixture::get_balance( const string& account_name )const
 {
-  return db->get_account( account_name ).get_balance();
+  const auto& acnt = db->get_account( account_name );
+  const auto& assets = db->get< assets_object, by_account_id >( acnt.get_id() );
+  return assets.get_balance();
 }
 
 asset database_fixture::get_hbd_balance( const string& account_name )const
 {
-  return db->get_account( account_name ).get_hbd_balance();
+  const auto& acnt = db->get_account( account_name );
+  const auto& assets = db->get< assets_object, by_account_id >( acnt.get_id() );
+  return assets.get_hbd_balance();
 }
 
 asset database_fixture::get_savings( const string& account_name )const
 {
-  return db->get_account( account_name ).get_savings();
+  const auto& acnt = db->get_account( account_name );
+  const auto& assets = db->get< assets_object, by_account_id >( acnt.get_id() );
+  return assets.get_savings();
 }
 
 asset database_fixture::get_hbd_savings( const string& account_name )const
 {
-  return db->get_account( account_name ).get_hbd_savings();
+  const auto& acnt = db->get_account( account_name );
+  const auto& assets = db->get< assets_object, by_account_id >( acnt.get_id() );
+  return assets.get_hbd_savings();
 }
 
 asset database_fixture::get_rewards( const string& account_name )const
 {
-  return db->get_account( account_name ).get_rewards();
+  const auto& acnt = db->get_account( account_name );
+  const auto& assets = db->get< assets_object, by_account_id >( acnt.get_id() );
+  return assets.get_rewards();
 }
 
 asset database_fixture::get_hbd_rewards( const string& account_name )const
 {
-  return db->get_account( account_name ).get_hbd_rewards();
+  const auto& acnt = db->get_account( account_name );
+  const auto& assets = db->get< assets_object, by_account_id >( acnt.get_id() );
+  return assets.get_hbd_rewards();
 }
 
 asset database_fixture::get_vesting( const string& account_name )const
 {
-  return db->get_account( account_name ).get_vesting();
+  const auto& acnt = db->get_account( account_name );
+  const auto& assets = db->get< assets_object, by_account_id >( acnt.get_id() );
+  return assets.get_vesting();
 }
 
 asset database_fixture::get_vest_rewards( const string& account_name )const
 {
-  return db->get_account( account_name ).get_vest_rewards();
+  const auto& acnt = db->get_account( account_name );
+  const auto& assets = db->get< assets_object, by_account_id >( acnt.get_id() );
+  return assets.get_vest_rewards();
 }
 
 asset database_fixture::get_vest_rewards_as_hive( const string& account_name )const
 {
-  return db->get_account( account_name ).get_vest_rewards_as_hive();
+  const auto& acnt = db->get_account( account_name );
+  const auto& assets = db->get< assets_object, by_account_id >( acnt.get_id() );
+  return assets.get_vest_rewards_as_hive();
+}
+
+const util::manabar& database_fixture::get_voting_manabar( const string& account_name )const
+{
+  const auto& acnt = db->get_account( account_name );
+  const auto& mrc = db->get< manabars_rc_object, by_account_id >( acnt.get_id() );
+  return mrc.get_voting_manabar();
+}
+
+const util::manabar& database_fixture::get_downvote_manabar( const string& account_name )const
+{
+  const auto& acnt = db->get_account( account_name );
+  const auto& mrc = db->get< manabars_rc_object, by_account_id >( acnt.get_id() );
+  return mrc.get_downvote_manabar();
+}
+
+share_type database_fixture::get_effective_vesting_shares( const string& account_name )const
+{
+  const auto& acnt = db->get_account( account_name );
+  const auto& assets = db->get< assets_object, by_account_id >( acnt.get_id() );
+  const auto& time_obj = db->get< time_object, by_account_id >( acnt.get_id() );
+  return acnt.get_effective_vesting_shares( assets, time_obj );
+}
+
+time_point_sec database_fixture::get_last_vote_time( const string& account_name )const
+{
+  const auto& acnt = db->get_account( account_name );
+  const auto& time_obj = db->get< time_object, by_account_id >( acnt.get_id() );
+  return time_obj.get_last_vote_time();
 }
 
 comment database_fixture::get_comment( const std::string& author, const std::string& permlink )const

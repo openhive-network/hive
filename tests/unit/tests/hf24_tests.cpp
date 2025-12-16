@@ -190,10 +190,12 @@ BOOST_AUTO_TEST_CASE( comment_beneficiary )
     }
     tx.clear();
 
-    asset initial_treasury_balance = db->get_treasury().get_hbd_balance();
+    const auto& treasury = db->get_treasury();
+    const auto& treasury_assets = db->get< assets_object, by_account_id >( treasury.get_id() );
+    asset initial_treasury_balance = treasury_assets.get_hbd_balance();
     generate_blocks( db->find_comment_cashout( *db->get_comment( "alice", string( "test" ) ) )->get_cashout_time() );
     BOOST_REQUIRE_EQUAL( get_hbd_balance( OBSOLETE_TREASURY_ACCOUNT ).amount.value, 0 );
-    BOOST_REQUIRE_EQUAL( db->get_treasury().get_hbd_balance().amount.value, 1150 + initial_treasury_balance.amount.value );
+    BOOST_REQUIRE_EQUAL( treasury_assets.get_hbd_balance().amount.value, 1150 + initial_treasury_balance.amount.value );
 
     database_fixture::validate_database();
   }
@@ -236,41 +238,46 @@ BOOST_AUTO_TEST_CASE( consolidate_balance )
     database_fixture::validate_database();
     {
       const auto& old_treasury = db->get_account( OBSOLETE_TREASURY_ACCOUNT );
-      BOOST_REQUIRE_EQUAL( old_treasury.get_balance().amount.value, 5000 );
-      BOOST_REQUIRE_EQUAL( old_treasury.get_savings().amount.value, 3000 );
-      BOOST_REQUIRE_EQUAL( old_treasury.get_rewards().amount.value, 2000 );
-      BOOST_REQUIRE_EQUAL( old_treasury.get_hbd_balance().amount.value, 5000 );
-      BOOST_REQUIRE_EQUAL( old_treasury.get_hbd_savings().amount.value, 3000 );
-      BOOST_REQUIRE_EQUAL( old_treasury.get_hbd_rewards().amount.value, 2000 );
-      BOOST_REQUIRE_EQUAL( old_treasury.get_vesting().amount.value, vested_7.amount.value );
-      BOOST_REQUIRE_EQUAL( old_treasury.get_vest_rewards().amount.value, vested_3.amount.value );
+      const auto& old_treasury_assets = db->get< assets_object, by_account_id >( old_treasury.get_id() );
+      BOOST_REQUIRE_EQUAL( old_treasury_assets.get_balance().amount.value, 5000 );
+      BOOST_REQUIRE_EQUAL( old_treasury_assets.get_savings().amount.value, 3000 );
+      BOOST_REQUIRE_EQUAL( old_treasury_assets.get_rewards().amount.value, 2000 );
+      BOOST_REQUIRE_EQUAL( old_treasury_assets.get_hbd_balance().amount.value, 5000 );
+      BOOST_REQUIRE_EQUAL( old_treasury_assets.get_hbd_savings().amount.value, 3000 );
+      BOOST_REQUIRE_EQUAL( old_treasury_assets.get_hbd_rewards().amount.value, 2000 );
+      BOOST_REQUIRE_EQUAL( old_treasury_assets.get_vesting().amount.value, vested_7.amount.value );
+      BOOST_REQUIRE_EQUAL( old_treasury_assets.get_vest_rewards().amount.value, vested_3.amount.value );
     }
 
-    asset initial_treasury_balance = db->get_treasury().get_hbd_balance();
+    const auto& treasury_acct = db->get_treasury();
+    const auto& treasury_acct_assets = db->get< assets_object, by_account_id >( treasury_acct.get_id() );
+    asset initial_treasury_balance = treasury_acct_assets.get_hbd_balance();
     generate_block();
     database_fixture::validate_database();
 
     {
       const auto& old_treasury = db->get_account( OBSOLETE_TREASURY_ACCOUNT );
-      BOOST_REQUIRE_EQUAL( old_treasury.get_balance().amount.value, 0 );
-      BOOST_REQUIRE_EQUAL( old_treasury.get_savings().amount.value, 0 );
-      BOOST_REQUIRE_EQUAL( old_treasury.get_rewards().amount.value, 0 );
-      BOOST_REQUIRE_EQUAL( old_treasury.get_hbd_balance().amount.value, 0 );
-      BOOST_REQUIRE_EQUAL( old_treasury.get_hbd_savings().amount.value, 0 );
-      BOOST_REQUIRE_EQUAL( old_treasury.get_hbd_rewards().amount.value, 0 );
-      BOOST_REQUIRE_EQUAL( old_treasury.get_vesting().amount.value, 0 );
-      BOOST_REQUIRE_EQUAL( old_treasury.get_vest_rewards().amount.value, 0 );
+      const auto& old_treasury_assets = db->get< assets_object, by_account_id >( old_treasury.get_id() );
+      BOOST_REQUIRE_EQUAL( old_treasury_assets.get_balance().amount.value, 0 );
+      BOOST_REQUIRE_EQUAL( old_treasury_assets.get_savings().amount.value, 0 );
+      BOOST_REQUIRE_EQUAL( old_treasury_assets.get_rewards().amount.value, 0 );
+      BOOST_REQUIRE_EQUAL( old_treasury_assets.get_hbd_balance().amount.value, 0 );
+      BOOST_REQUIRE_EQUAL( old_treasury_assets.get_hbd_savings().amount.value, 0 );
+      BOOST_REQUIRE_EQUAL( old_treasury_assets.get_hbd_rewards().amount.value, 0 );
+      BOOST_REQUIRE_EQUAL( old_treasury_assets.get_vesting().amount.value, 0 );
+      BOOST_REQUIRE_EQUAL( old_treasury_assets.get_vest_rewards().amount.value, 0 );
     }
     {
       const auto& treasury = db->get_account( NEW_HIVE_TREASURY_ACCOUNT );
-      BOOST_REQUIRE_EQUAL( treasury.get_balance().amount.value, 14999 ); //rounding during vest->hive conversion
-      BOOST_REQUIRE_EQUAL( treasury.get_savings().amount.value, 3000 );
-      BOOST_REQUIRE_EQUAL( treasury.get_rewards().amount.value, 2000 );
-      BOOST_REQUIRE_EQUAL( treasury.get_hbd_balance().amount.value, 5000 + initial_treasury_balance.amount.value );
-      BOOST_REQUIRE_EQUAL( treasury.get_hbd_savings().amount.value, 3000 );
-      BOOST_REQUIRE_EQUAL( treasury.get_hbd_rewards().amount.value, 2000 );
-      BOOST_REQUIRE_EQUAL( treasury.get_vesting().amount.value, 0 );
-      BOOST_REQUIRE_EQUAL( treasury.get_vest_rewards().amount.value, 0 );
+      const auto& treasury_assets = db->get< assets_object, by_account_id >( treasury.get_id() );
+      BOOST_REQUIRE_EQUAL( treasury_assets.get_balance().amount.value, 14999 ); //rounding during vest->hive conversion
+      BOOST_REQUIRE_EQUAL( treasury_assets.get_savings().amount.value, 3000 );
+      BOOST_REQUIRE_EQUAL( treasury_assets.get_rewards().amount.value, 2000 );
+      BOOST_REQUIRE_EQUAL( treasury_assets.get_hbd_balance().amount.value, 5000 + initial_treasury_balance.amount.value );
+      BOOST_REQUIRE_EQUAL( treasury_assets.get_hbd_savings().amount.value, 3000 );
+      BOOST_REQUIRE_EQUAL( treasury_assets.get_hbd_rewards().amount.value, 2000 );
+      BOOST_REQUIRE_EQUAL( treasury_assets.get_vesting().amount.value, 0 );
+      BOOST_REQUIRE_EQUAL( treasury_assets.get_vest_rewards().amount.value, 0 );
     }
   }
   FC_LOG_AND_RETHROW()

@@ -14,6 +14,7 @@
 
 #include <hive/chain/dhf_objects.hpp>
 #include <hive/chain/util/dhf_processor.hpp>
+#include <hive/chain/assets_object.hpp>
 
 #include <fc/macros.hpp>
 #include <fc/crypto/digest.hpp>
@@ -188,24 +189,28 @@ BOOST_AUTO_TEST_CASE( inactive_proposals_have_votes )
     const auto& _receiver = db->get_account( receiver );
     const auto& _voter_01 = db->get_account( voter_01 );
     const auto& _treasury = db->get_treasury();
+    const auto& _creator_assets = db->get< assets_object, by_account_id >( _creator.get_id() );
+    const auto& _receiver_assets = db->get< assets_object, by_account_id >( _receiver.get_id() );
+    const auto& _voter_01_assets = db->get< assets_object, by_account_id >( _voter_01.get_id() );
+    const auto& _treasury_assets = db->get< assets_object, by_account_id >( _treasury.get_id() );
 
     {
       BOOST_TEST_MESSAGE( "---Payment---" );
 
-      auto before_creator_hbd_balance = _creator.get_hbd_balance();
-      auto before_receiver_hbd_balance = _receiver.get_hbd_balance();
-      auto before_voter_01_hbd_balance = _voter_01.get_hbd_balance();
-      auto before_treasury_hbd_balance = _treasury.get_hbd_balance();
+      auto before_creator_hbd_balance = _creator_assets.get_hbd_balance();
+      auto before_receiver_hbd_balance = _receiver_assets.get_hbd_balance();
+      auto before_voter_01_hbd_balance = _voter_01_assets.get_hbd_balance();
+      auto before_treasury_hbd_balance = _treasury_assets.get_hbd_balance();
 
       auto next_block = get_nr_blocks_until_proposal_maintenance_block();
       generate_blocks( next_block - 1 );
       generate_block();
 
       auto treasury_hbd_inflation = dgpo.current_hbd_supply - old_hbd_supply;
-      auto after_creator_hbd_balance = _creator.get_hbd_balance();
-      auto after_receiver_hbd_balance = _receiver.get_hbd_balance();
-      auto after_voter_01_hbd_balance = _voter_01.get_hbd_balance();
-      auto after_treasury_hbd_balance = _treasury.get_hbd_balance();
+      auto after_creator_hbd_balance = _creator_assets.get_hbd_balance();
+      auto after_receiver_hbd_balance = _receiver_assets.get_hbd_balance();
+      auto after_voter_01_hbd_balance = _voter_01_assets.get_hbd_balance();
+      auto after_treasury_hbd_balance = _treasury_assets.get_hbd_balance();
 
       BOOST_REQUIRE( before_creator_hbd_balance == after_creator_hbd_balance );
       BOOST_REQUIRE( before_receiver_hbd_balance == after_receiver_hbd_balance - hourly_pay );
@@ -1094,24 +1099,28 @@ BOOST_AUTO_TEST_CASE( generating_payments )
     const auto& _receiver = db->get_account( receiver );
     const auto& _voter_01 = db->get_account( voter_01 );
     const auto& _treasury = db->get_treasury();
+    const auto& _creator_assets = db->get< assets_object, by_account_id >( _creator.get_id() );
+    const auto& _receiver_assets = db->get< assets_object, by_account_id >( _receiver.get_id() );
+    const auto& _voter_01_assets = db->get< assets_object, by_account_id >( _voter_01.get_id() );
+    const auto& _treasury_assets = db->get< assets_object, by_account_id >( _treasury.get_id() );
 
     {
       BOOST_TEST_MESSAGE( "---Payment---" );
 
-      auto before_creator_hbd_balance = _creator.get_hbd_balance();
-      auto before_receiver_hbd_balance = _receiver.get_hbd_balance();
-      auto before_voter_01_hbd_balance = _voter_01.get_hbd_balance();
-      auto before_treasury_hbd_balance = _treasury.get_hbd_balance();
+      auto before_creator_hbd_balance = _creator_assets.get_hbd_balance();
+      auto before_receiver_hbd_balance = _receiver_assets.get_hbd_balance();
+      auto before_voter_01_hbd_balance = _voter_01_assets.get_hbd_balance();
+      auto before_treasury_hbd_balance = _treasury_assets.get_hbd_balance();
 
       auto next_block = get_nr_blocks_until_proposal_maintenance_block();
       generate_blocks( next_block - 1 );
       generate_blocks( 1 );
 
       auto treasury_hbd_inflation = dgpo.get_current_hbd_supply() - old_hbd_supply;
-      auto after_creator_hbd_balance = _creator.get_hbd_balance();
-      auto after_receiver_hbd_balance = _receiver.get_hbd_balance();
-      auto after_voter_01_hbd_balance = _voter_01.get_hbd_balance();
-      auto after_treasury_hbd_balance = _treasury.get_hbd_balance();
+      auto after_creator_hbd_balance = _creator_assets.get_hbd_balance();
+      auto after_receiver_hbd_balance = _receiver_assets.get_hbd_balance();
+      auto after_voter_01_hbd_balance = _voter_01_assets.get_hbd_balance();
+      auto after_treasury_hbd_balance = _treasury_assets.get_hbd_balance();
 
       BOOST_REQUIRE( before_creator_hbd_balance == after_creator_hbd_balance );
       BOOST_REQUIRE( before_receiver_hbd_balance == after_receiver_hbd_balance - hourly_pay );
@@ -1194,7 +1203,8 @@ BOOST_AUTO_TEST_CASE( generating_payments_01 )
     for( auto item : inits )
     {
       const auto& account = db->get_account( item.account );
-      before_tbds[ item.account ] = account.get_hbd_balance();
+      const auto& account_assets = db->get< assets_object, by_account_id >( account.get_id() );
+      before_tbds[ item.account ] = account_assets.get_hbd_balance();
     }
 
     generate_blocks( start_date + end_time_shift + fc::seconds( 10 ), false );
@@ -1202,7 +1212,8 @@ BOOST_AUTO_TEST_CASE( generating_payments_01 )
     for( auto item : inits )
     {
       const auto& account = db->get_account( item.account );
-      auto after_tbd = account.get_hbd_balance();
+      const auto& account_assets = db->get< assets_object, by_account_id >( account.get_id() );
+      auto after_tbd = account_assets.get_hbd_balance();
       auto before_tbd = before_tbds[ item.account ];
       BOOST_REQUIRE( before_tbd == after_tbd - paid );
     }
@@ -1280,7 +1291,8 @@ BOOST_AUTO_TEST_CASE( generating_payments_02 )
       generate_block();
 
       const auto& account = db->get_account( item.account );
-      before_tbds[ item.account ] = account.get_hbd_balance();
+      const auto& account_assets = db->get< assets_object, by_account_id >( account.get_id() );
+      before_tbds[ item.account ] = account_assets.get_hbd_balance();
     }
 
     generate_blocks( start_date, false );
@@ -1313,7 +1325,8 @@ BOOST_AUTO_TEST_CASE( generating_payments_02 )
     for( auto item : inits )
     {
       const auto& account = db->get_account( item.account );
-      auto after_tbd = account.get_hbd_balance();
+      const auto& account_assets = db->get< assets_object, by_account_id >( account.get_id() );
+      auto after_tbd = account_assets.get_hbd_balance();
       auto before_tbd = before_tbds[ item.account ];
       BOOST_REQUIRE( before_tbd == after_tbd );
     }
@@ -1403,7 +1416,8 @@ BOOST_AUTO_TEST_CASE( generating_payments_03 )
     for( auto item : inits )
     {
       const auto& account = db->get_account( item.first );
-      before_tbds[ item.first ] = account.get_hbd_balance();
+      const auto& account_assets = db->get< assets_object, by_account_id >( account.get_id() );
+      before_tbds[ item.first ] = account_assets.get_hbd_balance();
     }
 
     auto payment_checker = [&]( const std::vector< asset >& payouts )
@@ -1414,7 +1428,8 @@ BOOST_AUTO_TEST_CASE( generating_payments_03 )
       for( const auto& item : inits )
       {
         const auto& account = db->get_account( item.first );
-        auto after_tbd = account.get_hbd_balance();
+        const auto& account_assets = db->get< assets_object, by_account_id >( account.get_id() );
+        auto after_tbd = account_assets.get_hbd_balance();
         auto before_tbd = before_tbds[ item.first ];
         idump( (before_tbd) );
         idump( (after_tbd) );
@@ -1542,24 +1557,28 @@ try
     const auto& _receiver = db->get_account( receiver );
     const auto& _voter_01 = db->get_account( voter_01 );
     const auto& _treasury = db->get_treasury();
+    const auto& _creator_assets = db->get< assets_object, by_account_id >( _creator.get_id() );
+    const auto& _receiver_assets = db->get< assets_object, by_account_id >( _receiver.get_id() );
+    const auto& _voter_01_assets = db->get< assets_object, by_account_id >( _voter_01.get_id() );
+    const auto& _treasury_assets = db->get< assets_object, by_account_id >( _treasury.get_id() );
 
     {
       BOOST_TEST_MESSAGE( "---Payment---" );
 
-      auto before_creator_hbd_balance = _creator.get_hbd_balance();
-      auto before_receiver_hbd_balance = _receiver.get_hbd_balance();
-      auto before_voter_01_hbd_balance = _voter_01.get_hbd_balance();
-      auto before_treasury_hbd_balance = _treasury.get_hbd_balance();
+      auto before_creator_hbd_balance = _creator_assets.get_hbd_balance();
+      auto before_receiver_hbd_balance = _receiver_assets.get_hbd_balance();
+      auto before_voter_01_hbd_balance = _voter_01_assets.get_hbd_balance();
+      auto before_treasury_hbd_balance = _treasury_assets.get_hbd_balance();
 
       auto next_block = get_nr_blocks_until_proposal_maintenance_block();
       generate_blocks( next_block - 1 );
       generate_block();
 
       auto treasury_hbd_inflation = dgpo.get_current_hbd_supply() - old_hbd_supply;
-      auto after_creator_hbd_balance = _creator.get_hbd_balance();
-      auto after_receiver_hbd_balance = _receiver.get_hbd_balance();
-      auto after_voter_01_hbd_balance = _voter_01.get_hbd_balance();
-      auto after_treasury_hbd_balance = _treasury.get_hbd_balance();
+      auto after_creator_hbd_balance = _creator_assets.get_hbd_balance();
+      auto after_receiver_hbd_balance = _receiver_assets.get_hbd_balance();
+      auto after_voter_01_hbd_balance = _voter_01_assets.get_hbd_balance();
+      auto after_treasury_hbd_balance = _treasury_assets.get_hbd_balance();
 
       BOOST_REQUIRE( before_creator_hbd_balance == after_creator_hbd_balance );
 
@@ -1630,24 +1649,28 @@ try
     const auto& _receiver = db->get_account( receiver );
     const auto& _voter_01 = db->get_account( voter_01 );
     const auto& _treasury = db->get_treasury();
+    const auto& _creator_assets = db->get< assets_object, by_account_id >( _creator.get_id() );
+    const auto& _receiver_assets = db->get< assets_object, by_account_id >( _receiver.get_id() );
+    const auto& _voter_01_assets = db->get< assets_object, by_account_id >( _voter_01.get_id() );
+    const auto& _treasury_assets = db->get< assets_object, by_account_id >( _treasury.get_id() );
 
     {
       BOOST_TEST_MESSAGE( "---Payment---" );
 
-      auto before_creator_hbd_balance = _creator.get_hbd_balance();
-      auto before_receiver_hbd_balance = _receiver.get_hbd_balance();
-      auto before_voter_01_hbd_balance = _voter_01.get_hbd_balance();
-      auto before_treasury_hbd_balance = _treasury.get_hbd_balance();
+      auto before_creator_hbd_balance = _creator_assets.get_hbd_balance();
+      auto before_receiver_hbd_balance = _receiver_assets.get_hbd_balance();
+      auto before_voter_01_hbd_balance = _voter_01_assets.get_hbd_balance();
+      auto before_treasury_hbd_balance = _treasury_assets.get_hbd_balance();
 
       auto next_block = get_nr_blocks_until_proposal_maintenance_block();
       generate_blocks( next_block - 1 );
       generate_block();
 
       auto treasury_hbd_inflation = dgpo.get_current_hbd_supply() - old_hbd_supply;
-      auto after_creator_hbd_balance = _creator.get_hbd_balance();
-      auto after_receiver_hbd_balance = _receiver.get_hbd_balance();
-      auto after_voter_01_hbd_balance = _voter_01.get_hbd_balance();
-      auto after_treasury_hbd_balance = _treasury.get_hbd_balance();
+      auto after_creator_hbd_balance = _creator_assets.get_hbd_balance();
+      auto after_receiver_hbd_balance = _receiver_assets.get_hbd_balance();
+      auto after_voter_01_hbd_balance = _voter_01_assets.get_hbd_balance();
+      auto after_treasury_hbd_balance = _treasury_assets.get_hbd_balance();
 
       BOOST_REQUIRE( before_creator_hbd_balance == after_creator_hbd_balance );
       BOOST_REQUIRE( before_receiver_hbd_balance == after_receiver_hbd_balance - hourly_pay );
@@ -1860,10 +1883,13 @@ BOOST_AUTO_TEST_CASE( proposal_object_apply )
     const auto& before_treasury_account = db->get_treasury();
     const auto& before_alice_account = db->get_account( creator );
     const auto& before_bob_account = db->get_account( receiver );
+    const auto& before_treasury_assets = db->get< assets_object, by_account_id >( before_treasury_account.get_id() );
+    const auto& before_alice_assets = db->get< assets_object, by_account_id >( before_alice_account.get_id() );
+    const auto& before_bob_assets = db->get< assets_object, by_account_id >( before_bob_account.get_id() );
 
-    auto before_alice_hbd_balance = before_alice_account.get_hbd_balance();
-    auto before_bob_hbd_balance = before_bob_account.get_hbd_balance();
-    auto before_treasury_balance = before_treasury_account.get_hbd_balance();
+    auto before_alice_hbd_balance = before_alice_assets.get_hbd_balance();
+    auto before_bob_hbd_balance = before_bob_assets.get_hbd_balance();
+    auto before_treasury_balance = before_treasury_assets.get_hbd_balance();
 
     create_proposal_operation op;
 
@@ -1886,10 +1912,13 @@ BOOST_AUTO_TEST_CASE( proposal_object_apply )
     const auto& after_treasury_account = db->get_treasury();
     const auto& after_alice_account = db->get_account( creator );
     const auto& after_bob_account = db->get_account( receiver );
+    const auto& after_treasury_assets = db->get< assets_object, by_account_id >( after_treasury_account.get_id() );
+    const auto& after_alice_assets = db->get< assets_object, by_account_id >( after_alice_account.get_id() );
+    const auto& after_bob_assets = db->get< assets_object, by_account_id >( after_bob_account.get_id() );
 
-    auto after_alice_hbd_balance = after_alice_account.get_hbd_balance();
-    auto after_bob_hbd_balance = after_bob_account.get_hbd_balance();
-    auto after_treasury_balance = after_treasury_account.get_hbd_balance();
+    auto after_alice_hbd_balance = after_alice_assets.get_hbd_balance();
+    auto after_bob_hbd_balance = after_bob_assets.get_hbd_balance();
+    auto after_treasury_balance = after_treasury_assets.get_hbd_balance();
 
     generate_block();
 
@@ -1958,10 +1987,13 @@ BOOST_AUTO_TEST_CASE( proposal_object_apply_fee_increase )
     const auto& before_treasury_account = db->get_treasury();
     const auto& before_alice_account = db->get_account( creator );
     const auto& before_bob_account = db->get_account( receiver );
+    const auto& before_treasury_assets = db->get< assets_object, by_account_id >( before_treasury_account.get_id() );
+    const auto& before_alice_assets = db->get< assets_object, by_account_id >( before_alice_account.get_id() );
+    const auto& before_bob_assets = db->get< assets_object, by_account_id >( before_bob_account.get_id() );
 
-    auto before_alice_hbd_balance = before_alice_account.get_hbd_balance();
-    auto before_bob_hbd_balance = before_bob_account.get_hbd_balance();
-    auto before_treasury_balance = before_treasury_account.get_hbd_balance();
+    auto before_alice_hbd_balance = before_alice_assets.get_hbd_balance();
+    auto before_bob_hbd_balance = before_bob_assets.get_hbd_balance();
+    auto before_treasury_balance = before_treasury_assets.get_hbd_balance();
 
     create_proposal_operation op;
 
@@ -1984,10 +2016,13 @@ BOOST_AUTO_TEST_CASE( proposal_object_apply_fee_increase )
     const auto& after_treasury_account = db->get_treasury();
     const auto& after_alice_account = db->get_account( creator );
     const auto& after_bob_account = db->get_account( receiver );
+    const auto& after_treasury_assets = db->get< assets_object, by_account_id >( after_treasury_account.get_id() );
+    const auto& after_alice_assets = db->get< assets_object, by_account_id >( after_alice_account.get_id() );
+    const auto& after_bob_assets = db->get< assets_object, by_account_id >( after_bob_account.get_id() );
 
-    auto after_alice_hbd_balance = after_alice_account.get_hbd_balance();
-    auto after_bob_hbd_balance = after_bob_account.get_hbd_balance();
-    auto after_treasury_balance = after_treasury_account.get_hbd_balance();
+    auto after_alice_hbd_balance = after_alice_assets.get_hbd_balance();
+    auto after_bob_hbd_balance = after_bob_assets.get_hbd_balance();
+    auto after_treasury_balance = after_treasury_assets.get_hbd_balance();
 
     generate_block();
 
@@ -4660,7 +4695,8 @@ BOOST_AUTO_TEST_CASE( generating_payments )
     {
       auto item = inits[ i % inits.size() ];
       const auto& account = db->get_account( item.account );
-      before_tbds[ item.account ] = account.get_hbd_balance();
+      const auto& account_assets = db->get< assets_object, by_account_id >( account.get_id() );
+      before_tbds[ item.account ] = account_assets.get_hbd_balance();
     }
 
     generate_blocks( start_time + ( start_time_shift - block_interval ) );
@@ -4671,8 +4707,9 @@ BOOST_AUTO_TEST_CASE( generating_payments )
     {
       auto item = inits[ i % inits.size() ];
       const auto& account = db->get_account( item.account );
+      const auto& account_assets = db->get< assets_object, by_account_id >( account.get_id() );
 
-      auto after_tbd = account.get_hbd_balance();
+      auto after_tbd = account_assets.get_hbd_balance();
       auto before_tbd = before_tbds[ item.account ];
       idump( (before_tbd) );
       idump( (after_tbd) );
@@ -4692,17 +4729,18 @@ BOOST_AUTO_TEST_CASE( converting_hive_to_dhf )
     BOOST_TEST_MESSAGE( "Testing: converting hive to hbd in the dhf" );
     const auto& dgpo = db->get_dynamic_global_properties();
     const auto& _treasury = db->get_treasury();
+    const auto& _treasury_assets = db->get< assets_object, by_account_id >( _treasury.get_id() );
     set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
 
-    auto before_inflation_treasury_hbd_balance =  _treasury.get_hbd_balance();
+    auto before_inflation_treasury_hbd_balance =  _treasury_assets.get_hbd_balance();
     generate_block();
-    auto treasury_per_block_inflation =  _treasury.get_hbd_balance() - before_inflation_treasury_hbd_balance;
+    auto treasury_per_block_inflation =  _treasury_assets.get_hbd_balance() - before_inflation_treasury_hbd_balance;
 
     ISSUE_FUNDS( db->get_treasury_name(), ASSET( "100.000 TESTS" ) );
     generate_block();
 
-    auto before_treasury_hbd_balance =  _treasury.get_hbd_balance();
-    auto before_treasury_hive_balance =  _treasury.get_balance();
+    auto before_treasury_hbd_balance =  _treasury_assets.get_hbd_balance();
+    auto before_treasury_hive_balance =  _treasury_assets.get_balance();
 
     const auto hive_converted = asset(HIVE_PROPOSAL_CONVERSION_RATE * before_treasury_hive_balance.amount / HIVE_100_PERCENT, HIVE_SYMBOL);
     // Same because of the 1:1 tests to tbd ratio
@@ -4712,13 +4750,13 @@ BOOST_AUTO_TEST_CASE( converting_hive_to_dhf )
     auto before_daily_maintenance_time = dgpo.next_daily_maintenance_time;
     generate_blocks( next_block - 1);
 
-    auto treasury_hbd_inflation =  _treasury.get_hbd_balance() - before_treasury_hbd_balance;
+    auto treasury_hbd_inflation =  _treasury_assets.get_hbd_balance() - before_treasury_hbd_balance;
     generate_block();
 
     treasury_hbd_inflation += treasury_per_block_inflation;
     auto after_daily_maintenance_time = dgpo.next_daily_maintenance_time;
-    auto after_treasury_hbd_balance =  _treasury.get_hbd_balance();
-    auto after_treasury_hive_balance =  _treasury.get_balance();
+    auto after_treasury_hbd_balance =  _treasury_assets.get_hbd_balance();
+    auto after_treasury_hive_balance =  _treasury_assets.get_balance();
 
     BOOST_REQUIRE( before_treasury_hbd_balance == after_treasury_hbd_balance - treasury_hbd_inflation - hbd_converted );
     BOOST_REQUIRE( before_treasury_hive_balance == after_treasury_hive_balance + hive_converted );

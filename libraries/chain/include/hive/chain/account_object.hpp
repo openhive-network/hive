@@ -196,6 +196,16 @@ namespace hive { namespace chain {
         return mrc.get_maximum_rc( effective_vesting, only_delegable );
       }
 
+      // Value of active step of pending power down (or zero)
+      // Needs: assets_object, time_object
+      share_type get_active_next_vesting_withdrawal( const assets_object& assets, const time_object& time_obj ) const
+      {
+        if( time_obj.has_active_power_down() )
+          return std::min( assets.get_vesting_withdraw_rate().amount, assets.get_total_vesting_withdrawal() );
+        else
+          return 0;
+      }
+
     private:
       // Members from misc structure (now directly in account_object)
       account_id_type   proxy;

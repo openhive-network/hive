@@ -491,44 +491,56 @@ struct api_account_object
     last_account_recovery( a.get_block_last_account_recovery_time() ),
     post_count( a.get_post_count() ),
     can_vote( a.can_vote() ),
-    voting_manabar( a.get_voting_manabar() ),
-    downvote_manabar( a.get_downvote_manabar() ),
-    balance( a.get_balance() ),
-    savings_balance( a.get_savings() ),
-    hbd_balance( a.get_hbd_balance() ),
-    hbd_seconds( a.get_hbd_seconds() ),
-    hbd_seconds_last_update( a.get_hbd_seconds_last_update() ),
-    hbd_last_interest_payment( a.get_hbd_last_interest_payment() ),
-    savings_hbd_balance( a.get_hbd_savings() ),
-    savings_hbd_seconds( a.get_savings_hbd_seconds() ),
-    savings_hbd_seconds_last_update( a.get_savings_hbd_seconds_last_update() ),
-    savings_hbd_last_interest_payment( a.get_savings_hbd_last_interest_payment() ),
-    savings_withdraw_requests( a.get_savings_withdraw_requests() ),
-    reward_hbd_balance( a.get_hbd_rewards() ),
-    reward_hive_balance( a.get_rewards() ),
-    reward_vesting_balance( a.get_vest_rewards() ),
-    reward_vesting_hive( a.get_vest_rewards_as_hive() ),
-    curation_rewards( a.get_curation_rewards().amount ),
-    posting_rewards( a.get_posting_rewards().amount ),
-    vesting_shares( a.get_vesting() ),
-    delegated_vesting_shares( a.get_delegated_vesting() ),
-    received_vesting_shares( a.get_received_vesting() ),
-    vesting_withdraw_rate( a.get_vesting_withdraw_rate() ),
-    next_vesting_withdrawal( a.get_next_vesting_withdrawal() ),
-    withdrawn( a.get_withdrawn().amount ),
-    to_withdraw( a.get_to_withdraw().amount ),
     withdraw_routes( a.get_withdraw_routes() ),
     pending_transfers( a.get_pending_escrow_transfers() ),
     witnesses_voted_for( a.get_witnesses_voted_for() ),
     last_post( a.get_last_post() ),
     last_root_post( a.get_last_root_post() ),
     last_post_edit( a.get_last_post_edit() ),
-    last_vote_time( a.get_last_vote_time() ),
     post_bandwidth( a.get_post_bandwidth() ),
     pending_claimed_accounts( a.get_pending_claimed_accounts() ),
     open_recurrent_transfers( a.get_open_recurrent_transfers() ),
     governance_vote_expiration_ts( a.get_governance_vote_expiration_ts())
   {
+    // Get split objects
+    const auto& assets = db.get< assets_object, by_account_id >( a.get_id() );
+    const auto& mrc = db.get< manabars_rc_object, by_account_id >( a.get_id() );
+    const auto& time_obj = db.get< time_object, by_account_id >( a.get_id() );
+    const auto& dvotes = db.get< delayed_votes_object, by_account_id >( a.get_id() );
+
+    // From manabars_rc_object
+    voting_manabar = mrc.get_voting_manabar();
+    downvote_manabar = mrc.get_downvote_manabar();
+
+    // From time_object
+    last_vote_time = time_obj.get_last_vote_time();
+    next_vesting_withdrawal = time_obj.get_next_vesting_withdrawal();
+
+    // From assets_object
+    balance = assets.get_balance();
+    savings_balance = assets.get_savings();
+    hbd_balance = assets.get_hbd_balance();
+    hbd_seconds = assets.get_hbd_seconds();
+    hbd_seconds_last_update = assets.get_hbd_seconds_last_update();
+    hbd_last_interest_payment = assets.get_hbd_last_interest_payment();
+    savings_hbd_balance = assets.get_hbd_savings();
+    savings_hbd_seconds = assets.get_savings_hbd_seconds();
+    savings_hbd_seconds_last_update = assets.get_savings_hbd_seconds_last_update();
+    savings_hbd_last_interest_payment = assets.get_savings_hbd_last_interest_payment();
+    savings_withdraw_requests = assets.get_savings_withdraw_requests();
+    reward_hbd_balance = assets.get_hbd_rewards();
+    reward_hive_balance = assets.get_rewards();
+    reward_vesting_balance = assets.get_vest_rewards();
+    reward_vesting_hive = assets.get_vest_rewards_as_hive();
+    curation_rewards = assets.get_curation_rewards().amount;
+    posting_rewards = assets.get_posting_rewards().amount;
+    vesting_shares = assets.get_vesting();
+    delegated_vesting_shares = assets.get_delegated_vesting();
+    received_vesting_shares = assets.get_received_vesting();
+    vesting_withdraw_rate = assets.get_vesting_withdraw_rate();
+    withdrawn = assets.get_withdrawn().amount;
+    to_withdraw = assets.get_to_withdraw().amount;
+
     if( a.has_proxy() )
       proxy = db.get_account( a.get_proxy() ).get_name();
     if( a.has_recovery_account() )
@@ -561,9 +573,9 @@ struct api_account_object
 #endif
 
     if( delayed_votes_active )
-      delayed_votes = vector< delayed_votes_data >{ a.get_delayed_votes().begin(), a.get_delayed_votes().end() };
+      delayed_votes = vector< delayed_votes_data >{ dvotes.get_delayed_votes().begin(), dvotes.get_delayed_votes().end() };
 
-    post_voting_power = VEST_asset(a.get_effective_vesting_shares());
+    post_voting_power = VEST_asset(a.get_effective_vesting_shares( assets, time_obj ));
   }
 
   api_account_object(){}

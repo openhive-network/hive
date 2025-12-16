@@ -304,12 +304,13 @@ void debug_node_plugin::debug_set_vest_price( const hive::protocol::price& new_p
   debug_update( [ this, vest_modifier, hive_modifier ]( chain::database& db )
   {
     const auto& miner_account = db.get_account( HIVE_INIT_MINER_NAME );
-    auto _update_initminer = [ &db, &vest_modifier, &miner_account ]()
+    const auto& miner_assets = db.get< hive::chain::assets_object, hive::chain::by_account_id >( miner_account.get_id() );
+    auto _update_initminer = [ &db, &vest_modifier, &miner_assets ]()
     {
-      /// If we increased vests pool, we need to put them to initminer account to avoid validate_invariants failure 
-      db.modify( miner_account, [ &vest_modifier ]( hive::chain::account_object& account )
+      /// If we increased vests pool, we need to put them to initminer account to avoid validate_invariants failure
+      db.modify( miner_assets, [ &vest_modifier ]( hive::chain::assets_object& assets )
       {
-        account.set_vesting( account.get_vesting() + vest_modifier );
+        assets.set_vesting( assets.get_vesting() + vest_modifier );
       } );
     };
     db.rc.update_rc_for_custom_action( _update_initminer, miner_account );
