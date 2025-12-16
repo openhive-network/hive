@@ -1999,28 +1999,13 @@ full_mainnet_replay_and_snapshot_manual:
   script:
     - test -n "$HIVED_IMAGE_NAME"
     - echo "Preparing test environment..."
-    - mkdir -p "$CI_PROJECT_DIR/data_generated_during_hive_replay/block_logs"
-    - echo "Block log source: $BLOCK_LOG_BASE_URL (path=$BLOCK_LOG_PATH)"
-    - echo "Downloading parts: 0001-$(printf '%04d' $LAST_PART)"
     - |
-      # Download needed parts (0001 to LAST_PART)
-      for i in $(seq 1 $LAST_PART); do
-        PART=$(printf "%04d" $i)
-        PART_FILE="block_log_part.$PART"
-        ARTIFACTS_FILE="$PART_FILE.artifacts"
-
-        echo "Downloading $PART_FILE..."
-        curl -k -f -o "$CI_PROJECT_DIR/data_generated_during_hive_replay/block_logs/$PART_FILE" \
-          "$BLOCK_LOG_BASE_URL/$PART_FILE?path=$BLOCK_LOG_PATH" || exit 1
-
-        echo "Downloading $ARTIFACTS_FILE..."
-        curl -k -f -o "$CI_PROJECT_DIR/data_generated_during_hive_replay/block_logs/$ARTIFACTS_FILE" \
-          "$BLOCK_LOG_BASE_URL/$ARTIFACTS_FILE?path=$BLOCK_LOG_PATH" || echo "  (artifacts not found, skipping)"
-      done
-
-      echo "Downloaded $(ls "$CI_PROJECT_DIR/data_generated_during_hive_replay/block_logs/" | wc -l) files"
-    - echo "Block logs downloaded, listing:"
-    - ls -lh "$CI_PROJECT_DIR/data_generated_during_hive_replay/block_logs/"
+      # Download block_log parts from termit
+      $CI_PROJECT_DIR/scripts/ci-helpers/download_block_log_parts.sh \
+        "$BLOCK_LOG_BASE_URL" \
+        "$BLOCK_LOG_PATH" \
+        "$LAST_PART" \
+        "$CI_PROJECT_DIR/data_generated_during_hive_replay/block_logs"
     - echo "Running test..."
     - cd $CI_PROJECT_DIR/tests/integration
     - export BLOCK_LOG_SOURCE_DIR="$CI_PROJECT_DIR/data_generated_during_hive_replay/block_logs"
