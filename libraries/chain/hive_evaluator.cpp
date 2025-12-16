@@ -507,8 +507,8 @@ void pow_apply( database& db, Operation o )
   auto itr = accounts_by_name.find(o.get_worker_account());
   if(itr == accounts_by_name.end())
   {
-    const auto& new_account = db.create< account_object >( o.get_worker_account(), o.work.worker, dgp.time, db.get_current_timestamp(),
-      true /*mined*/, nullptr /*recovery_account*/, true /*voting mana 100%*/, asset( 0, VESTS_SYMBOL ) /*initial_delegation*/, 0 /*rc_adjustment*/ );
+    const auto& new_account = create_account( db, o.get_worker_account(), o.work.worker, dgp.time, db.get_current_timestamp(),
+      true /*mined*/, asset( 0, HIVE_SYMBOL ) );
     // ^ empty recovery account parameter means highest voted witness at time of recovery
 
 #ifdef COLLECT_ACCOUNT_METADATA
@@ -648,8 +648,8 @@ void pow2_evaluator::do_apply( const pow2_operation& o )
   if(itr == accounts_by_name.end())
   {
     FC_ASSERT( o.new_owner_key.valid(), "New owner key is not valid." );
-    const auto& new_account = db.create< account_object >( worker_account, *o.new_owner_key, dgp.time, _db.get_current_timestamp(),
-      true /*mined*/, nullptr /*recovery_account*/, true /*voting mana 100%*/, asset( 0, VESTS_SYMBOL ) /*initial_delegation*/, 0 /*rc_adjustment*/ );
+    const auto& new_account = create_account( db, worker_account, *o.new_owner_key, dgp.time, _db.get_current_timestamp(),
+      true /*mined*/, asset( 0, HIVE_SYMBOL ) );
     // ^ empty recovery account parameter means highest voted witness at time of recovery
 
 #ifdef COLLECT_ACCOUNT_METADATA
