@@ -35,7 +35,7 @@ namespace hive { namespace chain {
    * - time_object: various timestamps (interest, posts, votes, withdrawal schedule)
    * - delayed_votes_object: delayed votes data with sum
    */
-  class account_object : public object< account_object_type, account_object, std::true_type >
+  class account_object : public object< account_object_type, account_object >
   {
     CHAINBASE_OBJECT( account_object );
     public:
