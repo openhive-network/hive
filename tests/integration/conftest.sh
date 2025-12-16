@@ -23,6 +23,29 @@ get_last_block_log_part_number() {
     echo "$last_block_log_part_number"
 }
 
+# Get the last block_log part number from a directory by checking filenames
+# Returns the part number (e.g., 102 for block_log_part.0102)
+get_last_part_number_from_dir() {
+    local block_log_dir="$1"
+
+    if [ ! -d "$block_log_dir" ]; then
+        echo "ERROR: Directory does not exist: $block_log_dir" >&2
+        return 1
+    fi
+
+    local last_part=$(ls -1 "$block_log_dir"/block_log_part.???? 2>/dev/null | \
+                      tail -1 | \
+                      grep -o '[0-9]\{4\}$')
+
+    if [ -z "$last_part" ]; then
+        echo "ERROR: No block_log parts found in $block_log_dir" >&2
+        return 1
+    fi
+
+    # Remove leading zeros and return part number
+    echo $((10#$last_part))
+}
+
 monitor_container() {
     local container_name="$1"
     local timeout_seconds="${2:-7200}"  # Default 2 hours
