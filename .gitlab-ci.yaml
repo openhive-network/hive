@@ -8,11 +8,6 @@ stages:
 
 variables:
   PYTEST_NUMBER_OF_PROCESSES: 8
-
-  # Docker image tags from common-ci-configuration with util-linux for NFS flock support
-  DOCKER_BUILDER_TAG: "3dd346380da7f28cdaf3ef3955559c905d94bd1c"
-  DOCKER_DIND_TAG: "3dd346380da7f28cdaf3ef3955559c905d94bd1c"
-
   # Fetch strategy reuses workspace between jobs, reducing GitLab server load.
   # Full clone (depth 0) enables efficient incremental fetches - shallow clones
   # don't reduce server CPU and make fetch less effective.
@@ -60,11 +55,78 @@ include:
   # Skip rules for docs-only changes optimization
   - local: '/scripts/ci-helpers/skip_rules.yml'
 
-# Use common git cleanup template from common-ci-configuration
-# Includes: corrupt repo/submodule cleanup, directory-to-submodule transitions
 default:
   hooks:
-    pre_get_sources_script: !reference [.pre_get_sources_with_submodules, pre_get_sources_script]
+    pre_get_sources_script:
+      # Clean corrupt git state left by cancelled pipelines (see GitLab #296638, #4600)
+      # Also handles directory-to-submodule transitions when switching branches
+      # Wrapped in subshell to avoid changing working directory for subsequent git operations
+      - |
+        (
+        cd "${CI_PROJECT_DIR:-/builds}" 2>/dev/null || exit 0
+        echo "pre_get_sources: checking $(pwd) for corrupt git state"
+        if [ -d ".git" ]; then
+          # Remove stale lock files that block git operations
+          find .git -name "*.lock" -delete 2>/dev/null || true
+
+          # Check if main repo is corrupt - if so, remove .git to force fresh clone
+          if ! git rev-parse HEAD >/dev/null 2>&1; then
+            echo "pre_get_sources: main repository corrupt, forcing fresh clone"
+            rm -rf .git
+          else
+            # Main repo OK - check and clean corrupt submodules
+            # Check both the working dir and .git/modules/ since either can be corrupt
+            if [ -f ".gitmodules" ]; then
+              git config --file .gitmodules --get-regexp path 2>/dev/null | awk '{print $2}' | while read submod; do
+                needs_clean=false
+                [ -z "$submod" ] && continue
+                # Check if submodule working directory exists but is corrupt
+                if [ -d "$submod" ] && [ -f "$submod/.git" ]; then
+                  if ! git -C "$submod" rev-parse HEAD >/dev/null 2>&1; then
+                    needs_clean=true
+                  fi
+                fi
+                # Check if .git/modules exists but is corrupt (even if working dir is gone)
+                if [ -d ".git/modules/$submod" ]; then
+                  if ! git --git-dir=".git/modules/$submod" rev-parse HEAD >/dev/null 2>&1; then
+                    echo "pre_get_sources: $submod corrupt (rev-parse failed)"
+                    needs_clean=true
+                  fi
+                fi
+                if [ "$needs_clean" = true ]; then
+                  echo "pre_get_sources: cleaning corrupt submodule: $submod"
+                  rm -rf "$submod" ".git/modules/$submod"
+                fi
+              done
+            fi
+
+            # Handle directory-to-submodule transitions: fetch target ref's .gitmodules
+            # and remove any paths that exist as regular directories (not submodules)
+            if [ -n "$CI_COMMIT_REF_NAME" ]; then
+              echo "pre_get_sources: checking for directory-to-submodule transitions (ref: $CI_COMMIT_REF_NAME)"
+              # Fetch the target ref first (it may not exist locally yet)
+              git fetch origin "$CI_COMMIT_REF_NAME" --depth=1 2>&1 || true
+              target_gitmodules=$(git show "origin/$CI_COMMIT_REF_NAME:.gitmodules" 2>/dev/null) || true
+              if [ -n "$target_gitmodules" ]; then
+                echo "$target_gitmodules" | grep "path = " | sed 's/.*path = //' | while read submod; do
+                  [ -z "$submod" ] && continue
+                  # If path exists as a regular directory (not a submodule), remove it
+                  if [ -d "$submod" ] && [ ! -f "$submod/.git" ]; then
+                    echo "pre_get_sources: removing directory for submodule transition: $submod"
+                    rm -rf "$submod"
+                  fi
+                done
+              else
+                echo "pre_get_sources: no target gitmodules found"
+              fi
+            fi
+
+            echo "pre_get_sources: existing repo OK"
+          fi
+        else
+          echo "pre_get_sources: no .git directory (fresh workspace)"
+        fi
+        )
 
 prepare_hived_image:
   extends:
@@ -80,25 +142,8 @@ prepare_hived_image:
     BINARY_CACHE_PATH: "$CI_PROJECT_DIR/hived-binaries"
     HIVE_NETWORK_TYPE: mainnet
   tags:
+    - public-runner-docker
     - bigjob
-  after_script:
-    - |
-      source docker_image_name.env
-      echo "Adding latest/stable/version tags for mainnet image..."
-      # Pull image to local daemon (may not be loaded when using cached builds)
-      docker pull $HIVED_INSTANCE || echo "Warning: docker pull failed"
-      docker images
-      if [[ "$CI_COMMIT_BRANCH" == "develop" ]]; then
-        docker tag $HIVED_INSTANCE ${CI_REGISTRY_IMAGE}:latest
-        docker push ${CI_REGISTRY_IMAGE}:latest
-      elif [[ "$CI_COMMIT_BRANCH" == "master" ]]; then
-        docker tag $HIVED_INSTANCE ${CI_REGISTRY_IMAGE}:stable
-        docker push ${CI_REGISTRY_IMAGE}:stable
-      fi
-      if [[ -n "$CI_COMMIT_TAG" && "$CI_COMMIT_REF_PROTECTED" == "true" ]]; then
-        docker tag $HIVED_INSTANCE ${CI_REGISTRY_IMAGE}:${CI_COMMIT_TAG}
-        docker push ${CI_REGISTRY_IMAGE}:${CI_COMMIT_TAG}
-      fi
 
 prepare_hived_data:
   extends:
@@ -166,25 +211,6 @@ testnet_node_build:
       - "$BINARY_CACHE_PATH"
   tags:
     - bigjob
-  after_script:
-    - |
-      source docker_image_name.env
-      echo "Adding latest/stable/version tags for testnet image..."
-      # Pull image to local daemon (may not be loaded when using cached builds)
-      docker pull $HIVED_INSTANCE || echo "Warning: docker pull failed"
-      docker images
-      IMAGE_NAME_PREFIX="${CI_REGISTRY_IMAGE}/testnet:"
-      if [[ "$CI_COMMIT_BRANCH" == "develop" ]]; then
-        docker tag $HIVED_INSTANCE ${IMAGE_NAME_PREFIX}latest
-        docker push ${IMAGE_NAME_PREFIX}latest
-      elif [[ "$CI_COMMIT_BRANCH" == "master" ]]; then
-        docker tag $HIVED_INSTANCE ${IMAGE_NAME_PREFIX}stable
-        docker push ${IMAGE_NAME_PREFIX}stable
-      fi
-      if [[ -n "$CI_COMMIT_TAG" && "$CI_COMMIT_REF_PROTECTED" == "true" ]]; then
-        docker tag $HIVED_INSTANCE ${IMAGE_NAME_PREFIX}${CI_COMMIT_TAG}
-        docker push ${IMAGE_NAME_PREFIX}${CI_COMMIT_TAG}
-      fi
 
 generate-wax-spec:
   extends: .generate_swagger_package
@@ -219,27 +245,29 @@ mirrornet_node_build:
     REGISTRY_PASS: $HIVED_CI_IMGBUILDER_PASSWORD
     BINARY_CACHE_PATH: "$CI_PROJECT_DIR/hived-mirrornet-binaries"
     HIVE_NETWORK_TYPE: mirrornet
-  tags:
-    - bigjob
   after_script:
     - |
       source docker_image_name.env
-      echo "Adding latest/stable/version tags for mirrornet image..."
-      # Pull image to local daemon (may not be loaded when using cached builds)
-      docker pull $HIVED_INSTANCE || echo "Warning: docker pull failed"
+      echo "Pushing hived image for commits on develop, master and tagged"
       docker images
-      IMAGE_NAME_PREFIX="${CI_REGISTRY_IMAGE}/mirrornet:"
-      if [[ "$CI_COMMIT_BRANCH" == "develop" ]]; then
+      IMAGE_NAME_PREFIX="$CI_REGISTRY_IMAGE/mirrornet:"
+      if [[ "$CI_COMMIT_BRANCH" == "develop" ]];
+      then
         docker tag $HIVED_INSTANCE ${IMAGE_NAME_PREFIX}latest
         docker push ${IMAGE_NAME_PREFIX}latest
-      elif [[ "$CI_COMMIT_BRANCH" == "master" ]]; then
+      elif [[ "$CI_COMMIT_BRANCH" == "master" ]];
+      then
         docker tag $HIVED_INSTANCE ${IMAGE_NAME_PREFIX}stable
         docker push ${IMAGE_NAME_PREFIX}stable
-      fi
-      if [[ -n "$CI_COMMIT_TAG" && "$CI_COMMIT_REF_PROTECTED" == "true" ]]; then
+      elif [[ -n "$CI_COMMIT_TAG" ]];
+      then
         docker tag $HIVED_INSTANCE ${IMAGE_NAME_PREFIX}${CI_COMMIT_TAG}
         docker push ${IMAGE_NAME_PREFIX}${CI_COMMIT_TAG}
       fi
+
+  tags:
+    - public-runner-docker
+    - bigjob
 
 extended_block_log_creation:
   extends: .extended_block_log_creation
@@ -670,6 +698,7 @@ cli_wallet_extended_tests:
     - cd tests/python/functional/fork_tests
     - !reference [.run-pytest, script]
   tags:
+    - public-runner-docker
     - bigjob
   artifacts:
     expire_in: 2 days
@@ -1097,12 +1126,15 @@ functional_api_tests:
     PYTEST_DIR: tests/python/functional/api_tests
     PYTEST_TIMEOUT_MINUTES: 3
 
-publish_images:
-  extends: .docker_publish_job_template
-  variables:
-    # Publish mainnet (root) and mirrornet images to registry.hive.blog
-    # Note: testnet is not published externally (internal use only)
-    PUBLISH_IMAGES: "hive mirrornet"
+publish_docker_image:
+  stage: publish
+  extends: .publish_docker_image_template
+  before_script:
+    - !reference [.publish_docker_image_template, before_script]
+  script:
+    - scripts/ci-helpers/build_and_publish_instance.sh
+  tags:
+    - public-runner-docker
 
 hardfork_schedule_tests:
   extends: .simple_pytest_job
@@ -1212,6 +1244,7 @@ operation_tests:
                      update_proposal_votes_tests,
                      witness_ops_tests ]
   tags:
+    - public-runner-docker
     - bigjob
 
 comment_cashout_tests:
@@ -1393,142 +1426,74 @@ generate_hived_flattened_openapi_definition:
     - public-runner-docker
     - standard
 
-generate_python_api_clients:
+# Unified hiveio-api package: generate, build, test (via examples), and deploy to GitLab
+hiveio_api_package:
   needs:
     - job: generate_hived_flattened_openapi_definition
       artifacts: true
-  extends: .project_develop_configuration_template
+  extends: .build_wheel_template
   # Override image to Python 3.12 - api_client_generator doesn't support Python 3.14 yet
   image: registry.gitlab.syncad.com/hive/common-ci-configuration/python:3.12.9-1
   variables:
     API_GENERATION_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation"
     PYPROJECT_DIR: "${API_GENERATION_DIR}/api_generation"
+    DEPENDENCY_SOURCE_DIR: "${CI_PROJECT_DIR}/tests/python/hive-local-tools"
+  stage: build
   script:
-    - $API_GENERATION_DIR/generate_api_packages.sh
+    # Generate the hiveio_api package
+    - echo -e "${TXT_BLUE}Generating hiveio_api package...${TXT_CLEAR}"
+    - cd "${API_GENERATION_DIR}"
+    - poetry -C "${PYPROJECT_DIR}" install
+    - "${API_GENERATION_DIR}/generate_api_packages.sh"
+
+    # Switch PYPROJECT_DIR and DIST_DIR to the generated package
+    - export PYPROJECT_DIR="${API_GENERATION_DIR}/hiveio_api"
+    - export DIST_DIR="${PYPROJECT_DIR}/dist"
+
+    # Build the wheel
+    - echo -e "${TXT_BLUE}Building hiveio-api wheel...${TXT_CLEAR}"
+    - !reference [.build_wheel_template, script]
+
+    # Install dependencies for testing
+    - echo -e "${TXT_BLUE}Installing dependencies for testing...${TXT_CLEAR}"
+    - poetry -C "${DEPENDENCY_SOURCE_DIR}" install --no-root
+    - poetry -C "${PYPROJECT_DIR}" install --only-root
+
+    # Verify by running examples for all APIs (dynamically from __all__)
+    - echo -e "${TXT_BLUE}Verifying package by running examples for all APIs...${TXT_CLEAR}"
+    - |
+      API_LIST=$(python3 -c "import hiveio_api; print(' '.join(hiveio_api.__all__))")
+      echo "APIs to test: ${API_LIST}"
+      for api in ${API_LIST}; do
+        echo "Testing hiveio_api.${api}..."
+        python3 -m hiveio_api.${api}
+        echo -e "${TXT_GREEN}Example verification passed for ${api}${TXT_CLEAR}"
+      done
+    - echo -e "${TXT_GREEN}All API examples passed!${TXT_CLEAR}"
+
+    # Deploy to GitLab PyPI registry
+    - !reference [.deploy_wheel_to_gitlab_template, script]
   artifacts:
     expire_in: 1 week
     paths:
-      - "${API_GENERATION_DIR}/database_api"
-      - "${API_GENERATION_DIR}/rc_api"
-      - "${API_GENERATION_DIR}/block_api"
-      - "${API_GENERATION_DIR}/network_broadcast_api"
-      - "${API_GENERATION_DIR}/account_by_key_api"
-      - "${API_GENERATION_DIR}/bridge"
-      - "${API_GENERATION_DIR}/account_history_api"
-      - "${API_GENERATION_DIR}/condenser_api"
-      - "${API_GENERATION_DIR}/hive"
-      - "${API_GENERATION_DIR}/follow_api"
-      - "${API_GENERATION_DIR}/jsonrpc"
-      - "${API_GENERATION_DIR}/market_history_api"
-      - "${API_GENERATION_DIR}/reputation_api"
-      - "${API_GENERATION_DIR}/tags_api"
-      - "${API_GENERATION_DIR}/transaction_status_api"
-      - "${API_GENERATION_DIR}/debug_node_api"
-      - "${API_GENERATION_DIR}/search_api"
-  stage: build
-  tags:
-    - public-runner-docker
-    - standard
-
-# =============================================================================
-# Python API Client Wheel Jobs (consolidated using parallel:matrix)
-# =============================================================================
-# These jobs build and deploy Python wheel packages for all generated API clients.
-# Using parallel:matrix reduces ~460 lines to ~60 lines while maintaining the same behavior.
-
-# List of all API packages to build/deploy
-.api_wheel_matrix: &api_wheel_matrix
-  parallel:
-    matrix:
-      - API_NAME:
-          - database_api
-          - rc_api
-          - block_api
-          - network_broadcast_api
-          - account_by_key_api
-          - bridge
-          - account_history_api
-          - condenser_api
-          - hive
-          - follow_api
-          - jsonrpc
-          - market_history_api
-          - reputation_api
-          - transaction_status_api
-          - debug_node_api
-          - search_api
-
-# APIs to deploy to public PyPI (excludes jsonrpc which is internal/meta API)
-.api_wheel_pypi_matrix: &api_wheel_pypi_matrix
-  parallel:
-    matrix:
-      - API_NAME:
-          - database_api
-          - rc_api
-          - block_api
-          - network_broadcast_api
-          - account_by_key_api
-          - bridge
-          - account_history_api
-          - condenser_api
-          - hive
-          - follow_api
-          - market_history_api
-          - reputation_api
-          - transaction_status_api
-          - debug_node_api
-          - search_api
-
-# Build wheel for each API package
-build_api_wheel:
-  extends: .build_wheel_template
-  <<: *api_wheel_matrix
-  stage: build
-  # Use same image as generate_python_api_clients to avoid permission issues
-  image: registry.gitlab.syncad.com/hive/common-ci-configuration/python:3.12.9-1
-  variables:
-    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/${API_NAME}"
-    DIST_DIR: "${PYPROJECT_DIR}/dist"
-  needs:
-    - job: generate_python_api_clients
-      artifacts: true
-  tags:
-    - public-runner-docker
-    - standard
-  artifacts:
-    paths:
-      - "${PYPROJECT_DIR}/dist"
-      - "${PYPROJECT_DIR}/pyproject.toml"
-      - "${PYPROJECT_DIR}/${API_NAME}"
+      - "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/hiveio_api"
       - "build_wheel.env"
-
-# Deploy wheel to internal GitLab registry for each API package
-deploy_api_wheel_to_gitlab:
-  extends: .deploy_wheel_to_gitlab_template
-  <<: *api_wheel_matrix
-  stage: deploy
-  variables:
-    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/${API_NAME}"
-  needs:
-    - job: build_api_wheel
-      artifacts: true
+    reports:
+      dotenv: build_wheel.env
   tags:
     - public-runner-docker
-    - standard
 
-# Deploy wheel to public PyPI registry (excludes jsonrpc)
-deploy_api_wheel_to_pypi:
+# Deploy hiveio-api wheel to PyPI
+deploy_hiveio_api_to_pypi:
+  stage: deploy
   extends: .deploy_wheel_to_pypi_template
-  <<: *api_wheel_pypi_matrix
-  stage: deploy
   variables:
-    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/${API_NAME}"
+    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/hiveio_api"
   needs:
-    - job: build_api_wheel
+    - job: hiveio_api_package
       artifacts: true
   tags:
     - public-runner-docker
-    - standard
 
 generate_testing_block_logs:
   stage: build
@@ -1584,6 +1549,7 @@ generate_testing_block_logs:
     paths:
       - $TESTING_BLOCK_LOGS_DIR/checksums/
   tags:
+    - public-runner-docker
     - bigjob
 
 build_combined_testing_block_logs_image:
