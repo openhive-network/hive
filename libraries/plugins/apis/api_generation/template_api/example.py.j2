@@ -1,0 +1,33 @@
+"""
+Example usage of the {{ api_name_snake_case }} package.
+
+This module demonstrates how to use the {{ api_name_pascal_case }} API client
+with the wax library to interact with the Hive blockchain.
+
+Run this example with:
+    python3 -m hiveio_api.{{ api_name_snake_case }}
+"""
+
+from __future__ import annotations
+
+from wax import create_hive_chain
+
+from hiveio_api.{{ api_name_snake_case }} import {{ api_name_pascal_case }}
+
+
+class MyApiCollection:
+    """Custom API collection that includes {{ api_name_pascal_case }}."""
+
+    def __init__(self) -> None:
+        self.{{ api_name_snake_case }} = {{ api_name_pascal_case }}
+
+
+def main() -> None:
+    """Run the example demonstrating {{ api_name_pascal_case }} usage."""
+    chain = create_hive_chain()
+    chain.extends(MyApiCollection)
+    print("Successfully extended chain API with {{ api_name_pascal_case }}")
+
+
+if __name__ == "__main__":
+    main()
