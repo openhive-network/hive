@@ -1977,3 +1977,41 @@ exchange_node_block_log_pruning_test:
   - when: on_success
   tags:
     - public-runner-docker
+
+full_mainnet_replay_and_snapshot_manual:
+  extends: .prepare_hived_data_5m
+  stage: test
+  needs:
+    - job: prepare_hived_image
+      artifacts: true
+  timeout: 24h
+  when: manual
+  variables:
+    BLOCK_LOG_SOURCE_DIR: $BLOCK_LOG_SOURCE_DIR_5M
+    CONFIG_INI_SOURCE: "$CI_PROJECT_DIR/docker/config_5M.ini"
+    HIVE_NETWORK_TYPE: mainnet
+  script:
+    - test -n "$HIVED_IMAGE_NAME"
+    - echo "Preparing test environment..."
+    - mkdir -p "$CI_PROJECT_DIR/data_generated_during_hive_replay"
+    - mkdir -p "$CI_PROJECT_DIR/data_generated_during_hive_replay/block_logs"
+    - echo "Block log source directory: $BLOCK_LOG_SOURCE_DIR"
+    - ls -lh "$BLOCK_LOG_SOURCE_DIR"/block_log_part.???? || echo "No block log parts found"
+    - echo "Copying block log parts to test directory..."
+    - cp -v "$BLOCK_LOG_SOURCE_DIR"/block_log_part.???? "$CI_PROJECT_DIR/data_generated_during_hive_replay/block_logs/" || exit 1
+    - cp -v "$BLOCK_LOG_SOURCE_DIR"/block_log_part.????.artifacts "$CI_PROJECT_DIR/data_generated_during_hive_replay/block_logs/" || true
+    - echo "Block logs prepared, listing:"
+    - ls -lh "$CI_PROJECT_DIR/data_generated_during_hive_replay/block_logs/"
+    - echo "Running test..."
+    - cd $CI_PROJECT_DIR/tests/integration
+    - export BLOCK_LOG_SOURCE_DIR="$CI_PROJECT_DIR/data_generated_during_hive_replay/block_logs"
+    - ./test_pruned_block_log_on_full_mainnet_replay_and_snapshot_start.sh $HIVED_IMAGE_NAME $CI_PROJECT_DIR/data_generated_during_hive_replay
+    - echo "Test completed, artifacts:"
+    - ls -lah "$CI_PROJECT_DIR/data_generated_during_hive_replay"
+  artifacts:
+    paths:
+      - $CI_PROJECT_DIR/data_generated_during_hive_replay/
+    when: always
+    expire_in: 1 week
+  tags:
+    - data-cache-storage
