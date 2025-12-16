@@ -2004,10 +2004,10 @@ full_mainnet_replay_and_snapshot_manual:
       $CI_PROJECT_DIR/scripts/ci-helpers/download_block_log_parts.sh \
         "$BLOCK_LOG_BASE_URL" \
         "$LAST_PART_VALUE" \
-        "$CI_PROJECT_DIR/data_generated_during_hive_replay/block_logs"
+        "$CI_PROJECT_DIR/data_generated_during_hive_replay/blockchain"
     - echo "Running test..."
     - cd $CI_PROJECT_DIR/tests/integration
-    - export BLOCK_LOG_SOURCE_DIR="$CI_PROJECT_DIR/data_generated_during_hive_replay/block_logs"
+    - export BLOCK_LOG_SOURCE_DIR="$CI_PROJECT_DIR/data_generated_during_hive_replay/blockchain"
     - ./test_pruned_block_log_on_full_mainnet_replay_and_snapshot_start.sh $HIVED_IMAGE_NAME $CI_PROJECT_DIR/data_generated_during_hive_replay
     - echo "Test completed, artifacts:"
     - ls -lah "$CI_PROJECT_DIR/data_generated_during_hive_replay"
