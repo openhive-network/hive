@@ -1,0 +1,69 @@
+# Template for building and deploying the unified hiveio-api Python package
+# This template generates, builds, tests, and optionally deploys the hiveio-api package
+# which consolidates all API clients into a single package with lazy-loaded subpackages.
+#
+# Usage:
+#   include:
+#     - local: '/scripts/ci-helpers/hiveio_api_package.gitlab-ci.yml'
+#
+# Variables:
+#   SKIP_WHEEL_DEPLOY: Set to any value to skip deployment to GitLab PyPI registry
+
+# Base template for hiveio-api package generation, build, test, and deployment
+.hiveio_api_package_template:
+  extends: .build_wheel_template
+  variables:
+    API_GENERATION_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation"
+    PYPROJECT_DIR: "${API_GENERATION_DIR}/api_generation"
+    DEPENDENCY_SOURCE_DIR: "${CI_PROJECT_DIR}/tests/python/hive-local-tools"
+  stage: build
+  script:
+    # Generate the hiveio_api package
+    - echo -e "${TXT_BLUE}Generating hiveio_api package...${TXT_CLEAR}"
+    - cd "${API_GENERATION_DIR}"
+    - poetry -C "${PYPROJECT_DIR}" install
+    - "${API_GENERATION_DIR}/generate_api_packages.sh"
+
+    # Switch PYPROJECT_DIR and DIST_DIR to the generated package
+    - export PYPROJECT_DIR="${API_GENERATION_DIR}/hiveio_api"
+    - export DIST_DIR="${PYPROJECT_DIR}/dist"
+
+    # Build the wheel
+    - echo -e "${TXT_BLUE}Building hiveio-api wheel...${TXT_CLEAR}"
+    - !reference [.build_wheel_template, script]
+
+    # Install dependencies for testing
+    - echo -e "${TXT_BLUE}Installing dependencies for testing...${TXT_CLEAR}"
+    - poetry -C "${DEPENDENCY_SOURCE_DIR}" install --no-root
+    - poetry -C "${PYPROJECT_DIR}" install --only-root
+
+    # Verify by running examples for all APIs (dynamically from __all__)
+    - echo -e "${TXT_BLUE}Verifying package by running examples for all APIs...${TXT_CLEAR}"
+    - |
+      API_LIST=$(python3 -c "import hiveio_api; print(' '.join(hiveio_api.__all__))")
+      echo "APIs to test: ${API_LIST}"
+      for api in ${API_LIST}; do
+        echo "Testing hiveio_api.${api}..."
+        python3 -m hiveio_api.${api}
+        echo -e "${TXT_GREEN}Example verification passed for ${api}${TXT_CLEAR}"
+      done
+    - echo -e "${TXT_GREEN}All API examples passed!${TXT_CLEAR}"
+
+    # Deploy to GitLab PyPI registry (skip if SKIP_WHEEL_DEPLOY is set)
+    - |
+      if [ -z "${SKIP_WHEEL_DEPLOY}" ]; then
+        echo -e "${TXT_BLUE}Deploying to GitLab PyPI registry...${TXT_CLEAR}"
+      else
+        echo -e "${TXT_YELLOW}Skipping deployment (SKIP_WHEEL_DEPLOY is set)${TXT_CLEAR}"
+        exit 0
+      fi
+    - !reference [.deploy_wheel_to_gitlab_template, script]
+  artifacts:
+    expire_in: 1 week
+    paths:
+      - "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/hiveio_api"
+      - "build_wheel.env"
+    reports:
+      dotenv: build_wheel.env
+  tags:
+    - public-runner-docker
