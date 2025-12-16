@@ -29,6 +29,8 @@
 #include <hive/chain/database.hpp>
 #include <hive/chain/account_object.hpp>
 #include <hive/chain/block_summary_object.hpp>
+#include <hive/chain/comment_object.hpp>
+#include <hive/chain/witness_objects.hpp>
 #include <hive/chain/detail/state/convert_request_object.hpp>
 #include <hive/chain/detail/state/collateralized_convert_request_object.hpp>
 #include <hive/chain/detail/state/escrow_object.hpp>
@@ -43,6 +45,8 @@
 #include <hive/chain/dhf_objects.hpp>
 #include <hive/chain/transaction_object.hpp>
 #include <hive/chain/rc/rc_objects.hpp>
+#include <hive/chain/detail/state/hardfork_property_object.hpp>
+#include <hive/chain/detail/state/global_property_object.hpp>
 
 #include <hive/chain/util/reward.hpp>
 

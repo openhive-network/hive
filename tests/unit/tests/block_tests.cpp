@@ -45,6 +45,10 @@
 #include <hive/chain/detail/state/recurrent_transfer_object.hpp>
 
 #include <hive/chain/external_storage/placeholder_comment_archive.hpp>
+#include <hive/chain/comment_object.hpp>
+#include <hive/chain/witness_objects.hpp>
+#include <hive/chain/detail/state/hardfork_property_object.hpp>
+#include <hive/chain/detail/state/global_property_object.hpp>
 
 #include <hive/plugins/account_history_rocksdb/account_history_rocksdb_plugin.hpp>
 #include <hive/plugins/witness/block_producer.hpp>

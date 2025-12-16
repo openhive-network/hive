@@ -27,6 +27,10 @@
 
 #include <hive/chain/util/delayed_voting_processor.hpp>
 #include <hive/chain/util/delayed_voting.hpp>
+#include <hive/chain/comment_object.hpp>
+#include <hive/chain/witness_objects.hpp>
+#include <hive/chain/detail/state/hardfork_property_object.hpp>
+#include <hive/chain/detail/state/global_property_object.hpp>
 
 #include <fc/macros.hpp>
 #include <fc/crypto/digest.hpp>
