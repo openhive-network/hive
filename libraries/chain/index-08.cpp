@@ -450,7 +450,7 @@ void database::get_limit_order_smt_totals( std::map< asset_symbol_type, TCombine
       asset zero_vesting = asset( 0, a.symbol.get_paired_symbol() );
       auto insertInfo = theMap.emplace( a.symbol, TCombinedBalance( { a, zero_vesting, zero_liquid, zero_vesting, zero_liquid } ) );
       if( insertInfo.second == false )
-        insertInfo.first->second.liquid_balance += a;
+        insertInfo.first->second.liquid += a;
     }
   }
 }

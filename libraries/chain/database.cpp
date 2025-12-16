@@ -3736,13 +3736,6 @@ void database::validate_smt_invariants()const
   try
   {
     // Get total balances.
-    typedef struct {
-      asset liquid;
-      asset vesting;
-      asset pending_liquid;
-      asset pending_vesting_shares;
-      asset pending_vesting_value;
-    } TCombinedBalance;
     typedef std::map< asset_symbol_type, TCombinedBalance > TCombinedSupplyMap;
     TCombinedSupplyMap theMap;
 
