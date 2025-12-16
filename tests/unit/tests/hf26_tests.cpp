@@ -4,6 +4,9 @@
 
 #include <hive/chain/util/owner_update_limit_mgr.hpp>
 #include <hive/chain/comment_object.hpp>
+#include <hive/chain/witness_objects.hpp>
+#include <hive/chain/detail/state/hardfork_property_object.hpp>
+#include <hive/chain/detail/state/global_property_object.hpp>
 #include <hive/protocol/misc_utilities.hpp>
 #include <hive/protocol/exceptions.hpp>
 #include <hive/chain/database_exceptions.hpp>

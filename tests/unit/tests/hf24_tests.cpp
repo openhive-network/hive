@@ -23,6 +23,10 @@
 #include <hive/chain/detail/state/recurrent_transfer_object.hpp>
 
 #include <hive/chain/util/reward.hpp>
+#include <hive/chain/comment_object.hpp>
+#include <hive/chain/witness_objects.hpp>
+#include <hive/chain/detail/state/hardfork_property_object.hpp>
+#include <hive/chain/detail/state/global_property_object.hpp>
 
 #include <fc/macros.hpp>
 #include <fc/crypto/digest.hpp>
