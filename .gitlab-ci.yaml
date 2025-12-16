@@ -64,8 +64,6 @@ include:
   # Skip rules for docs-only changes optimization
   - local: '/scripts/ci-helpers/skip_rules.yml'
 
-# Use common git cleanup template from common-ci-configuration
-# Includes: corrupt repo/submodule cleanup, directory-to-submodule transitions
 default:
   hooks:
     pre_get_sources_script: !reference [.pre_get_sources_with_submodules, pre_get_sources_script]
@@ -1101,12 +1099,15 @@ functional_api_tests:
     PYTEST_DIR: tests/python/functional/api_tests
     PYTEST_TIMEOUT_MINUTES: 3
 
-publish_images:
-  extends: .docker_publish_job_template
-  variables:
-    # Publish mainnet (root) and mirrornet images to registry.hive.blog
-    # Note: testnet is not published externally (internal use only)
-    PUBLISH_IMAGES: "hive mirrornet"
+publish_docker_image:
+  stage: publish
+  extends: .publish_docker_image_template
+  before_script:
+    - !reference [.publish_docker_image_template, before_script]
+  script:
+    - scripts/ci-helpers/build_and_publish_instance.sh
+  tags:
+    - public-runner-docker
 
 hardfork_schedule_tests:
   extends: .simple_pytest_job
@@ -1397,138 +1398,71 @@ generate_hived_flattened_openapi_definition:
     - public-runner-docker
     - standard
 
-generate_python_api_clients:
+# Unified hiveio-api package: generate, build, test (via examples), and deploy to GitLab
+hiveio_api_package:
   needs:
     - job: generate_hived_flattened_openapi_definition
       artifacts: true
-  extends: .project_develop_configuration_template
+  extends: .build_wheel_template
   # Override image to Python 3.12 - api_client_generator doesn't support Python 3.14 yet
   image: registry.gitlab.syncad.com/hive/common-ci-configuration/python:3.12.9-1
   variables:
     API_GENERATION_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation"
     PYPROJECT_DIR: "${API_GENERATION_DIR}/api_generation"
+    DEPENDENCY_SOURCE_DIR: "${CI_PROJECT_DIR}/tests/python/hive-local-tools"
+  stage: build
   script:
-    - $API_GENERATION_DIR/generate_api_packages.sh
+    # Generate the hiveio_api package
+    - echo -e "${TXT_BLUE}Generating hiveio_api package...${TXT_CLEAR}"
+    - cd "${API_GENERATION_DIR}"
+    - poetry -C "${PYPROJECT_DIR}" install
+    - "${API_GENERATION_DIR}/generate_api_packages.sh"
+
+    # Switch PYPROJECT_DIR and DIST_DIR to the generated package
+    - export PYPROJECT_DIR="${API_GENERATION_DIR}/hiveio_api"
+    - export DIST_DIR="${PYPROJECT_DIR}/dist"
+
+    # Build the wheel
+    - echo -e "${TXT_BLUE}Building hiveio-api wheel...${TXT_CLEAR}"
+    - !reference [.build_wheel_template, script]
+
+    # Install dependencies for testing
+    - echo -e "${TXT_BLUE}Installing dependencies for testing...${TXT_CLEAR}"
+    - poetry -C "${DEPENDENCY_SOURCE_DIR}" install --no-root
+    - poetry -C "${PYPROJECT_DIR}" install --only-root
+
+    # Verify by running examples for all APIs (dynamically from __all__)
+    - echo -e "${TXT_BLUE}Verifying package by running examples for all APIs...${TXT_CLEAR}"
+    - |
+      API_LIST=$(python3 -c "import hiveio_api; print(' '.join(hiveio_api.__all__))")
+      echo "APIs to test: ${API_LIST}"
+      for api in ${API_LIST}; do
+        echo "Testing hiveio_api.${api}..."
+        python3 -m hiveio_api.${api}
+        echo -e "${TXT_GREEN}Example verification passed for ${api}${TXT_CLEAR}"
+      done
+    - echo -e "${TXT_GREEN}All API examples passed!${TXT_CLEAR}"
+
+    # Deploy to GitLab PyPI registry
+    - !reference [.deploy_wheel_to_gitlab_template, script]
   artifacts:
     expire_in: 1 week
     paths:
-      - "${API_GENERATION_DIR}/database_api"
-      - "${API_GENERATION_DIR}/rc_api"
-      - "${API_GENERATION_DIR}/block_api"
-      - "${API_GENERATION_DIR}/network_broadcast_api"
-      - "${API_GENERATION_DIR}/account_by_key_api"
-      - "${API_GENERATION_DIR}/bridge"
-      - "${API_GENERATION_DIR}/account_history_api"
-      - "${API_GENERATION_DIR}/condenser_api"
-      - "${API_GENERATION_DIR}/hive"
-      - "${API_GENERATION_DIR}/follow_api"
-      - "${API_GENERATION_DIR}/jsonrpc"
-      - "${API_GENERATION_DIR}/market_history_api"
-      - "${API_GENERATION_DIR}/reputation_api"
-      - "${API_GENERATION_DIR}/tags_api"
-      - "${API_GENERATION_DIR}/transaction_status_api"
-      - "${API_GENERATION_DIR}/debug_node_api"
-      - "${API_GENERATION_DIR}/search_api"
-  stage: build
-  tags:
-    - public-runner-docker
-    - standard
-
-# =============================================================================
-# Python API Client Wheel Jobs (consolidated using parallel:matrix)
-# =============================================================================
-# These jobs build and deploy Python wheel packages for all generated API clients.
-# Using parallel:matrix reduces ~460 lines to ~60 lines while maintaining the same behavior.
-
-# List of all API packages to build/deploy
-.api_wheel_matrix: &api_wheel_matrix
-  parallel:
-    matrix:
-      - API_NAME:
-          - database_api
-          - rc_api
-          - block_api
-          - network_broadcast_api
-          - account_by_key_api
-          - bridge
-          - account_history_api
-          - condenser_api
-          - hive
-          - follow_api
-          - jsonrpc
-          - market_history_api
-          - reputation_api
-          - transaction_status_api
-          - debug_node_api
-          - search_api
-
-# APIs to deploy to public PyPI (excludes jsonrpc which is internal/meta API)
-.api_wheel_pypi_matrix: &api_wheel_pypi_matrix
-  parallel:
-    matrix:
-      - API_NAME:
-          - database_api
-          - rc_api
-          - block_api
-          - network_broadcast_api
-          - account_by_key_api
-          - bridge
-          - account_history_api
-          - condenser_api
-          - hive
-          - follow_api
-          - market_history_api
-          - reputation_api
-          - transaction_status_api
-          - debug_node_api
-          - search_api
-
-# Build wheel for each API package
-build_api_wheel:
-  extends: .build_wheel_template
-  <<: *api_wheel_matrix
-  stage: build
-  # Use same image as generate_python_api_clients to avoid permission issues
-  image: registry.gitlab.syncad.com/hive/common-ci-configuration/python:3.12.9-1
-  variables:
-    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/${API_NAME}"
-    DIST_DIR: "${PYPROJECT_DIR}/dist"
-  needs:
-    - job: generate_python_api_clients
-      artifacts: true
-  tags:
-    - public-runner-docker
-    - standard
-  artifacts:
-    paths:
-      - "${PYPROJECT_DIR}/dist"
-      - "${PYPROJECT_DIR}/pyproject.toml"
-      - "${PYPROJECT_DIR}/${API_NAME}"
+      - "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/hiveio_api"
       - "build_wheel.env"
-
-# Deploy wheel to internal GitLab registry for each API package
-deploy_api_wheel_to_gitlab:
-  extends: .deploy_wheel_to_gitlab_template
-  <<: *api_wheel_matrix
-  stage: deploy
-  variables:
-    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/${API_NAME}"
-  needs:
-    - job: build_api_wheel
-      artifacts: true
+    reports:
+      dotenv: build_wheel.env
   tags:
     - public-runner-docker
-    - standard
 
-# Deploy wheel to public PyPI registry (excludes jsonrpc)
-deploy_api_wheel_to_pypi:
-  extends: .deploy_wheel_to_pypi_template
-  <<: *api_wheel_pypi_matrix
+# Deploy hiveio-api wheel to PyPI
+deploy_hiveio_api_to_pypi:
   stage: deploy
+  extends: .deploy_wheel_to_pypi_template
   variables:
-    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/${API_NAME}"
+    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/hiveio_api"
   needs:
-    - job: build_api_wheel
+    - job: hiveio_api_package
       artifacts: true
   tags:
     - public-runner-docker
