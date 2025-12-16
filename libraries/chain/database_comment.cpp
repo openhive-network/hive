@@ -407,7 +407,7 @@ void database::process_comment_cashout()
       else
         decay_time = HIVE_RECENT_RSHARES_DECAY_TIME_HF17;
 
-      if( ( _now - rfo.last_update ) <= decay_time || !has_hardfork( HIVE_HARDFORK_1_26_CLAIM_UNDERFLOW ) ) //TODO: remove hardfork part after HF26
+      if( ( _now - rfo.last_update ) <= decay_time )
         rfo.recent_claims -= ( rfo.recent_claims * ( _now - rfo.last_update ).to_seconds() ) / decay_time.to_seconds();
       else
         rfo.recent_claims = 0; // this should never happen - requires chain to be inactive for more than decay_time

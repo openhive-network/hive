@@ -104,11 +104,10 @@ void database::clear_witness_votes( const account_object& a )
     remove(current);
   }
 
-  if( has_hardfork( HIVE_HARDFORK_0_6__104 ) )
-    modify( a, [&](account_object& acc )
-    {
-      acc.witnesses_voted_for = 0;
-    });
+  modify( a, [&]( account_object& acc )
+  {
+    acc.witnesses_voted_for = 0;
+  } );
 }
 
 void database::retally_witness_votes()

@@ -247,27 +247,21 @@ bool database::apply_order( const limit_order_object& new_order_object )
 
 int database::match( const limit_order_object& new_order, const limit_order_object& old_order, const price& match_price )
 {
-  bool has_hf_20__1815 = has_hardfork( HIVE_HARDFORK_0_20__1815 );
-
-FC_TODO( " Remove if(), do assert unconditionally after HF20 occurs" )
-  if( has_hf_20__1815 )
-  {
-    HIVE_ASSERT( new_order.sell_price.quote.symbol == old_order.sell_price.base.symbol,
-      order_match_exception, "error matching orders: ${new_order} ${old_order} ${match_price}",
-      ("new_order", new_order)("old_order", old_order)("match_price", match_price) );
-    HIVE_ASSERT( new_order.sell_price.base.symbol  == old_order.sell_price.quote.symbol,
-      order_match_exception, "error matching orders: ${new_order} ${old_order} ${match_price}",
-      ("new_order", new_order)("old_order", old_order)("match_price", match_price) );
-    HIVE_ASSERT( new_order.for_sale > 0 && old_order.for_sale > 0,
-      order_match_exception, "error matching orders: ${new_order} ${old_order} ${match_price}",
-      ("new_order", new_order)("old_order", old_order)("match_price", match_price) );
-    HIVE_ASSERT( match_price.quote.symbol == new_order.sell_price.base.symbol,
-      order_match_exception, "error matching orders: ${new_order} ${old_order} ${match_price}",
-      ("new_order", new_order)("old_order", old_order)("match_price", match_price) );
-    HIVE_ASSERT( match_price.base.symbol == old_order.sell_price.base.symbol,
-      order_match_exception, "error matching orders: ${new_order} ${old_order} ${match_price}",
-      ("new_order", new_order)("old_order", old_order)("match_price", match_price) );
-  }
+  HIVE_ASSERT( new_order.sell_price.quote.symbol == old_order.sell_price.base.symbol,
+    order_match_exception, "error matching orders: ${new_order} ${old_order} ${match_price}",
+    ("new_order", new_order)("old_order", old_order)("match_price", match_price) );
+  HIVE_ASSERT( new_order.sell_price.base.symbol  == old_order.sell_price.quote.symbol,
+    order_match_exception, "error matching orders: ${new_order} ${old_order} ${match_price}",
+    ("new_order", new_order)("old_order", old_order)("match_price", match_price) );
+  HIVE_ASSERT( new_order.for_sale > 0 && old_order.for_sale > 0,
+    order_match_exception, "error matching orders: ${new_order} ${old_order} ${match_price}",
+    ("new_order", new_order)("old_order", old_order)("match_price", match_price) );
+  HIVE_ASSERT( match_price.quote.symbol == new_order.sell_price.base.symbol,
+    order_match_exception, "error matching orders: ${new_order} ${old_order} ${match_price}",
+    ("new_order", new_order)("old_order", old_order)("match_price", match_price) );
+  HIVE_ASSERT( match_price.base.symbol == old_order.sell_price.base.symbol,
+    order_match_exception, "error matching orders: ${new_order} ${old_order} ${match_price}",
+    ("new_order", new_order)("old_order", old_order)("match_price", match_price) );
 
   auto new_order_for_sale = new_order.amount_for_sale();
   auto old_order_for_sale = old_order.amount_for_sale();
@@ -292,14 +286,10 @@ FC_TODO( " Remove if(), do assert unconditionally after HF20 occurs" )
   old_order_pays = new_order_receives;
   new_order_pays = old_order_receives;
 
-FC_TODO( " Remove if(), do assert unconditionally after HF20 occurs" )
-  if( has_hf_20__1815 )
-  {
-    HIVE_ASSERT( new_order_pays == new_order.amount_for_sale() ||
-              old_order_pays == old_order.amount_for_sale(),
-      order_match_exception, "error matching orders: ${new_order} ${old_order} ${match_price}",
-      ("new_order", new_order)("old_order", old_order)("match_price", match_price) );
-  }
+  HIVE_ASSERT( new_order_pays == new_order.amount_for_sale() ||
+               old_order_pays == old_order.amount_for_sale(),
+    order_match_exception, "error matching orders: ${new_order} ${old_order} ${match_price}",
+    ("new_order", new_order)("old_order", old_order)("match_price", match_price) );
 
   auto age = head_block_time() - old_order.created;
   if( !has_hardfork( HIVE_HARDFORK_0_12__178 ) &&
@@ -324,13 +314,9 @@ FC_TODO( " Remove if(), do assert unconditionally after HF20 occurs" )
   result |= fill_order( new_order, new_order_pays, new_order_receives );
   result |= fill_order( old_order, old_order_pays, old_order_receives ) << 1;
 
-FC_TODO( " Remove if(), do assert unconditionally after HF20 occurs" )
-  if( has_hf_20__1815 )
-  {
-    HIVE_ASSERT( result != 0,
-      order_match_exception, "error matching orders: ${new_order} ${old_order} ${match_price}",
-      ("new_order", new_order)("old_order", old_order)("match_price", match_price) );
-  }
+  HIVE_ASSERT( result != 0,
+    order_match_exception, "error matching orders: ${new_order} ${old_order} ${match_price}",
+    ("new_order", new_order)("old_order", old_order)("match_price", match_price) );
   return result;
 }
 
@@ -354,13 +340,9 @@ bool database::fill_order( const limit_order_object& order, const asset& pays, c
     }
     else
     {
-FC_TODO( " Remove if(), do assert unconditionally after HF20 occurs" )
-      if( has_hardfork( HIVE_HARDFORK_0_20__1815 ) )
-      {
-        HIVE_ASSERT( pays < order.amount_for_sale(),
-          order_fill_exception, "error filling orders: ${order} ${pays} ${receives}",
-          ("order", order)("pays", pays)("receives", receives) );
-      }
+      HIVE_ASSERT( pays < order.amount_for_sale(),
+        order_fill_exception, "error filling orders: ${order} ${pays} ${receives}",
+        ("order", order)("pays", pays)("receives", receives) );
 
       modify( order, [&]( limit_order_object& b )
       {

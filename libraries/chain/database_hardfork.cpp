@@ -441,7 +441,7 @@ void database::apply_hardfork( uint32_t hardfork )
       if( find_account(treasury_name) == nullptr ) {
           create<account_object>(treasury_name, head_block_time());
           push_virtual_operation( *this,
-            account_created_operation( treasury_name, treasury_name, asset(0, VESTS_SYMBOL), asset(0, VESTS_SYMBOL) ) );
+            account_created_operation( treasury_name, treasury_name, VEST_asset( 0 ), VEST_asset( 0 ) ) );
       }
 
       lock_account( get_treasury() );
@@ -549,7 +549,7 @@ void database::apply_hardfork( uint32_t hardfork )
     if( find_account(treasury_name) == nullptr ) {
         create<account_object>(treasury_name, head_block_time());
         push_virtual_operation( *this,
-          account_created_operation( treasury_name, treasury_name, asset(0, VESTS_SYMBOL), asset(0, VESTS_SYMBOL) ) );
+          account_created_operation( treasury_name, treasury_name, VEST_asset( 0 ), VEST_asset( 0 ) ) );
     }
 
     lock_account( get_treasury() );
