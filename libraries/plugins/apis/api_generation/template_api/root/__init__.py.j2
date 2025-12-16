@@ -1,0 +1,9 @@
+"""Hive JSON-RPC API client package with lazy-loaded submodules."""
+
+from __future__ import annotations
+
+__version__ = "0.0.0"
+
+__all__ = [
+{% for api in apis %}    "{{ api.snake_case }}",
+{% endfor %}]

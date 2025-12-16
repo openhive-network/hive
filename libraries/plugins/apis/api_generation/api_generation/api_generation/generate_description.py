@@ -23,7 +23,7 @@ def generate_description(api: AvailableApis, base_directory: Path) -> Path:
 
     print(f"Attempting to process {api} from Swagger file: {openapi_json_path}")
 
-    output_path = api_generation_path / api / api / f"{api}_description.py"
+    output_path = api_generation_path / "hiveio_api" / "hiveio_api" / api / f"{api}_description.py"
 
     generate_api_description(
         api_description_dict_name,

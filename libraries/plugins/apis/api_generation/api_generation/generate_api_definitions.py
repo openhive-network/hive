@@ -1,15 +1,37 @@
 from __future__ import annotations
 
+import ast
 import shutil
 from pathlib import Path
 from typing import Any
 from jinja2 import Environment, FileSystemLoader
 import sys
-import toml
 import importlib.util
 
 from api_generation.generate_description import generate_description
 from api_generation.generate_client import generate_client
+
+
+def extract_class_names_from_file(file_path: Path) -> list[str]:
+    """
+    Extract all class names from a Python file using AST parsing.
+
+    Args:
+        file_path: The path to the Python file from which to extract class names.
+
+    Returns:
+        A list of class names defined in the file.
+
+    Raises:
+        FileNotFoundError: If the specified file does not exist.
+    """
+    if not file_path.exists():
+        raise FileNotFoundError(f"The file {file_path} does not exist.")
+
+    with open(file_path, "r") as f:
+        tree = ast.parse(f.read(), filename=str(file_path))
+
+    return [node.name for node in ast.walk(tree) if isinstance(node, ast.ClassDef)]
 
 
 def load_symbol_from_file(file_path: Path, symbol_name: str) -> dict[str, Any]:
@@ -33,7 +55,11 @@ def load_symbol_from_file(file_path: Path, symbol_name: str) -> dict[str, Any]:
     if file_path.suffix != ".py":
         raise ValueError(f"The file {file_path} is not a Python file.")
 
-    relative_path = file_path.relative_to(file_path.parents[1])
+    # Create module name relative to hiveio_api project directory (parent of hiveio_api package)
+    # For path like: .../hiveio_api/hiveio_api/rc_api/rc_api_description.py
+    # We want module name: hiveio_api.rc_api.rc_api_description
+    # parents[2] is the project directory containing hiveio_api/
+    relative_path = file_path.relative_to(file_path.parents[2])
     module_name = ".".join(relative_path.with_suffix("").parts)
 
     spec = importlib.util.spec_from_file_location(module_name, str(file_path))
@@ -50,74 +76,66 @@ def create_api_directory_structure(
     template_directory: Path,
 ) -> None:
     """
-    Create the directory structure for the API.
+    Create the directory structure for the API within the hiveio_api package.
+
+    Structure:
+        base_directory/hiveio_api/hiveio_api/{api_name}/
 
     Args:
         api_name: The name of the API.
-        base_directory: The base directory where the API structure will be created.
+        base_directory: The base directory where the hiveio_api package will be created.
         template_directory: The directory containing the template files for the API.
     """
 
     api_name = api_name.replace("-", "_")
 
-    api_root_directory = base_directory / api_name
-    api_package_path = api_root_directory / api_name
+    # hiveio_api/hiveio_api/{api_name}/
+    project_directory = base_directory / "hiveio_api"
+    package_directory = project_directory / "hiveio_api"
+    api_subpackage_path = package_directory / api_name
 
-    api_root_directory.mkdir(exist_ok=True)
-    api_package_path.mkdir(exist_ok=True)
+    project_directory.mkdir(exist_ok=True)
+    package_directory.mkdir(exist_ok=True)
+    api_subpackage_path.mkdir(exist_ok=True)
 
-    shutil.copy(template_directory / "py.typed", api_package_path)
-    shutil.copy(template_directory / "__init__.py", api_package_path)
+    shutil.copy(template_directory / "py.typed", api_subpackage_path)
 
 
-def create_pyproject_content_for_api_package(
-    api_name: str,
-    api_generation_pyproject_path: Path,
-    template_directory: Path,
-) -> str:
-    """
-    Create a pyproject.toml content file for the API package.
-
-    Args:
-        api_name: The name of the API for which to create the pyproject.toml content.
-        api_generation_pyproject_path: The path to the pyproject.toml of the api_generation package.
-                                       Beekeepy version is read from this file.
-        template_directory: The directory containing the template files for the API.
-
-    Returns:
-        The content of the pyproject.toml file as a string.
-    """
-    api_generation_pyproject = toml.load(api_generation_pyproject_path)
-
-    env = Environment(loader=FileSystemLoader(template_directory))
-    template = env.get_template("pyproject.toml.j2")
-
-    return template.render(api_name=api_name, api_name_kebab=api_name.replace("_", "-"), api_generation_pyproject=api_generation_pyproject)
-
-def create_readme_for_api_package(
+def render_package_templates(
     api_snake_case: str,
-    api_kebab_case: str,
+    api_pascal_case: str,
+    description_symbols: list[str],
+    api_subpackage_path: Path,
     template_directory: Path,
-) -> str:
+) -> None:
     """
-    Create a README.md content file for the API package.
+    Render and write the subpackage template files (__init__.py, __main__.py, example.py).
 
     Args:
         api_snake_case: The name of the API in snake_case.
-        api_kebab_case: The name of the API in kebab-case.
-        template_directory: The directory containing the template files for the API.
-
-    Returns:
-        The content of the README.md file as a string.
+        api_pascal_case: The name of the API in PascalCase.
+        description_symbols: List of symbols exported from the description module.
+        api_subpackage_path: The path to the API subpackage directory within hiveio_api.
+        template_directory: The directory containing the template files.
     """
     env = Environment(loader=FileSystemLoader(template_directory))
-    template = env.get_template("README.md.j2")
 
-    return template.render(
-        api_name_snake_case=api_snake_case,
-        api_name_kebab_case=api_kebab_case,
-        api_name_pascal_case="".join(word.capitalize() for word in api_snake_case.split("_")),
-    )
+    template_context = {
+        "api_name_snake_case": api_snake_case,
+        "api_name_pascal_case": api_pascal_case,
+        "description_symbols": description_symbols,
+    }
+
+    for template_name, output_name in [
+        ("__init__.py.j2", "__init__.py"),
+        ("__main__.py.j2", "__main__.py"),
+        ("example.py.j2", "example.py"),
+        ("README.md.j2", "README.md"),
+    ]:
+        template = env.get_template(template_name)
+        content = template.render(**template_context)
+        with open(api_subpackage_path / output_name, "w") as f:
+            f.write(content)
 
 
 if __name__ == "__main__":
@@ -133,7 +151,7 @@ if __name__ == "__main__":
     create_api_directory_structure(api, base_directory, template_api_path)
 
     api_description_file = generate_description(api, base_directory)
-    description_symbol_name = f"{api.replace("-", "_")}_description"
+    description_symbol_name = f"{api.replace('-', '_')}_description"
 
     print(
         f"Loading generated API descriptor: {description_symbol_name} from generated file: {api_description_file}"
@@ -144,18 +162,21 @@ if __name__ == "__main__":
     )
     generate_client(api, api_descriptor, base_directory)
 
-    api_name_kebab_case = api.replace("_", "-")
     api_name_snake_case = api.replace("-", "_")
-    pyproject_path = base_directory / "api_generation" /"pyproject.toml"
-    pyproject_content = create_pyproject_content_for_api_package(
-        api_name_snake_case, pyproject_path, template_api_path
+    api_name_pascal_case = "".join(word.capitalize() for word in api_name_snake_case.split("_"))
+    api_subpackage_path = base_directory / "hiveio_api" / "hiveio_api" / api_name_snake_case
+
+    # Extract class names from the generated description file for lazy imports
+    description_symbols = extract_class_names_from_file(api_description_file)
+    print(f"Extracted {len(description_symbols)} symbols from description file")
+
+    # Render subpackage template files (__init__.py, __main__.py, example.py, README.md)
+    render_package_templates(
+        api_name_snake_case,
+        api_name_pascal_case,
+        description_symbols,
+        api_subpackage_path,
+        template_api_path,
     )
 
-    api_pyproject_path = base_directory / api_name_snake_case / "pyproject.toml"
-    api_readme_path = base_directory / api_name_snake_case / api_name_snake_case /"README.md"
-
-    with open(api_pyproject_path, "w") as f:
-        f.write(pyproject_content)
-
-    with open(api_readme_path, "w") as f:
-        f.write(create_readme_for_api_package(api_name_snake_case, api_name_kebab_case, template_api_path))
+    print(f"Successfully generated API subpackage: hiveio_api.{api_name_snake_case}")
