@@ -9,6 +9,31 @@ SHARED_BLOCK_LOG_DIR="${SHARED_BLOCK_LOG_DIR:-/nfs/ci-cache/hive/block_log_5m}"
 # NFS cache configuration
 CACHE_NFS_PATH="${CACHE_NFS_PATH:-/nfs/ci-cache}"
 
+# Fix pg_tblspc symlinks to point to the correct tablespace location
+# PostgreSQL stores tablespace symlinks with absolute paths, which break when data is copied
+fix_pg_tblspc_symlinks() {
+    local datadir="$1"
+    local pg_tblspc="${datadir}/haf_db_store/pgdata/pg_tblspc"
+    local tablespace="${datadir}/haf_db_store/tablespace"
+
+    if [[ ! -d "$pg_tblspc" ]]; then
+        return 0
+    fi
+
+    for link in "$pg_tblspc"/*; do
+        if [[ -L "$link" ]]; then
+            local target
+            target=$(readlink "$link")
+            # Fix if symlink contains 'tablespace' (relative or wrong absolute path)
+            if [[ "$target" == *"tablespace"* ]] && [[ -d "$tablespace" ]]; then
+                echo "Fixing pg_tblspc symlink: $(basename "$link") -> $tablespace"
+                rm -f "$link"
+                ln -s "$tablespace" "$link"
+            fi
+        fi
+    done
+}
+
 # Function to extract NFS cache if local DATA_SOURCE doesn't exist
 # Derives cache type and key from DATA_SOURCE path pattern: /cache/{type}_{key}
 extract_nfs_cache_if_needed() {
@@ -60,6 +85,8 @@ extract_nfs_cache_if_needed() {
                 chmod 700 "$tablespace" 2>/dev/null || true
                 chown -R 105:105 "$tablespace" 2>/dev/null || true
             fi
+            # Fix pg_tblspc symlinks after extraction
+            fix_pg_tblspc_symlinks "${data_source}/datadir"
             return 0
         else
             echo "ERROR: Failed to extract NFS cache"
@@ -88,6 +115,9 @@ then
         sudo -Enu hived mkdir -p "${DATADIR}"
         # Use cp without -p to avoid "Operation not supported" errors when copying from NFS
         flock "${DATA_SOURCE}/datadir" sudo -En cp -r --no-preserve=mode,ownership "${DATA_SOURCE}/datadir"/*  "${DATADIR}"
+
+        # Fix pg_tblspc symlinks after copying to DATADIR
+        fix_pg_tblspc_symlinks "${DATADIR}"
 
         # Handle blockchain directory - may be excluded from cache for efficiency
         if [[ -d "${DATA_SOURCE}/datadir/blockchain" ]]; then
