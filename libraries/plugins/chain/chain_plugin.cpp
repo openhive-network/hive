@@ -1725,10 +1725,7 @@ void chain_plugin::plugin_initialize(const variables_map& options)
       configuration_data.min_root_comment_interval = fc::seconds( alternate_chain_spec["min_root_comment_interval"].as< uint64_t >() );
 
     if( alternate_chain_spec.get_object().contains("min_reply_interval") )
-    {
       configuration_data.min_reply_interval = fc::seconds( alternate_chain_spec["min_reply_interval"].as< uint64_t >() );
-      configuration_data.min_reply_interval_hf20 = configuration_data.min_reply_interval;
-    }
 
     if( alternate_chain_spec.get_object().contains("min_comment_edit_interval") )
       configuration_data.min_comment_edit_interval = fc::seconds( alternate_chain_spec["min_comment_edit_interval"].as< uint64_t >() );

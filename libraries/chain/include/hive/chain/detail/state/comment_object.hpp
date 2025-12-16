@@ -190,7 +190,6 @@ namespace hive { namespace chain {
       //called on vote (new or edit)
       void on_vote( int16_t vote_percent, int16_t old_vote_percent = 0, bool real_vote = true )
       {
-        FC_TODO( "After HF26 try to make it unconditional" );
         if( real_vote )
           was_voted_on = true;
         if( old_vote_percent > 0 )

@@ -25,8 +25,7 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_HF_9_COMPROMISED_ACCOUNTS_PUBLIC_KEY_STR (configuration_data.get_HF9_compromised_accounts_key())
 
 #define HIVE_MIN_ROOT_COMMENT_INTERVAL        (configuration_data.min_root_comment_interval) // 5 minutes
-#define HIVE_MIN_REPLY_INTERVAL               (configuration_data.min_reply_interval) // 20 seconds
-#define HIVE_MIN_REPLY_INTERVAL_HF20          (configuration_data.min_reply_interval_hf20) // 3 seconds
+#define HIVE_MIN_REPLY_INTERVAL               (configuration_data.min_reply_interval) // 3 seconds
 #define HIVE_MIN_COMMENT_EDIT_INTERVAL        (configuration_data.min_comment_edit_interval) // 3 seconds
 
 #define HIVE_INIT_SUPPLY                      (configuration_data.get_init_hive_supply())
@@ -41,8 +40,7 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_HF_9_COMPROMISED_ACCOUNTS_PUBLIC_KEY_STR HIVE_DEFAULT_HF_9_COMPROMISED_ACCOUNTS_PUBLIC_KEY_STR
 
 #define HIVE_MIN_ROOT_COMMENT_INTERVAL        (fc::seconds(60*5)) // 5 minutes
-#define HIVE_MIN_REPLY_INTERVAL               (fc::seconds(20)) // 20 seconds
-#define HIVE_MIN_REPLY_INTERVAL_HF20          (fc::seconds(3)) // 3 seconds
+#define HIVE_MIN_REPLY_INTERVAL               (fc::seconds(3)) // 3 seconds
 #define HIVE_MIN_COMMENT_EDIT_INTERVAL        (fc::seconds(3)) // 3 seconds
 
 #define HIVE_INIT_SUPPLY                      int64_t(0)
