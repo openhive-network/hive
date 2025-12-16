@@ -38,7 +38,7 @@ void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )
   if( op.max_rc != 0 && _db.is_in_control() )
   {
     const auto& wso = _db.get_witness_schedule_object();
-    auto min_delegation = ( asset( wso.median_props.account_creation_fee.amount / 3, HIVE_SYMBOL ) * gpo.get_vesting_share_price() ).amount.value;
+    auto min_delegation = ( ( wso.median_props.account_creation_fee / 3 ) * gpo.get_vesting_share_price() ).amount.value;
 
     FC_ASSERT( op.max_rc >= min_delegation, "Cannot delegate less than ${min_delegation} rc", (min_delegation) );
   }

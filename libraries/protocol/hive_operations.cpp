@@ -256,6 +256,7 @@ namespace hive { namespace protocol {
       fc::raw::unpack_from_vector( itr->second, account_creation_fee );
       FC_ASSERT( account_creation_fee.symbol == HIVE_SYMBOL, "account_creation_fee must be in HIVE" );
       FC_ASSERT( account_creation_fee.amount >= HIVE_MIN_ACCOUNT_CREATION_FEE && "account_creation_fee smaller than minimum account creation fee" );
+      FC_ASSERT( account_creation_fee.amount <= HIVE_MAX_ACCOUNT_CREATION_FEE && "account_creation_fee greater than maximum account creation fee" );
     }
 
     itr = props.find( "maximum_block_size" );
@@ -264,6 +265,7 @@ namespace hive { namespace protocol {
       uint32_t maximum_block_size = 0u;
       fc::raw::unpack_from_vector( itr->second, maximum_block_size );
       FC_ASSERT( maximum_block_size >= HIVE_MIN_BLOCK_SIZE_LIMIT && "maximum_block_size smaller than minimum max block size" );
+      FC_ASSERT( maximum_block_size <= HIVE_MAX_BLOCK_SIZE && "Max block size cannot be more than 2MiB" );
     }
 
     itr = props.find( "sbd_interest_rate" );
@@ -435,21 +437,21 @@ namespace hive { namespace protocol {
     work = fc::sha256::hash(recover);
   }
 
-void pow2::create(const block_id_type & prev, const account_name_type & account_name, uint64_t n)
+  void pow2::create(const block_id_type & prev, const account_name_type & account_name, uint64_t n)
   {
-  input.worker_account = account_name;
-  input.prev_block = prev;
-  input.nonce = n;
+    input.worker_account = account_name;
+    input.prev_block = prev;
+    input.nonce = n;
 
-  auto prv_key = fc::sha256::hash(input);
-  auto input = fc::sha256::hash(prv_key);
-  auto signature = fc::ecc::private_key::regenerate(prv_key).sign_compact(input);
+    auto prv_key = fc::sha256::hash(input);
+    auto input = fc::sha256::hash(prv_key);
+    auto signature = fc::ecc::private_key::regenerate(prv_key).sign_compact(input);
 
-  auto sig_hash = fc::sha256::hash(signature);
-  public_key_type recover = fc::ecc::public_key(signature, sig_hash);
+    auto sig_hash = fc::sha256::hash(signature);
+    public_key_type recover = fc::ecc::public_key(signature, sig_hash);
 
-  fc::sha256 work = fc::sha256::hash(std::make_pair(input, recover));
-  pow_summary = work.approx_log_32();
+    fc::sha256 work = fc::sha256::hash(std::make_pair(input, recover));
+    pow_summary = work.approx_log_32();
   }
 
 

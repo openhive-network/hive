@@ -480,10 +480,9 @@ namespace hive { namespace protocol {
       {
         FC_ASSERT( account_creation_fee.symbol.is_canon() );
       }
-      FC_ASSERT( account_creation_fee.amount >= HIVE_MIN_ACCOUNT_CREATION_FEE);
-      FC_ASSERT( maximum_block_size >= HIVE_MIN_BLOCK_SIZE_LIMIT);
-      FC_ASSERT( hbd_interest_rate >= 0 );
-      FC_ASSERT( hbd_interest_rate <= HIVE_100_PERCENT );
+      FC_ASSERT( account_creation_fee.amount >= HIVE_MIN_ACCOUNT_CREATION_FEE && account_creation_fee.amount <= HIVE_MAX_ACCOUNT_CREATION_FEE );
+      FC_ASSERT( maximum_block_size >= HIVE_MIN_BLOCK_SIZE_LIMIT && maximum_block_size <= HIVE_MAX_BLOCK_SIZE );
+      FC_ASSERT( hbd_interest_rate >= 0 && hbd_interest_rate <= HIVE_100_PERCENT );
     }
 
     HIVE_asset get_account_creation_fee() const { return HIVE_asset( account_creation_fee.amount ); }
@@ -755,8 +754,6 @@ namespace hive { namespace protocol {
 
     void validate()const;
     fc::sha256 work_input()const;
-
-    const account_name_type& get_worker_account()const { return worker_account; }
 
     /** there is no need to verify authority, the proof of work is sufficient */
     void get_required_active_authorities( flat_set<account_name_type>& a )const{  }

@@ -362,14 +362,14 @@ void database::apply_hardfork( uint32_t hardfork )
           {
             modify( get< witness_object, by_name >( witness ), [&]( witness_object& w )
             {
-              w.props.account_creation_fee = asset( w.props.account_creation_fee.amount * HIVE_CREATE_ACCOUNT_WITH_HIVE_MODIFIER, HIVE_SYMBOL );
+              w.props.account_creation_fee = w.props.account_creation_fee * HIVE_CREATE_ACCOUNT_WITH_HIVE_MODIFIER;
             } );
           }
         }
 
         modify( wso, [&]( witness_schedule_object& wso )
         {
-          wso.median_props.account_creation_fee = asset( wso.median_props.account_creation_fee.amount * HIVE_CREATE_ACCOUNT_WITH_HIVE_MODIFIER, HIVE_SYMBOL );
+          wso.median_props.account_creation_fee = wso.median_props.account_creation_fee * HIVE_CREATE_ACCOUNT_WITH_HIVE_MODIFIER;
         } );
 
         // Initialize RC:
