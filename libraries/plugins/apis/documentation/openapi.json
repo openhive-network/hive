@@ -3081,8 +3081,7 @@
                                     "HIVE_MIN_POW_REWARD": "1.000 HIVE",
                                     "HIVE_MIN_PRODUCER_REWARD": "1.000 HIVE",
                                     "HIVE_MIN_RECURRENT_TRANSFERS_RECURRENCE": 24,
-                                    "HIVE_MIN_REPLY_INTERVAL": 20000000,
-                                    "HIVE_MIN_REPLY_INTERVAL_HF20": 3000000,
+                                    "HIVE_MIN_REPLY_INTERVAL": 3000000,
                                     "HIVE_MIN_ROOT_COMMENT_INTERVAL": 300000000,
                                     "HIVE_MIN_TRANSACTION_EXPIRATION_LIMIT": 15,
                                     "HIVE_MIN_TRANSACTION_SIZE_LIMIT": 1024,
@@ -7792,8 +7791,7 @@
                                         "nai": "@@000000021"
                                     },
                                     "HIVE_MIN_PERMLINK_LENGTH": 0,
-                                    "HIVE_MIN_REPLY_INTERVAL": 20000000,
-                                    "HIVE_MIN_REPLY_INTERVAL_HF20": 3000000,
+                                    "HIVE_MIN_REPLY_INTERVAL": 3000000,
                                     "HIVE_MIN_ROOT_COMMENT_INTERVAL": 300000000,
                                     "HIVE_MIN_COMMENT_EDIT_INTERVAL": 3000000,
                                     "HIVE_MIN_VOTE_INTERVAL_SEC": 3,
@@ -19314,10 +19312,6 @@
                         "type": "integer",
                         "description": "Minimum reply interval (microseconds)."
                     },
-                    "HIVE_MIN_REPLY_INTERVAL_HF20": {
-                        "type": "integer",
-                        "description": "Minimum reply interval for HF20 (microseconds)."
-                    },
                     "HIVE_MIN_ROOT_COMMENT_INTERVAL": {
                         "type": "integer",
                         "description": "Minimum root comment interval (microseconds)."
@@ -19955,7 +19949,6 @@
                     "HIVE_MIN_BLOCK_SIZE",
                     "HIVE_MIN_PERMLINK_LENGTH",
                     "HIVE_MIN_REPLY_INTERVAL",
-                    "HIVE_MIN_REPLY_INTERVAL_HF20",
                     "HIVE_MIN_ROOT_COMMENT_INTERVAL",
                     "HIVE_MIN_COMMENT_EDIT_INTERVAL",
                     "HIVE_MIN_VOTE_INTERVAL_SEC",

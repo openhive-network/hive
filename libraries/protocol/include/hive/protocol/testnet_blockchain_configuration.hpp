@@ -269,8 +269,7 @@ class configuration
       const price& vest_price = price( VEST_asset( 1800 ), HIVE_asset( 1'000 ) ) );
 
     fc::microseconds min_root_comment_interval = fc::seconds(60*5);
-    fc::microseconds min_reply_interval = fc::seconds(20);
-    fc::microseconds min_reply_interval_hf20 = fc::seconds(3);
+    fc::microseconds min_reply_interval = fc::seconds(3);
     fc::microseconds min_comment_edit_interval = fc::seconds(3);
     uint64_t         custom_op_block_limit = 5;
 
