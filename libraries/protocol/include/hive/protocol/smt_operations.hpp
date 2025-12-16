@@ -206,6 +206,8 @@ struct smt_contribute_operation : public base_operation
   asset              contribution;
   extensions_type    extensions;
 
+  HIVE_asset get_contribution() const { return contribution; }
+
   void validate() const;
   void get_required_active_authorities( flat_set<account_name_type>& a )const
   { a.insert( contributor ); }

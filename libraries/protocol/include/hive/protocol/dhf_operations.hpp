@@ -25,6 +25,8 @@ struct create_proposal_operation : public base_operation
 
   extensions_type extensions;
 
+  HBD_asset get_daily_pay() const { return daily_pay; }
+
   void validate()const;
 
   void get_required_active_authorities( flat_set<account_name_type>& a )const { a.insert( creator ); }
@@ -52,6 +54,8 @@ struct update_proposal_operation : public base_operation
   /// Given link shall be a valid permlink. Must be posted by creator or the receiver.
   string permlink;
   update_proposal_extensions_type extensions;
+
+  HBD_asset get_daily_pay() const { return daily_pay; }
 
   void validate()const;
 

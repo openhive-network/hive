@@ -23,6 +23,8 @@ namespace hive { namespace protocol {
     public_key_type   memo_key;
     json_string       json_metadata;
 
+    HIVE_asset get_fee() const { return fee; }
+
     void validate()const;
     void get_required_active_authorities( flat_set<account_name_type>& a )const{ a.insert(creator); }
   };
@@ -41,6 +43,9 @@ namespace hive { namespace protocol {
     json_string       json_metadata;
 
     extensions_type   extensions;
+
+    HIVE_asset get_fee() const { return fee; }
+    VEST_asset get_delegation() const { return delegation; }
 
     void validate()const;
     void get_required_active_authorities( flat_set<account_name_type>& a )const{ a.insert(creator); }
@@ -198,6 +203,8 @@ namespace hive { namespace protocol {
     bool              allow_curation_rewards = true; /// allows voters to receive curation rewards. Rewards return to reward fund.
     comment_options_extensions_type extensions;
 
+    HBD_asset get_max_accepted_payout() const { return max_accepted_payout; }
+
     void validate()const;
     void get_required_posting_authorities( flat_set<account_name_type>& a )const{ a.insert(author); }
   };
@@ -208,6 +215,8 @@ namespace hive { namespace protocol {
     account_name_type creator;
     asset             fee;
     extensions_type   extensions;
+
+    HIVE_asset get_fee() const { return fee; }
 
     void get_required_active_authorities( flat_set< account_name_type >& a ) const { a.insert( creator ); }
     void validate() const;
@@ -307,6 +316,9 @@ namespace hive { namespace protocol {
 
     json_string       json_meta;
 
+    HBD_asset get_hbd_amount() const { return hbd_amount; }
+    HIVE_asset get_hive_amount() const { return hive_amount; }
+
     void validate()const;
     void get_required_active_authorities( flat_set<account_name_type>& a )const{ a.insert(from); }
   };
@@ -373,6 +385,9 @@ namespace hive { namespace protocol {
     asset             hbd_amount = asset( 0, HBD_SYMBOL ); ///< the amount of HBD to release
     asset             hive_amount = asset( 0, HIVE_SYMBOL ); ///< the amount of HIVE to release
 
+    HBD_asset get_hbd_amount() const { return hbd_amount; }
+    HIVE_asset get_hive_amount() const { return hive_amount; }
+
     void validate()const;
     void get_required_active_authorities( flat_set<account_name_type>& a )const{ a.insert(who); }
   };
@@ -409,6 +424,8 @@ namespace hive { namespace protocol {
   {
     account_name_type account;
     asset             vesting_shares;
+
+    VEST_asset get_vesting_shares() const { return vesting_shares; }
 
     void validate()const;
     void get_required_active_authorities( flat_set<account_name_type>& a )const{ a.insert(account); }
@@ -468,6 +485,8 @@ namespace hive { namespace protocol {
       FC_ASSERT( hbd_interest_rate >= 0 );
       FC_ASSERT( hbd_interest_rate <= HIVE_100_PERCENT );
     }
+
+    HIVE_asset get_account_creation_fee() const { return HIVE_asset( account_creation_fee.amount ); }
   };
 
 
@@ -492,6 +511,8 @@ namespace hive { namespace protocol {
     public_key_type   block_signing_key;
     legacy_chain_properties  props;
     asset             fee; ///< the fee paid to register a new witness, should be 10x current block production pay
+
+    HIVE_asset get_fee() const { return fee; }
 
     void validate()const;
     void get_required_active_authorities( flat_set<account_name_type>& a )const{ a.insert(owner); }
@@ -621,6 +642,8 @@ namespace hive { namespace protocol {
     uint32_t          requestid = 0;
     asset             amount; //in HBD
 
+    HBD_asset get_amount() const { return amount; }
+
     void  validate()const;
     void  get_required_active_authorities( flat_set<account_name_type>& a )const{ a.insert(owner); }
   };
@@ -636,6 +659,8 @@ namespace hive { namespace protocol {
     account_name_type owner;
     uint32_t          requestid = 0;
     asset             amount; //in HIVE
+
+    HIVE_asset get_amount() const { return amount; }
 
     void  validate()const;
     void  get_required_active_authorities( flat_set<account_name_type>& a )const { a.insert( owner ); }
@@ -889,10 +914,10 @@ namespace hive { namespace protocol {
 
 
   /**
-    *  This operation allows recovery_accoutn to change account_to_reset's owner authority to
-    *  new_owner_authority after 60 days of inactivity.
+    * Never used, placeholder in case we need to add new operation.
     */
-  struct reset_account_operation : public base_operation {
+  struct reset_account_operation : public base_operation
+  {
     account_name_type reset_account;
     account_name_type account_to_reset;
     authority         new_owner_authority;
@@ -902,10 +927,10 @@ namespace hive { namespace protocol {
   };
 
   /**
-    * This operation allows 'account' owner to control which account has the power
-    * to execute the 'reset_account_operation' after 60 days.
+    * Never used, placeholder in case we need to add new operation.
     */
-  struct set_reset_account_operation : public base_operation {
+  struct set_reset_account_operation : public base_operation
+  {
     account_name_type account;
     account_name_type current_reset_account;
     account_name_type reset_account;
@@ -953,7 +978,8 @@ namespace hive { namespace protocol {
   };
 
 
-  struct transfer_to_savings_operation : public base_operation {
+  struct transfer_to_savings_operation : public base_operation
+  {
     account_name_type from;
     account_name_type to;
     asset             amount;
@@ -964,7 +990,8 @@ namespace hive { namespace protocol {
   };
 
 
-  struct transfer_from_savings_operation : public base_operation {
+  struct transfer_from_savings_operation : public base_operation
+  {
     account_name_type from;
     uint32_t          request_id = 0;
     account_name_type to;
@@ -976,7 +1003,8 @@ namespace hive { namespace protocol {
   };
 
 
-  struct cancel_transfer_from_savings_operation : public base_operation {
+  struct cancel_transfer_from_savings_operation : public base_operation
+  {
     account_name_type from;
     uint32_t          request_id = 0;
 
@@ -1000,6 +1028,10 @@ namespace hive { namespace protocol {
     asset             reward_hive;
     asset             reward_hbd;
     asset             reward_vests;
+
+    HIVE_asset get_reward_hive() const { return reward_hive; }
+    HBD_asset get_reward_hbd() const { return reward_hbd; }
+    VEST_asset get_reward_vests() const { return reward_vests; }
 
     void get_required_posting_authorities( flat_set< account_name_type >& a )const{ a.insert( account ); }
     void validate() const;
@@ -1038,6 +1070,8 @@ namespace hive { namespace protocol {
     account_name_type delegator;        ///< The account delegating vesting shares
     account_name_type delegatee;        ///< The account receiving vesting shares
     asset             vesting_shares;   ///< The amount of vesting shares delegated
+
+    VEST_asset get_vesting_shares() const { return vesting_shares; }
 
     void get_required_active_authorities( flat_set< account_name_type >& a ) const { a.insert( delegator ); }
     void validate() const;
