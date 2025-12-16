@@ -1979,6 +1979,9 @@ exchange_node_block_log_pruning_test:
     - public-runner-docker
 
 full_mainnet_replay_and_snapshot_manual:
+  # Manual CI job for full mainnet replay, snapshot, and pruning test
+  # Downloads block_log parts from termit server and tests pruning with split=2
+  # Override LAST_PART variable when triggering to control test size (default: 5 parts = 5M blocks)
   extends: .prepare_hived_data_5m
   stage: test
   needs:
@@ -1987,24 +1990,41 @@ full_mainnet_replay_and_snapshot_manual:
   timeout: 24h
   when: manual
   variables:
-    BLOCK_LOG_SOURCE_DIR: $BLOCK_LOG_SOURCE_DIR_5M
+    BLOCK_LOG_BASE_URL: "https://termit.pl.syncad.com/fbdownload"
+    BLOCK_LOG_PATH: "/files"
+    LAST_PART: "5"  # Number of 1M block parts to process (override when triggering manually)
+                    # Examples: 5 = 5M blocks (~17h), 10 = 10M blocks (~34h), 101 = full data
     CONFIG_INI_SOURCE: "$CI_PROJECT_DIR/docker/config_5M.ini"
     HIVE_NETWORK_TYPE: mainnet
   script:
     - test -n "$HIVED_IMAGE_NAME"
     - echo "Preparing test environment..."
-    - mkdir -p "$CI_PROJECT_DIR/data_generated_during_hive_replay"
     - mkdir -p "$CI_PROJECT_DIR/data_generated_during_hive_replay/block_logs"
-    - echo "Block log source directory: $BLOCK_LOG_SOURCE_DIR"
-    - ls -lh "$BLOCK_LOG_SOURCE_DIR"/block_log_part.???? || echo "No block log parts found"
-    - echo "Copying block log parts to test directory..."
-    - cp -v "$BLOCK_LOG_SOURCE_DIR"/block_log_part.???? "$CI_PROJECT_DIR/data_generated_during_hive_replay/block_logs/" || exit 1
-    - cp -v "$BLOCK_LOG_SOURCE_DIR"/block_log_part.????.artifacts "$CI_PROJECT_DIR/data_generated_during_hive_replay/block_logs/" || true
-    - echo "Block logs prepared, listing:"
+    - echo "Block log source: $BLOCK_LOG_BASE_URL (path=$BLOCK_LOG_PATH)"
+    - echo "Downloading parts: 0001-$(printf '%04d' $LAST_PART)"
+    - |
+      # Download needed parts (0001 to LAST_PART)
+      for i in $(seq 1 $LAST_PART); do
+        PART=$(printf "%04d" $i)
+        PART_FILE="block_log_part.$PART"
+        ARTIFACTS_FILE="$PART_FILE.artifacts"
+
+        echo "Downloading $PART_FILE..."
+        curl -k -f -o "$CI_PROJECT_DIR/data_generated_during_hive_replay/block_logs/$PART_FILE" \
+          "$BLOCK_LOG_BASE_URL/$PART_FILE?path=$BLOCK_LOG_PATH" || exit 1
+
+        echo "Downloading $ARTIFACTS_FILE..."
+        curl -k -f -o "$CI_PROJECT_DIR/data_generated_during_hive_replay/block_logs/$ARTIFACTS_FILE" \
+          "$BLOCK_LOG_BASE_URL/$ARTIFACTS_FILE?path=$BLOCK_LOG_PATH" || echo "  (artifacts not found, skipping)"
+      done
+
+      echo "Downloaded $(ls "$CI_PROJECT_DIR/data_generated_during_hive_replay/block_logs/" | wc -l) files"
+    - echo "Block logs downloaded, listing:"
     - ls -lh "$CI_PROJECT_DIR/data_generated_during_hive_replay/block_logs/"
     - echo "Running test..."
     - cd $CI_PROJECT_DIR/tests/integration
     - export BLOCK_LOG_SOURCE_DIR="$CI_PROJECT_DIR/data_generated_during_hive_replay/block_logs"
+    - export LAST_PART=$LAST_PART
     - ./test_pruned_block_log_on_full_mainnet_replay_and_snapshot_start.sh $HIVED_IMAGE_NAME $CI_PROJECT_DIR/data_generated_during_hive_replay
     - echo "Test completed, artifacts:"
     - ls -lah "$CI_PROJECT_DIR/data_generated_during_hive_replay"

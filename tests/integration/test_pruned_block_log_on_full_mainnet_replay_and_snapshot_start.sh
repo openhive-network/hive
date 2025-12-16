@@ -14,6 +14,14 @@ if [ "$#" -lt 2 ]; then
     echo "  hived_image_name      Docker image name for hived"
     echo "  data_dir              Working directory for test data"
     echo "  block_log_source_dir  Directory containing block_log parts (optional, uses BLOCK_LOG_SOURCE_DIR env var if not provided)"
+    echo ""
+    echo "Environment variables:"
+    echo "  LAST_PART             Override last part number to use (for testing with subset of data)"
+    echo "                        Example: LAST_PART=5 uses only parts 0001-0005 even if more are available"
+    echo ""
+    echo "Examples:"
+    echo "  $0 registry.gitlab.syncad.com/hive/hive:instance-1234 /tmp/test"
+    echo "  LAST_PART=5 $0 image:tag /tmp/test  # Test with only 5M blocks"
     exit 1
 fi
 
@@ -41,10 +49,23 @@ echo "=========================="
 # Detect available block_log parts and calculate last block number
 echo "Detecting block_log parts in $BLOCK_LOG_SOURCE_DIR..."
 
-LAST_PART=$(get_last_part_number_from_dir "$BLOCK_LOG_SOURCE_DIR")
+DETECTED_LAST_PART=$(get_last_part_number_from_dir "$BLOCK_LOG_SOURCE_DIR")
 if [ $? -ne 0 ]; then
     echo "ERROR: Failed to detect block_log parts"
     exit 1
+fi
+
+# Allow override via environment variable for testing with subset of data
+LAST_PART=${LAST_PART:-$DETECTED_LAST_PART}
+
+if [ "$LAST_PART" -gt "$DETECTED_LAST_PART" ]; then
+    echo "ERROR: LAST_PART ($LAST_PART) exceeds available parts ($DETECTED_LAST_PART)"
+    exit 1
+fi
+
+echo "Detected parts: 0001-$(printf "%04d" $DETECTED_LAST_PART)"
+if [ "$LAST_PART" -ne "$DETECTED_LAST_PART" ]; then
+    echo "Using subset: 0001-$(printf "%04d" $LAST_PART) (LAST_PART override)"
 fi
 
 LAST_BLOCK_NUMBER=$((LAST_PART * 1000000))
