@@ -50,10 +50,9 @@ void register_witness_evaluators( evaluator_registry<operation>& registry )
   registry.register_evaluator< witness_block_approve_evaluator  >();
 }
 
-template< bool force_canon >
 void copy_legacy_chain_properties( chain_properties& dest, const legacy_chain_properties& src )
 {
-  dest.account_creation_fee = src.account_creation_fee.to_asset< force_canon >();
+  dest.account_creation_fee = src.get_account_creation_fee();
   dest.maximum_block_size = src.maximum_block_size;
   dest.hbd_interest_rate = src.hbd_interest_rate;
 }
@@ -65,44 +64,35 @@ void witness_update_evaluator::do_apply( const witness_update_operation& o )
   if ( _db.has_hardfork( HIVE_HARDFORK_0_14__410 ) )
   {
     FC_ASSERT( o.props.account_creation_fee.symbol.is_canon() );
-    if( _db.has_hardfork( HIVE_HARDFORK_0_20__2651 ) )
-    {
-      FC_TODO( "Move to validate() after HF20" );
-      FC_ASSERT( o.props.account_creation_fee.amount <= HIVE_MAX_ACCOUNT_CREATION_FEE, "account_creation_fee greater than maximum account creation fee" );
-    }
   }
   else if( !o.props.account_creation_fee.symbol.is_canon() )
   {
-    // after HF, above check can be moved to validate() if reindex doesn't show this warning
+    // there are 8 instances of non-canon fee symbol in mainnet, so the check can't be in validate()
     push_virtual_operation( _db, system_warning_operation( FC_LOG_MESSAGE( warn,
       "Wrong fee symbol in block ${b}", ( "b", _db.head_block_num() + 1 ) ).get_message() ) );
-  }
-
-  FC_TODO( "Check and move this to validate after HF 20" );
-  if( _db.has_hardfork( HIVE_HARDFORK_0_20__2642 ) )
-  {
-    FC_ASSERT( o.props.maximum_block_size <= HIVE_MAX_BLOCK_SIZE, "Max block size cannot be more than 2MiB" );
   }
 
   const auto& by_witness_name_idx = _db.get_index< witness_index >().indices().get< by_name >();
   auto wit_itr = by_witness_name_idx.find( o.owner );
   if( wit_itr != by_witness_name_idx.end() )
   {
-    _db.modify( *wit_itr, [&]( witness_object& w ) {
+    _db.modify( *wit_itr, [&]( witness_object& w )
+    {
       from_string( w.url, o.url );
-      w.signing_key        = o.block_signing_key;
-      copy_legacy_chain_properties< false >( w.props, o.props );
-    });
+      w.signing_key = o.block_signing_key;
+      copy_legacy_chain_properties( w.props, o.props );
+    } );
   }
   else
   {
-    _db.create< witness_object >( [&]( witness_object& w ) {
-      w.owner              = o.owner;
+    _db.create< witness_object >( [&]( witness_object& w )
+    {
+      w.owner = o.owner;
       from_string( w.url, o.url );
-      w.signing_key        = o.block_signing_key;
-      w.created            = _db.head_block_time();
-      copy_legacy_chain_properties< false >( w.props, o.props );
-    });
+      w.signing_key = o.block_signing_key;
+      w.created = _db.head_block_time();
+      copy_legacy_chain_properties( w.props, o.props );
+    } );
   }
 }
 
@@ -144,61 +134,41 @@ void witness_set_properties_evaluator::do_apply( const witness_set_properties_op
   flags.account_creation_changed = itr != o.props.end();
   if( flags.account_creation_changed )
   {
-    fc::raw::unpack_from_vector( itr->second, props.account_creation_fee );
-    if( _db.has_hardfork( HIVE_HARDFORK_0_20__2651 ) )
-    {
-      FC_TODO( "Move to validate() after HF20" );
-      FC_ASSERT( props.account_creation_fee.amount <= HIVE_MAX_ACCOUNT_CREATION_FEE, "account_creation_fee greater than maximum account creation fee" );
-    }
+    asset fee;
+    fc::raw::unpack_from_vector( itr->second, fee );
+    props.account_creation_fee = fee;
   }
 
   itr = o.props.find( "maximum_block_size" );
   flags.max_block_changed = itr != o.props.end();
   if( flags.max_block_changed )
-  {
     fc::raw::unpack_from_vector( itr->second, props.maximum_block_size );
-    FC_TODO( "Check and move this to validate after HF 28" );
-    if( _db.is_in_control() || _db.has_hardfork( HIVE_HARDFORK_1_28_MAX_BLOCK_SIZE ) )
-    {
-      FC_ASSERT( props.maximum_block_size <= HIVE_MAX_BLOCK_SIZE, "Max block size cannot be more than 2MiB" );
-    }
-  }
 
   itr = o.props.find( "sbd_interest_rate" );
   if(itr == o.props.end() && _db.has_hardfork(HIVE_HARDFORK_1_24))
     itr = o.props.find( "hbd_interest_rate" );
-
   flags.hbd_interest_changed = itr != o.props.end();
   if( flags.hbd_interest_changed )
-  {
     fc::raw::unpack_from_vector( itr->second, props.hbd_interest_rate );
-  }
 
   itr = o.props.find( "account_subsidy_budget" );
   flags.account_subsidy_budget_changed = itr != o.props.end();
   if( flags.account_subsidy_budget_changed )
-  {
     fc::raw::unpack_from_vector( itr->second, props.account_subsidy_budget );
-  }
 
   itr = o.props.find( "account_subsidy_decay" );
   flags.account_subsidy_decay_changed = itr != o.props.end();
   if( flags.account_subsidy_decay_changed )
-  {
     fc::raw::unpack_from_vector( itr->second, props.account_subsidy_decay );
-  }
 
   itr = o.props.find( "new_signing_key" );
   flags.key_changed = itr != o.props.end();
   if( flags.key_changed )
-  {
     fc::raw::unpack_from_vector( itr->second, signing_key );
-  }
 
   itr = o.props.find( "sbd_exchange_rate" );
   if(itr == o.props.end() && _db.has_hardfork(HIVE_HARDFORK_1_24))
     itr = o.props.find("hbd_exchange_rate");
-
   flags.hbd_exchange_changed = itr != o.props.end();
   if( flags.hbd_exchange_changed )
   {
@@ -209,53 +179,30 @@ void witness_set_properties_evaluator::do_apply( const witness_set_properties_op
   itr = o.props.find( "url" );
   flags.url_changed = itr != o.props.end();
   if( flags.url_changed )
-  {
     fc::raw::unpack_from_vector< std::string >( itr->second, url );
-  }
 
   _db.modify( witness, [&]( witness_object& w )
   {
     if( flags.account_creation_changed )
-    {
       w.props.account_creation_fee = props.account_creation_fee;
-    }
-
     if( flags.max_block_changed )
-    {
       w.props.maximum_block_size = props.maximum_block_size;
-    }
-
     if( flags.hbd_interest_changed )
-    {
       w.props.hbd_interest_rate = props.hbd_interest_rate;
-    }
-
     if( flags.account_subsidy_budget_changed )
-    {
       w.props.account_subsidy_budget = props.account_subsidy_budget;
-    }
-
     if( flags.account_subsidy_decay_changed )
-    {
       w.props.account_subsidy_decay = props.account_subsidy_decay;
-    }
-
     if( flags.key_changed )
-    {
       w.signing_key = signing_key;
-    }
-
     if( flags.hbd_exchange_changed )
     {
       w.hbd_exchange_rate = hbd_exchange_rate;
       w.last_hbd_exchange_update = last_hbd_exchange_update;
     }
-
     if( flags.url_changed )
-    {
       from_string( w.url, url );
-    }
-  });
+  } );
 }
 
 void account_witness_proxy_evaluator::do_apply( const account_witness_proxy_operation& o )
@@ -324,56 +271,54 @@ void account_witness_vote_evaluator::do_apply( const account_witness_vote_operat
   const auto& by_account_witness_idx = _db.get_index< witness_vote_index >().indices().get< by_account_witness >();
   auto itr = by_account_witness_idx.find( boost::make_tuple( voter.get_name(), witness.owner ) );
 
-  if( itr == by_account_witness_idx.end() ) {
+  if( itr == by_account_witness_idx.end() )
+  {
     FC_ASSERT( o.approve, "Vote doesn't exist, user must indicate a desire to approve witness." );
 
-    if ( _db.has_hardfork( HIVE_HARDFORK_0_2 ) )
+    if( _db.has_hardfork( HIVE_HARDFORK_0_2 ) ) // a49e13be78bf337c95967418d6ead76565515385 pushed fminerten above limit
+      FC_ASSERT( voter.witnesses_voted_for < HIVE_MAX_ACCOUNT_WITNESS_VOTES, "Account has voted for too many witnesses." );
+
+    _db.create<witness_vote_object>( [&]( witness_vote_object& v )
     {
-      FC_ASSERT( voter.witnesses_voted_for < HIVE_MAX_ACCOUNT_WITNESS_VOTES, "Account has voted for too many witnesses." ); // TODO: Remove after hardfork 2
+      v.witness = witness.owner;
+      v.account = voter.get_name();
+    } );
 
-      _db.create<witness_vote_object>( [&]( witness_vote_object& v ) {
-          v.witness = witness.owner;
-          v.account = voter.get_name();
-      });
-
-      if( _db.has_hardfork( HIVE_HARDFORK_0_3 ) ) {
-        _db.adjust_witness_vote( witness, voter.get_governance_vote_power() );
-      }
-      else {
-        _db.adjust_proxied_witness_votes( voter, voter.get_governance_vote_power() );
-      }
-
-    } else {
-
-      _db.create<witness_vote_object>( [&]( witness_vote_object& v ) {
-          v.witness = witness.owner;
-          v.account = voter.get_name();
-      });
-      _db.modify( witness, [&]( witness_object& w ) {
-          w.votes += voter.get_governance_vote_power();
-      });
-
+    if( _db.has_hardfork( HIVE_HARDFORK_0_3 ) )
+      _db.adjust_witness_vote( witness, voter.get_governance_vote_power() );
+    else if( _db.has_hardfork( HIVE_HARDFORK_0_2 ) )
+      _db.adjust_proxied_witness_votes( voter, voter.get_governance_vote_power() );
+    else
+    {
+      _db.modify( witness, [&]( witness_object& w )
+      {
+        w.votes += voter.get_governance_vote_power();
+      } );
     }
-    _db.modify( voter, [&]( account_object& a ) {
+    _db.modify( voter, [&]( account_object& a )
+    {
       a.witnesses_voted_for++;
-    });
-
-  } else {
+    } );
+  }
+  else
+  {
     FC_ASSERT( !o.approve, "Vote currently exists, user must indicate a desire to reject witness." );
 
-    if (  _db.has_hardfork( HIVE_HARDFORK_0_2 ) ) {
-      if( _db.has_hardfork( HIVE_HARDFORK_0_3 ) )
-        _db.adjust_witness_vote( witness, -voter.get_governance_vote_power() );
-      else
-        _db.adjust_proxied_witness_votes( voter, -voter.get_governance_vote_power() );
-    } else  {
-      _db.modify( witness, [&]( witness_object& w ) {
+    if( _db.has_hardfork( HIVE_HARDFORK_0_3 ) )
+      _db.adjust_witness_vote( witness, -voter.get_governance_vote_power() );
+    else if( _db.has_hardfork( HIVE_HARDFORK_0_2 ) )
+      _db.adjust_proxied_witness_votes( voter, -voter.get_governance_vote_power() );
+    else
+    {
+      _db.modify( witness, [&]( witness_object& w )
+      {
         w.votes -= voter.get_governance_vote_power();
-      });
+      } );
     }
-    _db.modify( voter, [&]( account_object& a ) {
+    _db.modify( voter, [&]( account_object& a )
+    {
       a.witnesses_voted_for--;
-    });
+    } );
     _db.remove( *itr );
   }
 }
@@ -497,50 +442,47 @@ void pow_apply( database& db, Operation o )
     const auto& witness_by_work = db.get_index<witness_index>().indices().get<by_work>();
     auto work_itr = witness_by_work.find( o.work.work );
     if( work_itr != witness_by_work.end() )
-    {
-        FC_ASSERT( !"DUPLICATE WORK DISCOVERED", "${w}  ${witness}",("w",o)("wit",*work_itr) );
-    }
+      FC_ASSERT( !"DUPLICATE WORK DISCOVERED", "${w}  ${witness}",("w",o)("wit",*work_itr) );
   }
 
   const auto& accounts_by_name = db.get_index<account_index>().indices().get<by_name>();
 
-  auto itr = accounts_by_name.find(o.get_worker_account());
+  auto itr = accounts_by_name.find( o.worker_account );
   if(itr == accounts_by_name.end())
   {
-    const auto& new_account = create_account( db, o.get_worker_account(), o.work.worker, dgp.time, db.get_current_timestamp(),
-      true /*mined*/, asset( 0, HIVE_SYMBOL ) );
+    const auto& new_account = create_account( db, o.worker_account, o.work.worker, dgp.time, db.get_current_timestamp(),
+      true /*mined*/, HIVE_asset( 0 ) );
     // ^ empty recovery account parameter means highest voted witness at time of recovery
 
 #ifdef COLLECT_ACCOUNT_METADATA
     db.create< account_metadata_object >( [&]( account_metadata_object& meta )
     {
       meta.account = new_account.get_id();
-    });
+    } );
 #else
     FC_UNUSED( new_account );
 #endif
 
     db.create< account_authority_object >( [&]( account_authority_object& auth )
     {
-      auth.account = o.get_worker_account();
-      auth.owner = authority( 1, o.work.worker, 1);
+      auth.account = o.worker_account;
+      auth.owner = authority( 1, o.work.worker, 1 );
       auth.active = auth.owner;
       auth.posting = auth.owner;
-    });
+    } );
 
-    push_virtual_operation( db, account_created_operation( new_account.get_name(), o.get_worker_account(), asset(0, VESTS_SYMBOL), asset(0, VESTS_SYMBOL) ) );
+    push_virtual_operation( db, account_created_operation( new_account.get_name(), o.worker_account, VEST_asset( 0 ), VEST_asset( 0 ) ) );
   }
 
-  const auto& worker_account = db.get_account( o.get_worker_account() ); // verify it exists
+  const auto& worker_account = db.get_account( o.worker_account ); // verify it exists
 #ifndef HIVE_CONVERTER_BUILD // disable these checks, since there is a 2nd auth applied on all the accs in the alternate chain generated using hive blockchain converter
-  const auto& worker_auth = db.get< account_authority_object, by_account >( o.get_worker_account() );
+  const auto& worker_auth = db.get< account_authority_object, by_account >( o.worker_account );
   FC_ASSERT( worker_auth.active.num_auths() == 1, "Miners can only have one key authority. ${a}", ("a",worker_auth.active) );
   FC_ASSERT( worker_auth.active.key_auths.size() == 1, "Miners may only have one key authority." );
   FC_ASSERT( worker_auth.active.key_auths.begin()->first == o.work.worker, "Work must be performed by key that signed the work." );
 #endif
   FC_ASSERT( o.block_id == db.head_block_id(), "pow not for last block" );
-  if( db.has_hardfork( HIVE_HARDFORK_0_13__256 ) )
-    FC_ASSERT( worker_account.last_account_update < db.head_block_time(), "Worker account must not have updated their account this block." );
+  // there used to be limit preventing pow operation following worker account update in the same block (since HF13)
 
 #ifndef HIVE_CONVERTER_BUILD // due to the optimization issues with blockchain_converter performing proof of work for every pow operations, this check is applied only in mainnet
   fc::sha256 target = db.get_pow_target();
@@ -552,27 +494,31 @@ void pow_apply( database& db, Operation o )
   {
     p.total_pow++; // make sure this doesn't break anything...
     p.num_pow_witnesses++;
-  });
+  } );
 
 
   const witness_object* cur_witness = db.find_witness( worker_account.get_name() );
-  if( cur_witness ) {
+  if( cur_witness )
+  {
     FC_ASSERT( cur_witness->pow_worker == 0, "This account is already scheduled for pow block production." );
-    db.modify(*cur_witness, [&]( witness_object& w ){
-        copy_legacy_chain_properties< true >( w.props, o.props );
-        w.pow_worker        = dgp.total_pow;
-        w.last_work         = o.work.work;
-    });
-  } else {
+    db.modify(*cur_witness, [&]( witness_object& w )
+    {
+      copy_legacy_chain_properties( w.props, o.props );
+      w.pow_worker = dgp.total_pow;
+      w.last_work = o.work.work;
+    } );
+  }
+  else
+  {
     db.create<witness_object>( [&]( witness_object& w )
     {
-        w.owner             = o.get_worker_account();
-        copy_legacy_chain_properties< true >( w.props, o.props );
-        w.created           = db.head_block_time();
-        w.signing_key       = o.work.worker;
-        w.pow_worker        = dgp.total_pow;
-        w.last_work         = o.work.work;
-    });
+      w.owner = o.worker_account;
+      copy_legacy_chain_properties( w.props, o.props );
+      w.created = db.head_block_time();
+      w.signing_key = o.work.worker;
+      w.pow_worker = dgp.total_pow;
+      w.last_work = o.work.work;
+    } );
   }
   /// POW reward depends upon whether we are before or after MINER_VOTING kicks in
   asset pow_reward = db.get_pow_reward();
@@ -649,14 +595,14 @@ void pow2_evaluator::do_apply( const pow2_operation& o )
   {
     FC_ASSERT( o.new_owner_key.valid(), "New owner key is not valid." );
     const auto& new_account = create_account( db, worker_account, *o.new_owner_key, dgp.time, _db.get_current_timestamp(),
-      true /*mined*/, asset( 0, HIVE_SYMBOL ) );
+      true /*mined*/, HIVE_asset( 0 ) );
     // ^ empty recovery account parameter means highest voted witness at time of recovery
 
 #ifdef COLLECT_ACCOUNT_METADATA
     db.create< account_metadata_object >( [&]( account_metadata_object& meta )
     {
       meta.account = new_account.get_id();
-    });
+    } );
 #else
     FC_UNUSED( new_account );
 #endif
@@ -664,21 +610,21 @@ void pow2_evaluator::do_apply( const pow2_operation& o )
     db.create< account_authority_object >( [&]( account_authority_object& auth )
     {
       auth.account = worker_account;
-      auth.owner = authority( 1, *o.new_owner_key, 1);
+      auth.owner = authority( 1, *o.new_owner_key, 1 );
       auth.active = auth.owner;
       auth.posting = auth.owner;
-    });
+    } );
 
     db.create<witness_object>( [&]( witness_object& w )
     {
-        w.owner             = worker_account;
-        copy_legacy_chain_properties< true >( w.props, o.props );
-        w.created           = db.head_block_time();
-        w.signing_key       = *o.new_owner_key;
-        w.pow_worker        = dgp.total_pow;
-    });
+      w.owner = worker_account;
+      copy_legacy_chain_properties( w.props, o.props );
+      w.created = db.head_block_time();
+      w.signing_key = *o.new_owner_key;
+      w.pow_worker = dgp.total_pow;
+    } );
 
-    push_virtual_operation( _db, account_created_operation( new_account.get_name(), worker_account, asset(0, VESTS_SYMBOL), asset(0, VESTS_SYMBOL) ) );
+    push_virtual_operation( _db, account_created_operation( new_account.get_name(), worker_account, VEST_asset( 0 ), VEST_asset( 0 ) ) );
   }
   else
   {
@@ -688,9 +634,9 @@ void pow2_evaluator::do_apply( const pow2_operation& o )
     FC_ASSERT( cur_witness->pow_worker == 0 && "This account is already scheduled for pow block production." );
     db.modify(*cur_witness, [&]( witness_object& w )
     {
-        copy_legacy_chain_properties< true >( w.props, o.props );
-        w.pow_worker        = dgp.total_pow;
-    });
+      copy_legacy_chain_properties( w.props, o.props );
+      w.pow_worker = dgp.total_pow;
+    } );
   }
 
   if( !db.has_hardfork( HIVE_HARDFORK_0_16__551) )
@@ -707,9 +653,13 @@ void pow2_evaluator::do_apply( const pow2_operation& o )
 
 void feed_publish_evaluator::do_apply( const feed_publish_operation& o )
 {
-  if( _db.has_hardfork( HIVE_HARDFORK_0_20__409 ) )
+  if( _db.has_hardfork( HIVE_HARDFORK_0_20__409 ) ) // f87cc43e41e33d7d125f6f63bb9d2dcfc900ba9b - example of reverted feed
+  {
+    // ABW: unfortunately existence of reversed feed means we won't be able to use "tiny price" for feeds;
+    // we can't normalize it either, because it would change price sorting, therefore also median price
     FC_ASSERT( is_asset_type( o.exchange_rate.base, HBD_SYMBOL ) && is_asset_type( o.exchange_rate.quote, HIVE_SYMBOL ),
-        "Price feed must be a HBD/HIVE price" );
+      "Price feed must be a HBD/HIVE price" );
+  }
 
   const auto& witness = _db.get_witness( o.publisher );
   _db.modify( witness, [&]( witness_object& w )

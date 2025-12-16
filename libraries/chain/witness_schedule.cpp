@@ -69,7 +69,7 @@ void update_median_witness_props(database& db, const witness_schedule_object& ws
   {
     return a->props.account_creation_fee.amount < b->props.account_creation_fee.amount;
   } );
-  asset median_account_creation_fee = active[active.size()/2]->props.account_creation_fee;
+  HIVE_asset median_account_creation_fee = active[active.size()/2]->props.account_creation_fee;
 
   /// sort them by maximum_block_size
   std::sort( active.begin(), active.end(), [&]( const witness_object* a, const witness_object* b )
@@ -510,7 +510,7 @@ void update_witness_schedule(database& db)
         } );
         db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& obj )
         {
-            obj.num_pow_witnesses--;
+          obj.num_pow_witnesses--;
         } );
       }
     }
@@ -528,13 +528,6 @@ void update_witness_schedule(database& db)
 
     db.modify( wso, [&]( witness_schedule_object& _wso )
     {
-    /*
-      _wso.current_shuffled_witnesses.clear();
-      _wso.current_shuffled_witnesses.reserve( active_witnesses.size() );
-
-      for( const string& w : active_witnesses )
-        _wso.current_shuffled_witnesses.push_back( w );
-        */
       // active witnesses has exactly HIVE_MAX_WITNESSES elements, asserted above
       for( size_t i = 0; i < active_witnesses.size(); i++ )
       {
