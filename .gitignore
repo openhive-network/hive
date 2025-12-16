@@ -140,6 +140,7 @@ build_*/
 /.vs
 /out/isenseconfig/Linux-Release
 node_modules
+build_wheel.env
 
 # various log and benchmark files
 advanced_benchmark.json
