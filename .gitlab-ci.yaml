@@ -462,8 +462,19 @@ mirrornet_replay_test:
 
 chain_test:
   extends: .unit_tests_base
+  parallel:
+    matrix:
+      - TEST_SUITE:
+          - "serialization_tests undo_tests"
+          - "basic_tests operation_time_tests"
+          - "proposal_tests"
+          - "operation_tests"
+          - "* !serialization_tests !undo_tests !basic_tests !operation_time_tests !proposal_tests !operation_tests"
   script:
-    - timeout 30m ./hived-testnet-binaries/chain_test --log_format=JUNIT --log_sink=chain_test_results.xml --log_level=error > chain_test.log 2>&1
+    - TESTS=$(echo "$TEST_SUITE" | tr ' ' ',')
+    - 'echo "DEBUG - Raw: $TEST_SUITE"'
+    - 'echo "DEBUG - Converted: $TESTS"'
+    - timeout 20m ./hived-testnet-binaries/chain_test --run_test="$TESTS" --log_format=JUNIT --log_sink=chain_test_results.xml --log_level=error > chain_test.log 2>&1
   artifacts:
     reports:
       junit: chain_test_results.xml
