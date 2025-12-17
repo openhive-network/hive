@@ -88,20 +88,25 @@ void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )
   }
 
   // Get the minimum between the current RC and the maximum delegable RC, so that eve can't f.e. re-delegate delegated RC
-  int64_t from_delegable_rc = std::min( from_account.get_maximum_rc( true ).value, from_account.get_rc_manabar().current_mana );
+  const auto& from_mrc = _db.get< manabars_rc_object, by_account_id >( from_account.get_id() );
+  const auto& from_assets = _db.get< assets_object, by_account_id >( from_account.get_id() );
+  const auto& from_time = _db.get< time_object, by_account_id >( from_account.get_id() );
+
+  // Get the minimum between the current RC and the maximum delegable RC, so that eve can't f.e. re-delegate delegated RC
+  int64_t from_delegable_rc = std::min( from_account.get_maximum_rc( from_mrc, from_assets, from_time, true ).value, from_mrc.get_rc_manabar().current_mana );
   // We do this assert at the end instead of in the loop because depending on the ordering of the accounts the delta can start off as from_delegable_rc < delta_total and then be valid as some delegations may get modified to take less rc
   FC_ASSERT( from_delegable_rc >= delta_total, "Account ${a} has insufficient RC (have ${h}, needs ${n})", ( "a", op.from )( "h", from_delegable_rc )( "n", delta_total ) );
 
-  _db.modify< account_object >( from_account, [&]( account_object& acc )
+  _db.modify< manabars_rc_object >( from_mrc, [&]( manabars_rc_object& mrc )
   {
     // Do not give mana back when deleting/reducing rc delegation (note that regular delegations behave differently)
     if( delta_total > 0 )
     {
-      acc.get_rc_manabar().current_mana -= delta_total;
+      mrc.get_rc_manabar().current_mana -= delta_total;
       // since delta_total is not greater than from_delegable_rc which is not greater than current_mana, we know it can't dive into negative
     }
-    acc.set_delegated_rc( acc.get_delegated_rc() + delta_total );
-    acc.set_last_max_rc( acc.get_maximum_rc() );
+    mrc.set_delegated_rc( mrc.get_delegated_rc() + delta_total );
+    mrc.set_last_max_rc( from_account.get_maximum_rc( mrc, from_assets, from_time ) );
   } );
 
   _db.rc.handle_custom_op_usage( op, gpo.time ); //we have to handle it here because later we'd have to reinterpret json into concrete custom op
