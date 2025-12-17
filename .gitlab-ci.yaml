@@ -2278,6 +2278,8 @@ exchange_node_block_log_pruning_test:
   needs:
     - job: prepare_hived_image
       artifacts: true
+  variables:
+    HIVE_API_NODE: "https://api.hive.blog"
   script:
     - cd tests/integration
     - timeout 30m ./test_exchange_node_block_log_pruning.sh $HIVED_IMAGE_NAME $CI_PROJECT_DIR/data_generated_during_exchange_node_pruning_test
@@ -2286,5 +2288,9 @@ exchange_node_block_log_pruning_test:
       - $CI_PROJECT_DIR/data_generated_during_exchange_node_pruning_test/
     when: always
     expire_in: 1 week
+  rules:
+  - if: $QUICK_TEST == "true"
+    when: never
+  - when: on_success
   tags:
     - public-runner-docker

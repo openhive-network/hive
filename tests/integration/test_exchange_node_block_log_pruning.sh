@@ -120,7 +120,7 @@ mkdir -vp "$DATA_DIR"
 echo "Copy example config.ini to data dir"
 cp "$CI_PROJECT_DIR/doc/example_config.ini" "$DATA_DIR/config.ini"
 
-echo "Sapshot will be stored in: ${DATA_DIR}/snapshot"
+echo "Snapshot will be stored in: ${DATA_DIR}/snapshot"
 
 HIVED_IMAGE_TAG="${HIVED_IMAGE_NAME##*:}"
 

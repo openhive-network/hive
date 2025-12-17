@@ -6,7 +6,9 @@ set -euo pipefail
 get_head_block_number() {
   local block_num response
 
-  response=$(curl -s --data '{"jsonrpc":"2.0", "method":"database_api.get_dynamic_global_properties", "id":1}' https://api.hive.blog)
+  local api_node="${HIVE_API_NODE:-https://api.hive.blog}"
+
+  response=$(curl -s --data '{"jsonrpc":"2.0", "method":"database_api.get_dynamic_global_properties", "id":1}' "$api_node")
   block_num=$(echo "$response" | sed -n 's/.*"head_block_number": *\([0-9]*\).*/\1/p')
 
   echo "$block_num"
