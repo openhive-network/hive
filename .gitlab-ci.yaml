@@ -1390,6 +1390,21 @@ deploy_beekeeper_wasm_dev_package:
     - if: $QUICK_TEST == "true"
       when: never
     - when: on_success
+
+  before_script:
+    - !reference [.npm_based_job_base, before_script]
+    # Fix BUILT_PACKAGE_PATH to use current job's workspace (path contains build job's workspace)
+    - |
+      if [[ -n "$BUILT_PACKAGE_PATH" && "$BUILT_PACKAGE_PATH" == /builds/* ]]; then
+        RELATIVE_PATH="${BUILT_PACKAGE_PATH#*/hive/hive/}"
+        PACKAGE_TGZ_PATH="${CI_PROJECT_DIR}/${RELATIVE_PATH}"
+        echo "Transformed PACKAGE_TGZ_PATH to: $PACKAGE_TGZ_PATH"
+      fi
+    - echo -e "\e[0Ksection_start:$(date +%s):package_tgz_unpack[collapsed=true]\r\e[0KAttempting to unpack ${PACKAGE_TGZ_PATH}"
+    - cd "${CI_PROJECT_DIR}"
+    - tar -xf "${PACKAGE_TGZ_PATH}" -C "${SOURCE_DIR}" --strip-components=1
+    - echo -e "\e[0Ksection_end:$(date +%s):package_tgz_unpack\r\e[0K"
+
   variables:
     SOURCE_DIR: "${CI_PROJECT_DIR}/programs/beekeeper/beekeeper_wasm"
     PACKAGE_TGZ_PATH: "${BUILT_PACKAGE_PATH}"
@@ -1412,6 +1427,21 @@ deploy_beekeeper_wasm_production_public_npm:
     - if: $QUICK_TEST == "true"
       when: never
     - when: on_success
+
+  before_script:
+    - !reference [.npm_based_job_base, before_script]
+    # Fix BUILT_PACKAGE_PATH to use current job's workspace (path contains build job's workspace)
+    - |
+      if [[ -n "$BUILT_PACKAGE_PATH" && "$BUILT_PACKAGE_PATH" == /builds/* ]]; then
+        RELATIVE_PATH="${BUILT_PACKAGE_PATH#*/hive/hive/}"
+        PACKAGE_TGZ_PATH="${CI_PROJECT_DIR}/${RELATIVE_PATH}"
+        echo "Transformed PACKAGE_TGZ_PATH to: $PACKAGE_TGZ_PATH"
+      fi
+    - echo -e "\e[0Ksection_start:$(date +%s):package_tgz_unpack[collapsed=true]\r\e[0KAttempting to unpack ${PACKAGE_TGZ_PATH}"
+    - cd "${CI_PROJECT_DIR}"
+    - tar -xf "${PACKAGE_TGZ_PATH}" -C "${SOURCE_DIR}" --strip-components=1
+    - echo -e "\e[0Ksection_end:$(date +%s):package_tgz_unpack\r\e[0K"
+
   variables:
     SOURCE_DIR: "${CI_PROJECT_DIR}/programs/beekeeper/beekeeper_wasm"
     NPM_PUBLISH_TOKEN: "$INTERNAL_HIDDEN_PUBLISH_TOKEN"
@@ -1435,6 +1465,26 @@ deploy-wax-spec-dev-package:
     - if: $QUICK_TEST == "true"
       when: never
     - when: on_success
+
+  before_script:
+    - !reference [.npm_based_job_base, before_script]
+    # Fix BUILT_PACKAGE_PATH to use current job's workspace (path contains build job's workspace)
+    - |
+      if [[ -n "$BUILT_PACKAGE_PATH" && "$BUILT_PACKAGE_PATH" == /builds/* ]]; then
+        RELATIVE_PATH="${BUILT_PACKAGE_PATH#*/hive/hive/}"
+        PACKAGE_TGZ_PATH="${CI_PROJECT_DIR}/${RELATIVE_PATH}"
+        echo "Transformed PACKAGE_TGZ_PATH to: $PACKAGE_TGZ_PATH"
+      fi
+      if [[ -n "$PACKAGE_SOURCE_DIR" && "$PACKAGE_SOURCE_DIR" == /builds/* ]]; then
+        RELATIVE_PATH="${PACKAGE_SOURCE_DIR#*/hive/hive/}"
+        SOURCE_DIR="${CI_PROJECT_DIR}/${RELATIVE_PATH}"
+        echo "Transformed SOURCE_DIR to: $SOURCE_DIR"
+      fi
+    - echo -e "\e[0Ksection_start:$(date +%s):package_tgz_unpack[collapsed=true]\r\e[0KAttempting to unpack ${PACKAGE_TGZ_PATH}"
+    - cd "${CI_PROJECT_DIR}"
+    - tar -xf "${PACKAGE_TGZ_PATH}" -C "${SOURCE_DIR}" --strip-components=1
+    - echo -e "\e[0Ksection_end:$(date +%s):package_tgz_unpack\r\e[0K"
+
   variables:
     SOURCE_DIR: "${PACKAGE_SOURCE_DIR}"
     PACKAGE_TGZ_PATH: "${BUILT_PACKAGE_PATH}"
@@ -1458,6 +1508,21 @@ deploy-wax-spec-production-public-npm:
     NPM_PACKAGE_NAME: "wax-api-jsonrpc"
     SOURCE_DIR: "${PACKAGE_SOURCE_DIR}"
     PACKAGE_TGZ_PATH: "${BUILT_PACKAGE_PATH}"
+  before_script:
+    - !reference [.npm_based_job_base, before_script]
+    # Fix BUILT_PACKAGE_PATH and PACKAGE_SOURCE_DIR to use current job's workspace
+    # These paths contain the build job's workspace which differs from this job's workspace
+    - |
+      if [[ -n "$BUILT_PACKAGE_PATH" && "$BUILT_PACKAGE_PATH" == /builds/* ]]; then
+        RELATIVE_PATH="${BUILT_PACKAGE_PATH#*/hive/hive/}"
+        PACKAGE_TGZ_PATH="${CI_PROJECT_DIR}/${RELATIVE_PATH}"
+        echo "Transformed PACKAGE_TGZ_PATH to: $PACKAGE_TGZ_PATH"
+      fi
+      if [[ -n "$PACKAGE_SOURCE_DIR" && "$PACKAGE_SOURCE_DIR" == /builds/* ]]; then
+        RELATIVE_PATH="${PACKAGE_SOURCE_DIR#*/hive/hive/}"
+        SOURCE_DIR="${CI_PROJECT_DIR}/${RELATIVE_PATH}"
+        echo "Transformed SOURCE_DIR to: $SOURCE_DIR"
+      fi
   needs:
     - job: deploy-wax-spec-dev-package
     - job: test-wax-spec-package
