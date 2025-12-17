@@ -1426,6 +1426,8 @@ deploy_beekeeper_wasm_production_public_npm:
   rules:
     - if: $QUICK_TEST == "true"
       when: never
+    - if: $CI_COMMIT_REF_PROTECTED != "true"
+      when: never
     - when: on_success
 
   before_script:
@@ -1502,6 +1504,8 @@ deploy-wax-spec-production-public-npm:
   stage: publish
   rules:
     - if: $QUICK_TEST == "true"
+      when: never
+    - if: $CI_COMMIT_REF_PROTECTED != "true"
       when: never
     - when: on_success
   variables:
