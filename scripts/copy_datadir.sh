@@ -11,6 +11,7 @@ CACHE_NFS_PATH="${CACHE_NFS_PATH:-/nfs/ci-cache}"
 
 # Fix pg_tblspc symlinks to point to the correct tablespace location
 # PostgreSQL stores tablespace symlinks with absolute paths, which break when data is copied
+# Uses relative symlinks so they work both on the host AND inside Docker containers
 fix_pg_tblspc_symlinks() {
     local datadir="$1"
     local pg_tblspc="${datadir}/haf_db_store/pgdata/pg_tblspc"
@@ -25,10 +26,13 @@ fix_pg_tblspc_symlinks() {
             local target
             target=$(readlink "$link")
             # Fix if symlink contains 'tablespace' (relative or wrong absolute path)
+            # Use relative path so it works inside Docker containers too
             if [[ "$target" == *"tablespace"* ]] && [[ -d "$tablespace" ]]; then
-                echo "Fixing pg_tblspc symlink: $(basename "$link") -> $tablespace"
+                # Relative path from pg_tblspc/16396 to tablespace is ../../tablespace
+                local relative_path="../../tablespace"
+                echo "Fixing pg_tblspc symlink: $(basename "$link") -> $relative_path"
                 sudo rm -f "$link"
-                sudo ln -s "$tablespace" "$link"
+                sudo ln -s "$relative_path" "$link"
             fi
         fi
     done
