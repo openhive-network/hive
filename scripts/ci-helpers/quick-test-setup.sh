@@ -12,6 +12,11 @@ set -euo pipefail
 
 SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 
+# JSON parsing helper (works without jq using Python)
+json_get_sha() {
+    python3 -c "import sys, json; data=json.load(sys.stdin); print(data[0]['sha'][:8] if data else '')" 2>/dev/null || echo ""
+}
+
 # Configuration
 REGISTRY="${CI_REGISTRY_IMAGE:-registry.gitlab.syncad.com/hive/hive}"
 BINARY_PATH="${CI_PROJECT_DIR:-$(pwd)}/hived-testnet-binaries"
@@ -43,7 +48,7 @@ resolve_binary_commit() {
         # Try current branch first
         commit=$(curl -sf -H "PRIVATE-TOKEN: ${CI_JOB_TOKEN:-$GITLAB_TOKEN}" \
             "${API_URL}/projects/${PROJECT_ID}/pipelines?ref=${BRANCH}&status=success&per_page=5" 2>/dev/null \
-            | jq -r '.[0].sha // empty' | head -c 8) || true
+            | json_get_sha) || true
 
         if [[ -n "$commit" ]]; then
             echo "Found successful pipeline on branch '$BRANCH': $commit"
@@ -52,7 +57,7 @@ resolve_binary_commit() {
             echo "No successful pipeline on '$BRANCH', checking develop..."
             commit=$(curl -sf -H "PRIVATE-TOKEN: ${CI_JOB_TOKEN:-$GITLAB_TOKEN}" \
                 "${API_URL}/projects/${PROJECT_ID}/pipelines?ref=develop&status=success&per_page=5" 2>/dev/null \
-                | jq -r '.[0].sha // empty' | head -c 8) || true
+                | json_get_sha) || true
 
             if [[ -n "$commit" ]]; then
                 echo "Found successful pipeline on develop: $commit"
@@ -61,7 +66,7 @@ resolve_binary_commit() {
                 echo "No successful pipeline on develop, checking master..."
                 commit=$(curl -sf -H "PRIVATE-TOKEN: ${CI_JOB_TOKEN:-$GITLAB_TOKEN}" \
                     "${API_URL}/projects/${PROJECT_ID}/pipelines?ref=master&status=success&per_page=5" 2>/dev/null \
-                    | jq -r '.[0].sha // empty' | head -c 8) || true
+                    | json_get_sha) || true
             fi
         fi
     fi
