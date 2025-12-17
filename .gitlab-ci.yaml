@@ -756,9 +756,12 @@ test_tools_tests:
   extends:
     - .test_tools_based
   rules:
-    # Run in QUICK_TEST mode if requested in QUICK_TEST_JOBS
-    - if: $QUICK_TEST == "true" && $QUICK_TEST_JOBS =~ /test_tools_tests/
+    # Run in QUICK_TEST mode if requested in QUICK_TEST_JOBS AND block log image is provided
+    - if: $QUICK_TEST == "true" && $QUICK_TEST_JOBS =~ /test_tools_tests/ && $QUICK_TEST_BLOCK_LOG_IMAGE
       when: on_success
+    # Skip if QUICK_TEST mode but no block log image (prevents empty service name error)
+    - if: $QUICK_TEST == "true" && $QUICK_TEST_JOBS =~ /test_tools_tests/
+      when: never
     - if: $QUICK_TEST == "true"
       when: never
     - when: on_success
@@ -779,10 +782,14 @@ test_tools_tests:
     TEST_BLOCK_LOGS_SOURCES: testing_block_logs/empty_block_logs/
     TESTING_BLOCK_LOGS_DESTINATION: $CI_PROJECT_DIR/testing_block_logs_dir/
     TEST_BLOCK_LOG_SERVER: "http://test-block-log-server:80"
-  # Service uses QUICK_TEST_BLOCK_LOG_IMAGE if provided, otherwise TEST_BLOCK_LOG_LATEST_VERSION_IMAGE from dotenv
+  # In normal mode, uses TEST_BLOCK_LOG_LATEST_VERSION_IMAGE from build job's dotenv
+  # In QUICK_TEST mode, uses QUICK_TEST_BLOCK_LOG_IMAGE passed as pipeline variable
   services:
-    - name: ${QUICK_TEST_BLOCK_LOG_IMAGE:-$TEST_BLOCK_LOG_LATEST_VERSION_IMAGE}
+    - name: "$BLOCK_LOG_SERVICE_IMAGE"
       alias: test-block-log-server
+  variables:
+    # BLOCK_LOG_SERVICE_IMAGE picks the right image based on mode
+    BLOCK_LOG_SERVICE_IMAGE: "${QUICK_TEST_BLOCK_LOG_IMAGE:-${TEST_BLOCK_LOG_LATEST_VERSION_IMAGE}}"
   before_script:
     # In QUICK_TEST mode, verify required images are available
     - |
