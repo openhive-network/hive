@@ -1340,7 +1340,10 @@ Trigger-full-mirrornet-conversion:
 deploy_beekeeper_wasm_dev_package:
   extends: .npm_deploy_package_template
   stage: publish
-
+  rules:
+    - if: $QUICK_TEST == "true"
+      when: never
+    - when: on_success
   variables:
     SOURCE_DIR: "${CI_PROJECT_DIR}/programs/beekeeper/beekeeper_wasm"
     PACKAGE_TGZ_PATH: "${BUILT_PACKAGE_PATH}"
@@ -1359,6 +1362,10 @@ deploy_beekeeper_wasm_dev_package:
 deploy_beekeeper_wasm_production_public_npm:
   extends: .registry_npmjs_org_deploy_package_template
   stage: publish
+  rules:
+    - if: $QUICK_TEST == "true"
+      when: never
+    - when: on_success
   variables:
     SOURCE_DIR: "${CI_PROJECT_DIR}/programs/beekeeper/beekeeper_wasm"
     NPM_PUBLISH_TOKEN: "$INTERNAL_HIDDEN_PUBLISH_TOKEN"
@@ -1378,6 +1385,10 @@ deploy_beekeeper_wasm_production_public_npm:
 deploy-wax-spec-dev-package:
   extends: .npm_deploy_package_template
   stage: publish
+  rules:
+    - if: $QUICK_TEST == "true"
+      when: never
+    - when: on_success
   variables:
     SOURCE_DIR: "${PACKAGE_SOURCE_DIR}"
     PACKAGE_TGZ_PATH: "${BUILT_PACKAGE_PATH}"
@@ -1392,6 +1403,10 @@ deploy-wax-spec-dev-package:
 deploy-wax-spec-production-public-npm:
   extends: .registry_npmjs_org_deploy_package_template
   stage: publish
+  rules:
+    - if: $QUICK_TEST == "true"
+      when: never
+    - when: on_success
   variables:
     NPM_PUBLISH_TOKEN: "$INTERNAL_HIDDEN_PUBLISH_TOKEN"
     NPM_PACKAGE_NAME: "wax-api-jsonrpc"
