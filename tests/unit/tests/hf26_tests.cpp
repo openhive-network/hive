@@ -7,6 +7,9 @@
 #include <hive/protocol/misc_utilities.hpp>
 #include <hive/protocol/exceptions.hpp>
 #include <hive/chain/database_exceptions.hpp>
+#include <hive/chain/witness_objects.hpp>
+#include <hive/chain/detail/state/comment_object.hpp>
+#include <hive/chain/witness_objects_multiindex.hpp>
 
 #include "../db_fixture/clean_database_fixture.hpp"
 
@@ -356,7 +359,7 @@ BOOST_AUTO_TEST_CASE( pack_transaction_basic )
           executor->push_transaction_ex( _tx, post_key, 0, hive::protocol::pack_type::legacy );
 
           const auto& _comment = executor->db->get_comment( "alice", std::string( "lemon" ) );
-          BOOST_REQUIRE( _comment.get_author_and_permlink_hash() == comment_object::compute_author_and_permlink_hash( executor->get_account_id( "alice" ), "lemon" ) );
+          BOOST_REQUIRE( _comment->get_author_and_permlink_hash() == comment_object::compute_author_and_permlink_hash( executor->get_account_id( "alice" ), "lemon" ) );
 
           executor->generate_block();
         }
@@ -371,7 +374,7 @@ BOOST_AUTO_TEST_CASE( pack_transaction_basic )
           executor->push_transaction_ex( _tx, post_key, 0, hive::protocol::pack_type::hf26 );
 
           const auto& _comment = executor->db->get_comment( "alice", std::string( "avocado" ) );
-          BOOST_REQUIRE( _comment.get_author_and_permlink_hash() == comment_object::compute_author_and_permlink_hash( executor->get_account_id( "alice" ), "avocado" ) );
+          BOOST_REQUIRE( _comment->get_author_and_permlink_hash() == comment_object::compute_author_and_permlink_hash( executor->get_account_id( "alice" ), "avocado" ) );
 
           executor->generate_block();
         }

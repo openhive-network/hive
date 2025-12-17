@@ -20,6 +20,8 @@
 #include <hive/chain/detail/state/decline_voting_rights_request_object.hpp>
 #include <hive/chain/detail/state/reward_fund_object.hpp>
 #include <hive/chain/detail/state/recurrent_transfer_object.hpp>
+#include <hive/chain/detail/state/decline_voting_rights_request_object_multiindex.hpp>
+#include <hive/chain/witness_objects.hpp>
 
 #include <hive/chain/dhf_objects.hpp>
 

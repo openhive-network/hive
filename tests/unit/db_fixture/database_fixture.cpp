@@ -15,6 +15,10 @@
 #include <hive/chain/detail/state/reward_fund_object.hpp>
 #include <hive/chain/detail/state/recurrent_transfer_object.hpp>
 #include <hive/chain/dhf_objects.hpp>
+#include <hive/chain/detail/state/feed_history_object_multiindex.hpp>
+#include <hive/chain/detail/state/global_property_object_multiindex.hpp>
+#include <hive/chain/detail/state/witness_objects_multiindex.hpp>
+#include <hive/chain/detail/state/dhf_objects_multiindex.hpp>
 #include <hive/chain/util/delayed_voting.hpp>
 
 #include <hive/plugins/chain/chain_plugin.hpp>

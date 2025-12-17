@@ -2,6 +2,7 @@
 #include <boost/test/unit_test.hpp>
 
 #include "../db_fixture/clean_database_fixture.hpp"
+#include <hive/chain/global_property_object_multiindex.hpp>
 
 using namespace hive::chain;
 using namespace hive::protocol;

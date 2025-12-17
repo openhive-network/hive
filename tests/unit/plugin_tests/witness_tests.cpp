@@ -13,6 +13,8 @@
 #include <hive/plugins/witness/witness_plugin.hpp>
 #include <hive/plugins/colony/colony_plugin.hpp>
 #include <hive/plugins/queen/queen_plugin.hpp>
+#include <hive/chain/witness_objects.hpp>
+#include <hive/chain/comment_object_multiindex.hpp>
 
 #include <fc/log/appender.hpp>
 

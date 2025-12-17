@@ -1,6 +1,7 @@
 #include <boost/test/unit_test.hpp>
 
 #include "../db_fixture/clean_database_fixture.hpp"
+#include "hive/chain/database.hpp"
 
 #include <hive/chain/comment_object.hpp>
 #include <hive/chain/detail/state/convert_request_object.hpp>
@@ -13,7 +14,10 @@
 #include <hive/chain/detail/state/withdraw_vesting_route_object.hpp>
 #include <hive/chain/detail/state/decline_voting_rights_request_object.hpp>
 #include <hive/chain/detail/state/reward_fund_object.hpp>
+#include <hive/chain/detail/state/reward_fund_object_multiindex.hpp>
 #include <hive/chain/detail/state/recurrent_transfer_object.hpp>
+#include <hive/chain/notifications.hpp>
+#include <hive/chain/comment_object_multiindex.hpp>
 
 #include <hive/utilities/signal.hpp>
 
@@ -186,7 +190,7 @@ struct curation_rewards_handler
 
   std::vector<comment_reward_info>          comment_rewards;
 
-  boost::signals2::connection               _comment_reward_con;
+  database::signal_connection_ptr           _comment_reward_con;
 
   curation_rewards_handler( clean_database_fixture& _test_object, chain::database& _db )
   : test_object( _test_object ), db( _db )
@@ -479,7 +483,7 @@ struct curation_rewards_handler
 
     uint32_t vote_percent = HIVE_1_PERCENT * 90;
 
-    auto comment_id = db.get_comment( author, permlink ).get_id();
+    auto comment_id = db.get_comment( author, permlink )->get_id();
 
     for( auto& time : votes_time )
     {

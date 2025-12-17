@@ -7,6 +7,7 @@
 #include <hive/utilities/signal.hpp>
 
 #include <hive/chain/database_exceptions.hpp>
+#include <hive/chain/global_property_object_multiindex.hpp>
 
 #include "../db_fixture/clean_database_fixture.hpp"
 
@@ -79,7 +80,7 @@ struct expectation_set : appbase::plugin< expectation_set >
 {
   database& _db;
   std::list< expectation > current_expectations;
-  std::vector< boost::signals2::connection > connections;
+  std::vector< database::signal_connection_ptr > connections;
   bool failure = false;
 
   expectation_set( database& db ) : _db( db )

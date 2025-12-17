@@ -20,6 +20,10 @@
 #include <hive/chain/detail/state/reward_fund_object.hpp>
 #include <hive/chain/detail/state/recurrent_transfer_object.hpp>
 #include <hive/chain/transaction_object.hpp>
+#include <hive/chain/detail/state/feed_history_object_multiindex.hpp>
+#include <hive/chain/detail/state/comment_object.hpp>
+#include <hive/chain/comment_object_multiindex.hpp>
+#include <hive/chain/transaction_object_multiindex.hpp>
 
 #include <hive/chain/util/reward.hpp>
 

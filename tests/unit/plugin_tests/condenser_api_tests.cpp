@@ -5,6 +5,7 @@
 #include <hive/plugins/database_api/database_api_plugin.hpp>
 #include <hive/plugins/condenser_api/condenser_api_plugin.hpp>
 #include <hive/plugins/condenser_api/condenser_api.hpp>
+#include <hive/chain/witness_objects_multiindex.hpp>
 
 #include <boost/test/unit_test.hpp>
 

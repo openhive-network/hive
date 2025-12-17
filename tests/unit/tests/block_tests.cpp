@@ -43,6 +43,10 @@
 #include <hive/chain/detail/state/decline_voting_rights_request_object.hpp>
 #include <hive/chain/detail/state/reward_fund_object.hpp>
 #include <hive/chain/detail/state/recurrent_transfer_object.hpp>
+#include <hive/chain/detail/state/global_property_object_multiindex.hpp>
+#include <hive/chain/detail/state/liquidity_reward_balance_object_multiindex.hpp>
+#include <hive/chain/detail/state/hardfork_property_object_multiindex.hpp>
+#include <hive/chain/detail/state/witness_objects_multiindex.hpp>
 
 #include <hive/chain/external_storage/placeholder_comment_archive.hpp>
 

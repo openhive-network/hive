@@ -21,6 +21,7 @@
 #include <hive/chain/detail/state/reward_fund_object.hpp>
 #include <hive/chain/detail/state/recurrent_transfer_object.hpp>
 #include <hive/chain/transaction_object.hpp>
+#include <hive/chain/witness_objects.hpp>
 
 #include "../db_fixture/clean_database_fixture.hpp"
 

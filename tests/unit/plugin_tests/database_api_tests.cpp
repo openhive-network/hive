@@ -2,6 +2,7 @@
 #include <boost/test/unit_test.hpp>
 #include <hive/plugins/database_api/database_api_plugin.hpp>
 #include <hive/plugins/database_api/database_api.hpp>
+#include <hive/chain/witness_objects_multiindex.hpp>
 
 #include "../db_fixture/hived_fixture.hpp"
 

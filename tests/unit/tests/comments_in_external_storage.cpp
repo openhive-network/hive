@@ -6,8 +6,10 @@
 #include <hive/protocol/exceptions.hpp>
 #include <hive/protocol/hardfork.hpp>
 
+#include <hive/chain/hive_object_types.hpp>
 #include <hive/chain/block_summary_object.hpp>
 #include <hive/chain/database.hpp>
+#include <hive/chain/comment_object.hpp>
 #include <hive/chain/detail/state/convert_request_object.hpp>
 #include <hive/chain/detail/state/collateralized_convert_request_object.hpp>
 #include <hive/chain/detail/state/escrow_object.hpp>
@@ -19,6 +21,7 @@
 #include <hive/chain/detail/state/decline_voting_rights_request_object.hpp>
 #include <hive/chain/detail/state/reward_fund_object.hpp>
 #include <hive/chain/detail/state/recurrent_transfer_object.hpp>
+#include <hive/chain/comment_object_multiindex.hpp>
 
 #include <hive/chain/util/reward.hpp>
 
@@ -256,7 +259,7 @@ void fork_reverts_cashout_scanario( const std::string& comment_archive_type, boo
   auto get_comment = [&]( const std::string& author, const std::string& permlink )
   {
     comment = test.get_comment( author, permlink );
-    comment_id = comment.get_id();
+    comment_id = comment->get_id();
     cashout_time = test.db->find_comment_cashout( *comment.get() )->get_cashout_time();
   };
 

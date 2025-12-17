@@ -16,6 +16,11 @@
 #include <hive/chain/dhf_objects.hpp>
 #include <hive/chain/account_object.hpp>
 #include <hive/chain/database_exceptions.hpp>
+#include <hive/chain/detail/state/decline_voting_rights_request_object_multiindex.hpp>
+#include <hive/chain/witness_objects.hpp>
+#include <hive/chain/comment_object_multiindex.hpp>
+#include <hive/chain/detail/state/reward_fund_object_multiindex.hpp>
+#include <hive/chain/dhf_objects_multiindex.hpp>
 
 #include <hive/protocol/transaction_util.hpp>
 
@@ -1665,8 +1670,8 @@ BOOST_AUTO_TEST_CASE( vote_edit_limit )
 
     const auto& comment = db->get_comment( "alice", std::string( "test" ) );
     const auto& comment_vote_idx = db->get_index< comment_vote_index, by_comment_voter >();
-    const auto& vote_bob = *comment_vote_idx.find( boost::make_tuple( comment.get_id(), bob_id ) );
-    const auto& vote_carol = *comment_vote_idx.find( boost::make_tuple( comment.get_id(), carol_id ) );
+    const auto& vote_bob = *comment_vote_idx.find( boost::make_tuple( comment->get_id(), bob_id ) );
+    const auto& vote_carol = *comment_vote_idx.find( boost::make_tuple( comment->get_id(), carol_id ) );
     BOOST_REQUIRE_EQUAL( vote_bob.get_rshares(), vote_carol.get_rshares() );
 
     validate_database();
@@ -1803,7 +1808,7 @@ BOOST_AUTO_TEST_CASE( vote_stabilization )
     {
       auto permlink = "reply" + std::to_string( i );
       vote( "alice", permlink, voter, weight, key );
-      auto reply_id = db->get_comment( "alice", permlink ).get_id();
+      auto reply_id = db->get_comment( "alice", permlink )->get_id();
       const auto& vote_obj = *vote_idx.find( boost::make_tuple( reply_id, get_account_id( voter ) ) );
       return vote_obj.get_rshares();
     };
@@ -1942,7 +1947,7 @@ BOOST_AUTO_TEST_CASE( empty_voting )
       "voter.voting_manabar.current_mana + voter.downvote_manabar.current_mana > fc::uint128_to_int64( used_mana )" );
     generate_block();
 
-    auto post_id = db->get_comment( "alice", std::string( "test" ) ).get_id();
+    auto post_id = db->get_comment( "alice", std::string( "test" ) )->get_id();
     const auto& vote_idx = db->get_index< comment_vote_index, by_comment_voter >();
     auto voteI = vote_idx.find( boost::make_tuple( post_id, bob_id ) );
     BOOST_REQUIRE( voteI != vote_idx.end() );
