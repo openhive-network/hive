@@ -41,9 +41,19 @@ HAF_BUILD=""
 
 CMAKE_ARGS=()
 
+# Calculate parallel jobs: default 20, scale down for systems with less RAM
 JOBS=$(nproc)
-JOBS=$(( JOBS > 10 ? 10 : JOBS ))
-echo "Build will use $JOBS concurrent jobs..."
+JOBS=$(( JOBS > 20 ? 20 : JOBS ))
+
+# Memory-aware scaling: ~6GB per compile job
+AVAILABLE_MEM_GB=$(awk '/MemAvailable/ {printf "%d", $2/1024/1024}' /proc/meminfo 2>/dev/null || echo "128")
+MEM_BASED_JOBS=$(( AVAILABLE_MEM_GB / 6 ))
+MEM_BASED_JOBS=$(( MEM_BASED_JOBS < 1 ? 1 : MEM_BASED_JOBS ))
+if [[ $MEM_BASED_JOBS -lt $JOBS ]]; then
+  JOBS=$MEM_BASED_JOBS
+fi
+
+echo "Build will use $JOBS concurrent jobs (RAM: ${AVAILABLE_MEM_GB}GB)..."
 
 add_cmake_arg () {
   CMAKE_ARGS+=("$1")
@@ -98,7 +108,7 @@ pushd "$abs_build_dir"
 echo "Building Hive!"
 
 cmake -DCMAKE_BUILD_TYPE=Release -GNinja "${CMAKE_ARGS[@]}" "$abs_src_dir"
-ninja "$@"
+ninja -j "$JOBS" "$@"
 
 if [[ "$CLEAN_AFTER_BUILD" == "true" ]]; then
     echo "Cleaning up after build..."
