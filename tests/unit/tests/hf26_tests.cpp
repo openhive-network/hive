@@ -7,6 +7,25 @@
 #include <hive/chain/witness_objects.hpp>
 #include <hive/chain/detail/state/hardfork_property_object.hpp>
 #include <hive/chain/detail/state/global_property_object.hpp>
+// Multiindex headers for index type definitions
+#include <hive/chain/comment_object_multiindex.hpp>
+#include <hive/chain/transaction_object_multiindex.hpp>
+#include <hive/chain/dhf_objects_multiindex.hpp>
+#include <hive/chain/block_summary_object_multiindex.hpp>
+#include <hive/chain/hardfork_property_object_multiindex.hpp>
+#include <hive/chain/witness_objects_multiindex.hpp>
+#include <hive/chain/detail/state/global_property_object_multiindex.hpp>
+#include <hive/chain/detail/state/feed_history_object_multiindex.hpp>
+#include <hive/chain/detail/state/limit_order_object_multiindex.hpp>
+#include <hive/chain/detail/state/decline_voting_rights_request_object_multiindex.hpp>
+#include <hive/chain/detail/state/reward_fund_object_multiindex.hpp>
+#include <hive/chain/detail/state/recurrent_transfer_object_multiindex.hpp>
+#include <hive/chain/detail/state/convert_request_object_multiindex.hpp>
+#include <hive/chain/detail/state/collateralized_convert_request_object_multiindex.hpp>
+#include <hive/chain/detail/state/escrow_object_multiindex.hpp>
+#include <hive/chain/detail/state/savings_withdraw_object_multiindex.hpp>
+#include <hive/chain/detail/state/liquidity_reward_balance_object_multiindex.hpp>
+#include <hive/chain/detail/state/withdraw_vesting_route_object_multiindex.hpp>
 #include <hive/protocol/misc_utilities.hpp>
 #include <hive/protocol/exceptions.hpp>
 #include <hive/chain/database_exceptions.hpp>
