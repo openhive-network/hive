@@ -34,7 +34,7 @@ namespace hive { namespace chain {
         const account_name_type& _name, const public_key_type& _memo_key,
         const time_point_sec& _creation_time, const time_point_sec& _block_creation_time, bool _mined,
         const account_object* _recovery_account,
-        bool _fill_mana, const asset& incoming_delegation, int64_t _rc_adjustment = 0 )
+        bool _fill_mana, const VEST_asset& incoming_delegation, int64_t _rc_adjustment = 0 )
       : id( _id ), name( _name ), rc_adjustment( _rc_adjustment ), created( _creation_time ), block_created( _block_creation_time ),
         mined( _mined ), memo_key( _memo_key ), delayed_votes( a )
       {
@@ -179,7 +179,7 @@ namespace hive { namespace chain {
 
       account_id_type   recovery_account;
       time_point_sec    last_account_recovery;
-      time_point_sec    block_last_account_recovery;
+      time_point_sec    block_last_account_recovery; // REMOVE - not used by consensus checks (only API)
 
       account_name_type name;
 
@@ -226,21 +226,21 @@ namespace hive { namespace chain {
       time_point_sec    savings_hbd_seconds_last_update; ///< the last time the hbd_seconds was updated
       time_point_sec    savings_hbd_last_interest_payment; ///< used to pay interest at most once per month
     private:
-      time_point_sec    created; //(not read by consensus code)
-      time_point_sec    block_created;
+      time_point_sec    created; // REMOVE - not used by consensus checks (only unit tests)
+      time_point_sec    block_created; // REMOVE - not used by consensus checks (only API and colony)
     public:
-      time_point_sec    last_account_update; //(only used by outdated consensus checks - up to HF17)
+      time_point_sec    last_account_update; // REMOVE - not used by consensus checks
       time_point_sec    last_post; //(we could probably remove limit on posting replies)
       time_point_sec    last_root_post; //influenced root comment reward between HF12 and HF17
-      time_point_sec    last_post_edit; //(we could probably remove limit on post edits)
-      time_point_sec    last_vote_time; //(only used by outdated consensus checks - up to HF26)
+      time_point_sec    last_post_edit; //(that limit could be coupled with last_post - no need for separate field; NOTE: requires HF)
+      time_point_sec    last_vote_time; // REMOVE - not used by consensus checks
       time_point_sec    next_vesting_withdrawal = fc::time_point_sec::maximum(); ///< after every withdrawal this is incremented by 1 week
 
     private:
       time_point_sec    governance_vote_expiration_ts = fc::time_point_sec::maximum();
 
     public:
-      uint32_t          post_count = 0; //(not read by consensus code)
+      uint32_t          post_count = 0; // REMOVE - not used by consensus checks (only API)
       uint32_t          post_bandwidth = 0; //influenced root comment reward between HF12 and HF17
 
       uint16_t          withdraw_routes = 0; //max 10, why is it 16bit?
@@ -251,7 +251,7 @@ namespace hive { namespace chain {
       uint8_t           savings_withdraw_requests = 0;
       bool              can_vote = true;
     private:
-      bool              mined = true; //(not read by consensus code)
+      bool              mined = true; // REMOVE - not used by consensus checks (only API)
 
     public:
       public_key_type   memo_key; //33 bytes with alignment of 1; (it belongs to metadata as it is not used by consensus, but witnesses need it here since they don't COLLECT_ACCOUNT_METADATA)
@@ -263,7 +263,7 @@ namespace hive { namespace chain {
         Holds sum of VESTS per day.
         VESTS from day `X` will be matured after `X` + 30 days ( because `HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS` == 30 days )
       */
-      t_delayed_votes   delayed_votes;
+      t_delayed_votes   delayed_votes; // TODO: check how frequently it is filled - maybe separate index would be better
 
       //methods
 

@@ -403,7 +403,6 @@ namespace hive { namespace chain {
         vote_percent = _vote_percent;
         weight = _weight;
         rshares = _rshares;
-        ++num_changes;
       }
 
       account_id_type get_voter() const { return voter; }
@@ -412,7 +411,6 @@ namespace hive { namespace chain {
       int64_t         get_rshares() const { return rshares; }
       int16_t         get_vote_percent() const { return vote_percent; }
       time_point_sec  get_last_update() const { return last_update; }
-      int8_t          get_number_of_changes() const { return num_changes; }
 
     private:
       comment_vote_object( uint64_t _id, const account_object& _voter, const comment_object& _comment,
@@ -423,8 +421,7 @@ namespace hive { namespace chain {
       uint64_t          weight = 0; ///< defines the score this vote receives, used by vote payout calc. 0 if a negative vote or changed votes.
       int64_t           rshares = 0; ///< The number of rshares this vote is responsible for
       int16_t           vote_percent = 0; ///< The percent weight of the vote
-      time_point_sec    last_update; ///< The time of the last update of the vote
-      int8_t            num_changes = 0; ///< TODO: remove after HF28
+      time_point_sec    last_update; /// REMOVE - not used by consensus checks (only API)
 
     CHAINBASE_UNPACK_CONSTRUCTOR(comment_vote_object);
   };
@@ -470,5 +467,5 @@ FC_REFLECT( hive::chain::comment_cashout_ex_object,
           )
 
 FC_REFLECT( hive::chain::comment_vote_object,
-          (id)(voter)(comment)(weight)(rshares)(vote_percent)(last_update)(num_changes)
+          (id)(voter)(comment)(weight)(rshares)(vote_percent)(last_update)
         )
