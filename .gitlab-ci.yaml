@@ -1467,19 +1467,20 @@ deploy-wax-spec-dev-package:
     - when: on_success
 
   before_script:
-    - !reference [.npm_based_job_base, before_script]
-    # Fix BUILT_PACKAGE_PATH to use current job's workspace (path contains build job's workspace)
+    # Fix paths FIRST, before npm_based_job_base does cd "${SOURCE_DIR}"
+    # The dotenv artifact paths contain the build job's workspace which differs from this job
     - |
-      if [[ -n "$BUILT_PACKAGE_PATH" && "$BUILT_PACKAGE_PATH" == /builds/* ]]; then
-        RELATIVE_PATH="${BUILT_PACKAGE_PATH#*/hive/hive/}"
-        PACKAGE_TGZ_PATH="${CI_PROJECT_DIR}/${RELATIVE_PATH}"
-        echo "Transformed PACKAGE_TGZ_PATH to: $PACKAGE_TGZ_PATH"
-      fi
       if [[ -n "$PACKAGE_SOURCE_DIR" && "$PACKAGE_SOURCE_DIR" == /builds/* ]]; then
         RELATIVE_PATH="${PACKAGE_SOURCE_DIR#*/hive/hive/}"
-        SOURCE_DIR="${CI_PROJECT_DIR}/${RELATIVE_PATH}"
+        export SOURCE_DIR="${CI_PROJECT_DIR}/${RELATIVE_PATH}"
         echo "Transformed SOURCE_DIR to: $SOURCE_DIR"
       fi
+      if [[ -n "$BUILT_PACKAGE_PATH" && "$BUILT_PACKAGE_PATH" == /builds/* ]]; then
+        RELATIVE_PATH="${BUILT_PACKAGE_PATH#*/hive/hive/}"
+        export PACKAGE_TGZ_PATH="${CI_PROJECT_DIR}/${RELATIVE_PATH}"
+        echo "Transformed PACKAGE_TGZ_PATH to: $PACKAGE_TGZ_PATH"
+      fi
+    - !reference [.npm_based_job_base, before_script]
     - echo -e "\e[0Ksection_start:$(date +%s):package_tgz_unpack[collapsed=true]\r\e[0KAttempting to unpack ${PACKAGE_TGZ_PATH}"
     - cd "${CI_PROJECT_DIR}"
     - tar -xf "${PACKAGE_TGZ_PATH}" -C "${SOURCE_DIR}" --strip-components=1
@@ -1509,20 +1510,20 @@ deploy-wax-spec-production-public-npm:
     SOURCE_DIR: "${PACKAGE_SOURCE_DIR}"
     PACKAGE_TGZ_PATH: "${BUILT_PACKAGE_PATH}"
   before_script:
-    - !reference [.npm_based_job_base, before_script]
-    # Fix BUILT_PACKAGE_PATH and PACKAGE_SOURCE_DIR to use current job's workspace
-    # These paths contain the build job's workspace which differs from this job's workspace
+    # Fix paths FIRST, before npm_based_job_base does cd "${SOURCE_DIR}"
+    # The dotenv artifact paths contain the build job's workspace which differs from this job
     - |
-      if [[ -n "$BUILT_PACKAGE_PATH" && "$BUILT_PACKAGE_PATH" == /builds/* ]]; then
-        RELATIVE_PATH="${BUILT_PACKAGE_PATH#*/hive/hive/}"
-        PACKAGE_TGZ_PATH="${CI_PROJECT_DIR}/${RELATIVE_PATH}"
-        echo "Transformed PACKAGE_TGZ_PATH to: $PACKAGE_TGZ_PATH"
-      fi
       if [[ -n "$PACKAGE_SOURCE_DIR" && "$PACKAGE_SOURCE_DIR" == /builds/* ]]; then
         RELATIVE_PATH="${PACKAGE_SOURCE_DIR#*/hive/hive/}"
-        SOURCE_DIR="${CI_PROJECT_DIR}/${RELATIVE_PATH}"
+        export SOURCE_DIR="${CI_PROJECT_DIR}/${RELATIVE_PATH}"
         echo "Transformed SOURCE_DIR to: $SOURCE_DIR"
       fi
+      if [[ -n "$BUILT_PACKAGE_PATH" && "$BUILT_PACKAGE_PATH" == /builds/* ]]; then
+        RELATIVE_PATH="${BUILT_PACKAGE_PATH#*/hive/hive/}"
+        export PACKAGE_TGZ_PATH="${CI_PROJECT_DIR}/${RELATIVE_PATH}"
+        echo "Transformed PACKAGE_TGZ_PATH to: $PACKAGE_TGZ_PATH"
+      fi
+    - !reference [.npm_based_job_base, before_script]
   needs:
     - job: deploy-wax-spec-dev-package
     - job: test-wax-spec-package
