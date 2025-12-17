@@ -35,6 +35,34 @@ if [[ -n "${QUICK_TEST_BLOCK_LOG_IMAGE:-}" ]]; then
     echo "Block log image: $QUICK_TEST_BLOCK_LOG_IMAGE"
 fi
 
+# Get most recent testnet image tag from registry
+get_latest_testnet_tag() {
+    local response
+    local url="${API_URL}/projects/${PROJECT_ID}/registry/repositories?per_page=100"
+
+    # Find testnet repository ID
+    response=$(curl -sf -H "JOB-TOKEN: ${CI_JOB_TOKEN:-}" "$url" 2>/dev/null) || \
+        response=$(curl -sf -H "PRIVATE-TOKEN: ${GITLAB_TOKEN:-}" "$url" 2>/dev/null) || true
+
+    local repo_id
+    repo_id=$(echo "$response" | python3 -c "import sys,json;d=json.load(sys.stdin);print(next((r['id'] for r in d if r['name']=='testnet'),''))" 2>/dev/null) || true
+
+    if [[ -z "$repo_id" ]]; then
+        echo ""
+        return
+    fi
+
+    # Get most recent tag
+    local tags_url="${API_URL}/projects/${PROJECT_ID}/registry/repositories/${repo_id}/tags?per_page=10"
+    response=$(curl -sf -H "JOB-TOKEN: ${CI_JOB_TOKEN:-}" "$tags_url" 2>/dev/null) || \
+        response=$(curl -sf -H "PRIVATE-TOKEN: ${GITLAB_TOKEN:-}" "$tags_url" 2>/dev/null) || true
+
+    if [[ -n "$response" ]]; then
+        # Return the first (most recent) tag
+        echo "$response" | python3 -c "import sys,json;d=json.load(sys.stdin);print(d[0]['name'] if d else '')" 2>/dev/null || true
+    fi
+}
+
 # Determine which commit to use for binaries
 resolve_binary_commit() {
     local commit=""
@@ -43,46 +71,16 @@ resolve_binary_commit() {
         commit="$QUICK_TEST_BINARY_COMMIT"
         echo "Using provided commit: $commit" >&2
     else
-        echo "Auto-detecting last successful pipeline..." >&2
+        echo "Auto-detecting latest testnet image from registry..." >&2
+        commit=$(get_latest_testnet_tag)
 
-        # Helper to fetch pipeline SHA
-        fetch_sha() {
-            local ref="$1"
-            local response
-            local url="${API_URL}/projects/${PROJECT_ID}/pipelines?ref=${ref}&status=success&per_page=5"
-            echo "DEBUG: Fetching $url" >&2
-            # Try with JOB-TOKEN header (for CI jobs) and fallback to PRIVATE-TOKEN (for personal tokens)
-            response=$(curl -sf -H "JOB-TOKEN: ${CI_JOB_TOKEN:-}" "$url" 2>/dev/null) || \
-                response=$(curl -sf -H "PRIVATE-TOKEN: ${GITLAB_TOKEN:-}" "$url" 2>/dev/null) || true
-            if [[ -n "$response" ]]; then
-                echo "DEBUG: Got response (${#response} chars)" >&2
-                echo "$response" | json_get_sha
-            else
-                echo "DEBUG: No response from API" >&2
-            fi
-        }
-
-        # Try current branch first
-        commit=$(fetch_sha "$BRANCH")
         if [[ -n "$commit" ]]; then
-            echo "Found successful pipeline on branch '$BRANCH': $commit" >&2
-        else
-            # Fallback to develop branch
-            echo "No successful pipeline on '$BRANCH', checking develop..." >&2
-            commit=$(fetch_sha "develop")
-
-            if [[ -n "$commit" ]]; then
-                echo "Found successful pipeline on develop: $commit" >&2
-            else
-                # Last resort: master
-                echo "No successful pipeline on develop, checking master..." >&2
-                commit=$(fetch_sha "master")
-            fi
+            echo "Found testnet image tag: $commit" >&2
         fi
     fi
 
     if [[ -z "$commit" ]]; then
-        echo "ERROR: Could not find any successful pipeline with binaries."
+        echo "ERROR: Could not find any testnet images in registry."
         echo "Please specify QUICK_TEST_BINARY_COMMIT manually, or run a full pipeline first."
         echo ""
         echo "To find available commits, run: ./scripts/ci-helpers/list-hive-binaries.sh"
