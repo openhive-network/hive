@@ -536,12 +536,23 @@ DEFINE_API_IMPL( database_api_impl, list_accounts )
     case( by_next_vesting_withdrawal ):
     {
       auto key = args.start.as< std::pair< fc::time_point_sec, account_name_type > >();
-      iterate_results< chain::account_index, chain::by_next_vesting_withdrawal >(
-        boost::make_tuple( key.first, key.second ),
+      account_id_type account_id;
+      if( key.second.size() > 0 )
+      {
+         const auto* account = _db.find_account( key.second );
+         FC_ASSERT( account != nullptr, "Given account does not exist." );
+         account_id = account->get_id();
+      }
+
+      iterate_results< chain::time_index, chain::by_next_vesting_withdrawal >(
+        boost::make_tuple( key.first, account_id ),
         result.accounts,
         args.limit,
-        [&]( const account_object& a, const database& db ){ return api_account_object( a, db, args.delayed_votes_active ); },
-        &database_api_impl::filter_default< account_object > );
+        [&]( const time_object& t, const database& db ){
+          const auto& a = db.get< account_object, chain::by_id >( t.get_account_id() );
+          return api_account_object( a, db, args.delayed_votes_active );
+        },
+        &database_api_impl::filter_default< time_object > );
       break;
     }
     default:
