@@ -1749,8 +1749,9 @@ void database::process_funds()
       FC_ASSERT( median_price.is_null() == false );
 
       const auto& treasury_account = get_treasury();
-      const auto hbd_supply_without_treasury = (props.get_current_hbd_supply() - treasury_account.hbd_balance).amount < 0 ? asset(0, HBD_SYMBOL) : (props.get_current_hbd_supply() - treasury_account.hbd_balance);
-      const auto virtual_supply_without_treasury = hbd_supply_without_treasury * median_price + props.current_supply;
+      const HBD_asset hbd_supply_without_treasury = props.get_current_hbd_supply() - treasury_account.get_hbd_balance();
+      FC_ASSERT( hbd_supply_without_treasury.amount.value >= 0 ); // ABW: not needed
+      const auto virtual_supply_without_treasury = hbd_supply_without_treasury * median_price + props.get_current_supply();
 
       new_hive = (virtual_supply_without_treasury.amount * current_inflation_rate) / (int64_t(HIVE_100_PERCENT) * int64_t(HIVE_BLOCKS_PER_YEAR));
     }
