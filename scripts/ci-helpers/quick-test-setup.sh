@@ -12,6 +12,25 @@ set -euo pipefail
 
 SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 
+# Check for required tools
+check_requirements() {
+    local missing=""
+    if ! command -v curl &>/dev/null; then missing="$missing curl"; fi
+    if ! command -v python3 &>/dev/null; then missing="$missing python3"; fi
+    if ! command -v docker &>/dev/null; then missing="$missing docker"; fi
+    if [[ -n "$missing" ]]; then
+        echo "ERROR: Missing required tools:$missing"
+        echo "Installing missing tools..."
+        if command -v apk &>/dev/null; then
+            apk add --no-cache $missing 2>/dev/null || true
+        elif command -v apt-get &>/dev/null; then
+            apt-get update && apt-get install -y $missing 2>/dev/null || true
+        fi
+    fi
+}
+
+check_requirements
+
 # JSON parsing helper (works without jq using Python)
 json_get_sha() {
     python3 -c "import sys,json;d=json.load(sys.stdin);print(d[0]['sha'][:8] if d else '')" 2>/dev/null || true
