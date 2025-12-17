@@ -1,3 +1,6 @@
+include:
+  - local: scripts/ci-helpers/common_includes.yml
+
 # Template for building and deploying the unified hiveio-api Python package
 # This template generates, builds, tests, and optionally deploys the hiveio-api package
 # which consolidates all API clients into a single package with lazy-loaded subpackages.
@@ -7,15 +10,17 @@
 #     - local: '/scripts/ci-helpers/hiveio_api_package.gitlab-ci.yml'
 #
 # Variables:
+#   HIVE_PROJECT_ROOT: Root directory of the Hive project (default: "${CI_PROJECT_DIR}")
 #   SKIP_WHEEL_DEPLOY: Set to any value to skip deployment to GitLab PyPI registry
 
 # Base template for hiveio-api package generation, build, test, and deployment
 .hiveio_api_package_template:
   extends: .build_wheel_template
   variables:
-    API_GENERATION_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation"
+    HIVE_PROJECT_ROOT: "${CI_PROJECT_DIR}"
+    API_GENERATION_DIR: "${HIVE_PROJECT_ROOT}/libraries/plugins/apis/api_generation"
     PYPROJECT_DIR: "${API_GENERATION_DIR}/api_generation"
-    DEPENDENCY_SOURCE_DIR: "${CI_PROJECT_DIR}/tests/python/hive-local-tools"
+    DEPENDENCY_SOURCE_DIR: "${HIVE_PROJECT_ROOT}/tests/python/hive-local-tools"
   stage: build
   script:
     # Generate the hiveio_api package
@@ -58,10 +63,14 @@
         exit 0
       fi
     - !reference [.deploy_wheel_to_gitlab_template, script]
+  after_script:
+    # Override PYPROJECT_DIR to point to the generated hiveio_api package (not api_generation)
+    - export PYPROJECT_DIR="${API_GENERATION_DIR}/hiveio_api"
+    - !reference [.build_wheel_template, after_script]
   artifacts:
     expire_in: 1 week
     paths:
-      - "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/hiveio_api"
+      - "${API_GENERATION_DIR}/hiveio_api"
       - "build_wheel.env"
     reports:
       dotenv: build_wheel.env
