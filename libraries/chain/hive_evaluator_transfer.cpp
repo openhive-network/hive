@@ -453,7 +453,8 @@ void set_withdraw_vesting_route_evaluator::do_apply( const set_withdraw_vesting_
 void convert_evaluator::do_apply( const convert_operation& o )
 {
   const auto& owner = _db.get_account( o.owner );
-  _db.adjust_balance( owner, -o.amount );
+  HBD_asset o_amount = o.get_amount();
+  _db.adjust_balance( owner, -o_amount );
 
   const auto& fhistory = _db.get_feed_history();
   FC_ASSERT( !fhistory.current_median_history.is_null() && "Cannot convert HBD because there is no price feed." );
@@ -462,7 +463,7 @@ void convert_evaluator::do_apply( const convert_operation& o )
   if( _db.has_hardfork( HIVE_HARDFORK_0_16__551) )
     hive_conversion_delay = HIVE_CONVERSION_DELAY;
 
-  _db.create<convert_request_object>( owner, o.amount, _db.head_block_time() + hive_conversion_delay, o.requestid );
+  _db.create<convert_request_object>( owner, o_amount, _db.head_block_time() + hive_conversion_delay, o.requestid );
 }
 
 void collateralized_convert_evaluator::do_apply( const collateralized_convert_operation& o )
@@ -470,7 +471,8 @@ void collateralized_convert_evaluator::do_apply( const collateralized_convert_op
   FC_ASSERT( _db.has_hardfork( HIVE_HARDFORK_1_25 ) && "Operation not available until HF25" );
 
   const auto& owner = _db.get_account( o.owner );
-  _db.adjust_balance( owner, -o.amount );
+  HIVE_asset o_amount = o.get_amount();
+  _db.adjust_balance( owner, -o_amount );
 
   const auto& fhistory = _db.get_feed_history();
   FC_ASSERT( !fhistory.current_median_history.is_null() && "Cannot convert HIVE because there is no price feed." );
@@ -483,11 +485,11 @@ void collateralized_convert_evaluator::do_apply( const collateralized_convert_op
   //if you change something here take a look at wallet_api::estimate_hive_collateral as well
 
   //cut amount by collateral ratio
-  uint128_t _amount = ( uint128_t( o.amount.amount.value ) * HIVE_100_PERCENT ) / HIVE_CONVERSION_COLLATERAL_RATIO;
-  asset for_immediate_conversion = asset( fc::uint128_to_uint64(_amount), o.amount.symbol );
+  uint128_t _amount = ( uint128_t( o_amount.amount.value ) * HIVE_100_PERCENT ) / HIVE_CONVERSION_COLLATERAL_RATIO;
+  HIVE_asset for_immediate_conversion = HIVE_asset( fc::uint128_to_uint64( _amount ) );
 
   //immediately create HBD - apply fee to current rolling minimum price
-  auto converted_amount = multiply_with_fee( for_immediate_conversion, fhistory.current_min_history,
+  HBD_asset converted_amount = multiply_with_fee( for_immediate_conversion, fhistory.current_min_history,
     HIVE_COLLATERALIZED_CONVERSION_FEE, HIVE_SYMBOL );
   FC_ASSERT( converted_amount.amount > 0, "Amount of collateral too low - conversion gives no HBD" );
   _db.adjust_balance( owner, converted_amount );
@@ -506,7 +508,7 @@ void collateralized_convert_evaluator::do_apply( const collateralized_convert_op
   uint16_t percent_hbd = _db.calculate_HBD_percent();
   FC_ASSERT( percent_hbd <= dgpo.hbd_stop_percent, "Creation of new ${hbd} violates global limit.", ( "hbd", converted_amount ) );
 
-  _db.create<collateralized_convert_request_object>( owner, o.amount, converted_amount,
+  _db.create<collateralized_convert_request_object>( owner, o_amount, converted_amount,
     _db.head_block_time() + HIVE_COLLATERALIZED_CONVERSION_DELAY, o.requestid );
 
   push_virtual_operation( _db, collateralized_convert_immediate_conversion_operation( o.owner, o.requestid, converted_amount ) );

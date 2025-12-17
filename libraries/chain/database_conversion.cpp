@@ -38,8 +38,8 @@ void database::process_conversions()
   if( fhistory.current_median_history.is_null() )
     return;
 
-  asset net_hbd( 0, HBD_SYMBOL );
-  asset net_hive( 0, HIVE_SYMBOL );
+  HBD_asset net_hbd( 0 );
+  HIVE_asset net_hive( 0 );
 
   //regular requests
   int count = 0;
@@ -51,7 +51,7 @@ void database::process_conversions()
 
     while( itr != request_by_date.end() && itr->get_conversion_date() <= now )
     {
-      auto amount_to_issue = itr->get_convert_amount() * fhistory.current_median_history;
+      HIVE_asset amount_to_issue = itr->get_convert_amount() * fhistory.current_median_history;
       const auto& owner = get_account( itr->get_owner() );
 
       adjust_balance( owner, amount_to_issue );
@@ -89,9 +89,9 @@ void database::process_conversions()
       //to use median price here, minimal during immediate conversion was to prevent gaming; the latter is for rare
       //case, when this conversion happens when median price does not reflect market conditions when hard limit was
       //hit - see update_median_feed()
-      auto required_hive = multiply_with_fee( itr->get_converted_amount(), fhistory.market_median_history,
+      HIVE_asset required_hive = multiply_with_fee( itr->get_converted_amount(), fhistory.market_median_history,
         HIVE_COLLATERALIZED_CONVERSION_FEE, HIVE_SYMBOL );
-      auto excess_collateral = itr->get_collateral_amount() - required_hive;
+      HIVE_asset excess_collateral = itr->get_collateral_amount() - required_hive;
       if( excess_collateral.amount < 0 )
       {
         push_virtual_operation( *this, system_warning_operation( FC_LOG_MESSAGE( warn,
@@ -99,7 +99,7 @@ void database::process_conversions()
           ( "id", itr->get_request_id() )( "o", owner.get_name() )( "ec", -excess_collateral ) ).get_message() ) );
 
         required_hive = itr->get_collateral_amount();
-        excess_collateral.amount = 0;
+        excess_collateral = HIVE_asset( 0 );
       }
       else
       {
