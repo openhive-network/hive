@@ -49,10 +49,16 @@ resolve_binary_commit() {
         fetch_sha() {
             local ref="$1"
             local response
-            response=$(curl -sf -H "PRIVATE-TOKEN: ${CI_JOB_TOKEN:-$GITLAB_TOKEN}" \
-                "${API_URL}/projects/${PROJECT_ID}/pipelines?ref=${ref}&status=success&per_page=5" 2>/dev/null) || true
+            local url="${API_URL}/projects/${PROJECT_ID}/pipelines?ref=${ref}&status=success&per_page=5"
+            echo "DEBUG: Fetching $url" >&2
+            # Try with JOB-TOKEN header (for CI jobs) and fallback to PRIVATE-TOKEN (for personal tokens)
+            response=$(curl -sf -H "JOB-TOKEN: ${CI_JOB_TOKEN:-}" "$url" 2>/dev/null) || \
+                response=$(curl -sf -H "PRIVATE-TOKEN: ${GITLAB_TOKEN:-}" "$url" 2>/dev/null) || true
             if [[ -n "$response" ]]; then
+                echo "DEBUG: Got response (${#response} chars)" >&2
                 echo "$response" | json_get_sha
+            else
+                echo "DEBUG: No response from API" >&2
             fi
         }
 
