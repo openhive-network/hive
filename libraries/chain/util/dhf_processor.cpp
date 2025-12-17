@@ -98,7 +98,9 @@ uint64_t dhf_processor::calculate_votes( uint32_t pid )
     //If _voter has set proxy, then his votes aren't taken into consideration
     if( !_voter.has_proxy() )
     {
-      auto sum = _voter.get_governance_vote_power();
+      const auto& voter_assets = db.get< assets_object, by_account_id >( _voter.get_id() );
+      const auto& voter_dvotes = db.get< delayed_votes_object, by_account_id >( _voter.get_id() );
+      auto sum = _voter.get_governance_vote_power( voter_assets, voter_dvotes );
       ret += sum.value;
     }
 

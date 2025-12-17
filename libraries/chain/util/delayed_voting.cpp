@@ -5,20 +5,22 @@ namespace hive { namespace chain {
 
 void delayed_voting::add_delayed_value( const account_object& account, const time_point_sec& head_time, const ushare_type val )
 {
-  db.modify( account, [&]( account_object& a )
+  const auto& dvotes = db.get< delayed_votes_object, by_account_id >( account.get_id() );
+  db.modify( dvotes, [&]( delayed_votes_object& dv )
   {
-    delayed_voting_processor::add( a.get_delayed_votes(), a.get_sum_delayed_votes(), head_time, val );
+    delayed_voting_processor::add( dv.get_delayed_votes(), dv.get_sum_delayed_votes(), head_time, val );
   } );
 }
 
 void delayed_voting::erase_delayed_value( const account_object& account, const ushare_type val )
 {
-  if( account.get_sum_delayed_votes() == 0 )
+  const auto& dvotes = db.get< delayed_votes_object, by_account_id >( account.get_id() );
+  if( dvotes.get_sum_delayed_votes() == 0 )
     return;
 
-  db.modify( account, [&]( account_object& a )
+  db.modify( dvotes, [&]( delayed_votes_object& dv )
   {
-    delayed_voting_processor::erase( a.get_delayed_votes(), a.get_sum_delayed_votes(), val );
+    delayed_voting_processor::erase( dv.get_delayed_votes(), dv.get_sum_delayed_votes(), val );
   } );
 }
 
@@ -62,10 +64,11 @@ fc::optional< ushare_type > delayed_voting::update_votes( const opt_votes_update
     else
     {
       const ushare_type abs_val{ static_cast< ushare_type >( -item.val.value ) };
-      if( abs_val >= item.account->get_sum_delayed_votes() )
+      const auto& dvotes = db.get< delayed_votes_object, by_account_id >( item.account->get_id() );
+      if( abs_val >= dvotes.get_sum_delayed_votes() )
       {
-        res = abs_val - item.account->get_sum_delayed_votes();
-        erase_delayed_value( *item.account, item.account->get_sum_delayed_votes() );
+        res = abs_val - dvotes.get_sum_delayed_votes();
+        erase_delayed_value( *item.account, dvotes.get_sum_delayed_votes() );
       }
       else
         erase_delayed_value( *item.account, abs_val );
@@ -77,7 +80,7 @@ fc::optional< ushare_type > delayed_voting::update_votes( const opt_votes_update
 
 void delayed_voting::run( const fc::time_point_sec& head_time )
 {
-  const auto& idx = db.get_index< account_index, by_delayed_voting >();
+  const auto& idx = db.get_index< delayed_votes_index, by_delayed_voting >();
   auto current = idx.begin();
 
   int count = 0;
@@ -89,16 +92,19 @@ void delayed_voting::run( const fc::time_point_sec& head_time )
   {
     const ushare_type _val{ current->get_delayed_votes().begin()->val };
 
-    //dlog( "account: ${acc} delayed_votes: ${dv} time: ${time}", ( "acc", current->get_name() )( "dv", _val )( "time", current->get_delayed_votes().begin()->time.to_iso_string() ) );
+    // Get the account_object for this delayed_votes_object
+    const auto& account = db.get< account_object, by_id >( current->get_account_id() );
 
-    operation vop = hive::protocol::delayed_voting_operation( current->get_name(), _val );
+    //dlog( "account: ${acc} delayed_votes: ${dv} time: ${time}", ( "acc", account.get_name() )( "dv", _val )( "time", current->get_delayed_votes().begin()->time.to_iso_string() ) );
+
+    operation vop = hive::protocol::delayed_voting_operation( account.get_name(), _val );
     /// Push vop to be recorded by other parts (like AH plugin etc.)
     db.push_virtual_operation( vop );
 
-    db.adjust_proxied_witness_votes( *current, _val.value );
+    db.adjust_proxied_witness_votes( account, _val.value );
 
     /*
-      The operation `transfer_to_vesting` always adds elements to `delayed_votes` collection in `account_object`.
+      The operation `transfer_to_vesting` always adds elements to `delayed_votes` collection in `delayed_votes_object`.
       In terms of performance is necessary to hold size of `delayed_votes` not greater than `30`.
 
       Why `30`? HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS / HIVE_DELAYED_VOTING_INTERVAL_SECONDS == 30
@@ -106,9 +112,9 @@ void delayed_voting::run( const fc::time_point_sec& head_time )
       Solution:
         The best solution is to add new record at the back and to remove at the front.
     */
-    db.modify( *current, [&]( account_object& a )
+    db.modify( *current, [&]( delayed_votes_object& dv )
     {
-      delayed_voting_processor::erase_front( a.get_delayed_votes(), a.get_sum_delayed_votes() );
+      delayed_voting_processor::erase_front( dv.get_delayed_votes(), dv.get_sum_delayed_votes() );
     } );
 
     current = idx.begin();
