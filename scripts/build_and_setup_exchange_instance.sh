@@ -107,6 +107,9 @@ process_option() {
      --name=*)
         add_run_hived_img_arg "${o}"
         ;;
+    --preserve-container)
+        add_run_hived_img_arg "${o}"
+        ;;
     --docker-option=*)
         add_run_hived_img_arg "${o}"
         ;; 
