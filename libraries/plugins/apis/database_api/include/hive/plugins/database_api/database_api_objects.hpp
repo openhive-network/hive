@@ -484,19 +484,19 @@ struct api_account_object
     name( a.get_name() ),
     memo_key( a.get_memo_key() ),
     proxy( HIVE_PROXY_TO_SELF_ACCOUNT ),
-    last_account_update( a.get_last_account_update() ),
+    last_account_update(),
     created( a.get_block_creation_time() ),
     mined( a.was_mined() ),
     reset_account( HIVE_NULL_ACCOUNT ),
-    last_account_recovery( a.get_block_last_account_recovery_time() ),
+    last_account_recovery(),
     post_count( a.get_post_count() ),
     can_vote( a.can_vote() ),
     withdraw_routes( a.get_withdraw_routes() ),
     pending_transfers( a.get_pending_escrow_transfers() ),
     witnesses_voted_for( a.get_witnesses_voted_for() ),
-    last_post( a.get_last_post() ),
-    last_root_post( a.get_last_root_post() ),
-    last_post_edit( a.get_last_post_edit() ),
+    last_post(),
+    last_root_post(),
+    last_post_edit(),
     post_bandwidth( a.get_post_bandwidth() ),
     pending_claimed_accounts( a.get_pending_claimed_accounts() ),
     open_recurrent_transfers( a.get_open_recurrent_transfers() ),
@@ -507,6 +507,7 @@ struct api_account_object
     const auto& mrc = db.get< manabars_rc_object, by_account_id >( a.get_id() );
     const auto& time_obj = db.get< time_object, by_account_id >( a.get_id() );
     const auto& dvotes = db.get< delayed_votes_object, by_account_id >( a.get_id() );
+    const auto& recovery = db.get< recovery_object, by_account_id >( a.get_id() );
 
     // From manabars_rc_object
     voting_manabar = mrc.get_voting_manabar();
@@ -514,20 +515,25 @@ struct api_account_object
 
     // From time_object
     last_vote_time = time_obj.get_last_vote_time();
+    last_account_update = time_obj.get_last_account_update();
+    last_post = time_obj.get_last_post();
+    last_root_post = time_obj.get_last_root_post();
+    last_post_edit = time_obj.get_last_post_edit();
     next_vesting_withdrawal = time_obj.get_next_vesting_withdrawal();
+    last_account_recovery = recovery.get_block_last_account_recovery_time();
 
     // From assets_object
     balance = assets.get_balance();
     savings_balance = assets.get_savings();
     hbd_balance = assets.get_hbd_balance();
-    hbd_seconds = assets.get_hbd_seconds();
-    hbd_seconds_last_update = assets.get_hbd_seconds_last_update();
-    hbd_last_interest_payment = assets.get_hbd_last_interest_payment();
+    hbd_seconds = time_obj.get_hbd_seconds();
+    hbd_seconds_last_update = time_obj.get_hbd_seconds_last_update();
+    hbd_last_interest_payment = time_obj.get_hbd_last_interest_payment();
     savings_hbd_balance = assets.get_hbd_savings();
-    savings_hbd_seconds = assets.get_savings_hbd_seconds();
-    savings_hbd_seconds_last_update = assets.get_savings_hbd_seconds_last_update();
-    savings_hbd_last_interest_payment = assets.get_savings_hbd_last_interest_payment();
-    savings_withdraw_requests = assets.get_savings_withdraw_requests();
+    savings_hbd_seconds = time_obj.get_savings_hbd_seconds();
+    savings_hbd_seconds_last_update = time_obj.get_savings_hbd_seconds_last_update();
+    savings_hbd_last_interest_payment = time_obj.get_savings_hbd_last_interest_payment();
+    savings_withdraw_requests = a.get_savings_withdraw_requests();
     reward_hbd_balance = assets.get_hbd_rewards();
     reward_hive_balance = assets.get_rewards();
     reward_vesting_balance = assets.get_vest_rewards();
@@ -543,8 +549,8 @@ struct api_account_object
 
     if( a.has_proxy() )
       proxy = db.get_account( a.get_proxy() ).get_name();
-    if( a.has_recovery_account() )
-      recovery_account = db.get_account( a.get_recovery_account() ).get_name();
+    if( recovery.has_recovery_account() )
+      recovery_account = db.get_account( recovery.get_recovery_account() ).get_name();
 
     size_t n = a.get_proxied_vsf_votes().size();
     proxied_vsf_votes.reserve( n );

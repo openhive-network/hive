@@ -92,7 +92,7 @@ namespace hive { namespace chain {
     CHAINBASE_UNPACK_CONSTRUCTOR(time_object);
   };
 
-  struct by_account_id;
+
   struct by_next_vesting_withdrawal;
 
   typedef multi_index_container<

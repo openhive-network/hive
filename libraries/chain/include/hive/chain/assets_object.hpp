@@ -121,7 +121,7 @@ namespace hive { namespace chain {
     CHAINBASE_UNPACK_CONSTRUCTOR(assets_object);
   };
 
-  struct by_account_id;
+
 
   typedef multi_index_container<
     assets_object,

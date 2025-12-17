@@ -1,4 +1,5 @@
 #include <hive/chain/util/dhf_processor.hpp>
+#include <hive/chain/assets_object.hpp>
 
 namespace hive { namespace chain {
 

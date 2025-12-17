@@ -50,7 +50,7 @@ namespace hive { namespace chain {
     CHAINBASE_UNPACK_CONSTRUCTOR(recovery_object);
   };
 
-  struct by_account_id;
+
 
   typedef multi_index_container<
     recovery_object,
