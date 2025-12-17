@@ -41,9 +41,24 @@ HAF_BUILD=""
 
 CMAKE_ARGS=()
 
+# Calculate optimal parallel jobs based on CPU cores and available memory
+# Heavy C++ compilation (template-heavy code) can use 8-10GB per cc1plus process
 JOBS=$(nproc)
 JOBS=$(( JOBS > 10 ? 10 : JOBS ))
-echo "Build will use $JOBS concurrent jobs..."
+
+# Memory-aware scaling: limit jobs based on available RAM
+# Assume ~8GB per compile job for safety margin on complex files
+AVAILABLE_MEM_GB=$(awk '/MemAvailable/ {printf "%d", $2/1024/1024}' /proc/meminfo 2>/dev/null || echo "128")
+MEM_BASED_JOBS=$(( AVAILABLE_MEM_GB / 8 ))
+if [[ $MEM_BASED_JOBS -lt 1 ]]; then
+  MEM_BASED_JOBS=1
+fi
+if [[ $MEM_BASED_JOBS -lt $JOBS ]]; then
+  echo "Limiting jobs from $JOBS to $MEM_BASED_JOBS based on available memory (${AVAILABLE_MEM_GB}GB)"
+  JOBS=$MEM_BASED_JOBS
+fi
+
+echo "Build will use $JOBS concurrent jobs (cores: $(nproc), memory: ${AVAILABLE_MEM_GB}GB)..."
 
 add_cmake_arg () {
   CMAKE_ARGS+=("$1")

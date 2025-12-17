@@ -1,5 +1,5 @@
-# OOM Test Pipeline - Forces all jobs to builder-11 to reproduce memory exhaustion
-# Original file backed up - restore after testing
+# OOM Fix Test - Memory-aware build.sh
+# Tests that build.sh correctly limits parallel jobs based on available memory
 
 stages:
   - build
@@ -10,14 +10,17 @@ variables:
   GIT_STRATEGY: clone
   GIT_SUBMODULE_STRATEGY: recursive
 
-# Job 1: The actual testnet build (heavy C++ compilation)
+# Test the memory-aware build on builder-11 (60GB RAM)
 testnet_node_build:
   stage: build
   image: "${CI_REGISTRY_IMAGE}/ci-base-image:ubuntu24.04-3"
   variables:
     HIVE_BUILD_ROOT_PATH: "${CI_PROJECT_DIR}/build"
   script:
-    - echo "Starting testnet build on builder-11"
+    - echo "=== Memory Info ==="
+    - free -h
+    - cat /proc/meminfo | grep -E "MemTotal|MemAvailable"
+    - echo "=== Starting build with memory-aware job scaling ==="
     - |
       ./scripts/build.sh \
         --source-dir="${CI_PROJECT_DIR}" \
@@ -29,45 +32,3 @@ testnet_node_build:
   tags:
     - hive-builder-11
     - build-testnet
-
-# Job 2: Memory stress test (runs in parallel with build)
-memory_stress_1:
-  stage: build
-  image: ubuntu:24.04
-  script:
-    - echo "Memory stress job 1 - allocating memory"
-    - apt-get update && apt-get install -y stress-ng
-    - |
-      # Allocate 8GB and hold for 10 minutes
-      stress-ng --vm 2 --vm-bytes 4G --timeout 600s &
-      STRESS_PID=$!
-      # Report memory every 30 seconds
-      for i in $(seq 1 20); do
-        sleep 30
-        free -h
-        echo "--- iteration $i ---"
-      done
-      kill $STRESS_PID 2>/dev/null || true
-  tags:
-    - hive-builder-11
-
-# Job 3: Another memory stress test (runs in parallel)
-memory_stress_2:
-  stage: build
-  image: ubuntu:24.04
-  script:
-    - echo "Memory stress job 2 - allocating memory"
-    - apt-get update && apt-get install -y stress-ng
-    - |
-      # Allocate 8GB and hold for 10 minutes
-      stress-ng --vm 2 --vm-bytes 4G --timeout 600s &
-      STRESS_PID=$!
-      # Report memory every 30 seconds
-      for i in $(seq 1 20); do
-        sleep 30
-        free -h
-        echo "--- iteration $i ---"
-      done
-      kill $STRESS_PID 2>/dev/null || true
-  tags:
-    - hive-builder-11
