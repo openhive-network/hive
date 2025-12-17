@@ -120,10 +120,15 @@ then
         fix_pg_tblspc_symlinks "${DATADIR}"
 
         # Handle blockchain directory - may be excluded from cache for efficiency
-        if [[ -d "${DATA_SOURCE}/datadir/blockchain" ]]; then
+        # Check if directory exists AND has content (empty dirs can be created by Docker bind mounts)
+        if [[ -d "${DATA_SOURCE}/datadir/blockchain" ]] && ls "${DATA_SOURCE}/datadir/blockchain"/block_log* 1>/dev/null 2>&1; then
             sudo chmod -R a+w "${DATA_SOURCE}/datadir/blockchain"
             ls -al "${DATA_SOURCE}/datadir/blockchain"
         elif [[ -d "${SHARED_BLOCK_LOG_DIR}" ]]; then
+            # Remove empty blockchain dir if it exists (leftover from Docker bind mounts)
+            if [[ -d "${DATADIR}/blockchain" ]] && [[ -z "$(ls -A "${DATADIR}/blockchain")" ]]; then
+                rmdir "${DATADIR}/blockchain"
+            fi
             # Blockchain not in cache - create symlinks to shared block_log
             echo "Blockchain not in cache, linking to shared block_log at ${SHARED_BLOCK_LOG_DIR}"
             sudo -Enu hived mkdir -p "${DATADIR}/blockchain"
