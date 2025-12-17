@@ -12,9 +12,25 @@ set -euo pipefail
 
 SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 
-# JSON parsing helper (works without jq using Python)
-json_get_sha() {
-    python3 -c "import sys,json;d=json.load(sys.stdin);print(d[0]['sha'][:8] if d else '')" 2>/dev/null || true
+# JSON parsing helper (works without jq or Python, uses grep/sed)
+json_extract_first_sha() {
+    # Extract first "sha" value from JSON array and return first 8 chars
+    grep -o '"sha":"[^"]*"' | head -1 | sed 's/"sha":"//;s/"//' | head -c 8
+}
+
+json_extract_first_name() {
+    # Extract first "name" value from JSON array
+    grep -o '"name":"[^"]*"' | head -1 | sed 's/"name":"//;s/"//'
+}
+
+json_extract_first_id() {
+    # Extract first "id" value that matches a name pattern
+    local pattern="$1"
+    local input
+    input=$(cat)
+
+    # Find the id for the entry with matching name
+    echo "$input" | grep -o '"id":[0-9]*,"name":"[^"]*"' | grep "$pattern" | head -1 | grep -o '"id":[0-9]*' | sed 's/"id"://'
 }
 
 # Configuration
@@ -45,7 +61,8 @@ get_latest_testnet_tag() {
         response=$(curl -sf -H "PRIVATE-TOKEN: ${GITLAB_TOKEN:-}" "$url" 2>/dev/null) || true
 
     local repo_id
-    repo_id=$(echo "$response" | python3 -c "import sys,json;d=json.load(sys.stdin);print(next((r['id'] for r in d if r['name']=='testnet'),''))" 2>/dev/null) || true
+    # Extract the id for the testnet repository using grep/sed
+    repo_id=$(echo "$response" | grep -o '"id":[0-9]*,"name":"testnet"' | grep -o '[0-9]*' | head -1) || true
 
     if [[ -z "$repo_id" ]]; then
         echo ""
@@ -58,8 +75,8 @@ get_latest_testnet_tag() {
         response=$(curl -sf -H "PRIVATE-TOKEN: ${GITLAB_TOKEN:-}" "$tags_url" 2>/dev/null) || true
 
     if [[ -n "$response" ]]; then
-        # Return the first (most recent) tag
-        echo "$response" | python3 -c "import sys,json;d=json.load(sys.stdin);print(d[0]['name'] if d else '')" 2>/dev/null || true
+        # Return the first (most recent) tag name
+        echo "$response" | json_extract_first_name
     fi
 }
 
