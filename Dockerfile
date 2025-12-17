@@ -176,12 +176,13 @@ ENV SHM_DIR=${DATADIR}/blockchain
 
 STOPSIGNAL SIGINT
 
+# Expose HTTP port first (hardcoded for GitLab runner 18.6+ health check compatibility)
+# Runner versions 18.6+ have issues detecting variable-based EXPOSE ports
+EXPOSE 8091
 #p2p service
 EXPOSE ${P2P_PORT}
 # websocket service
 EXPOSE ${WS_PORT}
-# JSON rpc service
-EXPOSE ${HTTP_PORT}
 # Port specific to HTTP cli_wallet server
 EXPOSE ${CLI_WALLET_PORT}
 
