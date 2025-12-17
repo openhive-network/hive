@@ -14,7 +14,7 @@ SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 
 # JSON parsing helper (works without jq using Python)
 json_get_sha() {
-    python3 -c "import sys, json; data=json.load(sys.stdin); print(data[0]['sha'][:8] if data else '')" 2>/dev/null || echo ""
+    python3 -c "import sys,json;d=json.load(sys.stdin);print(d[0]['sha'][:8] if d else '')" 2>/dev/null || true
 }
 
 # Configuration
@@ -41,32 +41,36 @@ resolve_binary_commit() {
 
     if [[ -n "${QUICK_TEST_BINARY_COMMIT:-}" ]]; then
         commit="$QUICK_TEST_BINARY_COMMIT"
-        echo "Using provided commit: $commit"
+        echo "Using provided commit: $commit" >&2
     else
-        echo "Auto-detecting last successful pipeline..."
+        echo "Auto-detecting last successful pipeline..." >&2
+
+        # Helper to fetch pipeline SHA
+        fetch_sha() {
+            local ref="$1"
+            local response
+            response=$(curl -sf -H "PRIVATE-TOKEN: ${CI_JOB_TOKEN:-$GITLAB_TOKEN}" \
+                "${API_URL}/projects/${PROJECT_ID}/pipelines?ref=${ref}&status=success&per_page=5" 2>/dev/null) || true
+            if [[ -n "$response" ]]; then
+                echo "$response" | json_get_sha
+            fi
+        }
 
         # Try current branch first
-        commit=$(curl -sf -H "PRIVATE-TOKEN: ${CI_JOB_TOKEN:-$GITLAB_TOKEN}" \
-            "${API_URL}/projects/${PROJECT_ID}/pipelines?ref=${BRANCH}&status=success&per_page=5" 2>/dev/null \
-            | json_get_sha) || true
-
+        commit=$(fetch_sha "$BRANCH")
         if [[ -n "$commit" ]]; then
-            echo "Found successful pipeline on branch '$BRANCH': $commit"
+            echo "Found successful pipeline on branch '$BRANCH': $commit" >&2
         else
             # Fallback to develop branch
-            echo "No successful pipeline on '$BRANCH', checking develop..."
-            commit=$(curl -sf -H "PRIVATE-TOKEN: ${CI_JOB_TOKEN:-$GITLAB_TOKEN}" \
-                "${API_URL}/projects/${PROJECT_ID}/pipelines?ref=develop&status=success&per_page=5" 2>/dev/null \
-                | json_get_sha) || true
+            echo "No successful pipeline on '$BRANCH', checking develop..." >&2
+            commit=$(fetch_sha "develop")
 
             if [[ -n "$commit" ]]; then
-                echo "Found successful pipeline on develop: $commit"
+                echo "Found successful pipeline on develop: $commit" >&2
             else
                 # Last resort: master
-                echo "No successful pipeline on develop, checking master..."
-                commit=$(curl -sf -H "PRIVATE-TOKEN: ${CI_JOB_TOKEN:-$GITLAB_TOKEN}" \
-                    "${API_URL}/projects/${PROJECT_ID}/pipelines?ref=master&status=success&per_page=5" 2>/dev/null \
-                    | json_get_sha) || true
+                echo "No successful pipeline on develop, checking master..." >&2
+                commit=$(fetch_sha "master")
             fi
         fi
     fi
@@ -91,10 +95,11 @@ extract_binaries() {
     echo "=== Retrieving binaries from $image ==="
 
     # Login to registry if credentials available
-    if [[ -n "${REGISTRY_PASS:-$HIVED_CI_IMGBUILDER_PASSWORD:-}" ]]; then
-        echo "${REGISTRY_PASS:-$HIVED_CI_IMGBUILDER_PASSWORD}" | \
-            docker login -u "${REGISTRY_USER:-$HIVED_CI_IMGBUILDER_USER:-gitlab-ci-token}" \
-            "${REGISTRY%%/*}" --password-stdin 2>/dev/null || true
+    local registry_pass="${REGISTRY_PASS:-${HIVED_CI_IMGBUILDER_PASSWORD:-}}"
+    local registry_user="${REGISTRY_USER:-${HIVED_CI_IMGBUILDER_USER:-gitlab-ci-token}}"
+    if [[ -n "$registry_pass" ]]; then
+        echo "$registry_pass" | \
+            docker login -u "$registry_user" "${REGISTRY%%/*}" --password-stdin 2>/dev/null || true
     fi
 
     # Check if image exists
