@@ -354,8 +354,6 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
   int64_t current_power = 0;
   {
     int64_t elapsed_seconds = _now.sec_since_epoch() - voter.voting_manabar.last_update_time;
-    if( _db.has_hardfork( HIVE_HARDFORK_0_11 ) )
-      FC_ASSERT( elapsed_seconds >= HIVE_MIN_VOTE_INTERVAL_SEC, "Can only vote once every 3 seconds." );
     int64_t regenerated_power = (HIVE_100_PERCENT * elapsed_seconds) / HIVE_VOTING_MANA_REGENERATION_SECONDS;
     current_power = std::min( int64_t(voter.voting_manabar.current_mana) + regenerated_power, int64_t(HIVE_100_PERCENT) );
     FC_ASSERT( current_power > 0, "Account currently does not have voting power." );
@@ -412,7 +410,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
   _db.modify( voter, [&]( account_object& a )
   {
     a.voting_manabar.current_mana = current_power - used_power; // always nonnegative
-    a.last_vote_time = _now;
+    a.last_vote_time = _now; //not needed for consensus
     a.voting_manabar.last_update_time = _now.sec_since_epoch();
   } );
 
@@ -586,9 +584,9 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
   }
   else // edit of existing vote
   {
-    FC_ASSERT( itr->get_number_of_changes() < HIVE_MAX_VOTE_CHANGES, "Voter has used the maximum number of vote changes on this comment." );
+    // there used to be limit on number of changes made on vote (5) until HF28 - removed along with related data member
 
-    if( _db.has_hardfork( HIVE_HARDFORK_0_6__112 ) )
+    if( _db.has_hardfork( HIVE_HARDFORK_0_6__112 ) ) // look for self-votes on @spaninv/segundo-post (https://hivescan.info/@spaninv?page=2&filters=00000001_h)
       FC_ASSERT( itr->get_vote_percent() != o.weight && "You have already voted in a similar way." );
 
     _db.modify( *comment_cashout, [&]( comment_cashout_object& c )
@@ -644,8 +642,7 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
 
   auto _now = _db.head_block_time();
   FC_ASSERT( _now < comment_cashout->get_cashout_time(), "Comment is actively being rewarded. Cannot vote on comment." );
-  if( !_db.has_hardfork( HIVE_HARDFORK_1_26_NO_VOTE_COOLDOWN ) )
-    FC_ASSERT( ( _now - voter.last_vote_time ).to_seconds() >= HIVE_MIN_VOTE_INTERVAL_SEC, "Can only vote once every 3 seconds." );
+  // there used to be a "one vote per block per user" limit, between HF11 and HF26
 
   const auto& comment_vote_idx = _db.get_index< comment_vote_index, by_comment_voter >();
   auto itr = comment_vote_idx.find( boost::make_tuple( comment->get_id(), voter.get_id() ) );
@@ -660,8 +657,7 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
   }
   else
   {
-    if( !_db.has_hardfork( HIVE_HARDFORK_1_28_NO_VOTE_LIMIT ) )
-      FC_ASSERT( itr->get_number_of_changes() < HIVE_MAX_VOTE_CHANGES && "Voter has used the maximum number of vote changes on this comment." );
+    // there used to be limit on number of changes made on vote (5) until HF28 - removed along with related data member
     FC_ASSERT( itr->get_vote_percent() != o.weight && "Your current vote on this comment is identical to this vote." );
     previous_vote_percent = itr->get_vote_percent();
     previous_rshares = itr->get_rshares();
@@ -761,7 +757,7 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
       a.voting_manabar.use_mana( fc::uint128_to_int64(used_mana) );
     }
 
-    a.last_vote_time = _now;
+    a.last_vote_time = _now; //not needed for consensus
   } );
 
   /// this is the rshares voting for or against the post
