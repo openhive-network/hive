@@ -507,14 +507,16 @@ pre_commit_checks:
 # Quick Test Setup - retrieves cached binaries from previous successful pipeline
 # Only runs when QUICK_TEST=true, skips all build jobs and runs only unit tests
 quick_test_setup:
+  extends: .docker_image_builder_job
   stage: static_code_analysis
-  image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
   rules:
     - if: $QUICK_TEST == "true"
       when: always
     - when: never
   variables:
     GIT_STRATEGY: clone
+    REGISTRY_USER: "$HIVED_CI_IMGBUILDER_USER"
+    REGISTRY_PASS: $HIVED_CI_IMGBUILDER_PASSWORD
   script:
     - ./scripts/ci-helpers/quick-test-setup.sh
   artifacts:
@@ -523,8 +525,6 @@ quick_test_setup:
     reports:
       dotenv: quick_test.env
     expire_in: 1 day
-  tags:
-    - public-runner-docker
 
 .pytest_based:
   extends: .python_based
