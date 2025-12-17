@@ -734,13 +734,17 @@ broadcast_tests:
   # Usage:
   # 1. Add - !reference [.fetch_test_block_logs, script] at the beginning of your test script section.
   # 2. Set the appropriate values for:
-  #    - TEST_BLOCK_LOG_LATEST_VERSION_IMAGE (required, should be set in testing_block_log_image_generator.sh)
+  #    - TEST_BLOCK_LOG_LATEST_VERSION_IMAGE or QUICK_TEST_BLOCK_LOG_IMAGE (one required)
   #    - TEST_BLOCK_LOG_SERVER (required, should be set in .test-block-log-service)
   #    - TEST_BLOCK_LOGS_SOURCES (required, should be set in test job)
   #    - TESTING_BLOCK_LOGS_DESTINATION (required, should be set in test job)
   script:
     - |
-      test -n "$TEST_BLOCK_LOG_LATEST_VERSION_IMAGE"
+      # Check that either TEST_BLOCK_LOG_LATEST_VERSION_IMAGE or QUICK_TEST_BLOCK_LOG_IMAGE is set
+      if [[ -z "$TEST_BLOCK_LOG_LATEST_VERSION_IMAGE" ]] && [[ -z "$QUICK_TEST_BLOCK_LOG_IMAGE" ]]; then
+        echo "ERROR: Either TEST_BLOCK_LOG_LATEST_VERSION_IMAGE or QUICK_TEST_BLOCK_LOG_IMAGE must be set"
+        exit 1
+      fi
       test -n "$TEST_BLOCK_LOG_SERVER"
       test -n "$TESTING_BLOCK_LOGS_DESTINATION"
       curl -I $TEST_BLOCK_LOG_SERVER || (echo "error connecting to service test-block-log-server" && false)
