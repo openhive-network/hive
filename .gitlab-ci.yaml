@@ -297,6 +297,21 @@ test_beekeeper_wasm:
     - if: $QUICK_TEST == "true"
       when: never
     - when: on_success
+
+  before_script:
+    - !reference [.npm_based_job_base, before_script]
+    # Fix BUILT_PACKAGE_PATH to use current job's workspace (path contains build job's workspace)
+    - |
+      if [[ -n "$BUILT_PACKAGE_PATH" && "$BUILT_PACKAGE_PATH" == /builds/* ]]; then
+        RELATIVE_PATH="${BUILT_PACKAGE_PATH#*/hive/hive/}"
+        PACKAGE_TGZ_PATH="${CI_PROJECT_DIR}/${RELATIVE_PATH}"
+        echo "Transformed PACKAGE_TGZ_PATH to: $PACKAGE_TGZ_PATH"
+      fi
+    - echo -e "\e[0Ksection_start:$(date +%s):package_tgz_unpack[collapsed=true]\r\e[0KAttempting to unpack ${PACKAGE_TGZ_PATH}"
+    - cd "${CI_PROJECT_DIR}"
+    - tar -xf "${PACKAGE_TGZ_PATH}" -C "${SOURCE_DIR}" --strip-components=1
+    - echo -e "\e[0Ksection_end:$(date +%s):package_tgz_unpack\r\e[0K"
+
   needs:
     - job: beekeeper_tsc_build
       artifacts: true
@@ -317,6 +332,21 @@ run_examples_beekeeper_wasm:
     - if: $QUICK_TEST == "true"
       when: never
     - when: on_success
+
+  before_script:
+    - !reference [.npm_based_job_base, before_script]
+    # Fix BUILT_PACKAGE_PATH to use current job's workspace (path contains build job's workspace)
+    - |
+      if [[ -n "$BUILT_PACKAGE_PATH" && "$BUILT_PACKAGE_PATH" == /builds/* ]]; then
+        RELATIVE_PATH="${BUILT_PACKAGE_PATH#*/hive/hive/}"
+        PACKAGE_TGZ_PATH="${CI_PROJECT_DIR}/${RELATIVE_PATH}"
+        echo "Transformed PACKAGE_TGZ_PATH to: $PACKAGE_TGZ_PATH"
+      fi
+    - echo -e "\e[0Ksection_start:$(date +%s):package_tgz_unpack[collapsed=true]\r\e[0KAttempting to unpack ${PACKAGE_TGZ_PATH}"
+    - cd "${CI_PROJECT_DIR}"
+    - tar -xf "${PACKAGE_TGZ_PATH}" -C "${SOURCE_DIR}" --strip-components=1
+    - echo -e "\e[0Ksection_end:$(date +%s):package_tgz_unpack\r\e[0K"
+
   script:
     - echo -e "\e[0Ksection_start:$(date +%s):testing[collapsed=false]\r\e[0KAttempting to start examples..."
     - cd "${SOURCE_DIR}"
@@ -1305,6 +1335,13 @@ test-wax-spec-package:
     WAX_TEST_DIR: "test-wax-spec"
     PACKAGE_TGZ_PATH: "${BUILT_PACKAGE_PATH}"
   script:
+    # Fix BUILT_PACKAGE_PATH to use current job's workspace (path contains build job's workspace)
+    - |
+      if [[ -n "$BUILT_PACKAGE_PATH" && "$BUILT_PACKAGE_PATH" == /builds/* ]]; then
+        RELATIVE_PATH="${BUILT_PACKAGE_PATH#*/hive/hive/}"
+        PACKAGE_TGZ_PATH="${CI_PROJECT_DIR}/${RELATIVE_PATH}"
+        echo "Transformed PACKAGE_TGZ_PATH to: $PACKAGE_TGZ_PATH"
+      fi
     - mkdir -p "${WAX_TEST_DIR}"
     - cd "${WAX_TEST_DIR}"
     - npm init es6
