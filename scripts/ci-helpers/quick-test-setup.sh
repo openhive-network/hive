@@ -12,6 +12,11 @@ set -euo pipefail
 
 SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 
+# JSON parsing helper (works without jq using Python)
+json_get_sha() {
+    python3 -c "import sys,json;d=json.load(sys.stdin);print(d[0]['sha'][:8] if d else '')" 2>/dev/null || true
+}
+
 # Configuration
 REGISTRY="${CI_REGISTRY_IMAGE:-registry.gitlab.syncad.com/hive/hive}"
 BINARY_PATH="${CI_PROJECT_DIR:-$(pwd)}/hived-testnet-binaries"
@@ -30,44 +35,52 @@ if [[ -n "${QUICK_TEST_BLOCK_LOG_IMAGE:-}" ]]; then
     echo "Block log image: $QUICK_TEST_BLOCK_LOG_IMAGE"
 fi
 
+# Get most recent testnet image tag from registry
+get_latest_testnet_tag() {
+    local response
+    local url="${API_URL}/projects/${PROJECT_ID}/registry/repositories?per_page=100"
+
+    # Find testnet repository ID
+    response=$(curl -sf -H "JOB-TOKEN: ${CI_JOB_TOKEN:-}" "$url" 2>/dev/null) || \
+        response=$(curl -sf -H "PRIVATE-TOKEN: ${GITLAB_TOKEN:-}" "$url" 2>/dev/null) || true
+
+    local repo_id
+    repo_id=$(echo "$response" | python3 -c "import sys,json;d=json.load(sys.stdin);print(next((r['id'] for r in d if r['name']=='testnet'),''))" 2>/dev/null) || true
+
+    if [[ -z "$repo_id" ]]; then
+        echo ""
+        return
+    fi
+
+    # Get most recent tag
+    local tags_url="${API_URL}/projects/${PROJECT_ID}/registry/repositories/${repo_id}/tags?per_page=10"
+    response=$(curl -sf -H "JOB-TOKEN: ${CI_JOB_TOKEN:-}" "$tags_url" 2>/dev/null) || \
+        response=$(curl -sf -H "PRIVATE-TOKEN: ${GITLAB_TOKEN:-}" "$tags_url" 2>/dev/null) || true
+
+    if [[ -n "$response" ]]; then
+        # Return the first (most recent) tag
+        echo "$response" | python3 -c "import sys,json;d=json.load(sys.stdin);print(d[0]['name'] if d else '')" 2>/dev/null || true
+    fi
+}
+
 # Determine which commit to use for binaries
 resolve_binary_commit() {
     local commit=""
 
     if [[ -n "${QUICK_TEST_BINARY_COMMIT:-}" ]]; then
         commit="$QUICK_TEST_BINARY_COMMIT"
-        echo "Using provided commit: $commit"
+        echo "Using provided commit: $commit" >&2
     else
-        echo "Auto-detecting last successful pipeline..."
-
-        # Try current branch first
-        commit=$(curl -sf -H "PRIVATE-TOKEN: ${CI_JOB_TOKEN:-$GITLAB_TOKEN}" \
-            "${API_URL}/projects/${PROJECT_ID}/pipelines?ref=${BRANCH}&status=success&per_page=5" 2>/dev/null \
-            | jq -r '.[0].sha // empty' | head -c 8) || true
+        echo "Auto-detecting latest testnet image from registry..." >&2
+        commit=$(get_latest_testnet_tag)
 
         if [[ -n "$commit" ]]; then
-            echo "Found successful pipeline on branch '$BRANCH': $commit"
-        else
-            # Fallback to develop branch
-            echo "No successful pipeline on '$BRANCH', checking develop..."
-            commit=$(curl -sf -H "PRIVATE-TOKEN: ${CI_JOB_TOKEN:-$GITLAB_TOKEN}" \
-                "${API_URL}/projects/${PROJECT_ID}/pipelines?ref=develop&status=success&per_page=5" 2>/dev/null \
-                | jq -r '.[0].sha // empty' | head -c 8) || true
-
-            if [[ -n "$commit" ]]; then
-                echo "Found successful pipeline on develop: $commit"
-            else
-                # Last resort: master
-                echo "No successful pipeline on develop, checking master..."
-                commit=$(curl -sf -H "PRIVATE-TOKEN: ${CI_JOB_TOKEN:-$GITLAB_TOKEN}" \
-                    "${API_URL}/projects/${PROJECT_ID}/pipelines?ref=master&status=success&per_page=5" 2>/dev/null \
-                    | jq -r '.[0].sha // empty' | head -c 8) || true
-            fi
+            echo "Found testnet image tag: $commit" >&2
         fi
     fi
 
     if [[ -z "$commit" ]]; then
-        echo "ERROR: Could not find any successful pipeline with binaries."
+        echo "ERROR: Could not find any testnet images in registry."
         echo "Please specify QUICK_TEST_BINARY_COMMIT manually, or run a full pipeline first."
         echo ""
         echo "To find available commits, run: ./scripts/ci-helpers/list-hive-binaries.sh"
@@ -86,10 +99,11 @@ extract_binaries() {
     echo "=== Retrieving binaries from $image ==="
 
     # Login to registry if credentials available
-    if [[ -n "${REGISTRY_PASS:-$HIVED_CI_IMGBUILDER_PASSWORD:-}" ]]; then
-        echo "${REGISTRY_PASS:-$HIVED_CI_IMGBUILDER_PASSWORD}" | \
-            docker login -u "${REGISTRY_USER:-$HIVED_CI_IMGBUILDER_USER:-gitlab-ci-token}" \
-            "${REGISTRY%%/*}" --password-stdin 2>/dev/null || true
+    local registry_pass="${REGISTRY_PASS:-${HIVED_CI_IMGBUILDER_PASSWORD:-}}"
+    local registry_user="${REGISTRY_USER:-${HIVED_CI_IMGBUILDER_USER:-gitlab-ci-token}}"
+    if [[ -n "$registry_pass" ]]; then
+        echo "$registry_pass" | \
+            docker login -u "$registry_user" "${REGISTRY%%/*}" --password-stdin 2>/dev/null || true
     fi
 
     # Check if image exists
