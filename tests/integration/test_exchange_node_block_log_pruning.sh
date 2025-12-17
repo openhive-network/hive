@@ -134,6 +134,7 @@ HIVED_IMAGE_TAG="${HIVED_IMAGE_NAME##*:}"
   --block-log-split=9999 \
   --name=sync-instance \
   --detach \
+  --preserve-container \
   --checkpoint="[\"${CHECKPOINT_BLOCK}\",\"${CHECKPOINT_BLOCK_ID}\"]" \
   --plugin=app_status_api \
   "$@"
@@ -148,6 +149,7 @@ monitor_container "sync-instance" 600  # 10 minutes timeout
   --exit-at-block="$INITIAL_SYNC_BLOCK" \
   --name=dump-snapshot-instance \
   --detach \
+  --preserve-container \
   --plugin=app_status_api
 monitor_container "dump-snapshot-instance" 600  # 10 minutes timeout
 
@@ -161,6 +163,7 @@ echo "Starting load snapshot with pruned block log..."
   --stop-at-block="$TARGET_SYNC_BLOCK" \
   --name=load-snapshot-instance \
   --detach \
+  --preserve-container \
   --plugin=app_status_api
 
 # Phase 1: Wait for chain API to become ready
