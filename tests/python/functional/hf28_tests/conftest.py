@@ -38,22 +38,33 @@ def prepare_environment(node: tt.InitNode) -> tuple[tt.InitNode, tt.Wallet]:
 @pytest.fixture()
 def prepare_environment_on_hf_27(node: tt.InitNode) -> tuple[tt.InitNode, tt.Wallet]:
     # run on a node with a date earlier than the start date of hardfork 28 (february 8, 2023 1:00:00 am)
-    node = tt.WitnessNode(witnesses=[f"witness{i}-alpha" for i in range(20)])
-    node.config.block_log_split = -1
+    max_retries = 3
+    for attempt in range(max_retries):
+        node = tt.WitnessNode(witnesses=[f"witness{i}-alpha" for i in range(20)])
+        node.config.block_log_split = -1
 
-    block_log_directory = Path(__file__).parent / "block_log"
-    block_log = tt.BlockLog(block_log_directory, "auto")
+        block_log_directory = Path(__file__).parent / "block_log"
+        block_log = tt.BlockLog(block_log_directory, "auto")
 
-    node.run(
-        replay_from=block_log,
-        time_control=tt.StartTimeControl(start_time="head_block_time"),
-    )
+        try:
+            node.run(
+                replay_from=block_log,
+                time_control=tt.StartTimeControl(start_time="head_block_time"),
+                timeout=180.0,
+            )
 
-    wallet = tt.Wallet(attach_to=node)
-    wallet.create_account(VOTER_ACCOUNT, vests=tt.Asset.Test(10))
-    wallet.create_account(PROXY_ACCOUNT)
-    assert node.api.wallet_bridge.get_hardfork_version() == "1.27.0"
-    return node, wallet
+            wallet = tt.Wallet(attach_to=node)
+            wallet.create_account(VOTER_ACCOUNT, vests=tt.Asset.Test(10))
+            wallet.create_account(PROXY_ACCOUNT)
+            assert node.api.wallet_bridge.get_hardfork_version() == "1.27.0"
+            return node, wallet
+        except (FailedToStartExecutableError, CommunicationError, TimeoutError):
+            if attempt < max_retries - 1:
+                logger.warning(f"Node startup failed (attempt {attempt + 1}/{max_retries}), retrying...")
+                time.sleep(1)
+            else:
+                raise
+    raise RuntimeError("Failed to start node after retries")  # Should not reach here
 
 
 @pytest.fixture()
