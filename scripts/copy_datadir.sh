@@ -139,12 +139,12 @@ then
             echo "Blockchain not in cache, copying from shared block_log at ${SHARED_BLOCK_LOG_DIR}"
             sudo -Enu hived mkdir -p "${DATADIR}/blockchain"
             # Copy block_log files (not symlinks) so hived has write access
+            # Run cp as hived user so files are owned correctly without needing chown
             for block_file in "${SHARED_BLOCK_LOG_DIR}"/block_log* ; do
                 if [[ -f "$block_file" ]]; then
                     local_name=$(basename "$block_file")
                     echo "Copying: ${local_name}"
-                    sudo -En cp "$block_file" "${DATADIR}/blockchain/${local_name}"
-                    sudo -En chown hived:hived "${DATADIR}/blockchain/${local_name}"
+                    sudo -Enu hived cp "$block_file" "${DATADIR}/blockchain/${local_name}"
                 fi
             done
             ls -al "${DATADIR}/blockchain"
