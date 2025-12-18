@@ -569,24 +569,20 @@ void request_account_recovery_evaluator::do_apply( const request_account_recover
   const auto& recovery_request_idx = _db.get_index< account_recovery_request_index, by_account >();
   auto request = recovery_request_idx.find( o.account_to_recover );
 
+  FC_TODO( "validate_auth_size should always be called" );
+    //ABW: now there is a bug - editing existing request can introduce authority wider than max,
+    //such authority can also be used when cancelling (although it is kind of "workaroundable")
+    //HF29 is needed to fix this, after that the check should be moved to validate
+
   if( request == recovery_request_idx.end() ) // New Request
   {
     FC_ASSERT( !o.new_owner_authority.is_impossible() && "Cannot recover using an impossible authority." );
     FC_ASSERT( o.new_owner_authority.weight_threshold, "Cannot recover using an open authority." );
 
-    if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
-    {
-      validate_auth_size( o.new_owner_authority );
-    }
+    validate_auth_size( o.new_owner_authority );
 
     // Check accounts in the new authority exist
-    if( ( _db.has_hardfork( HIVE_HARDFORK_0_15__465 ) ) )
-    {
-      for( auto& a : o.new_owner_authority.account_auths )
-      {
-        _db.get_account( a.first );
-      }
-    }
+    verify_authority_accounts_exist( _db, o.new_owner_authority, o.account_to_recover, authority::owner );
 
     _db.create< account_recovery_request_object >( account_to_recover, o.new_owner_authority,
       _db.head_block_time() + HIVE_ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD );
@@ -600,18 +596,12 @@ void request_account_recovery_evaluator::do_apply( const request_account_recover
     FC_ASSERT( !o.new_owner_authority.is_impossible(), "Cannot recover using an impossible authority." );
 
     // Check accounts in the new authority exist
-    if( ( _db.has_hardfork( HIVE_HARDFORK_0_15__465 ) ) )
-    {
-      for( auto& a : o.new_owner_authority.account_auths )
-      {
-        _db.get_account( a.first );
-      }
-    }
+    verify_authority_accounts_exist( _db, o.new_owner_authority, o.account_to_recover, authority::owner );
 
     _db.modify( *request, [&]( account_recovery_request_object& req )
     {
       req.set_new_owner_authority( o.new_owner_authority, _db.head_block_time() + HIVE_ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD );
-    });
+    } );
   }
 }
 
