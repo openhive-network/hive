@@ -129,18 +129,22 @@ then
             sudo chmod -R a+w "${DATA_SOURCE}/datadir/blockchain"
             ls -al "${DATA_SOURCE}/datadir/blockchain"
         elif [[ -d "${SHARED_BLOCK_LOG_DIR}" ]]; then
-            # Blockchain not in cache or empty - create symlinks to shared block_log
+            # Blockchain not in cache or empty - copy from shared block_log
+            # We copy instead of symlink because hived may need write access during replay
+            # (e.g., to finalize block_log or reopen for writing)
             # Remove empty blockchain dir if it exists (leftover from Docker bind mounts)
             if [[ -d "${DATADIR}/blockchain" ]] && [[ -z "$(ls -A "${DATADIR}/blockchain" 2>/dev/null)" ]]; then
                 rmdir "${DATADIR}/blockchain" 2>/dev/null || true
             fi
-            echo "Blockchain not in cache, linking to shared block_log at ${SHARED_BLOCK_LOG_DIR}"
+            echo "Blockchain not in cache, copying from shared block_log at ${SHARED_BLOCK_LOG_DIR}"
             sudo -Enu hived mkdir -p "${DATADIR}/blockchain"
+            # Copy block_log files (not symlinks) so hived has write access
             for block_file in "${SHARED_BLOCK_LOG_DIR}"/block_log* ; do
                 if [[ -f "$block_file" ]]; then
                     local_name=$(basename "$block_file")
-                    sudo -Enu hived ln -sf "$block_file" "${DATADIR}/blockchain/${local_name}"
-                    echo "Linked: ${local_name}"
+                    echo "Copying: ${local_name}"
+                    sudo -En cp "$block_file" "${DATADIR}/blockchain/${local_name}"
+                    sudo -En chown hived:hived "${DATADIR}/blockchain/${local_name}"
                 fi
             done
             ls -al "${DATADIR}/blockchain"
