@@ -527,8 +527,7 @@ void limit_order_create_evaluator::do_apply( const limit_order_create_operation&
   FC_ASSERT( o.expiration > _db.head_block_time(), "Limit order has to expire after head block time." );
 
   time_point_sec expiration = o.expiration;
-  FC_TODO( "Check past order expirations and cleanup after HF 20" )
-  if( _db.has_hardfork( HIVE_HARDFORK_0_20__1449 ) )
+  if( _db.has_hardfork( HIVE_HARDFORK_0_20__1449 ) ) // 307842c657d54f576615cd312a425c517ad68db4 example tx with extra long expiration
   {
     FC_ASSERT( o.expiration <= _db.head_block_time() + HIVE_MAX_LIMIT_ORDER_EXPIRATION, "Limit Order Expiration must not be more than 28 days in the future" );
   }
@@ -553,8 +552,7 @@ void limit_order_create2_evaluator::do_apply( const limit_order_create2_operatio
   FC_ASSERT( o.expiration > _db.head_block_time() && "Limit order has to expire after head block time." );
 
   time_point_sec expiration = o.expiration;
-  FC_TODO( "Check past order expirations and cleanup after HF 20" )
-  if( _db.has_hardfork( HIVE_HARDFORK_0_20__1449 ) )
+  if( _db.has_hardfork( HIVE_HARDFORK_0_20__1449 ) ) // 8bce7ca4b2bea9af848db927342a88f82eea0684 example tx with extra long expiration
   {
     FC_ASSERT( o.expiration <= _db.head_block_time() + HIVE_MAX_LIMIT_ORDER_EXPIRATION && "Limit Order Expiration must not be more than 28 days in the future" );
   }
