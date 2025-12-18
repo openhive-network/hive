@@ -358,23 +358,43 @@ namespace hive { namespace protocol {
     FC_ASSERT( proxy != account, "Cannot proxy to self" );
   }
 
-  void custom_operation::validate() const {
+  void custom_operation::validate() const
+  {
     /// required auth accounts are the ones whose bandwidth is consumed
     FC_ASSERT( required_auths.size() > 0, "at least one account must be specified" );
+    FC_ASSERT( required_auths.size() <= HIVE_MAX_AUTHORITY_MEMBERSHIP,
+      "Authority membership exceeded. Max: ${max} Current: ${n}", ( "max", HIVE_MAX_AUTHORITY_MEMBERSHIP )( "n", required_auths.size() ) );
   }
-  void custom_json_operation::validate() const {
+
+  void custom_json_operation::validate() const
+  {
     /// required auth accounts are the ones whose bandwidth is consumed
-    FC_ASSERT( (required_auths.size() + required_posting_auths.size()) > 0, "at least one account must be specified" );
+    size_t num_auths = required_auths.size() + required_posting_auths.size();
+    FC_ASSERT( num_auths > 0, "at least one account must be specified" );
+    FC_ASSERT( num_auths <= HIVE_MAX_AUTHORITY_MEMBERSHIP,
+      "Authority membership exceeded. Max: ${max} Current: ${n}", ( "max", HIVE_MAX_AUTHORITY_MEMBERSHIP )( "n", num_auths ) );
+
     FC_ASSERT( id.size() <= HIVE_CUSTOM_OP_ID_MAX_LENGTH,
-      "Operation ID length exceeded. Max: ${max} Current: ${n}", ("max", HIVE_CUSTOM_OP_ID_MAX_LENGTH)("n", id.size()) );
-    validate_json_with_fallback(json);
+      "Operation ID length exceeded. Max: ${max} Current: ${n}", ( "max", HIVE_CUSTOM_OP_ID_MAX_LENGTH )( "n", id.size() ) );
+    validate_json_with_fallback( json );
   }
-  void custom_binary_operation::validate() const {
-    /// required auth accounts are the ones whose bandwidth is consumed
-    FC_ASSERT( (required_owner_auths.size() + required_active_auths.size() + required_posting_auths.size()) > 0, "at least one account must be specified" );
+
+  void custom_binary_operation::validate() const
+  {
+    size_t num_auths = required_owner_auths.size() + required_active_auths.size() + required_posting_auths.size();
+    FC_ASSERT( num_auths > 0 && "binary", "at least one account must be specified" ); // ABW: that limit has to hold at least until
+      // https://gitlab.syncad.com/hive/hive/-/issues/675#note_159315 is implemented - someone has to pay RC
+    for( const auto& auth : required_auths )
+    {
+      auth.validate();
+      num_auths += auth.key_auths.size() + auth.account_auths.size();
+    }
+    FC_ASSERT( num_auths <= HIVE_MAX_AUTHORITY_MEMBERSHIP && "binary",
+      "Authority membership exceeded. Max: ${max} Current: ${n}", ( "max", HIVE_MAX_AUTHORITY_MEMBERSHIP )( "n", num_auths ) );
     FC_ASSERT( HIVE_CUSTOM_OP_ID_MAX_LENGTH >= id.size(),
       "Operation ID length exceeded. Max: ${max} Current: ${n}", ("max", HIVE_CUSTOM_OP_ID_MAX_LENGTH)("n", id.size()) );
-    for( const auto& a : required_auths ) a.validate();
+    FC_ASSERT( data.size() <= HIVE_CUSTOM_OP_DATA_MAX_LENGTH && "Too large",
+      "Operation data must be less than ${bytes} bytes.", ( "bytes", HIVE_CUSTOM_OP_DATA_MAX_LENGTH ) );
   }
 
 
