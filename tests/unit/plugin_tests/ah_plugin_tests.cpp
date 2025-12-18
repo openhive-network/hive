@@ -55,7 +55,7 @@ BOOST_AUTO_TEST_CASE( enum_virtual_ops_zero_bug )
 struct trigger_bug : appbase::plugin< trigger_bug >
 {
   database& _db;
-  boost::signals2::connection _post_apply_block;
+  database::signal_connection_ptr _post_apply_block;
   bool trigger = false;
 
   trigger_bug( appbase::application& app, database& db ) : appbase::plugin<trigger_bug>(), _db( db )

@@ -3,6 +3,8 @@
 
 #include "../db_fixture/clean_database_fixture.hpp"
 
+#include <hive/chain/detail/state/global_property_object_multiindex.hpp>
+
 using namespace hive::chain;
 using namespace hive::protocol;
 using namespace hive::plugins;
