@@ -467,19 +467,20 @@ chain_test:
       - TEST_SUITE:
           - "serialization_tests undo_tests"
           - "basic_tests operation_time_tests"
-          - "proposal_tests"
-          - "operation_tests"
-          - "* !serialization_tests !undo_tests !basic_tests !operation_time_tests !proposal_tests !operation_tests"
+          - "proposal_tests proposal_tests_performance"
+          - "operation_tests timeshare_tests"
+          - "hf23_tests hf24_tests hf26_tests hf28_tests hf28_tests2"
+          - "smt_tests smt_operation_tests smt_operation_time_tests"
+          - "rc_tests direct_rc_delegation delayed_voting_tests delayed_voting_proposal_tests"
+          - "curation_reward_tests curation_reward_tests2 tx_status_tests beekeeper_tests block_tests block_storage_tests"
+          - "* !serialization_tests !undo_tests !basic_tests !operation_time_tests !proposal_tests !proposal_tests_performance !operation_tests !timeshare_tests !hf23_tests !hf24_tests !hf26_tests !hf28_tests !hf28_tests2 !smt_tests !smt_operation_tests !smt_operation_time_tests !rc_tests !direct_rc_delegation !delayed_voting_tests !delayed_voting_proposal_tests !curation_reward_tests !curation_reward_tests2 !tx_status_tests !beekeeper_tests !block_tests !block_storage_tests"
   script:
-    - TESTS=$(echo "$TEST_SUITE" | tr ' ' ',')
-    - 'echo "DEBUG - Raw: $TEST_SUITE"'
-    - 'echo "DEBUG - Converted: $TESTS"'
-    - timeout 20m ./hived-testnet-binaries/chain_test --run_test="$TESTS" --log_format=JUNIT --log_sink=chain_test_results.xml --log_level=error > chain_test.log 2>&1
+    - timeout 20m ./hived-testnet-binaries/chain_test --run_test=$(echo "$TEST_SUITE" | tr ' ' ',') --log_format=JUNIT --log_sink="chain_test_results_${CI_NODE_INDEX}.xml" --log_level=error > "chain_test_${CI_NODE_INDEX}.log" 2>&1
   artifacts:
     reports:
-      junit: chain_test_results.xml
+      junit: chain_test_results_*.xml
     paths:
-      - chain_test.log
+      - "chain_test_*.log"
     when: always
     expire_in: 1 week
 
