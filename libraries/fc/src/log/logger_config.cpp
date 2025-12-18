@@ -47,7 +47,7 @@ namespace fc {
       return configure_result;
       } catch ( exception& e )
       {
-         fc::cerr<<e.to_detail_string()<<"\n";
+         //fc::cerr<<e.to_detail_string()<<"\n";
       }
       return false;
    }

@@ -11,11 +11,11 @@ Modifications by Steemit, Inc. 2016
 #include <../../../include/fc/macros.hpp>
 
 #ifdef EQUIHASH_POW_VERBOSE
-#include <iomanip>
+/*#include <iomanip>
 #include <iostream>
 
 #define EQUIHASH_LOG(s) \
-   std::cerr << s << std::endl;
+   std::cerr << s << std::endl;*/
 #else
 #define EQUIHASH_LOG(s)
 #endif

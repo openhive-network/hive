@@ -6,6 +6,7 @@
 
 #pragma once
 
+#if defined(__DUPA__)
 #include <iostream>
 
 namespace fc {
@@ -14,3 +15,4 @@ void print_stacktrace(std::ostream& out, unsigned int max_frames = 63, void* cal
 void print_stacktrace_on_segfault();
 
 }
+#endif // defined(__DUPA__)

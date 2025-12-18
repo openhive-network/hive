@@ -1,3 +1,4 @@
+#if defined(__DUPA__)
 #include <fc/rpc/cli.hpp>
 #include <fc/thread/thread.hpp>
 #include <fc/interprocess/signals.hpp>
@@ -266,3 +267,4 @@ void cli::getline( const fc::string& prompt, fc::string& line)
 }
 
 } } // namespace fc::rpc
+#endif // #if defined(__DUPA__)

@@ -1,4 +1,5 @@
 #pragma once
+#if defined(__DUPA__)
 #include <fc/io/stdio.hpp>
 #include <fc/io/json.hpp>
 #include <fc/io/buffered_iostream.hpp>
@@ -44,3 +45,4 @@ namespace fc { namespace rpc {
          on_termination_handler _termination_hdl;
    };
 } }
+#endif // defined(__DUPA__)

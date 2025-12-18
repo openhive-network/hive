@@ -1,3 +1,4 @@
+#if defined(__DUPA__)
 #include <fc/exception/exception.hpp>
 #include <fc/io/fstream.hpp>
 #include <fc/log/json_file_appender.hpp>
@@ -282,3 +283,4 @@ namespace fc {
    }
 
 } // fc
+#endif // #if defined(__DUPA__)

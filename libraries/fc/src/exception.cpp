@@ -6,7 +6,7 @@
 #include <fc/io/json.hpp>
 #include <fc/stacktrace.hpp>
 
-#include <iostream>
+//#include <iostream>
 
 namespace fc
 {
@@ -320,7 +320,7 @@ namespace fc
       if( enable_assert_stacktrace )
       {
          out << "FC_ASSERT / CHAINBASE_THROW_EXCEPTION!" << std::endl;
-         print_stacktrace( out, 128, nullptr, false );
+         //print_stacktrace( out, 128, nullptr, false );
       }
 
       wlog( out.str() );

@@ -6,7 +6,7 @@
 
 #include <assert.h>
 #include <fc/log/logger.hpp>
-#include <iostream>
+//#include <iostream>
 
 namespace fc {
 

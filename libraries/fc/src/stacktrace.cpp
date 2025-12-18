@@ -3,7 +3,7 @@
 
 // Downloaded from http://panthema.net/2008/0901-stacktrace-demangled/
 // and modified for C++ and FC by Steemit, Inc.
-
+#if defined(__DUPA__)
 #include <fc/filesystem.hpp>
 #include <fc/macros.hpp>
 #include <fc/stacktrace.hpp>
@@ -304,3 +304,4 @@ void print_stacktrace_on_segfault() {}
 }
 
 #endif
+#endif // #if defined(__DUPA__)

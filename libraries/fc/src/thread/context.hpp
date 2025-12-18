@@ -3,7 +3,7 @@
 #include <fc/exception/exception.hpp>
 #include <vector>
 
-#include <iostream>
+//#include <iostream>
 
 #include <boost/version.hpp>
 

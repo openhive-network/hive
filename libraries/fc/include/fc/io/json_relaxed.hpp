@@ -12,7 +12,7 @@
 #include <fc/log/logger.hpp>
 #include <fc/string.hpp>
 //#include <utfcpp/utf8.h>
-#include <iostream>
+//#include <iostream>
 #include <fstream>
 #include <sstream>
 

@@ -1,3 +1,4 @@
+#if defined(__DUPA__)
 #include <fc/io/stdio.hpp>
 #include <iostream>
 
@@ -18,3 +19,4 @@ namespace fc {
   cout_t& cout = *cout_ptr;
   cerr_t& cerr = *cerr_ptr;
 } // namespace fc
+#endif // #if defined(__DUPA__)

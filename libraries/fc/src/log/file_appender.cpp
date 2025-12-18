@@ -1,3 +1,4 @@
+#if defined(__DUPA__)
 #include <fc/exception/exception.hpp>
 #include <fc/io/fstream.hpp>
 #include <fc/log/file_appender.hpp>
@@ -241,3 +242,4 @@ namespace fc {
    }( &reg_file_appender );
 
 } // fc
+#endif // #if defined(__DUPA__)
