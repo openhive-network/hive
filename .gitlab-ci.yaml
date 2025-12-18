@@ -1426,9 +1426,9 @@ deploy_beekeeper_wasm_production_public_npm:
   rules:
     - if: $QUICK_TEST == "true"
       when: never
-    - if: $CI_COMMIT_REF_PROTECTED != "true"
-      when: never
-    - when: on_success
+    - if: '$CI_COMMIT_TAG && $CI_COMMIT_REF_PROTECTED == "true"'
+      when: manual
+      allow_failure: true
 
   before_script:
     - !reference [.npm_based_job_base, before_script]
@@ -1505,9 +1505,9 @@ deploy-wax-spec-production-public-npm:
   rules:
     - if: $QUICK_TEST == "true"
       when: never
-    - if: $CI_COMMIT_REF_PROTECTED != "true"
-      when: never
-    - when: on_success
+    - if: '$CI_COMMIT_TAG && $CI_COMMIT_REF_PROTECTED == "true"'
+      when: manual
+      allow_failure: true
   variables:
     NPM_PUBLISH_TOKEN: "$INTERNAL_HIDDEN_PUBLISH_TOKEN"
     NPM_PACKAGE_NAME: "wax-api-jsonrpc"
