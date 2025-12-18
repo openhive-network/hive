@@ -29,7 +29,7 @@ struct smt_create_operation : public base_operation
   account_name_type control_account;
   asset_symbol_type symbol;
 
-  /// The amount to be transfered from @account to null account as elevation fee.
+  /// The amount to be transfered from @account to null account as elevation fee (HIVE or HBD).
   asset             smt_creation_fee;
   /// Separately provided precision for clarity and redundancy.
   uint8_t           precision;

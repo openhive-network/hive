@@ -157,13 +157,13 @@ void smt_setup_evaluator::do_apply( const smt_setup_operation& o )
 {
   FC_ASSERT( _db.has_hardfork( HIVE_SMT_HARDFORK ) && "Premature SMT setup",
     "SMT functionality not enabled until hardfork ${hf}", ("hf", HIVE_SMT_HARDFORK) );
-FC_TODO("Adjust assertion below and add/modify negative tests appropriately.")
+  FC_TODO("Adjust assertion below and add/modify negative tests appropriately.")
   const auto* _token = _db.find< smt_token_object, by_symbol >( o.symbol );
   FC_ASSERT( _token, "SMT ${ac} not elevated yet.",("ac", o.control_account) );
 
   _db.modify(  *_token, [&]( smt_token_object& token )
   {
-FC_TODO("Add/modify test to check the token phase correctly set.")
+    FC_TODO("Add/modify test to check the token phase correctly set.")
     token.phase = smt_phase::setup_completed;
     token.control_account = o.control_account;
     token.max_supply = o.max_supply;
@@ -322,24 +322,26 @@ void smt_contribute_evaluator::do_apply( const smt_contribute_operation& o )
     FC_ASSERT( token->phase >= smt_phase::contribution_begin_time_completed, "SMT has yet to enter the contribution phase" );
     FC_ASSERT( token->phase < smt_phase::contribution_end_time_completed, "SMT is no longer in the contribution phase" );
 
+    HIVE_asset o_contribution = o.get_contribution();
+
     const smt_ico_object* token_ico = _db.find< smt_ico_object, by_symbol >( token->liquid_symbol );
     FC_ASSERT( token_ico != nullptr, "Unable to find ICO data for symbol: ${sym}", ("sym", token->liquid_symbol) );
     FC_ASSERT( token_ico->contributed.amount < token_ico->hive_units_hard_cap, "SMT ICO has reached its hard cap and no longer accepts contributions" );
-    FC_ASSERT( token_ico->contributed.amount + o.contribution.amount <= token_ico->hive_units_hard_cap,
+    FC_ASSERT( token_ico->contributed.amount + o_contribution.amount <= token_ico->hive_units_hard_cap,
       "The proposed contribution would exceed the ICO hard cap, maximum possible contribution: ${c}",
-      ("c", asset( token_ico->hive_units_hard_cap - token_ico->contributed.amount, HIVE_SYMBOL )) );
+      ( "c", HIVE_asset( token_ico->hive_units_hard_cap - token_ico->contributed.amount ) ) );
 
-    auto key = boost::tuple< asset_symbol_type, account_name_type, uint32_t >( o.contribution.symbol, o.contributor, o.contribution_id );
+    auto key = boost::tuple< asset_symbol_type, account_name_type, uint32_t >( HIVE_SYMBOL, o.contributor, o.contribution_id );
     auto contrib_ptr = _db.find< smt_contribution_object, by_symbol_contributor >( key );
     FC_ASSERT( contrib_ptr == nullptr, "The provided contribution ID must be unique. Current: ${id}", ("id", o.contribution_id) );
 
-    _db.adjust_balance( o.contributor, -o.contribution );
+    _db.adjust_balance( o.contributor, -o_contribution );
 
-    _db.create< smt_contribution_object >( o.contributor, o.contribution, o.symbol, o.contribution_id );
+    _db.create< smt_contribution_object >( o.contributor, o_contribution, o.symbol, o.contribution_id );
 
     _db.modify( *token_ico, [&]( smt_ico_object& ico )
     {
-      ico.contributed += o.contribution;
+      ico.contributed += o_contribution;
     } );
   }
   FC_CAPTURE_AND_RETHROW( (o) )

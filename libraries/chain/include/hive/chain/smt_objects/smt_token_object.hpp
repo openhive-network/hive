@@ -126,7 +126,7 @@ public:
   time_point_sec                launch_time;
   share_type                    hive_units_soft_cap = -1;
   share_type                    hive_units_hard_cap = -1;
-  protocol::asset               contributed = protocol::asset( 0, HIVE_SYMBOL );
+  protocol::HIVE_asset          contributed = protocol::HIVE_asset( 0 );
 
   CHAINBASE_UNPACK_CONSTRUCTOR(smt_ico_object);
 };
@@ -161,7 +161,7 @@ class smt_contribution_object : public object< smt_contribution_object_type, smt
 public:
   template< typename Allocator >
   smt_contribution_object( allocator< Allocator > a, uint64_t _id,
-    const account_name_type& _contributor, const protocol::asset& _contribution, const asset_symbol_type& _smt_symbol, uint32_t _contribution_id )
+    const account_name_type& _contributor, const protocol::HIVE_asset& _contribution, const asset_symbol_type& _smt_symbol, uint32_t _contribution_id )
     : id( _id ), symbol( _smt_symbol ), contributor( _contributor ), contribution_id( _contribution_id ), contribution( _contribution )
   {}
 

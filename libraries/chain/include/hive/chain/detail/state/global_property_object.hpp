@@ -171,7 +171,7 @@ namespace hive { namespace chain {
       uint16_t max_open_recurrent_transfers = HIVE_MAX_OPEN_RECURRENT_TRANSFERS;
 
 #ifdef HIVE_ENABLE_SMT
-      HBD_asset smt_creation_fee = HBD_asset( 1000 );
+      asset smt_creation_fee = HBD_asset( 1000 ); // NOTE: it is expected to be able to be expressed in HIVE as well
 #endif
     CHAINBASE_UNPACK_CONSTRUCTOR(dynamic_global_property_object);
   };
