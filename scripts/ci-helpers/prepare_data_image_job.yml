@@ -63,16 +63,19 @@ include:
     BLOCK_LOG_SOURCE_DIR: ""
     CONFIG_INI_SOURCE: ""
     HIVE_NETWORK_TYPE: mainnet
-    DATA_CACHE_DIR: "${DATA_CACHE_HIVE_PREFIX}_${HIVED_COMMIT}"
+    # Build in local cache - cache-manager handles two-tier caching (local + NFS)
+    DATA_CACHE_DIR: "${CACHE_LOCAL_PATH}/hive/${HIVED_COMMIT}"
+    CACHE_KEY: "${HIVED_COMMIT}"
     # NFS cache configuration
     CACHE_NFS_PATH: "/nfs/ci-cache"
     CACHE_LOCAL_PATH: "/cache"
   script:
     - |
-      # Try to get cached data from NFS first
+      # Two-tier caching: local cache -> NFS tar
+      # cache-manager handles extracting from NFS to local cache if needed
       CACHE_MANAGER="$SCRIPTS_PATH/ci-helpers/cache-manager.sh"
-      CACHE_KEY="${HIVED_COMMIT}"
 
+      # Try to get from cache (checks local first, then NFS)
       if [[ -x "$CACHE_MANAGER" ]] && "$CACHE_MANAGER" get hive "$CACHE_KEY" "${DATA_CACHE_DIR}"; then
         echo "Cache hit for HIVED commit $CACHE_KEY"
         # Ensure hived_uid.env exists
@@ -80,17 +83,18 @@ include:
           echo "HIVED_UID=$(id -u)" > "${DATA_CACHE_DIR}/datadir/hived_uid.env"
         fi
       else
-        echo "Cache miss for HIVED commit $CACHE_KEY - performing replay"
+        echo "Cache miss for HIVED commit $CACHE_KEY - performing replay in LOCAL storage"
         mkdir "${DATA_CACHE_DIR}/datadir" -pv
         cd "${DATA_CACHE_DIR}/datadir"
+        # flock prevents concurrent replays on same builder
         flock "${DATA_CACHE_DIR}/datadir" $SCRIPTS_PATH/ci-helpers/build_data.sh $HIVED_IMAGE_NAME \
           --data-cache="${DATA_CACHE_DIR}" --block-log-source-dir="$BLOCK_LOG_SOURCE_DIR" \
           --config-ini-source="$CONFIG_INI_SOURCE"
         cd "$CI_PROJECT_DIR"
 
-        # Push to NFS cache for future use
+        # Push to cache (local -> NFS tar)
         if [[ -x "$CACHE_MANAGER" ]]; then
-          "$CACHE_MANAGER" put hive "$CACHE_KEY" "${DATA_CACHE_DIR}" || echo "Warning: Failed to push to NFS cache"
+          "$CACHE_MANAGER" put hive "$CACHE_KEY" "${DATA_CACHE_DIR}" || echo "Warning: Failed to push to cache"
         fi
       fi
     - cp "${DATA_CACHE_DIR}/datadir/hived_uid.env" "$CI_PROJECT_DIR/hived_uid.env"

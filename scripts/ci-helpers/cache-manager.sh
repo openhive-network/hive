@@ -9,6 +9,7 @@
 #   cache-manager.sh get <cache-type> <cache-key> <local-dest>
 #   cache-manager.sh put <cache-type> <cache-key> <local-source>
 #   cache-manager.sh cleanup <cache-type> [--max-size-gb N] [--max-age-days N]
+#   cache-manager.sh cleanup-local [<cache-type>]  # Clean local cache by LRU
 #   cache-manager.sh list <cache-type>
 #   cache-manager.sh status
 #   cache-manager.sh is-fast-builder    # Check if current host is a fast builder
@@ -23,9 +24,13 @@
 #   CACHE_NFS_PATH      - NFS mount point (default: /nfs/ci-cache)
 #   CACHE_LOCAL_PATH    - Local cache directory (default: /cache)
 #   CACHE_MAX_SIZE_GB   - Max total NFS cache size (default: 2000)
-#   CACHE_MAX_AGE_DAYS  - Max cache age (default: 30)
+#   CACHE_MAX_AGE_DAYS  - Max NFS cache age (default: 30)
+#   CACHE_LOCAL_MAX_SIZE_GB - Max local cache size (default: auto 70% of available)
+#   CACHE_LOCAL_MAX_AGE_DAYS - Max local cache age (default: 7)
 #   CACHE_LOCK_TIMEOUT  - Lock timeout in seconds (default: 3600)
 #   CACHE_QUIET         - Suppress verbose output (default: false)
+#
+# Per-builder config: Create /storage1/cache/.cache-config to override auto limits
 
 set -euo pipefail
 
@@ -70,6 +75,33 @@ CACHE_MAX_SIZE_GB="${CACHE_MAX_SIZE_GB:-2000}"
 CACHE_MAX_AGE_DAYS="${CACHE_MAX_AGE_DAYS:-30}"
 CACHE_LOCK_TIMEOUT="${CACHE_LOCK_TIMEOUT:-3600}"
 CACHE_QUIET="${CACHE_QUIET:-false}"
+
+# Local cache limits (will be auto-configured if not set)
+CACHE_LOCAL_MAX_SIZE_GB="${CACHE_LOCAL_MAX_SIZE_GB:-}"
+CACHE_LOCAL_MAX_AGE_DAYS="${CACHE_LOCAL_MAX_AGE_DAYS:-}"
+
+# Load per-builder config if exists (overrides defaults)
+LOCAL_CONFIG="${CACHE_LOCAL_PATH}/.cache-config"
+if [[ -f "$LOCAL_CONFIG" ]]; then
+    # shellcheck source=/dev/null
+    source "$LOCAL_CONFIG"
+fi
+
+# Auto-configure local cache limits based on available space
+_auto_configure_local_limits() {
+    if [[ -d "$CACHE_LOCAL_PATH" ]]; then
+        local avail_kb
+        avail_kb=$(df --output=avail "$CACHE_LOCAL_PATH" 2>/dev/null | tail -1) || avail_kb=0
+        local avail_gb=$((avail_kb / 1024 / 1024))
+        # Default to 70% of available space
+        : "${CACHE_LOCAL_MAX_SIZE_GB:=$((avail_gb * 70 / 100))}"
+    else
+        : "${CACHE_LOCAL_MAX_SIZE_GB:=500}"
+    fi
+    # Default age to 7 days for local cache
+    : "${CACHE_LOCAL_MAX_AGE_DAYS:=7}"
+}
+_auto_configure_local_limits
 
 # Logging
 _log() {
@@ -119,13 +151,15 @@ _get_paths() {
     if _is_nfs_host; then
         LOCAL_CACHE_DIR="$NFS_CACHE_DIR"
     else
-        LOCAL_CACHE_DIR="${CACHE_LOCAL_PATH}/${cache_type}_${cache_key}"
+        # Use subdirectory structure matching NFS (not underscore-separated)
+        LOCAL_CACHE_DIR="${CACHE_LOCAL_PATH}/${cache_type}/${cache_key}"
     fi
 
     LOCK_FILE="${NFS_CACHE_DIR}/.lock"
     METADATA_FILE="${NFS_CACHE_DIR}/.metadata"
     LRU_INDEX="${CACHE_NFS_PATH}/.lru_index"
     GLOBAL_LOCK="${CACHE_NFS_PATH}/.global_lock"
+    LOCAL_LOCK_FILE="${LOCAL_CACHE_DIR}/.lock"
 }
 
 # Update LRU index with access timestamp
@@ -148,6 +182,29 @@ _update_lru() {
             echo '${timestamp}|${entry}' > '$LRU_INDEX'
         fi
     " || _error "Failed to acquire global lock for LRU update"
+}
+
+# Update local cache LRU index with access timestamp
+_update_local_lru() {
+    local cache_type="$1"
+    local cache_key="$2"
+    local timestamp
+    timestamp=$(date +%s)
+    local entry="${cache_type}/${cache_key}"
+    local local_lru_index="${CACHE_LOCAL_PATH}/.lru_index"
+    local local_lru_lock="${CACHE_LOCAL_PATH}/.lru_lock"
+
+    mkdir -p "$CACHE_LOCAL_PATH"
+    touch "$local_lru_lock"
+    _flock_with_timeout 30 -x "$local_lru_lock" -c "
+        if [[ -f '$local_lru_index' ]]; then
+            grep -v '^[0-9]*|${entry}\$' '$local_lru_index' > '${local_lru_index}.tmp' 2>/dev/null || true
+            echo '${timestamp}|${entry}' >> '${local_lru_index}.tmp'
+            mv '${local_lru_index}.tmp' '$local_lru_index'
+        else
+            echo '${timestamp}|${entry}' > '$local_lru_index'
+        fi
+    " || _error "Failed to update local LRU"
 }
 
 # Write metadata for a cache entry
@@ -254,7 +311,8 @@ _build_haf_tar_excludes() {
     echo "$excludes"
 }
 
-# GET: Check local, then NFS, copy to local if found on NFS
+# GET: Check local cache, then NFS, populate local cache from NFS if needed
+# Two-tier caching: local cache has real data (not symlinks), NFS is backing store
 cmd_get() {
     local cache_type="$1"
     local cache_key="$2"
@@ -265,23 +323,40 @@ cmd_get() {
     local is_nfs_host=false
     _is_nfs_host && is_nfs_host=true
 
-    # 1. Check local cache first (on NFS host, this IS the NFS cache)
-    if [[ -d "$LOCAL_CACHE_DIR" ]]; then
-        _log "Cache hit: $LOCAL_CACHE_DIR"
+    # 1. Check local cache first (real data, not symlinks)
+    # On NFS host, LOCAL_CACHE_DIR == NFS_CACHE_DIR
+    if [[ -d "$LOCAL_CACHE_DIR" && ! -L "$LOCAL_CACHE_DIR" ]]; then
+        _log "Local cache hit: $LOCAL_CACHE_DIR"
+
         if [[ "$LOCAL_CACHE_DIR" != "$local_dest" ]]; then
-            _log "Copying to destination: $local_dest"
-            mkdir -p "$(dirname "$local_dest")"
-            # Use cp -r instead of cp -a to avoid permission issues on NFS
-            # (cp -a tries to preserve ownership which can fail on NFS)
-            cp -r "$LOCAL_CACHE_DIR" "$local_dest"
+            # Use shared lock during copy to prevent cleanup from deleting while reading
+            mkdir -p "$(dirname "$LOCAL_LOCK_FILE")"
+            touch "$LOCAL_LOCK_FILE" 2>/dev/null || true
+
+            if _flock_with_timeout "$CACHE_LOCK_TIMEOUT" -s "$LOCAL_LOCK_FILE" -c "
+                echo '[cache-manager] Copying from local cache to destination: $local_dest' >&2
+                mkdir -p '$local_dest'
+                cp -r '$LOCAL_CACHE_DIR'/. '$local_dest'/
+            "; then
+                _log "Copied from local cache successfully"
+            else
+                _log "Failed to acquire shared lock on local cache, falling back to NFS"
+                # Fall through to NFS path
+                if [[ "$is_nfs_host" == "true" ]]; then
+                    return 1
+                fi
+            fi
         else
             _log "Destination is cache dir, no copy needed"
         fi
+
         # Restore pgdata permissions for HAF caches
-        if [[ "$cache_type" == "haf" ]]; then
+        if [[ "$cache_type" == "haf" || "$cache_type" == "haf_sync" ]]; then
             _restore_pgdata_permissions "$local_dest"
         fi
-        # Update LRU if NFS available
+
+        # Update LRU indices
+        _update_local_lru "$cache_type" "$cache_key" || true
         if _nfs_available; then
             _update_lru "$cache_type" "$cache_key" || true
         fi
@@ -294,13 +369,13 @@ cmd_get() {
         return 1
     fi
 
-    # 2. Check NFS cache (only for NFS clients)
+    # 2. Not in local cache - check NFS (only for NFS clients)
     if ! _nfs_available; then
         _log "NFS not available, cache miss"
         return 1
     fi
 
-    # Check for tar archive first (new format), then directory (legacy format)
+    # Check for tar archive first (preferred format), then directory (legacy)
     local NFS_TAR_FILE="${NFS_CACHE_DIR}.tar"
     local use_tar=false
 
@@ -314,55 +389,59 @@ cmd_get() {
         return 1
     fi
 
-    # 3. Copy from NFS to local - NFS clients only
-    mkdir -p "$local_dest"
+    # 3. Populate local cache from NFS (with exclusive lock to prevent races)
+    mkdir -p "$(dirname "$LOCAL_CACHE_DIR")"
+    mkdir -p "$(dirname "$LOCAL_LOCK_FILE")"
+    local local_entry_lock="${LOCAL_CACHE_DIR}.lock"
+    touch "$local_entry_lock" 2>/dev/null || true
 
-    if [[ "$use_tar" == "true" ]]; then
-        # Extract tar archive to local (fast: reading single file from NFS)
-        local NFS_TAR_LOCK="${NFS_TAR_FILE}.lock"
-        touch "$NFS_TAR_LOCK" 2>/dev/null || true
-
-        if _flock_with_timeout "$CACHE_LOCK_TIMEOUT" -s "$NFS_TAR_LOCK" -c "
-            echo '[cache-manager] Extracting tar archive to local: $local_dest' >&2
-            tar xf '$NFS_TAR_FILE' -C '$local_dest'
-        "; then
-            _log "Extracted tar archive successfully"
-        else
-            _error "Failed to extract tar archive"
-            return 1
+    if ! _flock_with_timeout "$CACHE_LOCK_TIMEOUT" -x "$local_entry_lock" -c "
+        # Double-check after acquiring lock (another job may have populated)
+        if [[ -d '$LOCAL_CACHE_DIR' && ! -L '$LOCAL_CACHE_DIR' ]]; then
+            echo '[cache-manager] Local cache populated while waiting for lock' >&2
+            exit 0
         fi
+
+        # Remove any stale symlinks
+        [[ -L '$LOCAL_CACHE_DIR' ]] && rm -f '$LOCAL_CACHE_DIR'
+
+        # Extract from NFS to local cache
+        mkdir -p '$LOCAL_CACHE_DIR'
+        if [[ '$use_tar' == 'true' ]]; then
+            echo '[cache-manager] Extracting NFS tar to local cache: $LOCAL_CACHE_DIR' >&2
+            tar xf '$NFS_TAR_FILE' -C '$LOCAL_CACHE_DIR'
+        else
+            echo '[cache-manager] Copying NFS directory to local cache: $LOCAL_CACHE_DIR' >&2
+            (cd '$NFS_CACHE_DIR' && tar cf - .) | (cd '$LOCAL_CACHE_DIR' && tar xf -)
+        fi
+    "; then
+        _log "Populated local cache from NFS"
     else
-        # Legacy directory format - use tar pipe for faster reads
-        mkdir -p "$(dirname "$LOCK_FILE")"
-        touch "$LOCK_FILE"
-
-        if _flock_with_timeout "$CACHE_LOCK_TIMEOUT" -s "$LOCK_FILE" -c "
-            echo '[cache-manager] Copying from NFS directory to local: $local_dest' >&2
-            (cd '$NFS_CACHE_DIR' && tar cf - .) | (cd '$local_dest' && tar xf -)
-        "; then
-            _log "Copied from directory successfully"
-        else
-            _error "Failed to acquire shared lock"
-            return 1
-        fi
+        _error "Failed to populate local cache from NFS"
+        return 1
     fi
 
-    # Cache locally for future use (symlink to avoid copy)
-    if [[ "$LOCAL_CACHE_DIR" != "$local_dest" && ! -e "$LOCAL_CACHE_DIR" ]]; then
-        mkdir -p "$(dirname "$LOCAL_CACHE_DIR")"
-        ln -sf "$local_dest" "$LOCAL_CACHE_DIR" 2>/dev/null || true
+    # 4. Copy from local cache to destination
+    if [[ "$LOCAL_CACHE_DIR" != "$local_dest" ]]; then
+        mkdir -p "$local_dest"
+        cp -r "$LOCAL_CACHE_DIR"/. "$local_dest"/
+        _log "Copied to destination: $local_dest"
     fi
 
     # Restore pgdata permissions for HAF caches
-    if [[ "$cache_type" == "haf" ]]; then
+    if [[ "$cache_type" == "haf" || "$cache_type" == "haf_sync" ]]; then
         _restore_pgdata_permissions "$local_dest"
     fi
 
-    _update_lru "$cache_type" "$cache_key"
+    # Update LRU indices
+    _update_local_lru "$cache_type" "$cache_key" || true
+    _update_lru "$cache_type" "$cache_key" || true
+
     return 0
 }
 
-# PUT: Copy local cache to NFS
+# PUT: Store cache in local cache, then push to NFS as tar archive
+# Two-tier caching: local cache has real data, NFS is backing store (tar format)
 cmd_put() {
     local cache_type="$1"
     local cache_key="$2"
@@ -374,7 +453,7 @@ cmd_put() {
     fi
 
     # Relax pgdata permissions for HAF caches so they can be copied
-    if [[ "$cache_type" == "haf" ]]; then
+    if [[ "$cache_type" == "haf" || "$cache_type" == "haf_sync" ]]; then
         _relax_pgdata_permissions "$local_source"
     fi
 
@@ -393,7 +472,6 @@ cmd_put() {
         fi
 
         # Copy directly to NFS path (which is local storage on this host)
-        # Use tar streaming for consistency (though local-to-local is already fast)
         if [[ "$local_source" != "$NFS_CACHE_DIR" ]]; then
             _log "Storing cache on NFS host: $NFS_CACHE_DIR"
             mkdir -p "$NFS_CACHE_DIR"
@@ -413,31 +491,41 @@ cmd_put() {
         return 0
     fi
 
-    # NFS client path: prefer NFS, use local cache only as fallback
-    # Rationale: Local cache is only useful on THIS builder. NFS is shared across all builders.
-    # We skip local copy to save time - if NFS push succeeds, create symlink for local reference.
+    # NFS client path: copy to local cache first, then push to NFS
 
-    # Check if source is already on NFS - no need to copy/tar
-    if [[ "$local_source" == "$CACHE_NFS_PATH"/* ]]; then
-        _log "Source is already on NFS: $local_source"
-        # Create symlink from expected cache path to actual location if different
-        if [[ "$local_source" != "$NFS_CACHE_DIR" && ! -e "$NFS_CACHE_DIR" ]]; then
-            ln -sf "$local_source" "$NFS_CACHE_DIR" 2>/dev/null || true
+    # 1. Copy to local cache (if source is different from local cache path)
+    if [[ "$local_source" != "$LOCAL_CACHE_DIR" ]]; then
+        # Check if local cache already has this entry
+        if [[ -d "$LOCAL_CACHE_DIR" && ! -L "$LOCAL_CACHE_DIR" ]]; then
+            _log "Local cache already exists: $LOCAL_CACHE_DIR"
+        else
+            _log "Copying to local cache: $LOCAL_CACHE_DIR"
+            mkdir -p "$(dirname "$LOCAL_CACHE_DIR")"
+            local local_entry_lock="${LOCAL_CACHE_DIR}.lock"
+            touch "$local_entry_lock" 2>/dev/null || true
+
+            if ! _flock_with_timeout "$CACHE_LOCK_TIMEOUT" -x "$local_entry_lock" -c "
+                # Remove any stale symlinks
+                [[ -L '$LOCAL_CACHE_DIR' ]] && rm -f '$LOCAL_CACHE_DIR'
+
+                if [[ -d '$LOCAL_CACHE_DIR' ]]; then
+                    echo '[cache-manager] Local cache already exists' >&2
+                    exit 0
+                fi
+
+                mkdir -p '$LOCAL_CACHE_DIR'
+                cp -r '$local_source'/. '$LOCAL_CACHE_DIR'/
+            "; then
+                _error "Failed to write to local cache"
+                # Continue to try NFS anyway
+            fi
         fi
-        _write_metadata "$cache_type" "$cache_key" "$local_source"
-        _update_lru "$cache_type" "$cache_key"
-        _log "Cache registered (source already on NFS)"
-        return 0
+        _update_local_lru "$cache_type" "$cache_key" || true
     fi
 
+    # 2. Push to NFS (if available)
     if ! _nfs_available; then
-        # NFS unavailable - use local cache as fallback
-        if [[ "$LOCAL_CACHE_DIR" != "$local_source" ]]; then
-            _log "NFS not available, caching locally: $LOCAL_CACHE_DIR"
-            mkdir -p "$(dirname "$LOCAL_CACHE_DIR")"
-            cp -a "$local_source" "$LOCAL_CACHE_DIR" 2>/dev/null || true
-        fi
-        _log "Cached locally only (NFS unavailable)"
+        _log "NFS not available, cached locally only"
         return 0
     fi
 
@@ -451,14 +539,11 @@ cmd_put() {
 
     # Copy to NFS as single tar archive for 3x faster writes
     # Benchmark: cp -a 19GB/1844 files = 74s, tar archive = 25s
-    # Writing single large file to NFS is much faster than many small files
     mkdir -p "$(dirname "$NFS_TAR_FILE")"
     local NFS_TAR_LOCK="${NFS_TAR_FILE}.lock"
     touch "$NFS_TAR_LOCK"
 
     # Build exclusions for caches to reduce size and speed up NFS writes
-    # - hive caches: exclude blockchain (~1.7GB) - services use /blockchain/block_log_5m (local mount)
-    # - HAF caches: exclude blockchain + unnecessary WAL files (~7.5GB total)
     local tar_excludes=""
     if [[ "$cache_type" == "hive" ]]; then
         # Exclude blockchain - CI runners mount /blockchain locally via services_volumes
@@ -507,18 +592,12 @@ cmd_put() {
     _write_metadata "$cache_type" "$cache_key" "$local_source"
     mv "$METADATA_FILE" "$TAR_METADATA" 2>/dev/null || true
 
-    # Create local symlink to source for future local hits (instant, no copy)
-    if [[ "$LOCAL_CACHE_DIR" != "$local_source" && ! -e "$LOCAL_CACHE_DIR" ]]; then
-        mkdir -p "$(dirname "$LOCAL_CACHE_DIR")"
-        ln -sf "$local_source" "$LOCAL_CACHE_DIR" 2>/dev/null || true
-        _log "Created local cache symlink: $LOCAL_CACHE_DIR -> $local_source"
-    fi
-
     _update_lru "$cache_type" "$cache_key"
     _log "Cache stored successfully (tar archive)"
 
     # Trigger async cleanup check
     _maybe_cleanup &
+    _maybe_cleanup_local &
 
     return 0
 }
@@ -640,6 +719,140 @@ _maybe_cleanup() {
     fi
 }
 
+# CLEANUP_LOCAL: Remove old entries from local cache using LRU eviction
+cmd_cleanup_local() {
+    local cache_type="${1:-}"
+    local max_size_gb="$CACHE_LOCAL_MAX_SIZE_GB"
+    local max_age_days="$CACHE_LOCAL_MAX_AGE_DAYS"
+
+    # Parse options
+    shift || true
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            --max-size-gb)
+                max_size_gb="$2"
+                shift 2
+                ;;
+            --max-age-days)
+                max_age_days="$2"
+                shift 2
+                ;;
+            *)
+                shift
+                ;;
+        esac
+    done
+
+    # Skip on NFS host (local cache IS NFS cache)
+    if _is_nfs_host; then
+        _log "On NFS host, local cleanup skipped (use NFS cleanup)"
+        return 0
+    fi
+
+    if [[ ! -d "$CACHE_LOCAL_PATH" ]]; then
+        _log "Local cache path does not exist: $CACHE_LOCAL_PATH"
+        return 0
+    fi
+
+    _log "Starting local cleanup (max_size=${max_size_gb}GB, max_age=${max_age_days}days)"
+
+    local max_size_bytes=$((max_size_gb * 1024 * 1024 * 1024))
+    local cutoff_timestamp=$(($(date +%s) - max_age_days * 86400))
+
+    local lru_index="${CACHE_LOCAL_PATH}/.lru_index"
+
+    # Calculate current total size
+    local search_path="$CACHE_LOCAL_PATH"
+    [[ -n "$cache_type" ]] && search_path="$CACHE_LOCAL_PATH/$cache_type"
+
+    local total_size
+    total_size=$(du -sb "$search_path" 2>/dev/null | cut -f1 || echo 0)
+    _log "Current local cache size: $((total_size / 1024 / 1024 / 1024))GB"
+
+    if [[ ! -f "$lru_index" ]]; then
+        _log "No local LRU index found, nothing to clean"
+        return 0
+    fi
+
+    # Sort by timestamp (oldest first) and process
+    local removed=0
+    while IFS='|' read -r timestamp entry; do
+        # Skip if filtering by type and doesn't match
+        if [[ -n "$cache_type" && ! "$entry" =~ ^${cache_type}/ ]]; then
+            continue
+        fi
+
+        local entry_path="$CACHE_LOCAL_PATH/$entry"
+
+        # Skip if doesn't exist or is a symlink
+        [[ -d "$entry_path" && ! -L "$entry_path" ]] || continue
+
+        # Check if should remove (age or size)
+        local should_remove=false
+
+        if [[ $timestamp -lt $cutoff_timestamp ]]; then
+            _log "Local entry $entry is older than ${max_age_days} days"
+            should_remove=true
+        elif [[ $total_size -gt $max_size_bytes ]]; then
+            _log "Local cache exceeds limit, removing oldest: $entry"
+            should_remove=true
+        fi
+
+        if [[ "$should_remove" == "true" ]]; then
+            # Check if locked (skip if in use)
+            local lock_file="$entry_path/.lock"
+            if [[ -f "$lock_file" ]] && ! flock -n "$lock_file" -c "true" 2>/dev/null; then
+                _log "Skipping local $entry - currently locked"
+                continue
+            fi
+
+            local entry_size
+            entry_size=$(du -sb "$entry_path" 2>/dev/null | cut -f1 || echo 0)
+            _log "Removing local: $entry (${entry_size} bytes)"
+            rm -rf "$entry_path"
+            total_size=$((total_size - entry_size))
+            removed=$((removed + 1))
+
+            # Remove from local LRU index
+            local lru_lock="${CACHE_LOCAL_PATH}/.lru_lock"
+            touch "$lru_lock"
+            _flock_with_timeout 30 -x "$lru_lock" -c "
+                grep -v '|${entry}\$' '$lru_index' > '${lru_index}.tmp' 2>/dev/null || true
+                mv '${lru_index}.tmp' '$lru_index'
+            " || true
+        fi
+
+        # Stop if under limit
+        [[ $total_size -le $max_size_bytes ]] && break
+
+    done < <(sort -t'|' -k1 -n "$lru_index")
+
+    _log "Local cleanup complete, removed $removed entries"
+}
+
+# Maybe trigger local cleanup if size is getting large
+_maybe_cleanup_local() {
+    # Skip on NFS host
+    if _is_nfs_host; then
+        return 0
+    fi
+
+    if [[ ! -d "$CACHE_LOCAL_PATH" ]]; then
+        return 0
+    fi
+
+    local total_size
+    total_size=$(du -sb "$CACHE_LOCAL_PATH" 2>/dev/null | awk '{print $1}') || total_size=0
+    [[ -z "$total_size" ]] && total_size=0
+    local max_bytes=$((CACHE_LOCAL_MAX_SIZE_GB * 1024 * 1024 * 1024))
+    local threshold=$((max_bytes * 90 / 100))  # 90% threshold
+
+    if [[ "$total_size" =~ ^[0-9]+$ ]] && [[ $total_size -gt $threshold ]]; then
+        _log "Local cache at 90% capacity, triggering cleanup"
+        cmd_cleanup_local "" --max-size-gb "$CACHE_LOCAL_MAX_SIZE_GB" --max-age-days "$CACHE_LOCAL_MAX_AGE_DAYS"
+    fi
+}
+
 # LIST: Show caches of a given type
 cmd_list() {
     local cache_type="${1:-}"
@@ -704,31 +917,49 @@ cmd_is_fast_builder() {
 cmd_status() {
     echo "Cache Manager Status"
     echo "===================="
-    echo "NFS Path:     $CACHE_NFS_PATH"
-    echo "Local Path:   $CACHE_LOCAL_PATH"
-    echo "Max Size:     ${CACHE_MAX_SIZE_GB}GB"
-    echo "Max Age:      ${CACHE_MAX_AGE_DAYS} days"
-    echo "NFS Host:     $(_is_nfs_host && echo "YES (local storage)" || echo "NO (NFS client)")"
+    echo "NFS Path:       $CACHE_NFS_PATH"
+    echo "Local Path:     $CACHE_LOCAL_PATH"
+    echo "NFS Max Size:   ${CACHE_MAX_SIZE_GB}GB"
+    echo "NFS Max Age:    ${CACHE_MAX_AGE_DAYS} days"
+    echo "Local Max Size: ${CACHE_LOCAL_MAX_SIZE_GB}GB"
+    echo "Local Max Age:  ${CACHE_LOCAL_MAX_AGE_DAYS} days"
+    echo "NFS Host:       $(_is_nfs_host && echo "YES (local storage)" || echo "NO (NFS client)")"
     echo ""
 
     local lru_index="${CACHE_NFS_PATH}/.lru_index"
+    local local_lru_index="${CACHE_LOCAL_PATH}/.lru_index"
 
     if _nfs_available; then
-        echo "NFS Status:   AVAILABLE"
-        local total=$(du -sh "$CACHE_NFS_PATH" 2>/dev/null | cut -f1 || echo "?")
-        echo "NFS Usage:    $total"
+        echo "NFS Status:     AVAILABLE"
+        local total
+        total=$(du -sh "$CACHE_NFS_PATH" 2>/dev/null | cut -f1 || echo "?")
+        echo "NFS Usage:      $total"
 
         if [[ -f "$lru_index" ]]; then
-            local count=$(wc -l < "$lru_index")
-            echo "Cache Entries: $count"
+            local count
+            count=$(wc -l < "$lru_index")
+            echo "NFS Entries:    $count"
         fi
     else
-        echo "NFS Status:   NOT AVAILABLE"
+        echo "NFS Status:     NOT AVAILABLE"
     fi
 
     echo ""
-    echo "Local Usage:"
-    du -sh "${CACHE_LOCAL_PATH}"/* 2>/dev/null | head -10 || echo "  (empty)"
+    echo "Local Cache:"
+    if [[ -d "$CACHE_LOCAL_PATH" ]]; then
+        local local_total
+        local_total=$(du -sh "$CACHE_LOCAL_PATH" 2>/dev/null | cut -f1 || echo "?")
+        echo "  Usage:        $local_total"
+        if [[ -f "$local_lru_index" ]]; then
+            local local_count
+            local_count=$(wc -l < "$local_lru_index")
+            echo "  LRU Entries:  $local_count"
+        fi
+        echo "  Directories:"
+        du -sh "${CACHE_LOCAL_PATH}"/*/ 2>/dev/null | head -10 || echo "    (empty)"
+    else
+        echo "  (not initialized)"
+    fi
 }
 
 # Main
@@ -753,6 +984,9 @@ case "$cmd" in
         ;;
     cleanup)
         cmd_cleanup "$@"
+        ;;
+    cleanup-local)
+        cmd_cleanup_local "$@"
         ;;
     list)
         cmd_list "$@"

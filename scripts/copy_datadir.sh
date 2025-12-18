@@ -44,7 +44,9 @@ fix_pg_tblspc_symlinks() {
 
 # Function to extract NFS cache if local DATA_SOURCE doesn't exist
 # Delegates to cache-manager.sh for unified cache handling
-# Derives cache type and key from DATA_SOURCE path pattern: /cache/{type}_{key}
+# Supports two path patterns:
+#   New: /cache/{type}/{key}     -> NFS tar: /nfs/ci-cache/{type}/{key}.tar
+#   Old: /cache/{type}_{key}     -> NFS tar: /nfs/ci-cache/{type}/{key}.tar
 extract_nfs_cache_if_needed() {
     local data_source="$1"
 
@@ -55,17 +57,24 @@ extract_nfs_cache_if_needed() {
     fi
 
     # Parse DATA_SOURCE to derive cache type and key
-    # Pattern: /cache/{type}_{key} -> cache-manager get {type} {key} {data_source}
-    local basename
-    basename=$(basename "$data_source")
-
-    # Split by first underscore: haf_pipeline_12345_filtered -> type=haf_pipeline, key=12345_filtered
-    # Most common: hive_{commit} -> type=hive, key={commit}
     local cache_type cache_key
-    if [[ "$basename" =~ ^([^_]+_[^_]+)_(.+)$ ]]; then
+    local basename dirname_base
+    basename=$(basename "$data_source")
+    dirname_base=$(basename "$(dirname "$data_source")")
+
+    # Try new subdirectory pattern first: /cache/{type}/{key}
+    # Check if parent directory looks like a cache type (not "cache" itself)
+    if [[ "$dirname_base" != "cache" && "$dirname_base" != "/" && ! "$dirname_base" =~ _ ]]; then
+        # Subdirectory structure: parent is cache_type, basename is cache_key
+        cache_type="$dirname_base"
+        cache_key="$basename"
+    # Fall back to old underscore pattern: /cache/{type}_{key}
+    elif [[ "$basename" =~ ^([^_]+_[^_]+)_(.+)$ ]]; then
+        # Pattern: haf_pipeline_12345_filtered -> type=haf_pipeline, key=12345_filtered
         cache_type="${BASH_REMATCH[1]}"
         cache_key="${BASH_REMATCH[2]}"
     elif [[ "$basename" =~ ^([^_]+)_(.+)$ ]]; then
+        # Pattern: hive_abc123 -> type=hive, key=abc123
         cache_type="${BASH_REMATCH[1]}"
         cache_key="${BASH_REMATCH[2]}"
     else

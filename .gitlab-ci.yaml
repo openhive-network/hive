@@ -24,7 +24,10 @@ variables:
   PYTHON_JUNIT_XML_VERSION: "1.9"
   PYTHON_DATEUTIL_VERSION: "2.8.2"
 
-  DATA_CACHE_HIVE_PREFIX: "/nfs/ci-cache/hive/replay_data_hive"
+  # Two-tier cache: local /cache/hive/${COMMIT} -> NFS /nfs/ci-cache/hive/${COMMIT}.tar
+  # DATA_CACHE_HIVE_PREFIX is for consuming jobs to find cached data
+  DATA_CACHE_HIVE_PREFIX: "/cache/hive"
+  # Cleanup pattern for legacy directories (new structure uses cache-manager LRU)
   DATA_CACHE_HIVE_CLEANUP_PATTERN: "/nfs/ci-cache/hive/replay_data_hive_*"
   BLOCK_LOG_SOURCE_DIR_5M: /blockchain/block_log_5m
   BLOCK_LOG_SOURCE_DIR_MIRRORNET_5M: /blockchain/block_log_5m_mirrornet
@@ -593,7 +596,7 @@ plugin_test:
   - name: $HIVED_IMAGE_NAME
     alias: hived-instance
     variables:
-      DATA_SOURCE: "${DATA_CACHE_HIVE_PREFIX}_${HIVED_COMMIT}"
+      DATA_SOURCE: "${DATA_CACHE_HIVE_PREFIX}/${HIVED_COMMIT}"
       LOG_FILE: $CI_JOB_NAME.log
     command: ["--replay-blockchain", "--stop-at-block=5000000"]
 
