@@ -325,18 +325,10 @@ void account_witness_vote_evaluator::do_apply( const account_witness_vote_operat
 
 void custom_evaluator::do_apply( const custom_operation& o )
 {
-  FC_TODO( "Check when this soft-fork was added and change to appropriate hardfork" );
-  if( _db.is_in_control() || _db.has_hardfork( HIVE_HARDFORK_1_26_SOLIDIFY_OLD_SOFTFORKS ) )
+  if( _db.has_hardfork( HIVE_HARDFORK_1_26_SOLIDIFY_OLD_SOFTFORKS ) ) // ab28c8e3a10d24f56476653d6a525e712e2e912e example tx with big op
   {
     FC_ASSERT( o.data.size() <= HIVE_CUSTOM_OP_DATA_MAX_LENGTH,
       "Operation data must be less than ${bytes} bytes.", ("bytes", HIVE_CUSTOM_OP_DATA_MAX_LENGTH) );
-  }
-
-  if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
-  {
-    FC_TODO( "Check if the following could become part of operation validation (unconditional)" );
-    FC_ASSERT( o.required_auths.size() <= HIVE_MAX_AUTHORITY_MEMBERSHIP,
-      "Authority membership exceeded. Max: ${max} Current: ${n}", ("max", HIVE_MAX_AUTHORITY_MEMBERSHIP)("n", o.required_auths.size()) );
   }
 }
 
@@ -344,19 +336,10 @@ void custom_json_evaluator::do_apply( const custom_json_operation& o )
 {
   using hive::protocol::details::truncation_controller;
 
-  FC_TODO( "Check when this soft-fork was added and change to appropriate hardfork" );
-  if( _db.is_in_control() || _db.has_hardfork( HIVE_HARDFORK_1_26_SOLIDIFY_OLD_SOFTFORKS ) )
+  if( _db.has_hardfork( HIVE_HARDFORK_1_26_SOLIDIFY_OLD_SOFTFORKS ) ) // 803bcc0dae4d242e0a6539948d998a4410b19655 example tx of big json
   {
     FC_ASSERT( o.json.length() <= HIVE_CUSTOM_OP_DATA_MAX_LENGTH,
       "Operation JSON must be less than ${bytes} bytes.", ("bytes", HIVE_CUSTOM_OP_DATA_MAX_LENGTH) );
-  }
-
-  if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
-  {
-    size_t num_auths = o.required_auths.size() + o.required_posting_auths.size();
-    FC_TODO( "Check if the following could become part of operation validation (unconditional)" );
-    FC_ASSERT( num_auths <= HIVE_MAX_AUTHORITY_MEMBERSHIP,
-      "Authority membership exceeded. Max: ${max} Current: ${n}", ("max", HIVE_MAX_AUTHORITY_MEMBERSHIP)("n", num_auths) );
   }
 
   std::shared_ptr< custom_operation_interpreter > eval = _db.get_custom_json_evaluator( o.id );
@@ -390,27 +373,9 @@ void custom_json_evaluator::do_apply( const custom_json_operation& o )
 
 void custom_binary_evaluator::do_apply( const custom_binary_operation& o )
 {
-  FC_TODO( "Check when this soft-fork was added and change to appropriate hardfork" );
-  if( _db.is_in_control() || _db.has_hardfork( HIVE_HARDFORK_1_26_SOLIDIFY_OLD_SOFTFORKS ) )
-  {
-    FC_ASSERT( false && "custom_binary_operation is deprecated" );
-    FC_ASSERT( o.data.size() <= HIVE_CUSTOM_OP_DATA_MAX_LENGTH && "Too large",
-      "Operation data must be less than ${bytes} bytes.", ("bytes", HIVE_CUSTOM_OP_DATA_MAX_LENGTH) );
-  }
+  FC_ASSERT( false && "custom_binary_operation is disallowed" ); //ABW: since no one used it in practice
+    //it waits for potential redesign until it is reenabled
   FC_ASSERT( _db.has_hardfork( HIVE_HARDFORK_0_14__317 ) );
-
-  if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
-  {
-    FC_TODO( "Check if the following could become part of operation validation (unconditional)" );
-    size_t num_auths = o.required_owner_auths.size() + o.required_active_auths.size() + o.required_posting_auths.size();
-    for( const auto& auth : o.required_auths )
-    {
-      num_auths += auth.key_auths.size() + auth.account_auths.size();
-    }
-
-    FC_ASSERT( num_auths <= HIVE_MAX_AUTHORITY_MEMBERSHIP && "binary",
-      "Authority membership exceeded. Max: ${max} Current: ${n}", ("max", HIVE_MAX_AUTHORITY_MEMBERSHIP)("n", num_auths) );
-  }
 
   std::shared_ptr< custom_operation_interpreter > eval = _db.get_custom_json_evaluator( o.id );
   if( !eval )
