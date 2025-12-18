@@ -102,7 +102,7 @@ struct expectation_set : appbase::plugin< expectation_set >
 {
   database& _db;
   std::list< expectation > current_expectations;
-  std::vector< boost::signals2::connection > connections;
+  std::vector< database::signal_connection_ptr > connections;
   bool failure = false;
 
   expectation_set( database& db ) : _db( db )

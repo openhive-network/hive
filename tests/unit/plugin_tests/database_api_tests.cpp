@@ -5,6 +5,8 @@
 
 #include "../db_fixture/hived_fixture.hpp"
 
+#include <hive/chain/detail/state/witness_objects_multiindex.hpp>
+
 using namespace hive::chain;
 using namespace hive::protocol;
 

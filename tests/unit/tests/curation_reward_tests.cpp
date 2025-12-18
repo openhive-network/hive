@@ -210,7 +210,7 @@ struct curation_rewards_handler
 
   std::vector<comment_reward_info>          comment_rewards;
 
-  boost::signals2::connection               _comment_reward_con;
+  hive::chain::database::signal_connection_ptr _comment_reward_con;
 
   curation_rewards_handler( clean_database_fixture& _test_object, chain::database& _db )
   : test_object( _test_object ), db( _db )
@@ -503,7 +503,7 @@ struct curation_rewards_handler
 
     uint32_t vote_percent = HIVE_1_PERCENT * 90;
 
-    auto comment_id = db.get_comment( author, permlink ).get_id();
+    auto comment_id = db.get_comment( author, permlink )->get_id();
 
     for( auto& time : votes_time )
     {

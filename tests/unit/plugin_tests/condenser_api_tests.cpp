@@ -6,6 +6,8 @@
 #include <hive/plugins/condenser_api/condenser_api_plugin.hpp>
 #include <hive/plugins/condenser_api/condenser_api.hpp>
 
+#include <hive/chain/detail/state/witness_objects_multiindex.hpp>
+
 #include <boost/test/unit_test.hpp>
 
 BOOST_FIXTURE_TEST_SUITE( condenser_api_tests, condenser_api_fixture );

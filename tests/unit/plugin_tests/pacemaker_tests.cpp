@@ -6,6 +6,8 @@
 
 #include <hive/plugins/pacemaker/pacemaker_plugin.hpp>
 
+#include <fc/thread/thread.hpp>
+
 #include "../db_fixture/hived_fixture.hpp"
 
 using namespace hive::chain;

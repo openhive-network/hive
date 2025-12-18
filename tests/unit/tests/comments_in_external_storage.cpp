@@ -281,7 +281,7 @@ void fork_reverts_cashout_scanario( const std::string& comment_archive_type, boo
   auto get_comment = [&]( const std::string& author, const std::string& permlink )
   {
     comment = test.get_comment( author, permlink );
-    comment_id = comment.get_id();
+    comment_id = comment->get_id();
     cashout_time = test.db->find_comment_cashout( *comment.get() )->get_cashout_time();
   };
 
