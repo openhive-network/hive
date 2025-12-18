@@ -14,6 +14,9 @@
 #include <hive/plugins/colony/colony_plugin.hpp>
 #include <hive/plugins/queen/queen_plugin.hpp>
 
+#include <hive/chain/detail/state/witness_objects_multiindex.hpp>
+#include <hive/chain/detail/state/comment_object_multiindex.hpp>
+
 #include <fc/log/appender.hpp>
 
 #include <boost/scope_exit.hpp>

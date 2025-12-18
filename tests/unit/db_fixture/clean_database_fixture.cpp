@@ -4,6 +4,8 @@
 
 #include <hive/plugins/witness/witness_plugin.hpp>
 
+#include <hive/chain/detail/state/witness_objects_multiindex.hpp>
+
 #include <hive/utilities/database_configuration.hpp>
 #include <hive/utilities/logging_config.hpp>
 #include <hive/utilities/options_description_ex.hpp>
