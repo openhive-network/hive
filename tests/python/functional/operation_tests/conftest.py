@@ -833,7 +833,7 @@ def hive_fund(
 def speed_up_node() -> tt.InitNode:
     node = tt.InitNode()
     node.config.plugin.append("account_history_api")
-    node.run(timeout=60.0, time_control=tt.SpeedUpRateTimeControl(speed_up_rate=5))
+    node.run(timeout=60.0, time_control=tt.SpeedUpRateTimeControl(speed_up_rate=5), max_retries=3)
     return node
 
 

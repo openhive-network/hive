@@ -28,6 +28,7 @@ def node() -> tt.InitNode:
                 )
             ],
         ),
+        max_retries=3,
     )
     return node
 
