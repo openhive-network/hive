@@ -281,7 +281,8 @@ void transfer_evaluator::do_apply( const transfer_operation& o )
     // o.to will always be the treasury so no need to call _db.get_treasury
     push_virtual_operation( _db, dhf_conversion_operation( o.to, o.amount, amount_to_transfer ) );
     return;
-  } else if( _db.has_hardfork( HIVE_HARDFORK_0_21__3343 ) )
+  }
+  else if( _db.has_hardfork( HIVE_HARDFORK_0_21__3343 ) )
   {
     FC_ASSERT( o.amount.symbol == HBD_SYMBOL || !_db.is_treasury( o.to ), "Can only transfer HBD or HIVE to ${s}", ("s", o.to ) );
   }
@@ -578,10 +579,7 @@ void transfer_to_savings_evaluator::do_apply( const transfer_to_savings_operatio
   const auto& from = _db.get_account( op.from );
   const auto& to   = _db.get_account(op.to);
 
-  if( _db.has_hardfork( HIVE_HARDFORK_0_21__3343 ) )
-  {
-    FC_ASSERT( !_db.is_treasury( op.to ), "Cannot transfer to savings of treasury ${s}", ("s", op.to ) );
-  }
+  FC_ASSERT( !_db.is_treasury( op.to ), "Cannot transfer to savings of treasury ${s}", ("s", op.to ) );
 
   _db.adjust_balance( from, -op.amount );
   _db.adjust_savings_balance( to, op.amount );
@@ -594,10 +592,7 @@ void transfer_from_savings_evaluator::do_apply( const transfer_from_savings_oper
 
   FC_ASSERT( from.savings_withdraw_requests < HIVE_SAVINGS_WITHDRAW_REQUEST_LIMIT, "Account has reached limit for pending withdraw requests." );
 
-  if( _db.has_hardfork( HIVE_HARDFORK_0_21__3343 ) )
-  {
-    FC_ASSERT( op.amount.symbol == HBD_SYMBOL || !_db.is_treasury( op.to ), "Can only transfer HBD to ${s}", ("s", op.to ) );
-  }
+  FC_ASSERT( op.amount.symbol == HBD_SYMBOL || !_db.is_treasury( op.to ), "Can only transfer HBD to ${s}", ("s", op.to ) );
 
   FC_ASSERT( _db.get_savings_balance( from, op.amount.symbol ) >= op.amount );
   _db.adjust_savings_balance( from, -op.amount );
@@ -606,7 +601,7 @@ void transfer_from_savings_evaluator::do_apply( const transfer_from_savings_oper
   _db.modify( from, [&]( account_object& a )
   {
     a.savings_withdraw_requests++;
-  });
+  } );
 }
 
 void cancel_transfer_from_savings_evaluator::do_apply( const cancel_transfer_from_savings_operation& op )
@@ -619,7 +614,7 @@ void cancel_transfer_from_savings_evaluator::do_apply( const cancel_transfer_fro
   _db.modify( from, [&]( account_object& a )
   {
     a.savings_withdraw_requests--;
-  });
+  } );
 }
 
 void claim_reward_balance_evaluator::do_apply( const claim_reward_balance_operation& op )
@@ -995,24 +990,13 @@ void recurrent_transfer_evaluator::do_apply( const recurrent_transfer_operation&
 {
   FC_ASSERT( _db.has_hardfork( HIVE_HARDFORK_1_25 ), "Recurrent transfers are not enabled until hardfork ${hf}", ("hf", HIVE_HARDFORK_1_25) );
 
-  // Legacy faulty validation see https://gitlab.syncad.com/hive/hive/-/issues/456 once hf28 has been released, we can remove it
-  if( _db.has_hardfork( HIVE_HARDFORK_1_28 ) == false )
-  {
-    FC_ASSERT( fc::hours( op.recurrence * op.executions ).to_seconds() < fc::days( HIVE_MAX_RECURRENT_TRANSFER_END_DATE ).to_seconds(),
-      "Cannot set a transfer that would last for longer than ${days} days", ( "days", HIVE_MAX_RECURRENT_TRANSFER_END_DATE ) );
-  }
-
   const auto& from_account = _db.get_account( op.from );
   const auto& to_account = _db.get_account( op.to );
 
   asset available = _db.get_balance( from_account, op.amount.symbol );
   FC_ASSERT( available >= op.amount, "Account does not have enough tokens for the first transfer, has ${has} needs ${needs}", ("has",  available)("needs", op.amount) );
 
-  bool was_pair_id = false;
-  uint8_t rtp_id = op.get_pair_id( &was_pair_id );
-
-  FC_ASSERT( !was_pair_id || ( was_pair_id && _db.has_hardfork( HIVE_HARDFORK_1_28 ) ),
-    "recurrent_transfer_pair_id extension requires hardfork ${hf}", ( "hf", HIVE_HARDFORK_1_28 ) );
+  uint8_t rtp_id = op.get_pair_id();
 
   const auto& rt_idx = _db.get_index< recurrent_transfer_index, by_from_to_id >();
   auto itr = rt_idx.find( boost::make_tuple( from_account.get_id(), to_account.get_id(), rtp_id ) );

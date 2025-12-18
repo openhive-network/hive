@@ -676,7 +676,8 @@ namespace hive { namespace protocol {
     validate_account_name( new_recovery_account );
   }
 
-  void transfer_to_savings_operation::validate()const {
+  void transfer_to_savings_operation::validate()const
+  {
     validate_account_name( from );
     validate_account_name( to );
     FC_ASSERT( amount.amount > 0 && "Must transfer to savings some amount" );
@@ -684,7 +685,9 @@ namespace hive { namespace protocol {
     FC_ASSERT( memo.size() < HIVE_MAX_MEMO_SIZE && "Transfer to savings memo is too large" );
     FC_ASSERT( fc::is_utf8( memo ) && "Transfer to savings memo is not UTF8" );
   }
-  void transfer_from_savings_operation::validate()const {
+
+  void transfer_from_savings_operation::validate()const
+  {
     validate_account_name( from );
     validate_account_name( to );
     FC_ASSERT( amount.amount > 0 && "Must transfer from savings some amount" );
@@ -692,7 +695,9 @@ namespace hive { namespace protocol {
     FC_ASSERT( memo.size() < HIVE_MAX_MEMO_SIZE && "Transfer from savings memo is too large" );
     FC_ASSERT( fc::is_utf8( memo ), "Transfer from savings memo is not UTF8" );
   }
-  void cancel_transfer_from_savings_operation::validate()const {
+
+  void cancel_transfer_from_savings_operation::validate()const
+  {
     validate_account_name( from );
   }
 
@@ -703,20 +708,12 @@ namespace hive { namespace protocol {
 
   void reset_account_operation::validate()const
   {
-    validate_account_name( reset_account );
-    validate_account_name( account_to_reset );
-    FC_ASSERT( not new_owner_authority.is_impossible(), "new owner authority cannot be impossible" );
-    FC_ASSERT( new_owner_authority.weight_threshold > 0, "new owner authority cannot be trivial" );
-    new_owner_authority.validate();
+    FC_ASSERT( false && "placeholder1", "Placeholder for potential new operation" );
   }
 
   void set_reset_account_operation::validate()const
   {
-    validate_account_name( account );
-    if( current_reset_account.size() )
-      validate_account_name( current_reset_account );
-    validate_account_name( reset_account );
-    FC_ASSERT( current_reset_account != reset_account, "new reset account cannot be current reset account" );
+    FC_ASSERT( false && "placeholder2", "Placeholder for potential new operation" );
   }
 
   void claim_reward_balance_operation::validate()const
@@ -762,23 +759,21 @@ namespace hive { namespace protocol {
 
   void recurrent_transfer_operation::validate()const
   { try {
-      validate_account_name( from );
-      validate_account_name( to );
-      FC_ASSERT( amount.symbol.is_vesting() == false && "Recurrent transfer of vesting is not allowed." );
-      FC_ASSERT( amount.amount >= 0 && "Cannot transfer a negative amount (aka: stealing)" );
-      FC_ASSERT( recurrence >= HIVE_MIN_RECURRENT_TRANSFERS_RECURRENCE, "Cannot set a transfer recurrence that is less than ${recurrence} hours", ("recurrence", HIVE_MIN_RECURRENT_TRANSFERS_RECURRENCE) );
-      FC_ASSERT( memo.size() < HIVE_MAX_MEMO_SIZE && "Recurrent transfer memo is too large" );
-      FC_ASSERT( fc::is_utf8( memo ) && "Recurrent transfer memo is not UTF8" );
-      FC_ASSERT( from != to, "Cannot set a transfer to yourself" );
-      FC_ASSERT(executions >= 2, "Executions must be at least 2, if you set executions to 1 the recurrent transfer will execute immediately and delete itself. You should use a normal transfer operation");
-    } FC_CAPTURE_AND_RETHROW( (*this) )
-  }
+    validate_account_name( from );
+    validate_account_name( to );
+    FC_ASSERT( amount.symbol.is_vesting() == false && "Recurrent transfer of vesting is not allowed." );
+    FC_ASSERT( amount.amount >= 0 && "Cannot transfer a negative amount (aka: stealing)" );
+    FC_ASSERT( recurrence >= HIVE_MIN_RECURRENT_TRANSFERS_RECURRENCE, "Cannot set a transfer recurrence that is less than ${recurrence} hours", ("recurrence", HIVE_MIN_RECURRENT_TRANSFERS_RECURRENCE) );
+    FC_ASSERT( memo.size() < HIVE_MAX_MEMO_SIZE && "Recurrent transfer memo is too large" );
+    FC_ASSERT( fc::is_utf8( memo ) && "Recurrent transfer memo is not UTF8" );
+    FC_ASSERT( from != to, "Cannot set a transfer to yourself" );
+    FC_ASSERT(executions >= 2, "Executions must be at least 2, if you set executions to 1 the recurrent transfer will execute immediately and delete itself. You should use a normal transfer operation");
+  } FC_CAPTURE_AND_RETHROW( (*this) ) }
 
   void witness_block_approve_operation::validate()const
   { try {
-      validate_account_name( witness );
-    } FC_CAPTURE_AND_RETHROW( (*this) )
-  }
+    validate_account_name( witness );
+  } FC_CAPTURE_AND_RETHROW( (*this) ) }
 
   struct recurrent_transfer_extension_visitor
   {
