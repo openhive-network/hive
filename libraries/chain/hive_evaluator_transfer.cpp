@@ -623,35 +623,39 @@ void claim_reward_balance_evaluator::do_apply( const claim_reward_balance_operat
   const auto& dgpo = _db.get_dynamic_global_properties();
   auto now = dgpo.time;
 
-  FC_ASSERT( op.reward_hive <= acnt.get_rewards(), "Cannot claim that much HIVE. Claim: ${c} Actual: ${a}",
-    ("c", op.reward_hive)("a", acnt.get_rewards() ) );
-  FC_ASSERT( op.reward_hbd <= acnt.get_hbd_rewards(), "Cannot claim that much HBD. Claim: ${c} Actual: ${a}",
-    ("c", op.reward_hbd)("a", acnt.get_hbd_rewards()) );
-  FC_ASSERT( op.reward_vests <= acnt.get_vest_rewards(), "Cannot claim that much VESTS. Claim: ${c} Actual: ${a}",
-    ("c", op.reward_vests)("a", acnt.get_vest_rewards() ) );
+  HIVE_asset op_reward_hive = op.get_reward_hive();
+  HBD_asset op_reward_hbd = op.get_reward_hbd();
+  VEST_asset op_reward_vests = op.get_reward_vests();
 
-  asset reward_vesting_hive_to_move = asset( 0, HIVE_SYMBOL );
-  if( op.reward_vests == acnt.get_vest_rewards() )
+  FC_ASSERT( op_reward_hive <= acnt.get_rewards(), "Cannot claim that much HIVE. Claim: ${c} Actual: ${a}",
+    ( "c", op_reward_hive )( "a", acnt.get_rewards() ) );
+  FC_ASSERT( op_reward_hbd <= acnt.get_hbd_rewards(), "Cannot claim that much HBD. Claim: ${c} Actual: ${a}",
+    ( "c", op_reward_hbd )( "a", acnt.get_hbd_rewards() ) );
+  FC_ASSERT( op_reward_vests <= acnt.get_vest_rewards(), "Cannot claim that much VESTS. Claim: ${c} Actual: ${a}",
+    ( "c", op_reward_vests )( "a", acnt.get_vest_rewards() ) );
+
+  HIVE_asset reward_vesting_hive_to_move = HIVE_asset( 0 );
+  if( op_reward_vests == acnt.get_vest_rewards() )
     reward_vesting_hive_to_move = acnt.get_vest_rewards_as_hive();
   else
-    reward_vesting_hive_to_move = asset( fc::uint128_to_uint64( ( uint128_t( op.reward_vests.amount.value ) * uint128_t( acnt.get_vest_rewards_as_hive().amount.value ) )
-      / uint128_t( acnt.get_vest_rewards().amount.value ) ), HIVE_SYMBOL );
+    reward_vesting_hive_to_move = HIVE_asset( fc::uint128_to_uint64( ( uint128_t( op_reward_vests.amount.value ) * uint128_t( acnt.get_vest_rewards_as_hive().amount.value ) )
+      / uint128_t( acnt.get_vest_rewards().amount.value ) ) );
 
-  _db.adjust_reward_balance( acnt, -op.reward_hive );
-  _db.adjust_reward_balance( acnt, -op.reward_hbd );
-  _db.adjust_balance( acnt, op.reward_hive );
-  _db.adjust_balance( acnt, op.reward_hbd );
+  _db.adjust_reward_balance( acnt, -op_reward_hive );
+  _db.adjust_reward_balance( acnt, -op_reward_hbd );
+  _db.adjust_balance( acnt, op_reward_hive );
+  _db.adjust_balance( acnt, op_reward_hbd );
 
   _db.modify( acnt, [&]( account_object& a )
   {
     if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
     {
-      util::update_manabar( dgpo, a, op.reward_vests.amount.value );
+      util::update_manabar( dgpo, a, op_reward_vests.amount.value );
       _db.rc().regenerate_rc_mana( a, now );
     }
 
-    a.vesting_shares += op.reward_vests;
-    a.reward_vesting_balance -= op.reward_vests;
+    a.vesting_shares += op_reward_vests;
+    a.reward_vesting_balance -= op_reward_vests;
     a.reward_vesting_hive -= reward_vesting_hive_to_move;
   } );
   if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
@@ -659,14 +663,14 @@ void claim_reward_balance_evaluator::do_apply( const claim_reward_balance_operat
 
   _db.modify( dgpo, [&]( dynamic_global_property_object& gpo )
   {
-    gpo.total_vesting_shares += op.reward_vests;
+    gpo.total_vesting_shares += op_reward_vests;
     gpo.total_vesting_fund_hive += reward_vesting_hive_to_move;
 
-    gpo.pending_rewarded_vesting_shares -= op.reward_vests;
+    gpo.pending_rewarded_vesting_shares -= op_reward_vests;
     gpo.pending_rewarded_vesting_hive -= reward_vesting_hive_to_move;
   } );
 
-  _db.adjust_proxied_witness_votes( acnt, op.reward_vests.amount );
+  _db.adjust_proxied_witness_votes( acnt, op_reward_vests.amount );
 }
 
 #ifdef HIVE_ENABLE_SMT
