@@ -301,10 +301,8 @@ BOOST_AUTO_TEST_CASE( reward_funds )
 
     {
       const auto& post_rf = db->get< reward_fund_object, by_name >( HIVE_POST_REWARD_FUND_NAME );
-      const auto& comment_rf = db->get< reward_fund_object, by_name >( HIVE_COMMENT_REWARD_FUND_NAME );
 
       BOOST_REQUIRE( post_rf.reward_balance.amount == 0 );
-      BOOST_REQUIRE( comment_rf.reward_balance.amount > 0 );
       BOOST_REQUIRE( get_hbd_rewards( "alice" ).amount > 0 );
       BOOST_REQUIRE( get_hbd_rewards( "bob" ).amount == 0 );
       validate_database();
@@ -314,10 +312,8 @@ BOOST_AUTO_TEST_CASE( reward_funds )
 
     {
       const auto& post_rf = db->get< reward_fund_object, by_name >( HIVE_POST_REWARD_FUND_NAME );
-      const auto& comment_rf = db->get< reward_fund_object, by_name >( HIVE_COMMENT_REWARD_FUND_NAME );
 
       BOOST_REQUIRE( post_rf.reward_balance.amount > 0 );
-      BOOST_REQUIRE( comment_rf.reward_balance.amount == 0 );
       BOOST_REQUIRE( get_hbd_rewards( "alice" ).amount > 0 );
       BOOST_REQUIRE( get_hbd_rewards( "bob" ).amount > 0 );
       validate_database();
