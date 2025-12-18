@@ -333,30 +333,32 @@ void withdraw_vesting_evaluator::do_apply( const withdraw_vesting_operation& o )
   const auto& account = _db.get_account( o.account );
   auto now = _db.head_block_time();
 
-  if( o.vesting_shares.amount < 0 )
+  VEST_asset o_vesting_shares = o.get_vesting_shares();
+
+  if( o_vesting_shares.amount < 0 )
   {
     FC_ASSERT( !_db.has_hardfork( HIVE_HARDFORK_0_20 ), "Cannot withdraw negative VESTS. account: ${account}, vests:${vests}",
-      ("account", o.account)("vests", o.vesting_shares) );
+      ( "account", o.account )( "vests", o_vesting_shares ) );
     //see https://peakd.com/imfamy/@ironshield/block-23847548-the-block-which-will-live-in-infamy
     return;
   }
 
-  FC_ASSERT( account.get_vesting() >= asset( 0, VESTS_SYMBOL ), "Account does not have sufficient Hive Power for withdraw." );
-  FC_ASSERT( static_cast<asset>(account.get_vesting()) - account.delegated_vesting_shares >= o.vesting_shares, "Account does not have sufficient Hive Power for withdraw." );
+  FC_ASSERT( account.get_vesting() >= VEST_asset( 0 ), "Account does not have sufficient Hive Power for withdraw." );
+  FC_ASSERT( account.get_vesting() - account.get_delegated_vesting() >= o_vesting_shares, "Account does not have sufficient Hive Power for withdraw." );
 
   if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
     _db.rc().regenerate_rc_mana( account, now );
-  if( o.vesting_shares.amount == 0 )
+  if( o_vesting_shares.amount == 0 )
   {
     if( _db.has_hardfork( HIVE_HARDFORK_1_28_FIX_CANCEL_POWER_DOWN ) )
       FC_ASSERT( account.has_active_power_down(), "This operation would not change the vesting withdraw rate." );
 
     _db.modify( account, [&]( account_object& a )
     {
-      a.vesting_withdraw_rate = asset( 0, VESTS_SYMBOL );
+      a.vesting_withdraw_rate = VEST_asset( 0 );
       a.next_vesting_withdrawal = time_point_sec::maximum();
-      a.to_withdraw.amount = 0;
-      a.withdrawn.amount = 0;
+      a.to_withdraw = VEST_asset( 0 );
+      a.withdrawn = VEST_asset( 0 );
     } );
   }
   else
@@ -367,12 +369,12 @@ void withdraw_vesting_evaluator::do_apply( const withdraw_vesting_operation& o )
 
     _db.modify( account, [&]( account_object& a )
     {
-      auto new_vesting_withdraw_rate = asset( o.vesting_shares.amount / vesting_withdraw_intervals, VESTS_SYMBOL );
+      VEST_asset new_vesting_withdraw_rate = o_vesting_shares / vesting_withdraw_intervals;
 
       if( new_vesting_withdraw_rate.amount == 0 )
         new_vesting_withdraw_rate.amount = 1;
 
-      if( _db.has_hardfork( HIVE_HARDFORK_0_21 ) && new_vesting_withdraw_rate.amount * vesting_withdraw_intervals < o.vesting_shares.amount )
+      if( _db.has_hardfork( HIVE_HARDFORK_0_21 ) && new_vesting_withdraw_rate.amount * vesting_withdraw_intervals < o_vesting_shares.amount )
       {
         new_vesting_withdraw_rate.amount += 1;
       }
@@ -382,8 +384,8 @@ void withdraw_vesting_evaluator::do_apply( const withdraw_vesting_operation& o )
 
       a.vesting_withdraw_rate = new_vesting_withdraw_rate;
       a.next_vesting_withdrawal = now + fc::seconds( HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS );
-      a.to_withdraw.amount = o.vesting_shares.amount;
-      a.withdrawn.amount = 0;
+      a.to_withdraw = o_vesting_shares;
+      a.withdrawn = VEST_asset( 0 );
     } );
   }
   if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
@@ -749,7 +751,7 @@ void claim_reward_balance2_evaluator::do_apply( const claim_reward_balance2_oper
 
 void delegate_vesting_shares_evaluator::do_apply( const delegate_vesting_shares_operation& op )
 {
-FC_TODO("Update get_effective_vesting_shares when modifying this operation to support SMTs." )
+  FC_TODO("Update get_effective_vesting_shares when modifying this operation to support SMTs." )
 
   const auto& delegator = _db.get_account( op.delegator );
   const auto& delegatee = _db.get_account( op.delegatee );
@@ -758,8 +760,9 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
   const auto& gpo = _db.get_dynamic_global_properties();
   auto now = gpo.time;
 
-  asset available_shares;
-  asset available_downvote_shares;
+  VEST_asset op_vesting_shares = op.get_vesting_shares();
+  VEST_asset available_shares;
+  VEST_asset available_downvote_shares;
 
   if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
   {
@@ -776,20 +779,20 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
       util::update_manabar( gpo, a );
     } );
 
-    available_shares = asset( delegator.voting_manabar.current_mana, VESTS_SYMBOL );
+    available_shares = VEST_asset( delegator.voting_manabar.current_mana );
     if( gpo.downvote_pool_percent )
     {
       if( _db.has_hardfork( HIVE_HARDFORK_0_22__3485 ) )
       {
-        available_downvote_shares = asset(
+        available_downvote_shares = VEST_asset(
           fc::uint128_to_int64( ( uint128_t( delegator.downvote_manabar.current_mana ) * HIVE_100_PERCENT ) / gpo.downvote_pool_percent
-          + ( HIVE_100_PERCENT / gpo.downvote_pool_percent ) - 1 ), VESTS_SYMBOL );
+          + ( HIVE_100_PERCENT / gpo.downvote_pool_percent ) - 1 ) );
       }
       else
       {
-        available_downvote_shares = asset(
+        available_downvote_shares = VEST_asset(
           ( delegator.downvote_manabar.current_mana * HIVE_100_PERCENT ) / gpo.downvote_pool_percent
-          + ( HIVE_100_PERCENT / gpo.downvote_pool_percent ) - 1, VESTS_SYMBOL );
+          + ( HIVE_100_PERCENT / gpo.downvote_pool_percent ) - 1 );
       }
     }
     else
@@ -813,53 +816,48 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
       */
       auto weekly_withdraw = delegator.get_next_vesting_withdrawal();
       auto remaining_withdraw = delegator.get_total_vesting_withdrawal();
-      available_shares += asset( weekly_withdraw - remaining_withdraw, VESTS_SYMBOL );
-      available_downvote_shares += asset( weekly_withdraw - remaining_withdraw, VESTS_SYMBOL );
+      available_shares += VEST_asset( weekly_withdraw - remaining_withdraw );
+      available_downvote_shares += VEST_asset( weekly_withdraw - remaining_withdraw );
     }
   }
   else
   {
-    available_shares = delegator.get_vesting().to_asset() - delegator.get_delegated_vesting() - asset( delegator.get_total_vesting_withdrawal(), VESTS_SYMBOL );
+    available_shares = delegator.get_vesting() - delegator.get_delegated_vesting() - VEST_asset( delegator.get_total_vesting_withdrawal() );
+    available_downvote_shares = available_shares;
   }
 
-  const auto& wso = _db.get_witness_schedule_object();
-
   // HF 20 increase fee meaning by 30x, reduce these thresholds to compensate.
-  auto min_delegation = _db.has_hardfork( HIVE_HARDFORK_0_20__1761 ) ?
-    asset( wso.median_props.account_creation_fee.amount / 3, HIVE_SYMBOL ) * gpo.get_vesting_share_price() :
-    asset( wso.median_props.account_creation_fee.amount * 10, HIVE_SYMBOL ) * gpo.get_vesting_share_price();
-  auto min_update = _db.has_hardfork( HIVE_HARDFORK_0_20__1761 ) ?
-    asset( wso.median_props.account_creation_fee.amount / 30, HIVE_SYMBOL ) * gpo.get_vesting_share_price() :
-    wso.median_props.account_creation_fee * gpo.get_vesting_share_price();
+  HIVE_asset fee = _db.get_witness_schedule_object().median_props.account_creation_fee;
+  VEST_asset min_delegation = _db.has_hardfork( HIVE_HARDFORK_0_20__1761 ) ?
+    ( fee / 3 ) * gpo.get_vesting_share_price() : ( fee * 10 ) * gpo.get_vesting_share_price();
+  VEST_asset min_update = _db.has_hardfork( HIVE_HARDFORK_0_20__1761 ) ?
+    ( fee / 30 ) * gpo.get_vesting_share_price() : fee * gpo.get_vesting_share_price();
 
-  // If delegation doesn't exist, create it
-  if( delegation == nullptr )
+  if( delegation == nullptr ) // delegation doesn't exist, create it
   {
-    FC_ASSERT( available_shares >= op.vesting_shares, "Account ${acc} does not have enough mana to delegate. required: ${r} available: ${a}",
-      ("acc", op.delegator)("r", op.vesting_shares)("a", available_shares) );
-    FC_TODO( "This hardfork check should not be needed. Remove after HF21 if that is the case." );
-    if( _db.has_hardfork( HIVE_HARDFORK_0_21__3336 ) )
-      FC_ASSERT( available_downvote_shares >= op.vesting_shares, "Account ${acc} does not have enough downvote mana to delegate. required: ${r} available: ${a}",
-      ("acc", op.delegator)("r", op.vesting_shares)("a", available_downvote_shares) );
-    FC_ASSERT( op.vesting_shares >= min_delegation && "Minimum not reached", "Account must delegate a minimum of ${v}", ("v", min_delegation) );
+    FC_ASSERT( available_shares >= op_vesting_shares, "Account ${acc} does not have enough mana to delegate. required: ${r} available: ${a}",
+      ( "acc", op.delegator )( "r", op_vesting_shares )( "a", available_shares ) );
+    FC_ASSERT( available_downvote_shares >= op_vesting_shares, "Account ${acc} does not have enough downvote mana to delegate. required: ${r} available: ${a}",
+      ( "acc", op.delegator )( "r", op_vesting_shares )( "a", available_downvote_shares ) );
+    FC_ASSERT( op_vesting_shares >= min_delegation && "Minimum not reached", "Account must delegate a minimum of ${v}", ( "v", min_delegation ) );
 
-    _db.create< vesting_delegation_object >( delegator, delegatee, op.vesting_shares, now );
+    _db.create< vesting_delegation_object >( delegator, delegatee, op_vesting_shares, now );
 
     _db.modify( delegator, [&]( account_object& a )
     {
-      a.delegated_vesting_shares += op.vesting_shares;
+      a.delegated_vesting_shares += op_vesting_shares;
 
       if( _db.has_hardfork( HIVE_HARDFORK_0_20__2539 ) )
       {
-        a.voting_manabar.use_mana( op.vesting_shares.amount.value );
+        a.voting_manabar.use_mana( op_vesting_shares.amount.value );
 
         if( _db.has_hardfork( HIVE_HARDFORK_0_22__3485 ) )
         {
-          a.downvote_manabar.use_mana( fc::uint128_to_int64( ( uint128_t( op.vesting_shares.amount.value ) * gpo.downvote_pool_percent ) / HIVE_100_PERCENT ) );
+          a.downvote_manabar.use_mana( fc::uint128_to_int64( ( uint128_t( op_vesting_shares.amount.value ) * gpo.downvote_pool_percent ) / HIVE_100_PERCENT ) );
         }
         else if( _db.has_hardfork( HIVE_HARDFORK_0_21__3336 ) )
         {
-          a.downvote_manabar.use_mana( op.vesting_shares.amount.value );
+          a.downvote_manabar.use_mana( op_vesting_shares.amount.value );
         }
       }
     } );
@@ -868,24 +866,21 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
     {
       if( _db.has_hardfork( HIVE_HARDFORK_0_20__2539 ) )
       {
-        util::update_manabar( gpo, a, op.vesting_shares.amount.value );
+        util::update_manabar( gpo, a, op_vesting_shares.amount.value );
       }
 
-      a.received_vesting_shares += op.vesting_shares;
+      a.received_vesting_shares += op_vesting_shares;
     } );
   }
-  // Else if the delegation is increasing
-  else if( op.vesting_shares >= delegation->get_vesting() )
+  else if( op_vesting_shares >= delegation->get_vesting() ) // delegation is increasing
   {
-    auto delta = op.vesting_shares - delegation->get_vesting();
+    auto delta = op_vesting_shares - delegation->get_vesting();
 
     FC_ASSERT( delta >= min_update && "Wrong increase", "Hive Power increase is not enough of a difference. min_update: ${min}", ("min", min_update) );
     FC_ASSERT( available_shares >= delta, "Account ${acc} does not have enough mana to delegate. required: ${r} available: ${a}",
-      ("acc", op.delegator)("r", delta)("a", available_shares) );
-    FC_TODO( "This hardfork check should not be needed. Remove after HF21 if that is the case." );
-    if( _db.has_hardfork( HIVE_HARDFORK_0_21__3336 ) )
-      FC_ASSERT( available_downvote_shares >= delta, "Account ${acc} does not have enough downvote mana to delegate. required: ${r} available: ${a}",
-      ("acc", op.delegator)("r", delta)("a", available_downvote_shares) );
+      ( "acc", op.delegator )( "r", delta )( "a", available_shares ) );
+    FC_ASSERT( available_downvote_shares >= delta, "Account ${acc} does not have enough downvote mana to delegate. required: ${r} available: ${a}",
+      ( "acc", op.delegator )( "r", delta )( "a", available_downvote_shares ) );
 
     _db.modify( delegator, [&]( account_object& a )
     {
@@ -918,22 +913,21 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
 
     _db.modify( *delegation, [&]( vesting_delegation_object& obj )
     {
-      obj.set_vesting( op.vesting_shares );
+      obj.set_vesting( op_vesting_shares );
     } );
   }
-  // Else the delegation is decreasing
-  else
+  else // delegation is decreasing
   {
-    auto delta = delegation->get_vesting() - op.vesting_shares;
+    auto delta = delegation->get_vesting() - op_vesting_shares;
 
-    if( op.vesting_shares.amount > 0 )
+    if( op_vesting_shares.amount > 0 )
     {
-      FC_ASSERT( delta >= min_update && "Wrong decrease", "Hive Power decrease is not enough of a difference. min_update: ${min}", ("min", min_update) );
-      FC_ASSERT( op.vesting_shares >= min_delegation, "Delegation must be removed or leave minimum delegation amount of ${v}", ("v", min_delegation) );
+      FC_ASSERT( delta >= min_update && "Wrong decrease", "Hive Power decrease is not enough of a difference. min_update: ${min}", ( "min", min_update ) );
+      FC_ASSERT( op_vesting_shares >= min_delegation, "Delegation must be removed or leave minimum delegation amount of ${v}", ( "v", min_delegation ) );
     }
     else
     {
-      FC_ASSERT( delegation->get_vesting().amount > 0, "Delegation would set vesting_shares to zero, but it is already zero");
+      FC_ASSERT( delegation->get_vesting().amount > 0, "Delegation would set vesting_shares to zero, but it is already zero" );
     }
 
     _db.create< vesting_delegation_expiration_object >( delegator, delta,
@@ -960,17 +954,17 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
           }
           else
           {
-            a.downvote_manabar.use_mana( op.vesting_shares.amount.value );
+            a.downvote_manabar.use_mana( op_vesting_shares.amount.value );
           }
         }
       }
     } );
 
-    if( op.vesting_shares.amount > 0 )
+    if( op_vesting_shares.amount > 0 )
     {
       _db.modify( *delegation, [&]( vesting_delegation_object& obj )
       {
-        obj.set_vesting( op.vesting_shares );
+        obj.set_vesting( op_vesting_shares );
       } );
     }
     else
