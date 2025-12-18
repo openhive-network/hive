@@ -1386,10 +1386,6 @@ Trigger-full-mirrornet-conversion:
 deploy_beekeeper_wasm_dev_package:
   extends: .npm_deploy_package_template
   stage: publish
-  rules:
-    - if: $QUICK_TEST == "true"
-      when: never
-    - when: on_success
 
   before_script:
     - !reference [.npm_based_job_base, before_script]
@@ -1423,12 +1419,6 @@ deploy_beekeeper_wasm_dev_package:
 deploy_beekeeper_wasm_production_public_npm:
   extends: .registry_npmjs_org_deploy_package_template
   stage: publish
-  rules:
-    - if: $QUICK_TEST == "true"
-      when: never
-    - if: $CI_COMMIT_REF_PROTECTED != "true"
-      when: never
-    - when: on_success
 
   before_script:
     - !reference [.npm_based_job_base, before_script]
@@ -1463,10 +1453,6 @@ deploy_beekeeper_wasm_production_public_npm:
 deploy-wax-spec-dev-package:
   extends: .npm_deploy_package_template
   stage: publish
-  rules:
-    - if: $QUICK_TEST == "true"
-      when: never
-    - when: on_success
 
   before_script:
     # Fix paths FIRST, before npm_based_job_base does cd "${SOURCE_DIR}"
@@ -1502,12 +1488,6 @@ deploy-wax-spec-dev-package:
 deploy-wax-spec-production-public-npm:
   extends: .registry_npmjs_org_deploy_package_template
   stage: publish
-  rules:
-    - if: $QUICK_TEST == "true"
-      when: never
-    - if: $CI_COMMIT_REF_PROTECTED != "true"
-      when: never
-    - when: on_success
   variables:
     NPM_PUBLISH_TOKEN: "$INTERNAL_HIDDEN_PUBLISH_TOKEN"
     NPM_PACKAGE_NAME: "wax-api-jsonrpc"
