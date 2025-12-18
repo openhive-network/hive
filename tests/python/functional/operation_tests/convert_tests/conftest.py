@@ -42,6 +42,7 @@ def create_node_and_wallet_for_convert_tests(
     node.run(
         time_control=tt.SpeedUpRateTimeControl(speed_up_rate=5),
         alternate_chain_specs=alternate_chain_spec,
+        max_retries=3,
     )
     wallet = tt.Wallet(attach_to=node)
     wallet.api.update_witness(

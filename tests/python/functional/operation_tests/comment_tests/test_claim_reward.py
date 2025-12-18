@@ -37,6 +37,7 @@ def node():
             init_supply=20000000000,
             initial_vesting=tt.InitialVesting(hive_amount=10000000000, vests_per_hive=1800),
         ),
+        max_retries=3,
     )
     init_node.wait_number_of_blocks(100)
 
@@ -62,12 +63,12 @@ def prepare_account_with_reward_balance(
     vote_0.vote(100)
 
     start_time = node.get_head_block_time() + datetime.timedelta(seconds=40 * 60)
-    node.restart(time_control=tt.StartTimeControl(start_time=start_time, speed_up_rate=5))
+    node.restart(time_control=tt.StartTimeControl(start_time=start_time, speed_up_rate=5), max_retries=3)
     time_before_publish_feed = node.get_head_block_time()
     publish_feeds_with_confirmation(node, wallet, 1, 4)
 
     start_time = time_before_publish_feed + datetime.timedelta(seconds=20 * 60)
-    node.restart(time_control=tt.StartTimeControl(start_time=start_time, speed_up_rate=5))
+    node.restart(time_control=tt.StartTimeControl(start_time=start_time, speed_up_rate=5), max_retries=3)
 
     assert get_reward_hbd_balance(node, comment_0.author) == tt.Asset.Tbd(0)
     assert get_reward_vesting_balance(node, comment_0.author) != tt.Asset.Vest(0)
@@ -84,14 +85,14 @@ def prepare_account_with_reward_balance(
     vote_1.vote(90)
 
     start_time = node.get_head_block_time() + datetime.timedelta(seconds=40 * 60)
-    node.restart(time_control=tt.StartTimeControl(start_time=start_time, speed_up_rate=5))
+    node.restart(time_control=tt.StartTimeControl(start_time=start_time, speed_up_rate=5), max_retries=3)
 
     # To receive a reward in HIVE instead of HBD, you must publish new feed and therefore change the median price.
     time_before_publish_feed = node.get_head_block_time()
     publish_feeds_with_confirmation(node, wallet, 25, 1)
 
     start_time = time_before_publish_feed + datetime.timedelta(seconds=20 * 60)
-    node.restart(time_control=tt.StartTimeControl(start_time=start_time))
+    node.restart(time_control=tt.StartTimeControl(start_time=start_time), max_retries=3)
 
     assert get_reward_hive_balance(node, comment_0.author) != tt.Asset.Hive(0)
     assert get_reward_hbd_balance(node, comment_0.author) != tt.Asset.Tbd(0)
