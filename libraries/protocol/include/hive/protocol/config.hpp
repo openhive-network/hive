@@ -242,11 +242,9 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_MAX_OPEN_RECURRENT_TRANSFERS     255
 #define HIVE_MAX_CONSECUTIVE_RECURRENT_TRANSFER_FAILURES     10
 #define HIVE_VOTING_MANA_REGENERATION_SECONDS (5*60*60*24) // 5 day
-#define HIVE_MAX_VOTE_CHANGES                 5
 #define HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF6 (60*30) /// 30 minutes
 #define HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF20 (60*15) /// 15 minutes
 #define HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF21 (60*5) /// 5 minutes
-#define HIVE_MIN_VOTE_INTERVAL_SEC            3
 #define HIVE_VOTE_DUST_THRESHOLD              (50000000)
 #define HIVE_DOWNVOTE_POOL_PERCENT_HF21       (25*HIVE_1_PERCENT)
 
@@ -273,14 +271,10 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_MINER_PAY_PERCENT                (HIVE_1_PERCENT) // 1%
 #define HIVE_MAX_RATION_DECAY_RATE            (1000000)
 
-#define HIVE_BANDWIDTH_AVERAGE_WINDOW_SECONDS (60*60*24*7) ///< 1 week
-#define HIVE_BANDWIDTH_PRECISION              (uint64_t(1000000)) ///< 1 million
 #define HIVE_MAX_COMMENT_DEPTH_PRE_HF17       6
 #define HIVE_MAX_COMMENT_DEPTH                0xffff // 64k
 #define HIVE_SOFT_MAX_COMMENT_DEPTH           0xff // 255
 #define HIVE_MAX_COMMENT_BENEFICIARIES        8
-
-#define HIVE_MAX_RESERVE_RATIO                (20000)
 
 #define HIVE_CREATE_ACCOUNT_WITH_HIVE_MODIFIER   30
 #define HIVE_CREATE_ACCOUNT_DELEGATION_RATIO     5
@@ -300,13 +294,7 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_MIN_PRODUCER_REWARD              HIVE_MINING_REWARD
 #define HIVE_MIN_POW_REWARD                   HIVE_MINING_REWARD
 
-#define HIVE_ACTIVE_CHALLENGE_FEE             asset( 2000, HIVE_SYMBOL )
-#define HIVE_OWNER_CHALLENGE_FEE              asset( 30000, HIVE_SYMBOL )
-#define HIVE_ACTIVE_CHALLENGE_COOLDOWN        fc::days(1)
-#define HIVE_OWNER_CHALLENGE_COOLDOWN         fc::days(1)
-
 #define HIVE_POST_REWARD_FUND_NAME            ("post")
-#define HIVE_COMMENT_REWARD_FUND_NAME         ("comment")
 #define HIVE_RECENT_RSHARES_DECAY_TIME_HF17   (fc::days(30))
 #define HIVE_RECENT_RSHARES_DECAY_TIME_HF19   (fc::days(15))
 #define HIVE_CONTENT_CONSTANT_HF0             (uint128_t(2000000000000ll))
@@ -376,24 +364,19 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC (60*60*24*30)
 #define HIVE_MAX_TRANSACTION_SIZE             (1024*64)
 #define HIVE_MIN_BLOCK_SIZE_LIMIT             (HIVE_MAX_TRANSACTION_SIZE)
-#define HIVE_MAX_BLOCK_SIZE              (2*1024*1024)
+#define HIVE_MAX_BLOCK_SIZE                   (2*1024*1024)
 #define HIVE_MIN_BLOCK_SIZE                   115
 
-#define HIVE_MIN_UNDO_HISTORY                 10
 #define HIVE_MAX_UNDO_HISTORY                 10000
 
-#define HIVE_MIN_TRANSACTION_EXPIRATION_LIMIT (HIVE_BLOCK_INTERVAL * 5) // 5 transactions per block
-#define HIVE_BLOCKCHAIN_PRECISION             uint64_t( 1000 )
+#define HIVE_BLOCKCHAIN_PRECISION             uint64_t( 1000 )  // actually HBD precision
 
-#define HIVE_BLOCKCHAIN_PRECISION_DIGITS      3
-#define HIVE_MAX_INSTANCE_ID                  (uint64_t(-1)>>16)
 /** NOTE: making this a power of 2 (say 2^15) would greatly accelerate fee calcs */
 #ifndef HIVE_CONVERTER_BUILD
 #  define HIVE_MAX_AUTHORITY_MEMBERSHIP       40
 #else
 #  define HIVE_MAX_AUTHORITY_MEMBERSHIP       41 /* 40 + second auth */
 #endif
-#define HIVE_MAX_ASSET_WHITELIST_AUTHORITIES  10
 #define HIVE_MAX_URL_LENGTH                   127
 
 #define HIVE_IRREVERSIBLE_THRESHOLD           (75 * HIVE_1_PERCENT)

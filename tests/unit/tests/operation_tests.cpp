@@ -71,6 +71,8 @@ using fc::string;
 #define CHECK_PROXY( account, proxy ) BOOST_REQUIRE( account.get_proxy() == proxy.get_id() )
 #define CHECK_NO_PROXY( account ) BOOST_REQUIRE( account.has_proxy() == false )
 
+#define HIVE_MIN_TRANSACTION_EXPIRATION_LIMIT 15
+
 inline uint16_t get_voting_power( const account_object& a )
 {
   return (uint16_t)( a.voting_manabar.current_mana / a.get_effective_vesting_shares().value );
@@ -820,7 +822,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
 
     BOOST_TEST_MESSAGE( "--- Test reduced power for quick voting" ); // no such feature (anymore) - even more true after HF28
 
-    generate_blocks( db->head_block_time() + HIVE_MIN_VOTE_INTERVAL_SEC );
+    generate_block();
 
     util::manabar old_manabar = _alice.voting_manabar;
     util::manabar_params params( _alice.get_effective_vesting_shares().value, HIVE_VOTING_MANA_REGENERATION_SECONDS );
@@ -885,7 +887,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
 
     BOOST_TEST_MESSAGE( "--- Test increasing vote rshares" );
 
-    generate_blocks( db->head_block_time() + HIVE_MIN_VOTE_INTERVAL_SEC );
+    generate_block();
 
     auto alice_bob_vote = vote_idx.find( boost::make_tuple( bob_comment->get_id(), alice_id ) );
     auto old_vote_rshares = alice_bob_vote->get_rshares();
@@ -910,7 +912,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
 
     BOOST_TEST_MESSAGE( "--- Test decreasing vote rshares" );
 
-    generate_blocks( db->head_block_time() + HIVE_MIN_VOTE_INTERVAL_SEC );
+    generate_block();
 
     old_vote_rshares = new_rshares;
     old_net_rshares = bob_comment_cashout->get_net_rshares();
@@ -939,7 +941,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
 
     BOOST_TEST_MESSAGE( "--- Test changing a vote to 0 weight (aka: removing a vote)" );
 
-    generate_blocks( db->head_block_time() + HIVE_MIN_VOTE_INTERVAL_SEC );
+    generate_block();
 
     old_vote_rshares = alice_bob_vote->get_rshares();
     old_net_rshares = bob_comment_cashout->get_net_rshares();

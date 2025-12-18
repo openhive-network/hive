@@ -192,8 +192,6 @@ namespace detail
       {"HIVE_MIN_CURATE_REWARD",    fc::variant{ _asset_type{ HIVE_MIN_CURATE_REWARD,     transaction_serialization_type::legacy } } },
       {"HIVE_MIN_PRODUCER_REWARD",  fc::variant{ _asset_type{ HIVE_MIN_PRODUCER_REWARD,   transaction_serialization_type::legacy } } },
       {"HIVE_MIN_POW_REWARD",       fc::variant{ _asset_type{ HIVE_MIN_POW_REWARD,        transaction_serialization_type::legacy } } },
-      {"HIVE_ACTIVE_CHALLENGE_FEE", fc::variant{ _asset_type{ HIVE_ACTIVE_CHALLENGE_FEE,  transaction_serialization_type::legacy } } },
-      {"HIVE_OWNER_CHALLENGE_FEE",  fc::variant{ _asset_type{ HIVE_OWNER_CHALLENGE_FEE,   transaction_serialization_type::legacy } } },
       {"HIVE_MIN_PAYOUT_HBD",       fc::variant{ _asset_type{ HIVE_MIN_PAYOUT_HBD,        transaction_serialization_type::legacy } } }
     };
     return _result;

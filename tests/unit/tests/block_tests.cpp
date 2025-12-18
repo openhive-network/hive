@@ -188,7 +188,6 @@ BOOST_AUTO_TEST_CASE( generate_empty_blocks )
         init_account_priv_key, database::skip_nothing );
 
       // TODO:  Change this test when we correct #406
-      // n.b. we generate HIVE_MIN_UNDO_HISTORY+1 extra blocks which will be discarded on save
       for( uint32_t i = 1; ; ++i )
       {
         BOOST_CHECK( db.head_block_id() == b->get_block_id() );
