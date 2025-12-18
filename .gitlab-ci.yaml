@@ -36,6 +36,10 @@ variables:
   QUICK_TEST_JOBS: ""
   QUICK_TEST_BLOCK_LOG_IMAGE: ""
 
+  # Debug mode for comment_cashout_tests segfault investigation
+  # Set DEBUG_SEGFAULT_TEST=true to run only this test (10x parallel) with verbose logging
+  DEBUG_SEGFAULT_TEST: "false"
+
 include:
   - template: Workflows/Branch-Pipelines.gitlab-ci.yml
   # needed to point TEST_IMAGE_TAG
@@ -106,6 +110,8 @@ testnet_node_build:
   extends: .prepare_hived_image
   stage: build
   rules:
+    - if: $DEBUG_SEGFAULT_TEST == "true"
+      when: on_success
     - if: $QUICK_TEST == "true"
       when: never
     - when: on_success
@@ -577,8 +583,10 @@ quick_test_setup:
 
 .test_tools_based:
   extends: .pytest_based
-  # Default: skip in QUICK_TEST mode. Jobs that support QUICK_TEST_JOBS override these rules.
+  # Default: skip in QUICK_TEST mode and DEBUG_SEGFAULT_TEST mode
   rules:
+    - if: $DEBUG_SEGFAULT_TEST == "true"
+      when: never
     - if: $QUICK_TEST == "true"
       when: never
     - when: on_success
@@ -1299,6 +1307,12 @@ comment_cashout_tests:
   extends:
     - .test_tools_based
     - .test-block-log-service
+  rules:
+    - if: $DEBUG_SEGFAULT_TEST == "true"
+      when: never
+    - if: $QUICK_TEST == "true"
+      when: never
+    - when: on_success
   needs:
     - !reference [.test_tools_based, needs]
     - job: build_combined_testing_block_logs_image
@@ -1312,6 +1326,43 @@ comment_cashout_tests:
   script:
     - mkdir -p "$TESTING_BLOCK_LOGS_DESTINATION"
     - !reference [.fetch_test_block_logs, script]
+    - cd tests/python/functional/comment_cashout_tests
+    - !reference [.run-pytest, script]
+  tags:
+    - public-runner-docker
+
+# Debug version - runs 10x in parallel to catch intermittent segfaults
+comment_cashout_tests_debug:
+  stage: test
+  extends:
+    - .test_tools_based
+    - .test-block-log-service
+  rules:
+    - if: $DEBUG_SEGFAULT_TEST == "true"
+      when: on_success
+  parallel: 10
+  needs:
+    - !reference [.test_tools_based, needs]
+    - job: build_combined_testing_block_logs_image
+      artifacts: true
+  variables:
+    PYTEST_NUMBER_OF_PROCESSES: 1
+    PYTEST_TIMEOUT_MINUTES: 30
+    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/comment_cashout_tests/report.xml
+    TEST_BLOCK_LOGS_SOURCES: testing_block_logs/comment_cashout/comments_and_votes/
+    TESTING_BLOCK_LOGS_DESTINATION: $CI_PROJECT_DIR/testing_block_logs_dir/
+  script:
+    - mkdir -p "$TESTING_BLOCK_LOGS_DESTINATION"
+    - !reference [.fetch_test_block_logs, script]
+    - |
+      echo "=== DEBUG MODE: Run $CI_NODE_INDEX of $CI_NODE_TOTAL ==="
+      echo "Runner: $CI_RUNNER_DESCRIPTION"
+      echo "Job ID: $CI_JOB_ID"
+      python3 --version
+      pip show msgspec beekeepy hiveio-schemas 2>/dev/null | grep -E "^(Name|Version):" || true
+      free -h
+      cat /proc/cpuinfo | grep "model name" | head -1 || true
+      echo "=== Starting test ==="
     - cd tests/python/functional/comment_cashout_tests
     - !reference [.run-pytest, script]
   tags:
@@ -2041,6 +2092,8 @@ generate_testing_block_logs:
   extends: [.extended_block_log_creation, .test_tools_based]
   timeout: 3h
   rules:
+    - if: $DEBUG_SEGFAULT_TEST == "true"
+      when: on_success
     - if: $QUICK_TEST == "true"
       when: never
     - when: on_success
@@ -2096,6 +2149,8 @@ build_combined_testing_block_logs_image:
   stage: build
   extends: .docker_image_builder_job
   rules:
+    - if: $DEBUG_SEGFAULT_TEST == "true"
+      when: on_success
     - if: $QUICK_TEST == "true"
       when: never
     - when: on_success
