@@ -8157,7 +8157,7 @@ BOOST_AUTO_TEST_CASE( comment_options_apply )
     push_transaction( op, alice_post_key );
 
     BOOST_TEST_MESSAGE( "--- Test voting no longer possible" );
-    HIVE_REQUIRE_ASSERT( push_transaction( vote, bob_post_key ), "comment_cashout->allows_votes() && \"Votes are not allowed on the comment->\"" );
+    HIVE_REQUIRE_ASSERT( push_transaction( vote, bob_post_key ), "comment_cashout->allows_votes() && \"Votes are not allowed on the comment.\"" );
 
     BOOST_TEST_MESSAGE( "--- Test enabling voting back not possible" );
     op.allow_votes = true;
