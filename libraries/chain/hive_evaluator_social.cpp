@@ -170,18 +170,20 @@ void comment_options_evaluator::do_apply( const comment_options_operation& o )
     return;
   }
 
-  if( !o.allow_curation_rewards || !o.allow_votes || o.max_accepted_payout < comment_cashout->get_max_accepted_payout() )
+  HBD_asset o_max_accepted_payout = o.get_max_accepted_payout();
+
+  if( !o.allow_curation_rewards || !o.allow_votes || o_max_accepted_payout < comment_cashout->get_max_accepted_payout() )
     FC_ASSERT( !comment_cashout->has_votes(), "One of the included comment options requires the comment to have no rshares allocated to it." );
 
   FC_ASSERT( comment_cashout->allows_curation_rewards() >= o.allow_curation_rewards, "Curation rewards cannot be re-enabled." );
   FC_ASSERT( comment_cashout->allows_votes() >= o.allow_votes, "Voting cannot be re-enabled." );
-  FC_ASSERT( comment_cashout->get_max_accepted_payout() >= o.max_accepted_payout, "A comment cannot accept a greater payout." );
+  FC_ASSERT( comment_cashout->get_max_accepted_payout() >= o_max_accepted_payout, "A comment cannot accept a greater payout." );
   FC_ASSERT( comment_cashout->get_percent_hbd() >= o.percent_hbd, "A comment cannot accept a greater percent HBD." );
 
   _db.modify( *comment_cashout, [&]( comment_cashout_object& c )
   {
-    c.configure_options( o.percent_hbd, o.max_accepted_payout, o.allow_votes, o.allow_curation_rewards );
-  });
+    c.configure_options( o.percent_hbd, o_max_accepted_payout, o.allow_votes, o.allow_curation_rewards );
+  } );
 
   for( auto& e : o.extensions )
   {
