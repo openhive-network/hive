@@ -1,0 +1,252 @@
+# Skip rules for CI job optimization based on changed files
+# Include this file and use the patterns/templates in job rules
+#
+# Features:
+#   1. Skip builds AND tests for docs-only changes
+#   2. Skip builds (use cached binaries) for test-only changes
+#   3. Run full pipeline for source code changes
+#
+# How it works:
+#   - detect_changes job analyzes what files changed and sets TESTS_ONLY variable
+#   - Build jobs skip when TESTS_ONLY=true or QUICK_TEST=true
+#   - quick_test_setup runs when TESTS_ONLY=true to fetch cached binaries
+#   - Test jobs run normally, using whichever binaries are available
+
+variables:
+  # Control variable to force full pipeline regardless of changes
+  # Set to "true" to run all jobs even for docs-only or test-only changes
+  FORCE_FULL_PIPELINE: "false"
+  # Set by detect_changes job - indicates only test files changed (no source code)
+  TESTS_ONLY: "false"
+
+# ============================================================================
+# Change Detection Job
+# ============================================================================
+
+# Detects what type of files changed and sets variables for other jobs
+# Must run before build jobs in static_code_analysis stage
+.detect_changes:
+  stage: static_code_analysis
+  image: alpine:latest
+  needs: []
+  before_script:
+    - apk add --no-cache git
+  script:
+    - |
+      echo "Detecting what files changed..."
+
+      # Determine base commit to compare against
+      if [ -n "$CI_MERGE_REQUEST_DIFF_BASE_SHA" ]; then
+        BASE_SHA="$CI_MERGE_REQUEST_DIFF_BASE_SHA"
+        echo "Using MR diff base: $BASE_SHA"
+      elif [ -n "$CI_COMMIT_BEFORE_SHA" ] && [ "$CI_COMMIT_BEFORE_SHA" != "0000000000000000000000000000000000000000" ]; then
+        BASE_SHA="$CI_COMMIT_BEFORE_SHA"
+        echo "Using commit before SHA: $BASE_SHA"
+      else
+        # For first commit on branch or other edge cases, compare to parent
+        BASE_SHA="HEAD~1"
+        echo "Using HEAD~1 as base"
+      fi
+
+      # Get list of changed files
+      echo "Changed files:"
+      git diff --name-only "$BASE_SHA" HEAD 2>/dev/null || git diff --name-only HEAD~1 HEAD | head -50
+
+      # Check if source code changed (files that require C++ builds)
+      SOURCE_CHANGED="false"
+      if git diff --name-only "$BASE_SHA" HEAD 2>/dev/null | grep -qE '^(libraries/|programs/|CMakeLists\.txt|cmake/|Dockerfile|docker/|contrib/)'; then
+        SOURCE_CHANGED="true"
+      fi
+
+      # Check if tests changed
+      TESTS_CHANGED="false"
+      if git diff --name-only "$BASE_SHA" HEAD 2>/dev/null | grep -qE '^tests/'; then
+        TESTS_CHANGED="true"
+      fi
+
+      # Check if CI/scripts changed (should trigger full build)
+      CI_CHANGED="false"
+      if git diff --name-only "$BASE_SHA" HEAD 2>/dev/null | grep -qE '^(\.gitlab-ci\.yaml|scripts/ci-helpers/)'; then
+        CI_CHANGED="true"
+      fi
+
+      # Determine if this is a tests-only change
+      # Tests-only means: tests changed, but source code and CI did NOT change
+      TESTS_ONLY="false"
+      if [ "$TESTS_CHANGED" = "true" ] && [ "$SOURCE_CHANGED" = "false" ] && [ "$CI_CHANGED" = "false" ]; then
+        TESTS_ONLY="true"
+        echo ">>> TESTS_ONLY detected - will use cached binaries"
+      fi
+
+      echo ""
+      echo "Detection results:"
+      echo "  SOURCE_CHANGED=$SOURCE_CHANGED"
+      echo "  TESTS_CHANGED=$TESTS_CHANGED"
+      echo "  CI_CHANGED=$CI_CHANGED"
+      echo "  TESTS_ONLY=$TESTS_ONLY"
+
+      # Write to dotenv file for other jobs
+      echo "TESTS_ONLY=$TESTS_ONLY" > detect_changes.env
+      echo "SOURCE_CHANGED=$SOURCE_CHANGED" >> detect_changes.env
+  artifacts:
+    reports:
+      dotenv: detect_changes.env
+  rules:
+    # Skip detection on protected branches - always run full pipeline
+    - if: $CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH == "master"
+      when: never
+    # Skip on tags
+    - if: $CI_COMMIT_TAG
+      when: never
+    # Skip if forcing full pipeline
+    - if: $FORCE_FULL_PIPELINE == "true"
+      when: never
+    # Skip if QUICK_TEST is manually enabled
+    - if: $QUICK_TEST == "true"
+      when: never
+    - when: on_success
+
+# ============================================================================
+# Source Code Patterns (trigger C++ builds)
+# ============================================================================
+
+.source_code_patterns:
+  - libraries/**/*
+  - programs/**/*
+  - CMakeLists.txt
+  - cmake/**/*
+  - Dockerfile
+  - docker/**/*
+  - contrib/**/*
+
+# ============================================================================
+# Rule Templates for Jobs
+# ============================================================================
+
+# Template: Skip build jobs if only docs OR only tests changed
+# Use: extends: .skip_build_on_non_source_changes (for build jobs)
+.skip_build_on_non_source_changes:
+  rules:
+    # QUICK_TEST mode - skip builds (manual override)
+    - if: $QUICK_TEST == "true"
+      when: never
+    # TESTS_ONLY mode - skip builds (auto-detected)
+    - if: $TESTS_ONLY == "true"
+      when: never
+    # Force full pipeline if requested
+    - if: $FORCE_FULL_PIPELINE == "true"
+      when: on_success
+    # Always run on protected branches
+    - if: $CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH == "master"
+      when: on_success
+    # Always run on tags
+    - if: $CI_COMMIT_TAG
+      when: on_success
+    # Run if build-relevant files changed
+    - changes:
+        paths:
+          - libraries/**/*
+          - programs/**/*
+          - CMakeLists.txt
+          - cmake/**/*
+          - Dockerfile
+          - docker/**/*
+          - contrib/**/*
+          - scripts/ci-helpers/get_image4submodule.sh
+          - scripts/ci-helpers/build_data.sh
+          - scripts/ci-helpers/build_and_publish_instance.sh
+          - scripts/ci-helpers/cache-manager.sh
+          - scripts/ci-helpers/prepare_data_image_job.yml
+          - .gitlab-ci.yaml
+      when: on_success
+    # Skip otherwise (docs-only or tests-only changes)
+    - when: never
+
+# Template: Run quick_test_setup when QUICK_TEST or TESTS_ONLY
+# Use: extends: .quick_test_setup_rules
+.quick_test_setup_rules:
+  rules:
+    # Run when QUICK_TEST is manually enabled
+    - if: $QUICK_TEST == "true"
+      when: always
+    # Run when TESTS_ONLY is auto-detected
+    - if: $TESTS_ONLY == "true"
+      when: always
+    # Don't run otherwise
+    - when: never
+
+# Template: Skip test jobs if only documentation changed
+# Use: extend existing .test_tools_based or similar with these rules
+.skip_test_on_docs_only:
+  rules:
+    # Force full pipeline if requested
+    - if: $FORCE_FULL_PIPELINE == "true"
+      when: on_success
+    # Always run on protected branches
+    - if: $CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH == "master"
+      when: on_success
+    # Always run on tags
+    - if: $CI_COMMIT_TAG
+      when: on_success
+    # Run if any non-doc files changed
+    - changes:
+        paths:
+          - libraries/**/*
+          - programs/**/*
+          - tests/**/*
+          - CMakeLists.txt
+          - cmake/**/*
+          - Dockerfile
+          - docker/**/*
+          - contrib/**/*
+          - scripts/**/*
+          - .gitlab-ci.yaml
+          - setup.py
+          - version.py
+      when: on_success
+    # Skip otherwise (docs-only changes)
+    - when: never
+
+# Template: Skip test jobs if only docs changed, WITH QUICK_TEST/TESTS_ONLY support
+# Use: replaces .test_tools_based rules block
+# Note: These tests are skipped in QUICK_TEST mode but run in TESTS_ONLY mode
+.skip_test_on_docs_only_with_quick_test:
+  rules:
+    # QUICK_TEST mode - skip heavy test jobs (only unit tests run)
+    - if: $QUICK_TEST == "true"
+      when: never
+    # Force full pipeline if requested
+    - if: $FORCE_FULL_PIPELINE == "true"
+      when: on_success
+    # Always run on protected branches
+    - if: $CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH == "master"
+      when: on_success
+    # Always run on tags
+    - if: $CI_COMMIT_TAG
+      when: on_success
+    # Run if any non-doc files changed (includes TESTS_ONLY scenario)
+    - changes:
+        paths:
+          - libraries/**/*
+          - programs/**/*
+          - tests/**/*
+          - CMakeLists.txt
+          - cmake/**/*
+          - Dockerfile
+          - docker/**/*
+          - contrib/**/*
+          - scripts/**/*
+          - .gitlab-ci.yaml
+          - setup.py
+          - version.py
+      when: on_success
+    # Skip otherwise (docs-only changes)
+    - when: never
+
+# ============================================================================
+# Legacy aliases (for backwards compatibility)
+# ============================================================================
+
+# Alias for the updated build skip rules
+.skip_build_on_docs_only_with_quick_test:
+  extends: .skip_build_on_non_source_changes
