@@ -337,7 +337,7 @@ BOOST_AUTO_TEST_CASE( pack_transaction_basic )
           executor->generate_block();
         }
 
-        if( is_hf26 )
+        if( /*is_hf26*/ true ) // ABW: it is no longer needed to distinguish between "past" and HF26 transactions, all can use hf26 pack
         {
           auto _alice_balance_previous  = executor->get_balance( "alice" );
           auto _bob_balance_previous    = executor->get_balance( "bob" );
@@ -353,11 +353,11 @@ BOOST_AUTO_TEST_CASE( pack_transaction_basic )
 
           executor->generate_block();
         }
-        else
+        /*else
         {
           signed_transaction _tx = _get_trx( executor, { _op } );
           HIVE_REQUIRE_THROW( executor->push_transaction_ex( _tx, active_key, 0, hive::protocol::pack_type::hf26 ), hive::protocol::transaction_auth_exception );
-        }
+        }*/
       };
 
       auto _op_comment_comment_options = [&_get_trx]( ptr_hardfork_database_fixture& executor, const fc::ecc::private_key& post_key, bool is_hf26 )
@@ -404,18 +404,18 @@ BOOST_AUTO_TEST_CASE( pack_transaction_basic )
         _op2.permlink = "lemon";
         _op2.max_accepted_payout = asset( 13456, HBD_SYMBOL );
 
-        if( is_hf26 )
+        if( /*is_hf26*/ true )
         {
           signed_transaction _tx = _get_trx( executor, { _op2 } );
           executor->push_transaction_ex( _tx, post_key, 0, hive::protocol::pack_type::hf26 );
 
           executor->generate_block();
         }
-        else
+        /*else
         {
           signed_transaction _tx = _get_trx( executor, { _op2 } );
           HIVE_REQUIRE_THROW( executor->push_transaction_ex( _tx, post_key, 0, hive::protocol::pack_type::hf26 ), hive::protocol::transaction_auth_exception );
-        }
+        }*/
       };
 
       auto _op_decline_voting_rights = [&_get_trx]( ptr_hardfork_database_fixture& executor, const fc::ecc::private_key& active_key, bool is_hf26 )

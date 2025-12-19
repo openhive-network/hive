@@ -1451,30 +1451,30 @@ BOOST_AUTO_TEST_CASE( different_behaviour_for_nonexistent_proposals )
 
       BOOST_TEST_MESSAGE( "Create 'update_proposal_votes_operation'" );
 
-      //An exception must be thrown because there is a condition `_db.is_in_control()` or `_db.has_hardfork( HIVE_HARDFORK_1_28 )`
+      //An exception must be thrown because there is a condition `_db.has_hardfork( HIVE_HARDFORK_1_28 )`
       if( is_hf28 )
         HIVE_REQUIRE_ASSERT( executor->vote_proposal("alice", { 666 }, true, alice_private_key), "false && \"proposal not found\"" );
       else
-        HIVE_REQUIRE_ASSERT( executor->vote_proposal("alice", { 666 }, true, alice_private_key), "false && \"proposal not found\"" );
+        executor->vote_proposal("alice", { 666 }, true, alice_private_key);
 
-      //An exception must be thrown because there is a condition `_db.is_in_control()` or `_db.has_hardfork( HIVE_HARDFORK_1_28 )`
+      //An exception must be thrown because there is a condition `_db.has_hardfork( HIVE_HARDFORK_1_28 )`
       if( is_hf28 )
-        HIVE_REQUIRE_ASSERT( executor->vote_proposal("alice", { _id_proposal, 666 }, true, alice_private_key), "false && \"proposal not found\"" );
+        HIVE_REQUIRE_ASSERT( executor->vote_proposal("alice", { _id_proposal, 667 }, true, alice_private_key), "false && \"proposal not found\"" );
       else
-        HIVE_REQUIRE_ASSERT( executor->vote_proposal("alice", { _id_proposal, 666 }, true, alice_private_key), "false && \"proposal not found\"" );
+        executor->vote_proposal("alice", { _id_proposal, 667 }, true, alice_private_key);
 
       BOOST_TEST_MESSAGE( "Create 'remove_proposal_operation'" );
-      //An exception must be thrown because there is a condition `_db.is_in_control()` or `_db.has_hardfork( HIVE_HARDFORK_1_28 )`
+      //An exception must be thrown because there is a condition `_db.has_hardfork( HIVE_HARDFORK_1_28 )`
       if( is_hf28 )
-        HIVE_REQUIRE_ASSERT( executor->remove_proposal("alice", { 666 }, alice_private_key), "false && \"proposal doesn't exist\"" );
+        HIVE_REQUIRE_ASSERT( executor->remove_proposal("alice", { 668 }, alice_private_key), "false && \"proposal doesn't exist\"" );
       else
-        HIVE_REQUIRE_ASSERT( executor->remove_proposal("alice", { 666 }, alice_private_key), "false && \"proposal doesn't exist\"" );
+        executor->remove_proposal("alice", { 668 }, alice_private_key);
 
-      //An exception must be thrown because there is a condition `_db.is_in_control()` or `_db.has_hardfork( HIVE_HARDFORK_1_28 )`
+      //An exception must be thrown because there is a condition `_db.has_hardfork( HIVE_HARDFORK_1_28 )`
       if( is_hf28 )
-        HIVE_REQUIRE_ASSERT( executor->remove_proposal("alice", { _id_proposal, 666 }, alice_private_key), "false && \"proposal doesn't exist\"" );
+        HIVE_REQUIRE_ASSERT( executor->remove_proposal("alice", { _id_proposal, 669 }, alice_private_key), "false && \"proposal doesn't exist\"" );
       else
-        HIVE_REQUIRE_ASSERT( executor->remove_proposal("alice", { _id_proposal, 666 }, alice_private_key), "false && \"proposal doesn't exist\"" );
+        executor->remove_proposal("alice", { _id_proposal, 669 }, alice_private_key);
     };
 
     BOOST_TEST_MESSAGE( "*****HF-27*****" );
