@@ -1,3 +1,4 @@
+#if defined(__DUPA__)
 #include <string>
 #include <sstream>
 #include <string.h>
@@ -221,3 +222,4 @@ void smaz_decompress(const char *in, uint32_t inlen, std::stringstream& ss ) {
   }
 
 } // namespace fc
+#endif // defined(__DUPA__)

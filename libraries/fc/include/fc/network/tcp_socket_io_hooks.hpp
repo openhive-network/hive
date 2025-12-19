@@ -1,3 +1,4 @@
+/*
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
 #include <memory>
@@ -25,3 +26,4 @@ namespace fc
     virtual size_t writesome(ssl_socket& socket, const std::shared_ptr<const char>& buffer, size_t length, size_t offset) = 0;
   };
 } // namesapce fc
+*/

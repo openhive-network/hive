@@ -1,3 +1,4 @@
+#if defined(__DUPA__)
 #define NOMINMAX // prevent windows from defining min and max macros
 #include <libssh2.h>
 #include <libssh2_sftp.h>
@@ -715,3 +716,4 @@ namespace fc { namespace ssh {
   }
 
 } }
+#endif // #if defined(__DUPA__)

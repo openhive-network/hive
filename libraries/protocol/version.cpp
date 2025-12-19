@@ -3,24 +3,24 @@
 #include <fc/exception/exception.hpp>
 #include <fc/variant.hpp>
 
-#include <sstream>
+//#include <sstream>
 
 namespace hive { namespace protocol {
 
 /* Quick conversion utilities from http://joelverhagen.com/blog/2010/11/convert-an-int-to-a-string-and-vice-versa-in-c/ */
 inline int string_to_int( const fc::string& input )
 {
-  std::stringstream s( input );
+  //std::stringstream s( input );
   int i;
-  s >> i;
+  //s >> i;
   return i;
 }
 
 inline fc::string int_to_string( int input )
 {
-  std::stringstream s;
-  s << input;
-  return s.str();
+  //std::stringstream s;
+  //s << input;
+  return "";//return s.str();
 }
 
 version::version( uint8_t m, uint8_t h, uint16_t r )
@@ -32,14 +32,15 @@ version::version( uint8_t m, uint8_t h, uint16_t r )
 
 version::operator fc::string()const
 {
-  std::stringstream s;
+  /*std::stringstream s;
   s << ( ( v_num >> 24 ) & 0x000000FF )
     << '.'
     << ( ( v_num >> 16 ) & 0x000000FF )
     << '.'
     << ( ( v_num & 0x0000FFFF ) );
 
-  return s.str();
+  return s.str();*/
+  return "";
 }
 
 } } // hive::protocol
@@ -56,7 +57,7 @@ namespace fc
     uint32_t major = 0, hardfork = 0, revision = 0;
     char dot_a = 0, dot_b = 0;
 
-    std::stringstream s( var.as_string() );
+    /*std::stringstream s( var.as_string() );
     s >> major >> dot_a >> hardfork >> dot_b >> revision;
 
     // We'll accept either m.h.v or m_h_v as canonical version strings
@@ -66,7 +67,7 @@ namespace fc
     FC_ASSERT( revision <= 0xFFFF, "Revision version is out of range" );
     FC_ASSERT( s.eof(), "Extra information at end of version string" );
 
-    v.v_num = 0 | ( major << 24 ) | ( hardfork << 16 ) | revision;
+    v.v_num = 0 | ( major << 24 ) | ( hardfork << 16 ) | revision;*/
   }
 
   void to_variant( const hive::protocol::hardfork_version& hv, variant& var )

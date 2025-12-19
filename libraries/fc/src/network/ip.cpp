@@ -1,3 +1,4 @@
+#if defined(__DUPA__)
 #include <fc/network/ip.hpp>
 #include <fc/variant.hpp>
 #include <fc/exception/exception.hpp>
@@ -156,3 +157,4 @@ namespace fc { namespace ip {
   }
 
 } 
+#endif // #if defined(__DUPA__)

@@ -5,7 +5,7 @@
 #include <optional>
 #include <set>
 #include <vector>
-#include <sstream>
+//#include <sstream>
 
 #include <boost/tuple/tuple.hpp>
 
@@ -100,7 +100,7 @@ namespace fc {
          return n.c_str();
      }
   };
-   template< typename T, typename... Args >
+   /*template< typename T, typename... Args >
    struct var_template_args_typename_helper
    {
       static void name( std::stringstream& ss )
@@ -117,19 +117,19 @@ namespace fc {
       {
          ss << get_typename< T >::name();
       }
-   };
+   };*/
 
    template< typename... Args > struct get_typename< std::tuple< Args... > >
    {
       static const char* name()
       {
          static std::string n;
-         if( n.length() == 0 )
+         /*if( n.length() == 0 )
          {
             std::stringstream ss;
             var_template_args_typename_helper< Args... >::name( ss );
             n = ss.str();
-         }
+         }*/
          return n.c_str();
       }
    };
@@ -140,12 +140,12 @@ namespace fc {
       static const char* name()
       {
          static std::string n;
-         if( n.length() == 0 )
+         /*if( n.length() == 0 )
          {
             std::stringstream ss;
             var_template_args_typename_helper< Args... >::name( ss );
             n = ss.str();
-         }
+         }*/
          return n.c_str();
       }
    };

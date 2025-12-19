@@ -1,3 +1,4 @@
+#if defined(__DUPA__)
 #define NOMINMAX
 #include <libssh2.h>
 #include <libssh2_sftp.h>
@@ -278,3 +279,4 @@ namespace fc { namespace ssh {
   }
 
 } }
+#endif // #if defined(__DUPA__)

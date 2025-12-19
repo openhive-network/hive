@@ -1,3 +1,4 @@
+#if defined(__DUPA__)
 #include <fc/real128.hpp>
 #include <fc/crypto/bigint.hpp>
 #include <fc/exception/exception.hpp>
@@ -128,3 +129,4 @@ namespace fc
    }
 
 } // namespace fc
+#endif // defined(__DUPA__)

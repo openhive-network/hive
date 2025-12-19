@@ -1,3 +1,4 @@
+#if defined(__DUPA__)
 /**
  *  @file fc/cmt/asio.hpp
  *  @brief defines wrappers for boost::asio functions
@@ -302,3 +303,4 @@ namespace asio {
 
 } } // namespace fc::asio
 
+#endif // __DUPA__

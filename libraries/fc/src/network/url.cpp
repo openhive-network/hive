@@ -1,3 +1,4 @@
+#if defined(__DUPA__)
 #include <fc/network/url.hpp>
 #include <fc/string.hpp>
 #include <fc/io/sstream.hpp>
@@ -312,3 +313,4 @@ namespace fc
 
 }
 
+#endif // __DUPA__

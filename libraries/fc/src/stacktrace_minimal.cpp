@@ -1,3 +1,4 @@
+#if defined(__DUPA__)
 #include <fc/filesystem.hpp>
 #include <fc/stacktrace.hpp>
 
@@ -11,3 +12,4 @@ void print_stacktrace(std::ostream& out, unsigned int max_frames /* = 63 */, voi
 void print_stacktrace_on_segfault() {}
 
 }
+#endif // defined(__DUPA__)

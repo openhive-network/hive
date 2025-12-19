@@ -11,8 +11,8 @@
 #include "console_defines.h"
 #include <fc/io/stdio.hpp>
 #include <fc/exception/exception.hpp>
-#include <iomanip>
-#include <sstream>
+//#include <iomanip>
+//#include <sstream>
 
 
 namespace fc {
@@ -83,7 +83,7 @@ namespace fc {
    }
 
    void console_appender::log( const log_message& m ) {
-      //fc::string message = fc::format_string( m.get_format(), m.get_data() );
+      /*//fc::string message = fc::format_string( m.get_format(), m.get_data() );
       //fc::variant lmsg(m);
 
       //fc::string fmt_str = fc::format_string( cfg.format, mutable_variant_object(m.get_context())( "message", message)  );
@@ -112,7 +112,7 @@ namespace fc {
       fc::string message = fc::format_string( m.get_format(), m.get_data() );
       line << message;//.c_str();
 
-      log_impl(line.str(), my->lc[m.get_context().get_log_level()]);
+      log_impl(line.str(), my->lc[m.get_context().get_log_level()]);*/
    }
 
    void console_appender::print_new_line()const

@@ -1,3 +1,4 @@
+#if defined(__DUPA__)
 #include <fc/io/buffered_iostream.hpp>
 #include <fc/exception/exception.hpp>
 #include <boost/asio/streambuf.hpp>
@@ -207,3 +208,4 @@ namespace fc
 
 
 }
+#endif // __DUPA__

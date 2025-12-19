@@ -6,8 +6,8 @@
 #include <boost/algorithm/string.hpp>
 
 #include <string>
-#include <sstream>
-#include <iomanip>
+//#include <sstream>
+//#include <iomanip>
 #include <locale>
 #include <limits>
 
@@ -23,13 +23,13 @@ namespace fc  {
          virtual std::string do_grouping() const { return "\03"; }
    };
 
-  std::string to_pretty_string( int64_t value )
+  /*std::string to_pretty_string( int64_t value )
   {
      std::stringstream ss;
      ss.imbue( {std::locale(), new comma_numpunct} );
      ss << std::fixed << value;
      return ss.str();
-  }
+  }*/
 
 #ifdef USE_FC_STRING
   string::string(const char* s, int l) :my(s,l){ }
@@ -131,9 +131,10 @@ namespace fc  {
   fc::string to_string(double d)
   {
     // +2 is required to ensure that the double is rounded correctly when read back in.  http://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html
-    std::stringstream ss;
-    ss << std::setprecision(std::numeric_limits<double>::digits10 + 2) << std::fixed << d;
-    return ss.str();
+    //std::stringstream ss;
+    //ss << std::setprecision(std::numeric_limits<double>::digits10 + 2) << std::fixed << d;
+    //return ss.str();
+    return fc::string();
   }
 
   fc::string to_string(unsigned long long d)
