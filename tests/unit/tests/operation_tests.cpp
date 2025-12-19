@@ -157,7 +157,7 @@ BOOST_AUTO_TEST_CASE( account_create_apply )
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     tx.operations.push_back( op );
     tx.validate();
-    HIVE_REQUIRE_ASSERT( push_transaction( tx, init_account_priv_key ), "o.fee == wso.median_props.account_creation_fee" );
+    HIVE_REQUIRE_ASSERT( push_transaction( tx, init_account_priv_key ), "o_fee == wso.median_props.account_creation_fee" );
 
     BOOST_TEST_MESSAGE( "--- Test normal account creation" );
     op.fee = asset( 100, HIVE_SYMBOL );
@@ -8220,7 +8220,7 @@ BOOST_AUTO_TEST_CASE( comment_options_apply )
 
     BOOST_TEST_MESSAGE( "--- Test increasing max_accepted_payout not possible" );
     op.max_accepted_payout.amount *= 2;
-    HIVE_REQUIRE_ASSERT( push_transaction( op, alice_post_key ), "comment_cashout->get_max_accepted_payout() >= o.max_accepted_payout" );
+    HIVE_REQUIRE_ASSERT( push_transaction( op, alice_post_key ), "comment_cashout->get_max_accepted_payout() >= o_max_accepted_payout" );
 
     BOOST_TEST_MESSAGE( "--- Test success of voting on comment with lowered max_accepted_payout" );
     push_transaction( vote, dave_post_key );
@@ -8517,7 +8517,7 @@ BOOST_AUTO_TEST_CASE( witness_set_properties_validate )
     prop_op.props.clear();
     prop_op.props[ "key" ] = fc::raw::pack_to_vector( signing_key.get_public_key() );
     prop_op.props[ "maximum_block_size" ] = fc::raw::pack_to_vector( HIVE_MAX_BLOCK_SIZE + 1 );
-    HIVE_REQUIRE_ASSERT( push_transaction( prop_op, signing_key ), "props.maximum_block_size <= HIVE_MAX_BLOCK_SIZE" );
+    HIVE_REQUIRE_ASSERT( push_transaction( prop_op, signing_key ), "maximum_block_size <= HIVE_MAX_BLOCK_SIZE && \"Max block size cannot be more than 2MiB\"" );
   }
   FC_LOG_AND_RETHROW()
 }
