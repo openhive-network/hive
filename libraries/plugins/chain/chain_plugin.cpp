@@ -1387,7 +1387,13 @@ void chain_plugin_impl::work( synchronization_type& on_sync )
   }
   else
   {
-    block_storage->reopen_for_writing();
+    // Only reopen for writing if we might actually write new blocks.
+    // If stop_at_block is set and we've already reached it, stay read-only to allow
+    // multiple instances to share the same block_log via symlinks (useful for CI).
+    if( stop_at_block == 0 || db.head_block_num() < stop_at_block )
+    {
+      block_storage->reopen_for_writing();
+    }
     ilog( "Started on blockchain with ${n} blocks", ("n", db.head_block_num()) );
   }
 
@@ -1900,7 +1906,11 @@ void chain_plugin::plugin_startup()
     {
       assert( !my->is_p2p_enabled );
       ilog( "P2P is disabled${str}.", ( str ) );
-      my->block_storage->reopen_for_writing();
+      // Only reopen for writing if we might actually write new blocks
+      if( my->stop_at_block == 0 || my->db.head_block_num() < my->stop_at_block )
+      {
+        my->block_storage->reopen_for_writing();
+      }
     }
   }
 
