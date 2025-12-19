@@ -8,10 +8,16 @@ stages:
 
 variables:
   PYTEST_NUMBER_OF_PROCESSES: 8
-  GIT_DEPTH: 15
-  GIT_SUBMODULE_DEPTH: 1
-  GIT_STRATEGY: clone
+  # Fetch strategy reuses workspace between jobs, reducing GitLab server load.
+  # Full clone (depth 0) enables efficient incremental fetches - shallow clones
+  # don't reduce server CPU and make fetch less effective.
+  GIT_STRATEGY: fetch
+  GIT_DEPTH: 0
+  GIT_SUBMODULE_DEPTH: 0
   GIT_SUBMODULE_STRATEGY: recursive
+  # Temporary: separate clone path prevents clone-strategy jobs from erasing
+  # fetch workspaces during transition. Remove once all projects use fetch.
+  GIT_CLONE_PATH: $CI_BUILDS_DIR/fetch/$CI_RUNNER_SHORT_TOKEN/$CI_CONCURRENT_ID/$CI_PROJECT_PATH
   CI_DEBUG_SERVICES: "true"
 
   # Versions of Python packages
