@@ -493,6 +493,24 @@ plugin_test:
       LOG_FILE: $CI_JOB_NAME.log
     command: ["--replay-blockchain", "--stop-at-block=5000000"]
 
+# Wait for hived service to be ready with retry loop
+# Usage: !reference [.wait-for-hived, script]
+.wait-for-hived:
+  script:
+    - |
+      HIVED_ENDPOINT="${NODE_ADDRESS:-hived-instance:8091}"
+      echo "Waiting for hived at ${HIVED_ENDPOINT} to be ready..."
+      for i in $(seq 1 60); do
+        if curl -sI "${HIVED_ENDPOINT}" >/dev/null 2>&1; then
+          echo "Connected to hived on attempt $i"
+          exit 0
+        fi
+        echo "Waiting for hived... attempt $i/60"
+        sleep 2
+      done
+      echo "ERROR: hived not ready after 60 retries (2 minutes)"
+      exit 1
+
 .test-block-log-service:
   variables:
     TEST_BLOCK_LOG_SERVER: "http://test-block-log-server:80"
@@ -927,7 +945,7 @@ patterns_tests:
     - *hived-service
 
   before_script:
-    - curl -I hived-instance:8091 || (echo "error connecting to service hived-instance" && false)
+    - !reference [.wait-for-hived, script]
     - !reference [.test_tools_based, before_script]
 
   script:
@@ -983,7 +1001,7 @@ python_pattern_mainnet_tests:
     - *hived-service
 
   before_script:
-    - curl -I hived-instance:8091 || (echo "error connecting to service hived-instance" && false)
+    - !reference [.wait-for-hived, script]
     - !reference [.test_tools_based, before_script]
   script:
     # run pattern tests
@@ -1060,7 +1078,7 @@ message_format_mainnet_5m_tests:
     HIVED_UID: $HIVED_UID
     HIVED_COMMIT: $HIVED_COMMIT
   before_script:
-    - curl -I ${NODE_ADDRESS} || (echo "error connecting to service hived-instance" && false)
+    - !reference [.wait-for-hived, script]
     - !reference [.message_format_tests, before_script]
   artifacts:
     name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
@@ -1125,7 +1143,7 @@ witness_tests:
     HIVED_UID: $HIVED_UID
     HIVED_COMMIT: $HIVED_COMMIT
   script:
-    - curl -I ${NODE_ADDRESS} || (echo "error connecting to service hived-instance" && false)
+    - !reference [.wait-for-hived, script]
     - cd tests/python/functional/witness_tests
     - export PYTEST_ARGS=(--http-endpoint=${NODE_ADDRESS})
     - !reference [.run-pytest, script]
