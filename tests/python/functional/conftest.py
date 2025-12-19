@@ -29,6 +29,7 @@ def pytest_configure(config) -> None:
         # before any xdist workers start making concurrent API calls
         import schemas.apis.account_by_key_api  # noqa: F401
         import schemas.apis.account_history_api  # noqa: F401
+        import schemas.apis.app_status_api  # noqa: F401  # Used by beekeepy.__discover_ports()
         import schemas.apis.block_api  # noqa: F401
         import schemas.apis.condenser_api  # noqa: F401
         import schemas.apis.database_api.fundaments_of_reponses  # noqa: F401

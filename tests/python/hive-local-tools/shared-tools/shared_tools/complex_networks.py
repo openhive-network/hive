@@ -32,6 +32,7 @@ def _warmup_msgspec_decoders() -> None:
     with contextlib.suppress(Exception):
         # Import and access schemas types to trigger annotation resolution
         # This ensures msgspec decoders are initialized before parallel operations
+        import schemas.apis.app_status_api  # Used by beekeepy.__discover_ports()
         import schemas.apis.database_api.fundaments_of_reponses
         import schemas.apis.database_api.response_schemas
         import schemas.apis.network_node_api
