@@ -321,10 +321,12 @@ The CI automatically optimizes pipeline execution based on what files changed. T
 
 **How test-only optimization works:**
 1. `detect_changes` job analyzes what files changed
-2. If only `tests/**` changed (no source code), sets `TESTS_ONLY=true`
-3. Build jobs skip when `TESTS_ONLY=true`
-4. `quick_test_setup` automatically runs to fetch cached binaries
-5. Test jobs run using the cached binaries
+2. If only `tests/**` changed (no source code):
+   - Queries registry API to verify cached binaries exist
+   - If cache exists: sets `TESTS_ONLY=true`, skips builds
+   - If no cache: runs full build (self-healing fallback)
+3. `quick_test_setup` fetches cached binaries when `TESTS_ONLY=true`
+4. Test jobs run using the cached binaries
 
 **Override variables:**
 - `FORCE_FULL_PIPELINE=true` - Run all jobs regardless of changes

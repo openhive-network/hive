@@ -30,7 +30,7 @@ variables:
   image: alpine:latest
   needs: []
   before_script:
-    - apk add --no-cache git
+    - apk add --no-cache git curl
   script:
     - |
       echo "Detecting what files changed..."
@@ -74,8 +74,43 @@ variables:
       # Tests-only means: tests changed, but source code and CI did NOT change
       TESTS_ONLY="false"
       if [ "$TESTS_CHANGED" = "true" ] && [ "$SOURCE_CHANGED" = "false" ] && [ "$CI_CHANGED" = "false" ]; then
-        TESTS_ONLY="true"
-        echo ">>> TESTS_ONLY detected - will use cached binaries"
+        echo ""
+        echo "Tests-only change detected - checking for cached binaries..."
+
+        # Check if cached testnet binaries exist in registry before enabling TESTS_ONLY
+        # Query the registry API to find testnet repository and its tags
+        CACHE_EXISTS="false"
+        API_URL="${CI_API_V4_URL:-https://gitlab.syncad.com/api/v4}"
+        PROJECT_ID="${CI_PROJECT_ID:-198}"
+
+        # Find testnet repository ID
+        REPOS_RESPONSE=$(curl -sf -H "JOB-TOKEN: ${CI_JOB_TOKEN:-}" \
+          "$API_URL/projects/$PROJECT_ID/registry/repositories?per_page=100" 2>/dev/null) || true
+
+        if [ -n "$REPOS_RESPONSE" ]; then
+          # Extract testnet repository ID using grep/sed (no jq needed)
+          TESTNET_REPO_ID=$(echo "$REPOS_RESPONSE" | grep -o '"id":[0-9]*,"name":"testnet"' | grep -o '[0-9]*' | head -1) || true
+
+          if [ -n "$TESTNET_REPO_ID" ]; then
+            # Check if there are any tags in the testnet repository
+            TAGS_RESPONSE=$(curl -sf -H "JOB-TOKEN: ${CI_JOB_TOKEN:-}" \
+              "$API_URL/projects/$PROJECT_ID/registry/repositories/$TESTNET_REPO_ID/tags?per_page=1" 2>/dev/null) || true
+
+            if [ -n "$TAGS_RESPONSE" ] && echo "$TAGS_RESPONSE" | grep -q '"name"'; then
+              CACHE_EXISTS="true"
+              CACHED_TAG=$(echo "$TAGS_RESPONSE" | grep -o '"name":"[^"]*"' | head -1 | sed 's/"name":"//;s/"//') || true
+              echo "Found cached binaries: testnet:$CACHED_TAG"
+            fi
+          fi
+        fi
+
+        if [ "$CACHE_EXISTS" = "true" ]; then
+          TESTS_ONLY="true"
+          echo ">>> TESTS_ONLY enabled - will use cached binaries"
+        else
+          echo ">>> No cached binaries found - will run full build"
+          TESTS_ONLY="false"
+        fi
       fi
 
       echo ""
