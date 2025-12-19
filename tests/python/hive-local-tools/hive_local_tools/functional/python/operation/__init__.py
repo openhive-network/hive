@@ -36,21 +36,23 @@ if TYPE_CHECKING:
 class Operation:
     _node: tt.InitNode
     _wallet: tt.Wallet
-    _rc_cost: int = field(init=False, default=None)
-    _transaction: dict = field(init=False, default=None)
+    _rc_cost: int | None = field(init=False, default=None)
+    _transaction: dict[str, Any] | None = field(init=False, default=None)
 
     @property
     def rc_cost(self) -> int:
+        assert self._rc_cost is not None
         return self._rc_cost
 
     @property
-    def transaction(self) -> dict:
+    def transaction(self) -> dict[str, Any]:
+        assert self._transaction is not None
         return self._transaction
 
     def assert_minimal_operation_rc_cost(self, minimal_cost: int | None = None) -> None:
         if minimal_cost:
-            assert self._rc_cost >= minimal_cost, f"RC cost is less than or {minimal_cost}."
-        assert self._rc_cost > 0, "RC cost is less than or equal to zero."
+            assert self.rc_cost >= minimal_cost, f"RC cost is less than or {minimal_cost}."
+        assert self.rc_cost > 0, "RC cost is less than or equal to zero."
 
 
 ApiAccountItem = AccountItemFundament
