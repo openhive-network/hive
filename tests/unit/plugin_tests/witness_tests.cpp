@@ -1353,6 +1353,7 @@ BOOST_AUTO_TEST_CASE( block_conflict_test )
         }
         fc::sleep_until( next_block_time );
         // second block of third schedule - the slow block
+        uint32_t slow_block_num = block_num + 1;
         {
           block_header = &get_block_reader().head_block()->get_block_header();
           BOOST_REQUIRE_EQUAL( block_num, block_header->block_num() );
@@ -1388,35 +1389,25 @@ BOOST_AUTO_TEST_CASE( block_conflict_test )
           // require us to have full separate database, in other words, separate node
           ilog( "Producing and reapplying slow block" );
           schedule_block();
-          // ABW: there is a small chance that by the time we read block_header below,
-          // chosen_witness has already produced block N+1, causing us to see that block
-          // instead of the slow block N. In that case, we've already achieved the test goal
-          // (witness produced its block), so we handle both cases.
-          block_header = &get_block_reader().head_block()->get_block_header();
+          // ABW: there is a very small but nonzero chance that the read below could happen
+          // after block N+1 is produced by chosen_witness; in such case reading head_block()
+          // would give us not the slow block we've just scheduled, but next one, and the test
+          // would fail (such cases actually happened on occasion on CI); to prevent that, we
+          // are reading block with specific number
+          block_header = &get_block_reader().get_block_by_number( slow_block_num )->get_block_header();
           block_num = block_header->block_num();
           ilog( "Block #${n}, ts: ${t}, witness: ${w}", ( "n", block_num )
             ( "t", block_header->timestamp )( "w", block_header->witness ) );
         }
         ilog( "Performing end checks" );
-        // Check if we caught the slow block or if chosen_witness already produced block N+1
-        if( block_header->witness == chosen_witness )
-        {
-          // Race condition: chosen_witness already produced block N+1 before we could read
-          // the slow block. This is fine - the test goal is achieved (witness produced its block).
-          ilog( "Race detected: chosen_witness already produced block N+1" );
-          BOOST_REQUIRE_EQUAL( block_header->block_num(), block_num );
-          // block_num already points to chosen_witness's block, no need to wait
-        }
-        else
-        {
-          // Normal case: we see the slow block, wait for chosen_witness to produce next block
-          // wait for third block of third schedule
-          fc::usleep( fc::seconds( 1 ) );
-          block_header = &get_block_reader().head_block()->get_block_header();
-          // the block should be normal next block, even though it was requested as alternative for missed
-          BOOST_REQUIRE_EQUAL( block_header->block_num(), block_num + 1 );
-          BOOST_REQUIRE_EQUAL( block_header->witness, chosen_witness );
-        }
+        // the slow block should "win" over witness block
+        BOOST_REQUIRE_NE( block_header->witness, chosen_witness );
+        // wait for third block of third schedule
+        fc::usleep( fc::seconds( 1 ) );
+        block_header = &get_block_reader().head_block()->get_block_header();
+        // the block should be normal next block, even though it was requested as alternative for missed
+        BOOST_REQUIRE_EQUAL( block_header->block_num(), slow_block_num + 1 );
+        BOOST_REQUIRE_EQUAL( block_header->witness, chosen_witness );
 
         ilog( "'API' thread finished" );
         test_passed = !theApp.is_interrupt_request();
@@ -1503,6 +1494,7 @@ BOOST_AUTO_TEST_CASE( block_lock_test )
         }
         fc::sleep_until( next_block_time );
         // second block of third schedule - the slow block
+        uint32_t slow_block_num = block_num + 1;
         {
           block_header = &get_block_reader().head_block()->get_block_header();
           BOOST_REQUIRE_EQUAL( block_num, block_header->block_num() );
@@ -1514,35 +1506,25 @@ BOOST_AUTO_TEST_CASE( block_lock_test )
           // so if witness works correctly, it should still manage to produce its block
           ilog( "Producing and reapplying slow block" );
           schedule_block();
-          // ABW: there is a small chance that by the time we read block_header below,
-          // chosen_witness has already produced block N+1, causing us to see that block
-          // instead of the slow block N. In that case, we've already achieved the test goal
-          // (witness produced its block), so we handle both cases.
-          block_header = &get_block_reader().head_block()->get_block_header();
+          // ABW: there is a very small but nonzero chance that the read below could happen
+          // after block N+1 is produced by chosen_witness; in such case reading head_block()
+          // would give us not the slow block we've just scheduled, but next one, and the test
+          // would fail (such cases actually happened on occasion on CI); to prevent that, we
+          // are reading block with specific number
+          block_header = &get_block_reader().get_block_by_number( slow_block_num )->get_block_header();
           block_num = block_header->block_num();
           ilog( "Block #${n}, ts: ${t}, witness: ${w}", ( "n", block_num )
             ( "t", block_header->timestamp )( "w", block_header->witness ) );
         }
         ilog( "Performing end checks" );
-        // Check if we caught the slow block or if chosen_witness already produced block N+1
-        if( block_header->witness == chosen_witness )
-        {
-          // Race condition: chosen_witness already produced block N+1 before we could read
-          // the slow block. This is fine - the test goal is achieved (witness produced its block).
-          ilog( "Race detected: chosen_witness already produced block N+1" );
-          BOOST_REQUIRE_EQUAL( block_header->block_num(), block_num );
-          // block_num already points to chosen_witness's block, no need to wait
-        }
-        else
-        {
-          // Normal case: we see the slow block, wait for chosen_witness to produce next block
-          // wait for third block of third schedule
-          fc::usleep( fc::seconds( 1 ) );
-          block_header = &get_block_reader().head_block()->get_block_header();
-          // chosen_witness should manage to produce its block
-          BOOST_REQUIRE_EQUAL( block_header->block_num(), block_num + 1 );
-          BOOST_REQUIRE_EQUAL( block_header->witness, chosen_witness );
-        }
+        // the slow block should "win" over witness block
+        BOOST_REQUIRE_NE( block_header->witness, chosen_witness );
+        // wait for third block of third schedule
+        fc::usleep( fc::seconds( 1 ) );
+        block_header = &get_block_reader().head_block()->get_block_header();
+        // chosen_witness should manage to produce its block
+        BOOST_REQUIRE_EQUAL( block_header->block_num(), slow_block_num + 1 );
+        BOOST_REQUIRE_EQUAL( block_header->witness, chosen_witness );
 
         ilog( "'API' thread finished" );
         test_passed = !theApp.is_interrupt_request();
@@ -1594,6 +1576,10 @@ BOOST_AUTO_TEST_CASE( block_lag_test )
     std::string chosen_witness = db->get_scheduled_witness( 3 );
     ilog( "Chosen witness is ${w}", ( "w", chosen_witness ) );
     witness_plugin->set_witnesses( { chosen_witness } );
+    hive::plugins::witness::witness_plugin::t_witnesses all_but_slow =
+      { "initminer", "wit1", "wit2", "wit3", "wit4", "wit5", "wit6", "wit7", "wit8", "wit9",
+      "wita", "witb", "witc", "witd", "wite", "witf", "witg", "with", "witi", "witj", "witk" };
+    all_but_slow.erase( db->get_scheduled_witness( 2 ) );
 
     fc::thread api_thread;
     auto _future = api_thread.async( [&]()
@@ -1634,6 +1620,7 @@ BOOST_AUTO_TEST_CASE( block_lag_test )
         }
         fc::sleep_until( next_block_time );
         // second block of third schedule - the slow block
+        uint32_t slow_block_num = block_num + 1;
         {
           block_header = &get_block_reader().head_block()->get_block_header();
           BOOST_REQUIRE_EQUAL( block_num, block_header->block_num() );
@@ -1647,41 +1634,28 @@ BOOST_AUTO_TEST_CASE( block_lag_test )
           ilog( "Producing and reapplying slow block" );
           // in order to be able to see which block (timestamp) is when blocks will start
           // to be produced again, we are setting witness plugin to represent all witnesses
-          // from this point
-          witness_plugin->set_witnesses( { "initminer", "wit1", "wit2", "wit3", "wit4",
-            "wit5", "wit6", "wit7", "wit8", "wit9", "wita", "witb", "witc", "witd", "wite",
-            "witf", "witg", "with", "witi", "witj", "witk" } );
+          // from this point (except the witness that is to produce slow block, to avoid witness
+          // plugin sending "double producing" request)
+          witness_plugin->set_witnesses( all_but_slow );
           schedule_block();
-          // ABW: there is a small chance that by the time we read block_header below,
-          // a witness has already produced block N+1, causing us to see that block
-          // instead of the slow block N. We handle both cases.
-          block_header = &get_block_reader().head_block()->get_block_header();
+          // ABW: there is a very small but nonzero chance that the read below could happen
+          // after block N+1 is produced; in such case reading head_block() would give us not
+          // the slow block we've just scheduled, but next one; to prevent that, we
+          // are reading block with specific number
+          block_header = &get_block_reader().get_block_by_number( slow_block_num )->get_block_header();
           block_num = block_header->block_num();
           ilog( "Block #${n}, ts: ${t}, witness: ${w}", ( "n", block_num )
             ( "t", block_header->timestamp )( "w", block_header->witness ) );
         }
         ilog( "Performing end checks" );
-        // Check if we caught the slow block or if a witness already produced block N+1
-        // block_num and next_block_time is a number and ts of slow block (or N+1 if race occurred)
-        if( block_header->witness == chosen_witness )
-        {
-          // Race condition: we already see block N+1 produced after the slow block.
-          // In this test, chosen_witness's turn was missed, so seeing their block means
-          // we're already past the slow block. Verify we're at the expected position.
-          ilog( "Race detected: already past slow block" );
-          // The block we see should be 4 intervals after the slow block's timestamp
-          BOOST_REQUIRE( block_header->timestamp == next_block_time + 4 * HIVE_BLOCK_INTERVAL );
-        }
-        else
-        {
-          // Normal case: we see the slow block
-          fc::usleep( fc::seconds( HIVE_BLOCK_INTERVAL ) );
-          // we should now have a first block after slow one, which should be 4 intervals further
-          // (3 missing blocks)
-          block_header = &get_block_reader().head_block()->get_block_header();
-          BOOST_REQUIRE_EQUAL( block_header->block_num(), block_num + 1 );
-          BOOST_REQUIRE( block_header->timestamp == next_block_time + 4 * HIVE_BLOCK_INTERVAL );
-        }
+        // block_num and next_block_time is a number and ts of slow block
+        BOOST_REQUIRE_NE( block_header->witness, chosen_witness );
+        fc::usleep( fc::seconds( HIVE_BLOCK_INTERVAL ) );
+        // we should now have a first block after slow one, which should be 4 intervals further
+        // (3 missing blocks)
+        block_header = &get_block_reader().head_block()->get_block_header();
+        BOOST_REQUIRE_EQUAL( block_header->block_num(), slow_block_num + 1 );
+        BOOST_REQUIRE( block_header->timestamp == next_block_time + 4 * HIVE_BLOCK_INTERVAL );
 
         ilog( "'API' thread finished" );
         test_passed = !theApp.is_interrupt_request();
