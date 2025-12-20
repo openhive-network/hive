@@ -24,3 +24,6 @@
 [submodule "libraries/fc"]
 	path = libraries/fc
 	url = ../fc.git
+[submodule "libraries/appbase"]
+	path = libraries/appbase
+	url = ../appbase.git
