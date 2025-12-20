@@ -1,6 +1,8 @@
 #pragma once
 
 #include <thread>
+#include <atomic>
+#include <condition_variable>
 
 #include <core/time_manager_base.hpp>
 
@@ -10,10 +12,11 @@ class time_manager: public time_manager_base
 {
   private:
 
-    bool stop_requested = false;
+    std::atomic<bool> stop_requested{false};
 
     std::unique_ptr<std::thread> lock_thread;
     std::mutex mtx;
+    std::condition_variable cv;
 
   public:
 

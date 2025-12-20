@@ -8,17 +8,22 @@ time_manager::time_manager()
 {
   lock_thread = std::make_unique<std::thread>( [this]()
     {
-      while( !stop_requested )
+      while( !stop_requested.load() )
       {
         run();
-        std::this_thread::sleep_for( std::chrono::milliseconds(200) );
+        std::unique_lock<std::mutex> lock( mtx );
+        cv.wait_for( lock, std::chrono::milliseconds(200), [this]() { return stop_requested.load(); } );
       }
     } );
 }
 
 time_manager::~time_manager()
 {
-  stop_requested = true;
+  {
+    std::lock_guard<std::mutex> lock( mtx );
+    stop_requested.store( true );
+  }
+  cv.notify_one();
   lock_thread->join();
 }
 
