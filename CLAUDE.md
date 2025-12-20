@@ -306,6 +306,40 @@ def test_example():
 - `BLOCK_LOG_SOURCE_DIR_5M=/blockchain/block_log_5m` - Pre-generated 5M block_log
 - `DATA_CACHE_HIVE_PREFIX=/nfs/ci-cache/hive/replay_data_hive` - Replay cache location
 
+### CI Skip Optimization
+
+The CI automatically optimizes pipeline execution based on what files changed. This saves significant CI time (~60+ minutes for full pipeline).
+
+**Automatic optimization** (defined in `scripts/ci-helpers/skip_rules.yml`):
+
+| Changed Files | Build Jobs | Test Jobs | Notes |
+|--------------|------------|-----------|-------|
+| `doc/**`, `*.md` only | Skipped | Skipped | Docs-only changes |
+| `tests/**` only | Skipped | Run | Uses cached binaries via `quick_test_setup` |
+| `libraries/**`, `programs/**` | Run | Run | Source code changes |
+| `scripts/**`, `.gitlab-ci.yaml` | Run | Run | CI/scripts changes |
+
+**How test-only optimization works:**
+1. `detect_changes` job analyzes what files changed
+2. If only `tests/**` changed (no source code):
+   - Queries registry API to verify cached binaries exist
+   - If cache exists: sets `TESTS_ONLY=true`, skips builds
+   - If no cache: runs full build (self-healing fallback)
+3. `quick_test_setup` fetches cached binaries when `TESTS_ONLY=true`
+4. Test jobs run using the cached binaries
+
+**Override variables:**
+- `FORCE_FULL_PIPELINE=true` - Run all jobs regardless of changes
+- `QUICK_TEST=true` - Skip builds, use cached binaries (manual mode)
+
+**Protected branches**: Full pipeline always runs on `develop`, `master`, and tags.
+
+**Files triggering C++ builds:**
+- `libraries/**/*`, `programs/**/*` - Source code
+- `CMakeLists.txt`, `cmake/**/*` - Build configuration
+- `Dockerfile`, `docker/**/*` - Docker configuration
+- `scripts/ci-helpers/*.sh` - Build scripts
+
 ## Code Style
 
 **C++:**
