@@ -385,14 +385,15 @@ void block_log_artifacts::impl::open(const fc::path& block_log_file_path,
 
       FC_THROW("Cannot load header of artifacts file: ${_artifact_file_name}", (_artifact_file_name));
     }
-    // We allow to read artifacts when something is writing to it. When hived works and add new blocks, there may (for sure will be during sync) be a difference between 
-    // artifacts head num and block_log head num. Because we firstly load artifacts header, new block can be applied to block_log before below if and then it will be higher than current artifacts hbn
-    // so in that case just check if newest block_log hbn is lower than artifacts hbn
-
+    // Without sharable locks, readers can proceed while a writer is active. Since block_log is always
+    // written before artifacts (see block_log::append_raw), block_log head may temporarily exceed
+    // artifacts head during concurrent writes. We handle this by re-reading block_log head:
+    // - If block_log head unchanged and mismatches artifacts -> error (stale artifacts)
+    // - If block_log head changed but is still < artifacts -> error (should never happen given write order)
+    // - If block_log head changed and >= artifacts -> ok (expected during concurrent writes)
     const uint32_t newest_head_block_num = head_block ? source_block_provider.read_head()->get_block_num() : 0;
     if ((newest_head_block_num == block_log_head_block_num && block_log_head_block_num != _header.head_block_num) ||
         (newest_head_block_num != block_log_head_block_num && newest_head_block_num < _header.head_block_num))
-
     {
       if (write_fallback)
       {
