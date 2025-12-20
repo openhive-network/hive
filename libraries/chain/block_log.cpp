@@ -347,6 +347,9 @@ namespace hive { namespace chain {
       memcpy(block_with_start_pos.get(), raw_block_data, raw_block_size);
       *(uint64_t*)(block_with_start_pos.get() + raw_block_size) = block_start_pos_with_flags;
 
+      // IMPORTANT: block_log MUST be written before artifacts. Concurrent readers without sharable locks
+      // rely on this ordering - they tolerate block_log head > artifacts head (transient during write)
+      // but not the reverse. See block_log_artifacts.cpp open() validation logic.
       detail::block_log_impl::write_with_retry(my->block_log_fd, block_with_start_pos.get(), block_size_including_start_pos);
       my->block_log_size += block_size_including_start_pos;
 
@@ -386,6 +389,7 @@ namespace hive { namespace chain {
       ++block_num;
     }
 
+    // IMPORTANT: block_log MUST be written before artifacts (see comment in append_raw).
     detail::block_log_impl::write_with_retry(my->block_log_fd, block_data_buffer.get(), buffer_offset);
     my->_artifacts->store_block_artifacts(artifacts_data, false/*is_at_live_sync*/);
   }
