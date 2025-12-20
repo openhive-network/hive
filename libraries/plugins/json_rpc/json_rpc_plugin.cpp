@@ -3,7 +3,10 @@
 
 #include <hive/plugins/statsd/utility.hpp>
 
+#ifdef HIVE_BUILD_WITH_BLOCKCHAIN
 #include <hive/protocol/misc_utilities.hpp>
+#include <chainbase/chainbase.hpp>
+#endif
 
 #include <boost/algorithm/string.hpp>
 #include <boost/scope_exit.hpp>
@@ -13,13 +16,16 @@
 #include <fc/macros.hpp>
 #include <fc/io/fstream.hpp>
 
-#include <chainbase/chainbase.hpp>
-
 #define ENABLE_JSON_RPC_LOG
 
 namespace hive { namespace plugins { namespace json_rpc {
 
+#ifdef HIVE_BUILD_WITH_BLOCKCHAIN
 using mode_guard = hive::protocol::serialization_mode_controller::mode_guard;
+#else
+// No-op mode guard for non-blockchain builds (e.g., beekeeper)
+struct mode_guard { mode_guard(int) {} };
+#endif
 
 namespace detail
 {
@@ -490,10 +496,12 @@ namespace detail
                 }
               }
             }
+#ifdef HIVE_BUILD_WITH_BLOCKCHAIN
             catch( chainbase::lock_exception& e )
             {
               response.error = json_rpc_error( JSON_RPC_ERROR_DURING_CALL, e.what() );
             }
+#endif
             catch( fc::assert_exception& e )
             {
               response.error = json_rpc_error( JSON_RPC_ERROR_DURING_CALL, e.to_string(), fc::variant( *(e.dynamic_copy_exception()) ) );
