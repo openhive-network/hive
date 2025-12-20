@@ -1,7 +1,3 @@
-[submodule "secp256k1-zkp"]
-	path = libraries/fc/vendor/secp256k1-zkp
-	url = https://github.com/ElementsProject/secp256k1-zkp.git
-	shallow = true
 [submodule "tests_api"]
 	path = tests/python/hive-local-tools/tests_api
 	url = ../tests_api.git
@@ -9,10 +5,6 @@
 [submodule "test_tools"]
 	path = tests/python/hive-local-tools/test-tools
 	url = ../test-tools.git
-	shallow = true
-[submodule "websocketpp"]
-	path = libraries/fc/vendor/websocketpp
-	url = https://github.com/zaphoyd/websocketpp.git
 	shallow = true
 [submodule "libraries/vendor/zstd"]
 	path = libraries/vendor/zstd
@@ -29,3 +21,6 @@
 [submodule "npm-common-config"]
 	path = programs/beekeeper/beekeeper_wasm/npm-common-config
 	url = ../common-ci-configuration.git
+[submodule "libraries/fc"]
+	path = libraries/fc
+	url = ../fc.git
