@@ -1,6 +1,6 @@
 variables:
   # Variables required by Common CI jobs
-  CI_COMMON_JOB_VERSION: "034656a22890de7af0fe1db30b0da171f1304e2e"
+  CI_COMMON_JOB_VERSION: "9925b2ae030bd88e7eb532933189c013211a1d91"
   DOCKER_BUILDER_TAG: "$CI_COMMON_JOB_VERSION"
   DOCKER_DIND_TAG: "$CI_COMMON_JOB_VERSION"
   IMAGE_REMOVER_TAG: "$CI_COMMON_JOB_VERSION"
@@ -9,7 +9,7 @@ variables:
 
 include:
   - project: 'hive/common-ci-configuration'
-    ref: 034656a22890de7af0fe1db30b0da171f1304e2e # feature/skip-variables-in-templates
+    ref: 9925b2ae030bd88e7eb532933189c013211a1d91 # fix cross-runner artifact paths
     file:
       - '/templates/npm_projects.gitlab-ci.yml'
       - '/templates/wasm_build.gitlab-ci.yml'

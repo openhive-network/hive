@@ -644,6 +644,21 @@ quick_test_setup:
       artifacts: true
       optional: true  # Not needed if build was skipped (docs-only changes)
 
+# Simple pytest job template for tests that only need:
+# - PYTEST_DIR: directory containing tests (relative to CI_PROJECT_DIR)
+# - PYTEST_TIMEOUT_MINUTES: test timeout
+# Automatically sets PYTEST_JUNIT_REPORT based on PYTEST_DIR
+.simple_pytest_job:
+  stage: test
+  extends: .test_tools_based
+  variables:
+    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/${PYTEST_DIR}/report.xml
+  script:
+    - cd ${PYTEST_DIR}
+    - !reference [.run-pytest, script]
+  tags:
+    - public-runner-docker
+
 .beem_tests_base:
   stage: test
   extends: .test_tools_based
@@ -688,32 +703,16 @@ beem_mirrornet_tests:
     - export PYTEST_ARGS=(-m mirrornet --chain-id ${MIRRORNET_CHAIN_ID} --skeleton-key "${MIRRORNET_SKELETON_KEY}")
 
 cli_wallet_tests:
-  stage: test
-  extends: .test_tools_based
-
+  extends: .simple_pytest_job
   variables:
-    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/cli_wallet/report.xml
+    PYTEST_DIR: tests/python/functional/cli_wallet
     PYTEST_TIMEOUT_MINUTES: 30
-
-  script:
-    - cd tests/python/functional/cli_wallet
-    - !reference [.run-pytest, script]
-  tags:
-    - public-runner-docker
 
 beekeeper_wallet_tests:
-  stage: test
-  extends: .test_tools_based
-
+  extends: .simple_pytest_job
   variables:
-    JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/beekeeper_wallet/report.xml
+    PYTEST_DIR: tests/python/functional/beekeeper_wallet_tests
     PYTEST_TIMEOUT_MINUTES: 30
-
-  script:
-    - cd tests/python/functional/beekeeper_wallet_tests
-    - !reference [.run-pytest, script]
-  tags:
-    - public-runner-docker
   
 hived_tests:
   stage: test
@@ -738,18 +737,10 @@ hived_tests:
     - public-runner-docker
 
 cli_wallet_extended_tests:
-  stage: test
-  extends: .test_tools_based
-
+  extends: .simple_pytest_job
   variables:
+    PYTEST_DIR: tests/python/functional/cli_wallet_extended_tests
     PYTEST_TIMEOUT_MINUTES: 14
-    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/cli_wallet_extended_tests/report.xml
-
-  script:
-    - cd tests/python/functional/cli_wallet_extended_tests
-    - !reference [.run-pytest, script]
-  tags:
-    - public-runner-docker
 
 .fork_test_base:
   stage: test
@@ -777,47 +768,23 @@ fork_tests:
     PYTEST_JUNIT_REPORT: "$CI_PROJECT_DIR/tests/python/functional/fork_tests/report_${GROUP}.xml"
 
 hf26_tests:
-  stage: test
-  extends: .test_tools_based
-
+  extends: .simple_pytest_job
   variables:
+    PYTEST_DIR: tests/python/functional/hf26_tests
     PYTEST_TIMEOUT_MINUTES: 20
     SIGN_TRANSACTION_PATH: "$CI_PROJECT_DIR/hived-testnet-binaries/sign_transaction"
-    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/hf26_tests/report.xml
-
-  script:
-    - cd tests/python/functional/hf26_tests
-    - !reference [.run-pytest, script]
-  tags:
-    - public-runner-docker
 
 live_sync_tests:
-  stage: test
-  extends: .test_tools_based
-
+  extends: .simple_pytest_job
   variables:
+    PYTEST_DIR: tests/python/functional/live_sync_tests
     PYTEST_TIMEOUT_MINUTES: 10
-    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/live_sync_tests/report.xml
-
-  script:
-    - cd tests/python/functional/live_sync_tests
-    - !reference [.run-pytest, script]
-  tags:
-    - public-runner-docker
 
 broadcast_tests:
-  stage: test
-  extends: .test_tools_based
-
+  extends: .simple_pytest_job
   variables:
+    PYTEST_DIR: tests/python/functional/broadcast_tests
     PYTEST_TIMEOUT_MINUTES: 6
-    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/broadcast_tests/report.xml
-
-  script:
-    - cd tests/python/functional/broadcast_tests
-    - !reference [.run-pytest, script]
-  tags:
-    - public-runner-docker
 
 .fetch_test_block_logs:
   # Usage:
@@ -900,18 +867,10 @@ test_tools_tests:
     - public-runner-docker
 
 rc_direct_delegations_tests:
-  stage: test
-  extends: .test_tools_based
-
+  extends: .simple_pytest_job
   variables:
+    PYTEST_DIR: tests/python/functional/direct_rc_delegations_tests
     PYTEST_TIMEOUT_MINUTES: 12
-    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/direct_rc_delegations_tests/report.xml
-
-  script:
-    - cd tests/python/functional/direct_rc_delegations_tests
-    - !reference [.run-pytest, script]
-  tags:
-    - public-runner-docker
 
 message_format_testnet_tests:
   stage: test
@@ -1198,32 +1157,16 @@ witness_tests:
     - data-cache-storage
 
 hf28_tests:
-  stage: test
-  extends: .test_tools_based
-
+  extends: .simple_pytest_job
   variables:
+    PYTEST_DIR: tests/python/functional/hf28_tests
     PYTEST_TIMEOUT_MINUTES: 20
-    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/hf28_tests/report.xml
-
-  script:
-    - cd tests/python/functional/hf28_tests
-    - !reference [.run-pytest, script]
-  tags:
-    - public-runner-docker
 
 functional_api_tests:
-  stage: test
-  extends: .test_tools_based
-
+  extends: .simple_pytest_job
   variables:
+    PYTEST_DIR: tests/python/functional/api_tests
     PYTEST_TIMEOUT_MINUTES: 3
-    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/api_tests/report.xml
-
-  script:
-    - cd tests/python/functional/api_tests/
-    - !reference [.run-pytest, script]
-  tags:
-    - public-runner-docker
 
 publish_docker_image:
   stage: publish
@@ -1236,18 +1179,10 @@ publish_docker_image:
     - public-runner-docker
 
 hardfork_schedule_tests:
-  stage: test
-  extends: .test_tools_based
-
+  extends: .simple_pytest_job
   variables:
+    PYTEST_DIR: tests/python/functional/hardfork_schedule_tests
     PYTEST_TIMEOUT_MINUTES: 10  # Extended for slower speed_up_rate=5 to reduce flakiness
-    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/hardfork_schedule_tests/report.xml
-
-  script:
-    - cd tests/python/functional/hardfork_schedule_tests
-    - !reference [.run-pytest, script]
-  tags:
-    - public-runner-docker
 
 several_node_restarts_tests:
   extends:
@@ -1310,16 +1245,10 @@ block_log_util_split_and_merge_block_log_tests:
     - public-runner-docker
 
 recovery_tests:
-  stage: test
-  extends: .test_tools_based
+  extends: .simple_pytest_job
   variables:
+    PYTEST_DIR: tests/python/functional/recovery_tests
     PYTEST_TIMEOUT_MINUTES: 10
-    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/recovery_tests/report.xml
-  script:
-    - cd tests/python/functional/recovery_tests
-    - !reference [.run-pytest, script]
-  tags:
-    - public-runner-docker
 
 operation_tests:
   stage: test
@@ -1579,18 +1508,10 @@ deploy-wax-spec-production-public-npm:
     - public-runner-docker
 
 authority_tests:
-  stage: test
-  extends: .test_tools_based
-
+  extends: .simple_pytest_job
   variables:
+    PYTEST_DIR: tests/python/functional/authority
     PYTEST_TIMEOUT_MINUTES: 6
-    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/authority/report.xml
-
-  script:
-    - cd tests/python/functional/authority
-    - !reference [.run-pytest, script]
-  tags:
-    - public-runner-docker
 
 generate_hived_flattened_openapi_definition:
   extends: .node_based_job_base
@@ -1639,15 +1560,63 @@ generate_python_api_clients:
   tags:
     - public-runner-docker
 
-# common definition of package wheel building job specific to generated API clients 
-.build_python_api_client_wheel:
-  extends: .build_wheel_template
-  variables:
-    API_NAME: "" # to be set by derived job
+# =============================================================================
+# Python API Client Wheel Jobs (consolidated using parallel:matrix)
+# =============================================================================
+# These jobs build and deploy Python wheel packages for all generated API clients.
+# Using parallel:matrix reduces ~460 lines to ~60 lines while maintaining the same behavior.
 
+# List of all API packages to build/deploy
+.api_wheel_matrix: &api_wheel_matrix
+  parallel:
+    matrix:
+      - API_NAME:
+          - database_api
+          - rc_api
+          - block_api
+          - network_broadcast_api
+          - account_by_key_api
+          - bridge
+          - account_history_api
+          - condenser_api
+          - hive
+          - follow_api
+          - jsonrpc
+          - market_history_api
+          - reputation_api
+          - transaction_status_api
+          - debug_node_api
+          - search_api
+
+# APIs to deploy to public PyPI (excludes jsonrpc which is internal/meta API)
+.api_wheel_pypi_matrix: &api_wheel_pypi_matrix
+  parallel:
+    matrix:
+      - API_NAME:
+          - database_api
+          - rc_api
+          - block_api
+          - network_broadcast_api
+          - account_by_key_api
+          - bridge
+          - account_history_api
+          - condenser_api
+          - hive
+          - follow_api
+          - market_history_api
+          - reputation_api
+          - transaction_status_api
+          - debug_node_api
+          - search_api
+
+# Build wheel for each API package
+build_api_wheel:
+  extends: .build_wheel_template
+  <<: *api_wheel_matrix
+  stage: build
+  variables:
     PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/${API_NAME}"
     DIST_DIR: "${PYPROJECT_DIR}/dist"
-  stage: build
   needs:
     - job: generate_python_api_clients
       artifacts: true
@@ -1660,440 +1629,28 @@ generate_python_api_clients:
       - "${PYPROJECT_DIR}/${API_NAME}"
       - "build_wheel.env"
 
-build_database_api_wheel:
-  extends: .build_python_api_client_wheel
-  variables:
-    API_NAME: "database_api"
-
-deploy_database_api_wheel_to_gitlab:
-  stage: deploy
-  needs:
-    - job: build_database_api_wheel
-      artifacts: true
+# Deploy wheel to internal GitLab registry for each API package
+deploy_api_wheel_to_gitlab:
   extends: .deploy_wheel_to_gitlab_template
+  <<: *api_wheel_matrix
+  stage: deploy
   variables:
-    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/database_api"
+    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/${API_NAME}"
+  needs:
+    - job: build_api_wheel
+      artifacts: true
   tags:
     - public-runner-docker
-  when: on_success
 
-deploy_database_api_wheel_to_pypi:
-  stage: deploy
-  needs:
-    - job: build_database_api_wheel
-      artifacts: true
+# Deploy wheel to public PyPI registry (excludes jsonrpc)
+deploy_api_wheel_to_pypi:
   extends: .deploy_wheel_to_pypi_template
-  variables:
-    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/database_api"
-  tags:
-    - public-runner-docker
-
-build_rc_api_wheel:
-  extends: .build_python_api_client_wheel
-  variables:
-    API_NAME: "rc_api"
-
-deploy_rc_api_wheel_to_gitlab:
+  <<: *api_wheel_pypi_matrix
   stage: deploy
-  extends: .deploy_wheel_to_gitlab_template
   variables:
-    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/rc_api"
+    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/${API_NAME}"
   needs:
-    - job: build_rc_api_wheel
-      artifacts: true
-  tags:
-    - public-runner-docker
-  when: on_success
-
-deploy_rc_api_wheel_to_pypi:
-  stage: deploy
-  extends: .deploy_wheel_to_pypi_template
-  variables:
-    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/rc_api"
-  needs:
-    - job: build_rc_api_wheel
-      artifacts: true
-  tags:
-    - public-runner-docker
-
-build_block_api_wheel:
-  extends: .build_python_api_client_wheel
-  variables:
-    API_NAME: "block_api"
-
-deploy_block_api_wheel_to_gitlab:
-  stage: deploy
-  extends: .deploy_wheel_to_gitlab_template
-  variables:
-    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/block_api"
-  needs:
-    - job: build_block_api_wheel
-      artifacts: true
-  tags:
-    - public-runner-docker
-  when: on_success
-
-deploy_block_api_wheel_to_pypi:
-  stage: deploy
-  extends: .deploy_wheel_to_pypi_template
-  variables:
-    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/block_api"
-  needs:
-    - job: build_block_api_wheel
-      artifacts: true
-  tags:
-    - public-runner-docker
-
-build_network_broadcast_api_wheel:
-  extends: .build_python_api_client_wheel
-  variables:
-    API_NAME: "network_broadcast_api"
-
-deploy_network_broadcast_api_wheel_to_gitlab:
-  stage: deploy
-  extends: .deploy_wheel_to_gitlab_template
-  variables:
-    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/network_broadcast_api"
-  needs:
-    - job: build_network_broadcast_api_wheel
-      artifacts: true
-  tags:
-    - public-runner-docker
-  when: on_success
-
-deploy_network_broadcast_api_wheel_to_pypi:
-  stage: deploy
-  extends: .deploy_wheel_to_pypi_template
-  variables:
-    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/network_broadcast_api"
-  needs:
-    - job: build_network_broadcast_api_wheel
-      artifacts: true
-  tags:
-    - public-runner-docker
-
-
-build_account_by_key_api_wheel:
-  extends: .build_python_api_client_wheel
-  variables:
-    API_NAME: "account_by_key_api"
-
-deploy_account_by_key_api_wheel_to_gitlab:
-  stage: deploy
-  extends: .deploy_wheel_to_gitlab_template
-  variables:
-    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/account_by_key_api"
-  needs:
-    - job: build_account_by_key_api_wheel
-      artifacts: true
-  tags:
-    - public-runner-docker
-  when: on_success
-
-deploy_account_by_key_api_wheel_to_pypi:
-  stage: deploy
-  extends: .deploy_wheel_to_pypi_template
-  variables:
-    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/account_by_key_api"
-  needs:
-    - job: build_account_by_key_api_wheel
-      artifacts: true
-  tags:
-    - public-runner-docker
-
-build_bridge_wheel:
-  extends: .build_python_api_client_wheel
-  variables:
-    API_NAME: "bridge"
-
-deploy_bridge_wheel_to_gitlab:
-  stage: deploy
-  extends: .deploy_wheel_to_gitlab_template
-  variables:
-    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/bridge"
-  needs:
-    - job: build_bridge_wheel
-      artifacts: true
-  tags:
-    - public-runner-docker
-  when: on_success
-
-deploy_bridge_wheel_to_pypi:
-  stage: deploy
-  extends: .deploy_wheel_to_pypi_template
-  variables:
-    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/bridge"
-  needs:
-    - job: build_bridge_wheel
-      artifacts: true
-  tags:
-    - public-runner-docker
-
-build_account_history_api_wheel:
-  extends: .build_python_api_client_wheel
-  variables:
-    API_NAME: "account_history_api"
-
-deploy_account_history_api_wheel_to_gitlab:
-  stage: deploy
-  extends: .deploy_wheel_to_gitlab_template
-  variables:
-    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/account_history_api"
-  needs:
-    - job: build_account_history_api_wheel
-      artifacts: true
-  tags:
-    - public-runner-docker
-  when: on_success
-
-deploy_account_history_api_wheel_to_pypi:
-  stage: deploy
-  extends: .deploy_wheel_to_pypi_template
-  variables:
-    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/account_history_api"
-  needs:
-    - job: build_account_history_api_wheel
-      artifacts: true
-  tags:
-    - public-runner-docker
-
-build_condenser_api_wheel:
-  extends: .build_python_api_client_wheel
-  variables:
-    API_NAME: "condenser_api"
-
-deploy_condenser_api_wheel_to_gitlab:
-  stage: deploy
-  needs:
-    - job: build_condenser_api_wheel
-      artifacts: true
-  extends: .deploy_wheel_to_gitlab_template
-  variables:
-    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/condenser_api"
-  tags:
-    - public-runner-docker
-  when: on_success
-
-deploy_condenser_api_wheel_to_pypi:
-  stage: deploy
-  needs:
-    - job: build_condenser_api_wheel
-      artifacts: true
-  extends: .deploy_wheel_to_pypi_template
-  variables:
-    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/condenser_api"
-  tags:
-    - public-runner-docker
-
-build_hive_api_wheel:
-  extends: .build_python_api_client_wheel
-  variables:
-    API_NAME: "hive"
-
-deploy_hive_api_wheel_to_gitlab:
-  stage: deploy
-  needs:
-    - job: build_hive_api_wheel
-      artifacts: true
-  extends: .deploy_wheel_to_gitlab_template
-  variables:
-    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/hive"
-  tags:
-    - public-runner-docker
-  when: on_success
-
-deploy_hive_api_wheel_to_pypi:
-  stage: deploy
-  needs:
-    - job: build_hive_api_wheel
-      artifacts: true
-  extends: .deploy_wheel_to_pypi_template
-  variables:
-    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/hive"
-  tags:
-    - public-runner-docker
-
-build_follow_api_wheel:
-  extends: .build_python_api_client_wheel
-  variables:
-    API_NAME: "follow_api"
-
-deploy_follow_api_wheel_to_gitlab:
-  stage: deploy
-  extends: .deploy_wheel_to_gitlab_template
-  variables:
-    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/follow_api"
-  needs:
-    - job: build_follow_api_wheel
-      artifacts: true
-  tags:
-    - public-runner-docker
-  when: on_success
-
-deploy_follow_api_wheel_to_pypi:
-  stage: deploy
-  extends: .deploy_wheel_to_pypi_template
-  variables:
-    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/follow_api"
-  needs:
-    - job: build_follow_api_wheel
-      artifacts: true
-  tags:
-    - public-runner-docker
-
-build_jsonrpc_wheel:
-  extends: .build_python_api_client_wheel
-  variables:
-    API_NAME: "jsonrpc"
-
-deploy_jsonrpc_wheel_to_gitlab:
-  stage: deploy
-  extends: .deploy_wheel_to_gitlab_template
-  variables:
-    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/jsonrpc"
-  needs:
-    - job: build_jsonrpc_wheel
-      artifacts: true
-  tags:
-    - public-runner-docker
-  when: on_success
-
-build_market_history_api_wheel:
-  extends: .build_python_api_client_wheel
-  variables:
-    API_NAME: "market_history_api"
-
-deploy_market_history_api_wheel_to_gitlab:
-  stage: deploy
-  extends: .deploy_wheel_to_gitlab_template
-  variables:
-    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/market_history_api"
-  needs:
-    - job: build_market_history_api_wheel
-      artifacts: true
-  tags:
-    - public-runner-docker
-  when: on_success
-
-deploy_market_history_api_wheel_to_pypi:
-  stage: deploy
-  extends: .deploy_wheel_to_pypi_template
-  variables:
-    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/market_history_api"
-  needs:
-    - job: build_market_history_api_wheel
-      artifacts: true
-  tags:
-    - public-runner-docker
-
-build_reputation_api_wheel:
-  extends: .build_python_api_client_wheel
-  variables:
-    API_NAME: "reputation_api"
-
-deploy_reputation_api_wheel_to_gitlab:
-  stage: deploy
-  extends: .deploy_wheel_to_gitlab_template
-  variables:
-    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/reputation_api"
-  needs:
-    - job: build_reputation_api_wheel
-      artifacts: true
-  tags:
-    - public-runner-docker
-  when: on_success
-
-deploy_reputation_api_wheel_to_pypi:
-  stage: deploy
-  extends: .deploy_wheel_to_pypi_template
-  variables:
-    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/reputation_api"
-  needs:
-    - job: build_reputation_api_wheel
-      artifacts: true
-  tags:
-    - public-runner-docker
-
-build_transaction_status_api_wheel:
-  extends: .build_python_api_client_wheel
-  variables:
-    API_NAME: "transaction_status_api"
-
-deploy_transaction_status_api_wheel_to_gitlab:
-  stage: deploy
-  extends: .deploy_wheel_to_gitlab_template
-  variables:
-    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/transaction_status_api"
-  needs:
-    - job: build_transaction_status_api_wheel
-      artifacts: true
-  tags:
-    - public-runner-docker
-  when: on_success
-
-deploy_transaction_status_api_wheel_to_pypi:
-  stage: deploy
-  extends: .deploy_wheel_to_pypi_template
-  variables:
-    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/transaction_status_api"
-  needs:
-    - job: build_transaction_status_api_wheel
-      artifacts: true
-  tags:
-    - public-runner-docker
-
-build_debug_node_api_wheel:
-  extends: .build_python_api_client_wheel
-  variables:
-    API_NAME: "debug_node_api"
-
-deploy_debug_node_api_wheel_to_gitlab:
-  stage: deploy
-  extends: .deploy_wheel_to_gitlab_template
-  variables:
-    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/debug_node_api"
-  needs:
-    - job: build_debug_node_api_wheel
-      artifacts: true
-  tags:
-    - public-runner-docker
-  when: on_success
-
-deploy_debug_node_api_wheel_to_pypi:
-  stage: deploy
-  extends: .deploy_wheel_to_pypi_template
-  variables:
-    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/debug_node_api"
-  needs:
-    - job: build_debug_node_api_wheel
-      artifacts: true
-  tags:
-    - public-runner-docker
-
-build_search_api_wheel:
-  extends: .build_python_api_client_wheel
-  variables:
-    API_NAME: "search_api"
-
-deploy_search_api_wheel_to_gitlab:
-  stage: deploy
-  extends: .deploy_wheel_to_gitlab_template
-  variables:
-    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/search_api"
-  needs:
-    - job: build_search_api_wheel
-      artifacts: true
-  tags:
-    - public-runner-docker
-  when: on_success
-
-deploy_search_api_wheel_to_pypi:
-  stage: deploy
-  extends: .deploy_wheel_to_pypi_template
-  variables:
-    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/search_api"
-  needs:
-    - job: build_search_api_wheel
+    - job: build_api_wheel
       artifacts: true
   tags:
     - public-runner-docker
