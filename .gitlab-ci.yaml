@@ -43,14 +43,17 @@ include:
   - local: '/scripts/ci-helpers/prepare_data_image_job.yml'
   - local: '/scripts/ci-helpers/mirrornet_jobs.gitlab-ci.yml'
   - local: '/scripts/ci-helpers/extended_block_log_creation.gitlab-ci.yml'
+  # Skip rules for docs-only changes optimization
+  - local: '/scripts/ci-helpers/skip_rules.yml'
 
 prepare_hived_image:
-  extends: .prepare_hived_image
+  extends:
+    - .prepare_hived_image
+    - .skip_build_on_docs_only_with_quick_test
   stage: build
-  rules:
-    - if: $QUICK_TEST == "true"
-      when: never
-    - when: on_success
+  needs:
+    - job: detect_changes
+      optional: true  # Not needed on protected branches
   variables:
     REGISTRY_USER: "$HIVED_CI_IMGBUILDER_USER"
     REGISTRY_PASS: $HIVED_CI_IMGBUILDER_PASSWORD
@@ -61,15 +64,16 @@ prepare_hived_image:
     - build-mainnet
 
 prepare_hived_data:
-  extends: .prepare_hived_data_5m
+  extends:
+    - .prepare_hived_data_5m
+    - .skip_build_on_docs_only_with_quick_test
   needs:
+    - job: detect_changes
+      optional: true  # Not needed on protected branches
     - job: prepare_hived_image
       artifacts: true
+      optional: true  # Not needed if build was skipped
   stage: build
-  rules:
-    - if: $QUICK_TEST == "true"
-      when: never
-    - when: on_success
   variables:
     HIVE_NETWORK_TYPE: mainnet
     BLOCK_LOG_SOURCE_DIR: $BLOCK_LOG_SOURCE_DIR_5M
@@ -103,12 +107,13 @@ cleanup_old_hived_cache:
 
 
 testnet_node_build:
-  extends: .prepare_hived_image
+  extends:
+    - .prepare_hived_image
+    - .skip_build_on_docs_only_with_quick_test
   stage: build
-  rules:
-    - if: $QUICK_TEST == "true"
-      when: never
-    - when: on_success
+  needs:
+    - job: detect_changes
+      optional: true  # Not needed on protected branches
   variables:
     REGISTRY_USER: "$HIVED_CI_IMGBUILDER_USER"
     REGISTRY_PASS: $HIVED_CI_IMGBUILDER_PASSWORD
@@ -228,11 +233,12 @@ push_to_wiki:
 
 mirrornet_node_build:
   stage: build
-  extends: .prepare_hived_image
-  rules:
-    - if: $QUICK_TEST == "true"
-      when: never
-    - when: on_success
+  extends:
+    - .prepare_hived_image
+    - .skip_build_on_docs_only_with_quick_test
+  needs:
+    - job: detect_changes
+      optional: true  # Not needed on protected branches
   variables:
     REGISTRY_USER: "$HIVED_CI_IMGBUILDER_USER"
     REGISTRY_PASS: $HIVED_CI_IMGBUILDER_PASSWORD
@@ -266,8 +272,11 @@ extended_block_log_creation:
   extends: .extended_block_log_creation
   stage: build
   needs:
+    - job: detect_changes
+      optional: true  # Not needed on protected branches
     - job: "mirrornet_node_build"
       artifacts: true
+      optional: true  # Not needed if build was skipped
   variables:
     REGISTRY: "${CI_REGISTRY_IMAGE}"
     IMAGE_TAG: "${CI_COMMIT_SHORT_SHA}"
@@ -279,12 +288,27 @@ extended_block_log_creation:
   rules:
     - if: $QUICK_TEST == "true"
       when: never
+    - if: $TESTS_ONLY == "true"
+      when: never
     - if: $CI_COMMIT_TAG
       when: never
     - if: $CI_COMMIT_BRANCH == "master"
       when: never
+    # Skip if only docs changed
     - if: $CI_COMMIT_BRANCH
+      changes:
+        paths:
+          - libraries/**/*
+          - programs/**/*
+          - CMakeLists.txt
+          - cmake/**/*
+          - Dockerfile
+          - docker/**/*
+          - contrib/**/*
+          - scripts/ci-helpers/**/*
+          - .gitlab-ci.yaml
       when: always
+    - when: never
   tags:
     - data-cache-storage
 
@@ -365,16 +389,15 @@ run_examples_beekeeper_wasm:
     - public-runner-docker
 
 mirrornet_replay_test:
-  extends: .job-defaults
+  extends:
+    - .job-defaults
+    - .skip_test_on_docs_only_with_quick_test
   stage: test
   image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
-  rules:
-    - if: $QUICK_TEST == "true"
-      when: never
-    - when: on_success
   needs:
     - job: "mirrornet_node_build"
       artifacts: true
+      optional: true  # Not needed if build was skipped
 
   variables:
     BINARIES_DIR: "hived-mirrornet-binaries"
@@ -444,12 +467,14 @@ mirrornet_replay_test:
     - data-cache-storage
 
 .unit_tests_base:
-  extends: .job-defaults
+  extends:
+    - .job-defaults
+    - .skip_test_on_docs_only
   stage: test
   needs:
     - job: testnet_node_build
       artifacts: true
-      optional: true  # Not required in QUICK_TEST mode
+      optional: true  # Not required in QUICK_TEST mode or docs-only changes
     - job: quick_test_setup
       artifacts: true
       optional: true  # Not required in normal mode
@@ -552,15 +577,23 @@ pre_commit_checks:
     paths:
       - tests/python/hive-local-tools/poetry.lock
 
+# Detect what type of files changed to enable test-only optimization
+# Sets TESTS_ONLY=true when only test files changed (no source code)
+detect_changes:
+  extends: .detect_changes
+  tags:
+    - public-runner-docker
+
 # Quick Test Setup - retrieves cached binaries from previous successful pipeline
-# Only runs when QUICK_TEST=true, skips all build jobs and runs only unit tests
+# Runs when QUICK_TEST=true (manual) or TESTS_ONLY=true (auto-detected)
 quick_test_setup:
-  extends: .docker_image_builder_job
+  extends:
+    - .docker_image_builder_job
+    - .quick_test_setup_rules
   stage: static_code_analysis
-  rules:
-    - if: $QUICK_TEST == "true"
-      when: always
-    - when: never
+  needs:
+    - job: detect_changes
+      optional: true  # Not needed on protected branches or when QUICK_TEST is set
   variables:
     GIT_STRATEGY: clone
     REGISTRY_USER: "$HIVED_CI_IMGBUILDER_USER"
@@ -594,12 +627,11 @@ quick_test_setup:
     expire_in: 1 week
 
 .test_tools_based:
-  extends: .pytest_based
-  # Default: skip in QUICK_TEST mode. Jobs that support QUICK_TEST_JOBS override these rules.
-  rules:
-    - if: $QUICK_TEST == "true"
-      when: never
-    - when: on_success
+  extends:
+    - .pytest_based
+    - .skip_test_on_docs_only_with_quick_test
+  # Default: skip in QUICK_TEST mode and on docs-only changes.
+  # Jobs that support QUICK_TEST_JOBS override these rules.
   variables:
     HIVED_PATH: "$CI_PROJECT_DIR/hived-testnet-binaries/hived"
     CLI_WALLET_PATH: "$CI_PROJECT_DIR/hived-testnet-binaries/cli_wallet"
@@ -610,6 +642,7 @@ quick_test_setup:
   needs:
     - job: testnet_node_build
       artifacts: true
+      optional: true  # Not needed if build was skipped (docs-only changes)
 
 .beem_tests_base:
   stage: test
@@ -918,6 +951,7 @@ datagen_api_tests:
     - !reference [.test_tools_based, needs]
     - job: build_combined_testing_block_logs_image
       artifacts: true
+      optional: true  # Not needed if build was skipped
   variables:
     PYTEST_NUMBER_OF_PROCESSES: 1  # Single worker to avoid block_log artifacts file locking conflicts
     PYTEST_TIMEOUT_MINUTES: 30
@@ -936,11 +970,9 @@ datagen_api_tests:
 patterns_tests:
   stage: test
   image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
-  extends: .pytest_based
-  rules:
-    - if: $QUICK_TEST == "true"
-      when: never
-    - when: on_success
+  extends:
+    - .pytest_based
+    - .skip_test_on_docs_only_with_quick_test
   variables:
     FF_NETWORK_PER_BUILD: 1
     TEST_SUITE: "(condenser_api_patterns and (get_block or get_block_header) ) or block_api_patterns or (not get_transaction_hex and (get_transaction or get_account_history or enum_virtual_ops or get_ops_in_block))"
@@ -949,6 +981,7 @@ patterns_tests:
   needs:
     - job: prepare_hived_data
       artifacts: true
+      optional: true  # Not needed if build was skipped
 
   services:
     - *hived-service
@@ -1003,8 +1036,10 @@ python_pattern_mainnet_tests:
   needs:
     - job: prepare_hived_image
       artifacts: true
+      optional: true  # Not needed if build was skipped
     - job: prepare_hived_data
       artifacts: true
+      optional: true  # Not needed if build was skipped
 
   services:
     - *hived-service
@@ -1078,6 +1113,7 @@ message_format_mainnet_5m_tests:
   needs:
     - job: prepare_hived_data
       artifacts: true
+      optional: true  # Not needed if build was skipped
   services:
     - *hived-service
   variables:
@@ -1124,6 +1160,7 @@ foundation_layer_tests:
     - !reference [.test_tools_based, needs]
     - job: build_combined_testing_block_logs_image
       artifacts: true
+      optional: true  # Not needed if build was skipped
   variables:
     PYTEST_TIMEOUT_MINUTES: 12
     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/foundation_layer_tests/report.xml
@@ -1143,6 +1180,7 @@ witness_tests:
   needs:
     - job: prepare_hived_data
       artifacts: true
+      optional: true  # Not needed if build was skipped
   services:
     - *hived-service
   variables:
@@ -1212,15 +1250,14 @@ hardfork_schedule_tests:
     - public-runner-docker
 
 several_node_restarts_tests:
-  extends: .prepare_hived_data_5m
+  extends:
+    - .prepare_hived_data_5m
+    - .skip_test_on_docs_only_with_quick_test
   stage: test
-  rules:
-    - if: $QUICK_TEST == "true"
-      when: never
-    - when: on_success
   needs:
     - job: prepare_hived_image
       artifacts: true
+      optional: true  # Not needed if build was skipped
   variables:
     BLOCK_LOG_SOURCE_DIR: "$BLOCK_LOG_SOURCE_DIR_5M"
     CONFIG_INI_SOURCE: "$CI_PROJECT_DIR/docker/config_5M.ini"
@@ -1237,16 +1274,15 @@ several_node_restarts_tests:
     - public-runner-docker
 
 artifacts_generation_tests:
-  extends: .job-defaults
+  extends:
+    - .job-defaults
+    - .skip_test_on_docs_only_with_quick_test
   stage: test
   image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
-  rules:
-    - if: $QUICK_TEST == "true"
-      when: never
-    - when: on_success
   needs:
     - job: prepare_hived_image
       artifacts: true
+      optional: true  # Not needed if build was skipped
   variables:
     BINARY_CACHE_PATH: "hived-binaries"
   script:
@@ -1256,16 +1292,15 @@ artifacts_generation_tests:
     - public-runner-docker
 
 block_log_util_split_and_merge_block_log_tests:
-  extends: .job-defaults
+  extends:
+    - .job-defaults
+    - .skip_test_on_docs_only_with_quick_test
   stage: test
   image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
-  rules:
-    - if: $QUICK_TEST == "true"
-      when: never
-    - when: on_success
   needs:
     - job: testnet_node_build
       artifacts: true
+      optional: true  # Not needed if build was skipped
   variables:
     BLOCK_LOG_UTIL_TESTNET_PATH: "$CI_PROJECT_DIR/hived-testnet-binaries/block_log_util"
   script:
