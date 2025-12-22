@@ -575,6 +575,9 @@ void p2p_plugin::plugin_shutdown()
 
 void p2p_plugin::broadcast_block(const std::shared_ptr<hive::chain::full_block_type>& full_block)
 {
+  if( !my->node )
+    return;
+
   uint32_t block_num = full_block->get_block_num();
   size_t transaction_count = full_block->get_full_transactions().size();
   ulog("Broadcasting block #${block_num} with ${transaction_count} transactions", (block_num)(transaction_count));
@@ -583,6 +586,9 @@ void p2p_plugin::broadcast_block(const std::shared_ptr<hive::chain::full_block_t
 
 void p2p_plugin::broadcast_transaction(const std::shared_ptr<hive::chain::full_transaction_type>& full_transaction)
 {
+  if( !my->node )
+    return;
+
   ulog("Broadcasting tx #${id}", ("id", full_transaction->get_transaction_id()));
   my->node->broadcast(full_transaction);
 }
@@ -595,6 +601,9 @@ void p2p_plugin::set_block_production( bool producing_blocks )
 
 fc::variant_object p2p_plugin::get_info()
 {
+  if( !my->node )
+    return fc::variant_object();
+
   fc::mutable_variant_object result = my->node->network_get_info();
   result["connection_count"] = my->node->get_connection_count();
   return result;
@@ -602,16 +611,25 @@ fc::variant_object p2p_plugin::get_info()
 
 void p2p_plugin::add_node(const fc::ip::endpoint& endpoint)
 {
+  if( !my->node )
+    return;
+
   my->node->add_node(endpoint);
 }
 
 void p2p_plugin::set_allowed_peers(const std::vector<graphene::net::node_id_t>& allowed_peers)
 {
+  if( !my->node )
+    return;
+
   my->node->set_allowed_peers(allowed_peers);
 }
 
 std::vector< api_peer_status > p2p_plugin::get_connected_peers()
 {
+  if( !my->node )
+    return {};
+
   std::vector<graphene::net::peer_status> connected_peers = my->node->get_connected_peers();
   std::vector<api_peer_status> api_connected_peers;
   api_connected_peers.reserve( connected_peers.size() );
