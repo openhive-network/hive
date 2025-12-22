@@ -96,7 +96,7 @@ def connect_nodes(first_node: tt.AnyNode, second_node: tt.AnyNode) -> None:
     """
     This place have to be removed after solving issue https://gitlab.syncad.com/hive/test-tools/-/issues/10
     """
-    second_node.config.p2p_seed_node = first_node.p2p_endpoint.as_string()
+    second_node.config.p2p_seed_node.append(first_node.p2p_endpoint)
 
 
 def __generate_and_broadcast_transaction(
