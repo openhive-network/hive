@@ -145,7 +145,7 @@ prepare_hived_image:
 prepare_hived_data:
   extends:
     - .prepare_hived_data_5m
-    - .skip_build_on_docs_only_with_quick_test
+    - .manual_on_feature_branches_skip_tests_only  # Manual on feature branches, auto on develop/master
   needs:
     - job: detect_changes
       optional: true  # Not needed on protected branches
@@ -470,7 +470,7 @@ run_examples_beekeeper_wasm:
 mirrornet_replay_test:
   extends:
     - .job-defaults
-    - .skip_test_on_docs_only_with_quick_test
+    - .manual_on_feature_branches  # Manual on feature branches (converts and replays 5M blocks)
   stage: test
   image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
   needs:
@@ -1010,7 +1010,7 @@ patterns_tests:
   image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
   extends:
     - .pytest_based
-    - .skip_test_on_docs_only_with_quick_test
+    - .manual_on_feature_branches  # Manual on feature branches (requires mainnet_5m data)
   variables:
     FF_NETWORK_PER_BUILD: 1
     TEST_SUITE: "(condenser_api_patterns and (get_block or get_block_header) ) or block_api_patterns or (not get_transaction_hex and (get_transaction or get_account_history or enum_virtual_ops or get_ops_in_block))"
@@ -1018,8 +1018,7 @@ patterns_tests:
     HIVED_COMMIT: $HIVED_COMMIT # HIVED_COMMIT and HIVED_UID must be in this section to be passed to service
   needs:
     - job: prepare_hived_data
-      artifacts: true
-      optional: true  # Not needed if build was skipped
+      artifacts: true  # Blocked until prepare_hived_data completes
 
   services:
     - *hived-service
@@ -1063,7 +1062,9 @@ transaction_serialization_testnet_tests:
 python_pattern_mainnet_tests:
   stage: test
   image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
-  extends: .test_tools_based
+  extends:
+    - .test_tools_based
+    - .manual_on_feature_branches  # Manual on feature branches (requires mainnet_5m data)
   variables:
     PYTEST_TIMEOUT_MINUTES: 27
     TEST_TOOLS_NODE_DEFAULT_WAIT_FOR_LIVE_TIMEOUT: "60"
@@ -1076,8 +1077,7 @@ python_pattern_mainnet_tests:
       artifacts: true
       optional: true  # Not needed if build was skipped
     - job: prepare_hived_data
-      artifacts: true
-      optional: true  # Not needed if build was skipped
+      artifacts: true  # Blocked until prepare_hived_data completes
 
   services:
     - *hived-service
@@ -1147,11 +1147,12 @@ python_pattern_testnet_tests:
     - public-runner-docker
 
 message_format_mainnet_5m_tests:
-  extends: .message_format_tests
+  extends:
+    - .message_format_tests
+    - .manual_on_feature_branches  # Manual on feature branches (requires mainnet_5m data)
   needs:
     - job: prepare_hived_data
-      artifacts: true
-      optional: true  # Not needed if build was skipped
+      artifacts: true  # Blocked until prepare_hived_data completes
   services:
     - *hived-service
   variables:
@@ -1214,11 +1215,12 @@ foundation_layer_tests:
 
 witness_tests:
   stage: test
-  extends: .test_tools_based
+  extends:
+    - .test_tools_based
+    - .manual_on_feature_branches  # Manual on feature branches (requires mainnet_5m data)
   needs:
     - job: prepare_hived_data
-      artifacts: true
-      optional: true  # Not needed if build was skipped
+      artifacts: true  # Blocked until prepare_hived_data completes
   services:
     - *hived-service
   variables:
@@ -1266,7 +1268,7 @@ hardfork_schedule_tests:
 several_node_restarts_tests:
   extends:
     - .prepare_hived_data_5m
-    - .skip_test_on_docs_only_with_quick_test
+    - .manual_on_feature_branches  # Manual on feature branches (uses 5M block_log replay)
   stage: test
   needs:
     - job: prepare_hived_image
