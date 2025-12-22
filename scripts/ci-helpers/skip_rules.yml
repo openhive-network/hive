@@ -279,6 +279,66 @@ variables:
     - when: never
 
 # ============================================================================
+# Mainnet 5M Jobs - Manual on Feature Branches
+# ============================================================================
+# These templates make expensive mainnet_5m jobs (prepare_hived_data, replay tests)
+# run as manual jobs on feature branches, saving ~60+ minutes by default.
+# Users can still click to run them when needed.
+
+# Template: Manual on feature branches, auto on integration branches
+# Use for expensive jobs that don't need to run on every feature branch push
+# - Feature branches: Manual (click to run)
+# - develop/master/tags: Automatic
+# - QUICK_TEST=true: Manual (same as feature branch)
+# - TESTS_ONLY=true: Skip entirely (no new binaries to test)
+# - FORCE_FULL_PIPELINE=true: Automatic (override)
+.manual_on_feature_branches:
+  rules:
+    # Force full pipeline overrides everything
+    - if: $FORCE_FULL_PIPELINE == "true"
+      when: on_success
+    # TESTS_ONLY mode - skip entirely (no point testing without new binaries)
+    - if: $TESTS_ONLY == "true"
+      when: never
+    # QUICK_TEST mode - make jobs manual (user can click to run)
+    - if: $QUICK_TEST == "true"
+      when: manual
+      allow_failure: true  # Don't block pipeline if user doesn't run these
+    # Always run automatically on protected/integration branches
+    - if: $CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH == "master"
+      when: on_success
+    # Always run automatically on tags
+    - if: $CI_COMMIT_TAG
+      when: on_success
+    # Feature branches: manual by default (saves ~60 min)
+    - when: manual
+      allow_failure: true  # Don't block pipeline if user doesn't run these
+
+# Template: Same as above but also skips when TESTS_ONLY (no new binaries)
+# Use for build jobs like prepare_hived_data
+.manual_on_feature_branches_skip_tests_only:
+  rules:
+    # Force full pipeline overrides everything
+    - if: $FORCE_FULL_PIPELINE == "true"
+      when: on_success
+    # TESTS_ONLY mode - skip entirely (no point without new binaries)
+    - if: $TESTS_ONLY == "true"
+      when: never
+    # QUICK_TEST mode - make jobs manual
+    - if: $QUICK_TEST == "true"
+      when: manual
+      allow_failure: true
+    # Always run automatically on protected/integration branches
+    - if: $CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH == "master"
+      when: on_success
+    # Always run automatically on tags
+    - if: $CI_COMMIT_TAG
+      when: on_success
+    # Feature branches: manual by default
+    - when: manual
+      allow_failure: true
+
+# ============================================================================
 # Legacy aliases (for backwards compatibility)
 # ============================================================================
 
