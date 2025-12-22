@@ -9,6 +9,10 @@ SHARED_BLOCK_LOG_DIR="${SHARED_BLOCK_LOG_DIR:-/nfs/ci-cache/hive/block_log_5m}"
 # NFS cache configuration
 CACHE_NFS_PATH="${CACHE_NFS_PATH:-/nfs/ci-cache}"
 
+# Cache manager script location (relative to this script)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CACHE_MANAGER="${SCRIPT_DIR}/ci-helpers/cache-manager.sh"
+
 # Fix pg_tblspc symlinks to point to the correct tablespace location
 # PostgreSQL stores tablespace symlinks with absolute paths, which break when data is copied
 # Uses relative symlinks so they work both on the host AND inside Docker containers
@@ -39,6 +43,7 @@ fix_pg_tblspc_symlinks() {
 }
 
 # Function to extract NFS cache if local DATA_SOURCE doesn't exist
+# Delegates to cache-manager.sh for unified cache handling
 # Derives cache type and key from DATA_SOURCE path pattern: /cache/{type}_{key}
 extract_nfs_cache_if_needed() {
     local data_source="$1"
@@ -50,11 +55,12 @@ extract_nfs_cache_if_needed() {
     fi
 
     # Parse DATA_SOURCE to derive cache type and key
-    # Pattern: /cache/{type}_{key} -> NFS tar: /nfs/ci-cache/{type}/{key}.tar
+    # Pattern: /cache/{type}_{key} -> cache-manager get {type} {key} {data_source}
     local basename
     basename=$(basename "$data_source")
 
     # Split by first underscore: haf_pipeline_12345_filtered -> type=haf_pipeline, key=12345_filtered
+    # Most common: hive_{commit} -> type=hive, key={commit}
     local cache_type cache_key
     if [[ "$basename" =~ ^([^_]+_[^_]+)_(.+)$ ]]; then
         cache_type="${BASH_REMATCH[1]}"
@@ -67,38 +73,55 @@ extract_nfs_cache_if_needed() {
         return 1
     fi
 
-    local nfs_tar="${CACHE_NFS_PATH}/${cache_type}/${cache_key}.tar"
-    echo "Checking for NFS cache: $nfs_tar"
+    echo "Attempting NFS cache retrieval: type=$cache_type key=$cache_key"
 
-    if [[ -f "$nfs_tar" ]]; then
-        echo "Found NFS cache, extracting to $data_source"
-        mkdir -p "$data_source"
-        chmod 777 "$data_source" 2>/dev/null || true
-
-        if tar xf "$nfs_tar" -C "$data_source"; then
-            echo "NFS cache extracted successfully"
-
-            # Restore pgdata permissions for PostgreSQL
-            local pgdata="${data_source}/datadir/haf_db_store/pgdata"
-            local tablespace="${data_source}/datadir/haf_db_store/tablespace"
-            if [[ -d "$pgdata" ]]; then
-                chmod 700 "$pgdata" 2>/dev/null || true
-                chown -R 105:105 "$pgdata" 2>/dev/null || true
-            fi
-            if [[ -d "$tablespace" ]]; then
-                chmod 700 "$tablespace" 2>/dev/null || true
-                chown -R 105:105 "$tablespace" 2>/dev/null || true
-            fi
-            # Fix pg_tblspc symlinks after extraction
+    # Use cache-manager if available, otherwise fall back to direct NFS access
+    if [[ -x "$CACHE_MANAGER" ]]; then
+        echo "Using cache-manager for NFS fallback"
+        if "$CACHE_MANAGER" get "$cache_type" "$cache_key" "$data_source"; then
+            echo "Cache-manager retrieved cache successfully"
+            # Fix pg_tblspc symlinks after extraction (cache-manager handles pgdata perms)
             fix_pg_tblspc_symlinks "${data_source}/datadir"
             return 0
         else
-            echo "ERROR: Failed to extract NFS cache"
+            echo "Cache-manager could not retrieve cache"
             return 1
         fi
     else
-        echo "NFS cache not found at $nfs_tar"
-        return 1
+        # Fallback: direct NFS tar extraction (for environments without cache-manager)
+        local nfs_tar="${CACHE_NFS_PATH}/${cache_type}/${cache_key}.tar"
+        echo "Cache-manager not found, checking NFS directly: $nfs_tar"
+
+        if [[ -f "$nfs_tar" ]]; then
+            echo "Found NFS cache, extracting to $data_source"
+            mkdir -p "$data_source"
+            chmod 777 "$data_source" 2>/dev/null || true
+
+            if tar xf "$nfs_tar" -C "$data_source"; then
+                echo "NFS cache extracted successfully"
+
+                # Restore pgdata permissions for PostgreSQL
+                local pgdata="${data_source}/datadir/haf_db_store/pgdata"
+                local tablespace="${data_source}/datadir/haf_db_store/tablespace"
+                if [[ -d "$pgdata" ]]; then
+                    chmod 700 "$pgdata" 2>/dev/null || true
+                    chown -R 105:105 "$pgdata" 2>/dev/null || true
+                fi
+                if [[ -d "$tablespace" ]]; then
+                    chmod 700 "$tablespace" 2>/dev/null || true
+                    chown -R 105:105 "$tablespace" 2>/dev/null || true
+                fi
+                # Fix pg_tblspc symlinks after extraction
+                fix_pg_tblspc_symlinks "${data_source}/datadir"
+                return 0
+            else
+                echo "ERROR: Failed to extract NFS cache"
+                return 1
+            fi
+        else
+            echo "NFS cache not found at $nfs_tar"
+            return 1
+        fi
     fi
 }
 
