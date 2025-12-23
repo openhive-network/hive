@@ -2135,7 +2135,8 @@ wallet_signed_transaction wallet_api::convert_hbd(
   FC_ASSERT( !is_locked() );
   convert_operation op;
   op.owner = from;
-  op.requestid = fc::time_point::now().sec_since_epoch();
+  // Use microseconds for better uniqueness - avoids collisions when multiple requests are made in the same second
+  op.requestid = static_cast<uint32_t>(fc::time_point::now().time_since_epoch().count());
   op.amount = amount.value;
 
   signed_transaction tx;
@@ -2153,7 +2154,8 @@ wallet_signed_transaction wallet_api::convert_hive_with_collateral(
   FC_ASSERT( !is_locked() );
   collateralized_convert_operation op;
   op.owner = from;
-  op.requestid = fc::time_point::now().sec_since_epoch();
+  // Use microseconds for better uniqueness - avoids collisions when multiple requests are made in the same second
+  op.requestid = static_cast<uint32_t>(fc::time_point::now().time_since_epoch().count());
   op.amount = collateral_amount.value;
 
   signed_transaction tx;
