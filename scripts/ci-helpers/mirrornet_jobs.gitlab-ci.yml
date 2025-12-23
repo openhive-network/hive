@@ -44,8 +44,8 @@ include:
       MAINNET_BLOCK_LOG_PATH="$BLOCK_LOG_OUTPUT_DIR/$CI_PIPELINE_ID/mainnet/block_log"
       rm -f "$MAINNET_BLOCK_LOG_PATH"
       rm -f "$MAINNET_BLOCK_LOG_PATH.artifacts"
-      ln "$BLOCK_LOG_SOURCE_DIR/block_log" "$MAINNET_BLOCK_LOG_PATH"
-      ln "$BLOCK_LOG_SOURCE_DIR/block_log.artifacts" "$MAINNET_BLOCK_LOG_PATH.artifacts"
+      cp "$BLOCK_LOG_SOURCE_DIR/block_log" "$MAINNET_BLOCK_LOG_PATH"
+      cp "$BLOCK_LOG_SOURCE_DIR/block_log.artifacts" "$MAINNET_BLOCK_LOG_PATH.artifacts"
       ls -lAh "$BLOCK_LOG_OUTPUT_DIR/$CI_PIPELINE_ID"
       time /home/hived/bin/blockchain_converter \
         --plugin block_log_conversion \
@@ -92,8 +92,8 @@ generate_mirrornet_config_ini:
   script:
     - |
       mkdir -vp "hive-home/blockchain"
-      ln -s $BLOCK_LOG_OUTPUT_DIR/$CI_PIPELINE_ID/block_log hive-home/blockchain/block_log
-      ln -s $BLOCK_LOG_OUTPUT_DIR/$CI_PIPELINE_ID/block_log.artifacts hive-home/blockchain/block_log.artifacts
+      cp $BLOCK_LOG_OUTPUT_DIR/$CI_PIPELINE_ID/block_log hive-home/blockchain/block_log
+      cp $BLOCK_LOG_OUTPUT_DIR/$CI_PIPELINE_ID/block_log.artifacts hive-home/blockchain/block_log.artifacts
       cd hive-home
       ls -lAhR
       /home/hived/bin/hived \
