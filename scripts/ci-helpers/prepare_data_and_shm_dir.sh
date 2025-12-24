@@ -71,7 +71,23 @@ if [ -n "$BLOCK_LOG_SOURCE_DIR" ]; then
 fi
 
 
-if [ -n "$CONFIG_INI_SOURCE" ];
-then
-  cp "$CONFIG_INI_SOURCE" $DATA_BASE_DIR/datadir/config.ini
+# Copy config.ini if source is specified
+if [ -n "$CONFIG_INI_SOURCE" ]; then
+  echo "Copying config from: $CONFIG_INI_SOURCE"
+  if [ -f "$CONFIG_INI_SOURCE" ]; then
+    cp "$CONFIG_INI_SOURCE" "$DATA_BASE_DIR/datadir/config.ini"
+    if [ -f "$DATA_BASE_DIR/datadir/config.ini" ]; then
+      echo "Config copied successfully to $DATA_BASE_DIR/datadir/config.ini"
+      # Show key settings for verification
+      grep -E "shared-file-size|shared-file-full-threshold" "$DATA_BASE_DIR/datadir/config.ini" || true
+    else
+      echo "ERROR: Config copy failed - destination file not found"
+      exit 1
+    fi
+  else
+    echo "ERROR: Config source file not found: $CONFIG_INI_SOURCE"
+    exit 1
+  fi
+else
+  echo "WARNING: CONFIG_INI_SOURCE not specified - hived will use default config (larger shared memory)"
 fi
