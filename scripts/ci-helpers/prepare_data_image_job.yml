@@ -56,6 +56,8 @@ include:
 
 .prepare_hived_data_5m:
   extends: .docker_image_builder_job
+  tags:
+    - fastest
 
   variables:
     SUBMODULE_DIR: "$CI_PROJECT_DIR"
