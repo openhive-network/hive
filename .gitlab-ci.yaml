@@ -752,6 +752,8 @@ quick_test_setup:
     - cd beem
     - python3 -m pip install .[tests]
     - python3 setup.py install
+    # Reinstall pytest 8.3.5 for Python 3.14 compatibility (beem installs pytest 7.2.2)
+    - pip3 install pytest==8.3.5
     - cd ..
     - mkdir -p build/tests/hive-node-data
     - cd tests/python/functional/beem_tests
