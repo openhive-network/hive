@@ -54,17 +54,26 @@ install_all_dev_packages() {
   echo "Attempting to install all dev packages..."
   assert_is_root
 
-  apt-get update && apt-get install -y \
+  # Add deadsnakes PPA for Python 3.14
+  apt-get update && apt-get install -y software-properties-common
+  add-apt-repository -y ppa:deadsnakes/ppa
+  apt-get update
+
+  apt-get install -y \
   git python3 build-essential gir1.2-glib-2.0 libgirepository-1.0-1 libglib2.0-0 libglib2.0-data libxml2 python3-lib2to3 python3-pkg-resources shared-mime-info xdg-user-dirs ca-certificates \
   autoconf automake cmake clang clang-tidy g++ git libbz2-dev libsnappy-dev libssl-dev libtool make pkg-config python3-jinja2 libboost-all-dev doxygen libncurses5-dev libreadline-dev perl ninja-build zopfli \
   xxd liburing-dev \
   \
   screen python3-pip python3-dateutil tzdata python3-junit.xml python3-venv python3-dateutil \
   python3-dev p7zip-full \
+  \
+  python3.14 python3.14-venv python3.14-dev \
   && \
   (if [ "$(lsb_release -rs | cut -d. -f1)" -ge 24 ]; then apt-get install -y python3-setuptools; else apt-get install -y python3-distutils; fi) && \
   apt-get clean && rm -r /var/lib/apt/lists/* && \
-  pip3 install --break-system-packages -U secp256k1prp
+  pip3 install --break-system-packages -U secp256k1prp && \
+  # Set python3.14 as default python3
+  update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.14 1
 }
 
 preconfigure_faketime() {
