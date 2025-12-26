@@ -26,12 +26,12 @@ source = [
 
 [tool.poetry.dependencies]
 python = ">=3.14,<4"
-pytest = "7.2.2"
-pytest-rerunfailures = "10.2"
-pytest-timeout = "2.1.0"
-pytest-asyncio = "0.23.8"
-pytest-repeat = "0.9.1"
-pytest-xdist = "3.2.0"
+pytest = "8.3.5"
+pytest-rerunfailures = "14.0"
+pytest-timeout = "2.3.1"
+pytest-asyncio = "0.25.3"
+pytest-repeat = "0.9.3"
+pytest-xdist = "3.6.1"
 tavern = "2.2.0"
 types-PyYAML = "6.0.12.11"
 shared-tools = { path = "shared-tools", develop = true }
