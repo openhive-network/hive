@@ -650,6 +650,7 @@ pre_commit_checks:
   stage: static_code_analysis
   variables:
     POETRY_INSTALL_ARGS: --only pre-commit
+    PYO3_USE_ABI3_FORWARD_COMPATIBILITY: "1"  # Allow PyO3-based packages to build with Python 3.14
   extends:
     - .pre_commit_checks_template
     - .python_static_analysis_configuration
