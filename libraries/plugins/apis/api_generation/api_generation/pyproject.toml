@@ -24,10 +24,5 @@ source = [
 python = "^3.12"
 toml = "0.10.2"
 jinja2 = "3.1.6"
-api_client_generator = " 1.7.0"
-# Note: beekeepy is not a runtime dependency - only the version string is needed for generated packages
-# See [tool.api_generation] section
-
-[tool.api_generation]
-# This version is used in generated API packages' pyproject.toml
-beekeepy_version = ">=1.28.4.dev4"
+hiveio-beekeepy = ">=1.28.4.dev4"  # This version is copied to generated API packages
+api_client_generator = ">=1.7.1.dev1"  # Updated to use msgspec 0.20.0
