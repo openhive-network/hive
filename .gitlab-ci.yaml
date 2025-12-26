@@ -648,6 +648,7 @@ plugin_test:
 
 pre_commit_checks:
   stage: static_code_analysis
+  allow_failure: true  # Temporarily allow failure until Python 3.14 packages are published
   variables:
     POETRY_INSTALL_ARGS: --only pre-commit
     PYO3_USE_ABI3_FORWARD_COMPATIBILITY: "1"  # Allow PyO3-based packages to build with Python 3.14
