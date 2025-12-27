@@ -476,7 +476,7 @@ mirrornet_replay_test:
     - .job-defaults
     - .manual_on_feature_branches  # Manual on feature branches (converts and replays 5M blocks)
   stage: test
-  image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
+  image: "$CI_BASE_IMAGE"
   needs:
     - job: "mirrornet_node_build"
       artifacts: true
@@ -561,7 +561,7 @@ mirrornet_replay_test:
     - job: quick_test_setup
       artifacts: true
       optional: true  # Not required in normal mode
-  image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
+  image: "$CI_BASE_IMAGE"
   variables:
     GIT_STRATEGY: none
     FF_NETWORK_PER_BUILD: "true"
@@ -627,7 +627,7 @@ plugin_test:
       alias: test-block-log-server
 
 .python_based:
-  image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
+  image: "$CI_BASE_IMAGE"
   extends:
     - .project_develop_configuration_template
   before_script:
@@ -1014,7 +1014,7 @@ datagen_api_tests:
 
 patterns_tests:
   stage: test
-  image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
+  image: "$CI_BASE_IMAGE"
   extends:
     - .pytest_based
     - .manual_on_feature_branches  # Manual on feature branches (requires mainnet_5m data)
@@ -1068,7 +1068,7 @@ transaction_serialization_testnet_tests:
 
 python_pattern_mainnet_tests:
   stage: test
-  image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
+  image: "$CI_BASE_IMAGE"
   extends:
     - .test_tools_based
     - .manual_on_feature_branches  # Manual on feature branches (requires mainnet_5m data)
@@ -1301,7 +1301,7 @@ artifacts_generation_tests:
     - .job-defaults
     - .skip_test_on_docs_only_with_quick_test
   stage: test
-  image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
+  image: "$CI_BASE_IMAGE"
   needs:
     - job: prepare_hived_image
       artifacts: true
@@ -1319,7 +1319,7 @@ block_log_util_split_and_merge_block_log_tests:
     - .job-defaults
     - .skip_test_on_docs_only_with_quick_test
   stage: test
-  image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
+  image: "$CI_BASE_IMAGE"
   needs:
     - job: testnet_node_build
       artifacts: true
