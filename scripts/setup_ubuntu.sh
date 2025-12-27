@@ -81,8 +81,9 @@ install_all_dev_packages() {
   && \
   (if [ "$(lsb_release -rs | cut -d. -f1)" -ge 24 ]; then apt-get install -y python3-setuptools; else apt-get install -y python3-distutils; fi) && \
   apt-get clean && rm -r /var/lib/apt/lists/* && \
-  # Use --no-build-isolation to avoid pytest-runner requirement that fails on Python 3.14
-  pip3 install --break-system-packages --no-build-isolation -U secp256k1prp && \
+  # Pre-install pytest-runner to satisfy secp256k1prp's setup_requires
+  pip3 install --break-system-packages pytest-runner && \
+  pip3 install --break-system-packages -U secp256k1prp && \
   # Set python3.14 as default python3
   update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.14 1
 }
