@@ -54,10 +54,20 @@ install_all_dev_packages() {
   echo "Attempting to install all dev packages..."
   assert_is_root
 
-  # Add deadsnakes PPA for Python 3.14
-  apt-get update && apt-get install -y software-properties-common
-  add-apt-repository -y ppa:deadsnakes/ppa
   apt-get update
+
+  # Add deadsnakes PPA for Python 3.14 if not already present
+  if ! apt-cache policy python3.14 2>/dev/null | grep -q "Candidate:"; then
+    apt-get install -y software-properties-common
+    # Use python3.12 explicitly for add-apt-repository to avoid apt_pkg issues
+    # when Python 3.14 is already set as default
+    if command -v python3.12 &> /dev/null; then
+      python3.12 /usr/bin/add-apt-repository -y ppa:deadsnakes/ppa
+    else
+      add-apt-repository -y ppa:deadsnakes/ppa
+    fi
+    apt-get update
+  fi
 
   apt-get install -y \
   git python3 build-essential gir1.2-glib-2.0 libgirepository-1.0-1 libglib2.0-0 libglib2.0-data libxml2 python3-lib2to3 python3-pkg-resources shared-mime-info xdg-user-dirs ca-certificates \
