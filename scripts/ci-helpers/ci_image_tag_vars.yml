@@ -1,4 +1,8 @@
 variables:
   # pin to specific docker images for build repeatability
-  # uses registry.gitlab.syncad.com/hive/hive/ci-base-image:ubuntu24.04-py3.14-1
-  TEST_IMAGE_TAG: "@sha256:64bc6a41d7811e6caace5fed8c82ca1ee6c26bfdcae8b29546d830a63bfe1f17"
+  # ci-base-image is now built in common-ci-configuration
+  # uses registry.gitlab.syncad.com/hive/common-ci-configuration/ci-base-image:ubuntu24.04-py3.14-1
+  CI_BASE_IMAGE_TAG: ":ubuntu24.04-py3.14-1"
+  CI_BASE_IMAGE: "registry.gitlab.syncad.com/hive/common-ci-configuration/ci-base-image${CI_BASE_IMAGE_TAG}"
+  # Legacy variable for backwards compatibility (deprecated - use CI_BASE_IMAGE instead)
+  TEST_IMAGE_TAG: "${CI_BASE_IMAGE_TAG}"
