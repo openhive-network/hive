@@ -555,7 +555,8 @@ cmd_get() {
     fi
 
     # Mark destination as complete (extracted from NFS successfully)
-    echo "0" > "$local_dest/$CACHE_COMPLETE_MARKER"
+    # Use sudo with tee to handle permission issues (cache may be owned by different user)
+    echo "0" | sudo tee "$local_dest/$CACHE_COMPLETE_MARKER" >/dev/null
     _log "Created cache complete marker: $local_dest/$CACHE_COMPLETE_MARKER"
 
     # Cache locally for future use (copy to avoid cross-contamination)
@@ -569,7 +570,7 @@ cmd_get() {
             rm -rf "$LOCAL_CACHE_DIR" 2>/dev/null || true
         else
             # Mark local cache copy as complete
-            echo "0" > "$LOCAL_CACHE_DIR/$CACHE_COMPLETE_MARKER"
+            echo "0" | sudo tee "$LOCAL_CACHE_DIR/$CACHE_COMPLETE_MARKER" >/dev/null
         fi
     fi
 
@@ -640,7 +641,7 @@ cmd_put() {
         fi
 
         # Mark cache as complete
-        echo "0" > "$NFS_CACHE_DIR/$CACHE_COMPLETE_MARKER"
+        echo "0" | sudo tee "$NFS_CACHE_DIR/$CACHE_COMPLETE_MARKER" >/dev/null
         _log "Created cache complete marker: $NFS_CACHE_DIR/$CACHE_COMPLETE_MARKER"
 
         _write_metadata "$cache_type" "$cache_key" "$NFS_CACHE_DIR"
@@ -661,7 +662,7 @@ cmd_put() {
             mkdir -p "$(dirname "$LOCAL_CACHE_DIR")"
             if cp -a "$local_source" "$LOCAL_CACHE_DIR" 2>/dev/null; then
                 # Mark cache as complete
-                echo "0" > "$LOCAL_CACHE_DIR/$CACHE_COMPLETE_MARKER"
+                echo "0" | sudo tee "$LOCAL_CACHE_DIR/$CACHE_COMPLETE_MARKER" >/dev/null
             fi
         fi
         _log "Cached locally only (NFS unavailable)"
@@ -746,7 +747,7 @@ cmd_put() {
             rm -rf "$LOCAL_CACHE_DIR" 2>/dev/null || true
         else
             # Mark local cache copy as complete
-            echo "0" > "$LOCAL_CACHE_DIR/$CACHE_COMPLETE_MARKER"
+            echo "0" | sudo tee "$LOCAL_CACHE_DIR/$CACHE_COMPLETE_MARKER" >/dev/null
         fi
     fi
 
