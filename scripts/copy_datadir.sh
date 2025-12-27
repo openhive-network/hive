@@ -9,9 +9,16 @@ SHARED_BLOCK_LOG_DIR="${SHARED_BLOCK_LOG_DIR:-/nfs/ci-cache/hive/block_log_5m}"
 # NFS cache configuration
 CACHE_NFS_PATH="${CACHE_NFS_PATH:-/nfs/ci-cache}"
 
-# Cache manager script location (relative to this script)
+# Cache manager script - fetch from common-ci-configuration if not available locally
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CACHE_MANAGER="${SCRIPT_DIR}/ci-helpers/cache-manager.sh"
+if [[ ! -x "$CACHE_MANAGER" ]]; then
+    CACHE_MANAGER="/tmp/cache-manager.sh"
+    if [[ ! -x "$CACHE_MANAGER" ]]; then
+        curl -fsSL "https://gitlab.syncad.com/hive/common-ci-configuration/-/raw/develop/scripts/cache-manager.sh" -o "$CACHE_MANAGER" 2>/dev/null || true
+        chmod +x "$CACHE_MANAGER" 2>/dev/null || true
+    fi
+fi
 
 # Fix pg_tblspc symlinks to point to the correct tablespace location
 # PostgreSQL stores tablespace symlinks with absolute paths, which break when data is copied
