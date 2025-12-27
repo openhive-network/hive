@@ -537,11 +537,12 @@ mirrornet_replay_test:
     # Push generated mirrornet block_log to NFS cache for HAF CI using cache-manager
     # Uses tar archive for atomic writes and metadata tracking
     - echo "Pushing mirrornet block_log to NFS cache..."
-    - CACHE_MANAGER="$SCRIPTS_PATH/ci-helpers/cache-manager.sh"
     - |
-      if [[ -x "$CACHE_MANAGER" ]]; then
-        "$CACHE_MANAGER" put hive block_log_5m_mirrornet "$MIRRORNET_BLOCKCHAIN_DATA_DIR/blockchain" || echo "Warning: cache-manager put failed, using direct copy"
-      fi
+      # Fetch cache-manager from common-ci-configuration
+      CACHE_MANAGER="/tmp/cache-manager.sh"
+      curl -fsSL "https://gitlab.syncad.com/hive/common-ci-configuration/-/raw/develop/scripts/cache-manager.sh" -o "$CACHE_MANAGER"
+      chmod +x "$CACHE_MANAGER"
+      "$CACHE_MANAGER" put hive block_log_5m_mirrornet "$MIRRORNET_BLOCKCHAIN_DATA_DIR/blockchain" || echo "Warning: cache-manager put failed"
     - ls -lAh /nfs/ci-cache/hive/
   artifacts:
     paths:
