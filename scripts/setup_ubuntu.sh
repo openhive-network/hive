@@ -81,9 +81,9 @@ install_all_dev_packages() {
   && \
   (if [ "$(lsb_release -rs | cut -d. -f1)" -ge 24 ]; then apt-get install -y python3-setuptools; else apt-get install -y python3-distutils; fi) && \
   apt-get clean && rm -r /var/lib/apt/lists/* && \
-  # Pre-install pytest-runner to satisfy secp256k1prp's setup_requires
-  pip3 install --break-system-packages pytest-runner && \
-  pip3 install --break-system-packages -U secp256k1prp && \
+  # Skip secp256k1prp for now - it requires pytest-runner which doesn't work on Python 3.14
+  # The package is not actively used in tests (see https://gitlab.syncad.com/hive/hive/-/issues/XXXX)
+  # pip3 install --break-system-packages -U secp256k1prp && \
   # Set python3.14 as default python3
   update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.14 1
 }
