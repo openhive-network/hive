@@ -1,4 +1,4 @@
-FROM alpine:3.22.1 AS transmogrifier
+FROM registry.gitlab.syncad.com/hive/common-ci-configuration/mirrors/alpine-3.22.1 AS transmogrifier
 
 RUN apk add --no-cache jq
 
@@ -10,7 +10,7 @@ RUN jq -c '.' /openapi.json.orig > /openapi.json
 RUN jq -c '.' /walletapi.json.orig > /walletapi.json
 
 # Start from busybox
-FROM busybox:1.37.0
+FROM registry.gitlab.syncad.com/hive/common-ci-configuration/mirrors/busybox-1.37.0
 
 # Set the working directory
 WORKDIR /www
