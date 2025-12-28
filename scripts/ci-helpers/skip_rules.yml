@@ -7,15 +7,21 @@
 #   3. Run full pipeline for source code changes
 #
 # How it works:
-#   - detect_changes job analyzes what files changed and sets TESTS_ONLY variable
+#   - detect_changes job analyzes what files changed and sets DOCS_ONLY/TESTS_ONLY variables
 #   - Build jobs skip when TESTS_ONLY=true or QUICK_TEST=true
+#   - Test jobs skip when DOCS_ONLY=true (only documentation changed)
 #   - quick_test_setup runs when TESTS_ONLY=true to fetch cached binaries
-#   - Test jobs run normally, using whichever binaries are available
+#   - Default behavior is to RUN jobs (safe fallback if detection fails)
+#
+# Safety: Uses blocklist approach - jobs run by default, skip only when certain
+# it's safe. If detect_changes fails or doesn't run, jobs still execute.
 
 variables:
   # Control variable to force full pipeline regardless of changes
   # Set to "true" to run all jobs even for docs-only or test-only changes
   FORCE_FULL_PIPELINE: "false"
+  # Set by detect_changes job - indicates only documentation files changed
+  DOCS_ONLY: "false"
   # Set by detect_changes job - indicates only test files changed (no source code)
   TESTS_ONLY: "false"
 
@@ -50,30 +56,46 @@ variables:
 
       # Get list of changed files
       echo "Changed files:"
-      git diff --name-only "$BASE_SHA" HEAD 2>/dev/null || git diff --name-only HEAD~1 HEAD | head -50
+      CHANGED_FILES=$(git diff --name-only "$BASE_SHA" HEAD 2>/dev/null || git diff --name-only HEAD~1 HEAD)
+      echo "$CHANGED_FILES" | head -50
+
+      # Documentation-only patterns (files that don't require builds or tests)
+      # Uses blocklist approach: if ALL changed files match these patterns, skip CI
+      DOCS_PATTERN='^(.*\.md|doc/|\.gitignore|\.gitattributes|\.dockerignore|\.editorconfig|CODEOWNERS|\.mailmap)$'
+
+      # Check if ONLY documentation files changed (blocklist approach - safe default)
+      DOCS_ONLY="false"
+      if [ -n "$CHANGED_FILES" ]; then
+        # Check if any file does NOT match the docs pattern
+        NON_DOCS=$(echo "$CHANGED_FILES" | grep -vE "$DOCS_PATTERN" || true)
+        if [ -z "$NON_DOCS" ]; then
+          DOCS_ONLY="true"
+          echo ">>> Only documentation files changed"
+        fi
+      fi
 
       # Check if source code changed (files that require C++ builds)
       SOURCE_CHANGED="false"
-      if git diff --name-only "$BASE_SHA" HEAD 2>/dev/null | grep -qE '^(libraries/|programs/|CMakeLists\.txt|cmake/|Dockerfile|docker/|contrib/)'; then
+      if echo "$CHANGED_FILES" | grep -qE '^(libraries/|programs/|CMakeLists\.txt|cmake/|Dockerfile|docker/|contrib/)'; then
         SOURCE_CHANGED="true"
       fi
 
       # Check if tests changed
       TESTS_CHANGED="false"
-      if git diff --name-only "$BASE_SHA" HEAD 2>/dev/null | grep -qE '^tests/'; then
+      if echo "$CHANGED_FILES" | grep -qE '^tests/'; then
         TESTS_CHANGED="true"
       fi
 
       # Check if CI/scripts changed (should trigger full build)
       CI_CHANGED="false"
-      if git diff --name-only "$BASE_SHA" HEAD 2>/dev/null | grep -qE '^(\.gitlab-ci\.yaml|scripts/ci-helpers/)'; then
+      if echo "$CHANGED_FILES" | grep -qE '^(\.gitlab-ci\.yaml|scripts/ci-helpers/)'; then
         CI_CHANGED="true"
       fi
 
       # Determine if this is a tests-only change
       # Tests-only means: tests changed, but source code and CI did NOT change
       TESTS_ONLY="false"
-      if [ "$TESTS_CHANGED" = "true" ] && [ "$SOURCE_CHANGED" = "false" ] && [ "$CI_CHANGED" = "false" ]; then
+      if [ "$DOCS_ONLY" = "false" ] && [ "$TESTS_CHANGED" = "true" ] && [ "$SOURCE_CHANGED" = "false" ] && [ "$CI_CHANGED" = "false" ]; then
         echo ""
         echo "Tests-only change detected - checking for cached binaries..."
 
@@ -115,13 +137,15 @@ variables:
 
       echo ""
       echo "Detection results:"
+      echo "  DOCS_ONLY=$DOCS_ONLY"
       echo "  SOURCE_CHANGED=$SOURCE_CHANGED"
       echo "  TESTS_CHANGED=$TESTS_CHANGED"
       echo "  CI_CHANGED=$CI_CHANGED"
       echo "  TESTS_ONLY=$TESTS_ONLY"
 
       # Write to dotenv file for other jobs
-      echo "TESTS_ONLY=$TESTS_ONLY" > detect_changes.env
+      echo "DOCS_ONLY=$DOCS_ONLY" > detect_changes.env
+      echo "TESTS_ONLY=$TESTS_ONLY" >> detect_changes.env
       echo "SOURCE_CHANGED=$SOURCE_CHANGED" >> detect_changes.env
   artifacts:
     reports:
@@ -160,10 +184,14 @@ variables:
 
 # Template: Skip build jobs if only docs OR only tests changed
 # Use: extends: .skip_build_on_non_source_changes (for build jobs)
+# Safety: Uses DOCS_ONLY/TESTS_ONLY variables - default to "false" so builds run if detection fails
 .skip_build_on_non_source_changes:
   rules:
     # QUICK_TEST mode - skip builds (manual override)
     - if: $QUICK_TEST == "true"
+      when: never
+    # DOCS_ONLY mode - skip builds (auto-detected)
+    - if: $DOCS_ONLY == "true"
       when: never
     # TESTS_ONLY mode - skip builds (auto-detected)
     - if: $TESTS_ONLY == "true"
@@ -171,31 +199,14 @@ variables:
     # Force full pipeline if requested
     - if: $FORCE_FULL_PIPELINE == "true"
       when: on_success
-    # Always run on protected branches
+    # Always run on protected branches (detect_changes doesn't run there)
     - if: $CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH == "master"
       when: on_success
     # Always run on tags
     - if: $CI_COMMIT_TAG
       when: on_success
-    # Run if build-relevant files changed
-    - changes:
-        paths:
-          - libraries/**/*
-          - programs/**/*
-          - CMakeLists.txt
-          - cmake/**/*
-          - Dockerfile
-          - docker/**/*
-          - contrib/**/*
-          - scripts/ci-helpers/get_image4submodule.sh
-          - scripts/ci-helpers/build_data.sh
-          - scripts/ci-helpers/build_and_publish_instance.sh
-          - scripts/ci-helpers/cache-manager.sh
-          - scripts/ci-helpers/prepare_data_image_job.yml
-          - .gitlab-ci.yaml
-      when: on_success
-    # Skip otherwise (docs-only or tests-only changes)
-    - when: never
+    # Default: run the build (safe fallback)
+    - when: on_success
 
 # Template: Run quick_test_setup when QUICK_TEST or TESTS_ONLY
 # Use: extends: .quick_test_setup_rules
@@ -212,39 +223,29 @@ variables:
 
 # Template: Skip test jobs if only documentation changed
 # Use: extend existing .test_tools_based or similar with these rules
+# Safety: Uses DOCS_ONLY variable from detect_changes job. If detect_changes
+# doesn't run (protected branches, tags), DOCS_ONLY defaults to "false" and jobs run.
 .skip_test_on_docs_only:
   rules:
     # Force full pipeline if requested
     - if: $FORCE_FULL_PIPELINE == "true"
       when: on_success
-    # Always run on protected branches
+    # Always run on protected branches (detect_changes doesn't run there)
     - if: $CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH == "master"
       when: on_success
     # Always run on tags
     - if: $CI_COMMIT_TAG
       when: on_success
-    # Run if any non-doc files changed
-    - changes:
-        paths:
-          - libraries/**/*
-          - programs/**/*
-          - tests/**/*
-          - CMakeLists.txt
-          - cmake/**/*
-          - Dockerfile
-          - docker/**/*
-          - contrib/**/*
-          - scripts/**/*
-          - .gitlab-ci.yaml
-          - setup.py
-          - version.py
-      when: on_success
-    # Skip otherwise (docs-only changes)
-    - when: never
+    # Skip if only documentation changed (detected by detect_changes job)
+    - if: $DOCS_ONLY == "true"
+      when: never
+    # Default: run the job (safe fallback)
+    - when: on_success
 
 # Template: Skip test jobs if only docs changed, WITH QUICK_TEST/TESTS_ONLY support
 # Use: replaces .test_tools_based rules block
 # Note: These tests are skipped in QUICK_TEST mode but run in TESTS_ONLY mode
+# Safety: Uses DOCS_ONLY variable - defaults to "false" so jobs run if detection fails
 .skip_test_on_docs_only_with_quick_test:
   rules:
     # QUICK_TEST mode - skip heavy test jobs (only unit tests run)
@@ -253,30 +254,17 @@ variables:
     # Force full pipeline if requested
     - if: $FORCE_FULL_PIPELINE == "true"
       when: on_success
-    # Always run on protected branches
+    # Always run on protected branches (detect_changes doesn't run there)
     - if: $CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH == "master"
       when: on_success
     # Always run on tags
     - if: $CI_COMMIT_TAG
       when: on_success
-    # Run if any non-doc files changed (includes TESTS_ONLY scenario)
-    - changes:
-        paths:
-          - libraries/**/*
-          - programs/**/*
-          - tests/**/*
-          - CMakeLists.txt
-          - cmake/**/*
-          - Dockerfile
-          - docker/**/*
-          - contrib/**/*
-          - scripts/**/*
-          - .gitlab-ci.yaml
-          - setup.py
-          - version.py
-      when: on_success
-    # Skip otherwise (docs-only changes)
-    - when: never
+    # Skip if only documentation changed (detected by detect_changes job)
+    - if: $DOCS_ONLY == "true"
+      when: never
+    # Default: run the job (safe fallback)
+    - when: on_success
 
 # ============================================================================
 # Mainnet 5M Jobs - Manual on Feature Branches
