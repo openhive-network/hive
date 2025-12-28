@@ -24,6 +24,19 @@ def generate_random_hex_string(n: int) -> str:
     return "".join(random.choices("0123456789abcdef", k=n))
 
 
+def wait_for_peer_connection(node: tt.InitNode | tt.ApiNode, timeout: int = 60) -> None:
+    """Wait until the node has at least one connected peer."""
+
+    def has_peers() -> bool:
+        try:
+            peers = node.api.network_node.get_connected_peers()
+            return len(peers) > 0
+        except Exception:
+            return False
+
+    tt.Time.wait_for(has_peers, timeout=timeout)
+
+
 @pytest.mark.parametrize("checkpoint_num", [0, 1, 10, 100, 430])
 def test_set_random_number_of_checkpoints_from_replay(
     block_log_empty_430_split: tt.BlockLog, checkpoint_num: int
@@ -184,26 +197,37 @@ def test_api_node_rejects_mismatched_checkpoint(block_log_empty_430_split: tt.Bl
 
 def test_checkpoint_missmatch_to_block_from_sync(block_log_empty_430_split: tt.BlockLog) -> None:
     node = tt.InitNode()
-    node.run(replay_from=block_log_empty_430_split, exit_before_synchronization=True)
-
-    api_node = tt.ApiNode()
-
     node.config.p2p_endpoint = generate_free_addresses(1)[0]
-    api_node.config.p2p_seed_node.append(node.config.p2p_endpoint)
+    node.run(replay_from=block_log_empty_430_split, exit_before_synchronization=True)
 
     checkpoint_block: Final[int] = 50
     hex_value = f"{checkpoint_block:08x}"
     id_unmatched_to_block = hex_value + generate_random_hex_string(
         len(block_log_empty_430_split.get_block_ids(1)) - len(hex_value)
     )
+
+    api_node = tt.ApiNode()
     api_node.config.checkpoint.append((checkpoint_block, id_unmatched_to_block))
 
-    simultaneous_node_startup([node, api_node], timeout=120, wait_for_live=False)
-
+    # Start InitNode first to ensure P2P is listening
+    node.run(timeout=120, wait_for_live=False)
     assert node.is_running()
+
+    # Start ApiNode
+    api_node.run(timeout=120, wait_for_live=False)
     assert api_node.is_running()
 
+    # Explicitly add InitNode as peer using the network_node API
+    api_node.api.network_node.add_node(endpoint=node.p2p_endpoint.as_string())
+
+    # Wait for P2P connection to be established
+    wait_for_peer_connection(api_node)
+
     node.wait_for_block_with_number(block_log_empty_430_split.get_head_block_number() + 10)
+
+    # Close nodes to flush logs before checking stderr
+    api_node.close()
+    node.close()
 
     verify_error_in_stderr(
         api_node,
