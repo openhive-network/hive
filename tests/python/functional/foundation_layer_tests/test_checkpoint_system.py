@@ -212,14 +212,21 @@ def test_checkpoint_missmatch_to_block_from_sync(block_log_empty_430_split: tt.B
     )
     api_node.config.checkpoint.append((checkpoint_block, id_unmatched_to_block))
 
-    # Use simultaneous startup like the passing test
-    simultaneous_node_startup([node, api_node], timeout=120, wait_for_live=True)
-
+    # Start InitNode first - it needs to be live to produce blocks
+    node.run(wait_for_live=True, timeout=120)
     assert node.is_running()
+
+    # Start ApiNode without wait_for_live since it will get stuck at checkpoint_block - 1
+    # (the invalid checkpoint at block 50 will prevent it from syncing past block 49)
+    api_node.run(wait_for_live=False, timeout=120)
     assert api_node.is_running()
 
-    # Wait for InitNode to produce enough blocks
-    node.wait_for_block_with_number(block_log_empty_430_split.get_head_block_number() + 10)
+    # Wait for ApiNode to sync up to the block before the checkpoint
+    # It should get stuck here because the checkpoint won't match
+    tt.Time.wait_for(lambda: api_node.get_last_block_number() >= checkpoint_block - 1, timeout=60)
+
+    # Wait for InitNode to produce enough blocks to ensure ApiNode had time to try syncing
+    node.wait_for_block_with_number(block_log_empty_430_split.get_head_block_number() + 10, timeout=120)
 
     # ApiNode should be stuck at checkpoint_block - 1
     assert api_node.get_last_block_number() == checkpoint_block - 1, "Invalid checkpoint was crossed successfully."
