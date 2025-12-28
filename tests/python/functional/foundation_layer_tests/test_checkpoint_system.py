@@ -197,33 +197,32 @@ def test_api_node_rejects_mismatched_checkpoint(block_log_empty_430_split: tt.Bl
 
 def test_checkpoint_missmatch_to_block_from_sync(block_log_empty_430_split: tt.BlockLog) -> None:
     node = tt.InitNode()
-    node.config.p2p_endpoint = generate_free_addresses(1)[0]
     node.run(replay_from=block_log_empty_430_split, exit_before_synchronization=True)
+
+    api_node = tt.ApiNode()
+
+    # Set P2P endpoint and configure seed node before starting
+    node.config.p2p_endpoint = generate_free_addresses(1)[0]
+    api_node.config.p2p_seed_node.append(node.config.p2p_endpoint)
 
     checkpoint_block: Final[int] = 50
     hex_value = f"{checkpoint_block:08x}"
     id_unmatched_to_block = hex_value + generate_random_hex_string(
         len(block_log_empty_430_split.get_block_ids(1)) - len(hex_value)
     )
-
-    api_node = tt.ApiNode()
     api_node.config.checkpoint.append((checkpoint_block, id_unmatched_to_block))
 
-    # Start InitNode first to ensure P2P is listening
-    node.run(timeout=120, wait_for_live=False)
-    assert node.is_running()
+    # Use simultaneous startup like the passing test
+    simultaneous_node_startup([node, api_node], timeout=120, wait_for_live=True)
 
-    # Start ApiNode
-    api_node.run(timeout=120, wait_for_live=False)
+    assert node.is_running()
     assert api_node.is_running()
 
-    # Explicitly add InitNode as peer using the network_node API
-    api_node.api.network_node.add_node(endpoint=node.p2p_endpoint.as_string())
-
-    # Wait for P2P connection to be established
-    wait_for_peer_connection(api_node)
-
+    # Wait for InitNode to produce enough blocks
     node.wait_for_block_with_number(block_log_empty_430_split.get_head_block_number() + 10)
+
+    # ApiNode should be stuck at checkpoint_block - 1
+    assert api_node.get_last_block_number() == checkpoint_block - 1, "Invalid checkpoint was crossed successfully."
 
     # Close nodes to flush logs before checking stderr
     api_node.close()
