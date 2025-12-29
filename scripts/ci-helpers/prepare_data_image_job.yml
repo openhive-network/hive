@@ -25,6 +25,7 @@ include:
     FF_NETWORK_PER_BUILD: "true"
 
   before_script:
+    - !reference [.docker_image_builder_job_template, before_script]
     - git config --global --add safe.directory '*'
 
 .docker_image_cleanup_job:

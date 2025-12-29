@@ -288,6 +288,10 @@ def test_example():
 
 ## CI/CD Pipeline
 
+**CI images and templates** come from `hive/common-ci-configuration`. Key version refs:
+- `CI_COMMON_JOB_VERSION` in `scripts/ci-helpers/prepare_data_image_job.yml` - docker-builder/docker-dind tags
+- `CI_BASE_IMAGE_TAG` in `scripts/ci-helpers/ci_image_tag_vars.yml` - Python/build environment image
+
 **GitLab CI stages** (`.gitlab-ci.yaml`):
 1. `static_code_analysis` - Code quality checks
 2. `build` - Build hived docker images (mainnet, testnet, mirrornet)
@@ -356,7 +360,7 @@ The CI automatically optimizes pipeline execution based on what files changed. T
 
 **Before committing Python:**
 ```bash
-cd tests/python/hive-local-tools/test-tools
+cd tests/python/hive-local-tools
 poetry run black .
 ```
 
@@ -373,6 +377,18 @@ poetry run black .
 - Disk: ~10GB for build artifacts
 
 ## Important Notes
+
+### Submodules
+
+This repo contains several submodules that require coordination:
+
+| Submodule | Path | Repo |
+|-----------|------|------|
+| npm-common-config | `programs/beekeeper/beekeeper_wasm/npm-common-config` | common-ci-configuration |
+| test-tools | `tests/python/hive-local-tools/test-tools` | test-tools |
+| tests_api | `tests/python/hive-local-tools/tests_api` | tests-api |
+
+When updating CI configuration, ensure `npm-common-config` submodule matches the ref in `prepare_data_image_job.yml`.
 
 ### Test-Tools Dependency
 
