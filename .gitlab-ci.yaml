@@ -1620,6 +1620,8 @@ generate_python_api_clients:
     - job: generate_hived_flattened_openapi_definition
       artifacts: true
   extends: .project_develop_configuration_template
+  # Override image to Python 3.12 - api_client_generator doesn't support Python 3.14 yet
+  image: registry.gitlab.syncad.com/hive/common-ci-configuration/python:3.12.9-1
   variables:
     API_GENERATION_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation"
     PYPROJECT_DIR: "${API_GENERATION_DIR}/api_generation"
