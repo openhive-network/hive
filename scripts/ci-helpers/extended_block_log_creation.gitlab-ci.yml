@@ -4,7 +4,7 @@ include:
 
 .extended_block_log_creation:
   extends: .docker_image_builder_job
-  image: "registry.gitlab.syncad.com/hive/hive/ci-base-image$TEST_IMAGE_TAG"
+  image: "$CI_BASE_IMAGE"
   timeout: 1 hour
   variables:
     REGISTRY: "${CI_REGISTRY_IMAGE}"
