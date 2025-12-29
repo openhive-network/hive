@@ -1720,6 +1720,8 @@ build_api_wheel:
   extends: .build_wheel_template
   <<: *api_wheel_matrix
   stage: build
+  # Use same image as generate_python_api_clients to avoid permission issues
+  image: registry.gitlab.syncad.com/hive/common-ci-configuration/python:3.12.9-1
   variables:
     PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/${API_NAME}"
     DIST_DIR: "${PYPROJECT_DIR}/dist"
