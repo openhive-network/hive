@@ -67,7 +67,7 @@ include:
 
 generate_mirrornet_config_ini:
   extends: .mirrornet-job_base
-  image: "$CI_REGISTRY_IMAGE/ci-base-image$TEST_IMAGE_TAG"
+  image: "$CI_BASE_IMAGE"
   variables:
     OUTPUT_FILE_DIR: "hive-home"
   when: manual
