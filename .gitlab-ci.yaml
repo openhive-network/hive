@@ -581,16 +581,31 @@ chain_test:
     when: always
     expire_in: 1 week
 
-plugin_test:
+# Split plugin_test into two parallel jobs:
+# - witness_tests uses real-time block production (slow, ~15 min)
+# - other suites use debug_generate_blocks (fast, ~5 min)
+
+plugin_test_witness:
   extends: .unit_tests_base
   script:
-    # note: consider using --result_code=no to force exit code 0 even when tests fail because they currently fail and I want a nice green checkmark
-    - timeout 25m ./hived-testnet-binaries/plugin_test --log_format=JUNIT --log_sink=plugin_test_results.xml --log_level=error > plugin_test.log 2>&1
+    - timeout 20m ./hived-testnet-binaries/plugin_test --run_test=witness_tests --log_format=JUNIT --log_sink=plugin_test_witness_results.xml --log_level=error > plugin_test_witness.log 2>&1
   artifacts:
     reports:
-      junit: plugin_test_results.xml
+      junit: plugin_test_witness_results.xml
     paths:
-      - plugin_test.log
+      - plugin_test_witness.log
+    when: always
+    expire_in: 1 week
+
+plugin_test_api:
+  extends: .unit_tests_base
+  script:
+    - timeout 10m ./hived-testnet-binaries/plugin_test --run_test=!witness_tests --log_format=JUNIT --log_sink=plugin_test_api_results.xml --log_level=error > plugin_test_api.log 2>&1
+  artifacts:
+    reports:
+      junit: plugin_test_api_results.xml
+    paths:
+      - plugin_test_api.log
     when: always
     expire_in: 1 week
 
