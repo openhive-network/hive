@@ -561,11 +561,19 @@ void p2p_plugin::plugin_pre_shutdown() {
   }
 
   ilog("P2P Plugin: terminating p2p tasks");
-  my->node->close();
-  ilog("Waiting for p2p_thread quit");
-  my->p2p_thread.quit();
-  ilog("p2p_thread quit done");
-  my->node.reset();
+  if( my->node )
+  {
+    my->node->close();
+    ilog("Waiting for p2p_thread quit");
+    my->p2p_thread.quit();
+    ilog("p2p_thread quit done");
+    my->node.reset();
+  }
+  else
+  {
+    ilog("P2P node was not fully initialized, skipping close");
+    my->p2p_thread.quit();
+  }
 }
 
 void p2p_plugin::plugin_shutdown()
