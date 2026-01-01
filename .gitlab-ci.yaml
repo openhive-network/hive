@@ -143,7 +143,7 @@ prepare_hived_image:
     HIVE_NETWORK_TYPE: mainnet
   tags:
     - public-runner-docker
-    - build-mainnet
+    - bigjob
 
 prepare_hived_data:
   extends:
@@ -207,7 +207,7 @@ testnet_node_build:
       - "$BINARY_CACHE_PATH"
   tags:
     - public-runner-docker
-    - build-testnet
+    - bigjob
 
 beekeeper_tsc_build:
   extends: .npm_build_template
@@ -349,7 +349,7 @@ mirrornet_node_build:
 
   tags:
     - public-runner-docker
-    - build-mirrornet
+    - bigjob
 
 extended_block_log_creation:
   extends: .extended_block_log_creation
@@ -855,6 +855,7 @@ cli_wallet_extended_tests:
     - !reference [.run-pytest, script]
   tags:
     - public-runner-docker
+    - bigjob
   artifacts:
     expire_in: 2 days
 
@@ -1002,6 +1003,7 @@ message_format_testnet_tests:
                wallet_bridge_api_tests ]
   tags:
     - public-runner-docker
+    - bigjob
 
 datagen_api_tests:
   stage: test
@@ -1168,6 +1170,7 @@ python_pattern_testnet_tests:
                wallet_bridge_api_tests ]
   tags:
     - public-runner-docker
+    - bigjob
 
 message_format_mainnet_5m_tests:
   extends:
@@ -1202,6 +1205,7 @@ message_format_mainnet_5m_tests:
     expire_in: 1 week
   tags:
     - data-cache-storage
+    - bigjob
 
 message_format_live_mainnet_tests:
   extends: .message_format_tests
@@ -1388,6 +1392,7 @@ operation_tests:
                      witness_ops_tests ]
   tags:
     - public-runner-docker
+    - bigjob
 
 comment_cashout_tests:
   stage: test
@@ -1818,6 +1823,7 @@ generate_testing_block_logs:
       - $TESTING_BLOCK_LOGS_DIR/checksums/
   tags:
     - public-runner-docker
+    - bigjob
 
 build_combined_testing_block_logs_image:
   stage: build
