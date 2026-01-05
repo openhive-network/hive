@@ -85,6 +85,7 @@ class PowerDown(Operation):
 
     def cancel(self) -> None:
         self._wallet.api.withdraw_vesting(self._name, tt.Asset.Vest(0))
+        self._node.wait_for_irreversible_block()
 
     def update(self, vesting_shares: tt.Asset.VestT):
         self.__init__(self._node, self._wallet, self._name, vesting_shares, update=True)
