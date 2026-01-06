@@ -43,29 +43,53 @@ ClangBuildAnalyzer has been installed to `/tmp/ClangBuildAnalyzer/build/ClangBui
    - **After:** `virtual ~rate_limiting_group_impl();`
    - **Reason:** Class inherits from base with virtual functions; needs virtual destructor
 
-### Remaining Issues
+### Fixed - Chainbase Inheritance Issue
 
-#### Chainbase Private Base Class Casting (Clang-specific)
+**Location:** `chainbase/pool_allocator.hpp:18`
 
-**Location:** `chainbase/chainbase.hpp:402` when compiling `account_history_rocksdb_plugin.cpp`
+**Problem:**
+- `pool_allocator_t` used **private inheritance**: `class pool_allocator_t : private std::conditional_t<...>`
+- `allocator_helper_t::get_generic_allocator()` needs to cast to base allocator type
+- Clang's strict access control rejected cast to private base (GCC allowed it)
 
-**Error:**
-```
-cannot cast 'const allocator_type' to its private base class 'const allocator<...>'
-```
+**Solution:** Changed to **public inheritance**
+- **Before:** `class pool_allocator_t : private std::conditional_t<...>`
+- **After:** `class pool_allocator_t : public std::conditional_t<...>`
 
-**Root Cause:**
-- `pool_allocator_t` uses private inheritance: `class pool_allocator_t : private std::conditional_t<...>`
-- Clang's stricter access control prevents casting to private base class
-- GCC allows this cast (less strict)
+**Result:** Full Clang build now succeeds! ✓
 
-**Status:** Not fixed (would require significant chainbase refactoring)
+## Compilation Time Analysis Results
 
-**Workaround:** Use GCC for full builds; Clang can be used for analyzing most of the codebase
+### account_history_rocksdb_plugin.cpp Analysis
 
-## Analysis Without Full Clang Build
+**Total compilation time:** 36.8 seconds
+- **Frontend (parsing):** 7.96 seconds (22%)
+- **Backend (codegen):** 28.82 seconds (78%)
 
-Since the chainbase issue prevents a full Clang build, you can still analyze compilation bottlenecks using GCC preprocessing:
+The backend dominates! Code generation and optimization take 3.6x longer than parsing.
+
+**Top Time Consumers:**
+
+1. **Template Instantiations (18.1 seconds total):**
+   - `std::shared_ptr` family: 27.3 seconds across 6000+ instantiations
+   - `std::make_shared`: 8.4 seconds (1439 instantiations)
+   - `std::unique_ptr`: 2.4 seconds (328 instantiations)
+   - `fc::static_variant<>::visit`: 1.1 seconds (expensive operation serialization)
+   - `boost::asio::async_initiate`: 1.1 seconds
+
+2. **Expensive Headers:**
+   - `boost/lexical_cast.hpp`: 35.9 seconds (included 82 times!)
+   - `fc/time.hpp`: 33.4 seconds (79 includes)
+   - `fc/variant.hpp`: 28.7 seconds (79 includes)
+   - `fc/log/logger.hpp`: 25.2 seconds (77 includes)
+   - `fc/exception/exception.hpp`: 24.7 seconds (72 includes)
+
+3. **Include Chain Analysis:**
+   Most expensive chain: `exception.hpp → logger.hpp → time.hpp → reflect.hpp → lexical_cast.hpp`
+
+## Alternative Analysis Methods (if Clang unavailable)
+
+You can still analyze compilation bottlenecks using GCC preprocessing:
 
 ### Preprocessed Line Count Analysis
 
