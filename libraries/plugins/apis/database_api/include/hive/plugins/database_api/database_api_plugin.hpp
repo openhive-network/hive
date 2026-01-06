@@ -2,6 +2,7 @@
 #include <hive/chain/hive_fwd.hpp>
 #include <hive/plugins/chain/chain_plugin.hpp>
 #include <hive/plugins/json_rpc/json_rpc_plugin.hpp>
+#include <hive/plugins/database_api/database_api.hpp>
 
 #include <appbase/application.hpp>
 
@@ -14,8 +15,8 @@ using namespace appbase;
 class database_api_plugin : public plugin< database_api_plugin >
 {
   public:
-    database_api_plugin();
-    virtual ~database_api_plugin();
+    database_api_plugin() {}
+    virtual ~database_api_plugin() {}
 
     APPBASE_PLUGIN_REQUIRES(
       (hive::plugins::json_rpc::json_rpc_plugin)
@@ -26,10 +27,15 @@ class database_api_plugin : public plugin< database_api_plugin >
 
     virtual void set_program_options(
       options_description& cli,
-      options_description& cfg ) override;
-    virtual void plugin_initialize( const variables_map& options ) override;
-    virtual void plugin_startup() override;
-    virtual void plugin_shutdown() override;
+      options_description& cfg ) override {}
+
+    virtual void plugin_initialize( const variables_map& options ) override
+    {
+      api = std::make_shared< database_api >( get_app() );
+    }
+
+    virtual void plugin_startup() override {}
+    virtual void plugin_shutdown() override {}
 
     std::shared_ptr< class database_api > api;
 };
