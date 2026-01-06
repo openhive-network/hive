@@ -514,6 +514,9 @@ api_smt_contribution_object::api_smt_contribution_object( const smt_contribution
 {}
 #endif
 
+// Helper function for proposal status - defined in database_api_impl.hpp
+proposal_status get_proposal_status( const hive::chain::proposal_object& po, const fc::time_point_sec current_time );
+
 // api_proposal_object constructor
 api_proposal_object::api_proposal_object(const proposal_object& po, const time_point_sec& current_time) :
   id(po.get_id()),
