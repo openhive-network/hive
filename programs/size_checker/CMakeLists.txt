@@ -6,6 +6,10 @@ endif()
 target_link_libraries( size_checker
                        PRIVATE hive_chain hive_protocol fc ${CMAKE_DL_LIBS} ${PLATFORM_SPECIFIC_LIBS} )
 
+set_target_properties( size_checker PROPERTIES
+   EXCLUDE_FROM_ALL TRUE
+)
+
 install( TARGETS
    size_checker
 
