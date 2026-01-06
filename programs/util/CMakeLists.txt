@@ -202,6 +202,11 @@ install( TARGETS
 add_executable( shared_memory_file_util shared_memory_file_util.cpp )
 target_link_libraries( shared_memory_file_util
                        PRIVATE hive_chain hive_plugins fc ${CMAKE_DL_LIBS} ${PLATFORM_SPECIFIC_LIBS} )
+
+set_target_properties( shared_memory_file_util test_sqrt decoded_types_data_storage_tester block_log_test explain_op sign_digest test_shared_mem inflation_model PROPERTIES
+   EXCLUDE_FROM_ALL TRUE
+)
+
 install( TARGETS
    shared_memory_file_util
 
