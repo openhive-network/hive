@@ -1987,7 +1987,9 @@ full_mainnet_replay_and_snapshot_manual:
     - job: prepare_hived_image
       artifacts: true
   timeout: 24h
-  when: manual
+  rules:
+    - when: manual
+      allow_failure: true
   variables:
     BLOCK_LOG_BASE_URL: "http://termit.pl.syncad.com:3000/block_log_sources/mainnet_full"
     LAST_PART: "5"  # Number of 1M block parts to process (empty = auto-detect, override when triggering manually)
