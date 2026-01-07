@@ -70,8 +70,18 @@ fi
 
 LAST_BLOCK_NUMBER=$((LAST_PART * 1000000))
 
-# Get list of all parts for copying
-BLOCK_LOG_PARTS=($(ls -1 "$BLOCK_LOG_SOURCE_DIR"/block_log_part.???? 2>/dev/null))
+# Get list of parts to use (respecting LAST_PART limit)
+# If LAST_PART equals detected max, use all; otherwise filter to only needed parts
+BLOCK_LOG_PARTS=()
+for i in $(seq 1 $LAST_PART); do
+    part_file="$BLOCK_LOG_SOURCE_DIR/block_log_part.$(printf "%04d" $i)"
+    if [ -f "$part_file" ]; then
+        BLOCK_LOG_PARTS+=("$part_file")
+    else
+        echo "ERROR: Missing expected part: $part_file"
+        exit 1
+    fi
+done
 
 # Configuration
 BLOCK_LOG_SPLIT=2                    # Keep 2 completed parts
@@ -109,7 +119,13 @@ mkdir -vp "${DATA_DIR_REPLAY_INSTANCE}/blockchain"
 
 # Copy block_log parts to replay instance
 echo "Copying block_log parts to replay instance..."
-cp -v "${BLOCK_LOG_PARTS[@]}" "${BLOCK_LOG_PARTS[@]/%/.artifacts}" "$DATA_DIR_REPLAY_INSTANCE/blockchain/"
+for part_file in "${BLOCK_LOG_PARTS[@]}"; do
+    cp -v "$part_file" "$DATA_DIR_REPLAY_INSTANCE/blockchain/"
+    # Copy artifacts if they exist
+    if [ -f "${part_file}.artifacts" ]; then
+        cp -v "${part_file}.artifacts" "$DATA_DIR_REPLAY_INSTANCE/blockchain/"
+    fi
+done
 
 # STEP 1: Replay full mainnet data
 echo "=== STEP 1: Replay mainnet to block $LAST_BLOCK_NUMBER (part $(printf "%04d" $LAST_PART)) ==="
@@ -165,7 +181,13 @@ if [ ${#LAST_FOUR_PARTS[@]} -lt 4 ]; then
 fi
 
 echo "Copying parts: ${LAST_FOUR_PARTS[@]}"
-cp -v "${LAST_FOUR_PARTS[@]}" "${LAST_FOUR_PARTS[@]/%/.artifacts}" "$DATA_DIR_SNAPSHOT_INSTANCE/blockchain/"
+for part_file in "${LAST_FOUR_PARTS[@]}"; do
+    cp -v "$part_file" "$DATA_DIR_SNAPSHOT_INSTANCE/blockchain/"
+    # Copy artifacts if they exist
+    if [ -f "${part_file}.artifacts" ]; then
+        cp -v "${part_file}.artifacts" "$DATA_DIR_SNAPSHOT_INSTANCE/blockchain/"
+    fi
+done
 
 # Display which parts will be kept/pruned after sync
 PART_TO_PRUNE=$(( CURRENT_PART - 3 ))
