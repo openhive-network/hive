@@ -1332,7 +1332,7 @@ void database::adjust_proxied_witness_votes( const account_object& a, share_type
 void database::nullify_proxied_witness_votes( const account_object& a )
 {
   std::array<share_type, HIVE_MAX_PROXY_RECURSION_DEPTH + 1> delta;
-  delta[ 0 ] = -a.get_direct_governance_vote_power();
+  delta[ 0 ] = -a.get_direct_governance_vote_power( get< assets_object, by_account_id >( a.get_id() ), get< delayed_votes_object, by_account_id >( a.get_id() ) );
   for( int i = 0; i < HIVE_MAX_PROXY_RECURSION_DEPTH; ++i )
     delta[ i + 1 ] = -a.get_proxied_vsf_votes()[ i ];
   adjust_proxied_witness_votes( a, delta );
@@ -2522,9 +2522,9 @@ share_type database::pay_curators( const comment_object& comment, const comment_
               pre_push_virtual_operation( vop );
             } );
 
-            modify( voter, [&]( account_object& a )
+            modify( get< assets_object, by_account_id >( voter.get_id() ), [&]( assets_object& assets )
             {
-              a.set_curation_rewards( a.get_curation_rewards() + HIVE_asset( claim ) );
+              assets.set_curation_rewards( assets.get_curation_rewards() + HIVE_asset( claim ) );
             });
           post_push_virtual_operation( vop );
         }
@@ -2660,9 +2660,9 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
         pre_push_virtual_operation( vop );
         post_push_virtual_operation( vop );
 
-        modify( author, [&]( account_object& a )
+        modify( get< assets_object, by_account_id >( author.get_id() ), [&]( assets_object& assets )
         {
-          a.set_posting_rewards( a.get_posting_rewards() + HIVE_asset( author_tokens ) );
+          assets.set_posting_rewards( assets.get_posting_rewards() + HIVE_asset( author_tokens ) );
         });
       }
 
@@ -5753,37 +5753,39 @@ void database::adjust_balance( const account_object& a, const asset& delta )
 
 void database::adjust_savings_balance( const account_object& a, const asset& delta )
 {
+  auto _assets = get< assets_object, by_account_id >( a.get_id() );
+
   bool check_balance = has_hardfork( HIVE_HARDFORK_0_20__1811 );
 
-  modify( a, [&]( account_object& acnt )
+  modify( _assets, [&]( assets_object& assets )
   {
     if( delta.symbol.asset_num == HIVE_ASSET_NUM_HIVE )
     {
-      acnt.set_savings( acnt.get_savings() + delta );
+      assets.set_savings( assets.get_savings() + delta );
       if( check_balance )
       {
-        FC_ASSERT( acnt.get_savings().amount.value >= 0, "Insufficient savings HIVE funds" );
+        FC_ASSERT( assets.get_savings().amount.value >= 0, "Insufficient savings HIVE funds" );
       }
     }
     else
     {
       FC_ASSERT( delta.symbol.asset_num == HIVE_ASSET_NUM_HBD && "invalid symbol" );
-      if( a.get_savings_hbd_seconds_last_update() != head_block_time() )
+      if( assets.get_savings_hbd_seconds_last_update() != head_block_time() )
       {
         const auto _head_block_time = head_block_time();
-        const bool update_savings_hdb_balance = (_head_block_time - a.get_savings_hbd_last_interest_payment()).to_seconds() > HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC;
-        auto _savings_hbd_seconds = acnt.get_savings_hbd_seconds();
-        const auto interest = hive::protocol::hbd_interest::evaluate_hbd_interest(&_savings_hbd_seconds, _head_block_time, a.get_hbd_savings(), a.get_savings_hbd_seconds_last_update(),
+        const bool update_savings_hdb_balance = (_head_block_time - assets.get_savings_hbd_last_interest_payment()).to_seconds() > HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC;
+        auto _savings_hbd_seconds = assets.get_savings_hbd_seconds();
+        const auto interest = hive::protocol::hbd_interest::evaluate_hbd_interest(&_savings_hbd_seconds, _head_block_time, assets.get_hbd_savings(), assets.get_savings_hbd_seconds_last_update(),
           get_dynamic_global_properties().get_hbd_interest_rate(), update_savings_hdb_balance);
-        acnt.set_savings_hbd_seconds( _savings_hbd_seconds );
-        acnt.set_savings_hbd_seconds_last_update( _head_block_time );
+        assets.set_savings_hbd_seconds( _savings_hbd_seconds );
+        assets.set_savings_hbd_seconds_last_update( _head_block_time );
 
-        if( acnt.get_savings_hbd_seconds() > 0 && update_savings_hdb_balance )
+        if( assets.get_savings_hbd_seconds() > 0 && update_savings_hdb_balance )
         {
           asset interest_paid(fc::uint128_to_uint64(interest), HBD_SYMBOL);
-          acnt.set_hbd_savings( acnt.get_hbd_savings() + interest_paid );
-          acnt.set_savings_hbd_seconds( 0 );
-          acnt.set_savings_hbd_last_interest_payment( _head_block_time );
+          assets.set_hbd_savings( assets.get_hbd_savings() + interest_paid );
+          assets.set_savings_hbd_seconds( 0 );
+          assets.set_savings_hbd_last_interest_payment( _head_block_time );
 
           if(interest > 0)
             push_virtual_operation( interest_operation( a.get_name(), interest_paid, false ) );
@@ -5795,10 +5797,10 @@ void database::adjust_savings_balance( const account_object& a, const asset& del
           } );
         }
       }
-      acnt.set_hbd_savings( acnt.get_hbd_savings() + delta );
+      assets.set_hbd_savings( assets.get_hbd_savings() + delta );
       if( check_balance )
       {
-        FC_ASSERT( acnt.get_hbd_savings().amount.value >= 0, "Insufficient savings HBD funds" );
+        FC_ASSERT( assets.get_hbd_savings().amount.value >= 0, "Insufficient savings HBD funds" );
       }
     }
   } );
@@ -6627,10 +6629,10 @@ void database::validate_invariants()const
       total_vesting += itr->get_vest_rewards();
       pending_vesting_hive += itr->get_vest_rewards_as_hive();
       total_vsf_votes += ( !itr->has_proxy() ?
-                      itr->get_governance_vote_power() :
+                      itr->get_governance_vote_power( _db.get< assets_object, by_account_id >( itr->get_id() ), _db.get< delayed_votes_object, by_account_id >( itr->get_id() ) ) :
                       ( HIVE_MAX_PROXY_RECURSION_DEPTH > 0 ?
                           itr->get_proxied_vsf_votes()[HIVE_MAX_PROXY_RECURSION_DEPTH - 1] :
-                          itr->get_direct_governance_vote_power() ) );
+                          itr->get_direct_governance_vote_power( get< assets_object, by_account_id >( a.get_id() ), get< delayed_votes_object, by_account_id >( a.get_id() ) ) ) );
       total_delayed_votes += itr->get_sum_delayed_votes();
       ushare_type sum_delayed_votes{ 0ul };
       for( auto& dv : itr->get_delayed_votes() )
@@ -6962,7 +6964,7 @@ void database::retally_witness_votes()
     auto wit_itr = vidx.lower_bound( boost::make_tuple( a.get_name(), account_name_type() ) );
     while( wit_itr != vidx.end() && wit_itr->account == a.get_name() )
     {
-      adjust_witness_vote( get< witness_object, by_name >(wit_itr->witness), a.get_governance_vote_power() );
+      adjust_witness_vote( get< witness_object, by_name >(wit_itr->witness), a.get_governance_vote_power( _db.get< assets_object, by_account_id >( a.get_id() ), _db.get< delayed_votes_object, by_account_id >( a.get_id() ) ) );
       ++wit_itr;
     }
   }

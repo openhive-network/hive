@@ -696,8 +696,11 @@ void account_update_evaluator::do_apply( const account_update_operation& o )
   {
     if( o.memo_key != public_key_type() )
         acc.set_memo_key( o.memo_key );
+  });
 
-    acc.set_last_account_update( _db.head_block_time() );
+  _db.modify( _db.get< time_object, by_account_id >( account.get_id() ), [&]( time_object& time_obj )
+  {
+    time_obj.set_last_account_update( _db.head_block_time() );
   });
 
   #ifdef COLLECT_ACCOUNT_METADATA
@@ -762,8 +765,11 @@ void account_update2_evaluator::do_apply( const account_update2_operation& o )
   {
     if( o.memo_key && *o.memo_key != public_key_type() )
         acc.set_memo_key( *o.memo_key );
+  });
 
-    acc.set_last_account_update( _db.head_block_time() );
+  _db.modify( _db.get< time_object, by_account_id >( account.get_id() ), [&]( time_object& time_obj )
+  {
+    time_obj.set_last_account_update( _db.head_block_time() );
   });
 
   #ifdef COLLECT_ACCOUNT_METADATA
@@ -940,6 +946,7 @@ void comment_evaluator::do_apply( const comment_operation& o )
     FC_ASSERT( o.title.size() + o.body.size() + o.json_metadata.size(), "Cannot update comment because nothing appears to be changing." );
 
   const auto& auth = _db.get_account( o.author ); /// prove it exists
+  const auto& _time_obj = _db.get< time_object, by_account_id >( auth.get_id() );
 
   auto _comment = _db.find_comment( auth.get_id(), o.permlink );
   auto _now = _db.head_block_time();
@@ -969,27 +976,27 @@ void comment_evaluator::do_apply( const comment_operation& o )
     if( _db.has_hardfork( HIVE_HARDFORK_0_20__2019 ) )
     {
       if( !parent )
-        FC_ASSERT( ( _now - auth.get_last_root_post() ) > HIVE_MIN_ROOT_COMMENT_INTERVAL && "Post HF20", "You may only post once every 5 minutes.", ("now",_now)("last_root_post", auth.get_last_root_post()) );
+        FC_ASSERT( ( _now - _time_obj.get_last_root_post() ) > HIVE_MIN_ROOT_COMMENT_INTERVAL && "Post HF20", "You may only post once every 5 minutes.", ("now",_now)("last_root_post", _time_obj.get_last_root_post()) );
       else
-        FC_ASSERT( ( _now - auth.get_last_post() ) >= HIVE_MIN_REPLY_INTERVAL_HF20, "You may only comment once every 3 seconds.", ("now",_now)("auth.last_post",auth.get_last_post()) );
+        FC_ASSERT( ( _now - _time_obj.get_last_post() ) >= HIVE_MIN_REPLY_INTERVAL_HF20, "You may only comment once every 3 seconds.", ("now",_now)("auth.last_post",_time_obj.get_last_post()) );
     }
     else if( _db.has_hardfork( HIVE_HARDFORK_0_12__176 ) )
     {
       if( !parent )
-        FC_ASSERT( ( _now - auth.get_last_root_post() ) > HIVE_MIN_ROOT_COMMENT_INTERVAL, "You may only post once every 5 minutes.", ("now",_now)("last_root_post", auth.get_last_root_post()) );
+        FC_ASSERT( ( _now - _time_obj.get_last_root_post() ) > HIVE_MIN_ROOT_COMMENT_INTERVAL, "You may only post once every 5 minutes.", ("now",_now)("last_root_post", _time_obj.get_last_root_post()) );
       else
-        FC_ASSERT( ( _now - auth.get_last_post() ) > HIVE_MIN_REPLY_INTERVAL && "Post HF12", "You may only comment once every 20 seconds.", ("now",_now)("auth.last_post",auth.get_last_post()) );
+        FC_ASSERT( ( _now - _time_obj.get_last_post() ) > HIVE_MIN_REPLY_INTERVAL && "Post HF12", "You may only comment once every 20 seconds.", ("now",_now)("auth.last_post",_time_obj.get_last_post()) );
     }
     else if( _db.has_hardfork( HIVE_HARDFORK_0_6__113 ) )
     {
       if( !parent )
-        FC_ASSERT( ( _now - auth.get_last_post() ) > HIVE_MIN_ROOT_COMMENT_INTERVAL, "You may only post once every 5 minutes.", ("now",_now)("auth.last_post",auth.get_last_post()) );
+        FC_ASSERT( ( _now - _time_obj.get_last_root_post() ) > HIVE_MIN_ROOT_COMMENT_INTERVAL, "You may only post once every 5 minutes.", ("now",_now)("auth.last_post",_time_obj.get_last_root_post()) );
       else
-        FC_ASSERT( ( _now - auth.get_last_post() ) > HIVE_MIN_REPLY_INTERVAL, "You may only comment once every 20 seconds.", ("now",_now)("auth.last_post",auth.get_last_post()) );
+        FC_ASSERT( ( _now - _time_obj.get_last_post() ) > HIVE_MIN_REPLY_INTERVAL, "You may only comment once every 20 seconds.", ("now",_now)("auth.last_post",_time_obj.get_last_post()) );
     }
     else
     {
-      FC_ASSERT( ( _now - auth.get_last_post() ) > fc::seconds(60), "You may only post once per minute.", ("now",_now)("auth.last_post",auth.get_last_post()) );
+      FC_ASSERT( ( _now - _time_obj.get_last_post() ) > fc::seconds(60), "You may only post once per minute.", ("now",_now)("auth.last_post",_time_obj.get_last_post()) );
     }
 
     uint16_t reward_weight = HIVE_100_PERCENT;
@@ -997,7 +1004,7 @@ void comment_evaluator::do_apply( const comment_operation& o )
 
     if( _db.has_hardfork( HIVE_HARDFORK_0_12__176 ) && !_db.has_hardfork( HIVE_HARDFORK_0_17__733 ) && !parent )
     {
-      uint64_t post_delta_time = std::min( _now.sec_since_epoch() - auth.get_last_root_post().sec_since_epoch(), HIVE_POST_AVERAGE_WINDOW );
+      uint64_t post_delta_time = std::min( _now.sec_since_epoch() - _time_obj.get_last_root_post().sec_since_epoch(), HIVE_POST_AVERAGE_WINDOW );
       uint32_t old_weight = uint32_t( ( post_bandwidth * ( HIVE_POST_AVERAGE_WINDOW - post_delta_time ) ) / HIVE_POST_AVERAGE_WINDOW );
       post_bandwidth = ( old_weight + HIVE_100_PERCENT );
       reward_weight = uint16_t( std::min( ( HIVE_POST_WEIGHT_CONSTANT * HIVE_100_PERCENT ) / ( post_bandwidth * post_bandwidth ), uint64_t( HIVE_100_PERCENT ) ) );
@@ -1007,12 +1014,19 @@ void comment_evaluator::do_apply( const comment_operation& o )
     {
       if( !parent )
       {
-        a.set_last_root_post( _now );
         a.set_post_bandwidth( uint32_t( post_bandwidth ) );
       }
-      a.set_last_post( _now );
-      a.set_last_post_edit( _now );
       a.set_post_count( a.get_post_count() + 1 );
+    });
+
+    _db.modify( _db.get< time_object, by_account_id >( auth.get_id() ), [&]( time_object& time_obj )
+    {
+      if( !parent )
+      {
+        time_obj.set_last_root_post( _now );
+      }
+      time_obj.set_last_post( _now );
+      time_obj.set_last_post_edit( _now );
     });
 
     if( _db.has_hardfork( HIVE_HARDFORK_0_1 ) )
@@ -1057,7 +1071,7 @@ void comment_evaluator::do_apply( const comment_operation& o )
   {
     if( _db.has_hardfork( HIVE_HARDFORK_0_21__3313 ) )
     {
-      FC_ASSERT( _now - auth.get_last_post_edit() >= HIVE_MIN_COMMENT_EDIT_INTERVAL, "Can only perform one comment edit per block." );
+      FC_ASSERT( _now - _time_obj.get_last_post_edit() >= HIVE_MIN_COMMENT_EDIT_INTERVAL, "Can only perform one comment edit per block." );
     }
 
     if( !_db.has_hardfork( HIVE_HARDFORK_0_17__772 ) )
@@ -1083,9 +1097,9 @@ void comment_evaluator::do_apply( const comment_operation& o )
       FC_ASSERT( _comment.get_parent_id() == parent.get_id(), "The parent of a comment cannot change." );
     }
 
-    _db.modify( auth, [&]( account_object& a )
+    _db.modify( _time_obj, [&]( time_object& time_obj )
     {
-      a.set_last_post_edit( _now );
+      time_obj.set_last_post_edit( _now );
     });
 
   } // end EDIT case
@@ -1524,7 +1538,7 @@ void account_witness_proxy_evaluator::do_apply( const account_witness_proxy_oper
 
     /// add all new votes
     std::array<share_type, HIVE_MAX_PROXY_RECURSION_DEPTH + 1> delta;
-    delta[0] = account.get_direct_governance_vote_power();
+    delta[0] = account.get_direct_governance_vote_power( _db.get< assets_object, by_account_id >( account.get_id() ), _db.get< delayed_votes_object, by_account_id >( account.get_id() ) );
     for( int i = 0; i < HIVE_MAX_PROXY_RECURSION_DEPTH; ++i )
       delta[i+1] = account.get_proxied_vsf_votes()[i];
     _db.adjust_proxied_witness_votes( account, delta );
@@ -1565,10 +1579,10 @@ void account_witness_vote_evaluator::do_apply( const account_witness_vote_operat
       });
 
       if( _db.has_hardfork( HIVE_HARDFORK_0_3 ) ) {
-        _db.adjust_witness_vote( witness, voter.get_governance_vote_power() );
+        _db.adjust_witness_vote( witness, voter.get_governance_vote_power( _db.get< assets_object, by_account_id >( voter.get_id() ), _db.get< delayed_votes_object, by_account_id >( voter.get_id() ) ) );
       }
       else {
-        _db.adjust_proxied_witness_votes( voter, voter.get_governance_vote_power() );
+        _db.adjust_proxied_witness_votes( voter, voter.get_governance_vote_power( _db.get< assets_object, by_account_id >( voter.get_id() ), _db.get< delayed_votes_object, by_account_id >( voter.get_id() ) ) );
       }
 
     } else {
@@ -1578,7 +1592,7 @@ void account_witness_vote_evaluator::do_apply( const account_witness_vote_operat
           v.account = voter.get_name();
       });
       _db.modify( witness, [&]( witness_object& w ) {
-          w.votes += voter.get_governance_vote_power();
+          w.votes += voter.get_governance_vote_power( _db.get< assets_object, by_account_id >( voter.get_id() ), _db.get< delayed_votes_object, by_account_id >( voter.get_id() ) );
       });
 
     }
@@ -1591,12 +1605,12 @@ void account_witness_vote_evaluator::do_apply( const account_witness_vote_operat
 
     if (  _db.has_hardfork( HIVE_HARDFORK_0_2 ) ) {
       if( _db.has_hardfork( HIVE_HARDFORK_0_3 ) )
-        _db.adjust_witness_vote( witness, -voter.get_governance_vote_power() );
+        _db.adjust_witness_vote( witness, -voter.get_governance_vote_power( _db.get< assets_object, by_account_id >( voter.get_id() ), _db.get< delayed_votes_object, by_account_id >( voter.get_id() ) ) );
       else
-        _db.adjust_proxied_witness_votes( voter, -voter.get_governance_vote_power() );
+        _db.adjust_proxied_witness_votes( voter, -voter.get_governance_vote_power( _db.get< assets_object, by_account_id >( voter.get_id() ), _db.get< delayed_votes_object, by_account_id >( voter.get_id() ) ) );
     } else  {
       _db.modify( witness, [&]( witness_object& w ) {
-        w.votes -= voter.get_governance_vote_power();
+        w.votes -= voter.get_governance_vote_power( _db.get< assets_object, by_account_id >( voter.get_id() ), _db.get< delayed_votes_object, by_account_id >( voter.get_id() ) );
       });
     }
     _db.modify( voter, [&]( account_object& a ) {
@@ -1660,7 +1674,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
   }
   FC_ASSERT( used_power <= current_power, "Account does not have enough power to vote." );
 
-  int64_t abs_rshares = fc::uint128_to_uint64((uint128_t( voter.get_effective_vesting_shares( voter_assets, voter_time, false ).value ) * used_power) / (HIVE_100_PERCENT));
+  int64_t abs_rshares = fc::uint128_to_uint64((uint128_t( voter.get_effective_vesting_shares( _db.get< assets_object, by_account_id >( voter.get_id() ), voter_time, false ).value ) * used_power) / (HIVE_100_PERCENT));
   if( !_db.has_hardfork( HIVE_HARDFORK_0_14__259 ) && abs_rshares == 0 ) abs_rshares = 1;
 
   if( _db.has_hardfork( HIVE_HARDFORK_0_14__259 ) )

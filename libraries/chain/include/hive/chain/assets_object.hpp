@@ -94,6 +94,18 @@ namespace hive { namespace chain {
       const HIVE_asset& get_posting_rewards() const { return posting_rewards; }
       void set_posting_rewards( const HIVE_asset& value ) { posting_rewards = value; }
 
+      // Savings HBD seconds
+      uint128_t get_savings_hbd_seconds() const { return savings_hbd_seconds; }
+      void set_savings_hbd_seconds( const uint128_t& value ) { savings_hbd_seconds = value; }
+
+      // Last time savings HBD seconds was updated
+      time_point_sec get_savings_hbd_seconds_last_update() const { return savings_hbd_seconds_last_update; }
+      void set_savings_hbd_seconds_last_update( const time_point_sec& value ) { savings_hbd_seconds_last_update = value; }
+
+      // Used to pay savings interest at most once per month
+      time_point_sec get_savings_hbd_last_interest_payment() const { return savings_hbd_last_interest_payment; }
+      void set_savings_hbd_last_interest_payment( const time_point_sec& value ) { savings_hbd_last_interest_payment = value; }
+
     private:
       account_id_type   account_id;               // Links to parent account_object
 
@@ -117,6 +129,10 @@ namespace hive { namespace chain {
 
       VEST_asset        withdrawn;                ///< VESTS already withdrawn in currently active power down
       VEST_asset        to_withdraw;              ///< VESTS yet to be withdrawn in currently active power down
+
+      uint128_t         savings_hbd_seconds = 0;  ///< savings HBD * how long it has been held
+      time_point_sec    savings_hbd_seconds_last_update;
+      time_point_sec    savings_hbd_last_interest_payment;
 
     CHAINBASE_UNPACK_CONSTRUCTOR(assets_object);
   };
@@ -144,6 +160,8 @@ FC_REFLECT( hive::chain::assets_object,
           (received_vesting_shares)(vesting_withdraw_rate)
           (curation_rewards)(posting_rewards)
           (withdrawn)(to_withdraw)
+          (savings_hbd_seconds)(savings_hbd_seconds_last_update)
+          (savings_hbd_last_interest_payment)
         )
 
 CHAINBASE_SET_INDEX_TYPE( hive::chain::assets_object, hive::chain::assets_index )

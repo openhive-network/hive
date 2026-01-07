@@ -31,10 +31,6 @@ namespace hive { namespace chain {
       uint128_t get_hbd_seconds() const { return hbd_seconds; }
       void set_hbd_seconds( const uint128_t& value ) { hbd_seconds = value; }
 
-      // Savings HBD seconds
-      uint128_t get_savings_hbd_seconds() const { return savings_hbd_seconds; }
-      void set_savings_hbd_seconds( const uint128_t& value ) { savings_hbd_seconds = value; }
-
       // Last time HBD seconds was updated
       time_point_sec get_hbd_seconds_last_update() const { return hbd_seconds_last_update; }
       void set_hbd_seconds_last_update( const time_point_sec& value ) { hbd_seconds_last_update = value; }
@@ -42,14 +38,6 @@ namespace hive { namespace chain {
       // Used to pay interest at most once per month
       time_point_sec get_hbd_last_interest_payment() const { return hbd_last_interest_payment; }
       void set_hbd_last_interest_payment( const time_point_sec& value ) { hbd_last_interest_payment = value; }
-
-      // Last time savings HBD seconds was updated
-      time_point_sec get_savings_hbd_seconds_last_update() const { return savings_hbd_seconds_last_update; }
-      void set_savings_hbd_seconds_last_update( const time_point_sec& value ) { savings_hbd_seconds_last_update = value; }
-
-      // Used to pay savings interest at most once per month
-      time_point_sec get_savings_hbd_last_interest_payment() const { return savings_hbd_last_interest_payment; }
-      void set_savings_hbd_last_interest_payment( const time_point_sec& value ) { savings_hbd_last_interest_payment = value; }
 
       // Only used by outdated consensus checks - up to HF17
       time_point_sec get_last_account_update() const { return last_account_update; }
@@ -75,12 +63,9 @@ namespace hive { namespace chain {
       account_id_type   account_id;               // Links to parent account_object
 
       uint128_t         hbd_seconds = 0;          ///< liquid HBD * how long it has been held
-      uint128_t         savings_hbd_seconds = 0;  ///< savings HBD * how long it has been held
 
       time_point_sec    hbd_seconds_last_update;
       time_point_sec    hbd_last_interest_payment;
-      time_point_sec    savings_hbd_seconds_last_update;
-      time_point_sec    savings_hbd_last_interest_payment;
 
       time_point_sec    last_account_update;      //(only used by outdated consensus checks - up to HF17)
       time_point_sec    last_post;                //(we could probably remove limit on posting replies)
@@ -116,9 +101,8 @@ namespace hive { namespace chain {
 
 FC_REFLECT( hive::chain::time_object,
           (id)(account_id)
-          (hbd_seconds)(savings_hbd_seconds)
+          (hbd_seconds)
           (hbd_seconds_last_update)(hbd_last_interest_payment)
-          (savings_hbd_seconds_last_update)(savings_hbd_last_interest_payment)
           (last_account_update)(last_post)(last_root_post)
           (last_post_edit)(last_vote_time)(next_vesting_withdrawal)
         )
