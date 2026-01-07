@@ -12,54 +12,32 @@ set -euo pipefail
 
 SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 
-# Fetch common-ci-configuration scripts if not already present
+# Fetch common-ci-configuration scripts
 CI_SCRIPTS_DIR="${CI_SCRIPTS_DIR:-/tmp/common-ci-scripts}"
 CI_SCRIPTS_REF="${CI_SCRIPTS_REF:-develop}"
 CI_SCRIPTS_URL="https://gitlab.syncad.com/hive/common-ci-configuration/-/raw/${CI_SCRIPTS_REF}/scripts/bash"
 
-fetch_ci_scripts() {
-    if [[ ! -f "$CI_SCRIPTS_DIR/find-last-source-commit.sh" ]]; then
-        echo "Fetching common-ci-configuration scripts..."
-        mkdir -p "$CI_SCRIPTS_DIR"
-        for script in find-last-source-commit.sh get-cached-image.sh docker-image-utils.sh; do
-            curl -sf -o "$CI_SCRIPTS_DIR/$script" "$CI_SCRIPTS_URL/$script" || {
-                echo "Warning: Failed to fetch $script from common-ci-configuration"
-                return 1
-            }
-            chmod +x "$CI_SCRIPTS_DIR/$script"
-        done
-    fi
-    return 0
-}
-
-# Try to use common-ci-configuration scripts, fall back to local if unavailable
-if fetch_ci_scripts; then
-    # shellcheck source=/dev/null
-    source "$CI_SCRIPTS_DIR/docker-image-utils.sh"
-    FIND_LAST_SOURCE_COMMIT="$CI_SCRIPTS_DIR/find-last-source-commit.sh"
-    GET_CACHED_IMAGE="$CI_SCRIPTS_DIR/get-cached-image.sh"
-else
-    echo "Using local scripts as fallback..."
-    # shellcheck source=./docker_image_utils.sh
-    source "$SCRIPTPATH/docker_image_utils.sh"
-    # Fall back to local retrieve_last_commit.sh if it exists
-    if [[ -x "$SCRIPTPATH/retrieve_last_commit.sh" ]]; then
-        FIND_LAST_SOURCE_COMMIT="$SCRIPTPATH/retrieve_last_commit.sh"
-    else
-        echo "Error: Cannot find commit lookup script"
-        exit 1
-    fi
-    GET_CACHED_IMAGE=""
+if [[ ! -f "$CI_SCRIPTS_DIR/find-last-source-commit.sh" ]]; then
+    echo "Fetching common-ci-configuration scripts..."
+    mkdir -p "$CI_SCRIPTS_DIR"
+    for script in find-last-source-commit.sh get-cached-image.sh; do
+        curl -sf -o "$CI_SCRIPTS_DIR/$script" "$CI_SCRIPTS_URL/$script" || {
+            echo "Error: Failed to fetch $script from common-ci-configuration"
+            exit 1
+        }
+        chmod +x "$CI_SCRIPTS_DIR/$script"
+    done
 fi
+
+# shellcheck source=/dev/null
+source "$SCRIPTPATH/docker_image_utils.sh"
 
 submodule_path=""
 REGISTRY=""
 DOTENV_VAR_NAME=""
 REGISTRY_USER=""
 REGISTRY_PASSWORD=""
-
 NETWORK_TYPE=""
-EXPORT_BINARIES=""
 
 print_help () {
     echo "Usage: $0 <submodule_path> <registry> <dotenv_var_name> <registry_user> <registry_password> [OPTION[=VALUE]]..."
@@ -96,8 +74,7 @@ while [ $# -gt 0 ]; do
         esac
         ;;
     --export-binaries=*)
-        EXPORT_BINARIES="${1#*=}"
-        echo "using EXPORT_BINARIES $EXPORT_BINARIES"
+        # Ignored - binaries exported via BINARY_CACHE_PATH env var
         ;;
     --help)
         print_help
@@ -131,17 +108,8 @@ echo "Attempting to get commit for: $submodule_path"
 SOURCE_PATTERNS=(libraries/ programs/ scripts/ docker/ tests/unit/ Dockerfile cmake CMakeLists.txt .gitmodules)
 
 # Find the last commit that changed source files
-if [[ "$FIND_LAST_SOURCE_COMMIT" == *"find-last-source-commit.sh" ]]; then
-    # Use new script
-    commit=$("$FIND_LAST_SOURCE_COMMIT" --dir="$submodule_path" --full "${SOURCE_PATTERNS[@]}")
-    short_commit=$("$FIND_LAST_SOURCE_COMMIT" --dir="$submodule_path" --quiet "${SOURCE_PATTERNS[@]}")
-else
-    # Fall back to old script
-    commit=$("$FIND_LAST_SOURCE_COMMIT" "${submodule_path}" "${SOURCE_PATTERNS[@]}")
-    pushd "${submodule_path}" > /dev/null
-    short_commit=$(git -c core.abbrev=8 rev-parse --short "$commit")
-    popd > /dev/null
-fi
+commit=$("$CI_SCRIPTS_DIR/find-last-source-commit.sh" --dir="$submodule_path" --full --quiet "${SOURCE_PATTERNS[@]}")
+short_commit=$("$CI_SCRIPTS_DIR/find-last-source-commit.sh" --dir="$submodule_path" --quiet "${SOURCE_PATTERNS[@]}")
 
 echo "commit with last source code changes is $commit (short: $short_commit)"
 
@@ -159,28 +127,17 @@ fi
 echo "$REGISTRY_PASSWORD" | docker login -u "$REGISTRY_USER" "$REGISTRY" --password-stdin
 
 # Check if image exists
-image_exists=0
-
-if [[ -n "$GET_CACHED_IMAGE" ]]; then
-    # Use new script for registry check
-    CACHE_ENV=$(mktemp)
-    if [[ -n "$IMGNAME_INSTANCE" ]]; then
-        "$GET_CACHED_IMAGE" --commit="$short_commit" --registry="$REGISTRY" --image="$IMGNAME_INSTANCE" --output="$CACHE_ENV" --quiet || true
-    else
-        "$GET_CACHED_IMAGE" --commit="$short_commit" --registry="$REGISTRY" --output="$CACHE_ENV" --quiet || true
-    fi
-    # shellcheck source=/dev/null
-    source "$CACHE_ENV"
-    rm -f "$CACHE_ENV"
-    if [[ "${CACHE_HIT:-false}" == "true" ]]; then
-        image_exists=1
-    fi
+CACHE_ENV=$(mktemp)
+if [[ -n "$IMGNAME_INSTANCE" ]]; then
+    "$CI_SCRIPTS_DIR/get-cached-image.sh" --commit="$short_commit" --registry="$REGISTRY" --image="$IMGNAME_INSTANCE" --output="$CACHE_ENV" --quiet || true
 else
-    # Fall back to docker_image_utils function
-    docker_image_exists "$img_instance" image_exists
+    "$CI_SCRIPTS_DIR/get-cached-image.sh" --commit="$short_commit" --registry="$REGISTRY" --output="$CACHE_ENV" --quiet || true
 fi
+# shellcheck source=/dev/null
+source "$CACHE_ENV"
+rm -f "$CACHE_ENV"
 
-if [ "$image_exists" -eq 1 ]; then
+if [[ "${CACHE_HIT:-false}" == "true" ]]; then
     echo "Image $img_instance already exists..."
     "$SCRIPTPATH/export-data-from-docker-image.sh" "${img_instance}" "${BINARY_CACHE_PATH}"
 else
