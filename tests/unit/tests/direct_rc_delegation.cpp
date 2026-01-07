@@ -845,7 +845,7 @@ BOOST_AUTO_TEST_CASE( direct_rc_delegation_vesting_withdrawal )
     push_transaction(op, alice_private_key);
 
     auto next_withdrawal = db->head_block_time() + HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS;
-    asset withdraw_rate = new_alice.get_vesting_withdraw_rate();
+    asset withdraw_rate = new_alice_assets.get_vesting_withdraw_rate();
 
     BOOST_TEST_MESSAGE( "Generating block up to first withdrawal" );
     generate_blocks( next_withdrawal - HIVE_BLOCK_INTERVAL );
@@ -1016,7 +1016,7 @@ BOOST_AUTO_TEST_CASE( direct_rc_delegation_vesting_withdrawal_routes )
     push_transaction(op, alice_private_key);
 
     auto next_withdrawal = db->head_block_time() + HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS;
-    asset withdraw_rate = new_alice.get_vesting_withdraw_rate();
+    asset withdraw_rate = new_alice_assets.get_vesting_withdraw_rate();
 
     BOOST_TEST_MESSAGE( "Generating block up to first withdrawal" );
     generate_blocks( next_withdrawal - HIVE_BLOCK_INTERVAL );

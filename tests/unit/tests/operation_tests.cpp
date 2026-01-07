@@ -141,7 +141,7 @@ BOOST_AUTO_TEST_CASE( account_create_apply )
     BOOST_REQUIRE( acct.get_id().get_value() == acct_auth.get_id().get_value() );
 
     BOOST_REQUIRE( acct_assets.get_vesting().amount.value == 0 );
-    BOOST_REQUIRE( acct.get_vesting_withdraw_rate().amount.value == ASSET( "0.000000 VESTS" ).amount.value );
+    BOOST_REQUIRE( acct_assets.get_vesting_withdraw_rate().amount.value == ASSET( "0.000000 VESTS" ).amount.value );
     BOOST_REQUIRE( acct.proxied_vsf_votes_total().value == 0 );
     BOOST_REQUIRE( ( init_starting_balance - ASSET( "0.100 TESTS" ) ).amount.value == init_assets.get_balance().amount.value );
     validate_database();
@@ -159,7 +159,7 @@ BOOST_AUTO_TEST_CASE( account_create_apply )
     BOOST_REQUIRE( acct_assets.get_balance().amount.value == ASSET( "0.000 TESTS " ).amount.value );
     BOOST_REQUIRE( acct_assets.get_hbd_balance().amount.value == ASSET( "0.000 TBD" ).amount.value );
     BOOST_REQUIRE( acct_assets.get_vesting().amount.value == 0 );
-    BOOST_REQUIRE( acct.get_vesting_withdraw_rate().amount.value == ASSET( "0.000000 VESTS" ).amount.value );
+    BOOST_REQUIRE( acct_assets.get_vesting_withdraw_rate().amount.value == ASSET( "0.000000 VESTS" ).amount.value );
     BOOST_REQUIRE( acct.proxied_vsf_votes_total().value == 0 );
     BOOST_REQUIRE( ( init_starting_balance - ASSET( "0.100 TESTS" ) ).amount.value == init_assets.get_balance().amount.value );
     validate_database();
@@ -1669,6 +1669,7 @@ BOOST_AUTO_TEST_CASE( withdraw_vesting_apply )
     {
     const auto& alice = db->get_account( "alice" );
     const auto& alice_assets = db->get< assets_object, by_account_id >( alice.get_id() );
+    const auto& alice_time = db->get< time_object, by_account_id >( alice.get_id() );
 
     withdraw_vesting_operation op;
     op.account = "alice";
@@ -1691,9 +1692,9 @@ BOOST_AUTO_TEST_CASE( withdraw_vesting_apply )
     push_transaction( tx, alice_private_key );
 
     BOOST_REQUIRE( alice_assets.get_vesting().amount.value == old_vesting_shares.amount.value );
-    BOOST_REQUIRE( alice.get_vesting_withdraw_rate().amount.value == ( old_vesting_shares.amount / ( HIVE_VESTING_WITHDRAW_INTERVALS * 2 ) ).value + 1 );
-    BOOST_REQUIRE( alice.get_to_withdraw().amount.value == op.vesting_shares.amount.value );
-    BOOST_REQUIRE( alice.get_next_vesting_withdrawal() == db->head_block_time() + HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS );
+    BOOST_REQUIRE( alice_assets.get_vesting_withdraw_rate().amount.value == ( old_vesting_shares.amount / ( HIVE_VESTING_WITHDRAW_INTERVALS * 2 ) ).value + 1 );
+    BOOST_REQUIRE( alice_assets.get_to_withdraw().amount.value == op.vesting_shares.amount.value );
+    BOOST_REQUIRE( alice_time.get_next_vesting_withdrawal() == db->head_block_time() + HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test changing vesting withdrawal" );
@@ -1705,9 +1706,9 @@ BOOST_AUTO_TEST_CASE( withdraw_vesting_apply )
     push_transaction( tx, alice_private_key );
 
     BOOST_REQUIRE( alice_assets.get_vesting().amount.value == old_vesting_shares.amount.value );
-    BOOST_REQUIRE( alice.get_vesting_withdraw_rate().amount.value == ( old_vesting_shares.amount / ( HIVE_VESTING_WITHDRAW_INTERVALS * 3 ) ).value + 1 );
-    BOOST_REQUIRE( alice.get_to_withdraw().amount.value == op.vesting_shares.amount.value );
-    BOOST_REQUIRE( alice.get_next_vesting_withdrawal() == db->head_block_time() + HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS );
+    BOOST_REQUIRE( alice_assets.get_vesting_withdraw_rate().amount.value == ( old_vesting_shares.amount / ( HIVE_VESTING_WITHDRAW_INTERVALS * 3 ) ).value + 1 );
+    BOOST_REQUIRE( alice_assets.get_to_withdraw().amount.value == op.vesting_shares.amount.value );
+    BOOST_REQUIRE( alice_time.get_next_vesting_withdrawal() == db->head_block_time() + HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test withdrawing more vests than available" );
@@ -1720,8 +1721,8 @@ BOOST_AUTO_TEST_CASE( withdraw_vesting_apply )
     HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::exception );
 
     BOOST_REQUIRE( alice_assets.get_vesting().amount.value == old_vesting_shares.amount.value );
-    BOOST_REQUIRE( alice.get_vesting_withdraw_rate().amount.value == ( old_vesting_shares.amount / ( HIVE_VESTING_WITHDRAW_INTERVALS * 3 ) ).value + 1 );
-    BOOST_REQUIRE( alice.get_next_vesting_withdrawal() == db->head_block_time() + HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS );
+    BOOST_REQUIRE( alice_assets.get_vesting_withdraw_rate().amount.value == ( old_vesting_shares.amount / ( HIVE_VESTING_WITHDRAW_INTERVALS * 3 ) ).value + 1 );
+    BOOST_REQUIRE( alice_time.get_next_vesting_withdrawal() == db->head_block_time() + HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test withdrawing 0 to reset vesting withdraw" );
@@ -1733,9 +1734,9 @@ BOOST_AUTO_TEST_CASE( withdraw_vesting_apply )
     push_transaction( tx, alice_private_key );
 
     BOOST_REQUIRE( alice_assets.get_vesting().amount.value == old_vesting_shares.amount.value );
-    BOOST_REQUIRE( alice.get_vesting_withdraw_rate().amount.value == 0 );
-    BOOST_REQUIRE( alice.get_to_withdraw().amount.value == 0 );
-    BOOST_REQUIRE( alice.get_next_vesting_withdrawal() == fc::time_point_sec::maximum() );
+    BOOST_REQUIRE( alice_assets.get_vesting_withdraw_rate().amount.value == 0 );
+    BOOST_REQUIRE( alice_assets.get_to_withdraw().amount.value == 0 );
+    BOOST_REQUIRE( alice_time.get_next_vesting_withdrawal() == fc::time_point_sec::maximum() );
 
 
     BOOST_TEST_MESSAGE( "--- Test cancelling a withdraw when below the account creation fee" );
@@ -1772,7 +1773,7 @@ BOOST_AUTO_TEST_CASE( withdraw_vesting_apply )
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     push_transaction( tx, alice_private_key );
 
-    BOOST_REQUIRE( db->get_account( "alice" ).get_vesting_withdraw_rate() == ASSET( "0.000000 VESTS" ) );
+    BOOST_REQUIRE( db->get< assets_object, by_account_id >( db->get_account( "alice" ).get_id() ).get_vesting_withdraw_rate() == ASSET( "0.000000 VESTS" ) );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test withdrawing minimal VESTS" );
@@ -9101,6 +9102,7 @@ BOOST_AUTO_TEST_CASE( create_claimed_account_apply )
 
     const auto& bob = db->get_account( "bob" );
     const auto& bob_assets = db->get< assets_object, by_account_id >( bob.get_id() );
+    const auto& bob_recovery = db->get< recovery_object, by_account_id >( bob.get_id() );
     const auto& bob_auth = db->get< account_authority_object, by_account >( "bob" );
 
     BOOST_REQUIRE( bob.get_name() == "bob" );
@@ -9113,7 +9115,7 @@ BOOST_AUTO_TEST_CASE( create_claimed_account_apply )
     BOOST_REQUIRE( bob_meta.json_metadata == "{\"foo\":\"bar\"}" );
 #endif
     CHECK_NO_PROXY( bob );
-    BOOST_REQUIRE( bob.get_recovery_account() == alice_id );
+    BOOST_REQUIRE( bob_recovery.get_recovery_account() == alice_id );
     BOOST_REQUIRE( bob.get_creation_time() == db->head_block_time() );
     BOOST_REQUIRE( bob_assets.get_balance().amount.value == ASSET( "0.000 TESTS" ).amount.value );
     BOOST_REQUIRE( bob_assets.get_hbd_balance().amount.value == ASSET( "0.000 TBD" ).amount.value );
@@ -9146,7 +9148,7 @@ BOOST_AUTO_TEST_CASE( create_claimed_account_apply )
     tx.operations.push_back( op );
     push_transaction( tx );
 
-    BOOST_REQUIRE( !db->get_account( "charlie" ).has_recovery_account() );
+    BOOST_REQUIRE( !db->get< recovery_object, by_account_id >( db->get_account( "charlie" ).get_id() ).has_recovery_account() );
     validate_database();
   }
   FC_LOG_AND_RETHROW()

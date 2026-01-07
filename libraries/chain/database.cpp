@@ -3344,13 +3344,14 @@ void database::account_recovery_processing()
   while( change_req != change_req_idx.end() && change_req->get_execution_time() <= head_block_time() )
   {
     const auto& account = get_account( change_req->get_account_to_recover() );
+    const auto& recovery_obj = get< recovery_object, by_account_id >( account.get_id() );
     account_name_type old_recovery_account_name;
-    if( account.has_recovery_account() )
-      old_recovery_account_name = get_account( account.get_recovery_account() ).get_name();
+    if( recovery_obj.has_recovery_account() )
+      old_recovery_account_name = get_account( recovery_obj.get_recovery_account() ).get_name();
     const auto& new_recovery_account = get_account( change_req->get_recovery_account() );
-    modify( account, [&]( account_object& a )
+    modify( recovery_obj, [&]( recovery_object& ro )
     {
-      a.set_recovery_account( new_recovery_account.get_id() );
+      ro.set_recovery_account( new_recovery_account.get_id() );
     });
 
     push_virtual_operation(changed_recovery_account_operation( account.get_name(), old_recovery_account_name, new_recovery_account.get_name() ));

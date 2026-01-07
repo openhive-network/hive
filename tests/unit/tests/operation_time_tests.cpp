@@ -1130,7 +1130,7 @@ BOOST_AUTO_TEST_CASE( vesting_withdrawals )
     auto next_withdrawal = db->head_block_time() + HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS;
     asset vesting_shares = new_alice_assets.get_vesting();
     asset original_vesting = vesting_shares;
-    asset withdraw_rate = new_alice.get_vesting_withdraw_rate();
+    asset withdraw_rate = new_alice_assets.get_vesting_withdraw_rate();
 
     BOOST_TEST_MESSAGE( "Generating block up to first withdrawal" );
     generate_blocks( next_withdrawal - HIVE_BLOCK_INTERVAL );
@@ -1155,7 +1155,7 @@ BOOST_AUTO_TEST_CASE( vesting_withdrawals )
 
     vesting_shares = get_vesting( "alice" );
     auto balance = get_balance( "alice" );
-    auto old_next_vesting = db->get_account( "alice" ).get_next_vesting_withdrawal();
+    auto old_next_vesting = db->get< time_object, by_account_id >( db->get_account( "alice" ).get_id() ).get_next_vesting_withdrawal();
 
     for( int i = 1; i < HIVE_VESTING_WITHDRAW_INTERVALS - 1; i++ )
     {
@@ -1174,21 +1174,21 @@ BOOST_AUTO_TEST_CASE( vesting_withdrawals )
       BOOST_REQUIRE( std::abs( ( fill_op.deposited - fill_op.withdrawn * gpo.get_vesting_share_price() ).amount.value ) <= 1 );
 
       if ( i == HIVE_VESTING_WITHDRAW_INTERVALS - 1 )
-        BOOST_REQUIRE( alice.get_next_vesting_withdrawal() == fc::time_point_sec::maximum() );
+        BOOST_REQUIRE( db->get< time_object, by_account_id >( alice.get_id() ).get_next_vesting_withdrawal() == fc::time_point_sec::maximum() );
       else
-        BOOST_REQUIRE( alice.get_next_vesting_withdrawal().sec_since_epoch() == ( old_next_vesting + HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS ).sec_since_epoch() );
+        BOOST_REQUIRE( db->get< time_object, by_account_id >( alice.get_id() ).get_next_vesting_withdrawal().sec_since_epoch() == ( old_next_vesting + HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS ).sec_since_epoch() );
 
       validate_database();
 
       vesting_shares = alice_assets.get_vesting();
       balance = alice_assets.get_balance();
-      old_next_vesting = alice.get_next_vesting_withdrawal();
+      old_next_vesting = db->get< time_object, by_account_id >( alice.get_id() ).get_next_vesting_withdrawal();
     }
 
     BOOST_TEST_MESSAGE( "Generating one more block to finish vesting withdrawal" );
     generate_blocks( db->head_block_time() + HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS, true );
 
-    BOOST_REQUIRE( db->get_account( "alice" ).get_next_vesting_withdrawal().sec_since_epoch() == fc::time_point_sec::maximum().sec_since_epoch() );
+    BOOST_REQUIRE( db->get< time_object, by_account_id >( db->get_account( "alice" ).get_id() ).get_next_vesting_withdrawal().sec_since_epoch() == fc::time_point_sec::maximum().sec_since_epoch() );
     BOOST_REQUIRE( get_vesting( "alice" ).amount.value == ( original_vesting - op.vesting_shares ).amount.value );
 
     validate_database();
@@ -1243,7 +1243,7 @@ BOOST_AUTO_TEST_CASE( vesting_withdraw_route )
     const auto& bob_assets = db->get< assets_object, by_account_id >( bob.get_id() );
     const auto& sam_assets = db->get< assets_object, by_account_id >( sam.get_id() );
 
-    auto vesting_withdraw_rate = alice.get_vesting_withdraw_rate();
+    auto vesting_withdraw_rate = alice_assets.get_vesting_withdraw_rate();
     auto old_alice_balance = alice_assets.get_balance();
     auto old_alice_vesting = alice_assets.get_vesting();
     auto old_bob_balance = bob_assets.get_balance();
@@ -1251,7 +1251,7 @@ BOOST_AUTO_TEST_CASE( vesting_withdraw_route )
     auto old_sam_balance = sam_assets.get_balance();
     auto old_sam_vesting = sam_assets.get_vesting();
 
-    generate_blocks( alice.get_next_vesting_withdrawal() - HIVE_BLOCK_INTERVAL, true );
+    generate_blocks( db->get< time_object, by_account_id >( alice.get_id() ).get_next_vesting_withdrawal() - HIVE_BLOCK_INTERVAL, true );
     generate_block();
 
     {
@@ -1309,7 +1309,7 @@ BOOST_AUTO_TEST_CASE( vesting_withdraw_route )
     tx.operations.push_back( op );
     push_transaction( tx, alice_private_key );
 
-    generate_blocks( db->get_account( "alice" ).get_next_vesting_withdrawal() - HIVE_BLOCK_INTERVAL, true );
+    generate_blocks( db->get< time_object, by_account_id >( db->get_account( "alice" ).get_id() ).get_next_vesting_withdrawal() - HIVE_BLOCK_INTERVAL, true );
     generate_block();
 
     {

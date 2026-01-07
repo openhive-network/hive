@@ -1684,11 +1684,11 @@ BOOST_AUTO_TEST_CASE( artificial_1_on_power_down )
 
     // vesting shares split puts artificial 1 on vesting withdraw rate on accounts with no power down
     inject_hardfork( HIVE_HARDFORK_0_1 );
-    BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).get_vesting_withdraw_rate().amount.value, 1 );
-    BOOST_REQUIRE_EQUAL( db->get_account( "bob" ).get_vesting_withdraw_rate().amount.value, 1 );
-    BOOST_REQUIRE_EQUAL( db->get_account( "carol" ).get_vesting_withdraw_rate().amount.value, 1 );
-    BOOST_REQUIRE_EQUAL( db->get_account( "dave" ).get_vesting_withdraw_rate().amount.value, 1 );
-    BOOST_REQUIRE_EQUAL( db->get_account( "eric" ).get_vesting_withdraw_rate().amount.value, 1 );
+    BOOST_REQUIRE_EQUAL( db->get< assets_object, by_account_id >( db->get_account( "alice" ).get_id() ).get_vesting_withdraw_rate().amount.value, 1 );
+    BOOST_REQUIRE_EQUAL( db->get< assets_object, by_account_id >( db->get_account( "bob" ).get_id() ).get_vesting_withdraw_rate().amount.value, 1 );
+    BOOST_REQUIRE_EQUAL( db->get< assets_object, by_account_id >( db->get_account( "carol" ).get_id() ).get_vesting_withdraw_rate().amount.value, 1 );
+    BOOST_REQUIRE_EQUAL( db->get< assets_object, by_account_id >( db->get_account( "dave" ).get_id() ).get_vesting_withdraw_rate().amount.value, 1 );
+    BOOST_REQUIRE_EQUAL( db->get< assets_object, by_account_id >( db->get_account( "eric" ).get_id() ).get_vesting_withdraw_rate().amount.value, 1 );
 
     // HF5 activates "no op" check during power down and cancel power down
     inject_hardfork( HIVE_HARDFORK_0_5 );
@@ -1706,18 +1706,18 @@ BOOST_AUTO_TEST_CASE( artificial_1_on_power_down )
     generate_block();
 
     // since 'alice' and 'bob' are now no longer affected by a bug, we can use them to check the power down with natural 1 withdraw rate
-    BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).get_vesting_withdraw_rate().amount.value, 0 );
-    BOOST_REQUIRE_EQUAL( db->get_account( "bob" ).get_vesting_withdraw_rate().amount.value, 0 );
+    BOOST_REQUIRE_EQUAL( db->get< assets_object, by_account_id >( db->get_account( "alice" ).get_id() ).get_vesting_withdraw_rate().amount.value, 0 );
+    BOOST_REQUIRE_EQUAL( db->get< assets_object, by_account_id >( db->get_account( "bob" ).get_id() ).get_vesting_withdraw_rate().amount.value, 0 );
 
     withdraw_vesting( "alice", asset( HIVE_VESTING_WITHDRAW_INTERVALS_PRE_HF_16 - 1, VESTS_SYMBOL ), alice_private_key);
     // above power down truncates down to zero, that is corrected to 1
-    BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).get_vesting_withdraw_rate().amount.value, 1 );
+    BOOST_REQUIRE_EQUAL( db->get< assets_object, by_account_id >( db->get_account( "alice" ).get_id() ).get_vesting_withdraw_rate().amount.value, 1 );
 
     // HF16 switches from 104 weeks to 13 weeks of power down
     inject_hardfork( HIVE_HARDFORK_0_16 );
 
     withdraw_vesting( "bob", asset( HIVE_VESTING_WITHDRAW_INTERVALS * 2 - 1, VESTS_SYMBOL ), bob_private_key );
-    BOOST_REQUIRE_EQUAL( db->get_account( "bob" ).get_vesting_withdraw_rate().amount.value, 1 );
+    BOOST_REQUIRE_EQUAL( db->get< assets_object, by_account_id >( db->get_account( "bob" ).get_id() ).get_vesting_withdraw_rate().amount.value, 1 );
 
     // make sure code behaves "properly" (I mean in unchanged way) right before HF28 too
     inject_hardfork( HIVE_HARDFORK_1_27 );
@@ -1730,7 +1730,7 @@ BOOST_AUTO_TEST_CASE( artificial_1_on_power_down )
     // also since HF21 there is different rate correction mechanism, so the same operation as for 'bob'
     // before results in different rate
     withdraw_vesting( "carol", asset( HIVE_VESTING_WITHDRAW_INTERVALS * 2 - 1, VESTS_SYMBOL ), carol_private_key );
-    BOOST_REQUIRE_EQUAL( db->get_account( "carol" ).get_vesting_withdraw_rate().amount.value, 2 );
+    BOOST_REQUIRE_EQUAL( db->get< assets_object, by_account_id >( db->get_account( "carol" ).get_id() ).get_vesting_withdraw_rate().amount.value, 2 );
 
     // HF28 activates code that prevents bug from affecting new power down cancels
     inject_hardfork( HIVE_HARDFORK_1_28 );
