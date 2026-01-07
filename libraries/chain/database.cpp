@@ -1668,9 +1668,14 @@ void database::lock_account( const account_object& account )
     } );
   }
 
+  const auto& recovery_obj = get< recovery_object, by_account_id >( account.get_id() );
+  modify( recovery_obj, [&]( recovery_object& r )
+  {
+    r.set_recovery_account( account.get_id() );
+  } );
+
   modify( account, []( account_object& a )
   {
-    a.set_recovery_account( a.get_id() );
     a.set_memo_key( public_key_type() );
   } );
 
@@ -3712,10 +3717,21 @@ void database::init_genesis()
       uint32_t old_flags;
     } inhibitor(*this);
 
+    // Helper to create split objects for an account
+    const auto create_split_objects = [&]( const account_object& acc )
+    {
+      create< recovery_object >( acc.get_id() );
+      create< assets_object >( acc.get_id() );
+      create< manabars_rc_object >( acc.get_id() );
+      create< time_object >( acc.get_id() );
+      create< delayed_votes_object >( acc.get_id() );
+    };
+
     // Create blockchain accounts
     public_key_type      init_public_key(HIVE_INIT_PUBLIC_KEY);
 
-    create< account_object >( HIVE_MINER_ACCOUNT, HIVE_GENESIS_TIME );
+    const auto& miner_acc = create< account_object >( HIVE_MINER_ACCOUNT, HIVE_GENESIS_TIME );
+    create_split_objects( miner_acc );
     create< account_authority_object >( [&]( account_authority_object& auth )
     {
       auth.account = HIVE_MINER_ACCOUNT;
@@ -3724,7 +3740,8 @@ void database::init_genesis()
       auth.posting.weight_threshold = 1;
     });
 
-    create< account_object >( HIVE_NULL_ACCOUNT, HIVE_GENESIS_TIME );
+    const auto& null_acc = create< account_object >( HIVE_NULL_ACCOUNT, HIVE_GENESIS_TIME );
+    create_split_objects( null_acc );
     create< account_authority_object >( [&]( account_authority_object& auth )
     {
       auth.account = HIVE_NULL_ACCOUNT;
@@ -3734,7 +3751,8 @@ void database::init_genesis()
     });
 
 #if defined(IS_TEST_NET) || defined(HIVE_CONVERTER_ICEBERG_PLUGIN_ENABLED)
-    create< account_object >( OBSOLETE_TREASURY_ACCOUNT, HIVE_GENESIS_TIME );
+    const auto& obs_treasury_acc = create< account_object >( OBSOLETE_TREASURY_ACCOUNT, HIVE_GENESIS_TIME );
+    create_split_objects( obs_treasury_acc );
     create< account_authority_object >([&](account_authority_object& auth)
     {
       auth.account = OBSOLETE_TREASURY_ACCOUNT;
@@ -3742,7 +3760,8 @@ void database::init_genesis()
       auth.active.weight_threshold = 1;
       auth.posting.weight_threshold = 1;
     } );
-    create< account_object >( NEW_HIVE_TREASURY_ACCOUNT, HIVE_GENESIS_TIME );
+    const auto& new_treasury_acc = create< account_object >( NEW_HIVE_TREASURY_ACCOUNT, HIVE_GENESIS_TIME );
+    create_split_objects( new_treasury_acc );
     create< account_authority_object >([&](account_authority_object& auth)
     {
       auth.account = NEW_HIVE_TREASURY_ACCOUNT;
@@ -3752,7 +3771,8 @@ void database::init_genesis()
     } );
 #endif
 
-    create< account_object >( HIVE_TEMP_ACCOUNT, HIVE_GENESIS_TIME );
+    const auto& temp_acc = create< account_object >( HIVE_TEMP_ACCOUNT, HIVE_GENESIS_TIME );
+    create_split_objects( temp_acc );
     create< account_authority_object >( [&]( account_authority_object& auth )
     {
       auth.account = HIVE_TEMP_ACCOUNT;
@@ -3763,7 +3783,8 @@ void database::init_genesis()
 
     const auto init_witness = [&]( const account_name_type& account_name )
     {
-      create< account_object >( account_name, HIVE_GENESIS_TIME, init_public_key );
+      const auto& acc = create< account_object >( account_name, HIVE_GENESIS_TIME, init_public_key );
+      create_split_objects( acc );
 
       create< account_authority_object >( [&]( account_authority_object& auth )
       {
@@ -3799,7 +3820,8 @@ void database::init_genesis()
     {
       const char* STEEM_ACCOUNT_NAME = "steem";
       auto STEEM_PUBLIC_KEY = public_key_type( HIVE_STEEM_PUBLIC_KEY_STR );
-      create< account_object >( STEEM_ACCOUNT_NAME, STEEM_PUBLIC_KEY, HIVE_GENESIS_TIME, HIVE_GENESIS_TIME, true, nullptr, true, asset( 0, VESTS_SYMBOL ) );
+      const auto& steem_acc = create< account_object >( STEEM_ACCOUNT_NAME, STEEM_PUBLIC_KEY, HIVE_GENESIS_TIME, HIVE_GENESIS_TIME, true, nullptr );
+      create_split_objects( steem_acc );
       create< account_authority_object >( [&]( account_authority_object& auth )
       {
         auth.account = STEEM_ACCOUNT_NAME;

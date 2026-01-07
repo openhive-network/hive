@@ -1660,7 +1660,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
   }
   FC_ASSERT( used_power <= current_power, "Account does not have enough power to vote." );
 
-  int64_t abs_rshares = fc::uint128_to_uint64((uint128_t( voter.get_effective_vesting_shares( false ).value ) * used_power) / (HIVE_100_PERCENT));
+  int64_t abs_rshares = fc::uint128_to_uint64((uint128_t( voter.get_effective_vesting_shares( voter_assets, voter_time, false ).value ) * used_power) / (HIVE_100_PERCENT));
   if( !_db.has_hardfork( HIVE_HARDFORK_0_14__259 ) && abs_rshares == 0 ) abs_rshares = 1;
 
   if( _db.has_hardfork( HIVE_HARDFORK_0_14__259 ) )
@@ -2334,7 +2334,10 @@ void pow_apply( database& db, Operation o )
 #endif
   FC_ASSERT( o.block_id == db.head_block_id(), "pow not for last block" );
   if( db.has_hardfork( HIVE_HARDFORK_0_13__256 ) )
-    FC_ASSERT( worker_account.get_last_account_update() < db.head_block_time(), "Worker account must not have updated their account this block." );
+  {
+    const auto& worker_time = db.get< time_object, by_account_id >( worker_account.get_id() );
+    FC_ASSERT( worker_time.get_last_account_update() < db.head_block_time(), "Worker account must not have updated their account this block." );
+  }
 
 #ifndef HIVE_CONVERTER_BUILD // due to the optimization issues with blockchain_converter performing proof of work for every pow operations, this check is applied only in mainnet
   fc::sha256 target = db.get_pow_target();
@@ -2741,9 +2744,11 @@ void request_account_recovery_evaluator::do_apply( const request_account_recover
 {
   const auto& account_to_recover = _db.get_account( o.account_to_recover );
 
-  if ( account_to_recover.has_recovery_account() ) // Make sure recovery matches expected recovery account
+  const auto& recovery_obj = _db.get< recovery_object, by_account_id >( account_to_recover.get_id() );
+
+  if ( recovery_obj.has_recovery_account() ) // Make sure recovery matches expected recovery account
   {
-    const auto& recovery_account = _db.get_account( account_to_recover.get_recovery_account() );
+    const auto& recovery_account = _db.get_account( recovery_obj.get_recovery_account() );
     FC_ASSERT( recovery_account.get_name() == o.recovery_account, "Cannot recover an account that does not have you as their recovery partner." );
     if( o.recovery_account == HIVE_TEMP_ACCOUNT )
       wlog( "Recovery by temp account" );
@@ -2807,7 +2812,10 @@ void recover_account_evaluator::do_apply( const recover_account_operation& o )
   const auto& account = _db.get_account( o.account_to_recover );
 
   if( _db.has_hardfork( HIVE_HARDFORK_0_12 ) )
-    FC_ASSERT( util::owner_update_limit_mgr::check( _db.head_block_time(), account.get_last_account_recovery_time() ), "${m}", ("m", util::owner_update_limit_mgr::msg( _db.has_hardfork( HIVE_HARDFORK_1_26_AUTH_UPDATE ) ) ) );
+  {
+    const auto& recovery_obj = _db.get< recovery_object, by_account_id >( account.get_id() );
+    FC_ASSERT( util::owner_update_limit_mgr::check( _db.head_block_time(), recovery_obj.get_last_account_recovery_time() ), "${m}", ("m", util::owner_update_limit_mgr::msg( _db.has_hardfork( HIVE_HARDFORK_1_26_AUTH_UPDATE ) ) ) );
+  }
 
   const auto& recovery_request_idx = _db.get_index< account_recovery_request_index, by_account >();
   auto request = recovery_request_idx.find( o.account_to_recover );
@@ -2830,11 +2838,12 @@ void recover_account_evaluator::do_apply( const recover_account_operation& o )
 
   _db.remove( *request ); // Remove first, update_owner_authority may invalidate iterator
   _db.update_owner_authority( account, o.new_owner_authority );
-  _db.modify( account, [&]( account_object& a )
-  {
-    a.set_last_account_recovery_time( _db.head_block_time() );
-    a.set_block_last_account_recovery_time( _db.get_current_timestamp() );
-  });
+    const auto& recovery_obj = _db.get< recovery_object, by_account_id >( account.get_id() );
+    _db.modify( recovery_obj, [&]( recovery_object& r )
+    {
+      r.set_last_account_recovery_time( _db.head_block_time() );
+      r.set_block_last_account_recovery_time( _db.get_current_timestamp() );
+    });
 }
 
 void change_recovery_account_evaluator::do_apply( const change_recovery_account_operation& o )
@@ -2851,7 +2860,7 @@ void change_recovery_account_evaluator::do_apply( const change_recovery_account_
     //ABW: it is possible to request change to currently set recovery agent (empty operation)
     _db.create< change_recovery_account_request_object >( account_to_recover, new_recovery_account, _db.head_block_time() + HIVE_OWNER_AUTH_RECOVERY_PERIOD );
   }
-  else if( account_to_recover.get_recovery_account() != new_recovery_account.get_id() ) // Change existing request
+  else if( _db.get< recovery_object, by_account_id >( account_to_recover.get_id() ).get_recovery_account() != new_recovery_account.get_id() ) // Change existing request
   {
     //ABW: it is possible to request change to already requested new recovery agent (operation only resets timer)
     _db.modify( *request, [&]( change_recovery_account_request_object& req )
