@@ -75,8 +75,10 @@ variables:
       fi
 
       # Check if source code changed (files that require C++ builds)
+      # Uses source-patterns.sh as single source of truth
+      SOURCE_PATTERN=$("$CI_PROJECT_DIR/scripts/ci-helpers/source-patterns.sh" --regex)
       SOURCE_CHANGED="false"
-      if echo "$CHANGED_FILES" | grep -qE '^(libraries/|programs/|CMakeLists\.txt|cmake/|Dockerfile|docker/|contrib/)'; then
+      if echo "$CHANGED_FILES" | grep -qE "$SOURCE_PATTERN"; then
         SOURCE_CHANGED="true"
       fi
 
@@ -166,17 +168,10 @@ variables:
     - when: on_success
 
 # ============================================================================
-# Source Code Patterns (trigger C++ builds)
+# Source Code Patterns
 # ============================================================================
-
-.source_code_patterns:
-  - libraries/**/*
-  - programs/**/*
-  - CMakeLists.txt
-  - cmake/**/*
-  - Dockerfile
-  - docker/**/*
-  - contrib/**/*
+# Defined in scripts/ci-helpers/source-patterns.sh (single source of truth)
+# Used by detect_changes job and downstream repos like clive
 
 # ============================================================================
 # Rule Templates for Jobs

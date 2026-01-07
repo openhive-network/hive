@@ -104,8 +104,8 @@ done
 
 echo "Attempting to get commit for: $submodule_path"
 
-# Source patterns that affect the build
-SOURCE_PATTERNS=(libraries/ programs/ scripts/ docker/ tests/unit/ Dockerfile cmake CMakeLists.txt .gitmodules)
+# Source patterns from single source of truth (also used by skip_rules.yml and downstream repos like clive)
+IFS=',' read -ra SOURCE_PATTERNS <<< "$("$SCRIPTPATH/source-patterns.sh")"
 
 # Find the last commit that changed source files
 commit=$("$CI_SCRIPTS_DIR/find-last-source-commit.sh" --dir="$submodule_path" --full --quiet "${SOURCE_PATTERNS[@]}")
