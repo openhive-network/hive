@@ -2001,6 +2001,15 @@ full_mainnet_replay_and_snapshot_manual:
     - test -n "$HIVED_IMAGE_NAME"
     - echo "Preparing test environment..."
     - |
+      # Debug: Test connectivity to termit
+      echo "=== DEBUG: Testing connectivity to termit ==="
+      echo "URL: $BLOCK_LOG_BASE_URL"
+      echo "Hostname resolution:"
+      getent hosts termit.pl.syncad.com || echo "DNS lookup failed"
+      echo "Curl test:"
+      curl -v --max-time 10 "$BLOCK_LOG_BASE_URL/block_log_part.0001" -o /dev/null 2>&1 | head -30 || echo "Curl failed"
+      echo "=== END DEBUG ==="
+    - |
       # Download block_log parts from termit (auto-detect if LAST_PART empty)
       LAST_PART_VALUE="${LAST_PART:-auto}"
       $CI_PROJECT_DIR/scripts/ci-helpers/download_block_log_parts.sh \
