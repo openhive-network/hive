@@ -10,10 +10,13 @@ class crypto_memo: public crypto_data
 {
   public:
 
-    struct memo_content: public content
+    struct memo_content
     {
       public_key_type   from;
       public_key_type   to;
+      uint64_t          nonce = 0;
+      uint32_t          check = 0;
+      std::vector<char> encrypted;
     };
 
   private:
@@ -45,4 +48,4 @@ class crypto_memo: public crypto_data
 
 } } // hive::protocol
 
-FC_REFLECT_DERIVED( hive::protocol::crypto_memo::memo_content, (fc::crypto_data::content), (from)(to) )
+FC_REFLECT( hive::protocol::crypto_memo::memo_content, (from)(to)(nonce)(check)(encrypted) )
