@@ -20,6 +20,7 @@
 #include <hive/plugins/rc_api/rc_api.hpp>
 
 #include <algorithm>
+#include <atomic>
 #include <cctype>
 #include <iomanip>
 #include <iostream>
@@ -2127,6 +2128,11 @@ wallet_signed_transaction wallet_api::set_withdraw_vesting_route(
   return { my->sign_transaction( tx, broadcast ) };
 }
 
+// Counter for generating unique request IDs, seeded with current time
+static std::atomic<uint32_t> convert_request_id_counter{
+    static_cast<uint32_t>(fc::time_point::now().time_since_epoch().count())
+};
+
 wallet_signed_transaction wallet_api::convert_hbd(
   const string& from,
   const wallet_serializer_wrapper<hive::protocol::asset>& amount,
@@ -2135,8 +2141,8 @@ wallet_signed_transaction wallet_api::convert_hbd(
   FC_ASSERT( !is_locked() );
   convert_operation op;
   op.owner = from;
-  // Use microseconds for better uniqueness - avoids collisions when multiple requests are made in the same second
-  op.requestid = static_cast<uint32_t>(fc::time_point::now().time_since_epoch().count());
+  // Use atomic counter seeded with time for uniqueness across rapid sequential calls
+  op.requestid = ++convert_request_id_counter;
   op.amount = amount.value;
 
   signed_transaction tx;
@@ -2154,8 +2160,8 @@ wallet_signed_transaction wallet_api::convert_hive_with_collateral(
   FC_ASSERT( !is_locked() );
   collateralized_convert_operation op;
   op.owner = from;
-  // Use microseconds for better uniqueness - avoids collisions when multiple requests are made in the same second
-  op.requestid = static_cast<uint32_t>(fc::time_point::now().time_since_epoch().count());
+  // Use atomic counter seeded with time for uniqueness across rapid sequential calls
+  op.requestid = ++convert_request_id_counter;
   op.amount = collateral_amount.value;
 
   signed_transaction tx;
