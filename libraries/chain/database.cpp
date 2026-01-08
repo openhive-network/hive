@@ -1126,7 +1126,7 @@ asset calculate_vesting( database& db, const asset& liquid, bool to_reward_balan
   {
     FC_ASSERT( liquid.symbol.is_vesting() == false );
     // Get share price.
-    const auto& smt = db.get< smt_token_object, by_symbol >( liquid.symbol );
+    const auto& smt = get< smt_token_object, by_symbol >( liquid.symbol );
     FC_ASSERT( smt.allow_voting == to_reward_balance, "No voting - no rewards" );
     price vesting_share_price = to_reward_balance ? smt.get_reward_vesting_share_price() : smt.get_vesting_share_price();
     // Calculate new vesting from provided liquid using share price.
@@ -1193,9 +1193,13 @@ asset database::adjust_account_vesting_balance(const account_object& to_account,
     {
       if( has_hardfork( HIVE_HARDFORK_0_20 ) )
       {
-        modify( to_account, [&]( account_object& a )
+        const auto& _assets_obj = get< assets_object, by_account_id >( to_account.get_id() );
+        const auto& _time_obj = get< time_object, by_account_id >( to_account.get_id() );
+        const auto& _manabars_rc_object = get< manabars_rc_object, by_account_id >( to_account.get_id() );
+
+        modify( _manabars_rc_object, [&]( manabars_rc_object& mrc )
         {
-          util::update_manabar( cprops, a, new_vesting.amount.value );
+          util::update_manabar( cprops, to_account, _assets_obj, _time_obj, mrc, new_vesting.amount.value );
         });
         rc.regenerate_rc_mana( to_account, _now );
       }
@@ -1769,7 +1773,7 @@ void database::clear_account( const account_object& account )
   // Get split objects for the account
   const auto& assets = get< assets_object, by_account_id >( account.get_id() );
   const auto& mrc = get< manabars_rc_object, by_account_id >( account.get_id() );
-  const auto& time_obj = get< time_object, by_account_id >( account.get_id() );
+  const auto& time = get< time_object, by_account_id >( account.get_id() );
   const auto& dvotes = get< delayed_votes_object, by_account_id >( account.get_id() );
 
   if( assets.get_vesting().amount > 0 )
@@ -1793,6 +1797,7 @@ void database::clear_account( const account_object& account )
 
       // Get split objects for the delegatee
       const auto& delegatee_assets = get< assets_object, by_account_id >( delegatee.get_id() );
+      const auto& delegatee_time = get< time_object, by_account_id >( delegatee.get_id() );
       const auto& delegatee_mrc = get< manabars_rc_object, by_account_id >( delegatee.get_id() );
 
       modify( delegatee_assets, [&]( assets_object& a )
@@ -1803,7 +1808,7 @@ void database::clear_account( const account_object& account )
 
       modify( delegatee_mrc, [&]( manabars_rc_object& m )
       {
-        util::update_manabar( cprops, delegatee_assets, m );
+        util::update_manabar( cprops, delegatee, delegatee_assets, delegatee_time, m );
         m.get_voting_manabar().use_mana( delegation.get_vesting().amount.value );
 
         m.get_downvote_manabar().use_mana(
@@ -1849,13 +1854,13 @@ void database::clear_account( const account_object& account )
     // Update manabars_rc_object
     modify( mrc, [&]( manabars_rc_object& m )
     {
-      util::update_manabar( cprops, assets, m );
+      util::update_manabar( cprops, account, assets, time, m );
       m.get_voting_manabar().current_mana = 0;
       m.get_downvote_manabar().current_mana = 0;
     } );
 
     // Update time_object
-    modify( time_obj, [&]( time_object& t )
+    modify( time, [&]( time_object& t )
     {
       t.set_next_vesting_withdrawal( fc::time_point_sec::maximum() );
     } );
@@ -5509,8 +5514,11 @@ void database::clear_expired_delegations()
   while( itr != delegations_by_exp.end() && itr->get_expiration_time() < now )
   {
     const auto& delegator = get_account( itr->get_delegator() );
+
     const auto& delegator_assets = get< assets_object, by_account_id >( delegator.get_id() );
+    const auto& delegator_time = get< time_object, by_account_id >( delegator.get_id() );
     const auto& delegator_mrc = get< manabars_rc_object, by_account_id >( delegator.get_id() );
+
     operation vop = return_vesting_delegation_operation( delegator.get_name(), itr->get_vesting() );
     try{
     pre_push_virtual_operation( vop );
@@ -5519,7 +5527,7 @@ void database::clear_expired_delegations()
     {
       modify( delegator_mrc, [&]( manabars_rc_object& m )
       {
-        util::update_manabar( gpo, delegator_assets, m, itr->get_vesting().amount.value );
+        util::update_manabar( gpo, delegator, delegator_assets, delegator_time, m, itr->get_vesting().amount.value );
       });
       rc.regenerate_rc_mana( delegator, now );
     }
@@ -6625,8 +6633,8 @@ void database::validate_invariants()const
 
     for( auto itr = account_idx.begin(); itr != account_idx.end(); ++itr )
     {
-      const auto& _assets_obj = _db.get< assets_object, by_account_id >( itr->get_id() );
-      const auto& _delayed_votes_obj = _db.get< delayed_votes_object, by_account_id >( itr->get_id() );
+      const auto& _assets_obj = get< assets_object, by_account_id >( itr->get_id() );
+      const auto& _delayed_votes_obj = get< delayed_votes_object, by_account_id >( itr->get_id() );
 
       total_supply += _assets_obj.get_balance();
       total_supply += _assets_obj.get_savings();
@@ -6973,7 +6981,7 @@ void database::retally_witness_votes()
     auto wit_itr = vidx.lower_bound( boost::make_tuple( a.get_name(), account_name_type() ) );
     while( wit_itr != vidx.end() && wit_itr->account == a.get_name() )
     {
-      adjust_witness_vote( get< witness_object, by_name >(wit_itr->witness), a.get_governance_vote_power( _db.get< assets_object, by_account_id >( a.get_id() ), _db.get< delayed_votes_object, by_account_id >( a.get_id() ) ) );
+      adjust_witness_vote( get< witness_object, by_name >(wit_itr->witness), a.get_governance_vote_power( get< assets_object, by_account_id >( a.get_id() ), get< delayed_votes_object, by_account_id >( a.get_id() ) ) );
       ++wit_itr;
     }
   }

@@ -1925,8 +1925,8 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
 
   const auto& voter   = _db.get_account( o.voter );
   const auto& voter_assets = _db.get< assets_object, by_account_id >( voter.get_id() );
-  const auto& voter_mrc = _db.get< manabars_rc_object, by_account_id >( voter.get_id() );
   const auto& voter_time = _db.get< time_object, by_account_id >( voter.get_id() );
+  const auto& voter_mrc = _db.get< manabars_rc_object, by_account_id >( voter.get_id() );
   const auto& dgpo    = _db.get_dynamic_global_properties();
 
   FC_ASSERT( voter.can_vote(), "Voter has declined their voting rights." );
@@ -1971,7 +1971,7 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
 
   _db.modify( voter_mrc, [&]( manabars_rc_object& m )
   {
-    util::update_manabar( dgpo, voter_assets, m );
+    util::update_manabar( dgpo, voter, voter_assets, voter_time, m );
   });
 
   int16_t abs_weight = abs( o.weight );
@@ -3005,6 +3005,7 @@ void claim_reward_balance_evaluator::do_apply( const claim_reward_balance_operat
 {
   const auto& acnt = _db.get_account( op.account );
   const auto& acnt_assets = _db.get< assets_object, by_account_id >( acnt.get_id() );
+  const auto& acnt_time = _db.get< time_object, by_account_id >( acnt.get_id() );
   const auto& acnt_mrc = _db.get< manabars_rc_object, by_account_id >( acnt.get_id() );
   const auto& dgpo = _db.get_dynamic_global_properties();
   auto now = dgpo.time;
@@ -3032,7 +3033,7 @@ void claim_reward_balance_evaluator::do_apply( const claim_reward_balance_operat
   {
     _db.modify( acnt_mrc, [&]( manabars_rc_object& m )
     {
-      util::update_manabar( dgpo, acnt_assets, m, op.reward_vests.amount.value );
+      util::update_manabar( dgpo, acnt, acnt_assets, acnt_time, m, op.reward_vests.amount.value );
     });
     _db.rc.regenerate_rc_mana( acnt, now );
   }
@@ -3143,12 +3144,17 @@ void delegate_vesting_shares_evaluator::do_apply( const delegate_vesting_shares_
 FC_TODO("Update get_effective_vesting_shares when modifying this operation to support SMTs." )
 
   const auto& delegator = _db.get_account( op.delegator );
+
   const auto& delegator_assets = _db.get< assets_object, by_account_id >( delegator.get_id() );
-  const auto& delegator_mrc = _db.get< manabars_rc_object, by_account_id >( delegator.get_id() );
   const auto& delegator_time = _db.get< time_object, by_account_id >( delegator.get_id() );
+  const auto& delegator_mrc = _db.get< manabars_rc_object, by_account_id >( delegator.get_id() );
+
   const auto& delegatee = _db.get_account( op.delegatee );
+
   const auto& delegatee_assets = _db.get< assets_object, by_account_id >( delegatee.get_id() );
+  const auto& delegatee_time = _db.get< time_object, by_account_id >( delegatee.get_id() );
   const auto& delegatee_mrc = _db.get< manabars_rc_object, by_account_id >( delegatee.get_id() );
+
   auto* delegation = _db.find< vesting_delegation_object, by_delegation >( boost::make_tuple( delegator.get_id(), delegatee.get_id() ) );
 
   const auto& gpo = _db.get_dynamic_global_properties();
@@ -3169,7 +3175,7 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
 
     _db.modify( delegator_mrc, [&]( manabars_rc_object& m )
     {
-      util::update_manabar( gpo, delegator_assets, m );
+      util::update_manabar( gpo, delegator, delegator_assets, delegator_time, m );
     } );
 
     available_shares = asset( delegator_mrc.get_voting_manabar().current_mana, VESTS_SYMBOL );
@@ -3267,7 +3273,7 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
     {
       _db.modify( delegatee_mrc, [&]( manabars_rc_object& m )
       {
-        util::update_manabar( gpo, delegatee_assets, m, op.vesting_shares.amount.value );
+        util::update_manabar( gpo, delegatee, delegatee_assets, delegatee_time, m, op.vesting_shares.amount.value );
       } );
     }
 
@@ -3315,7 +3321,7 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
     {
       _db.modify( delegatee_mrc, [&]( manabars_rc_object& m )
       {
-        util::update_manabar( gpo, delegatee_assets, m, delta.amount.value );
+        util::update_manabar( gpo, delegatee, delegatee_assets, delegatee_time, m, delta.amount.value );
       } );
     }
 
@@ -3351,7 +3357,7 @@ FC_TODO("Update get_effective_vesting_shares when modifying this operation to su
     {
       _db.modify( delegatee_mrc, [&]( manabars_rc_object& m )
       {
-        util::update_manabar( gpo, delegatee_assets, m );
+        util::update_manabar( gpo, delegatee, delegatee_assets, delegatee_time, m );
       } );
     }
 

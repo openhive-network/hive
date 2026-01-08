@@ -101,59 +101,15 @@ struct manabar
   }
 };
 
-template< typename PropType, typename AccountType >
-void update_manabar( const PropType& gpo, AccountType& account, int64_t new_mana = 0 )
+template< typename PropType, typename AccountType, typename AssetsType, typename TimeType, typename ManabarType >
+void update_manabar( const PropType& gpo, AccountType& account, AssetsType& assets, TimeType& time, ManabarType& mrc, int64_t new_mana = 0 )
 {
-  auto effective_vests = account.get_effective_vesting_shares().value;
-  try {
-  manabar_params params( effective_vests, HIVE_VOTING_MANA_REGENERATION_SECONDS );
-  account.get_voting_manabar().regenerate_mana( params, gpo.time );
-  account.get_voting_manabar().use_mana( -new_mana );
-  } FC_CAPTURE_LOG_AND_RETHROW( (account)(effective_vests) )
-
-  try{
-  if( gpo.downvote_pool_percent )
-  {
-    manabar_params params;
-    params.regen_time = HIVE_VOTING_MANA_REGENERATION_SECONDS;
-
-#if defined(IS_TEST_NET) || defined(HIVE_CONVERTER_ICEBERG_PLUGIN_ENABLED)
-    if( true )
-#else //mainnet and regular mirrornet
-    if( gpo.head_block_number > HIVE_HF_21_STALL_BLOCK )
-#endif
-    {
-      params.max_mana = fc::uint128_to_int64( ( uint128_t( effective_vests ) * gpo.downvote_pool_percent ) / HIVE_100_PERCENT );
-    }
-    else
-    {
-      uint128_t numerator = uint128_t( effective_vests ) * gpo.downvote_pool_percent;
-      if( fc::uint128_high_bits(numerator) != 0 )
-        dlog( "NOTIFYALERT! max mana overflow made it in to the chain at block ${b}", ( "b", gpo.head_block_number ) );
-
-      params.max_mana = ( effective_vests * gpo.downvote_pool_percent ) / HIVE_100_PERCENT;
-    }
-
-    account.get_downvote_manabar().regenerate_mana( params, gpo.time );
-    account.get_downvote_manabar().use_mana( ( -new_mana * gpo.downvote_pool_percent ) / HIVE_100_PERCENT );
-  }
-  } FC_CAPTURE_LOG_AND_RETHROW( (account)(effective_vests) )
-}
-
-// Overload for split objects (assets_object + manabars_rc_object)
-template< typename PropType, typename AssetsType, typename ManabarType >
-void update_manabar( const PropType& gpo, const AssetsType& assets, ManabarType& mrc, int64_t new_mana = 0 )
-{
-  // Calculate effective vesting shares from assets_object
-  // Note: This simplified version doesn't account for active power down since time_object is not available
-  // For full accuracy, the caller should compute effective_vests
-  auto effective_vests = assets.get_vesting().amount.value - assets.get_delegated_vesting().amount.value + assets.get_received_vesting().amount.value;
-
+  auto effective_vests = account.get_effective_vesting_shares( assets, time ).value;
   try {
   manabar_params params( effective_vests, HIVE_VOTING_MANA_REGENERATION_SECONDS );
   mrc.get_voting_manabar().regenerate_mana( params, gpo.time );
   mrc.get_voting_manabar().use_mana( -new_mana );
-  } FC_CAPTURE_LOG_AND_RETHROW( (assets)(effective_vests) )
+  } FC_CAPTURE_LOG_AND_RETHROW( (account)(effective_vests) )
 
   try{
   if( gpo.downvote_pool_percent )
@@ -181,7 +137,7 @@ void update_manabar( const PropType& gpo, const AssetsType& assets, ManabarType&
     mrc.get_downvote_manabar().regenerate_mana( params, gpo.time );
     mrc.get_downvote_manabar().use_mana( ( -new_mana * gpo.downvote_pool_percent ) / HIVE_100_PERCENT );
   }
-  } FC_CAPTURE_LOG_AND_RETHROW( (assets)(effective_vests) )
+  } FC_CAPTURE_LOG_AND_RETHROW( (account)(effective_vests) )
 }
 
 } } } // hive::chain::util
