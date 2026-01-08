@@ -5753,7 +5753,7 @@ void database::adjust_balance( const account_object& a, const asset& delta )
 
 void database::adjust_savings_balance( const account_object& a, const asset& delta )
 {
-  auto _assets = get< assets_object, by_account_id >( a.get_id() );
+  const auto& _assets = get< assets_object, by_account_id >( a.get_id() );
 
   bool check_balance = has_hardfork( HIVE_HARDFORK_0_20__1811 );
 
@@ -5927,14 +5927,16 @@ asset database::get_balance( const account_object& a, asset_symbol_type symbol )
 
 asset database::get_savings_balance( const account_object& a, asset_symbol_type symbol )const
 {
+  const auto& _assets_obj = get< assets_object, by_account_id >( a.get_id() );
+
   if( symbol.asset_num == HIVE_ASSET_NUM_HIVE )
   {
-    return a.get_savings();
+    return _assets_obj.get_savings();
   }
   else
   {
     FC_ASSERT( symbol.asset_num == HIVE_ASSET_NUM_HBD && "invalid symbol" );
-    return a.get_hbd_savings();
+    return _assets_obj.get_hbd_savings();
   }
 }
 
@@ -6401,13 +6403,17 @@ void database::apply_hardfork( uint32_t hardfork )
         const auto& idx = get_index< account_index, by_id >();
         for( auto it = idx.begin(); it != idx.end(); ++it )
         {
-          modify( *it, [&]( account_object& account )
+          const auto& _manabars_rc_object = get< manabars_rc_object, by_account_id >( it->get_id() );
+          const auto& _assets_obj = get< assets_object, by_account_id >( it->get_id() );
+          const auto& _time_obj = get< time_object, by_account_id >( it->get_id() );
+
+          modify( _manabars_rc_object, [&]( manabars_rc_object& manabars_rc_object )
           {
-            account.set_rc_adjustment( HIVE_RC_HISTORICAL_ACCOUNT_CREATION_ADJUSTMENT );
-            account.get_rc_manabar().last_update_time = now.sec_since_epoch();
-            auto max_rc = account.get_maximum_rc().value;
-            account.get_rc_manabar().current_mana = max_rc;
-            account.set_last_max_rc( max_rc );
+            manabars_rc_object.set_rc_adjustment( HIVE_RC_HISTORICAL_ACCOUNT_CREATION_ADJUSTMENT );
+            manabars_rc_object.get_rc_manabar().last_update_time = now.sec_since_epoch();
+            auto max_rc = it->get_maximum_rc( _manabars_rc_object, _assets_obj, _time_obj ).value;
+            manabars_rc_object.get_rc_manabar().current_mana = max_rc;
+            manabars_rc_object.set_last_max_rc( max_rc );
           } );
         }
 
@@ -6619,26 +6625,29 @@ void database::validate_invariants()const
 
     for( auto itr = account_idx.begin(); itr != account_idx.end(); ++itr )
     {
-      total_supply += itr->get_balance();
-      total_supply += itr->get_savings();
-      total_supply += itr->get_rewards();
-      total_hbd += itr->get_hbd_balance();
-      total_hbd += itr->get_hbd_savings();
-      total_hbd += itr->get_hbd_rewards();
-      total_vesting += itr->get_vesting();
-      total_vesting += itr->get_vest_rewards();
-      pending_vesting_hive += itr->get_vest_rewards_as_hive();
+      const auto& _assets_obj = _db.get< assets_object, by_account_id >( itr->get_id() );
+      const auto& _delayed_votes_obj = _db.get< delayed_votes_object, by_account_id >( itr->get_id() );
+
+      total_supply += _assets_obj.get_balance();
+      total_supply += _assets_obj.get_savings();
+      total_supply += _assets_obj.get_rewards();
+      total_hbd += _assets_obj.get_hbd_balance();
+      total_hbd += _assets_obj.get_hbd_savings();
+      total_hbd += _assets_obj.get_hbd_rewards();
+      total_vesting += _assets_obj.get_vesting();
+      total_vesting += _assets_obj.get_vest_rewards();
+      pending_vesting_hive += _assets_obj.get_vest_rewards_as_hive();
       total_vsf_votes += ( !itr->has_proxy() ?
-                      itr->get_governance_vote_power( _db.get< assets_object, by_account_id >( itr->get_id() ), _db.get< delayed_votes_object, by_account_id >( itr->get_id() ) ) :
+                      itr->get_governance_vote_power( _assets_obj, _delayed_votes_obj ) :
                       ( HIVE_MAX_PROXY_RECURSION_DEPTH > 0 ?
                           itr->get_proxied_vsf_votes()[HIVE_MAX_PROXY_RECURSION_DEPTH - 1] :
-                          itr->get_direct_governance_vote_power( get< assets_object, by_account_id >( a.get_id() ), get< delayed_votes_object, by_account_id >( a.get_id() ) ) ) );
-      total_delayed_votes += itr->get_sum_delayed_votes();
+                          itr->get_direct_governance_vote_power( _assets_obj, _delayed_votes_obj ) ) );
+      total_delayed_votes += _delayed_votes_obj.get_sum_delayed_votes();
       ushare_type sum_delayed_votes{ 0ul };
-      for( auto& dv : itr->get_delayed_votes() )
+      for( auto& dv : _delayed_votes_obj.get_delayed_votes() )
         sum_delayed_votes += dv.val;
-      FC_ASSERT( sum_delayed_votes == itr->get_sum_delayed_votes(), "", ("sum_delayed_votes",sum_delayed_votes)("itr->sum_delayed_votes",itr->get_sum_delayed_votes()) );
-      FC_ASSERT( sum_delayed_votes.value <= itr->get_vesting().amount, "", ("sum_delayed_votes",sum_delayed_votes)("itr->vesting_shares.amount",itr->get_vesting().amount)("account",itr->get_name()) );
+      FC_ASSERT( sum_delayed_votes == _delayed_votes_obj.get_sum_delayed_votes(), "", ("sum_delayed_votes",sum_delayed_votes)("_delayed_votes_obj.get_sum_delayed_votes()",_delayed_votes_obj.get_sum_delayed_votes()) );
+      FC_ASSERT( sum_delayed_votes.value <= _assets_obj.get_vesting().amount, "", ("sum_delayed_votes",sum_delayed_votes)("_assets_obj.get_vesting().amount",_assets_obj.get_vesting().amount)("account",itr->get_name()) );
       ++account_no;
     }
 

@@ -530,9 +530,9 @@ struct api_account_object
     hbd_seconds_last_update = time_obj.get_hbd_seconds_last_update();
     hbd_last_interest_payment = time_obj.get_hbd_last_interest_payment();
     savings_hbd_balance = assets.get_hbd_savings();
-    savings_hbd_seconds = time_obj.get_savings_hbd_seconds();
-    savings_hbd_seconds_last_update = time_obj.get_savings_hbd_seconds_last_update();
-    savings_hbd_last_interest_payment = time_obj.get_savings_hbd_last_interest_payment();
+    savings_hbd_seconds = assets.get_savings_hbd_seconds();
+    savings_hbd_seconds_last_update = assets.get_savings_hbd_seconds_last_update();
+    savings_hbd_last_interest_payment = assets.get_savings_hbd_last_interest_payment();
     savings_withdraw_requests = a.get_savings_withdraw_requests();
     reward_hbd_balance = assets.get_hbd_rewards();
     reward_hive_balance = assets.get_rewards();
