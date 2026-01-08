@@ -1982,6 +1982,7 @@ full_mainnet_replay_and_snapshot_manual:
   # Manual CI job for full mainnet replay, snapshot, and pruning test
   # Downloads block_log parts from termit server and tests pruning with split=2
   # Override LAST_PART variable when triggering to control test size (default: 5 parts = 5M blocks)
+  extends: .docker_image_builder_job
   stage: test
   needs:
     - job: prepare_hived_image
