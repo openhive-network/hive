@@ -63,6 +63,7 @@ include:
   - local: '/scripts/ci-helpers/extended_block_log_creation.gitlab-ci.yml'
   # Skip rules for docs-only changes optimization
   - local: '/scripts/ci-helpers/skip_rules.yml'
+  - local: '/scripts/ci-helpers/common_includes.yml'
   - local: '/scripts/ci-helpers/hiveio_api_package.gitlab-ci.yml'
 
 default:
