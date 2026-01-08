@@ -16,9 +16,6 @@ include:
 # Base template for hiveio-api package generation, build, test, and deployment
 .hiveio_api_package_template:
   extends: .build_wheel_template
-  # Override image to Python 3.12 - datamodel-code-generator doesn't support Python 3.14 yet
-  # It generates invalid syntax like bare "int | Type" instead of proper type annotations
-  image: registry.gitlab.syncad.com/hive/common-ci-configuration/python:3.12.9-1
   variables:
     HIVE_PROJECT_ROOT: "${CI_PROJECT_DIR}"
     API_GENERATION_DIR: "${HIVE_PROJECT_ROOT}/libraries/plugins/apis/api_generation"
