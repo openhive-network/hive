@@ -172,7 +172,8 @@ then
                 fi
             done
             # Ensure hived can access the blockchain directory
-            sudo chown -R hived:hived "${DATADIR}/blockchain"
+            # Note: hived user's primary group is 'users', not 'hived'
+            sudo chown -R hived:users "${DATADIR}/blockchain"
             ls -al "${DATADIR}/blockchain"
         else
             echo "WARNING: No blockchain in cache and shared block_log not found at ${SHARED_BLOCK_LOG_DIR}"
