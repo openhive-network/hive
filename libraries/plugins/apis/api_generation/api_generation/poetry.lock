@@ -144,17 +144,17 @@ files = [
 
 [[package]]
 name = "api-client-generator"
-version = "1.7.1.dev11+7075dcf"
+version = "1.7.1.dev17+7d759fb"
 description = ""
 optional = false
 python-versions = ">=3.14,<4"
 groups = ["main"]
 files = [
-    {file = "api_client_generator-1.7.1.dev11+7075dcf-py3-none-any.whl", hash = "sha256:51758471b72cd6bf99f48a028e31dacb3e123e48b35239630cf3818687c4ffd7"},
+    {file = "api_client_generator-1.7.1.dev17+7d759fb-py3-none-any.whl", hash = "sha256:1d69fed8ffce0829c05c463c837539c7aa44d40df58750395e86c90ff2a1f7f6"},
 ]
 
 [package.dependencies]
-datamodel-code-generator = "0.49.0"
+datamodel-code-generator = "0.52.2"
 msgspec = "0.20.0"
 ruff = "0.11.5"
 
@@ -406,14 +406,14 @@ files = [
 
 [[package]]
 name = "datamodel-code-generator"
-version = "0.49.0"
+version = "0.52.2"
 description = "Datamodel Code Generator"
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "datamodel_code_generator-0.49.0-py3-none-any.whl", hash = "sha256:0c24d21b7a3103a89a324be48bbcac3fed1fd2f22804de8589e589f2c93d9dc0"},
-    {file = "datamodel_code_generator-0.49.0.tar.gz", hash = "sha256:eb4a95ee21c10f7675982f8b7d92344971b9a5e4c34c89b54652f8576b3a604b"},
+    {file = "datamodel_code_generator-0.52.2-py3-none-any.whl", hash = "sha256:3ee19ec38190b76bb4119aa67ddce25b3447dd4e5c6bfd47b03a9937c50f5aac"},
+    {file = "datamodel_code_generator-0.52.2.tar.gz", hash = "sha256:54b25789980deafed50c455c25a5d391c177a9f74f0e14b0edeb6db69f1185a9"},
 ]
 
 [package.dependencies]
@@ -590,13 +590,13 @@ files = [
 
 [[package]]
 name = "hiveio-beekeepy"
-version = "1.28.4.dev9+a3c7bbe"
+version = "1.28.4.dev7+c04687a"
 description = "All in one package for beekeeper interaction via Python interface."
 optional = false
 python-versions = ">=3.12,<4"
 groups = ["main"]
 files = [
-    {file = "hiveio_beekeepy-1.28.4.dev9+a3c7bbe-py3-none-any.whl", hash = "sha256:97393d400aa487a2a303c1b18cbbe834da70580b01261752a142a5878e885e2a"},
+    {file = "hiveio_beekeepy-1.28.4.dev7+c04687a-py3-none-any.whl", hash = "sha256:f6d098a75e283d9361e9a7ea8792a218e0de3e5140dda36afbc4076159e90e7d"},
 ]
 
 [package.dependencies]
@@ -1838,4 +1838,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.14"
-content-hash = "9758192b672dbaff6b0a4ca27d303047d1b16aa61fe5b344ecc83aa63eac3fc5"
+content-hash = "d527709c47593e368807a6d575bf60b18be4cc5bed081be0056dd122faafcf0b"
