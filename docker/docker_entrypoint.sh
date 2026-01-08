@@ -22,7 +22,8 @@ if [ -n "${DATA_SOURCE+x}" ]; then
     COMMON_CI_URL="${COMMON_CI_URL:-https://gitlab.syncad.com/hive/common-ci-configuration/-/raw/develop}"
     COPY_DATADIR_SCRIPT="/tmp/copy_datadir.sh"
     echo "Fetching copy_datadir.sh from common-ci-configuration..."
-    curl -fsSL "${COMMON_CI_URL}/haf-app-tools/scripts/copy_datadir.sh" -o "$COPY_DATADIR_SCRIPT"
+    # Use wget instead of curl since curl is not installed in minimal runtime image
+    wget -q "${COMMON_CI_URL}/haf-app-tools/scripts/copy_datadir.sh" -O "$COPY_DATADIR_SCRIPT"
     chmod +x "$COPY_DATADIR_SCRIPT"
     source "$COPY_DATADIR_SCRIPT"
 fi
