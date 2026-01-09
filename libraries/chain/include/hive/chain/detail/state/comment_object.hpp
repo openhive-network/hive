@@ -136,7 +136,7 @@ namespace hive { namespace chain {
         , allowed_vote_assets( a )
 #endif
       {
-        init( _author, _permlink, _creation_time, _cashout_time );
+        init( _author, _permlink );
       }
 
       void configure_options( uint16_t _percent_hbd, const HBD_asset& _max_accepted_payout, bool _allow_votes, bool _allow_curation )
@@ -236,8 +236,7 @@ namespace hive { namespace chain {
       }
 
     private:
-      void init( const account_object& _author, const std::string& _permlink,
-        const time_point_sec& _creation_time, const time_point_sec& _cashout_time );
+      void init( const account_object& _author, const std::string& _permlink );
 
       account_id_type   author_id;
       shared_string     permlink;
