@@ -79,6 +79,12 @@ def generate_root_package(
     with open(project_directory / "pyproject.toml", "w") as f:
         f.write(pyproject_content)
 
+    # Render .gitignore (in the project directory)
+    gitignore_template = env.get_template(".gitignore.j2")
+    gitignore_content = gitignore_template.render()
+    with open(project_directory / ".gitignore", "w") as f:
+        f.write(gitignore_content)
+
     # Copy py.typed marker to the Python package directory
     shutil.copy(template_directory / "py.typed", package_directory)
 
