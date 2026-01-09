@@ -69,7 +69,7 @@ void delete_comment_evaluator::do_apply( const delete_comment_operation& o )
 
   if( comment_cashout->get_net_rshares() > 0 )
   {
-    push_virtual_operation( _db,  ineffective_delete_comment_operation( o.author, o.permlink ) );
+    push_virtual_operation( _db, ineffective_delete_comment_operation( o.author, o.permlink ) );
     return;
   }
 
@@ -638,7 +638,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
     _db.adjust_rshares2( old_rshares, new_rshares );
   }
 
-  push_virtual_operation( _db,  effective_comment_vote_operation( o.voter, o.author, o.permlink, vote_weight, rshares, comment_cashout->get_total_vote_weight() ) );
+  push_virtual_operation( _db, effective_comment_vote_operation( o.voter, o.author, o.permlink, vote_weight, rshares, comment_cashout->get_total_vote_weight() ) );
 }
 
 void hf20_vote_evaluator( const vote_operation& o, database& _db )
@@ -889,7 +889,7 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
     });
   }
 
-  push_virtual_operation( _db,  effective_comment_vote_operation( o.voter, o.author, o.permlink, vote_weight, rshares, comment_cashout->get_total_vote_weight() ) );
+  push_virtual_operation( _db, effective_comment_vote_operation( o.voter, o.author, o.permlink, vote_weight, rshares, comment_cashout->get_total_vote_weight() ) );
 }
 
 void vote_evaluator::do_apply( const vote_operation& o )

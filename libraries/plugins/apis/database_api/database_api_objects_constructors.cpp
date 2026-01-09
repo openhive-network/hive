@@ -551,6 +551,6 @@ api_recurrent_transfer_object::api_recurrent_transfer_object( const recurrent_tr
   consecutive_failures( o.consecutive_failures ),
   remaining_executions( o.remaining_executions ),
   pair_id( o.pair_id )
-  {}
+{}
 
 } } } // hive::plugins::database_api

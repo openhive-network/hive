@@ -256,7 +256,7 @@ void account_create_evaluator::do_apply( const account_create_operation& o )
   {
     initial_vesting_shares = asset(0, VESTS_SYMBOL);
   }
-  push_virtual_operation( _db,  account_created_operation(o.new_account_name, o.creator, initial_vesting_shares, asset(0, VESTS_SYMBOL) ) );
+  push_virtual_operation( _db, account_created_operation( o.new_account_name, o.creator, initial_vesting_shares, asset(0, VESTS_SYMBOL) ) );
 }
 
 void account_create_with_delegation_evaluator::do_apply( const account_create_with_delegation_operation& o )
@@ -377,7 +377,7 @@ void account_create_with_delegation_evaluator::do_apply( const account_create_wi
   {
     initial_vesting_shares = asset(0, VESTS_SYMBOL);
   }
-  push_virtual_operation( _db,  account_created_operation( o.new_account_name, o.creator, initial_vesting_shares, o.delegation) );
+  push_virtual_operation( _db, account_created_operation( o.new_account_name, o.creator, initial_vesting_shares, o.delegation ) );
 }
 
 
@@ -661,7 +661,7 @@ void create_claimed_account_evaluator::do_apply( const create_claimed_account_op
     auth.last_owner_update = fc::time_point_sec::min();
   });
 
-  push_virtual_operation( _db,  account_created_operation(new_account.get_name(), o.creator, asset(0, VESTS_SYMBOL), asset(0, VESTS_SYMBOL) ) );
+  push_virtual_operation( _db, account_created_operation( new_account.get_name(), o.creator, asset(0, VESTS_SYMBOL), asset(0, VESTS_SYMBOL) ) );
 }
 
 void request_account_recovery_evaluator::do_apply( const request_account_recovery_operation& o )

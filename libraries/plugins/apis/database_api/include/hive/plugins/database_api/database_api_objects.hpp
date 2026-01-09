@@ -70,7 +70,7 @@ using namespace hive::chain;
 struct api_reward_fund_object
 {
   api_reward_fund_object() = default;
-  api_reward_fund_object(const reward_fund_object& o, const database& db);
+  api_reward_fund_object( const reward_fund_object& o, const database& db );
 
   reward_fund_id_type     id;
   reward_fund_name_type   name;
@@ -86,7 +86,7 @@ struct api_reward_fund_object
 
 struct api_witness_vote_object
 {
-  api_witness_vote_object(const witness_vote_object& o, const database& db);
+  api_witness_vote_object( const witness_vote_object& o, const database& db );
 
   witness_vote_id_type id;
   account_name_type    witness;
@@ -95,7 +95,7 @@ struct api_witness_vote_object
 
 struct api_escrow_object
 {
-  api_escrow_object(const escrow_object& o, const database& db);
+  api_escrow_object( const escrow_object& o, const database& db );
 
   escrow_id_type    id;
   uint32_t          escrow_id;
@@ -114,7 +114,7 @@ struct api_escrow_object
 
 struct api_withdraw_vesting_route_object
 {
-  api_withdraw_vesting_route_object(const withdraw_vesting_route_object& o, const database& db);
+  api_withdraw_vesting_route_object( const withdraw_vesting_route_object& o, const database& db );
   api_withdraw_vesting_route_object() = default;
 
   withdraw_vesting_route_id_type id;
@@ -126,7 +126,7 @@ struct api_withdraw_vesting_route_object
 
 struct api_vesting_delegation_object
 {
-  api_vesting_delegation_object(const vesting_delegation_object& o, const database& db);
+  api_vesting_delegation_object( const vesting_delegation_object& o, const database& db );
 
   vesting_delegation_id_type id;
   account_name_type          delegator;
@@ -137,7 +137,7 @@ struct api_vesting_delegation_object
 
 struct api_vesting_delegation_expiration_object
 {
-  api_vesting_delegation_expiration_object(const vesting_delegation_expiration_object& o, const database& db);
+  api_vesting_delegation_expiration_object( const vesting_delegation_expiration_object& o, const database& db );
 
   vesting_delegation_expiration_id_type id;
   account_name_type                     delegator;
@@ -148,7 +148,7 @@ struct api_vesting_delegation_expiration_object
 struct api_convert_request_object
 {
   api_convert_request_object() = default;
-  api_convert_request_object(const convert_request_object& o, const database& db);
+  api_convert_request_object( const convert_request_object& o, const database& db );
 
   convert_request_id_type id;
   account_name_type       owner;
@@ -160,7 +160,7 @@ struct api_convert_request_object
 struct api_collateralized_convert_request_object
 {
   api_collateralized_convert_request_object() = default;
-  api_collateralized_convert_request_object(const collateralized_convert_request_object& o, const database& db);
+  api_collateralized_convert_request_object( const collateralized_convert_request_object& o, const database& db );
 
   collateralized_convert_request_id_type id;
   account_name_type                      owner;
@@ -172,7 +172,7 @@ struct api_collateralized_convert_request_object
 
 struct api_decline_voting_rights_request_object
 {
-  api_decline_voting_rights_request_object(const decline_voting_rights_request_object& o, const database& db);
+  api_decline_voting_rights_request_object( const decline_voting_rights_request_object& o, const database& db );
 
   decline_voting_rights_request_id_type id;
   account_name_type                     account;
@@ -181,7 +181,7 @@ struct api_decline_voting_rights_request_object
 
 struct api_limit_order_object
 {
-  api_limit_order_object(const limit_order_object& o, const database& db);
+  api_limit_order_object( const limit_order_object& o, const database& db );
   api_limit_order_object() = default;
 
   limit_order_id_type id;
@@ -195,7 +195,7 @@ struct api_limit_order_object
 
 struct api_dynamic_global_property_object
 {
-  api_dynamic_global_property_object(const dynamic_global_property_object& o, const database& db);
+  api_dynamic_global_property_object( const dynamic_global_property_object& o, const database& db );
   api_dynamic_global_property_object() = default;
 
   dynamic_global_property_id_type id;
@@ -250,7 +250,7 @@ struct api_dynamic_global_property_object
 
 struct api_change_recovery_account_request_object
 {
-  api_change_recovery_account_request_object(const change_recovery_account_request_object& o, const database& db);
+  api_change_recovery_account_request_object( const change_recovery_account_request_object& o, const database& db );
 
   change_recovery_account_request_id_type id;
   account_name_type                       account_to_recover;
@@ -289,7 +289,7 @@ struct api_commment_cashout_info
 
 struct api_comment_object
 {
-  api_comment_object(const comment_object& o, const database& db);
+  api_comment_object( const comment_object& o, const database& db );
   api_comment_object() = default;
 
   comment_id_type   id;
@@ -341,7 +341,7 @@ struct api_comment_object
 
 struct api_comment_vote_object
 {
-  api_comment_vote_object(const comment_vote_object& cv, const database& db);
+  api_comment_vote_object( const comment_vote_object& cv, const database& db );
 
   comment_vote_id_type id;
 
@@ -357,7 +357,7 @@ struct api_comment_vote_object
 
 struct api_account_object
 {
-  api_account_object(const account_object& a, const database& db, bool delayed_votes_active);
+  api_account_object( const account_object& a, const database& db, bool delayed_votes_active );
   api_account_object() = default;
 
   account_id_type   id;
@@ -445,7 +445,7 @@ struct api_account_object
 
 struct api_owner_authority_history_object
 {
-  api_owner_authority_history_object(const owner_authority_history_object& o, const database& db);
+  api_owner_authority_history_object( const owner_authority_history_object& o, const database& db );
   api_owner_authority_history_object() = default;
 
   owner_authority_history_id_type  id;
@@ -457,7 +457,7 @@ struct api_owner_authority_history_object
 
 struct api_account_recovery_request_object
 {
-  api_account_recovery_request_object(const account_recovery_request_object& o, const database& db);
+  api_account_recovery_request_object( const account_recovery_request_object& o, const database& db );
   api_account_recovery_request_object() = default;
 
   account_recovery_request_id_type id;
@@ -473,7 +473,7 @@ struct api_account_history_object
 
 struct api_savings_withdraw_object
 {
-  api_savings_withdraw_object(const savings_withdraw_object& o, const database& db);
+  api_savings_withdraw_object( const savings_withdraw_object& o, const database& db );
   api_savings_withdraw_object() = default;
 
   savings_withdraw_id_type   id;
@@ -487,7 +487,7 @@ struct api_savings_withdraw_object
 
 struct api_feed_history_object
 {
-  api_feed_history_object(const feed_history_object& f);
+  api_feed_history_object( const feed_history_object& f );
   api_feed_history_object() = default;
 
   feed_history_id_type id;
@@ -500,7 +500,7 @@ struct api_feed_history_object
 
 struct api_witness_object
 {
-  api_witness_object(const witness_object& w, const database& db);
+  api_witness_object( const witness_object& w, const database& db );
   api_witness_object() = default;
 
   witness_id_type   id;
@@ -568,8 +568,8 @@ struct future_witness_schedule
 struct api_witness_schedule_object
 {
   api_witness_schedule_object() = default;
-  api_witness_schedule_object(const witness_schedule_object& wso,
-    const witness_schedule_object& future_wso, bool include_future, const database& db);
+  api_witness_schedule_object( const witness_schedule_object& wso,
+    const witness_schedule_object& future_wso, bool include_future, const database& db );
 
   witness_schedule_id_type              id; //always from active wso
 
@@ -609,7 +609,7 @@ struct api_signed_block_object : public signed_block
 
 struct api_hardfork_property_object
 {
-  api_hardfork_property_object(const hardfork_property_object& h);
+  api_hardfork_property_object( const hardfork_property_object& h );
   api_hardfork_property_object() = default;
 
   hardfork_property_id_type     id;
@@ -624,7 +624,7 @@ struct api_hardfork_property_object
 
 struct api_smt_token_object
 {
-  api_smt_token_object(const smt_token_object& token, const database& db);
+  api_smt_token_object( const smt_token_object& token, const database& db );
 
   smt_token_object                token;
   fc::optional< smt_ico_object >  ico;
@@ -632,7 +632,7 @@ struct api_smt_token_object
 
 struct api_smt_token_emissions_object
 {
-  api_smt_token_emissions_object(const smt_token_emissions_object& o, const database& db);
+  api_smt_token_emissions_object( const smt_token_emissions_object& o, const database& db );
 
   smt_token_emissions_id_type           id;
   asset_symbol_type                     symbol;
@@ -651,7 +651,7 @@ struct api_smt_token_emissions_object
 
 struct api_smt_contribution_object
 {
-  api_smt_contribution_object(const smt_contribution_object& o, const database& db);
+  api_smt_contribution_object( const smt_contribution_object& o, const database& db );
 
   smt_contribution_id_type id;
   asset_symbol_type        symbol;
@@ -697,7 +697,7 @@ struct api_proposal_object
 struct api_proposal_vote_object
 {
   api_proposal_vote_object() = default;
-  api_proposal_vote_object(const proposal_vote_object& pvo, const database& db);
+  api_proposal_vote_object( const proposal_vote_object& pvo, const database& db );
 
   proposal_vote_id_type   id;
   account_name_type       voter;
@@ -708,18 +708,18 @@ struct api_proposal_vote_object
 struct api_recurrent_transfer_object
 {
   api_recurrent_transfer_object() = default;
-  api_recurrent_transfer_object(const recurrent_transfer_object& o, const account_name_type from_name, const account_name_type to_name);
+  api_recurrent_transfer_object( const recurrent_transfer_object& o, const account_name_type from_name, const account_name_type to_name );
 
   recurrent_transfer_id_type id;
-    time_point_sec    trigger_date;
-    account_name_type from;
-    account_name_type to;
-    asset             amount;
-    string            memo;
-    uint16_t          recurrence = 0;
-    uint8_t           consecutive_failures = 0;
-    uint16_t          remaining_executions = 0;
-    uint8_t          pair_id = 0;
+  time_point_sec    trigger_date;
+  account_name_type from;
+  account_name_type to;
+  asset             amount;
+  string            memo;
+  uint16_t          recurrence = 0;
+  uint8_t           consecutive_failures = 0;
+  uint16_t          remaining_executions = 0;
+  uint8_t           pair_id = 0;
 };
 
 
