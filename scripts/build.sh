@@ -131,11 +131,6 @@ if [[ -d "$HIVED_INSTALLATION_DIR" ]]; then
 
     sudo rm -rf "$HIVED_INSTALLATION_DIR/CMakeFiles"
 
-    if [[ -f "$abs_build_dir/${HAF_BUILD:+"hive/"}programs/beekeeper/beekeeper/beekeeper" ]]; then
-        sudo mv "$abs_build_dir/${HAF_BUILD:+"hive/"}programs/beekeeper/beekeeper/beekeeper" \
-            "$HIVED_INSTALLATION_DIR/"
-    fi
-
     if [[ -n "$(shopt -s nullglob; echo "$abs_build_dir/${HAF_BUILD:+"hive/"}programs/blockchain_converter/blockchain_converter"*)" ]]; then
         sudo mv "$abs_build_dir/${HAF_BUILD:+"hive/"}programs/blockchain_converter/blockchain_converter"* \
             "$HIVED_INSTALLATION_DIR/"

@@ -39,9 +39,9 @@ QUICK_TEST USAGE:
   # Run only unit tests (chain_test, plugin_test) with auto-detected binaries:
   glab ci run -b my-branch --variables QUICK_TEST:true
 
-  # Run specific tests (e.g., beekeeper tests):
+  # Run specific tests (e.g., wax-spec tests):
   glab ci run -b my-branch --variables QUICK_TEST:true \\
-    --variables QUICK_TEST_JOBS:run_examples_beekeeper_wasm
+    --variables QUICK_TEST_JOBS:test-wax-spec-package
 
   # Run test_tools_tests (requires test block log image):
   glab ci run -b my-branch --variables QUICK_TEST:true \\
@@ -49,8 +49,6 @@ QUICK_TEST USAGE:
     --variables QUICK_TEST_BLOCK_LOG_IMAGE:<image>
 
 SUPPORTED QUICK_TEST_JOBS:
-  - run_examples_beekeeper_wasm  (also runs beekeeper_tsc_build)
-  - test_beekeeper_wasm          (also runs beekeeper_tsc_build)
   - test-wax-spec-package        (also runs generate-wax-spec)
   - test_tools_tests             (requires QUICK_TEST_BLOCK_LOG_IMAGE)
 EOF
@@ -222,7 +220,7 @@ echo "glab ci run -b <your-branch> --variables QUICK_TEST:true"
 echo ""
 echo "# Run specific non-unit tests:"
 echo "glab ci run -b <your-branch> --variables QUICK_TEST:true \\"
-echo "  --variables QUICK_TEST_JOBS:run_examples_beekeeper_wasm"
+echo "  --variables QUICK_TEST_JOBS:test-wax-spec-package"
 echo ""
 echo "# Run test_tools_tests (requires block log image):"
 echo "glab ci run -b <your-branch> --variables QUICK_TEST:true \\"
