@@ -151,7 +151,7 @@ void escrow_approve_evaluator::do_apply( const escrow_approve_operation& o )
       _db.adjust_balance( o.from, escrow.get_hbd_balance() );
       _db.adjust_balance( o.from, escrow.get_fee() );
 
-      push_virtual_operation( _db,  escrow_rejected_operation( o.from, o.to, o.agent, o.escrow_id,
+      push_virtual_operation( _db, escrow_rejected_operation( o.from, o.to, o.agent, o.escrow_id,
         escrow.get_hbd_balance(), escrow.get_hive_balance(), escrow.get_fee() ) );
 
       _db.modify( _db.get_account( escrow.from ), []( account_object& a )
@@ -164,7 +164,7 @@ void escrow_approve_evaluator::do_apply( const escrow_approve_operation& o )
     {
       _db.adjust_balance( o.agent, escrow.get_fee() );
 
-      push_virtual_operation( _db,  escrow_approved_operation( o.from, o.to, o.agent,
+      push_virtual_operation( _db, escrow_approved_operation( o.from, o.to, o.agent,
         o.escrow_id, escrow.get_fee() ) );
 
       _db.modify( escrow, [&]( escrow_object& esc )
@@ -274,7 +274,7 @@ void transfer_evaluator::do_apply( const transfer_operation& o )
       _db.adjust_supply(amount_to_transfer);
 
     // o.to will always be the treasury so no need to call _db.get_treasury
-    push_virtual_operation( _db,  dhf_conversion_operation( o.to, o.amount, amount_to_transfer ) );
+    push_virtual_operation( _db, dhf_conversion_operation( o.to, o.amount, amount_to_transfer ) );
     return;
   } else if( _db.has_hardfork( HIVE_HARDFORK_0_21__3343 ) )
   {
@@ -319,7 +319,7 @@ void transfer_to_vesting_evaluator::do_apply( const transfer_to_vesting_operatio
   }
 
   /// Emit this vop unconditionally, since VESTS balance changed immediately, indepdenent to subsequent updates of account voting power done inside `delayed_voting` mechanism.
-  push_virtual_operation( _db, transfer_to_vesting_completed_operation(from_account.get_name(), to_account.get_name(), o.amount, amount_vested));
+  push_virtual_operation( _db, transfer_to_vesting_completed_operation(from_account.get_name(), to_account.get_name(), o.amount, amount_vested) );
 }
 
 void withdraw_vesting_evaluator::do_apply( const withdraw_vesting_operation& o )
@@ -521,7 +521,7 @@ void collateralized_convert_evaluator::do_apply( const collateralized_convert_op
   _db.create<collateralized_convert_request_object>( owner, o.amount, converted_amount,
     _db.head_block_time() + HIVE_COLLATERALIZED_CONVERSION_DELAY, o.requestid );
 
-  push_virtual_operation( _db,  collateralized_convert_immediate_conversion_operation( o.owner, o.requestid, converted_amount ) );
+  push_virtual_operation( _db, collateralized_convert_immediate_conversion_operation( o.owner, o.requestid, converted_amount ) );
 }
 
 void limit_order_create_evaluator::do_apply( const limit_order_create_operation& o )
