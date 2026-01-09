@@ -225,7 +225,7 @@ void account_create_evaluator::do_apply( const account_create_operation& o )
   }
 
   const auto& new_account = create_account( _db, o.new_account_name, o.memo_key, props.time, _db.get_current_timestamp(),
-    false /*mined*/, o.fee, &creator, asset( 0, VESTS_SYMBOL ) );
+    false /*mined*/, o.fee, &creator );
 
 #ifdef COLLECT_ACCOUNT_METADATA
   _db.create< account_metadata_object >( [&]( account_metadata_object& meta )
@@ -639,7 +639,7 @@ void create_claimed_account_evaluator::do_apply( const create_claimed_account_op
   });
 
   const auto& new_account = create_account( _db, o.new_account_name, o.memo_key, props.time, _db.get_current_timestamp(),
-    false /*mined*/, _db.get_witness_schedule_object().median_props.account_creation_fee, &creator, asset( 0, VESTS_SYMBOL ) );
+    false /*mined*/, _db.get_witness_schedule_object().median_props.account_creation_fee, &creator );
 
 #ifdef COLLECT_ACCOUNT_METADATA
   _db.create< account_metadata_object >( [&]( account_metadata_object& meta )
