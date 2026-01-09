@@ -3647,7 +3647,7 @@ void database::validate_invariants()const
     {
       asset order_hive( 0, HIVE_SYMBOL );
       asset order_hbd( 0, HBD_SYMBOL );
-      get_limit_order_totals( order_hive, order_hbd );
+      get_limit_order_totals( order_hive, order_hbd, order_no );
       total_supply += order_hive;
       total_hbd += order_hbd;
     }
