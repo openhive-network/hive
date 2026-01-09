@@ -2393,22 +2393,6 @@ void database::_apply_block( const std::shared_ptr<full_block_type>& full_block,
   _my->_last_pushed_block_time.store(gprops.time.sec_since_epoch(), std::memory_order_release);
 } FC_CAPTURE_CALL_LOG_AND_RETHROW( std::bind( &database::notify_fail_apply_block, this, note ), (block_num) ) }
 
-void database::process_header_extensions( const signed_block& next_block )
-{
-  fc::optional<block_header_extensions> version_ext;
-  fc::optional<block_header_extensions> hf_vote_ext;
-
-  for( const auto& e : next_block.extensions )
-  {
-    if( e.which() == block_header_extensions::tag<version>::value )
-      version_ext = e;
-    else if( e.which() == block_header_extensions::tag<hardfork_version_vote>::value )
-      hf_vote_ext = e;
-  }
-
-  process_header_witness_updates( next_block.witness, version_ext, hf_vote_ext );
-}
-
 void database::process_genesis_accounts()
 {
   /*
