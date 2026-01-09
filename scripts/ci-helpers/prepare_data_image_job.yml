@@ -1,15 +1,11 @@
 variables:
-  # Variables required by Common CI jobs
-  CI_COMMON_JOB_VERSION: "dc184288e7aa73a299000b6965d10d206b022080"
-  DOCKER_BUILDER_TAG: "$CI_COMMON_JOB_VERSION"
-  DOCKER_DIND_TAG: "$CI_COMMON_JOB_VERSION"
-  IMAGE_REMOVER_TAG: "$CI_COMMON_JOB_VERSION"
+  # Docker infrastructure images use "latest" tag (default from templates)
   BEEKEEPY_INITIALIZATION_TIMEOUT: 60  # for test-tools
   BEEKEEPY_CLOSE_TIMEOUT: 60  # for test-tools
 
 include:
   - project: 'hive/common-ci-configuration'
-    ref: dc184288e7aa73a299000b6965d10d206b022080 # Updated EMSCRIPTEN_IMAGE_TAG to use new image across other repos
+    ref: 5269373859a0bf9156d751d13bfbe270065b3798 # Updated EMSCRIPTEN_IMAGE_TAG to 4.0.22-1
     file:
       - '/templates/npm_projects.gitlab-ci.yml'
       - '/templates/wasm_build.gitlab-ci.yml'
