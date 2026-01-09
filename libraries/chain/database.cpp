@@ -3616,37 +3616,10 @@ void database::validate_invariants()const
       ++account_no;
     }
 
-    {
-      asset convert_hbd( 0, HBD_SYMBOL );
-      asset collateral_hive( 0, HIVE_SYMBOL );
-      get_convert_request_totals( collateral_hive, convert_hbd, collateralized_convert_no, convert_no );
-      total_hbd += convert_hbd;
-      total_supply += collateral_hive;
-    }
-
-    {
-      asset order_hive( 0, HIVE_SYMBOL );
-      asset order_hbd( 0, HBD_SYMBOL );
-      get_limit_order_totals( order_hive, order_hbd, order_no );
-      total_supply += order_hive;
-      total_hbd += order_hbd;
-    }
-
-    {
-      asset escrow_hive( 0, HIVE_SYMBOL );
-      asset escrow_hbd( 0, HBD_SYMBOL );
-      get_escrow_totals( escrow_hive, escrow_hbd, escrow_no );
-      total_supply += escrow_hive;
-      total_hbd += escrow_hbd;
-    }
-
-    {
-      asset withdraw_hive( 0, HIVE_SYMBOL );
-      asset withdraw_hbd( 0, HBD_SYMBOL );
-      get_savings_withdraw_totals( withdraw_hive, withdraw_hbd, withdrawal_no );
-      total_supply += withdraw_hive;
-      total_hbd += withdraw_hbd;
-    }
+    get_convert_request_totals( total_supply, total_hbd, collateralized_convert_no, convert_no );
+    get_limit_order_totals( total_supply, total_hbd, order_no );
+    get_escrow_totals( total_supply, total_hbd, escrow_no );
+    get_savings_withdraw_totals( total_supply, total_hbd, withdrawal_no );
 
     const auto& reward_idx = get_index< reward_fund_index, by_id >();
 
