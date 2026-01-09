@@ -2092,19 +2092,6 @@ const irreversible_block_data_type* database::get_last_irreversible_object() con
   return last_irreversible_object;
 }
 
-// Initialization functions moved to database_init.cpp:
-// - initialize_evaluators()
-// - register_custom_operation_interpreter()
-// - get_custom_json_evaluator()
-// - initialize_indexes()
-// - initialize_irreversible_storage()
-// - verify_match_of_state_objects_definitions_from_shm()
-// - verify_match_of_blockchain_configuration()
-// - get_current_decoded_types_data_json()
-// - get_json_schema()
-// - init_schema()
-// - init_genesis()
-// - set_flush_interval()
 
 //////////////////// private methods ////////////////////
 
@@ -3573,13 +3560,6 @@ asset database::get_savings_balance( const account_object& a, asset_symbol_type 
   }
 }
 
-// Hardfork functions moved to database_hardfork.cpp:
-// - init_hardforks()
-// - process_hardforks()
-// - has_hardfork()
-// - get_hardfork()
-// - set_hardfork()
-// - apply_hardfork()
 
 /**
   * Verifies all supply invariantes check out
