@@ -132,7 +132,7 @@ fi
 
 echo -e "Building Docker build image...\n"
 
-docker build --target=build \
+docker build --provenance=false --target=build \
   --build-arg CI_REGISTRY_IMAGE="$REGISTRY/" \
   --build-arg BUILD_HIVE_TESTNET=$BUILD_HIVE_TESTNET \
   --build-arg HIVE_CONVERTER_BUILD=$HIVE_CONVERTER_BUILD \
@@ -144,7 +144,7 @@ docker build --target=build \
 
 echo -e "\nDone!\nBuilding Docker instance image...\n"
 
-docker build --target=instance \
+docker build --provenance=false --target=instance \
   --build-arg CI_REGISTRY_IMAGE="$REGISTRY/" \
   --build-arg BUILD_IMAGE_TAG="$BUILD_IMAGE_TAG" \
   --build-arg BUILD_HIVE_TESTNET=$BUILD_HIVE_TESTNET \
