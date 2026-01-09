@@ -14,12 +14,11 @@ comment_object::author_and_permlink_hash_type comment_object::compute_author_and
 }
 
 // comment_cashout_object init helper
-void comment_cashout_object::init( const account_object& _author, const std::string& _permlink,
-  const time_point_sec& _creation_time, const time_point_sec& _cashout_time )
+void comment_cashout_object::init( const account_object& _author, const std::string& _permlink )
 {
   author_id = _author.get_id();
   from_string( permlink, _permlink );
-  FC_ASSERT( _creation_time <= _cashout_time );
+  FC_ASSERT( created <= cashout_time );
 }
 
 void comment_cashout_object::add_beneficiary( const account_object& beneficiary, uint16_t weight )
