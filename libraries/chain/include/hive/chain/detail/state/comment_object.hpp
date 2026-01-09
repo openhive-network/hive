@@ -129,7 +129,8 @@ namespace hive { namespace chain {
       comment_cashout_object( allocator< Allocator > a, uint64_t _id,
         const comment_object& _comment, const account_object& _author, const std::string& _permlink,
         const time_point_sec& _creation_time, const time_point_sec& _cashout_time )
-      : id( _comment.get_id() ), permlink( a ), created( _creation_time ),
+      : id( _comment.get_id() ), //note that it is possible because relation is 1->{0,1} so we can share id
+        permlink( a ), created( _creation_time ),
         cashout_time( _cashout_time ), beneficiaries( a )
 #ifdef HIVE_ENABLE_SMT
         , allowed_vote_assets( a )

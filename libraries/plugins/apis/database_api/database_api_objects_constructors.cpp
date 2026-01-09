@@ -209,19 +209,19 @@ api_comment_object::api_comment_object( const comment_object& o, const database&
   if( cc )
   {
     total_vote_weight       = cc->get_total_vote_weight();
-    reward_weight           = HIVE_100_PERCENT;
-    author_rewards          = 0;
+    reward_weight           = HIVE_100_PERCENT; // since HF17 reward is not limited if posts are too frequent
+    author_rewards          = 0; // since HF19 it was always 0 or cc did not exist
     net_votes               = cc->get_net_votes();
-    last_payout             = time_point_sec::min();
+    last_payout             = time_point_sec::min(); // since HF19 it is the only value possible
     children                = cc->get_number_of_replies();
     net_rshares             = cc->get_net_rshares();
-    abs_rshares             = 0;
+    abs_rshares             = 0; // value was only used for comments created before HF6
     vote_rshares            = cc->get_vote_rshares();
-    children_abs_rshares    = 0;
+    children_abs_rshares    = 0; // value not accumulated after HF17
     created                 = cc->get_creation_time();
-    last_update             = created;
+    last_update             = created; // edit time not available here (Hivemind has it)
     cashout_time            = cc->get_cashout_time();
-    max_cashout_time        = time_point_sec::maximum();
+    max_cashout_time        = time_point_sec::maximum(); // since HF17 it is the only possible value
     max_accepted_payout     = cc->get_max_accepted_payout();
     percent_hbd             = cc->get_percent_hbd();
     allow_votes             = cc->allows_votes();
@@ -247,7 +247,7 @@ api_comment_vote_object::api_comment_vote_object( const comment_vote_object& cv,
 {
   voter = db.get( cv.get_voter() ).get_name();
   const comment_cashout_object* cc = db.find_comment_cashout( cv.get_comment() );
-  assert( cc != nullptr );
+  assert( cc != nullptr ); //votes should not exist after cashout
   author = db.get_account( cc->get_author_id() ).get_name();
   permlink = to_string( cc->get_permlink() );
 }
@@ -480,11 +480,11 @@ api_hardfork_property_object::api_hardfork_property_object( const hardfork_prope
 #ifdef HIVE_ENABLE_SMT
 // api_smt_token_object constructor
 api_smt_token_object::api_smt_token_object( const smt_token_object& token, const database& db )
-  : token( token.copy_chain_object() )
+  : token( token.copy_chain_object() ) //FIXME: exposes internal chain object as API result
 {
   const smt_ico_object* ico = db.find< smt_ico_object, by_symbol >( token.liquid_symbol );
   if ( ico != nullptr )
-    this->ico = ico->copy_chain_object();
+    this->ico = ico->copy_chain_object(); //FIXME: exposes internal chain object as API result
 }
 
 // api_smt_token_emissions_object constructor
