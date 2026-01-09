@@ -406,7 +406,7 @@ void database::clear_expired_orders()
   }
 }
 
-void database::get_limit_order_totals( asset& total_hive, asset& total_hbd ) const
+void database::get_limit_order_totals( asset& total_hive, asset& total_hbd, uint64_t& order_count ) const
 {
   const auto& limit_order_idx = get_index< limit_order_index >().indices();
 
@@ -420,6 +420,7 @@ void database::get_limit_order_totals( asset& total_hive, asset& total_hbd ) con
     {
       total_hbd += asset( itr->for_sale, HBD_SYMBOL );
     }
+    ++order_count;
   }
 }
 

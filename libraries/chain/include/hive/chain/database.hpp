@@ -569,7 +569,7 @@ namespace chain {
       void get_escrow_totals( asset& total_hive, asset& total_hbd, uint64_t& escrow_count ) const;
       void remove_pending_savings_withdraws( const account_object& account, const account_name_type& account_name );
       void get_savings_withdraw_totals( asset& total_hive, asset& total_hbd, uint64_t& withdrawal_count ) const;
-      void get_limit_order_totals( asset& total_hive, asset& total_hbd ) const;
+      void get_limit_order_totals( asset& total_hive, asset& total_hbd, uint64_t& order_count ) const;
       void remove_pending_limit_orders( const account_object& account, const account_name_type& account_name );
 #ifdef HIVE_ENABLE_SMT
       struct TCombinedBalance {
