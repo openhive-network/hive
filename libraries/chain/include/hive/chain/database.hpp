@@ -753,9 +753,6 @@ namespace chain {
       void update_signing_witness(const witness_object& signing_witness, const signed_block& new_block);
       void update_witness_hardfork_version_votes( const hardfork_version& hardfork_version, const fc::time_point_sec& hardfork_time );
       void update_witness_schedule_for_elected( const witness_object& current_witness, const util::rd_dynamics_params& account_subsidy_rd );
-      void process_header_witness_updates( const account_name_type& witness_name,
-        const fc::optional<block_header_extensions>& version_ext,
-        const fc::optional<block_header_extensions>& hf_vote_ext );
       uint64_t validate_witness_votes_invariant() const;
       void update_witness_missed_blocks( const account_name_type& block_witness, uint32_t missed_blocks );
       uint32_t update_last_irreversible_block(std::optional<switch_forks_t> sf);

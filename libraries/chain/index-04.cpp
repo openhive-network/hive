@@ -217,35 +217,56 @@ void database::update_witness_schedule_for_elected( const witness_object& curren
   }
 }
 
-void database::process_header_witness_updates(
-  const account_name_type& witness_name,
-  const fc::optional<block_header_extensions>& version_ext,
-  const fc::optional<block_header_extensions>& hf_vote_ext )
+struct process_header_visitor
 {
-  if( version_ext.valid() )
+  process_header_visitor( const std::string& witness, database& db ) :
+    _witness( witness ),
+    _db( db ) {}
+
+  typedef void result_type;
+
+  const std::string& _witness;
+  database& _db;
+
+  void operator()( const void_t& obj ) const
   {
-    const auto& signing_witness = get_witness( witness_name );
-    const version& reported_version = version_ext->get<version>();
+    //Nothing to do.
+  }
+
+  void operator()( const version& reported_version ) const
+  {
+    const auto& signing_witness = _db.get_witness( _witness );
+    //idump( (next_block.witness)(signing_witness.running_version)(reported_version) );
+
     if( reported_version != signing_witness.running_version )
     {
-      modify( signing_witness, [&]( witness_object& wo )
+      _db.modify( signing_witness, [&]( witness_object& wo )
       {
         wo.running_version = reported_version;
       });
     }
   }
 
-  if( hf_vote_ext.valid() )
+  void operator()( const hardfork_version_vote& hfv ) const
   {
-    const auto& signing_witness = get_witness( witness_name );
-    const hardfork_version_vote& hfv = hf_vote_ext->get<hardfork_version_vote>();
+    const auto& signing_witness = _db.get_witness( _witness );
+    //idump( (next_block.witness)(signing_witness.running_version)(hfv) );
+
     if( hfv.hf_version != signing_witness.hardfork_version_vote || hfv.hf_time != signing_witness.hardfork_time_vote )
-      modify( signing_witness, [&]( witness_object& wo )
+      _db.modify( signing_witness, [&]( witness_object& wo )
       {
         wo.hardfork_version_vote = hfv.hf_version;
         wo.hardfork_time_vote = hfv.hf_time;
       });
   }
+};
+
+void database::process_header_extensions( const signed_block& next_block )
+{
+  process_header_visitor _v( next_block.witness, *this );
+
+  for( const auto& e : next_block.extensions )
+    e.visit( _v );
 }
 
 uint64_t database::validate_witness_votes_invariant() const
