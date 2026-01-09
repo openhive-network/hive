@@ -162,6 +162,7 @@ prepare_hived_data:
     CONFIG_INI_SOURCE: "$CI_PROJECT_DIR/docker/config_5M.ini"
   tags:
     - data-cache-storage
+    - standard
     - fastest
 
 cleanup_hived_cache_manual:
@@ -171,6 +172,7 @@ cleanup_hived_cache_manual:
     CLEANUP_PATH_PATTERN: "$DATA_CACHE_HIVE_CLEANUP_PATTERN"
   tags:
     - data-cache-storage
+    - standard
 
 cleanup_cache_on_hived_builders:
   extends: .cleanup_cache_manual_template
@@ -179,6 +181,7 @@ cleanup_cache_on_hived_builders:
     CLEANUP_PATH_PATTERN: "$DATA_CACHE_HIVE_CLEANUP_PATTERN"
   tags:
     - public-runner-docker
+    - standard
 
 cleanup_old_hived_cache:
   extends: .cleanup_old_cache_template
@@ -187,6 +190,7 @@ cleanup_old_hived_cache:
     CLEANUP_PATH_PATTERN: "$DATA_CACHE_HIVE_CLEANUP_PATTERN"
   tags:
     - data-cache-storage
+    - standard
 
 
 testnet_node_build:
@@ -251,6 +255,7 @@ beekeeper_tsc_build:
 
   tags:
     - public-runner-docker
+    - standard
 
 generate-wax-spec:
   extends: .generate_swagger_package
@@ -270,6 +275,7 @@ generate-wax-spec:
     API_TYPE: "jsonrpc"
   tags:
     - public-runner-docker
+    - standard
 
 generate_beekeeper_docs:
   stage: build
@@ -293,6 +299,7 @@ generate_beekeeper_docs:
     expire_in: 1 week
   tags:
     - public-runner-docker
+    - standard
 
 push_to_wiki:
   extends: .npm_push_doc_template
@@ -313,6 +320,7 @@ push_to_wiki:
 
   tags:
     - public-runner-docker
+    - standard
 
 mirrornet_node_build:
   stage: build
@@ -394,6 +402,7 @@ extended_block_log_creation:
     - when: never
   tags:
     - data-cache-storage
+    - standard
 
 test_beekeeper_wasm:
   extends: .npm_test_template
@@ -429,6 +438,7 @@ test_beekeeper_wasm:
 
   tags:
     - public-runner-docker
+    - standard
 
 run_examples_beekeeper_wasm:
   extends: .npm_process_built_package_tarball
@@ -470,6 +480,7 @@ run_examples_beekeeper_wasm:
 
   tags:
     - public-runner-docker
+    - standard
 
 mirrornet_replay_test:
   extends:
@@ -549,6 +560,7 @@ mirrornet_replay_test:
       - "$BINARIES_DIR/*.log"
   tags:
     - data-cache-storage
+    - standard
 
 .unit_tests_base:
   extends:
@@ -568,6 +580,7 @@ mirrornet_replay_test:
     FF_NETWORK_PER_BUILD: "true"
   tags:
     - public-runner-docker
+    - standard
 
 chain_test:
   extends: .unit_tests_base
@@ -664,6 +677,7 @@ plugin_test_api:
     - cd $CI_PROJECT_DIR/tests/python/hive-local-tools
   tags:
     - public-runner-docker
+    - standard
 
 pre_commit_checks:
   stage: static_code_analysis
@@ -683,6 +697,7 @@ detect_changes:
   extends: .detect_changes
   tags:
     - public-runner-docker
+    - standard
 
 # Quick Test Setup - retrieves cached binaries from previous successful pipeline
 # Runs when QUICK_TEST=true (manual) or TESTS_ONLY=true (auto-detected)
@@ -758,6 +773,7 @@ quick_test_setup:
     - !reference [.run-pytest, script]
   tags:
     - public-runner-docker
+    - standard
 
 .beem_tests_base:
   stage: test
@@ -776,6 +792,7 @@ quick_test_setup:
     - !reference [.run-pytest, script]
   tags:
     - public-runner-docker
+    - standard
 
 beem_testnet_tests:
   extends: .beem_tests_base
@@ -837,6 +854,7 @@ hived_tests:
     - !reference [.run-pytest, script]
   tags:
     - public-runner-docker
+    - standard
 
 cli_wallet_extended_tests:
   extends: .simple_pytest_job
@@ -968,6 +986,7 @@ test_tools_tests:
     - !reference [.run-pytest, script]
   tags:
     - public-runner-docker
+    - standard
 
 rc_direct_delegations_tests:
   extends: .simple_pytest_job
@@ -1029,6 +1048,7 @@ datagen_api_tests:
     - !reference [.run-pytest, script]
   tags:
     - public-runner-docker
+    - standard
 
 patterns_tests:
   stage: test
@@ -1068,6 +1088,7 @@ patterns_tests:
     when: always
   tags:
     - data-cache-storage
+    - standard
 
 transaction_serialization_testnet_tests:
   stage: test
@@ -1083,6 +1104,7 @@ transaction_serialization_testnet_tests:
     - !reference [.run-pytest, script]
   tags:
     - public-runner-docker
+    - standard
 
 python_pattern_mainnet_tests:
   stage: test
@@ -1130,6 +1152,7 @@ python_pattern_mainnet_tests:
     when: always
   tags:
     - data-cache-storage
+    - standard
 
 python_pattern_testnet_tests:
   stage: test
@@ -1143,6 +1166,7 @@ python_pattern_testnet_tests:
     - !reference [.run-pytest, script]
   tags:
     - public-runner-docker
+    - standard
 
 .message_format_tests:
   stage: test
@@ -1239,6 +1263,7 @@ foundation_layer_tests:
     - !reference [.run-pytest, script]
   tags:
     - public-runner-docker
+    - standard
 
 witness_tests:
   stage: test
@@ -1263,6 +1288,7 @@ witness_tests:
     - !reference [.run-pytest, script]
   tags:
     - data-cache-storage
+    - standard
 
 hf28_tests:
   extends: .simple_pytest_job
@@ -1285,6 +1311,7 @@ publish_docker_image:
     - scripts/ci-helpers/build_and_publish_instance.sh
   tags:
     - public-runner-docker
+    - standard
 
 hardfork_schedule_tests:
   extends: .simple_pytest_job
@@ -1315,6 +1342,7 @@ several_node_restarts_tests:
       - $CI_PROJECT_DIR/data_generated_during_hive_replay/datadir/docker_entrypoint.log
   tags:
     - public-runner-docker
+    - standard
 
 artifacts_generation_tests:
   extends:
@@ -1333,6 +1361,7 @@ artifacts_generation_tests:
     - ./test_artifacts_generation.sh "$CI_PROJECT_DIR/$BINARY_CACHE_PATH/hived" "$CI_PROJECT_DIR/$BINARY_CACHE_PATH/block_log_util"
   tags:
     - public-runner-docker
+    - standard
 
 block_log_util_split_and_merge_block_log_tests:
   extends:
@@ -1351,6 +1380,7 @@ block_log_util_split_and_merge_block_log_tests:
     - ./test_block_log_util_split_and_merge_block_log.sh "$BLOCK_LOG_UTIL_TESTNET_PATH"
   tags:
     - public-runner-docker
+    - standard
 
 recovery_tests:
   extends: .simple_pytest_job
@@ -1416,6 +1446,7 @@ comment_cashout_tests:
     - !reference [.run-pytest, script]
   tags:
     - public-runner-docker
+    - standard
 
 test-wax-spec-package:
   extends: .node_based_job_base
@@ -1461,6 +1492,7 @@ test-wax-spec-package:
       artifacts: true
   tags:
     - public-runner-docker
+    - standard
 
 Trigger-full-mirrornet-conversion:
   stage: deploy
@@ -1515,6 +1547,7 @@ deploy_beekeeper_wasm_dev_package:
 
   tags:
     - public-runner-docker
+    - standard
 
 deploy_beekeeper_wasm_production_public_npm:
   extends: .registry_npmjs_org_deploy_package_template
@@ -1549,6 +1582,7 @@ deploy_beekeeper_wasm_production_public_npm:
 
   tags:
     - public-runner-docker
+    - standard
 
 deploy-wax-spec-dev-package:
   extends: .npm_deploy_package_template
@@ -1584,6 +1618,7 @@ deploy-wax-spec-dev-package:
       artifacts: true
   tags:
   - public-runner-docker
+  - standard
 
 deploy-wax-spec-production-public-npm:
   extends: .registry_npmjs_org_deploy_package_template
@@ -1615,6 +1650,7 @@ deploy-wax-spec-production-public-npm:
       artifacts: true
   tags:
     - public-runner-docker
+    - standard
 
 authority_tests:
   extends: .simple_pytest_job
@@ -1634,6 +1670,7 @@ generate_hived_flattened_openapi_definition:
       - "${CI_PROJECT_DIR}/libraries/plugins/apis/documentation/openapi_flattened.json"
   tags:
     - public-runner-docker
+    - standard
 
 generate_python_api_clients:
   needs:
@@ -1670,6 +1707,7 @@ generate_python_api_clients:
   stage: build
   tags:
     - public-runner-docker
+    - standard
 
 # =============================================================================
 # Python API Client Wheel Jobs (consolidated using parallel:matrix)
@@ -1735,6 +1773,7 @@ build_api_wheel:
       artifacts: true
   tags:
     - public-runner-docker
+    - standard
   artifacts:
     paths:
       - "${PYPROJECT_DIR}/dist"
@@ -1754,6 +1793,7 @@ deploy_api_wheel_to_gitlab:
       artifacts: true
   tags:
     - public-runner-docker
+    - standard
 
 # Deploy wheel to public PyPI registry (excludes jsonrpc)
 deploy_api_wheel_to_pypi:
@@ -1767,6 +1807,7 @@ deploy_api_wheel_to_pypi:
       artifacts: true
   tags:
     - public-runner-docker
+    - standard
 
 generate_testing_block_logs:
   stage: build
@@ -1848,6 +1889,7 @@ build_combined_testing_block_logs_image:
       dotenv: testing_block_log_latest_version.env
   tags:
     - public-runner-docker
+    - standard
 
 universal_block_log_tests:
   stage: test
@@ -1870,6 +1912,7 @@ universal_block_log_tests:
     - !reference [.run-pytest, script]
   tags:
     - public-runner-docker
+    - standard
 
 colony_tests:
   stage: test
@@ -1902,6 +1945,7 @@ colony_tests:
       - TEST_NAME: test_colony_with_unknown_colony_signer
   tags:
     - public-runner-docker
+    - standard
 
 # Build and push OpenAPI spec Docker image
 build_openapi_spec_image:
@@ -1953,6 +1997,7 @@ build_openapi_spec_image:
       fi
   tags:
     - public-runner-docker
+    - standard
 
 exchange_node_block_log_pruning_test:
   extends: .docker_image_builder_job
@@ -1977,3 +2022,4 @@ exchange_node_block_log_pruning_test:
   - when: on_success
   tags:
     - public-runner-docker
+    - standard
