@@ -560,7 +560,7 @@ namespace chain {
       void process_funds();
       void process_conversions();
       void remove_pending_conversion_requests( const account_object& account );
-      void get_convert_request_totals( asset& total_hbd, asset& total_collateral, uint64_t& convert_count, uint64_t& collateralized_count ) const;
+      void get_convert_request_totals( asset& total_hive, asset& total_hbd, uint64_t& collateralized_count, uint64_t& convert_count ) const;
       void process_savings_withdraws();
       void process_subsidized_accounts();
       void account_recovery_processing();

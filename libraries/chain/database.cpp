@@ -3639,7 +3639,7 @@ void database::validate_invariants()const
     {
       asset convert_hbd( 0, HBD_SYMBOL );
       asset collateral_hive( 0, HIVE_SYMBOL );
-      get_convert_request_totals( convert_hbd, collateral_hive, convert_no, collateralized_convert_no );
+      get_convert_request_totals( collateral_hive, convert_hbd, collateralized_convert_no, convert_no );
       total_hbd += convert_hbd;
       total_supply += collateral_hive;
     }
