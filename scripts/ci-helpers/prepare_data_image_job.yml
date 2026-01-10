@@ -1,6 +1,6 @@
 variables:
   # Variables required by Common CI jobs
-  CI_COMMON_JOB_VERSION: "7cc2791e1e11f4c29d305103ad6dbc7a00e150a6"
+  CI_COMMON_JOB_VERSION: "296649fb125e2cb3f22686f2c2bd662b19e17c72"
   DOCKER_BUILDER_TAG: "$CI_COMMON_JOB_VERSION"
   DOCKER_DIND_TAG: "$CI_COMMON_JOB_VERSION"
   IMAGE_REMOVER_TAG: "$CI_COMMON_JOB_VERSION"
@@ -9,7 +9,7 @@ variables:
 
 include:
   - project: 'hive/common-ci-configuration'
-    ref: 7cc2791e1e11f4c29d305103ad6dbc7a00e150a6 # Add util-linux to docker-builder for NFS flock support
+    ref: 296649fb125e2cb3f22686f2c2bd662b19e17c72  # emsdk 4.0.22 with -Oz optimized libs
     file:
       - '/templates/npm_projects.gitlab-ci.yml'
       - '/templates/wasm_build.gitlab-ci.yml'
