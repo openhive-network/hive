@@ -6,7 +6,7 @@ variables:
 
 include:
   - project: 'hive/common-ci-configuration'
-    ref: af540f5ab5e9e005d33562a898140138d1151403  # tar extraction race condition fix
+    ref: 3f520905f6da2ba060fe016c8a635826dfcb3ffd  # disable buildx attestations
     file:
       - '/templates/npm_projects.gitlab-ci.yml'
       - '/templates/wasm_build.gitlab-ci.yml'
