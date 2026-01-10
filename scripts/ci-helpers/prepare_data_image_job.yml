@@ -1,9 +1,6 @@
 variables:
-  # Variables required by Common CI jobs
-  CI_COMMON_JOB_VERSION: "296649fb125e2cb3f22686f2c2bd662b19e17c72"
-  DOCKER_BUILDER_TAG: "$CI_COMMON_JOB_VERSION"
-  DOCKER_DIND_TAG: "$CI_COMMON_JOB_VERSION"
-  IMAGE_REMOVER_TAG: "$CI_COMMON_JOB_VERSION"
+  # Docker image tags - use "latest" for stable images from common-ci-configuration
+  # Don't pin to CI_COMMON_JOB_VERSION as those commit-specific images may not exist
   BEEKEEPY_INITIALIZATION_TIMEOUT: 60  # for test-tools
   BEEKEEPY_CLOSE_TIMEOUT: 60  # for test-tools
 
