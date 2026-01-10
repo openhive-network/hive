@@ -6,7 +6,7 @@ variables:
 
 include:
   - project: 'hive/common-ci-configuration'
-    ref: 296649fb125e2cb3f22686f2c2bd662b19e17c72  # emsdk 4.0.22 with -Oz optimized libs
+    ref: af540f5ab5e9e005d33562a898140138d1151403  # tar extraction race condition fix
     file:
       - '/templates/npm_projects.gitlab-ci.yml'
       - '/templates/wasm_build.gitlab-ci.yml'
