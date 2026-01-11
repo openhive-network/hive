@@ -1,7 +1,3 @@
-include:
-  # needed to point TEST_IMAGE_TAG
-  - local: '/scripts/ci-helpers/ci_image_tag_vars.yml'
-
 .extended_block_log_creation:
   extends: .docker_image_builder_job
   image: "$CI_BASE_IMAGE"
