@@ -14,7 +14,6 @@ include:
       - '/templates/python_projects.gitlab-ci.yml'
       - '/templates/cache_cleanup.gitlab-ci.yml'
       - '/templates/docker_image_jobs.gitlab-ci.yml'
-      - '/templates/haf_app_testing.gitlab-ci.yml'
       - '/templates/test_jobs.gitlab-ci.yml'
   - local: scripts/ci-helpers/extended_block_log_creation.gitlab-ci.yml
 

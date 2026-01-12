@@ -63,7 +63,8 @@ include:
 # Use common git cleanup template from common-ci-configuration
 # Includes: corrupt repo/submodule cleanup, directory-to-submodule transitions
 default:
-  hooks: !reference [.haf_git_corruption_cleanup, hooks]
+  hooks:
+    pre_get_sources_script: !reference [.pre_get_sources_with_submodules, pre_get_sources_script]
 
 prepare_hived_image:
   extends:
