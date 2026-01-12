@@ -78,6 +78,8 @@ using fc::string;
 #define GET_DV( account_name ) (db->get< delayed_votes_object, by_account_id >( db->get_account( account_name ).get_id() ))
 #define GET_EFF_VESTS( account_name ) (db->get_account( account_name ).get_effective_vesting_shares( GET_ASSETS( account_name ), GET_TIME( account_name ) ))
 #define GET_GOV_VOTE_POWER( acc ) ((acc).get_direct_governance_vote_power( db->get< assets_object, by_account_id >( (acc).get_id() ), db->get< delayed_votes_object, by_account_id >( (acc).get_id() ) ))
+#define GET_RECOVERY( account_name ) (db->get< recovery_object, by_account_id >( db->get_account( account_name ).get_id() ))
+#define GET_RECOVERY_FOR_ACC( acc ) (db->get< recovery_object, by_account_id >( (acc).get_id() ))
 #define CHECK_PROXY( account, proxy ) BOOST_REQUIRE( account.get_proxy() == proxy.get_id() )
 #define CHECK_NO_PROXY( account ) BOOST_REQUIRE( account.has_proxy() == false )
 
@@ -246,7 +248,7 @@ BOOST_AUTO_TEST_CASE( account_create_apply )
     tx.operations.push_back( op );
     push_transaction( tx );
 
-    BOOST_REQUIRE( !db->get_account( "bob" ).has_recovery_account() );
+    BOOST_REQUIRE( !GET_RECOVERY( "bob" ).has_recovery_account() );
     validate_database();
 
   }
@@ -503,12 +505,12 @@ BOOST_AUTO_TEST_CASE( comment_apply )
     const auto alice_comment = db->get_comment( "alice", string( "lorem" ) );
     const comment_cashout_object* alice_comment_cashout = db->find_comment_cashout( *alice_comment );
 
-    BOOST_REQUIRE( alice_comment->get_author_and_permlink_hash() == comment_object::compute_author_and_permlink_hash( get_account_id( "alice" ), "lorem" ) );
+    BOOST_REQUIRE( alice_comment.get_author_and_permlink_hash() == comment_object::compute_author_and_permlink_hash( get_account_id( "alice" ), "lorem" ) );
     BOOST_REQUIRE( alice_comment_cashout != nullptr );
-    BOOST_CHECK_EQUAL( alice_comment_cashout->get_comment_id(), alice_comment->get_id() );
+    BOOST_CHECK_EQUAL( alice_comment_cashout->get_comment_id(), alice_comment.get_id() );
     BOOST_CHECK_EQUAL( alice_comment_cashout->get_author_id(), get_account_id( op.author ) );
     BOOST_CHECK_EQUAL( to_string( alice_comment_cashout->get_permlink() ), "lorem" );
-    BOOST_REQUIRE( alice_comment->is_root() );
+    BOOST_REQUIRE( alice_comment.is_root() );
     BOOST_REQUIRE( alice_comment_cashout->get_creation_time() == db->head_block_time() );
     BOOST_REQUIRE( alice_comment_cashout->get_net_rshares() == 0 );
     BOOST_REQUIRE( alice_comment_cashout->get_cashout_time() == fc::time_point_sec( db->head_block_time() + fc::seconds( HIVE_CASHOUT_WINDOW_SECONDS ) ) );
@@ -535,12 +537,12 @@ BOOST_AUTO_TEST_CASE( comment_apply )
     const auto bob_comment = db->get_comment( "bob", string( "ipsum" ) );
     const comment_cashout_object* bob_comment_cashout = db->find_comment_cashout( *bob_comment );
 
-    BOOST_CHECK_EQUAL( bob_comment->get_author_and_permlink_hash(), comment_object::compute_author_and_permlink_hash( get_account_id( "bob" ), "ipsum" ) );
+    BOOST_CHECK_EQUAL( bob_comment.get_author_and_permlink_hash(), comment_object::compute_author_and_permlink_hash( get_account_id( "bob" ), "ipsum" ) );
     BOOST_REQUIRE( bob_comment_cashout != nullptr );
-    BOOST_CHECK_EQUAL( bob_comment_cashout->get_comment_id(), bob_comment->get_id() );
+    BOOST_CHECK_EQUAL( bob_comment_cashout->get_comment_id(), bob_comment.get_id() );
     BOOST_CHECK_EQUAL( bob_comment_cashout->get_author_id(), get_account_id( "bob" ) );
     BOOST_CHECK_EQUAL( to_string( bob_comment_cashout->get_permlink() ), "ipsum" );
-    BOOST_REQUIRE( bob_comment->get_parent_id() == alice_comment->get_id() );
+    BOOST_REQUIRE( bob_comment.get_parent_id() == alice_comment.get_id() );
     BOOST_REQUIRE( bob_comment_cashout->get_creation_time() == db->head_block_time() );
     BOOST_REQUIRE( bob_comment_cashout->get_net_rshares() == 0 );
     BOOST_REQUIRE( bob_comment_cashout->get_cashout_time() == bob_comment_cashout->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
@@ -560,12 +562,12 @@ BOOST_AUTO_TEST_CASE( comment_apply )
     const auto sam_comment = db->get_comment( "sam", string( "dolor" ) );
     const comment_cashout_object* sam_comment_cashout = db->find_comment_cashout( *sam_comment );
 
-    BOOST_REQUIRE( sam_comment->get_author_and_permlink_hash() == comment_object::compute_author_and_permlink_hash( get_account_id( "sam" ), "dolor" ) );
+    BOOST_REQUIRE( sam_comment.get_author_and_permlink_hash() == comment_object::compute_author_and_permlink_hash( get_account_id( "sam" ), "dolor" ) );
     BOOST_REQUIRE( sam_comment_cashout != nullptr );
-    BOOST_CHECK_EQUAL( sam_comment_cashout->get_comment_id(), sam_comment->get_id() );
+    BOOST_CHECK_EQUAL( sam_comment_cashout->get_comment_id(), sam_comment.get_id() );
     BOOST_CHECK_EQUAL( sam_comment_cashout->get_author_id(), get_account_id( "sam" ) );
     BOOST_CHECK_EQUAL( to_string( sam_comment_cashout->get_permlink() ), "dolor" );
-    BOOST_REQUIRE( sam_comment->get_parent_id() == bob_comment->get_id() );
+    BOOST_REQUIRE( sam_comment.get_parent_id() == bob_comment.get_id() );
     BOOST_REQUIRE( sam_comment_cashout->get_creation_time() == db->head_block_time() );
     BOOST_REQUIRE( sam_comment_cashout->get_net_rshares() == 0 );
     BOOST_REQUIRE( sam_comment_cashout->get_cashout_time() == sam_comment_cashout->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
@@ -605,12 +607,12 @@ BOOST_AUTO_TEST_CASE( comment_apply )
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     push_transaction( tx, sam_post_key );
 
-    BOOST_REQUIRE( mod_sam_comment->get_author_and_permlink_hash() == comment_object::compute_author_and_permlink_hash( get_account_id( "sam" ), "dolor" ) );
+    BOOST_REQUIRE( mod_sam_comment.get_author_and_permlink_hash() == comment_object::compute_author_and_permlink_hash( get_account_id( "sam" ), "dolor" ) );
     BOOST_REQUIRE( mod_sam_comment_cashout != nullptr );
-    BOOST_CHECK_EQUAL( mod_sam_comment_cashout->get_comment_id(), mod_sam_comment->get_id() );
+    BOOST_CHECK_EQUAL( mod_sam_comment_cashout->get_comment_id(), mod_sam_comment.get_id() );
     BOOST_CHECK_EQUAL( mod_sam_comment_cashout->get_author_id(), get_account_id( "sam" ) );
     BOOST_CHECK_EQUAL( to_string( mod_sam_comment_cashout->get_permlink() ), "dolor" );
-    BOOST_REQUIRE( mod_sam_comment->get_parent_id() == mod_bob_comment->get_id() );
+    BOOST_REQUIRE( mod_sam_comment.get_parent_id() == mod_bob_comment.get_id() );
     BOOST_REQUIRE( mod_sam_comment_cashout->get_creation_time() == created );
     BOOST_REQUIRE( mod_sam_comment_cashout->get_cashout_time() == mod_sam_comment_cashout->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
     validate_database();
@@ -827,7 +829,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
     auto old_mana = _alice_mrc.get_voting_manabar().current_mana;
     vote( "alice", "foo", "alice", HIVE_100_PERCENT, alice_post_key );
 
-    auto itr = vote_idx.find( boost::make_tuple( alice_comment->get_id(), alice_id ) );
+    auto itr = vote_idx.find( boost::make_tuple( alice_comment.get_id(), alice_id ) );
     int64_t max_vote_denom = ( db->get_dynamic_global_properties().vote_power_reserve_rate * HIVE_VOTING_MANA_REGENERATION_SECONDS ) / (60*60*24);
 
     BOOST_REQUIRE( _alice_time.get_last_vote_time() == db->head_block_time() );
@@ -846,7 +848,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
     old_manabar.regenerate_mana( params, db->head_block_time() );
 
     vote( "bob", "foo", "alice", HIVE_100_PERCENT / 2, alice_post_key );
-    itr = vote_idx.find( boost::make_tuple( bob_comment->get_id(), alice_id ) );
+    itr = vote_idx.find( boost::make_tuple( bob_comment.get_id(), alice_id ) );
 
     BOOST_REQUIRE( bob_comment_cashout->get_net_rshares() == ( old_manabar.current_mana - _alice_mrc.get_voting_manabar().current_mana ) - HIVE_VOTE_DUST_THRESHOLD );
     BOOST_REQUIRE( bob_comment_cashout->get_cashout_time() == bob_comment_cashout->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
@@ -861,7 +863,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
     generate_blocks( db->head_block_time() + fc::seconds( ( HIVE_CASHOUT_WINDOW_SECONDS / 2 ) ), true );
 
     vote( "alice", "foo", "bob", HIVE_100_PERCENT, bob_post_key );
-    itr = vote_idx.find( boost::make_tuple( alice_comment->get_id(), bob_id ) );
+    itr = vote_idx.find( boost::make_tuple( alice_comment.get_id(), bob_id ) );
 
     BOOST_REQUIRE( alice_comment_cashout->get_net_rshares() == old_net_rshares + ( old_mana - _bob_mrc.get_voting_manabar().current_mana ) - HIVE_VOTE_DUST_THRESHOLD );
     BOOST_REQUIRE( alice_comment_cashout->get_cashout_time() == alice_comment_cashout->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
@@ -877,7 +879,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
     old_manabar.regenerate_mana( params, db->head_block_time() );
 
     vote( "bob", "foo", "sam", -1 * HIVE_100_PERCENT / 2, sam_post_key );
-    itr = vote_idx.find( boost::make_tuple( bob_comment->get_id(), sam_id ) );
+    itr = vote_idx.find( boost::make_tuple( bob_comment.get_id(), sam_id ) );
 
     util::manabar old_downvote_manabar;
     util::manabar_params downvote_params( _alice.get_effective_vesting_shares( _alice_assets, _alice_time ).value / 4, HIVE_VOTING_MANA_REGENERATION_SECONDS );
@@ -908,7 +910,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
 
     generate_block();
 
-    auto alice_bob_vote = vote_idx.find( boost::make_tuple( bob_comment->get_id(), alice_id ) );
+    auto alice_bob_vote = vote_idx.find( boost::make_tuple( bob_comment.get_id(), alice_id ) );
     auto old_vote_rshares = alice_bob_vote->get_rshares();
     old_net_rshares = bob_comment_cashout->get_net_rshares();
     alice_evs = _alice.get_effective_vesting_shares( _alice_assets, _alice_time );
@@ -1025,7 +1027,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
     new_rshares = old_manabar.current_mana - _dave_mrc.get_voting_manabar().current_mana - HIVE_VOTE_DUST_THRESHOLD;
     new_rshares = ( new_rshares * ( HIVE_UPVOTE_LOCKOUT_SECONDS - HIVE_BLOCK_INTERVAL ) ) / HIVE_UPVOTE_LOCKOUT_SECONDS;
 
-    const auto& dave_bob_vote = db->get< comment_vote_object, by_comment_voter >( boost::make_tuple( bob_comment->get_id(), dave_id ) );
+    const auto& dave_bob_vote = db->get< comment_vote_object, by_comment_voter >( boost::make_tuple( bob_comment.get_id(), dave_id ) );
     BOOST_REQUIRE_EQUAL( dave_bob_vote.get_rshares(), new_rshares );
     validate_database();
   }
@@ -1218,6 +1220,7 @@ BOOST_AUTO_TEST_CASE( vote_weights )
 
     const auto& vote_idx = db->get_index< comment_vote_index, by_comment_voter >();
     std::vector<const hive::chain::account_object*> voterObjs;
+    std::vector<const hive::chain::assets_object*> voterAssets;
     std::vector<const hive::chain::comment_vote_object*> voteObjs;
     for( i = 0; i < 40; ++i )
     {
@@ -1225,7 +1228,8 @@ BOOST_AUTO_TEST_CASE( vote_weights )
       const auto& cashout = *( db->find_comment_cashout( *comment ) );
       const auto& voter = db->get_account( voters[i].name );
       voterObjs.emplace_back( &voter );
-      const auto& vote = *( vote_idx.find( boost::make_tuple( comment->get_id(), voter.get_id() ) ) );
+      voterAssets.emplace_back( &db->get< assets_object, by_account_id >( voter.get_id() ) );
+      const auto& vote = *( vote_idx.find( boost::make_tuple( comment.get_id(), voter.get_id() ) ) );
       voteObjs.emplace_back( &vote );
       BOOST_REQUIRE_EQUAL( vote.get_weight(), cashout.get_total_vote_weight() );
     }
@@ -1252,23 +1256,23 @@ BOOST_AUTO_TEST_CASE( vote_weights )
     generate_blocks( cashout_time, false );
 
     for( auto i : { 8,16,24 } ) //upvotes edited in early window have the same rewards as early window pattern
-      BOOST_REQUIRE_EQUAL( voterObjs[i]->get_vest_rewards().amount.value, voterObjs[0]->get_vest_rewards().amount.value );
+      BOOST_REQUIRE_EQUAL( voterAssets[i]->get_vest_rewards().amount.value, voterAssets[0]->get_vest_rewards().amount.value );
     for( auto i : { 4,12,20,28 } ) //downvotes have no rewards
-      BOOST_REQUIRE_EQUAL( voterObjs[i]->get_vest_rewards().amount.value, 0 );
+      BOOST_REQUIRE_EQUAL( voterAssets[i]->get_vest_rewards().amount.value, 0 );
     for( auto i : { 9,17,25 } ) //upvotes edited in mid window have the same rewards as mid window pattern
-      BOOST_REQUIRE_EQUAL( voterObjs[i]->get_vest_rewards().amount.value, voterObjs[1]->get_vest_rewards().amount.value );
+      BOOST_REQUIRE_EQUAL( voterAssets[i]->get_vest_rewards().amount.value, voterAssets[1]->get_vest_rewards().amount.value );
     for( auto i : { 5,13,21,29 } ) //downvotes have no rewards
-      BOOST_REQUIRE_EQUAL( voterObjs[i]->get_vest_rewards().amount.value, 0 );
+      BOOST_REQUIRE_EQUAL( voterAssets[i]->get_vest_rewards().amount.value, 0 );
     for( auto i : { 10,18,26 } ) //upvotes edited in late window have the same rewards as late window pattern
-      BOOST_REQUIRE_EQUAL( voterObjs[i]->get_vest_rewards().amount.value, voterObjs[2]->get_vest_rewards().amount.value );
+      BOOST_REQUIRE_EQUAL( voterAssets[i]->get_vest_rewards().amount.value, voterAssets[2]->get_vest_rewards().amount.value );
     for( auto i : { 6,14,22,30 } ) //downvotes have no rewards
-      BOOST_REQUIRE_EQUAL( voterObjs[i]->get_vest_rewards().amount.value, 0 );
+      BOOST_REQUIRE_EQUAL( voterAssets[i]->get_vest_rewards().amount.value, 0 );
     for( auto i : { 11,19,27 } ) //upvotes edited in lockout window have the same rewards as lockout window pattern (only because the same block)
-      BOOST_REQUIRE_EQUAL( voterObjs[i]->get_vest_rewards().amount.value, voterObjs[3]->get_vest_rewards().amount.value );
+      BOOST_REQUIRE_EQUAL( voterAssets[i]->get_vest_rewards().amount.value, voterAssets[3]->get_vest_rewards().amount.value );
     for( auto i : { 7,15,23,31 } ) //downvotes have no rewards
-      BOOST_REQUIRE_EQUAL( voterObjs[i]->get_vest_rewards().amount.value, 0 );
+      BOOST_REQUIRE_EQUAL( voterAssets[i]->get_vest_rewards().amount.value, 0 );
     for( i = 32; i < 40; ++i ) //deleted votes have no rewards
-      BOOST_REQUIRE_EQUAL( voterObjs[i]->get_vest_rewards().amount.value, 0 );
+      BOOST_REQUIRE_EQUAL( voterAssets[i]->get_vest_rewards().amount.value, 0 );
 
     validate_database();
   }
@@ -1819,7 +1823,7 @@ BOOST_AUTO_TEST_CASE( withdraw_vesting_apply )
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     push_transaction( tx, alice_private_key );
 
-    BOOST_REQUIRE( db->get< assets_object, by_account_id >( db->get_account( "alice" ).get_id() ).get_vesting_withdraw_rate() == ASSET( "0.000000 VESTS" ) );
+    BOOST_REQUIRE( GET_ASSETS( "alice" ).get_vesting_withdraw_rate() == ASSET( "0.000000 VESTS" ) );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test withdrawing minimal VESTS" );
@@ -2158,6 +2162,7 @@ BOOST_AUTO_TEST_CASE(account_witness_vote_apply_delay)
     //they need to be reacquired from chain
     const auto& _alice = db->get_account("alice");
     const auto& _alice_assets = db->get< assets_object, by_account_id >( _alice.get_id() );
+    const auto& _alice_dv = db->get< delayed_votes_object, by_account_id >( _alice.get_id() );
     const auto& _bob = db->get_account("bob");
     const auto& _bob_assets = db->get< assets_object, by_account_id >( _bob.get_id() );
     //const auto& _sam = db->get_account("sam");
@@ -2177,12 +2182,12 @@ BOOST_AUTO_TEST_CASE(account_witness_vote_apply_delay)
     push_transaction(tx, alice_private_key );
 
     BOOST_REQUIRE(_sam_witness.votes == 0);
-    BOOST_REQUIRE(_alice_assets.get_vesting().amount == _alice.get_sum_delayed_votes().value);
+    BOOST_REQUIRE(_alice_assets.get_vesting().amount == _alice_dv.get_sum_delayed_votes().value);
     BOOST_REQUIRE(witness_vote_idx.find(boost::make_tuple(_sam_witness.owner, _alice.get_name())) != witness_vote_idx.end());
     validate_database();
     generate_blocks(db->head_block_time() + fc::seconds(HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS));
     BOOST_REQUIRE(_sam_witness.votes == _alice_assets.get_vesting().amount);
-    BOOST_REQUIRE(_alice.get_sum_delayed_votes() == 0);
+    BOOST_REQUIRE(_alice_dv.get_sum_delayed_votes() == 0);
     validate_database();
 
     BOOST_TEST_MESSAGE("--- Test revoke vote");
