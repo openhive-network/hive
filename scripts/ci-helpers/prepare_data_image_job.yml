@@ -6,7 +6,7 @@ variables:
 
 include:
   - project: 'hive/common-ci-configuration'
-    ref: feature/upstream-git-cleanup-templates  # TODO: Change to develop after common-ci-configuration!191 is merged
+    ref: develop
     file:
       - '/templates/base.gitlab-ci.yml'
       - '/templates/npm_projects.gitlab-ci.yml'
