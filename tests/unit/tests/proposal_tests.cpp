@@ -48,6 +48,7 @@
 #include <hive/chain/detail/state/liquidity_reward_balance_object_multiindex.hpp>
 #include <hive/chain/detail/state/withdraw_vesting_route_object_multiindex.hpp>
 #include <hive/chain/assets_object.hpp>
+#include <hive/chain/delayed_votes_object.hpp>
 
 #include <fc/macros.hpp>
 #include <fc/crypto/digest.hpp>
@@ -62,6 +63,8 @@ using namespace hive;
 using namespace hive::chain;
 using namespace hive::protocol;
 using fc::string;
+
+#define GET_GOV_VOTE_POWER( acc ) ((acc).get_direct_governance_vote_power( db->get< assets_object, by_account_id >( (acc).get_id() ), db->get< delayed_votes_object, by_account_id >( (acc).get_id() ) ))
 
 template< typename PROPOSAL_IDX >
 int64_t calc_proposals( const PROPOSAL_IDX& proposal_idx, const std::vector< int64_t >& proposals_id )
@@ -664,8 +667,8 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
     BOOST_REQUIRE(!db->get_account("acc4").has_proxy());
     BOOST_REQUIRE(db->get_account("acc5").get_proxy() == db->get_account("acc1").get_id());
     BOOST_REQUIRE(db->get_account("acc1").get_proxy() == db->get_account("acc2").get_id());
-    BOOST_REQUIRE(db->get_account("acc1").proxied_vsf_votes_total() == db->get_account("acc5").get_direct_governance_vote_power());
-    BOOST_REQUIRE(db->get_account("acc2").proxied_vsf_votes_total() == (db->get_account("acc1").get_direct_governance_vote_power() + db->get_account("acc5").get_direct_governance_vote_power()));
+    BOOST_REQUIRE(db->get_account("acc1").proxied_vsf_votes_total() == GET_GOV_VOTE_POWER( db->get_account("acc5") ));
+    BOOST_REQUIRE(db->get_account("acc2").proxied_vsf_votes_total() == (GET_GOV_VOTE_POWER( db->get_account("acc1") ) + GET_GOV_VOTE_POWER( db->get_account("acc5") )));
 
     validate_database();
   }

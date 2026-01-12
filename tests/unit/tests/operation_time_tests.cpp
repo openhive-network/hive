@@ -46,6 +46,8 @@
 #include <hive/chain/detail/state/savings_withdraw_object_multiindex.hpp>
 #include <hive/chain/detail/state/liquidity_reward_balance_object_multiindex.hpp>
 #include <hive/chain/detail/state/withdraw_vesting_route_object_multiindex.hpp>
+#include <hive/chain/assets_object.hpp>
+#include <hive/chain/time_object.hpp>
 
 #include <fc/crypto/digest.hpp>
 
@@ -57,6 +59,11 @@ using namespace hive;
 using namespace hive::chain;
 using namespace hive::chain::util;
 using namespace hive::protocol;
+
+#define GET_ASSETS( account_name ) (db->get< assets_object, by_account_id >( db->get_account( account_name ).get_id() ))
+#define GET_TIME( account_name ) (db->get< time_object, by_account_id >( db->get_account( account_name ).get_id() ))
+#define GET_ASSETS_FOR_ACC( acc ) (db->get< assets_object, by_account_id >( (acc).get_id() ))
+#define GET_TIME_FOR_ACC( acc ) (db->get< time_object, by_account_id >( (acc).get_id() ))
 
 BOOST_FIXTURE_TEST_SUITE( operation_time_tests, clean_database_fixture )
 
@@ -175,9 +182,9 @@ BOOST_AUTO_TEST_CASE( comment_payout_equalize )
     const auto& bob_account   = db->get_account("bob");
     const auto& dave_account  = db->get_account("dave");
 
-    BOOST_CHECK( alice_account.get_hbd_rewards() == ASSET( "6140.000 TBD" ) );
-    BOOST_CHECK( bob_account.get_hbd_rewards() == ASSET( "0.000 TBD" ) );
-    BOOST_CHECK( dave_account.get_hbd_rewards() == alice_account.get_hbd_rewards() );
+    BOOST_CHECK( GET_ASSETS( "alice" ).get_hbd_rewards() == ASSET( "6140.000 TBD" ) );
+    BOOST_CHECK( GET_ASSETS( "bob" ).get_hbd_rewards() == ASSET( "0.000 TBD" ) );
+    BOOST_CHECK( GET_ASSETS( "dave" ).get_hbd_rewards() == GET_ASSETS( "alice" ).get_hbd_rewards() );
   }
   FC_LOG_AND_RETHROW()
 }
@@ -1203,21 +1210,21 @@ BOOST_AUTO_TEST_CASE( vesting_withdrawals )
       BOOST_REQUIRE( std::abs( ( fill_op.deposited - fill_op.withdrawn * gpo.get_vesting_share_price() ).amount.value ) <= 1 );
 
       if ( i == HIVE_VESTING_WITHDRAW_INTERVALS - 1 )
-        BOOST_REQUIRE( db->get< time_object, by_account_id >( alice.get_id() ).get_next_vesting_withdrawal() == fc::time_point_sec::maximum() );
+        BOOST_REQUIRE( GET_TIME_FOR_ACC( alice ).get_next_vesting_withdrawal() == fc::time_point_sec::maximum() );
       else
-        BOOST_REQUIRE( db->get< time_object, by_account_id >( alice.get_id() ).get_next_vesting_withdrawal().sec_since_epoch() == ( old_next_vesting + HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS ).sec_since_epoch() );
+        BOOST_REQUIRE( GET_TIME_FOR_ACC( alice ).get_next_vesting_withdrawal().sec_since_epoch() == ( old_next_vesting + HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS ).sec_since_epoch() );
 
       validate_database();
 
       vesting_shares = alice_assets.get_vesting();
       balance = alice_assets.get_balance();
-      old_next_vesting = db->get< time_object, by_account_id >( alice.get_id() ).get_next_vesting_withdrawal();
+      old_next_vesting = GET_TIME_FOR_ACC( alice ).get_next_vesting_withdrawal();
     }
 
     BOOST_TEST_MESSAGE( "Generating one more block to finish vesting withdrawal" );
     generate_blocks( db->head_block_time() + HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS, true );
 
-    BOOST_REQUIRE( db->get< time_object, by_account_id >( db->get_account( "alice" ).get_id() ).get_next_vesting_withdrawal().sec_since_epoch() == fc::time_point_sec::maximum().sec_since_epoch() );
+    BOOST_REQUIRE( GET_TIME( "alice" ).get_next_vesting_withdrawal().sec_since_epoch() == fc::time_point_sec::maximum().sec_since_epoch() );
     BOOST_REQUIRE( get_vesting( "alice" ).amount.value == ( original_vesting - op.vesting_shares ).amount.value );
 
     validate_database();
@@ -1728,7 +1735,7 @@ BOOST_AUTO_TEST_CASE( hbd_interest )
 
     issue_funds( "alice", ASSET( "31.903 TBD" ) );
 
-    auto start_time = db->get_account( "alice" ).get_hbd_seconds_last_update();
+    auto start_time = GET_TIME( "alice" ).get_hbd_seconds_last_update();
     auto alice_hbd = get_hbd_balance( "alice" );
 
     generate_blocks( db->head_block_time() + fc::seconds( HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC ), true );
@@ -1762,7 +1769,7 @@ BOOST_AUTO_TEST_CASE( hbd_interest )
 
     BOOST_TEST_MESSAGE( "Testing interest under interest period" );
 
-    start_time = db->get_account( "alice" ).get_hbd_seconds_last_update();
+    start_time = GET_TIME( "alice" ).get_hbd_seconds_last_update();
     alice_hbd = get_hbd_balance( "alice" );
 
     generate_blocks( db->head_block_time() + fc::seconds( HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC / 2 ), true );
@@ -1777,7 +1784,7 @@ BOOST_AUTO_TEST_CASE( hbd_interest )
 
     auto alice_coindays = uint128_t( alice_hbd.amount.value ) * ( db->head_block_time() - start_time ).to_seconds();
     alice_hbd = get_hbd_balance( "alice" );
-    start_time = db->get_account( "alice" ).get_hbd_seconds_last_update();
+    start_time = GET_TIME( "alice" ).get_hbd_seconds_last_update();
 
     BOOST_TEST_MESSAGE( "Testing longer interest period" );
 
@@ -1824,7 +1831,7 @@ BOOST_AUTO_TEST_CASE(hbd_savings_interest)
 
     issue_funds("alice", ASSET("3.000 TBD"));
 
-    auto start_time = db->get_account("alice").get_savings_hbd_seconds_last_update();
+    auto start_time = GET_TIME( "alice" ).get_savings_hbd_seconds_last_update();
     auto alice_hbd = get_hbd_balance("alice");
 
     BOOST_REQUIRE(alice_hbd == ASSET("3.000 TBD"));
@@ -1862,7 +1869,7 @@ BOOST_AUTO_TEST_CASE(hbd_savings_interest)
 
     BOOST_TEST_MESSAGE("Testing savings interest under interest period");
 
-    start_time = db->get_account("alice").get_savings_hbd_seconds_last_update();
+    start_time = GET_TIME( "alice" ).get_savings_hbd_seconds_last_update();
     alice_hbd_savings = get_hbd_savings("alice");
 
     generate_blocks(db->head_block_time() + fc::seconds(HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC / 2), true);
@@ -1876,7 +1883,7 @@ BOOST_AUTO_TEST_CASE(hbd_savings_interest)
 
     auto alice_coindays = uint128_t(alice_hbd_savings.amount.value) * (db->head_block_time() - start_time).to_seconds();
     alice_hbd_savings = get_hbd_savings("alice");
-    start_time = db->get_account("alice").get_savings_hbd_seconds_last_update();
+    start_time = GET_TIME( "alice" ).get_savings_hbd_seconds_last_update();
 
     BOOST_TEST_MESSAGE("Testing savings interest for longer period");
 
@@ -2712,7 +2719,9 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
     asset hbd_balance = asset( ( dgpo.current_supply.amount * ( dgpo.hbd_stop_percent + correction ) ) / HIVE_100_PERCENT, HIVE_SYMBOL ) * exchange_rate;
     db_plugin->debug_update( [=]( database& db )
     {
-      db.modify( db.get_account( "sam" ), [&]( account_object& a )
+      const auto& sam_acc = db.get_account( "sam" );
+      const auto& sam_assets = db.get< assets_object, by_account_id >( sam_acc.get_id() );
+      db.modify( sam_assets, [&]( assets_object& a )
       {
         a.set_hbd_balance( hbd_balance - get_hbd_balance( HIVE_INIT_MINER_NAME ) ); // initial HBD balance is still on 'initminer'
       });
@@ -2738,9 +2747,9 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
 
     const auto& _alice = db->get_account( "alice" );
     const auto& _alice_assets = db->get< assets_object, by_account_id >( _alice.get_id() );
-    auto alice_hbd = _alice_assets.get_hbd_balance() + _alice.get_hbd_rewards();
+    auto alice_hbd = _alice_assets.get_hbd_balance() + _alice_assets.get_hbd_rewards();
     BOOST_REQUIRE_EQUAL( alice_hbd.amount.value, 0 );
-    auto alice_hive = _alice_assets.get_balance() + _alice.get_rewards();
+    auto alice_hive = _alice_assets.get_balance() + _alice_assets.get_rewards();
     BOOST_REQUIRE_EQUAL( alice_hive.amount.value, 0 );
 
     BOOST_TEST_MESSAGE( "Pay out comment and check rewards are paid as HIVE" );
@@ -2748,8 +2757,8 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
 
     validate_database();
 
-    BOOST_REQUIRE( _alice_assets.get_hbd_balance() + _alice.get_hbd_rewards() == alice_hbd );
-    BOOST_REQUIRE( _alice_assets.get_balance() + _alice.get_rewards() > alice_hive );
+    BOOST_REQUIRE( _alice_assets.get_hbd_balance() + _alice_assets.get_hbd_rewards() == alice_hbd );
+    BOOST_REQUIRE( _alice_assets.get_balance() + _alice_assets.get_rewards() > alice_hive );
 
     BOOST_TEST_MESSAGE( "Letting percent market cap fall to hbd_start_percent to verify printing of HBD turns back on" );
 
