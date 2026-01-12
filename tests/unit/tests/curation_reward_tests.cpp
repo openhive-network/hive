@@ -38,6 +38,7 @@
 #include <hive/chain/detail/state/liquidity_reward_balance_object_multiindex.hpp>
 #include <hive/chain/detail/state/withdraw_vesting_route_object_multiindex.hpp>
 #include <hive/chain/notifications.hpp>
+#include <hive/chain/assets_object.hpp>
 
 #include <hive/utilities/signal.hpp>
 
@@ -503,7 +504,7 @@ struct curation_rewards_handler
 
     uint32_t vote_percent = HIVE_1_PERCENT * 90;
 
-    auto comment_id = db.get_comment( author, permlink )->get_id();
+    auto comment_id = db.get_comment( author, permlink ).get_id();
 
     for( auto& time : votes_time )
     {
@@ -529,7 +530,8 @@ struct curation_rewards_handler
     for( auto& item : curve_printers[ comment_idx ].curve_items )
     {
       const auto& acc = db.get_account( item.account );
-      item.reward = static_cast<uint32_t>( acc.get_curation_rewards().amount.value );
+      const auto& acc_assets = db.get< assets_object, by_account_id >( acc.get_id() );
+      item.reward = static_cast<uint32_t>( acc_assets.get_curation_rewards().amount.value );
 
       uint64_t _seconds = static_cast<uint64_t>( ( item.time - curve_printers[ comment_idx ].start_time ).to_seconds() );
 
@@ -556,7 +558,8 @@ struct curation_rewards_handler
     for( auto& item : curve_printers[ comment_idx ].curve_items )
     {
       const auto& acc = db.get_account( item.account );
-      item.reward = static_cast<uint32_t>( acc.get_curation_rewards().amount.value );
+      const auto& acc_assets = db.get< assets_object, by_account_id >( acc.get_id() );
+      item.reward = static_cast<uint32_t>( acc_assets.get_curation_rewards().amount.value );
 
       uint64_t _seconds = static_cast<uint64_t>( ( item.time - curve_printers[ comment_idx ].start_time ).to_seconds() );
 
@@ -925,7 +928,8 @@ BOOST_AUTO_TEST_CASE( no_votes )
     auto found_author = crh.authors.find( author_number );
     BOOST_REQUIRE( found_author != crh.authors.end() );
     const auto& creator = db->get_account( found_author->second );
-    BOOST_REQUIRE_EQUAL( creator.get_posting_rewards().amount.value, 0 );
+    const auto& creator_assets = db->get< assets_object, by_account_id >( creator.get_id() );
+    BOOST_REQUIRE_EQUAL( creator_assets.get_posting_rewards().amount.value, 0 );
 
     auto cmp = []( const reward_stat& item )
     {

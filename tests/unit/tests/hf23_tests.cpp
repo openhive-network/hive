@@ -21,8 +21,9 @@
 #include <hive/chain/detail/state/decline_voting_rights_request_object.hpp>
 #include <hive/chain/detail/state/reward_fund_object.hpp>
 #include <hive/chain/detail/state/recurrent_transfer_object.hpp>
-#include <hive/chain/hive_objects.hpp>
+#include <hive/chain/hive_object_types.hpp>
 #include <hive/chain/assets_object.hpp>
+#include <hive/chain/time_object.hpp>
 
 #include <hive/chain/util/reward.hpp>
 #include <hive/chain/comment_object.hpp>
@@ -63,8 +64,10 @@ using namespace hive::chain;
 using namespace hive::protocol;
 using fc::string;
 
-#define DELEGATED_VESTS( account ) db->get_account( account ).get_delegated_vesting().amount.value
-#define RECEIVED_VESTS( account ) db->get_account( account ).get_received_vesting().amount.value
+#define GET_ASSETS( account ) (db->get< assets_object, by_account_id >( db->get_account( account ).get_id() ))
+#define GET_TIME( account ) (db->get< time_object, by_account_id >( db->get_account( account ).get_id() ))
+#define DELEGATED_VESTS( account ) GET_ASSETS( account ).get_delegated_vesting().amount.value
+#define RECEIVED_VESTS( account ) GET_ASSETS( account ).get_received_vesting().amount.value
 
 namespace
 {
@@ -1268,7 +1271,7 @@ BOOST_AUTO_TEST_CASE( hbd_test_02 )
 
     BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "0.000 TBD" ) );
     issue_funds( "alice", ASSET( "1000.000 TBD" ) );
-    auto start_time = db->get_account( "alice" ).get_hbd_seconds_last_update();
+    auto start_time = GET_TIME( "alice" ).get_hbd_seconds_last_update();
     auto alice_hbd = get_hbd_balance( "alice" );
     const auto& _treasury_hbd_test = db->get_treasury();
     const auto& _treasury_hbd_test_assets = db->get< assets_object, by_account_id >( _treasury_hbd_test.get_id() );
