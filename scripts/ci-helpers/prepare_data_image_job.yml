@@ -6,13 +6,15 @@ variables:
 
 include:
   - project: 'hive/common-ci-configuration'
-    ref: 3f520905f6da2ba060fe016c8a635826dfcb3ffd  # disable buildx attestations
+    ref: develop
     file:
+      - '/templates/base.gitlab-ci.yml'
       - '/templates/npm_projects.gitlab-ci.yml'
       - '/templates/wasm_build.gitlab-ci.yml'
       - '/templates/python_projects.gitlab-ci.yml'
       - '/templates/cache_cleanup.gitlab-ci.yml'
       - '/templates/docker_image_jobs.gitlab-ci.yml'
+      - '/templates/haf_app_testing.gitlab-ci.yml'
       - '/templates/test_jobs.gitlab-ci.yml'
   - local: scripts/ci-helpers/extended_block_log_creation.gitlab-ci.yml
 

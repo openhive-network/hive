@@ -8,6 +8,11 @@ stages:
 
 variables:
   PYTEST_NUMBER_OF_PROCESSES: 8
+
+  # Docker image tags from common-ci-configuration with util-linux for NFS flock support
+  DOCKER_BUILDER_TAG: "3dd346380da7f28cdaf3ef3955559c905d94bd1c"
+  DOCKER_DIND_TAG: "3dd346380da7f28cdaf3ef3955559c905d94bd1c"
+
   # Fetch strategy reuses workspace between jobs, reducing GitLab server load.
   # Full clone (depth 0) enables efficient incremental fetches - shallow clones
   # don't reduce server CPU and make fetch less effective.
@@ -55,78 +60,10 @@ include:
   # Skip rules for docs-only changes optimization
   - local: '/scripts/ci-helpers/skip_rules.yml'
 
+# Use common git cleanup template from common-ci-configuration
+# Includes: corrupt repo/submodule cleanup, directory-to-submodule transitions
 default:
-  hooks:
-    pre_get_sources_script:
-      # Clean corrupt git state left by cancelled pipelines (see GitLab #296638, #4600)
-      # Also handles directory-to-submodule transitions when switching branches
-      # Wrapped in subshell to avoid changing working directory for subsequent git operations
-      - |
-        (
-        cd "${CI_PROJECT_DIR:-/builds}" 2>/dev/null || exit 0
-        echo "pre_get_sources: checking $(pwd) for corrupt git state"
-        if [ -d ".git" ]; then
-          # Remove stale lock files that block git operations
-          find .git -name "*.lock" -delete 2>/dev/null || true
-
-          # Check if main repo is corrupt - if so, remove .git to force fresh clone
-          if ! git rev-parse HEAD >/dev/null 2>&1; then
-            echo "pre_get_sources: main repository corrupt, forcing fresh clone"
-            rm -rf .git
-          else
-            # Main repo OK - check and clean corrupt submodules
-            # Check both the working dir and .git/modules/ since either can be corrupt
-            if [ -f ".gitmodules" ]; then
-              git config --file .gitmodules --get-regexp path 2>/dev/null | awk '{print $2}' | while read submod; do
-                needs_clean=false
-                [ -z "$submod" ] && continue
-                # Check if submodule working directory exists but is corrupt
-                if [ -d "$submod" ] && [ -f "$submod/.git" ]; then
-                  if ! git -C "$submod" rev-parse HEAD >/dev/null 2>&1; then
-                    needs_clean=true
-                  fi
-                fi
-                # Check if .git/modules exists but is corrupt (even if working dir is gone)
-                if [ -d ".git/modules/$submod" ]; then
-                  if ! git --git-dir=".git/modules/$submod" rev-parse HEAD >/dev/null 2>&1; then
-                    echo "pre_get_sources: $submod corrupt (rev-parse failed)"
-                    needs_clean=true
-                  fi
-                fi
-                if [ "$needs_clean" = true ]; then
-                  echo "pre_get_sources: cleaning corrupt submodule: $submod"
-                  rm -rf "$submod" ".git/modules/$submod"
-                fi
-              done
-            fi
-
-            # Handle directory-to-submodule transitions: fetch target ref's .gitmodules
-            # and remove any paths that exist as regular directories (not submodules)
-            if [ -n "$CI_COMMIT_REF_NAME" ]; then
-              echo "pre_get_sources: checking for directory-to-submodule transitions (ref: $CI_COMMIT_REF_NAME)"
-              # Fetch the target ref first (it may not exist locally yet)
-              git fetch origin "$CI_COMMIT_REF_NAME" --depth=1 2>&1 || true
-              target_gitmodules=$(git show "origin/$CI_COMMIT_REF_NAME:.gitmodules" 2>/dev/null) || true
-              if [ -n "$target_gitmodules" ]; then
-                echo "$target_gitmodules" | grep "path = " | sed 's/.*path = //' | while read submod; do
-                  [ -z "$submod" ] && continue
-                  # If path exists as a regular directory (not a submodule), remove it
-                  if [ -d "$submod" ] && [ ! -f "$submod/.git" ]; then
-                    echo "pre_get_sources: removing directory for submodule transition: $submod"
-                    rm -rf "$submod"
-                  fi
-                done
-              else
-                echo "pre_get_sources: no target gitmodules found"
-              fi
-            fi
-
-            echo "pre_get_sources: existing repo OK"
-          fi
-        else
-          echo "pre_get_sources: no .git directory (fresh workspace)"
-        fi
-        )
+  hooks: !reference [.haf_git_corruption_cleanup, hooks]
 
 prepare_hived_image:
   extends:
