@@ -466,7 +466,7 @@ void database::apply_hardfork( uint32_t hardfork )
           }
         } );
         // override value for new account tokens using parameters provided by witnesses
-        rc.set_pool_params( wso );
+        rc().set_pool_params( wso );
         dlog( "Initial RC params: ${o}", ( "o", rc_params ) );
 
         // create usage statistics buckets (empty, but with proper timestamps, last bucket has current timestamp)

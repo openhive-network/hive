@@ -1,6 +1,7 @@
 #include <hive/plugins/database_api/database_api_impl.hpp>
 
 #include <hive/chain/account_object.hpp>
+#include <hive/chain/time_object.hpp>
 #include <hive/chain/witness_objects.hpp>
 #include <hive/chain/witness_objects_multiindex.hpp>
 
