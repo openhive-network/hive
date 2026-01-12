@@ -1831,7 +1831,7 @@ BOOST_AUTO_TEST_CASE(hbd_savings_interest)
 
     issue_funds("alice", ASSET("3.000 TBD"));
 
-    auto start_time = GET_TIME( "alice" ).get_savings_hbd_seconds_last_update();
+    auto start_time = GET_ASSETS( "alice" ).get_savings_hbd_seconds_last_update();
     auto alice_hbd = get_hbd_balance("alice");
 
     BOOST_REQUIRE(alice_hbd == ASSET("3.000 TBD"));
@@ -1869,7 +1869,7 @@ BOOST_AUTO_TEST_CASE(hbd_savings_interest)
 
     BOOST_TEST_MESSAGE("Testing savings interest under interest period");
 
-    start_time = GET_TIME( "alice" ).get_savings_hbd_seconds_last_update();
+    start_time = GET_ASSETS( "alice" ).get_savings_hbd_seconds_last_update();
     alice_hbd_savings = get_hbd_savings("alice");
 
     generate_blocks(db->head_block_time() + fc::seconds(HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC / 2), true);
@@ -1883,7 +1883,7 @@ BOOST_AUTO_TEST_CASE(hbd_savings_interest)
 
     auto alice_coindays = uint128_t(alice_hbd_savings.amount.value) * (db->head_block_time() - start_time).to_seconds();
     alice_hbd_savings = get_hbd_savings("alice");
-    start_time = GET_TIME( "alice" ).get_savings_hbd_seconds_last_update();
+    start_time = GET_ASSETS( "alice" ).get_savings_hbd_seconds_last_update();
 
     BOOST_TEST_MESSAGE("Testing savings interest for longer period");
 
@@ -2769,7 +2769,9 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
     hbd_balance = asset( ( dgpo.current_supply.amount * ( dgpo.hbd_start_percent + correction ) ) / HIVE_100_PERCENT, HIVE_SYMBOL ) * exchange_rate;
     db_plugin->debug_update( [&]( database& db )
     {
-      db.modify( db.get_account( "sam" ), [&]( account_object& a )
+      const auto& sam_acc = db.get_account( "sam" );
+      const auto& sam_assets = db.get< assets_object, by_account_id >( sam_acc.get_id() );
+      db.modify( sam_assets, [&]( assets_object& a )
       {
         a.set_hbd_balance( hbd_balance - get_hbd_balance( HIVE_INIT_MINER_NAME ) ); // initial HBD balance is still on 'initminer'
       });
@@ -2918,7 +2920,9 @@ BOOST_AUTO_TEST_CASE( clear_null_account )
 
     db_plugin->debug_update( [=]( database& db )
     {
-      db.modify( db.get_account( HIVE_NULL_ACCOUNT ), [&]( account_object& a )
+      const auto& null_acc = db.get_account( HIVE_NULL_ACCOUNT );
+      const auto& null_assets = db.get< assets_object, by_account_id >( null_acc.get_id() );
+      db.modify( null_assets, [&]( assets_object& a )
       {
         a.set_rewards( ASSET( "1.000 TESTS" ) );
         a.set_hbd_rewards( ASSET( "1.000 TBD" ) );
