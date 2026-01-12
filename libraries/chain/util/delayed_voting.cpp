@@ -2,6 +2,7 @@
 #include <hive/chain/util/delayed_voting_processor.hpp>
 #include <hive/chain/assets_object.hpp>
 #include <hive/chain/delayed_votes_object.hpp>
+#include <hive/chain/database_virtual_operations.hpp>
 
 namespace hive { namespace chain {
 

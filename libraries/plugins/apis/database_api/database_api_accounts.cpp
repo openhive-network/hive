@@ -1,6 +1,7 @@
 #include <hive/plugins/database_api/database_api_impl.hpp>
 
 #include <hive/chain/account_object.hpp>
+#include <hive/chain/time_object.hpp>
 #include <hive/chain/witness_objects.hpp>
 #include <hive/chain/witness_objects_multiindex.hpp>
 
@@ -181,6 +182,8 @@ DEFINE_API_IMPL( database_api_impl, list_accounts )
     }
     case( by_next_vesting_withdrawal ):
     {
+      // by_next_vesting_withdrawal index is now in time_object, not account_object
+      // We iterate over time_index and look up the account for each result
       auto key = args.start.as< std::pair< fc::time_point_sec, account_name_type > >();
       iterate_results< chain::account_index, chain::by_next_vesting_withdrawal >(
         boost::make_tuple( key.first, key.second ),
