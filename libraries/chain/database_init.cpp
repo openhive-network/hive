@@ -9,6 +9,7 @@
 #include <hive/chain/custom_operation_interpreter.hpp>
 #include <hive/chain/witness_schedule.hpp>
 #include <hive/chain/account_object_multiindex.hpp>
+#include <hive/chain/assets_object.hpp>
 #include <hive/chain/global_property_object_multiindex.hpp>
 #include <hive/chain/hardfork_property_object_multiindex.hpp>
 #include <hive/chain/block_summary_object_multiindex.hpp>
@@ -328,7 +329,9 @@ void database::init_genesis()
       HIVE_asset to_vest( HIVE_INITIAL_VESTING );
       VEST_asset initial_vests( to_vest * HIVE_INITIAL_VESTING_PRICE );
 
-      modify( get_account( HIVE_INIT_MINER_NAME ), [&]( account_object& a )
+      const auto& init_account = get_account( HIVE_INIT_MINER_NAME );
+      const auto& init_assets = get< assets_object, by_account_id >( init_account.get_id() );
+      modify( init_assets, [&]( assets_object& a )
       {
         a.set_balance( HIVE_asset( HIVE_INIT_SUPPLY ) - to_vest );
         a.set_hbd_balance( HBD_asset( HIVE_HBD_INIT_SUPPLY ) );
