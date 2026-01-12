@@ -49,6 +49,10 @@
 #include <hive/chain/witness_objects.hpp>
 #include <hive/chain/detail/state/hardfork_property_object.hpp>
 #include <hive/chain/detail/state/global_property_object.hpp>
+#include <hive/chain/manabars_rc_object.hpp>
+#include <hive/chain/assets_object.hpp>
+#include <hive/chain/time_object.hpp>
+#include <hive/chain/recovery_object.hpp>
 
 #include <fc/macros.hpp>
 #include <fc/crypto/digest.hpp>
@@ -66,8 +70,10 @@ using namespace hive::chain;
 using namespace hive::protocol;
 using fc::string;
 
-#define VOTING_MANABAR( account_name ) db->get< manabars_rc_object, by_account_id >( db->get_account( account_name ).get_id() ).get_voting_manabar()
-#define DOWNVOTE_MANABAR( account_name ) db->get< manabars_rc_object, by_account_id >( db->get_account( account_name ).get_id() ).get_downvote_manabar()
+#define VOTING_MANABAR( account_name ) (db->get< manabars_rc_object, by_account_id >( db->get_account( account_name ).get_id() ).get_voting_manabar())
+#define DOWNVOTE_MANABAR( account_name ) (db->get< manabars_rc_object, by_account_id >( db->get_account( account_name ).get_id() ).get_downvote_manabar())
+#define GET_ASSETS( account_name ) (db->get< assets_object, by_account_id >( db->get_account( account_name ).get_id() ))
+#define GET_TIME( account_name ) (db->get< time_object, by_account_id >( db->get_account( account_name ).get_id() ))
 #define CHECK_PROXY( account, proxy ) BOOST_REQUIRE( account.get_proxy() == proxy.get_id() )
 #define CHECK_NO_PROXY( account ) BOOST_REQUIRE( account.has_proxy() == false )
 
@@ -7819,8 +7825,10 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
     util::manabar old_dave_manabar = VOTING_MANABAR( "dave" );
     util::manabar old_dave_downvote_manabar = DOWNVOTE_MANABAR( "dave" );
 
-    util::manabar_params sam_params( db->get_account( "sam" ).get_effective_vesting_shares().value, HIVE_VOTING_MANA_REGENERATION_SECONDS );
-    util::manabar_params dave_params( db->get_account( "dave" ).get_effective_vesting_shares().value, HIVE_VOTING_MANA_REGENERATION_SECONDS );
+    const auto& sam_acc = db->get_account( "sam" );
+    const auto& dave_acc = db->get_account( "dave" );
+    util::manabar_params sam_params( sam_acc.get_effective_vesting_shares( GET_ASSETS( "sam" ), GET_TIME( "sam" ) ).value, HIVE_VOTING_MANA_REGENERATION_SECONDS );
+    util::manabar_params dave_params( dave_acc.get_effective_vesting_shares( GET_ASSETS( "dave" ), GET_TIME( "dave" ) ).value, HIVE_VOTING_MANA_REGENERATION_SECONDS );
 
     tx.clear();
     op.vesting_shares = ASSET( "0.000000 VESTS" );
@@ -7837,8 +7845,8 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
     BOOST_REQUIRE( exp_obj->get_delegator() == sam_id );
     BOOST_REQUIRE( exp_obj->get_vesting() == sam_vest );
     BOOST_REQUIRE( exp_obj->get_expiration_time() == db->head_block_time() + gpo.delegation_return_period );
-    BOOST_REQUIRE( db->get_account( "sam" ).get_delegated_vesting() == sam_vest );
-    BOOST_REQUIRE( db->get_account( "dave" ).get_received_vesting() == ASSET( "0.000000 VESTS" ) );
+    BOOST_REQUIRE( GET_ASSETS( "sam" ).get_delegated_vesting() == sam_vest );
+    BOOST_REQUIRE( GET_ASSETS( "dave" ).get_received_vesting() == ASSET( "0.000000 VESTS" ) );
     delegation = db->find< vesting_delegation_object, by_delegation >( boost::make_tuple( sam_acc.get_id(), dave_acc.get_id() ) );
     BOOST_REQUIRE( delegation == nullptr );
 
@@ -7860,8 +7868,8 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
     old_dave_manabar = VOTING_MANABAR( "dave" );
     old_dave_downvote_manabar = DOWNVOTE_MANABAR( "dave" );
 
-    sam_params.max_mana = db->get_account( "sam" ).get_effective_vesting_shares().value;
-    dave_params.max_mana = db->get_account( "dave" ).get_effective_vesting_shares().value;
+    sam_params.max_mana = sam_acc.get_effective_vesting_shares( GET_ASSETS( "sam" ), GET_TIME( "sam" ) ).value;
+    dave_params.max_mana = dave_acc.get_effective_vesting_shares( GET_ASSETS( "dave" ), GET_TIME( "dave" ) ).value;
 
     generate_blocks( exp_obj->get_expiration_time() + HIVE_BLOCK_INTERVAL );
 
@@ -7877,7 +7885,7 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
     end = db->get_index< vesting_delegation_expiration_index, by_id >().end();
 
     BOOST_REQUIRE( exp_obj == end );
-    BOOST_REQUIRE( db->get_account( "sam" ).get_delegated_vesting() == ASSET( "0.000000 VESTS" ) );
+    BOOST_REQUIRE( GET_ASSETS( "sam" ).get_delegated_vesting() == ASSET( "0.000000 VESTS" ) );
     BOOST_REQUIRE( VOTING_MANABAR( "sam" ).current_mana == old_sam_manabar.current_mana + sam_vest.amount.value );
     BOOST_REQUIRE( DOWNVOTE_MANABAR( "sam" ).current_mana == old_sam_downvote_manabar.current_mana + sam_vest.amount.value / 4 );
     BOOST_REQUIRE( VOTING_MANABAR( "dave" ).current_mana == old_dave_manabar.current_mana );
@@ -7921,9 +7929,11 @@ BOOST_AUTO_TEST_CASE( issue_971_vesting_removal )
     generate_block();
     const auto& alice_acc = db->get_account( "alice" );
     const auto& bob_acc = db->get_account( "bob" );
+    const auto& alice_assets = GET_ASSETS( "alice" );
+    const auto& bob_assets = GET_ASSETS( "bob" );
 
-    BOOST_REQUIRE( alice_acc.get_delegated_vesting() == ASSET( "10000000.000000 VESTS"));
-    BOOST_REQUIRE( bob_acc.get_received_vesting() == ASSET( "10000000.000000 VESTS"));
+    BOOST_REQUIRE( alice_assets.get_delegated_vesting() == ASSET( "10000000.000000 VESTS"));
+    BOOST_REQUIRE( bob_assets.get_received_vesting() == ASSET( "10000000.000000 VESTS"));
 
     generate_block();
 
@@ -7944,8 +7954,8 @@ BOOST_AUTO_TEST_CASE( issue_971_vesting_removal )
     push_transaction( tx, alice_private_key );
     generate_block();
 
-    BOOST_REQUIRE( alice_acc.get_delegated_vesting() == ASSET( "10000000.000000 VESTS"));
-    BOOST_REQUIRE( bob_acc.get_received_vesting() == ASSET( "0.000000 VESTS"));
+    BOOST_REQUIRE( GET_ASSETS( "alice" ).get_delegated_vesting() == ASSET( "10000000.000000 VESTS"));
+    BOOST_REQUIRE( GET_ASSETS( "bob" ).get_received_vesting() == ASSET( "0.000000 VESTS"));
   }
   FC_LOG_AND_RETHROW()
 }
@@ -8036,7 +8046,9 @@ BOOST_AUTO_TEST_CASE( comment_beneficiaries_apply )
         gpo.proposal_fund_percent = 0;
       });
 
-      db.modify( db.get_treasury(), [=]( account_object& a )
+      const auto& treasury = db.get_treasury();
+      const auto& treasury_assets = db.get< assets_object, by_account_id >( treasury.get_id() );
+      db.modify( treasury_assets, [=]( assets_object& a )
       {
         a.set_hbd_balance( ASSET( "0.000 TBD" ) );
       });
@@ -8144,8 +8156,9 @@ BOOST_AUTO_TEST_CASE( comment_beneficiaries_apply )
     const comment_cashout_object* _comment_cashout = db->find_comment_cashout( *_comment );
     BOOST_REQUIRE( _comment_cashout == nullptr );
 
-    BOOST_REQUIRE( ( get_hbd_rewards( "alice" ).amount + get_vest_rewards_as_hive( "alice" ).amount + db->get_treasury().get_hbd_balance().amount ) == get_vest_rewards_as_hive( "bob" ).amount + get_hbd_rewards( "bob" ).amount + 1 );
-    BOOST_REQUIRE( ( get_hbd_rewards( "alice" ).amount + get_vest_rewards_as_hive( "alice" ).amount + db->get_treasury().get_hbd_balance().amount ) == ( get_vest_rewards_as_hive( "sam" ).amount + get_hbd_rewards( "sam" ).amount ) / 2 + 1 );
+    const auto& treasury_assets = db->get< assets_object, by_account_id >( db->get_treasury().get_id() );
+    BOOST_REQUIRE( ( get_hbd_rewards( "alice" ).amount + get_vest_rewards_as_hive( "alice" ).amount + treasury_assets.get_hbd_balance().amount ) == get_vest_rewards_as_hive( "bob" ).amount + get_hbd_rewards( "bob" ).amount + 1 );
+    BOOST_REQUIRE( ( get_hbd_rewards( "alice" ).amount + get_vest_rewards_as_hive( "alice" ).amount + treasury_assets.get_hbd_balance().amount ) == ( get_vest_rewards_as_hive( "sam" ).amount + get_hbd_rewards( "sam" ).amount ) / 2 + 1 );
     BOOST_REQUIRE( get_vest_rewards_as_hive( "bob" ).amount == get_hbd_rewards( "bob" ).amount + 1 );
     BOOST_REQUIRE( get_vest_rewards_as_hive( "sam" ).amount == get_hbd_rewards( "sam" ).amount + 1 );
 
@@ -8168,7 +8181,9 @@ BOOST_AUTO_TEST_CASE( comment_options_apply )
         gpo.proposal_fund_percent = 0;
       } );
 
-      db.modify( db.get_treasury(), [=]( account_object& a )
+      const auto& treasury = db.get_treasury();
+      const auto& treasury_assets_obj = db.get< assets_object, by_account_id >( treasury.get_id() );
+      db.modify( treasury_assets_obj, [=]( assets_object& a )
       {
         a.set_hbd_balance( ASSET( "5.000 TBD" ) );
       } );
@@ -8344,7 +8359,9 @@ BOOST_AUTO_TEST_CASE( comment_options_deleted_permlink_reuse )
         gpo.proposal_fund_percent = 0;
       } );
 
-      db.modify( db.get_treasury(), [=]( account_object& a )
+      const auto& treasury = db.get_treasury();
+      const auto& treasury_assets_obj = db.get< assets_object, by_account_id >( treasury.get_id() );
+      db.modify( treasury_assets_obj, [=]( assets_object& a )
       {
         a.set_hbd_balance( ASSET( "5.000 TBD" ) );
       } );
@@ -8375,7 +8392,7 @@ BOOST_AUTO_TEST_CASE( comment_options_deleted_permlink_reuse )
     BOOST_TEST_MESSAGE( "--- Comment has curations and voting blocked, small max payout; vote exists" );
     const auto old_comment = db->get_comment( "alice", string( "test" ) );
     const auto* comment_cashout = db->find_comment_cashout( *old_comment );
-    auto old_comment_id = old_comment->get_id();
+    auto old_comment_id = old_comment.get_id();
     BOOST_REQUIRE_EQUAL( comment_cashout->allows_curation_rewards(), false );
     BOOST_REQUIRE_EQUAL( comment_cashout->allows_votes(), false );
     BOOST_REQUIRE_EQUAL( comment_cashout->get_max_accepted_payout().amount.value, 10 );
@@ -8402,7 +8419,7 @@ BOOST_AUTO_TEST_CASE( comment_options_deleted_permlink_reuse )
     BOOST_TEST_MESSAGE( "--- New comment has default options, no vote on it exists" );
     const auto new_comment = db->get_comment( "alice", string( "test" ) );
     comment_cashout = db->find_comment_cashout( *new_comment );
-    auto new_comment_id = new_comment->get_id();
+    auto new_comment_id = new_comment.get_id();
     BOOST_REQUIRE_EQUAL( comment_cashout->allows_curation_rewards(), true );
     BOOST_REQUIRE_EQUAL( comment_cashout->allows_votes(), true );
     BOOST_REQUIRE_EQUAL( comment_cashout->get_max_accepted_payout().amount.value, 1000000000 );
@@ -9180,7 +9197,7 @@ BOOST_AUTO_TEST_CASE( create_claimed_account_apply )
     tx.operations.push_back( op );
     push_transaction( tx );
 
-    BOOST_REQUIRE( !db->get< recovery_object, by_account_id >( db->get_account( "charlie" ).get_id() ).has_recovery_account() );
+    BOOST_REQUIRE( !(db->get< recovery_object, by_account_id >( db->get_account( "charlie" ).get_id() ).has_recovery_account()) );
     validate_database();
   }
   FC_LOG_AND_RETHROW()
