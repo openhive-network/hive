@@ -581,8 +581,9 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow )
 
     const auto& alice_account_initial = db->get_account( "alice" );
     const auto& alice_assets_initial = db->get< assets_object, by_account_id >( alice_account_initial.get_id() );
+    const auto& alice_mrc_initial = GET_MRC( "alice" );
     int64_t vesting_amount = alice_assets_initial.get_vesting().amount.value;
-    int64_t creation_rc = alice_account_initial.get_rc_adjustment().value;
+    int64_t creation_rc = alice_mrc_initial.get_rc_adjustment().value;
 
     // Delegate 10 rc to bob, the rest to dave, alice has rc_adjustment remaining rc
     delegate_rc_operation op;
@@ -607,7 +608,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow )
 
     const auto& bob_rc_account_before = GET_MRC( "bob" );
     const auto& dave_rc_account_before = GET_MRC( "dave" );
-    const auto& alice_rc_before = db->get_account( "alice" );
+    const auto& alice_rc_before = GET_MRC( "alice" );
 
     BOOST_REQUIRE( alice_rc_before.get_delegated_rc() == uint64_t(vesting_amount) );
     BOOST_REQUIRE( alice_rc_before.get_received_rc() == 0 );
@@ -707,8 +708,9 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_many_accounts )
 
     const auto& alice_account_initial = db->get_account( "alice" );
     const auto& alice_assets_initial = db->get< assets_object, by_account_id >( alice_account_initial.get_id() );
+    const auto& alice_mrc_initial = GET_MRC( "alice" );
     uint64_t vesting_amount = uint64_t(alice_assets_initial.get_vesting().amount.value);
-    int64_t creation_rc = alice_account_initial.get_rc_adjustment().value;
+    int64_t creation_rc = alice_mrc_initial.get_rc_adjustment().value;
 
     delegate_rc_operation op;
     op.from = "alice";
@@ -852,7 +854,8 @@ BOOST_AUTO_TEST_CASE( direct_rc_delegation_vesting_withdrawal )
 
     const auto& alice_account_initial = db->get_account( "alice" );
     const auto& alice_assets_initial = db->get< assets_object, by_account_id >( alice_account_initial.get_id() );
-    int64_t creation_rc = alice_account_initial.get_rc_adjustment().value;
+    const auto& alice_mrc_initial = GET_MRC( "alice" );
+    int64_t creation_rc = alice_mrc_initial.get_rc_adjustment().value;
     int64_t vesting_shares = alice_assets_initial.get_vesting().amount.value;
     int64_t delegated_rc = vesting_shares / 2;
 
@@ -1018,7 +1021,8 @@ BOOST_AUTO_TEST_CASE( direct_rc_delegation_vesting_withdrawal_routes )
 
     const auto& alice_account_initial = db->get_account( "alice" );
     const auto& alice_assets_initial = db->get< assets_object, by_account_id >( alice_account_initial.get_id() );
-    int64_t creation_rc = alice_account_initial.get_rc_adjustment().value;
+    const auto& alice_mrc_initial = GET_MRC( "alice" );
+    int64_t creation_rc = alice_mrc_initial.get_rc_adjustment().value;
     int64_t vesting_shares = alice_assets_initial.get_vesting().amount.value;
     int64_t delegated_rc = vesting_shares / 2;
 

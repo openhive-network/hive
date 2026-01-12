@@ -258,7 +258,8 @@ BOOST_AUTO_TEST_CASE( consolidate_balance )
       const auto& old_treasury = db.get_account( OBSOLETE_TREASURY_ACCOUNT );
       db.create_vesting( old_treasury, ASSET( "7.000 TESTS" ) );
       db.create_vesting( old_treasury, ASSET( "3.000 TESTS" ), true );
-      db.modify( old_treasury, [&]( account_object& t )
+      const auto& old_treasury_assets_init = db.get< assets_object, by_account_id >( old_treasury.get_id() );
+      db.modify( old_treasury_assets_init, [&]( assets_object& t )
       {
         t.set_balance( ASSET( "5.000 TESTS" ) );
         t.set_savings( ASSET( "3.000 TESTS" ) );
