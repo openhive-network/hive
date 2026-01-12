@@ -31,6 +31,9 @@
 #include <hive/protocol/hive_custom_operations.hpp>
 
 #include <hive/chain/rc/rc_objects.hpp>
+#include <hive/chain/manabars_rc_object.hpp>
+#include <hive/chain/assets_object.hpp>
+#include <hive/chain/time_object.hpp>
 
 #include "../db_fixture/clean_database_fixture.hpp"
 
@@ -38,6 +41,11 @@
 
 using namespace hive::chain;
 using namespace hive::protocol;
+
+// Helper to get manabars_rc_object for an account
+#define GET_MRC( account_name ) db->get< manabars_rc_object, by_account_id >( db->get_account( account_name ).get_id() )
+#define GET_ASSETS( account_name ) db->get< assets_object, by_account_id >( db->get_account( account_name ).get_id() )
+#define GET_TIME( account_name ) db->get< time_object, by_account_id >( db->get_account( account_name ).get_id() )
 
 BOOST_FIXTURE_TEST_SUITE( direct_rc_delegation, clean_database_fixture )
 
@@ -156,8 +164,8 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_single )
     BOOST_REQUIRE( delegation->to == bob_id );
     BOOST_REQUIRE( delegation->delegated_rc == uint64_t(op.max_rc) );
 
-    const auto& from_rc_account = db->get_account( op.from );
-    const auto& to_rc_account = db->get_account( "bob" );
+    const auto& from_rc_account = GET_MRC( op.from );
+    const auto& to_rc_account = GET_MRC( "bob" );
 
     BOOST_REQUIRE( from_rc_account.get_delegated_rc() == min_delegation + 1 );
     BOOST_REQUIRE( from_rc_account.get_received_rc() == 0 );
@@ -185,8 +193,8 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_single )
     BOOST_REQUIRE( delegation_decreased->to == bob_id );
     BOOST_REQUIRE( delegation_decreased->delegated_rc == uint64_t(op.max_rc) );
 
-    const auto& from_rc_account_decreased = db->get_account( op.from );
-    const auto& to_rc_account_decreased = db->get_account( "bob" );
+    const auto& from_rc_account_decreased = GET_MRC( op.from );
+    const auto& to_rc_account_decreased = GET_MRC( "bob" );
 
     BOOST_REQUIRE( from_rc_account_decreased.get_delegated_rc() == min_delegation );
     BOOST_REQUIRE( from_rc_account_decreased.get_received_rc() == 0 );
@@ -207,8 +215,8 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_single )
     BOOST_REQUIRE( delegation_increased->to == bob_id );
     BOOST_REQUIRE( delegation_increased->delegated_rc == uint64_t(op.max_rc) );
 
-    const auto& from_rc_account_increased = db->get_account( op.from );
-    const auto& to_rc_account_increased = db->get_account( "bob" );
+    const auto& from_rc_account_increased = GET_MRC( op.from );
+    const auto& to_rc_account_increased = GET_MRC( "bob" );
 
     BOOST_REQUIRE( from_rc_account_increased.get_delegated_rc() == min_delegation + 10 );
     BOOST_REQUIRE( from_rc_account_increased.get_received_rc() == 0 );
@@ -227,8 +235,8 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_single )
     const rc_direct_delegation_object* delegation_deleted = db->find< rc_direct_delegation_object, by_from_to >( boost::make_tuple( alice_id, bob_id ) );
     BOOST_REQUIRE( delegation_deleted == nullptr );
 
-    const auto& from_rc_account_deleted = db->get_account( "alice" );
-    const auto& to_rc_account_deleted = db->get_account( "bob" );
+    const auto& from_rc_account_deleted = GET_MRC( "alice" );
+    const auto& to_rc_account_deleted = GET_MRC( "bob" );
 
     BOOST_REQUIRE( from_rc_account_deleted.get_delegated_rc() == 0 );
     BOOST_REQUIRE( from_rc_account_deleted.get_received_rc() == 0 );
@@ -341,7 +349,7 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_many )
     BOOST_REQUIRE( delegation_decreased_dave->to == dave_id );
     BOOST_REQUIRE( delegation_decreased_dave->delegated_rc == uint64_t(op.max_rc) );
 
-    const auto& from_rc_account_decreased = db->get_account( op.from );
+    const auto& from_rc_account_decreased = GET_MRC( op.from );
     const auto& bob_rc_account_decreased = db->get_account( "bob" );
     const auto& dave_rc_account_decreased = db->get_account( "dave" );
 
@@ -399,7 +407,7 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_many )
     BOOST_REQUIRE( delegation_dan_deleted == nullptr );
     BOOST_REQUIRE( delegation_dave_deleted == nullptr );
 
-    const auto& from_rc_account_deleted = db->get_account( "alice" );
+    const auto& from_rc_account_deleted = GET_MRC( "alice" );
     const auto& bob_rc_account_deleted = db->get_account( "bob" );
     const auto& dave_rc_account_deleted = db->get_account( "dave" );
     const auto& dan_rc_account_deleted = db->get_account( "dan" );

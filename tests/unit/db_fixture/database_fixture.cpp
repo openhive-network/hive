@@ -21,6 +21,9 @@
 #include <hive/chain/detail/state/dhf_objects_multiindex.hpp>
 #include <hive/chain/detail/state/feed_history_object_multiindex.hpp>
 #include <hive/chain/detail/state/global_property_object_multiindex.hpp>
+#include <hive/chain/assets_object.hpp>
+#include <hive/chain/time_object.hpp>
+#include <hive/chain/delayed_votes_object.hpp>
 
 #include <hive/plugins/chain/chain_plugin.hpp>
 #include <hive/plugins/webserver/webserver_plugin.hpp>
@@ -438,9 +441,16 @@ void database_fixture::issue_funds(
         else if( amount.symbol == HBD_SYMBOL )
         {
           a.set_hbd_balance( a.get_hbd_balance() + HBD_asset( amount ) );
-          a.set_hbd_seconds_last_update( db.head_block_time() );
         }
       });
+      if( amount.symbol == HBD_SYMBOL )
+      {
+        const auto& acnt_time = db.get< time_object, by_account_id >( acnt.get_id() );
+        db.modify( acnt_time, [&]( time_object& t )
+        {
+          t.set_hbd_seconds_last_update( db.head_block_time() );
+        });
+      }
 
       db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
       {
@@ -1304,26 +1314,30 @@ void database_fixture::recover_account( const std::string& account_to_recover, c
 
 bool database_fixture::compare_delayed_vote_count( const account_name_type& name, const std::vector<uint64_t>& data_to_compare )
 {
-  const auto& idx = db->get_index< account_index, by_delayed_voting >();
-  for(const auto& usr : idx)
-    if(usr.get_name() == name)
-    {
-      if (usr.get_delayed_votes().size() != data_to_compare.size()) {
-        BOOST_TEST_MESSAGE("Incorrect delayed votes size: expected: " << data_to_compare.size() << ", actual: " << usr.get_delayed_votes().size());
-        return false;
-      }
-      const auto p = std::mismatch(
-        usr.get_delayed_votes().begin(),
-        usr.get_delayed_votes().end(),
-        data_to_compare.begin(),
-        data_to_compare.end(),
-        [](const delayed_votes_data& x, const uint64_t y){ return x.val == y; });
-      if (p.first != usr.get_delayed_votes().end() && p.second != data_to_compare.end()) {
-        BOOST_TEST_MESSAGE("Incorrect delayed votes: expected: " << *p.second << ", actual: " << p.first->val.value);
-      }
-      return p.first == usr.get_delayed_votes().end() && p.second == data_to_compare.end();
-    }
-  return false;
+  const auto* account = db->find_account( name );
+  if( account == nullptr )
+    return false;
+
+  const auto* dv = db->find< delayed_votes_object, by_account_id >( account->get_id() );
+  if( dv == nullptr )
+    return false;
+
+  if( dv->get_delayed_votes().size() != data_to_compare.size() )
+  {
+    BOOST_TEST_MESSAGE("Incorrect delayed votes size: expected: " << data_to_compare.size() << ", actual: " << dv->get_delayed_votes().size());
+    return false;
+  }
+  const auto p = std::mismatch(
+    dv->get_delayed_votes().begin(),
+    dv->get_delayed_votes().end(),
+    data_to_compare.begin(),
+    data_to_compare.end(),
+    [](const delayed_votes_data& x, const uint64_t y){ return x.val == y; });
+  if( p.first != dv->get_delayed_votes().end() && p.second != data_to_compare.end() )
+  {
+    BOOST_TEST_MESSAGE("Incorrect delayed votes: expected: " << *p.second << ", actual: " << p.first->val.value);
+  }
+  return p.first == dv->get_delayed_votes().end() && p.second == data_to_compare.end();
 };
 
 vector< operation > database_fixture::get_last_operations( uint32_t num_ops )
