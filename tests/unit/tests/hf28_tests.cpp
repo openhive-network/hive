@@ -39,6 +39,8 @@
 #include <hive/chain/detail/state/savings_withdraw_object_multiindex.hpp>
 #include <hive/chain/detail/state/liquidity_reward_balance_object_multiindex.hpp>
 #include <hive/chain/detail/state/withdraw_vesting_route_object_multiindex.hpp>
+#include <hive/chain/assets_object.hpp>
+#include <hive/chain/time_object.hpp>
 
 #include <hive/protocol/transaction_util.hpp>
 
@@ -46,6 +48,10 @@
 
 using namespace hive::chain;
 using namespace hive::chain::util;
+
+#define GET_ASSETS( account_name ) (db->get< assets_object, by_account_id >( db->get_account( account_name ).get_id() ))
+#define GET_TIME( account_name ) (db->get< time_object, by_account_id >( db->get_account( account_name ).get_id() ))
+#define GET_ACTIVE_NEXT_VW( account_name ) (db->get_account( account_name ).get_active_next_vesting_withdrawal( GET_ASSETS( account_name ), GET_TIME( account_name ) ))
 
 BOOST_FIXTURE_TEST_SUITE( hf28_tests, cluster_database_fixture )
 
@@ -1543,8 +1549,8 @@ BOOST_AUTO_TEST_CASE( disturbed_power_down )
     int start_block = db->head_block_num();
     withdraw_vesting( "bob", get_vesting( "bob" ), bob_private_key );
     withdraw_vesting( "gil", get_vesting( "gil" ), gil_private_key );
-    BOOST_CHECK_EQUAL( db->get_account( "bob" ).get_active_next_vesting_withdrawal().value, bob_rate );
-    BOOST_CHECK_EQUAL( db->get_account( "gil" ).get_active_next_vesting_withdrawal().value, gil_rate );
+    BOOST_CHECK_EQUAL( GET_ACTIVE_NEXT_VW( "bob" ).value, bob_rate );
+    BOOST_CHECK_EQUAL( GET_ACTIVE_NEXT_VW( "gil" ).value, gil_rate );
 
     generate_blocks( week_blocks );
     BOOST_CHECK_EQUAL( start_block + week_blocks, db->head_block_num() );
@@ -1578,8 +1584,8 @@ BOOST_AUTO_TEST_CASE( disturbed_power_down )
     // down rate was not multiplied but recalculated, disturbing the flow
     bob_rate = bob_amount * split / 104;
     gil_rate = gil_amount * split / 104;
-    BOOST_CHECK_EQUAL( db->get_account( "bob" ).get_active_next_vesting_withdrawal().value, bob_rate );
-    BOOST_CHECK_EQUAL( db->get_account( "gil" ).get_active_next_vesting_withdrawal().value, gil_rate );
+    BOOST_CHECK_EQUAL( GET_ACTIVE_NEXT_VW( "bob" ).value, bob_rate );
+    BOOST_CHECK_EQUAL( GET_ACTIVE_NEXT_VW( "gil" ).value, gil_rate );
 
     BOOST_CHECK_EQUAL( bob_vests % bob_rate, 0 );
     BOOST_CHECK_EQUAL( gil_vests - 102 * gil_rate, 769270 );
@@ -1602,9 +1608,9 @@ BOOST_AUTO_TEST_CASE( disturbed_power_down )
     }
     BOOST_CHECK_EQUAL( get_vesting( "bob" ).amount.value, 0 );
     BOOST_CHECK_EQUAL( get_vesting( "gil" ).amount.value, 769270 );
-    BOOST_CHECK_EQUAL( db->get_account( "bob" ).get_active_next_vesting_withdrawal().value, 0 );
+    BOOST_CHECK_EQUAL( GET_ACTIVE_NEXT_VW( "bob" ).value, 0 );
     // officially whole remainder of gil's power down is for next week, but that's not the case prior HF28
-    BOOST_CHECK_EQUAL( db->get_account( "gil" ).get_active_next_vesting_withdrawal().value, 769270 );
+    BOOST_CHECK_EQUAL( GET_ACTIVE_NEXT_VW( "gil" ).value, 769270 );
 
     BOOST_TEST_MESSAGE( "Bob finished power down, but not gil" );
     gil_rate = 40;
@@ -1621,25 +1627,81 @@ BOOST_AUTO_TEST_CASE( disturbed_power_down )
       BOOST_CHECK_EQUAL( get_vesting( "gil" ).amount.value, gil_vests );
     }
     BOOST_CHECK_EQUAL( get_vesting( "gil" ).amount.value, 769270 - 30*40 );
-    BOOST_CHECK_EQUAL( db->get_account( "gil" ).get_active_next_vesting_withdrawal().value, 769270 - 30*40 );
+    BOOST_CHECK_EQUAL( GET_ACTIVE_NEXT_VW( "gil" ).value, 769270 - 30*40 );
 
     BOOST_TEST_MESSAGE( "Activate fix" );
     inject_hardfork( HIVE_HARDFORK_1_28 );
 
     BOOST_TEST_MESSAGE( "Check innediately after HF28 - nothing changed yet for gil" );
     BOOST_CHECK_EQUAL( get_vesting( "gil" ).amount.value, 769270 - 30 * 40 );
-    BOOST_CHECK_EQUAL( db->get_account( "gil" ).get_active_next_vesting_withdrawal().value, 769270 - 30 * 40 );
+    BOOST_CHECK_EQUAL( GET_ACTIVE_NEXT_VW( "gil" ).value, 769270 - 30 * 40 );
 
     generate_blocks( week_blocks );
     BOOST_TEST_MESSAGE( "Check week after activation of HF28 - should fix power down on gil" );
     BOOST_CHECK_EQUAL( get_vesting( "gil" ).amount.value, 0 );
-    BOOST_CHECK_EQUAL( db->get_account( "gil" ).get_active_next_vesting_withdrawal().value, 0 );
+    BOOST_CHECK_EQUAL( GET_ACTIVE_NEXT_VW( "gil" ).value, 0 );
 
     validate_database();
   }
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( vote_edit_limit )
+{
+  try
+  {
+    autoscope reset( set_mainnet_cashout_values() );
+
+    inject_hardfork( HIVE_HARDFORK_0_20 ); // we don't care about old voting rules
+
+    ACTORS_DEFAULT_FEE( (alice)(bob)(carol) );
+    vest( "bob", ASSET( "1.000 TESTS" ) );
+    vest( "carol", ASSET( "1.000 TESTS" ) );
+    generate_block();
+
+    post_comment( "alice", "test", "test", "test", "category", alice_post_key );
+    generate_block();
+
+    vote( "alice", "test", "bob", HIVE_100_PERCENT, bob_post_key );
+    generate_block();
+    vote( "alice", "test", "bob", 90 * HIVE_1_PERCENT, bob_post_key ); // edit 1
+    generate_block();
+    vote( "alice", "test", "bob", 80 * HIVE_1_PERCENT, bob_post_key ); // edit 2
+    generate_block();
+    vote( "alice", "test", "bob", 70 * HIVE_1_PERCENT, bob_post_key ); // edit 3
+    generate_block();
+    vote( "alice", "test", "bob", 60 * HIVE_1_PERCENT, bob_post_key ); // edit 4
+    generate_block();
+    vote( "alice", "test", "bob", 50 * HIVE_1_PERCENT, bob_post_key ); // edit 5
+    generate_block();
+    HIVE_REQUIRE_ASSERT( vote( "alice", "test", "bob", 40 * HIVE_1_PERCENT, bob_post_key ), "itr->get_number_of_changes() < HIVE_MAX_VOTE_CHANGES && \"Voter has used the maximum number of vote changes on this comment.\""); // edit 6 - fails
+
+    BOOST_TEST_MESSAGE( "Activate HF28" );
+    inject_hardfork( HIVE_HARDFORK_1_28 );
+    BOOST_TEST_MESSAGE( "Now there is no limit on vote edits (other than RC)" );
+
+    vote( "alice", "test", "bob", 40 * HIVE_1_PERCENT, bob_post_key ); // edit 6
+    generate_block();
+    vote( "alice", "test", "bob", 30 * HIVE_1_PERCENT, bob_post_key ); // edit 7
+    generate_block();
+    vote( "alice", "test", "bob", 20 * HIVE_1_PERCENT, bob_post_key ); // edit 8
+    generate_block();
+
+    // wait a day for voting power of 'bob' to regenerate
+    generate_blocks( HIVE_BLOCKS_PER_DAY );
+    vote( "alice", "test", "bob", 75 * HIVE_1_PERCENT, bob_post_key ); // edit 9
+    vote( "alice", "test", "carol", 75 * HIVE_1_PERCENT, carol_post_key ); // fresh vote of the same power
+
+    const auto& comment = db->get_comment( "alice", std::string( "test" ) );
+    const auto& comment_vote_idx = db->get_index< comment_vote_index, by_comment_voter >();
+    const auto& vote_bob = *comment_vote_idx.find( boost::make_tuple( comment.get_id(), bob_id ) );
+    const auto& vote_carol = *comment_vote_idx.find( boost::make_tuple( comment.get_id(), carol_id ) );
+    BOOST_REQUIRE_EQUAL( vote_bob.get_rshares(), vote_carol.get_rshares() );
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
 BOOST_AUTO_TEST_CASE( artificial_1_on_power_down )
 {
   try
@@ -1660,11 +1722,11 @@ BOOST_AUTO_TEST_CASE( artificial_1_on_power_down )
 
     // after fix vesting shares split no longer affects accounts with no active power down
     inject_hardfork( HIVE_HARDFORK_0_1 );
-    BOOST_REQUIRE_EQUAL( db->get< assets_object, by_account_id >( db->get_account( "alice" ).get_id() ).get_vesting_withdraw_rate().amount.value, 0 );
-    BOOST_REQUIRE_EQUAL( db->get< assets_object, by_account_id >( db->get_account( "bob" ).get_id() ).get_vesting_withdraw_rate().amount.value, 0 );
-    BOOST_REQUIRE_EQUAL( db->get< assets_object, by_account_id >( db->get_account( "carol" ).get_id() ).get_vesting_withdraw_rate().amount.value, 0 );
-    BOOST_REQUIRE_EQUAL( db->get< assets_object, by_account_id >( db->get_account( "dave" ).get_id() ).get_vesting_withdraw_rate().amount.value, 0 );
-    BOOST_REQUIRE_EQUAL( db->get< assets_object, by_account_id >( db->get_account( "eric" ).get_id() ).get_vesting_withdraw_rate().amount.value, 0 );
+    BOOST_REQUIRE_EQUAL( GET_ASSETS( "alice" ).get_vesting_withdraw_rate().amount.value, 0 );
+    BOOST_REQUIRE_EQUAL( GET_ASSETS( "bob" ).get_vesting_withdraw_rate().amount.value, 0 );
+    BOOST_REQUIRE_EQUAL( GET_ASSETS( "carol" ).get_vesting_withdraw_rate().amount.value, 0 );
+    BOOST_REQUIRE_EQUAL( GET_ASSETS( "dave" ).get_vesting_withdraw_rate().amount.value, 0 );
+    BOOST_REQUIRE_EQUAL( GET_ASSETS( "eric" ).get_vesting_withdraw_rate().amount.value, 0 );
 
     // HF5 used to activate "no op" check during power down and cancel power down, but now the check only activates after HF28
     inject_hardfork( HIVE_HARDFORK_0_5 );
@@ -1682,18 +1744,18 @@ BOOST_AUTO_TEST_CASE( artificial_1_on_power_down )
     generate_block();
 
     // we can use 'alice' and 'bob' to check the power down with natural 1 withdraw rate
-    BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).get_id() ).get_vesting_withdraw_rate().amount.value, 0 );
-    BOOST_REQUIRE_EQUAL( db->get_account( "bob" ).get_id() ).get_vesting_withdraw_rate().amount.value, 0 );
+    BOOST_REQUIRE_EQUAL( GET_ASSETS( "alice" ).get_vesting_withdraw_rate().amount.value, 0 );
+    BOOST_REQUIRE_EQUAL( GET_ASSETS( "bob" ).get_vesting_withdraw_rate().amount.value, 0 );
 
     withdraw_vesting( "alice", asset( HIVE_VESTING_WITHDRAW_INTERVALS_PRE_HF_16 - 1, VESTS_SYMBOL ), alice_private_key);
     // above power down truncates down to zero, that is corrected to 1
-    BOOST_REQUIRE_EQUAL( db->get< assets_object, by_account_id >( db->get_account( "alice" ).get_id() ).get_vesting_withdraw_rate().amount.value, 1 );
+    BOOST_REQUIRE_EQUAL( GET_ASSETS( "alice" ).get_vesting_withdraw_rate().amount.value, 1 );
 
     // HF16 switches from 104 weeks to 13 weeks of power down
     inject_hardfork( HIVE_HARDFORK_0_16 );
 
     withdraw_vesting( "bob", asset( HIVE_VESTING_WITHDRAW_INTERVALS * 2 - 1, VESTS_SYMBOL ), bob_private_key );
-    BOOST_REQUIRE_EQUAL( db->get< assets_object, by_account_id >( db->get_account( "bob" ).get_id() ).get_vesting_withdraw_rate().amount.value, 1 );
+    BOOST_REQUIRE_EQUAL( GET_ASSETS( "bob" ).get_vesting_withdraw_rate().amount.value, 1 );
 
     // make sure code behaves "properly" (I mean in unchanged way) right before HF28 too
     inject_hardfork( HIVE_HARDFORK_1_27 );
@@ -1706,7 +1768,7 @@ BOOST_AUTO_TEST_CASE( artificial_1_on_power_down )
     // also since HF21 there is different rate correction mechanism, so the same operation as for 'bob'
     // before results in different rate
     withdraw_vesting( "carol", asset( HIVE_VESTING_WITHDRAW_INTERVALS * 2 - 1, VESTS_SYMBOL ), carol_private_key );
-    BOOST_REQUIRE_EQUAL( db->get< assets_object, by_account_id >( db->get_account( "carol" ).get_id() ).get_vesting_withdraw_rate().amount.value, 2 );
+    BOOST_REQUIRE_EQUAL( GET_ASSETS( "carol" ).get_vesting_withdraw_rate().amount.value, 2 );
 
     // HF28 activates code that prevents bug from affecting new power down cancels
     inject_hardfork( HIVE_HARDFORK_1_28 );
@@ -1769,7 +1831,7 @@ BOOST_AUTO_TEST_CASE( vote_stabilization )
     {
       auto permlink = "reply" + std::to_string( i );
       vote( "alice", permlink, voter, weight, key );
-      auto reply_id = db->get_comment( "alice", permlink )->get_id();
+      auto reply_id = db->get_comment( "alice", permlink ).get_id();
       const auto& vote_obj = *vote_idx.find( boost::make_tuple( reply_id, get_account_id( voter ) ) );
       return vote_obj.get_rshares();
     };
@@ -1908,7 +1970,7 @@ BOOST_AUTO_TEST_CASE( empty_voting )
       "voter.get_voting_manabar().current_mana + voter.get_downvote_manabar().current_mana > fc::uint128_to_int64( used_mana )" );
     generate_block();
 
-    auto post_id = db->get_comment( "alice", std::string( "test" ) )->get_id();
+    auto post_id = db->get_comment( "alice", std::string( "test" ) ).get_id();
     const auto& vote_idx = db->get_index< comment_vote_index, by_comment_voter >();
     auto voteI = vote_idx.find( boost::make_tuple( post_id, bob_id ) );
     BOOST_REQUIRE( voteI != vote_idx.end() );

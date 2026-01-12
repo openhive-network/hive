@@ -53,6 +53,7 @@
 #include <hive/chain/assets_object.hpp>
 #include <hive/chain/time_object.hpp>
 #include <hive/chain/recovery_object.hpp>
+#include <hive/chain/delayed_votes_object.hpp>
 
 #include <fc/macros.hpp>
 #include <fc/crypto/digest.hpp>
@@ -74,6 +75,9 @@ using fc::string;
 #define DOWNVOTE_MANABAR( account_name ) (db->get< manabars_rc_object, by_account_id >( db->get_account( account_name ).get_id() ).get_downvote_manabar())
 #define GET_ASSETS( account_name ) (db->get< assets_object, by_account_id >( db->get_account( account_name ).get_id() ))
 #define GET_TIME( account_name ) (db->get< time_object, by_account_id >( db->get_account( account_name ).get_id() ))
+#define GET_DV( account_name ) (db->get< delayed_votes_object, by_account_id >( db->get_account( account_name ).get_id() ))
+#define GET_EFF_VESTS( account_name ) (db->get_account( account_name ).get_effective_vesting_shares( GET_ASSETS( account_name ), GET_TIME( account_name ) ))
+#define GET_GOV_VOTE_POWER( acc ) ((acc).get_direct_governance_vote_power( db->get< assets_object, by_account_id >( (acc).get_id() ), db->get< delayed_votes_object, by_account_id >( (acc).get_id() ) ))
 #define CHECK_PROXY( account, proxy ) BOOST_REQUIRE( account.get_proxy() == proxy.get_id() )
 #define CHECK_NO_PROXY( account ) BOOST_REQUIRE( account.has_proxy() == false )
 
@@ -2052,7 +2056,7 @@ BOOST_AUTO_TEST_CASE( account_witness_vote_apply )
 
     push_transaction( tx, alice_private_key );
 
-    BOOST_REQUIRE( sam_witness.votes == alice.get_direct_governance_vote_power() );
+    BOOST_REQUIRE( sam_witness.votes == GET_GOV_VOTE_POWER( alice ) );
     BOOST_REQUIRE( witness_vote_idx.find( boost::make_tuple( sam_witness.owner, alice.get_name() ) ) != witness_vote_idx.end() );
     validate_database();
 
@@ -2081,7 +2085,7 @@ BOOST_AUTO_TEST_CASE( account_witness_vote_apply )
 
     push_transaction( tx, bob_private_key );
 
-    BOOST_REQUIRE( sam_witness.votes == ( bob.proxied_vsf_votes_total() + bob.get_direct_governance_vote_power() ) );
+    BOOST_REQUIRE( sam_witness.votes == ( bob.proxied_vsf_votes_total() + GET_GOV_VOTE_POWER( bob ) ) );
     BOOST_REQUIRE( witness_vote_idx.find( boost::make_tuple( sam_witness.owner, bob.get_name() ) ) != witness_vote_idx.end() );
     BOOST_REQUIRE( witness_vote_idx.find( boost::make_tuple( sam_witness.owner, alice.get_name() ) ) == witness_vote_idx.end() );
 
@@ -2091,7 +2095,7 @@ BOOST_AUTO_TEST_CASE( account_witness_vote_apply )
     tx.operations.push_back( op );
     HIVE_REQUIRE_ASSERT( push_transaction( tx, alice_private_key ), "!voter.has_proxy()" );
 
-    BOOST_REQUIRE( sam_witness.votes == ( bob.proxied_vsf_votes_total() + bob.get_direct_governance_vote_power() ) );
+    BOOST_REQUIRE( sam_witness.votes == ( bob.proxied_vsf_votes_total() + GET_GOV_VOTE_POWER( bob ) ) );
     BOOST_REQUIRE( witness_vote_idx.find( boost::make_tuple( sam_witness.owner, bob.get_name() ) ) != witness_vote_idx.end() );
     BOOST_REQUIRE( witness_vote_idx.find( boost::make_tuple( sam_witness.owner, alice.get_name() ) ) == witness_vote_idx.end() );
 
@@ -2560,7 +2564,7 @@ BOOST_AUTO_TEST_CASE( account_witness_proxy_apply )
     CHECK_PROXY( bob, alice );
     BOOST_REQUIRE( bob.proxied_vsf_votes_total().value == 0 );
     CHECK_NO_PROXY( alice );
-    BOOST_REQUIRE( alice.proxied_vsf_votes_total() == bob.get_direct_governance_vote_power() );
+    BOOST_REQUIRE( alice.proxied_vsf_votes_total() == GET_GOV_VOTE_POWER( bob ) );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test changing proxy" );
@@ -2576,7 +2580,7 @@ BOOST_AUTO_TEST_CASE( account_witness_proxy_apply )
     BOOST_REQUIRE( bob.proxied_vsf_votes_total().value == 0 );
     BOOST_REQUIRE( alice.proxied_vsf_votes_total().value == 0 );
     CHECK_NO_PROXY( sam );
-    BOOST_REQUIRE( sam.proxied_vsf_votes_total().value == bob.get_direct_governance_vote_power() );
+    BOOST_REQUIRE( sam.proxied_vsf_votes_total().value == GET_GOV_VOTE_POWER( bob ) );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test failure when changing proxy to existing proxy" );
@@ -2586,7 +2590,7 @@ BOOST_AUTO_TEST_CASE( account_witness_proxy_apply )
     CHECK_PROXY( bob, sam );
     BOOST_REQUIRE( bob.proxied_vsf_votes_total().value == 0 );
     CHECK_NO_PROXY( sam );
-    BOOST_REQUIRE( sam.proxied_vsf_votes_total() == bob.get_direct_governance_vote_power() );
+    BOOST_REQUIRE( sam.proxied_vsf_votes_total() == GET_GOV_VOTE_POWER( bob ) );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test adding a grandparent proxy" );
@@ -2602,9 +2606,9 @@ BOOST_AUTO_TEST_CASE( account_witness_proxy_apply )
     CHECK_PROXY( bob, sam );
     BOOST_REQUIRE( bob.proxied_vsf_votes_total().value == 0 );
     CHECK_PROXY( sam, dave );
-    BOOST_REQUIRE( sam.proxied_vsf_votes_total() == bob.get_direct_governance_vote_power() );
+    BOOST_REQUIRE( sam.proxied_vsf_votes_total() == GET_GOV_VOTE_POWER( bob ) );
     CHECK_NO_PROXY( dave );
-    BOOST_REQUIRE( dave.proxied_vsf_votes_total() == ( sam.get_direct_governance_vote_power() + bob.get_direct_governance_vote_power() ) );
+    BOOST_REQUIRE( dave.proxied_vsf_votes_total() == ( GET_GOV_VOTE_POWER( sam ) + GET_GOV_VOTE_POWER( bob ) ) );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test adding a grandchild proxy" );
@@ -2624,9 +2628,9 @@ BOOST_AUTO_TEST_CASE( account_witness_proxy_apply )
     CHECK_PROXY( bob, sam );
     BOOST_REQUIRE( bob.proxied_vsf_votes_total().value == 0 );
     CHECK_PROXY( sam, dave );
-    BOOST_REQUIRE( sam.proxied_vsf_votes_total() == ( bob.get_direct_governance_vote_power() + alice.get_direct_governance_vote_power() ) );
+    BOOST_REQUIRE( sam.proxied_vsf_votes_total() == ( GET_GOV_VOTE_POWER( bob ) + GET_GOV_VOTE_POWER( alice ) ) );
     CHECK_NO_PROXY( dave );
-    BOOST_REQUIRE( dave.proxied_vsf_votes_total() == ( sam.get_direct_governance_vote_power() + bob.get_direct_governance_vote_power() + alice.get_direct_governance_vote_power() ) );
+    BOOST_REQUIRE( dave.proxied_vsf_votes_total() == ( GET_GOV_VOTE_POWER( sam ) + GET_GOV_VOTE_POWER( bob ) + GET_GOV_VOTE_POWER( alice ) ) );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test removing a grandchild proxy" );
@@ -2644,9 +2648,9 @@ BOOST_AUTO_TEST_CASE( account_witness_proxy_apply )
     CHECK_NO_PROXY( bob );
     BOOST_REQUIRE( bob.proxied_vsf_votes_total().value == 0 );
     CHECK_PROXY( sam, dave );
-    BOOST_REQUIRE( sam.proxied_vsf_votes_total() == alice.get_direct_governance_vote_power() );
+    BOOST_REQUIRE( sam.proxied_vsf_votes_total() == GET_GOV_VOTE_POWER( alice ) );
     CHECK_NO_PROXY( dave );
-    BOOST_REQUIRE( dave.proxied_vsf_votes_total() == ( sam.get_direct_governance_vote_power() + alice.get_direct_governance_vote_power() ) );
+    BOOST_REQUIRE( dave.proxied_vsf_votes_total() == ( GET_GOV_VOTE_POWER( sam ) + GET_GOV_VOTE_POWER( alice ) ) );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test votes are transferred when a proxy is added" );
@@ -2665,7 +2669,7 @@ BOOST_AUTO_TEST_CASE( account_witness_proxy_apply )
 
     push_transaction( tx, alice_private_key );
 
-    BOOST_REQUIRE( db->get_witness( HIVE_INIT_MINER_NAME ).votes == ( alice.get_direct_governance_vote_power() + bob.get_direct_governance_vote_power() ) );
+    BOOST_REQUIRE( db->get_witness( HIVE_INIT_MINER_NAME ).votes == ( GET_GOV_VOTE_POWER( alice ) + GET_GOV_VOTE_POWER( bob ) ) );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test votes are removed when a proxy is removed" );
@@ -2675,7 +2679,7 @@ BOOST_AUTO_TEST_CASE( account_witness_proxy_apply )
 
     push_transaction( tx, alice_private_key );
 
-    BOOST_REQUIRE( db->get_witness( HIVE_INIT_MINER_NAME ).votes == bob.get_direct_governance_vote_power() );
+    BOOST_REQUIRE( db->get_witness( HIVE_INIT_MINER_NAME ).votes == GET_GOV_VOTE_POWER( bob ) );
     validate_database();
   }
   FC_LOG_AND_RETHROW()
@@ -7233,7 +7237,7 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_apply )
     tx.operations.push_back( witness_vote );
     HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::exception );
 
-    db->get< comment_vote_object, by_comment_voter >( boost::make_tuple( db->get_comment( "alice", string( "test" ) )->get_id(), get_account_id( "alice" ) ) );
+    db->get< comment_vote_object, by_comment_voter >( boost::make_tuple( db->get_comment( "alice", string( "test" ) ).get_id(), get_account_id( "alice" ) ) );
 
     vote.weight = 0;
     tx.clear();
@@ -7421,7 +7425,9 @@ BOOST_AUTO_TEST_CASE( claim_reward_balance_apply )
 
     db_plugin->debug_update( []( database& db )
     {
-      db.modify( db.get_account( "alice" ), []( account_object& a )
+      const auto& alice_acc = db.get_account( "alice" );
+      const auto& alice_assets = db.get< assets_object, by_account_id >( alice_acc.get_id() );
+      db.modify( alice_assets, []( assets_object& a )
       {
         a.set_rewards( ASSET( "10.000 TESTS" ) );
         a.set_hbd_rewards( ASSET( "10.000 TBD" ) );
@@ -7585,19 +7591,19 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
     op.delegatee = "bob";
 
     util::manabar old_manabar = VOTING_MANABAR( "alice" );
-    util::manabar_params params( db->get_account( "alice" ).get_effective_vesting_shares().value, HIVE_VOTING_MANA_REGENERATION_SECONDS );
+    util::manabar_params params( GET_EFF_VESTS( "alice" ).value, HIVE_VOTING_MANA_REGENERATION_SECONDS );
     old_manabar.regenerate_mana( params, db->head_block_time() );
 
     util::manabar old_downvote_manabar = DOWNVOTE_MANABAR( "alice" );
-    params.max_mana = db->get_account( "alice" ).get_effective_vesting_shares().value / 4;
+    params.max_mana = GET_EFF_VESTS( "alice" ).value / 4;
     old_downvote_manabar.regenerate_mana( params, db->head_block_time() );
 
     util::manabar old_bob_manabar = VOTING_MANABAR( "bob" );
-    params.max_mana = db->get_account( "bob" ).get_effective_vesting_shares().value;
+    params.max_mana = GET_EFF_VESTS( "bob" ).value;
     old_bob_manabar.regenerate_mana( params, db->head_block_time() );
 
     util::manabar old_bob_downvote_manabar = DOWNVOTE_MANABAR( "bob" );
-    params.max_mana = db->get_account( "bob" ).get_effective_vesting_shares().value / 4;
+    params.max_mana = GET_EFF_VESTS( "bob" ).value / 4;
     old_bob_downvote_manabar.regenerate_mana( params, db->head_block_time() );
 
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
@@ -7609,10 +7615,10 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
     const auto& bob_acc = db->get_account( "bob" );
     const auto& bob_mrc = db->get< manabars_rc_object, by_account_id >( bob_acc.get_id() );
 
-    BOOST_REQUIRE( alice_acc.get_delegated_vesting() == ASSET( "10000000.000000 VESTS" ) );
+    BOOST_REQUIRE( GET_ASSETS( "alice" ).get_delegated_vesting() == ASSET( "10000000.000000 VESTS" ) );
     BOOST_REQUIRE( alice_mrc.get_voting_manabar().current_mana == old_manabar.current_mana - op.vesting_shares.amount.value );
     BOOST_REQUIRE( alice_mrc.get_downvote_manabar().current_mana == old_downvote_manabar.current_mana - op.vesting_shares.amount.value / 4 );
-    BOOST_REQUIRE( bob_acc.get_received_vesting() == ASSET( "10000000.000000 VESTS" ) );
+    BOOST_REQUIRE( GET_ASSETS( "bob" ).get_received_vesting() == ASSET( "10000000.000000 VESTS" ) );
     BOOST_REQUIRE( bob_mrc.get_voting_manabar().current_mana == old_bob_manabar.current_mana + op.vesting_shares.amount.value );
     BOOST_REQUIRE( bob_mrc.get_downvote_manabar().current_mana == old_bob_downvote_manabar.current_mana + op.vesting_shares.amount.value / 4 );
 
@@ -7625,19 +7631,19 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
     BOOST_REQUIRE( delegation->get_vesting() == ASSET( "10000000.000000 VESTS"));
 
     old_manabar = VOTING_MANABAR( "alice" );
-    params.max_mana = db->get_account( "alice" ).get_effective_vesting_shares().value;
+    params.max_mana = GET_EFF_VESTS( "alice" ).value;
     old_manabar.regenerate_mana( params, db->head_block_time() );
 
     old_downvote_manabar = DOWNVOTE_MANABAR( "alice" );
-    params.max_mana = db->get_account( "alice" ).get_effective_vesting_shares().value / 4;
+    params.max_mana = GET_EFF_VESTS( "alice" ).value / 4;
     old_downvote_manabar.regenerate_mana( params, db->head_block_time() );
 
     old_bob_manabar = VOTING_MANABAR( "bob" );
-    params.max_mana = db->get_account( "bob" ).get_effective_vesting_shares().value;
+    params.max_mana = GET_EFF_VESTS( "bob" ).value;
     old_bob_manabar.regenerate_mana( params, db->head_block_time() );
 
     old_bob_downvote_manabar = DOWNVOTE_MANABAR( "bob" );
-    params.max_mana = db->get_account( "bob" ).get_effective_vesting_shares().value / 4;
+    params.max_mana = GET_EFF_VESTS( "bob" ).value / 4;
     old_bob_downvote_manabar.regenerate_mana( params, db->head_block_time() );
 
     int64_t delta = 10000000000000;
@@ -7653,10 +7659,10 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
     BOOST_REQUIRE( delegation != nullptr );
     BOOST_REQUIRE( delegation->get_delegator() == alice_acc.get_id() );
     BOOST_REQUIRE( delegation->get_vesting() == ASSET( "20000000.000000 VESTS"));
-    BOOST_REQUIRE( alice_acc.get_delegated_vesting() == ASSET( "20000000.000000 VESTS"));
+    BOOST_REQUIRE( GET_ASSETS( "alice" ).get_delegated_vesting() == ASSET( "20000000.000000 VESTS"));
     BOOST_REQUIRE( alice_mrc.get_voting_manabar().current_mana == old_manabar.current_mana - delta );
     BOOST_REQUIRE( alice_mrc.get_downvote_manabar().current_mana == old_downvote_manabar.current_mana - delta / 4 );
-    BOOST_REQUIRE( bob_acc.get_received_vesting() == ASSET( "20000000.000000 VESTS"));
+    BOOST_REQUIRE( GET_ASSETS( "bob" ).get_received_vesting() == ASSET( "20000000.000000 VESTS"));
     BOOST_REQUIRE( bob_mrc.get_voting_manabar().current_mana == old_bob_manabar.current_mana + delta );
     BOOST_REQUIRE( bob_mrc.get_downvote_manabar().current_mana == old_bob_downvote_manabar.current_mana + delta / 4 );
 
@@ -7673,7 +7679,7 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
     tx.operations.clear();
 
     old_manabar = VOTING_MANABAR( "bob" );
-    params.max_mana = db->get_account( "bob" ).get_effective_vesting_shares().value;
+    params.max_mana = GET_EFF_VESTS( "bob" ).value;
     old_manabar.regenerate_mana( params, db->head_block_time() );
 
     comment_operation comment_op;
@@ -7825,8 +7831,6 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
     util::manabar old_dave_manabar = VOTING_MANABAR( "dave" );
     util::manabar old_dave_downvote_manabar = DOWNVOTE_MANABAR( "dave" );
 
-    const auto& sam_acc = db->get_account( "sam" );
-    const auto& dave_acc = db->get_account( "dave" );
     util::manabar_params sam_params( sam_acc.get_effective_vesting_shares( GET_ASSETS( "sam" ), GET_TIME( "sam" ) ).value, HIVE_VOTING_MANA_REGENERATION_SECONDS );
     util::manabar_params dave_params( dave_acc.get_effective_vesting_shares( GET_ASSETS( "dave" ), GET_TIME( "dave" ) ).value, HIVE_VOTING_MANA_REGENERATION_SECONDS );
 
