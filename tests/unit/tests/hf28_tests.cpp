@@ -1880,7 +1880,7 @@ BOOST_AUTO_TEST_CASE( vote_stabilization )
       BOOST_REQUIRE_EQUAL( rshares, full_power ); // power stays the same on all votes
     }
     HIVE_REQUIRE_ASSERT( vote_reply( i, HIVE_100_PERCENT, "carol", carol_post_key ),
-      "voter.get_voting_manabar().has_mana( fc::uint128_to_int64( used_mana ) )" );
+      "voter_mrc.get_voting_manabar().has_mana( fc::uint128_to_int64( used_mana ) )" );
 
     generate_block();
     // after single block 'carol' should regenerate enough mana to counter "round-up" mentioned above
@@ -1888,17 +1888,17 @@ BOOST_AUTO_TEST_CASE( vote_stabilization )
     // but further voting is not possible, unless she waits or lowers weight significantly
     ++i;
     HIVE_REQUIRE_ASSERT( vote_reply( i, HIVE_100_PERCENT, "carol", carol_post_key ),
-      "voter.get_voting_manabar().has_mana( fc::uint128_to_int64( used_mana ) )" );
+      "voter_mrc.get_voting_manabar().has_mana( fc::uint128_to_int64( used_mana ) )" );
 
     generate_blocks( HIVE_BLOCKS_PER_DAY / 10 - 1 );
     HIVE_REQUIRE_ASSERT( vote_reply( i, HIVE_100_PERCENT, "carol", carol_post_key ),
-      "voter.get_voting_manabar().has_mana( fc::uint128_to_int64( used_mana ) )" );
+      "voter_mrc.get_voting_manabar().has_mana( fc::uint128_to_int64( used_mana ) )" );
     generate_block();
     vote_reply( i, HIVE_100_PERCENT, "carol", carol_post_key );
     // only one full vote is possible after 1/10 of day of mana regen
     ++i;
     HIVE_REQUIRE_ASSERT( vote_reply( i, HIVE_100_PERCENT, "carol", carol_post_key ),
-      "voter.get_voting_manabar().has_mana( fc::uint128_to_int64( used_mana ) )" );
+      "voter_mrc.get_voting_manabar().has_mana( fc::uint128_to_int64( used_mana ) )" );
 
     // downvote all replies with 'anticarol'
     for( i = 0; i < 12+1+49; ++i )
