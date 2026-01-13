@@ -13,11 +13,6 @@
 #include <hive/chain/util/delayed_voting.hpp>
 #include <hive/chain/util/rd_dynamics.hpp>
 #include <hive/chain/witness_objects.hpp>
-#include <hive/chain/assets_object.hpp>
-#include <hive/chain/manabars_rc_object.hpp>
-#include <hive/chain/time_object.hpp>
-#include <hive/chain/delayed_votes_object.hpp>
-#include <hive/chain/recovery_object.hpp>
 
 #include <hive/plugins/metadata/metadata_plugin.hpp>
 
