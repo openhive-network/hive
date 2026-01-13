@@ -668,6 +668,7 @@ void claim_reward_balance_evaluator::do_apply( const claim_reward_balance_operat
 
   if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
   {
+    _db.rc().regenerate_rc_mana( acnt, now );
     _db.modify( acnt_mrc, [&]( manabars_rc_object& mrc )
     {
       _db.modify( acnt_assets, [&]( assets_object& a )
@@ -681,7 +682,6 @@ void claim_reward_balance_evaluator::do_apply( const claim_reward_balance_operat
         a.set_vest_rewards_as_hive( a.get_vest_rewards_as_hive() - reward_vesting_hive_to_move );
       } );
     } );
-    _db.rc().regenerate_rc_mana( acnt, now );
   }
   else
   {

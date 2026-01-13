@@ -48,6 +48,7 @@
 #include <hive/chain/dhf_objects.hpp>
 #include <hive/chain/transaction_object.hpp>
 #include <hive/chain/rc/rc_objects.hpp>
+#include <hive/chain/delayed_votes_object.hpp>
 #include <hive/chain/detail/state/hardfork_property_object.hpp>
 #include <hive/chain/detail/state/global_property_object.hpp>
 // Multiindex headers for index type definitions
@@ -1145,7 +1146,8 @@ BOOST_AUTO_TEST_CASE( decoding_types_mechanism_test )
     We should have new types like: hive::protocol::public_key_type (reflected) and hive::chain::account_object (reflected).
   */
   dtds.register_new_type<hive::chain::account_object>();
-  BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 28 );
+  // With split objects, account_object has fewer types registered (20 instead of 28)
+  BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 20 );
   {
     const hive::chain::util::decoded_type_data& decoded_public_key_type = dtds.get_decoded_type_data<hive::protocol::public_key_type>();
 
@@ -1176,22 +1178,23 @@ BOOST_AUTO_TEST_CASE( decoding_types_mechanism_test )
     BOOST_CHECK( decoded_account_object.reflected );
     BOOST_CHECK( !decoded_account_object.enum_values );
     BOOST_CHECK( decoded_account_object.members );
-    BOOST_CHECK_EQUAL( decoded_account_object.members->size(), 58 );
+    // With split objects, account_object has fewer members (18 instead of 58)
+    BOOST_CHECK_EQUAL( decoded_account_object.members->size(), 18 );
   }
 
-  BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 28 ); // decoded types map size shouldn't change.
+  BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 20 ); // decoded types map size shouldn't change.
 
   BOOST_CHECK_NO_THROW(dtds.register_new_type<fc::static_variant<>>());
-  BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 29 );
+  BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 21 );
   BOOST_CHECK_NO_THROW(dtds.register_new_type<fc::static_variant<int>>());
-  BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 30 );
+  BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 22 );
   BOOST_CHECK_NO_THROW((dtds.register_new_type<fc::static_variant<fc::erpair<fc::sha256, long>, fc::erpair<double, long double>, fc::erpair<float, long>>>()));
-  BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 35 );
+  BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 27 );
   BOOST_CHECK_NO_THROW(dtds.register_new_type<fc::sha256>());
-  BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 35 );
+  BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 27 );
   {
     BOOST_CHECK_NO_THROW(dtds.register_new_type<hive::void_t>());
-    BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 36 );
+    BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 28 );
     const hive::chain::util::decoded_type_data& decoded_hive_void_t =dtds.get_decoded_type_data<hive::void_t>();
     BOOST_CHECK( decoded_hive_void_t.reflected );
     BOOST_CHECK( !decoded_hive_void_t.enum_values );
@@ -1480,7 +1483,9 @@ BOOST_AUTO_TEST_CASE( additional_allocations )
     };
 
     auto& accountIdx = db->get_mutable_index<account_index>();
+    auto& delayedVotesIdx = db->get_mutable_index<delayed_votes_index>();
     const size_t initial_account_allocations = accountIdx.get_item_additional_allocation();
+    const size_t initial_delayed_votes_allocations = delayedVotesIdx.get_item_additional_allocation();
     const size_t all_initial_allocations = get_all_dynamic_alloc();
 
     ACTOR_DEFAULT_FEE( alice )
@@ -1492,7 +1497,8 @@ BOOST_AUTO_TEST_CASE( additional_allocations )
 
     vest( "alice", "alice", ASSET( "100.000 TESTS" ), alice_private_key );
     generate_block();
-    BOOST_REQUIRE_GT( accountIdx.get_item_additional_allocation(), initial_account_allocations );
+    // With split objects, delayed_votes_object has the dynamic allocation (t_delayed_votes vector)
+    BOOST_REQUIRE_GT( delayedVotesIdx.get_item_additional_allocation(), initial_delayed_votes_allocations );
     {
       size_t current_allocations = get_all_dynamic_alloc();
       BOOST_REQUIRE_GT( current_allocations, all_allocations );
@@ -1508,6 +1514,8 @@ BOOST_AUTO_TEST_CASE( additional_allocations )
 
     accountIdx.clear();
     BOOST_REQUIRE_EQUAL( accountIdx.get_item_additional_allocation(), 0 );
+    delayedVotesIdx.clear();
+    BOOST_REQUIRE_EQUAL( delayedVotesIdx.get_item_additional_allocation(), 0 );
   }
   FC_LOG_AND_RETHROW()
 }
