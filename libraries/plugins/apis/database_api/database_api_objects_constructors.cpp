@@ -1,4 +1,5 @@
 #include <hive/plugins/database_api/database_api_objects.hpp>
+#include <hive/plugins/metadata_api/metadata_api.hpp>
 
 #include <hive/chain/account_object.hpp>
 #include <hive/chain/block_summary_object.hpp>
@@ -201,7 +202,7 @@ api_change_recovery_account_request_object::api_change_recovery_account_request_
 {}
 
 // api_account_object constructors
-api_account_object::api_account_object( const account_object& a, const database& db, bool delayed_votes_active ) :
+api_account_object::api_account_object( const account_object& a, const database& db, const std::shared_ptr< metadata::metadata_api >& metadata_api, bool delayed_votes_active ) :
   id( a.get_id() ),
   name( a.get_name() ),
   memo_key( a.memo_key ),
@@ -267,14 +268,12 @@ api_account_object::api_account_object( const account_object& a, const database&
   posting = authority( auth.posting );
   previous_owner_update = auth.previous_owner_update;
   last_owner_update = auth.last_owner_update;
-#ifdef COLLECT_ACCOUNT_METADATA
-  const auto* maybe_meta = db.find< account_metadata_object, by_account >( id );
-  if( maybe_meta )
+  if( metadata_api )
   {
-    json_metadata = to_string( maybe_meta->json_metadata );
-    posting_json_metadata = to_string( maybe_meta->posting_json_metadata );
+    auto meta = metadata_api->get_metadata( { name } );
+    json_metadata = meta.json_metadata;
+    posting_json_metadata = meta.posting_json_metadata;
   }
-#endif
 
 #ifdef HIVE_ENABLE_SMT
   const auto& by_control_account_index = db.get_index<smt_token_index>().indices().get<by_control_account>();

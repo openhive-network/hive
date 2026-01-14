@@ -5,6 +5,8 @@
 
 #include <hive/chain/database.hpp>
 #include <hive/chain/index.hpp>
+#include <hive/chain/account_object.hpp>
+#include <chainbase/chainbase.inl>
 #include <hive/chain/util/type_registrar_definition.hpp>
 
 #include <hive/utilities/signal.hpp>
@@ -21,7 +23,7 @@ class metadata_plugin_impl
   private:
 
     metadata_plugin& _self;
-    boost::signals2::connection _on_metadata_conn;
+    chain::database::signal_connection_ptr _on_metadata_conn;
 
   public:
 
@@ -36,10 +38,7 @@ class metadata_plugin_impl
           on_metadata( note );
         }, _self );
       }
-    virtual ~metadata_plugin_impl()
-    {
-      hive::utilities::disconnect_signal( _on_metadata_conn );
-    }
+    virtual ~metadata_plugin_impl() = default;
 
     void on_metadata( const hive::chain::metadata_notification& note )
     {
