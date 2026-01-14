@@ -18,19 +18,19 @@ set( SOURCES
              database_init.cpp
              database_hardfork.cpp
              index.cpp
-             index-01.cpp
-             index-02.cpp
-             index-03.cpp
-             index-04.cpp
-             index-05.cpp
-             index-06.cpp
-             index-07.cpp
-             index-08.cpp
-             index-09.cpp
-             index-10.cpp
-             index-11.cpp
-             index-12.cpp
-             index-13.cpp
+             database_account.cpp
+             database_authority.cpp
+             database_comment.cpp
+             database_witness.cpp
+             database_conversion.cpp
+             database_vesting.cpp
+             database_recovery.cpp
+             database_market.cpp
+             database_delegation.cpp
+             database_smt.cpp
+             database_dhf.cpp
+             database_rc_core.cpp
+             database_rc_delegation.cpp
 
              full_block.cpp
              full_transaction.cpp
