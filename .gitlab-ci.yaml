@@ -86,6 +86,8 @@ prepare_hived_image:
     - |
       source docker_image_name.env
       echo "Adding latest/stable/version tags for mainnet image..."
+      # Pull image to local daemon (may not be loaded when using cached builds)
+      docker pull $HIVED_INSTANCE || echo "Warning: docker pull failed"
       docker images
       if [[ "$CI_COMMIT_BRANCH" == "develop" ]]; then
         docker tag $HIVED_INSTANCE ${CI_REGISTRY_IMAGE}:latest
@@ -170,6 +172,8 @@ testnet_node_build:
     - |
       source docker_image_name.env
       echo "Adding latest/stable/version tags for testnet image..."
+      # Pull image to local daemon (may not be loaded when using cached builds)
+      docker pull $HIVED_INSTANCE || echo "Warning: docker pull failed"
       docker images
       IMAGE_NAME_PREFIX="${CI_REGISTRY_IMAGE}/testnet:"
       if [[ "$CI_COMMIT_BRANCH" == "develop" ]]; then
@@ -224,6 +228,8 @@ mirrornet_node_build:
     - |
       source docker_image_name.env
       echo "Adding latest/stable/version tags for mirrornet image..."
+      # Pull image to local daemon (may not be loaded when using cached builds)
+      docker pull $HIVED_INSTANCE || echo "Warning: docker pull failed"
       docker images
       IMAGE_NAME_PREFIX="${CI_REGISTRY_IMAGE}/mirrornet:"
       if [[ "$CI_COMMIT_BRANCH" == "develop" ]]; then
