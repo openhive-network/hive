@@ -5,9 +5,9 @@
 #include <hive/plugins/witness/witness_plugin.hpp>
 
 #include <hive/chain/detail/state/witness_objects_multiindex.hpp>
-#include <hive/chain/manabars_rc_object.hpp>
-#include <hive/chain/assets_object.hpp>
-#include <hive/chain/time_object.hpp>
+#include <hive/chain/detail/state/manabars_rc_object.hpp>
+#include <hive/chain/detail/state/assets_object.hpp>
+#include <hive/chain/detail/state/time_object.hpp>
 
 #include <hive/utilities/database_configuration.hpp>
 #include <hive/utilities/logging_config.hpp>

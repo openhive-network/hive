@@ -10,11 +10,11 @@
 #include <hive/chain/witness_objects_multiindex.hpp>
 #include <hive/chain/account_object_multiindex.hpp>
 #include <hive/chain/evaluator_registry.hpp>
-#include <hive/chain/assets_object.hpp>
-#include <hive/chain/recovery_object.hpp>
-#include <hive/chain/time_object.hpp>
-#include <hive/chain/manabars_rc_object.hpp>
-#include <hive/chain/delayed_votes_object.hpp>
+#include <hive/chain/detail/state/assets_object.hpp>
+#include <hive/chain/detail/state/recovery_object.hpp>
+#include <hive/chain/detail/state/time_object.hpp>
+#include <hive/chain/detail/state/manabars_rc_object.hpp>
+#include <hive/chain/detail/state/delayed_votes_object.hpp>
 
 #include <hive/chain/util/owner_update_limit_mgr.hpp>
 

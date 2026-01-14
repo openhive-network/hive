@@ -49,11 +49,11 @@
 #include <hive/chain/witness_objects.hpp>
 #include <hive/chain/detail/state/hardfork_property_object.hpp>
 #include <hive/chain/detail/state/global_property_object.hpp>
-#include <hive/chain/manabars_rc_object.hpp>
-#include <hive/chain/assets_object.hpp>
-#include <hive/chain/time_object.hpp>
-#include <hive/chain/recovery_object.hpp>
-#include <hive/chain/delayed_votes_object.hpp>
+#include <hive/chain/detail/state/manabars_rc_object.hpp>
+#include <hive/chain/detail/state/assets_object.hpp>
+#include <hive/chain/detail/state/time_object.hpp>
+#include <hive/chain/detail/state/recovery_object.hpp>
+#include <hive/chain/detail/state/delayed_votes_object.hpp>
 
 #include <fc/macros.hpp>
 #include <fc/crypto/digest.hpp>
