@@ -2,7 +2,7 @@
 #include <hive/plugins/metadata_api/metadata_api.hpp>
 #include <hive/plugins/metadata/metadata_objects.hpp>
 
-#include <hive/chain/hive_objects.hpp>
+#include <hive/chain/account_object.hpp>
 
 namespace hive { namespace plugins { namespace metadata {
 

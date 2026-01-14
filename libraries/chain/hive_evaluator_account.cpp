@@ -192,15 +192,106 @@ void account_create_evaluator::do_apply( const account_create_operation& o )
   else if( o_fee.amount > 0 )
     initial_vesting_shares = _db.create_vesting( new_account, o_fee );
 
-#ifdef COLLECT_ACCOUNT_METADATA
-  _db.create< account_metadata_object >( [&]( account_metadata_object& meta )
+  _db.notify_metadata( { new_account.get_id(), o.json_metadata, "", metadata_action::account_create } );
+
+  _db.create< account_authority_object >( [&]( account_authority_object& auth )
   {
-    meta.account = new_account.get_id();
-    from_string( meta.json_metadata, o.json_metadata );
-  } );
-#else
-  FC_UNUSED( new_account );
-#endif
+    auth.account = o.new_account_name;
+    auth.owner = *_auth_owner;
+    auth.active = *_auth_active;
+    auth.posting = *_auth_posting;
+    auth.previous_owner_update = fc::time_point_sec::min();
+    auth.last_owner_update = fc::time_point_sec::min();
+  });
+
+  asset initial_vesting_shares;
+  if( !_db.has_hardfork( HIVE_HARDFORK_0_20__1762 ) && o.fee.amount > 0 )
+  {
+    initial_vesting_shares = _db.create_vesting( new_account, o.fee );
+  }
+  else
+  {
+    initial_vesting_shares = asset(0, VESTS_SYMBOL);
+  }
+  push_virtual_operation( _db, account_created_operation( o.new_account_name, o.creator, initial_vesting_shares, asset(0, VESTS_SYMBOL) ) );
+}
+
+void account_create_with_delegation_evaluator::do_apply( const account_create_with_delegation_operation& o )
+{
+  FC_ASSERT( !_db.has_hardfork( HIVE_HARDFORK_0_20__1760 ), "Account creation with delegation is deprecated as of Hardfork 20" );
+
+  if( _db.has_hardfork( HIVE_HARDFORK_0_20__2651 ) )
+  {
+    FC_TODO( "Move to validate() after HF20" );
+    FC_ASSERT( o.fee <= asset( HIVE_MAX_ACCOUNT_CREATION_FEE, HIVE_SYMBOL ) && "Account creation fee cannot be too large" );
+  }
+
+  const auto& creator = _db.get_account( o.creator );
+  const auto& props = _db.get_dynamic_global_properties();
+  const witness_schedule_object& wso = _db.get_witness_schedule_object();
+
+  FC_ASSERT( creator.get_balance() >= o.fee && "Can't create",
+    "Insufficient balance to create account.",
+    ( "creator.balance", creator.get_balance() )
+    ( "required", o.fee ) );
+
+  FC_ASSERT( creator.get_vesting().to_asset() - creator.get_delegated_vesting() - asset( creator.get_total_vesting_withdrawal(), VESTS_SYMBOL ) >= o.delegation, "Insufficient vesting shares to delegate to new account.",
+          ( "creator.vesting_shares", creator.get_vesting() )
+          ( "creator.delegated_vesting_shares", creator.get_delegated_vesting() )( "required", o.delegation ) );
+
+  auto target_delegation = asset( wso.median_props.account_creation_fee.amount * HIVE_CREATE_ACCOUNT_WITH_HIVE_MODIFIER * HIVE_CREATE_ACCOUNT_DELEGATION_RATIO, HIVE_SYMBOL ) * props.get_vesting_share_price();
+
+  auto current_delegation = asset( o.fee.amount * HIVE_CREATE_ACCOUNT_DELEGATION_RATIO, HIVE_SYMBOL ) * props.get_vesting_share_price() + o.delegation;
+
+  FC_ASSERT( current_delegation >= target_delegation, "Insufficient Delegation ${f} required, ${p} provided.",
+          ("f", target_delegation )
+          ( "p", current_delegation )
+          ( "account_creation_fee", wso.median_props.account_creation_fee )
+          ( "o.fee", o.fee )
+          ( "o.delegation", o.delegation ) );
+
+  FC_ASSERT( o.fee >= wso.median_props.account_creation_fee, "Insufficient Fee: ${f} required, ${p} provided.",
+          ("f", wso.median_props.account_creation_fee)
+          ("p", o.fee) );
+
+  FC_TODO( "Check and move to validate post HF20" );
+  if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
+  {
+    validate_auth_size( o.owner );
+    validate_auth_size( o.active );
+    validate_auth_size( o.posting );
+  }
+
+  for( const auto& a : o.owner.account_auths )
+  {
+    _db.get_account( a.first );
+  }
+
+  for( const auto& a : o.active.account_auths )
+  {
+    _db.get_account( a.first );
+  }
+
+  for( const auto& a : o.posting.account_auths )
+  {
+    _db.get_account( a.first );
+  }
+
+  _db.modify( creator, [&]( account_object& c )
+  {
+    c.balance -= o.fee;
+    c.delegated_vesting_shares += o.delegation;
+  });
+
+  if( _db.has_hardfork( HIVE_HARDFORK_0_20__1762 ) )
+  {
+    _db.adjust_balance( _db.get< account_object, by_name >( HIVE_NULL_ACCOUNT ), o.fee );
+  }
+
+  const auto& new_account = create_account( _db, o.new_account_name, o.memo_key, props.time, _db.get_current_timestamp(),
+    false /*mined*/, o.fee, &creator, o.delegation );
+
+  _db.notify_metadata( { new_account.get_id(), o.json_metadata, "", metadata_action::account_create_with_delegation } );
 
   _db.create< account_authority_object >( [&]( account_authority_object& auth )
   {
@@ -364,19 +455,7 @@ void account_update_evaluator::do_apply( const account_update_operation& o )
     acc.last_account_update = _db.head_block_time(); //not needed for consensus
   } );
 
-  #ifdef COLLECT_ACCOUNT_METADATA
-  if( o.json_metadata.size() > 0 )
-  {
-    _db.modify( _db.get< account_metadata_object, by_account >( account.get_id() ), [&]( account_metadata_object& meta )
-    {
-      from_string( meta.json_metadata, o.json_metadata );
-      if ( !_db.has_hardfork( HIVE_HARDFORK_0_21__3274 ) )
-      {
-        from_string( meta.posting_json_metadata, o.json_metadata );
-      }
-    });
-  }
-  #endif
+  _db.notify_metadata( { account.get_id(), o.json_metadata, "", metadata_action::account_update } );
 
   if( o.active || *_auth_posting )
   {
@@ -420,19 +499,7 @@ void account_update2_evaluator::do_apply( const account_update2_operation& o )
     acc.last_account_update = _db.head_block_time(); //not needed for consensus
   } );
 
-  #ifdef COLLECT_ACCOUNT_METADATA
-  if( o.json_metadata.size() > 0 || o.posting_json_metadata.size() > 0 )
-  {
-    _db.modify( _db.get< account_metadata_object, by_account >( account.get_id() ), [&]( account_metadata_object& meta )
-    {
-      if ( o.json_metadata.size() > 0 )
-        from_string( meta.json_metadata, o.json_metadata );
-
-      if ( o.posting_json_metadata.size() > 0 )
-        from_string( meta.posting_json_metadata, o.posting_json_metadata );
-    } );
-  }
-  #endif
+  _db.notify_metadata( { account.get_id(), o.json_metadata, o.posting_json_metadata, metadata_action::account_update2 } );
 
   if( o.active || o.posting )
   {
@@ -527,15 +594,7 @@ void create_claimed_account_evaluator::do_apply( const create_claimed_account_op
   const auto& new_account = create_account( _db, o.new_account_name, o.memo_key, props.time, _db.get_current_timestamp(),
     false /*mined*/, _db.get_witness_schedule_object().median_props.account_creation_fee, &creator );
 
-#ifdef COLLECT_ACCOUNT_METADATA
-  _db.create< account_metadata_object >( [&]( account_metadata_object& meta )
-  {
-    meta.account = new_account.get_id();
-    from_string( meta.json_metadata, o.json_metadata );
-  } );
-#else
-  FC_UNUSED( new_account );
-#endif
+  _db.notify_metadata( { new_account.get_id(), o.json_metadata, "", metadata_action::create_claimed_account } );
 
   _db.create< account_authority_object >( [&]( account_authority_object& auth )
   {

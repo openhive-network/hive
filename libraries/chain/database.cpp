@@ -898,7 +898,7 @@ void database::notify_post_reindex( const reindex_notification& note )
 
 void database::notify_metadata( const metadata_notification& note )
 {
-  HIVE_TRY_NOTIFY( _metadata_signal, note )
+  HIVE_TRY_NOTIFY( _my->_metadata_signal, note )
 }
 
 account_name_type database::get_scheduled_witness( uint32_t slot_num )const
@@ -2781,12 +2781,6 @@ void database_impl::apply_operation(const operation& op)
     _self._benchmark_dumper.end( name );
 
   _self.notify_post_apply_operation( note );
-}
-
-boost::signals2::connection database::add_metadata_handler( const metadata_handler_t& func,
-  const abstract_plugin& plugin, int32_t group )
-{
-  return connect_impl<false>(_metadata_signal, func, plugin, group, "metadata");
 }
 
 void database::flush_to_all_storages()

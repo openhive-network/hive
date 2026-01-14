@@ -40,7 +40,7 @@ api_commment_cashout_info::api_commment_cashout_info(const comment_cashout_objec
 //////////////////////////////////////////////////////////////////////
 
 database_api::database_api( appbase::application& app )
-  : my( new database_api_impl( app ) )
+  : my( new database_api_impl( app ) ), theApp( app )
 {
   JSON_RPC_REGISTER_API( HIVE_DATABASE_API_PLUGIN_NAME );
 }
