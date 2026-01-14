@@ -82,6 +82,22 @@ prepare_hived_image:
   tags:
     - public-runner-docker
     - bigjob
+  after_script:
+    - |
+      source docker_image_name.env
+      echo "Adding latest/stable/version tags for mainnet image..."
+      docker images
+      if [[ "$CI_COMMIT_BRANCH" == "develop" ]]; then
+        docker tag $HIVED_INSTANCE ${CI_REGISTRY_IMAGE}:latest
+        docker push ${CI_REGISTRY_IMAGE}:latest
+      elif [[ "$CI_COMMIT_BRANCH" == "master" ]]; then
+        docker tag $HIVED_INSTANCE ${CI_REGISTRY_IMAGE}:stable
+        docker push ${CI_REGISTRY_IMAGE}:stable
+      fi
+      if [[ -n "$CI_COMMIT_TAG" && "$CI_COMMIT_REF_PROTECTED" == "true" ]]; then
+        docker tag $HIVED_INSTANCE ${CI_REGISTRY_IMAGE}:${CI_COMMIT_TAG}
+        docker push ${CI_REGISTRY_IMAGE}:${CI_COMMIT_TAG}
+      fi
 
 prepare_hived_data:
   extends:
@@ -150,6 +166,23 @@ testnet_node_build:
   tags:
     - public-runner-docker
     - bigjob
+  after_script:
+    - |
+      source docker_image_name.env
+      echo "Adding latest/stable/version tags for testnet image..."
+      docker images
+      IMAGE_NAME_PREFIX="${CI_REGISTRY_IMAGE}/testnet:"
+      if [[ "$CI_COMMIT_BRANCH" == "develop" ]]; then
+        docker tag $HIVED_INSTANCE ${IMAGE_NAME_PREFIX}latest
+        docker push ${IMAGE_NAME_PREFIX}latest
+      elif [[ "$CI_COMMIT_BRANCH" == "master" ]]; then
+        docker tag $HIVED_INSTANCE ${IMAGE_NAME_PREFIX}stable
+        docker push ${IMAGE_NAME_PREFIX}stable
+      fi
+      if [[ -n "$CI_COMMIT_TAG" && "$CI_COMMIT_REF_PROTECTED" == "true" ]]; then
+        docker tag $HIVED_INSTANCE ${IMAGE_NAME_PREFIX}${CI_COMMIT_TAG}
+        docker push ${IMAGE_NAME_PREFIX}${CI_COMMIT_TAG}
+      fi
 
 generate-wax-spec:
   extends: .generate_swagger_package
@@ -184,29 +217,26 @@ mirrornet_node_build:
     REGISTRY_PASS: $HIVED_CI_IMGBUILDER_PASSWORD
     BINARY_CACHE_PATH: "$CI_PROJECT_DIR/hived-mirrornet-binaries"
     HIVE_NETWORK_TYPE: mirrornet
-  after_script:
-    - |
-      source docker_image_name.env
-      echo "Pushing hived image for commits on develop, master and tagged"
-      docker images
-      IMAGE_NAME_PREFIX="$CI_REGISTRY_IMAGE/mirrornet:"
-      if [[ "$CI_COMMIT_BRANCH" == "develop" ]];
-      then
-        docker tag $HIVED_INSTANCE ${IMAGE_NAME_PREFIX}latest
-        docker push ${IMAGE_NAME_PREFIX}latest
-      elif [[ "$CI_COMMIT_BRANCH" == "master" ]];
-      then
-        docker tag $HIVED_INSTANCE ${IMAGE_NAME_PREFIX}stable
-        docker push ${IMAGE_NAME_PREFIX}stable
-      elif [[ -n "$CI_COMMIT_TAG" ]];
-      then
-        docker tag $HIVED_INSTANCE ${IMAGE_NAME_PREFIX}${CI_COMMIT_TAG}
-        docker push ${IMAGE_NAME_PREFIX}${CI_COMMIT_TAG}
-      fi
-
   tags:
     - public-runner-docker
     - bigjob
+  after_script:
+    - |
+      source docker_image_name.env
+      echo "Adding latest/stable/version tags for mirrornet image..."
+      docker images
+      IMAGE_NAME_PREFIX="${CI_REGISTRY_IMAGE}/mirrornet:"
+      if [[ "$CI_COMMIT_BRANCH" == "develop" ]]; then
+        docker tag $HIVED_INSTANCE ${IMAGE_NAME_PREFIX}latest
+        docker push ${IMAGE_NAME_PREFIX}latest
+      elif [[ "$CI_COMMIT_BRANCH" == "master" ]]; then
+        docker tag $HIVED_INSTANCE ${IMAGE_NAME_PREFIX}stable
+        docker push ${IMAGE_NAME_PREFIX}stable
+      fi
+      if [[ -n "$CI_COMMIT_TAG" && "$CI_COMMIT_REF_PROTECTED" == "true" ]]; then
+        docker tag $HIVED_INSTANCE ${IMAGE_NAME_PREFIX}${CI_COMMIT_TAG}
+        docker push ${IMAGE_NAME_PREFIX}${CI_COMMIT_TAG}
+      fi
 
 extended_block_log_creation:
   extends: .extended_block_log_creation
@@ -1067,16 +1097,12 @@ functional_api_tests:
     PYTEST_DIR: tests/python/functional/api_tests
     PYTEST_TIMEOUT_MINUTES: 3
 
-publish_docker_image:
-  stage: publish
-  extends: .publish_docker_image_template
-  before_script:
-    - !reference [.publish_docker_image_template, before_script]
-  script:
-    - scripts/ci-helpers/build_and_publish_instance.sh
-  tags:
-    - public-runner-docker
-    - standard
+publish_images:
+  extends: .docker_publish_job_template
+  variables:
+    # Publish mainnet (root) and mirrornet images to registry.hive.blog
+    # Note: testnet is not published externally (internal use only)
+    PUBLISH_IMAGES: "hive mirrornet"
 
 hardfork_schedule_tests:
   extends: .simple_pytest_job
