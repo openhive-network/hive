@@ -490,13 +490,13 @@ void database::apply_hardfork( uint32_t hardfork )
           const auto& _assets_obj = get< assets_object, by_account_id >( it->get_id() );
           const auto& _time_obj = get< time_object, by_account_id >( it->get_id() );
 
-          modify( _manabars_rc_object, [&]( manabars_rc_object& manabars_rc_object )
+          modify( _manabars_rc_object, [&]( manabars_rc_object& mrc )
           {
-            manabars_rc_object.set_rc_adjustment( HIVE_RC_HISTORICAL_ACCOUNT_CREATION_ADJUSTMENT );
-            manabars_rc_object.get_rc_manabar().last_update_time = now.sec_since_epoch();
-            auto max_rc = it->get_maximum_rc( _manabars_rc_object, _assets_obj, _time_obj ).value;
-            manabars_rc_object.get_rc_manabar().current_mana = max_rc;
-            manabars_rc_object.set_last_max_rc( max_rc );
+            mrc.set_rc_adjustment( HIVE_RC_HISTORICAL_ACCOUNT_CREATION_ADJUSTMENT );
+            mrc.get_rc_manabar().last_update_time = now.sec_since_epoch();
+            auto max_rc = it->get_maximum_rc( mrc, _assets_obj, _time_obj ).value;
+            mrc.get_rc_manabar().current_mana = max_rc;
+            mrc.set_last_max_rc( max_rc );
           } );
         }
 
