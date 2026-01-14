@@ -21,9 +21,9 @@
 #include <hive/chain/detail/state/dhf_objects_multiindex.hpp>
 #include <hive/chain/detail/state/feed_history_object_multiindex.hpp>
 #include <hive/chain/detail/state/global_property_object_multiindex.hpp>
-#include <hive/chain/assets_object.hpp>
-#include <hive/chain/time_object.hpp>
-#include <hive/chain/delayed_votes_object.hpp>
+#include <hive/chain/detail/state/assets_object.hpp>
+#include <hive/chain/detail/state/time_object.hpp>
+#include <hive/chain/detail/state/delayed_votes_object.hpp>
 
 #include <hive/plugins/chain/chain_plugin.hpp>
 #include <hive/plugins/webserver/webserver_plugin.hpp>

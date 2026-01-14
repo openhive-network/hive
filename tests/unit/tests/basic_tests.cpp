@@ -48,7 +48,7 @@
 #include <hive/chain/dhf_objects.hpp>
 #include <hive/chain/transaction_object.hpp>
 #include <hive/chain/rc/rc_objects.hpp>
-#include <hive/chain/delayed_votes_object.hpp>
+#include <hive/chain/detail/state/delayed_votes_object.hpp>
 #include <hive/chain/detail/state/hardfork_property_object.hpp>
 #include <hive/chain/detail/state/global_property_object.hpp>
 // Multiindex headers for index type definitions

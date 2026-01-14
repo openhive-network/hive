@@ -18,9 +18,9 @@
 #include <hive/chain/witness_objects.hpp>
 #include <hive/chain/global_property_object_multiindex.hpp>
 #include <hive/chain/evaluator_registry.hpp>
-#include <hive/chain/assets_object.hpp>
-#include <hive/chain/time_object.hpp>
-#include <hive/chain/manabars_rc_object.hpp>
+#include <hive/chain/detail/state/assets_object.hpp>
+#include <hive/chain/detail/state/time_object.hpp>
+#include <hive/chain/detail/state/manabars_rc_object.hpp>
 
 #include <hive/chain/util/reward.hpp>
 #include <hive/chain/util/manabar.hpp>
