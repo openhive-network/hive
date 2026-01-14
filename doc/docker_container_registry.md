@@ -9,7 +9,6 @@ This document describes the container registries under `registry.gitlab.syncad.c
 | Registry | Path | Description |
 |----------|------|-------------|
 | **(root)** | `hive/hive:TAG` | Main production hived images. Contains release versions (1.27.x, 1.28.x) and commit-based tags. This is the primary registry for deployment. |
-| **instance** | `hive/hive/instance:TAG` | Alternative path for production hived instance images. Contains same release versions as root. |
 | **mirrornet** | `hive/hive/mirrornet:TAG` | Mirrornet hived images for testing with mainnet-derived data. Used by mirrornet CI jobs. |
 | **testnet** | `hive/hive/testnet:TAG` | Testnet hived images built with `BUILD_HIVE_TESTNET=ON`. |
 
@@ -18,7 +17,7 @@ This document describes the container registries under `registry.gitlab.syncad.c
 | Registry | Path | Description |
 |----------|------|-------------|
 | **runtime** | `hive/hive/runtime:TAG` | Base runtime image built from `phusion/baseimage`. Contains runtime dependencies. Used as base for `ci-base-image`. Tags: `ubuntu22.04-*`, `ubuntu24.04-*` |
-| **minimal-runtime** | `hive/hive/minimal-runtime:TAG` | Minimal Ubuntu-based runtime image. Lighter than `runtime`. Used as base for production `instance` images in Dockerfile. |
+| **minimal-runtime** | `hive/hive/minimal-runtime:TAG` | Minimal Ubuntu-based runtime image. Lighter than `runtime`. Used as base for production images in Dockerfile. |
 | **ci-base-image** | `hive/hive/ci-base-image:TAG` | CI build environment with development packages. **DEPRECATED** - now built in `common-ci-configuration` repo. Legacy tags remain for backwards compatibility. |
 | **ci-base-image-5m** | `hive/hive/ci-base-image-5m:TAG` | CI image with pre-replayed 5M block data. **DEPRECATED** - replay caching now handled differently. |
 | **mirrornet-base** | `hive/hive/mirrornet-base:TAG` | Base image for mirrornet builds. |
@@ -71,7 +70,7 @@ phusion/baseimage:noble-1.0.1
 
 ubuntu:24.04
     └── minimal-runtime (hive/hive/minimal-runtime:TAG)
-            └── instance (hive/hive/instance:TAG or hive/hive:TAG)
+            └── hived (hive/hive:TAG)
 ```
 
 ## Usage Examples
