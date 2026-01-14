@@ -4,9 +4,7 @@ namespace hive { namespace protocol {
 
 crypto_memo::memo_content crypto_memo::build_from_encrypted_content( const crypto_data::public_key_type& from, const crypto_data::public_key_type& to, crypto_data::content&& content )
 {
-  memo_content _result{ content.nonce, content.check, std::move( content.encrypted ) };
-  _result.from = from;
-  _result.to = to;
+  memo_content _result{ from, to, content.nonce, content.check, std::move( content.encrypted ) };
 
   return _result;
 }
@@ -41,7 +39,7 @@ std::string crypto_memo::decrypt( key_finder_type key_finder, const std::string&
   if( !_c )
     return encrypted_memo;
 
-  auto _result = decrypt_impl( key_finder, _c->from, _c->to, _c.value() );
+  auto _result = decrypt_impl( key_finder, _c->from, _c->to, { _c->nonce, _c->check, _c->encrypted } );
   if( !_result.has_value() )
     return encrypted_memo;
 
