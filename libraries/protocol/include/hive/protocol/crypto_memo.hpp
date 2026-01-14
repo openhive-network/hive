@@ -19,9 +19,22 @@ class crypto_memo: public crypto_data
       std::vector<char> encrypted;
     };
 
+    /// Buggy format with incorrect field order (from commit 3af2709be, versions 1.27.5-1.28.6)
+    /// Only used for decoding memos encrypted with the broken version - NOT a legacy standard
+    struct memo_content_buggy_format
+    {
+      uint64_t          nonce = 0;
+      uint32_t          check = 0;
+      std::vector<char> encrypted;
+      public_key_type   from;
+      public_key_type   to;
+    };
+
   private:
 
     const char marker = '#';
+
+    std::optional<memo_content> load_from_string_buggy_format( const std::string& data );
 
   protected:
 
@@ -49,3 +62,4 @@ class crypto_memo: public crypto_data
 } } // hive::protocol
 
 FC_REFLECT( hive::protocol::crypto_memo::memo_content, (from)(to)(nonce)(check)(encrypted) )
+FC_REFLECT( hive::protocol::crypto_memo::memo_content_buggy_format, (nonce)(check)(encrypted)(from)(to) )
