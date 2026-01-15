@@ -33,13 +33,9 @@ variables:
   DATA_CACHE_HIVE_CLEANUP_PATTERN: "/nfs/ci-cache/hive/replay_data_hive_*"
   BLOCK_LOG_SOURCE_DIR_5M: /blockchain/block_log_5m
 
-  # Compiler cache (ccache) configuration
-  CCACHE_DIR: "/cache/ccache"
-  CCACHE_BASEDIR: "${CI_PROJECT_DIR}"
-  CCACHE_COMPILERCHECK: "content"
-  CCACHE_MAXSIZE: "30G"
-  CCACHE_NOHASHDIR: "true"
-  CCACHE_SLOPPINESS: "include_file_ctime,include_file_mtime,time_macros,pch_defines"
+  # sccache distributed compiler cache (Redis backend on builder-10)
+  SCCACHE_REDIS: "redis://192.168.50.109:6379"
+  SCCACHE_CACHE_SIZE: "50G"
   BLOCK_LOG_SOURCE_DIR_MIRRORNET_5M: /blockchain/block_log_5m_mirrornet
 
   # Variables required by the mirrornet pipeline

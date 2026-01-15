@@ -139,6 +139,7 @@ docker build --provenance=false --target=build \
   --build-arg BUILD_IMAGE_TAG="$BUILD_IMAGE_TAG" \
   --build-arg HIVE_SUBDIR="$HIVE_SUBDIR" \
   --build-arg IMAGE_TAG_PREFIX="${IMAGE_TAG_PREFIX:+$IMAGE_TAG_PREFIX-}" \
+  --build-arg SCCACHE_REDIS="${SCCACHE_REDIS:-}" \
   --tag "${REGISTRY}${IMAGE_TAG_PREFIX:+/$IMAGE_TAG_PREFIX}/build:${BUILD_IMAGE_TAG}" \
   --file Dockerfile "$SOURCE_DIR"
 

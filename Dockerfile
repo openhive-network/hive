@@ -7,7 +7,7 @@ ARG CI_IMAGE_TAG=ubuntu24.04-py3.14-1
 ARG BUILD_IMAGE_TAG
 ARG IMAGE_TAG_PREFIX
 # CI base image for build stage - must be at top level for FROM to see it
-ARG CI_BASE_IMAGE=registry.gitlab.syncad.com/hive/common-ci-configuration/ci-base-image:ubuntu24.04-py3.14-4
+ARG CI_BASE_IMAGE=registry.gitlab.syncad.com/hive/common-ci-configuration/ci-base-image:ubuntu24.04-py3.14-5
 
 FROM phusion/baseimage:noble-1.0.1 AS runtime
 
@@ -44,7 +44,7 @@ USER hived_admin
 WORKDIR /home/hived_admin
 
 # Build stage uses centralized ci-base-image from common-ci-configuration
-# This image includes: build toolchain, ccache, Python 3.14, Docker CLI, hived_admin and hived users
+# This image includes: build toolchain, sccache, Python 3.14, Docker CLI, hived_admin and hived users
 FROM ${CI_BASE_IMAGE} AS build
 
 ARG BUILD_HIVE_TESTNET=OFF
@@ -61,6 +61,9 @@ ENV HIVE_LINT=${HIVE_LINT}
 
 ARG HIVE_SUBDIR=.
 ENV HIVE_SUBDIR=${HIVE_SUBDIR}
+
+ARG SCCACHE_REDIS=""
+ENV SCCACHE_REDIS=${SCCACHE_REDIS}
 
 USER hived_admin
 WORKDIR /home/hived_admin
