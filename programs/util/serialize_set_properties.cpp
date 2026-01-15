@@ -45,8 +45,8 @@ class serialize_member_visitor
     serialize_member_visitor( const witness_properties& in, flat_map< string, vector<char> >& out )
       : _in(in), _out(out) {}
 
-    template<typename Member, class Class, Member (Class::*member)>
-    void operator()( const char* name )const
+    template<typename Member, class Class>
+    void operator()( Member Class::*member, const char* name )const
     {
       if( !(_in.*member) )
         return;
