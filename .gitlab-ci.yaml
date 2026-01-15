@@ -80,7 +80,6 @@ prepare_hived_image:
     BINARY_CACHE_PATH: "$CI_PROJECT_DIR/hived-binaries"
     HIVE_NETWORK_TYPE: mainnet
   tags:
-    - public-runner-docker
     - bigjob
   after_script:
     - |
@@ -166,7 +165,6 @@ testnet_node_build:
     paths:
       - "$BINARY_CACHE_PATH"
   tags:
-    - public-runner-docker
     - bigjob
   after_script:
     - |
@@ -222,7 +220,6 @@ mirrornet_node_build:
     BINARY_CACHE_PATH: "$CI_PROJECT_DIR/hived-mirrornet-binaries"
     HIVE_NETWORK_TYPE: mirrornet
   tags:
-    - public-runner-docker
     - bigjob
   after_script:
     - |
@@ -673,7 +670,6 @@ cli_wallet_extended_tests:
     - cd tests/python/functional/fork_tests
     - !reference [.run-pytest, script]
   tags:
-    - public-runner-docker
     - bigjob
   artifacts:
     expire_in: 2 days
@@ -822,7 +818,6 @@ message_format_testnet_tests:
                transaction_status_api_tests,
                wallet_bridge_api_tests ]
   tags:
-    - public-runner-docker
     - bigjob
 
 datagen_api_tests:
@@ -994,7 +989,6 @@ python_pattern_testnet_tests:
                transaction_status_api_tests,
                wallet_bridge_api_tests ]
   tags:
-    - public-runner-docker
     - bigjob
 
 message_format_mainnet_5m_tests:
@@ -1218,7 +1212,6 @@ operation_tests:
                      update_proposal_votes_tests,
                      witness_ops_tests ]
   tags:
-    - public-runner-docker
     - bigjob
 
 comment_cashout_tests:
@@ -1591,7 +1584,6 @@ generate_testing_block_logs:
     paths:
       - $TESTING_BLOCK_LOGS_DIR/checksums/
   tags:
-    - public-runner-docker
     - bigjob
 
 build_combined_testing_block_logs_image:
