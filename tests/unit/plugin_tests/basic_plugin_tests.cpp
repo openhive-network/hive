@@ -70,7 +70,7 @@ BOOST_AUTO_TEST_CASE( plugin_object_checksum )
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::block_log_info::block_log_pending_message_object>(dtds), "b7da18e0b992b242d903ac255ca3023151db5e16" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::market_history::order_history_object>(dtds), "d44984762f037d0a93007dfc3f172c0cca5cf8f2" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::reputation::reputation_object>(dtds), "cacdc6e0294f4098f4cef0c3e0bc06e4d7ede488" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::metadata::account_metadata_object>(dtds), "8a8a73c8a77292e0685109e0caf6040da28ba70c" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::metadata::account_metadata_object>(dtds), "55cadd90e77ed413f6536756f6708632a53a818e" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::transaction_status::transaction_status_object>(dtds), "cb9ceb3c9d94912d0e5326d6ebfcd6110bd9c953" );
 
   #ifdef HIVE_ENABLE_SMT
