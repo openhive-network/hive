@@ -141,6 +141,13 @@ if [[ "${CACHE_HIT:-false}" == "true" ]]; then
     echo "Image $img_instance already exists..."
     "$SCRIPTPATH/export-data-from-docker-image.sh" "${img_instance}" "${BINARY_CACHE_PATH}"
 else
+    # Verify source directory is valid before building
+    if [[ ! -d "$submodule_path/.git" ]]; then
+        echo "ERROR: Source directory $submodule_path is not a git repository."
+        echo "Ensure submodules are checked out (GIT_SUBMODULE_STRATEGY: recursive)"
+        exit 1
+    fi
+
     # Build new image from current checkout (source files are identical to $commit)
     # This avoids an extra clone since GitLab already checked out the code
     echo "${img_instance} image is missing. Building from current checkout..."
