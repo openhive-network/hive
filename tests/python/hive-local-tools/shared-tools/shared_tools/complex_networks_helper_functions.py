@@ -39,7 +39,35 @@ def assert_no_duplicates(node, *nodes):
     tt.logger.info("No there are no duplicates in account_history.get_ops_in_block...")
 
 
-def connect_sub_networks(sub_networks: list):
+def wait_for_p2p_connections(sub_networks: list, min_peers_per_node: int = 1, timeout_seconds: float = 30.0) -> None:
+    """Wait for P2P connections to establish between nodes in different sub-networks.
+
+    After connect_sub_networks() allows connections, P2P reconnection is asynchronous.
+    This function waits until nodes actually have peers, ensuring block propagation can occur.
+    """
+    if len(sub_networks) <= 1:
+        return
+
+    all_nodes = []
+    for network in sub_networks:
+        all_nodes.extend(network.nodes)
+
+    def all_nodes_have_peers() -> bool:
+        for node in all_nodes:
+            try:
+                peers = node.api.network_node.get_connected_peers()
+                if len(peers) < min_peers_per_node:
+                    return False
+            except Exception:
+                return False
+        return True
+
+    tt.logger.info(f"Waiting for P2P connections to establish (timeout: {timeout_seconds}s)...")
+    tt.Time.wait_for(all_nodes_have_peers, timeout=timeout_seconds)
+    tt.logger.info("P2P connections established")
+
+
+def connect_sub_networks(sub_networks: list, wait_for_connections: bool = True) -> None:
     if len(sub_networks) == 1:
         return
     assert len(sub_networks) > 1
@@ -52,6 +80,10 @@ def connect_sub_networks(sub_networks: list):
             sub_networks[current_idx].connect_with(sub_networks[next_current_idx])
             next_current_idx += 1
         current_idx += 1
+
+    # Wait for P2P connections to actually establish before returning
+    if wait_for_connections:
+        wait_for_p2p_connections(sub_networks)
 
 
 def disconnect_sub_networks(sub_networks: list):
