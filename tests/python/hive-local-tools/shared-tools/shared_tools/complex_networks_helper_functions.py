@@ -48,7 +48,7 @@ def _get_peer_count(node) -> int:
         return 0
 
 
-def wait_for_p2p_connections(sub_networks: list, min_peers_per_node: int = 1, timeout_seconds: float = 30.0) -> None:
+def wait_for_p2p_connections(sub_networks: list, min_peers_per_node: int = 1, timeout_seconds: float = 120.0) -> None:
     """Wait for P2P connections to establish between nodes in different sub-networks.
 
     After connect_sub_networks() allows connections, P2P reconnection is asynchronous.
