@@ -30,6 +30,14 @@ set( INSTALLER_APP_ID "68ad7005-8eee-49c9-95ce-9eed97e5b347" )
 set(CMAKE_EXPORT_COMPILE_COMMANDS "ON")
 set(CMAKE_VERBOSE_MAKEFILE "ON")
 
+# Compiler caching support (ccache)
+find_program(CCACHE_PROGRAM ccache)
+if(CCACHE_PROGRAM)
+  message(STATUS "Found ccache: ${CCACHE_PROGRAM}")
+  set(CMAKE_C_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
+  set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
+endif()
+
 #set (ENABLE_INSTALLER 1)
 #set (USE_PCH 1)
 

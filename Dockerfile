@@ -1,11 +1,13 @@
 # syntax=docker/dockerfile:1.6
 # Base docker file having defined environment for build and run of hived instance.
-# Modify CI_IMAGE_TAG here and inside script hive/scripts/ci-helpers/build_ci_base_image.sh and run it. Then push images to registry
-# To be started from cloned haf source directory.
+# Build stage uses ci-base-image from common-ci-configuration (centralized build toolchain)
+# To be started from cloned hive source directory.
 ARG CI_REGISTRY_IMAGE=registry.gitlab.syncad.com/hive/hive/
 ARG CI_IMAGE_TAG=ubuntu24.04-py3.14-1
 ARG BUILD_IMAGE_TAG
 ARG IMAGE_TAG_PREFIX
+# CI base image for build stage - must be at top level for FROM to see it
+ARG CI_BASE_IMAGE=registry.gitlab.syncad.com/hive/common-ci-configuration/ci-base-image:ubuntu24.04-py3.14-4
 
 FROM phusion/baseimage:noble-1.0.1 AS runtime
 
@@ -41,29 +43,9 @@ RUN ./scripts/setup_ubuntu.sh --runtime --hived-admin-account="hived_admin" --hi
 USER hived_admin
 WORKDIR /home/hived_admin
 
-FROM ${CI_REGISTRY_IMAGE}runtime:$CI_IMAGE_TAG AS ci-base-image
-
-ENV LANG=en_US.UTF-8
-ENV PATH="/home/hived_admin/.local/bin:$PATH"
-
-SHELL ["/bin/bash", "-c"]
-
-USER root
-WORKDIR /usr/local/src
-
-# Install additionally development packages
-RUN ./scripts/setup_ubuntu.sh --dev --hived-admin-account="hived_admin" --hived-account="hived"
-
-USER hived_admin
-WORKDIR /home/hived_admin
-
-# Install additionally packages located in user directory
-RUN /usr/local/src/scripts/setup_ubuntu.sh --user
-
-# Install Docker CLI
-RUN /usr/local/src/scripts/setup_ubuntu.sh --docker-cli=28.0.1
-
-FROM ${CI_REGISTRY_IMAGE}ci-base-image:$CI_IMAGE_TAG AS build
+# Build stage uses centralized ci-base-image from common-ci-configuration
+# This image includes: build toolchain, ccache, Python 3.14, Docker CLI, hived_admin and hived users
+FROM ${CI_BASE_IMAGE} AS build
 
 ARG BUILD_HIVE_TESTNET=OFF
 ENV BUILD_HIVE_TESTNET=${BUILD_HIVE_TESTNET}
