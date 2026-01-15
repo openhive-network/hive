@@ -86,8 +86,8 @@ public:
     : op(op), prefix(prefix)
   {}
 
-    template<typename Member, class Class, Member (Class::*member)>
-    void operator()(const char* name) const
+    template<typename Member, class Class>
+    void operator()(Member Class::*member, const char* name) const
     {
       if (prefix.empty())
         explain_member(name, op.*member);
