@@ -1,6 +1,6 @@
 include:
   - project: 'hive/common-ci-configuration'
-    ref: 20652793ff176dd63f31f6382ea51cff0a67e6da # Add util-linux to docker-builder for NFS flock support
+    ref: 7d82f5d902f354dd2506d7fb38f592eb359a44d4
     file:
       - '/templates/npm_projects.gitlab-ci.yml'
       - '/templates/wasm_build.gitlab-ci.yml'
