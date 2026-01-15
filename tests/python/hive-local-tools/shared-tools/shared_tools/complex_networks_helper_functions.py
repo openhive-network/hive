@@ -39,6 +39,15 @@ def assert_no_duplicates(node, *nodes):
     tt.logger.info("No there are no duplicates in account_history.get_ops_in_block...")
 
 
+def _get_peer_count(node) -> int:
+    """Get number of connected peers for a node, returning 0 on any error."""
+    try:
+        peers = node.api.network_node.get_connected_peers()
+        return len(peers)
+    except Exception:
+        return 0
+
+
 def wait_for_p2p_connections(sub_networks: list, min_peers_per_node: int = 1, timeout_seconds: float = 30.0) -> None:
     """Wait for P2P connections to establish between nodes in different sub-networks.
 
@@ -53,14 +62,7 @@ def wait_for_p2p_connections(sub_networks: list, min_peers_per_node: int = 1, ti
         all_nodes.extend(network.nodes)
 
     def all_nodes_have_peers() -> bool:
-        for node in all_nodes:
-            try:
-                peers = node.api.network_node.get_connected_peers()
-                if len(peers) < min_peers_per_node:
-                    return False
-            except Exception:
-                return False
-        return True
+        return all(_get_peer_count(node) >= min_peers_per_node for node in all_nodes)
 
     tt.logger.info(f"Waiting for P2P connections to establish (timeout: {timeout_seconds}s)...")
     tt.Time.wait_for(all_nodes_have_peers, timeout=timeout_seconds)
@@ -81,9 +83,14 @@ def connect_sub_networks(sub_networks: list, wait_for_connections: bool = True) 
             next_current_idx += 1
         current_idx += 1
 
-    # Wait for P2P connections to actually establish before returning
+    # Wait for P2P connections to establish, but only if nodes are already running.
+    # During initial setup, connect_sub_networks is called before nodes start,
+    # so we skip the wait (nodes will connect when they run).
     if wait_for_connections:
-        wait_for_p2p_connections(sub_networks)
+        all_nodes = [node for network in sub_networks for node in network.nodes]
+        nodes_running = any(node.is_running() for node in all_nodes)
+        if nodes_running:
+            wait_for_p2p_connections(sub_networks)
 
 
 def disconnect_sub_networks(sub_networks: list):
@@ -228,7 +235,9 @@ def wait_for_final_block(
     lib_values = [get_last_irreversible_block_num(d) for d in data]
     head_values = [get_last_head_block_number(d) for d in data]
     node_names = [log.name for log in logs]
-    diagnostic = ", ".join(f"{name}: HEAD={head} LIB={lib}" for name, head, lib in zip(node_names, head_values, lib_values))
+    diagnostic = ", ".join(
+        f"{name}: HEAD={head} LIB={lib}" for name, head, lib in zip(node_names, head_values, lib_values)
+    )
     raise TimeoutError(
         f"Networks failed to synchronize after {max_blocks} blocks. "
         f"Node states: [{diagnostic}]. "
