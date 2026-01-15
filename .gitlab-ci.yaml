@@ -1102,14 +1102,11 @@ functional_api_tests:
     PYTEST_TIMEOUT_MINUTES: 3
 
 publish_docker_image:
-  stage: publish
-  extends: .publish_docker_image_template
-  before_script:
-    - !reference [.publish_docker_image_template, before_script]
-  script:
-    - scripts/ci-helpers/build_and_publish_instance.sh
-  tags:
-    - public-runner-docker
+  extends: .docker_publish_job_template
+  variables:
+    # Publish mainnet (root) and mirrornet images to registry.hive.blog
+    # Note: testnet is not published externally (internal use only)
+    PUBLISH_IMAGES: "hive mirrornet"
 
 hardfork_schedule_tests:
   extends: .simple_pytest_job
