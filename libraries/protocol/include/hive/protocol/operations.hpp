@@ -72,7 +72,10 @@ namespace hive { namespace protocol {
         remove_proposal_operation, // 46
         update_proposal_operation, // 47
         collateralized_convert_operation, // 48
-        recurrent_transfer_operation, // 49
+        recurrent_transfer_operation // 49
+
+#ifndef HIVE_PROTOCOL_SKIP_VOPS
+        ,
 
 #ifdef HIVE_ENABLE_SMT
         /// SMT operations
@@ -130,6 +133,8 @@ namespace hive { namespace protocol {
         escrow_rejected_operation, //last_regular + 41
         proxy_cleared_operation, //last_regular + 42
         declined_voting_rights_operation //last_regular + 43
+
+#endif // HIVE_PROTOCOL_SKIP_VOPS
       > operation;
 
   /*void operation_get_required_authorities( const operation& op,
