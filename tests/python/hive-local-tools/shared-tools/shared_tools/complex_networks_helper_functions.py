@@ -39,37 +39,7 @@ def assert_no_duplicates(node, *nodes):
     tt.logger.info("No there are no duplicates in account_history.get_ops_in_block...")
 
 
-def _get_peer_count(node) -> int:
-    """Get number of connected peers for a node, returning 0 on any error."""
-    try:
-        peers = node.api.network_node.get_connected_peers()
-        return len(peers)
-    except Exception:
-        return 0
-
-
-def wait_for_p2p_connections(sub_networks: list, min_peers_per_node: int = 1, timeout_seconds: float = 120.0) -> None:
-    """Wait for P2P connections to establish between nodes in different sub-networks.
-
-    After connect_sub_networks() allows connections, P2P reconnection is asynchronous.
-    This function waits until nodes actually have peers, ensuring block propagation can occur.
-    """
-    if len(sub_networks) <= 1:
-        return
-
-    all_nodes = []
-    for network in sub_networks:
-        all_nodes.extend(network.nodes)
-
-    def all_nodes_have_peers() -> bool:
-        return all(_get_peer_count(node) >= min_peers_per_node for node in all_nodes)
-
-    tt.logger.info(f"Waiting for P2P connections to establish (timeout: {timeout_seconds}s)...")
-    tt.Time.wait_for(all_nodes_have_peers, timeout=timeout_seconds)
-    tt.logger.info("P2P connections established")
-
-
-def connect_sub_networks(sub_networks: list, wait_for_connections: bool = True) -> None:
+def connect_sub_networks(sub_networks: list) -> None:
     if len(sub_networks) == 1:
         return
     assert len(sub_networks) > 1
@@ -83,14 +53,9 @@ def connect_sub_networks(sub_networks: list, wait_for_connections: bool = True) 
             next_current_idx += 1
         current_idx += 1
 
-    # Wait for P2P connections to establish, but only if nodes are already running.
-    # During initial setup, connect_sub_networks is called before nodes start,
-    # so we skip the wait (nodes will connect when they run).
-    if wait_for_connections:
-        all_nodes = [node for network in sub_networks for node in network.nodes]
-        nodes_running = any(node.is_running() for node in all_nodes)
-        if nodes_running:
-            wait_for_p2p_connections(sub_networks)
+    # Note: We don't wait for P2P connections here. After set_allowed_peers(),
+    # reconnection is asynchronous and may take time due to backoff. The
+    # wait_for_final_block() function handles synchronization with a timeout.
 
 
 def disconnect_sub_networks(sub_networks: list):
