@@ -8,6 +8,11 @@ stages:
 
 variables:
   PYTEST_NUMBER_OF_PROCESSES: 8
+
+  # Docker image tags from common-ci-configuration with util-linux for NFS flock support
+  DOCKER_BUILDER_TAG: "3dd346380da7f28cdaf3ef3955559c905d94bd1c"
+  DOCKER_DIND_TAG: "3dd346380da7f28cdaf3ef3955559c905d94bd1c"
+
   # Fetch strategy reuses workspace between jobs, reducing GitLab server load.
   # Full clone (depth 0) enables efficient incremental fetches - shallow clones
   # don't reduce server CPU and make fetch less effective.
@@ -59,76 +64,7 @@ include:
 
 default:
   hooks:
-    pre_get_sources_script:
-      # Clean corrupt git state left by cancelled pipelines (see GitLab #296638, #4600)
-      # Also handles directory-to-submodule transitions when switching branches
-      # Wrapped in subshell to avoid changing working directory for subsequent git operations
-      - |
-        (
-        cd "${CI_PROJECT_DIR:-/builds}" 2>/dev/null || exit 0
-        echo "pre_get_sources: checking $(pwd) for corrupt git state"
-        if [ -d ".git" ]; then
-          # Remove stale lock files that block git operations
-          find .git -name "*.lock" -delete 2>/dev/null || true
-
-          # Check if main repo is corrupt - if so, remove .git to force fresh clone
-          if ! git rev-parse HEAD >/dev/null 2>&1; then
-            echo "pre_get_sources: main repository corrupt, forcing fresh clone"
-            rm -rf .git
-          else
-            # Main repo OK - check and clean corrupt submodules
-            # Check both the working dir and .git/modules/ since either can be corrupt
-            if [ -f ".gitmodules" ]; then
-              git config --file .gitmodules --get-regexp path 2>/dev/null | awk '{print $2}' | while read submod; do
-                needs_clean=false
-                [ -z "$submod" ] && continue
-                # Check if submodule working directory exists but is corrupt
-                if [ -d "$submod" ] && [ -f "$submod/.git" ]; then
-                  if ! git -C "$submod" rev-parse HEAD >/dev/null 2>&1; then
-                    needs_clean=true
-                  fi
-                fi
-                # Check if .git/modules exists but is corrupt (even if working dir is gone)
-                if [ -d ".git/modules/$submod" ]; then
-                  if ! git --git-dir=".git/modules/$submod" rev-parse HEAD >/dev/null 2>&1; then
-                    echo "pre_get_sources: $submod corrupt (rev-parse failed)"
-                    needs_clean=true
-                  fi
-                fi
-                if [ "$needs_clean" = true ]; then
-                  echo "pre_get_sources: cleaning corrupt submodule: $submod"
-                  rm -rf "$submod" ".git/modules/$submod"
-                fi
-              done
-            fi
-
-            # Handle directory-to-submodule transitions: fetch target ref's .gitmodules
-            # and remove any paths that exist as regular directories (not submodules)
-            if [ -n "$CI_COMMIT_REF_NAME" ]; then
-              echo "pre_get_sources: checking for directory-to-submodule transitions (ref: $CI_COMMIT_REF_NAME)"
-              # Fetch the target ref first (it may not exist locally yet)
-              git fetch origin "$CI_COMMIT_REF_NAME" --depth=1 2>&1 || true
-              target_gitmodules=$(git show "origin/$CI_COMMIT_REF_NAME:.gitmodules" 2>/dev/null) || true
-              if [ -n "$target_gitmodules" ]; then
-                echo "$target_gitmodules" | grep "path = " | sed 's/.*path = //' | while read submod; do
-                  [ -z "$submod" ] && continue
-                  # If path exists as a regular directory (not a submodule), remove it
-                  if [ -d "$submod" ] && [ ! -f "$submod/.git" ]; then
-                    echo "pre_get_sources: removing directory for submodule transition: $submod"
-                    rm -rf "$submod"
-                  fi
-                done
-              else
-                echo "pre_get_sources: no target gitmodules found"
-              fi
-            fi
-
-            echo "pre_get_sources: existing repo OK"
-          fi
-        else
-          echo "pre_get_sources: no .git directory (fresh workspace)"
-        fi
-        )
+    pre_get_sources_script: !reference [.pre_get_sources_with_submodules, pre_get_sources_script]
 
 prepare_hived_image:
   extends:
@@ -144,8 +80,25 @@ prepare_hived_image:
     BINARY_CACHE_PATH: "$CI_PROJECT_DIR/hived-binaries"
     HIVE_NETWORK_TYPE: mainnet
   tags:
-    - public-runner-docker
     - bigjob
+  after_script:
+    - |
+      source docker_image_name.env
+      echo "Adding latest/stable/version tags for mainnet image..."
+      # Pull image to local daemon (may not be loaded when using cached builds)
+      docker pull $HIVED_INSTANCE || echo "Warning: docker pull failed"
+      docker images
+      if [[ "$CI_COMMIT_BRANCH" == "develop" ]]; then
+        docker tag $HIVED_INSTANCE ${CI_REGISTRY_IMAGE}:latest
+        docker push ${CI_REGISTRY_IMAGE}:latest
+      elif [[ "$CI_COMMIT_BRANCH" == "master" ]]; then
+        docker tag $HIVED_INSTANCE ${CI_REGISTRY_IMAGE}:stable
+        docker push ${CI_REGISTRY_IMAGE}:stable
+      fi
+      if [[ -n "$CI_COMMIT_TAG" && "$CI_COMMIT_REF_PROTECTED" == "true" ]]; then
+        docker tag $HIVED_INSTANCE ${CI_REGISTRY_IMAGE}:${CI_COMMIT_TAG}
+        docker push ${CI_REGISTRY_IMAGE}:${CI_COMMIT_TAG}
+      fi
 
 prepare_hived_data:
   extends:
@@ -213,6 +166,25 @@ testnet_node_build:
       - "$BINARY_CACHE_PATH"
   tags:
     - bigjob
+  after_script:
+    - |
+      source docker_image_name.env
+      echo "Adding latest/stable/version tags for testnet image..."
+      # Pull image to local daemon (may not be loaded when using cached builds)
+      docker pull $HIVED_INSTANCE || echo "Warning: docker pull failed"
+      docker images
+      IMAGE_NAME_PREFIX="${CI_REGISTRY_IMAGE}/testnet:"
+      if [[ "$CI_COMMIT_BRANCH" == "develop" ]]; then
+        docker tag $HIVED_INSTANCE ${IMAGE_NAME_PREFIX}latest
+        docker push ${IMAGE_NAME_PREFIX}latest
+      elif [[ "$CI_COMMIT_BRANCH" == "master" ]]; then
+        docker tag $HIVED_INSTANCE ${IMAGE_NAME_PREFIX}stable
+        docker push ${IMAGE_NAME_PREFIX}stable
+      fi
+      if [[ -n "$CI_COMMIT_TAG" && "$CI_COMMIT_REF_PROTECTED" == "true" ]]; then
+        docker tag $HIVED_INSTANCE ${IMAGE_NAME_PREFIX}${CI_COMMIT_TAG}
+        docker push ${IMAGE_NAME_PREFIX}${CI_COMMIT_TAG}
+      fi
 
 generate-wax-spec:
   extends: .generate_swagger_package
@@ -247,29 +219,27 @@ mirrornet_node_build:
     REGISTRY_PASS: $HIVED_CI_IMGBUILDER_PASSWORD
     BINARY_CACHE_PATH: "$CI_PROJECT_DIR/hived-mirrornet-binaries"
     HIVE_NETWORK_TYPE: mirrornet
+  tags:
+    - bigjob
   after_script:
     - |
       source docker_image_name.env
-      echo "Pushing hived image for commits on develop, master and tagged"
+      echo "Adding latest/stable/version tags for mirrornet image..."
+      # Pull image to local daemon (may not be loaded when using cached builds)
+      docker pull $HIVED_INSTANCE || echo "Warning: docker pull failed"
       docker images
-      IMAGE_NAME_PREFIX="$CI_REGISTRY_IMAGE/mirrornet:"
-      if [[ "$CI_COMMIT_BRANCH" == "develop" ]];
-      then
+      IMAGE_NAME_PREFIX="${CI_REGISTRY_IMAGE}/mirrornet:"
+      if [[ "$CI_COMMIT_BRANCH" == "develop" ]]; then
         docker tag $HIVED_INSTANCE ${IMAGE_NAME_PREFIX}latest
         docker push ${IMAGE_NAME_PREFIX}latest
-      elif [[ "$CI_COMMIT_BRANCH" == "master" ]];
-      then
+      elif [[ "$CI_COMMIT_BRANCH" == "master" ]]; then
         docker tag $HIVED_INSTANCE ${IMAGE_NAME_PREFIX}stable
         docker push ${IMAGE_NAME_PREFIX}stable
-      elif [[ -n "$CI_COMMIT_TAG" ]];
-      then
+      fi
+      if [[ -n "$CI_COMMIT_TAG" && "$CI_COMMIT_REF_PROTECTED" == "true" ]]; then
         docker tag $HIVED_INSTANCE ${IMAGE_NAME_PREFIX}${CI_COMMIT_TAG}
         docker push ${IMAGE_NAME_PREFIX}${CI_COMMIT_TAG}
       fi
-
-  tags:
-    - public-runner-docker
-    - bigjob
 
 extended_block_log_creation:
   extends: .extended_block_log_creation
@@ -700,7 +670,6 @@ cli_wallet_extended_tests:
     - cd tests/python/functional/fork_tests
     - !reference [.run-pytest, script]
   tags:
-    - public-runner-docker
     - bigjob
   artifacts:
     expire_in: 2 days
@@ -1246,7 +1215,6 @@ operation_tests:
                      update_proposal_votes_tests,
                      witness_ops_tests ]
   tags:
-    - public-runner-docker
     - bigjob
 
 comment_cashout_tests:
@@ -1446,6 +1414,7 @@ deploy_hiveio_api_to_pypi:
       artifacts: true
   tags:
     - public-runner-docker
+    - standard
 
 generate_testing_block_logs:
   stage: build
@@ -1501,7 +1470,6 @@ generate_testing_block_logs:
     paths:
       - $TESTING_BLOCK_LOGS_DIR/checksums/
   tags:
-    - public-runner-docker
     - bigjob
 
 build_combined_testing_block_logs_image:
