@@ -478,7 +478,7 @@ plugin_test_api:
     PRE_COMMIT_CONFIG: "$CI_PROJECT_DIR/tests/python/hive-local-tools/.pre-commit-config.yaml"
     PYPROJECT_DIR: "$CI_PROJECT_DIR/tests/python/hive-local-tools"
     # Only clone test-related submodules (skip rocksdb, zstd, fc, appbase, compression_dictionaries)
-    GIT_SUBMODULE_PATHS: "tests/python/hive-local-tools/test-tools tests/python/hive-local-tools/tests_api"
+    GIT_SUBMODULE_PATHS: "tests/python/hive-local-tools/tests_api"
   before_script:
     - !reference [.python_based, before_script]
     - cd $CI_PROJECT_DIR/tests/python/hive-local-tools
@@ -531,7 +531,7 @@ quick_test_setup:
   variables:
     PYPROJECT_DIR: "$CI_PROJECT_DIR/tests/python/hive-local-tools"
     # Only clone test-related submodules (skip rocksdb, zstd, fc, appbase, compression_dictionaries)
-    GIT_SUBMODULE_PATHS: "tests/python/hive-local-tools/test-tools tests/python/hive-local-tools/tests_api"
+    GIT_SUBMODULE_PATHS: "tests/python/hive-local-tools/tests_api"
   after_script:
     - |
       shopt -s globstar
@@ -557,7 +557,7 @@ quick_test_setup:
     # Fetch submodules script from common-ci-configuration
     - curl -fsSL "${CI_SERVER_URL}/hive/common-ci-configuration/-/raw/develop/scripts/fetch-submodules.sh" -o /tmp/fetch-submodules.sh
     - chmod +x /tmp/fetch-submodules.sh
-    - /tmp/fetch-submodules.sh --parallel tests/python/hive-local-tools/test-tools tests/python/hive-local-tools/tests_api
+    - /tmp/fetch-submodules.sh --parallel tests/python/hive-local-tools/tests_api
     # Then run the standard Python setup from .python_based
     - !reference [.python_based, before_script]
 
