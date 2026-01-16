@@ -456,14 +456,14 @@ testing = ["hatch", "pre-commit", "pytest", "tox"]
 
 [[package]]
 name = "filelock"
-version = "3.20.2"
+version = "3.20.3"
 description = "A platform independent file lock."
 optional = false
 python-versions = ">=3.10"
 groups = ["dev", "pre-commit"]
 files = [
-    {file = "filelock-3.20.2-py3-none-any.whl", hash = "sha256:fbba7237d6ea277175a32c54bb71ef814a8546d8601269e1bfc388de333974e8"},
-    {file = "filelock-3.20.2.tar.gz", hash = "sha256:a2241ff4ddde2a7cebddf78e39832509cb045d18ec1a09d7248d6bfc6bfbbe64"},
+    {file = "filelock-3.20.3-py3-none-any.whl", hash = "sha256:4b0dda527ee31078689fc205ec4f1c1bf7d56cf88b6dc9426c4f230e46c2dce1"},
+    {file = "filelock-3.20.3.tar.gz", hash = "sha256:18c57ee915c7ec61cff0ecf7f0f869936c7c30191bb0cf406f1341778d0834e1"},
 ]
 
 [[package]]
@@ -636,18 +636,18 @@ hyperframe = ">=6.1,<7"
 
 [[package]]
 name = "hiveio-beekeepy"
-version = "1.28.4.dev9+a3c7bbe"
+version = "1.28.4.dev15+d0a1bbf"
 description = "All in one package for beekeeper interaction via Python interface."
 optional = false
 python-versions = ">=3.12,<4"
 groups = ["main"]
 files = [
-    {file = "hiveio_beekeepy-1.28.4.dev9+a3c7bbe-py3-none-any.whl", hash = "sha256:97393d400aa487a2a303c1b18cbbe834da70580b01261752a142a5878e885e2a"},
+    {file = "hiveio_beekeepy-1.28.4.dev15+d0a1bbf-py3-none-any.whl", hash = "sha256:b28aa611f67e5d93e1fc410d9830d51ed037ba9bf6e95b377e6760fcb4ab91ad"},
 ]
 
 [package.dependencies]
 aiohttp = "3.11.15"
-hiveio-schemas = "1.28.1.dev3+ae54493"
+hiveio-schemas = "1.28.1.dev8+cc9d4bb"
 loguru = "0.7.2"
 psutil = "7.0.0"
 python-dateutil = "2.8.2"
@@ -717,14 +717,13 @@ reference = "gitlab-database_api"
 
 [[package]]
 name = "hiveio-schemas"
-version = "1.28.1.dev3+ae54493"
+version = "1.28.1.dev8+cc9d4bb"
 description = "Tools for checking if message fits expected format"
 optional = false
 python-versions = ">=3.12,<4"
 groups = ["main"]
 files = [
-    {file = "hiveio_schemas-1.28.1.dev3+ae54493-py3-none-any.whl", hash = "sha256:4bef1f9a096610ffa9bdd7d63b4a53a3fee01b1083266acf19ea2da0c197439f"},
-    {file = "hiveio_schemas-1.28.1.dev3+ae54493.tar.gz", hash = "sha256:425437fc83293aaac6c478ef48b14c7f4e06c136a599bc1a5c2e5d93c6f3dd75"},
+    {file = "hiveio_schemas-1.28.1.dev8+cc9d4bb-py3-none-any.whl", hash = "sha256:3b57548a3547c07e70ce6957d069712e921a8f95a76e1600f2b1903f50d4136d"},
 ]
 
 [package.dependencies]
@@ -737,14 +736,13 @@ reference = "gitlab-schemas"
 
 [[package]]
 name = "hiveio-wax"
-version = "1.28.4rc1.dev91+61b0797e"
+version = "1.28.4rc1.dev86+b007c856"
 description = ""
 optional = false
 python-versions = ">=3.12,<4"
 groups = ["main"]
 files = [
-    {file = "hiveio_wax-1.28.4rc1.dev91+61b0797e-cp312-cp312-manylinux_2_39_x86_64.whl", hash = "sha256:d38037f4662c85cc6b3360dd6e14f2e4e03a485144afcfe93f31482ac4c2244d"},
-    {file = "hiveio_wax-1.28.4rc1.dev91+61b0797e-cp314-cp314-manylinux_2_39_x86_64.whl", hash = "sha256:b8b80c6606878643616cdb1dc57860abc2fda633d508f7314b11a7bd185dd2b8"},
+    {file = "hiveio_wax-1.28.4rc1.dev86+b007c856-cp314-cp314-manylinux_2_39_x86_64.whl", hash = "sha256:6f7b3c0b226f9a448f83ca4d79ea9e4580d759d8b573eb07a9547b115f902e1e"},
 ]
 
 [package.dependencies]
@@ -836,14 +834,14 @@ files = [
 
 [[package]]
 name = "identify"
-version = "2.6.15"
+version = "2.6.16"
 description = "File identification library for Python"
 optional = false
-python-versions = ">=3.9"
+python-versions = ">=3.10"
 groups = ["dev", "pre-commit"]
 files = [
-    {file = "identify-2.6.15-py2.py3-none-any.whl", hash = "sha256:1181ef7608e00704db228516541eb83a88a9f94433a8c80bb9b5bd54b1d81757"},
-    {file = "identify-2.6.15.tar.gz", hash = "sha256:e4f4864b96c6557ef2a1e1c951771838f4edc9df3a72ec7118b338801b11c7bf"},
+    {file = "identify-2.6.16-py2.py3-none-any.whl", hash = "sha256:391ee4d77741d994189522896270b787aed8670389bfd60f326d677d64a6dfb0"},
+    {file = "identify-2.6.16.tar.gz", hash = "sha256:846857203b5511bbe94d5a352a48ef2359532bc8f6727b5544077a0dcfb24980"},
 ]
 
 [package.extras]
@@ -1224,14 +1222,14 @@ files = [
 
 [[package]]
 name = "pathspec"
-version = "1.0.2"
+version = "1.0.3"
 description = "Utility library for gitignore style pattern matching of file paths."
 optional = false
 python-versions = ">=3.9"
 groups = ["black", "dev"]
 files = [
-    {file = "pathspec-1.0.2-py3-none-any.whl", hash = "sha256:62f8558917908d237d399b9b338ef455a814801a4688bc41074b25feefd93472"},
-    {file = "pathspec-1.0.2.tar.gz", hash = "sha256:fa32b1eb775ed9ba8d599b22c5f906dc098113989da2c00bf8b210078ca7fb92"},
+    {file = "pathspec-1.0.3-py3-none-any.whl", hash = "sha256:e80767021c1cc524aa3fb14bedda9c34406591343cc42797b386ce7b9354fb6c"},
+    {file = "pathspec-1.0.3.tar.gz", hash = "sha256:bac5cf97ae2c2876e2d25ebb15078eb04d76e4b98921ee31c6f85ade8b59444d"},
 ]
 
 [package.extras]
@@ -2133,9 +2131,9 @@ develop = true
 
 [package.dependencies]
 abstractcp = "0.9.9"
-hiveio-beekeepy = ">=1.28.4.dev7"
-hiveio-schemas = ">=1.28.1.dev3"
-hiveio-wax = "==1.28.4rc1.dev91+61b0797e"
+hiveio-beekeepy = "1.28.4.dev15+d0a1bbf"
+hiveio-schemas = "1.28.1.dev8+cc9d4bb"
+hiveio-wax = "1.28.4rc1.dev86+b007c856"
 loguru = "0.7.2"
 msgspec = "^0.20.0"
 python-dateutil = "2.8.2"
@@ -2149,7 +2147,7 @@ name = "tests-api"
 version = "0.0.0"
 description = "A collective library containing tests for different APIs and tools for benchmarking"
 optional = false
-python-versions = "^3.12"
+python-versions = ">=3.12"
 groups = ["main"]
 files = []
 develop = true
@@ -2235,14 +2233,14 @@ zstd = ["backports-zstd (>=1.0.0) ; python_version < \"3.14\""]
 
 [[package]]
 name = "virtualenv"
-version = "20.36.0"
+version = "20.36.1"
 description = "Virtual Python Environment builder"
 optional = false
 python-versions = ">=3.8"
 groups = ["dev", "pre-commit"]
 files = [
-    {file = "virtualenv-20.36.0-py3-none-any.whl", hash = "sha256:e7ded577f3af534fd0886d4ca03277f5542053bedb98a70a989d3c22cfa5c9ac"},
-    {file = "virtualenv-20.36.0.tar.gz", hash = "sha256:a3601f540b515a7983508113f14e78993841adc3d83710fa70f0ac50f43b23ed"},
+    {file = "virtualenv-20.36.1-py3-none-any.whl", hash = "sha256:575a8d6b124ef88f6f51d56d656132389f961062a9177016a50e4f507bbcc19f"},
+    {file = "virtualenv-20.36.1.tar.gz", hash = "sha256:8befb5c81842c641f8ee658481e42641c68b5eab3521d8e092d18320902466ba"},
 ]
 
 [package.dependencies]
