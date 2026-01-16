@@ -2119,26 +2119,28 @@ mqtt = ["paho-mqtt (>=1.3.1,<=1.6.1)"]
 
 [[package]]
 name = "test-tools"
-version = "0.0.0"
+version = "0.0.1.dev1398+4478459"
 description = "Tools for testing hive software"
 optional = false
 python-versions = ">=3.12,<4"
 groups = ["main"]
-files = []
-develop = true
+files = [
+    {file = "test_tools-0.0.1.dev1398+4478459-py3-none-any.whl", hash = "sha256:98731606464b985481d8ced06284b7f2c5b22c0452fc9138b0e05ee470ace23c"},
+]
 
 [package.dependencies]
 abstractcp = "0.9.9"
-hiveio-beekeepy = "==1.28.4.dev16+83e3a3c"
+hiveio-beekeepy = "1.28.4.dev16+83e3a3c"
 hiveio-schemas = ">=1.28.1.dev3"
-hiveio-wax = "==1.28.4rc1.dev91+61b0797e"
+hiveio-wax = "1.28.4rc1.dev91+61b0797e"
 loguru = "0.7.2"
-msgspec = "^0.20.0"
+msgspec = ">=0.20.0,<0.21.0"
 python-dateutil = "2.8.2"
 
 [package.source]
-type = "directory"
-url = "test-tools"
+type = "legacy"
+url = "https://gitlab.syncad.com/api/v4/projects/300/packages/pypi/simple"
+reference = "gitlab-test-tools"
 
 [[package]]
 name = "tests-api"
@@ -2426,4 +2428,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.14,<4"
-content-hash = "6fde069d7c9223eca3429bc050accba63ef85e386d43558df89acdc497a8d3dd"
+content-hash = "ec9fae9bc53f590a088dd3e99ef205a658796a501274ee960649ff23701e103b"
