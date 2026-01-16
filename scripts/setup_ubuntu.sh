@@ -57,7 +57,8 @@ install_all_dev_packages() {
   apt-get update
 
   # Add deadsnakes PPA for Python 3.14 if not already present
-  if ! apt-cache policy python3.14 2>/dev/null | grep -q "Candidate:"; then
+  # Skip if python3.14 is already installed (e.g., in CI base images from common-ci-configuration)
+  if ! command -v python3.14 &>/dev/null && ! apt-cache policy python3.14 2>/dev/null | grep -q "Candidate:"; then
     apt-get install -y software-properties-common
     # Use python3.12 explicitly for add-apt-repository to avoid apt_pkg issues
     # when Python 3.14 is already set as default
