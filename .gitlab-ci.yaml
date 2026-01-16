@@ -808,7 +808,7 @@ message_format_testnet_tests:
                transaction_status_api_tests,
                wallet_bridge_api_tests ]
   tags:
-    - bigjob
+    - public-runner-docker
 
 datagen_api_tests:
   stage: test
@@ -1009,7 +1009,7 @@ message_format_mainnet_5m_tests:
     expire_in: 1 week
   tags:
     - data-cache-storage
-    - bigjob
+    - public-runner-docker
 
 message_format_live_mainnet_tests:
   extends: .message_format_tests
@@ -1192,7 +1192,7 @@ operation_tests:
                      update_proposal_votes_tests,
                      witness_ops_tests ]
   tags:
-    - bigjob
+    - public-runner-docker
 
 comment_cashout_tests:
   stage: test
@@ -1441,7 +1441,7 @@ generate_testing_block_logs:
     paths:
       - $TESTING_BLOCK_LOGS_DIR/checksums/
   tags:
-    - bigjob
+    - public-runner-docker
 
 build_combined_testing_block_logs_image:
   stage: build
