@@ -39,7 +39,7 @@ def assert_no_duplicates(node, *nodes):
     tt.logger.info("No there are no duplicates in account_history.get_ops_in_block...")
 
 
-def connect_sub_networks(sub_networks: list):
+def connect_sub_networks(sub_networks: list) -> None:
     if len(sub_networks) == 1:
         return
     assert len(sub_networks) > 1
@@ -52,6 +52,10 @@ def connect_sub_networks(sub_networks: list):
             sub_networks[current_idx].connect_with(sub_networks[next_current_idx])
             next_current_idx += 1
         current_idx += 1
+
+    # Note: We don't wait for P2P connections here. After set_allowed_peers(),
+    # reconnection is asynchronous and may take time due to backoff. The
+    # wait_for_final_block() function handles synchronization with a timeout.
 
 
 def disconnect_sub_networks(sub_networks: list):
@@ -170,25 +174,40 @@ def lib_custom_condition(compared_item1, compared_item2):
 
 
 def wait_for_final_block(
-    witness_node, logs, data: list, allow_lib=True, lib_cond=lib_true_condition, allow_last_head=True
+    witness_node, logs, data: list, allow_lib=True, lib_cond=lib_true_condition, allow_last_head=True, max_blocks=100
 ):
     assert allow_lib or allow_last_head
 
-    # Hard to say when all nodes would have the same HEAD"s/LIB"s. All nodes are connected together in common network
-    # so sometimes one or two nodes are "delayed" - their LIB is lower than LIB others.
-    # The best option is to wait until every node has the same data.
-    # It doesn"t matter if such situation occurs after 5 or 25 blocks.
-    # In case when nodes wouldn"t have the same data, it"s an obvious error and CI will finish this test.
-    while True:
+    # Wait until all nodes have synchronized HEAD/LIB values. Nodes reconnecting after a fork
+    # may be temporarily "delayed" with lower LIB values. We wait up to max_blocks for sync.
+    # If nodes don't sync within the timeout, we raise TimeoutError with diagnostic info.
+    blocks_waited = 0
+    while blocks_waited < max_blocks:
         wait(1, logs, witness_node)
+        blocks_waited += 1
 
-        # Veryfing if all nodes have the same last irreversible block number
+        # Verifying if all nodes have the same last irreversible block number
         if allow_lib and lib_cond() and final_block_the_same(get_last_irreversible_block_num, data):
+            tt.logger.info(f"Networks synchronized after {blocks_waited} blocks (LIB match)")
             return False
 
-        # Veryfing if all nodes have the same last head block number
+        # Verifying if all nodes have the same last head block number
         if allow_last_head and final_block_the_same(get_last_head_block_number, data):
+            tt.logger.info(f"Networks synchronized after {blocks_waited} blocks (HEAD match)")
             return False
+
+    # Timeout reached - collect diagnostic info
+    lib_values = [get_last_irreversible_block_num(d) for d in data]
+    head_values = [get_last_head_block_number(d) for d in data]
+    node_names = [log.name for log in logs]
+    diagnostic = ", ".join(
+        f"{name}: HEAD={head} LIB={lib}" for name, head, lib in zip(node_names, head_values, lib_values)
+    )
+    raise TimeoutError(
+        f"Networks failed to synchronize after {max_blocks} blocks. "
+        f"Node states: [{diagnostic}]. "
+        f"allow_lib={allow_lib}, allow_last_head={allow_last_head}"
+    )
 
 
 def calculate_transformed_witnesses(wallet, node):
