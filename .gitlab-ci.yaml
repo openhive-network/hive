@@ -768,9 +768,8 @@ test_tools_tests:
       artifacts: true
       optional: true  # Not required when using QUICK_TEST_BLOCK_LOG_IMAGE
   variables:
-    PYTEST_ADDOPTS: "--ignore=hived_handle_tests"
     PYTEST_TIMEOUT_MINUTES: 30
-    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/hive-local-tools/test-tools/tests/report.xml
+    PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/test_tools_tests/report.xml
     TEST_BLOCK_LOGS_SOURCES: testing_block_logs/empty_block_logs/
     TESTING_BLOCK_LOGS_DESTINATION: $CI_PROJECT_DIR/testing_block_logs_dir/
     TEST_BLOCK_LOG_SERVER: "http://test-block-log-server:80"
@@ -792,7 +791,7 @@ test_tools_tests:
   script:
     - mkdir -p "$TESTING_BLOCK_LOGS_DESTINATION"
     - !reference [.fetch_test_block_logs, script]
-    - cd $CI_PROJECT_DIR/tests/python/hive-local-tools/test-tools/tests
+    - cd $CI_PROJECT_DIR/tests/python/test_tools_tests
     - pip install local-tools/
     - !reference [.run-pytest, script]
   tags:
