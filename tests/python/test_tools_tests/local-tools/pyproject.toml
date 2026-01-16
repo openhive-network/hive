@@ -1,0 +1,18 @@
+[build-system]
+requires = ["poetry-core==1.1.0"]
+build-backend = "poetry.core.masonry.api"
+
+
+[tool.poetry]
+name = "local-tools"
+version = "0.0.0"
+description = "Tools shared by tests in test-tools project"
+authors = []
+repository = "https://gitlab.syncad.com/hive/test-tools"
+packages = [
+    { include = "local_tools" },
+]
+
+
+[tool.poetry.dependencies]
+python = "^3.10"
