@@ -141,6 +141,7 @@ files = [
 
 [package.dependencies]
 frozenlist = ">=1.1.0"
+typing-extensions = {version = ">=4.2", markers = "python_version < \"3.13\""}
 
 [[package]]
 name = "anyio"
@@ -156,6 +157,7 @@ files = [
 
 [package.dependencies]
 idna = ">=2.8"
+typing_extensions = {version = ">=4.5", markers = "python_version < \"3.13\""}
 
 [package.extras]
 trio = ["trio (>=0.31.0) ; python_version < \"3.10\"", "trio (>=0.32.0) ; python_version >= \"3.10\""]
@@ -658,17 +660,17 @@ reference = "gitlab-beekeepy"
 
 [[package]]
 name = "hiveio-database-api"
-version = "1.28.2.dev212+05ea6f5dc"
+version = "1.28.2.dev327+0fca59d75"
 description = ""
 optional = false
 python-versions = ">=3.12,<4.0"
 groups = ["main"]
 files = [
-    {file = "hiveio_database_api-1.28.2.dev212+05ea6f5dc-py3-none-any.whl", hash = "sha256:faaa2afa2d953e382f84601b04ddf34c94bddabaa27a47d7bfc82a5fd56a9334"},
+    {file = "hiveio_database_api-1.28.2.dev327+0fca59d75-py3-none-any.whl", hash = "sha256:f9ad9e19a73f65ca203e0ceec6f908be90b70c0c8e985336d89fbed6ed4a8e04"},
 ]
 
 [package.dependencies]
-hiveio-beekeepy = ">=1.28.4.dev4"
+hiveio-beekeepy = ">=1.28.4.dev7"
 
 [package.source]
 type = "legacy"
@@ -677,17 +679,17 @@ reference = "gitlab-database_api"
 
 [[package]]
 name = "hiveio-network-broadcast-api"
-version = "1.28.2.dev212+05ea6f5dc"
+version = "1.28.2.dev327+0fca59d75"
 description = ""
 optional = false
 python-versions = ">=3.12,<4.0"
 groups = ["main"]
 files = [
-    {file = "hiveio_network_broadcast_api-1.28.2.dev212+05ea6f5dc-py3-none-any.whl", hash = "sha256:6072b3da8d1302dc0bc3ec2161f60763778b3f4dd4188b6a9f338046392890bc"},
+    {file = "hiveio_network_broadcast_api-1.28.2.dev327+0fca59d75-py3-none-any.whl", hash = "sha256:3bc486d6d45083c4076acaaa0a0051de69f63ae6b65a26d351eec3de03ea1ffc"},
 ]
 
 [package.dependencies]
-hiveio-beekeepy = ">=1.28.4.dev4"
+hiveio-beekeepy = ">=1.28.4.dev7"
 
 [package.source]
 type = "legacy"
@@ -696,17 +698,17 @@ reference = "gitlab-database_api"
 
 [[package]]
 name = "hiveio-rc-api"
-version = "1.28.2.dev212+05ea6f5dc"
+version = "1.28.2.dev327+0fca59d75"
 description = ""
 optional = false
 python-versions = ">=3.12,<4.0"
 groups = ["main"]
 files = [
-    {file = "hiveio_rc_api-1.28.2.dev212+05ea6f5dc-py3-none-any.whl", hash = "sha256:d9e1356cbab3de4c874ca40843a5df1ba32e7df69a623964644596bbeac7133d"},
+    {file = "hiveio_rc_api-1.28.2.dev327+0fca59d75-py3-none-any.whl", hash = "sha256:f363899079fd9a7275a9424a3d1e6e7046aad4c52ae5316bb6ee61de60efc912"},
 ]
 
 [package.dependencies]
-hiveio-beekeepy = ">=1.28.4.dev4"
+hiveio-beekeepy = ">=1.28.4.dev7"
 
 [package.source]
 type = "legacy"
@@ -735,19 +737,20 @@ reference = "gitlab-schemas"
 
 [[package]]
 name = "hiveio-wax"
-version = "1.28.4rc1.dev102+a74b8600"
+version = "1.28.4rc1.dev91+61b0797e"
 description = ""
 optional = false
-python-versions = ">=3.14,<4"
+python-versions = ">=3.12,<4"
 groups = ["main"]
 files = [
-    {file = "hiveio_wax-1.28.4rc1.dev102+a74b8600-cp314-cp314-manylinux_2_39_x86_64.whl", hash = "sha256:994263ad547790bf0a76581721499cc5c4c68abc4056496639ee3ed1511a9d91"},
+    {file = "hiveio_wax-1.28.4rc1.dev91+61b0797e-cp312-cp312-manylinux_2_39_x86_64.whl", hash = "sha256:d38037f4662c85cc6b3360dd6e14f2e4e03a485144afcfe93f31482ac4c2244d"},
+    {file = "hiveio_wax-1.28.4rc1.dev91+61b0797e-cp314-cp314-manylinux_2_39_x86_64.whl", hash = "sha256:b8b80c6606878643616cdb1dc57860abc2fda633d508f7314b11a7bd185dd2b8"},
 ]
 
 [package.dependencies]
-hiveio-database-api = "1.28.2.dev212+05ea6f5dc"
-hiveio-network-broadcast-api = "1.28.2.dev212+05ea6f5dc"
-hiveio-rc-api = "1.28.2.dev212+05ea6f5dc"
+hiveio-database-api = "1.28.2.dev327+0fca59d75"
+hiveio-network-broadcast-api = "1.28.2.dev327+0fca59d75"
+hiveio-rc-api = "1.28.2.dev327+0fca59d75"
 httpx = {version = "0.23.3", extras = ["http2"]}
 loguru = "0.7.2"
 protobuf = "6.33.0"
@@ -1789,6 +1792,7 @@ files = [
 [package.dependencies]
 attrs = ">=22.2.0"
 rpds-py = ">=0.7.0"
+typing-extensions = {version = ">=4.4.0", markers = "python_version < \"3.13\""}
 
 [[package]]
 name = "requests"
@@ -2027,7 +2031,7 @@ name = "shared-tools"
 version = "0.0.0"
 description = "Tools shared by tests in hive projects"
 optional = false
-python-versions = ">=3.14,<4"
+python-versions = ">=3.12"
 groups = ["main"]
 files = []
 develop = true
@@ -2122,7 +2126,7 @@ name = "test-tools"
 version = "0.0.0"
 description = "Tools for testing hive software"
 optional = false
-python-versions = ">=3.14,<4"
+python-versions = ">=3.12,<4"
 groups = ["main"]
 files = []
 develop = true
@@ -2131,7 +2135,7 @@ develop = true
 abstractcp = "0.9.9"
 hiveio-beekeepy = ">=1.28.4.dev7"
 hiveio-schemas = ">=1.28.1.dev3"
-hiveio-wax = ">=1.28.4rc1.dev60"
+hiveio-wax = "==1.28.4rc1.dev91+61b0797e"
 loguru = "0.7.2"
 msgspec = "^0.20.0"
 python-dateutil = "2.8.2"
@@ -2425,5 +2429,5 @@ propcache = ">=0.2.1"
 
 [metadata]
 lock-version = "2.1"
-python-versions = ">=3.14,<4"
-content-hash = "6fde069d7c9223eca3429bc050accba63ef85e386d43558df89acdc497a8d3dd"
+python-versions = ">=3.12,<4"
+content-hash = "803af891488845447502a0f36142ff6b8de77aff949a9a3788b0ffa7d79f8027"
