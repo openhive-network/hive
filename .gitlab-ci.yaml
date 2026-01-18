@@ -1028,7 +1028,6 @@ message_format_mainnet_5m_tests:
     expire_in: 1 week
   tags:
     - data-cache-storage
-    - public-runner-docker
 
 message_format_live_mainnet_tests:
   extends: .message_format_tests
