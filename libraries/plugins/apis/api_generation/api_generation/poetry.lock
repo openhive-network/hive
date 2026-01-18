@@ -129,6 +129,7 @@ files = [
 
 [package.dependencies]
 frozenlist = ">=1.1.0"
+typing-extensions = {version = ">=4.2", markers = "python_version < \"3.13\""}
 
 [[package]]
 name = "annotated-types"
@@ -144,13 +145,13 @@ files = [
 
 [[package]]
 name = "api-client-generator"
-version = "1.7.1.dev17+7d759fb"
+version = "1.7.1.dev18+b820ba4"
 description = ""
 optional = false
-python-versions = ">=3.14,<4"
+python-versions = ">=3.12,<4"
 groups = ["main"]
 files = [
-    {file = "api_client_generator-1.7.1.dev17+7d759fb-py3-none-any.whl", hash = "sha256:1d69fed8ffce0829c05c463c837539c7aa44d40df58750395e86c90ff2a1f7f6"},
+    {file = "api_client_generator-1.7.1.dev18+b820ba4-py3-none-any.whl", hash = "sha256:670beaa0a559b1701ceb8f32fe5cb8a58352bc87ea6b99679127b93dc0f8fd52"},
 ]
 
 [package.dependencies]
@@ -1837,5 +1838,5 @@ propcache = ">=0.2.1"
 
 [metadata]
 lock-version = "2.1"
-python-versions = "^3.14"
-content-hash = "d527709c47593e368807a6d575bf60b18be4cc5bed081be0056dd122faafcf0b"
+python-versions = ">=3.12,<4"
+content-hash = "1898f5214594b373d435da65a11a57e798ec656182e6f772c9678f20a7e00d0d"

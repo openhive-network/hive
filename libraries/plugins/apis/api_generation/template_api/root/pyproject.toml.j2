@@ -36,7 +36,7 @@ url = "https://gitlab.syncad.com/api/v4/projects/434/packages/pypi/simple"
 priority = "supplemental"
 
 [tool.poetry.dependencies]
-python = "^3.12"
+python = ">=3.12,<4"
 hiveio-beekeepy = "{{ api_generation_pyproject.tool.poetry.dependencies['hiveio-beekeepy'] }}"
 
 [tool.poetry-dynamic-versioning]
