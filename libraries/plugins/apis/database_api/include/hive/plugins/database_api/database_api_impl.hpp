@@ -209,8 +209,9 @@ class database_api_impl
     }
 
     chain::database& _db;
+    appbase::application& _app;
 
-    std::shared_ptr< metadata::metadata_api > _metadata_api;
+    std::shared_ptr< metadata::metadata_api > get_metadata_api() const;
 };
 
 // Helper function for proposal status - used by api_proposal_object constructor and content filtering

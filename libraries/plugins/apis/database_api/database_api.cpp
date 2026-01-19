@@ -48,7 +48,17 @@ database_api::database_api( appbase::application& app )
 database_api::~database_api() {}
 
 database_api_impl::database_api_impl( appbase::application& app )
-  : _db( app.get_plugin< hive::plugins::chain::chain_plugin >().db() ) {}
+  : _db( app.get_plugin< hive::plugins::chain::chain_plugin >().db() ),
+    _app( app )
+{}
+
+std::shared_ptr< metadata::metadata_api > database_api_impl::get_metadata_api() const
+{
+  auto* metadata_api_plugin = _app.find_plugin< hive::plugins::metadata::metadata_api_plugin >();
+  if( metadata_api_plugin != nullptr )
+    return metadata_api_plugin->api;
+  return nullptr;
+}
 
 database_api_impl::~database_api_impl() {}
 
