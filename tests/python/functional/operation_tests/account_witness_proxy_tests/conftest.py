@@ -9,6 +9,7 @@ from hive_local_tools.functional.python.operation import Account, Proposal
 
 from .block_log.generate_block_log import WITNESSES
 
+
 @pytest.fixture()
 def node() -> tt.InitNode:
     node = tt.InitNode()
@@ -26,6 +27,8 @@ def node() -> tt.InitNode:
         time_control=tt.StartTimeControl(start_time="head_block_time"),
         replay_from=block_log,
         alternate_chain_specs=tt.AlternateChainSpecs.parse_file(block_log_directory),
+        timeout=60.0,
+        max_retries=3,
     )
     return node
 
