@@ -74,10 +74,9 @@ namespace hive { namespace protocol {
         collateralized_convert_operation, // 48
         recurrent_transfer_operation // 49
 
-#ifndef HIVE_PROTOCOL_SKIP_VOPS
+#ifdef HIVE_ENABLE_SMT
         ,
 
-#ifdef HIVE_ENABLE_SMT
         /// SMT operations
         claim_reward_balance2_operation, // last_pre_smt + 1
 
@@ -86,8 +85,11 @@ namespace hive { namespace protocol {
         smt_set_setup_parameters_operation, // last_pre_smt + 4
         smt_set_runtime_parameters_operation, // last_pre_smt + 5
         smt_create_operation, // last_pre_smt + 5
-        smt_contribute_operation, // last_pre_smt + 6
+        smt_contribute_operation // last_pre_smt + 6
 #endif
+
+#ifndef HIVE_PROTOCOL_SKIP_VOPS
+        ,
 
         /// virtual operations below this point
         fill_convert_request_operation, // last_regular + 1
