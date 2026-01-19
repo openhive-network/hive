@@ -1776,9 +1776,9 @@ BOOST_AUTO_TEST_CASE( artificial_1_on_power_down )
     // 'alice' and 'bob' have 1 in vesting withdraw rate, but they are actually performing power down
     // it means they can't change rate to 1, because it is already 1
     HIVE_REQUIRE_ASSERT( withdraw_vesting( "alice", asset( 1, VESTS_SYMBOL ), alice_private_key ),
-      "account_assets.get_vesting_withdraw_rate() != new_vesting_withdraw_rate || !account_time.has_active_power_down()" );
+      "account_assets.get_vesting_withdraw_rate() != new_vesting_withdraw_rate" );
     HIVE_REQUIRE_ASSERT( withdraw_vesting( "bob", asset( 1, VESTS_SYMBOL ), bob_private_key ),
-      "account_assets.get_vesting_withdraw_rate() != new_vesting_withdraw_rate || !account_time.has_active_power_down()" );
+      "account_assets.get_vesting_withdraw_rate() != new_vesting_withdraw_rate" );
     withdraw_vesting( "alice", asset( 0, VESTS_SYMBOL ), alice_private_key );
     withdraw_vesting( "bob", asset( 0, VESTS_SYMBOL ), bob_private_key );
     // 'carol' does not have 1 as power down rate, so she can change it to 1 or cancel power down
