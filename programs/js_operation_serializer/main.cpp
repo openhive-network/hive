@@ -214,8 +214,8 @@ struct serialize_type_visitor
 class serialize_member_visitor
 {
   public:
-    template<typename Member, class Class>
-    void operator()( Member Class::*member, const char* name )const
+    template<typename Member, class Class, Member (Class::*member)>
+    void operator()( const char* name )const
     {
       std::cout << "    " << name <<": " << js_name<Member>::name() <<"\n";
     }
@@ -338,8 +338,8 @@ struct serializer< fc::static_variant<>, false >
 class register_member_visitor
 {
   public:
-    template<typename Member, class Class>
-    void operator()( Member Class::*member, const char* name )const
+    template<typename Member, class Class, Member (Class::*member)>
+    void operator()( const char* name )const
     {
       serializer<Member>::init();
     }

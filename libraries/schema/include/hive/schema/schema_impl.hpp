@@ -19,8 +19,8 @@ struct get_deps_member_visitor
 
   typedef void result_type;
 
-  template<typename Member, class Class>
-  void operator()( Member Class::*member, const char* name )const
+  template<typename Member, class Class, Member (Class::*member)>
+  void operator()( const char* name )const
   {
     _deps.push_back( get_schema_for_type<Member>() );
   }
@@ -34,8 +34,8 @@ struct get_str_schema_class_member_visitor
 
   typedef void result_type;
 
-  template<typename Member, class Class>
-  void operator()( Member Class::*member, const char* name )const
+  template<typename Member, class Class, Member (Class::*member)>
+  void operator()( const char* name )const
   {
     std::shared_ptr< abstract_schema > member_schema = get_schema_for_type<Member>();
     _members.emplace_back();
