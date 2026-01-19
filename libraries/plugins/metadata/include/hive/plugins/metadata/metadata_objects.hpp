@@ -1,6 +1,5 @@
 #pragma once
 #include <hive/chain/hive_fwd.hpp>
-#include <hive/plugins/metadata/metadata_objects.hpp>
 
 #include <hive/chain/hive_object_types.hpp>
 
