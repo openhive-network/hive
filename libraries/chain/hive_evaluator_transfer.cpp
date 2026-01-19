@@ -356,7 +356,7 @@ void withdraw_vesting_evaluator::do_apply( const withdraw_vesting_operation& o )
   if( o_vesting_shares.amount == 0 )
   {
     if( _db.has_hardfork( HIVE_HARDFORK_1_28_FIX_CANCEL_POWER_DOWN ) )
-      FC_ASSERT( account.has_active_power_down(), "This operation would not change the vesting withdraw rate." );
+      FC_ASSERT( account_time.has_active_power_down(), "This operation would not change the vesting withdraw rate." );
 
     _db.modify( account_assets, [&]( assets_object& a )
     {
@@ -375,27 +375,27 @@ void withdraw_vesting_evaluator::do_apply( const withdraw_vesting_operation& o )
     if( _db.has_hardfork( HIVE_HARDFORK_0_16__551 ) )
       vesting_withdraw_intervals = HIVE_VESTING_WITHDRAW_INTERVALS; /// 13 weeks = 1 quarter of a year
 
+    VEST_asset new_vesting_withdraw_rate = o_vesting_shares / vesting_withdraw_intervals;
+
+    if( new_vesting_withdraw_rate.amount == 0 )
+      new_vesting_withdraw_rate.amount = 1;
+
+    if( _db.has_hardfork( HIVE_HARDFORK_0_21 ) && new_vesting_withdraw_rate.amount * vesting_withdraw_intervals < o_vesting_shares.amount )
+    {
+      new_vesting_withdraw_rate.amount += 1;
+    }
+
+    //TODO: fix after HF28 along with problem in perform_vesting_share_split()
+    //new condition allows change of power down rate to 1 even for accounts with artificial 1 already there;
+    //after HF28, once we remove artificial 1 (will be back to proper 0), original check from HF5 will
+    //be sufficient again, since account.has_active_power_down() <=> (account.vesting_withdraw_rate == 0)
+    if( _db.has_hardfork( HIVE_HARDFORK_1_28_FIX_CANCEL_POWER_DOWN ) )
+      FC_ASSERT( account_assets.get_vesting_withdraw_rate() != new_vesting_withdraw_rate || !account_time.has_active_power_down(), "This operation would not change the vesting withdraw rate." );
+    else if( _db.has_hardfork( HIVE_HARDFORK_0_5__57 ) )
+      FC_ASSERT( account_assets.get_vesting_withdraw_rate() != new_vesting_withdraw_rate, "This operation would not change the vesting withdraw rate." );
+
     _db.modify( account_assets, [&]( assets_object& a )
     {
-      VEST_asset new_vesting_withdraw_rate = o_vesting_shares / vesting_withdraw_intervals;
-
-      if( new_vesting_withdraw_rate.amount == 0 )
-        new_vesting_withdraw_rate.amount = 1;
-
-      if( _db.has_hardfork( HIVE_HARDFORK_0_21 ) && new_vesting_withdraw_rate.amount * vesting_withdraw_intervals < o_vesting_shares.amount )
-      {
-        new_vesting_withdraw_rate.amount += 1;
-      }
-
-      //TODO: fix after HF28 along with problem in perform_vesting_share_split()
-      //new condition allows change of power down rate to 1 even for accounts with artificial 1 already there;
-      //after HF28, once we remove artificial 1 (will be back to proper 0), original check from HF5 will
-      //be sufficient again, since account.has_active_power_down() <=> (account.vesting_withdraw_rate == 0)
-      if( _db.has_hardfork( HIVE_HARDFORK_1_28_FIX_CANCEL_POWER_DOWN ) )
-        FC_ASSERT( account_assets.get_vesting_withdraw_rate() != new_vesting_withdraw_rate || !account_time.has_active_power_down(), "This operation would not change the vesting withdraw rate." );
-      else if( _db.has_hardfork( HIVE_HARDFORK_0_5__57 ) )
-        FC_ASSERT( account_assets.get_vesting_withdraw_rate() != new_vesting_withdraw_rate, "This operation would not change the vesting withdraw rate." );
-
       a.set_vesting_withdraw_rate( new_vesting_withdraw_rate );
       a.set_to_withdraw( o_vesting_shares );
       a.set_withdrawn( VEST_asset( 0 ) );

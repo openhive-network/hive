@@ -634,8 +634,10 @@ void database::perform_vesting_share_split( uint32_t magnitude )
         a.set_withdrawn( a.get_withdrawn() * magnitude );
         a.set_to_withdraw( a.get_to_withdraw() * magnitude );
         a.set_vesting_withdraw_rate( VEST_asset( a.get_to_withdraw().amount / HIVE_VESTING_WITHDRAW_INTERVALS_PRE_HF_16 ) );
-        FC_ASSERT( a.vesting_withdraw_rate.amount > 0 || a.to_withdraw.amount == 0, "Unexpected truncation to zero." );
-
+        FC_ASSERT( a.get_vesting_withdraw_rate().amount > 0 || a.get_to_withdraw().amount == 0, "Unexpected truncation to zero." );
+      } );
+      modify( account, [&]( account_object& a )
+      {
         for( uint32_t i = 0; i < HIVE_MAX_PROXY_RECURSION_DEPTH; ++i )
           a.get_proxied_vsf_votes()[i] *= magnitude;
       } );
