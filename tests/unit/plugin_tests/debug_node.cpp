@@ -1,4 +1,4 @@
-#if defined IS_TEST_NET && !defined ENABLE_STD_ALLOCATOR
+#if defined IS_TEST_NET
 #include <boost/test/unit_test.hpp>
 
 #include "../db_fixture/clean_database_fixture.hpp"

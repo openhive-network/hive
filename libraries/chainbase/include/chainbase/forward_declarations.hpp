@@ -13,12 +13,10 @@ namespace fc {
 
 namespace raw {
 
-#ifndef ENABLE_STD_ALLOCATOR
 template<typename Stream>
 inline void pack( Stream& s, const chainbase::shared_string& ss );
 template<typename Stream>
 inline void unpack( Stream& s, chainbase::shared_string& ss, uint32_t depth = 0, bool limit_is_disabled = false );
-#endif
 
 template<typename Stream, typename E, typename A>
 void pack( Stream& s, const boost::interprocess::deque< E, A >& value );
