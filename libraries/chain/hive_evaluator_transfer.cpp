@@ -80,25 +80,27 @@ void escrow_transfer_evaluator::do_apply( const escrow_transfer_operation& o )
 {
   try
   {
-    const auto& from_account = _db.get_account(o.from);
-    _db.get_account(o.to);
-    _db.get_account(o.agent);
+    const auto& from_account = _db.get_account( o.from );
+    const auto& to_account = _db.get_account( o.to );
+    const auto& agent_account = _db.get_account( o.agent );
 
     FC_ASSERT( o.ratification_deadline > _db.head_block_time(), "The escrow ratification deadline must be after head block time." );
     FC_ASSERT( o.escrow_expiration > _db.head_block_time(), "The escrow expiration must be after head block time." );
     FC_ASSERT( from_account.pending_escrow_transfers < HIVE_MAX_PENDING_TRANSFERS, "Account already has the maximum number of open escrow transfers." );
 
-    asset hive_spent = o.hive_amount;
-    asset hbd_spent = o.hbd_amount;
+    HIVE_asset o_hive_amount = o.get_hive_amount();
+    HBD_asset o_hbd_amount = o.get_hbd_amount();
+    HIVE_asset hive_spent = o_hive_amount;
+    HBD_asset hbd_spent = o_hbd_amount;
     if( o.fee.symbol == HIVE_SYMBOL )
-      hive_spent += o.fee;
+      hive_spent += HIVE_asset( o.fee );
     else
-      hbd_spent += o.fee;
+      hbd_spent += HBD_asset( o.fee );
 
     _db.adjust_balance( from_account, -hive_spent );
     _db.adjust_balance( from_account, -hbd_spent );
 
-    _db.create<escrow_object>( o.from, o.to, o.agent, o.hive_amount, o.hbd_amount, o.fee, o.ratification_deadline, o.escrow_expiration, o.escrow_id );
+    _db.create<escrow_object>( from_account, to_account, agent_account, o_hive_amount, o_hbd_amount, o.fee, o.ratification_deadline, o.escrow_expiration, o.escrow_id );
     _db.modify( from_account, []( account_object& a )
     {
       a.pending_escrow_transfers++;
@@ -204,8 +206,11 @@ void escrow_release_evaluator::do_apply( const escrow_release_operation& o )
     const auto& from_account = _db.get_account( o.from );
 
     const auto& e = _db.get_escrow( o.from, o.escrow_id );
-    FC_ASSERT( e.get_hive_balance() >= o.hive_amount, "Release amount exceeds escrow balance. Amount: ${a}, Balance: ${b}", ("a", o.hive_amount)("b", e.get_hive_balance()) );
-    FC_ASSERT( e.get_hbd_balance() >= o.hbd_amount, "Release amount exceeds escrow balance. Amount: ${a}, Balance: ${b}", ("a", o.hbd_amount)("b", e.get_hbd_balance()) );
+    HIVE_asset o_hive_amount = o.get_hive_amount();
+    HBD_asset o_hbd_amount = o.get_hbd_amount();
+
+    FC_ASSERT( e.get_hive_balance() >= o_hive_amount, "Release amount exceeds escrow balance. Amount: ${a}, Balance: ${b}", ("a", o_hive_amount)("b", e.get_hive_balance()) );
+    FC_ASSERT( e.get_hbd_balance() >= o_hbd_amount, "Release amount exceeds escrow balance. Amount: ${a}, Balance: ${b}", ("a", o_hbd_amount)("b", e.get_hbd_balance()) );
     FC_ASSERT( e.to == o.to && "release", "Operation 'to' (${o}) does not match escrow 'to' (${e}).", ("o", o.to)("e", e.to) );
     FC_ASSERT( e.agent == o.agent && "release", "Operation 'agent' (${a}) does not match escrow 'agent' (${e}).", ("o", o.agent)("e", e.agent) );
     FC_ASSERT( o.receiver == e.from || o.receiver == e.to, "Funds must be released to 'from' (${f}) or 'to' (${t})", ("f", e.from)("t", e.to) );
@@ -235,14 +240,14 @@ void escrow_release_evaluator::do_apply( const escrow_release_operation& o )
     }
     // If escrow expires and there is no dispute, either party can release funds to either party.
 
-    _db.adjust_balance( o.receiver, o.hive_amount );
-    _db.adjust_balance( o.receiver, o.hbd_amount );
+    _db.adjust_balance( o.receiver, o_hive_amount );
+    _db.adjust_balance( o.receiver, o_hbd_amount );
 
     _db.modify( e, [&]( escrow_object& esc )
     {
-      esc.hive_balance -= o.hive_amount;
-      esc.hbd_balance -= o.hbd_amount;
-    });
+      esc.hive_balance -= o_hive_amount;
+      esc.hbd_balance -= o_hbd_amount;
+    } );
 
     if( e.get_hive_balance().amount == 0 && e.get_hbd_balance().amount == 0 )
     {
