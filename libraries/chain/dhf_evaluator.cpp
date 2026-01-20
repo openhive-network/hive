@@ -38,18 +38,18 @@ void create_proposal_evaluator::do_apply( const create_proposal_operation& o )
         since passed date should be adjusted by potential transaction execution delay (i.e. 3 sec
         as a time for processed next block).
     */
-    FC_ASSERT(o.end_date > _db.head_block_time(), "Can't create inactive proposals...");
+    FC_ASSERT( o.end_date > _db.head_block_time(), "Can't create inactive proposals..." );
 
-    asset fee_hbd( HIVE_TREASURY_FEE, HBD_SYMBOL );
+    HBD_asset fee_hbd( HIVE_TREASURY_FEE );
 
-    if(_db.has_hardfork(HIVE_HARDFORK_1_24))
+    if( _db.has_hardfork(HIVE_HARDFORK_1_24) )
     {
       uint32_t proposal_run_time = o.end_date.sec_since_epoch() - o.start_date.sec_since_epoch();
 
-      if(proposal_run_time > HIVE_PROPOSAL_FEE_INCREASE_DAYS_SEC)
+      if( proposal_run_time > HIVE_PROPOSAL_FEE_INCREASE_DAYS_SEC )
       {
         uint32_t extra_days = (proposal_run_time / HIVE_ONE_DAY_SECONDS) - HIVE_PROPOSAL_FEE_INCREASE_DAYS;
-        fee_hbd += asset(HIVE_PROPOSAL_FEE_INCREASE_AMOUNT * extra_days, HBD_SYMBOL);
+        fee_hbd += HBD_asset( HIVE_PROPOSAL_FEE_INCREASE_AMOUNT * extra_days );
       }
     }
 
@@ -82,16 +82,16 @@ void create_proposal_evaluator::do_apply( const create_proposal_operation& o )
       proposal.start_date = o.start_date;
       proposal.end_date = o.end_date;
 
-      proposal.daily_pay = o.daily_pay;
+      proposal.daily_pay = o.get_daily_pay();
 
       proposal.subject = o.subject.c_str();
 
       proposal.permlink = o.permlink.c_str();
-    });
+    } );
 
     _db.adjust_balance( owner_account, -fee_hbd );
     /// Fee shall be paid to the treasury
-    _db.adjust_balance(treasury_account, fee_hbd );
+    _db.adjust_balance( treasury_account, fee_hbd );
 
     push_virtual_operation( _db,  proposal_fee_operation( o.creator, treasury_account.get_name(), proposal_id, fee_hbd ) );
   }
@@ -115,31 +115,37 @@ void update_proposal_evaluator::do_apply( const update_proposal_operation& o )
       FC_ASSERT(commentObject && "Proposal permlink must point to the article posted by creator or the receiver");
     }
 
-    FC_ASSERT(o.daily_pay <= proposal.daily_pay, "You cannot increase the daily pay");
+    HBD_asset o_daily_pay( o.daily_pay );
+    FC_ASSERT( o_daily_pay <= proposal.daily_pay, "You cannot increase the daily pay" );
 
     const update_proposal_end_date* ed = nullptr;
-    if (_db.has_hardfork(HIVE_HARDFORK_1_25)) {
-      FC_ASSERT( o.extensions.size() < 2, "Cannot have more than 1 extension");
+    if( _db.has_hardfork( HIVE_HARDFORK_1_25 ) )
+    {
+      FC_ASSERT( o.extensions.size() < 2, "Cannot have more than 1 extension" );
       // NOTE: This assumes there is only one extension and it's of type proposal_end_date, if you add more, update this code
-      if (o.extensions.size() == 1) {
+      if( o.extensions.size() == 1 )
+      {
         ed = &(o.extensions.begin()->get<update_proposal_end_date>());
-        FC_ASSERT(ed->end_date <= proposal.end_date, "You cannot increase the end date of the proposal");
-        FC_ASSERT(ed->end_date > proposal.start_date, "The new end date must be after the start date");
+        FC_ASSERT( ed->end_date <= proposal.end_date, "You cannot increase the end date of the proposal" );
+        FC_ASSERT( ed->end_date > proposal.start_date, "The new end date must be after the start date" );
       }
-    } else {
-      FC_ASSERT( o.extensions.empty() , "Cannot set extensions");
+    }
+    else
+    {
+      FC_ASSERT( o.extensions.empty() , "Cannot set extensions" );
     }
 
     _db.modify( proposal, [&]( proposal_object& p )
     {
-      p.daily_pay = o.daily_pay;
+      p.daily_pay = o_daily_pay;
       p.subject = o.subject.c_str();
       p.permlink = o.permlink.c_str();
 
-      if (_db.has_hardfork(HIVE_HARDFORK_1_25) && ed != nullptr) {
-          p.end_date = ed->end_date;
+      if( _db.has_hardfork(HIVE_HARDFORK_1_25) && ed != nullptr )
+      {
+        p.end_date = ed->end_date;
       }
-    });
+    } );
   }
   FC_CAPTURE_AND_RETHROW( (o) )
 }
@@ -156,8 +162,7 @@ void update_proposal_votes_evaluator::do_apply( const update_proposal_votes_oper
 
     const auto& voter = _db.get_account(o.voter);
 
-    if( _db.is_in_control() || _db.has_hardfork( HIVE_HARDFORK_1_28 ) )
-      FC_ASSERT( voter.can_vote && "Voter declined voting rights, therefore casting votes is forbidden." );
+    FC_ASSERT( voter.can_vote && "Voter declined voting rights, therefore casting votes is forbidden." );
 
     _db.modify( voter, [&](account_object& a) { a.update_governance_vote_expiration_ts(_db.head_block_time()); });
 
@@ -167,12 +172,12 @@ void update_proposal_votes_evaluator::do_apply( const update_proposal_votes_oper
       auto found_id = pidx.find( pid );
       if( found_id == pidx.end() || found_id->removed )
       {
-        if( _db.is_in_control() || _db.has_hardfork( HIVE_HARDFORK_1_28_DONT_TRY_VOTE_FOR_NONEXISTENT_PROPOSAL ) )
+        if( _db.has_hardfork( HIVE_HARDFORK_1_28_DONT_TRY_VOTE_FOR_NONEXISTENT_PROPOSAL ) ) // 9b128fbcbc1d0d2758853240f46989a5a221905e unvoted removed proposal
           FC_ASSERT( false && "proposal not found", "Can't vote for nonexistent proposal with id: ${pid}",(pid) );
         continue;
       }
 
-      if( _db.has_hardfork( HIVE_HARDFORK_1_25 ) )
+      if( _db.has_hardfork( HIVE_HARDFORK_1_25 ) ) // 0119bd87d863cebca3a3d86fde2aa2ee42d8013f votes on proposal that expired previous day
       {
         /*
           In the future is possible a situation, when it will be thousands proposals and some account will vote on each proposal.

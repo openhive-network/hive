@@ -136,17 +136,17 @@ void dhf_processor::sort_by_votes( t_proposals& proposals )
   } );
 }
 
-asset dhf_processor::get_treasury_fund()
+const HBD_asset& dhf_processor::get_treasury_fund() const
 {
   auto& treasury_account = db.get_treasury();
 
   return treasury_account.get_hbd_balance();
 }
 
-asset dhf_processor::calculate_maintenance_budget( const time_point_sec& head_time )
+HBD_asset dhf_processor::calculate_maintenance_budget( const time_point_sec& head_time )
 {
   //Get funds from 'treasury' account ( treasury_fund )
-  asset treasury_fund = get_treasury_fund();
+  HBD_asset treasury_fund = get_treasury_fund();
 
   //Calculate budget for given maintenance period
   uint32_t passed_time_seconds = ( head_time - db.get_dynamic_global_properties().last_budget_time ).to_seconds();
@@ -156,10 +156,10 @@ asset dhf_processor::calculate_maintenance_budget( const time_point_sec& head_ti
 
   daily_budget_limit = fc::uint128_to_uint64( ( uint128_t( passed_time_seconds ) * daily_budget_limit ) / daily_seconds );
 
-  return asset( daily_budget_limit, treasury_fund.symbol );
+  return HBD_asset( daily_budget_limit );
 }
 
-void dhf_processor::transfer_payments( const time_point_sec& head_time, asset& maintenance_budget_limit, const t_proposals& proposals )
+void dhf_processor::transfer_payments( const time_point_sec& head_time, HBD_asset& maintenance_budget_limit, const t_proposals& proposals )
 {
   if( maintenance_budget_limit.amount.value == 0 )
     return;
@@ -188,15 +188,15 @@ void dhf_processor::transfer_payments( const time_point_sec& head_time, asset& m
     if( _item.total_votes == 0 )
       break;
 
-    asset period_pay;
+    HBD_asset period_pay;
     if( db.has_hardfork(HIVE_HARDFORK_1_25) )
     {
-      period_pay = asset((( passed_time_seconds * _item.daily_pay.amount.value ) / daily_seconds ), _item.daily_pay.symbol );
+      period_pay = HBD_asset( ( ( passed_time_seconds * _item.daily_pay.amount.value ) / daily_seconds ) );
     }
     else
     {
       uint128_t ratio = ( passed_time_seconds * HIVE_100_PERCENT ) / daily_seconds;
-      period_pay = asset( fc::uint128_to_uint64( ratio * _item.daily_pay.amount.value ) / HIVE_100_PERCENT, _item.daily_pay.symbol );
+      period_pay = HBD_asset( fc::uint128_to_uint64( ratio * _item.daily_pay.amount.value ) / HIVE_100_PERCENT );
     }
 
     if( period_pay >= maintenance_budget_limit )
@@ -274,7 +274,7 @@ void dhf_processor::make_payments( const block_notification& note )
   sort_by_votes( active_proposals );
 
   //Calculate budget for given maintenance period
-  asset maintenance_budget_limit = calculate_maintenance_budget( head_time );
+  HBD_asset maintenance_budget_limit = calculate_maintenance_budget( head_time );
 
   //Execute transfer for every active proposal
   transfer_payments( head_time, maintenance_budget_limit, active_proposals );

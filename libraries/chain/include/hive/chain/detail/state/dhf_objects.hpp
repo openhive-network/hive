@@ -9,6 +9,7 @@
 namespace hive { namespace chain {
 
 using hive::protocol::asset;
+using hive::protocol::HBD_asset;
 
 class proposal_object : public object< proposal_object_type, proposal_object, std::true_type >
 {
@@ -32,7 +33,7 @@ class proposal_object : public object< proposal_object_type, proposal_object, st
     time_point_sec end_date;
 
     //daily_pay (the amount of HBD that is being requested to be paid out daily)
-    asset daily_pay;
+    HBD_asset daily_pay;
 
     //subject (a very brief description or title for the proposal)
     shared_string subject;
