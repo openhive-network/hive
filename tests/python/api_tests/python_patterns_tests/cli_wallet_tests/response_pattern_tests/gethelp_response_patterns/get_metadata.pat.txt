@@ -1,0 +1,5 @@
+
+Retrieve metadata for the given account.
+
+Parameters:
+    account: The account (type: fc::variant)
