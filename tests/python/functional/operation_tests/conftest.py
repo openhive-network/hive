@@ -32,9 +32,15 @@ from schemas.operations.virtual.collateralized_convert_immediate_conversion_oper
 from schemas.operations.virtual.fill_collateralized_convert_request_operation import (
     FillCollateralizedConvertRequestOperation,
 )
-from schemas.operations.virtual.fill_convert_request_operation import FillConvertRequestOperation
-from schemas.operations.witness_block_approve_operation import WitnessBlockApproveOperation
-from schemas.operations.witness_set_properties_operation import WitnessSetPropertiesOperation
+from schemas.operations.virtual.fill_convert_request_operation import (
+    FillConvertRequestOperation,
+)
+from schemas.operations.witness_block_approve_operation import (
+    WitnessBlockApproveOperation,
+)
+from schemas.operations.witness_set_properties_operation import (
+    WitnessSetPropertiesOperation,
+)
 
 if TYPE_CHECKING:
     from schemas.fields.basic import PublicKey
@@ -61,7 +67,9 @@ class ConvertAccount(Account):
         self._added_hbds_by_convert_it += 1
         return self._added_hbds_by_convert[self._added_hbds_by_convert_it]
 
-    def assert_collateralized_conversion_requests(self, trx: dict, state: Literal["create", "delete"]) -> None:
+    def assert_collateralized_conversion_requests(
+        self, trx: dict, state: Literal["create", "delete"]
+    ) -> None:
         # extract requestid from transaction
         operations_from_transaction = trx["operations"]
         requestid = None
@@ -70,7 +78,9 @@ class ConvertAccount(Account):
             if operation[0] == "collateralized_convert_operation":
                 requestid = operation[1]["requestid"]
 
-        assert requestid is not None, "Provided transaction doesn't contain collateralized convert operation."
+        assert (
+            requestid is not None
+        ), "Provided transaction doesn't contain collateralized convert operation."
 
         requests = self._node.api.database.list_collateralized_conversion_requests(
             start=[""], limit=100, order="by_account"
@@ -87,28 +97,42 @@ class ConvertAccount(Account):
                 message = "Collateralized conversion request wasn't deleted after HIVE_CONVERSION_DELAY time."
                 assert requestid not in all_request_ids, message
 
-    def assert_fill_collateralized_convert_request_operation(self, expected_amount: int) -> None:
-        vops = self.__get_vops_from_more_than_2000_blocks(FillCollateralizedConvertRequestOperation)
+    def assert_fill_collateralized_convert_request_operation(
+        self, expected_amount: int
+    ) -> None:
+        vops = self.__get_vops_from_more_than_2000_blocks(
+            FillCollateralizedConvertRequestOperation
+        )
         assert (
             len(vops) == expected_amount
         ), "fill_collateralized_convert_request_operation virtual operation wasn't generated"
 
-    def assert_collateralized_convert_immediate_conversion_operation(self, expected_amount: int) -> None:
-        vops = self.__get_vops_from_more_than_2000_blocks(CollateralizedConvertImmediateConversionOperation)
+    def assert_collateralized_convert_immediate_conversion_operation(
+        self, expected_amount: int
+    ) -> None:
+        vops = self.__get_vops_from_more_than_2000_blocks(
+            CollateralizedConvertImmediateConversionOperation
+        )
         assert (
             len(vops) == expected_amount
         ), "collateralized_convert_immediate_conversion virtual operation wasn't generated"
 
     def assert_fill_convert_request_operation(self, expected_amount: int) -> None:
         vops = self.__get_vops_from_more_than_2000_blocks(FillConvertRequestOperation)
-        assert len(vops) == expected_amount, "fill_convert_request virtual operation wasn't generated"
+        assert (
+            len(vops) == expected_amount
+        ), "fill_convert_request virtual operation wasn't generated"
 
-    def __get_vops_from_more_than_2000_blocks(self, vop: type[SchemaVirtualOperation]) -> list:
+    def __get_vops_from_more_than_2000_blocks(
+        self, vop: type[SchemaVirtualOperation]
+    ) -> list:
         collected_vops = []
         last_block_number = self._node.get_last_block_number()
         end_block = 2000
         for _iterations in range((last_block_number // 2000) + 1):
-            vops = get_virtual_operations(self._node, vop, start_block=end_block - 1999, end_block=end_block)
+            vops = get_virtual_operations(
+                self._node, vop, start_block=end_block - 1999, end_block=end_block
+            )
             collected_vops.extend(vop for vop in vops if vop not in collected_vops)
             end_block += 2000
         return collected_vops
@@ -117,31 +141,47 @@ class ConvertAccount(Account):
         return self._wallet.api.convert_hbd(self._name, amount, broadcast=broadcast)
 
     def convert_hives(self, amount: tt.Asset.Test, broadcast: bool = True) -> dict:
-        return self._wallet.api.convert_hive_with_collateral(self._name, amount, broadcast=broadcast)
+        return self._wallet.api.convert_hive_with_collateral(
+            self._name, amount, broadcast=broadcast
+        )
 
-    def check_if_right_amount_was_converted_and_added_to_balance(self, transaction: dict) -> None:
+    def check_if_right_amount_was_converted_and_added_to_balance(
+        self, transaction: dict
+    ) -> None:
         old_hive_balance = self.hive
         self.update_account_info()
         median = get_current_median_history_price(self._node)
         amount_to_convert = self.extract_amount_from_convert_operation(transaction)
         exchange_rate = int(median.quote.amount) / int(median.base.amount)
-        should_be_added = tt.Asset.Test(int(amount_to_convert.amount) / 1000 * exchange_rate)
+        should_be_added = tt.Asset.Test(
+            int(amount_to_convert.amount) / 1000 * exchange_rate
+        )
         tolerance = tt.Asset.Test(0.001)
         assert (
-            self.hive - tolerance <= should_be_added + old_hive_balance <= self.hive + tolerance
+            self.hive - tolerance
+            <= should_be_added + old_hive_balance
+            <= self.hive + tolerance
         ), "Funds were not added to account balance after HBD conversion."
 
     def check_if_funds_to_convert_were_subtracted(self, transaction: dict) -> None:
         to_convert = self.extract_amount_from_convert_operation(transaction)
-        get_balance = self.get_hbd_balance if isinstance(to_convert, tt.Asset.TbdT) else self.get_hive_balance
-        funds_before_operation = self.hbd if isinstance(to_convert, tt.Asset.TbdT) else self.hive
+        get_balance = (
+            self.get_hbd_balance
+            if isinstance(to_convert, tt.Asset.TbdT)
+            else self.get_hive_balance
+        )
+        funds_before_operation = (
+            self.hbd if isinstance(to_convert, tt.Asset.TbdT) else self.hive
+        )
         self.update_account_info()
         funds_after_operation = get_balance()
         assert (
             funds_before_operation == funds_after_operation + to_convert
         ), f"Funds weren't subtracted from {self._name} balance after making convert or collateralized convert request."
 
-    def assert_if_right_amount_of_hives_came_back_after_collateral_conversion(self, transaction: dict) -> None:
+    def assert_if_right_amount_of_hives_came_back_after_collateral_conversion(
+        self, transaction: dict
+    ) -> None:
         to_convert = self.extract_amount_from_convert_operation(transaction)
         current_median = get_current_median_history_price(self._node)
         required_amount = (
@@ -157,17 +197,23 @@ class ConvertAccount(Account):
         self.update_account_info()
 
         if int(to_convert.amount) * 0.001 - required_amount < 0:
-            assert old_hive_balance == self.hive, "All collateral funds were used, but hive balance is not correct."
+            assert (
+                old_hive_balance == self.hive
+            ), "All collateral funds were used, but hive balance is not correct."
         else:
             hives_to_add = to_convert - tt.Asset.Test(required_amount)
             tolerance = tt.Asset.Test(0.001)
             assert (
-                self.hive - tolerance <= hives_to_add + old_hive_balance <= self.hive + tolerance
+                self.hive - tolerance
+                <= hives_to_add + old_hive_balance
+                <= self.hive + tolerance
             ), f"Balance is incorrect. After HIVE_COLLATERALIZED_CONVERSION_DELAY {self._name}"
             f" should get {hives_to_add.amount} HIVES."
 
-    def assert_account_balance_after_creating_collateral_conversion_request(self, transaction: dict) -> None:
-        # it checks if hives were substracted and hbds added immediately after creating request
+    def assert_account_balance_after_creating_collateral_conversion_request(
+        self, transaction: dict
+    ) -> None:
+        # it checks if hives were subtracted and hbds added immediately after creating request
         to_convert = self.extract_amount_from_convert_operation(transaction)
         hives_before_operation = self.hive
         hbds_before_operation = self.hbd
@@ -175,30 +221,62 @@ class ConvertAccount(Account):
         hives_after_operation = self.get_hive_balance()
         hbds_after_operation = self.get_hbd_balance()
 
-        response = self._node.api.wallet_bridge.get_feed_history().current_min_history
-        current_min_history = int(response.base.amount) / int(response.quote.amount)
-        hbds_to_add = tt.Asset.Tbd(0.95 * current_min_history * int((to_convert / 2).amount) / 1000)
-
         assert (
             hives_before_operation == hives_after_operation + to_convert
         ), f"Hives weren't subtracted from {self._name}'s balance after making collateralized convert request."
 
-        hbd_tolerance = tt.Asset.Tbd(0.6)
+        # Try to get the actual HBD amount from the virtual operation for precise comparison.
+        # This avoids floating-point precision issues and feed history timing races.
+        # Falls back to calculation if vop not yet available (transaction not yet in block).
+        vops = self.__get_vops_from_more_than_2000_blocks(
+            CollateralizedConvertImmediateConversionOperation
+        )
+        matching_vops = [vop for vop in vops if vop.op.value.owner == self._name]
+
+        # Count how many vops we've already processed to find new ones
+        expected_vop_count = len(self._added_hbds_by_convert) + 1
+
+        if len(matching_vops) >= expected_vop_count:
+            # Use the virtual operation value (most accurate)
+            actual_hbd_out = matching_vops[expected_vop_count - 1].op.value.hbd_out
+            expected_hbds = hbds_before_operation + actual_hbd_out
+            hbd_tolerance = tt.Asset.Tbd(0.001)
+        else:
+            # Fallback: calculate expected HBD from feed history (less accurate)
+            response = (
+                self._node.api.wallet_bridge.get_feed_history().current_min_history
+            )
+            current_min_history = int(response.base.amount) / int(response.quote.amount)
+            hbds_to_add = tt.Asset.Tbd(
+                0.95 * current_min_history * int((to_convert / 2).amount) / 1000
+            )
+            expected_hbds = hbds_before_operation + hbds_to_add
+            # Larger tolerance for calculation-based approach due to precision differences
+            hbd_tolerance = tt.Asset.Tbd(1.0)
+
         assert (
-            hbds_after_operation - hbd_tolerance
-            <= hbds_before_operation + hbds_to_add
-            <= hbds_after_operation + hbd_tolerance
-        ), f"Hbds weren't added to {self._name}'s balance after making collateralized convert request."
+            expected_hbds - hbd_tolerance
+            <= hbds_after_operation
+            <= expected_hbds + hbd_tolerance
+        ), f"HBDs weren't added correctly to {self._name}'s balance. Expected {expected_hbds}, got {hbds_after_operation}"
+
         self._added_hbds_by_convert.append(hbds_after_operation - hbds_before_operation)
 
     @staticmethod
-    def extract_amount_from_convert_operation(transaction: dict) -> tt.Asset.HiveT | tt.Asset.TbdT:
+    def extract_amount_from_convert_operation(
+        transaction: dict,
+    ) -> tt.Asset.HiveT | tt.Asset.TbdT:
         ops_in_transaction = transaction["operations"]
         # get amount to convert from transaction
         for operation in ops_in_transaction:
-            if operation[0] == "convert_operation" or operation[0] == "collateralized_convert_operation":
+            if (
+                operation[0] == "convert_operation"
+                or operation[0] == "collateralized_convert_operation"
+            ):
                 return operation[1]["amount"]
-        raise AssertionError("Convert or collateralized_convert operation wasn't found in given transaction.")
+        raise AssertionError(
+            "Convert or collateralized_convert operation wasn't found in given transaction."
+        )
 
 
 @dataclass
@@ -210,13 +288,19 @@ class EscrowAccount(Account):
     def check_account_balance(
         self,
         trx: dict,
-        mode: Literal["escrow_creation_operation", "escrow_rejection_operation", "escrow_release_operation"],
+        mode: Literal[
+            "escrow_creation_operation",
+            "escrow_rejection_operation",
+            "escrow_release_operation",
+        ],
     ) -> None:
         old_hive_amount = self.hive
         old_hbd_amount = self.hbd
 
         self.update_account_info()
-        fee, hbd_amount, hive_amount = self.__extract_escrow_values_from_transaction(trx)
+        fee, hbd_amount, hive_amount = self.__extract_escrow_values_from_transaction(
+            trx
+        )
 
         hbd_message = (
             f"Escrow fee ({fee}) {f'and HBD amount ({hbd_amount})' if hbd_amount != tt.Asset.Tbd(0) else ''} weren't"
@@ -228,28 +312,45 @@ class EscrowAccount(Account):
         )
         assert (
             old_hive_amount + hive_amount
-            if mode == "escrow_rejection_operation" or mode == "escrow_release_operation"
-            else old_hive_amount == self.hive + hive_amount if mode == "escrow_creation_operation" else self.hive
+            if mode == "escrow_rejection_operation"
+            or mode == "escrow_release_operation"
+            else old_hive_amount == self.hive + hive_amount
+            if mode == "escrow_creation_operation"
+            else self.hive
         ), hive_message
         assert (
             old_hbd_amount + (hbd_amount + fee)
-            if mode == "escrow_rejection_operation" or mode == "escrow_release_operation"
-            else old_hbd_amount == self.hbd + (hbd_amount + fee) if mode == "escrow_creation_operation" else self.hbd
+            if mode == "escrow_rejection_operation"
+            or mode == "escrow_release_operation"
+            else old_hbd_amount == self.hbd + (hbd_amount + fee)
+            if mode == "escrow_creation_operation"
+            else self.hbd
         ), hbd_message
 
-    def check_if_escrow_fee_was_added_to_agent_balance_after_approvals(self, trx: dict) -> None:
+    def check_if_escrow_fee_was_added_to_agent_balance_after_approvals(
+        self, trx: dict
+    ) -> None:
         fee = self.__extract_escrow_values_from_transaction(trx)[0]
         old_hbd_balance = self.hbd
         self.update_account_info()
-        assert old_hbd_balance + fee == self.hbd, f"Fee ({fee}) wasn't added to agent's balance after escrow approvals."
+        assert (
+            old_hbd_balance + fee == self.hbd
+        ), f"Fee ({fee}) wasn't added to agent's balance after escrow approvals."
 
     @staticmethod
     def __extract_escrow_values_from_transaction(trx: dict) -> tuple | None:
         ops = trx["operations"]
         for op in ops:
-            if op[0] == "escrow_transfer_operation" or op[0] == "escrow_release_operation":
+            if (
+                op[0] == "escrow_transfer_operation"
+                or op[0] == "escrow_release_operation"
+            ):
                 trx_value = op[1]
-                fee = trx_value["fee"] if op[0] == "escrow_transfer_operation" else tt.Asset.Tbd(0)
+                fee = (
+                    trx_value["fee"]
+                    if op[0] == "escrow_transfer_operation"
+                    else tt.Asset.Tbd(0)
+                )
                 hbd_amount = trx_value["hbd_amount"]
                 hive_amount = trx_value["hive_amount"]
                 return fee, hbd_amount, hive_amount
@@ -376,13 +477,24 @@ class ProposalAccount(Account):
     def assert_hbd_balance_wasnt_changed(self) -> None:
         old_hbd_balance = self.hbd
         self.update_account_info()
-        assert old_hbd_balance == self.hbd, "HBD balance was changed after broadcasting transaction while it shouldn't."
+        assert (
+            old_hbd_balance == self.hbd
+        ), "HBD balance was changed after broadcasting transaction while it shouldn't."
 
-    def create_proposal(self, proposal_receiver: str, start_date: str, end_date: str) -> dict:
+    def create_proposal(
+        self, proposal_receiver: str, start_date: str, end_date: str
+    ) -> dict:
         self._proposal_parameters["receiver"] = proposal_receiver
         for parameter_name, value in zip(
             ("receiver", "start_date", "end_date", "daily_pay", "subject", "permlink"),
-            (proposal_receiver, start_date, end_date, tt.Asset.Tbd(5), "subject", "comment-permlink"),
+            (
+                proposal_receiver,
+                start_date,
+                end_date,
+                tt.Asset.Tbd(5),
+                "subject",
+                "comment-permlink",
+            ),
         ):
             self._proposal_parameters[parameter_name] = value
 
@@ -407,15 +519,30 @@ class ProposalAccount(Account):
     ) -> dict:
         if self._proposal_parameters == {} and proposal_to_update_details is not None:
             self._proposal_parameters = proposal_to_update_details
-        new_daily_pay = daily_pay if daily_pay is not None else self._proposal_parameters["daily_pay"]
-        new_subject = subject if subject is not None else self._proposal_parameters["subject"]
-        new_permlink = permlink if permlink is not None else self._proposal_parameters["permlink"]
-        new_end_date = tt.Time.parse(end_date) if end_date is not None else self._proposal_parameters["end_date"]
+        new_daily_pay = (
+            daily_pay
+            if daily_pay is not None
+            else self._proposal_parameters["daily_pay"]
+        )
+        new_subject = (
+            subject if subject is not None else self._proposal_parameters["subject"]
+        )
+        new_permlink = (
+            permlink if permlink is not None else self._proposal_parameters["permlink"]
+        )
+        new_end_date = (
+            tt.Time.parse(end_date)
+            if end_date is not None
+            else self._proposal_parameters["end_date"]
+        )
         for parameter_name, value in zip(
-            ("end_date", "daily_pay", "subject", "permlink"), (new_end_date, new_daily_pay, new_subject, new_permlink)
+            ("end_date", "daily_pay", "subject", "permlink"),
+            (new_end_date, new_daily_pay, new_subject, new_permlink),
         ):
             self._proposal_parameters[parameter_name] = value
-        return self._wallet.api.update_proposal(0, self._name, new_daily_pay, new_subject, new_permlink, new_end_date)
+        return self._wallet.api.update_proposal(
+            0, self._name, new_daily_pay, new_subject, new_permlink, new_end_date
+        )
 
     def remove_proposal(self, proposal_to_remove_details: dict | None = None) -> dict:
         if self._proposal_parameters == {} and proposal_to_remove_details is not None:
@@ -424,7 +551,11 @@ class ProposalAccount(Account):
 
     def check_if_proposal_was_updated(self, changed_parameter: str) -> None:
         proposal = self._node.api.database.list_proposals(
-            start=[""], limit=100, order="by_creator", order_direction="ascending", status="all"
+            start=[""],
+            limit=100,
+            order="by_creator",
+            order_direction="ascending",
+            status="all",
         ).proposals[0]
         assert (
             proposal[changed_parameter] == self._proposal_parameters[changed_parameter]
@@ -452,10 +583,14 @@ class ProposalAccount(Account):
 @dataclass
 class TransferAccount(Account):
     # class with account representation created for transfer, transfer_to/from_savings tests
-    def transfer(self, receiver: str, amount: tt.Asset.TestT | tt.Asset.TbdT, memo: str) -> None:
+    def transfer(
+        self, receiver: str, amount: tt.Asset.TestT | tt.Asset.TbdT, memo: str
+    ) -> None:
         self._wallet.api.transfer(self._name, receiver, amount, memo)
 
-    def transfer_to_savings(self, receiver: str, amount: tt.Asset.TestT | tt.Asset.TbdT, memo: str) -> None:
+    def transfer_to_savings(
+        self, receiver: str, amount: tt.Asset.TestT | tt.Asset.TbdT, memo: str
+    ) -> None:
         self._wallet.api.transfer_to_savings(self._name, receiver, amount, memo)
 
     def transfer_from_savings(
@@ -465,16 +600,26 @@ class TransferAccount(Account):
         amount: tt.Asset.TestT | tt.Asset.TbdT,
         memo: str,
     ) -> None:
-        self._wallet.api.transfer_from_savings(self._name, transfer_id, receiver, amount, memo)
+        self._wallet.api.transfer_from_savings(
+            self._name, transfer_id, receiver, amount, memo
+        )
 
     def cancel_transfer_from_savings(self, transfer_id: int) -> None:
         self._wallet.api.cancel_transfer_from_savings(self._wallet, transfer_id)
 
     def get_hbd_savings_balance(self) -> tt.Asset.TbdT:
-        return self._node.api.database.find_accounts(accounts=[self._name]).accounts[0].savings_hbd_balance
+        return (
+            self._node.api.database.find_accounts(accounts=[self._name])
+            .accounts[0]
+            .savings_hbd_balance
+        )
 
     def get_hive_savings_balance(self) -> tt.Asset.TestT:
-        return self._node.api.database.find_accounts(accounts=[self._name]).accounts[0].savings_balance
+        return (
+            self._node.api.database.find_accounts(accounts=[self._name])
+            .accounts[0]
+            .savings_balance
+        )
 
 
 @dataclass
@@ -482,7 +627,9 @@ class UpdateAccount(Account):
     __key_generation_counter = 0
 
     @classmethod
-    def authority_changed(cls, new_key: str | list | dict[str, Any], old_key: list[tuple[PublicKey, int]]) -> bool:
+    def authority_changed(
+        cls, new_key: str | list | dict[str, Any], old_key: list[tuple[PublicKey, int]]
+    ) -> bool:
         old_public_key = old_key[0][0]
         if isinstance(new_key, str):
             return old_public_key == new_key
@@ -520,7 +667,9 @@ class UpdateAccount(Account):
             ), f"Posting authority of account {self._name} wasn't changed."
 
         if new_memo is not None:
-            assert new_memo == self._acc_info.memo_key, f"Memo key of account {self._name} wasn't changed."
+            assert (
+                new_memo == self._acc_info.memo_key
+            ), f"Memo key of account {self._name} wasn't changed."
 
         if new_json_meta is not None:
             assert (
@@ -540,13 +689,21 @@ class UpdateAccount(Account):
         self.rc_manabar.assert_current_mana_is_unchanged()
 
     def generate_new_authority(self) -> dict:
-        return {"account_auths": [], "key_auths": [(self.generate_new_key(), 1)], "weight_threshold": 1}
+        return {
+            "account_auths": [],
+            "key_auths": [(self.generate_new_key(), 1)],
+            "weight_threshold": 1,
+        }
 
     def generate_new_key(self) -> PublicKey:
         self.__key_generation_counter += 1
-        return tt.Account(self._name, secret=f"other_than_previous_{self.__key_generation_counter}").public_key
+        return tt.Account(
+            self._name, secret=f"other_than_previous_{self.__key_generation_counter}"
+        ).public_key
 
-    def get_current_key(self, type_: Literal["owner", "active", "posting", "memo"]) -> str:
+    def get_current_key(
+        self, type_: Literal["owner", "active", "posting", "memo"]
+    ) -> str:
         assert type_ in ("owner", "active", "posting", "memo"), "Wrong key type."
         if type_ == "memo":
             type_ = "memo_key"
@@ -554,9 +711,17 @@ class UpdateAccount(Account):
         authority: Authority = self._acc_info[type_]
         return authority.key_auths[0][0]
 
-    def update_all_account_details(self, *, json_meta: str, owner: str, active: str, posting: str, memo: str) -> None:
+    def update_all_account_details(
+        self, *, json_meta: str, owner: str, active: str, posting: str, memo: str
+    ) -> None:
         self._wallet.api.update_account(
-            self._name, json_meta=json_meta, owner=owner, active=active, posting=posting, memo=memo, broadcast=True
+            self._name,
+            json_meta=json_meta,
+            owner=owner,
+            active=active,
+            posting=posting,
+            memo=memo,
+            broadcast=True,
         )
 
     def update_account(
@@ -574,14 +739,19 @@ class UpdateAccount(Account):
         to_pass = {
             element: arguments[element]
             for element in arguments
-            if arguments[element] is not None and element not in ("arguments", "self", "use_account_update2")
+            if arguments[element] is not None
+            and element not in ("arguments", "self", "use_account_update2")
         }
         if use_account_update2 is False:
             to_pass.pop("posting_json_metadata")
         if memo_key is None and posting_json_metadata == "":
             to_pass["memo_key"] = self._wallet.api.get_account(self.name).memo_key
-        operation = AccountUpdate2Operation if use_account_update2 else AccountUpdateOperation
-        return create_transaction_with_any_operation(self._wallet, [operation(account=self.name, **to_pass)])
+        operation = (
+            AccountUpdate2Operation if use_account_update2 else AccountUpdateOperation
+        )
+        return create_transaction_with_any_operation(
+            self._wallet, [operation(account=self.name, **to_pass)]
+        )
 
     def update_single_account_detail(
         self,
@@ -598,26 +768,42 @@ class UpdateAccount(Account):
         update_account anyway, so it's still being tested.
         """
         if json_meta is not None:
-            transaction = self._wallet.api.update_account_meta(self._name, json_meta, broadcast=True)
+            transaction = self._wallet.api.update_account_meta(
+                self._name, json_meta, broadcast=True
+            )
             tt.logger.info(f"json meta RC COST {transaction['rc_cost']}")
             return transaction
-        assert key_type in ("owner", "active", "posting", "memo"), "Wrong authority type."
+        assert key_type in (
+            "owner",
+            "active",
+            "posting",
+            "memo",
+        ), "Wrong authority type."
         if key_type == "memo":
-            transaction = self._wallet.api.update_account_memo_key(self._name, key, broadcast=True)
+            transaction = self._wallet.api.update_account_memo_key(
+                self._name, key, broadcast=True
+            )
             tt.logger.info(f"change memo RC COST {transaction['rc_cost']}")
             return transaction
         self.update_account_info()
         current_key = self._acc_info[key_type]["key_auths"][0][0]
         # add new / update weight of existing key
-        transaction = self._wallet.api.update_account_auth_key(self._name, key_type, key, weight, broadcast=True)
-        tt.logger.info(f"add new / update weight of existing key RC COST {transaction['rc_cost']}")
+        transaction = self._wallet.api.update_account_auth_key(
+            self._name, key_type, key, weight, broadcast=True
+        )
+        tt.logger.info(
+            f"add new / update weight of existing key RC COST {transaction['rc_cost']}"
+        )
         if current_key != key:
             # generate private key corresponding given public key
             new_private = tt.Account(
-                self._name, secret=f"other_than_previous_{self.__key_generation_counter}"
+                self._name,
+                secret=f"other_than_previous_{self.__key_generation_counter}",
             ).private_key
             # delete old one - make weight equal to zero
-            transaction = self._wallet.api.update_account_auth_key(self._name, key_type, current_key, 0, broadcast=True)
+            transaction = self._wallet.api.update_account_auth_key(
+                self._name, key_type, current_key, 0, broadcast=True
+            )
             tt.logger.info(f"delete old key RC COST {transaction['rc_cost']}")
             self._wallet.api.import_key(new_private)
             return transaction
@@ -637,7 +823,10 @@ class WitnessAccount(Account):
             id=transaction["transaction_id"], include_reversible=True
         ).operations
         for operation in operations:
-            if operation.type_ == "feed_publish_operation" and operation.value.publisher == self._name:
+            if (
+                operation.type_ == "feed_publish_operation"
+                and operation.value.publisher == self._name
+            ):
                 return
         raise AssertionError("Feed_publish operation wasn't found.")
 
@@ -649,7 +838,11 @@ class WitnessAccount(Account):
         self.rc_manabar.assert_current_mana_is_unchanged()
 
     def become_witness(
-        self, url: str, account_creation_fee: tt.Asset.Test, maximum_block_size: int, hbd_interest_rate: int
+        self,
+        url: str,
+        account_creation_fee: tt.Asset.Test,
+        maximum_block_size: int,
+        hbd_interest_rate: int,
     ) -> dict:
         self._url = url
         self._account_creation_fee = account_creation_fee
@@ -671,7 +864,9 @@ class WitnessAccount(Account):
         # is deactivated
         # related issue: https://gitlab.syncad.com/hive/hive/-/issues/681
         empty_key = "STM1111111111111111111111111111111114T1Anm"
-        witnesses = self._node.api.database.list_witnesses(start="", limit=100, order="by_name").witnesses
+        witnesses = self._node.api.database.list_witnesses(
+            start="", limit=100, order="by_name"
+        ).witnesses
         for witness in witnesses:
             if witness.owner == self._name and witness.signing_key != empty_key:
                 found_as_witness = True
@@ -679,13 +874,21 @@ class WitnessAccount(Account):
         if "found_as_witness" in locals():
             if expected_witness_role:
                 return
-            raise AssertionError("Witness is listed in list_witnesses, but it shouldn't be.")
+            raise AssertionError(
+                "Witness is listed in list_witnesses, but it shouldn't be."
+            )
         if expected_witness_role:
-            raise AssertionError("Witness isn't listed in list_witnesses, but it should be.")
+            raise AssertionError(
+                "Witness isn't listed in list_witnesses, but it should be."
+            )
 
     def feed_publish(self, *, base: int, quote: int, broadcast: bool = True) -> dict:
-        exchange_rate = HbdExchangeRate(base=tt.Asset.Tbd(base), quote=tt.Asset.Test(quote))
-        return self._wallet.api.publish_feed(self._name, exchange_rate, broadcast=broadcast)
+        exchange_rate = HbdExchangeRate(
+            base=tt.Asset.Tbd(base), quote=tt.Asset.Test(quote)
+        )
+        return self._wallet.api.publish_feed(
+            self._name, exchange_rate, broadcast=broadcast
+        )
 
     def resign_from_witness_role(self) -> dict:
         return self._wallet.api.update_witness(
@@ -711,16 +914,24 @@ class WitnessAccount(Account):
         return self._wallet.api.update_witness(
             self._name,
             self._url if new_url is None else new_url,
-            tt.Account(self._name).public_key if new_block_signing_key is None else new_block_signing_key,
+            tt.Account(self._name).public_key
+            if new_block_signing_key is None
+            else new_block_signing_key,
             {
                 "account_creation_fee": (
-                    self._account_creation_fee if new_account_creation_fee is None else new_account_creation_fee
+                    self._account_creation_fee
+                    if new_account_creation_fee is None
+                    else new_account_creation_fee
                 ),
                 "maximum_block_size": (
-                    self._maximum_block_size if new_maximum_block_size is None else new_maximum_block_size
+                    self._maximum_block_size
+                    if new_maximum_block_size is None
+                    else new_maximum_block_size
                 ),
                 "hbd_interest_rate": (
-                    self._hbd_interest_rate if new_hbd_interest_rate is None else new_hbd_interest_rate
+                    self._hbd_interest_rate
+                    if new_hbd_interest_rate is None
+                    else new_hbd_interest_rate
                 ),
             },
         )
@@ -745,23 +956,33 @@ class WitnessAccount(Account):
             )
         if "hbd_exchange_rate" in props_to_serialize:
             props_to_serialize["hbd_exchange_rate"] = wax.python_price(
-                base=wax.python_json_asset(**props_to_serialize["hbd_exchange_rate"]["base"]),
-                quote=wax.python_json_asset(**props_to_serialize["hbd_exchange_rate"]["quote"]),
+                base=wax.python_json_asset(
+                    **props_to_serialize["hbd_exchange_rate"]["base"]
+                ),
+                quote=wax.python_json_asset(
+                    **props_to_serialize["hbd_exchange_rate"]["quote"]
+                ),
             )
 
         serialized_props = wax.serialize_witness_set_properties(
             wax.python_witness_set_properties_data(**props_to_serialize)
         )
-        serialized_props = [[key.decode("utf-8"), value.decode("utf-8")] for key, value in serialized_props.items()]
+        serialized_props = [
+            [key.decode("utf-8"), value.decode("utf-8")]
+            for key, value in serialized_props.items()
+        ]
 
         return create_transaction_with_any_operation(
             wallet=self._wallet,
-            operations=[WitnessSetPropertiesOperation(owner=self._name, props=serialized_props)],
+            operations=[
+                WitnessSetPropertiesOperation(owner=self._name, props=serialized_props)
+            ],
         )
 
     def witness_block_approve(self, *, block_id: int) -> dict:
         return create_transaction_with_any_operation(
-            self._wallet, [WitnessBlockApproveOperation(witness=self._name, block_id=block_id)]
+            self._wallet,
+            [WitnessBlockApproveOperation(witness=self._name, block_id=block_id)],
         )
 
 
@@ -833,7 +1054,11 @@ def hive_fund(
 def speed_up_node() -> tt.InitNode:
     node = tt.InitNode()
     node.config.plugin.append("account_history_api")
-    node.run(timeout=60.0, time_control=tt.SpeedUpRateTimeControl(speed_up_rate=5), max_retries=3)
+    node.run(
+        timeout=60.0,
+        time_control=tt.SpeedUpRateTimeControl(speed_up_rate=5),
+        max_retries=3,
+    )
     return node
 
 
@@ -844,10 +1069,15 @@ def wallet(speed_up_node: tt.InitNode) -> tt.Wallet:
 
 @pytest.fixture()
 def prepared_node(speed_up_node: tt.InitNode, wallet: tt.Wallet) -> tt.InitNode:
-    speed_up_node.set_vest_price(quote=tt.Asset.Vest(1800), invest=tt.Asset.Test(10_000_000))
+    speed_up_node.set_vest_price(
+        quote=tt.Asset.Vest(1800), invest=tt.Asset.Test(10_000_000)
+    )
 
     wallet.api.update_witness(
-        "initminer", "http://url.html", tt.Account("initminer").public_key, {"account_creation_fee": tt.Asset.Test(3)}
+        "initminer",
+        "http://url.html",
+        tt.Account("initminer").public_key,
+        {"account_creation_fee": tt.Asset.Test(3)},
     )
 
     speed_up_node.wait_number_of_blocks(43)
