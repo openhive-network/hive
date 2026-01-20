@@ -487,7 +487,6 @@ plugin_test_api:
 
 pre_commit_checks:
   stage: static_code_analysis
-  allow_failure: true  # Temporarily allow failure until Python 3.14 packages are published
   variables:
     POETRY_INSTALL_ARGS: --only pre-commit
   extends:
