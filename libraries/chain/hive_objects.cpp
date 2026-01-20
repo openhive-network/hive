@@ -1,6 +1,7 @@
 #include <hive/chain/hive_fwd.hpp>
 #include <hive/chain/comment_object.hpp>
 #include <hive/chain/account_object.hpp>
+#include <hive/chain/detail/state/escrow_object.hpp>
 
 #include <fc/uint128.hpp>
 
@@ -37,5 +38,13 @@ comment_vote_object::comment_vote_object( uint64_t _id, const account_object& _v
 : id( _id ), voter( _voter.get_id() ), comment( _comment.get_id() ), weight( _weight ),
   rshares( _rshares ), vote_percent( _vote_percent ), last_update( _creation_time )
 {}
+
+// escrow_object init helper
+void escrow_object::init( const account_object& _from, const account_object& _to, const account_object& _agent )
+{
+  from = _from.get_name();
+  to = _to.get_name();
+  agent = _agent.get_name();
+}
 
 } } // hive::chain
