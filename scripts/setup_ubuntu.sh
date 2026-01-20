@@ -89,7 +89,7 @@ install_all_dev_packages() {
 }
 
 preconfigure_faketime() {
-  git clone --depth 1 --branch v0.9.12 https://gitlab.syncad.com/hive/faketime.git
+  git clone --depth 1 --branch bw_timer_settime_fix https://gitlab.syncad.com/hive/faketime.git
   pushd faketime && CFLAGS="-O2 -DFAKE_STATELESS=1" make
 
   sudo make install # install it into default location path.
