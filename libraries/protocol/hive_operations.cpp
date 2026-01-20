@@ -37,11 +37,17 @@ namespace hive { namespace protocol {
     FC_ASSERT( is_asset_type( fee, HIVE_SYMBOL ), "Account creation fee must be HIVE" );
     owner.validate();
     active.validate();
+    posting.validate();
+
+    validate_auth_size( owner );
+    validate_auth_size( active );
+    validate_auth_size( posting );
 
     if (!json_metadata.empty())
       validate_json_with_fallback(json_metadata);
 
     FC_ASSERT( fee >= asset( 0, HIVE_SYMBOL ), "Account creation fee cannot be negative" );
+    FC_ASSERT( fee <= asset( HIVE_MAX_ACCOUNT_CREATION_FEE, HIVE_SYMBOL ), "Account creation fee cannot be too large" );
   }
 
   void account_create_with_delegation_operation::validate() const
@@ -55,22 +61,23 @@ namespace hive { namespace protocol {
     active.validate();
     posting.validate();
 
+    validate_auth_size( owner );
+    validate_auth_size( active );
+    validate_auth_size( posting );
+
     if (!json_metadata.empty())
       validate_json_with_fallback(json_metadata);
 
     FC_ASSERT( fee >= asset( 0, HIVE_SYMBOL ) && "Account creation fee cannot be negative" );
+    FC_ASSERT( fee <= asset( HIVE_MAX_ACCOUNT_CREATION_FEE, HIVE_SYMBOL ) && "Account creation fee cannot be too large" );
     FC_ASSERT( delegation >= asset( 0, VESTS_SYMBOL ), "Delegation cannot be negative" );
   }
 
   void account_update_operation::validate() const
   {
     validate_account_name( account );
-    /*if( owner )
-      owner->validate();
-    if( active )
-      active->validate();
-    if( posting )
-      posting->validate();*/
+
+    // unfortunately can't have validate_auth_size here
 
     if (!json_metadata.empty())
       validate_json_with_fallback(json_metadata);
@@ -79,6 +86,13 @@ namespace hive { namespace protocol {
   void account_update2_operation::validate() const
   {
     validate_account_name( account );
+
+    if( owner )
+      validate_auth_size( *owner );
+    if( active )
+      validate_auth_size( *active );
+    if( posting )
+      validate_auth_size( *posting );
 
     if (!json_metadata.empty())
       validate_json_with_fallback(json_metadata);
@@ -94,7 +108,6 @@ namespace hive { namespace protocol {
     FC_ASSERT( fc::is_utf8( title ), "Title not formatted in UTF8" );
     FC_ASSERT( body.size() > 0, "Body is empty" );
     FC_ASSERT( fc::is_utf8( body ), "Body not formatted in UTF8" );
-
 
     if( parent_author.size() )
       validate_account_name( parent_author );
@@ -167,7 +180,7 @@ namespace hive { namespace protocol {
     validate_account_name( creator );
     FC_ASSERT( is_asset_type( fee, HIVE_SYMBOL ) && "Account claiming fee must be HIVE" );
     FC_ASSERT( fee >= asset( 0, HIVE_SYMBOL ) && "Account claiming fee cannot be negative" );
-    FC_ASSERT( fee <= asset( HIVE_MAX_ACCOUNT_CREATION_FEE, HIVE_SYMBOL ), "Account claiming fee cannot be too large" );
+    FC_ASSERT( fee <= asset( HIVE_MAX_ACCOUNT_CREATION_FEE, HIVE_SYMBOL ) && "Account claiming fee cannot be too large" );
 
     FC_ASSERT( extensions.size() == 0, "There are no extensions for claim_account_operation." );
   }
@@ -192,7 +205,7 @@ namespace hive { namespace protocol {
   void vote_operation::validate() const
   {
     validate_account_name( voter );
-    validate_account_name( author );\
+    validate_account_name( author );
     FC_ASSERT( abs(weight) <= HIVE_100_PERCENT, "Weight is not a HIVE percentage" );
     validate_permlink( permlink );
   }
