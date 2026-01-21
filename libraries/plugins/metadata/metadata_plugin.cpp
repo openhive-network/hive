@@ -32,80 +32,65 @@ class metadata_plugin_impl
     metadata_plugin_impl( metadata_plugin& self, appbase::application& app ):
       _self(self),
       _db( app.get_plugin< hive::plugins::chain::chain_plugin >().db() )
+    {
+      _on_metadata_conn = _db.add_metadata_handler( [&]( const hive::chain::metadata_notification& note )
       {
-        _on_metadata_conn = _db.add_metadata_handler( [&]( const hive::chain::metadata_notification& note )
-        {
-          on_metadata( note );
-        }, _self );
-      }
-    virtual ~metadata_plugin_impl() = default;
+        on_metadata( note );
+      }, _self );
+    }
+
+    ~metadata_plugin_impl() = default;
 
     void on_metadata( const hive::chain::metadata_notification& note )
     {
+      using hive::chain::metadata_action;
+
       switch( note.action )
       {
-        case hive::chain::metadata_action::account_create:
+        case metadata_action::account_create:
+        case metadata_action::account_create_with_delegation:
+        case metadata_action::create_claimed_account:
           _db.create< account_metadata_object >( [&]( account_metadata_object& meta )
           {
             meta.account = note.account;
             from_string( meta.json_metadata, note.json_metadata );
           });
           break;
-        case hive::chain::metadata_action::account_create_with_delegation:
-          _db.create< account_metadata_object >( [&]( account_metadata_object& meta )
-          {
-            meta.account = note.account;
-            from_string( meta.json_metadata, note.json_metadata );
-          });
-          break;
-        case hive::chain::metadata_action::account_update:
-          if( note.json_metadata.size() > 0 )
-          {
-            _db.modify( _db.get< account_metadata_object, by_account >( note.account ), [&]( account_metadata_object& meta )
-            {
-              from_string( meta.json_metadata, note.json_metadata );
-              if ( !_db.has_hardfork( HIVE_HARDFORK_0_21__3274 ) )
-              {
-                from_string( meta.posting_json_metadata, note.json_metadata );
-              }
-            });
-          }
-          break;
-        case hive::chain::metadata_action::account_update2:
-          if( note.json_metadata.size() > 0 || note.posting_json_metadata.size() > 0 )
-          {
-            _db.modify( _db.get< account_metadata_object, by_account >( note.account ), [&]( account_metadata_object& meta )
-            {
-              if ( note.json_metadata.size() > 0 )
-                from_string( meta.json_metadata, note.json_metadata );
 
-              if ( note.posting_json_metadata.size() > 0 )
-                from_string( meta.posting_json_metadata, note.posting_json_metadata );
-            });
-          }
-          break;
-        case hive::chain::metadata_action::pow:
+        case metadata_action::pow:
+        case metadata_action::pow2:
           _db.create< account_metadata_object >( [&]( account_metadata_object& meta )
           {
             meta.account = note.account;
           });
           break;
-        case hive::chain::metadata_action::pow2:
-          _db.create< account_metadata_object >( [&]( account_metadata_object& meta )
+
+        case metadata_action::account_update:
+          // Signal is only emitted when json_metadata is non-empty (checked in evaluator)
+          _db.modify( _db.get< account_metadata_object, by_account >( note.account ), [&]( account_metadata_object& meta )
           {
-            meta.account = note.account;
-          });
-          break;
-        case hive::chain::metadata_action::create_claimed_account:
-          _db.create< account_metadata_object >( [&]( account_metadata_object& meta )
-          {
-            meta.account = note.account;
             from_string( meta.json_metadata, note.json_metadata );
+            if( !_db.has_hardfork( HIVE_HARDFORK_0_21__3274 ) )
+            {
+              from_string( meta.posting_json_metadata, note.json_metadata );
+            }
           });
           break;
-        default:
-          FC_ASSERT( false && "Unknown metadata action" );
+
+        case metadata_action::account_update2:
+          // Signal is only emitted when at least one metadata field is non-empty (checked in evaluator)
+          _db.modify( _db.get< account_metadata_object, by_account >( note.account ), [&]( account_metadata_object& meta )
+          {
+            if( note.json_metadata.size() > 0 )
+              from_string( meta.json_metadata, note.json_metadata );
+
+            if( note.posting_json_metadata.size() > 0 )
+              from_string( meta.posting_json_metadata, note.posting_json_metadata );
+          });
           break;
+
+        default:
+          FC_ASSERT( false, "Unknown metadata action" );
       }
     }
 };

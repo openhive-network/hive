@@ -455,7 +455,8 @@ void account_update_evaluator::do_apply( const account_update_operation& o )
     acc.last_account_update = _db.head_block_time(); //not needed for consensus
   } );
 
-  _db.notify_metadata( { account.get_id(), o.json_metadata, "", metadata_action::account_update } );
+  if( o.json_metadata.size() > 0 )
+    _db.notify_metadata( { account.get_id(), o.json_metadata, "", metadata_action::account_update } );
 
   if( o.active || *_auth_posting )
   {
@@ -499,7 +500,8 @@ void account_update2_evaluator::do_apply( const account_update2_operation& o )
     acc.last_account_update = _db.head_block_time(); //not needed for consensus
   } );
 
-  _db.notify_metadata( { account.get_id(), o.json_metadata, o.posting_json_metadata, metadata_action::account_update2 } );
+  if( o.json_metadata.size() > 0 || o.posting_json_metadata.size() > 0 )
+    _db.notify_metadata( { account.get_id(), o.json_metadata, o.posting_json_metadata, metadata_action::account_update2 } );
 
   if( o.active || o.posting )
   {

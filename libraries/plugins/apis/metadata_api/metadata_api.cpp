@@ -17,6 +17,7 @@ class metadata_api_impl
 
     DECLARE_API_IMPL(
       (get_metadata)
+      (find_account_metadata)
     )
 
     chain::database& _db;
@@ -26,19 +27,48 @@ DEFINE_API_IMPL( metadata_api_impl, get_metadata )
 {
   get_metadata_return result;
 
-  const auto* _account = _db.find_account( args.account );
-  FC_ASSERT( _account != nullptr, "Account not found: ${a}", ("a", args.account) );
+  const auto* account = _db.find_account( args.account );
+  FC_ASSERT( account != nullptr, "Account not found: ${a}", ("a", args.account) );
 
-  const auto* _metadata = _db.find< account_metadata_object, by_account >( _account->get_id() );
-  if( !_metadata )
+  const auto* meta = _db.find< account_metadata_object, by_account >( account->get_id() );
+  if( !meta )
     return result;
 
-  result.json_metadata = to_string( _metadata->json_metadata );
-  result.posting_json_metadata = to_string( _metadata->posting_json_metadata );
+  result.json_metadata = to_string( meta->json_metadata );
+  result.posting_json_metadata = to_string( meta->posting_json_metadata );
 
   return result;
 }
 
+DEFINE_API_IMPL( metadata_api_impl, find_account_metadata )
+{
+  find_account_metadata_return result;
+  result.metadata.reserve( args.accounts.size() );
+
+  for( const auto& account_name : args.accounts )
+  {
+    const auto* account = _db.find_account( account_name );
+    if( !account )
+      continue;
+
+    const auto* meta = _db.find< account_metadata_object, by_account >( account->get_id() );
+    if( meta )
+    {
+      result.metadata.push_back({
+        account_name,
+        to_string( meta->json_metadata ),
+        to_string( meta->posting_json_metadata )
+      });
+    }
+    else
+    {
+      // Account exists but no metadata (plugin wasn't loaded during account creation)
+      result.metadata.push_back({ account_name, "", "" });
+    }
+  }
+
+  return result;
+}
 
 } // detail
 
@@ -51,6 +81,7 @@ metadata_api::~metadata_api() {}
 
 DEFINE_READ_APIS( metadata_api,
   (get_metadata)
+  (find_account_metadata)
 )
 
 } } } // hive::plugins::metadata
