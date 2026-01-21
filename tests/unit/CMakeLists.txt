@@ -56,6 +56,8 @@ parse_unit_tests(TEST_CASES ${UNIT_TESTS})
 
 #message(STATUS "${TEST_CASES}")
 
+# Test name can optionally be followed by :cost to influence CTest scheduling.
+# Higher costs tests start first. E.g., "test_name:721"
 add_boost_test( chain_test
    SOURCES ${UNIT_TESTS}
    TESTS
@@ -185,13 +187,13 @@ add_boost_test( chain_test
    operation_time_tests/liquidity_rewards
    operation_time_tests/post_rate_limit
    operation_time_tests/comment_freeze
-   operation_time_tests/hbd_stability
+   operation_time_tests/hbd_stability:224
    operation_time_tests/hbd_price_feed_limit
    operation_time_tests/clear_null_account
    operation_time_tests/generate_account_subsidies
    operation_time_tests/account_subsidy_witness_limits
-   operation_time_tests/recurrent_transfer_consecutive_failure_deletion
-   operation_time_tests/recurrent_transfer_expiration
+   operation_time_tests/recurrent_transfer_consecutive_failure_deletion:721
+   operation_time_tests/recurrent_transfer_expiration:281
    proposal_tests/generating_payments
    proposal_tests/generating_payments_01
    proposal_tests/generating_payments_02
@@ -285,7 +287,7 @@ add_boost_test( plugin_test
     json_rpc/misc_validation
     json_rpc/positive_validation
     json_rpc/semantics_validation
-    market_history/mh_test
+    market_history/mh_test:142
     transaction_status/transaction_status_test
 )
 

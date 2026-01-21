@@ -224,16 +224,38 @@ function(add_boost_test _name)
 		endif()
 
 		if(TESTS AND ( "${Boost_VERSION_MACRO}" VERSION_GREATER "103799" ))
-			foreach(_test ${TESTS})
+			foreach(_test_with_cost ${TESTS})
+				# Parse test name and cost from format "testname:cost" or just "testname"
+				string(REGEX MATCH "^([^:]+):([0-9]+)$" _matched "${_test_with_cost}")
+				if(_matched)
+					set(_test "${CMAKE_MATCH_1}")
+					set(_cost "${CMAKE_MATCH_2}")
+				else()
+					set(_test "${_test_with_cost}")
+					set(_cost "1")
+				endif()
+				
+				# Set unique temp directory per test to enable parallel execution
+				string(REPLACE "/" "_" _test_safe_name "${_test}")
+				set(_temp_dir "/tmp/hive-test-${_name}-${_test_safe_name}")
+				
+				# Wrap test command to cleanup temp dir on success only
 				add_test(
 					unit/${_name}-${_test}
-					${_test_command} --run_test=${_test} ${Boost_TEST_FLAGS}
+					sh -c "./${_test_command} --run_test=${_test} ${Boost_TEST_FLAGS}; _result=$?; [ $_result -eq 0 ] && rm -rf ${_temp_dir}; exit $_result"
 				)
+				
 				if(FAIL_REGULAR_EXPRESSION)
 					set_tests_properties(unit/${_name}-${_test}
 						PROPERTIES
-						FAIL_REGULAR_EXPRESSION
-						"${FAIL_REGULAR_EXPRESSION}")
+						FAIL_REGULAR_EXPRESSION "${FAIL_REGULAR_EXPRESSION}"
+						ENVIRONMENT "HIVE_TEMPDIR=${_temp_dir}"
+						COST ${_cost})
+				else()
+					set_tests_properties(unit/${_name}-${_test}
+						PROPERTIES
+						ENVIRONMENT "HIVE_TEMPDIR=${_temp_dir}"
+						COST ${_cost})
 				endif()
 			endforeach()
 		else()
