@@ -16,16 +16,16 @@ class metadata_api_impl
     metadata_api_impl( appbase::application& app ) : _db( app.get_plugin< hive::plugins::chain::chain_plugin >().db() ){}
 
     DECLARE_API_IMPL(
-      (get_metadata)
+      (get_account_metadata)
       (find_account_metadata)
     )
 
     chain::database& _db;
 };
 
-DEFINE_API_IMPL( metadata_api_impl, get_metadata )
+DEFINE_API_IMPL( metadata_api_impl, get_account_metadata )
 {
-  get_metadata_return result;
+  get_account_metadata_return result;
 
   const auto* account = _db.find_account( args.account );
   FC_ASSERT( account != nullptr, "Account not found: ${a}", ("a", args.account) );
@@ -80,7 +80,7 @@ metadata_api::metadata_api( appbase::application& app ): my( new detail::metadat
 metadata_api::~metadata_api() {}
 
 DEFINE_READ_APIS( metadata_api,
-  (get_metadata)
+  (get_account_metadata)
   (find_account_metadata)
 )
 

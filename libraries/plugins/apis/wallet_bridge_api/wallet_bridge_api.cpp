@@ -68,7 +68,7 @@ class wallet_bridge_api_impl
         (find_rc_accounts)
         (list_rc_accounts)
         (list_rc_direct_delegations)
-        (get_metadata)
+        (get_account_metadata)
     )
 
     chain::chain_plugin&                                            _chain;
@@ -841,18 +841,18 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, list_rc_direct_delegations )
   return _rc_api->list_rc_direct_delegations(api_lrdd_args).rc_direct_delegations;
 }
 
-DEFINE_API_IMPL( wallet_bridge_api_impl, get_metadata )
+DEFINE_API_IMPL( wallet_bridge_api_impl, get_account_metadata )
 {
   FC_ASSERT( _metadata_api, "metadata_api_plugin not enabled." );
   verify_args( args, 1 );
-  FC_ASSERT(args.get_array().at(0).is_array(), "get_metadata needs at least one argument");
+  FC_ASSERT(args.get_array().at(0).is_array(), "get_account_metadata needs at least one argument");
   const auto arguments = args.get_array().at(0);
   verify_args( arguments, 1 );
 
-  metadata::get_metadata_args api_gma_args;
+  metadata::get_account_metadata_args api_gma_args;
   api_gma_args.account = arguments.get_array().at(0).as<protocol::account_name_type>();
 
-  return _metadata_api->get_metadata(api_gma_args);
+  return _metadata_api->get_account_metadata(api_gma_args);
 }
 
 DEFINE_LOCKLESS_APIS(
@@ -896,7 +896,7 @@ DEFINE_READ_APIS(
   (find_rc_accounts)
   (list_rc_accounts)
   (list_rc_direct_delegations)
-  (get_metadata)
+  (get_account_metadata)
 )
 
 } } } // hive::plugins::wallet_bridge_api
