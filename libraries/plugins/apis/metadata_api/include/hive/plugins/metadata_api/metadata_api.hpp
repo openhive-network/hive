@@ -10,12 +10,12 @@ namespace hive { namespace plugins { namespace metadata {
 
 using hive::protocol::account_name_type;
 
-struct get_metadata_args
+struct get_account_metadata_args
 {
   account_name_type account;
 };
 
-struct get_metadata_return
+struct get_account_metadata_return
 {
   std::string json_metadata;
   std::string posting_json_metadata;
@@ -48,7 +48,7 @@ class metadata_api
     ~metadata_api();
 
     DECLARE_API(
-      (get_metadata)
+      (get_account_metadata)
       (find_account_metadata)
     )
 
@@ -58,10 +58,10 @@ class metadata_api
 
 } } } // hive::plugins::metadata
 
-FC_REFLECT( hive::plugins::metadata::get_metadata_args,
+FC_REFLECT( hive::plugins::metadata::get_account_metadata_args,
         (account) )
 
-FC_REFLECT( hive::plugins::metadata::get_metadata_return,
+FC_REFLECT( hive::plugins::metadata::get_account_metadata_return,
         (json_metadata)(posting_json_metadata) )
 
 FC_REFLECT( hive::plugins::metadata::find_account_metadata_args,

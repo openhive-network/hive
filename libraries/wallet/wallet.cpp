@@ -2697,10 +2697,10 @@ wallet_serializer_wrapper<vector< rc::rc_direct_delegation_api_object >> wallet_
   return { my->_remote_wallet_bridge_api->list_rc_direct_delegations( {args}, LOCK ) };
 }
 
-metadata::get_metadata_return wallet_api::get_metadata( fc::variant account )
+metadata::get_account_metadata_return wallet_api::get_account_metadata( fc::variant account )
 {
   vector<variant> args{std::move(account)};
-  return { my->_remote_wallet_bridge_api->get_metadata( {args}, LOCK ) };
+  return { my->_remote_wallet_bridge_api->get_account_metadata( {args}, LOCK ) };
 }
 
 } } // hive::wallet
