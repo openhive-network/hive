@@ -1468,7 +1468,14 @@ class wallet_api
      *  @param account The account
      */
     metadata::get_account_metadata_return get_account_metadata( fc::variant account );
-          
+
+    /**
+     *  Retrieve metadata for the given accounts.
+     *
+     *  @param accounts The vector of accounts
+     */
+    metadata::find_account_metadata_return find_account_metadata( fc::variant accounts );
+
     private:
       std::shared_ptr<detail::wallet_api_impl> my;
       fc::promise< int >::ptr&                 exit_promise;
@@ -1610,6 +1617,7 @@ FC_API( hive::wallet::wallet_api,
       (list_rc_accounts)
       (list_rc_direct_delegations)
       (get_account_metadata)
+      (find_account_metadata)
     )
 
 FC_REFLECT_DERIVED( hive::wallet::annotated_signed_transaction_ex, (hive::plugins::account_history::annotated_signed_transaction), (rc_cost) );
