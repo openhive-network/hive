@@ -191,8 +191,8 @@ namespace decoders
         encoder.write(align_str.data(), align_str.size());
       }
 
-      template <typename Member, class Class, Member (Class::*member)>
-      void operator()( const char *name ) const
+      template <typename Member, class Class>
+      void operator()( Member Class::*member, const char *name ) const
       {
         decoders::main_decoder<Member> decoder;
         decoder.decode(dtds);
