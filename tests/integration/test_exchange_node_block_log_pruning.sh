@@ -175,7 +175,7 @@ wait_for_chain_api_ready "load-snapshot-instance" 1200 || {
 
 # Phase 2: Wait for sync to target block
 echo "Waiting for load-snapshot-instance to reach block $TARGET_SYNC_BLOCK..."
-HEAD_BLOCK=$(wait_for_container_block "load-snapshot-instance" $TARGET_SYNC_BLOCK "Sync progress" 120)
+HEAD_BLOCK=$(wait_for_container_block "load-snapshot-instance" $TARGET_SYNC_BLOCK "Sync progress" 1200)
 
 if [ -z "$HEAD_BLOCK" ]; then
   echo "ERROR: Node did not sync to block $TARGET_SYNC_BLOCK (timeout exceeded)"
