@@ -44,10 +44,12 @@ BOOST_AUTO_TEST_CASE( default_logging_config_test )
 
   postponed_init(); // default appender config
 
+  std::string p2p_log_path = (get_data_dir() / "logs/p2p/p2p.log").string();
+
   verify_logging_config_against_pattern( *this, 
     pattern_t( {
       R"~({"name":"stderr","type":"console","args":{"format":"${timestamp} ${context} ${file}:${line} ${method} ${level}]  ${message}","stream":"std_error","level_colors":[{"level":"debug","color":"green"},{"level":"warn","color":"brown"},{"level":"error","color":"red"}],"flush":true,"time_format":"iso_8601_microseconds"},"enabled":true})~",
-      R"~({"name":"p2p","type":"file","args":{"format":"${timestamp} ${context} ${file}:${line} ${method} ${level}]  ${message}","filename":"/tmp/hive-tmp/logs/p2p/p2p.log","flush":true,"truncate":true,"rotate":true,"rotation_interval":3600000000,"rotation_limit":86400000000,"time_format":"iso_8601_milliseconds","delta_times":false},"enabled":true})~"
+      R"~({"name":"p2p","type":"file","args":{"format":"${timestamp} ${context} ${file}:${line} ${method} ${level}]  ${message}","filename":")~" + p2p_log_path + R"~(","flush":true,"truncate":true,"rotate":true,"rotation_interval":3600000000,"rotation_limit":86400000000,"time_format":"iso_8601_milliseconds","delta_times":false},"enabled":true})~"
     } ),
     pattern_t( {
       R"~({"name":"default","level":"info","enabled":true,"additivity":false,"appenders":["stderr"]})~",
@@ -72,13 +74,18 @@ BOOST_AUTO_TEST_CASE( custom_logging_config_test )
     R"~({"appender":"5","file":"logs/p2p/p5p.log","time_format":"iso_8601_microseconds","rotation_limit":3600})~"
     } } ) } );
 
+  std::string p2p_log_path = (get_data_dir() / "logs/p2p/p2p.log").string();
+  std::string p3p_log_path = (get_data_dir() / "logs/p2p/p3p.log").string();
+  std::string p4p_log_path = (get_data_dir() / "logs/p2p/p4p.log").string();
+  std::string p5p_log_path = (get_data_dir() / "logs/p2p/p5p.log").string();
+
   verify_logging_config_against_pattern( *this, 
     pattern_t( {
       R"~({"name":"stderr","type":"console","args":{"format":"${timestamp} ${context} ${file}:${line} ${method} ${level}]  ${message}","stream":"std_error","level_colors":[{"level":"debug","color":"green"},{"level":"warn","color":"brown"},{"level":"error","color":"red"}],"flush":true,"time_format":"milliseconds_since_hour"},"enabled":true})~",
-      R"~({"name":"p2p","type":"file","args":{"format":"${timestamp} ${context} ${file}:${line} ${method} ${level}]  ${message}","filename":"/tmp/hive-tmp/logs/p2p/p2p.log","flush":false,"truncate":false,"rotate":true,"rotation_interval":3600000000,"rotation_limit":86400000000,"time_format":"milliseconds_since_epoch","delta_times":true},"enabled":true})~",
-      R"~({"name":"3","type":"file","args":{"format":"${timestamp} ${context} ${file}:${line} ${method} ${level}]  ${message}","filename":"/tmp/hive-tmp/logs/p2p/p3p.log","flush":true,"truncate":true,"rotate":false,"rotation_interval":3600000000,"rotation_limit":86400000000,"time_format":"iso_8601_seconds","delta_times":false},"enabled":true})~",
-      R"~({"name":"4","type":"file","args":{"format":"${timestamp} ${context} ${file}:${line} ${method} ${level}]  ${message}","filename":"/tmp/hive-tmp/logs/p2p/p4p.log","flush":true,"truncate":true,"rotate":true,"rotation_interval":1000000,"rotation_limit":86400000000,"time_format":"iso_8601_milliseconds","delta_times":false},"enabled":true})~",
-      R"~({"name":"5","type":"file","args":{"format":"${timestamp} ${context} ${file}:${line} ${method} ${level}]  ${message}","filename":"/tmp/hive-tmp/logs/p2p/p5p.log","flush":true,"truncate":true,"rotate":true,"rotation_interval":3600000000,"rotation_limit":3600000000,"time_format":"iso_8601_microseconds","delta_times":false},"enabled":true})~"
+      R"~({"name":"p2p","type":"file","args":{"format":"${timestamp} ${context} ${file}:${line} ${method} ${level}]  ${message}","filename":")~" + p2p_log_path + R"~(","flush":false,"truncate":false,"rotate":true,"rotation_interval":3600000000,"rotation_limit":86400000000,"time_format":"milliseconds_since_epoch","delta_times":true},"enabled":true})~",
+      R"~({"name":"3","type":"file","args":{"format":"${timestamp} ${context} ${file}:${line} ${method} ${level}]  ${message}","filename":")~" + p3p_log_path + R"~(","flush":true,"truncate":true,"rotate":false,"rotation_interval":3600000000,"rotation_limit":86400000000,"time_format":"iso_8601_seconds","delta_times":false},"enabled":true})~",
+      R"~({"name":"4","type":"file","args":{"format":"${timestamp} ${context} ${file}:${line} ${method} ${level}]  ${message}","filename":")~" + p4p_log_path + R"~(","flush":true,"truncate":true,"rotate":true,"rotation_interval":1000000,"rotation_limit":86400000000,"time_format":"iso_8601_milliseconds","delta_times":false},"enabled":true})~",
+      R"~({"name":"5","type":"file","args":{"format":"${timestamp} ${context} ${file}:${line} ${method} ${level}]  ${message}","filename":")~" + p5p_log_path + R"~(","flush":true,"truncate":true,"rotate":true,"rotation_interval":3600000000,"rotation_limit":3600000000,"time_format":"iso_8601_microseconds","delta_times":false},"enabled":true})~"
     } ),
     pattern_t()
   );
@@ -105,10 +112,12 @@ BOOST_AUTO_TEST_CASE( rotation_test )
     } } )
   } );
 
+  std::string p2p_log_path = (get_data_dir() / "logs/p2p/p2p.log").string();
+
   verify_logging_config_against_pattern( *this, 
     pattern_t( {
       R"~({"name":"stderr","type":"console","args":{"format":"${timestamp} ${context} ${file}:${line} ${method} ${level}]  ${message}","stream":"std_error","level_colors":[{"level":"debug","color":"green"},{"level":"warn","color":"brown"},{"level":"error","color":"red"}],"flush":true,"time_format":"iso_8601_microseconds"},"enabled":true})~",
-      R"~({"name":"p2p","type":"file","args":{"format":"${timestamp} ${context} ${file}:${line} ${method} ${level}]  ${message}","filename":"/tmp/hive-tmp/logs/p2p/p2p.log","flush":true,"truncate":true,"rotate":true,"rotation_interval":1000000,"rotation_limit":5000000,"time_format":"iso_8601_milliseconds","delta_times":false},"enabled":true})~"
+      R"~({"name":"p2p","type":"file","args":{"format":"${timestamp} ${context} ${file}:${line} ${method} ${level}]  ${message}","filename":")~" + p2p_log_path + R"~(","flush":true,"truncate":true,"rotate":true,"rotation_interval":1000000,"rotation_limit":5000000,"time_format":"iso_8601_milliseconds","delta_times":false},"enabled":true})~"
     } ),
     pattern_t( {
       R"~({"name":"default","level":"info","enabled":true,"additivity":false,"appenders":["stderr","p2p"]})~",
