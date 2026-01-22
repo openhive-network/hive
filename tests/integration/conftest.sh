@@ -77,7 +77,7 @@ wait_for_instance() {
   docker container exec -t "${container_name}" timeout $LIMIT bash -c "until wget -O - -qnv --timeout=30  --post-data='{\"jsonrpc\": \"2.0\",\"method\": \"database_api.get_dynamic_global_properties\",\"id\": 1}' localhost:8091  | grep -o '\"head_block_number\":${number_of_blocks_to_replay},'; do sleep 3 ; done"
 }
 
-# Wait for API mode to become ready (checks app_status_api for 'entering API mode' status)
+# Wait for chain API to become ready (checks app_status_api for 'chain API ready' status)
 # Returns 0 if ready, 1 if timeout
 wait_for_chain_api_ready() {
   local container=$1
@@ -92,8 +92,8 @@ wait_for_chain_api_ready() {
       --post-data='{"jsonrpc":"2.0","method":"app_status_api.get_app_status","id":1}' \
       localhost:8091 2>/dev/null || echo "")
 
-    if [ -n "$app_status" ] && echo "$app_status" | grep -q 'entering API mode'; then
-      echo "API mode ready after ${elapsed}s" >&2
+    if [ -n "$app_status" ] && echo "$app_status" | grep -q 'chain API ready'; then
+      echo "Chain API ready after ${elapsed}s" >&2
       return 0
     fi
 
