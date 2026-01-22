@@ -62,6 +62,12 @@ def test_update(wallet: tt.OldWallet) -> None:
     assert json.loads(wallet.api.get_account("alice")["json_metadata"]) == {"test": 4}
     assert json.loads(wallet.api.get_account_metadata("alice")["json_metadata"]) == {"test": 4}
 
+    # Test find_account_metadata
+    result = wallet.api.find_account_metadata(["alice"])
+    assert len(result["metadata"]) == 1
+    assert result["metadata"][0]["account"] == "alice"
+    assert json.loads(result["metadata"][0]["json_metadata"]) == {"test": 4}
+
     key = "STM8grZpsMPnH7sxbMVZHWEu1D26F3GwLW1fYnZEuwzT4Rtd57AER"
 
     wallet.api.update_account("alice", "{}", key, key, key, key)

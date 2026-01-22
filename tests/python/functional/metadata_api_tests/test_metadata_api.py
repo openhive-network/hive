@@ -131,3 +131,21 @@ def test_wallet_get_account_metadata_integration(wallet: tt.Wallet) -> None:
     # Test via wallet API
     result = wallet.api.get_account_metadata("dave")
     assert json.loads(result["json_metadata"]) == {"app": "test"}
+
+
+def test_wallet_find_account_metadata_integration(wallet: tt.Wallet) -> None:
+    """Test that wallet.api.find_account_metadata works correctly."""
+    wallet.create_account("eve", hives=tt.Asset.Test(100), vests=tt.Asset.Test(100))
+    wallet.create_account("frank", hives=tt.Asset.Test(100), vests=tt.Asset.Test(100))
+    wallet.api.update_account_meta("eve", '{"role": "tester"}')
+    wallet.api.update_account_meta("frank", '{"role": "developer"}')
+
+    # Test via wallet API
+    result = wallet.api.find_account_metadata(["eve", "frank"])
+    assert len(result["metadata"]) == 2
+
+    eve_meta = next(m for m in result["metadata"] if m["account"] == "eve")
+    assert json.loads(eve_meta["json_metadata"]) == {"role": "tester"}
+
+    frank_meta = next(m for m in result["metadata"] if m["account"] == "frank")
+    assert json.loads(frank_meta["json_metadata"]) == {"role": "developer"}

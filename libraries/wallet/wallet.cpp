@@ -2703,4 +2703,10 @@ metadata::get_account_metadata_return wallet_api::get_account_metadata( fc::vari
   return { my->_remote_wallet_bridge_api->get_account_metadata( {args}, LOCK ) };
 }
 
+metadata::find_account_metadata_return wallet_api::find_account_metadata( fc::variant accounts )
+{
+  vector<variant> args{std::move(accounts)};
+  return { my->_remote_wallet_bridge_api->find_account_metadata( {args}, LOCK ) };
+}
+
 } } // hive::wallet

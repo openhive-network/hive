@@ -222,6 +222,10 @@ typedef vector< rc::rc_direct_delegation_api_object >         list_rc_direct_del
 typedef variant                                               get_account_metadata_args;
 typedef metadata::get_account_metadata_return                 get_account_metadata_return;
 
+/* find_account_metadata */
+typedef variant                                               find_account_metadata_args;
+typedef metadata::find_account_metadata_return                find_account_metadata_return;
+
 } } } // hive::plugins::wallet_bridge_api
 
 FC_REFLECT( hive::plugins::wallet_bridge_api::broadcast_transaction_synchronous_return, (id)(block_num)(trx_num)(rc_cost)(expired))

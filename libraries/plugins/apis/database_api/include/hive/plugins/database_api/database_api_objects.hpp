@@ -13,7 +13,10 @@
 #include <hive/chain/util/delayed_voting.hpp>
 #include <hive/chain/util/rd_dynamics.hpp>
 #include <hive/chain/witness_objects.hpp>
+
 #include <hive/plugins/metadata_api/metadata_api_plugin.hpp>
+#include <hive/plugins/metadata_api/metadata_api.hpp>
+#include <hive/plugins/metadata/metadata_objects.hpp>
 
 #ifdef HIVE_ENABLE_SMT
 #include <hive/chain/smt_objects/smt_token_object.hpp>
@@ -63,9 +66,6 @@ namespace hive { namespace chain {
   // Type alias to avoid including hive_objects.hpp
   using reward_fund_name_type = protocol::fixed_string<16>;
 } }
-
-#include <hive/plugins/metadata_api/metadata_api.hpp>
-#include <hive/plugins/metadata/metadata_objects.hpp>
 
 namespace hive { namespace plugins { namespace database_api {
 
