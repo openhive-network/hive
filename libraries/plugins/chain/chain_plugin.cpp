@@ -229,7 +229,8 @@ class chain_plugin_impl
     state_snapshot_provider*            snapshot_provider = nullptr;
     bool                                is_p2p_enabled = true;
     bool                                is_work_enabled = true;
-    bool                                allow_syncing = false; 
+    bool                                allow_syncing = false;
+    bool                                force_live_sync = false; 
     std::atomic<uint32_t>               peer_count = {0};
 
     fc::time_point cumulative_times_last_reported_time;
@@ -419,6 +420,8 @@ bool chain_plugin_impl::is_running() const
 
 fc::microseconds chain_plugin_impl::get_time_gap_to_live_sync( const fc::time_point_sec& head_block_time )
 {
+  if( force_live_sync )
+    return fc::microseconds( -1 ); // Always considered synced
   return fc::time_point::now() - head_block_time - fc::minutes(1);
 }
 
@@ -1512,6 +1515,7 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
       ("chain-id", bpo::value< std::string >()->default_value( HIVE_CHAIN_ID ), "chain ID to connect to")
       ("skeleton-key", bpo::value< std::string >()->default_value(default_skeleton_privkey), "WIF PRIVATE key to be used as skeleton key for all accounts")
 #endif
+      ("force-live-sync", bpo::bool_switch()->default_value(false), "Force node to enter live sync immediately, bypassing time gap check (for testing only)")
       ;
 }
 
@@ -1590,6 +1594,7 @@ void chain_plugin::plugin_initialize(const variables_map& options)
   my->enable_block_log_compression = options.at( "enable-block-log-compression" ).as<bool>();
   my->enable_block_log_auto_fixing = options.at( "enable-block-log-auto-fixing" ).as<bool>();
   my->block_log_compression_level = options.at( "block-log-compression-level" ).as<int>();
+  my->force_live_sync = options.at( "force-live-sync" ).as<bool>();
 
   FC_ASSERT(!(my->exit_at_block && my->stop_at_block), "--exit-at-block and --stop-at-block cannot be used together" );
 
