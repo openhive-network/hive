@@ -141,7 +141,6 @@ files = [
 
 [package.dependencies]
 frozenlist = ">=1.1.0"
-typing-extensions = {version = ">=4.2", markers = "python_version < \"3.13\""}
 
 [[package]]
 name = "anyio"
@@ -157,7 +156,6 @@ files = [
 
 [package.dependencies]
 idna = ">=2.8"
-typing_extensions = {version = ">=4.5", markers = "python_version < \"3.13\""}
 
 [package.extras]
 trio = ["trio (>=0.31.0) ; python_version < \"3.10\"", "trio (>=0.32.0) ; python_version >= \"3.10\""]
@@ -1791,7 +1789,6 @@ files = [
 [package.dependencies]
 attrs = ">=22.2.0"
 rpds-py = ">=0.7.0"
-typing-extensions = {version = ">=4.4.0", markers = "python_version < \"3.13\""}
 
 [[package]]
 name = "requests"
@@ -2030,7 +2027,7 @@ name = "shared-tools"
 version = "0.0.0"
 description = "Tools shared by tests in hive projects"
 optional = false
-python-versions = ">=3.12"
+python-versions = ">=3.14,<4"
 groups = ["main"]
 files = []
 develop = true
@@ -2148,7 +2145,7 @@ name = "tests-api"
 version = "0.0.0"
 description = "A collective library containing tests for different APIs and tools for benchmarking"
 optional = false
-python-versions = "^3.12"
+python-versions = ">=3.14,<4"
 groups = ["main"]
 files = []
 develop = true
@@ -2428,5 +2425,5 @@ propcache = ">=0.2.1"
 
 [metadata]
 lock-version = "2.1"
-python-versions = ">=3.12,<4"
-content-hash = "803af891488845447502a0f36142ff6b8de77aff949a9a3788b0ffa7d79f8027"
+python-versions = ">=3.14,<4"
+content-hash = "6fde069d7c9223eca3429bc050accba63ef85e386d43558df89acdc497a8d3dd"
