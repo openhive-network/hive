@@ -129,7 +129,6 @@ files = [
 
 [package.dependencies]
 frozenlist = ">=1.1.0"
-typing-extensions = {version = ">=4.2", markers = "python_version < \"3.13\""}
 
 [[package]]
 name = "annotated-types"
@@ -1838,5 +1837,5 @@ propcache = ">=0.2.1"
 
 [metadata]
 lock-version = "2.1"
-python-versions = ">=3.12,<4"
-content-hash = "80a873709ff10f7053d00c3cb75b9ac6f4330302cfc92edf5c6d091d89e89079"
+python-versions = ">=3.14,<4"
+content-hash = "b7ebcdff90000afe8f14a11b199aaa4630da26c05c479d5a34ee9f0468925ac0"
