@@ -14,16 +14,16 @@
 #   ./hiveio_api_package.sh [options]
 #
 # Options:
-#   --skip-registry-check   Skip checking if package exists in registry (always build)
-#   --skip-deploy           Skip deployment to GitLab PyPI registry
-#   --skip-tests            Skip running tests (example verification)
-#   --help                  Show this help message
+#   --hive-project-root=PATH      Root directory of the Hive project (default: pwd)
+#   --api-generation-dir=PATH     API generation directory (default: HIVE_PROJECT_ROOT/libraries/plugins/apis/api_generation)
+#   --dependency-source-dir=PATH  Dependency source directory (default: HIVE_PROJECT_ROOT/tests/python/hive-local-tools)
+#   --package-registry-project-id=ID  Project ID for package registry (default: CI_PROJECT_ID)
+#   --skip-registry-check         Skip checking if package exists in registry (always build)
+#   --skip-deploy                 Skip deployment to GitLab PyPI registry
+#   --skip-tests                  Skip running tests (example verification)
+#   --help                        Show this help message
 #
-# Environment variables:
-#   HIVE_PROJECT_ROOT           Root directory of the Hive project (default: CI_PROJECT_DIR or pwd)
-#   SKIP_WHEEL_DEPLOY           Set to any value to skip deployment (same as --skip-deploy)
-#   SKIP_REGISTRY_CHECK         Set to any value to skip registry check (same as --skip-registry-check)
-#   PACKAGE_REGISTRY_PROJECT_ID Project ID for package registry (default: CI_PROJECT_ID)
+# Environment variables (GitLab CI):
 #   CI_API_V4_URL               GitLab API URL (required for registry operations)
 #   CI_JOB_TOKEN                GitLab CI job token (required for registry operations)
 #
@@ -46,22 +46,24 @@ TXT_YELLOW="${TXT_YELLOW:-\e[1;33m}"
 TXT_RED="${TXT_RED:-\e[1;31m}"
 TXT_CLEAR="${TXT_CLEAR:-\e[0m}"
 
-# Project paths
-HIVE_PROJECT_ROOT="${HIVE_PROJECT_ROOT:-${CI_PROJECT_DIR:-$(pwd)}}"
-API_GENERATION_DIR="${API_GENERATION_DIR:-${HIVE_PROJECT_ROOT}/libraries/plugins/apis/api_generation}"
-GENERATOR_PYPROJECT_DIR="${API_GENERATION_DIR}/api_generation"
-DEPENDENCY_SOURCE_DIR="${DEPENDENCY_SOURCE_DIR:-${HIVE_PROJECT_ROOT}/tests/python/hive-local-tools}"
-GENERATED_PACKAGE_DIR="${API_GENERATION_DIR}/hiveio_api"
-WHEEL_OUTPUT_DIR="${GENERATED_PACKAGE_DIR}/dist"
+# Project paths (set via arguments, with defaults)
+HIVE_PROJECT_ROOT=""
+API_GENERATION_DIR=""
+DEPENDENCY_SOURCE_DIR=""
+
+# Derived paths (set after argument parsing)
+GENERATOR_PYPROJECT_DIR=""
+GENERATED_PACKAGE_DIR=""
+WHEEL_OUTPUT_DIR=""
 
 # Package configuration
 PACKAGE_NAME="hiveio-api"
-PACKAGE_REGISTRY_PROJECT_ID="${PACKAGE_REGISTRY_PROJECT_ID:-${CI_PROJECT_ID:-}}"
+PACKAGE_REGISTRY_PROJECT_ID=""
 
-# Script options (can be overridden by CLI args or env vars)
-OPT_SKIP_DEPLOY="${SKIP_WHEEL_DEPLOY:-}"
+# Script options
+OPT_SKIP_DEPLOY=""
 OPT_SKIP_TESTS=""
-OPT_SKIP_REGISTRY_CHECK="${SKIP_REGISTRY_CHECK:-}"
+OPT_SKIP_REGISTRY_CHECK=""
 
 # ==============================================================================
 # Logging
@@ -82,17 +84,41 @@ show_help() {
     exit 0
 }
 
-# Parses command line arguments and sets OPT_* variables.
+# Parses command line arguments and sets configuration variables.
 parse_args() {
     while [[ $# -gt 0 ]]; do
         case $1 in
-            --skip-deploy)          OPT_SKIP_DEPLOY="true"; shift ;;
-            --skip-tests)           OPT_SKIP_TESTS="true"; shift ;;
-            --skip-registry-check)  OPT_SKIP_REGISTRY_CHECK="true"; shift ;;
-            --help|-h)              show_help ;;
-            *)                      log_error "Unknown option: $1"; show_help ;;
+            --hive-project-root=*)
+                HIVE_PROJECT_ROOT="${1#*=}"; shift ;;
+            --api-generation-dir=*)
+                API_GENERATION_DIR="${1#*=}"; shift ;;
+            --dependency-source-dir=*)
+                DEPENDENCY_SOURCE_DIR="${1#*=}"; shift ;;
+            --package-registry-project-id=*)
+                PACKAGE_REGISTRY_PROJECT_ID="${1#*=}"; shift ;;
+            --skip-deploy)
+                OPT_SKIP_DEPLOY="true"; shift ;;
+            --skip-tests)
+                OPT_SKIP_TESTS="true"; shift ;;
+            --skip-registry-check)
+                OPT_SKIP_REGISTRY_CHECK="true"; shift ;;
+            --help|-h)
+                show_help ;;
+            *)
+                log_error "Unknown option: $1"; show_help ;;
         esac
     done
+
+    # Set defaults for paths if not provided
+    HIVE_PROJECT_ROOT="${HIVE_PROJECT_ROOT:-$(pwd)}"
+    API_GENERATION_DIR="${API_GENERATION_DIR:-${HIVE_PROJECT_ROOT}/libraries/plugins/apis/api_generation}"
+    DEPENDENCY_SOURCE_DIR="${DEPENDENCY_SOURCE_DIR:-${HIVE_PROJECT_ROOT}/tests/python/hive-local-tools}"
+    PACKAGE_REGISTRY_PROJECT_ID="${PACKAGE_REGISTRY_PROJECT_ID:-${CI_PROJECT_ID:-}}"
+
+    # Set derived paths
+    GENERATOR_PYPROJECT_DIR="${API_GENERATION_DIR}/api_generation"
+    GENERATED_PACKAGE_DIR="${API_GENERATION_DIR}/hiveio_api"
+    WHEEL_OUTPUT_DIR="${GENERATED_PACKAGE_DIR}/dist"
 }
 
 # Returns 0 if all required CI variables for registry access are set.
