@@ -1,6 +1,6 @@
 include:
   - project: 'hive/common-ci-configuration'
-    ref: 7d82f5d902f354dd2506d7fb38f592eb359a44d4
+    ref: abc34d5832e76025af25de183ee30460ae8a3956
     file:
       - '/templates/npm_projects.gitlab-ci.yml'
       - '/templates/wasm_build.gitlab-ci.yml'
