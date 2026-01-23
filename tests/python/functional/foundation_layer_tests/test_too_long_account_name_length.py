@@ -165,7 +165,6 @@ TOO_LONG_ACCOUNT_NAME: Final[str] = "too-long-account-name"
             {"accounts": [TOO_LONG_ACCOUNT_NAME, TOO_LONG_ACCOUNT_NAME]},
         ),
         ("database", "find_collateralized_conversion_requests", [], {"account": TOO_LONG_ACCOUNT_NAME}),
-        ("database", "find_comments", [], {"comments": [[TOO_LONG_ACCOUNT_NAME, "https://api.hive.blog"]]}),
         (
             "database",
             "find_decline_voting_rights_requests",

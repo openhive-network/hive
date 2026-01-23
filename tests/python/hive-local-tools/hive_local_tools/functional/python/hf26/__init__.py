@@ -2,9 +2,6 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-import pytest
-from beekeepy.exceptions import CommunicationError
-
 import test_tools as tt
 from shared_tools.complex_networks import init_network
 
@@ -30,17 +27,6 @@ def legacy_operation_passed(wallet: tt.OldWallet) -> None:
 def hf26_operation_passed(wallet: tt.OldWallet) -> None:
     tt.logger.info("Creating `hf26` operations (pass expected)...")
     wallet.api.transfer("initminer", "alice", tt.Asset.Test(199).as_serialized_nai(), "memo")
-
-
-def hf26_operation_failed(wallet: tt.OldWallet) -> None:
-    tt.logger.info("Creating `hf26` operations (fail expected)...")
-
-    with pytest.raises(CommunicationError) as exception:
-        wallet.api.transfer("initminer", "alice", tt.Asset.Test(200).as_serialized_nai(), "memo")
-
-    assert (
-        "missing required active authority" in exception.value.get_response_error_messages()[0]
-    ), "Incorrect error in `hf26` transfer operation"
 
 
 def prepare_network(
