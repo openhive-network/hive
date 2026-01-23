@@ -1,5 +1,7 @@
 # Common macros for test property files.
 
+cmake_policy(SET CMP0064 NEW)
+
 if(NOT COMMAND set_test_properties_if_exists)
   macro(set_test_properties_if_exists TEST_NAME)
     if(TEST ${TEST_NAME})
