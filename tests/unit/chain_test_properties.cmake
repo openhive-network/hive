@@ -1,0 +1,18 @@
+# Test properties for chain_test - set COST for CTest scheduling (higher cost = starts first)
+# This file is included after test discovery to set properties on dynamically discovered tests
+
+include("${CMAKE_CURRENT_LIST_DIR}/BoostTestPropertiesMacros.cmake")
+
+set_test_properties_if_exists(unit/chain_test-direct_rc_delegation/rc_delegation_removal_no_rc PROPERTIES COST 171)
+set_test_properties_if_exists(unit/chain_test-operation_tests/recurrent_transfer_max_transfer_processed_per_block PROPERTIES COST 112)
+set_test_properties_if_exists(unit/chain_test-operation_tests/recurrent_transfer_max_open_transfers PROPERTIES COST 112)
+set_test_properties_if_exists(unit/chain_test-operation_time_tests/feed_publish_mean PROPERTIES COST 103)
+set_test_properties_if_exists(unit/chain_test-operation_time_tests/hbd_stability PROPERTIES COST 224)
+set_test_properties_if_exists(unit/chain_test-operation_time_tests/recurrent_transfer_consecutive_failure_deletion PROPERTIES COST 721)
+set_test_properties_if_exists(unit/chain_test-operation_time_tests/recurrent_transfer_expiration PROPERTIES COST 281)
+set_test_properties_if_exists(unit/chain_test-operation_visitor/visit_performance PROPERTIES COST 2726)
+set_test_properties_if_exists(unit/chain_test-proposal_tests/db_remove_expired_governance_votes PROPERTIES COST 222)
+set_test_properties_if_exists(unit/chain_test-proposal_tests_performance/generating_payments PROPERTIES COST 312)
+set_test_properties_if_exists(unit/chain_test-timeshare_tests/test_pre_hf26_behavior PROPERTIES COST 123)
+set_test_properties_if_exists(unit/chain_test-timeshare_tests/test_hf26_behavior PROPERTIES COST 120)
+set_test_properties_if_exists(unit/chain_test-timeshare_tests/test_hf27_behavior PROPERTIES COST 120)

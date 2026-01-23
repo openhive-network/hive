@@ -63,7 +63,7 @@ macro(add_command NAME)
   endforeach()
   string(APPEND script "${NAME}(${_args})\n")
   string(LENGTH "${script}" _script_len)
-  if(${_script_len} GREATER "50000")
+  if(${_script_len} GREATER "500000")
     flush_script()
   endif()
   # Unsets macro local variables to prevent leakage outside of this macro.
@@ -94,6 +94,10 @@ macro(add_another_test hierarchy_list enabled separator)
     list(JOIN ${hierarchy_list} ${separator} test_name)
     list(JOIN ${hierarchy_list} "/" test_path)
   endif()
+  # Create unique temp directory name for this test (sanitize for filesystem)
+  string(REPLACE "/" "_" test_safe_name "${test_path}")
+  string(REPLACE " " "_" test_safe_name "${test_safe_name}")
+  set(temp_dir "/tmp/hive-test-${__TEST_TARGET}-${test_safe_name}")
   # ...and add to script.
   add_command(add_test
       "${prefix}${test_name}${suffix}"
@@ -112,11 +116,12 @@ macro(add_another_test hierarchy_list enabled separator)
     "${prefix}${test_name}${suffix}"
     PROPERTIES
     WORKING_DIRECTORY "${__TEST_WORKING_DIR}"
+    ENVIRONMENT "HIVE_TEMPDIR=${temp_dir}"
     ${properties}
   )
   list(APPEND tests_buffer "${prefix}${test_name}${suffix}")
   list(LENGTH tests_buffer tests_buffer_length)
-  if(${tests_buffer_length} GREATER "250")
+  if(${tests_buffer_length} GREATER "1000")
     flush_tests_buffer()
   endif()
 endmacro()

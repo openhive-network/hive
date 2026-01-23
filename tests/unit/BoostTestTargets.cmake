@@ -102,8 +102,7 @@ function(add_boost_test _name)
 		FAIL_REGULAR_EXPRESSION
 		LAUNCHER
 		LIBRARIES
-		RESOURCES
-		TESTS)
+		RESOURCES)
 	set(_bool_args
 		USE_COMPILED_LIBRARY)
 	foreach(_arg ${_val_args} ${_bool_args})
@@ -208,67 +207,6 @@ function(add_boost_test _name)
 		if(RESOURCES)
 			set_property(TARGET ${_target_name} PROPERTY RESOURCE ${RESOURCES})
 			copy_resources_to_build_tree(${_target_name})
-		endif()
-
-		if(NOT Boost_TEST_FLAGS)
-#			set(Boost_TEST_FLAGS --catch_system_error=yes --output_format=XML)
-			set(Boost_TEST_FLAGS --catch_system_error=yes)
-		endif()
-
-		# TODO: Figure out why only recent boost handles individual test running properly
-
-		if(LAUNCHER)
-			set(_test_command ${LAUNCHER} "\$<TARGET_FILE:${_target_name}>")
-		else()
-			set(_test_command ${_target_name})
-		endif()
-
-		if(TESTS AND ( "${Boost_VERSION_MACRO}" VERSION_GREATER "103799" ))
-			foreach(_test_with_cost ${TESTS})
-				# Parse test name and cost from format "testname:cost" or just "testname"
-				string(REGEX MATCH "^([^:]+):([0-9]+)$" _matched "${_test_with_cost}")
-				if(_matched)
-					set(_test "${CMAKE_MATCH_1}")
-					set(_cost "${CMAKE_MATCH_2}")
-				else()
-					set(_test "${_test_with_cost}")
-					set(_cost "1")
-				endif()
-				
-				# Set unique temp directory per test to enable parallel execution
-				string(REPLACE "/" "_" _test_safe_name "${_test}")
-				set(_temp_dir "/tmp/hive-test-${_name}-${_test_safe_name}")
-				
-				# Wrap test command to cleanup temp dir on success only
-				add_test(
-					unit/${_name}-${_test}
-					sh -c "./${_test_command} --run_test=${_test} ${Boost_TEST_FLAGS}; _result=$?; [ $_result -eq 0 ] && rm -rf ${_temp_dir}; exit $_result"
-				)
-				
-				if(FAIL_REGULAR_EXPRESSION)
-					set_tests_properties(unit/${_name}-${_test}
-						PROPERTIES
-						FAIL_REGULAR_EXPRESSION "${FAIL_REGULAR_EXPRESSION}"
-						ENVIRONMENT "HIVE_TEMPDIR=${_temp_dir}"
-						COST ${_cost})
-				else()
-					set_tests_properties(unit/${_name}-${_test}
-						PROPERTIES
-						ENVIRONMENT "HIVE_TEMPDIR=${_temp_dir}"
-						COST ${_cost})
-				endif()
-			endforeach()
-		else()
-			add_test(
-				unit/${_name}-boost_test
-				${_test_command} ${Boost_TEST_FLAGS}
-			)
-			if(FAIL_REGULAR_EXPRESSION)
-				set_tests_properties(unit/${_name}-boost_test
-					PROPERTIES
-					FAIL_REGULAR_EXPRESSION
-					"${FAIL_REGULAR_EXPRESSION}")
-			endif()
 		endif()
 
 		# CppCheck the test if we can.
