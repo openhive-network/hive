@@ -32,7 +32,8 @@
 #
 # Variables:
 #   HIVE_PROJECT_ROOT           Root directory of the Hive project (default: "${CI_PROJECT_DIR}")
-#   SKIP_WHEEL_DEPLOY           Set to any value to skip deployment to GitLab PyPI registry
+#   SKIP_WHEEL_DEPLOY           Set to "true" to skip deployment to GitLab PyPI registry
+#   SKIP_REGISTRY_CHECK         Set to "true" to skip registry check (always build)
 #   PACKAGE_REGISTRY_PROJECT_ID Project ID for package registry (default: CI_PROJECT_ID)
 #                               Use this when running in a downstream project to publish
 #                               to the upstream (hive) project's registry
@@ -49,9 +50,20 @@
     API_GENERATION_DIR: "${HIVE_PROJECT_ROOT}/libraries/plugins/apis/api_generation"
     PYPROJECT_DIR: "${API_GENERATION_DIR}/api_generation"
     DEPENDENCY_SOURCE_DIR: "${HIVE_PROJECT_ROOT}/tests/python/hive-local-tools"
+    SKIP_WHEEL_DEPLOY: ""
+    SKIP_REGISTRY_CHECK: ""
   stage: build
   script:
-    - "${HIVE_PROJECT_ROOT}/scripts/ci-helpers/hiveio_api_package.sh"
+    - |
+      SCRIPT_ARGS=(
+        "--hive-project-root=${HIVE_PROJECT_ROOT}"
+        "--api-generation-dir=${API_GENERATION_DIR}"
+        "--dependency-source-dir=${DEPENDENCY_SOURCE_DIR}"
+        "--package-registry-project-id=${PACKAGE_REGISTRY_PROJECT_ID:-${CI_PROJECT_ID}}"
+      )
+      [[ "${SKIP_WHEEL_DEPLOY}" == "true" ]] && SCRIPT_ARGS+=("--skip-deploy")
+      [[ "${SKIP_REGISTRY_CHECK}" == "true" ]] && SCRIPT_ARGS+=("--skip-registry-check")
+      "${HIVE_PROJECT_ROOT}/scripts/ci-helpers/hiveio_api_package.sh" "${SCRIPT_ARGS[@]}"
   artifacts:
     expire_in: 1 week
     paths:
