@@ -390,12 +390,13 @@ mirrornet_replay_test:
 chain_test:
   extends: .unit_tests_base
   script:
-    - timeout 30m ./hived-testnet-binaries/chain_test --log_format=JUNIT --log_sink=chain_test_results.xml --log_level=error > chain_test.log 2>&1
+    - cd hived-testnet-binaries
+    - timeout 30m ctest --output-on-failure --output-junit chain_test_results.xml -R '^unit/chain_test-' --parallel $(nproc) 2>&1 | tee chain_test.log
   artifacts:
     reports:
-      junit: chain_test_results.xml
+      junit: hived-testnet-binaries/chain_test_results.xml
     paths:
-      - chain_test.log
+      - hived-testnet-binaries/chain_test.log
     when: always
     expire_in: 1 week
 
