@@ -2107,7 +2107,7 @@ name = "tests-api"
 version = "0.0.0"
 description = "A collective library containing tests for different APIs and tools for benchmarking"
 optional = false
-python-versions = ">=3.14,<4"
+python-versions = "^3.12"
 groups = ["main"]
 files = []
 develop = true
