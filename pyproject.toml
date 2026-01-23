@@ -1,0 +1,80 @@
+# Tool configuration for Python code in this repository.
+# This ensures consistent formatting/linting regardless of where tools are invoked from.
+# Full package config is in tests/python/hive-local-tools/pyproject.toml
+
+[tool.black]
+line-length = 120
+preview = true
+exclude = "test-tools|tests_api"
+
+
+[tool.ruff]
+preview = true
+line-length = 120
+exclude = [
+    "/**/test-tools/**",
+    "/**/tests_api/**",
+    "/**/helpy/**",
+    "/**/schemas/**"
+]
+[tool.ruff.lint]
+select = [  # https://docs.astral.sh/ruff/rules/
+    "F",
+    "E",
+    "W",
+    "C",
+    "I",
+    "N",
+    "UP",
+    "YTT",
+    "ASYNC",
+    "B",
+    "C4",
+    "FA",
+    "ISC",
+    "INP",
+    "PIE",
+    "PYI",
+    "PT",
+    "RSE",
+    "RET",
+    "SLF",
+    "SIM",
+    "TID",
+    "TCH",
+    "INT",
+    "TRY",
+    "FLY",
+    "PERF",
+    "FURB",
+    "RUF",
+]
+ignore = [
+    "E203", # whitespace before punctuation, handled by black
+    "E501", # line too long, handled by black
+    "PT004", # fixture does not return anything, add leading underscore
+    "TRY003", # too restrictive
+    "TRY400", # TODO: Consider fixing
+    "PERF401", # too restrictive
+]
+
+[tool.ruff.lint.per-file-ignores]
+"/**/tests/python/functional/fork_tests/**" = [
+    "N803",
+    "N806",
+]
+"/**/tests/python/**/decentralized_hive_fund*/**" = [
+    "PIE804",
+]
+
+
+[tool.ruff.lint.isort]
+known-first-party = [
+    "hive_local_tools",
+    "hive_utils",
+    "schemas",
+    "shared_tools",
+    "test_tools",
+    "wax",
+]
+required-imports = ["from __future__ import annotations"]

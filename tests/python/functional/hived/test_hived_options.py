@@ -28,9 +28,7 @@ def test_dump_config() -> None:
         {"exit_before_synchronization": True},
     ],
 )
-def test_stop_after_replay(
-    way_to_stop: dict[str, Any], block_log: Path, block_log_length: int
-) -> None:
+def test_stop_after_replay(way_to_stop: dict[str, Any], block_log: Path, block_log_length: int) -> None:
     network = tt.Network()
     node_which_should_not_synchronize = tt.ApiNode(network=network)
     node_with_new_blocks = tt.InitNode(network=network)
@@ -46,9 +44,7 @@ def test_stop_after_replay(
     node_with_new_blocks.close()  # Now node_which_should_not_synchronize will surely not synchronize.
 
     node_which_should_not_synchronize.run(wait_for_live=False)
-    assert (
-        node_which_should_not_synchronize.get_last_block_number() == block_log_length
-    )  # No new blocks.
+    assert node_which_should_not_synchronize.get_last_block_number() == block_log_length  # No new blocks.
 
 
 @pytest.mark.parametrize(
@@ -58,9 +54,7 @@ def test_stop_after_replay(
         {"exit_before_synchronization": True},
     ],
 )
-def test_stop_after_replay_in_load_from_snapshot(
-    way_to_stop: dict[str, Any], block_log: Path
-) -> None:
+def test_stop_after_replay_in_load_from_snapshot(way_to_stop: dict[str, Any], block_log: Path) -> None:
     node = tt.ApiNode()
     node.run(replay_from=block_log, **way_to_stop)
 
@@ -73,9 +67,7 @@ def test_stop_after_replay_in_load_from_snapshot(
             break
         except FailedToStartExecutableError:
             if attempt < max_retries - 1:
-                tt.logger.warning(
-                    f"Snapshot dump failed (attempt {attempt + 1}/{max_retries}), retrying..."
-                )
+                tt.logger.warning(f"Snapshot dump failed (attempt {attempt + 1}/{max_retries}), retrying...")
                 time.sleep(1)
             else:
                 raise
@@ -89,9 +81,7 @@ def test_stop_after_replay_in_load_from_snapshot(
             break
         except FailedToStartExecutableError:
             if attempt < max_retries - 1:
-                tt.logger.warning(
-                    f"Snapshot load failed (attempt {attempt + 1}/{max_retries}), retrying..."
-                )
+                tt.logger.warning(f"Snapshot load failed (attempt {attempt + 1}/{max_retries}), retrying...")
                 time.sleep(1)
             else:
                 raise
@@ -120,9 +110,7 @@ def test_exit_replay_at_given_block(block_log: Path, block_log_length: int) -> N
         assert warning in stderr
 
 
-def test_stop_replay_at_given_block_with_enabled_witness_plugin(
-    block_log: Path, block_log_length: int
-) -> None:
+def test_stop_replay_at_given_block_with_enabled_witness_plugin(block_log: Path, block_log_length: int) -> None:
     # In the past there was a problem with witness node stopped at given block. This issue was caused by communication
     # of witness plugin with p2p plugin. When node is stopped at given block, p2p plugin is not enabled, so witness
     # plugin was unable to get information from it and program used to crash.
@@ -139,9 +127,7 @@ def test_stop_replay_at_given_block_with_enabled_witness_plugin(
     # Wait some time to increase a chance of p2p and witness plugins communication.
     time.sleep(10)
 
-    assert (
-        node.get_last_block_number() == final_block
-    )  # Node should not produce any block since stop.
+    assert node.get_last_block_number() == final_block  # Node should not produce any block since stop.
     assert node.is_running()  # Make sure, that node didn't crash.
 
 
@@ -211,8 +197,6 @@ def test_hived_get_version() -> None:
         "fc_revision",
         "node_type",
     }:
-        assert (
-            expected_key in version_json["version"]
-        ), f"Missing `{expected_key}` in version_json."
+        assert expected_key in version_json["version"], f"Missing `{expected_key}` in version_json."
 
     assert version_json["version"]["node_type"] == "testnet"
