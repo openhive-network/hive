@@ -18,7 +18,11 @@ def node(request):
     if shared_file_size:
         init_node.config.shared_file_size = shared_file_size.args[0]
 
-    init_node.run(environment_variables={"HIVE_HF26_TIME": "1598558400"})
+    init_node.run(
+        environment_variables={"HIVE_HF26_TIME": "1598558400"},
+        timeout=60.0,
+        max_retries=3,
+    )
     return init_node
 
 
