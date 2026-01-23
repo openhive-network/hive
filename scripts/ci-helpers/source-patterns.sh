@@ -24,7 +24,8 @@ contrib/
 Dockerfile
 cmake
 CMakeLists.txt
-.gitmodules"
+.gitmodules
+scripts/build.sh"
 
 case "${1:-}" in
     --regex)
