@@ -581,12 +581,10 @@ class Vote:
     def assert_vote(self, mode: Literal["occurred", "not_occurred"]) -> None:
         if mode == "occurred":
             vote_operation = self.__vote_transaction.operations[0].value
-            operation_values = []
-            for i in (1, 2):
-                operations = self.__comment_obj.node.api.account_history.get_ops_in_block(
-                    block_num=self.__vote_transaction.ref_block_num + i, include_reversible=True
-                ).ops
-                operation_values = operation_values + [operation.op.value for operation in operations]
+            operations = self.__comment_obj.node.api.account_history.get_ops_in_block(
+                block_num=self.__vote_transaction.block_num, include_reversible=True
+            ).ops
+            operation_values = [operation.op.value for operation in operations]
             assert vote_operation in operation_values, "Vote_operation not generated, but it should have been"
         elif mode == "not_occurred":
             assert self.__vote_transaction is None, "Vote_operation generated, but it should have not been"
