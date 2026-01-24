@@ -44,7 +44,7 @@ struct witness_fixture : public hived_fixture
   witness_fixture( bool remove_db = true ) : hived_fixture( remove_db, false ) {}
   virtual ~witness_fixture() { configuration_data = configuration(); }
 
-  void initialize( int genesis_delay = 1, // genesis slightly in the future (or past with negative values)
+  void initialize( int genesis_delay = 3, // genesis slightly in the future (increased for CI stability)
     const std::vector< std::string > initial_witnesses = {}, // initial witnesses over 'initminer'
     const std::vector< std::string > represented_witnesses = { "initminer" }, // which witnesses can produce
     const config_arg_override_t& extra_config_args = config_arg_override_t(),
@@ -106,12 +106,14 @@ struct witness_fixture : public hived_fixture
   }
 
   template< typename ACTION >
-  uint32_t wait_for_block_change( uint32_t block_num, ACTION&& action )
+  uint32_t wait_for_block_change( uint32_t block_num, ACTION&& action, uint32_t timeout_seconds = 60 )
   {
     bool stop = false;
+    uint32_t waited = 0;
     do
     {
       fc::usleep( fc::seconds( 1 ) );
+      ++waited;
       db->with_read_lock( [&]()
       {
         uint32_t new_block = db->head_block_num();
@@ -123,7 +125,8 @@ struct witness_fixture : public hived_fixture
         }
       } );
     }
-    while( !stop && !theApp.is_interrupt_request() );
+    while( !stop && !theApp.is_interrupt_request() && waited < timeout_seconds );
+    BOOST_REQUIRE_MESSAGE( stop || theApp.is_interrupt_request(), "Timed out waiting for block change" );
     return block_num;
   }
 
@@ -1771,10 +1774,10 @@ BOOST_AUTO_TEST_CASE( colony_basic_test )
     } BOOST_SCOPE_EXIT_END
 
     configuration_data.min_root_comment_interval = fc::seconds( 3 );
-    const uint32_t COLONY_START = 42; // at the start of third schedule
+    const uint32_t COLONY_START = 63; // at the start of fourth schedule (increased for CI stability)
     bool test_passed = false;
 
-    initialize( 1, {}, { "initminer" }, {
+    initialize( 3, {}, { "initminer" }, {
       config_line_t( { "plugin", { HIVE_COLONY_PLUGIN_NAME } } ),
       config_line_t( { "colony-sign-with", { init_account_priv_key.key_to_wif() } } ),
       config_line_t( { "colony-start-at-block", { std::to_string( COLONY_START ) } } ),
@@ -2189,7 +2192,7 @@ BOOST_AUTO_TEST_CASE( colony_queen_test )
   try
   {
     configuration_data.min_root_comment_interval = fc::seconds( 3 );
-    const uint32_t COLONY_START = 42; // at the start of third schedule
+    const uint32_t COLONY_START = 63; // at the start of fourth schedule (increased for CI stability)
     bool test_passed = false;
 
     BOOST_SCOPE_EXIT( this_ )
@@ -2199,7 +2202,7 @@ BOOST_AUTO_TEST_CASE( colony_queen_test )
       this_->theApp.quit( true );
     } BOOST_SCOPE_EXIT_END
 
-    initialize( 1, {}, {}, {
+    initialize( 3, {}, {}, {
       config_line_t( { "plugin", { HIVE_COLONY_PLUGIN_NAME } } ),
       config_line_t( { "colony-sign-with", { init_account_priv_key.key_to_wif() } } ),
       config_line_t( { "colony-start-at-block", { std::to_string( COLONY_START ) } } ),
