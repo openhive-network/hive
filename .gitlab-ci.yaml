@@ -5,6 +5,7 @@ stages:
 - cleanup
 - publish
 - deploy
+- downstream
 
 variables:
   PYTEST_NUMBER_OF_PROCESSES: 8
@@ -1620,3 +1621,22 @@ exchange_node_block_log_pruning_test:
   - when: on_success
   tags:
     - public-runner-docker
+
+# =============================================================================
+# Downstream Triggers
+# =============================================================================
+# Trigger downstream repos to update their poetry.lock when hive's changes.
+# This prevents version mismatch failures in dependent projects like HAfAH.
+trigger_downstream_poetry_updates:
+  stage: downstream
+  rules:
+    - if: $CI_COMMIT_BRANCH == "develop" && $CI_PIPELINE_SOURCE == "push"
+      changes:
+        - tests/python/hive-local-tools/pyproject.toml
+        - tests/python/hive-local-tools/poetry.lock
+  trigger:
+    project: hive/HAfAH
+    branch: develop
+  variables:
+    TRIGGER_POETRY_UPDATE: "true"
+    HIVE_COMMIT: $CI_COMMIT_SHA
