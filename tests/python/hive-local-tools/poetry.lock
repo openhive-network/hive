@@ -664,7 +664,7 @@ files = [
 
 [package.dependencies]
 aiohttp = "3.11.15"
-hiveio-schemas = "1.28.1.dev15+ae89370"
+hiveio-schemas = "1.28.1.dev16+f57d36f"
 loguru = "0.7.2"
 psutil = "7.0.0"
 python-dateutil = "2.8.2"
@@ -677,13 +677,13 @@ reference = "gitlab-beekeepy"
 
 [[package]]
 name = "hiveio-schemas"
-version = "1.28.1.dev15+ae89370"
+version = "1.28.1.dev16+f57d36f"
 description = "Tools for checking if message fits expected format"
 optional = false
 python-versions = ">=3.12,<4"
 groups = ["main"]
 files = [
-    {file = "hiveio_schemas-1.28.1.dev15+ae89370-py3-none-any.whl", hash = "sha256:25c98a8bcd37143daee23eb6b5c51effb09164481b20e55850e36674ddd0cd34"},
+    {file = "hiveio_schemas-1.28.1.dev16+f57d36f-py3-none-any.whl", hash = "sha256:57f2c4e2ecf79df1fbcd565a27a9fffa860664b9faca31d78f7c28e6f23a4f1d"},
 ]
 
 [package.dependencies]
