@@ -1038,6 +1038,72 @@ BOOST_AUTO_TEST_CASE( start_before_genesis_test )
 
 BOOST_AUTO_TEST_CASE( missing_blocks_test )
 {
+  // Tests that witness scheduling correctly distributes block production across witnesses.
+  // Uses debug plugin for deterministic block generation instead of real-time waiting.
+  // This test validates the schedule logic by simulating which witnesses would produce
+  // based on their representation status.
+
+  try
+  {
+    BOOST_SCOPE_EXIT( this_ )
+    {
+      this_->theApp.generate_interrupt_request();
+      this_->theApp.wait4interrupt_request();
+      this_->theApp.quit( true );
+    } BOOST_SCOPE_EXIT_END
+
+    // Same setup as realtime test: 20 witnesses, representing every other one
+    std::vector< std::string > all_witnesses =
+      { "wit1", "wit2", "wit3", "wit4", "wit5", "wit6", "wit7", "wit8", "wit9", "wita",
+        "witb", "witc", "witd", "wite", "witf", "witg", "with", "witi", "witj", "witk" };
+    std::set< std::string > represented_witnesses =
+      { "wit1", "wit3", "wit5", "wit7", "wit9", "witb", "witd", "witf", "with", "witj" };
+
+    initialize( -HIVE_MAX_WITNESSES * 2 * HIVE_BLOCK_INTERVAL,
+      all_witnesses,
+      std::vector< std::string >( represented_witnesses.begin(), represented_witnesses.end() )
+    );
+
+    // Produce first two schedules of blocks to get past initminer
+    schedule_blocks( HIVE_MAX_WITNESSES * 2 );
+    BOOST_REQUIRE( db->has_hardfork( HIVE_NUM_HARDFORKS ) );
+    BOOST_REQUIRE_EQUAL( db->head_block_num(), HIVE_MAX_WITNESSES * 2 );
+
+    // Now examine the third schedule to verify witness distribution
+    uint32_t represented_count = 0;
+    uint32_t not_represented_count = 0;
+
+    for( uint32_t slot = 1; slot <= HIVE_MAX_WITNESSES; ++slot )
+    {
+      account_name_type scheduled = db->get_scheduled_witness( slot );
+      bool is_represented = represented_witnesses.count( scheduled ) > 0;
+
+      if( is_represented )
+      {
+        ++represented_count;
+        ilog( "Slot ${s}: ${w} (represented)", ("s", slot)("w", scheduled) );
+      }
+      else
+      {
+        ++not_represented_count;
+        ilog( "Slot ${s}: ${w} (not represented)", ("s", slot)("w", scheduled) );
+      }
+    }
+
+    // With 10 represented witnesses out of 21 slots (20 witnesses + 1 timeshare),
+    // we expect 10 represented and 11 not represented
+    BOOST_REQUIRE_EQUAL( represented_count, 10 );
+    BOOST_REQUIRE_EQUAL( not_represented_count, 11 );
+
+    ilog( "Test done: ${r} represented, ${n} not represented in schedule",
+      ("r", represented_count)("n", not_represented_count) );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+// Real-time version kept for integration testing (may be flaky under load)
+BOOST_AUTO_TEST_CASE( missing_blocks_realtime_test )
+{
   try
   {
     BOOST_SCOPE_EXIT( this_ )
@@ -1111,7 +1177,7 @@ BOOST_AUTO_TEST_CASE( missing_blocks_test )
 
 BOOST_AUTO_TEST_CASE( supplemented_blocks_test )
 {
-  // ABW: same as missing_blocks_test except blocks that witness plugin could not produce due to
+  // ABW: same as missing_blocks_realtime_test except blocks that witness plugin could not produce due to
   // not being marked as representing scheduled witnesses are generated artificially with debug plugin;
   // the main purpose of this test is to check if such thing works; for witness plugin it should
   // look as if those blocks were created outside of node and passed to it through p2p
