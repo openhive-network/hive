@@ -20,6 +20,7 @@ source = [
     { name = "gitlab-schemas", url = "https://gitlab.syncad.com/api/v4/projects/362/packages/pypi/simple", priority = "supplemental" },
     { name = "gitlab-wax", url = "https://gitlab.syncad.com/api/v4/projects/419/packages/pypi/simple", priority = "supplemental" },
     { name = "gitlab-beekeepy", url = "https://gitlab.syncad.com/api/v4/projects/434/packages/pypi/simple", priority = "supplemental" },
+    { name = "gitlab-test-tools", url = "https://gitlab.syncad.com/api/v4/projects/300/packages/pypi/simple", priority = "supplemental" },
     { name = "gitlab-database_api", url = "https://gitlab.syncad.com/api/v4/projects/198/packages/pypi/simple", priority = "supplemental" },
     { name = "gitlab-network_broadcast_api", url = "https://gitlab.syncad.com/api/v4/projects/198/packages/pypi/simple", priority = "supplemental" },
 ]
@@ -37,7 +38,7 @@ tavern = "3.0.2"
 msgspec = "^0.20.0"
 types-PyYAML = "6.0.12.11"
 shared-tools = { path = "shared-tools", develop = true }
-test-tools = { path = "test-tools", develop = true }
+test-tools = "0.0.1.dev1399+49adc69"
 tests_api = { path = "tests_api", develop = true }
 
 [tool.poetry.group.dev.dependencies]
