@@ -2,12 +2,6 @@
 # This ensures consistent formatting/linting regardless of where tools are invoked from.
 # Full package config is in tests/python/hive-local-tools/pyproject.toml
 
-[tool.black]
-line-length = 120
-preview = true
-exclude = "test-tools|tests_api"
-
-
 [tool.ruff]
 preview = true
 line-length = 120
@@ -50,8 +44,8 @@ select = [  # https://docs.astral.sh/ruff/rules/
     "RUF",
 ]
 ignore = [
-    "E203", # whitespace before punctuation, handled by black
-    "E501", # line too long, handled by black
+    "E203", # whitespace before punctuation, handled by ruff format
+    "E501", # line too long, handled by ruff format
     "PT004", # fixture does not return anything, add leading underscore
     "TRY003", # too restrictive
     "TRY400", # TODO: Consider fixing
