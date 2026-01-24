@@ -2079,13 +2079,13 @@ mqtt = ["paho-mqtt (>=1.3.1,<=1.6.1)"]
 
 [[package]]
 name = "test-tools"
-version = "0.0.1.dev1399+49adc69"
+version = "0.0.1.dev1401+edb6f1a"
 description = "Tools for testing hive software"
 optional = false
 python-versions = ">=3.12,<4"
 groups = ["main"]
 files = [
-    {file = "test_tools-0.0.1.dev1399+49adc69-py3-none-any.whl", hash = "sha256:1388a16510c665111e0fe90fb47660523383c12f28a4529fe2427563c5507d61"},
+    {file = "test_tools-0.0.1.dev1401+edb6f1a-py3-none-any.whl", hash = "sha256:b3170a1889078af9095d70354f919fe9cab344801d08b22f990f2d1b629f8969"},
 ]
 
 [package.dependencies]
@@ -2388,4 +2388,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.14,<4"
-content-hash = "79b9c3fc95cccdb05564c548fd35dce78e1c6ea4e157eb89a9f7a2245304ecbc"
+content-hash = "708212eb23d6bd33807d871817e1a58d55f6b03a4a9df6f4a26db6f64738e2bb"
