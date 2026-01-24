@@ -365,7 +365,7 @@ The CI automatically optimizes pipeline execution based on what files changed. T
 - No specific formatter enforced (match existing style)
 
 **Python:**
-- Format with `black` (line-length: 120) - **REQUIRED before committing**
+- Format with `ruff format` (line-length: 120) - **REQUIRED before committing**
 - Lint with `ruff` (see `tests/python/hive-local-tools/test-tools/pyproject.toml`)
 - Type hints with `mypy` in strict mode
 - All files require: `from __future__ import annotations`
@@ -373,7 +373,7 @@ The CI automatically optimizes pipeline execution based on what files changed. T
 **Before committing Python:**
 ```bash
 cd tests/python/hive-local-tools
-poetry run black .
+poetry run ruff format .
 ```
 
 ## System Requirements
