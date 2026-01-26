@@ -38,7 +38,7 @@ tavern = "3.0.2"
 msgspec = "^0.20.0"
 types-PyYAML = "6.0.12.11"
 shared-tools = { path = "shared-tools", develop = true }
-hiveio-test-tools = "0.0.1.dev1409+99e1fde"
+hiveio-test-tools = "0.0.1.dev1404+dbfbe3b"
 tests_api = { path = "tests_api", develop = true }
 
 [tool.poetry.group.dev.dependencies]

@@ -101,6 +101,7 @@ enum object_type
 
 class dynamic_global_property_object;
 class account_object;
+class account_metadata_object;
 class account_authority_object;
 class witness_object;
 class transaction_object;
@@ -151,6 +152,7 @@ class smt_ico_object;
 
 typedef oid_ref< dynamic_global_property_object         > dynamic_global_property_id_type;
 typedef oid_ref< account_object                         > account_id_type;
+typedef oid_ref< account_metadata_object                > account_metadata_id_type;
 typedef oid_ref< account_authority_object               > account_authority_id_type;
 typedef oid_ref< witness_object                         > witness_id_type;
 typedef oid_ref< transaction_object                     > transaction_object_id_type;

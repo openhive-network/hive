@@ -419,7 +419,14 @@ void pow_apply( database& db, Operation o )
       true /*mined*/, HIVE_asset( 0 ) );
     // ^ empty recovery account parameter means highest voted witness at time of recovery
 
-    db.notify_metadata( { new_account.get_id(), "", "", metadata_action::pow } );
+#ifdef COLLECT_ACCOUNT_METADATA
+    db.create< account_metadata_object >( [&]( account_metadata_object& meta )
+    {
+      meta.account = new_account.get_id();
+    } );
+#else
+    FC_UNUSED( new_account );
+#endif
 
     db.create< account_authority_object >( [&]( account_authority_object& auth )
     {
@@ -556,7 +563,14 @@ void pow2_evaluator::do_apply( const pow2_operation& o )
       true /*mined*/, HIVE_asset( 0 ) );
     // ^ empty recovery account parameter means highest voted witness at time of recovery
 
-    db.notify_metadata( { new_account.get_id(), "", "", metadata_action::pow2 } );
+#ifdef COLLECT_ACCOUNT_METADATA
+    db.create< account_metadata_object >( [&]( account_metadata_object& meta )
+    {
+      meta.account = new_account.get_id();
+    } );
+#else
+    FC_UNUSED( new_account );
+#endif
 
     db.create< account_authority_object >( [&]( account_authority_object& auth )
     {

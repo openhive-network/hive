@@ -2,14 +2,11 @@ from __future__ import annotations
 
 import json
 
-import pytest
-
 import test_tools as tt
 
 from .utilities import check_keys
 
 
-@pytest.mark.enable_plugins(["metadata_api"])
 def test_update(wallet: tt.OldWallet) -> None:
     wallet.create_account("alice")
 
@@ -60,13 +57,6 @@ def test_update(wallet: tt.OldWallet) -> None:
     wallet.api.update_account_meta("alice", '{ "test" : 4 }')
 
     assert json.loads(wallet.api.get_account("alice")["json_metadata"]) == {"test": 4}
-    assert json.loads(wallet.api.get_account_metadata("alice")["json_metadata"]) == {"test": 4}
-
-    # Test find_account_metadata
-    result = wallet.api.find_account_metadata(["alice"])
-    assert len(result["metadata"]) == 1
-    assert result["metadata"][0]["account"] == "alice"
-    assert json.loads(result["metadata"][0]["json_metadata"]) == {"test": 4}
 
     key = "STM8grZpsMPnH7sxbMVZHWEu1D26F3GwLW1fYnZEuwzT4Rtd57AER"
 

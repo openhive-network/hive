@@ -132,11 +132,6 @@ class database_impl
       *  This signal is emitted when storages have to be flushed
       */
     fc::signal<void()>                                    _flush_signal;
-
-    /**
-      *  This signal is emitted when account metadata is updated
-      */
-    fc::signal<void(const metadata_notification&)>        _metadata_signal;
 };
 
 } } // hive::chain
