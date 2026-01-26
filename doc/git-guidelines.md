@@ -71,3 +71,72 @@ Above will clarify dilemma to perform hived node replay during internal testing.
 - One of the reviewers may be the author of the change.
 - This policy is designed to encourage you to take off your "writer hat" and put on your "critic/reviewer hat."  If this were a patch from an unfamiliar community contributor, would you accept it?  Can you understand what the patch does and check its correctness based only on its commit message and diff? Does it break any existing tests, or need new tests to be written? Is it stylistically sloppy -- trailing whitespace, multiple unrelated changes in a single patch, mixing bug fixes and features, or overly verbose debug logging?
 - Having multiple people look at a patch reduces the probability it will contain uncaught bugs.
+
+## Local Build Verification
+
+**Always build locally before pushing changes** to catch errors early and save CI resources:
+
+1. **Build the specific target** - See `CLAUDE.md` for detailed build commands
+2. **Run affected tests** - Execute relevant unit tests locally
+3. **Only push after local success** - This prevents wasted CI cycles
+
+Example workflow:
+```bash
+mkdir -p build && cd build
+cmake -DCMAKE_BUILD_TYPE=Debug -DBUILD_HIVE_TESTNET=ON -GNinja ../
+ninja chain_test
+./tests/chain_test --run_test=<relevant_test_suite>
+```
+
+**Why build locally first?**
+- CI builds take significant time; local builds are faster for iteration
+- Saves shared CI resources for the team
+- Immediate feedback without waiting for pipeline queues
+- Catches obvious errors before they reach the remote
+
+## Pipeline Monitoring
+
+After pushing changes to an MR branch, **monitor the pipeline** until critical jobs complete:
+
+1. **Monitor build jobs** - Wait for build jobs to complete before assuming success
+2. **Check for failures early** - Don't wait for the entire pipeline; catch build errors quickly
+3. **Stay engaged** - Continue monitoring while working on other tasks
+
+**Why monitor?**
+- Build failures block all downstream tests
+- Early detection allows faster iteration
+- Ensures your changes don't break the build for others
+
+## Pipeline Failure Handling
+
+When a pipeline associated with your MR or branch fails:
+
+1. **Analyze the cause** - Review pipeline logs to identify the failure
+2. **If caused by MR changes** - Fix the issue in the current MR
+3. **If NOT caused by MR changes** (pre-existing issue):
+   - Create a new issue describing the problem
+   - Work on it in a **separate MR**
+   - **Do not mix unrelated fixes** into the current MR
+
+Keeping MRs focused on their original purpose makes code review easier and git history cleaner.
+
+## Multi-Repository Work
+
+Some work requires multiple MRs across repositories in the `gitlab.syncad.com/hive` group (e.g., hive, haf, hivemind, test-tools).
+
+### Linking MRs
+
+- MRs must be linked together to document the dependency chain
+- Reference related MRs in the description (e.g., `Depends on hive/hive!123`)
+
+### Merge Priority
+
+- Approved MRs with **longer dependency chains** have higher merge priority
+- The final commit in `develop` from a base MR must exist before dependent repos can reference it
+- Merge order: base dependencies first, then dependent MRs
+
+**Example dependency chain:**
+```
+hive/hive!100 (base) → hive/haf!30 → hive/hivemind!50
+```
+Merge `hive/hive!100` first, then `hive/haf!30`, then `hive/hivemind!50`.
