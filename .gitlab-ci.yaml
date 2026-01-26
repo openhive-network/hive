@@ -395,17 +395,34 @@ chain_test:
     - ls -la
     - echo "=== Checking CTest configuration ==="
     - test -f CTestTestfile.cmake && echo "CTestTestfile.cmake present" || echo "CTestTestfile.cmake MISSING"
-    - test -f BoostTestAddTests.cmake && echo "BoostTestAddTests.cmake present" || echo "BoostTestAddTests.cmake MISSING"
     - test -f chain_test && echo "chain_test present" || echo "chain_test MISSING"
-    - echo "=== Running ctest ==="
+    - echo "=== Running ctest (excluding performance tests) ==="
     - cat CTestTestfile.cmake
-    - echo "=== ctest verbose run ==="
-    - timeout 30m ctest --extra-verbose --output-on-failure --output-junit chain_test_results.xml -R '^unit/chain_test-' --parallel $(nproc) 2>&1 | tee chain_test.log
+    # Exclude proposal_tests_performance - runs separately after this job
+    - timeout 30m ctest --extra-verbose --output-on-failure --output-junit chain_test_results.xml -R '^unit/chain_test-' -E 'proposal_tests_performance' --parallel $(nproc) 2>&1 | tee chain_test.log
   artifacts:
     reports:
       junit: hived-testnet-binaries/chain_test_results.xml
     paths:
       - hived-testnet-binaries/chain_test.log
+    when: always
+    expire_in: 1 week
+
+# Performance tests run serially after all other chain_tests complete
+chain_test_performance:
+  extends: .unit_tests_base
+  needs:
+    - job: chain_test
+      artifacts: true
+  script:
+    - cd hived-testnet-binaries
+    - echo "=== Running performance tests serially ==="
+    - ./chain_test --run_test=proposal_tests_performance/* --log_format=JUNIT --log_sink=chain_test_performance_results.xml --log_level=error 2>&1 | tee chain_test_performance.log
+  artifacts:
+    reports:
+      junit: hived-testnet-binaries/chain_test_performance_results.xml
+    paths:
+      - hived-testnet-binaries/chain_test_performance.log
     when: always
     expire_in: 1 week
 
