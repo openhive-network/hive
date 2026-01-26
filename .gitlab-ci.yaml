@@ -398,7 +398,9 @@ chain_test:
     - test -f BoostTestAddTests.cmake && echo "BoostTestAddTests.cmake present" || echo "BoostTestAddTests.cmake MISSING"
     - test -f chain_test && echo "chain_test present" || echo "chain_test MISSING"
     - echo "=== Running ctest ==="
-    - timeout 30m ctest --output-on-failure --output-junit chain_test_results.xml -R '^unit/chain_test-' --parallel $(nproc) 2>&1 | tee chain_test.log
+    - cat CTestTestfile.cmake
+    - echo "=== ctest verbose run ==="
+    - timeout 30m ctest --extra-verbose --output-on-failure --output-junit chain_test_results.xml -R '^unit/chain_test-' --parallel $(nproc) 2>&1 | tee chain_test.log
   artifacts:
     reports:
       junit: hived-testnet-binaries/chain_test_results.xml
