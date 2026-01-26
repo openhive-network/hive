@@ -413,11 +413,12 @@ This repo contains several submodules that require coordination:
 
 | Submodule | Path | Repo |
 |-----------|------|------|
-| npm-common-config | `programs/beekeeper/beekeeper_wasm/npm-common-config` | common-ci-configuration |
-| test-tools | `tests/python/hive-local-tools/test-tools` | test-tools |
 | tests_api | `tests/python/hive-local-tools/tests_api` | tests-api |
+| fc | `libraries/fc` | fc |
+| appbase | `libraries/appbase` | appbase |
+| compression_dictionaries | `libraries/chain/compression_dictionaries` | compression_dictionaries |
 
-When updating CI configuration, ensure `npm-common-config` submodule matches the ref in `prepare_data_image_job.yml`.
+When updating CI configuration (e.g., ci-base-image version), ensure `scripts/ci-helpers/common_includes.yml` ref matches the required common-ci-configuration commit.
 
 ### Test-Tools Dependency
 
