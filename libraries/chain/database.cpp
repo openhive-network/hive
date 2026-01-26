@@ -1561,12 +1561,6 @@ void database::clear_account( const account_object& account )
       const auto& delegatee_time = get< time_object, by_account_id >( delegatee.get_id() );
       const auto& delegatee_mrc = get< manabars_rc_object, by_account_id >( delegatee.get_id() );
 
-      modify( delegatee_assets, [&]( assets_object& a )
-      {
-        a.set_received_vesting( a.get_received_vesting() - delegation.get_vesting() );
-        freed_delegations += delegation.get_vesting();
-      } );
-
       modify( delegatee_mrc, [&]( manabars_rc_object& m )
       {
         util::update_manabar( cprops, delegatee, delegatee_assets, delegatee_time, m );
@@ -1575,6 +1569,12 @@ void database::clear_account( const account_object& account )
         m.get_downvote_manabar().use_mana(
           fc::uint128_to_int64( ( uint128_t( delegation.get_vesting().amount.value ) * cprops.downvote_pool_percent ) /
           HIVE_100_PERCENT ) );
+      } );
+
+      modify( delegatee_assets, [&]( assets_object& a )
+      {
+        a.set_received_vesting( a.get_received_vesting() - delegation.get_vesting() );
+        freed_delegations += delegation.get_vesting();
       } );
 
       remove( delegation );
@@ -3374,7 +3374,7 @@ void database::modify_reward_balance( const account_object& a, const asset& valu
     {
       if( share_delta.amount.value == 0 )
       {
-        acnt.set_rewards( acnt.get_rewards() + value_delta );
+        acnt.set_rewards( acnt.get_rewards() + HIVE_asset( value_delta ) );
         FC_ASSERT( acnt.get_rewards().amount.value >= 0, "Insufficient reward HIVE funds" );
       }
       else
