@@ -52,7 +52,6 @@ namespace hive { namespace chain {
 #include <hive/plugins/account_by_key/account_by_key_objects.hpp>
 #include <hive/plugins/account_history_rocksdb/account_history_rocksdb_objects.hpp>
 #include <hive/plugins/block_log_info/block_log_info_objects.hpp>
-#include <hive/plugins/metadata/metadata_objects.hpp>
 #include <hive/plugins/market_history/market_history_plugin.hpp>
 #include <hive/plugins/reputation/reputation_objects.hpp>
 #include <hive/plugins/transaction_status/transaction_status_objects.hpp>
@@ -369,7 +368,7 @@ namespace shared_memory_file_util
 
     // List of all indices which can be found in shared memory file.
     save_index_name(add_index_to_db<hive::chain::account_index>());
-    save_index_name(add_index_to_db<hive::plugins::metadata::account_metadata_index>());
+    save_index_name(add_index_to_db<hive::chain::account_metadata_index>());
     save_index_name(add_index_to_db<hive::chain::owner_authority_history_index>());
     save_index_name(add_index_to_db<hive::chain::account_authority_index>());
     save_index_name(add_index_to_db<hive::chain::vesting_delegation_index>());

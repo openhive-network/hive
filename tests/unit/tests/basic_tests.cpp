@@ -717,6 +717,8 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
   BOOST_CHECK_EQUAL( alignof( account_object ), 16u );
   BOOST_CHECK_EQUAL( sizeof( account_object ), 480u ); //1.3M+
   BOOST_CHECK_EQUAL( sizeof( account_index::MULTIINDEX_NODE_TYPE ), 672u );
+  BOOST_CHECK_EQUAL( sizeof( account_metadata_object ), 72u ); //as many as account_object, but only FatNode (also to be moved to HiveMind)
+  BOOST_CHECK_EQUAL( sizeof( account_metadata_index::MULTIINDEX_NODE_TYPE ), 136u );
   BOOST_CHECK_EQUAL( sizeof( account_authority_object ), 248u ); //as many as account_object
   BOOST_CHECK_EQUAL( sizeof( account_authority_index::MULTIINDEX_NODE_TYPE ), 312u );
   BOOST_CHECK_EQUAL( sizeof( liquidity_reward_balance_object ), 48u ); //obsolete - only created/modified up to HF12 (683 objects)
@@ -1521,6 +1523,7 @@ BOOST_AUTO_TEST_CASE( chain_object_checksum )
   hive::chain::util::decoded_types_data_storage dtds;
 
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::account_object>(dtds), "f1d1ffb67d5b16ff922dd66afdd98a4043cf8909" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::account_metadata_object>(dtds), "8a8a73c8a77292e0685109e0caf6040da28ba70c" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::account_authority_object>(dtds), "e492c85b420461ce856b14b80edb3649e4996d86" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::vesting_delegation_object>(dtds), "2c140c595e4a83e6aab21cb3090816206b07a5ad" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::vesting_delegation_expiration_object>(dtds), "cf8a309d076970b83c8e7ada88b01277a43dc726" );

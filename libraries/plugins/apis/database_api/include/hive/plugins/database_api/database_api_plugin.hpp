@@ -34,10 +34,7 @@ class database_api_plugin : public plugin< database_api_plugin >
       api = std::make_shared< database_api >( get_app() );
     }
 
-    virtual void plugin_startup() override
-    {
-      api->api_startup();
-    }
+    virtual void plugin_startup() override {}
     virtual void plugin_shutdown() override {}
 
     std::shared_ptr< class database_api > api;

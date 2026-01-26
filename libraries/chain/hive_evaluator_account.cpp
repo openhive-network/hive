@@ -192,7 +192,15 @@ void account_create_evaluator::do_apply( const account_create_operation& o )
   else if( o_fee.amount > 0 )
     initial_vesting_shares = _db.create_vesting( new_account, o_fee );
 
-  _db.notify_metadata( { new_account.get_id(), o.json_metadata, "", metadata_action::account_create } );
+#ifdef COLLECT_ACCOUNT_METADATA
+  _db.create< account_metadata_object >( [&]( account_metadata_object& meta )
+  {
+    meta.account = new_account.get_id();
+    from_string( meta.json_metadata, o.json_metadata );
+  } );
+#else
+  FC_UNUSED( new_account );
+#endif
 
   _db.create< account_authority_object >( [&]( account_authority_object& auth )
   {
@@ -255,7 +263,15 @@ void account_create_with_delegation_evaluator::do_apply( const account_create_wi
   else if( o_fee.amount > 0 )
     initial_vesting_shares = _db.create_vesting( new_account, o_fee );
 
-  _db.notify_metadata( { new_account.get_id(), o.json_metadata, "", metadata_action::account_create_with_delegation } );
+#ifdef COLLECT_ACCOUNT_METADATA
+  _db.create< account_metadata_object >( [&]( account_metadata_object& meta )
+  {
+    meta.account = new_account.get_id();
+    from_string( meta.json_metadata, o.json_metadata );
+  } );
+#else
+  FC_UNUSED( new_account );
+#endif
 
   _db.create< account_authority_object >( [&]( account_authority_object& auth )
   {
@@ -348,8 +364,19 @@ void account_update_evaluator::do_apply( const account_update_operation& o )
     acc.last_account_update = _db.head_block_time(); //not needed for consensus
   } );
 
+  #ifdef COLLECT_ACCOUNT_METADATA
   if( o.json_metadata.size() > 0 )
-    _db.notify_metadata( { account.get_id(), o.json_metadata, "", metadata_action::account_update } );
+  {
+    _db.modify( _db.get< account_metadata_object, by_account >( account.get_id() ), [&]( account_metadata_object& meta )
+    {
+      from_string( meta.json_metadata, o.json_metadata );
+      if ( !_db.has_hardfork( HIVE_HARDFORK_0_21__3274 ) )
+      {
+        from_string( meta.posting_json_metadata, o.json_metadata );
+      }
+    });
+  }
+  #endif
 
   if( o.active || *_auth_posting )
   {
@@ -393,8 +420,19 @@ void account_update2_evaluator::do_apply( const account_update2_operation& o )
     acc.last_account_update = _db.head_block_time(); //not needed for consensus
   } );
 
+  #ifdef COLLECT_ACCOUNT_METADATA
   if( o.json_metadata.size() > 0 || o.posting_json_metadata.size() > 0 )
-    _db.notify_metadata( { account.get_id(), o.json_metadata, o.posting_json_metadata, metadata_action::account_update2 } );
+  {
+    _db.modify( _db.get< account_metadata_object, by_account >( account.get_id() ), [&]( account_metadata_object& meta )
+    {
+      if ( o.json_metadata.size() > 0 )
+        from_string( meta.json_metadata, o.json_metadata );
+
+      if ( o.posting_json_metadata.size() > 0 )
+        from_string( meta.posting_json_metadata, o.posting_json_metadata );
+    } );
+  }
+  #endif
 
   if( o.active || o.posting )
   {
@@ -489,7 +527,15 @@ void create_claimed_account_evaluator::do_apply( const create_claimed_account_op
   const auto& new_account = create_account( _db, o.new_account_name, o.memo_key, props.time, _db.get_current_timestamp(),
     false /*mined*/, _db.get_witness_schedule_object().median_props.account_creation_fee, &creator );
 
-  _db.notify_metadata( { new_account.get_id(), o.json_metadata, "", metadata_action::create_claimed_account } );
+#ifdef COLLECT_ACCOUNT_METADATA
+  _db.create< account_metadata_object >( [&]( account_metadata_object& meta )
+  {
+    meta.account = new_account.get_id();
+    from_string( meta.json_metadata, o.json_metadata );
+  } );
+#else
+  FC_UNUSED( new_account );
+#endif
 
   _db.create< account_authority_object >( [&]( account_authority_object& auth )
   {

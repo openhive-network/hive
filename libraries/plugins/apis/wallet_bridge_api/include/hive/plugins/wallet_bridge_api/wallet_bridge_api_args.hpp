@@ -12,7 +12,6 @@ namespace hive { namespace chain {
 #include <hive/plugins/database_api/database_api.hpp>
 #include <hive/plugins/market_history_api/market_history_api.hpp>
 #include <hive/plugins/rc_api/rc_api.hpp>
-#include <hive/plugins/metadata_api/metadata_api.hpp>
 
 namespace hive { namespace plugins { namespace wallet_bridge_api {
 
@@ -217,14 +216,6 @@ typedef vector< rc::rc_account_api_object >                   list_rc_accounts_r
 /* list_rc_direct_delegations */
 typedef variant                                               list_rc_direct_delegations_args;
 typedef vector< rc::rc_direct_delegation_api_object >         list_rc_direct_delegations_return;
-
-/* get_account_metadata */
-typedef variant                                               get_account_metadata_args;
-typedef metadata::get_account_metadata_return                 get_account_metadata_return;
-
-/* find_account_metadata */
-typedef variant                                               find_account_metadata_args;
-typedef metadata::find_account_metadata_return                find_account_metadata_return;
 
 } } } // hive::plugins::wallet_bridge_api
 

@@ -539,15 +539,12 @@ add_boost_test( plugin_test
     json_rpc/semantics_validation
     market_history/mh_test:142
     transaction_status/transaction_status_test
-    metadata_api_tests/get_account_metadata_test
-    metadata_api_tests/find_account_metadata_test
-    metadata_api_tests/account_create_metadata_test
 )
 
 # needed to correctly print crash stacktrace
 set_target_properties(plugin_test PROPERTIES ENABLE_EXPORTS true)
 
-target_link_libraries( plugin_test db_fixture hive_chain hive_protocol account_history_rocksdb_plugin market_history_plugin witness_plugin debug_node_plugin condenser_api_plugin database_api_plugin transaction_status_plugin transaction_status_api_plugin metadata_plugin metadata_api_plugin fc ${PLATFORM_SPECIFIC_LIBS} block_log_info_plugin hive_plugins )
+target_link_libraries( plugin_test db_fixture hive_chain hive_protocol account_history_rocksdb_plugin market_history_plugin witness_plugin debug_node_plugin condenser_api_plugin database_api_plugin transaction_status_plugin transaction_status_api_plugin fc ${PLATFORM_SPECIFIC_LIBS} block_log_info_plugin hive_plugins )
 
 if(MSVC)
   set_source_files_properties( tests/serialization_tests.cpp PROPERTIES COMPILE_FLAGS "/bigobj" )

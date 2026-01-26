@@ -40,29 +40,15 @@ api_commment_cashout_info::api_commment_cashout_info(const comment_cashout_objec
 //////////////////////////////////////////////////////////////////////
 
 database_api::database_api( appbase::application& app )
-  : my( new database_api_impl( app ) ), theApp( app )
+  : my( new database_api_impl( app ) )
 {
   JSON_RPC_REGISTER_API( HIVE_DATABASE_API_PLUGIN_NAME );
 }
 
 database_api::~database_api() {}
 
-void database_api::api_startup()
-{
-  my->initialize_metadata_api();
-}
-
 database_api_impl::database_api_impl( appbase::application& app )
-  : _db( app.get_plugin< hive::plugins::chain::chain_plugin >().db() ),
-    _app( app )
-{}
-
-void database_api_impl::initialize_metadata_api()
-{
-  auto* metadata_api_plugin = _app.find_plugin< hive::plugins::metadata::metadata_api_plugin >();
-  if( metadata_api_plugin != nullptr )
-    _metadata_api = metadata_api_plugin->api;
-}
+  : _db( app.get_plugin< hive::plugins::chain::chain_plugin >().db() ) {}
 
 database_api_impl::~database_api_impl() {}
 

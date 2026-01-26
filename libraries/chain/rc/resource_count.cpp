@@ -61,7 +61,7 @@ struct count_differential_operation_visitor
       usage += get_authority_dynamic_size( auth_ptr->posting );
 
     //metadata not handled by differential usage because it could be a source of RC differences
-    //on different nodes, since its existence depends on if metadata plugin is attached
+    //on different nodes, since its existence depends on COLLECT_ACCOUNT_METADATA
     state_bytes_count += usage;
     return usage != 0;
   }
@@ -81,7 +81,7 @@ struct count_differential_operation_visitor
       usage += get_authority_dynamic_size( auth_ptr->posting );
 
     //metadata not handled by differential usage because it could be a source of RC differences
-    //on different nodes, since its existence depends on if metadata plugin is attached
+    //on different nodes, since its existence depends on COLLECT_ACCOUNT_METADATA
     state_bytes_count += usage;
     return usage != 0;
   }
@@ -202,7 +202,7 @@ struct count_operation_visitor
       + get_authority_dynamic_size( op.active )
       + get_authority_dynamic_size( op.posting );
     //note: initial delegation from fee was only active before RC - compare with account_create_with_delegation_operation
-    //note2: not charging for metadata because its existence is optional (plugin `metadata` has to be enabled for it to be used)
+    //note2: not charging for metadata because its existence is optional (COLLECT_ACCOUNT_METADATA - only
     //API nodes should use it and only until we move it to HAF), which means it is not possible to
     //handle it with differential usage counter, which finally leads to massive overcharge
     execution_time_count += _e.account_create_time;
