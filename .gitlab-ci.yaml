@@ -391,6 +391,14 @@ chain_test:
   extends: .unit_tests_base
   script:
     - cd hived-testnet-binaries
+    # Debug: show what files are available for ctest
+    - echo "=== Contents of hived-testnet-binaries ==="
+    - ls -la
+    - echo "=== Checking CTest configuration ==="
+    - test -f CTestTestfile.cmake && echo "CTestTestfile.cmake: present" || echo "CTestTestfile.cmake: MISSING"
+    - test -f BoostTestAddTests.cmake && echo "BoostTestAddTests.cmake: present" || echo "BoostTestAddTests.cmake: MISSING"
+    - test -f chain_test && echo "chain_test: present" || echo "chain_test: MISSING"
+    - echo "=== Running ctest ==="
     - timeout 30m ctest --output-on-failure --output-junit chain_test_results.xml -R '^unit/chain_test-' --parallel $(nproc) 2>&1 | tee chain_test.log
   artifacts:
     reports:

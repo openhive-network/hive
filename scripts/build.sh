@@ -146,12 +146,23 @@ if [[ -d "$HIVED_INSTALLATION_DIR" ]]; then
             "$HIVED_INSTALLATION_DIR/"
     fi
 
+    # Check for unit test binaries and copy them along with CTest configuration
+    echo "Checking for unit test binaries in $abs_build_dir/tests/unit/..."
+    if [[ -d "$abs_build_dir/tests/unit" ]]; then
+        echo "Contents of $abs_build_dir/tests/unit/:"
+        ls -la "$abs_build_dir/tests/unit/" || true
+    fi
+
     if [[ -n "$(shopt -s nullglob; echo "$abs_build_dir/tests/unit/"*)" ]]; then
+        echo "Copying unit test files to $HIVED_INSTALLATION_DIR/..."
         sudo mv "$abs_build_dir/tests/unit/"* "$HIVED_INSTALLATION_DIR/"
-        
+
         # Copy BoostTestAddTests.cmake helper from source
         if [[ -f "$abs_src_dir/tests/unit/BoostTestAddTests.cmake" ]]; then
+            echo "Copying BoostTestAddTests.cmake..."
             sudo cp "$abs_src_dir/tests/unit/BoostTestAddTests.cmake" "$HIVED_INSTALLATION_DIR/"
+        else
+            echo "WARNING: BoostTestAddTests.cmake not found at $abs_src_dir/tests/unit/"
         fi
         
         # Create root CTestTestfile.cmake for flattened directory structure
@@ -207,6 +218,26 @@ if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/plugin_test")
   include("${CMAKE_CURRENT_LIST_DIR}/plugin_test[1]_tests.cmake")
 endif()
 EOF
+        # Verify CTest files were created
+        echo "Verifying CTest configuration files..."
+        if [[ -f "$HIVED_INSTALLATION_DIR/chain_test" ]]; then
+            echo "  chain_test: OK"
+        else
+            echo "  WARNING: chain_test executable not found!"
+        fi
+        if [[ -f "$HIVED_INSTALLATION_DIR/CTestTestfile.cmake" ]]; then
+            echo "  CTestTestfile.cmake: OK"
+        else
+            echo "  WARNING: CTestTestfile.cmake not found!"
+        fi
+        if [[ -f "$HIVED_INSTALLATION_DIR/BoostTestAddTests.cmake" ]]; then
+            echo "  BoostTestAddTests.cmake: OK"
+        else
+            echo "  WARNING: BoostTestAddTests.cmake not found!"
+        fi
+    else
+        echo "WARNING: No unit test files found in $abs_build_dir/tests/unit/"
+        echo "Unit tests will NOT be available. Is BUILD_HIVE_TESTNET=ON?"
     fi
 
     sudo rm -rf "$HIVED_INSTALLATION_DIR/CMakeFiles" "$HIVED_INSTALLATION_DIR/cmake_install.cmake"
