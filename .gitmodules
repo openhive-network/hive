@@ -2,6 +2,10 @@
 	path = tests/python/hive-local-tools/tests_api
 	url = ../tests_api.git
 	shallow = true
+[submodule "test_tools"]
+	path = tests/python/hive-local-tools/test-tools
+	url = ../test-tools.git
+	shallow = true
 [submodule "libraries/vendor/zstd"]
 	path = libraries/vendor/zstd
 	url = https://github.com/facebook/zstd.git
