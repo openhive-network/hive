@@ -96,16 +96,34 @@ ninja chain_test
 
 ## Pipeline Monitoring
 
-After pushing changes to an MR branch, **monitor the pipeline** until critical jobs complete:
+After pushing changes to an MR branch, **monitor the entire pipeline** until completion:
 
-1. **Monitor build jobs** - Wait for build jobs to complete before assuming success
-2. **Check for failures early** - Don't wait for the entire pipeline; catch build errors quickly
+1. **Monitor pipeline status** - Wait for full pipeline to pass (success) or fail
+2. **Check for failures early** - Build failures block downstream tests, catch them quickly
 3. **Stay engaged** - Continue monitoring while working on other tasks
 
-**Why monitor?**
-- Build failures block all downstream tests
+**Why monitor the full pipeline?**
+- All jobs must pass before MR can be merged
+- Build failures block downstream tests
+- Test failures indicate code issues that need fixing
 - Early detection allows faster iteration
-- Ensures your changes don't break the build for others
+
+## Proactive MR Status Monitoring
+
+**Periodically check MR status** and take automatic actions based on state:
+
+| Condition | Action |
+|-----------|--------|
+| Full pipeline passed + Maintainer approved + No fixup/WIP commits | Remove Draft status |
+| Draft removed + Full pipeline passed + Rebased on develop | Merge the MR |
+| Any pipeline job failed | Investigate and fix |
+| New review comments | Address feedback |
+
+**Workflow after maintainer approval:**
+1. Autosquash any fixup/WIP commits via `git rebase -i --autosquash origin/develop`
+2. Push rebased branch and wait for pipeline
+3. After pipeline passes → Remove Draft status
+4. After Draft removed → Merge MR
 
 ## Pipeline Failure Handling
 

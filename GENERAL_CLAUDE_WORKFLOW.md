@@ -208,27 +208,60 @@ ninja chain_test
 
 ### Pipeline Monitoring
 
-After pushing changes to an MR branch, **always monitor the pipeline** until critical jobs complete:
+After pushing changes to an MR branch, **monitor the entire pipeline** until completion:
 
-1. **Monitor build jobs** - Wait for `testnet_node_build` and `prepare_hived_image` to complete
-2. **Check for failures early** - Don't wait for the entire pipeline; catch build errors quickly
-3. **Stay engaged** - Continue monitoring while working on other tasks or reviewing feedback
+1. **Monitor pipeline status** - Wait for full pipeline to pass (success) or fail
+2. **Check for failures early** - Build failures block downstream tests, catch them quickly
+3. **Stay engaged** - Continue monitoring while working on other tasks
 
 ```bash
 # Check overall pipeline status
-glab ci status
-
-# Monitor specific jobs (build jobs are critical)
-glab ci status | grep -E "(testnet_node_build|prepare_hived_image|chain_test)"
+glab ci status | grep -E "(Pipeline state|testnet_node_build|prepare_hived_image|chain_test)"
 
 # Get pipeline URL for web view
 glab ci status | tail -3
 ```
 
-**Why monitor?**
-- Build failures block all downstream tests
+**Why monitor the full pipeline?**
+- All jobs must pass before MR can be merged
+- Build failures block downstream tests
+- Test failures indicate code issues that need fixing
 - Early detection allows faster iteration
-- Ensures your changes don't break the build for others
+
+### Proactive MR Status Monitoring
+
+**Periodically check MR status** and take automatic actions based on state:
+
+1. **Check MR state regularly** while working on it
+2. **Take automatic actions** when conditions are met:
+
+| Condition | Action |
+|-----------|--------|
+| Full pipeline passed + Maintainer approved + No fixup/WIP commits | Remove Draft status |
+| Draft removed + Full pipeline passed + Rebased on develop | Merge the MR |
+| Any pipeline job failed | Investigate and fix |
+| New review comments | Address feedback |
+
+```bash
+# Check MR approvals
+glab api "projects/<ID>/merge_requests/<MR>/approvals" | jq '.approved_by[].user.username'
+
+# Check for fixup/WIP commits
+git log --oneline origin/develop..HEAD | grep -iE "(fixup|wip)"
+
+# Remove draft status (after maintainer approval)
+glab mr update <MR> --ready
+
+# Merge MR (after all checks pass)
+glab mr merge <MR> --yes
+```
+
+**Automatic workflow:**
+1. After pushing → Monitor pipeline
+2. After pipeline passes → Check for approvals
+3. After maintainer approves → Autosquash fixups, rebase, push, wait for pipeline
+4. After pipeline passes again → Remove Draft status
+5. After Draft removed → Merge MR
 
 ### Pipeline Failure Handling
 
