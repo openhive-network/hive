@@ -150,8 +150,8 @@ if [[ -d "$HIVED_INSTALLATION_DIR" ]]; then
         sudo mv "$abs_build_dir/tests/unit/"* "$HIVED_INSTALLATION_DIR/"
         
         # Copy BoostTestAddTests.cmake helper from source
-        if [[ -f "$abs_source_dir/tests/unit/BoostTestAddTests.cmake" ]]; then
-            sudo cp "$abs_source_dir/tests/unit/BoostTestAddTests.cmake" "$HIVED_INSTALLATION_DIR/"
+        if [[ -f "$abs_src_dir/tests/unit/BoostTestAddTests.cmake" ]]; then
+            sudo cp "$abs_src_dir/tests/unit/BoostTestAddTests.cmake" "$HIVED_INSTALLATION_DIR/"
         fi
         
         # Create root CTestTestfile.cmake for flattened directory structure
