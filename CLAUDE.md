@@ -10,6 +10,23 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **Language**: C++ (C++17 standard) with Python test infrastructure
 **Build System**: CMake + Ninja
 
+## Workflow Compliance
+
+All contributions must follow the established workflow rules. Claude Code sessions must adhere to these documents:
+
+| Document | Purpose | Required |
+|----------|---------|----------|
+| [GENERAL_CLAUDE_WORKFLOW.md](GENERAL_CLAUDE_WORKFLOW.md) | Claude-specific workflow rules (GitLab interactions, context management, MR handling, pipeline monitoring) | **Yes** |
+| [doc/git-guidelines.md](doc/git-guidelines.md) | Project git workflow (branching, MRs, code review, local builds) | **Yes** |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Contribution guidelines (bug reports, enhancements, PR process) | **Yes** |
+
+**Key requirements:**
+- Always create MRs as **Draft** until maintainer approval
+- Build and test locally **before pushing** changes
+- Monitor pipeline after push; fix failures promptly
+- Keep commits atomic; use fixup commits for review feedback
+- Follow fast-forward merge strategy (rebase before merge)
+
 ## Build Commands
 
 ### Building from Source (Ubuntu 24.04 LTS)
