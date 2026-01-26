@@ -184,7 +184,7 @@ HEADER
             # Parse the HRF output and generate add_test() calls
             # HRF format: indented test names with trailing * for enabled, : for suite
             echo "$test_output" | awk '
-            BEGIN { suite = "" }
+            BEGIN { suite = ""; testnum = 0 }
             /^[^ ]/ {
                 # Top-level suite
                 gsub(/[*:].*/, "", $0)
@@ -197,8 +197,10 @@ HEADER
                 gsub(/[*:].*/, "", test)
                 gsub(/^ +| +$/, "", test)
                 if (suite != "" && test != "") {
+                    testnum++
                     fullname = "unit/chain_test-" suite "/" test
                     printf "add_test([==[%s]==] \"./chain_test\" \"--run_test=%s/%s\" \"--catch_system_error=yes\")\n", fullname, suite, test
+                    printf "set_tests_properties([==[%s]==] PROPERTIES ENVIRONMENT \"HIVE_TEMPDIR=/tmp/hive-test-chain-%d\")\n", fullname, testnum
                 }
             }
             ' | sudo tee -a "$HIVED_INSTALLATION_DIR/CTestTestfile.cmake" > /dev/null
@@ -215,7 +217,7 @@ HEADER
             test_output=$("$HIVED_INSTALLATION_DIR/plugin_test" --list_content=HRF 2>&1) || true
 
             echo "$test_output" | awk '
-            BEGIN { suite = "" }
+            BEGIN { suite = ""; testnum = 0 }
             /^[^ ]/ {
                 gsub(/[*:].*/, "", $0)
                 gsub(/^ +| +$/, "", $0)
@@ -226,8 +228,10 @@ HEADER
                 gsub(/[*:].*/, "", test)
                 gsub(/^ +| +$/, "", test)
                 if (suite != "" && test != "") {
+                    testnum++
                     fullname = "unit/plugin_test-" suite "/" test
                     printf "add_test([==[%s]==] \"./plugin_test\" \"--run_test=%s/%s\" \"--catch_system_error=yes\")\n", fullname, suite, test
+                    printf "set_tests_properties([==[%s]==] PROPERTIES ENVIRONMENT \"HIVE_TEMPDIR=/tmp/hive-test-plugin-%d\")\n", fullname, testnum
                 }
             }
             ' | sudo tee -a "$HIVED_INSTALLATION_DIR/CTestTestfile.cmake" > /dev/null
