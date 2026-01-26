@@ -695,6 +695,31 @@ url = "https://gitlab.syncad.com/api/v4/projects/362/packages/pypi/simple"
 reference = "gitlab-schemas"
 
 [[package]]
+name = "hiveio-test-tools"
+version = "0.0.1.dev1404+dbfbe3b"
+description = "Tools for testing hive software"
+optional = false
+python-versions = ">=3.12,<4"
+groups = ["main"]
+files = [
+    {file = "hiveio_test_tools-0.0.1.dev1404+dbfbe3b-py3-none-any.whl", hash = "sha256:ce1a1cf89dd5e69d9ffd82e994d9a15f82d5cc8eb90bf77afd2256935b8274a4"},
+]
+
+[package.dependencies]
+abstractcp = "0.9.9"
+hiveio-beekeepy = "1.28.4.dev24+dd092e5"
+hiveio-schemas = ">=1.28.1.dev14"
+hiveio-wax = "1.28.4rc1.dev124+72cfe8ea"
+loguru = "0.7.2"
+msgspec = ">=0.20.0,<0.21.0"
+python-dateutil = "2.8.2"
+
+[package.source]
+type = "legacy"
+url = "https://gitlab.syncad.com/api/v4/projects/300/packages/pypi/simple"
+reference = "gitlab-test-tools"
+
+[[package]]
 name = "hiveio-wax"
 version = "1.28.4rc1.dev124+72cfe8ea"
 description = ""
@@ -2078,31 +2103,6 @@ grpc = ["google-api-python-client", "grpcio", "grpcio-reflection", "grpcio-statu
 mqtt = ["paho-mqtt (>=1.3.1,<=1.6.1)"]
 
 [[package]]
-name = "test-tools"
-version = "0.0.1.dev1401+edb6f1a"
-description = "Tools for testing hive software"
-optional = false
-python-versions = ">=3.12,<4"
-groups = ["main"]
-files = [
-    {file = "test_tools-0.0.1.dev1401+edb6f1a-py3-none-any.whl", hash = "sha256:b3170a1889078af9095d70354f919fe9cab344801d08b22f990f2d1b629f8969"},
-]
-
-[package.dependencies]
-abstractcp = "0.9.9"
-hiveio-beekeepy = "1.28.4.dev24+dd092e5"
-hiveio-schemas = ">=1.28.1.dev14"
-hiveio-wax = "1.28.4rc1.dev124+72cfe8ea"
-loguru = "0.7.2"
-msgspec = ">=0.20.0,<0.21.0"
-python-dateutil = "2.8.2"
-
-[package.source]
-type = "legacy"
-url = "https://gitlab.syncad.com/api/v4/projects/300/packages/pypi/simple"
-reference = "gitlab-test-tools"
-
-[[package]]
 name = "tests-api"
 version = "0.0.0"
 description = "A collective library containing tests for different APIs and tools for benchmarking"
@@ -2388,4 +2388,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.14,<4"
-content-hash = "708212eb23d6bd33807d871817e1a58d55f6b03a4a9df6f4a26db6f64738e2bb"
+content-hash = "3372a4b0a56ea41b247a444f1d780a9192a1193f894b720bb9eca3058b4e7359"
