@@ -165,7 +165,7 @@ if docker buildx version &>/dev/null && [[ "${USE_BUILDX:-true}" != "false" ]]; 
       --build-arg IMAGE_TAG_PREFIX="${IMAGE_TAG_PREFIX:+$IMAGE_TAG_PREFIX-}" \
       --build-arg SCCACHE_REDIS="${SCCACHE_REDIS:-}" \
       --tag "${REGISTRY}${IMAGE_TAG_PREFIX:+/$IMAGE_TAG_PREFIX}/build:${BUILD_IMAGE_TAG}" \
-      --load \
+      --push \
       --file Dockerfile "$SOURCE_DIR"
 else
     echo "Buildx not available or disabled, using docker build..."
