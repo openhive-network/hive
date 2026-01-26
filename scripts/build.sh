@@ -175,69 +175,60 @@ if [[ -d "$HIVED_INSTALLATION_DIR" ]]; then
 # Tests discovered at build time from Boost.Test executables
 HEADER
 
-        # Discover chain_test tests
+        # Discover chain_test test SUITES (groups run in parallel, tests within group run serially)
         if [[ -x "$HIVED_INSTALLATION_DIR/chain_test" ]]; then
-            echo "Discovering chain_test tests..."
+            echo "Discovering chain_test test suites..."
             # Run chain_test to get test list (Boost.Test outputs to stderr)
             test_output=$("$HIVED_INSTALLATION_DIR/chain_test" --list_content=HRF 2>&1) || true
 
-            # Parse the HRF output and generate add_test() calls
-            # HRF format: indented test names with trailing * for enabled, : for suite
+            # Parse the HRF output and generate one add_test() per SUITE
+            # Each suite runs all its tests serially; suites run in parallel
             echo "$test_output" | awk '
-            BEGIN { suite = ""; testnum = 0 }
+            BEGIN { suitenum = 0 }
             /^[^ ]/ {
-                # Top-level suite
+                # Top-level suite (no leading spaces)
                 gsub(/[*:].*/, "", $0)
                 gsub(/^ +| +$/, "", $0)
-                suite = $0
-            }
-            /^    [^ ]/ {
-                # Test case (4 spaces indent)
-                test = $0
-                gsub(/[*:].*/, "", test)
-                gsub(/^ +| +$/, "", test)
-                if (suite != "" && test != "") {
-                    testnum++
-                    fullname = "unit/chain_test-" suite "/" test
-                    printf "add_test([==[%s]==] \"./chain_test\" \"--run_test=%s/%s\" \"--catch_system_error=yes\")\n", fullname, suite, test
-                    printf "set_tests_properties([==[%s]==] PROPERTIES ENVIRONMENT \"HIVE_TEMPDIR=/tmp/hive-test-chain-%d\")\n", fullname, testnum
+                if ($0 != "") {
+                    suitenum++
+                    suite = $0
+                    fullname = "unit/chain_test-" suite
+                    printf "add_test([==[%s]==] \"./chain_test\" \"--run_test=%s/*\" \"--catch_system_error=yes\")\n", fullname, suite
+                    printf "set_tests_properties([==[%s]==] PROPERTIES ENVIRONMENT \"HIVE_TEMPDIR=/tmp/hive-test-chain-%d\")\n", fullname, suitenum
                 }
             }
             ' | sudo tee -a "$HIVED_INSTALLATION_DIR/CTestTestfile.cmake" > /dev/null
 
-            chain_test_count=$(grep -c '^add_test' "$HIVED_INSTALLATION_DIR/CTestTestfile.cmake" || echo 0)
-            echo "  Discovered $chain_test_count chain_test tests"
+            chain_test_count=$(grep -c 'chain_test-' "$HIVED_INSTALLATION_DIR/CTestTestfile.cmake" || echo 0)
+            echo "  Discovered $chain_test_count chain_test suites"
         else
             echo "WARNING: chain_test not found or not executable"
         fi
 
-        # Discover plugin_test tests
+        # Discover plugin_test test SUITES (groups run in parallel, tests within group run serially)
         if [[ -x "$HIVED_INSTALLATION_DIR/plugin_test" ]]; then
-            echo "Discovering plugin_test tests..."
+            echo "Discovering plugin_test test suites..."
             test_output=$("$HIVED_INSTALLATION_DIR/plugin_test" --list_content=HRF 2>&1) || true
 
+            # Parse the HRF output and generate one add_test() per SUITE
             echo "$test_output" | awk '
-            BEGIN { suite = ""; testnum = 0 }
+            BEGIN { suitenum = 0 }
             /^[^ ]/ {
+                # Top-level suite (no leading spaces)
                 gsub(/[*:].*/, "", $0)
                 gsub(/^ +| +$/, "", $0)
-                suite = $0
-            }
-            /^    [^ ]/ {
-                test = $0
-                gsub(/[*:].*/, "", test)
-                gsub(/^ +| +$/, "", test)
-                if (suite != "" && test != "") {
-                    testnum++
-                    fullname = "unit/plugin_test-" suite "/" test
-                    printf "add_test([==[%s]==] \"./plugin_test\" \"--run_test=%s/%s\" \"--catch_system_error=yes\")\n", fullname, suite, test
-                    printf "set_tests_properties([==[%s]==] PROPERTIES ENVIRONMENT \"HIVE_TEMPDIR=/tmp/hive-test-plugin-%d\")\n", fullname, testnum
+                if ($0 != "") {
+                    suitenum++
+                    suite = $0
+                    fullname = "unit/plugin_test-" suite
+                    printf "add_test([==[%s]==] \"./plugin_test\" \"--run_test=%s/*\" \"--catch_system_error=yes\")\n", fullname, suite
+                    printf "set_tests_properties([==[%s]==] PROPERTIES ENVIRONMENT \"HIVE_TEMPDIR=/tmp/hive-test-plugin-%d\")\n", fullname, suitenum
                 }
             }
             ' | sudo tee -a "$HIVED_INSTALLATION_DIR/CTestTestfile.cmake" > /dev/null
 
             plugin_test_count=$(grep -c 'plugin_test-' "$HIVED_INSTALLATION_DIR/CTestTestfile.cmake" || echo 0)
-            echo "  Discovered $plugin_test_count plugin_test tests"
+            echo "  Discovered $plugin_test_count plugin_test suites"
         fi
 
         total_tests=$(grep -c '^add_test' "$HIVED_INSTALLATION_DIR/CTestTestfile.cmake" || echo 0)
