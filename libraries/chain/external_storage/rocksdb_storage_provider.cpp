@@ -238,7 +238,10 @@ void rocksdb_storage_provider::flushWriteBuffer()
 
 void rocksdb_storage_provider::flushDb()
 {
-  FC_ASSERT( getStorage() != nullptr && "Database pointer is null" );
+  // Storage may be null if plugin was already shut down before chain_plugin
+  // (shutdown order is reverse of startup, and account_history_rocksdb requires chain_plugin)
+  if( getStorage() == nullptr )
+    return;
 
   flushWriteBuffer();
 
