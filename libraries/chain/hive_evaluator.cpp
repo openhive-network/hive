@@ -419,8 +419,6 @@ void pow_apply( database& db, Operation o )
       true /*mined*/, HIVE_asset( 0 ) );
     // ^ empty recovery account parameter means highest voted witness at time of recovery
 
-    db.notify_metadata( { new_account.get_id(), "", "", metadata_action::pow } );
-
     db.create< account_authority_object >( [&]( account_authority_object& auth )
     {
       auth.account = o.worker_account;
@@ -555,8 +553,6 @@ void pow2_evaluator::do_apply( const pow2_operation& o )
     const auto& new_account = create_account( db, worker_account, *o.new_owner_key, dgp.time, _db.get_current_timestamp(),
       true /*mined*/, HIVE_asset( 0 ) );
     // ^ empty recovery account parameter means highest voted witness at time of recovery
-
-    db.notify_metadata( { new_account.get_id(), "", "", metadata_action::pow2 } );
 
     db.create< account_authority_object >( [&]( account_authority_object& auth )
     {
