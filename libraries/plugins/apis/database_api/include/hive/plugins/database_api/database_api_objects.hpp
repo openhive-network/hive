@@ -14,9 +14,7 @@
 #include <hive/chain/util/rd_dynamics.hpp>
 #include <hive/chain/witness_objects.hpp>
 
-#include <hive/plugins/metadata_api/metadata_api_plugin.hpp>
-#include <hive/plugins/metadata_api/metadata_api.hpp>
-#include <hive/plugins/metadata/metadata_objects.hpp>
+#include <hive/plugins/metadata/metadata_plugin.hpp>
 
 #ifdef HIVE_ENABLE_SMT
 #include <hive/chain/smt_objects/smt_token_object.hpp>
@@ -293,7 +291,7 @@ struct api_commment_cashout_info
 
 struct api_account_object
 {
-  api_account_object( const account_object& a, const database& db, const std::shared_ptr< metadata::metadata_api >& metadata_api, bool delayed_votes_active );
+  api_account_object( const account_object& a, const database& db, const metadata::metadata_plugin* metadata_plugin, bool delayed_votes_active );
   api_account_object() = default;
 
   account_id_type   id;

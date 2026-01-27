@@ -157,7 +157,7 @@ DEFINE_API_IMPL( database_api_impl, list_accounts )
         args.start.as< protocol::account_name_type >(),
         result.accounts,
         args.limit,
-        [&]( const account_object& a, const database& db ){ return api_account_object( a, db, get_metadata_api(), args.delayed_votes_active ); },
+        [&]( const account_object& a, const database& db ){ return api_account_object( a, db, get_metadata_plugin(), args.delayed_votes_active ); },
         &database_api_impl::filter_default< account_object > );
       break;
     }
@@ -175,7 +175,7 @@ DEFINE_API_IMPL( database_api_impl, list_accounts )
         boost::make_tuple( proxy_id, key.second ),
         result.accounts,
         args.limit,
-        [&]( const account_object& a, const database& db ){ return api_account_object( a, db, get_metadata_api(), args.delayed_votes_active ); },
+        [&]( const account_object& a, const database& db ){ return api_account_object( a, db, get_metadata_plugin(), args.delayed_votes_active ); },
         &database_api_impl::filter_default< account_object > );
       break;
     }
@@ -186,7 +186,7 @@ DEFINE_API_IMPL( database_api_impl, list_accounts )
         boost::make_tuple( key.first, key.second ),
         result.accounts,
         args.limit,
-        [&]( const account_object& a, const database& db ){ return api_account_object( a, db, get_metadata_api(), args.delayed_votes_active ); },
+        [&]( const account_object& a, const database& db ){ return api_account_object( a, db, get_metadata_plugin(), args.delayed_votes_active ); },
         &database_api_impl::filter_default< account_object > );
       break;
     }
@@ -207,7 +207,7 @@ DEFINE_API_IMPL( database_api_impl, find_accounts )
   {
     auto acct = _db.find< chain::account_object, chain::by_name >( a );
     if( acct != nullptr )
-      result.accounts.emplace_back( *acct, _db, get_metadata_api(), args.delayed_votes_active );
+      result.accounts.emplace_back( *acct, _db, get_metadata_plugin(), args.delayed_votes_active );
   }
 
   return result;

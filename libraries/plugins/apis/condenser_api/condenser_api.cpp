@@ -11,7 +11,7 @@
 #include <hive/plugins/reputation_api/reputation_api_plugin.hpp>
 #include <hive/plugins/market_history_api/market_history_api_plugin.hpp>
 #include <hive/plugins/rc_api/rc_api_plugin.hpp>
-#include <hive/plugins/metadata_api/metadata_api_plugin.hpp>
+#include <hive/plugins/metadata/metadata_plugin.hpp>
 
 #include <hive/protocol/misc_utilities.hpp>
 
@@ -171,7 +171,7 @@ namespace detail
       std::shared_ptr< reputation::reputation_api >                     _reputation_api;
       std::shared_ptr< market_history::market_history_api >             _market_history_api;
       std::shared_ptr< rc::rc_api >                                     _rc_api;
-      std::shared_ptr< metadata::metadata_api >                         _metadata_api;
+      const metadata::metadata_plugin*                                   _metadata_plugin = nullptr;
       map< transaction_id_type, confirmation_callback >                 _callbacks;
       map< time_point_sec, vector< transaction_id_type > >              _callback_expirations;
       chain::database::signal_connection_ptr                            _on_post_apply_block_conn;
@@ -374,7 +374,7 @@ namespace detail
       auto itr = idx.find( name );
       if ( itr != idx.end() )
       {
-        results.emplace_back( extended_account( database_api::api_account_object( *itr, _db, _metadata_api, delayed_votes_active ) ) );
+        results.emplace_back( extended_account( database_api::api_account_object( *itr, _db, _metadata_plugin, delayed_votes_active ) ) );
 
         if(_reputation_api)
         {
@@ -415,7 +415,7 @@ namespace detail
 
       if( itr )
       {
-        result.push_back( api_account_object( database_api::api_account_object( *itr, _db, _metadata_api, delayed_votes_active ) ) );
+        result.push_back( api_account_object( database_api::api_account_object( *itr, _db, _metadata_plugin, delayed_votes_active ) ) );
       }
       else
       {
@@ -1266,11 +1266,7 @@ void condenser_api::api_startup()
     my->_rc_api = rc->api;
   }
 
-  auto metadata = theApp.find_plugin< metadata::metadata_api_plugin >();
-  if( metadata != nullptr )
-  {
-    my->_metadata_api = metadata->api;
-  }
+  my->_metadata_plugin = theApp.find_plugin< metadata::metadata_plugin >();
 }
 
 DEFINE_LOCKLESS_APIS( condenser_api,

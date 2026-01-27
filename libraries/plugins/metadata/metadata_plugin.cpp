@@ -175,6 +175,24 @@ void metadata_plugin_impl::on_post_apply_operation( const hive::chain::operation
 metadata_plugin::metadata_plugin() {}
 metadata_plugin::~metadata_plugin() {}
 
+get_account_metadata_return metadata_plugin::get_account_metadata( const account_name_type& account ) const
+{
+  get_account_metadata_return result;
+
+  const auto* acct = my->_db.find_account( account );
+  if( acct == nullptr )
+    return result;
+
+  const auto* meta = my->_db.find< account_metadata_object, by_account >( acct->get_id() );
+  if( meta == nullptr )
+    return result;
+
+  result.json_metadata = to_string( meta->json_metadata );
+  result.posting_json_metadata = to_string( meta->posting_json_metadata );
+
+  return result;
+}
+
 void metadata_plugin::set_program_options(
   boost::program_options::options_description& cli,
   boost::program_options::options_description& cfg
