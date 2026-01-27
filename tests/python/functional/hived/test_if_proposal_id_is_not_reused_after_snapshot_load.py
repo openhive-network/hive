@@ -60,7 +60,6 @@ def test_if_proposal_id_is_not_reused_after_snapshot_load() -> None:
     # Remove plugins that ApiNode has but InitNode doesn't have
     api_node.config.plugin.remove("chain_api")
     api_node.config.plugin.remove("condenser_api")
-    api_node.config.plugin.remove("metadata_api")
     api_node.config.plugin.remove("network_broadcast_api")
     api_node.config.plugin.remove("node_status_api")
     api_node.config.plugin.remove("reputation_api")

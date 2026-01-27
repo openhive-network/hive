@@ -1,5 +1,4 @@
 #include <hive/plugins/database_api/database_api_objects.hpp>
-#include <hive/plugins/metadata_api/metadata_api.hpp>
 
 #include <hive/chain/account_object.hpp>
 #include <hive/chain/block_summary_object.hpp>
@@ -202,7 +201,7 @@ api_change_recovery_account_request_object::api_change_recovery_account_request_
 {}
 
 // api_account_object constructors
-api_account_object::api_account_object( const account_object& a, const database& db, const std::shared_ptr< metadata::metadata_api >& metadata_api, bool delayed_votes_active ) :
+api_account_object::api_account_object( const account_object& a, const database& db, const metadata::metadata_plugin* metadata_plugin, bool delayed_votes_active ) :
   id( a.get_id() ),
   name( a.get_name() ),
   memo_key( a.memo_key ),
@@ -268,9 +267,9 @@ api_account_object::api_account_object( const account_object& a, const database&
   posting = authority( auth.posting );
   previous_owner_update = auth.previous_owner_update;
   last_owner_update = auth.last_owner_update;
-  if( metadata_api )
+  if( metadata_plugin )
   {
-    auto meta = metadata_api->get_account_metadata( { name } );
+    auto meta = metadata_plugin->get_account_metadata( name );
     json_metadata = meta.json_metadata;
     posting_json_metadata = meta.posting_json_metadata;
   }

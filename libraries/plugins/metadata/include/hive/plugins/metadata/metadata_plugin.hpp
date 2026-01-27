@@ -19,6 +19,11 @@ namespace hive { namespace plugins { namespace metadata {
 using namespace hive::chain;
 using namespace appbase;
 
+struct get_account_metadata_return
+{
+  std::string json_metadata;
+  std::string posting_json_metadata;
+};
 
 namespace detail { class metadata_plugin_impl; }
 
@@ -35,6 +40,8 @@ class metadata_plugin : public plugin< metadata_plugin >
     virtual void set_program_options(
       options_description& cli,
       options_description& cfg ) override;
+
+    get_account_metadata_return get_account_metadata( const account_name_type& account ) const;
 
   protected:
     virtual void plugin_initialize( const variables_map& options ) override;

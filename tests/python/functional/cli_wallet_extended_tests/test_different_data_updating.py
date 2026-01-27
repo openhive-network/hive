@@ -2,14 +2,11 @@ from __future__ import annotations
 
 import json
 
-import pytest
-
 import test_tools as tt
 
 from .utilities import check_keys
 
 
-@pytest.mark.enable_plugins(["metadata_api"])
 def test_update(wallet: tt.OldWallet) -> None:
     wallet.create_account("alice")
 

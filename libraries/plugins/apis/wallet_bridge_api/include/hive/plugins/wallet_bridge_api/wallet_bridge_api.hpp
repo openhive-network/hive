@@ -49,8 +49,6 @@ class wallet_bridge_api
         (find_rc_accounts)
         (list_rc_accounts)
         (list_rc_direct_delegations)
-        (get_account_metadata)
-        (find_account_metadata)
     )
 
     void api_startup();
@@ -100,6 +98,4 @@ FC_API(
   (find_rc_accounts)
   (list_rc_accounts)
   (list_rc_direct_delegations)
-  (get_account_metadata)
-  (find_account_metadata)
 )

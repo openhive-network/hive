@@ -16,7 +16,7 @@ target_link_libraries( wallet_bridge_api_plugin
    network_broadcast_api_plugin
    json_rpc_plugin
    rc_api_plugin
-   metadata_api_plugin )
+   metadata_plugin )
 target_include_directories( wallet_bridge_api_plugin
                             PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" )
 

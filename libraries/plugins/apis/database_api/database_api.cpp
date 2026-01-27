@@ -49,7 +49,7 @@ database_api::~database_api() {}
 
 void database_api::api_startup()
 {
-  my->initialize_metadata_api();
+  my->initialize_metadata_plugin();
 }
 
 database_api_impl::database_api_impl( appbase::application& app )
@@ -57,11 +57,9 @@ database_api_impl::database_api_impl( appbase::application& app )
     _app( app )
 {}
 
-void database_api_impl::initialize_metadata_api()
+void database_api_impl::initialize_metadata_plugin()
 {
-  auto* metadata_api_plugin = _app.find_plugin< hive::plugins::metadata::metadata_api_plugin >();
-  if( metadata_api_plugin != nullptr )
-    _metadata_api = metadata_api_plugin->api;
+  _metadata_plugin = _app.find_plugin< hive::plugins::metadata::metadata_plugin >();
 }
 
 database_api_impl::~database_api_impl() {}
