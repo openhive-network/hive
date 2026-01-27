@@ -47,34 +47,20 @@ namespace type_traits {
 
 } // namespace type_traits
 
-template <typename T>
-struct get_allocator_helper_t
+/// Type trait to extract segment manager type from any allocator that has get_segment_manager()
+template <typename Allocator>
+using segment_manager_t = std::remove_pointer_t<decltype(std::declval<const Allocator&>().get_segment_manager())>;
+
+/// Type alias for the generic (base) allocator type - always bip::allocator<T, segment_manager>
+template <typename T, typename Allocator>
+using generic_allocator_t = boost::interprocess::allocator<T, segment_manager_t<Allocator>>;
+
+/// Creates a generic allocator from any allocator that has get_segment_manager()
+template <typename T, typename Allocator>
+inline auto make_generic_allocator(const Allocator& a)
 {
-  template <template <typename, uint32_t, bool> class Allocator,
-            typename T2, uint32_t BLOCK_SIZE, bool USE_MANAGED_MAPPED_FILE>
-  static auto get_generic_allocator(const Allocator<T2, BLOCK_SIZE, USE_MANAGED_MAPPED_FILE>& a)
-  {
-    return a.template get_generic_allocator<T>();
-  }
-
-  template <template <typename, typename> class Allocator, typename T2, typename TSegmentManager>
-  static auto get_generic_allocator(const Allocator<T2, TSegmentManager>& a)
-  {
-    return Allocator<T, TSegmentManager>(a.get_segment_manager());
-  }
-
-  template <template <typename, typename, size_t> class Allocator, typename T2, typename TSegmentManager, size_t BLOCK_SIZE>
-  static auto get_generic_allocator( const Allocator<T2, TSegmentManager, BLOCK_SIZE>& a )
-  {
-    return boost::interprocess::allocator<T, TSegmentManager>( a.get_segment_manager() );
-  }
-
-  template <template <typename> class Allocator, typename T2>
-  static auto get_generic_allocator(const Allocator<T2>& a)
-  {
-    return Allocator<T>();
-  }
-};
+  return generic_allocator_t<T, Allocator>(a.get_segment_manager());
+}
 
 } // namespace helpers
 

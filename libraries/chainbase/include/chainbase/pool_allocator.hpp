@@ -81,12 +81,6 @@ namespace chainbase {
         return base_class_t::get_segment_manager();
         }
 
-      template <typename T2>
-      auto get_generic_allocator() const
-        {
-        return allocator_t<T2>(get_segment_manager());
-        }
-
       template <typename T2, uint32_t BLOCK_SIZE2 = BLOCK_SIZE>
       auto get_pool_allocator() const
         {

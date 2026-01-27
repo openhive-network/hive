@@ -142,7 +142,6 @@ namespace chainbase {
   namespace bfs = boost::filesystem;
   using std::unique_ptr;
   using std::vector;
-  using helpers::get_allocator_helper_t;
 
   struct strcmp_less
   {
@@ -363,7 +362,7 @@ namespace chainbase {
 
       template <typename Allocator>
       generic_index( const Allocator& a, bfs::path p )
-      : _stack( get_allocator_helper_t<value_type>::get_generic_allocator(a) ),
+      : _stack( helpers::make_generic_allocator<value_type>(a) ),
         _shared_undo_object_allocator( a ),
         _shared_undo_id_allocator( a ),
         _indices( a, p ),
@@ -372,7 +371,7 @@ namespace chainbase {
 
       template <typename Allocator>
       generic_index( const Allocator& a )
-      : _stack( get_allocator_helper_t<value_type>::get_generic_allocator(a) ),
+      : _stack( helpers::make_generic_allocator<value_type>(a) ),
         _shared_undo_object_allocator( a ),
         _shared_undo_id_allocator( a ),
         _indices( a ),
@@ -397,7 +396,7 @@ namespace chainbase {
       const value_type& emplace( Args&&... args ) {
         auto new_id = _next_id;
         auto a = _indices.get_allocator();
-        auto insert_result = _indices.emplace( get_allocator_helper_t<value_type>::get_generic_allocator(a), new_id, std::forward<Args>( args )... );
+        auto insert_result = _indices.emplace( helpers::make_generic_allocator<value_type>(a), new_id, std::forward<Args>( args )... );
 
         if( !insert_result.second ) {
           CHAINBASE_THROW_EXCEPTION(std::logic_error(
@@ -418,7 +417,7 @@ namespace chainbase {
         std::function<std::string(const fc::variant&)>&& preetify) {
         _next_id = objectId;
         auto a = _indices.get_allocator();
-        value_type tmp(get_allocator_helper_t<value_type>::get_generic_allocator(a), objectId, std::move(unpack));
+        value_type tmp(helpers::make_generic_allocator<value_type>(a), objectId, std::move(unpack));
 
         auto insert_result = _indices.emplace(std::move(tmp));
 
