@@ -1045,11 +1045,14 @@ asset database::adjust_account_vesting_balance(const account_object& to_account,
         {
           util::update_manabar( cprops, to_account, _assets_obj, _time_obj, mrc, new_vesting.amount.value );
         });
-        rc().regenerate_rc_mana( to_account, _now );
+        rc().regenerate_rc_mana( to_account, _manabars_rc_object, _assets_obj, _time_obj, _now );
+        adjust_balance( to_account, new_vesting );
+        rc().update_account_after_vest_change( to_account, _manabars_rc_object, _assets_obj, _time_obj, _now );
       }
-      adjust_balance( to_account, new_vesting );
-      if( has_hardfork( HIVE_HARDFORK_0_20 ) )
-        rc().update_account_after_vest_change( to_account, _now );
+      else
+      {
+        adjust_balance( to_account, new_vesting );
+      }
     }
     // Update global vesting pool numbers.
     modify( cprops, [&]( dynamic_global_property_object& props )
@@ -1238,6 +1241,8 @@ void database::clear_null_account_balance()
   {
     const auto& gpo = get_dynamic_global_properties();
     auto _now = gpo.time;
+    const auto& null_mrc = get< manabars_rc_object, by_account_id >( null_account.get_id() );
+    const auto& null_time = get< time_object, by_account_id >( null_account.get_id() );
 
     modify( gpo, [&]( dynamic_global_property_object& g )
     {
@@ -1246,7 +1251,7 @@ void database::clear_null_account_balance()
     });
 
     if( has_hardfork( HIVE_HARDFORK_0_20 ) )
-      rc().regenerate_rc_mana( null_account, _now ); //we could just always set RC value on 'null' to 0
+      rc().regenerate_rc_mana( null_account, null_mrc, null_assets, null_time, _now ); //we could just always set RC value on 'null' to 0
     modify( null_assets, [&]( assets_object& a )
     {
       a.set_vesting( VEST_asset( 0 ) );
@@ -1257,7 +1262,7 @@ void database::clear_null_account_balance()
       dv.get_delayed_votes().clear();
     });
     if( has_hardfork( HIVE_HARDFORK_0_20 ) )
-      rc().update_account_after_vest_change( null_account, _now );
+      rc().update_account_after_vest_change( null_account, null_mrc, null_assets, null_time, _now );
   }
 
   if( null_assets.get_rewards().amount > 0 )
@@ -1539,7 +1544,7 @@ void database::clear_account( const account_object& account )
 
   if( assets.get_vesting().amount > 0 )
   {
-    rc().regenerate_rc_mana( account, now );
+    rc().regenerate_rc_mana( account, mrc, assets, time, now );
 
     // Remove all active delegations
     VEST_asset freed_delegations( 0 );
@@ -1554,12 +1559,12 @@ void database::clear_account( const account_object& account )
 
       vop.other_affected_accounts.emplace_back( delegatee.get_name() );
 
-      rc().regenerate_rc_mana( delegatee, now );
-
       // Get split objects for the delegatee
       const auto& delegatee_assets = get< assets_object, by_account_id >( delegatee.get_id() );
       const auto& delegatee_time = get< time_object, by_account_id >( delegatee.get_id() );
       const auto& delegatee_mrc = get< manabars_rc_object, by_account_id >( delegatee.get_id() );
+
+      rc().regenerate_rc_mana( delegatee, delegatee_mrc, delegatee_assets, delegatee_time, now );
 
       modify( delegatee_mrc, [&]( manabars_rc_object& m )
       {
@@ -1579,7 +1584,7 @@ void database::clear_account( const account_object& account )
 
       remove( delegation );
 
-      rc().update_account_after_vest_change( delegatee, now, true, true );
+      rc().update_account_after_vest_change( delegatee, delegatee_mrc, delegatee_assets, delegatee_time, now, true, true );
     }
 
     // Remove pending expired delegations
@@ -1636,7 +1641,7 @@ void database::clear_account( const account_object& account )
       } );
     }
 
-    rc().update_account_after_vest_change( account, now, true, true );
+    rc().update_account_after_vest_change( account, mrc, assets, time, now, true, true );
 
     adjust_balance( treasury_account, converted_hive );
     modify( cprops, [&]( dynamic_global_property_object& o )
@@ -1800,7 +1805,7 @@ void database::process_funds()
 
       const auto& treasury_account = get_treasury();
       const auto& treasury_assets = get< assets_object, by_account_id >( treasury_account.get_id() );
-      const auto hbd_supply_without_treasury = (props.get_current_hbd_supply() - treasury_assets.get_hbd_balance()).amount < 0 ? asset(0, HBD_SYMBOL) : (props.get_current_hbd_supply() - treasury_assets.get_hbd_balance());
+      const auto hbd_supply_without_treasury = (props.get_current_hbd_supply() - treasury_assets.get_hbd_balance()).amount < 0 ? HBD_asset(0) : (props.get_current_hbd_supply() - treasury_assets.get_hbd_balance());
       const auto virtual_supply_without_treasury = hbd_supply_without_treasury * median_price + props.get_current_supply();
 
       new_hive = (virtual_supply_without_treasury.amount * current_inflation_rate) / (int64_t(HIVE_100_PERCENT) * int64_t(HIVE_BLOCKS_PER_YEAR));
@@ -3222,7 +3227,7 @@ void database::clear_expired_delegations()
       {
         util::update_manabar( gpo, delegator, delegator_assets, delegator_time, m, itr->get_vesting().amount.value );
       });
-      rc().regenerate_rc_mana( delegator, now );
+      rc().regenerate_rc_mana( delegator, delegator_mrc, delegator_assets, delegator_time, now );
     }
 
     modify( delegator_assets, [&]( assets_object& a )
@@ -3230,7 +3235,7 @@ void database::clear_expired_delegations()
       a.set_delegated_vesting( a.get_delegated_vesting() - itr->get_vesting() );
     });
     if( has_hardfork( HIVE_HARDFORK_0_20 ) )
-      rc().update_account_after_vest_change( delegator, now );
+      rc().update_account_after_vest_change( delegator, delegator_mrc, delegator_assets, delegator_time, now );
 
     post_push_virtual_operation( *this, vop );
 

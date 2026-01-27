@@ -44,8 +44,7 @@ namespace hive { namespace chain {
       account_object( allocator< Allocator > a, uint64_t _id,
         const account_name_type& _name, const public_key_type& _memo_key,
         const time_point_sec& _creation_time, const time_point_sec& _block_creation_time, bool _mined,
-        const account_object* _recovery_account,
-        bool _fill_mana, const VEST_asset& incoming_delegation, int64_t _rc_adjustment = 0 )
+        const account_object* _recovery_account )
       : id( _id ),
         proxy(),
         name( _name ),
@@ -56,7 +55,6 @@ namespace hive { namespace chain {
       {
         // Note: recovery_object, assets_object, manabars_rc_object, time_object, delayed_votes_object
         // must be created separately with the same account_id
-        // The _fill_mana, incoming_delegation, and _rc_adjustment parameters are passed to those split objects
       }
 
       //minimal constructor used for creation of accounts at genesis and in tests

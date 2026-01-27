@@ -336,6 +336,7 @@ void withdraw_vesting_evaluator::do_apply( const withdraw_vesting_operation& o )
   const auto& account = _db.get_account( o.account );
   const auto& account_assets = _db.get< assets_object, by_account_id >( account.get_id() );
   const auto& account_time = _db.get< time_object, by_account_id >( account.get_id() );
+  const auto& account_mrc = _db.get< manabars_rc_object, by_account_id >( account.get_id() );
   auto now = _db.head_block_time();
 
   VEST_asset o_vesting_shares = o.get_vesting_shares();
@@ -352,7 +353,7 @@ void withdraw_vesting_evaluator::do_apply( const withdraw_vesting_operation& o )
   FC_ASSERT( account_assets.get_vesting() - account_assets.get_delegated_vesting() >= o_vesting_shares, "Account does not have sufficient Hive Power for withdraw." );
 
   if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
-    _db.rc().regenerate_rc_mana( account, now );
+    _db.rc().regenerate_rc_mana( account, account_mrc, account_assets, account_time, now );
   if( o_vesting_shares.amount == 0 )
   {
     if( _db.has_hardfork( HIVE_HARDFORK_1_28_FIX_CANCEL_POWER_DOWN ) )
@@ -400,7 +401,7 @@ void withdraw_vesting_evaluator::do_apply( const withdraw_vesting_operation& o )
     } );
   }
   if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
-    _db.rc().update_account_after_vest_change( account, now, false, true );
+    _db.rc().update_account_after_vest_change( account, account_mrc, account_assets, account_time, now, false, true );
 }
 
 void set_withdraw_vesting_route_evaluator::do_apply( const set_withdraw_vesting_route_operation& o )
@@ -662,7 +663,7 @@ void claim_reward_balance_evaluator::do_apply( const claim_reward_balance_operat
 
   if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
   {
-    _db.rc().regenerate_rc_mana( acnt, now );
+    _db.rc().regenerate_rc_mana( acnt, acnt_mrc, acnt_assets, acnt_time, now );
     _db.modify( acnt_mrc, [&]( manabars_rc_object& mrc )
     {
       _db.modify( acnt_assets, [&]( assets_object& a )
@@ -687,7 +688,7 @@ void claim_reward_balance_evaluator::do_apply( const claim_reward_balance_operat
     } );
   }
   if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
-    _db.rc().update_account_after_vest_change( acnt, now );
+    _db.rc().update_account_after_vest_change( acnt, acnt_mrc, acnt_assets, acnt_time, now );
 
   _db.modify( dgpo, [&]( dynamic_global_property_object& gpo )
   {
@@ -745,14 +746,16 @@ void claim_reward_balance2_evaluator::do_apply( const claim_reward_balance2_oper
           reward_vesting_hive_to_move = asset( fc::uint128_to_uint64( ( uint128_t( token.amount.value ) * uint128_t( a_assets->get_vest_rewards_as_hive().amount.value ) )
             / uint128_t( a_assets->get_vest_rewards().amount.value ) ), HIVE_SYMBOL );
 
-        _db.rc().regenerate_rc_mana( *a, now );
+        const auto& a_mrc = _db.get< manabars_rc_object, by_account_id >( a->get_id() );
+        const auto& a_time = _db.get< time_object, by_account_id >( a->get_id() );
+        _db.rc().regenerate_rc_mana( *a, a_mrc, *a_assets, a_time, now );
         _db.modify( *a_assets, [&]( assets_object& assets )
         {
           assets.set_vesting( assets.get_vesting() + token );
           assets.set_vest_rewards( assets.get_vest_rewards() - token );
           assets.set_vest_rewards_as_hive( assets.get_vest_rewards_as_hive() - reward_vesting_hive_to_move );
         } );
-        _db.rc().update_account_after_vest_change( *a, now );
+        _db.rc().update_account_after_vest_change( *a, a_mrc, *a_assets, a_time, now );
 
         _db.modify( dgpo, [&]( dynamic_global_property_object& gpo )
         {
@@ -804,8 +807,8 @@ void delegate_vesting_shares_evaluator::do_apply( const delegate_vesting_shares_
 
   if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
   {
-    _db.rc().regenerate_rc_mana( delegator, now );
-    _db.rc().regenerate_rc_mana( delegatee, now );
+    _db.rc().regenerate_rc_mana( delegator, delegator_mrc, delegator_assets, delegator_time, now );
+    _db.rc().regenerate_rc_mana( delegatee, delegatee_mrc, delegatee_assets, delegatee_time, now );
   }
 
   if( _db.has_hardfork( HIVE_HARDFORK_0_20__2539 ) )
@@ -1065,8 +1068,8 @@ void delegate_vesting_shares_evaluator::do_apply( const delegate_vesting_shares_
 
   if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
   {
-    _db.rc().update_account_after_vest_change( delegator, now, true, true );
-    _db.rc().update_account_after_vest_change( delegatee, now, true, true );
+    _db.rc().update_account_after_vest_change( delegator, delegator_mrc, delegator_assets, delegator_time, now, true, true );
+    _db.rc().update_account_after_vest_change( delegatee, delegatee_mrc, delegatee_assets, delegatee_time, now, true, true );
   }
 }
 
