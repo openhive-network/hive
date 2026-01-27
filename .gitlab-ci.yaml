@@ -413,7 +413,7 @@ chain_test_performance:
   extends: .unit_tests_base
   needs:
     - job: chain_test
-      artifacts: true
+      artifacts: false
   script:
     - cd hived-testnet-binaries
     - echo "=== Running performance tests serially ==="
