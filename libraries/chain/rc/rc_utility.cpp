@@ -322,14 +322,20 @@ int64_t resource_credits::compute_cost( rc_transaction_info* usage_info ) const
 
 void resource_credits::regenerate_rc_mana( const account_object& account, const fc::time_point_sec now ) const
 {
+  const auto& mrc = db.get< manabars_rc_object, by_account_id >( account.get_id() );
+  const auto& assets = db.get< assets_object, by_account_id >( account.get_id() );
+  const auto& time_obj = db.get< time_object, by_account_id >( account.get_id() );
+  regenerate_rc_mana( account, mrc, assets, time_obj, now );
+}
+
+void resource_credits::regenerate_rc_mana( const account_object& account,
+  const manabars_rc_object& mrc, const assets_object& assets, const time_object& time_obj,
+  const fc::time_point_sec now ) const
+{
   // Since RC tracking is non-consensus, we must rely on consensus to forbid
   // transferring / delegating VESTS that haven't regenerated voting power.
   static_assert( HIVE_RC_REGEN_TIME <= HIVE_VOTING_MANA_REGENERATION_SECONDS,
     "RC regen time must be smaller than vote regen time" );
-
-  const auto& mrc = db.get< manabars_rc_object, by_account_id >( account.get_id() );
-  const auto& assets = db.get< assets_object, by_account_id >( account.get_id() );
-  const auto& time_obj = db.get< time_object, by_account_id >( account.get_id() );
 
   util::manabar_params mbparams;
   mbparams.max_mana = account.get_maximum_rc( mrc, assets, time_obj ).value;
@@ -403,7 +409,13 @@ void resource_credits::update_account_after_vest_change( const account_object& a
   const auto& mrc = db.get< manabars_rc_object, by_account_id >( account.get_id() );
   const auto& assets = db.get< assets_object, by_account_id >( account.get_id() );
   const auto& time_obj = db.get< time_object, by_account_id >( account.get_id() );
+  update_account_after_vest_change( account, mrc, assets, time_obj, now, _fill_new_mana, _check_for_rc_delegation_overflow );
+}
 
+void resource_credits::update_account_after_vest_change( const account_object& account,
+  const manabars_rc_object& mrc, const assets_object& assets, const time_object& time_obj,
+  const fc::time_point_sec now, bool _fill_new_mana, bool _check_for_rc_delegation_overflow ) const
+{
   bool regenerate_condition = (mrc.get_rc_manabar().last_update_time != now.sec_since_epoch());
   if( regenerate_condition )
   {

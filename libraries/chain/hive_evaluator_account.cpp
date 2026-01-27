@@ -227,19 +227,20 @@ void account_create_with_delegation_evaluator::do_apply( const account_create_wi
   FC_ASSERT( !_db.has_hardfork( HIVE_HARDFORK_0_20__1760 ), "Account creation with delegation is deprecated as of Hardfork 20" );
 
   const auto& creator = _db.get_account( o.creator );
+  const auto& creator_assets = _db.get< assets_object, by_account_id >( creator.get_id() );
   const auto& props = _db.get_dynamic_global_properties();
   const witness_schedule_object& wso = _db.get_witness_schedule_object();
 
   VEST_asset o_delegation = o.get_delegation();
   HIVE_asset o_fee = o.get_fee();
 
-  FC_ASSERT( creator.get_balance() >= o_fee && "Can't create",
+  FC_ASSERT( creator_assets.get_balance() >= o_fee && "Can't create",
     "Insufficient balance to create account.",
-    ( "creator.balance", creator.get_balance() )
+    ( "creator.balance", creator_assets.get_balance() )
     ( "required", o_fee ) );
 
-  FC_ASSERT( creator.get_vesting() - creator.get_delegated_vesting() - VEST_asset( creator.get_total_vesting_withdrawal() ) >= o_delegation, "Insufficient vesting shares to delegate to new account.",
-    ( "creator.vesting_shares", creator.get_vesting() )( "creator.delegated_vesting_shares", creator.get_delegated_vesting() )( "required", o_delegation ) );
+  FC_ASSERT( creator_assets.get_vesting() - creator_assets.get_delegated_vesting() - VEST_asset( creator_assets.get_total_vesting_withdrawal() ) >= o_delegation, "Insufficient vesting shares to delegate to new account.",
+    ( "creator.vesting_shares", creator_assets.get_vesting() )( "creator.delegated_vesting_shares", creator_assets.get_delegated_vesting() )( "required", o_delegation ) );
 
   VEST_asset target_delegation = ( wso.median_props.account_creation_fee * ( HIVE_CREATE_ACCOUNT_WITH_HIVE_MODIFIER * HIVE_CREATE_ACCOUNT_DELEGATION_RATIO ) ) * props.get_vesting_share_price();
 
@@ -255,10 +256,10 @@ void account_create_with_delegation_evaluator::do_apply( const account_create_wi
   verify_authority_accounts_exist( _db, o.active, o.new_account_name, authority::active );
   verify_authority_accounts_exist( _db, o.posting, o.new_account_name, authority::posting );
 
-  _db.modify( creator, [&]( account_object& c )
+  _db.modify( creator_assets, [&]( assets_object& c )
   {
-    c.balance -= o_fee;
-    c.delegated_vesting_shares += o_delegation;
+    c.set_balance( c.get_balance() - o_fee );
+    c.set_delegated_vesting( c.get_delegated_vesting() + o_delegation );
   } );
 
   const auto& new_account = create_account( _db, o.new_account_name, o.memo_key, props.time, _db.get_current_timestamp(),
@@ -431,13 +432,14 @@ void claim_account_evaluator::do_apply( const claim_account_operation& o )
   FC_ASSERT( _db.has_hardfork( HIVE_HARDFORK_0_20__1771 ) && "claim_account_operation is not enabled until hardfork 20." );
 
   const auto& creator = _db.get_account( o.creator );
+  const auto& creator_assets = _db.get< assets_object, by_account_id >( creator.get_id() );
   const auto& wso = _db.get_witness_schedule_object();
 
   HIVE_asset o_fee = o.get_fee();
 
-  FC_ASSERT( creator.get_balance() >= o_fee && "Can't claim",
+  FC_ASSERT( creator_assets.get_balance() >= o_fee && "Can't claim",
     "Insufficient balance to create account.",
-    ( "creator.balance", creator.get_balance() )( "required", o_fee ) );
+    ( "creator.balance", creator_assets.get_balance() )( "required", o_fee ) );
 
   if( o_fee.amount == 0 )
   {

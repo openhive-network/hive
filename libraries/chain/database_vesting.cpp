@@ -127,6 +127,7 @@ void database::process_vesting_withdrawals()
     // Get the account and its split objects
     const auto& from_account = get< account_object, by_id >( time_obj.get_account_id() );
     const auto& from_assets = get< assets_object, by_account_id >( from_account.get_id() );
+    const auto& from_mrc = get< manabars_rc_object, by_account_id >( from_account.get_id() );
 
     share_type to_withdraw = from_account.get_active_next_vesting_withdrawal( from_assets, time_obj );
     if( !has_hardfork( HIVE_HARDFORK_1_28_FIX_POWER_DOWN ) && to_withdraw < from_assets.get_vesting_withdraw_rate().amount )
@@ -175,6 +176,8 @@ void database::process_vesting_withdrawals()
           {
             const auto& to_account = get< account_object, by_name >( itr->to_account );
             const auto& to_assets = get< assets_object, by_account_id >( to_account.get_id() );
+            const auto& to_mrc = get< manabars_rc_object, by_account_id >( to_account.get_id() );
+            const auto& to_time = get< time_object, by_account_id >( to_account.get_id() );
 
             asset vests = asset( to_deposit, VESTS_SYMBOL );
             asset routed = auto_vest_mode ? vests : ( vests * cprops.get_vesting_share_price() );
@@ -185,7 +188,7 @@ void database::process_vesting_withdrawals()
             if( auto_vest_mode )
             {
               if( has_hardfork( HIVE_HARDFORK_0_20 ) )
-                rc().regenerate_rc_mana( to_account, now );
+                rc().regenerate_rc_mana( to_account, to_mrc, to_assets, to_time, now );
             }
 
             modify( to_assets, [&]( assets_object& a )
@@ -203,7 +206,7 @@ void database::process_vesting_withdrawals()
             if( auto_vest_mode )
             {
               if( has_hardfork( HIVE_HARDFORK_0_20 ) )
-                rc().update_account_after_vest_change( to_account, now );
+                rc().update_account_after_vest_change( to_account, to_mrc, to_assets, to_time, now );
 
               if( has_hardfork( HIVE_HARDFORK_1_24 ) )
               {
@@ -249,7 +252,7 @@ void database::process_vesting_withdrawals()
     pre_push_virtual_operation( *this, vop );
 
     if( has_hardfork( HIVE_HARDFORK_0_20 ) )
-      rc().regenerate_rc_mana( from_account, now );
+      rc().regenerate_rc_mana( from_account, from_mrc, from_assets, time_obj, now );
     if( has_hardfork( HIVE_HARDFORK_1_24 ) )
     {
       FC_ASSERT( dv.valid() && "The object processing `delayed votes` must exist" );
@@ -297,7 +300,7 @@ void database::process_vesting_withdrawals()
     });
 
     if( has_hardfork( HIVE_HARDFORK_0_20 ) )
-      rc().update_account_after_vest_change( from_account, now, true, true );
+      rc().update_account_after_vest_change( from_account, from_mrc, from_assets, time_obj, now, true, true );
 
     modify( cprops, [&]( dynamic_global_property_object& o )
     {
