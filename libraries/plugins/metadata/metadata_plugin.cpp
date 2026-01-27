@@ -6,10 +6,13 @@
 #include <hive/chain/database.hpp>
 #include <hive/chain/index.hpp>
 #include <hive/chain/account_object.hpp>
+#include <hive/chain/notifications.hpp>
 #include <chainbase/chainbase.inl>
 #include <hive/chain/util/type_registrar_definition.hpp>
 
 #include <hive/utilities/signal.hpp>
+
+#include <hive/protocol/hive_operations.hpp>
 
 #include <fc/io/json.hpp>
 #include <fc/exception/exception.hpp>
@@ -18,82 +21,154 @@ namespace hive { namespace plugins { namespace metadata {
 
 namespace detail {
 
+using namespace hive::protocol;
+
 class metadata_plugin_impl
 {
-  private:
-
-    metadata_plugin& _self;
-    chain::database::signal_connection_ptr _on_metadata_conn;
-
   public:
 
+    metadata_plugin& _self;
     chain::database& _db;
+    chain::database::signal_connection_ptr _post_apply_operation_conn;
 
     metadata_plugin_impl( metadata_plugin& self, appbase::application& app ):
       _self(self),
       _db( app.get_plugin< hive::plugins::chain::chain_plugin >().db() )
     {
-      _on_metadata_conn = _db.add_metadata_handler( [&]( const hive::chain::metadata_notification& note )
-      {
-        on_metadata( note );
-      }, _self );
     }
 
     ~metadata_plugin_impl() = default;
 
-    void on_metadata( const hive::chain::metadata_notification& note )
-    {
-      using hive::chain::metadata_action;
-
-      switch( note.action )
-      {
-        case metadata_action::account_create:
-        case metadata_action::account_create_with_delegation:
-        case metadata_action::create_claimed_account:
-          _db.create< account_metadata_object >( [&]( account_metadata_object& meta )
-          {
-            meta.account = note.account;
-            from_string( meta.json_metadata, note.json_metadata );
-          });
-          break;
-
-        case metadata_action::pow:
-        case metadata_action::pow2:
-          _db.create< account_metadata_object >( [&]( account_metadata_object& meta )
-          {
-            meta.account = note.account;
-          });
-          break;
-
-        case metadata_action::account_update:
-          // Signal is only emitted when json_metadata is non-empty (checked in evaluator)
-          _db.modify( _db.get< account_metadata_object, by_account >( note.account ), [&]( account_metadata_object& meta )
-          {
-            from_string( meta.json_metadata, note.json_metadata );
-            if( !_db.has_hardfork( HIVE_HARDFORK_0_21__3274 ) )
-            {
-              from_string( meta.posting_json_metadata, note.json_metadata );
-            }
-          });
-          break;
-
-        case metadata_action::account_update2:
-          // Signal is only emitted when at least one metadata field is non-empty (checked in evaluator)
-          _db.modify( _db.get< account_metadata_object, by_account >( note.account ), [&]( account_metadata_object& meta )
-          {
-            if( note.json_metadata.size() > 0 )
-              from_string( meta.json_metadata, note.json_metadata );
-
-            if( note.posting_json_metadata.size() > 0 )
-              from_string( meta.posting_json_metadata, note.posting_json_metadata );
-          });
-          break;
-
-        default:
-          FC_ASSERT( false, "Unknown metadata action" );
-      }
-    }
+    void on_post_apply_operation( const hive::chain::operation_notification& note );
 };
+
+struct pow2_work_get_account_visitor
+{
+  typedef const account_name_type* result_type;
+
+  template< typename WorkType >
+  result_type operator()( const WorkType& work )const
+  {
+    return &work.input.worker_account;
+  }
+};
+
+struct post_operation_visitor
+{
+  metadata_plugin_impl& _plugin;
+
+  post_operation_visitor( metadata_plugin_impl& plugin ) : _plugin( plugin ) {}
+
+  typedef void result_type;
+
+  template< typename T >
+  void operator()( const T& )const {}
+
+  void operator()( const account_create_operation& op )const
+  {
+    auto& db = _plugin._db;
+    const auto& new_account = db.get_account( op.new_account_name );
+    db.create< account_metadata_object >( [&]( account_metadata_object& meta )
+    {
+      meta.account = new_account.get_id();
+      from_string( meta.json_metadata, op.json_metadata );
+    });
+  }
+
+  void operator()( const account_create_with_delegation_operation& op )const
+  {
+    auto& db = _plugin._db;
+    const auto& new_account = db.get_account( op.new_account_name );
+    db.create< account_metadata_object >( [&]( account_metadata_object& meta )
+    {
+      meta.account = new_account.get_id();
+      from_string( meta.json_metadata, op.json_metadata );
+    });
+  }
+
+  void operator()( const create_claimed_account_operation& op )const
+  {
+    auto& db = _plugin._db;
+    const auto& new_account = db.get_account( op.new_account_name );
+    db.create< account_metadata_object >( [&]( account_metadata_object& meta )
+    {
+      meta.account = new_account.get_id();
+      from_string( meta.json_metadata, op.json_metadata );
+    });
+  }
+
+  void operator()( const pow_operation& op )const
+  {
+    auto& db = _plugin._db;
+    const auto* account = db.find_account( op.worker_account );
+    if( account == nullptr )
+      return;
+    const auto* existing_meta = db.find< account_metadata_object, by_account >( account->get_id() );
+    if( existing_meta != nullptr )
+      return;
+    db.create< account_metadata_object >( [&]( account_metadata_object& meta )
+    {
+      meta.account = account->get_id();
+    });
+  }
+
+  void operator()( const pow2_operation& op )const
+  {
+    auto& db = _plugin._db;
+    const account_name_type* worker_account = op.work.visit( pow2_work_get_account_visitor() );
+    if( worker_account == nullptr )
+      return;
+    const auto* account = db.find_account( *worker_account );
+    if( account == nullptr )
+      return;
+    const auto* existing_meta = db.find< account_metadata_object, by_account >( account->get_id() );
+    if( existing_meta != nullptr )
+      return;
+    db.create< account_metadata_object >( [&]( account_metadata_object& meta )
+    {
+      meta.account = account->get_id();
+    });
+  }
+
+  void operator()( const account_update_operation& op )const
+  {
+    if( op.json_metadata.size() == 0 )
+      return;
+
+    auto& db = _plugin._db;
+    const auto& account = db.get_account( op.account );
+    db.modify( db.get< account_metadata_object, by_account >( account.get_id() ), [&]( account_metadata_object& meta )
+    {
+      from_string( meta.json_metadata, op.json_metadata );
+      if( !db.has_hardfork( HIVE_HARDFORK_0_21__3274 ) )
+      {
+        from_string( meta.posting_json_metadata, op.json_metadata );
+      }
+    });
+  }
+
+  void operator()( const account_update2_operation& op )const
+  {
+    if( op.json_metadata.size() == 0 && op.posting_json_metadata.size() == 0 )
+      return;
+
+    auto& db = _plugin._db;
+    const auto& account = db.get_account( op.account );
+    db.modify( db.get< account_metadata_object, by_account >( account.get_id() ), [&]( account_metadata_object& meta )
+    {
+      if( op.json_metadata.size() > 0 )
+        from_string( meta.json_metadata, op.json_metadata );
+
+      if( op.posting_json_metadata.size() > 0 )
+        from_string( meta.posting_json_metadata, op.posting_json_metadata );
+    });
+  }
+};
+
+void metadata_plugin_impl::on_post_apply_operation( const hive::chain::operation_notification& note )
+{
+  note.op.visit( post_operation_visitor( *this ) );
+}
 
 } // detail
 
@@ -114,7 +189,12 @@ void metadata_plugin::plugin_initialize( const boost::program_options::variables
     ilog( "metadata: plugin_initialize() begin" );
     my = std::make_unique< detail::metadata_plugin_impl >( *this, get_app() );
 
-    HIVE_ADD_PLUGIN_INDEX(my->_db, account_metadata_index);
+    chain::database& db = my->_db;
+
+    my->_post_apply_operation_conn = db.add_post_apply_operation_handler(
+      [&]( const hive::chain::operation_notification& note ){ my->on_post_apply_operation( note ); }, *this, 0 );
+
+    HIVE_ADD_PLUGIN_INDEX(db, account_metadata_index);
 
     ilog( "metadata: plugin_initialize() end" );
   } FC_CAPTURE_AND_RETHROW()
@@ -124,6 +204,7 @@ void metadata_plugin::plugin_startup() {}
 
 void metadata_plugin::plugin_shutdown()
 {
+  hive::utilities::disconnect_signal( my->_post_apply_operation_conn );
 }
 
 } } } // hive::plugins::metadata

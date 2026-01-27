@@ -192,8 +192,6 @@ void account_create_evaluator::do_apply( const account_create_operation& o )
   else if( o_fee.amount > 0 )
     initial_vesting_shares = _db.create_vesting( new_account, o_fee );
 
-  _db.notify_metadata( { new_account.get_id(), o.json_metadata, "", metadata_action::account_create } );
-
   _db.create< account_authority_object >( [&]( account_authority_object& auth )
   {
     auth.account = o.new_account_name;
@@ -254,8 +252,6 @@ void account_create_with_delegation_evaluator::do_apply( const account_create_wi
     _db.adjust_balance( _db.get< account_object, by_name >( HIVE_NULL_ACCOUNT ), o_fee );
   else if( o_fee.amount > 0 )
     initial_vesting_shares = _db.create_vesting( new_account, o_fee );
-
-  _db.notify_metadata( { new_account.get_id(), o.json_metadata, "", metadata_action::account_create_with_delegation } );
 
   _db.create< account_authority_object >( [&]( account_authority_object& auth )
   {
@@ -348,9 +344,6 @@ void account_update_evaluator::do_apply( const account_update_operation& o )
     acc.last_account_update = _db.head_block_time(); //not needed for consensus
   } );
 
-  if( o.json_metadata.size() > 0 )
-    _db.notify_metadata( { account.get_id(), o.json_metadata, "", metadata_action::account_update } );
-
   if( o.active || *_auth_posting )
   {
     _db.modify( account_auth, [&]( account_authority_object& auth)
@@ -392,9 +385,6 @@ void account_update2_evaluator::do_apply( const account_update2_operation& o )
 
     acc.last_account_update = _db.head_block_time(); //not needed for consensus
   } );
-
-  if( o.json_metadata.size() > 0 || o.posting_json_metadata.size() > 0 )
-    _db.notify_metadata( { account.get_id(), o.json_metadata, o.posting_json_metadata, metadata_action::account_update2 } );
 
   if( o.active || o.posting )
   {
@@ -488,8 +478,6 @@ void create_claimed_account_evaluator::do_apply( const create_claimed_account_op
 
   const auto& new_account = create_account( _db, o.new_account_name, o.memo_key, props.time, _db.get_current_timestamp(),
     false /*mined*/, _db.get_witness_schedule_object().median_props.account_creation_fee, &creator );
-
-  _db.notify_metadata( { new_account.get_id(), o.json_metadata, "", metadata_action::create_claimed_account } );
 
   _db.create< account_authority_object >( [&]( account_authority_object& auth )
   {
