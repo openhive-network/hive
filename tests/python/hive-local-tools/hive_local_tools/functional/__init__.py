@@ -12,7 +12,6 @@ from schemas.jsonrpc import get_response_model
 from schemas.operation import Operation
 from test_tools.__private.wallet.constants import SimpleTransaction, SimpleTransactionLegacy
 from wax import get_tapos_data
-from wax._private.result_tools import to_cpp_string
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -105,7 +104,7 @@ def __generate_and_broadcast_transaction(
 ) -> None:
     gdpo = node.api.database.get_dynamic_global_properties()
     block_id = gdpo.head_block_id
-    tapos_data = get_tapos_data(to_cpp_string(block_id))
+    tapos_data = get_tapos_data(block_id)
     ref_block_num = tapos_data.ref_block_num
     ref_block_prefix = tapos_data.ref_block_prefix
 

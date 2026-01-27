@@ -88,9 +88,7 @@ def convert_hbd_to_hive(node, hbd: tt.Asset.Hbd) -> tt.Asset.Hive:
         wax.hbd(int(hbd_to_hive_feed.base.amount)),
         wax.hive(int(hbd_to_hive_feed.quote.amount)),
     )
-    return AssetHive(
-        amount=calculated_hive.amount.decode(), precision=calculated_hive.precision, nai=calculated_hive.nai.decode()
-    )
+    return AssetHive(amount=calculated_hive.amount, precision=calculated_hive.precision, nai=calculated_hive.nai)
 
 
 def convert_vesting_to_hive(node, vesting: tt.Asset.Vest) -> tt.Asset.Hive:
@@ -102,9 +100,7 @@ def convert_vesting_to_hive(node, vesting: tt.Asset.Vest) -> tt.Asset.Hive:
         wax.hive(int(total_vesting_fund_hive.amount)),
         wax.vests(int(total_vesting_shares.amount)),
     )
-    return AssetHive(
-        amount=calculated_hp.amount.decode(), precision=calculated_hp.precision, nai=calculated_hp.nai.decode()
-    )
+    return AssetHive(amount=calculated_hp.amount, precision=calculated_hp.precision, nai=calculated_hp.nai)
 
 
 class Comment:

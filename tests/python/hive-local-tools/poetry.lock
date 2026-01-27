@@ -797,20 +797,20 @@ reference = "gitlab-hive"
 
 [[package]]
 name = "hiveio-test-tools"
-version = "2.0.1.post20260211120901"
+version = "0.0.2.post20260212154503"
 description = "Tools for testing hive software"
 optional = false
 python-versions = ">=3.12,<4"
 groups = ["main"]
 files = [
-    {file = "hiveio_test_tools-2.0.1.post20260211120901-py3-none-any.whl", hash = "sha256:4968fb9535c995324d374014baa7bdaadb65ee449c702123de1f9a7974445716"},
+    {file = "hiveio_test_tools-0.0.2.post20260212154503-py3-none-any.whl", hash = "sha256:c44ce2e2fd3a69919593f4a1846be6b20c66059680ac27de6762c3f745df3079"},
 ]
 
 [package.dependencies]
 abstractcp = ">=0.9.9"
 hiveio-beekeepy = ">=1.28.5"
 hiveio-schemas = ">=1.28.1"
-hiveio-wax = ">=2.0.1.post20260211120901"
+hiveio-wax = "2.0.1.post20260212113915"
 loguru = ">=0.7.2"
 msgspec = ">=0.20.0"
 python-dateutil = ">=2.8.2"
@@ -822,14 +822,14 @@ reference = "gitlab-hive"
 
 [[package]]
 name = "hiveio-wax"
-version = "2.0.1.post20260211120901"
+version = "2.0.1.post20260212113915"
 description = ""
 optional = false
 python-versions = ">=3.12,<4"
 groups = ["main"]
 files = [
-    {file = "hiveio_wax-2.0.1.post20260211120901-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:6ae1ca6547e7adabeecf97c3f6bca30208618a2c5b710f3d15e8032279c12813"},
-    {file = "hiveio_wax-2.0.1.post20260211120901-cp314-cp314-manylinux_2_28_x86_64.whl", hash = "sha256:21a67d02e541f2d62e967307724420902d959ff8e3bcc0e9b2d2f144cf48e185"},
+    {file = "hiveio_wax-2.0.1.post20260212113915-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:92d7c1d9045d88fe9e10ac1b92479d76a5fbd17689df4c1ebf49e90d9a4b7974"},
+    {file = "hiveio_wax-2.0.1.post20260212113915-cp314-cp314-manylinux_2_28_x86_64.whl", hash = "sha256:76510fc864987671c4a51d9eeaa988daf79195590c7343fe04ad4c311633de15"},
 ]
 
 [package.dependencies]
@@ -2780,4 +2780,4 @@ reference = "gitlab-hive"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.14,<4"
-content-hash = "2deaeade3335c55c1d2ad21743907962f33bca50b18952ee76127aba4e2631b5"
+content-hash = "20d6002b9da08ada3fa10ef06646754636f4b31e027d16ceca2bfc4bc6381635"
