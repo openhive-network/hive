@@ -2887,7 +2887,7 @@ uint16_t database::calculate_HBD_percent()
     // Removing the hbd in the treasury from the debt ratio calculations
     hbd_supply -= get_treasury().get_hbd_balance();
     if( hbd_supply.amount < 0 )
-      hbd_supply = asset( 0, HBD_SYMBOL );
+      hbd_supply = HBD_asset( 0 );
     virtual_supply = hbd_supply * median_price + dgpo.get_current_supply();
   }
 
@@ -3238,7 +3238,7 @@ void database::modify_balance( const account_object& a, const asset& delta )
 
         if( acnt.hbd_seconds > 0 && update_hdb_balance )
         {
-          asset interest_paid(fc::uint128_to_uint64(interest), HBD_SYMBOL);
+          HBD_asset interest_paid( fc::uint128_to_uint64( interest ) );
           acnt.hbd_balance += interest_paid;
           acnt.hbd_seconds = 0;
           acnt.hbd_last_interest_payment = _head_block_time;
@@ -3246,7 +3246,7 @@ void database::modify_balance( const account_object& a, const asset& delta )
           if(interest > 0)
             push_virtual_operation( *this, interest_operation( a.get_name(), interest_paid, true ) );
 
-          modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& props)
+          modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& props )
           {
             props.current_hbd_supply += interest_paid;
             props.virtual_supply += interest_paid * get_feed_history().current_median_history;
@@ -3360,15 +3360,15 @@ void database::adjust_savings_balance( const account_object& a, const asset& del
 
         if( acnt.savings_hbd_seconds > 0 && update_savings_hdb_balance )
         {
-          asset interest_paid(fc::uint128_to_uint64(interest), HBD_SYMBOL);
+          HBD_asset interest_paid( fc::uint128_to_uint64( interest ) );
           acnt.savings_hbd_balance += interest_paid;
           acnt.savings_hbd_seconds = 0;
           acnt.savings_hbd_last_interest_payment = _head_block_time;
 
-          if(interest > 0)
+          if( interest > 0 )
             push_virtual_operation( *this, interest_operation( a.get_name(), interest_paid, false ) );
 
-          modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& props)
+          modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& props )
           {
             props.current_hbd_supply += interest_paid;
             props.virtual_supply += interest_paid * get_feed_history().current_median_history;

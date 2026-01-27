@@ -708,12 +708,12 @@ void claim_reward_balance2_evaluator::do_apply( const claim_reward_balance2_oper
         const auto& dgpo = _db.get_dynamic_global_properties();
         auto now = dgpo.time;
 
-        asset reward_vesting_hive_to_move = asset( 0, HIVE_SYMBOL );
+        HIVE_asset reward_vesting_hive_to_move( 0 );
         if( token == a->get_vest_rewards() )
           reward_vesting_hive_to_move = a->get_vest_rewards_as_hive();
         else
-          reward_vesting_hive_to_move = asset( fc::uint128_to_uint64( ( uint128_t( token.amount.value ) * uint128_t( a->get_vest_rewards_as_hive().amount.value ) )
-            / uint128_t( a->get_vest_rewards().amount.value ) ), HIVE_SYMBOL );
+          reward_vesting_hive_to_move = HIVE_asset( fc::uint128_to_uint64( ( uint128_t( token.amount.value ) * uint128_t( a->get_vest_rewards_as_hive().amount.value ) )
+            / uint128_t( a->get_vest_rewards().amount.value ) ) );
 
         _db.rc().regenerate_rc_mana( *a, now );
         _db.modify( *a, [&]( account_object& a )

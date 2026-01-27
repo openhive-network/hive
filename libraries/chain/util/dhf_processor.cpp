@@ -311,16 +311,16 @@ void dhf_processor::record_funding( const block_notification& note )
 
   const auto& props = db.get_dynamic_global_properties();
 
-  if ( props.dhf_interval_ledger.amount.value <= 0 )
+  if( props.dhf_interval_ledger.amount.value <= 0 )
     return;
 
   operation vop = dhf_funding_operation( db.get_treasury_name(), props.dhf_interval_ledger );
-  push_virtual_operation( db,  vop );
+  push_virtual_operation( db, vop );
 
   db.modify( props, []( dynamic_global_property_object& dgpo )
   {
-    dgpo.dhf_interval_ledger = asset( 0, HBD_SYMBOL );
-  });
+    dgpo.dhf_interval_ledger = HBD_asset( 0 );
+  } );
 }
 
 void dhf_processor::convert_funds( const block_notification& note )

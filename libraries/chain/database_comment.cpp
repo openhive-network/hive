@@ -299,9 +299,9 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
           } );
         post_push_virtual_operation( *this, vop );
 
-        asset payout = hbd_payout.first + to_hbd( hbd_payout.second + asset( vesting_hive, HIVE_SYMBOL ) );
-        asset curator_payout = to_hbd( asset( curation_tokens, HIVE_SYMBOL ) );
-        asset beneficiary_payout = to_hbd( asset( total_beneficiary, HIVE_SYMBOL ) );
+        HBD_asset payout = hbd_payout.first + to_hbd( hbd_payout.second + asset( vesting_hive, HIVE_SYMBOL ) );
+        HBD_asset curator_payout = to_hbd( asset( curation_tokens, HIVE_SYMBOL ) );
+        HBD_asset beneficiary_payout = to_hbd( asset( total_beneficiary, HIVE_SYMBOL ) );
         if( !has_hardfork( HIVE_HARDFORK_0_19 ) )
         {
           modify( *comment_cashout_ex, [&]( comment_cashout_ex_object& c_ex )
@@ -624,22 +624,22 @@ void database::perform_vesting_share_split( uint32_t magnitude )
     // Need to update all VESTS in accounts and the total VESTS in the dgpo
     for( const auto& account : get_index< account_index, by_id >() )
     {
-      asset old_vesting_shares = account.get_vesting();
-      asset new_vesting_shares = old_vesting_shares;
+      VEST_asset old_vesting_shares = account.get_vesting();
+      VEST_asset new_vesting_shares = old_vesting_shares;
       modify( account, [&]( account_object& a )
       {
-        a.vesting_shares.amount *= magnitude;
+        a.vesting_shares *= magnitude;
         new_vesting_shares = a.get_vesting();
-        a.withdrawn.amount *= magnitude;
-        a.to_withdraw.amount *= magnitude;
-        a.vesting_withdraw_rate = asset( a.to_withdraw.amount / HIVE_VESTING_WITHDRAW_INTERVALS_PRE_HF_16, VESTS_SYMBOL );
+        a.withdrawn *= magnitude;
+        a.to_withdraw *= magnitude;
+        a.vesting_withdraw_rate = VEST_asset( a.to_withdraw.amount / HIVE_VESTING_WITHDRAW_INTERVALS_PRE_HF_16 );
         FC_ASSERT( a.vesting_withdraw_rate.amount > 0 || a.to_withdraw.amount == 0, "Unexpected truncation to zero." );
 
         for( uint32_t i = 0; i < HIVE_MAX_PROXY_RECURSION_DEPTH; ++i )
           a.proxied_vsf_votes[i] *= magnitude;
       } );
-      if (old_vesting_shares != new_vesting_shares)
-        push_virtual_operation( *this, vesting_shares_split_operation(account.get_name(), old_vesting_shares, new_vesting_shares) );
+      if( old_vesting_shares != new_vesting_shares )
+        push_virtual_operation( *this, vesting_shares_split_operation( account.get_name(), old_vesting_shares, new_vesting_shares ) );
     }
 
     const auto& comments = get_index< comment_cashout_index >().indices();
