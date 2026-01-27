@@ -417,9 +417,17 @@ chain_test_performance:
   script:
     - cd hived-testnet-binaries
     - echo "=== Running performance tests serially ==="
-    - ./chain_test --run_test=proposal_tests_performance/* --log_format=JUNIT --log_sink=chain_test_performance_raw.xml --log_level=error 2>&1 | tee chain_test_performance.log
-    # Remove skipped tests from JUNIT report (Boost.Test includes all tests even when filtered)
-    - xmlstarlet ed -d '//testcase[skipped]' chain_test_performance_raw.xml > chain_test_performance_results.xml || cp chain_test_performance_raw.xml chain_test_performance_results.xml
+    # Run tests, capture exit code, continue to post-process XML regardless
+    - |
+      set +e
+      ./chain_test --run_test=proposal_tests_performance/* --log_format=JUNIT --log_sink=chain_test_performance_raw.xml --log_level=error 2>&1 | tee chain_test_performance.log
+      TEST_EXIT=$?
+      set -e
+      # Remove skipped tests from JUNIT report (Boost.Test includes all tests even when filtered)
+      if [ -f chain_test_performance_raw.xml ]; then
+        xmlstarlet ed -d '//testcase[skipped]' chain_test_performance_raw.xml > chain_test_performance_results.xml || cp chain_test_performance_raw.xml chain_test_performance_results.xml
+      fi
+      exit $TEST_EXIT
   artifacts:
     reports:
       junit: hived-testnet-binaries/chain_test_performance_results.xml
