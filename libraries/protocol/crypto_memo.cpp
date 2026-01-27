@@ -1,5 +1,7 @@
 #include <hive/protocol/crypto_memo.hpp>
 
+// Test commit to verify NFS cache fix - can be reverted
+
 namespace hive { namespace protocol {
 
 crypto_memo::memo_content crypto_memo::build_from_encrypted_content( const crypto_data::public_key_type& from, const crypto_data::public_key_type& to, crypto_data::content&& content )
