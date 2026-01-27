@@ -39,12 +39,198 @@ include:
     REGISTRY_PASS: $CI_IMG_BUILDER_PASSWORD
     BINARY_CACHE_PATH: "$CI_PROJECT_DIR/hived-binaries"
     HIVE_NETWORK_TYPE: mainnet
+    # Smart-image-build settings for gap management
+    # Re-tag when gap exceeds this threshold (keeps image within downstream search depth)
+    RETAG_THRESHOLD: "20"
+    SEARCH_DEPTH: "25"
+    # Common-ci-configuration reference for script fetching
+    COMMON_CI_REF: "develop"
+    COMMON_CI_URL: "https://gitlab.syncad.com/hive/common-ci-configuration"
   script:
-    - $SCRIPTS_PATH/ci-helpers/get_image4submodule.sh
-        "$SUBMODULE_DIR" registry.gitlab.syncad.com/hive/hive HIVED "$REGISTRY_USER" "$REGISTRY_PASS"
-        --export-binaries="$BINARY_CACHE_PATH" --network-type="$HIVE_NETWORK_TYPE"
-    - chmod -Rc a+rwx "$BINARY_CACHE_PATH"
-    - ls -la $BINARY_CACHE_PATH/*
+    - |
+      # =============================================================================
+      # Smart Image Build Integration
+      # =============================================================================
+      # This integrates smart-image-build logic to ensure images are always findable
+      # within downstream search depth. When source files haven't changed but many
+      # commits have accumulated, it re-tags the cached image to the current commit.
+      #
+      # Decision logic:
+      #   - Source files changed: full build (via get_image4submodule.sh)
+      #   - Only tests/docs changed:
+      #     - Small gap: use cached image (skip)
+      #     - Medium gap: re-tag cached image to current commit
+      #     - Large gap: force rebuild (fail-safe)
+
+      set -euo pipefail
+
+      echo -e "\e[0Ksection_start:$(date +%s):smart_build_setup[collapsed=true]\r\e[0KSetting up smart-image-build..."
+
+      # Fetch smart-image-build script from common-ci-configuration
+      SCRIPT_URL="${COMMON_CI_URL}/-/raw/${COMMON_CI_REF}/scripts/bash/smart-image-build.sh"
+      curl -fsSL "$SCRIPT_URL" -o /tmp/smart-image-build.sh
+      chmod +x /tmp/smart-image-build.sh
+
+      # Fetch helper scripts
+      CI_SCRIPTS_DIR="/tmp/common-ci-scripts"
+      mkdir -p "$CI_SCRIPTS_DIR"
+      for script in find-last-source-commit.sh get-cached-image.sh; do
+        curl -fsSL "${COMMON_CI_URL}/-/raw/${COMMON_CI_REF}/scripts/bash/$script" -o "$CI_SCRIPTS_DIR/$script"
+        chmod +x "$CI_SCRIPTS_DIR/$script"
+      done
+
+      echo -e "\e[0Ksection_end:$(date +%s):smart_build_setup\r\e[0K"
+
+      # =========================================================================
+      # Step 1: Find last source commit and check for cached image
+      # =========================================================================
+
+      # Get source patterns from single source of truth
+      SOURCE_PATTERNS=$("$SCRIPTS_PATH/ci-helpers/source-patterns.sh")
+
+      # Find the last commit that changed source files
+      IFS=',' read -ra PATTERN_ARRAY <<< "$SOURCE_PATTERNS"
+      LAST_SOURCE_COMMIT=$("$CI_SCRIPTS_DIR/find-last-source-commit.sh" --dir="$SUBMODULE_DIR" --full --quiet "${PATTERN_ARRAY[@]}")
+      LAST_SOURCE_SHORT=$("$CI_SCRIPTS_DIR/find-last-source-commit.sh" --dir="$SUBMODULE_DIR" --quiet "${PATTERN_ARRAY[@]}")
+
+      echo "Last source commit: $LAST_SOURCE_COMMIT (short: $LAST_SOURCE_SHORT)"
+      echo "Current commit: $CI_COMMIT_SHA (short: $CI_COMMIT_SHORT_SHA)"
+
+      # Build image path based on network type
+      if [[ "$HIVE_NETWORK_TYPE" == "testnet" ]]; then
+        IMAGE_SUBPATH="testnet"
+        IMAGE_REGISTRY="registry.gitlab.syncad.com/hive/hive/testnet"
+      elif [[ "$HIVE_NETWORK_TYPE" == "mirrornet" ]]; then
+        IMAGE_SUBPATH="mirrornet"
+        IMAGE_REGISTRY="registry.gitlab.syncad.com/hive/hive/mirrornet"
+      else
+        IMAGE_SUBPATH=""
+        IMAGE_REGISTRY="registry.gitlab.syncad.com/hive/hive"
+      fi
+
+      # Login to registry
+      echo "$REGISTRY_PASS" | docker login -u "$REGISTRY_USER" registry.gitlab.syncad.com --password-stdin
+
+      # Check if cached image exists for the last source commit
+      CACHE_ENV=$(mktemp)
+      if [[ -n "$IMAGE_SUBPATH" ]]; then
+        "$CI_SCRIPTS_DIR/get-cached-image.sh" --commit="$LAST_SOURCE_SHORT" \
+          --registry="registry.gitlab.syncad.com/hive/hive" --image="$IMAGE_SUBPATH" \
+          --output="$CACHE_ENV" --quiet || true
+      else
+        "$CI_SCRIPTS_DIR/get-cached-image.sh" --commit="$LAST_SOURCE_SHORT" \
+          --registry="registry.gitlab.syncad.com/hive/hive" \
+          --output="$CACHE_ENV" --quiet || true
+      fi
+      source "$CACHE_ENV"
+      rm -f "$CACHE_ENV"
+
+      CACHED_IMAGE_NAME="${IMAGE_REGISTRY}:${LAST_SOURCE_SHORT}"
+      echo "Cache check: CACHE_HIT=${CACHE_HIT:-false}, CACHED_IMAGE_NAME=$CACHED_IMAGE_NAME"
+
+      # =========================================================================
+      # Step 2: Run smart-image-build to determine action
+      # =========================================================================
+
+      BUILD_ARGS=(
+        --registry="registry.gitlab.syncad.com/hive/hive"
+        --patterns="$SOURCE_PATTERNS"
+        --commit="$CI_COMMIT_SHA"
+        --retag-threshold="$RETAG_THRESHOLD"
+        --search-depth="$SEARCH_DEPTH"
+        --output=smart_build_decision.env
+      )
+
+      # Add image name for testnet/mirrornet
+      if [[ -n "$IMAGE_SUBPATH" ]]; then
+        BUILD_ARGS+=(--image="$IMAGE_SUBPATH")
+      fi
+
+      # If cached image exists and source hasn't changed, allow skip/retag
+      if [[ "${CACHE_HIT:-false}" == "true" && "$LAST_SOURCE_SHORT" != "$CI_COMMIT_SHORT_SHA" ]]; then
+        echo "Cached image exists and source unchanged - evaluating skip/retag..."
+        BUILD_ARGS+=(
+          --skip-build
+          --cached-commit="$LAST_SOURCE_COMMIT"
+          --cached-image="$CACHED_IMAGE_NAME"
+        )
+      fi
+
+      /tmp/smart-image-build.sh "${BUILD_ARGS[@]}"
+      source smart_build_decision.env
+
+      echo ""
+      echo "=== Smart Build Decision ==="
+      echo "  BUILD_ACTION: $BUILD_ACTION"
+      echo "  IMAGE_NAME: $IMAGE_NAME"
+      echo "  GAP_SIZE: ${GAP_SIZE:-0}"
+
+      # =========================================================================
+      # Step 3: Execute the build action
+      # =========================================================================
+
+      case "$BUILD_ACTION" in
+        build)
+          echo ""
+          echo "=== Full build required ==="
+          # Use existing get_image4submodule.sh for actual build
+          $SCRIPTS_PATH/ci-helpers/get_image4submodule.sh \
+            "$SUBMODULE_DIR" registry.gitlab.syncad.com/hive/hive HIVED "$REGISTRY_USER" "$REGISTRY_PASS" \
+            --export-binaries="$BINARY_CACHE_PATH" --network-type="$HIVE_NETWORK_TYPE"
+          ;;
+
+        retag)
+          echo ""
+          echo "=== Re-tagging cached image ==="
+          echo "Source: $CACHED_IMAGE_NAME"
+          echo "Target: $IMAGE_NAME"
+
+          docker pull "$CACHED_IMAGE_NAME"
+          docker tag "$CACHED_IMAGE_NAME" "$IMAGE_NAME"
+          docker push "$IMAGE_NAME"
+
+          # Export binaries from the cached image
+          "$SCRIPTS_PATH/ci-helpers/export-data-from-docker-image.sh" "$CACHED_IMAGE_NAME" "$BINARY_CACHE_PATH"
+
+          # Write dotenv file
+          echo "HIVED_IMAGE_NAME=$IMAGE_NAME" > docker_image_name.env
+          echo "HIVED_INSTANCE=$IMAGE_NAME" >> docker_image_name.env
+          echo "HIVED_REGISTRY_PATH=$IMAGE_REGISTRY" >> docker_image_name.env
+          echo "HIVED_REGISTRY_TAG=${CI_COMMIT_SHORT_SHA}" >> docker_image_name.env
+          echo "HIVED_COMMIT=$CI_COMMIT_SHA" >> docker_image_name.env
+          echo "BUILD_ACTION=retag" >> docker_image_name.env
+          ;;
+
+        skip)
+          echo ""
+          echo "=== Using cached image (no re-tag needed) ==="
+          echo "Cached image: $CACHED_IMAGE_NAME"
+
+          # Export binaries from the cached image
+          "$SCRIPTS_PATH/ci-helpers/export-data-from-docker-image.sh" "$CACHED_IMAGE_NAME" "$BINARY_CACHE_PATH"
+
+          # Write dotenv file with cached image info
+          echo "HIVED_IMAGE_NAME=$CACHED_IMAGE_NAME" > docker_image_name.env
+          echo "HIVED_INSTANCE=$CACHED_IMAGE_NAME" >> docker_image_name.env
+          echo "HIVED_REGISTRY_PATH=$IMAGE_REGISTRY" >> docker_image_name.env
+          echo "HIVED_REGISTRY_TAG=$LAST_SOURCE_SHORT" >> docker_image_name.env
+          echo "HIVED_COMMIT=$LAST_SOURCE_COMMIT" >> docker_image_name.env
+          echo "BUILD_ACTION=skip" >> docker_image_name.env
+          ;;
+
+        *)
+          echo "ERROR: Unknown BUILD_ACTION: $BUILD_ACTION"
+          exit 1
+          ;;
+      esac
+
+      # =========================================================================
+      # Step 4: Finalize
+      # =========================================================================
+
+      chmod -Rc a+rwx "$BINARY_CACHE_PATH"
+      ls -la $BINARY_CACHE_PATH/*
+      cat docker_image_name.env
 
   artifacts:
     reports:
