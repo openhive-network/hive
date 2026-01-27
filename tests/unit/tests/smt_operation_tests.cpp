@@ -175,8 +175,8 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create_apply )
 
     const auto& alice_account = db->get_account( "alice" );
     const auto& bob_account = db->get_account( "bob" );
-    const auto& alice_assets = db->get< assets_object, by_account_id >( alice_account.get_id() );
-    const auto& bob_assets = db->get< assets_object, by_account_id >( bob_account.get_id() );
+    const auto& alice_assets = db->get< assets_object >( assets_object::id_type( alice_account.get_id().get_value() ) );
+    const auto& bob_assets = db->get< assets_object >( assets_object::id_type( bob_account.get_id().get_value() ) );
 
     asset alice_0 = asset( 0, alice_symbol );
 
@@ -555,7 +555,7 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_cancel_apply )
     asset_symbol_type alice_symbol = create_smt( "alice", alice_private_key, 3 );
 
     const auto& alice_account = db->get_account( "alice" );
-    const auto& alice_assets = db->get< assets_object, by_account_id >( alice_account.get_id() );
+    const auto& alice_assets = db->get< assets_object >( assets_object::id_type( alice_account.get_id().get_value() ) );
 
     tx.operations.clear();
 
@@ -616,8 +616,8 @@ BOOST_AUTO_TEST_CASE( smt_limit_order_create2_apply )
 
     const auto& alice_account = db->get_account( "alice" );
     const auto& bob_account = db->get_account( "bob" );
-    const auto& alice_assets = db->get< assets_object, by_account_id >( alice_account.get_id() );
-    const auto& bob_assets = db->get< assets_object, by_account_id >( bob_account.get_id() );
+    const auto& alice_assets = db->get< assets_object >( assets_object::id_type( alice_account.get_id().get_value() ) );
+    const auto& bob_assets = db->get< assets_object >( assets_object::id_type( bob_account.get_id().get_value() ) );
 
     asset alice_0 = asset( 0, alice_symbol );
 

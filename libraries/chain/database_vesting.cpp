@@ -126,8 +126,8 @@ void database::process_vesting_withdrawals()
 
     // Get the account and its split objects
     const auto& from_account = get< account_object, by_id >( time_obj.get_account_id() );
-    const auto& from_assets = get< assets_object, by_account_id >( from_account.get_id() );
-    const auto& from_mrc = get< manabars_rc_object, by_account_id >( from_account.get_id() );
+    const auto& from_assets = get< assets_object >( assets_object::id_type( from_account.get_id().get_value() ) );
+    const auto& from_mrc = get< manabars_rc_object >( manabars_rc_object::id_type( from_account.get_id().get_value() ) );
 
     share_type to_withdraw = from_account.get_active_next_vesting_withdrawal( from_assets, time_obj );
     if( !has_hardfork( HIVE_HARDFORK_1_28_FIX_POWER_DOWN ) && to_withdraw < from_assets.get_vesting_withdraw_rate().amount )
@@ -175,9 +175,9 @@ void database::process_vesting_withdrawals()
           if( to_deposit > 0 )
           {
             const auto& to_account = get< account_object, by_name >( itr->to_account );
-            const auto& to_assets = get< assets_object, by_account_id >( to_account.get_id() );
-            const auto& to_mrc = get< manabars_rc_object, by_account_id >( to_account.get_id() );
-            const auto& to_time = get< time_object, by_account_id >( to_account.get_id() );
+            const auto& to_assets = get< assets_object >( assets_object::id_type( to_account.get_id().get_value() ) );
+            const auto& to_mrc = get< manabars_rc_object >( manabars_rc_object::id_type( to_account.get_id().get_value() ) );
+            const auto& to_time = get< time_object >( time_object::id_type( to_account.get_id().get_value() ) );
 
             asset vests = asset( to_deposit, VESTS_SYMBOL );
             asset routed = auto_vest_mode ? vests : ( vests * cprops.get_vesting_share_price() );
