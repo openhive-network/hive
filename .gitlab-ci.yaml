@@ -425,7 +425,16 @@ chain_test_performance:
       set -e
       # Remove skipped tests from JUNIT report (Boost.Test includes all tests even when filtered)
       if [ -f chain_test_performance_raw.xml ]; then
-        xmlstarlet ed -d '//testcase[skipped]' chain_test_performance_raw.xml > chain_test_performance_results.xml || cp chain_test_performance_raw.xml chain_test_performance_results.xml
+        python3 -c "
+      import xml.etree.ElementTree as ET
+      tree = ET.parse('chain_test_performance_raw.xml')
+      for ts in tree.iter('testsuite'):
+        for tc in [t for t in ts.findall('testcase') if t.find('skipped') is not None]:
+          ts.remove(tc)
+        ts.set('tests', str(len(ts.findall('testcase'))))
+        ts.set('skipped', '0')
+      tree.write('chain_test_performance_results.xml', xml_declaration=True, encoding='UTF-8')
+      " || cp chain_test_performance_raw.xml chain_test_performance_results.xml
       fi
       exit $TEST_EXIT
   artifacts:
