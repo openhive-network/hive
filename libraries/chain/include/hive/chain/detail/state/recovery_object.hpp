@@ -56,9 +56,7 @@ namespace hive { namespace chain {
     recovery_object,
     indexed_by<
       ordered_unique< tag< by_id >,
-        const_mem_fun< recovery_object, recovery_object::id_type, &recovery_object::get_id > >,
-      ordered_unique< tag< by_account_id >,
-        const_mem_fun< recovery_object, account_id_type, &recovery_object::get_account_id > >
+        const_mem_fun< recovery_object, recovery_object::id_type, &recovery_object::get_id > >
     >,
     multi_index_allocator< recovery_object >
   > recovery_index;

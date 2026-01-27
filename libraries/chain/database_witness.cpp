@@ -132,8 +132,8 @@ void database::retally_witness_votes()
     if( itr->has_proxy() ) continue;
 
     const auto& a = *itr;
-    const auto& _assets_obj = get< assets_object, by_account_id >( a.get_id() );
-    const auto& _dvotes = get< delayed_votes_object, by_account_id >( a.get_id() );
+    const auto& _assets_obj = get< assets_object >( assets_object::id_type( a.get_id().get_value() ) );
+    const auto& _dvotes = get< delayed_votes_object >( delayed_votes_object::id_type( a.get_id().get_value() ) );
 
     const auto& vidx = get_index<witness_vote_index>().indices().get<by_account_witness>();
     auto wit_itr = vidx.lower_bound( boost::make_tuple( a.get_name(), account_name_type() ) );

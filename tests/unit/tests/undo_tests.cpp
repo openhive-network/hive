@@ -1641,7 +1641,7 @@ BOOST_AUTO_TEST_CASE( debug_update_undo_bug )
     generate_block();
 
     const auto& alice_account = db->get_account( "alice" );
-    const auto& alice_assets = db->get< assets_object, by_account_id >( alice_account.get_id() );
+    const auto& alice_assets = db->get< assets_object >( assets_object::id_type( alice_account.get_id().get_value() ) );
     BOOST_REQUIRE_EQUAL( alice_assets.get_balance().amount.value, 0 );
 
     db->clear_pending();

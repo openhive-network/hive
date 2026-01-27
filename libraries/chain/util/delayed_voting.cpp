@@ -8,7 +8,7 @@ namespace hive { namespace chain {
 
 void delayed_voting::add_delayed_value( const account_object& account, const time_point_sec& head_time, const ushare_type val )
 {
-  const auto& dvotes = db.get< delayed_votes_object, by_account_id >( account.get_id() );
+  const auto& dvotes = db.get< delayed_votes_object >( delayed_votes_object::id_type( account.get_id().get_value() ) );
   db.modify( dvotes, [&]( delayed_votes_object& dv )
   {
     delayed_voting_processor::add( dv.get_delayed_votes(), dv.get_sum_delayed_votes(), head_time, val );
@@ -17,7 +17,7 @@ void delayed_voting::add_delayed_value( const account_object& account, const tim
 
 void delayed_voting::erase_delayed_value( const account_object& account, const ushare_type val )
 {
-  const auto& dvotes = db.get< delayed_votes_object, by_account_id >( account.get_id() );
+  const auto& dvotes = db.get< delayed_votes_object >( delayed_votes_object::id_type( account.get_id().get_value() ) );
   if( dvotes.get_sum_delayed_votes() == 0 )
     return;
 
@@ -67,7 +67,7 @@ fc::optional< ushare_type > delayed_voting::update_votes( const opt_votes_update
     else
     {
       const ushare_type abs_val{ static_cast< ushare_type >( -item.val.value ) };
-      const auto& dvotes = db.get< delayed_votes_object, by_account_id >( item.account->get_id() );
+      const auto& dvotes = db.get< delayed_votes_object >( delayed_votes_object::id_type( item.account->get_id().get_value() ) );
       if( abs_val >= dvotes.get_sum_delayed_votes() )
       {
         res = abs_val - dvotes.get_sum_delayed_votes();

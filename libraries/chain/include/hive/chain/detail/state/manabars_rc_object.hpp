@@ -85,15 +85,11 @@ namespace hive { namespace chain {
     CHAINBASE_UNPACK_CONSTRUCTOR(manabars_rc_object);
   };
 
-  struct by_account_id;
-
   typedef multi_index_container<
     manabars_rc_object,
     indexed_by<
       ordered_unique< tag< by_id >,
-        const_mem_fun< manabars_rc_object, manabars_rc_object::id_type, &manabars_rc_object::get_id > >,
-      ordered_unique< tag< by_account_id >,
-        const_mem_fun< manabars_rc_object, account_id_type, &manabars_rc_object::get_account_id > >
+        const_mem_fun< manabars_rc_object, manabars_rc_object::id_type, &manabars_rc_object::get_id > >
     >,
     multi_index_allocator< manabars_rc_object >
   > manabars_rc_index;

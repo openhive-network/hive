@@ -64,7 +64,7 @@ using namespace hive::chain;
 using namespace hive::protocol;
 using fc::string;
 
-#define GET_GOV_VOTE_POWER( acc ) ((acc).get_direct_governance_vote_power( db->get< assets_object, by_account_id >( (acc).get_id() ), db->get< delayed_votes_object, by_account_id >( (acc).get_id() ) ))
+#define GET_GOV_VOTE_POWER( acc ) ((acc).get_direct_governance_vote_power( db->get< assets_object >( assets_object::id_type( (acc).get_id().get_value() ) ), db->get< delayed_votes_object >( delayed_votes_object::id_type( (acc).get_id().get_value() ) ) ))
 
 template< typename PROPOSAL_IDX >
 int64_t calc_proposals( const PROPOSAL_IDX& proposal_idx, const std::vector< int64_t >& proposals_id )
@@ -225,10 +225,10 @@ BOOST_AUTO_TEST_CASE( inactive_proposals_have_votes )
     const auto& _receiver = db->get_account( receiver );
     const auto& _voter_01 = db->get_account( voter_01 );
     const auto& _treasury = db->get_treasury();
-    const auto& _creator_assets = db->get< assets_object, by_account_id >( _creator.get_id() );
-    const auto& _receiver_assets = db->get< assets_object, by_account_id >( _receiver.get_id() );
-    const auto& _voter_01_assets = db->get< assets_object, by_account_id >( _voter_01.get_id() );
-    const auto& _treasury_assets = db->get< assets_object, by_account_id >( _treasury.get_id() );
+    const auto& _creator_assets = db->get< assets_object >( assets_object::id_type( _creator.get_id().get_value() ) );
+    const auto& _receiver_assets = db->get< assets_object >( assets_object::id_type( _receiver.get_id().get_value() ) );
+    const auto& _voter_01_assets = db->get< assets_object >( assets_object::id_type( _voter_01.get_id().get_value() ) );
+    const auto& _treasury_assets = db->get< assets_object >( assets_object::id_type( _treasury.get_id().get_value() ) );
 
     {
       BOOST_TEST_MESSAGE( "---Payment---" );
@@ -1135,10 +1135,10 @@ BOOST_AUTO_TEST_CASE( generating_payments )
     const auto& _receiver = db->get_account( receiver );
     const auto& _voter_01 = db->get_account( voter_01 );
     const auto& _treasury = db->get_treasury();
-    const auto& _creator_assets = db->get< assets_object, by_account_id >( _creator.get_id() );
-    const auto& _receiver_assets = db->get< assets_object, by_account_id >( _receiver.get_id() );
-    const auto& _voter_01_assets = db->get< assets_object, by_account_id >( _voter_01.get_id() );
-    const auto& _treasury_assets = db->get< assets_object, by_account_id >( _treasury.get_id() );
+    const auto& _creator_assets = db->get< assets_object >( assets_object::id_type( _creator.get_id().get_value() ) );
+    const auto& _receiver_assets = db->get< assets_object >( assets_object::id_type( _receiver.get_id().get_value() ) );
+    const auto& _voter_01_assets = db->get< assets_object >( assets_object::id_type( _voter_01.get_id().get_value() ) );
+    const auto& _treasury_assets = db->get< assets_object >( assets_object::id_type( _treasury.get_id().get_value() ) );
 
     {
       BOOST_TEST_MESSAGE( "---Payment---" );
@@ -1239,7 +1239,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_01 )
     for( auto item : inits )
     {
       const auto& account = db->get_account( item.account );
-      const auto& account_assets = db->get< assets_object, by_account_id >( account.get_id() );
+      const auto& account_assets = db->get< assets_object >( assets_object::id_type( account.get_id().get_value() ) );
       before_tbds[ item.account ] = account_assets.get_hbd_balance();
     }
 
@@ -1248,7 +1248,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_01 )
     for( auto item : inits )
     {
       const auto& account = db->get_account( item.account );
-      const auto& account_assets = db->get< assets_object, by_account_id >( account.get_id() );
+      const auto& account_assets = db->get< assets_object >( assets_object::id_type( account.get_id().get_value() ) );
       auto after_tbd = account_assets.get_hbd_balance();
       auto before_tbd = before_tbds[ item.account ];
       BOOST_REQUIRE( before_tbd == after_tbd - paid );
@@ -1327,7 +1327,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_02 )
       generate_block();
 
       const auto& account = db->get_account( item.account );
-      const auto& account_assets = db->get< assets_object, by_account_id >( account.get_id() );
+      const auto& account_assets = db->get< assets_object >( assets_object::id_type( account.get_id().get_value() ) );
       before_tbds[ item.account ] = account_assets.get_hbd_balance();
     }
 
@@ -1361,7 +1361,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_02 )
     for( auto item : inits )
     {
       const auto& account = db->get_account( item.account );
-      const auto& account_assets = db->get< assets_object, by_account_id >( account.get_id() );
+      const auto& account_assets = db->get< assets_object >( assets_object::id_type( account.get_id().get_value() ) );
       auto after_tbd = account_assets.get_hbd_balance();
       auto before_tbd = before_tbds[ item.account ];
       BOOST_REQUIRE( before_tbd == after_tbd );
@@ -1452,7 +1452,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_03 )
     for( auto item : inits )
     {
       const auto& account = db->get_account( item.first );
-      const auto& account_assets = db->get< assets_object, by_account_id >( account.get_id() );
+      const auto& account_assets = db->get< assets_object >( assets_object::id_type( account.get_id().get_value() ) );
       before_tbds[ item.first ] = account_assets.get_hbd_balance();
     }
 
@@ -1464,7 +1464,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_03 )
       for( const auto& item : inits )
       {
         const auto& account = db->get_account( item.first );
-        const auto& account_assets = db->get< assets_object, by_account_id >( account.get_id() );
+        const auto& account_assets = db->get< assets_object >( assets_object::id_type( account.get_id().get_value() ) );
         auto after_tbd = account_assets.get_hbd_balance();
         auto before_tbd = before_tbds[ item.first ];
         idump( (before_tbd) );
@@ -1593,10 +1593,10 @@ try
     const auto& _receiver = db->get_account( receiver );
     const auto& _voter_01 = db->get_account( voter_01 );
     const auto& _treasury = db->get_treasury();
-    const auto& _creator_assets = db->get< assets_object, by_account_id >( _creator.get_id() );
-    const auto& _receiver_assets = db->get< assets_object, by_account_id >( _receiver.get_id() );
-    const auto& _voter_01_assets = db->get< assets_object, by_account_id >( _voter_01.get_id() );
-    const auto& _treasury_assets = db->get< assets_object, by_account_id >( _treasury.get_id() );
+    const auto& _creator_assets = db->get< assets_object >( assets_object::id_type( _creator.get_id().get_value() ) );
+    const auto& _receiver_assets = db->get< assets_object >( assets_object::id_type( _receiver.get_id().get_value() ) );
+    const auto& _voter_01_assets = db->get< assets_object >( assets_object::id_type( _voter_01.get_id().get_value() ) );
+    const auto& _treasury_assets = db->get< assets_object >( assets_object::id_type( _treasury.get_id().get_value() ) );
 
     {
       BOOST_TEST_MESSAGE( "---Payment---" );
@@ -1685,10 +1685,10 @@ try
     const auto& _receiver = db->get_account( receiver );
     const auto& _voter_01 = db->get_account( voter_01 );
     const auto& _treasury = db->get_treasury();
-    const auto& _creator_assets = db->get< assets_object, by_account_id >( _creator.get_id() );
-    const auto& _receiver_assets = db->get< assets_object, by_account_id >( _receiver.get_id() );
-    const auto& _voter_01_assets = db->get< assets_object, by_account_id >( _voter_01.get_id() );
-    const auto& _treasury_assets = db->get< assets_object, by_account_id >( _treasury.get_id() );
+    const auto& _creator_assets = db->get< assets_object >( assets_object::id_type( _creator.get_id().get_value() ) );
+    const auto& _receiver_assets = db->get< assets_object >( assets_object::id_type( _receiver.get_id().get_value() ) );
+    const auto& _voter_01_assets = db->get< assets_object >( assets_object::id_type( _voter_01.get_id().get_value() ) );
+    const auto& _treasury_assets = db->get< assets_object >( assets_object::id_type( _treasury.get_id().get_value() ) );
 
     {
       BOOST_TEST_MESSAGE( "---Payment---" );
@@ -1919,9 +1919,9 @@ BOOST_AUTO_TEST_CASE( proposal_object_apply )
     const auto& before_treasury_account = db->get_treasury();
     const auto& before_alice_account = db->get_account( creator );
     const auto& before_bob_account = db->get_account( receiver );
-    const auto& before_treasury_assets = db->get< assets_object, by_account_id >( before_treasury_account.get_id() );
-    const auto& before_alice_assets = db->get< assets_object, by_account_id >( before_alice_account.get_id() );
-    const auto& before_bob_assets = db->get< assets_object, by_account_id >( before_bob_account.get_id() );
+    const auto& before_treasury_assets = db->get< assets_object >( assets_object::id_type( before_treasury_account.get_id().get_value() ) );
+    const auto& before_alice_assets = db->get< assets_object >( assets_object::id_type( before_alice_account.get_id().get_value() ) );
+    const auto& before_bob_assets = db->get< assets_object >( assets_object::id_type( before_bob_account.get_id().get_value() ) );
 
     auto before_alice_hbd_balance = before_alice_assets.get_hbd_balance();
     auto before_bob_hbd_balance = before_bob_assets.get_hbd_balance();
@@ -1948,9 +1948,9 @@ BOOST_AUTO_TEST_CASE( proposal_object_apply )
     const auto& after_treasury_account = db->get_treasury();
     const auto& after_alice_account = db->get_account( creator );
     const auto& after_bob_account = db->get_account( receiver );
-    const auto& after_treasury_assets = db->get< assets_object, by_account_id >( after_treasury_account.get_id() );
-    const auto& after_alice_assets = db->get< assets_object, by_account_id >( after_alice_account.get_id() );
-    const auto& after_bob_assets = db->get< assets_object, by_account_id >( after_bob_account.get_id() );
+    const auto& after_treasury_assets = db->get< assets_object >( assets_object::id_type( after_treasury_account.get_id().get_value() ) );
+    const auto& after_alice_assets = db->get< assets_object >( assets_object::id_type( after_alice_account.get_id().get_value() ) );
+    const auto& after_bob_assets = db->get< assets_object >( assets_object::id_type( after_bob_account.get_id().get_value() ) );
 
     auto after_alice_hbd_balance = after_alice_assets.get_hbd_balance();
     auto after_bob_hbd_balance = after_bob_assets.get_hbd_balance();
@@ -2023,9 +2023,9 @@ BOOST_AUTO_TEST_CASE( proposal_object_apply_fee_increase )
     const auto& before_treasury_account = db->get_treasury();
     const auto& before_alice_account = db->get_account( creator );
     const auto& before_bob_account = db->get_account( receiver );
-    const auto& before_treasury_assets = db->get< assets_object, by_account_id >( before_treasury_account.get_id() );
-    const auto& before_alice_assets = db->get< assets_object, by_account_id >( before_alice_account.get_id() );
-    const auto& before_bob_assets = db->get< assets_object, by_account_id >( before_bob_account.get_id() );
+    const auto& before_treasury_assets = db->get< assets_object >( assets_object::id_type( before_treasury_account.get_id().get_value() ) );
+    const auto& before_alice_assets = db->get< assets_object >( assets_object::id_type( before_alice_account.get_id().get_value() ) );
+    const auto& before_bob_assets = db->get< assets_object >( assets_object::id_type( before_bob_account.get_id().get_value() ) );
 
     auto before_alice_hbd_balance = before_alice_assets.get_hbd_balance();
     auto before_bob_hbd_balance = before_bob_assets.get_hbd_balance();
@@ -2052,9 +2052,9 @@ BOOST_AUTO_TEST_CASE( proposal_object_apply_fee_increase )
     const auto& after_treasury_account = db->get_treasury();
     const auto& after_alice_account = db->get_account( creator );
     const auto& after_bob_account = db->get_account( receiver );
-    const auto& after_treasury_assets = db->get< assets_object, by_account_id >( after_treasury_account.get_id() );
-    const auto& after_alice_assets = db->get< assets_object, by_account_id >( after_alice_account.get_id() );
-    const auto& after_bob_assets = db->get< assets_object, by_account_id >( after_bob_account.get_id() );
+    const auto& after_treasury_assets = db->get< assets_object >( assets_object::id_type( after_treasury_account.get_id().get_value() ) );
+    const auto& after_alice_assets = db->get< assets_object >( assets_object::id_type( after_alice_account.get_id().get_value() ) );
+    const auto& after_bob_assets = db->get< assets_object >( assets_object::id_type( after_bob_account.get_id().get_value() ) );
 
     auto after_alice_hbd_balance = after_alice_assets.get_hbd_balance();
     auto after_bob_hbd_balance = after_bob_assets.get_hbd_balance();
@@ -4734,7 +4734,7 @@ BOOST_AUTO_TEST_CASE( generating_payments )
     {
       auto item = inits[ i % inits.size() ];
       const auto& account = db->get_account( item.account );
-      const auto& account_assets = db->get< assets_object, by_account_id >( account.get_id() );
+      const auto& account_assets = db->get< assets_object >( assets_object::id_type( account.get_id().get_value() ) );
       before_tbds[ item.account ] = account_assets.get_hbd_balance();
     }
 
@@ -4746,7 +4746,7 @@ BOOST_AUTO_TEST_CASE( generating_payments )
     {
       auto item = inits[ i % inits.size() ];
       const auto& account = db->get_account( item.account );
-      const auto& account_assets = db->get< assets_object, by_account_id >( account.get_id() );
+      const auto& account_assets = db->get< assets_object >( assets_object::id_type( account.get_id().get_value() ) );
 
       auto after_tbd = account_assets.get_hbd_balance();
       auto before_tbd = before_tbds[ item.account ];
@@ -4768,7 +4768,7 @@ BOOST_AUTO_TEST_CASE( converting_hive_to_dhf )
     BOOST_TEST_MESSAGE( "Testing: converting hive to hbd in the dhf" );
     const auto& dgpo = db->get_dynamic_global_properties();
     const auto& _treasury = db->get_treasury();
-    const auto& _treasury_assets = db->get< assets_object, by_account_id >( _treasury.get_id() );
+    const auto& _treasury_assets = db->get< assets_object >( assets_object::id_type( _treasury.get_id().get_value() ) );
     set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
 
     auto before_inflation_treasury_hbd_balance =  _treasury_assets.get_hbd_balance();

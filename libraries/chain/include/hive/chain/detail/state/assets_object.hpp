@@ -143,9 +143,7 @@ namespace hive { namespace chain {
     assets_object,
     indexed_by<
       ordered_unique< tag< by_id >,
-        const_mem_fun< assets_object, assets_object::id_type, &assets_object::get_id > >,
-      ordered_unique< tag< by_account_id >,
-        const_mem_fun< assets_object, account_id_type, &assets_object::get_account_id > >
+        const_mem_fun< assets_object, assets_object::id_type, &assets_object::get_id > >
     >,
     multi_index_allocator< assets_object >
   > assets_index;

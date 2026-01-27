@@ -41,15 +41,15 @@ using namespace hive::chain;
 using namespace hive::protocol;
 using namespace hive::plugins;
 
-#define GET_MRC_FOR_ACC( acc ) (db->get< manabars_rc_object, by_account_id >( (acc).get_id() ))
+#define GET_MRC_FOR_ACC( acc ) (db->get< manabars_rc_object >( manabars_rc_object::id_type( (acc).get_id().get_value() ) ))
 
 int64_t regenerate_rc_mana( debug_node::debug_node_plugin* db_plugin, const account_object& acc )
 {
   db_plugin->debug_update( [&]( database& db )
   {
-    const auto& mrc = db.get< manabars_rc_object, by_account_id >( acc.get_id() );
-    const auto& assets = db.get< assets_object, by_account_id >( acc.get_id() );
-    const auto& time_obj = db.get< time_object, by_account_id >( acc.get_id() );
+    const auto& mrc = db.get< manabars_rc_object >( manabars_rc_object::id_type( acc.get_id().get_value() ) );
+    const auto& assets = db.get< assets_object >( assets_object::id_type( acc.get_id().get_value() ) );
+    const auto& time_obj = db.get< time_object >( time_object::id_type( acc.get_id().get_value() ) );
     db.modify( mrc, [&]( manabars_rc_object& mrc_obj )
     {
       auto max_rc = acc.get_maximum_rc( mrc_obj, assets, time_obj );
@@ -57,14 +57,14 @@ int64_t regenerate_rc_mana( debug_node::debug_node_plugin* db_plugin, const acco
       mrc_obj.get_rc_manabar().regenerate_mana( manabar_params, db.head_block_time() );
     } );
   } );
-  return db_plugin->database().get< manabars_rc_object, by_account_id >( acc.get_id() ).get_rc_manabar().current_mana;
+  return db_plugin->database().get< manabars_rc_object >( manabars_rc_object::id_type( acc.get_id().get_value() ) ).get_rc_manabar().current_mana;
 }
 
 void clear_mana( debug_node::debug_node_plugin* db_plugin, const account_object& acc )
 {
   db_plugin->debug_update( [&]( database& db )
   {
-    const auto& mrc = db.get< manabars_rc_object, by_account_id >( acc.get_id() );
+    const auto& mrc = db.get< manabars_rc_object >( manabars_rc_object::id_type( acc.get_id().get_value() ) );
     db.modify( mrc, [&]( manabars_rc_object& mrc_obj )
     {
       mrc_obj.get_rc_manabar().current_mana = 0;

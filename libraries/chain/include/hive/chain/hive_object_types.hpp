@@ -43,7 +43,6 @@ inline void from_string( shared_string& out, const string& in ){ out.assign( in.
 
 using chainbase::by_id;
 struct by_name {};
-struct by_account_id {};
 
 enum object_type
 {
