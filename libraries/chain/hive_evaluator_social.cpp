@@ -229,14 +229,14 @@ void comment_evaluator::do_apply( const comment_operation& o )
       if( !parent )
         FC_ASSERT( ( _now - _time_obj.get_last_root_post() ) > HIVE_MIN_ROOT_COMMENT_INTERVAL && "Post HF12", "You may only post once every 5 minutes.", ("now",_now)("last_root_post", _time_obj.get_last_root_post()) );
       else
-        FC_ASSERT( ( _now - _time_obj.get_last_post() ) > HIVE_MIN_REPLY_INTERVAL && "Post HF12", "You may only comment once every 20 seconds.", ("now",_now)("auth.last_post",_time_obj.get_last_post()) );
+        FC_ASSERT( ( _now - _time_obj.get_last_post() ) >= HIVE_MIN_REPLY_INTERVAL && "Post HF12", "You may only comment once every 3 seconds.", ("now",_now)("auth.last_post",_time_obj.get_last_post()) );
     }
     else if( _db.has_hardfork( HIVE_HARDFORK_0_6__113 ) )
     {
       if( !parent )
         FC_ASSERT( ( _now - _time_obj.get_last_root_post() ) > HIVE_MIN_ROOT_COMMENT_INTERVAL && "Post HF6", "You may only post once every 5 minutes.", ("now",_now)("last_root_post", _time_obj.get_last_root_post()) );
       else
-        FC_ASSERT( ( _now - _time_obj.get_last_post() ) > HIVE_MIN_REPLY_INTERVAL, "You may only comment once every 20 seconds.", ("now",_now)("auth.last_post",_time_obj.get_last_post()) );
+        FC_ASSERT( ( _now - _time_obj.get_last_post() ) >= HIVE_MIN_REPLY_INTERVAL, "You may only comment once every 3 seconds.", ("now",_now)("auth.last_post",_time_obj.get_last_post()) );
       FC_TODO( "Fix bug when you can edit post and then post new reply in the same block" ); // the opposite is not possible, so we have inconsistency; requires HF29
     }
 
