@@ -1674,22 +1674,24 @@ BOOST_AUTO_TEST_CASE( vote_edit_limit )
     generate_block();
     vote( "alice", "test", "bob", 50 * HIVE_1_PERCENT, bob_post_key ); // edit 5
     generate_block();
-    HIVE_REQUIRE_ASSERT( vote( "alice", "test", "bob", 40 * HIVE_1_PERCENT, bob_post_key ), "itr->get_number_of_changes() < HIVE_MAX_VOTE_CHANGES && \"Voter has used the maximum number of vote changes on this comment.\""); // edit 6 - fails
+    // there used to be limit on number of changes made on vote (5) until HF28 - removed along with related data member
+    vote( "alice", "test", "bob", 40 * HIVE_1_PERCENT, bob_post_key ); // edit 6 - no longer fails (vote change limit removed)
+    generate_block();
 
     BOOST_TEST_MESSAGE( "Activate HF28" );
     inject_hardfork( HIVE_HARDFORK_1_28 );
     BOOST_TEST_MESSAGE( "Now there is no limit on vote edits (other than RC)" );
 
-    vote( "alice", "test", "bob", 40 * HIVE_1_PERCENT, bob_post_key ); // edit 6
-    generate_block();
     vote( "alice", "test", "bob", 30 * HIVE_1_PERCENT, bob_post_key ); // edit 7
     generate_block();
     vote( "alice", "test", "bob", 20 * HIVE_1_PERCENT, bob_post_key ); // edit 8
     generate_block();
+    vote( "alice", "test", "bob", 10 * HIVE_1_PERCENT, bob_post_key ); // edit 9
+    generate_block();
 
     // wait a day for voting power of 'bob' to regenerate
     generate_blocks( HIVE_BLOCKS_PER_DAY );
-    vote( "alice", "test", "bob", 75 * HIVE_1_PERCENT, bob_post_key ); // edit 9
+    vote( "alice", "test", "bob", 75 * HIVE_1_PERCENT, bob_post_key ); // edit 10
     vote( "alice", "test", "carol", 75 * HIVE_1_PERCENT, carol_post_key ); // fresh vote of the same power
 
     const auto& comment = db->get_comment( "alice", std::string( "test" ) );
