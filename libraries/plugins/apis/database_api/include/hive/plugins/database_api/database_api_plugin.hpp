@@ -2,6 +2,7 @@
 #include <hive/chain/hive_fwd.hpp>
 #include <hive/plugins/chain/chain_plugin.hpp>
 #include <hive/plugins/json_rpc/json_rpc_plugin.hpp>
+#include <hive/plugins/metadata/metadata_plugin.hpp>
 #include <hive/plugins/database_api/database_api.hpp>
 
 #include <appbase/application.hpp>
@@ -21,6 +22,7 @@ class database_api_plugin : public plugin< database_api_plugin >
     APPBASE_PLUGIN_REQUIRES(
       (hive::plugins::json_rpc::json_rpc_plugin)
       (hive::plugins::chain::chain_plugin)
+      (hive::plugins::metadata::metadata_plugin)
     )
 
     static const std::string& name() { static std::string name = HIVE_DATABASE_API_PLUGIN_NAME; return name; }
