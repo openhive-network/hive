@@ -24,32 +24,8 @@ SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 source "$SCRIPTPATH/docker_image_utils.sh"
 
 IMGNAME=testing-block-logs
-
-# Calculate checksum from multiple sources to ensure cache invalidation when:
-# 1. Generator script changes
-# 2. Source code changes (hived binary version)
-# 3. Any other code change that might affect block generation
-#
-# This prevents tests from running with stale block logs after source changes.
-checksum_parts=()
-
-# Generator script content (original behavior)
-checksum_parts+=("generator:$(sha256sum "$GENERATOR_PATH" | cut -d' ' -f1)")
-
-# Source commit hash - ensures rebuild when source code changes
-# This is critical because hived binary changes affect block generation
-if [[ -n "${CI_COMMIT_SHA:-}" ]]; then
-  checksum_parts+=("commit:${CI_COMMIT_SHA}")
-fi
-
-# Hived binary hash - direct check if binary exists and is accessible
-# Falls back to commit hash above if binary not available at checksum time
-if [[ -n "${HIVED_PATH:-}" && -f "${HIVED_PATH}" ]]; then
-  checksum_parts+=("hived:$(sha256sum "$HIVED_PATH" | cut -d' ' -f1)")
-fi
-
-# Combine all parts into final checksum
-final_checksum=$(printf '%s\n' "${checksum_parts[@]}" | sha256sum | cut -d' ' -f1 | head -c 16)
+CHANGES=("$GENERATOR_PATH")
+final_checksum=$(cat "${CHANGES[@]}" | sha256sum | tr -d '[:blank:] [=-=]')
 
 tag=$GENERATOR_NAME-$final_checksum
 img=$( build_image_name "$tag" "$REGISTRY" $IMGNAME )
