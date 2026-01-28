@@ -898,7 +898,7 @@ BOOST_AUTO_TEST_CASE( multiple_feeding_threads_test )
           "ears.";
         ilog( "sending carol/cat (failure - too early)" );
         HIVE_REQUIRE_ASSERT( schedule_transaction( comment ),
-          "( _now - _time_obj.get_last_root_post() ) > HIVE_MIN_ROOT_COMMENT_INTERVAL" );
+          "( _now - _time_obj.get_last_root_post() ) > HIVE_MIN_ROOT_COMMENT_INTERVAL && \"Post HF12\"" );
         fc::usleep( fc::seconds( 2 * HIVE_BLOCK_INTERVAL ) );
         ilog( "sending carol/cat" );
         schedule_transaction( comment );
