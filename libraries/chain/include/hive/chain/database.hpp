@@ -922,5 +922,4 @@ namespace chain {
 
     hive::plugins::chain::snapshot_load_helper& load_helper;
   };
-
 } }
