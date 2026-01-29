@@ -41,7 +41,7 @@ class metadata_plugin : public plugin< metadata_plugin >
       options_description& cli,
       options_description& cfg ) override;
 
-    get_account_metadata_return get_account_metadata( const account_name_type& account ) const;
+    get_account_metadata_return get_account_metadata( const account_object& account ) const;
 
   protected:
     virtual void plugin_initialize( const variables_map& options ) override;

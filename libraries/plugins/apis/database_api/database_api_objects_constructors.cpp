@@ -269,7 +269,7 @@ api_account_object::api_account_object( const account_object& a, const database&
   last_owner_update = auth.last_owner_update;
   if( metadata_plugin )
   {
-    auto meta = metadata_plugin->get_account_metadata( name );
+    auto meta = metadata_plugin->get_account_metadata( a );
     json_metadata = meta.json_metadata;
     posting_json_metadata = meta.posting_json_metadata;
   }
