@@ -104,7 +104,7 @@ void database::remove_pending_escrows( const account_object& account, const acco
   }
 }
 
-void database::get_escrow_totals( asset& total_hive, asset& total_hbd, uint64_t& escrow_count ) const
+void database::get_escrow_totals( HIVE_asset& total_hive, HBD_asset& total_hbd, uint64_t& escrow_count ) const
 {
   const auto& escrow_idx = get_index< escrow_index >().indices().get< by_id >();
 
@@ -114,11 +114,11 @@ void database::get_escrow_totals( asset& total_hive, asset& total_hbd, uint64_t&
     total_hbd += itr->get_hbd_balance();
 
     if( itr->get_fee().symbol == HIVE_SYMBOL )
-      total_hive += itr->get_fee();
+      total_hive += HIVE_asset( itr->get_fee() );
     else
     {
       FC_ASSERT( itr->get_fee().symbol == HBD_SYMBOL, "found escrow pending fee that is not HBD or HIVE" );
-      total_hbd += itr->get_fee();
+      total_hbd += HBD_asset( itr->get_fee() );
     }
     ++escrow_count;
   }
@@ -196,18 +196,18 @@ void database::remove_pending_savings_withdraws( const account_object& account, 
   }
 }
 
-void database::get_savings_withdraw_totals( asset& total_hive, asset& total_hbd, uint64_t& withdrawal_count ) const
+void database::get_savings_withdraw_totals( HIVE_asset& total_hive, HBD_asset& total_hbd, uint64_t& withdrawal_count ) const
 {
   const auto& savings_withdraw_idx = get_index< savings_withdraw_index >().indices().get< by_id >();
 
   for( auto itr = savings_withdraw_idx.begin(); itr != savings_withdraw_idx.end(); ++itr )
   {
     if( itr->amount.symbol == HIVE_SYMBOL )
-      total_hive += itr->amount;
+      total_hive += HIVE_asset( itr->amount );
     else
     {
       FC_ASSERT( itr->amount.symbol == HBD_SYMBOL, "found savings withdraw that is not HBD or HIVE" );
-      total_hbd += itr->amount;
+      total_hbd += HBD_asset( itr->amount );
     }
     ++withdrawal_count;
   }
@@ -388,7 +388,7 @@ void database::clear_expired_orders()
   }
 }
 
-void database::get_limit_order_totals( asset& total_hive, asset& total_hbd, uint64_t& order_count ) const
+void database::get_limit_order_totals( HIVE_asset& total_hive, HBD_asset& total_hbd, uint64_t& order_count ) const
 {
   const auto& limit_order_idx = get_index< limit_order_index >().indices();
 
@@ -396,11 +396,11 @@ void database::get_limit_order_totals( asset& total_hive, asset& total_hbd, uint
   {
     if( itr->sell_price.base.symbol == HIVE_SYMBOL )
     {
-      total_hive += asset( itr->for_sale, HIVE_SYMBOL );
+      total_hive += HIVE_asset( itr->for_sale );
     }
     else if ( itr->sell_price.base.symbol == HBD_SYMBOL )
     {
-      total_hbd += asset( itr->for_sale, HBD_SYMBOL );
+      total_hbd += HBD_asset( itr->for_sale );
     }
     ++order_count;
   }
