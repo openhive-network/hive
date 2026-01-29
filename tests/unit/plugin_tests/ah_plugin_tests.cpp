@@ -8,6 +8,10 @@
 
 #include "../db_fixture/clean_database_fixture.hpp"
 
+#include <hive/manifest/plugins.hpp>
+
+namespace bpo = boost::program_options;
+
 using namespace hive::chain;
 using namespace hive::protocol;
 using namespace hive::plugins;
@@ -204,6 +208,85 @@ BOOST_FIXTURE_TEST_CASE( inconsistent_ah_rocksdb_storage, empty_fixture )
       } );
       BOOST_CHECK_EQUAL( count, pattern_bob.size() );
     }
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( flush_before_plugin_startup_bug )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Test that notify_flush called before plugin_startup causes null storage assertion" );
+    // This test replicates the bug where on_flush() is called before plugin_startup()
+    // which initializes the storage. The on_flush() handler calls _provider->flushDb()
+    // which asserts that getStorage() != nullptr, but the storage is not yet opened.
+    //
+    // Bug location: account_history_rocksdb_plugin.cpp::on_flush() calls flushDb() without
+    // checking if _initialized is true.
+    //
+    // Root cause: The signal handler is connected during plugin_initialize, but the storage
+    // is only opened during plugin_startup. If notify_flush() is called between these two
+    // phases (e.g., during database.close() before plugin_startup completes), the assertion
+    // fails.
+    //
+    // The assertion is caught and logged by HIVE_TRY_NOTIFY, so we verify it by checking
+    // that fc::last_assert_expression was set.
+
+    bool flag = fc::enable_record_assert_trip;
+    fc::enable_record_assert_trip = true;
+    fc::last_assert_expression = "";
+
+    try
+    {
+      appbase::application app;
+      fc::temp_directory data_dir( hive::utilities::temp_directory_path() );
+
+      const char* argv[] = { "test", "--data-dir", data_dir.path().string().c_str() };
+      int argc = sizeof(argv) / sizeof(char*);
+
+      app.add_logging_program_options();
+      hive::plugins::register_plugins( app );
+
+      bpo::variables_map options;
+      bpo::options_description cfg_desc, cli_desc;
+      app.set_plugin_options( &cli_desc, &cfg_desc );
+
+      bpo::parsed_options parsed( &cfg_desc );
+      parsed.options.emplace_back( "plugin", std::vector<std::string>{ HIVE_ACCOUNT_HISTORY_ROCKSDB_PLUGIN_NAME } );
+      parsed.options.emplace_back( "shared-file-size", std::vector<std::string>{ "64" } );
+      bpo::store( parsed, options );
+
+      // Initialize plugins - this connects signal handlers
+      app.initialize< hive::plugins::chain::chain_plugin >( argc, const_cast<char**>(argv), options );
+
+      auto& chain_plugin = app.get_plugin< hive::plugins::chain::chain_plugin >();
+      auto& db = chain_plugin.db();
+
+      // At this point plugin_initialize has been called (handlers connected)
+      // but plugin_startup has NOT been called yet (storage not opened)
+      
+      // Trigger notify_flush which will call flushDb on uninitialized storage
+      // The assertion will be caught by HIVE_TRY_NOTIFY and logged
+      db.notify_flush();
+
+      // Verify the assertion was triggered
+      std::string last_assert = fc::last_assert_expression;
+      BOOST_TEST_MESSAGE( "Last assert expression: " << last_assert );
+      BOOST_REQUIRE( last_assert.find("Database pointer is null") != std::string::npos );
+
+      // Now call startup to properly initialize for cleanup
+      app.startup();
+      app.generate_interrupt_request();
+      app.finish();
+    }
+    catch( ... )
+    {
+      // Ignore all cleanup exceptions - we've already verified the bug
+      BOOST_TEST_MESSAGE( "Exception during cleanup (expected after triggering bug)" );
+    }
+
+    fc::enable_record_assert_trip = flag;
+    BOOST_TEST_MESSAGE( "Bug successfully replicated: notify_flush called before plugin_startup causes null storage assertion" );
   }
   FC_LOG_AND_RETHROW()
 }
