@@ -2,7 +2,6 @@
 #include <hive/chain/hive_fwd.hpp>
 #include <hive/plugins/chain/chain_plugin.hpp>
 #include <hive/plugins/json_rpc/json_rpc_plugin.hpp>
-#include <hive/plugins/metadata/metadata_plugin.hpp>
 #include <hive/plugins/database_api/database_api.hpp>
 
 #include <appbase/application.hpp>
