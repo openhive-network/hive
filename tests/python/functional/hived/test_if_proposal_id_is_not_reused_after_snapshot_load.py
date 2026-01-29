@@ -57,14 +57,8 @@ def test_if_proposal_id_is_not_reused_after_snapshot_load() -> None:
     api_node = tt.ApiNode()
 
     # To activate ApiNode in the 'live' mode, plugins must match those of InitNode.
-    # Remove plugins that ApiNode has but InitNode doesn't have
-    api_node.config.plugin.remove("chain_api")
-    api_node.config.plugin.remove("condenser_api")
-    api_node.config.plugin.remove("network_broadcast_api")
-    api_node.config.plugin.remove("node_status_api")
-    api_node.config.plugin.remove("reputation_api")
     api_node.config.plugin.remove("transaction_status_api")
-    api_node.config.plugin.remove("witness_api")
+    api_node.config.plugin.remove("reputation_api")
 
     connect_nodes(init_node, api_node)
     api_node.run(load_snapshot_from=snapshot, wait_for_live=True)
