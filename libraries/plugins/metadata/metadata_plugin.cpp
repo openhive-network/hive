@@ -55,9 +55,9 @@ struct pow2_work_get_account_visitor
 
 struct post_operation_visitor
 {
-  metadata_plugin_impl& _plugin;
+  chain::database& db;
 
-  post_operation_visitor( metadata_plugin_impl& plugin ) : _plugin( plugin ) {}
+  post_operation_visitor( metadata_plugin_impl& plugin ) : db( plugin._db ) {}
 
   typedef void result_type;
 
@@ -66,7 +66,6 @@ struct post_operation_visitor
 
   void operator()( const account_create_operation& op )const
   {
-    auto& db = _plugin._db;
     const auto& new_account = db.get_account( op.new_account_name );
     db.create< account_metadata_object >( [&]( account_metadata_object& meta )
     {
@@ -77,7 +76,6 @@ struct post_operation_visitor
 
   void operator()( const account_create_with_delegation_operation& op )const
   {
-    auto& db = _plugin._db;
     const auto& new_account = db.get_account( op.new_account_name );
     db.create< account_metadata_object >( [&]( account_metadata_object& meta )
     {
@@ -88,7 +86,6 @@ struct post_operation_visitor
 
   void operator()( const create_claimed_account_operation& op )const
   {
-    auto& db = _plugin._db;
     const auto& new_account = db.get_account( op.new_account_name );
     db.create< account_metadata_object >( [&]( account_metadata_object& meta )
     {
@@ -99,34 +96,26 @@ struct post_operation_visitor
 
   void operator()( const pow_operation& op )const
   {
-    auto& db = _plugin._db;
-    const auto* account = db.find_account( op.worker_account );
-    if( account == nullptr )
-      return;
-    const auto* existing_meta = db.find< account_metadata_object, by_account >( account->get_id() );
+    const auto& account = db.get_account( op.worker_account );
+    const auto* existing_meta = db.find< account_metadata_object, by_account >( account.get_id() );
     if( existing_meta != nullptr )
       return;
     db.create< account_metadata_object >( [&]( account_metadata_object& meta )
     {
-      meta.account = account->get_id();
+      meta.account = account.get_id();
     });
   }
 
   void operator()( const pow2_operation& op )const
   {
-    auto& db = _plugin._db;
     const account_name_type* worker_account = op.work.visit( pow2_work_get_account_visitor() );
-    if( worker_account == nullptr )
-      return;
-    const auto* account = db.find_account( *worker_account );
-    if( account == nullptr )
-      return;
-    const auto* existing_meta = db.find< account_metadata_object, by_account >( account->get_id() );
+    const auto& account = db.get_account( *worker_account );
+    const auto* existing_meta = db.find< account_metadata_object, by_account >( account.get_id() );
     if( existing_meta != nullptr )
       return;
     db.create< account_metadata_object >( [&]( account_metadata_object& meta )
     {
-      meta.account = account->get_id();
+      meta.account = account.get_id();
     });
   }
 
@@ -135,7 +124,6 @@ struct post_operation_visitor
     if( op.json_metadata.size() == 0 )
       return;
 
-    auto& db = _plugin._db;
     const auto& account = db.get_account( op.account );
     db.modify( db.get< account_metadata_object, by_account >( account.get_id() ), [&]( account_metadata_object& meta )
     {
@@ -152,7 +140,6 @@ struct post_operation_visitor
     if( op.json_metadata.size() == 0 && op.posting_json_metadata.size() == 0 )
       return;
 
-    auto& db = _plugin._db;
     const auto& account = db.get_account( op.account );
     db.modify( db.get< account_metadata_object, by_account >( account.get_id() ), [&]( account_metadata_object& meta )
     {
@@ -175,15 +162,11 @@ void metadata_plugin_impl::on_post_apply_operation( const hive::chain::operation
 metadata_plugin::metadata_plugin() {}
 metadata_plugin::~metadata_plugin() {}
 
-get_account_metadata_return metadata_plugin::get_account_metadata( const account_name_type& account ) const
+get_account_metadata_return metadata_plugin::get_account_metadata( const account_object& account ) const
 {
   get_account_metadata_return result;
 
-  const auto* acct = my->_db.find_account( account );
-  if( acct == nullptr )
-    return result;
-
-  const auto* meta = my->_db.find< account_metadata_object, by_account >( acct->get_id() );
+  const auto* meta = my->_db.find< account_metadata_object, by_account >( account.get_id() );
   if( meta == nullptr )
     return result;
 
