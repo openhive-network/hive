@@ -941,9 +941,9 @@ uint32_t database::get_slot_at_time(fc::time_point_sec when)const
   *  Converts HIVE into HBD and adds it to to_account while reducing the HIVE supply
   *  by HIVE and increasing the HBD supply by the specified amount.
   */
-std::pair< asset, asset > database::create_hbd( const account_object& to_account, asset hive, bool to_reward_balance )
+std::pair< HBD_asset, HIVE_asset > database::create_hbd( const account_object& to_account, asset hive, bool to_reward_balance )
 {
-  std::pair< asset, asset > assets( asset( 0, HBD_SYMBOL ), asset( 0, HIVE_SYMBOL ) );
+  std::pair< HBD_asset, HIVE_asset > assets;
 
   try
   {
@@ -974,7 +974,7 @@ std::pair< asset, asset > database::create_hbd( const account_object& to_account
       adjust_supply( asset( -to_hbd, HIVE_SYMBOL ) );
       adjust_supply( hbd );
       assets.first = hbd;
-      assets.second = asset( to_hive, HIVE_SYMBOL );
+      assets.second = HIVE_asset( to_hive );
     }
     else
     {
@@ -1971,12 +1971,12 @@ share_type database::pay_reward_funds( const share_type& reward )
   return used_rewards;
 }
 
-asset database::to_hbd( const asset& hive )const
+HBD_asset database::to_hbd( const asset& hive )const
 {
   return util::to_hbd( get_feed_history().current_median_history, hive );
 }
 
-asset database::to_hive( const asset& hbd )const
+HIVE_asset database::to_hive( const asset& hbd )const
 {
   return util::to_hive( get_feed_history().current_median_history, hbd );
 }
@@ -3510,10 +3510,10 @@ void database::validate_invariants()const
   try
   {
     const auto& account_idx = get_index< account_index, by_name >();
-    asset total_supply = asset( 0, HIVE_SYMBOL );
-    asset total_hbd = asset( 0, HBD_SYMBOL );
-    asset total_vesting = asset( 0, VESTS_SYMBOL );
-    asset pending_vesting_hive = asset( 0, HIVE_SYMBOL );
+    HIVE_asset total_supply;
+    HBD_asset total_hbd;
+    VEST_asset total_vesting;
+    HIVE_asset pending_vesting_hive;
     share_type total_vsf_votes = share_type( 0 );
     ushare_type total_delayed_votes = ushare_type( 0 );
 

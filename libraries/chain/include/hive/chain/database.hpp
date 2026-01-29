@@ -497,7 +497,7 @@ namespace chain {
       uint32_t get_slot_at_time(fc::time_point_sec when)const;
 
       /** @return the HBD created and deposited to_account, may return HIVE if there is no median feed */
-      std::pair< asset, asset > create_hbd( const account_object& to_account, asset hive, bool to_reward_balance=false );
+      std::pair< HBD_asset, HIVE_asset > create_hbd( const account_object& to_account, asset hive, bool to_reward_balance=false );
 
       using Before = std::function< void( const asset& ) >;
       asset adjust_account_vesting_balance(const account_object& to_account, const asset& liquid, bool to_reward_balance, Before&& before_vesting_callback );
@@ -561,16 +561,16 @@ namespace chain {
       void process_funds();
       void process_conversions();
       void remove_pending_conversion_requests( const account_object& account );
-      void get_convert_request_totals( asset& total_hive, asset& total_hbd, uint64_t& collateralized_count, uint64_t& convert_count ) const;
+      void get_convert_request_totals( HIVE_asset& total_hive, HBD_asset& total_hbd, uint64_t& collateralized_count, uint64_t& convert_count ) const;
       void process_savings_withdraws();
       void process_subsidized_accounts();
       void account_recovery_processing();
       void expire_escrow_ratification();
       void remove_pending_escrows( const account_object& account, const account_name_type& account_name );
-      void get_escrow_totals( asset& total_hive, asset& total_hbd, uint64_t& escrow_count ) const;
+      void get_escrow_totals( HIVE_asset& total_hive, HBD_asset& total_hbd, uint64_t& escrow_count ) const;
       void remove_pending_savings_withdraws( const account_object& account, const account_name_type& account_name );
-      void get_savings_withdraw_totals( asset& total_hive, asset& total_hbd, uint64_t& withdrawal_count ) const;
-      void get_limit_order_totals( asset& total_hive, asset& total_hbd, uint64_t& order_count ) const;
+      void get_savings_withdraw_totals( HIVE_asset& total_hive, HBD_asset& total_hbd, uint64_t& withdrawal_count ) const;
+      void get_limit_order_totals( HIVE_asset& total_hive, HBD_asset& total_hbd, uint64_t& order_count ) const;
       void remove_pending_limit_orders( const account_object& account, const account_name_type& account_name );
 #ifdef HIVE_ENABLE_SMT
       struct TCombinedBalance {
@@ -601,8 +601,8 @@ namespace chain {
         * Helper method to return the current HBD value of a given amount of
         * HIVE.  Return 0 HBD if there isn't a current_median_history
         */
-      asset to_hbd( const asset& hive )const;
-      asset to_hive( const asset& hbd )const;
+      HBD_asset to_hbd( const asset& hive )const;
+      HIVE_asset to_hive( const asset& hbd )const;
 
       time_point_sec   head_block_time()const;
       uint32_t         head_block_num()const;

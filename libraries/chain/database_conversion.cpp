@@ -156,7 +156,7 @@ void database::remove_pending_conversion_requests( const account_object& account
     "Collateralized convert requests not handled by clear_account" );
 }
 
-void database::get_convert_request_totals( asset& total_collateral, asset& total_hbd, uint64_t& collateralized_count, uint64_t& convert_count ) const
+void database::get_convert_request_totals( HIVE_asset& total_collateral, HBD_asset& total_hbd, uint64_t& collateralized_count, uint64_t& convert_count ) const
 {
   const auto& convert_request_idx = get_index< convert_request_index >().indices();
   for( auto itr = convert_request_idx.begin(); itr != convert_request_idx.end(); ++itr )
