@@ -13,6 +13,9 @@
 #define HIVE_METADATA_PLUGIN_NAME "metadata"
 #endif
 
+namespace hive { namespace chain {
+  class account_object;
+} }
 
 namespace hive { namespace plugins { namespace metadata {
 
