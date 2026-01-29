@@ -132,6 +132,7 @@ class advanced_benchmark_dumper
 
     void set_enabled( bool val ) { enabled = val; }
     bool is_enabled() { return enabled; }
+    const std::string& get_file_name() const { return file_name; }
 
     void begin();
     void end( const std::string& str, uint64_t _count = 1 ) { end( apply_context_name, str, _count ); }
