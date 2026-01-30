@@ -390,7 +390,9 @@ mirrornet_replay_test:
 chain_test:
   extends: .unit_tests_base
   script:
-    - ./scripts/run_chain_tests_parallel.sh ./hived-testnet-binaries/chain_test 6
+    - curl -fsSL "${CI_SERVER_URL}/${CI_PROJECT_PATH}/-/raw/${CI_COMMIT_SHA}/scripts/run_chain_tests_parallel.sh" -o run_chain_tests_parallel.sh
+    - chmod +x run_chain_tests_parallel.sh
+    - ./run_chain_tests_parallel.sh ./hived-testnet-binaries/chain_test 6
   artifacts:
     reports:
       junit: hived-testnet-binaries/chain_test_results.xml
