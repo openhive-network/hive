@@ -1,6 +1,6 @@
 include:
   - project: 'hive/common-ci-configuration'
-    ref: 125a566b8dc2e3202fc0ebb4b840c0b19f4f4422  # add-gnu-parallel branch
+    ref: 1818e48d4de93a66c6add209bd23587ee2962b8a  # add-gnu-parallel branch rebased
     file:
       - '/templates/npm_projects.gitlab-ci.yml'
       - '/templates/wasm_build.gitlab-ci.yml'
