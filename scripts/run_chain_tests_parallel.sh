@@ -27,17 +27,26 @@ kill_tree() {
 
 # Handle Ctrl-C: kill all child processes
 cleanup() {
+    local exit_code=$?
     trap - INT TERM EXIT
-    echo ""
-    echo "Interrupted, killing all test processes..."
-    if [ -n "$PARALLEL_PID" ]; then
-        kill_tree $PARALLEL_PID TERM
-        sleep 0.5
-        kill_tree $PARALLEL_PID KILL
+    # Only show interrupt message and kill processes if actually interrupted
+    if [ $exit_code -ne 0 ] || [ -n "$INTERRUPTED" ]; then
+        echo ""
+        echo "Interrupted, killing all test processes..."
+        if [ -n "$PARALLEL_PID" ]; then
+            kill_tree $PARALLEL_PID TERM
+            sleep 0.5
+            kill_tree $PARALLEL_PID KILL
+        fi
+        exit 130
     fi
-    exit 130
 }
-trap cleanup INT TERM EXIT
+interrupt_handler() {
+    INTERRUPTED=1
+    cleanup
+}
+trap interrupt_handler INT TERM
+trap cleanup EXIT
 
 CHAIN_TEST="${1:-}"
 PARALLELISM="${2:-6}"
