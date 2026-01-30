@@ -95,6 +95,9 @@ echo ""
 CHAIN_TEST_ABS=$(readlink -f "$CHAIN_TEST")
 cd "$OUTPUT_DIR"
 
+# Disable exit-on-error for log collection
+set +e
+
 parallel -j "$PARALLELISM" --joblog parallel.log --timeout 600 --termseq TERM,200,KILL,25 \
     "HIVE_TEMPDIR='$CHAIN_TEST_TMPDIR'/{} '$CHAIN_TEST_ABS' --run_test={} --log_format=JUNIT --log_sink=chain_test_{#}.xml --log_level=error > chain_test_{#}.log 2>&1; ret=\$?; echo 'Suite {} exited with code '\$ret; exit \$ret" \
     < test_list.txt &
