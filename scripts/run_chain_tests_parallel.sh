@@ -77,8 +77,8 @@ fi
 echo "Using chain_test: $CHAIN_TEST"
 echo "Parallelism: $PARALLELISM"
 
-# Create output directory
-OUTPUT_DIR=$(mktemp -d -t chain_test_parallel.XXXXXX)
+# Use the directory where chain_test binary resides for output
+OUTPUT_DIR=$(dirname "$CHAIN_TEST")
 CHAIN_TEST_TMPDIR=$(mktemp -d -t chain_test_tmp.XXXXXX)
 echo "Output directory: $OUTPUT_DIR"
 echo "Temp directory: $CHAIN_TEST_TMPDIR"
