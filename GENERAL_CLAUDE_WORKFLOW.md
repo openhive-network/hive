@@ -286,6 +286,43 @@ glab ci view
 glab issue create --title "Pipeline failure: <description>" --assignee=@me
 ```
 
+### Handling Unexpected Blockers
+
+When encountering unexpected issues that prevent normal operations (protected branches, permission errors, force-push rejections, etc.):
+
+1. **Stop and notify the user** - Don't attempt workarounds unilaterally
+2. **Explain the situation clearly**:
+   - What operation you attempted
+   - What error or blocker you encountered
+   - What options exist to proceed
+3. **Ask before taking drastic actions** - The user may have context you don't (e.g., branch intentionally protected for CI testing)
+
+**Never take these actions without explicit user approval:**
+- Closing an existing MR and creating a new one
+- Deleting branches
+- Force-pushing to shared branches
+- Abandoning work in progress
+
+**Why this matters:**
+- Closed MRs lose discussion history and context
+- MR references in other issues/MRs become stale
+- Makes future git history analysis harder
+- User may have intentional configurations you're unaware of
+
+```bash
+# Example: If force-push is rejected
+# BAD: Create new branch and new MR
+# GOOD: Stop and ask user how to proceed
+
+# Example message to user:
+# "Force push to branch X was rejected (branch is protected).
+# Options:
+# 1. Temporarily unprotect the branch
+# 2. Create commits on top instead of rebasing
+# 3. [other options]
+# How would you like to proceed?"
+```
+
 ### Multi-Repository / Multi-MR Work
 
 Some work requires multiple MRs across repositories in the `gitlab.syncad.com/hive` group.
