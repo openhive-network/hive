@@ -9,6 +9,7 @@ import test_tools as tt
 def node(request: pytest.FixtureRequest) -> tt.InitNode:
     init_node = tt.InitNode()
     init_node.config.plugin.append("metadata")
+    init_node.config.plugin.append("condenser_api")
 
     # Also respect enable_plugins marker from @run_for decorator
     mark = request.node.get_closest_marker("enable_plugins")
