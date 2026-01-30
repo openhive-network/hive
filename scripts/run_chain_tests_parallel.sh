@@ -85,46 +85,60 @@ echo "Temp directory: $CHAIN_TEST_TMPDIR"
 
 # Get list of test suites
 "$CHAIN_TEST" --list_content 2>&1 | \
-    awk '/^[^ ]/ && /\*/ {suite=$1; gsub(/\*/, "", suite); print suite}' > "$OUTPUT_DIR/test_list.txt"
+    awk '/^[^ ]/ && /\*/ {suite=$1; gsub(/\*/, "", suite); print suite}' > "$OUTPUT_DIR/chain_test_list.txt"
 
-NUM_SUITES=$(wc -l < "$OUTPUT_DIR/test_list.txt")
+NUM_SUITES=$(wc -l < "$OUTPUT_DIR/chain_test_list.txt")
 echo "Found $NUM_SUITES test suites to run"
 echo ""
 
-# Run test suites in parallel
+# Run test suites in parallel (individual files go to temp dir)
 CHAIN_TEST_ABS=$(readlink -f "$CHAIN_TEST")
-cd "$OUTPUT_DIR"
+OUTPUT_DIR_ABS=$(readlink -f "$OUTPUT_DIR")
 
 # Disable exit-on-error for log collection
 set +e
 
-parallel -j "$PARALLELISM" --joblog parallel.log --timeout 600 --termseq TERM,200,KILL,25 \
+cd "$CHAIN_TEST_TMPDIR"
+parallel -j "$PARALLELISM" --joblog chain_test_parallel.log --timeout 600 --termseq TERM,200,KILL,25 \
     "HIVE_TEMPDIR='$CHAIN_TEST_TMPDIR'/{} '$CHAIN_TEST_ABS' --run_test={} --log_format=JUNIT --log_sink=chain_test_{#}.xml --log_level=error > chain_test_{#}.log 2>&1; ret=\$?; echo 'Suite {} exited with code '\$ret; exit \$ret" \
-    < test_list.txt &
+    < "$OUTPUT_DIR_ABS/chain_test_list.txt" &
 PARALLEL_PID=$!
 wait $PARALLEL_PID || true
 
 echo ""
 echo "=== Parallel execution summary ==="
-cat parallel.log
+cat chain_test_parallel.log
 
-# Merge JUnit XML files
+# Merge JUnit XML files (only numbered files to avoid matching chain_test_results.xml)
 echo '<?xml version="1.0" encoding="UTF-8"?>' > chain_test_results.xml
 echo '<testsuites>' >> chain_test_results.xml
-for f in chain_test_*.xml; do
-    if [ -f "$f" ] && [ "$f" != "chain_test_results.xml" ]; then
+for f in chain_test_[0-9]*.xml; do
+    if [ -f "$f" ]; then
+        echo "Processing $f ($(wc -c < "$f") bytes)" >&2
         sed -n '/<testsuite/,/<\/testsuite>/p' "$f" >> chain_test_results.xml 2>/dev/null || true
     fi
 done
 echo '</testsuites>' >> chain_test_results.xml
+echo "=== Merged XML size: $(wc -c < chain_test_results.xml) bytes ===" >&2
 
-# Combine logs
-cat chain_test_*.log > chain_test.log 2>/dev/null || true
+# Combine logs (only numbered files)
+cat chain_test_[0-9]*.log > chain_test.log 2>/dev/null || true
+
+# Copy results to output directory
+cp chain_test_results.xml chain_test.log chain_test_parallel.log "$OUTPUT_DIR_ABS/"
+
+# Copy individual files to subdirectory for debugging (only numbered files)
+mkdir -p "$OUTPUT_DIR_ABS/chain_test_logs"
+for f in chain_test_[0-9]*.xml chain_test_[0-9]*.log; do
+    [ -f "$f" ] && cp "$f" "$OUTPUT_DIR_ABS/chain_test_logs/"
+done
+
+cd "$OUTPUT_DIR_ABS"
 
 # Check for failures
 echo ""
-FAILED_COUNT=$(awk 'NR>1 && $7!=0 {count++} END {print count+0}' parallel.log)
-PASSED_COUNT=$(awk 'NR>1 && $7==0 {count++} END {print count+0}' parallel.log)
+FAILED_COUNT=$(awk 'NR>1 && $7!=0 {count++} END {print count+0}' chain_test_parallel.log)
+PASSED_COUNT=$(awk 'NR>1 && $7==0 {count++} END {print count+0}' chain_test_parallel.log)
 
 if [ "$FAILED_COUNT" -eq 0 ]; then
     echo "=== All $PASSED_COUNT test suites passed ==="
@@ -132,15 +146,19 @@ if [ "$FAILED_COUNT" -eq 0 ]; then
     echo "Results in: $OUTPUT_DIR"
     echo "  - chain_test_results.xml (merged JUnit)"
     echo "  - chain_test.log (combined logs)"
-    echo "  - parallel.log (execution summary)"
+    echo "  - chain_test_parallel.log (execution summary)"
+    echo "  - chain_test_list.txt (test suite list)"
     exit 0
 else
     echo "=== $FAILED_COUNT test suites FAILED, $PASSED_COUNT passed ==="
     echo ""
     echo "Failed suites:"
-    awk 'NR>1 && $7!=0 {print "  - " $NF " (exit code: " $7 ")"}' parallel.log
+    awk 'NR>1 && $7!=0 {
+        cmd=$0; sub(/.*--run_test=/, "", cmd); sub(/ .*/, "", cmd);
+        print "  - " cmd " (exit code: " $7 ")"
+    }' chain_test_parallel.log
     echo ""
     echo "Results in: $OUTPUT_DIR"
-    echo "Check individual logs: chain_test_*.log"
+    echo "Check individual logs: chain_test_logs/"
     exit 1
 fi

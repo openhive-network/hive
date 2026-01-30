@@ -390,68 +390,15 @@ mirrornet_replay_test:
 chain_test:
   extends: .unit_tests_base
   script:
-    - |
-      # Verify GNU parallel is available (must be installed in ci-base-image)
-      if ! command -v parallel &> /dev/null; then
-        echo "ERROR: GNU parallel not found. Please add 'parallel' package to ci-base-image in common-ci-configuration."
-        exit 1
-      fi
-
-      # Create base temp directory for tests
-      CHAIN_TEST_TMPDIR=$(mktemp -d)
-
-      # Get list of top-level test suites (not individual tests)
-      ./hived-testnet-binaries/chain_test --list_content 2>&1 | \
-        awk '/^[^ ]/ && /\*/ {suite=$1; gsub(/\*/, "", suite); print suite}' > chain_test_list.txt
-
-      echo "Found $(wc -l < chain_test_list.txt) test suites to run"
-
-      # Run test suites in parallel with unique HIVE_TEMPDIR for each job
-      # {#} is the job sequence number, used to create unique temp dirs
-      # {} is the test suite name (e.g., basic_tests, block_tests)
-      parallel -j 6 --joblog chain_test_parallel.log \
-        'HIVE_TEMPDIR='"${CHAIN_TEST_TMPDIR}"'/{} timeout 10m ./hived-testnet-binaries/chain_test --run_test={} --log_format=JUNIT --log_sink=chain_test_{#}.xml --log_level=error > chain_test_{#}.log 2>&1; ret=$?; echo "Suite {} exited with code $ret"; exit $ret' \
-        < chain_test_list.txt || true
-
-      # Show parallel job summary
-      echo "=== Parallel execution summary ==="
-      cat chain_test_parallel.log
-
-      # Merge all JUnit XML files into one
-      # Boost.Test JUNIT includes all tests in each run (most as skipped)
-      # We concatenate the XML files and let GitLab handle duplicates
-      echo '<?xml version="1.0" encoding="UTF-8"?>' > chain_test_results.xml
-      echo '<testsuites>' >> chain_test_results.xml
-      for f in chain_test_*.xml; do
-        if [ -f "$f" ] && [ "$f" != "chain_test_results.xml" ]; then
-          echo "Processing $f ($(wc -c < "$f") bytes)" >&2
-          # Extract the testsuite element (skip XML declaration)
-          sed -n '/<testsuite/,/<\/testsuite>/p' "$f" >> chain_test_results.xml 2>/dev/null || true
-        fi
-      done
-      echo '</testsuites>' >> chain_test_results.xml
-      echo "=== Merged XML size: $(wc -c < chain_test_results.xml) bytes ===" >&2
-
-      # Combine all log files into main log
-      cat chain_test_*.log > chain_test.log 2>/dev/null || true
-
-      # Check for any failures in parallel log (column 7 is exit status)
-      if awk 'NR>1 && $7!=0 {exit 1}' chain_test_parallel.log; then
-        echo "All tests passed"
-      else
-        echo "Some tests failed - check individual logs"
-        awk 'NR>1 && $7!=0 {print "FAILED:", $NF, "exit code:", $7}' chain_test_parallel.log
-        exit 1
-      fi
+    - ./scripts/run_chain_tests_parallel.sh ./hived-testnet-binaries/chain_test 6
   artifacts:
     reports:
-      junit: chain_test_results.xml
+      junit: hived-testnet-binaries/chain_test_results.xml
     paths:
-      - chain_test.log
-      - chain_test_*.log
-      - chain_test_*.xml
-      - chain_test_parallel.log
-      - chain_test_list.txt
+      - hived-testnet-binaries/chain_test.log
+      - hived-testnet-binaries/chain_test_parallel.log
+      - hived-testnet-binaries/chain_test_list.txt
+      - hived-testnet-binaries/chain_test_logs/
     when: always
     expire_in: 1 week
 
