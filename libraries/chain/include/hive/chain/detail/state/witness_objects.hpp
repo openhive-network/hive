@@ -81,7 +81,7 @@ namespace hive { namespace chain {
       CHAINBASE_DEFAULT_CONSTRUCTOR( witness_object, (url) )
 
       //HBD to HIVE ratio proposed by the witness
-      const price& get_hbd_exchange_rate() const { return hbd_exchange_rate; }
+      const price& get_hbd_exchange_rate() const { return hbd_exchange_rate; } // note: this has to return price
       //time when HBD/HIVE price ratio was last confirmed (TODO: add routine to check if price feed is valid)
       const time_point_sec& get_last_hbd_exchange_update() const { return last_hbd_exchange_update; }
       //tells if witness is disabled (can't be chosen to schedule nor sign blocks)
@@ -109,7 +109,7 @@ namespace hive { namespace chain {
       public_key_type   signing_key;
 
       chain_properties  props;
-      price             hbd_exchange_rate;
+      price             hbd_exchange_rate; // note: this has to be price - see database::update_median_feed
       time_point_sec    last_hbd_exchange_update;
 
 

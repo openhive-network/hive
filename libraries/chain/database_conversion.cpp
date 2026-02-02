@@ -36,7 +36,7 @@ void database::process_conversions()
   auto now = head_block_time();
   const auto& fhistory = get_feed_history();
   if( fhistory.current_median_history.is_null() )
-    return;
+    return; //current_median_history was null until block 933600
 
   HBD_asset net_hbd( 0 );
   HIVE_asset net_hive( 0 );
