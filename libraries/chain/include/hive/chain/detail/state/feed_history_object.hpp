@@ -24,8 +24,7 @@ namespace hive { namespace chain {
       price current_max_history;
 
       using t_price_history = t_deque< price >;
-
-      t_deque< price > price_history; ///< tracks this last week of median_feed one per hour
+      t_price_history price_history; ///< tracks this last week of median_feed one per hour
 
       size_t get_dynamic_alloc() const
       {

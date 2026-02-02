@@ -343,12 +343,11 @@ void dhf_processor::convert_funds( const block_notification& note )
   const auto to_convert = asset(HIVE_PROPOSAL_CONVERSION_RATE * treasury_account.balance.amount / HIVE_100_PERCENT, HIVE_SYMBOL);
 
   const feed_history_object& fhistory = db.get_feed_history();
-  if( fhistory.current_median_history.is_null() )
-    return;
+  FC_ASSERT( not fhistory.current_median_history.is_null() ); //current_median_history was null only until block 933600
 
   auto converted_hbd = to_convert * fhistory.current_median_history;
   // Don't convert if the conversion would result in an amount lower than the dust threshold
-  if(converted_hbd < HIVE_MIN_PAYOUT_HBD )
+  if( converted_hbd < HIVE_MIN_PAYOUT_HBD )
     return;
 
   db.adjust_balance( treasury_account, -to_convert );
@@ -358,7 +357,7 @@ void dhf_processor::convert_funds( const block_notification& note )
   db.adjust_supply( converted_hbd );
 
   operation vop = dhf_conversion_operation( treasury_account.get_name(), to_convert, converted_hbd );
-  push_virtual_operation( db,  vop );
+  push_virtual_operation( db, vop );
 }
 
 } } // namespace hive::chain
