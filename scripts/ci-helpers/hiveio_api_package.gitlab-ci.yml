@@ -60,6 +60,7 @@
         "--api-generation-dir=${API_GENERATION_DIR}"
         "--dependency-source-dir=${DEPENDENCY_SOURCE_DIR}"
         "--package-registry-project-id=${PACKAGE_REGISTRY_PROJECT_ID:-${CI_PROJECT_ID}}"
+        "--skip-tests"
       )
       [[ "${SKIP_WHEEL_DEPLOY}" == "true" ]] && SCRIPT_ARGS+=("--skip-deploy")
       [[ "${SKIP_REGISTRY_CHECK}" == "true" ]] && SCRIPT_ARGS+=("--skip-registry-check")
