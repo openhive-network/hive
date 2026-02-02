@@ -24,5 +24,5 @@ source = [
 python = ">=3.14,<4"
 toml = "0.10.2"
 jinja2 = "3.1.6"
-hiveio-beekeepy = "1.0.1.dev27+c16c766"  # This version is copied to generated API packages (matches test-tools requirement)
+hiveio-beekeepy = "1.28.5.post20260202151849+unstable"  # This version is copied to generated API packages
 api_client_generator = ">=1.7.1.dev20"  # Includes fix for UnionType handling
