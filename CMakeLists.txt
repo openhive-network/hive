@@ -172,7 +172,6 @@ LIST( APPEND  BOOST_COMPONENTS
       date_time
       filesystem
       iostreams
-      locale
       regex
       system
       thread
