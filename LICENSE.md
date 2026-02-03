@@ -1,10 +1,13 @@
+Copyright (c) 2020-2026 Hive blockchain community contributors.
+Hive is a decentralized, open-source blockchain project maintained by its community.
+
 Copyright (c) 2019 Steemit, Inc., and contributors.
 
 The following license applies to code contained within this repository that
-is created by Steemit, Inc. Other copy right holders have licensed dependencies such
+is created by Steemit, Inc. Other copyright holders have licensed dependencies such
 as Graphene, FC, and Boost under their own individual licenses.
 
-In 2020, the original Steem code base was forked to create the open-source software for the Hive peer-to-peer network. All contributions since that time have been made by Hive community contributors and all such contributions continue to be licensed under the MIT license below.
+In 2020, the original Steem code base was forked and modified to create the open-source software for the Hive peer-to-peer network. All contributions since that time have been made by Hive community contributors and all such contributions continue to be licensed under the MIT license below.
 
 The MIT License
 
