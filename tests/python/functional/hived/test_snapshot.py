@@ -48,6 +48,11 @@ if TYPE_CHECKING:
 
     from test_tools import Snapshot
 
+def clear_state(node: tt.InitNode):
+        from os.path import join as join_paths
+        from shutil import rmtree
+
+        rmtree(join_paths(str(node.directory), "blockchain", "shared_memory.bin"), ignore_errors=True)
 
 def test_snapshots_content_binary(block_log: Path) -> None:
     node: list[tt.ApiNode] = []
@@ -68,12 +73,6 @@ def test_snapshots_content_binary(block_log: Path) -> None:
 
 
 def test_snapshots_existing_dir(block_log: Path, block_log_length: int) -> None:
-    def clear_state(node: tt.InitNode):
-        from os.path import join as join_paths
-        from shutil import rmtree
-
-        rmtree(join_paths(str(node.directory), "blockchain", "shared_memory.bin"), ignore_errors=True)
-
     error_message = "is not empty. Creating snapshot rejected."
 
     node = tt.InitNode()
@@ -109,12 +108,6 @@ def test_snapshots_existing_dir(block_log: Path, block_log_length: int) -> None:
 
 
 def test_snapshots_has_more_plugins(block_log: Path, block_log_length: int) -> None:
-    def clear_state(node: tt.InitNode):
-        from os.path import join as join_paths
-        from shutil import rmtree
-
-        rmtree(join_paths(str(node.directory), "blockchain", "shared_memory.bin"), ignore_errors=True)
-
     node = tt.InitNode()
     # extra plugin with new indexes: `block_log_info`
     node.config.plugin.append("block_log_info")
@@ -139,12 +132,6 @@ def test_snapshots_has_more_plugins(block_log: Path, block_log_length: int) -> N
 
 
 def test_snapshots_has_less_plugins(block_log: Path, block_log_length: int) -> None:
-    def clear_state(node: tt.InitNode):
-        from os.path import join as join_paths
-        from shutil import rmtree
-
-        rmtree(join_paths(str(node.directory), "blockchain", "shared_memory.bin"), ignore_errors=True)
-
     node = tt.InitNode()
     node.run(exit_before_synchronization=True, replay_from=block_log)
     node.close()
@@ -200,3 +187,31 @@ def test_dump_snapshot_on_enabled_account_history_plugin_node() -> None:
         len(snap_node.api.database.list_accounts(start="", limit=100, order="by_name").accounts)
         == len(BASE_ACCOUNTS) + number_of_accounts
     )
+
+def test_load_dump_snapshot_at_once(block_log: Path, block_log_length: int) -> None:
+    node = tt.InitNode()
+    node.run(exit_before_synchronization=True, replay_from=block_log)
+    node.close()
+
+    snap_0 = node.dump_snapshot(close=True, name="LessBlocks")
+    node.run()
+    node.wait_for_block_with_number(block_log_length + 5)
+    blocks_count = node.get_last_block_number()
+    node.close()
+
+    node.run(load_snapshot_from=snap_0, arguments=["--dump-snapshot=MoreBlocks"])
+    assert blocks_count <= node.get_last_block_number()
+    node.close()
+    log = sorted(node.directory.glob("stderr*.log"))[-1].read_text()
+    load_snapshot_msg = "Snapshot loading finished"
+    replay_finished_msg = "Done reindexing"
+    dump_snapshot_msg = "Snapshot generation finished"
+
+    assert load_snapshot_msg in log
+    assert replay_finished_msg in log
+    assert dump_snapshot_msg in log
+    assert log.index(load_snapshot_msg) < log.index(replay_finished_msg) < log.index(dump_snapshot_msg)
+
+    node.run(arguments=["--load-snapshot=MoreBlocks"])
+    assert blocks_count <= node.get_last_block_number()
+    node.close()
