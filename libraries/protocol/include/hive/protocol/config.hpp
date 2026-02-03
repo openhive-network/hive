@@ -1,4 +1,7 @@
 /*
+ * Copyright (c) 2020-2026 Hive blockchain community contributors.
+ * Hive is a decentralized, open-source blockchain project maintained by its community.
+ *
  * Copyright (c) 2016 Steemit, Inc., and contributors.
  */
 #pragma once
