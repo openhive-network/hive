@@ -113,7 +113,8 @@ class chain_plugin_impl
     void initial_settings();
     void open();
     bool replay_blockchain( const block_read_i& block_reader, hive::chain::blockchain_worker_thread_pool& thread_pool );
-    void process_snapshot();
+    void process_snapshot_dump_request();
+    void process_snapshot_load_request();
     bool check_data_consistency( const block_read_i& block_reader );
 
     void prepare_work( bool started, synchronization_type& on_sync );
@@ -1338,10 +1339,16 @@ bool chain_plugin_impl::replay_blockchain( const block_read_i& block_reader, hiv
   return true;
 }
 
-void chain_plugin_impl::process_snapshot()
+void chain_plugin_impl::process_snapshot_dump_request()
 {
   if( snapshot_provider != nullptr )
-    snapshot_provider->process_explicit_snapshot_requests( db_open_args );
+    snapshot_provider->process_explicit_snapshot_dump_requests( db_open_args );
+}
+
+void chain_plugin_impl::process_snapshot_load_request()
+{
+  if( snapshot_provider != nullptr )
+    snapshot_provider->process_explicit_snapshot_load_requests( db_open_args );
 }
 
 void chain_plugin_impl::prepare_work( bool started, synchronization_type& on_sync )
@@ -1847,19 +1854,22 @@ void chain_plugin::plugin_startup()
   my->prepare_work( get_state() == appbase::abstract_plugin::started, on_sync );
 
   bool start = false;
-  bool replay = my->replay;
+  bool force_replay_after_snapshot_loading = false;
 
-  if( not replay )
+  if (my->load_snapshot)
   {
-    ilog("Looking for snapshot processing requests...");
-    my->process_snapshot();
+    ilog("Looking for load snapshot processing requests...");
+    my->process_snapshot_load_request();
+  }
 
+  if( not my->replay )
+  {
     ilog( "Consistency data checking..." );
     if( my->check_data_consistency( my->default_block_writer->get_block_reader() ) )
     {
       start = true;
       if( my->db.get_snapshot_loaded() )
-        replay = true; //Replaying is forced, because after snapshot loading, node should work in synchronization mode.
+        force_replay_after_snapshot_loading = true; //Replaying is forced, because after snapshot loading, node should work in synchronization mode.
     }
   }
 
@@ -1870,31 +1880,26 @@ void chain_plugin::plugin_startup()
       ( "block_num", my->checkpoints.rbegin()->first )( "block_id", my->checkpoints.rbegin()->second ) );
   }
 
-  if( replay )
+  if( my->replay || force_replay_after_snapshot_loading )
   {
-    if (my->replay && my->load_snapshot)
-    {
-      ilog("Looking for snapshot processing requests...");
-      my->process_snapshot();
-    }
-
     std::shared_ptr< block_write_i > reindex_block_writer =
       std::make_shared< irreversible_block_writer >( *( my->block_storage.get() ) );
     ilog( "Replaying..." );
     start = !my->start_replay_processing( reindex_block_writer, get_thread_pool() );
-
-    if (my->replay && my->dump_snapshot)
-    {
-      ilog("Looking for snapshot processing requests...");
-      my->process_snapshot();
-    }
   }
+
+  if (my->dump_snapshot)
+  {
+    ilog("Looking for dump snapshot processing requests ...");
+    my->process_snapshot_dump_request();
+  }
+
   if( start )
   {
     if( my->stop_at_block > 0 && my->db.head_block_num() >= my->stop_at_block )
       disable_p2p( false );
 
-    std::string str = replay ? " after replaying" : "";
+    std::string str = (my->replay || force_replay_after_snapshot_loading) ? " after replaying" : "";
 
     if( my->is_work_enabled )
     {
