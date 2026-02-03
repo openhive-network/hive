@@ -432,6 +432,44 @@ plugin_test_api:
     when: always
     expire_in: 1 week
 
+# Verify binaries are statically linked (except for expected glibc dependencies)
+# This ensures binaries are portable across Linux distributions
+static_linking_check:
+  extends:
+    - .job-defaults
+    - .skip_test_on_docs_only
+  stage: test
+  needs:
+    - job: prepare_hived_image
+      artifacts: true
+  image: "$CI_BASE_IMAGE"
+  script:
+    - |
+      # Check main binaries for correct static linking
+      BINARIES=(
+        hived-binaries/hived
+        hived-binaries/cli_wallet
+      )
+
+      # Filter to only existing binaries (some may not be built in all configurations)
+      EXISTING_BINARIES=()
+      for bin in "${BINARIES[@]}"; do
+        if [[ -f "$bin" ]]; then
+          EXISTING_BINARIES+=("$bin")
+        else
+          echo "Note: $bin not found, skipping"
+        fi
+      done
+
+      if [[ ${#EXISTING_BINARIES[@]} -eq 0 ]]; then
+        echo "ERROR: No binaries found to check"
+        exit 1
+      fi
+
+      $CI_PROJECT_DIR/scripts/check-static-linking.sh "${EXISTING_BINARIES[@]}"
+  tags:
+    - public-runner-docker
+
 .hived-service: &hived-service
   - name: $HIVED_IMAGE_NAME
     alias: hived-instance
