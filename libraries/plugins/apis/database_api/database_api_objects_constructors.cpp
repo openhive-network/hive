@@ -320,12 +320,14 @@ api_savings_withdraw_object::api_savings_withdraw_object( const savings_withdraw
 // api_feed_history_object constructors
 api_feed_history_object::api_feed_history_object( const feed_history_object& f ) :
   id( f.get_id() ),
-  current_median_history( f.current_median_history ),
-  market_median_history( f.market_median_history ),
-  current_min_history( f.current_min_history ),
-  current_max_history( f.current_max_history ),
-  price_history( f.price_history.begin(), f.price_history.end() )
-{}
+  current_median_history( f.current_median_history.to_price() ),
+  market_median_history( f.market_median_history.to_price() ),
+  current_min_history( f.current_min_history.to_price() ),
+  current_max_history( f.current_max_history.to_price() )
+{
+  for( const auto& p : f.price_history )
+    price_history.push_back( p.to_price() );
+}
 
 
 // api_witness_object constructors

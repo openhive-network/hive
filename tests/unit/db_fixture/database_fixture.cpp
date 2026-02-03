@@ -424,7 +424,7 @@ void database_fixture::issue_funds(
         if( median_feed.current_median_history.is_null() )
           db.modify( median_feed, [&]( feed_history_object& f )
         {
-          f.current_median_history = price( asset( 1, HBD_SYMBOL ), asset( 1, HIVE_SYMBOL ) );
+          f.current_median_history = HBD_price( 1, 1 );
           f.market_median_history = f.current_median_history;
           f.current_min_history = f.current_median_history;
           f.current_max_history = f.current_median_history;
@@ -609,7 +609,7 @@ void database_fixture::set_price_feed( const price& new_price, bool stop_at_upda
 #ifdef IS_TEST_NET
     !db->skip_price_feed_limit_check ||
 #endif
-    db->get(feed_history_id_type()).current_median_history == new_price
+    db->get(feed_history_id_type()).current_median_history == HBD_price( new_price )
   ); // the check fails if you call set_price_feed more than once with different price
 }
 

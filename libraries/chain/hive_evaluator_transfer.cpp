@@ -268,15 +268,16 @@ void transfer_evaluator::do_apply( const transfer_operation& o )
 
     FC_ASSERT(!fhistory.current_median_history.is_null(), "Cannot send HIVE to ${s} because there is no price feed.", ("s", o.to ));
 
-    auto amount_to_transfer = o.amount * fhistory.current_median_history;
+    HIVE_asset o_amount( o.amount );
+    auto amount_to_transfer = o_amount * fhistory.current_median_history;
 
-    _db.adjust_balance(o.from, -o.amount);
-    _db.adjust_balance(o.to, amount_to_transfer);
+    _db.adjust_balance( o.from, -o_amount );
+    _db.adjust_balance( o.to, amount_to_transfer );
 
-    _db.adjust_supply(-o.amount);
+    _db.adjust_supply( -o_amount );
 
-    if (amount_to_transfer.amount > 0)
-      _db.adjust_supply(amount_to_transfer);
+    if( amount_to_transfer.amount > 0 )
+      _db.adjust_supply( amount_to_transfer );
 
     // o.to will always be the treasury so no need to call _db.get_treasury
     push_virtual_operation( _db, dhf_conversion_operation( o.to, o.amount, amount_to_transfer ) );
@@ -284,7 +285,7 @@ void transfer_evaluator::do_apply( const transfer_operation& o )
   }
   else if( _db.has_hardfork( HIVE_HARDFORK_0_21__3343 ) )
   {
-    FC_ASSERT( o.amount.symbol == HBD_SYMBOL || !_db.is_treasury( o.to ), "Can only transfer HBD or HIVE to ${s}", ("s", o.to ) );
+    FC_ASSERT( o.amount.symbol == HBD_SYMBOL || !_db.is_treasury( o.to ), "Can only transfer HBD or HIVE to ${s}", ( "s", o.to ) );
   }
 
   _db.adjust_balance( o.from, -o.amount );
@@ -497,7 +498,7 @@ void collateralized_convert_evaluator::do_apply( const collateralized_convert_op
   HIVE_asset for_immediate_conversion = HIVE_asset( fc::uint128_to_uint64( _amount ) );
 
   //immediately create HBD - apply fee to current rolling minimum price
-  HBD_asset converted_amount = multiply_with_fee( for_immediate_conversion, fhistory.current_min_history,
+  HBD_asset converted_amount = multiply_with_fee( for_immediate_conversion, fhistory.current_min_history.to_price(),
     HIVE_COLLATERALIZED_CONVERSION_FEE, HIVE_SYMBOL );
   FC_ASSERT( converted_amount.amount > 0, "Amount of collateral too low - conversion gives no HBD" );
   _db.adjust_balance( owner, converted_amount );
