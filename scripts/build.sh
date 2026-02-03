@@ -28,6 +28,7 @@ Allows to build Hive sources
   --cmake-arg=ARG          Specify additional arguments to the CMake tool spawn.
   --clean-after-build      Remove compiled files after build
   --haf-build              Set if build is called from HAF
+  --jobs=N                 Number of parallel build jobs (default: auto-detected based on CPU/RAM).
   --help                   Display this help screen and exit.
 
 EOF
@@ -38,22 +39,27 @@ HIVED_SOURCE_DIR="."
 HIVED_INSTALLATION_DIR=""
 CLEAN_AFTER_BUILD="false"
 HAF_BUILD=""
+USER_JOBS=""
 
 CMAKE_ARGS=()
 
-# Calculate parallel jobs: default 20, scale down for systems with less RAM
-JOBS=$(nproc)
-JOBS=$(( JOBS > 20 ? 20 : JOBS ))
+calculate_jobs() {
+  # Calculate parallel jobs: default 20, scale down for systems with less RAM
+  local jobs
+  jobs=$(nproc)
+  jobs=$(( jobs > 20 ? 20 : jobs ))
 
-# Memory-aware scaling: ~6GB per compile job
-AVAILABLE_MEM_GB=$(awk '/MemAvailable/ {printf "%d", $2/1024/1024}' /proc/meminfo 2>/dev/null || echo "128")
-MEM_BASED_JOBS=$(( AVAILABLE_MEM_GB / 6 ))
-MEM_BASED_JOBS=$(( MEM_BASED_JOBS < 1 ? 1 : MEM_BASED_JOBS ))
-if [[ $MEM_BASED_JOBS -lt $JOBS ]]; then
-  JOBS=$MEM_BASED_JOBS
-fi
+  # Memory-aware scaling: ~6GB per compile job
+  local available_mem_gb
+  available_mem_gb=$(awk '/MemAvailable/ {printf "%d", $2/1024/1024}' /proc/meminfo 2>/dev/null || echo "128")
+  local mem_based_jobs=$(( available_mem_gb / 6 ))
+  mem_based_jobs=$(( mem_based_jobs < 1 ? 1 : mem_based_jobs ))
+  if [[ $mem_based_jobs -lt $jobs ]]; then
+    jobs=$mem_based_jobs
+  fi
 
-echo "Build will use $JOBS concurrent jobs (RAM: ${AVAILABLE_MEM_GB}GB)..."
+  echo "$jobs"
+}
 
 add_cmake_arg () {
   CMAKE_ARGS+=("$1")
@@ -80,6 +86,9 @@ while [ $# -gt 0 ]; do
     --haf-build)
         HAF_BUILD="true"
         ;;
+    --jobs=*)
+        USER_JOBS="${1#*=}"
+        ;;
     --help)
         print_help
         exit 0
@@ -96,6 +105,20 @@ while [ $# -gt 0 ]; do
     esac
     shift
 done
+
+# Determine number of parallel jobs
+if [[ -n "$USER_JOBS" ]]; then
+  if ! [[ "$USER_JOBS" =~ ^[1-9][0-9]*$ ]]; then
+    echo "ERROR: --jobs requires a positive integer, got: '$USER_JOBS'"
+    exit 1
+  fi
+  JOBS="$USER_JOBS"
+  echo "Build will use $JOBS concurrent jobs (user-specified)..."
+else
+  JOBS=$(calculate_jobs)
+  AVAILABLE_MEM_GB=$(awk '/MemAvailable/ {printf "%d", $2/1024/1024}' /proc/meminfo 2>/dev/null || echo "128")
+  echo "Build will use $JOBS concurrent jobs (RAM: ${AVAILABLE_MEM_GB}GB)..."
+fi
 
 abs_src_dir=$(realpath -e --relative-base="$SCRIPTPATH" "$HIVED_SOURCE_DIR")
 abs_build_dir=$(realpath -m --relative-base="$SCRIPTPATH" "$HIVED_BINARY_DIR")
