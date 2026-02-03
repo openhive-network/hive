@@ -243,15 +243,15 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
           auto benefactor_tokens = ( author_tokens * b.weight ) / HIVE_100_PERCENT;
           auto benefactor_vesting_hive = benefactor_tokens;
           auto vop = comment_benefactor_reward_operation( beneficiary.get_name(), comment_author, to_string( comment_cashout.get_permlink() ),
-            asset( 0, HBD_SYMBOL ), asset( 0, HIVE_SYMBOL ), asset( 0, VESTS_SYMBOL ), has_hardfork( HIVE_HARDFORK_0_17__659 ) );
+            HBD_asset( 0 ), HIVE_asset( 0 ), VEST_asset( 0 ), has_hardfork( HIVE_HARDFORK_0_17__659 ) );
 
           if( has_hardfork( HIVE_HARDFORK_0_21__3343 ) && is_treasury( beneficiary.get_name() ) )
           {
             benefactor_vesting_hive = 0;
-            vop.hbd_payout = asset( benefactor_tokens, HIVE_SYMBOL ) * get_feed_history().current_median_history;
+            vop.hbd_payout = HIVE_asset( benefactor_tokens ) * get_feed_history().current_median_history;
             vop.payout_must_be_claimed = false;
             adjust_balance( get_treasury(), vop.hbd_payout );
-            adjust_supply( asset( -benefactor_tokens, HIVE_SYMBOL ) );
+            adjust_supply( HIVE_asset( -benefactor_tokens ) );
             adjust_supply( vop.hbd_payout );
           }
           else if( has_hardfork( HIVE_HARDFORK_0_20__2022 ) )
@@ -388,7 +388,7 @@ void database::process_comment_cashout()
   const auto& gpo = get_dynamic_global_properties();
   auto _now = head_block_time();
   util::comment_reward_context ctx;
-  ctx.current_hive_price = get_feed_history().current_median_history;
+  ctx.current_hive_price = get_feed_history().current_median_history.to_price();
 
   vector< reward_fund_context > funds;
   vector< share_type > hive_awarded;

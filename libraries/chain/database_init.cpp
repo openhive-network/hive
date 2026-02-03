@@ -300,7 +300,7 @@ void database::init_genesis()
 #if defined(IS_TEST_NET) || defined(HIVE_CONVERTER_ICEBERG_PLUGIN_ENABLED)
     create< feed_history_object >( [&]( feed_history_object& o )
     {
-      o.current_median_history = price( asset( 1, HBD_SYMBOL ), asset( 1, HIVE_SYMBOL ) );
+      o.current_median_history = HBD_price( 1, 1 );
       o.market_median_history = o.current_median_history;
       o.current_min_history = o.current_median_history;
       o.current_max_history = o.current_median_history;

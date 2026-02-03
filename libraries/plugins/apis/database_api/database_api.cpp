@@ -162,7 +162,7 @@ DEFINE_API_IMPL( database_api_impl, get_reward_funds )
 
 DEFINE_API_IMPL( database_api_impl, get_current_price_feed )
 {
-  return _db.get_feed_history().current_median_history;
+  return _db.get_feed_history().current_median_history.to_price();
 }
 
 DEFINE_API_IMPL( database_api_impl, get_feed_history )

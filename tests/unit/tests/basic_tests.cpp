@@ -800,8 +800,8 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
   BOOST_CHECK_EQUAL( sizeof( block_summary_index::MULTIINDEX_NODE_TYPE ), 56u );
   BOOST_CHECK_EQUAL( sizeof( hardfork_property_object ), 120u );
   BOOST_CHECK_EQUAL( sizeof( hardfork_property_index::MULTIINDEX_NODE_TYPE ), 152u );
-  BOOST_CHECK_EQUAL( sizeof( feed_history_object ), 232u ); //dynamic size worth 7*24 of sizeof(price)
-  BOOST_CHECK_EQUAL( sizeof( feed_history_index::MULTIINDEX_NODE_TYPE ), 264u );
+  BOOST_CHECK_EQUAL( sizeof( feed_history_object ), 168u ); //dynamic size worth 7*24 of sizeof(HBD_price)
+  BOOST_CHECK_EQUAL( sizeof( feed_history_index::MULTIINDEX_NODE_TYPE ), 200u );
   BOOST_CHECK_EQUAL( sizeof( witness_schedule_object ), 544u );
   BOOST_CHECK_EQUAL( sizeof( witness_schedule_index::MULTIINDEX_NODE_TYPE ), 576u );
   BOOST_CHECK_EQUAL( sizeof( rc_resource_param_object ), 368u );
@@ -1542,7 +1542,7 @@ BOOST_AUTO_TEST_CASE( chain_object_checksum )
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::escrow_object>(dtds), "d50d91fae93723aa444a3b993d448d48ff313b7e" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::savings_withdraw_object>(dtds), "7fd02375eac9da2cf26146b2ab7ae9d59bb6d69c" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::liquidity_reward_balance_object>(dtds), "3690a7914aba1105d390489d52328478445a0d29" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::feed_history_object>(dtds), "b78938588bbe8bc33afe39568f179fd824d1d120" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::feed_history_object>(dtds), "23f964e467b527855279ab546dd6281ff07fee68" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::limit_order_object>(dtds), "c5472f97a5dc2843f779244110f680e84bbd6b7f" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::withdraw_vesting_route_object>(dtds), "b70b71dab160c4a5fc2f7f896ec85e22e183cce6" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::decline_voting_rights_request_object>(dtds), "4a7b6e131317bdbf49e169e959f913c5e837fdaa" );

@@ -1428,7 +1428,7 @@ BOOST_AUTO_TEST_CASE( feed_publish_mean )
     auto& feed_history = db->get_feed_history();
     BOOST_TEST_MESSAGE( "Check state" );
     {
-      auto expected_price = price( asset( 1000, HBD_SYMBOL ), asset( 99000, HIVE_SYMBOL ) );
+      HBD_price expected_price( 1000, 99000 );
       BOOST_REQUIRE( feed_history.current_median_history == expected_price );
       BOOST_REQUIRE( feed_history.price_history[ 0 ] == expected_price );
     }
@@ -1455,7 +1455,7 @@ BOOST_AUTO_TEST_CASE( feed_publish_mean )
 
       auto& feed_history = db->get(feed_history_id_type());
       BOOST_REQUIRE( feed_history.current_median_history == feed_history.price_history[ ( i + 1 ) / 2 ] );
-      BOOST_REQUIRE( feed_history.price_history[ i + 1 ] == ops[4].exchange_rate );
+      BOOST_REQUIRE( feed_history.price_history[ i + 1 ] == HBD_price( ops[4].exchange_rate ) );
       validate_database();
     }
   }
@@ -2827,10 +2827,10 @@ BOOST_AUTO_TEST_CASE( hbd_price_feed_limit )
     BOOST_REQUIRE( sys_warn_op.message.compare( 0, 27, "HIVE price corrected upward" ) == 0 );
 
     const auto& feed = db->get_feed_history();
-    BOOST_REQUIRE( feed.current_median_history > new_exchange_rate && feed.current_median_history < exchange_rate );
-    BOOST_REQUIRE( feed.market_median_history == new_exchange_rate );
-    BOOST_REQUIRE( feed.current_min_history == new_exchange_rate );
-    BOOST_REQUIRE( feed.current_max_history == exchange_rate );
+    BOOST_REQUIRE( feed.current_median_history > HBD_price( new_exchange_rate ) && feed.current_median_history < HBD_price( exchange_rate ) );
+    BOOST_REQUIRE( feed.market_median_history == HBD_price( new_exchange_rate ) );
+    BOOST_REQUIRE( feed.current_min_history == HBD_price( new_exchange_rate ) );
+    BOOST_REQUIRE( feed.current_max_history == HBD_price( exchange_rate ) );
 
     validate_database();
   }

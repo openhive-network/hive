@@ -5,7 +5,7 @@
 
 namespace hive { namespace chain {
 
-  using hive::protocol::price;
+  using hive::protocol::HBD_price;
   using chainbase::t_deque;
 
   /**
@@ -18,12 +18,12 @@ namespace hive { namespace chain {
     public:
       CHAINBASE_DEFAULT_CONSTRUCTOR( feed_history_object, (price_history) )
 
-      price current_median_history; ///< the current median of the price history, used as the base for most convert operations
-      price market_median_history; ///< same as current_median_history except when the latter is artificially changed upward
-      price current_min_history; ///< used as immediate price for collateralized conversion (after fee correction)
-      price current_max_history;
+      HBD_price current_median_history; ///< the current median of the price history, used as the base for most convert operations
+      HBD_price market_median_history; ///< same as current_median_history except when the latter is artificially changed upward
+      HBD_price current_min_history; ///< used as immediate price for collateralized conversion (after fee correction)
+      HBD_price current_max_history;
 
-      using t_price_history = t_deque< price >;
+      using t_price_history = t_deque< HBD_price >;
       t_price_history price_history; ///< tracks this last week of median_feed one per hour
 
       size_t get_dynamic_alloc() const

@@ -958,7 +958,7 @@ std::pair< HBD_asset, HIVE_asset > database::create_hbd( const account_object& t
       auto to_hbd = ( gpo.hbd_print_rate * hive.amount ) / HIVE_100_PERCENT;
       auto to_hive = hive.amount - to_hbd;
 
-      auto hbd = asset( to_hbd, HIVE_SYMBOL ) * median_price;
+      auto hbd = HIVE_asset( to_hbd ) * median_price;
 
       if( to_reward_balance )
       {
@@ -1784,11 +1784,11 @@ void database::process_funds()
 
     witness_reward /= wso.witness_pay_normalization_factor;
 
-    auto new_hbd = asset( 0, HBD_SYMBOL );
+    HBD_asset new_hbd( 0 );
 
     if( dhf_new_funds.value )
     {
-      new_hbd = asset( dhf_new_funds, HIVE_SYMBOL ) * feed.current_median_history;
+      new_hbd = HIVE_asset( dhf_new_funds ) * feed.current_median_history;
       adjust_balance( get_treasury_name(), new_hbd );
     }
 
@@ -1858,11 +1858,11 @@ asset database::get_liquidity_reward()const
 {
   // There is no need to update virtual_supply to take into account treasury as it's done in process_funds
   if( has_hardfork( HIVE_HARDFORK_0_12__178 ) )
-    return asset( 0, HIVE_SYMBOL );
+    return HIVE_asset( 0 );
 
   const auto& props = get_dynamic_global_properties();
   static_assert( HIVE_LIQUIDITY_REWARD_PERIOD_SEC == 60*60, "this code assumes a 1 hour time interval" ); // NOLINT(misc-redundant-expression)
-  asset percent( protocol::calc_percent_reward_per_hour< HIVE_LIQUIDITY_APR_PERCENT >( props.virtual_supply.amount ), HIVE_SYMBOL );
+  HIVE_asset percent( protocol::calc_percent_reward_per_hour< HIVE_LIQUIDITY_APR_PERCENT >( props.virtual_supply.amount ) );
   return std::max( percent, HIVE_MIN_LIQUIDITY_REWARD );
 }
 
@@ -1871,7 +1871,7 @@ asset database::get_content_reward()const
   // There is no need to update virtual_supply to take into account treasury as it's done in process_funds
   const auto& props = get_dynamic_global_properties();
   static_assert( HIVE_BLOCK_INTERVAL == 3, "this code assumes a 3-second time interval" );
-  asset percent( protocol::calc_percent_reward_per_block< HIVE_CONTENT_APR_PERCENT >( props.virtual_supply.amount ), HIVE_SYMBOL );
+  HIVE_asset percent( protocol::calc_percent_reward_per_block< HIVE_CONTENT_APR_PERCENT >( props.virtual_supply.amount ) );
   return std::max( percent, HIVE_MIN_CONTENT_REWARD );
 }
 
@@ -1880,7 +1880,7 @@ asset database::get_curation_reward()const
   // There is no need to update virtual_supply to take into account treasury as it's done in process_funds
   const auto& props = get_dynamic_global_properties();
   static_assert( HIVE_BLOCK_INTERVAL == 3, "this code assumes a 3-second time interval" );
-  asset percent( protocol::calc_percent_reward_per_block< HIVE_CURATE_APR_PERCENT >( props.virtual_supply.amount ), HIVE_SYMBOL);
+  HIVE_asset percent( protocol::calc_percent_reward_per_block< HIVE_CURATE_APR_PERCENT >( props.virtual_supply.amount ) );
   return std::max( percent, HIVE_MIN_CURATE_REWARD );
 }
 
@@ -1889,7 +1889,7 @@ asset database::get_producer_reward()
   // There is no need to update virtual_supply to take into account treasury as it's done in process_funds
   const auto& props = get_dynamic_global_properties();
   static_assert( HIVE_BLOCK_INTERVAL == 3, "this code assumes a 3-second time interval" );
-  asset percent( protocol::calc_percent_reward_per_block< HIVE_PRODUCER_APR_PERCENT >( props.virtual_supply.amount ), HIVE_SYMBOL);
+  HIVE_asset percent( protocol::calc_percent_reward_per_block< HIVE_PRODUCER_APR_PERCENT >( props.virtual_supply.amount ) );
   auto pay = std::max( percent, HIVE_MIN_PRODUCER_REWARD );
   const auto& witness_account = get_account( props.current_witness );
 
@@ -1926,12 +1926,12 @@ asset database::get_pow_reward()const
 #ifndef IS_TEST_NET
   /// 0 block rewards until at least HIVE_MAX_WITNESSES have produced a POW
   if( props.num_pow_witnesses < HIVE_MAX_WITNESSES && props.head_block_number < HIVE_START_VESTING_BLOCK )
-    return asset( 0, HIVE_SYMBOL );
+    return HIVE_asset( 0 );
 #endif
 
   static_assert( HIVE_BLOCK_INTERVAL == 3, "this code assumes a 3-second time interval" );
   static_assert( HIVE_MAX_WITNESSES == 21, "this code assumes 21 per round" );
-  asset percent( calc_percent_reward_per_round< HIVE_POW_APR_PERCENT >( props.virtual_supply.amount ), HIVE_SYMBOL);
+  HIVE_asset percent( calc_percent_reward_per_round< HIVE_POW_APR_PERCENT >( props.virtual_supply.amount ) );
   return std::max( percent, HIVE_MIN_POW_REWARD );
 }
 
@@ -1973,12 +1973,12 @@ share_type database::pay_reward_funds( const share_type& reward )
 
 HBD_asset database::to_hbd( const asset& hive )const
 {
-  return util::to_hbd( get_feed_history().current_median_history, hive );
+  return util::to_hbd( get_feed_history().current_median_history.to_price(), hive );
 }
 
 HIVE_asset database::to_hive( const asset& hbd )const
 {
-  return util::to_hive( get_feed_history().current_median_history, hbd );
+  return util::to_hive( get_feed_history().current_median_history.to_price(), hbd );
 }
 
 void database::account_recovery_processing()
@@ -2459,7 +2459,7 @@ try {
     // of price_history's use of price type with HBD_price that is always normalized
     modify( get_feed_history(), [&]( feed_history_object& fho )
     {
-      fho.price_history.push_back( median_feed );
+      fho.price_history.push_back( HBD_price( median_feed ) );
       size_t hive_feed_history_window = HIVE_FEED_HISTORY_WINDOW_PRE_HF_16;
       if( has_hardfork( HIVE_HARDFORK_0_16__551) )
         hive_feed_history_window = HIVE_FEED_HISTORY_WINDOW;
@@ -2469,7 +2469,7 @@ try {
 
       if( fho.price_history.size() )
       {
-        std::vector< price > copy( fho.price_history.begin(), fho.price_history.end() );
+        std::vector< HBD_price > copy( fho.price_history.begin(), fho.price_history.end() );
         std::sort( copy.begin(), copy.end() );
         fho.current_median_history = copy[copy.size()/2];
         fho.market_median_history = fho.current_median_history;
@@ -2514,14 +2514,14 @@ try {
             static_assert( ( HIVE_HBD_HARD_LIMIT % HIVE_1_PERCENT ) == 0, "Hard cap has to be expressed in full percentage points" );
             limit /= HIVE_1_PERCENT; //ABW: this is just to have two more levels of magnitude bigger margin;
               //even without it we can still fit within 64bit value, even though numbers used here are pretty big
-            price min_price( asset( ( HIVE_100_PERCENT/HIVE_1_PERCENT - limit ) * hbd_supply.amount, HBD_SYMBOL ),
-                             asset( limit * dgpo.get_current_supply().amount, HIVE_SYMBOL ) );
+            HBD_price min_price( HBD_asset( ( HIVE_100_PERCENT/HIVE_1_PERCENT - limit ) * hbd_supply.amount ),
+                                 HIVE_asset( limit * dgpo.get_current_supply().amount ) );
 
             if( min_price > fho.current_median_history )
             {
               push_virtual_operation( *this, system_warning_operation( FC_LOG_MESSAGE( warn,
                 "HIVE price corrected upward due to ${limit}% HBD cutoff rule, from ${actual} to ${corrected}",
-                ( "limit", limit )( "actual", fho.current_median_history )( "corrected", min_price )).get_message()));
+                ( "limit", limit )( "actual", fho.current_median_history )( "corrected", min_price ) ).get_message() ) );
 
               fho.current_median_history = min_price;
             }
@@ -2894,7 +2894,7 @@ void database::update_virtual_supply()
     auto median_price = get_feed_history().current_median_history;
     //current_median_history was null until block 933600
     dgp.virtual_supply = dgp.current_supply
-      + ( median_price.is_null() ? asset( 0, HIVE_SYMBOL ) : dgp.get_current_hbd_supply() * median_price );
+      + ( median_price.is_null() ? HIVE_asset( 0 ) : dgp.get_current_hbd_supply() * median_price );
 
     if( !median_price.is_null() && has_hardfork( HIVE_HARDFORK_0_14__230 ) )
     {

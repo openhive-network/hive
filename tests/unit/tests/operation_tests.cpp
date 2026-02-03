@@ -3358,7 +3358,7 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_authorities )
       db.modify( db.get_feed_history(), [&]( feed_history_object& feed )
       {
         feed.current_median_history = feed.market_median_history =
-          feed.current_min_history = feed.current_max_history = price();
+          feed.current_min_history = feed.current_max_history = HBD_price();
       } );
     } );
 
@@ -3393,7 +3393,7 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
     
     price price_1_for_4 = price( ASSET( "1.000 TBD" ), ASSET( "4.000 TESTS" ) );
     set_price_feed( price_1_for_4 );
-    BOOST_REQUIRE( feed.current_median_history == price_1_for_4 );
+    BOOST_REQUIRE( feed.current_median_history == HBD_price( price_1_for_4 ) );
 
     //prevent HBD interest from interfering with the test
     flat_map< string, vector<char> > props;
@@ -3497,7 +3497,7 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
     price price_1_for_8 = price( ASSET( "1.000 TBD" ), ASSET( "8.000 TESTS" ) );
     set_price_feed( price_1_for_8 );
     set_price_feed( price_1_for_8 ); //need to do it twice or median won't be the one required
-    BOOST_REQUIRE( feed.current_median_history == price_1_for_8 );
+    BOOST_REQUIRE( feed.current_median_history == HBD_price( price_1_for_8 ) );
 
     generate_blocks( conversion_2_time + HIVE_COLLATERALIZED_CONVERSION_DELAY - fc::seconds( HIVE_BLOCK_INTERVAL ) );
 
@@ -3539,7 +3539,7 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
     set_price_feed( price_1_for_20 );
     set_price_feed( price_1_for_20 );
     set_price_feed( price_1_for_20 ); //four times required to override three previous records as median
-    BOOST_REQUIRE( feed.current_median_history == price_1_for_20 );
+    BOOST_REQUIRE( feed.current_median_history == HBD_price( price_1_for_20 ) );
 
     generate_blocks( conversion_3_time + HIVE_COLLATERALIZED_CONVERSION_DELAY - fc::seconds( HIVE_BLOCK_INTERVAL ) );
 
@@ -3565,7 +3565,7 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
       fc::uint128_t amount( dgpo.get_current_supply().amount.value );
       uint16_t limit2 = 2 * dgpo.hbd_stop_percent + HIVE_1_BASIS_POINT; //there is rounding when percent is calculated, hence some strange correction
       amount = ( amount * limit2 ) / ( 2 * HIVE_100_PERCENT - limit2 );
-      auto new_hbd = asset( fc::uint128_to_uint64(amount), HIVE_SYMBOL ) * feed.current_median_history;
+      auto new_hbd = asset( fc::uint128_to_uint64(amount), HIVE_SYMBOL ) * feed.current_median_history.to_price();
       new_hbd -= dgpo.get_current_hbd_supply() - db->get_treasury().get_hbd_balance();
       issue_funds( "alice", new_hbd, false );
       uint16_t percent = db->calculate_HBD_percent();
@@ -3624,10 +3624,10 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
       BOOST_REQUIRE( sys_warn_op.message.compare( 0, 27, "HIVE price corrected upward" ) == 0 );
     }
 
-    BOOST_REQUIRE( feed.current_median_history > price_1_for_20 );
-    BOOST_REQUIRE( feed.current_max_history == price_1_for_4 ); //it is hard to force artificial correction of max price when it is so high to begin with
-    BOOST_REQUIRE( feed.market_median_history == price_1_for_20 ); //market driven median price should be intact
-    BOOST_REQUIRE( feed.current_min_history == price_1_for_20 ); //minimal price should be intact
+    BOOST_REQUIRE( feed.current_median_history > HBD_price( price_1_for_20 ) );
+    BOOST_REQUIRE( feed.current_max_history == HBD_price( price_1_for_4 ) ); //it is hard to force artificial correction of max price when it is so high to begin with
+    BOOST_REQUIRE( feed.market_median_history == HBD_price( price_1_for_20 ) ); //market driven median price should be intact
+    BOOST_REQUIRE( feed.current_min_history == HBD_price( price_1_for_20 ) ); //minimal price should be intact
 
     generate_blocks( conversion_4_time + HIVE_COLLATERALIZED_CONVERSION_DELAY - fc::seconds( HIVE_BLOCK_INTERVAL ) );
 
@@ -3652,10 +3652,10 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
     generate_blocks( HIVE_FEED_INTERVAL_BLOCKS - ( dgpo.head_block_number % HIVE_FEED_INTERVAL_BLOCKS ) );
 
     //since HBD on treasury does not count the price should now be back to normal price
-    BOOST_REQUIRE( feed.current_median_history == price_1_for_20 );
-    BOOST_REQUIRE( feed.market_median_history == price_1_for_20 );
-    BOOST_REQUIRE( feed.current_min_history == price_1_for_20 );
-    BOOST_REQUIRE( feed.current_max_history == price_1_for_4 );
+    BOOST_REQUIRE( feed.current_median_history == HBD_price( price_1_for_20 ) );
+    BOOST_REQUIRE( feed.market_median_history == HBD_price( price_1_for_20 ) );
+    BOOST_REQUIRE( feed.current_min_history == HBD_price( price_1_for_20 ) );
+    BOOST_REQUIRE( feed.current_max_history == HBD_price( price_1_for_4 ) );
 
     BOOST_TEST_MESSAGE( "--- Test ok - conversion at 5 cents initial, 50 cents per HIVE actual" );
     op.amount = ASSET( "1000.000 TESTS" );
@@ -3676,7 +3676,7 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
     set_price_feed( price_1_for_2 );
     set_price_feed( price_1_for_2 );
     set_price_feed( price_1_for_2 );
-    BOOST_REQUIRE( feed.current_median_history == price_1_for_2 );
+    BOOST_REQUIRE( feed.current_median_history == HBD_price( price_1_for_2 ) );
 
     generate_blocks( conversion_5_time + HIVE_COLLATERALIZED_CONVERSION_DELAY - fc::seconds( HIVE_BLOCK_INTERVAL ) );
 
@@ -3705,7 +3705,7 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_narrow_price )
 
     price price_1_for_2 = price( ASSET( "0.001 TBD" ), ASSET( "0.002 TESTS" ) );
     set_price_feed( price_1_for_2 );
-    BOOST_REQUIRE( feed.current_median_history == price_1_for_2 );
+    BOOST_REQUIRE( feed.current_median_history == HBD_price( price_1_for_2 ) );
 
     //prevent HBD interest from interfering with the test
     flat_map< string, vector<char> > props;
@@ -3749,7 +3749,7 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_wide_price )
 
     price price_1_for_2 = price( ASSET( "4611686018427387.000 TBD" ), ASSET( "9223372036854774.000 TESTS" ) );
     set_price_feed( price_1_for_2 );
-    BOOST_REQUIRE( feed.current_median_history == price_1_for_2 );
+    BOOST_REQUIRE( feed.current_median_history == HBD_price( price_1_for_2 ) );
 
     //prevent HBD interest from interfering with the test
     flat_map< string, vector<char> > props;
