@@ -7,7 +7,9 @@ ARG CI_IMAGE_TAG=ubuntu24.04-py3.14-1
 ARG BUILD_IMAGE_TAG
 ARG IMAGE_TAG_PREFIX
 # CI base image for build stage - must be at top level for FROM to see it
-ARG CI_BASE_IMAGE=registry.gitlab.syncad.com/hive/common-ci-configuration/ci-base-image:ubuntu24.04-py3.14-4
+# Using commit hash instead of tag to pin to a specific docker image for build repeatability.
+# Tags can be moved/overwritten, but commit hashes are immutable. May switch to tags in future.
+ARG CI_BASE_IMAGE=registry.gitlab.syncad.com/hive/common-ci-configuration/ci-base-image:d680d4489049fe03f4b344fb04fba1ce9404ae2b
 
 FROM phusion/baseimage:noble-1.0.1 AS runtime
 
@@ -44,7 +46,7 @@ USER hived_admin
 WORKDIR /home/hived_admin
 
 # Build stage uses centralized ci-base-image from common-ci-configuration
-# This image includes: build toolchain, ccache, Python 3.14, Docker CLI, hived_admin and hived users
+# This image includes: build toolchain, ccache, Pythons 3.8 - 3.14, glibc 2.28, Docker CLI, hived_admin and hived users
 FROM ${CI_BASE_IMAGE} AS build
 
 ARG BUILD_HIVE_TESTNET=OFF
@@ -73,7 +75,8 @@ RUN <<-EOF
   set -e
 
   INSTALLATION_DIR="/home/hived/bin"
-  sudo --user=hived mkdir -p "${INSTALLATION_DIR}"
+  sudo mkdir -p "${INSTALLATION_DIR}"
+  sudo chown hived:users "${INSTALLATION_DIR}"
 
   ./source/${HIVE_SUBDIR}/scripts/build.sh --source-dir="./source/${HIVE_SUBDIR}" --binary-dir="./build" \
   --cmake-arg="-DBUILD_HIVE_TESTNET=${BUILD_HIVE_TESTNET}" \
@@ -83,7 +86,7 @@ RUN <<-EOF
   --flat-binary-directory="${INSTALLATION_DIR}" \
   --clean-after-build
 
-  sudo chown -R hived "${INSTALLATION_DIR}/"*
+  sudo chown -R hived:users "${INSTALLATION_DIR}/"*
 EOF
 
 FROM ${CI_REGISTRY_IMAGE}minimal-runtime:$CI_IMAGE_TAG AS instance

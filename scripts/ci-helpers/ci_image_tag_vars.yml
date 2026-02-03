@@ -1,8 +1,8 @@
 variables:
-  # pin to specific docker images for build repeatability
-  # ci-base-image is now built in common-ci-configuration (py3.14 variant)
-  # uses registry.gitlab.syncad.com/hive/common-ci-configuration/ci-base-image@sha256:29115768107465608bd4c6b9208befe369c9843d17f1b45789ac0e85200b4d5f
-  CI_BASE_IMAGE_TAG: "@sha256:29115768107465608bd4c6b9208befe369c9843d17f1b45789ac0e85200b4d5f"
+  # Using commit hash instead of tag (e.g., pypa_2_28-1) to pin to a specific docker image.
+  # This ensures build repeatability - tags can be moved/overwritten, but commit hashes are immutable.
+  # In future we may switch to tags once our tagging workflow is stable.
+  CI_BASE_IMAGE_TAG: ":d680d4489049fe03f4b344fb04fba1ce9404ae2b"
   CI_BASE_IMAGE: "registry.gitlab.syncad.com/hive/common-ci-configuration/ci-base-image${CI_BASE_IMAGE_TAG}"
   # Legacy variable for backwards compatibility (deprecated - use CI_BASE_IMAGE instead)
   TEST_IMAGE_TAG: "${CI_BASE_IMAGE_TAG}"
