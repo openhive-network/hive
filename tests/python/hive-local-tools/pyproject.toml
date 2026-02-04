@@ -35,7 +35,7 @@ types-PyYAML = "6.0.12.11"
 shared-tools = { path = "shared-tools", develop = true }
 hiveio-test-tools = "0.0.1.dev1416+c3483e6"
 hiveio-wax = "1.28.4rc1.dev167+f284ecce"
-hiveio-beekeepy = "1.28.5.post20260202151849"
+hiveio-beekeepy = ">=1.28.5"
 tests_api = { path = "tests_api", develop = true }
 
 [tool.poetry.group.dev.dependencies]
