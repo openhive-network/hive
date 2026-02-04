@@ -14,9 +14,7 @@ authors = []
 
 source = [
     { name = "PyPI", priority = "primary" },
-    { name = "gitlab-schemas", url = "https://gitlab.syncad.com/api/v4/projects/362/packages/pypi/simple", priority = "supplemental" },
-    { name = "gitlab-beekeepy", url = "https://gitlab.syncad.com/api/v4/projects/558/packages/pypi/simple", priority = "supplemental" },
-    { name = "gitlab-api_client_generator", url = "https://gitlab.syncad.com/api/v4/projects/484/packages/pypi/simple", priority = "supplemental" },
+    { name = "gitlab-hive", url = "https://gitlab.syncad.com/api/v4/groups/136/-/packages/pypi/simple", priority = "supplemental" },
 ]
 
 

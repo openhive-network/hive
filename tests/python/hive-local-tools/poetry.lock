@@ -641,6 +641,7 @@ python-versions = ">=3.12,<4"
 groups = ["main"]
 files = [
     {file = "hiveio_api-1.28.2.dev536+93c29df29-py3-none-any.whl", hash = "sha256:906391ff577cbfe9df05fe572fbd4249c836f16bc035ab3518e0c60fdaf34f17"},
+    {file = "hiveio_api-1.28.2.dev536+93c29df29-py3-none-any.whl", hash = "sha256:f72d27af1880a6e55b3ad370f54b48f9f1c2a0811e9b70221fcbb0af6b2825da"},
 ]
 
 [package.dependencies]
@@ -648,8 +649,8 @@ hiveio-beekeepy = "1.28.5.post20260202151849"
 
 [package.source]
 type = "legacy"
-url = "https://gitlab.syncad.com/api/v4/projects/419/packages/pypi/simple"
-reference = "gitlab-wax"
+url = "https://gitlab.syncad.com/api/v4/groups/136/-/packages/pypi/simple"
+reference = "gitlab-hive"
 
 [[package]]
 name = "hiveio-beekeepy"
@@ -672,8 +673,8 @@ requests = ">=2.32.3"
 
 [package.source]
 type = "legacy"
-url = "https://gitlab.syncad.com/api/v4/projects/558/packages/pypi/simple"
-reference = "gitlab-beekeepy"
+url = "https://gitlab.syncad.com/api/v4/groups/136/-/packages/pypi/simple"
+reference = "gitlab-hive"
 
 [[package]]
 name = "hiveio-schemas"
@@ -691,8 +692,8 @@ msgspec = "0.20.0"
 
 [package.source]
 type = "legacy"
-url = "https://gitlab.syncad.com/api/v4/projects/362/packages/pypi/simple"
-reference = "gitlab-schemas"
+url = "https://gitlab.syncad.com/api/v4/groups/136/-/packages/pypi/simple"
+reference = "gitlab-hive"
 
 [[package]]
 name = "hiveio-test-tools"
@@ -716,8 +717,8 @@ python-dateutil = "2.8.2"
 
 [package.source]
 type = "legacy"
-url = "https://gitlab.syncad.com/api/v4/projects/300/packages/pypi/simple"
-reference = "gitlab-test-tools"
+url = "https://gitlab.syncad.com/api/v4/groups/136/-/packages/pypi/simple"
+reference = "gitlab-hive"
 
 [[package]]
 name = "hiveio-wax"
@@ -743,8 +744,8 @@ typing-extensions = ">=4.0.0"
 
 [package.source]
 type = "legacy"
-url = "https://gitlab.syncad.com/api/v4/projects/419/packages/pypi/simple"
-reference = "gitlab-wax"
+url = "https://gitlab.syncad.com/api/v4/groups/136/-/packages/pypi/simple"
+reference = "gitlab-hive"
 
 [[package]]
 name = "hpack"
@@ -2389,4 +2390,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.14,<4"
-content-hash = "f6766f6acc035d5084700daaca22c4e3d6b0e47ce170e77bba9850a6d3b284b3"
+content-hash = "def7077affa143419db795bcf1cc3f4703735f07710d701665c8be35e2a46dc1"

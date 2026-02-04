@@ -160,8 +160,8 @@ ruff = "0.11.5"
 
 [package.source]
 type = "legacy"
-url = "https://gitlab.syncad.com/api/v4/projects/484/packages/pypi/simple"
-reference = "gitlab-api_client_generator"
+url = "https://gitlab.syncad.com/api/v4/groups/136/-/packages/pypi/simple"
+reference = "gitlab-hive"
 
 [[package]]
 name = "argcomplete"
@@ -609,8 +609,8 @@ requests = ">=2.32.3"
 
 [package.source]
 type = "legacy"
-url = "https://gitlab.syncad.com/api/v4/projects/558/packages/pypi/simple"
-reference = "gitlab-beekeepy"
+url = "https://gitlab.syncad.com/api/v4/groups/136/-/packages/pypi/simple"
+reference = "gitlab-hive"
 
 [[package]]
 name = "hiveio-schemas"
@@ -628,8 +628,8 @@ msgspec = "0.20.0"
 
 [package.source]
 type = "legacy"
-url = "https://gitlab.syncad.com/api/v4/projects/362/packages/pypi/simple"
-reference = "gitlab-schemas"
+url = "https://gitlab.syncad.com/api/v4/groups/136/-/packages/pypi/simple"
+reference = "gitlab-hive"
 
 [[package]]
 name = "idna"
@@ -1837,4 +1837,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.14,<4"
-content-hash = "1e30a97aeb7ed8cd68ef4e985793a6a830706cf09caa0feee5856123c28e4035"
+content-hash = "54f46070d3765a746842483d857a25842f03fb24e577c85e6363589bd13e9e37"
