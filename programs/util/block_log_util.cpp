@@ -194,6 +194,21 @@ bool validate_first_and_last_block_and_print_error_if_necessary(
         std::cerr << "Error: head_block_num must be bigger than last_block. head_block_num: " << head_block_num << ", last_block: " << last_block << "\n";
       return false;
     }
+    if (first_block > last_block)
+    {
+      if (json_output)
+        std::cerr << generate_json_output(
+          {
+            {"Error", fc::variant("first_block must not be greater than last_block")},
+            {"first_block", fc::variant(first_block)},
+            {"last_block", fc::variant(last_block)},
+            {"block_log_path", fc::variant(block_log_path)}
+          }
+        );
+      else
+        std::cerr << "Error: first_block must not be greater than last_block. first_block: " << first_block << ", last_block: " << last_block << "\n";
+      return false;
+    }
 
     return true;
 }
