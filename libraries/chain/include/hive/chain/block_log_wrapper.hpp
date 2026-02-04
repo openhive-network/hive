@@ -17,7 +17,8 @@ namespace hive { namespace chain {
   public:
     using block_log_wrapper_t = std::shared_ptr< block_log_wrapper >;
 
-    /// Requires that path points to first path file or legacy single file (no pruned logs accepted).
+    /// Accepts path to any split part file or legacy single file (no pruned logs accepted).
+    /// For part 1, opens all parts from part 1 onward. For non-first parts, opens just the single file.
     static block_log_wrapper_t create_opened_wrapper( const fc::path& the_path,
       appbase::application& app, blockchain_worker_thread_pool& thread_pool,
       bool read_only );
