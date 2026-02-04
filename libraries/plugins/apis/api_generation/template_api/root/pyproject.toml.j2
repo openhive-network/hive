@@ -21,19 +21,10 @@ include = [
     { path = "hiveio_api/**/*", format = ["wheel", "sdist"] }
 ]
 
-[[tool.poetry.source]]
-name = "PyPI"
-priority = "primary"
-
-[[tool.poetry.source]]
-name = "gitlab-schemas"
-url = "https://gitlab.syncad.com/api/v4/projects/362/packages/pypi/simple"
-priority = "supplemental"
-
-[[tool.poetry.source]]
-name = "gitlab-beekeepy"
-url = "https://gitlab.syncad.com/api/v4/projects/558/packages/pypi/simple"
-priority = "supplemental"
+source = [
+    { name = "PyPI", priority = "primary" },
+    { name = "gitlab-hive", url = "https://gitlab.syncad.com/api/v4/groups/136/-/packages/pypi/simple", priority = "supplemental" },
+]
 
 [tool.poetry.dependencies]
 python = ">=3.12,<4"
