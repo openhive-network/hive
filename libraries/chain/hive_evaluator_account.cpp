@@ -162,7 +162,7 @@ const account_object& create_account( database& db, const account_name_type& nam
   db.create< recovery_object >( new_account.get_id(), recovery_account ? recovery_account->get_id() : account_id_type() );
   db.create< assets_object >( new_account.get_id(), initial_delegation );
   db.create< manabars_rc_object >( new_account.get_id(), _creation_time, mana_100_percent, rc_adjustment_from_fee );
-  db.create< time_object >( new_account.get_id() );
+  db.create< time_object >( new_account.get_id(), new_account.get_name() );
   db.create< delayed_votes_object >( new_account.get_id() );
 
   return new_account;
