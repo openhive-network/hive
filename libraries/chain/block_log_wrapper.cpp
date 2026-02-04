@@ -24,11 +24,24 @@ namespace hive { namespace chain {
   uint32_t part_number = block_log_file_name_info::is_part_file( the_path );
   if( part_number > 0 )
   {
-    FC_ASSERT( part_number == 1,
-              "Expected 1st part file name, not following one (${path})", ("path", the_path) );
-    auto writer = std::make_shared< block_log_wrapper >( MAX_FILES_OF_SPLIT_BLOCK_LOG, app, thread_pool );
-    writer->open_and_init( the_path, read_only, 1/*start_from_part*/ );
-    return writer;
+    if( part_number == 1 )
+    {
+      auto writer = std::make_shared< block_log_wrapper >( MAX_FILES_OF_SPLIT_BLOCK_LOG, app, thread_pool );
+      writer->open_and_init( the_path, read_only, 1/*start_from_part*/ );
+      return writer;
+    }
+    else
+    {
+      // For non-first part files, open just this single file directly.
+      // This matches the old behavior where block_log::open() was called on individual parts.
+      auto writer = std::make_shared< block_log_wrapper >( MAX_FILES_OF_SPLIT_BLOCK_LOG, app, thread_pool );
+      writer->_open_args.data_dir = the_path.parent_path();
+      writer->skip_first_parts( part_number - 1 );
+      auto single_log = std::make_shared< block_log >( app );
+      writer->internal_open_and_init( single_log, the_path, read_only );
+      writer->_logs.push_back( single_log );
+      return writer;
+    }
   }
 
   FC_THROW_EXCEPTION( fc::parse_error_exception, 
