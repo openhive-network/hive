@@ -1904,9 +1904,6 @@ int main(int argc, char **argv)
           print_and_log_error("truncate operation accepts only single block_log", json_output);
           return ExitCode::InvalidArgumentError;
         }
-        if (artifacts_file_is_not_valid(block_log_path, json_output))
-          return ExitCode::ArtifactsFileNotValid;
-
         update_options_map(truncate_options);
         if (!options_map.count("block-number"))
         {
