@@ -104,6 +104,59 @@ prepare_hived_image:
         docker push ${CI_REGISTRY_IMAGE}:${CI_COMMIT_TAG}
       fi
 
+prepare_hived_clang_image:
+  extends: .docker_image_builder_job
+  stage: build
+  when: manual
+  allow_failure: true
+  variables:
+    REGISTRY_USER: "$HIVED_CI_IMGBUILDER_USER"
+    REGISTRY_PASS: $HIVED_CI_IMGBUILDER_PASSWORD
+    HIVE_NETWORK_TYPE: mainnet
+    # Use Clang compiler instead of GCC
+    CMAKE_C_COMPILER: clang
+    CMAKE_CXX_COMPILER: clang++
+  tags:
+    - bigjob
+  script:
+    - |
+      set -euo pipefail
+      
+      SCRIPTS_PATH="$CI_PROJECT_DIR/scripts"
+      IMAGE_REGISTRY="registry.gitlab.syncad.com/hive/hive/clang"
+      IMAGE_TAG="${CI_COMMIT_SHORT_SHA}"
+      IMAGE_NAME="${IMAGE_REGISTRY}:${IMAGE_TAG}"
+      
+      echo "Building hived with Clang compiler..."
+      echo "Image: $IMAGE_NAME"
+      
+      # Login to registry
+      echo "$REGISTRY_PASS" | docker login -u "$REGISTRY_USER" registry.gitlab.syncad.com --password-stdin
+      
+      # Build Docker image with Clang
+      docker build \
+        --build-arg CMAKE_C_COMPILER=clang \
+        --build-arg CMAKE_CXX_COMPILER=clang++ \
+        --build-arg BUILD_HIVE_TESTNET=OFF \
+        --build-arg HIVE_NETWORK_TYPE=mainnet \
+        -t "$IMAGE_NAME" \
+        -f Dockerfile \
+        .
+      
+      # Push to registry
+      docker push "$IMAGE_NAME"
+      
+      # Write dotenv file
+      echo "HIVED_CLANG_IMAGE_NAME=$IMAGE_NAME" > docker_clang_image_name.env
+      echo "HIVED_CLANG_INSTANCE=$IMAGE_NAME" >> docker_clang_image_name.env
+      
+      echo "Clang build completed successfully!"
+      echo "Image: $IMAGE_NAME"
+  artifacts:
+    reports:
+      dotenv: docker_clang_image_name.env
+
+
 prepare_hived_data:
   extends:
     - .prepare_hived_data_5m
