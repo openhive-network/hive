@@ -22,34 +22,25 @@ source = [
 
 [tool.poetry.dependencies]
 python = ">=3.14,<4"
-pytest = "8.3.5"
-pytest-rerunfailures = "14.0"
-pytest-timeout = "2.3.1"
-pytest-asyncio = "0.25.3"
-pytest-repeat = "0.9.3"
-pytest-xdist = "3.6.1"
-tavern = "3.0.2"
-msgspec = "^0.20.0"
-types-PyYAML = "6.0.12.11"
+pytest = ">=8.3.5"
+pytest-rerunfailures = ">=14.0"
+pytest-timeout = ">=2.3.1"
+pytest-asyncio = ">=0.25.3"
+pytest-repeat = ">=0.9.3"
+pytest-xdist = ">=3.6.1"
+tavern = ">=3.0.2"
+msgspec = ">=0.20.0"
+types-PyYAML = ">=6.0.12.11"
 shared-tools = { path = "shared-tools", develop = true }
-hiveio-test-tools = "0.0.1.dev1416+c3483e6"
-hiveio-wax = "1.28.4rc1.dev167+f284ecce"
+hiveio-test-tools = ">=0.0.2"
+hiveio-wax = ">=2.0.0rc0"
 hiveio-beekeepy = ">=1.28.5"
 tests_api = { path = "tests_api", develop = true }
 
-[tool.poetry.group.dev.dependencies]
-pre-commit = "3.4.0"
-black = "23.3.0"
-ruff = "0.6.5"
-
-[tool.poetry.group.black.dependencies]
-black = "23.3.0"
-
-[tool.poetry.group.ruff.dependencies]
-ruff = "0.6.5"
-
-[tool.poetry.group.pre-commit.dependencies]
-pre-commit = "3.4.0"
+[tool.poetry.group.static-analysis.dependencies]
+pre-commit = ">=3.4.0"
+black = ">=23.3.0"
+ruff = ">=0.6.5"
 
 [tool.black]
 line-length = 120

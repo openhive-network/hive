@@ -144,19 +144,19 @@ files = [
 
 [[package]]
 name = "api-client-generator"
-version = "1.7.1.dev20+9bdf617"
+version = "1.7.1"
 description = ""
 optional = false
-python-versions = ">=3.12,<4"
+python-versions = ">=3.14,<4"
 groups = ["main"]
 files = [
-    {file = "api_client_generator-1.7.1.dev20+9bdf617-py3-none-any.whl", hash = "sha256:85f71f7ecd0d8d39aef9d65c1dbb42a6925b0d7aec507af5f8e30710d5230073"},
+    {file = "api_client_generator-1.7.1-py3-none-any.whl", hash = "sha256:5302b9c34c6677eea0f64742d4488c81265e66abce64e0b6be28461149508676"},
 ]
 
 [package.dependencies]
-datamodel-code-generator = "0.52.2"
-msgspec = "0.20.0"
-ruff = "0.11.5"
+datamodel-code-generator = ">=0.52.2"
+msgspec = ">=0.20.0"
+ruff = ">=0.11.5"
 
 [package.source]
 type = "legacy"
@@ -1837,4 +1837,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.14,<4"
-content-hash = "8a458d1842dd94d1add2d9b43347db0374766ee281970d43e2d2c56bf3e229c4"
+content-hash = "0d69ebf3d26d1f9b31238ea9b90bcf1e3c4896bba311cbed8a2e55fae14d21c6"
