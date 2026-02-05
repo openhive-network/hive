@@ -486,14 +486,14 @@ BOOST_AUTO_TEST_CASE( comment_payout )
     auto bob_comment_discussion_rewards = asset( bob_comment_payout.amount / 4, HIVE_SYMBOL );
     bob_comment_payout -= bob_comment_discussion_rewards;
     auto bob_comment_hbd_reward = db->to_hbd( asset( bob_comment_payout.amount / 2, HIVE_SYMBOL ) );
-    auto bob_comment_vesting_reward = ( bob_comment_payout - asset( bob_comment_payout.amount / 2, HIVE_SYMBOL) ) * db->get_dynamic_global_properties().get_vesting_share_price();
+    auto bob_comment_vesting_reward = ( bob_comment_payout - asset( bob_comment_payout.amount / 2, HIVE_SYMBOL) ) * db->get_dynamic_global_properties().get_vesting_share_price().to_price();
 
     BOOST_TEST_MESSAGE( "Cause first payout" );
 
     generate_block();
 
     BOOST_REQUIRE( db->get_dynamic_global_properties().get_total_reward_fund_hive() == reward_hive - bob_comment_payout );
-    BOOST_REQUIRE( db->get_comment( "bob", string( "test" ) ).total_payout_value == bob_comment_vesting_reward * db->get_dynamic_global_properties().get_vesting_share_price() + bob_comment_hbd_reward * exchange_rate );
+    BOOST_REQUIRE( db->get_comment( "bob", string( "test" ) ).total_payout_value == bob_comment_vesting_reward * db->get_dynamic_global_properties().get_vesting_share_price().to_price() + bob_comment_hbd_reward * exchange_rate );
     BOOST_REQUIRE( get_vesting( "bob" ) == bob_vest_shares + bob_comment_vesting_reward );
     BOOST_REQUIRE( get_hbd_balance( "bob" ) == bob_hbd_balance + bob_comment_hbd_reward );
 
@@ -666,14 +666,14 @@ BOOST_AUTO_TEST_CASE( comment_payout )
     auto bob_comment_vote_rewards = asset( bob_comment_payout.amount / 2, HIVE_SYMBOL );
     bob_comment_payout -= bob_comment_vote_rewards;
     auto bob_comment_hbd_reward = asset( bob_comment_payout.amount / 2, HIVE_SYMBOL ) * exchange_rate;
-    auto bob_comment_vesting_reward = ( bob_comment_payout - asset( bob_comment_payout.amount / 2, HIVE_SYMBOL ) ) * db->get_dynamic_global_properties().get_vesting_share_price();
+    auto bob_comment_vesting_reward = ( bob_comment_payout - asset( bob_comment_payout.amount / 2, HIVE_SYMBOL ) ) * db->get_dynamic_global_properties().get_vesting_share_price().to_price();
     auto unclaimed_payments = bob_comment_vote_rewards;
     auto alice_vote_reward = asset( static_cast< uint64_t >( ( u256( vote_idx.find( boost::make_tuple( db->get_comment( "bob", string( "test" ).id, db->get_account( "alice" ) ).get_id() ) )->get_weight() ) * bob_comment_vote_rewards.amount.value ) / bob_comment_vote_total ), HIVE_SYMBOL );
-    auto alice_vote_vesting = alice_vote_reward * db->get_dynamic_global_properties().get_vesting_share_price();
+    auto alice_vote_vesting = alice_vote_reward * db->get_dynamic_global_properties().get_vesting_share_price().to_price();
     auto bob_vote_reward = asset( static_cast< uint64_t >( ( u256( vote_idx.find( boost::make_tuple( db->get_comment( "bob", string( "test" ).id, db->get_account( "bob" ) ).get_id() ) )->get_weight() ) * bob_comment_vote_rewards.amount.value ) / bob_comment_vote_total ), HIVE_SYMBOL );
-    auto bob_vote_vesting = bob_vote_reward * db->get_dynamic_global_properties().get_vesting_share_price();
+    auto bob_vote_vesting = bob_vote_reward * db->get_dynamic_global_properties().get_vesting_share_price().to_price();
     auto sam_vote_reward = asset( static_cast< uint64_t >( ( u256( vote_idx.find( boost::make_tuple( db->get_comment( "bob", string( "test" ).id, db->get_account( "sam" ) ).get_id() ) )->get_weight() ) * bob_comment_vote_rewards.amount.value ) / bob_comment_vote_total ), HIVE_SYMBOL );
-    auto sam_vote_vesting = sam_vote_reward * db->get_dynamic_global_properties().get_vesting_share_price();
+    auto sam_vote_vesting = sam_vote_reward * db->get_dynamic_global_properties().get_vesting_share_price().to_price();
     unclaimed_payments -= ( alice_vote_reward + bob_vote_reward + sam_vote_reward );
 
     BOOST_TEST_MESSAGE( "Generate one block to cause a payout" );
@@ -683,7 +683,7 @@ BOOST_AUTO_TEST_CASE( comment_payout )
     auto bob_comment_reward = get_last_operations( 1 )[0].get< comment_reward_operation >();
 
     BOOST_REQUIRE( db->get_dynamic_global_properties().get_total_reward_fund_hive().amount.value == reward_hive.amount.value - ( bob_comment_payout + bob_comment_vote_rewards - unclaimed_payments ).amount.value );
-    BOOST_REQUIRE( db->get_comment( "bob", string( "test" ) ).total_payout_value.amount.value == ( ( bob_comment_vesting_reward * db->get_dynamic_global_properties().get_vesting_share_price() ) + ( bob_comment_hbd_reward * exchange_rate ) ).amount.value );
+    BOOST_REQUIRE( db->get_comment( "bob", string( "test" ) ).total_payout_value.amount.value == ( ( bob_comment_vesting_reward * db->get_dynamic_global_properties().get_vesting_share_price().to_price() ) + ( bob_comment_hbd_reward * exchange_rate ) ).amount.value );
     BOOST_REQUIRE( get_hbd_balance( "bob" ).amount.value == ( bob_hbd_balance + bob_comment_hbd_reward ).amount.value );
     BOOST_REQUIRE( db->get_comment( "alice", string( "test" ) ).get_net_rshares() > 0 );
     BOOST_REQUIRE( db->get_comment( "bob", string( "test" ) ).get_net_rshares() == 0 );
@@ -741,23 +741,23 @@ BOOST_AUTO_TEST_CASE( comment_payout )
     auto alice_comment_vote_rewards = asset( alice_comment_payout.amount / 2, HIVE_SYMBOL );
     alice_comment_payout -= alice_comment_vote_rewards;
     auto alice_comment_hbd_reward = asset( alice_comment_payout.amount / 2, HIVE_SYMBOL ) * exchange_rate;
-    auto alice_comment_vesting_reward = ( alice_comment_payout - asset( alice_comment_payout.amount / 2, HIVE_SYMBOL ) ) * db->get_dynamic_global_properties().get_vesting_share_price();
+    auto alice_comment_vesting_reward = ( alice_comment_payout - asset( alice_comment_payout.amount / 2, HIVE_SYMBOL ) ) * db->get_dynamic_global_properties().get_vesting_share_price().to_price();
     unclaimed_payments = alice_comment_vote_rewards;
     alice_vote_reward = asset( static_cast< uint64_t >( ( u256( vote_idx.find( boost::make_tuple( db->get_comment( "alice", string( "test" ).id, db->get_account( "alice" ) ).get_id() ) )->get_weight() ) * alice_comment_vote_rewards.amount.value ) / alice_comment_vote_total ), HIVE_SYMBOL );
-    alice_vote_vesting = alice_vote_reward * db->get_dynamic_global_properties().get_vesting_share_price();
+    alice_vote_vesting = alice_vote_reward * db->get_dynamic_global_properties().get_vesting_share_price().to_price();
     bob_vote_reward = asset( static_cast< uint64_t >( ( u256( vote_idx.find( boost::make_tuple( db->get_comment( "alice", string( "test" ).id, db->get_account( "bob" ) ).get_id() ) )->get_weight() ) * alice_comment_vote_rewards.amount.value ) / alice_comment_vote_total ), HIVE_SYMBOL );
-    bob_vote_vesting = bob_vote_reward * db->get_dynamic_global_properties().get_vesting_share_price();
+    bob_vote_vesting = bob_vote_reward * db->get_dynamic_global_properties().get_vesting_share_price().to_price();
     sam_vote_reward = asset( static_cast< uint64_t >( ( u256( vote_idx.find( boost::make_tuple( db->get_comment( "alice", string( "test" ).id, db->get_account( "sam" ) ).get_id() ) )->get_weight() ) * alice_comment_vote_rewards.amount.value ) / alice_comment_vote_total ), HIVE_SYMBOL );
-    sam_vote_vesting = sam_vote_reward * db->get_dynamic_global_properties().get_vesting_share_price();
+    sam_vote_vesting = sam_vote_reward * db->get_dynamic_global_properties().get_vesting_share_price().to_price();
     auto dave_vote_reward = asset( static_cast< uint64_t >( ( u256( vote_idx.find( boost::make_tuple( db->get_comment( "alice", string( "test" ).id, db->get_account( "dave" ) ).get_id() ) )->get_weight() ) * alice_comment_vote_rewards.amount.value ) / alice_comment_vote_total ), HIVE_SYMBOL );
-    auto dave_vote_vesting = dave_vote_reward * db->get_dynamic_global_properties().get_vesting_share_price();
+    auto dave_vote_vesting = dave_vote_reward * db->get_dynamic_global_properties().get_vesting_share_price().to_price();
     unclaimed_payments -= ( alice_vote_reward + bob_vote_reward + sam_vote_reward + dave_vote_reward );
 
     generate_block();
     auto alice_comment_reward = get_last_operations( 1 )[0].get< comment_reward_operation >();
 
     BOOST_REQUIRE( ( db->get_dynamic_global_properties().get_total_reward_fund_hive() + alice_comment_payout + alice_comment_vote_rewards - unclaimed_payments ).amount.value == reward_hive.amount.value );
-    BOOST_REQUIRE( db->get_comment( "alice", string( "test" ) ).total_payout_value.amount.value == ( ( alice_comment_vesting_reward * db->get_dynamic_global_properties().get_vesting_share_price() ) + ( alice_comment_hbd_reward * exchange_rate ) ).amount.value );
+    BOOST_REQUIRE( db->get_comment( "alice", string( "test" ) ).total_payout_value.amount.value == ( ( alice_comment_vesting_reward * db->get_dynamic_global_properties().get_vesting_share_price().to_price() ) + ( alice_comment_hbd_reward * exchange_rate ) ).amount.value );
     BOOST_REQUIRE( get_hbd_balance( "alice" ).amount.value == ( alice_hbd_balance + alice_comment_hbd_reward ).amount.value );
     BOOST_REQUIRE( db->get_comment( "alice", string( "test" ) ).get_net_rshares() == 0 );
     BOOST_REQUIRE( db->get_comment( "alice", string( "test" ) ).get_net_rshares() == 0 );
@@ -996,12 +996,12 @@ OOST_AUTO_TEST_CASE( nested_comments )
     generate_block();
 
     // Calculate vesting share rewards from voting.
-    auto alice_vote_alice_vesting = alice_vote_alice_reward * gpo.get_vesting_share_price();
-    auto bob_vote_alice_vesting = bob_vote_alice_reward * gpo.get_vesting_share_price();
-    auto alice_vote_bob_vesting = alice_vote_bob_reward * gpo.get_vesting_share_price();
-    auto bob_vote_bob_vesting = bob_vote_bob_reward * gpo.get_vesting_share_price();
-    auto sam_vote_bob_vesting = sam_vote_bob_reward * gpo.get_vesting_share_price();
-    auto bob_vote_dave_vesting = bob_vote_dave_reward * gpo.get_vesting_share_price();
+    auto alice_vote_alice_vesting = alice_vote_alice_reward * gpo.get_vesting_share_price().to_price();
+    auto bob_vote_alice_vesting = bob_vote_alice_reward * gpo.get_vesting_share_price().to_price();
+    auto alice_vote_bob_vesting = alice_vote_bob_reward * gpo.get_vesting_share_price().to_price();
+    auto bob_vote_bob_vesting = bob_vote_bob_reward * gpo.get_vesting_share_price().to_price();
+    auto sam_vote_bob_vesting = sam_vote_bob_reward * gpo.get_vesting_share_price().to_price();
+    auto bob_vote_dave_vesting = bob_vote_dave_reward * gpo.get_vesting_share_price().to_price();
 
     BOOST_REQUIRE( db->get_comment( "alice", string( "test" ) ).total_payout_value.amount.value == alice_comment_total_payout.amount.value );
     BOOST_REQUIRE( db->get_comment( "bob", string( "test" ) ).total_payout_value.amount.value == bob_comment_total_payout.amount.value );
@@ -1021,7 +1021,7 @@ OOST_AUTO_TEST_CASE( nested_comments )
     BOOST_REQUIRE( com_vop.originating_author == "dave" );
     BOOST_REQUIRE( com_vop.originating_permlink == "test" );
     BOOST_REQUIRE( com_vop.payout.amount.value == dave_pays_alice_hbd );
-    BOOST_REQUIRE( ( com_vop.vesting_payout * gpo.get_vesting_share_price() ).amount.value == dave_pays_alice_vest );
+    BOOST_REQUIRE( ( com_vop.vesting_payout * gpo.get_vesting_share_price().to_price() ).amount.value == dave_pays_alice_vest );
 
     com_vop = ops[1].get< comment_reward_operation >();
     BOOST_REQUIRE( com_vop.author == "bob" );
@@ -1029,7 +1029,7 @@ OOST_AUTO_TEST_CASE( nested_comments )
     BOOST_REQUIRE( com_vop.originating_author == "dave" );
     BOOST_REQUIRE( com_vop.originating_permlink == "test" );
     BOOST_REQUIRE( com_vop.payout.amount.value == dave_pays_bob_hbd );
-    BOOST_REQUIRE( ( com_vop.vesting_payout * gpo.get_vesting_share_price() ).amount.value == dave_pays_bob_vest );
+    BOOST_REQUIRE( ( com_vop.vesting_payout * gpo.get_vesting_share_price().to_price() ).amount.value == dave_pays_bob_vest );
 
     com_vop = ops[2].get< comment_reward_operation >();
     BOOST_REQUIRE( com_vop.author == "sam" );
@@ -1037,7 +1037,7 @@ OOST_AUTO_TEST_CASE( nested_comments )
     BOOST_REQUIRE( com_vop.originating_author == "dave" );
     BOOST_REQUIRE( com_vop.originating_permlink == "test" );
     BOOST_REQUIRE( com_vop.payout.amount.value == dave_pays_sam_hbd );
-    BOOST_REQUIRE( ( com_vop.vesting_payout * gpo.get_vesting_share_price() ).amount.value == dave_pays_sam_vest );
+    BOOST_REQUIRE( ( com_vop.vesting_payout * gpo.get_vesting_share_price().to_price() ).amount.value == dave_pays_sam_vest );
 
     com_vop = ops[3].get< comment_reward_operation >();
     BOOST_REQUIRE( com_vop.author == "dave" );
@@ -1045,7 +1045,7 @@ OOST_AUTO_TEST_CASE( nested_comments )
     BOOST_REQUIRE( com_vop.originating_author == "dave" );
     BOOST_REQUIRE( com_vop.originating_permlink == "test" );
     BOOST_REQUIRE( com_vop.payout.amount.value == dave_pays_dave_hbd );
-    BOOST_REQUIRE( ( com_vop.vesting_payout * gpo.get_vesting_share_price() ).amount.value == dave_pays_dave_vest );
+    BOOST_REQUIRE( ( com_vop.vesting_payout * gpo.get_vesting_share_price().to_price() ).amount.value == dave_pays_dave_vest );
 
     cur_vop = ops[4].get< curate_reward_operation >();
     BOOST_REQUIRE( cur_vop.curator == "bob" );
@@ -1059,7 +1059,7 @@ OOST_AUTO_TEST_CASE( nested_comments )
     BOOST_REQUIRE( com_vop.originating_author == "bob" );
     BOOST_REQUIRE( com_vop.originating_permlink == "test" );
     BOOST_REQUIRE( com_vop.payout.amount.value == bob_pays_alice_hbd );
-    BOOST_REQUIRE( ( com_vop.vesting_payout * gpo.get_vesting_share_price() ).amount.value == bob_pays_alice_vest );
+    BOOST_REQUIRE( ( com_vop.vesting_payout * gpo.get_vesting_share_price().to_price() ).amount.value == bob_pays_alice_vest );
 
     com_vop = ops[6].get< comment_reward_operation >();
     BOOST_REQUIRE( com_vop.author == "bob" );
@@ -1067,7 +1067,7 @@ OOST_AUTO_TEST_CASE( nested_comments )
     BOOST_REQUIRE( com_vop.originating_author == "bob" );
     BOOST_REQUIRE( com_vop.originating_permlink == "test" );
     BOOST_REQUIRE( com_vop.payout.amount.value == bob_pays_bob_hbd );
-    BOOST_REQUIRE( ( com_vop.vesting_payout * gpo.get_vesting_share_price() ).amount.value == bob_pays_bob_vest );
+    BOOST_REQUIRE( ( com_vop.vesting_payout * gpo.get_vesting_share_price().to_price() ).amount.value == bob_pays_bob_vest );
 
     cur_vop = ops[7].get< curate_reward_operation >();
     BOOST_REQUIRE( cur_vop.curator == "sam" );
@@ -1093,7 +1093,7 @@ OOST_AUTO_TEST_CASE( nested_comments )
     BOOST_REQUIRE( com_vop.originating_author == "alice" );
     BOOST_REQUIRE( com_vop.originating_permlink == "test" );
     BOOST_REQUIRE( com_vop.payout.amount.value == alice_pays_alice_hbd );
-    BOOST_REQUIRE( ( com_vop.vesting_payout * gpo.get_vesting_share_price() ).amount.value == alice_pays_alice_vest );
+    BOOST_REQUIRE( ( com_vop.vesting_payout * gpo.get_vesting_share_price().to_price() ).amount.value == alice_pays_alice_vest );
 
     cur_vop = ops[11].get< curate_reward_operation >();
     BOOST_REQUIRE( cur_vop.curator == "bob" );
@@ -1110,22 +1110,22 @@ OOST_AUTO_TEST_CASE( nested_comments )
     BOOST_TEST_MESSAGE( "Checking account balances" );
 
     auto alice_total_hbd = alice_starting_hbd + asset( alice_pays_alice_hbd + bob_pays_alice_hbd + dave_pays_alice_hbd, HIVE_SYMBOL ) * exchange_rate;
-    auto alice_total_vesting = alice_starting_vesting + asset( alice_pays_alice_vest + bob_pays_alice_vest + dave_pays_alice_vest + alice_vote_alice_reward.amount + alice_vote_bob_reward.amount, HIVE_SYMBOL ) * gpo.get_vesting_share_price();
+    auto alice_total_vesting = alice_starting_vesting + asset( alice_pays_alice_vest + bob_pays_alice_vest + dave_pays_alice_vest + alice_vote_alice_reward.amount + alice_vote_bob_reward.amount, HIVE_SYMBOL ) * gpo.get_vesting_share_price().to_price();
     BOOST_REQUIRE( get_hbd_balance( "alice" ).amount.value == alice_total_hbd.amount.value );
     BOOST_REQUIRE( get_vesting( "alice" ).amount.value == alice_total_vesting.amount.value );
 
     auto bob_total_hbd = bob_starting_hbd + asset( bob_pays_bob_hbd + dave_pays_bob_hbd, HIVE_SYMBOL ) * exchange_rate;
-    auto bob_total_vesting = bob_starting_vesting + asset( bob_pays_bob_vest + dave_pays_bob_vest + bob_vote_alice_reward.amount + bob_vote_bob_reward.amount + bob_vote_dave_reward.amount, HIVE_SYMBOL ) * gpo.get_vesting_share_price();
+    auto bob_total_vesting = bob_starting_vesting + asset( bob_pays_bob_vest + dave_pays_bob_vest + bob_vote_alice_reward.amount + bob_vote_bob_reward.amount + bob_vote_dave_reward.amount, HIVE_SYMBOL ) * gpo.get_vesting_share_price().to_price();
     BOOST_REQUIRE( get_hbd_balance( "bob" ).amount.value == bob_total_hbd.amount.value );
     BOOST_REQUIRE( get_vesting( "bob" ).amount.value == bob_total_vesting.amount.value );
 
     auto sam_total_hbd = sam_starting_hbd + asset( dave_pays_sam_hbd, HIVE_SYMBOL ) * exchange_rate;
-    auto sam_total_vesting = bob_starting_vesting + asset( dave_pays_sam_vest + sam_vote_bob_reward.amount, HIVE_SYMBOL ) * gpo.get_vesting_share_price();
+    auto sam_total_vesting = bob_starting_vesting + asset( dave_pays_sam_vest + sam_vote_bob_reward.amount, HIVE_SYMBOL ) * gpo.get_vesting_share_price().to_price();
     BOOST_REQUIRE( get_hbd_balance( "sam" ).amount.value == sam_total_hbd.amount.value );
     BOOST_REQUIRE( get_vesting( "sam" ).amount.value == sam_total_vesting.amount.value );
 
     auto dave_total_hbd = dave_starting_hbd + asset( dave_pays_dave_hbd, HIVE_SYMBOL ) * exchange_rate;
-    auto dave_total_vesting = dave_starting_vesting + asset( dave_pays_dave_vest, HIVE_SYMBOL ) * gpo.get_vesting_share_price();
+    auto dave_total_vesting = dave_starting_vesting + asset( dave_pays_dave_vest, HIVE_SYMBOL ) * gpo.get_vesting_share_price().to_price();
     BOOST_REQUIRE( get_hbd_balance( "dave" ).amount.value == dave_total_hbd.amount.value );
     BOOST_REQUIRE( get_vesting( "dave" ).amount.value == dave_total_vesting.amount.value );
   }
@@ -1172,11 +1172,11 @@ BOOST_AUTO_TEST_CASE( vesting_withdrawals )
     auto& gpo = db->get_dynamic_global_properties();
 
     BOOST_REQUIRE( get_vesting( "alice" ).amount.value == ( vesting_shares - withdraw_rate ).amount.value );
-    BOOST_REQUIRE( ( withdraw_rate * gpo.get_vesting_share_price() ).amount.value - get_balance( "alice" ).amount.value <= 1 ); // Check a range due to differences in the share price
+    BOOST_REQUIRE( ( withdraw_rate * gpo.get_vesting_share_price().to_price() ).amount.value - get_balance( "alice" ).amount.value <= 1 ); // Check a range due to differences in the share price
     BOOST_REQUIRE( fill_op.from_account == "alice" );
     BOOST_REQUIRE( fill_op.to_account == "alice" );
     BOOST_REQUIRE( fill_op.withdrawn.amount.value == withdraw_rate.amount.value );
-    BOOST_REQUIRE( std::abs( ( fill_op.deposited - fill_op.withdrawn * gpo.get_vesting_share_price() ).amount.value ) <= 1 );
+    BOOST_REQUIRE( std::abs( ( fill_op.deposited - fill_op.withdrawn * gpo.get_vesting_share_price().to_price() ).amount.value ) <= 1 );
     validate_database();
 
     BOOST_TEST_MESSAGE( "Generating the rest of the blocks in the withdrawal" );
@@ -1194,11 +1194,11 @@ BOOST_AUTO_TEST_CASE( vesting_withdrawals )
       fill_op = get_last_operations( 2 )[ 1 ].get< fill_vesting_withdraw_operation >();
 
       BOOST_REQUIRE( alice.get_vesting().amount.value == ( vesting_shares - withdraw_rate ).amount.value );
-      BOOST_REQUIRE( balance.amount.value + ( withdraw_rate * gpo.get_vesting_share_price() ).amount.value - alice.get_balance().amount.value <= 1 );
+      BOOST_REQUIRE( balance.amount.value + ( withdraw_rate * gpo.get_vesting_share_price().to_price() ).amount.value - alice.get_balance().amount.value <= 1 );
       BOOST_REQUIRE( fill_op.from_account == "alice" );
       BOOST_REQUIRE( fill_op.to_account == "alice" );
       BOOST_REQUIRE( fill_op.withdrawn.amount.value == withdraw_rate.amount.value );
-      BOOST_REQUIRE( std::abs( ( fill_op.deposited - fill_op.withdrawn * gpo.get_vesting_share_price() ).amount.value ) <= 1 );
+      BOOST_REQUIRE( std::abs( ( fill_op.deposited - fill_op.withdrawn * gpo.get_vesting_share_price().to_price() ).amount.value ) <= 1 );
 
       if ( i == HIVE_VESTING_WITHDRAW_INTERVALS - 1 )
         BOOST_REQUIRE( alice.next_vesting_withdrawal == fc::time_point_sec::maximum() );
@@ -1296,11 +1296,11 @@ BOOST_AUTO_TEST_CASE( vesting_withdraw_route )
       BOOST_REQUIRE( implied_route.withdrawn == ( vesting_withdraw_rate - route_sam.withdrawn - route_bob.withdrawn ) );
 
       BOOST_REQUIRE( alice.get_vesting() == old_alice_vesting - vesting_withdraw_rate );
-      BOOST_REQUIRE( alice.get_balance() == old_alice_balance + asset( ( vesting_withdraw_rate.amount * HIVE_1_PERCENT * 20 ) / HIVE_100_PERCENT, VESTS_SYMBOL ) * db->get_dynamic_global_properties().get_vesting_share_price() );
+      BOOST_REQUIRE( alice.get_balance() == old_alice_balance + asset( ( vesting_withdraw_rate.amount * HIVE_1_PERCENT * 20 ) / HIVE_100_PERCENT, VESTS_SYMBOL ) * db->get_dynamic_global_properties().get_vesting_share_price().to_price() );
       BOOST_REQUIRE( bob.get_vesting() == old_bob_vesting + asset( ( vesting_withdraw_rate.amount * HIVE_1_PERCENT * 50 ) / HIVE_100_PERCENT, VESTS_SYMBOL ) );
       BOOST_REQUIRE( bob.get_balance() == old_bob_balance );
       BOOST_REQUIRE( sam.get_vesting() == old_sam_vesting );
-      BOOST_REQUIRE( sam.get_balance() ==  old_sam_balance + asset( ( vesting_withdraw_rate.amount * HIVE_1_PERCENT * 30 ) / HIVE_100_PERCENT, VESTS_SYMBOL ) * db->get_dynamic_global_properties().get_vesting_share_price() );
+      BOOST_REQUIRE( sam.get_balance() ==  old_sam_balance + asset( ( vesting_withdraw_rate.amount * HIVE_1_PERCENT * 30 ) / HIVE_100_PERCENT, VESTS_SYMBOL ) * db->get_dynamic_global_properties().get_vesting_share_price().to_price() );
 
       old_alice_balance = alice.get_balance();
       old_alice_vesting = alice.get_vesting();
@@ -1353,7 +1353,7 @@ BOOST_AUTO_TEST_CASE( vesting_withdraw_route )
       BOOST_REQUIRE( bob.get_vesting() == old_bob_vesting + asset( ( vesting_withdraw_rate.amount * HIVE_1_PERCENT * 50 ) / HIVE_100_PERCENT, VESTS_SYMBOL ) );
       BOOST_REQUIRE( bob.get_balance() == old_bob_balance );
       BOOST_REQUIRE( sam.get_vesting() == old_sam_vesting );
-      BOOST_REQUIRE( sam.get_balance() ==  old_sam_balance + asset( ( vesting_withdraw_rate.amount * HIVE_1_PERCENT * 50 ) / HIVE_100_PERCENT, VESTS_SYMBOL ) * db->get_dynamic_global_properties().get_vesting_share_price() );
+      BOOST_REQUIRE( sam.get_balance() ==  old_sam_balance + asset( ( vesting_withdraw_rate.amount * HIVE_1_PERCENT * 50 ) / HIVE_100_PERCENT, VESTS_SYMBOL ) * db->get_dynamic_global_properties().get_vesting_share_price().to_price() );
     }
   }
   FC_LOG_AND_RETHROW()
@@ -1578,7 +1578,7 @@ BOOST_AUTO_TEST_CASE( hive_inflation )
       if ( get_vesting( witness_name ).amount.value == 0 )
       {
         new_vesting_hive += witness_pay;
-        witness_pay_shares = witness_pay * gpo.get_vesting_share_price();
+        witness_pay_shares = witness_pay * gpo.get_vesting_share_price().to_price();
         new_vesting_shares += witness_pay_shares;
         new_supply += witness_pay;
         witness_pay = asset( 0, HIVE_SYMBOL );
@@ -1619,7 +1619,7 @@ BOOST_AUTO_TEST_CASE( hive_inflation )
       if ( get_vesting( witness_name ).amount.value == 0 )
       {
         new_vesting_hive += witness_pay;
-        witness_pay_shares = witness_pay * gpo.get_vesting_share_price();
+        witness_pay_shares = witness_pay * gpo.get_vesting_share_price().to_price();
         new_vesting_shares += witness_pay_shares;
         new_supply += witness_pay;
         witness_pay = asset( 0, HIVE_SYMBOL );
@@ -1651,7 +1651,7 @@ BOOST_AUTO_TEST_CASE( hive_inflation )
       new_rewards = std::max( HIVE_MIN_CONTENT_REWARD, asset( ( HIVE_CONTENT_APR * gpo.virtual_supply.amount ) / ( HIVE_BLOCKS_PER_YEAR * 100 ), HIVE_SYMBOL ) )
         + std::max( HIVE_MIN_CURATE_REWARD, asset( ( HIVE_CURATE_APR * gpo.virtual_supply.amount ) / ( HIVE_BLOCKS_PER_YEAR * 100 ), HIVE_SYMBOL ) );
       witness_pay = std::max( HIVE_MIN_PRODUCER_REWARD, asset( ( HIVE_PRODUCER_APR * gpo.virtual_supply.amount ) / ( HIVE_BLOCKS_PER_YEAR * 100 ), HIVE_SYMBOL ) );
-      witness_pay_shares = witness_pay * gpo.get_vesting_share_price();
+      witness_pay_shares = witness_pay * gpo.get_vesting_share_price().to_price();
       new_vesting_hive = asset( ( witness_pay + new_rewards ).amount * 9, HIVE_SYMBOL ) + witness_pay;
       new_vesting_shares = gpo.get_total_vesting_shares() + witness_pay_shares;
       new_supply = gpo.get_current_supply() + new_rewards + new_vesting_hive;

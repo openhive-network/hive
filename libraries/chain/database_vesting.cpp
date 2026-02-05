@@ -171,8 +171,8 @@ void database::process_vesting_withdrawals()
           {
             const auto& to_account = get< account_object, by_name >( itr->to_account );
 
-            asset vests = asset( to_deposit, VESTS_SYMBOL );
-            asset routed = auto_vest_mode ? vests : ( vests * cprops.get_vesting_share_price() );
+            VEST_asset vests( to_deposit );
+            asset routed = auto_vest_mode ? vests.to_asset() : ( vests * cprops.get_vesting_share_price() ).to_asset();
             operation vop = fill_vesting_withdraw_operation( from_account.get_name(), to_account.get_name(), vests, routed );
 
             pre_push_virtual_operation( *this, vop );
@@ -233,7 +233,7 @@ void database::process_vesting_withdrawals()
     share_type to_convert = to_withdraw - vests_deposited;
     FC_ASSERT( to_convert >= 0, "Deposited more vests than were supposed to be withdrawn" );
 
-    auto converted_hive = asset( to_convert, VESTS_SYMBOL ) * cprops.get_vesting_share_price();
+    auto converted_hive = VEST_asset( to_convert ) * cprops.get_vesting_share_price();
     operation vop = fill_vesting_withdraw_operation( from_account.get_name(), from_account.get_name(), asset( to_convert, VESTS_SYMBOL ), converted_hive );
     //note: it has to be generated even if to_convert is zero because we've accumulated change on from_account
     //and only now we are going to update that account's VESTS (see issue #337)

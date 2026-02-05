@@ -247,8 +247,8 @@ BOOST_AUTO_TEST_CASE( consolidate_balance )
       auto& dgpo = db.get_dynamic_global_properties();
       db.adjust_supply( ASSET( "20.000 TESTS" ) );
       db.adjust_supply( ASSET( "10.000 TBD" ) );
-      vested_3 = ASSET( "3.000 TESTS" ) * dgpo.get_vesting_share_price();
-      vested_7 = ASSET( "7.000 TESTS" ) * dgpo.get_vesting_share_price();
+      vested_3 = ASSET( "3.000 TESTS" ) * dgpo.get_vesting_share_price().to_price();
+      vested_7 = ASSET( "7.000 TESTS" ) * dgpo.get_vesting_share_price().to_price();
       db.modify( dgpo, []( dynamic_global_property_object& gpo )
       {
         gpo.proposal_fund_percent = 0;

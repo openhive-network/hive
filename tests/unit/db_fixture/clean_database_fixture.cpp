@@ -414,7 +414,7 @@ int32_t delayed_vote_database_fixture::get_user_voted_witness_count( const accou
 asset delayed_vote_database_fixture::to_vest( const asset& liquid, const bool to_reward_balance )
 {
   const auto& cprops = db->get_dynamic_global_properties();
-  price vesting_share_price = to_reward_balance ? cprops.get_reward_vesting_share_price() : cprops.get_vesting_share_price();
+  price vesting_share_price = to_reward_balance ? cprops.get_reward_vesting_share_price().to_price() : cprops.get_vesting_share_price().to_price();
 
   return liquid * ( vesting_share_price );
 }
