@@ -718,9 +718,20 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
   BOOST_CHECK_EQUAL( sizeof( comment_index::MULTIINDEX_NODE_TYPE ), 96u );
 
   //permanent objects (no operation to remove)
-  BOOST_CHECK_EQUAL( alignof( account_object ), 16u );
-  BOOST_CHECK_EQUAL( sizeof( account_object ), 480u ); //1.3M+
-  BOOST_CHECK_EQUAL( sizeof( account_index::MULTIINDEX_NODE_TYPE ), 672u );
+  BOOST_CHECK_EQUAL( alignof( account_object ), 8u );
+  BOOST_CHECK_EQUAL( sizeof( account_object ), 128u ); //1.3M+ (split into multiple objects)
+  BOOST_CHECK_EQUAL( sizeof( account_index::MULTIINDEX_NODE_TYPE ), 256u );
+  // Split objects from account_object (as many as account_object)
+  BOOST_CHECK_EQUAL( sizeof( recovery_object ), 20u );
+  BOOST_CHECK_EQUAL( sizeof( recovery_index::MULTIINDEX_NODE_TYPE ), 56u );
+  BOOST_CHECK_EQUAL( sizeof( assets_object ), 176u );
+  BOOST_CHECK_EQUAL( sizeof( assets_index::MULTIINDEX_NODE_TYPE ), 208u );
+  BOOST_CHECK_EQUAL( sizeof( manabars_rc_object ), 88u );
+  BOOST_CHECK_EQUAL( sizeof( manabars_rc_index::MULTIINDEX_NODE_TYPE ), 120u );
+  BOOST_CHECK_EQUAL( sizeof( time_object ), 80u );
+  BOOST_CHECK_EQUAL( sizeof( time_index::MULTIINDEX_NODE_TYPE ), 144u );
+  BOOST_CHECK_EQUAL( sizeof( delayed_votes_object ), 48u );
+  BOOST_CHECK_EQUAL( sizeof( delayed_votes_index::MULTIINDEX_NODE_TYPE ), 112u );
   BOOST_CHECK_EQUAL( sizeof( account_authority_object ), 248u ); //as many as account_object
   BOOST_CHECK_EQUAL( sizeof( account_authority_index::MULTIINDEX_NODE_TYPE ), 312u );
   BOOST_CHECK_EQUAL( sizeof( liquidity_reward_balance_object ), 48u ); //obsolete - only created/modified up to HF12 (683 objects)
@@ -1531,7 +1542,7 @@ BOOST_AUTO_TEST_CASE( chain_object_checksum )
 {
   hive::chain::util::decoded_types_data_storage dtds;
 
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::account_object>(dtds), "f1d1ffb67d5b16ff922dd66afdd98a4043cf8909" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::account_object>(dtds), "eb27f8c88c5e0db014067e6d75547a2a3237d4e7" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::account_authority_object>(dtds), "e492c85b420461ce856b14b80edb3649e4996d86" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::vesting_delegation_object>(dtds), "2c140c595e4a83e6aab21cb3090816206b07a5ad" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::vesting_delegation_expiration_object>(dtds), "cf8a309d076970b83c8e7ada88b01277a43dc726" );
