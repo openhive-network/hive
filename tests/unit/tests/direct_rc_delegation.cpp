@@ -104,7 +104,7 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_single )
     {
       const auto& gpo = db->get_dynamic_global_properties();
       const auto& wso = db->get_witness_schedule_object();
-      min_delegation = (asset( wso.median_props.account_creation_fee.amount / 3, HIVE_SYMBOL ) * gpo.get_vesting_share_price()).amount.value;
+      min_delegation = ( HIVE_asset( wso.median_props.account_creation_fee.amount / 3 ) * gpo.get_vesting_share_price() ).get_amount();
     }
 
     BOOST_TEST_MESSAGE( "Testing:  delegate_rc_operation_apply_single to a single account" );
@@ -255,7 +255,7 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_many )
     {
       const auto& gpo = db->get_dynamic_global_properties();
       const auto& wso = db->get_witness_schedule_object();
-      min_delegation = (asset( wso.median_props.account_creation_fee.amount / 3, HIVE_SYMBOL ) * gpo.get_vesting_share_price()).amount.value;
+      min_delegation = ( HIVE_asset( wso.median_props.account_creation_fee.amount / 3 ) * gpo.get_vesting_share_price() ).get_amount();
     }
 
     BOOST_TEST_MESSAGE( "Testing:  delegate_rc_operation_apply_many to many accounts" );

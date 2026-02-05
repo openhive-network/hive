@@ -1528,8 +1528,7 @@ BOOST_AUTO_TEST_CASE( disturbed_power_down )
     int64_t gil_vests = gil_amount;
     // check to make sure mainnet values are used
     static_assert( ( gil_amount / 104 == 9615 ) && ( gil_amount * split / 104 == 9615384615 ) );
-    BOOST_REQUIRE( db->get_dynamic_global_properties().get_vesting_share_price() ==
-      price( asset( 1000000, VESTS_SYMBOL ), asset( 1000, HIVE_SYMBOL ) ) );
+    BOOST_REQUIRE( db->get_dynamic_global_properties().get_vesting_share_price() == VEST_price( 1000000, 1000 ) );
 
     ACTORS_DEFAULT_FEE( (bob)(gil) );
     vest( "bob", asset( bob_amount / 1000, HIVE_SYMBOL ) );

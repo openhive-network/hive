@@ -14,7 +14,7 @@ namespace hive { namespace chain {
   using hive::protocol::HBD_asset;
   using hive::protocol::VEST_asset;
   using hive::protocol::asset;
-  using hive::protocol::price;
+  using hive::protocol::VEST_price;
 
   /**
     * @class dynamic_global_property_object
@@ -85,17 +85,16 @@ namespace hive { namespace chain {
       VEST_asset  pending_rewarded_vesting_shares = VEST_asset( 0 );
       HIVE_asset  pending_rewarded_vesting_hive   = HIVE_asset( 0 );
 
-      price       get_vesting_share_price() const // TODO: add tiny version of price and use it here
+      VEST_price get_vesting_share_price() const
       {
         if ( total_vesting_fund_hive.amount == 0 || total_vesting_shares.amount == 0 )
-          return price( asset( 1000000, VESTS_SYMBOL ), asset( 1000, HIVE_SYMBOL ) );
-
-        return price( total_vesting_shares, total_vesting_fund_hive );
+          return VEST_price( 1000000, 1000 );
+        return VEST_price( total_vesting_shares, total_vesting_fund_hive );
       }
 
-      price get_reward_vesting_share_price() const // TODO: add tiny version of price and use it here
+      VEST_price get_reward_vesting_share_price() const
       {
-        return price( total_vesting_shares + pending_rewarded_vesting_shares,
+        return VEST_price( total_vesting_shares + pending_rewarded_vesting_shares,
           total_vesting_fund_hive + pending_rewarded_vesting_hive );
       }
 

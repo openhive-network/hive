@@ -48,7 +48,7 @@ inline asset calculate_vesting( database& db, const asset& liquid, bool to_rewar
   // ^ A novelty, needed but risky in case someone managed to slip HBD/TESTS here in blockchain history.
   // Get share price.
   const auto& cprops = db.get_dynamic_global_properties();
-  price vesting_share_price = to_reward_balance ? cprops.get_reward_vesting_share_price() : cprops.get_vesting_share_price();
+  price vesting_share_price = to_reward_balance ? cprops.get_reward_vesting_share_price().to_price() : cprops.get_vesting_share_price().to_price();
   // Calculate new vesting from provided liquid using share price.
   return calculate_new_vesting( vesting_share_price );
 }
