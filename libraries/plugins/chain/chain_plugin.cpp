@@ -1004,6 +1004,10 @@ void chain_plugin_impl::push_transaction( const std::shared_ptr<full_transaction
 
 void chain_plugin_impl::finish_request()
 {
+  // Wake the write processor thread immediately so it doesn't have to wait
+  // for its condition variable timeout (~500ms) before detecting shutdown.
+  queue_condition_variable.notify_one();
+
   std::unique_lock<std::mutex> _guard( finish.mtx );
   finish.cv.wait( _guard, [this](){ return finish.status.load(); } );
 }
