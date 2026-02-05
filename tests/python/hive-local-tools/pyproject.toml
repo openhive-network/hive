@@ -16,8 +16,7 @@ packages = [
 
 
 source = [
-    { name = "PyPI", priority = "primary" },
-    { name = "gitlab-hive", url = "https://gitlab.syncad.com/api/v4/groups/136/-/packages/pypi/simple", priority = "supplemental" },
+    { name = "gitlab-hive", url = "https://gitlab.syncad.com/api/v4/groups/136/-/packages/pypi/simple", priority = "primary" },
 ]
 
 
