@@ -1,4 +1,5 @@
 #include <hive/chain/hive_fwd.hpp>
+#include <thread>
 
 #include <hive/chain/external_storage/comments_handler.hpp>
 
