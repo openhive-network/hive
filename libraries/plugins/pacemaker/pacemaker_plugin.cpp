@@ -3,6 +3,7 @@
 #include <hive/chain/block_log.hpp>
 
 #include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/asio/deadline_timer.hpp>
 #include <boost/filesystem.hpp>
 
 #define BLOCK_EMISSION_LOOP_SLEEP_TIME (100000)
