@@ -79,15 +79,6 @@
 #include <hive/protocol/transaction_util.hpp>
 #include <hive/protocol/words.hpp>
 
-#ifdef HIVE_ENABLE_SMT
-
-#include <hive/chain/smt_objects/smt_token_object.hpp>
-#include <hive/chain/smt_objects/account_balance_object.hpp>
-#include <hive/chain/smt_objects/nai_pool_object.hpp>
-#include <hive/chain/smt_objects/smt_token_object.hpp>
-
-#endif
-
 #include <fc/crypto/digest.hpp>
 #include <fc/crypto/hex.hpp>
 #include <fc/uint128.hpp>
@@ -748,16 +739,8 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
   BOOST_CHECK_EQUAL( sizeof( account_recovery_request_index::MULTIINDEX_NODE_TYPE ), 192u );
   BOOST_CHECK_EQUAL( sizeof( change_recovery_account_request_object ), 40u ); //at most <30d> of recovery account changes
   BOOST_CHECK_EQUAL( sizeof( change_recovery_account_request_index::MULTIINDEX_NODE_TYPE ), 136u );
-  BOOST_CHECK_EQUAL( sizeof( comment_cashout_object ), 128u //at most <7d> of unpaid comments (all comments prior to HF19)
-#ifdef HIVE_ENABLE_SMT
-    + 32
-#endif
-  );
-  BOOST_CHECK_EQUAL( sizeof( comment_cashout_index::MULTIINDEX_NODE_TYPE ), 192u
-#ifdef HIVE_ENABLE_SMT
-    + 32
-#endif
-  );
+  BOOST_CHECK_EQUAL( sizeof( comment_cashout_object ), 128u ); //at most <7d> of unpaid comments (all comments prior to HF19)
+  BOOST_CHECK_EQUAL( sizeof( comment_cashout_index::MULTIINDEX_NODE_TYPE ), 192u );
   BOOST_CHECK_EQUAL( sizeof( comment_cashout_ex_object ), 64u ); //all comments up to HF19, later not used
   BOOST_CHECK_EQUAL( sizeof( comment_cashout_ex_index::MULTIINDEX_NODE_TYPE ), 128u );
   BOOST_CHECK_EQUAL( sizeof( comment_vote_object ), 40u ); //at most <7d> of votes on unpaid comments
@@ -786,16 +769,8 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
   //singletons (size only affects performance)
   BOOST_CHECK_EQUAL( sizeof( reward_fund_object ), 112u );
   BOOST_CHECK_EQUAL( sizeof( reward_fund_index::MULTIINDEX_NODE_TYPE ), 176u );
-  BOOST_CHECK_EQUAL( sizeof( dynamic_global_property_object ), 288u
-#ifdef HIVE_ENABLE_SMT
-    + 16
-#endif
-  );
-  BOOST_CHECK_EQUAL( sizeof( dynamic_global_property_index::MULTIINDEX_NODE_TYPE ), 320u
-#ifdef HIVE_ENABLE_SMT
-    + 16
-#endif
-  );
+  BOOST_CHECK_EQUAL( sizeof( dynamic_global_property_object ), 288u );
+  BOOST_CHECK_EQUAL( sizeof( dynamic_global_property_index::MULTIINDEX_NODE_TYPE ), 320u );
   BOOST_CHECK_EQUAL( sizeof( block_summary_object ), 24u ); //always 64k objects
   BOOST_CHECK_EQUAL( sizeof( block_summary_index::MULTIINDEX_NODE_TYPE ), 56u );
   BOOST_CHECK_EQUAL( sizeof( hardfork_property_object ), 120u );
@@ -808,27 +783,10 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
   BOOST_CHECK_EQUAL( sizeof( rc_resource_param_index::MULTIINDEX_NODE_TYPE ), 400u );
   BOOST_CHECK_EQUAL( sizeof( rc_pool_object ), 176u );
   BOOST_CHECK_EQUAL( sizeof( rc_pool_index::MULTIINDEX_NODE_TYPE ), 208u );
-  BOOST_CHECK_EQUAL( sizeof( rc_stats_object ), 5632u //two objects
-#ifdef HIVE_ENABLE_SMT
-    + 616u
-#endif
-  );
-  BOOST_CHECK_EQUAL( sizeof( rc_stats_index::MULTIINDEX_NODE_TYPE ), 5664u
-#ifdef HIVE_ENABLE_SMT
-    + 616u
-#endif
-  );
+  BOOST_CHECK_EQUAL( sizeof( rc_stats_object ), 5632u ); //two objects
+  BOOST_CHECK_EQUAL( sizeof( rc_stats_index::MULTIINDEX_NODE_TYPE ), 5664u );
   BOOST_CHECK_EQUAL( sizeof( rc_usage_bucket_object ), 48u ); //always HIVE_RC_WINDOW_BUCKET_COUNT objects
   BOOST_CHECK_EQUAL( sizeof( rc_usage_bucket_index::MULTIINDEX_NODE_TYPE ), 112u );
-
-  //TODO: categorize and evaluate size potential of SMT related objects:
-  //account_regular_balance_object
-  //account_rewards_balance_object
-  //nai_pool_object
-  //smt_token_object
-  //smt_ico_object
-  //smt_token_emissions_object
-  //smt_contribution_object
 
   BOOST_CHECK_EQUAL( sizeof( full_transaction_type ), 464 ); //not a chain object but potentially very numerous
 
@@ -1558,23 +1516,9 @@ BOOST_AUTO_TEST_CASE( chain_object_checksum )
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::rc_direct_delegation_object>(dtds), "f0d4bea1fb7a0120c38300e47487328c301aec50" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::rc_usage_bucket_object>(dtds), "64fed99b3018ca29394f48592aec3a0a2a04ff28" );
 
-  #ifdef HIVE_ENABLE_SMT
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::smt_token_object>(dtds), "fac8527680fe801eaa30b1f1fbacd3bb9ca862be" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::account_regular_balance_object>(dtds), "6ce5d469aacb57f43c427ba35177fefdabf28b04" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::account_rewards_balance_object>(dtds), "0dd50c29905716ad06318e46a3f174915321c7d5" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::nai_pool_object>(dtds), "ef82f8d7d8a27e717ab1a51d314e89545100285c" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::smt_token_emissions_object>(dtds), "e6702e689a1cf49dcbf2490821c135fbc0baccaa" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::smt_contribution_object>(dtds), "6a9298578cec55f96e3335d5417dbf041e3532f8" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::smt_ico_object>(dtds), "46e8bd5eaa44cfa4ab2d19c9d4e50bde397f8e84" );
-
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::comment_cashout_object>(dtds), "2b3524a7e3cae469e96f8d9efccc6c97ac6d3730" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::dynamic_global_property_object>(dtds), "56cf7f86e13f4afa5b5a99dadb241563f55fa565" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::rc_stats_object>(dtds), "e8f7efb3092823f37935d3bd8bcae963b0151d7c" );
-  #else
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::comment_cashout_object>(dtds), "38b356fdf295b2a709ac9d77b94fbe0fcd3c9267" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::dynamic_global_property_object>(dtds), "bd2df40440ac957bd12940634ee8b3eebce7e50f" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::rc_stats_object>(dtds), "5ecebd9e709ff9f511dc2600e72c071e022223ca" );
-  #endif
 
 }
 

@@ -136,19 +136,6 @@ fc::ecc::private_key database_fixture::generate_private_key(string seed)
   return fc::ecc::private_key::regenerate( fc::sha256::hash( seed ) );
 }
 
-#ifdef HIVE_ENABLE_SMT
-asset_symbol_type database_fixture::get_new_smt_symbol( uint8_t token_decimal_places, chain::database* db )
-{
-  // The list of available nais is not dependent on SMT desired precision (token_decimal_places).
-  static std::vector< asset_symbol_type >::size_type next_nai = 0;
-  auto available_nais = db->get< nai_pool_object >().pool();
-  FC_ASSERT( available_nais.size() > 0, "No available nai returned by get_nai_pool." );
-  const asset_symbol_type& new_nai = available_nais[ next_nai++ % available_nais.size() ];
-  // Note that token's precision is needed now, when creating actual symbol.
-  return asset_symbol_type::from_nai( new_nai.to_nai(), token_decimal_places );
-}
-#endif
-
 void database_fixture::generate_block(uint32_t skip, const fc::ecc::private_key& key, int miss_blocks)
 {
   skip |= default_skip;
@@ -1142,7 +1129,7 @@ void database_fixture::create_with_pow( const std::string& _name, const fc::ecc:
   op.work.worker = _public_key;
   //note: we cannot compute nonce once and hardcode it in the test because HIVE_BLOCKCHAIN_VERSION
   //becomes part of first block as extension, which means when version changes (because we have new
-  //hardfork coming or just because of HIVE_ENABLE_SMT) the nonces will have to change as well
+  //hardfork coming) the nonces will have to change as well
   op.nonce = -1;
   do
   {
@@ -1299,9 +1286,6 @@ void database_fixture::validate_database()
   try
   {
     db->validate_invariants();
-#ifdef HIVE_ENABLE_SMT
-    db->validate_smt_invariants();
-#endif
   }
   FC_LOG_AND_RETHROW();
 }

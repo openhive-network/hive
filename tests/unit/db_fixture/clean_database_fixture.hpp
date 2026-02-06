@@ -71,49 +71,6 @@ struct curation_database_fixture : public config_database_fixture
   virtual ~curation_database_fixture();
 };
 
-#ifdef HIVE_ENABLE_SMT
-template< typename T >
-struct t_smt_database_fixture : public T
-{
-  using units = flat_map< account_name_type, uint16_t >;
-
-  using database_fixture::set_price_feed;
-  using database_fixture::fund;
-
-  t_smt_database_fixture(){}
-  virtual ~t_smt_database_fixture(){}
-
-  asset_symbol_type create_smt( const string& account_name, const fc::ecc::private_key& key,
-    uint8_t token_decimal_places );
-  asset_symbol_type create_smt_with_nai( const string& account_name, const fc::ecc::private_key& key,
-    uint32_t nai, uint8_t token_decimal_places );
-
-  /// Creates 3 different SMTs for provided control account, one with 0 precision, the other two with the same non-zero precision.
-  std::array<asset_symbol_type, 3> create_smt_3(const char* control_account_name, const fc::ecc::private_key& key);
-  /// Tries to create SMTs with too big precision or invalid name.
-  void create_invalid_smt( const char* control_account_name, const fc::ecc::private_key& key );
-
-  void push_invalid_operation( const operation& invalid_op, const fc::ecc::private_key& key );
-  /// Tries to create SMTs matching existing one. First attempt with matching precision, second one with different (but valid) precision.
-  void create_conflicting_smt( const asset_symbol_type existing_smt, const char* control_account_name, const fc::ecc::private_key& key );
-
-  //smt_setup_operation
-  smt_generation_unit get_generation_unit ( const units& hive_unit = units(), const units& token_unit = units() );
-  smt_capped_generation_policy get_capped_generation_policy
-  (
-    const smt_generation_unit& pre_soft_cap_unit = smt_generation_unit(),
-    const smt_generation_unit& post_soft_cap_unit = smt_generation_unit(),
-    uint16_t soft_cap_percent = 0,
-    uint32_t min_unit_ratio = 0,
-    uint32_t max_unit_ratio = 0
-  );
-};
-
-using smt_database_fixture = t_smt_database_fixture< clean_database_fixture >;
-using smt_database_fixture_for_plugin = t_smt_database_fixture< hived_fixture >;
-
-#endif
-
 struct dhf_database_fixture_performance : public clean_database_fixture
 {
   dhf_database_fixture_performance( uint16_t shared_file_size_in_mb = 512 )
