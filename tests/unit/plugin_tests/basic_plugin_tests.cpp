@@ -30,16 +30,8 @@ BOOST_AUTO_TEST_CASE( plugin_object_size )
   //BOOST_CHECK_EQUAL( sizeof( block_log_info::block_log_hash_state_object ), 0 );
   //BOOST_CHECK_EQUAL( sizeof( block_log_info::block_log_pending_message_object ), 0 );
 
-  BOOST_CHECK_EQUAL( sizeof( market_history::bucket_object ), 96u //temporary, regulated amount, ~13k
-#ifdef HIVE_ENABLE_SMT
-    + 8u
-#endif
-  );
-  BOOST_CHECK_EQUAL( sizeof( market_history::bucket_index::MULTIINDEX_NODE_TYPE ), 160u
-#ifdef HIVE_ENABLE_SMT
-    + 8u
-#endif
-  );
+  BOOST_CHECK_EQUAL( sizeof( market_history::bucket_object ), 96u ); //temporary, regulated amount, ~13k
+  BOOST_CHECK_EQUAL( sizeof( market_history::bucket_index::MULTIINDEX_NODE_TYPE ), 160u );
   BOOST_CHECK_EQUAL( sizeof( market_history::order_history_object ), 88u ); //permanent, growing with executed limit_order_object, 2.5M atm
   BOOST_CHECK_EQUAL( sizeof( market_history::order_history_index::MULTIINDEX_NODE_TYPE ), 152u );
 
@@ -73,11 +65,7 @@ BOOST_AUTO_TEST_CASE( plugin_object_checksum )
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::metadata::account_metadata_object>(dtds), "55cadd90e77ed413f6536756f6708632a53a818e" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::transaction_status::transaction_status_object>(dtds), "cb9ceb3c9d94912d0e5326d6ebfcd6110bd9c953" );
 
-  #ifdef HIVE_ENABLE_SMT
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::market_history::bucket_object>(dtds), "0ed6488aad10a231f02e7e58a5f7733362821c72" );
-  #else
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::plugins::market_history::bucket_object>(dtds), "fc8f56ad056d2594e97aac6e7e618007a1bfecfb" );
-  #endif
 }
 
 BOOST_AUTO_TEST_SUITE_END()
