@@ -257,9 +257,6 @@ struct database_fixture {
   virtual hive::plugins::chain::chain_plugin& get_chain_plugin() const = 0;
 
   static fc::ecc::private_key generate_private_key( string seed = "init_key" );
-#ifdef HIVE_ENABLE_SMT
-  static asset_symbol_type get_new_smt_symbol( uint8_t token_decimal_places, chain::database* db );
-#endif
 
   static const fc::ecc::private_key committee;
   static const uint16_t shared_file_size_small = 64;
