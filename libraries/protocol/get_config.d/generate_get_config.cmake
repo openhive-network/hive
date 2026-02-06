@@ -32,9 +32,6 @@ macro(generate_get_config path_to_config_hpp get_config_cpp_in get_config_cpp_ou
   if( BUILD_HIVE_TESTNET  )
     list(APPEND local_compiler_flags "-DIS_TEST_NET")
   endif()
-  if( ENABLE_SMT_SUPPORT  )
-    list(APPEND local_compiler_flags "-DHIVE_ENABLE_SMT")
-  endif()
 
   # using of compiler dry run to preprocess config.hpp
   message("running c++ compiler wit flags: ${local_compiler_flags}")
