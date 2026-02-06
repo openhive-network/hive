@@ -8,6 +8,8 @@
 #include <hive/chain/blockchain_worker_thread_pool.hpp>
 
 #include <queue>
+#include <thread>
+#include <condition_variable>
 #include <fstream>
 #include <fc/io/raw.hpp>
 #include <fc/thread/thread.hpp>
