@@ -3,6 +3,9 @@
 #include <hive/chain/database.hpp>
 #include <hive/chain/full_block.hpp>
 
+#include <fc/io/json.hpp>
+#include <fc/variant_object.hpp>
+
 namespace hive { namespace chain {
 
 block_data_type& block_data_type::operator=( const full_block_type& new_block )
@@ -39,6 +42,29 @@ std::shared_ptr<full_block_type> block_data_type::create_full_block() const
     );
   }
   FC_CAPTURE_AND_RETHROW()
+}
+
+std::string get_irreversible_block_details(chainbase::database& db)
+{
+  auto segment_manager = db.get_segment_manager();
+  const auto result = segment_manager->find<irreversible_block_data_type>("irreversible");
+
+  if(!result.first)
+    return "[Irreversible block data not found in shared memory]";
+
+  const auto& irr = *result.first;
+  const auto& block_data = irr._irreversible_block_data;
+
+  fc::mutable_variant_object block_data_vo;
+  block_data_vo("_compression_attributes", fc::variant(block_data._compression_attributes));
+  block_data_vo("_byte_size", block_data._byte_size);
+  block_data_vo("_block_id", fc::variant(block_data._block_id));
+
+  fc::mutable_variant_object vo;
+  vo("_irreversible_block_num", irr._irreversible_block_num);
+  vo("_irreversible_block_data", fc::variant(block_data_vo));
+
+  return fc::json::to_pretty_string(fc::variant(vo));
 }
 
 } } //hive::chain
