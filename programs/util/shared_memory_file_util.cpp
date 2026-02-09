@@ -12,9 +12,10 @@
 
 #include <hive/chain/util/decoded_types_data_storage.hpp>
 
-// Forward declaration to avoid including full definition which has interprocess allocators
+#include <string>
+
 namespace hive { namespace chain {
-  struct irreversible_block_data_type;
+  std::string get_irreversible_block_details(chainbase::database& db);
 }}
 
 #include <hive/chain/account_object.hpp>
@@ -427,11 +428,7 @@ namespace shared_memory_file_util
   {
     std::stringstream ss;
     ss << db.get_environment_details() << "\n";
-    // Note: Accessing irreversible_block_data_type requires including the full header
-    // which contains types with boost::interprocess allocators that cannot be serialized
-    // with fc::json. This functionality is disabled to avoid compilation errors.
-    // See irreversible_block_data.hpp for the type definition.
-    ss << "[Irreversible block data access disabled due to serialization limitations]\n";
+    ss << hive::chain::get_irreversible_block_details(db) << "\n";
     log_result(ss.str(), "shm details", "shared_memory_file_details.log");
   }
 
