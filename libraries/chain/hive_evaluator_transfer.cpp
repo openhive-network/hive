@@ -666,12 +666,11 @@ void claim_reward_balance_evaluator::do_apply( const claim_reward_balance_operat
   _db.adjust_balance( acnt, op_reward_hive );
   _db.adjust_balance( acnt, op_reward_hbd );
 
-  if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
+  _db.modify( acnt_assets, [&]( assets_object& a )
   {
-    _db.rc().regenerate_rc_mana( acnt, acnt_mrc, acnt_assets, acnt_time, now );
-    _db.modify( acnt_mrc, [&]( manabars_rc_object& mrc )
+    if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
     {
-      _db.modify( acnt_assets, [&]( assets_object& a )
+      _db.modify( acnt_mrc, [&]( manabars_rc_object& mrc )
       {
         _db.modify( acnt_time, [&]( time_object& t )
         {
@@ -681,11 +680,14 @@ void claim_reward_balance_evaluator::do_apply( const claim_reward_balance_operat
         a.set_vest_rewards( a.get_vest_rewards() - op_reward_vests );
         a.set_vest_rewards_as_hive( a.get_vest_rewards_as_hive() - reward_vesting_hive_to_move );
       } );
-    } );
-  }
-  else
-  {
-    _db.modify( acnt_assets, [&]( assets_object& a )
+      _db.rc().regenerate_rc_mana( acnt, acnt_mrc, acnt_assets, acnt_time, now );
+    }
+
+    a.set_vesting( a.get_vesting() + op_reward_vests );
+    a.set_vest_rewards( a.get_vest_rewards() - op_reward_vests );
+    a.set_vest_rewards_as_hive( a.get_vest_rewards_as_hive() - reward_vesting_hive_to_move );
+
+    if( acnt.get_name() == "votovzla" )
     {
       a.set_vesting( a.get_vesting() + op_reward_vests );
       a.set_vest_rewards( a.get_vest_rewards() - op_reward_vests );
@@ -693,7 +695,7 @@ void claim_reward_balance_evaluator::do_apply( const claim_reward_balance_operat
     } );
   }
   if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
-    _db.rc().update_account_after_vest_change( acnt, acnt_mrc, acnt_assets, acnt_time, now );
+    _db.rc().update_account_after_vest_change( acnt, now );
 
   _db.modify( dgpo, [&]( dynamic_global_property_object& gpo )
   {
@@ -822,13 +824,7 @@ void delegate_vesting_shares_evaluator::do_apply( const delegate_vesting_shares_
 
     _db.modify( delegator_mrc, [&]( manabars_rc_object& mrc )
     {
-      _db.modify( delegator_assets, [&]( assets_object& a )
-      {
-        _db.modify( delegator_time, [&]( time_object& t )
-        {
-          util::update_manabar( gpo, delegator, a, t, mrc );
-        } );
-      } );
+      util::update_manabar( gpo, delegator, delegator_assets, delegator_time, mrc );
     } );
 
     available_shares = VEST_asset( delegator_mrc.get_voting_manabar().current_mana );
@@ -921,12 +917,9 @@ void delegate_vesting_shares_evaluator::do_apply( const delegate_vesting_shares_
     {
       _db.modify( delegatee_mrc, [&]( manabars_rc_object& mrc )
       {
+        util::update_manabar( gpo, delegatee, delegatee_assets, delegatee_time, mrc, op_vesting_shares.amount.value );
         _db.modify( delegatee_assets, [&]( assets_object& a )
         {
-          _db.modify( delegatee_time, [&]( time_object& t )
-          {
-            util::update_manabar( gpo, delegatee, a, t, mrc, op_vesting_shares.amount.value );
-          } );
           a.set_received_vesting( a.get_received_vesting() + op_vesting_shares );
         } );
       } );
@@ -975,12 +968,9 @@ void delegate_vesting_shares_evaluator::do_apply( const delegate_vesting_shares_
     {
       _db.modify( delegatee_mrc, [&]( manabars_rc_object& mrc )
       {
+        util::update_manabar( gpo, delegatee, delegatee_assets, delegatee_time, mrc, delta.amount.value );
         _db.modify( delegatee_assets, [&]( assets_object& a )
         {
-          _db.modify( delegatee_time, [&]( time_object& t )
-          {
-            util::update_manabar( gpo, delegatee, a, t, mrc, delta.amount.value );
-          } );
           a.set_received_vesting( a.get_received_vesting() + delta );
         } );
       } );
@@ -1019,12 +1009,9 @@ void delegate_vesting_shares_evaluator::do_apply( const delegate_vesting_shares_
     {
       _db.modify( delegatee_mrc, [&]( manabars_rc_object& mrc )
       {
+        util::update_manabar( gpo, delegatee, delegatee_assets, delegatee_time, mrc );
         _db.modify( delegatee_assets, [&]( assets_object& a )
         {
-          _db.modify( delegatee_time, [&]( time_object& t )
-          {
-            util::update_manabar( gpo, delegatee, a, t, mrc );
-          } );
           a.set_received_vesting( a.get_received_vesting() - delta );
         } );
         if( _db.has_hardfork( HIVE_HARDFORK_0_20__2539 ) )

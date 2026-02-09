@@ -102,7 +102,7 @@ struct manabar
 };
 
 template< typename PropType, typename AccountType, typename AssetsType, typename TimeType, typename ManabarType >
-void update_manabar( const PropType& gpo, AccountType& account, AssetsType& assets, TimeType& time, ManabarType& mrc, int64_t new_mana = 0 )
+void update_manabar( const PropType& gpo, const AccountType& account, const AssetsType& assets, const TimeType& time, ManabarType& mrc, int64_t new_mana = 0 )
 {
   auto effective_vests = account.get_effective_vesting_shares( assets, time ).value;
   try {
