@@ -12,11 +12,7 @@
 
 #include <hive/chain/util/decoded_types_data_storage.hpp>
 
-#include <string>
-
-namespace hive { namespace chain {
-  std::string get_irreversible_block_details(chainbase::database& db);
-}}
+#include <hive/chain/irreversible_block_data_fwd.hpp>
 
 #include <hive/chain/account_object.hpp>
 #include <hive/chain/account_object_multiindex.hpp>
