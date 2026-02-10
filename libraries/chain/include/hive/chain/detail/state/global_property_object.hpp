@@ -13,7 +13,6 @@ namespace hive { namespace chain {
   using hive::protocol::HIVE_asset;
   using hive::protocol::HBD_asset;
   using hive::protocol::VEST_asset;
-  using hive::protocol::asset;
   using hive::protocol::VEST_price;
 
   /**
@@ -169,9 +168,6 @@ namespace hive { namespace chain {
       uint8_t min_recurrent_transfers_recurrence = HIVE_MIN_RECURRENT_TRANSFERS_RECURRENCE;
       uint16_t max_open_recurrent_transfers = HIVE_MAX_OPEN_RECURRENT_TRANSFERS;
 
-#ifdef HIVE_ENABLE_SMT
-      asset smt_creation_fee = HBD_asset( 1000 ); // NOTE: it is expected to be able to be expressed in HIVE as well
-#endif
     CHAINBASE_UNPACK_CONSTRUCTOR(dynamic_global_property_object);
   };
 
@@ -222,7 +218,4 @@ FC_REFLECT( hive::chain::dynamic_global_property_object,
           (max_recurrent_transfer_end_date)
           (max_open_recurrent_transfers)
           (min_recurrent_transfers_recurrence)
-#ifdef HIVE_ENABLE_SMT
-          (smt_creation_fee)
-#endif
         )

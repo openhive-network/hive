@@ -44,9 +44,6 @@ HIVE_DEFINE_EVALUATOR( transfer_to_savings )
 HIVE_DEFINE_EVALUATOR( transfer_from_savings )
 HIVE_DEFINE_EVALUATOR( cancel_transfer_from_savings )
 HIVE_DEFINE_EVALUATOR( claim_reward_balance )
-#ifdef HIVE_ENABLE_SMT
-HIVE_DEFINE_EVALUATOR( claim_reward_balance2 )
-#endif
 HIVE_DEFINE_EVALUATOR( delegate_vesting_shares )
 HIVE_DEFINE_EVALUATOR( recurrent_transfer )
 
@@ -69,9 +66,6 @@ void register_transfer_evaluators( evaluator_registry<operation>& registry )
   registry.register_evaluator< transfer_from_savings_evaluator          >();
   registry.register_evaluator< cancel_transfer_from_savings_evaluator   >();
   registry.register_evaluator< claim_reward_balance_evaluator           >();
-#ifdef HIVE_ENABLE_SMT
-  registry.register_evaluator< claim_reward_balance2_evaluator          >();
-#endif
   registry.register_evaluator< delegate_vesting_shares_evaluator        >();
   registry.register_evaluator< recurrent_transfer_evaluator             >();
 }
@@ -527,6 +521,8 @@ void limit_order_create_evaluator::do_apply( const limit_order_create_operation&
 {
   FC_ASSERT( o.expiration > _db.head_block_time(), "Limit order has to expire after head block time." );
 
+  FC_TODO( "Limit to HIVE/HBD after next hardfork (HF29)" ); // if possible edit check in validate after hardfork triggers
+
   time_point_sec expiration = o.expiration;
   if( _db.has_hardfork( HIVE_HARDFORK_0_20__1449 ) ) // 307842c657d54f576615cd312a425c517ad68db4 example tx with extra long expiration
   {
@@ -551,6 +547,8 @@ void limit_order_create_evaluator::do_apply( const limit_order_create_operation&
 void limit_order_create2_evaluator::do_apply( const limit_order_create2_operation& o )
 {
   FC_ASSERT( o.expiration > _db.head_block_time() && "Limit order has to expire after head block time." );
+
+  FC_TODO( "Limit to HIVE/HBD after next hardfork (HF29)" ); // if possible edit check in validate after hardfork triggers
 
   time_point_sec expiration = o.expiration;
   if( _db.has_hardfork( HIVE_HARDFORK_0_20__1449 ) ) // 8bce7ca4b2bea9af848db927342a88f82eea0684 example tx with extra long expiration
@@ -674,88 +672,8 @@ void claim_reward_balance_evaluator::do_apply( const claim_reward_balance_operat
   _db.adjust_proxied_witness_votes( acnt, op_reward_vests.amount );
 }
 
-#ifdef HIVE_ENABLE_SMT
-void claim_reward_balance2_evaluator::do_apply( const claim_reward_balance2_operation& op )
-{
-  //TODO: can be removed once SMT hardfork activates
-  FC_ASSERT( _db.has_hardfork( HIVE_SMT_HARDFORK ) && "Premature", "claim_reward_balance2_operation requires hardfork ${x}",
-    ( "x", HIVE_SMT_HARDFORK ) );
-  const account_object* a = nullptr; // Lazily initialized below because it may turn out unnecessary.
-
-  for( const asset& token : op.reward_tokens )
-  {
-    if( token.amount == 0 )
-      continue;
-
-    if( token.symbol.space() == asset_symbol_type::smt_nai_space )
-    {
-      _db.adjust_reward_balance( op.account, -token );
-      _db.adjust_balance( op.account, token );
-    }
-    else
-    {
-      // Lazy init here.
-      if( a == nullptr )
-      {
-        a = _db.find_account( op.account );
-        FC_ASSERT( a != nullptr && "Not found", "Could NOT find account ${a}", ("a", op.account) );
-      }
-
-      if( token.symbol == VESTS_SYMBOL )
-      {
-        FC_ASSERT( token <= a->get_vest_rewards(), "Cannot claim that much VESTS. Claim: ${c} Actual: ${a}",
-          ( "c", token )( "a", a->get_vest_rewards() ) );
-
-        const auto& dgpo = _db.get_dynamic_global_properties();
-        auto now = dgpo.time;
-
-        HIVE_asset reward_vesting_hive_to_move( 0 );
-        if( token == a->get_vest_rewards() )
-          reward_vesting_hive_to_move = a->get_vest_rewards_as_hive();
-        else
-          reward_vesting_hive_to_move = HIVE_asset( fc::uint128_to_uint64( ( uint128_t( token.amount.value ) * uint128_t( a->get_vest_rewards_as_hive().amount.value ) )
-            / uint128_t( a->get_vest_rewards().amount.value ) ) );
-
-        _db.rc().regenerate_rc_mana( *a, now );
-        _db.modify( *a, [&]( account_object& a )
-        {
-          a.vesting_shares += token;
-          a.reward_vesting_balance -= token;
-          a.reward_vesting_hive -= reward_vesting_hive_to_move;
-        } );
-        _db.rc().update_account_after_vest_change( *a, now );
-
-        _db.modify( dgpo, [&]( dynamic_global_property_object& gpo )
-        {
-          gpo.total_vesting_shares += token;
-          gpo.total_vesting_fund_hive += reward_vesting_hive_to_move;
-
-          gpo.pending_rewarded_vesting_shares -= token;
-          gpo.pending_rewarded_vesting_hive -= reward_vesting_hive_to_move;
-        } );
-
-        _db.adjust_proxied_witness_votes( *a, token.amount );
-      }
-      else if( token.symbol == HIVE_SYMBOL || token.symbol == HBD_SYMBOL )
-      {
-        FC_ASSERT( is_asset_type( token, HIVE_SYMBOL ) == false || token <= a->get_rewards(),
-          "Cannot claim that much HIVE. Claim: ${c} Actual: ${a}", ( "c", token )( "a", a->get_rewards() ) );
-        FC_ASSERT( is_asset_type( token, HBD_SYMBOL ) == false || token <= a->get_hbd_rewards(),
-          "Cannot claim that much HBD. Claim: ${c} Actual: ${a}", ( "c", token )( "a", a->get_hbd_rewards() ) );
-        _db.adjust_reward_balance( *a, -token );
-        _db.adjust_balance( *a, token );
-      }
-      else
-        FC_ASSERT( false && "Unknown asset symbol" );
-    } // non-SMT token
-  } // for( const auto& token : op.reward_tokens )
-}
-#endif
-
 void delegate_vesting_shares_evaluator::do_apply( const delegate_vesting_shares_operation& op )
 {
-  FC_TODO("Update get_effective_vesting_shares when modifying this operation to support SMTs." )
-
   const auto& delegator = _db.get_account( op.delegator );
   const auto& delegatee = _db.get_account( op.delegatee );
   auto* delegation = _db.find< vesting_delegation_object, by_delegation >( boost::make_tuple( delegator.get_id(), delegatee.get_id() ) );

@@ -45,9 +45,6 @@ namespace hive { namespace chain {
 #include <hive/chain/witness_objects.hpp>
 #include <hive/chain/witness_objects_multiindex.hpp>
 #include <hive/chain/rc/rc_objects.hpp>
-#include <hive/chain/smt_objects/account_balance_object.hpp>
-#include <hive/chain/smt_objects/nai_pool_object.hpp>
-#include <hive/chain/smt_objects/smt_token_object.hpp>
 
 #include <hive/plugins/account_by_key/account_by_key_objects.hpp>
 #include <hive/plugins/account_history_rocksdb/account_history_rocksdb_objects.hpp>
@@ -405,15 +402,6 @@ namespace shared_memory_file_util
     save_index_name(add_index_to_db<hive::chain::rc_direct_delegation_index>());
     save_index_name(add_index_to_db<hive::chain::rc_expired_delegation_index>());
     save_index_name(add_index_to_db<hive::chain::rc_usage_bucket_index>());
-#ifdef HIVE_ENABLE_SMT
-    save_index_name(add_index_to_db<hive::chain::account_regular_balance_index>());
-    save_index_name(add_index_to_db<hive::chain::account_rewards_balance_index>());
-    save_index_name(add_index_to_db<hive::chain::nai_pool_index>());
-    save_index_name(add_index_to_db<hive::chain::smt_contribution_index>());
-    save_index_name(add_index_to_db<hive::chain::smt_token_index>());
-    save_index_name(add_index_to_db<hive::chain::smt_ico_index>());
-    save_index_name(add_index_to_db<hive::chain::smt_token_emissions_index>());
-#endif
 
     save_index_name(add_index_to_db<hive::plugins::account_by_key::key_lookup_index>());
     save_index_name(add_index_to_db<hive::plugins::account_history_rocksdb::volatile_operation_index>());

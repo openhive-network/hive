@@ -78,9 +78,6 @@ void market_history_plugin_impl::on_post_apply_operation( const operation_notifi
           b.seconds = bucket;
 
           b.hive.fill( ( op.open_pays.symbol == HIVE_SYMBOL ) ? op.open_pays.amount : op.current_pays.amount );
-#ifdef HIVE_ENABLE_SMT
-          b.symbol = ( op.open_pays.symbol == HIVE_SYMBOL ) ? op.current_pays.symbol : op.open_pays.symbol;
-#endif
           b.non_hive.fill( ( op.open_pays.symbol == HIVE_SYMBOL ) ? op.current_pays.amount : op.open_pays.amount );
         });
       }
@@ -88,11 +85,6 @@ void market_history_plugin_impl::on_post_apply_operation( const operation_notifi
       {
         _db.modify( *itr, [&]( bucket_object& b )
         {
-#ifdef HIVE_ENABLE_SMT
-          // ABW: overwriting symbol in the bucket? the symbol should be one of bucket selection elements
-          // so we have separate buckets for each SMT
-          b.symbol = ( op.open_pays.symbol == HIVE_SYMBOL ) ? op.current_pays.symbol : op.open_pays.symbol;
-#endif
           if( op.open_pays.symbol == HIVE_SYMBOL )
           {
             b.hive.volume += op.open_pays.amount;

@@ -17,24 +17,6 @@ namespace hive { namespace protocol {
     bool operator < ( const beneficiary_route_type& o )const { return account < o.account; }
   };
 
-#ifdef HIVE_ENABLE_SMT
-  struct votable_asset_info_v1
-  {
-    votable_asset_info_v1() = default;
-    votable_asset_info_v1(const share_type& max_payout, bool allow_rewards) :
-      max_accepted_payout(max_payout), allow_curation_rewards(allow_rewards) {}
-
-    share_type        max_accepted_payout    = 0;
-    bool              allow_curation_rewards = false;
-  };
-
-  typedef static_variant< votable_asset_info_v1 > votable_asset_info;
-#endif /// HIVE_ENABLE_SMT
-
 } } // hive::protocol
 
 FC_REFLECT( hive::protocol::beneficiary_route_type, (account)(weight) )
-
-#ifdef HIVE_ENABLE_SMT
-FC_REFLECT( hive::protocol::votable_asset_info_v1, (max_accepted_payout)(allow_curation_rewards) )
-#endif

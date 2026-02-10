@@ -32,7 +32,6 @@ generate_get_config(
 
 SET( STATIC_SOURCES authority_verification_tracer.cpp
    testnet_blockchain_configuration.cpp
-   smt_operations.cpp
    hive_operations.cpp
    hive_custom_operations.cpp
    dhf_operations.cpp

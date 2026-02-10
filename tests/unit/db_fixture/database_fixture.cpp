@@ -26,8 +26,6 @@
 #include <hive/plugins/webserver/webserver_plugin.hpp>
 #include <hive/plugins/witness/witness_plugin.hpp>
 
-#include <hive/chain/smt_objects/nai_pool_object.hpp>
-
 #include <fc/crypto/digest.hpp>
 #include <fc/smart_ref_impl.hpp>
 
@@ -397,25 +395,19 @@ void database_fixture::issue_funds(
   {
     db_plugin->debug_update( [=]( database& db)
     {
-      if( amount.symbol.space() == asset_symbol_type::smt_nai_space )
-      {
-        db.adjust_balance(account_name, amount);
-        db.adjust_supply(amount);
-        // Note that SMT have no equivalent of HBD, hence no virtual supply, hence no need to update it.
-        return;
-      }
-
       const auto& median_feed = db.get_feed_history();
       if( amount.symbol == HBD_SYMBOL )
       {
         if( median_feed.current_median_history.is_null() )
-          db.modify( median_feed, [&]( feed_history_object& f )
         {
-          f.current_median_history = HBD_price( 1, 1 );
-          f.market_median_history = f.current_median_history;
-          f.current_min_history = f.current_median_history;
-          f.current_max_history = f.current_median_history;
-        } );
+          db.modify( median_feed, [&]( feed_history_object& f )
+          {
+            f.current_median_history = HBD_price( 1, 1 );
+            f.market_median_history = f.current_median_history;
+            f.current_min_history = f.current_median_history;
+            f.current_max_history = f.current_median_history;
+          } );
+        }
       }
 
       db.modify( db.get_account( account_name ), [&]( account_object& a )

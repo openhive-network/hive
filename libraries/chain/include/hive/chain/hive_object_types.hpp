@@ -86,17 +86,6 @@ enum object_type
   rc_usage_bucket_object_type,
   rc_stats_object_type,
   rc_expired_delegation_object_type,
-
-#ifdef HIVE_ENABLE_SMT
-  // SMT objects
-  smt_token_object_type,
-  account_regular_balance_object_type,
-  account_rewards_balance_object_type,
-  nai_pool_object_type,
-  smt_token_emissions_object_type,
-  smt_contribution_object_type,
-  smt_ico_object_type,
-#endif
 };
 
 class dynamic_global_property_object;
@@ -139,16 +128,6 @@ class rc_usage_bucket_object;
 class rc_stats_object;
 class rc_expired_delegation_object;
 
-#ifdef HIVE_ENABLE_SMT
-class smt_token_object;
-class account_regular_balance_object;
-class account_rewards_balance_object;
-class nai_pool_object;
-class smt_token_emissions_object;
-class smt_contribution_object;
-class smt_ico_object;
-#endif
-
 typedef oid_ref< dynamic_global_property_object         > dynamic_global_property_id_type;
 typedef oid_ref< account_object                         > account_id_type;
 typedef oid_ref< account_authority_object               > account_authority_id_type;
@@ -189,23 +168,6 @@ typedef oid_ref< rc_direct_delegation_object            > rc_direct_delegtion_id
 typedef oid_ref< rc_usage_bucket_object                 > rc_cost_bucket_id_type;
 typedef oid_ref< rc_stats_object                        > rc_stats_id_type;
 typedef oid_ref< rc_expired_delegation_object           > rc_expired_delegtion_id_type;
-
-#ifdef HIVE_ENABLE_SMT
-typedef oid_ref< smt_token_object                       > smt_token_id_type;
-typedef oid_ref< account_regular_balance_object         > account_regular_balance_id_type;
-typedef oid_ref< account_rewards_balance_object         > account_rewards_balance_id_type;
-typedef oid_ref< nai_pool_object                        > nai_pool_id_type;
-typedef oid_ref< smt_token_emissions_object             > smt_token_emissions_id_type;
-typedef oid_ref< smt_contribution_object                > smt_contribution_id_type;
-typedef oid_ref< smt_ico_object                         > smt_ico_id_type;
-#endif
-
-enum bandwidth_type
-{
-  post,    ///< Rate limiting posting reward eligibility over time
-  forum,   ///< Rate limiting for all forum related actions
-  market   ///< Rate limiting for all other actions
-};
 
 } } //hive::chain
 
@@ -349,18 +311,6 @@ FC_REFLECT_ENUM( hive::chain::object_type,
             (rc_usage_bucket_object_type)
             (rc_stats_object_type)
             (rc_expired_delegation_object_type)
-
-#ifdef HIVE_ENABLE_SMT
-            (smt_token_object_type)
-            (account_regular_balance_object_type)
-            (account_rewards_balance_object_type)
-            (nai_pool_object_type)
-            (smt_token_emissions_object_type)
-            (smt_contribution_object_type)
-            (smt_ico_object_type)
-#endif
           )
 
 FC_REFLECT_TYPENAME( hive::chain::shared_string )
-
-FC_REFLECT_ENUM( hive::chain::bandwidth_type, (post)(forum)(market) )

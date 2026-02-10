@@ -14,7 +14,6 @@
 #include <hive/chain/block_summary_object_multiindex.hpp>
 #include <hive/chain/detail/state/feed_history_object_multiindex.hpp>
 #include <hive/chain/witness_objects_multiindex.hpp>
-#include <hive/chain/smt_objects.hpp>
 
 #include <hive/chain/util/rd_setup.hpp>
 #include <hive/chain/util/state_checker_tools.hpp>
@@ -34,9 +33,6 @@ void database::initialize_evaluators()
   register_account_evaluators( _my->_evaluator_registry );
   register_witness_evaluators( _my->_evaluator_registry );
   register_dhf_evaluators( _my->_evaluator_registry );
-#ifdef HIVE_ENABLE_SMT
-  register_smt_evaluators( _my->_evaluator_registry );
-#endif
 
   rc().initialize_evaluators();
 }
@@ -364,10 +360,6 @@ void database::init_genesis()
       util::rd_setup_dynamics_params( account_subsidy_user_params, account_subsidy_system_params, wso.account_subsidy_rd );
       util::rd_setup_dynamics_params( account_subsidy_per_witness_user_params, account_subsidy_system_params, wso.account_subsidy_witness_rd );
     } );
-
-#ifdef HIVE_ENABLE_SMT
-    create< nai_pool_object >( [&]( nai_pool_object& npo ) {} );
-#endif
   }
   FC_CAPTURE_AND_RETHROW()
 }

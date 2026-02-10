@@ -132,12 +132,10 @@ in the database.
 
 ## Step 7
 
-- (7a) Unit tests for SMT functionality should go in `smt_tests.cpp`.
-
-- (7b) Operations should have separate tests:  `validate` test,
+- (7a) Operations should have separate tests:  `validate` test,
 `authorities` test and `apply` test.
 
-- (7c) If unit tests pass, but a bug or a spec change is discovered,
+- (7b) If unit tests pass, but a bug or a spec change is discovered,
 in addition to fixing the bug, code to demonstrate the bug should
 be added to the unit test.  The unit test should now fail without the
 bugfix code, and pass with the bugfix code.

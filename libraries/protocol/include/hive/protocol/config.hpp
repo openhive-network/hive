@@ -63,11 +63,7 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 
 #ifdef IS_TEST_NET
 
-#ifdef HIVE_ENABLE_SMT
-  #define HIVE_BLOCKCHAIN_VERSION             ( version(1, 29, 0) )
-#else
-  #define HIVE_BLOCKCHAIN_VERSION             ( version(1, 28, 6) ) /// no new HF atm
-#endif
+#define HIVE_BLOCKCHAIN_VERSION             ( version(1, 28, 6) ) /// no new HF atm
 
 #define OLD_CHAIN_ID                          (fc::sha256::hash("testnet"))
 #define HIVE_CHAIN_ID                         (fc::sha256::hash("testnet"))
@@ -471,20 +467,6 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_PROPOSAL_FEE_INCREASE_DAYS_SEC        (60*60*24*HIVE_PROPOSAL_FEE_INCREASE_DAYS) /// 60 days
 #define HIVE_PROPOSAL_FEE_INCREASE_AMOUNT          (1 * HIVE_BLOCKCHAIN_PRECISION)
 #define HIVE_PROPOSAL_CONVERSION_RATE             (5 * HIVE_1_BASIS_POINT)
-
-#ifdef HIVE_ENABLE_SMT
-
-#define SMT_MAX_VOTABLE_ASSETS 2
-#define SMT_VESTING_WITHDRAW_INTERVAL_SECONDS   (60*60*24*7) /// 1 week per interval
-#define SMT_UPVOTE_LOCKOUT                      (60*60*12)   /// 12 hours
-#define SMT_EMISSION_MIN_INTERVAL_SECONDS       (60*60*6)    /// 6 hours
-#define SMT_EMIT_INDEFINITELY                   (std::numeric_limits<uint32_t>::max())
-#define SMT_MAX_NOMINAL_VOTES_PER_DAY           (1000)
-#define SMT_MAX_VOTES_PER_REGENERATION          ((SMT_MAX_NOMINAL_VOTES_PER_DAY * SMT_VESTING_WITHDRAW_INTERVAL_SECONDS) / 86400)
-#define SMT_DEFAULT_VOTES_PER_REGEN_PERIOD      (50)
-#define SMT_DEFAULT_PERCENT_CURATION_REWARDS    (25 * HIVE_1_PERCENT)
-
-#endif /// HIVE_ENABLE_SMT
 
 /// (former) witness related constants
 

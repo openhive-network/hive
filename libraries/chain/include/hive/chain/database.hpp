@@ -572,16 +572,6 @@ namespace chain {
       void get_savings_withdraw_totals( HIVE_asset& total_hive, HBD_asset& total_hbd, uint64_t& withdrawal_count ) const;
       void get_limit_order_totals( HIVE_asset& total_hive, HBD_asset& total_hbd, uint64_t& order_count ) const;
       void remove_pending_limit_orders( const account_object& account, const account_name_type& account_name );
-#ifdef HIVE_ENABLE_SMT
-      struct TCombinedBalance {
-        asset liquid;
-        asset vesting;
-        asset pending_liquid;
-        asset pending_vesting_shares;
-        asset pending_vesting_value;
-      };
-      void get_limit_order_smt_totals( std::map< asset_symbol_type, TCombinedBalance >& theMap ) const;
-#endif
       void process_decline_voting_rights();
       void update_median_feed();
 
@@ -688,13 +678,6 @@ namespace chain {
       bool disable_low_mem_warning = true;
 #endif
 
-#ifdef HIVE_ENABLE_SMT
-      ///Smart Media Tokens related methods
-      ///@{
-      void validate_smt_invariants()const;
-      ///@}
-#endif
-
       //Restores balances for some accounts, which were cleared by mistake during HF23
       void restore_accounts( const std::set< std::string >& restored_accounts );
 
@@ -771,10 +754,6 @@ namespace chain {
       void apply_hardfork_17_comment_cashout_fix();
 
       ///@}
-#ifdef HIVE_ENABLE_SMT
-      template< typename smt_balance_object_type, typename modifier_type >
-      void adjust_smt_balance( const account_object& owner, const asset& delta, modifier_type&& modifier );
-#endif
       void modify_balance( const account_object& a, const asset& delta );
       void modify_reward_balance( const account_object& a, const asset& value_delta, const asset& share_delta );
 

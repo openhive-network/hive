@@ -117,70 +117,8 @@ namespace hive { namespace protocol {
     void validate()const;
   };
 
-#ifdef HIVE_ENABLE_SMT
-  /** Allows to store all SMT tokens being allowed to use during voting process.
-    *  Maps asset symbol (SMT) to the vote info.
-    *  @see SMT spec for details: https://gitlab.syncad.com/hive/smt-whitepaper/blob/master/smt-manual/manual.md
-    */
-  struct allowed_vote_assets
-  {
-    /// Helper method to simplify construction of votable_asset_info.
-    void add_votable_asset(const asset_symbol_type& symbol, const share_type& max_accepted_payout,
-      bool allow_curation_rewards)
-      {
-        votable_asset_info info(votable_asset_info_v1(max_accepted_payout, allow_curation_rewards));
-        votable_assets[symbol] = std::move(info);
-      }
-
-    /** Allows to check if given symbol is allowed votable asset.
-      *  @param symbol - asset symbol to be check against votable feature
-      *  @param max_accepted_payout - optional output parameter which allows to take `max_accepted_payout`
-      *                  configured for given asset
-      *  @param allow_curation_rewards - optional output parameter which allows to take `allow_curation_rewards`
-      *                  specified for given votable asset.
-      *  @returns true if given asset is allowed votable asset for given comment.
-      */
-    bool is_allowed(const asset_symbol_type& symbol, share_type* max_accepted_payout = nullptr,
-      bool* allow_curation_rewards = nullptr) const
-      {
-        auto foundI = votable_assets.find(symbol);
-        if(foundI == votable_assets.end())
-        {
-          if(max_accepted_payout != nullptr)
-            *max_accepted_payout = 0;
-          if(allow_curation_rewards != nullptr)
-            *allow_curation_rewards = false;
-          return false;
-        }
-
-        if(max_accepted_payout != nullptr)
-          *max_accepted_payout = foundI->second.get<votable_asset_info_v1>().max_accepted_payout;
-        if(allow_curation_rewards != nullptr)
-          *allow_curation_rewards = foundI->second.get<votable_asset_info_v1>().allow_curation_rewards;
-
-        return true;
-      }
-
-    /** Part of `comment_option_operation` validation process, to be called when allowed_vote_assets object
-      *  has been added as comment option extension.
-      *  @throws fc::assert_exception on failure.
-      */
-    void validate() const
-    {
-      FC_ASSERT(votable_assets.size() <= SMT_MAX_VOTABLE_ASSETS, "Too much votable assets specified");
-      FC_ASSERT(is_allowed(HIVE_SYMBOL) == false,
-        "HIVE can not be explicitly specified as one of allowed_vote_assets");
-    }
-
-    flat_map< asset_symbol_type, votable_asset_info > votable_assets;
-  };
-#endif /// HIVE_ENABLE_SMT
-
   typedef static_variant<
         comment_payout_beneficiaries
-#ifdef HIVE_ENABLE_SMT
-        ,allowed_vote_assets
-#endif /// HIVE_ENABLE_SMT
         > comment_options_extension;
 
   typedef flat_set< comment_options_extension > comment_options_extensions_type;
@@ -394,15 +332,17 @@ namespace hive { namespace protocol {
 
 
   /**
-    *  This operation converts liquid token (HIVE or liquid SMT) into VFS (Vesting Fund Shares,
-    *  VESTS or vesting SMT) at the current exchange rate. With this operation it is possible to
+    *  This operation converts liquid token (only HIVE at the moment) into VFS (Vesting Fund Shares,
+    *  VESTS) at the current exchange rate. With this operation it is possible to
     *  give another account vesting shares so that faucets can pre-fund new accounts with vesting shares.
     */
   struct transfer_to_vesting_operation : public base_operation
   {
     account_name_type from;
     account_name_type to;      ///< if null, then same as from
-    asset             amount;  ///< must be HIVE or liquid variant of SMT
+    asset             amount;  ///< must be HIVE
+
+    HIVE_asset get_amount() const { return amount; }
 
     void validate()const;
     void get_required_active_authorities( flat_set<account_name_type>& a )const{ a.insert(from); }
@@ -1034,25 +974,6 @@ namespace hive { namespace protocol {
     void validate() const;
   };
 
-#ifdef HIVE_ENABLE_SMT
-  /** Differs with original operation with extensions field and a container of tokens that will
-    *  be rewarded to an account. See discussion in issue #1859
-    */
-  struct claim_reward_balance2_operation : public base_operation
-  {
-    account_name_type account;
-    extensions_type   extensions;
-
-    /** \warning The contents of this container is required to be unique and sorted
-      *  (both by asset symbol) in ascending order. Otherwise operation validation will fail.
-      */
-    vector< asset > reward_tokens;
-
-    void get_required_posting_authorities( flat_set< account_name_type >& a )const{ a.insert( account ); }
-    void validate() const;
-  };
-#endif
-
   /**
     * Delegate vesting shares from one account to the other. The vesting shares are still owned
     * by the original account, but content voting rights and bandwidth allocation are transferred
@@ -1272,10 +1193,6 @@ FC_REFLECT( hive::protocol::delete_comment_operation, (author)(permlink) );
 
 FC_REFLECT( hive::protocol::comment_payout_beneficiaries, (beneficiaries) )
 
-#ifdef HIVE_ENABLE_SMT
-FC_REFLECT( hive::protocol::allowed_vote_assets, (votable_assets) )
-#endif
-
 FC_REFLECT_TYPENAME( hive::protocol::comment_options_extension )
 FC_REFLECT( hive::protocol::comment_options_operation, (author)(permlink)(max_accepted_payout)(percent_hbd)(allow_votes)(allow_curation_rewards)(extensions) )
 
@@ -1290,9 +1207,6 @@ FC_REFLECT( hive::protocol::recover_account_operation, (account_to_recover)(new_
 FC_REFLECT( hive::protocol::change_recovery_account_operation, (account_to_recover)(new_recovery_account)(extensions) );
 FC_REFLECT( hive::protocol::decline_voting_rights_operation, (account)(decline) );
 FC_REFLECT( hive::protocol::claim_reward_balance_operation, (account)(reward_hive)(reward_hbd)(reward_vests) );
-#ifdef HIVE_ENABLE_SMT
-FC_REFLECT( hive::protocol::claim_reward_balance2_operation, (account)(extensions)(reward_tokens) )
-#endif
 FC_REFLECT( hive::protocol::delegate_vesting_shares_operation, (delegator)(delegatee)(vesting_shares) );
 FC_REFLECT( hive::protocol::recurrent_transfer_operation, (from)(to)(amount)(memo)(recurrence)(executions)(extensions) );
 FC_REFLECT_TYPENAME( hive::protocol::recurrent_transfer_extension )

@@ -12,9 +12,7 @@
 #include <hive/protocol/version.hpp>
 #include <set>
 
-#if defined(IS_TEST_NET) && defined(HIVE_ENABLE_SMT)
-  #define HIVE_NUM_HARDFORKS 29
-#elif defined(USE_ALTERNATE_CHAIN_ID)
+#if defined(USE_ALTERNATE_CHAIN_ID)
   #define HIVE_NUM_HARDFORKS 28
 #else
   /// Mainnet atm supports only HF28

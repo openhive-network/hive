@@ -4,10 +4,6 @@
 #include <hive/chain/global_property_object.hpp>
 #include <hive/chain/util/manabar.hpp>
 
-#ifdef HIVE_ENABLE_SMT
-#include <hive/chain/smt_objects.hpp>
-#endif
-
 namespace hive { namespace chain {
 
 inline asset calculate_vesting( database& db, const asset& liquid, bool to_reward_balance )
@@ -30,19 +26,6 @@ inline asset calculate_vesting( database& db, const asset& liquid, bool to_rewar
     asset new_vesting = liquid * ( vesting_share_price );
     return new_vesting;
   };
-
-#ifdef HIVE_ENABLE_SMT
-  if( liquid.symbol.space() == asset_symbol_type::smt_nai_space )
-  {
-    FC_ASSERT( liquid.symbol.is_vesting() == false );
-    // Get share price.
-    const auto& smt = db.get< smt_token_object, by_symbol >( liquid.symbol );
-    FC_ASSERT( smt.allow_voting == to_reward_balance, "No voting - no rewards" );
-    price vesting_share_price = to_reward_balance ? smt.get_reward_vesting_share_price() : smt.get_vesting_share_price();
-    // Calculate new vesting from provided liquid using share price.
-    return calculate_new_vesting( vesting_share_price );
-  }
-#endif
 
   FC_ASSERT( liquid.symbol == HIVE_SYMBOL );
   // ^ A novelty, needed but risky in case someone managed to slip HBD/TESTS here in blockchain history.

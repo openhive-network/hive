@@ -26,7 +26,6 @@
 #include <hive/chain/detail/state/liquidity_reward_balance_object_multiindex.hpp>
 #include <hive/chain/detail/state/withdraw_vesting_route_object_multiindex.hpp>
 #include <hive/chain/database_exceptions.hpp>
-#include <hive/chain/smt_objects.hpp>
 #include <hive/protocol/hive_operations.hpp>
 #include <hive/protocol/hive_custom_operations.hpp>
 
