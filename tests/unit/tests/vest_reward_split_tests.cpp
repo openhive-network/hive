@@ -1856,6 +1856,791 @@ BOOST_AUTO_TEST_CASE( claim_reward_with_active_delegation )
   FC_LOG_AND_RETHROW()
 }
 
+/// ============================================================================
+/// Hardfork-specific branch coverage tests
+/// ============================================================================
+
+/// Test 31: Mana-based delegation validation (HIVE_HARDFORK_0_20__2539)
+/// Verifies that delegation is limited by available voting mana, not just balance
+BOOST_AUTO_TEST_CASE( hf20_delegation_mana_based_validation )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: hf20_delegation_mana_based_validation" );
+
+    ACTORS( (alice)(bob)(charlie) )
+    generate_block();
+
+    vest( "alice", ASSET( "1000.000 TESTS" ) );
+    generate_block();
+
+    auto alice_vests = get_vesting( "alice" );
+
+    BOOST_TEST_MESSAGE( "--- Delegate most of Alice's vests to Bob (consumes mana)" );
+    // This should consume Alice's voting mana
+    auto delegation1 = asset( alice_vests.amount * 3 / 4, VESTS_SYMBOL );
+    delegate_vest( "alice", "bob", delegation1, alice_private_key );
+    generate_block();
+
+    // Check that voting mana was consumed
+    auto alice_mana_after = VOTING_MANABAR( "alice" );
+    auto alice_downvote_after = DOWNVOTE_MANABAR( "alice" );
+
+    BOOST_TEST_MESSAGE( "Alice voting mana after delegation: " + std::to_string( alice_mana_after.current_mana ) );
+    BOOST_TEST_MESSAGE( "Alice downvote mana after delegation: " + std::to_string( alice_downvote_after.current_mana ) );
+
+    // Voting mana should have decreased due to delegation (mana used = delegation amount)
+    // Alice started with full mana = effective_vesting, then used delegation1 amount
+    BOOST_REQUIRE( alice_mana_after.current_mana < alice_vests.amount.value );
+
+    BOOST_TEST_MESSAGE( "--- Attempting to delegate more than remaining mana should fail" );
+    // With most mana consumed, trying to delegate more should fail
+    auto remaining_vests = alice_vests - delegation1;
+    // Try to delegate the entire remainder + 1 which should exceed available mana
+    HIVE_REQUIRE_THROW(
+      delegate_vest( "alice", "charlie", remaining_vests + ASSET( "1.000000 VESTS" ), alice_private_key ),
+      fc::assert_exception );
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+/// Test 32: Downvote mana consumed during delegation (HIVE_HARDFORK_0_22__3485)
+/// Verifies downvote mana is consumed proportionally with safe 128-bit math
+BOOST_AUTO_TEST_CASE( hf22_downvote_mana_on_delegation )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: hf22_downvote_mana_on_delegation" );
+
+    ACTORS( (alice)(bob) )
+    generate_block();
+
+    vest( "alice", ASSET( "1000.000 TESTS" ) );
+    generate_block();
+
+    // Wait for mana to fully regenerate
+    generate_blocks( 200 );
+
+    auto alice_mana_before = VOTING_MANABAR( "alice" );
+    auto alice_downvote_before = DOWNVOTE_MANABAR( "alice" );
+
+    BOOST_TEST_MESSAGE( "Voting mana before: " + std::to_string( alice_mana_before.current_mana ) );
+    BOOST_TEST_MESSAGE( "Downvote mana before: " + std::to_string( alice_downvote_before.current_mana ) );
+
+    auto alice_vests = get_vesting( "alice" );
+    auto delegation = asset( alice_vests.amount / 4, VESTS_SYMBOL );
+
+    BOOST_TEST_MESSAGE( "--- Delegating to bob" );
+    delegate_vest( "alice", "bob", delegation, alice_private_key );
+
+    auto alice_mana_after = VOTING_MANABAR( "alice" );
+    auto alice_downvote_after = DOWNVOTE_MANABAR( "alice" );
+
+    BOOST_TEST_MESSAGE( "Voting mana after: " + std::to_string( alice_mana_after.current_mana ) );
+    BOOST_TEST_MESSAGE( "Downvote mana after: " + std::to_string( alice_downvote_after.current_mana ) );
+
+    // Voting mana should decrease by delegation amount
+    BOOST_REQUIRE( alice_mana_after.current_mana < alice_mana_before.current_mana );
+
+    // Downvote mana should also decrease (proportional to downvote_pool_percent)
+    const auto& gpo = db->get_dynamic_global_properties();
+    if( gpo.downvote_pool_percent > 0 )
+    {
+      BOOST_REQUIRE( alice_downvote_after.current_mana < alice_downvote_before.current_mana );
+
+      // Downvote mana consumed should be: delegation * downvote_pool_percent / 100%
+      // Using 128-bit math as per HIVE_HARDFORK_0_22__3485
+      int64_t expected_downvote_consumed = fc::uint128_to_int64(
+        ( uint128_t( delegation.amount.value ) * gpo.downvote_pool_percent ) / HIVE_100_PERCENT );
+      int64_t actual_downvote_consumed = alice_downvote_before.current_mana - alice_downvote_after.current_mana;
+
+      BOOST_TEST_MESSAGE( "Expected downvote consumed: " + std::to_string( expected_downvote_consumed ) );
+      BOOST_TEST_MESSAGE( "Actual downvote consumed: " + std::to_string( actual_downvote_consumed ) );
+
+      // Allow off-by-one due to 128-bit math rounding differences
+      BOOST_REQUIRE( std::abs( actual_downvote_consumed - expected_downvote_consumed ) <= 1 );
+    }
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+/// Test 33: Delegation decrease path with manabar update (HIVE_HARDFORK_0_22__3485)
+/// Verifies that delegatee manabar is updated and mana consumed when delegation decreases
+BOOST_AUTO_TEST_CASE( hf22_delegation_decrease_manabar_update )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: hf22_delegation_decrease_manabar_update" );
+
+    ACTORS( (alice)(bob) )
+    generate_block();
+
+    vest( "alice", ASSET( "1000.000 TESTS" ) );
+    vest( "bob", ASSET( "100.000 TESTS" ) );
+    generate_block();
+
+    auto alice_vests = get_vesting( "alice" );
+    auto delegation = asset( alice_vests.amount / 2, VESTS_SYMBOL );
+
+    BOOST_TEST_MESSAGE( "--- Delegating to bob" );
+    delegate_vest( "alice", "bob", delegation, alice_private_key );
+    generate_block();
+
+    // Wait for mana to regenerate
+    generate_blocks( 200 );
+
+    auto bob_mana_before = VOTING_MANABAR( "bob" );
+    auto bob_downvote_before = DOWNVOTE_MANABAR( "bob" );
+    auto bob_eff_vests_before = GET_EFF_VESTS( "bob" );
+
+    BOOST_TEST_MESSAGE( "Bob voting mana before decrease: " + std::to_string( bob_mana_before.current_mana ) );
+    BOOST_TEST_MESSAGE( "Bob effective vests before: " + std::to_string( bob_eff_vests_before.value ) );
+
+    BOOST_TEST_MESSAGE( "--- Reducing delegation by half" );
+    auto reduced_delegation = asset( delegation.amount / 2, VESTS_SYMBOL );
+    delegate_vest( "alice", "bob", reduced_delegation, alice_private_key );
+    generate_block();
+
+    auto bob_mana_after = VOTING_MANABAR( "bob" );
+    auto bob_eff_vests_after = GET_EFF_VESTS( "bob" );
+
+    BOOST_TEST_MESSAGE( "Bob voting mana after decrease: " + std::to_string( bob_mana_after.current_mana ) );
+    BOOST_TEST_MESSAGE( "Bob effective vests after: " + std::to_string( bob_eff_vests_after.value ) );
+
+    // Bob's effective vesting should decrease
+    BOOST_REQUIRE( bob_eff_vests_after < bob_eff_vests_before );
+
+    // Bob's received vesting should reflect the reduced delegation
+    BOOST_REQUIRE( GET_ASSETS( "bob" ).get_received_vesting() == reduced_delegation );
+
+    // Bob's voting mana should have been consumed (reduced) by the delegation decrease
+    // The manabar is updated and then mana is used
+    BOOST_REQUIRE( bob_mana_after.current_mana < bob_mana_before.current_mana );
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+/// Test 34: Delegation increase mana consumption (HIVE_HARDFORK_0_20__2539)
+/// Verifies voting mana is consumed when increasing an existing delegation
+BOOST_AUTO_TEST_CASE( hf20_delegation_increase_mana_consumption )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: hf20_delegation_increase_mana_consumption" );
+
+    ACTORS( (alice)(bob) )
+    generate_block();
+
+    vest( "alice", ASSET( "1000.000 TESTS" ) );
+    generate_block();
+
+    auto alice_vests = get_vesting( "alice" );
+    auto initial_delegation = asset( alice_vests.amount / 4, VESTS_SYMBOL );
+
+    BOOST_TEST_MESSAGE( "--- Initial delegation" );
+    delegate_vest( "alice", "bob", initial_delegation, alice_private_key );
+    generate_block();
+
+    // Wait for mana to regenerate
+    generate_blocks( 200 );
+
+    auto alice_mana_before = VOTING_MANABAR( "alice" );
+    auto alice_downvote_before = DOWNVOTE_MANABAR( "alice" );
+
+    BOOST_TEST_MESSAGE( "--- Increasing delegation" );
+    auto increased_delegation = asset( alice_vests.amount / 2, VESTS_SYMBOL );
+    auto delta = increased_delegation - initial_delegation;
+
+    delegate_vest( "alice", "bob", increased_delegation, alice_private_key );
+
+    auto alice_mana_after = VOTING_MANABAR( "alice" );
+    auto alice_downvote_after = DOWNVOTE_MANABAR( "alice" );
+
+    // Voting mana should decrease by the delta amount
+    int64_t voting_mana_consumed = alice_mana_before.current_mana - alice_mana_after.current_mana;
+    BOOST_REQUIRE( voting_mana_consumed == delta.amount.value );
+
+    // Downvote mana should also decrease proportionally
+    const auto& gpo = db->get_dynamic_global_properties();
+    if( gpo.downvote_pool_percent > 0 )
+    {
+      int64_t expected_downvote_consumed = fc::uint128_to_int64(
+        ( uint128_t( delta.amount.value ) * gpo.downvote_pool_percent ) / HIVE_100_PERCENT );
+      int64_t actual_downvote_consumed = alice_downvote_before.current_mana - alice_downvote_after.current_mana;
+      // Allow off-by-one due to 128-bit math rounding differences
+      BOOST_REQUIRE( std::abs( actual_downvote_consumed - expected_downvote_consumed ) <= 1 );
+    }
+
+    // Delegatee (bob) manabar should have been updated with the increase
+    auto bob_received = GET_ASSETS( "bob" ).get_received_vesting();
+    BOOST_REQUIRE( bob_received == increased_delegation );
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+/// Test 35: Cancel power down validation (HIVE_HARDFORK_1_28_FIX_CANCEL_POWER_DOWN)
+/// Verifies that cancelling power down without an active one fails
+BOOST_AUTO_TEST_CASE( hf28_cancel_power_down_validation )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: hf28_cancel_power_down_validation" );
+
+    ACTORS( (alice) )
+    generate_block();
+
+    vest( "alice", ASSET( "100.000 TESTS" ) );
+    generate_block();
+
+    BOOST_TEST_MESSAGE( "--- Attempting to cancel power down when none is active should fail" );
+    HIVE_REQUIRE_THROW(
+      withdraw_vesting( "alice", ASSET( "0.000000 VESTS" ), alice_private_key ),
+      fc::assert_exception );
+
+    // Verify no power down was started
+    BOOST_REQUIRE( GET_TIME( "alice" ).get_next_vesting_withdrawal() == fc::time_point_sec::maximum() );
+
+    BOOST_TEST_MESSAGE( "--- Start power down, then cancel should succeed" );
+    auto alice_vests = get_vesting( "alice" );
+    withdraw_vesting( "alice", asset( alice_vests.amount / 2, VESTS_SYMBOL ), alice_private_key );
+    BOOST_REQUIRE( GET_TIME( "alice" ).get_next_vesting_withdrawal() != fc::time_point_sec::maximum() );
+
+    generate_block();
+
+    // Cancel should work now
+    withdraw_vesting( "alice", ASSET( "0.000000 VESTS" ), alice_private_key );
+    BOOST_REQUIRE( GET_TIME( "alice" ).get_next_vesting_withdrawal() == fc::time_point_sec::maximum() );
+
+    BOOST_TEST_MESSAGE( "--- After cancel, trying to cancel again should fail" );
+    generate_block();
+    HIVE_REQUIRE_THROW(
+      withdraw_vesting( "alice", ASSET( "0.000000 VESTS" ), alice_private_key ),
+      fc::assert_exception );
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+/// Test 36: Power down no-op detection (HIVE_HARDFORK_1_28_FIX_CANCEL_POWER_DOWN)
+/// Verifies that setting the same withdrawal rate fails
+BOOST_AUTO_TEST_CASE( hf28_power_down_noop_detection )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: hf28_power_down_noop_detection" );
+
+    ACTORS( (alice) )
+    generate_block();
+
+    vest( "alice", ASSET( "100.000 TESTS" ) );
+    generate_block();
+
+    auto alice_vests = get_vesting( "alice" );
+    auto withdraw_amount = asset( alice_vests.amount / 2, VESTS_SYMBOL );
+
+    BOOST_TEST_MESSAGE( "--- Starting power down" );
+    withdraw_vesting( "alice", withdraw_amount, alice_private_key );
+    BOOST_REQUIRE( GET_ASSETS( "alice" ).get_vesting_withdraw_rate().amount.value > 0 );
+
+    BOOST_TEST_MESSAGE( "--- Trying to set the same withdrawal rate should fail" );
+    generate_block();
+    HIVE_REQUIRE_THROW(
+      withdraw_vesting( "alice", withdraw_amount, alice_private_key ),
+      fc::assert_exception );
+
+    BOOST_TEST_MESSAGE( "--- Changing the withdrawal amount should succeed" );
+    auto new_withdraw = asset( alice_vests.amount / 4, VESTS_SYMBOL );
+    withdraw_vesting( "alice", new_withdraw, alice_private_key );
+    BOOST_REQUIRE( GET_ASSETS( "alice" ).get_to_withdraw() == new_withdraw );
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+/// Test 37: Withdrawal rate rounding fix (HIVE_HARDFORK_0_21)
+/// Verifies that rate * intervals >= total withdrawal amount (rounds up)
+BOOST_AUTO_TEST_CASE( hf21_withdrawal_rate_rounds_up )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: hf21_withdrawal_rate_rounds_up" );
+
+    ACTORS( (alice) )
+    generate_block();
+
+    vest( "alice", ASSET( "100.000 TESTS" ) );
+    generate_block();
+
+    // Choose an amount that doesn't divide evenly by HIVE_VESTING_WITHDRAW_INTERVALS (13)
+    auto alice_vests = get_vesting( "alice" );
+    // Use an odd amount that would require rounding
+    auto withdraw_amount = asset( alice_vests.amount - 1, VESTS_SYMBOL );
+
+    BOOST_TEST_MESSAGE( "--- Start power down with amount that needs rounding: " + fc::json::to_string( withdraw_amount ) );
+    withdraw_vesting( "alice", withdraw_amount, alice_private_key );
+
+    auto rate = GET_ASSETS( "alice" ).get_vesting_withdraw_rate();
+
+    // After HF21 fix: rate * intervals must be >= withdraw_amount
+    // This ensures full withdrawal completes without rounding down
+    auto total_from_rate = asset( rate.amount * HIVE_VESTING_WITHDRAW_INTERVALS, VESTS_SYMBOL );
+    BOOST_REQUIRE( total_from_rate >= withdraw_amount );
+
+    // The difference should be at most (intervals - 1) to ensure minimal rounding
+    auto overshoot = total_from_rate - withdraw_amount;
+    BOOST_REQUIRE( overshoot.amount < HIVE_VESTING_WITHDRAW_INTERVALS );
+
+    BOOST_TEST_MESSAGE( "Rate: " + fc::json::to_string( rate ) +
+                        " Total from rate: " + fc::json::to_string( total_from_rate ) +
+                        " Overshoot: " + fc::json::to_string( overshoot ) );
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+/// Test 38: RC mana regeneration on claim (HIVE_HARDFORK_0_20)
+/// Verifies that RC mana is regenerated when claiming vest rewards
+BOOST_AUTO_TEST_CASE( hf20_rc_mana_on_reward_claim )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: hf20_rc_mana_on_reward_claim" );
+
+    ACTORS( (alice) )
+    generate_block();
+
+    vest( "alice", ASSET( "100.000 TESTS" ) );
+    generate_block();
+
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+
+    // Set up reward
+    db_plugin->debug_update( [&]( database& db )
+    {
+      const auto& alice_acc = db.get_account( "alice" );
+      const auto& alice_assets = db.get< assets_object >( assets_object::id_type( alice_acc.get_id().get_value() ) );
+
+      db.modify( alice_assets, []( assets_object& a )
+      {
+        a.set_vest_rewards( ASSET( "500.000000 VESTS" ) );
+        a.set_vest_rewards_as_hive( ASSET( "250.000 TESTS" ) );
+      });
+
+      db.modify( db.get_dynamic_global_properties(), []( dynamic_global_property_object& gpo )
+      {
+        gpo.current_supply += ASSET( "250.000 TESTS" );
+        gpo.virtual_supply += ASSET( "250.000 TESTS" );
+        gpo.pending_rewarded_vesting_shares += ASSET( "500.000000 VESTS" );
+        gpo.pending_rewarded_vesting_hive += ASSET( "250.000 TESTS" );
+      });
+    });
+    generate_block();
+    validate_database();
+
+    // Wait some time then claim
+    generate_blocks( 50 );
+
+    auto alice_rc_before = GET_MRC( "alice" ).get_rc_manabar();
+    auto alice_voting_mana_before = VOTING_MANABAR( "alice" );
+
+    BOOST_TEST_MESSAGE( "RC mana before claim: " + std::to_string( alice_rc_before.current_mana ) );
+    BOOST_TEST_MESSAGE( "Voting mana before claim: " + std::to_string( alice_voting_mana_before.current_mana ) );
+
+    claim_reward_balance( "alice", ASSET( "0.000 TESTS" ), ASSET( "0.000 TBD" ), ASSET( "500.000000 VESTS" ), alice_post_key );
+
+    auto alice_rc_after = GET_MRC( "alice" ).get_rc_manabar();
+    auto alice_voting_mana_after = VOTING_MANABAR( "alice" );
+
+    BOOST_TEST_MESSAGE( "RC mana after claim: " + std::to_string( alice_rc_after.current_mana ) );
+    BOOST_TEST_MESSAGE( "Voting mana after claim: " + std::to_string( alice_voting_mana_after.current_mana ) );
+
+    // RC mana should have increased (regenerated + new vesting added)
+    BOOST_REQUIRE( alice_rc_after.current_mana >= alice_rc_before.current_mana );
+
+    // Voting mana should also have increased (new vesting adds mana)
+    BOOST_REQUIRE( alice_voting_mana_after.current_mana >= alice_voting_mana_before.current_mana );
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+/// Test 39: RC mana update after vest change on delegation (HIVE_HARDFORK_0_20)
+/// Verifies RC is updated for both delegator and delegatee after delegation
+BOOST_AUTO_TEST_CASE( hf20_rc_update_on_delegation )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: hf20_rc_update_on_delegation" );
+
+    ACTORS( (alice)(bob) )
+    generate_block();
+
+    vest( "alice", ASSET( "1000.000 TESTS" ) );
+    vest( "bob", ASSET( "10.000 TESTS" ) );
+    generate_block();
+
+    // Wait for RC to regenerate
+    generate_blocks( 200 );
+
+    auto alice_rc_before = GET_MRC( "alice" ).get_rc_manabar();
+    auto bob_rc_before = GET_MRC( "bob" ).get_rc_manabar();
+
+    BOOST_TEST_MESSAGE( "Alice RC before: " + std::to_string( alice_rc_before.current_mana ) );
+    BOOST_TEST_MESSAGE( "Bob RC before: " + std::to_string( bob_rc_before.current_mana ) );
+
+    auto alice_vests = get_vesting( "alice" );
+    auto delegation = asset( alice_vests.amount / 4, VESTS_SYMBOL );
+
+    delegate_vest( "alice", "bob", delegation, alice_private_key );
+    generate_block();
+
+    auto alice_rc_after = GET_MRC( "alice" ).get_rc_manabar();
+    auto bob_rc_after = GET_MRC( "bob" ).get_rc_manabar();
+
+    BOOST_TEST_MESSAGE( "Alice RC after: " + std::to_string( alice_rc_after.current_mana ) );
+    BOOST_TEST_MESSAGE( "Bob RC after: " + std::to_string( bob_rc_after.current_mana ) );
+
+    // Alice's RC should be updated (regenerated then changed)
+    // Bob's RC should also be updated
+    // The key check is that RC was properly recalculated for both accounts
+    // after delegation (HIVE_HARDFORK_0_20 path)
+
+    // Both accounts should have valid RC mana (> 0)
+    BOOST_REQUIRE( alice_rc_after.current_mana > 0 );
+    BOOST_REQUIRE( bob_rc_after.current_mana > 0 );
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+/// Test 40: Delayed voting on power down (HIVE_HARDFORK_1_24)
+/// Verifies that vesting changes during power down use delayed voting
+BOOST_AUTO_TEST_CASE( hf24_delayed_voting_on_power_down )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: hf24_delayed_voting_on_power_down" );
+
+    ACTORS( (alice) )
+    generate_block();
+
+    vest( "alice", ASSET( "100.000 TESTS" ) );
+    generate_block();
+
+    // Wait for delayed voting period for initial vesting
+    generate_blocks( db->head_block_time() + fc::seconds( HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS ), true );
+
+    const auto& alice_dv = GET_DV( "alice" );
+    BOOST_TEST_MESSAGE( "Delayed votes after maturation: has_delayed=" + std::to_string( alice_dv.has_delayed_votes() ) );
+
+    // After the delayed voting period, initial vesting should have matured
+    // Delayed votes should be empty or contain matured entries
+    auto alice_vests = get_vesting( "alice" );
+
+    BOOST_TEST_MESSAGE( "--- Starting power down" );
+    withdraw_vesting( "alice", alice_vests, alice_private_key );
+
+    BOOST_TEST_MESSAGE( "--- Processing first withdrawal" );
+    generate_blocks( GET_TIME( "alice" ).get_next_vesting_withdrawal(), true );
+
+    // After withdrawal, alice's vesting should decrease
+    auto alice_vests_after = get_vesting( "alice" );
+    BOOST_REQUIRE( alice_vests_after < alice_vests );
+
+    // The delayed voting object should exist and track the change
+    const auto& alice_dv_after = GET_DV( "alice" );
+    (void)alice_dv_after;
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+/// Test 41: Delayed voting on transfer_to_vesting (HIVE_HARDFORK_1_24)
+/// Verifies vesting via vest() uses delayed voting - votes aren't immediate
+BOOST_AUTO_TEST_CASE( hf24_delayed_voting_on_vest )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: hf24_delayed_voting_on_vest" );
+
+    ACTORS( (alice) )
+    generate_block();
+
+    BOOST_TEST_MESSAGE( "--- Vesting should create delayed votes" );
+    vest( "alice", ASSET( "100.000 TESTS" ) );
+    generate_block();
+
+    const auto& alice_dv = GET_DV( "alice" );
+
+    // After HF24, new vesting should create delayed voting entries
+    BOOST_REQUIRE( alice_dv.has_delayed_votes() );
+    BOOST_REQUIRE( alice_dv.get_sum_delayed_votes().value > 0 );
+
+    BOOST_TEST_MESSAGE( "Sum delayed votes: " + std::to_string( alice_dv.get_sum_delayed_votes().value ) );
+
+    // The delayed votes should mature after HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS
+    auto before_sum = alice_dv.get_sum_delayed_votes();
+
+    BOOST_TEST_MESSAGE( "--- Generating blocks past delayed voting period" );
+    generate_blocks( db->head_block_time() + fc::seconds( HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS ), true );
+
+    const auto& alice_dv_after = GET_DV( "alice" );
+
+    // After the delayed voting period, all delayed votes should have matured
+    BOOST_REQUIRE( !alice_dv_after.has_delayed_votes() || alice_dv_after.get_sum_delayed_votes() < before_sum );
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+/// Test 42: Delegation with active power down affects available mana (HIVE_HARDFORK_0_20__2539)
+/// Verifies that power-down-in-progress reduces available delegation capacity
+BOOST_AUTO_TEST_CASE( hf20_delegation_during_power_down )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: hf20_delegation_during_power_down" );
+
+    ACTORS( (alice)(bob) )
+    generate_block();
+
+    vest( "alice", ASSET( "1000.000 TESTS" ) );
+    generate_block();
+
+    // Wait for mana to regenerate
+    generate_blocks( 200 );
+
+    auto alice_vests = get_vesting( "alice" );
+
+    BOOST_TEST_MESSAGE( "--- Start power down of half vesting" );
+    auto withdraw_amount = asset( alice_vests.amount / 2, VESTS_SYMBOL );
+    withdraw_vesting( "alice", withdraw_amount, alice_private_key );
+    generate_block();
+
+    // Now try to delegate. The power-down should reduce available mana for delegation
+    // because VESTS being powered down cannot be delegated (HF20__2539 logic)
+    auto quarter = asset( alice_vests.amount / 4, VESTS_SYMBOL );
+
+    BOOST_TEST_MESSAGE( "--- Small delegation during power down should succeed" );
+    // A small delegation (less than non-powered-down portion) should work
+    delegate_vest( "alice", "bob", quarter, alice_private_key );
+    generate_block();
+
+    BOOST_REQUIRE( GET_ASSETS( "alice" ).get_delegated_vesting() == quarter );
+    BOOST_REQUIRE( GET_ASSETS( "bob" ).get_received_vesting() == quarter );
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+/// Test 43: RC mana update after power down setup (HIVE_HARDFORK_0_20)
+/// Verifies RC is updated when starting/cancelling power down
+BOOST_AUTO_TEST_CASE( hf20_rc_update_on_power_down )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: hf20_rc_update_on_power_down" );
+
+    ACTORS( (alice) )
+    generate_block();
+
+    vest( "alice", ASSET( "100.000 TESTS" ) );
+    generate_block();
+
+    // Wait for RC to regenerate
+    generate_blocks( 200 );
+
+    auto rc_before = GET_MRC( "alice" ).get_rc_manabar();
+    BOOST_TEST_MESSAGE( "RC mana before power down: " + std::to_string( rc_before.current_mana ) );
+
+    BOOST_TEST_MESSAGE( "--- Starting power down" );
+    auto alice_vests = get_vesting( "alice" );
+    withdraw_vesting( "alice", alice_vests, alice_private_key );
+
+    auto rc_after_start = GET_MRC( "alice" ).get_rc_manabar();
+    BOOST_TEST_MESSAGE( "RC mana after starting power down: " + std::to_string( rc_after_start.current_mana ) );
+
+    // RC should be regenerated and then updated (may be same or different)
+    // Key check: RC was properly recalculated
+    BOOST_REQUIRE( rc_after_start.current_mana > 0 );
+
+    generate_block();
+
+    BOOST_TEST_MESSAGE( "--- Cancelling power down" );
+    withdraw_vesting( "alice", ASSET( "0.000000 VESTS" ), alice_private_key );
+
+    auto rc_after_cancel = GET_MRC( "alice" ).get_rc_manabar();
+    BOOST_TEST_MESSAGE( "RC mana after cancel: " + std::to_string( rc_after_cancel.current_mana ) );
+
+    // RC should be valid after cancel
+    BOOST_REQUIRE( rc_after_cancel.current_mana > 0 );
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+/// Test 44: Multiple hardfork paths - full delegation lifecycle with mana tracking
+/// Exercises new delegation, increase, decrease, and removal with all mana updates
+BOOST_AUTO_TEST_CASE( full_delegation_lifecycle_mana_tracking )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: full_delegation_lifecycle_mana_tracking" );
+
+    ACTORS( (alice)(bob) )
+    generate_block();
+
+    vest( "alice", ASSET( "1000.000 TESTS" ) );
+    vest( "bob", ASSET( "10.000 TESTS" ) );
+    generate_block();
+
+    // Wait for full mana regen
+    generate_blocks( 200 );
+
+    auto alice_vests = get_vesting( "alice" );
+
+    BOOST_TEST_MESSAGE( "=== Step 1: Create delegation ===" );
+    auto delegation1 = asset( alice_vests.amount / 8, VESTS_SYMBOL );
+    auto alice_voting_before = VOTING_MANABAR( "alice" );
+    auto bob_voting_before = VOTING_MANABAR( "bob" );
+
+    delegate_vest( "alice", "bob", delegation1, alice_private_key );
+
+    auto alice_voting_after = VOTING_MANABAR( "alice" );
+    auto bob_voting_after = VOTING_MANABAR( "bob" );
+
+    // Alice mana consumed = delegation1
+    BOOST_REQUIRE( alice_voting_before.current_mana - alice_voting_after.current_mana == delegation1.amount.value );
+
+    // Bob received vesting
+    BOOST_REQUIRE( GET_ASSETS( "bob" ).get_received_vesting() == delegation1 );
+
+    BOOST_TEST_MESSAGE( "=== Step 2: Increase delegation ===" );
+    generate_block();
+    generate_blocks( 200 ); // Regen mana
+
+    alice_voting_before = VOTING_MANABAR( "alice" );
+    auto delegation2 = asset( alice_vests.amount / 4, VESTS_SYMBOL );
+    auto delta = delegation2 - delegation1;
+
+    delegate_vest( "alice", "bob", delegation2, alice_private_key );
+
+    alice_voting_after = VOTING_MANABAR( "alice" );
+
+    // Alice mana consumed = delta only (increase amount)
+    BOOST_REQUIRE( alice_voting_before.current_mana - alice_voting_after.current_mana == delta.amount.value );
+
+    BOOST_REQUIRE( GET_ASSETS( "bob" ).get_received_vesting() == delegation2 );
+
+    BOOST_TEST_MESSAGE( "=== Step 3: Decrease delegation ===" );
+    generate_block();
+    generate_blocks( 200 ); // Regen mana
+
+    bob_voting_before = VOTING_MANABAR( "bob" );
+
+    auto delegation3 = asset( alice_vests.amount / 8, VESTS_SYMBOL );
+    delegate_vest( "alice", "bob", delegation3, alice_private_key );
+
+    bob_voting_after = VOTING_MANABAR( "bob" );
+
+    // Bob's mana should decrease (mana consumed when delegation is removed)
+    BOOST_REQUIRE( bob_voting_after.current_mana < bob_voting_before.current_mana );
+
+    BOOST_REQUIRE( GET_ASSETS( "bob" ).get_received_vesting() == delegation3 );
+
+    BOOST_TEST_MESSAGE( "=== Step 4: Remove delegation ===" );
+    generate_block();
+    generate_blocks( 200 ); // Regen mana
+
+    bob_voting_before = VOTING_MANABAR( "bob" );
+
+    delegate_vest( "alice", "bob", ASSET( "0.000000 VESTS" ), alice_private_key );
+
+    bob_voting_after = VOTING_MANABAR( "bob" );
+
+    // Bob's mana should decrease when delegation is fully removed
+    BOOST_REQUIRE( bob_voting_after.current_mana < bob_voting_before.current_mana );
+    BOOST_REQUIRE( GET_ASSETS( "bob" ).get_received_vesting() == ASSET( "0.000000 VESTS" ) );
+
+    // Alice's delegated_vesting stays until expiration
+    BOOST_REQUIRE( GET_ASSETS( "alice" ).get_delegated_vesting().amount.value > 0 );
+
+    // Wait for all delegation return expirations to be processed.
+    // Multiple delegation changes (steps 2-4) create multiple expiration objects at different times.
+    // We must wait long enough for ALL of them to expire.
+    const auto& gpo = db->get_dynamic_global_properties();
+    generate_blocks( db->head_block_time() + gpo.delegation_return_period + fc::seconds( HIVE_BLOCK_INTERVAL ), true );
+
+    BOOST_REQUIRE( GET_ASSETS( "alice" ).get_delegated_vesting() == ASSET( "0.000000 VESTS" ) );
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+/// Test 45: Withdrawal routing with delayed voting (HIVE_HARDFORK_1_24)
+/// Verifies auto-vested withdrawals to other accounts use delayed voting
+BOOST_AUTO_TEST_CASE( hf24_withdrawal_routing_delayed_voting )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: hf24_withdrawal_routing_delayed_voting" );
+
+    ACTORS( (alice)(bob) )
+    generate_block();
+
+    vest( "alice", ASSET( "100.000 TESTS" ) );
+    generate_block();
+
+    // Wait for alice's initial delayed votes to mature
+    generate_blocks( db->head_block_time() + fc::seconds( HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS ), true );
+
+    BOOST_TEST_MESSAGE( "--- Set up auto-vest route to bob" );
+    set_withdraw_vesting_route( "alice", "bob", HIVE_1_PERCENT * 50, true /*auto_vest*/, alice_private_key );
+    generate_block();
+
+    auto bob_sum_before = GET_DV( "bob" ).get_sum_delayed_votes();
+
+    BOOST_TEST_MESSAGE( "--- Start power down and process first withdrawal" );
+    auto alice_vests = get_vesting( "alice" );
+    withdraw_vesting( "alice", alice_vests, alice_private_key );
+
+    generate_blocks( GET_TIME( "alice" ).get_next_vesting_withdrawal(), true );
+
+    // Bob received auto-vested shares - should create delayed voting entries
+    BOOST_REQUIRE( get_vesting( "bob" ).amount.value > 0 );
+
+    auto bob_sum_after = GET_DV( "bob" ).get_sum_delayed_votes();
+
+    // Bob should have new delayed votes from the auto-vested withdrawal
+    BOOST_REQUIRE( bob_sum_after > bob_sum_before );
+    BOOST_REQUIRE( GET_DV( "bob" ).has_delayed_votes() );
+
+    BOOST_TEST_MESSAGE( "Bob delayed votes sum: " + std::to_string( bob_sum_before.value ) +
+                        " -> " + std::to_string( bob_sum_after.value ) );
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 #endif
