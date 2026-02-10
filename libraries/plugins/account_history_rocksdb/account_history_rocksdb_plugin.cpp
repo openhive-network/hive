@@ -20,6 +20,8 @@
 #include <hive/chain/external_storage/types.hpp>
 #include <hive/plugins/account_history_rocksdb/rocksdb_ah_storage_provider.hpp>
 
+#include <hive/protocol/operation_id.hpp>
+
 #include <hive/utilities/benchmark_dumper.hpp>
 #include <hive/utilities/signal.hpp>
 
@@ -222,28 +224,16 @@ public:
 
 private:
 
-  uint64_t build_next_operation_id(const rocksdb_operation_object& obj, const hive::protocol::operation& processed_op)
+  uint64_t build_next_operation_id(const rocksdb_operation_object& obj)
   {
     auto number_in_block = _provider->get_operationSeqId();
     _provider->set_operationSeqId( _provider->get_operationSeqId() + 1 );
 
-    //msb.....................lsb
-    // || block | seq | type ||
-    // ||  32b  | 24b |  8b  ||
-    constexpr auto  TYPE_ID_LIMIT = 255; // 2^8-1
-    constexpr auto NUMBER_IN_BLOCK_LIMIT = 16777215; // 2^24-1
-    FC_ASSERT(processed_op.which() <= TYPE_ID_LIMIT, "Operation type is to large to fit in 8 bits");
-    FC_ASSERT(number_in_block <= NUMBER_IN_BLOCK_LIMIT, "Operation in block number is to large to fit in 24 bits");
-    uint64_t operation_id = obj.block;
-    operation_id <<= 32;
-    operation_id |= (number_in_block << 8);
-    operation_id |= processed_op.which();
-
-    return operation_id;
+    return to_operation_id( obj.block, number_in_block );
   }
 
   template< typename T >
-  void importOperation( rocksdb_operation_object& obj, const hive::protocol::operation& processed_op, const T& impacted )
+  void importOperation( rocksdb_operation_object& obj, const T& impacted )
   {
     if(_lastTx != obj.trx_id && obj.trx_id != transaction_id_type()/*An virtual operation shouldn't increase `_txNo` counter.*/ )
     {
@@ -252,7 +242,7 @@ private:
       storeTransactionInfo(obj.trx_id, obj.block, obj.trx_in_block);
     }
 
-    obj.id = build_next_operation_id(obj, processed_op);
+    obj.id = build_next_operation_id(obj);
 
     serialize_buffer_t serializedObj;
     auto size = fc::raw::pack_size(obj);
@@ -1203,7 +1193,7 @@ void account_history_rocksdb_plugin::impl::on_pre_apply_operation(const operatio
     fc::datastream< char* > ds( obj.serialized_op.data(), size );
     fc::raw::pack( ds, n.op );
 
-    importOperation( obj, n.op, impacted );
+    importOperation( obj, impacted );
   }
   else
   {
@@ -1259,8 +1249,7 @@ void account_history_rocksdb_plugin::impl::on_irreversible_block( uint32_t block
         //  ("txs", to_string(txs)));
         rocksdb_operation_object obj(operation);
         obj.timestamp = operation.timestamp;
-        hive::protocol::operation hive_op = fc::raw::unpack_from_buffer< hive::protocol::operation >(operation.serialized_op);
-        importOperation(obj, hive_op, operation.impacted);
+        importOperation(obj, operation.impacted);
         return true; /// Allow move_to_external_storage internals to erase this object
       }
       else
