@@ -29,15 +29,6 @@
 #include <hive/chain/transaction_object.hpp>
 #include <hive/chain/witness_objects.hpp>
 
-#ifdef HIVE_ENABLE_SMT
-
-#include <hive/chain/smt_objects/smt_token_object.hpp>
-#include <hive/chain/smt_objects/account_balance_object.hpp>
-#include <hive/chain/smt_objects/nai_pool_object.hpp>
-#include <hive/chain/smt_objects/smt_token_object.hpp>
-
-#endif
-
 #include <iostream>
 #include <sstream>
 #include <unordered_map>
@@ -97,16 +88,6 @@ void do_job()
     dtds.register_new_type<hive::plugins::reputation::reputation_object>();
     dtds.register_new_type<hive::plugins::transaction_status::transaction_status_object>();
     dtds.register_new_type<hive::plugins::metadata::account_metadata_object>();
-
-    #ifdef HIVE_ENABLE_SMT
-    dtds.register_new_type<hive::chain::smt_token_object>();
-    dtds.register_new_type<hive::chain::account_regular_balance_object>();
-    dtds.register_new_type<hive::chain::account_rewards_balance_object>();
-    dtds.register_new_type<hive::chain::nai_pool_object>();
-    dtds.register_new_type<hive::chain::smt_token_emissions_object>();
-    dtds.register_new_type<hive::chain::smt_contribution_object>();
-    dtds.register_new_type<hive::chain::smt_ico_object>();
-    #endif
 
     auto end = std::chrono::steady_clock::now();
 

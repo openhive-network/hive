@@ -134,15 +134,6 @@ struct operation_exec_info
   const int64_t feed_publish_time;
   const int64_t limit_order_cancel_time;
   const int64_t witness_set_properties_time;
-#ifdef HIVE_ENABLE_SMT
-  const int64_t claim_reward_balance2_time;
-  const int64_t smt_setup_time;
-  const int64_t smt_setup_emissions_time;
-  const int64_t smt_set_setup_parameters_time;
-  const int64_t smt_set_runtime_parameters_time;
-  const int64_t smt_create_time;
-  const int64_t smt_contribute_time;
-#endif
   const int64_t create_proposal_time;
   const int64_t update_proposal_time;
   const int64_t update_proposal_votes_time;
@@ -241,15 +232,6 @@ FC_REFLECT( hive::chain::operation_exec_info,
   ( feed_publish_time )
   ( limit_order_cancel_time )
   ( witness_set_properties_time )
-#ifdef HIVE_ENABLE_SMT
-  ( claim_reward_balance2_time )
-  ( smt_setup_time )
-  ( smt_setup_emissions_time )
-  ( smt_set_setup_parameters_time )
-  ( smt_set_runtime_parameters_time )
-  ( smt_create_time )
-  ( smt_contribute_time )
-#endif
   ( create_proposal_time )
   ( update_proposal_time )
   ( update_proposal_votes_time )

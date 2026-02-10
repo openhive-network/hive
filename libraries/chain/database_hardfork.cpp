@@ -11,7 +11,6 @@
 #include <hive/chain/detail/state/reward_fund_object_multiindex.hpp>
 #include <hive/chain/witness_objects_multiindex.hpp>
 #include <hive/chain/witness_schedule.hpp>
-#include <hive/chain/smt_objects.hpp>
 
 #include <hive/chain/rc/rc_objects.hpp>
 
@@ -110,14 +109,6 @@ void database::init_hardforks()
   FC_ASSERT( HIVE_HARDFORK_1_28 == 28, "Invalid hardfork configuration" );
   _hardfork_versions.times[ HIVE_HARDFORK_1_28 ] = fc::time_point_sec( HIVE_HARDFORK_1_28_TIME );
   _hardfork_versions.versions[ HIVE_HARDFORK_1_28 ] = HIVE_HARDFORK_1_28_VERSION;
-#if defined(USE_ALTERNATE_CHAIN_ID)
-  /// put here another HF other than SMT
-#if defined(IS_TEST_NET) && defined(HIVE_ENABLE_SMT)
-  FC_ASSERT( HIVE_HARDFORK_1_29 == 29, "Invalid hardfork configuration" );
-  _hardfork_versions.times[ HIVE_HARDFORK_1_29 ] = fc::time_point_sec( HIVE_HARDFORK_1_29_TIME );
-  _hardfork_versions.versions[ HIVE_HARDFORK_1_29 ] = HIVE_HARDFORK_1_29_VERSION;
-#endif
-#endif
 }
 
 void database::process_hardforks()
@@ -519,13 +510,6 @@ void database::apply_hardfork( uint32_t hardfork )
     case HIVE_HARDFORK_1_28:
     {
       remove_proposal_votes_for_accounts_without_voting_rights();
-      break;
-    }
-    case HIVE_SMT_HARDFORK:
-    {
-#ifdef HIVE_ENABLE_SMT
-      replenish_nai_pool( *this );
-#endif
       break;
     }
     default:

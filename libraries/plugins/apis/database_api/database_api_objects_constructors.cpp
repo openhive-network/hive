@@ -15,7 +15,6 @@
 #include <hive/chain/detail/state/decline_voting_rights_request_object.hpp>
 #include <hive/chain/detail/state/reward_fund_object.hpp>
 #include <hive/chain/detail/state/recurrent_transfer_object.hpp>
-#include <hive/chain/smt_objects.hpp>
 #include <hive/chain/dhf_objects.hpp>
 #include <hive/chain/dhf_objects_multiindex.hpp>
 #include <hive/chain/transaction_object.hpp>
@@ -186,9 +185,6 @@ api_dynamic_global_property_object::api_dynamic_global_property_object( const dy
   max_recurrent_transfer_end_date( o.max_recurrent_transfer_end_date ),
   min_recurrent_transfers_recurrence( o.min_recurrent_transfers_recurrence ),
   max_open_recurrent_transfers( o.max_open_recurrent_transfers )
-#ifdef HIVE_ENABLE_SMT
-  , smt_creation_fee( o.smt_creation_fee )
-#endif
 {}
 
 
@@ -273,12 +269,6 @@ api_account_object::api_account_object( const account_object& a, const database&
     json_metadata = meta.json_metadata;
     posting_json_metadata = meta.posting_json_metadata;
   }
-
-#ifdef HIVE_ENABLE_SMT
-  const auto& by_control_account_index = db.get_index<smt_token_index>().indices().get<by_control_account>();
-  auto smt_obj_itr = by_control_account_index.find( name );
-  is_smt = smt_obj_itr != by_control_account_index.end();
-#endif
 
   if( delayed_votes_active )
     delayed_votes = vector< delayed_votes_data >{ a.delayed_votes.begin(), a.delayed_votes.end() };
@@ -424,43 +414,6 @@ api_hardfork_property_object::api_hardfork_property_object( const hardfork_prope
   for( size_t i = 0; i < n; i++ )
     processed_hardforks.push_back( h.processed_hardforks[i] );
 }
-
-#ifdef HIVE_ENABLE_SMT
-// api_smt_token_object constructor
-api_smt_token_object::api_smt_token_object( const smt_token_object& token, const database& db )
-  : token( token.copy_chain_object() ) //FIXME: exposes internal chain object as API result
-{
-  const smt_ico_object* ico = db.find< smt_ico_object, by_symbol >( token.liquid_symbol );
-  if ( ico != nullptr )
-    this->ico = ico->copy_chain_object(); //FIXME: exposes internal chain object as API result
-}
-
-// api_smt_token_emissions_object constructor
-api_smt_token_emissions_object::api_smt_token_emissions_object( const smt_token_emissions_object& o, const database& db ):
-  id( o.get_id() ),
-  symbol( o.symbol ),
-  schedule_time( o.schedule_time ),
-  emissions_unit( o.emissions_unit ),
-  interval_seconds( o.interval_seconds ),
-  interval_count( o.interval_count ),
-  lep_time( o.lep_time ),
-  rep_time( o.rep_time ),
-  lep_abs_amount( o.lep_abs_amount ),
-  rep_abs_amount( o.rep_abs_amount ),
-  lep_rel_amount_numerator( o.lep_rel_amount_numerator ),
-  rep_rel_amount_numerator( o.rep_rel_amount_numerator ),
-  rel_amount_denom_bits( o.rel_amount_denom_bits )
-{}
-
-// api_smt_contribution_object constructor
-api_smt_contribution_object::api_smt_contribution_object( const smt_contribution_object& o, const database& db ):
-  id( o.get_id() ),
-  symbol( o.symbol ),
-  contributor( o.contributor ),
-  contribution_id( o.contribution_id ),
-  contribution( o.contribution )
-{}
-#endif
 
 // Helper function for proposal status - defined in database_api_impl.hpp
 proposal_status get_proposal_status( const hive::chain::proposal_object& po, const fc::time_point_sec current_time );

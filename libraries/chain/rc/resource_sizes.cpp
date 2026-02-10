@@ -22,15 +22,11 @@ namespace hive { namespace chain {
 // when uncommented the sizes of multiindex nodes will not be calculated dynamically, but will use fixed given values;
 // this is how it should be on production; dynamic sizes should only be compared with fixed values used temporarily
 // when we plan to update state RC costs for new hardfork after some significant changes in chain objects;
-// also do not use dynamic sizes with SMT enabled configuration - we don't want to charge differently just
-// because someone built with SMTs locally (unless of course SMTs become official feature in which case
-// we should always charge with SMTs included), some tests are super sensitive to changes in RC costs
+// some tests are super sensitive to changes in RC costs
 #define USE_FIXED_SIZE
 
 #ifdef USE_FIXED_SIZE
 #define SIZE( type, fixed_value ) ( fixed_value )
-#elif defined HIVE_ENABLE_SMT
-#error "Don't calculate state costs using dynamic sizes with SMTs enabled"
 #else
 template< size_t dynamic_value, int fixed_value >
 struct compare
@@ -222,15 +218,6 @@ operation_exec_info::operation_exec_info()
   feed_publish_time( 469 + 2233 + 213 + 144 ),
   limit_order_cancel_time( 407 + 5986 + 204 + 142 ),
   witness_set_properties_time( 3986 + 4920 + 310 + 234 ),
-#ifdef HIVE_ENABLE_SMT
-  claim_reward_balance2_time( 0 ),
-  smt_setup_time( 0 ),
-  smt_setup_emissions_time( 0 ),
-  smt_set_setup_parameters_time( 0 ),
-  smt_set_runtime_parameters_time( 0 ),
-  smt_create_time( 0 ),
-  smt_contribute_time( 0 ),
-#endif
   create_proposal_time( 831 + 24323 + 5666 + 2168 ), //processing not counted since it depends on too many variables
   update_proposal_time( 820 + 11193 + 4501 + 267 ),
   update_proposal_votes_time( 503 + 12602 + 2993 + 1206 ),

@@ -23,8 +23,5 @@ void register_account_evaluators( evaluator_registry<operation>& registry );
 void register_social_evaluators( evaluator_registry<operation>& registry );
 void register_witness_evaluators( evaluator_registry<operation>& registry );
 void register_dhf_evaluators( evaluator_registry<operation>& registry );
-#ifdef HIVE_ENABLE_SMT
-void register_smt_evaluators( evaluator_registry<operation>& registry );
-#endif
 
 } } // hive::chain

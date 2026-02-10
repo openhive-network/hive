@@ -2977,7 +2977,6 @@
                                     "HIVE_DELEGATION_RETURN_PERIOD_HF20": 432000,
                                     "HIVE_DOWNVOTE_POOL_PERCENT_HF21": 2500,
                                     "HIVE_EARLY_VOTING_SECONDS_HF25": 86400,
-                                    "HIVE_ENABLE_SMT": false,
                                     "HIVE_EQUIHASH_K": 6,
                                     "HIVE_EQUIHASH_N": 140,
                                     "HIVE_FEED_HISTORY_WINDOW": 84,
@@ -7639,18 +7638,6 @@
                                 "example": {
                                     "IS_TEST_NET": true,
                                     "TESTNET_BLOCK_LIMIT": 3000000,
-                                    "SMT_MAX_VOTABLE_ASSETS": 2,
-                                    "SMT_VESTING_WITHDRAW_INTERVAL_SECONDS": 604800,
-                                    "SMT_UPVOTE_LOCKOUT": 43200,
-                                    "SMT_EMISSION_MIN_INTERVAL_SECONDS": 21600,
-                                    "SMT_EMIT_INDEFINITELY": 4294967295,
-                                    "SMT_MAX_NOMINAL_VOTES_PER_DAY": 1000,
-                                    "SMT_MAX_VOTES_PER_REGENERATION": 7000,
-                                    "SMT_DEFAULT_VOTES_PER_REGEN_PERIOD": 50,
-                                    "SMT_DEFAULT_PERCENT_CURATION_REWARDS": 2500,
-                                    "SMT_INITIAL_VESTING_PER_UNIT": 1000000,
-                                    "SMT_BALLAST_SUPPLY_PERCENT": 10,
-                                    "SMT_MAX_ICO_TIERS": 10,
                                     "HBD_SYMBOL": {
                                         "nai": "@@000000013",
                                         "decimals": 3
@@ -7847,7 +7834,6 @@
                                     },
                                     "HIVE_VIRTUAL_SCHEDULE_LAP_LENGTH": "18446744073709551615",
                                     "HIVE_VIRTUAL_SCHEDULE_LAP_LENGTH2": "340282366920938463463374607431768211455",
-                                    "HIVE_VOTES_PER_PERIOD_SMT_HF": 50,
                                     "HIVE_MAX_LIMIT_ORDER_EXPIRATION": 2419200,
                                     "HIVE_DELEGATION_RETURN_PERIOD_HF0": 3600,
                                     "HIVE_DELEGATION_RETURN_PERIOD_HF20": 432000,
@@ -16800,15 +16786,6 @@
                             "total_vesting_shares",
                             "virtual_supply"
                         ]
-                    },
-                    {
-                        "type": "object",
-                        "properties": {
-                            "smt_creation_fee": {
-                                "$ref": "#/components/schemas/balance",
-                                "description": "The fee required to create a Smart Media Token (SMT)."
-                            }
-                        }
                     }
                 ]
             },
@@ -16873,15 +16850,6 @@
                             "total_vesting_shares",
                             "virtual_supply"
                         ]
-                    },
-                    {
-                        "type": "object",
-                        "properties": {
-                            "smt_creation_fee": {
-                                "type": "string",
-                                "description": "The fee required to create a Smart Media Token (SMT)."
-                            }
-                        }
                     }
                 ]
             },
@@ -17349,41 +17317,6 @@
                         "$ref": "#/components/schemas/hive_int",
                         "example": 3000,
                         "description": "Time taken to process proof-of-work version 2 operations in microseconds."
-                    },
-                    "claim_reward_balance2_time": {
-                        "$ref": "#/components/schemas/hive_int",
-                        "example": 900,
-                        "description": "Time taken to process claim reward balance version 2 operations in microseconds."
-                    },
-                    "smt_setup_time": {
-                        "$ref": "#/components/schemas/hive_int",
-                        "example": 4000,
-                        "description": "Time taken to process SMT setup operations in microseconds."
-                    },
-                    "smt_setup_emissions_time": {
-                        "$ref": "#/components/schemas/hive_int",
-                        "example": 4500,
-                        "description": "Time taken to process SMT setup emissions operations in microseconds."
-                    },
-                    "smt_set_setup_parameters_time": {
-                        "$ref": "#/components/schemas/hive_int",
-                        "example": 3500,
-                        "description": "Time taken to process SMT set setup parameters operations in microseconds."
-                    },
-                    "smt_set_runtime_parameters_time": {
-                        "$ref": "#/components/schemas/hive_int",
-                        "example": 3000,
-                        "description": "Time taken to process SMT set runtime parameters operations in microseconds."
-                    },
-                    "smt_create_time": {
-                        "$ref": "#/components/schemas/hive_int",
-                        "example": 5000,
-                        "description": "Time taken to process SMT create operations in microseconds."
-                    },
-                    "smt_contribute_time": {
-                        "$ref": "#/components/schemas/hive_int",
-                        "example": 6000,
-                        "description": "Time taken to process SMT contribute operations in microseconds."
                     }
                 },
                 "required": [
@@ -18765,67 +18698,15 @@
                         "$ref": "#/components/schemas/hive_int",
                         "description": "The initial vesting price for HIVE."
                     },
-                    "HIVE_ENABLE_SMT": {
-                        "type": "boolean",
-                        "description": "Flag to enable SMT (Simple Mining Token)."
-                    },
                     "IS_TEST_NET": {
                         "type": "boolean",
                         "description": "Indicates if the node is running on a testnet."
-                    },
-                    "SMT_MAX_VOTABLE_ASSETS": {
-                        "type": "integer",
-                        "description": "Max SMT assets that can be voted per post."
-                    },
-                    "SMT_VESTING_WITHDRAW_INTERVAL_SECONDS": {
-                        "type": "integer",
-                        "description": "SMT vesting withdrawal interval in seconds."
-                    },
-                    "SMT_UPVOTE_LOCKOUT": {
-                        "type": "integer",
-                        "description": "Lockout period for SMT upvotes in seconds."
-                    },
-                    "SMT_EMISSION_MIN_INTERVAL_SECONDS": {
-                        "type": "integer",
-                        "description": "Minimum interval between SMT emissions."
-                    },
-                    "SMT_EMIT_INDEFINITELY": {
-                        "type": "integer",
-                        "description": "Value for indefinite SMT emission."
-                    },
-                    "SMT_MAX_NOMINAL_VOTES_PER_DAY": {
-                        "type": "integer",
-                        "description": "Max nominal SMT votes per day."
-                    },
-                    "SMT_MAX_VOTES_PER_REGENERATION": {
-                        "type": "integer",
-                        "description": "Max SMT votes per regeneration period."
-                    },
-                    "SMT_DEFAULT_VOTES_PER_REGEN_PERIOD": {
-                        "type": "integer",
-                        "description": "Default SMT votes per regeneration period."
-                    },
-                    "SMT_DEFAULT_PERCENT_CURATION_REWARDS": {
-                        "type": "integer",
-                        "description": "Default curation rewards percent for SMT."
                     }
                 }
             },
             "config_template": {
                 "type": "object",
                 "properties": {
-                    "SMT_INITIAL_VESTING_PER_UNIT": {
-                        "type": "integer",
-                        "description": "Initial vesting per unit for SMT."
-                    },
-                    "SMT_BALLAST_SUPPLY_PERCENT": {
-                        "type": "integer",
-                        "description": "Ballast supply percent for SMT."
-                    },
-                    "SMT_MAX_ICO_TIERS": {
-                        "type": "integer",
-                        "description": "Max ICO tiers for SMT."
-                    },
                     "HIVE_INITIAL_VOTE_POWER_RATE": {
                         "type": "integer",
                         "description": "Initial vote power regeneration rate."
@@ -19422,10 +19303,6 @@
                         "$ref": "#/components/schemas/hive_int",
                         "description": "Virtual schedule lap length 2."
                     },
-                    "HIVE_VOTES_PER_PERIOD_SMT_HF": {
-                        "type": "integer",
-                        "description": "Votes per period for SMT HF."
-                    },
                     "HIVE_MAX_LIMIT_ORDER_EXPIRATION": {
                         "type": "integer",
                         "description": "Max limit order expiration (seconds)."
@@ -19729,9 +19606,6 @@
                 },
                 "required": [
                     "TESTNET_BLOCK_LIMIT",
-                    "SMT_INITIAL_VESTING_PER_UNIT",
-                    "SMT_BALLAST_SUPPLY_PERCENT",
-                    "SMT_MAX_ICO_TIERS",
                     "HIVE_INITIAL_VOTE_POWER_RATE",
                     "HIVE_REDUCED_VOTE_POWER_RATE",
                     "HIVE_100_PERCENT",
@@ -19881,7 +19755,6 @@
                     "HIVE_VOTING_MANA_REGENERATION_SECONDS",
                     "HIVE_VIRTUAL_SCHEDULE_LAP_LENGTH",
                     "HIVE_VIRTUAL_SCHEDULE_LAP_LENGTH2",
-                    "HIVE_VOTES_PER_PERIOD_SMT_HF",
                     "HIVE_MAX_LIMIT_ORDER_EXPIRATION",
                     "HIVE_DELEGATION_RETURN_PERIOD_HF0",
                     "HIVE_DELEGATION_RETURN_PERIOD_HF20",
