@@ -20,10 +20,6 @@ namespace hive { namespace chain {
   using chainbase::t_pair;
   using hive::protocol::asset;
   using hive::protocol::HBD_asset;
-#ifdef HIVE_ENABLE_SMT
-  using hive::protocol::asset_symbol_type;
-  using protocol::votable_asset_info;
-#endif
 
   class comment_object : public object< comment_object_type, comment_object, std::false_type /* no dynamic alloc */, std::true_type /* enable no undo remove */>
   {
@@ -121,9 +117,6 @@ namespace hive { namespace chain {
         uint16_t        weight;
       };
       using t_beneficiaries = t_vector< stored_beneficiary_route_type >;
-#ifdef HIVE_ENABLE_SMT
-      using t_votable_assets = t_vector< t_pair< asset_symbol_type, votable_asset_info > >;
-#endif
 
       template< typename Allocator >
       comment_cashout_object( allocator< Allocator > a, uint64_t _id,
@@ -132,9 +125,6 @@ namespace hive { namespace chain {
       : id( _comment.get_id() ), //note that it is possible because relation is 1->{0,1} so we can share id
         permlink( a ), created( _creation_time ),
         cashout_time( _cashout_time ), beneficiaries( a )
-#ifdef HIVE_ENABLE_SMT
-        , allowed_vote_assets( a )
-#endif
       {
         init( _author, _permlink );
       }
@@ -267,19 +257,10 @@ namespace hive { namespace chain {
         size_t size = 0;
         size += permlink.capacity() * sizeof( decltype( permlink )::value_type );
         size += beneficiaries.capacity() * sizeof( decltype( beneficiaries )::value_type );
-#ifdef HIVE_ENABLE_SMT
-        size += allowed_vote_assets.capacity() * sizeof( decltype( allowed_vote_assets )::value_type );
-#endif
         return size;
       }
 
-#ifdef HIVE_ENABLE_SMT
-      t_votable_assets  allowed_vote_assets;
-
-      CHAINBASE_UNPACK_CONSTRUCTOR(comment_cashout_object, (permlink)(beneficiaries)(allowed_vote_assets));
-#else
       CHAINBASE_UNPACK_CONSTRUCTOR(comment_cashout_object, (permlink)(beneficiaries));
-#endif
   };
 
   /*
@@ -453,9 +434,6 @@ FC_REFLECT( hive::chain::comment_cashout_object,
           (percent_hbd)
           (allow_votes)(allow_curation_rewards)(was_voted_on)
           (beneficiaries)
-#ifdef HIVE_ENABLE_SMT
-          (allowed_vote_assets)
-#endif
         )
 
 FC_REFLECT( hive::chain::comment_cashout_ex_object,

@@ -20,7 +20,6 @@
 #include <hive/chain/db_with.hpp>
 #include <hive/chain/irreversible_block_data.hpp>
 #include <hive/chain/dhf_objects.hpp>
-#include <hive/chain/smt_objects.hpp>
 #include <hive/chain/detail/state/feed_history_object_multiindex.hpp>
 #include <hive/chain/detail/state/reward_fund_object_multiindex.hpp>
 #include <hive/chain/transaction_object_multiindex.hpp>
@@ -991,37 +990,6 @@ asset database::adjust_account_vesting_balance(const account_object& to_account,
 {
   try
   {
-#ifdef HIVE_ENABLE_SMT
-    if( liquid.symbol.space() == asset_symbol_type::smt_nai_space )
-    {
-      asset new_vesting = calculate_vesting( *this, liquid, to_reward_balance );
-      before_vesting_callback( new_vesting );
-      // Add new vesting to owner's balance.
-      if( to_reward_balance )
-        adjust_reward_balance( to_account, liquid, new_vesting );
-      else
-        adjust_balance( to_account, new_vesting );
-      // Update global vesting pool numbers.
-      const auto& smt = get< smt_token_object, by_symbol >( liquid.symbol );
-      modify( smt, [&]( smt_token_object& smt_object )
-      {
-        if( to_reward_balance )
-        {
-          smt_object.pending_rewarded_vesting_shares += new_vesting.amount;
-          smt_object.pending_rewarded_vesting_smt += liquid.amount;
-        }
-        else
-        {
-          smt_object.total_vesting_fund_smt += liquid.amount;
-          smt_object.total_vesting_shares += new_vesting.amount;
-        }
-      } );
-
-      // NOTE that SMT vesting does not impact witness voting.
-
-      return new_vesting;
-    }
-#endif
     asset new_vesting = calculate_vesting( *this, liquid, to_reward_balance );
     before_vesting_callback( new_vesting );
     // Add new vesting to owner's balance.
@@ -1069,7 +1037,7 @@ asset database::adjust_account_vesting_balance(const account_object& to_account,
 
 /**
   * @param to_account - the account to receive the new vesting shares
-  * @param liquid     - HIVE or liquid SMT to be converted to vesting shares
+  * @param liquid     - HIVE to be converted to vesting shares
   */
 asset database::create_vesting( const account_object& to_account, const asset& liquid, bool to_reward_balance )
 {
@@ -3162,34 +3130,6 @@ void database::clear_expired_delegations()
     itr = delegations_by_exp.begin();
   } FC_CAPTURE_AND_RETHROW( (vop) ) }
 }
-#ifdef HIVE_ENABLE_SMT
-template< typename smt_balance_object_type, typename modifier_type >
-void database::adjust_smt_balance( const account_object& owner, const asset& delta, modifier_type&& modifier )
-{
-  asset_symbol_type liquid_symbol = delta.symbol.is_vesting() ? delta.symbol.get_paired_symbol() : delta.symbol;
-  const smt_balance_object_type* bo = find< smt_balance_object_type, by_owner_liquid_symbol >( boost::make_tuple( owner.get_id(), liquid_symbol ) );
-  // Note that SMT related code, being post-20-hf needs no hf-guard to do balance checks.
-  if( bo == nullptr )
-  {
-    // No balance object related to the SMT means '0' balance. Check delta to avoid creation of negative balance.
-    FC_ASSERT( delta.amount.value >= 0, "Insufficient SMT ${smt} funds", ("smt", delta.symbol) );
-    // No need to create object with '0' balance (see comment above).
-    if( delta.amount.value == 0 )
-      return;
-
-    auto& new_balance_object = create< smt_balance_object_type >( owner, liquid_symbol );
-    bo = &new_balance_object;
-  }
-
-  modify( *bo, std::forward<modifier_type>( modifier ) );
-  if( bo->is_empty() )
-  {
-    // Zero balance is the same as non object balance at all.
-    // Remove balance object if both liquid and vesting balances are zero.
-    remove( *bo );
-  }
-}
-#endif
 
 void database::modify_balance( const account_object& a, const asset& delta )
 {
@@ -3300,32 +3240,7 @@ void database::adjust_balance( const account_object& a, const asset& delta )
         ("acc", a.get_name())("r", delta)("a", available) );
   }
 
-#ifdef HIVE_ENABLE_SMT
-  if( delta.symbol.space() == asset_symbol_type::smt_nai_space )
-  {
-    // No account object modification for SMT balance, hence separate handling here.
-    // Note that SMT related code, being post-20-hf needs no hf-guard to do balance checks.
-    adjust_smt_balance< account_regular_balance_object >( a, delta, [&]( account_regular_balance_object& bo )
-    {
-      if( delta.symbol.is_vesting() )
-      {
-        bo.vesting += delta;
-        // Check result to avoid negative balance storing.
-        FC_ASSERT( bo.vesting.amount >= 0, "Insufficient SMT ${smt} funds", ( "smt", delta.symbol ) ); //ABW: redundant with check at start
-      }
-      else
-      {
-        bo.liquid += delta;
-        // Check result to avoid negative balance storing.
-        FC_ASSERT( bo.liquid.amount >= 0, "Insufficient SMT ${smt} funds", ( "smt", delta.symbol ) ); //ABW: redundant with check at start
-      }
-    } );
-  }
-  else
-#endif
-  {
-    modify_balance( a, delta );
-  }
+  modify_balance( a, delta );
 }
 
 void database::adjust_savings_balance( const account_object& a, const asset& delta )
@@ -3376,51 +3291,11 @@ void database::adjust_reward_balance( const account_object& a, const asset& valu
 {
   FC_ASSERT( value_delta.symbol.is_vesting() == false && share_delta.symbol.is_vesting() );
 
-#ifdef HIVE_ENABLE_SMT
-  // No account object modification for SMT balance, hence separate handling here.
-  // Note that SMT related code, being post-20-hf needs no hf-guard to do balance checks.
-  if( value_delta.symbol.space() == asset_symbol_type::smt_nai_space )
-  {
-    adjust_smt_balance< account_rewards_balance_object >( a, value_delta, [&]( account_rewards_balance_object& bo )
-    {
-      if( share_delta.amount.value != 0 )
-      {
-        bo.pending_vesting_value += value_delta;
-        bo.pending_vesting_shares += share_delta;
-        // Check result to avoid negative balance storing.
-        FC_ASSERT( bo.pending_vesting_value.amount >= 0, "Insufficient SMT ${smt} funds", ( "smt", value_delta.symbol ) );
-      }
-      else
-      {
-        bo.pending_liquid += value_delta;
-        // Check result to avoid negative balance storing.
-        FC_ASSERT( bo.pending_liquid.amount >= 0, "Insufficient SMT ${smt} funds", ( "smt", value_delta.symbol ) );
-      }
-    } );
-  }
-  else
-#endif
-  {
-    modify_reward_balance( a, value_delta, share_delta );
-  }
+  modify_reward_balance( a, value_delta, share_delta );
 }
 
 void database::adjust_supply( const asset& delta, bool adjust_vesting )
 {
-#ifdef HIVE_ENABLE_SMT
-  if( delta.symbol.space() == asset_symbol_type::smt_nai_space )
-  {
-    const auto& smt = get< smt_token_object, by_symbol >( delta.symbol );
-    auto smt_new_supply = smt.current_supply + delta.amount;
-    FC_ASSERT( smt_new_supply >= 0 );
-    modify( smt, [smt_new_supply]( smt_token_object& smt )
-    {
-      smt.current_supply = smt_new_supply;
-    });
-    return;
-  }
-#endif
-
   const auto& props = get_dynamic_global_properties();
   if( props.head_block_number < HIVE_BLOCKS_PER_DAY*7 )
     adjust_vesting = false;
@@ -3454,27 +3329,8 @@ asset database::get_balance( const account_object& a, asset_symbol_type symbol )
   }
   else
   {
-#ifndef HIVE_ENABLE_SMT
     FC_ASSERT( symbol.asset_num == HIVE_ASSET_NUM_HBD, "Invalid symbol: ${s}", ("s", symbol) );
     return a.get_hbd_balance();
-#else
-    if( symbol.asset_num == HIVE_ASSET_NUM_HBD )
-      return a.get_hbd_balance();
-    else
-    {
-      FC_ASSERT( symbol.space() == asset_symbol_type::smt_nai_space, "Invalid symbol: ${s}", ("s", symbol) );
-      auto key = boost::make_tuple( a.get_id(), symbol.is_vesting() ? symbol.get_paired_symbol() : symbol );
-      const account_regular_balance_object* arbo = find< account_regular_balance_object, by_owner_liquid_symbol >( key );
-      if( arbo == nullptr )
-      {
-        return asset(0, symbol);
-      }
-      else
-      {
-        return symbol.is_vesting() ? arbo->vesting : arbo->liquid;
-      }
-    }
-#endif
   }
 }
 
@@ -3515,7 +3371,6 @@ void database::validate_invariants()const
     uint64_t escrow_no = 0;
     uint64_t withdrawal_no = 0;
     uint64_t reward_fund_no = 0;
-    uint64_t contribution_no = 0;
 
     auto& gpo = get_dynamic_global_properties();
 
@@ -3560,16 +3415,6 @@ void database::validate_invariants()const
       ++reward_fund_no;
     }
 
-#ifdef HIVE_ENABLE_SMT
-    const auto& smt_contribution_idx = get_index< smt_contribution_index, by_id >();
-
-    for ( auto itr = smt_contribution_idx.begin(); itr != smt_contribution_idx.end(); ++itr )
-    {
-      total_supply += itr->contribution;
-      ++contribution_no;
-    }
-#endif
-
     total_supply += gpo.get_total_vesting_fund_hive() + gpo.get_total_reward_fund_hive() + gpo.get_pending_rewarded_vesting_hive();
 
     FC_ASSERT( gpo.current_supply == total_supply, "", ("gpo.current_supply",gpo.current_supply)("total_supply",total_supply) );
@@ -3586,8 +3431,8 @@ void database::validate_invariants()const
     }
 
     ilog( "validate_invariants @${b}:", ( "b", head_block_num() ) );
-    ilog( "successful scan of ${p} witnesses, ${a} accounts, ${c} convert requests, ${cc} collateralized convert requests, ${o} limit orders, ${e} escrow transfers, ${w} saving withdrawals, ${r} reward funds and ${s} SMT contributions.",
-      ( "p", witness_no )( "a", account_no )( "c", convert_no )( "cc", collateralized_convert_no )( "o", order_no )( "e", escrow_no )( "w", withdrawal_no )( "r", reward_fund_no )( "s", contribution_no ) );
+    ilog( "successful scan of ${p} witnesses, ${a} accounts, ${c} convert requests, ${cc} collateralized convert requests, ${o} limit orders, ${e} escrow transfers, ${w} saving withdrawals and ${r} reward funds.",
+      ( "p", witness_no )( "a", account_no )( "c", convert_no )( "cc", collateralized_convert_no )( "o", order_no )( "e", escrow_no )( "w", withdrawal_no )( "r", reward_fund_no ) );
     ilog( "HIVE supply: ${h}", ( "h", gpo.current_supply.amount.value ) );
     ilog( "HBD supply: ${s} ( including ${i} initial )", ( "s", gpo.get_current_hbd_supply().amount.value )( "i", gpo.init_hbd_supply.amount.value ) );
     ilog( "virtual supply (HIVE): ${w}", ( "w", gpo.virtual_supply.amount.value ) );
@@ -3596,106 +3441,6 @@ void database::validate_invariants()const
   FC_CAPTURE_LOG_AND_RETHROW( (head_block_num()) );
 }
 
-#ifdef HIVE_ENABLE_SMT
-
-namespace {
-  template <typename index_type, typename lambda>
-  void add_from_balance_index(const index_type& balance_idx, lambda callback )
-  {
-    auto it = balance_idx.begin();
-    auto end = balance_idx.end();
-    for( ; it != end; ++it )
-    {
-      const auto& balance = *it;
-      callback( balance );
-    }
-  }
-}
-
-/**
-  * SMT version of validate_invariants.
-  */
-void database::validate_smt_invariants()const
-{
-  try
-  {
-    // Get total balances.
-    typedef std::map< asset_symbol_type, TCombinedBalance > TCombinedSupplyMap;
-    TCombinedSupplyMap theMap;
-
-    // - Process regular balances, collecting SMT counterparts of 'balance' & 'vesting_shares'.
-    const auto& balance_idx = get_index< account_regular_balance_index, by_id >();
-    add_from_balance_index( balance_idx, [ &theMap ] ( const account_regular_balance_object& regular )
-    {
-      asset zero_liquid = asset( 0, regular.liquid.symbol );
-      asset zero_vesting = asset( 0, regular.vesting.symbol );
-      auto insertInfo = theMap.emplace( regular.liquid.symbol,
-        TCombinedBalance( { regular.liquid, regular.vesting, zero_liquid, zero_vesting, zero_liquid } ) );
-      if( insertInfo.second == false )
-        {
-        TCombinedBalance& existing_balance = insertInfo.first->second;
-        existing_balance.liquid += regular.liquid;
-        existing_balance.vesting += regular.vesting;
-        }
-    });
-
-    // - Process reward balances, collecting SMT counterparts of 'reward_hive_balance', 'reward_vesting_balance' & 'reward_vesting_hive'.
-    const auto& rewards_balance_idx = get_index< account_rewards_balance_index, by_id >();
-    add_from_balance_index( rewards_balance_idx, [ &theMap ] ( const account_rewards_balance_object& rewards )
-    {
-      asset zero_liquid = asset( 0, rewards.pending_vesting_value.symbol );
-      asset zero_vesting = asset( 0, rewards.pending_vesting_shares.symbol );
-      auto insertInfo = theMap.emplace( rewards.pending_liquid.symbol, TCombinedBalance( { zero_liquid, zero_vesting,
-        rewards.pending_liquid, rewards.pending_vesting_shares, rewards.pending_vesting_value } ) );
-      if( insertInfo.second == false )
-        {
-        TCombinedBalance& existing_balance = insertInfo.first->second;
-        existing_balance.pending_liquid += rewards.pending_liquid;
-        existing_balance.pending_vesting_shares += rewards.pending_vesting_shares;
-        existing_balance.pending_vesting_value += rewards.pending_vesting_value;
-        }
-    });
-
-    // - Market orders
-    get_limit_order_smt_totals( theMap );
-
-    // - Reward funds
-FC_TODO( "Add reward_fund_object iteration here once they support SMTs." )
-
-    // - Escrow & savings - no support of SMT is expected.
-
-    // Do the verification of total balances.
-    auto itr = get_index< smt_token_index, by_id >().begin();
-    auto end = get_index< smt_token_index, by_id >().end();
-    for( ; itr != end; ++itr )
-    {
-      const smt_token_object& smt = *itr;
-      asset_symbol_type vesting_symbol = smt.liquid_symbol.get_paired_symbol();
-      auto totalIt = theMap.find( smt.liquid_symbol );
-      // Check liquid SMT supply.
-      asset total_liquid_supply = totalIt == theMap.end() ? asset(0, smt.liquid_symbol) :
-        ( totalIt->second.liquid + totalIt->second.pending_liquid );
-      total_liquid_supply += asset( smt.total_vesting_fund_smt, smt.liquid_symbol )
-                    /*+ gpo.get_total_reward_fund_hive() */
-                    + asset( smt.pending_rewarded_vesting_smt, smt.liquid_symbol );
-FC_TODO( "Supplement ^ once SMT rewards are implemented" )
-      FC_ASSERT( asset(smt.current_supply, smt.liquid_symbol) == total_liquid_supply,
-              "", ("smt current_supply",smt.current_supply)("total_liquid_supply",total_liquid_supply) );
-      // Check vesting SMT supply.
-      asset total_vesting_supply = totalIt == theMap.end() ? asset(0, vesting_symbol) :
-        ( totalIt->second.vesting + totalIt->second.pending_vesting_shares );
-      asset smt_vesting_supply = asset(smt.total_vesting_shares + smt.pending_rewarded_vesting_shares, vesting_symbol);
-      FC_ASSERT( smt_vesting_supply == total_vesting_supply,
-              "", ("smt vesting supply",smt_vesting_supply)("total_vesting_supply",total_vesting_supply) );
-      // Check pending_vesting_value
-      asset pending_vesting_value = totalIt == theMap.end() ? asset(0, smt.liquid_symbol) : totalIt->second.pending_vesting_value;
-      FC_ASSERT( asset(smt.pending_rewarded_vesting_smt, smt.liquid_symbol) == pending_vesting_value, "",
-        ("smt pending_rewarded_vesting_smt", smt.pending_rewarded_vesting_smt)("pending_vesting_value", pending_vesting_value));
-    }
-  }
-  FC_CAPTURE_LOG_AND_RETHROW( (head_block_num()) );
-}
-#endif
 void database::remove_expired_governance_votes()
 {
   if (!has_hardfork(HIVE_HARDFORK_1_25))

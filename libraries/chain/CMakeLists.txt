@@ -1,4 +1,4 @@
-file(GLOB HEADERS RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "include/hive/chain/*.hpp" "include/hive/chain/util/*.hpp" "include/hive/chain/smt_objects/*.hpp" "include/hive/chain/dhf_objects/*.hpp")
+file(GLOB HEADERS RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "include/hive/chain/*.hpp" "include/hive/chain/util/*.hpp" "include/hive/chain/dhf_objects/*.hpp")
 
 if( NOT DEFINED SKIP_COMPRESSION_DICTIONARIES )
   if( IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/compression_dictionaries"
@@ -27,7 +27,6 @@ set( SOURCES
              database_recovery.cpp
              database_market.cpp
              database_delegation.cpp
-             database_smt.cpp
              database_dhf.cpp
              database_rc_core.cpp
              database_rc_delegation.cpp
@@ -36,11 +35,8 @@ set( SOURCES
              full_transaction.cpp
              blockchain_worker_thread_pool.cpp
 
-             smt_evaluator.cpp
              dhf_evaluator.cpp
 
-             smt_objects/smt_market_maker.cpp
-             smt_objects/nai_pool.cpp
              # hive_evaluator split into multiple files for faster parallel compilation
              hive_evaluator.cpp
              hive_evaluator_transfer.cpp
@@ -73,7 +69,6 @@ set( SOURCES
              util/reward.cpp
              util/extractors.cpp
              util/advanced_benchmark_dumper.cpp
-             util/smt_token.cpp
              util/decoded_types_data_storage.cpp
              util/dhf_processor.cpp
              util/dhf_helper.cpp

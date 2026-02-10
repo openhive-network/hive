@@ -123,12 +123,6 @@ namespace hive { namespace protocol {
   {
     typedef void result_type;
 
-#ifdef HIVE_ENABLE_SMT
-    void operator()( const allowed_vote_assets& va) const
-    {
-      va.validate();
-    }
-#endif
     void operator()( const comment_payout_beneficiaries& cpb ) const
     {
       cpb.validate();
@@ -223,9 +217,7 @@ namespace hive { namespace protocol {
   void transfer_to_vesting_operation::validate() const
   {
     validate_account_name( from );
-    FC_ASSERT( amount.symbol == HIVE_SYMBOL ||
-            ( amount.symbol.space() == asset_symbol_type::smt_nai_space && amount.symbol.is_vesting() == false ),
-            "Amount must be HIVE or SMT liquid" );
+    FC_ASSERT( amount.symbol == HIVE_SYMBOL, "Amount must be HIVE" );
     if ( to != account_name_type() ) validate_account_name( to );
     FC_ASSERT( amount.amount > 0 && "Must transfer a nonzero amount" );
   }
@@ -233,7 +225,7 @@ namespace hive { namespace protocol {
   void withdraw_vesting_operation::validate() const
   {
     validate_account_name( account );
-    FC_ASSERT( is_asset_type( vesting_shares, VESTS_SYMBOL), "Amount must be VESTS"  );
+    FC_ASSERT( is_asset_type( vesting_shares, VESTS_SYMBOL ) && "Amount to withdraw must be VESTS" );
   }
 
   void set_withdraw_vesting_route_operation::validate() const
@@ -551,7 +543,7 @@ namespace hive { namespace protocol {
               is_asset_type( amount_to_sell, HIVE_SYMBOL )
               && min_to_receive.symbol.space() == asset_symbol_type::smt_nai_space
             ),
-          "Limit order must be for the HIVE:HBD or SMT:(HIVE/HBD) market" );
+          "Limit order must be for the HIVE:HBD market" );
 
     price( amount_to_sell, min_to_receive ).validate();
   }
@@ -573,7 +565,7 @@ namespace hive { namespace protocol {
               is_asset_type( amount_to_sell, HIVE_SYMBOL )
               && exchange_rate.quote.symbol.space() == asset_symbol_type::smt_nai_space
             ),
-          "Limit order must be for the HIVE:HBD or SMT:(HIVE/HBD) market" );
+          "Limit order must be for the HIVE:HBD market" );
 
     FC_ASSERT( ( amount_to_sell * exchange_rate ).amount > 0, "Amount to sell cannot round to 0 when traded" );
   }
@@ -727,26 +719,6 @@ namespace hive { namespace protocol {
     FC_ASSERT( reward_vests.amount >= 0, "Cannot claim a negative amount" );
     FC_ASSERT( reward_hive.amount > 0 || reward_hbd.amount > 0 || reward_vests.amount > 0, "Must claim something." );
   }
-
-#ifdef HIVE_ENABLE_SMT
-  void claim_reward_balance2_operation::validate()const
-  {
-    validate_account_name( account );
-    FC_ASSERT( reward_tokens.empty() == false, "Must claim something." );
-    FC_ASSERT( reward_tokens.begin()->amount >= 0, "Cannot claim a negative amount" );
-    bool is_substantial_reward = reward_tokens.begin()->amount > 0;
-    for( auto itl = reward_tokens.begin(), itr = itl+1; itr != reward_tokens.end(); ++itl, ++itr )
-    {
-      FC_ASSERT( itl->symbol.to_nai() <= itr->symbol.to_nai(),
-              "Reward tokens have not been inserted in ascending order." );
-      FC_ASSERT( itl->symbol.to_nai() != itr->symbol.to_nai(),
-              "Duplicate symbol ${s} inserted into claim reward operation container.", ("s", itl->symbol) );
-      FC_ASSERT( itr->amount >= 0, "Cannot claim a negative amount" );
-      is_substantial_reward |= itr->amount > 0;
-    }
-    FC_ASSERT( is_substantial_reward, "Must claim something." );
-  }
-#endif
 
   void delegate_vesting_shares_operation::validate()const
   {

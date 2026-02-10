@@ -170,21 +170,11 @@ do {                                                              \
 #define ACTORS_EXT(object, names) BOOST_PP_SEQ_FOR_EACH(ACTORS_EXT_IMPL, object, names) \
   object.validate_database();
 
-#define SMT_SYMBOL( name, decimal_places, db ) \
-  asset_symbol_type name ## _symbol = get_new_smt_symbol( decimal_places, db );
-
 #define ASSET( s ) \
   hive::protocol::legacy_asset::from_string( s ).to_asset()
 
 #define ISSUE_FUNDS( account_name, _asset ) \
   issue_funds( account_name, _asset ); \
-  generate_block();
-
-// To be incorporated into fund() method if deemed appropriate.
-// 'SMT' would be dropped from the name then.
-#define FUND_SMT_REWARDS( account_name, amount ) \
-  db->adjust_reward_balance( account_name, amount ); \
-  db->adjust_supply( amount ); \
   generate_block();
 
 #define OP2TX(OP,TX) \

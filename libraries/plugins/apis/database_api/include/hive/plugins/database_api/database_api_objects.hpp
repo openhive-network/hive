@@ -16,10 +16,6 @@
 
 #include <hive/plugins/metadata/metadata_plugin.hpp>
 
-#ifdef HIVE_ENABLE_SMT
-#include <hive/chain/smt_objects/smt_token_object.hpp>
-#endif
-
 #include <fc/optional.hpp>
 #include <fc/container/flat.hpp>
 
@@ -51,10 +47,6 @@ namespace hive { namespace chain {
   class witness_object;
   class witness_schedule_object;
   class hardfork_property_object;
-  class smt_token_object;
-  class smt_ico_object;
-  class smt_token_emissions_object;
-  class smt_contribution_object;
   class proposal_object;
   class proposal_vote_object;
   class recurrent_transfer_object;
@@ -245,9 +237,6 @@ struct api_dynamic_global_property_object
   uint16_t                        max_recurrent_transfer_end_date = HIVE_MAX_RECURRENT_TRANSFER_END_DATE;
   uint8_t                        min_recurrent_transfers_recurrence = HIVE_MIN_RECURRENT_TRANSFERS_RECURRENCE;
   uint16_t                        max_open_recurrent_transfers = HIVE_MAX_OPEN_RECURRENT_TRANSFERS;
-#ifdef HIVE_ENABLE_SMT
-  asset                           smt_creation_fee;
-#endif
 };
 
 struct api_change_recovery_account_request_object
@@ -371,7 +360,7 @@ struct api_account_object
   share_type        pending_claimed_accounts = 0;
   uint16_t          open_recurrent_transfers = 0;
 
-  bool              is_smt = false;
+  bool              is_smt = false; // always false
 
   fc::optional< vector< delayed_votes_data > >  delayed_votes;
   time_point_sec governance_vote_expiration_ts;
@@ -554,48 +543,6 @@ struct api_hardfork_property_object
   fc::time_point_sec            next_hardfork_time;
 };
 
-#ifdef HIVE_ENABLE_SMT
-
-struct api_smt_token_object
-{
-  api_smt_token_object( const smt_token_object& token, const database& db );
-
-  smt_token_object                token;
-  fc::optional< smt_ico_object >  ico;
-};
-
-struct api_smt_token_emissions_object
-{
-  api_smt_token_emissions_object( const smt_token_emissions_object& o, const database& db );
-
-  smt_token_emissions_id_type           id;
-  asset_symbol_type                     symbol;
-  time_point_sec                        schedule_time;
-  hive::protocol::smt_emissions_unit    emissions_unit;
-  uint32_t                              interval_seconds;
-  uint32_t                              interval_count;
-  time_point_sec                        lep_time;
-  time_point_sec                        rep_time;
-  asset                                 lep_abs_amount;
-  asset                                 rep_abs_amount;
-  uint32_t                              lep_rel_amount_numerator;
-  uint32_t                              rep_rel_amount_numerator;
-  uint8_t                               rel_amount_denom_bits;
-};
-
-struct api_smt_contribution_object
-{
-  api_smt_contribution_object( const smt_contribution_object& o, const database& db );
-
-  smt_contribution_id_type id;
-  asset_symbol_type        symbol;
-  account_name_type        contributor;
-  uint32_t                 contribution_id;
-  asset                    contribution;
-};
-
-#endif
-
 enum proposal_status
 {
   all,
@@ -756,9 +703,6 @@ FC_REFLECT( hive::plugins::database_api::api_dynamic_global_property_object,
           (dhf_interval_ledger)(downvote_pool_percent)(current_remove_threshold)(early_voting_seconds)(mid_voting_seconds)
           (max_consecutive_recurrent_transfer_failures)(max_recurrent_transfer_end_date)(min_recurrent_transfers_recurrence)
           (max_open_recurrent_transfers)
-#ifdef HIVE_ENABLE_SMT
-          (smt_creation_fee)
-#endif
         )
 
 FC_REFLECT( hive::plugins::database_api::api_change_recovery_account_request_object,
@@ -895,25 +839,6 @@ FC_REFLECT( hive::plugins::database_api::api_hardfork_property_object,
         (next_hardfork)
         (next_hardfork_time)
         )
-
-#ifdef HIVE_ENABLE_SMT
-
-FC_REFLECT( hive::plugins::database_api::api_smt_token_object,
-  (token)
-  (ico)
-)
-
-FC_REFLECT( hive::plugins::database_api::api_smt_token_emissions_object,
-          (id)(symbol)(schedule_time)(emissions_unit)(interval_seconds)(interval_count)
-          (lep_time)(rep_time)(lep_abs_amount)(rep_abs_amount)(lep_rel_amount_numerator)
-          (rep_rel_amount_numerator)(rel_amount_denom_bits)
-        )
-
-FC_REFLECT( hive::plugins::database_api::api_smt_contribution_object,
-          (id)(symbol)(contributor)(contribution_id)(contribution)
-        )
-
-#endif
 
 FC_REFLECT_ENUM( hive::plugins::database_api::proposal_status,
             (all)

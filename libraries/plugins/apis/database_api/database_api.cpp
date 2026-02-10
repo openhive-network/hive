@@ -228,15 +228,6 @@ DEFINE_READ_APIS( database_api,
   (verify_authority)
   (verify_account_authority)
   (verify_signatures)
-#ifdef HIVE_ENABLE_SMT
-  (get_nai_pool)
-  (list_smt_contributions)
-  (find_smt_contributions)
-  (list_smt_tokens)
-  (find_smt_tokens)
-  (list_smt_token_emissions)
-  (find_smt_token_emissions)
-#endif
   (is_known_transaction)
 )
 

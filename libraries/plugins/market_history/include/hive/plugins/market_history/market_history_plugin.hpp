@@ -94,15 +94,8 @@ public:
   bucket_object_details hive;
   bucket_object_details non_hive;
 
-#ifdef HIVE_ENABLE_SMT
-  asset_symbol_type symbol = HBD_SYMBOL;
-
-  price high()const { return price( asset( non_hive.high, symbol ), asset( hive.high, HIVE_SYMBOL ) ); }
-  price low()const { return price( asset( non_hive.low, symbol ), asset( hive.low, HIVE_SYMBOL ) ); }
-#else
   price high()const { return price( asset( non_hive.high, HBD_SYMBOL ), asset( hive.high, HIVE_SYMBOL ) ); }
   price low()const { return price( asset( non_hive.low, HBD_SYMBOL ), asset( hive.low, HIVE_SYMBOL ) ); }
-#endif
 };
 
 typedef oid_ref< bucket_object > bucket_id_type;
@@ -168,9 +161,6 @@ FC_REFLECT( hive::plugins::market_history::bucket_object,
               (id)
               (open)(seconds)
               (hive)
-#ifdef HIVE_ENABLE_SMT
-              (symbol)
-#endif
               (non_hive)
       )
 

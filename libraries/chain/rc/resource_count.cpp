@@ -323,7 +323,6 @@ struct count_operation_visitor
 
   void operator()( const set_withdraw_vesting_route_operation& op )const
   {
-    FC_TODO( "Change RC state bytes computation to take SMT's into account" )
     if( op.percent != 0 )
       state_bytes_count += _w.set_withdraw_vesting_route_size;
     execution_time_count += _e.set_withdraw_vesting_route_time;
@@ -331,7 +330,6 @@ struct count_operation_visitor
 
   void operator()( const vote_operation& op )const
   {
-    FC_TODO( "Change RC state bytes computation to take SMT's into account" )
     state_bytes_count += _w.vote_size;
     execution_time_count += _e.vote_time;
   }
@@ -347,14 +345,12 @@ struct count_operation_visitor
 
   void operator()( const transfer_operation& )const
   {
-    FC_TODO( "Change RC state bytes computation to take SMT's into account" )
     execution_time_count += _e.transfer_time;
     market_op_count++;
   }
 
   void operator()( const transfer_to_vesting_operation& )const
   {
-    FC_TODO( "Change RC state bytes computation to take SMT's into account" )
     state_bytes_count += _w.transfer_to_vesting_size;
     execution_time_count += _e.transfer_to_vesting_time;
     market_op_count++;
@@ -362,26 +358,22 @@ struct count_operation_visitor
 
   void operator()( const transfer_to_savings_operation& )const
   {
-    FC_TODO( "Change RC state bytes computation to take SMT's into account" )
     execution_time_count += _e.transfer_to_savings_time;
   }
 
   void operator()( const transfer_from_savings_operation& )const
   {
-    FC_TODO( "Change RC state bytes computation to take SMT's into account" )
     state_bytes_count += _w.transfer_from_savings_size;
     execution_time_count += _e.transfer_from_savings_time;
   }
 
   void operator()( const claim_reward_balance_operation& op )const
   {
-    FC_TODO( "Change RC state bytes computation to take SMT's into account" )
     execution_time_count += _e.claim_reward_balance_time;
   }
 
   void operator()( const withdraw_vesting_operation& op )const
   {
-    FC_TODO( "Change RC state bytes computation to take SMT's into account" )
     execution_time_count += _e.withdraw_vesting_time;
   }
 
@@ -491,55 +483,6 @@ struct count_operation_visitor
     execution_time_count += _e.witness_set_properties_time;
   }
 
-#ifdef HIVE_ENABLE_SMT
-  void operator()( const claim_reward_balance2_operation& op )const
-  {
-    FC_TODO( "Change RC state bytes computation to take SMT's into account" )
-    execution_time_count += _e.claim_reward_balance2_time;
-  }
-
-  void operator()( const smt_setup_operation& op )const
-  {
-    FC_TODO( "Change RC state bytes computation to take SMT's into account" )
-    execution_time_count += _e.smt_setup_time;
-  }
-
-  void operator()( const smt_setup_emissions_operation& op )const
-  {
-    FC_TODO( "Change RC state bytes computation to take SMT's into account" )
-    execution_time_count += _e.smt_setup_emissions_time;
-  }
-
-  void operator()( const smt_set_setup_parameters_operation& op )const
-  {
-    FC_TODO( "Change RC state bytes computation to take SMT's into account" )
-    execution_time_count += _e.smt_set_setup_parameters_time;
-  }
-
-  void operator()( const smt_set_runtime_parameters_operation& op )const
-  {
-    FC_TODO( "Change RC state bytes computation to take SMT's into account" )
-    execution_time_count += _e.smt_set_runtime_parameters_time;
-  }
-
-  void operator()( const smt_create_operation& op )const
-  {
-    FC_TODO( "Change RC state bytes computation to take SMT's into account" )
-    execution_time_count += _e.smt_create_time;
-  }
-
-  void operator()( const allowed_vote_assets& )const
-  {
-    FC_TODO( "Change RC state bytes computation to take SMT's into account" )
-  }
-
-  void operator()( const smt_contribute_operation& op ) const
-  {
-    FC_TODO( "Change RC state bytes computation to take SMT's into account" )
-    execution_time_count += _e.smt_contribute_time;
-  }
-#endif
-
   void operator()( const create_proposal_operation& op ) const
   {
     FC_ASSERT( op.end_date > _now );
@@ -623,7 +566,7 @@ struct count_operation_visitor
   // withdraw_vesting, convert, collateralized_convert, set_withdraw_vesting_route, limit_order_create2
   // escrow_transfer, escrow_dispute, escrow_release, escrow_approve,
   // transfer_to_savings, transfer_from_savings, cancel_transfer_from_savings,
-  // claim_reward_balance, delegate_vesting_shares, any SMT operations
+  // claim_reward_balance, delegate_vesting_shares
 };
 
 void count_resources(

@@ -112,28 +112,6 @@ struct comment_options_extension_visitor
   const comment_cashout_object& _c;
   database& _db;
 
-#ifdef HIVE_ENABLE_SMT
-  void operator()( const allowed_vote_assets& va) const
-  {
-    FC_ASSERT( !_c.has_votes(), "Comment must not have been voted on before specifying allowed vote assets." );
-    auto remaining_asset_number = SMT_MAX_VOTABLE_ASSETS;
-    FC_ASSERT( remaining_asset_number > 0 && "Votable assets limit must be positive" );
-    _db.modify( _c, [&]( comment_cashout_object& c )
-    {
-      for( const auto& a : va.votable_assets )
-      {
-        if( a.first != HIVE_SYMBOL )
-        {
-          FC_ASSERT( remaining_asset_number > 0, "Comment votable assets number exceeds allowed limit ${ava}.",
-                ("ava", SMT_MAX_VOTABLE_ASSETS) );
-          --remaining_asset_number;
-          c.allowed_vote_assets.emplace_back( a.first, a.second );
-        }
-      }
-    });
-  }
-#endif
-
   void operator()( const comment_payout_beneficiaries& cpb ) const
   {
     FC_ASSERT( _c.get_beneficiaries().size() == 0, "Comment already has beneficiaries specified." );

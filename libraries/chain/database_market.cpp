@@ -419,26 +419,6 @@ void database::remove_pending_limit_orders( const account_object& account, const
   }
 }
 
-#ifdef HIVE_ENABLE_SMT
-void database::get_limit_order_smt_totals( std::map< asset_symbol_type, TCombinedBalance >& theMap ) const
-{
-  const auto& limit_order_idx = get_index< limit_order_index >().indices();
-  for( auto itr = limit_order_idx.begin(); itr != limit_order_idx.end(); ++itr )
-  {
-    if( itr->sell_price.base.symbol.space() == asset_symbol_type::smt_nai_space )
-    {
-      asset a( itr->for_sale, itr->sell_price.base.symbol );
-      FC_ASSERT( a.symbol.is_vesting() == false );
-      asset zero_liquid = asset( 0, a.symbol );
-      asset zero_vesting = asset( 0, a.symbol.get_paired_symbol() );
-      auto insertInfo = theMap.emplace( a.symbol, TCombinedBalance( { a, zero_vesting, zero_liquid, zero_vesting, zero_liquid } ) );
-      if( insertInfo.second == false )
-        insertInfo.first->second.liquid += a;
-    }
-  }
-}
-#endif
-
 } }
 
 HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::chain::escrow_index)
