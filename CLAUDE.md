@@ -269,6 +269,52 @@ cli_wallet --daemon --rpc-http-endpoint=127.0.0.1:8092 --rpc-http-allowip=127.0.
 
 ## Development Patterns
 
+### Consensus-Critical Changes (Hardfork Requirements)
+
+**CRITICAL**: Any change that affects transaction validity requires a hardfork. Without it, nodes running old code will behave differently from nodes with new code, causing network splits when affected transactions appear in blocks.
+
+**Changes requiring hardfork:**
+- Making previously illegal transactions legal
+- Making previously legal transactions illegal
+- Adding new operations or extensions to existing operations
+- Changing validation/evaluation logic that affects which transactions pass
+
+**How to introduce such changes correctly:**
+
+**1. Allowing something previously forbidden:**
+- If the blocking assertion was in `validate()`, move it to the evaluator
+- Guard with: `if( !_db.has_hardfork( HIVE_HARDFORK_1_29_NEW_FEATURE ) )`
+- The restriction stays active until the hardfork activates
+- New operations/extensions must be blocked until hardfork activation
+
+**2. Forbidding something previously allowed:**
+- Add assertion in evaluator with: `if( _db.is_in_control() || _db.has_hardfork( HIVE_HARDFORK_1_29_NEW_LIMITATION ) )`
+- `is_in_control()` - rejects new transactions (not yet in a block) that violate the new rule
+- `has_hardfork()` - rejects such transactions even in blocks, but only after hardfork activation
+- After hardfork activates, `is_in_control()` part can be removed
+- The hardfork condition can only be removed after experiment: remove it and replay up to the hardfork activation block - if replay succeeds, the restriction can be safely applied retroactively
+
+**Safe changes (no hardfork needed):**
+- Moving an assertion from `validate()` to evaluator **if it doesn't change which transactions are legal** - only changes where the error is caught
+- Code refactoring that preserves identical validation behavior
+- Non-consensus code (APIs, plugins that don't affect block production)
+
+**Example - Safe change:**
+```cpp
+// Moving SMT check from validate() to evaluator is safe IF:
+// - validate() had: FC_ASSERT( amount.symbol == HIVE_SYMBOL )
+// - evaluator would hit: FC_ASSERT in get_balance() for non-HIVE/HBD symbols
+// Same transactions fail, just at different point - no hardfork needed
+```
+
+**Example - Unsafe change (requires hardfork):**
+```cpp
+// Adding new restriction in limit_order that rejects SMT symbols
+// Previously: order with HIVE/SMT pair was "legal" (created but never matched)
+// After: same transaction is rejected
+// This changes transaction validity - REQUIRES HARDFORK
+```
+
 ### Adding New Operations
 
 Operations are defined in `libraries/protocol/include/hive/protocol/operations.hpp`. See `doc/devs/create-operation.md` for detailed guide.
