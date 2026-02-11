@@ -686,14 +686,7 @@ void claim_reward_balance_evaluator::do_apply( const claim_reward_balance_operat
     a.set_vesting( a.get_vesting() + op_reward_vests );
     a.set_vest_rewards( a.get_vest_rewards() - op_reward_vests );
     a.set_vest_rewards_as_hive( a.get_vest_rewards_as_hive() - reward_vesting_hive_to_move );
-
-    if( acnt.get_name() == "votovzla" )
-    {
-      a.set_vesting( a.get_vesting() + op_reward_vests );
-      a.set_vest_rewards( a.get_vest_rewards() - op_reward_vests );
-      a.set_vest_rewards_as_hive( a.get_vest_rewards_as_hive() - reward_vesting_hive_to_move );
-    } );
-  }
+  } );
   if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
     _db.rc().update_account_after_vest_change( acnt, now );
 
@@ -852,7 +845,7 @@ void delegate_vesting_shares_evaluator::do_apply( const delegate_vesting_shares_
     available_shares.amount = std::min( available_shares.amount, max_mana - delegator_assets.get_received_vesting().amount );
     available_downvote_shares.amount = std::min( available_downvote_shares.amount, max_mana - delegator_assets.get_received_vesting().amount );
 
-    if( delegator_time.has_active_power_down()
+    if( delegator_time.get_next_vesting_withdrawal() < fc::time_point_sec::maximum()
       && delegator_assets.get_total_vesting_withdrawal() > delegator_assets.get_vesting_withdraw_rate().amount )
     {
       /*
@@ -913,24 +906,18 @@ void delegate_vesting_shares_evaluator::do_apply( const delegate_vesting_shares_
       } );
     }
 
-    if( _db.has_hardfork( HIVE_HARDFORK_0_20__2539 ) )
+    _db.modify( delegatee_mrc, [&]( manabars_rc_object& mrc )
     {
-      _db.modify( delegatee_mrc, [&]( manabars_rc_object& mrc )
+      if( _db.has_hardfork( HIVE_HARDFORK_0_20__2539 ) )
       {
         util::update_manabar( gpo, delegatee, delegatee_assets, delegatee_time, mrc, op_vesting_shares.amount.value );
-        _db.modify( delegatee_assets, [&]( assets_object& a )
-        {
-          a.set_received_vesting( a.get_received_vesting() + op_vesting_shares );
-        } );
-      } );
-    }
-    else
-    {
+      }
+
       _db.modify( delegatee_assets, [&]( assets_object& a )
       {
         a.set_received_vesting( a.get_received_vesting() + op_vesting_shares );
       } );
-    }
+    } );
   }
   else if( op_vesting_shares >= delegation->get_vesting() ) // delegation is increasing
   {
@@ -964,24 +951,17 @@ void delegate_vesting_shares_evaluator::do_apply( const delegate_vesting_shares_
       } );
     }
 
-    if( _db.has_hardfork( HIVE_HARDFORK_0_20__2539 ) )
+    _db.modify( delegatee_mrc, [&]( manabars_rc_object& mrc )
     {
-      _db.modify( delegatee_mrc, [&]( manabars_rc_object& mrc )
+      if( _db.has_hardfork( HIVE_HARDFORK_0_20__2539 ) )
       {
         util::update_manabar( gpo, delegatee, delegatee_assets, delegatee_time, mrc, delta.amount.value );
-        _db.modify( delegatee_assets, [&]( assets_object& a )
-        {
-          a.set_received_vesting( a.get_received_vesting() + delta );
-        } );
-      } );
-    }
-    else
-    {
+      }
       _db.modify( delegatee_assets, [&]( assets_object& a )
       {
         a.set_received_vesting( a.get_received_vesting() + delta );
       } );
-    }
+    } );
 
     _db.modify( *delegation, [&]( vesting_delegation_object& obj )
     {
@@ -1005,45 +985,35 @@ void delegate_vesting_shares_evaluator::do_apply( const delegate_vesting_shares_
     _db.create< vesting_delegation_expiration_object >( delegator, delta,
       std::max( now + gpo.delegation_return_period, delegation->get_min_delegation_time() ) );
 
-    if( _db.has_hardfork( HIVE_HARDFORK_0_22__3485 ) )
+    _db.modify( delegatee_mrc, [&]( manabars_rc_object& mrc )
     {
-      _db.modify( delegatee_mrc, [&]( manabars_rc_object& mrc )
+      if( _db.has_hardfork( HIVE_HARDFORK_0_22__3485 ) )
       {
         util::update_manabar( gpo, delegatee, delegatee_assets, delegatee_time, mrc );
-        _db.modify( delegatee_assets, [&]( assets_object& a )
-        {
-          a.set_received_vesting( a.get_received_vesting() - delta );
-        } );
-        if( _db.has_hardfork( HIVE_HARDFORK_0_20__2539 ) )
-        {
-          mrc.get_voting_manabar().use_mana( delta.amount.value );
+      }
 
-          if( _db.has_hardfork( HIVE_HARDFORK_0_21__3336 ) )
-          {
-            mrc.get_downvote_manabar().use_mana( fc::uint128_to_int64( ( uint128_t( delta.amount.value ) * gpo.downvote_pool_percent ) / HIVE_100_PERCENT ) );
-          }
-        }
-      } );
-    }
-    else
-    {
-      _db.modify( delegatee_assets, [&]( assets_object& a )
+     _db.modify( delegatee_assets, [&]( assets_object& a )
       {
         a.set_received_vesting( a.get_received_vesting() - delta );
       } );
+
       if( _db.has_hardfork( HIVE_HARDFORK_0_20__2539 ) )
       {
-        _db.modify( delegatee_mrc, [&]( manabars_rc_object& mrc )
-        {
-          mrc.get_voting_manabar().use_mana( delta.amount.value );
+        mrc.get_voting_manabar().use_mana( delta.amount.value );
 
-          if( _db.has_hardfork( HIVE_HARDFORK_0_21__3336 ) )
+        if( _db.has_hardfork( HIVE_HARDFORK_0_21__3336 ) )
+        {
+          if( _db.has_hardfork( HIVE_HARDFORK_0_22__3485 ) )
           {
-            mrc.get_downvote_manabar().use_mana( delta.amount.value );
+           mrc.get_downvote_manabar().use_mana( fc::uint128_to_int64( ( uint128_t( delta.amount.value ) * gpo.downvote_pool_percent ) / HIVE_100_PERCENT ) );
           }
-        } );
+          else
+          {
+            mrc.get_downvote_manabar().use_mana( op_vesting_shares.amount.value );
+          }
+        }
       }
-    }
+    } );
 
     if( op_vesting_shares.amount > 0 )
     {
