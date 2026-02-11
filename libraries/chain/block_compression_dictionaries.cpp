@@ -96,7 +96,7 @@ ZSTD_DDict* get_zstd_decompression_dictionary(uint8_t dictionary_number)
   const decompressed_raw_dictionary_info& decompressed_dictionary = get_decompressed_raw_dictionary(dictionary_number);
 
   // then create a usable decompression dictionary for it
-  ZSTD_DDict* dictionary = ZSTD_createDDict_byReference(decompressed_dictionary.buffer.get(), decompressed_dictionary.size);
+  ZSTD_DDict* dictionary = ZSTD_createDDict(decompressed_dictionary.buffer.get(), decompressed_dictionary.size);
   decompression_dictionaries[dictionary_number] = dictionary;
   return dictionary;
 }
