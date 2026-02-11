@@ -18828,11 +18828,11 @@
                         "description": "Content reward percent for HF21."
                     },
                     "HIVE_CONVERSION_DELAY": {
-                        "type": "string",
+                        "$ref": "#/components/schemas/hive_int",
                         "description": "Conversion delay for HBD to HIVE (in microseconds)."
                     },
                     "HIVE_CONVERSION_DELAY_PRE_HF_16": {
-                        "type": "string",
+                        "$ref": "#/components/schemas/hive_int",
                         "description": "Pre-HF16 conversion delay (in microseconds)."
                     },
                     "HIVE_CREATE_ACCOUNT_DELEGATION_RATIO": {
@@ -18840,7 +18840,7 @@
                         "description": "Ratio for account creation delegation."
                     },
                     "HIVE_CREATE_ACCOUNT_DELEGATION_TIME": {
-                        "type": "string",
+                        "$ref": "#/components/schemas/hive_int",
                         "description": "Delegation time for account creation (in microseconds)."
                     },
                     "HIVE_CREATE_ACCOUNT_WITH_HIVE_MODIFIER": {
@@ -19192,11 +19192,11 @@
                         "description": "Proposal fund percent for HF21."
                     },
                     "HIVE_RECENT_RSHARES_DECAY_TIME_HF19": {
-                        "type": "string",
+                        "$ref": "#/components/schemas/hive_int",
                         "description": "Recent rshares decay time for HF19 (microseconds)."
                     },
                     "HIVE_RECENT_RSHARES_DECAY_TIME_HF17": {
-                        "type": "string",
+                        "$ref": "#/components/schemas/hive_int",
                         "description": "Recent rshares decay time for HF17 (microseconds)."
                     },
                     "HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF6": {
@@ -19220,7 +19220,7 @@
                         "description": "Savings withdraw request limit."
                     },
                     "HIVE_SAVINGS_WITHDRAW_TIME": {
-                        "type": "string",
+                        "$ref": "#/components/schemas/hive_int",
                         "description": "Savings withdraw time (microseconds)."
                     },
                     "HIVE_HBD_START_PERCENT_HF14": {
@@ -19672,7 +19672,6 @@
                     "HIVE_MAX_ACCOUNT_WITNESS_VOTES",
                     "HIVE_MAX_AUTHORITY_MEMBERSHIP",
                     "HIVE_MAX_BLOCK_SIZE",
-                    "HIVE_SOFT_MAX_BLOCK_SIZE",
                     "HIVE_MAX_CASHOUT_WINDOW_SECONDS",
                     "HIVE_MAX_COMMENT_DEPTH",
                     "HIVE_MAX_COMMENT_DEPTH_PRE_HF17",
@@ -20952,9 +20951,7 @@
                     "blockchain_version",
                     "hive_revision",
                     "fc_revision",
-                    "chain_id",
-                    "haf_revision",
-                    "node_type"
+                    "chain_id"
                 ]
             },
             "get_witness_schedule_response": {
