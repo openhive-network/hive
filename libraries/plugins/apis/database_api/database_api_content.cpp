@@ -256,9 +256,14 @@ DEFINE_API_IMPL( database_api_impl, list_proposal_votes )
   {
     case by_voter_proposal:
     {
-      auto key = args.start.as< std::pair< fc::optional<account_name_type>, fc::optional<api_id_type> > >();
+      std::optional< boost::tuple< account_name_type, api_id_type > > start;
+      if( !args.start.is_null() )
+      {
+        auto key = args.start.as< std::pair< fc::optional<account_name_type>, fc::optional<api_id_type> > >();
+        start = boost::make_tuple( get_account_name( key.first ), get_proposal_id( key.second ) );
+      }
       iterate_results< hive::chain::proposal_vote_index, hive::chain::by_voter_proposal >(
-        std::optional( boost::make_tuple( get_account_name( key.first ), get_proposal_id( key.second ) ) ),
+        start,
         result.proposal_votes,
         args.limit,
         &database_api_impl::on_push_default< api_proposal_vote_object, proposal_vote_object >,
@@ -273,9 +278,14 @@ DEFINE_API_IMPL( database_api_impl, list_proposal_votes )
     }
     case by_proposal_voter:
     {
-      auto key = args.start.as< std::pair< fc::optional<api_id_type>, fc::optional<account_name_type> > >();
+      std::optional< boost::tuple< api_id_type, account_name_type > > start;
+      if( !args.start.is_null() )
+      {
+        auto key = args.start.as< std::pair< fc::optional<api_id_type>, fc::optional<account_name_type> > >();
+        start = boost::make_tuple( get_proposal_id( key.first ), get_account_name( key.second) );
+      }
       iterate_results< hive::chain::proposal_vote_index, hive::chain::by_proposal_voter >(
-        std::optional( boost::make_tuple( get_proposal_id( key.first ), get_account_name( key.second) ) ),
+        start,
         result.proposal_votes,
         args.limit,
         &database_api_impl::on_push_default< api_proposal_vote_object, proposal_vote_object >,

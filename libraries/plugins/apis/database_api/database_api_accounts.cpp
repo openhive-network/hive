@@ -23,8 +23,13 @@ DEFINE_API_IMPL( database_api_impl, list_witnesses )
   {
     case( by_name ):
     {
+      std::optional< protocol::account_name_type > start;
+      if( !args.start.is_null() )
+      {
+        start = args.start.as< protocol::account_name_type >();
+      }
       iterate_results< chain::witness_index, chain::by_name >(
-        std::optional( args.start.as< protocol::account_name_type >() ),
+        start,
         result.witnesses,
         args.limit,
         &database_api_impl::on_push_default< api_witness_object, witness_object >,
@@ -33,9 +38,14 @@ DEFINE_API_IMPL( database_api_impl, list_witnesses )
     }
     case( by_vote_name ):
     {
-      auto key = args.start.as< std::pair< share_type, account_name_type > >();
+      std::optional< boost::tuple< share_type, account_name_type > > start;
+      if( !args.start.is_null() )
+      {
+        auto key = args.start.as< std::pair< share_type, account_name_type > >();
+        start = boost::make_tuple( key.first, key.second );
+      }
       iterate_results< chain::witness_index, chain::by_vote_name >(
-        std::optional( boost::make_tuple( key.first, key.second ) ),
+        start,
         result.witnesses,
         args.limit,
         &database_api_impl::on_push_default< api_witness_object, witness_object >,
@@ -44,10 +54,15 @@ DEFINE_API_IMPL( database_api_impl, list_witnesses )
     }
     case( by_schedule_time ):
     {
-      auto key = args.start.as< std::pair< fc::uint128, account_name_type > >();
-      auto wit_id = _db.get< chain::witness_object, chain::by_name >( key.second ).get_id();
+      std::optional< boost::tuple< fc::uint128, witness_id_type > > start;
+      if( !args.start.is_null() )
+      {
+        auto key = args.start.as< std::pair< fc::uint128, account_name_type > >();
+        auto wit_id = _db.get< chain::witness_object, chain::by_name >( key.second ).get_id();
+        start = boost::make_tuple( key.first, wit_id );
+      }
       iterate_results< chain::witness_index, chain::by_schedule_time >(
-        std::optional( boost::make_tuple( key.first, wit_id ) ),
+        start,
         result.witnesses,
         args.limit,
         &database_api_impl::on_push_default< api_witness_object, witness_object >,
@@ -90,9 +105,14 @@ DEFINE_API_IMPL( database_api_impl, list_witness_votes )
   {
     case( by_account_witness ):
     {
-      auto key = args.start.as< std::pair< account_name_type, account_name_type > >();
+      std::optional< boost::tuple< account_name_type, account_name_type > > start;
+      if( !args.start.is_null() )
+      {
+        auto key = args.start.as< std::pair< account_name_type, account_name_type > >();
+        start = boost::make_tuple( key.first, key.second );
+      }
       iterate_results< chain::witness_vote_index, chain::by_account_witness >(
-        std::optional( boost::make_tuple( key.first, key.second ) ),
+        start,
         result.votes,
         args.limit,
         &database_api_impl::on_push_default< api_witness_vote_object, witness_vote_object >,
@@ -101,9 +121,14 @@ DEFINE_API_IMPL( database_api_impl, list_witness_votes )
     }
     case( by_witness_account ):
     {
-      auto key = args.start.as< std::pair< account_name_type, account_name_type > >();
+      std::optional< boost::tuple< account_name_type, account_name_type > > start;
+      if( !args.start.is_null() )
+      {
+        auto key = args.start.as< std::pair< account_name_type, account_name_type > >();
+        start = boost::make_tuple( key.first, key.second );
+      }
       iterate_results< chain::witness_vote_index, chain::by_witness_account >(
-        std::optional( boost::make_tuple( key.first, key.second ) ),
+        start,
         result.votes,
         args.limit,
         &database_api_impl::on_push_default< api_witness_vote_object, witness_vote_object >,
@@ -153,8 +178,13 @@ DEFINE_API_IMPL( database_api_impl, list_accounts )
   {
     case( by_name ):
     {
+      std::optional< protocol::account_name_type > start;
+      if( !args.start.is_null() )
+      {
+        start = args.start.as< protocol::account_name_type >();
+      }
       iterate_results< chain::account_index, chain::by_name >(
-        std::optional( args.start.as< protocol::account_name_type >() ),
+        start,
         result.accounts,
         args.limit,
         [&]( const account_object& a, const database& db ){ return api_account_object( a, db, get_metadata_plugin(), args.delayed_votes_active ); },
@@ -163,16 +193,21 @@ DEFINE_API_IMPL( database_api_impl, list_accounts )
     }
     case( by_proxy ):
     {
-      auto key = args.start.as< std::pair< account_name_type, account_name_type > >();
-      account_id_type proxy_id;
-      if( key.first != HIVE_PROXY_TO_SELF_ACCOUNT )
+      std::optional< boost::tuple< account_id_type, account_name_type > > start;
+      if( !args.start.is_null() )
       {
-        const auto* proxy = _db.find_account( key.first );
-        FC_ASSERT( proxy != nullptr, "Given proxy account does not exist." );
-        proxy_id = proxy->get_id();
+        auto key = args.start.as< std::pair< account_name_type, account_name_type > >();
+        account_id_type proxy_id;
+        if( key.first != HIVE_PROXY_TO_SELF_ACCOUNT )
+        {
+          const auto* proxy = _db.find_account( key.first );
+          FC_ASSERT( proxy != nullptr, "Given proxy account does not exist." );
+          proxy_id = proxy->get_id();
+        }
+        start = boost::make_tuple( proxy_id, key.second );
       }
       iterate_results< chain::account_index, chain::by_proxy >(
-        std::optional( boost::make_tuple( proxy_id, key.second ) ),
+        start,
         result.accounts,
         args.limit,
         [&]( const account_object& a, const database& db ){ return api_account_object( a, db, get_metadata_plugin(), args.delayed_votes_active ); },
@@ -181,9 +216,14 @@ DEFINE_API_IMPL( database_api_impl, list_accounts )
     }
     case( by_next_vesting_withdrawal ):
     {
-      auto key = args.start.as< std::pair< fc::time_point_sec, account_name_type > >();
+      std::optional< boost::tuple< fc::time_point_sec, account_name_type > > start;
+      if( !args.start.is_null() )
+      {
+        auto key = args.start.as< std::pair< fc::time_point_sec, account_name_type > >();
+        start = boost::make_tuple( key.first, key.second );
+      }
       iterate_results< chain::account_index, chain::by_next_vesting_withdrawal >(
-        std::optional( boost::make_tuple( key.first, key.second ) ),
+        start,
         result.accounts,
         args.limit,
         [&]( const account_object& a, const database& db ){ return api_account_object( a, db, get_metadata_plugin(), args.delayed_votes_active ); },
@@ -223,9 +263,14 @@ DEFINE_API_IMPL( database_api_impl, list_owner_histories )
   list_owner_histories_return result;
   result.owner_auths.reserve( args.limit );
 
-  auto key = args.start.as< std::pair< account_name_type, fc::time_point_sec > >();
+  std::optional< boost::tuple< account_name_type, fc::time_point_sec > > start;
+  if( !args.start.is_null() )
+  {
+    auto key = args.start.as< std::pair< account_name_type, fc::time_point_sec > >();
+    start = boost::make_tuple( key.first, key.second );
+  }
   iterate_results< chain::owner_authority_history_index, chain::by_account >(
-    std::optional( boost::make_tuple( key.first, key.second ) ),
+    start,
     result.owner_auths,
     args.limit,
     &database_api_impl::on_push_default< api_owner_authority_history_object, owner_authority_history_object >,
@@ -264,8 +309,13 @@ DEFINE_API_IMPL( database_api_impl, list_account_recovery_requests )
   {
     case( by_account ):
     {
+      std::optional< account_name_type > start;
+      if( !args.start.is_null() )
+      {
+        start = args.start.as< account_name_type >();
+      }
       iterate_results< chain::account_recovery_request_index, chain::by_account >(
-        std::optional( args.start.as< account_name_type >() ),
+        start,
         result.requests,
         args.limit,
         &database_api_impl::on_push_default< api_account_recovery_request_object, account_recovery_request_object >,
@@ -274,9 +324,14 @@ DEFINE_API_IMPL( database_api_impl, list_account_recovery_requests )
     }
     case( by_expiration ):
     {
-      auto key = args.start.as< std::pair< fc::time_point_sec, account_name_type > >();
+      std::optional< boost::tuple< fc::time_point_sec, account_name_type > > start;
+      if( !args.start.is_null() )
+      {
+        auto key = args.start.as< std::pair< fc::time_point_sec, account_name_type > >();
+        start = boost::make_tuple( key.first, key.second );
+      }
       iterate_results< chain::account_recovery_request_index, chain::by_expiration >(
-        std::optional( boost::make_tuple( key.first, key.second ) ),
+        start,
         result.requests,
         args.limit,
         &database_api_impl::on_push_default< api_account_recovery_request_object, account_recovery_request_object >,
@@ -321,8 +376,13 @@ DEFINE_API_IMPL( database_api_impl, list_change_recovery_account_requests )
   {
     case( by_account ):
     {
+      std::optional< account_name_type > start;
+      if( !args.start.is_null() )
+      {
+        start = args.start.as< account_name_type >();
+      }
       iterate_results< chain::change_recovery_account_request_index, chain::by_account >(
-        std::optional( args.start.as< account_name_type >() ),
+        start,
         result.requests,
         args.limit,
         &database_api_impl::on_push_default< api_change_recovery_account_request_object, change_recovery_account_request_object >,
@@ -331,9 +391,14 @@ DEFINE_API_IMPL( database_api_impl, list_change_recovery_account_requests )
     }
     case( by_effective_date ):
     {
-      auto key = args.start.as< std::pair< fc::time_point_sec, account_name_type > >();
+      std::optional< boost::tuple< fc::time_point_sec, account_name_type > > start;
+      if( !args.start.is_null() )
+      {
+        auto key = args.start.as< std::pair< fc::time_point_sec, account_name_type > >();
+        start = boost::make_tuple( key.first, key.second );
+      }
       iterate_results< chain::change_recovery_account_request_index, chain::by_effective_date >(
-        std::optional( boost::make_tuple( key.first, key.second ) ),
+        start,
         result.requests,
         args.limit,
         &database_api_impl::on_push_default< api_change_recovery_account_request_object, change_recovery_account_request_object >,
