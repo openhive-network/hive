@@ -35,9 +35,14 @@ DEFINE_API_IMPL( database_api_impl, list_escrows )
   {
     case( by_from_id ):
     {
-      auto key = args.start.as< std::pair< account_name_type, uint32_t > >();
+      std::optional< boost::tuple< account_name_type, uint32_t > > start;
+      if( !args.start.is_null() )
+      {
+        auto key = args.start.as< std::pair< account_name_type, uint32_t > >();
+        start = boost::make_tuple( key.first, key.second );
+      }
       iterate_results< chain::escrow_index, chain::by_from_id >(
-        std::optional( boost::make_tuple( key.first, key.second ) ),
+        start,
         result.escrows,
         args.limit,
         &database_api_impl::on_push_default< api_escrow_object, escrow_object >,
@@ -46,10 +51,15 @@ DEFINE_API_IMPL( database_api_impl, list_escrows )
     }
     case( by_ratification_deadline ):
     {
-      auto key = args.start.as< std::vector< fc::variant > >();
-      FC_ASSERT( key.size() == 3, "by_ratification_deadline start requires 3 values. (bool, time_point_sec, escrow_id_type)" );
+      std::optional< boost::tuple< bool, fc::time_point_sec, escrow_id_type > > start;
+      if( !args.start.is_null() )
+      {
+        auto key = args.start.as< std::vector< fc::variant > >();
+        FC_ASSERT( key.size() == 3, "by_ratification_deadline start requires 3 values. (bool, time_point_sec, escrow_id_type)" );
+        start = boost::make_tuple( key[0].as< bool >(), key[1].as< fc::time_point_sec >(), key[2].as< escrow_id_type >() );
+      }
       iterate_results< chain::escrow_index, chain::by_ratification_deadline >(
-        std::optional( boost::make_tuple( key[0].as< bool >(), key[1].as< fc::time_point_sec >(), key[2].as< escrow_id_type >() ) ),
+        start,
         result.escrows,
         args.limit,
         &database_api_impl::on_push_default< api_escrow_object, escrow_object >,
@@ -93,9 +103,14 @@ DEFINE_API_IMPL( database_api_impl, list_withdraw_vesting_routes )
   {
     case( by_withdraw_route ):
     {
-      auto key = args.start.as< std::pair< account_name_type, account_name_type > >();
+      std::optional< boost::tuple< account_name_type, account_name_type > > start;
+      if( !args.start.is_null() )
+      {
+        auto key = args.start.as< std::pair< account_name_type, account_name_type > >();
+        start = boost::make_tuple( key.first, key.second );
+      }
       iterate_results< chain::withdraw_vesting_route_index, chain::by_withdraw_route >(
-        std::optional( boost::make_tuple( key.first, key.second ) ),
+        start,
         result.routes,
         args.limit,
         &database_api_impl::on_push_default< api_withdraw_vesting_route_object, withdraw_vesting_route_object >,
@@ -104,9 +119,14 @@ DEFINE_API_IMPL( database_api_impl, list_withdraw_vesting_routes )
     }
     case( by_destination ):
     {
-      auto key = args.start.as< std::pair< account_name_type, withdraw_vesting_route_id_type > >();
+      std::optional< boost::tuple< account_name_type, withdraw_vesting_route_id_type > > start;
+      if( !args.start.is_null() )
+      {
+        auto key = args.start.as< std::pair< account_name_type, withdraw_vesting_route_id_type > >();
+        start = boost::make_tuple( key.first, key.second );
+      }
       iterate_results< chain::withdraw_vesting_route_index, chain::by_destination >(
-        std::optional( boost::make_tuple( key.first, key.second ) ),
+        start,
         result.routes,
         args.limit,
         &database_api_impl::on_push_default< api_withdraw_vesting_route_object, withdraw_vesting_route_object >,
@@ -173,9 +193,14 @@ DEFINE_API_IMPL( database_api_impl, list_savings_withdrawals )
   {
     case( by_from_id ):
     {
-      auto key = args.start.as< std::pair< account_name_type, uint32_t > >();
+      std::optional< boost::tuple< account_name_type, uint32_t > > start;
+      if( !args.start.is_null() )
+      {
+        auto key = args.start.as< std::pair< account_name_type, uint32_t > >();
+        start = boost::make_tuple( key.first, key.second );
+      }
       iterate_results< chain::savings_withdraw_index, chain::by_from_rid >(
-        std::optional( boost::make_tuple( key.first, key.second ) ),
+        start,
         result.withdrawals,
         args.limit,
         &database_api_impl::on_push_default< api_savings_withdraw_object, savings_withdraw_object >,
@@ -184,10 +209,15 @@ DEFINE_API_IMPL( database_api_impl, list_savings_withdrawals )
     }
     case( by_complete_from_id ):
     {
-      auto key = args.start.as< std::vector< fc::variant > >();
-      FC_ASSERT( key.size() == 3, "by_complete_from_id start requires 3 values. (time_point_sec, account_name_type, uint32_t)" );
+      std::optional< boost::tuple< fc::time_point_sec, account_name_type, uint32_t > > start;
+      if( !args.start.is_null() )
+      {
+        auto key = args.start.as< std::vector< fc::variant > >();
+        FC_ASSERT( key.size() == 3, "by_complete_from_id start requires 3 values. (time_point_sec, account_name_type, uint32_t)" );
+        start = boost::make_tuple( key[0].as< fc::time_point_sec >(), key[1].as< account_name_type >(), key[2].as< uint32_t >() );
+      }
       iterate_results< chain::savings_withdraw_index, chain::by_complete_from_rid >(
-        std::optional( boost::make_tuple( key[0].as< fc::time_point_sec >(), key[1].as< account_name_type >(), key[2].as< uint32_t >() ) ),
+        start,
         result.withdrawals,
         args.limit,
         &database_api_impl::on_push_default< api_savings_withdraw_object, savings_withdraw_object >,
@@ -196,10 +226,15 @@ DEFINE_API_IMPL( database_api_impl, list_savings_withdrawals )
     }
     case( by_to_complete ):
     {
-      auto key = args.start.as< std::vector< fc::variant > >();
-      FC_ASSERT( key.size() == 3, "by_to_complete start requires 3 values. (account_name_type, time_point_sec, savings_withdraw_id_type" );
+      std::optional< boost::tuple< account_name_type, fc::time_point_sec, savings_withdraw_id_type > > start;
+      if( !args.start.is_null() )
+      {
+        auto key = args.start.as< std::vector< fc::variant > >();
+        FC_ASSERT( key.size() == 3, "by_to_complete start requires 3 values. (account_name_type, time_point_sec, savings_withdraw_id_type" );
+        start = boost::make_tuple( key[0].as< account_name_type >(), key[1].as< fc::time_point_sec >(), key[2].as< savings_withdraw_id_type >() );
+      }
       iterate_results< chain::savings_withdraw_index, chain::by_to_complete >(
-        std::optional( boost::make_tuple( key[0].as< account_name_type >(), key[1].as< fc::time_point_sec >(), key[2].as< savings_withdraw_id_type >() ) ),
+        start,
         result.withdrawals,
         args.limit,
         &database_api_impl::on_push_default< api_savings_withdraw_object, savings_withdraw_object >,
@@ -242,18 +277,23 @@ DEFINE_API_IMPL( database_api_impl, list_vesting_delegations )
   {
     case( by_delegation ):
     {
-      auto key = args.start.as< std::pair< account_name_type, account_name_type > >();
-      const auto* delegator = _db.find_account( key.first );
-      FC_ASSERT( delegator != nullptr, "Given account does not exist." );
-      account_id_type delegatee_id;
-      if( key.second != "" )
+      std::optional< boost::tuple< account_id_type, account_id_type > > start;
+      if( !args.start.is_null() )
       {
-        const auto* delegatee = _db.find_account( key.second );
-        FC_ASSERT( delegatee != nullptr, "Given account does not exist." );
-        delegatee_id = delegatee->get_id();
+        auto key = args.start.as< std::pair< account_name_type, account_name_type > >();
+        const auto* delegator = _db.find_account( key.first );
+        FC_ASSERT( delegator != nullptr, "Given account does not exist." );
+        account_id_type delegatee_id;
+        if( key.second != "" )
+        {
+          const auto* delegatee = _db.find_account( key.second );
+          FC_ASSERT( delegatee != nullptr, "Given account does not exist." );
+          delegatee_id = delegatee->get_id();
+        }
+        start = boost::make_tuple( delegator->get_id(), delegatee_id );
       }
       iterate_results< chain::vesting_delegation_index, chain::by_delegation >(
-        std::optional( boost::make_tuple( delegator->get_id(), delegatee_id ) ),
+        start,
         result.delegations,
         args.limit,
         &database_api_impl::on_push_default< api_vesting_delegation_object, vesting_delegation_object >,
@@ -299,9 +339,14 @@ DEFINE_API_IMPL( database_api_impl, list_vesting_delegation_expirations )
   {
     case( by_expiration ):
     {
-      auto key = args.start.as< std::pair< time_point_sec, vesting_delegation_expiration_id_type > >();
+      std::optional< boost::tuple< time_point_sec, vesting_delegation_expiration_id_type > > start;
+      if( !args.start.is_null() )
+      {
+        auto key = args.start.as< std::pair< time_point_sec, vesting_delegation_expiration_id_type > >();
+        start = boost::make_tuple( key.first, key.second );
+      }
       iterate_results< chain::vesting_delegation_expiration_index, chain::by_expiration >(
-        std::optional( boost::make_tuple( key.first, key.second ) ),
+        start,
         result.delegations,
         args.limit,
         &database_api_impl::on_push_default< api_vesting_delegation_expiration_object, vesting_delegation_expiration_object >,
@@ -310,18 +355,23 @@ DEFINE_API_IMPL( database_api_impl, list_vesting_delegation_expirations )
     }
     case( by_account_expiration ):
     {
-      auto key = args.start.as< std::vector< fc::variant > >();
-      FC_ASSERT( key.size() == 3, "by_account_expiration start requires 3 values. (account_name_type, time_point_sec, vesting_delegation_expiration_id_type" );
-      account_name_type delegator_name = key[0].as< account_name_type >();
-      account_id_type delegator_id;
-      if( delegator_name != "" )
+      std::optional< boost::tuple< account_id_type, time_point_sec, vesting_delegation_expiration_id_type > > start;
+      if( !args.start.is_null() )
       {
-        const auto* delegator = _db.find_account( delegator_name );
-        FC_ASSERT( delegator != nullptr, "Given account does not exist." );
-        delegator_id = delegator->get_id();
+        auto key = args.start.as< std::vector< fc::variant > >();
+        FC_ASSERT( key.size() == 3, "by_account_expiration start requires 3 values. (account_name_type, time_point_sec, vesting_delegation_expiration_id_type" );
+        account_name_type delegator_name = key[0].as< account_name_type >();
+        account_id_type delegator_id;
+        if( delegator_name != "" )
+        {
+          const auto* delegator = _db.find_account( delegator_name );
+          FC_ASSERT( delegator != nullptr, "Given account does not exist." );
+          delegator_id = delegator->get_id();
+        }
+        start = boost::make_tuple( delegator_id, key[1].as< time_point_sec >(), key[2].as< vesting_delegation_expiration_id_type >() );
       }
       iterate_results< chain::vesting_delegation_expiration_index, chain::by_account_expiration >(
-        std::optional( boost::make_tuple( delegator_id, key[1].as< time_point_sec >(), key[2].as< vesting_delegation_expiration_id_type >() ) ),
+        start,
         result.delegations,
         args.limit,
         &database_api_impl::on_push_default< api_vesting_delegation_expiration_object, vesting_delegation_expiration_object >,
@@ -367,9 +417,14 @@ DEFINE_API_IMPL( database_api_impl, list_hbd_conversion_requests )
   {
     case( by_conversion_date ):
     {
-      auto key = args.start.as< std::pair< time_point_sec, convert_request_id_type > >();
+      std::optional< boost::tuple< time_point_sec, convert_request_id_type > > start;
+      if( !args.start.is_null() )
+      {
+        auto key = args.start.as< std::pair< time_point_sec, convert_request_id_type > >();
+        start = boost::make_tuple( key.first, key.second );
+      }
       iterate_results< chain::convert_request_index, chain::by_conversion_date >(
-        std::optional( boost::make_tuple( key.first, key.second ) ),
+        start,
         result.requests,
         args.limit,
         &database_api_impl::on_push_default< api_convert_request_object, convert_request_object >,
@@ -378,16 +433,21 @@ DEFINE_API_IMPL( database_api_impl, list_hbd_conversion_requests )
     }
     case( by_account ):
     {
-      auto key = args.start.as< std::pair< account_name_type, uint32_t > >();
-      account_id_type owner_id;
-      if( key.first != "" )
+      std::optional< boost::tuple< account_id_type, uint32_t > > start;
+      if( !args.start.is_null() )
       {
-        const auto* owner = _db.find_account( key.first );
-        FC_ASSERT( owner != nullptr, "Given account does not exist." );
-        owner_id = owner->get_id();
+        auto key = args.start.as< std::pair< account_name_type, uint32_t > >();
+        account_id_type owner_id;
+        if( key.first != "" )
+        {
+          const auto* owner = _db.find_account( key.first );
+          FC_ASSERT( owner != nullptr, "Given account does not exist." );
+          owner_id = owner->get_id();
+        }
+        start = boost::make_tuple( owner_id, key.second );
       }
       iterate_results< chain::convert_request_index, chain::by_owner >(
-        std::optional( boost::make_tuple( owner_id, key.second ) ),
+        start,
         result.requests,
         args.limit,
         &database_api_impl::on_push_default< api_convert_request_object, convert_request_object >,
@@ -434,9 +494,14 @@ DEFINE_API_IMPL( database_api_impl, list_collateralized_conversion_requests )
   {
     case( by_conversion_date ):
     {
-      auto key = args.start.as< std::pair< time_point_sec, collateralized_convert_request_id_type > >();
+      std::optional< boost::tuple< time_point_sec, collateralized_convert_request_id_type > > start;
+      if( !args.start.is_null() )
+      {
+        auto key = args.start.as< std::pair< time_point_sec, collateralized_convert_request_id_type > >();
+        start = boost::make_tuple( key.first, key.second );
+      }
       iterate_results< chain::collateralized_convert_request_index, chain::by_conversion_date >(
-        std::optional( boost::make_tuple( key.first, key.second ) ),
+        start,
         result.requests,
         args.limit,
         &database_api_impl::on_push_default< api_collateralized_convert_request_object, collateralized_convert_request_object >,
@@ -445,16 +510,21 @@ DEFINE_API_IMPL( database_api_impl, list_collateralized_conversion_requests )
     }
     case( by_account ):
     {
-      auto key = args.start.as< std::pair< account_name_type, uint32_t > >();
-      account_id_type owner_id;
-      if( key.first != "" )
+      std::optional< boost::tuple< account_id_type, uint32_t > > start;
+      if( !args.start.is_null() )
       {
-        const auto* owner = _db.find_account( key.first );
-        FC_ASSERT( owner != nullptr, "Given account does not exist." );
-        owner_id = owner->get_id();
+        auto key = args.start.as< std::pair< account_name_type, uint32_t > >();
+        account_id_type owner_id;
+        if( key.first != "" )
+        {
+          const auto* owner = _db.find_account( key.first );
+          FC_ASSERT( owner != nullptr, "Given account does not exist." );
+          owner_id = owner->get_id();
+        }
+        start = boost::make_tuple( owner_id, key.second );
       }
       iterate_results< chain::collateralized_convert_request_index, chain::by_owner >(
-        std::optional( boost::make_tuple( owner_id, key.second ) ),
+        start,
         result.requests,
         args.limit,
         &database_api_impl::on_push_default< api_collateralized_convert_request_object, collateralized_convert_request_object >,
@@ -501,8 +571,13 @@ DEFINE_API_IMPL( database_api_impl, list_decline_voting_rights_requests )
   {
     case( by_account ):
     {
+      std::optional< account_name_type > start;
+      if( !args.start.is_null() )
+      {
+        start = args.start.as< account_name_type >();
+      }
       iterate_results< chain::decline_voting_rights_request_index, chain::by_account >(
-        std::optional( args.start.as< account_name_type >() ),
+        start,
         result.requests,
         args.limit,
         &database_api_impl::on_push_default< api_decline_voting_rights_request_object, decline_voting_rights_request_object >,
@@ -511,9 +586,14 @@ DEFINE_API_IMPL( database_api_impl, list_decline_voting_rights_requests )
     }
     case( by_effective_date ):
     {
-      auto key = args.start.as< std::pair< time_point_sec, account_name_type > >();
+      std::optional< boost::tuple< time_point_sec, account_name_type > > start;
+      if( !args.start.is_null() )
+      {
+        auto key = args.start.as< std::pair< time_point_sec, account_name_type > >();
+        start = boost::make_tuple( key.first, key.second );
+      }
       iterate_results< chain::decline_voting_rights_request_index, chain::by_effective_date >(
-        std::optional( boost::make_tuple( key.first, key.second ) ),
+        start,
         result.requests,
         args.limit,
         &database_api_impl::on_push_default< api_decline_voting_rights_request_object, decline_voting_rights_request_object >,
@@ -558,9 +638,14 @@ DEFINE_API_IMPL( database_api_impl, list_limit_orders )
   {
     case( by_price ):
     {
-      auto key = args.start.as< std::pair< price, limit_order_id_type > >();
+      std::optional< boost::tuple< price, limit_order_id_type > > start;
+      if( !args.start.is_null() )
+      {
+        auto key = args.start.as< std::pair< price, limit_order_id_type > >();
+        start = boost::make_tuple( key.first, key.second );
+      }
       iterate_results< chain::limit_order_index, chain::by_price >(
-        std::optional( boost::make_tuple( key.first, key.second ) ),
+        start,
         result.orders,
         args.limit,
         &database_api_impl::on_push_default< api_limit_order_object, limit_order_object >,
@@ -569,9 +654,14 @@ DEFINE_API_IMPL( database_api_impl, list_limit_orders )
     }
     case( by_account ):
     {
-      auto key = args.start.as< std::pair< account_name_type, uint32_t > >();
+      std::optional< boost::tuple< account_name_type, uint32_t > > start;
+      if( !args.start.is_null() )
+      {
+        auto key = args.start.as< std::pair< account_name_type, uint32_t > >();
+        start = boost::make_tuple( key.first, key.second );
+      }
       iterate_results< chain::limit_order_index, chain::by_account >(
-        std::optional( boost::make_tuple( key.first, key.second ) ),
+        start,
         result.orders,
         args.limit,
         &database_api_impl::on_push_default< api_limit_order_object, limit_order_object >,
@@ -695,17 +785,19 @@ DEFINE_API_IMPL( database_api_impl, list_smt_contributions )
   {
     case( by_symbol_contributor ):
     {
-      auto key = args.start.get_array();
-      FC_ASSERT( key.size() == 0 || key.size() == 3, "The parameter 'start' must be an empty array or consist of asset_symbol_type, contributor and contribution_id" );
+      std::optional< boost::tuple< asset_symbol_type, account_name_type, uint32_t > > start;
+      if( !args.start.is_null() )
+      {
+        auto key = args.start.get_array();
+        FC_ASSERT( key.size() == 0 || key.size() == 3, "The parameter 'start' must be an empty array or consist of asset_symbol_type, contributor and contribution_id" );
 
-      boost::tuple< asset_symbol_type, account_name_type, uint32_t > start;
-      if ( key.size() == 0 )
-        start = boost::make_tuple( asset_symbol_type(), account_name_type(), 0 );
-      else
-        start = boost::make_tuple( key[ 0 ].as< asset_symbol_type >(), key[ 1 ].as< account_name_type >(), key[ 2 ].as< uint32_t >() );
-
+        if ( key.size() == 0 )
+          start = boost::make_tuple( asset_symbol_type(), account_name_type(), 0 );
+        else
+          start = boost::make_tuple( key[ 0 ].as< asset_symbol_type >(), key[ 1 ].as< account_name_type >(), key[ 2 ].as< uint32_t >() );
+      }
       iterate_results< chain::smt_contribution_index, chain::by_symbol_contributor >(
-        std::optional( start ),
+        start,
         result.contributions,
         args.limit,
         &database_api_impl::on_push_default< api_smt_contribution_object, chain::smt_contribution_object >,
@@ -714,17 +806,19 @@ DEFINE_API_IMPL( database_api_impl, list_smt_contributions )
     }
     case( by_symbol_id ):
     {
-      auto key = args.start.get_array();
-      FC_ASSERT( key.size() == 0 || key.size() == 2, "The parameter 'start' must be an empty array or consist of asset_symbol_type and id" );
+      std::optional< boost::tuple< asset_symbol_type, smt_contribution_id_type > > start;
+      if( !args.start.is_null() )
+      {
+        auto key = args.start.get_array();
+        FC_ASSERT( key.size() == 0 || key.size() == 2, "The parameter 'start' must be an empty array or consist of asset_symbol_type and id" );
 
-      boost::tuple< asset_symbol_type, smt_contribution_id_type > start;
-      if ( key.size() == 0 )
-        start = boost::make_tuple( asset_symbol_type(), smt_contribution_id_type() );
-      else
-        start = boost::make_tuple( key[ 0 ].as< asset_symbol_type >(), key[ 1 ].as< smt_contribution_id_type >() );
-
+        if ( key.size() == 0 )
+          start = boost::make_tuple( asset_symbol_type(), smt_contribution_id_type() );
+        else
+          start = boost::make_tuple( key[ 0 ].as< asset_symbol_type >(), key[ 1 ].as< smt_contribution_id_type >() );
+      }
       iterate_results< chain::smt_contribution_index, chain::by_symbol_id >(
-        std::optional( start ),
+        start,
         result.contributions,
         args.limit,
         &database_api_impl::on_push_default< api_smt_contribution_object, chain::smt_contribution_object >,
@@ -734,17 +828,19 @@ DEFINE_API_IMPL( database_api_impl, list_smt_contributions )
 // #ifndef IS_LOW_MEM // indexing by contributor might cause optimization problems in the future
     case ( by_contributor ):
     {
-      auto key = args.start.get_array();
-      FC_ASSERT( key.size() == 0 || key.size() == 3, "The parameter 'start' must be an empty array or consist of contributor, asset_symbol_type and contribution_id" );
+      std::optional< boost::tuple< account_name_type, asset_symbol_type, uint32_t > > start;
+      if( !args.start.is_null() )
+      {
+        auto key = args.start.get_array();
+        FC_ASSERT( key.size() == 0 || key.size() == 3, "The parameter 'start' must be an empty array or consist of contributor, asset_symbol_type and contribution_id" );
 
-      boost::tuple< account_name_type, asset_symbol_type, uint32_t > start;
-      if ( key.size() == 0 )
-        start = boost::make_tuple( account_name_type(), asset_symbol_type(), 0 );
-      else
-        start = boost::make_tuple( key[ 0 ].as< account_name_type >(), key[ 1 ].as< asset_symbol_type >(), key[ 2 ].as< uint32_t >() );
-
+        if ( key.size() == 0 )
+          start = boost::make_tuple( account_name_type(), asset_symbol_type(), 0 );
+        else
+          start = boost::make_tuple( key[ 0 ].as< account_name_type >(), key[ 1 ].as< asset_symbol_type >(), key[ 2 ].as< uint32_t >() );
+      }
       iterate_results< chain::smt_contribution_index, chain::by_contributor >(
-        std::optional( start ),
+        start,
         result.contributions,
         args.limit,
         &database_api_impl::on_push_default< api_smt_contribution_object, chain::smt_contribution_object >,
@@ -789,15 +885,19 @@ DEFINE_API_IMPL( database_api_impl, list_smt_tokens )
   {
     case( by_symbol ):
     {
-      asset_symbol_type start;
-
-      if( args.start.get_object().size() > 0 )
+      std::optional< asset_symbol_type > start;
+      if( !args.start.is_null() )
       {
-        start = args.start.as< asset_symbol_type >();
+        asset_symbol_type s;
+        if( args.start.get_object().size() > 0 )
+        {
+          s = args.start.as< asset_symbol_type >();
+        }
+        start = s;
       }
 
       iterate_results< chain::smt_token_index, chain::by_symbol >(
-        std::optional( start ),
+        start,
         result.tokens,
         args.limit,
         &database_api_impl::on_push_default< api_smt_token_object, chain::smt_token_object >,
@@ -807,22 +907,24 @@ DEFINE_API_IMPL( database_api_impl, list_smt_tokens )
     }
     case( by_control_account ):
     {
-      boost::tuple< account_name_type, asset_symbol_type > start;
-
-      if( args.start.is_string() )
+      std::optional< boost::tuple< account_name_type, asset_symbol_type > > start;
+      if( !args.start.is_null() )
       {
-        start = boost::make_tuple( args.start.as< account_name_type >(), asset_symbol_type() );
-      }
-      else
-      {
-        auto key = args.start.get_array();
-        FC_ASSERT( key.size() == 2, "The parameter 'start' must be an account name or an array containing an account name and an asset symbol" );
+        if( args.start.is_string() )
+        {
+          start = boost::make_tuple( args.start.as< account_name_type >(), asset_symbol_type() );
+        }
+        else
+        {
+          auto key = args.start.get_array();
+          FC_ASSERT( key.size() == 2, "The parameter 'start' must be an account name or an array containing an account name and an asset symbol" );
 
-        start = boost::make_tuple( key[0].as< account_name_type >(), key[1].as< asset_symbol_type >() );
+          start = boost::make_tuple( key[0].as< account_name_type >(), key[1].as< asset_symbol_type >() );
+        }
       }
 
       iterate_results< chain::smt_token_index, chain::by_control_account >(
-        std::optional( start ),
+        start,
         result.tokens,
         args.limit,
         &database_api_impl::on_push_default< api_smt_token_object, chain::smt_token_object >,
@@ -868,17 +970,19 @@ DEFINE_API_IMPL( database_api_impl, list_smt_token_emissions )
   {
     case( by_symbol_time ):
     {
-      auto key = args.start.get_array();
-      FC_ASSERT( key.size() == 0 || key.size() == 2, "The parameter 'start' must be an empty array or consist of asset_symbol_type and time_point_sec" );
+      std::optional< boost::tuple< asset_symbol_type, time_point_sec > > start;
+      if( !args.start.is_null() )
+      {
+        auto key = args.start.get_array();
+        FC_ASSERT( key.size() == 0 || key.size() == 2, "The parameter 'start' must be an empty array or consist of asset_symbol_type and time_point_sec" );
 
-      boost::tuple< asset_symbol_type, time_point_sec > start;
-      if ( key.size() == 0 )
-        start = boost::make_tuple( asset_symbol_type(), time_point_sec() );
-      else
-        start = boost::make_tuple( key[ 0 ].as< asset_symbol_type >(), key[ 1 ].as< time_point_sec >() );
-
+        if ( key.size() == 0 )
+          start = boost::make_tuple( asset_symbol_type(), time_point_sec() );
+        else
+          start = boost::make_tuple( key[ 0 ].as< asset_symbol_type >(), key[ 1 ].as< time_point_sec >() );
+      }
       iterate_results< chain::smt_token_emissions_index, chain::by_symbol_time >(
-        std::optional( start ),
+        start,
         result.token_emissions,
         args.limit,
         &database_api_impl::on_push_default< api_smt_token_emissions_object, chain::smt_token_emissions_object >,
