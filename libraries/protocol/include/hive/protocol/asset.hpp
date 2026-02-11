@@ -199,6 +199,7 @@ namespace hive { namespace protocol {
   /** Applies price to given asset in order to calculate its value in the second asset (like operator* ).
       Additionally applies fee scale factor to specific asset in price. Used f.e. to apply fee to
       collateralized conversions. Fee scale parameter in basis points.
+      NOTE: there are template versions of that function that are actually used in hive code
     */
   asset multiply_with_fee( const asset& a, const price& p, uint16_t fee, asset_symbol_type apply_fee_to );
 
@@ -408,6 +409,16 @@ namespace hive { namespace protocol {
     result = ( result * p.get_quote().get_amount() ) / p.get_base().get_amount();
     return tiny_asset< _QUOTE_SYMBOL >( is_negative ? -fc::uint128_to_uint64( result ) : fc::uint128_to_uint64( result ) );
   }
+
+  // Template version of multiply_with_fee for tiny_asset/tiny_price. Overload: tiny_asset<QUOTE> * tiny_price<BASE,QUOTE> -> tiny_asset<BASE>
+  template< uint32_t _APPLY_FEE_TO, uint32_t _BASE_SYMBOL, uint32_t _QUOTE_SYMBOL >
+  tiny_asset< _BASE_SYMBOL > multiply_with_fee( const tiny_asset< _QUOTE_SYMBOL >& a,
+    const tiny_price< _BASE_SYMBOL, _QUOTE_SYMBOL >& p, uint16_t fee );
+
+  // Template version of multiply_with_fee for tiny_asset/tiny_price. Overload: tiny_asset<BASE> * tiny_price<BASE,QUOTE> -> tiny_asset<QUOTE>
+  template< uint32_t _APPLY_FEE_TO, uint32_t _BASE_SYMBOL, uint32_t _QUOTE_SYMBOL >
+  tiny_asset< _QUOTE_SYMBOL > multiply_with_fee( const tiny_asset< _BASE_SYMBOL >& a,
+    const tiny_price< _BASE_SYMBOL, _QUOTE_SYMBOL >& p, uint16_t fee );
 
 } } // hive::protocol
 

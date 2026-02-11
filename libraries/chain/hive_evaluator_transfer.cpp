@@ -492,8 +492,8 @@ void collateralized_convert_evaluator::do_apply( const collateralized_convert_op
   HIVE_asset for_immediate_conversion = HIVE_asset( fc::uint128_to_uint64( _amount ) );
 
   //immediately create HBD - apply fee to current rolling minimum price
-  HBD_asset converted_amount = multiply_with_fee( for_immediate_conversion, fhistory.current_min_history.to_price(),
-    HIVE_COLLATERALIZED_CONVERSION_FEE, HIVE_SYMBOL );
+  HBD_asset converted_amount = multiply_with_fee< HIVE_ASSET_NUM_HIVE >( for_immediate_conversion,
+    fhistory.current_min_history, HIVE_COLLATERALIZED_CONVERSION_FEE );
   FC_ASSERT( converted_amount.amount > 0, "Amount of collateral too low - conversion gives no HBD" );
   _db.adjust_balance( owner, converted_amount );
 

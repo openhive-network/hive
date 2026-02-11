@@ -89,8 +89,8 @@ void database::process_conversions()
       //to use median price here, minimal during immediate conversion was to prevent gaming; the latter is for rare
       //case, when this conversion happens when median price does not reflect market conditions when hard limit was
       //hit - see update_median_feed()
-      HIVE_asset required_hive = multiply_with_fee( itr->get_converted_amount(), fhistory.market_median_history.to_price(),
-        HIVE_COLLATERALIZED_CONVERSION_FEE, HIVE_SYMBOL );
+      HIVE_asset required_hive = hive::protocol::multiply_with_fee< HIVE_ASSET_NUM_HIVE >( itr->get_converted_amount(),
+        fhistory.market_median_history, HIVE_COLLATERALIZED_CONVERSION_FEE );
       HIVE_asset excess_collateral = itr->get_collateral_amount() - required_hive;
       if( excess_collateral.amount < 0 )
       {
