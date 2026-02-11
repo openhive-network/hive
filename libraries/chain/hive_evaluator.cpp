@@ -477,7 +477,7 @@ void pow_apply( database& db, Operation o )
     } );
   }
   /// POW reward depends upon whether we are before or after MINER_VOTING kicks in
-  asset pow_reward = db.get_pow_reward();
+  HIVE_asset pow_reward = db.get_pow_reward();
   if( db.head_block_num() < HIVE_START_MINER_VOTING_BLOCK )
     pow_reward.amount *= HIVE_MAX_WITNESSES;
   db.adjust_supply( pow_reward, true );
@@ -589,11 +589,11 @@ void pow2_evaluator::do_apply( const pow2_operation& o )
   if( !db.has_hardfork( HIVE_HARDFORK_0_16__551) )
   {
     /// pay the witness that includes this POW
-    asset inc_reward = db.get_pow_reward();
+    HIVE_asset inc_reward = db.get_pow_reward();
     db.adjust_supply( inc_reward, true );
 
     const auto& inc_witness = db.get_account( dgp.current_witness );
-    asset actual_reward = db.create_vesting( inc_witness, inc_reward );
+    VEST_asset actual_reward = db.create_vesting( inc_witness, inc_reward );
     push_virtual_operation( db, pow_reward_operation( dgp.current_witness, actual_reward ) );
   }
 }

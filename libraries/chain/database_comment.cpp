@@ -171,11 +171,12 @@ share_type database::pay_curators( const comment_object& comment, const comment_
         {
           unclaimed_rewards -= claim;
           const auto& voter = get( item->get_voter() );
-          operation vop = curation_reward_operation( voter.get_name(), asset(0, VESTS_SYMBOL), comment_author_name, to_string( comment_cashout.get_permlink() ), has_hardfork( HIVE_HARDFORK_0_17__659 ) );
-          create_vesting2( *this, voter, asset( claim, HIVE_SYMBOL ), has_hardfork( HIVE_HARDFORK_0_17__659 ),
-            [&]( const asset& reward )
+          auto vop = curation_reward_operation( voter.get_name(), VEST_asset( 0 ), comment_author_name,
+            to_string( comment_cashout.get_permlink() ), has_hardfork( HIVE_HARDFORK_0_17__659 ) );
+          create_vesting2( *this, voter, HIVE_asset( claim ), has_hardfork( HIVE_HARDFORK_0_17__659 ),
+            [&]( const VEST_asset& reward )
             {
-              vop.get< curation_reward_operation >().reward = reward;
+              vop.reward = reward;
               pre_push_virtual_operation( *this, vop );
             } );
 
@@ -264,12 +265,12 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
             vop.hive_payout = hbd_payout.second; // HIVE portion
           }
 
-          create_vesting2( *this, beneficiary, asset( benefactor_vesting_hive, HIVE_SYMBOL ), has_hardfork( HIVE_HARDFORK_0_17__659 ),
-          [&]( const asset& reward )
-          {
-            vop.vesting_payout = reward;
-            pre_push_virtual_operation( *this, vop );
-          });
+          create_vesting2( *this, beneficiary, HIVE_asset( benefactor_vesting_hive ), has_hardfork( HIVE_HARDFORK_0_17__659 ),
+            [&]( const VEST_asset& reward )
+            {
+              vop.vesting_payout = reward;
+              pre_push_virtual_operation( *this, vop );
+            } );
 
           post_push_virtual_operation( *this, vop );
           total_beneficiary += benefactor_tokens;
@@ -286,15 +287,15 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
           Total payout for curators is calculated due to the performance in third party softwares(f.e. `hivemind`).
           During payments calculations it's enough to catch `author_reward_operation`, without adding all values from `curation_reward_operation`.
         */
-        auto curators_vesting_payout = calculate_vesting( *this, asset( curation_tokens, HIVE_SYMBOL ), has_hardfork( HIVE_HARDFORK_0_17__659 ) );
+        auto curators_vesting_payout = calculate_vesting( *this, HIVE_asset( curation_tokens ), has_hardfork( HIVE_HARDFORK_0_17__659 ) );
 
-        operation vop = author_reward_operation( comment_author, to_string( comment_cashout.get_permlink() ), hbd_payout.first, hbd_payout.second, asset( 0, VESTS_SYMBOL ),
-                                                curators_vesting_payout, has_hardfork( HIVE_HARDFORK_0_17__659 ) );
+        auto vop = author_reward_operation( comment_author, to_string( comment_cashout.get_permlink() ), hbd_payout.first, hbd_payout.second, VEST_asset( 0 ),
+                                            curators_vesting_payout, has_hardfork( HIVE_HARDFORK_0_17__659 ) );
 
-        create_vesting2( *this, author, asset( vesting_hive, HIVE_SYMBOL ), has_hardfork( HIVE_HARDFORK_0_17__659 ),
-          [&]( const asset& vesting_payout )
+        create_vesting2( *this, author, HIVE_asset( vesting_hive ), has_hardfork( HIVE_HARDFORK_0_17__659 ),
+          [&]( const VEST_asset& vesting_payout )
           {
-            vop.get< author_reward_operation >().vesting_payout = vesting_payout;
+            vop.vesting_payout = vesting_payout;
             pre_push_virtual_operation( *this, vop );
           } );
         post_push_virtual_operation( *this, vop );
@@ -312,10 +313,8 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
             beneficiary_payout = c_ex.get_beneficiary_payout();
           } );
         }
-        vop = comment_reward_operation( comment_author, to_string( comment_cashout.get_permlink() ),
-          to_hbd( asset( claimed_reward, HIVE_SYMBOL ) ), author_tokens, payout, curator_payout, beneficiary_payout );
-        pre_push_virtual_operation( *this, vop );
-        post_push_virtual_operation( *this, vop );
+        push_virtual_operation( *this, comment_reward_operation( comment_author, to_string( comment_cashout.get_permlink() ),
+          to_hbd( asset( claimed_reward, HIVE_SYMBOL ) ), author_tokens, payout, curator_payout, beneficiary_payout ) );
 
         modify( author, [&]( account_object& a )
         {

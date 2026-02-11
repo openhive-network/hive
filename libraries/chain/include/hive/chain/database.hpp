@@ -499,10 +499,10 @@ namespace chain {
       /** @return the HBD created and deposited to_account, may return HIVE if there is no median feed */
       std::pair< HBD_asset, HIVE_asset > create_hbd( const account_object& to_account, asset hive, bool to_reward_balance=false );
 
-      using Before = std::function< void( const asset& ) >;
-      asset adjust_account_vesting_balance(const account_object& to_account, const asset& liquid, bool to_reward_balance, Before&& before_vesting_callback );
+      using Before = std::function< void( const VEST_asset& ) >;
+      VEST_asset adjust_account_vesting_balance( const account_object& to_account, const HIVE_asset& liquid, bool to_reward_balance, Before&& before_vesting_callback );
 
-      asset create_vesting( const account_object& to_account, const asset& liquid, bool to_reward_balance=false );
+      VEST_asset create_vesting( const account_object& to_account, const HIVE_asset& liquid, bool to_reward_balance=false );
 
       void adjust_liquidity_reward( const account_object& owner, const asset& volume, bool is_hbd );
 
@@ -579,7 +579,7 @@ namespace chain {
       asset get_content_reward()const;
       asset get_producer_reward();
       asset get_curation_reward()const;
-      asset get_pow_reward()const;
+      HIVE_asset get_pow_reward()const;
 
       uint16_t get_curation_rewards_percent() const;
 
