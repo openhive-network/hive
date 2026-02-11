@@ -20,6 +20,7 @@
 #include <hive/plugins/rc_api/rc_api.hpp>
 
 #include <algorithm>
+#include <csignal>
 #include <atomic>
 #include <cctype>
 #include <iomanip>
