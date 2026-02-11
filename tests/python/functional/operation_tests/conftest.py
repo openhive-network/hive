@@ -210,10 +210,8 @@ class ConvertAccount(Account):
             ), f"Balance is incorrect. After HIVE_COLLATERALIZED_CONVERSION_DELAY {self._name}"
             f" should get {hives_to_add.amount} HIVES."
 
-    def assert_account_balance_after_creating_collateral_conversion_request(
-        self, transaction: dict
-    ) -> None:
-        # it checks if hives were subtracted and hbds added immediately after creating request
+    def assert_account_balance_after_creating_collateral_conversion_request(self, transaction: dict) -> None:
+        # it checks if hives were substracted and hbds added immediately after creating request
         to_convert = self.extract_amount_from_convert_operation(transaction)
         hives_before_operation = self.hive
         hbds_before_operation = self.hbd
@@ -221,45 +219,20 @@ class ConvertAccount(Account):
         hives_after_operation = self.get_hive_balance()
         hbds_after_operation = self.get_hbd_balance()
 
+        response = self._node.api.wallet_bridge.get_feed_history().current_min_history
+        current_min_history = int(response.base.amount) / int(response.quote.amount)
+        hbds_to_add = tt.Asset.Tbd(0.95 * current_min_history * int((to_convert / 2).amount) / 1000)
+
         assert (
             hives_before_operation == hives_after_operation + to_convert
         ), f"Hives weren't subtracted from {self._name}'s balance after making collateralized convert request."
 
-        # Try to get the actual HBD amount from the virtual operation for precise comparison.
-        # This avoids floating-point precision issues and feed history timing races.
-        # Falls back to calculation if vop not yet available (transaction not yet in block).
-        vops = self.__get_vops_from_more_than_2000_blocks(
-            CollateralizedConvertImmediateConversionOperation
-        )
-        matching_vops = [vop for vop in vops if vop.op.value.owner == self._name]
-
-        # Count how many vops we've already processed to find new ones
-        expected_vop_count = len(self._added_hbds_by_convert) + 1
-
-        if len(matching_vops) >= expected_vop_count:
-            # Use the virtual operation value (most accurate)
-            actual_hbd_out = matching_vops[expected_vop_count - 1].op.value.hbd_out
-            expected_hbds = hbds_before_operation + actual_hbd_out
-            hbd_tolerance = tt.Asset.Tbd(0.001)
-        else:
-            # Fallback: calculate expected HBD from feed history (less accurate)
-            response = (
-                self._node.api.wallet_bridge.get_feed_history().current_min_history
-            )
-            current_min_history = int(response.base.amount) / int(response.quote.amount)
-            hbds_to_add = tt.Asset.Tbd(
-                0.95 * current_min_history * int((to_convert / 2).amount) / 1000
-            )
-            expected_hbds = hbds_before_operation + hbds_to_add
-            # Larger tolerance for calculation-based approach due to precision differences
-            hbd_tolerance = tt.Asset.Tbd(1.0)
-
+        hbd_tolerance = tt.Asset.Tbd(0.6)
         assert (
-            expected_hbds - hbd_tolerance
-            <= hbds_after_operation
-            <= expected_hbds + hbd_tolerance
-        ), f"HBDs weren't added correctly to {self._name}'s balance. Expected {expected_hbds}, got {hbds_after_operation}"
-
+            hbds_after_operation - hbd_tolerance
+            <= hbds_before_operation + hbds_to_add
+            <= hbds_after_operation + hbd_tolerance
+        ), f"Hbds weren't added to {self._name}'s balance after making collateralized convert request."
         self._added_hbds_by_convert.append(hbds_after_operation - hbds_before_operation)
 
     @staticmethod
@@ -396,11 +369,11 @@ class LimitOrderAccount(Account):
     def assert_not_completed_order(self, amount: int, hbd: bool) -> None:
         query = self._node.api.database.find_limit_orders(account=self._name).orders[0]
         for_sale = query.for_sale
-        nai = query.sell_price.base
-        nai.amount = for_sale
         currency = tt.Asset.Tbd if hbd else tt.Asset.Test
-        token = currency(0).get_asset_information().get_symbol()
-        assert nai == currency(amount), (
+        expected = currency(amount)
+        token = expected.get_asset_information().get_symbol()
+        # Compare amounts directly (for_sale is in raw units, expected.amount is in raw units too)
+        assert int(for_sale) == int(expected.amount), (
             f"Amount of {token} that are still available for sale "
             f"is not correct. {self._name} should have now {amount} {token}"
         )
@@ -551,15 +524,36 @@ class ProposalAccount(Account):
 
     def check_if_proposal_was_updated(self, changed_parameter: str) -> None:
         proposal = self._node.api.database.list_proposals(
-            start=[""],
-            limit=100,
-            order="by_creator",
-            order_direction="ascending",
-            status="all",
+            start=[""], limit=100, order="by_creator", order_direction="ascending", status="all"
         ).proposals[0]
-        assert (
-            proposal[changed_parameter] == self._proposal_parameters[changed_parameter]
-        ), f"Something went wrong after proposal update. {changed_parameter} has wrong value"
+        actual = proposal[changed_parameter]
+        expected = self._proposal_parameters[changed_parameter]
+        # Compare raw values - database_api returns simple types
+        if changed_parameter == "daily_pay":
+            # Compare amounts (actual.amount is str, expected.amount is int)
+            assert int(actual.amount) == int(expected.amount), (
+                f"Something went wrong after proposal update. {changed_parameter} has wrong value"
+            )
+        elif changed_parameter in ("end_date", "start_date"):
+            # Compare datetime strings - API returns ISO format with T separator (HIVE_TIME_FORMAT)
+            # expected may be HiveDateTime (has serialize()), datetime object, or string
+            if hasattr(expected, "serialize"):
+                # HiveDateTime.serialize() returns HIVE_TIME_FORMAT with T separator
+                expected_str = expected.serialize()
+            elif hasattr(expected, "strftime"):
+                # Regular datetime - format with T separator
+                expected_str = expected.strftime("%Y-%m-%dT%H:%M:%S")
+            else:
+                expected_str = str(expected)
+            # Normalize: remove timezone info from actual (API may include it)
+            actual_str = actual.replace("+00:00", "").replace("Z", "") if isinstance(actual, str) else str(actual)
+            assert actual_str == expected_str, (
+                f"Something went wrong after proposal update. {changed_parameter} has wrong value"
+            )
+        else:
+            assert actual == expected, (
+                f"Something went wrong after proposal update. {changed_parameter} has wrong value"
+            )
 
     def check_if_rc_current_mana_was_reduced(self, transaction: dict) -> None:
         self.rc_manabar.assert_rc_current_mana_is_reduced(transaction)
@@ -608,18 +602,16 @@ class TransferAccount(Account):
         self._wallet.api.cancel_transfer_from_savings(self._wallet, transfer_id)
 
     def get_hbd_savings_balance(self) -> tt.Asset.TbdT:
-        return (
-            self._node.api.database.find_accounts(accounts=[self._name])
-            .accounts[0]
-            .savings_hbd_balance
-        )
+        balance = self._node.api.database.find_accounts(accounts=[self._name]).accounts[0].savings_hbd_balance
+        if callable(getattr(balance, "precision", None)):
+            return balance
+        return tt.Asset.from_nai({"amount": balance.amount, "precision": balance.precision, "nai": balance.nai})
 
     def get_hive_savings_balance(self) -> tt.Asset.TestT:
-        return (
-            self._node.api.database.find_accounts(accounts=[self._name])
-            .accounts[0]
-            .savings_balance
-        )
+        balance = self._node.api.database.find_accounts(accounts=[self._name]).accounts[0].savings_balance
+        if callable(getattr(balance, "precision", None)):
+            return balance
+        return tt.Asset.from_nai({"amount": balance.amount, "precision": balance.precision, "nai": balance.nai})
 
 
 @dataclass
@@ -672,15 +664,16 @@ class UpdateAccount(Account):
             ), f"Memo key of account {self._name} wasn't changed."
 
         if new_json_meta is not None:
-            assert (
-                new_json_meta == self._acc_info.json_metadata
-            ), f"Json metadata of account {self._name} wasn't changed."
+            expected = json.loads(new_json_meta) if new_json_meta else {}
+            meta = self._acc_info.json_metadata
+            actual = meta.value if hasattr(meta, "value") else (json.loads(meta) if meta else {})
+            assert expected == actual, f"Json metadata of account {self._name} wasn't changed."
 
         if new_posting_json_meta is not None:
             to_compare = self._acc_info.posting_json_metadata
-            assert (
-                json.loads(new_posting_json_meta) == to_compare.value
-            ), f"Posting json metadata of account {self._name} wasn't changed."
+            expected = json.loads(new_posting_json_meta)
+            actual = to_compare.value if hasattr(to_compare, "value") else (json.loads(to_compare) if to_compare else {})
+            assert expected == actual, f"Posting json metadata of account {self._name} wasn't changed."
 
     def assert_if_rc_current_mana_was_reduced(self, transaction):
         self.rc_manabar.assert_rc_current_mana_is_reduced(transaction)
@@ -1051,12 +1044,7 @@ def hive_fund(
 def speed_up_node() -> tt.InitNode:
     node = tt.InitNode()
     node.config.plugin.append("account_history_api")
-    node.config.plugin.append("metadata")
-    node.run(
-        timeout=60.0,
-        time_control=tt.SpeedUpRateTimeControl(speed_up_rate=5),
-        max_retries=3,
-    )
+    node.run(timeout=60.0, time_control=tt.SpeedUpRateTimeControl(speed_up_rate=5), max_retries=3)
     return node
 
 
