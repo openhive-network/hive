@@ -105,7 +105,8 @@ DEFINE_API_IMPL( database_api_impl, list_proposals )
 
       if ( start_parameters.empty() )
       {
-        iterate_results_no_start< hive::chain::proposal_index, hive::chain::by_creator >(
+        iterate_results< hive::chain::proposal_index, hive::chain::by_creator, account_name_type >(
+          std::nullopt,
           result.proposals,
           args.limit,
           [&]( const proposal_object& po, const database& db ){ return api_proposal_object( po, current_time ); },
@@ -119,7 +120,7 @@ DEFINE_API_IMPL( database_api_impl, list_proposals )
       // Workaround: at the moment there is an assumption, that no more than one start parameter is passed, more are ignored
       auto start_creator = start_parameters.front().as< account_name_type >();
       iterate_results< hive::chain::proposal_index, hive::chain::by_creator >(
-        boost::make_tuple( start_creator, args.order_direction == ascending ? LOWEST_PROPOSAL_ID : GREATEST_PROPOSAL_ID ),
+        std::optional( boost::make_tuple( start_creator, args.order_direction == ascending ? LOWEST_PROPOSAL_ID : GREATEST_PROPOSAL_ID ) ),
         result.proposals,
         args.limit,
         [&]( const proposal_object& po, const database& db ){ return api_proposal_object( po, current_time ); },
@@ -135,7 +136,8 @@ DEFINE_API_IMPL( database_api_impl, list_proposals )
 
       if ( start_parameters.empty() )
       {
-        iterate_results_no_start< hive::chain::proposal_index, hive::chain::by_start_date >(
+        iterate_results< hive::chain::proposal_index, hive::chain::by_start_date, time_point_sec >(
+          std::nullopt,
           result.proposals,
           args.limit,
           [&]( const proposal_object& po, const database& db ){ return api_proposal_object( po, current_time ); },
@@ -153,7 +155,7 @@ DEFINE_API_IMPL( database_api_impl, list_proposals )
         : start_parameters.front().as< time_point_sec >();
 
       iterate_results< hive::chain::proposal_index, hive::chain::by_start_date >(
-        boost::make_tuple( time, args.order_direction == ascending ? LOWEST_PROPOSAL_ID : GREATEST_PROPOSAL_ID ),
+        std::optional( boost::make_tuple( time, args.order_direction == ascending ? LOWEST_PROPOSAL_ID : GREATEST_PROPOSAL_ID ) ),
         result.proposals,
         args.limit,
         [&]( const proposal_object& po, const database& db ){ return api_proposal_object( po, current_time ); },
@@ -169,7 +171,8 @@ DEFINE_API_IMPL( database_api_impl, list_proposals )
 
       if ( start_parameters.empty() )
       {
-        iterate_results_no_start< hive::chain::proposal_index, hive::chain::by_end_date >(
+        iterate_results< hive::chain::proposal_index, hive::chain::by_end_date, time_point_sec >(
+          std::nullopt,
           result.proposals,
           args.limit,
           [&]( const proposal_object& po, const database& db ){ return api_proposal_object( po, current_time ); },
@@ -191,7 +194,7 @@ DEFINE_API_IMPL( database_api_impl, list_proposals )
         : start_parameters.front().as< time_point_sec >();
 
       iterate_results< hive::chain::proposal_index, hive::chain::by_end_date >(
-        boost::make_tuple( time, args.order_direction == ascending ? LOWEST_PROPOSAL_ID : GREATEST_PROPOSAL_ID ),
+        std::optional( boost::make_tuple( time, args.order_direction == ascending ? LOWEST_PROPOSAL_ID : GREATEST_PROPOSAL_ID ) ),
         result.proposals,
         args.limit,
         [&]( const proposal_object& po, const database& db ){ return api_proposal_object( po, current_time ); },
@@ -207,7 +210,8 @@ DEFINE_API_IMPL( database_api_impl, list_proposals )
 
       if( start_parameters.empty() )
       {
-        iterate_results_no_start< hive::chain::proposal_index, hive::chain::by_total_votes >(
+        iterate_results< hive::chain::proposal_index, hive::chain::by_total_votes, uint64_t >(
+          std::nullopt,
           result.proposals,
           args.limit,
           [&]( const proposal_object& po, const database& db ){ return api_proposal_object( po, current_time ); },
@@ -222,7 +226,7 @@ DEFINE_API_IMPL( database_api_impl, list_proposals )
       auto votes = start_parameters.front().as< uint64_t >();
 
       iterate_results< hive::chain::proposal_index, hive::chain::by_total_votes >(
-        boost::make_tuple( votes, args.order_direction == ascending ? LOWEST_PROPOSAL_ID : GREATEST_PROPOSAL_ID ),
+        std::optional( boost::make_tuple( votes, args.order_direction == ascending ? LOWEST_PROPOSAL_ID : GREATEST_PROPOSAL_ID ) ),
         result.proposals,
         args.limit,
         [&]( const proposal_object& po, const database& db ){ return api_proposal_object( po, current_time ); },
@@ -300,7 +304,7 @@ DEFINE_API_IMPL( database_api_impl, list_proposal_votes )
     {
       auto key = args.start.as< std::pair< fc::optional<account_name_type>, fc::optional<api_id_type> > >();
       iterate_results< hive::chain::proposal_vote_index, hive::chain::by_voter_proposal >(
-        boost::make_tuple( get_account_name( key.first ), get_proposal_id( key.second ) ),
+        std::optional( boost::make_tuple( get_account_name( key.first ), get_proposal_id( key.second ) ) ),
         result.proposal_votes,
         args.limit,
         &database_api_impl::on_push_default< api_proposal_vote_object, proposal_vote_object >,
@@ -317,7 +321,7 @@ DEFINE_API_IMPL( database_api_impl, list_proposal_votes )
     {
       auto key = args.start.as< std::pair< fc::optional<api_id_type>, fc::optional<account_name_type> > >();
       iterate_results< hive::chain::proposal_vote_index, hive::chain::by_proposal_voter >(
-        boost::make_tuple( get_proposal_id( key.first ), get_account_name( key.second) ),
+        std::optional( boost::make_tuple( get_proposal_id( key.first ), get_account_name( key.second) ) ),
         result.proposal_votes,
         args.limit,
         &database_api_impl::on_push_default< api_proposal_vote_object, proposal_vote_object >,

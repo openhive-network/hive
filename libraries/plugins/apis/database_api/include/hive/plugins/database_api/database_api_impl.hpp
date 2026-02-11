@@ -16,6 +16,8 @@
 #include <hive/chain/database.hpp>
 #include <hive/chain/dhf_objects.hpp>
 
+#include <optional>
+
 namespace hive { namespace plugins { namespace database_api {
 
 using namespace hive::chain;
@@ -144,7 +146,7 @@ class database_api_impl
 
     template<typename IndexType, typename OrderType, typename StartType, typename ResultType, typename OnPushType, typename FilterType>
     void iterate_results(
-      StartType start,
+      std::optional<StartType> start,
       std::vector<ResultType>& result,
       uint32_t limit,
       OnPushType&& on_push,
@@ -161,47 +163,16 @@ class database_api_impl
       const auto& idx = _db.get_index< IndexType, OrderType >();
       if( direction == ascending )
       {
-        auto itr = idx.lower_bound( start );
+        auto itr = start.has_value() ? idx.lower_bound( *start ) : idx.begin();
         auto end = idx.end();
 
         iteration_loop< ResultType, OnPushType, FilterType >( itr, end, result, limit, std::forward<OnPushType>(on_push), std::forward<FilterType>(filter) );
       }
       else if( direction == descending )
       {
-        auto iter = boost::make_reverse_iterator( idx.upper_bound(start) );
-        auto end_iter = boost::make_reverse_iterator( idx.begin() );
-
-        iteration_loop< ResultType, OnPushType, FilterType >( iter, end_iter, result, limit, std::forward<OnPushType>(on_push), std::forward<FilterType>(filter) );
-      }
-    }
-
-    template<typename IndexType, typename OrderType, typename ResultType, typename OnPushType, typename FilterType>
-    void iterate_results_no_start(
-      std::vector<ResultType>& result,
-      uint32_t limit,
-      OnPushType&& on_push,
-      FilterType&& filter,
-      order_direction_type direction = ascending,
-      fc::optional<uint64_t> last_index = fc::optional<uint64_t>()
-    )
-    {
-      if( last_index.valid() )
-      {
-        iterate_results_from_index< IndexType, OrderType >( *last_index, result, limit, std::forward<OnPushType>(on_push), std::forward<FilterType>(filter), direction );
-        return;
-      }
-
-      const auto& idx = _db.get_index< IndexType, OrderType >();
-      if( direction == ascending )
-      {
-        auto itr = idx.begin();
-        auto end = idx.end();
-
-        iteration_loop< ResultType, OnPushType, FilterType >( itr, end, result, limit, std::forward<OnPushType>(on_push), std::forward<FilterType>(filter) );
-      }
-      else if( direction == descending )
-      {
-        auto iter = boost::make_reverse_iterator( idx.end() );
+        auto iter = start.has_value()
+          ? boost::make_reverse_iterator( idx.upper_bound( *start ) )
+          : boost::make_reverse_iterator( idx.end() );
         auto end_iter = boost::make_reverse_iterator( idx.begin() );
 
         iteration_loop< ResultType, OnPushType, FilterType >( iter, end_iter, result, limit, std::forward<OnPushType>(on_push), std::forward<FilterType>(filter) );
