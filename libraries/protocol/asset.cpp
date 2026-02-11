@@ -307,31 +307,85 @@ share_type price::max_satoshis()
 
 asset multiply_with_fee( const asset& a, const price& p, uint16_t fee, asset_symbol_type apply_fee_to )
 {
-  bool is_negative = a.amount.value < 0;
-  uint128_t result( is_negative ? -a.amount.value : a.amount.value );
+  bool is_negative = a.get_amount() < 0;
+  uint128_t result( is_negative ? -a.get_amount() : a.get_amount() );
   uint16_t scale_b = HIVE_100_PERCENT, scale_q = HIVE_100_PERCENT;
-  if( apply_fee_to == p.base.symbol )
+  if( apply_fee_to == p.get_base().symbol )
   {
     scale_b += fee;
   }
   else
   {
-    FC_ASSERT( apply_fee_to == p.quote.symbol, "Invalid fee symbol ${at} for price ${p}", ( "at", apply_fee_to )( "p", p ) );
+    FC_ASSERT( apply_fee_to == p.get_quote().symbol, "Invalid fee symbol ${at} for price ${p}", ( "at", apply_fee_to )( "p", p ) );
     scale_q += fee;
   }
 
-  if( a.symbol == p.base.symbol )
+  if( a.symbol == p.get_base().symbol )
   {
-    result = ( result * p.quote.amount.value * scale_q ) / ( uint128_t( p.base.amount.value ) * scale_b );
-    return asset( is_negative ? -fc::uint128_to_uint64(result) : fc::uint128_to_uint64(result), p.quote.symbol );
+    result = ( result * p.get_quote().get_amount() * scale_q ) / ( uint128_t( p.get_base().get_amount() ) * scale_b );
+    return asset( is_negative ? -fc::uint128_to_uint64( result ) : fc::uint128_to_uint64( result ), p.get_quote().symbol );
   }
   else 
   {
-    FC_ASSERT( a.symbol == p.quote.symbol, "invalid ${asset} * ${price}", ( "asset", a )( "price", p ) );
-    result = ( result * p.base.amount.value * scale_b ) / ( uint128_t ( p.quote.amount.value ) * scale_q );
-    return asset( is_negative ? -fc::uint128_to_uint64(result) : fc::uint128_to_uint64(result), p.base.symbol );
+    FC_ASSERT( a.symbol == p.get_quote().symbol, "invalid ${asset} * ${price}", ( "asset", a )( "price", p ) );
+    result = ( result * p.get_base().get_amount() * scale_b ) / ( uint128_t( p.get_quote().get_amount() ) * scale_q );
+    return asset( is_negative ? -fc::uint128_to_uint64( result ) : fc::uint128_to_uint64( result ), p.get_base().symbol );
   }
 }
+
+template< uint32_t _APPLY_FEE_TO, uint32_t _BASE_SYMBOL, uint32_t _QUOTE_SYMBOL >
+tiny_asset< _BASE_SYMBOL > multiply_with_fee( const tiny_asset< _QUOTE_SYMBOL >& a,
+  const tiny_price< _BASE_SYMBOL, _QUOTE_SYMBOL >& p, uint16_t fee )
+{
+  static_assert( _APPLY_FEE_TO == _BASE_SYMBOL || _APPLY_FEE_TO == _QUOTE_SYMBOL,
+    "Fee must be applied to base or quote symbol of the price" );
+
+  bool is_negative = a.get_amount() < 0;
+  uint128_t result( is_negative ? -a.get_amount() : a.get_amount() );
+
+  if constexpr( _APPLY_FEE_TO == _BASE_SYMBOL )
+  {
+    result = ( result * p.get_base().get_amount() * ( HIVE_100_PERCENT + fee ) )
+           / ( uint128_t( p.get_quote().get_amount() ) * HIVE_100_PERCENT );
+  }
+  else
+  {
+    result = ( result * p.get_base().get_amount() * HIVE_100_PERCENT )
+           / ( uint128_t( p.get_quote().get_amount() ) * ( HIVE_100_PERCENT + fee ) );
+  }
+
+  return tiny_asset< _BASE_SYMBOL >( is_negative ? -fc::uint128_to_uint64( result ) : fc::uint128_to_uint64( result ) );
+}
+
+// Overload: tiny_asset<BASE> * tiny_price<BASE,QUOTE> -> tiny_asset<QUOTE>
+template< uint32_t _APPLY_FEE_TO, uint32_t _BASE_SYMBOL, uint32_t _QUOTE_SYMBOL >
+tiny_asset< _QUOTE_SYMBOL > multiply_with_fee( const tiny_asset< _BASE_SYMBOL >& a,
+  const tiny_price< _BASE_SYMBOL, _QUOTE_SYMBOL >& p, uint16_t fee )
+{
+  static_assert( _APPLY_FEE_TO == _BASE_SYMBOL || _APPLY_FEE_TO == _QUOTE_SYMBOL,
+    "Fee must be applied to base or quote symbol of the price" );
+
+  bool is_negative = a.get_amount() < 0;
+  uint128_t result( is_negative ? -a.get_amount() : a.get_amount() );
+
+  if constexpr( _APPLY_FEE_TO == _BASE_SYMBOL )
+  {
+    result = ( result * p.get_quote().get_amount() * HIVE_100_PERCENT )
+           / ( uint128_t( p.get_base().get_amount() ) * ( HIVE_100_PERCENT + fee ) );
+  }
+  else
+  {
+    result = ( result * p.get_quote().get_amount() * ( HIVE_100_PERCENT + fee ) )
+           / ( uint128_t( p.get_base().get_amount() ) * HIVE_100_PERCENT );
+  }
+
+  return tiny_asset< _QUOTE_SYMBOL >( is_negative ? -fc::uint128_to_uint64( result ) : fc::uint128_to_uint64( result ) );
+}
+
+// Explicit instantiations for type combinations used in the codebase
+// (collateralized conversions: HBD<->HIVE with fee applied to HIVE)
+template HIVE_asset multiply_with_fee< HIVE_ASSET_NUM_HIVE >( const HBD_asset&, const HBD_price&, uint16_t );
+template HBD_asset multiply_with_fee< HIVE_ASSET_NUM_HIVE >( const HIVE_asset&, const HBD_price&, uint16_t );
 
 uint32_t string_to_asset_num( const char* p, uint8_t decimals )
 {
