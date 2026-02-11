@@ -43,6 +43,12 @@ find_package( Snappy CONFIG )
 #    endif()
 # endforeach()
 
+# Prevent RocksDB from setting GLOBAL RULE_LAUNCH_COMPILE to ccache.
+# Compiler caching is handled by the top-level CMakeLists.txt via
+# CMAKE_C_COMPILER_LAUNCHER / CMAKE_CXX_COMPILER_LAUNCHER.
+# RocksDB's approach conflicts with that (double-wrapping the compiler).
+set(CCACHE_FOUND "CCACHE_FOUND-NOTFOUND" CACHE FILEPATH "Disabled: compiler caching handled at top level" FORCE)
+
 add_subdirectory(rocksdb)
 
 GET_TARGET_PROPERTY( prop Snappy::snappy IMPORTED_LOCATION_RELWITHDEBINFO )
