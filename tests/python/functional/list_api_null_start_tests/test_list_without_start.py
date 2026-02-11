@@ -1,0 +1,180 @@
+"""Tests that all list_* database API calls work correctly when 'start' is omitted (null/nullopt).
+
+After commit 2ed2cf50, the 'start' parameter is optional in every list database API function.
+When omitted, iterate_results iterates from the beginning (ascending) or end (descending) of the index.
+These tests verify that every (method, order) combination returns a valid response without crashing.
+"""
+
+from __future__ import annotations
+
+import pytest
+import requests
+
+import test_tools as tt
+from hive_local_tools import run_for
+
+# Each tuple: (method_name, params_without_start, expected_result_key)
+# params always has "limit" and "order" (where applicable), but never "start".
+LIST_API_CASES = [
+    # list_witnesses
+    ("list_witnesses", {"limit": 100, "order": "by_name"}, "witnesses"),
+    ("list_witnesses", {"limit": 100, "order": "by_vote_name"}, "witnesses"),
+    ("list_witnesses", {"limit": 100, "order": "by_schedule_time"}, "witnesses"),
+    # list_witness_votes
+    ("list_witness_votes", {"limit": 100, "order": "by_account_witness"}, "votes"),
+    ("list_witness_votes", {"limit": 100, "order": "by_witness_account"}, "votes"),
+    # list_accounts
+    ("list_accounts", {"limit": 100, "order": "by_name"}, "accounts"),
+    ("list_accounts", {"limit": 100, "order": "by_proxy"}, "accounts"),
+    ("list_accounts", {"limit": 100, "order": "by_next_vesting_withdrawal"}, "accounts"),
+    # list_owner_histories (no order param)
+    ("list_owner_histories", {"limit": 100}, "owner_auths"),
+    # list_account_recovery_requests
+    ("list_account_recovery_requests", {"limit": 100, "order": "by_account"}, "requests"),
+    ("list_account_recovery_requests", {"limit": 100, "order": "by_expiration"}, "requests"),
+    # list_change_recovery_account_requests
+    ("list_change_recovery_account_requests", {"limit": 100, "order": "by_account"}, "requests"),
+    ("list_change_recovery_account_requests", {"limit": 100, "order": "by_effective_date"}, "requests"),
+    # list_escrows
+    ("list_escrows", {"limit": 100, "order": "by_from_id"}, "escrows"),
+    ("list_escrows", {"limit": 100, "order": "by_ratification_deadline"}, "escrows"),
+    # list_withdraw_vesting_routes
+    ("list_withdraw_vesting_routes", {"limit": 100, "order": "by_withdraw_route"}, "routes"),
+    ("list_withdraw_vesting_routes", {"limit": 100, "order": "by_destination"}, "routes"),
+    # list_savings_withdrawals
+    ("list_savings_withdrawals", {"limit": 100, "order": "by_from_id"}, "withdrawals"),
+    ("list_savings_withdrawals", {"limit": 100, "order": "by_complete_from_id"}, "withdrawals"),
+    ("list_savings_withdrawals", {"limit": 100, "order": "by_to_complete"}, "withdrawals"),
+    # list_vesting_delegations
+    ("list_vesting_delegations", {"limit": 100, "order": "by_delegation"}, "delegations"),
+    # list_vesting_delegation_expirations
+    ("list_vesting_delegation_expirations", {"limit": 100, "order": "by_expiration"}, "delegations"),
+    ("list_vesting_delegation_expirations", {"limit": 100, "order": "by_account_expiration"}, "delegations"),
+    # list_hbd_conversion_requests
+    ("list_hbd_conversion_requests", {"limit": 100, "order": "by_conversion_date"}, "requests"),
+    ("list_hbd_conversion_requests", {"limit": 100, "order": "by_account"}, "requests"),
+    # list_collateralized_conversion_requests
+    ("list_collateralized_conversion_requests", {"limit": 100, "order": "by_conversion_date"}, "requests"),
+    ("list_collateralized_conversion_requests", {"limit": 100, "order": "by_account"}, "requests"),
+    # list_decline_voting_rights_requests
+    ("list_decline_voting_rights_requests", {"limit": 100, "order": "by_account"}, "requests"),
+    ("list_decline_voting_rights_requests", {"limit": 100, "order": "by_effective_date"}, "requests"),
+    # list_limit_orders
+    ("list_limit_orders", {"limit": 100, "order": "by_price"}, "orders"),
+    ("list_limit_orders", {"limit": 100, "order": "by_account"}, "orders"),
+    # list_proposal_votes
+    (
+        "list_proposal_votes",
+        {"limit": 100, "order": "by_voter_proposal", "order_direction": "ascending", "status": "all"},
+        "proposal_votes",
+    ),
+    (
+        "list_proposal_votes",
+        {"limit": 100, "order": "by_proposal_voter", "order_direction": "ascending", "status": "all"},
+        "proposal_votes",
+    ),
+]
+
+
+def call_api(node: tt.InitNode, method: str, params: dict) -> dict:
+    """Send a raw JSON-RPC request to database_api.<method> without any 'start' parameter."""
+    url = node.http_endpoint.as_string()
+    payload = {
+        "jsonrpc": "2.0",
+        "method": f"database_api.{method}",
+        "params": params,
+        "id": 1,
+    }
+    response = requests.post(url, json=payload, timeout=30)
+    response.raise_for_status()
+    return response.json()
+
+
+def prepare_node(node: tt.InitNode) -> None:
+    """Set up blockchain state so most list calls return non-empty results."""
+    wallet = tt.Wallet(attach_to=node)
+
+    # Create accounts with funds
+    wallet.create_account("alice", hives=tt.Asset.Test(500), vests=tt.Asset.Test(500), hbds=tt.Asset.Tbd(500))
+    wallet.create_account("bob", hives=tt.Asset.Test(500), vests=tt.Asset.Test(500), hbds=tt.Asset.Tbd(500))
+
+    # Register alice as a witness
+    wallet.api.update_witness(
+        "alice",
+        "http://url.html",
+        tt.Account("alice").public_key,
+        {"account_creation_fee": tt.Asset.Test(28), "maximum_block_size": 131072, "hbd_interest_rate": 1000},
+    )
+
+    # bob votes for alice as witness
+    wallet.api.vote_for_witness("bob", "alice", True)
+
+    # Vesting delegation: alice -> bob
+    wallet.api.delegate_vesting_shares("alice", "bob", tt.Asset.Vest(10))
+
+    # Limit order: alice sells HIVE for HBD
+    wallet.api.create_order("alice", 431, tt.Asset.Test(10), tt.Asset.Tbd(1), False, 3600)
+
+    # HBD conversion request
+    wallet.api.convert_hbd("alice", tt.Asset.Tbd(5))
+
+    # Collateralized conversion request
+    wallet.api.convert_hive_with_collateral("alice", tt.Asset.Test(10))
+
+    # Savings withdrawal
+    wallet.api.transfer_to_savings("alice", "alice", tt.Asset.Test(50), "save")
+    wallet.api.transfer_from_savings("alice", 100, "alice", tt.Asset.Test(10), "withdraw")
+
+    # Proposal: alice posts, creates proposal, bob votes for it
+    wallet.api.post_comment("alice", "test-post", "", "test", "Test Post", "body", "{}")
+    wallet.api.create_proposal(
+        "alice", "alice", "2031-01-01T00:00:00", "2031-06-01T00:00:00", tt.Asset.Tbd(10), "test proposal", "test-post"
+    )
+    wallet.api.update_proposal_votes("bob", [0], True)
+
+    # Decline voting rights for bob
+    wallet.api.decline_voting_rights("bob", True)
+
+    # Change recovery account: alice changes recovery to bob
+    wallet.api.change_recovery_account("alice", "bob")
+
+    # Owner history: update alice's owner key to generate an owner_auth_history entry
+    wallet.api.update_account(
+        "alice",
+        "{}",
+        tt.Account("carol").public_key,
+        tt.Account("alice").public_key,
+        tt.Account("alice").public_key,
+        tt.Account("alice").public_key,
+    )
+
+    # Withdraw vesting route: alice -> bob
+    wallet.api.set_withdraw_vesting_route("alice", "bob", 50, True)
+
+    # Wait for a block to confirm all transactions
+    node.wait_number_of_blocks(2)
+
+
+@run_for("testnet")
+@pytest.mark.parametrize(
+    ("method", "params", "expected_key"),
+    LIST_API_CASES,
+    ids=[f"{m}-{p.get('order', 'default')}" for m, p, _ in LIST_API_CASES],
+)
+def test_list_without_start(
+    node: tt.InitNode, should_prepare: bool, method: str, params: dict, expected_key: str
+) -> None:
+    """Verify that calling database_api.<method> without 'start' returns a valid response."""
+    if should_prepare:
+        prepare_node(node)
+
+    response = call_api(node, method, params)
+
+    assert "error" not in response, f"API returned error: {response.get('error')}"
+    assert "result" in response, f"API response missing 'result': {response}"
+
+    result = response["result"]
+    assert expected_key in result, f"Result missing expected key '{expected_key}': {list(result.keys())}"
+    assert isinstance(result[expected_key], list), (
+        f"Expected list for '{expected_key}', got {type(result[expected_key])}"
+    )
