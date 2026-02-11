@@ -1571,7 +1571,7 @@ BOOST_AUTO_TEST_CASE( transfer_to_vesting_apply )
     signed_transaction tx;
     tx.operations.push_back( op );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    HIVE_REQUIRE_ASSERT( push_transaction( tx, alice_private_key ), "(o.amount.symbol == HBD_SYMBOL || !_db.is_treasury( o.to ))" );
+    HIVE_REQUIRE_ASSERT( push_transaction( tx, alice_private_key ), "!_db.is_treasury( o.to )" );
 
     op.to = "";
     tx.clear();

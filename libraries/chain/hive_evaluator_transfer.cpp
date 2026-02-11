@@ -292,14 +292,12 @@ void transfer_to_vesting_evaluator::do_apply( const transfer_to_vesting_operatio
   const auto& to_account = o.to.size() ? _db.get_account(o.to) : from_account;
 
   if( _db.has_hardfork( HIVE_HARDFORK_0_21__3343 ) )
-  {
-    FC_ASSERT( (o.amount.symbol == HBD_SYMBOL || !_db.is_treasury( o.to )),
-      "Can only transfer HBD to ${s}", ("s", o.to ) );
-  }
+    FC_ASSERT( !_db.is_treasury( o.to ), "Cannot vest on behalf of ${s}", ("s", o.to ) );
 
-  _db.adjust_balance( from_account, -o.amount );
+  HIVE_asset o_amount( o.get_amount() );
+  _db.adjust_balance( from_account, -o_amount );
 
-  asset amount_vested;
+  VEST_asset amount_vested;
 
   /*
     Voting immediately when `transfer_to_vesting` is executed is dangerous,
@@ -309,18 +307,18 @@ void transfer_to_vesting_evaluator::do_apply( const transfer_to_vesting_operatio
   */
   if( _db.has_hardfork( HIVE_HARDFORK_1_24 ) )
   {
-    amount_vested = _db.adjust_account_vesting_balance( to_account, o.amount, false/*to_reward_balance*/, []( asset vests_created ) {} );
+    amount_vested = _db.adjust_account_vesting_balance( to_account, o_amount, false/*to_reward_balance*/, []( VEST_asset vests_created ) {} );
 
     delayed_voting dv( _db );
-    dv.add_delayed_value( to_account, _db.head_block_time(), amount_vested.amount.value );
+    dv.add_delayed_value( to_account, _db.head_block_time(), amount_vested.get_amount() );
   }
   else
   {
-    amount_vested = _db.create_vesting( to_account, o.amount );
+    amount_vested = _db.create_vesting( to_account, o_amount );
   }
 
   /// Emit this vop unconditionally, since VESTS balance changed immediately, indepdenent to subsequent updates of account voting power done inside `delayed_voting` mechanism.
-  push_virtual_operation( _db, transfer_to_vesting_completed_operation(from_account.get_name(), to_account.get_name(), o.amount, amount_vested) );
+  push_virtual_operation( _db, transfer_to_vesting_completed_operation( from_account.get_name(), to_account.get_name(), o_amount, amount_vested ) );
 }
 
 void withdraw_vesting_evaluator::do_apply( const withdraw_vesting_operation& o )

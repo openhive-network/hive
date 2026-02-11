@@ -986,11 +986,11 @@ std::pair< HBD_asset, HIVE_asset > database::create_hbd( const account_object& t
   return assets;
 }
 
-asset database::adjust_account_vesting_balance(const account_object& to_account, const asset& liquid, bool to_reward_balance, Before&& before_vesting_callback )
+VEST_asset database::adjust_account_vesting_balance(const account_object& to_account, const HIVE_asset& liquid, bool to_reward_balance, Before&& before_vesting_callback )
 {
   try
   {
-    asset new_vesting = calculate_vesting( *this, liquid, to_reward_balance );
+    VEST_asset new_vesting = calculate_vesting( *this, liquid, to_reward_balance );
     before_vesting_callback( new_vesting );
     // Add new vesting to owner's balance.
 
@@ -1007,7 +1007,7 @@ asset database::adjust_account_vesting_balance(const account_object& to_account,
       {
         modify( to_account, [&]( account_object& a )
         {
-          util::update_manabar( cprops, a, new_vesting.amount.value );
+          util::update_manabar( cprops, a, new_vesting.get_amount() );
         });
         rc().regenerate_rc_mana( to_account, _now );
       }
@@ -1039,9 +1039,9 @@ asset database::adjust_account_vesting_balance(const account_object& to_account,
   * @param to_account - the account to receive the new vesting shares
   * @param liquid     - HIVE to be converted to vesting shares
   */
-asset database::create_vesting( const account_object& to_account, const asset& liquid, bool to_reward_balance )
+VEST_asset database::create_vesting( const account_object& to_account, const HIVE_asset& liquid, bool to_reward_balance )
 {
-  return create_vesting2( *this, to_account, liquid, to_reward_balance, []( asset vests_created ) {} );
+  return create_vesting2( *this, to_account, liquid, to_reward_balance, []( VEST_asset vests_created ){} );
 }
 
 fc::sha256 database::get_pow_target()const
@@ -1773,11 +1773,11 @@ void database::process_funds()
       p.dhf_interval_ledger += new_hbd;
     });
 
-    operation vop = producer_reward_operation( cwit.owner, asset( 0, VESTS_SYMBOL ) );
-    create_vesting2( *this, get_account( cwit.owner ), asset( witness_reward, HIVE_SYMBOL ), false,
-      [&]( const asset& vesting_shares )
+    auto vop = producer_reward_operation( cwit.owner, VEST_asset( 0 ) );
+    create_vesting2( *this, get_account( cwit.owner ), HIVE_asset( witness_reward ), false,
+      [&]( const VEST_asset& vesting_shares )
       {
-        vop.get< producer_reward_operation >().vesting_shares = vesting_shares;
+        vop.vesting_shares = vesting_shares;
         pre_push_virtual_operation( *this, vop );
       } );
     post_push_virtual_operation( *this, vop );
@@ -1865,11 +1865,11 @@ asset database::get_producer_reward()
   if( props.head_block_number >= HIVE_START_MINER_VOTING_BLOCK || (witness_account.get_vesting().amount.value == 0) )
   {
     // const auto& witness_obj = get_witness( props.current_witness );
-    operation vop = producer_reward_operation( witness_account.get_name(), asset( 0, VESTS_SYMBOL ) );
+    auto vop = producer_reward_operation( witness_account.get_name(), VEST_asset( 0 ) );
     create_vesting2( *this, witness_account, pay, false,
-      [&]( const asset& vesting_shares )
+      [&]( const VEST_asset& vesting_shares )
       {
-        vop.get< producer_reward_operation >().vesting_shares = vesting_shares;
+        vop.vesting_shares = vesting_shares;
         pre_push_virtual_operation( *this, vop );
       } );
     post_push_virtual_operation( *this, vop );
@@ -1886,7 +1886,7 @@ asset database::get_producer_reward()
   return pay;
 }
 
-asset database::get_pow_reward()const
+HIVE_asset database::get_pow_reward()const
 {
   // There is no need to update virtual_supply to take into account treasury as it's done in process_funds
   const auto& props = get_dynamic_global_properties();
