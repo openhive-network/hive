@@ -12,7 +12,7 @@ size_t perform_read(int fd, char* buffer, size_t to_read, size_t offset, const s
   size_t total_read = 0;
   while(1)
   {
-    bytes_read = pread(fd, buffer + bytes_read, to_read, offset);
+    bytes_read = pread(fd, buffer + total_read, to_read, offset);
 
     if(bytes_read == -1)
       FC_THROW("Error reading ${nbytes} while performing operation: ${op}: ${error}",
