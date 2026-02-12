@@ -111,6 +111,44 @@ LIST_API_CASES = [
         "proposal_votes",
         [0, ""],
     ),
+    # list_proposals descending
+    (
+        "list_proposals",
+        {"limit": 100, "order": "by_creator", "order_direction": "descending", "status": "all"},
+        "proposals",
+        None,
+    ),
+    (
+        "list_proposals",
+        {"limit": 100, "order": "by_start_date", "order_direction": "descending", "status": "all"},
+        "proposals",
+        None,
+    ),
+    (
+        "list_proposals",
+        {"limit": 100, "order": "by_end_date", "order_direction": "descending", "status": "all"},
+        "proposals",
+        None,
+    ),
+    (
+        "list_proposals",
+        {"limit": 100, "order": "by_total_votes", "order_direction": "descending", "status": "all"},
+        "proposals",
+        None,
+    ),
+    # list_proposal_votes descending
+    (
+        "list_proposal_votes",
+        {"limit": 100, "order": "by_voter_proposal", "order_direction": "descending", "status": "all"},
+        "proposal_votes",
+        None,
+    ),
+    (
+        "list_proposal_votes",
+        {"limit": 100, "order": "by_proposal_voter", "order_direction": "descending", "status": "all"},
+        "proposal_votes",
+        None,
+    ),
 ]
 
 
