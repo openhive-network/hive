@@ -74,6 +74,31 @@ LIST_API_CASES = [
     # list_limit_orders
     ("list_limit_orders", {"limit": 100, "order": "by_price"}, "orders", None),
     ("list_limit_orders", {"limit": 100, "order": "by_account"}, "orders", ["", 0]),
+    # list_proposals
+    (
+        "list_proposals",
+        {"limit": 100, "order": "by_creator", "order_direction": "ascending", "status": "all"},
+        "proposals",
+        [""],
+    ),
+    (
+        "list_proposals",
+        {"limit": 100, "order": "by_start_date", "order_direction": "ascending", "status": "all"},
+        "proposals",
+        [""],
+    ),
+    (
+        "list_proposals",
+        {"limit": 100, "order": "by_end_date", "order_direction": "ascending", "status": "all"},
+        "proposals",
+        [""],
+    ),
+    (
+        "list_proposals",
+        {"limit": 100, "order": "by_total_votes", "order_direction": "ascending", "status": "all"},
+        "proposals",
+        [0],
+    ),
     # list_proposal_votes
     (
         "list_proposal_votes",

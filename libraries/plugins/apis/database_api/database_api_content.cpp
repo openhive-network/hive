@@ -101,13 +101,16 @@ DEFINE_API_IMPL( database_api_impl, list_proposals )
   {
     case by_creator:
     {
-      auto start_parameters = args.start.as< variants >();
       std::optional< boost::tuple< account_name_type, api_id_type > > start;
-      if ( !start_parameters.empty() )
+      if( !args.start.is_null() )
       {
-        // Workaround: at the moment there is an assumption, that no more than one start parameter is passed, more are ignored
-        auto start_creator = start_parameters.front().as< account_name_type >();
-        start = boost::make_tuple( start_creator, args.order_direction == ascending ? LOWEST_PROPOSAL_ID : GREATEST_PROPOSAL_ID );
+        auto start_parameters = args.start.as< variants >();
+        if ( !start_parameters.empty() )
+        {
+          // Workaround: at the moment there is an assumption, that no more than one start parameter is passed, more are ignored
+          auto start_creator = start_parameters.front().as< account_name_type >();
+          start = boost::make_tuple( start_creator, args.order_direction == ascending ? LOWEST_PROPOSAL_ID : GREATEST_PROPOSAL_ID );
+        }
       }
       iterate_results< hive::chain::proposal_index, hive::chain::by_creator >(
         start,
@@ -122,16 +125,19 @@ DEFINE_API_IMPL( database_api_impl, list_proposals )
     }
     case by_start_date:
     {
-      auto start_parameters = args.start.as< variants >();
       std::optional< boost::tuple< time_point_sec, api_id_type > > start;
-      if ( !start_parameters.empty() )
+      if( !args.start.is_null() )
       {
-        auto start_date_string = start_parameters.front().as< std::string >();
-        // check if empty string was passed as the time
-        auto time = start_date_string.empty()
-          ? time_point_sec( args.order_direction == ascending ? fc::time_point::min() : fc::time_point::maximum() )
-          : start_parameters.front().as< time_point_sec >();
-        start = boost::make_tuple( time, args.order_direction == ascending ? LOWEST_PROPOSAL_ID : GREATEST_PROPOSAL_ID );
+        auto start_parameters = args.start.as< variants >();
+        if ( !start_parameters.empty() )
+        {
+          auto start_date_string = start_parameters.front().as< std::string >();
+          // check if empty string was passed as the time
+          auto time = start_date_string.empty()
+            ? time_point_sec( args.order_direction == ascending ? fc::time_point::min() : fc::time_point::maximum() )
+            : start_parameters.front().as< time_point_sec >();
+          start = boost::make_tuple( time, args.order_direction == ascending ? LOWEST_PROPOSAL_ID : GREATEST_PROPOSAL_ID );
+        }
       }
       iterate_results< hive::chain::proposal_index, hive::chain::by_start_date >(
         start,
@@ -146,17 +152,20 @@ DEFINE_API_IMPL( database_api_impl, list_proposals )
     }
     case by_end_date:
     {
-      auto start_parameters = args.start.as< variants >();
       std::optional< boost::tuple< time_point_sec, api_id_type > > start;
-      if ( !start_parameters.empty() )
+      if( !args.start.is_null() )
       {
-        // Workaround: at the moment there is assumption, that no more than one start parameter is passed, more are ignored
-        auto end_date_string = start_parameters.front().as< std::string >();
-        // check if empty string was passed as the time
-        auto time = end_date_string.empty()
-          ? time_point_sec( args.order_direction == ascending ? fc::time_point::min() : fc::time_point::maximum() )
-          : start_parameters.front().as< time_point_sec >();
-        start = boost::make_tuple( time, args.order_direction == ascending ? LOWEST_PROPOSAL_ID : GREATEST_PROPOSAL_ID );
+        auto start_parameters = args.start.as< variants >();
+        if ( !start_parameters.empty() )
+        {
+          // Workaround: at the moment there is assumption, that no more than one start parameter is passed, more are ignored
+          auto end_date_string = start_parameters.front().as< std::string >();
+          // check if empty string was passed as the time
+          auto time = end_date_string.empty()
+            ? time_point_sec( args.order_direction == ascending ? fc::time_point::min() : fc::time_point::maximum() )
+            : start_parameters.front().as< time_point_sec >();
+          start = boost::make_tuple( time, args.order_direction == ascending ? LOWEST_PROPOSAL_ID : GREATEST_PROPOSAL_ID );
+        }
       }
       iterate_results< hive::chain::proposal_index, hive::chain::by_end_date >(
         start,
@@ -171,13 +180,16 @@ DEFINE_API_IMPL( database_api_impl, list_proposals )
     }
     case by_total_votes:
     {
-      auto start_parameters = args.start.as< variants >();
       std::optional< boost::tuple< uint64_t, api_id_type > > start;
-      if ( !start_parameters.empty() )
+      if( !args.start.is_null() )
       {
-        // Workaround: at the moment there is assumption, that no more than one start parameter is passed, more are ignored
-        auto votes = start_parameters.front().as< uint64_t >();
-        start = boost::make_tuple( votes, args.order_direction == ascending ? LOWEST_PROPOSAL_ID : GREATEST_PROPOSAL_ID );
+        auto start_parameters = args.start.as< variants >();
+        if ( !start_parameters.empty() )
+        {
+          // Workaround: at the moment there is assumption, that no more than one start parameter is passed, more are ignored
+          auto votes = start_parameters.front().as< uint64_t >();
+          start = boost::make_tuple( votes, args.order_direction == ascending ? LOWEST_PROPOSAL_ID : GREATEST_PROPOSAL_ID );
+        }
       }
       iterate_results< hive::chain::proposal_index, hive::chain::by_total_votes >(
         start,
