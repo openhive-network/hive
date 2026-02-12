@@ -676,9 +676,6 @@ void claim_reward_balance_evaluator::do_apply( const claim_reward_balance_operat
         {
           util::update_manabar( dgpo, acnt, a, t, mrc, op_reward_vests.amount.value );
         } );
-        a.set_vesting( a.get_vesting() + op_reward_vests );
-        a.set_vest_rewards( a.get_vest_rewards() - op_reward_vests );
-        a.set_vest_rewards_as_hive( a.get_vest_rewards_as_hive() - reward_vesting_hive_to_move );
       } );
       _db.rc().regenerate_rc_mana( acnt, acnt_mrc, acnt_assets, acnt_time, now );
     }
