@@ -52,7 +52,7 @@ struct supplement_operations_visitor
 
       if( _db.has_hardfork( HIVE_HARDFORK_0_17__774 ) )
       {
-        reward_hive = HIVE_asset( rf->reward_balance );
+        reward_hive = rf->get_reward_balance();
         vshares = chain::util::evaluate_reward_curve( cashout->get_net_rshares(), rf->author_reward_curve, rf->content_constant );
       }
       else

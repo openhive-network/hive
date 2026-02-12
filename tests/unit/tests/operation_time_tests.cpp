@@ -246,7 +246,7 @@ BOOST_AUTO_TEST_CASE( comment_payout_dust )
 
     // If comments are paid out independent of order, then the last satoshi of HIVE cannot be divided among them
     const auto& rf = db->get< reward_fund_object, by_name >( HIVE_POST_REWARD_FUND_NAME );
-    BOOST_REQUIRE( rf.reward_balance == ASSET( "0.001 TESTS" ) );
+    BOOST_REQUIRE( rf.get_reward_balance() == HIVE_asset( 1 ) );
 
     validate_database();
 

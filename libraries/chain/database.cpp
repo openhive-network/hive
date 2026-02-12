@@ -1927,7 +1927,7 @@ share_type database::pay_reward_funds( const share_type& reward )
 
     modify( *itr, [&]( reward_fund_object& rfo )
     {
-      rfo.reward_balance += asset( r, HIVE_SYMBOL );
+      rfo.reward_balance += HIVE_asset( r );
     });
 
     used_rewards += r;
