@@ -791,7 +791,7 @@ DEFINE_API_IMPL( database_api_impl, list_smt_contributions )
         auto key = args.start.get_array();
         FC_ASSERT( key.size() == 0 || key.size() == 3, "The parameter 'start' must be an empty array or consist of asset_symbol_type, contributor and contribution_id" );
 
-        if ( key.size() == 0 )
+        if( key.size() == 0 )
           start = boost::make_tuple( asset_symbol_type(), account_name_type(), 0 );
         else
           start = boost::make_tuple( key[ 0 ].as< asset_symbol_type >(), key[ 1 ].as< account_name_type >(), key[ 2 ].as< uint32_t >() );
@@ -812,7 +812,7 @@ DEFINE_API_IMPL( database_api_impl, list_smt_contributions )
         auto key = args.start.get_array();
         FC_ASSERT( key.size() == 0 || key.size() == 2, "The parameter 'start' must be an empty array or consist of asset_symbol_type and id" );
 
-        if ( key.size() == 0 )
+        if( key.size() == 0 )
           start = boost::make_tuple( asset_symbol_type(), smt_contribution_id_type() );
         else
           start = boost::make_tuple( key[ 0 ].as< asset_symbol_type >(), key[ 1 ].as< smt_contribution_id_type >() );
@@ -834,7 +834,7 @@ DEFINE_API_IMPL( database_api_impl, list_smt_contributions )
         auto key = args.start.get_array();
         FC_ASSERT( key.size() == 0 || key.size() == 3, "The parameter 'start' must be an empty array or consist of contributor, asset_symbol_type and contribution_id" );
 
-        if ( key.size() == 0 )
+        if( key.size() == 0 )
           start = boost::make_tuple( account_name_type(), asset_symbol_type(), 0 );
         else
           start = boost::make_tuple( key[ 0 ].as< account_name_type >(), key[ 1 ].as< asset_symbol_type >(), key[ 2 ].as< uint32_t >() );
@@ -976,7 +976,7 @@ DEFINE_API_IMPL( database_api_impl, list_smt_token_emissions )
         auto key = args.start.get_array();
         FC_ASSERT( key.size() == 0 || key.size() == 2, "The parameter 'start' must be an empty array or consist of asset_symbol_type and time_point_sec" );
 
-        if ( key.size() == 0 )
+        if( key.size() == 0 )
           start = boost::make_tuple( asset_symbol_type(), time_point_sec() );
         else
           start = boost::make_tuple( key[ 0 ].as< asset_symbol_type >(), key[ 1 ].as< time_point_sec >() );

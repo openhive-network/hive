@@ -105,7 +105,7 @@ DEFINE_API_IMPL( database_api_impl, list_proposals )
       if( !args.start.is_null() )
       {
         auto start_parameters = args.start.as< variants >();
-        if ( !start_parameters.empty() )
+        if( !start_parameters.empty() )
         {
           // Workaround: at the moment there is an assumption, that no more than one start parameter is passed, more are ignored
           auto start_creator = start_parameters.front().as< account_name_type >();
@@ -129,7 +129,7 @@ DEFINE_API_IMPL( database_api_impl, list_proposals )
       if( !args.start.is_null() )
       {
         auto start_parameters = args.start.as< variants >();
-        if ( !start_parameters.empty() )
+        if( !start_parameters.empty() )
         {
           auto start_date_string = start_parameters.front().as< std::string >();
           // check if empty string was passed as the time
@@ -156,7 +156,7 @@ DEFINE_API_IMPL( database_api_impl, list_proposals )
       if( !args.start.is_null() )
       {
         auto start_parameters = args.start.as< variants >();
-        if ( !start_parameters.empty() )
+        if( !start_parameters.empty() )
         {
           // Workaround: at the moment there is assumption, that no more than one start parameter is passed, more are ignored
           auto end_date_string = start_parameters.front().as< std::string >();
@@ -184,7 +184,7 @@ DEFINE_API_IMPL( database_api_impl, list_proposals )
       if( !args.start.is_null() )
       {
         auto start_parameters = args.start.as< variants >();
-        if ( !start_parameters.empty() )
+        if( !start_parameters.empty() )
         {
           // Workaround: at the moment there is assumption, that no more than one start parameter is passed, more are ignored
           auto votes = start_parameters.front().as< uint64_t >();
