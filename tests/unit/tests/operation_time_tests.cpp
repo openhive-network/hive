@@ -485,7 +485,7 @@ BOOST_AUTO_TEST_CASE( comment_payout )
     auto bob_comment_payout = asset( ( ( uint128_t( bob_comment_rshares.value ) * bob_comment_rshares.value * reward_hive.amount.value ) / total_rshares2 ).to_uint64(), HIVE_SYMBOL );
     auto bob_comment_discussion_rewards = asset( bob_comment_payout.amount / 4, HIVE_SYMBOL );
     bob_comment_payout -= bob_comment_discussion_rewards;
-    auto bob_comment_hbd_reward = db->to_hbd( asset( bob_comment_payout.amount / 2, HIVE_SYMBOL ) );
+    auto bob_comment_hbd_reward = db->to_hbd( HIVE_asset( bob_comment_payout.amount / 2 ) );
     auto bob_comment_vesting_reward = ( bob_comment_payout - asset( bob_comment_payout.amount / 2, HIVE_SYMBOL) ) * db->get_dynamic_global_properties().get_vesting_share_price().to_price();
 
     BOOST_TEST_MESSAGE( "Cause first payout" );
@@ -976,13 +976,13 @@ OOST_AUTO_TEST_CASE( nested_comments )
     dave_pays_bob_vest -= dave_pays_alice_vest;
 
     // Calculate total comment payouts
-    auto alice_comment_total_payout = db->to_hbd( asset( alice_pays_alice_hbd + alice_pays_alice_vest, HIVE_SYMBOL ) );
-    alice_comment_total_payout += db->to_hbd( asset( bob_pays_alice_hbd + bob_pays_alice_vest, HIVE_SYMBOL ) );
-    alice_comment_total_payout += db->to_hbd( asset( dave_pays_alice_hbd + dave_pays_alice_vest, HIVE_SYMBOL ) );
-    auto bob_comment_total_payout = db->to_hbd( asset( bob_pays_bob_hbd + bob_pays_bob_vest, HIVE_SYMBOL ) );
-    bob_comment_total_payout += db->to_hbd( asset( dave_pays_bob_hbd + dave_pays_bob_vest, HIVE_SYMBOL ) );
-    auto sam_comment_total_payout = db->to_hbd( asset( dave_pays_sam_hbd + dave_pays_sam_vest, HIVE_SYMBOL ) );
-    auto dave_comment_total_payout = db->to_hbd( asset( dave_pays_dave_hbd + dave_pays_dave_vest, HIVE_SYMBOL ) );
+    auto alice_comment_total_payout = db->to_hbd( HIVE_asset( alice_pays_alice_hbd + alice_pays_alice_vest ) );
+    alice_comment_total_payout += db->to_hbd( HIVE_asset( bob_pays_alice_hbd + bob_pays_alice_vest ) );
+    alice_comment_total_payout += db->to_hbd( HIVE_asset( dave_pays_alice_hbd + dave_pays_alice_vest ) );
+    auto bob_comment_total_payout = db->to_hbd( HIVE_asset( bob_pays_bob_hbd + bob_pays_bob_vest ) );
+    bob_comment_total_payout += db->to_hbd( HIVE_asset( dave_pays_bob_hbd + dave_pays_bob_vest ) );
+    auto sam_comment_total_payout = db->to_hbd( HIVE_asset( dave_pays_sam_hbd + dave_pays_sam_vest ) );
+    auto dave_comment_total_payout = db->to_hbd( HIVE_asset( dave_pays_dave_hbd + dave_pays_dave_vest ) );
 
     auto alice_starting_vesting = get_vesting( "alice" );
     auto alice_starting_hbd = get_hbd_balance( "alice" );
