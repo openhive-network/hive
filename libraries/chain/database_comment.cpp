@@ -38,7 +38,7 @@ using hive::protocol::vesting_shares_split_operation;
 struct reward_fund_context
 {
   uint128_t   recent_claims = 0;
-  asset       reward_balance = asset( 0, HIVE_SYMBOL );
+  HIVE_asset  reward_balance;
   share_type  hive_awarded = 0;
 };
 
@@ -521,7 +521,7 @@ void database::process_comment_cashout()
       modify( get< reward_fund_object, by_id >( reward_fund_object::id_type( i ) ), [&]( reward_fund_object& rfo )
       {
         rfo.recent_claims = funds[ i ].recent_claims;
-        rfo.reward_balance -= asset( funds[ i ].hive_awarded, HIVE_SYMBOL );
+        rfo.reward_balance -= HIVE_asset( funds[ i ].hive_awarded );
       });
     }
   }
