@@ -66,7 +66,7 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #ifdef HIVE_ENABLE_SMT
   #define HIVE_BLOCKCHAIN_VERSION             ( version(1, 29, 0) )
 #else
-  #define HIVE_BLOCKCHAIN_VERSION             ( version(1, 28, 3) ) /// no new HF atm
+  #define HIVE_BLOCKCHAIN_VERSION             ( version(1, 28, 6) ) /// no new HF atm
 #endif
 
 #define OLD_CHAIN_ID                          (fc::sha256::hash("testnet"))
@@ -136,12 +136,12 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 
 #ifdef USE_ALTERNATE_CHAIN_ID
   /// Mirrornet
-  #define HIVE_BLOCKCHAIN_VERSION               ( version(1, 28, 3) )
+  #define HIVE_BLOCKCHAIN_VERSION               ( version(1, 28, 6) )
   #define OLD_CHAIN_ID                          fc::sha256()
   #define HIVE_CHAIN_ID                         fc::sha256("4200000000000000000000000000000000000000000000000000000000000000")
 #else
   /// Hive mainnet
-  #define HIVE_BLOCKCHAIN_VERSION               ( version(1, 28, 3) )
+  #define HIVE_BLOCKCHAIN_VERSION               ( version(1, 28, 6) )
   #define OLD_CHAIN_ID                          fc::sha256()
   #define HIVE_CHAIN_ID                         fc::sha256("beeab0de00000000000000000000000000000000000000000000000000000000")
 #endif
