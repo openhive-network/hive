@@ -5,13 +5,11 @@
 namespace hive { namespace chain { namespace util {
 
 uint64_t get_rshare_reward( const comment_reward_context& ctx )
-{
-  try
-  {
+{ try {
   FC_ASSERT( ctx.rshares > 0 );
   FC_ASSERT( ctx.total_reward_shares2 > 0 );
 
-  u256 rf(ctx.total_reward_fund_hive.amount.value);
+  u256 rf( ctx.total_reward_fund_hive.get_amount() );
   u256 total_claims = to256( ctx.total_reward_shares2 );
 
   //idump( (ctx) );
@@ -26,13 +24,12 @@ uint64_t get_rshare_reward( const comment_reward_context& ctx )
   if( is_comment_payout_dust( ctx.current_hive_price, payout ) )
     payout = 0;
 
-  asset max_hive = to_hive( ctx.current_hive_price, ctx.max_hbd );
+  HIVE_asset max_hive = to_hive( ctx.current_hive_price, ctx.max_hbd );
 
-  payout = std::min( payout, uint64_t( max_hive.amount.value ) );
+  payout = std::min( payout, uint64_t( max_hive.get_amount() ) );
 
   return payout;
-  } FC_CAPTURE_AND_RETHROW( (ctx) )
-}
+} FC_CAPTURE_AND_RETHROW( (ctx) ) }
 
 uint128_t evaluate_reward_curve( const uint128_t& rshares, const protocol::curve_id& curve, const uint128_t& var1 )
 {

@@ -940,13 +940,13 @@ uint32_t database::get_slot_at_time(fc::time_point_sec when)const
   *  Converts HIVE into HBD and adds it to to_account while reducing the HIVE supply
   *  by HIVE and increasing the HBD supply by the specified amount.
   */
-std::pair< HBD_asset, HIVE_asset > database::create_hbd( const account_object& to_account, asset hive, bool to_reward_balance )
+std::pair< HBD_asset, HIVE_asset > database::create_hbd( const account_object& to_account, const HIVE_asset& hive, bool to_reward_balance )
 {
   std::pair< HBD_asset, HIVE_asset > assets;
 
   try
   {
-    if( hive.amount == 0 )
+    if( hive.get_amount() == 0 )
       return assets;
 
     const auto& median_price = get_feed_history().current_median_history;
@@ -954,26 +954,26 @@ std::pair< HBD_asset, HIVE_asset > database::create_hbd( const account_object& t
 
     if( !median_price.is_null() )
     {
-      auto to_hbd = ( gpo.hbd_print_rate * hive.amount ) / HIVE_100_PERCENT;
-      auto to_hive = hive.amount - to_hbd;
+      auto to_hbd = ( gpo.hbd_print_rate * hive ) / HIVE_100_PERCENT;
+      auto to_hive = hive - to_hbd;
 
-      auto hbd = HIVE_asset( to_hbd ) * median_price;
+      auto hbd = to_hbd * median_price;
 
       if( to_reward_balance )
       {
         adjust_reward_balance( to_account, hbd );
-        adjust_reward_balance( to_account, asset( to_hive, HIVE_SYMBOL ) );
+        adjust_reward_balance( to_account, to_hive );
       }
       else
       {
         adjust_balance( to_account, hbd );
-        adjust_balance( to_account, asset( to_hive, HIVE_SYMBOL ) );
+        adjust_balance( to_account, to_hive );
       }
 
-      adjust_supply( asset( -to_hbd, HIVE_SYMBOL ) );
+      adjust_supply( -to_hbd );
       adjust_supply( hbd );
       assets.first = hbd;
-      assets.second = HIVE_asset( to_hive );
+      assets.second = to_hive;
     }
     else
     {
@@ -1939,14 +1939,14 @@ share_type database::pay_reward_funds( const share_type& reward )
   return used_rewards;
 }
 
-HBD_asset database::to_hbd( const asset& hive )const
+HBD_asset database::to_hbd( const HIVE_asset& hive )const
 {
-  return util::to_hbd( get_feed_history().current_median_history.to_price(), hive );
+  return util::to_hbd( get_feed_history().current_median_history, hive );
 }
 
-HIVE_asset database::to_hive( const asset& hbd )const
+HIVE_asset database::to_hive( const HBD_asset& hbd )const
 {
-  return util::to_hive( get_feed_history().current_median_history.to_price(), hbd );
+  return util::to_hive( get_feed_history().current_median_history, hbd );
 }
 
 void database::account_recovery_processing()

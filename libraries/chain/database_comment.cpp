@@ -259,7 +259,7 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
           {
             auto benefactor_hbd_hive = ( benefactor_tokens * comment_cashout.get_percent_hbd() ) / ( 2 * HIVE_100_PERCENT ) ;
             benefactor_vesting_hive  = benefactor_tokens - benefactor_hbd_hive;
-            auto hbd_payout          = create_hbd( beneficiary, asset( benefactor_hbd_hive, HIVE_SYMBOL ), true );
+            auto hbd_payout          = create_hbd( beneficiary, HIVE_asset( benefactor_hbd_hive ), true );
 
             vop.hbd_payout   = hbd_payout.first; // HBD portion
             vop.hive_payout = hbd_payout.second; // HIVE portion
@@ -281,7 +281,7 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
         auto hbd_hive     = ( author_tokens * comment_cashout.get_percent_hbd() ) / ( 2 * HIVE_100_PERCENT ) ;
         auto vesting_hive = author_tokens - hbd_hive;
 
-        auto hbd_payout = create_hbd( author, asset( hbd_hive, HIVE_SYMBOL ), has_hardfork( HIVE_HARDFORK_0_17__659 ) );
+        auto hbd_payout = create_hbd( author, HIVE_asset( hbd_hive ), has_hardfork( HIVE_HARDFORK_0_17__659 ) );
 
         /*
           Total payout for curators is calculated due to the performance in third party softwares(f.e. `hivemind`).
@@ -300,9 +300,9 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
           } );
         post_push_virtual_operation( *this, vop );
 
-        HBD_asset payout = hbd_payout.first + to_hbd( hbd_payout.second + asset( vesting_hive, HIVE_SYMBOL ) );
-        HBD_asset curator_payout = to_hbd( asset( curation_tokens, HIVE_SYMBOL ) );
-        HBD_asset beneficiary_payout = to_hbd( asset( total_beneficiary, HIVE_SYMBOL ) );
+        HBD_asset payout = hbd_payout.first + to_hbd( hbd_payout.second + HIVE_asset( vesting_hive ) );
+        HBD_asset curator_payout = to_hbd( HIVE_asset( curation_tokens ) );
+        HBD_asset beneficiary_payout = to_hbd( HIVE_asset( total_beneficiary ) );
         if( !has_hardfork( HIVE_HARDFORK_0_19 ) )
         {
           modify( *comment_cashout_ex, [&]( comment_cashout_ex_object& c_ex )
@@ -314,7 +314,7 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
           } );
         }
         push_virtual_operation( *this, comment_reward_operation( comment_author, to_string( comment_cashout.get_permlink() ),
-          to_hbd( asset( claimed_reward, HIVE_SYMBOL ) ), author_tokens, payout, curator_payout, beneficiary_payout ) );
+          to_hbd( HIVE_asset( claimed_reward ) ), author_tokens, payout, curator_payout, beneficiary_payout ) );
 
         modify( author, [&]( account_object& a )
         {
@@ -387,7 +387,7 @@ void database::process_comment_cashout()
   const auto& gpo = get_dynamic_global_properties();
   auto _now = head_block_time();
   util::comment_reward_context ctx;
-  ctx.current_hive_price = get_feed_history().current_median_history.to_price();
+  ctx.current_hive_price = get_feed_history().current_median_history;
 
   vector< reward_fund_context > funds;
   vector< share_type > hive_awarded;
