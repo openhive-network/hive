@@ -110,6 +110,8 @@ add_library( hive_protocol STATIC ${SOURCES} )
 
 file(MAKE_DIRECTORY ${BINARY_INCLUDE_DIR})
 
+find_program(ZOPFLI zopfli REQUIRED)
+
 add_custom_command(
   COMMAND "bash" "-c" "\"${CMAKE_CURRENT_SOURCE_DIR}/generate_words.sh\" \"${CMAKE_CURRENT_SOURCE_DIR}/words.txt\" \"${BINARY_INCLUDE_DIR}/words.deflate\" \"${BINARY_INCLUDE_DIR}/words.b64\""
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
