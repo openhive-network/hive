@@ -169,7 +169,10 @@ def call_api(node: tt.InitNode, method: str, params: dict) -> dict:
 @pytest.mark.parametrize(
     ("method", "params", "expected_key", "min_start"),
     LIST_API_CASES,
-    ids=[f"{m}-{p.get('order', 'default')}" for m, p, _, _ms in LIST_API_CASES],
+    ids=[
+        f"{m}-{p.get('order', 'default')}" + (f"-{p['order_direction']}" if "order_direction" in p else "")
+        for m, p, _, _ms in LIST_API_CASES
+    ],
 )
 def test_list_without_start(
     prepared_node: tt.InitNode, method: str, params: dict, expected_key: str, min_start: object
