@@ -33,7 +33,6 @@
 #include <hive/chain/rc/rc_objects.hpp>
 #include <hive/chain/detail/state/manabars_rc_object.hpp>
 #include <hive/chain/detail/state/assets_object.hpp>
-#include <hive/chain/detail/state/time_object.hpp>
 
 #include "../db_fixture/clean_database_fixture.hpp"
 

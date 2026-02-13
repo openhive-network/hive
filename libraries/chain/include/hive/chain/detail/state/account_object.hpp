@@ -15,7 +15,6 @@
 #include <hive/chain/detail/state/recovery_object.hpp>
 #include <hive/chain/detail/state/assets_object.hpp>
 #include <hive/chain/detail/state/manabars_rc_object.hpp>
-#include <hive/chain/detail/state/time_object.hpp>
 #include <hive/chain/detail/state/delayed_votes_object.hpp>
 
 #include <numeric>
@@ -32,7 +31,6 @@ namespace hive { namespace chain {
    * - recovery_object: recovery account info, last recovery times
    * - assets_object: all balance-related data (HIVE, HBD, VESTS, rewards, delegations, power down)
    * - manabars_rc_object: voting manabars, RC manabar, RC delegations
-   * - time_object: various timestamps (interest, posts, votes, withdrawal schedule)
    * - delayed_votes_object: delayed votes data with sum
    */
   class account_object : public object< account_object_type, account_object >
@@ -53,7 +51,7 @@ namespace hive { namespace chain {
         mined( _mined ),
         memo_key( _memo_key )
       {
-        // Note: recovery_object, assets_object, manabars_rc_object, time_object, delayed_votes_object
+        // Note: recovery_object, assets_object, manabars_rc_object, delayed_votes_object
         // must be created separately with the same account_id
       }
 

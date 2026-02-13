@@ -23,7 +23,6 @@
 #include <hive/chain/detail/state/recurrent_transfer_object.hpp>
 #include <hive/chain/hive_object_types.hpp>
 #include <hive/chain/detail/state/assets_object.hpp>
-#include <hive/chain/detail/state/time_object.hpp>
 
 #include <hive/chain/util/reward.hpp>
 #include <hive/chain/comment_object.hpp>
