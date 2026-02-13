@@ -797,20 +797,20 @@ reference = "gitlab-hive"
 
 [[package]]
 name = "hiveio-test-tools"
-version = "0.0.2.post20260212154503"
+version = "2.0.1.post20260213113337"
 description = "Tools for testing hive software"
 optional = false
 python-versions = ">=3.12,<4"
 groups = ["main"]
 files = [
-    {file = "hiveio_test_tools-0.0.2.post20260212154503-py3-none-any.whl", hash = "sha256:c44ce2e2fd3a69919593f4a1846be6b20c66059680ac27de6762c3f745df3079"},
+    {file = "hiveio_test_tools-2.0.1.post20260213113337-py3-none-any.whl", hash = "sha256:d1a2ceee198fd83f9001d5715f027010d296670747b5c224a1bb15ab90658e22"},
 ]
 
 [package.dependencies]
 abstractcp = ">=0.9.9"
 hiveio-beekeepy = ">=1.28.5"
 hiveio-schemas = ">=1.28.1"
-hiveio-wax = "2.0.1.post20260212113915"
+hiveio-wax = ">=2.0.1.post20260213113337"
 loguru = ">=0.7.2"
 msgspec = ">=0.20.0"
 python-dateutil = ">=2.8.2"
@@ -822,14 +822,14 @@ reference = "gitlab-hive"
 
 [[package]]
 name = "hiveio-wax"
-version = "2.0.1.post20260212113915"
+version = "2.0.1.post20260213113337"
 description = ""
 optional = false
 python-versions = ">=3.12,<4"
 groups = ["main"]
 files = [
-    {file = "hiveio_wax-2.0.1.post20260212113915-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:92d7c1d9045d88fe9e10ac1b92479d76a5fbd17689df4c1ebf49e90d9a4b7974"},
-    {file = "hiveio_wax-2.0.1.post20260212113915-cp314-cp314-manylinux_2_28_x86_64.whl", hash = "sha256:76510fc864987671c4a51d9eeaa988daf79195590c7343fe04ad4c311633de15"},
+    {file = "hiveio_wax-2.0.1.post20260213113337-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:c48371e4bd12c07a44d437b399bcc71d3862ec29fb7b893650f8c36989029849"},
+    {file = "hiveio_wax-2.0.1.post20260213113337-cp314-cp314-manylinux_2_28_x86_64.whl", hash = "sha256:efc8563b8feb46b5220a4174d305cb6db2f7df31ac16d1f6fc792c9294a05154"},
 ]
 
 [package.dependencies]
@@ -2780,4 +2780,4 @@ reference = "gitlab-hive"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.14,<4"
-content-hash = "20d6002b9da08ada3fa10ef06646754636f4b31e027d16ceca2bfc4bc6381635"
+content-hash = "6c783e30e95f865d3a588845d4fe3d25aa2bd770857bd321edfcd65011d2ccad"
