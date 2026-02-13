@@ -976,8 +976,16 @@ struct impacted_balance_collector
 
   void operator()(const proposal_pay_operation& o)
   {
-    emplace_back(o.receiver, o.payment.to_asset());
-    emplace_back(o.payer, -o.payment.to_asset());
+    if( o.conversion.amount > 0 )
+    {
+      emplace_back(o.receiver, o.conversion);
+      emplace_back(o.payer, -o.payment);
+    }
+    else
+    {
+      emplace_back(o.receiver, o.payment);
+      emplace_back(o.payer, -o.payment);
+    }
   }
 
   void operator()(const dhf_funding_operation& o)

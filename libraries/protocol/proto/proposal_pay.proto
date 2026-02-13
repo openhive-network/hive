@@ -20,4 +20,7 @@ message proposal_pay {
 
   // @param {asset} payment - (HBD) paid amount
   required asset  payment = 4;
+
+  // @param {asset} conversion - (HIVE) actual amount paid when HBD print rate is 0
+  optional asset  conversion = 5;
 }

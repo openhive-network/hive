@@ -309,14 +309,18 @@ struct clear_null_account_balance_operation : public virtual_operation
 struct proposal_pay_operation : public virtual_operation
 {
   proposal_pay_operation() = default;
-  proposal_pay_operation( uint32_t _proposal_id, const account_name_type& _receiver, const account_name_type& _treasury, const HBD_asset& _payment )
-    : proposal_id( _proposal_id ), receiver( _receiver ), payer( _treasury ), payment( _payment )
+  proposal_pay_operation( uint32_t _proposal_id, const account_name_type& _receiver,
+    const account_name_type& _treasury, const HBD_asset& _payment,
+    const HIVE_asset& _conversion = HIVE_asset() )
+    : proposal_id( _proposal_id ), receiver( _receiver ), payer( _treasury ),
+      payment( _payment ), conversion( _conversion )
   {}
 
   uint32_t          proposal_id = 0; //id of chosen proposal
   account_name_type receiver; //account designated to receive funding (receiver of payment)
   account_name_type payer; //treasury account, source of payment
-  HBD_asset         payment; //(HBD) paid amount
+  HBD_asset         payment; //(HBD) notional value / actual HBD paid (0 when converted)
+  HIVE_asset        conversion; //(HIVE) actual HIVE paid when print rate is 0 (0 otherwise)
 };
 
 /**
@@ -838,7 +842,7 @@ FC_REFLECT( hive::protocol::return_vesting_delegation_operation, (account)(vesti
 FC_REFLECT( hive::protocol::comment_benefactor_reward_operation, (benefactor)(author)(permlink)(hbd_payout)(hive_payout)(vesting_payout)(payout_must_be_claimed) )
 FC_REFLECT( hive::protocol::producer_reward_operation, (producer)(vesting_shares) )
 FC_REFLECT( hive::protocol::clear_null_account_balance_operation, (total_cleared) )
-FC_REFLECT( hive::protocol::proposal_pay_operation, (proposal_id)(receiver)(payer)(payment) )
+FC_REFLECT( hive::protocol::proposal_pay_operation, (proposal_id)(receiver)(payer)(payment)(conversion) )
 FC_REFLECT( hive::protocol::dhf_funding_operation, (treasury)(additional_funds) )
 FC_REFLECT( hive::protocol::hardfork_hive_operation, (account)(treasury)(other_affected_accounts)(hbd_transferred)(hive_transferred)(vests_converted)(total_hive_from_vests) )
 FC_REFLECT( hive::protocol::hardfork_hive_restore_operation, (account)(treasury)(hbd_transferred)(hive_transferred) )

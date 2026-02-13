@@ -1,4 +1,5 @@
 #include <hive/chain/util/dhf_processor.hpp>
+#include <hive/chain/util/asset.hpp>
 #include <hive/chain/database_virtual_operations.hpp>
 #include <hive/chain/notifications.hpp>
 #include <hive/chain/global_property_object_multiindex.hpp>
@@ -170,13 +171,44 @@ void dhf_processor::transfer_payments( const time_point_sec& head_time, HBD_asse
   auto processing = [this, &treasury_account]( const proposal_object& _item, const HBD_asset& payment )
   {
     const auto& receiver_account = db.get_account( _item.receiver );
+    const auto& gpo = db.get_dynamic_global_properties();
 
-    operation vop = proposal_pay_operation( _item.proposal_id, _item.receiver, db.get_treasury_name(), payment );
-    /// Push vop to be recorded by other parts (like AH plugin etc.)
-    push_virtual_operation( db, vop);
-    /// Virtual ops have no evaluators, so operation must be immediately "evaluated"
-    db.adjust_balance( treasury_account, -payment );
-    db.adjust_balance( receiver_account, payment );
+    HIVE_asset conversion;
+
+    if( db.has_hardfork( HIVE_HARDFORK_1_29_DHF_CONVERT_TREASURY_HIVE )
+        && gpo.hbd_print_rate == 0 )
+    {
+      const auto& fhistory = db.get_feed_history();
+      if( !fhistory.current_median_history.is_null() )
+      {
+        // Convert HBD to HIVE using median feed price
+        auto hive_amount = util::to_hive( fhistory.current_median_history, payment );
+        conversion = HIVE_asset( hive_amount.amount );
+
+        // Treasury loses HBD, receiver gains HIVE
+        db.adjust_balance( treasury_account, -payment );
+        db.adjust_balance( receiver_account, hive_amount );
+        // Adjust global supplies: destroy HBD, create HIVE
+        db.adjust_supply( -payment );
+        db.adjust_supply( hive_amount );
+      }
+      else
+      {
+        // No price feed - pay HBD as fallback
+        db.adjust_balance( treasury_account, -payment );
+        db.adjust_balance( receiver_account, payment );
+      }
+    }
+    else
+    {
+      // Normal HBD payment (pre-HF29 or print rate > 0)
+      db.adjust_balance( treasury_account, -payment );
+      db.adjust_balance( receiver_account, payment );
+    }
+
+    operation vop = proposal_pay_operation( _item.proposal_id, _item.receiver,
+      db.get_treasury_name(), payment, conversion );
+    push_virtual_operation( db, vop );
   };
 
   for( auto& item : proposals )

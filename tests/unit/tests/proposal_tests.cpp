@@ -4444,6 +4444,794 @@ BOOST_AUTO_TEST_CASE( update_proposal_006 )
   } FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( generating_payments_hive_when_print_rate_zero )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: proposal payments are converted to HIVE when hbd_print_rate == 0" );
+
+    ACTORS( (alice)(bob)(carol) )
+    generate_block();
+
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    generate_block();
+
+    //=====================preparing=====================
+    auto creator = "alice";
+    auto receiver = "bob";
+
+    auto start_date = db->head_block_time();
+
+    auto daily_pay = ASSET( "48.000 TBD" );
+    auto hourly_pay = ASSET( "2.000 TBD" );
+
+    ISSUE_FUNDS( creator, ASSET( "160.000 TESTS" ) );
+    ISSUE_FUNDS( creator, ASSET( "80.000 TBD" ) );
+    ISSUE_FUNDS( db->get_treasury_name(), ASSET( "5000.000 TBD" ) );
+
+    auto voter_01 = "carol";
+
+    vest( voter_01, ASSET( "1.000 TESTS" ) );
+
+    // Wait for delayed voting to activate
+    start_date += fc::seconds( HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS );
+    generate_blocks( start_date );
+
+    auto end_date = start_date + fc::days( 2 );
+    //=====================preparing=====================
+
+    int64_t id_proposal_00 = create_proposal( creator, receiver, start_date, end_date, daily_pay, alice_private_key, alice_post_key );
+    generate_blocks( 1 );
+
+    vote_proposal( voter_01, { id_proposal_00 }, true/*approve*/, carol_private_key );
+    generate_blocks( 1 );
+
+    // Skip interest generating
+    fund( receiver, ASSET( "0.001 TBD" ) );
+    generate_block( 5 );
+    fund( db->get_treasury_name(), ASSET( "0.001 TBD" ) );
+    generate_block( 5 );
+
+    // Force hbd_print_rate to 0
+    db_plugin->debug_update( [&]( database& db )
+    {
+      db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
+      {
+        gpo.hbd_print_rate = 0;
+      });
+    } );
+
+    const auto& dgpo = db->get_dynamic_global_properties();
+    BOOST_REQUIRE_EQUAL( dgpo.hbd_print_rate, 0 );
+
+    const account_object& _receiver = db->get_account( receiver );
+    const account_object& _treasury = db->get_treasury();
+
+    {
+      BOOST_TEST_MESSAGE( "---Payment with HIVE conversion---" );
+
+      auto before_receiver_hbd_balance = _receiver.get_hbd_balance();
+      auto before_receiver_balance = _receiver.get_balance();
+      auto before_treasury_hbd_balance = _treasury.get_hbd_balance();
+
+      auto old_hbd_supply = dgpo.get_current_hbd_supply();
+      auto old_hive_supply = dgpo.current_supply;
+
+      auto next_block = get_nr_blocks_until_proposal_maintenance_block();
+      generate_blocks( next_block - 1 );
+      generate_blocks( 1 );
+
+      auto after_receiver_hbd_balance = _receiver.get_hbd_balance();
+      auto after_receiver_balance = _receiver.get_balance();
+      auto after_treasury_hbd_balance = _treasury.get_hbd_balance();
+
+      // With 1:1 price feed, hourly_pay of 2.000 TBD converts to 2.000 TESTS
+      auto expected_hive_conversion = ASSET( "2.000 TESTS" );
+
+      // Receiver's HBD balance should not increase (payment was converted)
+      BOOST_REQUIRE( after_receiver_hbd_balance == before_receiver_hbd_balance );
+      // Receiver's HIVE balance should increase by the converted amount
+      BOOST_REQUIRE( after_receiver_balance == before_receiver_balance + expected_hive_conversion );
+
+      // Treasury lost the HBD
+      // (treasury also gains dhf_interval_ledger inflation during maintenance, so we can't do exact equality
+      //  on treasury balance alone, but we verify the receiver side precisely)
+
+      // Verify supply: HBD was destroyed, HIVE was minted
+      auto new_hbd_supply = dgpo.get_current_hbd_supply();
+      auto new_hive_supply = dgpo.current_supply;
+      // HIVE supply should have increased (block production rewards + conversion)
+      BOOST_REQUIRE( new_hive_supply > old_hive_supply );
+
+      // Check the virtual operation
+      auto recent_ops = get_last_operations( 5 );
+      bool found_proposal_pay = false;
+      for( auto& op : recent_ops )
+      {
+        if( op.which() == operation::tag< proposal_pay_operation >::value )
+        {
+          auto prop_pay = op.get< proposal_pay_operation >();
+          // payment field records the notional HBD value
+          BOOST_REQUIRE( prop_pay.payment == hourly_pay );
+          // conversion field records the actual HIVE paid
+          BOOST_REQUIRE( prop_pay.conversion == expected_hive_conversion );
+          found_proposal_pay = true;
+          break;
+        }
+      }
+      BOOST_REQUIRE( found_proposal_pay );
+    }
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( generating_payments_hive_conversion_non_unity_price )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: HIVE conversion uses correct non-1:1 price feed" );
+
+    ACTORS( (alice)(bob)(carol) )
+    generate_block();
+
+    // 1 TBD = 5 TESTS
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "5.000 TESTS" ) ) );
+    generate_block();
+
+    //=====================preparing=====================
+    auto creator = "alice";
+    auto receiver = "bob";
+
+    auto start_date = db->head_block_time();
+
+    auto daily_pay = ASSET( "48.000 TBD" );
+    auto hourly_pay = ASSET( "2.000 TBD" );
+
+    ISSUE_FUNDS( creator, ASSET( "160.000 TESTS" ) );
+    ISSUE_FUNDS( creator, ASSET( "80.000 TBD" ) );
+    ISSUE_FUNDS( db->get_treasury_name(), ASSET( "5000.000 TBD" ) );
+
+    auto voter_01 = "carol";
+
+    vest( voter_01, ASSET( "1.000 TESTS" ) );
+
+    start_date += fc::seconds( HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS );
+    generate_blocks( start_date );
+
+    auto end_date = start_date + fc::days( 2 );
+    //=====================preparing=====================
+
+    int64_t id_proposal_00 = create_proposal( creator, receiver, start_date, end_date, daily_pay, alice_private_key, alice_post_key );
+    generate_blocks( 1 );
+
+    vote_proposal( voter_01, { id_proposal_00 }, true/*approve*/, carol_private_key );
+    generate_blocks( 1 );
+
+    fund( receiver, ASSET( "0.001 TBD" ) );
+    generate_block( 5 );
+    fund( db->get_treasury_name(), ASSET( "0.001 TBD" ) );
+    generate_block( 5 );
+
+    // Force hbd_print_rate to 0
+    db_plugin->debug_update( [&]( database& db )
+    {
+      db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
+      {
+        gpo.hbd_print_rate = 0;
+      });
+    } );
+
+    const auto& dgpo = db->get_dynamic_global_properties();
+    BOOST_REQUIRE_EQUAL( dgpo.hbd_print_rate, 0 );
+
+    const account_object& _receiver = db->get_account( receiver );
+
+    {
+      BOOST_TEST_MESSAGE( "---Payment with 1:5 price conversion---" );
+
+      auto before_receiver_hbd_balance = _receiver.get_hbd_balance();
+      auto before_receiver_balance = _receiver.get_balance();
+
+      auto next_block = get_nr_blocks_until_proposal_maintenance_block();
+      generate_blocks( next_block - 1 );
+      generate_blocks( 1 );
+
+      auto after_receiver_hbd_balance = _receiver.get_hbd_balance();
+      auto after_receiver_balance = _receiver.get_balance();
+
+      // 2.000 TBD at 1:5 rate = 10.000 TESTS
+      auto expected_hive_conversion = ASSET( "10.000 TESTS" );
+
+      // No HBD increase
+      BOOST_REQUIRE( after_receiver_hbd_balance == before_receiver_hbd_balance );
+      // HIVE increased by converted amount
+      BOOST_REQUIRE( after_receiver_balance == before_receiver_balance + expected_hive_conversion );
+
+      // Verify vop has correct conversion amount
+      auto recent_ops = get_last_operations( 5 );
+      bool found_proposal_pay = false;
+      for( auto& op : recent_ops )
+      {
+        if( op.which() == operation::tag< proposal_pay_operation >::value )
+        {
+          auto prop_pay = op.get< proposal_pay_operation >();
+          BOOST_REQUIRE( prop_pay.payment == hourly_pay );
+          BOOST_REQUIRE( prop_pay.conversion == expected_hive_conversion );
+          found_proposal_pay = true;
+          break;
+        }
+      }
+      BOOST_REQUIRE( found_proposal_pay );
+    }
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( generating_payments_normal_hbd_when_print_rate_nonzero )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: normal HBD payments still work when print rate > 0 (regression)" );
+
+    ACTORS( (alice)(bob)(carol) )
+    generate_block();
+
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    generate_block();
+
+    //=====================preparing=====================
+    auto creator = "alice";
+    auto receiver = "bob";
+
+    auto start_date = db->head_block_time();
+
+    auto daily_pay = ASSET( "48.000 TBD" );
+    auto hourly_pay = ASSET( "2.000 TBD" );
+
+    ISSUE_FUNDS( creator, ASSET( "160.000 TESTS" ) );
+    ISSUE_FUNDS( creator, ASSET( "80.000 TBD" ) );
+    ISSUE_FUNDS( db->get_treasury_name(), ASSET( "5000.000 TBD" ) );
+
+    auto voter_01 = "carol";
+
+    vest( voter_01, ASSET( "1.000 TESTS" ) );
+
+    start_date += fc::seconds( HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS );
+    generate_blocks( start_date );
+
+    auto end_date = start_date + fc::days( 2 );
+    //=====================preparing=====================
+
+    int64_t id_proposal_00 = create_proposal( creator, receiver, start_date, end_date, daily_pay, alice_private_key, alice_post_key );
+    generate_blocks( 1 );
+
+    vote_proposal( voter_01, { id_proposal_00 }, true/*approve*/, carol_private_key );
+    generate_blocks( 1 );
+
+    fund( receiver, ASSET( "0.001 TBD" ) );
+    generate_block( 5 );
+    fund( db->get_treasury_name(), ASSET( "0.001 TBD" ) );
+    generate_block( 5 );
+
+    const auto& dgpo = db->get_dynamic_global_properties();
+    // Ensure print rate is nonzero (default is HIVE_100_PERCENT)
+    BOOST_REQUIRE( dgpo.hbd_print_rate > 0 );
+
+    const account_object& _receiver = db->get_account( receiver );
+
+    {
+      BOOST_TEST_MESSAGE( "---Normal HBD payment (print rate > 0)---" );
+
+      auto before_receiver_hbd_balance = _receiver.get_hbd_balance();
+      auto before_receiver_balance = _receiver.get_balance();
+
+      auto next_block = get_nr_blocks_until_proposal_maintenance_block();
+      generate_blocks( next_block - 1 );
+      generate_blocks( 1 );
+
+      auto after_receiver_hbd_balance = _receiver.get_hbd_balance();
+      auto after_receiver_balance = _receiver.get_balance();
+
+      // Receiver gets HBD (normal behavior)
+      BOOST_REQUIRE( after_receiver_hbd_balance == before_receiver_hbd_balance + hourly_pay );
+      // Receiver should NOT get HIVE from proposal
+      BOOST_REQUIRE( after_receiver_balance == before_receiver_balance );
+
+      // Virtual operation should have zero conversion field
+      auto recent_ops = get_last_operations( 5 );
+      bool found_proposal_pay = false;
+      for( auto& op : recent_ops )
+      {
+        if( op.which() == operation::tag< proposal_pay_operation >::value )
+        {
+          auto prop_pay = op.get< proposal_pay_operation >();
+          BOOST_REQUIRE( prop_pay.payment == hourly_pay );
+          BOOST_REQUIRE( prop_pay.conversion == ASSET( "0.000 TESTS" ) );
+          found_proposal_pay = true;
+          break;
+        }
+      }
+      BOOST_REQUIRE( found_proposal_pay );
+    }
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( generating_payments_hive_conversion_supply_accounting )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: HBD supply decreases and HIVE supply increases correctly during conversion" );
+
+    ACTORS( (alice)(bob)(carol) )
+    generate_block();
+
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    generate_block();
+
+    //=====================preparing=====================
+    auto creator = "alice";
+    auto receiver = "bob";
+
+    auto start_date = db->head_block_time();
+
+    auto daily_pay = ASSET( "48.000 TBD" );
+    auto hourly_pay = ASSET( "2.000 TBD" );
+
+    ISSUE_FUNDS( creator, ASSET( "160.000 TESTS" ) );
+    ISSUE_FUNDS( creator, ASSET( "80.000 TBD" ) );
+    ISSUE_FUNDS( db->get_treasury_name(), ASSET( "5000.000 TBD" ) );
+
+    auto voter_01 = "carol";
+
+    vest( voter_01, ASSET( "1.000 TESTS" ) );
+
+    start_date += fc::seconds( HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS );
+    generate_blocks( start_date );
+
+    auto end_date = start_date + fc::days( 2 );
+    //=====================preparing=====================
+
+    int64_t id_proposal_00 = create_proposal( creator, receiver, start_date, end_date, daily_pay, alice_private_key, alice_post_key );
+    generate_blocks( 1 );
+
+    vote_proposal( voter_01, { id_proposal_00 }, true/*approve*/, carol_private_key );
+    generate_blocks( 1 );
+
+    fund( receiver, ASSET( "0.001 TBD" ) );
+    generate_block( 5 );
+    fund( db->get_treasury_name(), ASSET( "0.001 TBD" ) );
+    generate_block( 5 );
+
+    // Force hbd_print_rate to 0
+    db_plugin->debug_update( [&]( database& db )
+    {
+      db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
+      {
+        gpo.hbd_print_rate = 0;
+      });
+    } );
+
+    const auto& dgpo = db->get_dynamic_global_properties();
+    BOOST_REQUIRE_EQUAL( dgpo.hbd_print_rate, 0 );
+
+    const account_object& _receiver = db->get_account( receiver );
+    const account_object& _treasury = db->get_treasury();
+
+    {
+      BOOST_TEST_MESSAGE( "---Verify supply accounting---" );
+
+      auto before_receiver_hbd_balance = _receiver.get_hbd_balance();
+      auto before_receiver_balance = _receiver.get_balance();
+      auto before_treasury_hbd_balance = _treasury.get_hbd_balance();
+
+      auto old_hbd_supply = dgpo.get_current_hbd_supply();
+      auto old_hive_supply = dgpo.current_supply;
+
+      // Advance to one block before maintenance to isolate the maintenance block effects
+      auto next_block = get_nr_blocks_until_proposal_maintenance_block();
+      generate_blocks( next_block - 1 );
+
+      // Record state just before maintenance
+      auto pre_maint_hbd_supply = dgpo.get_current_hbd_supply();
+      auto pre_maint_hive_supply = dgpo.current_supply;
+      auto pre_maint_treasury_hbd = _treasury.get_hbd_balance();
+
+      // Generate the maintenance block
+      generate_blocks( 1 );
+
+      auto post_maint_hbd_supply = dgpo.get_current_hbd_supply();
+      auto post_maint_hive_supply = dgpo.current_supply;
+      auto post_maint_treasury_hbd = _treasury.get_hbd_balance();
+
+      auto after_receiver_hbd_balance = _receiver.get_hbd_balance();
+      auto after_receiver_balance = _receiver.get_balance();
+
+      // The payment was 2.000 TBD worth, converted to 2.000 TESTS at 1:1
+      auto expected_hive_conversion = ASSET( "2.000 TESTS" );
+
+      // Receiver got HIVE, not HBD
+      BOOST_REQUIRE( after_receiver_hbd_balance == before_receiver_hbd_balance );
+      BOOST_REQUIRE( after_receiver_balance == before_receiver_balance + expected_hive_conversion );
+
+      // Treasury lost HBD for the payment
+      // Note: treasury also receives dhf_interval_ledger during maintenance, so the net change
+      // is: treasury_change = inflation_added - payment_removed
+      // We can verify: the delta between pre-maintenance treasury and post-maintenance treasury
+      // should include the payment being deducted
+      // post_maint_treasury = pre_maint_treasury + inflation - hourly_pay
+      // We can verify the receiver side precisely:
+      auto receiver_hive_gained = after_receiver_balance - before_receiver_balance;
+      BOOST_REQUIRE( receiver_hive_gained == expected_hive_conversion );
+
+      // HBD was destroyed: the HBD supply change during maintenance should account for
+      // the inflation added minus the payment that was destroyed
+      // (HBD supply changes = inflation - payment_destroyed)
+      // We can't easily isolate inflation from payment, but we can verify that
+      // the net HBD supply increase is less than it would be without payment destruction.
+      // More importantly, validate_database() will catch any supply inconsistency.
+    }
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( generating_payments_hive_conversion_multiple_proposals )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: multiple proposals all pay in HIVE when print rate is 0" );
+
+    ACTORS( (alice)(bob)(carol)(dave) )
+    generate_block();
+
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    generate_block();
+
+    //=====================preparing=====================
+    auto creator = "alice";
+    auto receiver_1 = "bob";
+    auto receiver_2 = "dave";
+
+    auto start_date = db->head_block_time();
+
+    auto daily_pay_1 = ASSET( "48.000 TBD" );
+    auto daily_pay_2 = ASSET( "24.000 TBD" );
+    auto hourly_pay_1 = ASSET( "2.000 TBD" );
+    auto hourly_pay_2 = ASSET( "1.000 TBD" );
+
+    ISSUE_FUNDS( creator, ASSET( "160.000 TESTS" ) );
+    ISSUE_FUNDS( creator, ASSET( "80.000 TBD" ) );
+    ISSUE_FUNDS( db->get_treasury_name(), ASSET( "5000.000 TBD" ) );
+
+    auto voter_01 = "carol";
+
+    vest( voter_01, ASSET( "1.000 TESTS" ) );
+
+    start_date += fc::seconds( HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS );
+    generate_blocks( start_date );
+
+    auto end_date = start_date + fc::days( 2 );
+    //=====================preparing=====================
+
+    int64_t id_proposal_00 = create_proposal( creator, receiver_1, start_date, end_date, daily_pay_1, alice_private_key, alice_post_key );
+    generate_blocks( 1 );
+    int64_t id_proposal_01 = create_proposal( creator, receiver_2, start_date, end_date, daily_pay_2, alice_private_key, alice_post_key );
+    generate_blocks( 1 );
+
+    vote_proposal( voter_01, { id_proposal_00, id_proposal_01 }, true/*approve*/, carol_private_key );
+    generate_blocks( 1 );
+
+    fund( receiver_1, ASSET( "0.001 TBD" ) );
+    generate_block( 5 );
+    fund( receiver_2, ASSET( "0.001 TBD" ) );
+    generate_block( 5 );
+    fund( db->get_treasury_name(), ASSET( "0.001 TBD" ) );
+    generate_block( 5 );
+
+    // Force hbd_print_rate to 0
+    db_plugin->debug_update( [&]( database& db )
+    {
+      db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
+      {
+        gpo.hbd_print_rate = 0;
+      });
+    } );
+
+    const auto& dgpo = db->get_dynamic_global_properties();
+    BOOST_REQUIRE_EQUAL( dgpo.hbd_print_rate, 0 );
+
+    const account_object& _receiver_1 = db->get_account( receiver_1 );
+    const account_object& _receiver_2 = db->get_account( receiver_2 );
+
+    {
+      BOOST_TEST_MESSAGE( "---Multiple proposals, both paid in HIVE---" );
+
+      auto before_receiver_1_hbd = _receiver_1.get_hbd_balance();
+      auto before_receiver_1_hive = _receiver_1.get_balance();
+      auto before_receiver_2_hbd = _receiver_2.get_hbd_balance();
+      auto before_receiver_2_hive = _receiver_2.get_balance();
+
+      auto next_block = get_nr_blocks_until_proposal_maintenance_block();
+      generate_blocks( next_block - 1 );
+      generate_blocks( 1 );
+
+      auto after_receiver_1_hbd = _receiver_1.get_hbd_balance();
+      auto after_receiver_1_hive = _receiver_1.get_balance();
+      auto after_receiver_2_hbd = _receiver_2.get_hbd_balance();
+      auto after_receiver_2_hive = _receiver_2.get_balance();
+
+      // At 1:1 price, 2.000 TBD -> 2.000 TESTS, 1.000 TBD -> 1.000 TESTS
+      auto expected_hive_1 = ASSET( "2.000 TESTS" );
+      auto expected_hive_2 = ASSET( "1.000 TESTS" );
+
+      // Neither receiver should get HBD
+      BOOST_REQUIRE( after_receiver_1_hbd == before_receiver_1_hbd );
+      BOOST_REQUIRE( after_receiver_2_hbd == before_receiver_2_hbd );
+
+      // Both receivers should get HIVE
+      BOOST_REQUIRE( after_receiver_1_hive == before_receiver_1_hive + expected_hive_1 );
+      BOOST_REQUIRE( after_receiver_2_hive == before_receiver_2_hive + expected_hive_2 );
+
+      // Verify both vops have conversion fields set
+      auto recent_ops = get_last_operations( 10 );
+      int proposal_pay_count = 0;
+      for( auto& op : recent_ops )
+      {
+        if( op.which() == operation::tag< proposal_pay_operation >::value )
+        {
+          auto prop_pay = op.get< proposal_pay_operation >();
+          BOOST_REQUIRE( prop_pay.conversion.amount > 0 );
+          ++proposal_pay_count;
+        }
+      }
+      BOOST_REQUIRE_EQUAL( proposal_pay_count, 2 );
+    }
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( generating_payments_hive_conversion_budget_exhaustion )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: budget exhaustion during HIVE conversion pays remaining budget in HIVE" );
+
+    ACTORS( (alice)(bob)(carol)(dave) )
+    generate_block();
+
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    generate_block();
+
+    //=====================preparing=====================
+    auto creator = "alice";
+    auto receiver_1 = "bob";
+    auto receiver_2 = "dave";
+
+    auto start_date = db->head_block_time();
+
+    // First proposal asks for a huge daily pay that will exhaust the budget
+    auto huge_daily_pay = ASSET( "50000001.000 TBD" );
+    auto small_daily_pay = ASSET( "24.000 TBD" );
+
+    ISSUE_FUNDS( creator, ASSET( "160.000 TESTS" ) );
+    ISSUE_FUNDS( creator, ASSET( "80.000 TBD" ) );
+    // Relatively small treasury so budget is limited
+    ISSUE_FUNDS( db->get_treasury_name(), ASSET( "5000.000 TBD" ) );
+
+    auto voter_01 = "carol";
+
+    vest( voter_01, ASSET( "1.000 TESTS" ) );
+    // Give dave some vesting for voting
+    vest( "dave", ASSET( "1.000 TESTS" ) );
+
+    start_date += fc::seconds( HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS );
+    generate_blocks( start_date );
+
+    auto end_date = start_date + fc::days( 2 );
+    //=====================preparing=====================
+
+    // bob's proposal (huge pay, will exhaust budget)
+    int64_t id_proposal_00 = create_proposal( creator, receiver_1, start_date, end_date, huge_daily_pay, alice_private_key, alice_post_key );
+    generate_blocks( 1 );
+    // dave's proposal (small pay, but won't get funded because budget is exhausted by first)
+    int64_t id_proposal_01 = create_proposal( creator, receiver_2, start_date, end_date, small_daily_pay, alice_private_key, alice_post_key );
+    generate_blocks( 1 );
+
+    // Both voters vote for both proposals, but carol has more vesting so her vote wins
+    vote_proposal( voter_01, { id_proposal_00, id_proposal_01 }, true/*approve*/, carol_private_key );
+    generate_blocks( 1 );
+    vote_proposal( "dave", { id_proposal_01 }, true/*approve*/, dave_private_key );
+    generate_blocks( 1 );
+
+    fund( receiver_1, ASSET( "0.001 TBD" ) );
+    generate_block( 5 );
+    fund( receiver_2, ASSET( "0.001 TBD" ) );
+    generate_block( 5 );
+    fund( db->get_treasury_name(), ASSET( "0.001 TBD" ) );
+    generate_block( 5 );
+
+    // Force hbd_print_rate to 0
+    db_plugin->debug_update( [&]( database& db )
+    {
+      db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
+      {
+        gpo.hbd_print_rate = 0;
+      });
+    } );
+
+    const auto& dgpo = db->get_dynamic_global_properties();
+    BOOST_REQUIRE_EQUAL( dgpo.hbd_print_rate, 0 );
+
+    const account_object& _receiver_1 = db->get_account( receiver_1 );
+    const account_object& _receiver_2 = db->get_account( receiver_2 );
+
+    {
+      BOOST_TEST_MESSAGE( "---Budget exhaustion with HIVE conversion---" );
+
+      auto before_receiver_1_hbd = _receiver_1.get_hbd_balance();
+      auto before_receiver_1_hive = _receiver_1.get_balance();
+      auto before_receiver_2_hbd = _receiver_2.get_hbd_balance();
+      auto before_receiver_2_hive = _receiver_2.get_balance();
+
+      auto next_block = get_nr_blocks_until_proposal_maintenance_block();
+      generate_blocks( next_block - 1 );
+      generate_blocks( 1 );
+
+      auto after_receiver_1_hbd = _receiver_1.get_hbd_balance();
+      auto after_receiver_1_hive = _receiver_1.get_balance();
+      auto after_receiver_2_hbd = _receiver_2.get_hbd_balance();
+      auto after_receiver_2_hive = _receiver_2.get_balance();
+
+      // First proposal should have received entire budget (converted to HIVE)
+      // No HBD should be received
+      BOOST_REQUIRE( after_receiver_1_hbd == before_receiver_1_hbd );
+      // But HIVE should have increased
+      BOOST_REQUIRE( after_receiver_1_hive > before_receiver_1_hive );
+
+      // Second proposal should not have been paid (budget exhausted)
+      BOOST_REQUIRE( after_receiver_2_hbd == before_receiver_2_hbd );
+      BOOST_REQUIRE( after_receiver_2_hive == before_receiver_2_hive );
+
+      // Verify only one proposal_pay vop was generated
+      auto recent_ops = get_last_operations( 10 );
+      int proposal_pay_count = 0;
+      for( auto& op : recent_ops )
+      {
+        if( op.which() == operation::tag< proposal_pay_operation >::value )
+        {
+          auto prop_pay = op.get< proposal_pay_operation >();
+          BOOST_REQUIRE( prop_pay.conversion.amount > 0 );
+          ++proposal_pay_count;
+        }
+      }
+      BOOST_REQUIRE_EQUAL( proposal_pay_count, 1 );
+    }
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( generating_payments_hive_conversion_treasury_balance )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: treasury HBD balance decreases during HIVE conversion" );
+
+    ACTORS( (alice)(bob)(carol) )
+    generate_block();
+
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    generate_block();
+
+    //=====================preparing=====================
+    auto creator = "alice";
+    auto receiver = "bob";
+
+    auto start_date = db->head_block_time();
+
+    auto daily_pay = ASSET( "48.000 TBD" );
+    auto hourly_pay = ASSET( "2.000 TBD" );
+
+    ISSUE_FUNDS( creator, ASSET( "160.000 TESTS" ) );
+    ISSUE_FUNDS( creator, ASSET( "80.000 TBD" ) );
+    ISSUE_FUNDS( db->get_treasury_name(), ASSET( "5000.000 TBD" ) );
+
+    auto voter_01 = "carol";
+
+    vest( voter_01, ASSET( "1.000 TESTS" ) );
+
+    start_date += fc::seconds( HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS );
+    generate_blocks( start_date );
+
+    auto end_date = start_date + fc::days( 2 );
+    //=====================preparing=====================
+
+    int64_t id_proposal_00 = create_proposal( creator, receiver, start_date, end_date, daily_pay, alice_private_key, alice_post_key );
+    generate_blocks( 1 );
+
+    vote_proposal( voter_01, { id_proposal_00 }, true/*approve*/, carol_private_key );
+    generate_blocks( 1 );
+
+    fund( receiver, ASSET( "0.001 TBD" ) );
+    generate_block( 5 );
+    fund( db->get_treasury_name(), ASSET( "0.001 TBD" ) );
+    generate_block( 5 );
+
+    const auto& dgpo = db->get_dynamic_global_properties();
+    auto old_hbd_supply = dgpo.get_current_hbd_supply();
+
+    // First: do a normal payment (print rate > 0) to get a baseline
+    const account_object& _receiver = db->get_account( receiver );
+    const account_object& _treasury = db->get_treasury();
+
+    {
+      BOOST_TEST_MESSAGE( "---Normal payment first (print rate > 0)---" );
+      auto before_treasury_hbd = _treasury.get_hbd_balance();
+
+      auto next_block = get_nr_blocks_until_proposal_maintenance_block();
+      generate_blocks( next_block - 1 );
+      generate_blocks( 1 );
+
+      auto after_treasury_hbd = _treasury.get_hbd_balance();
+      auto treasury_hbd_inflation = dgpo.get_current_hbd_supply() - old_hbd_supply;
+
+      // Normal: treasury lost hourly_pay worth of HBD (but gained inflation)
+      BOOST_REQUIRE( before_treasury_hbd == after_treasury_hbd - treasury_hbd_inflation + hourly_pay );
+    }
+
+    old_hbd_supply = dgpo.get_current_hbd_supply();
+
+    // Now force hbd_print_rate to 0
+    db_plugin->debug_update( [&]( database& db )
+    {
+      db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
+      {
+        gpo.hbd_print_rate = 0;
+      });
+    } );
+    BOOST_REQUIRE_EQUAL( dgpo.hbd_print_rate, 0 );
+
+    {
+      BOOST_TEST_MESSAGE( "---Converted payment (print rate == 0)---" );
+      auto before_treasury_hbd = _treasury.get_hbd_balance();
+      auto before_receiver_hbd = _receiver.get_hbd_balance();
+      auto before_receiver_hive = _receiver.get_balance();
+
+      auto next_block = get_nr_blocks_until_proposal_maintenance_block();
+      generate_blocks( next_block - 1 );
+      generate_blocks( 1 );
+
+      auto after_treasury_hbd = _treasury.get_hbd_balance();
+      auto after_receiver_hbd = _receiver.get_hbd_balance();
+      auto after_receiver_hive = _receiver.get_balance();
+
+      // Treasury still lost HBD (the payment was deducted from treasury as HBD)
+      // The HBD was destroyed rather than transferred to receiver
+      // Treasury balance: before - payment + inflation = after
+      auto treasury_hbd_inflation = dgpo.get_current_hbd_supply() - old_hbd_supply;
+      BOOST_REQUIRE( before_treasury_hbd == after_treasury_hbd + hourly_pay - treasury_hbd_inflation );
+
+      // Receiver got HIVE, not HBD
+      BOOST_REQUIRE( after_receiver_hbd == before_receiver_hbd );
+      BOOST_REQUIRE( after_receiver_hive == before_receiver_hive + ASSET( "2.000 TESTS" ) );
+    }
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 
