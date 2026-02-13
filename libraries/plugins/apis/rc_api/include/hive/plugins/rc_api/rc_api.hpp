@@ -31,7 +31,6 @@ using hive::chain::account_object;
 using hive::chain::database;
 using hive::chain::manabars_rc_object;
 using hive::chain::assets_object;
-using hive::chain::time_object;
 
 
 namespace detail
@@ -78,11 +77,10 @@ struct rc_account_api_object
   {
     const auto& mrc = db.get< manabars_rc_object >( manabars_rc_object::id_type( a.get_id().get_value() ) );
     const auto& assets = db.get< assets_object >( assets_object::id_type( a.get_id().get_value() ) );
-    const auto& time_obj = db.get< time_object >( time_object::id_type( a.get_id().get_value() ) );
 
     rc_manabar = mrc.get_rc_manabar();
     max_rc_creation_adjustment = asset( mrc.get_rc_adjustment(), VESTS_SYMBOL );
-    max_rc = a.get_maximum_rc( mrc, assets, time_obj ).value;
+    max_rc = a.get_maximum_rc( mrc, assets ).value;
     delegated_rc = mrc.get_delegated_rc().value;
     received_delegated_rc = mrc.get_received_rc().value;
   }

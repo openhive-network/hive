@@ -50,8 +50,8 @@ using namespace hive::chain;
 using namespace hive::chain::util;
 
 #define GET_ASSETS( account_name ) (db->get< assets_object >( assets_object::id_type( db->get_account( account_name ).get_id().get_value() ) ))
-#define GET_TIME( account_name ) (db->get< time_object >( time_object::id_type( db->get_account( account_name ).get_id().get_value() ) ))
-#define GET_ACTIVE_NEXT_VW( account_name ) (db->get_account( account_name ).get_active_next_vesting_withdrawal( GET_ASSETS( account_name ), GET_TIME( account_name ) ))
+#define GET_TIME( account_name ) GET_ASSETS( account_name )
+#define GET_ACTIVE_NEXT_VW( account_name ) (db->get_account( account_name ).get_active_next_vesting_withdrawal( GET_ASSETS( account_name ) ))
 
 BOOST_FIXTURE_TEST_SUITE( hf28_tests, cluster_database_fixture )
 

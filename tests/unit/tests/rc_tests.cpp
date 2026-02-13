@@ -49,10 +49,9 @@ int64_t regenerate_rc_mana( debug_node::debug_node_plugin* db_plugin, const acco
   {
     const auto& mrc = db.get< manabars_rc_object >( manabars_rc_object::id_type( acc.get_id().get_value() ) );
     const auto& assets = db.get< assets_object >( assets_object::id_type( acc.get_id().get_value() ) );
-    const auto& time_obj = db.get< time_object >( time_object::id_type( acc.get_id().get_value() ) );
     db.modify( mrc, [&]( manabars_rc_object& mrc_obj )
     {
-      auto max_rc = acc.get_maximum_rc( mrc_obj, assets, time_obj );
+      auto max_rc = acc.get_maximum_rc( mrc_obj, assets );
       hive::chain::util::manabar_params manabar_params( max_rc.value, HIVE_RC_REGEN_TIME );
       mrc_obj.get_rc_manabar().regenerate_mana( manabar_params, db.head_block_time() );
     } );

@@ -98,8 +98,7 @@ void clean_database_fixture::validate_database()
     {
       const auto& mrc = db->get< manabars_rc_object >( manabars_rc_object::id_type( account.get_id().get_value() ) );
       const auto& assets = db->get< assets_object >( assets_object::id_type( account.get_id().get_value() ) );
-      const auto& time_obj = db->get< time_object >( time_object::id_type( account.get_id().get_value() ) );
-      int64_t max_rc = account.get_maximum_rc( mrc, assets, time_obj ).value;
+      int64_t max_rc = account.get_maximum_rc( mrc, assets ).value;
       FC_ASSERT( max_rc == mrc.get_last_max_rc(),
         "Account ${a} max RC changed from ${old} to ${new} without triggering an op, noticed on block ${b} in validate_database()",
         ( "a", account.get_name() )( "old", mrc.get_last_max_rc() )( "new", max_rc )( "b", db->head_block_num() ) );

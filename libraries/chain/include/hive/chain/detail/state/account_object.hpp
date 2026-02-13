@@ -175,11 +175,11 @@ namespace hive { namespace chain {
       }
 
       // Effective balance of VESTS including delegations and optionally excluding active step of pending power down
-      // Needs: assets_object, time_object
-      share_type get_effective_vesting_shares( const assets_object& assets, const time_object& time_obj, bool excludeWeeklyPowerDown = true ) const
+      // Needs: assets_object (which now contains time data too)
+      share_type get_effective_vesting_shares( const assets_object& assets, bool excludeWeeklyPowerDown = true ) const
       {
         share_type total = assets.get_vesting().amount - assets.get_delegated_vesting().amount + assets.get_received_vesting().amount;
-        if( excludeWeeklyPowerDown && time_obj.has_active_power_down() )
+        if( excludeWeeklyPowerDown && assets.has_active_power_down() )
         {
           // Value of active step of pending power down (or zero)
           share_type active_withdrawal = std::min( assets.get_vesting_withdraw_rate().amount, assets.get_total_vesting_withdrawal() );
@@ -189,18 +189,18 @@ namespace hive { namespace chain {
       }
 
       // Effective balance of VESTS for RC calculation optionally excluding part that cannot be delegated
-      // Needs: manabars_rc_object, assets_object, time_object
-      share_type get_maximum_rc( const manabars_rc_object& mrc, const assets_object& assets, const time_object& time_obj, bool only_delegable = false ) const
+      // Needs: manabars_rc_object, assets_object
+      share_type get_maximum_rc( const manabars_rc_object& mrc, const assets_object& assets, bool only_delegable = false ) const
       {
-        share_type effective_vesting = get_effective_vesting_shares( assets, time_obj );
+        share_type effective_vesting = get_effective_vesting_shares( assets );
         return mrc.get_maximum_rc( effective_vesting, only_delegable );
       }
 
       // Value of active step of pending power down (or zero)
-      // Needs: assets_object, time_object
-      share_type get_active_next_vesting_withdrawal( const assets_object& assets, const time_object& time_obj ) const
+      // Needs: assets_object
+      share_type get_active_next_vesting_withdrawal( const assets_object& assets ) const
       {
-        if( time_obj.has_active_power_down() )
+        if( assets.has_active_power_down() )
           return std::min( assets.get_vesting_withdraw_rate().amount, assets.get_total_vesting_withdrawal() );
         else
           return 0;

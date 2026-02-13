@@ -160,9 +160,9 @@ const account_object& create_account( database& db, const account_name_type& nam
   bool mana_100_percent = !db.has_hardfork( HIVE_HARDFORK_0_20__2539 );
 
   db.create< recovery_object >( new_account.get_id(), recovery_account ? recovery_account->get_id() : account_id_type() );
-  db.create< assets_object >( new_account.get_id(), initial_delegation );
+  db.create< assets_object >( new_account.get_id(), new_account.get_name(), initial_delegation );
   db.create< manabars_rc_object >( new_account.get_id(), _creation_time, mana_100_percent, rc_adjustment_from_fee );
-  db.create< time_object >( new_account.get_id(), new_account.get_name() );
+  db.create< time_object >( new_account.get_id() );
   db.create< delayed_votes_object >( new_account.get_id() );
 
   return new_account;
@@ -362,10 +362,10 @@ void account_update_evaluator::do_apply( const account_update_operation& o )
     } );
   }
 
-  const auto& account_time = _db.get< time_object >( time_object::id_type( account.get_id().get_value() ) );
-  _db.modify( account_time, [&]( time_object& t )
+  const auto& account_assets = _db.get< assets_object >( assets_object::id_type( account.get_id().get_value() ) );
+  _db.modify( account_assets, [&]( assets_object& a )
   {
-    t.set_last_account_update( _db.head_block_time() );
+    a.set_last_account_update( _db.head_block_time() );
   } );
 
   if( o.active || *_auth_posting )
@@ -410,10 +410,10 @@ void account_update2_evaluator::do_apply( const account_update2_operation& o )
     } );
   }
 
-  const auto& account_time = _db.get< time_object >( time_object::id_type( account.get_id().get_value() ) );
-  _db.modify( account_time, [&]( time_object& t )
+  const auto& account_assets = _db.get< assets_object >( assets_object::id_type( account.get_id().get_value() ) );
+  _db.modify( account_assets, [&]( assets_object& a )
   {
-    t.set_last_account_update( _db.head_block_time() );
+    a.set_last_account_update( _db.head_block_time() );
   } );
 
   if( o.active || o.posting )

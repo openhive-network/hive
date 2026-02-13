@@ -1,7 +1,7 @@
 #include <hive/plugins/database_api/database_api_impl.hpp>
 
 #include <hive/chain/account_object.hpp>
-#include <hive/chain/detail/state/time_object.hpp>
+#include <hive/chain/detail/state/assets_object.hpp>
 #include <hive/chain/witness_objects.hpp>
 #include <hive/chain/witness_objects_multiindex.hpp>
 
@@ -182,18 +182,17 @@ DEFINE_API_IMPL( database_api_impl, list_accounts )
     }
     case( by_next_vesting_withdrawal ):
     {
-      // by_next_vesting_withdrawal index is in time_object
-      // We iterate over time_index and look up the account for each result
+      // by_next_vesting_withdrawal index is in assets_object
       auto key = args.start.as< std::pair< fc::time_point_sec, account_name_type > >();
 
-      const auto& time_idx = _db.get_index< chain::time_index, chain::by_next_vesting_withdrawal >();
-      auto itr = time_idx.lower_bound( boost::make_tuple( key.first, key.second ) );
-      auto end = time_idx.end();
+      const auto& assets_idx = _db.get_index< chain::assets_index, chain::by_next_vesting_withdrawal >();
+      auto itr = assets_idx.lower_bound( boost::make_tuple( key.first, key.second ) );
+      auto end = assets_idx.end();
 
       while( itr != end && result.accounts.size() < args.limit )
       {
-        const auto& time_obj = *itr;
-        const auto& account = _db.get< chain::account_object >( chain::account_object::id_type( time_obj.get_id().get_value() ) );
+        const auto& assets_obj = *itr;
+        const auto& account = _db.get< chain::account_object >( chain::account_object::id_type( assets_obj.get_id().get_value() ) );
         result.accounts.emplace_back( api_account_object( account, _db, get_metadata_plugin(), args.delayed_votes_active ) );
         ++itr;
       }

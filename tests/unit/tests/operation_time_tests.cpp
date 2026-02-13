@@ -61,9 +61,9 @@ using namespace hive::chain::util;
 using namespace hive::protocol;
 
 #define GET_ASSETS( account_name ) (db->get< assets_object >( assets_object::id_type( db->get_account( account_name ).get_id().get_value() ) ))
-#define GET_TIME( account_name ) (db->get< time_object >( time_object::id_type( db->get_account( account_name ).get_id().get_value() ) ))
+#define GET_TIME( account_name ) GET_ASSETS( account_name )
 #define GET_ASSETS_FOR_ACC( acc ) (db->get< assets_object >( assets_object::id_type( (acc).get_id().get_value() ) ))
-#define GET_TIME_FOR_ACC( acc ) (db->get< time_object >( time_object::id_type( (acc).get_id().get_value() ) ))
+#define GET_TIME_FOR_ACC( acc ) GET_ASSETS_FOR_ACC( acc )
 
 BOOST_FIXTURE_TEST_SUITE( operation_time_tests, clean_database_fixture )
 
@@ -1191,7 +1191,7 @@ BOOST_AUTO_TEST_CASE( vesting_withdrawals )
 
     vesting_shares = get_vesting( "alice" );
     auto balance = get_balance( "alice" );
-    auto old_next_vesting = db->get< time_object >( time_object::id_type( db->get_account( "alice" ).get_id().get_value() ) ).get_next_vesting_withdrawal();
+    auto old_next_vesting = db->get< assets_object >( assets_object::id_type( db->get_account( "alice" ).get_id().get_value() ) ).get_next_vesting_withdrawal();
 
     for( int i = 1; i < HIVE_VESTING_WITHDRAW_INTERVALS - 1; i++ )
     {
@@ -1287,7 +1287,7 @@ BOOST_AUTO_TEST_CASE( vesting_withdraw_route )
     auto old_sam_balance = sam_assets.get_balance();
     auto old_sam_vesting = sam_assets.get_vesting();
 
-    generate_blocks( db->get< time_object >( time_object::id_type( alice.get_id().get_value() ) ).get_next_vesting_withdrawal() - HIVE_BLOCK_INTERVAL, true );
+    generate_blocks( db->get< assets_object >( assets_object::id_type( alice.get_id().get_value() ) ).get_next_vesting_withdrawal() - HIVE_BLOCK_INTERVAL, true );
     generate_block();
 
     {
@@ -1345,7 +1345,7 @@ BOOST_AUTO_TEST_CASE( vesting_withdraw_route )
     tx.operations.push_back( op );
     push_transaction( tx, alice_private_key );
 
-    generate_blocks( db->get< time_object >( time_object::id_type( db->get_account( "alice" ).get_id().get_value() ) ).get_next_vesting_withdrawal() - HIVE_BLOCK_INTERVAL, true );
+    generate_blocks( db->get< assets_object >( assets_object::id_type( db->get_account( "alice" ).get_id().get_value() ) ).get_next_vesting_withdrawal() - HIVE_BLOCK_INTERVAL, true );
     generate_block();
 
     {
