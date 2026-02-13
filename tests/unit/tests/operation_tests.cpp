@@ -466,7 +466,7 @@ BOOST_AUTO_TEST_CASE( comment_authorities )
     BOOST_TEST_MESSAGE( "--- Up to HF28 it was a test failure when signed by an additional signature not in the creator's authority. Now is a failure because of logic of given operation." );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION - HIVE_BLOCK_INTERVAL );
     HIVE_REQUIRE_ASSERT( push_transaction( tx, { alice_post_key, bob_private_key } ),
-      "_now - _time_obj.get_last_post_edit() >= HIVE_MIN_COMMENT_EDIT_INTERVAL" );
+      "_now - _assets_obj.get_last_post_edit() >= HIVE_MIN_COMMENT_EDIT_INTERVAL" );
 
     BOOST_TEST_MESSAGE( "--- Test failure when signed by a signature not in the creator's authority" );
     HIVE_REQUIRE_THROW( push_transaction( tx, bob_private_key ), tx_missing_posting_auth );
