@@ -522,7 +522,6 @@ void database::apply_hardfork( uint32_t hardfork )
           create< recovery_object >( account_id );
           create< assets_object >( account_id, treasury_name );
           create< manabars_rc_object >( account_id );
-          create< time_object >( account_id );
           create< delayed_votes_object >( account_id );
           push_virtual_operation(
             *this, account_created_operation( treasury_name, treasury_name, asset(0, VESTS_SYMBOL), asset(0, VESTS_SYMBOL) ) );
@@ -637,7 +636,6 @@ void database::apply_hardfork( uint32_t hardfork )
         create< recovery_object >( account_id );
         create< assets_object >( account_id, treasury_name );
         create< manabars_rc_object >( account_id );
-        create< time_object >( account_id );
         create< delayed_votes_object >( account_id );
         push_virtual_operation(
           *this, account_created_operation( treasury_name, treasury_name, asset(0, VESTS_SYMBOL), asset(0, VESTS_SYMBOL) ) );

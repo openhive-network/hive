@@ -728,8 +728,6 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
   BOOST_CHECK_EQUAL( sizeof( assets_index::MULTIINDEX_NODE_TYPE ), 208u );
   BOOST_CHECK_EQUAL( sizeof( manabars_rc_object ), 88u );
   BOOST_CHECK_EQUAL( sizeof( manabars_rc_index::MULTIINDEX_NODE_TYPE ), 120u );
-  BOOST_CHECK_EQUAL( sizeof( time_object ), 80u );
-  BOOST_CHECK_EQUAL( sizeof( time_index::MULTIINDEX_NODE_TYPE ), 144u );
   BOOST_CHECK_EQUAL( sizeof( delayed_votes_object ), 48u );
   BOOST_CHECK_EQUAL( sizeof( delayed_votes_index::MULTIINDEX_NODE_TYPE ), 112u );
   BOOST_CHECK_EQUAL( sizeof( account_authority_object ), 248u ); //as many as account_object

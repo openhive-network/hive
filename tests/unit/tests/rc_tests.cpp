@@ -10,7 +10,6 @@
 #include <hive/chain/detail/state/global_property_object.hpp>
 #include <hive/chain/detail/state/manabars_rc_object.hpp>
 #include <hive/chain/detail/state/assets_object.hpp>
-#include <hive/chain/detail/state/time_object.hpp>
 // Multiindex headers for index type definitions
 #include <hive/chain/comment_object_multiindex.hpp>
 #include <hive/chain/transaction_object_multiindex.hpp>
