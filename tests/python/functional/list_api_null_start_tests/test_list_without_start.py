@@ -1,6 +1,6 @@
 """Tests that all list_* database API calls work correctly when 'start' is omitted (null/nullopt).
 
-After commit 2ed2cf50, the 'start' parameter is optional in every list database API function.
+The 'start' parameter is optional in every list database API function.
 When omitted, iterate_results iterates from the beginning (ascending) or end (descending) of the index.
 These tests verify that every (method, order) combination returns a valid response without crashing.
 """
