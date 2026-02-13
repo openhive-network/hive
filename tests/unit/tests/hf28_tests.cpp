@@ -1786,7 +1786,7 @@ BOOST_AUTO_TEST_CASE( artificial_1_on_power_down )
     withdraw_vesting( "carol", asset( 1, VESTS_SYMBOL ), carol_private_key );
     withdraw_vesting( "carol", asset( 0, VESTS_SYMBOL ), carol_private_key );
     // only 'dave' does not have power down
-    HIVE_REQUIRE_ASSERT( withdraw_vesting( "dave", asset( 0, VESTS_SYMBOL ), dave_private_key ), "account_time.has_active_power_down()" );
+    HIVE_REQUIRE_ASSERT( withdraw_vesting( "dave", asset( 0, VESTS_SYMBOL ), dave_private_key ), "account_assets.has_active_power_down()" );
     // 'eric' can change rate to 1
     withdraw_vesting( "eric", asset( 1, VESTS_SYMBOL ), eric_private_key );
 
