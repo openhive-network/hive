@@ -93,10 +93,9 @@ void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )
   // Get the minimum between the current RC and the maximum delegable RC, so that eve can't f.e. re-delegate delegated RC
   const auto& from_mrc = _db.get< manabars_rc_object >( manabars_rc_object::id_type( from_account.get_id().get_value() ) );
   const auto& from_assets = _db.get< assets_object >( assets_object::id_type( from_account.get_id().get_value() ) );
-  const auto& from_time = _db.get< time_object >( time_object::id_type( from_account.get_id().get_value() ) );
 
   // Get the minimum between the current RC and the maximum delegable RC, so that eve can't f.e. re-delegate delegated RC
-  int64_t from_delegable_rc = std::min( from_account.get_maximum_rc( from_mrc, from_assets, from_time, true ).value, from_mrc.get_rc_manabar().current_mana );
+  int64_t from_delegable_rc = std::min( from_account.get_maximum_rc( from_mrc, from_assets, true ).value, from_mrc.get_rc_manabar().current_mana );
   // We do this assert at the end instead of in the loop because depending on the ordering of the accounts the delta can start off as from_delegable_rc < delta_total and then be valid as some delegations may get modified to take less rc
   FC_ASSERT( from_delegable_rc >= delta_total, "Account ${a} has insufficient RC (have ${h}, needs ${n})", ( "a", op.from )( "h", from_delegable_rc )( "n", delta_total ) );
 
@@ -109,7 +108,7 @@ void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )
       // since delta_total is not greater than from_delegable_rc which is not greater than current_mana, we know it can't dive into negative
     }
     mrc.set_delegated_rc( mrc.get_delegated_rc() + delta_total );
-    mrc.set_last_max_rc( from_account.get_maximum_rc( mrc, from_assets, from_time ) );
+    mrc.set_last_max_rc( from_account.get_maximum_rc( mrc, from_assets ) );
   } );
 
   _db.rc().handle_custom_op_usage( op, gpo.time ); //we have to handle it here because later we'd have to reinterpret json into concrete custom op
@@ -324,12 +323,11 @@ void resource_credits::regenerate_rc_mana( const account_object& account, const 
 {
   const auto& mrc = db.get< manabars_rc_object >( manabars_rc_object::id_type( account.get_id().get_value() ) );
   const auto& assets = db.get< assets_object >( assets_object::id_type( account.get_id().get_value() ) );
-  const auto& time_obj = db.get< time_object >( time_object::id_type( account.get_id().get_value() ) );
-  regenerate_rc_mana( account, mrc, assets, time_obj, now );
+  regenerate_rc_mana( account, mrc, assets, now );
 }
 
 void resource_credits::regenerate_rc_mana( const account_object& account,
-  const manabars_rc_object& mrc, const assets_object& assets, const time_object& time_obj,
+  const manabars_rc_object& mrc, const assets_object& assets,
   const fc::time_point_sec now ) const
 {
   // Since RC tracking is non-consensus, we must rely on consensus to forbid
@@ -338,7 +336,7 @@ void resource_credits::regenerate_rc_mana( const account_object& account,
     "RC regen time must be smaller than vote regen time" );
 
   util::manabar_params mbparams;
-  mbparams.max_mana = account.get_maximum_rc( mrc, assets, time_obj ).value;
+  mbparams.max_mana = account.get_maximum_rc( mrc, assets ).value;
   mbparams.regen_time = HIVE_RC_REGEN_TIME;
 
   try
@@ -369,11 +367,10 @@ void resource_credits::update_account_after_rc_delegation( const account_object&
 {
   const auto& mrc = db.get< manabars_rc_object >( manabars_rc_object::id_type( account.get_id().get_value() ) );
   const auto& assets = db.get< assets_object >( assets_object::id_type( account.get_id().get_value() ) );
-  const auto& time_obj = db.get< time_object >( time_object::id_type( account.get_id().get_value() ) );
 
   db.modify< manabars_rc_object >( mrc, [&]( manabars_rc_object& mrc_obj )
   {
-    auto max_rc = account.get_maximum_rc( mrc, assets, time_obj ).value;
+    auto max_rc = account.get_maximum_rc( mrc, assets ).value;
     util::manabar_params manabar_params( max_rc, HIVE_RC_REGEN_TIME );
     if( regenerate_mana )
     {
@@ -408,12 +405,11 @@ void resource_credits::update_account_after_vest_change( const account_object& a
 {
   const auto& mrc = db.get< manabars_rc_object >( manabars_rc_object::id_type( account.get_id().get_value() ) );
   const auto& assets = db.get< assets_object >( assets_object::id_type( account.get_id().get_value() ) );
-  const auto& time_obj = db.get< time_object >( time_object::id_type( account.get_id().get_value() ) );
-  update_account_after_vest_change( account, mrc, assets, time_obj, now, _fill_new_mana, _check_for_rc_delegation_overflow );
+  update_account_after_vest_change( account, mrc, assets, now, _fill_new_mana, _check_for_rc_delegation_overflow );
 }
 
 void resource_credits::update_account_after_vest_change( const account_object& account,
-  const manabars_rc_object& mrc, const assets_object& assets, const time_object& time_obj,
+  const manabars_rc_object& mrc, const assets_object& assets,
   const fc::time_point_sec now, bool _fill_new_mana, bool _check_for_rc_delegation_overflow ) const
 {
   bool regenerate_condition = (mrc.get_rc_manabar().last_update_time != now.sec_since_epoch());
@@ -434,7 +430,7 @@ void resource_credits::update_account_after_vest_change( const account_object& a
     //the following action is needed when given account lost VESTs and it now might have less
     //than it already delegated with rc delegations (second part of condition is a quick exit
     //check for times before RC delegations are activated (HF26))
-    int64_t delegation_overflow = -account.get_maximum_rc( mrc, assets, time_obj, true ).value;
+    int64_t delegation_overflow = -account.get_maximum_rc( mrc, assets, true ).value;
     int64_t initial_overflow = delegation_overflow;
 
     if( delegation_overflow > 0 )
@@ -471,7 +467,7 @@ void resource_credits::update_account_after_vest_change( const account_object& a
     }
   }
 
-  int64_t new_last_max_rc = account.get_maximum_rc( mrc, assets, time_obj ).value;
+  int64_t new_last_max_rc = account.get_maximum_rc( mrc, assets ).value;
   int64_t drc = new_last_max_rc - mrc.get_last_max_rc().value;
   drc = _fill_new_mana ? drc : 0;
 
@@ -519,10 +515,9 @@ bool resource_credits::use_account_rcs( int64_t rc )
 
   const auto& mrc = db.get< manabars_rc_object >( manabars_rc_object::id_type( account.get_id().get_value() ) );
   const auto& assets = db.get< assets_object >( assets_object::id_type( account.get_id().get_value() ) );
-  const auto& time_obj = db.get< time_object >( time_object::id_type( account.get_id().get_value() ) );
 
   util::manabar_params mbparams;
-  auto max_mana = account.get_maximum_rc( mrc, assets, time_obj ).value;
+  auto max_mana = account.get_maximum_rc( mrc, assets ).value;
   mbparams.max_mana = max_mana;
   tx_info.max = max_mana;
   tx_info.rc = mrc.get_rc_manabar().current_mana; // initialize before regen in case of exception

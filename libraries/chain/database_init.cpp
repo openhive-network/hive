@@ -198,9 +198,9 @@ void database::init_genesis()
     const auto create_split_objects = [&]( const account_object& acc )
     {
       create< recovery_object >( acc.get_id() );
-      create< assets_object >( acc.get_id() );
+      create< assets_object >( acc.get_id(), acc.get_name() );
       create< manabars_rc_object >( acc.get_id() );
-      create< time_object >( acc.get_id(), acc.get_name() );
+      create< time_object >( acc.get_id() );
       create< delayed_votes_object >( acc.get_id() );
     };
 

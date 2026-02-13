@@ -445,10 +445,10 @@ void database_fixture::issue_funds(
       });
       if( amount.symbol == HBD_SYMBOL )
       {
-        const auto& acnt_time = db.get< time_object >( time_object::id_type( acnt.get_id().get_value() ) );
-        db.modify( acnt_time, [&]( time_object& t )
+        const auto& acnt_assets_obj = db.get< assets_object >( assets_object::id_type( acnt.get_id().get_value() ) );
+        db.modify( acnt_assets_obj, [&]( assets_object& a )
         {
-          t.set_hbd_seconds_last_update( db.head_block_time() );
+          a.set_hbd_seconds_last_update( db.head_block_time() );
         });
       }
 
@@ -1075,15 +1075,14 @@ share_type database_fixture::get_effective_vesting_shares( const string& account
 {
   const auto& acnt = db->get_account( account_name );
   const auto& assets = db->get< assets_object >( assets_object::id_type( acnt.get_id().get_value() ) );
-  const auto& time_obj = db->get< time_object >( time_object::id_type( acnt.get_id().get_value() ) );
-  return acnt.get_effective_vesting_shares( assets, time_obj );
+  return acnt.get_effective_vesting_shares( assets );
 }
 
 time_point_sec database_fixture::get_last_vote_time( const string& account_name )const
 {
   const auto& acnt = db->get_account( account_name );
-  const auto& time_obj = db->get< time_object >( time_object::id_type( acnt.get_id().get_value() ) );
-  return time_obj.get_last_vote_time();
+  const auto& assets_obj = db->get< assets_object >( assets_object::id_type( acnt.get_id().get_value() ) );
+  return assets_obj.get_last_vote_time();
 }
 
 comment database_fixture::get_comment( const std::string& author, const std::string& permlink )const

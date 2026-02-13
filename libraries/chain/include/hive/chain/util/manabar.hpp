@@ -101,10 +101,10 @@ struct manabar
   }
 };
 
-template< typename PropType, typename AccountType, typename AssetsType, typename TimeType, typename ManabarType >
-void update_manabar( const PropType& gpo, const AccountType& account, const AssetsType& assets, const TimeType& time, ManabarType& mrc, int64_t new_mana = 0 )
+template< typename PropType, typename AccountType, typename AssetsType, typename ManabarType >
+void update_manabar( const PropType& gpo, const AccountType& account, const AssetsType& assets, ManabarType& mrc, int64_t new_mana = 0 )
 {
-  auto effective_vests = account.get_effective_vesting_shares( assets, time ).value;
+  auto effective_vests = account.get_effective_vesting_shares( assets ).value;
   try {
   manabar_params params( effective_vests, HIVE_VOTING_MANA_REGENERATION_SECONDS );
   mrc.get_voting_manabar().regenerate_mana( params, gpo.time );

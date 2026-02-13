@@ -488,13 +488,12 @@ void database::apply_hardfork( uint32_t hardfork )
         {
           const auto& _manabars_rc_object = get< manabars_rc_object >( manabars_rc_object::id_type( it->get_id().get_value() ) );
           const auto& _assets_obj = get< assets_object >( assets_object::id_type( it->get_id().get_value() ) );
-          const auto& _time_obj = get< time_object >( time_object::id_type( it->get_id().get_value() ) );
 
           modify( _manabars_rc_object, [&]( manabars_rc_object& mrc )
           {
             mrc.set_rc_adjustment( HIVE_RC_HISTORICAL_ACCOUNT_CREATION_ADJUSTMENT );
             mrc.get_rc_manabar().last_update_time = now.sec_since_epoch();
-            auto max_rc = it->get_maximum_rc( mrc, _assets_obj, _time_obj ).value;
+            auto max_rc = it->get_maximum_rc( mrc, _assets_obj ).value;
             mrc.get_rc_manabar().current_mana = max_rc;
             mrc.set_last_max_rc( max_rc );
           } );
@@ -521,9 +520,9 @@ void database::apply_hardfork( uint32_t hardfork )
           // Create all split objects for the treasury account
           account_id_type account_id = new_account.get_id();
           create< recovery_object >( account_id );
-          create< assets_object >( account_id );
+          create< assets_object >( account_id, treasury_name );
           create< manabars_rc_object >( account_id );
-          create< time_object >( account_id, treasury_name );
+          create< time_object >( account_id );
           create< delayed_votes_object >( account_id );
           push_virtual_operation(
             *this, account_created_operation( treasury_name, treasury_name, asset(0, VESTS_SYMBOL), asset(0, VESTS_SYMBOL) ) );
@@ -636,9 +635,9 @@ void database::apply_hardfork( uint32_t hardfork )
         // Create all split objects for the treasury account
         account_id_type account_id = new_account.get_id();
         create< recovery_object >( account_id );
-        create< assets_object >( account_id );
+        create< assets_object >( account_id, treasury_name );
         create< manabars_rc_object >( account_id );
-        create< time_object >( account_id, treasury_name );
+        create< time_object >( account_id );
         create< delayed_votes_object >( account_id );
         push_virtual_operation(
           *this, account_created_operation( treasury_name, treasury_name, asset(0, VESTS_SYMBOL), asset(0, VESTS_SYMBOL) ) );

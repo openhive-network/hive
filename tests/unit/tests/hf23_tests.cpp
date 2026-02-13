@@ -65,7 +65,7 @@ using namespace hive::protocol;
 using fc::string;
 
 #define GET_ASSETS( account ) (db->get< assets_object >( assets_object::id_type( db->get_account( account ).get_id().get_value() ) ))
-#define GET_TIME( account ) (db->get< time_object >( time_object::id_type( db->get_account( account ).get_id().get_value() ) ))
+#define GET_TIME( account ) GET_ASSETS( account )
 #define DELEGATED_VESTS( account ) GET_ASSETS( account ).get_delegated_vesting().amount.value
 #define RECEIVED_VESTS( account ) GET_ASSETS( account ).get_received_vesting().amount.value
 

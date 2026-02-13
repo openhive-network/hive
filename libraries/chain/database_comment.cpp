@@ -163,6 +163,7 @@ share_type database::pay_curators( const comment_object& comment, const comment_
       }
 
       const auto& comment_author_name = get_account( comment_cashout.get_author_id() ).get_name();
+      const bool to_reward_balance = has_hardfork( HIVE_HARDFORK_0_17__659 );
       for( auto& item : proxy_set )
       { try {
         uint128_t weight( item->get_weight() );
@@ -171,18 +172,37 @@ share_type database::pay_curators( const comment_object& comment, const comment_
         {
           unclaimed_rewards -= claim;
           const auto& voter = get( item->get_voter() );
-          operation vop = curation_reward_operation( voter.get_name(), asset(0, VESTS_SYMBOL), comment_author_name, to_string( comment_cashout.get_permlink() ), has_hardfork( HIVE_HARDFORK_0_17__659 ) );
-          create_vesting2( *this, voter, asset( claim, HIVE_SYMBOL ), has_hardfork( HIVE_HARDFORK_0_17__659 ),
-            [&]( const asset& reward )
-            {
-              vop.get< curation_reward_operation >().reward = reward;
-              pre_push_virtual_operation( *this, vop );
-            } );
+          const auto& voter_assets = get< assets_object >( assets_object::id_type( voter.get_id().get_value() ) );
+          asset new_vesting = calculate_vesting( *this, asset( claim, HIVE_SYMBOL ), to_reward_balance );
+          operation vop = curation_reward_operation( voter.get_name(), new_vesting, comment_author_name, to_string( comment_cashout.get_permlink() ), to_reward_balance );
+          pre_push_virtual_operation( *this, vop );
 
-            modify( get< assets_object >( assets_object::id_type( voter.get_id().get_value() ) ), [&]( assets_object& assets )
+          if( to_reward_balance )
+          {
+            // Post-HF17: combine reward balance + curation_rewards in single modify
+            // (saves one get<assets_object> lookup + one modify() undo overhead per curator)
+            modify( voter_assets, [&]( assets_object& a )
             {
-              assets.set_curation_rewards( assets.get_curation_rewards() + HIVE_asset( claim ) );
+              a.set_vest_rewards_as_hive( a.get_vest_rewards_as_hive() + HIVE_asset( claim ) );
+              a.set_vest_rewards( a.get_vest_rewards() + VEST_asset( new_vesting ) );
+              a.set_curation_rewards( a.get_curation_rewards() + HIVE_asset( claim ) );
             });
+            modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& props )
+            {
+              props.pending_rewarded_vesting_shares += new_vesting;
+              props.pending_rewarded_vesting_hive += asset( claim, HIVE_SYMBOL );
+            });
+          }
+          else
+          {
+            // Pre-HF17: use standard vesting path (includes manabar updates if applicable)
+            create_vesting2( *this, voter, asset( claim, HIVE_SYMBOL ), false,
+              []( const asset& ) {} );
+            modify( voter_assets, [&]( assets_object& a )
+            {
+              a.set_curation_rewards( a.get_curation_rewards() + HIVE_asset( claim ) );
+            });
+          }
           post_push_virtual_operation( *this, vop );
         }
       } FC_CAPTURE_AND_RETHROW( (*item) ) }
