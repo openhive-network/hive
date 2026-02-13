@@ -75,4 +75,6 @@ def prepared_node() -> tt.InitNode:
     # Wait for a block to confirm all transactions
     node.wait_number_of_blocks(2)
 
-    return node
+    yield node
+
+    node.close()
