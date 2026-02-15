@@ -186,15 +186,21 @@ public:
 
   ~impl()
   {
+    disconnect_signals();
+
+    _provider->shutdownDb();
+    _initialized = false;
+  }
+
+  /// Disconnect all signal handlers. Idempotent — safe to call multiple times.
+  void disconnect_signals()
+  {
     hive::utilities::disconnect_signal(_on_pre_apply_operation_con);
     hive::utilities::disconnect_signal(_on_irreversible_block_conn);
     hive::utilities::disconnect_signal(_on_post_apply_block_conn);
     hive::utilities::disconnect_signal(_on_fail_apply_block_conn);
     hive::utilities::disconnect_signal(_on_wipe_conn);
     hive::utilities::disconnect_signal(_on_flush_conn);
-
-    _provider->shutdownDb();
-    _initialized = false;
   }
 
   void printReport(uint32_t blockNo, const char* detailText) const;
@@ -1443,6 +1449,14 @@ void account_history_rocksdb_plugin::plugin_startup()
 void account_history_rocksdb_plugin::plugin_shutdown()
 {
   ilog("Shutting down account_history_rocksdb_plugin...");
+
+  /// Disconnect all signal handlers BEFORE shutting down storage.
+  /// This prevents dangling handlers from being invoked during
+  /// chain_plugin::plugin_shutdown() -> database::close() -> notify_flush(),
+  /// which fires _flush_signal after AH RocksDB has already been finalized.
+  /// Note: disconnect_signals() is idempotent, safe to call from both here and ~impl().
+  _my->disconnect_signals();
+
   _my->shutdownDb();
 }
 
