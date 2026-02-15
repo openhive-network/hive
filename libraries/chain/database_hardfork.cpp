@@ -109,6 +109,11 @@ void database::init_hardforks()
   FC_ASSERT( HIVE_HARDFORK_1_28 == 28, "Invalid hardfork configuration" );
   _hardfork_versions.times[ HIVE_HARDFORK_1_28 ] = fc::time_point_sec( HIVE_HARDFORK_1_28_TIME );
   _hardfork_versions.versions[ HIVE_HARDFORK_1_28 ] = HIVE_HARDFORK_1_28_VERSION;
+#if defined(USE_ALTERNATE_CHAIN_ID)
+  FC_ASSERT( HIVE_HARDFORK_1_29 == 29, "Invalid hardfork configuration" );
+  _hardfork_versions.times[ HIVE_HARDFORK_1_29 ] = fc::time_point_sec( HIVE_HARDFORK_1_29_TIME );
+  _hardfork_versions.versions[ HIVE_HARDFORK_1_29 ] = HIVE_HARDFORK_1_29_VERSION;
+#endif
 }
 
 void database::process_hardforks()

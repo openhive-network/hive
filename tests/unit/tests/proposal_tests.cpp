@@ -4498,6 +4498,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_hive_when_print_rate_zero )
       db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
       {
         gpo.hbd_print_rate = 0;
+        gpo.hbd_stop_percent = 0;
       });
     } );
 
@@ -4620,6 +4621,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_hive_conversion_non_unity_price )
       db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
       {
         gpo.hbd_print_rate = 0;
+        gpo.hbd_stop_percent = 0;
       });
     } );
 
@@ -4815,6 +4817,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_hive_conversion_supply_accounting )
       db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
       {
         gpo.hbd_print_rate = 0;
+        gpo.hbd_stop_percent = 0;
       });
     } );
 
@@ -4909,7 +4912,9 @@ BOOST_AUTO_TEST_CASE( generating_payments_hive_conversion_multiple_proposals )
 
     ISSUE_FUNDS( creator, ASSET( "160.000 TESTS" ) );
     ISSUE_FUNDS( creator, ASSET( "80.000 TBD" ) );
-    ISSUE_FUNDS( db->get_treasury_name(), ASSET( "5000.000 TBD" ) );
+    // Budget is 1% of treasury per day; need hourly budget >= 3 TBD
+    // 3 * 100 * 24 = 7200 TBD minimum, use 10000 for margin
+    ISSUE_FUNDS( db->get_treasury_name(), ASSET( "10000.000 TBD" ) );
 
     auto voter_01 = "carol";
 
@@ -4942,6 +4947,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_hive_conversion_multiple_proposals )
       db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
       {
         gpo.hbd_print_rate = 0;
+        gpo.hbd_stop_percent = 0;
       });
     } );
 
@@ -5047,10 +5053,9 @@ BOOST_AUTO_TEST_CASE( generating_payments_hive_conversion_budget_exhaustion )
     int64_t id_proposal_01 = create_proposal( creator, receiver_2, start_date, end_date, small_daily_pay, alice_private_key, alice_post_key );
     generate_blocks( 1 );
 
-    // Both voters vote for both proposals, but carol has more vesting so her vote wins
+    // Carol votes for both proposals; equal votes means sorting by proposal_id,
+    // so proposal_00 (huge pay) is processed first and exhausts the budget
     vote_proposal( voter_01, { id_proposal_00, id_proposal_01 }, true/*approve*/, carol_private_key );
-    generate_blocks( 1 );
-    vote_proposal( "dave", { id_proposal_01 }, true/*approve*/, dave_private_key );
     generate_blocks( 1 );
 
     fund( receiver_1, ASSET( "0.001 TBD" ) );
@@ -5066,6 +5071,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_hive_conversion_budget_exhaustion )
       db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
       {
         gpo.hbd_print_rate = 0;
+        gpo.hbd_stop_percent = 0;
       });
     } );
 
@@ -5190,14 +5196,13 @@ BOOST_AUTO_TEST_CASE( generating_payments_hive_conversion_treasury_balance )
       BOOST_REQUIRE( before_treasury_hbd == after_treasury_hbd - treasury_hbd_inflation + hourly_pay );
     }
 
-    old_hbd_supply = dgpo.get_current_hbd_supply();
-
     // Now force hbd_print_rate to 0
     db_plugin->debug_update( [&]( database& db )
     {
       db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
       {
         gpo.hbd_print_rate = 0;
+        gpo.hbd_stop_percent = 0;
       });
     } );
     BOOST_REQUIRE_EQUAL( dgpo.hbd_print_rate, 0 );
@@ -5207,6 +5212,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_hive_conversion_treasury_balance )
       auto before_treasury_hbd = _treasury.get_hbd_balance();
       auto before_receiver_hbd = _receiver.get_hbd_balance();
       auto before_receiver_hive = _receiver.get_balance();
+      auto old_hbd_supply_2 = dgpo.get_current_hbd_supply();
 
       auto next_block = get_nr_blocks_until_proposal_maintenance_block();
       generate_blocks( next_block - 1 );
@@ -5216,11 +5222,13 @@ BOOST_AUTO_TEST_CASE( generating_payments_hive_conversion_treasury_balance )
       auto after_receiver_hbd = _receiver.get_hbd_balance();
       auto after_receiver_hive = _receiver.get_balance();
 
-      // Treasury still lost HBD (the payment was deducted from treasury as HBD)
-      // The HBD was destroyed rather than transferred to receiver
-      // Treasury balance: before - payment + inflation = after
-      auto treasury_hbd_inflation = dgpo.get_current_hbd_supply() - old_hbd_supply;
-      BOOST_REQUIRE( before_treasury_hbd == after_treasury_hbd + hourly_pay - treasury_hbd_inflation );
+      // In conversion mode, the HBD payment is destroyed (adjust_supply) rather than
+      // transferred to the receiver. Both the treasury balance and global HBD supply
+      // decrease by the payment amount. Meanwhile, DHF inflation adds HBD to treasury
+      // each block via process_funds(). Account for inflation like the normal case:
+      // net treasury change = HBD inflation - hourly_pay = global HBD supply change
+      auto treasury_hbd_inflation_2 = dgpo.get_current_hbd_supply() - old_hbd_supply_2;
+      BOOST_REQUIRE( before_treasury_hbd == after_treasury_hbd - treasury_hbd_inflation_2 );
 
       // Receiver got HIVE, not HBD
       BOOST_REQUIRE( after_receiver_hbd == before_receiver_hbd );
