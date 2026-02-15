@@ -1,5 +1,5 @@
 #include <hive/plugins/witness/witness_plugin.hpp>
-#include <appbase/io_service_wrapper.hpp>
+#include <appbase/io_context_wrapper.hpp>
 
 #include <hive/chain/database_exceptions.hpp>
 #include <hive/chain/notifications.hpp>
@@ -62,7 +62,7 @@ namespace detail {
 class witness_plugin_impl
 {
   public:
-    witness_plugin_impl( boost::asio::io_service& io, appbase::application& app ) :
+    witness_plugin_impl( boost::asio::io_context& io, appbase::application& app ) :
       _timer(io),
       _chain_plugin( app.get_plugin< hive::plugins::chain::chain_plugin >() ),
       _db( _chain_plugin.db() ),
@@ -87,7 +87,7 @@ class witness_plugin_impl
 
     witness_plugin::t_signing_keys     _private_keys;
     witness_plugin::t_witnesses        _witnesses;
-    boost::asio::deadline_timer        _timer;
+    boost::asio::system_timer        _timer;
 
     plugins::chain::chain_plugin& _chain_plugin;
     chain::database&              _db;
@@ -375,7 +375,7 @@ class witness_plugin_impl
       time_to_sleep += BLOCK_PRODUCTION_LOOP_SLEEP_TIME;
 
     using boost::placeholders::_1;
-    _timer.expires_from_now( boost::posix_time::microseconds( time_to_sleep ) );
+    _timer.expires_after( std::chrono::microseconds( time_to_sleep ) );
     _timer.async_wait( boost::bind( &witness_plugin_impl::block_production_loop, this, _1 ) );
   }
 
@@ -610,7 +610,7 @@ void witness_plugin::set_program_options(
 void witness_plugin::plugin_initialize(const boost::program_options::variables_map& options)
 { try {
   ilog( "Initializing witness plugin" );
-  my = std::make_unique< detail::witness_plugin_impl >( get_app().get_io_service().get(), get_app() );
+  my = std::make_unique< detail::witness_plugin_impl >( get_app().get_io_context().get(), get_app() );
 
   my->_chain_plugin.register_block_generator( get_name(), my->_block_producer );
 

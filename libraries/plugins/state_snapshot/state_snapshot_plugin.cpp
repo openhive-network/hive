@@ -39,8 +39,8 @@
 #include <boost/bind/bind.hpp>
 #include <boost/type.hpp>
 #include <boost/algorithm/string.hpp>
-#include <boost/asio/io_service.hpp>
 #include <boost/thread/thread.hpp>
+#include <boost/asio.hpp>
 
 #include <limits>
 #include <string>
@@ -48,6 +48,7 @@
 #include <typeinfo>
 
 namespace bpo = boost::program_options;
+using work_guard_type = boost::asio::executor_work_guard<boost::asio::io_context::executor_type>;
 
 #define SNAPSHOT_FORMAT_VERSION "2.3"
 
@@ -621,19 +622,19 @@ void index_dump_writer::start(const workers& workers)
 
   if(num_threads > 1)
     {
-    boost::asio::io_service ioService;
+    boost::asio::io_context ioContext;
     boost::thread_group threadpool;
-    std::unique_ptr<boost::asio::io_service::work> work = std::make_unique<boost::asio::io_service::work>(ioService);
+    std::unique_ptr<work_guard_type> work = std::make_unique<work_guard_type>(work_guard_type(ioContext.get_executor()));
 
     for(unsigned int i = 0; i < num_threads; ++i)
-      threadpool.create_thread(boost::bind(&boost::asio::io_service::run, &ioService));
+      threadpool.create_thread(boost::bind(&boost::asio::io_context::run, &ioContext));
 
     for(size_t i = 0; i < _builtWorkers.size(); ++i)
       {
       dumping_worker* w = _builtWorkers[i].get();
       FC_ASSERT(w == workers[i]);
 
-      ioService.post(boost::bind(&dumping_worker::perform_dump, w));
+      boost::asio::post(ioContext, boost::bind(&dumping_worker::perform_dump, w));
       }
 
     ilog("Waiting for dumping-workers jobs completion");
@@ -1472,7 +1473,7 @@ void state_snapshot_plugin::impl::prepare_snapshot(const std::string& snapshotNa
   dumper.initialize( "state_snapshot_dump.json" );
 
   bfs::path actualStoragePath = _storagePath / snapshotName;
-  actualStoragePath = actualStoragePath.normalize();
+  actualStoragePath = actualStoragePath.lexically_normal();
 
   ilog("Request to generate snapshot in the location: `${p}'", ("p", actualStoragePath.string()));
 
@@ -1489,18 +1490,18 @@ void state_snapshot_plugin::impl::prepare_snapshot(const std::string& snapshotNa
 
   if (_num_threads > 1)
   {
-    boost::asio::io_service ioService;
+    boost::asio::io_context ioContext;
     boost::thread_group threadpool;
-    std::unique_ptr<boost::asio::io_service::work> work = std::make_unique<boost::asio::io_service::work>(ioService);
+    std::unique_ptr<work_guard_type> work = std::make_unique<work_guard_type>(work_guard_type(ioContext.get_executor()));
 
     for(unsigned int i = 0; i < _num_threads; ++i)
-      threadpool.create_thread(boost::bind(&boost::asio::io_service::run, &ioService));
+      threadpool.create_thread(boost::bind(&boost::asio::io_context::run, &ioContext));
 
     for(const chainbase::abstract_index* idx : indices)
     {
       builtWriters.emplace_back(std::make_unique<index_dump_writer>(_mainDb, *idx, actualStoragePath, true /* allow_concurrency */, _is_error));
       index_dump_writer* writer = builtWriters.back().get();
-      ioService.post(boost::bind(&impl::safe_spawn_snapshot_dump, this, idx, writer));
+      boost::asio::post(ioContext, boost::bind(&impl::safe_spawn_snapshot_dump, this, idx, writer));
     }
     ilog("Waiting for dumping jobs completion");
     work.reset();
@@ -1560,7 +1561,7 @@ void state_snapshot_plugin::impl::prepare_snapshot(const std::string& snapshotNa
 void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshotName, const hive::chain::open_args& openArgs)
   {
   bfs::path actualStoragePath = _storagePath / snapshotName;
-  actualStoragePath = actualStoragePath.normalize();
+  actualStoragePath = actualStoragePath.lexically_normal();
 
   if(bfs::exists(actualStoragePath) == false)
     {
@@ -1614,12 +1615,12 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
 
   if (_num_threads > 1)
   {
-    boost::asio::io_service ioService;
+    boost::asio::io_context ioContext;
     boost::thread_group threadpool;
-    std::unique_ptr<boost::asio::io_service::work> work = std::make_unique<boost::asio::io_service::work>(ioService);
+    std::unique_ptr<work_guard_type> work = std::make_unique<work_guard_type>(work_guard_type(ioContext.get_executor()));
 
     for(unsigned int i = 0; i < _num_threads; ++i)
-      threadpool.create_thread(boost::bind(&boost::asio::io_service::run, &ioService));
+      threadpool.create_thread(boost::bind(&boost::asio::io_context::run, &ioContext));
 
     std::vector<std::unique_ptr< index_dump_reader>> builtReaders;
 
@@ -1627,7 +1628,7 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
     {
       builtReaders.emplace_back(std::make_unique<index_dump_reader>(std::get<0>(snapshotManifest), actualStoragePath, _is_error));
       index_dump_reader* reader = builtReaders.back().get();
-      ioService.post(boost::bind(&impl::safe_spawn_snapshot_load, this, idx, reader));
+      boost::asio::post(ioContext, boost::bind(&impl::safe_spawn_snapshot_load, this, idx, reader));
     }
 
     ilog("Waiting for loading jobs completion");

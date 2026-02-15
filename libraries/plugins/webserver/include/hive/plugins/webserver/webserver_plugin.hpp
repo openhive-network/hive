@@ -19,11 +19,11 @@ using namespace appbase;
   * registered handles based on payload. The payload must be conform
   * to the JSONRPC 2.0 spec.
   *
-  * The handler will be called from the appbase application io_service
+  * The handler will be called from the appbase application io_context
   * thread.  The callback can be called from any thread and will
   * automatically propagate the call to the http thread.
   *
-  * The HTTP service will run in its own thread with its own io_service to
+  * The HTTP service will run in its own thread with its own io_context to
   * make sure that HTTP request processing does not interfer with other
   * plugins.
   */

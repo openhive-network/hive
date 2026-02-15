@@ -1,10 +1,10 @@
 #include <hive/plugins/pacemaker/pacemaker_plugin.hpp>
-#include <appbase/io_service_wrapper.hpp>
+#include <appbase/io_context_wrapper.hpp>
 
 #include <hive/chain/block_log.hpp>
 
 #include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/asio/deadline_timer.hpp>
+#include <boost/asio/system_timer.hpp>
 #include <boost/filesystem.hpp>
 
 #define BLOCK_EMISSION_LOOP_SLEEP_TIME (100000)
@@ -22,7 +22,7 @@ namespace detail {
 class pacemaker_plugin_impl
 {
 public:
-  pacemaker_plugin_impl( boost::asio::io_service& io, appbase::application& app ) :
+  pacemaker_plugin_impl( boost::asio::io_context& io, appbase::application& app ) :
     _timer( io ),
     _chain_plugin( app.get_plugin< hive::plugins::chain::chain_plugin >() ),
     _p2p_plugin( app.get_plugin<hive::plugins::p2p::p2p_plugin >() ),
@@ -40,7 +40,7 @@ public:
   fc::time_point failure_time() const { return block_time() + fc::microseconds( _max_offset ); }
   fc::time_point catch_up_time() const { return block_time() + fc::microseconds( _catch_up_offset ); }
 
-  boost::asio::deadline_timer      _timer;
+  boost::asio::system_timer      _timer;
 
   plugins::chain::chain_plugin&    _chain_plugin;
   plugins::p2p::p2p_plugin&        _p2p_plugin;
@@ -84,7 +84,7 @@ void pacemaker_plugin_impl::schedule_emission_loop()
   if( time_to_sleep < 50000 ) // we must sleep for at least 50ms
     time_to_sleep += BLOCK_EMISSION_LOOP_SLEEP_TIME;
 
-  _timer.expires_from_now( boost::posix_time::microseconds( time_to_sleep ) );
+  _timer.expires_after( std::chrono::microseconds( time_to_sleep ) );
   _timer.async_wait( boost::bind( &pacemaker_plugin_impl::block_emission_loop, this ) );
 }
 
@@ -210,7 +210,7 @@ void pacemaker_plugin::plugin_initialize( const boost::program_options::variable
 #endif
 
   ilog( "Initializing pacemaker plugin" );
-  my = std::make_unique< detail::pacemaker_plugin_impl >( get_app().get_io_service().get(), get_app() );
+  my = std::make_unique< detail::pacemaker_plugin_impl >( get_app().get_io_context().get(), get_app() );
 
   FC_ASSERT( options.count( "pacemaker-source" ) == 1, "Missing or redundant option pacemaker-source - path pointing to source of block emissions" );
   auto sp = options.at( "pacemaker-source" ).as<bfs::path>();

@@ -3,6 +3,8 @@
 #include <fc/string.hpp>
 #include <fc/time.hpp>
 
+#include <functional>
+
 namespace hive { namespace protocol {
 
 /*

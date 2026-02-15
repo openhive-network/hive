@@ -26,6 +26,7 @@
   */
 #ifdef IS_TEST_NET
 #include <boost/test/unit_test.hpp>
+#include <boost/range/iterator_range.hpp>
 
 #include <hive/chain/block_storage_interface.hpp>
 #include <hive/chain/hive_fwd.hpp>
