@@ -52,10 +52,13 @@
 
 #include <iostream>
 
+#include <algorithm>
 #include <cstdint>
 #include <deque>
 #include <fstream>
 #include <functional>
+#include <iterator>
+#include <limits>
 #include <stdlib.h>
 
 long next_hf_time()
@@ -2103,6 +2106,673 @@ void database::process_recurrent_transfers()
     _benchmark_dumper.end( "processing", "hive::protocol::recurrent_transfer_operation", processed_transfers );
 }
 
+#ifdef HIVE_ENABLE_SMT
+namespace {
+
+const account_name_type SMT_DESTINATION_MARKET_MAKER( "$market_maker" );
+const account_name_type SMT_DESTINATION_REWARDS( "$rewards" );
+const account_name_type SMT_DESTINATION_VESTING( "$vesting" );
+const account_name_type SMT_GENERATION_DESTINATION_FROM( "$from" );
+const account_name_type SMT_GENERATION_DESTINATION_FROM_VESTING( "$from.vesting" );
+
+int64_t interpolate_emission_component( const time_point_sec& now, const time_point_sec& left_time, const time_point_sec& right_time,
+  int64_t left_value, int64_t right_value )
+{
+  if( left_time >= right_time )
+    return right_value;
+
+  if( now <= left_time )
+    return left_value;
+
+  if( now >= right_time )
+    return right_value;
+
+  const uint32_t elapsed = now.sec_since_epoch() - left_time.sec_since_epoch();
+  const uint32_t full_range = right_time.sec_since_epoch() - left_time.sec_since_epoch();
+  FC_ASSERT( full_range > 0 );
+
+  if( right_value >= left_value )
+  {
+    const uint64_t delta = static_cast< uint64_t >( right_value - left_value );
+    const uint64_t step = fc::uint128_to_uint64( ( fc::uint128_t( delta ) * elapsed ) / full_range );
+    return left_value + static_cast< int64_t >( step );
+  }
+
+  const uint64_t delta = static_cast< uint64_t >( left_value - right_value );
+  const uint64_t step = fc::uint128_to_uint64( ( fc::uint128_t( delta ) * elapsed ) / full_range );
+  return left_value - static_cast< int64_t >( step );
+}
+
+int64_t calculate_relative_emission_amount( share_type current_supply, uint32_t rel_amount_numerator, uint8_t rel_amount_denom_bits )
+{
+  if( current_supply <= 0 || rel_amount_numerator == 0 )
+    return 0;
+
+  fc::uint128_t amount = fc::uint128_t( current_supply.value ) * rel_amount_numerator;
+  amount >>= rel_amount_denom_bits;
+
+  const uint64_t max_int64 = static_cast< uint64_t >( std::numeric_limits< int64_t >::max() );
+  if( amount > max_int64 )
+    return std::numeric_limits< int64_t >::max();
+
+  return static_cast< int64_t >( fc::uint128_to_uint64( amount ) );
+}
+
+int64_t proportional_slice( int64_t source_before, int64_t source_after, int64_t source_total, int64_t target_total )
+{
+  if( source_total <= 0 || target_total <= 0 )
+    return 0;
+
+  const fc::uint128_t before = ( fc::uint128_t( source_before ) * target_total ) / source_total;
+  const fc::uint128_t after = ( fc::uint128_t( source_after ) * target_total ) / source_total;
+
+  FC_ASSERT( after >= before );
+  return static_cast< int64_t >( fc::uint128_to_uint64( after - before ) );
+}
+
+template< typename UnitMap, typename Visitor >
+void route_weighted_amount( int64_t amount, const UnitMap& units, Visitor&& visitor )
+{
+  if( amount <= 0 || units.empty() )
+    return;
+
+  uint32_t total_weight = 0;
+  for( const auto& u : units )
+    total_weight += u.second;
+
+  FC_ASSERT( total_weight > 0 );
+
+  int64_t routed = 0;
+  const auto end_itr = units.end();
+  for( auto unit_itr = units.begin(); unit_itr != end_itr; ++unit_itr )
+  {
+    const bool is_last = std::next( unit_itr ) == end_itr;
+    int64_t route_amount = 0;
+
+    if( is_last )
+    {
+      route_amount = amount - routed;
+    }
+    else
+    {
+      route_amount = static_cast< int64_t >( fc::uint128_to_uint64(
+        ( fc::uint128_t( amount ) * unit_itr->second ) / total_weight ) );
+    }
+
+    routed += route_amount;
+    if( route_amount > 0 )
+      visitor( unit_itr->first, route_amount );
+  }
+}
+
+} // namespace
+
+void database::process_smt_phase_transitions()
+{
+  if( !has_hardfork( HIVE_SMT_HARDFORK ) )
+    return;
+
+  const auto now = head_block_time();
+  uint16_t processed_transitions = 0;
+  if( _benchmark_dumper.is_enabled() )
+    _benchmark_dumper.begin();
+
+  auto process_begin_phase = [this, &now, &processed_transitions]()
+  {
+    const auto& idx = get_index< smt_ico_index, by_ico_contribution_begin_time >();
+    auto itr = idx.begin();
+
+    while( itr != idx.end() && !itr->contribution_begin_processed &&
+      itr->contribution_begin_time <= now && processed_transitions < SMT_MAX_PHASE_TRANSITIONS_PER_BLOCK )
+    {
+      const auto& ico = *itr;
+      ++itr;
+
+      const auto* token = find< smt_token_object, by_symbol >( ico.symbol );
+      if( token == nullptr )
+        continue;
+
+      bool phase_reached = false;
+      if( token->phase == smt_phase::setup_completed )
+      {
+        modify( *token, []( smt_token_object& t )
+        {
+          t.phase = smt_phase::contribution_begin_time_completed;
+        } );
+        phase_reached = true;
+      }
+      else if( token->phase >= smt_phase::contribution_begin_time_completed )
+      {
+        phase_reached = true;
+      }
+
+      if( phase_reached )
+      {
+        modify( ico, []( smt_ico_object& o )
+        {
+          o.contribution_begin_processed = true;
+        } );
+        ++processed_transitions;
+      }
+    }
+  };
+
+  auto process_end_phase = [this, &now, &processed_transitions]()
+  {
+    const auto& idx = get_index< smt_ico_index, by_ico_contribution_end_time >();
+    auto itr = idx.begin();
+
+    while( itr != idx.end() && !itr->contribution_end_processed &&
+      itr->contribution_end_time <= now && processed_transitions < SMT_MAX_PHASE_TRANSITIONS_PER_BLOCK )
+    {
+      const auto& ico = *itr;
+      ++itr;
+
+      const auto* token = find< smt_token_object, by_symbol >( ico.symbol );
+      if( token == nullptr )
+        continue;
+
+      bool phase_reached = false;
+      if( token->phase == smt_phase::contribution_begin_time_completed )
+      {
+        modify( *token, []( smt_token_object& t )
+        {
+          t.phase = smt_phase::contribution_end_time_completed;
+        } );
+        phase_reached = true;
+      }
+      else if( token->phase >= smt_phase::contribution_end_time_completed )
+      {
+        phase_reached = true;
+      }
+
+      if( phase_reached )
+      {
+        modify( ico, []( smt_ico_object& o )
+        {
+          o.contribution_end_processed = true;
+        } );
+        ++processed_transitions;
+      }
+    }
+  };
+
+  auto process_launch_phase = [this, &now, &processed_transitions]()
+  {
+    const auto& idx = get_index< smt_ico_index, by_ico_launch_time >();
+    auto itr = idx.begin();
+
+    while( itr != idx.end() && !itr->launch_processed &&
+      itr->launch_time <= now && processed_transitions < SMT_MAX_PHASE_TRANSITIONS_PER_BLOCK )
+    {
+      const auto& ico = *itr;
+      ++itr;
+
+      const auto* token = find< smt_token_object, by_symbol >( ico.symbol );
+      if( token == nullptr )
+        continue;
+
+      bool phase_reached = false;
+      if( token->phase == smt_phase::contribution_end_time_completed )
+      {
+        const bool launch_succeeded = ico.contributed.amount >= ico.hive_units_soft_cap;
+        modify( ico, [launch_succeeded]( smt_ico_object& o )
+        {
+          o.launch_processed = true;
+          o.launch_succeeded = launch_succeeded;
+        } );
+        phase_reached = true;
+      }
+      else if( token->phase >= smt_phase::launch_failed )
+      {
+        const bool launch_succeeded = token->phase == smt_phase::launch_success;
+        modify( ico, [launch_succeeded]( smt_ico_object& o )
+        {
+          o.launch_processed = true;
+          o.launch_succeeded = launch_succeeded;
+          o.settlement_complete = true;
+        } );
+        phase_reached = true;
+      }
+
+      if( phase_reached )
+      {
+        ++processed_transitions;
+      }
+    }
+  };
+
+  process_begin_phase();
+  process_end_phase();
+  process_launch_phase();
+
+  if( _benchmark_dumper.is_enabled() && processed_transitions )
+    _benchmark_dumper.end( "processing", "hive::chain::smt_phase_transition", processed_transitions );
+}
+
+void database::process_smt_contribution_settlements()
+{
+  if( !has_hardfork( HIVE_SMT_HARDFORK ) )
+    return;
+
+  uint16_t processed_contributions = 0;
+  if( _benchmark_dumper.is_enabled() )
+    _benchmark_dumper.begin();
+
+  const auto& ico_idx = get_index< smt_ico_index, by_ico_settlement_state >();
+  const auto& contribution_idx = get_index< smt_contribution_index, by_symbol_id >();
+
+  auto ico_itr = ico_idx.lower_bound( boost::make_tuple( true, false, asset_symbol_type() ) );
+  while( ico_itr != ico_idx.end() && ico_itr->launch_processed && !ico_itr->settlement_complete &&
+    processed_contributions < SMT_MAX_SETTLEMENT_CONTRIBUTIONS_PER_BLOCK )
+  {
+    const auto& ico = *ico_itr;
+    ++ico_itr;
+
+    const auto* token = find< smt_token_object, by_symbol >( ico.symbol );
+    if( token == nullptr )
+    {
+      modify( ico, [&]( smt_ico_object& o )
+      {
+        o.settlement_complete = true;
+      } );
+      continue;
+    }
+
+    if( ico.launch_succeeded && !ico.settlement_initialized )
+    {
+      const auto& policy = ico.capped_generation_policy;
+      const int64_t total_contributed = ico.contributed.amount.value;
+
+      int64_t pre_soft_cap_contributions = 0;
+      if( total_contributed > 0 )
+      {
+        pre_soft_cap_contributions = static_cast< int64_t >( fc::uint128_to_uint64(
+          ( fc::uint128_t( ico.hive_units_hard_cap ) * policy.soft_cap_percent ) / HIVE_100_PERCENT ) );
+        pre_soft_cap_contributions = std::min( pre_soft_cap_contributions, total_contributed );
+      }
+
+      const int64_t post_soft_cap_contributions = total_contributed - pre_soft_cap_contributions;
+
+      const bool pre_routes_tokens = !policy.pre_soft_cap_unit.token_unit.empty();
+      const bool post_routes_tokens = !policy.post_soft_cap_unit.token_unit.empty();
+
+      const fc::uint128_t pre_nominal_tokens = pre_routes_tokens
+        ? fc::uint128_t( pre_soft_cap_contributions ) * policy.max_unit_ratio
+        : fc::uint128_t( 0 );
+      const fc::uint128_t post_nominal_tokens = post_routes_tokens
+        ? fc::uint128_t( post_soft_cap_contributions ) * policy.min_unit_ratio
+        : fc::uint128_t( 0 );
+
+      const fc::uint128_t nominal_tokens = pre_nominal_tokens + post_nominal_tokens;
+      const fc::uint128_t token_cap = fc::uint128_t( ico.hive_units_hard_cap ) * policy.min_unit_ratio;
+      fc::uint128_t effective_tokens = std::min( nominal_tokens, token_cap );
+
+      int64_t supply_remaining = std::numeric_limits< int64_t >::max() - token->current_supply.value;
+      if( token->max_supply > 0 )
+        supply_remaining = std::min( supply_remaining, token->max_supply - token->current_supply.value );
+      if( supply_remaining < 0 )
+        supply_remaining = 0;
+      effective_tokens = std::min( effective_tokens, fc::uint128_t( supply_remaining ) );
+
+      const fc::uint128_t pre_effective_tokens = nominal_tokens > 0
+        ? ( effective_tokens * pre_nominal_tokens ) / nominal_tokens
+        : fc::uint128_t( 0 );
+      const fc::uint128_t post_effective_tokens = effective_tokens - pre_effective_tokens;
+
+      modify( ico, [&]( smt_ico_object& o )
+      {
+        o.settlement_initialized = true;
+        o.pre_soft_cap_contributions = pre_soft_cap_contributions;
+        o.pre_soft_cap_tokens = static_cast< int64_t >( fc::uint128_to_uint64( pre_effective_tokens ) );
+        o.post_soft_cap_tokens = static_cast< int64_t >( fc::uint128_to_uint64( post_effective_tokens ) );
+      } );
+    }
+
+    auto contribution_itr = contribution_idx.lower_bound( boost::make_tuple( ico.symbol, smt_contribution_id_type() ) );
+    while( contribution_itr != contribution_idx.end() && contribution_itr->symbol == ico.symbol &&
+      processed_contributions < SMT_MAX_SETTLEMENT_CONTRIBUTIONS_PER_BLOCK )
+    {
+      const auto& contribution = *contribution_itr;
+      ++contribution_itr;
+
+      const auto& current_ico = get< smt_ico_object, by_symbol >( ico.symbol );
+      const int64_t total_contributed = current_ico.contributed.amount.value;
+      int64_t settled_before = current_ico.settled_contributions.value;
+      const int64_t settled_after = settled_before + contribution.contribution.amount.value;
+
+      FC_ASSERT( settled_after <= total_contributed );
+
+      if( current_ico.launch_succeeded )
+      {
+        const auto& policy = current_ico.capped_generation_policy;
+        const int64_t pre_soft_total = current_ico.pre_soft_cap_contributions.value;
+        const int64_t post_soft_total = total_contributed - pre_soft_total;
+
+        const int64_t pre_soft_before = proportional_slice( 0, settled_before, total_contributed, pre_soft_total );
+        const int64_t pre_soft_after = proportional_slice( 0, settled_after, total_contributed, pre_soft_total );
+        const int64_t pre_soft_contribution = pre_soft_after - pre_soft_before;
+        const int64_t post_soft_contribution = contribution.contribution.amount.value - pre_soft_contribution;
+
+        const account_name_type contributor_name = contribution.contributor;
+
+        auto apply_hive_route = [this, &contributor_name]( const account_name_type& destination, int64_t amount )
+        {
+          if( amount <= 0 )
+            return;
+
+          if( destination == SMT_GENERATION_DESTINATION_FROM )
+          {
+            adjust_balance( contributor_name, asset( amount, HIVE_SYMBOL ) );
+          }
+          else if( destination == SMT_GENERATION_DESTINATION_FROM_VESTING )
+          {
+            create_vesting( get_account( contributor_name ), asset( amount, HIVE_SYMBOL ) );
+          }
+          else
+          {
+            const auto* account = find_account( destination );
+            if( account != nullptr )
+              adjust_balance( *account, asset( amount, HIVE_SYMBOL ) );
+          }
+        };
+
+        route_weighted_amount( pre_soft_contribution, policy.pre_soft_cap_unit.hive_unit, apply_hive_route );
+        route_weighted_amount( post_soft_contribution, policy.post_soft_cap_unit.hive_unit, apply_hive_route );
+
+        const int64_t pre_soft_tokens = current_ico.pre_soft_cap_tokens.value;
+        const int64_t post_soft_tokens = current_ico.post_soft_cap_tokens.value;
+
+        const int64_t post_soft_before = settled_before - pre_soft_before;
+        const int64_t post_soft_after = settled_after - pre_soft_after;
+
+        const int64_t pre_token_contribution = proportional_slice( pre_soft_before, pre_soft_after, pre_soft_total, pre_soft_tokens );
+        const int64_t post_token_contribution = proportional_slice( post_soft_before, post_soft_after, post_soft_total, post_soft_tokens );
+
+        struct token_route_action
+        {
+          account_name_type account;
+          int64_t amount = 0;
+          bool to_vesting = false;
+        };
+
+        std::vector< token_route_action > token_actions;
+        token_actions.reserve(
+          policy.pre_soft_cap_unit.token_unit.size() +
+          policy.post_soft_cap_unit.token_unit.size() );
+
+        int64_t minted_tokens = 0;
+        auto collect_token_route = [this, &contributor_name, &token_actions, &minted_tokens]( const account_name_type& destination, int64_t amount )
+        {
+          if( amount <= 0 )
+            return;
+
+          if( destination == SMT_GENERATION_DESTINATION_FROM )
+          {
+            token_actions.push_back( token_route_action{ contributor_name, amount, false } );
+            minted_tokens += amount;
+          }
+          else if( destination == SMT_GENERATION_DESTINATION_FROM_VESTING )
+          {
+            token_actions.push_back( token_route_action{ contributor_name, amount, true } );
+            minted_tokens += amount;
+          }
+          else
+          {
+            const auto* account = find_account( destination );
+            if( account != nullptr )
+            {
+              token_actions.push_back( token_route_action{ destination, amount, false } );
+              minted_tokens += amount;
+            }
+          }
+        };
+
+        route_weighted_amount( pre_token_contribution, policy.pre_soft_cap_unit.token_unit, collect_token_route );
+        route_weighted_amount( post_token_contribution, policy.post_soft_cap_unit.token_unit, collect_token_route );
+
+        if( minted_tokens > 0 )
+        {
+          adjust_supply( asset( minted_tokens, ico.symbol ) );
+          for( const auto& action : token_actions )
+          {
+            if( action.to_vesting )
+              create_vesting( get_account( action.account ), asset( action.amount, ico.symbol ) );
+            else
+              adjust_balance( action.account, asset( action.amount, ico.symbol ) );
+          }
+        }
+      }
+      else
+      {
+        adjust_balance( contribution.contributor, contribution.contribution );
+      }
+
+      modify( current_ico, [&]( smt_ico_object& o )
+      {
+        o.settled_contributions = settled_after;
+      } );
+
+      remove( contribution );
+      ++processed_contributions;
+    }
+
+    const auto left_contribution_itr = contribution_idx.lower_bound( boost::make_tuple( ico.symbol, smt_contribution_id_type() ) );
+    const bool has_left_contributions = left_contribution_itr != contribution_idx.end() && left_contribution_itr->symbol == ico.symbol;
+
+    if( !has_left_contributions )
+    {
+      const auto& current_ico = get< smt_ico_object, by_symbol >( ico.symbol );
+      const auto* current_token = find< smt_token_object, by_symbol >( ico.symbol );
+      if( current_token != nullptr && current_token->phase == smt_phase::contribution_end_time_completed )
+      {
+        const smt_phase final_phase = current_ico.launch_succeeded
+          ? smt_phase::launch_success
+          : smt_phase::launch_failed;
+
+        modify( *current_token, [final_phase]( smt_token_object& t )
+        {
+          t.phase = final_phase;
+        } );
+      }
+
+      modify( current_ico, [&]( smt_ico_object& o )
+      {
+        o.settlement_complete = true;
+      } );
+    }
+  }
+
+  if( _benchmark_dumper.is_enabled() && processed_contributions )
+    _benchmark_dumper.end( "processing", "hive::chain::smt_contribution_settlement", processed_contributions );
+}
+
+void database::process_smt_emissions()
+{
+  if( !has_hardfork( HIVE_SMT_HARDFORK ) )
+    return;
+
+  const auto now = head_block_time();
+  uint16_t processed_emissions = 0;
+  if( _benchmark_dumper.is_enabled() )
+    _benchmark_dumper.begin();
+
+  const auto& emissions_by_time = get_index< smt_token_emissions_index, by_emission_schedule_time >();
+  auto itr = emissions_by_time.begin();
+
+  while( itr != emissions_by_time.end() && itr->schedule_time <= now )
+  {
+    if( processed_emissions >= SMT_MAX_EMISSIONS_PER_BLOCK )
+    {
+      ilog( "Reached max processed SMT emissions this block" );
+      break;
+    }
+
+    const auto& emission = *itr;
+    ++itr;
+
+    const auto* token = find< smt_token_object, by_symbol >( emission.symbol );
+    if( token == nullptr )
+    {
+      remove( emission );
+      ++processed_emissions;
+      continue;
+    }
+
+    if( token->phase != smt_phase::launch_success )
+    {
+      if( token->phase == smt_phase::launch_failed )
+      {
+        remove( emission );
+      }
+      else
+      {
+        const auto* ico = find< smt_ico_object, by_symbol >( emission.symbol );
+        if( ico != nullptr && ico->launch_time > now && emission.schedule_time < ico->launch_time )
+        {
+          modify( emission, [&]( smt_token_emissions_object& e )
+          {
+            e.schedule_time = ico->launch_time;
+          } );
+        }
+      }
+
+      ++processed_emissions;
+      continue;
+    }
+
+    const auto symbol = emission.symbol;
+    const auto control_account = token->control_account;
+
+    const int64_t abs_amount = interpolate_emission_component( emission.schedule_time, emission.lep_time, emission.rep_time,
+      emission.lep_abs_amount.amount.value, emission.rep_abs_amount.amount.value );
+    const uint32_t rel_numerator = static_cast< uint32_t >( interpolate_emission_component( emission.schedule_time,
+      emission.lep_time, emission.rep_time, emission.lep_rel_amount_numerator, emission.rep_rel_amount_numerator ) );
+    const int64_t rel_amount = calculate_relative_emission_amount( token->current_supply, rel_numerator, emission.rel_amount_denom_bits );
+
+    int64_t emission_amount = abs_amount + rel_amount;
+    if( emission_amount < 0 )
+      emission_amount = 0;
+
+    if( token->max_supply > 0 )
+    {
+      const int64_t max_mintable = token->max_supply - token->current_supply.value;
+      if( max_mintable <= 0 )
+        emission_amount = 0;
+      else
+        emission_amount = std::min( emission_amount, max_mintable );
+    }
+
+    struct destination_amount
+    {
+      account_name_type destination;
+      int64_t amount = 0;
+    };
+
+    std::vector< destination_amount > routed_amounts;
+    routed_amounts.reserve( emission.emissions_unit.token_unit.size() );
+
+    if( emission_amount > 0 )
+    {
+      uint32_t total_units = 0;
+      for( const auto& e : emission.emissions_unit.token_unit )
+        total_units += e.second;
+      FC_ASSERT( total_units > 0 );
+
+      int64_t already_routed = 0;
+      const auto end_itr = emission.emissions_unit.token_unit.end();
+      for( auto unit_itr = emission.emissions_unit.token_unit.begin(); unit_itr != end_itr; ++unit_itr )
+      {
+        const bool is_last = std::next( unit_itr ) == end_itr;
+        int64_t routed_amount = 0;
+
+        if( is_last )
+        {
+          routed_amount = emission_amount - already_routed;
+        }
+        else
+        {
+          routed_amount = static_cast< int64_t >( fc::uint128_to_uint64(
+            ( fc::uint128_t( emission_amount ) * unit_itr->second ) / total_units ) );
+        }
+
+        already_routed += routed_amount;
+        if( routed_amount > 0 )
+          routed_amounts.push_back( destination_amount{ unit_itr->first, routed_amount } );
+      }
+    }
+
+    int64_t issued_amount = 0;
+    for( auto& r : routed_amounts )
+    {
+      const bool is_special_destination = ( r.destination == SMT_DESTINATION_REWARDS )
+        || ( r.destination == SMT_DESTINATION_VESTING )
+        || ( r.destination == SMT_DESTINATION_MARKET_MAKER );
+
+      if( !is_special_destination && find_account( r.destination ) == nullptr )
+        r.amount = 0;
+    }
+
+    for( const auto& r : routed_amounts )
+      issued_amount += r.amount;
+
+    if( issued_amount > 0 )
+      adjust_supply( asset( issued_amount, symbol ) );
+
+    for( const auto& r : routed_amounts )
+    {
+      if( r.amount <= 0 )
+        continue;
+
+      if( r.destination == SMT_DESTINATION_REWARDS )
+      {
+        adjust_reward_balance( control_account, asset( r.amount, symbol ) );
+      }
+      else if( r.destination == SMT_DESTINATION_VESTING )
+      {
+        create_vesting( get_account( control_account ), asset( r.amount, symbol ) );
+      }
+      else if( r.destination == SMT_DESTINATION_MARKET_MAKER )
+      {
+        const auto& current_token = get< smt_token_object, by_symbol >( symbol );
+        modify( current_token, [&]( smt_token_object& t )
+        {
+          t.market_maker.token_balance += asset( r.amount, symbol );
+        } );
+      }
+      else
+      {
+        const auto* account = find_account( r.destination );
+        if( account != nullptr )
+          adjust_balance( *account, asset( r.amount, symbol ) );
+      }
+    }
+
+    const int64_t max_int32 = std::numeric_limits< int32_t >::max();
+    const bool schedule_overflows = emission.schedule_time.sec_since_epoch() > max_int32 - static_cast< int64_t >( emission.interval_seconds );
+
+    if( emission.interval_count == 1 || schedule_overflows )
+    {
+      remove( emission );
+      ++processed_emissions;
+      continue;
+    }
+
+    modify( emission, [&]( smt_token_emissions_object& e )
+    {
+      e.schedule_time += fc::seconds( e.interval_seconds );
+      if( e.interval_count != SMT_EMIT_INDEFINITELY )
+        --e.interval_count;
+    } );
+
+    ++processed_emissions;
+  }
+
+  if( _benchmark_dumper.is_enabled() && processed_emissions )
+    _benchmark_dumper.end( "processing", "hive::chain::smt_token_emission", processed_emissions );
+}
+#endif
+
 void database::remove_proposal_votes_for_accounts_without_voting_rights()
 {
   std::vector<account_name_type> voters;
@@ -4122,6 +4792,11 @@ void database::_apply_block( const std::shared_ptr<full_block_type>& full_block,
   remove_expired_governance_votes();
 
   process_recurrent_transfers();
+#ifdef HIVE_ENABLE_SMT
+  process_smt_phase_transitions();
+  process_smt_contribution_settlements();
+  process_smt_emissions();
+#endif
 
   rc.handle_expired_delegations();
   rc.finalize_block();

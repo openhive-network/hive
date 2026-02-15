@@ -130,6 +130,16 @@ public:
   time_point_sec                contribution_begin_time;
   time_point_sec                contribution_end_time;
   time_point_sec                launch_time;
+  bool                          contribution_begin_processed = false;
+  bool                          contribution_end_processed = false;
+  bool                          launch_processed = false;
+  bool                          launch_succeeded = false;
+  bool                          settlement_initialized = false;
+  bool                          settlement_complete = false;
+  share_type                    settled_contributions = 0;
+  share_type                    pre_soft_cap_contributions = 0;
+  share_type                    pre_soft_cap_tokens = 0;
+  share_type                    post_soft_cap_tokens = 0;
   share_type                    hive_units_soft_cap = -1;
   share_type                    hive_units_hard_cap = -1;
   protocol::asset               contributed = protocol::asset( 0, HIVE_SYMBOL );
@@ -235,18 +245,52 @@ typedef multi_index_container <
   multi_index_allocator< smt_token_object >
 > smt_token_index;
 
+struct by_ico_contribution_begin_time;
+struct by_ico_contribution_end_time;
+struct by_ico_launch_time;
+struct by_ico_settlement_state;
+
 typedef multi_index_container <
   smt_ico_object,
   indexed_by <
     ordered_unique< tag< by_id >,
       const_mem_fun< smt_ico_object, smt_ico_object::id_type, &smt_ico_object::get_id > >,
     ordered_unique< tag< by_symbol >,
-      member< smt_ico_object, asset_symbol_type, &smt_ico_object::symbol > >
+      member< smt_ico_object, asset_symbol_type, &smt_ico_object::symbol > >,
+    ordered_non_unique< tag< by_ico_contribution_begin_time >,
+      composite_key< smt_ico_object,
+        member< smt_ico_object, bool, &smt_ico_object::contribution_begin_processed >,
+        member< smt_ico_object, time_point_sec, &smt_ico_object::contribution_begin_time >,
+        member< smt_ico_object, asset_symbol_type, &smt_ico_object::symbol >
+      >
+    >,
+    ordered_non_unique< tag< by_ico_contribution_end_time >,
+      composite_key< smt_ico_object,
+        member< smt_ico_object, bool, &smt_ico_object::contribution_end_processed >,
+        member< smt_ico_object, time_point_sec, &smt_ico_object::contribution_end_time >,
+        member< smt_ico_object, asset_symbol_type, &smt_ico_object::symbol >
+      >
+    >,
+    ordered_non_unique< tag< by_ico_launch_time >,
+      composite_key< smt_ico_object,
+        member< smt_ico_object, bool, &smt_ico_object::launch_processed >,
+        member< smt_ico_object, time_point_sec, &smt_ico_object::launch_time >,
+        member< smt_ico_object, asset_symbol_type, &smt_ico_object::symbol >
+      >
+    >,
+    ordered_non_unique< tag< by_ico_settlement_state >,
+      composite_key< smt_ico_object,
+        member< smt_ico_object, bool, &smt_ico_object::launch_processed >,
+        member< smt_ico_object, bool, &smt_ico_object::settlement_complete >,
+        member< smt_ico_object, asset_symbol_type, &smt_ico_object::symbol >
+      >
+    >
   >,
   multi_index_allocator< smt_ico_object >
 > smt_ico_index;
 
 struct by_symbol_time;
+struct by_emission_schedule_time;
 
 typedef multi_index_container <
   smt_token_emissions_object,
@@ -257,6 +301,12 @@ typedef multi_index_container <
       composite_key< smt_token_emissions_object,
         member< smt_token_emissions_object, asset_symbol_type, &smt_token_emissions_object::symbol >,
         member< smt_token_emissions_object, time_point_sec, &smt_token_emissions_object::schedule_time >
+      >
+    >,
+    ordered_non_unique< tag< by_emission_schedule_time >,
+      composite_key< smt_token_emissions_object,
+        member< smt_token_emissions_object, time_point_sec, &smt_token_emissions_object::schedule_time >,
+        member< smt_token_emissions_object, asset_symbol_type, &smt_token_emissions_object::symbol >
       >
     >
   >,
@@ -356,6 +406,16 @@ FC_REFLECT( hive::chain::smt_ico_object,
   (contribution_begin_time)
   (contribution_end_time)
   (launch_time)
+  (contribution_begin_processed)
+  (contribution_end_processed)
+  (launch_processed)
+  (launch_succeeded)
+  (settlement_initialized)
+  (settlement_complete)
+  (settled_contributions)
+  (pre_soft_cap_contributions)
+  (pre_soft_cap_tokens)
+  (post_soft_cap_tokens)
   (hive_units_soft_cap)
   (hive_units_hard_cap)
   (contributed)

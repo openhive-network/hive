@@ -706,6 +706,11 @@ namespace chain {
       void process_delayed_voting(const block_notification& note );
 
       void process_recurrent_transfers();
+#ifdef HIVE_ENABLE_SMT
+      void process_smt_phase_transitions();
+      void process_smt_contribution_settlements();
+      void process_smt_emissions();
+#endif
 
       void update_global_dynamic_data( const signed_block& b );
       void update_signing_witness(const witness_object& signing_witness, const signed_block& new_block);

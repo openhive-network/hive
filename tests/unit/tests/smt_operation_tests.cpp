@@ -3447,6 +3447,333 @@ BOOST_AUTO_TEST_CASE( smt_contribute_apply )
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( smt_automatic_phase_transitions_apply )
+{
+  try
+  {
+    ACTORS( (alice) )
+    generate_block();
+
+    asset_symbol_type alice_symbol = create_smt( "alice", alice_private_key, 3 );
+    fund( "alice", ASSET( "2000.000 TESTS" ) );
+    generate_block();
+
+    const auto contribution_begin_time = db->head_block_time() + fc::seconds( 2 * HIVE_BLOCK_INTERVAL );
+    const auto contribution_end_time = contribution_begin_time + fc::seconds( 2 * HIVE_BLOCK_INTERVAL );
+    const auto launch_time = contribution_end_time + fc::seconds( 2 * HIVE_BLOCK_INTERVAL );
+
+    smt_setup_operation setup_op;
+    setup_op.control_account = "alice";
+    setup_op.symbol = alice_symbol;
+    setup_op.hive_units_soft_cap = SMT_MIN_SOFT_CAP_HIVE_UNITS;
+    setup_op.hive_units_hard_cap = SMT_MIN_HARD_CAP_HIVE_UNITS;
+    setup_op.contribution_begin_time = contribution_begin_time;
+    setup_op.contribution_end_time = contribution_end_time;
+    setup_op.launch_time = launch_time;
+    setup_op.initial_generation_policy = get_capped_generation_policy
+    (
+      get_generation_unit( { { "alice", 1 } }, { { "alice", 1 } } ),
+      get_generation_unit(),
+      HIVE_100_PERCENT,
+      1,
+      1
+    );
+
+    PUSH_OP( setup_op, alice_private_key );
+
+    auto token = util::smt::find_token( *db, alice_symbol );
+    BOOST_REQUIRE( token != nullptr );
+    BOOST_REQUIRE( token->phase == smt_phase::setup_completed );
+
+    smt_contribute_operation contribute_op;
+    contribute_op.contributor = "alice";
+    contribute_op.symbol = alice_symbol;
+    contribute_op.contribution_id = 1;
+    contribute_op.contribution = asset( SMT_MIN_SOFT_CAP_HIVE_UNITS, HIVE_SYMBOL );
+
+    FAIL_WITH_OP( contribute_op, alice_private_key, fc::assert_exception );
+
+    generate_blocks( contribution_begin_time, true );
+    token = util::smt::find_token( *db, alice_symbol );
+    BOOST_REQUIRE( token != nullptr );
+    BOOST_REQUIRE( token->phase == smt_phase::contribution_begin_time_completed );
+
+    PUSH_OP( contribute_op, alice_private_key );
+
+    generate_blocks( contribution_end_time, true );
+    token = util::smt::find_token( *db, alice_symbol );
+    BOOST_REQUIRE( token != nullptr );
+    BOOST_REQUIRE( token->phase == smt_phase::contribution_end_time_completed );
+
+    contribute_op.contribution_id++;
+    FAIL_WITH_OP( contribute_op, alice_private_key, fc::assert_exception );
+
+    generate_blocks( launch_time, true );
+    token = util::smt::find_token( *db, alice_symbol );
+    BOOST_REQUIRE( token != nullptr );
+    BOOST_REQUIRE( token->phase == smt_phase::launch_success );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( smt_emissions_are_processed_after_launch )
+{
+  try
+  {
+    ACTORS( (alice) )
+    generate_block();
+
+    asset_symbol_type alice_symbol = create_smt( "alice", alice_private_key, 3 );
+    fund( "alice", ASSET( "2000.000 TESTS" ) );
+    generate_block();
+
+    const auto contribution_begin_time = db->head_block_time() + fc::seconds( 2 * HIVE_BLOCK_INTERVAL );
+    const auto contribution_end_time = contribution_begin_time + fc::seconds( 2 * HIVE_BLOCK_INTERVAL );
+    const auto launch_time = contribution_end_time + fc::seconds( 2 * HIVE_BLOCK_INTERVAL );
+    const auto first_emission_time = launch_time + fc::seconds( HIVE_BLOCK_INTERVAL );
+
+    smt_setup_emissions_operation emissions_op;
+    emissions_op.control_account = "alice";
+    emissions_op.symbol = alice_symbol;
+    emissions_op.schedule_time = first_emission_time;
+    emissions_op.interval_seconds = SMT_EMISSION_MIN_INTERVAL_SECONDS;
+    emissions_op.interval_count = 2;
+    emissions_op.lep_time = first_emission_time;
+    emissions_op.rep_time = first_emission_time;
+    emissions_op.lep_abs_amount = asset( 4000, alice_symbol );
+    emissions_op.rep_abs_amount = asset( 4000, alice_symbol );
+    emissions_op.lep_rel_amount_numerator = 0;
+    emissions_op.rep_rel_amount_numerator = 0;
+    emissions_op.emissions_unit.token_unit[ "alice" ] = 1;
+    emissions_op.emissions_unit.token_unit[ "$rewards" ] = 1;
+    emissions_op.emissions_unit.token_unit[ "$vesting" ] = 1;
+    emissions_op.emissions_unit.token_unit[ "$market_maker" ] = 1;
+
+    PUSH_OP( emissions_op, alice_private_key );
+
+    smt_setup_operation setup_op;
+    setup_op.control_account = "alice";
+    setup_op.symbol = alice_symbol;
+    setup_op.hive_units_soft_cap = SMT_MIN_SOFT_CAP_HIVE_UNITS;
+    setup_op.hive_units_hard_cap = SMT_MIN_HARD_CAP_HIVE_UNITS;
+    setup_op.contribution_begin_time = contribution_begin_time;
+    setup_op.contribution_end_time = contribution_end_time;
+    setup_op.launch_time = launch_time;
+    setup_op.initial_generation_policy = get_capped_generation_policy
+    (
+      get_generation_unit( { { "alice", 1 } }, { { "alice", 1 } } ),
+      get_generation_unit(),
+      HIVE_100_PERCENT,
+      1,
+      1
+    );
+
+    PUSH_OP( setup_op, alice_private_key );
+
+    smt_contribute_operation contribute_op;
+    contribute_op.contributor = "alice";
+    contribute_op.symbol = alice_symbol;
+    contribute_op.contribution_id = 1;
+    contribute_op.contribution = asset( SMT_MIN_SOFT_CAP_HIVE_UNITS, HIVE_SYMBOL );
+
+    generate_blocks( contribution_begin_time, true );
+    PUSH_OP( contribute_op, alice_private_key );
+    generate_blocks( contribution_end_time, true );
+    generate_blocks( launch_time, true );
+
+    auto token = util::smt::find_token( *db, alice_symbol );
+    BOOST_REQUIRE( token != nullptr );
+    BOOST_REQUIRE( token->phase == smt_phase::launch_success );
+
+    generate_blocks( first_emission_time, true );
+
+    BOOST_REQUIRE( db->get_balance( "alice", alice_symbol ) == asset( 2000, alice_symbol ) );
+    BOOST_REQUIRE( db->get_balance( "alice", alice_symbol.get_paired_symbol() ) == asset( 1000, alice_symbol.get_paired_symbol() ) );
+
+    {
+      const auto reward_key = boost::make_tuple( db->get_account( "alice" ).get_id(), alice_symbol );
+      const auto* rewards = db->find< account_rewards_balance_object, by_owner_liquid_symbol >( reward_key );
+      BOOST_REQUIRE( rewards != nullptr );
+      BOOST_REQUIRE( rewards->pending_liquid == asset( 1000, alice_symbol ) );
+    }
+
+    {
+      const auto& token_obj = db->get< smt_token_object, by_symbol >( alice_symbol );
+      BOOST_REQUIRE( token_obj.current_supply == share_type( 5000 ) );
+      BOOST_REQUIRE( token_obj.market_maker.token_balance == asset( 1000, alice_symbol ) );
+    }
+
+    generate_blocks( first_emission_time + fc::seconds( emissions_op.interval_seconds ), true );
+
+    BOOST_REQUIRE( db->get_balance( "alice", alice_symbol ) == asset( 3000, alice_symbol ) );
+    BOOST_REQUIRE( db->get_balance( "alice", alice_symbol.get_paired_symbol() ) == asset( 2000, alice_symbol.get_paired_symbol() ) );
+
+    {
+      const auto reward_key = boost::make_tuple( db->get_account( "alice" ).get_id(), alice_symbol );
+      const auto* rewards = db->find< account_rewards_balance_object, by_owner_liquid_symbol >( reward_key );
+      BOOST_REQUIRE( rewards != nullptr );
+      BOOST_REQUIRE( rewards->pending_liquid == asset( 2000, alice_symbol ) );
+    }
+
+    {
+      const auto& token_obj = db->get< smt_token_object, by_symbol >( alice_symbol );
+      BOOST_REQUIRE( token_obj.current_supply == share_type( 9000 ) );
+      BOOST_REQUIRE( token_obj.market_maker.token_balance == asset( 2000, alice_symbol ) );
+    }
+
+    const auto& emissions_idx = db->get_index< smt_token_emissions_index, by_symbol_time >();
+    const auto remaining = emissions_idx.equal_range( alice_symbol );
+    BOOST_REQUIRE( remaining.first == remaining.second );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( smt_contributor_settlement_success_distribution )
+{
+  try
+  {
+    ACTORS( (alice)(bob) )
+    generate_block();
+
+    asset_symbol_type alice_symbol = create_smt( "alice", alice_private_key, 3 );
+    fund( "alice", ASSET( "10000.000 TESTS" ) );
+    fund( "bob", ASSET( "10000.000 TESTS" ) );
+    generate_block();
+
+    const auto contribution_begin_time = db->head_block_time() + fc::seconds( 2 * HIVE_BLOCK_INTERVAL );
+    const auto contribution_end_time = contribution_begin_time + fc::seconds( 2 * HIVE_BLOCK_INTERVAL );
+    const auto launch_time = contribution_end_time + fc::seconds( 2 * HIVE_BLOCK_INTERVAL );
+
+    smt_setup_operation setup_op;
+    setup_op.control_account = "alice";
+    setup_op.symbol = alice_symbol;
+    setup_op.hive_units_soft_cap = SMT_MIN_SOFT_CAP_HIVE_UNITS;
+    setup_op.hive_units_hard_cap = SMT_MIN_HARD_CAP_HIVE_UNITS;
+    setup_op.contribution_begin_time = contribution_begin_time;
+    setup_op.contribution_end_time = contribution_end_time;
+    setup_op.launch_time = launch_time;
+    setup_op.initial_generation_policy = get_capped_generation_policy
+    (
+      get_generation_unit( { { "alice", 1 } }, { { "$from", 1 } } ),
+      get_generation_unit( { { "$from", 1 } }, {} ),
+      2000, // 20% of hard cap contributes to pre-soft segment
+      1,
+      2
+    );
+
+    PUSH_OP( setup_op, alice_private_key );
+
+    generate_blocks( contribution_begin_time, true );
+
+    const auto alice_hive_before = db->get_balance( "alice", HIVE_SYMBOL );
+    const auto bob_hive_before = db->get_balance( "bob", HIVE_SYMBOL );
+
+    smt_contribute_operation alice_contribution;
+    alice_contribution.contributor = "alice";
+    alice_contribution.symbol = alice_symbol;
+    alice_contribution.contribution_id = 1;
+    alice_contribution.contribution = asset( 2000, HIVE_SYMBOL );
+
+    smt_contribute_operation bob_contribution;
+    bob_contribution.contributor = "bob";
+    bob_contribution.symbol = alice_symbol;
+    bob_contribution.contribution_id = 1;
+    bob_contribution.contribution = asset( 2000, HIVE_SYMBOL );
+
+    PUSH_OP( alice_contribution, alice_private_key );
+    PUSH_OP( bob_contribution, bob_private_key );
+
+    generate_blocks( contribution_end_time, true );
+    generate_blocks( launch_time, true );
+
+    const auto* token = util::smt::find_token( *db, alice_symbol );
+    BOOST_REQUIRE( token != nullptr );
+    BOOST_REQUIRE( token->phase == smt_phase::launch_success );
+
+    BOOST_REQUIRE( db->get_balance( "alice", HIVE_SYMBOL ) == alice_hive_before + asset( 1000, HIVE_SYMBOL ) );
+    BOOST_REQUIRE( db->get_balance( "bob", HIVE_SYMBOL ) == bob_hive_before - asset( 1000, HIVE_SYMBOL ) );
+
+    BOOST_REQUIRE( db->get_balance( "alice", alice_symbol ) == asset( 2000, alice_symbol ) );
+    BOOST_REQUIRE( db->get_balance( "bob", alice_symbol ) == asset( 2000, alice_symbol ) );
+
+    const auto* ico = db->find< smt_ico_object, by_symbol >( alice_symbol );
+    BOOST_REQUIRE( ico != nullptr );
+    BOOST_REQUIRE( ico->settlement_complete == true );
+
+    const auto& contribution_idx = db->get_index< smt_contribution_index, by_symbol_id >();
+    auto contribution_itr = contribution_idx.lower_bound( boost::make_tuple( alice_symbol, smt_contribution_id_type() ) );
+    BOOST_REQUIRE( contribution_itr == contribution_idx.end() || contribution_itr->symbol != alice_symbol );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( smt_contributor_settlement_launch_failed_refund )
+{
+  try
+  {
+    ACTORS( (alice) )
+    generate_block();
+
+    asset_symbol_type alice_symbol = create_smt( "alice", alice_private_key, 3 );
+    fund( "alice", ASSET( "10000.000 TESTS" ) );
+    generate_block();
+
+    const auto contribution_begin_time = db->head_block_time() + fc::seconds( 2 * HIVE_BLOCK_INTERVAL );
+    const auto contribution_end_time = contribution_begin_time + fc::seconds( 2 * HIVE_BLOCK_INTERVAL );
+    const auto launch_time = contribution_end_time + fc::seconds( 2 * HIVE_BLOCK_INTERVAL );
+
+    smt_setup_operation setup_op;
+    setup_op.control_account = "alice";
+    setup_op.symbol = alice_symbol;
+    setup_op.hive_units_soft_cap = SMT_MIN_HARD_CAP_HIVE_UNITS; // intentionally above contributed amount
+    setup_op.hive_units_hard_cap = SMT_MIN_HARD_CAP_HIVE_UNITS;
+    setup_op.contribution_begin_time = contribution_begin_time;
+    setup_op.contribution_end_time = contribution_end_time;
+    setup_op.launch_time = launch_time;
+    setup_op.initial_generation_policy = get_capped_generation_policy
+    (
+      get_generation_unit( { { "$from", 1 } }, { { "$from", 1 } } ),
+      get_generation_unit(),
+      HIVE_100_PERCENT,
+      1,
+      1
+    );
+
+    PUSH_OP( setup_op, alice_private_key );
+
+    generate_blocks( contribution_begin_time, true );
+
+    const auto alice_hive_before = db->get_balance( "alice", HIVE_SYMBOL );
+
+    smt_contribute_operation contribution;
+    contribution.contributor = "alice";
+    contribution.symbol = alice_symbol;
+    contribution.contribution_id = 1;
+    contribution.contribution = asset( 2000, HIVE_SYMBOL );
+
+    PUSH_OP( contribution, alice_private_key );
+
+    generate_blocks( contribution_end_time, true );
+    generate_blocks( launch_time, true );
+
+    const auto* token = util::smt::find_token( *db, alice_symbol );
+    BOOST_REQUIRE( token != nullptr );
+    BOOST_REQUIRE( token->phase == smt_phase::launch_failed );
+
+    BOOST_REQUIRE( db->get_balance( "alice", HIVE_SYMBOL ) == alice_hive_before );
+    BOOST_REQUIRE( db->get_balance( "alice", alice_symbol ) == asset( 0, alice_symbol ) );
+
+    const auto* ico = db->find< smt_ico_object, by_symbol >( alice_symbol );
+    BOOST_REQUIRE( ico != nullptr );
+    BOOST_REQUIRE( ico->settlement_complete == true );
+
+    const auto& contribution_idx = db->get_index< smt_contribution_index, by_symbol_id >();
+    auto contribution_itr = contribution_idx.lower_bound( boost::make_tuple( alice_symbol, smt_contribution_id_type() ) );
+    BOOST_REQUIRE( contribution_itr == contribution_idx.end() || contribution_itr->symbol != alice_symbol );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_CASE( smt_transfer_validate )
 {
   try
