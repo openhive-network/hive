@@ -107,6 +107,8 @@ class database_api_impl
       (find_smt_tokens)
       (list_smt_token_emissions)
       (find_smt_token_emissions)
+      (list_smt_allowances)
+      (find_smt_allowances)
 #endif
       (is_known_transaction)
     )
@@ -2104,6 +2106,85 @@ DEFINE_API_IMPL( database_api_impl, find_smt_token_emissions )
   return result;
 }
 
+DEFINE_API_IMPL( database_api_impl, list_smt_allowances )
+{
+  FC_ASSERT( 0 < args.limit && args.limit <= DATABASE_API_SINGLE_QUERY_LIMIT, "limit not set or too big" );
+
+  list_smt_allowances_return result;
+  result.allowances.reserve( args.limit );
+
+  switch( args.order )
+  {
+    case( by_owner_spender ):
+    {
+      auto key = args.start.get_array();
+      FC_ASSERT( key.size() == 0 || key.size() == 3,
+        "The parameter 'start' must be an empty array or consist of owner, spender, and asset_symbol_type" );
+
+      boost::tuple< account_name_type, account_name_type, asset_symbol_type > start;
+      if( key.size() == 0 )
+        start = boost::make_tuple( account_name_type(), account_name_type(), asset_symbol_type() );
+      else
+        start = boost::make_tuple( key[0].as< account_name_type >(), key[1].as< account_name_type >(), key[2].as< asset_symbol_type >() );
+
+      iterate_results< chain::smt_allowance_index, chain::by_owner_spender >(
+        start,
+        result.allowances,
+        args.limit,
+        &database_api_impl::on_push_default< api_smt_allowance_object, chain::smt_allowance_object >,
+        &database_api_impl::filter_default< chain::smt_allowance_object > );
+
+      break;
+    }
+    case( by_spender ):
+    {
+      auto key = args.start.get_array();
+      FC_ASSERT( key.size() == 0 || key.size() == 3,
+        "The parameter 'start' must be an empty array or consist of spender, owner, and asset_symbol_type" );
+
+      boost::tuple< account_name_type, account_name_type, asset_symbol_type > start;
+      if( key.size() == 0 )
+        start = boost::make_tuple( account_name_type(), account_name_type(), asset_symbol_type() );
+      else
+        start = boost::make_tuple( key[0].as< account_name_type >(), key[1].as< account_name_type >(), key[2].as< asset_symbol_type >() );
+
+      iterate_results< chain::smt_allowance_index, chain::by_spender >(
+        start,
+        result.allowances,
+        args.limit,
+        &database_api_impl::on_push_default< api_smt_allowance_object, chain::smt_allowance_object >,
+        &database_api_impl::filter_default< chain::smt_allowance_object > );
+
+      break;
+    }
+    default:
+      FC_ASSERT( false, "Unknown or unsupported sort order '${o}'", ( "o", args.order ) );
+  }
+
+  return result;
+}
+
+DEFINE_API_IMPL( database_api_impl, find_smt_allowances )
+{
+  FC_ASSERT( 0 < args.owner_spender_pairs.size() && args.owner_spender_pairs.size() <= DATABASE_API_SINGLE_QUERY_LIMIT,
+    "list of owner_spender pairs not filled or too big" );
+
+  find_smt_allowances_return result;
+  result.allowances.reserve( args.owner_spender_pairs.size() );
+
+  for( auto& pair : args.owner_spender_pairs )
+  {
+    auto key = boost::make_tuple( pair.first, pair.second, args.symbol );
+    const auto* allowance = _db.find< chain::smt_allowance_object, chain::by_owner_spender >( key );
+    if( allowance != nullptr )
+    {
+      result.allowances.emplace_back( *allowance, _db );
+    }
+  }
+
+  return result;
+}
+
 #endif
 
 DEFINE_API_IMPL( database_api_impl, is_known_transaction )
@@ -2175,6 +2256,8 @@ DEFINE_READ_APIS( database_api,
   (find_smt_tokens)
   (list_smt_token_emissions)
   (find_smt_token_emissions)
+  (list_smt_allowances)
+  (find_smt_allowances)
 #endif
   (is_known_transaction)
 )

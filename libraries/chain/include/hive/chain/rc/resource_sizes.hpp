@@ -142,6 +142,10 @@ struct operation_exec_info
   const int64_t smt_set_runtime_parameters_time;
   const int64_t smt_create_time;
   const int64_t smt_contribute_time;
+  const int64_t smt_set_token_metadata_time;
+  const int64_t smt_approve_time;
+  const int64_t smt_transfer_from_time;
+  const int64_t smt_transfer_control_time;
 #endif
   const int64_t create_proposal_time;
   const int64_t update_proposal_time;
@@ -249,6 +253,10 @@ FC_REFLECT( hive::chain::operation_exec_info,
   ( smt_set_runtime_parameters_time )
   ( smt_create_time )
   ( smt_contribute_time )
+  ( smt_set_token_metadata_time )
+  ( smt_approve_time )
+  ( smt_transfer_from_time )
+  ( smt_transfer_control_time )
 #endif
   ( create_proposal_time )
   ( update_proposal_time )

@@ -10,11 +10,13 @@
 #define SMT_MAX_UNIT_ROUTES            10
 #define SMT_MAX_UNIT_COUNT             20
 #define SMT_MAX_DECIMAL_PLACES         8
-#define SMT_MIN_HARD_CAP_HIVE_UNITS   10000
 #define SMT_MIN_HARD_CAP_HIVE_UNITS    10000
 #define SMT_MIN_SATURATION_HIVE_UNITS  1000
-#define SMT_MIN_SOFT_CAP_HIVE_UNITS   1000
 #define SMT_MIN_SOFT_CAP_HIVE_UNITS    1000
+
+#define SMT_MAX_TOKEN_NAME_LENGTH        32
+#define SMT_MAX_TOKEN_DESCRIPTION_LENGTH 1000
+#define SMT_MAX_TOKEN_IMAGE_URL_LENGTH   256
 
 namespace hive { namespace protocol {
 
@@ -211,6 +213,67 @@ struct smt_contribute_operation : public base_operation
   { a.insert( contributor ); }
 };
 
+struct smt_set_token_metadata_operation : public base_operation
+{
+  account_name_type control_account;
+  asset_symbol_type symbol;
+  string            token_name;        /// max SMT_MAX_TOKEN_NAME_LENGTH chars
+  string            token_description; /// max SMT_MAX_TOKEN_DESCRIPTION_LENGTH chars
+  string            token_image_url;   /// max SMT_MAX_TOKEN_IMAGE_URL_LENGTH chars
+  string            token_json_metadata; /// valid JSON when non-empty
+
+  extensions_type   extensions;
+
+  void validate() const;
+
+  void get_required_active_authorities( flat_set<account_name_type>& a )const
+  { a.insert( control_account ); }
+};
+
+struct smt_approve_operation : public base_operation
+{
+  account_name_type owner;   /// token holder granting allowance
+  account_name_type spender; /// account authorized to spend
+  asset_symbol_type symbol;  /// which SMT
+  share_type        amount;  /// max amount spender may transfer (0 = revoke)
+
+  extensions_type   extensions;
+
+  void validate() const;
+
+  void get_required_active_authorities( flat_set<account_name_type>& a )const
+  { a.insert( owner ); }
+};
+
+struct smt_transfer_from_operation : public base_operation
+{
+  account_name_type spender; /// account executing the spend
+  account_name_type from;    /// token owner whose balance is spent
+  account_name_type to;      /// recipient
+  asset             amount;  /// amount to transfer (includes symbol)
+
+  extensions_type   extensions;
+
+  void validate() const;
+
+  void get_required_active_authorities( flat_set<account_name_type>& a )const
+  { a.insert( spender ); }
+};
+
+struct smt_transfer_control_operation : public base_operation
+{
+  account_name_type control_account;
+  asset_symbol_type symbol;
+  account_name_type new_control_account;
+
+  extensions_type   extensions;
+
+  void validate() const;
+
+  void get_required_active_authorities( flat_set<account_name_type>& a )const
+  { a.insert( control_account ); }
+};
+
 } }
 
 FC_REFLECT(
@@ -334,6 +397,43 @@ FC_REFLECT(
   (symbol)
   (contribution_id)
   (contribution)
+  (extensions)
+  )
+
+FC_REFLECT(
+  hive::protocol::smt_set_token_metadata_operation,
+  (control_account)
+  (symbol)
+  (token_name)
+  (token_description)
+  (token_image_url)
+  (token_json_metadata)
+  (extensions)
+  )
+
+FC_REFLECT(
+  hive::protocol::smt_approve_operation,
+  (owner)
+  (spender)
+  (symbol)
+  (amount)
+  (extensions)
+  )
+
+FC_REFLECT(
+  hive::protocol::smt_transfer_from_operation,
+  (spender)
+  (from)
+  (to)
+  (amount)
+  (extensions)
+  )
+
+FC_REFLECT(
+  hive::protocol::smt_transfer_control_operation,
+  (control_account)
+  (symbol)
+  (new_control_account)
   (extensions)
   )
 

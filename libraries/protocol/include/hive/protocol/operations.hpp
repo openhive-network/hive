@@ -82,8 +82,12 @@ namespace hive { namespace protocol {
         smt_setup_emissions_operation, // last_pre_smt + 3
         smt_set_setup_parameters_operation, // last_pre_smt + 4
         smt_set_runtime_parameters_operation, // last_pre_smt + 5
-        smt_create_operation, // last_pre_smt + 5
-        smt_contribute_operation, // last_pre_smt + 6
+        smt_create_operation, // last_pre_smt + 6
+        smt_contribute_operation, // last_pre_smt + 7
+        smt_set_token_metadata_operation, // last_pre_smt + 8
+        smt_approve_operation, // last_pre_smt + 9
+        smt_transfer_from_operation, // last_pre_smt + 10
+        smt_transfer_control_operation, // last_pre_smt + 11
 #endif
 
         /// virtual operations below this point

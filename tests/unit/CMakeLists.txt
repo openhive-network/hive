@@ -81,6 +81,13 @@ parse_unit_tests(TEST_CASES ${UNIT_TESTS})
 
 #message(STATUS "${TEST_CASES}")
 
+set(SMT_CHAIN_TESTS)
+if( ENABLE_SMT_SUPPORT AND BUILD_HIVE_TESTNET )
+  list(APPEND SMT_CHAIN_TESTS
+    smt_operation_tests
+  )
+endif()
+
 add_boost_test( chain_test
    SOURCES ${UNIT_TESTS}
    TESTS
@@ -287,6 +294,7 @@ add_boost_test( chain_test
    undo_tests/undo_key_collision
    undo_tests/undo_different_indexes
    undo_tests/undo_generate_blocks
+   ${SMT_CHAIN_TESTS}
 )
 
 # needed to correctly print crash stacktrace

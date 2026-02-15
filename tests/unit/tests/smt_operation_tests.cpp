@@ -1323,6 +1323,13 @@ BOOST_AUTO_TEST_CASE( smt_create_validate )
     HIVE_REQUIRE_THROW( op.validate(), fc::assert_exception );
     op.precision = op.symbol.decimals();
 
+    BOOST_TEST_MESSAGE( " -- Invalid SMT creation precision: too many decimal places" );
+    op.symbol = get_new_smt_symbol( SMT_MAX_DECIMAL_PLACES + 1, db );
+    op.precision = op.symbol.decimals();
+    HIVE_REQUIRE_THROW( op.validate(), fc::assert_exception );
+    op.symbol = get_new_smt_symbol( 3, db );
+    op.precision = op.symbol.decimals();
+
     // Test symbol
     BOOST_TEST_MESSAGE( " -- Invalid SMT creation symbol: vesting symbol used instead of liquid one" );
     op.symbol = op.symbol.get_paired_symbol();
@@ -1842,6 +1849,538 @@ BOOST_AUTO_TEST_CASE( smt_nai_pool_count )
     BOOST_REQUIRE( npo.num_available_nais == SMT_MAX_NAI_POOL_COUNT );
   }
   FC_LOG_AND_RETHROW();
+}
+
+BOOST_AUTO_TEST_CASE( smt_setup_validate )
+{
+  try
+  {
+    smt_setup_operation op;
+
+    ACTORS( (alice) )
+    generate_block();
+    asset_symbol_type alice_symbol = create_smt("alice", alice_private_key, 4);
+
+    op.control_account = "";
+    HIVE_REQUIRE_THROW( op.validate(), fc::exception );
+
+    //Invalid account
+    op.control_account = "&&&&&&";
+    HIVE_REQUIRE_THROW( op.validate(), fc::exception );
+
+    //FC_ASSERT( max_supply > 0 )
+    op.control_account = "abcd";
+    op.max_supply = -1;
+    HIVE_REQUIRE_THROW( op.validate(), fc::exception );
+
+    op.symbol = alice_symbol;
+
+    //FC_ASSERT( max_supply > 0 )
+    op.max_supply = 0;
+    HIVE_REQUIRE_THROW( op.validate(), fc::exception );
+
+    //FC_ASSERT( max_supply <= HIVE_MAX_SHARE_SUPPLY )
+    op.max_supply = HIVE_MAX_SHARE_SUPPLY + 1;
+    HIVE_REQUIRE_THROW( op.validate(), fc::exception );
+
+    //FC_ASSERT( generation_begin_time > HIVE_GENESIS_TIME )
+    op.max_supply = HIVE_MAX_SHARE_SUPPLY / 1000;
+    op.contribution_begin_time = HIVE_GENESIS_TIME;
+    HIVE_REQUIRE_THROW( op.validate(), fc::exception );
+
+    fc::time_point_sec start_time = fc::variant( "2018-03-07T00:00:00" ).as< fc::time_point_sec >();
+    fc::time_point_sec t50 = start_time + fc::seconds( 50 );
+    fc::time_point_sec t100 = start_time + fc::seconds( 100 );
+    fc::time_point_sec t200 = start_time + fc::seconds( 200 );
+    fc::time_point_sec t300 = start_time + fc::seconds( 300 );
+
+    op.contribution_begin_time = t100;
+    op.contribution_end_time = t50;
+    HIVE_REQUIRE_THROW( op.validate(), fc::exception );
+
+    op.contribution_begin_time = t100;
+    HIVE_REQUIRE_THROW( op.validate(), fc::exception );
+
+    op.launch_time = t200;
+    op.contribution_end_time = t300;
+    HIVE_REQUIRE_THROW( op.validate(), fc::exception );
+
+    op.contribution_begin_time = t50;
+    op.contribution_end_time = t100;
+    op.launch_time = t300;
+    HIVE_REQUIRE_THROW( op.validate(), fc::exception );
+
+    op.launch_time = t200;
+    smt_capped_generation_policy gp = get_capped_generation_policy
+    (
+      get_generation_unit( { { "xyz", 1 } }, { { "xyz2", 2 } } )/*pre_soft_cap_unit*/,
+      get_generation_unit()/*post_soft_cap_unit*/,
+      HIVE_100_PERCENT/*soft_cap_percent*/,
+      1/*min_unit_ratio*/,
+      2/*max_unit_ratio*/
+    );
+    op.initial_generation_policy = gp;
+    HIVE_REQUIRE_THROW( op.validate(), fc::exception );
+
+    units to_many_units;
+    for( uint32_t i = 0; i < SMT_MAX_UNIT_ROUTES + 1; ++i )
+      to_many_units.emplace( "alice" + std::to_string( i ), 1 );
+
+    //FC_ASSERT( hive_unit.size() <= SMT_MAX_UNIT_ROUTES )
+    gp.pre_soft_cap_unit.hive_unit = to_many_units;
+    gp.pre_soft_cap_unit.token_unit = { { "bob",3 } };
+    op.initial_generation_policy = gp;
+    HIVE_REQUIRE_THROW( op.validate(), fc::exception );
+
+    gp.pre_soft_cap_unit.hive_unit = { { "bob2", 33 } };
+    gp.pre_soft_cap_unit.token_unit = to_many_units;
+    op.initial_generation_policy = gp;
+    HIVE_REQUIRE_THROW( op.validate(), fc::exception );
+
+    //Invalid account
+    gp.pre_soft_cap_unit.hive_unit = { { "{}{}", 12 } };
+    gp.pre_soft_cap_unit.token_unit = { { "xyz", 13 } };
+    op.initial_generation_policy = gp;
+    HIVE_REQUIRE_THROW( op.validate(), fc::exception );
+
+    gp.pre_soft_cap_unit.hive_unit = { { "xyz2", 14 } };
+    gp.pre_soft_cap_unit.token_unit = { { "{}", 15 } };
+    op.initial_generation_policy = gp;
+    HIVE_REQUIRE_THROW( op.validate(), fc::exception );
+
+    //Invalid account -> valid is '$from'
+    gp.pre_soft_cap_unit.hive_unit = { { "$fromx", 1 } };
+    gp.pre_soft_cap_unit.token_unit = { { "$from", 2 } };
+    op.initial_generation_policy = gp;
+    HIVE_REQUIRE_THROW( op.validate(), fc::exception );
+
+    gp.pre_soft_cap_unit.hive_unit = { { "$from", 3 } };
+    gp.pre_soft_cap_unit.token_unit = { { "$from_", 4 } };
+    op.initial_generation_policy = gp;
+    HIVE_REQUIRE_THROW( op.validate(), fc::exception );
+
+    //Invalid account -> valid is '$from.vesting'
+    gp.pre_soft_cap_unit.hive_unit = { { "$from.vestingx", 2 } };
+    gp.pre_soft_cap_unit.token_unit = { { "$from.vesting", 222 } };
+    op.initial_generation_policy = gp;
+    HIVE_REQUIRE_THROW( op.validate(), fc::exception );
+
+    gp.pre_soft_cap_unit.hive_unit = { { "$from.vesting", 13 } };
+    HIVE_REQUIRE_THROW( ( gp.pre_soft_cap_unit.token_unit = { { "$from.vesting.vesting", 3 } } ), fc::exception );
+    gp.pre_soft_cap_unit.token_unit = { { "$from.vesting.ve", 3 } };
+    op.initial_generation_policy = gp;
+    HIVE_REQUIRE_THROW( op.validate(), fc::exception );
+
+    //FC_ASSERT( hive_unit.value > 0 );
+    gp.pre_soft_cap_unit.hive_unit = { { "$from.vesting", 0 } };
+    gp.pre_soft_cap_unit.token_unit = { { "$from.vesting", 2 } };
+    op.initial_generation_policy = gp;
+    HIVE_REQUIRE_THROW( op.validate(), fc::exception );
+
+    gp.pre_soft_cap_unit.hive_unit = { { "$from.vesting", 10 } };
+    gp.pre_soft_cap_unit.token_unit = { { "$from.vesting", 0 } };
+    op.initial_generation_policy = gp;
+    HIVE_REQUIRE_THROW( op.validate(), fc::exception );
+
+    //FC_ASSERT( hive_unit.value > 0 );
+    gp.pre_soft_cap_unit.hive_unit = { { "$from", 0 } };
+    gp.pre_soft_cap_unit.token_unit = { { "$from", 100 } };
+    op.initial_generation_policy = gp;
+    HIVE_REQUIRE_THROW( op.validate(), fc::exception );
+
+    gp.pre_soft_cap_unit.hive_unit = { { "$from", 33 } };
+    gp.pre_soft_cap_unit.token_unit = { { "$from", 0 } };
+    op.initial_generation_policy = gp;
+    HIVE_REQUIRE_THROW( op.validate(), fc::exception );
+
+    //FC_ASSERT( hive_unit.value > 0 );
+    gp.pre_soft_cap_unit.hive_unit = { { "qprst", 0 } };
+    gp.pre_soft_cap_unit.token_unit = { { "qprst", 67 } };
+    op.initial_generation_policy = gp;
+    HIVE_REQUIRE_THROW( op.validate(), fc::exception );
+
+    gp.pre_soft_cap_unit.hive_unit = { { "my_account2", 55 } };
+    gp.pre_soft_cap_unit.token_unit = { { "my_account", 0 } };
+    op.initial_generation_policy = gp;
+    HIVE_REQUIRE_THROW( op.validate(), fc::exception );
+
+    gp.pre_soft_cap_unit.hive_unit = { { "bob", 2 }, { "$from.vesting", 3 }, { "$from", 4 } };
+    gp.pre_soft_cap_unit.token_unit = { { "alice", 5 }, { "$from", 3 } };
+    op.initial_generation_policy = gp;
+    HIVE_REQUIRE_THROW( op.validate(), fc::exception );
+
+    gp.soft_cap_percent = 0;
+    op.initial_generation_policy = gp;
+    HIVE_REQUIRE_THROW( op.validate(), fc::exception );
+
+    gp.soft_cap_percent = HIVE_100_PERCENT + 1;
+    op.initial_generation_policy = gp;
+    HIVE_REQUIRE_THROW( op.validate(), fc::exception );
+
+    gp.soft_cap_percent = HIVE_100_PERCENT;
+    gp.post_soft_cap_unit.hive_unit = { { "bob", 2 } };
+    gp.post_soft_cap_unit.token_unit = {};
+    op.initial_generation_policy = gp;
+    HIVE_REQUIRE_THROW( op.validate(), fc::exception );
+
+    gp.soft_cap_percent = HIVE_100_PERCENT;
+    gp.post_soft_cap_unit.hive_unit = {};
+    gp.post_soft_cap_unit.token_unit = { { "alice", 3 } };
+    op.initial_generation_policy = gp;
+    HIVE_REQUIRE_THROW( op.validate(), fc::exception );
+
+    gp.soft_cap_percent = HIVE_100_PERCENT / 2;
+    gp.post_soft_cap_unit.hive_unit = {};
+    gp.post_soft_cap_unit.token_unit = {};
+    op.initial_generation_policy = gp;
+    HIVE_REQUIRE_THROW( op.validate(), fc::exception );
+
+    gp.soft_cap_percent = HIVE_100_PERCENT;
+    gp.post_soft_cap_unit.hive_unit = {};
+    gp.post_soft_cap_unit.token_unit = {};
+    op.initial_generation_policy = gp;
+    HIVE_REQUIRE_THROW( op.validate(), fc::exception );
+
+    op.hive_units_soft_cap = SMT_MIN_SOFT_CAP_HIVE_UNITS;
+    op.hive_units_hard_cap = SMT_MIN_HARD_CAP_HIVE_UNITS;
+    op.validate();
+
+    gp.max_unit_ratio = ( ( 11 * SMT_MIN_HARD_CAP_HIVE_UNITS ) / SMT_MIN_SATURATION_HIVE_UNITS ) * 2;
+    op.initial_generation_policy = gp;
+    op.validate();
+
+    gp.max_unit_ratio = 2;
+    op.initial_generation_policy = gp;
+    op.validate();
+
+    smt_capped_generation_policy gp_valid = gp;
+
+    gp.soft_cap_percent = 1;
+    gp.post_soft_cap_unit.hive_unit = { { "bob", 2 } };
+    op.initial_generation_policy = gp;
+    op.validate();
+
+    gp = gp_valid;
+    op.initial_generation_policy = gp;
+    op.validate();
+
+    uint16_t max_val_16 = std::numeric_limits<uint16_t>::max();
+    uint32_t max_val_32 = std::numeric_limits<uint32_t>::max();
+
+    gp.soft_cap_percent = HIVE_100_PERCENT - 1;
+    gp.min_unit_ratio = max_val_32;
+    gp.post_soft_cap_unit.hive_unit = { { "abc", 1 } };
+    gp.post_soft_cap_unit.token_unit = { { "abc1", max_val_16 } };
+    gp.pre_soft_cap_unit.token_unit = { { "abc2", max_val_16 } };
+    op.initial_generation_policy = gp;
+    op.validate();
+
+    gp.min_unit_ratio = 1;
+    gp.post_soft_cap_unit.token_unit = { { "abc1", 1 } };
+    gp.pre_soft_cap_unit.token_unit = { { "abc2", 1 } };
+    gp.post_soft_cap_unit.hive_unit = { { "abc3", max_val_16 } };
+    gp.pre_soft_cap_unit.hive_unit = { { "abc34", max_val_16 } };
+    op.initial_generation_policy = gp;
+    op.validate();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( smt_setup_authorities )
+{
+  try
+  {
+    smt_setup_operation op;
+    op.control_account = "alice";
+
+    flat_set< account_name_type > auths;
+    flat_set< account_name_type > expected;
+
+    op.get_required_owner_authorities( auths );
+    BOOST_REQUIRE( auths == expected );
+
+    op.get_required_posting_authorities( auths );
+    BOOST_REQUIRE( auths == expected );
+
+    expected.insert( "alice" );
+    op.get_required_active_authorities( auths );
+    BOOST_REQUIRE( auths == expected );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( smt_setup_apply )
+{
+  try
+  {
+    ACTORS( (alice)(bob) )
+
+    generate_block();
+
+    fund( "alice", ASSET( "10000.000 TESTS" ) );
+    generate_block();
+    fund( "bob", ASSET( "10000.000 TESTS" ) );
+    generate_block();
+
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+
+    smt_setup_operation op;
+    op.control_account = "alice";
+    op.hive_units_soft_cap = SMT_MIN_SOFT_CAP_HIVE_UNITS;
+    op.hive_units_hard_cap = SMT_MIN_HARD_CAP_HIVE_UNITS;
+
+    smt_capped_generation_policy gp = get_capped_generation_policy
+    (
+      get_generation_unit( { { "xyz", 1 } }, { { "xyz2", 2 } } )/*pre_soft_cap_unit*/,
+      get_generation_unit()/*post_soft_cap_unit*/,
+      HIVE_100_PERCENT/*soft_cap_percent*/,
+      1/*min_unit_ratio*/,
+      2/*max_unit_ratio*/
+    );
+
+    fc::time_point_sec start_time        = fc::variant( "2021-01-01T00:00:00" ).as< fc::time_point_sec >();
+    fc::time_point_sec start_time_plus_1 = start_time + fc::seconds(1);
+
+    op.initial_generation_policy = gp;
+    op.contribution_begin_time = start_time;
+    op.contribution_end_time = op.launch_time = start_time_plus_1;
+
+    signed_transaction tx;
+
+    BOOST_TEST_MESSAGE( "--- Failure when SMT doesn't exist" );
+    tx.operations.push_back( op );
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::exception );
+    tx.operations.clear();
+
+    //Try to elevate account
+    asset_symbol_type alice_symbol = create_smt( "alice", alice_private_key, 3 );
+    tx.operations.clear();
+
+    //Make transaction again. Everything is correct.
+    op.symbol = alice_symbol;
+    tx.operations.push_back( op );
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    push_transaction( tx, alice_private_key );
+    tx.operations.clear();
+
+    BOOST_TEST_MESSAGE( "--- Verify phase is correctly set to setup_completed" );
+    auto token = util::smt::find_token( *db, alice_symbol );
+    BOOST_REQUIRE( token != nullptr );
+    BOOST_REQUIRE( token->phase == smt_phase::setup_completed );
+    BOOST_REQUIRE( token->max_supply == op.max_supply );
+
+    BOOST_TEST_MESSAGE( "--- Failure when setup is attempted again (phase already past account_elevated)" );
+    asset_symbol_type bob_symbol = create_smt( "bob", bob_private_key, 3 );
+    smt_setup_operation op2 = op;
+    op2.control_account = "bob";
+    op2.symbol = bob_symbol;
+
+    tx.operations.push_back( op2 );
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    push_transaction( tx, bob_private_key );
+    tx.operations.clear();
+
+    // Now try to setup again - should fail because phase is already setup_completed
+    tx.operations.push_back( op2 );
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION - HIVE_BLOCK_INTERVAL );
+    HIVE_REQUIRE_THROW( push_transaction( tx, bob_private_key ), fc::exception );
+    tx.operations.clear();
+
+    BOOST_TEST_MESSAGE( "--- Failure when wrong control account attempts setup" );
+    asset_symbol_type alice_symbol2 = create_smt( "alice", alice_private_key, 5 );
+    smt_setup_operation op3 = op;
+    op3.symbol = alice_symbol2;
+    op3.control_account = "bob"; // bob does not control alice's token
+    tx.operations.push_back( op3 );
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    HIVE_REQUIRE_THROW( push_transaction( tx, bob_private_key ), fc::exception );
+    tx.operations.clear();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( smt_setup_rejects_max_supply_below_current_supply )
+{
+  try
+  {
+    ACTORS( (alice) )
+    generate_block();
+
+    asset_symbol_type alice_symbol = create_smt( "alice", alice_private_key, 3 );
+    issue_funds( "alice", asset( 1000, alice_symbol ) );
+
+    smt_setup_operation op;
+    op.control_account = "alice";
+    op.symbol = alice_symbol;
+    op.max_supply = 999;
+    op.hive_units_soft_cap = SMT_MIN_SOFT_CAP_HIVE_UNITS;
+    op.hive_units_hard_cap = SMT_MIN_HARD_CAP_HIVE_UNITS;
+
+    smt_capped_generation_policy gp = get_capped_generation_policy
+    (
+      get_generation_unit( { { "xyz", 1 } }, { { "xyz2", 2 } } ),
+      get_generation_unit(),
+      HIVE_100_PERCENT,
+      1,
+      2
+    );
+    op.initial_generation_policy = gp;
+
+    fc::time_point_sec start_time = db->head_block_time() + fc::seconds( 60 );
+    op.contribution_begin_time = start_time;
+    op.contribution_end_time = start_time + fc::seconds( 60 );
+    op.launch_time = start_time + fc::seconds( 120 );
+
+    signed_transaction tx;
+    tx.operations.push_back( op );
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::assert_exception );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( comment_votable_assers_validate )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Test Comment Votable Assets Validate" );
+    ACTORS((alice));
+
+    generate_block();
+
+    std::array<asset_symbol_type, SMT_MAX_VOTABLE_ASSETS + 1> smts;
+    /// Create one more than limit to test negative cases
+    for(size_t i = 0; i < SMT_MAX_VOTABLE_ASSETS + 1; ++i)
+    {
+      asset_symbol_type smt = create_smt("alice", alice_private_key, 0);
+      smts[i] = std::move(smt);
+    }
+
+    {
+      comment_options_operation op;
+
+      op.author = "alice";
+      op.permlink = "test";
+
+      BOOST_TEST_MESSAGE( "--- Testing valid configuration: no votable_assets" );
+      allowed_vote_assets ava;
+      op.extensions.insert( ava );
+      op.validate();
+    }
+
+    {
+      comment_options_operation op;
+
+      op.author = "alice";
+      op.permlink = "test";
+
+      BOOST_TEST_MESSAGE( "--- Testing valid configuration of votable_assets" );
+      allowed_vote_assets ava;
+      for(size_t i = 0; i < SMT_MAX_VOTABLE_ASSETS; ++i)
+      {
+        const auto& smt = smts[i];
+        ava.add_votable_asset(smt, share_type(10 + i), (i & 2) != 0);
+      }
+
+      op.extensions.insert( ava );
+      op.validate();
+    }
+
+    {
+      comment_options_operation op;
+
+      op.author = "alice";
+      op.permlink = "test";
+
+      BOOST_TEST_MESSAGE( "--- Testing invalid configuration of votable_assets - too much assets specified" );
+      allowed_vote_assets ava;
+      for(size_t i = 0; i < smts.size(); ++i)
+      {
+        const auto& smt = smts[i];
+        ava.add_votable_asset(smt, share_type(20 + i), (i & 2) != 0);
+      }
+
+      op.extensions.insert( ava );
+      HIVE_REQUIRE_THROW( op.validate(), fc::assert_exception );
+    }
+
+    {
+      comment_options_operation op;
+
+      op.author = "alice";
+      op.permlink = "test";
+
+      BOOST_TEST_MESSAGE( "--- Testing invalid configuration of votable_assets - HIVE added to container" );
+      allowed_vote_assets ava;
+      const auto& smt = smts.front();
+      ava.add_votable_asset(smt, share_type(20), false);
+      ava.add_votable_asset(HIVE_SYMBOL, share_type(20), true);
+      op.extensions.insert( ava );
+      HIVE_REQUIRE_THROW( op.validate(), fc::assert_exception );
+    }
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( asset_symbol_vesting_methods )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Test asset_symbol vesting methods" );
+
+    asset_symbol_type Hive = HIVE_SYMBOL;
+    FC_ASSERT( Hive.is_vesting() == false );
+    FC_ASSERT( Hive.get_paired_symbol() == VESTS_SYMBOL );
+
+    asset_symbol_type Vests = VESTS_SYMBOL;
+    FC_ASSERT( Vests.is_vesting() );
+    FC_ASSERT( Vests.get_paired_symbol() == HIVE_SYMBOL );
+
+    asset_symbol_type Hbd = HBD_SYMBOL;
+    FC_ASSERT( Hbd.is_vesting() == false );
+    FC_ASSERT( Hbd.get_paired_symbol() == HBD_SYMBOL );
+
+    ACTORS( (alice) )
+    generate_block();
+    auto smts = create_smt_3("alice", alice_private_key);
+    {
+      for( const asset_symbol_type& liquid_smt : smts )
+      {
+        FC_ASSERT( liquid_smt.is_vesting() == false );
+        auto vesting_smt = liquid_smt.get_paired_symbol();
+        FC_ASSERT( vesting_smt != liquid_smt );
+        FC_ASSERT( vesting_smt.is_vesting() );
+        FC_ASSERT( vesting_smt.get_paired_symbol() == liquid_smt );
+      }
+    }
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( vesting_smt_creation )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Test Creation of vesting SMT" );
+
+    ACTORS((alice));
+    generate_block();
+
+    asset_symbol_type liquid_symbol = create_smt("alice", alice_private_key, 6);
+    // Use liquid symbol/NAI to confirm smt object was created.
+    auto liquid_object_by_symbol = util::smt::find_token( *db, liquid_symbol );
+    FC_ASSERT( liquid_object_by_symbol != nullptr );
+
+    asset_symbol_type vesting_symbol = liquid_symbol.get_paired_symbol();
+    // Use vesting symbol/NAI to confirm smt object was created.
+    auto vesting_object_by_symbol = util::smt::find_token( *db, vesting_symbol );
+    FC_ASSERT( vesting_object_by_symbol != nullptr );
+
+    // Check that liquid and vesting objects are the same one.
+    FC_ASSERT( liquid_object_by_symbol == vesting_object_by_symbol );
+  }
+  FC_LOG_AND_RETHROW()
 }
 
 BOOST_AUTO_TEST_CASE( smt_setup_emissions_validate )
@@ -3031,6 +3570,501 @@ BOOST_AUTO_TEST_CASE( smt_transfer_apply )
 
     BOOST_REQUIRE( db->get_balance( "alice", symbol ) == asset( 0, symbol ) );
     BOOST_REQUIRE( db->get_balance( "bob", symbol ) == asset( 10000, symbol ) );
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( smt_set_token_metadata_validate )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: smt_set_token_metadata_validate" );
+
+    ACTORS( (alice) )
+    generate_block();
+
+    auto symbol = create_smt( "alice", alice_private_key, 3 );
+
+    smt_set_token_metadata_operation op;
+    op.control_account = "alice";
+    op.symbol = symbol;
+    op.token_name = "Test Token";
+    op.token_description = "A test token";
+    op.token_image_url = "https://example.com/logo.png";
+    op.token_json_metadata = R"({"collection":"test","attributes":[{"trait_type":"rarity","value":"common"}]})";
+
+    BOOST_TEST_MESSAGE( "--- Test valid operation" );
+    op.validate();
+
+    BOOST_TEST_MESSAGE( "--- Test token_name too long" );
+    op.token_name = std::string( SMT_MAX_TOKEN_NAME_LENGTH + 1, 'x' );
+    HIVE_REQUIRE_THROW( op.validate(), fc::assert_exception );
+    op.token_name = "Test Token";
+
+    BOOST_TEST_MESSAGE( "--- Test token_description too long" );
+    op.token_description = std::string( SMT_MAX_TOKEN_DESCRIPTION_LENGTH + 1, 'x' );
+    HIVE_REQUIRE_THROW( op.validate(), fc::assert_exception );
+    op.token_description = "A test token";
+
+    BOOST_TEST_MESSAGE( "--- Test token_image_url too long" );
+    op.token_image_url = std::string( SMT_MAX_TOKEN_IMAGE_URL_LENGTH + 1, 'x' );
+    HIVE_REQUIRE_THROW( op.validate(), fc::assert_exception );
+    op.token_image_url = "https://example.com/logo.png";
+
+    BOOST_TEST_MESSAGE( "--- Test invalid token_json_metadata" );
+    op.token_json_metadata = "{invalid json}";
+    HIVE_REQUIRE_THROW( op.validate(), fc::assert_exception );
+    op.token_json_metadata = R"({"collection":"test","attributes":[{"trait_type":"rarity","value":"common"}]})";
+
+    BOOST_TEST_MESSAGE( "--- Test empty fields are valid" );
+    op.token_name = "";
+    op.token_description = "";
+    op.token_image_url = "";
+    op.token_json_metadata = "";
+    op.validate();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( smt_set_token_metadata_apply )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: smt_set_token_metadata_apply" );
+
+    ACTORS( (alice)(bob) )
+    generate_block();
+
+    auto symbol = create_smt( "alice", alice_private_key, 3 );
+
+    BOOST_TEST_MESSAGE( "--- Test setting metadata" );
+    smt_set_token_metadata_operation op;
+    op.control_account = "alice";
+    op.symbol = symbol;
+    op.token_name = "Test Token";
+    op.token_description = "A test token description";
+    op.token_image_url = "https://example.com/logo.png";
+    op.token_json_metadata = R"({"collection":"test","attributes":[{"trait_type":"rarity","value":"legendary"}]})";
+
+    tx.operations.clear();
+    tx.operations.push_back( op );
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    push_transaction( tx, alice_private_key );
+
+    const auto* token = db->find< smt_token_object, by_symbol >( symbol );
+    BOOST_REQUIRE( token != nullptr );
+    BOOST_REQUIRE( to_string( token->token_name ) == "Test Token" );
+    BOOST_REQUIRE( to_string( token->token_description ) == "A test token description" );
+    BOOST_REQUIRE( to_string( token->token_image_url ) == "https://example.com/logo.png" );
+    BOOST_REQUIRE( to_string( token->token_json_metadata ) == R"({"collection":"test","attributes":[{"trait_type":"rarity","value":"legendary"}]})" );
+
+    BOOST_TEST_MESSAGE( "--- Test overwriting metadata" );
+    op.token_name = "Updated Token";
+    op.token_description = "Updated description";
+    op.token_image_url = "";
+    op.token_json_metadata = R"({"collection":"test","external_url":"https://example.com/project"})";
+    tx.operations.clear();
+    tx.operations.push_back( op );
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    push_transaction( tx, alice_private_key );
+
+    token = db->find< smt_token_object, by_symbol >( symbol );
+    BOOST_REQUIRE( to_string( token->token_name ) == "Updated Token" );
+    BOOST_REQUIRE( to_string( token->token_description ) == "Updated description" );
+    BOOST_REQUIRE( to_string( token->token_image_url ) == "" );
+    BOOST_REQUIRE( to_string( token->token_json_metadata ) == R"({"collection":"test","external_url":"https://example.com/project"})" );
+
+    BOOST_TEST_MESSAGE( "--- Test non-control account cannot set metadata" );
+    op.control_account = "bob";
+    tx.operations.clear();
+    tx.operations.push_back( op );
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    HIVE_REQUIRE_THROW( push_transaction( tx, bob_private_key ), fc::assert_exception );
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( smt_approve_validate )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: smt_approve_validate" );
+
+    ACTORS( (alice)(bob) )
+    generate_block();
+
+    auto symbol = create_smt( "alice", alice_private_key, 3 );
+
+    smt_approve_operation op;
+    op.owner = "alice";
+    op.spender = "bob";
+    op.symbol = symbol;
+    op.amount = 1000;
+
+    BOOST_TEST_MESSAGE( "--- Test valid operation" );
+    op.validate();
+
+    BOOST_TEST_MESSAGE( "--- Test owner == spender" );
+    op.spender = "alice";
+    HIVE_REQUIRE_THROW( op.validate(), fc::assert_exception );
+    op.spender = "bob";
+
+    BOOST_TEST_MESSAGE( "--- Test negative amount" );
+    op.amount = -1;
+    HIVE_REQUIRE_THROW( op.validate(), fc::assert_exception );
+    op.amount = 1000;
+
+    BOOST_TEST_MESSAGE( "--- Test zero amount (revoke) is valid" );
+    op.amount = 0;
+    op.validate();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( smt_approve_apply )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: smt_approve_apply" );
+
+    ACTORS( (alice)(bob) )
+    generate_block();
+
+    auto symbol = create_smt( "alice", alice_private_key, 3 );
+
+    BOOST_TEST_MESSAGE( "--- Test creating an allowance" );
+    smt_approve_operation op;
+    op.owner = "alice";
+    op.spender = "bob";
+    op.symbol = symbol;
+    op.amount = 5000;
+
+    signed_transaction tx;
+    tx.operations.push_back( op );
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    push_transaction( tx, alice_private_key );
+
+    auto key = boost::make_tuple( account_name_type( "alice" ), account_name_type( "bob" ), symbol );
+    const auto* allowance = db->find< smt_allowance_object, by_owner_spender >( key );
+    BOOST_REQUIRE( allowance != nullptr );
+    BOOST_REQUIRE( allowance->remaining == 5000 );
+
+    BOOST_TEST_MESSAGE( "--- Test updating an allowance" );
+    op.amount = 10000;
+    tx.operations.clear();
+    tx.operations.push_back( op );
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    push_transaction( tx, alice_private_key );
+
+    allowance = db->find< smt_allowance_object, by_owner_spender >( key );
+    BOOST_REQUIRE( allowance != nullptr );
+    BOOST_REQUIRE( allowance->remaining == 10000 );
+
+    BOOST_TEST_MESSAGE( "--- Test revoking an allowance" );
+    op.amount = 0;
+    tx.operations.clear();
+    tx.operations.push_back( op );
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    push_transaction( tx, alice_private_key );
+
+    allowance = db->find< smt_allowance_object, by_owner_spender >( key );
+    BOOST_REQUIRE( allowance == nullptr );
+
+    BOOST_TEST_MESSAGE( "--- Test revoking non-existent allowance is no-op" );
+    tx.operations.clear();
+    tx.operations.push_back( op );
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    push_transaction( tx, alice_private_key );
+    // Should succeed without error
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( smt_transfer_from_validate )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: smt_transfer_from_validate" );
+
+    ACTORS( (alice)(bob)(carol) )
+    generate_block();
+
+    auto symbol = create_smt( "alice", alice_private_key, 3 );
+
+    smt_transfer_from_operation op;
+    op.spender = "bob";
+    op.from = "alice";
+    op.to = "carol";
+    op.amount = asset( 100, symbol );
+
+    BOOST_TEST_MESSAGE( "--- Test valid operation" );
+    op.validate();
+
+    BOOST_TEST_MESSAGE( "--- Test spender == from" );
+    op.spender = "alice";
+    HIVE_REQUIRE_THROW( op.validate(), fc::assert_exception );
+    op.spender = "bob";
+
+    BOOST_TEST_MESSAGE( "--- Test from == to" );
+    op.to = "alice";
+    HIVE_REQUIRE_THROW( op.validate(), fc::assert_exception );
+    op.to = "carol";
+
+    BOOST_TEST_MESSAGE( "--- Test zero amount" );
+    op.amount = asset( 0, symbol );
+    HIVE_REQUIRE_THROW( op.validate(), fc::assert_exception );
+    op.amount = asset( 100, symbol );
+
+    BOOST_TEST_MESSAGE( "--- Test negative amount" );
+    op.amount = asset( -100, symbol );
+    HIVE_REQUIRE_THROW( op.validate(), fc::assert_exception );
+    op.amount = asset( 100, symbol );
+
+    BOOST_TEST_MESSAGE( "--- Test vesting symbol" );
+    op.amount = asset( 100, symbol.get_paired_symbol() );
+    HIVE_REQUIRE_THROW( op.validate(), fc::assert_exception );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( smt_transfer_from_apply )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: smt_transfer_from_apply" );
+
+    ACTORS( (alice)(bob)(carol) )
+    generate_block();
+
+    auto symbol = create_smt( "alice", alice_private_key, 3 );
+    issue_funds( "alice", asset( 10000, symbol ) );
+
+    BOOST_REQUIRE( db->get_balance( "alice", symbol ) == asset( 10000, symbol ) );
+    BOOST_REQUIRE( db->get_balance( "carol", symbol ) == asset( 0, symbol ) );
+
+    BOOST_TEST_MESSAGE( "--- Test transfer_from without allowance fails" );
+    smt_transfer_from_operation tfop;
+    tfop.spender = "bob";
+    tfop.from = "alice";
+    tfop.to = "carol";
+    tfop.amount = asset( 1000, symbol );
+
+    signed_transaction tx;
+    tx.operations.push_back( tfop );
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    HIVE_REQUIRE_THROW( push_transaction( tx, bob_private_key ), fc::assert_exception );
+
+    BOOST_TEST_MESSAGE( "--- Setting up allowance" );
+    smt_approve_operation aop;
+    aop.owner = "alice";
+    aop.spender = "bob";
+    aop.symbol = symbol;
+    aop.amount = 5000;
+
+    tx.operations.clear();
+    tx.operations.push_back( aop );
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    push_transaction( tx, alice_private_key );
+
+    BOOST_TEST_MESSAGE( "--- Test successful transfer_from" );
+    tx.operations.clear();
+    tx.operations.push_back( tfop );
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    push_transaction( tx, bob_private_key );
+
+    BOOST_REQUIRE( db->get_balance( "alice", symbol ) == asset( 9000, symbol ) );
+    BOOST_REQUIRE( db->get_balance( "carol", symbol ) == asset( 1000, symbol ) );
+
+    auto key = boost::make_tuple( account_name_type( "alice" ), account_name_type( "bob" ), symbol );
+    const auto* allowance = db->find< smt_allowance_object, by_owner_spender >( key );
+    BOOST_REQUIRE( allowance != nullptr );
+    BOOST_REQUIRE( allowance->remaining == 4000 );
+
+    BOOST_TEST_MESSAGE( "--- Test transfer_from exceeding allowance fails" );
+    tfop.amount = asset( 5000, symbol );
+    tx.operations.clear();
+    tx.operations.push_back( tfop );
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    HIVE_REQUIRE_THROW( push_transaction( tx, bob_private_key ), fc::assert_exception );
+
+    BOOST_TEST_MESSAGE( "--- Test transfer_from that exhausts allowance removes object" );
+    tfop.amount = asset( 4000, symbol );
+    tx.operations.clear();
+    tx.operations.push_back( tfop );
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    push_transaction( tx, bob_private_key );
+
+    BOOST_REQUIRE( db->get_balance( "alice", symbol ) == asset( 5000, symbol ) );
+    BOOST_REQUIRE( db->get_balance( "carol", symbol ) == asset( 5000, symbol ) );
+
+    allowance = db->find< smt_allowance_object, by_owner_spender >( key );
+    BOOST_REQUIRE( allowance == nullptr );
+
+    BOOST_TEST_MESSAGE( "--- Test transfer_from after allowance exhausted fails" );
+    tfop.amount = asset( 1000, symbol );
+    tx.operations.clear();
+    tx.operations.push_back( tfop );
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    HIVE_REQUIRE_THROW( push_transaction( tx, bob_private_key ), fc::assert_exception );
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( smt_transfer_control_validate )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: smt_transfer_control_validate" );
+
+    ACTORS( (alice)(bob) )
+    generate_block();
+
+    auto symbol = create_smt( "alice", alice_private_key, 3 );
+
+    smt_transfer_control_operation op;
+    op.control_account = "alice";
+    op.symbol = symbol;
+    op.new_control_account = "bob";
+
+    BOOST_TEST_MESSAGE( "--- Test valid operation" );
+    op.validate();
+
+    BOOST_TEST_MESSAGE( "--- Test invalid current control account" );
+    op.control_account = "@@@";
+    HIVE_REQUIRE_THROW( op.validate(), fc::assert_exception );
+    op.control_account = "alice";
+
+    BOOST_TEST_MESSAGE( "--- Test invalid new control account" );
+    op.new_control_account = "@@@";
+    HIVE_REQUIRE_THROW( op.validate(), fc::assert_exception );
+    op.new_control_account = "bob";
+
+    BOOST_TEST_MESSAGE( "--- Test same current and new control account" );
+    op.new_control_account = "alice";
+    HIVE_REQUIRE_THROW( op.validate(), fc::assert_exception );
+    op.new_control_account = "bob";
+
+    BOOST_TEST_MESSAGE( "--- Test vesting SMT symbol rejected" );
+    op.symbol = symbol.get_paired_symbol();
+    HIVE_REQUIRE_THROW( op.validate(), fc::assert_exception );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( smt_transfer_control_apply )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: smt_transfer_control_apply" );
+
+    ACTORS( (alice)(bob)(carol) )
+    generate_block();
+
+    auto symbol = create_smt( "alice", alice_private_key, 3 );
+
+    smt_transfer_control_operation op;
+    op.control_account = "alice";
+    op.symbol = symbol;
+    op.new_control_account = "bob";
+
+    BOOST_TEST_MESSAGE( "--- Transfer to a non-existent account fails" );
+    op.new_control_account = "dave";
+    signed_transaction tx;
+    tx.operations.push_back( op );
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::assert_exception );
+
+    op.new_control_account = "bob";
+
+    tx.operations.clear();
+    tx.operations.push_back( op );
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    push_transaction( tx, alice_private_key );
+
+    const auto* token = db->find< smt_token_object, by_symbol >( symbol );
+    BOOST_REQUIRE( token != nullptr );
+    BOOST_REQUIRE( token->control_account == "bob" );
+
+    BOOST_TEST_MESSAGE( "--- Old control account can no longer perform admin operations" );
+    smt_set_token_metadata_operation metadata_op;
+    metadata_op.control_account = "alice";
+    metadata_op.symbol = symbol;
+    metadata_op.token_name = "Old owner update";
+
+    tx.operations.clear();
+    tx.operations.push_back( metadata_op );
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::assert_exception );
+
+    BOOST_TEST_MESSAGE( "--- New control account can perform admin operations" );
+    metadata_op.control_account = "bob";
+    metadata_op.token_name = "New owner update";
+    tx.operations.clear();
+    tx.operations.push_back( metadata_op );
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    push_transaction( tx, bob_private_key );
+
+    token = db->find< smt_token_object, by_symbol >( symbol );
+    BOOST_REQUIRE( to_string( token->token_name ) == "New owner update" );
+
+    BOOST_TEST_MESSAGE( "--- Old control account cannot transfer control again" );
+    op.control_account = "alice";
+    op.new_control_account = "carol";
+    tx.operations.clear();
+    tx.operations.push_back( op );
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::assert_exception );
+
+    BOOST_TEST_MESSAGE( "--- Current control account can transfer control onward" );
+    op.control_account = "bob";
+    op.new_control_account = "carol";
+    tx.operations.clear();
+    tx.operations.push_back( op );
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    push_transaction( tx, bob_private_key );
+
+    token = db->find< smt_token_object, by_symbol >( symbol );
+    BOOST_REQUIRE( token->control_account == "carol" );
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( smt_max_supply_enforced )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: smt_max_supply_enforced" );
+
+    ACTORS( (alice) )
+    generate_block();
+
+    auto symbol = create_smt( "alice", alice_private_key, 3 );
+
+    const auto* token = db->find< smt_token_object, by_symbol >( symbol );
+    BOOST_REQUIRE( token != nullptr );
+
+    db->modify( *token, [&]( smt_token_object& t )
+    {
+      t.max_supply = 1000;
+    });
+
+    issue_funds( "alice", asset( 1000, symbol ) );
+    BOOST_REQUIRE( db->get_balance( "alice", symbol ) == asset( 1000, symbol ) );
+
+    HIVE_REQUIRE_THROW( issue_funds( "alice", asset( 1, symbol ) ), fc::assert_exception );
+
+    token = db->find< smt_token_object, by_symbol >( symbol );
+    BOOST_REQUIRE( token->current_supply == 1000 );
+
     validate_database();
   }
   FC_LOG_AND_RETHROW()

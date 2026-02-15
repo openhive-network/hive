@@ -17,6 +17,7 @@ void initialize_core_indexes_10( database& db )
   HIVE_ADD_CORE_INDEX(db, smt_token_emissions_index);
   HIVE_ADD_CORE_INDEX(db, smt_contribution_index);
   HIVE_ADD_CORE_INDEX(db, smt_ico_index);
+  HIVE_ADD_CORE_INDEX(db, smt_allowance_index);
 #endif
   HIVE_ADD_CORE_INDEX(db, proposal_index);
 }
@@ -32,4 +33,5 @@ HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::chain::nai_pool_index)
 HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::chain::smt_token_emissions_index)
 HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::chain::smt_contribution_index)
 HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::chain::smt_ico_index)
+HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::chain::smt_allowance_index)
 #endif

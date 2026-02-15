@@ -39,7 +39,8 @@ public:
   template< typename Allocator >
   smt_token_object( allocator< Allocator > a, uint64_t _id,
     asset_symbol_type _liquid_symbol, const account_name_type& _control_account )
-    : id( _id ), liquid_symbol( _liquid_symbol ), control_account( _control_account )
+    : id( _id ), liquid_symbol( _liquid_symbol ), control_account( _control_account ),
+      token_name( a ), token_description( a ), token_image_url( a ), token_json_metadata( a )
   {
     market_maker.token_balance = protocol::asset( 0, liquid_symbol );
   }
@@ -103,6 +104,12 @@ public:
   protocol::curve_id   curation_reward_curve = curve_id::square_root;
 
   bool                 allow_downvotes = true;
+
+  /// token metadata
+  shared_string        token_name;
+  shared_string        token_description;
+  shared_string        token_image_url;
+  shared_string        token_json_metadata;
 
   ///parameters for 'smt_setup_operation'
   int64_t              max_supply = 0;
@@ -256,6 +263,47 @@ typedef multi_index_container <
   multi_index_allocator< smt_token_emissions_object >
 > smt_token_emissions_index;
 
+class smt_allowance_object : public object< smt_allowance_object_type, smt_allowance_object >
+{
+  CHAINBASE_OBJECT( smt_allowance_object );
+
+public:
+  CHAINBASE_DEFAULT_CONSTRUCTOR( smt_allowance_object )
+
+  account_name_type    owner;
+  account_name_type    spender;
+  asset_symbol_type    symbol;
+  share_type           remaining = 0;
+
+  CHAINBASE_UNPACK_CONSTRUCTOR(smt_allowance_object);
+};
+
+struct by_owner_spender;
+struct by_spender;
+
+typedef multi_index_container <
+  smt_allowance_object,
+  indexed_by <
+    ordered_unique< tag< by_id >,
+      const_mem_fun< smt_allowance_object, smt_allowance_object::id_type, &smt_allowance_object::get_id > >,
+    ordered_unique< tag< by_owner_spender >,
+      composite_key< smt_allowance_object,
+        member< smt_allowance_object, account_name_type, &smt_allowance_object::owner >,
+        member< smt_allowance_object, account_name_type, &smt_allowance_object::spender >,
+        member< smt_allowance_object, asset_symbol_type, &smt_allowance_object::symbol >
+      >
+    >,
+    ordered_unique< tag< by_spender >,
+      composite_key< smt_allowance_object,
+        member< smt_allowance_object, account_name_type, &smt_allowance_object::spender >,
+        member< smt_allowance_object, account_name_type, &smt_allowance_object::owner >,
+        member< smt_allowance_object, asset_symbol_type, &smt_allowance_object::symbol >
+      >
+    >
+  >,
+  multi_index_allocator< smt_allowance_object >
+> smt_allowance_index;
+
 } } // namespace hive::chain
 
 FC_REFLECT_ENUM( hive::chain::smt_phase,
@@ -294,6 +342,10 @@ FC_REFLECT( hive::chain::smt_token_object,
   (percent_curation_rewards)
   (author_reward_curve)
   (curation_reward_curve)
+  (token_name)
+  (token_description)
+  (token_image_url)
+  (token_json_metadata)
   (max_supply)
 )
 
@@ -333,9 +385,18 @@ FC_REFLECT( hive::chain::smt_contribution_object,
   (contribution)
 )
 
+FC_REFLECT( hive::chain::smt_allowance_object,
+  (id)
+  (owner)
+  (spender)
+  (symbol)
+  (remaining)
+)
+
 CHAINBASE_SET_INDEX_TYPE( hive::chain::smt_token_object, hive::chain::smt_token_index )
 CHAINBASE_SET_INDEX_TYPE( hive::chain::smt_ico_object, hive::chain::smt_ico_index )
 CHAINBASE_SET_INDEX_TYPE( hive::chain::smt_token_emissions_object, hive::chain::smt_token_emissions_index )
 CHAINBASE_SET_INDEX_TYPE( hive::chain::smt_contribution_object, hive::chain::smt_contribution_index )
+CHAINBASE_SET_INDEX_TYPE( hive::chain::smt_allowance_object, hive::chain::smt_allowance_index )
 
 #endif

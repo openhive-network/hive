@@ -132,7 +132,7 @@ in the database.
 
 ## Step 7
 
-- (7a) Unit tests for SMT functionality should go in `smt_tests.cpp`.
+- (7a) Unit tests for SMT functionality should go in `smt_operation_tests.cpp`.
 
 - (7b) Operations should have separate tests:  `validate` test,
 `authorities` test and `apply` test.

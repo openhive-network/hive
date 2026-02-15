@@ -164,6 +164,9 @@ class database_api
 
       (list_smt_token_emissions)
       (find_smt_token_emissions)
+
+      (list_smt_allowances)
+      (find_smt_allowances)
 #endif
       (is_known_transaction)
     )

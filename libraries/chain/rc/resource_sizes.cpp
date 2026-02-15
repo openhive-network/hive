@@ -223,6 +223,10 @@ operation_exec_info::operation_exec_info()
   smt_set_runtime_parameters_time( 0 ),
   smt_create_time( 0 ),
   smt_contribute_time( 0 ),
+  smt_set_token_metadata_time( 0 ),
+  smt_approve_time( 0 ),
+  smt_transfer_from_time( 0 ),
+  smt_transfer_control_time( 0 ),
 #endif
   create_proposal_time( 831 + 24323 + 5666 + 2168 ), //processing not counted since it depends on too many variables
   update_proposal_time( 820 + 11193 + 4501 + 267 ),

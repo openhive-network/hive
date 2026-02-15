@@ -96,6 +96,7 @@ enum object_type
   smt_token_emissions_object_type,
   smt_contribution_object_type,
   smt_ico_object_type,
+  smt_allowance_object_type,
 #endif
 };
 
@@ -148,6 +149,7 @@ class nai_pool_object;
 class smt_token_emissions_object;
 class smt_contribution_object;
 class smt_ico_object;
+class smt_allowance_object;
 #endif
 
 typedef oid_ref< dynamic_global_property_object         > dynamic_global_property_id_type;
@@ -200,6 +202,7 @@ typedef oid_ref< nai_pool_object                        > nai_pool_id_type;
 typedef oid_ref< smt_token_emissions_object             > smt_token_emissions_id_type;
 typedef oid_ref< smt_contribution_object                > smt_contribution_id_type;
 typedef oid_ref< smt_ico_object                         > smt_ico_id_type;
+typedef oid_ref< smt_allowance_object                   > smt_allowance_id_type;
 #endif
 
 enum bandwidth_type
@@ -366,6 +369,7 @@ FC_REFLECT_ENUM( hive::chain::object_type,
             (smt_token_emissions_object_type)
             (smt_contribution_object_type)
             (smt_ico_object_type)
+            (smt_allowance_object_type)
 #endif
           )
 

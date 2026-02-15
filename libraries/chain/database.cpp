@@ -3475,6 +3475,10 @@ void database::initialize_evaluators()
   _my->_evaluator_registry.register_evaluator< smt_set_runtime_parameters_evaluator     >();
   _my->_evaluator_registry.register_evaluator< smt_create_evaluator                     >();
   _my->_evaluator_registry.register_evaluator< smt_contribute_evaluator                 >();
+  _my->_evaluator_registry.register_evaluator< smt_set_token_metadata_evaluator         >();
+  _my->_evaluator_registry.register_evaluator< smt_approve_evaluator                    >();
+  _my->_evaluator_registry.register_evaluator< smt_transfer_from_evaluator              >();
+  _my->_evaluator_registry.register_evaluator< smt_transfer_control_evaluator           >();
 #endif
 
   _my->_evaluator_registry.register_evaluator< create_proposal_evaluator                >();
@@ -5695,6 +5699,10 @@ void database::adjust_supply( const asset& delta, bool adjust_vesting )
     const auto& smt = get< smt_token_object, by_symbol >( delta.symbol );
     auto smt_new_supply = smt.current_supply + delta.amount;
     FC_ASSERT( smt_new_supply >= 0 );
+    if( delta.amount > 0 && smt.max_supply > 0 )
+      FC_ASSERT( smt_new_supply <= smt.max_supply,
+        "SMT ${smt} max supply exceeded. Current: ${current}, Delta: ${delta}, Max: ${max}",
+        ("smt", smt.liquid_symbol.to_nai())("current", smt.current_supply)("delta", delta.amount)("max", smt.max_supply) );
     modify( smt, [smt_new_supply]( smt_token_object& smt )
     {
       smt.current_supply = smt_new_supply;
@@ -6884,4 +6892,3 @@ database::node_status_t database::get_node_status()
 }
 
 } } //hive::chain
-

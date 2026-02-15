@@ -1008,6 +1008,23 @@ struct api_smt_contribution_object
   asset                    contribution;
 };
 
+struct api_smt_allowance_object
+{
+  api_smt_allowance_object( const smt_allowance_object& o, const database& db ):
+    id( o.get_id() ),
+    owner( o.owner ),
+    spender( o.spender ),
+    symbol( o.symbol ),
+    remaining( o.remaining )
+  {}
+
+  smt_allowance_id_type id;
+  account_name_type     owner;
+  account_name_type     spender;
+  asset_symbol_type     symbol;
+  share_type            remaining;
+};
+
 #endif
 
 enum proposal_status
@@ -1372,6 +1389,10 @@ FC_REFLECT( hive::plugins::database_api::api_smt_token_emissions_object,
 
 FC_REFLECT( hive::plugins::database_api::api_smt_contribution_object,
           (id)(symbol)(contributor)(contribution_id)(contribution)
+        )
+
+FC_REFLECT( hive::plugins::database_api::api_smt_allowance_object,
+          (id)(owner)(spender)(symbol)(remaining)
         )
 
 #endif

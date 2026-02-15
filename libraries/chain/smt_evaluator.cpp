@@ -139,21 +139,23 @@ void smt_setup_evaluator::do_apply( const smt_setup_operation& o )
 {
   FC_ASSERT( _db.has_hardfork( HIVE_SMT_HARDFORK ) && "Premature SMT setup",
     "SMT functionality not enabled until hardfork ${hf}", ("hf", HIVE_SMT_HARDFORK) );
-FC_TODO("Adjust assertion below and add/modify negative tests appropriately.")
-  const auto* _token = _db.find< smt_token_object, by_symbol >( o.symbol );
-  FC_ASSERT( _token, "SMT ${ac} not elevated yet.",("ac", o.control_account) );
 
-  _db.modify(  *_token, [&]( smt_token_object& token )
+  const smt_token_object& _token = get_controlled_smt( _db, o.control_account, o.symbol );
+  FC_ASSERT( _token.phase == smt_phase::account_elevated,
+    "SMT ${smt} has already completed setup. Phase: ${p}", ("smt", o.symbol.to_nai())("p", _token.phase) );
+  FC_ASSERT( _token.current_supply <= o.max_supply,
+    "SMT ${smt} current supply ${current} exceeds requested max supply ${max}",
+    ("smt", o.symbol.to_nai())("current", _token.current_supply)("max", o.max_supply) );
+
+  _db.modify( _token, [&]( smt_token_object& token )
   {
-FC_TODO("Add/modify test to check the token phase correctly set.")
     token.phase = smt_phase::setup_completed;
-    token.control_account = o.control_account;
     token.max_supply = o.max_supply;
   } );
 
   auto& token_ico = _db.create< smt_ico_object >( [&] ( smt_ico_object& token_ico_obj )
   {
-    token_ico_obj.symbol = _token->liquid_symbol;
+    token_ico_obj.symbol = _token.liquid_symbol;
     token_ico_obj.contribution_begin_time = o.contribution_begin_time;
     token_ico_obj.contribution_end_time = o.contribution_end_time;
     token_ico_obj.launch_time = o.launch_time;
@@ -325,6 +327,121 @@ void smt_contribute_evaluator::do_apply( const smt_contribute_operation& o )
     } );
   }
   FC_CAPTURE_AND_RETHROW( (o) )
+}
+
+void smt_set_token_metadata_evaluator::do_apply( const smt_set_token_metadata_operation& o )
+{
+  FC_ASSERT( _db.has_hardfork( HIVE_SMT_HARDFORK ) && "Premature SMT metadata operation",
+    "SMT functionality not enabled until hardfork ${hf}", ("hf", HIVE_SMT_HARDFORK) );
+
+  const smt_token_object& smt = get_controlled_smt( _db, o.control_account, o.symbol );
+
+  _db.modify( smt, [&]( smt_token_object& token )
+  {
+    from_string( token.token_name, o.token_name );
+    from_string( token.token_description, o.token_description );
+    from_string( token.token_image_url, o.token_image_url );
+    from_string( token.token_json_metadata, o.token_json_metadata );
+  });
+}
+
+void smt_approve_evaluator::do_apply( const smt_approve_operation& o )
+{
+  FC_ASSERT( _db.has_hardfork( HIVE_SMT_HARDFORK ) && "Premature SMT approve operation",
+    "SMT functionality not enabled until hardfork ${hf}", ("hf", HIVE_SMT_HARDFORK) );
+
+  const smt_token_object* token = util::smt::find_token( _db, o.symbol );
+  FC_ASSERT( token != nullptr, "SMT ${smt} does not exist", ("smt", o.symbol.to_nai()) );
+
+  auto key = boost::make_tuple( o.owner, o.spender, o.symbol );
+  const auto* existing = _db.find< smt_allowance_object, by_owner_spender >( key );
+
+  if( o.amount > 0 )
+  {
+    if( existing != nullptr )
+    {
+      _db.modify( *existing, [&]( smt_allowance_object& a )
+      {
+        a.remaining = o.amount;
+      });
+    }
+    else
+    {
+      _db.create< smt_allowance_object >( [&]( smt_allowance_object& a )
+      {
+        a.owner = o.owner;
+        a.spender = o.spender;
+        a.symbol = o.symbol;
+        a.remaining = o.amount;
+      });
+    }
+  }
+  else // amount == 0 means revoke
+  {
+    if( existing != nullptr )
+    {
+      _db.remove( *existing );
+    }
+    // else no-op: revoking a non-existent allowance is fine
+  }
+}
+
+void smt_transfer_from_evaluator::do_apply( const smt_transfer_from_operation& o )
+{
+  try
+  {
+    FC_ASSERT( _db.has_hardfork( HIVE_SMT_HARDFORK ) && "Premature SMT transfer_from operation",
+      "SMT functionality not enabled until hardfork ${hf}", ("hf", HIVE_SMT_HARDFORK) );
+
+    const smt_token_object* token = util::smt::find_token( _db, o.amount.symbol );
+    FC_ASSERT( token != nullptr, "SMT ${smt} does not exist", ("smt", o.amount.symbol.to_nai()) );
+
+    const auto& from_account = _db.get_account( o.from );
+    const auto& to_account = _db.get_account( o.to );
+    const auto& spender_account = _db.get_account( o.spender );
+    (void)to_account;
+    (void)spender_account;
+
+    auto key = boost::make_tuple( o.from, o.spender, o.amount.symbol );
+    const auto* allowance = _db.find< smt_allowance_object, by_owner_spender >( key );
+    FC_ASSERT( allowance != nullptr, "No allowance exists from ${from} to spender ${spender} for ${sym}",
+      ("from", o.from)("spender", o.spender)("sym", o.amount.symbol) );
+    FC_ASSERT( allowance->remaining >= o.amount.amount,
+      "Allowance remaining ${r} is less than requested transfer amount ${a}",
+      ("r", allowance->remaining)("a", o.amount.amount) );
+
+    _db.adjust_balance( from_account, -o.amount );
+    _db.adjust_balance( o.to, o.amount );
+
+    share_type new_remaining = allowance->remaining - o.amount.amount;
+    if( new_remaining == 0 )
+    {
+      _db.remove( *allowance );
+    }
+    else
+    {
+      _db.modify( *allowance, [&]( smt_allowance_object& a )
+      {
+        a.remaining = new_remaining;
+      });
+    }
+  }
+  FC_CAPTURE_AND_RETHROW( (o) )
+}
+
+void smt_transfer_control_evaluator::do_apply( const smt_transfer_control_operation& o )
+{
+  FC_ASSERT( _db.has_hardfork( HIVE_SMT_HARDFORK ) && "Premature SMT control transfer",
+    "SMT functionality not enabled until hardfork ${hf}", ("hf", HIVE_SMT_HARDFORK) );
+
+  const smt_token_object& smt = get_controlled_smt( _db, o.control_account, o.symbol );
+  const auto& new_control_account = _db.get_account( o.new_control_account );
+  (void)new_control_account;
+
+  _db.modify( smt, [&]( smt_token_object& token )
+  {
+    token.control_account = o.new_control_account;
+  });
 }
 
 } }

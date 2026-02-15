@@ -124,6 +124,7 @@ struct operation_filtering_visitor
 #ifdef HIVE_ENABLE_SMT
   CHECK_SMT_OPERATIONS_HIGH( (claim_reward_balance2_operation)(smt_setup_operation)(smt_setup_emissions_operation)(smt_set_setup_parameters_operation)
     (smt_set_runtime_parameters_operation)(smt_create_operation)(smt_contribute_operation)
+    (smt_set_token_metadata_operation)(smt_approve_operation)(smt_transfer_from_operation)(smt_transfer_control_operation)
   )
 #endif
 

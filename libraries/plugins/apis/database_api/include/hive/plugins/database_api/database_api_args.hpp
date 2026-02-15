@@ -65,6 +65,8 @@ enum sort_order_type
   by_proposal_voter,
   by_contributor,
   by_symbol_id,
+  by_owner_spender,
+  by_spender,
   not_set //< keep it as last (it would be better if it was first == 0, however people are using enums
     //not just with names, but with values as well and those would change if not_set was made first
 };
@@ -701,6 +703,21 @@ struct find_smt_token_emissions_args
 
 typedef list_smt_token_emissions_return find_smt_token_emissions_return;
 
+typedef list_object_args_type list_smt_allowances_args;
+
+struct list_smt_allowances_return
+{
+  vector< api_smt_allowance_object > allowances;
+};
+
+struct find_smt_allowances_args
+{
+  vector< std::pair< account_name_type, account_name_type > > owner_spender_pairs;
+  asset_symbol_type symbol;
+};
+
+typedef list_smt_allowances_return find_smt_allowances_return;
+
 #endif
 
 struct is_known_transaction_args
@@ -755,6 +772,8 @@ FC_REFLECT_ENUM( hive::plugins::database_api::sort_order_type,
   (by_proposal_voter)
   (by_contributor)
   (by_symbol_id)
+  (by_owner_spender)
+  (by_spender)
   (not_set) )
 
 FC_REFLECT_ENUM( hive::plugins::database_api::order_direction_type,
@@ -983,6 +1002,12 @@ FC_REFLECT( hive::plugins::database_api::list_smt_token_emissions_return,
 
 FC_REFLECT( hive::plugins::database_api::find_smt_token_emissions_args,
   (asset_symbol) )
+
+FC_REFLECT( hive::plugins::database_api::list_smt_allowances_return,
+  (allowances) )
+
+FC_REFLECT( hive::plugins::database_api::find_smt_allowances_args,
+  (owner_spender_pairs)(symbol) )
 
 #endif
 

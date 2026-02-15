@@ -28,4 +28,12 @@ The requirements on optional actions or much more lax. Because they can be skipp
 Example Actions
 ---------------
 
-TODO: Add some SMT Actions
+SMT-relevant examples and implementation notes are now documented in:
+
+- `doc/devs/smt.md`
+
+In particular, see the sections describing:
+
+- emission schedule configuration (`smt_setup_emissions_operation`)
+- RC accounting caveats for SMT operations
+- current implementation gaps around automated SMT phase/emission execution

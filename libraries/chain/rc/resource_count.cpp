@@ -538,6 +538,30 @@ struct count_operation_visitor
     FC_TODO( "Change RC state bytes computation to take SMT's into account" )
     execution_time_count += _e.smt_contribute_time;
   }
+
+  void operator()( const smt_set_token_metadata_operation& op ) const
+  {
+    FC_TODO( "Change RC state bytes computation to take SMT's into account" )
+    execution_time_count += _e.smt_set_token_metadata_time;
+  }
+
+  void operator()( const smt_approve_operation& op ) const
+  {
+    FC_TODO( "Change RC state bytes computation to take SMT's into account" )
+    execution_time_count += _e.smt_approve_time;
+  }
+
+  void operator()( const smt_transfer_from_operation& op ) const
+  {
+    FC_TODO( "Change RC state bytes computation to take SMT's into account" )
+    execution_time_count += _e.smt_transfer_from_time;
+  }
+
+  void operator()( const smt_transfer_control_operation& op ) const
+  {
+    FC_TODO( "Change RC state bytes computation to take SMT's into account" )
+    execution_time_count += _e.smt_transfer_control_time;
+  }
 #endif
 
   void operator()( const create_proposal_operation& op ) const

@@ -1,6 +1,9 @@
 
 #include <hive/protocol/smt_operations.hpp>
 #include <hive/protocol/validation.hpp>
+
+#include <fc/io/json.hpp>
+#include <fc/utf8.hpp>
 #ifdef HIVE_ENABLE_SMT
 
 #define SMT_DESTINATION_FROM          account_name_type( "$from" )
@@ -10,6 +13,18 @@
 #define SMT_DESTINATION_VESTING       account_name_type( "$vesting" )
 
 namespace hive { namespace protocol {
+
+namespace
+{
+void validate_json_with_fallback( const std::string& json )
+{
+  if( !fc::json::fast_is_valid( json ) )
+  {
+    FC_ASSERT( fc::is_utf8( json ), "JSON not formatted in UTF8" );
+    FC_ASSERT( fc::json::is_valid( json, fc::json::format_validation_mode::relaxed ), "JSON is not valid JSON" );
+  }
+}
+}
 
 void common_symbol_validation( const asset_symbol_type& symbol )
 {
@@ -28,6 +43,10 @@ void smt_admin_operation_validate( const Operation& o )
 void smt_create_operation::validate()const
 {
   smt_admin_operation_validate( *this );
+  FC_ASSERT( symbol.decimals() <= SMT_MAX_DECIMAL_PLACES,
+    "SMT supports up to ${max} decimal places", ("max", SMT_MAX_DECIMAL_PLACES) );
+  FC_ASSERT( precision <= SMT_MAX_DECIMAL_PLACES,
+    "SMT supports up to ${max} decimal places", ("max", SMT_MAX_DECIMAL_PLACES) );
   FC_ASSERT( smt_creation_fee.amount >= 0, "fee cannot be negative" );
   FC_ASSERT( smt_creation_fee.amount <= HIVE_MAX_SHARE_SUPPLY, "Fee must be smaller than HIVE_MAX_SHARE_SUPPLY" );
   FC_ASSERT( is_asset_type( smt_creation_fee, HIVE_SYMBOL ) || is_asset_type( smt_creation_fee, HBD_SYMBOL ), "Fee must be HIVE or HBD" );
@@ -106,8 +125,6 @@ void smt_capped_generation_policy::validate()const
   FC_ASSERT( pre_soft_cap_unit.token_unit.size() <= SMT_MAX_UNIT_COUNT );
   FC_ASSERT( post_soft_cap_unit.hive_unit.size() <= SMT_MAX_UNIT_COUNT );
   FC_ASSERT( post_soft_cap_unit.token_unit.size() <= SMT_MAX_UNIT_COUNT );
-
-  // TODO : Check account name
 
   if( soft_cap_percent == HIVE_100_PERCENT )
   {
@@ -290,6 +307,48 @@ void smt_contribute_operation::validate() const
   common_symbol_validation( symbol );
   FC_ASSERT( contribution.symbol == HIVE_SYMBOL, "Contributions must be made in HIVE" );
   FC_ASSERT( contribution.amount > 0, "Contribution amount must be greater than 0" );
+}
+
+void smt_set_token_metadata_operation::validate() const
+{
+  smt_admin_operation_validate( *this );
+  FC_ASSERT( token_name.size() <= SMT_MAX_TOKEN_NAME_LENGTH,
+    "Token name is too long. Max length: ${max}", ("max", SMT_MAX_TOKEN_NAME_LENGTH) );
+  FC_ASSERT( token_description.size() <= SMT_MAX_TOKEN_DESCRIPTION_LENGTH,
+    "Token description is too long. Max length: ${max}", ("max", SMT_MAX_TOKEN_DESCRIPTION_LENGTH) );
+  FC_ASSERT( token_image_url.size() <= SMT_MAX_TOKEN_IMAGE_URL_LENGTH,
+    "Token image URL is too long. Max length: ${max}", ("max", SMT_MAX_TOKEN_IMAGE_URL_LENGTH) );
+
+  if( !token_json_metadata.empty() )
+    validate_json_with_fallback( token_json_metadata );
+}
+
+void smt_approve_operation::validate() const
+{
+  validate_account_name( owner );
+  validate_account_name( spender );
+  common_symbol_validation( symbol );
+  FC_ASSERT( owner != spender, "Cannot approve yourself as spender" );
+  FC_ASSERT( amount >= 0, "Approval amount cannot be negative" );
+}
+
+void smt_transfer_from_operation::validate() const
+{
+  validate_account_name( spender );
+  validate_account_name( from );
+  validate_account_name( to );
+  FC_ASSERT( spender != from, "Spender cannot be the same as from account. Use a regular transfer instead." );
+  FC_ASSERT( from != to, "Cannot transfer to self" );
+  common_symbol_validation( amount.symbol );
+  FC_ASSERT( amount.amount > 0, "Transfer amount must be greater than 0" );
+  FC_ASSERT( amount.symbol.is_vesting() == false, "Use liquid variant of SMT symbol" );
+}
+
+void smt_transfer_control_operation::validate() const
+{
+  smt_admin_operation_validate( *this );
+  validate_account_name( new_control_account );
+  FC_ASSERT( control_account != new_control_account, "New control account must differ from current control account" );
 }
 
 } }
