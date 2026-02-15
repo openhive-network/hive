@@ -282,20 +282,21 @@ class webserver_plugin_impl : public webserver_base
     thread_pool_size_t         thread_pool_size;
 
     shared_ptr< std::thread >  http_thread;
-    asio::io_service           http_ios;
+    asio::io_context           http_ios;
     websocket_server_type      http_server;
 
     shared_ptr< std::thread >              unix_thread;
-    asio::io_service                       unix_ios;
+    asio::io_context                       unix_ios;
     websocket_local_server_type            unix_server;
 
     shared_ptr< std::thread >  ws_thread;
-    asio::io_service           ws_ios;
+    asio::io_context           ws_ios;
     websocket_server_type      ws_server;
 
     boost::thread_group        thread_pool;
-    asio::io_service           thread_pool_ios;
-    std::unique_ptr< asio::io_service::work > thread_pool_work;
+    asio::io_context           thread_pool_ios;
+    using work_guard_type = boost::asio::executor_work_guard<boost::asio::io_context::executor_type>;
+    std::unique_ptr< work_guard_type > thread_pool_work;
 
     plugins::json_rpc::json_rpc_plugin* api = nullptr;
 
@@ -321,7 +322,7 @@ void webserver_plugin_impl<websocket_server_type>::startup()
 template<typename websocket_server_type>
 void webserver_plugin_impl<websocket_server_type>::prepare_threads()
 {
-  thread_pool_work.reset( new asio::io_service::work( this->thread_pool_ios ) );
+  thread_pool_work.reset( new work_guard_type(this->thread_pool_ios.get_executor()));
 
   for( uint32_t i = 0; i < thread_pool_size; ++i )
     thread_pool.create_thread( [&]() { fc::set_thread_name("api"); thread_pool_ios.run(); } );
@@ -548,8 +549,7 @@ void webserver_plugin_impl<websocket_server_type>::handle_ws_message( websocket_
   auto con = server->get_con_from_hdl( std::move( hdl ) );
 
   fc::time_point arrival_time = fc::time_point::now();
-  thread_pool_ios.post( [con, msg, this, arrival_time]()
-  {
+  boost::asio::post(thread_pool_ios, [con, msg, this, arrival_time]() {
     LOG_DELAY(arrival_time, fc::seconds(2), "Excessive delay to begin processing ws API call");
 
     try
@@ -601,8 +601,7 @@ void webserver_plugin_impl<websocket_server_type>::handle_http_message( websocke
   con->defer_http_response();
 
   fc::time_point arrival_time = fc::time_point::now();
-  thread_pool_ios.post( [con, this, arrival_time]()
-  {
+  boost::asio::post(thread_pool_ios, [con, this, arrival_time]() {
     LOG_DELAY(arrival_time, fc::seconds(2), "Excessive delay to begin processing API call");
 
     auto body = con->get_request_body();
@@ -662,8 +661,7 @@ void webserver_plugin_impl<websocket_server_type>::handle_http_request(websocket
   auto con = server->get_con_from_hdl( std::move( hdl ) );
   con->defer_http_response();
 
-  thread_pool_ios.post( [con, this]()
-  {
+  boost::asio::post(thread_pool_ios, [con, this]() {
     auto body = con->get_request_body();
 
     try
@@ -775,7 +773,7 @@ void webserver_plugin::plugin_initialize( const variables_map& options )
     FC_ASSERT( endpoints.size(), "${http-endpoint-type} ${hostname} did not resolve",
               ("http-endpoint-type", my->tls ? "webserver-https-endpoint" : "webserver-http-endpoint")("hostname", _http_or_https_endpoint) );
 
-    my->http_endpoint = tcp::endpoint( boost::asio::ip::address_v4::from_string( ( string )endpoints[0].get_address() ), endpoints[0].port() );
+    my->http_endpoint = tcp::endpoint( boost::asio::ip::make_address_v4( ( string )endpoints[0].get_address() ), endpoints[0].port() );
     ilog( "configured ${type} to listen on ${ep}", ("type", my->tls ? "https" : "http")("ep", endpoints[0]) );
   }
 
@@ -792,7 +790,7 @@ void webserver_plugin::plugin_initialize( const variables_map& options )
     auto ws_endpoint = options.at( "webserver-ws-endpoint" ).as< string >();
     auto endpoints = fc::resolve_string_to_ip_endpoints( ws_endpoint );
     FC_ASSERT( endpoints.size(), "ws-server-endpoint ${hostname} did not resolve", ("hostname", ws_endpoint) );
-    my->ws_endpoint = tcp::endpoint( boost::asio::ip::address_v4::from_string( ( string )endpoints[0].get_address() ), endpoints[0].port() );
+    my->ws_endpoint = tcp::endpoint( boost::asio::ip::make_address_v4( ( string )endpoints[0].get_address() ), endpoints[0].port() );
     ilog( "configured ws to listen on ${ep}", ("ep", endpoints[0]) );
   }
 }

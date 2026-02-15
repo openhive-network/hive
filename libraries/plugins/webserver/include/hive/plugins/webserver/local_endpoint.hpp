@@ -26,10 +26,10 @@ public:
   /// Type of a shared pointer to this connection socket component
   typedef lib::shared_ptr<type> ptr;
 
-  /// Type of a pointer to the Asio io_service being used
-  typedef lib::asio::io_service* io_service_ptr;
-  /// Type of a pointer to the Asio io_service strand being used
-  typedef lib::shared_ptr<lib::asio::io_service::strand> strand_ptr;
+  /// Type of a pointer to the Asio io_context being used
+  typedef lib::asio::io_context* io_context_ptr;
+  /// Type of a pointer to the Asio io_context strand being used
+  typedef lib::shared_ptr<lib::asio::io_context::strand> strand_ptr;
   /// Type of the ASIO socket being used
   typedef lib::asio::local::stream_protocol::socket socket_type;
   /// Type of a shared pointer to the socket being used.
@@ -78,7 +78,7 @@ public:
   }
 
 protected:
-  lib::error_code init_asio (io_service_ptr service, strand_ptr, bool)
+  lib::error_code init_asio (io_context_ptr service, strand_ptr, bool)
   {
     if (m_state != UNINITIALIZED) {
       return socket::make_error_code(socket::error::invalid_state);
@@ -185,18 +185,19 @@ public:
   /// associated with this endpoint transport component
   typedef typename transport_con_type::ptr transport_con_ptr;
 
-  /// Type of a pointer to the ASIO io_service being used
-  typedef lib::asio::io_service * io_service_ptr;
+  /// Type of a pointer to the ASIO io_context being used
+  typedef lib::asio::io_context * io_context_ptr;
   /// Type of a shared pointer to the acceptor being used
   typedef lib::shared_ptr<lib::asio::local::stream_protocol::acceptor> acceptor_ptr;
   /// Type of timer handle
   typedef lib::shared_ptr<lib::asio::steady_timer> timer_ptr;
-  /// Type of a shared pointer to an io_service work object
-  typedef lib::shared_ptr<lib::asio::io_service::work> work_ptr;
+  /// Type of a shared pointer to an io_context work object
+  typedef lib::asio::executor_work_guard<boost::asio::io_context::executor_type> work_guard_type;
+  typedef lib::shared_ptr<work_guard_type> work_ptr;
 
-  // generate and manage our own io_service
+  // generate and manage our own io_context
   explicit local_endpoint()
-    : m_io_service(NULL)
+    : m_io_context(NULL)
     , m_state(UNINITIALIZED)
   {
     //std::cout << "transport::asio::endpoint constructor" << std::endl;
@@ -229,13 +230,13 @@ public:
     : config::socket_type(std::move(src))
     , m_tcp_pre_init_handler(src.m_tcp_pre_init_handler)
     , m_tcp_post_init_handler(src.m_tcp_post_init_handler)
-    , m_io_service(src.m_io_service)
+    , m_io_context(src.m_io_context)
     , m_acceptor(src.m_acceptor)
     , m_elog(src.m_elog)
     , m_alog(src.m_alog)
     , m_state(src.m_state)
   {
-    src.m_io_service = NULL;
+    src.m_io_context = NULL;
     src.m_acceptor = NULL;
     src.m_state = UNINITIALIZED;
   }
@@ -247,16 +248,16 @@ public:
     return socket_type::is_secure();
   }
 
-  /// initialize asio transport with external io_service (exception free)
+  /// initialize asio transport with external io_context (exception free)
   /**
     * Initialize the ASIO transport policy for this endpoint using the provided
-    * io_service object. asio_init must be called exactly once on any endpoint
+    * io_context object. asio_init must be called exactly once on any endpoint
     * that uses transport::asio before it can be used.
     *
-    * @param ptr A pointer to the io_service to use for asio events
+    * @param ptr A pointer to the io_context to use for asio events
     * @param ec Set to indicate what error occurred, if any.
     */
-  void init_asio(io_service_ptr ptr, lib::error_code & ec) {
+  void init_asio(io_context_ptr ptr, lib::error_code & ec) {
     if (m_state != UNINITIALIZED) {
       m_elog->write(log::elevel::library,
         "asio::init_asio called from the wrong state");
@@ -267,22 +268,22 @@ public:
 
     m_alog->write(log::alevel::devel,"asio::init_asio");
 
-    m_io_service = ptr;
-    m_acceptor.reset(new lib::asio::local::stream_protocol::acceptor(*m_io_service));
+    m_io_context = ptr;
+    m_acceptor.reset(new lib::asio::local::stream_protocol::acceptor(*m_io_context));
 
     m_state = READY;
     ec = lib::error_code();
   }
 
-  /// initialize asio transport with external io_service
+  /// initialize asio transport with external io_context
   /**
     * Initialize the ASIO transport policy for this endpoint using the provided
-    * io_service object. asio_init must be called exactly once on any endpoint
+    * io_context object. asio_init must be called exactly once on any endpoint
     * that uses transport::asio before it can be used.
     *
-    * @param ptr A pointer to the io_service to use for asio events
+    * @param ptr A pointer to the io_context to use for asio events
     */
-  void init_asio(io_service_ptr ptr) {
+  void init_asio(io_context_ptr ptr) {
     lib::error_code ec;
     init_asio(ptr,ec);
     if (ec) { throw exception(ec); }
@@ -331,19 +332,19 @@ public:
     m_tcp_post_init_handler = h;
   }
 
-  /// Retrieve a reference to the endpoint's io_service
+  /// Retrieve a reference to the endpoint's io_context
   /**
-    * The io_service may be an internal or external one. This may be used to
-    * call methods of the io_service that are not explicitly wrapped by the
+    * The io_context may be an internal or external one. This may be used to
+    * call methods of the io_context that are not explicitly wrapped by the
     * endpoint.
     *
     * This method is only valid after the endpoint has been initialized with
     * `init_asio`. No error will be returned if it isn't.
     *
-    * @return A reference to the endpoint's io_service
+    * @return A reference to the endpoint's io_context
     */
-  lib::asio::io_service & get_io_service() {
-    return *m_io_service;
+  lib::asio::io_context & get_io_context() {
+    return *m_io_context;
   }
 
   /// Set up endpoint for listening manually (exception free)
@@ -370,7 +371,7 @@ public:
 
     {
       boost::system::error_code test_ec;
-      lib::asio::local::stream_protocol::socket test_socket(get_io_service());
+      lib::asio::local::stream_protocol::socket test_socket(get_io_context());
       test_socket.connect(ep, test_ec);
     
       //looks like a service is already running on that socket, don't touch it
@@ -390,7 +391,7 @@ public:
       m_acceptor->bind(ep,bec);
     }
     if (!bec) {
-      m_acceptor->listen(boost::asio::socket_base::max_connections,bec);  // todo on boost upgrade: max_listen_connections
+      m_acceptor->listen(boost::asio::socket_base::max_listen_connections,bec);
     }
     if (bec) {
       if (m_acceptor->is_open()) {
@@ -463,42 +464,42 @@ public:
     return (m_state == LISTENING);
   }
 
-  /// wraps the run method of the internal io_service object
+  /// wraps the run method of the internal io_context object
   std::size_t run() {
-    return m_io_service->run();
+    return m_io_context->run();
   }
 
-  /// wraps the run_one method of the internal io_service object
+  /// wraps the run_one method of the internal io_context object
   /**
     * @since 0.3.0-alpha4
     */
   std::size_t run_one() {
-    return m_io_service->run_one();
+    return m_io_context->run_one();
   }
 
-  /// wraps the stop method of the internal io_service object
+  /// wraps the stop method of the internal io_context object
   void stop() {
-    m_io_service->stop();
+    m_io_context->stop();
   }
 
-  /// wraps the poll method of the internal io_service object
+  /// wraps the poll method of the internal io_context object
   std::size_t poll() {
-    return m_io_service->poll();
+    return m_io_context->poll();
   }
 
-  /// wraps the poll_one method of the internal io_service object
+  /// wraps the poll_one method of the internal io_context object
   std::size_t poll_one() {
-    return m_io_service->poll_one();
+    return m_io_context->poll_one();
   }
 
-  /// wraps the reset method of the internal io_service object
+  /// wraps the reset method of the internal io_context object
   void reset() {
-    m_io_service->reset();
+    m_io_context->restart();
   }
 
-  /// wraps the stopped method of the internal io_service object
+  /// wraps the stopped method of the internal io_context object
   bool stopped() const {
-    return m_io_service->stopped();
+    return m_io_context->stopped();
   }
 
   /// Marks the endpoint as perpetual, stopping it from exiting when empty
@@ -514,7 +515,7 @@ public:
     * @since 0.3.0
     */
   void start_perpetual() {
-    m_work.reset(new lib::asio::io_service::work(*m_io_service));
+    m_work.reset(new work_guard_type(this->m_io_context->get_executor()));
   }
 
   /// Clears the endpoint's perpetual flag, allowing it to exit when empty
@@ -543,7 +544,7 @@ public:
     */
   timer_ptr set_timer(long duration, timer_handler callback) {
     timer_ptr new_timer = lib::make_shared<lib::asio::steady_timer>(
-      *m_io_service,
+      *m_io_context,
         lib::asio::milliseconds(duration)
     );
 
@@ -709,7 +710,7 @@ protected:
     connect_handler callback, lib::asio::error_code const & ec)
   {
     if (ec == lib::asio::error::operation_aborted ||
-      lib::asio::is_neg(con_timer->expires_from_now()))
+      lib::asio::is_neg(con_timer->expiry()))
     {
       m_alog->write(log::alevel::devel,"async_connect cancelled");
       return;
@@ -735,10 +736,10 @@ protected:
   template <typename parent_type>
   struct connection_wrapper : public parent_type
   {
-    template<typename io_service_type>
-    static lib::error_code execute_init_asio( parent_type& source, io_service_type m_io_service )
+    template<typename io_context_type>
+    static lib::error_code execute_init_asio( parent_type& source, io_context_type m_io_context )
     {
-      return ( static_cast<connection_wrapper&>( source ) ).init_asio( m_io_service );
+      return ( static_cast<connection_wrapper&>( source ) ).init_asio( m_io_context );
     }
   };
 
@@ -757,7 +758,7 @@ protected:
     m_alog->write(log::alevel::devel, "transport::asio::init");
 
     using _type_without_ref = typename std::remove_reference<decltype( *tcon )>::type;
-    auto ec = connection_wrapper<_type_without_ref>::execute_init_asio( *tcon, m_io_service );
+    auto ec = connection_wrapper<_type_without_ref>::execute_init_asio( *tcon, m_io_context );
     if (ec) {return ec;}
 
     tcon->set_tcp_pre_init_handler(m_tcp_pre_init_handler);
@@ -785,7 +786,7 @@ private:
   tcp_init_handler    m_tcp_post_init_handler;
 
   // Network Resources
-  io_service_ptr      m_io_service;
+  io_context_ptr      m_io_context;
   acceptor_ptr        m_acceptor;
   work_ptr            m_work;
 
