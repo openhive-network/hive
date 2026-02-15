@@ -1,0 +1,13 @@
+#ifndef HIVE_HARDFORK_1_30
+#define HIVE_HARDFORK_1_30 30
+#define HIVE_SMT_HARDFORK HIVE_HARDFORK_1_30
+
+#ifdef USE_ALTERNATE_CHAIN_ID
+#define HIVE_HARDFORK_1_30_TIME (hive::protocol::testnet_blockchain_configuration::configuration_data.get_hf_time(HIVE_HARDFORK_1_30, 1834228800))
+#else
+#define HIVE_HARDFORK_1_30_TIME 1834228800
+#endif // Sunday, 15 February 2028 12:00:00
+
+#define HIVE_HARDFORK_1_30_VERSION hive::protocol::hardfork_version( 1, 30 )
+
+#endif
