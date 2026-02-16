@@ -61,6 +61,13 @@ class serialize_member_visitor
       _out.emplace( name, std::move( v ) );
     }
 
+    // Overload for new FC_REFLECT signature that passes member as template parameter
+    template<typename Member, class Class, Member Class::*member>
+    void operator()( const char* name )const
+    {
+      this->operator()<Member, Class>(member, name);
+    }
+
   private:
     const witness_properties& _in;
     flat_map< string, vector<char> >& _out;

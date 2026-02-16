@@ -412,6 +412,24 @@ namespace chainbase {
       }
 
       /**
+        * Construct a new element in the multi_index_container.
+        */
+      template< typename U = value_type, typename ...Args, typename std::enable_if_t< U::enable_no_undo_t::value, bool > = true >
+      const value_type& emplace_no_undo( Args&&... args ) {
+        auto a = _indices.get_allocator();
+        auto insert_result = _indices.emplace( get_allocator_helper_t<value_type>::get_generic_allocator(a), std::forward<Args>( args )... );
+
+        if( !insert_result.second ) {
+          CHAINBASE_THROW_EXCEPTION(std::logic_error(
+            "could not insert object, most likely a uniqueness constraint was violated inside index holding types: " + get_type_name()));
+        }
+
+        if constexpr( value_type::has_dynamic_alloc_t::value )
+          _item_additional_allocation += insert_result.first->get_dynamic_alloc();
+        return *insert_result.first;
+      }
+
+      /**
         * Construct a new element and puts in the multi_index_container, basing on snapshot stream.
         */
       void unpack_from_snapshot(typename value_type::id_type objectId, std::function<void(value_type&)>&& unpack,
@@ -521,6 +539,55 @@ namespace chainbase {
         _indices.erase( _indices.iterator_to( obj ) );
         if constexpr( value_type::has_dynamic_alloc_t::value )
           _item_additional_allocation -= size;
+      }
+
+      /**
+       * Modify object without tracking changes for undo.
+       * Use with create_no_undo to fully bypass undo tracking.
+       */
+      template< typename U = value_type, typename Modifier, typename std::enable_if_t< U::enable_no_undo_t::value, bool > = true >
+      void modify_no_undo( const U& obj, Modifier&& m )
+      {
+        fc::exception_ptr fc_exception_ptr;
+        std::exception_ptr std_exception_ptr;
+
+        auto safe_modifier = [&m, &fc_exception_ptr, &std_exception_ptr](value_type& obj) {
+          try
+          {
+            m(obj);
+          }
+          catch(const fc::exception& e)
+          {
+            fc_exception_ptr = e.dynamic_copy_exception();
+          }
+          catch(...)
+          {
+            std_exception_ptr = std::current_exception();
+          }
+        };
+
+        auto itr = _indices.iterator_to( obj );
+
+        size_t old_size = 0, new_size = 0;
+        if constexpr( value_type::has_dynamic_alloc_t::value )
+          old_size = obj.get_dynamic_alloc();
+        auto ok = _indices.modify( itr, safe_modifier);
+        if constexpr( value_type::has_dynamic_alloc_t::value )
+          new_size = obj.get_dynamic_alloc();
+
+        if(fc_exception_ptr)
+          fc_exception_ptr->dynamic_rethrow_exception();
+        else if(std_exception_ptr)
+          std::rethrow_exception(std_exception_ptr);
+
+        if(!ok)
+        {
+          CHAINBASE_THROW_EXCEPTION(std::logic_error(
+            "Could not modify object, most likely a uniqueness constraint was violated inside index holding types: " + get_type_name()));
+        }
+
+        if constexpr( value_type::has_dynamic_alloc_t::value )
+          _item_additional_allocation += new_size - old_size;
       }
 
       template< typename ByIndex, typename ExternalStorageProcessor, typename Iterator = typename MultiIndexType::template index_iterator<ByIndex>::type >
@@ -1275,6 +1342,18 @@ namespace chainbase {
         get_mutable_index<index_type>().modify( obj, std::forward<Modifier>( m ) );
       }
 
+      /**
+       * Modify object without tracking changes for undo.
+       * Use with create_no_undo to fully bypass undo tracking.
+       */
+      template<typename ObjectType, typename Modifier>
+      void modify_no_undo( const ObjectType& obj, Modifier&& m )
+      {
+        CHAINBASE_REQUIRE_WRITE_LOCK("modify_no_undo", ObjectType);
+        typedef typename get_index_type<ObjectType>::type index_type;
+        get_mutable_index<index_type>().modify_no_undo( obj, std::forward<Modifier>( m ) );
+      }
+
       template<typename ObjectType>
       void remove( const ObjectType& obj )
       {
@@ -1297,6 +1376,14 @@ namespace chainbase {
         CHAINBASE_REQUIRE_WRITE_LOCK("create", ObjectType);
         typedef typename get_index_type<ObjectType>::type index_type;
         return get_mutable_index<index_type>().emplace( std::forward<Args>( args )... );
+      }
+
+      template<typename ObjectType, typename ... Args>
+      const ObjectType& create_no_undo( Args&&... args )
+      {
+        CHAINBASE_REQUIRE_WRITE_LOCK("create", ObjectType);
+        typedef typename get_index_type<ObjectType>::type index_type;
+        return get_mutable_index<index_type>(). template emplace_no_undo<ObjectType>( std::forward<Args>( args )... );
       }
 
       template< typename ObjectType >

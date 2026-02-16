@@ -573,7 +573,7 @@ void account_history_rocksdb_plugin::impl::find_account_history_data(const accou
 
   ReadOptions rOptions;
 
-  ah_info_by_name_slice_t nameSlice(name.data);
+  account_name_slice_t nameSlice(name.data);
   PinnableSlice buffer;
   auto s = _provider->getStorage()->Get(rOptions, _provider->getColumnHandle( Columns::AH_INFO_BY_NAME ), nameSlice, &buffer);
 
@@ -730,7 +730,7 @@ void account_history_rocksdb_plugin::impl::find_operations_by_block(size_t block
   }
 
   std::unique_ptr<::rocksdb::Iterator> it(_provider->getStorage()->NewIterator(ReadOptions(), _provider->getColumnHandle( Columns::OPERATION_BY_BLOCK )));
-  by_block_slice_t blockNumSlice(blockNum);
+  uint32_slice_t blockNumSlice(blockNum);
   op_by_block_num_slice_t key(block_op_id_pair(blockNum, 0));
 
   for(it->Seek(key); it->Valid() && it->key().starts_with(blockNumSlice); it->Next())
@@ -947,7 +947,7 @@ void account_history_rocksdb_plugin::impl::buildAccountHistoryRecord( const acco
   ReadOptions rOptions;
   //rOptions.tailing = true;
 
-  ah_info_by_name_slice_t nameSlice(name.data);
+  account_name_slice_t nameSlice(name.data);
 
   account_history_info ahInfo;
   bool found = _provider->getCachableWriteBuffer().getAHInfo(name, &ahInfo);
@@ -1286,67 +1286,68 @@ void account_history_rocksdb_plugin::impl::on_post_apply_block(const block_notif
       while (account_iter != account_idx.end() &&
              account_iter->get_name() <= upper)
       {
-        const account_object& account = *account_iter;
+        const auto& account = *account_iter;
+        const auto& assets = _mainDb.get< hive::chain::assets_object, hive::chain::by_account_id >( account.get_id() );
 
-        auto saved_balance_iter = _saved_balances.find(account_iter->get_name());
+        auto saved_balance_iter = _saved_balances.find(account.get_name());
         bool balances_changed = saved_balance_iter == _saved_balances.end();
-        saved_balances& saved_balance_record = _saved_balances[account_iter->get_name()];
+        saved_balances& saved_balance_record = _saved_balances[account.get_name()];
 
-        if (saved_balance_record.hive_balance != account.balance)
+        if (saved_balance_record.hive_balance != assets.get_balance())
         {
-          saved_balance_record.hive_balance = account.balance;
+          saved_balance_record.hive_balance = assets.get_balance();
           balances_changed = true;
         }
-        if (saved_balance_record.savings_hive_balance != account.savings_balance)
+        if (saved_balance_record.savings_hive_balance != assets.get_savings())
         {
-          saved_balance_record.savings_hive_balance = account.savings_balance;
+          saved_balance_record.savings_hive_balance = assets.get_savings();
           balances_changed = true;
         }
-        if (saved_balance_record.hbd_balance != account.hbd_balance)
+        if (saved_balance_record.hbd_balance != assets.get_hbd_balance())
         {
-          saved_balance_record.hbd_balance = account.hbd_balance;
+          saved_balance_record.hbd_balance = assets.get_hbd_balance();
           balances_changed = true;
         }
-        if (saved_balance_record.savings_hbd_balance != account.savings_hbd_balance)
+        if (saved_balance_record.savings_hbd_balance != assets.get_hbd_savings())
         {
-          saved_balance_record.savings_hbd_balance = account.savings_hbd_balance;
-          balances_changed = true;
-        }
-
-        if (saved_balance_record.reward_hbd_balance != account.reward_hbd_balance)
-        {
-          saved_balance_record.reward_hbd_balance = account.reward_hbd_balance;
-          balances_changed = true;
-        }
-        if (saved_balance_record.reward_hive_balance != account.reward_hive_balance)
-        {
-          saved_balance_record.reward_hive_balance = account.reward_hive_balance;
-          balances_changed = true;
-        }
-        if (saved_balance_record.reward_vesting_balance != account.reward_vesting_balance)
-        {
-          saved_balance_record.reward_vesting_balance = account.reward_vesting_balance;
-          balances_changed = true;
-        }
-        if (saved_balance_record.reward_vesting_hive_balance != account.reward_vesting_hive)
-        {
-          saved_balance_record.reward_vesting_hive_balance = account.reward_vesting_hive;
+          saved_balance_record.savings_hbd_balance = assets.get_hbd_savings();
           balances_changed = true;
         }
 
-        if (saved_balance_record.vesting_shares != account.get_vesting())
+        if (saved_balance_record.reward_hbd_balance != assets.get_hbd_rewards())
         {
-          saved_balance_record.vesting_shares = account.get_vesting();
+          saved_balance_record.reward_hbd_balance = assets.get_hbd_rewards();
           balances_changed = true;
         }
-        if (saved_balance_record.delegated_vesting_shares != account.delegated_vesting_shares)
+        if (saved_balance_record.reward_hive_balance != assets.get_rewards())
         {
-          saved_balance_record.delegated_vesting_shares = account.delegated_vesting_shares;
+          saved_balance_record.reward_hive_balance = assets.get_rewards();
           balances_changed = true;
         }
-        if (saved_balance_record.received_vesting_shares != account.received_vesting_shares)
+        if (saved_balance_record.reward_vesting_balance != assets.get_vest_rewards())
         {
-          saved_balance_record.received_vesting_shares = account.received_vesting_shares;
+          saved_balance_record.reward_vesting_balance = assets.get_vest_rewards();
+          balances_changed = true;
+        }
+        if (saved_balance_record.reward_vesting_hive_balance != assets.get_vest_rewards_as_hive())
+        {
+          saved_balance_record.reward_vesting_hive_balance = assets.get_vest_rewards_as_hive();
+          balances_changed = true;
+        }
+
+        if (saved_balance_record.vesting_shares != assets.get_vesting())
+        {
+          saved_balance_record.vesting_shares = assets.get_vesting();
+          balances_changed = true;
+        }
+        if (saved_balance_record.delegated_vesting_shares != assets.get_delegated_vesting())
+        {
+          saved_balance_record.delegated_vesting_shares = assets.get_delegated_vesting();
+          balances_changed = true;
+        }
+        if (saved_balance_record.received_vesting_shares != assets.get_received_vesting())
+        {
+          saved_balance_record.received_vesting_shares = assets.get_received_vesting();
           balances_changed = true;
         }
 

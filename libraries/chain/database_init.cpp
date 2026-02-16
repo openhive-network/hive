@@ -9,6 +9,7 @@
 #include <hive/chain/custom_operation_interpreter.hpp>
 #include <hive/chain/witness_schedule.hpp>
 #include <hive/chain/account_object_multiindex.hpp>
+#include <hive/chain/detail/state/assets_object.hpp>
 #include <hive/chain/global_property_object_multiindex.hpp>
 #include <hive/chain/hardfork_property_object_multiindex.hpp>
 #include <hive/chain/block_summary_object_multiindex.hpp>
@@ -193,10 +194,21 @@ void database::init_genesis()
       uint32_t old_flags;
     } inhibitor(*this);
 
+    // Helper to create split objects for an account
+    const auto create_split_objects = [&]( const account_object& acc )
+    {
+      create< recovery_object >( acc.get_id() );
+      create< assets_object >( acc.get_id() );
+      create< manabars_rc_object >( acc.get_id() );
+      create< time_object >( acc.get_id(), acc.get_name() );
+      create< delayed_votes_object >( acc.get_id() );
+    };
+
     // Create blockchain accounts
     public_key_type      init_public_key(HIVE_INIT_PUBLIC_KEY);
 
-    create< account_object >( HIVE_MINER_ACCOUNT, HIVE_GENESIS_TIME );
+    const auto& miner_acc = create< account_object >( HIVE_MINER_ACCOUNT, HIVE_GENESIS_TIME );
+    create_split_objects( miner_acc );
     create< account_authority_object >( [&]( account_authority_object& auth )
     {
       auth.account = HIVE_MINER_ACCOUNT;
@@ -205,7 +217,8 @@ void database::init_genesis()
       auth.posting.weight_threshold = 1;
     });
 
-    create< account_object >( HIVE_NULL_ACCOUNT, HIVE_GENESIS_TIME );
+    const auto& null_acc = create< account_object >( HIVE_NULL_ACCOUNT, HIVE_GENESIS_TIME );
+    create_split_objects( null_acc );
     create< account_authority_object >( [&]( account_authority_object& auth )
     {
       auth.account = HIVE_NULL_ACCOUNT;
@@ -215,7 +228,8 @@ void database::init_genesis()
     });
 
 #if defined(IS_TEST_NET) || defined(HIVE_CONVERTER_ICEBERG_PLUGIN_ENABLED)
-    create< account_object >( OBSOLETE_TREASURY_ACCOUNT, HIVE_GENESIS_TIME );
+    const auto& obs_treasury_acc = create< account_object >( OBSOLETE_TREASURY_ACCOUNT, HIVE_GENESIS_TIME );
+    create_split_objects( obs_treasury_acc );
     create< account_authority_object >([&](account_authority_object& auth)
     {
       auth.account = OBSOLETE_TREASURY_ACCOUNT;
@@ -223,7 +237,8 @@ void database::init_genesis()
       auth.active.weight_threshold = 1;
       auth.posting.weight_threshold = 1;
     } );
-    create< account_object >( NEW_HIVE_TREASURY_ACCOUNT, HIVE_GENESIS_TIME );
+    const auto& new_treasury_acc = create< account_object >( NEW_HIVE_TREASURY_ACCOUNT, HIVE_GENESIS_TIME );
+    create_split_objects( new_treasury_acc );
     create< account_authority_object >([&](account_authority_object& auth)
     {
       auth.account = NEW_HIVE_TREASURY_ACCOUNT;
@@ -233,7 +248,8 @@ void database::init_genesis()
     } );
 #endif
 
-    create< account_object >( HIVE_TEMP_ACCOUNT, HIVE_GENESIS_TIME );
+    const auto& temp_acc = create< account_object >( HIVE_TEMP_ACCOUNT, HIVE_GENESIS_TIME );
+    create_split_objects( temp_acc );
     create< account_authority_object >( [&]( account_authority_object& auth )
     {
       auth.account = HIVE_TEMP_ACCOUNT;
@@ -244,7 +260,8 @@ void database::init_genesis()
 
     const auto init_witness = [&]( const account_name_type& account_name )
     {
-      create< account_object >( account_name, HIVE_GENESIS_TIME, init_public_key );
+      const auto& acc = create< account_object >( account_name, HIVE_GENESIS_TIME, init_public_key );
+      create_split_objects( acc );
 
       create< account_authority_object >( [&]( account_authority_object& auth )
       {
@@ -280,7 +297,8 @@ void database::init_genesis()
     {
       const char* STEEM_ACCOUNT_NAME = "steem";
       auto STEEM_PUBLIC_KEY = public_key_type( HIVE_STEEM_PUBLIC_KEY_STR );
-      create< account_object >( STEEM_ACCOUNT_NAME, STEEM_PUBLIC_KEY, HIVE_GENESIS_TIME, HIVE_GENESIS_TIME, true, nullptr, true, VEST_asset( 0 ) );
+      const auto& steem_acc = create< account_object >( STEEM_ACCOUNT_NAME, STEEM_PUBLIC_KEY, HIVE_GENESIS_TIME, HIVE_GENESIS_TIME, true, nullptr );
+      create_split_objects( steem_acc );
       create< account_authority_object >( [&]( account_authority_object& auth )
       {
         auth.account = STEEM_ACCOUNT_NAME;
@@ -311,12 +329,14 @@ void database::init_genesis()
       HIVE_asset to_vest( HIVE_INITIAL_VESTING );
       VEST_asset initial_vests( to_vest * HIVE_INITIAL_VESTING_PRICE );
 
-      modify( get_account( HIVE_INIT_MINER_NAME ), [&]( account_object& a )
+      const auto& init_account = get_account( HIVE_INIT_MINER_NAME );
+      const auto& init_assets = get< assets_object, by_account_id >( init_account.get_id() );
+      modify( init_assets, [&]( assets_object& a )
       {
-        a.balance = HIVE_asset( HIVE_INIT_SUPPLY ) - to_vest;
-        a.hbd_balance = HBD_asset( HIVE_HBD_INIT_SUPPLY );
-        a.vesting_shares = initial_vests;
-        FC_ASSERT( a.balance.amount >= 0 && a.hbd_balance.amount >= 0 && a.vesting_shares.amount >= 0, "Invalid testnet configuration" );
+        a.set_balance( HIVE_asset( HIVE_INIT_SUPPLY ) - to_vest );
+        a.set_hbd_balance( HBD_asset( HIVE_HBD_INIT_SUPPLY ) );
+        a.set_vesting( initial_vests );
+        FC_ASSERT( a.get_balance().amount >= 0 && a.get_hbd_balance().amount >= 0 && a.get_vesting().amount >= 0, "Invalid testnet configuration" );
       } );
       modify( dgpo, [&]( dynamic_global_property_object& gpo )
       {

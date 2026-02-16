@@ -67,6 +67,7 @@ class wallet_bridge_api_impl
         (find_rc_accounts)
         (list_rc_accounts)
         (list_rc_direct_delegations)
+        (get_metadata)
     )
 
     chain::chain_plugin&                                            _chain;
@@ -420,7 +421,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_account )
   verify_args( arguments, 1 );
 
   chain::account_name_type acc_name = arguments.get_array().at(0).as<protocol::account_name_type>();
-  const chain::account_object* account = _db.find_account(acc_name);
+  const auto* account = _db.find_account(acc_name);
   get_account_return result;
   if (account)
     result = database_api::api_account_object(*account, _db, _metadata_plugin, true);
@@ -448,7 +449,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_accounts )
 
   for( const auto& acc_name: _accounts )
   {
-    const chain::account_object* account = _db.find_account( acc_name );
+    const auto* account = _db.find_account( acc_name );
     if (account)
       result.push_back(database_api::api_account_object( *account, _db, _metadata_plugin, delayed_votes_active ) );
   }
@@ -837,6 +838,20 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, list_rc_direct_delegations )
   return _rc_api->list_rc_direct_delegations(api_lrdd_args).rc_direct_delegations;
 }
 
+DEFINE_API_IMPL( wallet_bridge_api_impl, get_metadata )
+{
+  FC_ASSERT( _metadata_api, "metadata_api_plugin not enabled." );
+  verify_args( args, 1 );
+  FC_ASSERT(args.get_array().at(0).is_array(), "get_metadata needs at least one argument");
+  const auto arguments = args.get_array().at(0);
+  verify_args( arguments, 1 );
+
+  metadata::get_metadata_args api_gma_args;
+  api_gma_args.account = arguments.get_array().at(0).as<protocol::account_name_type>();
+
+  return _metadata_api->get_metadata(api_gma_args);
+}
+
 DEFINE_LOCKLESS_APIS(
   wallet_bridge_api, 
   (get_version)
@@ -878,6 +893,7 @@ DEFINE_READ_APIS(
   (find_rc_accounts)
   (list_rc_accounts)
   (list_rc_direct_delegations)
+  (get_metadata)
 )
 
 } } } // hive::plugins::wallet_bridge_api

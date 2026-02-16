@@ -59,8 +59,8 @@ void database::process_recurrent_transfers()
     auto &current_recurrent_transfer = *itr;
     ++itr;
 
-    const auto &from_account = get_account(current_recurrent_transfer.from_id);
-    const auto &to_account = get_account(current_recurrent_transfer.to_id);
+    const auto& from_account = get_account(current_recurrent_transfer.from_id);
+    const auto& to_account = get_account(current_recurrent_transfer.to_id);
     asset available = get_balance(from_account, current_recurrent_transfer.amount.symbol);
     FC_ASSERT(current_recurrent_transfer.remaining_executions > 0);
     const auto remaining_executions = current_recurrent_transfer.remaining_executions -1;
@@ -130,10 +130,10 @@ void database::process_recurrent_transfers()
     if (remove_recurrent_transfer)
     {
       remove( current_recurrent_transfer );
-      modify(from_account, [&](account_object& a )
+      modify( from_account, [&]( account_object& a )
       {
-        FC_ASSERT( a.open_recurrent_transfers > 0 );
-        a.open_recurrent_transfers--;
+        FC_ASSERT( a.get_open_recurrent_transfers() > 0 );
+        a.set_open_recurrent_transfers( a.get_open_recurrent_transfers() - 1 );
       });
     }
 
@@ -165,7 +165,7 @@ void database::remove_proposal_votes_for_accounts_without_voting_rights()
   for( auto& voter : voters )
   {
     const auto& account = get_account( voter );
-    if( !account.can_vote )
+    if( !account.can_vote() )
       accounts.push_back( account.get_name() );
   }
 
@@ -232,7 +232,7 @@ void database::process_decline_voting_rights()
 
       modify( account, [&]( account_object& a )
       {
-        a.can_vote = false;
+        a.set_can_vote( false );
         a.clear_proxy();
       });
 

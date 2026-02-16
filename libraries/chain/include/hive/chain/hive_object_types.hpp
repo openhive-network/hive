@@ -43,6 +43,7 @@ inline void from_string( shared_string& out, const string& in ){ out.assign( in.
 
 using chainbase::by_id;
 struct by_name {};
+struct by_account_id {};
 
 enum object_type
 {
@@ -86,6 +87,14 @@ enum object_type
   rc_usage_bucket_object_type,
   rc_stats_object_type,
   rc_expired_delegation_object_type,
+  tiny_account_object_type,
+
+  // Account split objects
+  recovery_object_type,
+  assets_object_type,
+  manabars_rc_object_type,
+  time_object_type,
+  delayed_votes_object_type,
 
 #ifdef HIVE_ENABLE_SMT
   // SMT objects
@@ -101,6 +110,7 @@ enum object_type
 
 class dynamic_global_property_object;
 class account_object;
+class account_metadata_object;
 class account_authority_object;
 class witness_object;
 class transaction_object;
@@ -139,6 +149,13 @@ class rc_usage_bucket_object;
 class rc_stats_object;
 class rc_expired_delegation_object;
 
+// Account split objects
+class recovery_object;
+class assets_object;
+class manabars_rc_object;
+class time_object;
+class delayed_votes_object;
+
 #ifdef HIVE_ENABLE_SMT
 class smt_token_object;
 class account_regular_balance_object;
@@ -151,6 +168,7 @@ class smt_ico_object;
 
 typedef oid_ref< dynamic_global_property_object         > dynamic_global_property_id_type;
 typedef oid_ref< account_object                         > account_id_type;
+typedef oid_ref< account_metadata_object                > account_metadata_id_type;
 typedef oid_ref< account_authority_object               > account_authority_id_type;
 typedef oid_ref< witness_object                         > witness_id_type;
 typedef oid_ref< transaction_object                     > transaction_object_id_type;
@@ -189,6 +207,13 @@ typedef oid_ref< rc_direct_delegation_object            > rc_direct_delegtion_id
 typedef oid_ref< rc_usage_bucket_object                 > rc_cost_bucket_id_type;
 typedef oid_ref< rc_stats_object                        > rc_stats_id_type;
 typedef oid_ref< rc_expired_delegation_object           > rc_expired_delegtion_id_type;
+
+// Account split objects id types
+typedef oid_ref< recovery_object                        > recovery_id_type;
+typedef oid_ref< assets_object                          > assets_id_type;
+typedef oid_ref< manabars_rc_object                     > manabars_rc_id_type;
+typedef oid_ref< time_object                            > time_id_type;
+typedef oid_ref< delayed_votes_object                   > delayed_votes_id_type;
 
 #ifdef HIVE_ENABLE_SMT
 typedef oid_ref< smt_token_object                       > smt_token_id_type;
@@ -349,6 +374,13 @@ FC_REFLECT_ENUM( hive::chain::object_type,
             (rc_usage_bucket_object_type)
             (rc_stats_object_type)
             (rc_expired_delegation_object_type)
+            (tiny_account_object_type)
+
+            (recovery_object_type)
+            (assets_object_type)
+            (manabars_rc_object_type)
+            (time_object_type)
+            (delayed_votes_object_type)
 
 #ifdef HIVE_ENABLE_SMT
             (smt_token_object_type)
