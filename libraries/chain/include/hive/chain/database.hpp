@@ -553,8 +553,8 @@ namespace chain {
         */
       void clear_witness_votes( const account_object& a );
       void process_vesting_withdrawals();
-      share_type pay_curators( const comment_object& comment, const comment_cashout_object& comment_cashout, share_type& max_rewards );
-      share_type cashout_comment_helper( util::comment_reward_context& ctx, const comment_object& comment,
+      HIVE_asset pay_curators( const comment_object& comment, const comment_cashout_object& comment_cashout, HIVE_asset& max_rewards );
+      HIVE_asset cashout_comment_helper( util::comment_reward_context& ctx, const comment_object& comment,
         const comment_cashout_object& comment_cashout, const comment_cashout_ex_object* comment_cashout_ex,
         bool forward_curation_remainder = true );
       void process_comment_cashout();

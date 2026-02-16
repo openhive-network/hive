@@ -4,7 +4,7 @@
 
 namespace hive { namespace chain { namespace util {
 
-uint64_t get_rshare_reward( const comment_reward_context& ctx )
+HIVE_asset get_rshare_reward( const comment_reward_context& ctx )
 { try {
   FC_ASSERT( ctx.rshares > 0 );
   FC_ASSERT( ctx.total_reward_shares2 > 0 );
@@ -19,14 +19,14 @@ uint64_t get_rshare_reward( const comment_reward_context& ctx )
 
   u256 payout_u256 = ( rf * claim ) / total_claims;
   FC_ASSERT( payout_u256 <= u256( uint64_t( std::numeric_limits<int64_t>::max() ) ) );
-  uint64_t payout = static_cast< uint64_t >( payout_u256 );
+  HIVE_asset payout( static_cast< uint64_t >( payout_u256 ) );
 
   if( is_comment_payout_dust( ctx.current_hive_price, payout ) )
-    payout = 0;
+    payout = HIVE_asset( 0 );
 
   HIVE_asset max_hive = to_hive( ctx.current_hive_price, ctx.max_hbd );
 
-  payout = std::min( payout, uint64_t( max_hive.get_amount() ) );
+  payout = std::min( payout, max_hive );
 
   return payout;
 } FC_CAPTURE_AND_RETHROW( (ctx) ) }

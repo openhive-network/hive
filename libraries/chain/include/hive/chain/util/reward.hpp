@@ -32,7 +32,7 @@ struct comment_reward_context
   uint128_t          content_constant = HIVE_CONTENT_CONSTANT_HF0;
 };
 
-uint64_t get_rshare_reward( const comment_reward_context& ctx );
+HIVE_asset get_rshare_reward( const comment_reward_context& ctx );
 
 inline uint128_t get_content_constant_s()
 {
@@ -41,9 +41,9 @@ inline uint128_t get_content_constant_s()
 
 uint128_t evaluate_reward_curve( const uint128_t& rshares, const protocol::curve_id& curve = protocol::quadratic, const uint128_t& var1 = HIVE_CONTENT_CONSTANT_HF0 );
 
-inline bool is_comment_payout_dust( const HBD_price& p, uint64_t hive_payout )
+inline bool is_comment_payout_dust( const HBD_price& p, const HIVE_asset& hive_payout )
 {
-  return to_hbd( p, HIVE_asset( hive_payout ) ) < HIVE_MIN_PAYOUT_HBD;
+  return to_hbd( p, hive_payout ) < HIVE_MIN_PAYOUT_HBD;
 }
 
 } } } // hive::chain::util

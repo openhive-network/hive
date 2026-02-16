@@ -39,7 +39,7 @@ struct reward_fund_context
 {
   uint128_t   recent_claims = 0;
   HIVE_asset  reward_balance;
-  share_type  hive_awarded = 0;
+  HIVE_asset  hive_awarded;
 };
 
 void initialize_core_indexes_03( database& db )
@@ -126,7 +126,7 @@ void database::remove_old_cashouts()
   *
   *  @returns unclaimed rewards.
   */
-share_type database::pay_curators( const comment_object& comment, const comment_cashout_object& comment_cashout, share_type& max_rewards )
+HIVE_asset database::pay_curators( const comment_object& comment, const comment_cashout_object& comment_cashout, HIVE_asset& max_rewards )
 {
   struct cmp
   {
@@ -141,12 +141,12 @@ share_type database::pay_curators( const comment_object& comment, const comment_
 
   try
   {
-    share_type unclaimed_rewards = max_rewards;
+    HIVE_asset unclaimed_rewards = max_rewards;
 
     if( !comment_cashout.allows_curation_rewards() )
     {
-      unclaimed_rewards = 0;
-      max_rewards = 0;
+      unclaimed_rewards = HIVE_asset( 0 );
+      max_rewards = HIVE_asset( 0 );
     }
     else if( comment_cashout.get_total_vote_weight() > 0 )
     {
@@ -166,14 +166,14 @@ share_type database::pay_curators( const comment_object& comment, const comment_
       for( auto& item : proxy_set )
       { try {
         uint128_t weight( item->get_weight() );
-        auto claim = fc::uint128_to_uint64( ( max_rewards.value * weight ) / total_weight );
-        if( claim > 0 ) // min_amt is non-zero satoshis
+        HIVE_asset claim( fc::uint128_to_int64( ( max_rewards.amount.value * weight ) / total_weight ) );
+        if( claim.amount > 0 ) // min_amt is non-zero satoshis
         {
           unclaimed_rewards -= claim;
           const auto& voter = get( item->get_voter() );
           auto vop = curation_reward_operation( voter.get_name(), VEST_asset( 0 ), comment_author_name,
             to_string( comment_cashout.get_permlink() ), has_hardfork( HIVE_HARDFORK_0_17__659 ) );
-          create_vesting2( *this, voter, HIVE_asset( claim ), has_hardfork( HIVE_HARDFORK_0_17__659 ),
+          create_vesting2( *this, voter, claim, has_hardfork( HIVE_HARDFORK_0_17__659 ),
             [&]( const VEST_asset& reward )
             {
               vop.reward = reward;
@@ -182,7 +182,7 @@ share_type database::pay_curators( const comment_object& comment, const comment_
 
             modify( voter, [&]( account_object& a )
             {
-              a.curation_rewards.amount += claim;
+              a.curation_rewards += claim;
             });
           post_push_virtual_operation( *this, vop );
         }
@@ -194,12 +194,12 @@ share_type database::pay_curators( const comment_object& comment, const comment_
   } FC_CAPTURE_AND_RETHROW( (max_rewards) )
 }
 
-share_type database::cashout_comment_helper( util::comment_reward_context& ctx, const comment_object& comment,
+HIVE_asset database::cashout_comment_helper( util::comment_reward_context& ctx, const comment_object& comment,
   const comment_cashout_object& comment_cashout, const comment_cashout_ex_object* comment_cashout_ex, bool forward_curation_remainder )
 {
   try
   {
-    share_type claimed_reward = 0;
+    HIVE_asset claimed_reward;
 
     if( comment_cashout.get_net_rshares() > 0 )
     {
@@ -217,22 +217,22 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
         ctx.content_constant = rf.content_constant;
       }
 
-      const share_type reward = util::get_rshare_reward( ctx );
-      uint128_t reward_tokens = uint128_t( reward.value );
-      share_type curation_tokens;
-      share_type author_tokens;
+      const HIVE_asset reward = util::get_rshare_reward( ctx );
+      uint128_t reward_tokens = uint128_t( reward.get_amount() );
+      HIVE_asset curation_tokens;
+      HIVE_asset author_tokens;
 
       if( reward_tokens > 0 )
       {
-        curation_tokens = fc::uint128_to_uint64( ( reward_tokens * get_curation_rewards_percent() ) / HIVE_100_PERCENT );
-        author_tokens = fc::uint128_to_uint64(reward_tokens) - curation_tokens;
+        curation_tokens = HIVE_asset( fc::uint128_to_int64( ( reward_tokens * get_curation_rewards_percent() ) / HIVE_100_PERCENT ) );
+        author_tokens = reward - curation_tokens;
 
-        share_type curation_remainder = pay_curators( comment, comment_cashout, curation_tokens );
+        HIVE_asset curation_remainder = pay_curators( comment, comment_cashout, curation_tokens );
 
         if( forward_curation_remainder )
           author_tokens += curation_remainder;
 
-        share_type total_beneficiary = 0;
+        HIVE_asset total_beneficiary;
         claimed_reward = author_tokens + curation_tokens;
         const auto& author = get_account( comment_cashout.get_author_id() );
         const auto& comment_author = author.get_name();
@@ -248,24 +248,24 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
 
           if( has_hardfork( HIVE_HARDFORK_0_21__3343 ) && is_treasury( beneficiary.get_name() ) )
           {
-            benefactor_vesting_hive = 0;
-            vop.hbd_payout = HIVE_asset( benefactor_tokens ) * get_feed_history().current_median_history;
+            benefactor_vesting_hive = HIVE_asset( 0 );
+            vop.hbd_payout = benefactor_tokens * get_feed_history().current_median_history;
             vop.payout_must_be_claimed = false;
             adjust_balance( get_treasury(), vop.hbd_payout );
-            adjust_supply( HIVE_asset( -benefactor_tokens ) );
+            adjust_supply( -benefactor_tokens );
             adjust_supply( vop.hbd_payout );
           }
           else if( has_hardfork( HIVE_HARDFORK_0_20__2022 ) )
           {
             auto benefactor_hbd_hive = ( benefactor_tokens * comment_cashout.get_percent_hbd() ) / ( 2 * HIVE_100_PERCENT ) ;
             benefactor_vesting_hive  = benefactor_tokens - benefactor_hbd_hive;
-            auto hbd_payout          = create_hbd( beneficiary, HIVE_asset( benefactor_hbd_hive ), true );
+            auto hbd_payout          = create_hbd( beneficiary, benefactor_hbd_hive, true );
 
             vop.hbd_payout   = hbd_payout.first; // HBD portion
             vop.hive_payout = hbd_payout.second; // HIVE portion
           }
 
-          create_vesting2( *this, beneficiary, HIVE_asset( benefactor_vesting_hive ), has_hardfork( HIVE_HARDFORK_0_17__659 ),
+          create_vesting2( *this, beneficiary, benefactor_vesting_hive, has_hardfork( HIVE_HARDFORK_0_17__659 ),
             [&]( const VEST_asset& reward )
             {
               vop.vesting_payout = reward;
@@ -281,18 +281,18 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
         auto hbd_hive     = ( author_tokens * comment_cashout.get_percent_hbd() ) / ( 2 * HIVE_100_PERCENT ) ;
         auto vesting_hive = author_tokens - hbd_hive;
 
-        auto hbd_payout = create_hbd( author, HIVE_asset( hbd_hive ), has_hardfork( HIVE_HARDFORK_0_17__659 ) );
+        auto hbd_payout = create_hbd( author, hbd_hive, has_hardfork( HIVE_HARDFORK_0_17__659 ) );
 
         /*
           Total payout for curators is calculated due to the performance in third party softwares(f.e. `hivemind`).
           During payments calculations it's enough to catch `author_reward_operation`, without adding all values from `curation_reward_operation`.
         */
-        auto curators_vesting_payout = calculate_vesting( *this, HIVE_asset( curation_tokens ), has_hardfork( HIVE_HARDFORK_0_17__659 ) );
+        auto curators_vesting_payout = calculate_vesting( *this, curation_tokens, has_hardfork( HIVE_HARDFORK_0_17__659 ) );
 
         auto vop = author_reward_operation( comment_author, to_string( comment_cashout.get_permlink() ), hbd_payout.first, hbd_payout.second, VEST_asset( 0 ),
                                             curators_vesting_payout, has_hardfork( HIVE_HARDFORK_0_17__659 ) );
 
-        create_vesting2( *this, author, HIVE_asset( vesting_hive ), has_hardfork( HIVE_HARDFORK_0_17__659 ),
+        create_vesting2( *this, author, vesting_hive, has_hardfork( HIVE_HARDFORK_0_17__659 ),
           [&]( const VEST_asset& vesting_payout )
           {
             vop.vesting_payout = vesting_payout;
@@ -300,9 +300,9 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
           } );
         post_push_virtual_operation( *this, vop );
 
-        HBD_asset payout = hbd_payout.first + to_hbd( hbd_payout.second + HIVE_asset( vesting_hive ) );
-        HBD_asset curator_payout = to_hbd( HIVE_asset( curation_tokens ) );
-        HBD_asset beneficiary_payout = to_hbd( HIVE_asset( total_beneficiary ) );
+        HBD_asset payout = hbd_payout.first + to_hbd( hbd_payout.second + vesting_hive );
+        HBD_asset curator_payout = to_hbd( curation_tokens );
+        HBD_asset beneficiary_payout = to_hbd( total_beneficiary );
         if( !has_hardfork( HIVE_HARDFORK_0_19 ) )
         {
           modify( *comment_cashout_ex, [&]( comment_cashout_ex_object& c_ex )
@@ -314,11 +314,11 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
           } );
         }
         push_virtual_operation( *this, comment_reward_operation( comment_author, to_string( comment_cashout.get_permlink() ),
-          to_hbd( HIVE_asset( claimed_reward ) ), author_tokens, payout, curator_payout, beneficiary_payout ) );
+          to_hbd( claimed_reward ), author_tokens, payout, curator_payout, beneficiary_payout ) );
 
         modify( author, [&]( account_object& a )
         {
-          a.posting_rewards.amount += author_tokens;
+          a.posting_rewards += author_tokens;
         });
       }
 
@@ -390,7 +390,6 @@ void database::process_comment_cashout()
   ctx.current_hive_price = get_feed_history().current_median_history;
 
   vector< reward_fund_context > funds;
-  vector< share_type > hive_awarded;
   const auto& reward_idx = get_index< reward_fund_index, by_id >();
 
   // Decay recent rshares of each fund
@@ -498,11 +497,11 @@ void database::process_comment_cashout()
         auto reward = cashout_comment_helper( ctx, *comment, *comment_cashout, &comment_cashout_ex );
         ++count;
 
-        if( reward > 0 )
+        if( reward.get_amount() > 0 )
         {
           modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& p )
           {
-            p.total_reward_fund_hive.amount -= reward;
+            p.total_reward_fund_hive -= reward;
           });
         }
       }
@@ -521,7 +520,7 @@ void database::process_comment_cashout()
       modify( get< reward_fund_object, by_id >( reward_fund_object::id_type( i ) ), [&]( reward_fund_object& rfo )
       {
         rfo.recent_claims = funds[ i ].recent_claims;
-        rfo.reward_balance -= HIVE_asset( funds[ i ].hive_awarded );
+        rfo.reward_balance -= funds[ i ].hive_awarded;
       });
     }
   }

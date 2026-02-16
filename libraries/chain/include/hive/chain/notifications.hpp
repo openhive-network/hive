@@ -6,6 +6,8 @@
 
 namespace hive { namespace chain {
 
+using hive::protocol::HIVE_asset;
+
 struct block_notification
 {
   block_notification( const std::shared_ptr<full_block_type>& full_block ) :
@@ -52,12 +54,12 @@ struct operation_notification
 
 struct comment_reward_notification
 {
-  comment_reward_notification( const share_type& _total_reward, share_type _author_tokens, share_type _curation_tokens )
+  comment_reward_notification( const HIVE_asset& _total_reward, const HIVE_asset& _author_tokens, const HIVE_asset& _curation_tokens )
   : total_reward( _total_reward ), author_tokens( _author_tokens ), curation_tokens( _curation_tokens ) {}
 
-  share_type total_reward;
-  share_type author_tokens;
-  share_type curation_tokens;
+  HIVE_asset total_reward;
+  HIVE_asset author_tokens;
+  HIVE_asset curation_tokens;
 };
 
 } }
