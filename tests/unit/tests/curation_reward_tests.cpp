@@ -48,23 +48,23 @@ using fc::string;
 
 struct window_input_data
 {
-  uint32_t nr_voters  = 0;
-  uint32_t interval   = 0;
-  uint32_t amount     = 0;
+  uint32_t   nr_voters  = 0;
+  uint32_t   interval   = 0;
+  HIVE_asset amount;
 };
 
 struct comment_reward_info
 {
-  share_type total_reward;
-  share_type author_tokens;
-  share_type curation_tokens;
+  HIVE_asset total_reward;
+  HIVE_asset author_tokens;
+  HIVE_asset curation_tokens;
 };
 
 struct reward_stat
 {
   using rewards_stats = std::vector<reward_stat>;
 
-  uint64_t value = 0;
+  HIVE_asset value;
 
   public:
 
@@ -76,9 +76,9 @@ struct reward_stat
       display_reward( obj.curation_tokens );
     }
 
-    static void display_reward( const share_type& reward )
+    static void display_reward( const HIVE_asset& reward )
     {
-      std::string str = std::to_string( reward.value );
+      std::string str = std::to_string( reward.get_amount() );
 
       BOOST_TEST_MESSAGE( str.c_str() );
     }
@@ -89,7 +89,7 @@ struct reward_stat
 
       for( size_t i = 0; i < stats.size(); ++i )
       {
-        str += std::to_string( stats[i].value );
+        str += std::to_string( stats[i].value.get_amount() );
         if( i < stats.size() - 1 )
           str += ",";
       }
@@ -220,7 +220,7 @@ struct curation_rewards_handler
     _comment_reward_con = db.add_comment_reward_handler(
       [&]( const comment_reward_notification& note )
       {
-        comment_rewards.emplace_back( comment_reward_info{ note.total_reward.amount, note.author_tokens.amount, note.curation_tokens.amount } );
+        comment_rewards.emplace_back( comment_reward_info{ note.total_reward, note.author_tokens, note.curation_tokens } );
       },
       _test_object.theApp.get_plugin< hive::plugins::debug_node::debug_node_plugin >()
     );
@@ -409,16 +409,16 @@ struct curation_rewards_handler
     std::copy( _post_voter_keys.begin(), _post_voter_keys.end(), std::back_inserter( post_voter_keys ) );
   }
 
-  uint64_t prepare_funds_impl( uint32_t idx, uint32_t amount )
+  HIVE_asset prepare_funds_impl( uint32_t idx, HIVE_asset amount )
   {
-    test_object.fund( voters[idx], asset( amount, HIVE_SYMBOL ) );
-    test_object.vest( voters[idx], voters[idx], asset( amount / 10, HIVE_SYMBOL ), active_voter_keys[idx] );
+    test_object.fund( voters[idx], amount );
+    test_object.vest( voters[idx], voters[idx], amount / 10, active_voter_keys[idx] );
     return amount;
   }
 
-  uint64_t prepare_funds( uint32_t& counter, const window_input_data& window )
+  HIVE_asset prepare_funds( uint32_t& counter, const window_input_data& window )
   {
-    uint64_t funds = 0;
+    HIVE_asset funds;
     for( uint32_t i = counter; i < counter + window.nr_voters; ++i )
     {
       funds += prepare_funds_impl( i, window.amount );
@@ -433,23 +433,23 @@ struct curation_rewards_handler
     BOOST_REQUIRE_GE( voters.size(), early.nr_voters + mid.nr_voters + late.nr_voters );
 
     uint32_t counter = 0;
-    uint64_t funds = 0;
+    HIVE_asset funds;
 
     funds += prepare_funds( counter, early );
     funds += prepare_funds( counter, mid );
     funds += prepare_funds( counter, late );
 
-    test_object.issue_funds( HIVE_INIT_MINER_NAME, asset( funds, HIVE_SYMBOL ) );
+    test_object.issue_funds( HIVE_INIT_MINER_NAME, funds );
   }
 
-  void prepare_funds( uint32_t amount = curation_rewards_handler::default_amount )
+  void prepare_funds( HIVE_asset amount = HIVE_asset( curation_rewards_handler::default_amount ) )
   {
-    uint64_t funds = 0;
+    HIVE_asset funds;
     for( uint32_t i = 0; i < voters.size(); ++i )
     {
       funds += prepare_funds_impl( i, amount );
     }
-    test_object.issue_funds( HIVE_INIT_MINER_NAME, asset( funds, HIVE_SYMBOL ) );
+    test_object.issue_funds( HIVE_INIT_MINER_NAME, funds );
   }
 
   void prepare_comment( const std::string& permlink, uint32_t creator_number )
@@ -529,20 +529,20 @@ struct curation_rewards_handler
     for( auto& item : curve_printers[ comment_idx ].curve_items )
     {
       const auto& acc = db.get_account( item.account );
-      item.reward = static_cast<uint32_t>( acc.curation_rewards.amount.value );
+      item.reward = static_cast<uint32_t>( acc.curation_rewards.get_amount() );
 
       uint64_t _seconds = static_cast<uint64_t>( ( item.time - curve_printers[ comment_idx ].start_time ).to_seconds() );
 
       if( _seconds >= dgpo.early_voting_seconds )
       {
         if( _seconds < ( dgpo.early_voting_seconds + dgpo.mid_voting_seconds ) )
-          mid_stats.emplace_back( reward_stat{ item.reward } );
+          mid_stats.emplace_back( reward_stat{ HIVE_asset( item.reward ) } );
         else
-          late_stats.emplace_back( reward_stat{ item.reward } );
+          late_stats.emplace_back( reward_stat{ HIVE_asset( item.reward ) } );
       }
       else
       {
-        early_stats.emplace_back( reward_stat{ item.reward } );
+        early_stats.emplace_back( reward_stat{ HIVE_asset( item.reward ) } );
       }
     }
   }
@@ -556,17 +556,17 @@ struct curation_rewards_handler
     for( auto& item : curve_printers[ comment_idx ].curve_items )
     {
       const auto& acc = db.get_account( item.account );
-      item.reward = static_cast<uint32_t>( acc.curation_rewards.amount.value );
+      item.reward = static_cast<uint32_t>( acc.curation_rewards.get_amount() );
 
       uint64_t _seconds = static_cast<uint64_t>( ( item.time - curve_printers[ comment_idx ].start_time ).to_seconds() );
 
       if( _seconds >= dgpo.reverse_auction_seconds )
       {
-        late_stats.emplace_back( reward_stat{ item.reward } );
+        late_stats.emplace_back( reward_stat{ HIVE_asset( item.reward ) } );
       }
       else
       {
-        early_stats.emplace_back( reward_stat{ item.reward } );
+        early_stats.emplace_back( reward_stat{ HIVE_asset( item.reward ) } );
       }
     }
   }
@@ -584,7 +584,7 @@ struct curation_rewards_handler
       test_object.generate_blocks( _time + fc::seconds( cashout_time - _seconds ) );
   }
 
-  share_type calculate_reward()
+  HIVE_asset calculate_reward()
   {
     const auto& props = db.get_dynamic_global_properties();
 
@@ -595,11 +595,11 @@ struct curation_rewards_handler
     // below subtraction cannot underflow int64_t because inflation_rate_adjustment is <2^32
     int64_t current_inflation_rate = std::max( start_inflation_rate - inflation_rate_adjustment, inflation_rate_floor );
 
-    auto new_hive = ( props.virtual_supply.amount * current_inflation_rate ) / ( int64_t( HIVE_100_PERCENT ) * int64_t( HIVE_BLOCKS_PER_YEAR ) );
-    return ( new_hive * props.content_reward_percent ) / HIVE_100_PERCENT;
+    auto new_hive = ( props.virtual_supply * current_inflation_rate ) / ( int64_t( HIVE_100_PERCENT ) * int64_t( HIVE_BLOCKS_PER_YEAR ) );
+    return new_hive * props.content_reward_percent / HIVE_100_PERCENT;
   }
 
-  share_type current_total_reward()
+  HIVE_asset current_total_reward()
   {
     const auto& reward_idx = db.get_index< reward_fund_index, by_id >();
 
@@ -607,9 +607,9 @@ struct curation_rewards_handler
 
     auto found = reward_idx.find( fund_id );
     if( found == reward_idx.end() )
-      return 0;
+      return HIVE_asset( 0 );
 
-    return found->reward_balance.amount;
+    return found->reward_balance;
   }
 
 };
@@ -686,9 +686,9 @@ void basic_test_impl(
     auto _cmp = [ reward, factor ]( const reward_stat& item_a, const reward_stat& item_b )
     {
       if( factor == 2 )
-        return item_a.value == reward && ( item_a.value / factor == item_b.value );
+        return item_a.value.get_amount() == reward && ( item_a.value / factor == item_b.value );
       else
-        return item_a.value && ( item_a.value / factor == item_b.value );
+        return item_a.value.get_amount() != 0 && ( item_a.value / factor == item_b.value );
     };
     reward_stat::check_phases( stats_a, stats_b, _cmp );
   };
@@ -699,9 +699,9 @@ void basic_test_impl(
     if( early_stats.empty() ^ mid_stats.empty() )
     {
       if( !early_stats.empty() )
-        BOOST_REQUIRE_EQUAL( early_stats[0].value, reward );
+        BOOST_REQUIRE_EQUAL( early_stats[0].value.get_amount(), reward );
       else
-        BOOST_REQUIRE_EQUAL( mid_stats[0].value, reward );
+        BOOST_REQUIRE_EQUAL( mid_stats[0].value.get_amount(), reward );
     }
   }
   {
@@ -712,18 +712,18 @@ void basic_test_impl(
       if( !mid_stats.empty() )
       {
         if( early_stats.empty() )
-          BOOST_REQUIRE_EQUAL( mid_stats[0].value, reward );
+          BOOST_REQUIRE_EQUAL( mid_stats[0].value.get_amount(), reward );
         else
-          BOOST_REQUIRE_EQUAL( mid_stats[0].value, reward / 2 );
+          BOOST_REQUIRE_EQUAL( mid_stats[0].value.get_amount(), reward / 2 );
       }
       else
       {
         if( early_stats.empty() && mid_stats.empty() )
-          BOOST_REQUIRE_EQUAL( late_stats[0].value, reward );
+          BOOST_REQUIRE_EQUAL( late_stats[0].value.get_amount(), reward );
         else if( mid_stats.empty() )
-          BOOST_REQUIRE_EQUAL( late_stats[0].value, reward / 4 );
+          BOOST_REQUIRE_EQUAL( late_stats[0].value.get_amount(), reward / 4 );
         else
-          BOOST_REQUIRE_EQUAL( late_stats[0].value, reward / 8 );
+          BOOST_REQUIRE_EQUAL( late_stats[0].value.get_amount(), reward / 8 );
       }
     }
   }
@@ -743,7 +743,7 @@ BOOST_AUTO_TEST_CASE( basic_test_v0 )
   {
     BOOST_TEST_MESSAGE( "Testing: curation rewards after HF25. Reward during whole rewards-time (7 days). Voting in every window." );
 
-    auto _a = curation_rewards_handler::default_amount;
+    HIVE_asset _a( curation_rewards_handler::default_amount );
 
     basic_test_impl( "00.content_format.time:curation_reward.csv",
                       *this,
@@ -760,7 +760,7 @@ BOOST_AUTO_TEST_CASE( basic_test_v1 )
   {
     BOOST_TEST_MESSAGE( "Testing: curation rewards after HF25. Reward during whole rewards-time (7 days). Voting in 2 windows: early, mid." );
 
-    auto _a = curation_rewards_handler::default_amount;
+    HIVE_asset _a( curation_rewards_handler::default_amount );
 
     basic_test_impl( "01.content_format.time:curation_reward.csv",
                       *this,
@@ -777,7 +777,7 @@ BOOST_AUTO_TEST_CASE( basic_test_v2 )
   {
     BOOST_TEST_MESSAGE( "Testing: curation rewards after HF25. Reward during whole rewards-time (7 days). Voting in 2 windows: early, mid." );
 
-    auto _a = curation_rewards_handler::default_amount;
+    HIVE_asset _a( curation_rewards_handler::default_amount );
 
     basic_test_impl( "02.content_format.time:curation_reward.csv",
                       *this,
@@ -794,7 +794,7 @@ BOOST_AUTO_TEST_CASE( basic_test_v3 )
   {
     BOOST_TEST_MESSAGE( "Testing: curation rewards after HF25. Reward during whole rewards-time (7 days). Voting in early window." );
 
-    auto _a = curation_rewards_handler::default_amount;
+    HIVE_asset _a( curation_rewards_handler::default_amount );
 
     basic_test_impl( "03.content_format.time:curation_reward.csv",
                       *this,
@@ -811,7 +811,7 @@ BOOST_AUTO_TEST_CASE( basic_test_v4 )
   {
     BOOST_TEST_MESSAGE( "Testing: curation rewards after HF25. Reward during whole rewards-time (7 days). Voting in mid window." );
 
-    auto _a = curation_rewards_handler::default_amount;
+    HIVE_asset _a( curation_rewards_handler::default_amount );
 
     basic_test_impl( "04.content_format.time:curation_reward.csv",
                       *this,
@@ -828,7 +828,7 @@ BOOST_AUTO_TEST_CASE( basic_test_v5 )
   {
     BOOST_TEST_MESSAGE( "Testing: curation rewards after HF25. Reward during whole rewards-time (7 days). Voting in early window." );
 
-    auto _a = curation_rewards_handler::default_amount * 2;
+    HIVE_asset _a( curation_rewards_handler::default_amount * 2 );
 
     basic_test_impl( "05.content_format.time:curation_reward.csv",
                       *this,
@@ -845,7 +845,7 @@ BOOST_AUTO_TEST_CASE( basic_test_v6 )
   {
     BOOST_TEST_MESSAGE( "Testing: curation rewards after HF25. Reward during whole rewards-time (7 days). Voting in mid window." );
 
-    auto _a = curation_rewards_handler::default_amount * 2;
+    HIVE_asset _a( curation_rewards_handler::default_amount * 2 );
 
     basic_test_impl( "06.content_format.time:curation_reward.csv",
                       *this,
@@ -864,7 +864,7 @@ BOOST_AUTO_TEST_CASE( basic_test_v7 )
     BOOST_TEST_MESSAGE( "Totally 50 voters vote on 1 comment" );
     BOOST_TEST_MESSAGE( "1 voter votes in early window, rest of voters vote in mid window." );
 
-    auto _a = curation_rewards_handler::default_amount * 2;
+    HIVE_asset _a( curation_rewards_handler::default_amount * 2 );
 
     basic_test_impl( "07.content_format.time:curation_reward.csv",
                       *this,
@@ -883,7 +883,7 @@ BOOST_AUTO_TEST_CASE( basic_test_v8 )
     BOOST_TEST_MESSAGE( "Totally 50 voters vote on 1 comment" );
     BOOST_TEST_MESSAGE( "5 voters vote in early window, rest of voters vote in mid window." );
 
-    auto _a = curation_rewards_handler::default_amount * 2;
+    HIVE_asset _a( curation_rewards_handler::default_amount * 2 );
 
     basic_test_impl( "08.content_format.time:curation_reward.csv",
                       *this,
@@ -925,11 +925,11 @@ BOOST_AUTO_TEST_CASE( no_votes )
     auto found_author = crh.authors.find( author_number );
     BOOST_REQUIRE( found_author != crh.authors.end() );
     const auto& creator = db->get_account( found_author->second );
-    BOOST_REQUIRE_EQUAL( creator.posting_rewards.amount.value, 0 );
+    BOOST_REQUIRE_EQUAL( creator.posting_rewards.get_amount(), 0 );
 
     auto cmp = []( const reward_stat& item )
     {
-      return item.value == 0;
+      return item.value.get_amount() == 0;
     };
     reward_stat::check_phase( early_stats, cmp );
     reward_stat::check_phase( mid_stats, cmp );
@@ -1003,7 +1003,7 @@ BOOST_AUTO_TEST_CASE( one_vote_for_comment )
     {
       auto cmp = []( const reward_stat& item_a, const reward_stat& item_b )
       {
-        return item_a.value == 12463 && item_a.value == item_b.value;
+        return item_a.value == HIVE_asset( 12463 ) && item_a.value == item_b.value;
       };
       reward_stat::check_phases( early_stats, mid_stats, cmp );
       reward_stat::check_phases( mid_stats, late_stats, cmp );
@@ -1098,27 +1098,27 @@ BOOST_AUTO_TEST_CASE( two_votes_for_comment )
       BOOST_REQUIRE_EQUAL( mid_stats.size(),    2 );
       BOOST_REQUIRE_EQUAL( late_stats.size(),   2 );
 
-      BOOST_REQUIRE_EQUAL( early_stats[0].value, 8308 );
-      BOOST_REQUIRE_EQUAL( early_stats[1].value, 11078 );
+      BOOST_REQUIRE_EQUAL( early_stats[0].value.get_amount(), 8308 );
+      BOOST_REQUIRE_EQUAL( early_stats[1].value.get_amount(), 11078 );
 
-      BOOST_REQUIRE_EQUAL( mid_stats[0].value, 4154 );
-      BOOST_REQUIRE_EQUAL( mid_stats[1].value, 9970 );
+      BOOST_REQUIRE_EQUAL( mid_stats[0].value.get_amount(), 4154 );
+      BOOST_REQUIRE_EQUAL( mid_stats[1].value.get_amount(), 9970 );
 
-      BOOST_REQUIRE_EQUAL( late_stats[0].value, 1384 );
-      BOOST_REQUIRE_EQUAL( late_stats[1].value, 2492 );
+      BOOST_REQUIRE_EQUAL( late_stats[0].value.get_amount(), 1384 );
+      BOOST_REQUIRE_EQUAL( late_stats[1].value.get_amount(), 2492 );
 
       reward_stat::display_stats( early_stats );
       reward_stat::display_stats( mid_stats );
       reward_stat::display_stats( late_stats );
 
-      auto vc0a = early_stats[ 0 ].value;
-      auto vc0b =   mid_stats[ 0 ].value;
+      auto vc0a = early_stats[ 0 ].value.get_amount();
+      auto vc0b =   mid_stats[ 0 ].value.get_amount();
 
-      auto vc1a = early_stats[ 1 ].value;
-      auto vc1b =  late_stats[ 0 ].value;
+      auto vc1a = early_stats[ 1 ].value.get_amount();
+      auto vc1b =  late_stats[ 0 ].value.get_amount();
 
-      auto vc2a =   mid_stats[ 1 ].value;
-      auto vc2b =  late_stats[ 1 ].value;
+      auto vc2a =   mid_stats[ 1 ].value.get_amount();
+      auto vc2b =  late_stats[ 1 ].value.get_amount();
 
       BOOST_REQUIRE_EQUAL( vc0a + vc0b, vc1a + vc1b );
       BOOST_REQUIRE_EQUAL( vc1a + vc1b, vc2a + vc2b );
@@ -1157,7 +1157,7 @@ void two_comments_in_the_same_blocks_impl( cluster_database_fixture& cluster, bo
     };
 
     auto execution = []( curation_rewards_handler& crh, cluster_database_fixture::ptr_hardfork_database_fixture& executor,
-                          share_type& total_rewards_pool_before, share_type& total_rewards_pool_after )
+                          HIVE_asset& total_rewards_pool_before, HIVE_asset& total_rewards_pool_after )
     {
       size_t vote_counter = 0;
 
@@ -1191,12 +1191,12 @@ void two_comments_in_the_same_blocks_impl( cluster_database_fixture& cluster, bo
       reward_stat::rewards_stats early_stats[2];
       reward_stat::rewards_stats late_stats[2];
 
-      share_type total_rewards_pool_before;
-      share_type total_rewards_pool_after;
+      HIVE_asset total_rewards_pool_before;
+      HIVE_asset total_rewards_pool_after;
 
       curation_rewards_handler crh( *executor, *( executor->db ) );
 
-      share_type reward_per_block = preparation( crh, executor );
+      HIVE_asset reward_per_block = preparation( crh, executor );
 
       {
         execution( crh, executor, total_rewards_pool_before, total_rewards_pool_after );
@@ -1248,7 +1248,7 @@ void two_comments_in_the_same_blocks_impl( cluster_database_fixture& cluster, bo
         for( uint32_t c = 0; c < 2; ++c )
         {
           for( auto& item : early_stats[c] )
-            _sum_curation_rewards[c] += item.value;
+            _sum_curation_rewards[c] += item.value.get_amount();
         }
 
         BOOST_TEST_MESSAGE( "*****HF24:SUM CURATION REWARDS*****" );
@@ -1257,16 +1257,16 @@ void two_comments_in_the_same_blocks_impl( cluster_database_fixture& cluster, bo
         BOOST_TEST_MESSAGE( "sum_curation_rewards(2)" );
         BOOST_TEST_MESSAGE( std::to_string( _sum_curation_rewards[1] ).c_str() );
 
-        BOOST_REQUIRE_EQUAL( _sum_curation_rewards[0], crh.comment_rewards[0].curation_tokens.value );
-        BOOST_REQUIRE_EQUAL( _sum_curation_rewards[1], crh.comment_rewards[1].curation_tokens.value );
+        BOOST_REQUIRE_EQUAL( _sum_curation_rewards[0], crh.comment_rewards[0].curation_tokens.get_amount() );
+        BOOST_REQUIRE_EQUAL( _sum_curation_rewards[1], crh.comment_rewards[1].curation_tokens.get_amount() );
       }
       {
         /*
           Not used rewards are returned back after(!) processing all comments, therefore it doesn't matter how much it's returned,
           if all comments are in the same block.
         */
-        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.value, 36951 );
-        BOOST_REQUIRE_EQUAL( crh.comment_rewards[1].author_tokens.value, 289 );
+        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.get_amount(), 36951 );
+        BOOST_REQUIRE_EQUAL( crh.comment_rewards[1].author_tokens.get_amount(), 289 );
       }
 
       executor->validate_database();
@@ -1281,8 +1281,8 @@ void two_comments_in_the_same_blocks_impl( cluster_database_fixture& cluster, bo
       reward_stat::rewards_stats mid_stats[2];
       reward_stat::rewards_stats late_stats[2];
 
-      share_type total_rewards_pool_before;
-      share_type total_rewards_pool_after;
+      HIVE_asset total_rewards_pool_before;
+      HIVE_asset total_rewards_pool_after;
 
       if( restore_author_reward_curve )
       {
@@ -1297,7 +1297,7 @@ void two_comments_in_the_same_blocks_impl( cluster_database_fixture& cluster, bo
 
       curation_rewards_handler crh( *executor, *( executor->db ) );
 
-      share_type reward_per_block = preparation( crh, executor );
+      HIVE_asset reward_per_block = preparation( crh, executor );
 
       {
         //**********************HF 25 is activated**********************
@@ -1364,7 +1364,7 @@ void two_comments_in_the_same_blocks_impl( cluster_database_fixture& cluster, bo
         for( uint32_t c = 0; c < 2; ++c )
         {
           for( auto& item : early_stats[c] )
-            _sum_curation_rewards[c] += item.value;
+            _sum_curation_rewards[c] += item.value.get_amount();
         }
 
         BOOST_TEST_MESSAGE( "*****HF25:SUM CURATION REWARDS*****" );
@@ -1373,8 +1373,8 @@ void two_comments_in_the_same_blocks_impl( cluster_database_fixture& cluster, bo
         BOOST_TEST_MESSAGE( "sum_curation_rewards(2)" );
         BOOST_TEST_MESSAGE( std::to_string( _sum_curation_rewards[1] ).c_str() );
 
-        BOOST_REQUIRE_EQUAL( _sum_curation_rewards[0], crh.comment_rewards[0].curation_tokens.value );
-        BOOST_REQUIRE_EQUAL( _sum_curation_rewards[1], crh.comment_rewards[1].curation_tokens.value );
+        BOOST_REQUIRE_EQUAL( _sum_curation_rewards[0], crh.comment_rewards[0].curation_tokens.get_amount() );
+        BOOST_REQUIRE_EQUAL( _sum_curation_rewards[1], crh.comment_rewards[1].curation_tokens.get_amount() );
       }
       {
         /*
@@ -1383,13 +1383,13 @@ void two_comments_in_the_same_blocks_impl( cluster_database_fixture& cluster, bo
         */
         if( restore_author_reward_curve )
         {
-          BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.value, 36951 );
-          BOOST_REQUIRE_EQUAL( crh.comment_rewards[1].author_tokens.value, 289 );
+          BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.get_amount(), 36951 );
+          BOOST_REQUIRE_EQUAL( crh.comment_rewards[1].author_tokens.get_amount(), 289 );
         }
         else
         {
-          BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.value, 36750 );
-          BOOST_REQUIRE_EQUAL( crh.comment_rewards[1].author_tokens.value, 490 );
+          BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.get_amount(), 36750 );
+          BOOST_REQUIRE_EQUAL( crh.comment_rewards[1].author_tokens.get_amount(), 490 );
         }
       }
 
@@ -1401,13 +1401,13 @@ void two_comments_in_the_same_blocks_impl( cluster_database_fixture& cluster, bo
 
     if( restore_author_reward_curve )
     {
-      BOOST_REQUIRE_EQUAL( comment_rewards_hf24[0].author_tokens.value, comment_rewards_hf25[0].author_tokens.value );
-      BOOST_REQUIRE_EQUAL( comment_rewards_hf24[1].author_tokens.value, comment_rewards_hf25[1].author_tokens.value );
+      BOOST_REQUIRE_EQUAL( comment_rewards_hf24[0].author_tokens.get_amount(), comment_rewards_hf25[0].author_tokens.get_amount() );
+      BOOST_REQUIRE_EQUAL( comment_rewards_hf24[1].author_tokens.get_amount(), comment_rewards_hf25[1].author_tokens.get_amount() );
     }
     else
     {
-      BOOST_REQUIRE_GT( comment_rewards_hf24[0].author_tokens.value, comment_rewards_hf25[0].author_tokens.value );
-      BOOST_REQUIRE_LT( comment_rewards_hf24[1].author_tokens.value, comment_rewards_hf25[1].author_tokens.value );
+      BOOST_REQUIRE_GT( comment_rewards_hf24[0].author_tokens.get_amount(), comment_rewards_hf25[0].author_tokens.get_amount() );
+      BOOST_REQUIRE_LT( comment_rewards_hf24[1].author_tokens.get_amount(), comment_rewards_hf25[1].author_tokens.get_amount() );
     }
 }
 
@@ -1430,7 +1430,7 @@ void two_comments_in_different_blocks_impl( cluster_database_fixture& cluster, b
     };
 
     auto execution = []( curation_rewards_handler& crh, cluster_database_fixture::ptr_hardfork_database_fixture& executor,
-                          share_type total_rewards_pool_before[], share_type total_rewards_pool_after[] )
+                          HIVE_asset total_rewards_pool_before[], HIVE_asset total_rewards_pool_after[] )
     {
       size_t vote_counter = 0;
 
@@ -1482,12 +1482,12 @@ void two_comments_in_different_blocks_impl( cluster_database_fixture& cluster, b
       reward_stat::rewards_stats early_stats[2];
       reward_stat::rewards_stats late_stats[2];
 
-      share_type total_rewards_pool_before[2];
-      share_type total_rewards_pool_after[2];
+      HIVE_asset total_rewards_pool_before[2];
+      HIVE_asset total_rewards_pool_after[2];
 
       curation_rewards_handler crh( *executor, *( executor->db ) );
 
-      share_type reward_per_block = preparation( crh, executor );
+      HIVE_asset reward_per_block = preparation( crh, executor );
 
       {
         //**********************HF 24 is activated**********************
@@ -1533,7 +1533,7 @@ void two_comments_in_different_blocks_impl( cluster_database_fixture& cluster, b
         for( uint32_t c = 0; c < 2; ++c )
         {
           for( auto& item : early_stats[c] )
-            _sum_curation_rewards[c] += item.value;
+            _sum_curation_rewards[c] += item.value.get_amount();
         }
 
         BOOST_TEST_MESSAGE( "*****HF24:SUM CURATION REWARDS*****" );
@@ -1542,16 +1542,16 @@ void two_comments_in_different_blocks_impl( cluster_database_fixture& cluster, b
         BOOST_TEST_MESSAGE( "sum_curation_rewards(2)" );
         BOOST_TEST_MESSAGE( std::to_string( _sum_curation_rewards[1] ).c_str() );
 
-        BOOST_REQUIRE_EQUAL( _sum_curation_rewards[0], crh.comment_rewards[0].curation_tokens.value );
-        BOOST_REQUIRE_EQUAL( _sum_curation_rewards[1], crh.comment_rewards[1].curation_tokens.value );
+        BOOST_REQUIRE_EQUAL( _sum_curation_rewards[0], crh.comment_rewards[0].curation_tokens.get_amount() );
+        BOOST_REQUIRE_EQUAL( _sum_curation_rewards[1], crh.comment_rewards[1].curation_tokens.get_amount() );
       }
       {
         /*
           Not used rewards are returned back after processing first comment,
           therefore second reward in HF24 is higher than second reward in HF25.
         */
-        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.value, 40330 );
-        BOOST_REQUIRE_EQUAL( crh.comment_rewards[1].author_tokens.value, 179 );
+        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.get_amount(), 40330 );
+        BOOST_REQUIRE_EQUAL( crh.comment_rewards[1].author_tokens.get_amount(), 179 );
       }
 
       executor->validate_database();
@@ -1566,8 +1566,8 @@ void two_comments_in_different_blocks_impl( cluster_database_fixture& cluster, b
       reward_stat::rewards_stats mid_stats[2];
       reward_stat::rewards_stats late_stats[2];
 
-      share_type total_rewards_pool_before[2];
-      share_type total_rewards_pool_after[2];
+      HIVE_asset total_rewards_pool_before[2];
+      HIVE_asset total_rewards_pool_after[2];
 
       if( restore_author_reward_curve )
       {
@@ -1582,7 +1582,7 @@ void two_comments_in_different_blocks_impl( cluster_database_fixture& cluster, b
 
       curation_rewards_handler crh( *executor, *( executor->db ) );
 
-      share_type reward_per_block = preparation( crh, executor );
+      HIVE_asset reward_per_block = preparation( crh, executor );
 
       {
         //**********************HF 25 is activated**********************
@@ -1630,7 +1630,7 @@ void two_comments_in_different_blocks_impl( cluster_database_fixture& cluster, b
         for( uint32_t c = 0; c < 2; ++c )
         {
           for( auto& item : early_stats[c] )
-            _sum_curation_rewards[c] += item.value;
+            _sum_curation_rewards[c] += item.value.get_amount();
         }
 
         BOOST_TEST_MESSAGE( "*****HF25:SUM CURATION REWARDS*****" );
@@ -1639,22 +1639,22 @@ void two_comments_in_different_blocks_impl( cluster_database_fixture& cluster, b
         BOOST_TEST_MESSAGE( "sum_curation_rewards(2)" );
         BOOST_TEST_MESSAGE( std::to_string( _sum_curation_rewards[1] ).c_str() );
 
-        BOOST_REQUIRE_EQUAL( _sum_curation_rewards[0], crh.comment_rewards[0].curation_tokens.value );
-        BOOST_REQUIRE_EQUAL( _sum_curation_rewards[1], crh.comment_rewards[1].curation_tokens.value );
+        BOOST_REQUIRE_EQUAL( _sum_curation_rewards[0], crh.comment_rewards[0].curation_tokens.get_amount() );
+        BOOST_REQUIRE_EQUAL( _sum_curation_rewards[1], crh.comment_rewards[1].curation_tokens.get_amount() );
       }
       {
         /*
           Not used rewards are returned back after processing first comment,
           therefore second reward in HF24 is higher than second reward in HF25.
         */
-        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.value, 40330 );
+        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.get_amount(), 40330 );
         if( restore_author_reward_curve )
         {
-          BOOST_REQUIRE_EQUAL( crh.comment_rewards[1].author_tokens.value, 24 );
+          BOOST_REQUIRE_EQUAL( crh.comment_rewards[1].author_tokens.get_amount(), 24 );
         }
         else
         {
-          BOOST_REQUIRE_EQUAL( crh.comment_rewards[1].author_tokens.value, 41 );
+          BOOST_REQUIRE_EQUAL( crh.comment_rewards[1].author_tokens.get_amount(), 41 );
         }
         
       }
@@ -1665,8 +1665,8 @@ void two_comments_in_different_blocks_impl( cluster_database_fixture& cluster, b
     cluster.execute_hardfork<24>( hf24_content );
     cluster.execute_hardfork<25>( hf25_content );
 
-    BOOST_REQUIRE_EQUAL(  comment_rewards_hf24[0].author_tokens.value, comment_rewards_hf25[0].author_tokens.value );
-    BOOST_REQUIRE_GT(     comment_rewards_hf24[1].author_tokens.value, comment_rewards_hf25[1].author_tokens.value );
+    BOOST_REQUIRE_EQUAL(  comment_rewards_hf24[0].author_tokens.get_amount(), comment_rewards_hf25[0].author_tokens.get_amount() );
+    BOOST_REQUIRE_GT(     comment_rewards_hf24[1].author_tokens.get_amount(), comment_rewards_hf25[1].author_tokens.get_amount() );
 }
 
 BOOST_FIXTURE_TEST_SUITE( curation_reward_tests2, cluster_database_fixture )
@@ -1694,7 +1694,7 @@ BOOST_AUTO_TEST_CASE( one_vote_per_comment )
     };
 
     auto execution = []( curation_rewards_handler& crh, ptr_hardfork_database_fixture& executor,
-                          share_type& total_rewards_pool_before, share_type& total_rewards_pool_after )
+                          HIVE_asset& total_rewards_pool_before, HIVE_asset& total_rewards_pool_after )
     {
       size_t vote_counter = 0;
       uint32_t vote_01_time = 12;
@@ -1718,12 +1718,12 @@ BOOST_AUTO_TEST_CASE( one_vote_per_comment )
     {
       reward_stat::rewards_stats early_stats;
       reward_stat::rewards_stats late_stats;
-      share_type total_rewards_pool_before;
-      share_type total_rewards_pool_after;
+      HIVE_asset total_rewards_pool_before;
+      HIVE_asset total_rewards_pool_after;
 
       curation_rewards_handler crh( *executor, *( executor->db ) );
 
-      share_type reward_per_block = preparation( crh, executor );
+      HIVE_asset reward_per_block = preparation( crh, executor );
 
       {
         //**********************HF 24 is activated**********************
@@ -1764,18 +1764,18 @@ BOOST_AUTO_TEST_CASE( one_vote_per_comment )
         */
         BOOST_REQUIRE_EQUAL( early_stats.size(), 1 );
         BOOST_REQUIRE( late_stats.empty() );
-        BOOST_REQUIRE_LT( early_stats[0].value, crh.comment_rewards[0].author_tokens.value );
-        BOOST_REQUIRE_GT( crh.comment_rewards[0].total_reward.value, early_stats[0].value + crh.comment_rewards[0].author_tokens.value );
-        BOOST_REQUIRE_EQUAL( early_stats[0].value,   1864 );
-        BOOST_REQUIRE_EQUAL( early_stats[0].value,   crh.comment_rewards[0].curation_tokens.value );
-        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.value, 37300 );
+        BOOST_REQUIRE_LT( early_stats[0].value.get_amount(), crh.comment_rewards[0].author_tokens.get_amount() );
+        BOOST_REQUIRE_GT( crh.comment_rewards[0].total_reward.get_amount(), early_stats[0].value.get_amount() + crh.comment_rewards[0].author_tokens.get_amount() );
+        BOOST_REQUIRE_EQUAL( early_stats[0].value.get_amount(),   1864 );
+        BOOST_REQUIRE_EQUAL( early_stats[0].value.get_amount(),   crh.comment_rewards[0].curation_tokens.get_amount() );
+        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.get_amount(), 37300 );
       }
       {
         /*
           total_rewards_pool_before + reward_per_block == total_rewards_pool_after + early_stats[0] + author_tokens[0]
         */
-        auto _temp_before = total_rewards_pool_before.value + reward_per_block.value;
-        auto _temp_after = total_rewards_pool_after.value + early_stats[0].value + crh.comment_rewards[0].author_tokens.value;
+        auto _temp_before = total_rewards_pool_before.get_amount() + reward_per_block.get_amount();
+        auto _temp_after = total_rewards_pool_after.get_amount() + early_stats[0].value.get_amount() + crh.comment_rewards[0].author_tokens.get_amount();
         BOOST_REQUIRE_EQUAL( _temp_before, _temp_after );
       }
 
@@ -1789,12 +1789,12 @@ BOOST_AUTO_TEST_CASE( one_vote_per_comment )
       reward_stat::rewards_stats early_stats;
       reward_stat::rewards_stats mid_stats;
       reward_stat::rewards_stats late_stats;
-      share_type total_rewards_pool_before;
-      share_type total_rewards_pool_after;
+      HIVE_asset total_rewards_pool_before;
+      HIVE_asset total_rewards_pool_after;
 
       curation_rewards_handler crh( *executor, *( executor->db ) );
 
-      share_type reward_per_block = preparation( crh, executor );
+      HIVE_asset reward_per_block = preparation( crh, executor );
 
       {
         //**********************HF 25 is activated**********************
@@ -1838,18 +1838,18 @@ BOOST_AUTO_TEST_CASE( one_vote_per_comment )
         BOOST_REQUIRE_EQUAL( early_stats.size(), 1 );
         BOOST_REQUIRE( mid_stats.empty() );
         BOOST_REQUIRE( late_stats.empty() );
-        BOOST_REQUIRE_EQUAL( early_stats[0].value, crh.comment_rewards[0].author_tokens.value );
-        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].total_reward.value, early_stats[0].value + crh.comment_rewards[0].author_tokens.value );
-        BOOST_REQUIRE_EQUAL( early_stats[0].value,   37300 );
-        BOOST_REQUIRE_EQUAL( early_stats[0].value,   crh.comment_rewards[0].curation_tokens.value );
-        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.value, 37300 );
+        BOOST_REQUIRE_EQUAL( early_stats[0].value.get_amount(), crh.comment_rewards[0].author_tokens.get_amount() );
+        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].total_reward.get_amount(), early_stats[0].value.get_amount() + crh.comment_rewards[0].author_tokens.get_amount() );
+        BOOST_REQUIRE_EQUAL( early_stats[0].value.get_amount(),   37300 );
+        BOOST_REQUIRE_EQUAL( early_stats[0].value.get_amount(),   crh.comment_rewards[0].curation_tokens.get_amount() );
+        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.get_amount(), 37300 );
       }
       {
         /*
           total_rewards_pool_before + reward_per_block == total_rewards_pool_after + early_stats[0] + author_tokens[0]
         */
-        auto _temp_before = total_rewards_pool_before.value + reward_per_block.value;
-        auto _temp_after = total_rewards_pool_after.value + early_stats[0].value + crh.comment_rewards[0].author_tokens.value;
+        auto _temp_before = total_rewards_pool_before.get_amount() + reward_per_block.get_amount();
+        auto _temp_after = total_rewards_pool_after.get_amount() + early_stats[0].value.get_amount() + crh.comment_rewards[0].author_tokens.get_amount();
         BOOST_REQUIRE_EQUAL( _temp_before, _temp_after );
       }
 
@@ -1859,7 +1859,7 @@ BOOST_AUTO_TEST_CASE( one_vote_per_comment )
     execute_hardfork<24>( hf24_content );
     execute_hardfork<25>( hf25_content );
 
-    BOOST_REQUIRE_EQUAL( comment_rewards_hf24[0].author_tokens.value, comment_rewards_hf25[0].author_tokens.value );
+    BOOST_REQUIRE_EQUAL( comment_rewards_hf24[0].author_tokens.get_amount(), comment_rewards_hf25[0].author_tokens.get_amount() );
   }
   FC_LOG_AND_RETHROW()
 }
@@ -1887,7 +1887,7 @@ BOOST_AUTO_TEST_CASE( one_vote_per_comment_v2 )
     };
 
     auto execution = []( curation_rewards_handler& crh, ptr_hardfork_database_fixture& executor,
-                          share_type& total_rewards_pool_before, share_type& total_rewards_pool_after )
+                          HIVE_asset& total_rewards_pool_before, HIVE_asset& total_rewards_pool_after )
     {
       size_t vote_counter = 0;
       uint32_t vote_01_time = 300/*old value of 'reverse_auction_seconds'*/;
@@ -1911,12 +1911,12 @@ BOOST_AUTO_TEST_CASE( one_vote_per_comment_v2 )
     {
       reward_stat::rewards_stats early_stats;
       reward_stat::rewards_stats late_stats;
-      share_type total_rewards_pool_before;
-      share_type total_rewards_pool_after;
+      HIVE_asset total_rewards_pool_before;
+      HIVE_asset total_rewards_pool_after;
 
       curation_rewards_handler crh( *executor, *( executor->db ) );
 
-      share_type reward_per_block = preparation( crh, executor );
+      HIVE_asset reward_per_block = preparation( crh, executor );
 
       {
         //**********************HF 24 is activated**********************
@@ -1951,23 +1951,23 @@ BOOST_AUTO_TEST_CASE( one_vote_per_comment_v2 )
           early_stats.size() == empty
           late_stats == 1
           late_stats[0] == author_tokens[0]                 ( curation_reward == author_reward )
-          crh.comment_rewards[0].total_reward.value == late_stats[0] + author_tokens[0]   ( current_reward == curation_reward + author_reward )
+          crh.comment_rewards[0].total_reward.get_amount() == late_stats[0] + author_tokens[0]   ( current_reward == curation_reward + author_reward )
           checking exact values
         */
         BOOST_REQUIRE( early_stats.empty() );
         BOOST_REQUIRE_EQUAL( late_stats.size(), 1 );
-        BOOST_REQUIRE_EQUAL( late_stats[0].value, crh.comment_rewards[0].author_tokens.value );
-        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].total_reward.value, late_stats[0].value + crh.comment_rewards[0].author_tokens.value );
-        BOOST_REQUIRE_EQUAL( late_stats[0].value,    37300 );
-        BOOST_REQUIRE_EQUAL( late_stats[0].value,    crh.comment_rewards[0].curation_tokens.value );
-        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.value, 37300 );
+        BOOST_REQUIRE_EQUAL( late_stats[0].value.get_amount(), crh.comment_rewards[0].author_tokens.get_amount() );
+        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].total_reward.get_amount(), late_stats[0].value.get_amount() + crh.comment_rewards[0].author_tokens.get_amount() );
+        BOOST_REQUIRE_EQUAL( late_stats[0].value.get_amount(),    37300 );
+        BOOST_REQUIRE_EQUAL( late_stats[0].value.get_amount(),    crh.comment_rewards[0].curation_tokens.get_amount() );
+        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.get_amount(), 37300 );
       }
       {
         /*
           total_rewards_pool_before + reward_per_block == total_rewards_pool_after + late_stats[0] + author_tokens[0]
         */
-        auto _temp_before = total_rewards_pool_before.value + reward_per_block.value;
-        auto _temp_after = total_rewards_pool_after.value + late_stats[0].value + crh.comment_rewards[0].author_tokens.value;
+        auto _temp_before = total_rewards_pool_before.get_amount() + reward_per_block.get_amount();
+        auto _temp_after = total_rewards_pool_after.get_amount() + late_stats[0].value.get_amount() + crh.comment_rewards[0].author_tokens.get_amount();
         BOOST_REQUIRE_EQUAL( _temp_before, _temp_after );
       }
 
@@ -1981,12 +1981,12 @@ BOOST_AUTO_TEST_CASE( one_vote_per_comment_v2 )
       reward_stat::rewards_stats early_stats;
       reward_stat::rewards_stats mid_stats;
       reward_stat::rewards_stats late_stats;
-      share_type total_rewards_pool_before;
-      share_type total_rewards_pool_after;
+      HIVE_asset total_rewards_pool_before;
+      HIVE_asset total_rewards_pool_after;
 
       curation_rewards_handler crh( *executor, *( executor->db ) );
 
-      share_type reward_per_block = preparation( crh, executor );
+      HIVE_asset reward_per_block = preparation( crh, executor );
 
       {
         //**********************HF 25 is activated**********************
@@ -2023,24 +2023,24 @@ BOOST_AUTO_TEST_CASE( one_vote_per_comment_v2 )
           mid_stats == empty
           late_stats == empty
           early_stats[0] == author_tokens[0]            ( curation_reward == author_reward )
-          crh.comment_rewards[0].total_reward.value = early_stats[0] + author_tokens[0]   ( current_reward == curation_reward + author_reward )
+          crh.comment_rewards[0].total_reward.get_amount() = early_stats[0] + author_tokens[0]   ( current_reward == curation_reward + author_reward )
           checking exact values
         */
         BOOST_REQUIRE_EQUAL( early_stats.size(), 1 );
         BOOST_REQUIRE( mid_stats.empty() );
         BOOST_REQUIRE( late_stats.empty() );
-        BOOST_REQUIRE_EQUAL( early_stats[0].value, crh.comment_rewards[0].author_tokens.value );
-        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].total_reward.value, early_stats[0].value + crh.comment_rewards[0].author_tokens.value );
-        BOOST_REQUIRE_EQUAL( early_stats[0].value,   37300 );
-        BOOST_REQUIRE_EQUAL( early_stats[0].value,   crh.comment_rewards[0].curation_tokens.value );
-        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.value, 37300 );
+        BOOST_REQUIRE_EQUAL( early_stats[0].value.get_amount(), crh.comment_rewards[0].author_tokens.get_amount() );
+        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].total_reward.get_amount(), early_stats[0].value.get_amount() + crh.comment_rewards[0].author_tokens.get_amount() );
+        BOOST_REQUIRE_EQUAL( early_stats[0].value.get_amount(),   37300 );
+        BOOST_REQUIRE_EQUAL( early_stats[0].value.get_amount(),   crh.comment_rewards[0].curation_tokens.get_amount() );
+        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.get_amount(), 37300 );
       }
       {
         /*
           total_rewards_pool_before + reward_per_block == total_rewards_pool_after + early_stats[0] + author_tokens[0]
         */
-        auto _temp_before = total_rewards_pool_before.value + reward_per_block.value;
-        auto _temp_after = total_rewards_pool_after.value + early_stats[0].value + crh.comment_rewards[0].author_tokens.value;
+        auto _temp_before = total_rewards_pool_before.get_amount() + reward_per_block.get_amount();
+        auto _temp_after = total_rewards_pool_after.get_amount() + early_stats[0].value.get_amount() + crh.comment_rewards[0].author_tokens.get_amount();
         BOOST_REQUIRE_EQUAL( _temp_before, _temp_after );
       }
 
@@ -2050,7 +2050,7 @@ BOOST_AUTO_TEST_CASE( one_vote_per_comment_v2 )
     execute_hardfork<24>( hf24_content );
     execute_hardfork<25>( hf25_content );
 
-    BOOST_REQUIRE_EQUAL( comment_rewards_hf24[0].author_tokens.value, comment_rewards_hf25[0].author_tokens.value );
+    BOOST_REQUIRE_EQUAL( comment_rewards_hf24[0].author_tokens.get_amount(), comment_rewards_hf25[0].author_tokens.get_amount() );
   }
   FC_LOG_AND_RETHROW()
 }
@@ -2078,7 +2078,7 @@ BOOST_AUTO_TEST_CASE( five_votes_per_comment )
     };
 
     auto execution = []( curation_rewards_handler& crh, ptr_hardfork_database_fixture& executor,
-                          share_type& total_rewards_pool_before, share_type& total_rewards_pool_after )
+                          HIVE_asset& total_rewards_pool_before, HIVE_asset& total_rewards_pool_after )
     {
       size_t vote_counter = 0;
       uint32_t vote_01_time = 300/*old value of 'reverse_auction_seconds'*/ + 3;
@@ -2106,12 +2106,12 @@ BOOST_AUTO_TEST_CASE( five_votes_per_comment )
     {
       reward_stat::rewards_stats early_stats;
       reward_stat::rewards_stats late_stats;
-      share_type total_rewards_pool_before;
-      share_type total_rewards_pool_after;
+      HIVE_asset total_rewards_pool_before;
+      HIVE_asset total_rewards_pool_after;
 
       curation_rewards_handler crh( *executor, *( executor->db ) );
 
-      share_type reward_per_block = preparation( crh, executor );
+      HIVE_asset reward_per_block = preparation( crh, executor );
 
       {
         //**********************HF 24 is activated**********************
@@ -2150,7 +2150,7 @@ BOOST_AUTO_TEST_CASE( five_votes_per_comment )
           late_stats == nr_votes
           previous_reward > next_reward
           _sum_curation_rewards == author_tokens[0]                 ( sum_curation_rewards == author_reward )
-          crh.comment_rewards[0].total_reward.value == _sum_curation_rewards + author_tokens[0]   ( current_reward == sum_curation_rewards + author_reward )
+          crh.comment_rewards[0].total_reward.get_amount() == _sum_curation_rewards + author_tokens[0]   ( current_reward == sum_curation_rewards + author_reward )
           checking exact values
         */
         BOOST_REQUIRE( early_stats.empty() );
@@ -2158,33 +2158,33 @@ BOOST_AUTO_TEST_CASE( five_votes_per_comment )
 
         //calculating of auxiliary sum
         for( uint32_t i = 0; i < nr_votes; ++i )
-          _sum_curation_rewards += late_stats[i].value;
+          _sum_curation_rewards += late_stats[i].value.get_amount();
 
         BOOST_TEST_MESSAGE( "sum_curation_rewards" );
         BOOST_TEST_MESSAGE( std::to_string( _sum_curation_rewards ).c_str() );
 
-        BOOST_REQUIRE_EQUAL( _sum_curation_rewards, crh.comment_rewards[0].curation_tokens.value );
+        BOOST_REQUIRE_EQUAL( _sum_curation_rewards, crh.comment_rewards[0].curation_tokens.get_amount() );
 
         for( uint32_t i = 0; i < nr_votes - 1; ++i )
-          BOOST_REQUIRE_GT( late_stats[i].value, late_stats[i+1].value );
+          BOOST_REQUIRE_GT( late_stats[i].value.get_amount(), late_stats[i+1].value.get_amount() );
 
-        BOOST_REQUIRE_EQUAL( late_stats[0].value,  10529 );
-        BOOST_REQUIRE_EQUAL( late_stats[1].value,  8551 );
-        BOOST_REQUIRE_EQUAL( late_stats[2].value,  7083 );
-        BOOST_REQUIRE_EQUAL( late_stats[3].value,  5963 );
-        BOOST_REQUIRE_EQUAL( late_stats[4].value,  5172 );
+        BOOST_REQUIRE_EQUAL( late_stats[0].value.get_amount(),  10529 );
+        BOOST_REQUIRE_EQUAL( late_stats[1].value.get_amount(),  8551 );
+        BOOST_REQUIRE_EQUAL( late_stats[2].value.get_amount(),  7083 );
+        BOOST_REQUIRE_EQUAL( late_stats[3].value.get_amount(),  5963 );
+        BOOST_REQUIRE_EQUAL( late_stats[4].value.get_amount(),  5172 );
 
-        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.value, 37300 );
+        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.get_amount(), 37300 );
 
-        BOOST_REQUIRE_EQUAL( _sum_curation_rewards + 2/*rounding*/, crh.comment_rewards[0].author_tokens.value );
-        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].total_reward.value, _sum_curation_rewards + 2/*rounding*/ + crh.comment_rewards[0].author_tokens.value );
+        BOOST_REQUIRE_EQUAL( _sum_curation_rewards + 2/*rounding*/, crh.comment_rewards[0].author_tokens.get_amount() );
+        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].total_reward.get_amount(), _sum_curation_rewards + 2/*rounding*/ + crh.comment_rewards[0].author_tokens.get_amount() );
       }
       {
         /*
           total_rewards_pool_before + reward_per_block == total_rewards_pool_after + _sum + author_tokens[0]
         */
-        auto _temp_before = total_rewards_pool_before.value + reward_per_block.value;
-        auto _temp_after = total_rewards_pool_after.value + _sum_curation_rewards + crh.comment_rewards[0].author_tokens.value;
+        auto _temp_before = total_rewards_pool_before.get_amount() + reward_per_block.get_amount();
+        auto _temp_after = total_rewards_pool_after.get_amount() + _sum_curation_rewards + crh.comment_rewards[0].author_tokens.get_amount();
         BOOST_REQUIRE_EQUAL( _temp_before, _temp_after );
       }
 
@@ -2198,12 +2198,12 @@ BOOST_AUTO_TEST_CASE( five_votes_per_comment )
       reward_stat::rewards_stats early_stats;
       reward_stat::rewards_stats mid_stats;
       reward_stat::rewards_stats late_stats;
-      share_type total_rewards_pool_before;
-      share_type total_rewards_pool_after;
+      HIVE_asset total_rewards_pool_before;
+      HIVE_asset total_rewards_pool_after;
 
       curation_rewards_handler crh( *executor, *( executor->db ) );
 
-      share_type reward_per_block = preparation( crh, executor );
+      HIVE_asset reward_per_block = preparation( crh, executor );
 
       {
         //**********************HF 25 is activated**********************
@@ -2244,7 +2244,7 @@ BOOST_AUTO_TEST_CASE( five_votes_per_comment )
           late_stats == empty
           previous_reward == next_reward
           _sum_curation_rewards == author_tokens[0]                 ( sum_curation_rewards == author_reward )
-          crh.comment_rewards[0].total_reward.value = _sum_curation_rewards + author_tokens[0]    ( current_reward == sum_curation_rewards + author_reward )
+          crh.comment_rewards[0].total_reward.get_amount() = _sum_curation_rewards + author_tokens[0]    ( current_reward == sum_curation_rewards + author_reward )
           checking exact values
         */
         BOOST_REQUIRE_EQUAL( early_stats.size(), nr_votes );
@@ -2253,29 +2253,29 @@ BOOST_AUTO_TEST_CASE( five_votes_per_comment )
 
         //calculating of auxiliary sum
         for( uint32_t i = 0; i < nr_votes; ++i )
-          _sum_curation_rewards += early_stats[i].value;
+          _sum_curation_rewards += early_stats[i].value.get_amount();
 
         BOOST_TEST_MESSAGE( "sum_curation_rewards" );
         BOOST_TEST_MESSAGE( std::to_string( _sum_curation_rewards ).c_str() );
 
-        BOOST_REQUIRE_EQUAL( _sum_curation_rewards, crh.comment_rewards[0].curation_tokens.value );
+        BOOST_REQUIRE_EQUAL( _sum_curation_rewards, crh.comment_rewards[0].curation_tokens.get_amount() );
 
         for( uint32_t i = 0; i < nr_votes - 1; ++i )
-          BOOST_REQUIRE_EQUAL( early_stats[i].value, early_stats[i+1].value );
+          BOOST_REQUIRE_EQUAL( early_stats[i].value.get_amount(), early_stats[i+1].value.get_amount() );
 
-        BOOST_REQUIRE_EQUAL( _sum_curation_rewards, crh.comment_rewards[0].author_tokens.value );
-        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].total_reward.value, _sum_curation_rewards + crh.comment_rewards[0].author_tokens.value );
+        BOOST_REQUIRE_EQUAL( _sum_curation_rewards, crh.comment_rewards[0].author_tokens.get_amount() );
+        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].total_reward.get_amount(), _sum_curation_rewards + crh.comment_rewards[0].author_tokens.get_amount() );
 
         for( uint32_t i = 0; i < nr_votes; ++i )
-          BOOST_REQUIRE_EQUAL( early_stats[i].value, 7460 );
-        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.value, 37300 );
+          BOOST_REQUIRE_EQUAL( early_stats[i].value.get_amount(), 7460 );
+        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.get_amount(), 37300 );
       }
       {
         /*
           total_rewards_pool_before + reward_per_block == total_rewards_pool_after + _sum + author_tokens[0]
         */
-        auto _temp_before = total_rewards_pool_before.value + reward_per_block.value;
-        auto _temp_after = total_rewards_pool_after.value + _sum_curation_rewards + crh.comment_rewards[0].author_tokens.value;
+        auto _temp_before = total_rewards_pool_before.get_amount() + reward_per_block.get_amount();
+        auto _temp_after = total_rewards_pool_after.get_amount() + _sum_curation_rewards + crh.comment_rewards[0].author_tokens.get_amount();
         BOOST_REQUIRE_EQUAL( _temp_before, _temp_after );
       }
 
@@ -2285,7 +2285,7 @@ BOOST_AUTO_TEST_CASE( five_votes_per_comment )
     execute_hardfork<24>( hf24_content );
     execute_hardfork<25>( hf25_content );
 
-    BOOST_REQUIRE_EQUAL( comment_rewards_hf24[0].author_tokens.value, comment_rewards_hf25[0].author_tokens.value );
+    BOOST_REQUIRE_EQUAL( comment_rewards_hf24[0].author_tokens.get_amount(), comment_rewards_hf25[0].author_tokens.get_amount() );
 
   }
   FC_LOG_AND_RETHROW()
