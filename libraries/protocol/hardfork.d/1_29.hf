@@ -3,10 +3,10 @@
 #define HIVE_HARDFORK_1_29_DHF_CONVERT_TREASURY_HIVE (HIVE_HARDFORK_1_29)
 
 #ifdef USE_ALTERNATE_CHAIN_ID
-#define HIVE_HARDFORK_1_29_TIME (hive::protocol::testnet_blockchain_configuration::configuration_data.get_hf_time(HIVE_HARDFORK_1_29, 1802692800))
+#define HIVE_HARDFORK_1_29_TIME (hive::protocol::testnet_blockchain_configuration::configuration_data.get_hf_time(HIVE_HARDFORK_1_29, 1717243200))
 #else
 #define HIVE_HARDFORK_1_29_TIME 1802692800
-#endif // Monday, 15 February 2027 12:00:00
+#endif // Testnet: Saturday, 01 June 2024 12:00:00 / Mainnet: Monday, 15 February 2027 12:00:00
 
 #define HIVE_HARDFORK_1_29_VERSION hive::protocol::hardfork_version( 1, 29 )
 
