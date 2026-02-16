@@ -79,16 +79,16 @@ struct curation_reward_operation : public virtual_operation
 struct comment_reward_operation : public virtual_operation
 {
   comment_reward_operation() = default;
-  comment_reward_operation( const account_name_type& a, const string& pl, const HBD_asset& p, share_type ar,
+  comment_reward_operation( const account_name_type& a, const string& pl, const HBD_asset& p, const HIVE_asset& ar,
     const HBD_asset& tpv, const HBD_asset& cpv, const HBD_asset& bpv )
-    : author( a ), permlink( pl ), payout( p ), author_rewards( ar ),
+    : author( a ), permlink( pl ), payout( p ), author_rewards( ar.amount ),
     total_payout_value( tpv ), curator_payout_value( cpv ), beneficiary_payout_value( bpv )
   {}
 
   account_name_type author; //author of the comment
   string            permlink; //permlink of the comment
   HBD_asset         payout; //(HBD) total value of comment reward recalculated to HBD
-  share_type        author_rewards; //(HIVE satoshi) raw author reward (@see author_reward_operation) [is it needed?]
+  share_type        author_rewards; //(HIVE satoshi) raw author reward (@see author_reward_operation) [is it needed?] TODO: turn into HIVE_asset
   HBD_asset         total_payout_value; //(HBD) overall author reward (from multiple cashouts prior to HF17) recalculated to HBD [is it needed?]
   HBD_asset         curator_payout_value; //(HBD) overall curation reward (from multiple cashouts prior to HF17) recalculated to HBD [is it needed?]
   HBD_asset         beneficiary_payout_value; //(HBD) overall beneficiary reward (from multiple cashouts prior to HF17) recalculated to HBD [is it needed?]

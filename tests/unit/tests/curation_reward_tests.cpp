@@ -220,7 +220,7 @@ struct curation_rewards_handler
     _comment_reward_con = db.add_comment_reward_handler(
       [&]( const comment_reward_notification& note )
       {
-        comment_rewards.emplace_back( comment_reward_info{ note.total_reward, note.author_tokens, note.curation_tokens } );
+        comment_rewards.emplace_back( comment_reward_info{ note.total_reward.amount, note.author_tokens.amount, note.curation_tokens.amount } );
       },
       _test_object.theApp.get_plugin< hive::plugins::debug_node::debug_node_plugin >()
     );
