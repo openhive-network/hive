@@ -8,6 +8,7 @@
 #include <hive/protocol/types.hpp>
 
 #include <hive/utilities/signal.hpp>
+#include <fc/signals.hpp>
 
 #include <atomic>
 #include <map>
