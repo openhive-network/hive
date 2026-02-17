@@ -630,7 +630,7 @@ void basic_test_impl(
   crh.prepare_voters();
   mgr_test.generate_block();
 
-  mgr_test.set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+  mgr_test.set_price_feed( HBD_price( 1000, 1000 ) );
   mgr_test.generate_block();
 
   crh.prepare_funds( early, mid, late );
@@ -905,7 +905,7 @@ BOOST_AUTO_TEST_CASE( no_votes )
     crh.prepare_author( { 0 } );
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     uint32_t author_number = 0;
@@ -955,7 +955,7 @@ BOOST_AUTO_TEST_CASE( one_vote_for_comment )
     crh.prepare_10_voters();
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     crh.prepare_funds();
@@ -1029,7 +1029,7 @@ BOOST_AUTO_TEST_CASE( two_votes_for_comment )
     crh.prepare_10_voters();
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     crh.prepare_funds();
@@ -1147,7 +1147,7 @@ void two_comments_in_the_same_blocks_impl( cluster_database_fixture& cluster, bo
       crh.create_printer();
       executor->generate_block();
 
-      executor->set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+      executor->set_price_feed( HBD_price( 1000, 1000 ) );
       executor->generate_block();
 
       crh.prepare_funds();
@@ -1420,7 +1420,7 @@ void two_comments_in_different_blocks_impl( cluster_database_fixture& cluster, b
       crh.create_printer();
       executor->generate_block();
 
-      executor->set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+      executor->set_price_feed( HBD_price( 1000, 1000 ) );
       executor->generate_block();
 
       crh.prepare_funds();
@@ -1684,7 +1684,7 @@ BOOST_AUTO_TEST_CASE( one_vote_per_comment )
       crh.prepare_10_voters();
       executor->generate_block();
 
-      executor->set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+      executor->set_price_feed( HBD_price( 1000, 1000 ) );
       executor->generate_block();
 
       crh.prepare_funds();
@@ -1877,7 +1877,7 @@ BOOST_AUTO_TEST_CASE( one_vote_per_comment_v2 )
       crh.prepare_10_voters();
       executor->generate_block();
 
-      executor->set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+      executor->set_price_feed( HBD_price( 1000, 1000 ) );
       executor->generate_block();
 
       crh.prepare_funds();
@@ -2068,7 +2068,7 @@ BOOST_AUTO_TEST_CASE( five_votes_per_comment )
       crh.prepare_10_voters();
       executor->generate_block();
 
-      executor->set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+      executor->set_price_feed( HBD_price( 1000, 1000 ) );
       executor->generate_block();
 
       crh.prepare_funds();

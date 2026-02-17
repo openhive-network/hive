@@ -1425,7 +1425,7 @@ BOOST_AUTO_TEST_CASE( additional_allocations )
   {
     BOOST_TEST_MESSAGE( "--- Testing: additional_allocations" );
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     auto get_all_dynamic_alloc = [this]() -> size_t

@@ -114,7 +114,7 @@ BOOST_AUTO_TEST_CASE( delayed_proposal_test_01 )
     //setup
     ACTORS( (alice)(bob)(carol) )
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     ISSUE_FUNDS( "alice", TESTS_1000 );
@@ -183,7 +183,7 @@ BOOST_AUTO_TEST_CASE( delayed_proposal_test_02 )
     //setup
     ACTORS( (alice)(bob)(carol) )
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     ISSUE_FUNDS( "alice", TESTS_1000 );
@@ -283,7 +283,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
   {
     BOOST_TEST_MESSAGE( "Testing: Setting proxy - more complex tests" );
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     auto start_time = db->head_block_time();
@@ -881,7 +881,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_01 )
     {
       BOOST_TEST_MESSAGE( "Preparing accounts..." );
 
-      set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+      set_price_feed( HBD_price( 1000, 1000 ) );
       generate_block();
 
       ISSUE_FUNDS( "alice", ASSET( "10000.000 TESTS" ) );
@@ -1023,7 +1023,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_many_vesting_01 )
     {
       BOOST_TEST_MESSAGE( "Preparing accounts..." );
 
-      set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+      set_price_feed( HBD_price( 1000, 1000 ) );
       generate_block();
 
       ISSUE_FUNDS( "alice", ASSET( "10000.000 TESTS" ) );
@@ -1122,7 +1122,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_01 )
     ACTORS( (alice)(bob)(witness) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     //auto start_time = db->head_block_time();
@@ -1170,7 +1170,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_04 )
     ACTORS( (bob)(witness) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     //auto start_time = db->head_block_time();
@@ -1219,7 +1219,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_05 )
     ACTORS( (bob)(witness1)(witness2) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     //auto start_time = db->head_block_time();
@@ -1279,7 +1279,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_06 )
     ACTORS( (bob)(witness) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     //auto start_time = db->head_block_time();
@@ -1456,7 +1456,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_03 )
 {
   try
   {
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     // user setup
@@ -1629,7 +1629,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_02 )
 
   BOOST_TEST_MESSAGE( "Testing: `delayed_voting::update_votes` method" );
 
-  set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+  set_price_feed( HBD_price( 1000, 1000 ) );
   generate_block();
 
   ACTORS( (alice)(bob) )
@@ -2042,7 +2042,7 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_01 )
     ACTORS( (bob)(alice)(witness) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     // auto start_time = db->head_block_time();
@@ -2093,7 +2093,7 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_02 )
     ACTORS( (bob)(alice)(witness) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     ISSUE_FUNDS( "bob", ASSET( "10000.000 TESTS" ) );
@@ -2162,7 +2162,7 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_03 )
     ACTORS( (bob)(alice)(witness)(witness2) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     // auto start_time = db->head_block_time();
@@ -2231,7 +2231,7 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_04 )
   {
     BOOST_TEST_MESSAGE( "Testing: decline voting rights: casual use with cancel" );
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     const std::function<bool(const account_name_type)>  is_cancelled = [&](const account_name_type name)
@@ -2294,7 +2294,7 @@ BOOST_AUTO_TEST_CASE( small_common_test_01 )
   {
     BOOST_TEST_MESSAGE( "Testing: simulation of trying to overcome system" );
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     ACTORS( (alice)(witness) )

@@ -128,7 +128,7 @@ BOOST_AUTO_TEST_CASE( inactive_proposals_have_votes )
     ACTORS( (alice)(bob)(carol)(dan) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     //=====================preparing=====================
@@ -323,7 +323,7 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
     vest( "acc8", ASSET( "8.000 TESTS" ) );
 
     generate_block();
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     const fc::time_point_sec LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS = HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP + HIVE_HARDFORK_1_25_MAX_OLD_GOVERNANCE_VOTE_EXPIRE_SHIFT;
@@ -684,7 +684,7 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes_with_proxy )
     vest( "carol",        ASSET( "5.000 TESTS" ) );
 
     generate_block();
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     proxy( "carol", "bobproxy", carol_private_key );
@@ -787,7 +787,7 @@ BOOST_AUTO_TEST_CASE( proposals_with_decline_voting_rights )
     vest( "dwr", ASSET( "1.000 TESTS" ) );
 
     generate_block();
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     const fc::time_point_sec LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS = HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP + HIVE_HARDFORK_1_25_MAX_OLD_GOVERNANCE_VOTE_EXPIRE_SHIFT;
@@ -909,7 +909,7 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes_threshold_exceeded )
     }
 
     generate_block();
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     fc::time_point_sec expiration_time = db->head_block_time() + HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD;
@@ -1080,7 +1080,7 @@ BOOST_AUTO_TEST_CASE( generating_payments )
     ACTORS( (alice)(bob)(carol) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     //=====================preparing=====================
@@ -1166,7 +1166,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_01 )
     ACTORS( (tester001)(tester002)(tester003)(tester004)(tester005) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     //=====================preparing=====================
@@ -1260,7 +1260,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_02 )
         )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     //=====================preparing=====================
@@ -1369,7 +1369,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_03 )
     ACTORS( (tester00)(tester01)(tester02) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     //=====================preparing=====================
@@ -1527,7 +1527,7 @@ try
     ACTORS( (alice)(bob)(carol)(dave) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     //=====================preparing=====================
@@ -1615,7 +1615,7 @@ try
     ACTORS( (alice)(bob)(carol)(dave) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     //=====================preparing=====================
@@ -1702,7 +1702,7 @@ BOOST_AUTO_TEST_CASE( expired_proposals_forbidden_voting)
     ACTORS( (alice)(bob)(carol)(carol1)(carol2) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     //=====================preparing=====================
@@ -1781,7 +1781,7 @@ BOOST_AUTO_TEST_CASE( proposals_maintenance)
     ACTORS( (alice)(bob) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     //=====================preparing=====================
@@ -1868,7 +1868,7 @@ BOOST_AUTO_TEST_CASE( proposal_object_apply )
     ACTORS( (alice)(bob) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     auto fee = asset( HIVE_TREASURY_FEE, HBD_SYMBOL );
@@ -1965,7 +1965,7 @@ BOOST_AUTO_TEST_CASE( proposal_object_apply_fee_increase )
     ACTORS( (alice)(bob) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     auto creator = "alice";
@@ -2063,7 +2063,7 @@ BOOST_AUTO_TEST_CASE( proposal_vote_object_apply )
     ACTORS( (alice)(bob)(carol)(dan) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     auto creator = "alice";
@@ -2131,7 +2131,7 @@ BOOST_AUTO_TEST_CASE( proposal_vote_object_01_apply )
     ACTORS( (alice)(bob)(carol)(dan) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     auto creator = "alice";
@@ -2372,7 +2372,7 @@ BOOST_AUTO_TEST_CASE( create_proposal_000 )
     ACTORS( (alice)(bob) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     auto creator    = "alice";
@@ -3199,7 +3199,7 @@ BOOST_AUTO_TEST_CASE( proposals_maintenance_01 )
     ACTORS( (a00)(a01)(a02)(a03)(a04) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     //=====================preparing=====================
@@ -3290,7 +3290,7 @@ BOOST_AUTO_TEST_CASE( proposals_maintenance_02 )
     ACTORS( (a00)(a01)(a02)(a03)(a04) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     //=====================preparing=====================
@@ -3399,7 +3399,7 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold )
     ACTORS( (a00)(a01)(a02)(a03)(a04) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     //=====================preparing=====================
@@ -3498,7 +3498,7 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_01 )
     ACTORS( (a00)(a01)(a02)(a03)(a04)(a05) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     //=====================preparing=====================
@@ -3744,7 +3744,7 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_02 )
         )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     //=====================preparing=====================
@@ -4058,7 +4058,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_000 )
     ACTORS( (alice)(bob) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     auto creator = "alice";
@@ -4153,7 +4153,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_001 )
     ACTORS( (alice)(bob) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     auto creator    = "alice";
@@ -4199,7 +4199,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_002 )
     ACTORS( (alice)(bob) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     auto creator    = "alice";
@@ -4247,7 +4247,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_003 )
     ACTORS( (alice)(bob) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     auto creator    = "alice";
@@ -4298,7 +4298,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_004 )
     ACTORS( (alice)(bob) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     auto creator    = "alice";
@@ -4349,7 +4349,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_005 )
     ACTORS( (alice)(bob)(dave) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     auto creator    = "alice";
@@ -4403,7 +4403,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_006 )
     ACTORS( (alice)(bob) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     auto creator    = "alice";
@@ -4514,7 +4514,7 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_03 )
 
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     //=====================preparing=====================
@@ -4620,7 +4620,7 @@ BOOST_AUTO_TEST_CASE( generating_payments )
 
     std::vector< performance::initial_data > inits = performance::generate_accounts( this, 30000 );
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     //=====================preparing=====================
@@ -4728,7 +4728,7 @@ BOOST_AUTO_TEST_CASE( converting_hive_to_dhf )
     BOOST_TEST_MESSAGE( "Testing: converting hive to hbd in the dhf" );
     const auto& dgpo = db->get_dynamic_global_properties();
     const account_object& _treasury = db->get_treasury();
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
 
     auto before_inflation_treasury_hbd_balance =  _treasury.get_hbd_balance();
     generate_block();

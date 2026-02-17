@@ -126,7 +126,7 @@ BOOST_AUTO_TEST_CASE( account_create_apply )
   {
     BOOST_TEST_MESSAGE( "Testing: account_create_apply" );
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
 
     db_plugin->debug_update( [=]( database& db )
     {
@@ -655,7 +655,7 @@ BOOST_AUTO_TEST_CASE( comment_delete_apply )
 
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
 
     signed_transaction tx;
     comment_operation comment;
@@ -1458,7 +1458,7 @@ BOOST_AUTO_TEST_CASE( transfer_apply )
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test successfully transfering HIVE to treasury and converting it to HBD" );
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
     auto treasury_hbd_balance = db->get_treasury().get_hbd_balance();
     op.from = "bob";
@@ -1596,7 +1596,7 @@ BOOST_AUTO_TEST_CASE( transfer_to_vesting_apply )
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     push_transaction( tx, alice_private_key );
 
-    new_vest = asset( ( op.amount * price( shares, vests ) ).amount, VESTS_SYMBOL );
+    new_vest = op.amount * price( shares, vests );
     shares += new_vest;
     vests += op.amount;
     bob_shares += new_vest;
@@ -3315,7 +3315,7 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_authorities )
 
     ACTORS( (alice)(bob) )
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "4.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 4000 ) );
 
     issue_funds( "alice", ASSET( "300.000 TBD" ) );
     issue_funds( "alice", ASSET( "1000.000 TESTS" ) );
@@ -3391,9 +3391,9 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
     const auto& feed = db->get_feed_history();
     db->skip_price_feed_limit_check = false;
     
-    price price_1_for_4 = price( ASSET( "1.000 TBD" ), ASSET( "4.000 TESTS" ) );
+    HBD_price price_1_for_4( 1000, 4000 );
     set_price_feed( price_1_for_4 );
-    BOOST_REQUIRE( feed.current_median_history == HBD_price( price_1_for_4 ) );
+    BOOST_REQUIRE( feed.current_median_history == price_1_for_4 );
 
     //prevent HBD interest from interfering with the test
     flat_map< string, vector<char> > props;
@@ -3494,10 +3494,10 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
     BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "119.047 TBD" ) ); // 1000/2 collateral * 10/42 price with fee
     transfer( "alice", db->get_treasury_name(), get_hbd_balance( "alice" ), "", alice_private_key );
 
-    price price_1_for_8 = price( ASSET( "1.000 TBD" ), ASSET( "8.000 TESTS" ) );
+    HBD_price price_1_for_8( 1000, 8000 );
     set_price_feed( price_1_for_8 );
     set_price_feed( price_1_for_8 ); //need to do it twice or median won't be the one required
-    BOOST_REQUIRE( feed.current_median_history == HBD_price( price_1_for_8 ) );
+    BOOST_REQUIRE( feed.current_median_history == price_1_for_8 );
 
     generate_blocks( conversion_2_time + HIVE_COLLATERALIZED_CONVERSION_DELAY - fc::seconds( HIVE_BLOCK_INTERVAL ) );
 
@@ -3534,12 +3534,12 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
     BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "59.523 TBD" ) ); // 1000/2 collateral * 10/84 price with fee
     //transfer( "alice", db->get_treasury_name(), get_hbd_balance( "alice" ) ); leave it this time on account
 
-    price price_1_for_20 = price( ASSET( "1.000 TBD" ), ASSET( "20.000 TESTS" ) );
+    HBD_price price_1_for_20( 1000, 20000 );
     set_price_feed( price_1_for_20 );
     set_price_feed( price_1_for_20 );
     set_price_feed( price_1_for_20 );
     set_price_feed( price_1_for_20 ); //four times required to override three previous records as median
-    BOOST_REQUIRE( feed.current_median_history == HBD_price( price_1_for_20 ) );
+    BOOST_REQUIRE( feed.current_median_history == price_1_for_20 );
 
     generate_blocks( conversion_3_time + HIVE_COLLATERALIZED_CONVERSION_DELAY - fc::seconds( HIVE_BLOCK_INTERVAL ) );
 
@@ -3624,10 +3624,10 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
       BOOST_REQUIRE( sys_warn_op.message.compare( 0, 27, "HIVE price corrected upward" ) == 0 );
     }
 
-    BOOST_REQUIRE( feed.current_median_history > HBD_price( price_1_for_20 ) );
-    BOOST_REQUIRE( feed.current_max_history == HBD_price( price_1_for_4 ) ); //it is hard to force artificial correction of max price when it is so high to begin with
-    BOOST_REQUIRE( feed.market_median_history == HBD_price( price_1_for_20 ) ); //market driven median price should be intact
-    BOOST_REQUIRE( feed.current_min_history == HBD_price( price_1_for_20 ) ); //minimal price should be intact
+    BOOST_REQUIRE( feed.current_median_history > price_1_for_20 );
+    BOOST_REQUIRE( feed.current_max_history == price_1_for_4 ); //it is hard to force artificial correction of max price when it is so high to begin with
+    BOOST_REQUIRE( feed.market_median_history == price_1_for_20 ); //market driven median price should be intact
+    BOOST_REQUIRE( feed.current_min_history == price_1_for_20 ); //minimal price should be intact
 
     generate_blocks( conversion_4_time + HIVE_COLLATERALIZED_CONVERSION_DELAY - fc::seconds( HIVE_BLOCK_INTERVAL ) );
 
@@ -3652,10 +3652,10 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
     generate_blocks( HIVE_FEED_INTERVAL_BLOCKS - ( dgpo.head_block_number % HIVE_FEED_INTERVAL_BLOCKS ) );
 
     //since HBD on treasury does not count the price should now be back to normal price
-    BOOST_REQUIRE( feed.current_median_history == HBD_price( price_1_for_20 ) );
-    BOOST_REQUIRE( feed.market_median_history == HBD_price( price_1_for_20 ) );
-    BOOST_REQUIRE( feed.current_min_history == HBD_price( price_1_for_20 ) );
-    BOOST_REQUIRE( feed.current_max_history == HBD_price( price_1_for_4 ) );
+    BOOST_REQUIRE( feed.current_median_history == price_1_for_20 );
+    BOOST_REQUIRE( feed.market_median_history == price_1_for_20 );
+    BOOST_REQUIRE( feed.current_min_history == price_1_for_20 );
+    BOOST_REQUIRE( feed.current_max_history == price_1_for_4 );
 
     BOOST_TEST_MESSAGE( "--- Test ok - conversion at 5 cents initial, 50 cents per HIVE actual" );
     op.amount = ASSET( "1000.000 TESTS" );
@@ -3666,7 +3666,7 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
     BOOST_REQUIRE( get_balance( "alice" ) == alice_balance );
     BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "23.809 TBD" ) ); // 1000/2 collateral * 1/21 price with fee
 
-    price price_1_for_2 = price( ASSET( "1.000 TBD" ), ASSET( "2.000 TESTS" ) );
+    HBD_price price_1_for_2( 1000, 2000 );
     set_price_feed( price_1_for_2 );
     set_price_feed( price_1_for_2 );
     set_price_feed( price_1_for_2 );
@@ -3676,7 +3676,7 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
     set_price_feed( price_1_for_2 );
     set_price_feed( price_1_for_2 );
     set_price_feed( price_1_for_2 );
-    BOOST_REQUIRE( feed.current_median_history == HBD_price( price_1_for_2 ) );
+    BOOST_REQUIRE( feed.current_median_history == price_1_for_2 );
 
     generate_blocks( conversion_5_time + HIVE_COLLATERALIZED_CONVERSION_DELAY - fc::seconds( HIVE_BLOCK_INTERVAL ) );
 
@@ -3703,9 +3703,9 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_narrow_price )
     const auto& feed = db->get_feed_history();
     db->skip_price_feed_limit_check = false;
 
-    price price_1_for_2 = price( ASSET( "0.001 TBD" ), ASSET( "0.002 TESTS" ) );
+    HBD_price price_1_for_2( 1, 2 );
     set_price_feed( price_1_for_2 );
-    BOOST_REQUIRE( feed.current_median_history == HBD_price( price_1_for_2 ) );
+    BOOST_REQUIRE( feed.current_median_history == price_1_for_2 );
 
     //prevent HBD interest from interfering with the test
     flat_map< string, vector<char> > props;
@@ -3747,9 +3747,9 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_wide_price )
     const auto& feed = db->get_feed_history();
     db->skip_price_feed_limit_check = false;
 
-    price price_1_for_2 = price( ASSET( "4611686018427387.000 TBD" ), ASSET( "9223372036854774.000 TESTS" ) );
+    HBD_price price_1_for_2( 4611686018427387000, 9223372036854774000 );
     set_price_feed( price_1_for_2 );
-    BOOST_REQUIRE( feed.current_median_history == HBD_price( price_1_for_2 ) );
+    BOOST_REQUIRE( feed.current_median_history == price_1_for_2 );
 
     //prevent HBD interest from interfering with the test
     flat_map< string, vector<char> > props;
@@ -7372,7 +7372,7 @@ BOOST_AUTO_TEST_CASE( claim_reward_balance_apply )
     ACTORS( (alice) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
 
     db_plugin->debug_update( []( database& db )
     {
@@ -7992,7 +7992,7 @@ BOOST_AUTO_TEST_CASE( comment_beneficiaries_apply )
       });
     });
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
 
     comment_operation comment;
     vote_operation vote;
@@ -8124,7 +8124,7 @@ BOOST_AUTO_TEST_CASE( comment_options_apply )
       } );
     } );
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
 
     comment_operation comment;
     vote_operation vote;
@@ -8300,7 +8300,7 @@ BOOST_AUTO_TEST_CASE( comment_options_deleted_permlink_reuse )
       } );
     } );
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
 
     comment_operation comment;
     vote_operation vote;
@@ -8372,7 +8372,7 @@ BOOST_AUTO_TEST_CASE( message_when_author_or_comment_doesnt_exist )
     ACTORS( (alice)(bob) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
 
     comment_operation comment;
 

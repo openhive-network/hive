@@ -2289,7 +2289,7 @@ BOOST_AUTO_TEST_CASE( treasury_hbd_does_not_affect_inflation_basic )
   {
     // Test inflation behavior across HF27 and HF28 with HBD issuance. This basic test just checks that inflation with HBD is higher than inflation without
     inject_hardfork( HIVE_HARDFORK_1_27 );
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     BOOST_REQUIRE_EQUAL( db->has_hardfork( HIVE_HARDFORK_1_27 ), true );
@@ -2397,7 +2397,7 @@ BOOST_AUTO_TEST_CASE(treasury_hbd_does_not_affect_inflation_advanced)
         const auto& props = db->get_dynamic_global_properties();
 
         inject_hardfork(HIVE_HARDFORK_1_27);
-        set_price_feed(price(ASSET("1.000 TBD"), ASSET("1.000 TESTS")));
+        set_price_feed( HBD_price( 1000, 1000 ) );
         generate_block();
         ISSUE_FUNDS(db->get_treasury_name(), ASSET("50000000.000 TBD"));
 

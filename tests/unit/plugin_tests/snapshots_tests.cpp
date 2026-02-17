@@ -41,7 +41,7 @@ BOOST_AUTO_TEST_CASE( additional_allocation_after_snapshot_load )
         witness_create( HIVE_INIT_MINER_NAME + fc::to_string( i ), init_account_priv_key, "foo.bar", init_account_pub_key, HIVE_MIN_PRODUCER_REWARD.amount );
       }
       validate_database();
-      set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+      set_price_feed( HBD_price( 1000, 1000 ) );
 
       generate_block();
 

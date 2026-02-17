@@ -303,7 +303,7 @@ void condenser_api_fixture::witness_scenario( check_point_tester_t check_point_t
   
   witness_create( "alice5ah", alice5ah_private_key, "foo.bar", alice5ah_private_key.get_public_key(), 1000 );
   witness_plugin->add_signing_key( alice5ah_private_key );
-  witness_feed_publish( "alice5ah", price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ), alice5ah_private_key );
+  witness_feed_publish( "alice5ah", HBD_price( 1000, 1000 ), alice5ah_private_key );
   proxy( "ben5ah", "carol5ah", ben5ah_private_key );
   witness_vote( "carol5ah", "alice5ah", carol5ah_private_key, true ); // mistakenly voted
   witness_vote( "carol5ah", "alice5ah", carol5ah_private_key, false ); // fixed the mistake
