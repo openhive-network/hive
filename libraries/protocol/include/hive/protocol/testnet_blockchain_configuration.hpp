@@ -59,15 +59,15 @@ class configuration
   uint16_t hive_owner_update_limit = 6;
 
 #ifdef IS_TEST_NET
-  uint64_t init_hive_supply = int64_t( 243 ) * int64_t( 1000000 ) * int64_t( 1000 ); // in HIVE satoshis
-  uint64_t init_hbd_supply = int64_t( 7 ) * int64_t( 1000000 ) * int64_t( 1000 ); // in HBD satoshis
-  uint64_t initial_vesting = 0; // in HIVE satoshis
-  price initial_vesting_price = price( VEST_asset( 1800 ), HIVE_asset( 1000 ) ); // VESTS (base) on HIVE (quote) - see comment for set_initial_asset_supply
+  HIVE_asset init_hive_supply = HIVE_asset( int64_t( 243 ) * int64_t( 1000000 ) * int64_t( 1000 ) );
+  HBD_asset init_hbd_supply = HBD_asset( int64_t( 7 ) * int64_t( 1000000 ) * int64_t( 1000 ) );
+  HIVE_asset initial_vesting;
+  VEST_price initial_vesting_price = VEST_price( 1800, 1000 ); // see comment for set_initial_asset_supply
 #else // hive converter build
-  uint64_t init_hive_supply = 0;
-  uint64_t init_hbd_supply = 0;
-  uint64_t initial_vesting = 0;
-  price initial_vesting_price;
+  HIVE_asset init_hive_supply;
+  HBD_asset init_hbd_supply;
+  HIVE_asset initial_vesting;
+  VEST_price initial_vesting_price;
 #endif
 
   std::string hive_hf9_compromised_key;
@@ -123,10 +123,10 @@ class configuration
     int64_t  get_hive_governance_vote_expiration_period() const { return hive_governance_vote_expiration_period; }
     uint16_t get_hive_owner_update_limit() const { return hive_owner_update_limit; }
 
-    uint64_t get_init_hive_supply() const { return init_hive_supply; }
-    uint64_t get_init_hbd_supply() const { return init_hbd_supply; }
-    uint64_t get_initial_vesting() const { return initial_vesting; }
-    const price& get_initial_vesting_price() const { return initial_vesting_price; }
+    HIVE_asset get_init_hive_supply() const { return init_hive_supply; }
+    HBD_asset get_init_hbd_supply() const { return init_hbd_supply; }
+    HIVE_asset get_initial_vesting() const { return initial_vesting; }
+    const VEST_price& get_initial_vesting_price() const { return initial_vesting_price; }
 
     uint32_t get_hive_proposal_maintenance_period() const { return hive_proposal_maintenance_period; }
 
@@ -259,14 +259,15 @@ class configuration
     /**
      * Sets initial supply of HIVE and HBD and also allows stabilization of price of VESTS
      * Amount of HIVE to be vested (on initminer) needs to be less than given supply.
-     * Price expressed as VESTS on HIVE.
      *
      * IMPORTANT! price is applied prior to HF1 when vesting share split occurs, so VEST
      * portion of the price will be effectively multiplied by 1000000 when HF1 is executed;
      * caller must take that into account when passing vest_price
      */
-    void set_initial_asset_supply( uint64_t hive = 0, uint64_t hbd = 0, uint64_t to_vest = 0,
-      const price& vest_price = price( VEST_asset( 1800 ), HIVE_asset( 1'000 ) ) );
+    void set_initial_asset_supply( const HIVE_asset& hive = HIVE_asset( 0 ),
+                                   const HBD_asset& hbd = HBD_asset( 0 ),
+                                   const HIVE_asset& to_vest = HIVE_asset( 0 ),
+                                   const VEST_price& vest_price = VEST_price( 1800, 1'000 ) );
 
     fc::microseconds min_root_comment_interval = fc::seconds(60*5);
     fc::microseconds min_reply_interval = fc::seconds(3);
