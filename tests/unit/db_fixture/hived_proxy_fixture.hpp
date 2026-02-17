@@ -268,7 +268,7 @@ public:
     FC_ASSERT(fixture);
     return fixture->proxy(_account, _proxy, _key);
   }
-  void set_price_feed( const price& new_price, bool stop_at_update_block = false )
+  void set_price_feed( const HBD_price& new_price, bool stop_at_update_block = false )
   {
     FC_ASSERT(fixture);
     return fixture->set_price_feed(new_price, stop_at_update_block);
@@ -278,7 +278,7 @@ public:
     FC_ASSERT(fixture);
     return fixture->set_witness_props(new_props);
   }
-  void witness_feed_publish( const fc::string& publisher, const price& exchange_rate, const private_key_type& key )
+  void witness_feed_publish( const fc::string& publisher, const HBD_price& exchange_rate, const private_key_type& key )
   {
     FC_ASSERT(fixture);
     return fixture->witness_feed_publish(publisher, exchange_rate, key);

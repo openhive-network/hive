@@ -174,7 +174,7 @@ BOOST_AUTO_TEST_CASE( undo_delayed_votes )
   {
     BOOST_TEST_MESSAGE( "--- Testing: undo_delayed_votes" );
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     undo_db udb( *db );
@@ -231,7 +231,7 @@ BOOST_AUTO_TEST_CASE( undo_feed_history )
     udb.undo_begin();
 
     // increase size by adding feed entries
-    const auto exchange_rate = price( ASSET( "0.500 TBD" ), ASSET( "1.000 TESTS" ) );
+    const auto exchange_rate = HBD_price( 500, 1000 );
     set_price_feed( exchange_rate, true );
     //generate_block();
     //ABW: note that we can't generate block since migrate_irreversible_state() calls

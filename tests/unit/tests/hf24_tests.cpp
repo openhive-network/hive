@@ -315,7 +315,7 @@ BOOST_AUTO_TEST_CASE( treasury_debt_ratio )
   {
     ACTORS((alice))
     BOOST_TEST_MESSAGE( "After HF24 funds in the treasury don't count towards the HBD debt ratio" );
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "10.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 10000 ) );
     generate_block();
     auto& dgpo = db->get_dynamic_global_properties();
     const auto before_hbd_print_rate = dgpo.hbd_print_rate;

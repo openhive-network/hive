@@ -339,12 +339,12 @@ void database_fixture::account_update2( const string& account,
 
 void database_fixture::witness_feed_publish(
   const string& publisher,
-  const price& exchange_rate,
+  const HBD_price& exchange_rate,
   const private_key_type& key )
 {
   feed_publish_operation op;
   op.publisher = publisher;
-  op.exchange_rate = exchange_rate;
+  op.exchange_rate = exchange_rate.to_price();
 
   push_transaction( op, key );
 }
@@ -567,13 +567,13 @@ void database_fixture::proxy( const string& _account, const string& _proxy, cons
   push_transaction( op, _key );
 }
 
-void database_fixture::set_price_feed( const price& new_price, bool stop_at_update_block )
+void database_fixture::set_price_feed( const HBD_price& new_price, bool stop_at_update_block )
 {
   for( size_t i = 1; i < 8; i++ )
   {
     witness_set_properties_operation op;
     op.owner = HIVE_INIT_MINER_NAME + fc::to_string( i );
-    op.props[ "hbd_exchange_rate" ] = fc::raw::pack_to_vector( new_price );
+    op.props[ "hbd_exchange_rate" ] = fc::raw::pack_to_vector( new_price.to_price() );
     op.props[ "key" ] = fc::raw::pack_to_vector( init_account_pub_key );
 
     push_transaction( op, init_account_priv_key );
@@ -588,7 +588,7 @@ void database_fixture::set_price_feed( const price& new_price, bool stop_at_upda
 #ifdef IS_TEST_NET
     !db->skip_price_feed_limit_check ||
 #endif
-    db->get(feed_history_id_type()).current_median_history == HBD_price( new_price )
+    db->get(feed_history_id_type()).current_median_history == new_price
   ); // the check fails if you call set_price_feed more than once with different price
 }
 

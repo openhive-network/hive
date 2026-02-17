@@ -70,7 +70,7 @@ BOOST_AUTO_TEST_CASE( basic_checks )
     vest( "alice", ASSET( "10.000 TESTS" ) );
     vest( "bob", ASSET( "10.000 TESTS" ) );
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
 
     auto _create_or_update_comments = [this]( const std::string& author, const fc::ecc::private_key& post_key )
     {
@@ -150,7 +150,7 @@ BOOST_AUTO_TEST_CASE( nested_comments )
     vest( "sam", ASSET( "10.000 TESTS" ) );
     vest( "dave", ASSET( "10.000 TESTS" ) );
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
 
     auto _create_or_update_comments = [this, &alice_post_key, &bob_post_key, &sam_post_key, &dave_post_key]()
     {

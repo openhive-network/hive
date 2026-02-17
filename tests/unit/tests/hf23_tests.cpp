@@ -86,7 +86,7 @@ BOOST_AUTO_TEST_CASE( restore_accounts_02 )
     ACTORS( (alice0)(alice1)(alice2)(alice3)(alice4)(dude) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     std::set< std::string > accounts{ "alice0", "alice1", "alice2", "alice3", "alice4" };
@@ -169,7 +169,7 @@ BOOST_AUTO_TEST_CASE( restore_accounts_01 )
     ACTORS( (alice)(bob)(carol) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     ISSUE_FUNDS( "alice", ASSET( "1000.000 TESTS" ) );
@@ -300,7 +300,7 @@ BOOST_AUTO_TEST_CASE( save_test_02 )
     ACTORS( (alice) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     ISSUE_FUNDS( "alice", ASSET( "1000.000 TESTS" ) );
@@ -335,7 +335,7 @@ BOOST_AUTO_TEST_CASE( save_test_01 )
     ACTORS( (alice)(bob) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     ISSUE_FUNDS( "alice", ASSET( "1000.000 TESTS" ) );
@@ -380,7 +380,7 @@ BOOST_AUTO_TEST_CASE( basic_test_06 )
     ACTORS( (alice)(bob) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     auto _10 = ASSET( "10.000 TESTS" );
@@ -457,7 +457,7 @@ BOOST_AUTO_TEST_CASE( basic_test_05 )
     ACTORS( (alice)(bob)(carol) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     auto _10 = ASSET( "10.000 TESTS" );
@@ -547,7 +547,7 @@ BOOST_AUTO_TEST_CASE( basic_test_04 )
     ACTORS( (alice)(bob)(carol) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     auto _10 = ASSET( "10.000 TESTS" );
@@ -626,7 +626,7 @@ BOOST_AUTO_TEST_CASE( basic_test_03 )
     ACTORS( (alice)(bob)(carol) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     auto _1 = ASSET( "1.000 TESTS" );
@@ -688,7 +688,7 @@ BOOST_AUTO_TEST_CASE( basic_test_02 )
     ACTORS( (alice)(bob) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     auto _1 = ASSET( "1.000 TESTS" );
@@ -1219,7 +1219,7 @@ BOOST_AUTO_TEST_CASE( hbd_test_01 )
     ACTORS( (alice) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "0.000 TBD" ) );
@@ -1244,7 +1244,7 @@ BOOST_AUTO_TEST_CASE( hbd_test_02 )
     ACTORS( (alice)(bob) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "0.000 TBD" ) );
@@ -1304,7 +1304,7 @@ BOOST_AUTO_TEST_CASE( savings_test_01 )
     ACTORS( (alice) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     issue_funds( "alice", ASSET( "1000.000 TBD" ) );
@@ -1326,7 +1326,7 @@ BOOST_AUTO_TEST_CASE( savings_test_02 )
     ACTORS( (alice)(bob) )
     generate_block();
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
     issue_funds( "alice", ASSET( "1000.000 TBD" ) );
