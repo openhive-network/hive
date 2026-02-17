@@ -25,6 +25,7 @@
 #include <hive/utilities/database_configuration.hpp>
 #include <hive/utilities/signal.hpp>
 
+#include <fc/thread/thread.hpp>
 #include <fc/string.hpp>
 #include <fc/io/json.hpp>
 #include <fc/io/fstream.hpp>

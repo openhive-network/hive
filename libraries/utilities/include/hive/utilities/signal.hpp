@@ -1,24 +1,13 @@
 #pragma once
 
 #include <hive/utilities/signal_connection_ptr.hpp>
-#include <fc/signals.hpp>
 
 namespace hive { namespace utilities {
 
-inline void disconnect_signal( boost::signals2::connection& signal )
-{
-  if( signal.connected() )
-    signal.disconnect();
-  FC_ASSERT( !signal.connected() );
-}
+/// Disconnects a signal connection and asserts it is disconnected.
+void disconnect_signal( boost::signals2::connection& signal );
 
-inline void disconnect_signal( signal_connection_ptr& signal )
-{
-  if( signal )
-  {
-    disconnect_signal( *signal );
-    signal.reset();
-  }
-}
+/// Disconnects and resets an opaque signal_connection_ptr.
+void disconnect_signal( signal_connection_ptr& signal );
 
 } }

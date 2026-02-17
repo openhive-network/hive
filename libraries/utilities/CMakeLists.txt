@@ -21,6 +21,7 @@ set(sources
    database_configuration.cpp
    io_primitives.cpp
    signal_connection_ptr.cpp
+   signal.cpp
    ${HEADERS})
 
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/git_revision.cpp.in" "${CMAKE_CURRENT_BINARY_DIR}/git_revision.cpp" @ONLY)
