@@ -10,8 +10,6 @@
 #include <hive/plugins/chain/abstract_block_producer.hpp>
 #include <hive/plugins/webserver/webserver_plugin.hpp>
 
-#include <boost/signals2.hpp>
-
 #define HIVE_CHAIN_PLUGIN_NAME "chain"
 
 namespace hive {
@@ -38,8 +36,6 @@ using namespace appbase;
 using namespace hive::chain;
 
 namespace bfs = boost::filesystem;
-
-using synchronization_type = boost::signals2::signal<void()>;
 
 class chain_plugin : public plugin< chain_plugin >
 {
@@ -147,10 +143,6 @@ public:
   fc::microseconds get_time_gap_to_live_sync( const fc::time_point_sec& head_block_time );
 
   hive::chain::blockchain_worker_thread_pool& get_thread_pool();
-
-  // Emitted when the blockchain is syncing/live.
-  // This is to synchronize plugins that have the chain plugin as an optional dependency.
-  synchronization_type on_sync;
 
   bool is_p2p_enabled() const;
   void disable_p2p( bool also_disable_work = true ) const;

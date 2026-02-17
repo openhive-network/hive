@@ -32,6 +32,7 @@
 
 #include <boost/asio.hpp>
 #include <boost/optional.hpp>
+#include <boost/signals2.hpp>
 //#include <boost/bind/bind.hpp>
 #include <boost/preprocessor/stringize.hpp>
 #include <boost/scope_exit.hpp>
@@ -55,7 +56,6 @@ using namespace hive;
 using fc::flat_map;
 using hive::chain::block_id_type;
 
-using hive::plugins::chain::synchronization_type;
 using index_memory_details_cntr_t = hive::utilities::benchmark_dumper::index_memory_details_cntr_t;
 using comment_archive_details_t = hive::utilities::benchmark_dumper::comment_archive_details_t;
 using get_stat_details_t = hive::utilities::benchmark_dumper::get_stat_details_t;
@@ -118,8 +118,8 @@ class chain_plugin_impl
     void process_snapshot_load_request();
     bool check_data_consistency( const block_read_i& block_reader );
 
-    void prepare_work( bool started, synchronization_type& on_sync );
-    void work( synchronization_type& on_sync );
+    void prepare_work( bool started );
+    void work();
 
     void write_default_database_config( bfs::path& p );
     void setup_benchmark_dumper();
@@ -259,6 +259,8 @@ class chain_plugin_impl
 
     class write_request_visitor;
 
+    using synchronization_type = boost::signals2::signal<void()>;
+    synchronization_type                        on_sync;
     chain::database::signal_connection_ptr      chain_sync_con;
     hive::plugins::webserver::webserver_plugin& webserver;
 
@@ -1356,7 +1358,7 @@ void chain_plugin_impl::process_snapshot_load_request()
     snapshot_provider->process_explicit_snapshot_load_requests( db_open_args );
 }
 
-void chain_plugin_impl::prepare_work( bool started, synchronization_type& on_sync )
+void chain_plugin_impl::prepare_work( bool started )
 {
   if( !started )
   {
@@ -1372,7 +1374,7 @@ void chain_plugin_impl::prepare_work( bool started, synchronization_type& on_syn
   }
 }
 
-void chain_plugin_impl::work( synchronization_type& on_sync )
+void chain_plugin_impl::work()
 {
   ilog( "Started on blockchain with ${n} blocks, LIB: ${lb}", ("n", db.head_block_num())("lb", db.get_last_irreversible_block_num()) );
 
@@ -1856,7 +1858,7 @@ void chain_plugin::plugin_startup()
   ilog("Database opening...");
   my->open();
 
-  my->prepare_work( get_state() == appbase::abstract_plugin::started, on_sync );
+  my->prepare_work( get_state() == appbase::abstract_plugin::started );
 
   bool start = false;
   bool force_replay_after_snapshot_loading = false;
@@ -1934,7 +1936,7 @@ void chain_plugin::plugin_startup()
 void chain_plugin::plugin_finalize_startup()
 {
   if( my->allow_syncing )
-    my->work( on_sync );
+    my->work();
 }
 
 void chain_plugin::plugin_shutdown()
