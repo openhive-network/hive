@@ -115,7 +115,7 @@ DEFINE_API_IMPL( debug_node_api_impl, debug_has_hardfork )
 
 DEFINE_API_IMPL( debug_node_api_impl, debug_set_vest_price )
 {
-  _debug_node.debug_set_vest_price( args.vest_price, args.hook_to_tx );
+  _debug_node.debug_set_vest_price( hive::protocol::VEST_price( args.vest_price ), args.hook_to_tx );
 
   return {};
 }
