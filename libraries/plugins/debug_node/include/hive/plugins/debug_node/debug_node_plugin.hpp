@@ -94,7 +94,7 @@ class debug_node_plugin : public plugin< debug_node_plugin >
     }
 
     void debug_set_vest_price(
-      const hive::protocol::price& new_price,
+      const hive::protocol::VEST_price& new_price,
       fc::optional<protocol::transaction_id_type> transaction_id = fc::optional<protocol::transaction_id_type>() );
 
     uint32_t debug_generate_blocks(
@@ -118,7 +118,7 @@ class debug_node_plugin : public plugin< debug_node_plugin >
     void save_debug_updates( fc::mutable_variant_object& target );
     void load_debug_updates( const fc::variant_object& target );
 
-    void calculate_modifiers_according_to_new_price(const hive::protocol::price& new_price,
+    void calculate_modifiers_according_to_new_price(const hive::protocol::VEST_price& new_price,
       const hive::protocol::HIVE_asset& total_hive, const hive::protocol::VEST_asset& total_vests,
       hive::protocol::HIVE_asset& hive_modifier, hive::protocol::VEST_asset& vest_modifier ) const;
 

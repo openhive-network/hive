@@ -27,6 +27,8 @@
 
 namespace hive { namespace plugins { namespace debug_node {
 
+using namespace hive::protocol;
+
 namespace detail {
 
 class debug_generate_block_flow_control final : public hive::chain::generate_block_flow_control
@@ -144,7 +146,7 @@ const protocol::transaction_id_type& debug_node_plugin::make_artificial_transact
 
   ++idx;
   std::string idx_str( std::to_string( idx ) );
-  hive::protocol::custom_operation op;
+  custom_operation op;
   op.required_auths = { HIVE_TEMP_ACCOUNT }; // we are using 'temp' account because it has open authority, so it should work even in mainnet
   op.id = 0;
   op.data = std::vector<char>( idx_str.begin(), idx_str.end() );
@@ -155,7 +157,7 @@ const protocol::transaction_id_type& debug_node_plugin::make_artificial_transact
   tx.set_expiration( dgpo.time + HIVE_MAX_TIME_UNTIL_EXPIRATION );
   tx.operations.push_back( op );
 
-  const auto pack_type = hive::protocol::serialization_mode_controller::get_current_pack();
+  const auto pack_type = serialization_mode_controller::get_current_pack();
   hive::chain::full_transaction_ptr ftx = hive::chain::full_transaction_type::create_from_signed_transaction( tx, pack_type, false );
   ftx->sign_transaction( std::vector<fc::ecc::private_key>{}, database().get_chain_id(), pack_type );
   my->_chain_plugin.push_transaction( ftx, 0 );
@@ -260,42 +262,39 @@ void debug_apply_update( chain::database& db, const fc::variant_object& vo, bool
 }
 */
 
-void debug_node_plugin::calculate_modifiers_according_to_new_price(const hive::protocol::price& new_price,
-  const hive::protocol::HIVE_asset& total_hive, const hive::protocol::VEST_asset& total_vests,
-  hive::protocol::HIVE_asset& hive_modifier, hive::protocol::VEST_asset& vest_modifier ) const
+void debug_node_plugin::calculate_modifiers_according_to_new_price(const VEST_price& new_price,
+  const HIVE_asset& total_hive, const VEST_asset& total_vests,
+  HIVE_asset& hive_modifier, VEST_asset& vest_modifier ) const
 {
-  FC_ASSERT(new_price.base.symbol == HIVE_SYMBOL);
-  FC_ASSERT(new_price.quote.symbol == VESTS_SYMBOL);
+  hive_modifier = HIVE_asset( 0 );
+  vest_modifier = VEST_asset( 0 );
 
-  hive_modifier = hive::protocol::HIVE_asset( 0 );
-  vest_modifier = hive::protocol::VEST_asset( 0 );
+  auto alpha_x = new_price.get_base().amount * total_hive.amount;
+  auto alpha_y = new_price.get_quote().amount * total_vests.amount;
 
-  auto alpha_x = new_price.quote.amount * total_hive.amount;
-  auto alpha_y = new_price.base.amount * total_vests.amount;
-
-  if (alpha_x >= alpha_y)
+  if( alpha_x >= alpha_y )
   {
     /// Means that alpha is >= 1, so we will be increasing vests pool
     fc::uint128_t a = total_vests.amount.value;
-    a *= (alpha_x - alpha_y).value;
+    a *= ( alpha_x - alpha_y ).value;
     a /= alpha_y.value;
-    vest_modifier = hive::protocol::VEST_asset( fc::uint128_to_int64(a) );
+    vest_modifier = VEST_asset( fc::uint128_to_int64(a) );
   }
   else
   {
     /// Means that alpha is < 1, so we will be increasing Hive pool
     fc::uint128_t b = total_hive.amount.value;
-    b *= (alpha_y - alpha_x).value;
+    b *= ( alpha_y - alpha_x ).value;
     b /= alpha_x.value;
-    hive_modifier = hive::protocol::HIVE_asset( fc::uint128_to_int64(b) );
+    hive_modifier = HIVE_asset( fc::uint128_to_int64(b) );
   }
 }
 
-void debug_node_plugin::debug_set_vest_price( const hive::protocol::price& new_price,
+void debug_node_plugin::debug_set_vest_price( const VEST_price& new_price,
   fc::optional<protocol::transaction_id_type> transaction_id )
 {
-  hive::protocol::VEST_asset vest_modifier;
-  hive::protocol::HIVE_asset hive_modifier;
+  VEST_asset vest_modifier;
+  HIVE_asset hive_modifier;
 
   const auto& dgpo = database().get_dynamic_global_properties();
   calculate_modifiers_according_to_new_price( new_price, dgpo.total_vesting_fund_hive, dgpo.total_vesting_shares, hive_modifier, vest_modifier );
@@ -328,7 +327,7 @@ void debug_node_plugin::debug_set_vest_price( const hive::protocol::price& new_p
 
   ilog( "After modification: total_vesting_shares=${vest}, total_vesting_fund_hive=${hive}",
     ( "vest", dgpo.total_vesting_shares )( "hive", dgpo.total_vesting_fund_hive ) );
-  ilog( "Final price=${p}", ( "p", hive::protocol::price( dgpo.total_vesting_fund_hive, dgpo.total_vesting_shares ) ) );
+  ilog( "Final price=${p}", ( "p", dgpo.get_vesting_share_price() ) );
 }
 
 uint32_t debug_node_plugin::debug_generate_blocks( fc::optional<fc::ecc::private_key> debug_private_key,
