@@ -31,8 +31,8 @@ struct pacemaker_fixture : public hived_fixture
     theApp.init_signals_handler();
 
     configuration_data.set_initial_asset_supply(
-      200'000'000'000ul, 1'000'000'000ul, 100'000'000'000ul,
-      price( VEST_asset( 1'800 ), HIVE_asset( 1'000 ) )
+      HIVE_asset( 200'000'000'000ll ), HBD_asset( 1'000'000'000ll ),
+      HIVE_asset( 100'000'000'000ll ), VEST_price( 1'800, 1'000 )
     );
     genesis_time = fc::time_point::now() + fc::seconds( genesis_delay );
     // we need to make genesis time proper multiple of 3 seconds, otherwise only first block will be

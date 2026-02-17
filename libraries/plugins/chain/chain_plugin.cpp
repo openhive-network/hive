@@ -1701,7 +1701,7 @@ void chain_plugin::plugin_initialize(const variables_map& options)
       uint64_t hive = 0, hbd = 0, to_vest = 0;
       // default value somewhat close to mainnet - won't have any impact if to_vest remains zero
       // see comment for configuration::set_initial_asset_supply to see why the price looks so weird
-      hive::protocol::price vest_price( VEST_asset( 1800 ), HIVE_asset( 1'000 ) );
+      VEST_price vest_price( 1800, 1'000 );
       bool set = false;
 
       if( alternate_chain_spec.get_object().contains("init_supply") )
@@ -1725,14 +1725,11 @@ void chain_plugin::plugin_initialize(const variables_map& options)
         to_vest = initial_vesting[ "hive_amount" ].as< uint64_t >();
         uint64_t vests_per_hive = initial_vesting[ "vests_per_hive" ].as< uint64_t >();
 
-        vest_price = hive::protocol::price(
-          hive::protocol::VEST_asset( vests_per_hive ),
-          hive::protocol::HIVE_asset( 1'000 ) // see comment for configuration::set_initial_asset_supply
-        );
+        vest_price = VEST_price( vests_per_hive, 1'000 ); // see comment for configuration::set_initial_asset_supply
       }
 
       if( set )
-        configuration_data.set_initial_asset_supply( hive, hbd, to_vest, vest_price );
+        configuration_data.set_initial_asset_supply( HIVE_asset( hive ), HBD_asset( hbd ), HIVE_asset( to_vest ), vest_price );
     }
 
     if( alternate_chain_spec.get_object().contains("min_root_comment_interval") )
