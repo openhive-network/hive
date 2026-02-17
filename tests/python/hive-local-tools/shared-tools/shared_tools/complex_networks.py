@@ -60,7 +60,9 @@ class NodesPreparer:
 def get_relative_time_offset_from_timestamp(timestamp: datetime.datatime) -> OffsetTimeControl:
     delta = tt.Time.now(serialize=False) - timestamp
     delta += tt.Time.seconds(5)  # Node starting and entering live mode takes some time to complete
-    return OffsetTimeControl(offset=f"-{delta.total_seconds():.3f}s")
+    total = delta.total_seconds()
+    sign = "-" if total >= 0 else "+"
+    return OffsetTimeControl(offset=f"{sign}{abs(total):.3f}s")
 
 
 def init_network(  # noqa: C901
