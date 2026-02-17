@@ -24,7 +24,14 @@ SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 source "$SCRIPTPATH/docker_image_utils.sh"
 
 IMGNAME=testing-block-logs
-CHANGES=("$GENERATOR_PATH")
+HARDFORK_DIR="$SCRIPTPATH/../../libraries/protocol/hardfork.d"
+HARDFORK_FILES=()
+if [ -d "$HARDFORK_DIR" ]; then
+  while IFS= read -r -d '' hf_file; do
+    HARDFORK_FILES+=("$hf_file")
+  done < <(find "$HARDFORK_DIR" -name '*.hf' -type f -print0 | sort -z)
+fi
+CHANGES=("$GENERATOR_PATH" "${HARDFORK_FILES[@]}")
 final_checksum=$(cat "${CHANGES[@]}" | sha256sum | tr -d '[:blank:] [=-=]')
 
 tag=$GENERATOR_NAME-$final_checksum
