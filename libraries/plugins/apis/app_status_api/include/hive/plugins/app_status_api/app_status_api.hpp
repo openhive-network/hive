@@ -1,7 +1,7 @@
 #pragma once
 
 #include <appbase/application.hpp>
-#include <hive/utilities/data_collector.hpp>
+#include <hive/utilities/data_collector_types.hpp>
 
 #include <hive/plugins/json_rpc/utility.hpp>
 
