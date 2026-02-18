@@ -8,7 +8,6 @@
 #include <hive/chain/witness_objects.hpp>
 #include <hive/chain/detail/state/hardfork_property_object.hpp>
 #include <hive/chain/detail/state/global_property_object.hpp>
-#include <hive/chain/detail/state/manabars_rc_object.hpp>
 #include <hive/chain/detail/state/assets_object.hpp>
 // Multiindex headers for index type definitions
 #include <hive/chain/comment_object_multiindex.hpp>
@@ -40,33 +39,32 @@ using namespace hive::chain;
 using namespace hive::protocol;
 using namespace hive::plugins;
 
-#define GET_MRC_FOR_ACC( acc ) (db->get< manabars_rc_object >( manabars_rc_object::id_type( (acc).get_id().get_value() ) ))
+#define GET_MRC_FOR_ACC( acc ) (db->get< assets_object >( assets_object::id_type( (acc).get_id().get_value() ) ))
 
 int64_t regenerate_rc_mana( debug_node::debug_node_plugin* db_plugin, const account_object& acc )
 {
   db_plugin->debug_update( [&]( database& db )
   {
-    const auto& mrc = db.get< manabars_rc_object >( manabars_rc_object::id_type( acc.get_id().get_value() ) );
     const auto& assets = db.get< assets_object >( assets_object::id_type( acc.get_id().get_value() ) );
-    db.modify( mrc, [&]( manabars_rc_object& mrc_obj )
+    db.modify( assets, [&]( assets_object& a )
     {
-      auto max_rc = acc.get_maximum_rc( mrc_obj, assets );
+      auto max_rc = acc.get_maximum_rc( a );
       hive::chain::util::manabar_params manabar_params( max_rc.value, HIVE_RC_REGEN_TIME );
-      mrc_obj.get_rc_manabar().regenerate_mana( manabar_params, db.head_block_time() );
+      a.get_rc_manabar().regenerate_mana( manabar_params, db.head_block_time() );
     } );
   } );
-  return db_plugin->database().get< manabars_rc_object >( manabars_rc_object::id_type( acc.get_id().get_value() ) ).get_rc_manabar().current_mana;
+  return db_plugin->database().get< assets_object >( assets_object::id_type( acc.get_id().get_value() ) ).get_rc_manabar().current_mana;
 }
 
 void clear_mana( debug_node::debug_node_plugin* db_plugin, const account_object& acc )
 {
   db_plugin->debug_update( [&]( database& db )
   {
-    const auto& mrc = db.get< manabars_rc_object >( manabars_rc_object::id_type( acc.get_id().get_value() ) );
-    db.modify( mrc, [&]( manabars_rc_object& mrc_obj )
+    const auto& assets = db.get< assets_object >( assets_object::id_type( acc.get_id().get_value() ) );
+    db.modify( assets, [&]( assets_object& a )
     {
-      mrc_obj.get_rc_manabar().current_mana = 0;
-      mrc_obj.get_rc_manabar().last_update_time = db.head_block_time().sec_since_epoch();
+      a.get_rc_manabar().current_mana = 0;
+      a.get_rc_manabar().last_update_time = db.head_block_time().sec_since_epoch();
     } );
   } );
 }

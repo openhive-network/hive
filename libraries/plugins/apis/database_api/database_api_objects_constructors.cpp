@@ -3,7 +3,6 @@
 #include <hive/chain/account_object.hpp>
 #include <hive/chain/detail/state/assets_object.hpp>
 #include <hive/chain/detail/state/recovery_object.hpp>
-#include <hive/chain/detail/state/manabars_rc_object.hpp>
 #include <hive/chain/detail/state/delayed_votes_object.hpp>
 #include <hive/chain/block_summary_object.hpp>
 #include <hive/chain/hardfork_property_object.hpp>
@@ -27,7 +26,6 @@
 #include <hive/chain/database.hpp>
 #include <hive/chain/notifications.hpp>
 #include <hive/chain/detail/state/assets_object.hpp>
-#include <hive/chain/detail/state/manabars_rc_object.hpp>
 #include <hive/chain/detail/state/delayed_votes_object.hpp>
 #include <hive/chain/detail/state/recovery_object.hpp>
 
@@ -234,13 +232,12 @@ api_account_object::api_account_object( const account_object& a, const database&
 {
   // Get split objects
   const auto& assets = db.get< assets_object >( assets_object::id_type( a.get_id().get_value() ) );
-  const auto& mrc = db.get< manabars_rc_object >( manabars_rc_object::id_type( a.get_id().get_value() ) );
   const auto& dvotes = db.get< delayed_votes_object >( delayed_votes_object::id_type( a.get_id().get_value() ) );
   const auto& recovery = db.get< recovery_object >( recovery_object::id_type( a.get_id().get_value() ) );
 
-  // From manabars_rc_object
-  voting_manabar = mrc.get_voting_manabar();
-  downvote_manabar = mrc.get_downvote_manabar();
+  // From assets_object (manabars merged into assets_object)
+  voting_manabar = assets.get_voting_manabar();
+  downvote_manabar = assets.get_downvote_manabar();
 
   // From assets_object (time-related fields merged into assets_object)
   last_vote_time = assets.get_last_vote_time();

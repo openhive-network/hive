@@ -29,7 +29,6 @@ using hive::chain::account_id_type;
 using hive::protocol::asset;
 using hive::chain::account_object;
 using hive::chain::database;
-using hive::chain::manabars_rc_object;
 using hive::chain::assets_object;
 
 
@@ -75,14 +74,13 @@ struct rc_account_api_object
   rc_account_api_object( const account_object& a, const database& db ) :
     account( a.get_name() )
   {
-    const auto& mrc = db.get< manabars_rc_object >( manabars_rc_object::id_type( a.get_id().get_value() ) );
     const auto& assets = db.get< assets_object >( assets_object::id_type( a.get_id().get_value() ) );
 
-    rc_manabar = mrc.get_rc_manabar();
-    max_rc_creation_adjustment = asset( mrc.get_rc_adjustment(), VESTS_SYMBOL );
-    max_rc = a.get_maximum_rc( mrc, assets ).value;
-    delegated_rc = mrc.get_delegated_rc().value;
-    received_delegated_rc = mrc.get_received_rc().value;
+    rc_manabar = assets.get_rc_manabar();
+    max_rc_creation_adjustment = asset( assets.get_rc_adjustment(), VESTS_SYMBOL );
+    max_rc = a.get_maximum_rc( assets ).value;
+    delegated_rc = assets.get_delegated_rc().value;
+    received_delegated_rc = assets.get_received_rc().value;
   }
 
   account_name_type     account;

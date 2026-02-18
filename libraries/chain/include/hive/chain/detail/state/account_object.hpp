@@ -14,7 +14,6 @@
 // Include the new split objects
 #include <hive/chain/detail/state/recovery_object.hpp>
 #include <hive/chain/detail/state/assets_object.hpp>
-#include <hive/chain/detail/state/manabars_rc_object.hpp>
 #include <hive/chain/detail/state/delayed_votes_object.hpp>
 
 #include <numeric>
@@ -29,8 +28,7 @@ namespace hive { namespace chain {
    * account_object now only contains the 'misc' structure members and id.
    * All other data has been split into separate objects:
    * - recovery_object: recovery account info, last recovery times
-   * - assets_object: all balance-related data (HIVE, HBD, VESTS, rewards, delegations, power down)
-   * - manabars_rc_object: voting manabars, RC manabar, RC delegations
+   * - assets_object: all balance-related data, timestamps, manabars, and RC data
    * - delayed_votes_object: delayed votes data with sum
    */
   class account_object : public object< account_object_type, account_object >
@@ -51,7 +49,7 @@ namespace hive { namespace chain {
         mined( _mined ),
         memo_key( _memo_key )
       {
-        // Note: recovery_object, assets_object, manabars_rc_object, delayed_votes_object
+        // Note: recovery_object, assets_object, delayed_votes_object
         // must be created separately with the same account_id
       }
 
@@ -187,11 +185,11 @@ namespace hive { namespace chain {
       }
 
       // Effective balance of VESTS for RC calculation optionally excluding part that cannot be delegated
-      // Needs: manabars_rc_object, assets_object
-      share_type get_maximum_rc( const manabars_rc_object& mrc, const assets_object& assets, bool only_delegable = false ) const
+      // Needs: assets_object (which now contains manabar/RC data)
+      share_type get_maximum_rc( const assets_object& assets, bool only_delegable = false ) const
       {
         share_type effective_vesting = get_effective_vesting_shares( assets );
-        return mrc.get_maximum_rc( effective_vesting, only_delegable );
+        return assets.get_maximum_rc( effective_vesting, only_delegable );
       }
 
       // Value of active step of pending power down (or zero)

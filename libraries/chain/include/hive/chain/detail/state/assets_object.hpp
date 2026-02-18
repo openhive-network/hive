@@ -5,6 +5,7 @@
 #include <hive/chain/hive_fwd.hpp>
 #include <hive/chain/hive_object_types.hpp>
 #include <hive/protocol/asset.hpp>
+#include <hive/chain/util/manabar.hpp>
 
 namespace hive { namespace chain {
 
@@ -14,9 +15,9 @@ namespace hive { namespace chain {
   using hive::protocol::asset;
 
   /**
-   * assets_object now contains all balance-related data AND all timestamp/schedule data
-   * that were previously split between assets_object and time_object.
-   * The merge eliminates one get<> lookup and one modify() call per most operations,
+   * assets_object now contains all balance-related data, all timestamp/schedule data,
+   * AND all manabar/RC data that were previously in manabars_rc_object.
+   * The merge eliminates get<> lookups and modify() calls per most operations,
    * improving performance by reducing B-tree traversals and undo overhead.
    */
   class assets_object : public object< assets_object_type, assets_object >
@@ -27,10 +28,25 @@ namespace hive { namespace chain {
       assets_object( allocator< Allocator > a, uint64_t _id,
         account_id_type _account_id,
         const account_name_type& _name = account_name_type(),
-        const asset& incoming_delegation = asset( 0, VESTS_SYMBOL ) )
-        : id( _id ), account_id( _account_id ), name( _name )
+        const asset& incoming_delegation = asset( 0, VESTS_SYMBOL ),
+        const time_point_sec& _creation_time = time_point_sec(),
+        bool _fill_mana = false,
+        int64_t _rc_adjustment = 0,
+        share_type effective_vesting_shares = 0 )
+        : id( _id ), account_id( _account_id ), name( _name ), rc_adjustment( _rc_adjustment )
       {
         received_vesting_shares += incoming_delegation;
+        voting_manabar.last_update_time = _creation_time.sec_since_epoch();
+        downvote_manabar.last_update_time = _creation_time.sec_since_epoch();
+        if( _fill_mana )
+          voting_manabar.current_mana = HIVE_100_PERCENT;
+        if( rc_adjustment.value )
+        {
+          rc_manabar.last_update_time = _creation_time.sec_since_epoch();
+          auto max_rc = get_maximum_rc( effective_vesting_shares ).value;
+          rc_manabar.current_mana = max_rc;
+          last_max_rc = max_rc;
+        }
       }
 
       // Link to parent account_object
@@ -160,6 +176,43 @@ namespace hive { namespace chain {
       time_point_sec get_last_vote_time() const { return last_vote_time; }
       void set_last_vote_time( const time_point_sec& value ) { last_vote_time = value; }
 
+      // ===== Manabar/RC accessors (formerly in manabars_rc_object) =====
+
+      // Effective balance of VESTS for RC calculation optionally excluding part that cannot be delegated
+      share_type get_maximum_rc( share_type effective_vesting_shares, bool only_delegable = false ) const
+      {
+        share_type total = effective_vesting_shares - delegated_rc;
+        if( only_delegable == false )
+          total += rc_adjustment + received_rc;
+        return total;
+      }
+
+      // RC compensation for account creation fee
+      share_type get_rc_adjustment() const { return rc_adjustment; }
+      void set_rc_adjustment( const share_type& value ) { rc_adjustment = value; }
+
+      // RC that were delegated to other accounts
+      share_type get_delegated_rc() const { return delegated_rc; }
+      void set_delegated_rc( const share_type& value ) { delegated_rc = value; }
+
+      // RC that were borrowed from other accounts
+      share_type get_received_rc() const { return received_rc; }
+      void set_received_rc( const share_type& value ) { received_rc = value; }
+
+      // Last max RC (for bug catching with RC code)
+      share_type get_last_max_rc() const { return last_max_rc; }
+      void set_last_max_rc( const share_type& value ) { last_max_rc = value; }
+
+      // Manabar accessors
+      util::manabar& get_rc_manabar() { return rc_manabar; }
+      const util::manabar& get_rc_manabar() const { return rc_manabar; }
+
+      util::manabar& get_voting_manabar() { return voting_manabar; }
+      const util::manabar& get_voting_manabar() const { return voting_manabar; }
+
+      util::manabar& get_downvote_manabar() { return downvote_manabar; }
+      const util::manabar& get_downvote_manabar() const { return downvote_manabar; }
+
     private:
       account_id_type   account_id;               // Links to parent account_object
       account_name_type name;                     // Account name (for index sort order compatibility)
@@ -202,6 +255,16 @@ namespace hive { namespace chain {
       time_point_sec    last_vote_time;           //(only used by outdated consensus checks - up to HF26)
       time_point_sec    next_vesting_withdrawal = fc::time_point_sec::maximum(); ///< after every withdrawal this is incremented by 1 week
 
+      // Fields merged from manabars_rc_object:
+      util::manabar     voting_manabar;
+      util::manabar     downvote_manabar;
+      util::manabar     rc_manabar;
+
+      share_type        rc_adjustment;            ///< compensation for account creation fee in form of extra RC
+      share_type        delegated_rc;             ///< RC delegated out to other accounts
+      share_type        received_rc;              ///< RC delegated to this account
+      share_type        last_max_rc;              ///< (for bug catching with RC code)
+
     CHAINBASE_UNPACK_CONSTRUCTOR(assets_object);
   };
 
@@ -239,6 +302,8 @@ FC_REFLECT( hive::chain::assets_object,
           (hbd_seconds_last_update)(hbd_last_interest_payment)
           (last_account_update)(last_post)(last_root_post)
           (last_post_edit)(last_vote_time)(next_vesting_withdrawal)
+          (voting_manabar)(downvote_manabar)(rc_manabar)
+          (rc_adjustment)(delegated_rc)(received_rc)(last_max_rc)
         )
 
 CHAINBASE_SET_INDEX_TYPE( hive::chain::assets_object, hive::chain::assets_index )

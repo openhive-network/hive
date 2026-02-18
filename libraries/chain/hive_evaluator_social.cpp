@@ -353,7 +353,6 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
 
   const auto& voter = _db.get_account( o.voter );
   const auto& voter_assets = _db.get< assets_object >( assets_object::id_type( voter.get_id().get_value() ) );
-  const auto& voter_mrc = _db.get< manabars_rc_object >( manabars_rc_object::id_type( voter.get_id().get_value() ) );
 
   FC_ASSERT( voter.can_vote() && "Voter has declined their voting rights." );
 
@@ -372,9 +371,9 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
 
   int64_t current_power = 0;
   {
-    int64_t elapsed_seconds = _now.sec_since_epoch() - voter_mrc.get_voting_manabar().last_update_time;
+    int64_t elapsed_seconds = _now.sec_since_epoch() - voter_assets.get_voting_manabar().last_update_time;
     int64_t regenerated_power = (HIVE_100_PERCENT * elapsed_seconds) / HIVE_VOTING_MANA_REGENERATION_SECONDS;
-    current_power = std::min( int64_t(voter_mrc.get_voting_manabar().current_mana) + regenerated_power, int64_t(HIVE_100_PERCENT) );
+    current_power = std::min( int64_t(voter_assets.get_voting_manabar().current_mana) + regenerated_power, int64_t(HIVE_100_PERCENT) );
     FC_ASSERT( current_power > 0, "Account currently does not have voting power." );
   }
   int64_t abs_weight = abs(o.weight);
@@ -426,13 +425,10 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
     }
   }
 
-  _db.modify( voter_mrc, [&]( manabars_rc_object& m )
-  {
-    m.get_voting_manabar().current_mana = current_power - used_power; // always nonnegative
-    m.get_voting_manabar().last_update_time = _now.sec_since_epoch();
-  } );
   _db.modify( voter_assets, [&]( assets_object& a )
   {
+    a.get_voting_manabar().current_mana = current_power - used_power; // always nonnegative
+    a.get_voting_manabar().last_update_time = _now.sec_since_epoch();
     a.set_last_vote_time( _now ); //not needed for consensus
   } );
 
@@ -649,7 +645,6 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
 
   const auto& voter   = _db.get_account( o.voter );
   const auto& voter_assets = _db.get< assets_object >( assets_object::id_type( voter.get_id().get_value() ) );
-  const auto& voter_mrc = _db.get< manabars_rc_object >( manabars_rc_object::id_type( voter.get_id().get_value() ) );
   const auto& dgpo    = _db.get_dynamic_global_properties();
 
   FC_ASSERT( voter.can_vote(), "Voter has declined their voting rights." );
@@ -690,9 +685,9 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
     previous_vote_weight = itr->get_weight();
   }
 
-  _db.modify( voter_mrc, [&]( manabars_rc_object& m )
+  _db.modify( voter_assets, [&]( assets_object& a )
   {
-    util::update_manabar( dgpo, voter, voter_assets, m );
+    util::update_manabar( dgpo, voter, a, a );
   });
 
   int16_t abs_weight = abs( o.weight );
@@ -706,20 +701,20 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
   {
     if( _db.has_hardfork( HIVE_HARDFORK_0_22__3485 ) )
     {
-      used_mana = ( std::max( ( ( uint128_t( voter_mrc.get_downvote_manabar().current_mana ) * HIVE_100_PERCENT ) / dgpo.downvote_pool_percent ),
-                      uint128_t( voter_mrc.get_voting_manabar().current_mana ) )
+      used_mana = ( std::max( ( ( uint128_t( voter_assets.get_downvote_manabar().current_mana ) * HIVE_100_PERCENT ) / dgpo.downvote_pool_percent ),
+                      uint128_t( voter_assets.get_voting_manabar().current_mana ) )
             * abs_weight * 60 * 60 * 24 ) / HIVE_100_PERCENT;
     }
     else
     {
-      used_mana = ( std::max( ( uint128_t( voter_mrc.get_downvote_manabar().current_mana * HIVE_100_PERCENT ) / dgpo.downvote_pool_percent ),
-                      uint128_t( voter_mrc.get_voting_manabar().current_mana ) )
+      used_mana = ( std::max( ( uint128_t( voter_assets.get_downvote_manabar().current_mana * HIVE_100_PERCENT ) / dgpo.downvote_pool_percent ),
+                      uint128_t( voter_assets.get_voting_manabar().current_mana ) )
             * abs_weight * 60 * 60 * 24 ) / HIVE_100_PERCENT;
     }
   }
   else
   {
-    used_mana = ( uint128_t( voter_mrc.get_voting_manabar().current_mana ) * abs_weight * 60 * 60 * 24 ) / HIVE_100_PERCENT;
+    used_mana = ( uint128_t( voter_assets.get_voting_manabar().current_mana ) * abs_weight * 60 * 60 * 24 ) / HIVE_100_PERCENT;
   }
 
   int64_t max_vote_denom = dgpo.vote_power_reserve_rate * HIVE_VOTING_MANA_REGENERATION_SECONDS;
@@ -731,16 +726,16 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
     // note that downvote requires more mana than necessary, which prevents accounts with no stake from downvoting;
     // while the effect might be unintentional, it was like that for long time and there is enough drama with
     // downvotes as it is, enabling "no effect" downvotes is not necessary, so we are not correcting it
-    FC_ASSERT( voter_mrc.get_voting_manabar().current_mana + voter_mrc.get_downvote_manabar().current_mana > fc::uint128_to_int64( used_mana ),
+    FC_ASSERT( voter_assets.get_voting_manabar().current_mana + voter_assets.get_downvote_manabar().current_mana > fc::uint128_to_int64( used_mana ),
       "Account does not have enough mana to downvote. voting_mana: ${v} downvote_mana: ${d} required_mana: ${r}",
-      ( "v", voter_mrc.get_voting_manabar().current_mana )( "d", voter_mrc.get_downvote_manabar().current_mana )( "r", fc::uint128_to_int64( used_mana ) ) );
+      ( "v", voter_assets.get_voting_manabar().current_mana )( "d", voter_assets.get_downvote_manabar().current_mana )( "r", fc::uint128_to_int64( used_mana ) ) );
   }
   else
   {
     // even after HF28 it is not possible to burn all mana in one 50 vote transaction due to "round up" code above
-    FC_ASSERT( voter_mrc.get_voting_manabar().has_mana( fc::uint128_to_int64( used_mana ) ),
+    FC_ASSERT( voter_assets.get_voting_manabar().has_mana( fc::uint128_to_int64( used_mana ) ),
       "Account does not have enough mana to vote. voting_mana: ${v} required_mana: ${r}",
-      ( "v", voter_mrc.get_voting_manabar().current_mana )( "r", fc::uint128_to_int64( used_mana ) ) );
+      ( "v", voter_assets.get_voting_manabar().current_mana )( "r", fc::uint128_to_int64( used_mana ) ) );
   }
 
   int64_t abs_rshares = fc::uint128_to_int64(used_mana);
@@ -755,34 +750,25 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
     abs_rshares = (int64_t) fc::uint128_to_uint64( ( uint128_t( abs_rshares ) * cashout_delta ) / HIVE_UPVOTE_LOCKOUT_SECONDS );
   }
 
-  _db.modify( voter_mrc, [&]( manabars_rc_object& m )
+  _db.modify( voter_assets, [&]( assets_object& a )
   {
     if( dgpo.downvote_pool_percent && o.weight < 0 )
     {
-      if( fc::uint128_to_int64(used_mana) > m.get_downvote_manabar().current_mana )
+      if( fc::uint128_to_int64(used_mana) > a.get_downvote_manabar().current_mana )
       {
-        /* used mana is always less than downvote_mana + voting_mana because the amount used
-          * is a fraction of max( downvote_mana, voting_mana ). If more mana is consumed than
-          * there is downvote_mana, then it is because voting_mana is greater, and used_mana
-          * is strictly smaller than voting_mana. This is the same reason why a check is not
-          * required when using voting mana on its own as an upvote.
-          */
-        auto remainder = fc::uint128_to_int64(used_mana) - m.get_downvote_manabar().current_mana;
-        m.get_downvote_manabar().use_mana( m.get_downvote_manabar().current_mana );
-        m.get_voting_manabar().use_mana( remainder );
+        auto remainder = fc::uint128_to_int64(used_mana) - a.get_downvote_manabar().current_mana;
+        a.get_downvote_manabar().use_mana( a.get_downvote_manabar().current_mana );
+        a.get_voting_manabar().use_mana( remainder );
       }
       else
       {
-        m.get_downvote_manabar().use_mana( fc::uint128_to_int64(used_mana) );
+        a.get_downvote_manabar().use_mana( fc::uint128_to_int64(used_mana) );
       }
     }
     else
     {
-      m.get_voting_manabar().use_mana( fc::uint128_to_int64(used_mana) );
+      a.get_voting_manabar().use_mana( fc::uint128_to_int64(used_mana) );
     }
-  } );
-  _db.modify( voter_assets, [&]( assets_object& a )
-  {
     a.set_last_vote_time( _now ); //not needed for consensus
   } );
 

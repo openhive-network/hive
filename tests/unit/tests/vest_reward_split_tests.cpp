@@ -47,7 +47,6 @@
 #include <hive/chain/witness_objects.hpp>
 #include <hive/chain/detail/state/hardfork_property_object.hpp>
 #include <hive/chain/detail/state/global_property_object.hpp>
-#include <hive/chain/detail/state/manabars_rc_object.hpp>
 #include <hive/chain/detail/state/assets_object.hpp>
 #include <hive/chain/detail/state/recovery_object.hpp>
 #include <hive/chain/detail/state/delayed_votes_object.hpp>
@@ -65,11 +64,11 @@ using namespace hive::chain;
 using namespace hive::protocol;
 using fc::string;
 
-#define VOTING_MANABAR( account_name ) (db->get< manabars_rc_object >( manabars_rc_object::id_type( db->get_account( account_name ).get_id().get_value() ) ).get_voting_manabar())
-#define DOWNVOTE_MANABAR( account_name ) (db->get< manabars_rc_object >( manabars_rc_object::id_type( db->get_account( account_name ).get_id().get_value() ) ).get_downvote_manabar())
+#define VOTING_MANABAR( account_name ) (db->get< assets_object >( assets_object::id_type( db->get_account( account_name ).get_id().get_value() ) ).get_voting_manabar())
+#define DOWNVOTE_MANABAR( account_name ) (db->get< assets_object >( assets_object::id_type( db->get_account( account_name ).get_id().get_value() ) ).get_downvote_manabar())
 #define GET_ASSETS( account_name ) (db->get< assets_object >( assets_object::id_type( db->get_account( account_name ).get_id().get_value() ) ))
 #define GET_TIME( account_name ) GET_ASSETS( account_name )
-#define GET_MRC( account_name ) (db->get< manabars_rc_object >( manabars_rc_object::id_type( db->get_account( account_name ).get_id().get_value() ) ))
+#define GET_MRC( account_name ) (db->get< assets_object >( assets_object::id_type( db->get_account( account_name ).get_id().get_value() ) ))
 #define GET_DV( account_name ) (db->get< delayed_votes_object >( delayed_votes_object::id_type( db->get_account( account_name ).get_id().get_value() ) ))
 #define GET_EFF_VESTS( account_name ) (db->get_account( account_name ).get_effective_vesting_shares( GET_ASSETS( account_name ) ))
 
