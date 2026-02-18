@@ -5240,6 +5240,115 @@ BOOST_AUTO_TEST_CASE( generating_payments_hive_conversion_treasury_balance )
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( generating_payments_hbd_fallback_when_no_price_feed )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: when hbd_print_rate == 0 but price feed is null, payment falls back to HBD" );
+
+    ACTORS( (alice)(bob)(carol) )
+    generate_block();
+
+    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    generate_block();
+
+    //=====================preparing=====================
+    auto creator = "alice";
+    auto receiver = "bob";
+
+    auto start_date = db->head_block_time();
+
+    auto daily_pay = ASSET( "48.000 TBD" );
+    auto hourly_pay = ASSET( "2.000 TBD" );
+
+    ISSUE_FUNDS( creator, ASSET( "160.000 TESTS" ) );
+    ISSUE_FUNDS( creator, ASSET( "80.000 TBD" ) );
+    ISSUE_FUNDS( db->get_treasury_name(), ASSET( "5000.000 TBD" ) );
+
+    auto voter_01 = "carol";
+
+    vest( voter_01, ASSET( "1.000 TESTS" ) );
+
+    start_date += fc::seconds( HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS );
+    generate_blocks( start_date );
+
+    auto end_date = start_date + fc::days( 2 );
+    //=====================preparing=====================
+
+    int64_t id_proposal_00 = create_proposal( creator, receiver, start_date, end_date, daily_pay, alice_private_key, alice_post_key );
+    generate_blocks( 1 );
+
+    vote_proposal( voter_01, { id_proposal_00 }, true/*approve*/, carol_private_key );
+    generate_blocks( 1 );
+
+    fund( receiver, ASSET( "0.001 TBD" ) );
+    generate_block( 5 );
+    fund( db->get_treasury_name(), ASSET( "0.001 TBD" ) );
+    generate_block( 5 );
+
+    // Force hbd_print_rate to 0 AND null out the price feed
+    db_plugin->debug_update( [&]( database& db )
+    {
+      db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
+      {
+        gpo.hbd_print_rate = 0;
+        gpo.hbd_stop_percent = 0;
+      });
+      db.modify( db.get_feed_history(), [&]( feed_history_object& f )
+      {
+        f.current_median_history = price();
+        f.market_median_history = price();
+        f.current_min_history = price();
+        f.current_max_history = price();
+      });
+    } );
+
+    const auto& dgpo = db->get_dynamic_global_properties();
+    BOOST_REQUIRE_EQUAL( dgpo.hbd_print_rate, 0 );
+    BOOST_REQUIRE( db->get_feed_history().current_median_history.is_null() );
+
+    const account_object& _receiver = db->get_account( receiver );
+
+    {
+      BOOST_TEST_MESSAGE( "---Payment falls back to HBD when no price feed---" );
+
+      auto before_receiver_hbd_balance = _receiver.get_hbd_balance();
+      auto before_receiver_balance = _receiver.get_balance();
+
+      auto next_block = get_nr_blocks_until_proposal_maintenance_block();
+      generate_blocks( next_block - 1 );
+      generate_blocks( 1 );
+
+      auto after_receiver_hbd_balance = _receiver.get_hbd_balance();
+      auto after_receiver_balance = _receiver.get_balance();
+
+      // With no price feed, payment should fall back to HBD even though print rate is 0
+      BOOST_REQUIRE( after_receiver_hbd_balance == before_receiver_hbd_balance + hourly_pay );
+      // Receiver should NOT get any HIVE
+      BOOST_REQUIRE( after_receiver_balance == before_receiver_balance );
+
+      // Virtual operation should have zero conversion field (no HIVE conversion happened)
+      auto recent_ops = get_last_operations( 5 );
+      bool found_proposal_pay = false;
+      for( auto& op : recent_ops )
+      {
+        if( op.which() == operation::tag< proposal_pay_operation >::value )
+        {
+          auto prop_pay = op.get< proposal_pay_operation >();
+          BOOST_REQUIRE( prop_pay.payment == hourly_pay );
+          BOOST_REQUIRE( prop_pay.conversion == ASSET( "0.000 TESTS" ) );
+          found_proposal_pay = true;
+          break;
+        }
+      }
+      BOOST_REQUIRE( found_proposal_pay );
+    }
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 

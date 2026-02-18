@@ -319,7 +319,7 @@ struct proposal_pay_operation : public virtual_operation
   uint32_t          proposal_id = 0; //id of chosen proposal
   account_name_type receiver; //account designated to receive funding (receiver of payment)
   account_name_type payer; //treasury account, source of payment
-  HBD_asset         payment; //(HBD) notional value / actual HBD paid (0 when converted)
+  HBD_asset         payment; //(HBD) original HBD amount of the payment (always set, regardless of conversion)
   HIVE_asset        conversion; //(HIVE) actual HIVE paid when print rate is 0 (0 otherwise)
 };
 
