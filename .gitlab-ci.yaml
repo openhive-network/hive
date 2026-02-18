@@ -1643,6 +1643,13 @@ build_openapi_spec_image:
           --cache-from "type=registry,ref=$CI_REGISTRY_IMAGE/$OPENAPI_IMAGE_NAME:cache" \
           --cache-to "type=registry,mode=max,ref=$CI_REGISTRY_IMAGE/$OPENAPI_IMAGE_NAME:cache" \
           --provenance=false \
+          --build-arg BUILD_TIME="$(date -u +'%Y-%m-%dT%H:%M:%SZ')" \
+          --build-arg GIT_COMMIT_SHA="$CI_COMMIT_SHA" \
+          --build-arg GIT_CURRENT_BRANCH="$CI_COMMIT_BRANCH" \
+          --build-arg GIT_LAST_LOG_MESSAGE="$(git log -1 --format=%s)" \
+          --build-arg GIT_LAST_COMMITTER="$(git log -1 --format=%an)" \
+          --build-arg GIT_LAST_COMMIT_DATE="$(git log -1 --format=%aI)" \
+          --build-arg CI_COMMIT_TAG="$CI_COMMIT_TAG" \
           --tag "$CI_REGISTRY_IMAGE/$OPENAPI_IMAGE_NAME:$CI_COMMIT_SHORT_SHA" \
           --tag "$CI_REGISTRY_IMAGE/$OPENAPI_IMAGE_NAME:$CI_COMMIT_TAG" \
           --tag "registry.hive.blog/hive/$OPENAPI_IMAGE_NAME:$CI_COMMIT_TAG" \
@@ -1655,6 +1662,12 @@ build_openapi_spec_image:
           --cache-from "type=registry,ref=$CI_REGISTRY_IMAGE/$OPENAPI_IMAGE_NAME:cache" \
           --cache-to "type=registry,mode=max,ref=$CI_REGISTRY_IMAGE/$OPENAPI_IMAGE_NAME:cache" \
           --provenance=false \
+          --build-arg BUILD_TIME="$(date -u +'%Y-%m-%dT%H:%M:%SZ')" \
+          --build-arg GIT_COMMIT_SHA="$CI_COMMIT_SHA" \
+          --build-arg GIT_CURRENT_BRANCH="$CI_COMMIT_BRANCH" \
+          --build-arg GIT_LAST_LOG_MESSAGE="$(git log -1 --format=%s)" \
+          --build-arg GIT_LAST_COMMITTER="$(git log -1 --format=%an)" \
+          --build-arg GIT_LAST_COMMIT_DATE="$(git log -1 --format=%aI)" \
           --tag "$CI_REGISTRY_IMAGE/$OPENAPI_IMAGE_NAME:$CI_COMMIT_SHORT_SHA" \
           --push \
           "$OPENAPI_BUILD_CONTEXT"
