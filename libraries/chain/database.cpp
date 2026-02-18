@@ -1715,11 +1715,9 @@ void database::process_funds()
     int64_t current_inflation_rate = std::max( start_inflation_rate - inflation_rate_adjustment, inflation_rate_floor );
 
     HIVE_asset new_hive( 0 );
-    if( has_hardfork( HIVE_HARDFORK_1_28_NO_DHF_HBD_IN_INFLATION ) )
+    auto median_price = get_feed_history().current_median_history;
+    if( has_hardfork( HIVE_HARDFORK_1_28_NO_DHF_HBD_IN_INFLATION ) && !median_price.is_null() )
     {
-      auto median_price = get_feed_history().current_median_history;
-      FC_ASSERT( median_price.is_null() == false );
-
       const auto& treasury_account = get_treasury();
       const HBD_asset hbd_supply_without_treasury = props.get_current_hbd_supply() - treasury_account.get_hbd_balance();
       FC_ASSERT( hbd_supply_without_treasury.amount.value >= 0 ); // ABW: not needed
@@ -1757,11 +1755,20 @@ void database::process_funds()
     witness_reward /= wso.witness_pay_normalization_factor;
 
     HBD_asset new_hbd( 0 );
+    bool dhf_funded_as_hive = false;
 
     if( dhf_new_funds.get_amount() != 0 )
     {
-      new_hbd = dhf_new_funds * feed.current_median_history;
-      adjust_balance( get_treasury_name(), new_hbd );
+      if( !feed.current_median_history.is_null() )
+      {
+        new_hbd = dhf_new_funds * feed.current_median_history;
+        adjust_balance( get_treasury_name(), new_hbd );
+      }
+      else
+      {
+        adjust_balance( get_treasury_name(), dhf_new_funds );
+        dhf_funded_as_hive = true;
+      }
     }
 
     new_hive = content_reward + vesting_reward + witness_reward;
@@ -1771,7 +1778,7 @@ void database::process_funds()
       p.total_vesting_fund_hive += vesting_reward;
       if( !has_hardfork( HIVE_HARDFORK_0_17__774 ) )
         p.total_reward_fund_hive += content_reward;
-      p.current_supply      += new_hive;
+      p.current_supply      += new_hive + ( dhf_funded_as_hive ? dhf_new_funds : HIVE_asset(0) );
       p.current_hbd_supply  += new_hbd;
       p.virtual_supply      += new_hive + dhf_new_funds;
       p.dhf_interval_ledger += new_hbd;
