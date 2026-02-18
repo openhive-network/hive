@@ -1,5 +1,6 @@
 #pragma once
 #include <appbase/application.hpp>
+#include <hive/utilities/notifications.hpp>
 
 #include <hive/plugins/json_rpc/json_rpc_plugin.hpp>
 
