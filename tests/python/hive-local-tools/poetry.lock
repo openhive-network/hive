@@ -648,13 +648,13 @@ hiveio-beekeepy = ">=1.28.6"
 
 [[package]]
 name = "hiveio-beekeepy"
-version = "1.28.6"
+version = "1.28.6.post20260218130331.dev0+unstable"
 description = "All in one package for beekeeper interaction via Python interface."
 optional = false
-python-versions = "<4,>=3.12"
+python-versions = ">=3.12,<4"
 groups = ["main"]
 files = [
-    {file = "hiveio_beekeepy-1.28.6-py3-none-any.whl", hash = "sha256:b4725690361effb7bea8d13752aef9341914992048da651d7ec11acecfeb8305"},
+    {file = "hiveio_beekeepy-1.28.6.post20260218130331.dev0+unstable-py3-none-any.whl", hash = "sha256:c036498327d99d9064d50bf2acc3740f80da67c2292e85bd089a60355cccec03"},
 ]
 
 [package.dependencies]
@@ -664,6 +664,11 @@ loguru = ">=0.7.2"
 psutil = ">=7.0.0"
 python-dateutil = ">=2.8.2"
 requests = ">=2.32.3"
+
+[package.source]
+type = "legacy"
+url = "https://gitlab.syncad.com/api/v4/groups/136/-/packages/pypi/simple"
+reference = "gitlab-hive"
 
 [[package]]
 name = "hiveio-schemas"
@@ -2374,4 +2379,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.14,<4"
-content-hash = "178e93c4f3706f8e2e40524545717bcfa7303ba65f13a4be8b7d8797b1e3c725"
+content-hash = "4af94a85e2e6a1aac64e2bad2a7f8d527674bb0b6a2e465f0b07f84027ba5069"
