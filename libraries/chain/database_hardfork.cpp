@@ -559,11 +559,11 @@ const hardfork_property_object& database::get_hardfork_property_object()const
   return get< hardfork_property_object >();
 } FC_CAPTURE_AND_RETHROW() }
 
-void database::gather_balance( const std::string& name, const asset& balance, const asset& hbd_balance )
+void database::gather_balance( const std::string& name, const HIVE_asset& hive_balance, const HBD_asset& hbd_balance )
 {
   modify( get_hardfork_property_object(), [&]( hardfork_property_object& hfp )
   {
-    hfp.h23_balances.emplace( std::make_pair( name, hf23_item{ balance, hbd_balance } ) );
+    hfp.h23_balances.emplace( std::make_pair( name, hf23_item{ hive_balance, hbd_balance } ) );
   } );
 }
 

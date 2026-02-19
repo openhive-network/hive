@@ -288,7 +288,7 @@ hive::chain::hf23_item get_balances( const account_object& obj )
 
 bool cmp_hf23_item( const hive::chain::hf23_item& a, const hive::chain::hf23_item& b )
 {
-  return a.balance == b.balance && a.hbd_balance == b.hbd_balance;
+  return a.hive_balance == b.hive_balance && a.hbd_balance == b.hbd_balance;
 }
 
 BOOST_AUTO_TEST_CASE( save_test_02 )

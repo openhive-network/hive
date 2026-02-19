@@ -6,15 +6,16 @@
 
 namespace hive { namespace chain {
 
-using hive::protocol::asset;
+using hive::protocol::HIVE_asset;
+using hive::protocol::HBD_asset;
 
 struct hf23_item
 {
-  asset       balance;
-  asset       hbd_balance;
+  HIVE_asset  hive_balance;
+  HBD_asset   hbd_balance;
 };
 
 } } // namespace hive::chain
 
 FC_REFLECT( hive::chain::hf23_item,
-  (balance)(hbd_balance) )
+  (hive_balance)(hbd_balance) )

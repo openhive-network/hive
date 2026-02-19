@@ -1436,15 +1436,15 @@ void database::restore_accounts( const std::set< std::string >& restored_account
     }
 
     adjust_balance( treasury_account, -found->second.hbd_balance );
-    adjust_balance( treasury_account, -found->second.balance );
+    adjust_balance( treasury_account, -found->second.hive_balance );
 
     adjust_balance( *account_ptr, found->second.hbd_balance );
-    adjust_balance( *account_ptr, found->second.balance );
+    adjust_balance( *account_ptr, found->second.hive_balance );
 
-    operation vop = hardfork_hive_restore_operation( name, treasury_name, found->second.hbd_balance, found->second.balance );
+    operation vop = hardfork_hive_restore_operation( name, treasury_name, found->second.hbd_balance, found->second.hive_balance );
     push_virtual_operation( *this, vop );
 
-    ilog( "Balances ${hbd} and ${hive} for the account ${acc} were restored", ( "hbd", found->second.hbd_balance )( "hive", found->second.balance )( "acc", name ) );
+    ilog( "Balances ${hbd} and ${hive} for the account ${acc} were restored", ( "hbd", found->second.hbd_balance )( "hive", found->second.hive_balance )( "acc", name ) );
   }
 }
 
