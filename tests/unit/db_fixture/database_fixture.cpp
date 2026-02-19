@@ -21,6 +21,9 @@
 #include <hive/chain/detail/state/dhf_objects_multiindex.hpp>
 #include <hive/chain/detail/state/feed_history_object_multiindex.hpp>
 #include <hive/chain/detail/state/global_property_object_multiindex.hpp>
+#include <hive/chain/detail/state/assets_object.hpp>
+#include <hive/chain/detail/state/time_object.hpp>
+#include <hive/chain/detail/state/delayed_votes_object.hpp>
 
 #include <hive/plugins/chain/chain_plugin.hpp>
 #include <hive/plugins/webserver/webserver_plugin.hpp>
@@ -230,9 +233,7 @@ const account_object& database_fixture::account_create(
       vest( name, HIVE_asset( fee_remainder ) );
     }
 
-    const account_object& acct = db->get_account( name );
-
-    return acct;
+    return db->get_account( name );
   }
   FC_CAPTURE_AND_RETHROW( (name)(creator) )
 }
@@ -349,6 +350,11 @@ void database_fixture::witness_feed_publish(
   push_transaction( op, key );
 }
 
+account_id_type database_fixture::get_account_id( const string& account_name )const
+{
+  return db->get_account( account_name ).get_id();
+}
+
 share_type database_fixture::get_votes( const string& witness_name )
 {
   const auto& idx = db->get_index< witness_index >().indices().get< by_name >();
@@ -387,9 +393,11 @@ void database_fixture::issue_funds( const string& account_name, const HIVE_asset
 { try {
   db_plugin->debug_update( [=]( database& db)
   {
-    db.modify( db.get_account( account_name ), [&]( account_object& a )
+    const auto& acnt = db.get_account( account_name );
+    const auto& acnt_assets = db.get< assets_object, by_account_id >( acnt.get_id() );
+    db.modify( acnt_assets, [&]( assets_object& a )
     {
-      a.balance += amount;
+      a.set_balance( a.get_balance() + amount.to_asset() );
     } );
 
     db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
@@ -418,10 +426,17 @@ void database_fixture::issue_funds( const string& account_name, const HBD_asset&
       } );
     }
 
-    db.modify( db.get_account( account_name ), [&]( account_object& a )
+    const auto& acnt = db.get_account( account_name );
+    const auto& acnt_assets = db.get< assets_object, by_account_id >( acnt.get_id() );
+    db.modify( acnt_assets, [&]( assets_object& a )
     {
-      a.hbd_balance += amount;
-      a.hbd_seconds_last_update = db.head_block_time();
+      a.set_hbd_balance( a.get_hbd_balance() + amount );
+    } );
+
+    const auto& acnt_time = db.get< time_object, by_account_id >( acnt.get_id() );
+    db.modify( acnt_time, [&]( time_object& t )
+    {
+      t.set_hbd_seconds_last_update( db.head_block_time() );
     } );
 
     db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
@@ -954,54 +969,96 @@ uint64_t database_fixture::get_nr_blocks_until_daily_proposal_maintenance_block(
   return ret;
 }
 
-account_id_type database_fixture::get_account_id( const string& account_name )const
-{
-  return db->get_account( account_name ).get_id();
-}
-
 HIVE_asset database_fixture::get_hive_balance( const string& account_name )const
 {
-  return db->get_account( account_name ).get_hive_balance();
+  const auto& acnt = db->get_account( account_name );
+  const auto& assets = db->get< assets_object, by_account_id >( acnt.get_id() );
+  return assets.get_balance();
 }
 
 HBD_asset database_fixture::get_hbd_balance( const string& account_name )const
 {
-  return db->get_account( account_name ).get_hbd_balance();
+  const auto& acnt = db->get_account( account_name );
+  const auto& assets = db->get< assets_object, by_account_id >( acnt.get_id() );
+  return assets.get_hbd_balance();
 }
 
 HIVE_asset database_fixture::get_hive_savings( const string& account_name )const
 {
-  return db->get_account( account_name ).get_hive_savings();
+  const auto& acnt = db->get_account( account_name );
+  const auto& assets = db->get< assets_object, by_account_id >( acnt.get_id() );
+  return assets.get_savings();
 }
 
 HBD_asset database_fixture::get_hbd_savings( const string& account_name )const
 {
-  return db->get_account( account_name ).get_hbd_savings();
+  const auto& acnt = db->get_account( account_name );
+  const auto& assets = db->get< assets_object, by_account_id >( acnt.get_id() );
+  return assets.get_hbd_savings();
 }
 
 HIVE_asset database_fixture::get_hive_rewards( const string& account_name )const
 {
-  return db->get_account( account_name ).get_hive_rewards();
+  const auto& acnt = db->get_account( account_name );
+  const auto& assets = db->get< assets_object, by_account_id >( acnt.get_id() );
+  return assets.get_rewards();
 }
 
 HBD_asset database_fixture::get_hbd_rewards( const string& account_name )const
 {
-  return db->get_account( account_name ).get_hbd_rewards();
+  const auto& acnt = db->get_account( account_name );
+  const auto& assets = db->get< assets_object, by_account_id >( acnt.get_id() );
+  return assets.get_hbd_rewards();
 }
 
 VEST_asset database_fixture::get_vesting( const string& account_name )const
 {
-  return db->get_account( account_name ).get_vesting();
+  const auto& acnt = db->get_account( account_name );
+  const auto& assets = db->get< assets_object, by_account_id >( acnt.get_id() );
+  return assets.get_vesting();
 }
 
 VEST_asset database_fixture::get_vest_rewards( const string& account_name )const
 {
-  return db->get_account( account_name ).get_vest_rewards();
+  const auto& acnt = db->get_account( account_name );
+  const auto& assets = db->get< assets_object, by_account_id >( acnt.get_id() );
+  return assets.get_vest_rewards();
 }
 
 HIVE_asset database_fixture::get_vest_rewards_as_hive( const string& account_name )const
 {
-  return db->get_account( account_name ).get_vest_rewards_as_hive();
+  const auto& acnt = db->get_account( account_name );
+  const auto& assets = db->get< assets_object, by_account_id >( acnt.get_id() );
+  return assets.get_vest_rewards_as_hive();
+}
+
+const util::manabar& database_fixture::get_voting_manabar( const string& account_name )const
+{
+  const auto& acnt = db->get_account( account_name );
+  const auto& mrc = db->get< manabars_rc_object, by_account_id >( acnt.get_id() );
+  return mrc.get_voting_manabar();
+}
+
+const util::manabar& database_fixture::get_downvote_manabar( const string& account_name )const
+{
+  const auto& acnt = db->get_account( account_name );
+  const auto& mrc = db->get< manabars_rc_object, by_account_id >( acnt.get_id() );
+  return mrc.get_downvote_manabar();
+}
+
+share_type database_fixture::get_effective_vesting_shares( const string& account_name )const
+{
+  const auto& acnt = db->get_account( account_name );
+  const auto& assets = db->get< assets_object, by_account_id >( acnt.get_id() );
+  const auto& time_obj = db->get< time_object, by_account_id >( acnt.get_id() );
+  return acnt.get_effective_vesting_shares( assets, time_obj );
+}
+
+time_point_sec database_fixture::get_last_vote_time( const string& account_name )const
+{
+  const auto& acnt = db->get_account( account_name );
+  const auto& time_obj = db->get< time_object, by_account_id >( acnt.get_id() );
+  return time_obj.get_last_vote_time();
 }
 
 comment database_fixture::get_comment( const std::string& author, const std::string& permlink )const
@@ -1232,26 +1289,30 @@ void database_fixture::recover_account( const std::string& account_to_recover, c
 
 bool database_fixture::compare_delayed_vote_count( const account_name_type& name, const std::vector<uint64_t>& data_to_compare )
 {
-  const auto& idx = db->get_index< account_index, by_delayed_voting >();
-  for(const auto& usr : idx)
-    if(usr.get_name() == name)
-    {
-      if (usr.delayed_votes.size() != data_to_compare.size()) {
-        BOOST_TEST_MESSAGE("Incorrect delayed votes size: expected: " << data_to_compare.size() << ", actual: " << usr.delayed_votes.size());
-        return false;
-      }
-      const auto p = std::mismatch(
-        usr.delayed_votes.begin(),
-        usr.delayed_votes.end(),
-        data_to_compare.begin(),
-        data_to_compare.end(),
-        [](const delayed_votes_data& x, const uint64_t y){ return x.val == y; });
-      if (p.first != usr.delayed_votes.end() && p.second != data_to_compare.end()) {
-        BOOST_TEST_MESSAGE("Incorrect delayed votes: expected: " << *p.second << ", actual: " << p.first->val.value);
-      }
-      return p.first == usr.delayed_votes.end() && p.second == data_to_compare.end();
-    }
-  return false;
+  const auto* account = db->find_account( name );
+  if( account == nullptr )
+    return false;
+
+  const auto* dv = db->find< delayed_votes_object, by_account_id >( account->get_id() );
+  if( dv == nullptr )
+    return false;
+
+  if( dv->get_delayed_votes().size() != data_to_compare.size() )
+  {
+    BOOST_TEST_MESSAGE("Incorrect delayed votes size: expected: " << data_to_compare.size() << ", actual: " << dv->get_delayed_votes().size());
+    return false;
+  }
+  const auto p = std::mismatch(
+    dv->get_delayed_votes().begin(),
+    dv->get_delayed_votes().end(),
+    data_to_compare.begin(),
+    data_to_compare.end(),
+    [](const delayed_votes_data& x, const uint64_t y){ return x.val == y; });
+  if( p.first != dv->get_delayed_votes().end() && p.second != data_to_compare.end() )
+  {
+    BOOST_TEST_MESSAGE("Incorrect delayed votes: expected: " << *p.second << ", actual: " << p.first->val.value);
+  }
+  return p.first == dv->get_delayed_votes().end() && p.second == data_to_compare.end();
 };
 
 vector< operation > database_fixture::get_last_operations( uint32_t num_ops )

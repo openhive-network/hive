@@ -6,9 +6,8 @@
 #include <hive/chain/database.hpp>
 #include <hive/chain/index.hpp>
 #include <hive/chain/account_object.hpp>
+#include <hive/chain/account_object_multiindex.hpp>
 #include <hive/chain/notifications.hpp>
-#include <chainbase/chainbase.inl>
-#include <hive/chain/util/type_registrar_definition.hpp>
 
 #include <hive/utilities/signal.hpp>
 
@@ -18,6 +17,10 @@
 #include <fc/exception/exception.hpp>
 
 namespace hive { namespace plugins { namespace metadata {
+
+// Use types from chain namespace
+using hive::chain::account_metadata_object;
+using hive::chain::by_account;
 
 namespace detail {
 
@@ -195,7 +198,8 @@ void metadata_plugin::plugin_initialize( const boost::program_options::variables
     my->_post_apply_operation_conn = db.add_post_apply_operation_handler(
       [&]( const hive::chain::operation_notification& note ){ my->on_post_apply_operation( note ); }, *this, 0 );
 
-    HIVE_ADD_PLUGIN_INDEX(db, account_metadata_index);
+    // Note: account_metadata_index is now registered as a core index in database_authority.cpp
+    // so we don't need to add it as a plugin index here.
 
     ilog( "metadata: plugin_initialize() end" );
   } FC_CAPTURE_AND_RETHROW()
@@ -210,4 +214,5 @@ void metadata_plugin::plugin_shutdown()
 
 } } } // hive::plugins::metadata
 
-HIVE_DEFINE_TYPE_REGISTRAR_REGISTER_TYPE(hive::plugins::metadata::account_metadata_index)
+// Note: Type registration for account_metadata_index is now done in
+// database_authority.cpp as it's a core index, not a plugin index.

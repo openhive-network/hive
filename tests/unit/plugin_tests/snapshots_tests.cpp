@@ -45,7 +45,7 @@ BOOST_AUTO_TEST_CASE( additional_allocation_after_snapshot_load )
 
       generate_block();
 
-      const auto& index = db()->get_index<account_index>();
+      const auto& index = db()->get_index<delayed_votes_index>();
       const size_t initial_allocations = index.get_item_additional_allocation();
 
       ACTOR_DEFAULT_FEE( alice )
@@ -73,7 +73,7 @@ BOOST_AUTO_TEST_CASE( additional_allocation_after_snapshot_load )
       db()->set_hardfork( 24 );
       generate_block();
 
-      const auto& index = db()->get_index<account_index>();
+      const auto& index = db()->get_index<delayed_votes_index>();
       BOOST_REQUIRE_GT(index.get_item_additional_allocation(), 0);
     }
 

@@ -5,6 +5,9 @@
 #include <hive/plugins/witness/witness_plugin.hpp>
 
 #include <hive/chain/detail/state/witness_objects_multiindex.hpp>
+#include <hive/chain/detail/state/manabars_rc_object.hpp>
+#include <hive/chain/detail/state/assets_object.hpp>
+#include <hive/chain/detail/state/time_object.hpp>
 
 #include <hive/utilities/database_configuration.hpp>
 #include <hive/utilities/logging_config.hpp>
@@ -91,12 +94,15 @@ void clean_database_fixture::validate_database()
   if( db->has_hardfork( HIVE_HARDFORK_0_20 ) )
   {
     const auto& idx = db->get_index< account_index, by_name >();
-    for( const account_object& account : idx )
+    for( const auto& account : idx )
     {
-      int64_t max_rc = account.get_maximum_rc().value;
-      FC_ASSERT( max_rc == account.last_max_rc,
+      const auto& mrc = db->get< manabars_rc_object, by_account_id >( account.get_id() );
+      const auto& assets = db->get< assets_object, by_account_id >( account.get_id() );
+      const auto& time_obj = db->get< time_object, by_account_id >( account.get_id() );
+      int64_t max_rc = account.get_maximum_rc( mrc, assets, time_obj ).value;
+      FC_ASSERT( max_rc == mrc.get_last_max_rc(),
         "Account ${a} max RC changed from ${old} to ${new} without triggering an op, noticed on block ${b} in validate_database()",
-        ( "a", account.get_name() )( "old", account.last_max_rc )( "new", max_rc )( "b", db->head_block_num() ) );
+        ( "a", account.get_name() )( "old", mrc.get_last_max_rc() )( "new", max_rc )( "b", db->head_block_num() ) );
     }
   }
 }
@@ -196,7 +202,7 @@ time_point_sec delayed_vote_database_fixture::move_forward_with_update( const fc
   for(const auto& var : tmp)
   {
     auto x = var.second;
-    x.account = &db->get_account(var.first);
+    x.account = &( db->get_account(var.first) );
     items->insert(x);
   }
 

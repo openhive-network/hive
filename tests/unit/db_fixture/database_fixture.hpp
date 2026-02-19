@@ -285,7 +285,7 @@ struct database_fixture {
 
   fc::string get_current_time_iso_string() const;
 
-  const account_object& account_create(
+    const account_object& account_create(
     const string& name,
     const string& creator,
     const private_key_type& creator_key,
@@ -295,19 +295,19 @@ struct database_fixture {
     const string& json_metadata
   );
 
-  const account_object& account_create(
+    const account_object& account_create(
     const string& name,
     const public_key_type& key,
     const public_key_type& post_key
   );
 
-  const account_object& account_create_default_fee(
+    const account_object& account_create_default_fee(
     const string& name,
     const public_key_type& key,
     const public_key_type& post_key
   );
 
-  const account_object& account_create(
+    const account_object& account_create(
     const string& name,
     const public_key_type& key
   );
@@ -319,6 +319,8 @@ struct database_fixture {
     const public_key_type& signing_key,
     const share_type& fee
   );
+
+  account_id_type get_account_id( const string& account_name )const;
 
   void account_update( const string& account, const fc::ecc::public_key& memo_key, const string& metadata,
                        optional<authority> owner, optional<authority> active, optional<authority> posting,
@@ -427,6 +429,11 @@ struct database_fixture {
   VEST_asset get_vesting( const string& account_name )const;
   VEST_asset get_vest_rewards( const string& account_name )const;
   HIVE_asset get_vest_rewards_as_hive( const string& account_name )const;
+
+  const util::manabar& get_voting_manabar( const string& account_name )const;
+  const util::manabar& get_downvote_manabar( const string& account_name )const;
+  share_type get_effective_vesting_shares( const string& account_name )const;
+  time_point_sec get_last_vote_time( const string& account_name )const;
 
   comment get_comment( const string& author, const string& permlink )const;
 

@@ -409,7 +409,7 @@ namespace shared_memory_file_util
     save_index_name(add_index_to_db<hive::plugins::reputation::reputation_index>());
     save_index_name(add_index_to_db<hive::plugins::transaction_status::transaction_status_index>());
     save_index_name(add_index_to_db<hive::plugins::transaction_status::transaction_status_block_index>());
-    save_index_name(add_index_to_db<hive::plugins::metadata::account_metadata_index>());
+    save_index_name(add_index_to_db<hive::chain::account_metadata_index>());
 
     log_result("Detected " + std::to_string(index_counter) + " indices:\n" + detected_indices_stream.str(), std::to_string(index_counter) + " detected indices", "detected_indices.log");
   }

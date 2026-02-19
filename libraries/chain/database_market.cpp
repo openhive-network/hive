@@ -74,7 +74,7 @@ void database::expire_escrow_ratification()
 
     modify( get_account( old_escrow.from ), []( account_object& a )
     {
-      a.pending_escrow_transfers--;
+      a.set_pending_escrow_transfers( a.get_pending_escrow_transfers() - 1 );
     } );
 
     remove( old_escrow );
@@ -97,7 +97,7 @@ void database::remove_pending_escrows( const account_object& account, const acco
 
     modify( account, []( account_object& a )
     {
-      a.pending_escrow_transfers--;
+      a.set_pending_escrow_transfers( a.get_pending_escrow_transfers() - 1 );
     } );
 
     remove( escrow );
@@ -147,7 +147,7 @@ void database::process_savings_withdraws()
 
     modify( get_account( itr->from ), [&]( account_object& a )
     {
-      a.savings_withdraw_requests--;
+      a.set_savings_withdraw_requests( a.get_savings_withdraw_requests() - 1 );
     });
 
     push_virtual_operation( *this, fill_transfer_from_savings_operation( itr->from, itr->to, itr->amount, itr->request_id, to_string( itr->memo) ) );
@@ -173,7 +173,7 @@ void database::remove_pending_savings_withdraws( const account_object& account, 
     adjust_balance( account, withdrawal.amount );
     modify( account, []( account_object& a )
     {
-      a.savings_withdraw_requests--;
+      a.set_savings_withdraw_requests( a.get_savings_withdraw_requests() - 1 );
     } );
 
     remove( withdrawal );
@@ -189,7 +189,7 @@ void database::remove_pending_savings_withdraws( const account_object& account, 
     adjust_balance( account, withdrawal.amount );
     modify( get_account( withdrawal.from ), []( account_object& a )
     {
-      a.savings_withdraw_requests--;
+      a.set_savings_withdraw_requests( a.get_savings_withdraw_requests() - 1 );
     } );
 
     remove( withdrawal );

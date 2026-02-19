@@ -577,10 +577,11 @@ void transaction_builder::build_vote( const account_object& actor, uint64_t nonc
 
 void transaction_builder::build_transfer( const account_object& actor, uint64_t nonce )
 {
+  const auto& actor_assets = _common._db.get< assets_object, by_account_id >( actor.get_id() );
   bool use_hive = false;
-  if( actor.get_hbd_balance().amount.value == 0 )
+  if( actor_assets.get_hbd_balance().amount.value == 0 )
   {
-    if( actor.get_hive_balance().amount.value == 0 )
+    if( actor_assets.get_balance().amount.value == 0 )
     {
       ++_transfer_substitutions;
       build_custom( actor, nonce );
@@ -702,17 +703,19 @@ void colony_plugin_impl::start( uint32_t block_num )
     if( lib.get() != nullptr )
       lib_ts = lib->get_block_header().timestamp;
   }
-  for( const auto& account : accounts )
+  for( const auto& _account : accounts )
   {
+    const auto& account = _db.get_account( _account.get_name() );
+
     if( account.get_block_creation_time() > lib_ts )
     {
       dlog( "Account ${a} is too fresh to be safely used as colony worker.", ( "a", account.get_name() ) );
       continue;
     }
 
-    auto get_active = [&]( const std::string& name ) { return authority( _db.get< account_authority_object, by_account >( name ).active ); };
-    auto get_owner = [&]( const std::string& name ) { return authority( _db.get< account_authority_object, by_account >( name ).owner ); };
-    auto get_posting = [&]( const std::string& name ) { return authority( _db.get< account_authority_object, by_account >( name ).posting ); };
+    auto get_active = [&]( const std::string& name ) { return _db.find_account_authority( name )->active; };
+    auto get_owner = [&]( const std::string& name ) { return _db.find_account_authority( name )->owner; };
+    auto get_posting = [&]( const std::string& name ) { return _db.find_account_authority( name )->posting; };
     auto get_witness_key = [&]( const std::string& name ) { try { return _db.get_witness( name ).signing_key; } FC_CAPTURE_AND_RETHROW( ( name ) ) };
 
     bool hf28 = _db.has_hardfork( HIVE_HARDFORK_1_28_ALLOW_STRICT_AND_MIXED_AUTHORITIES );
