@@ -7,7 +7,7 @@
 
 namespace hive { namespace chain {
 
-  class time_object : public object< time_object_type, time_object, std::false_type /* no dynamic alloc */ >
+  class time_object : public object< time_object_type, time_object, std::false_type /* no dynamic alloc */, std::true_type /* enable no undo remove */ >
   {
     CHAINBASE_OBJECT( time_object );
     public:

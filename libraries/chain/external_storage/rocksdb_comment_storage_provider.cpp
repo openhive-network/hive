@@ -5,7 +5,7 @@
 namespace hive { namespace chain {
 
 rocksdb_comment_storage_provider::rocksdb_comment_storage_provider( const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application& app )
-  : rocksdb_storage_provider( blockchain_storage_path, storage_path, app, "COMMENT" )
+  : rocksdb_base_storage_provider( blockchain_storage_path, storage_path, app, "COMMENT" )
 {
 
 }
@@ -24,19 +24,14 @@ rocksdb_storage_provider::ColumnDefinitions rocksdb_comment_storage_provider::pr
   return columnDefs;
 }
 
-WriteBatch& rocksdb_comment_storage_provider::getWriteBuffer()
+void rocksdb_comment_storage_provider::save( ColumnTypes column_type, const Slice& key, const Slice& value )
 {
-  return _writeBuffer;
+  rocksdb_storage_provider::save( column_type, key, value );
 }
 
-void rocksdb_comment_storage_provider::save( const Slice& key, const Slice& value )
+bool rocksdb_comment_storage_provider::read( ColumnTypes column_type, const Slice& key, PinnableSlice& value )
 {
-  rocksdb_storage_provider::save( key, value );
-}
-
-bool rocksdb_comment_storage_provider::read( const Slice& key, PinnableSlice& value )
-{
-  return rocksdb_storage_provider::read( key, value );
+  return rocksdb_storage_provider::read( column_type, key, value );
 }
 
 }}

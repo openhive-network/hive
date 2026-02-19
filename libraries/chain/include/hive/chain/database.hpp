@@ -12,6 +12,7 @@
 #include <hive/chain/util/type_registrar.hpp>
 #include <hive/chain/external_storage/comments_handler_ptr.hpp>
 #include <hive/chain/external_storage/comment.hpp>
+#include <hive/chain/external_storage/accounts_handler.hpp>
 
 #include <hive/protocol/asset.hpp>
 #include <hive/protocol/hardfork.hpp>
@@ -109,6 +110,7 @@ namespace chain {
     fc::path data_dir;
     fc::path shared_mem_dir;
     fc::path comments_storage_path;
+    fc::path state_storage_path;
     uint64_t shared_file_size = 0;
     uint16_t shared_file_full_threshold = 0;
     uint16_t shared_file_scale_rate = 0;
@@ -297,6 +299,18 @@ namespace chain {
 
       const account_object& get_account(  const account_name_type& name )const;
       const account_object* find_account( const account_name_type& name )const;
+
+      account_authority get_volatile_account_authority( const account_name_type& account_name )const;
+      account_authority find_volatile_account_authority( const account_name_type& account_name )const;
+
+      account_metadata get_volatile_account_metadata( const account_name_type& account_name )const;
+      account_metadata find_volatile_account_metadata( const account_name_type& account_name )const;
+
+      account get_volatile_account(  const account_id_type&     id )const;
+      account find_volatile_account( const account_id_type&     id )const;
+
+      account get_volatile_account(  const account_name_type& name )const;
+      account find_volatile_account( const account_name_type& name )const;
 
       const comment_object*  find_comment( comment_id_type comment_id )const;
 
@@ -862,6 +876,7 @@ namespace chain {
       std::optional<time_point_sec> _current_timestamp;
 
       comments_handler_ptr          _comments_handler;
+      accounts_handler::ptr         _accounts_handler;
 
     public:
 
@@ -880,8 +895,34 @@ namespace chain {
 
       comments_handler& get_comments_handler() const
       {
-        FC_ASSERT( _comments_handler );
+        FC_ASSERT( _comments_handler && "comments handler doesn't exist" );
         return *_comments_handler.get();
+      }
+
+      void set_accounts_handler( accounts_handler::ptr obj )
+      {
+        _accounts_handler = obj;
+      }
+
+      accounts_handler& get_accounts_handler() const
+      {
+        FC_ASSERT( _accounts_handler && "accounts handler doesn't exist" );
+        return *_accounts_handler.get();
+      }
+
+      template<typename ObjectType, typename ... Args>
+      const ObjectType& create( Args&&... args )
+      {
+        const ObjectType& _result = chainbase::database::create<ObjectType>( args... );
+        get_accounts_handler().create( _result );
+        return _result;
+      }
+
+      template<typename ObjectType, typename Modifier>
+      void modify( const ObjectType& obj, Modifier&& m )
+      {
+        if( !get_accounts_handler().modify<ObjectType>( obj, m ) )
+          chainbase::database::modify( obj, m );
       }
 
     private:

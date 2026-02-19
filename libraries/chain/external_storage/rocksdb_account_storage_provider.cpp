@@ -1,0 +1,107 @@
+
+#include <hive/chain/external_storage/rocksdb_account_storage_provider.hpp>
+#include <hive/chain/external_storage/account_rocksdb_objects.hpp>
+namespace hive { namespace chain {
+
+rocksdb_account_storage_provider::rocksdb_account_storage_provider( const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application& app )
+  : rocksdb_base_storage_provider( blockchain_storage_path, storage_path, app, "ACCOUNT" )
+{
+
+}
+
+rocksdb_storage_provider::ColumnDefinitions rocksdb_account_storage_provider::prepareColumnDefinitions( bool addDefaultColumn )
+{
+  ColumnDefinitions columnDefs;
+
+  if(addDefaultColumn)
+    columnDefs.emplace_back("default", ColumnFamilyOptions());
+
+  {
+    columnDefs.emplace_back("account_metadata", ColumnFamilyOptions());
+    auto& byTxIdColumn = columnDefs.back();
+    byTxIdColumn.options.comparator = by_account_name_Comparator();
+  }
+
+  {
+    columnDefs.emplace_back("account_authority", ColumnFamilyOptions());
+    auto& byTxIdColumn = columnDefs.back();
+    byTxIdColumn.options.comparator = by_account_name_Comparator();
+  }
+
+  {
+    columnDefs.emplace_back("account", ColumnFamilyOptions());
+    auto& byTxIdColumn = columnDefs.back();
+    byTxIdColumn.options.comparator = by_account_name_Comparator();
+  }
+
+  {
+    columnDefs.emplace_back("account_by_id", ColumnFamilyOptions());
+    auto& byTxIdColumn = columnDefs.back();
+    byTxIdColumn.options.comparator = by_id_Comparator();
+  }
+
+  // Split object columns
+  {
+    columnDefs.emplace_back("recovery", ColumnFamilyOptions());
+    auto& column = columnDefs.back();
+    column.options.comparator = by_id_Comparator();
+  }
+
+  {
+    columnDefs.emplace_back("assets", ColumnFamilyOptions());
+    auto& column = columnDefs.back();
+    column.options.comparator = by_id_Comparator();
+  }
+
+  {
+    columnDefs.emplace_back("manabars_rc", ColumnFamilyOptions());
+    auto& column = columnDefs.back();
+    column.options.comparator = by_id_Comparator();
+  }
+
+  {
+    columnDefs.emplace_back("time", ColumnFamilyOptions());
+    auto& column = columnDefs.back();
+    column.options.comparator = by_id_Comparator();
+  }
+
+  {
+    columnDefs.emplace_back("delayed_votes", ColumnFamilyOptions());
+    auto& column = columnDefs.back();
+    column.options.comparator = by_id_Comparator();
+  }
+
+  return columnDefs;
+}
+
+void rocksdb_account_storage_provider::save( ColumnTypes column_type, const Slice& key, const Slice& value )
+{
+  rocksdb_storage_provider::save( column_type, key, value );
+}
+
+bool rocksdb_account_storage_provider::read( ColumnTypes column_type, const Slice& key, PinnableSlice& value )
+{
+  return rocksdb_storage_provider::read( column_type, key, value );
+}
+
+void rocksdb_account_storage_provider::remove( ColumnTypes column_type, const Slice& key )
+{
+  rocksdb_storage_provider::remove( column_type, key );
+}
+
+void rocksdb_account_storage_provider::put_entity( ColumnTypes column_type, const Slice& key, const WideColumns& wide_columns )
+{
+  rocksdb_storage_provider::put_entity( column_type, key, wide_columns );
+}
+
+bool rocksdb_account_storage_provider::get_entity( ColumnTypes column_type, const Slice& key, PinnableWideColumns& wide_columns )
+{
+  return rocksdb_storage_provider::get_entity( column_type, key, wide_columns );
+}
+
+void rocksdb_account_storage_provider::compaction()
+{
+  getStorage()->CompactRange(rocksdb::CompactRangeOptions(), nullptr, nullptr );
+}
+
+}}
