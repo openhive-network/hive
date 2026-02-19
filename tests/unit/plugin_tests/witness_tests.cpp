@@ -5,6 +5,7 @@
 #include <hive/chain/full_transaction.hpp>
 
 #include <hive/utilities/signal.hpp>
+#include <boost/signals2.hpp>
 #include <fc/thread/thread.hpp>
 
 #include <hive/protocol/hive_operations.hpp>
