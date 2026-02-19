@@ -1451,7 +1451,7 @@ BOOST_AUTO_TEST_CASE( transfer_apply )
     tx.operations.clear();
     tx.operations.push_back( op );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION - 2*HIVE_BLOCK_INTERVAL );
-    HIVE_REQUIRE_ASSERT( push_transaction( tx, alice_private_key ), "available >= -delta" );
+    HIVE_REQUIRE_ASSERT( push_transaction( tx, alice_private_key ), "a.get_balance() >= -delta" );
 
     BOOST_REQUIRE( new_alice.get_balance().amount.value == ASSET( "0.000 TESTS" ).amount.value );
     BOOST_REQUIRE( new_bob.get_balance().amount.value == ASSET( "10.000 TESTS" ).amount.value );
@@ -3213,7 +3213,7 @@ BOOST_AUTO_TEST_CASE( convert_authorities )
 
     BOOST_TEST_MESSAGE( "--- Up to HF28 it was a test failure when signed by an additional signature not in the creator's authority. Now is a failure because of logic of given operation." );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION - HIVE_BLOCK_INTERVAL );
-    HIVE_REQUIRE_ASSERT( push_transaction( tx, { alice_private_key, bob_private_key } ), "available >= -delta" );
+    HIVE_REQUIRE_ASSERT( push_transaction( tx, { alice_private_key, bob_private_key } ), "a.get_hbd_balance() >= -delta" );
 
     validate_database();
   }
@@ -3425,7 +3425,7 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
 
     BOOST_TEST_MESSAGE( "--- Test failure sending collateral exceeding balance" );
     op.amount = ASSET( "1000.001 TESTS" );
-    HIVE_REQUIRE_ASSERT( push_transaction( op, alice_private_key ), "available >= -delta" );
+    HIVE_REQUIRE_ASSERT( push_transaction( op, alice_private_key ), "a.get_balance() >= -delta" );
 
     //give alice enough for further tests
     fund( "alice", ASSET( "9000.000 TESTS" ) );
