@@ -507,20 +507,40 @@ namespace chain {
       void adjust_liquidity_reward( const account_object& owner, const asset& volume, bool is_hbd );
 
       void adjust_balance( const account_object& a, const asset& delta );
-      void adjust_balance( const account_name_type& name, const asset& delta )
-      {
-        adjust_balance( get_account( name ), delta );
-      }
+      void adjust_balance( const account_object& a, const HIVE_asset& delta );
+      void adjust_balance( const account_object& a, const HBD_asset& delta );
+      void adjust_balance( const account_name_type& name, const asset& delta ) { adjust_balance( get_account( name ), delta ); }
+      void adjust_balance( const account_name_type& name, const HIVE_asset& delta ) { adjust_balance( get_account( name ), delta ); }
+      void adjust_balance( const account_name_type& name, const HBD_asset& delta ) { adjust_balance( get_account( name ), delta ); }
 
       void adjust_savings_balance( const account_object& a, const asset& delta );
+      void adjust_savings_balance( const account_object& a, const HIVE_asset& delta );
+      void adjust_savings_balance( const account_object& a, const HBD_asset& delta );
 
       void adjust_reward_balance( const account_object& a, const asset& value_delta, const asset& share_delta = asset(0,VESTS_SYMBOL) );
+      void adjust_reward_balance( const account_object& a, const HIVE_asset& value_delta );
+      void adjust_reward_balance( const account_object& a, const HBD_asset& value_delta );
+      void adjust_reward_balance( const account_object& a, const HIVE_asset& value_delta, const VEST_asset& share_delta );
       void adjust_reward_balance( const account_name_type& name, const asset& value_delta, const asset& share_delta = asset(0,VESTS_SYMBOL) )
+      {
+        adjust_reward_balance( get_account( name ), value_delta, share_delta );
+      }
+      void adjust_reward_balance( const account_name_type& name, const HIVE_asset& value_delta )
+      {
+        adjust_reward_balance( get_account( name ), value_delta );
+      }
+      void adjust_reward_balance( const account_name_type& name, const HBD_asset& value_delta )
+      {
+        adjust_reward_balance( get_account( name ), value_delta );
+      }
+      void adjust_reward_balance( const account_name_type& name, const HIVE_asset& value_delta, const VEST_asset& share_delta )
       {
         adjust_reward_balance( get_account( name ), value_delta, share_delta );
       }
 
       void adjust_supply( const asset& delta, bool adjust_vesting = false );
+      void adjust_supply( const HIVE_asset& delta, bool adjust_vesting = false );
+      void adjust_supply( const HBD_asset& delta );
       void adjust_rshares2( fc::uint128_t old_rshares2, fc::uint128_t new_rshares2 );
       void update_owner_authority( const account_object& account, const authority& owner_authority );
 
@@ -754,8 +774,6 @@ namespace chain {
       void apply_hardfork_17_comment_cashout_fix();
 
       ///@}
-      void modify_balance( const account_object& a, const asset& delta );
-      void modify_reward_balance( const account_object& a, const asset& value_delta, const asset& share_delta );
 
     public:
 
