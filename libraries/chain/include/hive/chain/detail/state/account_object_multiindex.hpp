@@ -3,6 +3,7 @@
 
 namespace hive { namespace chain {
 
+  struct by_block {};  // Index tag for RocksDB archiving (by last_access_block)
   struct by_proxy;
   struct by_governance_vote_expiration_ts;
   /**
@@ -24,6 +25,12 @@ namespace hive { namespace chain {
       ordered_unique< tag< by_governance_vote_expiration_ts >,
         composite_key< account_object,
           const_mem_fun< account_object, time_point_sec, &account_object::get_governance_vote_expiration_ts >,
+          const_mem_fun< account_object, account_object::id_type, &account_object::get_id >
+        >
+      >,
+      ordered_unique< tag< by_block >,
+        composite_key< account_object,
+          const_mem_fun< account_object, uint32_t, &account_object::get_last_access_block >,
           const_mem_fun< account_object, account_object::id_type, &account_object::get_id >
         >
       >
@@ -56,7 +63,13 @@ namespace hive { namespace chain {
       ordered_unique< tag< by_id >,
         const_mem_fun< account_metadata_object, account_metadata_object::id_type, &account_metadata_object::get_id > >,
       ordered_unique< tag< by_account >,
-        member< account_metadata_object, account_id_type, &account_metadata_object::account > >
+        member< account_metadata_object, account_id_type, &account_metadata_object::account > >,
+      ordered_unique< tag< by_block >,
+        composite_key< account_metadata_object,
+          const_mem_fun< account_metadata_object, uint32_t, &account_metadata_object::get_last_access_block >,
+          const_mem_fun< account_metadata_object, account_metadata_object::id_type, &account_metadata_object::get_id >
+        >
+      >
     >,
     multi_index_allocator< account_metadata_object >
   > account_metadata_index;
@@ -72,6 +85,12 @@ namespace hive { namespace chain {
           const_mem_fun< account_authority_object, account_authority_object::id_type, &account_authority_object::get_id >
         >,
         composite_key_compare< std::less< account_name_type >, std::less< account_authority_id_type > >
+      >,
+      ordered_unique< tag< by_block >,
+        composite_key< account_authority_object,
+          const_mem_fun< account_authority_object, uint32_t, &account_authority_object::get_last_access_block >,
+          const_mem_fun< account_authority_object, account_authority_object::id_type, &account_authority_object::get_id >
+        >
       >
     >,
     multi_index_allocator< account_authority_object >

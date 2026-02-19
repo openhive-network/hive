@@ -579,7 +579,7 @@ void account_history_rocksdb_plugin::impl::find_account_history_data(const accou
 
   ReadOptions rOptions;
 
-  ah_info_by_name_slice_t nameSlice(name.data);
+  account_name_slice_t nameSlice(name.data);
   PinnableSlice buffer;
   auto s = _provider->getStorage()->Get(rOptions, _provider->getColumnHandle( Columns::AH_INFO_BY_NAME ), nameSlice, &buffer);
 
@@ -736,7 +736,7 @@ void account_history_rocksdb_plugin::impl::find_operations_by_block(size_t block
   }
 
   std::unique_ptr<::rocksdb::Iterator> it(_provider->getStorage()->NewIterator(ReadOptions(), _provider->getColumnHandle( Columns::OPERATION_BY_BLOCK )));
-  by_block_slice_t blockNumSlice(blockNum);
+  uint32_slice_t blockNumSlice(blockNum);
   op_by_block_num_slice_t key(block_op_id_pair(blockNum, 0));
 
   for(it->Seek(key); it->Valid() && it->key().starts_with(blockNumSlice); it->Next())
@@ -953,7 +953,7 @@ void account_history_rocksdb_plugin::impl::buildAccountHistoryRecord( const acco
   ReadOptions rOptions;
   //rOptions.tailing = true;
 
-  ah_info_by_name_slice_t nameSlice(name.data);
+  account_name_slice_t nameSlice(name.data);
 
   account_history_info ahInfo;
   bool found = _provider->getCachableWriteBuffer().getAHInfo(name, &ahInfo);

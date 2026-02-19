@@ -6,6 +6,8 @@
 
 #include <rocksdb/db.h>
 
+#include<hive/chain/database.hpp>
+
 #include<string>
 
 #include <boost/filesystem.hpp>

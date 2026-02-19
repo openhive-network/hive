@@ -5,7 +5,7 @@
 
 namespace hive { namespace chain {
 
-  class recovery_object : public object< recovery_object_type, recovery_object, std::false_type /* no dynamic alloc */ >
+  class recovery_object : public object< recovery_object_type, recovery_object, std::false_type /* no dynamic alloc */, std::true_type /* enable no undo remove */ >
   {
     CHAINBASE_OBJECT( recovery_object );
     public:
