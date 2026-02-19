@@ -264,6 +264,7 @@ public:
   rocksdb_time_object( const time_object& obj )
     : id( obj.get_id() )
     , account_id( obj.get_account_id() )
+    , name( obj.get_name() )
     , hbd_seconds( obj.get_hbd_seconds() )
     , hbd_seconds_last_update( obj.get_hbd_seconds_last_update() )
     , hbd_last_interest_payment( obj.get_hbd_last_interest_payment() )
@@ -283,7 +284,8 @@ public:
       // Note: create_no_undo internally adds allocator
       const auto& obj = db.create_no_undo<time_object>(
                       id.get_value(),
-                      account_id );
+                      account_id,
+                      name );
       // Restore all time-related fields via modify_no_undo to avoid undo tracking
       db.modify_no_undo( obj, [this]( time_object& o )
       {
@@ -304,7 +306,8 @@ public:
       auto obj = std::make_shared<time_object>(
                           allocator_helper::get_allocator<time_object, time_index>( db ),
                           id.get_value(),
-                          account_id );
+                          account_id,
+                          name );
       obj->set_hbd_seconds( this->hbd_seconds );
       obj->set_hbd_seconds_last_update( this->hbd_seconds_last_update );
       obj->set_hbd_last_interest_payment( this->hbd_last_interest_payment );
@@ -320,6 +323,7 @@ public:
 
   time_id_type          id;
   account_id_type       account_id;
+  account_name_type     name;
   uint128_t             hbd_seconds = 0;
   time_point_sec        hbd_seconds_last_update;
   time_point_sec        hbd_last_interest_payment;
@@ -406,7 +410,7 @@ FC_REFLECT( hive::chain::rocksdb_manabars_rc_object,
         )
 
 FC_REFLECT( hive::chain::rocksdb_time_object,
-          (id)(account_id)
+          (id)(account_id)(name)
           (hbd_seconds)
           (hbd_seconds_last_update)(hbd_last_interest_payment)
           (last_account_update)(last_post)(last_root_post)

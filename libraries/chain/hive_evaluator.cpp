@@ -410,10 +410,8 @@ void pow_apply( database& db, Operation o )
       FC_ASSERT( !"DUPLICATE WORK DISCOVERED", "${w}  ${witness}",("w",o)("wit",*work_itr) );
   }
 
-  const auto& accounts_by_name = db.get_index<account_index>().indices().get<by_name>();
-
-  auto itr = accounts_by_name.find( o.worker_account );
-  if(itr == accounts_by_name.end())
+  const auto* existing_account = db.find_account( o.worker_account );
+  if( !existing_account )
   {
     const auto& new_account = create_account( db, o.worker_account, o.work.worker, dgp.time, db.get_current_timestamp(),
       true /*mined*/, HIVE_asset( 0 ) );
@@ -432,7 +430,7 @@ void pow_apply( database& db, Operation o )
 
   const auto& worker_account = db.get_account( o.worker_account ); // verify it exists
 #ifndef HIVE_CONVERTER_BUILD // disable these checks, since there is a 2nd auth applied on all the accs in the alternate chain generated using hive blockchain converter
-  const auto& worker_auth = db.get< account_authority_object, by_account >( o.worker_account );
+  const auto& worker_auth = db.get_account_authority( o.worker_account );
   FC_ASSERT( worker_auth.active.num_auths() == 1, "Miners can only have one key authority. ${a}", ("a",worker_auth.active) );
   FC_ASSERT( worker_auth.active.key_auths.size() == 1, "Miners may only have one key authority." );
   FC_ASSERT( worker_auth.active.key_auths.begin()->first == o.work.worker, "Work must be performed by key that signed the work." );
@@ -547,9 +545,8 @@ void pow2_evaluator::do_apply( const pow2_operation& o )
     p.num_pow_witnesses++;
   });
 
-  const auto& accounts_by_name = db.get_index<account_index>().indices().get<by_name>();
-  auto itr = accounts_by_name.find( worker_account );
-  if(itr == accounts_by_name.end())
+  const auto* existing_account = db.find_account( worker_account );
+  if( !existing_account )
   {
     FC_ASSERT( o.new_owner_key.valid(), "New owner key is not valid." );
     const auto& new_account = create_account( db, worker_account, *o.new_owner_key, dgp.time, _db.get_current_timestamp(),
