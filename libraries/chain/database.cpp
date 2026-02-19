@@ -1710,7 +1710,7 @@ void database::process_funds()
     // below subtraction cannot underflow int64_t because inflation_rate_adjustment is <2^32
     int64_t current_inflation_rate = std::max( start_inflation_rate - inflation_rate_adjustment, inflation_rate_floor );
 
-    safe<int64_t> new_hive;
+    HIVE_asset new_hive( 0 );
     if( has_hardfork( HIVE_HARDFORK_1_28_NO_DHF_HBD_IN_INFLATION ) )
     {
       auto median_price = get_feed_history().current_median_history;
@@ -1721,11 +1721,11 @@ void database::process_funds()
       FC_ASSERT( hbd_supply_without_treasury.amount.value >= 0 ); // ABW: not needed
       const auto virtual_supply_without_treasury = hbd_supply_without_treasury * median_price + props.get_current_supply();
 
-      new_hive = (virtual_supply_without_treasury.amount * current_inflation_rate) / (int64_t(HIVE_100_PERCENT) * int64_t(HIVE_BLOCKS_PER_YEAR));
+      new_hive = ( virtual_supply_without_treasury * current_inflation_rate ) / (int64_t(HIVE_100_PERCENT) * int64_t(HIVE_BLOCKS_PER_YEAR));
     }
     else
     {
-      new_hive = (props.virtual_supply.amount * current_inflation_rate) / (int64_t(HIVE_100_PERCENT) * int64_t(HIVE_BLOCKS_PER_YEAR));
+      new_hive = ( props.virtual_supply * current_inflation_rate ) / (int64_t(HIVE_100_PERCENT) * int64_t(HIVE_BLOCKS_PER_YEAR));
     }
 
     auto content_reward = ( new_hive * props.content_reward_percent ) / HIVE_100_PERCENT;
@@ -1754,9 +1754,9 @@ void database::process_funds()
 
     HBD_asset new_hbd( 0 );
 
-    if( dhf_new_funds.value )
+    if( dhf_new_funds.get_amount() != 0 )
     {
-      new_hbd = HIVE_asset( dhf_new_funds ) * feed.current_median_history;
+      new_hbd = dhf_new_funds * feed.current_median_history;
       adjust_balance( get_treasury_name(), new_hbd );
     }
 
@@ -1764,17 +1764,17 @@ void database::process_funds()
 
     modify( props, [&]( dynamic_global_property_object& p )
     {
-      p.total_vesting_fund_hive += asset( vesting_reward, HIVE_SYMBOL );
+      p.total_vesting_fund_hive += vesting_reward;
       if( !has_hardfork( HIVE_HARDFORK_0_17__774 ) )
-        p.total_reward_fund_hive += asset( content_reward, HIVE_SYMBOL );
-      p.current_supply      += asset( new_hive, HIVE_SYMBOL );
+        p.total_reward_fund_hive += content_reward;
+      p.current_supply      += new_hive;
       p.current_hbd_supply  += new_hbd;
-      p.virtual_supply      += asset( new_hive + dhf_new_funds, HIVE_SYMBOL );
+      p.virtual_supply      += new_hive + dhf_new_funds;
       p.dhf_interval_ledger += new_hbd;
-    });
+    } );
 
     auto vop = producer_reward_operation( cwit.owner, VEST_asset( 0 ) );
-    create_vesting2( *this, get_account( cwit.owner ), HIVE_asset( witness_reward ), false,
+    create_vesting2( *this, get_account( cwit.owner ), witness_reward, false,
       [&]( const VEST_asset& vesting_shares )
       {
         vop.vesting_shares = vesting_shares;
@@ -1792,9 +1792,9 @@ void database::process_funds()
     content_reward = content_reward + curate_reward;
 
     if( props.head_block_number < HIVE_START_VESTING_BLOCK )
-      vesting_reward.amount = 0;
+      vesting_reward = HIVE_asset( 0 );
     else
-      vesting_reward.amount.value *= 9;
+      vesting_reward *= 9;
 
     modify( props, [&]( dynamic_global_property_object& p )
     {
@@ -1822,7 +1822,7 @@ void database::process_subsidized_accounts()
   update_witness_schedule_for_elected( current_witness, wso.account_subsidy_witness_rd );
 }
 
-asset database::get_liquidity_reward()const
+HIVE_asset database::get_liquidity_reward()const
 {
   // There is no need to update virtual_supply to take into account treasury as it's done in process_funds
   if( has_hardfork( HIVE_HARDFORK_0_12__178 ) )
@@ -1834,7 +1834,7 @@ asset database::get_liquidity_reward()const
   return std::max( percent, HIVE_MIN_LIQUIDITY_REWARD );
 }
 
-asset database::get_content_reward()const
+HIVE_asset database::get_content_reward()const
 {
   // There is no need to update virtual_supply to take into account treasury as it's done in process_funds
   const auto& props = get_dynamic_global_properties();
@@ -1843,7 +1843,7 @@ asset database::get_content_reward()const
   return std::max( percent, HIVE_MIN_CONTENT_REWARD );
 }
 
-asset database::get_curation_reward()const
+HIVE_asset database::get_curation_reward()const
 {
   // There is no need to update virtual_supply to take into account treasury as it's done in process_funds
   const auto& props = get_dynamic_global_properties();
@@ -1852,7 +1852,7 @@ asset database::get_curation_reward()const
   return std::max( percent, HIVE_MIN_CURATE_REWARD );
 }
 
-asset database::get_producer_reward()
+HIVE_asset database::get_producer_reward()
 {
   // There is no need to update virtual_supply to take into account treasury as it's done in process_funds
   const auto& props = get_dynamic_global_properties();
@@ -1915,10 +1915,10 @@ uint16_t database::get_curation_rewards_percent() const
     return HIVE_1_PERCENT * 50;
 }
 
-share_type database::pay_reward_funds( const share_type& reward )
+HIVE_asset database::pay_reward_funds( const HIVE_asset& reward )
 {
   const auto& reward_idx = get_index< reward_fund_index, by_id >();
-  share_type used_rewards = 0;
+  HIVE_asset used_rewards( 0 );
 
   for( auto itr = reward_idx.begin(); itr != reward_idx.end(); ++itr )
   {
@@ -1927,7 +1927,7 @@ share_type database::pay_reward_funds( const share_type& reward )
 
     modify( *itr, [&]( reward_fund_object& rfo )
     {
-      rfo.reward_balance += HIVE_asset( r );
+      rfo.reward_balance += r;
     });
 
     used_rewards += r;

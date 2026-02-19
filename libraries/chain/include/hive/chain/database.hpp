@@ -595,15 +595,15 @@ namespace chain {
       void process_decline_voting_rights();
       void update_median_feed();
 
-      asset get_liquidity_reward()const;
-      asset get_content_reward()const;
-      asset get_producer_reward();
-      asset get_curation_reward()const;
+      HIVE_asset get_liquidity_reward()const;
+      HIVE_asset get_content_reward()const;
+      HIVE_asset get_producer_reward();
+      HIVE_asset get_curation_reward()const;
       HIVE_asset get_pow_reward()const;
 
       uint16_t get_curation_rewards_percent() const;
 
-      share_type pay_reward_funds( const share_type& reward );
+      HIVE_asset pay_reward_funds( const HIVE_asset& reward );
 
       void  pay_liquidity_reward();
 
