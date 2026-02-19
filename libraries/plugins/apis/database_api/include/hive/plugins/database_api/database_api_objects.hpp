@@ -13,6 +13,7 @@
 #include <hive/chain/util/delayed_voting.hpp>
 #include <hive/chain/util/rd_dynamics.hpp>
 #include <hive/chain/witness_objects.hpp>
+#include <hive/plugins/metadata_api/metadata_api_plugin.hpp>
 
 #include <hive/plugins/metadata/metadata_plugin.hpp>
 
@@ -65,6 +66,9 @@ namespace hive { namespace chain {
   using reward_fund_name_type = protocol::fixed_string<16>;
 } }
 
+#include <hive/plugins/metadata_api/metadata_api.hpp>
+#include <hive/plugins/metadata/metadata_objects.hpp>
+
 namespace hive { namespace plugins { namespace database_api {
 
 using namespace hive::chain;
@@ -93,6 +97,52 @@ struct api_witness_vote_object
   witness_vote_id_type id;
   account_name_type    witness;
   account_name_type    account;
+};
+
+struct api_comment_object
+{
+  api_comment_object( const comment_object& o, const database& db );
+  api_comment_object() = default;
+
+  comment_id_type id;
+  uint16_t        depth = 0;
+
+  uint64_t        total_vote_weight = 0;
+  uint16_t        reward_weight = 0;
+  share_type      author_rewards = 0;
+  int32_t         net_votes = 0;
+  time_point_sec  last_payout;
+  uint32_t        children = 0;
+  share_type      net_rshares = 0;
+  share_type      abs_rshares = 0;
+  share_type      vote_rshares = 0;
+  share_type      children_abs_rshares = 0;
+  time_point_sec  created;
+  time_point_sec  last_update;
+  time_point_sec  cashout_time;
+  time_point_sec  max_cashout_time;
+  asset           max_accepted_payout;
+  uint16_t        percent_hbd = 0;
+  bool            allow_votes = false;
+  bool            allow_curation_rewards = false;
+  bool            was_voted_on = false;
+
+  vector< protocol::beneficiary_route_type > beneficiaries;
+};
+
+struct api_comment_vote_object
+{
+  api_comment_vote_object( const comment_vote_object& cv, const database& db );
+  api_comment_vote_object() = default;
+
+  comment_vote_id_type id;
+  uint64_t          weight = 0;
+  int64_t           rshares = 0;
+  int16_t           vote_percent = 0;
+  time_point_sec    last_update;
+  account_name_type voter;
+  account_name_type author;
+  string            permlink;
 };
 
 struct api_escrow_object
@@ -708,6 +758,18 @@ FC_REFLECT( hive::plugins::database_api::api_reward_fund_object,
 
 FC_REFLECT( hive::plugins::database_api::api_witness_vote_object,
           (id)(witness)(account)
+        )
+
+FC_REFLECT( hive::plugins::database_api::api_comment_object,
+          (id)(depth)(total_vote_weight)(reward_weight)(author_rewards)(net_votes)
+          (last_payout)(children)(net_rshares)(abs_rshares)(vote_rshares)(children_abs_rshares)
+          (created)(last_update)(cashout_time)(max_cashout_time)(max_accepted_payout)
+          (percent_hbd)(allow_votes)(allow_curation_rewards)(was_voted_on)(beneficiaries)
+        )
+
+FC_REFLECT( hive::plugins::database_api::api_comment_vote_object,
+          (id)(weight)(rshares)(vote_percent)(last_update)
+          (voter)(author)(permlink)
         )
 
 FC_REFLECT( hive::plugins::database_api::api_escrow_object,

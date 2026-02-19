@@ -25,6 +25,13 @@ struct get_deps_member_visitor
     _deps.push_back( get_schema_for_type<Member>() );
   }
 
+  // Overload for new FC_REFLECT signature that passes member as template parameter
+  template<typename Member, class Class, Member Class::*member>
+  void operator()( const char* name )const
+  {
+    this->operator()<Member, Class>(member, name);
+  }
+
   std::vector< std::shared_ptr< abstract_schema > >& _deps;
 };
 
@@ -41,6 +48,13 @@ struct get_str_schema_class_member_visitor
     _members.emplace_back();
     member_schema->get_name( _members.back().first );
     _members.back().second = name;
+  }
+
+  // Overload for new FC_REFLECT signature that passes member as template parameter
+  template<typename Member, class Class, Member Class::*member>
+  void operator()( const char* name )const
+  {
+    this->operator()<Member, Class>(member, name);
   }
 
   mutable std::vector< std::pair< std::string, std::string > > _members;

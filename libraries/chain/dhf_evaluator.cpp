@@ -57,10 +57,10 @@ void create_proposal_evaluator::do_apply( const create_proposal_operation& o )
     const auto& treasury_account =_db.get_treasury();
 
     const auto& owner_account = _db.get_account( o.creator );
-    const auto* receiver_account = _db.find_account( o.receiver );
+    auto receiver_account = _db.find_account( o.receiver );
 
     /// Just to check the receiver account exists.
-    FC_ASSERT(receiver_account != nullptr, "Specified receiver account: ${r} must exist in the blockchain",
+    FC_ASSERT(receiver_account, "Specified receiver account: ${r} must exist in the blockchain",
       ("r", o.receiver));
 
     auto commentObject = _db.find_comment(o.creator, o.permlink);
@@ -162,9 +162,9 @@ void update_proposal_votes_evaluator::do_apply( const update_proposal_votes_oper
 
     const auto& voter = _db.get_account(o.voter);
 
-    FC_ASSERT( voter.can_vote && "Voter declined voting rights, therefore casting votes is forbidden." );
+    FC_ASSERT( voter.can_vote() && "Voter declined voting rights, therefore casting votes is forbidden." );
 
-    _db.modify( voter, [&](account_object& a) { a.update_governance_vote_expiration_ts(_db.head_block_time()); });
+    _db.modify( voter, [&]( account_object& a ) { a.update_governance_vote_expiration_ts(_db.head_block_time()); });
 
     for( const auto pid : o.proposal_ids )
     {

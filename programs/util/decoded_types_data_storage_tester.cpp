@@ -96,7 +96,7 @@ void do_job()
     dtds.register_new_type<hive::plugins::market_history::order_history_object>();
     dtds.register_new_type<hive::plugins::reputation::reputation_object>();
     dtds.register_new_type<hive::plugins::transaction_status::transaction_status_object>();
-    dtds.register_new_type<hive::plugins::metadata::account_metadata_object>();
+    dtds.register_new_type<hive::chain::account_metadata_object>();
 
     #ifdef HIVE_ENABLE_SMT
     dtds.register_new_type<hive::chain::smt_token_object>();

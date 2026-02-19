@@ -170,7 +170,8 @@ share_type database::pay_curators( const comment_object& comment, const comment_
         if( claim > 0 ) // min_amt is non-zero satoshis
         {
           unclaimed_rewards -= claim;
-          const auto& voter = get( item->get_voter() );
+          // Use get_account() which goes through accounts_handler to support RocksDB archived accounts
+          const auto& voter = get_account( item->get_voter() );
           operation vop = curation_reward_operation( voter.get_name(), asset(0, VESTS_SYMBOL), comment_author_name, to_string( comment_cashout.get_permlink() ), has_hardfork( HIVE_HARDFORK_0_17__659 ) );
           create_vesting2( *this, voter, asset( claim, HIVE_SYMBOL ), has_hardfork( HIVE_HARDFORK_0_17__659 ),
             [&]( const asset& reward )
@@ -179,9 +180,9 @@ share_type database::pay_curators( const comment_object& comment, const comment_
               pre_push_virtual_operation( *this, vop );
             } );
 
-            modify( voter, [&]( account_object& a )
+            modify( get< assets_object, by_account_id >( voter.get_id() ), [&]( assets_object& assets )
             {
-              a.curation_rewards.amount += claim;
+              assets.set_curation_rewards( assets.get_curation_rewards() + HIVE_asset( claim ) );
             });
           post_push_virtual_operation( *this, vop );
         }
@@ -317,9 +318,9 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
         pre_push_virtual_operation( *this, vop );
         post_push_virtual_operation( *this, vop );
 
-        modify( author, [&]( account_object& a )
+        modify( get< assets_object, by_account_id >( author.get_id() ), [&]( assets_object& assets )
         {
-          a.posting_rewards.amount += author_tokens;
+          assets.set_posting_rewards( assets.get_posting_rewards() + HIVE_asset( author_tokens ) );
         });
       }
 
@@ -624,19 +625,22 @@ void database::perform_vesting_share_split( uint32_t magnitude )
     // Need to update all VESTS in accounts and the total VESTS in the dgpo
     for( const auto& account : get_index< account_index, by_id >() )
     {
-      VEST_asset old_vesting_shares = account.get_vesting();
+      const auto& account_assets = get< assets_object, by_account_id >( account.get_id() );
+      VEST_asset old_vesting_shares = account_assets.get_vesting();
       VEST_asset new_vesting_shares = old_vesting_shares;
+      modify( account_assets, [&]( assets_object& a )
+      {
+        a.set_vesting( a.get_vesting() * magnitude );
+        new_vesting_shares = a.get_vesting();
+        a.set_withdrawn( a.get_withdrawn() * magnitude );
+        a.set_to_withdraw( a.get_to_withdraw() * magnitude );
+        a.set_vesting_withdraw_rate( VEST_asset( a.get_to_withdraw().amount / HIVE_VESTING_WITHDRAW_INTERVALS_PRE_HF_16 ) );
+        FC_ASSERT( a.get_vesting_withdraw_rate().amount > 0 || a.get_to_withdraw().amount == 0, "Unexpected truncation to zero." );
+      } );
       modify( account, [&]( account_object& a )
       {
-        a.vesting_shares *= magnitude;
-        new_vesting_shares = a.get_vesting();
-        a.withdrawn *= magnitude;
-        a.to_withdraw *= magnitude;
-        a.vesting_withdraw_rate = VEST_asset( a.to_withdraw.amount / HIVE_VESTING_WITHDRAW_INTERVALS_PRE_HF_16 );
-        FC_ASSERT( a.vesting_withdraw_rate.amount > 0 || a.to_withdraw.amount == 0, "Unexpected truncation to zero." );
-
         for( uint32_t i = 0; i < HIVE_MAX_PROXY_RECURSION_DEPTH; ++i )
-          a.proxied_vsf_votes[i] *= magnitude;
+          a.get_proxied_vsf_votes()[i] *= magnitude;
       } );
       if( old_vesting_shares != new_vesting_shares )
         push_virtual_operation( *this, vesting_shares_split_operation( account.get_name(), old_vesting_shares, new_vesting_shares ) );

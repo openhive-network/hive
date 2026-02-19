@@ -57,3 +57,6 @@ class metadata_plugin : public plugin< metadata_plugin >
 };
 
 }}}
+
+FC_REFLECT( hive::plugins::metadata::get_account_metadata_return,
+        (json_metadata)(posting_json_metadata) )

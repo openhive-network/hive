@@ -1,4 +1,5 @@
 #include <hive/plugins/database_api/database_api_objects.hpp>
+#include <hive/plugins/metadata_api/metadata_api.hpp>
 
 #include <hive/chain/account_object.hpp>
 #include <hive/chain/block_summary_object.hpp>
@@ -22,6 +23,11 @@
 #include <hive/chain/witness_objects.hpp>
 #include <hive/chain/database.hpp>
 #include <hive/chain/notifications.hpp>
+#include <hive/chain/detail/state/assets_object.hpp>
+#include <hive/chain/detail/state/manabars_rc_object.hpp>
+#include <hive/chain/detail/state/time_object.hpp>
+#include <hive/chain/detail/state/delayed_votes_object.hpp>
+#include <hive/chain/detail/state/recovery_object.hpp>
 
 namespace hive { namespace plugins { namespace database_api {
 
@@ -204,62 +210,80 @@ api_change_recovery_account_request_object::api_change_recovery_account_request_
 api_account_object::api_account_object( const account_object& a, const database& db, const metadata::metadata_plugin* metadata_plugin, bool delayed_votes_active ) :
   id( a.get_id() ),
   name( a.get_name() ),
-  memo_key( a.memo_key ),
+  memo_key( a.get_memo_key() ),
   proxy( HIVE_PROXY_TO_SELF_ACCOUNT ),
-  last_account_update( a.last_account_update ),
+  last_account_update(),
   created( a.get_block_creation_time() ),
   mined( a.was_mined() ),
   reset_account( HIVE_NULL_ACCOUNT ),
-  last_account_recovery( a.get_block_last_account_recovery_time() ),
-  post_count( a.post_count ),
-  can_vote( a.can_vote ),
-  voting_manabar( a.voting_manabar ),
-  downvote_manabar( a.downvote_manabar ),
-  balance( a.get_balance() ),
-  savings_balance( a.get_savings() ),
-  hbd_balance( a.hbd_balance ),
-  hbd_seconds( a.hbd_seconds ),
-  hbd_seconds_last_update( a.hbd_seconds_last_update ),
-  hbd_last_interest_payment( a.hbd_last_interest_payment ),
-  savings_hbd_balance( a.get_hbd_savings() ),
-  savings_hbd_seconds( a.savings_hbd_seconds ),
-  savings_hbd_seconds_last_update( a.savings_hbd_seconds_last_update ),
-  savings_hbd_last_interest_payment( a.savings_hbd_last_interest_payment ),
-  savings_withdraw_requests( a.savings_withdraw_requests ),
-  reward_hbd_balance( a.get_hbd_rewards() ),
-  reward_hive_balance( a.get_rewards() ),
-  reward_vesting_balance( a.get_vest_rewards() ),
-  reward_vesting_hive( a.get_vest_rewards_as_hive() ),
-  curation_rewards( a.curation_rewards.amount ),
-  posting_rewards( a.posting_rewards.amount ),
-  vesting_shares( a.vesting_shares ),
-  delegated_vesting_shares( a.delegated_vesting_shares ),
-  received_vesting_shares( a.received_vesting_shares ),
-  vesting_withdraw_rate( a.vesting_withdraw_rate ),
-  next_vesting_withdrawal( a.next_vesting_withdrawal ),
-  withdrawn( a.withdrawn.amount ),
-  to_withdraw( a.to_withdraw.amount ),
-  withdraw_routes( a.withdraw_routes ),
-  pending_transfers( a.pending_escrow_transfers ),
-  witnesses_voted_for( a.witnesses_voted_for ),
-  last_post( a.last_post ),
-  last_root_post( a.last_root_post ),
-  last_post_edit( a.last_post_edit ),
-  last_vote_time( a.last_vote_time ),
-  post_bandwidth( a.post_bandwidth ),
-  pending_claimed_accounts( a.pending_claimed_accounts ),
-  open_recurrent_transfers( a.open_recurrent_transfers ),
+  last_account_recovery(),
+  post_count( a.get_post_count() ),
+  can_vote( a.can_vote() ),
+  withdraw_routes( a.get_withdraw_routes() ),
+  pending_transfers( a.get_pending_escrow_transfers() ),
+  witnesses_voted_for( a.get_witnesses_voted_for() ),
+  last_post(),
+  last_root_post(),
+  last_post_edit(),
+  post_bandwidth( a.get_post_bandwidth() ),
+  pending_claimed_accounts( a.get_pending_claimed_accounts() ),
+  open_recurrent_transfers( a.get_open_recurrent_transfers() ),
   governance_vote_expiration_ts( a.get_governance_vote_expiration_ts())
 {
+  // Get split objects
+  const auto& assets = db.get< assets_object, by_account_id >( a.get_id() );
+  const auto& mrc = db.get< manabars_rc_object, by_account_id >( a.get_id() );
+  const auto& time_obj = db.get< time_object, by_account_id >( a.get_id() );
+  const auto& dvotes = db.get< delayed_votes_object, by_account_id >( a.get_id() );
+  const auto& recovery = db.get< recovery_object, by_account_id >( a.get_id() );
+
+  // From manabars_rc_object
+  voting_manabar = mrc.get_voting_manabar();
+  downvote_manabar = mrc.get_downvote_manabar();
+
+  // From time_object
+  last_vote_time = time_obj.get_last_vote_time();
+  last_account_update = time_obj.get_last_account_update();
+  last_post = time_obj.get_last_post();
+  last_root_post = time_obj.get_last_root_post();
+  last_post_edit = time_obj.get_last_post_edit();
+  next_vesting_withdrawal = time_obj.get_next_vesting_withdrawal();
+  last_account_recovery = recovery.get_block_last_account_recovery_time();
+
+  // From assets_object
+  balance = assets.get_balance();
+  savings_balance = assets.get_savings();
+  hbd_balance = assets.get_hbd_balance();
+  hbd_seconds = time_obj.get_hbd_seconds();
+  hbd_seconds_last_update = time_obj.get_hbd_seconds_last_update();
+  hbd_last_interest_payment = time_obj.get_hbd_last_interest_payment();
+  savings_hbd_balance = assets.get_hbd_savings();
+  savings_hbd_seconds = assets.get_savings_hbd_seconds();
+  savings_hbd_seconds_last_update = assets.get_savings_hbd_seconds_last_update();
+  savings_hbd_last_interest_payment = assets.get_savings_hbd_last_interest_payment();
+  savings_withdraw_requests = a.get_savings_withdraw_requests();
+  reward_hbd_balance = assets.get_hbd_rewards();
+  reward_hive_balance = assets.get_rewards();
+  reward_vesting_balance = assets.get_vest_rewards();
+  reward_vesting_hive = assets.get_vest_rewards_as_hive();
+  curation_rewards = assets.get_curation_rewards().amount;
+  posting_rewards = assets.get_posting_rewards().amount;
+  vesting_shares = assets.get_vesting();
+  delegated_vesting_shares = assets.get_delegated_vesting();
+  received_vesting_shares = assets.get_received_vesting();
+  vesting_withdraw_rate = assets.get_vesting_withdraw_rate();
+  withdrawn = assets.get_withdrawn().amount;
+  to_withdraw = assets.get_to_withdraw().amount;
+
   if( a.has_proxy() )
     proxy = db.get_account( a.get_proxy() ).get_name();
-  if( a.has_recovery_account() )
-    recovery_account = db.get_account( a.get_recovery_account() ).get_name();
+  if( recovery.has_recovery_account() )
+    recovery_account = db.get_account( recovery.get_recovery_account() ).get_name();
 
-  size_t n = a.proxied_vsf_votes.size();
+  size_t n = a.get_proxied_vsf_votes().size();
   proxied_vsf_votes.reserve( n );
   for( size_t i=0; i<n; i++ )
-    proxied_vsf_votes.push_back( a.proxied_vsf_votes[i] );
+    proxied_vsf_votes.push_back( a.get_proxied_vsf_votes()[i] );
 
   const auto& auth = db.get< account_authority_object, by_account >( name );
   owner = authority( auth.owner );
@@ -281,9 +305,61 @@ api_account_object::api_account_object( const account_object& a, const database&
 #endif
 
   if( delayed_votes_active )
-    delayed_votes = vector< delayed_votes_data >{ a.delayed_votes.begin(), a.delayed_votes.end() };
+    delayed_votes = vector< delayed_votes_data >{ dvotes.get_delayed_votes().begin(), dvotes.get_delayed_votes().end() };
 
-  post_voting_power = VEST_asset(a.get_effective_vesting_shares());
+  post_voting_power = VEST_asset(a.get_effective_vesting_shares( assets, time_obj ));
+}
+
+
+// api_comment_object constructors
+api_comment_object::api_comment_object( const comment_object& o, const database& db ):
+  id( o.get_id() ),
+  depth( o.get_depth() )
+{
+  const comment_cashout_object* cc = db.find_comment_cashout( o );
+  if( cc )
+  {
+    total_vote_weight       = cc->get_total_vote_weight();
+    reward_weight           = HIVE_100_PERCENT; // since HF17 reward is not limited if posts are too frequent
+    author_rewards          = 0; // since HF19 it was always 0 or cc did not exist
+    net_votes               = cc->get_net_votes();
+    last_payout             = time_point_sec::min(); // since HF19 it is the only value possible
+    children                = cc->get_number_of_replies();
+    net_rshares             = cc->get_net_rshares();
+    abs_rshares             = 0; // value was only used for comments created before HF6
+    vote_rshares            = cc->get_vote_rshares();
+    children_abs_rshares    = 0; // value not accumulated after HF17
+    created                 = cc->get_creation_time();
+    last_update             = created; // edit time not available here (Hivemind has it)
+    cashout_time            = cc->get_cashout_time();
+    max_cashout_time        = time_point_sec::maximum(); // since HF17 it is the only possible value
+    max_accepted_payout     = cc->get_max_accepted_payout();
+    percent_hbd             = cc->get_percent_hbd();
+    allow_votes             = cc->allows_votes();
+    allow_curation_rewards  = cc->allows_curation_rewards();
+    was_voted_on            = cc->has_votes();
+
+    for( auto& route : cc->get_beneficiaries() )
+    {
+      beneficiaries.emplace_back( db.get_account( route.account_id ).get_name(), route.weight );
+    }
+  }
+}
+
+
+// api_comment_vote_object constructor
+api_comment_vote_object::api_comment_vote_object( const comment_vote_object& cv, const database& db ) :
+  id( cv.get_id() ),
+  weight( cv.get_weight() ),
+  rshares( cv.get_rshares() ),
+  vote_percent( cv.get_vote_percent() ),
+  last_update( cv.get_last_update() )
+{
+  voter = db.get( cv.get_voter() ).get_name();
+  const comment_cashout_object* cc = db.find_comment_cashout( cv.get_comment() );
+  assert( cc != nullptr ); //votes should not exist after cashout
+  author = db.get_account( cc->get_author_id() ).get_name();
+  permlink = to_string( cc->get_permlink() );
 }
 
 

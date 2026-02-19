@@ -1,6 +1,7 @@
 #include <hive/plugins/database_api/database_api_impl.hpp>
 
 #include <hive/chain/account_object.hpp>
+#include <hive/chain/detail/state/time_object.hpp>
 #include <hive/chain/witness_objects.hpp>
 #include <hive/chain/witness_objects_multiindex.hpp>
 
@@ -216,18 +217,22 @@ DEFINE_API_IMPL( database_api_impl, list_accounts )
     }
     case( by_next_vesting_withdrawal ):
     {
-      std::optional< boost::tuple< fc::time_point_sec, account_name_type > > start;
-      if( !args.start.is_null() )
+      // by_next_vesting_withdrawal index is now in time_object, not account_object
+      // We iterate over time_index and look up the account for each result
+      auto key = args.start.as< std::pair< fc::time_point_sec, account_name_type > >();
+
+      const auto& time_idx = _db.get_index< chain::time_index, chain::by_next_vesting_withdrawal >();
+
+      auto itr = time_idx.lower_bound( boost::make_tuple( key.first, key.second ) );
+      auto end = time_idx.end();
+
+      while( itr != end && result.accounts.size() < args.limit )
       {
-        auto key = args.start.as< std::pair< fc::time_point_sec, account_name_type > >();
-        start = boost::make_tuple( key.first, key.second );
+        const auto& time_obj = *itr;
+        const auto& account = _db.get< account_object, by_id >( time_obj.get_account_id() );
+        result.accounts.emplace_back( api_account_object( account, _db, get_metadata_plugin(), args.delayed_votes_active ) );
+        ++itr;
       }
-      iterate_results< chain::account_index, chain::by_next_vesting_withdrawal >(
-        start,
-        result.accounts,
-        args.limit,
-        [&]( const account_object& a, const database& db ){ return api_account_object( a, db, get_metadata_plugin(), args.delayed_votes_active ); },
-        &database_api_impl::filter_default< account_object > );
       break;
     }
     default:
