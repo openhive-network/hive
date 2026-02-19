@@ -222,6 +222,13 @@ class serialize_member_visitor
     {
       std::cout << "    " << name <<": " << js_name<Member>::name() <<"\n";
     }
+
+    // Overload for new FC_REFLECT signature that passes member as template parameter
+    template<typename Member, class Class, Member Class::*member>
+    void operator()( const char* name )const
+    {
+      this->operator()<Member, Class>(member, name);
+    }
 };
 
 template<typename T>
@@ -345,6 +352,13 @@ class register_member_visitor
     void operator()( Member Class::*member, const char* name )const
     {
       serializer<Member>::init();
+    }
+
+    // Overload for new FC_REFLECT signature that passes member as template parameter
+    template<typename Member, class Class, Member Class::*member>
+    void operator()( const char* name )const
+    {
+      this->operator()<Member, Class>(member, name);
     }
 };
 

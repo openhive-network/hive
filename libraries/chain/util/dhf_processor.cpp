@@ -1,8 +1,9 @@
 #include <hive/chain/util/dhf_processor.hpp>
+#include <hive/chain/detail/state/assets_object.hpp>
 #include <hive/chain/database_virtual_operations.hpp>
-#include <hive/chain/notifications.hpp>
-#include <hive/chain/global_property_object_multiindex.hpp>
 #include <hive/chain/detail/state/feed_history_object.hpp>
+#include <hive/chain/global_property_object.hpp>
+#include <hive/chain/global_property_object_multiindex.hpp>
 
 namespace hive { namespace chain {
 
@@ -100,7 +101,7 @@ uint64_t dhf_processor::calculate_votes( uint32_t pid )
     //If _voter has set proxy, then his votes aren't taken into consideration
     if( !_voter.has_proxy() )
     {
-      auto sum = _voter.get_governance_vote_power();
+      auto sum = _voter.get_governance_vote_power( db.get< assets_object, by_account_id >( _voter.get_id() ), db.get< delayed_votes_object, by_account_id >( _voter.get_id() ) );
       ret += sum.value;
     }
 
@@ -138,9 +139,10 @@ void dhf_processor::sort_by_votes( t_proposals& proposals )
 
 const HBD_asset& dhf_processor::get_treasury_fund() const
 {
-  auto& treasury_account = db.get_treasury();
+  const auto& treasury_account = db.get_treasury();
+  const auto& treasury_assets = db.get< assets_object, by_account_id >( treasury_account.get_id() );
 
-  return treasury_account.get_hbd_balance();
+  return treasury_assets.get_hbd_balance();
 }
 
 HBD_asset dhf_processor::calculate_maintenance_budget( const time_point_sec& head_time )
@@ -336,11 +338,12 @@ void dhf_processor::convert_funds( const block_notification& note )
     _dgpo.next_daily_maintenance_time = block_ts + fc::seconds( HIVE_DAILY_PROPOSAL_MAINTENANCE_PERIOD );
   } );
 
-  const auto &treasury_account = db.get_treasury();
-  if (treasury_account.balance.amount == 0)
+  const auto& treasury_account = db.get_treasury();
+  const auto& treasury_assets = db.get< assets_object, by_account_id >( treasury_account.get_id() );
+  if (treasury_assets.get_balance().amount == 0)
     return;
 
-  const auto to_convert = asset(HIVE_PROPOSAL_CONVERSION_RATE * treasury_account.balance.amount / HIVE_100_PERCENT, HIVE_SYMBOL);
+  const auto to_convert = asset(HIVE_PROPOSAL_CONVERSION_RATE * treasury_assets.get_balance().amount / HIVE_100_PERCENT, HIVE_SYMBOL);
 
   const feed_history_object& fhistory = db.get_feed_history();
   if( fhistory.current_median_history.is_null() )

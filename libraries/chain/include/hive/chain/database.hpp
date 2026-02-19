@@ -286,11 +286,17 @@ namespace chain {
       /// Returns true for any account name that was ever a treasury account
       bool                   is_treasury( const account_name_type& name )const;
 
-      const account_object&  get_account(  const account_id_type      id )const;
-      const account_object*  find_account( const account_id_type&     id )const;
+      const account_authority_object& get_account_authority( const account_name_type& account_name )const;
+      const account_authority_object* find_account_authority( const account_name_type& account_name )const;
 
-      const account_object&  get_account(  const account_name_type& name )const;
-      const account_object*  find_account( const account_name_type& name )const;
+      const account_metadata_object& get_account_metadata( const account_name_type& account_name )const;
+      const account_metadata_object* find_account_metadata( const account_name_type& account_name )const;
+
+      const account_object& get_account(  const account_id_type&     id )const;
+      const account_object* find_account( const account_id_type&     id )const;
+
+      const account_object& get_account(  const account_name_type& name )const;
+      const account_object* find_account( const account_name_type& name )const;
 
       const comment_object*  find_comment( comment_id_type comment_id )const;
 
@@ -525,7 +531,7 @@ namespace chain {
       void update_owner_authority( const account_object& account, const authority& owner_authority );
 
       asset get_balance( const account_object& a, asset_symbol_type symbol )const;
-      asset get_savings_balance( const account_object& a, asset_symbol_type symbol )const;
+      asset get_savings( const account_object& a, asset_symbol_type symbol )const;
       asset get_balance( const account_name_type& aname, asset_symbol_type symbol )const
       {
         return get_balance( get_account( aname ), symbol );
@@ -743,6 +749,9 @@ namespace chain {
 
       //locks given account by clearing its authorizations and removing pending recovery [account change] request (used for treasury in HF code)
       void lock_account( const account_object& account );
+
+      //creates placeholder split objects to align their IDs with account IDs (used before creating treasury accounts in HF code)
+      void align_split_object_ids_with_accounts();
 
       void process_proposals( const block_notification& note );
 

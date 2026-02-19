@@ -192,7 +192,7 @@ namespace decoders
       }
 
       template <typename Member, class Class>
-      void operator()(Member Class::*member, const char *name) const
+      void operator()( Member Class::*member, const char *name ) const
       {
         decoders::main_decoder<Member> decoder;
         decoder.decode(dtds);
@@ -213,6 +213,13 @@ namespace decoders
         encoder.write(field_name.data(), field_name.size());
         encoder.write(member_offset_str.data(), member_offset_str.size());
         members.push_back({.type = boost::core::demangle(typeid(Member).name()), .name = field_name, .offset = member_offset});
+      }
+
+      // Overload for new FC_REFLECT signature that passes member as template parameter
+      template <typename Member, class Class, Member Class::*member>
+      void operator()(const char *name) const
+      {
+        this->operator()<Member, Class>(member, name);
       }
 
       decoded_type_data get_decoded_type_data()

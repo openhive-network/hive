@@ -10,6 +10,11 @@
 #include <hive/chain/witness_objects_multiindex.hpp>
 #include <hive/chain/account_object_multiindex.hpp>
 #include <hive/chain/evaluator_registry.hpp>
+#include <hive/chain/detail/state/assets_object.hpp>
+#include <hive/chain/detail/state/recovery_object.hpp>
+#include <hive/chain/detail/state/time_object.hpp>
+#include <hive/chain/detail/state/manabars_rc_object.hpp>
+#include <hive/chain/detail/state/delayed_votes_object.hpp>
 
 #include <hive/chain/util/owner_update_limit_mgr.hpp>
 
@@ -147,8 +152,20 @@ const account_object& create_account( database& db, const account_name_type& nam
   }
 
   FC_ASSERT( db.find_account( name ) == nullptr, "Account ${name} already exists.", ( name ) );
-  return db.create< account_object >( name, key, _creation_time, _block_creation_time, mined, recovery_account,
-    !db.has_hardfork( HIVE_HARDFORK_0_20__2539 ) /*voting mana 100%*/, initial_delegation, rc_adjustment_from_fee );
+
+  // Create the account_object with new minimal constructor
+  const account_object& new_account = db.create< account_object >( name, key, _creation_time, _block_creation_time, mined, recovery_account );
+
+  // Create the related objects with the same account_id
+  bool mana_100_percent = !db.has_hardfork( HIVE_HARDFORK_0_20__2539 );
+
+  db.create< recovery_object >( new_account.get_id(), recovery_account ? recovery_account->get_id() : account_id_type() );
+  db.create< assets_object >( new_account.get_id(), initial_delegation );
+  db.create< manabars_rc_object >( new_account.get_id(), _creation_time, mana_100_percent, rc_adjustment_from_fee );
+  db.create< time_object >( new_account.get_id(), new_account.get_name() );
+  db.create< delayed_votes_object >( new_account.get_id() );
+
+  return new_account;
 }
 
 void account_create_evaluator::do_apply( const account_create_operation& o )
@@ -210,19 +227,20 @@ void account_create_with_delegation_evaluator::do_apply( const account_create_wi
   FC_ASSERT( !_db.has_hardfork( HIVE_HARDFORK_0_20__1760 ), "Account creation with delegation is deprecated as of Hardfork 20" );
 
   const auto& creator = _db.get_account( o.creator );
+  const auto& creator_assets = _db.get< assets_object, by_account_id >( creator.get_id() );
   const auto& props = _db.get_dynamic_global_properties();
   const witness_schedule_object& wso = _db.get_witness_schedule_object();
 
   VEST_asset o_delegation = o.get_delegation();
   HIVE_asset o_fee = o.get_fee();
 
-  FC_ASSERT( creator.get_balance() >= o_fee && "Can't create",
+  FC_ASSERT( creator_assets.get_balance() >= o_fee && "Can't create",
     "Insufficient balance to create account.",
-    ( "creator.balance", creator.get_balance() )
+    ( "creator.balance", creator_assets.get_balance() )
     ( "required", o_fee ) );
 
-  FC_ASSERT( creator.get_vesting() - creator.get_delegated_vesting() - VEST_asset( creator.get_total_vesting_withdrawal() ) >= o_delegation, "Insufficient vesting shares to delegate to new account.",
-    ( "creator.vesting_shares", creator.get_vesting() )( "creator.delegated_vesting_shares", creator.get_delegated_vesting() )( "required", o_delegation ) );
+  FC_ASSERT( creator_assets.get_vesting() - creator_assets.get_delegated_vesting() - VEST_asset( creator_assets.get_total_vesting_withdrawal() ) >= o_delegation, "Insufficient vesting shares to delegate to new account.",
+    ( "creator.vesting_shares", creator_assets.get_vesting() )( "creator.delegated_vesting_shares", creator_assets.get_delegated_vesting() )( "required", o_delegation ) );
 
   VEST_asset target_delegation = ( wso.median_props.account_creation_fee * ( HIVE_CREATE_ACCOUNT_WITH_HIVE_MODIFIER * HIVE_CREATE_ACCOUNT_DELEGATION_RATIO ) ) * props.get_vesting_share_price();
 
@@ -238,10 +256,10 @@ void account_create_with_delegation_evaluator::do_apply( const account_create_wi
   verify_authority_accounts_exist( _db, o.active, o.new_account_name, authority::active );
   verify_authority_accounts_exist( _db, o.posting, o.new_account_name, authority::posting );
 
-  _db.modify( creator, [&]( account_object& c )
+  _db.modify( creator_assets, [&]( assets_object& c )
   {
-    c.balance -= o_fee;
-    c.delegated_vesting_shares += o_delegation;
+    c.set_balance( c.get_balance() - o_fee );
+    c.set_delegated_vesting( c.get_delegated_vesting() + o_delegation );
   } );
 
   const auto& new_account = create_account( _db, o.new_account_name, o.memo_key, props.time, _db.get_current_timestamp(),
@@ -336,12 +354,18 @@ void account_update_evaluator::do_apply( const account_update_operation& o )
     }
   }
 
-  _db.modify( account, [&]( account_object& acc )
+  if( o.memo_key != public_key_type() )
   {
-    if( o.memo_key != public_key_type() )
-      acc.memo_key = o.memo_key;
+    _db.modify( account, [&]( account_object& acc )
+    {
+      acc.set_memo_key( o.memo_key );
+    } );
+  }
 
-    acc.last_account_update = _db.head_block_time(); //not needed for consensus
+  const auto& account_time = _db.get< time_object, by_account_id >( account.get_id() );
+  _db.modify( account_time, [&]( time_object& t )
+  {
+    t.set_last_account_update( _db.head_block_time() );
   } );
 
   if( o.active || *_auth_posting )
@@ -378,12 +402,18 @@ void account_update2_evaluator::do_apply( const account_update2_operation& o )
   if( o.posting )
     verify_authority_accounts_exist( _db, *o.posting, o.account, authority::posting );
 
-  _db.modify( account, [&]( account_object& acc )
+  if( o.memo_key && *o.memo_key != public_key_type() )
   {
-    if( o.memo_key && *o.memo_key != public_key_type() )
-      acc.memo_key = *o.memo_key;
+    _db.modify( account, [&]( account_object& acc )
+    {
+      acc.set_memo_key( *o.memo_key );
+    } );
+  }
 
-    acc.last_account_update = _db.head_block_time(); //not needed for consensus
+  const auto& account_time = _db.get< time_object, by_account_id >( account.get_id() );
+  _db.modify( account_time, [&]( time_object& t )
+  {
+    t.set_last_account_update( _db.head_block_time() );
   } );
 
   if( o.active || o.posting )
@@ -402,13 +432,14 @@ void claim_account_evaluator::do_apply( const claim_account_operation& o )
   FC_ASSERT( _db.has_hardfork( HIVE_HARDFORK_0_20__1771 ) && "claim_account_operation is not enabled until hardfork 20." );
 
   const auto& creator = _db.get_account( o.creator );
+  const auto& creator_assets = _db.get< assets_object, by_account_id >( creator.get_id() );
   const auto& wso = _db.get_witness_schedule_object();
 
   HIVE_asset o_fee = o.get_fee();
 
-  FC_ASSERT( creator.get_balance() >= o_fee && "Can't claim",
+  FC_ASSERT( creator_assets.get_balance() >= o_fee && "Can't claim",
     "Insufficient balance to create account.",
-    ( "creator.balance", creator.get_balance() )( "required", o_fee ) );
+    ( "creator.balance", creator_assets.get_balance() )( "required", o_fee ) );
 
   if( o_fee.amount == 0 )
   {
@@ -449,12 +480,12 @@ void claim_account_evaluator::do_apply( const claim_account_operation& o )
       ( "p", o_fee )( "f", wso.median_props.account_creation_fee ) );
   }
 
+  _db.adjust_balance( creator, -o_fee );
   _db.adjust_balance( _db.get_account( HIVE_NULL_ACCOUNT ), o_fee );
 
   _db.modify( creator, [&]( account_object& a )
   {
-    a.balance -= o_fee;
-    a.pending_claimed_accounts++;
+    a.set_pending_claimed_accounts( a.get_pending_claimed_accounts() + 1 );
   } );
 }
 
@@ -465,7 +496,7 @@ void create_claimed_account_evaluator::do_apply( const create_claimed_account_op
   const auto& creator = _db.get_account( o.creator );
   const auto& props = _db.get_dynamic_global_properties();
 
-  FC_ASSERT( creator.pending_claimed_accounts > 0, "${creator} has no claimed accounts to create", ( "creator", o.creator ) );
+  FC_ASSERT( creator.get_pending_claimed_accounts() > 0, "${creator} has no claimed accounts to create", ( "creator", o.creator ) );
 
   verify_authority_accounts_exist( _db, o.owner, o.new_account_name, authority::owner );
   verify_authority_accounts_exist( _db, o.active, o.new_account_name, authority::active );
@@ -473,7 +504,7 @@ void create_claimed_account_evaluator::do_apply( const create_claimed_account_op
 
   _db.modify( creator, [&]( account_object& a )
   {
-    a.pending_claimed_accounts--;
+    a.set_pending_claimed_accounts( a.get_pending_claimed_accounts() - 1 );
   } );
 
   const auto& new_account = create_account( _db, o.new_account_name, o.memo_key, props.time, _db.get_current_timestamp(),
@@ -495,10 +526,12 @@ void create_claimed_account_evaluator::do_apply( const create_claimed_account_op
 void request_account_recovery_evaluator::do_apply( const request_account_recovery_operation& o )
 {
   const auto& account_to_recover = _db.get_account( o.account_to_recover );
+  const auto& recovery_obj = _db.get< recovery_object, by_account_id >( account_to_recover.get_id() );
 
-  if ( account_to_recover.has_recovery_account() ) // Make sure recovery matches expected recovery account
+  if ( recovery_obj.has_recovery_account() ) // Make sure recovery matches expected recovery account
   {
-    const auto& recovery_account = _db.get_account( account_to_recover.get_recovery_account() );
+    // Use get_account(id) which goes through accounts_handler to support RocksDB archived accounts
+    const auto& recovery_account = _db.get_account( recovery_obj.get_recovery_account() );
     FC_ASSERT( recovery_account.get_name() == o.recovery_account, "Cannot recover an account that does not have you as their recovery partner." );
     if( o.recovery_account == HIVE_TEMP_ACCOUNT )
       wlog( "Recovery by temp account" );
@@ -550,9 +583,10 @@ void request_account_recovery_evaluator::do_apply( const request_account_recover
 void recover_account_evaluator::do_apply( const recover_account_operation& o )
 {
   const auto& account = _db.get_account( o.account_to_recover );
+  const auto& recovery_obj = _db.get< recovery_object, by_account_id >( account.get_id() );
 
   if( _db.has_hardfork( HIVE_HARDFORK_0_12 ) )
-    FC_ASSERT( util::owner_update_limit_mgr::check( _db.head_block_time(), account.get_last_account_recovery_time() ), "${m}", ("m", util::owner_update_limit_mgr::msg( _db.has_hardfork( HIVE_HARDFORK_1_26_AUTH_UPDATE ) ) ) );
+    FC_ASSERT( util::owner_update_limit_mgr::check( _db.head_block_time(), recovery_obj.get_last_account_recovery_time() ), "${m}", ("m", util::owner_update_limit_mgr::msg( _db.has_hardfork( HIVE_HARDFORK_1_26_AUTH_UPDATE ) ) ) );
 
   const auto& recovery_request_idx = _db.get_index< account_recovery_request_index, by_account >();
   auto request = recovery_request_idx.find( o.account_to_recover );
@@ -575,10 +609,10 @@ void recover_account_evaluator::do_apply( const recover_account_operation& o )
 
   _db.remove( *request ); // Remove first, update_owner_authority may invalidate iterator
   _db.update_owner_authority( account, o.new_owner_authority );
-  _db.modify( account, [&]( account_object& a )
+  _db.modify( recovery_obj, [&]( recovery_object& r )
   {
-    a.set_last_account_recovery_time( _db.head_block_time() );
-    a.set_block_last_account_recovery_time( _db.get_current_timestamp() );
+    r.set_last_account_recovery_time( _db.head_block_time() );
+    r.set_block_last_account_recovery_time( _db.get_current_timestamp() );
   });
 }
 
@@ -587,6 +621,7 @@ void change_recovery_account_evaluator::do_apply( const change_recovery_account_
   const auto& new_recovery_account = _db.get_account( o.new_recovery_account ); // validate account exists
     //ABW: can't clear existing recovery agent to set it to top voted witness
   const auto& account_to_recover = _db.get_account( o.account_to_recover );
+  const auto& recovery_obj = _db.get< recovery_object, by_account_id >( account_to_recover.get_id() );
 
   const auto& change_recovery_idx = _db.get_index< change_recovery_account_request_index, by_account >();
   auto request = change_recovery_idx.find( o.account_to_recover );
@@ -596,7 +631,7 @@ void change_recovery_account_evaluator::do_apply( const change_recovery_account_
     //ABW: it is possible to request change to currently set recovery agent (empty operation)
     _db.create< change_recovery_account_request_object >( account_to_recover, new_recovery_account, _db.head_block_time() + HIVE_OWNER_AUTH_RECOVERY_PERIOD );
   }
-  else if( account_to_recover.get_recovery_account() != new_recovery_account.get_id() ) // Change existing request
+  else if( recovery_obj.get_recovery_account() != new_recovery_account.get_id() ) // Change existing request
   {
     //ABW: it is possible to request change to already requested new recovery agent (operation only resets timer)
     _db.modify( *request, [&]( change_recovery_account_request_object& req )
@@ -616,7 +651,8 @@ void decline_voting_rights_evaluator::do_apply( const decline_voting_rights_oper
 
   const auto& account = _db.get_account( o.account );
 
-  FC_ASSERT( account.can_vote && "Voter declined voting rights already, therefore trying to decline voting rights again is forbidden." );
+  if( _db.is_in_control() || _db.has_hardfork( HIVE_HARDFORK_1_28 ) )
+    FC_ASSERT( account.can_vote() && "Voter declined voting rights already, therefore trying to decline voting rights again is forbidden." );
 
   const auto& request_idx = _db.get_index< decline_voting_rights_request_index >().indices().get< by_account >();
   auto itr = request_idx.find( account.get_name() );

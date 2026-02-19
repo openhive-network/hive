@@ -106,7 +106,7 @@ void database::clear_witness_votes( const account_object& a )
 
   modify( a, [&]( account_object& acc )
   {
-    acc.witnesses_voted_for = 0;
+    acc.set_witnesses_voted_for(0);
   } );
 }
 
@@ -132,12 +132,14 @@ void database::retally_witness_votes()
     if( itr->has_proxy() ) continue;
 
     const auto& a = *itr;
+    const auto& _assets_obj = get< assets_object, by_account_id >( a.get_id() );
+    const auto& _dvotes = get< delayed_votes_object, by_account_id >( a.get_id() );
 
     const auto& vidx = get_index<witness_vote_index>().indices().get<by_account_witness>();
     auto wit_itr = vidx.lower_bound( boost::make_tuple( a.get_name(), account_name_type() ) );
     while( wit_itr != vidx.end() && wit_itr->account == a.get_name() )
     {
-      adjust_witness_vote( get< witness_object, by_name >(wit_itr->witness), a.get_governance_vote_power() );
+      adjust_witness_vote( get< witness_object, by_name >(wit_itr->witness), a.get_governance_vote_power( _assets_obj, _dvotes ) );
       ++wit_itr;
     }
   }
@@ -162,11 +164,11 @@ void database::retally_witness_vote_counts( bool force )
         ++wit_itr;
       }
     }
-    if( a.witnesses_voted_for != witnesses_voted_for )
+    if( a.get_witnesses_voted_for() != witnesses_voted_for )
     {
       modify( a, [&]( account_object& account )
       {
-        account.witnesses_voted_for = witnesses_voted_for;
+        account.set_witnesses_voted_for( witnesses_voted_for );
       } );
     }
   }
