@@ -702,7 +702,7 @@ namespace chain {
       void restore_accounts( const std::set< std::string >& restored_accounts );
 
       //Clears all pending operations on account that involve balance, moves tokens to treasury account
-      void gather_balance( const std::string& name, const asset& balance, const asset& hbd_balance );
+      void gather_balance( const std::string& name, const HIVE_asset& hive_balance, const HBD_asset& hbd_balance );
       void clear_accounts( const std::set< std::string >& cleared_accounts );
       void clear_account( const account_object& account );
 
