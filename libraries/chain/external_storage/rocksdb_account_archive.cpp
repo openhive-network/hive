@@ -380,6 +380,11 @@ bool rocksdb_account_archive::on_irreversible_block_impl_account( uint32_t block
     const auto* time_ptr = db.find< time_object, by_account_id >( account_id );
     const auto* delayed_votes_ptr = db.find< delayed_votes_object, by_account_id >( account_id );
 
+    // Skip accounts with active power-down - they need to stay in chainbase
+    // so that process_vesting_withdrawals() can find them via by_next_vesting_withdrawal index
+    if( time_ptr && time_ptr->has_active_power_down() )
+      continue;
+
     // Archive changed account data to RocksDB
     if( _current.changed() )
     {
