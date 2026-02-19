@@ -174,7 +174,7 @@ void database::process_vesting_withdrawals()
 
           if( to_deposit.amount > 0 )
           {
-            const auto& to_account = get< account_object, by_name >( itr->to_account );
+            const auto& to_account = get_account( itr->to_account );
             bool to_self = to_account.get_id() == from_account.get_id();
             const auto& to_assets = get< assets_object, by_account_id >( to_account.get_id() );
             const auto& to_mrc = get< manabars_rc_object, by_account_id >( to_account.get_id() );

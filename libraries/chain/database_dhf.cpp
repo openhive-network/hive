@@ -218,7 +218,7 @@ void database::process_decline_voting_rights()
 
   while( itr != request_idx.end() && itr->effective_date <= head_block_time() )
   {
-    const auto& account = get< account_object, by_name >( itr->account );
+    const auto& account = get_account( itr->account );
 
     if( !has_hardfork( HIVE_HARDFORK_1_28 ) || dhf_helper::remove_proposal_votes( account, proposal_votes, *this, obj_perf ) )
     {
