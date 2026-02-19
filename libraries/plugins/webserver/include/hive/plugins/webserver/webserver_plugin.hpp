@@ -1,6 +1,5 @@
 #pragma once
 #include <appbase/application.hpp>
-#include <hive/utilities/notifications.hpp>
 
 #include <hive/plugins/json_rpc/json_rpc_plugin.hpp>
 
@@ -14,7 +13,6 @@ namespace hive { namespace plugins { namespace webserver {
 namespace detail { class webserver_base; }
 
 using namespace appbase;
-using collector_t = hive::utilities::notifications::collector_t;
 
 /**
   * This plugin starts an HTTP/ws webserver and dispatches queries to
@@ -42,8 +40,6 @@ class webserver_plugin : public appbase::plugin< webserver_plugin >
     virtual void set_program_options(options_description&, options_description& cfg) override;
 
     void start_webserver();
-
-    boost::signals2::connection add_connection( std::function<void(const collector_t&)> func );
 
   protected:
     virtual void plugin_initialize(const variables_map& options) override;

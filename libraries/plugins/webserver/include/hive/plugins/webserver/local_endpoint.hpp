@@ -9,6 +9,7 @@
 
 #include <websocketpp/common/functional.hpp>
 
+#include <iostream>
 #include <sstream>
 #include <string>
 
