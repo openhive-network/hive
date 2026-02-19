@@ -184,6 +184,7 @@ void database::initialize_state_independent_data(const open_args& args)
 
   initialize_indexes();
   get_comments_handler().open();
+  get_accounts_handler().open();
   verify_match_of_state_objects_definitions_from_shm();
   initialize_evaluators();
 
@@ -281,6 +282,7 @@ void database::wipe(const fc::path& shared_mem_dir)
     close();
 
   get_comments_handler().wipe();
+  get_accounts_handler().wipe();
 
   notify_wipe();
 
@@ -303,6 +305,7 @@ void database::close()
 
     flush_to_all_storages();
     get_comments_handler().close();
+    get_accounts_handler().close();
 
     auto lib = this->get_last_irreversible_block_num();
 
@@ -377,51 +380,82 @@ bool database::is_treasury( const account_name_type& name )const
 
 const account_authority_object& database::get_account_authority( const account_name_type& account_name )const
 {
-  return get< account_authority_object, by_account >( account_name );
+  return *( get_accounts_handler().get_account_authority( account_name, true /*account_authority_is_required*/ ) );
 }
 
 const account_authority_object* database::find_account_authority( const account_name_type& account_name )const
 {
-  return find< account_authority_object, by_account >( account_name );
+  return get_accounts_handler().get_account_authority( account_name, false /*account_authority_is_required*/ );
 }
 
 const account_metadata_object& database::get_account_metadata( const account_name_type& account_name )const
 {
-  const auto& account = get_account( account_name );
-  const auto* meta = find< account_metadata_object, by_account >( account.get_id() );
-  FC_ASSERT( meta != nullptr, "Account metadata for ${acc} doesn't exist", ("acc", account_name) );
-  return *meta;
+  return *( get_accounts_handler().get_account_metadata( account_name, true /*account_metadata_is_required*/ ) );
 }
 
 const account_metadata_object* database::find_account_metadata( const account_name_type& account_name )const
 {
-  const auto* account = find_account( account_name );
-  if( !account ) return nullptr;
-  return find< account_metadata_object, by_account >( account->get_id() );
+  return get_accounts_handler().get_account_metadata( account_name, false /*account_metadata_is_required*/ );
 }
 
 const account_object& database::get_account( const account_id_type& id )const
-{ try {
-  const auto* _account = find_account( id );
-  FC_ASSERT( _account != nullptr, "Account with id ${acc} doesn't exist", ("acc", id) );
-  return *_account;
-} FC_CAPTURE_AND_RETHROW( (id) ) }
+{
+  return *( get_accounts_handler().get_account( id, true /*account_is_required*/ ) );
+}
 
 const account_object* database::find_account( const account_id_type& id )const
 {
-  return find< account_object, by_id >( id );
+  return get_accounts_handler().get_account( id, false /*account_is_required*/ );
 }
 
 const account_object& database::get_account( const account_name_type& name )const
-{ try {
-  const auto* _account = find_account( name );
-  FC_ASSERT( _account != nullptr, "Account ${acc} doesn't exist", ("acc", name) );
-  return *_account;
-} FC_CAPTURE_AND_RETHROW( (name) ) }
+{
+  return *( get_accounts_handler().get_account( name, true /*account_is_required*/ ) );
+}
 
 const account_object* database::find_account( const account_name_type& name )const
 {
-  return find< account_object, by_name >( name );
+  return get_accounts_handler().get_account( name, false /*account_is_required*/ );
+}
+
+account_authority database::get_volatile_account_authority( const account_name_type& account_name )const
+{
+  return get_accounts_handler().get_volatile_account_authority( account_name, true /*account_authority_is_required*/ );
+}
+
+account_authority database::find_volatile_account_authority( const account_name_type& account_name )const
+{
+  return get_accounts_handler().get_volatile_account_authority( account_name, false /*account_authority_is_required*/ );
+}
+
+account_metadata database::get_volatile_account_metadata( const account_name_type& account_name )const
+{
+  return get_accounts_handler().get_volatile_account_metadata( account_name, true /*account_metadata_is_required*/ );
+}
+
+account_metadata database::find_volatile_account_metadata( const account_name_type& account_name )const
+{
+  return get_accounts_handler().get_volatile_account_metadata( account_name, false /*account_metadata_is_required*/ );
+}
+
+account database::get_volatile_account(  const account_id_type& id )const
+{
+  return get_accounts_handler().get_volatile_account( id, true /*account_is_required*/ );
+}
+
+account database::find_volatile_account( const account_id_type& id )const
+{
+  return get_accounts_handler().get_volatile_account( id, false /*account_is_required*/ );
+}
+
+account database::get_volatile_account(  const account_name_type& name )const
+{
+  return get_accounts_handler().get_volatile_account( name, true /*account_is_required*/ );
+}
+
+account database::find_volatile_account( const account_name_type& name )const
+{
+  return get_accounts_handler().get_volatile_account( name, false /*account_is_required*/ );
 }
 
 comment database::get_comment( const account_id_type& author, const shared_string& permlink )const
@@ -1458,7 +1492,7 @@ void database::lock_account( const account_object& account )
   }
   else
   {
-    modify( *account_auth, []( account_authority_object& auth )
+    modify<account_authority_object>( *account_auth, []( account_authority_object& auth )
     {
       auth.owner.weight_threshold = 1;
       auth.owner.clear();
@@ -1784,7 +1818,7 @@ void database::update_owner_authority( const account_object& account, const auth
     create< owner_authority_history_object >( account, get_account_authority( account.get_name() ).owner, head_block_time() );
   }
 
-  modify( get_account_authority( account.get_name() ), [&]( account_authority_object& auth )
+  modify<account_authority_object>( get_account_authority( account.get_name() ), [&]( account_authority_object& auth )
   {
     auth.owner = owner_authority;
     auth.previous_owner_update = auth.last_owner_update;
@@ -3202,6 +3236,7 @@ void database::migrate_irreversible_state(uint32_t old_last_irreversible)
       //  ("b", new_last_irreversible)("ob", old_last_irreversible));
 
       get_comments_handler().on_irreversible_block( new_last_irreversible );
+      get_accounts_handler().on_irreversible_block( new_last_irreversible );
 
       //ABW: notifying one by one seems like a potential waste - notification receiver can't optimize its work
       for (uint32_t i = old_last_irreversible + 1; i <= new_last_irreversible; ++i)

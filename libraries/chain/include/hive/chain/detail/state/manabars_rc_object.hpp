@@ -6,7 +6,7 @@
 
 namespace hive { namespace chain {
 
-  class manabars_rc_object : public object< manabars_rc_object_type, manabars_rc_object, std::false_type /* no dynamic alloc */ >
+  class manabars_rc_object : public object< manabars_rc_object_type, manabars_rc_object, std::false_type /* no dynamic alloc */, std::true_type /* enable no undo remove */ >
   {
     CHAINBASE_OBJECT( manabars_rc_object );
     public:

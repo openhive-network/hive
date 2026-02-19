@@ -238,7 +238,10 @@ void rocksdb_storage_provider::flushWriteBuffer()
 
 void rocksdb_storage_provider::flushDb()
 {
-  FC_ASSERT( getStorage() != nullptr && "Database pointer is null" );
+  // If storage is null, there's nothing to flush - this can happen when
+  // flush handlers are called after the database has already been shut down
+  if( !getStorage() )
+    return;
 
   flushWriteBuffer();
 
@@ -278,18 +281,42 @@ void rocksdb_storage_provider::verifyStoreVersion()
   _verifier( "STORE_MINOR_VERSION", STORE_MINOR_VERSION );
 }
 
-void rocksdb_storage_provider::save( const Slice& key, const Slice& value )
+void rocksdb_storage_provider::save( ColumnTypes column_type, const Slice& key, const Slice& value )
 {
-  auto s = getWriteBuffer().Put( _columnHandles[CommentsColumns::COMMENT], key, value );
+  auto s = getWriteBuffer().Put( getColumnHandle(column_type), key, value );
   checkStatus(s);
 }
 
-bool rocksdb_storage_provider::read( const Slice& key, PinnableSlice& value )
+bool rocksdb_storage_provider::read( ColumnTypes column_type, const Slice& key, PinnableSlice& value )
 {
   ReadOptions rOptions;
 
-  auto s = getStorage()->Get( rOptions, _columnHandles[CommentsColumns::COMMENT], key, &value );
+  ::rocksdb::Status s = getStorage()->Get( rOptions, getColumnHandle(column_type), key, &value );
   return s.ok();
+}
+
+void rocksdb_storage_provider::remove( ColumnTypes column_type, const Slice& key )
+{
+  auto s = getWriteBuffer().Delete( getColumnHandle(column_type), key );
+  checkStatus(s);
+}
+
+void rocksdb_storage_provider::put_entity( ColumnTypes column_type, const Slice& key, const WideColumns& wide_columns )
+{
+  auto s = getWriteBuffer().PutEntity( getColumnHandle(column_type), key, wide_columns );
+  checkStatus(s);
+}
+
+bool rocksdb_storage_provider::get_entity( ColumnTypes column_type, const Slice& key, PinnableWideColumns& wide_columns )
+{
+  auto s = getStorage()->GetEntity( ReadOptions(), getColumnHandle(column_type), key, &wide_columns );
+  return s.ok();
+}
+
+ColumnFamilyHandle* rocksdb_storage_provider::getColumnHandle( ColumnTypes column_type )
+{
+  FC_ASSERT( column_type < _columnHandles.size() );
+  return _columnHandles[column_type];
 }
 
 void rocksdb_storage_provider::load_lib()

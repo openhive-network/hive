@@ -11,7 +11,7 @@ namespace hive { namespace chain {
   using hive::protocol::VEST_asset;
   using hive::protocol::asset;
 
-  class assets_object : public object< assets_object_type, assets_object, std::false_type /* no dynamic alloc */ >
+  class assets_object : public object< assets_object_type, assets_object, std::false_type /* no dynamic alloc */, std::true_type /* enable no undo remove */ >
   {
     CHAINBASE_OBJECT( assets_object );
     public:

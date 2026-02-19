@@ -1,5 +1,4 @@
 #include <hive/plugins/database_api/database_api_objects.hpp>
-#include <hive/plugins/metadata_api/metadata_api.hpp>
 
 #include <hive/chain/account_object.hpp>
 #include <hive/chain/block_summary_object.hpp>

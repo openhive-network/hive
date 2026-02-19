@@ -87,6 +87,7 @@ enum object_type
   rc_usage_bucket_object_type,
   rc_stats_object_type,
   rc_expired_delegation_object_type,
+  tiny_account_object_type,
 
   // Account split objects
   recovery_object_type,
@@ -373,6 +374,7 @@ FC_REFLECT_ENUM( hive::chain::object_type,
             (rc_usage_bucket_object_type)
             (rc_stats_object_type)
             (rc_expired_delegation_object_type)
+            (tiny_account_object_type)
 
             (recovery_object_type)
             (assets_object_type)

@@ -9,7 +9,7 @@ namespace hive { namespace chain {
   using chainbase::t_vector;
   using t_delayed_votes = t_vector< delayed_votes_data >;
 
-  class delayed_votes_object : public object< delayed_votes_object_type, delayed_votes_object, std::true_type /* dynamic alloc */ >
+  class delayed_votes_object : public object< delayed_votes_object_type, delayed_votes_object, std::true_type /* dynamic alloc */, std::true_type /* enable no undo remove */ >
   {
     CHAINBASE_OBJECT( delayed_votes_object );
     public:

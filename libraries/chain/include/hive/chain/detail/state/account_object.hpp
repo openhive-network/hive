@@ -35,7 +35,7 @@ namespace hive { namespace chain {
    * - time_object: various timestamps (interest, posts, votes, withdrawal schedule)
    * - delayed_votes_object: delayed votes data with sum
    */
-  class account_object : public object< account_object_type, account_object, std::false_type /* no dynamic alloc */ >
+  class account_object : public object< account_object_type, account_object, std::false_type /* no dynamic alloc */, std::true_type /* enable no undo */ >
   {
     CHAINBASE_OBJECT( account_object );
     public:
@@ -88,6 +88,16 @@ namespace hive { namespace chain {
         FC_ASSERT( &new_proxy != this );
         proxy = new_proxy.get_id();
       }
+      /// Set proxy directly by account id (used for RocksDB restore)
+      void set_proxy_by_id( const account_id_type& proxy_id )
+      {
+        proxy = proxy_id;
+      }
+
+      // ===== Restore methods for RocksDB =====
+      void restore_block_created( const time_point_sec& ts ) { block_created = ts; }
+      void restore_mined( bool value ) { mined = value; }
+
       // ===== Governance vote expiration =====
       time_point_sec get_governance_vote_expiration_ts() const
       {
@@ -107,6 +117,12 @@ namespace hive { namespace chain {
           const int64_t DIVIDER = HIVE_HARDFORK_1_25_MAX_OLD_GOVERNANCE_VOTE_EXPIRE_SHIFT.to_seconds();
           governance_vote_expiration_ts = HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP + fc::seconds(governance_vote_expiration_ts.sec_since_epoch() % DIVIDER);
         }
+      }
+
+      /// Restore governance_vote_expiration_ts from stored value (used for RocksDB restore)
+      void restore_governance_vote_expiration_ts( const time_point_sec ts )
+      {
+        governance_vote_expiration_ts = ts;
       }
 
       // ===== Voting =====
@@ -235,10 +251,20 @@ namespace hive { namespace chain {
 
       fc::array<share_type, HIVE_MAX_PROXY_RECURSION_DEPTH> proxied_vsf_votes; ///< the total VFS votes proxied to this account
 
+      // ===== RocksDB archiving support =====
+      uint32_t          last_access_block = 0; ///< block number when object was last modified (for RocksDB archiving)
+      bool              changed_flag = false;  ///< flag indicating object was modified since last archive
+
+    public:
+      uint32_t get_last_access_block() const { return last_access_block; }
+      void set_last_access_block( uint32_t block ) { last_access_block = block; changed_flag = true; }
+      bool changed() const { return changed_flag; }
+      void clear_changed() { changed_flag = false; }
+
     CHAINBASE_UNPACK_CONSTRUCTOR(account_object);
   };
 
-  class account_metadata_object : public object< account_metadata_object_type, account_metadata_object, std::true_type /* dynamic alloc */ >
+  class account_metadata_object : public object< account_metadata_object_type, account_metadata_object, std::true_type /* dynamic alloc */, std::true_type /* enable no undo */ >
   {
     CHAINBASE_OBJECT( account_metadata_object );
     public:
@@ -247,6 +273,15 @@ namespace hive { namespace chain {
       account_id_type   account;
       shared_string     json_metadata;
       shared_string     posting_json_metadata;
+
+      // ===== RocksDB archiving support =====
+      uint32_t          last_access_block = 0; ///< block number when object was last modified (for RocksDB archiving)
+      bool              changed_flag = false;  ///< flag indicating object was modified since last archive
+
+      uint32_t get_last_access_block() const { return last_access_block; }
+      void set_last_access_block( uint32_t block ) { last_access_block = block; changed_flag = true; }
+      bool changed() const { return changed_flag; }
+      void clear_changed() { changed_flag = false; }
 
       size_t get_dynamic_alloc() const
       {
@@ -259,7 +294,7 @@ namespace hive { namespace chain {
     CHAINBASE_UNPACK_CONSTRUCTOR(account_metadata_object, (json_metadata)(posting_json_metadata));
   };
 
-  class account_authority_object : public object< account_authority_object_type, account_authority_object, std::true_type /* dynamic alloc */ >
+  class account_authority_object : public object< account_authority_object_type, account_authority_object, std::true_type /* dynamic alloc */, std::true_type /* enable no undo */ >
   {
     CHAINBASE_OBJECT( account_authority_object );
     public:
@@ -267,12 +302,24 @@ namespace hive { namespace chain {
 
       account_name_type account;
 
+      // Required for RocksDB archiving (to match account_object interface)
+      const account_name_type& get_name() const { return account; }
+
       shared_authority  owner;   ///< used for backup control, can set owner or active
       shared_authority  active;  ///< used for all monetary operations, can set active or posting
       shared_authority  posting; ///< used for voting and posting
 
       time_point_sec    previous_owner_update;
       time_point_sec    last_owner_update;
+
+      // ===== RocksDB archiving support =====
+      uint32_t          last_access_block = 0; ///< block number when object was last modified (for RocksDB archiving)
+      bool              changed_flag = false;  ///< flag indicating object was modified since last archive
+
+      uint32_t get_last_access_block() const { return last_access_block; }
+      void set_last_access_block( uint32_t block ) { last_access_block = block; changed_flag = true; }
+      bool changed() const { return changed_flag; }
+      void clear_changed() { changed_flag = false; }
 
       size_t get_dynamic_alloc() const
       {
@@ -465,13 +512,14 @@ FC_REFLECT( hive::chain::account_object,
           (savings_withdraw_requests)(can_vote_flag)(mined)
           (memo_key)
           (proxied_vsf_votes)
+          (last_access_block)(changed_flag)
         )
 
 FC_REFLECT( hive::chain::account_metadata_object,
-          (id)(account)(json_metadata)(posting_json_metadata) )
+          (id)(account)(json_metadata)(posting_json_metadata)(last_access_block)(changed_flag) )
 
 FC_REFLECT( hive::chain::account_authority_object,
-          (id)(account)(owner)(active)(posting)(previous_owner_update)(last_owner_update)
+          (id)(account)(owner)(active)(posting)(previous_owner_update)(last_owner_update)(last_access_block)(changed_flag)
 )
 
 FC_REFLECT( hive::chain::vesting_delegation_object,
