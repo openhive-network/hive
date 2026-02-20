@@ -125,7 +125,7 @@ void database::process_vesting_withdrawals()
     const auto& time_obj = *current; ++current; ++count;
 
     // Get the account and its split objects
-    const auto& from_account = get< account_object, by_id >( time_obj.get_account_id() );
+    const auto& from_account = get_account( time_obj.get_account_id() );
     const auto& from_assets = get< assets_object, by_account_id >( from_account.get_id() );
     const auto& from_mrc = get< manabars_rc_object, by_account_id >( from_account.get_id() );
 

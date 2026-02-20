@@ -205,7 +205,7 @@ void account_create_evaluator::do_apply( const account_create_operation& o )
 
   VEST_asset initial_vesting_shares( 0 );
   if( _db.has_hardfork( HIVE_HARDFORK_0_20__1762 ) )
-    _db.adjust_balance( _db.get< account_object, by_name >( HIVE_NULL_ACCOUNT ), o_fee );
+    _db.adjust_balance( _db.get_account( HIVE_NULL_ACCOUNT ), o_fee );
   else if( o_fee.amount > 0 )
     initial_vesting_shares = _db.create_vesting( new_account, o_fee );
 
@@ -267,7 +267,7 @@ void account_create_with_delegation_evaluator::do_apply( const account_create_wi
 
   VEST_asset initial_vesting_shares( 0 );
   if( _db.has_hardfork( HIVE_HARDFORK_0_20__1762 ) )
-    _db.adjust_balance( _db.get< account_object, by_name >( HIVE_NULL_ACCOUNT ), o_fee );
+    _db.adjust_balance( _db.get_account( HIVE_NULL_ACCOUNT ), o_fee );
   else if( o_fee.amount > 0 )
     initial_vesting_shares = _db.create_vesting( new_account, o_fee );
 
