@@ -304,7 +304,7 @@ void account_update_evaluator::do_apply( const account_update_operation& o )
   FC_ASSERT(o.account != HIVE_TEMP_ACCOUNT, "Cannot update temp account.");
 
   const auto& account = _db.get_account( o.account );
-  const auto& account_auth = _db.get< account_authority_object, by_account >( o.account );
+  const auto& account_auth = _db.get_account_authority( o.account );
 
   if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) ) // 3920d6b938492a873b36b3b44725154cf4123e95 example authority exceeding size (hellosteem has even bigger set to this day)
   {
@@ -385,7 +385,7 @@ void account_update2_evaluator::do_apply( const account_update2_operation& o )
   FC_ASSERT( o.account != HIVE_TEMP_ACCOUNT && "Cannot update temp account." );
 
   const auto& account = _db.get_account( o.account );
-  const auto& account_auth = _db.get< account_authority_object, by_account >( o.account );
+  const auto& account_auth = _db.get_account_authority( o.account );
 
   if( o.owner )
   {

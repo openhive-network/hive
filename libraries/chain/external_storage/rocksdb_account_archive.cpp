@@ -556,7 +556,18 @@ Return_Type rocksdb_account_archive::get_object( const Key_Type& key, const std:
   else
   {
     Return_Type _external_found = rocksdb_reader<SHM_Object_Type, Key_Type, Return_Type>::read( db, provider, key, column_types );
-    if( !_external_found )
+    if( _external_found )
+    {
+      // Set last_access_block on restored object and its split objects to prevent immediate re-archival
+      if constexpr ( std::is_same_v<Return_Type, const SHM_Object_Type*> )
+      {
+        static_cast<chainbase::database&>(db).modify( *_external_found, [&]( SHM_Object_Type& o )
+        {
+          o.set_last_access_block( db.head_block_num() );
+        });
+      }
+    }
+    else
     {
       message<Key_Type, SHM_Object_Type>::check( is_required, key );
     }
@@ -616,7 +627,14 @@ const account_metadata_object* rocksdb_account_archive::get_account_metadata( co
   // Try to find in RocksDB
   auto _external_found = rocksdb_reader<account_metadata_object, account_name_type, const account_metadata_object*>::read( db, provider, account_name, { ColumnTypes::ACCOUNT_METADATA } );
   if( _external_found )
+  {
+    // Set last_access_block to prevent immediate re-archival
+    static_cast<chainbase::database&>(db).modify( *_external_found, [&]( account_metadata_object& o )
+    {
+      o.set_last_access_block( db.head_block_num() );
+    });
     return _external_found;
+  }
 
   if( account_metadata_is_required )
     FC_ASSERT( !"METADATA_OBJECT_MISSING", "Account metadata for `${name}` not found - metadata object missing", ("name", account_name) );
@@ -695,7 +713,14 @@ const account_authority_object* rocksdb_account_archive::get_account_authority( 
   // Try to find in RocksDB
   auto _external_found = rocksdb_reader<account_authority_object, account_name_type, const account_authority_object*>::read( db, provider, account_name, { ColumnTypes::ACCOUNT_AUTHORITY } );
   if( _external_found )
+  {
+    // Set last_access_block to prevent immediate re-archival
+    static_cast<chainbase::database&>(db).modify( *_external_found, [&]( account_authority_object& o )
+    {
+      o.set_last_access_block( db.head_block_num() );
+    });
     return _external_found;
+  }
 
   if( account_authority_is_required )
     FC_ASSERT( !"AUTHORITY_NOT_FOUND", "Account authority for `${name}` not found in authority index", ("name", account_name) );
@@ -773,7 +798,14 @@ const account_object* rocksdb_account_archive::get_account( const account_name_t
   // Try to find in RocksDB
   auto _external_found = rocksdb_reader<account_object, account_name_type, const account_object*>::read( db, provider, account_name, { ColumnTypes::ACCOUNT } );
   if( _external_found )
+  {
+    // Set last_access_block to prevent immediate re-archival
+    static_cast<chainbase::database&>(db).modify( *_external_found, [&]( account_object& o )
+    {
+      o.set_last_access_block( db.head_block_num() );
+    });
     return _external_found;
+  }
 
   if( account_is_required )
     FC_ASSERT( !"ACCOUNT_NOT_FOUND_BY_NAME", "Account `${name}` not found by name", ("name", account_name) );
@@ -798,7 +830,14 @@ const account_object* rocksdb_account_archive::get_account( const account_id_typ
   // Try to find in RocksDB
   auto _external_found = rocksdb_reader<account_object, account_id_type, const account_object*>::read( db, provider, account_id, { ColumnTypes::ACCOUNT_BY_ID, ColumnTypes::ACCOUNT } );
   if( _external_found )
+  {
+    // Set last_access_block to prevent immediate re-archival
+    static_cast<chainbase::database&>(db).modify( *_external_found, [&]( account_object& o )
+    {
+      o.set_last_access_block( db.head_block_num() );
+    });
     return _external_found;
+  }
 
   if( account_is_required )
     FC_ASSERT( !"ACCOUNT_NOT_FOUND_BY_ID", "Account with id `${id}` not found by id", ("id", account_id) );
