@@ -394,7 +394,7 @@ void database_fixture::issue_funds( const string& account_name, const HIVE_asset
   db_plugin->debug_update( [=]( database& db)
   {
     const auto& acnt = db.get_account( account_name );
-    const auto& acnt_assets = db.get< assets_object, by_account_id >( acnt.get_id() );
+    const auto& acnt_assets = db.get_asset_account( acnt.get_id() );
     db.modify( acnt_assets, [&]( assets_object& a )
     {
       a.set_balance( a.get_balance() + amount.to_asset() );
@@ -427,13 +427,13 @@ void database_fixture::issue_funds( const string& account_name, const HBD_asset&
     }
 
     const auto& acnt = db.get_account( account_name );
-    const auto& acnt_assets = db.get< assets_object, by_account_id >( acnt.get_id() );
+    const auto& acnt_assets = db.get_asset_account( acnt.get_id() );
     db.modify( acnt_assets, [&]( assets_object& a )
     {
       a.set_hbd_balance( a.get_hbd_balance() + amount );
     } );
 
-    const auto& acnt_time = db.get< time_object, by_account_id >( acnt.get_id() );
+    const auto& acnt_time = db.get_time_account( acnt.get_id() );
     db.modify( acnt_time, [&]( time_object& t )
     {
       t.set_hbd_seconds_last_update( db.head_block_time() );
@@ -972,92 +972,92 @@ uint64_t database_fixture::get_nr_blocks_until_daily_proposal_maintenance_block(
 HIVE_asset database_fixture::get_hive_balance( const string& account_name )const
 {
   const auto& acnt = db->get_account( account_name );
-  const auto& assets = db->get< assets_object, by_account_id >( acnt.get_id() );
+  const auto& assets = db->get_asset_account( acnt.get_id() );
   return assets.get_balance();
 }
 
 HBD_asset database_fixture::get_hbd_balance( const string& account_name )const
 {
   const auto& acnt = db->get_account( account_name );
-  const auto& assets = db->get< assets_object, by_account_id >( acnt.get_id() );
+  const auto& assets = db->get_asset_account( acnt.get_id() );
   return assets.get_hbd_balance();
 }
 
 HIVE_asset database_fixture::get_hive_savings( const string& account_name )const
 {
   const auto& acnt = db->get_account( account_name );
-  const auto& assets = db->get< assets_object, by_account_id >( acnt.get_id() );
+  const auto& assets = db->get_asset_account( acnt.get_id() );
   return assets.get_savings();
 }
 
 HBD_asset database_fixture::get_hbd_savings( const string& account_name )const
 {
   const auto& acnt = db->get_account( account_name );
-  const auto& assets = db->get< assets_object, by_account_id >( acnt.get_id() );
+  const auto& assets = db->get_asset_account( acnt.get_id() );
   return assets.get_hbd_savings();
 }
 
 HIVE_asset database_fixture::get_hive_rewards( const string& account_name )const
 {
   const auto& acnt = db->get_account( account_name );
-  const auto& assets = db->get< assets_object, by_account_id >( acnt.get_id() );
+  const auto& assets = db->get_asset_account( acnt.get_id() );
   return assets.get_rewards();
 }
 
 HBD_asset database_fixture::get_hbd_rewards( const string& account_name )const
 {
   const auto& acnt = db->get_account( account_name );
-  const auto& assets = db->get< assets_object, by_account_id >( acnt.get_id() );
+  const auto& assets = db->get_asset_account( acnt.get_id() );
   return assets.get_hbd_rewards();
 }
 
 VEST_asset database_fixture::get_vesting( const string& account_name )const
 {
   const auto& acnt = db->get_account( account_name );
-  const auto& assets = db->get< assets_object, by_account_id >( acnt.get_id() );
+  const auto& assets = db->get_asset_account( acnt.get_id() );
   return assets.get_vesting();
 }
 
 VEST_asset database_fixture::get_vest_rewards( const string& account_name )const
 {
   const auto& acnt = db->get_account( account_name );
-  const auto& assets = db->get< assets_object, by_account_id >( acnt.get_id() );
+  const auto& assets = db->get_asset_account( acnt.get_id() );
   return assets.get_vest_rewards();
 }
 
 HIVE_asset database_fixture::get_vest_rewards_as_hive( const string& account_name )const
 {
   const auto& acnt = db->get_account( account_name );
-  const auto& assets = db->get< assets_object, by_account_id >( acnt.get_id() );
+  const auto& assets = db->get_asset_account( acnt.get_id() );
   return assets.get_vest_rewards_as_hive();
 }
 
 const util::manabar& database_fixture::get_voting_manabar( const string& account_name )const
 {
   const auto& acnt = db->get_account( account_name );
-  const auto& mrc = db->get< manabars_rc_object, by_account_id >( acnt.get_id() );
+  const auto& mrc = db->get_manabars_rc_account( acnt.get_id() );
   return mrc.get_voting_manabar();
 }
 
 const util::manabar& database_fixture::get_downvote_manabar( const string& account_name )const
 {
   const auto& acnt = db->get_account( account_name );
-  const auto& mrc = db->get< manabars_rc_object, by_account_id >( acnt.get_id() );
+  const auto& mrc = db->get_manabars_rc_account( acnt.get_id() );
   return mrc.get_downvote_manabar();
 }
 
 share_type database_fixture::get_effective_vesting_shares( const string& account_name )const
 {
   const auto& acnt = db->get_account( account_name );
-  const auto& assets = db->get< assets_object, by_account_id >( acnt.get_id() );
-  const auto& time_obj = db->get< time_object, by_account_id >( acnt.get_id() );
+  const auto& assets = db->get_asset_account( acnt.get_id() );
+  const auto& time_obj = db->get_time_account( acnt.get_id() );
   return acnt.get_effective_vesting_shares( assets, time_obj );
 }
 
 time_point_sec database_fixture::get_last_vote_time( const string& account_name )const
 {
   const auto& acnt = db->get_account( account_name );
-  const auto& time_obj = db->get< time_object, by_account_id >( acnt.get_id() );
+  const auto& time_obj = db->get_time_account( acnt.get_id() );
   return time_obj.get_last_vote_time();
 }
 
@@ -1293,7 +1293,7 @@ bool database_fixture::compare_delayed_vote_count( const account_name_type& name
   if( account == nullptr )
     return false;
 
-  const auto* dv = db->find< delayed_votes_object, by_account_id >( account->get_id() );
+  const auto* dv = db->find_delayed_votes_account( account->get_id() );
   if( dv == nullptr )
     return false;
 

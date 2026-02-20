@@ -65,6 +65,12 @@ class rocksdb_account_archive : public accounts_handler
     const account_object* get_account( const account_id_type& account_id, bool account_is_required ) const override;
     void modify_object( const account_object& obj, std::function<void(account_object&)>&& modifier ) override;
 
+    const assets_object* get_asset_account( const account_id_type& account_id, bool is_required ) const override;
+    const time_object* get_time_account( const account_id_type& account_id, bool is_required ) const override;
+    const recovery_object* get_recovery_account( const account_id_type& account_id, bool is_required ) const override;
+    const manabars_rc_object* get_manabars_rc_account( const account_id_type& account_id, bool is_required ) const override;
+    const delayed_votes_object* get_delayed_votes_account( const account_id_type& account_id, bool is_required ) const override;
+
     account_metadata get_volatile_account_metadata( const account_name_type& account_name, bool account_metadata_is_required ) const override;
     account_authority get_volatile_account_authority( const account_name_type& account_name, bool account_authority_is_required ) const override;
     account get_volatile_account( const account_name_type& account_name, bool account_is_required ) const override;

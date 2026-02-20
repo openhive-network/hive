@@ -326,7 +326,7 @@ void database::init_genesis()
       VEST_asset initial_vests( to_vest * HIVE_INITIAL_VESTING_PRICE );
 
       const auto& init_account = get_account( HIVE_INIT_MINER_NAME );
-      const auto& init_assets = get< assets_object, by_account_id >( init_account.get_id() );
+      const auto& init_assets = get_asset_account( init_account.get_id() );
       modify( init_assets, [&]( assets_object& a )
       {
         a.set_balance( HIVE_asset( HIVE_INIT_SUPPLY ) - to_vest );

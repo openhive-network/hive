@@ -71,15 +71,15 @@ using namespace hive::chain;
 using namespace hive::protocol;
 using fc::string;
 
-#define VOTING_MANABAR( account_name ) (db->get< manabars_rc_object >( manabars_rc_object::id_type( db->get_account( account_name ).get_id().get_value() ) ).get_voting_manabar())
-#define DOWNVOTE_MANABAR( account_name ) (db->get< manabars_rc_object >( manabars_rc_object::id_type( db->get_account( account_name ).get_id().get_value() ) ).get_downvote_manabar())
-#define GET_ASSETS( account_name ) (db->get< assets_object >( assets_object::id_type( db->get_account( account_name ).get_id().get_value() ) ))
-#define GET_TIME( account_name ) (db->get< time_object >( time_object::id_type( db->get_account( account_name ).get_id().get_value() ) ))
-#define GET_DV( account_name ) (db->get< delayed_votes_object >( delayed_votes_object::id_type( db->get_account( account_name ).get_id().get_value() ) ))
+#define VOTING_MANABAR( account_name ) (db->get_manabars_rc_account( db->get_account( account_name ).get_id() ).get_voting_manabar())
+#define DOWNVOTE_MANABAR( account_name ) (db->get_manabars_rc_account( db->get_account( account_name ).get_id() ).get_downvote_manabar())
+#define GET_ASSETS( account_name ) (db->get_asset_account( db->get_account( account_name ).get_id() ))
+#define GET_TIME( account_name ) (db->get_time_account( db->get_account( account_name ).get_id() ))
+#define GET_DV( account_name ) (db->get_delayed_votes_account( db->get_account( account_name ).get_id() ))
 #define GET_EFF_VESTS( account_name ) (db->get_account( account_name ).get_effective_vesting_shares( GET_ASSETS( account_name ), GET_TIME( account_name ) ))
-#define GET_GOV_VOTE_POWER( acc ) ((acc).get_direct_governance_vote_power( db->get< assets_object >( assets_object::id_type( (acc).get_id().get_value() ) ), db->get< delayed_votes_object >( delayed_votes_object::id_type( (acc).get_id().get_value() ) ) ))
-#define GET_RECOVERY( account_name ) (db->get< recovery_object >( recovery_object::id_type( db->get_account( account_name ).get_id().get_value() ) ))
-#define GET_RECOVERY_FOR_ACC( acc ) (db->get< recovery_object >( recovery_object::id_type( (acc).get_id().get_value() ) ))
+#define GET_GOV_VOTE_POWER( acc ) ((acc).get_direct_governance_vote_power( db->get_asset_account( (acc).get_id() ), db->get_delayed_votes_account( (acc).get_id() ) ))
+#define GET_RECOVERY( account_name ) (db->get_recovery_account( db->get_account( account_name ).get_id() ))
+#define GET_RECOVERY_FOR_ACC( acc ) (db->get_recovery_account( (acc).get_id() ))
 #define CHECK_PROXY( account, proxy ) BOOST_REQUIRE( account.get_proxy() == proxy.get_id() )
 #define CHECK_NO_PROXY( account ) BOOST_REQUIRE( account.has_proxy() == false )
 
@@ -149,7 +149,7 @@ BOOST_AUTO_TEST_CASE( account_create_apply )
     private_key_type priv_key = generate_private_key( "alice" );
 
     const auto& init = db->get_account( HIVE_INIT_MINER_NAME );
-    const auto& init_assets = db->get< assets_object >( assets_object::id_type( init.get_id().get_value() ) );
+    const auto& init_assets = db->get_asset_account( init.get_id() );
     asset init_starting_balance = init_assets.get_balance();
 
     account_create_operation op;
@@ -176,7 +176,7 @@ BOOST_AUTO_TEST_CASE( account_create_apply )
     push_transaction( tx, init_account_priv_key );
 
     const auto& acct = db->get_account( "alice" );
-    const auto& acct_assets = db->get< assets_object >( assets_object::id_type( acct.get_id().get_value() ) );
+    const auto& acct_assets = db->get_asset_account( acct.get_id() );
     const account_authority_object& acct_auth = db->get_account_authority( "alice" );
 
     BOOST_REQUIRE_EQUAL( acct.get_name(), "alice" );
@@ -791,16 +791,16 @@ BOOST_AUTO_TEST_CASE( vote_apply )
     const auto& _bob = db->get_account( "bob" );
     const auto& _sam = db->get_account( "sam" );
     const auto& _dave = db->get_account( "dave" );
-    const auto& _alice_mrc = db->get< manabars_rc_object >( manabars_rc_object::id_type( _alice.get_id().get_value() ) );
-    const auto& _bob_mrc = db->get< manabars_rc_object >( manabars_rc_object::id_type( _bob.get_id().get_value() ) );
-    const auto& _sam_mrc = db->get< manabars_rc_object >( manabars_rc_object::id_type( _sam.get_id().get_value() ) );
-    const auto& _dave_mrc = db->get< manabars_rc_object >( manabars_rc_object::id_type( _dave.get_id().get_value() ) );
-    const auto& _alice_assets = db->get< assets_object >( assets_object::id_type( _alice.get_id().get_value() ) );
-    const auto& _sam_assets = db->get< assets_object >( assets_object::id_type( _sam.get_id().get_value() ) );
-    const auto& _dave_assets = db->get< assets_object >( assets_object::id_type( _dave.get_id().get_value() ) );
-    const auto& _alice_time = db->get< time_object >( time_object::id_type( _alice.get_id().get_value() ) );
-    const auto& _sam_time = db->get< time_object >( time_object::id_type( _sam.get_id().get_value() ) );
-    const auto& _dave_time = db->get< time_object >( time_object::id_type( _dave.get_id().get_value() ) );
+    const auto& _alice_mrc = db->get_manabars_rc_account( _alice.get_id() );
+    const auto& _bob_mrc = db->get_manabars_rc_account( _bob.get_id() );
+    const auto& _sam_mrc = db->get_manabars_rc_account( _sam.get_id() );
+    const auto& _dave_mrc = db->get_manabars_rc_account( _dave.get_id() );
+    const auto& _alice_assets = db->get_asset_account( _alice.get_id() );
+    const auto& _sam_assets = db->get_asset_account( _sam.get_id() );
+    const auto& _dave_assets = db->get_asset_account( _dave.get_id() );
+    const auto& _alice_time = db->get_time_account( _alice.get_id() );
+    const auto& _sam_time = db->get_time_account( _sam.get_id() );
+    const auto& _dave_time = db->get_time_account( _dave.get_id() );
 
     const auto& vote_idx = db->get_index< comment_vote_index, by_comment_voter >();
 
@@ -1225,7 +1225,7 @@ BOOST_AUTO_TEST_CASE( vote_weights )
       const auto& cashout = *( db->find_comment_cashout( *comment ) );
       const auto& voter = db->get_account( voters[i].name );
       voterObjs.emplace_back( &voter );
-      voterAssets.emplace_back( &db->get< assets_object >( assets_object::id_type( voter.get_id().get_value() ) ) );
+      voterAssets.emplace_back( &db->get_asset_account( voter.get_id() ) );
       const auto& vote = *( vote_idx.find( boost::make_tuple( comment.get_id(), voter.get_id() ) ) );
       voteObjs.emplace_back( &vote );
       BOOST_REQUIRE_EQUAL( vote.get_weight(), cashout.get_total_vote_weight() );
@@ -1453,9 +1453,9 @@ BOOST_AUTO_TEST_CASE( transfer_apply )
     generate_block();
 
     const auto& new_alice = db->get_account( "alice" );
-    const auto& new_alice_assets = db->get< assets_object >( assets_object::id_type( new_alice.get_id().get_value() ) );
+    const auto& new_alice_assets = db->get_asset_account( new_alice.get_id() );
     const auto& new_bob = db->get_account( "bob" );
-    const auto& new_bob_assets = db->get< assets_object >( assets_object::id_type( new_bob.get_id().get_value() ) );
+    const auto& new_bob_assets = db->get_asset_account( new_bob.get_id() );
 
     BOOST_REQUIRE_EQUAL( new_alice_assets.get_balance().amount.value, ASSET( "5.000 TESTS" ).amount.value );
     BOOST_REQUIRE_EQUAL( new_bob_assets.get_balance().amount.value, ASSET( "5.000 TESTS" ).amount.value );
@@ -1485,7 +1485,7 @@ BOOST_AUTO_TEST_CASE( transfer_apply )
     set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
     const auto& treasury = db->get_treasury();
-    const auto& treasury_assets = db->get< assets_object >( assets_object::id_type( treasury.get_id().get_value() ) );
+    const auto& treasury_assets = db->get_asset_account( treasury.get_id() );
     auto treasury_hbd_balance = treasury_assets.get_hbd_balance();
     op.from = "bob";
     op.to = db->get_treasury_name();
@@ -1581,8 +1581,8 @@ BOOST_AUTO_TEST_CASE( transfer_to_vesting_apply )
     fund( "alice", HIVE_asset( 10'000 ) );
 
     const auto& gpo = db->get_dynamic_global_properties();
-    const auto& alice_assets = db->get< assets_object >( assets_object::id_type( alice.get_id().get_value() ) );
-    const auto& bob_assets = db->get< assets_object >( assets_object::id_type( bob.get_id().get_value() ) );
+    const auto& alice_assets = db->get_asset_account( alice.get_id() );
+    const auto& bob_assets = db->get_asset_account( bob.get_id() );
 
     BOOST_REQUIRE_EQUAL( alice_assets.get_balance(), ASSET( "10.000 TESTS" ) );
 
@@ -1715,8 +1715,8 @@ BOOST_AUTO_TEST_CASE( withdraw_vesting_apply )
 
     {
     const auto& alice = db->get_account( "alice" );
-    const auto& alice_assets = db->get< assets_object >( assets_object::id_type( alice.get_id().get_value() ) );
-    const auto& alice_time = db->get< time_object >( time_object::id_type( alice.get_id().get_value() ) );
+    const auto& alice_assets = db->get_asset_account( alice.get_id() );
+    const auto& alice_time = db->get_time_account( alice.get_id() );
 
     withdraw_vesting_operation op;
     op.account = "alice";
@@ -1897,7 +1897,7 @@ BOOST_AUTO_TEST_CASE( witness_update_apply )
     ACTORS( (alice) )
     fund( "alice", HIVE_asset( 10'000 ) );
 
-    const auto& alice_assets = db->get< assets_object >( assets_object::id_type( alice.get_id().get_value() ) );
+    const auto& alice_assets = db->get_asset_account( alice.get_id() );
     private_key_type signing_key = generate_private_key( "new_key" );
 
     BOOST_TEST_MESSAGE( "--- Test upgrading an account to a witness" );
@@ -2158,10 +2158,10 @@ BOOST_AUTO_TEST_CASE(account_witness_vote_apply_delay)
     //above variables: alice/bob/sam are invalid past that point
     //they need to be reacquired from chain
     const auto& _alice = db->get_account("alice");
-    const auto& _alice_assets = db->get< assets_object >( assets_object::id_type( _alice.get_id().get_value() ) );
-    const auto& _alice_dv = db->get< delayed_votes_object >( delayed_votes_object::id_type( _alice.get_id().get_value() ) );
+    const auto& _alice_assets = db->get_asset_account( _alice.get_id() );
+    const auto& _alice_dv = db->get_delayed_votes_account( _alice.get_id() );
     const auto& _bob = db->get_account("bob");
-    const auto& _bob_assets = db->get< assets_object >( assets_object::id_type( _bob.get_id().get_value() ) );
+    const auto& _bob_assets = db->get_asset_account( _bob.get_id() );
     //const auto& _sam = db->get_account("sam");
     const witness_object& _sam_witness = db->get_witness("sam");
     const auto& witness_vote_idx = db->get_index< witness_vote_index >().indices().get< by_witness_account >();
@@ -2796,11 +2796,11 @@ BOOST_AUTO_TEST_CASE( account_witness_proxy_apply_delay )
     //above variables: alice etc. are invalid past that point
     //they need to be reacquired from chain
     const auto& _alice = db->get_account("alice");
-    const auto& _alice_assets = db->get< assets_object >( assets_object::id_type( _alice.get_id().get_value() ) );
+    const auto& _alice_assets = db->get_asset_account( _alice.get_id() );
     const auto& _bob = db->get_account("bob");
-    const auto& _bob_assets = db->get< assets_object >( assets_object::id_type( _bob.get_id().get_value() ) );
+    const auto& _bob_assets = db->get_asset_account( _bob.get_id() );
     const auto& _sam = db->get_account("sam");
-    const auto& _sam_assets = db->get< assets_object >( assets_object::id_type( _sam.get_id().get_value() ) );
+    const auto& _sam_assets = db->get_asset_account( _sam.get_id() );
     const auto& _dave = db->get_account("dave");
 
     BOOST_TEST_MESSAGE( "--- Test setting proxy to another account from self." );
@@ -3275,9 +3275,9 @@ BOOST_AUTO_TEST_CASE( convert_apply )
     const auto& convert_request_idx = db->get_index< convert_request_index, by_owner >();
 
     const auto& new_alice = db->get_account( "alice" );
-    const auto& new_alice_assets = db->get< assets_object >( assets_object::id_type( new_alice.get_id().get_value() ) );
+    const auto& new_alice_assets = db->get_asset_account( new_alice.get_id() );
     const auto& new_bob = db->get_account( "bob" );
-    const auto& new_bob_assets = db->get< assets_object >( assets_object::id_type( new_bob.get_id().get_value() ) );
+    const auto& new_bob_assets = db->get_asset_account( new_bob.get_id() );
 
     BOOST_TEST_MESSAGE( "--- Test failure when account does not have the required TESTS" );
     op.owner = "bob";
@@ -3605,7 +3605,7 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
       uint16_t limit2 = 2 * dgpo.hbd_stop_percent + HIVE_1_BASIS_POINT; //there is rounding when percent is calculated, hence some strange correction
       amount = ( amount * limit2 ) / ( 2 * HIVE_100_PERCENT - limit2 );
       auto new_hbd = asset( fc::uint128_to_uint64(amount), HIVE_SYMBOL ) * feed.current_median_history.to_price();
-      const auto& treasury_assets = db->get< assets_object >( assets_object::id_type( db->get_treasury().get_id().get_value() ) );
+      const auto& treasury_assets = db->get_asset_account( db->get_treasury().get_id() );
       new_hbd -= dgpo.get_current_hbd_supply() - treasury_assets.get_hbd_balance();
       issue_funds( "alice", new_hbd, false );
       uint16_t percent = db->calculate_HBD_percent();
@@ -3893,8 +3893,8 @@ BOOST_AUTO_TEST_CASE( limit_order_create_apply )
     fund( "bob", HBD_asset( 1'000'000 ) );
 
     const auto& limit_order_idx = db->get_index< limit_order_index >().indices().get< by_account >();
-    const auto& alice_assets = db->get< assets_object >( assets_object::id_type( alice.get_id().get_value() ) );
-    const auto& bob_assets = db->get< assets_object >( assets_object::id_type( bob.get_id().get_value() ) );
+    const auto& alice_assets = db->get_asset_account( alice.get_id() );
+    const auto& bob_assets = db->get_asset_account( bob.get_id() );
 
     BOOST_TEST_MESSAGE( "--- Test failure when account does not have required funds" );
     limit_order_create_operation op;
@@ -4214,8 +4214,8 @@ BOOST_AUTO_TEST_CASE( limit_order_create2_apply )
     fund( "bob", HBD_asset( 1'000'000 ) );
 
     const auto& limit_order_idx = db->get_index< limit_order_index >().indices().get< by_account >();
-    const auto& alice_assets = db->get< assets_object >( assets_object::id_type( alice.get_id().get_value() ) );
-    const auto& bob_assets = db->get< assets_object >( assets_object::id_type( bob.get_id().get_value() ) );
+    const auto& alice_assets = db->get_asset_account( alice.get_id() );
+    const auto& bob_assets = db->get_asset_account( bob.get_id() );
 
     BOOST_TEST_MESSAGE( "--- Test failure when account does not have required funds" );
     limit_order_create2_operation op;
@@ -4641,7 +4641,7 @@ BOOST_AUTO_TEST_CASE( limit_order_cancel_apply )
     fund( "alice", HIVE_asset( 10'000 ) );
 
     const auto& limit_order_idx = db->get_index< limit_order_index >().indices().get< by_account >();
-    const auto& alice_assets = db->get< assets_object >( assets_object::id_type( alice.get_id().get_value() ) );
+    const auto& alice_assets = db->get_asset_account( alice.get_id() );
 
     BOOST_TEST_MESSAGE( "--- Test cancel non-existent order" );
 
@@ -5128,9 +5128,9 @@ BOOST_AUTO_TEST_CASE( escrow_transfer_apply )
 
     fund( "alice", HIVE_asset( 10'000 ) );
 
-    const auto& alice_assets = db->get< assets_object >( assets_object::id_type( alice.get_id().get_value() ) );
-    const auto& bob_assets = db->get< assets_object >( assets_object::id_type( bob.get_id().get_value() ) );
-    const auto& sam_assets = db->get< assets_object >( assets_object::id_type( sam.get_id().get_value() ) );
+    const auto& alice_assets = db->get_asset_account( alice.get_id() );
+    const auto& bob_assets = db->get_asset_account( bob.get_id() );
+    const auto& sam_assets = db->get_asset_account( sam.get_id() );
 
     escrow_transfer_operation op;
     op.from = "alice";
@@ -5288,7 +5288,7 @@ BOOST_AUTO_TEST_CASE( escrow_approve_apply )
     ACTORS( (alice)(bob)(sam)(dave) )
     fund( "alice", HIVE_asset( 10'000 ) );
 
-    const auto& alice_assets = db->get< assets_object >( assets_object::id_type( alice.get_id().get_value() ) );
+    const auto& alice_assets = db->get_asset_account( alice.get_id() );
 
     escrow_transfer_operation et_op;
     et_op.from = "alice";
@@ -7428,7 +7428,7 @@ BOOST_AUTO_TEST_CASE( claim_reward_balance_apply )
     db_plugin->debug_update( []( database& db )
     {
       const auto& alice_acc = db.get_account( "alice" );
-      const auto& alice_assets = db.get< assets_object >( assets_object::id_type( alice_acc.get_id().get_value() ) );
+      const auto& alice_assets = db.get_asset_account( alice_acc.get_id() );
       db.modify( alice_assets, []( assets_object& a )
       {
         a.set_rewards( ASSET( "10.000 TESTS" ) );
@@ -7614,9 +7614,9 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
     push_transaction( tx, alice_private_key );
     generate_blocks( 1 );
     const auto& alice_acc = db->get_account( "alice" );
-    const auto& alice_mrc = db->get< manabars_rc_object >( manabars_rc_object::id_type( alice_acc.get_id().get_value() ) );
+    const auto& alice_mrc = db->get_manabars_rc_account( alice_acc.get_id() );
     const auto& bob_acc = db->get_account( "bob" );
-    const auto& bob_mrc = db->get< manabars_rc_object >( manabars_rc_object::id_type( bob_acc.get_id().get_value() ) );
+    const auto& bob_mrc = db->get_manabars_rc_account( bob_acc.get_id() );
 
     BOOST_REQUIRE_EQUAL( GET_ASSETS( "alice" ).get_delegated_vesting(), ASSET( "10000000.000000 VESTS" ) );
     BOOST_REQUIRE_EQUAL( alice_mrc.get_voting_manabar().current_mana, old_manabar.current_mana - op.vesting_shares.amount.value );
@@ -7747,9 +7747,9 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
     db_plugin->debug_update( [=]( database& db )
     {
       const auto& sam_acc = db.get_account( "sam" );
-      const auto& sam_assets = db.get< assets_object >( assets_object::id_type( sam_acc.get_id().get_value() ) );
-      const auto& sam_time = db.get< time_object >( time_object::id_type( sam_acc.get_id().get_value() ) );
-      db.modify( db.get< manabars_rc_object >( manabars_rc_object::id_type( sam_acc.get_id().get_value() ) ), [&]( manabars_rc_object& mrc )
+      const auto& sam_assets = db.get_asset_account( sam_acc.get_id() );
+      const auto& sam_time = db.get_time_account( sam_acc.get_id() );
+      db.modify( db.get_manabars_rc_account( sam_acc.get_id() ), [&]( manabars_rc_object& mrc )
       {
         mrc.get_voting_manabar().current_mana = mrc.get_downvote_manabar().current_mana * 3 / 4;
         mrc.get_voting_manabar().last_update_time = db.head_block_time().sec_since_epoch();
@@ -7767,9 +7767,9 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
     db_plugin->debug_update( [=]( database& db )
     {
       const auto& sam_acc = db.get_account( "sam" );
-      const auto& sam_assets = db.get< assets_object >( assets_object::id_type( sam_acc.get_id().get_value() ) );
-      const auto& sam_time = db.get< time_object >( time_object::id_type( sam_acc.get_id().get_value() ) );
-      db.modify( db.get< manabars_rc_object >( manabars_rc_object::id_type( sam_acc.get_id().get_value() ) ), [&]( manabars_rc_object& mrc )
+      const auto& sam_assets = db.get_asset_account( sam_acc.get_id() );
+      const auto& sam_time = db.get_time_account( sam_acc.get_id() );
+      db.modify( db.get_manabars_rc_account( sam_acc.get_id() ), [&]( manabars_rc_object& mrc )
       {
         mrc.get_voting_manabar().current_mana = sam_acc.get_effective_vesting_shares( sam_assets, sam_time ).value;
         mrc.get_voting_manabar().last_update_time = db.head_block_time().sec_since_epoch();
@@ -7787,9 +7787,9 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
     db_plugin->debug_update( [=]( database& db )
     {
       const auto& sam_acc = db.get_account( "sam" );
-      const auto& sam_assets = db.get< assets_object >( assets_object::id_type( sam_acc.get_id().get_value() ) );
-      const auto& sam_time = db.get< time_object >( time_object::id_type( sam_acc.get_id().get_value() ) );
-      db.modify( db.get< manabars_rc_object >( manabars_rc_object::id_type( sam_acc.get_id().get_value() ) ), [&]( manabars_rc_object& mrc )
+      const auto& sam_assets = db.get_asset_account( sam_acc.get_id() );
+      const auto& sam_time = db.get_time_account( sam_acc.get_id() );
+      db.modify( db.get_manabars_rc_account( sam_acc.get_id() ), [&]( manabars_rc_object& mrc )
       {
         mrc.get_downvote_manabar().current_mana = sam_acc.get_effective_vesting_shares( sam_assets, sam_time ).value / 4;
         mrc.get_downvote_manabar().last_update_time = db.head_block_time().sec_since_epoch();
@@ -8054,7 +8054,7 @@ BOOST_AUTO_TEST_CASE( comment_beneficiaries_apply )
       });
 
       const auto& treasury = db.get_treasury();
-      const auto& treasury_assets = db.get< assets_object >( assets_object::id_type( treasury.get_id().get_value() ) );
+      const auto& treasury_assets = db.get_asset_account( treasury.get_id() );
       db.modify( treasury_assets, [=]( assets_object& a )
       {
         a.set_hbd_balance( ASSET( "0.000 TBD" ) );
@@ -8163,7 +8163,7 @@ BOOST_AUTO_TEST_CASE( comment_beneficiaries_apply )
     const comment_cashout_object* _comment_cashout = db->find_comment_cashout( *_comment );
     BOOST_REQUIRE( _comment_cashout == nullptr );
 
-    const auto& treasury_assets = db->get< assets_object >( assets_object::id_type( db->get_treasury().get_id().get_value() ) );
+    const auto& treasury_assets = db->get_asset_account( db->get_treasury().get_id() );
     BOOST_REQUIRE_EQUAL( ( get_hbd_rewards( "alice" ).amount + get_vest_rewards_as_hive( "alice" ).amount + treasury_assets.get_hbd_balance().amount ), get_vest_rewards_as_hive( "bob" ).amount + get_hbd_rewards( "bob" ).amount + 1 );
     BOOST_REQUIRE_EQUAL( ( get_hbd_rewards( "alice" ).amount + get_vest_rewards_as_hive( "alice" ).amount + treasury_assets.get_hbd_balance().amount ), ( get_vest_rewards_as_hive( "sam" ).amount + get_hbd_rewards( "sam" ).amount ) / 2 + 1 );
     BOOST_REQUIRE_EQUAL( get_vest_rewards_as_hive( "bob" ).amount, get_hbd_rewards( "bob" ).amount + 1 );
@@ -8189,7 +8189,7 @@ BOOST_AUTO_TEST_CASE( comment_options_apply )
       } );
 
       const auto& treasury = db.get_treasury();
-      const auto& treasury_assets_obj = db.get< assets_object >( assets_object::id_type( treasury.get_id().get_value() ) );
+      const auto& treasury_assets_obj = db.get_asset_account( treasury.get_id() );
       db.modify( treasury_assets_obj, [=]( assets_object& a )
       {
         a.set_hbd_balance( ASSET( "5.000 TBD" ) );
@@ -8367,7 +8367,7 @@ BOOST_AUTO_TEST_CASE( comment_options_deleted_permlink_reuse )
       } );
 
       const auto& treasury = db.get_treasury();
-      const auto& treasury_assets_obj = db.get< assets_object >( assets_object::id_type( treasury.get_id().get_value() ) );
+      const auto& treasury_assets_obj = db.get_asset_account( treasury.get_id() );
       db.modify( treasury_assets_obj, [=]( assets_object& a )
       {
         a.set_hbd_balance( ASSET( "5.000 TBD" ) );
@@ -9161,8 +9161,8 @@ BOOST_AUTO_TEST_CASE( create_claimed_account_apply )
     push_transaction( tx, alice_private_key );
 
     const auto& bob = db->get_account( "bob" );
-    const auto& bob_assets = db->get< assets_object >( assets_object::id_type( bob.get_id().get_value() ) );
-    const auto& bob_recovery = db->get< recovery_object >( recovery_object::id_type( bob.get_id().get_value() ) );
+    const auto& bob_assets = db->get_asset_account( bob.get_id() );
+    const auto& bob_recovery = db->get_recovery_account( bob.get_id() );
     const auto& bob_auth = db->get_account_authority( "bob" );
 
     BOOST_REQUIRE_EQUAL( bob.get_name(), "bob" );
@@ -9205,7 +9205,7 @@ BOOST_AUTO_TEST_CASE( create_claimed_account_apply )
     tx.operations.push_back( op );
     push_transaction( tx );
 
-    BOOST_REQUIRE( !(db->get< recovery_object >( recovery_object::id_type( db->get_account( "charlie" ).get_id().get_value() ) ).has_recovery_account()) );
+    BOOST_REQUIRE( !(db->get_recovery_account( db->get_account( "charlie" ).get_id() ).has_recovery_account()) );
     validate_database();
   }
   FC_LOG_AND_RETHROW()

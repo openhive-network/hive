@@ -306,7 +306,7 @@ void debug_node_plugin::debug_set_vest_price( const VEST_price& new_price,
   debug_update( [ this, vest_modifier, hive_modifier ]( chain::database& db )
   {
     const auto& miner_account = db.get_account( HIVE_INIT_MINER_NAME );
-    const auto& miner_assets = db.get< hive::chain::assets_object, hive::chain::by_account_id >( miner_account.get_id() );
+    const auto& miner_assets = db.get_asset_account( miner_account.get_id() );
     auto _update_initminer = [ &db, &vest_modifier, &miner_assets ]()
     {
       /// If we increased vests pool, we need to put them to initminer account to avoid validate_invariants failure

@@ -540,9 +540,9 @@ void database::apply_hardfork( uint32_t hardfork )
         const auto& idx = get_index< account_index, by_id >();
         for( auto it = idx.begin(); it != idx.end(); ++it )
         {
-          const auto& _manabars_rc_object = get< manabars_rc_object, by_account_id >( it->get_id() );
-          const auto& _assets_obj = get< assets_object, by_account_id >( it->get_id() );
-          const auto& _time_obj = get< time_object, by_account_id >( it->get_id() );
+          const auto& _manabars_rc_object = get_manabars_rc_account( it->get_id() );
+          const auto& _assets_obj = get_asset_account( it->get_id() );
+          const auto& _time_obj = get_time_account( it->get_id() );
 
           modify( _manabars_rc_object, [&]( manabars_rc_object& mrc )
           {

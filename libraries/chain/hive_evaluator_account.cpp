@@ -227,7 +227,7 @@ void account_create_with_delegation_evaluator::do_apply( const account_create_wi
   FC_ASSERT( !_db.has_hardfork( HIVE_HARDFORK_0_20__1760 ), "Account creation with delegation is deprecated as of Hardfork 20" );
 
   const auto& creator = _db.get_account( o.creator );
-  const auto& creator_assets = _db.get< assets_object, by_account_id >( creator.get_id() );
+  const auto& creator_assets = _db.get_asset_account( creator.get_id() );
   const auto& props = _db.get_dynamic_global_properties();
   const witness_schedule_object& wso = _db.get_witness_schedule_object();
 
@@ -362,7 +362,7 @@ void account_update_evaluator::do_apply( const account_update_operation& o )
     } );
   }
 
-  const auto& account_time = _db.get< time_object, by_account_id >( account.get_id() );
+  const auto& account_time = _db.get_time_account( account.get_id() );
   _db.modify( account_time, [&]( time_object& t )
   {
     t.set_last_account_update( _db.head_block_time() );
@@ -410,7 +410,7 @@ void account_update2_evaluator::do_apply( const account_update2_operation& o )
     } );
   }
 
-  const auto& account_time = _db.get< time_object, by_account_id >( account.get_id() );
+  const auto& account_time = _db.get_time_account( account.get_id() );
   _db.modify( account_time, [&]( time_object& t )
   {
     t.set_last_account_update( _db.head_block_time() );
@@ -432,7 +432,7 @@ void claim_account_evaluator::do_apply( const claim_account_operation& o )
   FC_ASSERT( _db.has_hardfork( HIVE_HARDFORK_0_20__1771 ) && "claim_account_operation is not enabled until hardfork 20." );
 
   const auto& creator = _db.get_account( o.creator );
-  const auto& creator_assets = _db.get< assets_object, by_account_id >( creator.get_id() );
+  const auto& creator_assets = _db.get_asset_account( creator.get_id() );
   const auto& wso = _db.get_witness_schedule_object();
 
   HIVE_asset o_fee = o.get_fee();
@@ -526,7 +526,7 @@ void create_claimed_account_evaluator::do_apply( const create_claimed_account_op
 void request_account_recovery_evaluator::do_apply( const request_account_recovery_operation& o )
 {
   const auto& account_to_recover = _db.get_account( o.account_to_recover );
-  const auto& recovery_obj = _db.get< recovery_object, by_account_id >( account_to_recover.get_id() );
+  const auto& recovery_obj = _db.get_recovery_account( account_to_recover.get_id() );
 
   if ( recovery_obj.has_recovery_account() ) // Make sure recovery matches expected recovery account
   {
@@ -583,7 +583,7 @@ void request_account_recovery_evaluator::do_apply( const request_account_recover
 void recover_account_evaluator::do_apply( const recover_account_operation& o )
 {
   const auto& account = _db.get_account( o.account_to_recover );
-  const auto& recovery_obj = _db.get< recovery_object, by_account_id >( account.get_id() );
+  const auto& recovery_obj = _db.get_recovery_account( account.get_id() );
 
   if( _db.has_hardfork( HIVE_HARDFORK_0_12 ) )
     FC_ASSERT( util::owner_update_limit_mgr::check( _db.head_block_time(), recovery_obj.get_last_account_recovery_time() ), "${m}", ("m", util::owner_update_limit_mgr::msg( _db.has_hardfork( HIVE_HARDFORK_1_26_AUTH_UPDATE ) ) ) );
@@ -621,7 +621,7 @@ void change_recovery_account_evaluator::do_apply( const change_recovery_account_
   const auto& new_recovery_account = _db.get_account( o.new_recovery_account ); // validate account exists
     //ABW: can't clear existing recovery agent to set it to top voted witness
   const auto& account_to_recover = _db.get_account( o.account_to_recover );
-  const auto& recovery_obj = _db.get< recovery_object, by_account_id >( account_to_recover.get_id() );
+  const auto& recovery_obj = _db.get_recovery_account( account_to_recover.get_id() );
 
   const auto& change_recovery_idx = _db.get_index< change_recovery_account_request_index, by_account >();
   auto request = change_recovery_idx.find( o.account_to_recover );

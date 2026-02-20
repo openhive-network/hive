@@ -226,11 +226,11 @@ api_account_object::api_account_object( const account_object& a, const database&
   governance_vote_expiration_ts( a.get_governance_vote_expiration_ts())
 {
   // Get split objects
-  const auto& assets = db.get< assets_object, by_account_id >( a.get_id() );
-  const auto& mrc = db.get< manabars_rc_object, by_account_id >( a.get_id() );
-  const auto& time_obj = db.get< time_object, by_account_id >( a.get_id() );
-  const auto& dvotes = db.get< delayed_votes_object, by_account_id >( a.get_id() );
-  const auto& recovery = db.get< recovery_object, by_account_id >( a.get_id() );
+  const auto& assets = db.get_asset_account( a.get_id() );
+  const auto& mrc = db.get_manabars_rc_account( a.get_id() );
+  const auto& time_obj = db.get_time_account( a.get_id() );
+  const auto& dvotes = db.get_delayed_votes_account( a.get_id() );
+  const auto& recovery = db.get_recovery_account( a.get_id() );
 
   // From manabars_rc_object
   voting_manabar = mrc.get_voting_manabar();

@@ -416,7 +416,7 @@ struct curation_rewards_handler
     test_object.vest( voters[idx], voters[idx], amount / 10, active_voter_keys[idx] );
     // Debug: Check if vesting was applied
     const auto& voter_acc = test_object.db->get_account( voters[idx] );
-    const auto& voter_assets = test_object.db->get< assets_object, by_account_id >( voter_acc.get_id() );
+    const auto& voter_assets = test_object.db->get_asset_account( voter_acc.get_id() );
     ilog("DEBUG_VEST: voter=${v} idx=${i} voter_id=${vid} assets_id=${aid} acct_id=${accid} vesting=${vest}",
          ("v", voters[idx])("i", idx)("vid", voter_acc.get_id())("aid", voter_assets.get_id())
          ("accid", voter_assets.get_account_id())("vest", voter_assets.get_vesting()));
@@ -536,7 +536,7 @@ struct curation_rewards_handler
     for( auto& item : curve_printers[ comment_idx ].curve_items )
     {
       const auto& acc = db.get_account( item.account );
-      const auto& acc_assets = db.get< assets_object, by_account_id >( acc.get_id() );
+      const auto& acc_assets = db.get_asset_account( acc.get_id() );
       item.reward = static_cast<uint32_t>( acc_assets.get_curation_rewards().amount.value );
 
       uint64_t _seconds = static_cast<uint64_t>( ( item.time - curve_printers[ comment_idx ].start_time ).to_seconds() );
@@ -564,7 +564,7 @@ struct curation_rewards_handler
     for( auto& item : curve_printers[ comment_idx ].curve_items )
     {
       const auto& acc = db.get_account( item.account );
-      const auto& acc_assets = db.get< assets_object, by_account_id >( acc.get_id() );
+      const auto& acc_assets = db.get_asset_account( acc.get_id() );
       item.reward = static_cast<uint32_t>( acc_assets.get_curation_rewards().amount.value );
 
       uint64_t _seconds = static_cast<uint64_t>( ( item.time - curve_printers[ comment_idx ].start_time ).to_seconds() );
@@ -934,7 +934,7 @@ BOOST_AUTO_TEST_CASE( no_votes )
     auto found_author = crh.authors.find( author_number );
     BOOST_REQUIRE( found_author != crh.authors.end() );
     const auto& creator = db->get_account( found_author->second );
-    const auto& creator_assets = db->get< assets_object, by_account_id >( creator.get_id() );
+    const auto& creator_assets = db->get_asset_account( creator.get_id() );
     BOOST_REQUIRE_EQUAL( creator_assets.get_posting_rewards().amount.value, 0 );
 
     auto cmp = []( const reward_stat& item )
