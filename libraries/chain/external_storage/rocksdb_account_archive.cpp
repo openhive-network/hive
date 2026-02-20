@@ -151,11 +151,15 @@ struct rocksdb_reader<account_object, account_name_type, Return_Type>
     auto result = _obj.build<Return_Type>( db );
 
     // Also restore the split objects associated with this account
+    // Note: check if each split object already exists in chainbase before creating.
+    // Objects created with create_no_undo survive pop_block() during fork switches,
+    // so we must avoid duplicate creation on subsequent restoration attempts.
     if constexpr ( std::is_same_v<Return_Type, const account_object*> )
     {
       const account_id_type account_id = result->get_id();
 
       // Recovery object
+      if( !db.find< recovery_object, by_account_id >( account_id ) )
       {
         PinnableSlice split_buffer;
         if( rocksdb_storage_reader<uint32_slice_t>::read_from_storage( provider, uint32_slice_t( account_id ), ColumnTypes::RECOVERY, split_buffer ) )
@@ -167,6 +171,7 @@ struct rocksdb_reader<account_object, account_name_type, Return_Type>
       }
 
       // Assets object
+      if( !db.find< assets_object, by_account_id >( account_id ) )
       {
         PinnableSlice split_buffer;
         if( rocksdb_storage_reader<uint32_slice_t>::read_from_storage( provider, uint32_slice_t( account_id ), ColumnTypes::ASSETS, split_buffer ) )
@@ -178,6 +183,7 @@ struct rocksdb_reader<account_object, account_name_type, Return_Type>
       }
 
       // Manabars_rc object
+      if( !db.find< manabars_rc_object, by_account_id >( account_id ) )
       {
         PinnableSlice split_buffer;
         if( rocksdb_storage_reader<uint32_slice_t>::read_from_storage( provider, uint32_slice_t( account_id ), ColumnTypes::MANABARS_RC, split_buffer ) )
@@ -189,6 +195,7 @@ struct rocksdb_reader<account_object, account_name_type, Return_Type>
       }
 
       // Time object
+      if( !db.find< time_object, by_account_id >( account_id ) )
       {
         PinnableSlice split_buffer;
         if( rocksdb_storage_reader<uint32_slice_t>::read_from_storage( provider, uint32_slice_t( account_id ), ColumnTypes::TIME, split_buffer ) )
@@ -200,6 +207,7 @@ struct rocksdb_reader<account_object, account_name_type, Return_Type>
       }
 
       // Delayed_votes object
+      if( !db.find< delayed_votes_object, by_account_id >( account_id ) )
       {
         PinnableSlice split_buffer;
         if( rocksdb_storage_reader<uint32_slice_t>::read_from_storage( provider, uint32_slice_t( account_id ), ColumnTypes::DELAYED_VOTES, split_buffer ) )
