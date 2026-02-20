@@ -11,7 +11,6 @@ target_link_libraries( state_snapshot_plugin
 
 target_include_directories( state_snapshot_plugin
    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include"
-          "${CMAKE_CURRENT_SOURCE_DIR}/../../vendor/rocksdb/include"
    )
 
 install( TARGETS

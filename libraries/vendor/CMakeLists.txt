@@ -17,6 +17,7 @@ SET(WITH_TRACE_TOOLS OFF CACHE BOOL "build with trace tools")
 SET(WITH_GFLAGS OFF CACHE BOOL "build with GFlags")
 SET(USE_RTTI ON CACHE BOOL "build with RTTI")
 SET(PORTABLE ON CACHE BOOL "build a portable binary")
+SET(WITH_LIBURING ON CACHE BOOL "build with io_uring support")
 SET(WITH_TESTS OFF CACHE BOOL "build with tests")
 SET(WITH_TOOLS OFF CACHE BOOL "build with tools")
 
@@ -49,7 +50,95 @@ find_package( Snappy CONFIG )
 # RocksDB's approach conflicts with that (double-wrapping the compiler).
 set(CCACHE_FOUND "CCACHE_FOUND-NOTFOUND" CACHE FILEPATH "Disabled: compiler caching handled at top level" FORCE)
 
-add_subdirectory(rocksdb)
+# --- Preinstalled RocksDB detection ---
+set(HIVE_VENDOR_PREINSTALLED_DIR "/opt/hive/vendor" CACHE PATH
+    "Base directory for preinstalled vendor libraries")
+option(HIVE_USE_PREINSTALLED_VENDOR
+    "Use preinstalled vendor libraries if available (OFF to always build from source)" ON)
+
+# Verify submodule is initialized
+if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/rocksdb/.git")
+  message(FATAL_ERROR
+    "RocksDB submodule not initialized. Run: git submodule update --init --recursive")
+endif()
+
+# Read the submodule commit hash
+execute_process(
+  COMMAND git rev-parse HEAD
+  WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/rocksdb"
+  OUTPUT_VARIABLE _rocksdb_commit
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+  RESULT_VARIABLE _rocksdb_git_result
+)
+
+set(_rocksdb_preinstalled_dir
+    "${HIVE_VENDOR_PREINSTALLED_DIR}/rocksdb/${_rocksdb_commit}")
+
+set(_use_preinstalled OFF)
+if(HIVE_USE_PREINSTALLED_VENDOR
+   AND _rocksdb_git_result EQUAL 0
+   AND EXISTS "${_rocksdb_preinstalled_dir}/lib/librocksdb.a"
+   AND NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
+
+  # Ensure uring::uring is available before find_package(RocksDB).
+  # RocksDBConfig.cmake does NOT call find_dependency(uring), but
+  # RocksDBTargets.cmake references uring::uring in INTERFACE_LINK_LIBRARIES.
+  # The main CMakeLists.txt includes Finduring.cmake (line 158) before
+  # add_subdirectory(libraries), so uring::uring should already exist.
+  # As a safety net, add the RocksDB cmake/modules to MODULE_PATH so that
+  # Finduring.cmake can be found if needed by any transitive resolution.
+  list(APPEND CMAKE_MODULE_PATH
+       "${CMAKE_CURRENT_SOURCE_DIR}/rocksdb/cmake/modules"
+       "${_rocksdb_preinstalled_dir}/lib/cmake/rocksdb/modules")
+
+  # Use find_package with NO_DEFAULT_PATH to prevent finding a system-installed
+  # RocksDB instead of our commit-matched preinstalled version.
+  find_package(RocksDB CONFIG QUIET
+    PATHS "${_rocksdb_preinstalled_dir}"
+    NO_DEFAULT_PATH)
+
+  if(RocksDB_FOUND)
+    message(STATUS "Using preinstalled RocksDB (commit: ${_rocksdb_commit})")
+    message(STATUS "  Path: ${_rocksdb_preinstalled_dir}")
+
+    # Diagnostic: check what the exported target provides
+    get_target_property(_rdb_inc RocksDB::rocksdb INTERFACE_INCLUDE_DIRECTORIES)
+    message(STATUS "  RocksDB::rocksdb INTERFACE_INCLUDE_DIRECTORIES: ${_rdb_inc}")
+
+    # Create an INTERFACE library wrapping the IMPORTED target.
+    # Using INTERFACE instead of ALIAS ensures include directories are always
+    # propagated correctly, regardless of how the exported target was configured.
+    # The rest of the hive codebase links against the bare name "rocksdb".
+    add_library(rocksdb INTERFACE)
+    target_link_libraries(rocksdb INTERFACE RocksDB::rocksdb)
+    target_include_directories(rocksdb SYSTEM INTERFACE
+      "${_rocksdb_preinstalled_dir}/include")
+
+    set(_use_preinstalled ON)
+
+    # Expose sst_dump path for build.sh.
+    # Use PROJECT_BINARY_DIR (not CMAKE_BINARY_DIR) so the file lands in the
+    # hive subdirectory of the build tree when built from HAF via add_subdirectory(hive).
+    file(WRITE "${PROJECT_BINARY_DIR}/rocksdb_tools_dir.txt"
+         "${_rocksdb_preinstalled_dir}/bin")
+  else()
+    message(STATUS "Preinstalled RocksDB found but find_package failed, building from source")
+  endif()
+endif()
+
+if(NOT _use_preinstalled)
+  if(_rocksdb_git_result EQUAL 0 AND HIVE_USE_PREINSTALLED_VENDOR)
+    message(STATUS "No preinstalled RocksDB for commit ${_rocksdb_commit} "
+                   "(or Debug build), building from source")
+  elseif(NOT HIVE_USE_PREINSTALLED_VENDOR)
+    message(STATUS "Preinstalled vendor libraries disabled, building RocksDB from source")
+  else()
+    message(STATUS "Cannot read RocksDB submodule commit, building from source")
+  endif()
+
+  # Current behavior — build from source
+  add_subdirectory(rocksdb)
+endif()
 
 GET_TARGET_PROPERTY( prop Snappy::snappy IMPORTED_LOCATION_RELWITHDEBINFO )
 

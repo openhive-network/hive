@@ -175,9 +175,26 @@ if [[ -d "$HIVED_INSTALLATION_DIR" ]]; then
 
     sudo rm -rf "$HIVED_INSTALLATION_DIR/CMakeFiles" "$HIVED_INSTALLATION_DIR/cmake_install.cmake"
 
+    # Copy sst_dump tools - check build directory first, then preinstalled path
+    _sst_dump_found=false
+
+    # Source build path (current behavior)
     if [[ -n "$(shopt -s nullglob; echo "$abs_build_dir/${HAF_BUILD:+"hive/"}libraries/vendor/rocksdb/tools/sst_dum"*)" ]]; then
         sudo mv "$abs_build_dir/${HAF_BUILD:+"hive/"}libraries/vendor/rocksdb/tools/sst_dum"* \
             "$HIVED_INSTALLATION_DIR/"
+        _sst_dump_found=true
+    fi
+
+    # Preinstalled path fallback (when using preinstalled RocksDB)
+    if [[ "$_sst_dump_found" == "false" ]]; then
+        _tools_dir_file="$abs_build_dir/${HAF_BUILD:+"hive/"}rocksdb_tools_dir.txt"
+        if [[ -f "$_tools_dir_file" ]]; then
+            _preinstalled_tools=$(cat "$_tools_dir_file")
+            if [[ -n "$_preinstalled_tools" && -n "$(shopt -s nullglob; echo "$_preinstalled_tools/sst_dum"*)" ]]; then
+                # Use cp, not mv — do not modify the preinstalled directory
+                sudo cp "$_preinstalled_tools/sst_dum"* "$HIVED_INSTALLATION_DIR/"
+            fi
+        fi
     fi
 
 fi
