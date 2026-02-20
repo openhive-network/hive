@@ -229,7 +229,7 @@ DEFINE_API_IMPL( database_api_impl, list_accounts )
       while( itr != end && result.accounts.size() < args.limit )
       {
         const auto& time_obj = *itr;
-        const auto& account = _db.get< account_object, by_id >( time_obj.get_account_id() );
+        const auto& account = _db.get_account( time_obj.get_account_id() );
         result.accounts.emplace_back( api_account_object( account, _db, get_metadata_plugin(), args.delayed_votes_active ) );
         ++itr;
       }
