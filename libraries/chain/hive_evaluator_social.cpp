@@ -194,7 +194,7 @@ void comment_options_evaluator::do_apply( const comment_options_operation& o )
 void comment_evaluator::do_apply( const comment_operation& o )
 { try {
   const auto& auth = _db.get_account( o.author ); /// prove it exists
-  const auto& _time_obj = _db.get< time_object, by_account_id >( auth.get_id() );
+  const auto& _time_obj = _db.get_time_account( auth.get_id() );
 
   auto _comment = _db.find_comment( auth.get_id(), o.permlink );
   auto _now = _db.head_block_time();
@@ -260,7 +260,7 @@ void comment_evaluator::do_apply( const comment_operation& o )
       a.set_post_count( a.get_post_count() + 1 );
     });
 
-    _db.modify( _db.get< time_object, by_account_id >( auth.get_id() ), [&]( time_object& time_obj )
+    _db.modify( _db.get_time_account( auth.get_id() ), [&]( time_object& time_obj )
     {
       if( !parent )
       {
@@ -351,8 +351,8 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
   const comment_cashout_object* comment_cashout = _db.find_comment_cashout( *comment );
 
   const auto& voter = _db.get_account( o.voter );
-  const auto& voter_mrc = _db.get< manabars_rc_object, by_account_id >( voter.get_id() );
-  const auto& voter_time = _db.get< time_object, by_account_id >( voter.get_id() );
+  const auto& voter_mrc = _db.get_manabars_rc_account( voter.get_id() );
+  const auto& voter_time = _db.get_time_account( voter.get_id() );
 
   FC_ASSERT( voter.can_vote() && "Voter has declined their voting rights." );
 
@@ -397,7 +397,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
   }
   FC_ASSERT( used_power <= current_power, "Account does not have enough power to vote." );
 
-  const auto& voter_assets_for_voting = _db.get< assets_object, by_account_id >( voter.get_id() );
+  const auto& voter_assets_for_voting = _db.get_asset_account( voter.get_id() );
   int64_t abs_rshares = fc::uint128_to_uint64((uint128_t( voter.get_effective_vesting_shares( voter_assets_for_voting, voter_time, false ).value ) * used_power) / (HIVE_100_PERCENT));
   if( !_db.has_hardfork( HIVE_HARDFORK_0_14__259 ) && abs_rshares == 0 ) abs_rshares = 1;
 
@@ -648,9 +648,9 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
   const comment_cashout_object* comment_cashout = _db.find_comment_cashout( *comment );
 
   const auto& voter   = _db.get_account( o.voter );
-  const auto& voter_assets = _db.get< assets_object, by_account_id >( voter.get_id() );
-  const auto& voter_time = _db.get< time_object, by_account_id >( voter.get_id() );
-  const auto& voter_mrc = _db.get< manabars_rc_object, by_account_id >( voter.get_id() );
+  const auto& voter_assets = _db.get_asset_account( voter.get_id() );
+  const auto& voter_time = _db.get_time_account( voter.get_id() );
+  const auto& voter_mrc = _db.get_manabars_rc_account( voter.get_id() );
   const auto& dgpo    = _db.get_dynamic_global_properties();
 
   FC_ASSERT( voter.can_vote(), "Voter has declined their voting rights." );

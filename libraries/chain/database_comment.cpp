@@ -180,7 +180,7 @@ share_type database::pay_curators( const comment_object& comment, const comment_
               pre_push_virtual_operation( *this, vop );
             } );
 
-            modify( get< assets_object, by_account_id >( voter.get_id() ), [&]( assets_object& assets )
+            modify( get_asset_account( voter.get_id() ), [&]( assets_object& assets )
             {
               assets.set_curation_rewards( assets.get_curation_rewards() + HIVE_asset( claim ) );
             });
@@ -318,7 +318,7 @@ share_type database::cashout_comment_helper( util::comment_reward_context& ctx, 
         pre_push_virtual_operation( *this, vop );
         post_push_virtual_operation( *this, vop );
 
-        modify( get< assets_object, by_account_id >( author.get_id() ), [&]( assets_object& assets )
+        modify( get_asset_account( author.get_id() ), [&]( assets_object& assets )
         {
           assets.set_posting_rewards( assets.get_posting_rewards() + HIVE_asset( author_tokens ) );
         });
@@ -625,7 +625,7 @@ void database::perform_vesting_share_split( uint32_t magnitude )
     // Need to update all VESTS in accounts and the total VESTS in the dgpo
     for( const auto& account : get_index< account_index, by_id >() )
     {
-      const auto& account_assets = get< assets_object, by_account_id >( account.get_id() );
+      const auto& account_assets = get_asset_account( account.get_id() );
       VEST_asset old_vesting_shares = account_assets.get_vesting();
       VEST_asset new_vesting_shares = old_vesting_shares;
       modify( account_assets, [&]( assets_object& a )

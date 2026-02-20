@@ -78,8 +78,8 @@ uint32_t nr_intervals_in_delayed_voting()
   return configuration_data.get_hive_delayed_voting_total_interval_seconds() / configuration_data.get_hive_delayed_voting_interval_seconds();
 }
 
-#define GET_DV( name ) db->get< delayed_votes_object >( delayed_votes_object::id_type( db->get_account( name ).get_id().get_value() ) )
-#define GET_ASSETS( name ) db->get< assets_object >( assets_object::id_type( db->get_account( name ).get_id().get_value() ) )
+#define GET_DV( name ) db->get_delayed_votes_account( db->get_account( name ).get_id() )
+#define GET_ASSETS( name ) db->get_asset_account( db->get_account( name ).get_id() )
 #define VOTING_POWER( account ) db->get_account( account ).get_governance_vote_power( GET_ASSETS( account ), GET_DV( account ) ).value
 #define PROXIED_VSF( account ) db->get_account( account ).proxied_vsf_votes_total().value
 #define DELAYED_VOTES( account ) static_cast<int64_t>( GET_DV( account ).get_sum_delayed_votes().value )

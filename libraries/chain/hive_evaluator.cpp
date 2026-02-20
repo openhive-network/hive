@@ -243,7 +243,7 @@ void account_witness_proxy_evaluator::do_apply( const account_witness_proxy_oper
 
     /// add all new votes
     std::array<share_type, HIVE_MAX_PROXY_RECURSION_DEPTH + 1> delta;
-    delta[0] = account.get_direct_governance_vote_power( _db.get< assets_object, by_account_id >( account.get_id() ), _db.get< delayed_votes_object, by_account_id >( account.get_id() ) );
+    delta[0] = account.get_direct_governance_vote_power( _db.get_asset_account( account.get_id() ), _db.get_delayed_votes_account( account.get_id() ) );
     for( int i = 0; i < HIVE_MAX_PROXY_RECURSION_DEPTH; ++i )
       delta[i+1] = account.get_proxied_vsf_votes()[i];
     _db.adjust_proxied_witness_votes( account, delta );
@@ -285,14 +285,14 @@ void account_witness_vote_evaluator::do_apply( const account_witness_vote_operat
     } );
 
     if( _db.has_hardfork( HIVE_HARDFORK_0_3 ) )
-      _db.adjust_witness_vote( witness, voter.get_governance_vote_power( _db.get< assets_object, by_account_id >( voter.get_id() ), _db.get< delayed_votes_object, by_account_id >( voter.get_id() ) ) );
+      _db.adjust_witness_vote( witness, voter.get_governance_vote_power( _db.get_asset_account( voter.get_id() ), _db.get_delayed_votes_account( voter.get_id() ) ) );
     else if( _db.has_hardfork( HIVE_HARDFORK_0_2 ) )
-      _db.adjust_proxied_witness_votes( voter, voter.get_governance_vote_power( _db.get< assets_object, by_account_id >( voter.get_id() ), _db.get< delayed_votes_object, by_account_id >( voter.get_id() ) ) );
+      _db.adjust_proxied_witness_votes( voter, voter.get_governance_vote_power( _db.get_asset_account( voter.get_id() ), _db.get_delayed_votes_account( voter.get_id() ) ) );
     else
     {
       _db.modify( witness, [&]( witness_object& w )
       {
-        w.votes += voter.get_governance_vote_power( _db.get< assets_object, by_account_id >( voter.get_id() ), _db.get< delayed_votes_object, by_account_id >( voter.get_id() ) );
+        w.votes += voter.get_governance_vote_power( _db.get_asset_account( voter.get_id() ), _db.get_delayed_votes_account( voter.get_id() ) );
       } );
     }
     _db.modify( voter, [&]( account_object& a )
@@ -305,14 +305,14 @@ void account_witness_vote_evaluator::do_apply( const account_witness_vote_operat
     FC_ASSERT( !o.approve, "Vote currently exists, user must indicate a desire to reject witness." );
 
     if( _db.has_hardfork( HIVE_HARDFORK_0_3 ) )
-      _db.adjust_witness_vote( witness, -voter.get_governance_vote_power( _db.get< assets_object, by_account_id >( voter.get_id() ), _db.get< delayed_votes_object, by_account_id >( voter.get_id() ) ) );
+      _db.adjust_witness_vote( witness, -voter.get_governance_vote_power( _db.get_asset_account( voter.get_id() ), _db.get_delayed_votes_account( voter.get_id() ) ) );
     else if( _db.has_hardfork( HIVE_HARDFORK_0_2 ) )
-      _db.adjust_proxied_witness_votes( voter, -voter.get_governance_vote_power( _db.get< assets_object, by_account_id >( voter.get_id() ), _db.get< delayed_votes_object, by_account_id >( voter.get_id() ) ) );
+      _db.adjust_proxied_witness_votes( voter, -voter.get_governance_vote_power( _db.get_asset_account( voter.get_id() ), _db.get_delayed_votes_account( voter.get_id() ) ) );
     else
     {
       _db.modify( witness, [&]( witness_object& w )
       {
-        w.votes -= voter.get_governance_vote_power( _db.get< assets_object, by_account_id >( voter.get_id() ), _db.get< delayed_votes_object, by_account_id >( voter.get_id() ) );
+        w.votes -= voter.get_governance_vote_power( _db.get_asset_account( voter.get_id() ), _db.get_delayed_votes_account( voter.get_id() ) );
       } );
     }
     _db.modify( voter, [&]( account_object& a )

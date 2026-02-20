@@ -49,8 +49,8 @@
 using namespace hive::chain;
 using namespace hive::chain::util;
 
-#define GET_ASSETS( account_name ) (db->get< assets_object >( assets_object::id_type( db->get_account( account_name ).get_id().get_value() ) ))
-#define GET_TIME( account_name ) (db->get< time_object >( time_object::id_type( db->get_account( account_name ).get_id().get_value() ) ))
+#define GET_ASSETS( account_name ) (db->get_asset_account( db->get_account( account_name ).get_id() ))
+#define GET_TIME( account_name ) (db->get_time_account( db->get_account( account_name ).get_id() ))
 #define GET_ACTIVE_NEXT_VW( account_name ) (db->get_account( account_name ).get_active_next_vesting_withdrawal( GET_ASSETS( account_name ), GET_TIME( account_name ) ))
 
 BOOST_FIXTURE_TEST_SUITE( hf28_tests, cluster_database_fixture )
@@ -2423,7 +2423,7 @@ BOOST_AUTO_TEST_CASE(treasury_hbd_does_not_affect_inflation_advanced)
             auto new_hive = (props.virtual_supply.amount * current_inflation_rate) / (int64_t(HIVE_100_PERCENT) * int64_t(HIVE_BLOCKS_PER_YEAR));
             if (db->has_hardfork(HIVE_HARDFORK_1_28_NO_DHF_HBD_IN_INFLATION)) {
               const auto &treasury_account = db->get_treasury();
-              const auto &treasury_assets = db->get< assets_object >( assets_object::id_type( treasury_account.get_id().get_value() ) );
+              const auto &treasury_assets = db->get_asset_account( treasury_account.get_id() );
               const HBD_asset hbd_supply_without_treasury = props.get_current_hbd_supply() - treasury_assets.get_hbd_balance();
               BOOST_REQUIRE_GE( hbd_supply_without_treasury.amount.value, 0 );
               const auto virtual_supply_without_treasury = hbd_supply_without_treasury * db->get_feed_history().current_median_history + props.get_current_supply();

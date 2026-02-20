@@ -335,9 +335,9 @@ void transfer_to_vesting_evaluator::do_apply( const transfer_to_vesting_operatio
 void withdraw_vesting_evaluator::do_apply( const withdraw_vesting_operation& o )
 {
   const auto& account = _db.get_account( o.account );
-  const auto& account_assets = _db.get< assets_object, by_account_id >( account.get_id() );
-  const auto& account_time = _db.get< time_object, by_account_id >( account.get_id() );
-  const auto& account_mrc = _db.get< manabars_rc_object, by_account_id >( account.get_id() );
+  const auto& account_assets = _db.get_asset_account( account.get_id() );
+  const auto& account_time = _db.get_time_account( account.get_id() );
+  const auto& account_mrc = _db.get_manabars_rc_account( account.get_id() );
   auto now = _db.head_block_time();
 
   VEST_asset o_vesting_shares = o.get_vesting_shares();
@@ -633,9 +633,9 @@ void cancel_transfer_from_savings_evaluator::do_apply( const cancel_transfer_fro
 void claim_reward_balance_evaluator::do_apply( const claim_reward_balance_operation& op )
 {
   const auto& acnt = _db.get_account( op.account );
-  const auto& acnt_assets = _db.get< assets_object, by_account_id >( acnt.get_id() );
-  const auto& acnt_time = _db.get< time_object, by_account_id >( acnt.get_id() );
-  const auto& acnt_mrc = _db.get< manabars_rc_object, by_account_id >( acnt.get_id() );
+  const auto& acnt_assets = _db.get_asset_account( acnt.get_id() );
+  const auto& acnt_time = _db.get_time_account( acnt.get_id() );
+  const auto& acnt_mrc = _db.get_manabars_rc_account( acnt.get_id() );
   const auto& dgpo = _db.get_dynamic_global_properties();
 
   // Verify 1:1 ID correspondence between account and split objects
@@ -748,7 +748,7 @@ void claim_reward_balance2_evaluator::do_apply( const claim_reward_balance2_oper
       {
         a = _db.find_account( op.account );
         FC_ASSERT( a != nullptr && "Not found", "Could NOT find account ${a}", ("a", op.account) );
-        a_assets = &_db.get< assets_object, by_account_id >( a->get_id() );
+        a_assets = &_db.get_asset_account( a->get_id() );
       }
 
       if( token.symbol == VESTS_SYMBOL )
@@ -766,8 +766,8 @@ void claim_reward_balance2_evaluator::do_apply( const claim_reward_balance2_oper
           reward_vesting_hive_to_move = HIVE_asset( fc::uint128_to_uint64( ( uint128_t( token.amount.value ) * uint128_t( a_assets->get_vest_rewards_as_hive().amount.value ) )
             / uint128_t( a_assets->get_vest_rewards().amount.value ) ) );
 
-        const auto& a_mrc = _db.get< manabars_rc_object, by_account_id >( a->get_id() );
-        const auto& a_time = _db.get< time_object, by_account_id >( a->get_id() );
+        const auto& a_mrc = _db.get_manabars_rc_account( a->get_id() );
+        const auto& a_time = _db.get_time_account( a->get_id() );
         _db.rc().regenerate_rc_mana( *a, a_mrc, *a_assets, a_time, now );
         _db.modify( *a_assets, [&]( assets_object& assets )
         {
@@ -810,12 +810,12 @@ void delegate_vesting_shares_evaluator::do_apply( const delegate_vesting_shares_
 
   const auto& delegator = _db.get_account( op.delegator );
   const auto& delegatee = _db.get_account( op.delegatee );
-  const auto& delegator_assets = _db.get< assets_object, by_account_id >( delegator.get_id() );
-  const auto& delegatee_assets = _db.get< assets_object, by_account_id >( delegatee.get_id() );
-  const auto& delegator_time = _db.get< time_object, by_account_id >( delegator.get_id() );
-  const auto& delegatee_time = _db.get< time_object, by_account_id >( delegatee.get_id() );
-  const auto& delegator_mrc = _db.get< manabars_rc_object, by_account_id >( delegator.get_id() );
-  const auto& delegatee_mrc = _db.get< manabars_rc_object, by_account_id >( delegatee.get_id() );
+  const auto& delegator_assets = _db.get_asset_account( delegator.get_id() );
+  const auto& delegatee_assets = _db.get_asset_account( delegatee.get_id() );
+  const auto& delegator_time = _db.get_time_account( delegator.get_id() );
+  const auto& delegatee_time = _db.get_time_account( delegatee.get_id() );
+  const auto& delegator_mrc = _db.get_manabars_rc_account( delegator.get_id() );
+  const auto& delegatee_mrc = _db.get_manabars_rc_account( delegatee.get_id() );
   auto* delegation = _db.find< vesting_delegation_object, by_delegation >( boost::make_tuple( delegator.get_id(), delegatee.get_id() ) );
 
   const auto& gpo = _db.get_dynamic_global_properties();
