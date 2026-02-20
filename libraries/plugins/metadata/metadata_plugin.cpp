@@ -100,7 +100,7 @@ struct post_operation_visitor
   void operator()( const pow_operation& op )const
   {
     const auto& account = db.get_account( op.worker_account );
-    const auto* existing_meta = db.find< account_metadata_object, by_account >( account.get_id() );
+    const auto* existing_meta = db.find_account_metadata( op.worker_account );
     if( existing_meta != nullptr )
       return;
     db.create< account_metadata_object >( [&]( account_metadata_object& meta )
@@ -113,7 +113,7 @@ struct post_operation_visitor
   {
     const account_name_type* worker_account = op.work.visit( pow2_work_get_account_visitor() );
     const auto& account = db.get_account( *worker_account );
-    const auto* existing_meta = db.find< account_metadata_object, by_account >( account.get_id() );
+    const auto* existing_meta = db.find_account_metadata( *worker_account );
     if( existing_meta != nullptr )
       return;
     db.create< account_metadata_object >( [&]( account_metadata_object& meta )
@@ -127,8 +127,7 @@ struct post_operation_visitor
     if( op.json_metadata.size() == 0 )
       return;
 
-    const auto& account = db.get_account( op.account );
-    db.modify( db.get< account_metadata_object, by_account >( account.get_id() ), [&]( account_metadata_object& meta )
+    db.modify( db.get_account_metadata( op.account ), [&]( account_metadata_object& meta )
     {
       from_string( meta.json_metadata, op.json_metadata );
       if( !db.has_hardfork( HIVE_HARDFORK_0_21__3274 ) )
@@ -143,8 +142,7 @@ struct post_operation_visitor
     if( op.json_metadata.size() == 0 && op.posting_json_metadata.size() == 0 )
       return;
 
-    const auto& account = db.get_account( op.account );
-    db.modify( db.get< account_metadata_object, by_account >( account.get_id() ), [&]( account_metadata_object& meta )
+    db.modify( db.get_account_metadata( op.account ), [&]( account_metadata_object& meta )
     {
       if( op.json_metadata.size() > 0 )
         from_string( meta.json_metadata, op.json_metadata );
@@ -169,7 +167,7 @@ get_account_metadata_return metadata_plugin::get_account_metadata( const account
 {
   get_account_metadata_return result;
 
-  const auto* meta = my->_db.find< account_metadata_object, by_account >( account.get_id() );
+  const auto* meta = my->_db.find_account_metadata( account.get_name() );
   if( meta == nullptr )
     return result;
 

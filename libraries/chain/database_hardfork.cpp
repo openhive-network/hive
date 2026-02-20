@@ -284,7 +284,7 @@ void database::apply_hardfork( uint32_t hardfork )
 
           update_owner_authority( *account, authority( 1, public_key_type(HIVE_HF_9_COMPROMISED_ACCOUNTS_PUBLIC_KEY_STR), 1 ) );
 
-          modify( get< account_authority_object, by_account >( account->get_name() ), [&]( account_authority_object& auth )
+          modify( get_account_authority( account->get_name() ), [&]( account_authority_object& auth )
           {
             auth.active  = authority( 1, public_key_type(HIVE_HF_9_COMPROMISED_ACCOUNTS_PUBLIC_KEY_STR), 1 );
             auth.posting = authority( 1, public_key_type(HIVE_HF_9_COMPROMISED_ACCOUNTS_PUBLIC_KEY_STR), 1 );

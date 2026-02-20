@@ -250,7 +250,7 @@ DEFINE_API_IMPL( database_api_impl, find_accounts )
 
   for( auto& a : args.accounts )
   {
-    auto acct = _db.find< chain::account_object, chain::by_name >( a );
+    auto acct = _db.find_account( a );
     if( acct != nullptr )
       result.accounts.emplace_back( *acct, _db, get_metadata_plugin(), args.delayed_votes_active );
   }
