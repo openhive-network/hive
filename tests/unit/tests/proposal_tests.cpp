@@ -243,10 +243,11 @@ BOOST_AUTO_TEST_CASE( inactive_proposals_have_votes )
       generate_block();
 
       auto treasury_hbd_inflation = dgpo.current_hbd_supply - old_hbd_supply;
-      auto after_creator_hbd_balance = _creator_assets.get_hbd_balance();
-      auto after_receiver_hbd_balance = _receiver_assets.get_hbd_balance();
-      auto after_voter_01_hbd_balance = _voter_01_assets.get_hbd_balance();
-      auto after_treasury_hbd_balance = _treasury_assets.get_hbd_balance();
+      // Re-fetch assets objects after generate_blocks (references may be invalidated by RocksDB archival/restoration)
+      auto after_creator_hbd_balance = db->get< assets_object, by_account_id >( db->get_account( creator ).get_id() ).get_hbd_balance();
+      auto after_receiver_hbd_balance = db->get< assets_object, by_account_id >( db->get_account( receiver ).get_id() ).get_hbd_balance();
+      auto after_voter_01_hbd_balance = db->get< assets_object, by_account_id >( db->get_account( voter_01 ).get_id() ).get_hbd_balance();
+      auto after_treasury_hbd_balance = db->get< assets_object, by_account_id >( db->get_treasury().get_id() ).get_hbd_balance();
 
       BOOST_REQUIRE( before_creator_hbd_balance == after_creator_hbd_balance );
       BOOST_REQUIRE( before_receiver_hbd_balance == after_receiver_hbd_balance - hourly_pay );
@@ -1153,10 +1154,11 @@ BOOST_AUTO_TEST_CASE( generating_payments )
       generate_blocks( 1 );
 
       auto treasury_hbd_inflation = dgpo.get_current_hbd_supply() - old_hbd_supply;
-      auto after_creator_hbd_balance = _creator_assets.get_hbd_balance();
-      auto after_receiver_hbd_balance = _receiver_assets.get_hbd_balance();
-      auto after_voter_01_hbd_balance = _voter_01_assets.get_hbd_balance();
-      auto after_treasury_hbd_balance = _treasury_assets.get_hbd_balance();
+      // Re-fetch assets objects after generate_blocks (references may be invalidated by RocksDB archival/restoration)
+      auto after_creator_hbd_balance = db->get< assets_object, by_account_id >( db->get_account( creator ).get_id() ).get_hbd_balance();
+      auto after_receiver_hbd_balance = db->get< assets_object, by_account_id >( db->get_account( receiver ).get_id() ).get_hbd_balance();
+      auto after_voter_01_hbd_balance = db->get< assets_object, by_account_id >( db->get_account( voter_01 ).get_id() ).get_hbd_balance();
+      auto after_treasury_hbd_balance = db->get< assets_object, by_account_id >( db->get_treasury().get_id() ).get_hbd_balance();
 
       BOOST_REQUIRE( before_creator_hbd_balance == after_creator_hbd_balance );
       BOOST_REQUIRE( before_receiver_hbd_balance == after_receiver_hbd_balance - hourly_pay );
@@ -1611,10 +1613,11 @@ try
       generate_block();
 
       auto treasury_hbd_inflation = dgpo.get_current_hbd_supply() - old_hbd_supply;
-      auto after_creator_hbd_balance = _creator_assets.get_hbd_balance();
-      auto after_receiver_hbd_balance = _receiver_assets.get_hbd_balance();
-      auto after_voter_01_hbd_balance = _voter_01_assets.get_hbd_balance();
-      auto after_treasury_hbd_balance = _treasury_assets.get_hbd_balance();
+      // Re-fetch assets objects after generate_blocks (references may be invalidated by RocksDB archival/restoration)
+      auto after_creator_hbd_balance = db->get< assets_object, by_account_id >( db->get_account( creator ).get_id() ).get_hbd_balance();
+      auto after_receiver_hbd_balance = db->get< assets_object, by_account_id >( db->get_account( receiver ).get_id() ).get_hbd_balance();
+      auto after_voter_01_hbd_balance = db->get< assets_object, by_account_id >( db->get_account( voter_01 ).get_id() ).get_hbd_balance();
+      auto after_treasury_hbd_balance = db->get< assets_object, by_account_id >( db->get_treasury().get_id() ).get_hbd_balance();
 
       BOOST_REQUIRE( before_creator_hbd_balance == after_creator_hbd_balance );
 
@@ -1703,10 +1706,11 @@ try
       generate_block();
 
       auto treasury_hbd_inflation = dgpo.get_current_hbd_supply() - old_hbd_supply;
-      auto after_creator_hbd_balance = _creator_assets.get_hbd_balance();
-      auto after_receiver_hbd_balance = _receiver_assets.get_hbd_balance();
-      auto after_voter_01_hbd_balance = _voter_01_assets.get_hbd_balance();
-      auto after_treasury_hbd_balance = _treasury_assets.get_hbd_balance();
+      // Re-fetch assets objects after generate_blocks (references may be invalidated by RocksDB archival/restoration)
+      auto after_creator_hbd_balance = db->get< assets_object, by_account_id >( db->get_account( creator ).get_id() ).get_hbd_balance();
+      auto after_receiver_hbd_balance = db->get< assets_object, by_account_id >( db->get_account( receiver ).get_id() ).get_hbd_balance();
+      auto after_voter_01_hbd_balance = db->get< assets_object, by_account_id >( db->get_account( voter_01 ).get_id() ).get_hbd_balance();
+      auto after_treasury_hbd_balance = db->get< assets_object, by_account_id >( db->get_treasury().get_id() ).get_hbd_balance();
 
       BOOST_REQUIRE( before_creator_hbd_balance == after_creator_hbd_balance );
       BOOST_REQUIRE( before_receiver_hbd_balance == after_receiver_hbd_balance - hourly_pay );
@@ -4767,19 +4771,23 @@ BOOST_AUTO_TEST_CASE( converting_hive_to_dhf )
   {
     BOOST_TEST_MESSAGE( "Testing: converting hive to hbd in the dhf" );
     const auto& dgpo = db->get_dynamic_global_properties();
-    const auto& _treasury = db->get_treasury();
-    const auto& _treasury_assets = db->get< assets_object >( assets_object::id_type( _treasury.get_id().get_value() ) );
+
+    // Helper to get fresh treasury assets (references may be invalidated by RocksDB archival/restoration)
+    auto get_treasury_assets = [&]() -> const assets_object& {
+      return db->get< assets_object, by_account_id >( db->get_treasury().get_id() );
+    };
+
     set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
 
-    auto before_inflation_treasury_hbd_balance =  _treasury_assets.get_hbd_balance();
+    auto before_inflation_treasury_hbd_balance = get_treasury_assets().get_hbd_balance();
     generate_block();
-    auto treasury_per_block_inflation =  _treasury_assets.get_hbd_balance() - before_inflation_treasury_hbd_balance;
+    auto treasury_per_block_inflation = get_treasury_assets().get_hbd_balance() - before_inflation_treasury_hbd_balance;
 
     ISSUE_FUNDS( db->get_treasury_name(), ASSET( "100.000 TESTS" ) );
     generate_block();
 
-    auto before_treasury_hbd_balance =  _treasury_assets.get_hbd_balance();
-    auto before_treasury_hive_balance =  _treasury_assets.get_balance();
+    auto before_treasury_hbd_balance = get_treasury_assets().get_hbd_balance();
+    auto before_treasury_hive_balance = get_treasury_assets().get_balance();
 
     const auto hive_converted = asset(HIVE_PROPOSAL_CONVERSION_RATE * before_treasury_hive_balance.amount / HIVE_100_PERCENT, HIVE_SYMBOL);
     // Same because of the 1:1 tests to tbd ratio
@@ -4789,13 +4797,13 @@ BOOST_AUTO_TEST_CASE( converting_hive_to_dhf )
     auto before_daily_maintenance_time = dgpo.next_daily_maintenance_time;
     generate_blocks( next_block - 1);
 
-    auto treasury_hbd_inflation =  _treasury_assets.get_hbd_balance() - before_treasury_hbd_balance;
+    auto treasury_hbd_inflation = get_treasury_assets().get_hbd_balance() - before_treasury_hbd_balance;
     generate_block();
 
     treasury_hbd_inflation += treasury_per_block_inflation;
     auto after_daily_maintenance_time = dgpo.next_daily_maintenance_time;
-    auto after_treasury_hbd_balance =  _treasury_assets.get_hbd_balance();
-    auto after_treasury_hive_balance =  _treasury_assets.get_balance();
+    auto after_treasury_hbd_balance = get_treasury_assets().get_hbd_balance();
+    auto after_treasury_hive_balance = get_treasury_assets().get_balance();
 
     BOOST_REQUIRE( before_treasury_hbd_balance == after_treasury_hbd_balance - treasury_hbd_inflation - hbd_converted );
     BOOST_REQUIRE( before_treasury_hive_balance == after_treasury_hive_balance + hive_converted );
