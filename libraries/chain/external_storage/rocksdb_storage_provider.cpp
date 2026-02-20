@@ -140,6 +140,8 @@ std::tuple<bool, bool> rocksdb_storage_provider::createDbSchema( const bfs::path
       auto _status = DB::OpenForReadOnly( options, strPath, _columnDefs, &_columnHandles, &_db.db );
 
       ilog( "Database is ${status}.", ("status", _status.ok() ? "opened" : "not opened") );
+      if( !_status.ok() )
+        wlog( "OpenForReadOnly failed for `${name}` RocksDB. Error: ${e}", ("name", name)("e", _status.ToString()) );
       if( _status.ok() )
       {
         getStorage().reset( _db.db );
