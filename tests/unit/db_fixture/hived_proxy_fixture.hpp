@@ -435,47 +435,47 @@ public:
     FC_ASSERT(fixture);
     return fixture->get_account_id(account_name);
   }
-  asset get_hive_balance( const fc::string& account_name )const
+  HIVE_asset get_hive_balance( const fc::string& account_name )const
   {
     FC_ASSERT(fixture);
     return fixture->get_hive_balance(account_name);
   }
-  asset get_hbd_balance( const fc::string& account_name )const
+  HBD_asset get_hbd_balance( const fc::string& account_name )const
   {
     FC_ASSERT(fixture);
     return fixture->get_hbd_balance(account_name);
   }
-  asset get_hive_savings( const fc::string& account_name )const
+  HIVE_asset get_hive_savings( const fc::string& account_name )const
   {
     FC_ASSERT(fixture);
     return fixture->get_hive_savings(account_name);
   }
-  asset get_hbd_savings( const fc::string& account_name )const
+  HBD_asset get_hbd_savings( const fc::string& account_name )const
   {
     FC_ASSERT(fixture);
     return fixture->get_hbd_savings(account_name);
   }
-  asset get_hive_rewards( const fc::string& account_name )const
+  HIVE_asset get_hive_rewards( const fc::string& account_name )const
   {
     FC_ASSERT(fixture);
     return fixture->get_hive_rewards(account_name);
   }
-  asset get_hbd_rewards( const fc::string& account_name )const
+  HBD_asset get_hbd_rewards( const fc::string& account_name )const
   {
     FC_ASSERT(fixture);
     return fixture->get_hbd_rewards(account_name);
   }
-  asset get_vesting( const fc::string& account_name )const
+  VEST_asset get_vesting( const fc::string& account_name )const
   {
     FC_ASSERT(fixture);
     return fixture->get_vesting(account_name);
   }
-  asset get_vest_rewards( const fc::string& account_name )const
+  VEST_asset get_vest_rewards( const fc::string& account_name )const
   {
     FC_ASSERT(fixture);
     return fixture->get_vest_rewards(account_name);
   }
-  asset get_vest_rewards_as_hive( const fc::string& account_name )const
+  HIVE_asset get_vest_rewards_as_hive( const fc::string& account_name )const
   {
     FC_ASSERT(fixture);
     return fixture->get_vest_rewards_as_hive(account_name);

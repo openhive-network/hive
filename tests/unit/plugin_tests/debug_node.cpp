@@ -33,11 +33,6 @@ void direct_transfer( const account_name_type& from, const account_name_type& to
   db.adjust_balance( to, delta_to );
 }
 
-asset operator * ( const asset& a, int multiplier )
-{
-  return asset( a.amount * multiplier, a.symbol );
-}
-
 BOOST_FIXTURE_TEST_SUITE( debug_node, clean_database_fixture )
 
 BOOST_AUTO_TEST_CASE( vests_hive_evaluation )
@@ -196,10 +191,10 @@ BOOST_AUTO_TEST_CASE( debug_update_with_explicit_hook )
   auto carol_to_dan = make_transfer( "carol", "dan", ASSET( "6.000 TESTS" ), carol_private_key, *db );
 
   // everyone starts with zero balance
-  BOOST_REQUIRE_EQUAL( get_hive_balance( "alice" ).amount.value, 0 );
-  BOOST_REQUIRE_EQUAL( get_hive_balance( "bob" ).amount.value, 0 );
-  BOOST_REQUIRE_EQUAL( get_hive_balance( "carol" ).amount.value, 0 );
-  BOOST_REQUIRE_EQUAL( get_hive_balance( "dan" ).amount.value, 0 );
+  BOOST_REQUIRE( get_hive_balance( "alice" ) == HIVE_asset( 0 ) );
+  BOOST_REQUIRE( get_hive_balance( "bob" ) == HIVE_asset( 0 ) );
+  BOOST_REQUIRE( get_hive_balance( "carol" ) == HIVE_asset( 0 ) );
+  BOOST_REQUIRE( get_hive_balance( "dan" ) == HIVE_asset( 0 ) );
 
   // make bindings of callbacks to transactions out of order (to show they are not executed immediately)
 
@@ -227,54 +222,54 @@ BOOST_AUTO_TEST_CASE( debug_update_with_explicit_hook )
   }, 0, alice_to_bob->get_transaction_id() );
 
   // none of above debug_updates was executed yet
-  BOOST_REQUIRE_EQUAL( get_hive_balance( "alice" ).amount.value, 0 );
-  BOOST_REQUIRE_EQUAL( get_hive_balance( "bob" ).amount.value, 0 );
-  BOOST_REQUIRE_EQUAL( get_hive_balance( "carol" ).amount.value, 0 );
-  BOOST_REQUIRE_EQUAL( get_hive_balance( "dan" ).amount.value, 0 );
+  BOOST_REQUIRE( get_hive_balance( "alice" ) == HIVE_asset( 0 ) );
+  BOOST_REQUIRE( get_hive_balance( "bob" ) == HIVE_asset( 0 ) );
+  BOOST_REQUIRE( get_hive_balance( "carol" ) == HIVE_asset( 0 ) );
+  BOOST_REQUIRE( get_hive_balance( "dan" ) == HIVE_asset( 0 ) );
 
   auto& cp = get_chain_plugin();
 
   cp.push_transaction( alice_to_bob );
-  BOOST_REQUIRE_EQUAL( get_hive_balance( "alice" ).amount.value, 3100 - 1000 ); // direct from initminer / normal to bob
-  BOOST_REQUIRE_EQUAL( get_hive_balance( "bob" ).amount.value, 1000 ); // normal from alice
-  BOOST_REQUIRE_EQUAL( get_hive_balance( "carol" ).amount.value, 0 );
-  BOOST_REQUIRE_EQUAL( get_hive_balance( "dan" ).amount.value, 0 );
+  BOOST_REQUIRE( get_hive_balance( "alice" ) == HIVE_asset( 3100 - 1000 ) ); // direct from initminer / normal to bob
+  BOOST_REQUIRE( get_hive_balance( "bob" ) == HIVE_asset( 1000 ) ); // normal from alice
+  BOOST_REQUIRE( get_hive_balance( "carol" ) == HIVE_asset( 0 ) );
+  BOOST_REQUIRE( get_hive_balance( "dan" ) == HIVE_asset( 0 ) );
 
   cp.push_transaction( alice_to_carol );
-  BOOST_REQUIRE_EQUAL( get_hive_balance( "alice" ).amount.value, 3100 - 1000 - 2000 ); // ... / normal to carol
-  BOOST_REQUIRE_EQUAL( get_hive_balance( "bob" ).amount.value, 1000 );
-  BOOST_REQUIRE_EQUAL( get_hive_balance( "carol" ).amount.value, 200 + 2000 ); // direct from initminer / normal from alice
-  BOOST_REQUIRE_EQUAL( get_hive_balance( "dan" ).amount.value, 0 );
+  BOOST_REQUIRE( get_hive_balance( "alice" ) == HIVE_asset( 3100 - 1000 - 2000 ) ); // ... / normal to carol
+  BOOST_REQUIRE( get_hive_balance( "bob" ) == HIVE_asset( 1000 ) );
+  BOOST_REQUIRE( get_hive_balance( "carol" ) == HIVE_asset( 200 + 2000 ) ); // direct from initminer / normal from alice
+  BOOST_REQUIRE( get_hive_balance( "dan" ) == HIVE_asset( 0 ) );
 
   generate_block();
 
   // direct transfers are properly reapplied when block is generated
-  BOOST_REQUIRE_EQUAL( get_hive_balance( "alice" ).amount.value, 3100 - 1000 - 2000 );
-  BOOST_REQUIRE_EQUAL( get_hive_balance( "bob" ).amount.value, 1000 );
-  BOOST_REQUIRE_EQUAL( get_hive_balance( "carol" ).amount.value, 200 + 2000 );
-  BOOST_REQUIRE_EQUAL( get_hive_balance( "dan" ).amount.value, 0 );
+  BOOST_REQUIRE( get_hive_balance( "alice" ) == HIVE_asset( 3100 - 1000 - 2000 ) );
+  BOOST_REQUIRE( get_hive_balance( "bob" ) == HIVE_asset( 1000 ) );
+  BOOST_REQUIRE( get_hive_balance( "carol" ) == HIVE_asset( 200 + 2000 ) );
+  BOOST_REQUIRE( get_hive_balance( "dan" ) == HIVE_asset( 0 ) );
 
   // since bob was already given tokens by alice, he can transfer now
   cp.push_transaction( bob_to_dan );
-  BOOST_REQUIRE_EQUAL( get_hive_balance( "alice" ).amount.value, 3100 - 1000 - 2000 + 10 ); // ... / direct from bob
-  BOOST_REQUIRE_EQUAL( get_hive_balance( "bob" ).amount.value, 1000 - 10 - 700 ); // ... / direct to alice / normal to dan
-  BOOST_REQUIRE_EQUAL( get_hive_balance( "carol" ).amount.value, 200 + 2000 );
-  BOOST_REQUIRE_EQUAL( get_hive_balance( "dan" ).amount.value, 700 ); // normal from bob
+  BOOST_REQUIRE( get_hive_balance( "alice" ) == HIVE_asset( 3100 - 1000 - 2000 + 10 ) ); // ... / direct from bob
+  BOOST_REQUIRE( get_hive_balance( "bob" ) == HIVE_asset( 1000 - 10 - 700 ) ); // ... / direct to alice / normal to dan
+  BOOST_REQUIRE( get_hive_balance( "carol" ) == HIVE_asset( 200 + 2000 ) );
+  BOOST_REQUIRE( get_hive_balance( "dan" ) == HIVE_asset( 700 ) ); // normal from bob
 
   // carol has not enough balance to make transfer - hooked callback will also have no lasting effect
   BOOST_REQUIRE_THROW( cp.push_transaction( carol_to_dan ), fc::assert_exception );
-  BOOST_REQUIRE_EQUAL( get_hive_balance( "alice" ).amount.value, 3100 - 1000 - 2000 + 10 );
-  BOOST_REQUIRE_EQUAL( get_hive_balance( "bob" ).amount.value, 1000 - 10 - 700 );
-  BOOST_REQUIRE_EQUAL( get_hive_balance( "carol" ).amount.value, 200 + 2000 );
-  BOOST_REQUIRE_EQUAL( get_hive_balance( "dan" ).amount.value, 700 );
+  BOOST_REQUIRE( get_hive_balance( "alice" ) == HIVE_asset( 3100 - 1000 - 2000 + 10 ) );
+  BOOST_REQUIRE( get_hive_balance( "bob" ) == HIVE_asset( 1000 - 10 - 700 ) );
+  BOOST_REQUIRE( get_hive_balance( "carol" ) == HIVE_asset( 200 + 2000 ) );
+  BOOST_REQUIRE( get_hive_balance( "dan" ) == HIVE_asset( 700 ) );
 
   generate_block();
 
   // once again, check balances after block generation
-  BOOST_REQUIRE_EQUAL( get_hive_balance( "alice" ).amount.value, 3100 - 1000 - 2000 + 10 );
-  BOOST_REQUIRE_EQUAL( get_hive_balance( "bob" ).amount.value, 1000 - 10 - 700 );
-  BOOST_REQUIRE_EQUAL( get_hive_balance( "carol" ).amount.value, 200 + 2000 );
-  BOOST_REQUIRE_EQUAL( get_hive_balance( "dan" ).amount.value, 700 );
+  BOOST_REQUIRE( get_hive_balance( "alice" ) == HIVE_asset( 3100 - 1000 - 2000 + 10 ) );
+  BOOST_REQUIRE( get_hive_balance( "bob" ) == HIVE_asset( 1000 - 10 - 700 ) );
+  BOOST_REQUIRE( get_hive_balance( "carol" ) == HIVE_asset( 200 + 2000 ) );
+  BOOST_REQUIRE( get_hive_balance( "dan" ) == HIVE_asset( 700 ) );
 
   validate_database();
 }
@@ -297,14 +292,14 @@ BOOST_AUTO_TEST_CASE( debug_update_transaction_order )
   // - greg to temp (direct on internal(3))
   // if the order is different than above one of the transfers will fail
 
-  const asset token = ASSET( "1.000 TESTS" );
-  const asset step = ASSET( "0.001 TESTS" );
-  const asset zero = ASSET( "0.000 TESTS" );
+  const HIVE_asset token( 1'000 );
+  const HIVE_asset step( 1 );
+  const HIVE_asset zero( 0 );
 
   auto carol_to_dan = make_transfer( "carol", "dan", token - step * 6, carol_private_key, *db );
   db_plugin->debug_update( [&]( database& db )
   {
-    asset delta = token - step * 3;
+    HIVE_asset delta = token - step * 3;
     direct_transfer( "bob", "carol", -delta, delta, db );
   }, 0, carol_to_dan->get_transaction_id() );
 
@@ -318,7 +313,7 @@ BOOST_AUTO_TEST_CASE( debug_update_transaction_order )
   BOOST_REQUIRE( get_hive_balance( "greg" ) == zero );
 
   // initminer -> alice
-  fund( "alice", asset( token.amount.value, HIVE_SYMBOL ) );
+  fund( "alice", token.to_asset() );
   BOOST_REQUIRE( get_hive_balance( "alice" ) == token );
   BOOST_REQUIRE( get_hive_balance( "bob" ) == zero );
   BOOST_REQUIRE( get_hive_balance( "carol" ) == zero );
@@ -330,7 +325,7 @@ BOOST_AUTO_TEST_CASE( debug_update_transaction_order )
   // alice -> bob
   db_plugin->debug_update( [&]( database& db )
   {
-    asset delta = token - step * 1;
+    HIVE_asset delta = token - step * 1;
     direct_transfer( "alice", "bob", -delta, delta, db );
   } );
   BOOST_REQUIRE( get_hive_balance( "alice" ) == ( step * 1 ) );
@@ -354,7 +349,7 @@ BOOST_AUTO_TEST_CASE( debug_update_transaction_order )
   // dan -> eric
   db_plugin->debug_update( [&]( database& db )
   {
-    asset delta = token - step * 10;
+    HIVE_asset delta = token - step * 10;
     direct_transfer( "dan", "eric", -delta, delta, db );
   } );
   BOOST_REQUIRE( get_hive_balance( "alice" ) == ( step * 1 ) );
@@ -368,7 +363,7 @@ BOOST_AUTO_TEST_CASE( debug_update_transaction_order )
   // eric -> frank
   db_plugin->debug_update( [&]( database& db )
   {
-    asset delta = token - step * 15;
+    HIVE_asset delta = token - step * 15;
     direct_transfer( "eric", "frank", -delta, delta, db );
   } );
   BOOST_REQUIRE( get_hive_balance( "alice" ) == ( step * 1 ) );
@@ -392,7 +387,7 @@ BOOST_AUTO_TEST_CASE( debug_update_transaction_order )
   // greg -> temp
   db_plugin->debug_update( [&]( database& db )
   {
-    asset delta = token - step * 28;
+    HIVE_asset delta = token - step * 28;
     direct_transfer( "greg", HIVE_TEMP_ACCOUNT, -delta, delta, db );
   } );
   BOOST_REQUIRE( get_hive_balance( "alice" ) == ( step * 1 ) );
@@ -407,14 +402,14 @@ BOOST_AUTO_TEST_CASE( debug_update_transaction_order )
   generate_block();
 
   // state of balances should be the same after generating block
-  BOOST_REQUIRE( get_hive_balance( "alice" ) == ASSET( "0.001 TESTS" ) );
-  BOOST_REQUIRE( get_hive_balance( "bob" ) == ASSET( "0.002 TESTS" ) );
-  BOOST_REQUIRE( get_hive_balance( "carol" ) == ASSET( "0.003 TESTS" ) );
-  BOOST_REQUIRE( get_hive_balance( "dan" ) == ASSET( "0.004 TESTS" ) );
-  BOOST_REQUIRE( get_hive_balance( "eric" ) == ASSET( "0.005 TESTS" ) );
-  BOOST_REQUIRE( get_hive_balance( "frank" ) == ASSET( "0.006 TESTS" ) );
-  BOOST_REQUIRE( get_hive_balance( "greg" ) == ASSET( "0.007 TESTS" ) );
-  BOOST_REQUIRE( get_hive_balance( HIVE_TEMP_ACCOUNT ) == ASSET( "0.972 TESTS" ) );
+  BOOST_REQUIRE( get_hive_balance( "alice" ) == HIVE_asset( 1 ) );
+  BOOST_REQUIRE( get_hive_balance( "bob" ) == HIVE_asset( 2 ) );
+  BOOST_REQUIRE( get_hive_balance( "carol" ) == HIVE_asset( 3 ) );
+  BOOST_REQUIRE( get_hive_balance( "dan" ) == HIVE_asset( 4 ) );
+  BOOST_REQUIRE( get_hive_balance( "eric" ) == HIVE_asset( 5 ) );
+  BOOST_REQUIRE( get_hive_balance( "frank" ) == HIVE_asset( 6 ) );
+  BOOST_REQUIRE( get_hive_balance( "greg" ) == HIVE_asset( 7 ) );
+  BOOST_REQUIRE( get_hive_balance( HIVE_TEMP_ACCOUNT ) == HIVE_asset( 972 ) );
 
   validate_database();
 }
