@@ -834,27 +834,27 @@ BOOST_AUTO_TEST_CASE( rc_tx_order_bug )
     transfer.memo = "First transfer";
     tx1.operations.push_back( transfer );
     push_transaction( tx1, alice_private_key ); //t1
-    BOOST_REQUIRE( get_balance( "alice" ) == ASSET( "990.000 TESTS" ) );
-    BOOST_REQUIRE( get_balance( "bob" ) == ASSET( "10.000 TESTS" ) );
+    BOOST_REQUIRE( get_hive_balance( "alice" ) == ASSET( "990.000 TESTS" ) );
+    BOOST_REQUIRE( get_hive_balance( "bob" ) == ASSET( "10.000 TESTS" ) );
     transfer.amount = ASSET( "5.000 TESTS" );
     transfer.memo = "Second transfer";
     tx2.operations.push_back( transfer );
     HIVE_REQUIRE_EXCEPTION( push_transaction( tx2, alice_private_key ), "has_mana", plugin_exception ); //t2
-    BOOST_REQUIRE( get_balance( "alice" ) == ASSET( "990.000 TESTS" ) );
-    BOOST_REQUIRE( get_balance( "bob" ) == ASSET( "10.000 TESTS" ) );
+    BOOST_REQUIRE( get_hive_balance( "alice" ) == ASSET( "990.000 TESTS" ) );
+    BOOST_REQUIRE( get_hive_balance( "bob" ) == ASSET( "10.000 TESTS" ) );
     generate_block(); //t1 becomes part of block
 
     BOOST_TEST_MESSAGE( "Save aside and remove head block" );
     auto block = get_block_reader().get_block_by_number( db->head_block_num() );
     BOOST_REQUIRE( block );
     db->pop_block(); //t1 becomes popped
-    BOOST_REQUIRE( get_balance( "alice" ) == ASSET( "1000.000 TESTS" ) );
-    BOOST_REQUIRE( get_balance( "bob" ) == ASSET( "0.000 TESTS" ) );
+    BOOST_REQUIRE( get_hive_balance( "alice" ) == ASSET( "1000.000 TESTS" ) );
+    BOOST_REQUIRE( get_hive_balance( "bob" ) == ASSET( "0.000 TESTS" ) );
 
     BOOST_TEST_MESSAGE( "Reapply transaction that failed before putting it to pending" );
     push_transaction( tx2, alice_private_key ); //t2 becomes pending
-    BOOST_REQUIRE( get_balance( "alice" ) == ASSET( "995.000 TESTS" ) );
-    BOOST_REQUIRE( get_balance( "bob" ) == ASSET( "5.000 TESTS" ) );
+    BOOST_REQUIRE( get_hive_balance( "alice" ) == ASSET( "995.000 TESTS" ) );
+    BOOST_REQUIRE( get_hive_balance( "bob" ) == ASSET( "5.000 TESTS" ) );
 
     BOOST_TEST_MESSAGE( "Push previously popped block - pending transaction should run into lack of RC again" );
     //the only way to see if we run into problem is to observe ilog messages
@@ -874,16 +874,16 @@ BOOST_AUTO_TEST_CASE( rc_tx_order_bug )
       push_block( block );
       //t1 was applied as part of block, then popped version of t1 was skipped as duplicate and t2 was
       //applied as pending, however lack of RC caused it to be dropped; we can check that by looking at balances
-      BOOST_REQUIRE( get_balance( "alice" ) == ASSET( "990.000 TESTS" ) );
-      BOOST_REQUIRE( get_balance( "bob" ) == ASSET( "10.000 TESTS" ) );
+      BOOST_REQUIRE( get_hive_balance( "alice" ) == ASSET( "990.000 TESTS" ) );
+      BOOST_REQUIRE( get_hive_balance( "bob" ) == ASSET( "10.000 TESTS" ) );
 
       generate_block();
       //due to change that makes pending transactions drop from list due to lack of RC, testing fix for
       //former 'is_producing() == false' when building new block is no longer possible; nevertheless witness actually
       //'is_in_control()' when producing block, which means pending t2 would not be included during block production
       //(due to lack of RC)
-      BOOST_REQUIRE( get_balance( "alice" ) == ASSET( "990.000 TESTS" ) );
-      BOOST_REQUIRE( get_balance( "bob" ) == ASSET( "10.000 TESTS" ) );
+      BOOST_REQUIRE( get_hive_balance( "alice" ) == ASSET( "990.000 TESTS" ) );
+      BOOST_REQUIRE( get_hive_balance( "bob" ) == ASSET( "10.000 TESTS" ) );
       block = get_block_reader().get_block_by_number( db->head_block_num() );
       BOOST_REQUIRE( block );
       //check that block is indeed empty, without t2 and that tx2 waits as pending <- no longer true; tx2 was dropped above
@@ -896,8 +896,8 @@ BOOST_AUTO_TEST_CASE( rc_tx_order_bug )
       push_transaction( tx2, alice_private_key );
 
       //check that t2 did not expire while RC was regenerating and got accepted when send second time
-      BOOST_REQUIRE( get_balance( "alice" ) == ASSET( "985.000 TESTS" ) );
-      BOOST_REQUIRE( get_balance( "bob" ) == ASSET( "15.000 TESTS" ) );
+      BOOST_REQUIRE( get_hive_balance( "alice" ) == ASSET( "985.000 TESTS" ) );
+      BOOST_REQUIRE( get_hive_balance( "bob" ) == ASSET( "15.000 TESTS" ) );
     }
 
     validate_database();

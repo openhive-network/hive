@@ -4738,7 +4738,7 @@ BOOST_AUTO_TEST_CASE( converting_hive_to_dhf )
     generate_block();
 
     auto before_treasury_hbd_balance =  _treasury.get_hbd_balance();
-    auto before_treasury_hive_balance =  _treasury.get_balance();
+    auto before_treasury_hive_balance =  _treasury.get_hive_balance();
 
     const auto hive_converted = asset(HIVE_PROPOSAL_CONVERSION_RATE * before_treasury_hive_balance.amount / HIVE_100_PERCENT, HIVE_SYMBOL);
     // Same because of the 1:1 tests to tbd ratio
@@ -4754,7 +4754,7 @@ BOOST_AUTO_TEST_CASE( converting_hive_to_dhf )
     treasury_hbd_inflation += treasury_per_block_inflation;
     auto after_daily_maintenance_time = dgpo.next_daily_maintenance_time;
     auto after_treasury_hbd_balance =  _treasury.get_hbd_balance();
-    auto after_treasury_hive_balance =  _treasury.get_balance();
+    auto after_treasury_hive_balance =  _treasury.get_hive_balance();
 
     BOOST_REQUIRE( before_treasury_hbd_balance == after_treasury_hbd_balance - treasury_hbd_inflation - hbd_converted );
     BOOST_REQUIRE( before_treasury_hive_balance == after_treasury_hive_balance + hive_converted );

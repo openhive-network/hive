@@ -417,11 +417,11 @@ struct database_fixture {
   uint64_t get_nr_blocks_until_daily_proposal_maintenance_block();
 
   account_id_type get_account_id( const string& account_name )const;
-  asset get_balance( const string& account_name )const;
+  asset get_hive_balance( const string& account_name )const;
   asset get_hbd_balance( const string& account_name )const;
-  asset get_savings( const string& account_name )const;
+  asset get_hive_savings( const string& account_name )const;
   asset get_hbd_savings( const string& account_name )const;
-  asset get_rewards( const string& account_name )const;
+  asset get_hive_rewards( const string& account_name )const;
   asset get_hbd_rewards( const string& account_name )const;
   asset get_vesting( const string& account_name )const;
   asset get_vest_rewards( const string& account_name )const;

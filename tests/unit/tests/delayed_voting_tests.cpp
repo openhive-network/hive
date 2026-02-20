@@ -2348,7 +2348,7 @@ BOOST_AUTO_TEST_CASE( small_common_test_01 )
 
 #define ACCOUNT_REPORT( account ) \
   BOOST_TEST_MESSAGE( "[scenario_01]: " << account << " has " << asset_to_string( get_vesting( account )) ); \
-  BOOST_TEST_MESSAGE( "[scenario_01]: " << account << " has " << asset_to_string( get_balance( account )) ); \
+  BOOST_TEST_MESSAGE( "[scenario_01]: " << account << " has " << asset_to_string( get_hive_balance( account )) ); \
   BOOST_TEST_MESSAGE( "[scenario_01]: " << account << " has " << VOTING_POWER( account ) << " voting power" ); \
   BOOST_TEST_MESSAGE( "[scenario_01]: " << account << " has " << PROXIED_VSF( account ) << " proxied vsf" )
 
@@ -2371,7 +2371,7 @@ BOOST_AUTO_TEST_CASE( small_common_test_01 )
   BOOST_REQUIRE_EQUAL( get_vesting( #account ).amount.value, ( expected_ ## account ## _vests ).amount.value )
 
 #define CHECK_ACCOUNT_HIVE( account ) \
-  BOOST_REQUIRE( get_balance( #account ) == expected_ ## account ## _hive )
+  BOOST_REQUIRE( get_hive_balance( #account ) == expected_ ## account ## _hive )
 
 #define CHECK_ACCOUNT_VP( account ) \
   BOOST_REQUIRE( VOTING_POWER( #account ) == expected_ ## account ## _vp )
@@ -2380,8 +2380,8 @@ BOOST_AUTO_TEST_CASE( small_common_test_01 )
   BOOST_REQUIRE( WITNESS_VOTES( #witness ) == expected_ ## witness ## _votes )
 
 #define DAY_CHECK_VOTES_BALANCES \
-  BOOST_REQUIRE( get_balance( "alice" ).amount.value != 0 ); \
-  BOOST_REQUIRE_EQUAL( get_balance( "alice" ).amount.value, get_balance( "carol" ).amount.value ); \
+  BOOST_REQUIRE( get_hive_balance( "alice" ).amount.value != 0 ); \
+  BOOST_REQUIRE_EQUAL( get_hive_balance( "alice" ).amount.value, get_hive_balance( "carol" ).amount.value ); \
   BOOST_TEST_MESSAGE( "[scenario_01]: " << "expected_alice_vests = " << asset_to_string( expected_alice_vests ) ); \
   CHECK_ACCOUNT_VESTS( alice ); \
   BOOST_REQUIRE_EQUAL( VOTING_POWER( "alice" ), WITNESS_VOTES( "alice0bp" ) ); \
@@ -2441,7 +2441,7 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
 
   BOOST_TEST_MESSAGE( "[scenario_01]: after account creation" );
   BOOST_TEST_MESSAGE( "[scenario_01]: alice has " << asset_to_string( get_vesting( "alice" )) );
-  BOOST_TEST_MESSAGE( "[scenario_01]: alice has " << asset_to_string( get_balance( "alice" )) );
+  BOOST_TEST_MESSAGE( "[scenario_01]: alice has " << asset_to_string( get_hive_balance( "alice" )) );
 
   witness_create( "alice0bp", alice0bp_private_key, "url.alice.bp", alice0bp_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD.amount );
   witness_plugin->add_signing_key( alice0bp_private_key );
@@ -2517,7 +2517,7 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
   validate_database();
 
   INTERVAL_REPORT( today );
-  BOOST_REQUIRE( get_balance( "alice" ) == ASSET( "300.000 TESTS" ) );
+  BOOST_REQUIRE( get_hive_balance( "alice" ) == ASSET( "300.000 TESTS" ) );
 
 /*
   Analyzing delayed votes before they are removed.
@@ -2562,7 +2562,7 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
   validate_database();
 
   INTERVAL_REPORT( today );
-  BOOST_REQUIRE( get_balance( "alice" ) == ASSET( "0.000 TESTS" ) );
+  BOOST_REQUIRE( get_hive_balance( "alice" ) == ASSET( "0.000 TESTS" ) );
 
 /*
   Day 10: alice powers down 1300 vests; this schedules virtual PD actions on days 17, 24, 31, 38, 45, 52, 59, 66, 73, 80, 87, 94 and 101
@@ -2580,7 +2580,7 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
   validate_database();
 
   INTERVAL_REPORT( today );
-  BOOST_REQUIRE( get_balance( "alice" ) == ASSET( "0.000 TESTS" ) );
+  BOOST_REQUIRE( get_hive_balance( "alice" ) == ASSET( "0.000 TESTS" ) );
 
 /*
   Day 17: PD of 100 vests from alice gives 25 HIVE to carol, 25 HIVE to alice, powers up 25 vests to bob (maturing on day 47)
@@ -2598,7 +2598,7 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
   initial_bob0bp_vp = VOTING_POWER( "bob0bp");
   initial_bob0bp_votes = WITNESS_VOTES( "bob0bp" );
   initial_bob0bp_delayed_votes = DELAYED_VOTES( "bob0bp" );
-  initial_carol_hive = get_balance( "carol" );
+  initial_carol_hive = get_hive_balance( "carol" );
 
   expected_alice_vests = initial_alice0bp_vests;
   expected_alice0bp_vests = initial_alice0bp_vests;

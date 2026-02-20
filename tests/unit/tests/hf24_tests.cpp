@@ -139,7 +139,7 @@ BOOST_AUTO_TEST_CASE( blocked_operations )
       op.to = "alice";
       tx.operations.push_back( op );
       push_transaction( tx, alice_private_key );
-      BOOST_REQUIRE( get_savings( "alice" ) == ASSET( "1.000 TESTS" ) );
+      BOOST_REQUIRE( get_hive_savings( "alice" ) == ASSET( "1.000 TESTS" ) );
     }
     tx.clear();
 
@@ -269,9 +269,9 @@ BOOST_AUTO_TEST_CASE( consolidate_balance )
     database_fixture::validate_database();
     {
       auto& old_treasury = db->get_account( OBSOLETE_TREASURY_ACCOUNT );
-      BOOST_REQUIRE_EQUAL( old_treasury.get_balance().amount.value, 5000 );
-      BOOST_REQUIRE_EQUAL( old_treasury.get_savings().amount.value, 3000 );
-      BOOST_REQUIRE_EQUAL( old_treasury.get_rewards().amount.value, 2000 );
+      BOOST_REQUIRE_EQUAL( old_treasury.get_hive_balance().amount.value, 5000 );
+      BOOST_REQUIRE_EQUAL( old_treasury.get_hive_savings().amount.value, 3000 );
+      BOOST_REQUIRE_EQUAL( old_treasury.get_hive_rewards().amount.value, 2000 );
       BOOST_REQUIRE_EQUAL( old_treasury.get_hbd_balance().amount.value, 5000 );
       BOOST_REQUIRE_EQUAL( old_treasury.get_hbd_savings().amount.value, 3000 );
       BOOST_REQUIRE_EQUAL( old_treasury.get_hbd_rewards().amount.value, 2000 );
@@ -285,9 +285,9 @@ BOOST_AUTO_TEST_CASE( consolidate_balance )
 
     {
       auto& old_treasury = db->get_account( OBSOLETE_TREASURY_ACCOUNT );
-      BOOST_REQUIRE_EQUAL( old_treasury.get_balance().amount.value, 0 );
-      BOOST_REQUIRE_EQUAL( old_treasury.get_savings().amount.value, 0 );
-      BOOST_REQUIRE_EQUAL( old_treasury.get_rewards().amount.value, 0 );
+      BOOST_REQUIRE_EQUAL( old_treasury.get_hive_balance().amount.value, 0 );
+      BOOST_REQUIRE_EQUAL( old_treasury.get_hive_savings().amount.value, 0 );
+      BOOST_REQUIRE_EQUAL( old_treasury.get_hive_rewards().amount.value, 0 );
       BOOST_REQUIRE_EQUAL( old_treasury.get_hbd_balance().amount.value, 0 );
       BOOST_REQUIRE_EQUAL( old_treasury.get_hbd_savings().amount.value, 0 );
       BOOST_REQUIRE_EQUAL( old_treasury.get_hbd_rewards().amount.value, 0 );
@@ -296,9 +296,9 @@ BOOST_AUTO_TEST_CASE( consolidate_balance )
     }
     {
       auto& treasury = db->get_account( NEW_HIVE_TREASURY_ACCOUNT );
-      BOOST_REQUIRE_EQUAL( treasury.get_balance().amount.value, 14999 ); //rounding during vest->hive conversion
-      BOOST_REQUIRE_EQUAL( treasury.get_savings().amount.value, 3000 );
-      BOOST_REQUIRE_EQUAL( treasury.get_rewards().amount.value, 2000 );
+      BOOST_REQUIRE_EQUAL( treasury.get_hive_balance().amount.value, 14999 ); //rounding during vest->hive conversion
+      BOOST_REQUIRE_EQUAL( treasury.get_hive_savings().amount.value, 3000 );
+      BOOST_REQUIRE_EQUAL( treasury.get_hive_rewards().amount.value, 2000 );
       BOOST_REQUIRE_EQUAL( treasury.get_hbd_balance().amount.value, 5000 + initial_treasury_balance.amount.value );
       BOOST_REQUIRE_EQUAL( treasury.get_hbd_savings().amount.value, 3000 );
       BOOST_REQUIRE_EQUAL( treasury.get_hbd_rewards().amount.value, 2000 );

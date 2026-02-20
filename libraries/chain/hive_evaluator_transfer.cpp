@@ -624,8 +624,8 @@ void claim_reward_balance_evaluator::do_apply( const claim_reward_balance_operat
   HBD_asset op_reward_hbd = op.get_reward_hbd();
   VEST_asset op_reward_vests = op.get_reward_vests();
 
-  FC_ASSERT( op_reward_hive <= acnt.get_rewards(), "Cannot claim that much HIVE. Claim: ${c} Actual: ${a}",
-    ( "c", op_reward_hive )( "a", acnt.get_rewards() ) );
+  FC_ASSERT( op_reward_hive <= acnt.get_hive_rewards(), "Cannot claim that much HIVE. Claim: ${c} Actual: ${a}",
+    ( "c", op_reward_hive )( "a", acnt.get_hive_rewards() ) );
   FC_ASSERT( op_reward_hbd <= acnt.get_hbd_rewards(), "Cannot claim that much HBD. Claim: ${c} Actual: ${a}",
     ( "c", op_reward_hbd )( "a", acnt.get_hbd_rewards() ) );
   FC_ASSERT( op_reward_vests <= acnt.get_vest_rewards(), "Cannot claim that much VESTS. Claim: ${c} Actual: ${a}",

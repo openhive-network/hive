@@ -322,14 +322,14 @@ BOOST_AUTO_TEST_CASE( pack_transaction_basic )
         _op.amount  = _66;
 
         {
-          auto _alice_balance_previous  = executor->get_balance( "alice" );
-          auto _bob_balance_previous    = executor->get_balance( "bob" );
+          auto _alice_balance_previous  = executor->get_hive_balance( "alice" );
+          auto _bob_balance_previous    = executor->get_hive_balance( "bob" );
 
           signed_transaction _tx = _get_trx( executor, { _op } );
           executor->push_transaction_ex( _tx, active_key, 0, hive::protocol::pack_type::legacy );
 
-          auto _alice_balance_after = executor->get_balance( "alice" );
-          auto _bob_balance_after   = executor->get_balance( "bob" );
+          auto _alice_balance_after = executor->get_hive_balance( "alice" );
+          auto _bob_balance_after   = executor->get_hive_balance( "bob" );
 
           BOOST_REQUIRE_EQUAL( _alice_balance_previous.amount.value, ( _alice_balance_after + _66 ).amount.value );
           BOOST_REQUIRE_EQUAL( _bob_balance_previous.amount.value, ( _bob_balance_after - _66 ).amount.value );
@@ -339,14 +339,14 @@ BOOST_AUTO_TEST_CASE( pack_transaction_basic )
 
         if( /*is_hf26*/ true ) // ABW: it is no longer needed to distinguish between "past" and HF26 transactions, all can use hf26 pack
         {
-          auto _alice_balance_previous  = executor->get_balance( "alice" );
-          auto _bob_balance_previous    = executor->get_balance( "bob" );
+          auto _alice_balance_previous  = executor->get_hive_balance( "alice" );
+          auto _bob_balance_previous    = executor->get_hive_balance( "bob" );
 
           signed_transaction _tx = _get_trx( executor, { _op } );
           executor->push_transaction_ex( _tx, active_key, 0, hive::protocol::pack_type::hf26 );
 
-          auto _alice_balance_after = executor->get_balance( "alice" );
-          auto _bob_balance_after   = executor->get_balance( "bob" );
+          auto _alice_balance_after = executor->get_hive_balance( "alice" );
+          auto _bob_balance_after   = executor->get_hive_balance( "bob" );
 
           BOOST_REQUIRE_EQUAL( _alice_balance_previous.amount.value, ( _alice_balance_after + _66 ).amount.value );
           BOOST_REQUIRE_EQUAL( _bob_balance_previous.amount.value, ( _bob_balance_after - _66 ).amount.value );

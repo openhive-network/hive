@@ -1142,9 +1142,9 @@ bool database::collect_account_total_balance( const account_object& account, ass
   *total_hive += account.get_vest_rewards_as_hive();
   *total_vests += account.get_vest_rewards();
 
-  *total_hive += account.get_balance();
-  *total_hive += account.get_savings();
-  *total_hive += account.get_rewards();
+  *total_hive += account.get_hive_balance();
+  *total_hive += account.get_hive_savings();
+  *total_hive += account.get_hive_rewards();
 
   *total_hbd = account.get_hbd_balance();
   *total_hbd += account.get_hbd_savings();
@@ -1175,14 +1175,14 @@ void database::clear_null_account_balance()
 
   /////////////////////////////////////////////////////////////////////////////////////
 
-  if( null_account.get_balance().amount > 0 )
+  if( null_account.get_hive_balance().amount > 0 )
   {
-    adjust_balance( null_account, -null_account.get_balance() );
+    adjust_balance( null_account, -null_account.get_hive_balance() );
   }
 
-  if( null_account.get_savings().amount > 0 )
+  if( null_account.get_hive_savings().amount > 0 )
   {
-    adjust_savings_balance( null_account, -null_account.get_savings() );
+    adjust_savings_balance( null_account, -null_account.get_hive_savings() );
   }
 
   if( null_account.get_hbd_balance().amount > 0 )
@@ -1218,9 +1218,9 @@ void database::clear_null_account_balance()
       rc().update_account_after_vest_change( null_account, _now );
   }
 
-  if( null_account.get_rewards().amount > 0 )
+  if( null_account.get_hive_rewards().amount > 0 )
   {
-    adjust_reward_balance( null_account, -null_account.get_rewards() );
+    adjust_reward_balance( null_account, -null_account.get_hive_rewards() );
   }
 
   if( null_account.get_hbd_rewards().amount > 0 )
@@ -1285,16 +1285,16 @@ void database::consolidate_treasury_balance()
 
   /////////////////////////////////////////////////////////////////////////////////////
 
-  if( old_treasury_account.get_balance().amount > 0 )
+  if( old_treasury_account.get_hive_balance().amount > 0 )
   {
-    adjust_balance( treasury_account, old_treasury_account.get_balance() );
-    adjust_balance( old_treasury_account, -old_treasury_account.get_balance() );
+    adjust_balance( treasury_account, old_treasury_account.get_hive_balance() );
+    adjust_balance( old_treasury_account, -old_treasury_account.get_hive_balance() );
   }
 
-  if( old_treasury_account.get_savings().amount > 0 )
+  if( old_treasury_account.get_hive_savings().amount > 0 )
   {
-    adjust_savings_balance( treasury_account, old_treasury_account.get_savings() );
-    adjust_savings_balance( old_treasury_account, -old_treasury_account.get_savings() );
+    adjust_savings_balance( treasury_account, old_treasury_account.get_hive_savings() );
+    adjust_savings_balance( old_treasury_account, -old_treasury_account.get_hive_savings() );
   }
 
   if( old_treasury_account.get_hbd_balance().amount > 0 )
@@ -1330,10 +1330,10 @@ void database::consolidate_treasury_balance()
     } );
   }
 
-  if( old_treasury_account.get_rewards().amount > 0 )
+  if( old_treasury_account.get_hive_rewards().amount > 0 )
   {
-    adjust_reward_balance( treasury_account, old_treasury_account.get_rewards() );
-    adjust_reward_balance( old_treasury_account, -old_treasury_account.get_rewards() );
+    adjust_reward_balance( treasury_account, old_treasury_account.get_hive_rewards() );
+    adjust_reward_balance( old_treasury_account, -old_treasury_account.get_hive_rewards() );
   }
 
   if( old_treasury_account.get_hbd_rewards().amount > 0 )
@@ -1582,26 +1582,26 @@ void database::clear_account( const account_object& account )
   }
 
   // Remove remaining savings balances
-  total_transferred_hive += account.get_savings();
+  total_transferred_hive += account.get_hive_savings();
   total_transferred_hbd += account.get_hbd_savings();
-  adjust_balance( treasury_account, account.get_savings() );
-  adjust_savings_balance( account, -account.get_savings() );
+  adjust_balance( treasury_account, account.get_hive_savings() );
+  adjust_savings_balance( account, -account.get_hive_savings() );
   adjust_balance( treasury_account, account.get_hbd_savings() );
   adjust_savings_balance( account, -account.get_hbd_savings() );
 
   // Remove HBD and HIVE balances
-  total_transferred_hive += account.get_balance();
+  total_transferred_hive += account.get_hive_balance();
   total_transferred_hbd += account.get_hbd_balance();
-  adjust_balance( treasury_account, account.get_balance() );
-  adjust_balance( account, -account.get_balance() );
+  adjust_balance( treasury_account, account.get_hive_balance() );
+  adjust_balance( account, -account.get_hive_balance() );
   adjust_balance( treasury_account, account.get_hbd_balance() );
   adjust_balance( account, -account.get_hbd_balance() );
 
   // Transfer reward balances
-  total_transferred_hive += account.get_rewards();
+  total_transferred_hive += account.get_hive_rewards();
   total_transferred_hbd += account.get_hbd_rewards();
-  adjust_balance( treasury_account, account.get_rewards() );
-  adjust_reward_balance( account, -account.get_rewards() );
+  adjust_balance( treasury_account, account.get_hive_rewards() );
+  adjust_reward_balance( account, -account.get_hive_rewards() );
   adjust_balance( treasury_account, account.get_hbd_rewards() );
   adjust_reward_balance( account, -account.get_hbd_rewards() );
 
@@ -3146,9 +3146,9 @@ void database::adjust_balance( const account_object& a, const HIVE_asset& delta 
 {
   if( delta.amount < 0 )
   {
-    FC_ASSERT( a.get_balance() >= -delta,
+    FC_ASSERT( a.get_hive_balance() >= -delta,
       "Account ${acc} does not have sufficient funds for balance adjustment. Required: ${r}, Available: ${a}",
-        ("acc", a.get_name())("r", delta)("a", a.get_balance()) );
+        ("acc", a.get_name())("r", delta)("a", a.get_hive_balance()) );
   }
 
   const bool trace_balance_change = false; //a.get_name() == "X";
@@ -3169,7 +3169,7 @@ void database::adjust_balance( const account_object& a, const HIVE_asset& delta 
     if(trace_balance_change)
       ilog("${a} HIVE balance changed to ${nb} (previous: ${b} ) at block: ${block}. Operation context: ${c}", ("a", a.get_name())("b", b.amount)("nb", acnt.balance.amount)("block", _current_block_num)("c", op_context));
 
-    FC_ASSERT( acnt.get_balance().amount.value >= 0, "Insufficient HIVE funds" );
+    FC_ASSERT( acnt.get_hive_balance().amount.value >= 0, "Insufficient HIVE funds" );
   } );
 }
 
@@ -3248,7 +3248,7 @@ void database::adjust_savings_balance( const account_object& a, const HIVE_asset
   modify( a, [&]( account_object& acnt )
   {
     acnt.savings_balance += delta;
-    FC_ASSERT( acnt.get_savings().amount.value >= 0, "Insufficient savings HIVE funds" );
+    FC_ASSERT( acnt.get_hive_savings().amount.value >= 0, "Insufficient savings HIVE funds" );
   } );
 }
 
@@ -3310,7 +3310,7 @@ void database::adjust_reward_balance( const account_object& a, const HIVE_asset&
   modify( a, [&]( account_object& acnt )
   {
     acnt.reward_hive_balance += value_delta;
-    FC_ASSERT( acnt.get_rewards().amount.value >= 0, "Insufficient reward HIVE funds" );
+    FC_ASSERT( acnt.get_hive_rewards().amount.value >= 0, "Insufficient reward HIVE funds" );
   } );
 }
 
@@ -3376,7 +3376,7 @@ asset database::get_balance( const account_object& a, asset_symbol_type symbol )
 {
   if( symbol.asset_num == HIVE_ASSET_NUM_HIVE )
   {
-    return a.get_balance();
+    return a.get_hive_balance();
   }
   else
   {
@@ -3389,7 +3389,7 @@ asset database::get_savings_balance( const account_object& a, asset_symbol_type 
 {
   if( symbol.asset_num == HIVE_ASSET_NUM_HIVE )
   {
-    return a.get_savings();
+    return a.get_hive_savings();
   }
   else
   {
@@ -3430,9 +3430,9 @@ void database::validate_invariants()const
 
     for( auto itr = account_idx.begin(); itr != account_idx.end(); ++itr )
     {
-      total_supply += itr->get_balance();
-      total_supply += itr->get_savings();
-      total_supply += itr->get_rewards();
+      total_supply += itr->get_hive_balance();
+      total_supply += itr->get_hive_savings();
+      total_supply += itr->get_hive_rewards();
       total_hbd += itr->get_hbd_balance();
       total_hbd += itr->get_hbd_savings();
       total_hbd += itr->get_hbd_rewards();
