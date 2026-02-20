@@ -91,9 +91,9 @@ void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )
   }
 
   // Get the minimum between the current RC and the maximum delegable RC, so that eve can't f.e. re-delegate delegated RC
-  const auto& from_mrc = _db.get< manabars_rc_object, by_account_id >( from_account.get_id() );
-  const auto& from_assets = _db.get< assets_object, by_account_id >( from_account.get_id() );
-  const auto& from_time = _db.get< time_object, by_account_id >( from_account.get_id() );
+  const auto& from_mrc = _db.get_manabars_rc_account( from_account.get_id() );
+  const auto& from_assets = _db.get_asset_account( from_account.get_id() );
+  const auto& from_time = _db.get_time_account( from_account.get_id() );
 
   // Get the minimum between the current RC and the maximum delegable RC, so that eve can't f.e. re-delegate delegated RC
   int64_t from_delegable_rc = std::min( from_account.get_maximum_rc( from_mrc, from_assets, from_time, true ).value, from_mrc.get_rc_manabar().current_mana );
@@ -322,9 +322,9 @@ int64_t resource_credits::compute_cost( rc_transaction_info* usage_info ) const
 
 void resource_credits::regenerate_rc_mana( const account_object& account, const fc::time_point_sec now ) const
 {
-  const auto& mrc = db.get< manabars_rc_object, by_account_id >( account.get_id() );
-  const auto& assets = db.get< assets_object, by_account_id >( account.get_id() );
-  const auto& time_obj = db.get< time_object, by_account_id >( account.get_id() );
+  const auto& mrc = db.get_manabars_rc_account( account.get_id() );
+  const auto& assets = db.get_asset_account( account.get_id() );
+  const auto& time_obj = db.get_time_account( account.get_id() );
   regenerate_rc_mana( account, mrc, assets, time_obj, now );
 }
 
@@ -387,9 +387,9 @@ void resource_credits::regenerate_rc_mana( const account_object& account,
 void resource_credits::update_account_after_rc_delegation( const account_object& account,
   const fc::time_point_sec now, int64_t delta, bool regenerate_mana ) const
 {
-  const auto& mrc = db.get< manabars_rc_object, by_account_id >( account.get_id() );
-  const auto& assets = db.get< assets_object, by_account_id >( account.get_id() );
-  const auto& time_obj = db.get< time_object, by_account_id >( account.get_id() );
+  const auto& mrc = db.get_manabars_rc_account( account.get_id() );
+  const auto& assets = db.get_asset_account( account.get_id() );
+  const auto& time_obj = db.get_time_account( account.get_id() );
 
   // Check if RC state was never properly initialized (last_max_rc == 0).
   // This can happen in alternate chain configurations where hardforks are applied out of order.
@@ -444,9 +444,9 @@ void resource_credits::update_account_after_rc_delegation( const account_object&
 void resource_credits::update_account_after_vest_change( const account_object& account,
   const fc::time_point_sec now, bool _fill_new_mana, bool _check_for_rc_delegation_overflow ) const
 {
-  const auto& mrc = db.get< manabars_rc_object, by_account_id >( account.get_id() );
-  const auto& assets = db.get< assets_object, by_account_id >( account.get_id() );
-  const auto& time_obj = db.get< time_object, by_account_id >( account.get_id() );
+  const auto& mrc = db.get_manabars_rc_account( account.get_id() );
+  const auto& assets = db.get_asset_account( account.get_id() );
+  const auto& time_obj = db.get_time_account( account.get_id() );
   update_account_after_vest_change( account, mrc, assets, time_obj, now, _fill_new_mana, _check_for_rc_delegation_overflow );
 }
 
@@ -578,9 +578,9 @@ bool resource_credits::use_account_rcs( int64_t rc )
   const auto& account = db.get_account( account_name );
   const dynamic_global_property_object& dgpo = db.get_dynamic_global_properties();
 
-  const auto& mrc = db.get< manabars_rc_object, by_account_id >( account.get_id() );
-  const auto& assets = db.get< assets_object, by_account_id >( account.get_id() );
-  const auto& time_obj = db.get< time_object, by_account_id >( account.get_id() );
+  const auto& mrc = db.get_manabars_rc_account( account.get_id() );
+  const auto& assets = db.get_asset_account( account.get_id() );
+  const auto& time_obj = db.get_time_account( account.get_id() );
 
   util::manabar_params mbparams;
   auto max_mana = account.get_maximum_rc( mrc, assets, time_obj ).value;

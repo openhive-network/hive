@@ -101,7 +101,7 @@ uint64_t dhf_processor::calculate_votes( uint32_t pid )
     //If _voter has set proxy, then his votes aren't taken into consideration
     if( !_voter.has_proxy() )
     {
-      auto sum = _voter.get_governance_vote_power( db.get< assets_object, by_account_id >( _voter.get_id() ), db.get< delayed_votes_object, by_account_id >( _voter.get_id() ) );
+      auto sum = _voter.get_governance_vote_power( db.get_asset_account( _voter.get_id() ), db.get_delayed_votes_account( _voter.get_id() ) );
       ret += sum.value;
     }
 
@@ -140,7 +140,7 @@ void dhf_processor::sort_by_votes( t_proposals& proposals )
 const HBD_asset& dhf_processor::get_treasury_fund() const
 {
   const auto& treasury_account = db.get_treasury();
-  const auto& treasury_assets = db.get< assets_object, by_account_id >( treasury_account.get_id() );
+  const auto& treasury_assets = db.get_asset_account( treasury_account.get_id() );
 
   return treasury_assets.get_hbd_balance();
 }
@@ -339,7 +339,7 @@ void dhf_processor::convert_funds( const block_notification& note )
   } );
 
   const auto& treasury_account = db.get_treasury();
-  const auto& treasury_assets = db.get< assets_object, by_account_id >( treasury_account.get_id() );
+  const auto& treasury_assets = db.get_asset_account( treasury_account.get_id() );
   if (treasury_assets.get_balance().amount == 0)
     return;
 

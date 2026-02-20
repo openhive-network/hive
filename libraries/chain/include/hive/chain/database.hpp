@@ -312,6 +312,21 @@ namespace chain {
       account get_volatile_account(  const account_name_type& name )const;
       account find_volatile_account( const account_name_type& name )const;
 
+      const assets_object& get_asset_account(  const account_id_type& id )const;
+      const assets_object* find_asset_account( const account_id_type& id )const;
+
+      const time_object& get_time_account(  const account_id_type& id )const;
+      const time_object* find_time_account( const account_id_type& id )const;
+
+      const recovery_object& get_recovery_account(  const account_id_type& id )const;
+      const recovery_object* find_recovery_account( const account_id_type& id )const;
+
+      const manabars_rc_object& get_manabars_rc_account(  const account_id_type& id )const;
+      const manabars_rc_object* find_manabars_rc_account( const account_id_type& id )const;
+
+      const delayed_votes_object& get_delayed_votes_account(  const account_id_type& id )const;
+      const delayed_votes_object* find_delayed_votes_account( const account_id_type& id )const;
+
       const comment_object*  find_comment( comment_id_type comment_id )const;
 
       comment get_comment( const account_id_type& author, const shared_string& permlink )const;

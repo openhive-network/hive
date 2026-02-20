@@ -458,6 +458,56 @@ account database::find_volatile_account( const account_name_type& name )const
   return get_accounts_handler().get_volatile_account( name, false /*account_is_required*/ );
 }
 
+const assets_object& database::get_asset_account( const account_id_type& id )const
+{
+  return *( get_accounts_handler().get_asset_account( id, true /*is_required*/ ) );
+}
+
+const assets_object* database::find_asset_account( const account_id_type& id )const
+{
+  return get_accounts_handler().get_asset_account( id, false /*is_required*/ );
+}
+
+const time_object& database::get_time_account( const account_id_type& id )const
+{
+  return *( get_accounts_handler().get_time_account( id, true /*is_required*/ ) );
+}
+
+const time_object* database::find_time_account( const account_id_type& id )const
+{
+  return get_accounts_handler().get_time_account( id, false /*is_required*/ );
+}
+
+const recovery_object& database::get_recovery_account( const account_id_type& id )const
+{
+  return *( get_accounts_handler().get_recovery_account( id, true /*is_required*/ ) );
+}
+
+const recovery_object* database::find_recovery_account( const account_id_type& id )const
+{
+  return get_accounts_handler().get_recovery_account( id, false /*is_required*/ );
+}
+
+const manabars_rc_object& database::get_manabars_rc_account( const account_id_type& id )const
+{
+  return *( get_accounts_handler().get_manabars_rc_account( id, true /*is_required*/ ) );
+}
+
+const manabars_rc_object* database::find_manabars_rc_account( const account_id_type& id )const
+{
+  return get_accounts_handler().get_manabars_rc_account( id, false /*is_required*/ );
+}
+
+const delayed_votes_object& database::get_delayed_votes_account( const account_id_type& id )const
+{
+  return *( get_accounts_handler().get_delayed_votes_account( id, true /*is_required*/ ) );
+}
+
+const delayed_votes_object* database::find_delayed_votes_account( const account_id_type& id )const
+{
+  return get_accounts_handler().get_delayed_votes_account( id, false /*is_required*/ );
+}
+
 comment database::get_comment( const account_id_type& author, const shared_string& permlink )const
 {
   return get_comments_handler().get_comment( author, to_string( permlink ), true /*comment_is_required*/ );
@@ -1096,9 +1146,9 @@ asset database::adjust_account_vesting_balance(const account_object& to_account,
     {
       if( has_hardfork( HIVE_HARDFORK_0_20 ) )
       {
-        const auto& _assets_obj = get< assets_object, by_account_id >( to_account.get_id() );
-        const auto& _time_obj = get< time_object, by_account_id >( to_account.get_id() );
-        const auto& _manabars_rc_object = get< manabars_rc_object, by_account_id >( to_account.get_id() );
+        const auto& _assets_obj = get_asset_account( to_account.get_id() );
+        const auto& _time_obj = get_time_account( to_account.get_id() );
+        const auto& _manabars_rc_object = get_manabars_rc_account( to_account.get_id() );
 
         modify( _manabars_rc_object, [&]( manabars_rc_object& mrc )
         {
@@ -1223,7 +1273,7 @@ void database::adjust_proxied_witness_votes( const account_object& a, share_type
 void database::nullify_proxied_witness_votes( const account_object& a )
 {
   std::array<share_type, HIVE_MAX_PROXY_RECURSION_DEPTH + 1> delta;
-  delta[ 0 ] = -a.get_direct_governance_vote_power( get< assets_object, by_account_id >( a.get_id() ), get< delayed_votes_object, by_account_id >( a.get_id() ) );
+  delta[ 0 ] = -a.get_direct_governance_vote_power( get_asset_account( a.get_id() ), get_delayed_votes_account( a.get_id() ) );
   for( int i = 0; i < HIVE_MAX_PROXY_RECURSION_DEPTH; ++i )
     delta[ i + 1 ] = -a.get_proxied_vsf_votes()[ i ];
   adjust_proxied_witness_votes( a, delta );
@@ -1233,7 +1283,7 @@ bool database::collect_account_total_balance( const account_object& account, ass
   asset* total_vests, asset* vesting_shares_hive_value )
 {
   const auto& gpo = get_dynamic_global_properties();
-  const auto& assets = get< assets_object, by_account_id >( account.get_id() );
+  const auto& assets = get_asset_account( account.get_id() );
 
   *vesting_shares_hive_value = assets.get_vesting() * gpo.get_vesting_share_price();
   *total_hive = *vesting_shares_hive_value;
@@ -1257,8 +1307,8 @@ void database::clear_null_account_balance()
   if( !has_hardfork( HIVE_HARDFORK_0_14__327 ) ) return;
 
   const auto& null_account = get_account( HIVE_NULL_ACCOUNT );
-  const auto& null_assets = get< assets_object, by_account_id >( null_account.get_id() );
-  const auto& null_delayed_votes = get< delayed_votes_object, by_account_id >( null_account.get_id() );
+  const auto& null_assets = get_asset_account( null_account.get_id() );
+  const auto& null_delayed_votes = get_delayed_votes_account( null_account.get_id() );
   asset total_hive, total_hbd, total_vests, vesting_shares_hive_value;
 
   if( !( collect_account_total_balance( null_account, &total_hive, &total_hbd, &total_vests, &vesting_shares_hive_value ) ) )
@@ -1300,8 +1350,8 @@ void database::clear_null_account_balance()
   {
     const auto& gpo = get_dynamic_global_properties();
     auto _now = gpo.time;
-    const auto& null_mrc = get< manabars_rc_object, by_account_id >( null_account.get_id() );
-    const auto& null_time = get< time_object, by_account_id >( null_account.get_id() );
+    const auto& null_mrc = get_manabars_rc_account( null_account.get_id() );
+    const auto& null_time = get_time_account( null_account.get_id() );
 
     modify( gpo, [&]( dynamic_global_property_object& g )
     {
@@ -1371,8 +1421,8 @@ void database::consolidate_treasury_balance()
   auto old_treasury_name = get_treasury_name( HIVE_HARDFORK_1_24_TREASURY_RENAME - 1 );
 
   const auto& old_treasury_account = get_account( old_treasury_name );
-  const auto& old_treasury_assets = get< assets_object, by_account_id >( old_treasury_account.get_id() );
-  const auto& old_treasury_delayed_votes = get< delayed_votes_object, by_account_id >( old_treasury_account.get_id() );
+  const auto& old_treasury_assets = get_asset_account( old_treasury_account.get_id() );
+  const auto& old_treasury_delayed_votes = get_delayed_votes_account( old_treasury_account.get_id() );
   asset total_hive, total_hbd, total_vests, vesting_shares_hive_value;
 
   if( treasury_name == old_treasury_name || //ABW: once we actually include change of treasury in HF24 that part of condition can be removed
@@ -1505,7 +1555,7 @@ void database::lock_account( const account_object& account )
     } );
   }
 
-  const auto& recovery_obj = get< recovery_object, by_account_id >( account.get_id() );
+  const auto& recovery_obj = get_recovery_account( account.get_id() );
   modify( recovery_obj, [&]( recovery_object& r )
   {
     r.set_recovery_account( account.get_id() );
@@ -1596,10 +1646,10 @@ void database::clear_account( const account_object& account )
   HIVE_asset total_hive_from_vests( 0 );
 
   // Get split objects for the account
-  const auto& assets = get< assets_object, by_account_id >( account.get_id() );
-  const auto& mrc = get< manabars_rc_object, by_account_id >( account.get_id() );
-  const auto& time = get< time_object, by_account_id >( account.get_id() );
-  const auto& dvotes = get< delayed_votes_object, by_account_id >( account.get_id() );
+  const auto& assets = get_asset_account( account.get_id() );
+  const auto& mrc = get_manabars_rc_account( account.get_id() );
+  const auto& time = get_time_account( account.get_id() );
+  const auto& dvotes = get_delayed_votes_account( account.get_id() );
 
   if( assets.get_vesting().amount > 0 )
   {
@@ -1619,9 +1669,9 @@ void database::clear_account( const account_object& account )
       vop.other_affected_accounts.emplace_back( delegatee.get_name() );
 
       // Get split objects for the delegatee
-      const auto& delegatee_assets = get< assets_object, by_account_id >( delegatee.get_id() );
-      const auto& delegatee_time = get< time_object, by_account_id >( delegatee.get_id() );
-      const auto& delegatee_mrc = get< manabars_rc_object, by_account_id >( delegatee.get_id() );
+      const auto& delegatee_assets = get_asset_account( delegatee.get_id() );
+      const auto& delegatee_time = get_time_account( delegatee.get_id() );
+      const auto& delegatee_mrc = get_manabars_rc_account( delegatee.get_id() );
 
       rc().regenerate_rc_mana( delegatee, delegatee_mrc, delegatee_assets, delegatee_time, now );
 
@@ -1863,7 +1913,7 @@ void database::process_funds()
       FC_ASSERT( median_price.is_null() == false );
 
       const auto& treasury_account = get_treasury();
-      const auto& treasury_assets = get< assets_object, by_account_id >( treasury_account.get_id() );
+      const auto& treasury_assets = get_asset_account( treasury_account.get_id() );
       const auto hbd_supply_without_treasury = (props.get_current_hbd_supply() - treasury_assets.get_hbd_balance()).amount < 0 ? HBD_asset(0) : (props.get_current_hbd_supply() - treasury_assets.get_hbd_balance());
       const auto virtual_supply_without_treasury = hbd_supply_without_treasury * median_price + props.get_current_supply();
 
@@ -2006,7 +2056,7 @@ asset database::get_producer_reward()
   asset percent( protocol::calc_percent_reward_per_block< HIVE_PRODUCER_APR_PERCENT >( props.virtual_supply.amount ), HIVE_SYMBOL);
   auto pay = std::max( percent, HIVE_MIN_PRODUCER_REWARD );
   const auto& witness_account = get_account( props.current_witness );
-  const auto& witness_assets = get< assets_object, by_account_id >( witness_account.get_id() );
+  const auto& witness_assets = get_asset_account( witness_account.get_id() );
 
   /// pay witness in vesting shares
   if( props.head_block_number >= HIVE_START_MINER_VOTING_BLOCK || (witness_assets.get_vesting().amount.value == 0) )
@@ -2125,7 +2175,7 @@ void database::account_recovery_processing()
   while( change_req != change_req_idx.end() && change_req->get_execution_time() <= head_block_time() )
   {
     const auto& account = get_account( change_req->get_account_to_recover() );
-    const auto& recovery_obj = get< recovery_object, by_account_id >( account.get_id() );
+    const auto& recovery_obj = get_recovery_account( account.get_id() );
     account_name_type old_recovery_account_name;
     if( recovery_obj.has_recovery_account() )
       old_recovery_account_name = get_account( recovery_obj.get_recovery_account() ).get_name();
@@ -2616,7 +2666,7 @@ try {
           if( has_hardfork( HIVE_HARDFORK_1_25_HBD_HARD_CAP ) )
           {
             const auto& treasury_acct = get_treasury();
-            const auto& treasury_assets_local = get< assets_object, by_account_id >( treasury_acct.get_id() );
+            const auto& treasury_assets_local = get_asset_account( treasury_acct.get_id() );
             hbd_supply -= treasury_assets_local.get_hbd_balance();
           }
           if( hbd_supply.amount > 0 )
@@ -3006,7 +3056,7 @@ uint16_t database::calculate_HBD_percent()
   {
     // Removing the hbd in the treasury from the debt ratio calculations
     const auto& treasury_acct = get_treasury();
-    const auto& treasury_assets_debt = get< assets_object, by_account_id >( treasury_acct.get_id() );
+    const auto& treasury_assets_debt = get_asset_account( treasury_acct.get_id() );
     hbd_supply -= treasury_assets_debt.get_hbd_balance();
     if( hbd_supply.amount < 0 )
       hbd_supply = asset( 0, HBD_SYMBOL );
@@ -3273,9 +3323,9 @@ void database::clear_expired_delegations()
   {
     const auto& delegator = get_account( itr->get_delegator() );
 
-    const auto& delegator_assets = get< assets_object, by_account_id >( delegator.get_id() );
-    const auto& delegator_time = get< time_object, by_account_id >( delegator.get_id() );
-    const auto& delegator_mrc = get< manabars_rc_object, by_account_id >( delegator.get_id() );
+    const auto& delegator_assets = get_asset_account( delegator.get_id() );
+    const auto& delegator_time = get_time_account( delegator.get_id() );
+    const auto& delegator_mrc = get_manabars_rc_account( delegator.get_id() );
 
     operation vop = return_vesting_delegation_operation( delegator.get_name(), itr->get_vesting() );
     try{
@@ -3346,8 +3396,8 @@ void database::modify_balance( const account_object& a, const asset& delta )
   }
 
   // Get split objects for the account
-  const auto& acnt_assets = get< assets_object, by_account_id >( a.get_id() );
-  const auto& acnt_time = get< time_object, by_account_id >( a.get_id() );
+  const auto& acnt_assets = get_asset_account( a.get_id() );
+  const auto& acnt_time = get_time_account( a.get_id() );
 
   if( delta.symbol.asset_num == HIVE_ASSET_NUM_HIVE )
   {
@@ -3431,7 +3481,7 @@ void database::modify_balance( const account_object& a, const asset& delta )
 void database::modify_reward_balance( const account_object& a, const asset& value_delta, const asset& share_delta )
 {
   // Get split objects for the account
-  const auto& acnt_assets = get< assets_object, by_account_id >( a.get_id() );
+  const auto& acnt_assets = get_asset_account( a.get_id() );
 
   modify( acnt_assets, [&]( assets_object& acnt )
   {
@@ -3506,7 +3556,7 @@ void database::adjust_balance( const account_object& a, const asset& delta )
 
 void database::adjust_savings_balance( const account_object& a, const asset& delta )
 {
-  const auto& _assets = get< assets_object, by_account_id >( a.get_id() );
+  const auto& _assets = get_asset_account( a.get_id() );
 
   bool check_balance = has_hardfork( HIVE_HARDFORK_0_20__1811 );
 
@@ -3637,7 +3687,7 @@ void database::adjust_supply( const asset& delta, bool adjust_vesting )
 asset database::get_balance( const account_object& a, asset_symbol_type symbol )const
 {
   // Get assets_object for the account
-  const auto& assets = get< assets_object, by_account_id >( a.get_id() );
+  const auto& assets = get_asset_account( a.get_id() );
 
   if( symbol.asset_num == HIVE_ASSET_NUM_HIVE )
   {
@@ -3671,7 +3721,7 @@ asset database::get_balance( const account_object& a, asset_symbol_type symbol )
 
 asset database::get_savings( const account_object& a, asset_symbol_type symbol )const
 {
-  const auto& _assets_obj = get< assets_object, by_account_id >( a.get_id() );
+  const auto& _assets_obj = get_asset_account( a.get_id() );
 
   if( symbol.asset_num == HIVE_ASSET_NUM_HIVE )
   {
@@ -3717,8 +3767,8 @@ void database::validate_invariants()const
 
     for( auto itr = account_idx.begin(); itr != account_idx.end(); ++itr )
     {
-      const auto& _assets_obj = get< assets_object, by_account_id >( itr->get_id() );
-      const auto& _delayed_votes_obj = get< delayed_votes_object, by_account_id >( itr->get_id() );
+      const auto& _assets_obj = get_asset_account( itr->get_id() );
+      const auto& _delayed_votes_obj = get_delayed_votes_account( itr->get_id() );
 
       total_supply += _assets_obj.get_balance();
       total_supply += _assets_obj.get_savings();

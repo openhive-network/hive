@@ -902,6 +902,110 @@ void rocksdb_account_archive::modify_object( const account_object& obj, std::fun
 }
 //==========================================account_object==========================================
 
+//==========================================split objects==========================================
+
+const assets_object* rocksdb_account_archive::get_asset_account( const account_id_type& account_id, bool is_required ) const
+{
+  const auto* _found = db.find< assets_object, by_account_id >( account_id );
+  if( _found )
+    return _found;
+
+  // Try to restore from RocksDB (get_account restores all split objects)
+  if( get_account( account_id, false /*account_is_required*/ ) )
+  {
+    _found = db.find< assets_object, by_account_id >( account_id );
+    if( _found )
+      return _found;
+  }
+
+  if( is_required )
+    FC_ASSERT( !"ASSETS_NOT_FOUND", "Assets object for account with id `${id}` not found", ("id", account_id) );
+
+  return nullptr;
+}
+
+const time_object* rocksdb_account_archive::get_time_account( const account_id_type& account_id, bool is_required ) const
+{
+  const auto* _found = db.find< time_object, by_account_id >( account_id );
+  if( _found )
+    return _found;
+
+  // Try to restore from RocksDB (get_account restores all split objects)
+  if( get_account( account_id, false /*account_is_required*/ ) )
+  {
+    _found = db.find< time_object, by_account_id >( account_id );
+    if( _found )
+      return _found;
+  }
+
+  if( is_required )
+    FC_ASSERT( !"TIME_NOT_FOUND", "Time object for account with id `${id}` not found", ("id", account_id) );
+
+  return nullptr;
+}
+
+const recovery_object* rocksdb_account_archive::get_recovery_account( const account_id_type& account_id, bool is_required ) const
+{
+  const auto* _found = db.find< recovery_object, by_account_id >( account_id );
+  if( _found )
+    return _found;
+
+  // Try to restore from RocksDB (get_account restores all split objects)
+  if( get_account( account_id, false /*account_is_required*/ ) )
+  {
+    _found = db.find< recovery_object, by_account_id >( account_id );
+    if( _found )
+      return _found;
+  }
+
+  if( is_required )
+    FC_ASSERT( !"RECOVERY_NOT_FOUND", "Recovery object for account with id `${id}` not found", ("id", account_id) );
+
+  return nullptr;
+}
+
+const manabars_rc_object* rocksdb_account_archive::get_manabars_rc_account( const account_id_type& account_id, bool is_required ) const
+{
+  const auto* _found = db.find< manabars_rc_object, by_account_id >( account_id );
+  if( _found )
+    return _found;
+
+  // Try to restore from RocksDB (get_account restores all split objects)
+  if( get_account( account_id, false /*account_is_required*/ ) )
+  {
+    _found = db.find< manabars_rc_object, by_account_id >( account_id );
+    if( _found )
+      return _found;
+  }
+
+  if( is_required )
+    FC_ASSERT( !"MANABARS_RC_NOT_FOUND", "Manabars RC object for account with id `${id}` not found", ("id", account_id) );
+
+  return nullptr;
+}
+
+const delayed_votes_object* rocksdb_account_archive::get_delayed_votes_account( const account_id_type& account_id, bool is_required ) const
+{
+  const auto* _found = db.find< delayed_votes_object, by_account_id >( account_id );
+  if( _found )
+    return _found;
+
+  // Try to restore from RocksDB (get_account restores all split objects)
+  if( get_account( account_id, false /*account_is_required*/ ) )
+  {
+    _found = db.find< delayed_votes_object, by_account_id >( account_id );
+    if( _found )
+      return _found;
+  }
+
+  if( is_required )
+    FC_ASSERT( !"DELAYED_VOTES_NOT_FOUND", "Delayed votes object for account with id `${id}` not found", ("id", account_id) );
+
+  return nullptr;
+}
+
+//==========================================split objects==========================================
+
 void rocksdb_account_archive::save_snapshot( const hive::chain::prepare_snapshot_supplement_notification& note )
 {
   snapshot->save_snapshot( note );

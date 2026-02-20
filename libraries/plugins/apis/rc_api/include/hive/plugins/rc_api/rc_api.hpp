@@ -77,9 +77,9 @@ struct rc_account_api_object
   rc_account_api_object( const account_object& a, const database& db ) :
     account( a.get_name() )
   {
-    const auto& mrc = db.get< manabars_rc_object, by_account_id >( a.get_id() );
-    const auto& assets = db.get< assets_object, by_account_id >( a.get_id() );
-    const auto& time_obj = db.get< time_object, by_account_id >( a.get_id() );
+    const auto& mrc = db.get_manabars_rc_account( a.get_id() );
+    const auto& assets = db.get_asset_account( a.get_id() );
+    const auto& time_obj = db.get_time_account( a.get_id() );
 
     rc_manabar = mrc.get_rc_manabar();
     max_rc_creation_adjustment = asset( mrc.get_rc_adjustment(), VESTS_SYMBOL );
