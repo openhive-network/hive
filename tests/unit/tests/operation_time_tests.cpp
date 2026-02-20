@@ -1469,7 +1469,7 @@ BOOST_AUTO_TEST_CASE( convert_delay )
     ACTORS( (alice) )
     generate_block();
     vest( "alice", ASSET( "10.000 TESTS" ) );
-    issue_funds( "alice", ASSET( "25.000 TBD" ) );
+    issue_funds( "alice", HBD_asset( 25'000 ) );
 
     set_price_feed( HBD_price( 1000, 1250 ) );
 
@@ -1712,7 +1712,7 @@ BOOST_AUTO_TEST_CASE( hbd_interest )
     convert_operation op;
     signed_transaction tx;
 
-    issue_funds( "alice", ASSET( "31.903 TBD" ) );
+    issue_funds( "alice", HBD_asset( 31'903 ) );
 
     auto start_time = db->get_account( "alice" ).hbd_seconds_last_update;
     auto alice_hbd = get_hbd_balance( "alice" );
@@ -1803,12 +1803,12 @@ BOOST_AUTO_TEST_CASE(hbd_savings_interest)
 
     BOOST_TEST_MESSAGE("Testing savings interest over smallest interest period");
 
-    auto alice_funds = ASSET("31.903 TBD");
+    HBD_asset alice_funds( 31'903 );
     issue_funds("alice", alice_funds);
 
     transfer_to_savings( "alice", "alice", alice_funds, "New Tesla fund", alice_private_key);
 
-    issue_funds("alice", ASSET("3.000 TBD"));
+    issue_funds("alice", HBD_asset( 3'000 ));
 
     auto start_time = db->get_account("alice").savings_hbd_seconds_last_update;
     auto alice_hbd = get_hbd_balance("alice");
@@ -1900,7 +1900,7 @@ BOOST_AUTO_TEST_CASE( liquidity_rewards )
 
     signed_transaction tx;
 
-    issue_funds( "alice", ASSET( "25.522 TBD" ) );
+    issue_funds( "alice", HBD_asset( 25'522 ) );
     asset alice_hbd = get_hbd_balance( "alice" );
 
     generate_block();
@@ -2848,8 +2848,8 @@ BOOST_AUTO_TEST_CASE( clear_null_account )
 
     set_price_feed( HBD_price( 1000, 1000 ) );
 
-    issue_funds( "alice", ASSET( "10.000 TESTS" ) );
-    issue_funds( "alice", ASSET( "10.000 TBD" ) );
+    issue_funds( "alice", HIVE_asset( 10'000 ) );
+    issue_funds( "alice", HBD_asset( 10'000 ) );
 
     transfer_operation transfer1;
     transfer1.from = "alice";
@@ -3118,8 +3118,8 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_expiration )
 
     BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == 0 );
 
-    issue_funds( "alice", ASSET("100.000 TESTS") );
-    issue_funds( "alice", ASSET("100.000 TBD") );
+    issue_funds( "alice", HIVE_asset( 100'000 ) );
+    issue_funds( "alice", HBD_asset( 100'000 ) );
 
     BOOST_REQUIRE( get_balance( "alice" ).amount.value == ASSET( "100.000 TESTS" ).amount.value );
 
@@ -3182,8 +3182,8 @@ BOOST_FIXTURE_TEST_CASE( recurrent_transfer_consecutive_failure_deletion, pruned
 
     BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == 0 );
 
-    issue_funds( "alice", ASSET("5.000 TESTS") );
-    issue_funds( "alice", ASSET("100.000 TBD") );
+    issue_funds( "alice", HIVE_asset( 5'000 ) );
+    issue_funds( "alice", HBD_asset( 100'000 ) );
 
     BOOST_REQUIRE( get_balance( "alice" ).amount.value == ASSET( "5.000 TESTS" ).amount.value );
 
@@ -3213,7 +3213,7 @@ BOOST_FIXTURE_TEST_CASE( recurrent_transfer_consecutive_failure_deletion, pruned
 
     BOOST_TEST_MESSAGE( "Waiting another 24 hours to see if the recurrent transfer does not execute again past its deletion" );
 
-    issue_funds( "alice", ASSET("5.000 TESTS") );
+    issue_funds( "alice", HIVE_asset( 5'000 ) );
     auto blocks_until_next_execution = fc::days(1).to_seconds() / HIVE_BLOCK_INTERVAL;
     ilog("generating ${blocks} blocks", ("blocks", blocks_until_next_execution));
     generate_blocks( blocks_until_next_execution );
