@@ -212,7 +212,12 @@ public:
     FC_ASSERT(fixture);
     return fixture->fund(account_name, amount);
   }
-  void issue_funds( const fc::string& account_name, const asset& amount, bool update_print_rate = true )
+  void issue_funds( const fc::string& account_name, const HIVE_asset& amount )
+  {
+    FC_ASSERT(fixture);
+    return fixture->issue_funds(account_name, amount);
+  }
+  void issue_funds( const fc::string& account_name, const HBD_asset& amount, bool update_print_rate = true )
   {
     FC_ASSERT(fixture);
     return fixture->issue_funds(account_name, amount, update_print_rate);

@@ -190,7 +190,7 @@ BOOST_AUTO_TEST_CASE( undo_delayed_votes )
 
     ACTOR_DEFAULT_FEE( alice )
     generate_block();
-    ISSUE_FUNDS( "alice", ASSET( "100000.000 TESTS" ) );
+    ISSUE_FUNDS( "alice", HIVE_asset( 100'000'000 ) );
     BOOST_REQUIRE( compare_delayed_vote_count("alice", {}) );
     //BOOST_REQUIRE_EQUAL(index.get_item_additional_allocation(), initial_allocations);
 

@@ -385,59 +385,57 @@ void database_fixture::fund(
   } FC_CAPTURE_AND_RETHROW( (account_name)(amount) )
 }
 
-void database_fixture::issue_funds(
-  const string& account_name,
-  const asset& amount,
-  bool update_print_rate
-  )
-{
-  try
+void database_fixture::issue_funds( const string& account_name, const HIVE_asset& amount, bool update_print_rate )
+{ try {
+  db_plugin->debug_update( [=]( database& db)
   {
-    db_plugin->debug_update( [=]( database& db)
+    db.modify( db.get_account( account_name ), [&]( account_object& a )
     {
-      const auto& median_feed = db.get_feed_history();
-      if( amount.symbol == HBD_SYMBOL )
-      {
-        if( median_feed.current_median_history.is_null() )
-        {
-          db.modify( median_feed, [&]( feed_history_object& f )
-          {
-            f.current_median_history = HBD_price( 1, 1 );
-            f.market_median_history = f.current_median_history;
-            f.current_min_history = f.current_median_history;
-            f.current_max_history = f.current_median_history;
-          } );
-        }
-      }
+      a.balance += amount;
+    } );
 
-      db.modify( db.get_account( account_name ), [&]( account_object& a )
-      {
-        if( amount.symbol == HIVE_SYMBOL )
-          a.balance += amount;
-        else if( amount.symbol == HBD_SYMBOL )
-        {
-          a.hbd_balance += amount;
-          a.hbd_seconds_last_update = db.head_block_time();
-        }
-      });
+    db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
+    {
+      gpo.current_supply += amount;
+    } );
 
-      db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
-      {
-        if( amount.symbol == HIVE_SYMBOL )
-          gpo.current_supply += amount;
-        else if( amount.symbol == HBD_SYMBOL )
-        {
-          gpo.current_hbd_supply += amount;
-          gpo.virtual_supply = gpo.current_supply + gpo.current_hbd_supply * median_feed.current_median_history;
-        }
-      });
+    if( update_print_rate )
+      db.update_virtual_supply();
+  }, default_skip );
+} FC_CAPTURE_AND_RETHROW( (account_name)(amount) ) }
 
-      if( update_print_rate )
-        db.update_virtual_supply();
-    }, default_skip );
-  }
-  FC_CAPTURE_AND_RETHROW( (account_name)(amount) )
-}
+void database_fixture::issue_funds( const string& account_name, const HBD_asset& amount, bool update_print_rate )
+{ try {
+  db_plugin->debug_update( [=]( database& db)
+  {
+    const auto& median_feed = db.get_feed_history();
+    if( median_feed.current_median_history.is_null() )
+    {
+      db.modify( median_feed, [&]( feed_history_object& f )
+      {
+        f.current_median_history = HBD_price( 1, 1 );
+        f.market_median_history = f.current_median_history;
+        f.current_min_history = f.current_median_history;
+        f.current_max_history = f.current_median_history;
+      } );
+    }
+
+    db.modify( db.get_account( account_name ), [&]( account_object& a )
+    {
+      a.hbd_balance += amount;
+      a.hbd_seconds_last_update = db.head_block_time();
+    } );
+
+    db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
+    {
+      gpo.current_hbd_supply += amount;
+      gpo.virtual_supply = gpo.current_supply + gpo.current_hbd_supply * median_feed.current_median_history;
+    } );
+
+    if( update_print_rate )
+      db.update_virtual_supply();
+  }, default_skip );
+} FC_CAPTURE_AND_RETHROW( (account_name)(amount) ) }
 
 void database_fixture::convert_hbd_to_hive( const std::string& owner, uint32_t requestid, const asset& amount, 
   const fc::ecc::private_key& key )

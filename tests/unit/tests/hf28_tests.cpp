@@ -192,8 +192,8 @@ BOOST_AUTO_TEST_CASE( declined_voting_rights_proposal_votes )
 
       executor->vest( "alice", ASSET( "100.000 TESTS" ) );
       executor->vest( "bob", ASSET( "100.000 TESTS" ) );
-      executor->issue_funds( "alice", ASSET( "200.000 TBD" ) );
-      executor->issue_funds( "bob", ASSET( "200.000 TBD" ) );
+      executor->issue_funds( "alice", HBD_asset( 200'000 ) );
+      executor->issue_funds( "bob", HBD_asset( 200'000 ) );
 
       executor->generate_block();
 
@@ -257,8 +257,8 @@ BOOST_AUTO_TEST_CASE( declined_voting_rights_proposal_votes_2 )
 
       executor->vest( "alice", ASSET( "100.000 TESTS" ) );
       executor->vest( "bob", ASSET( "100.000 TESTS" ) );
-      executor->issue_funds( "alice", ASSET( "200.000 TBD" ) );
-      executor->issue_funds( "bob", ASSET( "200.000 TBD" ) );
+      executor->issue_funds( "alice", HBD_asset( 200'000 ) );
+      executor->issue_funds( "bob", HBD_asset( 200'000 ) );
 
       executor->generate_block();
 
@@ -553,7 +553,7 @@ BOOST_AUTO_TEST_CASE( declined_voting_rights_between_hf27_and_hf28_2 )
       for( auto& actor : _actors )
       {
         executor->vest( actor.name, ASSET( "100.000 TESTS" ) );
-        executor->issue_funds( actor.name, ASSET( "200.000 TBD" ) );
+        executor->issue_funds( actor.name, HBD_asset( 200'000 ) );
       }
       executor->generate_block();
 
@@ -636,8 +636,8 @@ BOOST_AUTO_TEST_CASE( basic_expiration_test )
       ACTORS_EXT( (*executor), (alice)(bob) );
       executor->vest( "alice", ASSET( "100.000 TESTS" ) );
       executor->vest( "bob", ASSET( "100.000 TESTS" ) );
-      executor->issue_funds( "alice", ASSET( "200.000 TESTS" ) );
-      executor->issue_funds( "bob", ASSET( "200.000 TESTS" ) );
+      executor->issue_funds( "alice", HIVE_asset( 200'000 ) );
+      executor->issue_funds( "bob", HIVE_asset( 200'000 ) );
 
       executor->generate_blocks( 60 / HIVE_BLOCK_INTERVAL );
 
@@ -856,7 +856,7 @@ BOOST_AUTO_TEST_CASE( mixed_authorities_in_one_transaction )
         ACTORS_EXT( (*executor), (alice)(bob) );
         executor->vest( "alice", ASSET( "1.000 TESTS" ) );
         executor->vest( "bob", ASSET( "1.000 TESTS" ) );
-        executor->issue_funds( "alice", ASSET( "100.000 TESTS" ) );
+        executor->issue_funds( "alice", HIVE_asset( 100'000 ) );
 
         account_witness_proxy_operation _proxy_op;
         _proxy_op.account = "alice";
@@ -924,8 +924,8 @@ BOOST_AUTO_TEST_CASE( mixed_authorities_in_one_transaction_2 )
         ACTORS_EXT( (*executor), (alice)(bob) );
         executor->vest( "alice", ASSET( "1.000 TESTS" ) );
         executor->vest( "bob", ASSET( "1.000 TESTS" ) );
-        executor->issue_funds( "alice", ASSET( "100.000 TESTS" ) );
-        executor->issue_funds( "bob", ASSET( "100.000 TESTS" ) );
+        executor->issue_funds( "alice", HIVE_asset( 100'000 ) );
+        executor->issue_funds( "bob", HIVE_asset( 100'000 ) );
 
         account_update_operation _acc_update_op;
         _acc_update_op.account = "alice";
@@ -1439,8 +1439,8 @@ BOOST_AUTO_TEST_CASE( different_behaviour_for_nonexistent_proposals )
 
       executor->vest( "alice", ASSET( "100.000 TESTS" ) );
       executor->vest( "bob", ASSET( "100.000 TESTS" ) );
-      executor->issue_funds( "alice", ASSET( "200.000 TBD" ) );
-      executor->issue_funds( "bob", ASSET( "200.000 TBD" ) );
+      executor->issue_funds( "alice", HBD_asset( 200'000 ) );
+      executor->issue_funds( "bob", HBD_asset( 200'000 ) );
 
       executor->generate_block();
 
@@ -2307,7 +2307,7 @@ BOOST_AUTO_TEST_CASE( treasury_hbd_does_not_affect_inflation_basic )
     BOOST_REQUIRE( initial_inflation > 0 );
 
     before_virtual_supply = props.virtual_supply.amount;
-    ISSUE_FUNDS( db->get_treasury_name(), ASSET( "5000000.000 TBD" ) );
+    ISSUE_FUNDS( db->get_treasury_name(), HBD_asset( 5'000'000'000 ) );
     
     generate_blocks( db->head_block_time() + 50 * HIVE_BLOCK_INTERVAL, false );
 
@@ -2399,7 +2399,7 @@ BOOST_AUTO_TEST_CASE(treasury_hbd_does_not_affect_inflation_advanced)
         inject_hardfork(HIVE_HARDFORK_1_27);
         set_price_feed( HBD_price( 1000, 1000 ) );
         generate_block();
-        ISSUE_FUNDS(db->get_treasury_name(), ASSET("50000000.000 TBD"));
+        ISSUE_FUNDS(db->get_treasury_name(), HBD_asset( 50'000'000'000 ));
 
         auto before_virtual_supply = props.virtual_supply.amount;
         auto expected_new_virtual_supply = calculate_expected_new_virtual_supply();

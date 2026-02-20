@@ -353,7 +353,7 @@ BOOST_AUTO_TEST_CASE( rc_single_recover_account )
     ACTORS( (agent)(victim)(thief) )
     generate_block(); 
     vest( "agent", ASSET( "1000.000 TESTS" ) );
-    issue_funds( "victim", ASSET( "1.000 TESTS" ) );
+    issue_funds( "victim", HIVE_asset( 1'000 ) );
 
     const auto& agent_rc = db->get_account( "agent" );
     const auto& victim_rc = db->get_account( "victim" );
@@ -470,7 +470,7 @@ BOOST_AUTO_TEST_CASE( rc_many_recover_accounts )
     ACTORS( (agent)(victim1)(victim2)(victim3)(thief1)(thief2)(thief3) )
     generate_block();
     vest( "agent", ASSET( "1000.000 TESTS" ) );
-    issue_funds( "victim1", ASSET( "1.000 TESTS" ) );
+    issue_funds( "victim1", HIVE_asset( 1'000 ) );
 
     const auto& agent_rc = db->get_account( "agent" );
     const auto& victim1_rc = db->get_account( "victim1" );
@@ -632,7 +632,7 @@ BOOST_AUTO_TEST_CASE( rc_multisig_recover_account )
     generate_block();
     vest( "agent", ASSET( "1000.000 TESTS" ) );
     vest( "thief", ASSET( "1000.000 TESTS" ) );
-    issue_funds( "agent", ASSET( "1000.000 TESTS" ) );
+    issue_funds( "agent", HIVE_asset( 1'000'000 ) );
 
     BOOST_TEST_MESSAGE( "create signer accounts and victim account (with agent as recovery)" );
 
@@ -815,7 +815,7 @@ BOOST_AUTO_TEST_CASE( rc_tx_order_bug )
     ACTORS( (alice)(bob) )
     generate_block();
     vest( "bob", ASSET( "35000.000 TESTS" ) ); //<- change that amount to tune RC cost
-    issue_funds( "alice", ASSET( "1000.000 TESTS" ) );
+    issue_funds( "alice", HIVE_asset( 1'000'000 ) );
 
     const auto& alice_rc = db->get_account( "alice" );
 
@@ -1578,7 +1578,7 @@ BOOST_AUTO_TEST_CASE( rc_exception_during_modify )
     ACTORS((dave))
     generate_block();
     vest( "dave", ASSET( "70000.000 TESTS" ) ); //<- change that amount to tune RC cost
-    issue_funds( "dave", ASSET( "1000.000 TESTS" ) );
+    issue_funds( "dave", HIVE_asset( 1'000'000 ) );
 
     generate_block();
 

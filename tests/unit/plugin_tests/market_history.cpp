@@ -73,12 +73,12 @@ BOOST_AUTO_TEST_CASE( mh_test )
     ACTORS( (alice)(bob)(sam) );
     generate_block();
 
-    issue_funds( "alice", ASSET( "1000.000 TESTS" ) );
-    issue_funds( "alice", ASSET( "1000.000 TBD" ) );
-    issue_funds( "bob", ASSET( "1000.000 TESTS" ) );
-    issue_funds( "bob", ASSET( "1000.000 TBD" ) );
-    issue_funds( "sam", ASSET( "1000.000 TESTS" ) );
-    issue_funds( "sam", ASSET( "1000.000 TBD" ) );
+    issue_funds( "alice", HIVE_asset( 1'000'000 ) );
+    issue_funds( "alice", HBD_asset( 1'000'000 ) );
+    issue_funds( "bob", HIVE_asset( 1'000'000 ) );
+    issue_funds( "bob", HBD_asset( 1'000'000 ) );
+    issue_funds( "sam", HIVE_asset( 1'000'000 ) );
+    issue_funds( "sam", HBD_asset( 1'000'000 ) );
 
     const auto& bucket_idx = db->get_index< bucket_index >().indices().get< by_bucket >();
     const auto& order_hist_idx = db->get_index< order_history_index >().indices().get< by_id >();

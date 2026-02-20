@@ -89,9 +89,9 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
       ACTORS_EXT( (fixture), (alice)(bob) );
       fixture.generate_block();
 
-      fixture.issue_funds( "alice", ASSET( "1000.000 TESTS" ) );
-      fixture.issue_funds( "alice", ASSET( "1000.000 TBD" ) );
-      fixture.issue_funds( "bob", ASSET( "1000.000 TESTS" ) );
+      fixture.issue_funds( "alice", HIVE_asset( 1'000'000 ) );
+      fixture.issue_funds( "alice", HBD_asset( 1'000'000 ) );
+      fixture.issue_funds( "bob", HIVE_asset( 1'000'000 ) );
 
       fixture.generate_block();
 

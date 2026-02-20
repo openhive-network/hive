@@ -1443,7 +1443,7 @@ BOOST_AUTO_TEST_CASE( additional_allocations )
 
     ACTOR_DEFAULT_FEE( alice )
     generate_block();
-    ISSUE_FUNDS( "alice", ASSET( "100000.000 TESTS" ) );
+    ISSUE_FUNDS( "alice", HIVE_asset( 100'000'000 ) );
     BOOST_REQUIRE_EQUAL( accountIdx.get_item_additional_allocation(), initial_account_allocations );
     size_t all_allocations = get_all_dynamic_alloc();
     BOOST_REQUIRE_GT( all_allocations, all_initial_allocations );

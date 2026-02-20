@@ -336,7 +336,8 @@ struct database_fixture {
     uint32_t skip_flags = 0, hive::protocol::pack_type pack_type = hive::protocol::serialization_mode_controller::get_current_pack() );
 
   void fund( const string& account_name, const asset& amount ); //transfer from initminer
-  void issue_funds( const string& account_name, const asset& amount, bool update_print_rate = true );
+  void issue_funds( const string& account_name, const HIVE_asset& amount, bool update_print_rate = true );
+  void issue_funds( const string& account_name, const HBD_asset& amount, bool update_print_rate = true );
   void transfer( const string& from, const string& to, const asset& amount, const std::string& memo, const fc::ecc::private_key& key );
   void recurrent_transfer( const string& from, const string& to, const asset& amount, const string& memo, uint16_t recurrence,
                            uint16_t executions, const fc::ecc::private_key& key );

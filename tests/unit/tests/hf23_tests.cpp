@@ -107,15 +107,15 @@ BOOST_AUTO_TEST_CASE( restore_accounts_02 )
     uint32_t cnt = 1;
     for( auto& account : accounts )
     {
-      ISSUE_FUNDS( account, asset( cnt * 1000,      HIVE_SYMBOL ) );
-      ISSUE_FUNDS( account, asset( cnt * 1000 + 1,  HBD_SYMBOL ) );
+      ISSUE_FUNDS( account, HIVE_asset( cnt * 1000 ) );
+      ISSUE_FUNDS( account, HBD_asset( cnt * 1000 + 1 ) );
       ++cnt;
 
       old_balances.emplace( tmp_data{ account, get_balance( account ), get_hbd_balance( account ) } );
     }
     {
-      ISSUE_FUNDS( "dude", asset( 68,   HIVE_SYMBOL ) );
-      ISSUE_FUNDS( "dude", asset( 78,   HBD_SYMBOL ) );
+      ISSUE_FUNDS( "dude", HIVE_asset( 68 ) );
+      ISSUE_FUNDS( "dude", HBD_asset( 78 ) );
       generate_block();
     }
     {
@@ -172,12 +172,12 @@ BOOST_AUTO_TEST_CASE( restore_accounts_01 )
     set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
-    ISSUE_FUNDS( "alice", ASSET( "1000.000 TESTS" ) );
-    ISSUE_FUNDS( "alice", ASSET( "20.000 TBD" ) );
-    ISSUE_FUNDS( "bob", ASSET( "900.000 TESTS" ) );
-    ISSUE_FUNDS( "bob", ASSET( "10.000 TBD" ) );
-    ISSUE_FUNDS( "carol", ASSET( "3600.000 TESTS" ) );
-    ISSUE_FUNDS( "carol", ASSET( "3500.000 TBD" ) );
+    ISSUE_FUNDS( "alice", HIVE_asset( 1'000'000 ) );
+    ISSUE_FUNDS( "alice", HBD_asset( 20'000 ) );
+    ISSUE_FUNDS( "bob", HIVE_asset( 900'000 ) );
+    ISSUE_FUNDS( "bob", HBD_asset( 10'000 ) );
+    ISSUE_FUNDS( "carol", HIVE_asset( 3'600'000 ) );
+    ISSUE_FUNDS( "carol", HBD_asset( 3'500'000 ) );
 
     const std::set< std::string > accounts{ "alice", "bob" };
 
@@ -205,12 +205,12 @@ BOOST_AUTO_TEST_CASE( restore_accounts_01 )
         db->adjust_balance( "bob", -_bob.get_hbd_balance() );
       }
 
-      asset _2000 = ASSET( "2000.000 TESTS" );
-      asset _10   = ASSET( "10.000 TBD" );
-      asset _800  = ASSET( "800.000 TESTS" );
-      asset _70   = ASSET( "70.000 TBD" );
-      asset _5000 = ASSET( "5000.000 TESTS" );
-      asset _4000 = ASSET( "4000.000 TBD" );
+      HIVE_asset _2000( 2'000'000 );
+      HBD_asset _10( 10'000 );
+      HIVE_asset _800( 800'000 );
+      HBD_asset _70( 70'000 );
+      HIVE_asset _5000( 5'000'000 );
+      HBD_asset _4000( 4'000'000 );
 
       {
         //Create another balances for `alice`
@@ -303,8 +303,8 @@ BOOST_AUTO_TEST_CASE( save_test_02 )
     set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
-    ISSUE_FUNDS( "alice", ASSET( "1000.000 TESTS" ) );
-    ISSUE_FUNDS( "alice", ASSET( "20.000 TBD" ) );
+    ISSUE_FUNDS( "alice", HIVE_asset( 1'000'000 ) );
+    ISSUE_FUNDS( "alice", HBD_asset( 20'000 ) );
 
     const std::set< std::string > accounts{ "alice", "bob" };
 
@@ -338,10 +338,10 @@ BOOST_AUTO_TEST_CASE( save_test_01 )
     set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
-    ISSUE_FUNDS( "alice", ASSET( "1000.000 TESTS" ) );
-    ISSUE_FUNDS( "bob", ASSET( "2000.000 TESTS" ) );
+    ISSUE_FUNDS( "alice", HIVE_asset( 1'000'000 ) );
+    ISSUE_FUNDS( "bob", HIVE_asset( 2'000'000 ) );
 
-    ISSUE_FUNDS( "alice", ASSET( "20.000 TBD" ) );
+    ISSUE_FUNDS( "alice", HBD_asset( 20'000 ) );
 
     const std::set< std::string > accounts{ "alice", "bob" };
 
@@ -383,12 +383,12 @@ BOOST_AUTO_TEST_CASE( basic_test_06 )
     set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
-    auto _10 = ASSET( "10.000 TESTS" );
-    auto _20 = ASSET( "20.000 TESTS" );
-    auto _1v = ASSET( "1.000000 VESTS" );
-    auto _2v = ASSET( "2.000000 VESTS" );
-    auto _3v = ASSET( "3.000000 VESTS" );
-    auto _1000 = ASSET( "1000.000 TESTS" );
+    HIVE_asset _10( 10'000 );
+    HIVE_asset _20( 20'000 );
+    VEST_asset _1v( 1'000000 );
+    VEST_asset _2v( 2'000000 );
+    VEST_asset _3v( 3'000000 );
+    HIVE_asset _1000( 1'000'000 );
 
     ISSUE_FUNDS( "alice", _1000 );
     ISSUE_FUNDS( "bob", _1000 );
@@ -460,12 +460,12 @@ BOOST_AUTO_TEST_CASE( basic_test_05 )
     set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
-    auto _10 = ASSET( "10.000 TESTS" );
-    auto _20 = ASSET( "20.000 TESTS" );
-    auto _1v = ASSET( "1.000000 VESTS" );
-    auto _2v = ASSET( "2.000000 VESTS" );
-    auto _3v = ASSET( "3.000000 VESTS" );
-    auto _1000 = ASSET( "1000.000 TESTS" );
+    HIVE_asset _10( 10'000 );
+    HIVE_asset _20( 20'000 );
+    VEST_asset _1v( 1.000000 );
+    VEST_asset _2v( 2.000000 );
+    VEST_asset _3v( 3.000000 );
+    HIVE_asset _1000( 1000'000 );
 
     ISSUE_FUNDS( "alice", _1000 );
     ISSUE_FUNDS( "bob", _1000 );
@@ -550,11 +550,11 @@ BOOST_AUTO_TEST_CASE( basic_test_04 )
     set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
-    auto _10 = ASSET( "10.000 TESTS" );
-    auto _20 = ASSET( "20.000 TESTS" );
-    auto _1v = ASSET( "1.000000 VESTS" );
-    auto _2v = ASSET( "2.000000 VESTS" );
-    auto _1000 = ASSET( "1000.000 TESTS" );
+    HIVE_asset _10( 10'000 );
+    HIVE_asset _20( 20'000 );
+    VEST_asset _1v( 1'000000 );
+    VEST_asset _2v( 2'000000 );
+    HIVE_asset _1000( 1'000'000 );
 
     ISSUE_FUNDS( "alice", _1000 );
     ISSUE_FUNDS( "bob", _1000 );
@@ -629,10 +629,10 @@ BOOST_AUTO_TEST_CASE( basic_test_03 )
     set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
-    auto _1 = ASSET( "1.000 TESTS" );
-    auto _2 = ASSET( "2.000 TESTS" );
-    auto _3 = ASSET( "3.000 TESTS" );
-    auto _1000 = ASSET( "1000.000 TESTS" );
+    HIVE_asset _1( 1'000 );
+    HIVE_asset _2( 2'000 );
+    HIVE_asset _3( 3'000 );
+    HIVE_asset _1000( 1'000'000 );
 
     ISSUE_FUNDS( "alice", _1000 );
     ISSUE_FUNDS( "bob", _1000 );
@@ -691,8 +691,8 @@ BOOST_AUTO_TEST_CASE( basic_test_02 )
     set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
-    auto _1 = ASSET( "1.000 TESTS" );
-    auto _1000 = ASSET( "1000.000 TESTS" );
+    HIVE_asset _1( 1'000 );
+    HIVE_asset _1000( 1'000'000 );
 
     ISSUE_FUNDS( "alice", _1000 );
     ISSUE_FUNDS( "bob", _1000 );
@@ -767,8 +767,8 @@ BOOST_AUTO_TEST_CASE( escrow_cleanup_test )
     ACTORS( (alice)(bob)(carol) )
     generate_block();
 
-    issue_funds( "alice", ASSET( "10.000 TESTS" ) ); //<- note! extra 0.1 is in form of vests
-    issue_funds( "alice", ASSET( "10.100 TBD" ) ); //<- note! treasury will get extras from interest and proposal-fund/inflation
+    issue_funds( "alice", HIVE_asset( 10'000 ) ); //<- note! extra 0.1 is in form of vests
+    issue_funds( "alice", HBD_asset( 10'100 ) ); //<- note! treasury will get extras from interest and proposal-fund/inflation
     generate_block();
     REQUIRE_BALANCE( "10.000", "0.000", "0.000", "0.000", get_balance, "TESTS" );
     REQUIRE_BALANCE( "10.100", "0.000", "0.000", "0.027", get_hbd_balance, "TBD" );
@@ -1026,8 +1026,8 @@ BOOST_AUTO_TEST_CASE( limit_order_cleanup_test )
     ACTORS( (alice)(bob) )
     generate_block();
 
-    issue_funds( "alice", ASSET( "10.000 TESTS" ) ); //<- note! extra 0.1 is in form of vests
-    issue_funds( "bob", ASSET( "5.000 TBD" ) ); //<- note! treasury will get extras from interest and proposal-fund/inflation
+    issue_funds( "alice", HIVE_asset( 10'000 ) ); //<- note! extra 0.1 is in form of vests
+    issue_funds( "bob", HBD_asset( 5'000 ) ); //<- note! treasury will get extras from interest and proposal-fund/inflation
     generate_block();
     REQUIRE_BALANCE( "10.000", "0.000", "0.000", get_balance, "TESTS" );
     REQUIRE_BALANCE( "0.000", "5.000", "0.027", get_hbd_balance, "TBD" );
@@ -1149,7 +1149,7 @@ BOOST_AUTO_TEST_CASE( convert_request_cleanup_test )
     generate_block();
 
     //note! extra 0.1 TESTS is in form of vests
-    issue_funds( "alice", ASSET( "5.000 TBD" ) ); //<- note! treasury will get extras from interest and proposal-fund/inflation
+    issue_funds( "alice", HBD_asset( 5'000 ) ); //<- note! treasury will get extras from interest and proposal-fund/inflation
     generate_block();
     REQUIRE_BALANCE( "0.000", "0.000", get_balance, "TESTS" );
     REQUIRE_BALANCE( "5.000", "0.027", get_hbd_balance, "TBD" );
@@ -1227,7 +1227,7 @@ BOOST_AUTO_TEST_CASE( hbd_test_01 )
     BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "0.000 TBD" ) );
     database_fixture::validate_database();
 
-    issue_funds( "alice", ASSET( "1000.000 TBD" ) );
+    issue_funds( "alice", HBD_asset( 1'000'000 ) );
     auto alice_hbd = get_hbd_balance( "alice" );
     BOOST_REQUIRE( alice_hbd == ASSET( "1000.000 TBD" ) );
     db->clear_account( db->get_account( "alice" ) );
@@ -1248,7 +1248,7 @@ BOOST_AUTO_TEST_CASE( hbd_test_02 )
     generate_block();
 
     BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "0.000 TBD" ) );
-    issue_funds( "alice", ASSET( "1000.000 TBD" ) );
+    issue_funds( "alice", HBD_asset( 1'000'000 ) );
     auto start_time = db->get_account( "alice" ).hbd_seconds_last_update;
     auto alice_hbd = get_hbd_balance( "alice" );
     BOOST_TEST_MESSAGE( "treasury_hbd = " << asset_to_string( db->get_treasury().get_hbd_balance() ) );
@@ -1307,7 +1307,7 @@ BOOST_AUTO_TEST_CASE( savings_test_01 )
     set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
-    issue_funds( "alice", ASSET( "1000.000 TBD" ) );
+    issue_funds( "alice", HBD_asset( 1'000'000 ) );
 
     transfer_to_savings( "alice", "alice", ASSET( "1000.000 TBD" ), "", alice_private_key );
 
@@ -1329,7 +1329,7 @@ BOOST_AUTO_TEST_CASE( savings_test_02 )
     set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
-    issue_funds( "alice", ASSET( "1000.000 TBD" ) );
+    issue_funds( "alice", HBD_asset( 1'000'000 ) );
 
     transfer_to_savings( "alice", "alice", ASSET( "1000.000 TBD" ), "", alice_private_key );
 
