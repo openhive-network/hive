@@ -1939,7 +1939,7 @@ BOOST_FIXTURE_TEST_CASE( init_hive_hbd_supply, init_supply_database_fixture )
     // the test replicates issue #574 on HBD, for completeness it does similar checks on initial HIVE supply
 
     // default configuration for testnet includes some HIVE/HBD, for mainnet the value is 0 - genesis puts that supply on balance of 'initminer'
-    BOOST_CHECK_EQUAL( get_balance( HIVE_INIT_MINER_NAME ).amount.value, HIVE_INIT_SUPPLY );
+    BOOST_CHECK_EQUAL( get_hive_balance( HIVE_INIT_MINER_NAME ).amount.value, HIVE_INIT_SUPPLY );
     BOOST_CHECK_EQUAL( get_hbd_balance( HIVE_INIT_MINER_NAME ).amount.value, HIVE_HBD_INIT_SUPPLY );
     // current HBD supply as well as virtual supply must include those values
     const auto& dgpo = db->get_dynamic_global_properties();
@@ -1958,7 +1958,7 @@ BOOST_FIXTURE_TEST_CASE( init_hive_hbd_supply, init_supply_database_fixture )
 
     generate_block(); // the bug caused assertion during reapplication of block containing HBD transfer to 'null'
 
-    BOOST_CHECK_EQUAL( get_balance( HIVE_INIT_MINER_NAME ).amount.value, HIVE_INIT_SUPPLY - 100'000);
+    BOOST_CHECK_EQUAL( get_hive_balance( HIVE_INIT_MINER_NAME ).amount.value, HIVE_INIT_SUPPLY - 100'000);
     BOOST_CHECK_EQUAL( get_hbd_balance( HIVE_INIT_MINER_NAME ).amount.value, HIVE_HBD_INIT_SUPPLY - 100'000 );
     // application of block burns HIVE/HBD on 'null' balances but block production adds inflation to
     // HIVE and HBD global balances (HBD goes to treasury)

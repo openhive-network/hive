@@ -67,11 +67,11 @@ namespace hive { namespace chain {
       {}
 
       //liquid HIVE balance
-      const HIVE_asset& get_balance() const { return balance; }
+      const HIVE_asset& get_hive_balance() const { return balance; }
       //HIVE balance in savings
-      const HIVE_asset& get_savings() const { return savings_balance; }
+      const HIVE_asset& get_hive_savings() const { return savings_balance; }
       //unclaimed HIVE rewards
-      const HIVE_asset& get_rewards() const { return reward_hive_balance; }
+      const HIVE_asset& get_hive_rewards() const { return reward_hive_balance; }
 
       //liquid HBD balance
       const HBD_asset& get_hbd_balance() const { return hbd_balance; }

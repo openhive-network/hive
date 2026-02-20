@@ -961,9 +961,9 @@ account_id_type database_fixture::get_account_id( const string& account_name )co
   return db->get_account( account_name ).get_id();
 }
 
-asset database_fixture::get_balance( const string& account_name )const
+asset database_fixture::get_hive_balance( const string& account_name )const
 {
-  return db->get_account( account_name ).get_balance();
+  return db->get_account( account_name ).get_hive_balance();
 }
 
 asset database_fixture::get_hbd_balance( const string& account_name )const
@@ -971,9 +971,9 @@ asset database_fixture::get_hbd_balance( const string& account_name )const
   return db->get_account( account_name ).get_hbd_balance();
 }
 
-asset database_fixture::get_savings( const string& account_name )const
+asset database_fixture::get_hive_savings( const string& account_name )const
 {
-  return db->get_account( account_name ).get_savings();
+  return db->get_account( account_name ).get_hive_savings();
 }
 
 asset database_fixture::get_hbd_savings( const string& account_name )const
@@ -981,9 +981,9 @@ asset database_fixture::get_hbd_savings( const string& account_name )const
   return db->get_account( account_name ).get_hbd_savings();
 }
 
-asset database_fixture::get_rewards( const string& account_name )const
+asset database_fixture::get_hive_rewards( const string& account_name )const
 {
-  return db->get_account( account_name ).get_rewards();
+  return db->get_account( account_name ).get_hive_rewards();
 }
 
 asset database_fixture::get_hbd_rewards( const string& account_name )const

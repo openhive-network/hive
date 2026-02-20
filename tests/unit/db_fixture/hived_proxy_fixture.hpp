@@ -435,30 +435,30 @@ public:
     FC_ASSERT(fixture);
     return fixture->get_account_id(account_name);
   }
-  asset get_balance( const fc::string& account_name )const
+  asset get_hive_balance( const fc::string& account_name )const
   {
     FC_ASSERT(fixture);
-    return fixture->get_balance(account_name);
+    return fixture->get_hive_balance(account_name);
   }
   asset get_hbd_balance( const fc::string& account_name )const
   {
     FC_ASSERT(fixture);
     return fixture->get_hbd_balance(account_name);
   }
-  asset get_savings( const fc::string& account_name )const
+  asset get_hive_savings( const fc::string& account_name )const
   {
     FC_ASSERT(fixture);
-    return fixture->get_savings(account_name);
+    return fixture->get_hive_savings(account_name);
   }
   asset get_hbd_savings( const fc::string& account_name )const
   {
     FC_ASSERT(fixture);
     return fixture->get_hbd_savings(account_name);
   }
-  asset get_rewards( const fc::string& account_name )const
+  asset get_hive_rewards( const fc::string& account_name )const
   {
     FC_ASSERT(fixture);
-    return fixture->get_rewards(account_name);
+    return fixture->get_hive_rewards(account_name);
   }
   asset get_hbd_rewards( const fc::string& account_name )const
   {

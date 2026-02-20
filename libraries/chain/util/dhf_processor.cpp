@@ -337,10 +337,10 @@ void dhf_processor::convert_funds( const block_notification& note )
   } );
 
   const auto& treasury_account = db.get_treasury();
-  if( treasury_account.get_balance().amount == 0 )
+  if( treasury_account.get_hive_balance().amount == 0 )
     return;
 
-  const auto to_convert = HIVE_asset( HIVE_PROPOSAL_CONVERSION_RATE * treasury_account.get_balance().amount / HIVE_100_PERCENT );
+  const auto to_convert = HIVE_PROPOSAL_CONVERSION_RATE * treasury_account.get_hive_balance() / HIVE_100_PERCENT;
 
   const feed_history_object& fhistory = db.get_feed_history();
   FC_ASSERT( not fhistory.current_median_history.is_null() ); //current_median_history was null only until block 933600

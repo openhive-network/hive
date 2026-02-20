@@ -216,9 +216,9 @@ void account_create_with_delegation_evaluator::do_apply( const account_create_wi
   VEST_asset o_delegation = o.get_delegation();
   HIVE_asset o_fee = o.get_fee();
 
-  FC_ASSERT( creator.get_balance() >= o_fee && "Can't create",
+  FC_ASSERT( creator.get_hive_balance() >= o_fee && "Can't create",
     "Insufficient balance to create account.",
-    ( "creator.balance", creator.get_balance() )
+    ( "creator.balance", creator.get_hive_balance() )
     ( "required", o_fee ) );
 
   FC_ASSERT( creator.get_vesting() - creator.get_delegated_vesting() - VEST_asset( creator.get_total_vesting_withdrawal() ) >= o_delegation, "Insufficient vesting shares to delegate to new account.",
@@ -406,9 +406,9 @@ void claim_account_evaluator::do_apply( const claim_account_operation& o )
 
   HIVE_asset o_fee = o.get_fee();
 
-  FC_ASSERT( creator.get_balance() >= o_fee && "Can't claim",
+  FC_ASSERT( creator.get_hive_balance() >= o_fee && "Can't claim",
     "Insufficient balance to create account.",
-    ( "creator.balance", creator.get_balance() )( "required", o_fee ) );
+    ( "creator.balance", creator.get_hive_balance() )( "required", o_fee ) );
 
   if( o_fee.amount == 0 )
   {
