@@ -284,7 +284,7 @@ api_account_object::api_account_object( const account_object& a, const database&
   for( size_t i=0; i<n; i++ )
     proxied_vsf_votes.push_back( a.get_proxied_vsf_votes()[i] );
 
-  const auto& auth = db.get< account_authority_object, by_account >( name );
+  const auto& auth = db.get_account_authority( name );
   owner = authority( auth.owner );
   active = authority( auth.active );
   posting = authority( auth.posting );
