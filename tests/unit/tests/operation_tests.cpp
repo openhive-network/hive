@@ -141,7 +141,7 @@ BOOST_AUTO_TEST_CASE( account_create_apply )
     private_key_type priv_key = generate_private_key( "alice" );
 
     const account_object& init = db->get_account( HIVE_INIT_MINER_NAME );
-    asset init_starting_balance = init.get_hive_balance();
+    HIVE_asset init_starting_balance = init.get_hive_balance();
 
     account_create_operation op;
 
@@ -175,14 +175,14 @@ BOOST_AUTO_TEST_CASE( account_create_apply )
     BOOST_REQUIRE( acct.memo_key == priv_key.get_public_key() );
     CHECK_NO_PROXY( acct );
     BOOST_REQUIRE( acct.get_creation_time() == db->head_block_time() );
-    BOOST_REQUIRE( acct.get_hive_balance().amount.value == ASSET( "0.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( acct.get_hbd_balance().amount.value == ASSET( "0.000 TBD" ).amount.value );
+    BOOST_REQUIRE( acct.get_hive_balance() == HIVE_asset( 0 ) );
+    BOOST_REQUIRE( acct.get_hbd_balance() == HBD_asset( 0 ) );
     BOOST_REQUIRE( acct.get_id().get_value() == acct_auth.get_id().get_value() );
 
-    BOOST_REQUIRE( acct.get_vesting().amount.value == 0 );
-    BOOST_REQUIRE( acct.vesting_withdraw_rate.amount.value == ASSET( "0.000000 VESTS" ).amount.value );
+    BOOST_REQUIRE( acct.get_vesting() == VEST_asset( 0 ) );
+    BOOST_REQUIRE( acct.vesting_withdraw_rate == VEST_asset( 0 ) );
     BOOST_REQUIRE( acct.proxied_vsf_votes_total().value == 0 );
-    BOOST_REQUIRE( ( init_starting_balance - ASSET( "0.100 TESTS" ) ).amount.value == init.get_hive_balance().amount.value );
+    BOOST_REQUIRE( init_starting_balance - HIVE_asset( 100 ) == init.get_hive_balance() );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test failure of duplicate account creation" );
@@ -195,12 +195,12 @@ BOOST_AUTO_TEST_CASE( account_create_apply )
     BOOST_REQUIRE( acct.memo_key == priv_key.get_public_key() );
     CHECK_NO_PROXY( acct );
     BOOST_REQUIRE( acct.get_creation_time() == db->head_block_time() );
-    BOOST_REQUIRE( acct.get_hive_balance().amount.value == ASSET( "0.000 TESTS " ).amount.value );
-    BOOST_REQUIRE( acct.get_hbd_balance().amount.value == ASSET( "0.000 TBD" ).amount.value );
-    BOOST_REQUIRE( acct.get_vesting().amount.value == 0 );
-    BOOST_REQUIRE( acct.vesting_withdraw_rate.amount.value == ASSET( "0.000000 VESTS" ).amount.value );
+    BOOST_REQUIRE( acct.get_hive_balance() == HIVE_asset( 0 ) );
+    BOOST_REQUIRE( acct.get_hbd_balance() == HBD_asset( 0 ) );
+    BOOST_REQUIRE( acct.get_vesting() == VEST_asset( 0 ) );
+    BOOST_REQUIRE( acct.vesting_withdraw_rate == VEST_asset( 0 ) );
     BOOST_REQUIRE( acct.proxied_vsf_votes_total().value == 0 );
-    BOOST_REQUIRE( ( init_starting_balance - ASSET( "0.100 TESTS" ) ).amount.value == init.get_hive_balance().amount.value );
+    BOOST_REQUIRE( init_starting_balance - HIVE_asset( 100 ) == init.get_hive_balance() );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test failure when creator cannot cover fee" );
@@ -1231,23 +1231,23 @@ BOOST_AUTO_TEST_CASE( vote_weights )
     generate_blocks( cashout_time, false );
 
     for( auto i : { 8,16,24 } ) //upvotes edited in early window have the same rewards as early window pattern
-      BOOST_REQUIRE_EQUAL( voterObjs[i]->get_vest_rewards().amount.value, voterObjs[0]->get_vest_rewards().amount.value );
+      BOOST_REQUIRE( voterObjs[i]->get_vest_rewards() == voterObjs[0]->get_vest_rewards() );
     for( auto i : { 4,12,20,28 } ) //downvotes have no rewards
-      BOOST_REQUIRE_EQUAL( voterObjs[i]->get_vest_rewards().amount.value, 0 );
+      BOOST_REQUIRE( voterObjs[i]->get_vest_rewards() == VEST_asset( 0 ) );
     for( auto i : { 9,17,25 } ) //upvotes edited in mid window have the same rewards as mid window pattern
-      BOOST_REQUIRE_EQUAL( voterObjs[i]->get_vest_rewards().amount.value, voterObjs[1]->get_vest_rewards().amount.value );
+      BOOST_REQUIRE( voterObjs[i]->get_vest_rewards() == voterObjs[1]->get_vest_rewards() );
     for( auto i : { 5,13,21,29 } ) //downvotes have no rewards
-      BOOST_REQUIRE_EQUAL( voterObjs[i]->get_vest_rewards().amount.value, 0 );
+      BOOST_REQUIRE( voterObjs[i]->get_vest_rewards() == VEST_asset( 0 ) );
     for( auto i : { 10,18,26 } ) //upvotes edited in late window have the same rewards as late window pattern
-      BOOST_REQUIRE_EQUAL( voterObjs[i]->get_vest_rewards().amount.value, voterObjs[2]->get_vest_rewards().amount.value );
+      BOOST_REQUIRE( voterObjs[i]->get_vest_rewards() == voterObjs[2]->get_vest_rewards() );
     for( auto i : { 6,14,22,30 } ) //downvotes have no rewards
-      BOOST_REQUIRE_EQUAL( voterObjs[i]->get_vest_rewards().amount.value, 0 );
+      BOOST_REQUIRE( voterObjs[i]->get_vest_rewards() == VEST_asset( 0 ) );
     for( auto i : { 11,19,27 } ) //upvotes edited in lockout window have the same rewards as lockout window pattern (only because the same block)
-      BOOST_REQUIRE_EQUAL( voterObjs[i]->get_vest_rewards().amount.value, voterObjs[3]->get_vest_rewards().amount.value );
+      BOOST_REQUIRE( voterObjs[i]->get_vest_rewards() == voterObjs[3]->get_vest_rewards() );
     for( auto i : { 7,15,23,31 } ) //downvotes have no rewards
-      BOOST_REQUIRE_EQUAL( voterObjs[i]->get_vest_rewards().amount.value, 0 );
+      BOOST_REQUIRE( voterObjs[i]->get_vest_rewards() == VEST_asset( 0 ) );
     for( i = 32; i < 40; ++i ) //deleted votes have no rewards
-      BOOST_REQUIRE_EQUAL( voterObjs[i]->get_vest_rewards().amount.value, 0 );
+      BOOST_REQUIRE( voterObjs[i]->get_vest_rewards() == VEST_asset( 0 ) );
 
     validate_database();
   }
@@ -1408,8 +1408,8 @@ BOOST_AUTO_TEST_CASE( transfer_apply )
     fund( "alice", ASSET( "10.000 TESTS" ) );
     issue_funds( "bob", HBD_asset( 1'000 ) );
 
-    BOOST_REQUIRE( get_hive_balance( "alice" ).amount.value == ASSET( "10.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( get_hive_balance( "bob" ).amount.value == ASSET(" 0.000 TESTS" ).amount.value );
+    BOOST_REQUIRE( get_hive_balance( "alice" ) == HIVE_asset( 10'000 ) );
+    BOOST_REQUIRE( get_hive_balance( "bob" ) == HIVE_asset( 0 ) );
 
     signed_transaction tx;
     transfer_operation op;
@@ -1423,8 +1423,8 @@ BOOST_AUTO_TEST_CASE( transfer_apply )
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     push_transaction( tx, alice_private_key );
 
-    BOOST_REQUIRE( get_hive_balance( "alice" ).amount.value == ASSET( "5.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( get_hive_balance( "bob" ).amount.value == ASSET( "5.000 TESTS" ).amount.value );
+    BOOST_REQUIRE( get_hive_balance( "alice" ) == HIVE_asset( 5'000 ) );
+    BOOST_REQUIRE( get_hive_balance( "bob" ) == HIVE_asset( 5'000 ) );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Generating a block" );
@@ -1433,8 +1433,8 @@ BOOST_AUTO_TEST_CASE( transfer_apply )
     const auto& new_alice = db->get_account( "alice" );
     const auto& new_bob = db->get_account( "bob" );
 
-    BOOST_REQUIRE( new_alice.get_hive_balance().amount.value == ASSET( "5.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( new_bob.get_hive_balance().amount.value == ASSET( "5.000 TESTS" ).amount.value );
+    BOOST_REQUIRE( new_alice.get_hive_balance() == HIVE_asset( 5'000 ) );
+    BOOST_REQUIRE( new_bob.get_hive_balance() == HIVE_asset( 5'000 ) );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test emptying an account" );
@@ -1443,8 +1443,8 @@ BOOST_AUTO_TEST_CASE( transfer_apply )
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     push_transaction( tx, alice_private_key );
 
-    BOOST_REQUIRE( new_alice.get_hive_balance().amount.value == ASSET( "0.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( new_bob.get_hive_balance().amount.value == ASSET( "10.000 TESTS" ).amount.value );
+    BOOST_REQUIRE( new_alice.get_hive_balance() == HIVE_asset( 0 ) );
+    BOOST_REQUIRE( new_bob.get_hive_balance() == HIVE_asset( 10'000 ) );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test transferring non-existent funds" );
@@ -1453,8 +1453,8 @@ BOOST_AUTO_TEST_CASE( transfer_apply )
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION - 2*HIVE_BLOCK_INTERVAL );
     HIVE_REQUIRE_ASSERT( push_transaction( tx, alice_private_key ), "a.get_hive_balance() >= -delta" );
 
-    BOOST_REQUIRE( new_alice.get_hive_balance().amount.value == ASSET( "0.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( new_bob.get_hive_balance().amount.value == ASSET( "10.000 TESTS" ).amount.value );
+    BOOST_REQUIRE( new_alice.get_hive_balance() == HIVE_asset( 0 ) );
+    BOOST_REQUIRE( new_bob.get_hive_balance() == HIVE_asset( 10'000 ) );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test successfully transfering HIVE to treasury and converting it to HBD" );
@@ -1468,8 +1468,8 @@ BOOST_AUTO_TEST_CASE( transfer_apply )
     tx.operations.clear();
     tx.operations.push_back( op );
     push_transaction( tx, bob_private_key );
-    BOOST_REQUIRE( get_hive_balance( "bob" ) == ASSET( "9.000 TESTS" ) );
-    BOOST_REQUIRE( db->get_treasury().get_hbd_balance() == treasury_hbd_balance + ASSET( "1.000 TBD" ) );
+    BOOST_REQUIRE( get_hive_balance( "bob" ) == HIVE_asset( 9'000 ) );
+    BOOST_REQUIRE( db->get_treasury().get_hbd_balance() == treasury_hbd_balance + HBD_asset( 1'000 ) );
     generate_block();
     validate_database();
 
@@ -1488,8 +1488,8 @@ BOOST_AUTO_TEST_CASE( transfer_apply )
     tx.operations.push_back( op );
     push_transaction( tx, bob_private_key );
 
-    BOOST_REQUIRE( get_hbd_balance( "bob" ) == ASSET( "0.000 TBD" ) );
-    BOOST_REQUIRE( db->get_treasury().get_hbd_balance() == treasury_hbd_balance + ASSET( "1.000 TBD" ) );
+    BOOST_REQUIRE( get_hbd_balance( "bob" ) == HBD_asset( 0 ) );
+    BOOST_REQUIRE( db->get_treasury().get_hbd_balance() == treasury_hbd_balance + HBD_asset( 1'000 ) );
     validate_database();
   }
   FC_LOG_AND_RETHROW()
@@ -1556,7 +1556,7 @@ BOOST_AUTO_TEST_CASE( transfer_to_vesting_apply )
 
     const auto& gpo = db->get_dynamic_global_properties();
 
-    BOOST_REQUIRE( alice.get_hive_balance() == ASSET( "10.000 TESTS" ) );
+    BOOST_REQUIRE( alice.get_hive_balance() == HIVE_asset( 10'000 ) );
 
     auto shares = asset( gpo.get_total_vesting_shares().amount, VESTS_SYMBOL );
     auto vests = asset( gpo.get_total_vesting_fund_hive().amount, HIVE_SYMBOL );
@@ -1583,8 +1583,8 @@ BOOST_AUTO_TEST_CASE( transfer_to_vesting_apply )
     vests += op.amount;
     alice_shares += new_vest;
 
-    BOOST_REQUIRE( alice.get_hive_balance().amount.value == ASSET( "2.500 TESTS" ).amount.value );
-    BOOST_REQUIRE( alice.get_vesting().amount.value == alice_shares.amount.value );
+    BOOST_REQUIRE( alice.get_hive_balance() == HIVE_asset( 2'500 ) );
+    BOOST_REQUIRE( alice.get_vesting() == alice_shares );
     BOOST_REQUIRE( gpo.get_total_vesting_fund_hive().amount.value == vests.amount.value );
     BOOST_REQUIRE( gpo.get_total_vesting_shares().amount.value == shares.amount.value );
     validate_database();
@@ -1601,10 +1601,10 @@ BOOST_AUTO_TEST_CASE( transfer_to_vesting_apply )
     vests += op.amount;
     bob_shares += new_vest;
 
-    BOOST_REQUIRE( alice.get_hive_balance().amount.value == ASSET( "0.500 TESTS" ).amount.value );
-    BOOST_REQUIRE( alice.get_vesting().amount.value == alice_shares.amount.value );
-    BOOST_REQUIRE( bob.get_hive_balance().amount.value == ASSET( "0.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( bob.get_vesting().amount.value == bob_shares.amount.value );
+    BOOST_REQUIRE( alice.get_hive_balance() == HIVE_asset( 500 ) );
+    BOOST_REQUIRE( alice.get_vesting() == alice_shares );
+    BOOST_REQUIRE( bob.get_hive_balance() == HIVE_asset( 0 ) );
+    BOOST_REQUIRE( bob.get_vesting() == bob_shares );
     BOOST_REQUIRE( gpo.get_total_vesting_fund_hive().amount.value == vests.amount.value );
     BOOST_REQUIRE( gpo.get_total_vesting_shares().amount.value == shares.amount.value );
     validate_database();
@@ -1612,10 +1612,10 @@ BOOST_AUTO_TEST_CASE( transfer_to_vesting_apply )
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION - HIVE_BLOCK_INTERVAL );
     HIVE_REQUIRE_THROW( push_transaction( tx, fc::ecc::private_key() ), tx_missing_active_auth );
 
-    BOOST_REQUIRE( alice.get_hive_balance().amount.value == ASSET( "0.500 TESTS" ).amount.value );
-    BOOST_REQUIRE( alice.get_vesting().amount.value == alice_shares.amount.value );
-    BOOST_REQUIRE( bob.get_hive_balance().amount.value == ASSET( "0.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( bob.get_vesting().amount.value == bob_shares.amount.value );
+    BOOST_REQUIRE( alice.get_hive_balance() == HIVE_asset( 500 ) );
+    BOOST_REQUIRE( alice.get_vesting() == alice_shares );
+    BOOST_REQUIRE( bob.get_hive_balance() == HIVE_asset( 0 ) );
+    BOOST_REQUIRE( bob.get_vesting() == bob_shares );
     BOOST_REQUIRE( gpo.get_total_vesting_fund_hive().amount.value == vests.amount.value );
     BOOST_REQUIRE( gpo.get_total_vesting_shares().amount.value == shares.amount.value );
     validate_database();
@@ -1708,7 +1708,7 @@ BOOST_AUTO_TEST_CASE( withdraw_vesting_apply )
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     push_transaction( tx, alice_private_key );
 
-    BOOST_REQUIRE( alice.get_vesting().amount.value == old_vesting_shares.amount.value );
+    BOOST_REQUIRE( alice.get_vesting() == old_vesting_shares );
     BOOST_REQUIRE( alice.vesting_withdraw_rate.amount.value == ( old_vesting_shares.amount / ( HIVE_VESTING_WITHDRAW_INTERVALS * 2 ) ).value + 1 );
     BOOST_REQUIRE( alice.to_withdraw.amount.value == op.vesting_shares.amount.value );
     BOOST_REQUIRE( alice.next_vesting_withdrawal == db->head_block_time() + HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS );
@@ -1722,7 +1722,7 @@ BOOST_AUTO_TEST_CASE( withdraw_vesting_apply )
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     push_transaction( tx, alice_private_key );
 
-    BOOST_REQUIRE( alice.get_vesting().amount.value == old_vesting_shares.amount.value );
+    BOOST_REQUIRE( alice.get_vesting() == old_vesting_shares );
     BOOST_REQUIRE( alice.vesting_withdraw_rate.amount.value == ( old_vesting_shares.amount / ( HIVE_VESTING_WITHDRAW_INTERVALS * 3 ) ).value + 1 );
     BOOST_REQUIRE( alice.to_withdraw.amount.value == op.vesting_shares.amount.value );
     BOOST_REQUIRE( alice.next_vesting_withdrawal == db->head_block_time() + HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS );
@@ -1737,7 +1737,7 @@ BOOST_AUTO_TEST_CASE( withdraw_vesting_apply )
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::exception );
 
-    BOOST_REQUIRE( alice.get_vesting().amount.value == old_vesting_shares.amount.value );
+    BOOST_REQUIRE( alice.get_vesting() == old_vesting_shares );
     BOOST_REQUIRE( alice.vesting_withdraw_rate.amount.value == ( old_vesting_shares.amount / ( HIVE_VESTING_WITHDRAW_INTERVALS * 3 ) ).value + 1 );
     BOOST_REQUIRE( alice.next_vesting_withdrawal == db->head_block_time() + HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS );
     validate_database();
@@ -1750,9 +1750,9 @@ BOOST_AUTO_TEST_CASE( withdraw_vesting_apply )
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     push_transaction( tx, alice_private_key );
 
-    BOOST_REQUIRE( alice.get_vesting().amount.value == old_vesting_shares.amount.value );
-    BOOST_REQUIRE( alice.vesting_withdraw_rate.amount.value == 0 );
-    BOOST_REQUIRE( alice.to_withdraw.amount.value == 0 );
+    BOOST_REQUIRE( alice.get_vesting() == old_vesting_shares );
+    BOOST_REQUIRE( alice.vesting_withdraw_rate == VEST_asset( 0 ) );
+    BOOST_REQUIRE( alice.to_withdraw == VEST_asset( 0 ) );
     BOOST_REQUIRE( alice.next_vesting_withdrawal == fc::time_point_sec::maximum() );
 
 
@@ -1901,7 +1901,7 @@ BOOST_AUTO_TEST_CASE( witness_update_apply )
     BOOST_REQUIRE( alice_witness.virtual_last_update == 0 );
     BOOST_REQUIRE( alice_witness.virtual_position == 0 );
     BOOST_REQUIRE( alice_witness.virtual_scheduled_time == fc::uint128_max_value() );
-    BOOST_REQUIRE( alice.get_hive_balance().amount.value == ASSET( "10.000 TESTS" ).amount.value ); // No fee
+    BOOST_REQUIRE( alice.get_hive_balance() == HIVE_asset( 10'000 ) ); // No fee
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test updating a witness" );
@@ -1926,7 +1926,7 @@ BOOST_AUTO_TEST_CASE( witness_update_apply )
     BOOST_REQUIRE( alice_witness.virtual_last_update == 0 );
     BOOST_REQUIRE( alice_witness.virtual_position == 0 );
     BOOST_REQUIRE( alice_witness.virtual_scheduled_time == fc::uint128_max_value() );
-    BOOST_REQUIRE( alice.get_hive_balance().amount.value == ASSET( "10.000 TESTS" ).amount.value );
+    BOOST_REQUIRE( alice.get_hive_balance() == HIVE_asset( 10'000 ) );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test failure when upgrading a non-existent account" );
@@ -3246,8 +3246,8 @@ BOOST_AUTO_TEST_CASE( convert_apply )
     tx.operations.push_back( op );
     HIVE_REQUIRE_THROW( push_transaction( tx, bob_private_key ), fc::exception );
 
-    BOOST_REQUIRE( new_bob.get_hive_balance().amount.value == ASSET( "3.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( new_bob.get_hbd_balance().amount.value == ASSET( "7.000 TBD" ).amount.value );
+    BOOST_REQUIRE( new_bob.get_hive_balance() == HIVE_asset( 3'000 ) );
+    BOOST_REQUIRE( new_bob.get_hbd_balance() == HBD_asset( 7'000 ) );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test failure when account does not have the required TBD" );
@@ -3257,8 +3257,8 @@ BOOST_AUTO_TEST_CASE( convert_apply )
     tx.operations.push_back( op );
     HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::exception );
 
-    BOOST_REQUIRE( new_alice.get_hive_balance().amount.value == ASSET( "7.500 TESTS" ).amount.value );
-    BOOST_REQUIRE( new_alice.get_hbd_balance().amount.value == ASSET( "2.500 TBD" ).amount.value );
+    BOOST_REQUIRE( new_alice.get_hive_balance() == HIVE_asset( 7'500 ) );
+    BOOST_REQUIRE( new_alice.get_hbd_balance() == HBD_asset( 2'500 ) );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test failure when account does not exist" );
@@ -3275,8 +3275,8 @@ BOOST_AUTO_TEST_CASE( convert_apply )
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     push_transaction( tx, bob_private_key );
 
-    BOOST_REQUIRE( new_bob.get_hive_balance().amount.value == ASSET( "3.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( new_bob.get_hbd_balance().amount.value == ASSET( "4.000 TBD" ).amount.value );
+    BOOST_REQUIRE( new_bob.get_hive_balance() == HIVE_asset( 3'000 ) );
+    BOOST_REQUIRE( new_bob.get_hbd_balance() == HBD_asset( 4'000 ) );
 
     auto convert_request = convert_request_idx.find( boost::make_tuple( get_account_id( op.owner ), op.requestid ) );
     BOOST_REQUIRE( convert_request != convert_request_idx.end() );
@@ -3292,8 +3292,8 @@ BOOST_AUTO_TEST_CASE( convert_apply )
     tx.operations.push_back( op );
     HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::exception );
 
-    BOOST_REQUIRE( new_bob.get_hive_balance().amount.value == ASSET( "3.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( new_bob.get_hbd_balance().amount.value == ASSET( "4.000 TBD" ).amount.value );
+    BOOST_REQUIRE( new_bob.get_hive_balance() == HIVE_asset( 3'000 ) );
+    BOOST_REQUIRE( new_bob.get_hbd_balance() == HBD_asset( 4'000 ) );
 
     convert_request = convert_request_idx.find( boost::make_tuple( get_account_id( op.owner ), op.requestid ) );
     BOOST_REQUIRE( convert_request != convert_request_idx.end() );
@@ -3430,7 +3430,7 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
     //give alice enough for further tests
     fund( "alice", ASSET( "9000.000 TESTS" ) );
     auto alice_balance = get_hive_balance( "alice" );
-    BOOST_REQUIRE( alice_balance == ASSET( "10000.000 TESTS" ) );
+    BOOST_REQUIRE( alice_balance == HIVE_asset( 10'000'000 ) );
 
     BOOST_TEST_MESSAGE( "--- Test ok - conversion at 25 cents per HIVE, both initial and actual" );
     op.amount = ASSET( "1000.000 TESTS" );
@@ -3445,9 +3445,9 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
       BOOST_REQUIRE( convert_op.hbd_out == ASSET( "119.047 TBD" ) );
     }
 
-    alice_balance -= ASSET( "1000.000 TESTS" );
+    alice_balance -= HIVE_asset( 1'000'000 );
     BOOST_REQUIRE( get_hive_balance( "alice" ) == alice_balance );
-    BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "119.047 TBD" ) ); // 1000/2 collateral * 10/42 price with fee
+    BOOST_REQUIRE( get_hbd_balance( "alice" ) == HBD_asset( 119'047 ) ); // 1000/2 collateral * 10/42 price with fee
     transfer( "alice", db->get_treasury_name(), get_hbd_balance( "alice" ), "", alice_private_key );
 
     generate_block();
@@ -3457,15 +3457,15 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
     HIVE_REQUIRE_CHAINBASE_ASSERT( push_transaction( op, alice_private_key ), "could not insert object, most likely a uniqueness constraint was violated inside index holding types: hive::chain::collateralized_convert_request_object" );
 
     BOOST_REQUIRE( get_hive_balance( "alice" ) == alice_balance );
-    BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "0.000 TBD" ) );
+    BOOST_REQUIRE( get_hbd_balance( "alice" ) == HBD_asset( 0 ) );
 
     generate_blocks( conversion_time + HIVE_COLLATERALIZED_CONVERSION_DELAY - fc::seconds( HIVE_BLOCK_INTERVAL ) );
 
     BOOST_REQUIRE( get_hive_balance( "alice" ) == alice_balance );
     generate_block(); //actual conversion
-    alice_balance += ASSET( "500.003 TESTS" ); //getting back excess collateral (1000 - 119.047 * 42/10)
+    alice_balance += HIVE_asset( 500'003 ); //getting back excess collateral (1000 - 119.047 * 42/10)
     BOOST_REQUIRE( get_hive_balance( "alice" ) == alice_balance );
-    BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "0.000 TBD" ) ); //actual conversion does not give any more HBD
+    BOOST_REQUIRE( get_hbd_balance( "alice" ) == HBD_asset( 0 ) ); //actual conversion does not give any more HBD
     {
       auto recent_ops = get_last_operations( 1 );
       auto convert_op = recent_ops.back().get< fill_collateralized_convert_request_operation >();
@@ -3489,9 +3489,9 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
       BOOST_REQUIRE( convert_op.hbd_out == ASSET( "119.047 TBD" ) );
     }
 
-    alice_balance -= ASSET( "1000.000 TESTS" );
+    alice_balance -= HIVE_asset( 1'000'000 );
     BOOST_REQUIRE( get_hive_balance( "alice" ) == alice_balance );
-    BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "119.047 TBD" ) ); // 1000/2 collateral * 10/42 price with fee
+    BOOST_REQUIRE( get_hbd_balance( "alice" ) == HBD_asset( 119'047 ) ); // 1000/2 collateral * 10/42 price with fee
     transfer( "alice", db->get_treasury_name(), get_hbd_balance( "alice" ), "", alice_private_key );
 
     HBD_price price_1_for_8( 1000, 8000 );
@@ -3503,9 +3503,9 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
 
     BOOST_REQUIRE( get_hive_balance( "alice" ) == alice_balance );
     generate_block(); //actual conversion
-    alice_balance += ASSET( "0.006 TESTS" ); //almost no excess collateral (1000 - 119.047 * 84/10)
+    alice_balance += HIVE_asset( 6 ); //almost no excess collateral (1000 - 119.047 * 84/10)
     BOOST_REQUIRE( get_hive_balance( "alice" ) == alice_balance );
-    BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "0.000 TBD" ) );
+    BOOST_REQUIRE( get_hbd_balance( "alice" ) == HBD_asset( 0 ) );
     {
       auto recent_ops = get_last_operations( 1 );
       auto convert_op = recent_ops.back().get< fill_collateralized_convert_request_operation >();
@@ -3529,9 +3529,9 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
       BOOST_REQUIRE( convert_op.hbd_out == ASSET( "59.523 TBD" ) );
     }
 
-    alice_balance -= ASSET( "1000.000 TESTS" );
+    alice_balance -= HIVE_asset( 1'000'000 );
     BOOST_REQUIRE( get_hive_balance( "alice" ) == alice_balance );
-    BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "59.523 TBD" ) ); // 1000/2 collateral * 10/84 price with fee
+    BOOST_REQUIRE( get_hbd_balance( "alice" ) == HBD_asset( 59'523 ) ); // 1000/2 collateral * 10/84 price with fee
     //transfer( "alice", db->get_treasury_name(), get_hbd_balance( "alice" ) ); leave it this time on account
 
     HBD_price price_1_for_20( 1000, 20000 );
@@ -3546,7 +3546,7 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
     BOOST_REQUIRE( get_hive_balance( "alice" ) == alice_balance );
     generate_block(); //actual conversion
     BOOST_REQUIRE( get_hive_balance( "alice" ) == alice_balance ); //no excess collateral
-    BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "59.523 TBD" ) ); //even though there was too little collateral we still don't try to take back produced HBD
+    BOOST_REQUIRE( get_hbd_balance( "alice" ) == HBD_asset( 59'523 ) ); //even though there was too little collateral we still don't try to take back produced HBD
     {
       auto recent_ops = get_last_operations( 2 );
       auto convert_op = recent_ops.front().get< fill_collateralized_convert_request_operation >();
@@ -3588,9 +3588,9 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
     auto alice_hbd_balance = get_hbd_balance( "alice" );
     push_transaction( op, alice_private_key );
 
-    alice_balance -= ASSET( "1000.000 TESTS" );
+    alice_balance -= HIVE_asset( 1'000'000 );
     BOOST_REQUIRE( get_hive_balance( "alice" ) == alice_balance );
-    alice_hbd_balance += ASSET( "23.809 TBD" ); // 1000/2 collateral * 1/21 price with fee
+    alice_hbd_balance += HBD_asset( 23'809 ); // 1000/2 collateral * 1/21 price with fee
     BOOST_REQUIRE( get_hbd_balance( "alice" ) == alice_hbd_balance );
 
     BOOST_TEST_MESSAGE( "--- Test ok - regular conversion" );
@@ -3632,11 +3632,11 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
     generate_blocks( conversion_4_time + HIVE_COLLATERALIZED_CONVERSION_DELAY - fc::seconds( HIVE_BLOCK_INTERVAL ) );
 
     BOOST_REQUIRE( get_hive_balance( "alice" ) == alice_balance );
-    BOOST_REQUIRE( get_hive_balance( "bob" ) == ASSET( "0.000 TESTS" ) );
+    BOOST_REQUIRE( get_hive_balance( "bob" ) == HIVE_asset( 0 ) );
     generate_block(); //actual conversion
-    alice_balance += ASSET( "500.011 TESTS" ); //excess collateral (1000 - 23.809 * 21/1) - alice used fee corrected market_median_price...
+    alice_balance += HIVE_asset( 500'011 ); //excess collateral (1000 - 23.809 * 21/1) - alice used fee corrected market_median_price...
     BOOST_REQUIRE( get_hive_balance( "alice" ) == alice_balance );
-    BOOST_REQUIRE( get_hive_balance( "bob" ) == ASSET( "273.619 TESTS" ) ); //...but bob used artificial current_median_history
+    BOOST_REQUIRE( get_hive_balance( "bob" ) == HIVE_asset( 273'619 ) ); //...but bob used artificial current_median_history
       //(for HF25 values of 9%/10%/10% lower/upper/hard cap expected value is 199.102)
       //(for 9%/10%/30% expected value is 383.222)
       //with different limits value will change, but should be less than 400.000 TESTS
@@ -3662,9 +3662,9 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
     auto conversion_5_time = db->head_block_time();
     push_transaction( op, alice_private_key );
 
-    alice_balance -= ASSET( "1000.000 TESTS" );
+    alice_balance -= HIVE_asset( 1'000'000 );
     BOOST_REQUIRE( get_hive_balance( "alice" ) == alice_balance );
-    BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "23.809 TBD" ) ); // 1000/2 collateral * 1/21 price with fee
+    BOOST_REQUIRE( get_hbd_balance( "alice" ) == HBD_asset( 23'809 ) ); // 1000/2 collateral * 1/21 price with fee
 
     HBD_price price_1_for_2( 1000, 2000 );
     set_price_feed( price_1_for_2 );
@@ -3682,7 +3682,7 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
 
     BOOST_REQUIRE( get_hive_balance( "alice" ) == alice_balance );
     generate_block(); //actual conversion
-    alice_balance += ASSET( "950.002 TESTS" ); //a lot of excess collateral (1000 - 23.809 * 21/10)
+    alice_balance += HIVE_asset( 950'002 ); //a lot of excess collateral (1000 - 23.809 * 21/10)
     BOOST_REQUIRE( get_hive_balance( "alice" ) == alice_balance );
 
     validate_database();
@@ -3718,16 +3718,16 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_narrow_price )
     auto conversion_time = db->head_block_time();
     collateralized_convert_hive_to_hbd( "alice", 0, ASSET( "0.042 TESTS" ), alice_private_key );
 
-    BOOST_REQUIRE( get_hive_balance( "alice" ) == ASSET( "0.000 TESTS" ) );
-    BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "0.010 TBD" ) ); // 0.042/2 collateral * 10/21 price with fee
+    BOOST_REQUIRE( get_hive_balance( "alice" ) == HIVE_asset( 0 ) );
+    BOOST_REQUIRE( get_hbd_balance( "alice" ) == HBD_asset( 10 ) ); // 0.042/2 collateral * 10/21 price with fee
 
     generate_blocks( conversion_time + HIVE_COLLATERALIZED_CONVERSION_DELAY - fc::seconds( HIVE_BLOCK_INTERVAL ) );
 
-    BOOST_REQUIRE( get_hive_balance( "alice" ) == ASSET( "0.000 TESTS" ) );
-    BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "0.010 TBD" ) );
+    BOOST_REQUIRE( get_hive_balance( "alice" ) == HIVE_asset( 0 ) );
+    BOOST_REQUIRE( get_hbd_balance( "alice" ) == HBD_asset( 10 ) );
     generate_block(); //actual conversion
-    BOOST_REQUIRE( get_hive_balance( "alice" ) == ASSET( "0.021 TESTS" ) );
-    BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "0.010 TBD" ) );
+    BOOST_REQUIRE( get_hive_balance( "alice" ) == HIVE_asset( 21 ) );
+    BOOST_REQUIRE( get_hbd_balance( "alice" ) == HBD_asset( 10 ) );
 
     validate_database();
   }
@@ -3769,19 +3769,19 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_wide_price )
     auto conversion_time = db->head_block_time();
     auto alice_balance = get_hive_balance( "alice" );
     push_transaction( op, alice_private_key );
-    alice_balance -= ASSET( "4200000.000 TESTS" );
+    alice_balance -= HIVE_asset( 4'200'000'000 );
 
     BOOST_REQUIRE( get_hive_balance( "alice" ) == alice_balance );
-    BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "1000000.000 TBD" ) );
+    BOOST_REQUIRE( get_hbd_balance( "alice" ) == HBD_asset( 1'000'000'000 ) );
 
     generate_blocks( conversion_time + HIVE_COLLATERALIZED_CONVERSION_DELAY - fc::seconds( HIVE_BLOCK_INTERVAL ) );
 
     BOOST_REQUIRE( get_hive_balance( "alice" ) == alice_balance );
-    BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "1000000.000 TBD" ) );
+    BOOST_REQUIRE( get_hbd_balance( "alice" ) == HBD_asset( 1'000'000'000 ) );
     generate_block(); //actual conversion
-    alice_balance += ASSET( "2100000.000 TESTS" );
+    alice_balance += HIVE_asset( 2'100'000'000 );
     BOOST_REQUIRE( get_hive_balance( "alice" ) == alice_balance );
-    BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "1000000.000 TBD" ) );
+    BOOST_REQUIRE( get_hbd_balance( "alice" ) == HBD_asset( 1'000'000'000 ) );
 
     validate_database();
   }
@@ -3869,8 +3869,8 @@ BOOST_AUTO_TEST_CASE( limit_order_create_apply )
     HIVE_REQUIRE_THROW( push_transaction( tx, bob_private_key ), fc::exception );
 
     BOOST_REQUIRE( limit_order_idx.find( boost::make_tuple( "bob", op.orderid ) ) == limit_order_idx.end() );
-    BOOST_REQUIRE( db->get_account( "bob" ).get_hive_balance().amount.value == ASSET( "0.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( db->get_account( "bob" ).get_hbd_balance().amount.value == ASSET( "1000.000 TBD" ).amount.value );
+    BOOST_REQUIRE( db->get_account( "bob" ).get_hive_balance() == HIVE_asset( 0 ) );
+    BOOST_REQUIRE( db->get_account( "bob" ).get_hbd_balance() == HBD_asset( 1'000'000 ) );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test failure when amount to receive is 0" );
@@ -3882,8 +3882,8 @@ BOOST_AUTO_TEST_CASE( limit_order_create_apply )
     HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::exception );
 
     BOOST_REQUIRE( limit_order_idx.find( boost::make_tuple( "alice", op.orderid ) ) == limit_order_idx.end() );
-    BOOST_REQUIRE( db->get_account( "alice" ).get_hive_balance().amount.value == ASSET( "1000.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( db->get_account( "alice" ).get_hbd_balance().amount.value == ASSET( "0.000 TBD" ).amount.value );
+    BOOST_REQUIRE( db->get_account( "alice" ).get_hive_balance() == HIVE_asset( 1'000'000 ) );
+    BOOST_REQUIRE( db->get_account( "alice" ).get_hbd_balance() == HBD_asset( 0 ) );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test failure when amount to sell is 0" );
@@ -3895,8 +3895,8 @@ BOOST_AUTO_TEST_CASE( limit_order_create_apply )
     HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::exception );
 
     BOOST_REQUIRE( limit_order_idx.find( boost::make_tuple( "alice", op.orderid ) ) == limit_order_idx.end() );
-    BOOST_REQUIRE( db->get_account( "alice" ).get_hive_balance().amount.value == ASSET( "1000.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( db->get_account( "alice" ).get_hbd_balance().amount.value == ASSET( "0.000 TBD" ).amount.value );
+    BOOST_REQUIRE( db->get_account( "alice" ).get_hive_balance() == HIVE_asset( 1'000'000 ) );
+    BOOST_REQUIRE( db->get_account( "alice" ).get_hbd_balance() == HBD_asset( 0 ) );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test failure when expiration is too long" );
@@ -3921,8 +3921,8 @@ BOOST_AUTO_TEST_CASE( limit_order_create_apply )
     BOOST_REQUIRE( limit_order->for_sale == op.amount_to_sell.amount );
     BOOST_REQUIRE( limit_order->sell_price == price( op.amount_to_sell, op.min_to_receive ) );
     BOOST_REQUIRE( limit_order->get_market() == std::make_pair( HBD_SYMBOL, HIVE_SYMBOL ) );
-    BOOST_REQUIRE( db->get_account( "alice" ).get_hive_balance().amount.value == ASSET( "990.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( db->get_account( "alice" ).get_hbd_balance().amount.value == ASSET( "0.000 TBD" ).amount.value );
+    BOOST_REQUIRE( db->get_account( "alice" ).get_hive_balance() == HIVE_asset( 990'000 ) );
+    BOOST_REQUIRE( db->get_account( "alice" ).get_hbd_balance() == HBD_asset( 0 ) );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test failure creating limit order with duplicate id" );
@@ -3939,8 +3939,8 @@ BOOST_AUTO_TEST_CASE( limit_order_create_apply )
     BOOST_REQUIRE( limit_order->for_sale == 10000 );
     BOOST_REQUIRE( limit_order->sell_price == price( ASSET( "10.000 TESTS" ), op.min_to_receive ) );
     BOOST_REQUIRE( limit_order->get_market() == std::make_pair( HBD_SYMBOL, HIVE_SYMBOL ) );
-    BOOST_REQUIRE( db->get_account( "alice" ).get_hive_balance().amount.value == ASSET( "990.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( db->get_account( "alice" ).get_hbd_balance().amount.value == ASSET( "0.000 TBD" ).amount.value );
+    BOOST_REQUIRE( db->get_account( "alice" ).get_hive_balance() == HIVE_asset( 990'000 ) );
+    BOOST_REQUIRE( db->get_account( "alice" ).get_hbd_balance() == HBD_asset( 0 ) );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test sucess killing an order that will not be filled" );
@@ -3952,8 +3952,8 @@ BOOST_AUTO_TEST_CASE( limit_order_create_apply )
     HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::exception );
 
     BOOST_REQUIRE( limit_order_idx.find( boost::make_tuple( "alice", op.orderid ) ) == limit_order_idx.end() );
-    BOOST_REQUIRE( db->get_account( "alice" ).get_hive_balance().amount.value == ASSET( "990.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( db->get_account( "alice" ).get_hbd_balance().amount.value == ASSET( "0.000 TBD" ).amount.value );
+    BOOST_REQUIRE( db->get_account( "alice" ).get_hive_balance() == HIVE_asset( 990'000 ) );
+    BOOST_REQUIRE( db->get_account( "alice" ).get_hbd_balance() == HBD_asset( 0 ) );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test having a partial match to limit order" );
@@ -3981,10 +3981,10 @@ BOOST_AUTO_TEST_CASE( limit_order_create_apply )
     BOOST_REQUIRE( limit_order->sell_price == price( ASSET( "10.000 TESTS" ), ASSET( "15.000 TBD" ) ) );
     BOOST_REQUIRE( limit_order->get_market() == std::make_pair( HBD_SYMBOL, HIVE_SYMBOL ) );
     BOOST_REQUIRE( limit_order_idx.find( boost::make_tuple( "bob", op.orderid ) ) == limit_order_idx.end() );
-    BOOST_REQUIRE( db->get_account( "alice" ).get_hive_balance().amount.value == ASSET( "990.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( db->get_account( "alice" ).get_hbd_balance().amount.value == ASSET( "7.500 TBD" ).amount.value );
-    BOOST_REQUIRE( db->get_account( "bob" ).get_hive_balance().amount.value == ASSET( "5.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( db->get_account( "bob" ).get_hbd_balance().amount.value == ASSET( "992.500 TBD" ).amount.value );
+    BOOST_REQUIRE( db->get_account( "alice" ).get_hive_balance() == HIVE_asset( 990'000 ) );
+    BOOST_REQUIRE( db->get_account( "alice" ).get_hbd_balance() == HBD_asset( 7'500 ) );
+    BOOST_REQUIRE( db->get_account( "bob" ).get_hive_balance() == HIVE_asset( 5'000 ) );
+    BOOST_REQUIRE( db->get_account( "bob" ).get_hbd_balance() == HBD_asset( 992'500 ) );
     BOOST_REQUIRE( fill_order_op.open_owner == "alice" );
     BOOST_REQUIRE( fill_order_op.open_orderid == 1 );
     BOOST_REQUIRE( fill_order_op.open_pays.amount.value == ASSET( "5.000 TESTS").amount.value );
@@ -4009,10 +4009,10 @@ BOOST_AUTO_TEST_CASE( limit_order_create_apply )
     BOOST_REQUIRE( limit_order->sell_price == price( ASSET( "15.000 TBD" ), ASSET( "10.000 TESTS" ) ) );
     BOOST_REQUIRE( limit_order->get_market() == std::make_pair( HBD_SYMBOL, HIVE_SYMBOL ) );
     BOOST_REQUIRE( limit_order_idx.find( boost::make_tuple( "alice", 1 ) ) == limit_order_idx.end() );
-    BOOST_REQUIRE( db->get_account( "alice" ).get_hive_balance().amount.value == ASSET( "990.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( db->get_account( "alice" ).get_hbd_balance().amount.value == ASSET( "15.000 TBD" ).amount.value );
-    BOOST_REQUIRE( db->get_account( "bob" ).get_hive_balance().amount.value == ASSET( "10.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( db->get_account( "bob" ).get_hbd_balance().amount.value == ASSET( "977.500 TBD" ).amount.value );
+    BOOST_REQUIRE( db->get_account( "alice" ).get_hive_balance() == HIVE_asset( 990'000 ) );
+    BOOST_REQUIRE( db->get_account( "alice" ).get_hbd_balance() == HBD_asset( 15'000 ) );
+    BOOST_REQUIRE( db->get_account( "bob" ).get_hive_balance() == HIVE_asset( 10'000 ) );
+    BOOST_REQUIRE( db->get_account( "bob" ).get_hbd_balance() == HBD_asset( 977'500 ) );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test filling an existing order and new order fully" );
@@ -4027,10 +4027,10 @@ BOOST_AUTO_TEST_CASE( limit_order_create_apply )
 
     BOOST_REQUIRE( limit_order_idx.find( boost::make_tuple( "alice", 3 ) ) == limit_order_idx.end() );
     BOOST_REQUIRE( limit_order_idx.find( boost::make_tuple( "bob", 1 ) ) == limit_order_idx.end() );
-    BOOST_REQUIRE( db->get_account( "alice" ).get_hive_balance().amount.value == ASSET( "985.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( db->get_account( "alice" ).get_hbd_balance().amount.value == ASSET( "22.500 TBD" ).amount.value );
-    BOOST_REQUIRE( db->get_account( "bob" ).get_hive_balance().amount.value == ASSET( "15.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( db->get_account( "bob" ).get_hbd_balance().amount.value == ASSET( "977.500 TBD" ).amount.value );
+    BOOST_REQUIRE( db->get_account( "alice" ).get_hive_balance() == HIVE_asset( 985'000 ) );
+    BOOST_REQUIRE( db->get_account( "alice" ).get_hbd_balance() == HBD_asset( 22'500 ) );
+    BOOST_REQUIRE( db->get_account( "bob" ).get_hive_balance() == HIVE_asset( 15'000 ) );
+    BOOST_REQUIRE( db->get_account( "bob" ).get_hbd_balance() == HBD_asset( 977'500 ) );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test filling limit order with better order when partial order is better." );
@@ -4059,10 +4059,10 @@ BOOST_AUTO_TEST_CASE( limit_order_create_apply )
     BOOST_REQUIRE( limit_order->for_sale.value == 1000 );
     BOOST_REQUIRE( limit_order->sell_price == price( ASSET( "12.000 TBD" ), ASSET( "10.000 TESTS" ) ) );
     BOOST_REQUIRE( limit_order->get_market() == std::make_pair( HBD_SYMBOL, HIVE_SYMBOL ) );
-    BOOST_REQUIRE( db->get_account( "alice" ).get_hive_balance().amount.value == ASSET( "975.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( db->get_account( "alice" ).get_hbd_balance().amount.value == ASSET( "33.500 TBD" ).amount.value );
-    BOOST_REQUIRE( db->get_account( "bob" ).get_hive_balance().amount.value == ASSET( "25.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( db->get_account( "bob" ).get_hbd_balance().amount.value == ASSET( "965.500 TBD" ).amount.value );
+    BOOST_REQUIRE( db->get_account( "alice" ).get_hive_balance() == HIVE_asset( 975'000 ) );
+    BOOST_REQUIRE( db->get_account( "alice" ).get_hbd_balance() == HBD_asset( 33'500 ) );
+    BOOST_REQUIRE( db->get_account( "bob" ).get_hive_balance() == HIVE_asset( 25'000 ) );
+    BOOST_REQUIRE( db->get_account( "bob" ).get_hbd_balance() == HBD_asset( 965'500 ) );
     validate_database();
 
     limit_order_cancel_operation can;
@@ -4101,10 +4101,10 @@ BOOST_AUTO_TEST_CASE( limit_order_create_apply )
     BOOST_REQUIRE( limit_order->for_sale.value == 9091 );
     BOOST_REQUIRE( limit_order->sell_price == price( ASSET( "20.000 TESTS" ), ASSET( "22.000 TBD" ) ) );
     BOOST_REQUIRE( limit_order->get_market() == std::make_pair( HBD_SYMBOL, HIVE_SYMBOL ) );
-    BOOST_REQUIRE( db->get_account( "alice" ).get_hive_balance().amount.value == ASSET( "955.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( db->get_account( "alice" ).get_hbd_balance().amount.value == ASSET( "45.500 TBD" ).amount.value );
-    BOOST_REQUIRE( db->get_account( "bob" ).get_hive_balance().amount.value == ASSET( "35.909 TESTS" ).amount.value );
-    BOOST_REQUIRE( db->get_account( "bob" ).get_hbd_balance().amount.value == ASSET( "954.500 TBD" ).amount.value );
+    BOOST_REQUIRE( db->get_account( "alice" ).get_hive_balance() == HIVE_asset( 955'000 ) );
+    BOOST_REQUIRE( db->get_account( "alice" ).get_hbd_balance() == HBD_asset( 45'500 ) );
+    BOOST_REQUIRE( db->get_account( "bob" ).get_hive_balance() == HIVE_asset( 35'909 ) );
+    BOOST_REQUIRE( db->get_account( "bob" ).get_hbd_balance() == HBD_asset( 954'500 ) );
     validate_database();
   }
   FC_LOG_AND_RETHROW()
@@ -4188,8 +4188,8 @@ BOOST_AUTO_TEST_CASE( limit_order_create2_apply )
     HIVE_REQUIRE_THROW( push_transaction( tx, bob_private_key ), fc::exception );
 
     BOOST_REQUIRE( limit_order_idx.find( boost::make_tuple( "bob", op.orderid ) ) == limit_order_idx.end() );
-    BOOST_REQUIRE( db->get_account( "bob" ).get_hive_balance().amount.value == ASSET( "0.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( db->get_account( "bob" ).get_hbd_balance().amount.value == ASSET( "1000.000 TBD" ).amount.value );
+    BOOST_REQUIRE( db->get_account( "bob" ).get_hive_balance() == HIVE_asset( 0 ) );
+    BOOST_REQUIRE( db->get_account( "bob" ).get_hbd_balance() == HBD_asset( 1'000'000 ) );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test failure when price is 0" );
@@ -4221,8 +4221,8 @@ BOOST_AUTO_TEST_CASE( limit_order_create2_apply )
     HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::exception );
 
     BOOST_REQUIRE( limit_order_idx.find( boost::make_tuple( "alice", op.orderid ) ) == limit_order_idx.end() );
-    BOOST_REQUIRE( db->get_account( "alice" ).get_hive_balance().amount.value == ASSET( "1000.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( db->get_account( "alice" ).get_hbd_balance().amount.value == ASSET( "0.000 TBD" ).amount.value );
+    BOOST_REQUIRE( db->get_account( "alice" ).get_hive_balance() == HIVE_asset( 1'000'000 ) );
+    BOOST_REQUIRE( db->get_account( "alice" ).get_hbd_balance() == HBD_asset( 0 ) );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test failure when amount to sell is 0" );
@@ -4234,8 +4234,8 @@ BOOST_AUTO_TEST_CASE( limit_order_create2_apply )
     HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::exception );
 
     BOOST_REQUIRE( limit_order_idx.find( boost::make_tuple( "alice", op.orderid ) ) == limit_order_idx.end() );
-    BOOST_REQUIRE( db->get_account( "alice" ).get_hive_balance().amount.value == ASSET( "1000.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( db->get_account( "alice" ).get_hbd_balance().amount.value == ASSET( "0.000 TBD" ).amount.value );
+    BOOST_REQUIRE( db->get_account( "alice" ).get_hive_balance() == HIVE_asset( 1'000'000 ) );
+    BOOST_REQUIRE( db->get_account( "alice" ).get_hbd_balance() == HBD_asset( 0 ) );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test failure when expiration is too long" );
@@ -4260,8 +4260,8 @@ BOOST_AUTO_TEST_CASE( limit_order_create2_apply )
     BOOST_REQUIRE( limit_order->for_sale == op.amount_to_sell.amount );
     BOOST_REQUIRE( limit_order->sell_price == op.exchange_rate );
     BOOST_REQUIRE( limit_order->get_market() == std::make_pair( HBD_SYMBOL, HIVE_SYMBOL ) );
-    BOOST_REQUIRE( db->get_account( "alice" ).get_hive_balance().amount.value == ASSET( "990.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( db->get_account( "alice" ).get_hbd_balance().amount.value == ASSET( "0.000 TBD" ).amount.value );
+    BOOST_REQUIRE( db->get_account( "alice" ).get_hive_balance() == HIVE_asset( 990'000 ) );
+    BOOST_REQUIRE( db->get_account( "alice" ).get_hbd_balance() == HBD_asset( 0 ) );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test failure creating limit order with duplicate id" );
@@ -4278,8 +4278,8 @@ BOOST_AUTO_TEST_CASE( limit_order_create2_apply )
     BOOST_REQUIRE( limit_order->for_sale == 10000 );
     BOOST_REQUIRE( limit_order->sell_price == op.exchange_rate );
     BOOST_REQUIRE( limit_order->get_market() == std::make_pair( HBD_SYMBOL, HIVE_SYMBOL ) );
-    BOOST_REQUIRE( db->get_account( "alice" ).get_hive_balance().amount.value == ASSET( "990.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( db->get_account( "alice" ).get_hbd_balance().amount.value == ASSET( "0.000 TBD" ).amount.value );
+    BOOST_REQUIRE( db->get_account( "alice" ).get_hive_balance() == HIVE_asset( 990'000 ) );
+    BOOST_REQUIRE( db->get_account( "alice" ).get_hbd_balance() == HBD_asset( 0 ) );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test sucess killing an order that will not be filled" );
@@ -4291,8 +4291,8 @@ BOOST_AUTO_TEST_CASE( limit_order_create2_apply )
     HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::exception );
 
     BOOST_REQUIRE( limit_order_idx.find( boost::make_tuple( "alice", op.orderid ) ) == limit_order_idx.end() );
-    BOOST_REQUIRE( db->get_account( "alice" ).get_hive_balance().amount.value == ASSET( "990.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( db->get_account( "alice" ).get_hbd_balance().amount.value == ASSET( "0.000 TBD" ).amount.value );
+    BOOST_REQUIRE( db->get_account( "alice" ).get_hive_balance() == HIVE_asset( 990'000 ) );
+    BOOST_REQUIRE( db->get_account( "alice" ).get_hbd_balance() == HBD_asset( 0 ) );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test having a partial match to limit order" );
@@ -4320,10 +4320,10 @@ BOOST_AUTO_TEST_CASE( limit_order_create2_apply )
     BOOST_REQUIRE( limit_order->sell_price == price( ASSET( "2.000 TESTS" ), ASSET( "3.000 TBD" ) ) );
     BOOST_REQUIRE( limit_order->get_market() == std::make_pair( HBD_SYMBOL, HIVE_SYMBOL ) );
     BOOST_REQUIRE( limit_order_idx.find( boost::make_tuple( "bob", op.orderid ) ) == limit_order_idx.end() );
-    BOOST_REQUIRE( db->get_account( "alice" ).get_hive_balance().amount.value == ASSET( "990.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( db->get_account( "alice" ).get_hbd_balance().amount.value == ASSET( "7.500 TBD" ).amount.value );
-    BOOST_REQUIRE( db->get_account( "bob" ).get_hive_balance().amount.value == ASSET( "5.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( db->get_account( "bob" ).get_hbd_balance().amount.value == ASSET( "992.500 TBD" ).amount.value );
+    BOOST_REQUIRE( db->get_account( "alice" ).get_hive_balance() == HIVE_asset( 990'000 ) );
+    BOOST_REQUIRE( db->get_account( "alice" ).get_hbd_balance() == HBD_asset( 7'500 ) );
+    BOOST_REQUIRE( db->get_account( "bob" ).get_hive_balance() == HIVE_asset( 5'000 ) );
+    BOOST_REQUIRE( db->get_account( "bob" ).get_hbd_balance() == HBD_asset( 992'500 ) );
     BOOST_REQUIRE( fill_order_op.open_owner == "alice" );
     BOOST_REQUIRE( fill_order_op.open_orderid == 1 );
     BOOST_REQUIRE( fill_order_op.open_pays.amount.value == ASSET( "5.000 TESTS").amount.value );
@@ -4348,10 +4348,10 @@ BOOST_AUTO_TEST_CASE( limit_order_create2_apply )
     BOOST_REQUIRE( limit_order->sell_price == price( ASSET( "3.000 TBD" ), ASSET( "2.000 TESTS" ) ) );
     BOOST_REQUIRE( limit_order->get_market() == std::make_pair( HBD_SYMBOL, HIVE_SYMBOL ) );
     BOOST_REQUIRE( limit_order_idx.find( boost::make_tuple( "alice", 1 ) ) == limit_order_idx.end() );
-    BOOST_REQUIRE( db->get_account( "alice" ).get_hive_balance().amount.value == ASSET( "990.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( db->get_account( "alice" ).get_hbd_balance().amount.value == ASSET( "15.000 TBD" ).amount.value );
-    BOOST_REQUIRE( db->get_account( "bob" ).get_hive_balance().amount.value == ASSET( "10.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( db->get_account( "bob" ).get_hbd_balance().amount.value == ASSET( "977.500 TBD" ).amount.value );
+    BOOST_REQUIRE( db->get_account( "alice" ).get_hive_balance() == HIVE_asset( 990'000 ) );
+    BOOST_REQUIRE( db->get_account( "alice" ).get_hbd_balance() == HBD_asset( 15'000 ) );
+    BOOST_REQUIRE( db->get_account( "bob" ).get_hive_balance() == HIVE_asset( 10'000 ) );
+    BOOST_REQUIRE( db->get_account( "bob" ).get_hbd_balance() == HBD_asset( 977'500 ) );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test filling an existing order and new order fully" );
@@ -4366,10 +4366,10 @@ BOOST_AUTO_TEST_CASE( limit_order_create2_apply )
 
     BOOST_REQUIRE( limit_order_idx.find( boost::make_tuple( "alice", 3 ) ) == limit_order_idx.end() );
     BOOST_REQUIRE( limit_order_idx.find( boost::make_tuple( "bob", 1 ) ) == limit_order_idx.end() );
-    BOOST_REQUIRE( db->get_account( "alice" ).get_hive_balance().amount.value == ASSET( "985.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( db->get_account( "alice" ).get_hbd_balance().amount.value == ASSET( "22.500 TBD" ).amount.value );
-    BOOST_REQUIRE( db->get_account( "bob" ).get_hive_balance().amount.value == ASSET( "15.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( db->get_account( "bob" ).get_hbd_balance().amount.value == ASSET( "977.500 TBD" ).amount.value );
+    BOOST_REQUIRE( db->get_account( "alice" ).get_hive_balance() == HIVE_asset( 985'000 ) );
+    BOOST_REQUIRE( db->get_account( "alice" ).get_hbd_balance() == HBD_asset( 22'500 ) );
+    BOOST_REQUIRE( db->get_account( "bob" ).get_hive_balance() == HIVE_asset( 15'000 ) );
+    BOOST_REQUIRE( db->get_account( "bob" ).get_hbd_balance() == HBD_asset( 977'500 ) );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test filling limit order with better order when partial order is better." );
@@ -4398,10 +4398,10 @@ BOOST_AUTO_TEST_CASE( limit_order_create2_apply )
     BOOST_REQUIRE( limit_order->for_sale.value == 1000 );
     BOOST_REQUIRE( limit_order->sell_price == op.exchange_rate );
     BOOST_REQUIRE( limit_order->get_market() == std::make_pair( HBD_SYMBOL, HIVE_SYMBOL ) );
-    BOOST_REQUIRE( db->get_account( "alice" ).get_hive_balance().amount.value == ASSET( "975.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( db->get_account( "alice" ).get_hbd_balance().amount.value == ASSET( "33.500 TBD" ).amount.value );
-    BOOST_REQUIRE( db->get_account( "bob" ).get_hive_balance().amount.value == ASSET( "25.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( db->get_account( "bob" ).get_hbd_balance().amount.value == ASSET( "965.500 TBD" ).amount.value );
+    BOOST_REQUIRE( db->get_account( "alice" ).get_hive_balance() == HIVE_asset( 975'000 ) );
+    BOOST_REQUIRE( db->get_account( "alice" ).get_hbd_balance() == HBD_asset( 33'500 ) );
+    BOOST_REQUIRE( db->get_account( "bob" ).get_hive_balance() == HIVE_asset( 25'000 ) );
+    BOOST_REQUIRE( db->get_account( "bob" ).get_hbd_balance() == HBD_asset( 965'500 ) );
     validate_database();
 
     limit_order_cancel_operation can;
@@ -4441,10 +4441,10 @@ BOOST_AUTO_TEST_CASE( limit_order_create2_apply )
     BOOST_REQUIRE( limit_order->for_sale.value == 9091 );
     BOOST_REQUIRE( limit_order->sell_price == price( ASSET( "1.000 TESTS" ), ASSET( "1.100 TBD" ) ) );
     BOOST_REQUIRE( limit_order->get_market() == std::make_pair( HBD_SYMBOL, HIVE_SYMBOL ) );
-    BOOST_REQUIRE( db->get_account( "alice" ).get_hive_balance().amount.value == ASSET( "955.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( db->get_account( "alice" ).get_hbd_balance().amount.value == ASSET( "45.500 TBD" ).amount.value );
-    BOOST_REQUIRE( db->get_account( "bob" ).get_hive_balance().amount.value == ASSET( "35.909 TESTS" ).amount.value );
-    BOOST_REQUIRE( db->get_account( "bob" ).get_hbd_balance().amount.value == ASSET( "954.500 TBD" ).amount.value );
+    BOOST_REQUIRE( db->get_account( "alice" ).get_hive_balance() == HIVE_asset( 955'000 ) );
+    BOOST_REQUIRE( db->get_account( "alice" ).get_hbd_balance() == HBD_asset( 45'500 ) );
+    BOOST_REQUIRE( db->get_account( "bob" ).get_hive_balance() == HIVE_asset( 35'909 ) );
+    BOOST_REQUIRE( db->get_account( "bob" ).get_hbd_balance() == HBD_asset( 954'500 ) );
 
     BOOST_TEST_MESSAGE( "--- Test filling best order with multiple matches." );
     ACTORS( (sam)(dave) )
@@ -4628,8 +4628,8 @@ BOOST_AUTO_TEST_CASE( limit_order_cancel_apply )
     push_transaction( tx, alice_private_key );
 
     BOOST_REQUIRE( limit_order_idx.find( boost::make_tuple( "alice", 5 ) ) == limit_order_idx.end() );
-    BOOST_REQUIRE( alice.get_hive_balance().amount.value == ASSET( "10.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( alice.get_hbd_balance().amount.value == ASSET( "0.000 TBD" ).amount.value );
+    BOOST_REQUIRE( alice.get_hive_balance() == HIVE_asset( 10'000 ) );
+    BOOST_REQUIRE( alice.get_hbd_balance() == HBD_asset( 0 ) );
   }
   FC_LOG_AND_RETHROW()
 }
@@ -5291,8 +5291,8 @@ BOOST_AUTO_TEST_CASE( escrow_approve_apply )
     BOOST_REQUIRE( escrow.agent == "sam" );
     BOOST_REQUIRE( escrow.ratification_deadline == et_op.ratification_deadline );
     BOOST_REQUIRE( escrow.escrow_expiration == et_op.escrow_expiration );
-    BOOST_REQUIRE( escrow.get_hbd_balance() == ASSET( "0.000 TBD" ) );
-    BOOST_REQUIRE( escrow.get_hive_balance() == ASSET( "1.000 TESTS" ) );
+    BOOST_REQUIRE( escrow.get_hbd_balance() == HBD_asset( 0 ) );
+    BOOST_REQUIRE( escrow.get_hive_balance() == HIVE_asset( 1'000 ) );
     BOOST_REQUIRE( escrow.get_fee() == ASSET( "0.100 TESTS" ) );
     BOOST_REQUIRE( escrow.to_approved );
     BOOST_REQUIRE( !escrow.agent_approved );
@@ -5308,8 +5308,8 @@ BOOST_AUTO_TEST_CASE( escrow_approve_apply )
     BOOST_REQUIRE( escrow.agent == "sam" );
     BOOST_REQUIRE( escrow.ratification_deadline == et_op.ratification_deadline );
     BOOST_REQUIRE( escrow.escrow_expiration == et_op.escrow_expiration );
-    BOOST_REQUIRE( escrow.get_hbd_balance() == ASSET( "0.000 TBD" ) );
-    BOOST_REQUIRE( escrow.get_hive_balance() == ASSET( "1.000 TESTS" ) );
+    BOOST_REQUIRE( escrow.get_hbd_balance() == HBD_asset( 0 ) );
+    BOOST_REQUIRE( escrow.get_hive_balance() == HIVE_asset( 1'000 ) );
     BOOST_REQUIRE( escrow.get_fee() == ASSET( "0.100 TESTS" ) );
     BOOST_REQUIRE( escrow.to_approved );
     BOOST_REQUIRE( !escrow.agent_approved );
@@ -5328,8 +5328,8 @@ BOOST_AUTO_TEST_CASE( escrow_approve_apply )
     BOOST_REQUIRE( escrow.agent == "sam" );
     BOOST_REQUIRE( escrow.ratification_deadline == et_op.ratification_deadline );
     BOOST_REQUIRE( escrow.escrow_expiration == et_op.escrow_expiration );
-    BOOST_REQUIRE( escrow.get_hbd_balance() == ASSET( "0.000 TBD" ) );
-    BOOST_REQUIRE( escrow.get_hive_balance() == ASSET( "1.000 TESTS" ) );
+    BOOST_REQUIRE( escrow.get_hbd_balance() == HBD_asset( 0 ) );
+    BOOST_REQUIRE( escrow.get_hive_balance() == HIVE_asset( 1'000 ) );
     BOOST_REQUIRE( escrow.get_fee() == ASSET( "0.100 TESTS" ) );
     BOOST_REQUIRE( escrow.to_approved );
     BOOST_REQUIRE( !escrow.agent_approved );
@@ -5359,7 +5359,7 @@ BOOST_AUTO_TEST_CASE( escrow_approve_apply )
     }
 
     HIVE_REQUIRE_THROW( db->get_escrow( op.from, op.escrow_id ), fc::exception );
-    BOOST_REQUIRE( db->get_account( "alice" ).get_hive_balance() == ASSET( "10.000 TESTS" ) );
+    BOOST_REQUIRE( db->get_account( "alice" ).get_hive_balance() == HIVE_asset( 10'000 ) );
     validate_database();
 
 
@@ -5386,7 +5386,7 @@ BOOST_AUTO_TEST_CASE( escrow_approve_apply )
     }
 
     HIVE_REQUIRE_THROW( db->get_escrow( op.from, op.escrow_id ), fc::exception );
-    BOOST_REQUIRE( get_hive_balance( "alice" ) == ASSET( "10.000 TESTS" ) );
+    BOOST_REQUIRE( get_hive_balance( "alice" ) == HIVE_asset( 10'000 ) );
     validate_database();
 
 
@@ -5421,7 +5421,7 @@ BOOST_AUTO_TEST_CASE( escrow_approve_apply )
     }
 
     HIVE_REQUIRE_THROW( db->get_escrow( op.from, op.escrow_id ), fc::exception );
-    BOOST_REQUIRE( get_hive_balance( "alice" ) == ASSET( "10.000 TESTS" ) );
+    BOOST_REQUIRE( get_hive_balance( "alice" ) == HIVE_asset( 10'000 ) );
     validate_database();
 
 
@@ -5455,7 +5455,7 @@ BOOST_AUTO_TEST_CASE( escrow_approve_apply )
     }
 
     HIVE_REQUIRE_THROW( db->get_escrow( op.from, op.escrow_id ), fc::exception );
-    BOOST_REQUIRE( get_hive_balance( "alice" ) == ASSET( "10.000 TESTS" ) );
+    BOOST_REQUIRE( get_hive_balance( "alice" ) == HIVE_asset( 10'000 ) );
     validate_database();
 
 
@@ -5493,8 +5493,8 @@ BOOST_AUTO_TEST_CASE( escrow_approve_apply )
       BOOST_REQUIRE( escrow.agent == "sam" );
       BOOST_REQUIRE( escrow.ratification_deadline == et_op.ratification_deadline );
       BOOST_REQUIRE( escrow.escrow_expiration == et_op.escrow_expiration );
-      BOOST_REQUIRE( escrow.get_hbd_balance() == ASSET( "0.000 TBD" ) );
-      BOOST_REQUIRE( escrow.get_hive_balance() == ASSET( "1.000 TESTS" ) );
+      BOOST_REQUIRE( escrow.get_hbd_balance() == HBD_asset( 0 ) );
+      BOOST_REQUIRE( escrow.get_hive_balance() == HIVE_asset( 1'000 ) );
       BOOST_REQUIRE( escrow.get_fee() == ASSET( "0.000 TESTS" ) );
       BOOST_REQUIRE( escrow.to_approved );
       BOOST_REQUIRE( escrow.agent_approved );
@@ -5514,8 +5514,8 @@ BOOST_AUTO_TEST_CASE( escrow_approve_apply )
       BOOST_REQUIRE( escrow.agent == "sam" );
       BOOST_REQUIRE( escrow.ratification_deadline == et_op.ratification_deadline );
       BOOST_REQUIRE( escrow.escrow_expiration == et_op.escrow_expiration );
-      BOOST_REQUIRE( escrow.get_hbd_balance() == ASSET( "0.000 TBD" ) );
-      BOOST_REQUIRE( escrow.get_hive_balance() == ASSET( "1.000 TESTS" ) );
+      BOOST_REQUIRE( escrow.get_hbd_balance() == HBD_asset( 0 ) );
+      BOOST_REQUIRE( escrow.get_hive_balance() == HIVE_asset( 1'000 ) );
       BOOST_REQUIRE( escrow.get_fee() == ASSET( "0.000 TESTS" ) );
       BOOST_REQUIRE( escrow.to_approved );
       BOOST_REQUIRE( escrow.agent_approved );
@@ -5993,8 +5993,8 @@ BOOST_AUTO_TEST_CASE( escrow_release_apply )
     tx.operations.push_back( op );
     push_transaction( tx, bob_private_key );
 
-    BOOST_REQUIRE( db->get_escrow( op.from, op.escrow_id ).get_hive_balance() == ASSET( "0.900 TESTS" ) );
-    BOOST_REQUIRE( get_hive_balance( "alice" ) == ASSET( "9.000 TESTS" ) );
+    BOOST_REQUIRE( db->get_escrow( op.from, op.escrow_id ).get_hive_balance() == HIVE_asset( 900 ) );
+    BOOST_REQUIRE( get_hive_balance( "alice" ) == HIVE_asset( 9'000 ) );
 
 
     BOOST_TEST_MESSAGE( "--- failure when 'from' attempts to release non-disputed escrow to 'from'" );
@@ -6029,8 +6029,8 @@ BOOST_AUTO_TEST_CASE( escrow_release_apply )
     tx.operations.push_back( op );
     push_transaction( tx, alice_private_key );
 
-    BOOST_REQUIRE( db->get_escrow( op.from, op.escrow_id ).get_hive_balance() == ASSET( "0.800 TESTS" ) );
-    BOOST_REQUIRE( get_hive_balance( "bob" ) == ASSET( "0.100 TESTS" ) );
+    BOOST_REQUIRE( db->get_escrow( op.from, op.escrow_id ).get_hive_balance() == HIVE_asset( 800 ) );
+    BOOST_REQUIRE( get_hive_balance( "bob" ) == HIVE_asset( 100 ) );
 
 
     BOOST_TEST_MESSAGE( "--- failure when releasing more hbd than available" );
@@ -6102,8 +6102,8 @@ BOOST_AUTO_TEST_CASE( escrow_release_apply )
     tx.operations.push_back( op );
     push_transaction( tx, sam_private_key );
 
-    BOOST_REQUIRE( get_hive_balance( "bob" ) == ASSET( "0.200 TESTS" ) );
-    BOOST_REQUIRE( db->get_escrow( et_op.from, et_op.escrow_id ).get_hive_balance() == ASSET( "0.700 TESTS" ) );
+    BOOST_REQUIRE( get_hive_balance( "bob" ) == HIVE_asset( 200 ) );
+    BOOST_REQUIRE( db->get_escrow( et_op.from, et_op.escrow_id ).get_hive_balance() == HIVE_asset( 700 ) );
 
 
     BOOST_TEST_MESSAGE( "--- success releasing disputed escrow with agent to 'from'" );
@@ -6113,8 +6113,8 @@ BOOST_AUTO_TEST_CASE( escrow_release_apply )
     tx.operations.push_back( op );
     push_transaction( tx, sam_private_key );
 
-    BOOST_REQUIRE( get_hive_balance( "alice" ) == ASSET( "9.100 TESTS" ) );
-    BOOST_REQUIRE( db->get_escrow( et_op.from, et_op.escrow_id ).get_hive_balance() == ASSET( "0.600 TESTS" ) );
+    BOOST_REQUIRE( get_hive_balance( "alice" ) == HIVE_asset( 9'100 ) );
+    BOOST_REQUIRE( db->get_escrow( et_op.from, et_op.escrow_id ).get_hive_balance() == HIVE_asset( 600 ) );
 
 
     BOOST_TEST_MESSAGE( "--- failure when 'to' attempts to release disputed expired escrow" );
@@ -6143,8 +6143,8 @@ BOOST_AUTO_TEST_CASE( escrow_release_apply )
     tx.operations.push_back( op );
     push_transaction( tx, sam_private_key );
 
-    BOOST_REQUIRE( get_hive_balance( "alice" ) == ASSET( "9.200 TESTS" ) );
-    BOOST_REQUIRE( db->get_escrow( et_op.from, et_op.escrow_id ).get_hive_balance() == ASSET( "0.500 TESTS" ) );
+    BOOST_REQUIRE( get_hive_balance( "alice" ) == HIVE_asset( 9'200 ) );
+    BOOST_REQUIRE( db->get_escrow( et_op.from, et_op.escrow_id ).get_hive_balance() == HIVE_asset( 500 ) );
 
 
     BOOST_TEST_MESSAGE( "--- success deleting escrow when balances are both zero" );
@@ -6153,7 +6153,7 @@ BOOST_AUTO_TEST_CASE( escrow_release_apply )
     tx.operations.push_back( op );
     push_transaction( tx, sam_private_key );
 
-    BOOST_REQUIRE( get_hive_balance( "alice" ) == ASSET( "9.700 TESTS" ) );
+    BOOST_REQUIRE( get_hive_balance( "alice" ) == HIVE_asset( 9'700 ) );
     HIVE_REQUIRE_THROW( db->get_escrow( et_op.from, et_op.escrow_id ), fc::exception );
 
 
@@ -6212,8 +6212,8 @@ BOOST_AUTO_TEST_CASE( escrow_release_apply )
     tx.operations.push_back( op );
     push_transaction( tx, bob_private_key );
 
-    BOOST_REQUIRE( get_hive_balance( "bob" ) == ASSET( "0.300 TESTS" ) );
-    BOOST_REQUIRE( db->get_escrow( et_op.from, et_op.escrow_id ).get_hive_balance() == ASSET( "0.900 TESTS" ) );
+    BOOST_REQUIRE( get_hive_balance( "bob" ) == HIVE_asset( 300 ) );
+    BOOST_REQUIRE( db->get_escrow( et_op.from, et_op.escrow_id ).get_hive_balance() == HIVE_asset( 900 ) );
 
 
     BOOST_TEST_MESSAGE( "--- success release non-disputed expired escrow to 'from' from 'to'" );
@@ -6222,8 +6222,8 @@ BOOST_AUTO_TEST_CASE( escrow_release_apply )
     tx.operations.push_back( op );
     push_transaction( tx, bob_private_key );
 
-    BOOST_REQUIRE( get_hive_balance( "alice" ) == ASSET( "8.700 TESTS" ) );
-    BOOST_REQUIRE( db->get_escrow( et_op.from, et_op.escrow_id ).get_hive_balance() == ASSET( "0.800 TESTS" ) );
+    BOOST_REQUIRE( get_hive_balance( "alice" ) == HIVE_asset( 8'700 ) );
+    BOOST_REQUIRE( db->get_escrow( et_op.from, et_op.escrow_id ).get_hive_balance() == HIVE_asset( 800 ) );
 
 
     BOOST_TEST_MESSAGE( "--- failure when 'from' attempts to release non-disputed expired escrow to 'agent'" );
@@ -6247,8 +6247,8 @@ BOOST_AUTO_TEST_CASE( escrow_release_apply )
     tx.operations.push_back( op );
     push_transaction( tx, alice_private_key );
 
-    BOOST_REQUIRE( get_hive_balance( "bob" ) == ASSET( "0.400 TESTS" ) );
-    BOOST_REQUIRE( db->get_escrow( et_op.from, et_op.escrow_id ).get_hive_balance() == ASSET( "0.700 TESTS" ) );
+    BOOST_REQUIRE( get_hive_balance( "bob" ) == HIVE_asset( 400 ) );
+    BOOST_REQUIRE( db->get_escrow( et_op.from, et_op.escrow_id ).get_hive_balance() == HIVE_asset( 700 ) );
 
 
     BOOST_TEST_MESSAGE( "--- success release non-disputed expired escrow to 'from' from 'from'" );
@@ -6257,8 +6257,8 @@ BOOST_AUTO_TEST_CASE( escrow_release_apply )
     tx.operations.push_back( op );
     push_transaction( tx, alice_private_key );
 
-    BOOST_REQUIRE( get_hive_balance( "alice" ) == ASSET( "8.800 TESTS" ) );
-    BOOST_REQUIRE( db->get_escrow( et_op.from, et_op.escrow_id ).get_hive_balance() == ASSET( "0.600 TESTS" ) );
+    BOOST_REQUIRE( get_hive_balance( "alice" ) == HIVE_asset( 8'800 ) );
+    BOOST_REQUIRE( db->get_escrow( et_op.from, et_op.escrow_id ).get_hive_balance() == HIVE_asset( 600 ) );
 
 
     BOOST_TEST_MESSAGE( "--- success deleting escrow when balances are zero on non-disputed escrow" );
@@ -6267,7 +6267,7 @@ BOOST_AUTO_TEST_CASE( escrow_release_apply )
     tx.operations.push_back( op );
     push_transaction( tx, alice_private_key );
 
-    BOOST_REQUIRE( get_hive_balance( "alice" ) == ASSET( "9.400 TESTS" ) );
+    BOOST_REQUIRE( get_hive_balance( "alice" ) == HIVE_asset( 9'400 ) );
     HIVE_REQUIRE_THROW( db->get_escrow( et_op.from, et_op.escrow_id ), fc::exception );
   }
   FC_LOG_AND_RETHROW()
@@ -6551,8 +6551,8 @@ BOOST_AUTO_TEST_CASE( transfer_to_savings_apply )
     issue_funds( "alice", HIVE_asset( 10'000 ) );
     issue_funds( "alice", HBD_asset( 10'000 ) );
 
-    BOOST_REQUIRE( get_hive_balance( "alice" ) == ASSET( "10.000 TESTS" ) );
-    BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "10.000 TBD" ) );
+    BOOST_REQUIRE( get_hive_balance( "alice" ) == HIVE_asset( 10'000 ) );
+    BOOST_REQUIRE( get_hbd_balance( "alice" ) == HBD_asset( 10'000 ) );
 
     transfer_to_savings_operation op;
     signed_transaction tx;
@@ -6600,8 +6600,8 @@ BOOST_AUTO_TEST_CASE( transfer_to_savings_apply )
     tx.operations.push_back( op );
     push_transaction( tx, alice_private_key );
 
-    BOOST_REQUIRE( get_hive_balance( "alice" ) == ASSET( "9.000 TESTS" ) );
-    BOOST_REQUIRE( get_hive_savings( "alice" ) == ASSET( "1.000 TESTS" ) );
+    BOOST_REQUIRE( get_hive_balance( "alice" ) == HIVE_asset( 9'000 ) );
+    BOOST_REQUIRE( get_hive_savings( "alice" ) == HIVE_asset( 1'000 ) );
     validate_database();
 
 
@@ -6612,8 +6612,8 @@ BOOST_AUTO_TEST_CASE( transfer_to_savings_apply )
     tx.operations.push_back( op );
     push_transaction( tx, alice_private_key );
 
-    BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "9.000 TBD" ) );
-    BOOST_REQUIRE( get_hbd_savings( "alice" ) == ASSET( "1.000 TBD" ) );
+    BOOST_REQUIRE( get_hbd_balance( "alice" ) == HBD_asset( 9'000 ) );
+    BOOST_REQUIRE( get_hbd_savings( "alice" ) == HBD_asset( 1'000 ) );
     validate_database();
 
 
@@ -6625,8 +6625,8 @@ BOOST_AUTO_TEST_CASE( transfer_to_savings_apply )
     tx.operations.push_back( op );
     push_transaction( tx, alice_private_key );
 
-    BOOST_REQUIRE( get_hive_balance( "alice" ) == ASSET( "8.000 TESTS" ) );
-    BOOST_REQUIRE( get_hive_savings( "bob" ) == ASSET( "1.000 TESTS" ) );
+    BOOST_REQUIRE( get_hive_balance( "alice" ) == HIVE_asset( 8'000 ) );
+    BOOST_REQUIRE( get_hive_savings( "bob" ) == HIVE_asset( 1'000 ) );
     validate_database();
 
 
@@ -6637,8 +6637,8 @@ BOOST_AUTO_TEST_CASE( transfer_to_savings_apply )
     tx.operations.push_back( op );
     push_transaction( tx, alice_private_key );
 
-    BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "8.000 TBD" ) );
-    BOOST_REQUIRE( get_hbd_savings( "bob" ) == ASSET( "1.000 TBD" ) );
+    BOOST_REQUIRE( get_hbd_balance( "alice" ) == HBD_asset( 8'000 ) );
+    BOOST_REQUIRE( get_hbd_savings( "bob" ) == HBD_asset( 1'000 ) );
     validate_database();
   }
   FC_LOG_AND_RETHROW()
@@ -6789,7 +6789,7 @@ BOOST_AUTO_TEST_CASE( transfer_from_savings_apply )
     tx.clear();
     tx.operations.push_back( op );
     push_transaction( tx, alice_private_key );
-    BOOST_REQUIRE( get_hbd_savings( "alice" ) == ASSET( "9.000 TBD" ) );
+    BOOST_REQUIRE( get_hbd_savings( "alice" ) == HBD_asset( 9'000 ) );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- success withdrawing HIVE to self" );
@@ -6801,8 +6801,8 @@ BOOST_AUTO_TEST_CASE( transfer_from_savings_apply )
     tx.operations.push_back( op );
     push_transaction( tx, alice_private_key );
 
-    BOOST_REQUIRE( get_hive_balance( "alice" ) == ASSET( "0.000 TESTS" ) );
-    BOOST_REQUIRE( get_hive_savings( "alice" ) == ASSET( "9.000 TESTS" ) );
+    BOOST_REQUIRE( get_hive_balance( "alice" ) == HIVE_asset( 0 ) );
+    BOOST_REQUIRE( get_hive_savings( "alice" ) == HIVE_asset( 9'000 ) );
     BOOST_REQUIRE( db->get_account( "alice" ).savings_withdraw_requests == op.request_id + 1 );
     BOOST_REQUIRE( db->get_savings_withdraw( "alice", op.request_id ).from == op.from );
     BOOST_REQUIRE( db->get_savings_withdraw( "alice", op.request_id ).to == op.to );
@@ -6821,8 +6821,8 @@ BOOST_AUTO_TEST_CASE( transfer_from_savings_apply )
     tx.operations.push_back( op );
     push_transaction( tx, alice_private_key );
 
-    BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "0.000 TBD" ) );
-    BOOST_REQUIRE( get_hbd_savings( "alice" ) == ASSET( "8.000 TBD" ) );
+    BOOST_REQUIRE( get_hbd_balance( "alice" ) == HBD_asset( 0 ) );
+    BOOST_REQUIRE( get_hbd_savings( "alice" ) == HBD_asset( 8'000 ) );
     BOOST_REQUIRE( db->get_account( "alice" ).savings_withdraw_requests == op.request_id + 1 );
     BOOST_REQUIRE( db->get_savings_withdraw( "alice", op.request_id ).from == op.from );
     BOOST_REQUIRE( db->get_savings_withdraw( "alice", op.request_id ).to == op.to );
@@ -6850,8 +6850,8 @@ BOOST_AUTO_TEST_CASE( transfer_from_savings_apply )
     tx.operations.push_back( op );
     push_transaction( tx, alice_private_key );
 
-    BOOST_REQUIRE( get_hive_balance( "alice" ) == ASSET( "0.000 TESTS" ) );
-    BOOST_REQUIRE( get_hive_savings( "alice" ) == ASSET( "8.000 TESTS" ) );
+    BOOST_REQUIRE( get_hive_balance( "alice" ) == HIVE_asset( 0 ) );
+    BOOST_REQUIRE( get_hive_savings( "alice" ) == HIVE_asset( 8'000 ) );
     BOOST_REQUIRE( db->get_account( "alice" ).savings_withdraw_requests == op.request_id + 1 );
     BOOST_REQUIRE( db->get_savings_withdraw( "alice", op.request_id ).from == op.from );
     BOOST_REQUIRE( db->get_savings_withdraw( "alice", op.request_id ).to == op.to );
@@ -6870,8 +6870,8 @@ BOOST_AUTO_TEST_CASE( transfer_from_savings_apply )
     tx.operations.push_back( op );
     push_transaction( tx, alice_private_key );
 
-    BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "0.000 TBD" ) );
-    BOOST_REQUIRE( get_hbd_savings( "alice" ) == ASSET( "7.000 TBD" ) );
+    BOOST_REQUIRE( get_hbd_balance( "alice" ) == HBD_asset( 0 ) );
+    BOOST_REQUIRE( get_hbd_savings( "alice" ) == HBD_asset( 7'000 ) );
     BOOST_REQUIRE( db->get_account( "alice" ).savings_withdraw_requests == op.request_id + 1 );
     BOOST_REQUIRE( db->get_savings_withdraw( "alice", op.request_id ).from == op.from );
     BOOST_REQUIRE( db->get_savings_withdraw( "alice", op.request_id ).to == op.to );
@@ -6885,19 +6885,19 @@ BOOST_AUTO_TEST_CASE( transfer_from_savings_apply )
     BOOST_TEST_MESSAGE( "--- withdraw on timeout" );
     generate_blocks( db->head_block_time() + HIVE_SAVINGS_WITHDRAW_TIME - fc::seconds( HIVE_BLOCK_INTERVAL ), true );
 
-    BOOST_REQUIRE( get_hive_balance( "alice" ) == ASSET( "0.000 TESTS" ) );
-    BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "0.000 TBD" ) );
-    BOOST_REQUIRE( get_hive_balance( "bob" ) == ASSET( "0.000 TESTS" ) );
-    BOOST_REQUIRE( get_hbd_balance( "bob" ) == ASSET( "0.000 TBD" ) );
+    BOOST_REQUIRE( get_hive_balance( "alice" ) == HIVE_asset( 0 ) );
+    BOOST_REQUIRE( get_hbd_balance( "alice" ) == HBD_asset( 0 ) );
+    BOOST_REQUIRE( get_hive_balance( "bob" ) == HIVE_asset( 0 ) );
+    BOOST_REQUIRE( get_hbd_balance( "bob" ) == HBD_asset( 0 ) );
     BOOST_REQUIRE( db->get_account( "alice" ).savings_withdraw_requests == op.request_id + 1 );
     validate_database();
 
     generate_block();
 
-    BOOST_REQUIRE( get_hive_balance( "alice" ) == ASSET( "1.000 TESTS" ) );
-    BOOST_REQUIRE( get_hbd_balance( "alice" ) == ASSET( "1.000 TBD" ) );
-    BOOST_REQUIRE( get_hive_balance( "bob" ) == ASSET( "1.000 TESTS" ) );
-    BOOST_REQUIRE( get_hbd_balance( "bob" ) == ASSET( "1.000 TBD" ) );
+    BOOST_REQUIRE( get_hive_balance( "alice" ) == HIVE_asset( 1'000 ) );
+    BOOST_REQUIRE( get_hbd_balance( "alice" ) == HBD_asset( 1'000 ) );
+    BOOST_REQUIRE( get_hive_balance( "bob" ) == HIVE_asset( 1'000 ) );
+    BOOST_REQUIRE( get_hbd_balance( "bob" ) == HBD_asset( 1'000 ) );
     BOOST_REQUIRE( db->get_account( "alice" ).savings_withdraw_requests == 0 );
     validate_database();
 
@@ -7035,11 +7035,11 @@ BOOST_AUTO_TEST_CASE( cancel_transfer_from_savings_apply )
     tx.operations.push_back( op );
     push_transaction( tx, alice_private_key );
 
-    BOOST_REQUIRE( get_hive_balance( "alice" ) == ASSET( "0.000 TESTS" ) );
-    BOOST_REQUIRE( get_hive_savings( "alice" ) == ASSET( "10.000 TESTS" ) );
+    BOOST_REQUIRE( get_hive_balance( "alice" ) == HIVE_asset( 0 ) );
+    BOOST_REQUIRE( get_hive_savings( "alice" ) == HIVE_asset( 10'000 ) );
     BOOST_REQUIRE( db->get_account( "alice" ).savings_withdraw_requests == 0 );
-    BOOST_REQUIRE( get_hive_balance( "bob" ) == ASSET( "0.000 TESTS" ) );
-    BOOST_REQUIRE( get_hive_savings( "bob" ) == ASSET( "0.000 TESTS" ) );
+    BOOST_REQUIRE( get_hive_balance( "bob" ) == HIVE_asset( 0 ) );
+    BOOST_REQUIRE( get_hive_savings( "bob" ) == HIVE_asset( 0 ) );
     BOOST_REQUIRE( db->get_account( "bob" ).savings_withdraw_requests == 0 );
     validate_database();
   }
@@ -7426,12 +7426,12 @@ BOOST_AUTO_TEST_CASE( claim_reward_balance_apply )
     push_transaction( tx, alice_post_key );
 
     BOOST_REQUIRE( get_hive_balance( "alice" ) == alice_hive + op.reward_hive );
-    BOOST_REQUIRE( get_hive_rewards( "alice" ) == ASSET( "10.000 TESTS" ) );
+    BOOST_REQUIRE( get_hive_rewards( "alice" ) == HIVE_asset( 10'000 ) );
     BOOST_REQUIRE( get_hbd_balance( "alice" ) == alice_hbd + op.reward_hbd );
-    BOOST_REQUIRE( get_hbd_rewards( "alice" ) == ASSET( "10.000 TBD" ) );
+    BOOST_REQUIRE( get_hbd_rewards( "alice" ) == HBD_asset( 10'000 ) );
     BOOST_REQUIRE( get_vesting( "alice" ) == alice_vests + op.reward_vests );
-    BOOST_REQUIRE( get_vest_rewards( "alice" ) == ASSET( "5.000000 VESTS" ) );
-    BOOST_REQUIRE( get_vest_rewards_as_hive( "alice" ) == ASSET( "5.000 TESTS" ) );
+    BOOST_REQUIRE( get_vest_rewards( "alice" ) == VEST_asset( 5'000'000 ) );
+    BOOST_REQUIRE( get_vest_rewards_as_hive( "alice" ) == HIVE_asset( 5'000 ) );
     validate_database();
 
     alice_vests += op.reward_vests;
@@ -7446,12 +7446,12 @@ BOOST_AUTO_TEST_CASE( claim_reward_balance_apply )
     push_transaction( tx, alice_post_key );
 
     BOOST_REQUIRE( get_hive_balance( "alice" ) == alice_hive + op.reward_hive );
-    BOOST_REQUIRE( get_hive_rewards( "alice" ) == ASSET( "0.000 TESTS" ) );
+    BOOST_REQUIRE( get_hive_rewards( "alice" ) == HIVE_asset( 0 ) );
     BOOST_REQUIRE( get_hbd_balance( "alice" ) == alice_hbd + op.reward_hbd );
-    BOOST_REQUIRE( get_hbd_rewards( "alice" ) == ASSET( "0.000 TBD" ) );
+    BOOST_REQUIRE( get_hbd_rewards( "alice" ) == HBD_asset( 0 ) );
     BOOST_REQUIRE( get_vesting( "alice" ) == alice_vests + op.reward_vests );
-    BOOST_REQUIRE( get_vest_rewards( "alice" ) == ASSET( "0.000000 VESTS" ) );
-    BOOST_REQUIRE( get_vest_rewards_as_hive( "alice" ) == ASSET( "0.000 TESTS" ) );
+    BOOST_REQUIRE( get_vest_rewards( "alice" ) == VEST_asset( 0 ) );
+    BOOST_REQUIRE( get_vest_rewards_as_hive( "alice" ) == HIVE_asset( 0 ) );
         validate_database();
   }
   FC_LOG_AND_RETHROW()
@@ -7575,7 +7575,7 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
 
     BOOST_REQUIRE( delegation != nullptr );
     BOOST_REQUIRE( delegation->get_delegator() == alice_acc.get_id() );
-    BOOST_REQUIRE( delegation->get_vesting() == ASSET( "10000000.000000 VESTS"));
+    BOOST_REQUIRE( delegation->get_vesting() == VEST_asset( 10'000'000'000'000 ));
 
     old_manabar = VOTING_MANABAR( "alice" );
     params.max_mana = db->get_account( "alice" ).get_effective_vesting_shares().value;
@@ -7605,7 +7605,7 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
 
     BOOST_REQUIRE( delegation != nullptr );
     BOOST_REQUIRE( delegation->get_delegator() == alice_acc.get_id() );
-    BOOST_REQUIRE( delegation->get_vesting() == ASSET( "20000000.000000 VESTS"));
+    BOOST_REQUIRE( delegation->get_vesting() == VEST_asset( 20'000'000'000'000 ));
     BOOST_REQUIRE( alice_acc.get_delegated_vesting() == ASSET( "20000000.000000 VESTS"));
     BOOST_REQUIRE( alice_acc.voting_manabar.current_mana == old_manabar.current_mana - delta );
     BOOST_REQUIRE( alice_acc.downvote_manabar.current_mana == old_downvote_manabar.current_mana - delta / 4 );
@@ -7788,7 +7788,7 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
     BOOST_REQUIRE( exp_obj->get_vesting() == sam_vest );
     BOOST_REQUIRE( exp_obj->get_expiration_time() == db->head_block_time() + gpo.delegation_return_period );
     BOOST_REQUIRE( db->get_account( "sam" ).get_delegated_vesting() == sam_vest );
-    BOOST_REQUIRE( db->get_account( "dave" ).get_received_vesting() == ASSET( "0.000000 VESTS" ) );
+    BOOST_REQUIRE( db->get_account( "dave" ).get_received_vesting() == VEST_asset( 0 ) );
     delegation = db->find< vesting_delegation_object, by_delegation >( boost::make_tuple( sam_acc.get_id(), dave_acc.get_id() ) );
     BOOST_REQUIRE( delegation == nullptr );
 
@@ -7827,7 +7827,7 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
     end = db->get_index< vesting_delegation_expiration_index, by_id >().end();
 
     BOOST_REQUIRE( exp_obj == end );
-    BOOST_REQUIRE( db->get_account( "sam" ).get_delegated_vesting() == ASSET( "0.000000 VESTS" ) );
+    BOOST_REQUIRE( db->get_account( "sam" ).get_delegated_vesting() == VEST_asset( 0 ) );
     BOOST_REQUIRE( VOTING_MANABAR( "sam" ).current_mana == old_sam_manabar.current_mana + sam_vest.amount.value );
     BOOST_REQUIRE( DOWNVOTE_MANABAR( "sam" ).current_mana == old_sam_downvote_manabar.current_mana + sam_vest.amount.value / 4 );
     BOOST_REQUIRE( VOTING_MANABAR( "dave" ).current_mana == old_dave_manabar.current_mana );
@@ -7872,8 +7872,8 @@ BOOST_AUTO_TEST_CASE( issue_971_vesting_removal )
     const account_object& alice_acc = db->get_account( "alice" );
     const account_object& bob_acc = db->get_account( "bob" );
 
-    BOOST_REQUIRE( alice_acc.get_delegated_vesting() == ASSET( "10000000.000000 VESTS"));
-    BOOST_REQUIRE( bob_acc.get_received_vesting() == ASSET( "10000000.000000 VESTS"));
+    BOOST_REQUIRE( alice_acc.get_delegated_vesting() == VEST_asset( 10'000'000'000'000 ));
+    BOOST_REQUIRE( bob_acc.get_received_vesting() == VEST_asset( 10'000'000'000'000 ));
 
     generate_block();
 
@@ -7894,8 +7894,8 @@ BOOST_AUTO_TEST_CASE( issue_971_vesting_removal )
     push_transaction( tx, alice_private_key );
     generate_block();
 
-    BOOST_REQUIRE( alice_acc.get_delegated_vesting() == ASSET( "10000000.000000 VESTS"));
-    BOOST_REQUIRE( bob_acc.get_received_vesting() == ASSET( "0.000000 VESTS"));
+    BOOST_REQUIRE( alice_acc.get_delegated_vesting() == VEST_asset( 10'000'000'000'000 ));
+    BOOST_REQUIRE( bob_acc.get_received_vesting() == VEST_asset( 0 ));
   }
   FC_LOG_AND_RETHROW()
 }
@@ -8243,37 +8243,37 @@ BOOST_AUTO_TEST_CASE( comment_options_apply )
 
     BOOST_REQUIRE( db->find_comment_cashout( *db->get_comment( "alice", string( "test1" ) ) ) == nullptr );
     //no reward for test1 comment
-    BOOST_REQUIRE_EQUAL( get_hive_rewards( "alice" ).amount.value, 0 );
-    BOOST_REQUIRE_EQUAL( get_hbd_rewards( "alice" ).amount.value, 0 );
-    BOOST_REQUIRE_EQUAL( get_vest_rewards_as_hive( "alice" ).amount.value, 0 );
-    BOOST_REQUIRE_EQUAL( get_hive_rewards( "bob" ).amount.value, 0 );
-    BOOST_REQUIRE_EQUAL( get_hbd_rewards( "bob" ).amount.value, 0 );
-    BOOST_REQUIRE_EQUAL( get_vest_rewards_as_hive( "bob" ).amount.value, 0 );
+    BOOST_REQUIRE( get_hive_rewards( "alice" ) == HIVE_asset( 0 ) );
+    BOOST_REQUIRE( get_hbd_rewards( "alice" ) == HBD_asset( 0 ) );
+    BOOST_REQUIRE( get_vest_rewards_as_hive( "alice" ) == HIVE_asset( 0 ) );
+    BOOST_REQUIRE( get_hive_rewards( "bob" ) == HIVE_asset( 0 ) );
+    BOOST_REQUIRE( get_hbd_rewards( "bob" ) == HBD_asset( 0 ) );
+    BOOST_REQUIRE( get_vest_rewards_as_hive( "bob" ) == HIVE_asset( 0 ) );
 
     db_plugin->debug_update( set_reward_pool );
     generate_block();
 
     BOOST_REQUIRE( db->find_comment_cashout( *db->get_comment( "alice", string( "test2" ) ) ) == nullptr );
     //alice got reward for test2 comment as author...
-    BOOST_REQUIRE_EQUAL( get_hive_rewards( "alice" ).amount.value, 0 );
-    BOOST_REQUIRE_EQUAL( get_hbd_rewards( "alice" ).amount.value, 18635 );
-    BOOST_REQUIRE_EQUAL( get_vest_rewards_as_hive( "alice" ).amount.value, 18635 );
+    BOOST_REQUIRE( get_hive_rewards( "alice" ) == HIVE_asset( 0 ) );
+    BOOST_REQUIRE( get_hbd_rewards( "alice" ) == HBD_asset( 18635 ) );
+    BOOST_REQUIRE( get_vest_rewards_as_hive( "alice" ) == HIVE_asset( 18635 ) );
     //...but no curation for sam
-    BOOST_REQUIRE_EQUAL( get_hive_rewards( "sam" ).amount.value, 0 );
-    BOOST_REQUIRE_EQUAL( get_hbd_rewards( "sam" ).amount.value, 0 );
-    BOOST_REQUIRE_EQUAL( get_vest_rewards_as_hive( "sam" ).amount.value, 0 );
+    BOOST_REQUIRE( get_hive_rewards( "sam" ) == HIVE_asset( 0 ) );
+    BOOST_REQUIRE( get_hbd_rewards( "sam" ) == HBD_asset( 0 ) );
+    BOOST_REQUIRE( get_vest_rewards_as_hive( "sam" ) == HIVE_asset( 0 ) );
 
     db_plugin->debug_update( set_reward_pool );
     generate_block();
 
     BOOST_REQUIRE( db->find_comment_cashout( *db->get_comment( "alice", string( "test3" ) ) ) == nullptr );
     //alice and dave got reward for test3 comment but they sum to 0.010 HBD
-    BOOST_REQUIRE_EQUAL( get_hive_rewards( "alice" ).amount.value, 0 );
-    BOOST_REQUIRE_EQUAL( get_hbd_rewards( "alice" ).amount.value, 18635 + 2 );
-    BOOST_REQUIRE_EQUAL( get_vest_rewards_as_hive( "alice" ).amount.value, 18635 + 3 );
-    BOOST_REQUIRE_EQUAL( get_hive_rewards( "dave" ).amount.value, 0 );
-    BOOST_REQUIRE_EQUAL( get_hbd_rewards( "dave" ).amount.value, 0 );
-    BOOST_REQUIRE_EQUAL( get_vest_rewards_as_hive( "dave" ).amount.value, 5 );
+    BOOST_REQUIRE( get_hive_rewards( "alice" ) == HIVE_asset( 0 ) );
+    BOOST_REQUIRE( get_hbd_rewards( "alice" ) == HBD_asset( 18635 + 2 ) );
+    BOOST_REQUIRE( get_vest_rewards_as_hive( "alice" ) == HIVE_asset( 18635 + 3 ) );
+    BOOST_REQUIRE( get_hive_rewards( "dave" ) == HIVE_asset( 0 ) );
+    BOOST_REQUIRE( get_hbd_rewards( "dave" ) == HBD_asset( 0 ) );
+    BOOST_REQUIRE( get_vest_rewards_as_hive( "dave" ) == HIVE_asset( 5 ) );
 
   }
   FC_LOG_AND_RETHROW()
@@ -8328,7 +8328,7 @@ BOOST_AUTO_TEST_CASE( comment_options_deleted_permlink_reuse )
     auto old_comment_id = old_comment->get_id();
     BOOST_REQUIRE_EQUAL( comment_cashout->allows_curation_rewards(), false );
     BOOST_REQUIRE_EQUAL( comment_cashout->allows_votes(), false );
-    BOOST_REQUIRE_EQUAL( comment_cashout->get_max_accepted_payout().amount.value, 10 );
+    BOOST_REQUIRE( comment_cashout->get_max_accepted_payout() == HBD_asset( 10 ) );
     const auto& vote_idx = db->get_index< comment_vote_index, by_comment_voter >();
     auto voteI = vote_idx.find( boost::make_tuple( old_comment_id, bob_id ) );
     BOOST_REQUIRE( voteI != vote_idx.end() );
@@ -8355,7 +8355,7 @@ BOOST_AUTO_TEST_CASE( comment_options_deleted_permlink_reuse )
     auto new_comment_id = new_comment->get_id();
     BOOST_REQUIRE_EQUAL( comment_cashout->allows_curation_rewards(), true );
     BOOST_REQUIRE_EQUAL( comment_cashout->allows_votes(), true );
-    BOOST_REQUIRE_EQUAL( comment_cashout->get_max_accepted_payout().amount.value, 1000000000 );
+    BOOST_REQUIRE( comment_cashout->get_max_accepted_payout() == HBD_asset( 1000000000 ) );
     voteI = vote_idx.find( boost::make_tuple( new_comment_id, bob_id ) );
     BOOST_REQUIRE( voteI == vote_idx.end() );
     voteI = vote_idx.find( boost::make_tuple( old_comment_id, bob_id ) );
@@ -8820,8 +8820,8 @@ BOOST_AUTO_TEST_CASE( claim_account_apply )
     get_subsidy_pools( c_subs, nc_subs );
 
     BOOST_REQUIRE( db->get_account( "alice" ).pending_claimed_accounts == 1 );
-    BOOST_REQUIRE( get_hive_balance( "alice" ) == ASSET( "15.000 TESTS" ) );
-    BOOST_REQUIRE( get_hive_balance( HIVE_NULL_ACCOUNT ) == ASSET( "5.000 TESTS" ) );
+    BOOST_REQUIRE( get_hive_balance( "alice" ) == HIVE_asset( 15'000 ) );
+    BOOST_REQUIRE( get_hive_balance( HIVE_NULL_ACCOUNT ) == HIVE_asset( 5'000 ) );
     BOOST_CHECK_EQUAL( c_subs, prev_c_subs );
     BOOST_CHECK_EQUAL( nc_subs, prev_nc_subs );
     validate_database();
@@ -8856,7 +8856,7 @@ BOOST_AUTO_TEST_CASE( claim_account_apply )
     get_subsidy_pools( c_subs, nc_subs );
 
     BOOST_REQUIRE( db->get_account( "alice" ).pending_claimed_accounts == 2 );
-    BOOST_REQUIRE( get_hive_balance( "alice" ) == ASSET( "10.000 TESTS" ) );
+    BOOST_REQUIRE( get_hive_balance( "alice" ) == HIVE_asset( 10'000 ) );
     BOOST_REQUIRE( c_subs == prev_c_subs );
     BOOST_REQUIRE( nc_subs == prev_nc_subs );
     validate_database();
@@ -8882,7 +8882,7 @@ BOOST_AUTO_TEST_CASE( claim_account_apply )
     push_transaction( tx, alice_private_key );
     get_subsidy_pools( c_subs, nc_subs );
     BOOST_CHECK( db->get_account( "alice" ).pending_claimed_accounts == 3 );
-    BOOST_CHECK( get_hive_balance( "alice" ) == ASSET( "10.000 TESTS" ) );
+    BOOST_CHECK( get_hive_balance( "alice" ) == HIVE_asset( 10'000 ) );
     // Non-consensus isn't updated until end of block
     BOOST_CHECK_EQUAL( c_subs, prev_c_subs - HIVE_ACCOUNT_SUBSIDY_PRECISION );
     BOOST_CHECK_EQUAL( nc_subs, prev_nc_subs );
@@ -9098,9 +9098,9 @@ BOOST_AUTO_TEST_CASE( create_claimed_account_apply )
     CHECK_NO_PROXY( bob );
     BOOST_REQUIRE( bob.get_recovery_account() == alice_id );
     BOOST_REQUIRE( bob.get_creation_time() == db->head_block_time() );
-    BOOST_REQUIRE( bob.get_hive_balance().amount.value == ASSET( "0.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( bob.get_hbd_balance().amount.value == ASSET( "0.000 TBD" ).amount.value );
-    BOOST_REQUIRE( bob.get_vesting().amount.value == ASSET( "0.000000 VESTS" ).amount.value );
+    BOOST_REQUIRE( bob.get_hive_balance() == HIVE_asset( 0 ) );
+    BOOST_REQUIRE( bob.get_hbd_balance() == HBD_asset( 0 ) );
+    BOOST_REQUIRE( bob.get_vesting() == VEST_asset( 0 ) );
     BOOST_REQUIRE( bob.get_id().get_value() == bob_auth.get_id().get_value() );
 
     BOOST_REQUIRE( db->get_account( "alice" ).pending_claimed_accounts == 1 );
@@ -9648,7 +9648,7 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_apply )
     fund( "alice", ASSET( "10.000 TESTS" ) );
     issue_funds( "alice", HBD_asset( 100'000 ) );
 
-    BOOST_REQUIRE( get_hive_balance( "alice" ).amount.value == ASSET( "10.000 TESTS" ).amount.value );
+    BOOST_REQUIRE( get_hive_balance( "alice" ) == HIVE_asset( 10'000 ) );
 
     recurrent_transfer_operation op;
     op.from = "alice";
@@ -9664,8 +9664,8 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_apply )
     const auto execution_block_time = db->head_block_time();
     const auto& recurrent_transfer_pre_execution = db->find< recurrent_transfer_object, by_from_to_id >(boost::make_tuple( alice_id, bob_id) );
 
-    BOOST_REQUIRE( get_hive_balance( "alice" ).amount.value == ASSET( "10.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( get_hive_balance( "bob" ).amount.value == ASSET( "0.000 TESTS" ).amount.value );
+    BOOST_REQUIRE( get_hive_balance( "alice" ) == HIVE_asset( 10'000 ) );
+    BOOST_REQUIRE( get_hive_balance( "bob" ) == HIVE_asset( 0 ) );
     BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == 1 );
     BOOST_REQUIRE( recurrent_transfer_pre_execution->get_trigger_date() == execution_block_time);
     BOOST_REQUIRE( recurrent_transfer_pre_execution->recurrence == 72 );
@@ -9677,8 +9677,8 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_apply )
 
     generate_block();
     BOOST_TEST_MESSAGE( "--- test initial recurrent transfer execution" );
-    BOOST_REQUIRE( get_hive_balance( "alice" ).amount.value == ASSET( "5.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( get_hive_balance( "bob" ).amount.value == ASSET( "5.000 TESTS" ).amount.value );
+    BOOST_REQUIRE( get_hive_balance( "alice" ) == HIVE_asset( 5'000 ) );
+    BOOST_REQUIRE( get_hive_balance( "bob" ) == HIVE_asset( 5'000 ) );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- test recurrent transfer trigger date and remaining executions post genesis execution" );
@@ -9782,15 +9782,15 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_hbd )
     push_transaction(op, alice_private_key);
 
     const auto execution_block_time = db->head_block_time();
-    BOOST_REQUIRE( get_hbd_balance( "alice" ).amount.value == ASSET( "100.000 TBD" ).amount.value );
-    BOOST_REQUIRE( get_hbd_balance( "bob" ).amount.value == ASSET( "0.000 TBD" ).amount.value );
+    BOOST_REQUIRE( get_hbd_balance( "alice" ) == HBD_asset( 100'000 ) );
+    BOOST_REQUIRE( get_hbd_balance( "bob" ) == HBD_asset( 0 ) );
     BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == 1 );
     validate_database();
     generate_block();
 
     BOOST_TEST_MESSAGE( "--- test initial recurrent transfer execution" );
-    BOOST_REQUIRE( get_hbd_balance( "alice" ).amount.value == ASSET( "90.000 TBD" ).amount.value );
-    BOOST_REQUIRE( get_hbd_balance( "bob" ).amount.value == ASSET( "10.000 TBD" ).amount.value );
+    BOOST_REQUIRE( get_hbd_balance( "alice" ) == HBD_asset( 90'000 ) );
+    BOOST_REQUIRE( get_hbd_balance( "bob" ) == HBD_asset( 10'000 ) );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- test recurrent transfer trigger date post genesis execution" );
@@ -9833,10 +9833,10 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_max_open_transfers )
     BOOST_TEST_MESSAGE( "Testing: executing all the recurrent transfers");
     generate_block();
 
-    BOOST_REQUIRE( get_hive_balance( "alice" ).amount.value == ASSET( "8725.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( get_hive_balance( "actor0" ).amount.value == ASSET( "5.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( get_hive_balance( "actor123" ).amount.value == ASSET( "5.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( get_hive_balance( "actor254" ).amount.value == ASSET( "5.000 TESTS" ).amount.value );
+    BOOST_REQUIRE( get_hive_balance( "alice" ) == HIVE_asset( 8'725'000 ) );
+    BOOST_REQUIRE( get_hive_balance( "actor0" ) == HIVE_asset( 5'000 ) );
+    BOOST_REQUIRE( get_hive_balance( "actor123" ) == HIVE_asset( 5'000 ) );
+    BOOST_REQUIRE( get_hive_balance( "actor254" ) == HIVE_asset( 5'000 ) );
     BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == HIVE_MAX_OPEN_RECURRENT_TRANSFERS);
 
     BOOST_TEST_MESSAGE( "Testing: Cannot create more than HIVE_MAX_OPEN_RECURRENT_TRANSFERS transfers");
@@ -9855,14 +9855,14 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_max_open_transfers )
 
     // since edit does not trigger transfer right away (unless it was scheduled for that block)
     // there should be no immediate change in balance
-    BOOST_REQUIRE( get_hive_balance( "alice" ).amount.value == ASSET( "8725.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( get_hive_balance( "actor123" ).amount.value == ASSET( "5.000 TESTS" ).amount.value );
+    BOOST_REQUIRE( get_hive_balance( "alice" ) == HIVE_asset( 8'725'000 ) );
+    BOOST_REQUIRE( get_hive_balance( "actor123" ) == HIVE_asset( 5'000 ) );
     BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == HIVE_MAX_OPEN_RECURRENT_TRANSFERS );
 
     generate_blocks( edit_time + fc::hours( 24 ), false );
 
-    BOOST_REQUIRE( get_hive_balance( "alice" ).amount.value == ASSET( "8710.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( get_hive_balance( "actor123" ).amount.value == ASSET( "20.000 TESTS" ).amount.value );
+    BOOST_REQUIRE( get_hive_balance( "alice" ) == HIVE_asset( 8'710'000 ) );
+    BOOST_REQUIRE( get_hive_balance( "actor123" ) == HIVE_asset( 20'000 ) );
     BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == HIVE_MAX_OPEN_RECURRENT_TRANSFERS );
 
     BOOST_TEST_MESSAGE( "Testing: Can still remove existing transfer even when at HIVE_MAX_OPEN_RECURRENT_TRANSFERS transfers" );
@@ -9872,8 +9872,8 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_max_open_transfers )
     push_transaction( op, alice_private_key );
     generate_block();
 
-    BOOST_REQUIRE( get_hive_balance( "alice" ).amount.value == ASSET( "8710.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( get_hive_balance( "actor123" ).amount.value == ASSET( "20.000 TESTS" ).amount.value );
+    BOOST_REQUIRE( get_hive_balance( "alice" ) == HIVE_asset( 8'710'000 ) );
+    BOOST_REQUIRE( get_hive_balance( "actor123" ) == HIVE_asset( 20'000 ) );
     BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == HIVE_MAX_OPEN_RECURRENT_TRANSFERS - 1 );
 
     validate_database();
@@ -9931,10 +9931,10 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_max_transfer_processed_per_block )
 
     const auto recurrent_transfer_no_drift_before = db->find< recurrent_transfer_object, by_from_to_id >(boost::make_tuple( alice_id, actor0_id) )->copy_chain_object();
 
-    BOOST_REQUIRE( get_hive_balance( "alice" ).amount.value == ASSET( "750.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( get_hive_balance( "actor0" ).amount.value == ASSET( "4.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( get_hive_balance( "actor123" ).amount.value == ASSET( "4.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( get_hive_balance( "actor250" ).amount.value == ASSET( "0.000 TESTS" ).amount.value );
+    BOOST_REQUIRE( get_hive_balance( "alice" ) == HIVE_asset( 750'000 ) );
+    BOOST_REQUIRE( get_hive_balance( "actor0" ) == HIVE_asset( 4'000 ) );
+    BOOST_REQUIRE( get_hive_balance( "actor123" ) == HIVE_asset( 4'000 ) );
+    BOOST_REQUIRE( get_hive_balance( "actor250" ) == HIVE_asset( 0 ) );
     BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == 251);
     BOOST_REQUIRE( recurrent_transfer_no_drift_before.get_trigger_date() == creation_block_time + fc::days(1));
 
@@ -9944,10 +9944,10 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_max_transfer_processed_per_block )
 
     const auto recurrent_transfer_drift_before = db->find< recurrent_transfer_object, by_from_to_id >(boost::make_tuple( alice_id, actor250_id) )->copy_chain_object();
 
-    BOOST_REQUIRE( get_hive_balance( "alice" ).amount.value == ASSET( "747.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( get_hive_balance( "actor0" ).amount.value == ASSET( "4.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( get_hive_balance( "actor123" ).amount.value == ASSET( "4.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( get_hive_balance( "actor250" ).amount.value == ASSET( "12.000 TESTS" ).amount.value );
+    BOOST_REQUIRE( get_hive_balance( "alice" ) == HIVE_asset( 747'000 ) );
+    BOOST_REQUIRE( get_hive_balance( "actor0" ) == HIVE_asset( 4'000 ) );
+    BOOST_REQUIRE( get_hive_balance( "actor123" ) == HIVE_asset( 4'000 ) );
+    BOOST_REQUIRE( get_hive_balance( "actor250" ) == HIVE_asset( 12'000 ) );
     BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == 251);
     BOOST_REQUIRE( recurrent_transfer_drift_before.get_trigger_date() == creation_block_time + fc::days(1));
     validate_database();
@@ -9960,10 +9960,10 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_max_transfer_processed_per_block )
 
     const auto recurrent_transfer_no_drift_after = db->find< recurrent_transfer_object, by_from_to_id >(boost::make_tuple( alice_id, actor0_id) )->copy_chain_object();
 
-    BOOST_REQUIRE( get_hive_balance( "alice" ).amount.value == ASSET( "497.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( get_hive_balance( "actor0" ).amount.value == ASSET( "8.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( get_hive_balance( "actor123" ).amount.value == ASSET( "8.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( get_hive_balance( "actor250" ).amount.value == ASSET( "12.000 TESTS" ).amount.value );
+    BOOST_REQUIRE( get_hive_balance( "alice" ) == HIVE_asset( 497'000 ) );
+    BOOST_REQUIRE( get_hive_balance( "actor0" ) == HIVE_asset( 8'000 ) );
+    BOOST_REQUIRE( get_hive_balance( "actor123" ) == HIVE_asset( 8'000 ) );
+    BOOST_REQUIRE( get_hive_balance( "actor250" ) == HIVE_asset( 12'000 ) );
     BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == 251);
     BOOST_REQUIRE( recurrent_transfer_no_drift_after.get_trigger_date() ==  recurrent_transfer_no_drift_before.get_trigger_date() + fc::hours(recurrent_transfer_no_drift_before.recurrence));
 
@@ -9971,10 +9971,10 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_max_transfer_processed_per_block )
     generate_block();
 
     const auto recurrent_transfer_drift_after = db->find< recurrent_transfer_object, by_from_to_id >(boost::make_tuple( alice_id, actor250_id) )->copy_chain_object();
-    BOOST_REQUIRE( get_hive_balance( "alice" ).amount.value == ASSET( "494.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( get_hive_balance( "actor0" ).amount.value == ASSET( "8.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( get_hive_balance( "actor123" ).amount.value == ASSET( "8.000 TESTS" ).amount.value );
-    BOOST_REQUIRE( get_hive_balance( "actor250" ).amount.value == ASSET( "24.000 TESTS" ).amount.value );
+    BOOST_REQUIRE( get_hive_balance( "alice" ) == HIVE_asset( 494'000 ) );
+    BOOST_REQUIRE( get_hive_balance( "actor0" ) == HIVE_asset( 8'000 ) );
+    BOOST_REQUIRE( get_hive_balance( "actor123" ) == HIVE_asset( 8'000 ) );
+    BOOST_REQUIRE( get_hive_balance( "actor250" ) == HIVE_asset( 24'000 ) );
     BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == 251);
     BOOST_REQUIRE( recurrent_transfer_drift_after.get_trigger_date() ==  recurrent_transfer_drift_before.get_trigger_date() + fc::hours(recurrent_transfer_drift_before.recurrence));
 
@@ -10023,22 +10023,22 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_pair_id_basic )
     push_transaction(op2, alice_private_key);
 
     // Check initial balances
-    BOOST_REQUIRE( get_hbd_balance( "alice" ).amount.value == ASSET( "200.000 TBD" ).amount.value );
-    BOOST_REQUIRE( get_hbd_balance( "bob" ).amount.value == ASSET( "0.000 TBD" ).amount.value );
+    BOOST_REQUIRE( get_hbd_balance( "alice" ) == HBD_asset( 200'000 ) );
+    BOOST_REQUIRE( get_hbd_balance( "bob" ) == HBD_asset( 0 ) );
     // Check the number of open recurrent transfers
     BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == 2 );
 
     // execute both initial recurrent transfers
     generate_block();
 
-    BOOST_REQUIRE( get_hbd_balance( "alice" ).amount.value == ASSET( "170.000 TBD" ).amount.value );
-    BOOST_REQUIRE( get_hbd_balance( "bob" ).amount.value == ASSET( "30.000 TBD" ).amount.value );
+    BOOST_REQUIRE( get_hbd_balance( "alice" ) == HBD_asset( 170'000 ) );
+    BOOST_REQUIRE( get_hbd_balance( "bob" ) == HBD_asset( 30'000 ) );
 
     // execute rest of steps of second transfer (one step of first will happen in the meantime)
     generate_blocks( db->head_block_time() + fc::hours( op2.recurrence * 2 ) );
 
-    BOOST_REQUIRE( get_hbd_balance( "alice" ).amount.value == ASSET( "120.000 TBD" ).amount.value );
-    BOOST_REQUIRE( get_hbd_balance( "bob" ).amount.value == ASSET( "80.000 TBD" ).amount.value );
+    BOOST_REQUIRE( get_hbd_balance( "alice" ) == HBD_asset( 120'000 ) );
+    BOOST_REQUIRE( get_hbd_balance( "bob" ) == HBD_asset( 80'000 ) );
     // Check the number of open recurrent transfers
     BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == 1 );
 
@@ -10290,8 +10290,8 @@ BOOST_AUTO_TEST_CASE( failed_recurrent_transfer )
 
       generate_block();
 
-      BOOST_REQUIRE( get_hbd_balance( from ).amount.value == ASSET( "1.000 TBD" ).amount.value );
-      BOOST_REQUIRE( get_hbd_balance( to ).amount.value == ASSET( "6.000 TBD" ).amount.value );
+      BOOST_REQUIRE( get_hbd_balance( from ) == HBD_asset( 1'000 ) );
+      BOOST_REQUIRE( get_hbd_balance( to ) == HBD_asset( 6'000 ) );
 
       const auto& _rt = *( db->get_index< recurrent_transfer_index, by_id >().begin() );
       BOOST_REQUIRE_EQUAL( _rt.consecutive_failures, 0 );

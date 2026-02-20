@@ -1068,9 +1068,9 @@ BOOST_AUTO_TEST_CASE( delayed_voting_many_vesting_01 )
         generate_block();
       }
 
-      BOOST_REQUIRE( get_vesting( "alice" ).amount.value == ( v_alice + v_alice_00 ).amount.value );
-      BOOST_REQUIRE( get_vesting( "bob" ).amount.value == ( v_bob + v_bob_00 ).amount.value );
-      BOOST_REQUIRE( get_vesting( "witness" ).amount.value == v_witness.amount.value );
+      BOOST_REQUIRE( get_vesting( "alice" ) == v_alice + v_alice_00 );
+      BOOST_REQUIRE( get_vesting( "bob" ) == v_bob + v_bob_00 );
+      BOOST_REQUIRE( get_vesting( "witness" ) == v_witness );
       BOOST_REQUIRE( get_votes( "witness" ) == votes_01 );
     }
     {
@@ -1089,9 +1089,9 @@ BOOST_AUTO_TEST_CASE( delayed_voting_many_vesting_01 )
       witness_vote( "bob", "witness", true/*approve*/, bob_private_key );
       generate_block();
 
-      BOOST_REQUIRE( get_vesting( "alice" ).amount.value == v_alice.amount.value );
-      BOOST_REQUIRE( get_vesting( "bob" ).amount.value == v_bob.amount.value );
-      BOOST_REQUIRE( get_vesting( "witness" ).amount.value == v_witness.amount.value );
+      BOOST_REQUIRE( get_vesting( "alice" ) == v_alice );
+      BOOST_REQUIRE( get_vesting( "bob" ) == v_bob );
+      BOOST_REQUIRE( get_vesting( "witness" ) == v_witness );
       BOOST_REQUIRE( get_votes( "witness" ) == votes_01 );
 
       generate_blocks( start_time + HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS , true );
@@ -2368,7 +2368,7 @@ BOOST_AUTO_TEST_CASE( small_common_test_01 )
   ACCOUNT_REPORT( "carol" )
 
 #define CHECK_ACCOUNT_VESTS( account ) \
-  BOOST_REQUIRE_EQUAL( get_vesting( #account ).amount.value, ( expected_ ## account ## _vests ).amount.value )
+  BOOST_REQUIRE( get_vesting( #account ) == expected_ ## account ## _vests )
 
 #define CHECK_ACCOUNT_HIVE( account ) \
   BOOST_REQUIRE( get_hive_balance( #account ) == expected_ ## account ## _hive )
@@ -2380,8 +2380,8 @@ BOOST_AUTO_TEST_CASE( small_common_test_01 )
   BOOST_REQUIRE( WITNESS_VOTES( #witness ) == expected_ ## witness ## _votes )
 
 #define DAY_CHECK_VOTES_BALANCES \
-  BOOST_REQUIRE( get_hive_balance( "alice" ).amount.value != 0 ); \
-  BOOST_REQUIRE_EQUAL( get_hive_balance( "alice" ).amount.value, get_hive_balance( "carol" ).amount.value ); \
+  BOOST_REQUIRE( get_hive_balance( "alice" ) != HIVE_asset( 0 ) ); \
+  BOOST_REQUIRE( get_hive_balance( "alice" ) == get_hive_balance( "carol" ) ); \
   BOOST_TEST_MESSAGE( "[scenario_01]: " << "expected_alice_vests = " << asset_to_string( expected_alice_vests ) ); \
   CHECK_ACCOUNT_VESTS( alice ); \
   BOOST_REQUIRE_EQUAL( VOTING_POWER( "alice" ), WITNESS_VOTES( "alice0bp" ) ); \
@@ -2508,7 +2508,7 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
   Day 0: alice powers up 1000 HIVE; she has 1000 vests, including delayed maturing on day 30 and 300 HIVE
 */
   uint32_t today = 0;
-  asset origin_alice_vests = get_vesting( "alice" );
+  VEST_asset origin_alice_vests = get_vesting( "alice" );
   BOOST_TEST_MESSAGE( "[scenario_01]: day_zero = " << today );
   BOOST_TEST_MESSAGE( "[scenario_01]: head_block_num = " << db->head_block_num() );
 
@@ -2517,7 +2517,7 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
   validate_database();
 
   INTERVAL_REPORT( today );
-  BOOST_REQUIRE( get_hive_balance( "alice" ) == ASSET( "300.000 TESTS" ) );
+  BOOST_REQUIRE( get_hive_balance( "alice" ) == HIVE_asset( 300'000 ) );
 
 /*
   Analyzing delayed votes before they are removed.
@@ -2562,7 +2562,7 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
   validate_database();
 
   INTERVAL_REPORT( today );
-  BOOST_REQUIRE( get_hive_balance( "alice" ) == ASSET( "0.000 TESTS" ) );
+  BOOST_REQUIRE( get_hive_balance( "alice" ) == HIVE_asset( 0 ) );
 
 /*
   Day 10: alice powers down 1300 vests; this schedules virtual PD actions on days 17, 24, 31, 38, 45, 52, 59, 66, 73, 80, 87, 94 and 101
@@ -2580,7 +2580,7 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
   validate_database();
 
   INTERVAL_REPORT( today );
-  BOOST_REQUIRE( get_hive_balance( "alice" ) == ASSET( "0.000 TESTS" ) );
+  BOOST_REQUIRE( get_hive_balance( "alice" ) == HIVE_asset( 0 ) );
 
 /*
   Day 17: PD of 100 vests from alice gives 25 HIVE to carol, 25 HIVE to alice, powers up 25 vests to bob (maturing on day 47)

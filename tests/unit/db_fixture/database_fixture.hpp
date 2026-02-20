@@ -417,15 +417,15 @@ struct database_fixture {
   uint64_t get_nr_blocks_until_daily_proposal_maintenance_block();
 
   account_id_type get_account_id( const string& account_name )const;
-  asset get_hive_balance( const string& account_name )const;
-  asset get_hbd_balance( const string& account_name )const;
-  asset get_hive_savings( const string& account_name )const;
-  asset get_hbd_savings( const string& account_name )const;
-  asset get_hive_rewards( const string& account_name )const;
-  asset get_hbd_rewards( const string& account_name )const;
-  asset get_vesting( const string& account_name )const;
-  asset get_vest_rewards( const string& account_name )const;
-  asset get_vest_rewards_as_hive( const string& account_name )const;
+  HIVE_asset get_hive_balance( const string& account_name )const;
+  HBD_asset get_hbd_balance( const string& account_name )const;
+  HIVE_asset get_hive_savings( const string& account_name )const;
+  HBD_asset get_hbd_savings( const string& account_name )const;
+  HIVE_asset get_hive_rewards( const string& account_name )const;
+  HBD_asset get_hbd_rewards( const string& account_name )const;
+  VEST_asset get_vesting( const string& account_name )const;
+  VEST_asset get_vest_rewards( const string& account_name )const;
+  HIVE_asset get_vest_rewards_as_hive( const string& account_name )const;
 
   comment get_comment( const string& author, const string& permlink )const;
 
