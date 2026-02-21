@@ -1131,8 +1131,8 @@ void database::nullify_proxied_witness_votes( const account_object& a )
   adjust_proxied_witness_votes( a, delta );
 }
 
-bool database::collect_account_total_balance( const account_object& account, asset* total_hive, asset* total_hbd,
-  asset* total_vests, asset* vesting_shares_hive_value )
+bool database::collect_account_total_balance( const account_object& account, HIVE_asset* total_hive, HBD_asset* total_hbd,
+  VEST_asset* total_vests, HIVE_asset* vesting_shares_hive_value )
 {
   const auto& gpo = get_dynamic_global_properties();
 
@@ -1158,7 +1158,9 @@ void database::clear_null_account_balance()
   if( !has_hardfork( HIVE_HARDFORK_0_14__327 ) ) return;
 
   const auto& null_account = get_account( HIVE_NULL_ACCOUNT );
-  asset total_hive, total_hbd, total_vests, vesting_shares_hive_value;
+  HIVE_asset total_hive, vesting_shares_hive_value;
+  HBD_asset total_hbd;
+  VEST_asset total_vests;
 
   if( !( collect_account_total_balance( null_account, &total_hive, &total_hbd, &total_vests, &vesting_shares_hive_value ) ) )
     return;
@@ -1265,7 +1267,9 @@ void database::consolidate_treasury_balance()
   auto old_treasury_name = get_treasury_name( HIVE_HARDFORK_1_24_TREASURY_RENAME - 1 );
 
   const auto& old_treasury_account = get_account( old_treasury_name );
-  asset total_hive, total_hbd, total_vests, vesting_shares_hive_value;
+  HIVE_asset total_hive, vesting_shares_hive_value;
+  HBD_asset total_hbd;
+  VEST_asset total_vests;
 
   if( treasury_name == old_treasury_name || //ABW: once we actually include change of treasury in HF24 that part of condition can be removed
     !( collect_account_total_balance( old_treasury_account, &total_hive, &total_hbd, &total_vests, &vesting_shares_hive_value ) ) )
