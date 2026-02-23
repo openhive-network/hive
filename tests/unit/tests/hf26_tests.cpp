@@ -77,7 +77,7 @@ BOOST_AUTO_TEST_CASE( update_operation )
       {
         db.modify( db.get_witness_schedule_object(), [&]( witness_schedule_object& wso )
         {
-          wso.median_props.account_creation_fee = ASSET( "0.100 TESTS" );
+          wso.median_props.account_creation_fee = HIVE_asset( 100 );
         });
       });
 
