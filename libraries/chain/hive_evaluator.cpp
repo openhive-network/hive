@@ -488,10 +488,12 @@ void pow_apply( database& db, Operation o )
   if( db.head_block_num() < HIVE_START_MINER_VOTING_BLOCK )
   {
     db.adjust_balance( inc_witness, pow_reward );
-    actual_reward = pow_reward;
+    actual_reward = pow_reward.to_asset();
   }
   else
-    actual_reward = db.create_vesting( inc_witness, pow_reward );
+  {
+    actual_reward = db.create_vesting( inc_witness, pow_reward ).to_asset();
+  }
   push_virtual_operation( db, pow_reward_operation( dgp.current_witness, actual_reward ) );
 }
 
@@ -594,7 +596,7 @@ void pow2_evaluator::do_apply( const pow2_operation& o )
 
     const auto& inc_witness = db.get_account( dgp.current_witness );
     VEST_asset actual_reward = db.create_vesting( inc_witness, inc_reward );
-    push_virtual_operation( db, pow_reward_operation( dgp.current_witness, actual_reward ) );
+    push_virtual_operation( db, pow_reward_operation( dgp.current_witness, actual_reward.to_asset() ) );
   }
 }
 

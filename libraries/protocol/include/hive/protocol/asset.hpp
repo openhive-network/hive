@@ -298,7 +298,7 @@ namespace hive { namespace protocol {
 
     tiny_price& operator=( const tiny_price& val ) = default;
 
-    price to_price() const { return price( asset( base ), asset( quote ) ); }
+    price to_price() const { return price( base.to_asset(), quote.to_asset() ); }
     static bool is_compatible( const price& p ) { return decltype( base )::is_compatible( p.base ) && decltype( quote )::is_compatible( p.quote ); }
     static bool is_assignable( const price& p ) { return is_compatible( p ) || ( decltype( base )::is_compatible( p.quote ) && decltype( quote )::is_compatible( p.base ) ); }
     const decltype( base )& get_base() const { return base; }

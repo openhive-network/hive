@@ -37,7 +37,7 @@ using namespace hive::protocol;
 api_reward_fund_object::api_reward_fund_object( const reward_fund_object& o, const database& db ):
   id( o.get_id() ),
   name( o.name ),
-  reward_balance( o.reward_balance ),
+  reward_balance( o.reward_balance.to_asset() ),
   recent_claims( o.recent_claims ),
   last_update( o.last_update ),
   content_constant( o.content_constant ),
@@ -63,8 +63,8 @@ api_escrow_object::api_escrow_object( const escrow_object& o, const database& db
   agent( o.agent ),
   ratification_deadline( o.ratification_deadline ),
   escrow_expiration( o.escrow_expiration ),
-  hbd_balance( o.hbd_balance ),
-  hive_balance( o.hive_balance ),
+  hbd_balance( o.hbd_balance.to_asset() ),
+  hive_balance( o.hive_balance.to_asset() ),
   pending_fee( o.pending_fee ),
   to_approved( o.to_approved ),
   agent_approved( o.agent_approved ),
@@ -86,7 +86,7 @@ api_vesting_delegation_object::api_vesting_delegation_object( const vesting_dele
   id( o.get_id() ),
   delegator( db.get_account( o.get_delegator() ).get_name() ),
   delegatee( db.get_account( o.get_delegatee() ).get_name() ),
-  vesting_shares( o.get_vesting() ),
+  vesting_shares( o.get_vesting().to_asset() ),
   min_delegation_time( o.get_min_delegation_time() )
 {}
 
@@ -94,7 +94,7 @@ api_vesting_delegation_object::api_vesting_delegation_object( const vesting_dele
 api_vesting_delegation_expiration_object::api_vesting_delegation_expiration_object( const vesting_delegation_expiration_object& o, const database& db ):
   id( o.get_id() ),
   delegator( db.get_account( o.get_delegator() ).get_name() ),
-  vesting_shares( o.get_vesting() ),
+  vesting_shares( o.get_vesting().to_asset() ),
   expiration( o.get_expiration_time() )
 {}
 
@@ -104,7 +104,7 @@ api_convert_request_object::api_convert_request_object( const convert_request_ob
   id( o.get_id() ),
   owner( db.get_account( o.get_owner() ).get_name() ),
   requestid( o.get_request_id() ),
-  amount( o.get_convert_amount() ),
+  amount( o.get_convert_amount().to_asset() ),
   conversion_date( o.get_conversion_date() )
 {}
 
@@ -114,8 +114,8 @@ api_collateralized_convert_request_object::api_collateralized_convert_request_ob
   id( o.get_id() ),
   owner( db.get_account( o.get_owner() ).get_name() ),
   requestid( o.get_request_id() ),
-  collateral_amount( o.get_collateral_amount() ),
-  converted_amount( o.get_converted_amount() ),
+  collateral_amount( o.get_collateral_amount().to_asset() ),
+  converted_amount( o.get_converted_amount().to_asset() ),
   conversion_date( o.get_conversion_date() )
 {}
 
@@ -147,16 +147,16 @@ api_dynamic_global_property_object::api_dynamic_global_property_object( const dy
   current_witness( o.current_witness ),
   total_pow( o.total_pow ),
   num_pow_witnesses( o.num_pow_witnesses ),
-  virtual_supply( o.virtual_supply ),
-  current_supply( o.current_supply ),
-  init_hbd_supply( o.init_hbd_supply ),
-  current_hbd_supply( o.current_hbd_supply ),
-  total_vesting_fund_hive( o.total_vesting_fund_hive ),
-  total_vesting_shares( o.total_vesting_shares ),
-  total_reward_fund_hive( o.total_reward_fund_hive ),
+  virtual_supply( o.virtual_supply.to_asset() ),
+  current_supply( o.current_supply.to_asset() ),
+  init_hbd_supply( o.init_hbd_supply.to_asset() ),
+  current_hbd_supply( o.current_hbd_supply.to_asset() ),
+  total_vesting_fund_hive( o.total_vesting_fund_hive.to_asset() ),
+  total_vesting_shares( o.total_vesting_shares.to_asset() ),
+  total_reward_fund_hive( o.total_reward_fund_hive.to_asset() ),
   total_reward_shares2( o.total_reward_shares2 ),
-  pending_rewarded_vesting_shares( o.pending_rewarded_vesting_shares ),
-  pending_rewarded_vesting_hive( o.pending_rewarded_vesting_hive ),
+  pending_rewarded_vesting_shares( o.pending_rewarded_vesting_shares.to_asset() ),
+  pending_rewarded_vesting_hive( o.pending_rewarded_vesting_hive.to_asset() ),
   hbd_interest_rate( o.hbd_interest_rate ),
   hbd_print_rate( o.hbd_print_rate ),
   maximum_block_size( o.maximum_block_size ),
@@ -176,7 +176,7 @@ api_dynamic_global_property_object::api_dynamic_global_property_object( const dy
   content_reward_percent( o.content_reward_percent ),
   vesting_reward_percent( o.vesting_reward_percent ),
   proposal_fund_percent( o.proposal_fund_percent ),
-  dhf_interval_ledger( o.dhf_interval_ledger ),
+  dhf_interval_ledger( o.dhf_interval_ledger.to_asset() ),
   downvote_pool_percent( o.downvote_pool_percent ),
   current_remove_threshold( o.current_remove_threshold ),
   early_voting_seconds( o.early_voting_seconds ),
@@ -211,27 +211,27 @@ api_account_object::api_account_object( const account_object& a, const database&
   can_vote( a.can_vote ),
   voting_manabar( a.voting_manabar ),
   downvote_manabar( a.downvote_manabar ),
-  balance( a.get_hive_balance() ),
-  savings_balance( a.get_hive_savings() ),
-  hbd_balance( a.hbd_balance ),
+  balance( a.get_hive_balance().to_asset() ),
+  savings_balance( a.get_hive_savings().to_asset() ),
+  hbd_balance( a.hbd_balance.to_asset() ),
   hbd_seconds( a.hbd_seconds ),
   hbd_seconds_last_update( a.hbd_seconds_last_update ),
   hbd_last_interest_payment( a.hbd_last_interest_payment ),
-  savings_hbd_balance( a.get_hbd_savings() ),
+  savings_hbd_balance( a.get_hbd_savings().to_asset() ),
   savings_hbd_seconds( a.savings_hbd_seconds ),
   savings_hbd_seconds_last_update( a.savings_hbd_seconds_last_update ),
   savings_hbd_last_interest_payment( a.savings_hbd_last_interest_payment ),
   savings_withdraw_requests( a.savings_withdraw_requests ),
-  reward_hbd_balance( a.get_hbd_rewards() ),
-  reward_hive_balance( a.get_hive_rewards() ),
-  reward_vesting_balance( a.get_vest_rewards() ),
-  reward_vesting_hive( a.get_vest_rewards_as_hive() ),
+  reward_hbd_balance( a.get_hbd_rewards().to_asset() ),
+  reward_hive_balance( a.get_hive_rewards().to_asset() ),
+  reward_vesting_balance( a.get_vest_rewards().to_asset() ),
+  reward_vesting_hive( a.get_vest_rewards_as_hive().to_asset() ),
   curation_rewards( a.curation_rewards.amount ),
   posting_rewards( a.posting_rewards.amount ),
-  vesting_shares( a.vesting_shares ),
-  delegated_vesting_shares( a.delegated_vesting_shares ),
-  received_vesting_shares( a.received_vesting_shares ),
-  vesting_withdraw_rate( a.vesting_withdraw_rate ),
+  vesting_shares( a.vesting_shares.to_asset() ),
+  delegated_vesting_shares( a.delegated_vesting_shares.to_asset() ),
+  received_vesting_shares( a.received_vesting_shares.to_asset() ),
+  vesting_withdraw_rate( a.vesting_withdraw_rate.to_asset() ),
   next_vesting_withdrawal( a.next_vesting_withdrawal ),
   withdrawn( a.withdrawn.amount ),
   to_withdraw( a.to_withdraw.amount ),
@@ -273,7 +273,7 @@ api_account_object::api_account_object( const account_object& a, const database&
   if( delayed_votes_active )
     delayed_votes = vector< delayed_votes_data >{ a.delayed_votes.begin(), a.delayed_votes.end() };
 
-  post_voting_power = a.get_effective_vesting_shares();
+  post_voting_power = a.get_effective_vesting_shares().to_asset();
 }
 
 
@@ -426,7 +426,7 @@ api_proposal_object::api_proposal_object(const proposal_object& po, const time_p
   receiver(po.receiver),
   start_date(po.start_date),
   end_date(po.end_date),
-  daily_pay(po.daily_pay),
+  daily_pay(po.daily_pay.to_asset()),
   subject(to_string(po.subject)),
   permlink(to_string(po.permlink)),
   total_votes(po.total_votes),

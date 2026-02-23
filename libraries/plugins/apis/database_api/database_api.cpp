@@ -14,8 +14,8 @@ api_commment_cashout_info::api_commment_cashout_info(const comment_cashout_objec
 {
   total_vote_weight = cc.get_total_vote_weight();
   reward_weight = HIVE_100_PERCENT; // since HF17 reward is not limited if posts are too frequent
-  total_payout_value = HBD_asset(); // since HF19 it was either default 0 or cc did not exist
-  curator_payout_value = HBD_asset(); // since HF19 it was either default 0 or cc did not exist
+  total_payout_value = asset( 0, HBD_SYMBOL ); // since HF19 it was either default 0 or cc did not exist
+  curator_payout_value = asset( 0, HBD_SYMBOL ); // since HF19 it was either default 0 or cc did not exist
   author_rewards = 0; // since HF19 author_rewards was either default 0 or cc did not exist
   net_votes = cc.get_net_votes();
   last_payout = time_point_sec::min(); // since HF17 there is only one payout and cc does not exist after HF19
@@ -25,7 +25,7 @@ api_commment_cashout_info::api_commment_cashout_info(const comment_cashout_objec
   children_abs_rshares = 0; // value not accumulated after HF17
   cashout_time = cc.get_cashout_time();
   max_cashout_time = time_point_sec::maximum(); // since HF17 it is the only possible value
-  max_accepted_payout = cc.get_max_accepted_payout();
+  max_accepted_payout = cc.get_max_accepted_payout().to_asset();
   percent_hbd = cc.get_percent_hbd();
   allow_votes = cc.allows_votes();
   allow_curation_rewards = cc.allows_curation_rewards();

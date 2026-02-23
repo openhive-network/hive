@@ -256,7 +256,7 @@ public:
     result["head_block_age"]            = fc::get_approximate_relative_time_string(dynamic_props.value.time, time_point_sec(time_point::now()), " old");
     result["participation"]             = (100*fc::uint128_popcount(dynamic_props.value.recent_slots_filled)) / 128.0;
     result["median_hbd_price"]          = wallet_serializer_wrapper<protocol::price>{ _remote_wallet_bridge_api->get_current_median_history_price({}, LOCK) };
-    result["account_creation_fee"]      = wallet_serializer_wrapper<hive::protocol::asset>{ _remote_wallet_bridge_api->get_chain_properties({}, LOCK).account_creation_fee };
+    result["account_creation_fee"]      = wallet_serializer_wrapper<hive::protocol::asset>{ _remote_wallet_bridge_api->get_chain_properties({}, LOCK).account_creation_fee.to_asset() };
 
     protocol::hardfork_version current_hardfork_version;
     fc::from_variant(result["hardfork_version"], current_hardfork_version);
@@ -1181,7 +1181,7 @@ wallet_signed_transaction wallet_api::create_funded_account_with_keys(
       op.posting = authority( 1, posting_key, 1 );
       op.memo_key = memo_key;
       op.json_metadata = json_meta;
-      op.fee = my->_remote_wallet_bridge_api->get_chain_properties({}, LOCK).account_creation_fee;
+      op.fee = my->_remote_wallet_bridge_api->get_chain_properties({}, LOCK).account_creation_fee.to_asset();
 
       tx.operations.push_back(op);
    }

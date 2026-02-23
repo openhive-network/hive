@@ -238,7 +238,7 @@ void database::process_vesting_withdrawals()
     FC_ASSERT( to_convert.amount >= 0, "Deposited more vests than were supposed to be withdrawn" );
 
     auto converted_hive = to_convert * cprops.get_vesting_share_price();
-    operation vop = fill_vesting_withdraw_operation( from_account.get_name(), from_account.get_name(), to_convert, converted_hive );
+    auto vop = fill_vesting_withdraw_operation( from_account.get_name(), from_account.get_name(), to_convert, converted_hive.to_asset() );
     //note: it has to be generated even if to_convert is zero because we've accumulated change on from_account
     //and only now we are going to update that account's VESTS (see issue #337)
     pre_push_virtual_operation( *this, vop );

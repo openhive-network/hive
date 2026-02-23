@@ -595,9 +595,9 @@ void transaction_builder::build_transfer( const account_object& actor, uint64_t 
   transfer.from = actor.get_name();
   transfer.to = (*_current_account)->get_name();
   if( use_hive )
-    transfer.amount = HIVE_asset( 1 );
+    transfer.amount = asset( 1, HIVE_SYMBOL );
   else
-    transfer.amount = HBD_asset( 1 );
+    transfer.amount = asset( 1, HBD_SYMBOL );
   transfer.memo = std::to_string( nonce );
   auto extra_size = _common._params[ TRANSFER ].randomize();
   _stats[ TRANSFER ].extra_size += extra_size;

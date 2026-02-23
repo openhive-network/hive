@@ -107,7 +107,7 @@ int64_t precision(const asset_symbol_type& symbol)
   return table[ d ];
 }
 
-std::string asset_to_string(asset a)
+std::string asset_to_string( const asset& a )
 {
   int64_t prec = precision(a.symbol);
   string result = fc::to_string(a.amount.value / prec);
@@ -117,6 +117,12 @@ std::string asset_to_string(asset a)
     result += "." + fc::to_string(prec + fract).erase(0,1);
   }
   return result + " " + asset_num_to_string(a.symbol.asset_num);
+}
+
+template< uint32_t _SYMBOL >
+std::string asset_to_string( const tiny_asset<_SYMBOL>& a )
+{
+  return asset_to_string( a.to_asset() );
 }
 
 struct operation_visitor
