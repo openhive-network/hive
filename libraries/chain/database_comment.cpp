@@ -622,7 +622,7 @@ void database::perform_vesting_share_split( uint32_t magnitude )
     } );
 
     // Need to update all VESTS in accounts and the total VESTS in the dgpo
-    for( const auto& tiny : get_index< tiny_account_index, by_name >() )
+    for( const auto& tiny : get_index< tiny_account_index, by_id >() )
     {
       const auto& account = get_account( tiny.get_name() );
       const auto& account_assets = get_asset_account( account.get_id() );

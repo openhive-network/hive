@@ -21,7 +21,7 @@ public:
 
   rocksdb_recovery_object( const recovery_object& obj )
     : id( obj.get_id() )
-    , account_id( obj.get_account_id() )
+    , account_id( account_id_type( account_object::id_type( obj.get_id().get_value() ) ) )
     , recovery_account( obj.get_recovery_account() )
     , last_account_recovery( obj.get_last_account_recovery_time() )
     , block_last_account_recovery( obj.get_block_last_account_recovery_time() )
@@ -35,7 +35,6 @@ public:
       // Note: create_no_undo internally adds allocator
       const auto& obj = db.create_no_undo<recovery_object>(
                       id.get_value(),
-                      account_id,
                       recovery_account );
       // Restore additional fields via modify_no_undo to avoid undo tracking
       db.modify_no_undo( obj, [this]( recovery_object& o )
@@ -50,7 +49,6 @@ public:
       auto obj = std::make_shared<recovery_object>(
                           allocator_helper::get_allocator<recovery_object, recovery_index>( db ),
                           id.get_value(),
-                          account_id,
                           recovery_account );
       obj->set_last_account_recovery_time( this->last_account_recovery );
       obj->set_block_last_account_recovery_time( this->block_last_account_recovery );
@@ -75,7 +73,7 @@ public:
 
   rocksdb_assets_object( const assets_object& obj )
     : id( obj.get_id() )
-    , account_id( obj.get_account_id() )
+    , account_id( account_id_type( account_object::id_type( obj.get_id().get_value() ) ) )
     , hbd_balance( obj.get_hbd_balance() )
     , savings_hbd_balance( obj.get_hbd_savings() )
     , reward_hbd_balance( obj.get_hbd_rewards() )
@@ -104,8 +102,7 @@ public:
     {
       // Note: create_no_undo internally adds allocator
       const auto& obj = db.create_no_undo<assets_object>(
-                      id.get_value(),
-                      account_id );
+                      id.get_value() );
       // Restore all balance fields via modify_no_undo to avoid undo tracking
       db.modify_no_undo( obj, [this]( assets_object& o )
       {
@@ -135,8 +132,7 @@ public:
     {
       auto obj = std::make_shared<assets_object>(
                           allocator_helper::get_allocator<assets_object, assets_index>( db ),
-                          id.get_value(),
-                          account_id );
+                          id.get_value() );
       obj->set_hbd_balance( this->hbd_balance );
       obj->set_hbd_savings( this->savings_hbd_balance );
       obj->set_hbd_rewards( this->reward_hbd_balance );
@@ -193,7 +189,7 @@ public:
 
   rocksdb_manabars_rc_object( const manabars_rc_object& obj )
     : id( obj.get_id() )
-    , account_id( obj.get_account_id() )
+    , account_id( account_id_type( account_object::id_type( obj.get_id().get_value() ) ) )
     , voting_manabar( obj.get_voting_manabar() )
     , downvote_manabar( obj.get_downvote_manabar() )
     , rc_manabar( obj.get_rc_manabar() )
@@ -210,8 +206,7 @@ public:
     {
       // Note: create_no_undo internally adds allocator
       const auto& obj = db.create_no_undo<manabars_rc_object>(
-                      id.get_value(),
-                      account_id );
+                      id.get_value() );
       // Restore all manabar and RC fields via modify_no_undo to avoid undo tracking
       db.modify_no_undo( obj, [this]( manabars_rc_object& o )
       {
@@ -229,8 +224,7 @@ public:
     {
       auto obj = std::make_shared<manabars_rc_object>(
                           allocator_helper::get_allocator<manabars_rc_object, manabars_rc_index>( db ),
-                          id.get_value(),
-                          account_id );
+                          id.get_value() );
       obj->get_voting_manabar() = this->voting_manabar;
       obj->get_downvote_manabar() = this->downvote_manabar;
       obj->get_rc_manabar() = this->rc_manabar;
@@ -263,7 +257,7 @@ public:
 
   rocksdb_time_object( const time_object& obj )
     : id( obj.get_id() )
-    , account_id( obj.get_account_id() )
+    , account_id( account_id_type( account_object::id_type( obj.get_id().get_value() ) ) )
     , name( obj.get_name() )
     , hbd_seconds( obj.get_hbd_seconds() )
     , hbd_seconds_last_update( obj.get_hbd_seconds_last_update() )
@@ -284,7 +278,6 @@ public:
       // Note: create_no_undo internally adds allocator
       const auto& obj = db.create_no_undo<time_object>(
                       id.get_value(),
-                      account_id,
                       name );
       // Restore all time-related fields via modify_no_undo to avoid undo tracking
       db.modify_no_undo( obj, [this]( time_object& o )
@@ -306,7 +299,6 @@ public:
       auto obj = std::make_shared<time_object>(
                           allocator_helper::get_allocator<time_object, time_index>( db ),
                           id.get_value(),
-                          account_id,
                           name );
       obj->set_hbd_seconds( this->hbd_seconds );
       obj->set_hbd_seconds_last_update( this->hbd_seconds_last_update );
@@ -345,7 +337,7 @@ public:
 
   rocksdb_delayed_votes_object( const delayed_votes_object& obj )
     : id( obj.get_id() )
-    , account_id( obj.get_account_id() )
+    , account_id( account_id_type( account_object::id_type( obj.get_id().get_value() ) ) )
     , sum_delayed_votes( obj.get_sum_delayed_votes() )
     , delayed_votes( delayed_votes_object::convert( obj.get_delayed_votes() ) )
   {}
@@ -357,8 +349,7 @@ public:
     {
       // Note: create_no_undo internally adds allocator
       const auto& obj = db.create_no_undo<delayed_votes_object>(
-                      id.get_value(),
-                      account_id );
+                      id.get_value() );
       // Modify the object using db.modify_no_undo to populate the delayed_votes data and avoid undo tracking
       db.modify_no_undo( obj, [&]( delayed_votes_object& o )
       {
@@ -371,8 +362,7 @@ public:
     {
       auto obj = std::make_shared<delayed_votes_object>(
                           allocator_helper::get_allocator<delayed_votes_object, delayed_votes_index>( db ),
-                          id.get_value(),
-                          account_id );
+                          id.get_value() );
       obj->set_sum_delayed_votes( sum_delayed_votes );
       obj->clone( delayed_votes );
       return Return_Type( obj );

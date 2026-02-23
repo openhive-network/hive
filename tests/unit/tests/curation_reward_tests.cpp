@@ -419,7 +419,7 @@ struct curation_rewards_handler
     const auto& voter_assets = test_object.db->get_asset_account( voter_acc.get_id() );
     ilog("DEBUG_VEST: voter=${v} idx=${i} voter_id=${vid} assets_id=${aid} acct_id=${accid} vesting=${vest}",
          ("v", voters[idx])("i", idx)("vid", voter_acc.get_id())("aid", voter_assets.get_id())
-         ("accid", voter_assets.get_account_id())("vest", voter_assets.get_vesting()));
+         ("accid", voter_assets.get_id())("vest", voter_assets.get_vesting()));
     return amount;
   }
 

@@ -17,15 +17,11 @@ namespace hive { namespace chain {
     public:
       template< typename Allocator >
       assets_object( allocator< Allocator > a, uint64_t _id,
-        account_id_type _account_id,
         const asset& incoming_delegation = asset( 0, VESTS_SYMBOL ) )
-        : id( _id ), account_id( _account_id )
+        : id( _id )
       {
         received_vesting_shares += incoming_delegation;
       }
-
-      // Link to parent account_object
-      account_id_type get_account_id() const { return account_id; }
 
       // Liquid HIVE balance
       const HIVE_asset& get_balance() const { return balance; }
@@ -107,8 +103,6 @@ namespace hive { namespace chain {
       void set_savings_hbd_last_interest_payment( const time_point_sec& value ) { savings_hbd_last_interest_payment = value; }
 
     private:
-      account_id_type   account_id;               // Links to parent account_object
-
       HBD_asset         hbd_balance;              ///< HBD liquid balance
       HBD_asset         savings_hbd_balance;      ///< HBD balance guarded by 3 day withdrawal (also earns interest)
       HBD_asset         reward_hbd_balance;       ///< HBD balance author rewards that can be claimed
@@ -139,15 +133,11 @@ namespace hive { namespace chain {
 
 
 
-  struct by_account_id;
-
   typedef multi_index_container<
     assets_object,
     indexed_by<
       ordered_unique< tag< by_id >,
-        const_mem_fun< assets_object, assets_object::id_type, &assets_object::get_id > >,
-      ordered_unique< tag< by_account_id >,
-        const_mem_fun< assets_object, account_id_type, &assets_object::get_account_id > >
+        const_mem_fun< assets_object, assets_object::id_type, &assets_object::get_id > >
     >,
     multi_index_allocator< assets_object >
   > assets_index;
@@ -155,7 +145,7 @@ namespace hive { namespace chain {
 } } // hive::chain
 
 FC_REFLECT( hive::chain::assets_object,
-          (id)(account_id)
+          (id)
           (hbd_balance)(savings_hbd_balance)(reward_hbd_balance)
           (reward_hive_balance)(reward_vesting_hive)(balance)(savings_balance)
           (reward_vesting_balance)(vesting_shares)(delegated_vesting_shares)

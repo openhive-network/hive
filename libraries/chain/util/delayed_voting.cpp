@@ -107,7 +107,7 @@ void delayed_voting::run( const fc::time_point_sec& head_time )
       )
   {
     // Look up the delayed_votes_object for this account to get the actual vote data
-    const auto& dvotes = db.get_delayed_votes_account( current->get_account_id() );
+    const auto& dvotes = db.get_delayed_votes_account( account_id_type( account_object::id_type( current->get_id().get_value() ) ) );
     const ushare_type _val{ dvotes.get_delayed_votes().begin()->val };
 
     // Get the account_object

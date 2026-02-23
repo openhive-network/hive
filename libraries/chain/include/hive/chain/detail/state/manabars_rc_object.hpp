@@ -12,12 +12,11 @@ namespace hive { namespace chain {
     public:
       template< typename Allocator >
       manabars_rc_object( allocator< Allocator > a, uint64_t _id,
-        account_id_type _account_id,
         const time_point_sec& _creation_time = time_point_sec(),
         bool _fill_mana = false,
         int64_t _rc_adjustment = 0,
         share_type effective_vesting_shares = 0 )
-        : id( _id ), account_id( _account_id ), rc_adjustment( _rc_adjustment )
+        : id( _id ), rc_adjustment( _rc_adjustment )
       {
         voting_manabar.last_update_time = _creation_time.sec_since_epoch();
         downvote_manabar.last_update_time = _creation_time.sec_since_epoch();
@@ -31,9 +30,6 @@ namespace hive { namespace chain {
           last_max_rc = max_rc;
         }
       }
-
-      // Link to parent account_object
-      account_id_type get_account_id() const { return account_id; }
 
       // Effective balance of VESTS for RC calculation optionally excluding part that cannot be delegated
       share_type get_maximum_rc( share_type effective_vesting_shares, bool only_delegable = false ) const
@@ -71,8 +67,6 @@ namespace hive { namespace chain {
       const util::manabar& get_downvote_manabar() const { return downvote_manabar; }
 
     private:
-      account_id_type   account_id;               // Links to parent account_object
-
       util::manabar     voting_manabar;
       util::manabar     downvote_manabar;
       util::manabar     rc_manabar;
@@ -89,9 +83,7 @@ namespace hive { namespace chain {
     manabars_rc_object,
     indexed_by<
       ordered_unique< tag< by_id >,
-        const_mem_fun< manabars_rc_object, manabars_rc_object::id_type, &manabars_rc_object::get_id > >,
-      ordered_unique< tag< by_account_id >,
-        const_mem_fun< manabars_rc_object, account_id_type, &manabars_rc_object::get_account_id > >
+        const_mem_fun< manabars_rc_object, manabars_rc_object::id_type, &manabars_rc_object::get_id > >
     >,
     multi_index_allocator< manabars_rc_object >
   > manabars_rc_index;
@@ -99,7 +91,7 @@ namespace hive { namespace chain {
 } } // hive::chain
 
 FC_REFLECT( hive::chain::manabars_rc_object,
-          (id)(account_id)
+          (id)
           (voting_manabar)(downvote_manabar)(rc_manabar)
           (rc_adjustment)(delegated_rc)(received_rc)(last_max_rc)
         )
