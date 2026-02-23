@@ -1158,7 +1158,7 @@ BOOST_AUTO_TEST_CASE( vesting_withdrawals )
     auto next_withdrawal = db->head_block_time() + HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS;
     VEST_asset vesting_shares = new_alice.get_vesting();
     VEST_asset original_vesting = vesting_shares;
-    asset withdraw_rate = new_alice.vesting_withdraw_rate;
+    VEST_asset withdraw_rate = new_alice.vesting_withdraw_rate;
 
     BOOST_TEST_MESSAGE( "Generating block up to first withdrawal" );
     generate_blocks( next_withdrawal - HIVE_BLOCK_INTERVAL );
@@ -1171,12 +1171,12 @@ BOOST_AUTO_TEST_CASE( vesting_withdrawals )
     auto fill_op = get_last_operations( 1 )[0].get< fill_vesting_withdraw_operation >();
     auto& gpo = db->get_dynamic_global_properties();
 
-    BOOST_REQUIRE( get_vesting( "alice" ).amount.value == ( vesting_shares - withdraw_rate ).amount.value );
-    BOOST_REQUIRE( ( withdraw_rate * gpo.get_vesting_share_price().to_price() ).amount.value - get_hive_balance( "alice" ).amount.value <= 1 ); // Check a range due to differences in the share price
+    BOOST_REQUIRE( get_vesting( "alice" ) == ( vesting_shares - withdraw_rate ) );
+    BOOST_REQUIRE( withdraw_rate * gpo.get_vesting_share_price() - get_hive_balance( "alice" ) <= HIVE_asset( 1 ) ); // Check a range due to differences in the share price
     BOOST_REQUIRE( fill_op.from_account == "alice" );
     BOOST_REQUIRE( fill_op.to_account == "alice" );
-    BOOST_REQUIRE( fill_op.withdrawn.amount.value == withdraw_rate.amount.value );
-    BOOST_REQUIRE( std::abs( ( fill_op.deposited - fill_op.withdrawn * gpo.get_vesting_share_price().to_price() ).amount.value ) <= 1 );
+    BOOST_REQUIRE( fill_op.withdrawn == withdraw_rate );
+    BOOST_REQUIRE( std::abs( ( fill_op.deposited - fill_op.withdrawn * gpo.get_vesting_share_price() ).amount.value ) <= 1 );
     validate_database();
 
     BOOST_TEST_MESSAGE( "Generating the rest of the blocks in the withdrawal" );
@@ -1193,12 +1193,12 @@ BOOST_AUTO_TEST_CASE( vesting_withdrawals )
 
       fill_op = get_last_operations( 2 )[ 1 ].get< fill_vesting_withdraw_operation >();
 
-      BOOST_REQUIRE( alice.get_vesting().amount.value == ( vesting_shares - withdraw_rate ).amount.value );
-      BOOST_REQUIRE( balance.amount.value + ( withdraw_rate * gpo.get_vesting_share_price().to_price() ).amount.value - alice.get_hive_balance().amount.value <= 1 );
+      BOOST_REQUIRE( alice.get_vesting() == ( vesting_shares - withdraw_rate ) );
+      BOOST_REQUIRE( balance + withdraw_rate * gpo.get_vesting_share_price() - alice.get_hive_balance() <= HIVE_asset( 1 ) );
       BOOST_REQUIRE( fill_op.from_account == "alice" );
       BOOST_REQUIRE( fill_op.to_account == "alice" );
-      BOOST_REQUIRE( fill_op.withdrawn.amount.value == withdraw_rate.amount.value );
-      BOOST_REQUIRE( std::abs( ( fill_op.deposited - fill_op.withdrawn * gpo.get_vesting_share_price().to_price() ).amount.value ) <= 1 );
+      BOOST_REQUIRE( fill_op.withdrawn == withdraw_rate );
+      BOOST_REQUIRE( std::abs( ( fill_op.deposited - fill_op.withdrawn * gpo.get_vesting_share_price() ).amount.value ) <= 1 );
 
       if ( i == HIVE_VESTING_WITHDRAW_INTERVALS - 1 )
         BOOST_REQUIRE( alice.next_vesting_withdrawal == fc::time_point_sec::maximum() );
@@ -1510,11 +1510,11 @@ BOOST_AUTO_TEST_CASE( convert_delay )
     convert_request = convert_request_idx.find( boost::make_tuple( alice_3.get_id(), 2 ) );
     BOOST_REQUIRE( convert_request == convert_request_idx.end() );
     BOOST_REQUIRE( alice_3.get_hive_balance() == HIVE_asset( 2500 ) );
-    BOOST_REQUIRE( alice_3.get_hbd_balance().amount.value == ( start_balance - op.amount ).amount.value );
+    BOOST_REQUIRE( alice_3.get_hbd_balance() == ( start_balance - op.amount ) );
     BOOST_REQUIRE( vop.owner == "alice" );
     BOOST_REQUIRE( vop.requestid == 2 );
-    BOOST_REQUIRE( vop.amount_in.amount.value == ASSET( "2.000 TBD" ).amount.value );
-    BOOST_REQUIRE( vop.amount_out.amount.value == ASSET( "2.500 TESTS" ).amount.value );
+    BOOST_REQUIRE( vop.amount_in == HBD_asset( 2'000 ) );
+    BOOST_REQUIRE( vop.amount_out == HIVE_asset( 2'500 ) );
     validate_database();
   }
   FC_LOG_AND_RETHROW();
@@ -2695,13 +2695,13 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
     BOOST_TEST_MESSAGE( "Changing sam and gpo to set up market cap conditions" );
 
     int correction = ( dgpo.hbd_stop_percent * dgpo.hbd_stop_percent ) / ( HIVE_100_PERCENT - dgpo.hbd_stop_percent ) + 1;
-    asset hbd_balance = asset( ( dgpo.current_supply.amount * ( dgpo.hbd_stop_percent + correction ) ) / HIVE_100_PERCENT, HIVE_SYMBOL ) * exchange_rate.to_price();
+    HBD_asset hbd_balance = ( ( dgpo.current_supply * ( dgpo.hbd_stop_percent + correction ) ) / HIVE_100_PERCENT ) * exchange_rate;
     db_plugin->debug_update( [=]( database& db )
     {
       db.modify( db.get_account( "sam" ), [&]( account_object& a )
       {
         a.hbd_balance = hbd_balance - get_hbd_balance( HIVE_INIT_MINER_NAME ); // initial HBD balance is still on 'initminer'
-      });
+      } );
     } );
 
     db_plugin->debug_update( [&]( database& db )
@@ -2740,7 +2740,7 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
     uint16_t percent = ( dgpo.hbd_stop_percent - dgpo.hbd_start_percent ) / 10;
     percent += dgpo.hbd_start_percent;
     correction = ( percent * percent ) / ( HIVE_100_PERCENT - percent ) + 1;
-    hbd_balance = asset( ( dgpo.current_supply.amount * ( dgpo.hbd_start_percent + correction ) ) / HIVE_100_PERCENT, HIVE_SYMBOL ) * exchange_rate.to_price();
+    hbd_balance = ( ( dgpo.current_supply * ( dgpo.hbd_start_percent + correction ) ) / HIVE_100_PERCENT ) * exchange_rate;
     db_plugin->debug_update( [&]( database& db )
     {
       db.modify( db.get_account( "sam" ), [&]( account_object& a )
