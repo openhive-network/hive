@@ -87,21 +87,21 @@ namespace hive { namespace chain {
       //VESTS that were borrowed from other accounts
       const VEST_asset& get_received_vesting() const { return received_vesting_shares; }
       //whole remainder of active power down (zero when not active)
-      share_type get_total_vesting_withdrawal() const { return to_withdraw.amount - withdrawn.amount; }
+      VEST_asset get_total_vesting_withdrawal() const { return to_withdraw - withdrawn; }
       //tells if account has active power down
       bool has_active_power_down() const { return next_vesting_withdrawal != fc::time_point_sec::maximum(); }
       //value of active step of pending power down (or zero)
-      share_type get_next_vesting_withdrawal() const
+      VEST_asset get_next_vesting_withdrawal() const
       {
         if( has_active_power_down() )
-          return std::min( vesting_withdraw_rate.amount, get_total_vesting_withdrawal() );
+          return std::min( vesting_withdraw_rate, get_total_vesting_withdrawal() );
         else
-          return 0;
+          return VEST_asset( 0 );
       }
       //effective balance of VESTS including delegations and optionally excluding active step of pending power down
-      share_type get_effective_vesting_shares( bool excludeWeeklyPowerDown = true ) const
+      VEST_asset get_effective_vesting_shares( bool excludeWeeklyPowerDown = true ) const
       {
-        share_type total = vesting_shares.amount - delegated_vesting_shares.amount + received_vesting_shares.amount;
+        VEST_asset total = vesting_shares - delegated_vesting_shares + received_vesting_shares;
         if( excludeWeeklyPowerDown && next_vesting_withdrawal != fc::time_point_sec::maximum() )
           total -= get_next_vesting_withdrawal();
         return total;
@@ -114,7 +114,7 @@ namespace hive { namespace chain {
       //effective balance of VESTS for RC calculation optionally excluding part that cannot be delegated
       share_type get_maximum_rc( bool only_delegable = false ) const
       {
-        share_type total = get_effective_vesting_shares() - delegated_rc;
+        share_type total = get_effective_vesting_shares().amount - delegated_rc;
         if( only_delegable == false )
           total += rc_adjustment + received_rc;
         return total;
