@@ -149,6 +149,8 @@ class rc_usage_bucket_object;
 class rc_stats_object;
 class rc_expired_delegation_object;
 
+class tiny_account_object;
+
 // Account split objects
 class recovery_object;
 class assets_object;

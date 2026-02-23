@@ -7,6 +7,7 @@
 #include <hive/chain/database_virtual_operations.hpp>
 #include <hive/chain/rc/rc_utility.hpp>
 #include <hive/chain/account_object_multiindex.hpp>
+#include <hive/chain/detail/state/tiny_account_object.hpp>
 #include <hive/chain/detail/state/convert_request_object_multiindex.hpp>
 #include <hive/chain/detail/state/collateralized_convert_request_object_multiindex.hpp>
 #include <hive/chain/detail/state/feed_history_object.hpp>
@@ -370,6 +371,12 @@ void withdraw_vesting_evaluator::do_apply( const withdraw_vesting_operation& o )
     {
       t.set_next_vesting_withdrawal( time_point_sec::maximum() );
     } );
+    {
+      const auto& tiny_idx = _db.get_index< tiny_account_index, by_name >();
+      auto tiny_it = tiny_idx.find( account.get_name() );
+      if( tiny_it != tiny_idx.end() )
+        _db.modify( *tiny_it, [&]( tiny_account_object& t ) { t.modify_from_time( account_time ); } );
+    }
   }
   else
   {
@@ -400,6 +407,12 @@ void withdraw_vesting_evaluator::do_apply( const withdraw_vesting_operation& o )
     {
       t.set_next_vesting_withdrawal( now + fc::seconds( HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS ) );
     } );
+    {
+      const auto& tiny_idx = _db.get_index< tiny_account_index, by_name >();
+      auto tiny_it = tiny_idx.find( account.get_name() );
+      if( tiny_it != tiny_idx.end() )
+        _db.modify( *tiny_it, [&]( tiny_account_object& t ) { t.modify_from_time( account_time ); } );
+    }
   }
   if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
     _db.rc().update_account_after_vest_change( account, account_mrc, account_assets, account_time, now, false, true );

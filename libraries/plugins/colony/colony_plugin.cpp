@@ -11,6 +11,7 @@
 #include <hive/chain/index.hpp>
 #include <hive/chain/account_object.hpp>
 #include <hive/chain/account_object_multiindex.hpp>
+#include <hive/chain/detail/state/tiny_account_object.hpp>
 #include <hive/chain/comment_object.hpp>
 #include <hive/chain/comment_object_multiindex.hpp>
 #include <hive/chain/witness_objects.hpp>
@@ -652,7 +653,7 @@ void colony_plugin_impl::start( uint32_t block_num )
   _use_posting = !active_needed;
   if( _use_posting )
     posting_needed = true; // custom jsons will use posting even if there are no comments/votes
-  const auto& accounts = _db.get_index< account_index, by_name >();
+  const auto& accounts = _db.get_index< tiny_account_index, by_name >();
   const auto& comments = _db.get_index< comment_cashout_index, by_id >();
   _fill_comment_buffers = _params[ REPLY ].weight > 0 || _params[ VOTE ].weight > 0;
   if( _fill_comment_buffers )

@@ -82,7 +82,6 @@ namespace hive { namespace chain {
 
 
   struct by_account_id;
-  struct by_next_vesting_withdrawal;
 
   typedef multi_index_container<
     time_object,
@@ -90,13 +89,7 @@ namespace hive { namespace chain {
       ordered_unique< tag< by_id >,
         const_mem_fun< time_object, time_object::id_type, &time_object::get_id > >,
       ordered_unique< tag< by_account_id >,
-        const_mem_fun< time_object, account_id_type, &time_object::get_account_id > >,
-      ordered_unique< tag< by_next_vesting_withdrawal >,
-        composite_key< time_object,
-          const_mem_fun< time_object, time_point_sec, &time_object::get_next_vesting_withdrawal >,
-          const_mem_fun< time_object, const account_name_type&, &time_object::get_name >
-        >
-      >
+        const_mem_fun< time_object, account_id_type, &time_object::get_account_id > >
     >,
     multi_index_allocator< time_object >
   > time_index;

@@ -3,6 +3,7 @@
 #include <hive/chain/detail/state/withdraw_vesting_route_object_multiindex.hpp>
 #include <hive/chain/account_object_multiindex.hpp>
 #include <hive/chain/global_property_object_multiindex.hpp>
+#include <hive/chain/detail/state/tiny_account_object.hpp>
 
 #include <hive/chain/database_virtual_operations.hpp>
 #include <hive/chain/index.hpp>
@@ -110,7 +111,7 @@ void database::retally_liquidity_weight() {
 
 void database::process_vesting_withdrawals()
 {
-  const auto& widx = get_index< time_index, by_next_vesting_withdrawal >();
+  const auto& widx = get_index< tiny_account_index, by_next_vesting_withdrawal >();
   const auto& didx = get_index< withdraw_vesting_route_index, by_withdraw_route >();
   auto current = widx.begin();
 
@@ -122,10 +123,11 @@ void database::process_vesting_withdrawals()
     _benchmark_dumper.begin();
   while( current != widx.end() && current->get_next_vesting_withdrawal() <= now )
   {
-    const auto& time_obj = *current; ++current; ++count;
+    const auto& tiny_obj = *current; ++current; ++count;
 
-    // Get the account and its split objects
-    const auto& from_account = get_account( time_obj.get_account_id() );
+    // Get the account and its split objects via tiny_account_object
+    const auto& from_account = get_account( tiny_obj.get_name() );
+    const auto& time_obj = get_time_account( from_account.get_id() );
     const auto& from_assets = get_asset_account( from_account.get_id() );
     const auto& from_mrc = get_manabars_rc_account( from_account.get_id() );
 
@@ -298,6 +300,12 @@ void database::process_vesting_withdrawals()
         t.set_next_vesting_withdrawal( t.get_next_vesting_withdrawal() + fc::seconds( HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS ) );
       }
     });
+    {
+      const auto& tiny_idx = get_index< tiny_account_index, by_name >();
+      auto tiny_it = tiny_idx.find( from_account.get_name() );
+      if( tiny_it != tiny_idx.end() )
+        modify( *tiny_it, [&]( tiny_account_object& t ) { t.modify_from_time( time_obj ); } );
+    }
 
     if( has_hardfork( HIVE_HARDFORK_0_20 ) )
       rc().update_account_after_vest_change( from_account, from_mrc, from_assets, time_obj, now, true, true );
