@@ -3771,7 +3771,7 @@ void database::validate_invariants()const
 {
   try
   {
-    const auto& account_idx = get_index< tiny_account_index, by_name >();
+    const auto& account_idx = get_index< tiny_account_index, by_id >();
     asset total_supply = asset( 0, HIVE_SYMBOL );
     asset total_hbd = asset( 0, HBD_SYMBOL );
     asset total_vesting = asset( 0, VESTS_SYMBOL );

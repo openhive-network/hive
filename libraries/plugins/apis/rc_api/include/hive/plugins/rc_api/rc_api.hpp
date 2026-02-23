@@ -32,7 +32,6 @@ using hive::chain::database;
 using hive::chain::manabars_rc_object;
 using hive::chain::assets_object;
 using hive::chain::time_object;
-using hive::chain::by_account_id;
 
 
 namespace detail

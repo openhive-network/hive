@@ -14,13 +14,9 @@ namespace hive { namespace chain {
     CHAINBASE_OBJECT( delayed_votes_object );
     public:
       template< typename Allocator >
-      delayed_votes_object( allocator< Allocator > a, uint64_t _id,
-        account_id_type _account_id )
-        : id( _id ), account_id( _account_id ), delayed_votes( a )
+      delayed_votes_object( allocator< Allocator > a, uint64_t _id )
+        : id( _id ), delayed_votes( a )
       {}
-
-      // Link to parent account_object
-      account_id_type get_account_id() const { return account_id; }
 
       // Check if there are delayed votes
       bool has_delayed_votes() const { return !delayed_votes.empty(); }
@@ -51,7 +47,6 @@ namespace hive { namespace chain {
       }
 
     private:
-      account_id_type   account_id;               // Links to parent account_object
       ushare_type       sum_delayed_votes = 0;    ///< sum of delayed_votes (should be changed to VEST_asset)
       t_delayed_votes   delayed_votes;
 
@@ -90,9 +85,7 @@ namespace hive { namespace chain {
     delayed_votes_object,
     indexed_by<
       ordered_unique< tag< by_id >,
-        const_mem_fun< delayed_votes_object, delayed_votes_object::id_type, &delayed_votes_object::get_id > >,
-      ordered_unique< tag< by_account_id >,
-        const_mem_fun< delayed_votes_object, account_id_type, &delayed_votes_object::get_account_id > >
+        const_mem_fun< delayed_votes_object, delayed_votes_object::id_type, &delayed_votes_object::get_id > >
     >,
     multi_index_allocator< delayed_votes_object >
   > delayed_votes_index;
@@ -100,7 +93,7 @@ namespace hive { namespace chain {
 } } // hive::chain
 
 FC_REFLECT( hive::chain::delayed_votes_object,
-          (id)(account_id)(sum_delayed_votes)(delayed_votes)
+          (id)(sum_delayed_votes)(delayed_votes)
         )
 
 CHAINBASE_SET_INDEX_TYPE( hive::chain::delayed_votes_object, hive::chain::delayed_votes_index )

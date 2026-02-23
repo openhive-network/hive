@@ -651,9 +651,9 @@ void claim_reward_balance_evaluator::do_apply( const claim_reward_balance_operat
   const auto& dgpo = _db.get_dynamic_global_properties();
 
   // Verify 1:1 ID correspondence between account and split objects
-  FC_ASSERT( acnt_assets.get_account_id() == acnt.get_id(),
-    "ID mismatch: assets_object account_id ${assets_acc_id} != account.get_id() ${acc_id} for account ${name}",
-    ( "assets_acc_id", acnt_assets.get_account_id() )( "acc_id", acnt.get_id() )( "name", op.account ) );
+  FC_ASSERT( acnt_assets.get_id().get_value() == acnt.get_id().get_value(),
+    "ID mismatch: assets_object id ${assets_id} != account id ${acc_id} for account ${name}",
+    ( "assets_id", acnt_assets.get_id() )( "acc_id", acnt.get_id() )( "name", op.account ) );
   auto now = dgpo.time;
 
   HIVE_asset op_reward_hive = op.get_reward_hive();

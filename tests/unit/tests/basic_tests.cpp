@@ -1544,11 +1544,11 @@ BOOST_AUTO_TEST_CASE( chain_object_checksum )
 {
   hive::chain::util::decoded_types_data_storage dtds;
 
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::recovery_object>(dtds), "79b3e61d1c23bf40c2a6b4d2b0e2fc029029f74f" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::assets_object>(dtds), "a6124e488ac57766d9d9c61c306905ce72e02c0c" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::manabars_rc_object>(dtds), "810fda206ebafc3681070a62b20ba196d10b9d83" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::time_object>(dtds), "768d9f30f6c683d97a0208ba864a72a2974b1a35" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::delayed_votes_object>(dtds), "f9f92cc06ba32e8fe87c9865d129fa9b9a2deca7" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::recovery_object>(dtds), "44f1de977d2512832fdb7f2635b379df8cdb2326" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::assets_object>(dtds), "ff47e1102430dd2a867b267bd711fa2a64f7a780" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::manabars_rc_object>(dtds), "06a53cca491da2a05713d9b3e73f0cb5b60080d2" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::time_object>(dtds), "fe2542145d53889ff4d37ce1bb0bb8f2c0721d01" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::delayed_votes_object>(dtds), "4bb1eaf49d4a10f24cb990eab033f710502f767b" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::account_object>(dtds), "19fd2b3a16df9f5aa3468f5fd9fe8fd408e12768" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::account_metadata_object>(dtds), "379587b74d3b399774c0daceb8df6626ab0adb22" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::account_authority_object>(dtds), "1074d1d80071265defb14211b78db78c45fec878" );

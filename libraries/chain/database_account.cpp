@@ -22,7 +22,6 @@ tiny_account_object::tiny_account_object( allocator< Allocator > a, uint64_t _id
   const account_object& acc, const time_object& time_obj, const delayed_votes_object& dvotes )
   : id( _id ), delayed_votes( a )
 {
-  account_id = acc.get_id();
   name = acc.get_name();
   proxy = acc.get_proxy();
   governance_vote_expiration_ts = acc.get_governance_vote_expiration_ts();

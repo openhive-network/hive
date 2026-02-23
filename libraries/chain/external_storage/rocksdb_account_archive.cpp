@@ -78,7 +78,7 @@ struct rocksdb_split_writer
 {
   static void write_to_storage( const external_storage_provider::ptr& provider, const SHM_Object_Type& object, ColumnTypes column_type )
   {
-    rocksdb_storage_writer<SHM_Object_Type, RocksDB_Object_Type, uint32_slice_t>::write_to_storage( provider, uint32_slice_t( object.get_account_id() ), object, column_type );
+    rocksdb_storage_writer<SHM_Object_Type, RocksDB_Object_Type, uint32_slice_t>::write_to_storage( provider, uint32_slice_t( account_id_type( account_object::id_type( object.get_id().get_value() ) ) ), object, column_type );
   }
 };
 
@@ -158,9 +158,10 @@ struct rocksdb_reader<account_object, account_name_type, Return_Type>
     if constexpr ( std::is_same_v<Return_Type, const account_object*> )
     {
       const account_id_type account_id = result->get_id();
+      const auto aid = account_id.get_value();
 
       // Recovery object
-      if( !db.find< recovery_object, by_account_id >( account_id ) )
+      if( !db.find< recovery_object, by_id >( recovery_object::id_type( aid ) ) )
       {
         PinnableSlice split_buffer;
         if( rocksdb_storage_reader<uint32_slice_t>::read_from_storage( provider, uint32_slice_t( account_id ), ColumnTypes::RECOVERY, split_buffer ) )
@@ -172,7 +173,7 @@ struct rocksdb_reader<account_object, account_name_type, Return_Type>
       }
 
       // Assets object
-      if( !db.find< assets_object, by_account_id >( account_id ) )
+      if( !db.find< assets_object, by_id >( assets_object::id_type( aid ) ) )
       {
         PinnableSlice split_buffer;
         if( rocksdb_storage_reader<uint32_slice_t>::read_from_storage( provider, uint32_slice_t( account_id ), ColumnTypes::ASSETS, split_buffer ) )
@@ -184,7 +185,7 @@ struct rocksdb_reader<account_object, account_name_type, Return_Type>
       }
 
       // Manabars_rc object
-      if( !db.find< manabars_rc_object, by_account_id >( account_id ) )
+      if( !db.find< manabars_rc_object, by_id >( manabars_rc_object::id_type( aid ) ) )
       {
         PinnableSlice split_buffer;
         if( rocksdb_storage_reader<uint32_slice_t>::read_from_storage( provider, uint32_slice_t( account_id ), ColumnTypes::MANABARS_RC, split_buffer ) )
@@ -196,7 +197,7 @@ struct rocksdb_reader<account_object, account_name_type, Return_Type>
       }
 
       // Time object
-      if( !db.find< time_object, by_account_id >( account_id ) )
+      if( !db.find< time_object, by_id >( time_object::id_type( aid ) ) )
       {
         PinnableSlice split_buffer;
         if( rocksdb_storage_reader<uint32_slice_t>::read_from_storage( provider, uint32_slice_t( account_id ), ColumnTypes::TIME, split_buffer ) )
@@ -208,7 +209,7 @@ struct rocksdb_reader<account_object, account_name_type, Return_Type>
       }
 
       // Delayed_votes object
-      if( !db.find< delayed_votes_object, by_account_id >( account_id ) )
+      if( !db.find< delayed_votes_object, by_id >( delayed_votes_object::id_type( aid ) ) )
       {
         PinnableSlice split_buffer;
         if( rocksdb_storage_reader<uint32_slice_t>::read_from_storage( provider, uint32_slice_t( account_id ), ColumnTypes::DELAYED_VOTES, split_buffer ) )
@@ -376,6 +377,7 @@ bool rocksdb_account_archive::on_irreversible_block_impl_account( uint32_t block
     ++_itr;
 
     const account_id_type account_id = _current.get_id();
+    const auto aid = account_id.get_value();
 
     // Use tiny_account_object to check archival guards (it is always in chainbase)
     const auto& tiny_idx = db.get_index< tiny_account_index, by_name >();
@@ -389,12 +391,12 @@ bool rocksdb_account_archive::on_irreversible_block_impl_account( uint32_t block
     if( tiny_it != tiny_idx.end() && tiny_it->get_next_vesting_withdrawal() != fc::time_point_sec::maximum() )
       continue;
 
-    // Find all split objects before removing anything - use by_account_id secondary index
-    const auto* recovery_ptr = db.find< recovery_object, by_account_id >( account_id );
-    const auto* assets_ptr = db.find< assets_object, by_account_id >( account_id );
-    const auto* manabars_ptr = db.find< manabars_rc_object, by_account_id >( account_id );
-    const auto* time_ptr = db.find< time_object, by_account_id >( account_id );
-    const auto* delayed_votes_ptr = db.find< delayed_votes_object, by_account_id >( account_id );
+    // Find all split objects before removing anything - use by_id index
+    const auto* recovery_ptr = db.find< recovery_object, by_id >( recovery_object::id_type( aid ) );
+    const auto* assets_ptr = db.find< assets_object, by_id >( assets_object::id_type( aid ) );
+    const auto* manabars_ptr = db.find< manabars_rc_object, by_id >( manabars_rc_object::id_type( aid ) );
+    const auto* time_ptr = db.find< time_object, by_id >( time_object::id_type( aid ) );
+    const auto* delayed_votes_ptr = db.find< delayed_votes_object, by_id >( delayed_votes_object::id_type( aid ) );
 
     // Archive changed account data to RocksDB
     if( _current.changed() )
@@ -790,8 +792,9 @@ void rocksdb_account_archive::create_object( const account_object& obj )
   } );
 
   // Create the tiny_account_object that stays in chainbase permanently
-  const auto* time_ptr = db.find< time_object, by_account_id >( obj.get_id() );
-  const auto* dvotes_ptr = db.find< delayed_votes_object, by_account_id >( obj.get_id() );
+  const auto aid = obj.get_id().get_value();
+  const auto* time_ptr = db.find< time_object, by_id >( time_object::id_type( aid ) );
+  const auto* dvotes_ptr = db.find< delayed_votes_object, by_id >( delayed_votes_object::id_type( aid ) );
   if( time_ptr && dvotes_ptr )
   {
     db.create< tiny_account_object >( obj, *time_ptr, *dvotes_ptr );
@@ -929,14 +932,15 @@ void rocksdb_account_archive::modify_object( const account_object& obj, std::fun
 
 const assets_object* rocksdb_account_archive::get_asset_account( const account_id_type& account_id, bool is_required ) const
 {
-  const auto* _found = db.find< assets_object, by_account_id >( account_id );
+  const auto aid = account_id.get_value();
+  const auto* _found = db.find< assets_object, by_id >( assets_object::id_type( aid ) );
   if( _found )
     return _found;
 
   // Try to restore from RocksDB (get_account restores all split objects)
   if( get_account( account_id, false /*account_is_required*/ ) )
   {
-    _found = db.find< assets_object, by_account_id >( account_id );
+    _found = db.find< assets_object, by_id >( assets_object::id_type( aid ) );
     if( _found )
       return _found;
   }
@@ -949,14 +953,15 @@ const assets_object* rocksdb_account_archive::get_asset_account( const account_i
 
 const time_object* rocksdb_account_archive::get_time_account( const account_id_type& account_id, bool is_required ) const
 {
-  const auto* _found = db.find< time_object, by_account_id >( account_id );
+  const auto aid = account_id.get_value();
+  const auto* _found = db.find< time_object, by_id >( time_object::id_type( aid ) );
   if( _found )
     return _found;
 
   // Try to restore from RocksDB (get_account restores all split objects)
   if( get_account( account_id, false /*account_is_required*/ ) )
   {
-    _found = db.find< time_object, by_account_id >( account_id );
+    _found = db.find< time_object, by_id >( time_object::id_type( aid ) );
     if( _found )
       return _found;
   }
@@ -969,14 +974,15 @@ const time_object* rocksdb_account_archive::get_time_account( const account_id_t
 
 const recovery_object* rocksdb_account_archive::get_recovery_account( const account_id_type& account_id, bool is_required ) const
 {
-  const auto* _found = db.find< recovery_object, by_account_id >( account_id );
+  const auto aid = account_id.get_value();
+  const auto* _found = db.find< recovery_object, by_id >( recovery_object::id_type( aid ) );
   if( _found )
     return _found;
 
   // Try to restore from RocksDB (get_account restores all split objects)
   if( get_account( account_id, false /*account_is_required*/ ) )
   {
-    _found = db.find< recovery_object, by_account_id >( account_id );
+    _found = db.find< recovery_object, by_id >( recovery_object::id_type( aid ) );
     if( _found )
       return _found;
   }
@@ -989,14 +995,15 @@ const recovery_object* rocksdb_account_archive::get_recovery_account( const acco
 
 const manabars_rc_object* rocksdb_account_archive::get_manabars_rc_account( const account_id_type& account_id, bool is_required ) const
 {
-  const auto* _found = db.find< manabars_rc_object, by_account_id >( account_id );
+  const auto aid = account_id.get_value();
+  const auto* _found = db.find< manabars_rc_object, by_id >( manabars_rc_object::id_type( aid ) );
   if( _found )
     return _found;
 
   // Try to restore from RocksDB (get_account restores all split objects)
   if( get_account( account_id, false /*account_is_required*/ ) )
   {
-    _found = db.find< manabars_rc_object, by_account_id >( account_id );
+    _found = db.find< manabars_rc_object, by_id >( manabars_rc_object::id_type( aid ) );
     if( _found )
       return _found;
   }
@@ -1009,14 +1016,15 @@ const manabars_rc_object* rocksdb_account_archive::get_manabars_rc_account( cons
 
 const delayed_votes_object* rocksdb_account_archive::get_delayed_votes_account( const account_id_type& account_id, bool is_required ) const
 {
-  const auto* _found = db.find< delayed_votes_object, by_account_id >( account_id );
+  const auto aid = account_id.get_value();
+  const auto* _found = db.find< delayed_votes_object, by_id >( delayed_votes_object::id_type( aid ) );
   if( _found )
     return _found;
 
   // Try to restore from RocksDB (get_account restores all split objects)
   if( get_account( account_id, false /*account_is_required*/ ) )
   {
-    _found = db.find< delayed_votes_object, by_account_id >( account_id );
+    _found = db.find< delayed_votes_object, by_id >( delayed_votes_object::id_type( aid ) );
     if( _found )
       return _found;
   }

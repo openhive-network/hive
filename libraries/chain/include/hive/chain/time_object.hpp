@@ -12,13 +12,9 @@ namespace hive { namespace chain {
     CHAINBASE_OBJECT( time_object );
     public:
       template< typename Allocator >
-      time_object( allocator< Allocator > a, uint64_t _id,
-        account_id_type _account_id )
-        : id( _id ), account_id( _account_id )
+      time_object( allocator< Allocator > a, uint64_t _id )
+        : id( _id )
       {}
-
-      // Link to parent account_object
-      account_id_type get_account_id() const { return account_id; }
 
       // Tells if account has active power down
       bool has_active_power_down() const { return next_vesting_withdrawal != fc::time_point_sec::maximum(); }
@@ -60,8 +56,6 @@ namespace hive { namespace chain {
       void set_last_vote_time( const time_point_sec& value ) { last_vote_time = value; }
 
     private:
-      account_id_type   account_id;               // Links to parent account_object
-
       uint128_t         hbd_seconds = 0;          ///< liquid HBD * how long it has been held
 
       time_point_sec    hbd_seconds_last_update;
@@ -82,9 +76,7 @@ namespace hive { namespace chain {
     time_object,
     indexed_by<
       ordered_unique< tag< by_id >,
-        const_mem_fun< time_object, time_object::id_type, &time_object::get_id > >,
-      ordered_unique< tag< by_account_id >,
-        const_mem_fun< time_object, account_id_type, &time_object::get_account_id > >
+        const_mem_fun< time_object, time_object::id_type, &time_object::get_id > >
     >,
     multi_index_allocator< time_object >
   > time_index;
@@ -92,7 +84,7 @@ namespace hive { namespace chain {
 } } // hive::chain
 
 FC_REFLECT( hive::chain::time_object,
-          (id)(account_id)
+          (id)
           (hbd_seconds)
           (hbd_seconds_last_update)(hbd_last_interest_payment)
           (last_account_update)(last_post)(last_root_post)
