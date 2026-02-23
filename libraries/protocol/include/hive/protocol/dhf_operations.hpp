@@ -25,7 +25,7 @@ struct create_proposal_operation : public base_operation
 
   extensions_type extensions;
 
-  HBD_asset get_daily_pay() const { return daily_pay; }
+  HBD_asset get_daily_pay() const { return HBD_asset( daily_pay ); }
 
   void validate()const;
 
@@ -55,7 +55,7 @@ struct update_proposal_operation : public base_operation
   string permlink;
   update_proposal_extensions_type extensions;
 
-  HBD_asset get_daily_pay() const { return daily_pay; }
+  HBD_asset get_daily_pay() const { return HBD_asset( daily_pay ); }
 
   void validate()const;
 
