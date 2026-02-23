@@ -245,8 +245,8 @@ BOOST_AUTO_TEST_CASE( consolidate_balance )
     db_plugin->debug_update( [&]( database& db )
     {
       auto& dgpo = db.get_dynamic_global_properties();
-      db.adjust_supply( ASSET( "20.000 TESTS" ) );
-      db.adjust_supply( ASSET( "10.000 TBD" ) );
+      db.adjust_supply( HIVE_asset( 20'000 ) );
+      db.adjust_supply( HBD_asset( 10'000 ) );
       vested_3 = ASSET( "3.000 TESTS" ) * dgpo.get_vesting_share_price().to_price();
       vested_7 = ASSET( "7.000 TESTS" ) * dgpo.get_vesting_share_price().to_price();
       db.modify( dgpo, []( dynamic_global_property_object& gpo )
@@ -254,8 +254,8 @@ BOOST_AUTO_TEST_CASE( consolidate_balance )
         gpo.proposal_fund_percent = 0;
       } );
       auto& old_treasury = db.get_account( OBSOLETE_TREASURY_ACCOUNT );
-      db.create_vesting( old_treasury, ASSET( "7.000 TESTS" ) );
-      db.create_vesting( old_treasury, ASSET( "3.000 TESTS" ), true );
+      db.create_vesting( old_treasury, HIVE_asset( 7'000 ) );
+      db.create_vesting( old_treasury, HIVE_asset( 3'000 ), true );
       db.modify( old_treasury, [&]( account_object& t )
       {
         t.balance = HIVE_asset( 5'000 );
