@@ -24,6 +24,7 @@
 
 #include <hive/chain/dhf_objects.hpp>
 #include <hive/chain/util/dhf_processor.hpp>
+#include <hive/chain/detail/state/tiny_account_object.hpp>
 #include <hive/chain/comment_object.hpp>
 #include <hive/chain/witness_objects.hpp>
 #include <hive/chain/detail/state/hardfork_property_object.hpp>
@@ -650,7 +651,7 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
       BOOST_REQUIRE_EQUAL( db->get_account( "acc7" ).get_witnesses_voted_for(), 0 );
       BOOST_REQUIRE_EQUAL( db->get_account( "acc8" ).get_witnesses_voted_for(), 0 );
 
-      time_point_sec first_expiring_ts = db->get_index<account_index, by_governance_vote_expiration_ts>().begin()->get_governance_vote_expiration_ts();
+      time_point_sec first_expiring_ts = db->get_index<tiny_account_index, by_governance_vote_expiration_ts>().begin()->get_governance_vote_expiration_ts();
       BOOST_REQUIRE_EQUAL( first_expiring_ts, fc::time_point_sec::maximum() );
     }
 
@@ -900,7 +901,7 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes_threshold_exceeded )
 
     const auto& proposal_vote_idx = db->get_index< proposal_vote_index, by_id >();
     const auto& witness_vote_idx = db->get_index< witness_vote_index, by_id >();
-    const auto& account_idx = db->get_index<account_index, by_governance_vote_expiration_ts>();
+    const auto& account_idx = db->get_index<tiny_account_index, by_governance_vote_expiration_ts>();
 
     const fc::time_point_sec LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS = HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP + HIVE_HARDFORK_1_25_MAX_OLD_GOVERNANCE_VOTE_EXPIRE_SHIFT;
     generate_blocks(LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS);
@@ -4802,7 +4803,6 @@ BOOST_AUTO_TEST_CASE( converting_hive_to_dhf )
 
     treasury_hbd_inflation += treasury_per_block_inflation;
     auto after_daily_maintenance_time = dgpo.next_daily_maintenance_time;
-<<<<<<< HEAD
     auto after_treasury_hbd_balance = get_treasury_assets().get_hbd_balance();
     auto after_treasury_hive_balance = HIVE_asset( get_treasury_assets().get_balance() );
 

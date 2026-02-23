@@ -21,6 +21,7 @@
 #include <hive/chain/detail/state/manabars_rc_object.hpp>
 #include <hive/chain/detail/state/time_object.hpp>
 #include <hive/chain/detail/state/delayed_votes_object.hpp>
+#include <hive/chain/detail/state/tiny_account_object.hpp>
 
 #include <boost/scope_exit.hpp>
 
@@ -374,12 +375,19 @@ bool rocksdb_account_archive::on_irreversible_block_impl_account( uint32_t block
     const auto& _current = *_itr;
     ++_itr;
 
+    const account_id_type account_id = _current.get_id();
+
+    // Use tiny_account_object to check archival guards (it is always in chainbase)
+    const auto& tiny_idx = db.get_index< tiny_account_index, by_name >();
+    auto tiny_it = tiny_idx.find( _current.get_name() );
+
     // Skip accounts with pending governance votes - they need to stay in chainbase
-    // so that remove_expired_governance_votes() can find them via by_governance_vote_expiration_ts index
-    if( _current.get_governance_vote_expiration_ts() != fc::time_point_sec::maximum() )
+    if( tiny_it != tiny_idx.end() && tiny_it->get_governance_vote_expiration_ts() != fc::time_point_sec::maximum() )
       continue;
 
-    const account_id_type account_id = _current.get_id();
+    // Skip accounts with active power-down - they need to stay in chainbase
+    if( tiny_it != tiny_idx.end() && tiny_it->get_next_vesting_withdrawal() != fc::time_point_sec::maximum() )
+      continue;
 
     // Find all split objects before removing anything - use by_account_id secondary index
     const auto* recovery_ptr = db.find< recovery_object, by_account_id >( account_id );
@@ -387,11 +395,6 @@ bool rocksdb_account_archive::on_irreversible_block_impl_account( uint32_t block
     const auto* manabars_ptr = db.find< manabars_rc_object, by_account_id >( account_id );
     const auto* time_ptr = db.find< time_object, by_account_id >( account_id );
     const auto* delayed_votes_ptr = db.find< delayed_votes_object, by_account_id >( account_id );
-
-    // Skip accounts with active power-down - they need to stay in chainbase
-    // so that process_vesting_withdrawals() can find them via by_next_vesting_withdrawal index
-    if( time_ptr && time_ptr->has_active_power_down() )
-      continue;
 
     // Archive changed account data to RocksDB
     if( _current.changed() )
@@ -428,6 +431,7 @@ bool rocksdb_account_archive::on_irreversible_block_impl_account( uint32_t block
     db.remove_no_undo( _current );
 
     // Also remove the split objects from chainbase
+    // NOTE: tiny_account_object is NOT removed - it stays permanently in chainbase
     if( recovery_ptr )
       db.remove_no_undo( *recovery_ptr );
 
@@ -785,6 +789,14 @@ void rocksdb_account_archive::create_object( const account_object& obj )
     o.set_last_access_block( head_block );
   } );
 
+  // Create the tiny_account_object that stays in chainbase permanently
+  const auto* time_ptr = db.find< time_object, by_account_id >( obj.get_id() );
+  const auto* dvotes_ptr = db.find< delayed_votes_object, by_account_id >( obj.get_id() );
+  if( time_ptr && dvotes_ptr )
+  {
+    db.create< tiny_account_object >( obj, *time_ptr, *dvotes_ptr );
+  }
+
   accounts_stats::stats.account_created.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
   ++accounts_stats::stats.account_created.count;
 }
@@ -896,6 +908,17 @@ void rocksdb_account_archive::modify_object( const account_object& obj, std::fun
     modifier( o );
     o.set_last_access_block( db.head_block_num() );
   } );
+
+  // Sync tiny_account_object with account_object changes (proxy, governance_vote_expiration_ts)
+  const auto& tiny_idx = db.get_index< tiny_account_index, by_name >();
+  auto tiny_it = tiny_idx.find( obj.get_name() );
+  if( tiny_it != tiny_idx.end() )
+  {
+    static_cast<chainbase::database&>(db).modify( *tiny_it, [&]( tiny_account_object& t )
+    {
+      t.modify_from_account( obj );
+    } );
+  }
 
   accounts_stats::stats.account_modified.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
   ++accounts_stats::stats.account_modified.count;

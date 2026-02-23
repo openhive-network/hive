@@ -21,6 +21,7 @@
 #include <hive/chain/util/uint256.hpp>
 #include <hive/chain/notifications.hpp>
 #include <hive/chain/account_object_multiindex.hpp>
+#include <hive/chain/detail/state/tiny_account_object.hpp>
 #include <hive/chain/hardfork_property_object_multiindex.hpp>
 #include <hive/chain/comment_object_multiindex.hpp>
 #include <hive/chain/dhf_objects_multiindex.hpp>
@@ -364,7 +365,7 @@ namespace detail
     if( args.size() == 2 )
       delayed_votes_active = args.at(1).as< bool >();
 
-    const auto& idx  = _db.get_index< account_index >().indices().get< by_name >();
+    const auto& idx  = _db.get_index< tiny_account_index, by_name >();
     const auto& vidx = _db.get_index< witness_vote_index >().indices().get< by_account_witness >();
     vector< extended_account > results;
     results.reserve(names.size());
@@ -374,15 +375,16 @@ namespace detail
       auto itr = idx.find( name );
       if ( itr != idx.end() )
       {
-        results.emplace_back( extended_account( database_api::api_account_object( *itr, _db, _metadata_plugin, delayed_votes_active ) ) );
+        const auto& acc = _db.get_account( itr->get_name() );
+        results.emplace_back( extended_account( database_api::api_account_object( acc, _db, _metadata_plugin, delayed_votes_active ) ) );
 
         if(_reputation_api)
         {
-          results.back().reputation = _reputation_api->get_account_reputations({ itr->get_name(), 1 }).reputations.at(0).reputation;
+          results.back().reputation = _reputation_api->get_account_reputations({ acc.get_name(), 1 }).reputations.at(0).reputation;
         }
 
-        auto vitr = vidx.lower_bound( boost::make_tuple( itr->get_name(), account_name_type() ) );
-        while( vitr != vidx.end() && vitr->account == itr->get_name() ) {
+        auto vitr = vidx.lower_bound( boost::make_tuple( acc.get_name(), account_name_type() ) );
+        while( vitr != vidx.end() && vitr->account == acc.get_name() ) {
           results.back().witness_votes.insert( _db.get< witness_object, by_name >( vitr->witness ).owner );
           ++vitr;
         }
@@ -433,7 +435,7 @@ namespace detail
     uint32_t limit = args.at(1).as< uint32_t >();
 
     FC_ASSERT( limit <= 1000 );
-    const auto& accounts_by_name = _db.get_index< account_index, by_name >();
+    const auto& accounts_by_name = _db.get_index< tiny_account_index, by_name >();
     set<string> result;
 
     for( auto itr = accounts_by_name.lower_bound( lower_bound_name );
@@ -449,7 +451,7 @@ namespace detail
   DEFINE_API_IMPL( condenser_api_impl, get_account_count )
   {
     CHECK_ARG_SIZE( 0 )
-    return _db.get_index<account_index>().indices().size();
+    return _db.get_index<tiny_account_index>().indices().size();
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_owner_history )

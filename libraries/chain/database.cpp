@@ -41,6 +41,7 @@
 #include <hive/chain/util/impacted.hpp>
 
 #include <hive/chain/rc/rc_objects.hpp>
+#include <hive/chain/detail/state/tiny_account_object.hpp>
 
 #include <fc/uint128.hpp>
 
@@ -1346,6 +1347,13 @@ void database::clear_null_account_balance()
       dv.set_sum_delayed_votes( 0 );
       dv.get_delayed_votes().clear();
     });
+    // Sync tiny_account_object with delayed_votes changes
+    {
+      const auto& tiny_idx = get_index< tiny_account_index, by_name >();
+      auto tiny_it = tiny_idx.find( null_account.get_name() );
+      if( tiny_it != tiny_idx.end() )
+        modify( *tiny_it, [&]( tiny_account_object& t ) { t.modify_from_delayed_votes( null_delayed_votes ); } );
+    }
     if( has_hardfork( HIVE_HARDFORK_0_20 ) )
       rc().update_account_after_vest_change( null_account, null_mrc, null_assets, null_time, _now );
   }
@@ -1467,6 +1475,13 @@ void database::consolidate_treasury_balance()
       dv.set_sum_delayed_votes( 0 );
       dv.get_delayed_votes().clear();
     } );
+    // Sync tiny_account_object with delayed_votes changes
+    {
+      const auto& tiny_idx = get_index< tiny_account_index, by_name >();
+      auto tiny_it = tiny_idx.find( old_treasury_account.get_name() );
+      if( tiny_it != tiny_idx.end() )
+        modify( *tiny_it, [&]( tiny_account_object& t ) { t.modify_from_delayed_votes( old_treasury_delayed_votes ); } );
+    }
   }
 
   if( old_treasury_assets.get_rewards().amount > 0 )
@@ -1726,6 +1741,20 @@ void database::clear_account( const account_object& account )
         d.get_delayed_votes().clear();
         d.set_sum_delayed_votes( 0 );
       } );
+    }
+
+    // Sync tiny_account_object with time and delayed_votes changes
+    {
+      const auto& tiny_idx = get_index< tiny_account_index, by_name >();
+      auto tiny_it = tiny_idx.find( account.get_name() );
+      if( tiny_it != tiny_idx.end() )
+      {
+        modify( *tiny_it, [&]( tiny_account_object& t )
+        {
+          t.modify_from_time( time );
+          t.modify_from_delayed_votes( dvotes );
+        } );
+      }
     }
 
     rc().update_account_after_vest_change( account, mrc, assets, time, now, true, true );
@@ -3717,7 +3746,7 @@ void database::validate_invariants()const
 {
   try
   {
-    const auto& account_idx = get_index< account_index, by_id >();
+    const auto& account_idx = get_index< tiny_account_index, by_name >();
     HIVE_asset total_supply;
     HBD_asset total_hbd;
     VEST_asset total_vesting;
@@ -3741,8 +3770,9 @@ void database::validate_invariants()const
 
     for( auto itr = account_idx.begin(); itr != account_idx.end(); ++itr )
     {
-      const auto& _assets_obj = get_asset_account( itr->get_id() );
-      const auto& _delayed_votes_obj = get_delayed_votes_account( itr->get_id() );
+      const auto& acc = get_account( itr->get_name() );
+      const auto& _assets_obj = get_asset_account( acc.get_id() );
+      const auto& _delayed_votes_obj = get_delayed_votes_account( acc.get_id() );
 
       total_supply += _assets_obj.get_balance();
       total_supply += _assets_obj.get_savings();
@@ -3753,17 +3783,17 @@ void database::validate_invariants()const
       total_vesting += _assets_obj.get_vesting();
       total_vesting += _assets_obj.get_vest_rewards();
       pending_vesting_hive += _assets_obj.get_vest_rewards_as_hive();
-      total_vsf_votes += ( !itr->has_proxy() ?
-                      itr->get_governance_vote_power( _assets_obj, _delayed_votes_obj ) :
+      total_vsf_votes += ( !acc.has_proxy() ?
+                      acc.get_governance_vote_power( _assets_obj, _delayed_votes_obj ) :
                       ( HIVE_MAX_PROXY_RECURSION_DEPTH > 0 ?
-                          itr->get_proxied_vsf_votes()[HIVE_MAX_PROXY_RECURSION_DEPTH - 1] :
-                          itr->get_direct_governance_vote_power( _assets_obj, _delayed_votes_obj ) ) );
+                          acc.get_proxied_vsf_votes()[HIVE_MAX_PROXY_RECURSION_DEPTH - 1] :
+                          acc.get_direct_governance_vote_power( _assets_obj, _delayed_votes_obj ) ) );
       total_delayed_votes += _delayed_votes_obj.get_sum_delayed_votes();
       ushare_type sum_delayed_votes{ 0ul };
       for( auto& dv : _delayed_votes_obj.get_delayed_votes() )
         sum_delayed_votes += dv.val;
       FC_ASSERT( sum_delayed_votes == _delayed_votes_obj.get_sum_delayed_votes(), "", ("sum_delayed_votes",sum_delayed_votes)("_delayed_votes_obj.get_sum_delayed_votes()",_delayed_votes_obj.get_sum_delayed_votes()) );
-      FC_ASSERT( sum_delayed_votes.value <= _assets_obj.get_vesting().amount, "", ("sum_delayed_votes",sum_delayed_votes)("_assets_obj.get_vesting().amount",_assets_obj.get_vesting().amount)("account",itr->get_name()) );
+      FC_ASSERT( sum_delayed_votes.value <= _assets_obj.get_vesting().amount, "", ("sum_delayed_votes",sum_delayed_votes)("_assets_obj.get_vesting().amount",_assets_obj.get_vesting().amount)("account",acc.get_name()) );
       ++account_no;
     }
 
@@ -3811,7 +3841,7 @@ void database::remove_expired_governance_votes()
   if (!has_hardfork(HIVE_HARDFORK_1_25))
     return;
 
-  const auto& accounts = get_index<account_index, by_governance_vote_expiration_ts>();
+  const auto& accounts = get_index<tiny_account_index, by_governance_vote_expiration_ts>();
   auto acc_it = accounts.begin();
   time_point_sec first_expiring = acc_it->get_governance_vote_expiration_ts();
   time_point_sec now = head_block_time();

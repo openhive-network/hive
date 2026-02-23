@@ -10,6 +10,7 @@
 #include <hive/chain/witness_schedule.hpp>
 #include <hive/chain/account_object_multiindex.hpp>
 #include <hive/chain/detail/state/assets_object.hpp>
+#include <hive/chain/detail/state/tiny_account_object.hpp>
 #include <hive/chain/global_property_object_multiindex.hpp>
 #include <hive/chain/hardfork_property_object_multiindex.hpp>
 #include <hive/chain/block_summary_object_multiindex.hpp>
@@ -196,8 +197,9 @@ void database::init_genesis()
       create< recovery_object >( acc.get_id() );
       create< assets_object >( acc.get_id() );
       create< manabars_rc_object >( acc.get_id() );
-      create< time_object >( acc.get_id(), acc.get_name() );
-      create< delayed_votes_object >( acc.get_id() );
+      const auto& time_obj = create< time_object >( acc.get_id(), acc.get_name() );
+      const auto& dvotes_obj = create< delayed_votes_object >( acc.get_id() );
+      create< tiny_account_object >( acc, time_obj, dvotes_obj );
     };
 
     // Create blockchain accounts

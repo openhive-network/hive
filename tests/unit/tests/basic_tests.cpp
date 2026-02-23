@@ -716,7 +716,7 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
   BOOST_CHECK_EQUAL( alignof( delayed_votes_object ), 8u );
   BOOST_CHECK_EQUAL( alignof( account_object ), 8u );
   BOOST_CHECK_EQUAL( sizeof( account_object ), 136u ); //1.3M+ (includes last_access_block + changed_flag for RocksDB archiving)
-  BOOST_CHECK_EQUAL( sizeof( account_index::MULTIINDEX_NODE_TYPE ), 296u );
+  BOOST_CHECK_EQUAL( sizeof( account_index::MULTIINDEX_NODE_TYPE ), 232u ); //reduced after moving by_proxy and by_governance_vote_expiration_ts to tiny_account_index
   BOOST_CHECK_EQUAL( sizeof( account_metadata_object ), 80u ); //as many as account_object, but only FatNode (also to be moved to HiveMind)
   BOOST_CHECK_EQUAL( sizeof( account_metadata_index::MULTIINDEX_NODE_TYPE ), 176u );
   BOOST_CHECK_EQUAL( sizeof( account_authority_object ), 256u ); //as many as account_object

@@ -52,6 +52,7 @@
 #include <hive/chain/detail/state/manabars_rc_object.hpp>
 #include <hive/chain/detail/state/assets_object.hpp>
 #include <hive/chain/detail/state/time_object.hpp>
+#include <hive/chain/detail/state/tiny_account_object.hpp>
 #include <hive/chain/detail/state/recovery_object.hpp>
 #include <hive/chain/detail/state/delayed_votes_object.hpp>
 
@@ -2319,7 +2320,7 @@ BOOST_AUTO_TEST_CASE( account_object_by_governance_vote_expiration_ts_idx )
     BOOST_REQUIRE_EQUAL( db->get_account( "acc2" ).get_governance_vote_expiration_ts(), db->get_account( "acc3" ).get_governance_vote_expiration_ts() );
     BOOST_REQUIRE_NE( db->get_account( "acc4" ).get_governance_vote_expiration_ts(), db->get_account( "acc3" ).get_governance_vote_expiration_ts() );
 
-    const auto& accounts = db->get_index< account_index, by_governance_vote_expiration_ts >();
+    const auto& accounts = db->get_index< tiny_account_index, by_governance_vote_expiration_ts >();
     time_point_sec governance_vote_expiration_ts = accounts.begin()->get_governance_vote_expiration_ts();
 
     for (const auto&ac : accounts)

@@ -8,6 +8,7 @@
 #include <hive/chain/detail/state/manabars_rc_object.hpp>
 #include <hive/chain/detail/state/assets_object.hpp>
 #include <hive/chain/detail/state/time_object.hpp>
+#include <hive/chain/detail/state/tiny_account_object.hpp>
 
 #include <hive/utilities/database_configuration.hpp>
 #include <hive/utilities/logging_config.hpp>
@@ -93,9 +94,10 @@ void clean_database_fixture::validate_database()
   //validate RC
   if( db->has_hardfork( HIVE_HARDFORK_0_20 ) )
   {
-    const auto& idx = db->get_index< account_index, by_name >();
-    for( const auto& account : idx )
+    const auto& idx = db->get_index< tiny_account_index, by_name >();
+    for( const auto& tiny : idx )
     {
+      const auto& account = db->get_account( tiny.get_name() );
       const auto& mrc = db->get_manabars_rc_account( account.get_id() );
       const auto& assets = db->get_asset_account( account.get_id() );
       const auto& time_obj = db->get_time_account( account.get_id() );

@@ -2,6 +2,7 @@
 #include <hive/chain/util/delayed_voting_processor.hpp>
 #include <hive/chain/detail/state/assets_object.hpp>
 #include <hive/chain/detail/state/delayed_votes_object.hpp>
+#include <hive/chain/detail/state/tiny_account_object.hpp>
 #include <hive/chain/database_virtual_operations.hpp>
 
 namespace hive { namespace chain {
@@ -13,6 +14,12 @@ void delayed_voting::add_delayed_value( const account_object& account, const tim
   {
     delayed_voting_processor::add( dv.get_delayed_votes(), dv.get_sum_delayed_votes(), head_time, val );
   } );
+  {
+    const auto& tiny_idx = db.get_index< tiny_account_index, by_name >();
+    auto tiny_it = tiny_idx.find( account.get_name() );
+    if( tiny_it != tiny_idx.end() )
+      db.modify( *tiny_it, [&]( tiny_account_object& t ) { t.modify_from_delayed_votes( dvotes ); } );
+  }
 }
 
 void delayed_voting::erase_delayed_value( const account_object& account, const ushare_type val )
@@ -25,6 +32,12 @@ void delayed_voting::erase_delayed_value( const account_object& account, const u
   {
     delayed_voting_processor::erase( dv.get_delayed_votes(), dv.get_sum_delayed_votes(), val );
   } );
+  {
+    const auto& tiny_idx = db.get_index< tiny_account_index, by_name >();
+    auto tiny_it = tiny_idx.find( account.get_name() );
+    if( tiny_it != tiny_idx.end() )
+      db.modify( *tiny_it, [&]( tiny_account_object& t ) { t.modify_from_delayed_votes( dvotes ); } );
+  }
 }
 
 void delayed_voting::add_votes( opt_votes_update_data_items& items, const bool withdraw_executor, const share_type& val, const account_object& account )
@@ -83,7 +96,7 @@ fc::optional< ushare_type > delayed_voting::update_votes( const opt_votes_update
 
 void delayed_voting::run( const fc::time_point_sec& head_time )
 {
-  const auto& idx = db.get_index< delayed_votes_index, by_delayed_voting >();
+  const auto& idx = db.get_index< tiny_account_index, by_delayed_voting >();
   auto current = idx.begin();
 
   int count = 0;
@@ -93,13 +106,14 @@ void delayed_voting::run( const fc::time_point_sec& head_time )
         head_time >= ( current->get_oldest_delayed_vote_time() + HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS )
       )
   {
-    const ushare_type _val{ current->get_delayed_votes().begin()->val };
+    // Look up the delayed_votes_object for this account to get the actual vote data
+    const auto& dvotes = db.get_delayed_votes_account( current->get_account_id() );
+    const ushare_type _val{ dvotes.get_delayed_votes().begin()->val };
 
-    // Get the account_object for this delayed_votes_object
-    // Use get_account(id) which goes through accounts_handler to support RocksDB archived accounts
-    const auto& account = db.get_account( current->get_account_id() );
+    // Get the account_object
+    const auto& account = db.get_account( current->get_name() );
 
-    //dlog( "account: ${acc} delayed_votes: ${dv} time: ${time}", ( "acc", account.get_name() )( "dv", _val )( "time", current->get_delayed_votes().begin()->time.to_iso_string() ) );
+    //dlog( "account: ${acc} delayed_votes: ${dv} time: ${time}", ( "acc", account.get_name() )( "dv", _val )( "time", dvotes.get_delayed_votes().begin()->time.to_iso_string() ) );
 
     operation vop = hive::protocol::delayed_voting_operation( account.get_name(), _val );
     /// Push vop to be recorded by other parts (like AH plugin etc.)
@@ -116,9 +130,14 @@ void delayed_voting::run( const fc::time_point_sec& head_time )
       Solution:
         The best solution is to add new record at the back and to remove at the front.
     */
-    db.modify( *current, [&]( delayed_votes_object& dv )
+    db.modify( dvotes, [&]( delayed_votes_object& dv )
     {
       delayed_voting_processor::erase_front( dv.get_delayed_votes(), dv.get_sum_delayed_votes() );
+    } );
+    // Sync tiny_account_object with delayed_votes changes
+    db.modify( *current, [&]( tiny_account_object& t )
+    {
+      t.modify_from_delayed_votes( dvotes );
     } );
 
     current = idx.begin();

@@ -1,5 +1,6 @@
 
 #include <hive/chain/detail/state/account_object.hpp>
+#include <hive/chain/detail/state/tiny_account_object.hpp>
 
 #include <hive/chain/database_virtual_operations.hpp>
 #include <hive/chain/external_storage/comments_handler.hpp>
@@ -621,8 +622,9 @@ void database::perform_vesting_share_split( uint32_t magnitude )
     } );
 
     // Need to update all VESTS in accounts and the total VESTS in the dgpo
-    for( const auto& account : get_index< account_index, by_id >() )
+    for( const auto& tiny : get_index< tiny_account_index, by_name >() )
     {
+      const auto& account = get_account( tiny.get_name() );
       const auto& account_assets = get_asset_account( account.get_id() );
       VEST_asset old_vesting_shares = account_assets.get_vesting();
       VEST_asset new_vesting_shares = old_vesting_shares;
