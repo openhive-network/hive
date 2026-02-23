@@ -136,7 +136,7 @@ void witness_set_properties_evaluator::do_apply( const witness_set_properties_op
   {
     asset fee;
     fc::raw::unpack_from_vector( itr->second, fee );
-    props.account_creation_fee = fee;
+    props.account_creation_fee = HIVE_asset( fee );
   }
 
   itr = o.props.find( "maximum_block_size" );

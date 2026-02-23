@@ -257,7 +257,8 @@ void escrow_release_evaluator::do_apply( const escrow_release_operation& o )
 
 void transfer_evaluator::do_apply( const transfer_operation& o )
 {
-  if ( _db.has_hardfork(HIVE_HARDFORK_1_24) && o.amount.symbol == HIVE_SYMBOL && _db.is_treasury( o.to ) ) {
+  if( _db.has_hardfork( HIVE_HARDFORK_1_24 ) && o.amount.symbol == HIVE_SYMBOL && _db.is_treasury( o.to ) )
+  {
     const auto &fhistory = _db.get_feed_history();
 
     FC_ASSERT(!fhistory.current_median_history.is_null(), "Cannot send HIVE to ${s} because there is no price feed.", ("s", o.to ));
@@ -274,7 +275,7 @@ void transfer_evaluator::do_apply( const transfer_operation& o )
       _db.adjust_supply( amount_to_transfer );
 
     // o.to will always be the treasury so no need to call _db.get_treasury
-    push_virtual_operation( _db, dhf_conversion_operation( o.to, o.amount, amount_to_transfer ) );
+    push_virtual_operation( _db, dhf_conversion_operation( o.to, o_amount, amount_to_transfer ) );
     return;
   }
   else if( _db.has_hardfork( HIVE_HARDFORK_0_21__3343 ) )

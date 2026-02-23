@@ -235,7 +235,7 @@ namespace hive { namespace chain {
 
       uint64_t          total_vote_weight = 0; /// the total weight of voting rewards, used to calculate pro-rata share of curation payouts
 
-      HBD_asset         max_accepted_payout = asset( 1000000000, HBD_SYMBOL ); /// HBD value of the maximum payout this post will receive
+      HBD_asset         max_accepted_payout = HBD_asset( 1'000'000'000 ); /// HBD value of the maximum payout this post will receive
 
       int32_t           net_votes = 0; // only used by APIs
       uint32_t          children = 0; // tracks number of direct replies
