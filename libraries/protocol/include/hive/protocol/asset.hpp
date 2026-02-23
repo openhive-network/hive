@@ -222,12 +222,8 @@ namespace hive { namespace protocol {
     tiny_asset() {}
     explicit tiny_asset( share_type _amount ) : amount( _amount ) {}
     tiny_asset( const tiny_asset& val ) = default;
-    tiny_asset( const asset& val ) { set( val ); } //to be made explicit
+    explicit tiny_asset( const asset& val ) { set( val ); }
     tiny_asset& operator=( const tiny_asset& val ) = default;
-    tiny_asset& operator=( const asset& val ) { set( val ); return *this; } //to be removed
-
-    tiny_asset& operator+=( const asset& val ) { check( val ); amount += val.amount; return *this; } //to be removed
-    tiny_asset& operator-=( const asset& val ) { check( val ); amount -= val.amount; return *this; } //to be removed
 
     operator asset() const { return to_asset(); } //to be removed
 
@@ -242,18 +238,6 @@ namespace hive { namespace protocol {
     tiny_asset& operator/=( const share_type& x ) { amount /= x; return *this; }
     tiny_asset& operator%=( const share_type& x ) { amount %= x; return *this; }
 
-    friend bool operator==( const tiny_asset& a, const asset& b ) { return a.to_asset() == b; } //to be removed
-    friend bool operator==( const asset& a, const tiny_asset& b ) { return a == b.to_asset(); } //to be removed
-    friend bool operator!=( const tiny_asset& a, const asset& b ) { return a.to_asset() != b; } //to be removed
-    friend bool operator!=( const asset& a, const tiny_asset& b ) { return a != b.to_asset(); } //to be removed
-    friend bool operator<( const tiny_asset& a, const asset& b ) { return a.to_asset() < b; } //to be removed
-    friend bool operator<( const asset& a, const tiny_asset& b ) { return a < b.to_asset(); } //to be removed
-    friend bool operator<=( const tiny_asset& a, const asset& b ) { return a.to_asset() <= b; } //to be removed
-    friend bool operator<=( const asset& a, const tiny_asset& b ) { return a <= b.to_asset(); } //to be removed
-    friend bool operator>( const tiny_asset& a, const asset& b ) { return a.to_asset() > b; } //to be removed
-    friend bool operator>( const asset& a, const tiny_asset& b ) { return a > b.to_asset(); } //to be removed
-    friend bool operator>=( const tiny_asset& a, const asset& b ) { return a.to_asset() >= b; } //to be removed
-    friend bool operator>=( const asset& a, const tiny_asset& b ) { return a >= b.to_asset(); } //to be removed
     bool operator==( const tiny_asset& other ) const { return amount == other.amount; }
     bool operator!=( const tiny_asset& other ) const { return amount != other.amount; }
     bool operator<( const tiny_asset& other ) const { return amount < other.amount; }
@@ -267,12 +251,6 @@ namespace hive { namespace protocol {
     tiny_asset operator+( const tiny_asset& other ) const { return tiny_asset( amount + other.amount ); }
     tiny_asset operator-( const tiny_asset& other ) const { return tiny_asset( amount - other.amount ); }
 
-    friend asset operator* ( const tiny_asset& a, const price& p ) { return a.to_asset() * p; } //to be removed
-    friend asset operator* ( const price& p, const tiny_asset& a ) { return a.to_asset() * p; } //to be removed
-    friend asset operator+ ( const tiny_asset& a, const asset& b ) { return a.to_asset() + b; } //to be removed
-    friend asset operator+ ( const asset& a, const tiny_asset& b ) { return a + b.to_asset(); } //to be removed
-    friend asset operator- ( const tiny_asset& a, const asset& b ) { return a.to_asset() - b; } //to be removed
-    friend asset operator- ( const asset& a, const tiny_asset& b ) { return a - b.to_asset(); } //to be removed
     friend tiny_asset operator* ( const tiny_asset& a, share_type b ) { return tiny_asset( a.amount * b ); }
     friend tiny_asset operator* ( share_type b, const tiny_asset& a ) { return tiny_asset( a.amount * b ); }
     friend tiny_asset operator/ ( const tiny_asset& a, share_type b ) { return tiny_asset( a.amount / b ); }
