@@ -132,7 +132,7 @@ BOOST_AUTO_TEST_CASE( account_create_apply )
     {
       db.modify( db.get_witness_schedule_object(), [&]( witness_schedule_object& wso )
       {
-        wso.median_props.account_creation_fee = ASSET( "0.100 TESTS" );
+        wso.median_props.account_creation_fee = HIVE_asset( 100 );
       });
     });
     generate_block();
@@ -217,7 +217,7 @@ BOOST_AUTO_TEST_CASE( account_create_apply )
     {
       db.modify( db.get_witness_schedule_object(), [&]( witness_schedule_object& wso )
       {
-        wso.median_props.account_creation_fee = ASSET( "10.000 TESTS" );
+        wso.median_props.account_creation_fee = HIVE_asset( 10'000 );
       });
     });
     generate_block();
@@ -1770,13 +1770,13 @@ BOOST_AUTO_TEST_CASE( withdraw_vesting_apply )
 
       db.modify( wso, [&]( witness_schedule_object& w )
       {
-        w.median_props.account_creation_fee = ASSET( "10.000 TESTS" );
+        w.median_props.account_creation_fee = HIVE_asset( 10'000 );
       });
 
       db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
       {
-        gpo.current_supply += wso.median_props.account_creation_fee - ASSET( "0.001 TESTS" ) - gpo.get_total_vesting_fund_hive();
-        gpo.total_vesting_fund_hive = wso.median_props.account_creation_fee - ASSET( "0.001 TESTS" );
+        gpo.current_supply += wso.median_props.account_creation_fee - HIVE_asset( 1 ) - gpo.get_total_vesting_fund_hive();
+        gpo.total_vesting_fund_hive = wso.median_props.account_creation_fee - HIVE_asset( 1 );
       });
 
       db.update_virtual_supply();
@@ -4675,7 +4675,7 @@ BOOST_AUTO_TEST_CASE( account_recovery )
     {
       db.modify( db.get_witness_schedule_object(), [&]( witness_schedule_object& wso )
       {
-        wso.median_props.account_creation_fee = ASSET( "0.100 TESTS" );
+        wso.median_props.account_creation_fee = HIVE_asset( 100 );
       });
     });
 
@@ -7338,7 +7338,7 @@ BOOST_AUTO_TEST_CASE( account_create_with_delegation_apply )
     {
       db.modify( db.get_witness_schedule_object(), [&]( witness_schedule_object& w )
       {
-        w.median_props.account_creation_fee = ASSET( "1.000 TESTS" );
+        w.median_props.account_creation_fee = HIVE_asset( 1'000 );
       });
     });
 
@@ -7378,19 +7378,19 @@ BOOST_AUTO_TEST_CASE( claim_reward_balance_apply )
     {
       db.modify( db.get_account( "alice" ), []( account_object& a )
       {
-        a.reward_hive_balance = ASSET( "10.000 TESTS" );
-        a.reward_hbd_balance = ASSET( "10.000 TBD" );
-        a.reward_vesting_balance = ASSET( "10.000000 VESTS" );
-        a.reward_vesting_hive = ASSET( "10.000 TESTS" );
+        a.reward_hive_balance = HIVE_asset( 10'000 );
+        a.reward_hbd_balance = HBD_asset( 10'000 );
+        a.reward_vesting_balance = VEST_asset( 10'000'000 );
+        a.reward_vesting_hive = HIVE_asset( 10'000 );
       });
 
       db.modify( db.get_dynamic_global_properties(), []( dynamic_global_property_object& gpo )
       {
-        gpo.current_supply += ASSET( "20.000 TESTS" );
-        gpo.current_hbd_supply += ASSET( "10.000 TBD" );
-        gpo.virtual_supply += ASSET( "20.000 TESTS" );
-        gpo.pending_rewarded_vesting_shares += ASSET( "10.000000 VESTS" );
-        gpo.pending_rewarded_vesting_hive += ASSET( "10.000 TESTS" );
+        gpo.current_supply += HIVE_asset( 20'000 );
+        gpo.current_hbd_supply += HBD_asset( 10'000 );
+        gpo.virtual_supply += HIVE_asset( 20'000 );
+        gpo.pending_rewarded_vesting_shares += VEST_asset( 10'000'000 );
+        gpo.pending_rewarded_vesting_hive += HIVE_asset( 10'000 );
       });
     });
 
@@ -7528,7 +7528,7 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
     {
       db.modify( db.get_witness_schedule_object(), [&]( witness_schedule_object& w )
       {
-        w.median_props.account_creation_fee = ASSET( "1.000 TESTS" );
+        w.median_props.account_creation_fee = HIVE_asset( 1'000 );
       });
     });
 
@@ -7853,7 +7853,7 @@ BOOST_AUTO_TEST_CASE( issue_971_vesting_removal )
     {
       db.modify( db.get_witness_schedule_object(), [&]( witness_schedule_object& w )
       {
-        w.median_props.account_creation_fee = ASSET( "1.000 TESTS" );
+        w.median_props.account_creation_fee = HIVE_asset( 1'000 );
       });
     });
 
@@ -7881,7 +7881,7 @@ BOOST_AUTO_TEST_CASE( issue_971_vesting_removal )
     {
       db.modify( db.get_witness_schedule_object(), [&]( witness_schedule_object& w )
       {
-        w.median_props.account_creation_fee = ASSET( "100.000 TESTS" );
+        w.median_props.account_creation_fee = HIVE_asset( 100'000 );
       });
     });
 
@@ -8082,7 +8082,7 @@ BOOST_AUTO_TEST_CASE( comment_beneficiaries_apply )
       db.modify( db.get_dynamic_global_properties(), [=]( dynamic_global_property_object& gpo )
       {
         gpo.current_supply -= gpo.get_total_reward_fund_hive();
-        gpo.total_reward_fund_hive = ASSET( "100.000 TESTS" );
+        gpo.total_reward_fund_hive = HIVE_asset( 100'000 );
         gpo.current_supply += gpo.get_total_reward_fund_hive();
       });
     });
@@ -8233,7 +8233,7 @@ BOOST_AUTO_TEST_CASE( comment_options_apply )
       db.modify( db.get_dynamic_global_properties(), [=]( dynamic_global_property_object& gpo )
       {
         gpo.current_supply -= gpo.get_total_reward_fund_hive();
-        gpo.total_reward_fund_hive = ASSET( "100.000 TESTS" );
+        gpo.total_reward_fund_hive = HIVE_asset( 100'000 );
         gpo.current_supply += gpo.get_total_reward_fund_hive();
       } );
     };
@@ -8804,7 +8804,7 @@ BOOST_AUTO_TEST_CASE( claim_account_apply )
     {
       db.modify( db.get_witness_schedule_object(), [&]( witness_schedule_object& wso )
       {
-        wso.median_props.account_creation_fee = ASSET( "5.000 TESTS" );
+        wso.median_props.account_creation_fee = HIVE_asset( 5'000 );
       });
     });
     generate_block();

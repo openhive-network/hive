@@ -476,7 +476,7 @@ BOOST_AUTO_TEST_CASE( comment_payout )
 
     //generate_blocks( db->get_comment( "bob", string( "test" ) ).get_cashout_time() - HIVE_BLOCK_INTERVAL, true );
 
-    auto reward_hive = db->get_dynamic_global_properties().get_total_reward_fund_hive() + ASSET( "1.667 TESTS" );
+    auto reward_hive = db->get_dynamic_global_properties().get_total_reward_fund_hive() + HIVE_asset( 1'667 );
     auto total_rshares2 = db->get_dynamic_global_properties().total_reward_shares2;
     auto bob_comment_rshares = db->get_comment( "bob", string( "test" ) ).get_net_rshares();
     auto bob_vest_shares = get_vesting( "bob" );
@@ -652,7 +652,7 @@ BOOST_AUTO_TEST_CASE( comment_payout )
     BOOST_REQUIRE( db->get_comment( "bob", string( "test" ) ).get_net_rshares() > 0 );
     validate_database();
 
-    auto reward_hive = db->get_dynamic_global_properties().get_total_reward_fund_hive() + ASSET( "2.000 TESTS" );
+    auto reward_hive = db->get_dynamic_global_properties().get_total_reward_fund_hive() + HIVE_asset( 2'000 );
     auto total_rshares2 = db->get_dynamic_global_properties().total_reward_shares2;
     auto bob_comment_vote_total = db->get_comment( "bob", string( "test" ) ).get_total_vote_weight();
     auto bob_comment_rshares = db->get_comment( "bob", string( "test" ) ).get_net_rshares();
@@ -721,7 +721,7 @@ BOOST_AUTO_TEST_CASE( comment_payout )
 
     BOOST_TEST_MESSAGE( "Generate block to cause payout" );
 
-    reward_hive = db->get_dynamic_global_properties().get_total_reward_fund_hive() + ASSET( "2.000 TESTS" );
+    reward_hive = db->get_dynamic_global_properties().get_total_reward_fund_hive() + HIVE_asset( 2'000 );
     total_rshares2 = db->get_dynamic_global_properties().total_reward_shares2;
     auto alice_comment_vote_total = db->get_comment( "alice", string( "test" ) ).get_total_vote_weight();
     auto alice_comment_rshares = db->get_comment( "alice", string( "test" ) ).get_net_rshares();
@@ -908,7 +908,7 @@ OOST_AUTO_TEST_CASE( nested_comments )
     generate_blocks( db->get_comment( "alice", string( "test" ) ).get_cashout_time() - fc::seconds( HIVE_BLOCK_INTERVAL ), true );
 
     auto& gpo = db->get_dynamic_global_properties();
-    uint128_t reward_hive = gpo.get_total_reward_fund_hive().amount.value + ASSET( "2.000 TESTS" ).amount.value;
+    uint128_t reward_hive = ( gpo.get_total_reward_fund_hive() + HIVE_asset( 2'000 ) ).amount.value;
     uint128_t total_rshares2 = gpo.total_reward_shares2;
 
     auto alice_comment = db->get_comment( "alice", string( "test" ) );
@@ -2892,19 +2892,19 @@ BOOST_AUTO_TEST_CASE( clear_null_account )
     {
       db.modify( db.get_account( HIVE_NULL_ACCOUNT ), [&]( account_object& a )
       {
-        a.reward_hive_balance = ASSET( "1.000 TESTS" );
-        a.reward_hbd_balance = ASSET( "1.000 TBD" );
-        a.reward_vesting_balance = ASSET( "1.000000 VESTS" );
-        a.reward_vesting_hive = ASSET( "1.000 TESTS" );
+        a.reward_hive_balance = HIVE_asset( 1'000 );
+        a.reward_hbd_balance = HBD_asset( 1'000 );
+        a.reward_vesting_balance = VEST_asset( 1'000'000 );
+        a.reward_vesting_hive = HIVE_asset( 1'000 );
       });
 
       db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
       {
-        gpo.current_supply += ASSET( "2.000 TESTS" );
-        gpo.virtual_supply += ASSET( "3.000 TESTS" );
-        gpo.current_hbd_supply += ASSET( "1.000 TBD" );
-        gpo.pending_rewarded_vesting_shares += ASSET( "1.000000 VESTS" );
-        gpo.pending_rewarded_vesting_hive += ASSET( "1.000 TESTS" );
+        gpo.current_supply += HIVE_asset( 2'000 );
+        gpo.virtual_supply += HIVE_asset( 3'000 );
+        gpo.current_hbd_supply += HBD_asset( 1'000 );
+        gpo.pending_rewarded_vesting_shares += VEST_asset( 1'000'000 );
+        gpo.pending_rewarded_vesting_hive += HIVE_asset( 1'000 );
       });
     });
 

@@ -258,12 +258,12 @@ BOOST_AUTO_TEST_CASE( consolidate_balance )
       db.create_vesting( old_treasury, ASSET( "3.000 TESTS" ), true );
       db.modify( old_treasury, [&]( account_object& t )
       {
-        t.balance = ASSET( "5.000 TESTS" );
-        t.savings_balance = ASSET( "3.000 TESTS" );
-        t.reward_hive_balance = ASSET( "2.000 TESTS" );
-        t.hbd_balance = ASSET( "5.000 TBD" );
-        t.savings_hbd_balance = ASSET( "3.000 TBD" );
-        t.reward_hbd_balance = ASSET( "2.000 TBD" );
+        t.balance = HIVE_asset( 5'000 );
+        t.savings_balance = HIVE_asset( 3'000 );
+        t.reward_hive_balance = HIVE_asset( 2'000 );
+        t.hbd_balance = HBD_asset( 5'000 );
+        t.savings_hbd_balance = HBD_asset( 3'000 );
+        t.reward_hbd_balance = HBD_asset( 2'000 );
       } );
     } );
     database_fixture::validate_database();

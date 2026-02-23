@@ -94,7 +94,7 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_single )
     {
       db.modify( db.get_witness_schedule_object(), [&]( witness_schedule_object& wso )
       {
-        wso.median_props.account_creation_fee = ASSET( "3.000 TESTS" ); //mainnet value
+        wso.median_props.account_creation_fee = HIVE_asset( 3'000 ); //mainnet value
       } );
     } );
     generate_block();
@@ -245,7 +245,7 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_many )
     {
       db.modify( db.get_witness_schedule_object(), [&]( witness_schedule_object& wso )
       {
-        wso.median_props.account_creation_fee = ASSET( "3.000 TESTS" ); //mainnet value
+        wso.median_props.account_creation_fee = HIVE_asset( 3'000 ); //mainnet value
       } );
     } );
     generate_block();
@@ -254,7 +254,7 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_many )
     {
       const auto& gpo = db->get_dynamic_global_properties();
       const auto& wso = db->get_witness_schedule_object();
-      min_delegation = ( HIVE_asset( wso.median_props.account_creation_fee.amount / 3 ) * gpo.get_vesting_share_price() ).get_amount();
+      min_delegation = ( ( wso.median_props.account_creation_fee / 3 ) * gpo.get_vesting_share_price() ).get_amount();
     }
 
     BOOST_TEST_MESSAGE( "Testing:  delegate_rc_operation_apply_many to many accounts" );
@@ -557,7 +557,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow )
     {
       db.modify( db.get_witness_schedule_object(), [&]( witness_schedule_object& wso )
       {
-        wso.median_props.account_creation_fee = ASSET( "0.001 TESTS" ); //it effectively turns off minimum HP delegation limit
+        wso.median_props.account_creation_fee = HIVE_asset( 1 ); //it effectively turns off minimum HP delegation limit
       });
     });
     generate_block();
@@ -678,7 +678,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_many_accounts )
     {
       db.modify( db.get_witness_schedule_object(), [&]( witness_schedule_object& wso )
       {
-        wso.median_props.account_creation_fee = ASSET( "0.001 TESTS" ); //it effectively turns off minimum HP delegation limit
+        wso.median_props.account_creation_fee = HIVE_asset( 1 ); //it effectively turns off minimum HP delegation limit
       });
       db.set_remove_threshold( removal_limit );
     });
@@ -825,7 +825,7 @@ BOOST_AUTO_TEST_CASE( direct_rc_delegation_vesting_withdrawal )
     {
       db.modify( db.get_witness_schedule_object(), [&]( witness_schedule_object& wso )
       {
-        wso.median_props.account_creation_fee = ASSET( "0.001 TESTS" ); //it effectively turns off minimum HP delegation limit
+        wso.median_props.account_creation_fee = HIVE_asset( 1 ); //it effectively turns off minimum HP delegation limit
       });
     });
     generate_block();
@@ -989,7 +989,7 @@ BOOST_AUTO_TEST_CASE( direct_rc_delegation_vesting_withdrawal_routes )
     {
       db.modify( db.get_witness_schedule_object(), [&]( witness_schedule_object& wso )
       {
-        wso.median_props.account_creation_fee = ASSET( "0.001 TESTS" ); //it effectively turns off minimum HP delegation limit
+        wso.median_props.account_creation_fee = HIVE_asset( 1 ); //it effectively turns off minimum HP delegation limit
       });
     });
     generate_block();
@@ -1108,7 +1108,7 @@ BOOST_AUTO_TEST_CASE( rc_delegation_regeneration )
     {
       db.modify( db.get_witness_schedule_object(), [&]( witness_schedule_object& wso )
       {
-        wso.median_props.account_creation_fee = ASSET( "0.001 TESTS" ); //it effectively turns off minimum HP delegation limit
+        wso.median_props.account_creation_fee = HIVE_asset( 1 ); //it effectively turns off minimum HP delegation limit
       });
     });
     generate_block();
@@ -1205,7 +1205,7 @@ BOOST_AUTO_TEST_CASE( rc_delegation_removal_no_rc )
     {
       db.modify( db.get_witness_schedule_object(), [&]( witness_schedule_object& wso )
       {
-        wso.median_props.account_creation_fee = ASSET( "0.001 TESTS" ); //it effectively turns off minimum HP delegation limit
+        wso.median_props.account_creation_fee = HIVE_asset( 1 ); //it effectively turns off minimum HP delegation limit
       });
     });
     generate_block();
@@ -1379,7 +1379,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_delegatee )
     {
       db.modify( db.get_witness_schedule_object(), [&]( witness_schedule_object& wso )
       {
-        wso.median_props.account_creation_fee = ASSET( "0.001 TESTS" ); //it effectively turns off minimum HP delegation limit
+        wso.median_props.account_creation_fee = HIVE_asset( 1 ); //it effectively turns off minimum HP delegation limit
       });
     });
     generate_block();
@@ -1484,7 +1484,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_delegatee_performance )
     {
       db.modify( db.get_witness_schedule_object(), [&]( witness_schedule_object& wso )
       {
-        wso.median_props.account_creation_fee = ASSET( "0.001 TESTS" ); //it effectively turns off minimum HP delegation limit
+        wso.median_props.account_creation_fee = HIVE_asset( 1 ); //it effectively turns off minimum HP delegation limit
       });
       db.set_remove_threshold( removal_limit );
     });

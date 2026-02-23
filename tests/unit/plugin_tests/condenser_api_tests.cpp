@@ -143,7 +143,7 @@ BOOST_AUTO_TEST_CASE( get_witness_schedule_test )
   {
     db.modify( db.get_future_witness_schedule_object(), [&]( witness_schedule_object& fwso )
     {
-      fwso.median_props.account_creation_fee = ASSET( "3.000 TESTS" );
+      fwso.median_props.account_creation_fee = HIVE_asset( 3'000 );
     } );
   } );
   auto full_schedule = condenser_api->get_witness_schedule( { true } );
@@ -179,7 +179,7 @@ BOOST_AUTO_TEST_CASE( get_witness_schedule_test )
   {
     db.modify( db.get_future_witness_schedule_object(), [&]( witness_schedule_object& fwso )
     {
-      fwso.median_props.account_creation_fee = active_schedule_2.median_props.account_creation_fee; //revert previous change
+      fwso.median_props.account_creation_fee = HIVE_asset( active_schedule_2.median_props.account_creation_fee.to_asset() ); //revert previous change
       fwso.majority_version = version( fwso.majority_version.major_v(),
         fwso.majority_version.minor_v() + 1, fwso.majority_version.rev_v() + 10 );
     } );

@@ -174,7 +174,7 @@ BOOST_AUTO_TEST_CASE( get_witness_schedule_test )
   {
     db.modify( db.get_future_witness_schedule_object(), [&]( witness_schedule_object& fwso )
     {
-      fwso.median_props.account_creation_fee = ASSET( "3.000 TESTS" );
+      fwso.median_props.account_creation_fee = HIVE_asset( 3'000 );
     } );
   } );
   auto full_schedule = database_api->get_witness_schedule( { true } );
