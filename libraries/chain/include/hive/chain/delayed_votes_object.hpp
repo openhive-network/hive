@@ -87,7 +87,6 @@ namespace hive { namespace chain {
   };
 
   struct by_account_id;
-  struct by_delayed_voting;
 
   typedef multi_index_container<
     delayed_votes_object,
@@ -95,13 +94,7 @@ namespace hive { namespace chain {
       ordered_unique< tag< by_id >,
         const_mem_fun< delayed_votes_object, delayed_votes_object::id_type, &delayed_votes_object::get_id > >,
       ordered_unique< tag< by_account_id >,
-        const_mem_fun< delayed_votes_object, account_id_type, &delayed_votes_object::get_account_id > >,
-      ordered_unique< tag< by_delayed_voting >,
-        composite_key< delayed_votes_object,
-          const_mem_fun< delayed_votes_object, time_point_sec, &delayed_votes_object::get_oldest_delayed_vote_time >,
-          const_mem_fun< delayed_votes_object, account_id_type, &delayed_votes_object::get_account_id >
-        >
-      >
+        const_mem_fun< delayed_votes_object, account_id_type, &delayed_votes_object::get_account_id > >
     >,
     multi_index_allocator< delayed_votes_object >
   > delayed_votes_index;

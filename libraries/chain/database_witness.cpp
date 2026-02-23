@@ -1,5 +1,6 @@
 #include <hive/chain/witness_objects_multiindex.hpp>
 #include <hive/chain/account_object_multiindex.hpp>
+#include <hive/chain/detail/state/tiny_account_object.hpp>
 #include <hive/chain/global_property_object_multiindex.hpp>
 #include <hive/chain/database_virtual_operations.hpp>
 
@@ -124,14 +125,14 @@ void database::retally_witness_votes()
     } );
   }
 
-  const auto& account_idx = get_index< account_index >().indices();
+  const auto& account_idx = get_index< tiny_account_index, by_name >();
 
   // Apply all existing votes by account
   for( auto itr = account_idx.begin(); itr != account_idx.end(); ++itr )
   {
-    if( itr->has_proxy() ) continue;
+    const auto& a = get_account( itr->get_name() );
+    if( a.has_proxy() ) continue;
 
-    const auto& a = *itr;
     const auto& _assets_obj = get_asset_account( a.get_id() );
     const auto& _dvotes = get_delayed_votes_account( a.get_id() );
 
@@ -147,12 +148,12 @@ void database::retally_witness_votes()
 
 void database::retally_witness_vote_counts( bool force )
 {
-  const auto& account_idx = get_index< account_index >().indices();
+  const auto& account_idx = get_index< tiny_account_index, by_name >();
 
   // Check all existing votes by account
   for( auto itr = account_idx.begin(); itr != account_idx.end(); ++itr )
   {
-    const auto& a = *itr;
+    const auto& a = get_account( itr->get_name() );
     uint16_t witnesses_voted_for = 0;
     if( force || a.has_proxy() )
     {

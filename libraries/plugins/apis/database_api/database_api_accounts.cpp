@@ -2,6 +2,7 @@
 
 #include <hive/chain/account_object.hpp>
 #include <hive/chain/detail/state/time_object.hpp>
+#include <hive/chain/detail/state/tiny_account_object.hpp>
 #include <hive/chain/witness_objects.hpp>
 #include <hive/chain/witness_objects_multiindex.hpp>
 
@@ -207,29 +208,32 @@ DEFINE_API_IMPL( database_api_impl, list_accounts )
         }
         start = boost::make_tuple( proxy_id, key.second );
       }
-      iterate_results< chain::account_index, chain::by_proxy >(
-        start,
-        result.accounts,
-        args.limit,
-        [&]( const account_object& a, const database& db ){ return api_account_object( a, db, get_metadata_plugin(), args.delayed_votes_active ); },
-        &database_api_impl::filter_default< account_object > );
+
+      // Iterate over tiny_account_index (by_proxy) and look up full account for each result
+      const auto& tiny_idx = _db.get_index< chain::tiny_account_index, chain::by_proxy >();
+      auto itr = start ? tiny_idx.lower_bound( *start ) : tiny_idx.begin();
+
+      while( itr != tiny_idx.end() && result.accounts.size() < args.limit )
+      {
+        const auto& account = _db.get_account( itr->get_name() );
+        result.accounts.emplace_back( api_account_object( account, _db, get_metadata_plugin(), args.delayed_votes_active ) );
+        ++itr;
+      }
       break;
     }
     case( by_next_vesting_withdrawal ):
     {
-      // by_next_vesting_withdrawal index is now in time_object, not account_object
-      // We iterate over time_index and look up the account for each result
+      // Iterate over tiny_account_index (by_next_vesting_withdrawal) and look up account for each result
       auto key = args.start.as< std::pair< fc::time_point_sec, account_name_type > >();
 
-      const auto& time_idx = _db.get_index< chain::time_index, chain::by_next_vesting_withdrawal >();
+      const auto& tiny_idx = _db.get_index< chain::tiny_account_index, chain::by_next_vesting_withdrawal >();
 
-      auto itr = time_idx.lower_bound( boost::make_tuple( key.first, key.second ) );
-      auto end = time_idx.end();
+      auto itr = tiny_idx.lower_bound( boost::make_tuple( key.first, key.second ) );
+      auto end = tiny_idx.end();
 
       while( itr != end && result.accounts.size() < args.limit )
       {
-        const auto& time_obj = *itr;
-        const auto& account = _db.get_account( time_obj.get_account_id() );
+        const auto& account = _db.get_account( itr->get_name() );
         result.accounts.emplace_back( api_account_object( account, _db, get_metadata_plugin(), args.delayed_votes_active ) );
         ++itr;
       }
