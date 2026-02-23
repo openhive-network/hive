@@ -359,7 +359,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
   }
   FC_ASSERT( used_power <= current_power, "Account does not have enough power to vote." );
 
-  int64_t abs_rshares = fc::uint128_to_uint64((uint128_t( voter.get_effective_vesting_shares( false ).value ) * used_power) / (HIVE_100_PERCENT));
+  int64_t abs_rshares = fc::uint128_to_int64( ( uint128_t( voter.get_effective_vesting_shares( false ).get_amount() ) * used_power ) / HIVE_100_PERCENT );
   if( !_db.has_hardfork( HIVE_HARDFORK_0_14__259 ) && abs_rshares == 0 ) abs_rshares = 1;
 
   if( _db.has_hardfork( HIVE_HARDFORK_0_14__259 ) )
@@ -656,7 +656,7 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
 
   if( _db.has_hardfork( HIVE_HARDFORK_1_28_STABLE_VOTE ) )
   {
-    used_mana = ( uint128_t( voter.get_effective_vesting_shares().value ) * abs_weight * 60 * 60 * 24 ) / HIVE_100_PERCENT;
+    used_mana = ( uint128_t( voter.get_effective_vesting_shares().get_amount() ) * abs_weight * 60 * 60 * 24 ) / HIVE_100_PERCENT;
   }
   else if( dgpo.downvote_pool_percent && o.weight < 0 )
   {

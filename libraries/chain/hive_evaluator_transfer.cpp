@@ -691,7 +691,7 @@ void delegate_vesting_shares_evaluator::do_apply( const delegate_vesting_shares_
 
   if( _db.has_hardfork( HIVE_HARDFORK_0_20__2539 ) )
   {
-    auto max_mana = delegator.get_effective_vesting_shares();
+    auto max_mana = delegator.get_effective_vesting_shares().amount;
 
     _db.modify( delegator, [&]( account_object& a )
     {
@@ -724,7 +724,7 @@ void delegate_vesting_shares_evaluator::do_apply( const delegate_vesting_shares_
     available_downvote_shares.amount = std::min( available_downvote_shares.amount, max_mana - delegator.received_vesting_shares.amount );
 
     if( delegator.next_vesting_withdrawal < fc::time_point_sec::maximum()
-      && delegator.get_total_vesting_withdrawal() > delegator.vesting_withdraw_rate.amount )
+      && delegator.get_total_vesting_withdrawal() > delegator.vesting_withdraw_rate )
     {
       /*
       Account cannot delegate **any** VESTS that they are powering down. Therefore we have to reduce
@@ -735,13 +735,13 @@ void delegate_vesting_shares_evaluator::do_apply( const delegate_vesting_shares_
       */
       auto weekly_withdraw = delegator.get_next_vesting_withdrawal();
       auto remaining_withdraw = delegator.get_total_vesting_withdrawal();
-      available_shares += VEST_asset( weekly_withdraw - remaining_withdraw );
-      available_downvote_shares += VEST_asset( weekly_withdraw - remaining_withdraw );
+      available_shares += weekly_withdraw - remaining_withdraw;
+      available_downvote_shares += weekly_withdraw - remaining_withdraw;
     }
   }
   else
   {
-    available_shares = delegator.get_vesting() - delegator.get_delegated_vesting() - VEST_asset( delegator.get_total_vesting_withdrawal() );
+    available_shares = delegator.get_vesting() - delegator.get_delegated_vesting() - delegator.get_total_vesting_withdrawal();
     available_downvote_shares = available_shares;
   }
 

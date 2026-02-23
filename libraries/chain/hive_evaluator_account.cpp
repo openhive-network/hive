@@ -221,7 +221,7 @@ void account_create_with_delegation_evaluator::do_apply( const account_create_wi
     ( "creator.balance", creator.get_hive_balance() )
     ( "required", o_fee ) );
 
-  FC_ASSERT( creator.get_vesting() - creator.get_delegated_vesting() - VEST_asset( creator.get_total_vesting_withdrawal() ) >= o_delegation, "Insufficient vesting shares to delegate to new account.",
+  FC_ASSERT( ( creator.get_vesting() - creator.get_delegated_vesting() - creator.get_total_vesting_withdrawal() ) >= o_delegation, "Insufficient vesting shares to delegate to new account.",
     ( "creator.vesting_shares", creator.get_vesting() )( "creator.delegated_vesting_shares", creator.get_delegated_vesting() )( "required", o_delegation ) );
 
   VEST_asset target_delegation = ( wso.median_props.account_creation_fee * ( HIVE_CREATE_ACCOUNT_WITH_HIVE_MODIFIER * HIVE_CREATE_ACCOUNT_DELEGATION_RATIO ) ) * props.get_vesting_share_price();

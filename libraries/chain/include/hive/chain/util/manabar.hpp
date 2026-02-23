@@ -104,7 +104,7 @@ struct manabar
 template< typename PropType, typename AccountType >
 void update_manabar( const PropType& gpo, AccountType& account, int64_t new_mana = 0 )
 {
-  auto effective_vests = account.get_effective_vesting_shares().value;
+  auto effective_vests = account.get_effective_vesting_shares().get_amount();
   try {
   manabar_params params( effective_vests, HIVE_VOTING_MANA_REGENERATION_SECONDS );
   account.voting_manabar.regenerate_mana( params, gpo.time );
