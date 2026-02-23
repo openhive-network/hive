@@ -1479,7 +1479,7 @@ BOOST_AUTO_TEST_CASE( transfer_apply )
 
     BOOST_REQUIRE( dhf_conversion_op.treasury == op.to );
     BOOST_REQUIRE( dhf_conversion_op.hive_amount_in == op.amount );
-    BOOST_REQUIRE( dhf_conversion_op.hbd_amount_out == ASSET( "1.000 TBD" ) );
+    BOOST_REQUIRE( dhf_conversion_op.hbd_amount_out == HBD_asset( 1'000 ) );
 
     BOOST_TEST_MESSAGE( "--- Test transfering HBD to treasury" );
     treasury_hbd_balance = db->get_treasury().get_hbd_balance();
@@ -1581,7 +1581,7 @@ BOOST_AUTO_TEST_CASE( transfer_to_vesting_apply )
     auto new_vest = op.amount * price( shares, vests );
     shares += new_vest;
     vests += op.amount;
-    alice_shares += new_vest;
+    alice_shares += VEST_asset( new_vest );
 
     BOOST_REQUIRE( alice.get_hive_balance() == HIVE_asset( 2'500 ) );
     BOOST_REQUIRE( alice.get_vesting() == alice_shares );
@@ -1599,7 +1599,7 @@ BOOST_AUTO_TEST_CASE( transfer_to_vesting_apply )
     new_vest = op.amount * price( shares, vests );
     shares += new_vest;
     vests += op.amount;
-    bob_shares += new_vest;
+    bob_shares += VEST_asset( new_vest );
 
     BOOST_REQUIRE( alice.get_hive_balance() == HIVE_asset( 500 ) );
     BOOST_REQUIRE( alice.get_vesting() == alice_shares );
@@ -1790,7 +1790,7 @@ BOOST_AUTO_TEST_CASE( withdraw_vesting_apply )
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     push_transaction( tx, alice_private_key );
 
-    BOOST_REQUIRE( db->get_account( "alice" ).vesting_withdraw_rate == ASSET( "0.000000 VESTS" ) );
+    BOOST_REQUIRE( db->get_account( "alice" ).vesting_withdraw_rate == VEST_asset( 0 ) );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test withdrawing minimal VESTS" );
@@ -3282,7 +3282,7 @@ BOOST_AUTO_TEST_CASE( convert_apply )
     BOOST_REQUIRE( convert_request != convert_request_idx.end() );
     BOOST_REQUIRE( convert_request->get_owner() == get_account_id( op.owner ) );
     BOOST_REQUIRE( convert_request->get_request_id() == op.requestid );
-    BOOST_REQUIRE( convert_request->get_convert_amount().amount.value == op.amount.amount.value );
+    BOOST_REQUIRE( convert_request->get_convert_amount() == HBD_asset( op.amount ) );
     //BOOST_REQUIRE( convert_request->premium == 100000 );
     BOOST_REQUIRE( convert_request->get_conversion_date() == db->head_block_time() + HIVE_CONVERSION_DELAY );
 
@@ -3299,7 +3299,7 @@ BOOST_AUTO_TEST_CASE( convert_apply )
     BOOST_REQUIRE( convert_request != convert_request_idx.end() );
     BOOST_REQUIRE( convert_request->get_owner() == get_account_id( op.owner ) );
     BOOST_REQUIRE( convert_request->get_request_id() == op.requestid );
-    BOOST_REQUIRE( convert_request->get_convert_amount().amount.value == ASSET( "3.000 TBD" ).amount.value );
+    BOOST_REQUIRE( convert_request->get_convert_amount() == HBD_asset( 3'000 ) );
     //BOOST_REQUIRE( convert_request->premium == 100000 );
     BOOST_REQUIRE( convert_request->get_conversion_date() == db->head_block_time() + HIVE_CONVERSION_DELAY );
     validate_database();
@@ -3442,7 +3442,7 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
       auto convert_op = recent_ops.back().get< collateralized_convert_immediate_conversion_operation >();
       BOOST_REQUIRE( convert_op.owner == "alice" );
       BOOST_REQUIRE( convert_op.requestid == 0 );
-      BOOST_REQUIRE( convert_op.hbd_out == ASSET( "119.047 TBD" ) );
+      BOOST_REQUIRE( convert_op.hbd_out == HBD_asset( 119'047 ) );
     }
 
     alice_balance -= HIVE_asset( 1'000'000 );
@@ -3471,9 +3471,9 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
       auto convert_op = recent_ops.back().get< fill_collateralized_convert_request_operation >();
       BOOST_REQUIRE( convert_op.owner == "alice" );
       BOOST_REQUIRE( convert_op.requestid == 0 );
-      BOOST_REQUIRE( convert_op.amount_in == ASSET( "499.997 TESTS" ) );
-      BOOST_REQUIRE( convert_op.amount_out == ASSET( "119.047 TBD" ) );
-      BOOST_REQUIRE( convert_op.excess_collateral == ASSET( "500.003 TESTS" ) );
+      BOOST_REQUIRE( convert_op.amount_in == HIVE_asset( 499'997 ) );
+      BOOST_REQUIRE( convert_op.amount_out == HBD_asset( 119'047 ) );
+      BOOST_REQUIRE( convert_op.excess_collateral == HIVE_asset( 500'003 ) );
     }
 
     BOOST_TEST_MESSAGE( "--- Test ok - conversion at 25 cents initial, 12.5 cents per HIVE actual" );
@@ -3486,7 +3486,7 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
       auto convert_op = recent_ops.back().get< collateralized_convert_immediate_conversion_operation >();
       BOOST_REQUIRE( convert_op.owner == "alice" );
       BOOST_REQUIRE( convert_op.requestid == 0 );
-      BOOST_REQUIRE( convert_op.hbd_out == ASSET( "119.047 TBD" ) );
+      BOOST_REQUIRE( convert_op.hbd_out == HBD_asset( 119'047 ) );
     }
 
     alice_balance -= HIVE_asset( 1'000'000 );
@@ -3511,9 +3511,9 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
       auto convert_op = recent_ops.back().get< fill_collateralized_convert_request_operation >();
       BOOST_REQUIRE( convert_op.owner == "alice" );
       BOOST_REQUIRE( convert_op.requestid == 0 );
-      BOOST_REQUIRE( convert_op.amount_in == ASSET( "999.994 TESTS" ) );
-      BOOST_REQUIRE( convert_op.amount_out == ASSET( "119.047 TBD" ) );
-      BOOST_REQUIRE( convert_op.excess_collateral == ASSET( "0.006 TESTS" ) );
+      BOOST_REQUIRE( convert_op.amount_in == HIVE_asset( 999'994 ) );
+      BOOST_REQUIRE( convert_op.amount_out == HBD_asset( 119'047 ) );
+      BOOST_REQUIRE( convert_op.excess_collateral == HIVE_asset( 6 ) );
     }
 
     BOOST_TEST_MESSAGE( "--- Test ok - conversion at 12.5 cents initial, 5 cents per HIVE actual" );
@@ -3526,7 +3526,7 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
       auto convert_op = recent_ops.back().get< collateralized_convert_immediate_conversion_operation >();
       BOOST_REQUIRE( convert_op.owner == "alice" );
       BOOST_REQUIRE( convert_op.requestid == 0 );
-      BOOST_REQUIRE( convert_op.hbd_out == ASSET( "59.523 TBD" ) );
+      BOOST_REQUIRE( convert_op.hbd_out == HBD_asset( 59'523 ) );
     }
 
     alice_balance -= HIVE_asset( 1'000'000 );
@@ -7429,12 +7429,12 @@ BOOST_AUTO_TEST_CASE( claim_reward_balance_apply )
     BOOST_REQUIRE( get_hive_rewards( "alice" ) == HIVE_asset( 10'000 ) );
     BOOST_REQUIRE( get_hbd_balance( "alice" ) == alice_hbd + op.reward_hbd );
     BOOST_REQUIRE( get_hbd_rewards( "alice" ) == HBD_asset( 10'000 ) );
-    BOOST_REQUIRE( get_vesting( "alice" ) == alice_vests + op.reward_vests );
+    BOOST_REQUIRE( get_vesting( "alice" ) == alice_vests + VEST_asset( op.reward_vests ) );
     BOOST_REQUIRE( get_vest_rewards( "alice" ) == VEST_asset( 5'000'000 ) );
     BOOST_REQUIRE( get_vest_rewards_as_hive( "alice" ) == HIVE_asset( 5'000 ) );
     validate_database();
 
-    alice_vests += op.reward_vests;
+    alice_vests += VEST_asset( op.reward_vests );
 
 
     BOOST_TEST_MESSAGE( "--- Claiming the full reward balance" );
@@ -7681,7 +7681,7 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
 
     BOOST_TEST_MESSAGE( "--- Testing failure delegating more vesting shares than account has." );
     tx.clear();
-    op.vesting_shares = asset( sam_vest.amount + 1, VESTS_SYMBOL );
+    op.vesting_shares = sam_vest + VEST_asset( 1 );
     tx.operations.push_back( op );
     HIVE_REQUIRE_THROW( push_transaction( tx, sam_private_key ), fc::assert_exception );
 
@@ -7732,7 +7732,7 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
     });
 
     tx.clear();
-    sam_vest = asset( sam_vest.amount / 2, VESTS_SYMBOL );
+    sam_vest /= 2;
     withdraw_vesting_operation withdraw;
     withdraw.account = "sam";
     withdraw.vesting_shares = sam_vest;
@@ -7740,7 +7740,7 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
     push_transaction( tx, sam_private_key );
 
     tx.clear();
-    op.vesting_shares = asset( sam_vest.amount + 2, VESTS_SYMBOL );
+    op.vesting_shares = sam_vest + VEST_asset( 2 );
     tx.operations.push_back( op );
     HIVE_REQUIRE_THROW( push_transaction( tx, sam_private_key ), fc::assert_exception );
 
@@ -7750,14 +7750,14 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
     push_transaction( tx, sam_private_key );
 
     BOOST_TEST_MESSAGE( "--- Test failure powering down vesting shares that are delegated" );
-    sam_vest.amount += 1000;
+    sam_vest += VEST_asset( 1000 );
     op.vesting_shares = sam_vest;
     tx.clear();
     tx.operations.push_back( op );
     push_transaction( tx, sam_private_key );
 
     tx.clear();
-    withdraw.vesting_shares = asset( sam_vest.amount, VESTS_SYMBOL );
+    withdraw.vesting_shares = sam_vest;
     tx.operations.push_back( withdraw );
     HIVE_REQUIRE_THROW( push_transaction( tx, sam_private_key ), fc::assert_exception );
 
