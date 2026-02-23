@@ -287,7 +287,7 @@ void database::apply_hardfork( uint32_t hardfork )
 
         modify( gpo, [&]( dynamic_global_property_object& g )
         {
-          g.total_reward_fund_hive = asset( 0, HIVE_SYMBOL );
+          g.total_reward_fund_hive = HIVE_asset( 0 );
           g.total_reward_shares2 = 0;
         });
 

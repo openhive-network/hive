@@ -6,7 +6,6 @@
 
 namespace hive { namespace chain {
 
-using hive::protocol::asset;
 using hive::protocol::dhf_conversion_operation;
 using hive::protocol::dhf_funding_operation;
 using hive::protocol::operation;
@@ -168,7 +167,7 @@ void dhf_processor::transfer_payments( const time_point_sec& head_time, HBD_asse
 
   uint32_t passed_time_seconds = ( head_time - db.get_dynamic_global_properties().last_budget_time ).to_seconds();
 
-  auto processing = [this, &treasury_account]( const proposal_object& _item, const asset& payment )
+  auto processing = [this, &treasury_account]( const proposal_object& _item, const HBD_asset& payment )
   {
     const auto& receiver_account = db.get_account( _item.receiver );
 
@@ -191,12 +190,12 @@ void dhf_processor::transfer_payments( const time_point_sec& head_time, HBD_asse
     HBD_asset period_pay;
     if( db.has_hardfork(HIVE_HARDFORK_1_25) )
     {
-      period_pay = HBD_asset( ( ( passed_time_seconds * _item.daily_pay.amount.value ) / daily_seconds ) );
+      period_pay = passed_time_seconds * _item.daily_pay / daily_seconds;
     }
     else
     {
       uint128_t ratio = ( passed_time_seconds * HIVE_100_PERCENT ) / daily_seconds;
-      period_pay = HBD_asset( fc::uint128_to_uint64( ratio * _item.daily_pay.amount.value ) / HIVE_100_PERCENT );
+      period_pay = HBD_asset( fc::uint128_to_int64( ratio * _item.daily_pay.amount.value ) / HIVE_100_PERCENT );
     }
 
     if( period_pay >= maintenance_budget_limit )
