@@ -22,7 +22,6 @@ namespace hive { namespace chain {
       tiny_account_object( allocator< Allocator > a, uint64_t _id,
         const account_object& acc, const time_object& time_obj, const delayed_votes_object& dvotes );
 
-      const account_id_type& get_account_id() const { return account_id; }
       const account_name_type& get_name() const { return name; }
       account_id_type get_proxy() const { return proxy; }
       bool has_proxy() const { return proxy != account_id_type(); }
@@ -50,7 +49,6 @@ namespace hive { namespace chain {
       }
 
     private:
-      account_id_type       account_id;
       account_name_type     name;
       account_id_type       proxy;
       time_point_sec        next_vesting_withdrawal = fc::time_point_sec::maximum();
@@ -99,13 +97,13 @@ namespace hive { namespace chain {
       ordered_unique< tag< by_delayed_voting >,
         composite_key< tiny_account_object,
           const_mem_fun< tiny_account_object, time_point_sec, &tiny_account_object::get_oldest_delayed_vote_time >,
-          const_mem_fun< tiny_account_object, const account_id_type&, &tiny_account_object::get_account_id >
+          const_mem_fun< tiny_account_object, tiny_account_object::id_type, &tiny_account_object::get_id >
         >
       >,
       ordered_unique< tag< by_governance_vote_expiration_ts >,
         composite_key< tiny_account_object,
           const_mem_fun< tiny_account_object, time_point_sec, &tiny_account_object::get_governance_vote_expiration_ts >,
-          const_mem_fun< tiny_account_object, const account_id_type&, &tiny_account_object::get_account_id >
+          const_mem_fun< tiny_account_object, tiny_account_object::id_type, &tiny_account_object::get_id >
         >
       >
     >,
@@ -115,7 +113,7 @@ namespace hive { namespace chain {
 } } // hive::chain
 
 FC_REFLECT( hive::chain::tiny_account_object,
-          (id)(account_id)(name)(proxy)
+          (id)(name)(proxy)
           (next_vesting_withdrawal)(governance_vote_expiration_ts)
           (delayed_votes)
         )

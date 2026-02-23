@@ -11,13 +11,9 @@ namespace hive { namespace chain {
     public:
       template< typename Allocator >
       recovery_object( allocator< Allocator > a, uint64_t _id,
-        account_id_type _account_id,
         const account_id_type& _recovery_account = account_id_type() )
-        : id( _id ), account_id( _account_id ), recovery_account( _recovery_account )
+        : id( _id ), recovery_account( _recovery_account )
       {}
-
-      // Link to parent account_object
-      account_id_type get_account_id() const { return account_id; }
 
       // Recovery account accessors
       bool has_recovery_account() const { return recovery_account != account_id_type(); }
@@ -42,7 +38,6 @@ namespace hive { namespace chain {
       }
 
     private:
-      account_id_type   account_id;               // Links to parent account_object
       account_id_type   recovery_account;
       time_point_sec    last_account_recovery;
       time_point_sec    block_last_account_recovery;
@@ -52,15 +47,11 @@ namespace hive { namespace chain {
 
 
 
-  struct by_account_id;
-
   typedef multi_index_container<
     recovery_object,
     indexed_by<
       ordered_unique< tag< by_id >,
-        const_mem_fun< recovery_object, recovery_object::id_type, &recovery_object::get_id > >,
-      ordered_unique< tag< by_account_id >,
-        const_mem_fun< recovery_object, account_id_type, &recovery_object::get_account_id > >
+        const_mem_fun< recovery_object, recovery_object::id_type, &recovery_object::get_id > >
     >,
     multi_index_allocator< recovery_object >
   > recovery_index;
@@ -68,7 +59,7 @@ namespace hive { namespace chain {
 } } // hive::chain
 
 FC_REFLECT( hive::chain::recovery_object,
-          (id)(account_id)(recovery_account)(last_account_recovery)(block_last_account_recovery)
+          (id)(recovery_account)(last_account_recovery)(block_last_account_recovery)
         )
 
 CHAINBASE_SET_INDEX_TYPE( hive::chain::recovery_object, hive::chain::recovery_index )

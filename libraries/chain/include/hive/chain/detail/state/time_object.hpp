@@ -13,12 +13,10 @@ namespace hive { namespace chain {
     public:
       template< typename Allocator >
       time_object( allocator< Allocator > a, uint64_t _id,
-        account_id_type _account_id, const account_name_type& _name = account_name_type() )
-        : id( _id ), account_id( _account_id ), name( _name )
+        const account_name_type& _name = account_name_type() )
+        : id( _id ), name( _name )
       {}
 
-      // Link to parent account_object
-      account_id_type get_account_id() const { return account_id; }
       // Account name (needed for by_next_vesting_withdrawal index to match old sort order)
       const account_name_type& get_name() const { return name; }
 
@@ -62,7 +60,6 @@ namespace hive { namespace chain {
       void set_last_vote_time( const time_point_sec& value ) { last_vote_time = value; }
 
     private:
-      account_id_type   account_id;               // Links to parent account_object
       account_name_type name;                     // Account name (for index sort order compatibility)
 
       uint128_t         hbd_seconds = 0;          ///< liquid HBD * how long it has been held
@@ -81,15 +78,11 @@ namespace hive { namespace chain {
   };
 
 
-  struct by_account_id;
-
   typedef multi_index_container<
     time_object,
     indexed_by<
       ordered_unique< tag< by_id >,
-        const_mem_fun< time_object, time_object::id_type, &time_object::get_id > >,
-      ordered_unique< tag< by_account_id >,
-        const_mem_fun< time_object, account_id_type, &time_object::get_account_id > >
+        const_mem_fun< time_object, time_object::id_type, &time_object::get_id > >
     >,
     multi_index_allocator< time_object >
   > time_index;
@@ -97,7 +90,7 @@ namespace hive { namespace chain {
 } } // hive::chain
 
 FC_REFLECT( hive::chain::time_object,
-          (id)(account_id)(name)
+          (id)(name)
           (hbd_seconds)
           (hbd_seconds_last_update)(hbd_last_interest_payment)
           (last_account_update)(last_post)(last_root_post)

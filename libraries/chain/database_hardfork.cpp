@@ -46,7 +46,7 @@ void database::align_split_object_ids_with_accounts()
     const auto& idx = get_index< recovery_index >();
     while( idx.get_next_id() < recovery_object::id_type( next_account_id.get_value() ) )
     {
-      create< recovery_object >( account_id_type() );
+      create< recovery_object >();
     }
   }
 
@@ -55,7 +55,7 @@ void database::align_split_object_ids_with_accounts()
     const auto& idx = get_index< assets_index >();
     while( idx.get_next_id() < assets_object::id_type( next_account_id.get_value() ) )
     {
-      create< assets_object >( account_id_type() );
+      create< assets_object >();
     }
   }
 
@@ -64,7 +64,7 @@ void database::align_split_object_ids_with_accounts()
     const auto& idx = get_index< manabars_rc_index >();
     while( idx.get_next_id() < manabars_rc_object::id_type( next_account_id.get_value() ) )
     {
-      create< manabars_rc_object >( account_id_type() );
+      create< manabars_rc_object >();
     }
   }
 
@@ -73,7 +73,7 @@ void database::align_split_object_ids_with_accounts()
     const auto& idx = get_index< time_index >();
     while( idx.get_next_id() < time_object::id_type( next_account_id.get_value() ) )
     {
-      create< time_object >( account_id_type() );
+      create< time_object >();
     }
   }
 
@@ -82,7 +82,7 @@ void database::align_split_object_ids_with_accounts()
     const auto& idx = get_index< delayed_votes_index >();
     while( idx.get_next_id() < delayed_votes_object::id_type( next_account_id.get_value() ) )
     {
-      create< delayed_votes_object >( account_id_type() );
+      create< delayed_votes_object >();
     }
   }
 }
@@ -547,7 +547,7 @@ void database::apply_hardfork( uint32_t hardfork )
         create< rc_stats_object >( RC_PENDING_STATS_ID.get_value() );
         create< rc_stats_object >( RC_ARCHIVE_STATS_ID.get_value() );
 
-        const auto& idx = get_index< tiny_account_index, by_name >();
+        const auto& idx = get_index< tiny_account_index, by_id >();
         for( auto it = idx.begin(); it != idx.end(); ++it )
         {
           const auto& acc = get_account( it->get_name() );
@@ -588,12 +588,11 @@ void database::apply_hardfork( uint32_t hardfork )
 
           const auto& new_account = create<account_object>(treasury_name, head_block_time());
           // Create all split objects for the treasury account
-          account_id_type account_id = new_account.get_id();
-          create< recovery_object >( account_id );
-          create< assets_object >( account_id );
-          create< manabars_rc_object >( account_id );
-          const auto& new_time = create< time_object >( account_id, treasury_name );
-          const auto& new_dvotes = create< delayed_votes_object >( account_id );
+          create< recovery_object >();
+          create< assets_object >();
+          create< manabars_rc_object >();
+          const auto& new_time = create< time_object >( treasury_name );
+          const auto& new_dvotes = create< delayed_votes_object >();
           create< tiny_account_object >( new_account, new_time, new_dvotes );
           push_virtual_operation(
             *this, account_created_operation( treasury_name, treasury_name, asset(0, VESTS_SYMBOL), asset(0, VESTS_SYMBOL) ) );
@@ -708,12 +707,11 @@ void database::apply_hardfork( uint32_t hardfork )
 
         const auto& new_account = create<account_object>(treasury_name, head_block_time());
         // Create all split objects for the treasury account
-        account_id_type account_id = new_account.get_id();
-        create< recovery_object >( account_id );
-        create< assets_object >( account_id );
-        create< manabars_rc_object >( account_id );
-        const auto& new_time = create< time_object >( account_id, treasury_name );
-        const auto& new_dvotes = create< delayed_votes_object >( account_id );
+        create< recovery_object >();
+        create< assets_object >();
+        create< manabars_rc_object >();
+        const auto& new_time = create< time_object >( treasury_name );
+        const auto& new_dvotes = create< delayed_votes_object >();
         create< tiny_account_object >( new_account, new_time, new_dvotes );
         push_virtual_operation(
           *this, account_created_operation( treasury_name, treasury_name, asset(0, VESTS_SYMBOL), asset(0, VESTS_SYMBOL) ) );

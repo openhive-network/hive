@@ -94,7 +94,7 @@ void clean_database_fixture::validate_database()
   //validate RC
   if( db->has_hardfork( HIVE_HARDFORK_0_20 ) )
   {
-    const auto& idx = db->get_index< tiny_account_index, by_name >();
+    const auto& idx = db->get_index< tiny_account_index, by_id >();
     for( const auto& tiny : idx )
     {
       const auto& account = db->get_account( tiny.get_name() );

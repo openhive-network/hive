@@ -125,7 +125,7 @@ void database::retally_witness_votes()
     } );
   }
 
-  const auto& account_idx = get_index< tiny_account_index, by_name >();
+  const auto& account_idx = get_index< tiny_account_index, by_id >();
 
   // Apply all existing votes by account
   for( auto itr = account_idx.begin(); itr != account_idx.end(); ++itr )
@@ -148,7 +148,7 @@ void database::retally_witness_votes()
 
 void database::retally_witness_vote_counts( bool force )
 {
-  const auto& account_idx = get_index< tiny_account_index, by_name >();
+  const auto& account_idx = get_index< tiny_account_index, by_id >();
 
   // Check all existing votes by account
   for( auto itr = account_idx.begin(); itr != account_idx.end(); ++itr )
