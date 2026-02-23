@@ -784,7 +784,7 @@ struct impacted_balance_collector
   void operator()(const fill_vesting_withdraw_operation& o)
   {
     emplace_back(o.to_account, o.deposited);
-    emplace_back(o.from_account, -o.withdrawn);
+    emplace_back(o.from_account, -o.withdrawn.to_asset());
   }
 
   void operator()(const producer_reward_operation& o)
@@ -835,17 +835,17 @@ struct impacted_balance_collector
   void operator()(const hardfork_hive_operation& o)
   {
     // balance tracker and similar apps need to clear all balances for accounts pointed by o.account
-    emplace_back(o.treasury, o.hive_transferred);
-    emplace_back(o.treasury, o.hbd_transferred);
-    emplace_back(o.treasury, o.total_hive_from_vests);
+    emplace_back(o.treasury, o.hive_transferred.to_asset());
+    emplace_back(o.treasury, o.hbd_transferred.to_asset());
+    emplace_back(o.treasury, o.total_hive_from_vests.to_asset());
   }
 
   void operator()(const hardfork_hive_restore_operation& o)
   {
-    emplace_back(o.account, o.hbd_transferred);
-    emplace_back(o.treasury, -o.hbd_transferred);
-    emplace_back(o.account, o.hive_transferred);
-    emplace_back(o.treasury, -o.hive_transferred);
+    emplace_back(o.account, o.hbd_transferred.to_asset());
+    emplace_back(o.treasury, -o.hbd_transferred.to_asset());
+    emplace_back(o.account, o.hive_transferred.to_asset());
+    emplace_back(o.treasury, -o.hive_transferred.to_asset());
   }
 
   void operator()(const fill_recurrent_transfer_operation& o)
@@ -861,17 +861,17 @@ struct impacted_balance_collector
 
   void operator()(const liquidity_reward_operation& o)
   {
-    emplace_back(o.owner, o.payout);
+    emplace_back(o.owner, o.payout.to_asset());
   }
 
   void operator()(const fill_convert_request_operation& o)
   {
-    emplace_back(o.owner, o.amount_out);
+    emplace_back(o.owner, o.amount_out.to_asset());
   }
 
   void operator()(const fill_collateralized_convert_request_operation& o)
   {
-    emplace_back(o.owner, o.excess_collateral);
+    emplace_back(o.owner, o.excess_collateral.to_asset());
   }
 
   void operator()(const escrow_transfer_operation& o)
@@ -911,8 +911,8 @@ struct impacted_balance_collector
 
   void operator()(const transfer_to_vesting_completed_operation& o)
   {
-    emplace_back(o.to_account, o.vesting_shares_received);
-    emplace_back(o.from_account, -o.hive_vested);
+    emplace_back(o.to_account, o.vesting_shares_received.to_asset());
+    emplace_back(o.from_account, -o.hive_vested.to_asset());
   }
 
   void operator()(const pow_reward_operation& o)
@@ -976,28 +976,28 @@ struct impacted_balance_collector
 
   void operator()(const proposal_pay_operation& o)
   {
-    emplace_back(o.receiver, o.payment);
-    emplace_back(o.payer, -o.payment);
+    emplace_back(o.receiver, o.payment.to_asset());
+    emplace_back(o.payer, -o.payment.to_asset());
   }
 
   void operator()(const dhf_funding_operation& o)
   {
-    emplace_back(o.treasury, o.additional_funds);
+    emplace_back(o.treasury, o.additional_funds.to_asset());
   }
 
   void operator()(const dhf_conversion_operation& o)
   {
-    emplace_back(o.treasury, -o.hive_amount_in);
-    emplace_back(o.treasury, o.hbd_amount_out);
+    emplace_back(o.treasury, -o.hive_amount_in.to_asset());
+    emplace_back(o.treasury, o.hbd_amount_out.to_asset());
   }
 
   void operator()(const author_reward_operation& o)
   {
     if( !o.payout_must_be_claimed )
     {
-      emplace_back(o.author, o.hbd_payout);
-      emplace_back(o.author, o.hive_payout);
-      emplace_back(o.author, o.vesting_payout);
+      emplace_back(o.author, o.hbd_payout.to_asset());
+      emplace_back(o.author, o.hive_payout.to_asset());
+      emplace_back(o.author, o.vesting_payout.to_asset());
     }
   }
 
@@ -1005,9 +1005,9 @@ struct impacted_balance_collector
   {
     if( !o.payout_must_be_claimed )
     {
-      emplace_back(o.benefactor, o.hbd_payout);
-      emplace_back(o.benefactor, o.hive_payout);
-      emplace_back(o.benefactor, o.vesting_payout);
+      emplace_back(o.benefactor, o.hbd_payout.to_asset());
+      emplace_back(o.benefactor, o.hive_payout.to_asset());
+      emplace_back(o.benefactor, o.vesting_payout.to_asset());
     }
   }
 
@@ -1015,30 +1015,30 @@ struct impacted_balance_collector
   {
     if( !o.payout_must_be_claimed )
     {
-      emplace_back(o.curator, o.reward);
+      emplace_back(o.curator, o.reward.to_asset());
     }
   }
 
   void operator()( const account_created_operation& op )
   {
-    emplace_back(op.new_account_name, op.initial_vesting_shares);
+    emplace_back(op.new_account_name, op.initial_vesting_shares.to_asset());
   }
 
   void operator()( const interest_operation& op )
   {
     if(op.is_saved_into_hbd_balance)
-      emplace_back(op.owner, op.interest);
+      emplace_back(op.owner, op.interest.to_asset());
   }
 
   void operator()( const proposal_fee_operation& op )
   {
-    emplace_back(op.creator, -op.fee);
-    emplace_back(op.treasury, op.fee);
+    emplace_back(op.creator, -op.fee.to_asset());
+    emplace_back(op.treasury, op.fee.to_asset());
   }
 
   void operator()( const collateralized_convert_immediate_conversion_operation& op )
   {
-    emplace_back(op.owner, op.hbd_out);
+    emplace_back(op.owner, op.hbd_out.to_asset());
   }
 
   void operator()( const escrow_approved_operation& op )
@@ -1048,8 +1048,8 @@ struct impacted_balance_collector
 
   void operator()( const escrow_rejected_operation& op )
   {
-    emplace_back( op.from, op.hbd_amount );
-    emplace_back( op.from, op.hive_amount );
+    emplace_back( op.from, op.hbd_amount.to_asset() );
+    emplace_back( op.from, op.hive_amount.to_asset() );
     emplace_back( op.from, op.fee );
   }
 

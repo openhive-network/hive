@@ -52,7 +52,7 @@ namespace hive { namespace plugins { namespace condenser_api {
 //////////////////////////////////////////////////////////////////////
 
 api_chain_properties::api_chain_properties( const hive::chain::chain_properties& c ) :
-  account_creation_fee( legacy_asset::from_asset( c.account_creation_fee ) ),
+  account_creation_fee( legacy_asset::from_asset( c.account_creation_fee.to_asset() ) ),
   maximum_block_size( c.maximum_block_size ),
   hbd_interest_rate( c.hbd_interest_rate ),
   account_subsidy_budget( c.account_subsidy_budget ),
@@ -188,13 +188,13 @@ namespace detail
       {"VESTS_SYMBOL",             fc::variant{ legacy_asset::from_asset( asset(0, VESTS_SYMBOL) ).asset_num_to_string() } },
       {"HIVE_SYMBOL",              fc::variant{ legacy_asset::from_asset( asset(0, HIVE_SYMBOL) ).asset_num_to_string() } },
       {"HBD_SYMBOL",               fc::variant{ legacy_asset::from_asset( asset(0, HBD_SYMBOL) ).asset_num_to_string() } },
-      {"HIVE_MINING_REWARD",        fc::variant{ _asset_type{ HIVE_MINING_REWARD,         transaction_serialization_type::legacy } } },
-      {"HIVE_MIN_LIQUIDITY_REWARD", fc::variant{ _asset_type{ HIVE_MIN_LIQUIDITY_REWARD,  transaction_serialization_type::legacy } } },
-      {"HIVE_MIN_CONTENT_REWARD",   fc::variant{ _asset_type{ HIVE_MIN_CONTENT_REWARD,    transaction_serialization_type::legacy } } },
-      {"HIVE_MIN_CURATE_REWARD",    fc::variant{ _asset_type{ HIVE_MIN_CURATE_REWARD,     transaction_serialization_type::legacy } } },
-      {"HIVE_MIN_PRODUCER_REWARD",  fc::variant{ _asset_type{ HIVE_MIN_PRODUCER_REWARD,   transaction_serialization_type::legacy } } },
-      {"HIVE_MIN_POW_REWARD",       fc::variant{ _asset_type{ HIVE_MIN_POW_REWARD,        transaction_serialization_type::legacy } } },
-      {"HIVE_MIN_PAYOUT_HBD",       fc::variant{ _asset_type{ HIVE_MIN_PAYOUT_HBD,        transaction_serialization_type::legacy } } }
+      {"HIVE_MINING_REWARD",        fc::variant{ _asset_type{ HIVE_MINING_REWARD.to_asset(),         transaction_serialization_type::legacy } } },
+      {"HIVE_MIN_LIQUIDITY_REWARD", fc::variant{ _asset_type{ HIVE_MIN_LIQUIDITY_REWARD.to_asset(),  transaction_serialization_type::legacy } } },
+      {"HIVE_MIN_CONTENT_REWARD",   fc::variant{ _asset_type{ HIVE_MIN_CONTENT_REWARD.to_asset(),    transaction_serialization_type::legacy } } },
+      {"HIVE_MIN_CURATE_REWARD",    fc::variant{ _asset_type{ HIVE_MIN_CURATE_REWARD.to_asset(),     transaction_serialization_type::legacy } } },
+      {"HIVE_MIN_PRODUCER_REWARD",  fc::variant{ _asset_type{ HIVE_MIN_PRODUCER_REWARD.to_asset(),   transaction_serialization_type::legacy } } },
+      {"HIVE_MIN_POW_REWARD",       fc::variant{ _asset_type{ HIVE_MIN_POW_REWARD.to_asset(),        transaction_serialization_type::legacy } } },
+      {"HIVE_MIN_PAYOUT_HBD",       fc::variant{ _asset_type{ HIVE_MIN_PAYOUT_HBD.to_asset(),        transaction_serialization_type::legacy } } }
     };
     return _result;
   }

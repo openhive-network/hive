@@ -456,11 +456,11 @@ struct future_chain_properties
 
   bool fill( const chain_properties& active, const chain_properties& future );
 
-  fc::optional<asset>    account_creation_fee;
-  fc::optional<uint32_t> maximum_block_size;
-  fc::optional<uint16_t> hbd_interest_rate;
-  fc::optional<int32_t>  account_subsidy_budget;
-  fc::optional<uint32_t> account_subsidy_decay;
+  fc::optional<HIVE_asset> account_creation_fee;
+  fc::optional<uint32_t>   maximum_block_size;
+  fc::optional<uint16_t>   hbd_interest_rate;
+  fc::optional<int32_t>    account_subsidy_budget;
+  fc::optional<uint32_t>   account_subsidy_decay;
 };
 
 // only filled parts that are different between active and future wso

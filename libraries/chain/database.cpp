@@ -1168,11 +1168,11 @@ void database::clear_null_account_balance()
   operation vop_op = clear_null_account_balance_operation();
   clear_null_account_balance_operation& vop = vop_op.get< clear_null_account_balance_operation >();
   if( total_hive.amount.value > 0 )
-    vop.total_cleared.push_back( total_hive );
+    vop.total_cleared.push_back( total_hive.to_asset() );
   if( total_vests.amount.value > 0 )
-    vop.total_cleared.push_back( total_vests );
+    vop.total_cleared.push_back( total_vests.to_asset() );
   if( total_hbd.amount.value > 0 )
-    vop.total_cleared.push_back( total_hbd );
+    vop.total_cleared.push_back( total_hbd.to_asset() );
   pre_push_virtual_operation( *this, vop_op );
 
   /////////////////////////////////////////////////////////////////////////////////////
@@ -1280,11 +1280,11 @@ void database::consolidate_treasury_balance()
   operation vop_op = consolidate_treasury_balance_operation();
   consolidate_treasury_balance_operation& vop = vop_op.get< consolidate_treasury_balance_operation >();
   if( total_hive.amount.value > 0 )
-    vop.total_moved.push_back( total_hive );
+    vop.total_moved.push_back( total_hive.to_asset() );
   if( total_vests.amount.value > 0 )
-    vop.total_moved.push_back( total_vests );
+    vop.total_moved.push_back( total_vests.to_asset() );
   if( total_hbd.amount.value > 0 )
-    vop.total_moved.push_back( total_hbd );
+    vop.total_moved.push_back( total_hbd.to_asset() );
   pre_push_virtual_operation( *this, vop_op );
 
   /////////////////////////////////////////////////////////////////////////////////////
@@ -1777,11 +1777,11 @@ void database::process_funds()
       p.dhf_interval_ledger += new_hbd;
     } );
 
-    auto vop = producer_reward_operation( cwit.owner, VEST_asset( 0 ) );
+    auto vop = producer_reward_operation( cwit.owner, asset( 0, VESTS_SYMBOL ) );
     create_vesting2( *this, get_account( cwit.owner ), witness_reward, false,
       [&]( const VEST_asset& vesting_shares )
       {
-        vop.vesting_shares = vesting_shares;
+        vop.vesting_shares = vesting_shares.to_asset();
         pre_push_virtual_operation( *this, vop );
       } );
     post_push_virtual_operation( *this, vop );
@@ -1869,11 +1869,11 @@ HIVE_asset database::get_producer_reward()
   if( props.head_block_number >= HIVE_START_MINER_VOTING_BLOCK || (witness_account.get_vesting().amount.value == 0) )
   {
     // const auto& witness_obj = get_witness( props.current_witness );
-    auto vop = producer_reward_operation( witness_account.get_name(), VEST_asset( 0 ) );
+    auto vop = producer_reward_operation( witness_account.get_name(), asset( 0, VESTS_SYMBOL ) );
     create_vesting2( *this, witness_account, pay, false,
       [&]( const VEST_asset& vesting_shares )
       {
-        vop.vesting_shares = vesting_shares;
+        vop.vesting_shares = vesting_shares.to_asset();
         pre_push_virtual_operation( *this, vop );
       } );
     post_push_virtual_operation( *this, vop );
@@ -1884,7 +1884,7 @@ HIVE_asset database::get_producer_reward()
     {
       a.balance += pay;
     } );
-    push_virtual_operation( *this, producer_reward_operation( witness_account.get_name(), pay ) );
+    push_virtual_operation( *this, producer_reward_operation( witness_account.get_name(), pay.to_asset() ) );
   }
 
   return pay;
@@ -3380,12 +3380,12 @@ asset database::get_balance( const account_object& a, asset_symbol_type symbol )
 {
   if( symbol.asset_num == HIVE_ASSET_NUM_HIVE )
   {
-    return a.get_hive_balance();
+    return a.get_hive_balance().to_asset();
   }
   else
   {
     FC_ASSERT( symbol.asset_num == HIVE_ASSET_NUM_HBD, "Invalid symbol: ${s}", ("s", symbol) );
-    return a.get_hbd_balance();
+    return a.get_hbd_balance().to_asset();
   }
 }
 
@@ -3393,12 +3393,12 @@ asset database::get_savings_balance( const account_object& a, asset_symbol_type 
 {
   if( symbol.asset_num == HIVE_ASSET_NUM_HIVE )
   {
-    return a.get_hive_savings();
+    return a.get_hive_savings().to_asset();
   }
   else
   {
     FC_ASSERT( symbol.asset_num == HIVE_ASSET_NUM_HBD && "invalid symbol" );
-    return a.get_hbd_savings();
+    return a.get_hbd_savings().to_asset();
   }
 }
 

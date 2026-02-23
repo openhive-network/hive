@@ -377,20 +377,20 @@ private:
 
   struct saved_balances
   {
-    asset hive_balance = asset(0, HIVE_SYMBOL);
-    asset savings_hive_balance = asset(0, HIVE_SYMBOL);
+    HIVE_asset hive_balance;
+    HIVE_asset savings_hive_balance;
 
-    asset hbd_balance = asset(0, HBD_SYMBOL);
-    asset savings_hbd_balance = asset(0, HBD_SYMBOL);
+    HBD_asset hbd_balance;
+    HBD_asset savings_hbd_balance;
 
-    asset vesting_shares = asset(0, VESTS_SYMBOL);
-    asset delegated_vesting_shares = asset(0, VESTS_SYMBOL);
-    asset received_vesting_shares = asset(0, VESTS_SYMBOL);
+    VEST_asset vesting_shares;
+    VEST_asset delegated_vesting_shares;
+    VEST_asset received_vesting_shares;
 
-    asset reward_hbd_balance = asset(0, HBD_SYMBOL);
-    asset reward_hive_balance = asset(0, HIVE_SYMBOL);
-    asset reward_vesting_balance = asset(0, VESTS_SYMBOL);
-    asset reward_vesting_hive_balance = asset(0, HIVE_SYMBOL);
+    HBD_asset reward_hbd_balance;
+    HIVE_asset reward_hive_balance;
+    VEST_asset reward_vesting_balance;
+    HIVE_asset reward_vesting_hive_balance;
   };
   optional<string>                 _balance_csv_filename;
   std::ofstream                    _balance_csv_file;
@@ -1361,17 +1361,17 @@ void account_history_rocksdb_plugin::impl::on_post_apply_block(const block_notif
           _balance_csv_file << (string)account.get_name() << ","
                             << bn.block_num << ","
                             << bn.get_block_timestamp().to_iso_string() << ","
-                            << get_asset_amount(saved_balance_record.hive_balance) << ","
-                            << get_asset_amount(saved_balance_record.savings_hive_balance) << ","
-                            << get_asset_amount(saved_balance_record.hbd_balance) << ","
-                            << get_asset_amount(saved_balance_record.savings_hbd_balance) << ","
-                            << get_asset_amount(saved_balance_record.vesting_shares) << ","
-                            << get_asset_amount(saved_balance_record.delegated_vesting_shares) << ","
-                            << get_asset_amount(saved_balance_record.received_vesting_shares) << ","
-                            << get_asset_amount(saved_balance_record.reward_hive_balance) << ","
-                            << get_asset_amount(saved_balance_record.reward_hbd_balance) << ","
-                            << get_asset_amount(saved_balance_record.reward_vesting_balance) << ","
-                            << get_asset_amount(saved_balance_record.reward_vesting_hive_balance) << "\n";
+                            << get_asset_amount(saved_balance_record.hive_balance.to_asset()) << ","
+                            << get_asset_amount(saved_balance_record.savings_hive_balance.to_asset()) << ","
+                            << get_asset_amount(saved_balance_record.hbd_balance.to_asset()) << ","
+                            << get_asset_amount(saved_balance_record.savings_hbd_balance.to_asset()) << ","
+                            << get_asset_amount(saved_balance_record.vesting_shares.to_asset()) << ","
+                            << get_asset_amount(saved_balance_record.delegated_vesting_shares.to_asset()) << ","
+                            << get_asset_amount(saved_balance_record.received_vesting_shares.to_asset()) << ","
+                            << get_asset_amount(saved_balance_record.reward_hive_balance.to_asset()) << ","
+                            << get_asset_amount(saved_balance_record.reward_hbd_balance.to_asset()) << ","
+                            << get_asset_amount(saved_balance_record.reward_vesting_balance.to_asset()) << ","
+                            << get_asset_amount(saved_balance_record.reward_vesting_hive_balance.to_asset()) << "\n";
           // flush every 10k lines
           ++_balance_csv_line_count;
           if (_balance_csv_line_count > 10000)

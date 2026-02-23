@@ -445,7 +445,7 @@ struct api_future_chain_properties
     account_subsidy_decay( c.account_subsidy_decay )
   {
     if( c.account_creation_fee.valid() )
-      account_creation_fee = legacy_asset::from_asset( c.account_creation_fee.value() );
+      account_creation_fee = legacy_asset::from_asset( c.account_creation_fee.value().to_asset() );
   }
 
   fc::optional<legacy_asset> account_creation_fee;
