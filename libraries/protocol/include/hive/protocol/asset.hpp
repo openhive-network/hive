@@ -225,8 +225,6 @@ namespace hive { namespace protocol {
     explicit tiny_asset( const asset& val ) { set( val ); }
     tiny_asset& operator=( const tiny_asset& val ) = default;
 
-    operator asset() const { return to_asset(); } //to be removed
-
     asset to_asset() const { return asset( amount, get_symbol() ); }
     static bool is_compatible( const asset& a ) { return a.symbol.asset_num == _SYMBOL; }
     int64_t get_amount() const { return amount.value; }
