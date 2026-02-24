@@ -29,70 +29,12 @@ struct executor_interface
   virtual void create_object( const account_authority_object& obj ) = 0;
   virtual void create_object( const account_object& obj ) = 0;
 
-  virtual void modify_object( const account_metadata_object& obj, std::function<void(account_metadata_object&)>&& modifier ) = 0;
-  virtual void modify_object( const account_authority_object& obj, std::function<void(account_authority_object&)>&& modifier ) = 0;
-  virtual void modify_object( const account_object& obj, std::function<void(account_object&)>&& modifier ) = 0;
+  /// Called after chainbase::modify completes for account handler objects.
+  /// Allows the handler to perform post-modify work (e.g. tiny_account sync, stats).
+  virtual void on_object_modified( const account_metadata_object& obj ) = 0;
+  virtual void on_object_modified( const account_authority_object& obj ) = 0;
+  virtual void on_object_modified( const account_object& obj ) = 0;
 };
-
-namespace
-{
-  template<typename ObjectType>
-  struct executor
-  {
-    void create( const ObjectType& obj, executor_interface& exec ) {}
-
-    template<typename Modifier>
-    bool modify( const ObjectType& obj, Modifier&& m, executor_interface& exec ) { return false; }
-  };
-
-  template<>
-  struct executor<account_metadata_object>
-  {
-    void create( const account_metadata_object& obj, executor_interface& exec )
-    {
-      exec.create_object( obj );
-    }
-
-    template<typename Modifier>
-    bool modify( const account_metadata_object& obj, Modifier&& m, executor_interface& exec )
-    {
-      exec.modify_object( obj, std::function<void(account_metadata_object&)>( m ) );
-      return true;
-    }
-  };
-
-  template<>
-  struct executor<account_authority_object>
-  {
-    void create( const account_authority_object& obj, executor_interface& exec )
-    {
-      exec.create_object( obj );
-    }
-
-    template<typename Modifier>
-    bool modify( const account_authority_object& obj, Modifier&& m, executor_interface& exec )
-    {
-      exec.modify_object( obj, std::function<void(account_authority_object&)>( m ) );
-      return true;
-    }
-  };
-
-  template<>
-  struct executor<account_object>
-  {
-    void create( const account_object& obj, executor_interface& exec )
-    {
-      exec.create_object( obj );
-    }
-
-    template<typename Modifier>
-    bool modify( const account_object& obj, Modifier&& m, executor_interface& exec )
-    {
-      exec.modify_object( obj, std::function<void(account_object&)>( m ) );
-      return true;
-    }
-  };
-}
 
 class accounts_handler : public executor_interface, public external_storage_snapshot
 {
@@ -102,17 +44,11 @@ class accounts_handler : public executor_interface, public external_storage_snap
 
     virtual void on_irreversible_block( uint32_t block_num ) = 0;
 
+    void create( const account_metadata_object& obj ) { create_object( obj ); }
+    void create( const account_authority_object& obj ) { create_object( obj ); }
+    void create( const account_object& obj ) { create_object( obj ); }
     template<typename ObjectType>
-    void create( const ObjectType& obj )
-    {
-      executor<ObjectType>().create( obj, *this );
-    }
-
-    template<typename ObjectType, typename Modifier>
-    bool modify( const ObjectType& obj, Modifier&& m )
-    {
-      return executor<ObjectType>().template modify<Modifier>( obj, m, *this );
-    }
+    void create( const ObjectType& ) {} // no-op for non-handler types
 
     virtual const account_metadata_object* get_account_metadata( const account_name_type& account_name, bool account_metadata_is_required ) const = 0;
     virtual const account_authority_object* get_account_authority( const account_name_type& account_name, bool account_authority_is_required ) const = 0;
