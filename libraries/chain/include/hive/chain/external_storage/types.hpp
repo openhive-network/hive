@@ -41,7 +41,6 @@ enum ColumnTypes
   RECOVERY,
   ASSETS,
   MANABARS_RC,
-  TIME,
   DELAYED_VOTES
 };
 

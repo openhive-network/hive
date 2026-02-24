@@ -66,7 +66,6 @@ class rocksdb_account_archive : public accounts_handler
     void on_object_modified( const account_object& obj ) override;
 
     const assets_object* get_asset_account( const account_id_type& account_id, bool is_required ) const override;
-    const time_object* get_time_account( const account_id_type& account_id, bool is_required ) const override;
     const recovery_object* get_recovery_account( const account_id_type& account_id, bool is_required ) const override;
     const manabars_rc_object* get_manabars_rc_account( const account_id_type& account_id, bool is_required ) const override;
     const delayed_votes_object* get_delayed_votes_account( const account_id_type& account_id, bool is_required ) const override;

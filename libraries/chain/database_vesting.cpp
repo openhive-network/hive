@@ -127,11 +127,10 @@ void database::process_vesting_withdrawals()
 
     // Get the account and its split objects via tiny_account_object
     const auto& from_account = get_account( tiny_obj.get_name() );
-    const auto& time_obj = get_time_account( from_account.get_id() );
     const auto& from_assets = get_asset_account( from_account.get_id() );
     const auto& from_mrc = get_manabars_rc_account( from_account.get_id() );
 
-    share_type to_withdraw = from_account.get_active_next_vesting_withdrawal( from_assets, time_obj );
+    share_type to_withdraw = from_account.get_active_next_vesting_withdrawal( from_assets );
     if( !has_hardfork( HIVE_HARDFORK_1_28_FIX_POWER_DOWN ) && to_withdraw < from_assets.get_vesting_withdraw_rate().amount )
       to_withdraw = from_assets.get_to_withdraw().amount % from_assets.get_vesting_withdraw_rate().amount;
     // see history of first (and so far the only) power down of 'gil' account: https://hiveblocks.com/@gil
@@ -179,7 +178,6 @@ void database::process_vesting_withdrawals()
             const auto& to_account = get_account( itr->to_account );
             const auto& to_assets = get_asset_account( to_account.get_id() );
             const auto& to_mrc = get_manabars_rc_account( to_account.get_id() );
-            const auto& to_time = get_time_account( to_account.get_id() );
 
             VEST_asset vests( to_deposit );
             asset routed = auto_vest_mode ? vests.to_asset() : ( vests * cprops.get_vesting_share_price() ).to_asset();
@@ -190,7 +188,7 @@ void database::process_vesting_withdrawals()
             if( auto_vest_mode )
             {
               if( has_hardfork( HIVE_HARDFORK_0_20 ) )
-                rc().regenerate_rc_mana( to_account, to_mrc, to_assets, to_time, now );
+                rc().regenerate_rc_mana( to_account, to_mrc, to_assets, now );
             }
 
             modify( to_assets, [&]( assets_object& a )
@@ -208,7 +206,7 @@ void database::process_vesting_withdrawals()
             if( auto_vest_mode )
             {
               if( has_hardfork( HIVE_HARDFORK_0_20 ) )
-                rc().update_account_after_vest_change( to_account, to_mrc, to_assets, to_time, now );
+                rc().update_account_after_vest_change( to_account, to_mrc, to_assets, now );
 
               if( has_hardfork( HIVE_HARDFORK_1_24 ) )
               {
@@ -254,7 +252,7 @@ void database::process_vesting_withdrawals()
     pre_push_virtual_operation( *this, vop );
 
     if( has_hardfork( HIVE_HARDFORK_0_20 ) )
-      rc().regenerate_rc_mana( from_account, from_mrc, from_assets, time_obj, now );
+      rc().regenerate_rc_mana( from_account, from_mrc, from_assets, now );
     if( has_hardfork( HIVE_HARDFORK_1_24 ) )
     {
       FC_ASSERT( dv.valid() && "The object processing `delayed votes` must exist" );
@@ -265,10 +263,6 @@ void database::process_vesting_withdrawals()
                 from_account/*account*/
               );
     }
-
-    // Track if we need to reset or update time_obj
-    bool reset_power_down = false;
-    bool advance_withdrawal = false;
 
     modify( from_assets, [&]( assets_object& a )
     {
@@ -281,34 +275,22 @@ void database::process_vesting_withdrawals()
         a.set_vesting_withdraw_rate( VEST_asset( 0 ) );
         a.set_to_withdraw( VEST_asset( 0 ) );
         a.set_withdrawn( VEST_asset( 0 ) );
-        reset_power_down = true;
+        a.set_next_vesting_withdrawal( fc::time_point_sec::maximum() );
       }
       else
       {
-        advance_withdrawal = true;
-      }
-    });
-
-    modify( time_obj, [&]( time_object& t )
-    {
-      if( reset_power_down )
-      {
-        t.set_next_vesting_withdrawal( fc::time_point_sec::maximum() );
-      }
-      else if( advance_withdrawal )
-      {
-        t.set_next_vesting_withdrawal( t.get_next_vesting_withdrawal() + fc::seconds( HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS ) );
+        a.set_next_vesting_withdrawal( a.get_next_vesting_withdrawal() + fc::seconds( HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS ) );
       }
     });
     {
       const auto& tiny_idx = get_index< tiny_account_index, by_name >();
       auto tiny_it = tiny_idx.find( from_account.get_name() );
       if( tiny_it != tiny_idx.end() )
-        modify( *tiny_it, [&]( tiny_account_object& t ) { t.modify_from_time( time_obj ); } );
+        modify( *tiny_it, [&]( tiny_account_object& t ) { t.modify_from_assets( from_assets ); } );
     }
 
     if( has_hardfork( HIVE_HARDFORK_0_20 ) )
-      rc().update_account_after_vest_change( from_account, from_mrc, from_assets, time_obj, now, true, true );
+      rc().update_account_after_vest_change( from_account, from_mrc, from_assets, now, true, true );
 
     modify( cprops, [&]( dynamic_global_property_object& o )
     {

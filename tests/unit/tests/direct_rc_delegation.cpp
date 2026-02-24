@@ -33,7 +33,6 @@
 #include <hive/chain/rc/rc_objects.hpp>
 #include <hive/chain/detail/state/manabars_rc_object.hpp>
 #include <hive/chain/detail/state/assets_object.hpp>
-#include <hive/chain/detail/state/time_object.hpp>
 
 #include "../db_fixture/clean_database_fixture.hpp"
 
@@ -45,7 +44,6 @@ using namespace hive::protocol;
 // Helper to get manabars_rc_object for an account
 #define GET_MRC( account_name ) db->get_manabars_rc_account( db->get_account( account_name ).get_id() )
 #define GET_ASSETS( account_name ) db->get_asset_account( db->get_account( account_name ).get_id() )
-#define GET_TIME( account_name ) db->get_time_account( db->get_account( account_name ).get_id() )
 
 BOOST_FIXTURE_TEST_SUITE( direct_rc_delegation, clean_database_fixture )
 
@@ -1167,8 +1165,7 @@ BOOST_AUTO_TEST_CASE( rc_delegation_regeneration )
       const auto& account = db->get_account( account_name );
       const auto& mrc = db->get_manabars_rc_account( account.get_id() );
       const auto& assets = db->get_asset_account( account.get_id() );
-      const auto& time_obj = db->get_time_account( account.get_id() );
-      hive::chain::util::manabar_params manabar_params( account.get_maximum_rc( mrc, assets, time_obj ).value, HIVE_RC_REGEN_TIME );
+      hive::chain::util::manabar_params manabar_params( account.get_maximum_rc( mrc, assets ).value, HIVE_RC_REGEN_TIME );
       auto manabar = mrc.get_rc_manabar();
       // Magic number: we regenerate based off the future, because otherwise the manabar will already be up to date and won't regenerate
       manabar.regenerate_mana( manabar_params, db->get_dynamic_global_properties().time.sec_since_epoch() + 1 );
@@ -1283,9 +1280,8 @@ BOOST_AUTO_TEST_CASE( rc_delegation_removal_no_rc )
     const auto& bob_account = db->get_account( "bob" );
     const auto& bob_rc_account = GET_MRC( "bob" );
     const auto& bob_assets = GET_ASSETS( "bob" );
-    const auto& bob_time = GET_TIME( "bob" );
     BOOST_REQUIRE( bob_rc_account.get_rc_manabar().current_mana == 0 );
-    BOOST_REQUIRE( bob_account.get_maximum_rc( bob_rc_account, bob_assets, bob_time ) >= 0 );
+    BOOST_REQUIRE( bob_account.get_maximum_rc( bob_rc_account, bob_assets ) >= 0 );
 
     validate_database();
   }
@@ -1388,8 +1384,7 @@ BOOST_AUTO_TEST_CASE( rc_negative_regeneration_bug )
     push_transaction( power_down, delegator1_private_key );
     const auto& delegator1_acct = db->get_account( "delegator1" );
     const auto& delegator1_assets = GET_ASSETS( "delegator1" );
-    const auto& delegator1_time = GET_TIME( "delegator1" );
-    int64_t undelegated = delegator1_acct.get_active_next_vesting_withdrawal( delegator1_assets, delegator1_time ).value;
+    int64_t undelegated = delegator1_acct.get_active_next_vesting_withdrawal( delegator1_assets ).value;
     rc_delegate( "delegator3", "pattern3", full_vest - undelegated, delegator3_post_key );
     generate_block();
     //pattern2 RC regeneration used to be triggered by author_reward_operation, but since it doesn't modify RC, that was removed

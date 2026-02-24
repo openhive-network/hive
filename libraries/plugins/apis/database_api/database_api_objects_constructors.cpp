@@ -24,7 +24,6 @@
 #include <hive/chain/notifications.hpp>
 #include <hive/chain/detail/state/assets_object.hpp>
 #include <hive/chain/detail/state/manabars_rc_object.hpp>
-#include <hive/chain/detail/state/time_object.hpp>
 #include <hive/chain/detail/state/delayed_votes_object.hpp>
 #include <hive/chain/detail/state/recovery_object.hpp>
 
@@ -232,7 +231,6 @@ api_account_object::api_account_object( const account_object& a, const database&
   // Get split objects
   const auto& assets = db.get_asset_account( a.get_id() );
   const auto& mrc = db.get_manabars_rc_account( a.get_id() );
-  const auto& time_obj = db.get_time_account( a.get_id() );
   const auto& dvotes = db.get_delayed_votes_account( a.get_id() );
   const auto& recovery = db.get_recovery_account( a.get_id() );
 
@@ -240,22 +238,22 @@ api_account_object::api_account_object( const account_object& a, const database&
   voting_manabar = mrc.get_voting_manabar();
   downvote_manabar = mrc.get_downvote_manabar();
 
-  // From time_object
-  last_vote_time = time_obj.get_last_vote_time();
-  last_account_update = time_obj.get_last_account_update();
-  last_post = time_obj.get_last_post();
-  last_root_post = time_obj.get_last_root_post();
-  last_post_edit = time_obj.get_last_post_edit();
-  next_vesting_withdrawal = time_obj.get_next_vesting_withdrawal();
+  // From assets_object (time-related fields)
+  last_vote_time = assets.get_last_vote_time();
+  last_account_update = assets.get_last_account_update();
+  last_post = assets.get_last_post();
+  last_root_post = assets.get_last_root_post();
+  last_post_edit = assets.get_last_post_edit();
+  next_vesting_withdrawal = assets.get_next_vesting_withdrawal();
   last_account_recovery = recovery.get_block_last_account_recovery_time();
 
   // From assets_object
   balance = assets.get_balance();
   savings_balance = assets.get_savings();
   hbd_balance = assets.get_hbd_balance();
-  hbd_seconds = time_obj.get_hbd_seconds();
-  hbd_seconds_last_update = time_obj.get_hbd_seconds_last_update();
-  hbd_last_interest_payment = time_obj.get_hbd_last_interest_payment();
+  hbd_seconds = assets.get_hbd_seconds();
+  hbd_seconds_last_update = assets.get_hbd_seconds_last_update();
+  hbd_last_interest_payment = assets.get_hbd_last_interest_payment();
   savings_hbd_balance = assets.get_hbd_savings();
   savings_hbd_seconds = assets.get_savings_hbd_seconds();
   savings_hbd_seconds_last_update = assets.get_savings_hbd_seconds_last_update();
@@ -306,7 +304,7 @@ api_account_object::api_account_object( const account_object& a, const database&
   if( delayed_votes_active )
     delayed_votes = vector< delayed_votes_data >{ dvotes.get_delayed_votes().begin(), dvotes.get_delayed_votes().end() };
 
-  post_voting_power = VEST_asset(a.get_effective_vesting_shares( assets, time_obj ));
+  post_voting_power = VEST_asset(a.get_effective_vesting_shares( assets ));
 }
 
 

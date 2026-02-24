@@ -60,12 +60,6 @@ rocksdb_storage_provider::ColumnDefinitions rocksdb_account_storage_provider::pr
   }
 
   {
-    columnDefs.emplace_back("time", ColumnFamilyOptions());
-    auto& column = columnDefs.back();
-    column.options.comparator = by_id_Comparator();
-  }
-
-  {
     columnDefs.emplace_back("delayed_votes", ColumnFamilyOptions());
     auto& column = columnDefs.back();
     column.options.comparator = by_id_Comparator();

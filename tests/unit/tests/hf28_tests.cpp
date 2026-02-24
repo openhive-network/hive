@@ -40,7 +40,6 @@
 #include <hive/chain/detail/state/liquidity_reward_balance_object_multiindex.hpp>
 #include <hive/chain/detail/state/withdraw_vesting_route_object_multiindex.hpp>
 #include <hive/chain/detail/state/assets_object.hpp>
-#include <hive/chain/detail/state/time_object.hpp>
 
 #include <hive/protocol/transaction_util.hpp>
 
@@ -50,8 +49,7 @@ using namespace hive::chain;
 using namespace hive::chain::util;
 
 #define GET_ASSETS( account_name ) (db->get_asset_account( db->get_account( account_name ).get_id() ))
-#define GET_TIME( account_name ) (db->get_time_account( db->get_account( account_name ).get_id() ))
-#define GET_ACTIVE_NEXT_VW( account_name ) (db->get_account( account_name ).get_active_next_vesting_withdrawal( GET_ASSETS( account_name ), GET_TIME( account_name ) ))
+#define GET_ACTIVE_NEXT_VW( account_name ) (db->get_account( account_name ).get_active_next_vesting_withdrawal( GET_ASSETS( account_name ) ))
 
 BOOST_FIXTURE_TEST_SUITE( hf28_tests, cluster_database_fixture )
 
@@ -1787,7 +1785,7 @@ BOOST_AUTO_TEST_CASE( artificial_1_on_power_down )
     withdraw_vesting( "carol", asset( 1, VESTS_SYMBOL ), carol_private_key );
     withdraw_vesting( "carol", asset( 0, VESTS_SYMBOL ), carol_private_key );
     // only 'dave' does not have power down
-    HIVE_REQUIRE_ASSERT( withdraw_vesting( "dave", asset( 0, VESTS_SYMBOL ), dave_private_key ), "account_time.has_active_power_down()" );
+    HIVE_REQUIRE_ASSERT( withdraw_vesting( "dave", asset( 0, VESTS_SYMBOL ), dave_private_key ), "account_assets.has_active_power_down()" );
     // 'eric' can change rate to 1
     withdraw_vesting( "eric", asset( 1, VESTS_SYMBOL ), eric_private_key );
 

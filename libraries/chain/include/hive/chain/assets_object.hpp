@@ -1,5 +1,7 @@
 #pragma once
 
+#include <fc/uint128.hpp>
+
 #include <hive/chain/hive_fwd.hpp>
 #include <hive/chain/hive_object_types.hpp>
 #include <hive/protocol/asset.hpp>
@@ -17,6 +19,7 @@ namespace hive { namespace chain {
     public:
       template< typename Allocator >
       assets_object( allocator< Allocator > a, uint64_t _id,
+        const account_name_type& _name = account_name_type(),
         const asset& incoming_delegation = asset( 0, VESTS_SYMBOL ) )
         : id( _id )
       {
@@ -102,6 +105,47 @@ namespace hive { namespace chain {
       time_point_sec get_savings_hbd_last_interest_payment() const { return savings_hbd_last_interest_payment; }
       void set_savings_hbd_last_interest_payment( const time_point_sec& value ) { savings_hbd_last_interest_payment = value; }
 
+      // ===== Fields merged from time_object =====
+
+      // Tells if account has active power down
+      bool has_active_power_down() const { return next_vesting_withdrawal != fc::time_point_sec::maximum(); }
+
+      // Next vesting withdrawal time
+      time_point_sec get_next_vesting_withdrawal() const { return next_vesting_withdrawal; }
+      void set_next_vesting_withdrawal( const time_point_sec& value ) { next_vesting_withdrawal = value; }
+
+      // HBD seconds (liquid HBD * how long it has been held)
+      uint128_t get_hbd_seconds() const { return hbd_seconds; }
+      void set_hbd_seconds( const uint128_t& value ) { hbd_seconds = value; }
+
+      // Last time HBD seconds was updated
+      time_point_sec get_hbd_seconds_last_update() const { return hbd_seconds_last_update; }
+      void set_hbd_seconds_last_update( const time_point_sec& value ) { hbd_seconds_last_update = value; }
+
+      // Used to pay interest at most once per month
+      time_point_sec get_hbd_last_interest_payment() const { return hbd_last_interest_payment; }
+      void set_hbd_last_interest_payment( const time_point_sec& value ) { hbd_last_interest_payment = value; }
+
+      // Only used by outdated consensus checks - up to HF17
+      time_point_sec get_last_account_update() const { return last_account_update; }
+      void set_last_account_update( const time_point_sec& value ) { last_account_update = value; }
+
+      // Last post time
+      time_point_sec get_last_post() const { return last_post; }
+      void set_last_post( const time_point_sec& value ) { last_post = value; }
+
+      // Influenced root comment reward between HF12 and HF17
+      time_point_sec get_last_root_post() const { return last_root_post; }
+      void set_last_root_post( const time_point_sec& value ) { last_root_post = value; }
+
+      // Last post edit time
+      time_point_sec get_last_post_edit() const { return last_post_edit; }
+      void set_last_post_edit( const time_point_sec& value ) { last_post_edit = value; }
+
+      // Only used by outdated consensus checks - up to HF26
+      time_point_sec get_last_vote_time() const { return last_vote_time; }
+      void set_last_vote_time( const time_point_sec& value ) { last_vote_time = value; }
+
     private:
       HBD_asset         hbd_balance;              ///< HBD liquid balance
       HBD_asset         savings_hbd_balance;      ///< HBD balance guarded by 3 day withdrawal (also earns interest)
@@ -127,6 +171,19 @@ namespace hive { namespace chain {
       uint128_t         savings_hbd_seconds = 0;  ///< savings HBD * how long it has been held
       time_point_sec    savings_hbd_seconds_last_update;
       time_point_sec    savings_hbd_last_interest_payment;
+
+      // Fields merged from time_object
+      uint128_t         hbd_seconds = 0;          ///< liquid HBD * how long it has been held
+
+      time_point_sec    hbd_seconds_last_update;
+      time_point_sec    hbd_last_interest_payment;
+
+      time_point_sec    last_account_update;      //(only used by outdated consensus checks - up to HF17)
+      time_point_sec    last_post;                //(we could probably remove limit on posting replies)
+      time_point_sec    last_root_post;           //influenced root comment reward between HF12 and HF17
+      time_point_sec    last_post_edit;           //(we could probably remove limit on post edits)
+      time_point_sec    last_vote_time;           //(only used by outdated consensus checks - up to HF26)
+      time_point_sec    next_vesting_withdrawal = fc::time_point_sec::maximum(); ///< after every withdrawal this is incremented by 1 week
 
     CHAINBASE_UNPACK_CONSTRUCTOR(assets_object);
   };
@@ -154,6 +211,10 @@ FC_REFLECT( hive::chain::assets_object,
           (withdrawn)(to_withdraw)
           (savings_hbd_seconds)(savings_hbd_seconds_last_update)
           (savings_hbd_last_interest_payment)
+          (hbd_seconds)
+          (hbd_seconds_last_update)(hbd_last_interest_payment)
+          (last_account_update)(last_post)(last_root_post)
+          (last_post_edit)(last_vote_time)(next_vesting_withdrawal)
         )
 
 CHAINBASE_SET_INDEX_TYPE( hive::chain::assets_object, hive::chain::assets_index )
