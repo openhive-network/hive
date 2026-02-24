@@ -938,9 +938,19 @@ namespace chain {
       void modify( const ObjectType& obj, Modifier&& m )
       {
         if constexpr( is_accounts_handler_object_v<ObjectType> )
-          get_accounts_handler().modify<ObjectType>( obj, std::forward<Modifier>( m ) );
+        {
+          chainbase::database::modify( obj, [&]( ObjectType& o )
+          {
+            m( o );
+            if( !is_replaying_block() )
+              o.set_last_access_block( head_block_num() );
+          } );
+          get_accounts_handler().on_object_modified( obj );
+        }
         else
+        {
           chainbase::database::modify( obj, std::forward<Modifier>( m ) );
+        }
       }
 
     private:

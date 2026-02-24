@@ -54,16 +54,16 @@ class rocksdb_account_archive : public accounts_handler
 
     void create_object( const account_metadata_object& obj ) override;
     const account_metadata_object* get_account_metadata( const account_name_type& account_name, bool account_metadata_is_required ) const override;
-    void modify_object( const account_metadata_object& obj, std::function<void(account_metadata_object&)>&& modifier ) override;
+    void on_object_modified( const account_metadata_object& obj ) override;
 
     void create_object( const account_authority_object& obj ) override;
     const account_authority_object* get_account_authority( const account_name_type& account_name, bool account_authority_is_required ) const override;
-    void modify_object( const account_authority_object& obj, std::function<void(account_authority_object&)>&& modifier ) override;
+    void on_object_modified( const account_authority_object& obj ) override;
 
     void create_object( const account_object& obj ) override;
     const account_object* get_account( const account_name_type& account_name, bool account_is_required ) const override;
     const account_object* get_account( const account_id_type& account_id, bool account_is_required ) const override;
-    void modify_object( const account_object& obj, std::function<void(account_object&)>&& modifier ) override;
+    void on_object_modified( const account_object& obj ) override;
 
     const assets_object* get_asset_account( const account_id_type& account_id, bool is_required ) const override;
     const time_object* get_time_account( const account_id_type& account_id, bool is_required ) const override;
