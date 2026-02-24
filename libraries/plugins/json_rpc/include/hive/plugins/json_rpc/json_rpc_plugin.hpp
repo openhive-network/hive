@@ -1,7 +1,5 @@
 #pragma once
-#ifdef HIVE_BUILD_WITH_BLOCKCHAIN
 #include <chainbase/forward_declarations.hpp>
-#endif
 #include <appbase/application.hpp>
 
 #include <fc/variant.hpp>
