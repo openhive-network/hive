@@ -672,19 +672,8 @@ account_metadata rocksdb_account_archive::get_volatile_account_metadata( const a
   return nullptr;
 }
 
-void rocksdb_account_archive::modify_object( const account_metadata_object& obj, std::function<void(account_metadata_object&)>&& modifier )
+void rocksdb_account_archive::on_object_modified( const account_metadata_object& obj )
 {
-  auto time_start = std::chrono::high_resolution_clock::now();
-
-  // Call chainbase::database::modify directly to avoid infinite recursion through accounts_handler
-  // (database::modify calls get_accounts_handler().modify() which would call this method again)
-  static_cast<chainbase::database&>(db).modify( obj, [&]( account_metadata_object& o )
-  {
-    modifier( o );
-    o.set_last_access_block( db.head_block_num() );
-  } );
-
-  accounts_stats::stats.account_metadata_modified.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
   ++accounts_stats::stats.account_metadata_modified.count;
 }
 //==========================================account_metadata_object==========================================
@@ -758,19 +747,8 @@ account_authority rocksdb_account_archive::get_volatile_account_authority( const
   return nullptr;
 }
 
-void rocksdb_account_archive::modify_object( const account_authority_object& obj, std::function<void(account_authority_object&)>&& modifier )
+void rocksdb_account_archive::on_object_modified( const account_authority_object& obj )
 {
-  auto time_start = std::chrono::high_resolution_clock::now();
-
-  // Call chainbase::database::modify directly to avoid infinite recursion through accounts_handler
-  // (database::modify calls get_accounts_handler().modify() which would call this method again)
-  static_cast<chainbase::database&>(db).modify( obj, [&]( account_authority_object& o )
-  {
-    modifier( o );
-    o.set_last_access_block( db.head_block_num() );
-  } );
-
-  accounts_stats::stats.account_authority_modified.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
   ++accounts_stats::stats.account_authority_modified.count;
 }
 //==========================================account_authority_object==========================================
@@ -900,18 +878,8 @@ account rocksdb_account_archive::get_volatile_account( const account_id_type& ac
   return nullptr;
 }
 
-void rocksdb_account_archive::modify_object( const account_object& obj, std::function<void(account_object&)>&& modifier )
+void rocksdb_account_archive::on_object_modified( const account_object& obj )
 {
-  auto time_start = std::chrono::high_resolution_clock::now();
-
-  // Call chainbase::database::modify directly to avoid infinite recursion through accounts_handler
-  // (database::modify calls get_accounts_handler().modify() which would call this method again)
-  static_cast<chainbase::database&>(db).modify( obj, [&]( account_object& o )
-  {
-    modifier( o );
-    o.set_last_access_block( db.head_block_num() );
-  } );
-
   // Sync tiny_account_object with account_object changes (proxy, governance_vote_expiration_ts)
   const auto& tiny_idx = db.get_index< tiny_account_index, by_name >();
   auto tiny_it = tiny_idx.find( obj.get_name() );
@@ -923,7 +891,6 @@ void rocksdb_account_archive::modify_object( const account_object& obj, std::fun
     } );
   }
 
-  accounts_stats::stats.account_modified.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
   ++accounts_stats::stats.account_modified.count;
 }
 //==========================================account_object==========================================
