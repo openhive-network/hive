@@ -6,7 +6,22 @@
 
 #include <hive/chain/account_object.hpp>
 
+#include <type_traits>
+
 namespace hive { namespace chain {
+
+/// Compile-time trait: true for object types managed by accounts_handler (RocksDB archival).
+/// Only these types are routed through the accounts_handler in database::create/modify;
+/// all other types go directly to chainbase, avoiding virtual dispatch overhead.
+template<typename T>
+struct is_accounts_handler_object : std::false_type {};
+
+template<> struct is_accounts_handler_object<account_metadata_object> : std::true_type {};
+template<> struct is_accounts_handler_object<account_authority_object> : std::true_type {};
+template<> struct is_accounts_handler_object<account_object> : std::true_type {};
+
+template<typename T>
+inline constexpr bool is_accounts_handler_object_v = is_accounts_handler_object<T>::value;
 
 struct executor_interface
 {
