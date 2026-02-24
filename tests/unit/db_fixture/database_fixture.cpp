@@ -22,7 +22,6 @@
 #include <hive/chain/detail/state/feed_history_object_multiindex.hpp>
 #include <hive/chain/detail/state/global_property_object_multiindex.hpp>
 #include <hive/chain/detail/state/assets_object.hpp>
-#include <hive/chain/detail/state/time_object.hpp>
 #include <hive/chain/detail/state/delayed_votes_object.hpp>
 
 #include <hive/plugins/chain/chain_plugin.hpp>
@@ -450,8 +449,8 @@ void database_fixture::issue_funds(
       });
       if( amount.symbol == HBD_SYMBOL )
       {
-        const auto& acnt_time = db.get_time_account( acnt.get_id() );
-        db.modify( acnt_time, [&]( time_object& t )
+        const auto& acnt_time = db.get_asset_account( acnt.get_id() );
+        db.modify( acnt_time, [&]( assets_object& t )
         {
           t.set_hbd_seconds_last_update( db.head_block_time() );
         });
@@ -1080,15 +1079,14 @@ share_type database_fixture::get_effective_vesting_shares( const string& account
 {
   const auto& acnt = db->get_account( account_name );
   const auto& assets = db->get_asset_account( acnt.get_id() );
-  const auto& time_obj = db->get_time_account( acnt.get_id() );
-  return acnt.get_effective_vesting_shares( assets, time_obj );
+  return acnt.get_effective_vesting_shares( assets );
 }
 
 time_point_sec database_fixture::get_last_vote_time( const string& account_name )const
 {
   const auto& acnt = db->get_account( account_name );
-  const auto& time_obj = db->get_time_account( acnt.get_id() );
-  return time_obj.get_last_vote_time();
+  const auto& assets = db->get_asset_account( acnt.get_id() );
+  return assets.get_last_vote_time();
 }
 
 comment database_fixture::get_comment( const std::string& author, const std::string& permlink )const

@@ -12,7 +12,6 @@
 #include <hive/chain/evaluator_registry.hpp>
 #include <hive/chain/detail/state/assets_object.hpp>
 #include <hive/chain/detail/state/recovery_object.hpp>
-#include <hive/chain/detail/state/time_object.hpp>
 #include <hive/chain/detail/state/manabars_rc_object.hpp>
 #include <hive/chain/detail/state/delayed_votes_object.hpp>
 #include <hive/chain/detail/state/tiny_account_object.hpp>
@@ -161,11 +160,10 @@ const account_object& create_account( database& db, const account_name_type& nam
   bool mana_100_percent = !db.has_hardfork( HIVE_HARDFORK_0_20__2539 );
 
   db.create< recovery_object >( recovery_account ? recovery_account->get_id() : account_id_type() );
-  db.create< assets_object >( initial_delegation );
+  const auto& new_assets = db.create< assets_object >( name, initial_delegation );
   db.create< manabars_rc_object >( _creation_time, mana_100_percent, rc_adjustment_from_fee );
-  const auto& new_time = db.create< time_object >( new_account.get_name() );
   const auto& new_dvotes = db.create< delayed_votes_object >();
-  db.create< tiny_account_object >( new_account, new_time, new_dvotes );
+  db.create< tiny_account_object >( new_account, new_assets, new_dvotes );
 
   return new_account;
 }
@@ -364,10 +362,10 @@ void account_update_evaluator::do_apply( const account_update_operation& o )
     } );
   }
 
-  const auto& account_time = _db.get_time_account( account.get_id() );
-  _db.modify( account_time, [&]( time_object& t )
+  const auto& account_assets = _db.get_asset_account( account.get_id() );
+  _db.modify( account_assets, [&]( assets_object& a )
   {
-    t.set_last_account_update( _db.head_block_time() );
+    a.set_last_account_update( _db.head_block_time() );
   } );
 
   if( o.active || *_auth_posting )
@@ -412,10 +410,10 @@ void account_update2_evaluator::do_apply( const account_update2_operation& o )
     } );
   }
 
-  const auto& account_time = _db.get_time_account( account.get_id() );
-  _db.modify( account_time, [&]( time_object& t )
+  const auto& account_assets = _db.get_asset_account( account.get_id() );
+  _db.modify( account_assets, [&]( assets_object& a )
   {
-    t.set_last_account_update( _db.head_block_time() );
+    a.set_last_account_update( _db.head_block_time() );
   } );
 
   if( o.active || o.posting )
