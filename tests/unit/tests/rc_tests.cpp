@@ -10,7 +10,6 @@
 #include <hive/chain/detail/state/global_property_object.hpp>
 #include <hive/chain/detail/state/manabars_rc_object.hpp>
 #include <hive/chain/detail/state/assets_object.hpp>
-#include <hive/chain/detail/state/time_object.hpp>
 // Multiindex headers for index type definitions
 #include <hive/chain/comment_object_multiindex.hpp>
 #include <hive/chain/transaction_object_multiindex.hpp>
@@ -49,10 +48,9 @@ int64_t regenerate_rc_mana( debug_node::debug_node_plugin* db_plugin, const acco
   {
     const auto& mrc = db.get_manabars_rc_account( acc.get_id() );
     const auto& assets = db.get_asset_account( acc.get_id() );
-    const auto& time_obj = db.get_time_account( acc.get_id() );
     db.modify( mrc, [&]( manabars_rc_object& mrc_obj )
     {
-      auto max_rc = acc.get_maximum_rc( mrc_obj, assets, time_obj );
+      auto max_rc = acc.get_maximum_rc( mrc_obj, assets );
       hive::chain::util::manabar_params manabar_params( max_rc.value, HIVE_RC_REGEN_TIME );
       mrc_obj.get_rc_manabar().regenerate_mana( manabar_params, db.head_block_time() );
     } );

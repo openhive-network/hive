@@ -468,16 +468,6 @@ const assets_object* database::find_asset_account( const account_id_type& id )co
   return get_accounts_handler().get_asset_account( id, false /*is_required*/ );
 }
 
-const time_object& database::get_time_account( const account_id_type& id )const
-{
-  return *( get_accounts_handler().get_time_account( id, true /*is_required*/ ) );
-}
-
-const time_object* database::find_time_account( const account_id_type& id )const
-{
-  return get_accounts_handler().get_time_account( id, false /*is_required*/ );
-}
-
 const recovery_object& database::get_recovery_account( const account_id_type& id )const
 {
   return *( get_accounts_handler().get_recovery_account( id, true /*is_required*/ ) );
@@ -1122,16 +1112,15 @@ VEST_asset database::adjust_account_vesting_balance(const account_object& to_acc
       if( has_hardfork( HIVE_HARDFORK_0_20 ) )
       {
         const auto& _assets_obj = get_asset_account( to_account.get_id() );
-        const auto& _time_obj = get_time_account( to_account.get_id() );
         const auto& _manabars_rc_object = get_manabars_rc_account( to_account.get_id() );
 
         modify( _manabars_rc_object, [&]( manabars_rc_object& mrc )
         {
-          util::update_manabar( cprops, to_account, _assets_obj, _time_obj, mrc, new_vesting.get_amount() );
+          util::update_manabar( cprops, to_account, _assets_obj, mrc, new_vesting.get_amount() );
         });
-        rc().regenerate_rc_mana( to_account, _manabars_rc_object, _assets_obj, _time_obj, _now );
+        rc().regenerate_rc_mana( to_account, _manabars_rc_object, _assets_obj, _now );
         adjust_balance( to_account, new_vesting );
-        rc().update_account_after_vest_change( to_account, _manabars_rc_object, _assets_obj, _time_obj, _now );
+        rc().update_account_after_vest_change( to_account, _manabars_rc_object, _assets_obj, _now );
       }
       else
       {
@@ -1328,7 +1317,6 @@ void database::clear_null_account_balance()
     const auto& gpo = get_dynamic_global_properties();
     auto _now = gpo.time;
     const auto& null_mrc = get_manabars_rc_account( null_account.get_id() );
-    const auto& null_time = get_time_account( null_account.get_id() );
 
     modify( gpo, [&]( dynamic_global_property_object& g )
     {
@@ -1337,7 +1325,7 @@ void database::clear_null_account_balance()
     });
 
     if( has_hardfork( HIVE_HARDFORK_0_20 ) )
-      rc().regenerate_rc_mana( null_account, null_mrc, null_assets, null_time, _now ); //we could just always set RC value on 'null' to 0
+      rc().regenerate_rc_mana( null_account, null_mrc, null_assets, _now ); //we could just always set RC value on 'null' to 0
     modify( null_assets, [&]( assets_object& a )
     {
       a.set_vesting( VEST_asset( 0 ) );
@@ -1355,7 +1343,7 @@ void database::clear_null_account_balance()
         modify( *tiny_it, [&]( tiny_account_object& t ) { t.modify_from_delayed_votes( null_delayed_votes ); } );
     }
     if( has_hardfork( HIVE_HARDFORK_0_20 ) )
-      rc().update_account_after_vest_change( null_account, null_mrc, null_assets, null_time, _now );
+      rc().update_account_after_vest_change( null_account, null_mrc, null_assets, _now );
   }
 
   if( null_assets.get_rewards().amount > 0 )
@@ -1641,12 +1629,11 @@ void database::clear_account( const account_object& account )
   // Get split objects for the account
   const auto& assets = get_asset_account( account.get_id() );
   const auto& mrc = get_manabars_rc_account( account.get_id() );
-  const auto& time = get_time_account( account.get_id() );
   const auto& dvotes = get_delayed_votes_account( account.get_id() );
 
   if( assets.get_vesting().amount > 0 )
   {
-    rc().regenerate_rc_mana( account, mrc, assets, time, now );
+    rc().regenerate_rc_mana( account, mrc, assets, now );
 
     // Remove all active delegations
     VEST_asset freed_delegations( 0 );
@@ -1663,14 +1650,13 @@ void database::clear_account( const account_object& account )
 
       // Get split objects for the delegatee
       const auto& delegatee_assets = get_asset_account( delegatee.get_id() );
-      const auto& delegatee_time = get_time_account( delegatee.get_id() );
       const auto& delegatee_mrc = get_manabars_rc_account( delegatee.get_id() );
 
-      rc().regenerate_rc_mana( delegatee, delegatee_mrc, delegatee_assets, delegatee_time, now );
+      rc().regenerate_rc_mana( delegatee, delegatee_mrc, delegatee_assets, now );
 
       modify( delegatee_mrc, [&]( manabars_rc_object& m )
       {
-        util::update_manabar( cprops, delegatee, delegatee_assets, delegatee_time, m );
+        util::update_manabar( cprops, delegatee, delegatee_assets, m );
         m.get_voting_manabar().use_mana( delegation.get_vesting().amount.value );
 
         m.get_downvote_manabar().use_mana(
@@ -1686,7 +1672,7 @@ void database::clear_account( const account_object& account )
 
       remove( delegation );
 
-      rc().update_account_after_vest_change( delegatee, delegatee_mrc, delegatee_assets, delegatee_time, now, true, true );
+      rc().update_account_after_vest_change( delegatee, delegatee_mrc, delegatee_assets, now, true, true );
     }
 
     // Remove pending expired delegations
@@ -1717,20 +1703,15 @@ void database::clear_account( const account_object& account )
       a.set_vesting_withdraw_rate( VEST_asset( 0 ) );
       a.set_to_withdraw( VEST_asset( 0 ) );
       a.set_withdrawn( VEST_asset( 0 ) );
+      a.set_next_vesting_withdrawal( fc::time_point_sec::maximum() );
     } );
 
     // Update manabars_rc_object
     modify( mrc, [&]( manabars_rc_object& m )
     {
-      util::update_manabar( cprops, account, assets, time, m );
+      util::update_manabar( cprops, account, assets, m );
       m.get_voting_manabar().current_mana = 0;
       m.get_downvote_manabar().current_mana = 0;
-    } );
-
-    // Update time_object
-    modify( time, [&]( time_object& t )
-    {
-      t.set_next_vesting_withdrawal( fc::time_point_sec::maximum() );
     } );
 
     // Update delayed_votes_object
@@ -1743,7 +1724,7 @@ void database::clear_account( const account_object& account )
       } );
     }
 
-    // Sync tiny_account_object with time and delayed_votes changes
+    // Sync tiny_account_object with assets and delayed_votes changes
     {
       const auto& tiny_idx = get_index< tiny_account_index, by_name >();
       auto tiny_it = tiny_idx.find( account.get_name() );
@@ -1751,13 +1732,13 @@ void database::clear_account( const account_object& account )
       {
         modify( *tiny_it, [&]( tiny_account_object& t )
         {
-          t.modify_from_time( time );
+          t.modify_from_assets( assets );
           t.modify_from_delayed_votes( dvotes );
         } );
       }
     }
 
-    rc().update_account_after_vest_change( account, mrc, assets, time, now, true, true );
+    rc().update_account_after_vest_change( account, mrc, assets, now, true, true );
 
     adjust_balance( treasury_account, converted_hive );
     modify( cprops, [&]( dynamic_global_property_object& o )
@@ -3321,7 +3302,6 @@ void database::clear_expired_delegations()
     const auto& delegator = get_account( itr->get_delegator() );
 
     const auto& delegator_assets = get_asset_account( delegator.get_id() );
-    const auto& delegator_time = get_time_account( delegator.get_id() );
     const auto& delegator_mrc = get_manabars_rc_account( delegator.get_id() );
 
     operation vop = return_vesting_delegation_operation( delegator.get_name(), itr->get_vesting() );
@@ -3332,9 +3312,9 @@ void database::clear_expired_delegations()
     {
       modify( delegator_mrc, [&]( manabars_rc_object& m )
       {
-        util::update_manabar( gpo, delegator, delegator_assets, delegator_time, m, itr->get_vesting().amount.value );
+        util::update_manabar( gpo, delegator, delegator_assets, m, itr->get_vesting().amount.value );
       });
-      rc().regenerate_rc_mana( delegator, delegator_mrc, delegator_assets, delegator_time, now );
+      rc().regenerate_rc_mana( delegator, delegator_mrc, delegator_assets, now );
     }
 
     modify( delegator_assets, [&]( assets_object& a )
@@ -3342,7 +3322,7 @@ void database::clear_expired_delegations()
       a.set_delegated_vesting( a.get_delegated_vesting() - itr->get_vesting() );
     });
     if( has_hardfork( HIVE_HARDFORK_0_20 ) )
-      rc().update_account_after_vest_change( delegator, delegator_mrc, delegator_assets, delegator_time, now );
+      rc().update_account_after_vest_change( delegator, delegator_mrc, delegator_assets, now );
 
     post_push_virtual_operation( *this, vop );
 
@@ -3384,7 +3364,6 @@ void database::adjust_balance( const account_object& a, const HIVE_asset& delta 
 
   // Get split objects for the account
   const auto& acnt_assets = get_asset_account( a.get_id() );
-  const auto& acnt_time = get_time_account( a.get_id() );
 
   if( delta.symbol.asset_num == HIVE_ASSET_NUM_HIVE )
   {
@@ -3401,18 +3380,18 @@ void database::adjust_balance( const account_object& a, const HIVE_asset& delta 
   else if( delta.symbol.asset_num == HIVE_ASSET_NUM_HBD )
   {
     /// Starting from HF 25 HBD interest will be paid only from saving balance.
-    if( has_hardfork(HIVE_HARDFORK_1_25) == false && acnt_time.get_hbd_seconds_last_update() != head_block_time() )
+    if( has_hardfork(HIVE_HARDFORK_1_25) == false && acnt_assets.get_hbd_seconds_last_update() != head_block_time() )
     {
       const auto _head_block_time = head_block_time();
-      const bool update_hdb_balance = (_head_block_time - acnt_time.get_hbd_last_interest_payment()).to_seconds() > HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC;
+      const bool update_hdb_balance = (_head_block_time - acnt_assets.get_hbd_last_interest_payment()).to_seconds() > HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC;
 
       // Need to track interest calculation state
-      uint128_t _hbd_seconds = acnt_time.get_hbd_seconds();
-      const auto interest = hive::protocol::hbd_interest::evaluate_hbd_interest(&_hbd_seconds, _head_block_time, acnt_assets.get_hbd_balance(), acnt_time.get_hbd_seconds_last_update(),
+      uint128_t _hbd_seconds = acnt_assets.get_hbd_seconds();
+      const auto interest = hive::protocol::hbd_interest::evaluate_hbd_interest(&_hbd_seconds, _head_block_time, acnt_assets.get_hbd_balance(), acnt_assets.get_hbd_seconds_last_update(),
         get_dynamic_global_properties().get_hbd_interest_rate(), update_hdb_balance);
 
-      // Update time_object with new HBD seconds tracking
-      modify( acnt_time, [&]( time_object& t )
+      // Update assets_object with new HBD seconds tracking
+      modify( acnt_assets, [&]( assets_object& t )
       {
         t.set_hbd_seconds( _hbd_seconds );
         t.set_hbd_seconds_last_update( _head_block_time );
@@ -3425,7 +3404,7 @@ void database::adjust_balance( const account_object& a, const HIVE_asset& delta 
         {
           acnt.set_hbd_balance( acnt.get_hbd_balance() + interest_paid );
         });
-        modify( acnt_time, [&]( time_object& t )
+        modify( acnt_assets, [&]( assets_object& t )
         {
           t.set_hbd_seconds( 0 );
           t.set_hbd_last_interest_payment( _head_block_time );

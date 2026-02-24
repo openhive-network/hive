@@ -195,11 +195,10 @@ void database::init_genesis()
     const auto create_split_objects = [&]( const account_object& acc )
     {
       create< recovery_object >();
-      create< assets_object >();
+      const auto& assets_obj = create< assets_object >( acc.get_name() );
       create< manabars_rc_object >();
-      const auto& time_obj = create< time_object >( acc.get_name() );
       const auto& dvotes_obj = create< delayed_votes_object >();
-      create< tiny_account_object >( acc, time_obj, dvotes_obj );
+      create< tiny_account_object >( acc, assets_obj, dvotes_obj );
     };
 
     // Create blockchain accounts

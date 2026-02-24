@@ -23,7 +23,6 @@
 #include <hive/chain/detail/state/recurrent_transfer_object.hpp>
 #include <hive/chain/hive_object_types.hpp>
 #include <hive/chain/detail/state/assets_object.hpp>
-#include <hive/chain/detail/state/time_object.hpp>
 
 #include <hive/chain/util/reward.hpp>
 #include <hive/chain/comment_object.hpp>
@@ -65,7 +64,7 @@ using namespace hive::protocol;
 using fc::string;
 
 #define GET_ASSETS( account ) (db->get_asset_account( db->get_account( account ).get_id() ))
-#define GET_TIME( account ) (db->get_time_account( db->get_account( account ).get_id() ))
+#define GET_TIME( account ) (db->get_asset_account( db->get_account( account ).get_id() ))
 #define DELEGATED_VESTS( account ) GET_ASSETS( account ).get_delegated_vesting().amount.value
 #define RECEIVED_VESTS( account ) GET_ASSETS( account ).get_received_vesting().amount.value
 

@@ -19,7 +19,6 @@
 #include <hive/chain/detail/state/recovery_object.hpp>
 #include <hive/chain/detail/state/assets_object.hpp>
 #include <hive/chain/detail/state/manabars_rc_object.hpp>
-#include <hive/chain/detail/state/time_object.hpp>
 #include <hive/chain/detail/state/delayed_votes_object.hpp>
 #include <hive/chain/detail/state/tiny_account_object.hpp>
 
@@ -196,18 +195,6 @@ struct rocksdb_reader<account_object, account_name_type, Return_Type>
         }
       }
 
-      // Time object
-      if( !db.find< time_object, by_id >( time_object::id_type( aid ) ) )
-      {
-        PinnableSlice split_buffer;
-        if( rocksdb_storage_reader<uint32_slice_t>::read_from_storage( provider, uint32_slice_t( account_id ), ColumnTypes::TIME, split_buffer ) )
-        {
-          rocksdb_time_object split_obj;
-          load( split_obj, split_buffer.data(), split_buffer.size() );
-          split_obj.build<const time_object*>( db );
-        }
-      }
-
       // Delayed_votes object
       if( !db.find< delayed_votes_object, by_id >( delayed_votes_object::id_type( aid ) ) )
       {
@@ -355,7 +342,7 @@ bool rocksdb_account_archive::on_irreversible_block_impl( uint32_t block_num, co
 }
 
 // Specialized implementation for account_object which skips accounts with pending governance votes
-// Also archives the associated split objects (recovery, assets, manabars_rc, time, delayed_votes)
+// Also archives the associated split objects (recovery, assets, manabars_rc, delayed_votes)
 bool rocksdb_account_archive::on_irreversible_block_impl_account( uint32_t block_num, const std::vector<ColumnTypes>& column_types )
 {
   const auto& _idx = db.get_index<account_index, by_block>();
@@ -395,7 +382,6 @@ bool rocksdb_account_archive::on_irreversible_block_impl_account( uint32_t block
     const auto* recovery_ptr = db.find< recovery_object, by_id >( recovery_object::id_type( aid ) );
     const auto* assets_ptr = db.find< assets_object, by_id >( assets_object::id_type( aid ) );
     const auto* manabars_ptr = db.find< manabars_rc_object, by_id >( manabars_rc_object::id_type( aid ) );
-    const auto* time_ptr = db.find< time_object, by_id >( time_object::id_type( aid ) );
     const auto* delayed_votes_ptr = db.find< delayed_votes_object, by_id >( delayed_votes_object::id_type( aid ) );
 
     // Archive changed account data to RocksDB
@@ -420,13 +406,10 @@ bool rocksdb_account_archive::on_irreversible_block_impl_account( uint32_t block
     if( manabars_ptr )
       rocksdb_split_writer<manabars_rc_object, rocksdb_manabars_rc_object>::write_to_storage( provider, *manabars_ptr, ColumnTypes::MANABARS_RC );
 
-    if( time_ptr )
-      rocksdb_split_writer<time_object, rocksdb_time_object>::write_to_storage( provider, *time_ptr, ColumnTypes::TIME );
-
     if( delayed_votes_ptr )
       rocksdb_split_writer<delayed_votes_object, rocksdb_delayed_votes_object>::write_to_storage( provider, *delayed_votes_ptr, ColumnTypes::DELAYED_VOTES );
 
-    if( !_do_flush && (recovery_ptr || assets_ptr || manabars_ptr || time_ptr || delayed_votes_ptr) )
+    if( !_do_flush && (recovery_ptr || assets_ptr || manabars_ptr || delayed_votes_ptr) )
       _do_flush = true;
 
     // Remove the account from chainbase
@@ -442,9 +425,6 @@ bool rocksdb_account_archive::on_irreversible_block_impl_account( uint32_t block
 
     if( manabars_ptr )
       db.remove_no_undo( *manabars_ptr );
-
-    if( time_ptr )
-      db.remove_no_undo( *time_ptr );
 
     if( delayed_votes_ptr )
       db.remove_no_undo( *delayed_votes_ptr );
@@ -771,11 +751,11 @@ void rocksdb_account_archive::create_object( const account_object& obj )
 
   // Create the tiny_account_object that stays in chainbase permanently
   const auto aid = obj.get_id().get_value();
-  const auto* time_ptr = db.find< time_object, by_id >( time_object::id_type( aid ) );
+  const auto* assets_ptr = db.find< assets_object, by_id >( assets_object::id_type( aid ) );
   const auto* dvotes_ptr = db.find< delayed_votes_object, by_id >( delayed_votes_object::id_type( aid ) );
-  if( time_ptr && dvotes_ptr )
+  if( assets_ptr && dvotes_ptr )
   {
-    db.create< tiny_account_object >( obj, *time_ptr, *dvotes_ptr );
+    db.create< tiny_account_object >( obj, *assets_ptr, *dvotes_ptr );
   }
 
   accounts_stats::stats.account_created.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
@@ -914,27 +894,6 @@ const assets_object* rocksdb_account_archive::get_asset_account( const account_i
 
   if( is_required )
     FC_ASSERT( !"ASSETS_NOT_FOUND", "Assets object for account with id `${id}` not found", ("id", account_id) );
-
-  return nullptr;
-}
-
-const time_object* rocksdb_account_archive::get_time_account( const account_id_type& account_id, bool is_required ) const
-{
-  const auto aid = account_id.get_value();
-  const auto* _found = db.find< time_object, by_id >( time_object::id_type( aid ) );
-  if( _found )
-    return _found;
-
-  // Try to restore from RocksDB (get_account restores all split objects)
-  if( get_account( account_id, false /*account_is_required*/ ) )
-  {
-    _found = db.find< time_object, by_id >( time_object::id_type( aid ) );
-    if( _found )
-      return _found;
-  }
-
-  if( is_required )
-    FC_ASSERT( !"TIME_NOT_FOUND", "Time object for account with id `${id}` not found", ("id", account_id) );
 
   return nullptr;
 }

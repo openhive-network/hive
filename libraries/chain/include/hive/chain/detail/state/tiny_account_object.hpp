@@ -7,7 +7,7 @@
 namespace hive { namespace chain {
 
   class account_object;
-  class time_object;
+  class assets_object;
   class delayed_votes_object;
 
   using chainbase::t_vector;
@@ -20,7 +20,7 @@ namespace hive { namespace chain {
 
       template< typename Allocator >
       tiny_account_object( allocator< Allocator > a, uint64_t _id,
-        const account_object& acc, const time_object& time_obj, const delayed_votes_object& dvotes );
+        const account_object& acc, const assets_object& assets_obj, const delayed_votes_object& dvotes );
 
       const account_name_type& get_name() const { return name; }
       account_id_type get_proxy() const { return proxy; }
@@ -38,7 +38,7 @@ namespace hive { namespace chain {
       }
 
       void modify_from_account( const account_object& acc );
-      void modify_from_time( const time_object& time_obj );
+      void modify_from_assets( const assets_object& assets_obj );
       void modify_from_delayed_votes( const delayed_votes_object& dvotes );
 
       size_t get_dynamic_alloc() const

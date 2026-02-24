@@ -67,15 +67,6 @@ void database::align_split_object_ids_with_accounts()
     }
   }
 
-  // Align time_index
-  {
-    const auto& idx = get_index< time_index >();
-    while( idx.get_next_id() < time_object::id_type( next_account_id.get_value() ) )
-    {
-      create< time_object >();
-    }
-  }
-
   // Align delayed_votes_index
   {
     const auto& idx = get_index< delayed_votes_index >();
@@ -544,13 +535,12 @@ void database::apply_hardfork( uint32_t hardfork )
           const auto& acc = get_account( it->get_name() );
           const auto& _manabars_rc_object = get_manabars_rc_account( acc.get_id() );
           const auto& _assets_obj = get_asset_account( acc.get_id() );
-          const auto& _time_obj = get_time_account( acc.get_id() );
 
           modify( _manabars_rc_object, [&]( manabars_rc_object& mrc )
           {
             mrc.set_rc_adjustment( HIVE_RC_HISTORICAL_ACCOUNT_CREATION_ADJUSTMENT );
             mrc.get_rc_manabar().last_update_time = now.sec_since_epoch();
-            auto max_rc = acc.get_maximum_rc( mrc, _assets_obj, _time_obj ).value;
+            auto max_rc = acc.get_maximum_rc( mrc, _assets_obj ).value;
             mrc.get_rc_manabar().current_mana = max_rc;
             mrc.set_last_max_rc( max_rc );
           } );
@@ -580,11 +570,10 @@ void database::apply_hardfork( uint32_t hardfork )
           const auto& new_account = create<account_object>(treasury_name, head_block_time());
           // Create all split objects for the treasury account
           create< recovery_object >();
-          create< assets_object >();
+          const auto& new_assets = create< assets_object >( treasury_name );
           create< manabars_rc_object >();
-          const auto& new_time = create< time_object >( treasury_name );
           const auto& new_dvotes = create< delayed_votes_object >();
-          create< tiny_account_object >( new_account, new_time, new_dvotes );
+          create< tiny_account_object >( new_account, new_assets, new_dvotes );
           push_virtual_operation(
             *this, account_created_operation( treasury_name, treasury_name, asset(0, VESTS_SYMBOL), asset(0, VESTS_SYMBOL) ) );
       }
@@ -692,11 +681,10 @@ void database::apply_hardfork( uint32_t hardfork )
         const auto& new_account = create<account_object>(treasury_name, head_block_time());
         // Create all split objects for the treasury account
         create< recovery_object >();
-        create< assets_object >();
+        const auto& new_assets = create< assets_object >( treasury_name );
         create< manabars_rc_object >();
-        const auto& new_time = create< time_object >( treasury_name );
         const auto& new_dvotes = create< delayed_votes_object >();
-        create< tiny_account_object >( new_account, new_time, new_dvotes );
+        create< tiny_account_object >( new_account, new_assets, new_dvotes );
         push_virtual_operation(
           *this, account_created_operation( treasury_name, treasury_name, asset(0, VESTS_SYMBOL), asset(0, VESTS_SYMBOL) ) );
     }
