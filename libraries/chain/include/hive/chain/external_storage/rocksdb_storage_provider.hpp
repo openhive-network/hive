@@ -101,6 +101,14 @@ class rocksdb_storage_provider: public external_basic_provider
     void update_lib( uint32_t ) override;
     uint32_t get_lib() const override { return _cached_irreversible_block; }
 
+    /// Updates only the in-memory cached LIB without writing to RocksDB write batch.
+    /// The caller must call persist_cached_lib() before the next flushDb() to persist.
+    void update_cached_lib( uint32_t lib ) { _cached_irreversible_block.store( lib ); }
+
+    /// Writes the currently cached LIB value to the RocksDB write batch.
+    /// Only valid for storage providers that have the CURRENT_LIB column.
+    void persist_cached_lib();
+
     void save( ColumnTypes column_type, const Slice& key, const Slice& value );
     bool read( ColumnTypes column_type, const Slice& key, PinnableSlice& value );
     void remove( ColumnTypes column_type, const Slice& key );

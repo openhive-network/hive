@@ -24,6 +24,8 @@
 
 #include <boost/scope_exit.hpp>
 
+#include <limits>
+
 namespace hive { namespace chain {
 
 template<typename SHM_Object_Type, typename RocksDB_Object_Type, typename Slice_Type>
@@ -478,9 +480,50 @@ bool rocksdb_account_archive::on_irreversible_block_impl_metadata( uint32_t bloc
   return _do_flush;
 }
 
+uint32_t rocksdb_account_archive::compute_next_archival_check() const
+{
+  uint32_t min_block = std::numeric_limits<uint32_t>::max();
+
+  {
+    const auto& idx = db.get_index<account_metadata_index, by_block>();
+    if( !idx.empty() )
+    {
+      uint32_t candidate = idx.begin()->get_last_access_block() + retention_blocks + 1;
+      if( candidate < min_block )
+        min_block = candidate;
+    }
+  }
+
+  {
+    const auto& idx = db.get_index<account_authority_index, by_block>();
+    if( !idx.empty() )
+    {
+      uint32_t candidate = idx.begin()->get_last_access_block() + retention_blocks + 1;
+      if( candidate < min_block )
+        min_block = candidate;
+    }
+  }
+
+  {
+    const auto& idx = db.get_index<account_index, by_block>();
+    if( !idx.empty() )
+    {
+      uint32_t candidate = idx.begin()->get_last_access_block() + retention_blocks + 1;
+      if( candidate < min_block )
+        min_block = candidate;
+    }
+  }
+
+  return min_block;
+}
+
 void rocksdb_account_archive::on_irreversible_block( uint32_t block_num )
 {
-  provider->update_lib( block_num );
+  provider->update_cached_lib( block_num );
+
+  // Skip archival scan if no objects can possibly need archiving yet
+  if( block_num < _next_archival_check_block )
+    return;
 
   if( objects_limit )
   {
@@ -507,6 +550,7 @@ void rocksdb_account_archive::on_irreversible_block( uint32_t block_num )
   {
     auto time_start = std::chrono::high_resolution_clock::now();
 
+    provider->persist_cached_lib();
     provider->flushDb();
 
     accounts_stats::stats.item_flush_to_storage.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
@@ -534,6 +578,8 @@ void rocksdb_account_archive::on_irreversible_block( uint32_t block_num )
 #endif
 
   }
+
+  _next_archival_check_block = compute_next_archival_check();
 }
 
 template<typename Key_Type, typename SHM_Object_Type, typename SHM_Object_Sub_Index, typename Return_Type>
@@ -980,6 +1026,8 @@ void rocksdb_account_archive::open()
 
 void rocksdb_account_archive::close()
 {
+  if( provider->getStorage() )
+    provider->persist_cached_lib();
   provider->shutdownDb();
 }
 

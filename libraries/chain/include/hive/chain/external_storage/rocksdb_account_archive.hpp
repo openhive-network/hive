@@ -44,6 +44,14 @@ class rocksdb_account_archive : public accounts_handler
     // Specialized implementation for account_object (skips accounts with pending governance votes)
     bool on_irreversible_block_impl_account( uint32_t block_num, const std::vector<ColumnTypes>& column_types );
 
+    /// The earliest block number at which any account could possibly need archival.
+    /// When block_num < this value, the entire archival scan is skipped.
+    uint32_t _next_archival_check_block = 0;
+
+    /// Computes the next block at which archival should be checked, based on the
+    /// minimum last_access_block across all by_block indices.
+    uint32_t compute_next_archival_check() const;
+
   public:
 
     rocksdb_account_archive( database& db, const bfs::path& blockchain_storage_path, const bfs::path& storage_path, uint32_t retention_blocks,

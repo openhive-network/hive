@@ -1255,21 +1255,37 @@ BOOST_AUTO_TEST_CASE( rc_delegation_removal_no_rc )
     push_transaction(custom_op, alice_post_key);
     generate_block();
 
-    const auto& bob_rc_account_initial = GET_MRC( "bob" );
-    auto current_mana = bob_rc_account_initial.get_rc_manabar().current_mana;
+    // Verify bob has RC from delegation
+    {
+      const auto& bob_mrc = GET_MRC( "bob" );
+      BOOST_REQUIRE_GT( bob_mrc.get_rc_manabar().current_mana, 100000 );
+    }
 
-    // Magic number, it's hard to exactly hit 0 RC, but since we delegated 100k rc, removing the delegation would put us to 0
-    while (current_mana > 50000) {
-      signed_transaction tx;
+    // Do one transfer to verify RC consumption works
+    {
       transfer_to_vesting_operation op;
       op.from = "bob";
       op.to = "alice";
       op.amount = ASSET( "0.001 TESTS" );
       push_transaction(op, bob_private_key);
       generate_block();
-      const auto& bob_rc_account_current = GET_MRC( "bob" );
-      current_mana = bob_rc_account_current.get_rc_manabar().current_mana;
     }
+
+    // Instead of draining mana through millions of iterations (bob's rc_adjustment
+    // from creation fee makes initial mana ~985M, each iteration only drains ~813 net),
+    // directly set bob's mana to a value between 0 and 100000 (the delegation amount).
+    // This way removing the delegation will clamp mana to 0.
+    db_plugin->debug_update( [=]( database& db )
+    {
+      const auto& bob_account = db.get_account( "bob" );
+      const auto& bob_mrc = db.get_manabars_rc_account( bob_account.get_id() );
+      db.modify( bob_mrc, [&]( manabars_rc_object& mrc_obj )
+      {
+        mrc_obj.get_rc_manabar().current_mana = 60000;
+        mrc_obj.get_rc_manabar().last_update_time = db.get_dynamic_global_properties().time.sec_since_epoch();
+      });
+    });
+    generate_block();
 
     BOOST_TEST_MESSAGE( "Removing the RC delegation" );
     drc_op.max_rc = 0;

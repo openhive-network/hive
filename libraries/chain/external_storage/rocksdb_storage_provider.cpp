@@ -227,6 +227,13 @@ void rocksdb_storage_provider::cleanupColumnHandles()
   _columnHandles.clear();
 }
 
+void rocksdb_storage_provider::persist_cached_lib()
+{
+  auto s = getWriteBuffer().Put( _columnHandles[Columns::CURRENT_LIB], LIB_ID,
+    lib_slice_t( _cached_irreversible_block.load() ) );
+  checkStatus( s );
+}
+
 void rocksdb_storage_provider::flushWriteBuffer()
 {
   ::rocksdb::WriteOptions wOptions;
