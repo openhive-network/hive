@@ -932,15 +932,18 @@ namespace chain {
       const ObjectType& create( Args&&... args )
       {
         const ObjectType& _result = chainbase::database::create<ObjectType>( args... );
-        get_accounts_handler().create( _result );
+        if constexpr( is_accounts_handler_object_v<ObjectType> )
+          get_accounts_handler().create( _result );
         return _result;
       }
 
       template<typename ObjectType, typename Modifier>
       void modify( const ObjectType& obj, Modifier&& m )
       {
-        if( !get_accounts_handler().modify<ObjectType>( obj, m ) )
-          chainbase::database::modify( obj, m );
+        if constexpr( is_accounts_handler_object_v<ObjectType> )
+          get_accounts_handler().modify<ObjectType>( obj, std::forward<Modifier>( m ) );
+        else
+          chainbase::database::modify( obj, std::forward<Modifier>( m ) );
       }
 
     private:
