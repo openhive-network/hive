@@ -15,6 +15,7 @@
 #include <hive/chain/detail/state/limit_order_object_multiindex.hpp>
 #include <hive/chain/detail/state/reward_fund_object_multiindex.hpp>
 #include <hive/chain/detail/state/recurrent_transfer_object_multiindex.hpp>
+#include <hive/chain/detail/state/tiny_account_object.hpp>
 #include <hive/chain/notifications.hpp>
 
 namespace hive { namespace plugins { namespace wallet_bridge_api {
@@ -397,7 +398,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, list_accounts )
   const protocol::account_name_type lowerbound = arguments.get_array().at(0).as<protocol::account_name_type>();
   uint32_t limit = arguments.get_array().at(1).as<uint32_t>();
   FC_ASSERT( limit <= 1000 );
-  const auto& accounts_by_name = _db.get_index< chain::account_index, chain::by_name >();
+  const auto& accounts_by_name = _db.get_index< chain::tiny_account_index, chain::by_name >();
   list_accounts_return result;
 
   for( auto itr = accounts_by_name.lower_bound( lowerbound ); limit-- && itr != accounts_by_name.end(); ++itr )

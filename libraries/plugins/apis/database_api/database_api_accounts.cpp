@@ -180,17 +180,18 @@ DEFINE_API_IMPL( database_api_impl, list_accounts )
   {
     case( by_name ):
     {
-      std::optional< protocol::account_name_type > start;
-      if( !args.start.is_null() )
+      // Iterate over tiny_account_index (by_name) and look up full account for each result
+      // tiny_account_index is archive-safe (never removed from shared memory)
+      const auto& tiny_idx = _db.get_index< chain::tiny_account_index, chain::by_name >();
+      auto itr = args.start.is_null() ? tiny_idx.begin()
+        : tiny_idx.lower_bound( args.start.as< protocol::account_name_type >() );
+
+      while( itr != tiny_idx.end() && result.accounts.size() < args.limit )
       {
-        start = args.start.as< protocol::account_name_type >();
+        const auto& account = _db.get_account( itr->get_name() );
+        result.accounts.emplace_back( api_account_object( account, _db, get_metadata_plugin(), args.delayed_votes_active ) );
+        ++itr;
       }
-      iterate_results< chain::account_index, chain::by_name >(
-        start,
-        result.accounts,
-        args.limit,
-        [&]( const account_object& a, const database& db ){ return api_account_object( a, db, get_metadata_plugin(), args.delayed_votes_active ); },
-        &database_api_impl::filter_default< account_object > );
       break;
     }
     case( by_proxy ):
