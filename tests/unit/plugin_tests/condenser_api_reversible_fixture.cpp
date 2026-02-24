@@ -29,7 +29,7 @@ condenser_api_reversible_fixture::condenser_api_reversible_fixture()
 
     ACTORS((whale)(voter1)(voter2)(voter3)(voter4)(voter5)(voter6)(voter7)(voter8)(voter9)(voter10))
 
-    vest( "whale", ASSET( "500000.000 TESTS" ) );
+    vest( "whale", HIVE_asset( 500'000'000 ) );
 
     account_witness_vote_operation op;
     op.account = "whale";
@@ -44,8 +44,8 @@ condenser_api_reversible_fixture::condenser_api_reversible_fixture()
     {
       std::string name = "voter" + std::to_string(i);
       auto key = generate_private_key( name );
-      fund( name, ASSET( "10000.000 TESTS" ) );
-      vest( name, "", asset( 10000000 / i, HIVE_SYMBOL ), key );
+      fund( name, HIVE_asset( 10'000'000 ) );
+      vest( name, "", HIVE_asset( 10'000'000 / i ), key );
       op.account = name;
       for( int v = 1; v <= i; ++v )
       {

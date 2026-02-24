@@ -54,7 +54,7 @@ BOOST_AUTO_TEST_CASE( additional_allocation_after_snapshot_load )
       BOOST_REQUIRE( compare_delayed_vote_count("alice", {}) );
       BOOST_REQUIRE_EQUAL(index.get_item_additional_allocation(), initial_allocations);
 
-      vest( "alice", "alice", ASSET( "100.000 TESTS" ), alice_private_key );
+      vest( "alice", "alice", HIVE_asset( 100'000 ), alice_private_key );
       generate_block();
       BOOST_CHECK( compare_delayed_vote_count("alice", { static_cast<uint64_t>(get_vesting( "alice" ).amount.value) }) );
       BOOST_CHECK_GT(index.get_item_additional_allocation(), initial_allocations);

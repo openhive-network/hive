@@ -198,7 +198,7 @@ struct witness_fixture : public hived_fixture
     account_create_operation create;
     create.new_account_name = name;
     create.creator = HIVE_INIT_MINER_NAME;
-    create.fee = db->get_witness_schedule_object().median_props.account_creation_fee;
+    create.fee = db->get_witness_schedule_object().median_props.account_creation_fee.to_asset();
     create.owner = authority( 1, init_account_pub_key, 1 );
     create.active = create.owner;
     create.posting = create.owner;
@@ -1842,7 +1842,7 @@ BOOST_AUTO_TEST_CASE( colony_basic_test )
           account_create_operation create;
           create.new_account_name = account_name;
           create.creator = HIVE_INIT_MINER_NAME;
-          create.fee = db->get_witness_schedule_object().median_props.account_creation_fee;
+          create.fee = db->get_witness_schedule_object().median_props.account_creation_fee.to_asset();
           create.owner = authority( 1, init_account_pub_key, 1 );
           create.active = create.owner;
           create.posting = create.owner;
@@ -2283,7 +2283,7 @@ BOOST_AUTO_TEST_CASE( colony_queen_test )
           account_create_operation create;
           create.new_account_name = account_name;
           create.creator = HIVE_INIT_MINER_NAME;
-          create.fee = db->get_witness_schedule_object().median_props.account_creation_fee;
+          create.fee = db->get_witness_schedule_object().median_props.account_creation_fee.to_asset();
           create.owner = authority( 1, init_account_pub_key, 1 );
           create.active = create.owner;
           create.posting = create.owner;

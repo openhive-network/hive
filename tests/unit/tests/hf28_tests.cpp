@@ -61,8 +61,8 @@ BOOST_AUTO_TEST_CASE( declined_voting_rights_basic )
         BOOST_REQUIRE_EQUAL( (bool)executor, true );
 
         ACTORS_EXT( (*executor), (alice)(bob) );
-        executor->vest( "alice", ASSET( "1.000 TESTS" ) );
-        executor->vest( "bob", ASSET( "1.000 TESTS" ) );
+        executor->vest( "alice", HIVE_asset( 1'000 ) );
+        executor->vest( "bob", HIVE_asset( 1'000 ) );
 
         BOOST_TEST_MESSAGE( "--- Generating 'declined_voting_rights_operation'" );
 
@@ -132,7 +132,7 @@ BOOST_AUTO_TEST_CASE( declined_voting_rights_basic_2 )
         BOOST_REQUIRE_EQUAL( (bool)executor, true );
 
         ACTORS_EXT( (*executor), (alice) );
-        executor->vest( "alice", ASSET( "1.000 TESTS" ) );
+        executor->vest( "alice", HIVE_asset( 1'000 ) );
 
         auto _create_decline_voting_rights_operation = []( ptr_hardfork_database_fixture& executor, const fc::ecc::private_key& key )
         {
@@ -190,8 +190,8 @@ BOOST_AUTO_TEST_CASE( declined_voting_rights_proposal_votes )
 
       executor->generate_block();
 
-      executor->vest( "alice", ASSET( "100.000 TESTS" ) );
-      executor->vest( "bob", ASSET( "100.000 TESTS" ) );
+      executor->vest( "alice", HIVE_asset( 100'000 ) );
+      executor->vest( "bob", HIVE_asset( 100'000 ) );
       executor->issue_funds( "alice", HBD_asset( 200'000 ) );
       executor->issue_funds( "bob", HBD_asset( 200'000 ) );
 
@@ -255,8 +255,8 @@ BOOST_AUTO_TEST_CASE( declined_voting_rights_proposal_votes_2 )
 
       executor->generate_block();
 
-      executor->vest( "alice", ASSET( "100.000 TESTS" ) );
-      executor->vest( "bob", ASSET( "100.000 TESTS" ) );
+      executor->vest( "alice", HIVE_asset( 100'000 ) );
+      executor->vest( "bob", HIVE_asset( 100'000 ) );
       executor->issue_funds( "alice", HBD_asset( 200'000 ) );
       executor->issue_funds( "bob", HBD_asset( 200'000 ) );
 
@@ -552,7 +552,7 @@ BOOST_AUTO_TEST_CASE( declined_voting_rights_between_hf27_and_hf28_2 )
       std::vector<account_data> _actors = { { "alice", alice_private_key }, { "bob", bob_private_key }, { "carol", carol_private_key }, { "diana", diana_private_key } };
       for( auto& actor : _actors )
       {
-        executor->vest( actor.name, ASSET( "100.000 TESTS" ) );
+        executor->vest( actor.name, HIVE_asset( 100'000 ) );
         executor->issue_funds( actor.name, HBD_asset( 200'000 ) );
       }
       executor->generate_block();
@@ -634,8 +634,8 @@ BOOST_AUTO_TEST_CASE( basic_expiration_test )
       BOOST_TEST_MESSAGE( "Testing: transactions with different expiration time" );
 
       ACTORS_EXT( (*executor), (alice)(bob) );
-      executor->vest( "alice", ASSET( "100.000 TESTS" ) );
-      executor->vest( "bob", ASSET( "100.000 TESTS" ) );
+      executor->vest( "alice", HIVE_asset( 100'000 ) );
+      executor->vest( "bob", HIVE_asset( 100'000 ) );
       executor->issue_funds( "alice", HIVE_asset( 200'000 ) );
       executor->issue_funds( "bob", HIVE_asset( 200'000 ) );
 
@@ -854,8 +854,8 @@ BOOST_AUTO_TEST_CASE( mixed_authorities_in_one_transaction )
         BOOST_REQUIRE_EQUAL( (bool)executor, true );
 
         ACTORS_EXT( (*executor), (alice)(bob) );
-        executor->vest( "alice", ASSET( "1.000 TESTS" ) );
-        executor->vest( "bob", ASSET( "1.000 TESTS" ) );
+        executor->vest( "alice", HIVE_asset( 1'000 ) );
+        executor->vest( "bob", HIVE_asset( 1'000 ) );
         executor->issue_funds( "alice", HIVE_asset( 100'000 ) );
 
         account_witness_proxy_operation _proxy_op;
@@ -922,8 +922,8 @@ BOOST_AUTO_TEST_CASE( mixed_authorities_in_one_transaction_2 )
         BOOST_REQUIRE_EQUAL( (bool)executor, true );
 
         ACTORS_EXT( (*executor), (alice)(bob) );
-        executor->vest( "alice", ASSET( "1.000 TESTS" ) );
-        executor->vest( "bob", ASSET( "1.000 TESTS" ) );
+        executor->vest( "alice", HIVE_asset( 1'000 ) );
+        executor->vest( "bob", HIVE_asset( 1'000 ) );
         executor->issue_funds( "alice", HIVE_asset( 100'000 ) );
         executor->issue_funds( "bob", HIVE_asset( 100'000 ) );
 
@@ -1437,8 +1437,8 @@ BOOST_AUTO_TEST_CASE( different_behaviour_for_nonexistent_proposals )
 
       executor->generate_block();
 
-      executor->vest( "alice", ASSET( "100.000 TESTS" ) );
-      executor->vest( "bob", ASSET( "100.000 TESTS" ) );
+      executor->vest( "alice", HIVE_asset( 100'000 ) );
+      executor->vest( "bob", HIVE_asset( 100'000 ) );
       executor->issue_funds( "alice", HBD_asset( 200'000 ) );
       executor->issue_funds( "bob", HBD_asset( 200'000 ) );
 
@@ -1531,8 +1531,8 @@ BOOST_AUTO_TEST_CASE( disturbed_power_down )
     BOOST_REQUIRE( db->get_dynamic_global_properties().get_vesting_share_price() == VEST_price( 1000000, 1000 ) );
 
     ACTORS_DEFAULT_FEE( (bob)(gil) );
-    vest( "bob", asset( bob_amount / 1000, HIVE_SYMBOL ) );
-    vest( "gil", asset( gil_amount / 1000, HIVE_SYMBOL ) );
+    vest( "bob", HIVE_asset( bob_amount / 1000 ) );
+    vest( "gil", HIVE_asset( gil_amount / 1000 ) );
     generate_block();
 
     BOOST_CHECK_EQUAL( get_vesting( "bob" ).amount.value, bob_amount );
@@ -1650,11 +1650,11 @@ BOOST_AUTO_TEST_CASE( artificial_1_on_power_down )
     //worth the time
 
     ACTORS_DEFAULT_FEE( (alice)(bob)(carol)(dave)(eric) );
-    vest( "alice", ASSET( "1.000 TESTS" ) );
-    vest( "bob", ASSET( "1.000 TESTS" ) );
-    vest( "carol", ASSET( "1.000 TESTS" ) );
-    vest( "dave", ASSET( "1.000 TESTS" ) );
-    vest( "eric", ASSET( "1.000 TESTS" ) );
+    vest( "alice", HIVE_asset( 1'000 ) );
+    vest( "bob", HIVE_asset( 1'000 ) );
+    vest( "carol", HIVE_asset( 1'000 ) );
+    vest( "dave", HIVE_asset( 1'000 ) );
+    vest( "eric", HIVE_asset( 1'000 ) );
     generate_block();
 
     // after fix vesting shares split no longer affects accounts with no active power down
@@ -1673,38 +1673,38 @@ BOOST_AUTO_TEST_CASE( artificial_1_on_power_down )
     generate_block();
 
     // 'alice' can cancel power down
-    withdraw_vesting( "alice", asset( 0, VESTS_SYMBOL ), alice_private_key );
+    withdraw_vesting( "alice", VEST_asset( 0 ), alice_private_key );
     // 'bob' can cancel nonexisting power down because check is not activated until HF28
-    withdraw_vesting( "bob", asset( 0, VESTS_SYMBOL ), bob_private_key );
+    withdraw_vesting( "bob", VEST_asset( 0 ), bob_private_key );
     // 'eric' used to not be able to change power down rate to 1 due to bug, but we don't care about past actions that didn't reach block log
-    //HIVE_REQUIRE_ASSERT( withdraw_vesting( "eric", asset( 1, VESTS_SYMBOL ), eric_private_key ), "account.vesting_withdraw_rate != new_vesting_withdraw_rate" );
+    //HIVE_REQUIRE_ASSERT( withdraw_vesting( "eric", VEST_asset( 1 ), eric_private_key ), "account.vesting_withdraw_rate != new_vesting_withdraw_rate" );
     generate_block();
 
     // we can use 'alice' and 'bob' to check the power down with natural 1 withdraw rate
     BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).vesting_withdraw_rate.amount.value, 0 );
     BOOST_REQUIRE_EQUAL( db->get_account( "bob" ).vesting_withdraw_rate.amount.value, 0 );
 
-    withdraw_vesting( "alice", asset( HIVE_VESTING_WITHDRAW_INTERVALS_PRE_HF_16 - 1, VESTS_SYMBOL ), alice_private_key);
+    withdraw_vesting( "alice", VEST_asset( HIVE_VESTING_WITHDRAW_INTERVALS_PRE_HF_16 - 1 ), alice_private_key );
     // above power down truncates down to zero, that is corrected to 1
     BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).vesting_withdraw_rate.amount.value, 1 );
 
     // HF16 switches from 104 weeks to 13 weeks of power down
     inject_hardfork( HIVE_HARDFORK_0_16 );
 
-    withdraw_vesting( "bob", asset( HIVE_VESTING_WITHDRAW_INTERVALS * 2 - 1, VESTS_SYMBOL ), bob_private_key );
+    withdraw_vesting( "bob", VEST_asset( HIVE_VESTING_WITHDRAW_INTERVALS * 2 - 1 ), bob_private_key );
     BOOST_REQUIRE_EQUAL( db->get_account( "bob" ).vesting_withdraw_rate.amount.value, 1 );
 
     // make sure code behaves "properly" (I mean in unchanged way) right before HF28 too
     inject_hardfork( HIVE_HARDFORK_1_27 );
     // 'carol' can cancel nonexisting power down because check is not active until HF28
-    withdraw_vesting( "carol", asset( 0, VESTS_SYMBOL ), carol_private_key );
+    withdraw_vesting( "carol", VEST_asset( 0 ), carol_private_key );
     // 'eric' used to not be able to change rate to 1 still, but like before, that operation didn't reach block log, so we don't care
-    //HIVE_REQUIRE_ASSERT( withdraw_vesting( "eric", asset( 1, VESTS_SYMBOL ), eric_private_key ), "account.vesting_withdraw_rate != new_vesting_withdraw_rate" );
+    //HIVE_REQUIRE_ASSERT( withdraw_vesting( "eric", VEST_asset( 1 ), eric_private_key ), "account.vesting_withdraw_rate != new_vesting_withdraw_rate" );
     generate_block();
 
     // also since HF21 there is different rate correction mechanism, so the same operation as for 'bob'
     // before results in different rate
-    withdraw_vesting( "carol", asset( HIVE_VESTING_WITHDRAW_INTERVALS * 2 - 1, VESTS_SYMBOL ), carol_private_key );
+    withdraw_vesting( "carol", VEST_asset( HIVE_VESTING_WITHDRAW_INTERVALS * 2 - 1 ), carol_private_key );
     BOOST_REQUIRE_EQUAL( db->get_account( "carol" ).vesting_withdraw_rate.amount.value, 2 );
 
     // HF28 activates code that prevents bug from affecting new power down cancels
@@ -1712,19 +1712,19 @@ BOOST_AUTO_TEST_CASE( artificial_1_on_power_down )
 
     // 'alice' and 'bob' have 1 in vesting withdraw rate, but they are actually performing power down
     // it means they can't change rate to 1, because it is already 1
-    HIVE_REQUIRE_ASSERT( withdraw_vesting( "alice", asset( 1, VESTS_SYMBOL ), alice_private_key ),
+    HIVE_REQUIRE_ASSERT( withdraw_vesting( "alice", VEST_asset( 1 ), alice_private_key ),
       "account.vesting_withdraw_rate != new_vesting_withdraw_rate" );
-    HIVE_REQUIRE_ASSERT( withdraw_vesting( "bob", asset( 1, VESTS_SYMBOL ), bob_private_key ),
+    HIVE_REQUIRE_ASSERT( withdraw_vesting( "bob", VEST_asset( 1 ), bob_private_key ),
       "account.vesting_withdraw_rate != new_vesting_withdraw_rate" );
-    withdraw_vesting( "alice", asset( 0, VESTS_SYMBOL ), alice_private_key );
-    withdraw_vesting( "bob", asset( 0, VESTS_SYMBOL ), bob_private_key );
+    withdraw_vesting( "alice", VEST_asset( 0 ), alice_private_key );
+    withdraw_vesting( "bob", VEST_asset( 0 ), bob_private_key );
     // 'carol' does not have 1 as power down rate, so she can change it to 1 or cancel power down
-    withdraw_vesting( "carol", asset( 1, VESTS_SYMBOL ), carol_private_key );
-    withdraw_vesting( "carol", asset( 0, VESTS_SYMBOL ), carol_private_key );
+    withdraw_vesting( "carol", VEST_asset( 1 ), carol_private_key );
+    withdraw_vesting( "carol", VEST_asset( 0 ), carol_private_key );
     // only 'dave' does not have power down
-    HIVE_REQUIRE_ASSERT( withdraw_vesting( "dave", asset( 0, VESTS_SYMBOL ), dave_private_key ), "account.has_active_power_down()" );
+    HIVE_REQUIRE_ASSERT( withdraw_vesting( "dave", VEST_asset( 0 ), dave_private_key ), "account.has_active_power_down()" );
     // 'eric' can change rate to 1
-    withdraw_vesting( "eric", asset( 1, VESTS_SYMBOL ), eric_private_key );
+    withdraw_vesting( "eric", VEST_asset( 1 ), eric_private_key );
 
     validate_database();
   }
@@ -1742,11 +1742,11 @@ BOOST_AUTO_TEST_CASE( vote_stabilization )
     inject_hardfork( HIVE_HARDFORK_1_27 );
 
     ACTORS_DEFAULT_FEE( (alice)(bob)(carol)(antibob)(anticarol) );
-    vest( "alice", ASSET( "1000.000 TESTS" ) );
-    vest( "bob", ASSET( "1000.000 TESTS" ) );
-    vest( "carol", ASSET( "1000.000 TESTS" ) );
-    vest( "antibob", ASSET( "1000.000 TESTS" ) );
-    vest( "anticarol", ASSET( "1000.000 TESTS" ) );
+    vest( "alice", HIVE_asset( 1'000'000 ) );
+    vest( "bob", HIVE_asset( 1'000'000 ) );
+    vest( "carol", HIVE_asset( 1'000'000 ) );
+    vest( "antibob", HIVE_asset( 1'000'000 ) );
+    vest( "anticarol", HIVE_asset( 1'000'000 ) );
     generate_block();
 
     // create root post
@@ -1883,7 +1883,7 @@ BOOST_AUTO_TEST_CASE( empty_voting )
     inject_hardfork( HIVE_HARDFORK_1_27 );
 
     ACTORS_DEFAULT_FEE( (alice)(bob)(carol)(antibob)(anticarol) );
-    vest( "alice", ASSET( "1000.000 TESTS" ) );
+    vest( "alice", HIVE_asset( 1'000'000 ) );
     generate_block();
 
     // create post
@@ -1974,7 +1974,7 @@ const uint32_t default_block_size = HIVE_MIN_BLOCK_SIZE_LIMIT * 2;
 static_assert( default_block_size != HIVE_MAX_BLOCK_SIZE );
 const uint16_t default_hbd_apr = HIVE_DEFAULT_HBD_INTEREST_RATE;
 static_assert( default_hbd_apr != 0 );
-const asset default_fee = HIVE_asset( HIVE_MIN_ACCOUNT_CREATION_FEE );
+const HIVE_asset default_fee( HIVE_MIN_ACCOUNT_CREATION_FEE );
 
 BOOST_AUTO_TEST_CASE( global_witness_props_basic_test )
 {

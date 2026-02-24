@@ -108,7 +108,7 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_single )
 
     BOOST_TEST_MESSAGE( "Testing:  delegate_rc_operation_apply_single to a single account" );
     ACTORS( (alice)(bob)(dave) )
-    vest( "alice", ASSET( "10.000 TESTS" ) );
+    vest( "alice", HIVE_asset( 10'000 ) );
     int64_t alice_vests = alice.get_vesting().amount.value;
 
     // Delegating more rc than I have should fail
@@ -259,7 +259,7 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_many )
 
     BOOST_TEST_MESSAGE( "Testing:  delegate_rc_operation_apply_many to many accounts" );
     ACTORS( (alice)(bob)(dave)(dan) )
-    vest( "alice", ASSET( "10.000 TESTS" ) );
+    vest( "alice", HIVE_asset( 10'000 ) );
     int64_t alice_vests = alice.get_vesting().amount.value;
 
     // Delegating more rc than alice has should fail
@@ -420,7 +420,7 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_many_different )
   {
     BOOST_TEST_MESSAGE( "Testing:  delegate_rc_operation_apply_many_different to many accounts" );
     ACTORS( (alice)(bob)(dave)(dan)(carol) )
-    vest( "alice", ASSET( "10.000 TESTS" ) );
+    vest( "alice", HIVE_asset( 10'000 ) );
     uint64_t alice_vests = alice.get_vesting().amount.value;
 
     std::string json = "[";
@@ -564,7 +564,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow )
 
     ACTORS_DEFAULT_FEE( (alice)(bob)(dave)(eve)(martin) )
     generate_block();
-    vest( "alice", ASSET( "0.010 TESTS" ) );
+    vest( "alice", HIVE_asset( 10 ) );
     generate_block();
 
     const account_object& alice_account_initial = db->get_account( "alice" );
@@ -689,7 +689,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_many_accounts )
     ACTORS_DEFAULT_FEE( (alice)(bob) )
     generate_block();
 
-    vest( "alice", ASSET( "0.010 TESTS" ) );
+    vest( "alice", HIVE_asset( 10 ) );
     generate_block();
 
     const account_object& alice_account_initial = db->get_account( "alice" );
@@ -774,7 +774,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_many_accounts )
 
     // We delegate all our vests and we don't have enough to sustain any of our remaining delegations
     const account_object& acct = db->get_account( "alice" );
-    dvso.vesting_shares = acct.get_vesting();
+    dvso.vesting_shares = acct.get_vesting().to_asset();
     dvso.delegator = "alice";
     dvso.delegatee = "bob";
     push_transaction(dvso, alice_private_key);
@@ -832,7 +832,7 @@ BOOST_AUTO_TEST_CASE( direct_rc_delegation_vesting_withdrawal )
     ACTORS_DEFAULT_FEE( (alice)(bob)(dave) )
     generate_block();
 
-    vest( "alice", ASSET( "0.010 TESTS" ) );
+    vest( "alice", HIVE_asset( 10 ) );
     generate_block();
 
     const account_object& alice_account_initial = db->get_account( "alice" );
@@ -854,11 +854,11 @@ BOOST_AUTO_TEST_CASE( direct_rc_delegation_vesting_withdrawal )
 
     withdraw_vesting_operation op;
     op.account = "alice";
-    op.vesting_shares = new_alice.get_vesting();
+    op.vesting_shares = new_alice.get_vesting().to_asset();
     push_transaction(op, alice_private_key);
 
     auto next_withdrawal = db->head_block_time() + HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS;
-    asset withdraw_rate = new_alice.vesting_withdraw_rate;
+    VEST_asset withdraw_rate = new_alice.vesting_withdraw_rate;
 
     BOOST_TEST_MESSAGE( "Generating block up to first withdrawal" );
     generate_blocks( next_withdrawal - HIVE_BLOCK_INTERVAL );
@@ -996,7 +996,7 @@ BOOST_AUTO_TEST_CASE( direct_rc_delegation_vesting_withdrawal_routes )
     ACTORS_DEFAULT_FEE( (alice)(bob)(dave) )
     generate_block();
 
-    vest( "alice", ASSET( "0.010 TESTS" ) );
+    vest( "alice", HIVE_asset( 10 ) );
     generate_block();
 
     const account_object& alice_account_initial = db->get_account( "alice" );
@@ -1027,7 +1027,7 @@ BOOST_AUTO_TEST_CASE( direct_rc_delegation_vesting_withdrawal_routes )
     push_transaction(op, alice_private_key);
 
     auto next_withdrawal = db->head_block_time() + HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS;
-    asset withdraw_rate = new_alice.vesting_withdraw_rate;
+    VEST_asset withdraw_rate = new_alice.vesting_withdraw_rate;
 
     BOOST_TEST_MESSAGE( "Generating block up to first withdrawal" );
     generate_blocks( next_withdrawal - HIVE_BLOCK_INTERVAL );
@@ -1116,8 +1116,8 @@ BOOST_AUTO_TEST_CASE( rc_delegation_regeneration )
     ACTORS_DEFAULT_FEE( (alice)(bob) )
     generate_block();
 
-    fund( "bob", ASSET( "100.000 TBD" ) );
-    vest( "alice", ASSET( "1.000 TESTS" ) );
+    fund( "bob", HBD_asset( 100'000 ) );
+    vest( "alice", HIVE_asset( 1'000 ) );
     generate_block();
 
     BOOST_TEST_MESSAGE( "Fetching the baseLine with no RC delegations" );
@@ -1212,8 +1212,8 @@ BOOST_AUTO_TEST_CASE( rc_delegation_removal_no_rc )
 
     ACTORS_DEFAULT_FEE( (alice)(bob) )
     generate_block();
-    fund( "bob", ASSET( "9000000.000 TESTS" ) );
-    vest( "alice", ASSET( "1.000 TESTS" ) );
+    fund( "bob", HIVE_asset( 9'000'000'000 ) );
+    vest( "alice", HIVE_asset( 1'000 ) );
     generate_block();
 
     BOOST_TEST_MESSAGE( "delegating RC to bob" );
@@ -1277,9 +1277,9 @@ BOOST_AUTO_TEST_CASE( rc_negative_regeneration_bug )
 
     ACTORS( (delegator1)(delegator2)(delegator3)(delegatee)(pattern2)(pattern3) )
     generate_block();
-    vest( "delegator1", ASSET( "1000.000 TESTS" ) );
-    vest( "delegator2", ASSET( "1000.000 TESTS" ) );
-    vest( "delegator3", ASSET( "1000.000 TESTS" ) );
+    vest( "delegator1", HIVE_asset( 1'000'000 ) );
+    vest( "delegator2", HIVE_asset( 1'000'000 ) );
+    vest( "delegator3", HIVE_asset( 1'000'000 ) );
     int64_t full_vest = get_vesting( "delegator1" ).amount.value;
     BOOST_REQUIRE_EQUAL( full_vest, get_vesting( "delegator2" ).amount.value );
     BOOST_REQUIRE_EQUAL( full_vest, get_vesting( "delegator3" ).amount.value );
@@ -1386,7 +1386,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_delegatee )
 
     ACTORS_DEFAULT_FEE( (alice)(bob)(dave)(eve)(martin) )
     generate_block();
-    vest( "alice", ASSET( "0.010 TESTS" ) );
+    vest( "alice", HIVE_asset( 10 ) );
     generate_block();
 
     const account_object& alice_account_initial = db->get_account( "alice" );
@@ -1395,7 +1395,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_delegatee )
 
     // We delegate all our vesting shares to bob
     delegate_vesting_shares_operation dvso;
-    dvso.vesting_shares = alice_account_initial.get_vesting();
+    dvso.vesting_shares = alice_account_initial.get_vesting().to_asset();
     dvso.delegator = "alice";
     dvso.delegatee = {"bob"};
     push_transaction(dvso, alice_private_key);
@@ -1492,7 +1492,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_delegatee_performance )
 
     ACTORS_DEFAULT_FEE( (alice)(bob)(carol) )
     generate_block();
-    vest( "alice", ASSET( "2000.000 TESTS" ) );
+    vest( "alice", HIVE_asset( 2'000'000 ) );
     generate_block();
 
     const uint32_t nr_accounts = removal_limit * 4;
@@ -1515,7 +1515,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_delegatee_performance )
 
     // We delegate all our vesting shares to bob and carol
     delegate_vesting_shares_operation dvso;
-    dvso.vesting_shares = alice_account_initial.get_vesting();
+    dvso.vesting_shares = alice_account_initial.get_vesting().to_asset();
     dvso.vesting_shares.amount.value /= 2;
     dvso.delegator = "alice";
     dvso.delegatee = "bob";
@@ -1618,8 +1618,8 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_delegatee_performance )
     time_checker( push_12, 100 ); // <- removes `removal_limit` delegations from carol, rest (1 limit) added postponed
     BOOST_REQUIRE_EQUAL( rc_del_idx.size(), 2 * nr_accounts - 4 * removal_limit );
 
-    vest( "bob", ASSET( "1000.000 TESTS" ) );
-    vest( "carol", ASSET( "1000.000 TESTS" ) );
+    vest( "bob", HIVE_asset( 1'000'000 ) );
+    vest( "carol", HIVE_asset( 1'000'000 ) );
     // even though delegators have new vests that could cover not-yet-removed delegations
     // we still continue to remove them (we could make it differently but that complicates
     // implementation - the mechanism is an safety trigger, so it should be simple)

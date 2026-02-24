@@ -198,7 +198,7 @@ BOOST_AUTO_TEST_CASE( undo_delayed_votes )
     udb.undo_begin();
     //BOOST_REQUIRE_EQUAL(index.get_item_additional_allocation(), initial_allocations);
 
-    vest( "alice", "alice", ASSET( "100.000 TESTS" ), alice_private_key );
+    vest( "alice", "alice", HIVE_asset( 100'000 ), alice_private_key );
     generate_block();
     BOOST_REQUIRE( compare_delayed_vote_count("alice", { static_cast<uint64_t>(get_vesting( "alice" ).amount.value) }) );
     //BOOST_REQUIRE_GT(index.get_item_additional_allocation(), initial_allocations);
@@ -1683,7 +1683,7 @@ BOOST_AUTO_TEST_CASE( debug_update_undo_bug )
     generate_block();
     BOOST_REQUIRE_EQUAL( alice_account.pending_claimed_accounts.value, 2 );
 
-    fund( "alice", ASSET( "1.000 TESTS" ) ); // this makes sure there is pending session open - normally
+    fund( "alice", HIVE_asset( 1'000 ) ); // this makes sure there is pending session open - normally
       // it could happen that it is open when there are some reapplied transactions, but not in unit tests
     BOOST_REQUIRE_EQUAL( alice_account.get_hive_balance().amount.value, 1000 );
     revision = db->revision();
@@ -1706,7 +1706,7 @@ BOOST_AUTO_TEST_CASE( debug_update_undo_bug )
     BOOST_REQUIRE_EQUAL( alice_account.pending_claimed_accounts.value, 3 );
     BOOST_REQUIRE_EQUAL( alice_account.get_hive_balance().amount.value, 1000 );
 
-    fund( "alice", ASSET( "1.000 TESTS" ) );
+    fund( "alice", HIVE_asset( 1'000 ) );
     BOOST_REQUIRE_EQUAL( alice_account.get_hive_balance().amount.value, 2000 );
     revision = db->revision();
     ilog( "Undo revision is ${r}", ( "r", revision ) );
@@ -1729,7 +1729,7 @@ BOOST_AUTO_TEST_CASE( debug_update_undo_bug )
     BOOST_REQUIRE_EQUAL( alice_account.pending_claimed_accounts.value, 4 );
     BOOST_REQUIRE_EQUAL( alice_account.get_hive_balance().amount.value, 2000 );
 
-    fund( "alice", ASSET( "1.000 TESTS" ) );
+    fund( "alice", HIVE_asset( 1'000 ) );
     BOOST_REQUIRE_EQUAL( alice_account.get_hive_balance().amount.value, 3000 );
     revision = db->revision();
     ilog( "Undo revision is ${r}", ( "r", revision ) );

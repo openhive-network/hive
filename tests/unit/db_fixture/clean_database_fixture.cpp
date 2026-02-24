@@ -61,7 +61,7 @@ clean_database_fixture::clean_database_fixture(
   inject_hardfork( hardfork.valid() ? ( *hardfork ) : HIVE_BLOCKCHAIN_VERSION.minor_v() );
   db->_log_hardforks = true;
 
-  vest( HIVE_INIT_MINER_NAME, ASSET( "10.000 TESTS" ) );
+  vest( HIVE_INIT_MINER_NAME, HIVE_asset( 10'000 ) );
 
   // Fill up the rest of the required miners
   for( int i = HIVE_NUM_INIT_MINERS; i < HIVE_MAX_WITNESSES; i++ )
@@ -217,12 +217,12 @@ int32_t delayed_vote_database_fixture::get_user_voted_witness_count( const accou
   return res;
 }
 
-asset delayed_vote_database_fixture::to_vest( const asset& liquid, const bool to_reward_balance )
+VEST_asset delayed_vote_database_fixture::to_vest( const HIVE_asset& liquid, const bool to_reward_balance )
 {
   const auto& cprops = db->get_dynamic_global_properties();
-  price vesting_share_price = to_reward_balance ? cprops.get_reward_vesting_share_price().to_price() : cprops.get_vesting_share_price().to_price();
+  VEST_price vesting_share_price = to_reward_balance ? cprops.get_reward_vesting_share_price() : cprops.get_vesting_share_price();
 
-  return liquid * ( vesting_share_price );
+  return liquid * vesting_share_price;
 }
 
 template< typename COLLECTION >

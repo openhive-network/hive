@@ -207,7 +207,12 @@ public:
     return fixture->push_transaction_ex(tx, keys, skip_flags, pack_type);
   }
 
-  void fund( const fc::string& account_name, const asset& amount )
+  void fund( const fc::string& account_name, const HIVE_asset& amount )
+  {
+    FC_ASSERT(fixture);
+    return fixture->fund(account_name, amount);
+  }
+  void fund( const fc::string& account_name, const HBD_asset& amount )
   {
     FC_ASSERT(fixture);
     return fixture->fund(account_name, amount);
@@ -233,27 +238,27 @@ public:
     FC_ASSERT(fixture);
     return fixture->recurrent_transfer(from, to, amount, memo, recurrence, executions, key);
   }
-  void convert_hbd_to_hive( const std::string& owner, uint32_t requestid, const asset& amount, const fc::ecc::private_key& key )
+  void convert_hbd_to_hive( const std::string& owner, uint32_t requestid, const HBD_asset& amount, const fc::ecc::private_key& key )
   {
     FC_ASSERT(fixture);
     return fixture->convert_hbd_to_hive(owner, requestid, amount, key);
   }
-  void collateralized_convert_hive_to_hbd( const std::string& owner, uint32_t requestid, const asset& amount, const fc::ecc::private_key& key )
+  void collateralized_convert_hive_to_hbd( const std::string& owner, uint32_t requestid, const HIVE_asset& amount, const fc::ecc::private_key& key )
   {
     FC_ASSERT(fixture);
     return fixture->collateralized_convert_hive_to_hbd(owner, requestid, amount, key);
   }
-  void vest( const fc::string& to, const asset& amount )
+  void vest( const fc::string& to, const HIVE_asset& amount )
   {
     FC_ASSERT(fixture);
     return fixture->vest(to, amount);
   }
-  void vest( const fc::string& from, const fc::string& to, const asset& amount, const fc::ecc::private_key& key )
+  void vest( const fc::string& from, const fc::string& to, const HIVE_asset& amount, const fc::ecc::private_key& key )
   {
     FC_ASSERT(fixture);
     return fixture->vest(from, to, amount, key);
   }
-  void delegate_vest( const fc::string& delegator, const fc::string& delegatee, const asset& amount, const fc::ecc::private_key& key )
+  void delegate_vest( const fc::string& delegator, const fc::string& delegatee, const VEST_asset& amount, const fc::ecc::private_key& key )
   {
     FC_ASSERT(fixture);
     return fixture->delegate_vest(delegator, delegatee, amount, key);
@@ -263,7 +268,7 @@ public:
     FC_ASSERT(fixture);
     return fixture->set_withdraw_vesting_route(from, to, percent, auto_vest, key);
   }
-  void withdraw_vesting( const fc::string& account, const asset& amount, const fc::ecc::private_key& key )
+  void withdraw_vesting( const fc::string& account, const VEST_asset& amount, const fc::ecc::private_key& key )
   {
     FC_ASSERT(fixture);
     return fixture->withdraw_vesting(account, amount, key);
@@ -315,8 +320,8 @@ public:
     FC_ASSERT(fixture);
     return fixture->limit_order2_create(owner, amount_to_sell, exchange_rate, fill_or_kill, expiration_shift, orderid, key);
   }
-  void escrow_transfer( const fc::string& from, const fc::string& to, const fc::string& agent, const asset& hive_amount, 
-                        const asset& hbd_amount, const asset& fee, const std::string& json_meta, const fc::microseconds& ratification_shift,
+  void escrow_transfer( const fc::string& from, const fc::string& to, const fc::string& agent, const HIVE_asset& hive_amount,
+                        const HBD_asset& hbd_amount, const asset& fee, const std::string& json_meta, const fc::microseconds& ratification_shift,
                         const fc::microseconds& expiration_shift, uint32_t escrow_id, const fc::ecc::private_key& key )
   {
     FC_ASSERT(fixture);
@@ -328,7 +333,7 @@ public:
     return fixture->escrow_approve(from, to, agent, who, approve, escrow_id, key);
   }
   void escrow_release( const fc::string& from, const fc::string& to, const fc::string& agent, const fc::string& who, const fc::string& receiver,
-                       const asset& hive_amount, const asset& hbd_amount, uint32_t escrow_id, const fc::ecc::private_key& key )
+                       const HIVE_asset& hive_amount, const HBD_asset& hbd_amount, uint32_t escrow_id, const fc::ecc::private_key& key )
   {
     FC_ASSERT(fixture);
     return fixture->escrow_release(from, to, agent, who, receiver, hive_amount, hbd_amount, escrow_id, key);
@@ -376,14 +381,14 @@ public:
   }
 
   int64_t create_proposal( const std::string& creator, const std::string& receiver, const std::string& subject, const std::string& permlink,
-                           fc::time_point_sec start_date, fc::time_point_sec end_date, asset daily_pay, const fc::ecc::private_key& key )
+                           fc::time_point_sec start_date, fc::time_point_sec end_date, HBD_asset daily_pay, const fc::ecc::private_key& key )
   {
     FC_ASSERT(fixture);
     return fixture->create_proposal(creator, receiver, subject, permlink, start_date, end_date, daily_pay, key);
   }
   int64_t create_proposal(   std::string creator, std::string receiver,
                     fc::time_point_sec start_date, fc::time_point_sec end_date,
-                    asset daily_pay, const fc::ecc::private_key& active_key, const fc::ecc::private_key& post_key, bool with_block_generation = true )
+                    HBD_asset daily_pay, const fc::ecc::private_key& active_key, const fc::ecc::private_key& post_key, bool with_block_generation = true )
   {
     FC_ASSERT(fixture);
     return fixture->create_proposal(creator, receiver, start_date, end_date, daily_pay, active_key, post_key, with_block_generation);
@@ -398,7 +403,7 @@ public:
     FC_ASSERT(fixture);
     return fixture->remove_proposal(_deleter, _proposal_id, _key);
   }
-  void update_proposal(uint64_t proposal_id, std::string creator, asset daily_pay, std::string subject, std::string permlink, const fc::ecc::private_key& key, fc::time_point_sec* end_date = nullptr )
+  void update_proposal(uint64_t proposal_id, std::string creator, HBD_asset daily_pay, std::string subject, std::string permlink, const fc::ecc::private_key& key, fc::time_point_sec* end_date = nullptr )
   {
     FC_ASSERT(fixture);
     return fixture->update_proposal(proposal_id, creator, daily_pay, subject, permlink, key, end_date);

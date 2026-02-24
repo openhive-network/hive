@@ -56,7 +56,7 @@ struct database_api_fixture_basic : hived_fixture
 
     ACTORS((whale)(voter1)(voter2)(voter3)(voter4)(voter5)(voter6)(voter7)(voter8)(voter9)(voter10))
 
-    vest( "whale", ASSET( "500000.000 TESTS" ) );
+    vest( "whale", HIVE_asset( 500'000'000 ) );
 
     account_witness_vote_operation op;
     op.account = "whale";
@@ -71,8 +71,8 @@ struct database_api_fixture_basic : hived_fixture
     {
       std::string name = "voter" + std::to_string(i);
       auto key = generate_private_key( name );
-      fund( name, ASSET( "10000.000 TESTS" ) );
-      vest( name, "", asset( 10000000 / i, HIVE_SYMBOL ), key );
+      fund( name, HIVE_asset( 10'000'000 ) );
+      vest( name, "", HIVE_asset( 10'000'000 / i ), key );
       op.account = name;
       for( int v = 1; v <= i; ++v )
       {
@@ -190,7 +190,7 @@ BOOST_AUTO_TEST_CASE( get_witness_schedule_test )
     BOOST_REQUIRE( changes.median_props.valid() == true );
     const auto& props_changes = changes.median_props.value();
     BOOST_REQUIRE( props_changes.account_creation_fee.valid() == true );
-    BOOST_REQUIRE( props_changes.account_creation_fee.value() == ASSET( "3.000 TESTS" ) );
+    BOOST_REQUIRE( props_changes.account_creation_fee.value() == HIVE_asset( 3'000 ) );
     BOOST_REQUIRE( props_changes.maximum_block_size.valid() == false );
     BOOST_REQUIRE( props_changes.hbd_interest_rate.valid() == false );
     BOOST_REQUIRE( props_changes.account_subsidy_budget.valid() == false );
@@ -254,7 +254,7 @@ BOOST_AUTO_TEST_CASE( verify_account_authority_test )
   do { \
     account_create_operation op; \
     op.creator = HIVE_INIT_MINER_NAME; \
-    op.fee = fee; \
+    op.fee = fee.to_asset(); \
     op.new_account_name = BOOST_PP_STRINGIZE( name ); \
     op.owner = authority( 1, name ## _owner, 1 ); \
     op.active = authority( 1, name ## _active, 1 ); \
@@ -278,7 +278,7 @@ BOOST_AUTO_TEST_CASE( verify_account_authority_test )
   {
     account_create_operation op;
     op.creator = HIVE_INIT_MINER_NAME;
-    op.fee = fee;
+    op.fee = fee.to_asset();
     op.new_account_name = "single";
     op.owner = authority( 1, single1_owner, 1, single2_owner, 1, "alice", 1, "bob", 1 );
     op.active = authority( 1, single1_active, 1, single2_active, 1, "alice", 1, "bob", 1 );
@@ -289,7 +289,7 @@ BOOST_AUTO_TEST_CASE( verify_account_authority_test )
   {
     account_create_operation op;
     op.creator = HIVE_INIT_MINER_NAME;
-    op.fee = fee;
+    op.fee = fee.to_asset();
     op.new_account_name = "open";
     op.owner = authority();
     op.active = authority();
@@ -300,7 +300,7 @@ BOOST_AUTO_TEST_CASE( verify_account_authority_test )
   {
     account_create_operation op;
     op.creator = HIVE_INIT_MINER_NAME;
-    op.fee = fee;
+    op.fee = fee.to_asset();
     op.new_account_name = "multi";
     op.owner = authority( 3, multi1_owner, 1, multi2_owner, 1, multi3_owner, 1,
       "alice", 2, "bob", 2, "carol", 2 );
@@ -580,7 +580,7 @@ BOOST_AUTO_TEST_CASE( verify_account_authority_test )
   do { \
     account_create_operation op; \
     op.creator = HIVE_INIT_MINER_NAME; \
-    op.fee = fee; \
+    op.fee = fee.to_asset(); \
     op.new_account_name = BOOST_PP_STRINGIZE( name ); \
     op.owner = authority( 1, name ## _owner, 1 ); \
     op.active = authority( 1, name ## _active, 1 ); \
@@ -604,7 +604,7 @@ BOOST_AUTO_TEST_CASE( verify_account_authority_test )
   {
     account_create_operation op;
     op.creator = HIVE_INIT_MINER_NAME;
-    op.fee = fee;
+    op.fee = fee.to_asset();
     op.new_account_name = "single";
     op.owner = authority( 1, single1_owner, 1, single2_owner, 1, "alice", 1, "bob", 1 );
     op.active = authority( 1, single1_active, 1, single2_active, 1, "alice", 1, "bob", 1 );
@@ -615,7 +615,7 @@ BOOST_AUTO_TEST_CASE( verify_account_authority_test )
   {
     account_create_operation op;
     op.creator = HIVE_INIT_MINER_NAME;
-    op.fee = fee;
+    op.fee = fee.to_asset();
     op.new_account_name = "open";
     op.owner = authority();
     op.active = authority();
@@ -626,7 +626,7 @@ BOOST_AUTO_TEST_CASE( verify_account_authority_test )
   {
     account_create_operation op;
     op.creator = HIVE_INIT_MINER_NAME;
-    op.fee = fee;
+    op.fee = fee.to_asset();
     op.new_account_name = "multi";
     op.owner = authority( 3, multi1_owner, 1, multi2_owner, 1, multi3_owner, 1,
       "alice", 2, "bob", 2, "carol", 2 );
