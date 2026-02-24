@@ -144,9 +144,9 @@ BOOST_AUTO_TEST_CASE( rc_usage_buckets )
       check_eq( bucket.get_usage(), {} );
 
     ACTORS( (alice)(bob)(sam) )
-    fund( "alice", ASSET( "1.000 TESTS" ) );
-    fund( "bob", ASSET( "1.000 TESTS" ) );
-    fund( "sam", ASSET( "1.000 TESTS" ) );
+    fund( "alice", HIVE_asset( 1'000 ) );
+    fund( "bob", HIVE_asset( 1'000 ) );
+    fund( "sam", HIVE_asset( 1'000 ) );
     generate_block();
 
     BOOST_TEST_MESSAGE( "Some resources consumed" );
@@ -320,7 +320,7 @@ BOOST_AUTO_TEST_CASE( rc_usage_buckets )
     market_bytes_share = new_market_bytes_share;
     BOOST_CHECK_EQUAL( pools.get_usage( resource_new_accounts ), 0 );
 
-    claim_account( "alice", ASSET( "0.000 TESTS" ), alice_private_key );
+    claim_account( "alice", HIVE_asset( 0 ), alice_private_key );
     generate_block(); //switch bucket
     BOOST_CHECK_EQUAL( print( true ), 0 );
     //last transaction should be registered within new bucket - it uses new account and execution, tx itself also state and history
@@ -352,7 +352,7 @@ BOOST_AUTO_TEST_CASE( rc_single_recover_account )
 
     ACTORS( (agent)(victim)(thief) )
     generate_block(); 
-    vest( "agent", ASSET( "1000.000 TESTS" ) );
+    vest( "agent", HIVE_asset( 1'000'000 ) );
     issue_funds( "victim", HIVE_asset( 1'000 ) );
 
     const auto& agent_rc = db->get_account( "agent" );
@@ -469,7 +469,7 @@ BOOST_AUTO_TEST_CASE( rc_many_recover_accounts )
 
     ACTORS( (agent)(victim1)(victim2)(victim3)(thief1)(thief2)(thief3) )
     generate_block();
-    vest( "agent", ASSET( "1000.000 TESTS" ) );
+    vest( "agent", HIVE_asset( 1'000'000 ) );
     issue_funds( "victim1", HIVE_asset( 1'000 ) );
 
     const auto& agent_rc = db->get_account( "agent" );
@@ -630,8 +630,8 @@ BOOST_AUTO_TEST_CASE( rc_multisig_recover_account )
 
     ACTORS( (agent)(thief) )
     generate_block();
-    vest( "agent", ASSET( "1000.000 TESTS" ) );
-    vest( "thief", ASSET( "1000.000 TESTS" ) );
+    vest( "agent", HIVE_asset( 1'000'000 ) );
+    vest( "thief", HIVE_asset( 1'000'000 ) );
     issue_funds( "agent", HIVE_asset( 1'000'000 ) );
 
     BOOST_TEST_MESSAGE( "create signer accounts and victim account (with agent as recovery)" );
@@ -656,12 +656,12 @@ BOOST_AUTO_TEST_CASE( rc_multisig_recover_account )
         return out;
       }
 
-      void create( int n, bool _isMixed, database_fixture* _this, const asset& fee )
+      void create( int n, bool _isMixed, database_fixture* _this, const HIVE_asset& fee )
       {
         isMixed = _isMixed;
 
         account_create_operation create;
-        create.fee = fee;
+        create.fee = fee.to_asset();
         create.creator = "initminer";
 
         char _name[16];
@@ -706,7 +706,7 @@ BOOST_AUTO_TEST_CASE( rc_multisig_recover_account )
 
     int key_count = 0;
     account_create_operation create;
-    create.fee = fee;
+    create.fee = fee.to_asset();
     create.creator = "agent";
     create.new_account_name = "victim";
     for( int i = 0; i < HIVE_MAX_AUTHORITY_MEMBERSHIP; ++i )
@@ -721,7 +721,7 @@ BOOST_AUTO_TEST_CASE( rc_multisig_recover_account )
     //create one alternative account with copy of authority from last mixed signer
     {
       account_create_operation create;
-      create.fee = fee;
+      create.fee = fee.to_asset();
       create.creator = "initminer";
       create.new_account_name = "alternative";
       create.owner = mixed_signers[ HIVE_MAX_AUTHORITY_MEMBERSHIP - 1 ].auth;
@@ -742,7 +742,7 @@ BOOST_AUTO_TEST_CASE( rc_multisig_recover_account )
     create.posting = create.owner;
     push_transaction( create, agent_private_key );
 
-    vest( "victim", ASSET( "1000.000 TESTS" ) );
+    vest( "victim", HIVE_asset( 1'000'000 ) );
     generate_block();
     const auto& victim_rc = db->get_account( "victim" );
 
@@ -814,7 +814,7 @@ BOOST_AUTO_TEST_CASE( rc_tx_order_bug )
 
     ACTORS( (alice)(bob) )
     generate_block();
-    vest( "bob", ASSET( "35000.000 TESTS" ) ); //<- change that amount to tune RC cost
+    vest( "bob", HIVE_asset( 35'000'000 ) ); //<- change that amount to tune RC cost
     issue_funds( "alice", HIVE_asset( 1'000'000 ) );
 
     const auto& alice_rc = db->get_account( "alice" );
@@ -916,7 +916,7 @@ BOOST_AUTO_TEST_CASE( rc_pending_data_reset )
 
     ACTORS( (alice)(bob) )
     generate_block();
-    fund( "alice", ASSET( "1000.000 TESTS" ) );
+    fund( "alice", HIVE_asset( 1'000'000 ) );
     generate_block();
 
     auto check_direction = []( const resource_cost_type& values, const std::array< int, HIVE_RC_NUM_RESOURCE_TYPES >& sign )
@@ -1049,9 +1049,9 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_operations )
 
     ACTORS( (alice)(bob)(sam) )
     generate_block();
-    fund( "alice", ASSET( "1000.000 TESTS" ) );
-    vest( "alice", ASSET( "10.000 TESTS" ) );
-    vest( "bob", ASSET( "10.000 TESTS" ) );
+    fund( "alice", HIVE_asset( 1'000'000 ) );
+    vest( "alice", HIVE_asset( 10'000 ) );
+    vest( "bob", HIVE_asset( 10'000 ) );
     generate_block();
 
     auto alice_owner_key = generate_private_key( "alice_owner" );
@@ -1366,7 +1366,7 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_negative )
     };
 
     account_create_operation create;
-    create.fee = db->get_witness_schedule_object().median_props.account_creation_fee;
+    create.fee = db->get_witness_schedule_object().median_props.account_creation_fee.to_asset();
     create.creator = "initminer";
     create.new_account_name = "alice";
     create.owner = authority( 1, alice_public_key, 1 );
@@ -1408,14 +1408,14 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_negative )
     generate_block();
 
     //add some source of RC so they can actually perform those (expensive) operations
-    vest( "alice", ASSET( "10.000 TESTS" ) );
-    fund( "alice", ASSET( "10.000 TESTS" ) );
-    vest( "barry", ASSET( "10.000 TESTS" ) );
-    fund( "barry", ASSET( "10.000 TESTS" ) );
-    vest( "carol", ASSET( "10.000 TESTS" ) );
-    fund( "carol", ASSET( "10.000 TESTS" ) );
-    vest( "diana", ASSET( "10.000 TESTS" ) );
-    fund( "diana", ASSET( "10.000 TESTS" ) );
+    vest( "alice", HIVE_asset( 10'000 ) );
+    fund( "alice", HIVE_asset( 10'000 ) );
+    vest( "barry", HIVE_asset( 10'000 ) );
+    fund( "barry", HIVE_asset( 10'000 ) );
+    vest( "carol", HIVE_asset( 10'000 ) );
+    fund( "carol", HIVE_asset( 10'000 ) );
+    vest( "diana", HIVE_asset( 10'000 ) );
+    fund( "diana", HIVE_asset( 10'000 ) );
     generate_block();
     //see explanation at the end of rc_pending_data_reset test
     //note that we don't actually have access to data on transaction but whole block, so it is
@@ -1515,8 +1515,8 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_many_ops )
 
     ACTORS( (alice)(carol) )
     generate_block();
-    vest( "alice", ASSET( "10.000 TESTS" ) );
-    vest( "carol", ASSET( "10.000 TESTS" ) );
+    vest( "alice", HIVE_asset( 10'000 ) );
+    vest( "carol", HIVE_asset( 10'000 ) );
     generate_block();
     //see explanation at the end of rc_pending_data_reset test
     //note that we don't actually have access to data on transaction but whole block, so it is
@@ -1577,7 +1577,7 @@ BOOST_AUTO_TEST_CASE( rc_exception_during_modify )
 
     ACTORS((dave))
     generate_block();
-    vest( "dave", ASSET( "70000.000 TESTS" ) ); //<- change that amount to tune RC cost
+    vest( "dave", HIVE_asset( 70'000'000 ) ); //<- change that amount to tune RC cost
     issue_funds( "dave", HIVE_asset( 1'000'000 ) );
 
     generate_block();

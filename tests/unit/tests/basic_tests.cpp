@@ -1448,7 +1448,7 @@ BOOST_AUTO_TEST_CASE( additional_allocations )
     size_t all_allocations = get_all_dynamic_alloc();
     BOOST_REQUIRE_GT( all_allocations, all_initial_allocations );
 
-    vest( "alice", "alice", ASSET( "100.000 TESTS" ), alice_private_key );
+    vest( "alice", "alice", HIVE_asset( 100'000 ), alice_private_key );
     generate_block();
     BOOST_REQUIRE_GT( accountIdx.get_item_additional_allocation(), initial_account_allocations );
     {
@@ -1767,7 +1767,7 @@ BOOST_AUTO_TEST_CASE( authorization_redirections )
     account_create_operation op;
     op.new_account_name = name;
     op.creator = HIVE_INIT_MINER_NAME;
-    op.fee = fee;
+    op.fee = fee.to_asset();
     op.owner = owner;
     op.active = active;
     op.posting = posting;

@@ -335,19 +335,20 @@ struct database_fixture {
   full_transaction_ptr push_transaction_ex( const signed_transaction& tx, const std::vector<fc::ecc::private_key>& keys,
     uint32_t skip_flags = 0, hive::protocol::pack_type pack_type = hive::protocol::serialization_mode_controller::get_current_pack() );
 
-  void fund( const string& account_name, const asset& amount ); //transfer from initminer
+  void fund( const string& account_name, const HIVE_asset& amount ); //transfer from initminer
+  void fund( const string& account_name, const HBD_asset& amount ); //transfer from initminer
   void issue_funds( const string& account_name, const HIVE_asset& amount, bool update_print_rate = true );
   void issue_funds( const string& account_name, const HBD_asset& amount, bool update_print_rate = true );
   void transfer( const string& from, const string& to, const asset& amount, const std::string& memo, const fc::ecc::private_key& key );
   void recurrent_transfer( const string& from, const string& to, const asset& amount, const string& memo, uint16_t recurrence,
                            uint16_t executions, const fc::ecc::private_key& key );
-  void convert_hbd_to_hive( const std::string& owner, uint32_t requestid, const asset& amount, const fc::ecc::private_key& key );
-  void collateralized_convert_hive_to_hbd( const std::string& owner, uint32_t requestid, const asset& amount, const fc::ecc::private_key& key );
-  void vest( const string& to, const asset& amount ); //vesting from initminer
-  void vest( const string& from, const string& to, const asset& amount, const fc::ecc::private_key& key );
-  void delegate_vest( const string& delegator, const string& delegatee, const asset& amount, const fc::ecc::private_key& key );
+  void convert_hbd_to_hive( const std::string& owner, uint32_t requestid, const HBD_asset& amount, const fc::ecc::private_key& key );
+  void collateralized_convert_hive_to_hbd( const std::string& owner, uint32_t requestid, const HIVE_asset& amount, const fc::ecc::private_key& key );
+  void vest( const string& to, const HIVE_asset& amount ); //vesting from initminer
+  void vest( const string& from, const string& to, const HIVE_asset& amount, const fc::ecc::private_key& key );
+  void delegate_vest( const string& delegator, const string& delegatee, const VEST_asset& amount, const fc::ecc::private_key& key );
   void set_withdraw_vesting_route(const string& from, const string& to, uint16_t percent, bool auto_vest, const fc::ecc::private_key& key);
-  void withdraw_vesting( const string& account, const asset& amount, const fc::ecc::private_key& key );
+  void withdraw_vesting( const string& account, const VEST_asset& amount, const fc::ecc::private_key& key );
   void proxy( const string& _account, const string& _proxy, const fc::ecc::private_key& _key );
   void set_price_feed( const HBD_price& new_price, bool stop_at_update_block = false ); //sets on initminer(s)
   void set_witness_props( const flat_map< string, vector< char > >& new_props, bool wait_for_activation = true ); //sets on initminer(s)
@@ -359,12 +360,12 @@ struct database_fixture {
   void limit_order_cancel( const string& owner, uint32_t orderid, const fc::ecc::private_key& key );
   void limit_order2_create( const string& owner, const asset& amount_to_sell, const price& exchange_rate, bool fill_or_kill,
                             const fc::microseconds& expiration_shift, uint32_t orderid, const fc::ecc::private_key& key );
-  void escrow_transfer( const string& from, const string& to, const string& agent, const asset& hive_amount, 
-                        const asset& hbd_amount, const asset& fee, const std::string& json_meta, const fc::microseconds& ratification_shift,
+  void escrow_transfer( const string& from, const string& to, const string& agent, const HIVE_asset& hive_amount,
+                        const HBD_asset& hbd_amount, const asset& fee, const std::string& json_meta, const fc::microseconds& ratification_shift,
                         const fc::microseconds& expiration_shift, uint32_t escrow_id, const fc::ecc::private_key& key );
   void escrow_approve( const string& from, const string& to, const string& agent, const string& who, bool approve, uint32_t escrow_id, const fc::ecc::private_key& key );
   void escrow_release( const string& from, const string& to, const string& agent, const string& who, const string& receiver,
-                       const asset& hive_amount, const asset& hbd_amount, uint32_t escrow_id, const fc::ecc::private_key& key );
+                       const HIVE_asset& hive_amount, const HBD_asset& hbd_amount, uint32_t escrow_id, const fc::ecc::private_key& key );
   void escrow_dispute( const string& from, const string& to, const string& agent, const string& who, uint32_t escrow_id, const fc::ecc::private_key& key );
   void transfer_to_savings( const string& from, const string& to, const asset& amount, const string& memo, const fc::ecc::private_key& key );
   void transfer_from_savings( const string& from, const string& to, const asset& amount, const string& memo, uint32_t request_id,
@@ -385,7 +386,7 @@ struct database_fixture {
     std::string receiver   ;
     fc::time_point_sec start_date ;
     fc::time_point_sec end_date   ;
-    hive::protocol::asset daily_pay ;
+    HBD_asset daily_pay ;
     std::string subject ;
     std::string url     ;
 
@@ -395,20 +396,20 @@ struct database_fixture {
       receiver   = "bob";
       start_date = _start     + fc::days( 1 );
       end_date   = start_date + fc::days( 2 );
-      daily_pay  = asset( 100, HBD_SYMBOL );
+      daily_pay  = HBD_asset( 100 );
       subject    = "hello";
       url        = "http:://something.html";
     }
   };
 
   int64_t create_proposal( const std::string& creator, const std::string& receiver, const std::string& subject, const std::string& permlink,
-                           const time_point_sec& start_date, const time_point_sec& end_date, const asset& daily_pay, const fc::ecc::private_key& active_key );
+                           const time_point_sec& start_date, const time_point_sec& end_date, const HBD_asset& daily_pay, const fc::ecc::private_key& active_key );
   int64_t create_proposal( const std::string& creator, const std::string& receiver,
                     const time_point_sec& start_date, const time_point_sec& end_date,
-                    const asset& daily_pay, const fc::ecc::private_key& active_key, const fc::ecc::private_key& post_key, bool with_block_generation = true );
+                    const HBD_asset& daily_pay, const fc::ecc::private_key& active_key, const fc::ecc::private_key& post_key, bool with_block_generation = true );
   void vote_proposal( const std::string& voter, const std::vector< int64_t >& id_proposals, bool approve, const fc::ecc::private_key& key );
   void remove_proposal(account_name_type _deleter, flat_set<int64_t> _proposal_id, const fc::ecc::private_key& _key);
-  void update_proposal( uint64_t proposal_id, const std::string& creator, const asset& daily_pay, const std::string& subject, const std::string& permlink, const fc::ecc::private_key& key, time_point_sec* end_date = nullptr );
+  void update_proposal( uint64_t proposal_id, const std::string& creator, const HBD_asset& daily_pay, const std::string& subject, const std::string& permlink, const fc::ecc::private_key& key, time_point_sec* end_date = nullptr );
 
   bool exist_proposal( int64_t id );
   const proposal_object* find_proposal( int64_t id );
@@ -441,12 +442,12 @@ public:
   void post_comment_to_comment( const std::string& author, const std::string& permlink, const std::string& title, const std::string& body,
                                 const std::string& parent_author, const std::string& parent_permlink, const fc::ecc::private_key& post_key );
   void delete_comment( const std::string& _author, const std::string& _permlink, const fc::ecc::private_key& _key );
-  void set_comment_options( const std::string& author, const std::string& permlink, const asset& max_accepted_payout, uint16_t percent_hbd,
+  void set_comment_options( const std::string& author, const std::string& permlink, const HBD_asset& max_accepted_payout, uint16_t percent_hbd,
                             bool allow_curation_rewards, bool allow_votes, const fc::ecc::private_key& post_key );
-  void set_comment_options( const std::string& author, const std::string& permlink, const asset& max_accepted_payout, uint16_t percent_hbd,
+  void set_comment_options( const std::string& author, const std::string& permlink, const HBD_asset& max_accepted_payout, uint16_t percent_hbd,
                             bool allow_curation_rewards, bool allow_votes, const comment_options_extensions_type& extensions, const fc::ecc::private_key& post_key );
   void vote( const std::string& _author, const std::string& _permlink, const std::string& _voter, int16_t _weight, const fc::ecc::private_key& _key );
-  void claim_reward_balance( const std::string& account, const asset& reward_hive, const asset& reward_hbd, const asset& reward_vests,
+  void claim_reward_balance( const std::string& account, const HIVE_asset& reward_hive, const HBD_asset& reward_hbd, const VEST_asset& reward_vests,
                              const fc::ecc::private_key& key );
   /// @brief Creates proof of work and account for the worker.
   /// @param _name Name of the worker (and account to be created too).
@@ -456,8 +457,8 @@ public:
   /// Same as create_with_pow but uses pow2 operation.
   void create_with_pow2( const std::string& _name, const fc::ecc::public_key& _public_key, const fc::ecc::private_key& _private_key );
   void create_with_delegation( const std::string& creator, const std::string& new_account_name, const fc::ecc::public_key& public_key,
-                               const fc::ecc::private_key& posting_key, const asset& delegation, const fc::ecc::private_key& key );
-  void claim_account( const std::string& creator, const asset& fee, const fc::ecc::private_key& key );
+                               const fc::ecc::private_key& posting_key, const VEST_asset& delegation, const fc::ecc::private_key& key );
+  void claim_account( const std::string& creator, const HIVE_asset& fee, const fc::ecc::private_key& key );
   void create_claimed_account( const std::string& creator, const std::string& new_account_name, const fc::ecc::public_key& public_key,
                                const fc::ecc::public_key& posting_key, const string& json_metadata, const fc::ecc::private_key& key );
   void change_recovery_account( const std::string& account_to_recover, const std::string& new_recovery_account, const fc::ecc::private_key& key );
@@ -470,6 +471,10 @@ public:
 
   vector< operation > get_last_operations( uint32_t ops );
 
+  std::string asset_to_string( const asset& a );
+  template< uint32_t _SYMBOL >
+  std::string asset_to_string( const tiny_asset<_SYMBOL>& a ) { return asset_to_string( a.to_asset() ); }
+
   void validate_database();
 };
 
@@ -481,7 +486,7 @@ struct dhf_database
     std::string receiver   ;
     fc::time_point_sec start_date ;
     fc::time_point_sec end_date   ;
-    hive::protocol::asset daily_pay ;
+    HBD_asset daily_pay ;
     std::string subject ;
     std::string url     ;
 
@@ -491,7 +496,7 @@ struct dhf_database
       receiver   = "bob";
       start_date = _start     + fc::days( 1 );
       end_date   = start_date + fc::days( 2 );
-      daily_pay  = asset( 100, HBD_SYMBOL );
+      daily_pay  = HBD_asset( 100 );
       subject    = "hello";
       url        = "http:://something.html";
     }

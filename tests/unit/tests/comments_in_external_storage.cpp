@@ -67,8 +67,8 @@ BOOST_AUTO_TEST_CASE( basic_checks )
   try
   {
     ACTORS( (alice)(bob) )
-    vest( "alice", ASSET( "10.000 TESTS" ) );
-    vest( "bob", ASSET( "10.000 TESTS" ) );
+    vest( "alice", HIVE_asset( 10'000 ) );
+    vest( "bob", HIVE_asset( 10'000 ) );
 
     set_price_feed( HBD_price( 1000, 1000 ) );
 
@@ -145,10 +145,10 @@ BOOST_AUTO_TEST_CASE( nested_comments )
   try
   {
     ACTORS( (alice)(bob)(sam)(dave) )
-    vest( "alice", ASSET( "10.000 TESTS" ) );
-    vest( "bob", ASSET( "10.000 TESTS" ) );
-    vest( "sam", ASSET( "10.000 TESTS" ) );
-    vest( "dave", ASSET( "10.000 TESTS" ) );
+    vest( "alice", HIVE_asset( 10'000 ) );
+    vest( "bob", HIVE_asset( 10'000 ) );
+    vest( "sam", HIVE_asset( 10'000 ) );
+    vest( "dave", HIVE_asset( 10'000 ) );
 
     set_price_feed( HBD_price( 1000, 1000 ) );
 
@@ -251,7 +251,7 @@ void fork_reverts_cashout_scanario( const std::string& comment_archive_type, boo
   test.generate_block();
   test.db->_log_hardforks = true;
 
-  test.vest( HIVE_INIT_MINER_NAME, ASSET( "10.000 TESTS" ) );
+  test.vest( HIVE_INIT_MINER_NAME, HIVE_asset( 10'000 ) );
 
   // Fill up the rest of miners
   for( int i = HIVE_NUM_INIT_MINERS; i < HIVE_MAX_WITNESSES; i++ )

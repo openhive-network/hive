@@ -110,7 +110,7 @@ struct delayed_vote_database_fixture : public config_database_fixture
 
     int32_t get_user_voted_witness_count( const account_name_type& name );
 
-    asset to_vest( const asset& liquid, const bool to_reward_balance = false );
+    VEST_asset to_vest( const HIVE_asset& liquid, const bool to_reward_balance = false );
     time_point_sec move_forward_with_update( const fc::microseconds& time, delayed_voting::opt_votes_update_data_items& items );
 
     template< typename COLLECTION >

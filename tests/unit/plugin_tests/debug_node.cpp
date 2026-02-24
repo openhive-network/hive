@@ -26,7 +26,7 @@ full_transaction_ptr make_transfer( const account_name_type& from, const account
 };
 
 void direct_transfer( const account_name_type& from, const account_name_type& to,
-  const asset& delta_from, const asset& delta_to, database& db )
+  const HIVE_asset& delta_from, const HIVE_asset& delta_to, database& db )
 {
   ilog( "Transfering directly from ${from} to ${to}", ( from ) ( to ) );
   db.adjust_balance( from, delta_from );
@@ -200,24 +200,24 @@ BOOST_AUTO_TEST_CASE( debug_update_with_explicit_hook )
 
   db_plugin->debug_update( [&]( database& db ) // if it executed now, bob would go negative
   {
-    asset delta = ASSET( "0.010 TESTS" );
+    HIVE_asset delta( 10 );
     direct_transfer( "bob", "alice", -delta, delta, db );
   }, 0, bob_to_dan->get_transaction_id() );
 
   db_plugin->debug_update( [&]( database& db )
   {
-    asset delta = ASSET( "0.200 TESTS" );
+    HIVE_asset delta( 200 );
     direct_transfer( "initminer", "carol", -delta, delta, db );
   }, 0, alice_to_carol->get_transaction_id() );
 
   db_plugin->debug_update( [&]( database& db ) // if it ever executed, validate_database would fail
   {
-    direct_transfer( "dan", "alice", -ASSET( "0.100 TESTS" ), ASSET( "10.000 TESTS" ), db );
+    direct_transfer( "dan", "alice", -HIVE_asset( 100 ), HIVE_asset( 10'000 ), db );
   }, 0, carol_to_dan->get_transaction_id() );
 
   db_plugin->debug_update( [&]( database& db )
   {
-    asset delta = ASSET( "3.100 TESTS" );
+    HIVE_asset delta( 3'100 );
     direct_transfer( "initminer", "alice", -delta, delta, db );
   }, 0, alice_to_bob->get_transaction_id() );
 
@@ -296,7 +296,7 @@ BOOST_AUTO_TEST_CASE( debug_update_transaction_order )
   const HIVE_asset step( 1 );
   const HIVE_asset zero( 0 );
 
-  auto carol_to_dan = make_transfer( "carol", "dan", token - step * 6, carol_private_key, *db );
+  auto carol_to_dan = make_transfer( "carol", "dan", ( token - step * 6 ).to_asset(), carol_private_key, *db );
   db_plugin->debug_update( [&]( database& db )
   {
     HIVE_asset delta = token - step * 3;
@@ -313,7 +313,7 @@ BOOST_AUTO_TEST_CASE( debug_update_transaction_order )
   BOOST_REQUIRE( get_hive_balance( "greg" ) == zero );
 
   // initminer -> alice
-  fund( "alice", token.to_asset() );
+  fund( "alice", token );
   BOOST_REQUIRE( get_hive_balance( "alice" ) == token );
   BOOST_REQUIRE( get_hive_balance( "bob" ) == zero );
   BOOST_REQUIRE( get_hive_balance( "carol" ) == zero );
@@ -375,7 +375,7 @@ BOOST_AUTO_TEST_CASE( debug_update_transaction_order )
   BOOST_REQUIRE( get_hive_balance( "greg" ) == zero );
 
   // frank -> greg
-  transfer( "frank", "greg", token - step * 21, "almost done", frank_private_key);
+  transfer( "frank", "greg", ( token - step * 21 ).to_asset(), "almost done", frank_private_key);
   BOOST_REQUIRE( get_hive_balance( "alice" ) == ( step * 1 ) );
   BOOST_REQUIRE( get_hive_balance( "bob" ) == ( step * 2 ) );
   BOOST_REQUIRE( get_hive_balance( "carol" ) == ( step * 3 ) );

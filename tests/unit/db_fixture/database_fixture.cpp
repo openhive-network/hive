@@ -227,7 +227,7 @@ const account_object& database_fixture::account_create(
 
     if( fee_remainder > 0 )
     {
-      vest( name, asset( fee_remainder, HIVE_SYMBOL ) );
+      vest( name, HIVE_asset( fee_remainder ) );
     }
 
     const account_object& acct = db->get_account( name );
@@ -373,17 +373,15 @@ void database_fixture:: witness_vote( account_name_type voter, account_name_type
   push_transaction( tx, key );
 }
 
-void database_fixture::fund(
-  const string& account_name,
-  const asset& amount
-  )
-{
-  try
-  {
-    transfer( HIVE_INIT_MINER_NAME, account_name, amount, "", init_account_priv_key );
+void database_fixture::fund( const string& account_name, const HIVE_asset& amount )
+{ try {
+  transfer( HIVE_INIT_MINER_NAME, account_name, amount.to_asset(), "", init_account_priv_key );
+} FC_CAPTURE_AND_RETHROW( (account_name)(amount) ) }
 
-  } FC_CAPTURE_AND_RETHROW( (account_name)(amount) )
-}
+void database_fixture::fund( const string& account_name, const HBD_asset& amount )
+{ try {
+  transfer( HIVE_INIT_MINER_NAME, account_name, amount.to_asset(), "", init_account_priv_key );
+} FC_CAPTURE_AND_RETHROW( (account_name)(amount) ) }
 
 void database_fixture::issue_funds( const string& account_name, const HIVE_asset& amount, bool update_print_rate )
 { try {
@@ -437,24 +435,24 @@ void database_fixture::issue_funds( const string& account_name, const HBD_asset&
   }, default_skip );
 } FC_CAPTURE_AND_RETHROW( (account_name)(amount) ) }
 
-void database_fixture::convert_hbd_to_hive( const std::string& owner, uint32_t requestid, const asset& amount, 
+void database_fixture::convert_hbd_to_hive( const std::string& owner, uint32_t requestid, const HBD_asset& amount,
   const fc::ecc::private_key& key )
 {
   convert_operation op;
   op.owner = owner;
   op.requestid = requestid;
-  op.amount = amount;
-  
+  op.amount = amount.to_asset();
+
   push_transaction( op, key );
 }
 
-void database_fixture::collateralized_convert_hive_to_hbd( const std::string& owner, uint32_t requestid, const asset& amount, 
+void database_fixture::collateralized_convert_hive_to_hbd( const std::string& owner, uint32_t requestid, const HIVE_asset& amount,
   const fc::ecc::private_key& key )
 {
     collateralized_convert_operation op;
     op.owner = owner;
     op.requestid = requestid;
-    op.amount = amount;
+    op.amount = amount.to_asset();
 
     push_transaction( op, key );
 }
@@ -511,25 +509,25 @@ full_transaction_ptr database_fixture::push_transaction_ex( const signed_transac
   return _tx;
 }
 
-void database_fixture::vest( const string& to, const asset& amount )
+void database_fixture::vest( const string& to, const HIVE_asset& amount )
 {
   vest( HIVE_INIT_MINER_NAME, to, amount, init_account_priv_key );
 }
 
-void database_fixture::vest( const string& from, const string& to, const asset& amount, const fc::ecc::private_key& key )
+void database_fixture::vest( const string& from, const string& to, const HIVE_asset& amount, const fc::ecc::private_key& key )
 {
   transfer_to_vesting_operation op;
   op.from = from;
   op.to = to;
-  op.amount = amount;
+  op.amount = amount.to_asset();
 
   push_transaction( op, key );
 }
 
-void database_fixture::delegate_vest( const string& delegator, const string& delegatee, const asset& amount, const fc::ecc::private_key& key )
+void database_fixture::delegate_vest( const string& delegator, const string& delegatee, const VEST_asset& amount, const fc::ecc::private_key& key )
 {
   delegate_vesting_shares_operation op;
-  op.vesting_shares = amount;
+  op.vesting_shares = amount.to_asset();
   op.delegator = delegator;
   op.delegatee = delegatee;
 
@@ -547,11 +545,11 @@ void database_fixture::set_withdraw_vesting_route( const string& from, const str
   push_transaction( op, key );
 }
 
-void database_fixture::withdraw_vesting( const string& account, const asset& amount, const fc::ecc::private_key& key )
+void database_fixture::withdraw_vesting( const string& account, const VEST_asset& amount, const fc::ecc::private_key& key )
 {
   withdraw_vesting_operation op;
   op.account = account;
-  op.vesting_shares = amount;
+  op.vesting_shares = amount.to_asset();
 
   push_transaction( op, key );
 }
@@ -674,16 +672,16 @@ void database_fixture::limit_order2_create( const string& owner, const asset& am
   push_transaction( tx, key );
 }
 
-void database_fixture::escrow_transfer( const string& from, const string& to, const string& agent, const asset& hive_amount, 
-  const asset& hbd_amount, const asset& fee, const std::string& json_meta, const fc::microseconds& ratification_shift,
+void database_fixture::escrow_transfer( const string& from, const string& to, const string& agent, const HIVE_asset& hive_amount,
+  const HBD_asset& hbd_amount, const asset& fee, const std::string& json_meta, const fc::microseconds& ratification_shift,
   const fc::microseconds& expiration_shift, uint32_t escrow_id, const fc::ecc::private_key& key )
 {
   escrow_transfer_operation op;
   op.from = from;
   op.to = to;
   op.agent = agent;
-  op.hive_amount = hive_amount;
-  op.hbd_amount = hbd_amount;
+  op.hive_amount = hive_amount.to_asset();
+  op.hbd_amount = hbd_amount.to_asset();
   op.fee = fee;
   op.json_meta = json_meta;
   op.ratification_deadline = db->head_block_time() + ratification_shift;
@@ -714,7 +712,7 @@ void database_fixture::escrow_approve( const string& from, const string& to, con
 }
 
 void database_fixture::escrow_release( const string& from, const string& to, const string& agent, const string& who,
-                                       const string& receiver, const asset& hive_amount, const asset& hbd_amount,
+                                       const string& receiver, const HIVE_asset& hive_amount, const HBD_asset& hbd_amount,
                                        uint32_t escrow_id, const fc::ecc::private_key& key )
 {
   escrow_release_operation op;
@@ -723,8 +721,8 @@ void database_fixture::escrow_release( const string& from, const string& to, con
   op.agent = agent;
   op.who = who;
   op.receiver = receiver;
-  op.hive_amount = hive_amount;
-  op.hbd_amount = hbd_amount;
+  op.hive_amount = hive_amount.to_asset();
+  op.hbd_amount = hbd_amount.to_asset();
   op.escrow_id = escrow_id;
 
   signed_transaction tx;
@@ -808,7 +806,7 @@ void database_fixture::push_custom_json_operation( const flat_set< account_name_
 }
 
 int64_t database_fixture::create_proposal( const std::string& creator, const std::string& receiver, const std::string& subject, const std::string& permlink,
-                           const time_point_sec& start_date, const time_point_sec& end_date, const asset& daily_pay, const fc::ecc::private_key& active_key )
+                           const time_point_sec& start_date, const time_point_sec& end_date, const HBD_asset& daily_pay, const fc::ecc::private_key& active_key )
 {
   create_proposal_operation op;
 
@@ -816,7 +814,7 @@ int64_t database_fixture::create_proposal( const std::string& creator, const std
   op.receiver = receiver;
   op.start_date = start_date;
   op.end_date = end_date;
-  op.daily_pay = daily_pay;
+  op.daily_pay = daily_pay.to_asset();
   op.subject = subject;
   op.permlink = permlink;
 
@@ -833,7 +831,7 @@ int64_t database_fixture::create_proposal( const std::string& creator, const std
 
 int64_t database_fixture::create_proposal( const std::string& creator, const std::string& receiver,
                     const time_point_sec& start_date, const time_point_sec& end_date,
-                    const asset& daily_pay,
+                    const HBD_asset& daily_pay,
                     const fc::ecc::private_key& active_key,
                     const fc::ecc::private_key& post_key,
                     bool with_block_generation )
@@ -855,14 +853,14 @@ int64_t database_fixture::create_proposal( const std::string& creator, const std
   return proposal_id;
 }
 
-void database_fixture::update_proposal( uint64_t proposal_id, const std::string& creator, const asset& daily_pay, const std::string& subject, const std::string& permlink, const fc::ecc::private_key& key, time_point_sec* end_date )
+void database_fixture::update_proposal( uint64_t proposal_id, const std::string& creator, const HBD_asset& daily_pay, const std::string& subject, const std::string& permlink, const fc::ecc::private_key& key, time_point_sec* end_date )
 {
   signed_transaction tx;
   update_proposal_operation op;
 
   op.proposal_id = proposal_id;
   op.creator = creator;
-  op.daily_pay = daily_pay;
+  op.daily_pay = daily_pay.to_asset();
   op.subject = subject;
   op.permlink = permlink;
 
@@ -1058,21 +1056,21 @@ void database_fixture::delete_comment( const std::string& _author, const std::st
   tx.operations.clear();
 }
 
-void database_fixture::set_comment_options( const std::string& author, const std::string& permlink, const asset& max_accepted_payout,
+void database_fixture::set_comment_options( const std::string& author, const std::string& permlink, const HBD_asset& max_accepted_payout,
   uint16_t percent_hbd, bool allow_curation_rewards, bool allow_votes, const fc::ecc::private_key& post_key )
 {
   comment_options_extensions_type extensions;
   set_comment_options( author, permlink, max_accepted_payout, percent_hbd, allow_curation_rewards, allow_votes, extensions, post_key );
 }
 
-void database_fixture::set_comment_options( const std::string& author, const std::string& permlink, const asset& max_accepted_payout,
+void database_fixture::set_comment_options( const std::string& author, const std::string& permlink, const HBD_asset& max_accepted_payout,
   uint16_t percent_hbd, bool allow_curation_rewards, bool allow_votes, const comment_options_extensions_type& extensions,
   const fc::ecc::private_key& post_key )
 {
   comment_options_operation op;
   op.author = author;
   op.permlink = permlink;
-  op.max_accepted_payout = max_accepted_payout;
+  op.max_accepted_payout = max_accepted_payout.to_asset();
   op.percent_hbd = percent_hbd;
   op.allow_curation_rewards = allow_curation_rewards;
   op.allow_votes = allow_votes;
@@ -1098,14 +1096,14 @@ void database_fixture::vote( const std::string& _author, const std::string& _per
   trx.operations.clear();
 }
 
-void database_fixture::claim_reward_balance( const std::string& account, const asset& reward_hive, const asset& reward_hbd,
-                                             const asset& reward_vests, const fc::ecc::private_key& key )
+void database_fixture::claim_reward_balance( const std::string& account, const HIVE_asset& reward_hive, const HBD_asset& reward_hbd,
+                                             const VEST_asset& reward_vests, const fc::ecc::private_key& key )
 {
   claim_reward_balance_operation op;
   op.account = account;
-  op.reward_hive = reward_hive;
-  op.reward_hbd = reward_hbd;
-  op.reward_vests = reward_vests;
+  op.reward_hive = reward_hive.to_asset();
+  op.reward_hbd = reward_hbd.to_asset();
+  op.reward_vests = reward_vests.to_asset();
 
   push_transaction( op, key );
 }
@@ -1154,13 +1152,13 @@ void database_fixture::create_with_pow2( const std::string& _worker_account, con
   push_transaction( op, _private_key );
 }
 
-void database_fixture::create_with_delegation( const std::string& creator, const std::string& new_account_name, 
-  const fc::ecc::public_key& public_key, const fc::ecc::private_key& posting_key, const asset& delegation,
+void database_fixture::create_with_delegation( const std::string& creator, const std::string& new_account_name,
+  const fc::ecc::public_key& public_key, const fc::ecc::private_key& posting_key, const VEST_asset& delegation,
   const fc::ecc::private_key& key )
 {
   account_create_with_delegation_operation op;
-  op.fee = db->get_witness_schedule_object().median_props.account_creation_fee;
-  op.delegation = delegation;
+  op.fee = db->get_witness_schedule_object().median_props.account_creation_fee.to_asset();
+  op.delegation = delegation.to_asset();
   op.creator = creator;
   op.new_account_name = new_account_name;
   op.owner = authority( 1, public_key, 1 );
@@ -1172,11 +1170,11 @@ void database_fixture::create_with_delegation( const std::string& creator, const
   push_transaction( op, key );
 }
 
-void database_fixture::claim_account( const std::string& creator, const asset& fee, const fc::ecc::private_key& key )
+void database_fixture::claim_account( const std::string& creator, const HIVE_asset& fee, const fc::ecc::private_key& key )
   {
     claim_account_operation claim_account;
     claim_account.creator = creator;
-    claim_account.fee = fee;
+    claim_account.fee = fee.to_asset();
 
     push_transaction( claim_account, key );
   }
@@ -1269,6 +1267,11 @@ vector< operation > database_fixture::get_last_operations( uint32_t num_ops )
     ops.emplace_back( std::move( op ) );
   }
   return ops;
+}
+
+std::string database_fixture::asset_to_string( const asset& a )
+{
+  return hive::protocol::legacy_asset::from_asset( a ).to_string();
 }
 
 void database_fixture::validate_database()

@@ -74,7 +74,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
       fixture.generate_block();
       fixture.db->_log_hardforks = true;
 
-      fixture.vest( HIVE_INIT_MINER_NAME, ASSET( "10.000 TESTS" ) );
+      fixture.vest( HIVE_INIT_MINER_NAME, HIVE_asset( 10'000 ) );
 
       // Fill up the rest of the required miners
       for( int i = HIVE_NUM_INIT_MINERS; i < HIVE_MAX_WITNESSES; i++ )

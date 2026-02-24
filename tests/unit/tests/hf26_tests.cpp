@@ -70,7 +70,7 @@ BOOST_AUTO_TEST_CASE( update_operation )
       BOOST_REQUIRE_EQUAL( (bool)executor, true );
 
       ACTORS_EXT( (*executor), (alice) );
-      executor->fund( "alice", ASSET( "1000.000 TESTS" ) );
+      executor->fund( "alice", HIVE_asset( 1'000'000 ) );
       executor->generate_block();
 
       executor->db_plugin->debug_update( [=]( database& db )
@@ -100,7 +100,7 @@ BOOST_AUTO_TEST_CASE( update_operation )
       tx.set_expiration( executor->db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
       executor->push_transaction( tx, alice_private_key );
 
-      executor->vest( "bob", ASSET( "1.000 TESTS" ) );
+      executor->vest( "bob", HIVE_asset( 1'000 ) );
 
       auto exec_update_op = [&]( const std::string& old_key,  const std::string& new_key, bool is_exception )
       {
@@ -292,8 +292,8 @@ BOOST_AUTO_TEST_CASE( pack_transaction_basic )
       BOOST_REQUIRE_EQUAL( (bool)executor, true );
 
       ACTORS_EXT( (*executor), (alice)(bob) );
-      executor->fund( "alice", ASSET( "1000.000 TESTS" ) );
-      executor->fund( "bob", ASSET( "1000.000 TESTS" ) );
+      executor->fund( "alice", HIVE_asset( 1'000'000 ) );
+      executor->fund( "bob", HIVE_asset( 1'000'000 ) );
       executor->generate_block();
 
       auto _get_trx = []( ptr_hardfork_database_fixture& executor, const std::vector<operation>& ops )
@@ -314,12 +314,12 @@ BOOST_AUTO_TEST_CASE( pack_transaction_basic )
       {
         BOOST_TEST_MESSAGE( "Executing operation using legacy/hf26 serialization - transfer operation" );
 
-        auto _66 = asset( 66, HIVE_SYMBOL );
+        auto _66 = HIVE_asset( 66 );
 
         transfer_operation _op;
         _op.from    = "alice";
         _op.to      = "bob";
-        _op.amount  = _66;
+        _op.amount  = _66.to_asset();
 
         {
           auto _alice_balance_previous  = executor->get_hive_balance( "alice" );

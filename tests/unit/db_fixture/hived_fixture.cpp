@@ -225,7 +225,7 @@ json_rpc_database_fixture::json_rpc_database_fixture()
   generate_block();
   db->_log_hardforks = true;
 
-  vest( HIVE_INIT_MINER_NAME, ASSET( "10.000 TESTS" ) );
+  vest( HIVE_INIT_MINER_NAME, HIVE_asset( 10'000 ) );
 
   // Fill up the rest of the required miners
   for( int i = HIVE_NUM_INIT_MINERS; i < HIVE_MAX_WITNESSES; i++ )
