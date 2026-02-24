@@ -560,6 +560,22 @@ verify_api_generation_poetry_lock_stability:
   tags:
     - public-runner-docker
 
+verify_shared_tools_poetry_lock_stability:
+  stage: static_code_analysis
+  extends: .verify_poetry_lock_stability_template
+  variables:
+    PYPROJECT_DIR: "$CI_PROJECT_DIR/tests/python/hive-local-tools/shared-tools"
+  tags:
+    - public-runner-docker
+
+verify_test_tools_tests_local_tools_poetry_lock_stability:
+  stage: static_code_analysis
+  extends: .verify_poetry_lock_stability_template
+  variables:
+    PYPROJECT_DIR: "$CI_PROJECT_DIR/tests/python/test_tools_tests/local-tools"
+  tags:
+    - public-runner-docker
+
 # Detect what type of files changed to enable test-only optimization
 # Sets TESTS_ONLY=true when only test files changed (no source code)
 detect_changes:
