@@ -1623,14 +1623,20 @@ build_openapi_spec_image:
     OPENAPI_IMAGE_NAME: "openapi-spec"
     OPENAPI_DOCKERFILE_PATH: "libraries/plugins/apis/documentation/Dockerfile"
     OPENAPI_BUILD_CONTEXT: "libraries/plugins/apis/documentation"
-    GIT_DEPTH: "1"
     GIT_SUBMODULE_STRATEGY: "none"
   script:
     # Login to GitLab registry
     - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" "$CI_REGISTRY" --password-stdin
 
-    # Check if this is a protected version tag
+    # Determine API version from git and build image
     - |
+      if [ -n "$CI_COMMIT_TAG" ]; then
+        API_VERSION="$CI_COMMIT_TAG"
+      else
+        API_VERSION=$(git describe --tags 2>/dev/null || echo "$CI_COMMIT_SHORT_SHA")
+      fi
+      echo "API version: $API_VERSION"
+
       if [ -n "$CI_COMMIT_TAG" ] && [[ "$CI_COMMIT_TAG" =~ ^[01v].* ]]; then
         echo "This is a protected version tag: $CI_COMMIT_TAG"
 
@@ -1640,6 +1646,7 @@ build_openapi_spec_image:
         # Build and push to multiple registries with multiple tags in one command
         docker buildx build \
           --file "$OPENAPI_DOCKERFILE_PATH" \
+          --build-arg API_VERSION="$API_VERSION" \
           --cache-from "type=registry,ref=$CI_REGISTRY_IMAGE/$OPENAPI_IMAGE_NAME:cache" \
           --cache-to "type=registry,mode=max,ref=$CI_REGISTRY_IMAGE/$OPENAPI_IMAGE_NAME:cache" \
           --provenance=false \
@@ -1652,13 +1659,14 @@ build_openapi_spec_image:
         # Build and push with commit SHA tag only
         docker buildx build \
           --file "$OPENAPI_DOCKERFILE_PATH" \
+          --build-arg API_VERSION="$API_VERSION" \
           --cache-from "type=registry,ref=$CI_REGISTRY_IMAGE/$OPENAPI_IMAGE_NAME:cache" \
           --cache-to "type=registry,mode=max,ref=$CI_REGISTRY_IMAGE/$OPENAPI_IMAGE_NAME:cache" \
           --provenance=false \
           --tag "$CI_REGISTRY_IMAGE/$OPENAPI_IMAGE_NAME:$CI_COMMIT_SHORT_SHA" \
           --push \
           "$OPENAPI_BUILD_CONTEXT"
-        
+
         if [ -n "$CI_COMMIT_TAG" ]; then
           echo "Tag $CI_COMMIT_TAG does not match protected version patterns, skipping version tagging"
         fi
