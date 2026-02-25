@@ -50,7 +50,7 @@ namespace hive { namespace chain {
       bool      force_replay = false;
     };
     virtual void open_and_init( const block_log_open_args& bl_open_args, bool read_only,
-                                database* lib_access ) = 0;
+                                bool write_fallback, database* lib_access ) = 0;
     virtual void reopen_for_writing() = 0;
     virtual void close_storage() = 0;
 

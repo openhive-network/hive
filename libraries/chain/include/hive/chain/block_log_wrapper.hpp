@@ -21,7 +21,7 @@ namespace hive { namespace chain {
     /// For part 1, opens all parts from part 1 onward. For non-first parts, opens just the single file.
     static block_log_wrapper_t create_opened_wrapper( const fc::path& the_path,
       appbase::application& app, blockchain_worker_thread_pool& thread_pool,
-      bool read_only );
+      bool read_only, bool write_fallback = true );
     static block_log_wrapper_t create_limited_wrapper( const fc::path& dir,
       appbase::application& app, blockchain_worker_thread_pool& thread_pool,
       uint32_t start_from_part = 1 );
@@ -37,7 +37,7 @@ namespace hive { namespace chain {
 
     // Required by block_storage_i:
     virtual void open_and_init( const block_log_open_args& bl_open_args, bool read_only,
-                                database* db ) override;
+                                bool write_fallback, database* db ) override;
     virtual void reopen_for_writing() override;
     virtual void close_storage() override;
     virtual void append( const full_block_ptr_t& full_block, const bool is_at_live_sync ) override;
@@ -141,12 +141,15 @@ namespace hive { namespace chain {
       part_file_names_t& part_file_names, bool allow_splitting_monolithic_log,
       full_block_ptr_t state_head_block );
     /// @brief Used internally by create_opened_wrapper
-    void open_and_init( const fc::path& path, bool read_only, uint32_t start_from_part = 1 );
+    void open_and_init( const fc::path& path, bool read_only, bool write_fallback,
+                        uint32_t start_from_part = 1 );
     // Common helpers
-    void common_open_and_init( bool read_only, bool allow_splitting_monolithic_log,
+    void common_open_and_init( bool read_only, bool write_fallback,
+                               bool allow_splitting_monolithic_log,
                                full_block_ptr_t state_head_block, uint32_t start_from_part = 1 );
     using block_log_ptr_t = std::shared_ptr<block_log>;
-    void internal_open_and_init( block_log_ptr_t the_log, const fc::path& path, bool read_only );
+    void internal_open_and_init( block_log_ptr_t the_log, const fc::path& path, bool read_only,
+                                 bool write_fallback );
     uint32_t validate_tail_part_number( uint32_t tail_part_number, uint32_t head_part_number ) const;
 
     block_log_ptr_t get_head_log() const;
