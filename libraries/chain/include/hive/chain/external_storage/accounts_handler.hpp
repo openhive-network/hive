@@ -57,7 +57,6 @@ class accounts_handler : public executor_interface, public external_storage_snap
 
     virtual const assets_object* get_asset_account( const account_id_type& account_id, bool is_required ) const = 0;
     virtual const recovery_object* get_recovery_account( const account_id_type& account_id, bool is_required ) const = 0;
-    virtual const manabars_rc_object* get_manabars_rc_account( const account_id_type& account_id, bool is_required ) const = 0;
     virtual const delayed_votes_object* get_delayed_votes_account( const account_id_type& account_id, bool is_required ) const = 0;
 
     virtual account_metadata get_volatile_account_metadata( const account_name_type& account_name, bool account_metadata_is_required ) const = 0;

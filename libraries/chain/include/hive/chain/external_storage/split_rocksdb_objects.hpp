@@ -3,7 +3,6 @@
 #include <hive/utilities/benchmark_dumper.hpp>
 #include <hive/chain/detail/state/recovery_object.hpp>
 #include <hive/chain/detail/state/assets_object.hpp>
-#include <hive/chain/detail/state/manabars_rc_object.hpp>
 #include <hive/chain/detail/state/delayed_votes_object.hpp>
 
 #include <hive/chain/external_storage/allocator_helper.hpp>
@@ -102,6 +101,13 @@ public:
     , last_post_edit( obj.get_last_post_edit() )
     , last_vote_time( obj.get_last_vote_time() )
     , next_vesting_withdrawal( obj.get_next_vesting_withdrawal() )
+    , voting_manabar( obj.get_voting_manabar() )
+    , downvote_manabar( obj.get_downvote_manabar() )
+    , rc_manabar( obj.get_rc_manabar() )
+    , rc_adjustment( obj.get_rc_adjustment() )
+    , delegated_rc( obj.get_delegated_rc() )
+    , received_rc( obj.get_received_rc() )
+    , last_max_rc( obj.get_last_max_rc() )
   {}
 
   template<typename Return_Type>
@@ -144,6 +150,13 @@ public:
         o.set_last_post_edit( this->last_post_edit );
         o.set_last_vote_time( this->last_vote_time );
         o.set_next_vesting_withdrawal( this->next_vesting_withdrawal );
+        o.get_voting_manabar() = this->voting_manabar;
+        o.get_downvote_manabar() = this->downvote_manabar;
+        o.get_rc_manabar() = this->rc_manabar;
+        o.set_rc_adjustment( this->rc_adjustment );
+        o.set_delegated_rc( this->delegated_rc );
+        o.set_received_rc( this->received_rc );
+        o.set_last_max_rc( this->last_max_rc );
       });
       return &obj;
     }
@@ -181,6 +194,13 @@ public:
       obj->set_last_post_edit( this->last_post_edit );
       obj->set_last_vote_time( this->last_vote_time );
       obj->set_next_vesting_withdrawal( this->next_vesting_withdrawal );
+      obj->get_voting_manabar() = this->voting_manabar;
+      obj->get_downvote_manabar() = this->downvote_manabar;
+      obj->get_rc_manabar() = this->rc_manabar;
+      obj->set_rc_adjustment( this->rc_adjustment );
+      obj->set_delegated_rc( this->delegated_rc );
+      obj->set_received_rc( this->received_rc );
+      obj->set_last_max_rc( this->last_max_rc );
       return Return_Type( obj );
     }
   }
@@ -216,67 +236,6 @@ public:
   time_point_sec        last_post_edit;
   time_point_sec        last_vote_time;
   time_point_sec        next_vesting_withdrawal = fc::time_point_sec::maximum();
-};
-
-/**
- * RocksDB serialization class for manabars_rc_object
- */
-class rocksdb_manabars_rc_object
-{
-public:
-  rocksdb_manabars_rc_object() {}
-
-  rocksdb_manabars_rc_object( const manabars_rc_object& obj )
-    : id( obj.get_id() )
-    , account_id( account_id_type( account_object::id_type( obj.get_id().get_value() ) ) )
-    , voting_manabar( obj.get_voting_manabar() )
-    , downvote_manabar( obj.get_downvote_manabar() )
-    , rc_manabar( obj.get_rc_manabar() )
-    , rc_adjustment( obj.get_rc_adjustment() )
-    , delegated_rc( obj.get_delegated_rc() )
-    , received_rc( obj.get_received_rc() )
-    , last_max_rc( obj.get_last_max_rc() )
-  {}
-
-  template<typename Return_Type>
-  Return_Type build( chainbase::database& db )
-  {
-    if constexpr ( std::is_same_v<Return_Type, const manabars_rc_object*> )
-    {
-      // Note: create_no_undo internally adds allocator
-      const auto& obj = db.create_no_undo<manabars_rc_object>(
-                      id.get_value() );
-      // Restore all manabar and RC fields via modify_no_undo to avoid undo tracking
-      db.modify_no_undo( obj, [this]( manabars_rc_object& o )
-      {
-        o.get_voting_manabar() = this->voting_manabar;
-        o.get_downvote_manabar() = this->downvote_manabar;
-        o.get_rc_manabar() = this->rc_manabar;
-        o.set_rc_adjustment( this->rc_adjustment );
-        o.set_delegated_rc( this->delegated_rc );
-        o.set_received_rc( this->received_rc );
-        o.set_last_max_rc( this->last_max_rc );
-      });
-      return &obj;
-    }
-    else
-    {
-      auto obj = std::make_shared<manabars_rc_object>(
-                          allocator_helper::get_allocator<manabars_rc_object, manabars_rc_index>( db ),
-                          id.get_value() );
-      obj->get_voting_manabar() = this->voting_manabar;
-      obj->get_downvote_manabar() = this->downvote_manabar;
-      obj->get_rc_manabar() = this->rc_manabar;
-      obj->set_rc_adjustment( this->rc_adjustment );
-      obj->set_delegated_rc( this->delegated_rc );
-      obj->set_received_rc( this->received_rc );
-      obj->set_last_max_rc( this->last_max_rc );
-      return Return_Type( obj );
-    }
-  }
-
-  manabars_rc_id_type   id;
-  account_id_type       account_id;
   util::manabar         voting_manabar;
   util::manabar         downvote_manabar;
   util::manabar         rc_manabar;
@@ -354,10 +313,6 @@ FC_REFLECT( hive::chain::rocksdb_assets_object,
           (hbd_seconds_last_update)(hbd_last_interest_payment)
           (last_account_update)(last_post)(last_root_post)
           (last_post_edit)(last_vote_time)(next_vesting_withdrawal)
-        )
-
-FC_REFLECT( hive::chain::rocksdb_manabars_rc_object,
-          (id)(account_id)
           (voting_manabar)(downvote_manabar)(rc_manabar)
           (rc_adjustment)(delegated_rc)(received_rc)(last_max_rc)
         )

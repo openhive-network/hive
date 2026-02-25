@@ -31,7 +31,6 @@
 #include <hive/protocol/hive_custom_operations.hpp>
 
 #include <hive/chain/rc/rc_objects.hpp>
-#include <hive/chain/detail/state/manabars_rc_object.hpp>
 #include <hive/chain/detail/state/assets_object.hpp>
 
 #include "../db_fixture/clean_database_fixture.hpp"
@@ -41,8 +40,8 @@
 using namespace hive::chain;
 using namespace hive::protocol;
 
-// Helper to get manabars_rc_object for an account
-#define GET_MRC( account_name ) db->get_manabars_rc_account( db->get_account( account_name ).get_id() )
+// Helper to get assets_object for an account
+#define GET_MRC( account_name ) db->get_asset_account( db->get_account( account_name ).get_id() )
 #define GET_ASSETS( account_name ) db->get_asset_account( db->get_account( account_name ).get_id() )
 
 BOOST_FIXTURE_TEST_SUITE( direct_rc_delegation, clean_database_fixture )
@@ -1146,16 +1145,16 @@ BOOST_AUTO_TEST_CASE( rc_delegation_regeneration )
     auto burn_mana = [this]( const account_name_type& account_name, int64_t amount_to_burn, const fc::ecc::private_key& key )
     {
       const auto& account = db->get_account( account_name );
-      const auto& mrc = db->get_manabars_rc_account( account.get_id() );
-      auto initial_mana = mrc.get_rc_manabar().current_mana;
+      const auto& assets = db->get_asset_account( account.get_id() );
+      auto initial_mana = assets.get_rc_manabar().current_mana;
       auto current_mana = initial_mana;
 
       // burn mana with self-transfers (use memo to avoid duplicates)
       while( current_mana + amount_to_burn > initial_mana )
       {
         transfer( account_name, account_name, ASSET( "1.000 TBD" ), std::to_string( current_mana ), key );
-        const auto& mrc_updated = db->get_manabars_rc_account( account.get_id() );
-        current_mana = mrc_updated.get_rc_manabar().current_mana;
+        const auto& assets_updated = db->get_asset_account( account.get_id() );
+        current_mana = assets_updated.get_rc_manabar().current_mana;
       }
 
       return current_mana;
@@ -1163,10 +1162,9 @@ BOOST_AUTO_TEST_CASE( rc_delegation_regeneration )
     auto mana_regen_per_second = [this]( const account_name_type& account_name, int64_t current_mana )
     {
       const auto& account = db->get_account( account_name );
-      const auto& mrc = db->get_manabars_rc_account( account.get_id() );
       const auto& assets = db->get_asset_account( account.get_id() );
-      hive::chain::util::manabar_params manabar_params( account.get_maximum_rc( mrc, assets ).value, HIVE_RC_REGEN_TIME );
-      auto manabar = mrc.get_rc_manabar();
+      hive::chain::util::manabar_params manabar_params( account.get_maximum_rc( assets ).value, HIVE_RC_REGEN_TIME );
+      auto manabar = assets.get_rc_manabar();
       // Magic number: we regenerate based off the future, because otherwise the manabar will already be up to date and won't regenerate
       manabar.regenerate_mana( manabar_params, db->get_dynamic_global_properties().time.sec_since_epoch() + 1 );
       return manabar.current_mana - current_mana;
@@ -1255,8 +1253,10 @@ BOOST_AUTO_TEST_CASE( rc_delegation_removal_no_rc )
     push_transaction(custom_op, alice_post_key);
     generate_block();
 
-    const auto& bob_rc_account_initial = GET_MRC( "bob" );
-    auto current_mana = bob_rc_account_initial.get_rc_manabar().current_mana;
+    // Verify bob has RC from delegation
+    const auto& bob_assets = GET_ASSETS( "bob" );
+    BOOST_REQUIRE_GT( bob_assets.get_rc_manabar().current_mana, 100000 );
+    auto current_mana = bob_assets.get_rc_manabar().current_mana;
 
     // Magic number, it's hard to exactly hit 0 RC, but since we delegated 100k rc, removing the delegation would put us to 0
     while (current_mana > 50000) {
@@ -1278,10 +1278,9 @@ BOOST_AUTO_TEST_CASE( rc_delegation_removal_no_rc )
     generate_block();
 
     const auto& bob_account = db->get_account( "bob" );
-    const auto& bob_rc_account = GET_MRC( "bob" );
-    const auto& bob_assets = GET_ASSETS( "bob" );
-    BOOST_REQUIRE( bob_rc_account.get_rc_manabar().current_mana == 0 );
-    BOOST_REQUIRE( bob_account.get_maximum_rc( bob_rc_account, bob_assets ) >= 0 );
+    const auto& bob_assets_2 = GET_ASSETS( "bob" );
+    BOOST_REQUIRE( bob_assets_2.get_rc_manabar().current_mana == 0 );
+    BOOST_REQUIRE( bob_account.get_maximum_rc( bob_assets ) >= 0 );
 
     validate_database();
   }
@@ -1363,12 +1362,12 @@ BOOST_AUTO_TEST_CASE( rc_negative_regeneration_bug )
     //int64_t full_rc = db->get_account( "delegatee" ).get_maximum_rc();
     //int64_t min_rc = -1 * ( HIVE_RC_MAX_NEGATIVE_PERCENT * full_rc ) / HIVE_100_PERCENT;
     int64_t min_rc = 0;
-    auto rc_set_negative_mana = [&]( const manabars_rc_object& mrc )
+    auto rc_set_negative_mana = [&]( const assets_object& assets )
     {
-      db->modify( mrc, [&]( manabars_rc_object& acc )
+      db->modify( assets, [&]( assets_object& a )
       {
-        acc.get_rc_manabar().current_mana = min_rc;
-        acc.get_rc_manabar().last_update_time = ( db->head_block_time() - fc::seconds( HIVE_RC_REGEN_TIME ) ).sec_since_epoch();
+        a.get_rc_manabar().current_mana = min_rc;
+        a.get_rc_manabar().last_update_time = ( db->head_block_time() - fc::seconds( HIVE_RC_REGEN_TIME ) ).sec_since_epoch();
       } );
     };
     rc_set_negative_mana( delegatee_rc );
@@ -1592,8 +1591,8 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_delegatee_performance )
     for( auto& account : accounts )
     {
       const auto& _account = db->get_account( account.account );
-      const auto& _mrc = db->get_manabars_rc_account( _account.get_id() );
-      BOOST_REQUIRE( _mrc.get_received_rc() == 10 );
+      const auto& _assets = db->get_asset_account( _account.get_id() );
+      BOOST_REQUIRE( _assets.get_received_rc() == 10 );
     }
 
     BOOST_TEST_MESSAGE( "remove delegations" );
@@ -1614,8 +1613,8 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_delegatee_performance )
     for( auto& account : accounts )
     {
       const auto& _account = db->get_account( account.account );
-      const auto& _mrc = db->get_manabars_rc_account( _account.get_id() );
-      BOOST_REQUIRE( _mrc.get_received_rc() == ( i >= removal_limit ? 10 : 0 ) );
+      const auto& _assets = db->get_asset_account( _account.get_id() );
+      BOOST_REQUIRE( _assets.get_received_rc() == ( i >= removal_limit ? 10 : 0 ) );
       ++i;
     }
     generate_block();
@@ -1627,8 +1626,8 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_delegatee_performance )
     for( auto& account : accounts )
     {
       const auto& _account = db->get_account( account.account );
-      const auto& _mrc = db->get_manabars_rc_account( _account.get_id() );
-      BOOST_REQUIRE( _mrc.get_received_rc() == ( i >= removal_limit * 2 ? 10 : i >= removal_limit ? 5 : 0 ) );
+      const auto& _assets = db->get_asset_account( _account.get_id() );
+      BOOST_REQUIRE( _assets.get_received_rc() == ( i >= removal_limit * 2 ? 10 : i >= removal_limit ? 5 : 0 ) );
       ++i;
     }
 

@@ -21,7 +21,7 @@ struct accounts_stats
  * - withdraw_routes, pending_escrow_transfers, open_recurrent_transfers, witnesses_voted_for
  * - savings_withdraw_requests, can_vote_flag, mined, memo_key, proxied_vsf_votes
  *
- * Other account data (recovery, assets, manabars_rc, time, delayed_votes) are stored
+ * Other account data (recovery, assets, delayed_votes) are stored
  * in separate split objects (recovery_object, assets_object, etc.)
  */
 class rocksdb_account_object

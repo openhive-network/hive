@@ -720,7 +720,6 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
   //permanent objects (no operation to remove)
   BOOST_CHECK_EQUAL( alignof( recovery_object ), 4u );
   BOOST_CHECK_EQUAL( alignof( assets_object ), 16u );
-  BOOST_CHECK_EQUAL( alignof( manabars_rc_object ), 8u );
   BOOST_CHECK_EQUAL( alignof( delayed_votes_object ), 8u );
   BOOST_CHECK_EQUAL( alignof( account_object ), 8u );
   BOOST_CHECK_EQUAL( sizeof( account_object ), 136u ); //1.3M+ (includes last_access_block + changed_flag for RocksDB archiving)
@@ -1544,8 +1543,7 @@ BOOST_AUTO_TEST_CASE( chain_object_checksum )
   hive::chain::util::decoded_types_data_storage dtds;
 
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::recovery_object>(dtds), "44f1de977d2512832fdb7f2635b379df8cdb2326" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::assets_object>(dtds), "83798d79df8da495840a2909aa33783cc14668cd" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::manabars_rc_object>(dtds), "06a53cca491da2a05713d9b3e73f0cb5b60080d2" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::assets_object>(dtds), "86b848a1beb98110b0bcac5eca0e26cb9a5ef6cb" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::delayed_votes_object>(dtds), "4bb1eaf49d4a10f24cb990eab033f710502f767b" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::account_object>(dtds), "19fd2b3a16df9f5aa3468f5fd9fe8fd408e12768" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::account_metadata_object>(dtds), "379587b74d3b399774c0daceb8df6626ab0adb22" );

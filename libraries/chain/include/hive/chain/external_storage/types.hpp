@@ -40,7 +40,6 @@ enum ColumnTypes
   // Split object columns
   RECOVERY,
   ASSETS,
-  MANABARS_RC,
   DELAYED_VOTES
 };
 
