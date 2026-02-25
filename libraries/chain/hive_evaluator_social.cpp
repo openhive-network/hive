@@ -688,32 +688,32 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
   uint128_t used_mana = 0;
   int64_t abs_rshares = 0;
 
-  _db.modify( voter_assets, [&]( assets_object& a )
+  _db.modify( voter_assets, [&]( assets_object& voter_assets )
   {
-    util::update_manabar( dgpo, voter, a );
+    util::update_manabar( dgpo, voter, voter_assets );
 
     if( _db.has_hardfork( HIVE_HARDFORK_1_28_STABLE_VOTE ) )
     {
-      used_mana = ( uint128_t( voter.get_effective_vesting_shares( a ).value ) * abs_weight * 60 * 60 * 24 ) / HIVE_100_PERCENT;
+      used_mana = ( uint128_t( voter.get_effective_vesting_shares( voter_assets ).value ) * abs_weight * 60 * 60 * 24 ) / HIVE_100_PERCENT;
     }
     else if( dgpo.downvote_pool_percent && o.weight < 0 )
     {
       if( _db.has_hardfork( HIVE_HARDFORK_0_22__3485 ) )
       {
-        used_mana = ( std::max( ( ( uint128_t( a.get_downvote_manabar().current_mana ) * HIVE_100_PERCENT ) / dgpo.downvote_pool_percent ),
-                        uint128_t( a.get_voting_manabar().current_mana ) )
+        used_mana = ( std::max( ( ( uint128_t( voter_assets.get_downvote_manabar().current_mana ) * HIVE_100_PERCENT ) / dgpo.downvote_pool_percent ),
+                        uint128_t( voter_assets.get_voting_manabar().current_mana ) )
               * abs_weight * 60 * 60 * 24 ) / HIVE_100_PERCENT;
       }
       else
       {
-        used_mana = ( std::max( ( uint128_t( a.get_downvote_manabar().current_mana * HIVE_100_PERCENT ) / dgpo.downvote_pool_percent ),
-                        uint128_t( a.get_voting_manabar().current_mana ) )
+        used_mana = ( std::max( ( uint128_t( voter_assets.get_downvote_manabar().current_mana * HIVE_100_PERCENT ) / dgpo.downvote_pool_percent ),
+                        uint128_t( voter_assets.get_voting_manabar().current_mana ) )
               * abs_weight * 60 * 60 * 24 ) / HIVE_100_PERCENT;
       }
     }
     else
     {
-      used_mana = ( uint128_t( a.get_voting_manabar().current_mana ) * abs_weight * 60 * 60 * 24 ) / HIVE_100_PERCENT;
+      used_mana = ( uint128_t( voter_assets.get_voting_manabar().current_mana ) * abs_weight * 60 * 60 * 24 ) / HIVE_100_PERCENT;
     }
 
     int64_t max_vote_denom = dgpo.vote_power_reserve_rate * HIVE_VOTING_MANA_REGENERATION_SECONDS;
@@ -725,16 +725,16 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
       // note that downvote requires more mana than necessary, which prevents accounts with no stake from downvoting;
       // while the effect might be unintentional, it was like that for long time and there is enough drama with
       // downvotes as it is, enabling "no effect" downvotes is not necessary, so we are not correcting it
-      FC_ASSERT( a.get_voting_manabar().current_mana + a.get_downvote_manabar().current_mana > fc::uint128_to_int64( used_mana ),
+      FC_ASSERT( voter_assets.get_voting_manabar().current_mana + voter_assets.get_downvote_manabar().current_mana > fc::uint128_to_int64( used_mana ),
         "Account does not have enough mana to downvote. voting_mana: ${v} downvote_mana: ${d} required_mana: ${r}",
-        ( "v", a.get_voting_manabar().current_mana )( "d", a.get_downvote_manabar().current_mana )( "r", fc::uint128_to_int64( used_mana ) ) );
+        ( "v", voter_assets.get_voting_manabar().current_mana )( "d", voter_assets.get_downvote_manabar().current_mana )( "r", fc::uint128_to_int64( used_mana ) ) );
     }
     else
     {
       // even after HF28 it is not possible to burn all mana in one 50 vote transaction due to "round up" code above
-      FC_ASSERT( a.get_voting_manabar().has_mana( fc::uint128_to_int64( used_mana ) ),
+      FC_ASSERT( voter_assets.get_voting_manabar().has_mana( fc::uint128_to_int64( used_mana ) ),
         "Account does not have enough mana to vote. voting_mana: ${v} required_mana: ${r}",
-        ( "v", a.get_voting_manabar().current_mana )( "r", fc::uint128_to_int64( used_mana ) ) );
+        ( "v", voter_assets.get_voting_manabar().current_mana )( "r", fc::uint128_to_int64( used_mana ) ) );
     }
 
     abs_rshares = fc::uint128_to_int64(used_mana);
@@ -749,7 +749,7 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
 
     if( dgpo.downvote_pool_percent && o.weight < 0 )
     {
-      if( fc::uint128_to_int64(used_mana) > a.get_downvote_manabar().current_mana )
+      if( fc::uint128_to_int64(used_mana) > voter_assets.get_downvote_manabar().current_mana )
       {
         /* used mana is always less than downvote_mana + voting_mana because the amount used
           * is a fraction of max( downvote_mana, voting_mana ). If more mana is consumed than
@@ -757,20 +757,20 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
           * is strictly smaller than voting_mana. This is the same reason why a check is not
           * required when using voting mana on its own as an upvote.
           */
-        auto remainder = fc::uint128_to_int64(used_mana) - a.get_downvote_manabar().current_mana;
-        a.get_downvote_manabar().use_mana( a.get_downvote_manabar().current_mana );
-        a.get_voting_manabar().use_mana( remainder );
+        auto remainder = fc::uint128_to_int64(used_mana) - voter_assets.get_downvote_manabar().current_mana;
+        voter_assets.get_downvote_manabar().use_mana( voter_assets.get_downvote_manabar().current_mana );
+        voter_assets.get_voting_manabar().use_mana( remainder );
       }
       else
       {
-        a.get_downvote_manabar().use_mana( fc::uint128_to_int64(used_mana) );
+        voter_assets.get_downvote_manabar().use_mana( fc::uint128_to_int64(used_mana) );
       }
     }
     else
     {
-      a.get_voting_manabar().use_mana( fc::uint128_to_int64(used_mana) );
+      voter_assets.get_voting_manabar().use_mana( fc::uint128_to_int64(used_mana) );
     }
-    a.set_last_vote_time( _now ); //not needed for consensus
+    voter_assets.set_last_vote_time( _now ); //not needed for consensus
   } );
 
   /// this is the rshares voting for or against the post
