@@ -12,7 +12,6 @@
 #include <hive/chain/evaluator_registry.hpp>
 #include <hive/chain/detail/state/assets_object.hpp>
 #include <hive/chain/detail/state/recovery_object.hpp>
-#include <hive/chain/detail/state/manabars_rc_object.hpp>
 #include <hive/chain/detail/state/delayed_votes_object.hpp>
 #include <hive/chain/detail/state/tiny_account_object.hpp>
 
@@ -160,8 +159,7 @@ const account_object& create_account( database& db, const account_name_type& nam
   bool mana_100_percent = !db.has_hardfork( HIVE_HARDFORK_0_20__2539 );
 
   db.create< recovery_object >( recovery_account ? recovery_account->get_id() : account_id_type() );
-  const auto& new_assets = db.create< assets_object >( name, initial_delegation );
-  db.create< manabars_rc_object >( _creation_time, mana_100_percent, rc_adjustment_from_fee );
+  const auto& new_assets = db.create< assets_object >( name, initial_delegation, _creation_time, mana_100_percent, rc_adjustment_from_fee );
   const auto& new_dvotes = db.create< delayed_votes_object >();
   db.create< tiny_account_object >( new_account, new_assets, new_dvotes );
 

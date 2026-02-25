@@ -28,7 +28,7 @@ namespace hive { namespace chain {
  * Helper function to align split object IDs with account IDs.
  *
  * When treasury accounts are created during hardforks, there may already be many
- * regular accounts. The split object indexes (recovery, assets, manabars_rc, time,
+ * regular accounts. The split object indexes (recovery, assets, time,
  * delayed_votes) may have lower next_id values than the account index. This function
  * creates placeholder split objects to advance the split object indexes' next_id
  * to match the account index's next_id, ensuring 1:1 ID correspondence.
@@ -56,15 +56,6 @@ void database::align_split_object_ids_with_accounts()
     while( idx.get_next_id() < assets_object::id_type( next_account_id.get_value() ) )
     {
       create< assets_object >();
-    }
-  }
-
-  // Align manabars_rc_index
-  {
-    const auto& idx = get_index< manabars_rc_index >();
-    while( idx.get_next_id() < manabars_rc_object::id_type( next_account_id.get_value() ) )
-    {
-      create< manabars_rc_object >();
     }
   }
 
@@ -542,16 +533,15 @@ void database::apply_hardfork( uint32_t hardfork )
         for( auto it = idx.begin(); it != idx.end(); ++it )
         {
           const auto& acc = get_account( it->get_name() );
-          const auto& _manabars_rc_object = get_manabars_rc_account( acc.get_id() );
           const auto& _assets_obj = get_asset_account( acc.get_id() );
 
-          modify( _manabars_rc_object, [&]( manabars_rc_object& mrc )
+          modify( _assets_obj, [&]( assets_object& a )
           {
-            mrc.set_rc_adjustment( HIVE_RC_HISTORICAL_ACCOUNT_CREATION_ADJUSTMENT );
-            mrc.get_rc_manabar().last_update_time = now.sec_since_epoch();
-            auto max_rc = acc.get_maximum_rc( mrc, _assets_obj ).value;
-            mrc.get_rc_manabar().current_mana = max_rc;
-            mrc.set_last_max_rc( max_rc );
+            a.set_rc_adjustment( HIVE_RC_HISTORICAL_ACCOUNT_CREATION_ADJUSTMENT );
+            a.get_rc_manabar().last_update_time = now.sec_since_epoch();
+            auto max_rc = acc.get_maximum_rc( a ).value;
+            a.get_rc_manabar().current_mana = max_rc;
+            a.set_last_max_rc( max_rc );
           } );
         }
 
@@ -580,7 +570,6 @@ void database::apply_hardfork( uint32_t hardfork )
           // Create all split objects for the treasury account
           create< recovery_object >();
           const auto& new_assets = create< assets_object >( treasury_name );
-          create< manabars_rc_object >();
           const auto& new_dvotes = create< delayed_votes_object >();
           create< tiny_account_object >( new_account, new_assets, new_dvotes );
           push_virtual_operation(
@@ -698,7 +687,6 @@ void database::apply_hardfork( uint32_t hardfork )
         // Create all split objects for the treasury account
         create< recovery_object >();
         const auto& new_assets = create< assets_object >( treasury_name );
-        create< manabars_rc_object >();
         const auto& new_dvotes = create< delayed_votes_object >();
         create< tiny_account_object >( new_account, new_assets, new_dvotes );
         push_virtual_operation(

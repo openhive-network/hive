@@ -5,7 +5,6 @@
 #include <hive/plugins/witness/witness_plugin.hpp>
 
 #include <hive/chain/detail/state/witness_objects_multiindex.hpp>
-#include <hive/chain/detail/state/manabars_rc_object.hpp>
 #include <hive/chain/detail/state/assets_object.hpp>
 #include <hive/chain/detail/state/tiny_account_object.hpp>
 
@@ -97,12 +96,11 @@ void clean_database_fixture::validate_database()
     for( const auto& tiny : idx )
     {
       const auto& account = db->get_account( tiny.get_name() );
-      const auto& mrc = db->get_manabars_rc_account( account.get_id() );
       const auto& assets = db->get_asset_account( account.get_id() );
-      int64_t max_rc = account.get_maximum_rc( mrc, assets ).value;
-      FC_ASSERT( max_rc == mrc.get_last_max_rc(),
+      int64_t max_rc = account.get_maximum_rc( assets ).value;
+      FC_ASSERT( max_rc == assets.get_last_max_rc(),
         "Account ${a} max RC changed from ${old} to ${new} without triggering an op, noticed on block ${b} in validate_database()",
-        ( "a", account.get_name() )( "old", mrc.get_last_max_rc() )( "new", max_rc )( "b", db->head_block_num() ) );
+        ( "a", account.get_name() )( "old", assets.get_last_max_rc() )( "new", max_rc )( "b", db->head_block_num() ) );
     }
   }
 }

@@ -18,7 +18,6 @@
 // Split object headers for multiindex access
 #include <hive/chain/detail/state/recovery_object.hpp>
 #include <hive/chain/detail/state/assets_object.hpp>
-#include <hive/chain/detail/state/manabars_rc_object.hpp>
 #include <hive/chain/detail/state/delayed_votes_object.hpp>
 #include <hive/chain/detail/state/tiny_account_object.hpp>
 
@@ -185,18 +184,6 @@ struct rocksdb_reader<account_object, account_name_type, Return_Type>
         }
       }
 
-      // Manabars_rc object
-      if( !db.find< manabars_rc_object, by_id >( manabars_rc_object::id_type( aid ) ) )
-      {
-        PinnableSlice split_buffer;
-        if( rocksdb_storage_reader<uint32_slice_t>::read_from_storage( provider, uint32_slice_t( account_id ), ColumnTypes::MANABARS_RC, split_buffer ) )
-        {
-          rocksdb_manabars_rc_object split_obj;
-          load( split_obj, split_buffer.data(), split_buffer.size() );
-          split_obj.build<const manabars_rc_object*>( db );
-        }
-      }
-
       // Delayed_votes object
       if( !db.find< delayed_votes_object, by_id >( delayed_votes_object::id_type( aid ) ) )
       {
@@ -344,7 +331,7 @@ bool rocksdb_account_archive::on_irreversible_block_impl( uint32_t block_num, co
 }
 
 // Specialized implementation for account_object which skips accounts with pending governance votes
-// Also archives the associated split objects (recovery, assets, manabars_rc, delayed_votes)
+// Also archives the associated split objects (recovery, assets, delayed_votes)
 bool rocksdb_account_archive::on_irreversible_block_impl_account( uint32_t block_num, const std::vector<ColumnTypes>& column_types )
 {
   const auto& _idx = db.get_index<account_index, by_block>();
@@ -383,7 +370,6 @@ bool rocksdb_account_archive::on_irreversible_block_impl_account( uint32_t block
     // Find all split objects before removing anything - use by_id index
     const auto* recovery_ptr = db.find< recovery_object, by_id >( recovery_object::id_type( aid ) );
     const auto* assets_ptr = db.find< assets_object, by_id >( assets_object::id_type( aid ) );
-    const auto* manabars_ptr = db.find< manabars_rc_object, by_id >( manabars_rc_object::id_type( aid ) );
     const auto* delayed_votes_ptr = db.find< delayed_votes_object, by_id >( delayed_votes_object::id_type( aid ) );
 
     // Archive changed account data to RocksDB
@@ -405,13 +391,10 @@ bool rocksdb_account_archive::on_irreversible_block_impl_account( uint32_t block
     if( assets_ptr )
       rocksdb_split_writer<assets_object, rocksdb_assets_object>::write_to_storage( provider, *assets_ptr, ColumnTypes::ASSETS );
 
-    if( manabars_ptr )
-      rocksdb_split_writer<manabars_rc_object, rocksdb_manabars_rc_object>::write_to_storage( provider, *manabars_ptr, ColumnTypes::MANABARS_RC );
-
     if( delayed_votes_ptr )
       rocksdb_split_writer<delayed_votes_object, rocksdb_delayed_votes_object>::write_to_storage( provider, *delayed_votes_ptr, ColumnTypes::DELAYED_VOTES );
 
-    if( !_do_flush && (recovery_ptr || assets_ptr || manabars_ptr || delayed_votes_ptr) )
+    if( !_do_flush && (recovery_ptr || assets_ptr || delayed_votes_ptr) )
       _do_flush = true;
 
     // Remove the account from chainbase
@@ -424,9 +407,6 @@ bool rocksdb_account_archive::on_irreversible_block_impl_account( uint32_t block
 
     if( assets_ptr )
       db.remove_no_undo( *assets_ptr );
-
-    if( manabars_ptr )
-      db.remove_no_undo( *manabars_ptr );
 
     if( delayed_votes_ptr )
       db.remove_no_undo( *delayed_votes_ptr );
@@ -961,27 +941,6 @@ const recovery_object* rocksdb_account_archive::get_recovery_account( const acco
 
   if( is_required )
     FC_ASSERT( !"RECOVERY_NOT_FOUND", "Recovery object for account with id `${id}` not found", ("id", account_id) );
-
-  return nullptr;
-}
-
-const manabars_rc_object* rocksdb_account_archive::get_manabars_rc_account( const account_id_type& account_id, bool is_required ) const
-{
-  const auto aid = account_id.get_value();
-  const auto* _found = db.find< manabars_rc_object, by_id >( manabars_rc_object::id_type( aid ) );
-  if( _found )
-    return _found;
-
-  // Try to restore from RocksDB (get_account restores all split objects)
-  if( get_account( account_id, false /*account_is_required*/ ) )
-  {
-    _found = db.find< manabars_rc_object, by_id >( manabars_rc_object::id_type( aid ) );
-    if( _found )
-      return _found;
-  }
-
-  if( is_required )
-    FC_ASSERT( !"MANABARS_RC_NOT_FOUND", "Manabars RC object for account with id `${id}` not found", ("id", account_id) );
 
   return nullptr;
 }

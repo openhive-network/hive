@@ -318,9 +318,6 @@ namespace chain {
       const recovery_object& get_recovery_account(  const account_id_type& id )const;
       const recovery_object* find_recovery_account( const account_id_type& id )const;
 
-      const manabars_rc_object& get_manabars_rc_account(  const account_id_type& id )const;
-      const manabars_rc_object* find_manabars_rc_account( const account_id_type& id )const;
-
       const delayed_votes_object& get_delayed_votes_account(  const account_id_type& id )const;
       const delayed_votes_object* find_delayed_votes_account( const account_id_type& id )const;
 
