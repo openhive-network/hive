@@ -42,6 +42,9 @@
 
 #include <hive/chain/rc/rc_objects.hpp>
 #include <hive/chain/detail/state/tiny_account_object.hpp>
+#include <hive/chain/detail/state/assets_object.hpp>
+#include <hive/chain/detail/state/recovery_object.hpp>
+#include <hive/chain/detail/state/delayed_votes_object.hpp>
 
 #include <fc/uint128.hpp>
 
@@ -400,11 +403,15 @@ const account_metadata_object* database::find_account_metadata( const account_na
 
 const account_object& database::get_account( const account_id_type& id )const
 {
+  if( is_replaying_block() )
+    return chainbase::database::get< account_object >( account_object::id_type( id.get_value() ) );
   return *( get_accounts_handler().get_account( id, true /*account_is_required*/ ) );
 }
 
 const account_object* database::find_account( const account_id_type& id )const
 {
+  if( is_replaying_block() )
+    return chainbase::database::find< account_object >( account_object::id_type( id.get_value() ) );
   return get_accounts_handler().get_account( id, false /*account_is_required*/ );
 }
 
@@ -460,32 +467,44 @@ account database::find_volatile_account( const account_name_type& name )const
 
 const assets_object& database::get_asset_account( const account_id_type& id )const
 {
+  if( is_replaying_block() )
+    return chainbase::database::get< assets_object >( assets_object::id_type( id.get_value() ) );
   return *( get_accounts_handler().get_asset_account( id, true /*is_required*/ ) );
 }
 
 const assets_object* database::find_asset_account( const account_id_type& id )const
 {
+  if( is_replaying_block() )
+    return chainbase::database::find< assets_object >( assets_object::id_type( id.get_value() ) );
   return get_accounts_handler().get_asset_account( id, false /*is_required*/ );
 }
 
 const recovery_object& database::get_recovery_account( const account_id_type& id )const
 {
+  if( is_replaying_block() )
+    return chainbase::database::get< recovery_object >( recovery_object::id_type( id.get_value() ) );
   return *( get_accounts_handler().get_recovery_account( id, true /*is_required*/ ) );
 }
 
 const recovery_object* database::find_recovery_account( const account_id_type& id )const
 {
+  if( is_replaying_block() )
+    return chainbase::database::find< recovery_object >( recovery_object::id_type( id.get_value() ) );
   return get_accounts_handler().get_recovery_account( id, false /*is_required*/ );
 }
 
 
 const delayed_votes_object& database::get_delayed_votes_account( const account_id_type& id )const
 {
+  if( is_replaying_block() )
+    return chainbase::database::get< delayed_votes_object >( delayed_votes_object::id_type( id.get_value() ) );
   return *( get_accounts_handler().get_delayed_votes_account( id, true /*is_required*/ ) );
 }
 
 const delayed_votes_object* database::find_delayed_votes_account( const account_id_type& id )const
 {
+  if( is_replaying_block() )
+    return chainbase::database::find< delayed_votes_object >( delayed_votes_object::id_type( id.get_value() ) );
   return get_accounts_handler().get_delayed_votes_account( id, false /*is_required*/ );
 }
 

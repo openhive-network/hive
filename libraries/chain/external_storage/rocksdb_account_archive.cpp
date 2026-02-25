@@ -306,7 +306,8 @@ bool rocksdb_account_archive::on_irreversible_block_impl( uint32_t block_num, co
     Regarding: `itr->get_last_access_block() < block_num`
     Here must be `<` not `<=` because `get_last_access_block` is a number of last block, but `block_num` is the current block.
   */
-  while( _itr != _idx.end() && _itr->get_last_access_block() + retention_blocks < block_num )
+  uint32_t _archived = 0;
+  while( _itr != _idx.end() && _itr->get_last_access_block() + retention_blocks < block_num && _archived < max_archives_per_block )
   {
     const auto& _current = *_itr;
     ++_itr;
@@ -322,6 +323,7 @@ bool rocksdb_account_archive::on_irreversible_block_impl( uint32_t block_num, co
     }
 
     db.remove_no_undo( _current );
+    ++_archived;
   }
 
   accounts_stats::stats.item_moved_to_storage.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
@@ -347,7 +349,8 @@ bool rocksdb_account_archive::on_irreversible_block_impl_account( uint32_t block
     Regarding: `itr->get_last_access_block() < block_num`
     Here must be `<` not `<=` because `get_last_access_block` is a number of last block, but `block_num` is the current block.
   */
-  while( _itr != _idx.end() && _itr->get_last_access_block() + retention_blocks < block_num )
+  uint32_t _archived = 0;
+  while( _itr != _idx.end() && _itr->get_last_access_block() + retention_blocks < block_num && _archived < max_archives_per_block )
   {
     const auto& _current = *_itr;
     ++_itr;
@@ -410,6 +413,8 @@ bool rocksdb_account_archive::on_irreversible_block_impl_account( uint32_t block
 
     if( delayed_votes_ptr )
       db.remove_no_undo( *delayed_votes_ptr );
+
+    ++_archived;
   }
 
   accounts_stats::stats.item_moved_to_storage.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
@@ -430,7 +435,8 @@ bool rocksdb_account_archive::on_irreversible_block_impl_metadata( uint32_t bloc
   bool _do_flush = false;
   uint32_t _cnt = 0;
 
-  while( _itr != _idx.end() && _itr->get_last_access_block() + retention_blocks < block_num )
+  uint32_t _archived = 0;
+  while( _itr != _idx.end() && _itr->get_last_access_block() + retention_blocks < block_num && _archived < max_archives_per_block )
   {
     const auto& _current = *_itr;
     ++_itr;
@@ -452,6 +458,7 @@ bool rocksdb_account_archive::on_irreversible_block_impl_metadata( uint32_t bloc
     }
 
     db.remove_no_undo( _current );
+    ++_archived;
   }
 
   accounts_stats::stats.item_moved_to_storage.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
