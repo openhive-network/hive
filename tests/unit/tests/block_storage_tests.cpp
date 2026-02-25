@@ -2,6 +2,7 @@
 #include <boost/test/unit_test.hpp>
 
 #include <hive/chain/block_log.hpp>
+#include <hive/chain/block_log_wrapper.hpp>
 #include <hive/chain/block_storage_interface.hpp>
 #include <hive/plugins/state_snapshot/state_snapshot_plugin.hpp>
 #include <hive/plugins/block_api/block_api.hpp>
@@ -1360,6 +1361,169 @@ BOOST_AUTO_TEST_CASE( snapshot_replay_pruned_to_pruned )
                                                post_dump_processor,
                                                post_load_processor, 
                                                extended_block_count /*extended_block_count*/);
+  } catch (fc::exception& e) {
+    edump((e.to_detail_string()));
+    throw;
+  }
+}
+
+/**
+ * Tests for the write_fallback parameter added to block_log open chain.
+ * See: https://gitlab.syncad.com/hive/hive/-/issues/817
+ *
+ * When write_fallback=false and read_only=true, block_log should NOT attempt
+ * to create missing files or auto-repair artifacts.
+ * When write_fallback=true and read_only=true, the existing behavior
+ * (create empty files, auto-repair artifacts) should be preserved.
+ */
+
+BOOST_AUTO_TEST_CASE( write_fallback_false_rejects_nonexistent_block_log )
+{
+  try {
+    // write_fallback=false + read_only=true on a nonexistent block log
+    // should fail, not silently create the file.
+    fc::temp_directory temp_dir( hive::utilities::temp_directory_path() );
+    fc::path nonexistent_part = temp_dir.path() / "block_log_part.0001";
+    BOOST_REQUIRE( !fc::exists( nonexistent_part ) );
+
+    appbase::application app;
+    blockchain_worker_thread_pool thread_pool( app );
+    block_log log( app );
+
+    // With write_fallback=false, opening a nonexistent file read-only should throw.
+    BOOST_REQUIRE_THROW(
+      log.open_and_init( nonexistent_part,
+                         true /*read_only*/,
+                         false /*write_fallback*/,
+                         false /*enable_compression*/,
+                         15 /*compression_level*/,
+                         true /*enable_block_log_auto_fixing*/,
+                         thread_pool ),
+      fc::exception
+    );
+
+    // The file should NOT have been created.
+    BOOST_REQUIRE( !fc::exists( nonexistent_part ) );
+  } catch (fc::exception& e) {
+    edump((e.to_detail_string()));
+    throw;
+  }
+}
+
+BOOST_AUTO_TEST_CASE( write_fallback_true_creates_nonexistent_block_log )
+{
+  try {
+    // write_fallback=true + read_only=true on a nonexistent block log
+    // should create the empty file (preserving existing hived behavior).
+    fc::temp_directory temp_dir( hive::utilities::temp_directory_path() );
+    fc::path nonexistent_part = temp_dir.path() / "block_log_part.0001";
+    BOOST_REQUIRE( !fc::exists( nonexistent_part ) );
+
+    appbase::application app;
+    blockchain_worker_thread_pool thread_pool( app );
+    block_log log( app );
+
+    // With write_fallback=true, the file should be created even in read-only mode.
+    log.open_and_init( nonexistent_part,
+                       true /*read_only*/,
+                       true /*write_fallback*/,
+                       false /*enable_compression*/,
+                       15 /*compression_level*/,
+                       true /*enable_block_log_auto_fixing*/,
+                       thread_pool );
+
+    BOOST_REQUIRE( fc::exists( nonexistent_part ) );
+    log.close();
+  } catch (fc::exception& e) {
+    edump((e.to_detail_string()));
+    throw;
+  }
+}
+
+BOOST_AUTO_TEST_CASE( write_fallback_false_opens_existing_block_log_readonly )
+{
+  try {
+    // First create a block log with some data, then reopen it with
+    // write_fallback=false to verify read-only access works on existing files.
+    fc::temp_directory temp_dir( hive::utilities::temp_directory_path() );
+    fc::path log_path = temp_dir.path() / "block_log_part.0001";
+
+    appbase::application app;
+    blockchain_worker_thread_pool thread_pool( app );
+
+    // Create a block log with one block.
+    {
+      block_log log( app );
+      log.open( log_path, thread_pool, false /*read_only*/, false /*write_fallback*/ );
+
+      std::vector<std::shared_ptr<full_transaction_type>> full_txs;
+      hive::protocol::signed_block_header b1;
+      b1.witness = "alice";
+      b1.previous = hive::protocol::block_id_type();
+      auto fb1 = full_block_type::create_from_block_header_and_transactions( b1, full_txs, nullptr );
+      log.append( fb1, false );
+      log.flush();
+      log.close();
+    }
+
+    BOOST_REQUIRE( fc::exists( log_path ) );
+
+    // Reopen with write_fallback=false, read_only=true — should succeed
+    // on existing file with valid artifacts.
+    {
+      block_log log( app );
+      log.open_and_init( log_path,
+                         true /*read_only*/,
+                         false /*write_fallback*/,
+                         false /*enable_compression*/,
+                         15 /*compression_level*/,
+                         true /*enable_block_log_auto_fixing*/,
+                         thread_pool );
+
+      // Verify we can read the block.
+      auto head = log.head();
+      BOOST_REQUIRE( head );
+      BOOST_REQUIRE_EQUAL( head->get_block_num(), 1u );
+      BOOST_REQUIRE_EQUAL( head->get_block_header().witness, "alice" );
+
+      auto block1 = log.read_block_by_num( 1 );
+      BOOST_REQUIRE( block1 );
+      BOOST_REQUIRE_EQUAL( block1->get_block_num(), 1u );
+
+      log.close();
+    }
+  } catch (fc::exception& e) {
+    edump((e.to_detail_string()));
+    throw;
+  }
+}
+
+BOOST_AUTO_TEST_CASE( write_fallback_parameter_passed_through_wrapper )
+{
+  try {
+    // Verify that write_fallback=false propagates through block_log_wrapper
+    // to block_log, preventing file creation for nonexistent split log dirs.
+    fc::temp_directory temp_dir( hive::utilities::temp_directory_path() );
+    fc::path data_dir = temp_dir.path() / "empty_dir";
+    fc::create_directories( data_dir );
+
+    appbase::application app;
+    blockchain_worker_thread_pool thread_pool( app );
+
+    auto wrapper = std::make_shared<block_log_wrapper>( MAX_FILES_OF_SPLIT_BLOCK_LOG, app, thread_pool );
+    block_log_wrapper::block_log_open_args args;
+    args.data_dir = data_dir;
+
+    // With write_fallback=false on an empty directory, opening should throw
+    // because there's no block log to read and no file creation is allowed.
+    BOOST_REQUIRE_THROW(
+      wrapper->open_and_init( args, true /*read_only*/, false /*write_fallback*/, nullptr ),
+      fc::exception
+    );
+
+    // Verify no block log files were created.
+    fc::path expected_part = data_dir / "block_log_part.0001";
+    BOOST_REQUIRE( !fc::exists( expected_part ) );
   } catch (fc::exception& e) {
     edump((e.to_detail_string()));
     throw;
