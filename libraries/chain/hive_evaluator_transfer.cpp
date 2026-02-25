@@ -896,11 +896,8 @@ void delegate_vesting_shares_evaluator::do_apply( const delegate_vesting_shares_
     _db.modify( delegator_assets, [&]( assets_object& a )
     {
       a.set_delegated_vesting( a.get_delegated_vesting() + op_vesting_shares );
-    } );
 
-    if( _db.has_hardfork( HIVE_HARDFORK_0_20__2539 ) )
-    {
-      _db.modify( delegator_assets, [&]( assets_object& a )
+      if( _db.has_hardfork( HIVE_HARDFORK_0_20__2539 ) )
       {
         a.get_voting_manabar().use_mana( op_vesting_shares.amount.value );
 
@@ -912,8 +909,8 @@ void delegate_vesting_shares_evaluator::do_apply( const delegate_vesting_shares_
         {
           a.get_downvote_manabar().use_mana( op_vesting_shares.amount.value );
         }
-      } );
-    }
+      }
+    } );
 
     _db.modify( delegatee_assets, [&]( assets_object& a )
     {
@@ -938,11 +935,8 @@ void delegate_vesting_shares_evaluator::do_apply( const delegate_vesting_shares_
     _db.modify( delegator_assets, [&]( assets_object& a )
     {
       a.set_delegated_vesting( a.get_delegated_vesting() + delta );
-    } );
 
-    if( _db.has_hardfork( HIVE_HARDFORK_0_20__2539 ) )
-    {
-      _db.modify( delegator_assets, [&]( assets_object& a )
+      if( _db.has_hardfork( HIVE_HARDFORK_0_20__2539 ) )
       {
         a.get_voting_manabar().use_mana( delta.amount.value );
 
@@ -954,8 +948,8 @@ void delegate_vesting_shares_evaluator::do_apply( const delegate_vesting_shares_
         {
           a.get_downvote_manabar().use_mana( delta.amount.value );
         }
-      } );
-    }
+      }
+    } );
 
     _db.modify( delegatee_assets, [&]( assets_object& a )
     {

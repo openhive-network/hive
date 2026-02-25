@@ -44,6 +44,10 @@ class rocksdb_account_archive : public accounts_handler
     // Specialized implementation for account_object (skips accounts with pending governance votes)
     bool on_irreversible_block_impl_account( uint32_t block_num, const std::vector<ColumnTypes>& column_types );
 
+    /// Maximum number of objects archived per irreversible block per index scan.
+    /// Prevents I/O spikes when many accounts become archival-eligible simultaneously.
+    static constexpr uint32_t max_archives_per_block = 10'000;
+
     /// The earliest block number at which any account could possibly need archival.
     /// When block_num < this value, the entire archival scan is skipped.
     uint32_t _next_archival_check_block = 0;
