@@ -9,7 +9,7 @@ namespace hive { namespace chain {
 
 /*static*/ std::shared_ptr< block_log_wrapper > block_log_wrapper::create_opened_wrapper(
   const fc::path& the_path, appbase::application& app,
-  blockchain_worker_thread_pool& thread_pool, bool read_only )
+  blockchain_worker_thread_pool& thread_pool, bool read_only, bool write_fallback /*= true*/ )
 {
   FC_ASSERT( not fc::exists( the_path ) || fc::is_regular_file( the_path ),
     "Path ${p} does NOT point to regular file.", ("p", the_path) );
@@ -17,7 +17,7 @@ namespace hive { namespace chain {
   if( the_path.filename().string() == block_log_file_name_info::_legacy_file_name )
   {
     auto writer = std::make_shared< block_log_wrapper >( LEGACY_SINGLE_FILE_BLOCK_LOG, app, thread_pool );
-    writer->open_and_init( the_path, read_only );
+    writer->open_and_init( the_path, read_only, write_fallback );
     return writer;
   }
 
@@ -27,7 +27,7 @@ namespace hive { namespace chain {
     if( part_number == 1 )
     {
       auto writer = std::make_shared< block_log_wrapper >( MAX_FILES_OF_SPLIT_BLOCK_LOG, app, thread_pool );
-      writer->open_and_init( the_path, read_only, 1/*start_from_part*/ );
+      writer->open_and_init( the_path, read_only, write_fallback, 1/*start_from_part*/ );
       return writer;
     }
     else
@@ -38,13 +38,13 @@ namespace hive { namespace chain {
       writer->_open_args.data_dir = the_path.parent_path();
       writer->skip_first_parts( part_number - 1 );
       auto single_log = std::make_shared< block_log >( app );
-      writer->internal_open_and_init( single_log, the_path, read_only );
+      writer->internal_open_and_init( single_log, the_path, read_only, write_fallback );
       writer->_logs.push_back( single_log );
       return writer;
     }
   }
 
-  FC_THROW_EXCEPTION( fc::parse_error_exception, 
+  FC_THROW_EXCEPTION( fc::parse_error_exception,
     "Provided block log path ${path} matches neither legacy single file name nor split log part file name pattern.",
     ("path", the_path) );
 }
@@ -79,19 +79,19 @@ block_log_wrapper::block_log_wrapper( int block_log_split, appbase::application&
 {}
 
 void block_log_wrapper::open_and_init( const block_log_open_args& bl_open_args, bool read_only,
-  database* db )
+  bool write_fallback, database* db )
 {
   _open_args = bl_open_args;
-  common_open_and_init( read_only, true /*allow_splitting_monolithic_log*/, 
+  common_open_and_init( read_only, write_fallback, true /*allow_splitting_monolithic_log*/,
     db ? db->get_last_irreversible_block_data() : full_block_ptr_t() /*state_head_block*/ );
 }
 
-void block_log_wrapper::open_and_init( const fc::path& path, bool read_only, 
+void block_log_wrapper::open_and_init( const fc::path& path, bool read_only, bool write_fallback,
   uint32_t start_from_part /*= 1*/ )
 {
   _open_args.data_dir = path.parent_path();
-  common_open_and_init( read_only, false /*allow_splitting_monolithic_log*/, full_block_ptr_t(),
-                        start_from_part );
+  common_open_and_init( read_only, write_fallback, false /*allow_splitting_monolithic_log*/,
+                        full_block_ptr_t(), start_from_part );
 }
 
 void block_log_wrapper::reopen_for_writing()
@@ -99,7 +99,8 @@ void block_log_wrapper::reopen_for_writing()
   // Only head part file is ever opened for writing.
   ilog("Reopening block log for writing.");
   auto head_log_ptr = get_head_log();
-  internal_open_and_init( head_log_ptr, head_log_ptr->get_log_file(), false/*read_only*/ );
+  internal_open_and_init( head_log_ptr, head_log_ptr->get_log_file(), false/*read_only*/,
+                          true/*write_fallback*/ );
 }
 
 void block_log_wrapper::close_storage()
@@ -462,10 +463,11 @@ block_log_wrapper::full_block_range_t block_log_wrapper::read_block_range_by_num
 }
 
 void block_log_wrapper::internal_open_and_init( block_log_ptr_t the_log, const fc::path& path,
-                                                bool read_only )
+                                                bool read_only, bool write_fallback )
 {
   the_log->open_and_init( path,
                           read_only,
+                          write_fallback,
                           _open_args.enable_block_log_compression,
                           _open_args.block_log_compression_level,
                           _open_args.enable_block_log_auto_fixing,
@@ -614,7 +616,8 @@ void block_log_wrapper::look_for_part_files( part_file_names_t& part_file_names 
   }
 }
 
-void block_log_wrapper::common_open_and_init( bool read_only, bool allow_splitting_monolithic_log, 
+void block_log_wrapper::common_open_and_init( bool read_only, bool write_fallback,
+  bool allow_splitting_monolithic_log,
   full_block_ptr_t state_head_block, uint32_t start_from_part /*= 1*/ )
 {
   FC_ASSERT( start_from_part > 0 );
@@ -624,7 +627,7 @@ void block_log_wrapper::common_open_and_init( bool read_only, bool allow_splitti
     auto single_part_log = std::make_shared<block_log>( _app );
     auto log_file_path = _open_args.data_dir / block_log_file_name_info::_legacy_file_name;
     ilog("Opening monolithic block log file ${log_file_path}", (log_file_path));
-    internal_open_and_init( single_part_log, log_file_path, read_only );
+    internal_open_and_init( single_part_log, log_file_path, read_only, write_fallback );
     _logs.push_back( single_part_log );
     return;
   }
@@ -676,7 +679,7 @@ void block_log_wrapper::common_open_and_init( bool read_only, bool allow_splitti
       fc::path part_file_path( _open_args.data_dir / block_log_file_name_info::get_nth_part_file_name( part_number ).c_str() );
 
       const auto first_part_log = std::make_shared<block_log>( _app );
-      internal_open_and_init( first_part_log, part_file_path, read_only );
+      internal_open_and_init( first_part_log, part_file_path, read_only, write_fallback );
       _logs.push_back( first_part_log );
       return;
     }
@@ -736,7 +739,7 @@ void block_log_wrapper::common_open_and_init( bool read_only, bool allow_splitti
     // Open all non-head parts for reading only (won't be appended),
     // use provided flag for head part.
     bool open_ro = part_number < head_part_number ? true : read_only;
-    internal_open_and_init( nth_part_log, cit->part_file, open_ro );
+    internal_open_and_init( nth_part_log, cit->part_file, open_ro, write_fallback );
     // Part numbers are always positive.
     std::atomic_store( &( _logs[ part_number-1 ] ), nth_part_log );
     if( last_block_id != block_id_type() )
@@ -824,7 +827,7 @@ void block_log_wrapper::internal_append( uint32_t first_block_num, size_t block_
     }
     fc::path new_path = _open_args.data_dir / block_log_file_name_info::get_nth_part_file_name( block_part_number ).c_str();
     const auto new_part_log = std::make_shared<block_log>( _app );
-    internal_open_and_init( new_part_log, new_path, false /*read_only*/ );
+    internal_open_and_init( new_part_log, new_path, false /*read_only*/, true /*write_fallback*/ );
     // Top log must keep valid head block. Append first, add on top later.
     do_appending( new_part_log );
     _logs.push_back( new_part_log );

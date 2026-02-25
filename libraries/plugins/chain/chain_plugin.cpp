@@ -935,7 +935,7 @@ void chain_plugin_impl::open()
     db.pre_open( db_open_args );
     db.with_write_lock([&]()
     {
-      block_storage->open_and_init( bl_open_args, true/*read_only*/, &db );
+      block_storage->open_and_init( bl_open_args, true/*read_only*/, true/*write_fallback*/, &db );
     });
     db.open( db_open_args );
 
