@@ -977,6 +977,7 @@ const delayed_votes_object* rocksdb_account_archive::get_delayed_votes_account( 
 
 void rocksdb_account_archive::save_snapshot( const hive::chain::prepare_snapshot_supplement_notification& note )
 {
+  provider->persist_cached_lib();
   snapshot->save_snapshot( note );
 }
 
