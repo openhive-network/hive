@@ -196,7 +196,6 @@ void database::init_genesis()
     {
       create< recovery_object >();
       const auto& assets_obj = create< assets_object >( acc.get_name() );
-      create< manabars_rc_object >();
       const auto& dvotes_obj = create< delayed_votes_object >();
       create< tiny_account_object >( acc, assets_obj, dvotes_obj );
     };

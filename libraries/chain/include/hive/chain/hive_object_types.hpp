@@ -91,7 +91,6 @@ enum object_type
   // Account split objects
   recovery_object_type,
   assets_object_type,
-  manabars_rc_object_type,
   delayed_votes_object_type,
 };
 
@@ -141,7 +140,6 @@ class tiny_account_object;
 // Account split objects
 class recovery_object;
 class assets_object;
-class manabars_rc_object;
 class delayed_votes_object;
 
 
@@ -190,7 +188,6 @@ typedef oid_ref< rc_expired_delegation_object           > rc_expired_delegtion_i
 // Account split objects id types
 typedef oid_ref< recovery_object                        > recovery_id_type;
 typedef oid_ref< assets_object                          > assets_id_type;
-typedef oid_ref< manabars_rc_object                     > manabars_rc_id_type;
 typedef oid_ref< delayed_votes_object                   > delayed_votes_id_type;
 
 enum bandwidth_type
@@ -347,7 +344,6 @@ FC_REFLECT_ENUM( hive::chain::object_type,
 
             (recovery_object_type)
             (assets_object_type)
-            (manabars_rc_object_type)
             (delayed_votes_object_type)
           )
 

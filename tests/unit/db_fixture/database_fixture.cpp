@@ -1033,15 +1033,15 @@ HIVE_asset database_fixture::get_vest_rewards_as_hive( const string& account_nam
 const util::manabar& database_fixture::get_voting_manabar( const string& account_name )const
 {
   const auto& acnt = db->get_account( account_name );
-  const auto& mrc = db->get_manabars_rc_account( acnt.get_id() );
-  return mrc.get_voting_manabar();
+  const auto& assets = db->get_asset_account( acnt.get_id() );
+  return assets.get_voting_manabar();
 }
 
 const util::manabar& database_fixture::get_downvote_manabar( const string& account_name )const
 {
   const auto& acnt = db->get_account( account_name );
-  const auto& mrc = db->get_manabars_rc_account( acnt.get_id() );
-  return mrc.get_downvote_manabar();
+  const auto& assets = db->get_asset_account( acnt.get_id() );
+  return assets.get_downvote_manabar();
 }
 
 share_type database_fixture::get_effective_vesting_shares( const string& account_name )const
