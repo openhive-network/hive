@@ -420,11 +420,17 @@ const account_object* database::find_account( const account_id_type& id )const
 
 const account_object& database::get_account( const account_name_type& name )const
 {
+  const auto* result = chainbase::database::find< account_object, by_name >( name );
+  if( BOOST_LIKELY( result != nullptr ) )
+    return *result;
   return *( get_accounts_handler().get_account( name, true /*account_is_required*/ ) );
 }
 
 const account_object* database::find_account( const account_name_type& name )const
 {
+  const auto* result = chainbase::database::find< account_object, by_name >( name );
+  if( BOOST_LIKELY( result != nullptr ) )
+    return result;
   return get_accounts_handler().get_account( name, false /*account_is_required*/ );
 }
 
