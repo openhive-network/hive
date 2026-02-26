@@ -674,12 +674,6 @@ void claim_reward_balance_evaluator::do_apply( const claim_reward_balance_operat
       a.set_vesting( a.get_vesting() + op_reward_vests );
       a.set_vest_rewards( a.get_vest_rewards() - op_reward_vests );
 
-      if( acnt.get_name() == "votovzla" )
-      {
-        ilog("01 Rewarding votovzla: ${block} ${xxx} ${vests}",
-          ("block", _db.head_block_num())("xxx", a.get_vest_rewards())("vests", op_reward_vests));
-      }
-
       a.set_vest_rewards_as_hive( a.get_vest_rewards_as_hive() - reward_vesting_hive_to_move );
     } );
   }
@@ -689,12 +683,6 @@ void claim_reward_balance_evaluator::do_apply( const claim_reward_balance_operat
     {
       a.set_vesting( a.get_vesting() + op_reward_vests );
       a.set_vest_rewards( a.get_vest_rewards() - op_reward_vests );
-
-      if( acnt.get_name() == "votovzla" )
-      {
-        ilog("01 Rewarding votovzla: ${block} ${xxx} ${vests}",
-          ("block", _db.head_block_num())("xxx", a.get_vest_rewards())("vests", op_reward_vests));
-      }
 
       a.set_vest_rewards_as_hive( a.get_vest_rewards_as_hive() - reward_vesting_hive_to_move );
     } );
