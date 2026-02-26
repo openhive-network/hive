@@ -1451,6 +1451,7 @@ authority_tests:
 
 generate_hived_flattened_openapi_definition:
   extends: .node_based_job_base
+  needs: []
   stage: build
   script:
     - npm install @apidevtools/json-schema-ref-parser@14.2.1 json-schema-merge-allof@0.8.1
