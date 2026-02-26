@@ -1311,11 +1311,11 @@ BOOST_AUTO_TEST_CASE( vesting_withdraw_route )
       BOOST_REQUIRE( implied_route.withdrawn == ( vesting_withdraw_rate - route_sam.withdrawn - route_bob.withdrawn ) );
 
       BOOST_REQUIRE( alice_assets.get_vesting() == old_alice_vesting - vesting_withdraw_rate );
-      BOOST_REQUIRE( alice_assets.get_balance() == old_alice_balance + asset( ( vesting_withdraw_rate.amount * HIVE_1_PERCENT * 20 ) / HIVE_100_PERCENT, VESTS_SYMBOL ) * db->get_dynamic_global_properties()->get_vesting_share_price().to_price() );
+      BOOST_REQUIRE( alice_assets.get_balance() == old_alice_balance + asset( ( vesting_withdraw_rate.amount * HIVE_1_PERCENT * 20 ) / HIVE_100_PERCENT, VESTS_SYMBOL ) * db->get_dynamic_global_properties().get_vesting_share_price().to_price() );
       BOOST_REQUIRE( bob_assets.get_vesting() == old_bob_vesting + asset( ( vesting_withdraw_rate.amount * HIVE_1_PERCENT * 50 ) / HIVE_100_PERCENT, VESTS_SYMBOL ) );
       BOOST_REQUIRE( bob_assets.get_balance() == old_bob_balance );
       BOOST_REQUIRE( sam_assets.get_vesting() == old_sam_vesting );
-      BOOST_REQUIRE( sam_assets.get_balance() ==  old_sam_balance + asset( ( vesting_withdraw_rate.amount * HIVE_1_PERCENT * 30 ) / HIVE_100_PERCENT, VESTS_SYMBOL ) * db->get_dynamic_global_properties()->get_vesting_share_price().to_price() );
+      BOOST_REQUIRE( sam_assets.get_balance() ==  old_sam_balance + asset( ( vesting_withdraw_rate.amount * HIVE_1_PERCENT * 30 ) / HIVE_100_PERCENT, VESTS_SYMBOL ) * db->get_dynamic_global_properties().get_vesting_share_price().to_price() );
 
       old_alice_balance = alice_assets.get_balance();
       old_alice_vesting = alice_assets.get_vesting();
@@ -1371,7 +1371,7 @@ BOOST_AUTO_TEST_CASE( vesting_withdraw_route )
       BOOST_REQUIRE( bob_assets.get_vesting() == old_bob_vesting + asset( ( vesting_withdraw_rate.amount * HIVE_1_PERCENT * 50 ) / HIVE_100_PERCENT, VESTS_SYMBOL ) );
       BOOST_REQUIRE( bob_assets.get_balance() == old_bob_balance );
       BOOST_REQUIRE( sam_assets.get_vesting() == old_sam_vesting );
-      BOOST_REQUIRE( sam_assets.get_balance() ==  old_sam_balance + asset( ( vesting_withdraw_rate.amount * HIVE_1_PERCENT * 50 ) / HIVE_100_PERCENT, VESTS_SYMBOL ) * db->get_dynamic_global_properties()->get_vesting_share_price().to_price() );
+      BOOST_REQUIRE( sam_assets.get_balance() ==  old_sam_balance + asset( ( vesting_withdraw_rate.amount * HIVE_1_PERCENT * 50 ) / HIVE_100_PERCENT, VESTS_SYMBOL ) * db->get_dynamic_global_properties().get_vesting_share_price().to_price() );
     }
   }
   FC_LOG_AND_RETHROW()
