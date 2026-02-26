@@ -590,22 +590,27 @@ reference = "gitlab-hive"
 
 [[package]]
 name = "hiveio-beekeepy"
-version = "1.28.6"
+version = "1.28.6.post20260226124737.dev0+unstable"
 description = "All in one package for beekeeper interaction via Python interface."
 optional = false
-python-versions = "<4,>=3.12"
+python-versions = ">=3.12,<4"
 groups = ["main"]
 files = [
-    {file = "hiveio_beekeepy-1.28.6-py3-none-any.whl", hash = "sha256:b4725690361effb7bea8d13752aef9341914992048da651d7ec11acecfeb8305"},
+    {file = "hiveio_beekeepy-1.28.6.post20260226124737.dev0+unstable-py3-none-any.whl", hash = "sha256:4a2d6106d06bbf289c7baf0d7ab1d36c57178ee5e9f0ed03203c7fcfd617b714"},
 ]
 
 [package.dependencies]
-aiohttp = ">=3.11.15"
-hiveio-schemas = ">=1.28.2"
-loguru = ">=0.7.2"
-psutil = ">=7.0.0"
-python-dateutil = ">=2.8.2"
-requests = ">=2.32.3"
+aiohttp = ">=3.11.15,<4.0.0"
+hiveio-schemas = ">=1.28.2,<2.0.0"
+loguru = ">=0.7.2,<0.8.0"
+psutil = ">=7.0.0,<8.0.0"
+python-dateutil = ">=2.8.2,<3.0.0"
+requests = ">=2.32.3,<3.0.0"
+
+[package.source]
+type = "legacy"
+url = "https://gitlab.syncad.com/api/v4/groups/136/-/packages/pypi/simple"
+reference = "gitlab-hive"
 
 [[package]]
 name = "hiveio-schemas"
