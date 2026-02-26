@@ -29,10 +29,10 @@ namespace detail
       app_status_api_impl( appbase::application& app )
       {
         auto update_app_status = [&](auto item) { app_status.update(item); };
-        _on_new_status_connection = app.get_status().add_new_status_handler(update_app_status);
-        _on_new_webserver_connection = app.get_status().add_new_webserver_handler(update_app_status);
-        _on_new_information_connection = app.get_status().add_new_information_handler(update_app_status);
-        _on_new_fork_connection = app.get_status().add_new_fork_handler(update_app_status);
+        _on_new_status_connection = app.status.add_new_status_handler(update_app_status);
+        _on_new_webserver_connection = app.status.add_new_webserver_handler(update_app_status);
+        _on_new_information_connection = app.status.add_new_information_handler(update_app_status);
+        _on_new_fork_connection = app.status.add_new_fork_handler(update_app_status);
       }
 
       ~app_status_api_impl()

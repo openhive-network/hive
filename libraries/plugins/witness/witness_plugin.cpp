@@ -1,5 +1,4 @@
 #include <hive/plugins/witness/witness_plugin.hpp>
-#include <appbase/io_service_wrapper.hpp>
 
 #include <hive/chain/database_exceptions.hpp>
 #include <hive/chain/notifications.hpp>
@@ -610,7 +609,7 @@ void witness_plugin::set_program_options(
 void witness_plugin::plugin_initialize(const boost::program_options::variables_map& options)
 { try {
   ilog( "Initializing witness plugin" );
-  my = std::make_unique< detail::witness_plugin_impl >( get_app().get_io_service().get(), get_app() );
+  my = std::make_unique< detail::witness_plugin_impl >( get_app().get_io_service(), get_app() );
 
   my->_chain_plugin.register_block_generator( get_name(), my->_block_producer );
 

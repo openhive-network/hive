@@ -182,7 +182,7 @@ void dhf_processor::transfer_payments( const time_point_sec& head_time, HBD_asse
       if( !fhistory.current_median_history.is_null() )
       {
         // Convert HBD to HIVE using median feed price
-        auto hive_amount = util::to_hive( fhistory.current_median_history, payment );
+        auto hive_amount = util::to_hive( fhistory.current_median_history.to_price(), payment );
         conversion = HIVE_asset( hive_amount.amount );
 
         // Treasury loses HBD, receiver gains HIVE

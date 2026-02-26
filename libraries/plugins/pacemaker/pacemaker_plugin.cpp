@@ -1,5 +1,4 @@
 #include <hive/plugins/pacemaker/pacemaker_plugin.hpp>
-#include <appbase/io_service_wrapper.hpp>
 
 #include <hive/chain/block_log.hpp>
 
@@ -210,7 +209,7 @@ void pacemaker_plugin::plugin_initialize( const boost::program_options::variable
 #endif
 
   ilog( "Initializing pacemaker plugin" );
-  my = std::make_unique< detail::pacemaker_plugin_impl >( get_app().get_io_service().get(), get_app() );
+  my = std::make_unique< detail::pacemaker_plugin_impl >( get_app().get_io_service(), get_app() );
 
   FC_ASSERT( options.count( "pacemaker-source" ) == 1, "Missing or redundant option pacemaker-source - path pointing to source of block emissions" );
   auto sp = options.at( "pacemaker-source" ).as<bfs::path>();
