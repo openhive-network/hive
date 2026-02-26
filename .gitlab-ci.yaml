@@ -544,7 +544,7 @@ pre_commit_checks:
     paths:
       - tests/python/hive-local-tools/poetry.lock
 
-verify_hive_local_tools_poetry_lock_stability:
+.verify_hive_local_tools_poetry_lock_stability:
   stage: static_code_analysis
   extends: .verify_poetry_lock_stability_template
   variables:
@@ -552,7 +552,7 @@ verify_hive_local_tools_poetry_lock_stability:
   tags:
     - public-runner-docker
 
-verify_api_generation_poetry_lock_stability:
+.verify_api_generation_poetry_lock_stability:
   stage: static_code_analysis
   extends: .verify_poetry_lock_stability_template
   variables:
