@@ -127,7 +127,7 @@ bool artifacts_file_is_not_valid(const fc::path& block_log_file_path, const bool
   return false;
 }
 
-hive::chain::block_log_wrapper::block_log_wrapper_t get_block_log_wrapper(const fc::path &block_log_path, appbase::application &app, hive::chain::blockchain_worker_thread_pool &thread_pool, bool read_only, bool write_fallback = true)
+hive::chain::block_log_wrapper::block_log_wrapper_t get_block_log_wrapper(const fc::path &block_log_path, appbase::application &app, hive::chain::blockchain_worker_thread_pool &thread_pool, bool read_only, bool write_fallback)
 {
   if (fc::is_directory(block_log_path))
   {
