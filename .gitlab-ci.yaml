@@ -637,6 +637,10 @@ quick_test_setup:
     - .skip_test_on_docs_only_with_quick_test
   # Default: skip in QUICK_TEST mode and on docs-only changes.
   # Jobs that support QUICK_TEST_JOBS override these rules.
+  before_script:
+    - !reference [.fetch_test_submodules, before_script]
+    - pip install ${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/hiveio_api/dist/*.whl
+    - pip list | grep hiveio-api
   variables:
     HIVED_PATH: "$CI_PROJECT_DIR/hived-testnet-binaries/hived"
     CLI_WALLET_PATH: "$CI_PROJECT_DIR/hived-testnet-binaries/cli_wallet"
@@ -645,6 +649,8 @@ quick_test_setup:
     SST_DUMP_PATH: "$CI_PROJECT_DIR/hived-testnet-binaries/sst_dump"
     TEST_TOOLS_NODE_DEFAULT_WAIT_FOR_LIVE_TIMEOUT: "60"
   needs:
+    - job: hiveio_api_package
+      artifacts: true  # provides hiveio-api wheel for direct installation
     - job: testnet_node_build
       artifacts: true
       optional: true  # Not needed if build was skipped (docs-only changes)
@@ -685,6 +691,8 @@ quick_test_setup:
 beem_testnet_tests:
   extends: .beem_tests_base
   needs:
+    - job: hiveio_api_package
+      artifacts: true
     - job: testnet_node_build
       artifacts: true
   variables:
@@ -695,6 +703,8 @@ beem_testnet_tests:
 beem_mirrornet_tests:
   extends: .beem_tests_base
   needs:
+    - job: hiveio_api_package
+      artifacts: true
     - job: mirrornet_node_build
       artifacts: true
   variables:
@@ -827,6 +837,8 @@ test_tools_tests:
       when: never
     - when: on_success
   needs:
+    - job: hiveio_api_package
+      artifacts: true
     - job: testnet_node_build
       artifacts: true
       optional: true  # Not required in QUICK_TEST mode
@@ -994,6 +1006,8 @@ python_pattern_mainnet_tests:
     HIVED_UID: $HIVED_UID
     HIVED_COMMIT: $HIVED_COMMIT
   needs:
+    - job: hiveio_api_package
+      artifacts: true
     - job: prepare_hived_image
       artifacts: true
       optional: true  # Not needed if build was skipped
@@ -1073,6 +1087,8 @@ message_format_mainnet_5m_tests:
     - .message_format_tests
     - .manual_on_feature_branches  # Manual on feature branches (requires mainnet_5m data)
   needs:
+    - job: hiveio_api_package
+      artifacts: true
     - job: prepare_hived_data
       artifacts: true  # Blocked until prepare_hived_data completes
   services:
@@ -1142,6 +1158,8 @@ witness_tests:
     - .test_tools_based
     - .manual_on_feature_branches  # Manual on feature branches (requires mainnet_5m data)
   needs:
+    - job: hiveio_api_package
+      artifacts: true
     - job: prepare_hived_data
       artifacts: true  # Blocked until prepare_hived_data completes
   services:
