@@ -533,12 +533,18 @@ void rocksdb_account_archive::on_irreversible_block( uint32_t block_num )
   // Use specialized method for account_object (skips accounts with pending governance votes)
   bool _do_flush_account = on_irreversible_block_impl_account( block_num, { ColumnTypes::ACCOUNT, ColumnTypes::ACCOUNT_BY_ID } );
 
-  if( _do_flush_meta || _do_flush_authority || _do_flush_account )
+  bool _any_data_changed = _do_flush_meta || _do_flush_authority || _do_flush_account;
+
+  if( _any_data_changed )
   {
     auto time_start = std::chrono::high_resolution_clock::now();
 
     provider->persist_cached_lib();
-    provider->flushDb();
+    // Use flushWriteBuffer() instead of flushDb() to avoid expensive per-column-family
+    // Flush() calls (memtable→SST). flushWriteBuffer() applies the WriteBatch to the
+    // database (memtable + WAL), making data visible for subsequent reads and durable
+    // via WAL. Full column flushes happen on close() and save_snapshot().
+    provider->flushWriteBuffer();
 
     accounts_stats::stats.item_flush_to_storage.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
     ++accounts_stats::stats.item_flush_to_storage.count;
@@ -567,6 +573,16 @@ void rocksdb_account_archive::on_irreversible_block( uint32_t block_num )
   }
 
   _next_archival_check_block = compute_next_archival_check();
+
+  // When no accounts were archived, all remaining accounts in chainbase are "hot"
+  // (accessed recently). With retention_blocks=0, compute_next_archival_check returns
+  // block_num+1, causing futile archival scans every block. Enforce a minimum gap
+  // to avoid this O(blocks) overhead for frequently-accessed accounts.
+  if( !_any_data_changed && _next_archival_check_block <= block_num + 1 )
+  {
+    static constexpr uint32_t MIN_ARCHIVAL_RECHECK_INTERVAL = 1000;
+    _next_archival_check_block = block_num + MIN_ARCHIVAL_RECHECK_INTERVAL;
+  }
 }
 
 template<typename Key_Type, typename SHM_Object_Type, typename SHM_Object_Sub_Index, typename Return_Type>
