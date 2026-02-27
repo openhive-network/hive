@@ -1135,7 +1135,7 @@ asset database::adjust_account_vesting_balance(const account_object& to_account,
           util::update_manabar( cprops, to_account, a, new_vesting.amount.value );
         });
         rc().regenerate_rc_mana( to_account, _assets_obj, _now );
-        adjust_balance( to_account, new_vesting );
+        adjust_balance( to_account, new_vesting, _assets_obj );
         rc().update_account_after_vest_change( to_account, _assets_obj, _now );
       }
       else
@@ -1308,7 +1308,7 @@ void database::clear_null_account_balance()
 
   if( null_assets.get_balance().amount > 0 )
   {
-    adjust_balance( null_account, -null_assets.get_balance() );
+    adjust_balance( null_account, -null_assets.get_balance(), null_assets );
   }
 
   if( null_assets.get_savings().amount > 0 )
@@ -1318,7 +1318,7 @@ void database::clear_null_account_balance()
 
   if( null_assets.get_hbd_balance().amount > 0 )
   {
-    adjust_balance( null_account, -null_assets.get_hbd_balance() );
+    adjust_balance( null_account, -null_assets.get_hbd_balance(), null_assets );
   }
 
   if( null_assets.get_hbd_savings().amount > 0 )
@@ -1361,12 +1361,12 @@ void database::clear_null_account_balance()
 
   if( null_assets.get_rewards().amount > 0 )
   {
-    adjust_reward_balance( null_account, -null_assets.get_rewards() );
+    adjust_reward_balance( null_account, -null_assets.get_rewards(), null_assets );
   }
 
   if( null_assets.get_hbd_rewards().amount > 0 )
   {
-    adjust_reward_balance( null_account, -null_assets.get_hbd_rewards() );
+    adjust_reward_balance( null_account, -null_assets.get_hbd_rewards(), null_assets );
   }
 
   if( null_assets.get_vest_rewards().amount > 0 )
@@ -1431,7 +1431,7 @@ void database::consolidate_treasury_balance()
   if( old_treasury_assets.get_balance().amount > 0 )
   {
     adjust_balance( treasury_account, old_treasury_assets.get_balance() );
-    adjust_balance( old_treasury_account, -old_treasury_assets.get_balance() );
+    adjust_balance( old_treasury_account, -old_treasury_assets.get_balance(), old_treasury_assets );
   }
 
   if( old_treasury_assets.get_savings().amount > 0 )
@@ -1443,7 +1443,7 @@ void database::consolidate_treasury_balance()
   if( old_treasury_assets.get_hbd_balance().amount > 0 )
   {
     adjust_balance( treasury_account, old_treasury_assets.get_hbd_balance() );
-    adjust_balance( old_treasury_account, -old_treasury_assets.get_hbd_balance() );
+    adjust_balance( old_treasury_account, -old_treasury_assets.get_hbd_balance(), old_treasury_assets );
   }
 
   if( old_treasury_assets.get_hbd_savings().amount > 0 )
@@ -1486,13 +1486,13 @@ void database::consolidate_treasury_balance()
   if( old_treasury_assets.get_rewards().amount > 0 )
   {
     adjust_reward_balance( treasury_account, old_treasury_assets.get_rewards() );
-    adjust_reward_balance( old_treasury_account, -old_treasury_assets.get_rewards() );
+    adjust_reward_balance( old_treasury_account, -old_treasury_assets.get_rewards(), old_treasury_assets );
   }
 
   if( old_treasury_assets.get_hbd_rewards().amount > 0 )
   {
     adjust_reward_balance( treasury_account, old_treasury_assets.get_hbd_rewards() );
-    adjust_reward_balance( old_treasury_account, -old_treasury_assets.get_hbd_rewards() );
+    adjust_reward_balance( old_treasury_account, -old_treasury_assets.get_hbd_rewards(), old_treasury_assets );
   }
 
   if( old_treasury_assets.get_vest_rewards().amount > 0 )
@@ -3372,6 +3372,11 @@ void database::adjust_smt_balance( const account_object& owner, const asset& del
 
 void database::modify_balance( const account_object& a, const asset& delta )
 {
+  modify_balance( a, delta, get_asset_account( a.get_id() ) );
+}
+
+void database::modify_balance( const account_object& a, const asset& delta, const assets_object& acnt_assets )
+{
   const bool trace_balance_change = false; //a.get_name() == "X";
   std::string op_context;
 
@@ -3382,9 +3387,6 @@ void database::modify_balance( const account_object& a, const asset& delta )
     else
       op_context = "No operation context";
   }
-
-  // Get split objects for the account
-  const auto& acnt_assets = get_asset_account( a.get_id() );
 
   if( delta.symbol.asset_num == HIVE_ASSET_NUM_HIVE )
   {
@@ -3467,9 +3469,11 @@ void database::modify_balance( const account_object& a, const asset& delta )
 
 void database::modify_reward_balance( const account_object& a, const asset& value_delta, const asset& share_delta )
 {
-  // Get split objects for the account
-  const auto& acnt_assets = get_asset_account( a.get_id() );
+  modify_reward_balance( a, value_delta, share_delta, get_asset_account( a.get_id() ) );
+}
 
+void database::modify_reward_balance( const account_object& a, const asset& value_delta, const asset& share_delta, const assets_object& acnt_assets )
+{
   modify( acnt_assets, [&]( assets_object& acnt )
   {
     if( value_delta.symbol.asset_num == HIVE_ASSET_NUM_HIVE )
@@ -3505,6 +3509,11 @@ void database::modify_reward_balance( const account_object& a, const asset& valu
 
 void database::adjust_balance( const account_object& a, const asset& delta )
 {
+  adjust_balance( a, delta, get_asset_account( a.get_id() ) );
+}
+
+void database::adjust_balance( const account_object& a, const asset& delta, const assets_object& acnt_assets )
+{
   if ( delta.amount < 0 )
   {
     asset available = get_balance( a, delta.symbol );
@@ -3537,7 +3546,7 @@ void database::adjust_balance( const account_object& a, const asset& delta )
   else
 #endif
   {
-    modify_balance( a, delta );
+    modify_balance( a, delta, acnt_assets );
   }
 }
 
@@ -3599,6 +3608,12 @@ void database::adjust_savings_balance( const account_object& a, const asset& del
 void database::adjust_reward_balance( const account_object& a, const asset& value_delta,
                           const asset& share_delta /*= asset(0,VESTS_SYMBOL)*/ )
 {
+  adjust_reward_balance( a, value_delta, get_asset_account( a.get_id() ), share_delta );
+}
+
+void database::adjust_reward_balance( const account_object& a, const asset& value_delta,
+                          const assets_object& acnt_assets, const asset& share_delta /*= asset(0,VESTS_SYMBOL)*/ )
+{
   FC_ASSERT( value_delta.symbol.is_vesting() == false && share_delta.symbol.is_vesting() );
 
 #ifdef HIVE_ENABLE_SMT
@@ -3626,7 +3641,7 @@ void database::adjust_reward_balance( const account_object& a, const asset& valu
   else
 #endif
   {
-    modify_reward_balance( a, value_delta, share_delta );
+    modify_reward_balance( a, value_delta, share_delta, acnt_assets );
   }
 }
 

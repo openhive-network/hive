@@ -662,10 +662,10 @@ void claim_reward_balance_evaluator::do_apply( const claim_reward_balance_operat
     reward_vesting_hive_to_move = HIVE_asset( fc::uint128_to_uint64( ( uint128_t( op_reward_vests.amount.value ) * uint128_t( acnt_assets.get_vest_rewards_as_hive().amount.value ) )
       / uint128_t( acnt_assets.get_vest_rewards().amount.value ) ) );
 
-  _db.adjust_reward_balance( acnt, -op_reward_hive );
-  _db.adjust_reward_balance( acnt, -op_reward_hbd );
-  _db.adjust_balance( acnt, op_reward_hive );
-  _db.adjust_balance( acnt, op_reward_hbd );
+  _db.adjust_reward_balance( acnt, -op_reward_hive, acnt_assets );
+  _db.adjust_reward_balance( acnt, -op_reward_hbd, acnt_assets );
+  _db.adjust_balance( acnt, op_reward_hive, acnt_assets );
+  _db.adjust_balance( acnt, op_reward_hbd, acnt_assets );
 
   if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
   {
