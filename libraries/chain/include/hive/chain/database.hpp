@@ -536,8 +536,11 @@ namespace chain {
       void adjust_liquidity_reward( const account_object& owner, const asset& volume, bool is_hbd );
 
       void adjust_balance( const account_object& a, const asset& delta );
+      void adjust_balance( const account_object& a, const asset& delta, const assets_object& acnt_assets );
       void adjust_balance( const account_object& a, const HIVE_asset& delta );
+      void adjust_balance( const account_object& a, const HIVE_asset& delta, const assets_object& acnt_assets );
       void adjust_balance( const account_object& a, const HBD_asset& delta );
+      void adjust_balance( const account_object& a, const HBD_asset& delta, const assets_object& acnt_assets );
       void adjust_balance( const account_name_type& name, const asset& delta ) { adjust_balance( get_account( name ), delta ); }
       void adjust_balance( const account_name_type& name, const HIVE_asset& delta ) { adjust_balance( get_account( name ), delta ); }
       void adjust_balance( const account_name_type& name, const HBD_asset& delta ) { adjust_balance( get_account( name ), delta ); }
@@ -547,9 +550,13 @@ namespace chain {
       void adjust_savings_balance( const account_object& a, const HBD_asset& delta );
 
       void adjust_reward_balance( const account_object& a, const asset& value_delta, const asset& share_delta = asset(0,VESTS_SYMBOL) );
+      void adjust_reward_balance( const account_object& a, const asset& value_delta, const assets_object& acnt_assets, const asset& share_delta = asset(0,VESTS_SYMBOL) );
       void adjust_reward_balance( const account_object& a, const HIVE_asset& value_delta );
+      void adjust_reward_balance( const account_object& a, const HIVE_asset& value_delta, const assets_object& acnt_assets );
       void adjust_reward_balance( const account_object& a, const HBD_asset& value_delta );
+      void adjust_reward_balance( const account_object& a, const HBD_asset& value_delta, const assets_object& acnt_assets );
       void adjust_reward_balance( const account_object& a, const HIVE_asset& value_delta, const VEST_asset& share_delta );
+      void adjust_reward_balance( const account_object& a, const HIVE_asset& value_delta, const VEST_asset& share_delta, const assets_object& acnt_assets );
       void adjust_reward_balance( const account_name_type& name, const asset& value_delta, const asset& share_delta = asset(0,VESTS_SYMBOL) )
       {
         adjust_reward_balance( get_account( name ), value_delta, share_delta );

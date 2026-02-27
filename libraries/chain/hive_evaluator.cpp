@@ -268,6 +268,11 @@ void account_witness_vote_evaluator::do_apply( const account_witness_vote_operat
 
   const auto& witness = _db.get_witness( o.witness );
 
+  // Pre-fetch split objects once to avoid redundant chainbase lookups in each branch below.
+  const auto& voter_assets = _db.get_asset_account( voter.get_id() );
+  const auto& voter_dvotes = _db.get_delayed_votes_account( voter.get_id() );
+  auto vote_power = voter.get_governance_vote_power( voter_assets, voter_dvotes );
+
   const auto& by_account_witness_idx = _db.get_index< witness_vote_index >().indices().get< by_account_witness >();
   auto itr = by_account_witness_idx.find( boost::make_tuple( voter.get_name(), witness.owner ) );
 
@@ -285,14 +290,14 @@ void account_witness_vote_evaluator::do_apply( const account_witness_vote_operat
     } );
 
     if( _db.has_hardfork( HIVE_HARDFORK_0_3 ) )
-      _db.adjust_witness_vote( witness, voter.get_governance_vote_power( _db.get_asset_account( voter.get_id() ), _db.get_delayed_votes_account( voter.get_id() ) ) );
+      _db.adjust_witness_vote( witness, vote_power );
     else if( _db.has_hardfork( HIVE_HARDFORK_0_2 ) )
-      _db.adjust_proxied_witness_votes( voter, voter.get_governance_vote_power( _db.get_asset_account( voter.get_id() ), _db.get_delayed_votes_account( voter.get_id() ) ) );
+      _db.adjust_proxied_witness_votes( voter, vote_power );
     else
     {
       _db.modify( witness, [&]( witness_object& w )
       {
-        w.votes += voter.get_governance_vote_power( _db.get_asset_account( voter.get_id() ), _db.get_delayed_votes_account( voter.get_id() ) );
+        w.votes += vote_power;
       } );
     }
     _db.modify( voter, [&]( account_object& a )
@@ -305,14 +310,14 @@ void account_witness_vote_evaluator::do_apply( const account_witness_vote_operat
     FC_ASSERT( !o.approve, "Vote currently exists, user must indicate a desire to reject witness." );
 
     if( _db.has_hardfork( HIVE_HARDFORK_0_3 ) )
-      _db.adjust_witness_vote( witness, -voter.get_governance_vote_power( _db.get_asset_account( voter.get_id() ), _db.get_delayed_votes_account( voter.get_id() ) ) );
+      _db.adjust_witness_vote( witness, -vote_power );
     else if( _db.has_hardfork( HIVE_HARDFORK_0_2 ) )
-      _db.adjust_proxied_witness_votes( voter, -voter.get_governance_vote_power( _db.get_asset_account( voter.get_id() ), _db.get_delayed_votes_account( voter.get_id() ) ) );
+      _db.adjust_proxied_witness_votes( voter, -vote_power );
     else
     {
       _db.modify( witness, [&]( witness_object& w )
       {
-        w.votes -= voter.get_governance_vote_power( _db.get_asset_account( voter.get_id() ), _db.get_delayed_votes_account( voter.get_id() ) );
+        w.votes -= vote_power;
       } );
     }
     _db.modify( voter, [&]( account_object& a )

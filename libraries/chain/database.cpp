@@ -1164,7 +1164,7 @@ VEST_asset database::adjust_account_vesting_balance(const account_object& to_acc
           util::update_manabar( cprops, to_account, a, new_vesting.get_amount() );
         });
         rc().regenerate_rc_mana( to_account, _assets_obj, _now );
-        adjust_balance( to_account, new_vesting );
+        adjust_balance( to_account, new_vesting, _assets_obj );
         rc().update_account_after_vest_change( to_account, _assets_obj, _now );
       }
       else
@@ -1339,7 +1339,7 @@ void database::clear_null_account_balance()
 
   if( null_assets.get_balance().amount > 0 )
   {
-    adjust_balance( null_account, -null_assets.get_balance() );
+    adjust_balance( null_account, -null_assets.get_balance(), null_assets );
   }
 
   if( null_assets.get_savings().amount > 0 )
@@ -1349,7 +1349,7 @@ void database::clear_null_account_balance()
 
   if( null_assets.get_hbd_balance().amount > 0 )
   {
-    adjust_balance( null_account, -null_assets.get_hbd_balance() );
+    adjust_balance( null_account, -null_assets.get_hbd_balance(), null_assets );
   }
 
   if( null_assets.get_hbd_savings().amount > 0 )
@@ -1392,12 +1392,12 @@ void database::clear_null_account_balance()
 
   if( null_assets.get_rewards().amount > 0 )
   {
-    adjust_reward_balance( null_account, -null_assets.get_rewards() );
+    adjust_reward_balance( null_account, -null_assets.get_rewards(), null_assets );
   }
 
   if( null_assets.get_hbd_rewards().amount > 0 )
   {
-    adjust_reward_balance( null_account, -null_assets.get_hbd_rewards() );
+    adjust_reward_balance( null_account, -null_assets.get_hbd_rewards(), null_assets );
   }
 
   if( null_assets.get_vest_rewards().amount > 0 )
@@ -1464,7 +1464,7 @@ void database::consolidate_treasury_balance()
   if( old_treasury_assets.get_balance().amount > 0 )
   {
     adjust_balance( treasury_account, old_treasury_assets.get_balance() );
-    adjust_balance( old_treasury_account, -old_treasury_assets.get_balance() );
+    adjust_balance( old_treasury_account, -old_treasury_assets.get_balance(), old_treasury_assets );
   }
 
   if( old_treasury_assets.get_savings().amount > 0 )
@@ -1476,7 +1476,7 @@ void database::consolidate_treasury_balance()
   if( old_treasury_assets.get_hbd_balance().amount > 0 )
   {
     adjust_balance( treasury_account, old_treasury_assets.get_hbd_balance() );
-    adjust_balance( old_treasury_account, -old_treasury_assets.get_hbd_balance() );
+    adjust_balance( old_treasury_account, -old_treasury_assets.get_hbd_balance(), old_treasury_assets );
   }
 
   if( old_treasury_assets.get_hbd_savings().amount > 0 )
@@ -1519,13 +1519,13 @@ void database::consolidate_treasury_balance()
   if( old_treasury_assets.get_rewards().amount > 0 )
   {
     adjust_reward_balance( treasury_account, old_treasury_assets.get_rewards() );
-    adjust_reward_balance( old_treasury_account, -old_treasury_assets.get_rewards() );
+    adjust_reward_balance( old_treasury_account, -old_treasury_assets.get_rewards(), old_treasury_assets );
   }
 
   if( old_treasury_assets.get_hbd_rewards().amount > 0 )
   {
     adjust_reward_balance( treasury_account, old_treasury_assets.get_hbd_rewards() );
-    adjust_reward_balance( old_treasury_account, -old_treasury_assets.get_hbd_rewards() );
+    adjust_reward_balance( old_treasury_account, -old_treasury_assets.get_hbd_rewards(), old_treasury_assets );
   }
 
   if( old_treasury_assets.get_vest_rewards().amount > 0 )
@@ -3376,7 +3376,23 @@ void database::adjust_balance( const account_object& a, const asset& delta )
   }
 }
 
+void database::adjust_balance( const account_object& a, const asset& delta, const assets_object& acnt_assets )
+{
+  if( delta.symbol.asset_num == HIVE_ASSET_NUM_HIVE )
+    adjust_balance( a, HIVE_asset( delta ), acnt_assets );
+  else
+  {
+    FC_ASSERT( ( delta.symbol.asset_num == HIVE_ASSET_NUM_HBD ) && "liquid", "invalid symbol" );
+    adjust_balance( a, HBD_asset( delta ), acnt_assets );
+  }
+}
+
 void database::adjust_balance( const account_object& a, const HIVE_asset& delta )
+{
+  adjust_balance( a, delta, get_asset_account( a.get_id() ) );
+}
+
+void database::adjust_balance( const account_object& a, const HIVE_asset& delta, const assets_object& acnt_assets )
 {
   if( delta.amount < 0 )
   {
@@ -3396,104 +3412,29 @@ void database::adjust_balance( const account_object& a, const HIVE_asset& delta 
       op_context = "No operation context";
   }
 
-  // Get split objects for the account
-  const auto& acnt_assets = get_asset_account( a.get_id() );
-
-  if( delta.symbol.asset_num == HIVE_ASSET_NUM_HIVE )
+  modify( acnt_assets, [&]( assets_object& acnt )
   {
-    modify( acnt_assets, [&]( assets_object& acnt )
-    {
-      auto b = acnt.get_balance();
-      acnt.set_balance( acnt.get_balance() + HIVE_asset( delta ) );
-      if(trace_balance_change)
-        ilog("${a} HIVE balance changed to ${nb} (previous: ${b} ) at block: ${block}. Operation context: ${c}", ("a", a.get_name())("b", b.amount)("nb", acnt.get_balance().amount)("block", _current_block_num)("c", op_context));
+    auto b = acnt.get_balance();
+    acnt.set_balance( acnt.get_balance() + delta );
+    if(trace_balance_change)
+      ilog("${a} HIVE balance changed to ${nb} (previous: ${b} ) at block: ${block}. Operation context: ${c}", ("a", a.get_name())("b", b.amount)("nb", acnt.get_balance().amount)("block", _current_block_num)("c", op_context));
 
-      FC_ASSERT( acnt.get_balance().amount.value >= 0, "Insufficient HIVE funds" );
-    });
-  }
-  else if( delta.symbol.asset_num == HIVE_ASSET_NUM_HBD )
-  {
-    /// Starting from HF 25 HBD interest will be paid only from saving balance.
-    HBD_asset interest_paid( 0 );
-    if( has_hardfork(HIVE_HARDFORK_1_25) == false && acnt_assets.get_hbd_seconds_last_update() != head_block_time() )
-    {
-      const auto _head_block_time = head_block_time();
-      const bool update_hdb_balance = (_head_block_time - acnt_assets.get_hbd_last_interest_payment()).to_seconds() > HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC;
-
-      // Need to track interest calculation state
-      uint128_t _hbd_seconds = acnt_assets.get_hbd_seconds();
-      const auto interest = hive::protocol::hbd_interest::evaluate_hbd_interest(&_hbd_seconds, _head_block_time, acnt_assets.get_hbd_balance(), acnt_assets.get_hbd_seconds_last_update(),
-        get_dynamic_global_properties().get_hbd_interest_rate(), update_hdb_balance);
-
-      const bool do_interest_reset = _hbd_seconds > 0 && update_hdb_balance;
-      if( do_interest_reset )
-        interest_paid = HBD_asset( fc::uint128_to_uint64( interest ) );
-
-      // Combined interest modify: update HBD seconds tracking, apply interest, and reset
-      // in a single modify to avoid redundant undo copies of the 500+ byte assets_object.
-      modify( acnt_assets, [&]( assets_object& t )
-      {
-        if( interest_paid.amount > 0 )
-          t.set_hbd_balance( t.get_hbd_balance() + interest_paid );
-        // Reset hbd_seconds and update last_interest_payment whenever the interest evaluation
-        // conditions are met, even if the calculated interest rounds to 0. Without this reset,
-        // hbd_seconds would accumulate across evaluation periods and hbd_last_interest_payment
-        // would remain stale, causing spurious interest in subsequent calls.
-        if( do_interest_reset )
-        {
-          t.set_hbd_seconds( 0 );
-          t.set_hbd_last_interest_payment( _head_block_time );
-        }
-        else
-        {
-          t.set_hbd_seconds( _hbd_seconds );
-        }
-        t.set_hbd_seconds_last_update( _head_block_time );
-      });
-
-      if( interest_paid.amount > 0 )
-      {
-        push_virtual_operation( *this, interest_operation( a.get_name(), interest_paid, true ) );
-
-        modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& props)
-        {
-          props.current_hbd_supply += interest_paid;
-          props.virtual_supply += interest_paid * get_feed_history().current_median_history;
-        } );
-      }
-    }
-
-    modify( acnt_assets, [&]( assets_object& acnt )
-    {
-      auto b = acnt.get_hbd_balance();
-      acnt.set_hbd_balance( acnt.get_hbd_balance() + HBD_asset( delta ) );
-
-      if(trace_balance_change)
-        ilog("${a} HBD balance changed to ${nb} (previous: ${b} ) at block: ${block}. Operation context: ${c}", ("a", a.get_name())("b", b.amount)("nb", acnt.get_hbd_balance().amount)("block", _current_block_num)("c", op_context));
-
-      FC_ASSERT( acnt.get_hbd_balance().amount.value >= 0, "Insufficient HBD funds" );
-    });
-  }
-  else
-  {
-    FC_ASSERT( delta.symbol.asset_num == HIVE_ASSET_NUM_VESTS, "invalid symbol" );
-
-    modify( acnt_assets, [&]( assets_object& acnt )
-    {
-      acnt.set_vesting( acnt.get_vesting() + delta );
-      FC_ASSERT( acnt.get_vesting().amount.value >= 0, "Insufficient VESTS funds" );
-    });
-  }
+    FC_ASSERT( acnt.get_balance().amount.value >= 0, "Insufficient HIVE funds" );
+  });
 }
 
 void database::adjust_balance( const account_object& a, const HBD_asset& delta )
 {
+  adjust_balance( a, delta, get_asset_account( a.get_id() ) );
+}
+
+void database::adjust_balance( const account_object& a, const HBD_asset& delta, const assets_object& acnt_assets )
+{
   if( delta.amount < 0 )
   {
-    const auto& check_assets = get< assets_object, by_account_id >( a.get_id() );
-    FC_ASSERT( check_assets.get_hbd_balance() >= -delta,
+    FC_ASSERT( acnt_assets.get_hbd_balance() >= -delta,
       "Account ${acc} does not have sufficient funds for balance adjustment. Required: ${r}, Available: ${a}",
-        ("acc", a.get_name())("r", delta)("a", check_assets.get_hbd_balance()) );
+        ("acc", a.get_name())("r", delta)("a", acnt_assets.get_hbd_balance()) );
   }
 
   const bool trace_balance_change = false; //a.get_name() == "X";
@@ -3507,42 +3448,47 @@ void database::adjust_balance( const account_object& a, const HBD_asset& delta )
       op_context = "No operation context";
   }
 
-  // Get split objects for the account
-  const auto& acnt_assets = get_asset_account( a.get_id() );
-  const auto& acnt_time = get_time_account( a.get_id() );
-
   /// Starting from HF 25 HBD interest will be paid only from saving balance.
-  if( has_hardfork(HIVE_HARDFORK_1_25) == false && acnt_time.get_hbd_seconds_last_update() != head_block_time() )
+  HBD_asset interest_paid( 0 );
+  if( has_hardfork(HIVE_HARDFORK_1_25) == false && acnt_assets.get_hbd_seconds_last_update() != head_block_time() )
   {
     const auto _head_block_time = head_block_time();
-    const bool update_hdb_balance = (_head_block_time - acnt_time.get_hbd_last_interest_payment()).to_seconds() > HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC;
+    const bool update_hdb_balance = (_head_block_time - acnt_assets.get_hbd_last_interest_payment()).to_seconds() > HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC;
 
-    uint128_t _hbd_seconds = acnt_time.get_hbd_seconds();
-    const auto interest = hive::protocol::hbd_interest::evaluate_hbd_interest(&_hbd_seconds, _head_block_time, acnt_assets.get_hbd_balance(), acnt_time.get_hbd_seconds_last_update(),
+    // Need to track interest calculation state
+    uint128_t _hbd_seconds = acnt_assets.get_hbd_seconds();
+    const auto interest = hive::protocol::hbd_interest::evaluate_hbd_interest(&_hbd_seconds, _head_block_time, acnt_assets.get_hbd_balance(), acnt_assets.get_hbd_seconds_last_update(),
       get_dynamic_global_properties().get_hbd_interest_rate(), update_hdb_balance);
 
-    // Update time_object with new HBD seconds tracking
-    modify( acnt_time, [&]( time_object& t )
-    {
-      t.set_hbd_seconds( _hbd_seconds );
-      t.set_hbd_seconds_last_update( _head_block_time );
-    });
+    const bool do_interest_reset = _hbd_seconds > 0 && update_hdb_balance;
+    if( do_interest_reset )
+      interest_paid = HBD_asset( fc::uint128_to_uint64( interest ) );
 
-    if( _hbd_seconds > 0 && update_hdb_balance )
+    // Combined interest modify: update HBD seconds tracking, apply interest, and reset
+    // in a single modify to avoid redundant undo copies of the 500+ byte assets_object.
+    modify( acnt_assets, [&]( assets_object& t )
     {
-      HBD_asset interest_paid( fc::uint128_to_uint64( interest ) );
-      modify( acnt_assets, [&]( assets_object& acnt )
-      {
-        acnt.set_hbd_balance( acnt.get_hbd_balance() + interest_paid );
-      });
-      modify( acnt_time, [&]( time_object& t )
+      if( interest_paid.amount > 0 )
+        t.set_hbd_balance( t.get_hbd_balance() + interest_paid );
+      // Reset hbd_seconds and update last_interest_payment whenever the interest evaluation
+      // conditions are met, even if the calculated interest rounds to 0. Without this reset,
+      // hbd_seconds would accumulate across evaluation periods and hbd_last_interest_payment
+      // would remain stale, causing spurious interest in subsequent calls.
+      if( do_interest_reset )
       {
         t.set_hbd_seconds( 0 );
         t.set_hbd_last_interest_payment( _head_block_time );
-      });
+      }
+      else
+      {
+        t.set_hbd_seconds( _hbd_seconds );
+      }
+      t.set_hbd_seconds_last_update( _head_block_time );
+    });
 
-      if(interest > 0)
-        push_virtual_operation( *this, interest_operation( a.get_name(), interest_paid, true ) );
+    if( interest_paid.amount > 0 )
+    {
+      push_virtual_operation( *this, interest_operation( a.get_name(), interest_paid, true ) );
 
       modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& props)
       {
@@ -3651,10 +3597,34 @@ void database::adjust_reward_balance( const account_object& a, const asset& valu
   }
 }
 
+void database::adjust_reward_balance( const account_object& a, const asset& value_delta,
+                          const assets_object& acnt_assets, const asset& share_delta /*= asset(0,VESTS_SYMBOL)*/ )
+{
+  FC_ASSERT( value_delta.symbol.is_vesting() == false && share_delta.symbol.is_vesting() );
+
+  if( value_delta.symbol.asset_num == HIVE_ASSET_NUM_HIVE )
+  {
+    if( share_delta.amount.value == 0 )
+      adjust_reward_balance( a, HIVE_asset( value_delta ), acnt_assets );
+    else
+      adjust_reward_balance( a, HIVE_asset( value_delta ), VEST_asset( share_delta ), acnt_assets );
+  }
+  else
+  {
+    FC_ASSERT( value_delta.symbol.asset_num == HIVE_ASSET_NUM_HBD, "invalid symbol" );
+    adjust_reward_balance( a, HBD_asset( value_delta ), acnt_assets );
+  }
+}
+
 void database::adjust_reward_balance( const account_object& a, const HIVE_asset& value_delta )
 {
   const auto& _assets = get< assets_object, by_account_id >( a.get_id() );
-  modify( _assets, [&]( assets_object& acnt )
+  adjust_reward_balance( a, value_delta, _assets );
+}
+
+void database::adjust_reward_balance( const account_object& a, const HIVE_asset& value_delta, const assets_object& acnt_assets )
+{
+  modify( acnt_assets, [&]( assets_object& acnt )
   {
     acnt.set_rewards( acnt.get_rewards() + value_delta );
     FC_ASSERT( acnt.get_rewards().amount.value >= 0, "Insufficient reward HIVE funds" );
@@ -3664,7 +3634,12 @@ void database::adjust_reward_balance( const account_object& a, const HIVE_asset&
 void database::adjust_reward_balance( const account_object& a, const HIVE_asset& value_delta, const VEST_asset& share_delta )
 {
   const auto& _assets = get< assets_object, by_account_id >( a.get_id() );
-  modify( _assets, [&]( assets_object& acnt )
+  adjust_reward_balance( a, value_delta, share_delta, _assets );
+}
+
+void database::adjust_reward_balance( const account_object& a, const HIVE_asset& value_delta, const VEST_asset& share_delta, const assets_object& acnt_assets )
+{
+  modify( acnt_assets, [&]( assets_object& acnt )
   {
     acnt.set_vest_rewards_as_hive( acnt.get_vest_rewards_as_hive() + value_delta );
     acnt.set_vest_rewards( acnt.get_vest_rewards() + share_delta );
@@ -3682,7 +3657,12 @@ void database::adjust_reward_balance( const account_object& a, const HIVE_asset&
 void database::adjust_reward_balance( const account_object& a, const HBD_asset& value_delta )
 {
   const auto& _assets = get< assets_object, by_account_id >( a.get_id() );
-  modify( _assets, [&]( assets_object& acnt )
+  adjust_reward_balance( a, value_delta, _assets );
+}
+
+void database::adjust_reward_balance( const account_object& a, const HBD_asset& value_delta, const assets_object& acnt_assets )
+{
+  modify( acnt_assets, [&]( assets_object& acnt )
   {
     acnt.set_hbd_rewards( acnt.get_hbd_rewards() + value_delta );
     FC_ASSERT( acnt.get_hbd_rewards().amount.value >= 0, "Insufficient reward HBD funds" );
