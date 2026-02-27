@@ -384,21 +384,43 @@ bool database::is_treasury( const account_name_type& name )const
 
 const account_authority_object& database::get_account_authority( const account_name_type& account_name )const
 {
+  const auto* result = chainbase::database::find< account_authority_object, by_account >( account_name );
+  if( BOOST_LIKELY( result != nullptr ) )
+    return *result;
   return *( get_accounts_handler().get_account_authority( account_name, true /*account_authority_is_required*/ ) );
 }
 
 const account_authority_object* database::find_account_authority( const account_name_type& account_name )const
 {
+  const auto* result = chainbase::database::find< account_authority_object, by_account >( account_name );
+  if( BOOST_LIKELY( result != nullptr ) )
+    return result;
   return get_accounts_handler().get_account_authority( account_name, false /*account_authority_is_required*/ );
 }
 
 const account_metadata_object& database::get_account_metadata( const account_name_type& account_name )const
 {
+  // Fast path: look up account in chainbase, then metadata by account_id
+  const auto* acc = chainbase::database::find< account_object, by_name >( account_name );
+  if( BOOST_LIKELY( acc != nullptr ) )
+  {
+    const auto* result = chainbase::database::find< account_metadata_object, by_account >( acc->get_id() );
+    if( BOOST_LIKELY( result != nullptr ) )
+      return *result;
+  }
   return *( get_accounts_handler().get_account_metadata( account_name, true /*account_metadata_is_required*/ ) );
 }
 
 const account_metadata_object* database::find_account_metadata( const account_name_type& account_name )const
 {
+  // Fast path: look up account in chainbase, then metadata by account_id
+  const auto* acc = chainbase::database::find< account_object, by_name >( account_name );
+  if( BOOST_LIKELY( acc != nullptr ) )
+  {
+    const auto* result = chainbase::database::find< account_metadata_object, by_account >( acc->get_id() );
+    if( BOOST_LIKELY( result != nullptr ) )
+      return result;
+  }
   return get_accounts_handler().get_account_metadata( account_name, false /*account_metadata_is_required*/ );
 }
 
