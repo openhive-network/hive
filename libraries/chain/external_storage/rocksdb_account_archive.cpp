@@ -909,15 +909,22 @@ account rocksdb_account_archive::get_volatile_account( const account_id_type& ac
 
 void rocksdb_account_archive::on_object_modified( const account_object& obj )
 {
-  // Sync tiny_account_object with account_object changes (proxy, governance_vote_expiration_ts)
+  // Sync tiny_account_object with account_object changes (proxy, governance_vote_expiration_ts).
+  // Only modify tiny_account_object if the synced fields actually differ — most account_object
+  // modifies (e.g. adjust_proxied_witness_votes changing proxied_vsf_votes[]) don't change
+  // proxy or governance_vote_expiration_ts, so the tiny sync + 6 B+ tree rebalances is wasted.
   const auto& tiny_idx = db.get_index< tiny_account_index, by_name >();
   auto tiny_it = tiny_idx.find( obj.get_name() );
   if( tiny_it != tiny_idx.end() )
   {
-    static_cast<chainbase::database&>(db).modify( *tiny_it, [&]( tiny_account_object& t )
+    if( tiny_it->get_proxy() != obj.get_proxy() ||
+        tiny_it->get_governance_vote_expiration_ts() != obj.get_governance_vote_expiration_ts() )
     {
-      t.modify_from_account( obj );
-    } );
+      static_cast<chainbase::database&>(db).modify( *tiny_it, [&]( tiny_account_object& t )
+      {
+        t.modify_from_account( obj );
+      } );
+    }
   }
 
   ++accounts_stats::stats.account_modified.count;
