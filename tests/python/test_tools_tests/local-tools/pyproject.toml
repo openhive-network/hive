@@ -1,9 +1,10 @@
 [build-system]
-requires = ["poetry-core==1.1.0"]
+requires = ["poetry-core==2.1.3"]
 build-backend = "poetry.core.masonry.api"
 
 
 [tool.poetry]
+requires-poetry = "2.1.3"
 name = "local-tools"
 version = "0.0.0"
 description = "Tools shared by tests in test-tools project"
