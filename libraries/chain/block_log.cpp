@@ -9,6 +9,8 @@
 
 #include <queue>
 #include <fstream>
+#include <thread>
+#include <condition_variable>
 #include <fc/io/raw.hpp>
 #include <fc/thread/thread.hpp>
 
