@@ -23,25 +23,25 @@ source = [
 
 [tool.poetry.dependencies]
 python = ">=3.14,<4"
-pytest = ">=8.3.5"
-pytest-rerunfailures = ">=14.0"
-pytest-timeout = ">=2.3.1"
-pytest-asyncio = ">=0.25.3"
-pytest-repeat = ">=0.9.3"
-pytest-xdist = ">=3.6.1"
-tavern = ">=3.0.2"
-msgspec = ">=0.20.0"
-types-PyYAML = ">=6.0.12.11"
+pytest = "^8.3.5"
+pytest-rerunfailures = "^14.0"
+pytest-timeout = "^2.3.1"
+pytest-asyncio = "^0.25.3"
+pytest-repeat = "^0.9.3"
+pytest-xdist = "^3.6.1"
+tavern = "^3.0.2"
+msgspec = "^0.20.0"
+types-PyYAML = "^6.0.12"
 shared-tools = { path = "shared-tools", develop = true }
-hiveio-test-tools = ">=2.0.1"
-hiveio-wax = ">=2.0.1"
-hiveio-beekeepy = ">=1.28.5"
+hiveio-test-tools = "^2.0.1"
+hiveio-wax = "^2.0.1"
+hiveio-beekeepy = "^1.28.5"
 tests_api = { path = "tests_api", develop = true }
 
 [tool.poetry.group.static-analysis.dependencies]
-pre-commit = ">=3.4.0"
-black = ">=23.3.0"
-ruff = ">=0.6.5"
+pre-commit = "^3.4.0"
+black = "^23.3.0"
+ruff = "^0.6.5"
 
 [tool.black]
 line-length = 120
