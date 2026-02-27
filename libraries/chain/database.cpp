@@ -3424,6 +3424,7 @@ void database::modify_balance( const account_object& a, const asset& delta )
   else if( delta.symbol.asset_num == HIVE_ASSET_NUM_HBD )
   {
     /// Starting from HF 25 HBD interest will be paid only from saving balance.
+    HBD_asset interest_paid( 0 );
     if( has_hardfork(HIVE_HARDFORK_1_25) == false && acnt_assets.get_hbd_seconds_last_update() != head_block_time() )
     {
       const auto _head_block_time = head_block_time();
@@ -3434,28 +3435,29 @@ void database::modify_balance( const account_object& a, const asset& delta )
       const auto interest = hive::protocol::hbd_interest::evaluate_hbd_interest(&_hbd_seconds, _head_block_time, acnt_assets.get_hbd_balance(), acnt_assets.get_hbd_seconds_last_update(),
         get_dynamic_global_properties().get_hbd_interest_rate(), update_hdb_balance);
 
-      // Update assets_object with new HBD seconds tracking
+      if( _hbd_seconds > 0 && update_hdb_balance )
+        interest_paid = HBD_asset( fc::uint128_to_uint64( interest ) );
+
+      // Combined interest modify: update HBD seconds tracking, apply interest, and reset
+      // in a single modify to avoid redundant undo copies of the 500+ byte assets_object.
       modify( acnt_assets, [&]( assets_object& t )
       {
-        t.set_hbd_seconds( _hbd_seconds );
+        if( interest_paid.amount > 0 )
+        {
+          t.set_hbd_balance( t.get_hbd_balance() + interest_paid );
+          t.set_hbd_seconds( 0 );
+          t.set_hbd_last_interest_payment( _head_block_time );
+        }
+        else
+        {
+          t.set_hbd_seconds( _hbd_seconds );
+        }
         t.set_hbd_seconds_last_update( _head_block_time );
       });
 
-      if( _hbd_seconds > 0 && update_hdb_balance )
+      if( interest_paid.amount > 0 )
       {
-        HBD_asset interest_paid( fc::uint128_to_uint64( interest ) );
-        modify( acnt_assets, [&]( assets_object& acnt )
-        {
-          acnt.set_hbd_balance( acnt.get_hbd_balance() + interest_paid );
-        });
-        modify( acnt_assets, [&]( assets_object& t )
-        {
-          t.set_hbd_seconds( 0 );
-          t.set_hbd_last_interest_payment( _head_block_time );
-        });
-
-        if(interest > 0)
-          push_virtual_operation( *this, interest_operation( a.get_name(), interest_paid, true ) );
+        push_virtual_operation( *this, interest_operation( a.get_name(), interest_paid, true ) );
 
         modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& props)
         {
