@@ -1,8 +1,6 @@
 variables:
-  # Using commit hash instead of tag (e.g., pypa_2_28-2) to pin to a specific docker image.
-  # This ensures build repeatability - tags can be moved/overwritten, but commit hashes are immutable.
-  # In future we may switch to tags once our tagging workflow is stable.
-  CI_BASE_IMAGE_TAG: ":02189cf63f0c9af1cd29136e299d9622048fdee8"
+  # Using tag to pin to a specific ci-base-image version.
+  CI_BASE_IMAGE_TAG: ":pypa_2_28-4"
   CI_BASE_IMAGE: "registry.gitlab.syncad.com/hive/common-ci-configuration/ci-base-image${CI_BASE_IMAGE_TAG}"
   # Legacy variable for backwards compatibility (deprecated - use CI_BASE_IMAGE instead)
   TEST_IMAGE_TAG: "${CI_BASE_IMAGE_TAG}"
