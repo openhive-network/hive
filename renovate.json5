@@ -1,4 +1,10 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["local>hive/common-ci-configuration//renovate/python.json5"]
+  "extends": ["local>hive/common-ci-configuration//renovate/python.json5"],
+
+  // :ignoreModulesAndTests (from config:recommended) ignores **/tests/** globally.
+  // Override for Poetry — tests/ contains real pyproject.toml files like hive-local-tools that need updates.
+  "poetry": {
+    "ignorePaths": []
+  }
 }
