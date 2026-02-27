@@ -43,6 +43,9 @@
 
 #include <hive/chain/rc/rc_objects.hpp>
 #include <hive/chain/detail/state/tiny_account_object.hpp>
+#include <hive/chain/detail/state/assets_object.hpp>
+#include <hive/chain/detail/state/recovery_object.hpp>
+#include <hive/chain/detail/state/delayed_votes_object.hpp>
 
 #include <fc/uint128.hpp>
 
@@ -401,21 +404,33 @@ const account_metadata_object* database::find_account_metadata( const account_na
 
 const account_object& database::get_account( const account_id_type& id )const
 {
+  const auto* result = chainbase::database::find< account_object >( account_object::id_type( id.get_value() ) );
+  if( BOOST_LIKELY( result != nullptr ) )
+    return *result;
   return *( get_accounts_handler().get_account( id, true /*account_is_required*/ ) );
 }
 
 const account_object* database::find_account( const account_id_type& id )const
 {
+  const auto* result = chainbase::database::find< account_object >( account_object::id_type( id.get_value() ) );
+  if( BOOST_LIKELY( result != nullptr ) )
+    return result;
   return get_accounts_handler().get_account( id, false /*account_is_required*/ );
 }
 
 const account_object& database::get_account( const account_name_type& name )const
 {
+  const auto* result = chainbase::database::find< account_object, by_name >( name );
+  if( BOOST_LIKELY( result != nullptr ) )
+    return *result;
   return *( get_accounts_handler().get_account( name, true /*account_is_required*/ ) );
 }
 
 const account_object* database::find_account( const account_name_type& name )const
 {
+  const auto* result = chainbase::database::find< account_object, by_name >( name );
+  if( BOOST_LIKELY( result != nullptr ) )
+    return result;
   return get_accounts_handler().get_account( name, false /*account_is_required*/ );
 }
 
@@ -461,32 +476,50 @@ account database::find_volatile_account( const account_name_type& name )const
 
 const assets_object& database::get_asset_account( const account_id_type& id )const
 {
+  const auto* result = chainbase::database::find< assets_object >( assets_object::id_type( id.get_value() ) );
+  if( BOOST_LIKELY( result != nullptr ) )
+    return *result;
   return *( get_accounts_handler().get_asset_account( id, true /*is_required*/ ) );
 }
 
 const assets_object* database::find_asset_account( const account_id_type& id )const
 {
+  const auto* result = chainbase::database::find< assets_object >( assets_object::id_type( id.get_value() ) );
+  if( BOOST_LIKELY( result != nullptr ) )
+    return result;
   return get_accounts_handler().get_asset_account( id, false /*is_required*/ );
 }
 
 const recovery_object& database::get_recovery_account( const account_id_type& id )const
 {
+  const auto* result = chainbase::database::find< recovery_object >( recovery_object::id_type( id.get_value() ) );
+  if( BOOST_LIKELY( result != nullptr ) )
+    return *result;
   return *( get_accounts_handler().get_recovery_account( id, true /*is_required*/ ) );
 }
 
 const recovery_object* database::find_recovery_account( const account_id_type& id )const
 {
+  const auto* result = chainbase::database::find< recovery_object >( recovery_object::id_type( id.get_value() ) );
+  if( BOOST_LIKELY( result != nullptr ) )
+    return result;
   return get_accounts_handler().get_recovery_account( id, false /*is_required*/ );
 }
 
 
 const delayed_votes_object& database::get_delayed_votes_account( const account_id_type& id )const
 {
+  const auto* result = chainbase::database::find< delayed_votes_object >( delayed_votes_object::id_type( id.get_value() ) );
+  if( BOOST_LIKELY( result != nullptr ) )
+    return *result;
   return *( get_accounts_handler().get_delayed_votes_account( id, true /*is_required*/ ) );
 }
 
 const delayed_votes_object* database::find_delayed_votes_account( const account_id_type& id )const
 {
+  const auto* result = chainbase::database::find< delayed_votes_object >( delayed_votes_object::id_type( id.get_value() ) );
+  if( BOOST_LIKELY( result != nullptr ) )
+    return result;
   return get_accounts_handler().get_delayed_votes_account( id, false /*is_required*/ );
 }
 
@@ -1262,8 +1295,13 @@ void database::nullify_proxied_witness_votes( const account_object& a )
 bool database::collect_account_total_balance( const account_object& account, asset* total_hive, asset* total_hbd,
   asset* total_vests, asset* vesting_shares_hive_value )
 {
+  return collect_account_total_balance( account, get_asset_account( account.get_id() ), total_hive, total_hbd, total_vests, vesting_shares_hive_value );
+}
+
+bool database::collect_account_total_balance( const account_object& account, const assets_object& assets, asset* total_hive, asset* total_hbd,
+  asset* total_vests, asset* vesting_shares_hive_value )
+{
   const auto& gpo = get_dynamic_global_properties();
-  const auto& assets = get_asset_account( account.get_id() );
 
   *vesting_shares_hive_value = assets.get_vesting() * gpo.get_vesting_share_price();
   *total_hive = *vesting_shares_hive_value;
@@ -1282,16 +1320,27 @@ bool database::collect_account_total_balance( const account_object& account, ass
   return ( total_hive->amount.value != 0 ) || ( total_hbd->amount.value != 0 ) || ( total_vests->amount.value != 0 );
 }
 
+void database::refresh_last_access_block( const account_object& account )
+{
+  if( account.get_last_access_block() != head_block_num() )
+  {
+    static_cast<chainbase::database&>(*this).modify( account, [&]( account_object& a )
+    {
+      a.set_last_access_block( head_block_num() );
+    } );
+  }
+}
+
 void database::clear_null_account_balance()
 {
   if( !has_hardfork( HIVE_HARDFORK_0_14__327 ) ) return;
 
   const auto& null_account = get_account( HIVE_NULL_ACCOUNT );
+  refresh_last_access_block( null_account );
   const auto& null_assets = get_asset_account( null_account.get_id() );
-  const auto& null_delayed_votes = get_delayed_votes_account( null_account.get_id() );
   asset total_hive, total_hbd, total_vests, vesting_shares_hive_value;
 
-  if( !( collect_account_total_balance( null_account, &total_hive, &total_hbd, &total_vests, &vesting_shares_hive_value ) ) )
+  if( !( collect_account_total_balance( null_account, null_assets, &total_hive, &total_hbd, &total_vests, &vesting_shares_hive_value ) ) )
     return;
 
   operation vop_op = clear_null_account_balance_operation();
@@ -1343,6 +1392,7 @@ void database::clear_null_account_balance()
     {
       a.set_vesting( VEST_asset( 0 ) );
     });
+    const auto& null_delayed_votes = get_delayed_votes_account( null_account.get_id() );
     modify( null_delayed_votes, [&]( delayed_votes_object& dv )
     {
       dv.set_sum_delayed_votes( 0 );
@@ -1406,12 +1456,12 @@ void database::consolidate_treasury_balance()
   auto old_treasury_name = get_treasury_name( HIVE_HARDFORK_1_24_TREASURY_RENAME - 1 );
 
   const auto& old_treasury_account = get_account( old_treasury_name );
+  refresh_last_access_block( old_treasury_account );
   const auto& old_treasury_assets = get_asset_account( old_treasury_account.get_id() );
-  const auto& old_treasury_delayed_votes = get_delayed_votes_account( old_treasury_account.get_id() );
   asset total_hive, total_hbd, total_vests, vesting_shares_hive_value;
 
   if( treasury_name == old_treasury_name || //ABW: once we actually include change of treasury in HF24 that part of condition can be removed
-    !( collect_account_total_balance( old_treasury_account, &total_hive, &total_hbd, &total_vests, &vesting_shares_hive_value ) ) )
+    !( collect_account_total_balance( old_treasury_account, old_treasury_assets, &total_hive, &total_hbd, &total_vests, &vesting_shares_hive_value ) ) )
     return;
 
   const auto& treasury_account = get_treasury();
@@ -1469,6 +1519,7 @@ void database::consolidate_treasury_balance()
     {
       a.set_vesting( VEST_asset( 0 ) );
     } );
+    const auto& old_treasury_delayed_votes = get_delayed_votes_account( old_treasury_account.get_id() );
     modify( old_treasury_delayed_votes, [&]( delayed_votes_object& dv )
     {
       dv.set_sum_delayed_votes( 0 );
@@ -1897,13 +1948,15 @@ void database::process_funds()
     int64_t current_inflation_rate = std::max( start_inflation_rate - inflation_rate_adjustment, inflation_rate_floor );
 
     safe<int64_t> new_hive;
+    const account_object* p_treasury_account = nullptr;
     if( has_hardfork( HIVE_HARDFORK_1_28_NO_DHF_HBD_IN_INFLATION ) )
     {
       auto median_price = get_feed_history().current_median_history;
       FC_ASSERT( median_price.is_null() == false );
 
-      const auto& treasury_account = get_treasury();
-      const auto& treasury_assets = get_asset_account( treasury_account.get_id() );
+      p_treasury_account = &get_treasury();
+      refresh_last_access_block( *p_treasury_account );
+      const auto& treasury_assets = get_asset_account( p_treasury_account->get_id() );
       const auto hbd_supply_without_treasury = (props.get_current_hbd_supply() - treasury_assets.get_hbd_balance()).amount < 0 ? HBD_asset(0) : (props.get_current_hbd_supply() - treasury_assets.get_hbd_balance());
       const auto virtual_supply_without_treasury = hbd_supply_without_treasury * median_price + props.get_current_supply();
 
@@ -1943,7 +1996,10 @@ void database::process_funds()
     if( dhf_new_funds.value )
     {
       new_hbd = asset( dhf_new_funds, HIVE_SYMBOL ) * feed.current_median_history;
-      adjust_balance( get_treasury_name(), new_hbd );
+      if( p_treasury_account )
+        adjust_balance( *p_treasury_account, new_hbd );
+      else
+        adjust_balance( get_treasury_name(), new_hbd );
     }
 
     new_hive = content_reward + vesting_reward + witness_reward;
@@ -3403,6 +3459,7 @@ void database::modify_balance( const account_object& a, const asset& delta, cons
   else if( delta.symbol.asset_num == HIVE_ASSET_NUM_HBD )
   {
     /// Starting from HF 25 HBD interest will be paid only from saving balance.
+    HBD_asset interest_paid( 0 );
     if( has_hardfork(HIVE_HARDFORK_1_25) == false && acnt_assets.get_hbd_seconds_last_update() != head_block_time() )
     {
       const auto _head_block_time = head_block_time();
@@ -3413,28 +3470,35 @@ void database::modify_balance( const account_object& a, const asset& delta, cons
       const auto interest = hive::protocol::hbd_interest::evaluate_hbd_interest(&_hbd_seconds, _head_block_time, acnt_assets.get_hbd_balance(), acnt_assets.get_hbd_seconds_last_update(),
         get_dynamic_global_properties().get_hbd_interest_rate(), update_hdb_balance);
 
-      // Update assets_object with new HBD seconds tracking
+      const bool do_interest_reset = _hbd_seconds > 0 && update_hdb_balance;
+      if( do_interest_reset )
+        interest_paid = HBD_asset( fc::uint128_to_uint64( interest ) );
+
+      // Combined interest modify: update HBD seconds tracking, apply interest, and reset
+      // in a single modify to avoid redundant undo copies of the 500+ byte assets_object.
       modify( acnt_assets, [&]( assets_object& t )
       {
-        t.set_hbd_seconds( _hbd_seconds );
-        t.set_hbd_seconds_last_update( _head_block_time );
-      });
-
-      if( _hbd_seconds > 0 && update_hdb_balance )
-      {
-        asset interest_paid(fc::uint128_to_uint64(interest), HBD_SYMBOL);
-        modify( acnt_assets, [&]( assets_object& acnt )
-        {
-          acnt.set_hbd_balance( acnt.get_hbd_balance() + interest_paid );
-        });
-        modify( acnt_assets, [&]( assets_object& t )
+        if( interest_paid.amount > 0 )
+          t.set_hbd_balance( t.get_hbd_balance() + interest_paid );
+        // Reset hbd_seconds and update last_interest_payment whenever the interest evaluation
+        // conditions are met, even if the calculated interest rounds to 0. Without this reset,
+        // hbd_seconds would accumulate across evaluation periods and hbd_last_interest_payment
+        // would remain stale, causing spurious interest in subsequent calls.
+        if( do_interest_reset )
         {
           t.set_hbd_seconds( 0 );
           t.set_hbd_last_interest_payment( _head_block_time );
-        });
+        }
+        else
+        {
+          t.set_hbd_seconds( _hbd_seconds );
+        }
+        t.set_hbd_seconds_last_update( _head_block_time );
+      });
 
-        if(interest > 0)
-          push_virtual_operation( *this, interest_operation( a.get_name(), interest_paid, true ) );
+      if( interest_paid.amount > 0 )
+      {
+        push_virtual_operation( *this, interest_operation( a.get_name(), interest_paid, true ) );
 
         modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& props)
         {
