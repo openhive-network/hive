@@ -500,6 +500,7 @@ uint32_t rocksdb_account_archive::compute_next_archival_check() const
 void rocksdb_account_archive::on_irreversible_block( uint32_t block_num )
 {
   provider->update_cached_lib( block_num );
+  provider->persist_cached_lib();
 
   // Skip archival scan if no objects can possibly need archiving yet
   if( block_num < _next_archival_check_block )
@@ -532,7 +533,6 @@ void rocksdb_account_archive::on_irreversible_block( uint32_t block_num )
   {
     auto time_start = std::chrono::high_resolution_clock::now();
 
-    provider->persist_cached_lib();
     // Use flushWriteBuffer() instead of flushDb() to avoid expensive per-column-family
     // Flush() calls (memtable->SST). flushWriteBuffer() applies the WriteBatch to the
     // database (memtable + WAL), making data visible for subsequent reads and durable
