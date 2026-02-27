@@ -3403,7 +3403,8 @@ void database::adjust_balance( const account_object& a, const HIVE_asset& delta 
       const auto interest = hive::protocol::hbd_interest::evaluate_hbd_interest(&_hbd_seconds, _head_block_time, acnt_assets.get_hbd_balance(), acnt_assets.get_hbd_seconds_last_update(),
         get_dynamic_global_properties().get_hbd_interest_rate(), update_hdb_balance);
 
-      if( _hbd_seconds > 0 && update_hdb_balance )
+      const bool do_interest_reset = _hbd_seconds > 0 && update_hdb_balance;
+      if( do_interest_reset )
         interest_paid = HBD_asset( fc::uint128_to_uint64( interest ) );
 
       // Combined interest modify: update HBD seconds tracking, apply interest, and reset
@@ -3411,8 +3412,13 @@ void database::adjust_balance( const account_object& a, const HIVE_asset& delta 
       modify( acnt_assets, [&]( assets_object& t )
       {
         if( interest_paid.amount > 0 )
-        {
           t.set_hbd_balance( t.get_hbd_balance() + interest_paid );
+        // Reset hbd_seconds and update last_interest_payment whenever the interest evaluation
+        // conditions are met, even if the calculated interest rounds to 0. Without this reset,
+        // hbd_seconds would accumulate across evaluation periods and hbd_last_interest_payment
+        // would remain stale, causing spurious interest in subsequent calls.
+        if( do_interest_reset )
+        {
           t.set_hbd_seconds( 0 );
           t.set_hbd_last_interest_payment( _head_block_time );
         }
