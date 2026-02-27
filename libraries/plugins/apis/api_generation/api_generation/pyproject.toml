@@ -20,5 +20,5 @@ source = [
 python = ">=3.14,<4"
 toml = "^0.10.2"
 jinja2 = "^3.1.6"
-hiveio-beekeepy = "^1.28.6"  # This version is copied to generated API packages
-hiveio-api-client-generator = "^1.7.1"
+hiveio-beekeepy = "^1.28.6-post"  # This version is copied to generated API packages
+hiveio-api-client-generator = "^1.7.1-post"
