@@ -154,8 +154,8 @@ def test_set_transaction_expiration() -> None:
         debug_key=tt.Account("initminer").private_key, count=20, skip=0, miss_blocks=0
     )
 
-    response = node.api.block.get_block(block_num=23)["block"]
-    last_block_time_point = tt.Time.parse(response["timestamp"])
+    response = node.api.block.get_block(block_num=23).block
+    last_block_time_point = tt.Time.parse(response.timestamp)
 
     wallet = tt.OldWallet(attach_to=node)
 

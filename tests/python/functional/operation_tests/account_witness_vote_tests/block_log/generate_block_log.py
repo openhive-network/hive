@@ -55,7 +55,7 @@ def prepare_blocklog_with_witnesses():
     tt.logger.info("Wait 21 blocks (when every witness sign at least one block)")
     node.wait_number_of_blocks(21)
 
-    timestamp = node.api.block.get_block(block_num=node.get_last_block_number())["block"]["timestamp"]
+    timestamp = node.api.block.get_block(block_num=node.get_last_block_number()).block.timestamp
     tt.logger.info(f"Final block_log head block number: {node.get_last_block_number()}")
     tt.logger.info(f"Final block_log head block timestamp: {timestamp}")
 

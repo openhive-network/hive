@@ -9,7 +9,7 @@ import test_tools as tt
 from hive_local_tools import run_for
 from hive_local_tools.constants import TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS
 from hive_local_tools.functional.python.hf28 import post_comment
-from hive_local_tools.functional.python.operation import Account, get_transaction_timestamp, get_virtual_operations
+from hive_local_tools.functional.python.operation import Account, get_virtual_operations
 from schemas.operations.virtual import (
     CurationRewardOperation,
     DeclinedVotingRightsOperation,
@@ -17,7 +17,7 @@ from schemas.operations.virtual import (
 )
 
 if TYPE_CHECKING:
-    from schemas.apis.account_history_api.response_schemas import EnumVirtualOps
+    from hiveio_api.account_history_api.account_history_api_description import EnumVirtualOpsResponse
 
 
 @run_for("testnet")
@@ -184,7 +184,7 @@ def test_payout_rewards_for_comment_vote_without_voting_rights(node: tt.InitNode
     wallet.api.vote("alice", "creator-2", "comment-of-creator-2", 100)
     node.wait_number_of_blocks(21)
 
-    vops: EnumVirtualOps = node.api.account_history.enum_virtual_ops(
+    vops: EnumVirtualOpsResponse = node.api.account_history.enum_virtual_ops(
         block_range_begin=0,
         block_range_end=2000,
         limit=2000,

@@ -220,9 +220,9 @@ def test_separating_2_networks_producing_blocks_from_3_networks(three_networks_c
     assert head_block_numbers[second_network] > head_block_numbers[third_network]
 
     assert (
-        second_network_witness_node.api.block.get_block(block_num=block_number_to_check)["block"]["witness"]
+        second_network_witness_node.api.block.get_block(block_num=block_number_to_check).block.witness
         == witness_account.name
     )
     assert (
-        first_network_init_node.api.block.get_block(block_num=block_number_to_check)["block"]["witness"] == "initminer"
+        first_network_init_node.api.block.get_block(block_num=block_number_to_check).block.witness == "initminer"
     )

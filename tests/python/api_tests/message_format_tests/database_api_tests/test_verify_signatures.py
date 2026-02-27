@@ -14,12 +14,12 @@ def test_verify_signatures_in_testnet(node: tt.InitNode) -> None:
     transaction = wallet.api.create_account("initminer", "alice", "{}")
     node_config = node.api.database.get_config()
     sig_digest = calculate_sig_digest(
-        transaction,
-        node_config.HIVE_CHAIN_ID,
+        transaction.json().encode(),
+        str(node_config.HIVE_CHAIN_ID).encode(),
     )
 
     node.api.database.verify_signatures(
-        hash=sig_digest.result,
+        hash=sig_digest.result.decode(),
         signatures=transaction["signatures"],
         required_owner=[],
         required_active=["initminer"],

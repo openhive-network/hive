@@ -167,7 +167,7 @@ def prepare_blocklog_with_comments_and_votes(output_block_log_directory: Path) -
 
     wait_for_comment_payment(init_node)
 
-    timestamp = init_node.api.block.get_block(block_num=init_node.get_last_block_number())["block"]["timestamp"]
+    timestamp = init_node.api.block.get_block(block_num=init_node.get_last_block_number()).block.timestamp
     tt.logger.info(f"Final block_log head block number: {init_node.get_last_block_number()}")
     tt.logger.info(f"Final block_log head block timestamp: {timestamp}")
 

@@ -18948,7 +18948,7 @@
                         "description": "Liquidity reward period in seconds."
                     },
                     "HIVE_LIQUIDITY_TIMEOUT_SEC": {
-                        "type": "string",
+                        "type": "integer",
                         "description": "Liquidity timeout in microseconds."
                     },
                     "HIVE_MAX_ACCOUNT_CREATION_FEE": {

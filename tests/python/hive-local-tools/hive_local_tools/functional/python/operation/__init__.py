@@ -24,7 +24,8 @@ from schemas.operations.virtual.transfer_to_vesting_completed_operation import (
 )
 
 if TYPE_CHECKING:
-    from schemas.apis.account_history_api.response_schemas import EnumVirtualOps
+    from hiveio_api.account_history_api.account_history_api_description import EnumVirtualOpsResponse
+
     from schemas.fields.hive_int import HiveInt
     from schemas.operations import Hf26Operations
     from schemas.virtual_operation import (
@@ -504,7 +505,7 @@ def get_virtual_operations(
     :param end_block: block to which virtual operations will be given,
     :return: a list of virtual operations of the type specified in the `vop` argument.
     """
-    result: EnumVirtualOps = node.api.account_history.enum_virtual_ops(
+    result: EnumVirtualOpsResponse = node.api.account_history.enum_virtual_ops(
         filter=build_vop_filter(*vops),
         include_reversible=True,
         block_range_begin=start_block,
@@ -525,7 +526,7 @@ def get_rc_max_mana(node: tt.InitNode, account_name: str) -> int:
 
 
 def get_transaction_timestamp(node: tt.InitNode, transaction) -> datetime:
-    timestamp = node.api.block.get_block(block_num=transaction["block_num"])["block"]["timestamp"]
+    timestamp = node.api.block.get_block(block_num=transaction["block_num"]).block.timestamp
     # Return timezone-aware datetime (UTC) for consistent comparisons
     if isinstance(timestamp, datetime):
         return timestamp if timestamp.tzinfo is not None else timestamp.replace(tzinfo=timezone.utc)

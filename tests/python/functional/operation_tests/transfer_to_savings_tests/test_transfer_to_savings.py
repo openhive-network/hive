@@ -63,7 +63,7 @@ def test_transfer_to_savings_account(
         assert len(interests) == 1, "interest_operation wasn't generated."
         assert (
             receiver_savings_balance_before_transfer
-            == receiver_savings_balance_after_transfer - currency(amount=2000) - interests[0]["op"]["value"]["interest"]
+            == receiver_savings_balance_after_transfer - currency(amount=2000) - interests[0].op.value.interest
         ), "Receiver savings balance wasn't increased by transfers and one interest."
     else:
         assert len(interests) == 0, "interest_operation was generated (it shouldn't be)"
