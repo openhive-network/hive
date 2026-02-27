@@ -575,7 +575,7 @@ void rocksdb_account_archive::on_irreversible_block( uint32_t block_num )
   _next_archival_check_block = compute_next_archival_check();
 
   // When no accounts were archived, all remaining accounts in chainbase are "hot"
-  // (accessed recently). With retention_blocks=0, compute_next_archival_check returns
+  // (accessed recently). With low retention_blocks, compute_next_archival_check may return
   // block_num+1, causing futile archival scans every block. Enforce a minimum gap
   // to avoid this O(blocks) overhead for frequently-accessed accounts.
   if( !_any_data_changed && _next_archival_check_block <= block_num + 1 )

@@ -1291,8 +1291,13 @@ void database::nullify_proxied_witness_votes( const account_object& a )
 bool database::collect_account_total_balance( const account_object& account, HIVE_asset* total_hive, HBD_asset* total_hbd,
   VEST_asset* total_vests, HIVE_asset* vesting_shares_hive_value )
 {
+  return collect_account_total_balance( account, get_asset_account( account.get_id() ), total_hive, total_hbd, total_vests, vesting_shares_hive_value );
+}
+
+bool database::collect_account_total_balance( const account_object& account, const assets_object& assets, asset* total_hive, asset* total_hbd,
+  asset* total_vests, asset* vesting_shares_hive_value )
+{
   const auto& gpo = get_dynamic_global_properties();
-  const auto& assets = get_asset_account( account.get_id() );
 
   *vesting_shares_hive_value = assets.get_vesting() * gpo.get_vesting_share_price();
   *total_hive = *vesting_shares_hive_value;
@@ -1311,18 +1316,30 @@ bool database::collect_account_total_balance( const account_object& account, HIV
   return ( total_hive->amount.value != 0 ) || ( total_hbd->amount.value != 0 ) || ( total_vests->amount.value != 0 );
 }
 
+void database::refresh_last_access_block( const account_object& account )
+{
+  if( account.get_last_access_block() != head_block_num() )
+  {
+    static_cast<chainbase::database&>(*this).modify( account, [&]( account_object& a )
+    {
+      a.set_last_access_block( head_block_num() );
+    } );
+  }
+}
+
 void database::clear_null_account_balance()
 {
   if( !has_hardfork( HIVE_HARDFORK_0_14__327 ) ) return;
 
   const auto& null_account = get_account( HIVE_NULL_ACCOUNT );
+  refresh_last_access_block( null_account );
   const auto& null_assets = get_asset_account( null_account.get_id() );
   const auto& null_delayed_votes = get_delayed_votes_account( null_account.get_id() );
   HIVE_asset total_hive, vesting_shares_hive_value;
   HBD_asset total_hbd;
   VEST_asset total_vests;
 
-  if( !( collect_account_total_balance( null_account, &total_hive, &total_hbd, &total_vests, &vesting_shares_hive_value ) ) )
+  if( !( collect_account_total_balance( null_account, null_assets, &total_hive, &total_hbd, &total_vests, &vesting_shares_hive_value ) ) )
     return;
 
   operation vop_op = clear_null_account_balance_operation();
@@ -1374,6 +1391,7 @@ void database::clear_null_account_balance()
     {
       a.set_vesting( VEST_asset( 0 ) );
     });
+    const auto& null_delayed_votes = get_delayed_votes_account( null_account.get_id() );
     modify( null_delayed_votes, [&]( delayed_votes_object& dv )
     {
       dv.set_sum_delayed_votes( 0 );
@@ -1437,6 +1455,7 @@ void database::consolidate_treasury_balance()
   auto old_treasury_name = get_treasury_name( HIVE_HARDFORK_1_24_TREASURY_RENAME - 1 );
 
   const auto& old_treasury_account = get_account( old_treasury_name );
+  refresh_last_access_block( old_treasury_account );
   const auto& old_treasury_assets = get_asset_account( old_treasury_account.get_id() );
   const auto& old_treasury_delayed_votes = get_delayed_votes_account( old_treasury_account.get_id() );
   HIVE_asset total_hive, vesting_shares_hive_value;
@@ -1444,7 +1463,7 @@ void database::consolidate_treasury_balance()
   VEST_asset total_vests;
 
   if( treasury_name == old_treasury_name || //ABW: once we actually include change of treasury in HF24 that part of condition can be removed
-    !( collect_account_total_balance( old_treasury_account, &total_hive, &total_hbd, &total_vests, &vesting_shares_hive_value ) ) )
+    !( collect_account_total_balance( old_treasury_account, old_treasury_assets, &total_hive, &total_hbd, &total_vests, &vesting_shares_hive_value ) ) )
     return;
 
   const auto& treasury_account = get_treasury();
@@ -1502,6 +1521,7 @@ void database::consolidate_treasury_balance()
     {
       a.set_vesting( VEST_asset( 0 ) );
     } );
+    const auto& old_treasury_delayed_votes = get_delayed_votes_account( old_treasury_account.get_id() );
     modify( old_treasury_delayed_votes, [&]( delayed_votes_object& dv )
     {
       dv.set_sum_delayed_votes( 0 );
@@ -1930,13 +1950,15 @@ void database::process_funds()
     int64_t current_inflation_rate = std::max( start_inflation_rate - inflation_rate_adjustment, inflation_rate_floor );
 
     HIVE_asset new_hive( 0 );
+    const account_object* p_treasury_account = nullptr;
     if( has_hardfork( HIVE_HARDFORK_1_28_NO_DHF_HBD_IN_INFLATION ) )
     {
       auto median_price = get_feed_history().current_median_history;
       FC_ASSERT( median_price.is_null() == false );
 
-      const auto& treasury_account = get_treasury();
-      const auto& treasury_assets = get_asset_account( treasury_account.get_id() );
+      p_treasury_account = &get_treasury();
+      refresh_last_access_block( *p_treasury_account );
+      const auto& treasury_assets = get_asset_account( p_treasury_account->get_id() );
       const auto hbd_supply_without_treasury = (props.get_current_hbd_supply() - treasury_assets.get_hbd_balance()).amount < 0 ? HBD_asset(0) : (props.get_current_hbd_supply() - treasury_assets.get_hbd_balance());
       const auto virtual_supply_without_treasury = hbd_supply_without_treasury * median_price + props.get_current_supply();
 
@@ -1976,7 +1998,10 @@ void database::process_funds()
     if( dhf_new_funds.get_amount() != 0 )
     {
       new_hbd = dhf_new_funds * feed.current_median_history;
-      adjust_balance( get_treasury_name(), new_hbd );
+      if( p_treasury_account )
+        adjust_balance( *p_treasury_account, new_hbd );
+      else
+        adjust_balance( get_treasury_name(), new_hbd );
     }
 
     new_hive = content_reward + vesting_reward + witness_reward;

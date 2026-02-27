@@ -775,6 +775,12 @@ namespace chain {
       //calculates sum of all balances stored on given account, returns true if any is nonzero
       bool collect_account_total_balance( const account_object& account, HIVE_asset* total_hive, HBD_asset* total_hbd,
         VEST_asset* total_vests, HIVE_asset* vesting_shares_hive_value );
+      bool collect_account_total_balance( const account_object& account, const assets_object& assets, HIVE_asset* total_hive, HBD_asset* total_hbd,
+        VEST_asset* total_vests, HIVE_asset* vesting_shares_hive_value );
+      //updates last_access_block on account_object without handler overhead,
+      //preventing unnecessary RocksDB archive-restore cycles for accounts
+      //that are accessed every block via split objects (e.g. null, treasury)
+      void refresh_last_access_block( const account_object& account );
       //removes (burns) balances held on null account
       void clear_null_account_balance();
       //moves balances from old treasury account to current one
