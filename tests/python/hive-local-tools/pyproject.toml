@@ -39,7 +39,7 @@ hiveio-beekeepy = "^1.28.5"
 tests_api = { path = "tests_api", develop = true }
 
 [tool.poetry.group.static-analysis.dependencies]
-pre-commit = "^3.4.0"
+pre-commit = "^4.0.0"
 black = "^23.3.0"
 ruff = "^0.15.0"
 
