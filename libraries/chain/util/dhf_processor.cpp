@@ -374,7 +374,8 @@ void dhf_processor::convert_funds( const block_notification& note )
   const auto to_convert = HIVE_PROPOSAL_CONVERSION_RATE * treasury_account.get_hive_balance() / HIVE_100_PERCENT;
 
   const feed_history_object& fhistory = db.get_feed_history();
-  FC_ASSERT( not fhistory.current_median_history.is_null() ); //current_median_history was null only until block 933600
+  if( fhistory.current_median_history.is_null() )
+    return;
 
   auto converted_hbd = to_convert * fhistory.current_median_history;
   // Don't convert if the conversion would result in an amount lower than the dust threshold
