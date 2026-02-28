@@ -978,13 +978,13 @@ struct impacted_balance_collector
   {
     if( o.conversion.amount > 0 )
     {
-      emplace_back(o.receiver, o.conversion);
-      emplace_back(o.payer, -o.payment);
+      emplace_back(o.receiver, o.conversion.to_asset());
+      emplace_back(o.payer, -o.payment.to_asset());
     }
     else
     {
-      emplace_back(o.receiver, o.payment);
-      emplace_back(o.payer, -o.payment);
+      emplace_back(o.receiver, o.payment.to_asset());
+      emplace_back(o.payer, -o.payment.to_asset());
     }
   }
 
