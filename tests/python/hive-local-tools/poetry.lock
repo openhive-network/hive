@@ -676,13 +676,13 @@ files = []
 develop = false
 
 [package.dependencies]
-msgspec = ">=0.20.0"
+msgspec = "^0.20.0"
 
 [package.source]
 type = "git"
 url = "https://gitlab.syncad.com/hive/schemas.git"
 reference = "feature/dhf-convert-treasury"
-resolved_reference = "6a44538aabff6a17bc25322da6e2c6336c179c75"
+resolved_reference = "c38c63201fbcc2a9f20ad4ac686a1b0caa994a0f"
 
 [[package]]
 name = "hiveio-test-tools"
