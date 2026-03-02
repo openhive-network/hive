@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import test_tools as tt
-from local_tools.network import three_networks_connected, two_networks_connected  # noqa: F401
 
 if TYPE_CHECKING:
     from collections.abc import Iterable

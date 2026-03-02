@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING
 
 import pytest
 import test_tools as tt
-from local_tools.network import three_networks_connected, two_networks_connected  # noqa: F401
 
 from wax.helpy import Hf26Asset as Asset
 from wax.helpy import Time

@@ -861,7 +861,6 @@ test_tools_tests:
     - mkdir -p "$TESTING_BLOCK_LOGS_DESTINATION"
     - !reference [.fetch_test_block_logs, script]
     - cd $CI_PROJECT_DIR/tests/python/test_tools_tests
-    - pip install local-tools/
     - !reference [.run-pytest, script]
   tags:
     - public-runner-docker
