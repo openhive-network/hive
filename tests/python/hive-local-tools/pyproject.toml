@@ -40,14 +40,7 @@ tests_api = { path = "tests_api", develop = true }
 
 [tool.poetry.group.static-analysis.dependencies]
 pre-commit = "^4.0.0"
-black = "^23.3.0"
 ruff = "^0.6.5"
-
-[tool.black]
-line-length = 120
-preview = true
-exclude = "test-tools|tests_api"
-
 
 [tool.ruff]
 preview = true
@@ -96,8 +89,8 @@ select = [  # https://docs.astral.sh/ruff/rules/
     "RUF",
 ]
 ignore = [
-    "E203", # whitespace before punctuation, handled by black
-    "E501", # line too long, handled by black
+    "E203", # whitespace before punctuation, handled by ruff format
+    "E501", # line too long, handled by ruff format
     "PT004", # fixture does not return anything, add leading underscore;  issue: pytest seems to ignore (not launch) auto-use fixtures with leading underscode
     "TRY003", # too restrictive
     "TRY400", # TODO: Consider fixing
