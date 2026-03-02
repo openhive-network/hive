@@ -829,15 +829,16 @@ void rocksdb_account_archive::create_object( const account_object& obj )
   } );
 
   // Create the tiny_account_object that stays in chainbase permanently.
-  // Both split objects must exist at this point — they are created before the account_object
-  // in hive_evaluator_account.cpp, so their absence indicates a data consistency bug.
+  // During genesis (init_genesis), account_object is created before its split objects,
+  // so we must check for their existence. In normal account creation (evaluators),
+  // split objects are always created before account_object.
   const auto aid = obj.get_id().get_value();
   const auto* assets_ptr = db.find< assets_object, by_id >( assets_object::id_type( aid ) );
   const auto* dvotes_ptr = db.find< delayed_votes_object, by_id >( delayed_votes_object::id_type( aid ) );
-  FC_ASSERT( assets_ptr && dvotes_ptr,
-    "Split objects (assets, delayed_votes) must exist when creating tiny_account for account ${a}",
-    ("a", obj.get_name()) );
-  db.create< tiny_account_object >( obj, *assets_ptr, *dvotes_ptr );
+  if( assets_ptr && dvotes_ptr )
+  {
+    db.create< tiny_account_object >( obj, *assets_ptr, *dvotes_ptr );
+  }
 
   accounts_stats::stats.account_created.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
   ++accounts_stats::stats.account_created.count;
