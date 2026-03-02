@@ -129,7 +129,7 @@ BOOST_AUTO_TEST_CASE( crypto_memo_encoding_roundtrip )
 
     // Basic format checks
     BOOST_CHECK( encrypted.size() > 0 );
-    BOOST_CHECK( encrypted[0] == '#' );
+    BOOST_CHECK_EQUAL( encrypted[0], '#' );
 
     // Verify decryption works
     std::string decrypted = memo_crypto.decrypt( make_key_finder(), encrypted );
@@ -159,7 +159,7 @@ BOOST_AUTO_TEST_CASE( crypto_memo_encoding_roundtrip )
 
     // Different nonce should produce different result
     std::string encrypted3 = memo_crypto.encrypt( alice_key, bob_key.get_public_key(), original_memo, fixed_nonce + 1 );
-    BOOST_CHECK( encrypted != encrypted3 );
+    BOOST_CHECK_NE( encrypted, encrypted3 );
 
     BOOST_TEST_MESSAGE( "Encoding roundtrip test passed" );
   }
@@ -185,14 +185,14 @@ BOOST_AUTO_TEST_CASE( crypto_memo_decrypt_buggy_format )
       alice_key, bob_key.get_public_key(), original_message, fixed_nonce );
 
     BOOST_CHECK( buggy_encrypted.size() > 0 );
-    BOOST_CHECK( buggy_encrypted[0] == '#' );
+    BOOST_CHECK_EQUAL( buggy_encrypted[0], '#' );
 
     // Encrypt the same message with current (correct) format
     std::string current_encrypted = memo_crypto.encrypt(
       alice_key, bob_key.get_public_key(), "#" + original_message, fixed_nonce );
 
     // The encrypted strings should be different (different serialization order)
-    BOOST_CHECK( buggy_encrypted != current_encrypted );
+    BOOST_CHECK_NE( buggy_encrypted, current_encrypted );
 
     // But both should decrypt to the same message
     std::string decrypted_current = memo_crypto.decrypt( make_key_finder(), current_encrypted );

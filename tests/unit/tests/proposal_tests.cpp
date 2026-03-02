@@ -240,10 +240,10 @@ BOOST_AUTO_TEST_CASE( inactive_proposals_have_votes )
       auto after_voter_01_hbd_balance = _voter_01.hbd_balance;
       auto after_treasury_hbd_balance = _treasury.hbd_balance;
 
-      BOOST_REQUIRE( before_creator_hbd_balance == after_creator_hbd_balance );
-      BOOST_REQUIRE( before_receiver_hbd_balance == after_receiver_hbd_balance - hourly_pay );
-      BOOST_REQUIRE( before_voter_01_hbd_balance == after_voter_01_hbd_balance );
-      BOOST_REQUIRE( before_treasury_hbd_balance == after_treasury_hbd_balance - treasury_hbd_inflation + hourly_pay );
+      BOOST_REQUIRE_EQUAL( before_creator_hbd_balance, after_creator_hbd_balance );
+      BOOST_REQUIRE_EQUAL( before_receiver_hbd_balance, after_receiver_hbd_balance - hourly_pay );
+      BOOST_REQUIRE_EQUAL( before_voter_01_hbd_balance, after_voter_01_hbd_balance );
+      BOOST_REQUIRE_EQUAL( before_treasury_hbd_balance, after_treasury_hbd_balance - treasury_hbd_inflation + hourly_pay );
     }
     /*
       Reminder:
@@ -371,16 +371,16 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
     {
       time_point_sec acc_6_vote_expiration_ts_before_proxy_action = db->get_account( "acc6" ).get_governance_vote_expiration_ts();
       //being set as someone's proxy does not affect expiration
-      BOOST_REQUIRE( db->get_account( "pxy" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( db->get_account( "pxy" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
       generate_days_blocks(25);
       witness_vote("pxy", "accw2", pxy_private_key); //26 days before HF25
       time_point_sec acc_6_vote_expiration_ts_after_proxy_action = db->get_account( "acc6" ).get_governance_vote_expiration_ts();
       //governance action on a proxy does not affect expiration on account that uses that proxy...
-      BOOST_REQUIRE( acc_6_vote_expiration_ts_before_proxy_action == acc_6_vote_expiration_ts_after_proxy_action );
+      BOOST_REQUIRE_EQUAL( acc_6_vote_expiration_ts_before_proxy_action, acc_6_vote_expiration_ts_after_proxy_action );
       proxy("acc6", "", acc6_private_key); //26 days before HF25
       time_point_sec acc_6_vote_expiration_ts_after_proxy_removal = db->get_account( "acc6" ).get_governance_vote_expiration_ts();
       //...but clearing proxy does
-      BOOST_REQUIRE( acc_6_vote_expiration_ts_after_proxy_removal == db->get_account( "pxy" ).get_governance_vote_expiration_ts() );
+      BOOST_REQUIRE_EQUAL( acc_6_vote_expiration_ts_after_proxy_removal, db->get_account( "pxy" ).get_governance_vote_expiration_ts() );
     }
     //unvoting proposal (even the one that the account did not vote for before) also resets expiration (same with witness, but you can't unvote witness you didn't vote for)
     vote_proposal("acc7", {proposal_2}, false, acc7_private_key); //26 days before HF25
@@ -406,30 +406,30 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
       BOOST_REQUIRE(pxy_vote_expiration_ts > HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP && pxy_vote_expiration_ts <= LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS );
 
       const auto& witness_votes = db->get_index<witness_vote_index,by_account_witness>();
-      BOOST_REQUIRE(witness_votes.size() == 3);
-      BOOST_REQUIRE(witness_votes.count("acc1") == 1);
-      BOOST_REQUIRE(witness_votes.count("acc3") == 1);
-      BOOST_REQUIRE(witness_votes.count("pxy") == 1);
+      BOOST_REQUIRE_EQUAL( witness_votes.size(), 3 );
+      BOOST_REQUIRE_EQUAL( witness_votes.count("acc1"), 1 );
+      BOOST_REQUIRE_EQUAL( witness_votes.count("acc3"), 1 );
+      BOOST_REQUIRE_EQUAL( witness_votes.count("pxy"), 1 );
 
       const auto& proposal_votes = db->get_index<proposal_vote_index, by_voter_proposal>();
-      BOOST_REQUIRE(proposal_votes.size() == 4);
-      BOOST_REQUIRE(proposal_votes.count("acc2") == 2);
-      BOOST_REQUIRE(proposal_votes.count("acc4") == 1);
-      BOOST_REQUIRE(proposal_votes.count("acc5") == 1);
+      BOOST_REQUIRE_EQUAL( proposal_votes.size(), 4 );
+      BOOST_REQUIRE_EQUAL( proposal_votes.count("acc2"), 2 );
+      BOOST_REQUIRE_EQUAL( proposal_votes.count("acc4"), 1 );
+      BOOST_REQUIRE_EQUAL( proposal_votes.count("acc5"), 1 );
     }
 
     //make all votes expired. Now vote expiration time is vote time + HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD
     generate_blocks(LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS);
 
     {
-      BOOST_REQUIRE(db->get_account( "acc1" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc2" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc3" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc4" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc5" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc6" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc7" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc8" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc1" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc2" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc3" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc4" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc5" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc6" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc7" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc8" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
 
       const auto& witness_votes = db->get_index<witness_vote_index, by_account_witness>();
       BOOST_REQUIRE(witness_votes.empty());
@@ -455,43 +455,43 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
     generate_blocks( expected_expiration_time - fc::seconds( HIVE_BLOCK_INTERVAL ) );
 
     {
-      BOOST_REQUIRE(db->get_account( "acc1" ).get_governance_vote_expiration_ts() == expected_expiration_time);
-      BOOST_REQUIRE(db->get_account( "acc2" ).get_governance_vote_expiration_ts() == expected_expiration_time);
-      BOOST_REQUIRE(db->get_account( "acc3" ).get_governance_vote_expiration_ts() == expected_expiration_time_2);
-      BOOST_REQUIRE(db->get_account( "acc4" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc5" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc6" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc7" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc8" ).get_governance_vote_expiration_ts() == expected_expiration_time_2 + fc::days(1));
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc1" ).get_governance_vote_expiration_ts(), expected_expiration_time );
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc2" ).get_governance_vote_expiration_ts(), expected_expiration_time );
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc3" ).get_governance_vote_expiration_ts(), expected_expiration_time_2 );
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc4" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc5" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc6" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc7" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc8" ).get_governance_vote_expiration_ts(), expected_expiration_time_2 + fc::days(1) );
 
       const auto& witness_votes = db->get_index<witness_vote_index, by_account_witness>();
-      BOOST_REQUIRE(witness_votes.count("acc1") == 2);
-      BOOST_REQUIRE(witness_votes.count("acc2") == 1);
-      BOOST_REQUIRE(witness_votes.count("acc8") == 1);
-      BOOST_REQUIRE(witness_votes.size() == 4);
+      BOOST_REQUIRE_EQUAL( witness_votes.count("acc1"), 2 );
+      BOOST_REQUIRE_EQUAL( witness_votes.count("acc2"), 1 );
+      BOOST_REQUIRE_EQUAL( witness_votes.count("acc8"), 1 );
+      BOOST_REQUIRE_EQUAL( witness_votes.size(), 4 );
 
       const auto& proposal_votes = db->get_index<proposal_vote_index, by_voter_proposal>();
       BOOST_REQUIRE(proposal_votes.empty());
     }
     generate_block();
     {
-      BOOST_REQUIRE(db->get_account( "acc1" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc2" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc3" ).get_governance_vote_expiration_ts() == expected_expiration_time_2);
-      BOOST_REQUIRE(db->get_account( "acc8" ).get_governance_vote_expiration_ts() == expected_expiration_time_2 + fc::days(1));
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc1" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc2" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc3" ).get_governance_vote_expiration_ts(), expected_expiration_time_2 );
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc8" ).get_governance_vote_expiration_ts(), expected_expiration_time_2 + fc::days(1) );
     }
     generate_block();
     {
-      BOOST_REQUIRE(db->get_account( "acc3" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc8" ).get_governance_vote_expiration_ts() == expected_expiration_time_2 + fc::days(1));
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc3" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc8" ).get_governance_vote_expiration_ts(), expected_expiration_time_2 + fc::days(1) );
 
       const auto& witness_votes = db->get_index<witness_vote_index,by_account_witness>();
-      BOOST_REQUIRE(witness_votes.count("acc8") == 1);
-      BOOST_REQUIRE(witness_votes.size() == 1 );
+      BOOST_REQUIRE_EQUAL( witness_votes.count("acc8"), 1 );
+      BOOST_REQUIRE_EQUAL( witness_votes.size(), 1 );
     }
     generate_days_blocks(1, false);
     {
-      BOOST_REQUIRE(db->get_account( "acc8" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc8" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
       const auto& witness_votes = db->get_index<witness_vote_index,by_account_witness>();
       BOOST_REQUIRE(witness_votes.empty());
     }
@@ -518,45 +518,45 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
     generate_blocks( expected_expiration_time - fc::seconds( HIVE_BLOCK_INTERVAL ) );
 
     {
-      BOOST_REQUIRE(db->get_account( "acc1" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc2" ).get_governance_vote_expiration_ts() == expected_expiration_time_2);
-      BOOST_REQUIRE(db->get_account( "acc3" ).get_governance_vote_expiration_ts() == expected_expiration_time);
-      BOOST_REQUIRE(db->get_account( "acc4" ).get_governance_vote_expiration_ts() == expected_expiration_time);
-      BOOST_REQUIRE(db->get_account( "acc5" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc6" ).get_governance_vote_expiration_ts() == expected_expiration_time_2);
-      BOOST_REQUIRE(db->get_account( "acc7" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc8" ).get_governance_vote_expiration_ts() == expected_expiration_time_2 + fc::days(1));
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc1" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc2" ).get_governance_vote_expiration_ts(), expected_expiration_time_2 );
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc3" ).get_governance_vote_expiration_ts(), expected_expiration_time );
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc4" ).get_governance_vote_expiration_ts(), expected_expiration_time );
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc5" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc6" ).get_governance_vote_expiration_ts(), expected_expiration_time_2 );
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc7" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc8" ).get_governance_vote_expiration_ts(), expected_expiration_time_2 + fc::days(1) );
 
       const auto& witness_votes = db->get_index<witness_vote_index, by_account_witness>();
       BOOST_REQUIRE(witness_votes.empty());
 
       const auto& proposal_votes = db->get_index<proposal_vote_index, by_voter_proposal>();
-      BOOST_REQUIRE(proposal_votes.count("acc3") == 2);
-      BOOST_REQUIRE(proposal_votes.count("acc4") == 1);
-      BOOST_REQUIRE(proposal_votes.count("acc8") == 1);
-      BOOST_REQUIRE(proposal_votes.size() == 4);
+      BOOST_REQUIRE_EQUAL( proposal_votes.count("acc3"), 2 );
+      BOOST_REQUIRE_EQUAL( proposal_votes.count("acc4"), 1 );
+      BOOST_REQUIRE_EQUAL( proposal_votes.count("acc8"), 1 );
+      BOOST_REQUIRE_EQUAL( proposal_votes.size(), 4 );
     }
     generate_block();
     {
-      BOOST_REQUIRE(db->get_account( "acc2" ).get_governance_vote_expiration_ts() == expected_expiration_time_2);
-      BOOST_REQUIRE(db->get_account( "acc3" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc4" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc6" ).get_governance_vote_expiration_ts() == expected_expiration_time_2);
-      BOOST_REQUIRE(db->get_account( "acc8" ).get_governance_vote_expiration_ts() == expected_expiration_time_2 + fc::days(1));
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc2" ).get_governance_vote_expiration_ts(), expected_expiration_time_2 );
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc3" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc4" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc6" ).get_governance_vote_expiration_ts(), expected_expiration_time_2 );
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc8" ).get_governance_vote_expiration_ts(), expected_expiration_time_2 + fc::days(1) );
     }
     generate_block();
     {
-      BOOST_REQUIRE(db->get_account( "acc2" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc6" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc8" ).get_governance_vote_expiration_ts() == expected_expiration_time_2 + fc::days(1));
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc2" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc6" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc8" ).get_governance_vote_expiration_ts(), expected_expiration_time_2 + fc::days(1) );
 
       const auto& proposal_votes = db->get_index<proposal_vote_index, by_voter_proposal>();
-      BOOST_REQUIRE(proposal_votes.count("acc8") == 1);
-      BOOST_REQUIRE(proposal_votes.size() == 1);
+      BOOST_REQUIRE_EQUAL( proposal_votes.count("acc8"), 1 );
+      BOOST_REQUIRE_EQUAL( proposal_votes.size(), 1 );
     }
     generate_days_blocks(1, false);
     {
-      BOOST_REQUIRE(db->get_account( "acc8" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc8" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
       const auto& proposal_votes = db->get_index<proposal_vote_index, by_voter_proposal>();
       BOOST_REQUIRE(proposal_votes.empty());
     }
@@ -575,47 +575,47 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
     generate_blocks( expected_expiration_time - fc::seconds( HIVE_BLOCK_INTERVAL ) );
 
     {
-      BOOST_REQUIRE(db->get_account( "acc1" ).get_governance_vote_expiration_ts() == expected_expiration_time);
-      BOOST_REQUIRE(db->get_account( "acc2" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc3" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc4" ).get_governance_vote_expiration_ts() == expected_expiration_time);
-      BOOST_REQUIRE(db->get_account( "acc5" ).get_governance_vote_expiration_ts() == expected_expiration_time);
-      BOOST_REQUIRE(db->get_account( "acc6" ).get_governance_vote_expiration_ts() == expected_expiration_time);
-      BOOST_REQUIRE(db->get_account( "acc7" ).get_governance_vote_expiration_ts() == expected_expiration_time);
-      BOOST_REQUIRE(db->get_account( "acc8" ).get_governance_vote_expiration_ts() == expected_expiration_time);
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc1" ).get_governance_vote_expiration_ts(), expected_expiration_time );
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc2" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc3" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc4" ).get_governance_vote_expiration_ts(), expected_expiration_time );
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc5" ).get_governance_vote_expiration_ts(), expected_expiration_time );
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc6" ).get_governance_vote_expiration_ts(), expected_expiration_time );
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc7" ).get_governance_vote_expiration_ts(), expected_expiration_time );
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc8" ).get_governance_vote_expiration_ts(), expected_expiration_time );
 
       const auto& witness_votes = db->get_index<witness_vote_index, by_account_witness>();
-      BOOST_REQUIRE(witness_votes.count("acc1") == 1);
-      BOOST_REQUIRE(witness_votes.count("acc2") == 0);
-      BOOST_REQUIRE(witness_votes.count("acc3") == 0);
-      BOOST_REQUIRE(witness_votes.count("acc4") == 0);
-      BOOST_REQUIRE(witness_votes.count("acc5") == 2);
-      BOOST_REQUIRE(witness_votes.count("acc6") == 0);
-      BOOST_REQUIRE(witness_votes.count("acc7") == 1);
-      BOOST_REQUIRE(witness_votes.count("acc8") == 1);
-      BOOST_REQUIRE(witness_votes.size() == 5);
+      BOOST_REQUIRE_EQUAL( witness_votes.count("acc1"), 1 );
+      BOOST_REQUIRE_EQUAL( witness_votes.count("acc2"), 0 );
+      BOOST_REQUIRE_EQUAL( witness_votes.count("acc3"), 0 );
+      BOOST_REQUIRE_EQUAL( witness_votes.count("acc4"), 0 );
+      BOOST_REQUIRE_EQUAL( witness_votes.count("acc5"), 2 );
+      BOOST_REQUIRE_EQUAL( witness_votes.count("acc6"), 0 );
+      BOOST_REQUIRE_EQUAL( witness_votes.count("acc7"), 1 );
+      BOOST_REQUIRE_EQUAL( witness_votes.count("acc8"), 1 );
+      BOOST_REQUIRE_EQUAL( witness_votes.size(), 5 );
 
       const auto& proposal_votes = db->get_index<proposal_vote_index, by_voter_proposal>();
-      BOOST_REQUIRE(proposal_votes.count("acc1") == 0);
-      BOOST_REQUIRE(proposal_votes.count("acc2") == 0);
-      BOOST_REQUIRE(proposal_votes.count("acc3") == 0);
-      BOOST_REQUIRE(proposal_votes.count("acc4") == 1);
-      BOOST_REQUIRE(proposal_votes.count("acc5") == 0);
-      BOOST_REQUIRE(proposal_votes.count("acc6") == 3);
-      BOOST_REQUIRE(proposal_votes.count("acc7") == 1);
-      BOOST_REQUIRE(proposal_votes.count("acc8") == 0);
-      BOOST_REQUIRE(proposal_votes.size() == 5);
+      BOOST_REQUIRE_EQUAL( proposal_votes.count("acc1"), 0 );
+      BOOST_REQUIRE_EQUAL( proposal_votes.count("acc2"), 0 );
+      BOOST_REQUIRE_EQUAL( proposal_votes.count("acc3"), 0 );
+      BOOST_REQUIRE_EQUAL( proposal_votes.count("acc4"), 1 );
+      BOOST_REQUIRE_EQUAL( proposal_votes.count("acc5"), 0 );
+      BOOST_REQUIRE_EQUAL( proposal_votes.count("acc6"), 3 );
+      BOOST_REQUIRE_EQUAL( proposal_votes.count("acc7"), 1 );
+      BOOST_REQUIRE_EQUAL( proposal_votes.count("acc8"), 0 );
+      BOOST_REQUIRE_EQUAL( proposal_votes.size(), 5 );
     }
     generate_block();
     {
-      BOOST_REQUIRE(db->get_account( "acc1" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc2" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc3" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc4" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc5" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc6" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc7" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
-      BOOST_REQUIRE(db->get_account( "acc8" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum());
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc1" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc2" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc3" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc4" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc5" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc6" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc7" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc8" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
 
       const auto& witness_votes = db->get_index<witness_vote_index, by_account_witness>();
       BOOST_REQUIRE(witness_votes.empty());
@@ -625,24 +625,24 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
 
       // first one is producer_reward_operation, later we should have expired_account_notification_operation
       const auto& last_operations = get_last_operations(6);
-      BOOST_REQUIRE(last_operations[0].get<expired_account_notification_operation>().account == "acc8");
-      BOOST_REQUIRE(last_operations[1].get<expired_account_notification_operation>().account == "acc7");
-      BOOST_REQUIRE(last_operations[2].get<expired_account_notification_operation>().account == "acc6");
-      BOOST_REQUIRE(last_operations[3].get<expired_account_notification_operation>().account == "acc5");
-      BOOST_REQUIRE(last_operations[4].get<expired_account_notification_operation>().account == "acc4");
-      BOOST_REQUIRE(last_operations[5].get<expired_account_notification_operation>().account == "acc1");
+      BOOST_REQUIRE_EQUAL( last_operations[0].get<expired_account_notification_operation>().account, "acc8" );
+      BOOST_REQUIRE_EQUAL( last_operations[1].get<expired_account_notification_operation>().account, "acc7" );
+      BOOST_REQUIRE_EQUAL( last_operations[2].get<expired_account_notification_operation>().account, "acc6" );
+      BOOST_REQUIRE_EQUAL( last_operations[3].get<expired_account_notification_operation>().account, "acc5" );
+      BOOST_REQUIRE_EQUAL( last_operations[4].get<expired_account_notification_operation>().account, "acc4" );
+      BOOST_REQUIRE_EQUAL( last_operations[5].get<expired_account_notification_operation>().account, "acc1" );
 
-      BOOST_REQUIRE(db->get_account( "acc1" ).witnesses_voted_for == 0);
-      BOOST_REQUIRE(db->get_account( "acc2" ).witnesses_voted_for == 0);
-      BOOST_REQUIRE(db->get_account( "acc3" ).witnesses_voted_for == 0);
-      BOOST_REQUIRE(db->get_account( "acc4" ).witnesses_voted_for == 0);
-      BOOST_REQUIRE(db->get_account( "acc5" ).witnesses_voted_for == 0);
-      BOOST_REQUIRE(db->get_account( "acc6" ).witnesses_voted_for == 0);
-      BOOST_REQUIRE(db->get_account( "acc7" ).witnesses_voted_for == 0);
-      BOOST_REQUIRE(db->get_account( "acc8" ).witnesses_voted_for == 0);
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc1" ).witnesses_voted_for, 0 );
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc2" ).witnesses_voted_for, 0 );
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc3" ).witnesses_voted_for, 0 );
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc4" ).witnesses_voted_for, 0 );
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc5" ).witnesses_voted_for, 0 );
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc6" ).witnesses_voted_for, 0 );
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc7" ).witnesses_voted_for, 0 );
+      BOOST_REQUIRE_EQUAL( db->get_account( "acc8" ).witnesses_voted_for, 0 );
 
       time_point_sec first_expiring_ts = db->get_index<account_index, by_governance_vote_expiration_ts>().begin()->get_governance_vote_expiration_ts();
-      BOOST_REQUIRE(first_expiring_ts == fc::time_point_sec::maximum());
+      BOOST_REQUIRE_EQUAL( first_expiring_ts, fc::time_point_sec::maximum() );
     }
 
     generate_block();
@@ -657,10 +657,10 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
     generate_blocks(2);
     BOOST_REQUIRE(!db->get_account("acc3").has_proxy());
     BOOST_REQUIRE(!db->get_account("acc4").has_proxy());
-    BOOST_REQUIRE(db->get_account("acc5").get_proxy() == db->get_account("acc1").get_id());
-    BOOST_REQUIRE(db->get_account("acc1").get_proxy() == db->get_account("acc2").get_id());
-    BOOST_REQUIRE(db->get_account("acc1").proxied_vsf_votes_total() == db->get_account("acc5").get_direct_governance_vote_power());
-    BOOST_REQUIRE(db->get_account("acc2").proxied_vsf_votes_total() == (db->get_account("acc1").get_direct_governance_vote_power() + db->get_account("acc5").get_direct_governance_vote_power()));
+    BOOST_REQUIRE_EQUAL( db->get_account("acc5").get_proxy(), db->get_account("acc1").get_id() );
+    BOOST_REQUIRE_EQUAL( db->get_account("acc1").get_proxy(), db->get_account("acc2").get_id() );
+    BOOST_REQUIRE_EQUAL( db->get_account("acc1").proxied_vsf_votes_total(), db->get_account("acc5").get_direct_governance_vote_power() );
+    BOOST_REQUIRE_EQUAL( db->get_account("acc2").proxied_vsf_votes_total(), (db->get_account("acc1").get_direct_governance_vote_power() + db->get_account("acc5").get_direct_governance_vote_power()) );
 
     validate_database();
   }
@@ -745,8 +745,8 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes_with_proxy )
       BOOST_REQUIRE_EQUAL( calc_total_votes( _proposal_idx, _id_proposal_01 ), get_vesting( "bobproxy" ).amount.value + get_vesting( "carol" ).amount.value );
     }
     {
-      BOOST_REQUIRE( db->get_account( "alice" ).get_governance_vote_expiration_ts() != fc::time_point_sec::maximum() );
-      BOOST_REQUIRE( db->get_account( "bobproxy" ).get_governance_vote_expiration_ts() != fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_NE( db->get_account( "alice" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_NE( db->get_account( "bobproxy" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
     }
     {
       generate_blocks( LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS );
@@ -760,8 +760,8 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes_with_proxy )
       BOOST_REQUIRE_EQUAL( calc_total_votes( _proposal_idx, _id_proposal_01 ), get_vesting( "bobproxy" ).amount.value + get_vesting( "carol" ).amount.value );
     }
     {
-      BOOST_REQUIRE( db->get_account( "alice" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum() );
-      BOOST_REQUIRE( db->get_account( "bobproxy" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( db->get_account( "bobproxy" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
     }
     {
       auto _next_block = get_nr_blocks_until_proposal_maintenance_block();
@@ -821,9 +821,9 @@ BOOST_AUTO_TEST_CASE( proposals_with_decline_voting_rights )
     //TODO: check balance of acc1 (0) and acc2 (50 days worth of proposal pay, maybe more if it caught one more payout before decline finalized)
 
     //at this point dwr successfully declined voting rights (long ago) - his expiration should be set in stone even if he tries to clear his (nonexisting) votes
-    BOOST_REQUIRE( db->get_account( "dwr" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum() );
+    BOOST_REQUIRE_EQUAL( db->get_account( "dwr" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
     vote_proposal( "dwr", { proposal_2 }, false, dwr_private_key );
-    BOOST_REQUIRE( db->get_account( "dwr" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum() );
+    BOOST_REQUIRE_EQUAL( db->get_account( "dwr" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
     //TODO: decide if finalization of decline should remove existing proposal votes (and if so add tests on number of active votes)
 
     generate_blocks( LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS );
@@ -831,7 +831,7 @@ BOOST_AUTO_TEST_CASE( proposals_with_decline_voting_rights )
 
     generate_days_blocks( 25 );
     //TODO: check balance of acc1 and acc2 (no change since last time)
-    BOOST_REQUIRE( db->get_account( "dwr" ).get_governance_vote_expiration_ts() == fc::time_point_sec::maximum() );
+    BOOST_REQUIRE_EQUAL( db->get_account( "dwr" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
 
     validate_database();
   }
@@ -968,7 +968,7 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes_threshold_exceeded )
           const auto& last_operations = get_last_operations( 1 );
           expired_account_notification_operation_visitor v;
           account_name_type acc_name = last_operations.back().visit( v );
-          BOOST_REQUIRE( acc_name == userI->account );
+          BOOST_REQUIRE_EQUAL( acc_name, userI->account );
           ++userI;
         }
         
@@ -1146,10 +1146,10 @@ BOOST_AUTO_TEST_CASE( generating_payments )
       auto after_voter_01_hbd_balance = _voter_01.get_hbd_balance();
       auto after_treasury_hbd_balance = _treasury.get_hbd_balance();
 
-      BOOST_REQUIRE( before_creator_hbd_balance == after_creator_hbd_balance );
-      BOOST_REQUIRE( before_receiver_hbd_balance == after_receiver_hbd_balance - hourly_pay );
-      BOOST_REQUIRE( before_voter_01_hbd_balance == after_voter_01_hbd_balance );
-      BOOST_REQUIRE( before_treasury_hbd_balance == after_treasury_hbd_balance - treasury_hbd_inflation + hourly_pay );
+      BOOST_REQUIRE_EQUAL( before_creator_hbd_balance, after_creator_hbd_balance );
+      BOOST_REQUIRE_EQUAL( before_receiver_hbd_balance, after_receiver_hbd_balance - hourly_pay );
+      BOOST_REQUIRE_EQUAL( before_voter_01_hbd_balance, after_voter_01_hbd_balance );
+      BOOST_REQUIRE_EQUAL( before_treasury_hbd_balance, after_treasury_hbd_balance - treasury_hbd_inflation + hourly_pay );
     }
 
     validate_database();
@@ -1237,7 +1237,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_01 )
       const account_object& account = db->get_account( item.account );
       auto after_tbd = account.get_hbd_balance();
       auto before_tbd = before_tbds[ item.account ];
-      BOOST_REQUIRE( before_tbd == after_tbd - paid );
+      BOOST_REQUIRE_EQUAL( before_tbd, after_tbd - paid );
     }
 
     validate_database();
@@ -1323,24 +1323,24 @@ BOOST_AUTO_TEST_CASE( generating_payments_02 )
       remove_proposal( item_creator.account, {0}, item_creator.active_key );
       auto found_proposals = calc_proposals( proposal_idx, {0} );
       auto found_votes = calc_proposal_votes( proposal_vote_idx, 0 );
-      BOOST_REQUIRE( found_proposals == 1 );
-      BOOST_REQUIRE( found_votes == 30 );
+      BOOST_REQUIRE_EQUAL( found_proposals, 1 );
+      BOOST_REQUIRE_EQUAL( found_votes, 30 );
     }
 
     {
       generate_block();
       auto found_proposals = calc_proposals( proposal_idx, {0} );
       auto found_votes = calc_proposal_votes( proposal_vote_idx, 0 );
-      BOOST_REQUIRE( found_proposals == 1 );
-      BOOST_REQUIRE( found_votes == 10 );
+      BOOST_REQUIRE_EQUAL( found_proposals, 1 );
+      BOOST_REQUIRE_EQUAL( found_votes, 10 );
     }
 
     {
       generate_block();
       auto found_proposals = calc_proposals( proposal_idx, { 0 } );
       auto found_votes = calc_proposal_votes( proposal_vote_idx, 0 );
-      BOOST_REQUIRE( found_proposals == 0 );
-      BOOST_REQUIRE( found_votes == 0 );
+      BOOST_REQUIRE_EQUAL( found_proposals, 0 );
+      BOOST_REQUIRE_EQUAL( found_votes, 0 );
     }
 
     for( auto item : inits )
@@ -1348,7 +1348,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_02 )
       const account_object& account = db->get_account( item.account );
       auto after_tbd = account.get_hbd_balance();
       auto before_tbd = before_tbds[ item.account ];
-      BOOST_REQUIRE( before_tbd == after_tbd );
+      BOOST_REQUIRE_EQUAL( before_tbd, after_tbd );
     }
 
     validate_database();
@@ -1453,7 +1453,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_03 )
         idump( (after_tbd) );
         idump( (payouts[i]) );
         //idump( (after_tbd - payouts[i++]) );
-        BOOST_REQUIRE( before_tbd == after_tbd - payouts[i++] );
+        BOOST_REQUIRE_EQUAL( before_tbd, after_tbd - payouts[i++] );
       }
     };
 
@@ -1594,11 +1594,11 @@ try
       auto after_voter_01_hbd_balance = _voter_01.get_hbd_balance();
       auto after_treasury_hbd_balance = _treasury.get_hbd_balance();
 
-      BOOST_REQUIRE( before_creator_hbd_balance == after_creator_hbd_balance );
+      BOOST_REQUIRE_EQUAL( before_creator_hbd_balance, after_creator_hbd_balance );
 
-      BOOST_REQUIRE( before_receiver_hbd_balance == after_receiver_hbd_balance - hourly_pay );
-      BOOST_REQUIRE( before_voter_01_hbd_balance == after_voter_01_hbd_balance );
-      BOOST_REQUIRE( before_treasury_hbd_balance == after_treasury_hbd_balance - treasury_hbd_inflation + hourly_pay );
+      BOOST_REQUIRE_EQUAL( before_receiver_hbd_balance, after_receiver_hbd_balance - hourly_pay );
+      BOOST_REQUIRE_EQUAL( before_voter_01_hbd_balance, after_voter_01_hbd_balance );
+      BOOST_REQUIRE_EQUAL( before_treasury_hbd_balance, after_treasury_hbd_balance - treasury_hbd_inflation + hourly_pay );
     }
 
     validate_database();
@@ -1682,10 +1682,10 @@ try
       auto after_voter_01_hbd_balance = _voter_01.get_hbd_balance();
       auto after_treasury_hbd_balance = _treasury.get_hbd_balance();
 
-      BOOST_REQUIRE( before_creator_hbd_balance == after_creator_hbd_balance );
-      BOOST_REQUIRE( before_receiver_hbd_balance == after_receiver_hbd_balance - hourly_pay );
-      BOOST_REQUIRE( before_voter_01_hbd_balance == after_voter_01_hbd_balance );
-      BOOST_REQUIRE( before_treasury_hbd_balance == after_treasury_hbd_balance - treasury_hbd_inflation + hourly_pay );
+      BOOST_REQUIRE_EQUAL( before_creator_hbd_balance, after_creator_hbd_balance );
+      BOOST_REQUIRE_EQUAL( before_receiver_hbd_balance, after_receiver_hbd_balance - hourly_pay );
+      BOOST_REQUIRE_EQUAL( before_voter_01_hbd_balance, after_voter_01_hbd_balance );
+      BOOST_REQUIRE_EQUAL( before_treasury_hbd_balance, after_treasury_hbd_balance - treasury_hbd_inflation + hourly_pay );
     }
 
     validate_database();
@@ -1929,27 +1929,27 @@ BOOST_AUTO_TEST_CASE( proposal_object_apply )
     {
       auto recent_ops = get_last_operations( 2 );
       auto fee_op = recent_ops[1].get< proposal_fee_operation >();
-      BOOST_REQUIRE( fee_op.creator == creator );
-      BOOST_REQUIRE( fee_op.treasury == db->get_treasury_name() );
-      BOOST_REQUIRE( fee_op.fee == fee );
+      BOOST_REQUIRE_EQUAL( fee_op.creator, creator );
+      BOOST_REQUIRE_EQUAL( fee_op.treasury, db->get_treasury_name() );
+      BOOST_REQUIRE_EQUAL( fee_op.fee, fee );
     }
 
-    BOOST_REQUIRE( before_alice_hbd_balance == after_alice_hbd_balance + fee );
-    BOOST_REQUIRE( before_bob_hbd_balance == after_bob_hbd_balance );
+    BOOST_REQUIRE_EQUAL( before_alice_hbd_balance, after_alice_hbd_balance + fee );
+    BOOST_REQUIRE_EQUAL( before_bob_hbd_balance, after_bob_hbd_balance );
     /// Fee shall be paid to treasury account.
-    BOOST_REQUIRE(before_treasury_balance == after_treasury_balance - fee);
+    BOOST_REQUIRE_EQUAL( before_treasury_balance, after_treasury_balance - fee );
 
     const auto& proposal_idx = db->get_index< proposal_index >().indices().get< by_creator >();
     auto found = proposal_idx.find( creator );
     BOOST_REQUIRE( found != proposal_idx.end() );
 
-    BOOST_REQUIRE( found->creator == creator );
-    BOOST_REQUIRE( found->receiver == receiver );
-    BOOST_REQUIRE( found->start_date == start_date );
-    BOOST_REQUIRE( found->end_date == end_date );
-    BOOST_REQUIRE( found->daily_pay == daily_pay );
-    BOOST_REQUIRE( found->subject == subject );
-    BOOST_REQUIRE( found->permlink == permlink );
+    BOOST_REQUIRE_EQUAL( found->creator, creator );
+    BOOST_REQUIRE_EQUAL( found->receiver, receiver );
+    BOOST_REQUIRE_EQUAL( found->start_date, start_date );
+    BOOST_REQUIRE_EQUAL( found->end_date, end_date );
+    BOOST_REQUIRE_EQUAL( found->daily_pay, daily_pay );
+    BOOST_REQUIRE_EQUAL( found->subject, subject );
+    BOOST_REQUIRE_EQUAL( found->permlink, permlink );
 
     validate_database();
   }
@@ -2027,27 +2027,27 @@ BOOST_AUTO_TEST_CASE( proposal_object_apply_fee_increase )
     {
       auto recent_ops = get_last_operations( 2 );
       auto fee_op = recent_ops[1].get< proposal_fee_operation >();
-      BOOST_REQUIRE( fee_op.creator == creator );
-      BOOST_REQUIRE( fee_op.treasury == db->get_treasury_name() );
-      BOOST_REQUIRE( fee_op.fee == fee );
+      BOOST_REQUIRE_EQUAL( fee_op.creator, creator );
+      BOOST_REQUIRE_EQUAL( fee_op.treasury, db->get_treasury_name() );
+      BOOST_REQUIRE_EQUAL( fee_op.fee, fee );
     }
 
-    BOOST_REQUIRE( before_alice_hbd_balance == after_alice_hbd_balance + fee );
-    BOOST_REQUIRE( before_bob_hbd_balance == after_bob_hbd_balance );
+    BOOST_REQUIRE_EQUAL( before_alice_hbd_balance, after_alice_hbd_balance + fee );
+    BOOST_REQUIRE_EQUAL( before_bob_hbd_balance, after_bob_hbd_balance );
     /// Fee shall be paid to treasury account.
-    BOOST_REQUIRE(before_treasury_balance == after_treasury_balance - fee);
+    BOOST_REQUIRE_EQUAL( before_treasury_balance, after_treasury_balance - fee );
 
     const auto& proposal_idx = db->get_index< proposal_index >().indices().get< by_creator >();
     auto found = proposal_idx.find( creator );
     BOOST_REQUIRE( found != proposal_idx.end() );
 
-    BOOST_REQUIRE( found->creator == creator );
-    BOOST_REQUIRE( found->receiver == receiver );
-    BOOST_REQUIRE( found->start_date == start_date );
-    BOOST_REQUIRE( found->end_date == end_date );
-    BOOST_REQUIRE( found->daily_pay == daily_pay );
-    BOOST_REQUIRE( found->subject == subject );
-    BOOST_REQUIRE( found->permlink == permlink );
+    BOOST_REQUIRE_EQUAL( found->creator, creator );
+    BOOST_REQUIRE_EQUAL( found->receiver, receiver );
+    BOOST_REQUIRE_EQUAL( found->start_date, start_date );
+    BOOST_REQUIRE_EQUAL( found->end_date, end_date );
+    BOOST_REQUIRE_EQUAL( found->daily_pay, daily_pay );
+    BOOST_REQUIRE_EQUAL( found->subject, subject );
+    BOOST_REQUIRE_EQUAL( found->permlink, permlink );
 
     validate_database();
   }
@@ -2097,8 +2097,8 @@ BOOST_AUTO_TEST_CASE( proposal_vote_object_apply )
       tx.operations.clear();
 
       auto found = proposal_vote_idx.find( boost::make_tuple( voter_01, id_proposal_00 ) );
-      BOOST_REQUIRE( found->voter == voter_01 );
-      BOOST_REQUIRE( found->proposal_id == id_proposal_00 );
+      BOOST_REQUIRE_EQUAL( found->voter, voter_01 );
+      BOOST_REQUIRE_EQUAL( found->proposal_id, id_proposal_00 );
     }
 
     {
@@ -2175,7 +2175,7 @@ BOOST_AUTO_TEST_CASE( proposal_vote_object_01_apply )
         ++cnt;
         ++found;
       }
-      BOOST_REQUIRE( cnt == 2 );
+      BOOST_REQUIRE_EQUAL( cnt, 2 );
     }
 
     int64_t id_proposal_02 = create_proposal( creator, receiver, start_date, end_date, daily_pay_02, alice_private_key, alice_post_key );
@@ -2203,7 +2203,7 @@ BOOST_AUTO_TEST_CASE( proposal_vote_object_01_apply )
         ++cnt;
         ++found;
       }
-      BOOST_REQUIRE( cnt == 3 );
+      BOOST_REQUIRE_EQUAL( cnt, 3 );
     }
 
     {
@@ -2225,7 +2225,7 @@ BOOST_AUTO_TEST_CASE( proposal_vote_object_01_apply )
         ++cnt;
         ++found;
       }
-      BOOST_REQUIRE( cnt == 3 );
+      BOOST_REQUIRE_EQUAL( cnt, 3 );
     }
 
     {
@@ -2247,7 +2247,7 @@ BOOST_AUTO_TEST_CASE( proposal_vote_object_01_apply )
         ++cnt;
         ++found;
       }
-      BOOST_REQUIRE( cnt == 2 );
+      BOOST_REQUIRE_EQUAL( cnt, 2 );
     }
 
     {
@@ -2269,7 +2269,7 @@ BOOST_AUTO_TEST_CASE( proposal_vote_object_01_apply )
         ++cnt;
         ++found;
       }
-      BOOST_REQUIRE( cnt == 1 );
+      BOOST_REQUIRE_EQUAL( cnt, 1 );
     }
 
     {
@@ -2293,7 +2293,7 @@ BOOST_AUTO_TEST_CASE( proposal_vote_object_01_apply )
         ++cnt;
         ++found;
       }
-      BOOST_REQUIRE( cnt == 0 );
+      BOOST_REQUIRE_EQUAL( cnt, 0 );
     }
 
     {
@@ -2315,7 +2315,7 @@ BOOST_AUTO_TEST_CASE( proposal_vote_object_01_apply )
         ++cnt;
         ++found;
       }
-      BOOST_REQUIRE( cnt == 0 );
+      BOOST_REQUIRE_EQUAL( cnt, 0 );
     }
 
     {
@@ -2336,7 +2336,7 @@ BOOST_AUTO_TEST_CASE( proposal_vote_object_01_apply )
         ++cnt;
         ++found;
       }
-      BOOST_REQUIRE( cnt == 0 );
+      BOOST_REQUIRE_EQUAL( cnt, 0 );
     }
 
     {
@@ -2357,7 +2357,7 @@ BOOST_AUTO_TEST_CASE( proposal_vote_object_01_apply )
         ++cnt;
         ++found;
       }
-      BOOST_REQUIRE( cnt == 0 );
+      BOOST_REQUIRE_EQUAL( cnt, 0 );
     }
 
     validate_database();
@@ -2748,7 +2748,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_000 )
     auto& proposal_idx = db->get_index< proposal_index >().indices().get< by_creator >();
     auto found = proposal_idx.find( cpd.creator );
     BOOST_REQUIRE( found != proposal_idx.end() );
-    BOOST_REQUIRE( proposal_idx.size() == 1 );
+    BOOST_REQUIRE_EQUAL( proposal_idx.size(), 1 );
 
     flat_set<int64_t> proposals = { proposal_1 };
     remove_proposal(cpd.creator, proposals, alice_private_key);
@@ -2784,14 +2784,14 @@ BOOST_AUTO_TEST_CASE( remove_proposal_001 )
     auto& proposal_idx = db->get_index< proposal_index >().indices().get< by_creator >();
     auto found = proposal_idx.find( cpd.creator );
     BOOST_REQUIRE( found != proposal_idx.end() );
-    BOOST_REQUIRE( proposal_idx.size() == 3 );
+    BOOST_REQUIRE_EQUAL( proposal_idx.size(), 3 );
 
     flat_set<int64_t> proposals = { proposal_1 };
     remove_proposal(cpd.creator, proposals, alice_private_key);
 
     found = proposal_idx.find( cpd.creator );
     BOOST_REQUIRE( found != proposal_idx.end() );   //two left
-    BOOST_REQUIRE( proposal_idx.size() == 2 );
+    BOOST_REQUIRE_EQUAL( proposal_idx.size(), 2 );
 
     proposals.clear();
     proposals.insert(proposal_2);
@@ -2799,7 +2799,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_001 )
 
     found = proposal_idx.find( cpd.creator );
     BOOST_REQUIRE( found != proposal_idx.end() );   //one left
-    BOOST_REQUIRE( proposal_idx.size() == 1 );
+    BOOST_REQUIRE_EQUAL( proposal_idx.size(), 1 );
 
     proposals.clear();
     proposals.insert(proposal_3);
@@ -2833,19 +2833,19 @@ BOOST_AUTO_TEST_CASE( remove_proposal_002 )
       BOOST_REQUIRE(proposal >= 0);
       proposals.push_back(proposal);
     }
-    BOOST_REQUIRE(proposals.size() == 6);
+    BOOST_REQUIRE_EQUAL( proposals.size(), 6 );
 
     auto& proposal_idx = db->get_index< proposal_index >().indices().get< by_creator >();
     auto found = proposal_idx.find( cpd.creator );
     BOOST_REQUIRE( found != proposal_idx.end() );
-    BOOST_REQUIRE(proposal_idx.size() == 6);
+    BOOST_REQUIRE_EQUAL( proposal_idx.size(), 6 );
 
     flat_set<int64_t> proposals_to_erase = {proposals[0], proposals[1], proposals[2], proposals[3]};
     remove_proposal(cpd.creator, proposals_to_erase, alice_private_key);
 
     found = proposal_idx.find( cpd.creator );
     BOOST_REQUIRE( found != proposal_idx.end() );
-    BOOST_REQUIRE( proposal_idx.size() == 2 );
+    BOOST_REQUIRE_EQUAL( proposal_idx.size(), 2 );
 
     proposals_to_erase.clear();
     proposals_to_erase.insert(proposals[4]);
@@ -2880,20 +2880,20 @@ BOOST_AUTO_TEST_CASE( remove_proposal_003 )
       BOOST_REQUIRE(proposal >= 0);
       proposals.push_back(proposal);
     }
-    BOOST_REQUIRE(proposals.size() == 2);
+    BOOST_REQUIRE_EQUAL( proposals.size(), 2 );
 
     auto& proposal_idx = db->get_index< proposal_index >().indices().get< by_creator >();
     auto found = proposal_idx.find( cpd.creator );
     BOOST_REQUIRE( found != proposal_idx.end() );
-    BOOST_REQUIRE(proposal_idx.size() == 2);
+    BOOST_REQUIRE_EQUAL( proposal_idx.size(), 2 );
 
     flat_set<int64_t> proposals_to_erase = {proposals[0]};
     remove_proposal(cpd.creator, proposals_to_erase, alice_private_key);
 
     found = proposal_idx.find( cpd.creator );
     BOOST_REQUIRE( found != proposal_idx.end() );
-    BOOST_REQUIRE( found->proposal_id == proposals[1]);
-    BOOST_REQUIRE( proposal_idx.size() == 1 );
+    BOOST_REQUIRE_EQUAL( found->proposal_id, proposals[1] );
+    BOOST_REQUIRE_EQUAL( proposal_idx.size(), 1 );
 
     proposals_to_erase.clear();
     proposals_to_erase.insert(proposals[1]);
@@ -2927,12 +2927,12 @@ BOOST_AUTO_TEST_CASE( remove_proposal_004 )
       BOOST_REQUIRE(proposal >= 0);
       proposals.push_back(proposal);
     }
-    BOOST_REQUIRE(proposals.size() == 6);
+    BOOST_REQUIRE_EQUAL( proposals.size(), 6 );
 
     auto& proposal_idx = db->get_index< proposal_index >().indices().get< by_creator >();
     auto found = proposal_idx.find( cpd.creator );
     BOOST_REQUIRE( found != proposal_idx.end() );
-    BOOST_REQUIRE(proposal_idx.size() == 6);
+    BOOST_REQUIRE_EQUAL( proposal_idx.size(), 6 );
 
     flat_set<int64_t> proposals_to_erase = {proposals[0], proposals[5]};
     remove_proposal(cpd.creator, proposals_to_erase, alice_private_key);
@@ -2940,10 +2940,10 @@ BOOST_AUTO_TEST_CASE( remove_proposal_004 )
     found = proposal_idx.find( cpd.creator );
     BOOST_REQUIRE( found != proposal_idx.end() );
     for(auto& it : proposal_idx) {
-      BOOST_REQUIRE( it.proposal_id != proposals[0] );
-      BOOST_REQUIRE( it.proposal_id != proposals[5] );
+      BOOST_REQUIRE_NE( it.proposal_id, proposals[0] );
+      BOOST_REQUIRE_NE( it.proposal_id, proposals[5] );
     }
-    BOOST_REQUIRE( proposal_idx.size() == 4 );
+    BOOST_REQUIRE_EQUAL( proposal_idx.size(), 4 );
 
     proposals_to_erase.clear();
     proposals_to_erase.insert(proposals[1]);
@@ -2952,13 +2952,13 @@ BOOST_AUTO_TEST_CASE( remove_proposal_004 )
     remove_proposal(cpd.creator, proposals_to_erase, alice_private_key);
     found = proposal_idx.find( cpd.creator );
     for(auto& it : proposal_idx) {
-      BOOST_REQUIRE( it.proposal_id != proposals[0] );
-      BOOST_REQUIRE( it.proposal_id != proposals[1] );
-      BOOST_REQUIRE( it.proposal_id != proposals[4] );
-      BOOST_REQUIRE( it.proposal_id != proposals[5] );
+      BOOST_REQUIRE_NE( it.proposal_id, proposals[0] );
+      BOOST_REQUIRE_NE( it.proposal_id, proposals[1] );
+      BOOST_REQUIRE_NE( it.proposal_id, proposals[4] );
+      BOOST_REQUIRE_NE( it.proposal_id, proposals[5] );
     }
     BOOST_REQUIRE( found != proposal_idx.end() );
-    BOOST_REQUIRE( proposal_idx.size() == 2 );
+    BOOST_REQUIRE_EQUAL( proposal_idx.size(), 2 );
 
     proposals_to_erase.clear();
     proposals_to_erase.insert(proposals[2]);
@@ -2991,7 +2991,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_005 )
     auto found       = proposal_idx.find( cpd.creator );
 
     BOOST_REQUIRE( found != proposal_idx.end() );
-    BOOST_REQUIRE( proposal_idx.size() == 1 );
+    BOOST_REQUIRE_EQUAL( proposal_idx.size(), 1 );
 
     std::vector<int64_t> vote_proposals = {proposal_1};
 
@@ -3029,7 +3029,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_006 )
     auto& proposal_idx = db->get_index< proposal_index >().indices().get< by_creator >();
     auto found = proposal_idx.find( cpd.creator );
     BOOST_REQUIRE( found != proposal_idx.end() );
-    BOOST_REQUIRE( proposal_idx.size() == 2 );
+    BOOST_REQUIRE_EQUAL( proposal_idx.size(), 2 );
 
     std::vector<int64_t> vote_proposals = {proposal_1};
 
@@ -3067,7 +3067,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_007 )
     auto& proposal_idx = db->get_index< proposal_index >().indices().get< by_creator >();
     auto found = proposal_idx.find( cpd.creator );
     BOOST_REQUIRE( found != proposal_idx.end() );
-    BOOST_REQUIRE( proposal_idx.size() == 2 );
+    BOOST_REQUIRE_EQUAL( proposal_idx.size(), 2 );
 
     std::vector<int64_t> vote_proposals = {proposal_1};
     vote_proposal( "bob",   vote_proposals, true, bob_private_key );
@@ -3250,7 +3250,7 @@ BOOST_AUTO_TEST_CASE( proposals_maintenance_01 )
     const auto& proposal_idx = db->get_index< proposal_index >().indices().get< by_proposal_id >();
 
     auto current_active_proposals = nr_proposals;
-    BOOST_REQUIRE( calc_proposals( proposal_idx, proposals_id ) == current_active_proposals );
+    BOOST_REQUIRE_EQUAL( calc_proposals( proposal_idx, proposals_id ), current_active_proposals );
 
     generate_blocks( start_time + fc::seconds( HIVE_PROPOSAL_MAINTENANCE_CLEANUP ) );
     start_time = db->head_block_time();
@@ -3271,10 +3271,10 @@ BOOST_AUTO_TEST_CASE( proposals_maintenance_01 )
         Take a look at comment in `dhf_processor::remove_proposals`
       */
       //BOOST_REQUIRE( current_active_proposals == found ); //earlier
-      BOOST_REQUIRE( nr_proposals == found );               //now
+      BOOST_REQUIRE_EQUAL( nr_proposals, found );               //now
     }
 
-    BOOST_REQUIRE( current_active_proposals == 0 );
+    BOOST_REQUIRE_EQUAL( current_active_proposals, 0 );
 
     validate_database();
   }
@@ -3354,10 +3354,10 @@ BOOST_AUTO_TEST_CASE( proposals_maintenance_02 )
     const auto& proposal_vote_idx = db->get_index< proposal_vote_index >().indices().get< by_proposal_voter >();
 
     auto current_active_proposals = nr_proposals;
-    BOOST_REQUIRE( calc_proposals( proposal_idx, proposals_id ) == current_active_proposals );
+    BOOST_REQUIRE_EQUAL( calc_proposals( proposal_idx, proposals_id ), current_active_proposals );
 
     auto current_active_votes = current_active_proposals * static_cast< int16_t > ( inits.size() );
-    BOOST_REQUIRE( calc_votes( proposal_vote_idx, proposals_id ) == current_active_votes );
+    BOOST_REQUIRE_EQUAL( calc_votes( proposal_vote_idx, proposals_id ), current_active_votes );
 
     generate_blocks( start_time + fc::seconds( HIVE_PROPOSAL_MAINTENANCE_CLEANUP ) );
     start_time = db->head_block_time();
@@ -3380,10 +3380,10 @@ BOOST_AUTO_TEST_CASE( proposals_maintenance_02 )
         Take a look at comment in `dhf_processor::remove_proposals`
       */
       //BOOST_REQUIRE( current_active_anything == found_proposals + found_votes );                            //earlier
-      BOOST_REQUIRE( ( current_active_proposals + current_active_votes ) == found_proposals + found_votes );  //now
+      BOOST_REQUIRE_EQUAL( ( current_active_proposals + current_active_votes ), found_proposals + found_votes );  //now
     }
 
-    BOOST_REQUIRE( current_active_anything == 0 );
+    BOOST_REQUIRE_EQUAL( current_active_anything, 0 );
 
     validate_database();
   }
@@ -3456,13 +3456,13 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold )
     const auto& proposal_vote_idx = db->get_index< proposal_vote_index >().indices().get< by_proposal_voter >();
 
     auto current_active_proposals = nr_proposals;
-    BOOST_REQUIRE( calc_proposals( proposal_idx, proposals_id ) == current_active_proposals );
+    BOOST_REQUIRE_EQUAL( calc_proposals( proposal_idx, proposals_id ), current_active_proposals );
 
     auto current_active_votes = current_active_proposals * static_cast< int16_t > ( inits.size() );
-    BOOST_REQUIRE( calc_votes( proposal_vote_idx, proposals_id ) == current_active_votes );
+    BOOST_REQUIRE_EQUAL( calc_votes( proposal_vote_idx, proposals_id ), current_active_votes );
 
     auto threshold = db->get_remove_threshold();
-    BOOST_REQUIRE( threshold == 20 );
+    BOOST_REQUIRE_EQUAL( threshold, 20 );
 
     flat_set< int64_t > _proposals_id( proposals_id.begin(), proposals_id.end() );
 
@@ -3470,8 +3470,8 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold )
       remove_proposal( item_creator.account,  _proposals_id, item_creator.active_key );
       auto found_proposals = calc_proposals( proposal_idx, proposals_id );
       auto found_votes = calc_votes( proposal_vote_idx, proposals_id );
-      BOOST_REQUIRE( found_proposals == 2 );
-      BOOST_REQUIRE( found_votes == 8 );
+      BOOST_REQUIRE_EQUAL( found_proposals, 2 );
+      BOOST_REQUIRE_EQUAL( found_votes, 8 );
       generate_blocks( 1 );
     }
 
@@ -3479,8 +3479,8 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold )
       HIVE_REQUIRE_ASSERT( remove_proposal( item_creator.account,  _proposals_id, item_creator.active_key ), "false && \"proposal doesn't exist\"" );
       auto found_proposals = calc_proposals( proposal_idx, proposals_id );
       auto found_votes = calc_votes( proposal_vote_idx, proposals_id );
-      BOOST_REQUIRE( found_proposals == 0 );
-      BOOST_REQUIRE( found_votes == 0 );
+      BOOST_REQUIRE_EQUAL( found_proposals, 0 );
+      BOOST_REQUIRE_EQUAL( found_votes, 0 );
       generate_blocks( 1 );
     }
 
@@ -3562,13 +3562,13 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_01 )
     const auto& proposal_vote_idx = db->get_index< proposal_vote_index >().indices().get< by_proposal_voter >();
 
     auto current_active_proposals = nr_proposals;
-    BOOST_REQUIRE( calc_proposals( proposal_idx, proposals_id ) == current_active_proposals );
+    BOOST_REQUIRE_EQUAL( calc_proposals( proposal_idx, proposals_id ), current_active_proposals );
 
     auto current_active_votes = current_active_proposals * static_cast< int16_t > ( inits.size() );
-    BOOST_REQUIRE( calc_votes( proposal_vote_idx, proposals_id ) == current_active_votes );
+    BOOST_REQUIRE_EQUAL( calc_votes( proposal_vote_idx, proposals_id ), current_active_votes );
 
     auto threshold = db->get_remove_threshold();
-    BOOST_REQUIRE( threshold == 20 );
+    BOOST_REQUIRE_EQUAL( threshold, 20 );
 
     /*
       nr_proposals = 10
@@ -3611,13 +3611,13 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_01 )
       generate_block();
       auto found_proposals = calc_proposals( proposal_idx, proposals_id );
       auto found_votes = calc_votes( proposal_vote_idx, proposals_id );
-      BOOST_REQUIRE( found_proposals == 9 );
-      BOOST_REQUIRE( found_votes == 54 );
+      BOOST_REQUIRE_EQUAL( found_proposals, 9 );
+      BOOST_REQUIRE_EQUAL( found_votes, 54 );
 
       int32_t cnt = 0;
       for( auto id : proposals_id )
         cnt += ( id != 3 ) ? calc_proposal_votes( proposal_vote_idx, id ) : 0;
-      BOOST_REQUIRE( cnt == found_votes );
+      BOOST_REQUIRE_EQUAL( cnt, found_votes );
     }
 
     /*
@@ -3635,8 +3635,8 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_01 )
       auto found_proposals = calc_proposals( proposal_idx, proposals_id );
       auto found_votes = calc_votes( proposal_vote_idx, proposals_id );
       BOOST_REQUIRE( exist_proposal( 7 ) && find_proposal( 7 )->removed );
-      BOOST_REQUIRE( found_proposals == 7 );
-      BOOST_REQUIRE( found_votes == 36 );
+      BOOST_REQUIRE_EQUAL( found_proposals, 7 );
+      BOOST_REQUIRE_EQUAL( found_votes, 36 );
     }
 
 
@@ -3657,8 +3657,8 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_01 )
       auto found_proposals = calc_proposals( proposal_idx, proposals_id );
       auto found_votes = calc_votes( proposal_vote_idx, proposals_id );
       BOOST_REQUIRE( !exist_proposal( 7 ) );
-      BOOST_REQUIRE( found_proposals == 6 );
-      BOOST_REQUIRE( found_votes == 36 );
+      BOOST_REQUIRE_EQUAL( found_proposals, 6 );
+      BOOST_REQUIRE_EQUAL( found_votes, 36 );
     }
 
     /*
@@ -3677,13 +3677,13 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_01 )
       auto found_proposals = calc_proposals( proposal_idx, proposals_id );
       auto found_votes = calc_votes( proposal_vote_idx, proposals_id );
       BOOST_REQUIRE( exist_proposal( 8 ) && find_proposal( 8 )->removed );
-      BOOST_REQUIRE( found_proposals == 4 );
-      BOOST_REQUIRE( found_votes == 18 );
+      BOOST_REQUIRE_EQUAL( found_proposals, 4 );
+      BOOST_REQUIRE_EQUAL( found_votes, 18 );
 
       int32_t cnt = 0;
       for( auto id : proposals_id )
         cnt += ( id == 0 || id == 4 || id == 8 || id == 9 ) ? calc_proposal_votes( proposal_vote_idx, id ) : 0;
-      BOOST_REQUIRE( cnt == found_votes );
+      BOOST_REQUIRE_EQUAL( cnt, found_votes );
     }
 
     /*
@@ -3701,8 +3701,8 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_01 )
       auto found_proposals = calc_proposals( proposal_idx, proposals_id );
       auto found_votes = calc_votes( proposal_vote_idx, proposals_id );
       BOOST_REQUIRE( exist_proposal( 9 ) && find_proposal( 9 )->removed );
-      BOOST_REQUIRE( found_proposals == 1 );
-      BOOST_REQUIRE( found_votes == 1 );
+      BOOST_REQUIRE_EQUAL( found_proposals, 1 );
+      BOOST_REQUIRE_EQUAL( found_votes, 1 );
     }
 
     /*
@@ -3721,8 +3721,8 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_01 )
 
       auto found_proposals = calc_proposals( proposal_idx, proposals_id );
       auto found_votes = calc_votes( proposal_vote_idx, proposals_id );
-      BOOST_REQUIRE( found_proposals == 0 );
-      BOOST_REQUIRE( found_votes == 0 );
+      BOOST_REQUIRE_EQUAL( found_proposals, 0 );
+      BOOST_REQUIRE_EQUAL( found_votes, 0 );
     }
 
   }
@@ -3806,13 +3806,13 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_02 )
     const auto& proposal_vote_idx = db->get_index< proposal_vote_index >().indices().get< by_proposal_voter >();
 
     auto current_active_proposals = nr_proposals;
-    BOOST_REQUIRE( calc_proposals( proposal_idx, proposals_id ) == current_active_proposals );
+    BOOST_REQUIRE_EQUAL( calc_proposals( proposal_idx, proposals_id ), current_active_proposals );
 
     auto current_active_votes = current_active_proposals * static_cast< int16_t > ( inits.size() );
-    BOOST_REQUIRE( calc_votes( proposal_vote_idx, proposals_id ) == current_active_votes );
+    BOOST_REQUIRE_EQUAL( calc_votes( proposal_vote_idx, proposals_id ), current_active_votes );
 
     auto threshold = db->get_remove_threshold();
-    BOOST_REQUIRE( threshold == 20 );
+    BOOST_REQUIRE_EQUAL( threshold, 20 );
 
     /*
       nr_proposals = 5
@@ -3850,8 +3850,8 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_02 )
       auto found_votes = calc_votes( proposal_vote_idx, proposals_id );
       BOOST_REQUIRE( exist_proposal( 0 ) && find_proposal( 0 )->removed );
       BOOST_REQUIRE( exist_proposal( 3 ) && find_proposal( 3 )->removed );
-      BOOST_REQUIRE( found_proposals == 5 );
-      BOOST_REQUIRE( found_votes == 230 );
+      BOOST_REQUIRE_EQUAL( found_proposals, 5 );
+      BOOST_REQUIRE_EQUAL( found_votes, 230 );
     }
 
     /*
@@ -3868,8 +3868,8 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_02 )
       auto found_votes = calc_votes( proposal_vote_idx, proposals_id );
       BOOST_REQUIRE( exist_proposal( 0 ) && find_proposal( 0 )->removed );
       BOOST_REQUIRE( exist_proposal( 3 ) && find_proposal( 3 )->removed );
-      BOOST_REQUIRE( found_proposals == 5 );
-      BOOST_REQUIRE( found_votes == 210 );
+      BOOST_REQUIRE_EQUAL( found_proposals, 5 );
+      BOOST_REQUIRE_EQUAL( found_votes, 210 );
     }
 
     /*
@@ -3889,8 +3889,8 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_02 )
       auto found_votes = calc_votes( proposal_vote_idx, proposals_id );
       BOOST_REQUIRE( !exist_proposal( 0 ) );
       BOOST_REQUIRE( !exist_proposal( 3 ) );
-      BOOST_REQUIRE( found_proposals == 3 );
-      BOOST_REQUIRE( found_votes == 150 );
+      BOOST_REQUIRE_EQUAL( found_proposals, 3 );
+      BOOST_REQUIRE_EQUAL( found_votes, 150 );
     }
 
     /*
@@ -3909,8 +3909,8 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_02 )
       auto found_votes = calc_votes( proposal_vote_idx, proposals_id );
       BOOST_REQUIRE( !exist_proposal( 0 ) );
       BOOST_REQUIRE( !exist_proposal( 3 ) );
-      BOOST_REQUIRE( found_proposals == 3 );
-      BOOST_REQUIRE( found_votes == 150 );
+      BOOST_REQUIRE_EQUAL( found_proposals, 3 );
+      BOOST_REQUIRE_EQUAL( found_votes, 150 );
     }
 
     /*
@@ -3923,8 +3923,8 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_02 )
       auto found_votes = calc_votes( proposal_vote_idx, proposals_id );
       BOOST_REQUIRE( !exist_proposal( 0 ) );
       BOOST_REQUIRE( !exist_proposal( 3 ) );
-      BOOST_REQUIRE( found_proposals == 3 );
-      BOOST_REQUIRE( found_votes == 150 );
+      BOOST_REQUIRE_EQUAL( found_proposals, 3 );
+      BOOST_REQUIRE_EQUAL( found_votes, 150 );
     }
 
     /*
@@ -3939,8 +3939,8 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_02 )
       auto found_proposals = calc_proposals( proposal_idx, proposals_id );
       auto found_votes = calc_votes( proposal_vote_idx, proposals_id );
       BOOST_REQUIRE( exist_proposal( 1 ) && find_proposal( 1 )->removed );
-      BOOST_REQUIRE( found_proposals == 3 );
-      BOOST_REQUIRE( found_votes == 130 );
+      BOOST_REQUIRE_EQUAL( found_proposals, 3 );
+      BOOST_REQUIRE_EQUAL( found_votes, 130 );
     }
 
     /*
@@ -3956,8 +3956,8 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_02 )
       auto found_votes = calc_votes( proposal_vote_idx, proposals_id );
       BOOST_REQUIRE( exist_proposal( 1 ) && find_proposal( 1 )->removed );
       BOOST_REQUIRE( exist_proposal( 2 ) && find_proposal( 2 )->removed );
-      BOOST_REQUIRE( found_proposals == 3 );
-      BOOST_REQUIRE( found_votes == 110 );
+      BOOST_REQUIRE_EQUAL( found_proposals, 3 );
+      BOOST_REQUIRE_EQUAL( found_votes, 110 );
     }
 
     /*
@@ -3976,8 +3976,8 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_02 )
       auto found_votes = calc_votes( proposal_vote_idx, proposals_id );
       BOOST_REQUIRE( !exist_proposal( 1 ) );
       BOOST_REQUIRE( exist_proposal( 2 ) && find_proposal( 2 )->removed );
-      BOOST_REQUIRE( found_proposals == 2 );
-      BOOST_REQUIRE( found_votes == 51 );
+      BOOST_REQUIRE_EQUAL( found_proposals, 2 );
+      BOOST_REQUIRE_EQUAL( found_votes, 51 );
     }
 
     /*
@@ -3994,8 +3994,8 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_02 )
       auto found_votes = calc_votes( proposal_vote_idx, proposals_id );
       BOOST_REQUIRE( !exist_proposal( 1 ) );
       BOOST_REQUIRE( !exist_proposal( 2 ) );
-      BOOST_REQUIRE( found_proposals == 1 );
-      BOOST_REQUIRE( found_votes == 50 );
+      BOOST_REQUIRE_EQUAL( found_proposals, 1 );
+      BOOST_REQUIRE_EQUAL( found_votes, 50 );
     }
 
     /*
@@ -4010,14 +4010,14 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_02 )
       auto found_proposals = calc_proposals( proposal_idx, proposals_id );
       auto found_votes = calc_votes( proposal_vote_idx, proposals_id );
       BOOST_REQUIRE( exist_proposal( 4 ) && find_proposal( 4 )->removed );
-      BOOST_REQUIRE( found_proposals == 1 );
-      BOOST_REQUIRE( found_votes == 30 );
+      BOOST_REQUIRE_EQUAL( found_proposals, 1 );
+      BOOST_REQUIRE_EQUAL( found_votes, 30 );
 
       for( auto item : inits )
         HIVE_REQUIRE_ASSERT( vote_proposal( item.account, {4}, true/*approve*/, item.active_key), "false && \"proposal not found\"" );
 
       found_votes = calc_votes( proposal_vote_idx, proposals_id );
-      BOOST_REQUIRE( found_votes == 30 );
+      BOOST_REQUIRE_EQUAL( found_votes, 30 );
     }
 
     /*
@@ -4034,14 +4034,14 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_02 )
       auto found_proposals = calc_proposals( proposal_idx, proposals_id );
       auto found_votes = calc_votes( proposal_vote_idx, proposals_id );
       BOOST_REQUIRE( !exist_proposal( 4 ) );
-      BOOST_REQUIRE( found_proposals == 0 );
-      BOOST_REQUIRE( found_votes == 0 );
+      BOOST_REQUIRE_EQUAL( found_proposals, 0 );
+      BOOST_REQUIRE_EQUAL( found_votes, 0 );
 
       for( auto item : inits )
         HIVE_REQUIRE_ASSERT( vote_proposal( item.account, {4}, true/*approve*/, item.active_key), "false && \"proposal not found\"" );
 
       found_votes = calc_votes( proposal_vote_idx, proposals_id );
-      BOOST_REQUIRE( found_votes == 0 );
+      BOOST_REQUIRE_EQUAL( found_votes, 0 );
     }
   }
   FC_LOG_AND_RETHROW()
@@ -4104,13 +4104,13 @@ BOOST_AUTO_TEST_CASE( update_proposal_000 )
     auto found = proposal_idx.find( creator );
     BOOST_REQUIRE( found != proposal_idx.end() );
 
-    BOOST_REQUIRE( found->creator == creator );
-    BOOST_REQUIRE( found->receiver == receiver );
-    BOOST_REQUIRE( found->start_date == start_date );
-    BOOST_REQUIRE( found->end_date == end_date );
-    BOOST_REQUIRE( found->daily_pay == daily_pay );
-    BOOST_REQUIRE( found->subject == subject );
-    BOOST_REQUIRE( found->permlink == permlink );
+    BOOST_REQUIRE_EQUAL( found->creator, creator );
+    BOOST_REQUIRE_EQUAL( found->receiver, receiver );
+    BOOST_REQUIRE_EQUAL( found->start_date, start_date );
+    BOOST_REQUIRE_EQUAL( found->end_date, end_date );
+    BOOST_REQUIRE_EQUAL( found->daily_pay, daily_pay );
+    BOOST_REQUIRE_EQUAL( found->subject, subject );
+    BOOST_REQUIRE_EQUAL( found->permlink, permlink );
 
     BOOST_TEST_MESSAGE("-- updating");
 
@@ -4121,24 +4121,24 @@ BOOST_AUTO_TEST_CASE( update_proposal_000 )
     update_proposal(found->proposal_id, creator, new_daily_pay, new_subject, new_permlink, alice_private_key);
     generate_block();
     found = proposal_idx.find( creator );
-    BOOST_REQUIRE( found->creator == creator );
-    BOOST_REQUIRE( found->receiver == receiver );
-    BOOST_REQUIRE( found->start_date == start_date );
-    BOOST_REQUIRE( found->end_date == end_date );
-    BOOST_REQUIRE( found->daily_pay == new_daily_pay );
-    BOOST_REQUIRE( found->subject == new_subject );
-    BOOST_REQUIRE( found->permlink == new_permlink );
+    BOOST_REQUIRE_EQUAL( found->creator, creator );
+    BOOST_REQUIRE_EQUAL( found->receiver, receiver );
+    BOOST_REQUIRE_EQUAL( found->start_date, start_date );
+    BOOST_REQUIRE_EQUAL( found->end_date, end_date );
+    BOOST_REQUIRE_EQUAL( found->daily_pay, new_daily_pay );
+    BOOST_REQUIRE_EQUAL( found->subject, new_subject );
+    BOOST_REQUIRE_EQUAL( found->permlink, new_permlink );
 
     update_proposal(found->proposal_id, creator, new_daily_pay, new_subject, new_permlink, alice_private_key, &new_end_date);
     generate_block();
     found = proposal_idx.find( creator );
-    BOOST_REQUIRE( found->creator == creator );
-    BOOST_REQUIRE( found->receiver == receiver );
-    BOOST_REQUIRE( found->start_date == start_date );
-    BOOST_REQUIRE( found->end_date == new_end_date );
-    BOOST_REQUIRE( found->daily_pay == new_daily_pay );
-    BOOST_REQUIRE( found->subject == new_subject );
-    BOOST_REQUIRE( found->permlink == new_permlink );
+    BOOST_REQUIRE_EQUAL( found->creator, creator );
+    BOOST_REQUIRE_EQUAL( found->receiver, receiver );
+    BOOST_REQUIRE_EQUAL( found->start_date, start_date );
+    BOOST_REQUIRE_EQUAL( found->end_date, new_end_date );
+    BOOST_REQUIRE_EQUAL( found->daily_pay, new_daily_pay );
+    BOOST_REQUIRE_EQUAL( found->subject, new_subject );
+    BOOST_REQUIRE_EQUAL( found->permlink, new_permlink );
 
     validate_database();
   } FC_LOG_AND_RETHROW()
@@ -4572,13 +4572,13 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_03 )
     const auto& proposal_vote_idx = db->get_index< proposal_vote_index >().indices().get< by_proposal_voter >();
 
     auto current_active_proposals = nr_proposals;
-    BOOST_REQUIRE( calc_proposals( proposal_idx, proposals_id ) == current_active_proposals );
+    BOOST_REQUIRE_EQUAL( calc_proposals( proposal_idx, proposals_id ), current_active_proposals );
 
     auto current_active_votes = current_active_proposals * static_cast< int16_t > ( inits.size() );
-    BOOST_REQUIRE( calc_votes( proposal_vote_idx, proposals_id ) == current_active_votes );
+    BOOST_REQUIRE_EQUAL( calc_votes( proposal_vote_idx, proposals_id ), current_active_votes );
 
     auto threshold = db->get_remove_threshold();
-    BOOST_REQUIRE( threshold == -1 );
+    BOOST_REQUIRE_EQUAL( threshold, -1 );
 
     generate_blocks( start_time + fc::seconds( HIVE_PROPOSAL_MAINTENANCE_CLEANUP ) );
     start_time = db->head_block_time();
@@ -4592,8 +4592,8 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_03 )
     */
     //BOOST_REQUIRE( calc_proposals( proposal_idx, proposals_id ) == 0 );                       //earlier
     //BOOST_REQUIRE( calc_votes( proposal_vote_idx, proposals_id ) == 0 );                      //earlier
-    BOOST_REQUIRE( calc_proposals( proposal_idx, proposals_id ) == current_active_proposals );  //now
-    BOOST_REQUIRE( calc_votes( proposal_vote_idx, proposals_id ) == current_active_votes );     //now
+    BOOST_REQUIRE_EQUAL( calc_proposals( proposal_idx, proposals_id ), current_active_proposals );  //now
+    BOOST_REQUIRE_EQUAL( calc_votes( proposal_vote_idx, proposals_id ), current_active_votes );     //now
 
     int32_t benchmark_time = get_time( *db, dhf_processor::get_removing_name() );
     idump( (benchmark_time) );
@@ -4713,7 +4713,7 @@ BOOST_AUTO_TEST_CASE( generating_payments )
       idump( (before_tbd) );
       idump( (after_tbd) );
       idump( (paid) );
-      BOOST_REQUIRE( before_tbd == after_tbd - paid );
+      BOOST_REQUIRE_EQUAL( before_tbd, after_tbd - paid );
     }
 
     validate_database();
@@ -4756,9 +4756,9 @@ BOOST_AUTO_TEST_CASE( converting_hive_to_dhf )
     auto after_treasury_hbd_balance =  _treasury.get_hbd_balance();
     auto after_treasury_hive_balance =  _treasury.get_hive_balance();
 
-    BOOST_REQUIRE( before_treasury_hbd_balance == after_treasury_hbd_balance - treasury_hbd_inflation - hbd_converted );
-    BOOST_REQUIRE( before_treasury_hive_balance == after_treasury_hive_balance + hive_converted );
-    BOOST_REQUIRE( before_daily_maintenance_time == after_daily_maintenance_time - fc::seconds( HIVE_DAILY_PROPOSAL_MAINTENANCE_PERIOD )  );
+    BOOST_REQUIRE_EQUAL( before_treasury_hbd_balance, after_treasury_hbd_balance - treasury_hbd_inflation - hbd_converted );
+    BOOST_REQUIRE_EQUAL( before_treasury_hive_balance, after_treasury_hive_balance + hive_converted );
+    BOOST_REQUIRE_EQUAL( before_daily_maintenance_time, after_daily_maintenance_time - fc::seconds( HIVE_DAILY_PROPOSAL_MAINTENANCE_PERIOD ) );
     validate_database();
   }
   FC_LOG_AND_RETHROW()

@@ -85,7 +85,7 @@ BOOST_AUTO_TEST_CASE( declined_voting_rights_basic )
 
         auto itr = request_idx.find( "alice" );
         BOOST_REQUIRE( itr != request_idx.end() );
-        BOOST_REQUIRE( itr->effective_date == executor->db->head_block_time() + HIVE_OWNER_AUTH_RECOVERY_PERIOD );
+        BOOST_REQUIRE_EQUAL( itr->effective_date, executor->db->head_block_time() + HIVE_OWNER_AUTH_RECOVERY_PERIOD );
 
         executor->generate_block();
 
@@ -106,7 +106,7 @@ BOOST_AUTO_TEST_CASE( declined_voting_rights_basic )
             Before HF28, a last vop was `proxy_cleared_operation`.
         */
         auto recent_op = recent_ops.back().get< declined_voting_rights_operation >();
-        BOOST_REQUIRE( recent_op.account == "alice" );
+        BOOST_REQUIRE_EQUAL( recent_op.account, "alice" );
     };
 
     BOOST_TEST_MESSAGE( "*****HF-27*****" );
@@ -773,7 +773,7 @@ BOOST_AUTO_TEST_CASE( basic_expiration_test )
           {
             _passed = false;
             BOOST_TEST_MESSAGE("Caught assert exception: " + ex.to_string() );
-            BOOST_REQUIRE( ex.to_string().find( "Duplicate transaction check failed" )  != std::string::npos );
+            BOOST_REQUIRE_NE( ex.to_string().find( "Duplicate transaction check failed" ), std::string::npos );
           }
           BOOST_REQUIRE( !_passed );
         }
@@ -808,9 +808,9 @@ BOOST_AUTO_TEST_CASE( basic_expiration_test )
 
             BOOST_TEST_MESSAGE("Caught assert exception: " + ex.to_string() );
             if( _additional_statuses[_test_cnt] )
-              BOOST_REQUIRE( ex.to_string().find( "Duplicate transaction check failed" )  != std::string::npos );
+              BOOST_REQUIRE_NE( ex.to_string().find( "Duplicate transaction check failed" ), std::string::npos );
             else
-              BOOST_REQUIRE( ex.to_string().find( "trx.expiration <= now" )  != std::string::npos );
+              BOOST_REQUIRE_NE( ex.to_string().find( "trx.expiration <= now" ), std::string::npos );
           }
           BOOST_REQUIRE( !_passed );
         }
@@ -1528,7 +1528,7 @@ BOOST_AUTO_TEST_CASE( disturbed_power_down )
     int64_t gil_vests = gil_amount;
     // check to make sure mainnet values are used
     static_assert( ( gil_amount / 104 == 9615 ) && ( gil_amount * split / 104 == 9615384615 ) );
-    BOOST_REQUIRE( db->get_dynamic_global_properties().get_vesting_share_price() == VEST_price( 1000000, 1000 ) );
+    BOOST_REQUIRE_EQUAL( db->get_dynamic_global_properties().get_vesting_share_price(), VEST_price( 1000000, 1000 ) );
 
     ACTORS_DEFAULT_FEE( (bob)(gil) );
     vest( "bob", HIVE_asset( bob_amount / 1000 ) );
@@ -1958,16 +1958,16 @@ BOOST_AUTO_TEST_CASE( genesis_account_authorities )
   FC_LOG_AND_RETHROW()
 }
 
-void set_witness_properties( database_fixture& fixture, uint32_t block_size, uint16_t hbd_apr, const asset& fee )
+void set_witness_properties( database_fixture& fixture, uint32_t block_size, uint16_t hbd_apr, const HIVE_asset& fee )
 {
   decltype( witness_set_properties_operation::props ) props;
   props[ "key" ] = fc::raw::pack_to_vector( fixture.init_account_pub_key );
   props[ "maximum_block_size" ] = fc::raw::pack_to_vector( block_size );
   props[ "hbd_interest_rate" ] = fc::raw::pack_to_vector( hbd_apr );
-  props[ "account_creation_fee" ] = fc::raw::pack_to_vector( fee );
+  props[ "account_creation_fee" ] = fc::raw::pack_to_vector( fee.to_asset() );
   fixture.set_witness_props( props, false );
   ilog( "#${b} setting new witness values: maximum_block_size = ${s}, hbd_interest_rate = ${h}, account_creation_fee = ${f}",
-    ( "b", fixture.db->head_block_num() )( "s", block_size )( "h", hbd_apr )( "f", legacy_asset( fee ).to_string() ) );
+    ( "b", fixture.db->head_block_num() )( "s", block_size )( "h", hbd_apr )( "f", fixture.asset_to_string( fee ) ) );
 };
 
 const uint32_t default_block_size = HIVE_MIN_BLOCK_SIZE_LIMIT * 2;
@@ -1998,9 +1998,9 @@ BOOST_AUTO_TEST_CASE( global_witness_props_basic_test )
     BOOST_REQUIRE_EQUAL( future_wso.median_props.hbd_interest_rate, default_hbd_apr );
     BOOST_REQUIRE_EQUAL( witness.props.hbd_interest_rate, default_hbd_apr );
 
-    BOOST_REQUIRE_EQUAL( wso.median_props.account_creation_fee.amount.value, default_fee.amount.value );
-    BOOST_REQUIRE_EQUAL( future_wso.median_props.account_creation_fee.amount.value, default_fee.amount.value );
-    BOOST_REQUIRE_EQUAL( witness.props.account_creation_fee.amount.value, default_fee.amount.value );
+    BOOST_REQUIRE_EQUAL( wso.median_props.account_creation_fee, default_fee );
+    BOOST_REQUIRE_EQUAL( future_wso.median_props.account_creation_fee, default_fee );
+    BOOST_REQUIRE_EQUAL( witness.props.account_creation_fee, default_fee );
 
     // generate three schedules worth of blocks so we know all the mechanisms had a chance to activate
     // (that is, default global properties that are used in first schedule, default witness schedule
@@ -2015,7 +2015,7 @@ BOOST_AUTO_TEST_CASE( global_witness_props_basic_test )
     // change witness properties
     uint32_t new_block_size1 = HIVE_MIN_BLOCK_SIZE_LIMIT * 3;
     uint16_t new_hbd_apr1 = HIVE_DEFAULT_HBD_INTEREST_RATE * 2;
-    asset new_fee1 = ASSET( "1.500 TESTS" );
+    HIVE_asset new_fee1( 1'500 );
     set_witness_properties( *this, new_block_size1, new_hbd_apr1, new_fee1 );
 
     // run one schedule so changed properties are included in future wso
@@ -2024,17 +2024,17 @@ BOOST_AUTO_TEST_CASE( global_witness_props_basic_test )
     // witness has new values
     BOOST_REQUIRE_EQUAL( witness.props.maximum_block_size, new_block_size1 );
     BOOST_REQUIRE_EQUAL( witness.props.hbd_interest_rate, new_hbd_apr1 );
-    BOOST_REQUIRE_EQUAL( witness.props.account_creation_fee.amount.value, new_fee1.amount.value );
+    BOOST_REQUIRE_EQUAL( witness.props.account_creation_fee, new_fee1 );
 
     // future wso has new values
     BOOST_REQUIRE_EQUAL( future_wso.median_props.maximum_block_size, new_block_size1 );
     BOOST_REQUIRE_EQUAL( future_wso.median_props.hbd_interest_rate, new_hbd_apr1 );
-    BOOST_REQUIRE_EQUAL( future_wso.median_props.account_creation_fee.amount.value, new_fee1.amount.value );
+    BOOST_REQUIRE_EQUAL( future_wso.median_props.account_creation_fee, new_fee1 );
 
     // wso still has old values
     BOOST_REQUIRE_EQUAL( wso.median_props.maximum_block_size, default_block_size );
     BOOST_REQUIRE_EQUAL( wso.median_props.hbd_interest_rate, default_hbd_apr );
-    BOOST_REQUIRE_EQUAL( wso.median_props.account_creation_fee.amount.value, default_fee.amount.value );
+    BOOST_REQUIRE_EQUAL( wso.median_props.account_creation_fee, default_fee );
 
     // dgpo incorrectly has new values, because they were activated when future wso was filled
     BOOST_REQUIRE_EQUAL( dgpo.maximum_block_size, new_block_size1 );
@@ -2048,20 +2048,20 @@ BOOST_AUTO_TEST_CASE( global_witness_props_basic_test )
     // all objects have new values
     BOOST_REQUIRE_EQUAL( witness.props.maximum_block_size, new_block_size1 );
     BOOST_REQUIRE_EQUAL( witness.props.hbd_interest_rate, new_hbd_apr1 );
-    BOOST_REQUIRE_EQUAL( witness.props.account_creation_fee.amount.value, new_fee1.amount.value );
+    BOOST_REQUIRE_EQUAL( witness.props.account_creation_fee, new_fee1 );
     BOOST_REQUIRE_EQUAL( future_wso.median_props.maximum_block_size, new_block_size1 );
     BOOST_REQUIRE_EQUAL( future_wso.median_props.hbd_interest_rate, new_hbd_apr1 );
-    BOOST_REQUIRE_EQUAL( future_wso.median_props.account_creation_fee.amount.value, new_fee1.amount.value );
+    BOOST_REQUIRE_EQUAL( future_wso.median_props.account_creation_fee, new_fee1 );
     BOOST_REQUIRE_EQUAL( wso.median_props.maximum_block_size, new_block_size1 );
     BOOST_REQUIRE_EQUAL( wso.median_props.hbd_interest_rate, new_hbd_apr1 );
-    BOOST_REQUIRE_EQUAL( wso.median_props.account_creation_fee.amount.value, new_fee1.amount.value );
+    BOOST_REQUIRE_EQUAL( wso.median_props.account_creation_fee, new_fee1 );
     BOOST_REQUIRE_EQUAL( dgpo.maximum_block_size, new_block_size1 );
     BOOST_REQUIRE_EQUAL( dgpo.hbd_interest_rate, new_hbd_apr1 );
 
     // change witness properties again
     uint32_t new_block_size2 = HIVE_MIN_BLOCK_SIZE_LIMIT * 5;
     uint16_t new_hbd_apr2 = HIVE_DEFAULT_HBD_INTEREST_RATE * 4;
-    asset new_fee2 = ASSET( "2.500 TESTS" );
+    HIVE_asset new_fee2( 2'500 );
     set_witness_properties( *this, new_block_size2, new_hbd_apr2, new_fee2 );
 
     // run one schedule so changed properties are included in future wso
@@ -2070,17 +2070,17 @@ BOOST_AUTO_TEST_CASE( global_witness_props_basic_test )
     // witness has new values
     BOOST_REQUIRE_EQUAL( witness.props.maximum_block_size, new_block_size2 );
     BOOST_REQUIRE_EQUAL( witness.props.hbd_interest_rate, new_hbd_apr2 );
-    BOOST_REQUIRE_EQUAL( witness.props.account_creation_fee.amount.value, new_fee2.amount.value );
+    BOOST_REQUIRE_EQUAL( witness.props.account_creation_fee, new_fee2 );
 
     // future wso has new values
     BOOST_REQUIRE_EQUAL( future_wso.median_props.maximum_block_size, new_block_size2 );
     BOOST_REQUIRE_EQUAL( future_wso.median_props.hbd_interest_rate, new_hbd_apr2 );
-    BOOST_REQUIRE_EQUAL( future_wso.median_props.account_creation_fee.amount.value, new_fee2.amount.value );
+    BOOST_REQUIRE_EQUAL( future_wso.median_props.account_creation_fee, new_fee2 );
 
     // wso still has previous values
     BOOST_REQUIRE_EQUAL( wso.median_props.maximum_block_size, new_block_size1 );
     BOOST_REQUIRE_EQUAL( wso.median_props.hbd_interest_rate, new_hbd_apr1 );
-    BOOST_REQUIRE_EQUAL( wso.median_props.account_creation_fee.amount.value, new_fee1.amount.value );
+    BOOST_REQUIRE_EQUAL( wso.median_props.account_creation_fee, new_fee1 );
 
     // dgpo also has previous values
     BOOST_REQUIRE_EQUAL( dgpo.maximum_block_size, new_block_size1 );
@@ -2092,13 +2092,13 @@ BOOST_AUTO_TEST_CASE( global_witness_props_basic_test )
     // all objects have new values
     BOOST_REQUIRE_EQUAL( witness.props.maximum_block_size, new_block_size2 );
     BOOST_REQUIRE_EQUAL( witness.props.hbd_interest_rate, new_hbd_apr2 );
-    BOOST_REQUIRE_EQUAL( witness.props.account_creation_fee.amount.value, new_fee2.amount.value );
+    BOOST_REQUIRE_EQUAL( witness.props.account_creation_fee, new_fee2 );
     BOOST_REQUIRE_EQUAL( future_wso.median_props.maximum_block_size, new_block_size2 );
     BOOST_REQUIRE_EQUAL( future_wso.median_props.hbd_interest_rate, new_hbd_apr2 );
-    BOOST_REQUIRE_EQUAL( future_wso.median_props.account_creation_fee.amount.value, new_fee2.amount.value );
+    BOOST_REQUIRE_EQUAL( future_wso.median_props.account_creation_fee, new_fee2 );
     BOOST_REQUIRE_EQUAL( wso.median_props.maximum_block_size, new_block_size2 );
     BOOST_REQUIRE_EQUAL( wso.median_props.hbd_interest_rate, new_hbd_apr2 );
-    BOOST_REQUIRE_EQUAL( wso.median_props.account_creation_fee.amount.value, new_fee2.amount.value );
+    BOOST_REQUIRE_EQUAL( wso.median_props.account_creation_fee, new_fee2 );
     BOOST_REQUIRE_EQUAL( dgpo.maximum_block_size, new_block_size2 );
     BOOST_REQUIRE_EQUAL( dgpo.hbd_interest_rate, new_hbd_apr2 );
   }
@@ -2132,7 +2132,7 @@ BOOST_AUTO_TEST_CASE( global_witness_props_change_noticed_after_hf_test )
     // change witness properties
     uint32_t new_block_size = HIVE_MIN_BLOCK_SIZE_LIMIT * 3;
     uint16_t new_hbd_apr = HIVE_DEFAULT_HBD_INTEREST_RATE * 2;
-    asset new_fee = ASSET( "1.500 TESTS" );
+    HIVE_asset new_fee( 1'500 );
     set_witness_properties( *this, new_block_size, new_hbd_apr, new_fee );
 
     generate_block();
@@ -2140,14 +2140,14 @@ BOOST_AUTO_TEST_CASE( global_witness_props_change_noticed_after_hf_test )
     // values only changed on witness
     BOOST_REQUIRE_EQUAL( witness.props.maximum_block_size, new_block_size );
     BOOST_REQUIRE_EQUAL( witness.props.hbd_interest_rate, new_hbd_apr );
-    BOOST_REQUIRE_EQUAL( witness.props.account_creation_fee.amount.value, new_fee.amount.value );
+    BOOST_REQUIRE_EQUAL( witness.props.account_creation_fee, new_fee );
 
     BOOST_REQUIRE_EQUAL( future_wso.median_props.maximum_block_size, default_block_size );
     BOOST_REQUIRE_EQUAL( future_wso.median_props.hbd_interest_rate, default_hbd_apr );
-    BOOST_REQUIRE_EQUAL( future_wso.median_props.account_creation_fee.amount.value, default_fee.amount.value );
+    BOOST_REQUIRE_EQUAL( future_wso.median_props.account_creation_fee, default_fee );
     BOOST_REQUIRE_EQUAL( wso.median_props.maximum_block_size, default_block_size );
     BOOST_REQUIRE_EQUAL( wso.median_props.hbd_interest_rate, default_hbd_apr );
-    BOOST_REQUIRE_EQUAL( wso.median_props.account_creation_fee.amount.value, default_fee.amount.value );
+    BOOST_REQUIRE_EQUAL( wso.median_props.account_creation_fee, default_fee );
     BOOST_REQUIRE_EQUAL( dgpo.maximum_block_size, default_block_size );
     BOOST_REQUIRE_EQUAL( dgpo.hbd_interest_rate, default_hbd_apr );
 
@@ -2156,14 +2156,14 @@ BOOST_AUTO_TEST_CASE( global_witness_props_change_noticed_after_hf_test )
     // new values still only on witness
     BOOST_REQUIRE_EQUAL( witness.props.maximum_block_size, new_block_size );
     BOOST_REQUIRE_EQUAL( witness.props.hbd_interest_rate, new_hbd_apr );
-    BOOST_REQUIRE_EQUAL( witness.props.account_creation_fee.amount.value, new_fee.amount.value );
+    BOOST_REQUIRE_EQUAL( witness.props.account_creation_fee, new_fee );
 
     BOOST_REQUIRE_EQUAL( future_wso.median_props.maximum_block_size, default_block_size );
     BOOST_REQUIRE_EQUAL( future_wso.median_props.hbd_interest_rate, default_hbd_apr );
-    BOOST_REQUIRE_EQUAL( future_wso.median_props.account_creation_fee.amount.value, default_fee.amount.value );
+    BOOST_REQUIRE_EQUAL( future_wso.median_props.account_creation_fee, default_fee );
     BOOST_REQUIRE_EQUAL( wso.median_props.maximum_block_size, default_block_size );
     BOOST_REQUIRE_EQUAL( wso.median_props.hbd_interest_rate, default_hbd_apr );
-    BOOST_REQUIRE_EQUAL( wso.median_props.account_creation_fee.amount.value, default_fee.amount.value );
+    BOOST_REQUIRE_EQUAL( wso.median_props.account_creation_fee, default_fee );
     BOOST_REQUIRE_EQUAL( dgpo.maximum_block_size, default_block_size );
     BOOST_REQUIRE_EQUAL( dgpo.hbd_interest_rate, default_hbd_apr );
 
@@ -2173,16 +2173,16 @@ BOOST_AUTO_TEST_CASE( global_witness_props_change_noticed_after_hf_test )
     // new values are now on witness and future wso, but not in active wso nor in dgpo (HF28 behavior)
     BOOST_REQUIRE_EQUAL( witness.props.maximum_block_size, new_block_size );
     BOOST_REQUIRE_EQUAL( witness.props.hbd_interest_rate, new_hbd_apr );
-    BOOST_REQUIRE_EQUAL( witness.props.account_creation_fee.amount.value, new_fee.amount.value );
+    BOOST_REQUIRE_EQUAL( witness.props.account_creation_fee, new_fee );
     BOOST_REQUIRE_EQUAL( future_wso.median_props.maximum_block_size, new_block_size );
     BOOST_REQUIRE_EQUAL( future_wso.median_props.hbd_interest_rate, new_hbd_apr );
-    BOOST_REQUIRE_EQUAL( future_wso.median_props.account_creation_fee.amount.value, new_fee.amount.value );
+    BOOST_REQUIRE_EQUAL( future_wso.median_props.account_creation_fee, new_fee );
 
     BOOST_REQUIRE_EQUAL( dgpo.maximum_block_size, default_block_size );
     BOOST_REQUIRE_EQUAL( dgpo.hbd_interest_rate, default_hbd_apr );
     BOOST_REQUIRE_EQUAL( wso.median_props.maximum_block_size, default_block_size );
     BOOST_REQUIRE_EQUAL( wso.median_props.hbd_interest_rate, default_hbd_apr );
-    BOOST_REQUIRE_EQUAL( wso.median_props.account_creation_fee.amount.value, default_fee.amount.value );
+    BOOST_REQUIRE_EQUAL( wso.median_props.account_creation_fee, default_fee );
   }
   FC_LOG_AND_RETHROW()
 }
@@ -2215,7 +2215,7 @@ BOOST_AUTO_TEST_CASE( global_witness_props_change_applied_after_hf_test )
     // change witness properties
     uint32_t new_block_size1 = HIVE_MIN_BLOCK_SIZE_LIMIT * 3;
     uint16_t new_hbd_apr1 = HIVE_DEFAULT_HBD_INTEREST_RATE * 2;
-    asset new_fee1 = ASSET( "1.500 TESTS" );
+    HIVE_asset new_fee1( 1'500 );
     set_witness_properties( *this, new_block_size1, new_hbd_apr1, new_fee1 );
 
     generate_block();
@@ -2226,37 +2226,37 @@ BOOST_AUTO_TEST_CASE( global_witness_props_change_applied_after_hf_test )
     // values changed on witness and future wso, but also copied to dgpo (old behavior)
     BOOST_REQUIRE_EQUAL( witness.props.maximum_block_size, new_block_size1 );
     BOOST_REQUIRE_EQUAL( witness.props.hbd_interest_rate, new_hbd_apr1 );
-    BOOST_REQUIRE_EQUAL( witness.props.account_creation_fee.amount.value, new_fee1.amount.value );
+    BOOST_REQUIRE_EQUAL( witness.props.account_creation_fee, new_fee1 );
     BOOST_REQUIRE_EQUAL( future_wso.median_props.maximum_block_size, new_block_size1 );
     BOOST_REQUIRE_EQUAL( future_wso.median_props.hbd_interest_rate, new_hbd_apr1 );
-    BOOST_REQUIRE_EQUAL( future_wso.median_props.account_creation_fee.amount.value, new_fee1.amount.value );
+    BOOST_REQUIRE_EQUAL( future_wso.median_props.account_creation_fee, new_fee1 );
     BOOST_REQUIRE_EQUAL( dgpo.maximum_block_size, new_block_size1 );
     BOOST_REQUIRE_EQUAL( dgpo.hbd_interest_rate, new_hbd_apr1 );
 
     BOOST_REQUIRE_EQUAL( wso.median_props.maximum_block_size, default_block_size );
     BOOST_REQUIRE_EQUAL( wso.median_props.hbd_interest_rate, default_hbd_apr );
-    BOOST_REQUIRE_EQUAL( wso.median_props.account_creation_fee.amount.value, default_fee.amount.value );
+    BOOST_REQUIRE_EQUAL( wso.median_props.account_creation_fee, default_fee );
 
     inject_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
 
     // activation of hardfork itself changes nothing
     BOOST_REQUIRE_EQUAL( witness.props.maximum_block_size, new_block_size1 );
     BOOST_REQUIRE_EQUAL( witness.props.hbd_interest_rate, new_hbd_apr1 );
-    BOOST_REQUIRE_EQUAL( witness.props.account_creation_fee.amount.value, new_fee1.amount.value );
+    BOOST_REQUIRE_EQUAL( witness.props.account_creation_fee, new_fee1 );
     BOOST_REQUIRE_EQUAL( future_wso.median_props.maximum_block_size, new_block_size1 );
     BOOST_REQUIRE_EQUAL( future_wso.median_props.hbd_interest_rate, new_hbd_apr1 );
-    BOOST_REQUIRE_EQUAL( future_wso.median_props.account_creation_fee.amount.value, new_fee1.amount.value );
+    BOOST_REQUIRE_EQUAL( future_wso.median_props.account_creation_fee, new_fee1 );
     BOOST_REQUIRE_EQUAL( dgpo.maximum_block_size, new_block_size1 );
     BOOST_REQUIRE_EQUAL( dgpo.hbd_interest_rate, new_hbd_apr1 );
 
     BOOST_REQUIRE_EQUAL( wso.median_props.maximum_block_size, default_block_size );
     BOOST_REQUIRE_EQUAL( wso.median_props.hbd_interest_rate, default_hbd_apr );
-    BOOST_REQUIRE_EQUAL( wso.median_props.account_creation_fee.amount.value, default_fee.amount.value );
+    BOOST_REQUIRE_EQUAL( wso.median_props.account_creation_fee, default_fee );
 
     // change witness properties again
     uint32_t new_block_size2 = HIVE_MIN_BLOCK_SIZE_LIMIT * 5;
     uint16_t new_hbd_apr2 = HIVE_DEFAULT_HBD_INTEREST_RATE * 4;
-    asset new_fee2 = ASSET( "2.500 TESTS" );
+    HIVE_asset new_fee2( 2'500 );
     set_witness_properties( *this, new_block_size2, new_hbd_apr2, new_fee2 );
 
     // run one schedule again
@@ -2267,16 +2267,16 @@ BOOST_AUTO_TEST_CASE( global_witness_props_change_applied_after_hf_test )
     // newer values are only on witness and future wso (new behavior)
     BOOST_REQUIRE_EQUAL( witness.props.maximum_block_size, new_block_size2 );
     BOOST_REQUIRE_EQUAL( witness.props.hbd_interest_rate, new_hbd_apr2 );
-    BOOST_REQUIRE_EQUAL( witness.props.account_creation_fee.amount.value, new_fee2.amount.value );
+    BOOST_REQUIRE_EQUAL( witness.props.account_creation_fee, new_fee2 );
     BOOST_REQUIRE_EQUAL( future_wso.median_props.maximum_block_size, new_block_size2 );
     BOOST_REQUIRE_EQUAL( future_wso.median_props.hbd_interest_rate, new_hbd_apr2 );
-    BOOST_REQUIRE_EQUAL( future_wso.median_props.account_creation_fee.amount.value, new_fee2.amount.value );
+    BOOST_REQUIRE_EQUAL( future_wso.median_props.account_creation_fee, new_fee2 );
 
     BOOST_REQUIRE_EQUAL( dgpo.maximum_block_size, new_block_size1 );
     BOOST_REQUIRE_EQUAL( dgpo.hbd_interest_rate, new_hbd_apr1 );
     BOOST_REQUIRE_EQUAL( wso.median_props.maximum_block_size, new_block_size1 );
     BOOST_REQUIRE_EQUAL( wso.median_props.hbd_interest_rate, new_hbd_apr1 );
-    BOOST_REQUIRE_EQUAL( wso.median_props.account_creation_fee.amount.value, new_fee1.amount.value );
+    BOOST_REQUIRE_EQUAL( wso.median_props.account_creation_fee, new_fee1 );
   }
  
   FC_LOG_AND_RETHROW()
@@ -2359,7 +2359,7 @@ BOOST_AUTO_TEST_CASE(treasury_hbd_does_not_affect_inflation_advanced)
             if (db->has_hardfork(HIVE_HARDFORK_1_28_NO_DHF_HBD_IN_INFLATION)) {
               const auto &treasury_account = db->get_treasury();
               const HBD_asset hbd_supply_without_treasury = props.get_current_hbd_supply() - treasury_account.get_hbd_balance();
-              BOOST_REQUIRE_GE( hbd_supply_without_treasury.amount.value, 0 );
+              BOOST_REQUIRE_GE( hbd_supply_without_treasury, HBD_asset( 0 ) );
               const auto virtual_supply_without_treasury = hbd_supply_without_treasury * db->get_feed_history().current_median_history + props.get_current_supply();
 
               new_hive = (virtual_supply_without_treasury.amount * current_inflation_rate) / (int64_t(HIVE_100_PERCENT) * int64_t(HIVE_BLOCKS_PER_YEAR));
@@ -2407,7 +2407,7 @@ BOOST_AUTO_TEST_CASE(treasury_hbd_does_not_affect_inflation_advanced)
         // check hf28 inflation
         generate_block();
         auto actual_new_virtual_supply = props.virtual_supply.amount - before_virtual_supply;
-        BOOST_REQUIRE(expected_new_virtual_supply == actual_new_virtual_supply);
+        BOOST_REQUIRE_EQUAL( expected_new_virtual_supply, actual_new_virtual_supply );
 
         inject_hardfork(HIVE_HARDFORK_1_28);
         generate_blocks( db->head_block_time() + 20 * HIVE_BLOCK_INTERVAL, false );
@@ -2418,7 +2418,7 @@ BOOST_AUTO_TEST_CASE(treasury_hbd_does_not_affect_inflation_advanced)
         generate_block();
         actual_new_virtual_supply = props.virtual_supply.amount - before_virtual_supply;
 
-        BOOST_REQUIRE(expected_new_virtual_supply == actual_new_virtual_supply);
+        BOOST_REQUIRE_EQUAL( expected_new_virtual_supply, actual_new_virtual_supply );
 
         validate_database();
     }

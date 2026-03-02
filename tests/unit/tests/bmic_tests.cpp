@@ -20,11 +20,11 @@ void basic_test( const std::vector< uint64_t >& v, Call&& call )
     };
     c.emplace( std::move( Object( constructor, std::allocator< Object >() ) ) );
   }
-  BOOST_REQUIRE( v.size() == c.size() );
+  BOOST_REQUIRE_EQUAL( v.size(), c.size() );
 
   BOOST_TEST_MESSAGE( "Removing all objects" );
   c.clear();
-  BOOST_REQUIRE( c.size() == 0 );
+  BOOST_REQUIRE_EQUAL( c.size(), 0 );
 
   BOOST_TEST_MESSAGE( "Creating 1 object" );
   auto constructor2 = [ &call ]( Object &obj )
@@ -37,11 +37,11 @@ void basic_test( const std::vector< uint64_t >& v, Call&& call )
 
   BOOST_TEST_MESSAGE( "Modyfing 1 object" );
   BOOST_REQUIRE( c.modify( c.begin(), []( Object& obj ){ obj.val = obj.val + 1; } ) == true );
-  BOOST_REQUIRE( c.size() == 1 );
+  BOOST_REQUIRE_EQUAL( c.size(), 1 );
 
   BOOST_TEST_MESSAGE( "Removing 1 object" );
   c.erase( c.begin() );
-  BOOST_REQUIRE( c.size() == 0 );
+  BOOST_REQUIRE_EQUAL( c.size(), 0 );
 
   BOOST_TEST_MESSAGE( "Creating `v.size()` objects" );
   for( const auto& item: v )
@@ -54,7 +54,7 @@ void basic_test( const std::vector< uint64_t >& v, Call&& call )
     };
     c.emplace( std::move( Object( constructor, std::allocator< Object >() ) ) );
   }
-  BOOST_REQUIRE( v.size() == c.size() );
+  BOOST_REQUIRE_EQUAL( v.size(), c.size() );
 
   BOOST_TEST_MESSAGE( "Removing all objects one by one" );
   auto it = c.begin();
@@ -64,7 +64,7 @@ void basic_test( const std::vector< uint64_t >& v, Call&& call )
     ++it;
     c.erase( tmp );
   }
-  BOOST_REQUIRE( c.size() == 0 );
+  BOOST_REQUIRE_EQUAL( c.size(), 0 );
 }
 
 template < typename Container, typename Object, typename Call >
@@ -86,7 +86,7 @@ void insert_remove_test( const std::vector< uint64_t >& v, Call&& call )
     c.emplace( std::move( Object( constructor, std::allocator< Object >() ) ) );
     ++cnt;
   }
-  BOOST_REQUIRE( v.size() == c.size() );
+  BOOST_REQUIRE_EQUAL( v.size(), c.size() );
 
   BOOST_TEST_MESSAGE( "Removing objects one by one. Every object is removed by erase method" );
   for( int64_t i = 0; i < cnt; ++i )
@@ -94,9 +94,9 @@ void insert_remove_test( const std::vector< uint64_t >& v, Call&& call )
     auto found = c.find( typename Object::id_type( i ) );
     BOOST_REQUIRE( found != c.end() );
     c.erase( found );
-    BOOST_REQUIRE( v.size() - i - 1 == c.size() );
+    BOOST_REQUIRE_EQUAL( v.size() - i - 1, c.size() );
   }
-  BOOST_REQUIRE( c.size() == 0 );
+  BOOST_REQUIRE_EQUAL( c.size(), 0 );
 
   BOOST_TEST_MESSAGE( "Creating 2 objects" );
   cnt = 0;
@@ -112,14 +112,14 @@ void insert_remove_test( const std::vector< uint64_t >& v, Call&& call )
     if( ++cnt == 2 )
       break;
   }
-  BOOST_REQUIRE( c.size() == 2 );
+  BOOST_REQUIRE_EQUAL( c.size(), 2 );
 
   BOOST_TEST_MESSAGE( "Removing first object" );
   const Object& object = *( c.begin() );
   auto found = c.iterator_to( object );
   BOOST_REQUIRE( found != c.end() );
   c.erase( found );
-  BOOST_REQUIRE( c.size() == 1 );
+  BOOST_REQUIRE_EQUAL( c.size(), 1 );
 
   BOOST_TEST_MESSAGE( "Adding object with id_key = 0" );
   auto constructor1 = [ &v, &call ]( Object &obj )
@@ -129,16 +129,16 @@ void insert_remove_test( const std::vector< uint64_t >& v, Call&& call )
     obj.val = 100;
   };
   c.emplace( std::move( Object( constructor1, std::allocator< Object >() ) ) );
-  BOOST_REQUIRE( c.size() == 2 );
+  BOOST_REQUIRE_EQUAL( c.size(), 2 );
 
   BOOST_TEST_MESSAGE( "Remove second object" );
   found = c.end();
   --found;
   auto first = std::prev( found, 1 );
   c.erase( found );
-  BOOST_REQUIRE( c.size() == 1 );
+  BOOST_REQUIRE_EQUAL( c.size(), 1 );
   c.erase( first );
-  BOOST_REQUIRE( c.size() == 0 );
+  BOOST_REQUIRE_EQUAL( c.size(), 0 );
 }
 
 template < typename Container, typename Object, typename Call1, typename Call2, typename Call3, typename Call4 >
@@ -149,15 +149,15 @@ void insert_remove_collision_test( const std::vector< uint64_t >& v, Call1&& cal
   BOOST_TEST_MESSAGE( "Adding 2 objects with collision - the same id" );
   c.emplace( std::move( Object( call1, std::allocator< Object >() ) ) );
   auto failed_emplace = c.emplace( Object( call2, std::allocator< Object >() ) );
-  BOOST_REQUIRE( failed_emplace.second == false );
-  BOOST_REQUIRE( c.size() == 1 );
+  BOOST_REQUIRE_EQUAL( failed_emplace.second, false );
+  BOOST_REQUIRE_EQUAL( c.size(), 1 );
 
   BOOST_TEST_MESSAGE( "Removing object and adding 2 objects with collision - the same name+val" );
   c.erase( c.begin() );
   c.emplace( std::move( Object( call3, std::allocator< Object >() ) ) );
   failed_emplace = c.emplace( Object( call4, std::allocator< Object >() ) );
-  BOOST_REQUIRE( failed_emplace.second == false );
-  BOOST_REQUIRE( c.size() == 1 );
+  BOOST_REQUIRE_EQUAL( failed_emplace.second, false );
+  BOOST_REQUIRE_EQUAL( c.size(), 1 );
 }
 
 template < typename Container, typename Object, typename Call1, typename Call2, typename Call3, typename Call4, typename Call5 >
@@ -176,19 +176,20 @@ void modify_test( const std::vector< uint64_t >& v, Call1&& call1, Call2&& call2
     };
     c.emplace( std::move( Object( constructor, std::allocator< Object >() ) ) );
   }
-  BOOST_REQUIRE( v.size() == c.size() );
+  BOOST_REQUIRE_EQUAL( v.size(), c.size() );
 
   BOOST_TEST_MESSAGE( "Modifying key in all objects" );
   auto it = c.begin();
   auto end = c.end();
   for( ; it != end; ++it )
     c.modify( it, call2 );
-  BOOST_REQUIRE( v.size() == c.size() );
+  BOOST_REQUIRE_EQUAL( v.size(), c.size() );
   int32_t cnt = 0;
   for( const auto& item : c )
   {
-    BOOST_REQUIRE( size_t( item.id ) == v[ cnt++ ] );
-    call3( item );
+    BOOST_REQUIRE_EQUAL( size_t( item.id ), v[ cnt ] );
+    cnt++;
+    call3(item);
     call4( item );
   }
 
@@ -220,27 +221,28 @@ void misc_test( const std::vector< uint64_t >& v )
     };
     c.emplace( std::move( Object( constructor, std::allocator< Object >() ) ) );
   }
-  BOOST_REQUIRE( v.size() == c.size() );
+  BOOST_REQUIRE_EQUAL( v.size(), c.size() );
 
   BOOST_TEST_MESSAGE( "Reading all elements" );
   uint32_t cnt = 0;
   for( const auto& item : c )
   {
-    BOOST_REQUIRE( size_t( item.id ) == v[ cnt++ ] );
-    BOOST_REQUIRE( item.name == "any_name" );
-    BOOST_REQUIRE( item.val == size_t( item.id ) + 200 );
+    BOOST_REQUIRE_EQUAL( size_t( item.id ), v[ cnt ] );
+    cnt++;
+    BOOST_REQUIRE_EQUAL( item.name, "any_name" );
+    BOOST_REQUIRE_EQUAL( item.val, size_t( item.id ) + 200 );
   }
 
   BOOST_TEST_MESSAGE( "Removing 2 objects: first and last" );
   c.erase( c.iterator_to( *( c.begin() ) ) );
   c.erase( c.iterator_to( *( std::prev( c.end(), 1 ) ) ) );
-  BOOST_REQUIRE( v.size() - 2 == c.size() );
+  BOOST_REQUIRE_EQUAL( v.size() - 2, c.size() );
 
   //Modyfing key `name` in one object.
   auto it1 = c.iterator_to( *c.begin() );
   c.modify( it1, []( Object& obj ){ obj.name = "completely_different_name"; } );
   it1 = c.iterator_to( *c.begin() );
-  BOOST_REQUIRE( it1->name == "completely_different_name" );
+  BOOST_REQUIRE_EQUAL( it1->name, "completely_different_name" );
   uint32_t val1 = it1->val;
 
   //Creating collision in two objects: [1] and [2]
@@ -250,7 +252,7 @@ void misc_test( const std::vector< uint64_t >& v )
   //Removing object [1].
   it1 = c.iterator_to( *std::next( c.begin(), 1 ) );
   c.erase( it1 );
-  BOOST_REQUIRE( v.size() - 4 == c.size() );
+  BOOST_REQUIRE_EQUAL( v.size() - 4, c.size() );
 
   //Removing all remaining objects
   auto it_erase = c.begin();
@@ -260,7 +262,7 @@ void misc_test( const std::vector< uint64_t >& v )
     ++it_erase;
     c.erase( tmp );
   }
-  BOOST_REQUIRE( c.size() == 0 );
+  BOOST_REQUIRE_EQUAL( c.size(), 0 );
 
   cnt = 0;
   BOOST_TEST_MESSAGE( "Creating `v.size()` objects. There are 'v.size() - 1' collisions." );
@@ -277,15 +279,15 @@ void misc_test( const std::vector< uint64_t >& v )
     else
       BOOST_REQUIRE_THROW( c.emplace( std::move( Object( constructor, std::allocator< Object >() ) ) ), boost::exception );
   }
-  BOOST_REQUIRE( c.size() == 1 );
+  BOOST_REQUIRE_EQUAL( c.size(), 1 );
   auto it_only_one = c.iterator_to( *c.begin() );
-  BOOST_REQUIRE( size_t( it_only_one->id ) == v[0] );
-  BOOST_REQUIRE( it_only_one->name == "all_objects_have_the_same_name" );
-  BOOST_REQUIRE( it_only_one->val == 667 );
+  BOOST_REQUIRE_EQUAL( size_t( it_only_one->id ), v[0] );
+  BOOST_REQUIRE_EQUAL( it_only_one->name, "all_objects_have_the_same_name" );
+  BOOST_REQUIRE_EQUAL( it_only_one->val, 667 );
 
   BOOST_TEST_MESSAGE( "Erasing one objects." );
   c.erase( it_only_one );
-  BOOST_REQUIRE( c.size() == 0 );
+  BOOST_REQUIRE_EQUAL( c.size(), 0 );
 
   cnt = 0;
   BOOST_TEST_MESSAGE( "Creating `v.size()` objects." );
@@ -299,7 +301,7 @@ void misc_test( const std::vector< uint64_t >& v )
     };
     c.emplace( std::move( Object( constructor, std::allocator< Object >() ) ) );
   }
-  BOOST_REQUIRE( c.size() == v.size() );
+  BOOST_REQUIRE_EQUAL( c.size(), v.size() );
 
   BOOST_TEST_MESSAGE( "Finding some objects according to given index." );
   const auto& ordered_idx = c.template get< SimpleIndex >();
@@ -307,7 +309,7 @@ void misc_test( const std::vector< uint64_t >& v )
 
   auto found = ordered_idx.find( typename Object::id_type( v.size() - 1 ) );
   BOOST_REQUIRE( found != ordered_idx.end() );
-  BOOST_REQUIRE( size_t( found->id ) == v.size() - 1 );
+  BOOST_REQUIRE_EQUAL( size_t( found->id ), v.size() - 1 );
 
   found = ordered_idx.find( typename Object::id_type( 987654 ) );
   BOOST_REQUIRE( found == ordered_idx.end() );
@@ -326,7 +328,7 @@ void misc_test( const std::vector< uint64_t >& v )
   cnt = 0;
   while( cfound++ != composite_ordered_idx.end() )
     ++cnt;
-  BOOST_REQUIRE( cnt == v.size() );
+  BOOST_REQUIRE_EQUAL( cnt, v.size() );
 
   BOOST_TEST_MESSAGE( "Removing all data using iterators from 'ComplexIndex' index");
   while( copy_cfound != composite_ordered_idx.end() )
@@ -335,7 +337,7 @@ void misc_test( const std::vector< uint64_t >& v )
     ++copy_cfound;
     c.erase( c.iterator_to( *tmp ) );
   }
-  BOOST_REQUIRE( c.size() == 0 );
+  BOOST_REQUIRE_EQUAL( c.size(), 0 );
 }
 
 template < typename Container, typename Object, typename SimpleIndex, typename ComplexIndex, typename AnotherComplexIndex >
@@ -355,7 +357,7 @@ void misc_test3( const std::vector< uint64_t >& v )
     };
     c.emplace( std::move( Object( constructor, std::allocator< Object >() ) ) );
   }
-  BOOST_REQUIRE( v.size() == c.size() );
+  BOOST_REQUIRE_EQUAL( v.size(), c.size() );
 
   BOOST_TEST_MESSAGE( "Finding some objects according to given index." );
   const auto& ordered_idx = c.template get< SimpleIndex >();
@@ -385,7 +387,7 @@ void misc_test3( const std::vector< uint64_t >& v )
 
   BOOST_TEST_MESSAGE( "Removing 1 object using iterator from 'AnotherComplexIndex' index");
   c.erase( c.iterator_to( *another_cfound ) );
-  BOOST_REQUIRE( c.size() == v.size() - 1 );
+  BOOST_REQUIRE_EQUAL( c.size(), v.size() - 1 );
 
   another_cfound = another_composite_ordered_idx.find( boost::make_tuple( 0 + 1, 0 + 3 ) );
   BOOST_REQUIRE( another_cfound == another_composite_ordered_idx.end() );
@@ -441,7 +443,7 @@ BOOST_AUTO_TEST_CASE(modify_tests)
 {
   auto c1 = []( bmic::test_object& obj ) { obj.name = "_name"; };
   auto c2 = []( bmic::test_object& obj ){ obj.name = "new_name"; };
-  auto c3 = []( const bmic::test_object& obj ){ BOOST_REQUIRE( obj.name == "new_name" ); };
+  auto c3 = []( const bmic::test_object& obj ){ BOOST_REQUIRE_EQUAL( obj.name, "new_name" ); };
   auto c4 = []( const bmic::test_object& obj ){ BOOST_REQUIRE( obj.val == size_t( obj.id ) + 100 ); };
   auto c5 = []( bool result ){ BOOST_REQUIRE( result == false ); };
 

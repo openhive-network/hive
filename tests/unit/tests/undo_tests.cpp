@@ -85,7 +85,7 @@ BOOST_AUTO_TEST_CASE( undo_basic )
     udb.undo_begin();
 
     const account_object& obj0 = ao.create( "name00", time );
-    BOOST_REQUIRE( std::string( obj0.get_name() ) == "name00" );
+    BOOST_REQUIRE_EQUAL( obj0.get_name(), "name00" );
 
     udb.undo_end();
     BOOST_REQUIRE( ao.check< account_index >() );
@@ -95,9 +95,9 @@ BOOST_AUTO_TEST_CASE( undo_basic )
     udb.undo_begin();
 
     const account_object& obj1 = ao.create( "name00", time );
-    BOOST_REQUIRE( std::string( obj1.get_name() ) == "name00" );
+    BOOST_REQUIRE_EQUAL( obj1.get_name(), "name00" );
     const account_object& obj2 = ao.modify( obj1, [&]( account_object& obj ){ obj.set_name( "name01" ); } );
-    BOOST_REQUIRE( std::string( obj2.get_name() ) == "name01" );
+    BOOST_REQUIRE_EQUAL( obj2.get_name(), "name01" );
 
     udb.undo_end();
     BOOST_REQUIRE( ao.check< account_index >() );
@@ -151,15 +151,15 @@ BOOST_AUTO_TEST_CASE( undo_basic )
     udb.undo_begin();
 
     const account_object& obj_c = ao.create( "name00", time );
-    BOOST_REQUIRE( std::string( obj_c.get_name() ) == "name00" );
+    BOOST_REQUIRE_EQUAL( obj_c.get_name(), "name00" );
 
     const account_object& obj_cm = ao.create( "name01", time );
-    BOOST_REQUIRE( std::string( obj_cm.get_name() ) == "name01" );
+    BOOST_REQUIRE_EQUAL( obj_cm.get_name(), "name01" );
     ao.modify( obj_cm, [&]( account_object& obj ){ obj.set_name( "name02" ); } );
-    BOOST_REQUIRE( std::string( obj_cm.get_name() ) == "name02" );
+    BOOST_REQUIRE_EQUAL( obj_cm.get_name(), "name02" );
 
     const account_object& obj_cr = ao.create( "name03", time );
-    BOOST_REQUIRE( std::string( obj_cr.get_name() ) == "name03" );
+    BOOST_REQUIRE_EQUAL( obj_cr.get_name(), "name03" );
     ao.remove( obj_cr );
 
     udb.undo_end();
@@ -268,10 +268,10 @@ BOOST_AUTO_TEST_CASE( undo_object_disappear )
     uint32_t old_size = ao.size< account_index >();
 
     const account_object& obj0 = ao.create( "name00", time ); ao.modify( obj0, [&]( account_object& obj ){ obj.set_proxy(pxy0); } );
-    BOOST_REQUIRE( old_size + 1 == ao.size< account_index >() );
+    BOOST_REQUIRE_EQUAL( old_size + 1, ao.size< account_index >() );
 
     const account_object& obj1 = ao.create( "name01", time ); ao.modify( obj1, [&]( account_object& obj ){ obj.set_proxy(pxy1); } );
-    BOOST_REQUIRE( old_size + 2 == ao.size< account_index >() );
+    BOOST_REQUIRE_EQUAL( old_size + 2, ao.size< account_index >() );
 
     ao.remember_old_values< account_index >();
     udb.undo_begin();
@@ -287,7 +287,7 @@ BOOST_AUTO_TEST_CASE( undo_object_disappear )
     HIVE_REQUIRE_THROW( ao.modify( obj1, [&]( account_object& obj ){ obj.set_name( "name00" ); obj.set_proxy(pxy0); } ), boost::exception );
 
     udb.undo_end();
-    BOOST_REQUIRE( old_size + 2 == ao.size< account_index >() );
+    BOOST_REQUIRE_EQUAL( old_size + 2, ao.size< account_index >() );
 
     BOOST_REQUIRE( ao.check< account_index >() );
   }
@@ -346,7 +346,7 @@ BOOST_AUTO_TEST_CASE( undo_key_collision )
     //Temporary. After fix, this line should be removed.
     ao.create( "nameXYZ", time );
 
-    BOOST_REQUIRE( old_size + 1 == ao.size< account_index >() );
+    BOOST_REQUIRE_EQUAL( old_size + 1, ao.size< account_index >() );
 
     udb.undo_end(); //ABW: when above lines are commented/uncommented as instructed undo fails because uniqueness constraints are checked
       //with every [un]modified object meaning original obj0 tries to regain its name00 which is in conflict with still not undone new name00 object;
@@ -364,7 +364,7 @@ BOOST_AUTO_TEST_CASE( undo_key_collision )
     const comment_object& objc0 = co.create( fake_account_object, "permlink", fake_parent_comment );
     const comment_cashout_object& objc0_cashout = co_cashout.create( objc0, fake_account_object, "permlink", time_point_sec( 10 ), time_point_sec( 20 ) );
 
-    BOOST_REQUIRE( objc0_cashout.get_comment_id() == objc0.get_id() );
+    BOOST_REQUIRE_EQUAL( objc0_cashout.get_comment_id(), objc0.get_id() );
 
     co.remember_old_values< comment_index >();
     co_cashout.remember_old_values< comment_cashout_index >();
@@ -379,10 +379,10 @@ BOOST_AUTO_TEST_CASE( undo_key_collision )
     const comment_object& objc1 = co.create( fake_account_object, "permlink2", fake_parent_comment );
     const comment_cashout_object& objc1_cashout = co_cashout.create( objc1, fake_account_object, "permlink2", time_point_sec( 10 ), time_point_sec( 20 ) );
 
-    BOOST_REQUIRE( objc1_cashout.get_comment_id() == objc1.get_id() );
+    BOOST_REQUIRE_EQUAL( objc1_cashout.get_comment_id(), objc1.get_id() );
 
-    BOOST_REQUIRE( old_size + 1 == co.size< comment_index >() );
-    BOOST_REQUIRE( old_size_cashout + 1 == co_cashout.size< comment_cashout_index >() );
+    BOOST_REQUIRE_EQUAL( old_size + 1, co.size< comment_index >() );
+    BOOST_REQUIRE_EQUAL( old_size_cashout + 1, co_cashout.size< comment_cashout_index >() );
 
     udb.undo_end();
     BOOST_REQUIRE( co.check< comment_index >() );
@@ -418,12 +418,12 @@ BOOST_AUTO_TEST_CASE( undo_different_indexes )
     udb.undo_begin();
 
     const account_object& obja0 = ao.create( "name00", time );
-    BOOST_REQUIRE( std::string( obja0.get_name() ) == "name00" );
-    BOOST_REQUIRE( old_size_ao + 1 == ao.size< account_index >() );
+    BOOST_REQUIRE_EQUAL( obja0.get_name(), "name00" );
+    BOOST_REQUIRE_EQUAL( old_size_ao + 1, ao.size< account_index >() );
 
     const comment_object& objc0 = co.create( fake_account_object, "11", fake_parent_comment );
     BOOST_CHECK_EQUAL( objc0.get_author_and_permlink_hash(), comment_object::compute_author_and_permlink_hash( fake_account_object.get_id(), "11" ) );
-    BOOST_REQUIRE( old_size_co + 1 == co.size< comment_index >() );
+    BOOST_REQUIRE_EQUAL( old_size_co + 1, co.size< comment_index >() );
 
     udb.undo_end();
     BOOST_REQUIRE( ao.check< account_index >() );
@@ -443,17 +443,17 @@ BOOST_AUTO_TEST_CASE( undo_different_indexes )
     const account_object& pxy = ao.create( "name00", time );
     const account_object& obja1 = ao.create( "name01", time );
     const account_object& obja2 = ao.create( "name02", time );
-    BOOST_REQUIRE( old_size_ao + 3 == ao.size< account_index >() );
+    BOOST_REQUIRE_EQUAL( old_size_ao + 3, ao.size< account_index >() );
     ao.modify( obja1, [&]( account_object& obj ){ obj.set_proxy(pxy); } );
     ao.remove( obja2 );
-    BOOST_REQUIRE( old_size_ao + 2 == ao.size< account_index >() );
+    BOOST_REQUIRE_EQUAL( old_size_ao + 2, ao.size< account_index >() );
 
     co.create( fake_account_object, "11", fake_parent_comment );
     const comment_object& objc1 = co.create( fake_account_object, "12", fake_parent_comment );
     const comment_cashout_object& objc1_cashout = co_cashout.create( objc1, fake_account_object, "12", time_point_sec( 10 ), time_point_sec( 20 ) );
     co_cashout.modify( objc1_cashout, [&]( comment_cashout_object& obj ){} );
-    BOOST_REQUIRE( old_size_co + 2 == co.size< comment_index >() );
-    BOOST_REQUIRE( old_size_co_cashout + 1 == co_cashout.size< comment_cashout_index >() );
+    BOOST_REQUIRE_EQUAL( old_size_co + 2, co.size< comment_index >() );
+    BOOST_REQUIRE_EQUAL( old_size_co_cashout + 1, co_cashout.size< comment_cashout_index >() );
 
     udb.undo_end();
     BOOST_REQUIRE( ao.check< account_index >() );
@@ -475,14 +475,14 @@ BOOST_AUTO_TEST_CASE( undo_different_indexes )
     ao.create( "name01", time );
     const comment_object& objc2 = co.create( fake_account_object, "12", fake_parent_comment );
     const comment_cashout_object& objc2_cashout = co_cashout.create( objc2, fake_account_object, "12", time_point_sec( 10 ), time_point_sec( 20 ) );
-    BOOST_REQUIRE( old_size_ao + 1 == ao.size< account_index >() );
-    BOOST_REQUIRE( old_size_co + 1 == co.size< comment_index >() );
-    BOOST_REQUIRE( old_size_co_cashout + 1 == co_cashout.size< comment_cashout_index >() );
+    BOOST_REQUIRE_EQUAL( old_size_ao + 1, ao.size< account_index >() );
+    BOOST_REQUIRE_EQUAL( old_size_co + 1, co.size< comment_index >() );
+    BOOST_REQUIRE_EQUAL( old_size_co_cashout + 1, co_cashout.size< comment_cashout_index >() );
 
     co_cashout.modify( objc2_cashout, [&]( comment_cashout_object& obj ){} );
-    BOOST_REQUIRE( old_size_ao + 1 == ao.size< account_index >() );
-    BOOST_REQUIRE( old_size_co + 1 == co.size< comment_index >() );
-    BOOST_REQUIRE( old_size_co_cashout + 1 == co_cashout.size< comment_cashout_index >() );
+    BOOST_REQUIRE_EQUAL( old_size_ao + 1, ao.size< account_index >() );
+    BOOST_REQUIRE_EQUAL( old_size_co + 1, co.size< comment_index >() );
+    BOOST_REQUIRE_EQUAL( old_size_co_cashout + 1, co_cashout.size< comment_cashout_index >() );
 
     udb.undo_end();
     BOOST_REQUIRE( ao.check< account_index >() );
@@ -511,14 +511,14 @@ BOOST_AUTO_TEST_CASE( undo_different_indexes )
       co_cashout.modify( co1_cashout, [&]( comment_cashout_object& obj ){} );
       ao.modify( ao1, [&]( account_object& obj ){ obj.set_name( std::to_string(0) ); } );
 
-      BOOST_REQUIRE( old_size_ao == ao.size< account_index >() );
+      BOOST_REQUIRE_EQUAL( old_size_ao, ao.size< account_index >() );
       BOOST_REQUIRE( old_size_co_cashout = co_cashout.size< comment_cashout_index >() );
     }
 
     udb.undo_end();
-    BOOST_REQUIRE( old_size_ao == ao.size< account_index >() );
-    BOOST_REQUIRE( old_size_co == co.size< comment_index >() );
-    BOOST_REQUIRE( old_size_co_cashout == co_cashout.size< comment_cashout_index >() );
+    BOOST_REQUIRE_EQUAL( old_size_ao, ao.size< account_index >() );
+    BOOST_REQUIRE_EQUAL( old_size_co, co.size< comment_index >() );
+    BOOST_REQUIRE_EQUAL( old_size_co_cashout, co_cashout.size< comment_cashout_index >() );
     BOOST_REQUIRE( ao.check< account_index >() );
     BOOST_REQUIRE( co.check< comment_index >() );
     BOOST_REQUIRE( co_cashout.check< comment_cashout_index >() );
@@ -598,7 +598,7 @@ BOOST_AUTO_TEST_CASE( undo_generate_blocks )
     generate_blocks( 1 );
     db->pop_block();
 
-    BOOST_REQUIRE( old_size_co == co.size< comment_index >() );
+    BOOST_REQUIRE_EQUAL( old_size_co, co.size< comment_index >() );
     BOOST_REQUIRE( co.check< comment_index >() );
     tx.operations.clear();
 
@@ -616,7 +616,7 @@ BOOST_AUTO_TEST_CASE( undo_generate_blocks )
     generate_blocks( 1 );
     db->pop_block();
 
-    BOOST_REQUIRE( old_size_co == co.size< comment_index >() );
+    BOOST_REQUIRE_EQUAL( old_size_co, co.size< comment_index >() );
     BOOST_REQUIRE( co.check< comment_index >() );
     tx.operations.clear();
   }
@@ -735,7 +735,7 @@ BOOST_AUTO_TEST_CASE( undo_state_on_squash_and_undo )
       for( int i = count - 1; i >= 0; --i )
       {
         BOOST_REQUIRE( index.find( created[ i ] ) != nullptr );
-        BOOST_REQUIRE( index.get( to_modify[ i ] ).expiration == time + HIVE_BLOCK_INTERVAL * i );
+        BOOST_REQUIRE_EQUAL( index.get( to_modify[ i ] ).expiration, time + HIVE_BLOCK_INTERVAL * i );
         BOOST_REQUIRE( index.find( to_remove[ i ] ) == nullptr );
       }
       saved_next_id = next_id;
@@ -767,7 +767,7 @@ BOOST_AUTO_TEST_CASE( undo_state_on_squash_and_undo )
         {
           --count;
           BOOST_REQUIRE( index.find( created[ count ] ) == nullptr );
-          BOOST_REQUIRE( index.get( to_modify[ count ] ).expiration == time );
+          BOOST_REQUIRE_EQUAL( index.get( to_modify[ count ] ).expiration, time );
           BOOST_REQUIRE( index.find( to_remove[ count ] ) != nullptr );
         }
       }
@@ -780,7 +780,7 @@ BOOST_AUTO_TEST_CASE( undo_state_on_squash_and_undo )
       for( int i = count - 1; i >= 0; --i )
       {
         BOOST_REQUIRE( index.find( created[ i ] ) != nullptr );
-        BOOST_REQUIRE( index.get( to_modify[ i ] ).expiration == time + HIVE_BLOCK_INTERVAL * i );
+        BOOST_REQUIRE_EQUAL( index.get( to_modify[ i ] ).expiration, time + HIVE_BLOCK_INTERVAL * i );
         BOOST_REQUIRE( index.find( to_remove[ i ] ) == nullptr );
       }
       // test implicit undo of nested session
@@ -812,14 +812,14 @@ BOOST_AUTO_TEST_CASE( undo_state_on_squash_and_undo )
       {
         --count;
         BOOST_REQUIRE( index.find( created[ count ] ) == nullptr );
-        BOOST_REQUIRE( index.get( to_modify[ count ] ).expiration == time );
+        BOOST_REQUIRE_EQUAL( index.get( to_modify[ count ] ).expiration, time );
         BOOST_REQUIRE( index.find( to_remove[ count ] ) != nullptr );
       }
       ilog( "Objects from first and squashed nested session are in their modified state" );
       for( int i = count - 1; i >= 0; --i )
       {
         BOOST_REQUIRE( index.find( created[ i ] ) != nullptr );
-        BOOST_REQUIRE( index.get( to_modify[ i ] ).expiration == time + HIVE_BLOCK_INTERVAL * i );
+        BOOST_REQUIRE_EQUAL( index.get( to_modify[ i ] ).expiration, time + HIVE_BLOCK_INTERVAL * i );
         BOOST_REQUIRE( index.find( to_remove[ i ] ) == nullptr );
       }
       // test squash of the only session into committed state
@@ -839,7 +839,7 @@ BOOST_AUTO_TEST_CASE( undo_state_on_squash_and_undo )
     for( int i = count - 1; i >= 0; --i )
     {
       BOOST_REQUIRE( index.find( created[ i ] ) != nullptr );
-      BOOST_REQUIRE( index.get( to_modify[ i ] ).expiration == time + HIVE_BLOCK_INTERVAL * i );
+      BOOST_REQUIRE_EQUAL( index.get( to_modify[ i ] ).expiration, time + HIVE_BLOCK_INTERVAL * i );
       BOOST_REQUIRE( index.find( to_remove[ i ] ) == nullptr );
     }
 
@@ -875,7 +875,7 @@ BOOST_AUTO_TEST_CASE( undo_state_on_squash_and_undo )
       {
         --count;
         BOOST_REQUIRE( index.find( created[ count ] ) == nullptr );
-        BOOST_REQUIRE( index.get( to_modify[ count ] ).expiration == time );
+        BOOST_REQUIRE_EQUAL( index.get( to_modify[ count ] ).expiration, time );
         BOOST_REQUIRE( index.find( to_remove[ count ] ) != nullptr );
       }
     }
@@ -888,7 +888,7 @@ BOOST_AUTO_TEST_CASE( undo_state_on_squash_and_undo )
     for( int i = count - 1; i >= 0; --i )
     {
       BOOST_REQUIRE( index.find( created[ i ] ) != nullptr );
-      BOOST_REQUIRE( index.get( to_modify[ i ] ).expiration == time + HIVE_BLOCK_INTERVAL * i );
+      BOOST_REQUIRE_EQUAL( index.get( to_modify[ i ] ).expiration, time + HIVE_BLOCK_INTERVAL * i );
       BOOST_REQUIRE( index.find( to_remove[ i ] ) == nullptr );
     }
 
@@ -921,14 +921,14 @@ BOOST_AUTO_TEST_CASE( undo_state_on_squash_and_undo )
     {
       --count;
       BOOST_REQUIRE( index.find( created[ count ] ) == nullptr );
-      BOOST_REQUIRE( index.get( to_modify[ count ] ).expiration == time );
+      BOOST_REQUIRE_EQUAL( index.get( to_modify[ count ] ).expiration, time );
       BOOST_REQUIRE( index.find( to_remove[ count ] ) != nullptr );
     }
     ilog( "All previously effectively committed changes are still there" );
     for( int i = count - 1; i >= 0; --i )
     {
       BOOST_REQUIRE( index.find( created[ i ] ) != nullptr );
-      BOOST_REQUIRE( index.get( to_modify[ i ] ).expiration == time + HIVE_BLOCK_INTERVAL * i );
+      BOOST_REQUIRE_EQUAL( index.get( to_modify[ i ] ).expiration, time + HIVE_BLOCK_INTERVAL * i );
       BOOST_REQUIRE( index.find( to_remove[ i ] ) == nullptr );
     }
   }
@@ -1074,14 +1074,14 @@ BOOST_AUTO_TEST_CASE( undo_state_on_push_and_commit )
     {
       --count;
       BOOST_REQUIRE( index.find( created[ count ] ) == nullptr );
-      BOOST_REQUIRE( index.get( to_modify[ count ] ).expiration == time );
+      BOOST_REQUIRE_EQUAL( index.get( to_modify[ count ] ).expiration, time );
       BOOST_REQUIRE( index.find( to_remove[ count ] ) != nullptr );
     }
     ilog( "All previous objects that were in committed sessions are in their modified state" );
     for( int i = count - 1; i >= 0; --i )
     {
       BOOST_REQUIRE( index.find( created[ i ] ) != nullptr );
-      BOOST_REQUIRE( index.get( to_modify[ i ] ).expiration == time + HIVE_BLOCK_INTERVAL * i );
+      BOOST_REQUIRE_EQUAL( index.get( to_modify[ i ] ).expiration, time + HIVE_BLOCK_INTERVAL * i );
       BOOST_REQUIRE( index.find( to_remove[ i ] ) == nullptr );
     }
 
@@ -1209,7 +1209,7 @@ BOOST_AUTO_TEST_CASE( undo_state_on_squash_and_undo_with_keep_alive )
       {
         --count;
         BOOST_REQUIRE( index.find( created[ count ] ) == nullptr );
-        BOOST_REQUIRE( index.get( to_modify[ count ] ).expiration == time );
+        BOOST_REQUIRE_EQUAL( index.get( to_modify[ count ] ).expiration, time );
         BOOST_REQUIRE( index.find( to_remove[ count ] ) != nullptr );
       }
       // create and change objects again within reused session
@@ -1234,7 +1234,7 @@ BOOST_AUTO_TEST_CASE( undo_state_on_squash_and_undo_with_keep_alive )
       {
         --count;
         BOOST_REQUIRE( index.find( created[ count ] ) == nullptr );
-        BOOST_REQUIRE( index.get( to_modify[ count ] ).expiration == time );
+        BOOST_REQUIRE_EQUAL( index.get( to_modify[ count ] ).expiration, time );
         BOOST_REQUIRE( index.find( to_remove[ count ] ) != nullptr );
       }
       // create and change objects yet again within reused session
@@ -1312,7 +1312,7 @@ BOOST_AUTO_TEST_CASE( undo_state_on_squash_and_undo_with_keep_alive )
         {
           --count;
           BOOST_REQUIRE( index.find( created[ count ] ) == nullptr );
-          BOOST_REQUIRE( index.get( to_modify[ count ] ).expiration == time );
+          BOOST_REQUIRE_EQUAL( index.get( to_modify[ count ] ).expiration, time );
           BOOST_REQUIRE( index.find( to_remove[ count ] ) != nullptr );
         }
         // create and change objects again within reused nested session
@@ -1337,7 +1337,7 @@ BOOST_AUTO_TEST_CASE( undo_state_on_squash_and_undo_with_keep_alive )
         {
           --count;
           BOOST_REQUIRE( index.find( created[ count ] ) == nullptr );
-          BOOST_REQUIRE( index.get( to_modify[ count ] ).expiration == time );
+          BOOST_REQUIRE_EQUAL( index.get( to_modify[ count ] ).expiration, time );
           BOOST_REQUIRE( index.find( to_remove[ count ] ) != nullptr );
         }
         // create and change objects yet again within reused nested session
@@ -1395,7 +1395,7 @@ BOOST_AUTO_TEST_CASE( undo_state_on_squash_and_undo_with_keep_alive )
       {
         --count;
         BOOST_REQUIRE( index.find( created[ count ] ) == nullptr );
-        BOOST_REQUIRE( index.get( to_modify[ count ] ).expiration == time );
+        BOOST_REQUIRE_EQUAL( index.get( to_modify[ count ] ).expiration, time );
         BOOST_REQUIRE( index.find( to_remove[ count ] ) != nullptr );
       }
       ilog( "All previous objects that were in squashed nested sessions and earlier are in their modified state" );
@@ -1404,7 +1404,7 @@ BOOST_AUTO_TEST_CASE( undo_state_on_squash_and_undo_with_keep_alive )
       for( int i = count - 1; i >= 0; --i )
       {
         BOOST_REQUIRE( index.find( created[ i ] ) != nullptr );
-        BOOST_REQUIRE( index.get( to_modify[ i ] ).expiration == time + HIVE_BLOCK_INTERVAL * i );
+        BOOST_REQUIRE_EQUAL( index.get( to_modify[ i ] ).expiration, time + HIVE_BLOCK_INTERVAL * i );
         BOOST_REQUIRE( index.find( to_remove[ i ] ) == nullptr );
       }
     }
@@ -1420,7 +1420,7 @@ BOOST_AUTO_TEST_CASE( undo_state_on_squash_and_undo_with_keep_alive )
     {
       --count;
       BOOST_REQUIRE( index.find( created[ count ] ) == nullptr );
-      BOOST_REQUIRE( index.get( to_modify[ count ] ).expiration == time );
+      BOOST_REQUIRE_EQUAL( index.get( to_modify[ count ] ).expiration, time );
       BOOST_REQUIRE( index.find( to_remove[ count ] ) != nullptr );
     }
     ilog( "All previous objects that were squashed into committed state are in their modified state" );
@@ -1428,7 +1428,7 @@ BOOST_AUTO_TEST_CASE( undo_state_on_squash_and_undo_with_keep_alive )
     for( int i = count - 1; i >= 0; --i )
     {
       BOOST_REQUIRE( index.find( created[ i ] ) != nullptr );
-      BOOST_REQUIRE( index.get( to_modify[ i ] ).expiration == time + HIVE_BLOCK_INTERVAL * i );
+      BOOST_REQUIRE_EQUAL( index.get( to_modify[ i ] ).expiration, time + HIVE_BLOCK_INTERVAL * i );
       BOOST_REQUIRE( index.find( to_remove[ i ] ) == nullptr );
     }
   }

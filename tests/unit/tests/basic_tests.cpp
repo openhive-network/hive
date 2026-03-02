@@ -567,24 +567,24 @@ BOOST_AUTO_TEST_CASE( adjust_balance_test )
 
   BOOST_TEST_MESSAGE( " --- Testing adding HIVE_SYMBOL" );
   db->adjust_balance( "alice", asset( 50000, HIVE_SYMBOL ) );
-  BOOST_REQUIRE( db->get_balance( "alice", HIVE_SYMBOL ) == asset( 50000, HIVE_SYMBOL ) );
+  BOOST_REQUIRE_EQUAL( db->get_balance( "alice", HIVE_SYMBOL ), asset( 50000, HIVE_SYMBOL ) );
 
   BOOST_TEST_MESSAGE( " --- Testing deducting HIVE_SYMBOL" );
   HIVE_REQUIRE_THROW( db->adjust_balance( "alice", asset( -50001, HIVE_SYMBOL ) ), fc::assert_exception );
   db->adjust_balance( "alice", asset( -30000, HIVE_SYMBOL ) );
   db->adjust_balance( "alice", asset( -20000, HIVE_SYMBOL ) );
-  BOOST_REQUIRE( db->get_balance( "alice", HIVE_SYMBOL ) == asset( 0, HIVE_SYMBOL ) );
+  BOOST_REQUIRE_EQUAL( db->get_balance( "alice", HIVE_SYMBOL ), asset( 0, HIVE_SYMBOL ) );
 
   BOOST_TEST_MESSAGE( " --- Testing adding HBD_SYMBOL" );
   db->adjust_balance( "alice", asset( 100000, HBD_SYMBOL ) );
-  BOOST_REQUIRE( db->get_balance( "alice", HBD_SYMBOL ) == asset( 100000, HBD_SYMBOL ) );
+  BOOST_REQUIRE_EQUAL( db->get_balance( "alice", HBD_SYMBOL ), asset( 100000, HBD_SYMBOL ) );
 
   BOOST_TEST_MESSAGE( " --- Testing deducting HBD_SYMBOL" );
   HIVE_REQUIRE_THROW( db->adjust_balance( "alice", asset( -100001, HBD_SYMBOL ) ), fc::assert_exception );
   db->adjust_balance( "alice", asset( -50000, HBD_SYMBOL ) );
   db->adjust_balance( "alice", asset( -25000, HBD_SYMBOL ) );
   db->adjust_balance( "alice", asset( -25000, HBD_SYMBOL ) );
-  BOOST_REQUIRE( db->get_balance( "alice", HBD_SYMBOL ) == asset( 0, HBD_SYMBOL ) );
+  BOOST_REQUIRE_EQUAL( db->get_balance( "alice", HBD_SYMBOL ), asset( 0, HBD_SYMBOL ) );
 }
 
 BOOST_AUTO_TEST_CASE( curation_weight_test )
@@ -594,19 +594,19 @@ BOOST_AUTO_TEST_CASE( curation_weight_test )
   fc::uint128_t sqrt = fc::uint128_approx_sqrt( rshares + 2 * s );
   uint64_t result = fc::uint128_to_uint64( rshares / sqrt );
 
-  BOOST_REQUIRE( fc::uint128_to_uint64(sqrt) == 2002250 );
-  BOOST_REQUIRE( result == 0 );
+  BOOST_REQUIRE_EQUAL( fc::uint128_to_uint64(sqrt), 2002250 );
+  BOOST_REQUIRE_EQUAL( result, 0 );
 
   rshares = 0;
   sqrt = fc::uint128_approx_sqrt( rshares + 2 * s );
   result = fc::uint128_to_uint64( rshares / sqrt );
 
-  BOOST_REQUIRE( fc::uint128_to_uint64(sqrt) == 2002250 );
-  BOOST_REQUIRE( result == 0 );
+  BOOST_REQUIRE_EQUAL( fc::uint128_to_uint64(sqrt), 2002250 );
+  BOOST_REQUIRE_EQUAL( result, 0 );
 
   result = fc::uint128_to_uint64( uint128_t( 0 ) - uint128_t( 0 ) );
 
-  BOOST_REQUIRE( result == 0 );
+  BOOST_REQUIRE_EQUAL( result, 0 );
   rshares = fc::to_uint128( 0, 3351842535167ull );
 
   for( int64_t i = 856158; i >= 0; --i )
@@ -620,7 +620,7 @@ BOOST_AUTO_TEST_CASE( curation_weight_test )
 
     w *= 300;
     w /= 300;
-    BOOST_REQUIRE( fc::uint128_to_uint64(w) == new_weight - old_weight );
+    BOOST_REQUIRE_EQUAL( fc::uint128_to_uint64(w), new_weight - old_weight );
   }
 
   //idump( (delta)(old_weight)(new_weight) );
