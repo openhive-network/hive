@@ -633,13 +633,13 @@ reference = "gitlab-hive"
 
 [[package]]
 name = "hiveio-test-tools"
-version = "2.0.2.post20260302212055"
+version = "2.0.2.post20260302220456"
 description = "Tools for testing hive software"
 optional = false
 python-versions = ">=3.12,<4"
 groups = ["main"]
 files = [
-    {file = "hiveio_test_tools-2.0.2.post20260302212055-py3-none-any.whl", hash = "sha256:162e7b3237bc8841c5c383bee02f7f4442f2724537d79b032b373a051c2e40a7"},
+    {file = "hiveio_test_tools-2.0.2.post20260302220456-py3-none-any.whl", hash = "sha256:4041c6566789d08649ab25075dd6a4fd01d4d29c733ba0d10ed6113abff380f0"},
 ]
 
 [package.dependencies]
@@ -658,14 +658,14 @@ reference = "gitlab-hive"
 
 [[package]]
 name = "hiveio-wax"
-version = "2.0.2.post20260302212055"
+version = "2.0.2.post20260302220456"
 description = ""
 optional = false
 python-versions = ">=3.12,<4"
 groups = ["main"]
 files = [
-    {file = "hiveio_wax-2.0.2.post20260302212055-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:c4d129099430ede62d8022896d456f9b0deefe23ffe12391189060eb51209643"},
-    {file = "hiveio_wax-2.0.2.post20260302212055-cp314-cp314-manylinux_2_28_x86_64.whl", hash = "sha256:7b85aa8155e4ea22de4cf171a1cef889eec6675c6c825bb3a362119ca30314fc"},
+    {file = "hiveio_wax-2.0.2.post20260302220456-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:17ef8de9bff3e3ac7aabe13eb4c5432a1dcf25f9940b3062c7969a283a4dfcda"},
+    {file = "hiveio_wax-2.0.2.post20260302220456-cp314-cp314-manylinux_2_28_x86_64.whl", hash = "sha256:3da68e12dbdc1d8e18d667332e2451064b5e67e231a92c7825721bcaa3d5472c"},
 ]
 
 [package.dependencies]
