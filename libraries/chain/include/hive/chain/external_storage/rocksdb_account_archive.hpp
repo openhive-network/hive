@@ -15,10 +15,13 @@ class rocksdb_account_archive : public accounts_handler
   private:
 
     // The limit is removed (set to 0) when sync completes via remove_objects_limit().
+    // During replay, set_replay_objects_limit() raises this to replay_objects_limit
+    // to reduce unnecessary archival churn while still bounding SHM usage.
     #ifdef IS_TEST_NET
         size_t objects_limit = 0;
     #else
         size_t objects_limit = 100'000;
+        static constexpr size_t replay_objects_limit = 500'000;
     #endif
 
     size_t compaction_frequency_counter  = 0;
@@ -94,6 +97,7 @@ class rocksdb_account_archive : public accounts_handler
     void wipe() override;
 
     void remove_objects_limit() override;
+    void set_replay_objects_limit() override;
 };
 
 } }

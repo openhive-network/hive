@@ -160,38 +160,61 @@ struct rocksdb_reader<account_object, account_name_type, Return_Type>
       const account_id_type account_id = result->get_id();
       const auto aid = account_id.get_value();
 
-      // Recovery object
-      if( !db.find< recovery_object, by_id >( recovery_object::id_type( aid ) ) )
+      // Determine which split objects need restoring
+      const bool need_recovery = !db.find< recovery_object, by_id >( recovery_object::id_type( aid ) );
+      const bool need_assets = !db.find< assets_object, by_id >( assets_object::id_type( aid ) );
+      const bool need_delayed = !db.find< delayed_votes_object, by_id >( delayed_votes_object::id_type( aid ) );
+
+      if( need_recovery || need_assets || need_delayed )
       {
-        PinnableSlice split_buffer;
-        if( rocksdb_storage_reader<uint32_slice_t>::read_from_storage( provider, uint32_slice_t( account_id ), ColumnTypes::RECOVERY, split_buffer ) )
+        // Batch all needed split object reads into a single MultiGet call
+        std::vector<ColumnTypes> columns;
+        std::vector<Slice> keys;
+        uint32_slice_t key_slice( account_id );
+
+        // Track which position in the results corresponds to which object type
+        int recovery_idx = -1, assets_idx = -1, delayed_idx = -1;
+
+        if( need_recovery )
+        {
+          recovery_idx = static_cast<int>( columns.size() );
+          columns.push_back( ColumnTypes::RECOVERY );
+          keys.push_back( key_slice );
+        }
+        if( need_assets )
+        {
+          assets_idx = static_cast<int>( columns.size() );
+          columns.push_back( ColumnTypes::ASSETS );
+          keys.push_back( key_slice );
+        }
+        if( need_delayed )
+        {
+          delayed_idx = static_cast<int>( columns.size() );
+          columns.push_back( ColumnTypes::DELAYED_VOTES );
+          keys.push_back( key_slice );
+        }
+
+        std::vector<std::string> values;
+        auto results_ok = provider->multi_read( columns, keys, values );
+
+        if( recovery_idx >= 0 && results_ok[recovery_idx] )
         {
           rocksdb_recovery_object split_obj;
-          load( split_obj, split_buffer.data(), split_buffer.size() );
+          load( split_obj, values[recovery_idx].data(), values[recovery_idx].size() );
           split_obj.build<const recovery_object*>( db );
         }
-      }
 
-      // Assets object
-      if( !db.find< assets_object, by_id >( assets_object::id_type( aid ) ) )
-      {
-        PinnableSlice split_buffer;
-        if( rocksdb_storage_reader<uint32_slice_t>::read_from_storage( provider, uint32_slice_t( account_id ), ColumnTypes::ASSETS, split_buffer ) )
+        if( assets_idx >= 0 && results_ok[assets_idx] )
         {
           rocksdb_assets_object split_obj;
-          load( split_obj, split_buffer.data(), split_buffer.size() );
+          load( split_obj, values[assets_idx].data(), values[assets_idx].size() );
           split_obj.build<const assets_object*>( db );
         }
-      }
 
-      // Delayed_votes object
-      if( !db.find< delayed_votes_object, by_id >( delayed_votes_object::id_type( aid ) ) )
-      {
-        PinnableSlice split_buffer;
-        if( rocksdb_storage_reader<uint32_slice_t>::read_from_storage( provider, uint32_slice_t( account_id ), ColumnTypes::DELAYED_VOTES, split_buffer ) )
+        if( delayed_idx >= 0 && results_ok[delayed_idx] )
         {
           rocksdb_delayed_votes_object split_obj;
-          load( split_obj, split_buffer.data(), split_buffer.size() );
+          load( split_obj, values[delayed_idx].data(), values[delayed_idx].size() );
           split_obj.build<const delayed_votes_object*>( db );
         }
       }
@@ -1029,6 +1052,14 @@ void rocksdb_account_archive::wipe()
 void rocksdb_account_archive::remove_objects_limit()
 {
   objects_limit = 0;
+}
+
+void rocksdb_account_archive::set_replay_objects_limit()
+{
+#ifndef IS_TEST_NET
+  objects_limit = replay_objects_limit;
+  ilog( "Replay objects limit set to ${l}", ("l", objects_limit) );
+#endif
 }
 
 } }

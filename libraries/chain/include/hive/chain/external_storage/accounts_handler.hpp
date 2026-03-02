@@ -69,6 +69,11 @@ class accounts_handler : public executor_interface, public external_storage_snap
     virtual void wipe() = 0;
 
     virtual void remove_objects_limit() = 0;
+
+    /// Sets a higher objects_limit for use during replay to reduce archival pressure.
+    /// Called at startup when replay is detected; limit is restored to 0 via remove_objects_limit()
+    /// when sync completes.
+    virtual void set_replay_objects_limit() = 0;
 };
 
 } } // hive::chain

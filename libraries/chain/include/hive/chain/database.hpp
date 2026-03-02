@@ -949,8 +949,7 @@ namespace chain {
           chainbase::database::modify( obj, [&]( ObjectType& o )
           {
             m( o );
-            if( !is_replaying_block() )
-              o.set_last_access_block( head_block_num() );
+            o.set_last_access_block( head_block_num() );
           } );
           get_accounts_handler().on_object_modified( obj );
         }

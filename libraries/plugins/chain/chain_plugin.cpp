@@ -780,10 +780,13 @@ void chain_plugin_impl::stop_write_processing()
   write_processor_thread.reset();
 }
 
-bool chain_plugin_impl::start_replay_processing( 
+bool chain_plugin_impl::start_replay_processing(
   std::shared_ptr< block_write_i > reindex_block_writer,
   hive::chain::blockchain_worker_thread_pool& thread_pool )
 {
+  if( account_archive )
+    account_archive->set_replay_objects_limit();
+
   db.set_block_writer( reindex_block_writer.get() );
 
   BOOST_SCOPE_EXIT(this_) {

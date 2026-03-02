@@ -304,6 +304,27 @@ bool rocksdb_storage_provider::read( ColumnTypes column_type, const Slice& key, 
   return s.ok();
 }
 
+std::vector<bool> rocksdb_storage_provider::multi_read( const std::vector<ColumnTypes>& column_types,
+                                                        const std::vector<Slice>& keys,
+                                                        std::vector<std::string>& values )
+{
+  FC_ASSERT( column_types.size() == keys.size() );
+  const size_t n = column_types.size();
+
+  std::vector<ColumnFamilyHandle*> handles( n );
+  for( size_t i = 0; i < n; ++i )
+    handles[i] = getColumnHandle( column_types[i] );
+
+  std::vector<::rocksdb::Status> statuses = getStorage()->MultiGet(
+    ReadOptions(), handles, keys, &values );
+
+  std::vector<bool> results( n );
+  for( size_t i = 0; i < n; ++i )
+    results[i] = statuses[i].ok();
+
+  return results;
+}
+
 void rocksdb_storage_provider::remove( ColumnTypes column_type, const Slice& key )
 {
   auto s = getWriteBuffer().Delete( getColumnHandle(column_type), key );

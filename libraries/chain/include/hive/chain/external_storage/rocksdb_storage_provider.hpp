@@ -111,6 +111,11 @@ class rocksdb_storage_provider: public external_basic_provider
 
     void save( ColumnTypes column_type, const Slice& key, const Slice& value );
     bool read( ColumnTypes column_type, const Slice& key, PinnableSlice& value );
+    /// Batch read multiple keys from different columns in a single MultiGet call.
+    /// Returns a vector of bools indicating which reads succeeded.
+    std::vector<bool> multi_read( const std::vector<ColumnTypes>& column_types,
+                                  const std::vector<Slice>& keys,
+                                  std::vector<std::string>& values );
     void remove( ColumnTypes column_type, const Slice& key );
 
     void put_entity( ColumnTypes column_type, const Slice& key, const WideColumns& wide_columns );
