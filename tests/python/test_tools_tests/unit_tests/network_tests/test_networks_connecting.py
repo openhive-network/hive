@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pytest
-from local_tools.network import four_networks_connected, three_networks_connected, two_networks_connected  # noqa: F401
 from test_tools.__private.network import Network
 from test_tools.__private.user_handles.get_implementation import get_implementation
 
