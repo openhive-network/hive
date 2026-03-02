@@ -46,17 +46,15 @@ def create_proposals(node, accounts, start_date, end_date, wif=None):
                 test_utils.get_permlink(account["name"]),
             )
         )
-        op = Create_proposal(
-            **{
-                "creator": account["name"],
-                "receiver": account["name"],
-                "start_date": start_date,
-                "end_date": end_date,
-                "daily_pay": "24.000 TBD",
-                "subject": f"Proposal from account {account['name']}",
-                "permlink": test_utils.get_permlink(account["name"]),
-            }
-        )
+        op = Create_proposal(**{
+            "creator": account["name"],
+            "receiver": account["name"],
+            "start_date": start_date,
+            "end_date": end_date,
+            "daily_pay": "24.000 TBD",
+            "subject": f"Proposal from account {account['name']}",
+            "permlink": test_utils.get_permlink(account["name"]),
+        })
         node.finalizeOp(op, account["name"], "active")
     if wif is not None:
         hive_utils.debug_generate_blocks(node.rpc.url, wif, 5)

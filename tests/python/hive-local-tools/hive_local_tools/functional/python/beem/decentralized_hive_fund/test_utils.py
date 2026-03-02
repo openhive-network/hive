@@ -117,17 +117,15 @@ def create_proposals(node, proposals, wif=None):
             stacklevel=STACK_LEVEL,
         )
 
-        op = Create_proposal(
-            **{
-                "creator": proposal["creator"],
-                "receiver": proposal["receiver"],
-                "start_date": proposal["start_date"],
-                "end_date": proposal["end_date"],
-                "daily_pay": proposal["daily_pay"],
-                "subject": f"Proposal from account {proposal['creator']}",
-                "permlink": get_permlink(proposal["creator"]),
-            }
-        )
+        op = Create_proposal(**{
+            "creator": proposal["creator"],
+            "receiver": proposal["receiver"],
+            "start_date": proposal["start_date"],
+            "end_date": proposal["end_date"],
+            "daily_pay": proposal["daily_pay"],
+            "subject": f"Proposal from account {proposal['creator']}",
+            "permlink": get_permlink(proposal["creator"]),
+        })
         node.finalizeOp(op, proposal["creator"], "active")
     if wif is not None:
         hive_utils.debug_generate_blocks(node.rpc.url, wif, 5)
