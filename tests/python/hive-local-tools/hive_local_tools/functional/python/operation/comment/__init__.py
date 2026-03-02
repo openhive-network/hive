@@ -479,18 +479,20 @@ class Comment:
             benefactor_and_permlink = [(value.benefactor, value.permlink) for value in comment_benefactors_operations]
             if mode == "generated":
                 assert (
-                    beneficiary["account"],
-                    self.permlink,
-                ) in benefactor_and_permlink, (
-                    "Comment_benefactor_reward_operation not generated, but it should have been"
-                )
+                    (
+                        beneficiary["account"],
+                        self.permlink,
+                    )
+                    in benefactor_and_permlink
+                ), "Comment_benefactor_reward_operation not generated, but it should have been"
             elif mode == "not_generated":
                 assert (
-                    beneficiary["account"],
-                    self.permlink,
-                ) not in benefactor_and_permlink, (
-                    "Comment_benefactor_reward_operation generated, but it should have not been"
-                )
+                    (
+                        beneficiary["account"],
+                        self.permlink,
+                    )
+                    not in benefactor_and_permlink
+                ), "Comment_benefactor_reward_operation generated, but it should have not been"
             else:
                 raise ValueError(f"Unexpected value for 'mode': '{mode}'")
 
@@ -619,11 +621,12 @@ class Vote:
             ) in voter_and_comment_permlink, "Effective_comment_vote_operation not generated, but it should have been"
         elif mode == "not_generated":
             assert (
-                self.__voter_obj.name,
-                self.__comment_obj.permlink,
-            ) not in voter_and_comment_permlink, (
-                "Effective_comment_vote_operation generated, but it should have not been"
-            )
+                (
+                    self.__voter_obj.name,
+                    self.__comment_obj.permlink,
+                )
+                not in voter_and_comment_permlink
+            ), "Effective_comment_vote_operation generated, but it should have not been"
         else:
             raise ValueError(f"Unexpected value for 'mode': '{mode}'")
 

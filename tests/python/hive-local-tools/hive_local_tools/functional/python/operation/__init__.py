@@ -135,16 +135,13 @@ class Account:
 
     def get_direct_governance_vote_power(self, current: bool) -> tt.Asset.Vest:
         acc_info = _find_account(self.node, self._name) if current else self._acc_info
-        return tt.Asset.from_nai(
-            {
-                "amount": str(
-                    int(acc_info.vesting_shares.amount)
-                    - sum([vote.val for vote in acc_info.delayed_votes])  # noqa: C419
-                ),
-                "precision": 6,
-                "nai": "@@000000037",
-            }
-        )
+        return tt.Asset.from_nai({
+            "amount": str(
+                int(acc_info.vesting_shares.amount) - sum([vote.val for vote in acc_info.delayed_votes])  # noqa: C419
+            ),
+            "precision": 6,
+            "nai": "@@000000037",
+        })
 
     def fund_vests(self, tests: tt.Asset.Test) -> None:
         self._wallet.api.transfer_to_vesting(
@@ -202,14 +199,12 @@ class Account:
         if len(delayed_votes) == 0:
             return
 
-        last_unlock_date = max(
-            [  # noqa: C419
-                tt.Time.parse(delay_vote["time"])
-                for delay_vote in self._node.api.database.find_accounts(accounts=[self._acc_info.name])
-                .accounts[0]
-                .delayed_votes
-            ]
-        )
+        last_unlock_date = max([  # noqa: C419
+            tt.Time.parse(delay_vote["time"])
+            for delay_vote in self._node.api.database.find_accounts(accounts=[self._acc_info.name])
+            .accounts[0]
+            .delayed_votes
+        ])
         self._node.restart(
             time_control=tt.StartTimeControl(
                 start_time=last_unlock_date + tt.Time.seconds(HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS)
@@ -372,14 +367,12 @@ def create_account_with_different_keys(wallet: tt.Wallet, account_name: str, cre
         broadcast=True,
     )
 
-    wallet.api.import_keys(
-        [
-            tt.Account(account_name, secret="owner_key").private_key,
-            tt.Account(account_name, secret="active_key").private_key,
-            tt.Account(account_name, secret="posting_key").private_key,
-            tt.Account(account_name, secret="memo_key").private_key,
-        ]
-    )
+    wallet.api.import_keys([
+        tt.Account(account_name, secret="owner_key").private_key,
+        tt.Account(account_name, secret="active_key").private_key,
+        tt.Account(account_name, secret="posting_key").private_key,
+        tt.Account(account_name, secret="memo_key").private_key,
+    ])
 
 
 def create_transaction_with_any_operation(
