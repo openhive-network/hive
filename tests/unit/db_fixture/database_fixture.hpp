@@ -471,9 +471,9 @@ public:
 
   vector< operation > get_last_operations( uint32_t ops );
 
-  std::string asset_to_string( const asset& a );
+  static std::string asset_to_string( const asset& a );
   template< uint32_t _SYMBOL >
-  std::string asset_to_string( const tiny_asset<_SYMBOL>& a ) { return asset_to_string( a.to_asset() ); }
+  static std::string asset_to_string( const tiny_asset<_SYMBOL>& a ) { return asset_to_string( a.to_asset() ); }
 
   void validate_database();
 };
@@ -528,3 +528,53 @@ namespace performance
 }
 
 } }
+
+namespace hive { namespace protocol {
+
+inline std::ostream& operator<<( std::ostream& os, const asset& a )
+{
+  return os << hive::chain::database_fixture::asset_to_string( a );
+}
+
+template< uint32_t _SYMBOL >
+inline std::ostream& operator<<( std::ostream& os, const tiny_asset<_SYMBOL>& a )
+{
+  return os << hive::chain::database_fixture::asset_to_string( a.to_asset() );
+}
+
+inline std::ostream& operator<<( std::ostream& os, const price& p )
+{
+  return os << "price( " << p.get_base() << " / " << p.get_quote() << " )";
+}
+
+template< uint32_t _BASE, uint32_t _QUOTE >
+inline std::ostream& operator<<( std::ostream& os, const tiny_price<_BASE,_QUOTE>& p )
+{
+  return os << p.to_price();
+}
+
+template< typename Storage >
+inline std::ostream& operator<<( std::ostream& os, const fixed_string_impl<Storage>& s )
+{
+  return os << std::string( s );
+}
+
+} }
+
+namespace fc
+{
+
+inline std::ostream& operator<<( std::ostream& ostr, const time_point_sec time )
+{
+  ostr << time.to_iso_string();
+  return ostr;
+}
+
+template <typename T>
+inline std::ostream& operator<<( std::ostream& ostr, const safe<T> v )
+{
+  ostr << v.value;
+  return ostr;
+}
+
+}

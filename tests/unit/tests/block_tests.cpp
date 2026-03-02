@@ -96,23 +96,6 @@ namespace fc
     ostr << hash.str();
     return ostr;
   }
-  std::ostream& operator<<(std::ostream& ostr, const time_point_sec time)
-  {
-    ostr << time.to_iso_string();
-    return ostr;
-  }
-}
-namespace hive 
-{
-  namespace protocol
-  {
-    template <typename Storage>
-    std::ostream& operator<<(std::ostream& ostr, const fixed_string_impl<Storage>& str)
-    {
-      ostr << (std::string)str;
-      return ostr;
-    }
-  }
 }
 
 namespace std {
