@@ -508,6 +508,15 @@ void rocksdb_account_archive::on_irreversible_block( uint32_t block_num )
 {
   provider->update_cached_lib( block_num );
 
+  // During replay, last_access_block is not updated (gated by is_replaying_block in
+  // database::modify), so all accounts appear permanently stale. Running archival would
+  // cause massive archive-restore thrashing: accounts archived here get immediately
+  // restored when referenced by the next block's operations, then archived again after
+  // retention_blocks. Skip archival entirely during replay; it will run properly once
+  // the node reaches live sync with real access tracking.
+  if( db.is_replaying_block() )
+    return;
+
   // Skip archival scan if no objects can possibly need archiving yet
   if( block_num < _next_archival_check_block )
     return;
