@@ -63,15 +63,15 @@ repos:
           tests/python/hive-local-tools/hive_utils/,\
           tests/python/hive-local-tools/shared-tools/shared_tools/
           "
-  - repo: https://github.com/psf/black
-    rev: 23.9.1
+  - repo: local
     hooks:
       - id: black
         name: format code using black
-        args: [ "--config", "tests/python/hive-local-tools/pyproject.toml" ]
-  - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: 'v0.6.5'
-    hooks:
+        entry: black --config tests/python/hive-local-tools/pyproject.toml
+        language: system
+        types: [python]
       - id: ruff
         name: linting code with Ruff
-        args: [ "--config", "tests/python/hive-local-tools/pyproject.toml", "--fix" ]
+        entry: ruff check --config tests/python/hive-local-tools/pyproject.toml --fix
+        language: system
+        types: [python]
