@@ -139,7 +139,7 @@ BOOST_AUTO_TEST_CASE( blocked_operations )
       op.to = "alice";
       tx.operations.push_back( op );
       push_transaction( tx, alice_private_key );
-      BOOST_REQUIRE( get_hive_savings( "alice" ) == HIVE_asset( 1'000 ) );
+      BOOST_REQUIRE_EQUAL( get_hive_savings( "alice" ), HIVE_asset( 1'000 ) );
     }
     tx.clear();
 
@@ -225,8 +225,8 @@ BOOST_AUTO_TEST_CASE( comment_beneficiary )
 
     HBD_asset initial_treasury_balance = db->get_treasury().get_hbd_balance();
     generate_blocks( db->find_comment_cashout( *db->get_comment( "alice", string( "test" ) ) )->get_cashout_time() );
-    BOOST_REQUIRE( get_hbd_balance( OBSOLETE_TREASURY_ACCOUNT ) == HBD_asset( 0 ) );
-    BOOST_REQUIRE( db->get_treasury().get_hbd_balance() == HBD_asset( 1150 ) + initial_treasury_balance );
+    BOOST_REQUIRE_EQUAL( get_hbd_balance( OBSOLETE_TREASURY_ACCOUNT ), HBD_asset( 0 ) );
+    BOOST_REQUIRE_EQUAL( db->get_treasury().get_hbd_balance(), HBD_asset( 1150 ) + initial_treasury_balance );
 
     database_fixture::validate_database();
   }
@@ -241,14 +241,14 @@ BOOST_AUTO_TEST_CASE( consolidate_balance )
     generate_block();
     
     //instead of trying to find a way to fund various balances of steem.dao, just write to them directly
-    asset vested_3, vested_7;
+    VEST_asset vested_3, vested_7;
     db_plugin->debug_update( [&]( database& db )
     {
       auto& dgpo = db.get_dynamic_global_properties();
       db.adjust_supply( HIVE_asset( 20'000 ) );
       db.adjust_supply( HBD_asset( 10'000 ) );
-      vested_3 = ASSET( "3.000 TESTS" ) * dgpo.get_vesting_share_price().to_price();
-      vested_7 = ASSET( "7.000 TESTS" ) * dgpo.get_vesting_share_price().to_price();
+      vested_3 = HIVE_asset( 3'000 ) * dgpo.get_vesting_share_price();
+      vested_7 = HIVE_asset( 7'000 ) * dgpo.get_vesting_share_price();
       db.modify( dgpo, []( dynamic_global_property_object& gpo )
       {
         gpo.proposal_fund_percent = 0;
@@ -269,14 +269,14 @@ BOOST_AUTO_TEST_CASE( consolidate_balance )
     database_fixture::validate_database();
     {
       auto& old_treasury = db->get_account( OBSOLETE_TREASURY_ACCOUNT );
-      BOOST_REQUIRE( old_treasury.get_hive_balance() == HIVE_asset( 5000 ) );
-      BOOST_REQUIRE( old_treasury.get_hive_savings() == HIVE_asset( 3000 ) );
-      BOOST_REQUIRE( old_treasury.get_hive_rewards() == HIVE_asset( 2000 ) );
-      BOOST_REQUIRE( old_treasury.get_hbd_balance() == HBD_asset( 5000 ) );
-      BOOST_REQUIRE( old_treasury.get_hbd_savings() == HBD_asset( 3000 ) );
-      BOOST_REQUIRE( old_treasury.get_hbd_rewards() == HBD_asset( 2000 ) );
-      BOOST_REQUIRE_EQUAL( old_treasury.get_vesting().amount.value, vested_7.amount.value );
-      BOOST_REQUIRE_EQUAL( old_treasury.get_vest_rewards().amount.value, vested_3.amount.value );
+      BOOST_REQUIRE_EQUAL( old_treasury.get_hive_balance(), HIVE_asset( 5000 ) );
+      BOOST_REQUIRE_EQUAL( old_treasury.get_hive_savings(), HIVE_asset( 3000 ) );
+      BOOST_REQUIRE_EQUAL( old_treasury.get_hive_rewards(), HIVE_asset( 2000 ) );
+      BOOST_REQUIRE_EQUAL( old_treasury.get_hbd_balance(), HBD_asset( 5000 ) );
+      BOOST_REQUIRE_EQUAL( old_treasury.get_hbd_savings(), HBD_asset( 3000 ) );
+      BOOST_REQUIRE_EQUAL( old_treasury.get_hbd_rewards(), HBD_asset( 2000 ) );
+      BOOST_REQUIRE_EQUAL( old_treasury.get_vesting(), vested_7 );
+      BOOST_REQUIRE_EQUAL( old_treasury.get_vest_rewards(), vested_3 );
     }
 
     HBD_asset initial_treasury_balance = db->get_treasury().get_hbd_balance();
@@ -285,25 +285,25 @@ BOOST_AUTO_TEST_CASE( consolidate_balance )
 
     {
       auto& old_treasury = db->get_account( OBSOLETE_TREASURY_ACCOUNT );
-      BOOST_REQUIRE( old_treasury.get_hive_balance() == HIVE_asset( 0 ) );
-      BOOST_REQUIRE( old_treasury.get_hive_savings() == HIVE_asset( 0 ) );
-      BOOST_REQUIRE( old_treasury.get_hive_rewards() == HIVE_asset( 0 ) );
-      BOOST_REQUIRE( old_treasury.get_hbd_balance() == HBD_asset( 0 ) );
-      BOOST_REQUIRE( old_treasury.get_hbd_savings() == HBD_asset( 0 ) );
-      BOOST_REQUIRE( old_treasury.get_hbd_rewards() == HBD_asset( 0 ) );
-      BOOST_REQUIRE( old_treasury.get_vesting() == VEST_asset( 0 ) );
-      BOOST_REQUIRE( old_treasury.get_vest_rewards() == VEST_asset( 0 ) );
+      BOOST_REQUIRE_EQUAL( old_treasury.get_hive_balance(), HIVE_asset( 0 ) );
+      BOOST_REQUIRE_EQUAL( old_treasury.get_hive_savings(), HIVE_asset( 0 ) );
+      BOOST_REQUIRE_EQUAL( old_treasury.get_hive_rewards(), HIVE_asset( 0 ) );
+      BOOST_REQUIRE_EQUAL( old_treasury.get_hbd_balance(), HBD_asset( 0 ) );
+      BOOST_REQUIRE_EQUAL( old_treasury.get_hbd_savings(), HBD_asset( 0 ) );
+      BOOST_REQUIRE_EQUAL( old_treasury.get_hbd_rewards(), HBD_asset( 0 ) );
+      BOOST_REQUIRE_EQUAL( old_treasury.get_vesting(), VEST_asset( 0 ) );
+      BOOST_REQUIRE_EQUAL( old_treasury.get_vest_rewards(), VEST_asset( 0 ) );
     }
     {
       auto& treasury = db->get_account( NEW_HIVE_TREASURY_ACCOUNT );
-      BOOST_REQUIRE( treasury.get_hive_balance() == HIVE_asset( 14999 ) ); //rounding during vest->hive conversion
-      BOOST_REQUIRE( treasury.get_hive_savings() == HIVE_asset( 3000 ) );
-      BOOST_REQUIRE( treasury.get_hive_rewards() == HIVE_asset( 2000 ) );
-      BOOST_REQUIRE( treasury.get_hbd_balance() == HBD_asset( 5000 ) + initial_treasury_balance );
-      BOOST_REQUIRE( treasury.get_hbd_savings() == HBD_asset( 3000 ) );
-      BOOST_REQUIRE( treasury.get_hbd_rewards() == HBD_asset( 2000 ) );
-      BOOST_REQUIRE( treasury.get_vesting() == VEST_asset( 0 ) );
-      BOOST_REQUIRE( treasury.get_vest_rewards() == VEST_asset( 0 ) );
+      BOOST_REQUIRE_EQUAL( treasury.get_hive_balance(), HIVE_asset( 14999 ) ); //rounding during vest->hive conversion
+      BOOST_REQUIRE_EQUAL( treasury.get_hive_savings(), HIVE_asset( 3000 ) );
+      BOOST_REQUIRE_EQUAL( treasury.get_hive_rewards(), HIVE_asset( 2000 ) );
+      BOOST_REQUIRE_EQUAL( treasury.get_hbd_balance(), HBD_asset( 5000 ) + initial_treasury_balance );
+      BOOST_REQUIRE_EQUAL( treasury.get_hbd_savings(), HBD_asset( 3000 ) );
+      BOOST_REQUIRE_EQUAL( treasury.get_hbd_rewards(), HBD_asset( 2000 ) );
+      BOOST_REQUIRE_EQUAL( treasury.get_vesting(), VEST_asset( 0 ) );
+      BOOST_REQUIRE_EQUAL( treasury.get_vest_rewards(), VEST_asset( 0 ) );
     }
   }
   FC_LOG_AND_RETHROW()
@@ -327,8 +327,8 @@ BOOST_AUTO_TEST_CASE( treasury_debt_ratio )
     generate_block();
     const auto after_hbd_print_rate = dgpo.hbd_print_rate;
 
-    BOOST_REQUIRE( after_hbd_print_rate == before_hbd_print_rate );
-    BOOST_REQUIRE( after_hbd_print_rate != during_hbd_print_rate );
+    BOOST_REQUIRE_EQUAL( after_hbd_print_rate, before_hbd_print_rate );
+    BOOST_REQUIRE_NE( after_hbd_print_rate, during_hbd_print_rate );
     database_fixture::validate_database();
   }
   FC_LOG_AND_RETHROW()

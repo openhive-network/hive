@@ -180,7 +180,7 @@ BOOST_AUTO_TEST_CASE( generate_empty_blocks )
         string cur_witness = db.get_scheduled_witness(1);
         b = GENERATE_BLOCK( bp, db.get_slot_time(1), cur_witness,
           init_account_priv_key, database::skip_nothing );
-        BOOST_CHECK( b->get_block_header().witness == cur_witness );
+        BOOST_CHECK_EQUAL( b->get_block_header().witness, cur_witness );
         uint32_t cutoff_height = db.get_last_irreversible_block_num();
         if( cutoff_height >= 200 )
         {
@@ -232,23 +232,23 @@ BOOST_AUTO_TEST_CASE( undo_block )
         GENERATE_BLOCK( bp, now, db.get_scheduled_witness(1),
           init_account_priv_key, database::skip_nothing );
       }
-      BOOST_CHECK( db.head_block_num() == 5 );
-      BOOST_CHECK( db.head_block_time() == now );
+      BOOST_CHECK_EQUAL( db.head_block_num(), 5 );
+      BOOST_CHECK_EQUAL( db.head_block_time(), now );
       db.pop_block();
       time_stack.pop_back();
       now = time_stack.back();
-      BOOST_CHECK( db.head_block_num() == 4 );
-      BOOST_CHECK( db.head_block_time() == now );
+      BOOST_CHECK_EQUAL( db.head_block_num(), 4 );
+      BOOST_CHECK_EQUAL( db.head_block_time(), now );
       db.pop_block();
       time_stack.pop_back();
       now = time_stack.back();
-      BOOST_CHECK( db.head_block_num() == 3 );
-      BOOST_CHECK( db.head_block_time() == now );
+      BOOST_CHECK_EQUAL( db.head_block_num(), 3 );
+      BOOST_CHECK_EQUAL( db.head_block_time(), now );
       db.pop_block();
       time_stack.pop_back();
       now = time_stack.back();
-      BOOST_CHECK( db.head_block_num() == 2 );
-      BOOST_CHECK( db.head_block_time() == now );
+      BOOST_CHECK_EQUAL( db.head_block_num(), 2 );
+      BOOST_CHECK_EQUAL( db.head_block_time(), now );
       for( uint32_t i = 0; i < 5; ++i )
       {
         now = db.get_slot_time(1);
@@ -256,7 +256,7 @@ BOOST_AUTO_TEST_CASE( undo_block )
         auto b = GENERATE_BLOCK( bp, now, db.get_scheduled_witness(1),
           init_account_priv_key, database::skip_nothing );
       }
-      BOOST_CHECK( db.head_block_num() == 7 );
+      BOOST_CHECK_EQUAL( db.head_block_num(), 7 );
     }
   } catch (fc::exception& e) {
     edump((e.to_detail_string()));
@@ -398,7 +398,7 @@ BOOST_AUTO_TEST_CASE( switch_forks_undo_create )
       init_account_priv_key, database::skip_nothing );
 
     auto alice_id = db1.get_account( "alice" ).get_id();
-    BOOST_CHECK( db1.get(alice_id).get_name() == "alice" );
+    BOOST_CHECK_EQUAL( db1.get(alice_id).get_name(), "alice" );
 
     b = GENERATE_BLOCK( bp2, db2.get_slot_time(1), db2.get_scheduled_witness(1),
       init_account_priv_key, database::skip_nothing );
@@ -417,8 +417,8 @@ BOOST_AUTO_TEST_CASE( switch_forks_undo_create )
       init_account_priv_key, database::skip_nothing );
     PUSH_BLOCK( chain_plugin1, b );
 
-    BOOST_CHECK( db1.get(alice_id).get_name() == "alice");
-    BOOST_CHECK( db2.get(alice_id).get_name() == "alice");
+    BOOST_CHECK_EQUAL( db1.get(alice_id).get_name(), "alice" );
+    BOOST_CHECK_EQUAL( db2.get(alice_id).get_name(), "alice" );
   } catch (fc::exception& e) {
     edump((e.to_detail_string()));
     throw;
@@ -1159,7 +1159,7 @@ BOOST_FIXTURE_TEST_CASE( skip_block, clean_database_fixture )
   try
   {
     BOOST_TEST_MESSAGE( "Skipping blocks through db" );
-    BOOST_REQUIRE( db->head_block_num() == 2 );
+    BOOST_REQUIRE_EQUAL( db->head_block_num(), 2 );
 
     witness::block_producer bp( get_chain_plugin() );
     unsigned int init_block_num = db->head_block_num();
@@ -1169,13 +1169,13 @@ BOOST_FIXTURE_TEST_CASE( skip_block, clean_database_fixture )
     GENERATE_BLOCK( bp, block_time , witness, init_account_priv_key );
 
     BOOST_CHECK_EQUAL( db->head_block_num(), init_block_num + 1 );
-    BOOST_CHECK( db->head_block_time() == block_time );
+    BOOST_CHECK_EQUAL( db->head_block_time(), block_time );
 
     BOOST_TEST_MESSAGE( "Generating a block through fixture" );
     generate_block();
 
     BOOST_CHECK_EQUAL( db->head_block_num(), init_block_num + 2 );
-    BOOST_CHECK( db->head_block_time() == block_time + HIVE_BLOCK_INTERVAL );
+    BOOST_CHECK_EQUAL( db->head_block_time(), block_time + HIVE_BLOCK_INTERVAL );
   }
   FC_LOG_AND_RETHROW();
 }
@@ -1253,7 +1253,7 @@ BOOST_FIXTURE_TEST_CASE( hardfork_test, hived_fixture )
     operation hardfork_vop = hardfork_operation( HIVE_HARDFORK_0_1 );
 
     BOOST_REQUIRE(last_op == hardfork_vop);
-    BOOST_REQUIRE(itr->timestamp == db->head_block_time());
+    BOOST_REQUIRE_EQUAL( itr->timestamp, db->head_block_time() );
 
     BOOST_TEST_MESSAGE( "Testing hardfork is only applied once" );
     generate_block();
@@ -1267,7 +1267,7 @@ BOOST_FIXTURE_TEST_CASE( hardfork_test, hived_fixture )
     }
 
       /// There shall be no more hardfork ops after last one.
-    BOOST_REQUIRE(processed_op.which() != hardfork_vop.which());
+    BOOST_REQUIRE_NE( processed_op.which(), hardfork_vop.which() );
 
     BOOST_REQUIRE( db->has_hardfork( 0 ) );
     BOOST_REQUIRE( db->has_hardfork( HIVE_HARDFORK_0_1 ) );
@@ -1278,7 +1278,7 @@ BOOST_FIXTURE_TEST_CASE( hardfork_test, hived_fixture )
     ++itr;
 
     /// Here last HF vop shall be pointed, with its original time.
-    BOOST_REQUIRE( itr->timestamp == db->head_block_time() - HIVE_BLOCK_INTERVAL );
+    BOOST_REQUIRE_EQUAL( itr->timestamp, db->head_block_time() - HIVE_BLOCK_INTERVAL );
 
   }
   catch( fc::exception& e )
@@ -1337,7 +1337,7 @@ BOOST_FIXTURE_TEST_CASE( generate_block_size, clean_database_fixture )
 
     // The last transfer should have been delayed due to size
     auto head_block = get_block_reader().get_block_by_number( db->head_block_num() );
-    BOOST_REQUIRE( head_block->get_block().transactions.size() == 1 );
+    BOOST_REQUIRE_EQUAL( head_block->get_block().transactions.size(), 1 );
   }
   FC_LOG_AND_RETHROW()
 }

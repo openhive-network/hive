@@ -329,8 +329,8 @@ BOOST_AUTO_TEST_CASE( mh_test )
     BOOST_REQUIRE_EQUAL( ticker.hbd_volume.amount.value, 31764 + 30069 + 25000 );
 
     auto volume = mh_api->get_volume( {} );
-    BOOST_REQUIRE_EQUAL( volume.hive_volume.amount.value, ticker.hive_volume.amount.value );
-    BOOST_REQUIRE_EQUAL( volume.hbd_volume.amount.value, ticker.hbd_volume.amount.value );
+    BOOST_REQUIRE_EQUAL( volume.hive_volume, ticker.hive_volume );
+    BOOST_REQUIRE_EQUAL( volume.hbd_volume, ticker.hbd_volume );
 
     auto orders = mh_api->get_order_book( { 10 } );
     // just last orders from sam and bob

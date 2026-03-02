@@ -401,9 +401,9 @@ BOOST_AUTO_TEST_CASE( popped_transactions )
     check.expect( expectation::pending_transaction( expectation::POST_TX ) );
     generate_block();
     check.check_empty();
-    BOOST_REQUIRE( get_hive_balance( "alice" ) == HIVE_asset( 19990 ) );
-    BOOST_REQUIRE( get_hive_balance( "bob" ) == HIVE_asset( 10 ) );
-    BOOST_REQUIRE( get_hive_balance( "carol" ) == HIVE_asset( 10000 ) );
+    BOOST_REQUIRE_EQUAL( get_hive_balance( "alice" ), HIVE_asset( 19990 ) );
+    BOOST_REQUIRE_EQUAL( get_hive_balance( "bob" ), HIVE_asset( 10 ) );
+    BOOST_REQUIRE_EQUAL( get_hive_balance( "carol" ), HIVE_asset( 10000 ) );
 
     BOOST_TEST_MESSAGE( "Generating block out of remaining previously popped transactions" );
     check.expect( expectation::gen_block( expectation::PRE_TX ) );

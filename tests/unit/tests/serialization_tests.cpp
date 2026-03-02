@@ -118,7 +118,7 @@ BOOST_AUTO_TEST_CASE( serialization_json_test )
 
     fc::variant test(op.amount);
     auto tmp = test.as<asset>();
-    BOOST_REQUIRE( tmp == op.amount );
+    BOOST_REQUIRE_EQUAL( tmp, op.amount );
 
     signed_transaction trx;
     trx.operations.push_back( op );
@@ -209,21 +209,21 @@ BOOST_AUTO_TEST_CASE( asset_test )
     BOOST_CHECK_EQUAL( hive.amount.value, 123456 );
     BOOST_CHECK_EQUAL( hive.symbol.decimals(), 3 );
     BOOST_CHECK_EQUAL( fc::json::to_string( hive ), "{\"amount\":\"123456\",\"precision\":3,\"nai\":\"@@000000021\"}" );
-    BOOST_CHECK( hive.symbol.asset_num == HIVE_ASSET_NUM_HIVE );
+    BOOST_CHECK_EQUAL( hive.symbol.asset_num, HIVE_ASSET_NUM_HIVE );
     BOOST_CHECK_EQUAL( fc::json::to_string( asset( 50, HIVE_SYMBOL ) ), "{\"amount\":\"50\",\"precision\":3,\"nai\":\"@@000000021\"}" );
     BOOST_CHECK_EQUAL( fc::json::to_string( asset( 50000, HIVE_SYMBOL ) ), "{\"amount\":\"50000\",\"precision\":3,\"nai\":\"@@000000021\"}" );
 
     BOOST_CHECK_EQUAL( hbd.amount.value, 654321 );
     BOOST_CHECK_EQUAL( hbd.symbol.decimals(), 3 );
     BOOST_CHECK_EQUAL( fc::json::to_string( hbd ), "{\"amount\":\"654321\",\"precision\":3,\"nai\":\"@@000000013\"}" );
-    BOOST_CHECK( hbd.symbol.asset_num == HIVE_ASSET_NUM_HBD );
+    BOOST_CHECK_EQUAL( hbd.symbol.asset_num, HIVE_ASSET_NUM_HBD );
     BOOST_CHECK_EQUAL( fc::json::to_string( asset( 50, HBD_SYMBOL ) ), "{\"amount\":\"50\",\"precision\":3,\"nai\":\"@@000000013\"}" );
     BOOST_CHECK_EQUAL( fc::json::to_string( asset( 50000, HBD_SYMBOL ) ), "{\"amount\":\"50000\",\"precision\":3,\"nai\":\"@@000000013\"}" );
 
     BOOST_CHECK_EQUAL( vests.amount.value, 123456789 );
     BOOST_CHECK_EQUAL( vests.symbol.decimals(), 6 );
     BOOST_CHECK_EQUAL( fc::json::to_string( vests ), "{\"amount\":\"123456789\",\"precision\":6,\"nai\":\"@@000000037\"}" );
-    BOOST_CHECK( vests.symbol.asset_num == HIVE_ASSET_NUM_VESTS );
+    BOOST_CHECK_EQUAL( vests.symbol.asset_num, HIVE_ASSET_NUM_VESTS );
     BOOST_CHECK_EQUAL( fc::json::to_string( asset( 50, VESTS_SYMBOL ) ), "{\"amount\":\"50\",\"precision\":6,\"nai\":\"@@000000037\"}" );
     BOOST_CHECK_EQUAL( fc::json::to_string( asset( 50000, VESTS_SYMBOL ) ), "{\"amount\":\"50000\",\"precision\":6,\"nai\":\"@@000000037\"}" );
 
@@ -376,7 +376,7 @@ BOOST_AUTO_TEST_CASE( asset_raw_test )
         std::istringstream ss( string(v_cur.begin(), v_cur.end()) );
         asset a2;
         fc::raw::unpack( ss, a2 );
-        BOOST_CHECK( a == a2 );
+        BOOST_CHECK_EQUAL( a, a2 );
 
         // check conversion to JSON works
         //std::string json_old = old_json_asset(a);
@@ -388,7 +388,7 @@ BOOST_AUTO_TEST_CASE( asset_raw_test )
         // check JSON serialization is symmetric
         std::string json_cur = fc::json::to_string(a);
         a2 = fc::json::from_string(json_cur, fc::json::format_validation_mode::full).as< asset >();
-        BOOST_CHECK( a == a2 );
+        BOOST_CHECK_EQUAL( a, a2 );
       }
     }
   }
@@ -494,7 +494,7 @@ namespace
   void test_static_variant_same( const fc::static_variant< Ts... >& sv1, const fc::static_variant< Ts... >& sv2 )
   {
     // Check static_variant index (do not waste time on hashing if variants are already holding different data)
-    BOOST_REQUIRE( sv1.which() == sv2.which() );
+    BOOST_REQUIRE_EQUAL( sv1.which(), sv2.which() );
 
     // Check if comment_options_extension hashes match
     BOOST_REQUIRE( fc::sha256::hash( sv1 ) == fc::sha256::hash( sv2 ) );
@@ -664,7 +664,7 @@ BOOST_AUTO_TEST_CASE( min_block_size )
   while( b.witness.length() < HIVE_MIN_ACCOUNT_NAME_LENGTH )
     b.witness += 'a';
   size_t min_size = fc::raw::pack_size( b );
-  BOOST_CHECK( min_size == HIVE_MIN_BLOCK_SIZE );
+  BOOST_CHECK_EQUAL( min_size, HIVE_MIN_BLOCK_SIZE );
 }
 
 BOOST_AUTO_TEST_CASE( legacy_signed_transaction )
@@ -723,10 +723,10 @@ BOOST_AUTO_TEST_CASE( static_variant_json_test )
     BOOST_CHECK_EQUAL( op.which(), 0 );
 
     transfer_operation t = op.get< transfer_operation >();
-    BOOST_CHECK( t.from == "foo" );
-    BOOST_CHECK( t.to == "bar" );
-    BOOST_CHECK( t.amount == asset( 1000, HIVE_SYMBOL ) );
-    BOOST_CHECK( t.memo == "" );
+    BOOST_CHECK_EQUAL( t.from, "foo" );
+    BOOST_CHECK_EQUAL( t.to, "bar" );
+    BOOST_CHECK_EQUAL( t.amount, asset( 1000, HIVE_SYMBOL ) );
+    BOOST_CHECK_EQUAL( t.memo, "" );
 
     json_str = "{\"type\":1,\"value\":{\"parent_author\":\"foo\",\"parent_permlink\":\"bar\",\"author\":\"foo1\",\"permlink\":\"bar1\",\"title\":\"\",\"body\":\"\",\"json_metadata\":\"\"}}";
 
@@ -734,12 +734,12 @@ BOOST_AUTO_TEST_CASE( static_variant_json_test )
     BOOST_CHECK_EQUAL( op.which(), 1 );
 
     comment_operation c = op.get< comment_operation >();
-    BOOST_CHECK( c.parent_author == "foo" );
-    BOOST_CHECK( c.parent_permlink == "bar" );
-    BOOST_CHECK( c.author == "foo1" );
-    BOOST_CHECK( c.permlink == "bar1" );
-    BOOST_CHECK( c.title == "" );
-    BOOST_CHECK( c.body == "" );
+    BOOST_CHECK_EQUAL( c.parent_author, "foo" );
+    BOOST_CHECK_EQUAL( c.parent_permlink, "bar" );
+    BOOST_CHECK_EQUAL( c.author, "foo1" );
+    BOOST_CHECK_EQUAL( c.permlink, "bar1" );
+    BOOST_CHECK_EQUAL( c.title, "" );
+    BOOST_CHECK_EQUAL( c.body, "" );
     BOOST_CHECK( c.json_metadata == "" );
 
     json_str = "{\"type\":\"not_a_type\",\"value\":{\"from\":\"foo\",\"to\":\"bar\",\"amount\":{\"amount\":\"1000\",\"precision\":3,\"nai\":\"@@000000021\"},\"memo\":\"\"}}";
@@ -761,10 +761,10 @@ BOOST_AUTO_TEST_CASE( asset_symbol_type_test )
     BOOST_REQUIRE( symbol == asset_symbol_type::from_nai( 100000006, 3 ) );
     BOOST_REQUIRE( symbol == asset_symbol_type::from_nai_string( "@@100000006", 3 ) );
     BOOST_REQUIRE( asset_num == asset_symbol_type::asset_num_from_nai( 100000006, 3 ) );
-    BOOST_REQUIRE( symbol.to_nai_string() == "@@100000006" );
-    BOOST_REQUIRE( symbol.to_nai() == 100000006 );
-    BOOST_REQUIRE( symbol.asset_num == asset_num );
-    BOOST_REQUIRE( symbol.space() == asset_symbol_type::asset_symbol_space::smt_nai_space );
+    BOOST_REQUIRE_EQUAL( symbol.to_nai_string(), "@@100000006" );
+    BOOST_REQUIRE_EQUAL( symbol.to_nai(), 100000006 );
+    BOOST_REQUIRE_EQUAL( symbol.asset_num, asset_num );
+    BOOST_REQUIRE_EQUAL( symbol.space(), asset_symbol_type::asset_symbol_space::smt_nai_space );
     BOOST_REQUIRE( symbol.get_paired_symbol() == asset_symbol_type::from_asset_num( asset_num ^ SMT_ASSET_NUM_VESTING_MASK ) );
     BOOST_REQUIRE( asset_symbol_type::from_nai( symbol.to_nai(), 3 ) == symbol );
 
@@ -772,9 +772,9 @@ BOOST_AUTO_TEST_CASE( asset_symbol_type_test )
     asset_symbol_type hbd = asset_symbol_type::from_asset_num( HIVE_ASSET_NUM_HBD );
     asset_symbol_type vests = asset_symbol_type::from_asset_num( HIVE_ASSET_NUM_VESTS );
 
-    BOOST_REQUIRE( hive.space() == asset_symbol_type::asset_symbol_space::legacy_space );
-    BOOST_REQUIRE( hbd.space() == asset_symbol_type::asset_symbol_space::legacy_space );
-    BOOST_REQUIRE( vests.space() == asset_symbol_type::asset_symbol_space::legacy_space );
+    BOOST_REQUIRE_EQUAL( hive.space(), asset_symbol_type::asset_symbol_space::legacy_space );
+    BOOST_REQUIRE_EQUAL( hbd.space(), asset_symbol_type::asset_symbol_space::legacy_space );
+    BOOST_REQUIRE_EQUAL( vests.space(), asset_symbol_type::asset_symbol_space::legacy_space );
 
     BOOST_REQUIRE( asset_symbol_type::from_nai( hive.to_nai(), HIVE_PRECISION_HIVE ) == hive );
     BOOST_REQUIRE( asset_symbol_type::from_nai( hbd.to_nai(), HIVE_PRECISION_HBD ) == hbd );
@@ -848,27 +848,27 @@ BOOST_AUTO_TEST_CASE( unpack_clear_test )
     // This operation should completely overwrite signed block 'b2'
     fc::raw::unpack_from_vector( ss1_vector, unpacked_block );
 
-    BOOST_REQUIRE( b1.transactions.size() == unpacked_block.transactions.size() );
+    BOOST_REQUIRE_EQUAL( b1.transactions.size(), unpacked_block.transactions.size() );
     for ( size_t i = 0; i < unpacked_block.transactions.size(); i++ )
     {
       signed_transaction tx = unpacked_block.transactions[ i ];
-      BOOST_REQUIRE( unpacked_block.transactions[ i ].operations.size() == b1.transactions[ i ].operations.size() );
+      BOOST_REQUIRE_EQUAL( unpacked_block.transactions[ i ].operations.size(), b1.transactions[ i ].operations.size() );
 
       vote_operation op = tx.operations[ 0 ].get< vote_operation >();
-      BOOST_REQUIRE( op.voter == "alice" );
-      BOOST_REQUIRE( op.author == "bob" );
-      BOOST_REQUIRE( op.permlink == "permlink1" );
-      BOOST_REQUIRE( op.weight == HIVE_100_PERCENT );
+      BOOST_REQUIRE_EQUAL( op.voter, "alice" );
+      BOOST_REQUIRE_EQUAL( op.author, "bob" );
+      BOOST_REQUIRE_EQUAL( op.permlink, "permlink1" );
+      BOOST_REQUIRE_EQUAL( op.weight, HIVE_100_PERCENT );
 
       vote_operation op2 = tx.operations[ 1 ].get< vote_operation >();
-      BOOST_REQUIRE( op2.voter == "charlie" );
-      BOOST_REQUIRE( op2.author == "sam" );
-      BOOST_REQUIRE( op2.permlink == "permlink2" );
-      BOOST_REQUIRE( op2.weight == HIVE_100_PERCENT );
+      BOOST_REQUIRE_EQUAL( op2.voter, "charlie" );
+      BOOST_REQUIRE_EQUAL( op2.author, "sam" );
+      BOOST_REQUIRE_EQUAL( op2.permlink, "permlink2" );
+      BOOST_REQUIRE_EQUAL( op2.weight, HIVE_100_PERCENT );
 
-      BOOST_REQUIRE( tx.ref_block_num == 1000 );
-      BOOST_REQUIRE( tx.ref_block_prefix == 1000000000 );
-      BOOST_REQUIRE( tx.expiration == fc::time_point_sec( 1514764800 + i ) );
+      BOOST_REQUIRE_EQUAL( tx.ref_block_num, 1000 );
+      BOOST_REQUIRE_EQUAL( tx.ref_block_prefix, 1000000000 );
+      BOOST_REQUIRE_EQUAL( tx.expiration, fc::time_point_sec( 1514764800 + i ) );
     }
   }
   FC_LOG_AND_RETHROW();

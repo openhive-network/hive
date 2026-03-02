@@ -175,9 +175,9 @@ BOOST_AUTO_TEST_CASE( comment_payout_equalize )
     const account_object& bob_account   = db->get_account("bob");
     const account_object& dave_account  = db->get_account("dave");
 
-    BOOST_CHECK( alice_account.get_hbd_rewards() == HBD_asset( 6'140'000 ) );
-    BOOST_CHECK( bob_account.get_hbd_rewards() == HBD_asset( 0 ) );
-    BOOST_CHECK( dave_account.get_hbd_rewards() == alice_account.get_hbd_rewards() );
+    BOOST_CHECK_EQUAL( alice_account.get_hbd_rewards(), HBD_asset( 6'140'000 ) );
+    BOOST_CHECK_EQUAL( bob_account.get_hbd_rewards(), HBD_asset( 0 ) );
+    BOOST_CHECK_EQUAL( dave_account.get_hbd_rewards(), alice_account.get_hbd_rewards() );
   }
   FC_LOG_AND_RETHROW()
 }
@@ -246,7 +246,7 @@ BOOST_AUTO_TEST_CASE( comment_payout_dust )
 
     // If comments are paid out independent of order, then the last satoshi of HIVE cannot be divided among them
     const auto& rf = db->get< reward_fund_object, by_name >( HIVE_POST_REWARD_FUND_NAME );
-    BOOST_REQUIRE( rf.get_reward_balance() == HIVE_asset( 1 ) );
+    BOOST_REQUIRE_EQUAL( rf.get_reward_balance(), HIVE_asset( 1 ) );
 
     validate_database();
 
@@ -302,9 +302,9 @@ BOOST_AUTO_TEST_CASE( reward_funds )
     {
       const auto& post_rf = db->get< reward_fund_object, by_name >( HIVE_POST_REWARD_FUND_NAME );
 
-      BOOST_REQUIRE( post_rf.reward_balance.amount == 0 );
+      BOOST_REQUIRE_EQUAL( post_rf.reward_balance.amount, 0 );
       BOOST_REQUIRE( get_hbd_rewards( "alice" ).amount > 0 );
-      BOOST_REQUIRE( get_hbd_rewards( "bob" ).amount == 0 );
+      BOOST_REQUIRE_EQUAL( get_hbd_rewards( "bob" ).amount, 0 );
       validate_database();
     }
 
@@ -492,10 +492,10 @@ BOOST_AUTO_TEST_CASE( comment_payout )
 
     generate_block();
 
-    BOOST_REQUIRE( db->get_dynamic_global_properties().get_total_reward_fund_hive() == reward_hive - bob_comment_payout );
-    BOOST_REQUIRE( db->get_comment( "bob", string( "test" ) ).total_payout_value == bob_comment_vesting_reward * db->get_dynamic_global_properties().get_vesting_share_price().to_price() + bob_comment_hbd_reward * exchange_rate );
-    BOOST_REQUIRE( get_vesting( "bob" ) == bob_vest_shares + bob_comment_vesting_reward );
-    BOOST_REQUIRE( get_hbd_balance( "bob" ) == bob_hbd_balance + bob_comment_hbd_reward );
+    BOOST_REQUIRE_EQUAL( db->get_dynamic_global_properties().get_total_reward_fund_hive(), reward_hive - bob_comment_payout );
+    BOOST_REQUIRE_EQUAL( db->get_comment( "bob", string( "test" ) ).total_payout_value, bob_comment_vesting_reward * db->get_dynamic_global_properties().get_vesting_share_price().to_price() + bob_comment_hbd_reward * exchange_rate );
+    BOOST_REQUIRE_EQUAL( get_vesting( "bob" ), bob_vest_shares + bob_comment_vesting_reward );
+    BOOST_REQUIRE_EQUAL( get_hbd_balance( "bob" ), bob_hbd_balance + bob_comment_hbd_reward );
 
     BOOST_TEST_MESSAGE( "Testing no payout when less than $0.02" );
 
@@ -540,8 +540,8 @@ BOOST_AUTO_TEST_CASE( comment_payout )
 
     generate_block();
 
-    BOOST_REQUIRE( bob_vest_shares == get_vesting( "bob" ) );
-    BOOST_REQUIRE( bob_hbd_balance == get_hbd_balance( "bob" ) );
+    BOOST_REQUIRE_EQUAL( bob_vest_shares, get_vesting( "bob" ) );
+    BOOST_REQUIRE_EQUAL( bob_hbd_balance, get_hbd_balance( "bob" ) );
     validate_database();
   }
   FC_LOG_AND_RETHROW()
@@ -682,19 +682,19 @@ BOOST_AUTO_TEST_CASE( comment_payout )
 
     auto bob_comment_reward = get_last_operations( 1 )[0].get< comment_reward_operation >();
 
-    BOOST_REQUIRE( db->get_dynamic_global_properties().get_total_reward_fund_hive().amount.value == reward_hive.amount.value - ( bob_comment_payout + bob_comment_vote_rewards - unclaimed_payments ).amount.value );
-    BOOST_REQUIRE( db->get_comment( "bob", string( "test" ) ).total_payout_value.amount.value == ( ( bob_comment_vesting_reward * db->get_dynamic_global_properties().get_vesting_share_price().to_price() ) + ( bob_comment_hbd_reward * exchange_rate ) ).amount.value );
-    BOOST_REQUIRE( get_hbd_balance( "bob" ).amount.value == ( bob_hbd_balance + bob_comment_hbd_reward ).amount.value );
+    BOOST_REQUIRE_EQUAL( db->get_dynamic_global_properties().get_total_reward_fund_hive(), reward_hive - ( bob_comment_payout + bob_comment_vote_rewards - unclaimed_payments ) );
+    BOOST_REQUIRE_EQUAL( db->get_comment( "bob", string( "test" ) ).total_payout_value, ( ( bob_comment_vesting_reward * db->get_dynamic_global_properties().get_vesting_share_price().to_price() ) + ( bob_comment_hbd_reward * exchange_rate ) ) );
+    BOOST_REQUIRE_EQUAL( get_hbd_balance( "bob" ), bob_hbd_balance + bob_comment_hbd_reward );
     BOOST_REQUIRE( db->get_comment( "alice", string( "test" ) ).get_net_rshares() > 0 );
-    BOOST_REQUIRE( db->get_comment( "bob", string( "test" ) ).get_net_rshares() == 0 );
-    BOOST_REQUIRE( get_vesting( "alice" ).amount.value == ( alice_vest_shares + alice_vote_vesting ).amount.value );
-    BOOST_REQUIRE( get_vesting( "bob" ).amount.value == ( bob_vest_shares + bob_vote_vesting + bob_comment_vesting_reward ).amount.value );
-    BOOST_REQUIRE( get_vesting( "sam" ).amount.value == ( sam_vest_shares + sam_vote_vesting ).amount.value );
-    BOOST_REQUIRE( get_vesting( "dave" ) == dave_vest_shares );
-    BOOST_REQUIRE( bob_comment_reward.author == "bob" );
-    BOOST_REQUIRE( bob_comment_reward.permlink == "test" );
-    BOOST_REQUIRE( bob_comment_reward.payout.amount.value == bob_comment_hbd_reward.amount.value );
-    BOOST_REQUIRE( bob_comment_reward.vesting_payout.amount.value == bob_comment_vesting_reward.amount.value );
+    BOOST_REQUIRE_EQUAL( db->get_comment( "bob", string( "test" ) ).get_net_rshares(), 0 );
+    BOOST_REQUIRE_EQUAL( get_vesting( "alice" ), alice_vest_shares + alice_vote_vesting );
+    BOOST_REQUIRE_EQUAL( get_vesting( "bob" ), bob_vest_shares + bob_vote_vesting + bob_comment_vesting_reward );
+    BOOST_REQUIRE_EQUAL( get_vesting( "sam" ), sam_vest_shares + sam_vote_vesting );
+    BOOST_REQUIRE_EQUAL( get_vesting( "dave" ), dave_vest_shares );
+    BOOST_REQUIRE_EQUAL( bob_comment_reward.author, "bob" );
+    BOOST_REQUIRE_EQUAL( bob_comment_reward.permlink, "test" );
+    BOOST_REQUIRE_EQUAL( bob_comment_reward.payout, bob_comment_hbd_reward );
+    BOOST_REQUIRE_EQUAL( bob_comment_reward.vesting_payout, bob_comment_vesting_reward );
     BOOST_REQUIRE( vote_idx.find( boost::make_tuple( db->get_comment( "alice", string( "test" ).id, db->get_account( "alice" ) ).id ) ) != vote_idx.end() );
     BOOST_REQUIRE( vote_idx.find( boost::make_tuple( db->get_comment( "alice", string( "test" ).id, db->get_account( "bob" ) ).id   ) ) != vote_idx.end() );
     BOOST_REQUIRE( vote_idx.find( boost::make_tuple( db->get_comment( "alice", string( "test" ).id, db->get_account( "sam" ) ).id   ) ) != vote_idx.end() );
@@ -716,7 +716,7 @@ BOOST_AUTO_TEST_CASE( comment_payout )
     BOOST_REQUIRE( vote_idx.find( boost::make_tuple( db->get_comment( "bob", string( "test" ).id,   db->get_account( "bob" ) ).id   ) ) == vote_idx.end() );
     BOOST_REQUIRE( vote_idx.find( boost::make_tuple( db->get_comment( "bob", string( "test" ).id,   db->get_account( "sam" ) ).id   ) ) == vote_idx.end() );
     BOOST_REQUIRE( db->get_comment( "alice", string( "test" ) ).get_net_rshares() > 0 );
-    BOOST_REQUIRE( db->get_comment( "bob", string( "test" ) ).get_net_rshares() == 0 );
+    BOOST_REQUIRE_EQUAL( db->get_comment( "bob", string( "test" ) ).get_net_rshares(), 0 );
     validate_database();
 
     BOOST_TEST_MESSAGE( "Generate block to cause payout" );
@@ -756,19 +756,19 @@ BOOST_AUTO_TEST_CASE( comment_payout )
     generate_block();
     auto alice_comment_reward = get_last_operations( 1 )[0].get< comment_reward_operation >();
 
-    BOOST_REQUIRE( ( db->get_dynamic_global_properties().get_total_reward_fund_hive() + alice_comment_payout + alice_comment_vote_rewards - unclaimed_payments ).amount.value == reward_hive.amount.value );
-    BOOST_REQUIRE( db->get_comment( "alice", string( "test" ) ).total_payout_value.amount.value == ( ( alice_comment_vesting_reward * db->get_dynamic_global_properties().get_vesting_share_price().to_price() ) + ( alice_comment_hbd_reward * exchange_rate ) ).amount.value );
-    BOOST_REQUIRE( get_hbd_balance( "alice" ).amount.value == ( alice_hbd_balance + alice_comment_hbd_reward ).amount.value );
-    BOOST_REQUIRE( db->get_comment( "alice", string( "test" ) ).get_net_rshares() == 0 );
-    BOOST_REQUIRE( db->get_comment( "alice", string( "test" ) ).get_net_rshares() == 0 );
-    BOOST_REQUIRE( get_vesting( "alice" ).amount.value == ( alice_vest_shares + alice_vote_vesting + alice_comment_vesting_reward ).amount.value );
-    BOOST_REQUIRE( get_vesting( "bob" ).amount.value == ( bob_vest_shares + bob_vote_vesting ).amount.value );
-    BOOST_REQUIRE( get_vesting( "sam" ).amount.value == ( sam_vest_shares + sam_vote_vesting ).amount.value );
-    BOOST_REQUIRE( get_vesting( "dave" ).amount.value == ( dave_vest_shares + dave_vote_vesting ).amount.value );
-    BOOST_REQUIRE( alice_comment_reward.author == "alice" );
-    BOOST_REQUIRE( alice_comment_reward.permlink == "test" );
-    BOOST_REQUIRE( alice_comment_reward.payout.amount.value == alice_comment_hbd_reward.amount.value );
-    BOOST_REQUIRE( alice_comment_reward.vesting_payout.amount.value == alice_comment_vesting_reward.amount.value );
+    BOOST_REQUIRE_EQUAL( db->get_dynamic_global_properties().get_total_reward_fund_hive() + alice_comment_payout + alice_comment_vote_rewards - unclaimed_payments, reward_hive );
+    BOOST_REQUIRE_EQUAL( db->get_comment( "alice", string( "test" ) ).total_payout_value, ( alice_comment_vesting_reward * db->get_dynamic_global_properties().get_vesting_share_price().to_price() ) + ( alice_comment_hbd_reward * exchange_rate ) );
+    BOOST_REQUIRE_EQUAL( get_hbd_balance( "alice" ), alice_hbd_balance + alice_comment_hbd_reward );
+    BOOST_REQUIRE_EQUAL( db->get_comment( "alice", string( "test" ) ).get_net_rshares(), 0 );
+    BOOST_REQUIRE_EQUAL( db->get_comment( "alice", string( "test" ) ).get_net_rshares(), 0 );
+    BOOST_REQUIRE_EQUAL( get_vesting( "alice" ), alice_vest_shares + alice_vote_vesting + alice_comment_vesting_reward );
+    BOOST_REQUIRE_EQUAL( get_vesting( "bob" ), bob_vest_shares + bob_vote_vesting );
+    BOOST_REQUIRE_EQUAL( get_vesting( "sam" ), sam_vest_shares + sam_vote_vesting );
+    BOOST_REQUIRE_EQUAL( get_vesting( "dave" ), dave_vest_shares + dave_vote_vesting );
+    BOOST_REQUIRE_EQUAL( alice_comment_reward.author, "alice" );
+    BOOST_REQUIRE_EQUAL( alice_comment_reward.permlink, "test" );
+    BOOST_REQUIRE_EQUAL( alice_comment_reward.payout, alice_comment_hbd_reward );
+    BOOST_REQUIRE_EQUAL( alice_comment_reward.vesting_payout, alice_comment_vesting_reward );
     BOOST_REQUIRE( vote_idx.find( boost::make_tuple( db->get_comment( "alice", string( "test" ).id, db->get_account( "alice" ) ).id ) ) == vote_idx.end() );
     BOOST_REQUIRE( vote_idx.find( boost::make_tuple( db->get_comment( "alice", string( "test" ).id, db->get_account( "bob" ) ).id   ) ) == vote_idx.end() );
     BOOST_REQUIRE( vote_idx.find( boost::make_tuple( db->get_comment( "alice", string( "test" ).id, db->get_account( "sam" ) ).id   ) ) == vote_idx.end() );
@@ -823,8 +823,8 @@ BOOST_AUTO_TEST_CASE( comment_payout )
     generate_block();
 
     BOOST_REQUIRE( vote_idx.find( boost::make_tuple( db->get_comment( "bob", string( "test" ).id, db->get_account( "dave" ) ).id ) ) == vote_idx.end() );
-    BOOST_REQUIRE( bob_vest_shares == get_vesting( "bob" ) );
-    BOOST_REQUIRE( bob_hbd == get_hbd_balance( "bob" ) );
+    BOOST_REQUIRE_EQUAL( bob_vest_shares, get_vesting( "bob" ) );
+    BOOST_REQUIRE_EQUAL( bob_hbd, get_hbd_balance( "bob" ) );
     validate_database();
   }
   FC_LOG_AND_RETHROW()
@@ -1003,10 +1003,10 @@ OOST_AUTO_TEST_CASE( nested_comments )
     auto sam_vote_bob_vesting = sam_vote_bob_reward * gpo.get_vesting_share_price().to_price();
     auto bob_vote_dave_vesting = bob_vote_dave_reward * gpo.get_vesting_share_price().to_price();
 
-    BOOST_REQUIRE( db->get_comment( "alice", string( "test" ) ).total_payout_value == alice_comment_total_payout );
-    BOOST_REQUIRE( db->get_comment( "bob", string( "test" ) ).total_payout_value == bob_comment_total_payout );
-    BOOST_REQUIRE( db->get_comment( "sam", string( "test" ) ).total_payout_value == sam_comment_total_payout );
-    BOOST_REQUIRE( db->get_comment( "dave", string( "test" ) ).total_payout_value == dave_comment_total_payout );
+    BOOST_REQUIRE_EQUAL( db->get_comment( "alice", string( "test" ) ).total_payout_value, alice_comment_total_payout );
+    BOOST_REQUIRE_EQUAL( db->get_comment( "bob", string( "test" ) ).total_payout_value, bob_comment_total_payout );
+    BOOST_REQUIRE_EQUAL( db->get_comment( "sam", string( "test" ) ).total_payout_value, sam_comment_total_payout );
+    BOOST_REQUIRE_EQUAL( db->get_comment( "dave", string( "test" ) ).total_payout_value, dave_comment_total_payout );
 
     // ops 0-3, 5-6, and 10 are comment reward ops
     auto ops = get_last_operations( 13 );
@@ -1016,118 +1016,118 @@ OOST_AUTO_TEST_CASE( nested_comments )
     curate_reward_operation cur_vop;
     comment_reward_operation com_vop = ops[0].get< comment_reward_operation >();
 
-    BOOST_REQUIRE( com_vop.author == "alice" );
-    BOOST_REQUIRE( com_vop.permlink == "test" );
-    BOOST_REQUIRE( com_vop.originating_author == "dave" );
-    BOOST_REQUIRE( com_vop.originating_permlink == "test" );
-    BOOST_REQUIRE( com_vop.payout.amount.value == dave_pays_alice_hbd );
-    BOOST_REQUIRE( ( com_vop.vesting_payout * gpo.get_vesting_share_price().to_price() ).amount.value == dave_pays_alice_vest );
+    BOOST_REQUIRE_EQUAL( com_vop.author, "alice" );
+    BOOST_REQUIRE_EQUAL( com_vop.permlink, "test" );
+    BOOST_REQUIRE_EQUAL( com_vop.originating_author, "dave" );
+    BOOST_REQUIRE_EQUAL( com_vop.originating_permlink, "test" );
+    BOOST_REQUIRE_EQUAL( com_vop.payout.amount.value, dave_pays_alice_hbd );
+    BOOST_REQUIRE_EQUAL( ( com_vop.vesting_payout * gpo.get_vesting_share_price().to_price() ).amount.value, dave_pays_alice_vest );
 
     com_vop = ops[1].get< comment_reward_operation >();
-    BOOST_REQUIRE( com_vop.author == "bob" );
-    BOOST_REQUIRE( com_vop.permlink == "test" );
-    BOOST_REQUIRE( com_vop.originating_author == "dave" );
-    BOOST_REQUIRE( com_vop.originating_permlink == "test" );
-    BOOST_REQUIRE( com_vop.payout.amount.value == dave_pays_bob_hbd );
-    BOOST_REQUIRE( ( com_vop.vesting_payout * gpo.get_vesting_share_price().to_price() ).amount.value == dave_pays_bob_vest );
+    BOOST_REQUIRE_EQUAL( com_vop.author, "bob" );
+    BOOST_REQUIRE_EQUAL( com_vop.permlink, "test" );
+    BOOST_REQUIRE_EQUAL( com_vop.originating_author, "dave" );
+    BOOST_REQUIRE_EQUAL( com_vop.originating_permlink, "test" );
+    BOOST_REQUIRE_EQUAL( com_vop.payout.amount.value, dave_pays_bob_hbd );
+    BOOST_REQUIRE_EQUAL( ( com_vop.vesting_payout * gpo.get_vesting_share_price().to_price() ).amount.value, dave_pays_bob_vest );
 
     com_vop = ops[2].get< comment_reward_operation >();
-    BOOST_REQUIRE( com_vop.author == "sam" );
-    BOOST_REQUIRE( com_vop.permlink == "test" );
-    BOOST_REQUIRE( com_vop.originating_author == "dave" );
-    BOOST_REQUIRE( com_vop.originating_permlink == "test" );
-    BOOST_REQUIRE( com_vop.payout.amount.value == dave_pays_sam_hbd );
-    BOOST_REQUIRE( ( com_vop.vesting_payout * gpo.get_vesting_share_price().to_price() ).amount.value == dave_pays_sam_vest );
+    BOOST_REQUIRE_EQUAL( com_vop.author, "sam" );
+    BOOST_REQUIRE_EQUAL( com_vop.permlink, "test" );
+    BOOST_REQUIRE_EQUAL( com_vop.originating_author, "dave" );
+    BOOST_REQUIRE_EQUAL( com_vop.originating_permlink, "test" );
+    BOOST_REQUIRE_EQUAL( com_vop.payout.amount.value, dave_pays_sam_hbd );
+    BOOST_REQUIRE_EQUAL( ( com_vop.vesting_payout * gpo.get_vesting_share_price().to_price() ).amount.value, dave_pays_sam_vest );
 
     com_vop = ops[3].get< comment_reward_operation >();
-    BOOST_REQUIRE( com_vop.author == "dave" );
-    BOOST_REQUIRE( com_vop.permlink == "test" );
-    BOOST_REQUIRE( com_vop.originating_author == "dave" );
-    BOOST_REQUIRE( com_vop.originating_permlink == "test" );
-    BOOST_REQUIRE( com_vop.payout.amount.value == dave_pays_dave_hbd );
-    BOOST_REQUIRE( ( com_vop.vesting_payout * gpo.get_vesting_share_price().to_price() ).amount.value == dave_pays_dave_vest );
+    BOOST_REQUIRE_EQUAL( com_vop.author, "dave" );
+    BOOST_REQUIRE_EQUAL( com_vop.permlink, "test" );
+    BOOST_REQUIRE_EQUAL( com_vop.originating_author, "dave" );
+    BOOST_REQUIRE_EQUAL( com_vop.originating_permlink, "test" );
+    BOOST_REQUIRE_EQUAL( com_vop.payout.amount.value, dave_pays_dave_hbd );
+    BOOST_REQUIRE_EQUAL( ( com_vop.vesting_payout * gpo.get_vesting_share_price().to_price() ).amount.value, dave_pays_dave_vest );
 
     cur_vop = ops[4].get< curate_reward_operation >();
-    BOOST_REQUIRE( cur_vop.curator == "bob" );
-    BOOST_REQUIRE( cur_vop.reward.amount.value == bob_vote_dave_vesting.amount.value );
-    BOOST_REQUIRE( cur_vop.author == "dave" );
-    BOOST_REQUIRE( cur_vop.permlink == "test" );
+    BOOST_REQUIRE_EQUAL( cur_vop.curator, "bob" );
+    BOOST_REQUIRE_EQUAL( cur_vop.reward, bob_vote_dave_vesting );
+    BOOST_REQUIRE_EQUAL( cur_vop.author, "dave" );
+    BOOST_REQUIRE_EQUAL( cur_vop.permlink, "test" );
 
     com_vop = ops[5].get< comment_reward_operation >();
-    BOOST_REQUIRE( com_vop.author == "alice" );
-    BOOST_REQUIRE( com_vop.permlink == "test" );
-    BOOST_REQUIRE( com_vop.originating_author == "bob" );
-    BOOST_REQUIRE( com_vop.originating_permlink == "test" );
-    BOOST_REQUIRE( com_vop.payout.amount.value == bob_pays_alice_hbd );
-    BOOST_REQUIRE( ( com_vop.vesting_payout * gpo.get_vesting_share_price().to_price() ).amount.value == bob_pays_alice_vest );
+    BOOST_REQUIRE_EQUAL( com_vop.author, "alice" );
+    BOOST_REQUIRE_EQUAL( com_vop.permlink, "test" );
+    BOOST_REQUIRE_EQUAL( com_vop.originating_author, "bob" );
+    BOOST_REQUIRE_EQUAL( com_vop.originating_permlink, "test" );
+    BOOST_REQUIRE_EQUAL( com_vop.payout.amount.value, bob_pays_alice_hbd );
+    BOOST_REQUIRE_EQUAL( ( com_vop.vesting_payout * gpo.get_vesting_share_price().to_price() ).amount.value, bob_pays_alice_vest );
 
     com_vop = ops[6].get< comment_reward_operation >();
-    BOOST_REQUIRE( com_vop.author == "bob" );
-    BOOST_REQUIRE( com_vop.permlink == "test" );
-    BOOST_REQUIRE( com_vop.originating_author == "bob" );
-    BOOST_REQUIRE( com_vop.originating_permlink == "test" );
-    BOOST_REQUIRE( com_vop.payout.amount.value == bob_pays_bob_hbd );
-    BOOST_REQUIRE( ( com_vop.vesting_payout * gpo.get_vesting_share_price().to_price() ).amount.value == bob_pays_bob_vest );
+    BOOST_REQUIRE_EQUAL( com_vop.author, "bob" );
+    BOOST_REQUIRE_EQUAL( com_vop.permlink, "test" );
+    BOOST_REQUIRE_EQUAL( com_vop.originating_author, "bob" );
+    BOOST_REQUIRE_EQUAL( com_vop.originating_permlink, "test" );
+    BOOST_REQUIRE_EQUAL( com_vop.payout.amount.value, bob_pays_bob_hbd );
+    BOOST_REQUIRE_EQUAL( ( com_vop.vesting_payout * gpo.get_vesting_share_price().to_price() ).amount.value, bob_pays_bob_vest );
 
     cur_vop = ops[7].get< curate_reward_operation >();
-    BOOST_REQUIRE( cur_vop.curator == "sam" );
-    BOOST_REQUIRE( cur_vop.reward.amount.value == sam_vote_bob_vesting.amount.value );
-    BOOST_REQUIRE( cur_vop.author == "bob" );
-    BOOST_REQUIRE( cur_vop.permlink == "test" );
+    BOOST_REQUIRE_EQUAL( cur_vop.curator, "sam" );
+    BOOST_REQUIRE_EQUAL( cur_vop.reward, sam_vote_bob_vesting );
+    BOOST_REQUIRE_EQUAL( cur_vop.author, "bob" );
+    BOOST_REQUIRE_EQUAL( cur_vop.permlink, "test" );
 
     cur_vop = ops[8].get< curate_reward_operation >();
-    BOOST_REQUIRE( cur_vop.curator == "bob" );
-    BOOST_REQUIRE( cur_vop.reward.amount.value == bob_vote_bob_vesting.amount.value );
-    BOOST_REQUIRE( cur_vop.author == "bob" );
-    BOOST_REQUIRE( cur_vop.permlink == "test" );
+    BOOST_REQUIRE_EQUAL( cur_vop.curator, "bob" );
+    BOOST_REQUIRE_EQUAL( cur_vop.reward, bob_vote_bob_vesting );
+    BOOST_REQUIRE_EQUAL( cur_vop.author, "bob" );
+    BOOST_REQUIRE_EQUAL( cur_vop.permlink, "test" );
 
     cur_vop = ops[9].get< curate_reward_operation >();
-    BOOST_REQUIRE( cur_vop.curator == "alice" );
-    BOOST_REQUIRE( cur_vop.reward.amount.value == alice_vote_bob_vesting.amount.value );
-    BOOST_REQUIRE( cur_vop.author == "bob" );
-    BOOST_REQUIRE( cur_vop.permlink == "test" );
+    BOOST_REQUIRE_EQUAL( cur_vop.curator, "alice" );
+    BOOST_REQUIRE_EQUAL( cur_vop.reward, alice_vote_bob_vesting );
+    BOOST_REQUIRE_EQUAL( cur_vop.author, "bob" );
+    BOOST_REQUIRE_EQUAL( cur_vop.permlink, "test" );
 
     com_vop = ops[10].get< comment_reward_operation >();
-    BOOST_REQUIRE( com_vop.author == "alice" );
-    BOOST_REQUIRE( com_vop.permlink == "test" );
-    BOOST_REQUIRE( com_vop.originating_author == "alice" );
-    BOOST_REQUIRE( com_vop.originating_permlink == "test" );
-    BOOST_REQUIRE( com_vop.payout.amount.value == alice_pays_alice_hbd );
-    BOOST_REQUIRE( ( com_vop.vesting_payout * gpo.get_vesting_share_price().to_price() ).amount.value == alice_pays_alice_vest );
+    BOOST_REQUIRE_EQUAL( com_vop.author, "alice" );
+    BOOST_REQUIRE_EQUAL( com_vop.permlink, "test" );
+    BOOST_REQUIRE_EQUAL( com_vop.originating_author, "alice" );
+    BOOST_REQUIRE_EQUAL( com_vop.originating_permlink, "test" );
+    BOOST_REQUIRE_EQUAL( com_vop.payout.amount.value, alice_pays_alice_hbd );
+    BOOST_REQUIRE_EQUAL( ( com_vop.vesting_payout * gpo.get_vesting_share_price().to_price() ).amount.value, alice_pays_alice_vest );
 
     cur_vop = ops[11].get< curate_reward_operation >();
-    BOOST_REQUIRE( cur_vop.curator == "bob" );
-    BOOST_REQUIRE( cur_vop.reward.amount.value == bob_vote_alice_vesting.amount.value );
-    BOOST_REQUIRE( cur_vop.author == "alice" );
-    BOOST_REQUIRE( cur_vop.permlink == "test" );
+    BOOST_REQUIRE_EQUAL( cur_vop.curator, "bob" );
+    BOOST_REQUIRE_EQUAL( cur_vop.reward, bob_vote_alice_vesting );
+    BOOST_REQUIRE_EQUAL( cur_vop.author, "alice" );
+    BOOST_REQUIRE_EQUAL( cur_vop.permlink, "test" );
 
     cur_vop = ops[12].get< curate_reward_operation >();
-    BOOST_REQUIRE( cur_vop.curator == "alice" );
-    BOOST_REQUIRE( cur_vop.reward.amount.value == alice_vote_alice_vesting.amount.value );
-    BOOST_REQUIRE( cur_vop.author == "alice" );
-    BOOST_REQUIRE( cur_vop.permlink == "test" );
+    BOOST_REQUIRE_EQUAL( cur_vop.curator, "alice" );
+    BOOST_REQUIRE_EQUAL( cur_vop.reward, alice_vote_alice_vesting );
+    BOOST_REQUIRE_EQUAL( cur_vop.author, "alice" );
+    BOOST_REQUIRE_EQUAL( cur_vop.permlink, "test" );
 
     BOOST_TEST_MESSAGE( "Checking account balances" );
 
     auto alice_total_hbd = alice_starting_hbd + HIVE_asset( alice_pays_alice_hbd + bob_pays_alice_hbd + dave_pays_alice_hbd ) * exchange_rate;
     auto alice_total_vesting = alice_starting_vesting + asset( alice_pays_alice_vest + bob_pays_alice_vest + dave_pays_alice_vest + alice_vote_alice_reward.amount + alice_vote_bob_reward.amount, HIVE_SYMBOL ) * gpo.get_vesting_share_price().to_price();
-    BOOST_REQUIRE( get_hbd_balance( "alice" ).amount.value == alice_total_hbd.amount.value );
-    BOOST_REQUIRE( get_vesting( "alice" ).amount.value == alice_total_vesting.amount.value );
+    BOOST_REQUIRE_EQUAL( get_hbd_balance( "alice" ), alice_total_hbd );
+    BOOST_REQUIRE_EQUAL( get_vesting( "alice" ), alice_total_vesting );
 
     auto bob_total_hbd = bob_starting_hbd + HIVE_asset( bob_pays_bob_hbd + dave_pays_bob_hbd ) * exchange_rate;
     auto bob_total_vesting = bob_starting_vesting + asset( bob_pays_bob_vest + dave_pays_bob_vest + bob_vote_alice_reward.amount + bob_vote_bob_reward.amount + bob_vote_dave_reward.amount, HIVE_SYMBOL ) * gpo.get_vesting_share_price().to_price();
-    BOOST_REQUIRE( get_hbd_balance( "bob" ).amount.value == bob_total_hbd.amount.value );
-    BOOST_REQUIRE( get_vesting( "bob" ).amount.value == bob_total_vesting.amount.value );
+    BOOST_REQUIRE_EQUAL( get_hbd_balance( "bob" ), bob_total_hbd );
+    BOOST_REQUIRE_EQUAL( get_vesting( "bob" ), bob_total_vesting );
 
     auto sam_total_hbd = sam_starting_hbd + HIVE_asset( dave_pays_sam_hbd ) * exchange_rate;
     auto sam_total_vesting = bob_starting_vesting + asset( dave_pays_sam_vest + sam_vote_bob_reward.amount, HIVE_SYMBOL ) * gpo.get_vesting_share_price().to_price();
-    BOOST_REQUIRE( get_hbd_balance( "sam" ).amount.value == sam_total_hbd.amount.value );
-    BOOST_REQUIRE( get_vesting( "sam" ).amount.value == sam_total_vesting.amount.value );
+    BOOST_REQUIRE_EQUAL( get_hbd_balance( "sam" ), sam_total_hbd );
+    BOOST_REQUIRE_EQUAL( get_vesting( "sam" ), sam_total_vesting );
 
     auto dave_total_hbd = dave_starting_hbd + HIVE_asset( dave_pays_dave_hbd ) * exchange_rate;
     auto dave_total_vesting = dave_starting_vesting + asset( dave_pays_dave_vest, HIVE_SYMBOL ) * gpo.get_vesting_share_price().to_price();
-    BOOST_REQUIRE( get_hbd_balance( "dave" ).amount.value == dave_total_hbd.amount.value );
-    BOOST_REQUIRE( get_vesting( "dave" ).amount.value == dave_total_vesting.amount.value );
+    BOOST_REQUIRE_EQUAL( get_hbd_balance( "dave" ), dave_total_hbd );
+    BOOST_REQUIRE_EQUAL( get_vesting( "dave" ), dave_total_vesting );
   }
   FC_LOG_AND_RETHROW()
 }
@@ -1163,7 +1163,7 @@ BOOST_AUTO_TEST_CASE( vesting_withdrawals )
     BOOST_TEST_MESSAGE( "Generating block up to first withdrawal" );
     generate_blocks( next_withdrawal - HIVE_BLOCK_INTERVAL );
 
-    BOOST_REQUIRE( get_vesting( "alice" ) == vesting_shares );
+    BOOST_REQUIRE_EQUAL( get_vesting( "alice" ), vesting_shares );
 
     BOOST_TEST_MESSAGE( "Generating block to cause withdrawal" );
     generate_block();
@@ -1171,11 +1171,11 @@ BOOST_AUTO_TEST_CASE( vesting_withdrawals )
     auto fill_op = get_last_operations( 1 )[0].get< fill_vesting_withdraw_operation >();
     auto& gpo = db->get_dynamic_global_properties();
 
-    BOOST_REQUIRE( get_vesting( "alice" ) == ( vesting_shares - withdraw_rate ) );
+    BOOST_REQUIRE_EQUAL( get_vesting( "alice" ), ( vesting_shares - withdraw_rate ) );
     BOOST_REQUIRE( withdraw_rate * gpo.get_vesting_share_price() - get_hive_balance( "alice" ) <= HIVE_asset( 1 ) ); // Check a range due to differences in the share price
-    BOOST_REQUIRE( fill_op.from_account == "alice" );
-    BOOST_REQUIRE( fill_op.to_account == "alice" );
-    BOOST_REQUIRE( fill_op.withdrawn == withdraw_rate );
+    BOOST_REQUIRE_EQUAL( fill_op.from_account, "alice" );
+    BOOST_REQUIRE_EQUAL( fill_op.to_account, "alice" );
+    BOOST_REQUIRE_EQUAL( fill_op.withdrawn, withdraw_rate );
     BOOST_REQUIRE( std::abs( fill_op.deposited.amount.value - ( fill_op.withdrawn * gpo.get_vesting_share_price() ).amount.value ) <= 1 );
     validate_database();
 
@@ -1193,17 +1193,17 @@ BOOST_AUTO_TEST_CASE( vesting_withdrawals )
 
       fill_op = get_last_operations( 2 )[ 1 ].get< fill_vesting_withdraw_operation >();
 
-      BOOST_REQUIRE( alice.get_vesting() == ( vesting_shares - withdraw_rate ) );
+      BOOST_REQUIRE_EQUAL( alice.get_vesting(), ( vesting_shares - withdraw_rate ) );
       BOOST_REQUIRE( balance + withdraw_rate * gpo.get_vesting_share_price() - alice.get_hive_balance() <= HIVE_asset( 1 ) );
-      BOOST_REQUIRE( fill_op.from_account == "alice" );
-      BOOST_REQUIRE( fill_op.to_account == "alice" );
-      BOOST_REQUIRE( fill_op.withdrawn == withdraw_rate );
+      BOOST_REQUIRE_EQUAL( fill_op.from_account, "alice" );
+      BOOST_REQUIRE_EQUAL( fill_op.to_account, "alice" );
+      BOOST_REQUIRE_EQUAL( fill_op.withdrawn, withdraw_rate );
       BOOST_REQUIRE( std::abs( fill_op.deposited.amount.value - ( fill_op.withdrawn * gpo.get_vesting_share_price() ).amount.value ) <= 1 );
 
       if ( i == HIVE_VESTING_WITHDRAW_INTERVALS - 1 )
-        BOOST_REQUIRE( alice.next_vesting_withdrawal == fc::time_point_sec::maximum() );
+        BOOST_REQUIRE_EQUAL( alice.next_vesting_withdrawal, fc::time_point_sec::maximum() );
       else
-        BOOST_REQUIRE( alice.next_vesting_withdrawal.sec_since_epoch() == ( old_next_vesting + HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS ).sec_since_epoch() );
+        BOOST_REQUIRE_EQUAL( alice.next_vesting_withdrawal.sec_since_epoch(), ( old_next_vesting + HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS ).sec_since_epoch() );
 
       validate_database();
 
@@ -1215,8 +1215,8 @@ BOOST_AUTO_TEST_CASE( vesting_withdrawals )
     BOOST_TEST_MESSAGE( "Generating one more block to finish vesting withdrawal" );
     generate_blocks( db->head_block_time() + HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS, true );
 
-    BOOST_REQUIRE( db->get_account( "alice" ).next_vesting_withdrawal.sec_since_epoch() == fc::time_point_sec::maximum().sec_since_epoch() );
-    BOOST_REQUIRE( get_vesting( "alice" ).amount.value == ( original_vesting.amount.value - op.vesting_shares.amount.value ) );
+    BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).next_vesting_withdrawal.sec_since_epoch(), fc::time_point_sec::maximum().sec_since_epoch() );
+    BOOST_REQUIRE_EQUAL( get_vesting( "alice" ), original_vesting - op.get_vesting_shares() );
 
     validate_database();
   }
@@ -1288,19 +1288,19 @@ BOOST_AUTO_TEST_CASE( vesting_withdraw_route )
       auto route_sam = vops[1].get< fill_vesting_withdraw_operation >();
       auto route_bob = vops[2].get< fill_vesting_withdraw_operation >();
       BOOST_REQUIRE( is_effective_operation( implied_route ) );
-      BOOST_REQUIRE( implied_route.to_account == alice.get_name() );
-      BOOST_REQUIRE( route_sam.to_account == sam.get_name() );
-      BOOST_REQUIRE( route_bob.to_account == bob.get_name() );
-      BOOST_REQUIRE( route_sam.withdrawn.amount == ( vesting_withdraw_rate.amount * HIVE_1_PERCENT * 30 / HIVE_100_PERCENT ) );
-      BOOST_REQUIRE( route_bob.withdrawn.amount == ( vesting_withdraw_rate.amount * HIVE_1_PERCENT * 50 / HIVE_100_PERCENT ) );
-      BOOST_REQUIRE( implied_route.withdrawn == ( vesting_withdraw_rate - route_sam.withdrawn - route_bob.withdrawn ) );
+      BOOST_REQUIRE_EQUAL( implied_route.to_account, alice.get_name() );
+      BOOST_REQUIRE_EQUAL( route_sam.to_account, sam.get_name() );
+      BOOST_REQUIRE_EQUAL( route_bob.to_account, bob.get_name() );
+      BOOST_REQUIRE_EQUAL( route_sam.withdrawn.amount, ( vesting_withdraw_rate.amount * HIVE_1_PERCENT * 30 / HIVE_100_PERCENT ) );
+      BOOST_REQUIRE_EQUAL( route_bob.withdrawn.amount, ( vesting_withdraw_rate.amount * HIVE_1_PERCENT * 50 / HIVE_100_PERCENT ) );
+      BOOST_REQUIRE_EQUAL( implied_route.withdrawn, ( vesting_withdraw_rate - route_sam.withdrawn - route_bob.withdrawn ) );
 
-      BOOST_REQUIRE( alice.get_vesting() == old_alice_vesting - vesting_withdraw_rate );
-      BOOST_REQUIRE( alice.get_hive_balance() == old_alice_balance + ( ( vesting_withdraw_rate * HIVE_1_PERCENT * 20 ) / HIVE_100_PERCENT ) * db->get_dynamic_global_properties().get_vesting_share_price() );
-      BOOST_REQUIRE( bob.get_vesting() == old_bob_vesting + ( ( vesting_withdraw_rate * HIVE_1_PERCENT * 50 ) / HIVE_100_PERCENT ) );
-      BOOST_REQUIRE( bob.get_hive_balance() == old_bob_balance );
-      BOOST_REQUIRE( sam.get_vesting() == old_sam_vesting );
-      BOOST_REQUIRE( sam.get_hive_balance() ==  old_sam_balance + ( ( vesting_withdraw_rate * HIVE_1_PERCENT * 30 ) / HIVE_100_PERCENT ) * db->get_dynamic_global_properties().get_vesting_share_price() );
+      BOOST_REQUIRE_EQUAL( alice.get_vesting(), old_alice_vesting - vesting_withdraw_rate );
+      BOOST_REQUIRE_EQUAL( alice.get_hive_balance(), old_alice_balance + ( ( vesting_withdraw_rate * HIVE_1_PERCENT * 20 ) / HIVE_100_PERCENT ) * db->get_dynamic_global_properties().get_vesting_share_price() );
+      BOOST_REQUIRE_EQUAL( bob.get_vesting(), old_bob_vesting + ( ( vesting_withdraw_rate * HIVE_1_PERCENT * 50 ) / HIVE_100_PERCENT ) );
+      BOOST_REQUIRE_EQUAL( bob.get_hive_balance(), old_bob_balance );
+      BOOST_REQUIRE_EQUAL( sam.get_vesting(), old_sam_vesting );
+      BOOST_REQUIRE_EQUAL( sam.get_hive_balance(), old_sam_balance + ( ( vesting_withdraw_rate * HIVE_1_PERCENT * 30 ) / HIVE_100_PERCENT ) * db->get_dynamic_global_properties().get_vesting_share_price() );
 
       old_alice_balance = alice.get_hive_balance();
       old_alice_vesting = alice.get_vesting();
@@ -1342,18 +1342,18 @@ BOOST_AUTO_TEST_CASE( vesting_withdraw_route )
       auto vops = get_last_operations( 2 );
       auto route_sam = vops[0].get< fill_vesting_withdraw_operation >();
       auto route_bob = vops[1].get< fill_vesting_withdraw_operation >();
-      BOOST_REQUIRE( route_sam.to_account == sam.get_name() );
-      BOOST_REQUIRE( route_bob.to_account == bob.get_name() );
-      BOOST_REQUIRE( route_sam.withdrawn.amount == ( vesting_withdraw_rate.amount * HIVE_1_PERCENT * 50 / HIVE_100_PERCENT ) );
-      BOOST_REQUIRE( route_bob.withdrawn == route_sam.withdrawn );
-      BOOST_REQUIRE( route_bob.withdrawn + route_sam.withdrawn == vesting_withdraw_rate );
+      BOOST_REQUIRE_EQUAL( route_sam.to_account, sam.get_name() );
+      BOOST_REQUIRE_EQUAL( route_bob.to_account, bob.get_name() );
+      BOOST_REQUIRE_EQUAL( route_sam.withdrawn.amount, ( vesting_withdraw_rate.amount * HIVE_1_PERCENT * 50 / HIVE_100_PERCENT ) );
+      BOOST_REQUIRE_EQUAL( route_bob.withdrawn, route_sam.withdrawn );
+      BOOST_REQUIRE_EQUAL( route_bob.withdrawn + route_sam.withdrawn, vesting_withdraw_rate );
 
-      BOOST_REQUIRE( alice.get_vesting() == old_alice_vesting - vesting_withdraw_rate );
-      BOOST_REQUIRE( alice.get_hive_balance() == old_alice_balance );
-      BOOST_REQUIRE( bob.get_vesting() == old_bob_vesting + ( ( vesting_withdraw_rate * HIVE_1_PERCENT * 50 ) / HIVE_100_PERCENT ) );
-      BOOST_REQUIRE( bob.get_hive_balance() == old_bob_balance );
-      BOOST_REQUIRE( sam.get_vesting() == old_sam_vesting );
-      BOOST_REQUIRE( sam.get_hive_balance() ==  old_sam_balance + ( ( vesting_withdraw_rate * HIVE_1_PERCENT * 50 ) / HIVE_100_PERCENT ) * db->get_dynamic_global_properties().get_vesting_share_price() );
+      BOOST_REQUIRE_EQUAL( alice.get_vesting(), old_alice_vesting - vesting_withdraw_rate );
+      BOOST_REQUIRE_EQUAL( alice.get_hive_balance(), old_alice_balance );
+      BOOST_REQUIRE_EQUAL( bob.get_vesting(), old_bob_vesting + ( ( vesting_withdraw_rate * HIVE_1_PERCENT * 50 ) / HIVE_100_PERCENT ) );
+      BOOST_REQUIRE_EQUAL( bob.get_hive_balance(), old_bob_balance );
+      BOOST_REQUIRE_EQUAL( sam.get_vesting(), old_sam_vesting );
+      BOOST_REQUIRE_EQUAL( sam.get_hive_balance(), old_sam_balance + ( ( vesting_withdraw_rate * HIVE_1_PERCENT * 50 ) / HIVE_100_PERCENT ) * db->get_dynamic_global_properties().get_vesting_share_price() );
     }
   }
   FC_LOG_AND_RETHROW()
@@ -1429,8 +1429,8 @@ BOOST_AUTO_TEST_CASE( feed_publish_mean )
     BOOST_TEST_MESSAGE( "Check state" );
     {
       HBD_price expected_price( 1000, 99000 );
-      BOOST_REQUIRE( feed_history.current_median_history == expected_price );
-      BOOST_REQUIRE( feed_history.price_history[ 0 ] == expected_price );
+      BOOST_REQUIRE_EQUAL( feed_history.current_median_history, expected_price );
+      BOOST_REQUIRE_EQUAL( feed_history.price_history[ 0 ], expected_price );
     }
     validate_database();
 
@@ -1454,8 +1454,8 @@ BOOST_AUTO_TEST_CASE( feed_publish_mean )
       BOOST_TEST_MESSAGE( "Check feed_history" );
 
       auto& feed_history = db->get(feed_history_id_type());
-      BOOST_REQUIRE( feed_history.current_median_history == feed_history.price_history[ ( i + 1 ) / 2 ] );
-      BOOST_REQUIRE( feed_history.price_history[ i + 1 ] == HBD_price( ops[4].exchange_rate ) );
+      BOOST_REQUIRE_EQUAL( feed_history.current_median_history, feed_history.price_history[ ( i + 1 ) / 2 ] );
+      BOOST_REQUIRE_EQUAL( feed_history.price_history[ i + 1 ], HBD_price( ops[4].exchange_rate ) );
       validate_database();
     }
   }
@@ -1496,8 +1496,8 @@ BOOST_AUTO_TEST_CASE( convert_delay )
     auto convert_request = convert_request_idx.find( boost::make_tuple( alice_2.get_id(), 2 ) );
 
     BOOST_REQUIRE( convert_request != convert_request_idx.end() );
-    BOOST_REQUIRE( alice_2.get_hive_balance() == HIVE_asset( 0 ) );
-    BOOST_REQUIRE( alice_2.get_hbd_balance() == ( start_balance - HBD_asset( op.amount ) ) );
+    BOOST_REQUIRE_EQUAL( alice_2.get_hive_balance(), HIVE_asset( 0 ) );
+    BOOST_REQUIRE_EQUAL( alice_2.get_hbd_balance(), ( start_balance - HBD_asset( op.amount ) ) );
     validate_database();
 
     BOOST_TEST_MESSAGE( "Generate one more block" );
@@ -1509,12 +1509,12 @@ BOOST_AUTO_TEST_CASE( convert_delay )
 
     convert_request = convert_request_idx.find( boost::make_tuple( alice_3.get_id(), 2 ) );
     BOOST_REQUIRE( convert_request == convert_request_idx.end() );
-    BOOST_REQUIRE( alice_3.get_hive_balance() == HIVE_asset( 2500 ) );
-    BOOST_REQUIRE( alice_3.get_hbd_balance() == ( start_balance - HBD_asset( op.amount ) ) );
-    BOOST_REQUIRE( vop.owner == "alice" );
-    BOOST_REQUIRE( vop.requestid == 2 );
-    BOOST_REQUIRE( vop.amount_in == HBD_asset( 2'000 ) );
-    BOOST_REQUIRE( vop.amount_out == HIVE_asset( 2'500 ) );
+    BOOST_REQUIRE_EQUAL( alice_3.get_hive_balance(), HIVE_asset( 2500 ) );
+    BOOST_REQUIRE_EQUAL( alice_3.get_hbd_balance(), ( start_balance - HBD_asset( op.amount ) ) );
+    BOOST_REQUIRE_EQUAL( vop.owner, "alice" );
+    BOOST_REQUIRE_EQUAL( vop.requestid, 2 );
+    BOOST_REQUIRE_EQUAL( vop.amount_in, HBD_asset( 2'000 ) );
+    BOOST_REQUIRE_EQUAL( vop.amount_out, HIVE_asset( 2'500 ) );
     validate_database();
   }
   FC_LOG_AND_RETHROW();
@@ -1552,12 +1552,12 @@ BOOST_AUTO_TEST_CASE( hive_inflation )
 
     generate_block();
 
-    BOOST_REQUIRE( gpo.get_current_supply().amount.value == new_supply.amount.value );
-    BOOST_REQUIRE( gpo.virtual_supply.amount.value == new_supply.amount.value );
-    BOOST_REQUIRE( gpo.get_total_reward_fund_hive().amount.value == new_rewards.amount.value );
-    BOOST_REQUIRE( gpo.get_total_vesting_fund_hive().amount.value == new_vesting_hive.amount.value );
-    BOOST_REQUIRE( gpo.get_total_vesting_shares().amount.value == new_vesting_shares.amount.value );
-    BOOST_REQUIRE( get_hive_balance( witness_name ).amount.value == ( old_witness_balance + witness_pay ).amount.value );
+    BOOST_REQUIRE_EQUAL( gpo.get_current_supply(), new_supply );
+    BOOST_REQUIRE_EQUAL( gpo.virtual_supply, new_supply );
+    BOOST_REQUIRE_EQUAL( gpo.get_total_reward_fund_hive(), new_rewards );
+    BOOST_REQUIRE_EQUAL( gpo.get_total_vesting_fund_hive(), new_vesting_hive );
+    BOOST_REQUIRE_EQUAL( gpo.get_total_vesting_shares(), new_vesting_shares );
+    BOOST_REQUIRE_EQUAL( get_hive_balance( witness_name ), old_witness_balance + witness_pay );
 
     validate_database();
 
@@ -1590,13 +1590,13 @@ BOOST_AUTO_TEST_CASE( hive_inflation )
 
       generate_block();
 
-      BOOST_REQUIRE( gpo.get_current_supply().amount.value == new_supply.amount.value );
-      BOOST_REQUIRE( gpo.virtual_supply.amount.value == new_supply.amount.value );
-      BOOST_REQUIRE( gpo.get_total_reward_fund_hive().amount.value == new_rewards.amount.value );
-      BOOST_REQUIRE( gpo.get_total_vesting_fund_hive().amount.value == new_vesting_hive.amount.value );
-      BOOST_REQUIRE( gpo.get_total_vesting_shares().amount.value == new_vesting_shares.amount.value );
-      BOOST_REQUIRE( get_hive_balance( witness_name ).amount.value == ( old_witness_balance + witness_pay ).amount.value );
-      BOOST_REQUIRE( get_vesting( witness_name ).amount.value == ( old_witness_shares + witness_pay_shares ).amount.value );
+      BOOST_REQUIRE_EQUAL( gpo.get_current_supply(), new_supply );
+      BOOST_REQUIRE_EQUAL( gpo.virtual_supply, new_supply );
+      BOOST_REQUIRE_EQUAL( gpo.get_total_reward_fund_hive(), new_rewards );
+      BOOST_REQUIRE_EQUAL( gpo.get_total_vesting_fund_hive(), new_vesting_hive );
+      BOOST_REQUIRE_EQUAL( gpo.get_total_vesting_shares(), new_vesting_shares );
+      BOOST_REQUIRE_EQUAL( get_hive_balance( witness_name ), old_witness_balance + witness_pay );
+      BOOST_REQUIRE_EQUAL( get_vesting( witness_name ), old_witness_shares + witness_pay_shares );
 
       validate_database();
     }
@@ -1631,13 +1631,13 @@ BOOST_AUTO_TEST_CASE( hive_inflation )
 
       generate_block();
 
-      BOOST_REQUIRE( gpo.get_current_supply().amount.value == new_supply.amount.value );
-      BOOST_REQUIRE( gpo.virtual_supply.amount.value == new_supply.amount.value );
-      BOOST_REQUIRE( gpo.get_total_reward_fund_hive().amount.value == new_rewards.amount.value );
-      BOOST_REQUIRE( gpo.get_total_vesting_fund_hive().amount.value == new_vesting_hive.amount.value );
-      BOOST_REQUIRE( gpo.get_total_vesting_shares().amount.value == new_vesting_shares.amount.value );
-      BOOST_REQUIRE( get_hive_balance( witness_name ).amount.value == ( old_witness_balance + witness_pay ).amount.value );
-      BOOST_REQUIRE( get_vesting( witness_name ).amount.value == ( old_witness_shares + witness_pay_shares ).amount.value );
+      BOOST_REQUIRE_EQUAL( gpo.get_current_supply(), new_supply );
+      BOOST_REQUIRE_EQUAL( gpo.virtual_supply, new_supply );
+      BOOST_REQUIRE_EQUAL( gpo.get_total_reward_fund_hive(), new_rewards );
+      BOOST_REQUIRE_EQUAL( gpo.get_total_vesting_fund_hive(), new_vesting_hive );
+      BOOST_REQUIRE_EQUAL( gpo.get_total_vesting_shares(), new_vesting_shares );
+      BOOST_REQUIRE_EQUAL( get_hive_balance( witness_name ), old_witness_balance + witness_pay );
+      BOOST_REQUIRE_EQUAL( get_vesting( witness_name ), old_witness_shares + witness_pay_shares );
 
       validate_database();
     }
@@ -1660,12 +1660,12 @@ BOOST_AUTO_TEST_CASE( hive_inflation )
 
       generate_block();
 
-      BOOST_REQUIRE( gpo.get_current_supply().amount.value == new_supply.amount.value );
-      BOOST_REQUIRE( gpo.virtual_supply.amount.value == new_supply.amount.value );
-      BOOST_REQUIRE( gpo.get_total_reward_fund_hive().amount.value == new_rewards.amount.value );
-      BOOST_REQUIRE( gpo.get_total_vesting_fund_hive().amount.value == new_vesting_hive.amount.value );
-      BOOST_REQUIRE( gpo.get_total_vesting_shares().amount.value == new_vesting_shares.amount.value );
-      BOOST_REQUIRE( get_vesting( witness_name ).amount.value == ( old_witness_shares + witness_pay_shares ).amount.value );
+      BOOST_REQUIRE_EQUAL( gpo.get_current_supply(), new_supply );
+      BOOST_REQUIRE_EQUAL( gpo.virtual_supply, new_supply );
+      BOOST_REQUIRE_EQUAL( gpo.get_total_reward_fund_hive(), new_rewards );
+      BOOST_REQUIRE_EQUAL( gpo.get_total_vesting_fund_hive(), new_vesting_hive );
+      BOOST_REQUIRE_EQUAL( gpo.get_total_vesting_shares(), new_vesting_shares );
+      BOOST_REQUIRE_EQUAL( get_vesting( witness_name ), old_witness_shares + witness_pay_shares );
 
       validate_database();
     }
@@ -1734,14 +1734,14 @@ BOOST_AUTO_TEST_CASE( hbd_interest )
     if(db->has_hardfork(HIVE_HARDFORK_1_25))
     {
       /// After HF 25 only HBD held on savings should get interest
-      BOOST_REQUIRE(get_hbd_balance("alice") == alice_hbd - HBD_asset( 1'000 ));
+      BOOST_REQUIRE_EQUAL( get_hbd_balance("alice"), alice_hbd - HBD_asset( 1'000 ) );
     }
     else
     {
       auto interest_op = get_last_operations( 1 )[0].get< interest_operation >();
-      BOOST_REQUIRE( static_cast<uint64_t>(get_hbd_balance( "alice" ).amount.value) == alice_hbd.amount.value - HBD_asset( 1'000 ).amount.value + fc::uint128_to_uint64( ( ( ( uint128_t( alice_hbd.amount.value ) * ( db->head_block_time() - start_time ).to_seconds() ) / HIVE_SECONDS_PER_YEAR ) * gpo.get_hbd_interest_rate() ) / HIVE_100_PERCENT ) );
-      BOOST_REQUIRE( interest_op.owner == "alice" );
-      BOOST_REQUIRE( interest_op.interest == get_hbd_balance( "alice" ) - ( alice_hbd - HBD_asset( 1'000 ) ) );
+      BOOST_REQUIRE_EQUAL( get_hbd_balance( "alice" ), alice_hbd - HBD_asset( 1'000 ) + HBD_asset( fc::uint128_to_int64( ( ( ( uint128_t( alice_hbd.amount.value ) * ( db->head_block_time() - start_time ).to_seconds() ) / HIVE_SECONDS_PER_YEAR ) * gpo.get_hbd_interest_rate() ) / HIVE_100_PERCENT ) ) );
+      BOOST_REQUIRE_EQUAL( interest_op.owner, "alice" );
+      BOOST_REQUIRE_EQUAL( interest_op.interest, get_hbd_balance( "alice" ) - ( alice_hbd - HBD_asset( 1'000 ) ) );
     }
 
     validate_database();
@@ -1758,7 +1758,7 @@ BOOST_AUTO_TEST_CASE( hbd_interest )
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     push_transaction( tx, alice_private_key );
 
-    BOOST_REQUIRE( get_hbd_balance( "alice" ) == alice_hbd - HBD_asset( 1'000 ) );
+    BOOST_REQUIRE_EQUAL( get_hbd_balance( "alice" ), alice_hbd - HBD_asset( 1'000 ) );
     validate_database();
 
     auto alice_coindays = uint128_t( alice_hbd.amount.value ) * ( db->head_block_time() - start_time ).to_seconds();
@@ -1777,11 +1777,11 @@ BOOST_AUTO_TEST_CASE( hbd_interest )
     if(db->has_hardfork(HIVE_HARDFORK_1_25))
     {
       /// After HF 25 only HBD held on savings should get interest
-      BOOST_REQUIRE(get_hbd_balance("alice") == alice_hbd - HBD_asset( 1'000 ));
+      BOOST_REQUIRE_EQUAL( get_hbd_balance("alice"), alice_hbd - HBD_asset( 1'000 ) );
     }
     else
     {
-      BOOST_REQUIRE( static_cast<uint64_t>(get_hbd_balance( "alice" ).amount.value) == alice_hbd.amount.value - HBD_asset( 1'000 ).amount.value + fc::uint128_to_uint64( ( ( ( uint128_t( alice_hbd.amount.value ) * ( db->head_block_time() - start_time ).to_seconds() + alice_coindays ) / HIVE_SECONDS_PER_YEAR ) * gpo.get_hbd_interest_rate() ) / HIVE_100_PERCENT ) );
+      BOOST_REQUIRE_EQUAL( get_hbd_balance( "alice" ), alice_hbd - HBD_asset( 1'000 ) + HBD_asset( fc::uint128_to_int64( ( ( ( uint128_t( alice_hbd.amount.value ) * ( db->head_block_time() - start_time ).to_seconds() + alice_coindays ) / HIVE_SECONDS_PER_YEAR ) * gpo.get_hbd_interest_rate() ) / HIVE_100_PERCENT ) ) );
     }
 
     validate_database();
@@ -1813,14 +1813,14 @@ BOOST_AUTO_TEST_CASE(hbd_savings_interest)
     auto start_time = db->get_account("alice").savings_hbd_seconds_last_update;
     auto alice_hbd = get_hbd_balance("alice");
 
-    BOOST_REQUIRE(alice_hbd == HBD_asset( 3'000 ));
+    BOOST_REQUIRE_EQUAL( alice_hbd, HBD_asset( 3'000 ) );
 
     auto alice_hbd_savings = get_hbd_savings("alice");
-    BOOST_REQUIRE(alice_hbd_savings == alice_funds);
+    BOOST_REQUIRE_EQUAL( alice_hbd_savings, alice_funds );
 
     generate_blocks(db->head_block_time() + fc::seconds(HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC), true);
 
-    BOOST_REQUIRE(get_hbd_balance("alice") == HBD_asset( 3'000 ));
+    BOOST_REQUIRE_EQUAL( get_hbd_balance("alice"), HBD_asset( 3'000 ) );
 
     transfer_to_savings_operation transfer;
     transfer.to = "alice";
@@ -1840,8 +1840,8 @@ BOOST_AUTO_TEST_CASE(hbd_savings_interest)
     auto interest_op = get_last_operations(2)[1].get< interest_operation >();
     BOOST_REQUIRE(get_hbd_savings("alice") == alice_hbd_savings + HBD_asset( 1'000 )
       + HBD_asset( fc::uint128_to_int64((((uint128_t(alice_hbd_savings.amount.value) * (db->head_block_time() - start_time).to_seconds()) / HIVE_SECONDS_PER_YEAR) * gpo.get_hbd_interest_rate()) / HIVE_100_PERCENT)) );
-    BOOST_REQUIRE(interest_op.owner == "alice");
-    BOOST_REQUIRE(interest_op.interest == get_hbd_savings("alice") - (alice_hbd_savings + HBD_asset( 1'000 )));
+    BOOST_REQUIRE_EQUAL( interest_op.owner, "alice" );
+    BOOST_REQUIRE_EQUAL( interest_op.interest, get_hbd_savings("alice") - (alice_hbd_savings + HBD_asset( 1'000 )) );
 
     BOOST_TEST_MESSAGE( "Alice got HDB saving interests: " + asset_to_string( interest_op.interest ) );
 
@@ -1857,7 +1857,7 @@ BOOST_AUTO_TEST_CASE(hbd_savings_interest)
     /// This op is needed to trigger interest payment...
     push_transaction(transfer, alice_private_key);
 
-    BOOST_REQUIRE(get_hbd_savings("alice") == alice_hbd_savings + HBD_asset( 1'000 ));
+    BOOST_REQUIRE_EQUAL( get_hbd_savings("alice"), alice_hbd_savings + HBD_asset( 1'000 ) );
 
     validate_database();
 
@@ -1969,25 +1969,25 @@ BOOST_AUTO_TEST_CASE( liquidity_rewards )
     auto reward = liquidity_idx.find( get_account_id( "alice" ) );
     BOOST_REQUIRE( reward == liquidity_idx.end() );
     /*BOOST_REQUIRE( reward->owner == get_account_id( "alice" ) );
-    BOOST_REQUIRE( reward->get_hbd_volume() == alice_hbd_volume );
-    BOOST_REQUIRE( reward->get_hive_volume() == alice_hive_volume );
-    BOOST_CHECK( reward->last_update == alice_reward_last_update );*/
+    BOOST_REQUIRE_EQUAL( reward->get_hbd_volume(), alice_hbd_volume );
+    BOOST_REQUIRE_EQUAL( reward->get_hive_volume(), alice_hive_volume );
+    BOOST_CHECK_EQUAL( reward->last_update, alice_reward_last_update );*/
 
     reward = liquidity_idx.find( get_account_id( "bob" ) );
     BOOST_REQUIRE( reward == liquidity_idx.end() );
     /*BOOST_REQUIRE( reward->owner == get_account_id( "bob" ) );
-    BOOST_REQUIRE( reward->get_hbd_volume() == bob_hbd_volume );
-    BOOST_REQUIRE( reward->get_hive_volume() == bob_hive_volume );
-    BOOST_CHECK( reward->last_update == bob_reward_last_update );*/
+    BOOST_REQUIRE_EQUAL( reward->get_hbd_volume(), bob_hbd_volume );
+    BOOST_REQUIRE_EQUAL( reward->get_hive_volume(), bob_hive_volume );
+    BOOST_CHECK_EQUAL( reward->last_update, bob_reward_last_update );*/
 
     auto fill_order_op = ops[1].get< fill_order_operation >();
 
-    BOOST_REQUIRE( fill_order_op.open_owner == "alice" );
-    BOOST_REQUIRE( fill_order_op.open_orderid == 1 );
-    BOOST_REQUIRE( fill_order_op.open_pays.amount.value == asset( alice_hbd.amount / 20, HBD_SYMBOL ).amount.value );
-    BOOST_REQUIRE( fill_order_op.current_owner == "bob" );
-    BOOST_REQUIRE( fill_order_op.current_orderid == 2 );
-    BOOST_REQUIRE( fill_order_op.current_pays.amount.value == ( asset( alice_hbd.amount / 20, HBD_SYMBOL ) * exchange_rate.to_price() ).amount.value );
+    BOOST_REQUIRE_EQUAL( fill_order_op.open_owner, "alice" );
+    BOOST_REQUIRE_EQUAL( fill_order_op.open_orderid, 1 );
+    BOOST_REQUIRE_EQUAL( fill_order_op.open_pays, asset( alice_hbd.amount / 20, HBD_SYMBOL ) );
+    BOOST_REQUIRE_EQUAL( fill_order_op.current_owner, "bob" );
+    BOOST_REQUIRE_EQUAL( fill_order_op.current_orderid, 2 );
+    BOOST_REQUIRE_EQUAL( fill_order_op.current_pays, asset( alice_hbd.amount / 20, HBD_SYMBOL ) * exchange_rate.to_price() );
 
     BOOST_CHECK( limit_order_idx.find( boost::make_tuple( "alice", 1 ) ) == limit_order_idx.end() );
     BOOST_CHECK( limit_order_idx.find( boost::make_tuple( "bob", 2 ) ) == limit_order_idx.end() );
@@ -2045,41 +2045,41 @@ BOOST_AUTO_TEST_CASE( liquidity_rewards )
     ops = get_last_operations( 3 );
 
     fill_order_op = ops[1].get< fill_order_operation >();
-    BOOST_REQUIRE( fill_order_op.open_owner == "bob" );
-    BOOST_REQUIRE( fill_order_op.open_orderid == 4 );
-    BOOST_REQUIRE( fill_order_op.open_pays.amount.value == asset( ( alice_hbd.amount.value / 10 ) * 3 - alice_hbd.amount.value / 20, HIVE_SYMBOL ).amount.value );
-    BOOST_REQUIRE( fill_order_op.current_owner == "alice" );
-    BOOST_REQUIRE( fill_order_op.current_orderid == 5 );
-    BOOST_REQUIRE( fill_order_op.current_pays.amount.value == asset( ( alice_hbd.amount.value / 10 ) * 3 - alice_hbd.amount.value / 20, HBD_SYMBOL ).amount.value );
+    BOOST_REQUIRE_EQUAL( fill_order_op.open_owner, "bob" );
+    BOOST_REQUIRE_EQUAL( fill_order_op.open_orderid, 4 );
+    BOOST_REQUIRE_EQUAL( fill_order_op.open_pays, asset( ( alice_hbd.amount.value / 10 ) * 3 - alice_hbd.amount.value / 20, HIVE_SYMBOL ) );
+    BOOST_REQUIRE_EQUAL( fill_order_op.current_owner, "alice" );
+    BOOST_REQUIRE_EQUAL( fill_order_op.current_orderid, 5 );
+    BOOST_REQUIRE_EQUAL( fill_order_op.current_pays, asset( ( alice_hbd.amount.value / 10 ) * 3 - alice_hbd.amount.value / 20, HBD_SYMBOL ) );
 
     fill_order_op = ops[2].get< fill_order_operation >();
-    BOOST_REQUIRE( fill_order_op.open_owner == "sam" );
-    BOOST_REQUIRE( fill_order_op.open_orderid == 3 );
-    BOOST_REQUIRE( fill_order_op.open_pays.amount.value == asset( alice_hbd.amount.value / 20, HIVE_SYMBOL ).amount.value );
-    BOOST_REQUIRE( fill_order_op.current_owner == "alice" );
-    BOOST_REQUIRE( fill_order_op.current_orderid == 5 );
-    BOOST_REQUIRE( fill_order_op.current_pays.amount.value == asset( alice_hbd.amount.value / 20, HBD_SYMBOL ).amount.value );
+    BOOST_REQUIRE_EQUAL( fill_order_op.open_owner, "sam" );
+    BOOST_REQUIRE_EQUAL( fill_order_op.open_orderid, 3 );
+    BOOST_REQUIRE_EQUAL( fill_order_op.open_pays, asset( alice_hbd.amount.value / 20, HIVE_SYMBOL ) );
+    BOOST_REQUIRE_EQUAL( fill_order_op.current_owner, "alice" );
+    BOOST_REQUIRE_EQUAL( fill_order_op.current_orderid, 5 );
+    BOOST_REQUIRE_EQUAL( fill_order_op.current_pays, asset( alice_hbd.amount.value / 20, HBD_SYMBOL ) );
 
     reward = liquidity_idx.find( get_account_id( "alice" ) );
     BOOST_REQUIRE( reward == liquidity_idx.end() );
     /*BOOST_REQUIRE( reward->owner == get_account_id( "alice" ) );
-    BOOST_REQUIRE( reward->get_hbd_volume() == alice_hbd_volume );
-    BOOST_REQUIRE( reward->get_hive_volume() == alice_hive_volume );
-    BOOST_CHECK( reward->last_update == alice_reward_last_update );*/
+    BOOST_REQUIRE_EQUAL( reward->get_hbd_volume(), alice_hbd_volume );
+    BOOST_REQUIRE_EQUAL( reward->get_hive_volume(), alice_hive_volume );
+    BOOST_CHECK_EQUAL( reward->last_update, alice_reward_last_update );*/
 
     reward = liquidity_idx.find( get_account_id( "bob" ) );
     BOOST_REQUIRE( reward == liquidity_idx.end() );
     /*BOOST_REQUIRE( reward->owner == get_account_id( "bob" ) );
-    BOOST_REQUIRE( reward->get_hbd_volume() == bob_hbd_volume );
-    BOOST_REQUIRE( reward->get_hive_volume() == bob_hive_volume );
-    BOOST_CHECK( reward->last_update == bob_reward_last_update );*/
+    BOOST_REQUIRE_EQUAL( reward->get_hbd_volume(), bob_hbd_volume );
+    BOOST_REQUIRE_EQUAL( reward->get_hive_volume(), bob_hive_volume );
+    BOOST_CHECK_EQUAL( reward->last_update, bob_reward_last_update );*/
 
     reward = liquidity_idx.find( get_account_id( "sam" ) );
     BOOST_REQUIRE( reward == liquidity_idx.end() );
     /*BOOST_REQUIRE( reward->owner == get_account_id( "sam" ) );
-    BOOST_REQUIRE( reward->get_hbd_volume() == sam_hbd_volume );
-    BOOST_REQUIRE( reward->get_hive_volume() == sam_hive_volume );
-    BOOST_CHECK( reward->last_update == sam_reward_last_update );*/
+    BOOST_REQUIRE_EQUAL( reward->get_hbd_volume(), sam_hbd_volume );
+    BOOST_REQUIRE_EQUAL( reward->get_hive_volume(), sam_hive_volume );
+    BOOST_CHECK_EQUAL( reward->last_update, sam_reward_last_update );*/
 
     BOOST_TEST_MESSAGE( "Testing a partial fill before minimum time and full fill after minimum time" );
 
@@ -2110,33 +2110,33 @@ BOOST_AUTO_TEST_CASE( liquidity_rewards )
     ops = get_last_operations( 5 );
     fill_order_op = ops[4].get< fill_order_operation >();
 
-    BOOST_REQUIRE( fill_order_op.open_owner == "alice" );
-    BOOST_REQUIRE( fill_order_op.open_orderid == 6 );
-    BOOST_REQUIRE( fill_order_op.open_pays.amount.value == asset( alice_hbd.amount.value / 20, HBD_SYMBOL ).amount.value );
-    BOOST_REQUIRE( fill_order_op.current_owner == "bob" );
-    BOOST_REQUIRE( fill_order_op.current_orderid == 7 );
-    BOOST_REQUIRE( fill_order_op.current_pays.amount.value == asset( alice_hbd.amount.value / 20, HIVE_SYMBOL ).amount.value );
+    BOOST_REQUIRE_EQUAL( fill_order_op.open_owner, "alice" );
+    BOOST_REQUIRE_EQUAL( fill_order_op.open_orderid, 6 );
+    BOOST_REQUIRE_EQUAL( fill_order_op.open_pays, asset( alice_hbd.amount.value / 20, HBD_SYMBOL ) );
+    BOOST_REQUIRE_EQUAL( fill_order_op.current_owner, "bob" );
+    BOOST_REQUIRE_EQUAL( fill_order_op.current_orderid, 7 );
+    BOOST_REQUIRE_EQUAL( fill_order_op.current_pays, asset( alice_hbd.amount.value / 20, HIVE_SYMBOL ) );
 
     reward = liquidity_idx.find( get_account_id( "alice" ) );
     BOOST_REQUIRE( reward == liquidity_idx.end() );
     /*BOOST_REQUIRE( reward->owner == get_account_id( "alice" ) );
-    BOOST_REQUIRE( reward->get_hbd_volume() == alice_hbd_volume );
-    BOOST_REQUIRE( reward->get_hive_volume() == alice_hive_volume );
-    BOOST_CHECK( reward->last_update == alice_reward_last_update );*/
+    BOOST_REQUIRE_EQUAL( reward->get_hbd_volume(), alice_hbd_volume );
+    BOOST_REQUIRE_EQUAL( reward->get_hive_volume(), alice_hive_volume );
+    BOOST_CHECK_EQUAL( reward->last_update, alice_reward_last_update );*/
 
     reward = liquidity_idx.find( get_account_id( "bob" ) );
     BOOST_REQUIRE( reward == liquidity_idx.end() );
     /*BOOST_REQUIRE( reward->owner == get_account_id( "bob" ) );
-    BOOST_REQUIRE( reward->get_hbd_volume() == bob_hbd_volume );
-    BOOST_REQUIRE( reward->get_hive_volume() == bob_hive_volume );
-    BOOST_CHECK( reward->last_update == bob_reward_last_update );*/
+    BOOST_REQUIRE_EQUAL( reward->get_hbd_volume(), bob_hbd_volume );
+    BOOST_REQUIRE_EQUAL( reward->get_hive_volume(), bob_hive_volume );
+    BOOST_CHECK_EQUAL( reward->last_update, bob_reward_last_update );*/
 
     reward = liquidity_idx.find( get_account_id( "sam" ) );
     BOOST_REQUIRE( reward == liquidity_idx.end() );
     /*BOOST_REQUIRE( reward->owner == get_account_id( "sam" ) );
-    BOOST_REQUIRE( reward->get_hbd_volume() == sam_hbd_volume );
-    BOOST_REQUIRE( reward->get_hive_volume() == sam_hive_volume );
-    BOOST_CHECK( reward->last_update == sam_reward_last_update );*/
+    BOOST_REQUIRE_EQUAL( reward->get_hbd_volume(), sam_hbd_volume );
+    BOOST_REQUIRE_EQUAL( reward->get_hive_volume(), sam_hive_volume );
+    BOOST_CHECK_EQUAL( reward->last_update, sam_reward_last_update );*/
 
     generate_blocks( db->head_block_time() + HIVE_MIN_LIQUIDITY_REWARD_PERIOD_SEC_HF10, true );
 
@@ -2157,33 +2157,33 @@ BOOST_AUTO_TEST_CASE( liquidity_rewards )
     ops = get_last_operations( 2 );
     fill_order_op = ops[1].get< fill_order_operation >();
 
-    BOOST_REQUIRE( fill_order_op.open_owner == "alice" );
-    BOOST_REQUIRE( fill_order_op.open_orderid == 6 );
-    BOOST_REQUIRE( fill_order_op.open_pays.amount.value == asset( alice_hbd.amount.value / 20, HBD_SYMBOL ).amount.value );
-    BOOST_REQUIRE( fill_order_op.current_owner == "sam" );
-    BOOST_REQUIRE( fill_order_op.current_orderid == 8 );
-    BOOST_REQUIRE( fill_order_op.current_pays.amount.value == asset( alice_hbd.amount.value / 20, HIVE_SYMBOL ).amount.value );
+    BOOST_REQUIRE_EQUAL( fill_order_op.open_owner, "alice" );
+    BOOST_REQUIRE_EQUAL( fill_order_op.open_orderid, 6 );
+    BOOST_REQUIRE_EQUAL( fill_order_op.open_pays, asset( alice_hbd.amount.value / 20, HBD_SYMBOL ) );
+    BOOST_REQUIRE_EQUAL( fill_order_op.current_owner, "sam" );
+    BOOST_REQUIRE_EQUAL( fill_order_op.current_orderid, 8 );
+    BOOST_REQUIRE_EQUAL( fill_order_op.current_pays, asset( alice_hbd.amount.value / 20, HIVE_SYMBOL ) );
 
     reward = liquidity_idx.find( get_account_id( "alice" ) );
     BOOST_REQUIRE( reward == liquidity_idx.end() );
     /*BOOST_REQUIRE( reward->owner == get_account_id( "alice" ) );
-    BOOST_REQUIRE( reward->get_hbd_volume() == alice_hbd_volume );
-    BOOST_REQUIRE( reward->get_hive_volume() == alice_hive_volume );
-    BOOST_CHECK( reward->last_update == alice_reward_last_update );*/
+    BOOST_REQUIRE_EQUAL( reward->get_hbd_volume(), alice_hbd_volume );
+    BOOST_REQUIRE_EQUAL( reward->get_hive_volume(), alice_hive_volume );
+    BOOST_CHECK_EQUAL( reward->last_update, alice_reward_last_update );*/
 
     reward = liquidity_idx.find( get_account_id( "bob" ) );
     BOOST_REQUIRE( reward == liquidity_idx.end() );
     /*BOOST_REQUIRE( reward->owner == get_account_id( "bob" ) );
-    BOOST_REQUIRE( reward->get_hbd_volume() == bob_hbd_volume );
-    BOOST_REQUIRE( reward->get_hive_volume() == bob_hive_volume );
-    BOOST_CHECK( reward->last_update == bob_reward_last_update );*/
+    BOOST_REQUIRE_EQUAL( reward->get_hbd_volume(), bob_hbd_volume );
+    BOOST_REQUIRE_EQUAL( reward->get_hive_volume(), bob_hive_volume );
+    BOOST_CHECK_EQUAL( reward->last_update, bob_reward_last_update );*/
 
     reward = liquidity_idx.find( get_account_id( "sam" ) );
     BOOST_REQUIRE( reward == liquidity_idx.end() );
     /*BOOST_REQUIRE( reward->owner == get_account_id( "sam" ) );
-    BOOST_REQUIRE( reward->get_hbd_volume() == sam_hbd_volume );
-    BOOST_REQUIRE( reward->get_hive_volume() == sam_hive_volume );
-    BOOST_CHECK( reward->last_update == sam_reward_last_update );*/
+    BOOST_REQUIRE_EQUAL( reward->get_hbd_volume(), sam_hbd_volume );
+    BOOST_REQUIRE_EQUAL( reward->get_hive_volume(), sam_hive_volume );
+    BOOST_CHECK_EQUAL( reward->last_update, sam_reward_last_update );*/
 
     BOOST_TEST_MESSAGE( "Trading to give Alice and Bob positive volumes to receive rewards" );
 
@@ -2225,40 +2225,40 @@ BOOST_AUTO_TEST_CASE( liquidity_rewards )
     ops = get_last_operations( 2 );
     fill_order_op = ops[1].get< fill_order_operation >();
 
-    BOOST_REQUIRE( fill_order_op.open_owner == "alice" );
-    BOOST_REQUIRE( fill_order_op.open_orderid == 9 );
-    BOOST_REQUIRE( fill_order_op.open_pays.amount.value == 7 * ( alice_hbd.amount.value / 20 ) );
-    BOOST_REQUIRE( fill_order_op.current_owner == "dave" );
-    BOOST_REQUIRE( fill_order_op.current_orderid == 10 );
-    BOOST_REQUIRE( fill_order_op.current_pays.amount.value == 7 * ( alice_hbd.amount.value / 20 ) );
+    BOOST_REQUIRE_EQUAL( fill_order_op.open_owner, "alice" );
+    BOOST_REQUIRE_EQUAL( fill_order_op.open_orderid, 9 );
+    BOOST_REQUIRE_EQUAL( fill_order_op.open_pays.amount.value, 7 * ( alice_hbd.amount.value / 20 ) );
+    BOOST_REQUIRE_EQUAL( fill_order_op.current_owner, "dave" );
+    BOOST_REQUIRE_EQUAL( fill_order_op.current_orderid, 10 );
+    BOOST_REQUIRE_EQUAL( fill_order_op.current_pays.amount.value, 7 * ( alice_hbd.amount.value / 20 ) );
 
     reward = liquidity_idx.find( get_account_id( "alice" ) );
     BOOST_REQUIRE( reward == liquidity_idx.end() );
     /*BOOST_REQUIRE( reward->owner == get_account_id( "alice" ) );
-    BOOST_REQUIRE( reward->get_hbd_volume() == alice_hbd_volume );
-    BOOST_REQUIRE( reward->get_hive_volume() == alice_hive_volume );
-    BOOST_CHECK( reward->last_update == alice_reward_last_update );*/
+    BOOST_REQUIRE_EQUAL( reward->get_hbd_volume(), alice_hbd_volume );
+    BOOST_REQUIRE_EQUAL( reward->get_hive_volume(), alice_hive_volume );
+    BOOST_CHECK_EQUAL( reward->last_update, alice_reward_last_update );*/
 
     reward = liquidity_idx.find( get_account_id( "bob" ) );
     BOOST_REQUIRE( reward == liquidity_idx.end() );
     /*BOOST_REQUIRE( reward->owner == get_account_id( "bob" ) );
-    BOOST_REQUIRE( reward->get_hbd_volume() == bob_hbd_volume );
-    BOOST_REQUIRE( reward->get_hive_volume() == bob_hive_volume );
-    BOOST_CHECK( reward->last_update == bob_reward_last_update );*/
+    BOOST_REQUIRE_EQUAL( reward->get_hbd_volume(), bob_hbd_volume );
+    BOOST_REQUIRE_EQUAL( reward->get_hive_volume(), bob_hive_volume );
+    BOOST_CHECK_EQUAL( reward->last_update, bob_reward_last_update );*/
 
     reward = liquidity_idx.find( get_account_id( "sam" ) );
     BOOST_REQUIRE( reward == liquidity_idx.end() );
     /*BOOST_REQUIRE( reward->owner == get_account_id( "sam" ) );
-    BOOST_REQUIRE( reward->get_hbd_volume() == sam_hbd_volume );
-    BOOST_REQUIRE( reward->get_hive_volume() == sam_hive_volume );
-    BOOST_CHECK( reward->last_update == sam_reward_last_update );*/
+    BOOST_REQUIRE_EQUAL( reward->get_hbd_volume(), sam_hbd_volume );
+    BOOST_REQUIRE_EQUAL( reward->get_hive_volume(), sam_hive_volume );
+    BOOST_CHECK_EQUAL( reward->last_update, sam_reward_last_update );*/
 
     reward = liquidity_idx.find( get_account_id( "dave" ) );
     BOOST_REQUIRE( reward == liquidity_idx.end() );
     /*BOOST_REQUIRE( reward->owner == get_account_id( "dave" ) );
-    BOOST_REQUIRE( reward->get_hbd_volume() == dave_hbd_volume );
-    BOOST_REQUIRE( reward->get_hive_volume() == dave_hive_volume );
-    BOOST_CHECK( reward->last_update == dave_reward_last_update );*/
+    BOOST_REQUIRE_EQUAL( reward->get_hbd_volume(), dave_hbd_volume );
+    BOOST_REQUIRE_EQUAL( reward->get_hive_volume(), dave_hive_volume );
+    BOOST_CHECK_EQUAL( reward->last_update, dave_reward_last_update );*/
 
     op.owner = "bob";
     op.amount_to_sell.amount = alice_hbd.amount / 20;
@@ -2277,40 +2277,40 @@ BOOST_AUTO_TEST_CASE( liquidity_rewards )
     ops = get_last_operations( 2 );
     fill_order_op = ops[1].get< fill_order_operation >();
 
-    BOOST_REQUIRE( fill_order_op.open_owner == "alice" );
-    BOOST_REQUIRE( fill_order_op.open_orderid == 9 );
-    BOOST_REQUIRE( fill_order_op.open_pays.amount.value == alice_hbd.amount.value / 20 );
-    BOOST_REQUIRE( fill_order_op.current_owner == "bob" );
-    BOOST_REQUIRE( fill_order_op.current_orderid == 11 );
-    BOOST_REQUIRE( fill_order_op.current_pays.amount.value == alice_hbd.amount.value / 20 );
+    BOOST_REQUIRE_EQUAL( fill_order_op.open_owner, "alice" );
+    BOOST_REQUIRE_EQUAL( fill_order_op.open_orderid, 9 );
+    BOOST_REQUIRE_EQUAL( fill_order_op.open_pays.amount.value, alice_hbd.amount.value / 20 );
+    BOOST_REQUIRE_EQUAL( fill_order_op.current_owner, "bob" );
+    BOOST_REQUIRE_EQUAL( fill_order_op.current_orderid, 11 );
+    BOOST_REQUIRE_EQUAL( fill_order_op.current_pays.amount.value, alice_hbd.amount.value / 20 );
 
     reward = liquidity_idx.find( get_account_id( "alice" ) );
     BOOST_REQUIRE( reward == liquidity_idx.end() );
     /*BOOST_REQUIRE( reward->owner == get_account_id( "alice" ) );
-    BOOST_REQUIRE( reward->get_hbd_volume() == alice_hbd_volume );
-    BOOST_REQUIRE( reward->get_hive_volume() == alice_hive_volume );
-    BOOST_CHECK( reward->last_update == alice_reward_last_update );*/
+    BOOST_REQUIRE_EQUAL( reward->get_hbd_volume(), alice_hbd_volume );
+    BOOST_REQUIRE_EQUAL( reward->get_hive_volume(), alice_hive_volume );
+    BOOST_CHECK_EQUAL( reward->last_update, alice_reward_last_update );*/
 
     reward = liquidity_idx.find( get_account_id( "bob" ) );
     BOOST_REQUIRE( reward == liquidity_idx.end() );
     /*BOOST_REQUIRE( reward->owner == get_account_id( "bob" ) );
-    BOOST_REQUIRE( reward->get_hbd_volume() == bob_hbd_volume );
-    BOOST_REQUIRE( reward->get_hive_volume() == bob_hive_volume );
-    BOOST_CHECK( reward->last_update == bob_reward_last_update );*/
+    BOOST_REQUIRE_EQUAL( reward->get_hbd_volume(), bob_hbd_volume );
+    BOOST_REQUIRE_EQUAL( reward->get_hive_volume(), bob_hive_volume );
+    BOOST_CHECK_EQUAL( reward->last_update, bob_reward_last_update );*/
 
     reward = liquidity_idx.find( get_account_id( "sam" ) );
     BOOST_REQUIRE( reward == liquidity_idx.end() );
     /*BOOST_REQUIRE( reward->owner == get_account_id( "sam" ) );
-    BOOST_REQUIRE( reward->get_hbd_volume() == sam_hbd_volume );
-    BOOST_REQUIRE( reward->get_hive_volume() == sam_hive_volume );
-    BOOST_CHECK( reward->last_update == sam_reward_last_update );*/
+    BOOST_REQUIRE_EQUAL( reward->get_hbd_volume(), sam_hbd_volume );
+    BOOST_REQUIRE_EQUAL( reward->get_hive_volume(), sam_hive_volume );
+    BOOST_CHECK_EQUAL( reward->last_update, sam_reward_last_update );*/
 
     reward = liquidity_idx.find( get_account_id( "dave" ) );
     BOOST_REQUIRE( reward == liquidity_idx.end() );
     /*BOOST_REQUIRE( reward->owner == get_account_id( "dave" ) );
-    BOOST_REQUIRE( reward->get_hbd_volume() == dave_hbd_volume );
-    BOOST_REQUIRE( reward->get_hive_volume() == dave_hive_volume );
-    BOOST_CHECK( reward->last_update == dave_reward_last_update );*/
+    BOOST_REQUIRE_EQUAL( reward->get_hbd_volume(), dave_hbd_volume );
+    BOOST_REQUIRE_EQUAL( reward->get_hive_volume(), dave_hive_volume );
+    BOOST_CHECK_EQUAL( reward->last_update, dave_reward_last_update );*/
 
     transfer.to = "bob";
     transfer.from = "alice";
@@ -2347,40 +2347,40 @@ BOOST_AUTO_TEST_CASE( liquidity_rewards )
     ops = get_last_operations( 2 );
     fill_order_op = ops[1].get< fill_order_operation >();
 
-    BOOST_REQUIRE( fill_order_op.open_owner == "bob" );
-    BOOST_REQUIRE( fill_order_op.open_orderid == 12 );
-    BOOST_REQUIRE( fill_order_op.open_pays.amount.value == 3 * ( alice_hbd.amount.value / 40 ) );
-    BOOST_REQUIRE( fill_order_op.current_owner == "dave" );
-    BOOST_REQUIRE( fill_order_op.current_orderid == 13 );
-    BOOST_REQUIRE( fill_order_op.current_pays.amount.value == 3 * ( alice_hbd.amount.value / 40 ) );
+    BOOST_REQUIRE_EQUAL( fill_order_op.open_owner, "bob" );
+    BOOST_REQUIRE_EQUAL( fill_order_op.open_orderid, 12 );
+    BOOST_REQUIRE_EQUAL( fill_order_op.open_pays.amount.value, 3 * ( alice_hbd.amount.value / 40 ) );
+    BOOST_REQUIRE_EQUAL( fill_order_op.current_owner, "dave" );
+    BOOST_REQUIRE_EQUAL( fill_order_op.current_orderid, 13 );
+    BOOST_REQUIRE_EQUAL( fill_order_op.current_pays.amount.value, 3 * ( alice_hbd.amount.value / 40 ) );
 
     reward = liquidity_idx.find( get_account_id( "alice" ) );
     BOOST_REQUIRE( reward == liquidity_idx.end() );
     /*BOOST_REQUIRE( reward->owner == get_account_id( "alice" ) );
-    BOOST_REQUIRE( reward->get_hbd_volume() == alice_hbd_volume );
-    BOOST_REQUIRE( reward->get_hive_volume() == alice_hive_volume );
-    BOOST_CHECK( reward->last_update == alice_reward_last_update );*/
+    BOOST_REQUIRE_EQUAL( reward->get_hbd_volume(), alice_hbd_volume );
+    BOOST_REQUIRE_EQUAL( reward->get_hive_volume(), alice_hive_volume );
+    BOOST_CHECK_EQUAL( reward->last_update, alice_reward_last_update );*/
 
     reward = liquidity_idx.find( get_account_id( "bob" ) );
     BOOST_REQUIRE( reward == liquidity_idx.end() );
     /*BOOST_REQUIRE( reward->owner == get_account_id( "bob" ) );
-    BOOST_REQUIRE( reward->get_hbd_volume() == bob_hbd_volume );
-    BOOST_REQUIRE( reward->get_hive_volume() == bob_hive_volume );
-    BOOST_CHECK( reward->last_update == bob_reward_last_update );*/
+    BOOST_REQUIRE_EQUAL( reward->get_hbd_volume(), bob_hbd_volume );
+    BOOST_REQUIRE_EQUAL( reward->get_hive_volume(), bob_hive_volume );
+    BOOST_CHECK_EQUAL( reward->last_update, bob_reward_last_update );*/
 
     reward = liquidity_idx.find( get_account_id( "sam" ) );
     BOOST_REQUIRE( reward == liquidity_idx.end() );
     /*BOOST_REQUIRE( reward->owner == get_account_id( "sam" ) );
-    BOOST_REQUIRE( reward->get_hbd_volume() == sam_hbd_volume );
-    BOOST_REQUIRE( reward->get_hive_volume() == sam_hive_volume );
-    BOOST_CHECK( reward->last_update == sam_reward_last_update );*/
+    BOOST_REQUIRE_EQUAL( reward->get_hbd_volume(), sam_hbd_volume );
+    BOOST_REQUIRE_EQUAL( reward->get_hive_volume(), sam_hive_volume );
+    BOOST_CHECK_EQUAL( reward->last_update, sam_reward_last_update );*/
 
     reward = liquidity_idx.find( get_account_id( "dave" ) );
     BOOST_REQUIRE( reward == liquidity_idx.end() );
     /*BOOST_REQUIRE( reward->owner == get_account_id( "dave" ) );
-    BOOST_REQUIRE( reward->get_hbd_volume() == dave_hbd_volume );
-    BOOST_REQUIRE( reward->get_hive_volume() == dave_hive_volume );
-    BOOST_CHECK( reward->last_update == dave_reward_last_update );*/
+    BOOST_REQUIRE_EQUAL( reward->get_hbd_volume(), dave_hbd_volume );
+    BOOST_REQUIRE_EQUAL( reward->get_hive_volume(), dave_hive_volume );
+    BOOST_CHECK_EQUAL( reward->last_update, dave_reward_last_update );*/
 
     auto alice_balance = get_hive_balance( "alice" );
     auto bob_balance = get_hive_balance( "bob" );
@@ -2392,39 +2392,39 @@ BOOST_AUTO_TEST_CASE( liquidity_rewards )
     db->liquidity_rewards_enabled = true;
     generate_blocks( HIVE_LIQUIDITY_REWARD_BLOCKS - ( db->head_block_num() % HIVE_LIQUIDITY_REWARD_BLOCKS ) - 1 );
 
-    BOOST_REQUIRE( db->head_block_num() % HIVE_LIQUIDITY_REWARD_BLOCKS == HIVE_LIQUIDITY_REWARD_BLOCKS - 1 );
-    BOOST_REQUIRE( get_hive_balance( "alice" ) == alice_balance );
-    BOOST_REQUIRE( get_hive_balance( "bob" ) == bob_balance );
-    BOOST_REQUIRE( get_hive_balance( "sam" ) == sam_balance );
-    BOOST_REQUIRE( get_hive_balance( "dave" ) == dave_balance );
+    BOOST_REQUIRE_EQUAL( db->head_block_num() % HIVE_LIQUIDITY_REWARD_BLOCKS, HIVE_LIQUIDITY_REWARD_BLOCKS - 1 );
+    BOOST_REQUIRE_EQUAL( get_hive_balance( "alice" ), alice_balance );
+    BOOST_REQUIRE_EQUAL( get_hive_balance( "bob" ), bob_balance );
+    BOOST_REQUIRE_EQUAL( get_hive_balance( "sam" ), sam_balance );
+    BOOST_REQUIRE_EQUAL( get_hive_balance( "dave" ), dave_balance );
 
     generate_block();
 
     //alice_balance += HIVE_MIN_LIQUIDITY_REWARD;
 
-    BOOST_REQUIRE( get_hive_balance( "alice" ) == alice_balance );
-    BOOST_REQUIRE( get_hive_balance( "bob" ) == bob_balance );
-    BOOST_REQUIRE( get_hive_balance( "sam" ) == sam_balance );
-    BOOST_REQUIRE( get_hive_balance( "dave" ) == dave_balance );
+    BOOST_REQUIRE_EQUAL( get_hive_balance( "alice" ), alice_balance );
+    BOOST_REQUIRE_EQUAL( get_hive_balance( "bob" ), bob_balance );
+    BOOST_REQUIRE_EQUAL( get_hive_balance( "sam" ), sam_balance );
+    BOOST_REQUIRE_EQUAL( get_hive_balance( "dave" ), dave_balance );
 
     ops = get_last_operations( 1 );
 
     HIVE_REQUIRE_THROW( ops[0].get< liquidity_reward_operation>(), fc::exception );
-    //BOOST_REQUIRE( ops[0].get< liquidity_reward_operation>().payout.amount.value == HIVE_MIN_LIQUIDITY_REWARD.amount.value );
+    //BOOST_REQUIRE( ops[0].get< liquidity_reward_operation>().payout == HIVE_MIN_LIQUIDITY_REWARD );
 
     generate_blocks( HIVE_LIQUIDITY_REWARD_BLOCKS );
 
     //bob_balance += HIVE_MIN_LIQUIDITY_REWARD;
 
-    BOOST_REQUIRE( get_hive_balance( "alice" ) == alice_balance );
-    BOOST_REQUIRE( get_hive_balance( "bob" ) == bob_balance );
-    BOOST_REQUIRE( get_hive_balance( "sam" ) == sam_balance );
-    BOOST_REQUIRE( get_hive_balance( "dave" ) == dave_balance );
+    BOOST_REQUIRE_EQUAL( get_hive_balance( "alice" ), alice_balance );
+    BOOST_REQUIRE_EQUAL( get_hive_balance( "bob" ), bob_balance );
+    BOOST_REQUIRE_EQUAL( get_hive_balance( "sam" ), sam_balance );
+    BOOST_REQUIRE_EQUAL( get_hive_balance( "dave" ), dave_balance );
 
     ops = get_last_operations( 1 );
 
     HIVE_REQUIRE_THROW( ops[0].get< liquidity_reward_operation>(), fc::exception );
-    //BOOST_REQUIRE( ops[0].get< liquidity_reward_operation>().payout.amount.value == HIVE_MIN_LIQUIDITY_REWARD.amount.value );
+    //BOOST_REQUIRE( ops[0].get< liquidity_reward_operation>().payout == HIVE_MIN_LIQUIDITY_REWARD );
 
     alice_hive_volume = 0;
     alice_hbd_volume = 0;
@@ -2448,10 +2448,10 @@ BOOST_AUTO_TEST_CASE( liquidity_rewards )
 
     reward = liquidity_idx.find( get_account_id( "sam" ) );
     /*BOOST_REQUIRE( reward == liquidity_idx.end() );
-    BOOST_REQUIRE( reward->owner == get_account_id( "sam" ) );
-    BOOST_REQUIRE( reward->get_hbd_volume() == sam_hbd_volume );
-    BOOST_REQUIRE( reward->get_hive_volume() == sam_hive_volume );
-    BOOST_CHECK( reward->last_update == sam_reward_last_update );*/
+    BOOST_REQUIRE_EQUAL( reward->owner, get_account_id( "sam" ) );
+    BOOST_REQUIRE_EQUAL( reward->get_hbd_volume(), sam_hbd_volume );
+    BOOST_REQUIRE_EQUAL( reward->get_hive_volume(), sam_hive_volume );
+    BOOST_CHECK_EQUAL( reward->last_update, sam_reward_last_update );*/
 
     generate_block();
 
@@ -2470,10 +2470,10 @@ BOOST_AUTO_TEST_CASE( liquidity_rewards )
 
     reward = liquidity_idx.find( get_account_id( "sam" ) );
     /*BOOST_REQUIRE( reward == liquidity_idx.end() );
-    BOOST_REQUIRE( reward->owner == get_account_id( "sam" ) );
-    BOOST_REQUIRE( reward->get_hbd_volume() == sam_hbd_volume );
-    BOOST_REQUIRE( reward->get_hive_volume() == sam_hive_volume );
-    BOOST_CHECK( reward->last_update == sam_reward_last_update );*/
+    BOOST_REQUIRE_EQUAL( reward->owner, get_account_id( "sam" ) );
+    BOOST_REQUIRE_EQUAL( reward->get_hbd_volume(), sam_hbd_volume );
+    BOOST_REQUIRE_EQUAL( reward->get_hive_volume(), sam_hive_volume );
+    BOOST_CHECK_EQUAL( reward->last_update, sam_reward_last_update );*/
   }
   FC_LOG_AND_RETHROW();
 }
@@ -2571,8 +2571,8 @@ BOOST_AUTO_TEST_CASE( comment_freeze )
     vote.permlink = "test";
     push_transaction( vote, bob_post_key );
 
-    BOOST_REQUIRE( db->find_comment_cashout( *db->get_comment( "alice", string( "test" ) ) )->get_cashout_time() != fc::time_point_sec::min() );
-    BOOST_REQUIRE( db->find_comment_cashout( *db->get_comment( "alice", string( "test" ) ) )->get_cashout_time() != fc::time_point_sec::maximum() );
+    BOOST_REQUIRE_NE( db->find_comment_cashout( *db->get_comment( "alice", string( "test" ) ) )->get_cashout_time(), fc::time_point_sec::min() );
+    BOOST_REQUIRE_NE( db->find_comment_cashout( *db->get_comment( "alice", string( "test" ) ) )->get_cashout_time(), fc::time_point_sec::maximum() );
 
     generate_blocks( db->find_comment_cashout( *db->get_comment( "alice", string( "test" ) ) )->get_cashout_time(), true );
 
@@ -2665,7 +2665,7 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
     HBD_price exchange_rate( 1000, 10000 );
     set_price_feed( exchange_rate );
 
-    BOOST_REQUIRE( dgpo.get_hbd_print_rate() == HIVE_100_PERCENT );
+    BOOST_REQUIRE_EQUAL( dgpo.get_hbd_print_rate(), HIVE_100_PERCENT );
 
     comment_operation comment;
     comment.author = "alice";
@@ -2724,16 +2724,16 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
 
     auto& _alice = db->get_account( "alice" );
     auto alice_hbd = _alice.get_hbd_balance() + _alice.get_hbd_rewards();
-    BOOST_REQUIRE( alice_hbd == HBD_asset( 0 ) );
+    BOOST_REQUIRE_EQUAL( alice_hbd, HBD_asset( 0 ) );
     auto alice_hive = _alice.get_hive_balance() + _alice.get_hive_rewards();
-    BOOST_REQUIRE( alice_hive == HIVE_asset( 0 ) );
+    BOOST_REQUIRE_EQUAL( alice_hive, HIVE_asset( 0 ) );
 
     BOOST_TEST_MESSAGE( "Pay out comment and check rewards are paid as HIVE" );
     generate_block();
 
     validate_database();
 
-    BOOST_REQUIRE( _alice.get_hbd_balance() + _alice.get_hbd_rewards() == alice_hbd );
+    BOOST_REQUIRE_EQUAL( _alice.get_hbd_balance() + _alice.get_hbd_rewards(), alice_hbd );
     BOOST_REQUIRE( _alice.get_hive_balance() + _alice.get_hive_rewards() > alice_hive );
 
     BOOST_TEST_MESSAGE( "Letting percent market cap fall to hbd_start_percent to verify printing of HBD turns back on" );
@@ -2779,7 +2779,7 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
 
     validate_database();
 
-    BOOST_REQUIRE( dgpo.get_hbd_print_rate() == HIVE_100_PERCENT );
+    BOOST_REQUIRE_EQUAL( dgpo.get_hbd_print_rate(), HIVE_100_PERCENT );
   }
   FC_LOG_AND_RETHROW()
 }
@@ -2826,13 +2826,13 @@ BOOST_AUTO_TEST_CASE( hbd_price_feed_limit )
 
     auto recent_ops = get_last_operations( 2 );
     auto sys_warn_op = recent_ops.back().get< system_warning_operation >();
-    BOOST_REQUIRE( sys_warn_op.message.compare( 0, 27, "HIVE price corrected upward" ) == 0 );
+    BOOST_REQUIRE_EQUAL( sys_warn_op.message.compare( 0, 27, "HIVE price corrected upward" ), 0 );
 
     const auto& feed = db->get_feed_history();
     BOOST_REQUIRE( feed.current_median_history > new_exchange_rate && feed.current_median_history < exchange_rate );
-    BOOST_REQUIRE( feed.market_median_history == new_exchange_rate );
-    BOOST_REQUIRE( feed.current_min_history == new_exchange_rate );
-    BOOST_REQUIRE( feed.current_max_history == exchange_rate );
+    BOOST_REQUIRE_EQUAL( feed.market_median_history, new_exchange_rate );
+    BOOST_REQUIRE_EQUAL( feed.current_min_history, new_exchange_rate );
+    BOOST_REQUIRE_EQUAL( feed.current_max_history, exchange_rate );
 
     validate_database();
   }
@@ -2912,33 +2912,33 @@ BOOST_AUTO_TEST_CASE( clear_null_account )
 
     validate_database();
 
-    BOOST_REQUIRE( get_hive_balance( HIVE_NULL_ACCOUNT ) == HIVE_asset( 1'000 ) );
-    BOOST_REQUIRE( get_hbd_balance( HIVE_NULL_ACCOUNT ) == HBD_asset( 2'000 ) );
+    BOOST_REQUIRE_EQUAL( get_hive_balance( HIVE_NULL_ACCOUNT ), HIVE_asset( 1'000 ) );
+    BOOST_REQUIRE_EQUAL( get_hbd_balance( HIVE_NULL_ACCOUNT ), HBD_asset( 2'000 ) );
     BOOST_REQUIRE( get_vesting( HIVE_NULL_ACCOUNT ) > VEST_asset( 0 ) );
-    BOOST_REQUIRE( get_hive_savings( HIVE_NULL_ACCOUNT ) == HIVE_asset( 4'000 ) );
-    BOOST_REQUIRE( get_hbd_savings( HIVE_NULL_ACCOUNT ) == HBD_asset( 5'000 ) );
-    BOOST_REQUIRE( get_hbd_rewards( HIVE_NULL_ACCOUNT ) == HBD_asset( 1'000 ) );
-    BOOST_REQUIRE( get_hive_rewards( HIVE_NULL_ACCOUNT ) == HIVE_asset( 1'000 ) );
-    BOOST_REQUIRE( get_vest_rewards( HIVE_NULL_ACCOUNT ) == VEST_asset( 1'000'000 ) );
-    BOOST_REQUIRE( get_vest_rewards_as_hive( HIVE_NULL_ACCOUNT ) == HIVE_asset( 1'000 ) );
-    BOOST_REQUIRE( get_hive_balance( "alice" ) == HIVE_asset( 2'000 ) );
-    BOOST_REQUIRE( get_hbd_balance( "alice" ) == HBD_asset( 3'000 ) );
+    BOOST_REQUIRE_EQUAL( get_hive_savings( HIVE_NULL_ACCOUNT ), HIVE_asset( 4'000 ) );
+    BOOST_REQUIRE_EQUAL( get_hbd_savings( HIVE_NULL_ACCOUNT ), HBD_asset( 5'000 ) );
+    BOOST_REQUIRE_EQUAL( get_hbd_rewards( HIVE_NULL_ACCOUNT ), HBD_asset( 1'000 ) );
+    BOOST_REQUIRE_EQUAL( get_hive_rewards( HIVE_NULL_ACCOUNT ), HIVE_asset( 1'000 ) );
+    BOOST_REQUIRE_EQUAL( get_vest_rewards( HIVE_NULL_ACCOUNT ), VEST_asset( 1'000'000 ) );
+    BOOST_REQUIRE_EQUAL( get_vest_rewards_as_hive( HIVE_NULL_ACCOUNT ), HIVE_asset( 1'000 ) );
+    BOOST_REQUIRE_EQUAL( get_hive_balance( "alice" ), HIVE_asset( 2'000 ) );
+    BOOST_REQUIRE_EQUAL( get_hbd_balance( "alice" ), HBD_asset( 3'000 ) );
 
     BOOST_TEST_MESSAGE( "--- Generating block to clear balances" );
     generate_block();
     validate_database();
 
-    BOOST_REQUIRE( get_hive_balance( HIVE_NULL_ACCOUNT ) == HIVE_asset( 0 ) );
-    BOOST_REQUIRE( get_hbd_balance( HIVE_NULL_ACCOUNT ) == HBD_asset( 0 ) );
-    BOOST_REQUIRE( get_vesting( HIVE_NULL_ACCOUNT ) == VEST_asset( 0 ) );
-    BOOST_REQUIRE( get_hive_savings( HIVE_NULL_ACCOUNT ) == HIVE_asset( 0 ) );
-    BOOST_REQUIRE( get_hbd_savings( HIVE_NULL_ACCOUNT ) == HBD_asset( 0 ) );
-    BOOST_REQUIRE( get_hbd_rewards( HIVE_NULL_ACCOUNT ) == HBD_asset( 0 ) );
-    BOOST_REQUIRE( get_hive_rewards( HIVE_NULL_ACCOUNT ) == HIVE_asset( 0 ) );
-    BOOST_REQUIRE( get_vest_rewards( HIVE_NULL_ACCOUNT ) == VEST_asset( 0 ) );
-    BOOST_REQUIRE( get_vest_rewards_as_hive( HIVE_NULL_ACCOUNT ) == HIVE_asset( 0 ) );
-    BOOST_REQUIRE( get_hive_balance( "alice" ) == HIVE_asset( 2'000 ) );
-    BOOST_REQUIRE( get_hbd_balance( "alice" ) == HBD_asset( 3'000 ) );
+    BOOST_REQUIRE_EQUAL( get_hive_balance( HIVE_NULL_ACCOUNT ), HIVE_asset( 0 ) );
+    BOOST_REQUIRE_EQUAL( get_hbd_balance( HIVE_NULL_ACCOUNT ), HBD_asset( 0 ) );
+    BOOST_REQUIRE_EQUAL( get_vesting( HIVE_NULL_ACCOUNT ), VEST_asset( 0 ) );
+    BOOST_REQUIRE_EQUAL( get_hive_savings( HIVE_NULL_ACCOUNT ), HIVE_asset( 0 ) );
+    BOOST_REQUIRE_EQUAL( get_hbd_savings( HIVE_NULL_ACCOUNT ), HBD_asset( 0 ) );
+    BOOST_REQUIRE_EQUAL( get_hbd_rewards( HIVE_NULL_ACCOUNT ), HBD_asset( 0 ) );
+    BOOST_REQUIRE_EQUAL( get_hive_rewards( HIVE_NULL_ACCOUNT ), HIVE_asset( 0 ) );
+    BOOST_REQUIRE_EQUAL( get_vest_rewards( HIVE_NULL_ACCOUNT ), VEST_asset( 0 ) );
+    BOOST_REQUIRE_EQUAL( get_vest_rewards_as_hive( HIVE_NULL_ACCOUNT ), HIVE_asset( 0 ) );
+    BOOST_REQUIRE_EQUAL( get_hive_balance( "alice" ), HIVE_asset( 2'000 ) );
+    BOOST_REQUIRE_EQUAL( get_hbd_balance( "alice" ), HBD_asset( 3'000 ) );
   }
   FC_LOG_AND_RETHROW()
 }
@@ -3038,22 +3038,22 @@ BOOST_AUTO_TEST_CASE( account_subsidy_witness_limits )
     tx.operations.push_back( op );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
 
-    BOOST_CHECK( db->get_account( "alice" ).pending_claimed_accounts == 0 );
-    BOOST_CHECK( db->_pending_tx.size() == 0 );
+    BOOST_CHECK_EQUAL( db->get_account( "alice" ).pending_claimed_accounts, 0 );
+    BOOST_CHECK_EQUAL( db->_pending_tx.size(), 0 );
 
     // Pushes successfully
     push_transaction( tx, alice_private_key );
-    BOOST_CHECK( db->get_account( "alice" ).pending_claimed_accounts == 1 );
-    BOOST_CHECK( db->_pending_tx.size() == 1 );
+    BOOST_CHECK_EQUAL( db->get_account( "alice" ).pending_claimed_accounts, 1 );
+    BOOST_CHECK_EQUAL( db->_pending_tx.size(), 1 );
 
     // Same with bob
     op.creator = "bob";
     tx.operations.clear();
     tx.operations.push_back( op );
-    BOOST_CHECK( db->get_account( "bob" ).pending_claimed_accounts == 0 );
+    BOOST_CHECK_EQUAL( db->get_account( "bob" ).pending_claimed_accounts, 0 );
     push_transaction( tx, bob_private_key );
-    BOOST_CHECK( db->get_account( "bob" ).pending_claimed_accounts == 1 );
-    BOOST_CHECK( db->_pending_tx.size() == 2 );
+    BOOST_CHECK_EQUAL( db->get_account( "bob" ).pending_claimed_accounts, 1 );
+    BOOST_CHECK_EQUAL( db->_pending_tx.size(), 2 );
 
     // We are doing two claims to replicate the bug, where setting current witness for block production
     // was enclosed in undo session for individual transaction (instead of in collective pending tx session)
@@ -3067,16 +3067,16 @@ BOOST_AUTO_TEST_CASE( account_subsidy_witness_limits )
       // The transactions fail to be included in new block (due to witness::schedule not being elected),
       // but it is successfully reapplied as pending
       BOOST_CHECK_EQUAL( get_block_reader().get_block_by_number( db->head_block_num() )->get_block().transactions.size(), 0u );
-      BOOST_CHECK( db->get_account( "alice" ).pending_claimed_accounts == 1 );
-      BOOST_CHECK( db->get_account( "bob" ).pending_claimed_accounts == 1 );
+      BOOST_CHECK_EQUAL( db->get_account( "alice" ).pending_claimed_accounts, 1 );
+      BOOST_CHECK_EQUAL( db->get_account( "bob" ).pending_claimed_accounts, 1 );
       BOOST_CHECK_EQUAL( db->_pending_tx.size(), 2u );
     } while( db->get< witness_object, by_name >( db->get_scheduled_witness( 1 ) ).schedule == witness_object::timeshare );
 
     // But generate another block, as a non-time-share witness, and it works
     generate_block();
     BOOST_CHECK_EQUAL( get_block_reader().get_block_by_number( db->head_block_num() )->get_block().transactions.size(), 2u );
-    BOOST_CHECK( db->get_account( "alice" ).pending_claimed_accounts == 1 );
-    BOOST_CHECK( db->get_account( "bob" ).pending_claimed_accounts == 1 );
+    BOOST_CHECK_EQUAL( db->get_account( "alice" ).pending_claimed_accounts, 1 );
+    BOOST_CHECK_EQUAL( db->get_account( "bob" ).pending_claimed_accounts, 1 );
     BOOST_CHECK_EQUAL( db->_pending_tx.size(), 0u );
 
     while( db->get< witness_object, by_name >( db->get_scheduled_witness( 1 ) ).schedule == witness_object::timeshare )
@@ -3098,7 +3098,7 @@ BOOST_AUTO_TEST_CASE( account_subsidy_witness_limits )
       push_transaction( tx, alice_private_key );
       expiration += fc::seconds(3);
     }
-    BOOST_CHECK( db->get_account( "alice" ).pending_claimed_accounts == n+2 );
+    BOOST_CHECK_EQUAL( db->get_account( "alice" ).pending_claimed_accounts, n+2 );
     BOOST_CHECK_EQUAL( db->_pending_tx.size(), n+1 );
     generate_block();
     BOOST_CHECK_EQUAL( get_block_reader().get_block_by_number( db->head_block_num() )->get_block().transactions.size(), n );
@@ -3118,12 +3118,12 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_expiration )
     ACTORS( (alice)(bob) )
     generate_block();
 
-    BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == 0 );
+    BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).open_recurrent_transfers, 0 );
 
     issue_funds( "alice", HIVE_asset( 100'000 ) );
     issue_funds( "alice", HBD_asset( 100'000 ) );
 
-    BOOST_REQUIRE( get_hive_balance( "alice" ) == HIVE_asset( 100'000 ) );
+    BOOST_REQUIRE_EQUAL( get_hive_balance( "alice" ), HIVE_asset( 100'000 ) );
 
     recurrent_transfer_operation op;
     op.from = "alice";
@@ -3134,15 +3134,15 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_expiration )
     op.executions = 2;
     push_transaction(op, alice_private_key);
 
-    BOOST_REQUIRE( get_hive_balance( "alice" ) == HIVE_asset( 100'000 ) );
-    BOOST_REQUIRE( get_hive_balance( "bob" ) == HIVE_asset( 0 ) );
-    BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == 1 );
+    BOOST_REQUIRE_EQUAL( get_hive_balance( "alice" ), HIVE_asset( 100'000 ) );
+    BOOST_REQUIRE_EQUAL( get_hive_balance( "bob" ), HIVE_asset( 0 ) );
+    BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).open_recurrent_transfers, 1 );
     validate_database();
 
     generate_block();
     BOOST_TEST_MESSAGE( "--- test initial recurrent transfer execution" );
-    BOOST_REQUIRE( get_hive_balance( "alice" ) == HIVE_asset( 95'000 ) );
-    BOOST_REQUIRE( get_hive_balance( "bob" ) == HIVE_asset( 5'000 ) );
+    BOOST_REQUIRE_EQUAL( get_hive_balance( "alice" ), HIVE_asset( 95'000 ) );
+    BOOST_REQUIRE_EQUAL( get_hive_balance( "bob" ), HIVE_asset( 5'000 ) );
     validate_database();
 
     auto blocks_until_expiration = (fc::hours(op.recurrence * op.executions) + fc::seconds(30)).to_seconds() / HIVE_BLOCK_INTERVAL;
@@ -3151,10 +3151,10 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_expiration )
 
     const auto* recurrent_transfer = db->find< recurrent_transfer_object, by_from_to_id >(boost::make_tuple( alice_id, bob_id) );
     BOOST_TEST_MESSAGE( "--- test recurrent transfer fully executed" );
-    BOOST_REQUIRE( get_hive_balance( "alice" ) == HIVE_asset( 90'000 ) );
-    BOOST_REQUIRE( get_hive_balance( "bob" ) == HIVE_asset( 10'000 ) );
+    BOOST_REQUIRE_EQUAL( get_hive_balance( "alice" ), HIVE_asset( 90'000 ) );
+    BOOST_REQUIRE_EQUAL( get_hive_balance( "bob" ), HIVE_asset( 10'000 ) );
     BOOST_REQUIRE( recurrent_transfer == nullptr );
-    BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == 0 );
+    BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).open_recurrent_transfers, 0 );
 
     BOOST_TEST_MESSAGE( "Waiting another 24 hours to see if the recurrent transfer does not execute again past its expiration" );
 
@@ -3163,10 +3163,10 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_expiration )
     generate_blocks( blocks_until_next_execution );
 
     const auto* recurrent_transfer_post_expiration = db->find< recurrent_transfer_object, by_from_to_id >(boost::make_tuple( alice_id, bob_id) );
-    BOOST_REQUIRE( get_hive_balance( "alice" ) == HIVE_asset( 90'000 ) );
-    BOOST_REQUIRE( get_hive_balance( "bob" ) == HIVE_asset( 10'000 ) );
+    BOOST_REQUIRE_EQUAL( get_hive_balance( "alice" ), HIVE_asset( 90'000 ) );
+    BOOST_REQUIRE_EQUAL( get_hive_balance( "bob" ), HIVE_asset( 10'000 ) );
     BOOST_REQUIRE( recurrent_transfer_post_expiration == nullptr );
-    BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == 0 );
+    BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).open_recurrent_transfers, 0 );
 
     validate_database();
  }
@@ -3182,24 +3182,24 @@ BOOST_FIXTURE_TEST_CASE( recurrent_transfer_consecutive_failure_deletion, pruned
     ACTORS( (alice)(bob) )
     generate_block();
 
-    BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == 0 );
+    BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).open_recurrent_transfers, 0 );
 
     issue_funds( "alice", HIVE_asset( 5'000 ) );
     issue_funds( "alice", HBD_asset( 100'000 ) );
 
-    BOOST_REQUIRE( get_hive_balance( "alice" ) == HIVE_asset( 5'000 ) );
+    BOOST_REQUIRE_EQUAL( get_hive_balance( "alice" ), HIVE_asset( 5'000 ) );
 
     recurrent_transfer( "alice", "bob", ASSET( "5.000 TESTS" ), "test", 24, 100, alice_private_key );
 
-    BOOST_REQUIRE( get_hive_balance( "alice" ) == HIVE_asset( 5'000 ) );
-    BOOST_REQUIRE( get_hive_balance( "bob" ) == HIVE_asset( 0 ) );
-    BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == 1 );
+    BOOST_REQUIRE_EQUAL( get_hive_balance( "alice" ), HIVE_asset( 5'000 ) );
+    BOOST_REQUIRE_EQUAL( get_hive_balance( "bob" ), HIVE_asset( 0 ) );
+    BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).open_recurrent_transfers, 1 );
     validate_database();
 
     generate_block();
     BOOST_TEST_MESSAGE( "--- test initial recurrent transfer execution" );
-    BOOST_REQUIRE( get_hive_balance( "alice" ) == HIVE_asset( 0 ) );
-    BOOST_REQUIRE( get_hive_balance( "bob" ) == HIVE_asset( 5'000 ) );
+    BOOST_REQUIRE_EQUAL( get_hive_balance( "alice" ), HIVE_asset( 0 ) );
+    BOOST_REQUIRE_EQUAL( get_hive_balance( "bob" ), HIVE_asset( 5'000 ) );
     validate_database();
 
     auto blocks_until_failure = (fc::days(10) + fc::seconds(60) ).to_seconds() / HIVE_BLOCK_INTERVAL;
@@ -3208,10 +3208,10 @@ BOOST_FIXTURE_TEST_CASE( recurrent_transfer_consecutive_failure_deletion, pruned
 
     const auto* recurrent_transfer = db->find< recurrent_transfer_object, by_from_to_id >(boost::make_tuple( alice_id, bob_id) );
     BOOST_TEST_MESSAGE( "--- test recurrent transfer got deleted" );
-    BOOST_REQUIRE( get_hive_balance( "alice" ) == HIVE_asset( 0 ) );
-    BOOST_REQUIRE( get_hive_balance( "bob" ) == HIVE_asset( 5'000 ) );
+    BOOST_REQUIRE_EQUAL( get_hive_balance( "alice" ), HIVE_asset( 0 ) );
+    BOOST_REQUIRE_EQUAL( get_hive_balance( "bob" ), HIVE_asset( 5'000 ) );
     BOOST_REQUIRE( recurrent_transfer == nullptr );
-    BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == 0 );
+    BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).open_recurrent_transfers, 0 );
 
     BOOST_TEST_MESSAGE( "Waiting another 24 hours to see if the recurrent transfer does not execute again past its deletion" );
 
@@ -3221,10 +3221,10 @@ BOOST_FIXTURE_TEST_CASE( recurrent_transfer_consecutive_failure_deletion, pruned
     generate_blocks( blocks_until_next_execution );
 
     const auto* recurrent_transfer_post_deletion = db->find< recurrent_transfer_object, by_from_to_id >(boost::make_tuple( alice_id, bob_id) );
-    BOOST_REQUIRE( get_hive_balance( "alice" ) == HIVE_asset( 5'000 ) );
-    BOOST_REQUIRE( get_hive_balance( "bob" ) == HIVE_asset( 5'000 ) );
+    BOOST_REQUIRE_EQUAL( get_hive_balance( "alice" ), HIVE_asset( 5'000 ) );
+    BOOST_REQUIRE_EQUAL( get_hive_balance( "bob" ), HIVE_asset( 5'000 ) );
     BOOST_REQUIRE( recurrent_transfer_post_deletion == nullptr );
-    BOOST_REQUIRE( db->get_account( "alice" ).open_recurrent_transfers == 0 );
+    BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).open_recurrent_transfers, 0 );
     validate_database();
  }
  FC_LOG_AND_RETHROW()
