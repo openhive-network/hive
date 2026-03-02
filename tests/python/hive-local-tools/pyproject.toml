@@ -40,7 +40,7 @@ tests_api = { path = "tests_api", develop = true }
 
 [tool.poetry.group.static-analysis.dependencies]
 pre-commit = "^4.0.0"
-black = "^23.3.0"
+black = "^25.0.0"
 ruff = "^0.15.0"
 
 [tool.black]
