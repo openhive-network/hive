@@ -60,9 +60,7 @@ using namespace hive::chain::util;
 using namespace hive::protocol;
 
 #define GET_ASSETS( account_name ) (db->get_asset_account( db->get_account( account_name ).get_id() ))
-#define GET_TIME( account_name ) (db->get_asset_account( db->get_account( account_name ).get_id() ))
 #define GET_ASSETS_FOR_ACC( acc ) (db->get_asset_account( (acc).get_id() ))
-#define GET_TIME_FOR_ACC( acc ) (db->get_asset_account( (acc).get_id() ))
 
 BOOST_FIXTURE_TEST_SUITE( operation_time_tests, clean_database_fixture )
 
@@ -1209,21 +1207,21 @@ BOOST_AUTO_TEST_CASE( vesting_withdrawals )
       BOOST_REQUIRE_LE( std::abs( ( fill_op.deposited - fill_op.withdrawn * gpo.get_vesting_share_price().to_price() ).amount.value ), 1 );
 
       if ( i == HIVE_VESTING_WITHDRAW_INTERVALS - 1 )
-        BOOST_REQUIRE_EQUAL( GET_TIME_FOR_ACC( alice ).get_next_vesting_withdrawal(), fc::time_point_sec::maximum() );
+        BOOST_REQUIRE_EQUAL( GET_ASSETS_FOR_ACC( alice ).get_next_vesting_withdrawal(), fc::time_point_sec::maximum() );
       else
-        BOOST_REQUIRE_EQUAL( GET_TIME_FOR_ACC( alice ).get_next_vesting_withdrawal().sec_since_epoch(), ( old_next_vesting + HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS ).sec_since_epoch() );
+        BOOST_REQUIRE_EQUAL( GET_ASSETS_FOR_ACC( alice ).get_next_vesting_withdrawal().sec_since_epoch(), ( old_next_vesting + HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS ).sec_since_epoch() );
 
       validate_database();
 
       vesting_shares = alice_assets.get_vesting();
       balance = alice_assets.get_balance();
-      old_next_vesting = GET_TIME_FOR_ACC( alice ).get_next_vesting_withdrawal();
+      old_next_vesting = GET_ASSETS_FOR_ACC( alice ).get_next_vesting_withdrawal();
     }
 
     BOOST_TEST_MESSAGE( "Generating one more block to finish vesting withdrawal" );
     generate_blocks( db->head_block_time() + HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS, true );
 
-    BOOST_REQUIRE_EQUAL( GET_TIME( "alice" ).get_next_vesting_withdrawal().sec_since_epoch(), fc::time_point_sec::maximum().sec_since_epoch() );
+    BOOST_REQUIRE_EQUAL( GET_ASSETS( "alice" ).get_next_vesting_withdrawal().sec_since_epoch(), fc::time_point_sec::maximum().sec_since_epoch() );
     BOOST_REQUIRE_EQUAL( get_vesting( "alice" ).amount.value, ( original_vesting - op.vesting_shares ).amount.value );
 
     validate_database();
@@ -1734,7 +1732,7 @@ BOOST_AUTO_TEST_CASE( hbd_interest )
 
     issue_funds( "alice", HBD_asset( 31'903 ) );
 
-    auto start_time = GET_TIME( "alice" ).get_hbd_seconds_last_update();
+    auto start_time = GET_ASSETS( "alice" ).get_hbd_seconds_last_update();
     auto alice_hbd = get_hbd_balance( "alice" );
 
     generate_blocks( db->head_block_time() + fc::seconds( HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC ), true );
@@ -1768,7 +1766,7 @@ BOOST_AUTO_TEST_CASE( hbd_interest )
 
     BOOST_TEST_MESSAGE( "Testing interest under interest period" );
 
-    start_time = GET_TIME( "alice" ).get_hbd_seconds_last_update();
+    start_time = GET_ASSETS( "alice" ).get_hbd_seconds_last_update();
     alice_hbd = get_hbd_balance( "alice" );
 
     generate_blocks( db->head_block_time() + fc::seconds( HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC / 2 ), true );
@@ -1783,7 +1781,7 @@ BOOST_AUTO_TEST_CASE( hbd_interest )
 
     auto alice_coindays = uint128_t( alice_hbd.amount.value ) * ( db->head_block_time() - start_time ).to_seconds();
     alice_hbd = get_hbd_balance( "alice" );
-    start_time = GET_TIME( "alice" ).get_hbd_seconds_last_update();
+    start_time = GET_ASSETS( "alice" ).get_hbd_seconds_last_update();
 
     BOOST_TEST_MESSAGE( "Testing longer interest period" );
 

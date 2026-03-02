@@ -73,7 +73,6 @@ using fc::string;
 #define VOTING_MANABAR( account_name ) (db->get_asset_account( db->get_account( account_name ).get_id() ).get_voting_manabar())
 #define DOWNVOTE_MANABAR( account_name ) (db->get_asset_account( db->get_account( account_name ).get_id() ).get_downvote_manabar())
 #define GET_ASSETS( account_name ) (db->get_asset_account( db->get_account( account_name ).get_id() ))
-#define GET_TIME( account_name ) (db->get_asset_account( db->get_account( account_name ).get_id() ))
 #define GET_DV( account_name ) (db->get_delayed_votes_account( db->get_account( account_name ).get_id() ))
 #define GET_EFF_VESTS( account_name ) (db->get_account( account_name ).get_effective_vesting_shares( GET_ASSETS( account_name ) ))
 #define GET_GOV_VOTE_POWER( acc ) ((acc).get_direct_governance_vote_power( db->get_asset_account( (acc).get_id() ), db->get_delayed_votes_account( (acc).get_id() ) ))

@@ -381,9 +381,16 @@ bool rocksdb_account_archive::on_irreversible_block_impl_account( uint32_t block
     const account_id_type account_id = _current.get_id();
     const auto aid = account_id.get_value();
 
+    // Skip system accounts (null, treasury) - they are accessed every block and must never be archived.
+    // This is a safety net: normally refresh_last_access_block() keeps these fresh, but an explicit
+    // guard prevents catastrophic archive-restore churn if that mechanism is ever changed.
+    const auto& account_name = _current.get_name();
+    if( account_name == HIVE_NULL_ACCOUNT || db.is_treasury( account_name ) )
+      continue;
+
     // Use tiny_account_object to check archival guards (it is always in chainbase)
     const auto& tiny_idx = db.get_index< tiny_account_index, by_name >();
-    auto tiny_it = tiny_idx.find( _current.get_name() );
+    auto tiny_it = tiny_idx.find( account_name );
 
     // Skip accounts with pending governance votes - they need to stay in chainbase
     if( tiny_it != tiny_idx.end() && tiny_it->get_governance_vote_expiration_ts() != fc::time_point_sec::maximum() )
@@ -473,11 +480,11 @@ bool rocksdb_account_archive::on_irreversible_block_impl_metadata( uint32_t bloc
       if( account_ptr )
       {
         rocksdb_writer<account_metadata_object, rocksdb_account_metadata_object, rocksdb_account_metadata_object>::write_to_storage( provider, _current, column_types, account_ptr->get_name() );
+
+        if( !_do_flush )
+          _do_flush = true;
       }
       // If account not found in chainbase, it may already be in RocksDB - skip writing metadata without account
-
-      if( !_do_flush )
-        _do_flush = true;
     }
 
     db.remove_no_undo( _current );
@@ -821,14 +828,16 @@ void rocksdb_account_archive::create_object( const account_object& obj )
     o.set_last_access_block( head_block );
   } );
 
-  // Create the tiny_account_object that stays in chainbase permanently
+  // Create the tiny_account_object that stays in chainbase permanently.
+  // Both split objects must exist at this point — they are created before the account_object
+  // in hive_evaluator_account.cpp, so their absence indicates a data consistency bug.
   const auto aid = obj.get_id().get_value();
   const auto* assets_ptr = db.find< assets_object, by_id >( assets_object::id_type( aid ) );
   const auto* dvotes_ptr = db.find< delayed_votes_object, by_id >( delayed_votes_object::id_type( aid ) );
-  if( assets_ptr && dvotes_ptr )
-  {
-    db.create< tiny_account_object >( obj, *assets_ptr, *dvotes_ptr );
-  }
+  FC_ASSERT( assets_ptr && dvotes_ptr,
+    "Split objects (assets, delayed_votes) must exist when creating tiny_account for account ${a}",
+    ("a", obj.get_name()) );
+  db.create< tiny_account_object >( obj, *assets_ptr, *dvotes_ptr );
 
   accounts_stats::stats.account_created.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
   ++accounts_stats::stats.account_created.count;

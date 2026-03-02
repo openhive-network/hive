@@ -381,25 +381,57 @@ bool database::is_treasury( const account_name_type& name )const
   return ( name == NEW_HIVE_TREASURY_ACCOUNT ) || ( name == OBSOLETE_TREASURY_ACCOUNT );
 }
 
-const account_authority_object& database::get_account_authority( const account_name_type& account_name )const
-{
-  const auto* result = chainbase::database::find< account_authority_object, by_account >( account_name );
-  if( BOOST_LIKELY( result != nullptr ) )
-    return *result;
-  return *( get_accounts_handler().get_account_authority( account_name, true /*account_authority_is_required*/ ) );
-}
+// === Accessor macros to eliminate boilerplate ===
+// Each accessor follows the "chainbase-first, handler fallback" pattern:
+// try chainbase lookup (BOOST_LIKELY hit), fall through to handler on miss.
 
-const account_authority_object* database::find_account_authority( const account_name_type& account_name )const
-{
-  const auto* result = chainbase::database::find< account_authority_object, by_account >( account_name );
-  if( BOOST_LIKELY( result != nullptr ) )
-    return result;
-  return get_accounts_handler().get_account_authority( account_name, false /*account_authority_is_required*/ );
-}
+/// Defines get/find pair for objects looked up by account_id with id_type conversion.
+#define HIVE_DEFINE_SPLIT_OBJECT_ACCESSORS(ObjectType, accessor_name, handler_method)             \
+  const ObjectType& database::get_##accessor_name( const account_id_type& id ) const              \
+  {                                                                                               \
+    const auto* r = chainbase::database::find<ObjectType>(ObjectType::id_type(id.get_value()));   \
+    if( BOOST_LIKELY( r != nullptr ) ) return *r;                                                 \
+    return *( get_accounts_handler().handler_method( id, true ) );                                \
+  }                                                                                               \
+  const ObjectType* database::find_##accessor_name( const account_id_type& id ) const             \
+  {                                                                                               \
+    const auto* r = chainbase::database::find<ObjectType>(ObjectType::id_type(id.get_value()));   \
+    if( BOOST_LIKELY( r != nullptr ) ) return r;                                                  \
+    return get_accounts_handler().handler_method( id, false );                                    \
+  }
 
+/// Defines get/find pair for objects looked up by name with a specific index tag.
+#define HIVE_DEFINE_HANDLER_ACCESSORS_BY_NAME(ObjectType, IndexTag, accessor_name, handler_method) \
+  const ObjectType& database::get_##accessor_name( const account_name_type& name ) const           \
+  {                                                                                                \
+    const auto* r = chainbase::database::find<ObjectType, IndexTag>( name );                       \
+    if( BOOST_LIKELY( r != nullptr ) ) return *r;                                                  \
+    return *( get_accounts_handler().handler_method( name, true ) );                               \
+  }                                                                                                \
+  const ObjectType* database::find_##accessor_name( const account_name_type& name ) const          \
+  {                                                                                                \
+    const auto* r = chainbase::database::find<ObjectType, IndexTag>( name );                       \
+    if( BOOST_LIKELY( r != nullptr ) ) return r;                                                   \
+    return get_accounts_handler().handler_method( name, false );                                   \
+  }
+
+/// Defines get/find pair for volatile (value-copy) accessors that delegate directly to handler.
+#define HIVE_DEFINE_VOLATILE_ACCESSORS(ReturnType, accessor_name, handler_method, KeyType)   \
+  ReturnType database::get_volatile_##accessor_name( const KeyType& key ) const              \
+  { return get_accounts_handler().get_volatile_##handler_method( key, true ); }              \
+  ReturnType database::find_volatile_##accessor_name( const KeyType& key ) const             \
+  { return get_accounts_handler().get_volatile_##handler_method( key, false ); }
+
+// --- Handler objects by name ---
+HIVE_DEFINE_HANDLER_ACCESSORS_BY_NAME( account_authority_object, by_account, account_authority, get_account_authority )
+HIVE_DEFINE_HANDLER_ACCESSORS_BY_NAME( account_object,          by_name,    account,           get_account )
+
+// --- Handler objects by id ---
+HIVE_DEFINE_SPLIT_OBJECT_ACCESSORS( account_object, account, get_account )
+
+// --- Account metadata (two-step fast path: account by name -> metadata by account_id) ---
 const account_metadata_object& database::get_account_metadata( const account_name_type& account_name )const
 {
-  // Fast path: look up account in chainbase, then metadata by account_id
   const auto* acc = chainbase::database::find< account_object, by_name >( account_name );
   if( BOOST_LIKELY( acc != nullptr ) )
   {
@@ -407,12 +439,11 @@ const account_metadata_object& database::get_account_metadata( const account_nam
     if( BOOST_LIKELY( result != nullptr ) )
       return *result;
   }
-  return *( get_accounts_handler().get_account_metadata( account_name, true /*account_metadata_is_required*/ ) );
+  return *( get_accounts_handler().get_account_metadata( account_name, true ) );
 }
 
 const account_metadata_object* database::find_account_metadata( const account_name_type& account_name )const
 {
-  // Fast path: look up account in chainbase, then metadata by account_id
   const auto* acc = chainbase::database::find< account_object, by_name >( account_name );
   if( BOOST_LIKELY( acc != nullptr ) )
   {
@@ -420,129 +451,23 @@ const account_metadata_object* database::find_account_metadata( const account_na
     if( BOOST_LIKELY( result != nullptr ) )
       return result;
   }
-  return get_accounts_handler().get_account_metadata( account_name, false /*account_metadata_is_required*/ );
+  return get_accounts_handler().get_account_metadata( account_name, false );
 }
 
-const account_object& database::get_account( const account_id_type& id )const
-{
-  const auto* result = chainbase::database::find< account_object >( account_object::id_type( id.get_value() ) );
-  if( BOOST_LIKELY( result != nullptr ) )
-    return *result;
-  return *( get_accounts_handler().get_account( id, true /*account_is_required*/ ) );
-}
+// --- Volatile accessors (pure handler delegation) ---
+HIVE_DEFINE_VOLATILE_ACCESSORS( account_authority, account_authority, account_authority, account_name_type )
+HIVE_DEFINE_VOLATILE_ACCESSORS( account_metadata,  account_metadata,  account_metadata,  account_name_type )
+HIVE_DEFINE_VOLATILE_ACCESSORS( account,           account,           account,            account_id_type )
+HIVE_DEFINE_VOLATILE_ACCESSORS( account,           account,           account,            account_name_type )
 
-const account_object* database::find_account( const account_id_type& id )const
-{
-  const auto* result = chainbase::database::find< account_object >( account_object::id_type( id.get_value() ) );
-  if( BOOST_LIKELY( result != nullptr ) )
-    return result;
-  return get_accounts_handler().get_account( id, false /*account_is_required*/ );
-}
+// --- Split object accessors ---
+HIVE_DEFINE_SPLIT_OBJECT_ACCESSORS( assets_object,        asset_account,         get_asset_account )
+HIVE_DEFINE_SPLIT_OBJECT_ACCESSORS( recovery_object,      recovery_account,      get_recovery_account )
+HIVE_DEFINE_SPLIT_OBJECT_ACCESSORS( delayed_votes_object, delayed_votes_account, get_delayed_votes_account )
 
-const account_object& database::get_account( const account_name_type& name )const
-{
-  const auto* result = chainbase::database::find< account_object, by_name >( name );
-  if( BOOST_LIKELY( result != nullptr ) )
-    return *result;
-  return *( get_accounts_handler().get_account( name, true /*account_is_required*/ ) );
-}
-
-const account_object* database::find_account( const account_name_type& name )const
-{
-  const auto* result = chainbase::database::find< account_object, by_name >( name );
-  if( BOOST_LIKELY( result != nullptr ) )
-    return result;
-  return get_accounts_handler().get_account( name, false /*account_is_required*/ );
-}
-
-account_authority database::get_volatile_account_authority( const account_name_type& account_name )const
-{
-  return get_accounts_handler().get_volatile_account_authority( account_name, true /*account_authority_is_required*/ );
-}
-
-account_authority database::find_volatile_account_authority( const account_name_type& account_name )const
-{
-  return get_accounts_handler().get_volatile_account_authority( account_name, false /*account_authority_is_required*/ );
-}
-
-account_metadata database::get_volatile_account_metadata( const account_name_type& account_name )const
-{
-  return get_accounts_handler().get_volatile_account_metadata( account_name, true /*account_metadata_is_required*/ );
-}
-
-account_metadata database::find_volatile_account_metadata( const account_name_type& account_name )const
-{
-  return get_accounts_handler().get_volatile_account_metadata( account_name, false /*account_metadata_is_required*/ );
-}
-
-account database::get_volatile_account(  const account_id_type& id )const
-{
-  return get_accounts_handler().get_volatile_account( id, true /*account_is_required*/ );
-}
-
-account database::find_volatile_account( const account_id_type& id )const
-{
-  return get_accounts_handler().get_volatile_account( id, false /*account_is_required*/ );
-}
-
-account database::get_volatile_account(  const account_name_type& name )const
-{
-  return get_accounts_handler().get_volatile_account( name, true /*account_is_required*/ );
-}
-
-account database::find_volatile_account( const account_name_type& name )const
-{
-  return get_accounts_handler().get_volatile_account( name, false /*account_is_required*/ );
-}
-
-const assets_object& database::get_asset_account( const account_id_type& id )const
-{
-  const auto* result = chainbase::database::find< assets_object >( assets_object::id_type( id.get_value() ) );
-  if( BOOST_LIKELY( result != nullptr ) )
-    return *result;
-  return *( get_accounts_handler().get_asset_account( id, true /*is_required*/ ) );
-}
-
-const assets_object* database::find_asset_account( const account_id_type& id )const
-{
-  const auto* result = chainbase::database::find< assets_object >( assets_object::id_type( id.get_value() ) );
-  if( BOOST_LIKELY( result != nullptr ) )
-    return result;
-  return get_accounts_handler().get_asset_account( id, false /*is_required*/ );
-}
-
-const recovery_object& database::get_recovery_account( const account_id_type& id )const
-{
-  const auto* result = chainbase::database::find< recovery_object >( recovery_object::id_type( id.get_value() ) );
-  if( BOOST_LIKELY( result != nullptr ) )
-    return *result;
-  return *( get_accounts_handler().get_recovery_account( id, true /*is_required*/ ) );
-}
-
-const recovery_object* database::find_recovery_account( const account_id_type& id )const
-{
-  const auto* result = chainbase::database::find< recovery_object >( recovery_object::id_type( id.get_value() ) );
-  if( BOOST_LIKELY( result != nullptr ) )
-    return result;
-  return get_accounts_handler().get_recovery_account( id, false /*is_required*/ );
-}
-
-
-const delayed_votes_object& database::get_delayed_votes_account( const account_id_type& id )const
-{
-  const auto* result = chainbase::database::find< delayed_votes_object >( delayed_votes_object::id_type( id.get_value() ) );
-  if( BOOST_LIKELY( result != nullptr ) )
-    return *result;
-  return *( get_accounts_handler().get_delayed_votes_account( id, true /*is_required*/ ) );
-}
-
-const delayed_votes_object* database::find_delayed_votes_account( const account_id_type& id )const
-{
-  const auto* result = chainbase::database::find< delayed_votes_object >( delayed_votes_object::id_type( id.get_value() ) );
-  if( BOOST_LIKELY( result != nullptr ) )
-    return result;
-  return get_accounts_handler().get_delayed_votes_account( id, false /*is_required*/ );
-}
+#undef HIVE_DEFINE_SPLIT_OBJECT_ACCESSORS
+#undef HIVE_DEFINE_HANDLER_ACCESSORS_BY_NAME
+#undef HIVE_DEFINE_VOLATILE_ACCESSORS
 
 comment database::get_comment( const account_id_type& author, const shared_string& permlink )const
 {

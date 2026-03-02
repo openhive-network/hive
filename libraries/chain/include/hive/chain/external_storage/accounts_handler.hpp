@@ -23,7 +23,8 @@ template<> struct is_accounts_handler_object<account_object> : std::true_type {}
 template<typename T>
 inline constexpr bool is_accounts_handler_object_v = is_accounts_handler_object<T>::value;
 
-struct executor_interface
+/// Lifecycle hooks for handler-managed account objects (create notification + post-modify sync).
+struct accounts_lifecycle_hooks
 {
   virtual void create_object( const account_metadata_object& obj ) = 0;
   virtual void create_object( const account_authority_object& obj ) = 0;
@@ -36,7 +37,7 @@ struct executor_interface
   virtual void on_object_modified( const account_object& obj ) = 0;
 };
 
-class accounts_handler : public executor_interface, public external_storage_snapshot
+class accounts_handler : public accounts_lifecycle_hooks, public external_storage_snapshot
 {
   public:
 

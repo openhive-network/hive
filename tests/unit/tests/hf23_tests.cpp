@@ -64,7 +64,6 @@ using namespace hive::protocol;
 using fc::string;
 
 #define GET_ASSETS( account ) (db->get_asset_account( db->get_account( account ).get_id() ))
-#define GET_TIME( account ) (db->get_asset_account( db->get_account( account ).get_id() ))
 #define DELEGATED_VESTS( account ) GET_ASSETS( account ).get_delegated_vesting().amount.value
 #define RECEIVED_VESTS( account ) GET_ASSETS( account ).get_received_vesting().amount.value
 
@@ -1270,7 +1269,7 @@ BOOST_AUTO_TEST_CASE( hbd_test_02 )
 
     BOOST_REQUIRE_EQUAL( get_hbd_balance( "alice" ), HBD_asset( 0 ) );
     issue_funds( "alice", ASSET( "1000.000 TBD" ) );
-    auto start_time = GET_TIME( "alice" ).get_hbd_seconds_last_update();
+    auto start_time = GET_ASSETS( "alice" ).get_hbd_seconds_last_update();
     auto alice_hbd = get_hbd_balance( "alice" );
     const auto& _treasury_hbd_test = db->get_treasury();
     const auto& _treasury_hbd_test_assets = db->get_asset_account( _treasury_hbd_test.get_id() );
