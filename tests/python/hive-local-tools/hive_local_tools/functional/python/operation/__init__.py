@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, Literal
 
 from beekeepy.exceptions import ErrorInResponseError
@@ -524,13 +524,21 @@ def get_rc_max_mana(node: tt.InitNode, account_name: str) -> int:
 
 
 def get_transaction_timestamp(node: tt.InitNode, transaction) -> datetime:
-    return tt.Time.parse(node.api.block.get_block(block_num=transaction["block_num"])["block"]["timestamp"])
+    timestamp = node.api.block.get_block(block_num=transaction["block_num"]).block.timestamp
+    # Return timezone-aware datetime (UTC) for consistent comparisons
+    if isinstance(timestamp, datetime):
+        return timestamp if timestamp.tzinfo is not None else timestamp.replace(tzinfo=timezone.utc)
+    return tt.Time.parse(timestamp, time_zone=timezone.utc)
 
 
 def get_previous_block_timestamp(node: tt.InitNode, block_num: int) -> datetime:
     """Get timestamp of the block immediately before the given block number."""
     prev_block = node.api.block.get_block(block_num=block_num - 1)
-    return tt.Time.parse(prev_block["block"]["timestamp"])
+    timestamp = prev_block.block.timestamp
+    # Return timezone-aware datetime (UTC) for consistent comparisons
+    if isinstance(timestamp, datetime):
+        return timestamp if timestamp.tzinfo is not None else timestamp.replace(tzinfo=timezone.utc)
+    return tt.Time.parse(timestamp, time_zone=timezone.utc)
 
 
 def jump_to_date(node: tt.InitNode, time_control: datetime, wait_for_irreversible: bool = False) -> None:

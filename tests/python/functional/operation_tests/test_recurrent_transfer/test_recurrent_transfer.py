@@ -4,6 +4,8 @@ Test scenarios: https://gitlab.syncad.com/hive/hive/-/issues/484
 
 from __future__ import annotations
 
+from datetime import timezone
+
 import pytest
 from beekeepy.exceptions import ErrorInResponseError
 
@@ -18,7 +20,7 @@ from hive_local_tools.functional.python.operation.recurrent_transfer import Recu
 from schemas.operations.virtual import FailedRecurrentTransferOperation
 
 
-@pytest.mark.testnet()
+@pytest.mark.testnet
 @pytest.mark.parametrize(("amount", "executions"), [(tt.Asset.Test(10), 3), (tt.Asset.Tbd(10), 3)])
 def test_recurrent_transfer_cases_1_and_2(
     node: tt.InitNode,
@@ -61,7 +63,7 @@ def test_recurrent_transfer_cases_1_and_2(
     recurrent_transfer.assert_fill_recurrent_transfer_operation_was_generated(expected_vop=executions)
 
 
-@pytest.mark.testnet()
+@pytest.mark.testnet
 @pytest.mark.parametrize(("amount", "executions"), [(tt.Asset.Test(10), 3), (tt.Asset.Tbd(10), 3)])
 def test_recurrent_transfer_cases_3_and_4(
     node: tt.InitNode,
@@ -114,7 +116,7 @@ def test_recurrent_transfer_cases_3_and_4(
     receiver.assert_hives_and_hbds_are_not_changed()
 
 
-@pytest.mark.testnet()
+@pytest.mark.testnet
 @pytest.mark.parametrize(
     ("amount_1", "amount_2", "executions_1", "executions_2"),
     [
@@ -178,7 +180,7 @@ def test_recurrent_transfer_cases_5_6_7_8(
     receiver.rc_manabar.assert_current_mana_is_unchanged()
 
 
-@pytest.mark.testnet()
+@pytest.mark.testnet
 @pytest.mark.parametrize(
     ("amount", "executions", "update_executions"),
     [
@@ -223,7 +225,7 @@ def test_recurrent_transfer_cases_9_and_10(
             recurrent_transfer.execute_future_transfer()
 
     # After 2 of 3 executions - user increases the number of execution in an existing recurrent transfer.
-    assert node.get_head_block_time() < recurrent_transfer.get_next_execution_date()
+    assert node.get_head_block_time().replace(tzinfo=timezone.utc) < recurrent_transfer.get_next_execution_date()
     recurrent_transfer.update(new_executions_number=update_executions)
     recurrent_transfer.execute_future_transfer()
 
@@ -253,7 +255,7 @@ def test_recurrent_transfer_cases_9_and_10(
         assert receiver.hbd == (2 + 5) * amount
 
 
-@pytest.mark.testnet()
+@pytest.mark.testnet
 @pytest.mark.parametrize(
     ("amount", "executions", "update_executions"),
     [
@@ -322,7 +324,7 @@ def test_recurrent_transfer_cases_11_and_12(
     receiver.assert_hives_and_hbds_are_not_changed()
 
 
-@pytest.mark.testnet()
+@pytest.mark.testnet
 @pytest.mark.parametrize(
     ("amount", "executions", "base_recurrence_time", "update_recurrence_time", "offset"),
     [
@@ -434,7 +436,11 @@ def test_recurrent_transfer_cases_13_14_15_16(
 
         # The time of the third execution of the initial recurrent transfer.
         time_third_execution = recurrent_transfer.executions_schedules[0][2]
-        if node.get_head_block_time() < time_third_execution < recurrent_transfer.get_next_execution_date():
+        if (
+            node.get_head_block_time().replace(tzinfo=timezone.utc)
+            < time_third_execution
+            < recurrent_transfer.get_next_execution_date()
+        ):
             recurrent_transfer.execute_future_transfer(execution_date=recurrent_transfer.executions_schedules[0][2])
             sender.update_account_info()
             receiver.update_account_info()
@@ -449,7 +455,7 @@ def test_recurrent_transfer_cases_13_14_15_16(
     receiver.assert_hives_and_hbds_are_not_changed()
 
 
-@pytest.mark.testnet()
+@pytest.mark.testnet
 @pytest.mark.parametrize(
     ("amount_1", "amount_2", "amount_3", "executions", "first_update_executions", "second_update_executions"),
     [
@@ -526,7 +532,7 @@ def test_recurrent_transfer_cases_17_and_18(
     receiver.update_account_info()
 
     node.restart(time_control=tt.StartTimeControl(start_time=node.get_head_block_time() + tt.Time.days(1)))
-    assert node.get_head_block_time() < recurrent_transfer.get_next_execution_date()
+    assert node.get_head_block_time().replace(tzinfo=timezone.utc) < recurrent_transfer.get_next_execution_date()
 
     # Update second time - decrease the number of executions and the frequency of recurrent transfers.
     recurrent_transfer.update(
@@ -559,7 +565,7 @@ def test_recurrent_transfer_cases_17_and_18(
     receiver.assert_hives_and_hbds_are_not_changed()
 
 
-@pytest.mark.testnet()
+@pytest.mark.testnet
 @pytest.mark.parametrize(
     ("recurrent_transfer_amount", "transfer_amount"),
     [
@@ -613,7 +619,7 @@ def test_recurrent_transfer_cases_19_and_20(
     receiver.assert_hives_and_hbds_are_not_changed()
 
 
-@pytest.mark.testnet()
+@pytest.mark.testnet
 @pytest.mark.parametrize(
     ("amount", "executions"),
     [
@@ -684,7 +690,7 @@ def test_recurrent_transfer_cases_21_and_22(
     receiver.assert_hives_and_hbds_are_not_changed()
 
 
-@pytest.mark.testnet()
+@pytest.mark.testnet
 @pytest.mark.parametrize("amount", [(tt.Asset.Test(10)), (tt.Asset.Tbd(10))])
 def test_recurrent_transfer_cases_23_and_24(
     node: tt.InitNode, wallet: tt.Wallet, receiver: RecurrentTransferAccount, amount: tt.Asset.TestT | tt.Asset.TbdT
@@ -733,7 +739,7 @@ def test_recurrent_transfer_cases_23_and_24(
     )
 
 
-@pytest.mark.testnet()
+@pytest.mark.testnet
 @pytest.mark.parametrize(
     ("amount", "executions", "recurrence"),
     [
@@ -777,7 +783,7 @@ def test_recurrent_transfer_cases_25_and_26(
         recurrent_transfer.execute_future_transfer()
 
 
-@pytest.mark.testnet()
+@pytest.mark.testnet
 @pytest.mark.parametrize(
     ("amount", "executions", "recurrence"),
     [

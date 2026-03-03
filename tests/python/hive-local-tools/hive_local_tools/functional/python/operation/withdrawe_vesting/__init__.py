@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import timezone
 from typing import TYPE_CHECKING
 
 import test_tools as tt
@@ -91,7 +92,7 @@ class PowerDown(Operation):
         self.__init__(self._node, self._wallet, self._name, vesting_shares, update=True)
 
     def execute_next_withdraw(self) -> None:
-        actual_head_block_time = self._node.get_head_block_time()
+        actual_head_block_time = self._node.get_head_block_time().replace(tzinfo=timezone.utc)
         for num, t in enumerate(self._tranche_schedule):
             if t > actual_head_block_time:
                 self._node.restart(time_control=tt.StartTimeControl(start_time=self._tranche_schedule[num]))
@@ -103,7 +104,7 @@ class PowerDown(Operation):
         self._node.restart(time_control=tt.StartTimeControl(start_time=self._tranche_schedule[-1]))
         self._remaining_executions = 0
         self._node.wait_for_irreversible_block()
-        assert self._node.get_head_block_time() >= self._tranche_schedule[-1]
+        assert self._node.get_head_block_time().replace(tzinfo=timezone.utc) >= self._tranche_schedule[-1]
 
     def assert_virtual_operation_fill_vesting_withdraw_operation_was_generated(
         self, start_block: int | None = None

@@ -8,7 +8,7 @@ import pytest
 
 import test_tools as tt
 from hive_local_tools.constants import HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD
-from hive_local_tools.functional.python.operation import get_transaction_timestamp, get_virtual_operations
+from hive_local_tools.functional.python.operation import get_virtual_operations
 from hive_local_tools.functional.python.operation.account_witness_proxy import AccountWitnessProxy
 from schemas.operations.virtual import ExpiredAccountNotificationOperation, ProxyClearedOperation
 
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from .conftest import Account, Proposal
 
 
-@pytest.mark.testnet()
+@pytest.mark.testnet
 def test_set_account_witness_proxy(
     node: tt.InitNode, wallet: tt.Wallet, alice: Account, bob: Account, proposal_x: Proposal, proposal_y: Proposal
 ) -> None:
@@ -47,7 +47,7 @@ def test_set_account_witness_proxy(
     assert get_witness_votes(node, "witness-y") == tt.Asset.Vest(0)
 
 
-@pytest.mark.testnet()
+@pytest.mark.testnet
 def test_remove_account_witness_proxy(
     node: tt.InitNode, wallet: tt.Wallet, alice: Account, bob: Account, proposal_x: Proposal, proposal_y: Proposal
 ) -> None:
@@ -73,7 +73,7 @@ def test_remove_account_witness_proxy(
     assert get_witness_votes(node, "witness-y") == tt.Asset.Vest(0)
 
 
-@pytest.mark.testnet()
+@pytest.mark.testnet
 def test_account_witness_proxy(
     node: tt.InitNode,
     wallet: tt.Wallet,
@@ -214,6 +214,8 @@ def get_witness_votes(node: tt.InitNode, witness_name: str) -> tt.Asset.Vest:
 
 
 def move_to_next_maintenance_time(node: tt.InitNode) -> None:
-    next_maintenance_time = tt.Time.parse(node.api.database.get_dynamic_global_properties().next_maintenance_time)
+    next_maintenance_time = tt.Time.parse(
+        node.api.database.get_dynamic_global_properties().next_maintenance_time
+    ).replace(tzinfo=None)
     node.restart(time_control=tt.StartTimeControl(start_time=next_maintenance_time))
     assert node.get_head_block_time() >= next_maintenance_time
