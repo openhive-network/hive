@@ -713,8 +713,8 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
   BOOST_CHECK_EQUAL( alignof( assets_object ), 16u );
   BOOST_CHECK_EQUAL( alignof( delayed_votes_object ), 8u );
   BOOST_CHECK_EQUAL( alignof( account_object ), 8u );
-  BOOST_CHECK_EQUAL( sizeof( account_object ), 136u ); //1.3M+ (includes last_access_block + changed_flag for RocksDB archiving)
-  BOOST_CHECK_EQUAL( sizeof( account_index::MULTIINDEX_NODE_TYPE ), 232u ); //reduced after moving by_proxy and by_governance_vote_expiration_ts to tiny_account_index
+  BOOST_CHECK_EQUAL( sizeof( account_object ), 128u ); //1.3M+ (includes last_access_block + changed_flag for RocksDB archiving)
+  BOOST_CHECK_EQUAL( sizeof( account_index::MULTIINDEX_NODE_TYPE ), 224u ); //reduced after moving by_proxy and by_governance_vote_expiration_ts to tiny_account_index
   BOOST_CHECK_EQUAL( sizeof( account_metadata_object ), 80u ); //as many as account_object, but only FatNode (also to be moved to HiveMind)
   BOOST_CHECK_EQUAL( sizeof( account_metadata_index::MULTIINDEX_NODE_TYPE ), 176u );
   BOOST_CHECK_EQUAL( sizeof( account_authority_object ), 256u ); //as many as account_object
@@ -1141,9 +1141,9 @@ BOOST_AUTO_TEST_CASE( decoding_types_mechanism_test )
     BOOST_CHECK( decoded_account_object.reflected );
     BOOST_CHECK( !decoded_account_object.enum_values );
     BOOST_CHECK( decoded_account_object.members );
-    // With split objects, account_object has fewer members (20 instead of 58)
+    // With split objects, account_object has fewer members (18 instead of 58)
     // includes last_access_block and changed_flag for RocksDB archiving
-    BOOST_CHECK_EQUAL( decoded_account_object.members->size(), 20 );
+    BOOST_CHECK_EQUAL( decoded_account_object.members->size(), 18 );
   }
 
   BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 20 ); // decoded types map size shouldn't change.
@@ -1501,9 +1501,9 @@ BOOST_AUTO_TEST_CASE( chain_object_checksum )
   hive::chain::util::decoded_types_data_storage dtds;
 
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::recovery_object>(dtds), "44f1de977d2512832fdb7f2635b379df8cdb2326" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::assets_object>(dtds), "86b848a1beb98110b0bcac5eca0e26cb9a5ef6cb" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::assets_object>(dtds), "99bacb02b44f45e87c5063fd51fe230979d71931" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::delayed_votes_object>(dtds), "4bb1eaf49d4a10f24cb990eab033f710502f767b" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::account_object>(dtds), "19fd2b3a16df9f5aa3468f5fd9fe8fd408e12768" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::account_object>(dtds), "1c689ded12f36e149c4a5d504451b4548b1380fd" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::account_metadata_object>(dtds), "379587b74d3b399774c0daceb8df6626ab0adb22" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::account_authority_object>(dtds), "1074d1d80071265defb14211b78db78c45fec878" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::vesting_delegation_object>(dtds), "2c140c595e4a83e6aab21cb3090816206b07a5ad" );
