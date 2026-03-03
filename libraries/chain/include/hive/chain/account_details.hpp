@@ -84,9 +84,6 @@ namespace hive { namespace chain { namespace account_details {
 
     time_point_sec    governance_vote_expiration_ts = fc::time_point_sec::maximum();
 
-    uint32_t          post_count = 0; //(not read by consensus code)
-    uint32_t          post_bandwidth = 0; //influenced root comment reward between HF12 and HF17
-
     uint16_t          withdraw_routes = 0; //max 10, why is it 16bit?
     uint16_t          pending_escrow_transfers = 0; //for now max is 255, but it might change
     uint16_t          open_recurrent_transfers = 0; //for now max is 255, but it might change
@@ -218,7 +215,7 @@ FC_REFLECT( hive::chain::account_details::misc,
           (pending_claimed_accounts)
           (created)(block_created)
           (governance_vote_expiration_ts)
-          (post_count)(post_bandwidth)(withdraw_routes)(pending_escrow_transfers)(open_recurrent_transfers)(witnesses_voted_for)
+          (withdraw_routes)(pending_escrow_transfers)(open_recurrent_transfers)(witnesses_voted_for)
           (savings_withdraw_requests)(can_vote)(mined)
           (memo_key)
           (proxied_vsf_votes)

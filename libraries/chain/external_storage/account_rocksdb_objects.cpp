@@ -13,8 +13,6 @@ rocksdb_account_object::rocksdb_account_object( const account_object& obj )
   created                     = obj.get_creation_time();
   block_created               = obj.get_block_creation_time();
   governance_vote_expiration_ts = obj.get_governance_vote_expiration_ts();
-  post_count                  = obj.get_post_count();
-  post_bandwidth              = obj.get_post_bandwidth();
   withdraw_routes             = obj.get_withdraw_routes();
   pending_escrow_transfers    = obj.get_pending_escrow_transfers();
   open_recurrent_transfers    = obj.get_open_recurrent_transfers();

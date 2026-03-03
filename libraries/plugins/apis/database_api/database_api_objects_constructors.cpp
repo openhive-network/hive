@@ -210,7 +210,6 @@ api_account_object::api_account_object( const account_object& a, const database&
   mined( a.was_mined() ),
   reset_account( HIVE_NULL_ACCOUNT ),
   last_account_recovery(),
-  post_count( a.get_post_count() ),
   can_vote( a.can_vote() ),
   withdraw_routes( a.get_withdraw_routes() ),
   pending_transfers( a.get_pending_escrow_transfers() ),
@@ -218,7 +217,6 @@ api_account_object::api_account_object( const account_object& a, const database&
   last_post(),
   last_root_post(),
   last_post_edit(),
-  post_bandwidth( a.get_post_bandwidth() ),
   pending_claimed_accounts( a.get_pending_claimed_accounts() ),
   open_recurrent_transfers( a.get_open_recurrent_transfers() ),
   governance_vote_expiration_ts( a.get_governance_vote_expiration_ts())
@@ -239,6 +237,8 @@ api_account_object::api_account_object( const account_object& a, const database&
   last_root_post = assets.get_last_root_post();
   last_post_edit = assets.get_last_post_edit();
   next_vesting_withdrawal = assets.get_next_vesting_withdrawal();
+  post_count = assets.get_post_count();
+  post_bandwidth = assets.get_post_bandwidth();
   last_account_recovery = recovery.get_block_last_account_recovery_time();
 
   // From assets_object

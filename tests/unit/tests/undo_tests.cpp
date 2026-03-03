@@ -336,7 +336,7 @@ BOOST_AUTO_TEST_CASE( undo_key_collision )
 
     uint32_t old_size = ao.size< account_index >();
 
-    ao.modify( obj0, [&]( account_object& obj ){ obj.set_post_count( 1 ); } );
+    ao.modify( obj0, [&]( account_object& obj ){ obj.set_pending_claimed_accounts( 1 ); } );
     ao.modify( obj0, [&]( account_object& obj ){ obj.set_name( "name01" ); } );
 
     /*

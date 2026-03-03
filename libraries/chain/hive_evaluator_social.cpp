@@ -219,7 +219,7 @@ void comment_evaluator::do_apply( const comment_operation& o )
     }
 
     uint16_t reward_weight = HIVE_100_PERCENT;
-    uint64_t post_bandwidth = auth.get_post_bandwidth();
+    uint64_t post_bandwidth = _assets_obj.get_post_bandwidth();
 
     if( _db.has_hardfork( HIVE_HARDFORK_0_12__176 ) && !_db.has_hardfork( HIVE_HARDFORK_0_17__733 ) && !parent )
     {
@@ -229,21 +229,14 @@ void comment_evaluator::do_apply( const comment_operation& o )
       reward_weight = uint16_t( std::min( ( HIVE_POST_WEIGHT_CONSTANT * HIVE_100_PERCENT ) / ( post_bandwidth * post_bandwidth ), uint64_t( HIVE_100_PERCENT ) ) );
     }
 
-    _db.modify( auth, [&]( account_object& a )
-    {
-      if( !parent )
-      {
-        a.set_post_bandwidth( uint32_t( post_bandwidth ) );
-      }
-      a.set_post_count( a.get_post_count() + 1 );
-    });
-
     _db.modify( _assets_obj, [&]( assets_object& a )
     {
       if( !parent )
       {
+        a.set_post_bandwidth( uint32_t( post_bandwidth ) );
         a.set_last_root_post( _now );
       }
+      a.set_post_count( a.get_post_count() + 1 );
       a.set_last_post( _now );
       a.set_last_post_edit( _now );
     });

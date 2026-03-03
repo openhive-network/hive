@@ -218,6 +218,19 @@ struct rocksdb_reader<account_object, account_name_type, Return_Type>
           split_obj.build<const delayed_votes_object*>( db );
         }
       }
+
+      // Recreate tiny_account_object if it was removed during archival.
+      // It is removed when all tracked fields are default (no proxy, no delayed_votes).
+      // On restore, we must recreate it for consensus index iteration.
+      if( !db.find< tiny_account_object, by_name >( result->get_name() ) )
+      {
+        const auto* restored_assets = db.find< assets_object, by_id >( assets_object::id_type( aid ) );
+        const auto* restored_dvotes = db.find< delayed_votes_object, by_id >( delayed_votes_object::id_type( aid ) );
+        if( restored_assets && restored_dvotes )
+        {
+          db.create_no_undo< tiny_account_object >( aid, *result, *restored_assets, *restored_dvotes );
+        }
+      }
     }
 
     return result;
@@ -434,7 +447,6 @@ bool rocksdb_account_archive::on_irreversible_block_impl_account( uint32_t block
     db.remove_no_undo( _current );
 
     // Also remove the split objects from chainbase
-    // NOTE: tiny_account_object is NOT removed - it stays permanently in chainbase
     if( recovery_ptr )
       db.remove_no_undo( *recovery_ptr );
 
@@ -443,6 +455,16 @@ bool rocksdb_account_archive::on_irreversible_block_impl_account( uint32_t block
 
     if( delayed_votes_ptr )
       db.remove_no_undo( *delayed_votes_ptr );
+
+    // Remove tiny_account_object if all tracked fields are at default values.
+    // Archival guards above already guarantee governance_vote_expiration_ts == maximum
+    // and next_vesting_withdrawal == maximum. We additionally check proxy and delayed_votes;
+    // if non-default, the entry must remain for consensus-critical index iteration.
+    if( tiny_it != tiny_idx.end() )
+    {
+      if( !tiny_it->has_proxy() && !tiny_it->has_delayed_votes() )
+        db.remove_no_undo( *tiny_it );
+    }
 
     ++_archived;
   }

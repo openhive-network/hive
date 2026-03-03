@@ -108,6 +108,8 @@ public:
     , delegated_rc( obj.get_delegated_rc() )
     , received_rc( obj.get_received_rc() )
     , last_max_rc( obj.get_last_max_rc() )
+    , post_count( obj.get_post_count() )
+    , post_bandwidth( obj.get_post_bandwidth() )
   {}
 
   template<typename Return_Type>
@@ -157,6 +159,8 @@ public:
         o.set_delegated_rc( this->delegated_rc );
         o.set_received_rc( this->received_rc );
         o.set_last_max_rc( this->last_max_rc );
+        o.set_post_count( this->post_count );
+        o.set_post_bandwidth( this->post_bandwidth );
       });
       return &obj;
     }
@@ -201,6 +205,8 @@ public:
       obj->set_delegated_rc( this->delegated_rc );
       obj->set_received_rc( this->received_rc );
       obj->set_last_max_rc( this->last_max_rc );
+      obj->set_post_count( this->post_count );
+      obj->set_post_bandwidth( this->post_bandwidth );
       return Return_Type( obj );
     }
   }
@@ -243,6 +249,8 @@ public:
   share_type            delegated_rc;
   share_type            received_rc;
   share_type            last_max_rc;
+  uint32_t              post_count = 0;
+  uint32_t              post_bandwidth = 0;
 };
 
 /**
@@ -315,6 +323,7 @@ FC_REFLECT( hive::chain::rocksdb_assets_object,
           (last_post_edit)(last_vote_time)(next_vesting_withdrawal)
           (voting_manabar)(downvote_manabar)(rc_manabar)
           (rc_adjustment)(delegated_rc)(received_rc)(last_max_rc)
+          (post_count)(post_bandwidth)
         )
 
 FC_REFLECT( hive::chain::rocksdb_delayed_votes_object,

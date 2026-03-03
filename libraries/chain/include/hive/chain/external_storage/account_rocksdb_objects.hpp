@@ -17,7 +17,7 @@ struct accounts_stats
  * rocksdb_account_object stores the account_object fields for RocksDB persistence.
  * In the split architecture, account_object contains only the "misc" fields:
  * - proxy, name, pending_claimed_accounts, created, block_created
- * - governance_vote_expiration_ts, post_count, post_bandwidth
+ * - governance_vote_expiration_ts
  * - withdraw_routes, pending_escrow_transfers, open_recurrent_transfers, witnesses_voted_for
  * - savings_withdraw_requests, can_vote_flag, mined, memo_key, proxied_vsf_votes
  *
@@ -52,8 +52,6 @@ class rocksdb_account_object
         o.set_proxy_by_id( this->proxy );
         o.set_pending_claimed_accounts( this->pending_claimed_accounts );
         o.restore_governance_vote_expiration_ts( this->governance_vote_expiration_ts );
-        o.set_post_count( this->post_count );
-        o.set_post_bandwidth( this->post_bandwidth );
         o.set_withdraw_routes( this->withdraw_routes );
         o.set_pending_escrow_transfers( this->pending_escrow_transfers );
         o.set_open_recurrent_transfers( this->open_recurrent_transfers );
@@ -78,8 +76,6 @@ class rocksdb_account_object
       obj->set_proxy_by_id( this->proxy );
       obj->set_pending_claimed_accounts( this->pending_claimed_accounts );
       obj->restore_governance_vote_expiration_ts( this->governance_vote_expiration_ts );
-      obj->set_post_count( this->post_count );
-      obj->set_post_bandwidth( this->post_bandwidth );
       obj->set_withdraw_routes( this->withdraw_routes );
       obj->set_pending_escrow_transfers( this->pending_escrow_transfers );
       obj->set_open_recurrent_transfers( this->open_recurrent_transfers );
@@ -100,8 +96,6 @@ class rocksdb_account_object
   time_point_sec    created;
   time_point_sec    block_created;
   time_point_sec    governance_vote_expiration_ts = fc::time_point_sec::maximum();
-  uint32_t          post_count = 0;
-  uint32_t          post_bandwidth = 0;
   uint16_t          withdraw_routes = 0;
   uint16_t          pending_escrow_transfers = 0;
   uint16_t          open_recurrent_transfers = 0;
@@ -134,7 +128,6 @@ FC_REFLECT( hive::chain::rocksdb_account_object,
           (pending_claimed_accounts)
           (created)(block_created)
           (governance_vote_expiration_ts)
-          (post_count)(post_bandwidth)
           (withdraw_routes)(pending_escrow_transfers)(open_recurrent_transfers)(witnesses_voted_for)
           (savings_withdraw_requests)(can_vote_flag)(mined)
           (memo_key)

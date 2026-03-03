@@ -141,9 +141,6 @@ namespace hive { namespace chain {
       uint16_t get_pending_escrow_transfers() const { return pending_escrow_transfers; }
       void set_pending_escrow_transfers( const uint16_t& value ) { pending_escrow_transfers = value; }
 
-      uint32_t get_post_bandwidth() const { return post_bandwidth; }
-      void set_post_bandwidth( const uint32_t& value ) { post_bandwidth = value; }
-
       uint16_t get_witnesses_voted_for() const { return witnesses_voted_for; }
       void set_witnesses_voted_for( const uint16_t& value ) { witnesses_voted_for = value; }
 
@@ -152,9 +149,6 @@ namespace hive { namespace chain {
 
       uint16_t get_open_recurrent_transfers() const { return open_recurrent_transfers; }
       void set_open_recurrent_transfers( const uint16_t& value ) { open_recurrent_transfers = value; }
-
-      uint32_t get_post_count() const { return post_count; }
-      void set_post_count( const uint32_t& value ) { post_count = value; }
 
       uint16_t get_withdraw_routes() const { return withdraw_routes; }
       void set_withdraw_routes( const uint16_t& value ) { withdraw_routes = value; }
@@ -229,9 +223,6 @@ namespace hive { namespace chain {
       time_point_sec    block_created;
 
       time_point_sec    governance_vote_expiration_ts = fc::time_point_sec::maximum();
-
-      uint32_t          post_count = 0;       //(not read by consensus code)
-      uint32_t          post_bandwidth = 0;   //influenced root comment reward between HF12 and HF17
 
       uint16_t          withdraw_routes = 0;          //max 10
       uint16_t          pending_escrow_transfers = 0; //max 255
@@ -503,7 +494,6 @@ FC_REFLECT( hive::chain::account_object,
           (pending_claimed_accounts)
           (created)(block_created)
           (governance_vote_expiration_ts)
-          (post_count)(post_bandwidth)
           (withdraw_routes)(pending_escrow_transfers)(open_recurrent_transfers)(witnesses_voted_for)
           (savings_withdraw_requests)(can_vote_flag)(mined)
           (memo_key)

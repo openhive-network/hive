@@ -165,6 +165,14 @@ namespace hive { namespace chain {
       time_point_sec get_last_vote_time() const { return last_vote_time; }
       void set_last_vote_time( const time_point_sec& value ) { last_vote_time = value; }
 
+      // Post count and bandwidth (moved from account_object for performance - eliminates
+      // unnecessary account_object modify in comment_operation)
+      uint32_t get_post_count() const { return post_count; }
+      void set_post_count( const uint32_t& value ) { post_count = value; }
+
+      uint32_t get_post_bandwidth() const { return post_bandwidth; }
+      void set_post_bandwidth( const uint32_t& value ) { post_bandwidth = value; }
+
       // ===== Fields merged from manabars_rc_object =====
 
       // Effective balance of VESTS for RC calculation optionally excluding part that cannot be delegated
@@ -253,6 +261,10 @@ namespace hive { namespace chain {
       share_type        received_rc;              ///< RC delegated to this account
       share_type        last_max_rc;              ///< (for bug catching with RC code)
 
+      // Fields moved from account_object for performance
+      uint32_t          post_count = 0;           //(not read by consensus code)
+      uint32_t          post_bandwidth = 0;       //influenced root comment reward between HF12 and HF17
+
     CHAINBASE_UNPACK_CONSTRUCTOR(assets_object);
   };
 
@@ -285,6 +297,7 @@ FC_REFLECT( hive::chain::assets_object,
           (last_post_edit)(last_vote_time)(next_vesting_withdrawal)
           (voting_manabar)(downvote_manabar)(rc_manabar)
           (rc_adjustment)(delegated_rc)(received_rc)(last_max_rc)
+          (post_count)(post_bandwidth)
         )
 
 CHAINBASE_SET_INDEX_TYPE( hive::chain::assets_object, hive::chain::assets_index )
