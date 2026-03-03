@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import msgspec
+
 from hive_local_tools import run_for
 
 if TYPE_CHECKING:
@@ -13,4 +15,4 @@ if TYPE_CHECKING:
 def test_debug_get_witness_schedule(node: tt.InitNode) -> None:
     debug_api_method_response = node.api.debug_node.debug_get_witness_schedule()
     database_api_method_response = node.api.database.get_witness_schedule()
-    assert debug_api_method_response.dict(exclude_none=True) == database_api_method_response.dict(exclude_none=True)
+    assert msgspec.to_builtins(debug_api_method_response) == msgspec.to_builtins(database_api_method_response)

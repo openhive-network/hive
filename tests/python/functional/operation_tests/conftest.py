@@ -79,7 +79,7 @@ class ConvertAccount(Account):
 
         requests = self._node.api.database.list_collateralized_conversion_requests(
             start=[""], limit=100, order="by_account"
-        )["requests"]
+        ).requests
         all_request_ids = []
         for request in requests:
             all_request_ids.append(request.requestid)
@@ -591,7 +591,7 @@ class UpdateAccount(Account):
         if type_ == "memo":
             type_ = "memo_key"
         self.update_account_info()
-        authority: Authority = self._acc_info[type_]
+        authority: Authority = getattr(self._acc_info, type_)
         return authority.key_auths[0][0]
 
     def update_all_account_details(self, *, json_meta: str, owner: str, active: str, posting: str, memo: str) -> None:
@@ -658,7 +658,7 @@ class UpdateAccount(Account):
             tt.logger.info(f"change memo RC COST {transaction['rc_cost']}")
             return transaction
         self.update_account_info()
-        current_key = self._acc_info[key_type]["key_auths"][0][0]
+        current_key = getattr(self._acc_info, key_type).key_auths[0][0]
         # add new / update weight of existing key
         transaction = self._wallet.api.update_account_auth_key(self._name, key_type, key, weight, broadcast=True)
         tt.logger.info(f"add new / update weight of existing key RC COST {transaction['rc_cost']}")
@@ -689,7 +689,7 @@ class WitnessAccount(Account):
             id=transaction["transaction_id"], include_reversible=True
         ).operations
         for operation in operations:
-            if operation.type_ == "feed_publish_operation" and operation.value.publisher == self._name:
+            if operation.type == "feed_publish_operation" and operation.value["publisher"] == self._name:
                 return
         raise AssertionError("Feed_publish operation wasn't found.")
 

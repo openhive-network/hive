@@ -3,8 +3,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pytest
-import test_tools as tt
 
+import test_tools as tt
 from wax.helpy import Time
 
 if TYPE_CHECKING:
@@ -117,7 +117,7 @@ def test_startup_with_modified_time() -> None:
     init_node = tt.InitNode()
     init_node.run(time_control=tt.StartTimeControl(start_time=requested_start_time))
 
-    node_time = Time.parse(init_node.api.database.get_dynamic_global_properties()["time"])
+    node_time = Time.parse(init_node.api.database.get_dynamic_global_properties().time)
 
     # Some time may pass between node start and getting time, so below comparison is made with a few block tolerance.
     assert Time.are_close(requested_start_time, node_time, absolute_tolerance=Time.seconds(15))

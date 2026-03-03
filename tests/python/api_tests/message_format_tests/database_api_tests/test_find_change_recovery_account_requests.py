@@ -15,8 +15,10 @@ def test_find_change_recovery_account_requests_in_testnet(node: tt.InitNode) -> 
 
 @run_for("mainnet_5m", "live_mainnet")
 def test_find_change_recovery_account_requests_in_mainnet(node: tt.RemoteNode) -> None:
-    account = node.api.database.list_change_recovery_account_requests(start="", limit=100, order="by_account")[
-        "requests"
-    ][0]["account_to_recover"]
+    account = (
+        node.api.database.list_change_recovery_account_requests(start="", limit=100, order="by_account")
+        .requests[0]
+        .account_to_recover
+    )
     requests = node.api.database.find_change_recovery_account_requests(accounts=[account]).requests
     assert len(requests) != 0

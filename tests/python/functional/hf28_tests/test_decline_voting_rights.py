@@ -7,7 +7,7 @@ from beekeepy.exceptions import ErrorInResponseError
 
 from hive_local_tools import run_for
 from hive_local_tools.constants import OWNER_AUTH_RECOVERY_PERIOD, TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS
-from hive_local_tools.functional.python.operation import Account, get_transaction_timestamp, get_virtual_operations
+from hive_local_tools.functional.python.operation import Account, get_virtual_operations
 from schemas.operations.virtual import DeclinedVotingRightsOperation
 
 if TYPE_CHECKING:
@@ -22,10 +22,10 @@ def test_decline_voting_rights(prepare_environment: tuple[tt.InitNode, tt.Wallet
     assert transaction["rc_cost"] > 0, "Rc cost of operation should be greater than 0."
     voter.rc_manabar.assert_rc_current_mana_is_reduced(transaction)
 
-    assert len(node.api.database.find_decline_voting_rights_requests(accounts=[voter.name])["requests"]) == 1
+    assert len(node.api.database.find_decline_voting_rights_requests(accounts=[voter.name]).requests) == 1
     assert node.api.database.find_accounts(accounts=[voter.name]).accounts[0].can_vote is True
     node.wait_number_of_blocks(TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS)
-    assert len(node.api.database.find_decline_voting_rights_requests(accounts=[voter.name])["requests"]) == 0
+    assert len(node.api.database.find_decline_voting_rights_requests(accounts=[voter.name]).requests) == 0
     assert node.api.database.find_accounts(accounts=[voter.name]).accounts[0].can_vote is False
     assert len(get_virtual_operations(node, DeclinedVotingRightsOperation)) == 1
 
@@ -38,12 +38,12 @@ def test_decline_voting_rights_more_than_once(
 
     transaction = wallet.api.decline_voting_rights(voter.name, True)
     voter.rc_manabar.assert_rc_current_mana_is_reduced(transaction)
-    assert len(node.api.database.find_decline_voting_rights_requests(accounts=[voter.name])["requests"]) == 1
+    assert len(node.api.database.find_decline_voting_rights_requests(accounts=[voter.name]).requests) == 1
     assert node.api.database.find_accounts(accounts=[voter.name]).accounts[0].can_vote is True
 
     node.wait_number_of_blocks(TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS)
 
-    assert len(node.api.database.find_decline_voting_rights_requests(accounts=[voter.name])["requests"]) == 0
+    assert len(node.api.database.find_decline_voting_rights_requests(accounts=[voter.name]).requests) == 0
     assert node.api.database.find_accounts(accounts=[voter.name]).accounts[0].can_vote is False
     assert len(get_virtual_operations(node, DeclinedVotingRightsOperation)) == 1
 
@@ -63,7 +63,7 @@ def test_create_two_decline_voting_rights_requests(
 
     transaction = wallet.api.decline_voting_rights(voter.name, True)
     voter.rc_manabar.assert_rc_current_mana_is_reduced(transaction)
-    assert len(node.api.database.find_decline_voting_rights_requests(accounts=[voter.name])["requests"]) == 1
+    assert len(node.api.database.find_decline_voting_rights_requests(accounts=[voter.name]).requests) == 1
 
     with pytest.raises(ErrorInResponseError) as exception:
         wallet.api.decline_voting_rights(voter.name, True)

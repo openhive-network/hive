@@ -23,7 +23,7 @@ if TYPE_CHECKING:
         ("bob", tt.Asset.TbdT, "get_hbd_savings_balance", "get_hbd_balance"),
     ],
 )
-@pytest.mark.testnet()
+@pytest.mark.testnet
 def test_transfer_to_savings_account(
     prepared_node: tt.InitNode,
     wallet: tt.Wallet,
@@ -57,13 +57,13 @@ def test_transfer_to_savings_account(
         include_reversible=True,
         filter=0x000020,
         group_by_block=False,
-    )["ops"]
+    ).ops
 
     if currency(0).nai() == "@@000000013":  # Now token is available ony from object, not class.
         assert len(interests) == 1, "interest_operation wasn't generated."
         assert (
             receiver_savings_balance_before_transfer
-            == receiver_savings_balance_after_transfer - currency(amount=2000) - interests[0]["op"]["value"]["interest"]
+            == receiver_savings_balance_after_transfer - currency(amount=2000) - interests[0].op.value["interest"]
         ), "Receiver savings balance wasn't increased by transfers and one interest."
     else:
         assert len(interests) == 0, "interest_operation was generated (it shouldn't be)"
@@ -73,7 +73,9 @@ def test_transfer_to_savings_account(
 
     assert (
         sender_balance_before_transfer - currency(amount=2000) == sender_balance_after_transfer
-    ), f"{currency(0).token()} balance of sender wasn't decreased."  # Now token is available ony from object, not class.
+    ), (
+        f"{currency(0).token()} balance of sender wasn't decreased."
+    )  # Now token is available ony from object, not class.
     assert (
         rc_amount_before_sending_op > rc_amount_after_sending_op
     ), "RC amount after sending transfers wasn't decreased."

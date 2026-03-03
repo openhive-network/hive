@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 def get_authority(
     node: tt.InitNode, account_name: AccountName, authority_level: Literal["posting", "active", "owner"]
 ) -> Authority:
-    return node.api.database.find_accounts(accounts=[account_name]).accounts[0][authority_level]
+    return getattr(node.api.database.find_accounts(accounts=[account_name]).accounts[0], authority_level)
 
 
 def basic_authority(key: PublicKey) -> Authority:

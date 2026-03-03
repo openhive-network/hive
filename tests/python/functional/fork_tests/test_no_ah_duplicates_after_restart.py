@@ -13,15 +13,15 @@ if TYPE_CHECKING:
     from shared_tools.networks_architecture import NetworksBuilder
 
 
-@pytest.mark.fork_tests_group_3()
+@pytest.mark.fork_tests_group_3
 def test_no_duplicates_in_account_history_plugin_after_restart(prepare_with_many_witnesses: NetworksBuilder) -> None:
     # TRIGGER
     # We restart one of nodes.
     networks_builder = prepare_with_many_witnesses
     api_node = networks_builder.networks[0].node("FullApiNode0")
 
-    head_block_num = api_node.api.condenser.get_dynamic_global_properties()["head_block_number"]
-    head_block_timestamp = api_node.api.block.get_block(block_num=head_block_num)["block"]["timestamp"]
+    head_block_num = api_node.api.condenser.get_dynamic_global_properties().head_block_number
+    head_block_timestamp = api_node.api.block.get_block(block_num=head_block_num).block.timestamp
     absolute_start_time = tt.Time.parse(head_block_timestamp)
     absolute_start_time -= tt.Time.seconds(5)  # Node starting and entering live mode takes some time to complete
 

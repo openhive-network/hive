@@ -35,11 +35,9 @@ def test_recalculation_proposal_votes() -> None:
     tt.logger.info(f"HBT: {node.get_head_block_time()}")
 
     # the first maintenance block has the number 107 ( processed in block_log )
-    vops_in_first_maintenance_block = get_virtual_operations(
-        node, ProposalPayOperation, start_block=107, end_block=108
-    )
-    proposal_id_from_first_maintenance_block = vops_in_first_maintenance_block[0]["op"]["value"]["proposal_id"]
-    receiver_from_first_maintenance_block = vops_in_first_maintenance_block[0]["op"]["value"]["receiver"]
+    vops_in_first_maintenance_block = get_virtual_operations(node, ProposalPayOperation, start_block=107, end_block=108)
+    proposal_id_from_first_maintenance_block = vops_in_first_maintenance_block[0].op.value.proposal_id
+    receiver_from_first_maintenance_block = vops_in_first_maintenance_block[0].op.value.receiver
 
     lbn = node.get_last_block_number()
     assert len(get_virtual_operations(node, ProposalPayOperation, start_block=lbn, end_block=lbn + 100)) == 0
@@ -54,11 +52,11 @@ def test_recalculation_proposal_votes() -> None:
     vops_in_second_maintenance_block = get_virtual_operations(
         node,
         ProposalPayOperation,
-        start_block=maintenance_block_number-1,
+        start_block=maintenance_block_number - 1,
         end_block=maintenance_block_number,
     )
     assert len(vops_in_second_maintenance_block) > 0
-    proposal_id_from_second_maintenance_block = vops_in_second_maintenance_block[0]["op"]["value"]["proposal_id"]
-    receiver_from_second_maintenance_block = vops_in_second_maintenance_block[0]["op"]["value"]["receiver"]
+    proposal_id_from_second_maintenance_block = vops_in_second_maintenance_block[0].op.value.proposal_id
+    receiver_from_second_maintenance_block = vops_in_second_maintenance_block[0].op.value.receiver
     assert proposal_id_from_first_maintenance_block != proposal_id_from_second_maintenance_block
     assert receiver_from_first_maintenance_block != receiver_from_second_maintenance_block

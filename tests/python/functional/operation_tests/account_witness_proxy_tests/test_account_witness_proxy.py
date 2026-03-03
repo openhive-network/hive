@@ -91,7 +91,7 @@ def test_account_witness_proxy(
 
     # User B votes for witness-z.
     bob_vote_for_witness = wallet.api.vote_for_witness(bob.name, "witness-z", True)
-    assert len(node.api.database.list_witness_votes(start=["", ""], limit=10, order="by_account_witness")["votes"]) == 2
+    assert len(node.api.database.list_witness_votes(start=["", ""], limit=10, order="by_account_witness").votes) == 2
     bob.rc_manabar.assert_rc_current_mana_is_reduced(bob_vote_for_witness)
     bob.update_account_info()
 
@@ -204,13 +204,11 @@ def get_number_of_proposal_votes(node: tt.InitNode) -> int:
 
 
 def get_witness_votes(node: tt.InitNode, witness_name: str) -> tt.Asset.Vest:
-    return tt.Asset.from_nai(
-        {
-            "amount": node.api.database.list_witnesses(start=witness_name, limit=1, order="by_name").witnesses[0].votes,
-            "precision": 6,
-            "nai": "@@000000037",
-        }
-    )
+    return tt.Asset.from_nai({
+        "amount": node.api.database.list_witnesses(start=witness_name, limit=1, order="by_name").witnesses[0].votes,
+        "precision": 6,
+        "nai": "@@000000037",
+    })
 
 
 def move_to_next_maintenance_time(node: tt.InitNode) -> None:

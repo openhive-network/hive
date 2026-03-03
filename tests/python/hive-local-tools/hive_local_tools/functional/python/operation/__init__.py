@@ -361,7 +361,7 @@ class _DownvoteManabar(_VoteManabarBase):
 
 def check_if_fill_transfer_from_savings_vop_was_generated(node: tt.InitNode, memo: str) -> bool:
     payout_vops = get_virtual_operations(node, FillTransferFromSavingsOperation)
-    return any(vop["op"]["value"]["memo"] == memo for vop in payout_vops)
+    return any(vop.op.value["memo"] == memo for vop in payout_vops)
 
 
 def create_account_with_different_keys(wallet: tt.Wallet, account_name: str, creator: str) -> None:
@@ -512,15 +512,15 @@ def get_virtual_operations(
 
     if skip_price_stabilization:
         for vop_number, vop in enumerate(result.ops):
-            if isinstance(vop.op.value, TransferToVestingCompletedOperation) and vop.op.value[
-                "hive_vested"
-            ] == tt.Asset.Test(10_000_000):
+            if vop.op.type == "transfer_to_vesting_completed_operation" and tt.Asset.from_nai(
+                vop.op.value["hive_vested"]
+            ) == tt.Asset.Test(10_000_000):
                 result.ops.pop(vop_number)  # noqa: B909
     return result.ops
 
 
 def get_rc_max_mana(node: tt.InitNode, account_name: str) -> int:
-    return int(node.api.rc.find_rc_accounts(accounts=[account_name])["rc_accounts"][0]["max_rc"])
+    return int(node.api.rc.find_rc_accounts(accounts=[account_name]).rc_accounts[0].max_rc)
 
 
 def get_transaction_timestamp(node: tt.InitNode, transaction) -> datetime:
@@ -571,7 +571,7 @@ def get_pending_claimed_accounts(node: tt.InitNode, account_name: str) -> str:
 def list_votes_for_all_proposals(node):
     return node.api.database.list_proposal_votes(
         start=[""], limit=1000, order="by_voter_proposal", order_direction="ascending", status="all"
-    )["proposal_votes"]
+    ).proposal_votes
 
 
 def get_vote_manabar(
@@ -580,8 +580,8 @@ def get_vote_manabar(
     response = wallet.api.get_account(account_name)
     max_mana = int(response.post_voting_power.amount)
     return ExtendedManabar(
-        current_mana=int(response[bar_type].current_mana),
-        last_update_time=response[bar_type].last_update_time,
+        current_mana=int(getattr(response, bar_type).current_mana),
+        last_update_time=getattr(response, bar_type).last_update_time,
         maximum=max_mana if bar_type == "voting_manabar" else int(0.25 * max_mana),
     )
 
@@ -597,17 +597,17 @@ class Proposal:
             status="all",
             last_id=proposal_id,
         ).proposals[0]
-        self.id = self._proposal_info["id"]
-        self.proposal_id = self._proposal_info["proposal_id"]
-        self.creator = self._proposal_info["creator"]
-        self.receiver = self._proposal_info["receiver"]
-        self.start_date = self._proposal_info["start_date"]
-        self.end_date = self._proposal_info["end_date"]
-        self.daily_pay = self._proposal_info["daily_pay"]
-        self.subject = self._proposal_info["subject"]
-        self.permlink = self._proposal_info["permlink"]
-        self.total_votes = tt.Asset.Vest(self._proposal_info["total_votes"] / 1_000_000)
-        self.status = self._proposal_info["status"]
+        self.id = self._proposal_info.id
+        self.proposal_id = self._proposal_info.proposal_id
+        self.creator = self._proposal_info.creator
+        self.receiver = self._proposal_info.receiver
+        self.start_date = self._proposal_info.start_date
+        self.end_date = self._proposal_info.end_date
+        self.daily_pay = self._proposal_info.daily_pay
+        self.subject = self._proposal_info.subject
+        self.permlink = self._proposal_info.permlink
+        self.total_votes = tt.Asset.Vest(self._proposal_info.total_votes / 1_000_000)
+        self.status = self._proposal_info.status
 
     def update_proposal_info(self):
         self.__init__(self._node, self.proposal_id)
@@ -615,7 +615,7 @@ class Proposal:
 
 def publish_feeds(node: tt.InitNode, wallet: tt.Wallet, base: int, quote: int, broadcast: bool = True) -> dict:
     response = node.api.database.list_witnesses(start=None, limit=100, order="by_name").witnesses
-    witnesses = [element["owner"] for element in response]
+    witnesses = [element.owner for element in response]
     with wallet.in_single_transaction(broadcast=broadcast) as transaction:
         for witness in witnesses:
             exchange_rate = {"base": tt.Asset.Tbd(base), "quote": tt.Asset.Test(quote)}
@@ -641,7 +641,7 @@ def assert_account_was_created(node: tt.AnyNode, account_name: str) -> None:
     account_created_operations = get_virtual_operations(node, AccountCreatedOperation)
     created_accounts = []
     for operation in account_created_operations:
-        created_accounts.append(operation.op.value.new_account_name)
+        created_accounts.append(operation.op.value["new_account_name"])
 
     assert account_name in created_accounts, f"Account named {account_name} was not created"
 

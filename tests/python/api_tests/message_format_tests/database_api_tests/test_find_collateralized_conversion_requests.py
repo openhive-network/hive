@@ -23,5 +23,5 @@ def test_find_collateralized_conversion_requests_in_live_mainnet(node: tt.Remote
         .requests[0]
         .owner
     )
-    requests = node.api.database.find_collateralized_conversion_requests(account=account)["requests"]
+    requests = node.api.database.find_collateralized_conversion_requests(account=account).requests
     assert len(requests) != 0

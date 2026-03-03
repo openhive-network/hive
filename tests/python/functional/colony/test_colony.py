@@ -13,7 +13,7 @@ from shared_tools.complex_networks import generate_free_addresses
 WITNESSES = [f"witness-{w}" for w in range(20)]
 
 
-@pytest.mark.testnet()
+@pytest.mark.testnet
 def test_start_colony_plugin() -> None:
     node = tt.InitNode()
     node.config.plugin.append("colony")
@@ -23,7 +23,7 @@ def test_start_colony_plugin() -> None:
     assert "colony" in node.config.plugin, "Colony plugin not started"
 
 
-@pytest.mark.testnet()
+@pytest.mark.testnet
 def test_start_colony_from_block_log(
     block_log_single_sign: tt.BlockLog, alternate_chain_spec: tt.AlternateChainSpecs
 ) -> None:
@@ -55,7 +55,7 @@ def test_start_colony_from_block_log(
     wait_for_start_colony(node, min_trx_in_block=5000)
 
 
-@pytest.mark.testnet()
+@pytest.mark.testnet
 def test_colony_on_basic_network_structure(
     block_log_single_sign: tt.BlockLog, alternate_chain_spec: tt.AlternateChainSpecs
 ) -> None:
@@ -104,7 +104,7 @@ def test_colony_on_basic_network_structure(
     wait_for_start_colony(witness_node, min_trx_in_block=2500, timeout=420)
 
 
-@pytest.mark.testnet()
+@pytest.mark.testnet
 def test_colony_on_complex_network(block_log_single_sign: tt.BlockLog, alternate_chain_spec: tt.BlockLog) -> None:
     """
     ColonyNode-0 ●─────●─────● ColonyNode-1
@@ -148,7 +148,7 @@ def test_colony_on_complex_network(block_log_single_sign: tt.BlockLog, alternate
     wait_for_start_colony(nodes[random.randint(0, len(nodes) - 1)], min_trx_in_block=5000)
 
 
-@pytest.mark.testnet()
+@pytest.mark.testnet
 def test_multiple_colony_nodes_communication_with_single_witness_node(
     block_log_single_sign: tt.BlockLog, alternate_chain_spec: tt.AlternateChainSpecs
 ) -> None:
@@ -255,8 +255,7 @@ def prepare_colony_config(node: tt.ApiNode | tt.InitNode) -> None:
 def wait_for_start_colony(node: tt.InitNode | tt.ApiNode, min_trx_in_block: int = 500, timeout: int = 300) -> None:
     def is_colony_started() -> bool:
         return (
-            len(node.api.block.get_block(block_num=node.get_last_block_number())["block"].transactions)
-            >= min_trx_in_block
+            len(node.api.block.get_block(block_num=node.get_last_block_number()).block.transactions) >= min_trx_in_block
         )
 
     tt.logger.info("Wait for start colony...")

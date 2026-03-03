@@ -102,13 +102,13 @@ def init_network(  # noqa: C901
     tt.logger.info("Wait 21 blocks to schedule newly created witnesses into future slate")
     init_node.wait_number_of_blocks(21)
 
-    future_witnesses = init_node.api.database.get_active_witnesses(include_future=True)["future_witnesses"]
+    future_witnesses = init_node.api.database.get_active_witnesses(include_future=True).future_witnesses
     tt.logger.info(f"Future witnesses after voting: {future_witnesses}")
 
     tt.logger.info("Wait 21 blocks for future slate to become active slate")
     init_node.wait_number_of_blocks(21)
 
-    active_witnesses = init_node.api.database.get_active_witnesses()["witnesses"]
+    active_witnesses = init_node.api.database.get_active_witnesses().witnesses
     tt.logger.info(f"Witness state after voting: {active_witnesses}")
 
     # Reason of this wait is to enable moving forward of irreversible block

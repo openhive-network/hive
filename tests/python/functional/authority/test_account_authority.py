@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 @pytest.mark.parametrize("authority_level", ["posting", "active", "owner"])
 def test_posting_account_authority(node: tt.InitNode, authority_level: str, alice: Account, bob: Account) -> None:
     alice.wallet.api.update_account_auth_account(alice.name, authority_level, bob.name, 1)
-    assert (bob.name, 1) in get_authority(
+    assert [bob.name, 1] in get_authority(
         node, alice.name, authority_level
     ).account_auths, f"Account {bob.name} was not set as account_auths for the account {alice.name}."
 
@@ -43,7 +43,7 @@ def test_posting_account_authority(node: tt.InitNode, authority_level: str, alic
 @pytest.mark.parametrize("authority_level", ["posting", "active", "owner"])
 def test_active_account_authority(node: tt.InitNode, authority_level: str, alice: Account, bob: Account) -> None:
     alice.wallet.api.update_account_auth_account(alice.name, authority_level, bob.name, 1)
-    assert (bob.name, 1) in get_authority(
+    assert [bob.name, 1] in get_authority(
         node, alice.name, authority_level
     ).account_auths, f"Account {bob.name} was not set as account_auths for the account {alice.name}."
 
@@ -69,7 +69,7 @@ def test_active_account_authority(node: tt.InitNode, authority_level: str, alice
 @pytest.mark.parametrize("authority_level", ["posting", "active", "owner"])
 def test_owner_account_authority(node: tt.InitNode, authority_level: str, alice: Account, bob: Account) -> None:
     alice.wallet.api.update_account_auth_account(alice.name, authority_level, bob.name, 1)
-    assert (bob.name, 1) in get_authority(
+    assert [bob.name, 1] in get_authority(
         node, alice.name, authority_level
     ).account_auths, f"Account {bob.name} was not set as account_auths for the account {alice.name}."
 
@@ -157,9 +157,10 @@ def test_signing_with_circular_account_authority(
            │                                           │
            ● posting                                   ● posting
     """
-    initminer_wallet.api.import_keys(
-        [tt.PrivateKey(account_name=bob.name, secret="owner"), tt.PrivateKey(account_name=carol.name, secret="owner")]
-    )
+    initminer_wallet.api.import_keys([
+        tt.PrivateKey(account_name=bob.name, secret="owner"),
+        tt.PrivateKey(account_name=carol.name, secret="owner"),
+    ])
 
     bob.wallet.api.import_key(tt.PrivateKey(account_name=bob.name, secret="active"))
     assert len(bob.wallet.api.list_keys()) == 1, "Bob's wallet has an incorrect number of imported keys. Expected 1"
