@@ -590,13 +590,13 @@ reference = "gitlab-hive"
 
 [[package]]
 name = "hiveio-beekeepy"
-version = "1.28.6.post20260302130504"
+version = "1.28.6.post20260303083717"
 description = "All in one package for beekeeper interaction via Python interface."
 optional = false
 python-versions = ">=3.12,<4"
 groups = ["main"]
 files = [
-    {file = "hiveio_beekeepy-1.28.6.post20260302130504-py3-none-any.whl", hash = "sha256:16b7f4465d0465c06bce959f6732d07dea4b3daa8d6cd53f9c7f5abc1ca2ed15"},
+    {file = "hiveio_beekeepy-1.28.6.post20260303083717-py3-none-any.whl", hash = "sha256:bd6c2c53c28bc04d5ac32e9f3a4beda52582c9c892fd37ca26e74302d8bf2fc3"},
 ]
 
 [package.dependencies]
@@ -633,13 +633,13 @@ reference = "gitlab-hive"
 
 [[package]]
 name = "hiveio-test-tools"
-version = "2.0.2.post20260303070442"
+version = "2.0.2.post20260303083843"
 description = "Tools for testing hive software"
 optional = false
 python-versions = ">=3.12,<4"
 groups = ["main"]
 files = [
-    {file = "hiveio_test_tools-2.0.2.post20260303070442-py3-none-any.whl", hash = "sha256:a193e6139ff9091e734b9056fbe1400c51d70a847257be86156850c64d5c3ea4"},
+    {file = "hiveio_test_tools-2.0.2.post20260303083843-py3-none-any.whl", hash = "sha256:76cd02b9df277cc491be926a3b1a2dd0fe66e3c7c5584c515fbc9162a7ea9d73"},
 ]
 
 [package.dependencies]
@@ -658,14 +658,14 @@ reference = "gitlab-hive"
 
 [[package]]
 name = "hiveio-wax"
-version = "2.0.2.post20260303070442"
+version = "2.0.2.post20260303083843"
 description = ""
 optional = false
 python-versions = ">=3.12,<4"
 groups = ["main"]
 files = [
-    {file = "hiveio_wax-2.0.2.post20260303070442-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:2e0e8af1725c291fa09271c2ff11cc7713d6c9b86515df5d1d59f00b034502ba"},
-    {file = "hiveio_wax-2.0.2.post20260303070442-cp314-cp314-manylinux_2_28_x86_64.whl", hash = "sha256:3d8cd8995bc1acfb8a1ffa707d1c47dcf806ff55dc1ab5b78fa1dc66ee311ad4"},
+    {file = "hiveio_wax-2.0.2.post20260303083843-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:7a2fd93eba21b4a7c8aaf14e3c9321985c7a70021c25599eecbea1acce4a524e"},
+    {file = "hiveio_wax-2.0.2.post20260303083843-cp314-cp314-manylinux_2_28_x86_64.whl", hash = "sha256:c22d9d06ed46b0ded125eac26b8a01fb592216a8c5acc896baea1b16c94318b6"},
 ]
 
 [package.dependencies]
