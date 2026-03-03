@@ -21,33 +21,32 @@ def pytest_configure(config) -> None:
     concurrent API calls that trigger decoder initialization.
     """
     with contextlib.suppress(Exception):
-        from schemas.jsonrpc import get_response_model
-        from schemas import decoders
-
-        # Import ALL schema modules to trigger annotation resolution
+        # Import ALL API modules to trigger annotation resolution
         # This forces all typing annotations to be resolved in the main thread
         # before any xdist workers start making concurrent API calls
-        import schemas.apis.account_by_key_api  # noqa: F401
-        import schemas.apis.account_history_api  # noqa: F401
-        import schemas.apis.app_status_api  # noqa: F401  # Used by beekeepy.__discover_ports()
-        import schemas.apis.block_api  # noqa: F401
-        import schemas.apis.condenser_api  # noqa: F401
-        import schemas.apis.database_api.fundaments_of_reponses  # noqa: F401
-        import schemas.apis.database_api.response_schemas  # noqa: F401
-        import schemas.apis.debug_node_api  # noqa: F401
-        import schemas.apis.follow_api  # noqa: F401
-        import schemas.apis.jsonrpc  # noqa: F401
-        import schemas.apis.market_history_api  # noqa: F401
-        import schemas.apis.network_broadcast_api  # noqa: F401
-        import schemas.apis.network_node_api  # noqa: F401
-        import schemas.apis.rc_api  # noqa: F401
-        import schemas.apis.reputation_api  # noqa: F401
-        import schemas.apis.test_api  # noqa: F401
-        import schemas.apis.wallet_bridge_api  # noqa: F401
-        import schemas.fields.basic  # noqa: F401
-        import schemas.fields.hex  # noqa: F401
-        import schemas.operations  # noqa: F401
+        import hiveio_api.account_by_key_api
+        import hiveio_api.account_history_api
+        import hiveio_api.block_api
+        import hiveio_api.condenser_api
+        import hiveio_api.database_api
+        import hiveio_api.debug_node_api
+        import hiveio_api.follow_api
+        import hiveio_api.jsonrpc
+        import hiveio_api.market_history_api
+        import hiveio_api.network_broadcast_api
+        import hiveio_api.rc_api
+        import hiveio_api.reputation_api  # noqa: F401
+
+        import schemas.apis.app_status_api  # Used by beekeepy.__discover_ports()
+        import schemas.apis.network_node_api
+        import schemas.apis.test_api
+        import schemas.apis.wallet_bridge_api
+        import schemas.fields.basic
+        import schemas.fields.hex
+        import schemas.operations
         import schemas.transaction  # noqa: F401
+        from schemas import decoders
+        from schemas.jsonrpc import get_response_model
 
         # Pre-build all decoders to avoid lazy initialization during tests
         for hf in ["hf26"]:
