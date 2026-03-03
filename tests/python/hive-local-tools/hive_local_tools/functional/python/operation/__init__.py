@@ -6,13 +6,13 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any, Literal
 
 from beekeepy.exceptions import ErrorInResponseError
+from hiveio_api.database_api.database_api_description import Account as AccountItemFundament
 
 import test_tools as tt
 import wax
 from hive_local_tools.constants import (
     HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS,
 )
-from schemas.apis.database_api.fundaments_of_reponses import AccountItemFundament
 from schemas.fields.compound import Manabar
 from schemas.filter import (
     build_vop_filter,
@@ -20,11 +20,12 @@ from schemas.filter import (
 from schemas.operations.virtual.account_created_operation import AccountCreatedOperation
 from schemas.operations.virtual.fill_transfer_from_savings_operation import FillTransferFromSavingsOperation
 from schemas.operations.virtual.transfer_to_vesting_completed_operation import (
-    TransferToVestingCompletedOperation,
+    TransferToVestingCompletedOperation as TransferToVestingCompletedOperation,
 )
 
 if TYPE_CHECKING:
-    from schemas.apis.account_history_api.response_schemas import EnumVirtualOps
+    from hiveio_api.account_history_api.account_history_api_description import EnumVirtualOpsResponse
+
     from schemas.fields.hive_int import HiveInt
     from schemas.operations import Hf26Operations
     from schemas.virtual_operation import (
@@ -200,7 +201,7 @@ class Account:
             return
 
         last_unlock_date = max([  # noqa: C419
-            tt.Time.parse(delay_vote["time"])
+            tt.Time.parse(delay_vote.time, time_zone=timezone.utc)
             for delay_vote in self._node.api.database.find_accounts(accounts=[self._acc_info.name])
             .accounts[0]
             .delayed_votes
@@ -494,7 +495,7 @@ def get_virtual_operations(
     :param end_block: block to which virtual operations will be given,
     :return: a list of virtual operations of the type specified in the `vop` argument.
     """
-    result: EnumVirtualOps = node.api.account_history.enum_virtual_ops(
+    result: EnumVirtualOpsResponse = node.api.account_history.enum_virtual_ops(
         filter=build_vop_filter(*vops),
         include_reversible=True,
         block_range_begin=start_block,
@@ -503,9 +504,9 @@ def get_virtual_operations(
 
     if skip_price_stabilization:
         for vop_number, vop in enumerate(result.ops):
-            if isinstance(
-                vop.op.value, TransferToVestingCompletedOperation
-            ) and vop.op.value.hive_vested == tt.Asset.Test(10_000_000):
+            if isinstance(vop.op.value, TransferToVestingCompletedOperation) and vop.op.value[
+                "hive_vested"
+            ] == tt.Asset.Test(10_000_000):
                 result.ops.pop(vop_number)  # noqa: B909
     return result.ops
 
