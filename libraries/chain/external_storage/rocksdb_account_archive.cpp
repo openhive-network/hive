@@ -539,6 +539,29 @@ void rocksdb_account_archive::on_irreversible_block( uint32_t block_num )
   provider->update_cached_lib( block_num );
   provider->persist_cached_lib();
 
+  // During replay, all accounts will likely be needed again soon by subsequent blocks.
+  // Archiving them to RocksDB only to restore them moments later creates a costly
+  // archive-restore churn cycle. Skip archival entirely during replay.
+  if( db.is_replaying_block() )
+  {
+    _was_replaying = true;
+    return;
+  }
+
+  if( _was_replaying )
+  {
+    _was_replaying = false;
+
+    size_t _nr_accounts = db.get_index<account_index, by_block>().size();
+    size_t _nr_metadata = db.get_index<account_metadata_index, by_block>().size();
+    size_t _nr_authority = db.get_index<account_authority_index, by_block>().size();
+
+    ilog( "Replay finished. Account archival is now active. "
+          "Pending objects in chainbase: ${a} accounts, ${m} metadata, ${u} authority. "
+          "Archival will process up to ${max} objects per block.",
+          ("a", _nr_accounts)("m", _nr_metadata)("u", _nr_authority)("max", max_archives_per_block) );
+  }
+
   // Skip archival scan if no objects can possibly need archiving yet
   if( block_num < _next_archival_check_block )
     return;

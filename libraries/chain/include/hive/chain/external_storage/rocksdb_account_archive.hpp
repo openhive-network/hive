@@ -55,6 +55,9 @@ class rocksdb_account_archive : public accounts_handler
     /// When block_num < this value, the entire archival scan is skipped.
     uint32_t _next_archival_check_block = 0;
 
+    /// True while replay is active; used to log the replay→live transition.
+    bool _was_replaying = false;
+
     /// Computes the next block at which archival should be checked, based on the
     /// minimum last_access_block across all by_block indices.
     uint32_t compute_next_archival_check() const;
