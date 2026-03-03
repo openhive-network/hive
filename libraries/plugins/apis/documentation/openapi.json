@@ -13234,13 +13234,11 @@
                     "post_count",
                     "last_post",
                     "last_root_post",
-                    "last_post_edit",
                     "last_vote_time",
                     "last_account_recovery",
                     "previous_owner_update",
                     "curation_rewards",
                     "governance_vote_expiration_ts",
-                    "is_smt",
                     "open_recurrent_transfers",
                     "posting_rewards",
                     "proxied_vsf_votes",
@@ -14061,7 +14059,6 @@
                     }
                 },
                 "required": [
-                    "created",
                     "hbd",
                     "hive",
                     "real_price"
@@ -14457,7 +14454,6 @@
                     "abs_rshares",
                     "vote_rshares",
                     "net_votes",
-                    "active",
                     "last_payout",
                     "cashout_time",
                     "max_cashout_time",
@@ -16702,7 +16698,6 @@
                     "hbd_stop_percent",
                     "head_block_id",
                     "head_block_number",
-                    "id",
                     "last_budget_time",
                     "last_irreversible_block_num",
                     "max_consecutive_recurrent_transfer_failures",
@@ -17382,7 +17377,14 @@
                             "type": "string"
                         },
                         "value": {
-                            "type": "string"
+                            "oneOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "object"
+                                }
+                            ]
                         }
                     },
                     "required": [
@@ -18367,10 +18369,7 @@
                     "header": {
                         "$ref": "#/components/schemas/block_header"
                     }
-                },
-                "required": [
-                    "header"
-                ]
+                }
             },
             "get_block_range": {
                 "type": "object",
@@ -18411,10 +18410,7 @@
                     "block": {
                         "$ref": "#/components/schemas/block_default"
                     }
-                },
-                "required": [
-                    "block"
-                ]
+                }
             },
             "get_comment_pending_payouts": {
                 "type": "object",
@@ -18828,11 +18824,11 @@
                         "description": "Content reward percent for HF21."
                     },
                     "HIVE_CONVERSION_DELAY": {
-                        "type": "string",
+                        "$ref": "#/components/schemas/hive_int",
                         "description": "Conversion delay for HBD to HIVE (in microseconds)."
                     },
                     "HIVE_CONVERSION_DELAY_PRE_HF_16": {
-                        "type": "string",
+                        "$ref": "#/components/schemas/hive_int",
                         "description": "Pre-HF16 conversion delay (in microseconds)."
                     },
                     "HIVE_CREATE_ACCOUNT_DELEGATION_RATIO": {
@@ -18840,7 +18836,7 @@
                         "description": "Ratio for account creation delegation."
                     },
                     "HIVE_CREATE_ACCOUNT_DELEGATION_TIME": {
-                        "type": "string",
+                        "$ref": "#/components/schemas/hive_int",
                         "description": "Delegation time for account creation (in microseconds)."
                     },
                     "HIVE_CREATE_ACCOUNT_WITH_HIVE_MODIFIER": {
@@ -18948,7 +18944,7 @@
                         "description": "Liquidity reward period in seconds."
                     },
                     "HIVE_LIQUIDITY_TIMEOUT_SEC": {
-                        "type": "string",
+                        "type": "integer",
                         "description": "Liquidity timeout in microseconds."
                     },
                     "HIVE_MAX_ACCOUNT_CREATION_FEE": {
@@ -19192,11 +19188,11 @@
                         "description": "Proposal fund percent for HF21."
                     },
                     "HIVE_RECENT_RSHARES_DECAY_TIME_HF19": {
-                        "type": "string",
+                        "$ref": "#/components/schemas/hive_int",
                         "description": "Recent rshares decay time for HF19 (microseconds)."
                     },
                     "HIVE_RECENT_RSHARES_DECAY_TIME_HF17": {
-                        "type": "string",
+                        "$ref": "#/components/schemas/hive_int",
                         "description": "Recent rshares decay time for HF17 (microseconds)."
                     },
                     "HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF6": {
@@ -19220,7 +19216,7 @@
                         "description": "Savings withdraw request limit."
                     },
                     "HIVE_SAVINGS_WITHDRAW_TIME": {
-                        "type": "string",
+                        "$ref": "#/components/schemas/hive_int",
                         "description": "Savings withdraw time (microseconds)."
                     },
                     "HIVE_HBD_START_PERCENT_HF14": {
@@ -19605,7 +19601,6 @@
                     }
                 },
                 "required": [
-                    "TESTNET_BLOCK_LIMIT",
                     "HIVE_INITIAL_VOTE_POWER_RATE",
                     "HIVE_REDUCED_VOTE_POWER_RATE",
                     "HIVE_100_PERCENT",
@@ -19672,7 +19667,6 @@
                     "HIVE_MAX_ACCOUNT_WITNESS_VOTES",
                     "HIVE_MAX_AUTHORITY_MEMBERSHIP",
                     "HIVE_MAX_BLOCK_SIZE",
-                    "HIVE_SOFT_MAX_BLOCK_SIZE",
                     "HIVE_MAX_CASHOUT_WINDOW_SECONDS",
                     "HIVE_MAX_COMMENT_DEPTH",
                     "HIVE_MAX_COMMENT_DEPTH_PRE_HF17",
@@ -19783,8 +19777,6 @@
                     "HIVE_PROPOSAL_MAINTENANCE_CLEANUP",
                     "HIVE_PROPOSAL_SUBJECT_MAX_LENGTH",
                     "HIVE_PROPOSAL_MAX_IDS_NUMBER",
-                    "HIVE_NETWORK_TYPE",
-                    "HIVE_DB_FORMAT_VERSION",
                     "HIVE_1_BASIS_POINT",
                     "HIVE_COLLATERALIZED_CONVERSION_DELAY",
                     "HIVE_COLLATERALIZED_CONVERSION_FEE",
@@ -20270,7 +20262,7 @@
                     "keys": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/auths"
+                            "type": "string"
                         }
                     }
                 },
@@ -20952,9 +20944,7 @@
                     "blockchain_version",
                     "hive_revision",
                     "fc_revision",
-                    "chain_id",
-                    "haf_revision",
-                    "node_type"
+                    "chain_id"
                 ]
             },
             "get_witness_schedule_response": {
@@ -21105,7 +21095,6 @@
                 },
                 "required": [
                     "id",
-                    "created",
                     "expiration",
                     "seller",
                     "orderid",
@@ -22866,8 +22855,8 @@
                         "example": 12345
                     },
                     "proposal_id": {
-                        "type": "string",
-                        "example": "139925218365120"
+                        "type": "integer",
+                        "example": 0
                     },
                     "creator": {
                         "type": "string",
