@@ -5,12 +5,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 import test_tools as tt
-from local_tools.network import (
-    get_head_block_number,
-    get_head_block_numbers_for_networks,
-    three_networks_connected,
-    two_networks_connected,
-)  # noqa: F401
+from local_tools.network import three_networks_connected, two_networks_connected  # noqa: F401
 
 from wax.helpy import Hf26Asset as Asset
 from wax.helpy import Time
@@ -19,6 +14,15 @@ if TYPE_CHECKING:
     from collections.abc import Iterable
 
     from test_tools.__private.type_annotations.any_node import AnyNode
+
+
+def _get_head_block_numbers(networks: Iterable[tt.Network]) -> dict[tt.Network, int]:
+    head_block_numbers = {}
+    for network in networks:
+        block_number = network.get_last_block_number()
+        tt.logger.info(f"Head block number of {network} is {block_number}")
+        head_block_numbers[network] = block_number
+    return head_block_numbers
 
 
 class DisconnectionType(Enum):
@@ -65,7 +69,7 @@ def prepare_witness(node: AnyNode, account: tt.Account) -> int:
         lambda: account.name in node.api.database.get_witness_schedule()["current_shuffled_witnesses"],
         timeout=maximum_time_when_witness_should_be_capable_of_producing_blocks,
     )
-    return get_head_block_number(node=node)
+    return node.get_last_block_number()
 
 
 def disconnect_two_networks_in_specified_way(
@@ -99,7 +103,7 @@ def test_disconnecting_2_networks(
     first_network.node("InitNode0").wait_number_of_blocks(1)
 
     # ASSERT
-    head_block_numbers = get_head_block_numbers_for_networks(networks=two_networks_connected)
+    head_block_numbers = _get_head_block_numbers(networks=two_networks_connected)
 
     assert head_block_numbers[first_network] != head_block_numbers[second_network]
 
@@ -118,14 +122,14 @@ def test_disconnecting_1_of_3_networks(
 
     # ACT
     disconnect_two_networks_in_specified_way(first_network, second_network, disconnection_type)
-    second_network_head_num_after_disconnect = get_head_block_number(network=second_network)
+    second_network_head_num_after_disconnect = second_network.get_last_block_number()
 
     first_network.node("InitNode0").wait_number_of_blocks(1)
 
     second_network.node("ApiNode0").wait_for_block_with_number(second_network_head_num_after_disconnect + 1, timeout=60)
 
     # ASSERT
-    head_block_numbers = get_head_block_numbers_for_networks(three_networks_connected)
+    head_block_numbers = _get_head_block_numbers(three_networks_connected)
 
     assert head_block_numbers[second_network] > second_network_head_num_after_disconnect
 
@@ -158,7 +162,7 @@ def test_separating_1_active_from_3_networks(
 
     max_sync_attempts = 10
     for _attempt in range(max_sync_attempts):
-        head_block_numbers = get_head_block_numbers_for_networks(three_networks_connected)
+        head_block_numbers = _get_head_block_numbers(three_networks_connected)
 
         # Check if second and third are synchronized
         if head_block_numbers[second_network] == head_block_numbers[third_network]:
@@ -168,7 +172,7 @@ def test_separating_1_active_from_3_networks(
         time.sleep(0.5)
     else:
         # Final read after retries
-        head_block_numbers = get_head_block_numbers_for_networks(three_networks_connected)
+        head_block_numbers = _get_head_block_numbers(three_networks_connected)
 
     assert (
         head_block_numbers[first_network] > head_block_numbers[second_network]
@@ -206,12 +210,12 @@ def test_separating_2_networks_producing_blocks_from_3_networks(three_networks_c
 
     # ASSERT
     # both networks should generate block with this same block_number
-    block_number_to_check = get_head_block_number(network=first_network)
+    block_number_to_check = first_network.get_last_block_number()
 
     # both witnesses should generate block every 6 seconds
     first_network_init_node.wait_for_block_with_number(block_number_to_check, timeout=10)
 
-    head_block_numbers = get_head_block_numbers_for_networks(three_networks_connected)
+    head_block_numbers = _get_head_block_numbers(three_networks_connected)
 
     assert head_block_numbers[first_network] > head_block_numbers[third_network]
     assert head_block_numbers[second_network] > head_block_numbers[third_network]
