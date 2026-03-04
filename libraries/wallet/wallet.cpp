@@ -2447,30 +2447,6 @@ void wallet_api::use_automatic_authority()
   my->use_automatic_authority();
 }
 
-wallet_signed_transaction wallet_api::follow( const string& follower, const string& following, set<string> what, bool broadcast )
-{
-  get_account( follower );
-  FC_ASSERT( !following.empty() );
-  get_account( following );
-
-  follow_operation op;
-  op.follower = follower;
-  op.following = '@' + following;
-  op.what = std::move( what );
-  follow_operation_type fop = op;
-
-  custom_json_operation jop;
-  jop.id = "follow";
-  jop.json = fc::json::to_string(fop);
-  jop.required_posting_auths.insert(follower);
-
-  signed_transaction trx;
-  trx.operations.push_back( jop );
-  trx.validate();
-
-  return { my->sign_transaction( trx, broadcast ) };
-}
-
   wallet_signed_transaction  wallet_api::create_proposal(
     const account_name_type& creator,
     const account_name_type& receiver,
