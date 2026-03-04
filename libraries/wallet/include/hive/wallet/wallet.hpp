@@ -1234,17 +1234,6 @@ class wallet_api
     variant get_account_history( const string& account, uint32_t from, uint32_t limit );
 
 
-    FC_TODO(Supplement API argument description)
-    /**
-      *  Marks one account as following another account.  Requires the posting authority of the follower.
-      *
-      *  @param follower
-      *  @param following
-      *  @param what - a set of things to follow: posts, comments, votes, ignore
-      *  @param broadcast true if you wish to broadcast the transaction
-      */
-    wallet_signed_transaction follow( const string& follower, const string& following, set<string> what, bool broadcast );
-
     /**
       * Checks memos against private keys on account and imported in wallet
       */
@@ -1542,7 +1531,6 @@ FC_API( hive::wallet::wallet_api,
       (update_witness)
       (set_voting_proxy)
       (vote_for_witness)
-      (follow)
       (transfer)
       (transfer_nonblocking)
       (escrow_transfer)
