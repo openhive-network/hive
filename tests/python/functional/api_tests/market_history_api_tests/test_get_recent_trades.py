@@ -6,6 +6,11 @@ import test_tools as tt
 from hive_local_tools import run_for
 
 
+def _asset_from_nai(obj):
+    """Convert hiveio_api msgspec asset struct to tt.Asset for comparison."""
+    return tt.Asset.from_nai({"amount": obj.amount, "precision": obj.precision, "nai": obj.nai})
+
+
 @pytest.mark.parametrize(
     "limit_orders",
     [
@@ -62,8 +67,9 @@ def test_recent_trades_output_parameters(node: tt.InitNode, limit_orders: dict) 
 
     # trades appear in response from last to first
     for x in range(len(response)):
-        assert tt.Asset.Tbd(limit_orders["order_" + str(x)]["tbds"]) == response[len(response) - x - 1]["current_pays"]
-        assert tt.Asset.Test(limit_orders["order_" + str(x)]["tests"]) == response[len(response) - x - 1]["open_pays"]
+        trade = response[len(response) - x - 1]
+        assert tt.Asset.Tbd(limit_orders["order_" + str(x)]["tbds"]) == _asset_from_nai(trade.current_pays)
+        assert tt.Asset.Test(limit_orders["order_" + str(x)]["tests"]) == _asset_from_nai(trade.open_pays)
 
 
 @pytest.mark.parametrize("limit", [1, 2])

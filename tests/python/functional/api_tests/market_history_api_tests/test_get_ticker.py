@@ -5,6 +5,11 @@ import pytest
 import test_tools as tt
 from hive_local_tools import run_for
 
+
+def _asset_from_nai(obj):
+    """Convert hiveio_api msgspec asset struct to tt.Asset for comparison."""
+    return tt.Asset.from_nai({"amount": obj.amount, "precision": obj.precision, "nai": obj.nai})
+
 HIVE_AND_HBD_AMOUNTS = (
     ([153, 241], [1095, 1331]),
     ([40, 50], [100, 200]),
@@ -74,8 +79,8 @@ def test_ticker_output_parameters(node: tt.InitNode, limit_orders: dict) -> None
     open = limit_orders["order_0"]["tbds"] / limit_orders["order_0"]["tests"]
 
     assert float(response.percent_change) == (latest - open) / open * 100
-    assert response.hive_volume == tt.Asset.Test(hive_volume)
-    assert response.hbd_volume == tt.Asset.Tbd(hbd_volume)
+    assert _asset_from_nai(response.hive_volume) == tt.Asset.Test(hive_volume)
+    assert _asset_from_nai(response.hbd_volume) == tt.Asset.Tbd(hbd_volume)
     assert float(response.latest) == latest
 
 

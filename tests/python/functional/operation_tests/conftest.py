@@ -453,8 +453,18 @@ class ProposalAccount(Account):
             order_direction="ascending",
             status="all",
         ).proposals[0]
+        actual_value = getattr(proposal, changed_parameter)
+        expected_value = self._proposal_parameters[changed_parameter]
+        # Convert hiveio_api asset structs (e.g. DailyPay) to tt.Asset for comparison
+        if hasattr(actual_value, "nai") and hasattr(actual_value, "amount"):
+            actual_value = tt.Asset.from_nai(
+                {"amount": actual_value.amount, "precision": actual_value.precision, "nai": actual_value.nai}
+            )
+        # Convert hiveio_api date strings to match HiveDateTime format
+        if changed_parameter in ("end_date", "start_date") and isinstance(actual_value, str):
+            expected_value = str(expected_value)
         assert (
-            getattr(proposal, changed_parameter) == self._proposal_parameters[changed_parameter]
+            actual_value == expected_value
         ), f"Something went wrong after proposal update. {changed_parameter} has wrong value"
 
     def check_if_rc_current_mana_was_reduced(self, transaction: dict) -> None:

@@ -7508,6 +7508,15 @@
                 ],
                 "summary": "Returns the list of active witnesses.",
                 "operationId": "get_active_witnesses",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/get_active_witnesses"
+                            }
+                        }
+                    }
+                },
                 "responses": {
                     "200": {
                         "description": "Successful operation",
@@ -18545,6 +18554,15 @@
                     "$ref": "#/components/schemas/post_bridge_api"
                 }
             },
+            "get_active_witnesses": {
+                "type": "object",
+                "properties": {
+                    "include_future": {
+                        "type": "boolean",
+                        "description": "If true, the response will include the future witnesses."
+                    }
+                }
+            },
             "get_active_witnesses_response": {
                 "type": "object",
                 "properties": {
@@ -18558,6 +18576,13 @@
                             "witness2"
                         ],
                         "description": "An array of strings representing the active witnesses."
+                    },
+                    "future_witnesses": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "An array of strings representing the future witnesses. Only present when include_future is true."
                     }
                 },
                 "required": [
@@ -21777,7 +21802,25 @@
                 }
             },
             "market_history_get_order_book_response": {
-                "$ref": "#/components/schemas/bids_and_asks_default"
+                "type": "object",
+                "properties": {
+                    "asks": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/bids_and_asks_default"
+                        }
+                    },
+                    "bids": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/bids_and_asks_default"
+                        }
+                    }
+                },
+                "required": [
+                    "asks",
+                    "bids"
+                ]
             },
             "nai_decimal": {
                 "type": "object",

@@ -95,7 +95,7 @@ def get_extension_from_operation(node, api: str, block_num: int):
 
     if api == "condenser":
         block = getattr(node.api, api).get_block(block_num)
-        operation = block["transactions"][0]["operations"][0][1]
+        operation = block.transactions[0].operations[0][1]
         return operation["extensions"][0]
 
     raise RuntimeError("Shouldn't be ever reached")

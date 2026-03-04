@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 from beekeepy.exceptions import ErrorInResponseError
 
+import msgspec
 import test_tools as tt
 from hive_local_tools import run_for
 
@@ -25,7 +26,9 @@ def test_get_transaction_in_reversible_block(node: tt.InitNode, include_reversib
     response = node.api.account_history.get_transaction(
         id=transaction["transaction_id"], include_reversible=include_reversible
     )
-    assert transaction.dict(exclude_none=True) == response.dict(exclude_none=True)
+    response_dict = msgspec.to_builtins(response)
+    transaction_dict = transaction.dict(exclude_none=True) if hasattr(transaction, "dict") else dict(transaction)
+    assert transaction_dict == response_dict
 
 
 @pytest.mark.parametrize(

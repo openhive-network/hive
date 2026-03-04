@@ -170,7 +170,7 @@ def test_list_vops_partly_in_irreversible_and_partly_in_reversible_blocks(
         group_by_block=group_by_block,
     )
 
-    assert len(response[key]) == limit
+    assert len(getattr(response, key)) == limit
 
 
 @pytest.mark.parametrize("group_by_block", [False, True])

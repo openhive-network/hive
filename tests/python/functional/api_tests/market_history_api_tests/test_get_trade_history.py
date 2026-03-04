@@ -7,6 +7,11 @@ import test_tools as tt
 from hive_local_tools import run_for
 
 
+def _asset_from_nai(obj):
+    """Convert hiveio_api msgspec asset struct to tt.Asset for comparison."""
+    return tt.Asset.from_nai({"amount": obj.amount, "precision": obj.precision, "nai": obj.nai})
+
+
 @pytest.mark.skip(reason="https://gitlab.syncad.com/hive/hive/-/issues/449")
 @run_for("testnet")
 def test_get_trade_history_with_start_date_after_end(node: tt.InitNode) -> None:
@@ -41,8 +46,8 @@ def test_trade_history_with_different_values(node: tt.InitNode, tests_amount: in
     ).trades
 
     assert len(response) == 1
-    assert response[0].current_pays == tt.Asset.Tbd(tbds_amount)
-    assert response[0].open_pays == tt.Asset.Hive(tests_amount)
+    assert _asset_from_nai(response[0].current_pays) == tt.Asset.Tbd(tbds_amount)
+    assert _asset_from_nai(response[0].open_pays) == tt.Asset.Test(tests_amount)
     assert response[0].maker == "alice"
     assert response[0].taker == "initminer"
 

@@ -7,6 +7,11 @@ import test_tools as tt
 from hive_local_tools import run_for
 
 
+def _asset_from_nai(obj):
+    """Convert hiveio_api msgspec asset struct to tt.Asset for comparison."""
+    return tt.Asset.from_nai({"amount": obj.amount, "precision": obj.precision, "nai": obj.nai})
+
+
 @pytest.mark.parametrize(
     ("ask_hbd_amount", "ask_hive_amount", "bid_hbd_amount", "bid_hive_amount"), [(50, 300, 30, 200), (25, 250, 20, 300)]
 )
@@ -24,12 +29,12 @@ def test_get_order_book_with_different_values(
     assert len(response.asks) == 1
     assert len(response.bids) == 1
 
-    assert response.asks[0].order_price.base == tt.Asset.Test(ask_hive_amount)
-    assert response.asks[0].order_price.quote == tt.Asset.Tbd(ask_hbd_amount)
+    assert _asset_from_nai(response.asks[0].order_price.base) == tt.Asset.Test(ask_hive_amount)
+    assert _asset_from_nai(response.asks[0].order_price.quote) == tt.Asset.Tbd(ask_hbd_amount)
     assert float(response.asks[0].real_price) == ask_hbd_amount / ask_hive_amount
 
-    assert response.bids[0].order_price.base == tt.Asset.Tbd(bid_hbd_amount)
-    assert response.bids[0].order_price.quote == tt.Asset.Test(bid_hive_amount)
+    assert _asset_from_nai(response.bids[0].order_price.base) == tt.Asset.Tbd(bid_hbd_amount)
+    assert _asset_from_nai(response.bids[0].order_price.quote) == tt.Asset.Test(bid_hive_amount)
     assert float(response.bids[0].real_price) == bid_hbd_amount / bid_hive_amount
 
 
