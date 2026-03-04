@@ -567,7 +567,7 @@ BOOST_AUTO_TEST_CASE( basic_test_04 )
       delegate_vest( "alice", "carol", _2v, alice_private_key );
 
       auto next = DELEGATED_VESTS( "alice" );
-      BOOST_REQUIRE( next > previous );
+      BOOST_REQUIRE_GT( next, previous );
 
       BOOST_REQUIRE_NE( DELEGATED_VESTS( "alice" ), VEST_asset( 0 ) );
       BOOST_REQUIRE_EQUAL( DELEGATED_VESTS( "bob" ), VEST_asset( 0 ) );
@@ -634,8 +634,8 @@ BOOST_AUTO_TEST_CASE( basic_test_03 )
       vest( "alice", "bob", _1, alice_private_key );
       vest( "bob", "carol", _2, bob_private_key );
       vest( "carol", "alice", _3, carol_private_key );
-      BOOST_REQUIRE( get_vesting( "alice" ) > get_vesting( "carol" ) );
-      BOOST_REQUIRE( get_vesting( "carol" ) > get_vesting( "bob" ) );
+      BOOST_REQUIRE_GT( get_vesting( "alice" ), get_vesting( "carol" ) );
+      BOOST_REQUIRE_GT( get_vesting( "carol" ), get_vesting( "bob" ) );
     }
     {
       auto vest_bob = get_vesting( "bob" );
@@ -690,7 +690,7 @@ BOOST_AUTO_TEST_CASE( basic_test_02 )
 
     {
       vest( "alice", "alice", _1, alice_private_key );
-      BOOST_REQUIRE( get_vesting( "alice" ) > get_vesting( "bob" ) );
+      BOOST_REQUIRE_GT( get_vesting( "alice" ), get_vesting( "bob" ) );
     }
     {
       auto vest_bob = get_vesting( "bob" );
@@ -747,7 +747,7 @@ BOOST_AUTO_TEST_CASE( escrow_cleanup_test )
   BOOST_REQUIRE_EQUAL( getter( "alice" ), asset( alice ) ); \
   BOOST_REQUIRE_EQUAL( getter( "bob" ), asset( bob ) ); \
   BOOST_REQUIRE_EQUAL( getter( "carol" ), asset( carol ) ); \
-  BOOST_REQUIRE( getter( db->get_treasury_name() ) == asset( treasury ) )
+  BOOST_REQUIRE_EQUAL( getter( db->get_treasury_name() ), asset( treasury ) )
 
   try
   {
@@ -1007,7 +1007,7 @@ BOOST_AUTO_TEST_CASE( limit_order_cleanup_test )
 #define REQUIRE_BALANCE( alice, bob, treasury, getter, asset ) \
   BOOST_REQUIRE_EQUAL( getter( "alice" ), asset( alice ) ); \
   BOOST_REQUIRE_EQUAL( getter( "bob" ), asset( bob ) ); \
-  BOOST_REQUIRE( getter( db->get_treasury_name() ) == asset( treasury ) )
+  BOOST_REQUIRE_EQUAL( getter( db->get_treasury_name() ), asset( treasury ) )
 
   try
   {
@@ -1129,7 +1129,7 @@ BOOST_AUTO_TEST_CASE( convert_request_cleanup_test )
 
 #define REQUIRE_BALANCE( alice, treasury, getter, asset ) \
   BOOST_REQUIRE_EQUAL( getter( "alice" ), asset( alice ) ); \
-  BOOST_REQUIRE( getter( db->get_treasury_name() ) == asset( treasury ) )
+  BOOST_REQUIRE_EQUAL( getter( db->get_treasury_name() ), asset( treasury ) )
 
   try
   {
@@ -1250,7 +1250,7 @@ BOOST_AUTO_TEST_CASE( hbd_test_02 )
 
     auto& gpo = db->get_dynamic_global_properties();
 
-    BOOST_REQUIRE(gpo.get_hbd_interest_rate() > 0);
+    BOOST_REQUIRE_GT( gpo.get_hbd_interest_rate(), 0 );
 
     if(db->has_hardfork(HIVE_HARDFORK_1_25))
     {
@@ -1261,7 +1261,7 @@ BOOST_AUTO_TEST_CASE( hbd_test_02 )
     {
       auto interest_op = get_last_operations( 1 )[0].get< interest_operation >();
 
-      BOOST_REQUIRE( static_cast<uint64_t>(get_hbd_balance( "alice" ).amount.value) ==
+      BOOST_REQUIRE_EQUAL( static_cast<uint64_t>(get_hbd_balance( "alice" ).amount.value),
         alice_hbd.amount.value - HBD_asset( 1'000 ).amount.value +
         fc::uint128_to_uint64( ( ( ( uint128_t( alice_hbd.amount.value ) * ( db->head_block_time() - start_time ).to_seconds() ) / HIVE_SECONDS_PER_YEAR ) *
           gpo.get_hbd_interest_rate() ) / HIVE_100_PERCENT ) );

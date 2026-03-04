@@ -354,7 +354,7 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
     generate_block();
     fc::time_point_sec hardfork_25_time(HIVE_HARDFORK_1_25_TIME);
     generate_blocks(hardfork_25_time - fc::days(201));
-    BOOST_REQUIRE(db->head_block_time() < hardfork_25_time - fc::days(200));
+    BOOST_REQUIRE_LT( db->head_block_time(), hardfork_25_time - fc::days(200) );
     witness_vote("acc1", "accw2", acc1_private_key); //201 days before HF25
     generate_days_blocks(25);
     vote_proposal("acc2", {proposal_1}, true, acc2_private_key); //176 days before HF25
@@ -2384,7 +2384,7 @@ BOOST_AUTO_TEST_CASE( create_proposal_000 )
     ISSUE_FUNDS( creator, HBD_asset( 80'000 ) );
     {
       int64_t proposal = create_proposal( creator, receiver, start_date, end_date, daily_pay, alice_private_key, alice_post_key );
-      BOOST_REQUIRE( proposal >= 0 );
+      BOOST_REQUIRE_GE( proposal, 0 );
     }
     validate_database();
   } FC_LOG_AND_RETHROW()
@@ -2593,7 +2593,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_votes_000 )
     generate_block();
 
     int64_t proposal_1 = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, alice_post_key );
-    BOOST_REQUIRE(proposal_1 >= 0);
+    BOOST_REQUIRE_GE( proposal_1, 0 );
     std::vector< int64_t > proposals = {proposal_1};
     vote_proposal("carol", proposals, true, carol_private_key);
     validate_database();
@@ -2613,7 +2613,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_votes_001 )
     generate_block();
 
     int64_t proposal_1 = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, alice_post_key );
-    BOOST_REQUIRE(proposal_1 >= 0);
+    BOOST_REQUIRE_GE( proposal_1, 0 );
     std::vector< int64_t > proposals = {proposal_1};
     vote_proposal("carol", proposals, false, carol_private_key);
     validate_database();
@@ -2633,7 +2633,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_votes_002 )
     generate_block();
 
     int64_t proposal_1 = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, alice_post_key );
-    BOOST_REQUIRE(proposal_1 >= 0);
+    BOOST_REQUIRE_GE( proposal_1, 0 );
     std::vector< int64_t > proposals;
     HIVE_REQUIRE_THROW( vote_proposal("carol", proposals, true, carol_private_key), fc::exception);
     validate_database();
@@ -2671,7 +2671,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_votes_004 )
     generate_block();
 
     int64_t proposal_1 = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, alice_post_key );
-    BOOST_REQUIRE(proposal_1 >= 0);
+    BOOST_REQUIRE_GE( proposal_1, 0 );
     std::vector< int64_t > proposals = {proposal_1};
     HIVE_REQUIRE_THROW(vote_proposal("urp", proposals, false, carol_private_key), fc::exception);
     validate_database();
@@ -2743,7 +2743,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_000 )
     generate_block();
 
     int64_t proposal_1 = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, alice_post_key );
-    BOOST_REQUIRE(proposal_1 >= 0);
+    BOOST_REQUIRE_GE( proposal_1, 0 );
 
     auto& proposal_idx = db->get_index< proposal_index >().indices().get< by_creator >();
     auto found = proposal_idx.find( cpd.creator );
@@ -2777,9 +2777,9 @@ BOOST_AUTO_TEST_CASE( remove_proposal_001 )
     int64_t proposal_1 = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, alice_post_key );
     int64_t proposal_2 = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, alice_post_key );
     int64_t proposal_3 = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, alice_post_key );
-    BOOST_REQUIRE(proposal_1 >= 0);
-    BOOST_REQUIRE(proposal_2 >= 0);
-    BOOST_REQUIRE(proposal_3 >= 0);
+    BOOST_REQUIRE_GE( proposal_1, 0 );
+    BOOST_REQUIRE_GE( proposal_2, 0 );
+    BOOST_REQUIRE_GE( proposal_3, 0 );
 
     auto& proposal_idx = db->get_index< proposal_index >().indices().get< by_creator >();
     auto found = proposal_idx.find( cpd.creator );
@@ -2830,7 +2830,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_002 )
 
     for(int i = 0; i < 6; i++) {
       proposal = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, alice_post_key );
-      BOOST_REQUIRE(proposal >= 0);
+      BOOST_REQUIRE_GE( proposal, 0 );
       proposals.push_back(proposal);
     }
     BOOST_REQUIRE_EQUAL( proposals.size(), 6 );
@@ -2877,7 +2877,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_003 )
 
     for(int i = 0; i < 2; i++) {
       proposal = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, alice_post_key );
-      BOOST_REQUIRE(proposal >= 0);
+      BOOST_REQUIRE_GE( proposal, 0 );
       proposals.push_back(proposal);
     }
     BOOST_REQUIRE_EQUAL( proposals.size(), 2 );
@@ -2924,7 +2924,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_004 )
 
     for(int i = 0; i < 6; i++) {
       proposal = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, alice_post_key );
-      BOOST_REQUIRE(proposal >= 0);
+      BOOST_REQUIRE_GE( proposal, 0 );
       proposals.push_back(proposal);
     }
     BOOST_REQUIRE_EQUAL( proposals.size(), 6 );
@@ -2985,7 +2985,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_005 )
     generate_block();
 
     int64_t proposal_1 = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, alice_post_key );
-    BOOST_REQUIRE(proposal_1 >= 0);
+    BOOST_REQUIRE_GE( proposal_1, 0 );
 
     auto& proposal_idx      = db->get_index< proposal_index >().indices().get< by_creator >();
     auto found       = proposal_idx.find( cpd.creator );
@@ -3023,8 +3023,8 @@ BOOST_AUTO_TEST_CASE( remove_proposal_006 )
 
     int64_t proposal_1 = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, alice_post_key );
     int64_t proposal_2 = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, alice_post_key );
-    BOOST_REQUIRE(proposal_1 >= 0);
-    BOOST_REQUIRE(proposal_2 >= 0);
+    BOOST_REQUIRE_GE( proposal_1, 0 );
+    BOOST_REQUIRE_GE( proposal_2, 0 );
 
     auto& proposal_idx = db->get_index< proposal_index >().indices().get< by_creator >();
     auto found = proposal_idx.find( cpd.creator );
@@ -3061,8 +3061,8 @@ BOOST_AUTO_TEST_CASE( remove_proposal_007 )
 
     int64_t proposal_1 = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, alice_post_key );
     int64_t proposal_2 = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, alice_post_key );
-    BOOST_REQUIRE(proposal_1 >= 0);
-    BOOST_REQUIRE(proposal_2 >= 0);
+    BOOST_REQUIRE_GE( proposal_1, 0 );
+    BOOST_REQUIRE_GE( proposal_2, 0 );
 
     auto& proposal_idx = db->get_index< proposal_index >().indices().get< by_creator >();
     auto found = proposal_idx.find( cpd.creator );

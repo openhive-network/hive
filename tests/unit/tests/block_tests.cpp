@@ -1347,7 +1347,7 @@ BOOST_AUTO_TEST_CASE( set_lower_lib_then_current )
   try {
     // this is required to reproduce issue with setting last irreversible block
     // before block number HIVE_START_MINER_VOTING_BLOCK, if not then other test should be added
-    BOOST_REQUIRE( HIVE_MAX_WITNESSES + 1 < HIVE_START_MINER_VOTING_BLOCK );
+    BOOST_REQUIRE_LT( HIVE_MAX_WITNESSES + 1, HIVE_START_MINER_VOTING_BLOCK );
 
     fc::temp_directory data_dir( hive::utilities::temp_directory_path() );
     SET_UP_FIXTURE( true /*REMOVE_DB_FILES*/, data_dir.path().string() );

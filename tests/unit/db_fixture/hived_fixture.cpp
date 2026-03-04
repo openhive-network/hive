@@ -254,18 +254,18 @@ fc::variant json_rpc_database_fixture::get_answer( std::string& request )
 
 void check_id_equal( const fc::variant& id_a, const fc::variant& id_b )
 {
-  BOOST_REQUIRE( id_a.get_type() == id_b.get_type() );
+  BOOST_REQUIRE_EQUAL( id_a.get_type(), id_b.get_type() );
 
   switch( id_a.get_type() )
   {
     case fc::variant::int64_type:
-      BOOST_REQUIRE( id_a.as_int64() == id_b.as_int64() );
+      BOOST_REQUIRE_EQUAL( id_a.as_int64(), id_b.as_int64() );
       break;
     case fc::variant::uint64_type:
-      BOOST_REQUIRE( id_a.as_uint64() == id_b.as_uint64() );
+      BOOST_REQUIRE_EQUAL( id_a.as_uint64(), id_b.as_uint64() );
       break;
     case fc::variant::string_type:
-      BOOST_REQUIRE( id_a.as_string() == id_b.as_string() );
+      BOOST_REQUIRE_EQUAL( id_a.as_string(), id_b.as_string() );
       break;
     case fc::variant::null_type:
       break;
@@ -296,7 +296,7 @@ void json_rpc_database_fixture::review_answer( fc::variant& answer, int64_t code
     BOOST_REQUIRE( error.contains( "code" ) );
     BOOST_REQUIRE( error["code"].is_int64() );
     answer_code = error["code"].as_int64();
-    BOOST_REQUIRE( answer_code == code );
+    BOOST_REQUIRE_EQUAL( answer_code, code );
     if( is_warning )
       BOOST_TEST_MESSAGE( error["message"].as_string() );
     if( message != nullptr )
@@ -327,7 +327,7 @@ void json_rpc_database_fixture::make_array_request( std::string& request, int64_
   fc::variants request_array = fc::json::from_string( request, fc::json::format_validation_mode::full ).get_array();
   fc::variants array = answer.get_array();
 
-  BOOST_REQUIRE( array.size() == request_array.size() );
+  BOOST_REQUIRE_EQUAL( array.size(), request_array.size() );
   for( size_t i = 0; i < array.size(); ++i )
   {
     fc::optional< fc::variant > id;

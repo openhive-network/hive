@@ -147,7 +147,7 @@ BOOST_AUTO_TEST_CASE( crypto_memo_encoding_roundtrip )
 
     // Verify correct field order: first bytes should be 'from' public key
     auto decoded = fc::from_base58( encrypted.substr(1) );
-    BOOST_REQUIRE( decoded.size() >= 33 );
+    BOOST_REQUIRE_GE( decoded.size(), 33 );
     uint8_t first_byte = static_cast<uint8_t>( decoded[0] );
     // Compressed public keys start with 0x02 or 0x03
     BOOST_CHECK_MESSAGE( first_byte == 0x02 || first_byte == 0x03,

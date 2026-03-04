@@ -49,7 +49,7 @@ BOOST_AUTO_TEST_CASE( get_account_history_comment_and_reward_all_reversible )
     for (int i = 0; i < 10; ++i) {
       generate_block();
     }
-    BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
+    BOOST_REQUIRE_LE( db->head_block_num(), generate_no_further_than );
   };
 
   // Check cumulative history now.
@@ -58,7 +58,7 @@ BOOST_AUTO_TEST_CASE( get_account_history_comment_and_reward_all_reversible )
   {
     // Generate a single block for claim_reward_balance_operation. All blocks are still reversible.
     generate_block();
-    BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
+    BOOST_REQUIRE_LE( db->head_block_num(), generate_no_further_than );
 
     expected_t expected_dan0ah_history = {
       R"~([0,{"trx_id":"08718ba49761f8fa109e16f0cec8bf6951fe5b16","block":45,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:15","op":{"type":"account_create_operation","value":{"fee":{"amount":"0","precision":3,"nai":"@@000000021"},"creator":"initminer","new_account_name":"dan0ah","owner":{"weight_threshold":1,"account_auths":[],"key_auths":[["STM7YJmUoKbPQkrMrZbrgPxDMYJA3uD3utaN3WYRwaFGKYbQ9ftKV",1]]},"active":{"weight_threshold":1,"account_auths":[],"key_auths":[["STM7YJmUoKbPQkrMrZbrgPxDMYJA3uD3utaN3WYRwaFGKYbQ9ftKV",1]]},"posting":{"weight_threshold":1,"account_auths":[],"key_auths":[["STM6HMjs2nWJ6gLw7eyoUySVHGN2uAoSc3CmCjer489SPC3Kwt1UW",1]]},"memo_key":"STM7YJmUoKbPQkrMrZbrgPxDMYJA3uD3utaN3WYRwaFGKYbQ9ftKV","json_metadata":""}},"operation_id":0}])~",
@@ -110,7 +110,7 @@ BOOST_AUTO_TEST_CASE( get_account_history_comment_and_reward_claim_reward_balanc
     for (int i = 0; i < 10; ++i) {
       generate_block();
     }
-    BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
+    BOOST_REQUIRE_LE( db->head_block_num(), generate_no_further_than );
   };
 
   // Check cumulative history now.
@@ -119,7 +119,7 @@ BOOST_AUTO_TEST_CASE( get_account_history_comment_and_reward_claim_reward_balanc
   {
     // Generate blocks so that all comment related operations are in irreversible blocks, but claim_reward_balance_operation is still in reversible block.
     generate_until_irreversible_block( 48 );
-    BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
+    BOOST_REQUIRE_LE( db->head_block_num(), generate_no_further_than );
 
     expected_t expected_dan0ah_history = {
       R"~([0,{"trx_id":"08718ba49761f8fa109e16f0cec8bf6951fe5b16","block":45,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:15","op":{"type":"account_create_operation","value":{"fee":{"amount":"0","precision":3,"nai":"@@000000021"},"creator":"initminer","new_account_name":"dan0ah","owner":{"weight_threshold":1,"account_auths":[],"key_auths":[["STM7YJmUoKbPQkrMrZbrgPxDMYJA3uD3utaN3WYRwaFGKYbQ9ftKV",1]]},"active":{"weight_threshold":1,"account_auths":[],"key_auths":[["STM7YJmUoKbPQkrMrZbrgPxDMYJA3uD3utaN3WYRwaFGKYbQ9ftKV",1]]},"posting":{"weight_threshold":1,"account_auths":[],"key_auths":[["STM6HMjs2nWJ6gLw7eyoUySVHGN2uAoSc3CmCjer489SPC3Kwt1UW",1]]},"memo_key":"STM7YJmUoKbPQkrMrZbrgPxDMYJA3uD3utaN3WYRwaFGKYbQ9ftKV","json_metadata":""}},"operation_id":0}])~",
@@ -169,7 +169,7 @@ BOOST_AUTO_TEST_CASE( get_account_history_comment_and_reward_all_irreversible )
   // Generate a number of blocks sufficient that following claim_reward_operation succeeds.
   auto check_point_1_tester = [ this ]( uint32_t generate_no_further_than ) {
     generate_until_irreversible_block( 48 );
-    BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
+    BOOST_REQUIRE_LE( db->head_block_num(), generate_no_further_than );
   };
 
   // Check cumulative history now.
@@ -178,7 +178,7 @@ BOOST_AUTO_TEST_CASE( get_account_history_comment_and_reward_all_irreversible )
   {
     // Generate blocks so that all comment operations and claim_reward_balance_operation are in irreversible blocks.
     generate_until_irreversible_block( 64 );
-    BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
+    BOOST_REQUIRE_LE( db->head_block_num(), generate_no_further_than );
 
     expected_t expected_dan0ah_history = {
       R"~([0,{"trx_id":"08718ba49761f8fa109e16f0cec8bf6951fe5b16","block":45,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:02:15","op":{"type":"account_create_operation","value":{"fee":{"amount":"0","precision":3,"nai":"@@000000021"},"creator":"initminer","new_account_name":"dan0ah","owner":{"weight_threshold":1,"account_auths":[],"key_auths":[["STM7YJmUoKbPQkrMrZbrgPxDMYJA3uD3utaN3WYRwaFGKYbQ9ftKV",1]]},"active":{"weight_threshold":1,"account_auths":[],"key_auths":[["STM7YJmUoKbPQkrMrZbrgPxDMYJA3uD3utaN3WYRwaFGKYbQ9ftKV",1]]},"posting":{"weight_threshold":1,"account_auths":[],"key_auths":[["STM6HMjs2nWJ6gLw7eyoUySVHGN2uAoSc3CmCjer489SPC3Kwt1UW",1]]},"memo_key":"STM7YJmUoKbPQkrMrZbrgPxDMYJA3uD3utaN3WYRwaFGKYbQ9ftKV","json_metadata":""}},"operation_id":0}])~",
@@ -230,7 +230,7 @@ BOOST_AUTO_TEST_CASE( get_account_history_comment_and_reward_reversible_paging )
     for (int i = 0; i < 10; ++i) {
       generate_block();
     }
-    BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
+    BOOST_REQUIRE_LE( db->head_block_num(), generate_no_further_than );
   };
 
   // Check cumulative history now.
@@ -239,7 +239,7 @@ BOOST_AUTO_TEST_CASE( get_account_history_comment_and_reward_reversible_paging )
   {
     // Generate blocks so that all comment related operations are in irreversible blocks, but claim_reward_balance_operation is still in reversible block.
     generate_until_irreversible_block( 48 );
-    BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
+    BOOST_REQUIRE_LE( db->head_block_num(), generate_no_further_than );
     BOOST_REQUIRE_EQUAL(get_last_irreversible_block_num(), 48);
 
     // dan0ah paging tests:
@@ -304,7 +304,7 @@ BOOST_AUTO_TEST_CASE( get_account_history_comment_and_reward_reversible_filterin
     for (int i = 0; i < 10; ++i) {
       generate_block();
     }
-    BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
+    BOOST_REQUIRE_LE( db->head_block_num(), generate_no_further_than );
   };
 
   // Check cumulative history now.
@@ -313,7 +313,7 @@ BOOST_AUTO_TEST_CASE( get_account_history_comment_and_reward_reversible_filterin
   {
     // Generate blocks so that all comment related operations are in irreversible blocks, but claim_reward_balance_operation is still in reversible block.
     generate_until_irreversible_block( 48 );
-    BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
+    BOOST_REQUIRE_LE( db->head_block_num(), generate_no_further_than );
     BOOST_REQUIRE_EQUAL(get_last_irreversible_block_num(), 48);
 
     // dan0ah filtering tests:
@@ -444,7 +444,7 @@ BOOST_AUTO_TEST_CASE( get_account_history_comment_and_reward_reversible_paging_a
     for (int i = 0; i < 10; ++i) {
       generate_block();
     }
-    BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
+    BOOST_REQUIRE_LE( db->head_block_num(), generate_no_further_than );
   };
 
   // Check cumulative history now.
@@ -453,7 +453,7 @@ BOOST_AUTO_TEST_CASE( get_account_history_comment_and_reward_reversible_paging_a
   {
     // Generate blocks so that all comment related operations are in irreversible blocks, but claim_reward_balance_operation is still in reversible block.
     generate_until_irreversible_block( 48 );
-    BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
+    BOOST_REQUIRE_LE( db->head_block_num(), generate_no_further_than );
     BOOST_REQUIRE_EQUAL(get_last_irreversible_block_num(), 48);
 
     // dan0ah paging and filtering tests:
@@ -568,7 +568,7 @@ BOOST_AUTO_TEST_CASE( get_account_history_convert_and_limit_order_reversible )
     // Now produce enough blocks for fill_convert_request_operation to appear.
     // It will be in reversible block and all previous operations will be in irreversible blocks.
     generate_until_block(130);
-    BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
+    BOOST_REQUIRE_LE( db->head_block_num(), generate_no_further_than );
 
     {
       expected_t expected_carol3ah_history = {
@@ -618,7 +618,7 @@ BOOST_AUTO_TEST_CASE( get_account_history_convert_and_limit_order_reversible_pag
     // Produce enough blocks for fill_convert_request_operation to appear.
     // It will be in reversible block and all previous operations will be in irreversible blocks.
     generate_until_block(130);
-    BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
+    BOOST_REQUIRE_LE( db->head_block_num(), generate_no_further_than );
     BOOST_REQUIRE_EQUAL(get_last_irreversible_block_num(), 111);
 
     // carol3ah tests:
@@ -764,7 +764,7 @@ BOOST_AUTO_TEST_CASE( get_account_history_witness_scenario_paged_and_filtered )
   auto check_point_tester = [ this ]( uint32_t generate_no_further_than )
   {
     generate_until_block(45);
-    BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
+    BOOST_REQUIRE_LE( db->head_block_num(), generate_no_further_than );
     BOOST_REQUIRE_EQUAL(get_last_irreversible_block_num(), 8);
 
     {
