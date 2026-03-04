@@ -2,7 +2,7 @@ from __future__ import annotations
 import json
 import os
 import random
-from datetime import timedelta
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Final, Literal
 
@@ -421,7 +421,7 @@ def __generate_and_broadcast_transaction(
     transaction = SimpleTransactionLegacy(
         ref_block_num=HiveInt(ref_block_num),
         ref_block_prefix=HiveInt(ref_block_prefix),
-        expiration=gdpo.time + timedelta(seconds=1800),
+        expiration=(datetime.fromisoformat(gdpo.time) if isinstance(gdpo.time, str) else gdpo.time) + timedelta(seconds=1800),
         extensions=[],
         signatures=[],
         operations=[],

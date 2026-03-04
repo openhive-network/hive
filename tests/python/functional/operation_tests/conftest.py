@@ -460,9 +460,11 @@ class ProposalAccount(Account):
             actual_value = tt.Asset.from_nai(
                 {"amount": actual_value.amount, "precision": actual_value.precision, "nai": actual_value.nai}
             )
-        # Convert hiveio_api date strings to match HiveDateTime format
+        # Normalize hiveio_api date strings (e.g. '2026-03-19T14:18:07') to match HiveDateTime
         if changed_parameter in ("end_date", "start_date") and isinstance(actual_value, str):
-            expected_value = str(expected_value)
+            actual_value = actual_value.replace("T", " ")
+            expected_str = str(expected_value).replace("+00:00", "")
+            expected_value = expected_str
         assert (
             actual_value == expected_value
         ), f"Something went wrong after proposal update. {changed_parameter} has wrong value"
