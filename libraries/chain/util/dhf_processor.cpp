@@ -1,5 +1,6 @@
 #include <hive/chain/util/dhf_processor.hpp>
 #include <hive/chain/detail/state/assets_object.hpp>
+#include <hive/chain/detail/state/tiny_account_object.hpp>
 #include <hive/chain/database_virtual_operations.hpp>
 #include <hive/chain/detail/state/feed_history_object.hpp>
 #include <hive/chain/global_property_object.hpp>
@@ -93,13 +94,19 @@ uint64_t dhf_processor::calculate_votes( uint32_t pid )
   const auto& pvidx = db.get_index< proposal_vote_index >().indices().get< by_proposal_voter >();
   auto found = pvidx.find( pid );
 
+  // Use tiny_account_object for fast proxy check to avoid full account_object load
+  // for proxied voters. tiny_account_object is always in chainbase (never archived).
+  const auto& tiny_idx = db.get_index< tiny_account_index, by_name >();
+
   while( found != pvidx.end() && found->proposal_id == pid )
   {
-    const auto& _voter = db.get_account( found->voter );
+    auto tiny_it = tiny_idx.find( found->voter );
 
-    //If _voter has set proxy, then his votes aren't taken into consideration
-    if( !_voter.has_proxy() )
+    // If voter has set proxy, their votes aren't taken into consideration.
+    // Check proxy via tiny_account_object to skip the expensive get_account() handler dispatch.
+    if( tiny_it != tiny_idx.end() && !tiny_it->has_proxy() )
     {
+      const auto& _voter = db.get_account( found->voter );
       auto sum = _voter.get_governance_vote_power( db.get_asset_account( _voter.get_id() ), db.get_delayed_votes_account( _voter.get_id() ) );
       ret += sum.value;
     }

@@ -302,7 +302,6 @@ void account_update_evaluator::do_apply( const account_update_operation& o )
   FC_ASSERT(o.account != HIVE_TEMP_ACCOUNT, "Cannot update temp account.");
 
   const auto& account = _db.get_account( o.account );
-  const auto& account_auth = _db.get_account_authority( o.account );
 
   if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) ) // 3920d6b938492a873b36b3b44725154cf4123e95 example authority exceeding size (hellosteem has even bigger set to this day)
   {
@@ -314,6 +313,10 @@ void account_update_evaluator::do_apply( const account_update_operation& o )
       validate_auth_size( *o.posting );
   }
 
+  // Only load account_authority_object when keys are being changed.
+  // Skips handler dispatch for metadata-only updates (memo_key, json_metadata).
+  const bool needs_authority = o.owner || o.active || o.posting;
+
   if( o.owner )
   {
 // Blockchain converter uses the `account_update` operation to change the private keys of the pow-mined accounts within the same transaction
@@ -324,9 +327,12 @@ void account_update_evaluator::do_apply( const account_update_operation& o )
 //       in HF21, so only this operation is applicable to our needs
 # ifndef HIVE_CONVERTER_BUILD
     if( _db.has_hardfork( HIVE_HARDFORK_0_11 ) )
+    {
+      const auto& account_auth = _db.get_account_authority( o.account );
       FC_ASSERT( util::owner_update_limit_mgr::check( _db.has_hardfork( HIVE_HARDFORK_1_26_AUTH_UPDATE ), _db.head_block_time(),
                                                                         account_auth.previous_owner_update, account_auth.last_owner_update ) && "update",
                                                       "${m}", ("m", util::owner_update_limit_mgr::msg( _db.has_hardfork( HIVE_HARDFORK_1_26_AUTH_UPDATE ) )) );
+    }
 # endif
 
     verify_authority_accounts_exist( _db, *o.owner, o.account, authority::owner );
@@ -366,8 +372,9 @@ void account_update_evaluator::do_apply( const account_update_operation& o )
     a.set_last_account_update( _db.head_block_time() );
   } );
 
-  if( o.active || *_auth_posting )
+  if( needs_authority && ( o.active || *_auth_posting ) )
   {
+    const auto& account_auth = _db.get_account_authority( o.account );
     _db.modify( account_auth, [&]( account_authority_object& auth)
     {
       if( o.active )       auth.active  = *o.active;
@@ -383,10 +390,10 @@ void account_update2_evaluator::do_apply( const account_update2_operation& o )
   FC_ASSERT( o.account != HIVE_TEMP_ACCOUNT && "Cannot update temp account." );
 
   const auto& account = _db.get_account( o.account );
-  const auto& account_auth = _db.get_account_authority( o.account );
 
   if( o.owner )
   {
+    const auto& account_auth = _db.get_account_authority( o.account );
     FC_ASSERT( util::owner_update_limit_mgr::check( _db.has_hardfork( HIVE_HARDFORK_1_26_AUTH_UPDATE ), _db.head_block_time(),
                                                                       account_auth.previous_owner_update, account_auth.last_owner_update ) && "update2",
                                                     "${m}", ("m", util::owner_update_limit_mgr::msg( _db.has_hardfork( HIVE_HARDFORK_1_26_AUTH_UPDATE ) ) ) );
@@ -416,6 +423,7 @@ void account_update2_evaluator::do_apply( const account_update2_operation& o )
 
   if( o.active || o.posting )
   {
+    const auto& account_auth = _db.get_account_authority( o.account );
     _db.modify( account_auth, [&]( account_authority_object& auth)
     {
       if( o.active )  auth.active  = *o.active;

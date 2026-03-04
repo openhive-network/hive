@@ -541,20 +541,29 @@ uint32_t rocksdb_account_archive::compute_next_archival_check() const
 void rocksdb_account_archive::on_irreversible_block( uint32_t block_num )
 {
   provider->update_cached_lib( block_num );
-  provider->persist_cached_lib();
 
   // During replay, all accounts will likely be needed again soon by subsequent blocks.
   // Archiving them to RocksDB only to restore them moments later creates a costly
   // archive-restore churn cycle. Skip archival entirely during replay.
+  // Also skip persist_cached_lib() during replay — it adds a WriteBatch Put on every
+  // block, accumulating millions of unnecessary operations that are never flushed until
+  // close(). The cached LIB (atomic) is sufficient; it will be persisted when replay ends.
   if( db.is_replaying_block() )
   {
     _was_replaying = true;
     return;
   }
 
+  // Persist the cached LIB to the WriteBatch now that we're in live mode.
+  provider->persist_cached_lib();
+
   if( _was_replaying )
   {
     _was_replaying = false;
+
+    // Flush the LIB immediately on the replay→live transition so the database
+    // has a valid LIB stored before any archival or snapshot operations.
+    provider->flushWriteBuffer();
 
     size_t _nr_accounts = db.get_index<account_index, by_block>().size();
     size_t _nr_metadata = db.get_index<account_metadata_index, by_block>().size();
