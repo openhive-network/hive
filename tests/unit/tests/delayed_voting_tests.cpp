@@ -42,8 +42,6 @@
 #include <hive/chain/detail/state/withdraw_vesting_route_object_multiindex.hpp>
 
 #include <hive/chain/dhf_objects.hpp>
-#include <hive/chain/detail/state/delayed_votes_object.hpp>
-#include <hive/chain/detail/state/assets_object.hpp>
 
 #include <hive/protocol/testnet_blockchain_configuration.hpp>
 

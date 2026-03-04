@@ -5,7 +5,6 @@
 #include <hive/plugins/witness/witness_plugin.hpp>
 
 #include <hive/chain/detail/state/witness_objects_multiindex.hpp>
-#include <hive/chain/detail/state/assets_object.hpp>
 #include <hive/chain/detail/state/tiny_account_object.hpp>
 
 #include <hive/utilities/database_configuration.hpp>

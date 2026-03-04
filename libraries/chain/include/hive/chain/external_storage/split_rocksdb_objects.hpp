@@ -19,7 +19,6 @@ public:
 
   rocksdb_recovery_object( const recovery_object& obj )
     : id( obj.get_id() )
-    , account_id( account_id_type( account_object::id_type( obj.get_id().get_value() ) ) )
     , recovery_account( obj.get_recovery_account() )
     , last_account_recovery( obj.get_last_account_recovery_time() )
     , block_last_account_recovery( obj.get_block_last_account_recovery_time() )
@@ -30,16 +29,10 @@ public:
   {
     if constexpr ( std::is_same_v<Return_Type, const recovery_object*> )
     {
-      // Note: create_no_undo internally adds allocator
       const auto& obj = db.create_no_undo<recovery_object>(
                       id.get_value(),
                       recovery_account );
-      // Restore additional fields via modify_no_undo to avoid undo tracking
-      db.modify_no_undo( obj, [this]( recovery_object& o )
-      {
-        o.set_last_account_recovery_time( this->last_account_recovery );
-        o.set_block_last_account_recovery_time( this->block_last_account_recovery );
-      });
+      db.modify_no_undo( obj, [this]( recovery_object& o ) { restore_fields( o ); });
       return &obj;
     }
     else
@@ -48,17 +41,22 @@ public:
                           allocator_helper::get_allocator<recovery_object, recovery_index>( db ),
                           id.get_value(),
                           recovery_account );
-      obj->set_last_account_recovery_time( this->last_account_recovery );
-      obj->set_block_last_account_recovery_time( this->block_last_account_recovery );
+      restore_fields( *obj );
       return Return_Type( obj );
     }
   }
 
   recovery_id_type      id;
-  account_id_type       account_id;
   account_id_type       recovery_account;
   time_point_sec        last_account_recovery;
   time_point_sec        block_last_account_recovery;
+
+private:
+  void restore_fields( recovery_object& o ) const
+  {
+    o.set_last_account_recovery_time( last_account_recovery );
+    o.set_block_last_account_recovery_time( block_last_account_recovery );
+  }
 };
 
 /**
@@ -71,7 +69,6 @@ public:
 
   rocksdb_assets_object( const assets_object& obj )
     : id( obj.get_id() )
-    , account_id( account_id_type( account_object::id_type( obj.get_id().get_value() ) ) )
     , name( obj.get_name() )
     , hbd_balance( obj.get_hbd_balance() )
     , savings_hbd_balance( obj.get_hbd_savings() )
@@ -117,51 +114,10 @@ public:
   {
     if constexpr ( std::is_same_v<Return_Type, const assets_object*> )
     {
-      // Note: create_no_undo internally adds allocator
       const auto& obj = db.create_no_undo<assets_object>(
                       id.get_value(),
                       name );
-      // Restore all balance and time fields via modify_no_undo to avoid undo tracking
-      db.modify_no_undo( obj, [this]( assets_object& o )
-      {
-        o.set_hbd_balance( this->hbd_balance );
-        o.set_hbd_savings( this->savings_hbd_balance );
-        o.set_hbd_rewards( this->reward_hbd_balance );
-        o.set_rewards( this->reward_hive_balance );
-        o.set_vest_rewards_as_hive( this->reward_vesting_hive );
-        o.set_balance( this->balance );
-        o.set_savings( this->savings_balance );
-        o.set_vest_rewards( this->reward_vesting_balance );
-        o.set_vesting( this->vesting_shares );
-        o.set_delegated_vesting( this->delegated_vesting_shares );
-        o.set_received_vesting( this->received_vesting_shares );
-        o.set_vesting_withdraw_rate( this->vesting_withdraw_rate );
-        o.set_curation_rewards( this->curation_rewards );
-        o.set_posting_rewards( this->posting_rewards );
-        o.set_withdrawn( this->withdrawn );
-        o.set_to_withdraw( this->to_withdraw );
-        o.set_savings_hbd_seconds( this->savings_hbd_seconds );
-        o.set_savings_hbd_seconds_last_update( this->savings_hbd_seconds_last_update );
-        o.set_savings_hbd_last_interest_payment( this->savings_hbd_last_interest_payment );
-        o.set_hbd_seconds( this->hbd_seconds );
-        o.set_hbd_seconds_last_update( this->hbd_seconds_last_update );
-        o.set_hbd_last_interest_payment( this->hbd_last_interest_payment );
-        o.set_last_account_update( this->last_account_update );
-        o.set_last_post( this->last_post );
-        o.set_last_root_post( this->last_root_post );
-        o.set_last_post_edit( this->last_post_edit );
-        o.set_last_vote_time( this->last_vote_time );
-        o.set_next_vesting_withdrawal( this->next_vesting_withdrawal );
-        o.get_voting_manabar() = this->voting_manabar;
-        o.get_downvote_manabar() = this->downvote_manabar;
-        o.get_rc_manabar() = this->rc_manabar;
-        o.set_rc_adjustment( this->rc_adjustment );
-        o.set_delegated_rc( this->delegated_rc );
-        o.set_received_rc( this->received_rc );
-        o.set_last_max_rc( this->last_max_rc );
-        o.set_post_count( this->post_count );
-        o.set_post_bandwidth( this->post_bandwidth );
-      });
+      db.modify_no_undo( obj, [this]( assets_object& o ) { restore_fields( o ); });
       return &obj;
     }
     else
@@ -170,49 +126,12 @@ public:
                           allocator_helper::get_allocator<assets_object, assets_index>( db ),
                           id.get_value(),
                           name );
-      obj->set_hbd_balance( this->hbd_balance );
-      obj->set_hbd_savings( this->savings_hbd_balance );
-      obj->set_hbd_rewards( this->reward_hbd_balance );
-      obj->set_rewards( this->reward_hive_balance );
-      obj->set_vest_rewards_as_hive( this->reward_vesting_hive );
-      obj->set_balance( this->balance );
-      obj->set_savings( this->savings_balance );
-      obj->set_vest_rewards( this->reward_vesting_balance );
-      obj->set_vesting( this->vesting_shares );
-      obj->set_delegated_vesting( this->delegated_vesting_shares );
-      obj->set_received_vesting( this->received_vesting_shares );
-      obj->set_vesting_withdraw_rate( this->vesting_withdraw_rate );
-      obj->set_curation_rewards( this->curation_rewards );
-      obj->set_posting_rewards( this->posting_rewards );
-      obj->set_withdrawn( this->withdrawn );
-      obj->set_to_withdraw( this->to_withdraw );
-      obj->set_savings_hbd_seconds( this->savings_hbd_seconds );
-      obj->set_savings_hbd_seconds_last_update( this->savings_hbd_seconds_last_update );
-      obj->set_savings_hbd_last_interest_payment( this->savings_hbd_last_interest_payment );
-      obj->set_hbd_seconds( this->hbd_seconds );
-      obj->set_hbd_seconds_last_update( this->hbd_seconds_last_update );
-      obj->set_hbd_last_interest_payment( this->hbd_last_interest_payment );
-      obj->set_last_account_update( this->last_account_update );
-      obj->set_last_post( this->last_post );
-      obj->set_last_root_post( this->last_root_post );
-      obj->set_last_post_edit( this->last_post_edit );
-      obj->set_last_vote_time( this->last_vote_time );
-      obj->set_next_vesting_withdrawal( this->next_vesting_withdrawal );
-      obj->get_voting_manabar() = this->voting_manabar;
-      obj->get_downvote_manabar() = this->downvote_manabar;
-      obj->get_rc_manabar() = this->rc_manabar;
-      obj->set_rc_adjustment( this->rc_adjustment );
-      obj->set_delegated_rc( this->delegated_rc );
-      obj->set_received_rc( this->received_rc );
-      obj->set_last_max_rc( this->last_max_rc );
-      obj->set_post_count( this->post_count );
-      obj->set_post_bandwidth( this->post_bandwidth );
+      restore_fields( *obj );
       return Return_Type( obj );
     }
   }
 
   assets_id_type        id;
-  account_id_type       account_id;
   account_name_type     name;
   HBD_asset             hbd_balance;
   HBD_asset             savings_hbd_balance;
@@ -251,6 +170,48 @@ public:
   share_type            last_max_rc;
   uint32_t              post_count = 0;
   uint32_t              post_bandwidth = 0;
+
+private:
+  void restore_fields( assets_object& o ) const
+  {
+    o.set_hbd_balance( hbd_balance );
+    o.set_hbd_savings( savings_hbd_balance );
+    o.set_hbd_rewards( reward_hbd_balance );
+    o.set_rewards( reward_hive_balance );
+    o.set_vest_rewards_as_hive( reward_vesting_hive );
+    o.set_balance( balance );
+    o.set_savings( savings_balance );
+    o.set_vest_rewards( reward_vesting_balance );
+    o.set_vesting( vesting_shares );
+    o.set_delegated_vesting( delegated_vesting_shares );
+    o.set_received_vesting( received_vesting_shares );
+    o.set_vesting_withdraw_rate( vesting_withdraw_rate );
+    o.set_curation_rewards( curation_rewards );
+    o.set_posting_rewards( posting_rewards );
+    o.set_withdrawn( withdrawn );
+    o.set_to_withdraw( to_withdraw );
+    o.set_savings_hbd_seconds( savings_hbd_seconds );
+    o.set_savings_hbd_seconds_last_update( savings_hbd_seconds_last_update );
+    o.set_savings_hbd_last_interest_payment( savings_hbd_last_interest_payment );
+    o.set_hbd_seconds( hbd_seconds );
+    o.set_hbd_seconds_last_update( hbd_seconds_last_update );
+    o.set_hbd_last_interest_payment( hbd_last_interest_payment );
+    o.set_last_account_update( last_account_update );
+    o.set_last_post( last_post );
+    o.set_last_root_post( last_root_post );
+    o.set_last_post_edit( last_post_edit );
+    o.set_last_vote_time( last_vote_time );
+    o.set_next_vesting_withdrawal( next_vesting_withdrawal );
+    o.get_voting_manabar() = voting_manabar;
+    o.get_downvote_manabar() = downvote_manabar;
+    o.get_rc_manabar() = rc_manabar;
+    o.set_rc_adjustment( rc_adjustment );
+    o.set_delegated_rc( delegated_rc );
+    o.set_received_rc( received_rc );
+    o.set_last_max_rc( last_max_rc );
+    o.set_post_count( post_count );
+    o.set_post_bandwidth( post_bandwidth );
+  }
 };
 
 /**
@@ -263,7 +224,6 @@ public:
 
   rocksdb_delayed_votes_object( const delayed_votes_object& obj )
     : id( obj.get_id() )
-    , account_id( account_id_type( account_object::id_type( obj.get_id().get_value() ) ) )
     , sum_delayed_votes( obj.get_sum_delayed_votes() )
     , delayed_votes( delayed_votes_object::convert( obj.get_delayed_votes() ) )
   {}
@@ -273,15 +233,9 @@ public:
   {
     if constexpr ( std::is_same_v<Return_Type, const delayed_votes_object*> )
     {
-      // Note: create_no_undo internally adds allocator
       const auto& obj = db.create_no_undo<delayed_votes_object>(
                       id.get_value() );
-      // Modify the object using db.modify_no_undo to populate the delayed_votes data and avoid undo tracking
-      db.modify_no_undo( obj, [&]( delayed_votes_object& o )
-      {
-        o.set_sum_delayed_votes( sum_delayed_votes );
-        o.clone( delayed_votes );
-      });
+      db.modify_no_undo( obj, [this]( delayed_votes_object& o ) { restore_fields( o ); });
       return &obj;
     }
     else
@@ -289,26 +243,31 @@ public:
       auto obj = std::make_shared<delayed_votes_object>(
                           allocator_helper::get_allocator<delayed_votes_object, delayed_votes_index>( db ),
                           id.get_value() );
-      obj->set_sum_delayed_votes( sum_delayed_votes );
-      obj->clone( delayed_votes );
+      restore_fields( *obj );
       return Return_Type( obj );
     }
   }
 
   delayed_votes_id_type id;
-  account_id_type       account_id;
   ushare_type           sum_delayed_votes = 0;
   std::vector<delayed_votes_data> delayed_votes;
+
+private:
+  void restore_fields( delayed_votes_object& o ) const
+  {
+    o.set_sum_delayed_votes( sum_delayed_votes );
+    o.clone( delayed_votes );
+  }
 };
 
 } } // hive::chain
 
 FC_REFLECT( hive::chain::rocksdb_recovery_object,
-          (id)(account_id)(recovery_account)(last_account_recovery)(block_last_account_recovery)
+          (id)(recovery_account)(last_account_recovery)(block_last_account_recovery)
         )
 
 FC_REFLECT( hive::chain::rocksdb_assets_object,
-          (id)(account_id)(name)
+          (id)(name)
           (hbd_balance)(savings_hbd_balance)(reward_hbd_balance)
           (reward_hive_balance)(reward_vesting_hive)(balance)(savings_balance)
           (reward_vesting_balance)(vesting_shares)(delegated_vesting_shares)
@@ -327,5 +286,5 @@ FC_REFLECT( hive::chain::rocksdb_assets_object,
         )
 
 FC_REFLECT( hive::chain::rocksdb_delayed_votes_object,
-          (id)(account_id)(sum_delayed_votes)(delayed_votes)
+          (id)(sum_delayed_votes)(delayed_votes)
         )
