@@ -357,7 +357,12 @@ def __create_signer(account: str, _: None) -> tuple[AccountCreateOperation]:
 
 def __create_and_fund_account(
     account: str, authority: dict
-) -> tuple[AccountCreateOperation, TransferOperation, TransferOperation, DelegateVestingSharesOperation,]:
+) -> tuple[
+    AccountCreateOperation,
+    TransferOperation,
+    TransferOperation,
+    DelegateVestingSharesOperation,
+]:
     return (
         AccountCreateOperation(
             fee=INITIAL_ACCOUNT_CREATION_FEE,
@@ -421,7 +426,8 @@ def __generate_and_broadcast_transaction(
     transaction = SimpleTransactionLegacy(
         ref_block_num=HiveInt(ref_block_num),
         ref_block_prefix=HiveInt(ref_block_prefix),
-        expiration=(datetime.fromisoformat(gdpo.time) if isinstance(gdpo.time, str) else gdpo.time) + timedelta(seconds=1800),
+        expiration=(datetime.fromisoformat(gdpo.time) if isinstance(gdpo.time, str) else gdpo.time)
+        + timedelta(seconds=1800),
         extensions=[],
         signatures=[],
         operations=[],

@@ -457,9 +457,11 @@ class ProposalAccount(Account):
         expected_value = self._proposal_parameters[changed_parameter]
         # Convert hiveio_api asset structs (e.g. DailyPay) to tt.Asset for comparison
         if hasattr(actual_value, "nai") and hasattr(actual_value, "amount"):
-            actual_value = tt.Asset.from_nai(
-                {"amount": actual_value.amount, "precision": actual_value.precision, "nai": actual_value.nai}
-            )
+            actual_value = tt.Asset.from_nai({
+                "amount": actual_value.amount,
+                "precision": actual_value.precision,
+                "nai": actual_value.nai,
+            })
         # Normalize hiveio_api date strings (e.g. '2026-03-19T14:18:07') to match HiveDateTime
         if changed_parameter in ("end_date", "start_date") and isinstance(actual_value, str):
             actual_value = actual_value.replace("T", " ")
