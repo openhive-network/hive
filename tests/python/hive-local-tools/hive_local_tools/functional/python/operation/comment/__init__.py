@@ -78,7 +78,7 @@ def get_reward_operations(node, mode: Literal["author", "curation", "comment_ben
         reward_operations = get_virtual_operations(node, CommentBenefactorRewardOperation)
     else:
         raise ValueError(f"Unexpected value for 'mode': '{mode}'")
-    return [vop["op"]["value"] for vop in reward_operations]
+    return [vop.op.value for vop in reward_operations]
 
 
 def convert_hbd_to_hive(node, hbd: tt.Asset.Hbd) -> tt.Asset.Hive:
@@ -343,12 +343,16 @@ class Comment:
         self.__wallet.api.vote(hater.name, self.author, self.permlink, -10)
 
     def assert_is_comment_sent_or_update(self) -> None:
-        comment_operation = self.comment_trx.operations[0]
+        comment_value = self.comment_trx.operations[0].value
         ops_in_block = self.__node.api.account_history.get_ops_in_block(
             block_num=self.comment_trx.block_num, include_reversible=True
         )
         for operation in ops_in_block.ops:
-            if operation.op.type_ == "comment_operation" and operation.op.value == comment_operation.value:
+            if (
+                operation.op.type == "comment_operation"
+                and operation.op.value.author == comment_value.author
+                and operation.op.value.permlink == comment_value.permlink
+            ):
                 return
         raise AssertionError
 
@@ -427,9 +431,9 @@ class Comment:
         for key in ["max_accepted_payout", "percent_hbd", "allow_votes", "allow_curation_rewards"]:
             if key in self.__comment_options:
                 if key != "max_accepted_payout":
-                    assert self.__comment_options[key] == comment_content[key], f"{key} is not applied"
+                    assert self.__comment_options[key] == getattr(comment_content, key), f"{key} is not applied"
                 else:
-                    assert self.__comment_options[key].amount == comment_content[key].amount
+                    assert self.__comment_options[key].amount == getattr(comment_content, key).amount
 
     def assert_is_rc_mana_decreased_after_comment_delete(self) -> None:
         self.assert_comment_exists()
@@ -582,8 +586,15 @@ class Vote:
             operations = self.__comment_obj.node.api.account_history.get_ops_in_block(
                 block_num=self.__vote_transaction.block_num, include_reversible=True
             ).ops
-            operation_values = [operation.op.value for operation in operations]
-            assert vote_operation in operation_values, "Vote_operation not generated, but it should have been"
+            found = any(
+                op.op.type == "vote_operation"
+                and op.op.value.voter == vote_operation.voter
+                and op.op.value.author == vote_operation.author
+                and op.op.value.permlink == vote_operation.permlink
+                and op.op.value.weight == vote_operation.weight
+                for op in operations
+            )
+            assert found, "Vote_operation not generated, but it should have been"
         elif mode == "not_occurred":
             assert self.__vote_transaction is None, "Vote_operation generated, but it should have not been"
         else:
@@ -736,7 +747,7 @@ class CommentAccount(Account):
 
     def assert_curation_reward_virtual_operation(self, mode: Literal["generated", "not_generated"]) -> None:
         curation_reward_operations = get_reward_operations(self.node, "curation")
-        curator = [value["curator"] for value in curation_reward_operations]
+        curator = [value.curator for value in curation_reward_operations]
         if mode == "generated":
             assert self.name in curator, "Curation_reward_operation not generated, but it should have been"
         elif mode == "not_generated":

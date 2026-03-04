@@ -512,8 +512,8 @@ def get_virtual_operations(
 
     if skip_price_stabilization:
         for vop_number, vop in enumerate(result.ops):
-            if vop.op.type == "transfer_to_vesting_completed_operation" and tt.Asset.from_nai(
-                vop.op.value["hive_vested"]
+            if vop.op.type == "transfer_to_vesting_completed_operation" and _convert_to_asset(
+                vop.op.value.hive_vested
             ) == tt.Asset.Test(10_000_000):
                 result.ops.pop(vop_number)  # noqa: B909
     return result.ops
