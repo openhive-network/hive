@@ -653,21 +653,21 @@ void basic_test_impl(
 
   size_t vote_counter = 0;
   crh.voting( vote_counter, author_number, permlink, early_votes_time );
-  BOOST_REQUIRE(mgr_test.db->head_block_time() < creation_time + fc::seconds(crh.early_window)); //too many early voters?
+  BOOST_REQUIRE_LT( mgr_test.db->head_block_time(), creation_time + fc::seconds(crh.early_window) ); //too many early voters?
   if( !mid_votes_time.empty() )
   {
     mgr_test.generate_blocks( creation_time + fc::seconds( crh.early_window ) );
     mid_votes_time.front() = 0;
   }
   crh.voting( vote_counter, author_number, permlink, mid_votes_time );
-  BOOST_REQUIRE( mgr_test.db->head_block_time() < creation_time + fc::seconds( crh.mid_window ) ); //too many mid voters?
+  BOOST_REQUIRE_LT( mgr_test.db->head_block_time(), creation_time + fc::seconds( crh.mid_window ) ); //too many mid voters?
   if( !late_votes_time.empty() )
   {
     mgr_test.generate_blocks( creation_time + fc::seconds( crh.mid_window ) );
     late_votes_time.front() = 0;
   }
   crh.voting( vote_counter, author_number, permlink, late_votes_time );
-  BOOST_REQUIRE( mgr_test.db->head_block_time() < creation_time + fc::seconds( crh.late_window ) ); //too many late voters?
+  BOOST_REQUIRE_LT( mgr_test.db->head_block_time(), creation_time + fc::seconds( crh.late_window ) ); //too many late voters?
   crh.make_payment();
 
   reward_stat::rewards_stats early_stats;

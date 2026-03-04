@@ -120,7 +120,7 @@ BOOST_AUTO_TEST_CASE( delayed_proposal_test_01 )
     dhf_database::create_proposal_data cpd(db->head_block_time());
     cpd.end_date = cpd.start_date + fc::days( 2* nr_intervals_in_delayed_voting() );
     int64_t proposal_1 = create_proposal( cpd.creator, cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, alice_post_key, false/*with_block_generation*/ );
-    BOOST_REQUIRE(proposal_1 >= 0);
+    BOOST_REQUIRE_GE( proposal_1, 0 );
 
     // carol vest
     vest("carol", "carol", HIVE_asset( 10'000 ), carol_private_key);
@@ -190,14 +190,14 @@ BOOST_AUTO_TEST_CASE( delayed_proposal_test_02 )
     cpd1.end_date = cpd1.start_date + fc::days( 2* nr_intervals_in_delayed_voting() );
     cpd1.creator = "alice";
     int64_t proposal_1 = create_proposal( cpd1.creator, cpd1.receiver, cpd1.start_date, cpd1.end_date, cpd1.daily_pay, alice_private_key, alice_post_key, false/*with_block_generation*/ );
-    BOOST_REQUIRE(proposal_1 >= 0);
+    BOOST_REQUIRE_GE( proposal_1, 0 );
 
     // create one proposal
     dhf_database::create_proposal_data cpd2(db->head_block_time());
     cpd2.end_date = cpd2.start_date + fc::days( 2* nr_intervals_in_delayed_voting() );
     cpd2.creator = "bob";
     int64_t proposal_2 = create_proposal( cpd2.creator, cpd2.receiver, cpd2.start_date, cpd2.end_date, cpd2.daily_pay, bob_private_key, bob_post_key, false/*with_block_generation*/ );
-    BOOST_REQUIRE(proposal_2 >= 0);
+    BOOST_REQUIRE_GE( proposal_2, 0 );
 
     // carol vest
     vest("carol", "carol", HIVE_asset( 10'000 ), carol_private_key);
@@ -334,7 +334,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
       if( found == proxy.end() )
       {
         //current number of interval doesn't exist yet, but previous number of interval must exist
-        BOOST_REQUIRE( dq.size() > 0 );
+        BOOST_REQUIRE_GT( dq.size(), 0 );
         return true;
       }
       else
@@ -648,8 +648,8 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
       nr_interval = 30;
       size_t diff = 1;//because `1` element in delayed_votes has been removed already
 
-      BOOST_REQUIRE( witness1_result_00 >= 0 );
-      BOOST_REQUIRE( witness2_result_00 >= 0 );
+      BOOST_REQUIRE_GE( witness1_result_00, 0 );
+      BOOST_REQUIRE_GE( witness2_result_00, 0 );
 
       BOOST_REQUIRE_EQUAL( get_votes( "witness1" ), ( votes_witness1 + witness1_result_00.value ) );
       BOOST_REQUIRE_EQUAL( get_votes( "witness2" ), ( votes_witness2 + witness2_result_00.value ) );
@@ -720,8 +720,8 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
       start_time += fc::seconds( HIVE_DELAYED_VOTING_INTERVAL_SECONDS ) - fc::seconds( 30 );
       generate_blocks( start_time, true );
 
-      BOOST_REQUIRE( witness1_result_01 > 0 );
-      BOOST_REQUIRE( witness2_result_01 > 0 );
+      BOOST_REQUIRE_GT( witness1_result_01, 0 );
+      BOOST_REQUIRE_GT( witness2_result_01, 0 );
 
       idump( ( VOTING_POWER( "alice" ) ) );
       idump( ( VOTING_POWER( "bob" ) ) );
@@ -750,8 +750,8 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
       start_time += fc::seconds( HIVE_DELAYED_VOTING_INTERVAL_SECONDS ) - fc::seconds( 30 );
       generate_blocks( start_time, true );
 
-      BOOST_REQUIRE( witness1_result_02 > 0 );
-      BOOST_REQUIRE( witness1_result_02 > 0 );
+      BOOST_REQUIRE_GT( witness1_result_02, 0 );
+      BOOST_REQUIRE_GT( witness2_result_02, 0 );
 
       idump( ( VOTING_POWER( "alice" ) ) );
       idump( ( VOTING_POWER( "bob" ) ) );
@@ -1362,7 +1362,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_06 )
     }
 
     for( auto& item : accs )
-      BOOST_REQUIRE( DELAYED_VOTES( item ) >= 0 );
+      BOOST_REQUIRE_GE( DELAYED_VOTES( item ), 0 );
 
     start_time = move_forward_with_update( fc::days( 13 * 7 ), withdraw_items );
 
@@ -1428,7 +1428,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_05 )
         start_time = move_forward_with_update( fc::days( 1 ), withdraw_items );
 
         for( auto& item : accs )
-          BOOST_REQUIRE( DELAYED_VOTES( item ) >= 0 );
+          BOOST_REQUIRE_GE( DELAYED_VOTES( item ), 0 );
       }
 
       start_time = move_forward_with_update( fc::days( 1 ), withdraw_items );
@@ -1596,7 +1596,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_04 )
         move_forward( fc::days( 1 ) );
 
         for( auto& item : accs )
-          BOOST_REQUIRE( DELAYED_VOTES( item ) >= 0 );
+          BOOST_REQUIRE_GE( DELAYED_VOTES( item ), 0 );
       }
 
       move_forward( fc::days( 1 ) );
@@ -2358,16 +2358,16 @@ BOOST_AUTO_TEST_CASE( small_common_test_01 )
   ACCOUNT_REPORT( "carol" )
 
 #define CHECK_ACCOUNT_VESTS( account ) \
-  BOOST_REQUIRE( get_vesting( #account ) == expected_ ## account ## _vests )
+  BOOST_REQUIRE_EQUAL( get_vesting( #account ), expected_ ## account ## _vests )
 
 #define CHECK_ACCOUNT_HIVE( account ) \
-  BOOST_REQUIRE( get_hive_balance( #account ) == expected_ ## account ## _hive )
+  BOOST_REQUIRE_EQUAL( get_hive_balance( #account ), expected_ ## account ## _hive )
 
 #define CHECK_ACCOUNT_VP( account ) \
-  BOOST_REQUIRE( VOTING_POWER( #account ) == expected_ ## account ## _vp )
+  BOOST_REQUIRE_EQUAL( VOTING_POWER( #account ), expected_ ## account ## _vp )
 
 #define CHECK_WITNESS_VOTES( witness ) \
-  BOOST_REQUIRE( WITNESS_VOTES( #witness ) == expected_ ## witness ## _votes )
+  BOOST_REQUIRE_EQUAL( WITNESS_VOTES( #witness ), expected_ ## witness ## _votes )
 
 #define DAY_CHECK_VOTES_BALANCES \
   BOOST_REQUIRE_NE( get_hive_balance( "alice" ), HIVE_asset( 0 ) ); \

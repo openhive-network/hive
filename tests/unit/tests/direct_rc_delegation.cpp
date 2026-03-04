@@ -1165,7 +1165,7 @@ BOOST_AUTO_TEST_CASE( rc_delegation_regeneration )
     current_mana = burn_mana( "bob", 5000000, bob_private_key );
     int64_t delta_delegation = mana_regen_per_second( "bob", current_mana );
 
-    BOOST_REQUIRE( delta_delegation > delta_no_delegation );
+    BOOST_REQUIRE_GT( delta_delegation, delta_no_delegation );
 
     BOOST_TEST_MESSAGE( "Reducing the RC delegation" );
     drc_op.max_rc = db->get_account( "alice" ).get_vesting().amount.value / 2;
@@ -1182,13 +1182,13 @@ BOOST_AUTO_TEST_CASE( rc_delegation_regeneration )
     push_transaction(custom_op, alice_post_key);
     generate_block();
 
-    BOOST_REQUIRE( delta_delegation > delta_reduced_delegation);
+    BOOST_REQUIRE_GT( delta_delegation, delta_reduced_delegation );
 
     current_mana = burn_mana( "bob", 5000000, bob_private_key );
     int64_t delta_removed_delegation = mana_regen_per_second( "bob", current_mana );
 
-    BOOST_REQUIRE(delta_delegation > delta_removed_delegation);
-    BOOST_REQUIRE(delta_reduced_delegation > delta_removed_delegation);
+    BOOST_REQUIRE_GT( delta_delegation, delta_removed_delegation );
+    BOOST_REQUIRE_GT( delta_reduced_delegation, delta_removed_delegation );
     BOOST_REQUIRE_EQUAL( delta_removed_delegation, delta_no_delegation );
 
     validate_database();
@@ -1252,7 +1252,7 @@ BOOST_AUTO_TEST_CASE( rc_delegation_removal_no_rc )
 
     const account_object& bob_rc_account = db->get_account( "bob" );
     BOOST_REQUIRE_EQUAL( bob_rc_account.rc_manabar.current_mana, 0 );
-    BOOST_REQUIRE( bob_rc_account.get_maximum_rc() >= 0 );
+    BOOST_REQUIRE_GE( bob_rc_account.get_maximum_rc(), 0 );
 
     validate_database();
   }

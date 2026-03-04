@@ -2277,9 +2277,9 @@ BOOST_AUTO_TEST_CASE( account_object_by_governance_vote_expiration_ts_idx )
     generate_block();
 
 
-    BOOST_REQUIRE (db->get_account( "acc1" ).get_governance_vote_expiration_ts() != db->get_account( "acc2" ).get_governance_vote_expiration_ts());
-    BOOST_REQUIRE (db->get_account( "acc2" ).get_governance_vote_expiration_ts() == db->get_account( "acc3" ).get_governance_vote_expiration_ts());
-    BOOST_REQUIRE (db->get_account( "acc4" ).get_governance_vote_expiration_ts() != db->get_account( "acc3" ).get_governance_vote_expiration_ts());
+    BOOST_REQUIRE_NE( db->get_account( "acc1" ).get_governance_vote_expiration_ts(), db->get_account( "acc2" ).get_governance_vote_expiration_ts() );
+    BOOST_REQUIRE_EQUAL( db->get_account( "acc2" ).get_governance_vote_expiration_ts(), db->get_account( "acc3" ).get_governance_vote_expiration_ts() );
+    BOOST_REQUIRE_NE( db->get_account( "acc4" ).get_governance_vote_expiration_ts(), db->get_account( "acc3" ).get_governance_vote_expiration_ts() );
 
     const auto& accounts = db->get_index< account_index, by_governance_vote_expiration_ts >();
     time_point_sec governance_vote_expiration_ts = accounts.begin()->get_governance_vote_expiration_ts();
@@ -2287,7 +2287,7 @@ BOOST_AUTO_TEST_CASE( account_object_by_governance_vote_expiration_ts_idx )
     for (const auto&ac : accounts)
     {
       time_point_sec curr_last_vote = ac.get_governance_vote_expiration_ts();
-      BOOST_REQUIRE (governance_vote_expiration_ts <= curr_last_vote);
+      BOOST_REQUIRE_LE( governance_vote_expiration_ts, curr_last_vote );
       governance_vote_expiration_ts = curr_last_vote;
     }
     validate_database();
@@ -3620,7 +3620,7 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
       BOOST_REQUIRE_EQUAL( sys_warn_op.message.compare( 0, 27, "HIVE price corrected upward" ), 0 );
     }
 
-    BOOST_REQUIRE( feed.current_median_history > price_1_for_20 );
+    BOOST_REQUIRE_GT( feed.current_median_history, price_1_for_20 );
     BOOST_REQUIRE_EQUAL( feed.current_max_history, price_1_for_4 ); //it is hard to force artificial correction of max price when it is so high to begin with
     BOOST_REQUIRE_EQUAL( feed.market_median_history, price_1_for_20 ); //market driven median price should be intact
     BOOST_REQUIRE_EQUAL( feed.current_min_history, price_1_for_20 ); //minimal price should be intact

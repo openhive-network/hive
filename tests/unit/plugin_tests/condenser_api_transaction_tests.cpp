@@ -29,7 +29,7 @@ void test_get_transaction( const condenser_api_fixture& caf, uint32_t block_num,
   const signed_block& block = full_block_ptr->get_block();
   ilog( "Block #${b} contains ${n1} transaction(s), ${n2} expected.",
     ("n1", block.transactions.size())("b", block_num)("n2", expected_transactions.size()) );
-  BOOST_REQUIRE( expected_transactions.size() == block.transactions.size() );
+  BOOST_REQUIRE_EQUAL( expected_transactions.size(), block.transactions.size() );
 
   for( size_t transaction_index = 0; transaction_index < expected_transactions.size(); ++transaction_index )
   {

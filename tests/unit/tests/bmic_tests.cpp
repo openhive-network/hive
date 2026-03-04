@@ -444,12 +444,12 @@ BOOST_AUTO_TEST_CASE(modify_tests)
   auto c1 = []( bmic::test_object& obj ) { obj.name = "_name"; };
   auto c2 = []( bmic::test_object& obj ){ obj.name = "new_name"; };
   auto c3 = []( const bmic::test_object& obj ){ BOOST_REQUIRE_EQUAL( obj.name, "new_name" ); };
-  auto c4 = []( const bmic::test_object& obj ){ BOOST_REQUIRE( obj.val == size_t( obj.id ) + 100 ); };
+  auto c4 = []( const bmic::test_object& obj ){ BOOST_REQUIRE_EQUAL( obj.val, size_t( obj.id ) + 100 ); };
   auto c5 = []( bool result ){ BOOST_REQUIRE( result == false ); };
 
   auto c1b = []( bmic::test_object2& obj ) { obj.val = 889; };
   auto c2b = []( bmic::test_object2& obj ){ obj.val = 2889; };
-  auto c3b = []( const bmic::test_object2& obj ){ BOOST_REQUIRE( obj.val == 2889 ); };
+  auto c3b = []( const bmic::test_object2& obj ){ BOOST_REQUIRE_EQUAL( obj.val, 2889 ); };
   auto c4b = []( const bmic::test_object2& obj ){ /*empty*/ };
   auto c5b = []( bool result ){ BOOST_REQUIRE( result == true ); };
 

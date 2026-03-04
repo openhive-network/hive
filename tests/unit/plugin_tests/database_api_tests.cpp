@@ -117,7 +117,7 @@ BOOST_AUTO_TEST_CASE( get_witness_schedule_test )
   BOOST_REQUIRE_EQUAL( scheduled_witnesses_1.witnesses.size(), HIVE_MAX_WITNESSES );
   BOOST_REQUIRE( scheduled_witnesses_1.future_witnesses.valid() == false );
   for( int i = 0; i < HIVE_MAX_WITNESSES; ++i )
-    BOOST_REQUIRE( active_schedule_1.current_shuffled_witnesses[i] == scheduled_witnesses_1.witnesses[i] );
+    BOOST_REQUIRE_EQUAL( active_schedule_1.current_shuffled_witnesses[i], scheduled_witnesses_1.witnesses[i] );
   BOOST_REQUIRE_GT( active_schedule_1.next_shuffle_block_num, db->head_block_num() );
   BOOST_REQUIRE_EQUAL( active_schedule_1.next_shuffle_block_num, full_schedule_1.next_shuffle_block_num );
   BOOST_REQUIRE_EQUAL( full_schedule_1.current_shuffled_witnesses.size(), HIVE_MAX_WITNESSES );
@@ -128,8 +128,8 @@ BOOST_AUTO_TEST_CASE( get_witness_schedule_test )
   BOOST_REQUIRE_EQUAL( all_scheduled_witnesses_1.future_witnesses->size(), HIVE_MAX_WITNESSES );
   for( int i = 0; i < HIVE_MAX_WITNESSES; ++i )
   {
-    BOOST_REQUIRE( full_schedule_1.current_shuffled_witnesses[i] == all_scheduled_witnesses_1.witnesses[i] );
-    BOOST_REQUIRE( full_schedule_1.future_shuffled_witnesses.value()[i] == all_scheduled_witnesses_1.future_witnesses.value()[i] );
+    BOOST_REQUIRE_EQUAL( full_schedule_1.current_shuffled_witnesses[i], all_scheduled_witnesses_1.witnesses[i] );
+    BOOST_REQUIRE_EQUAL( full_schedule_1.future_shuffled_witnesses.value()[i], all_scheduled_witnesses_1.future_witnesses.value()[i] );
   }
   BOOST_REQUIRE( full_schedule_1.future_changes.valid() == true );
   BOOST_REQUIRE( full_schedule_1.future_changes->majority_version.valid() == true );
@@ -150,7 +150,7 @@ BOOST_AUTO_TEST_CASE( get_witness_schedule_test )
   BOOST_REQUIRE_EQUAL( active_schedule_2.timeshare_weight, active_schedule_1.timeshare_weight );
   BOOST_REQUIRE_EQUAL( active_schedule_2.miner_weight, active_schedule_1.miner_weight );
   BOOST_REQUIRE_EQUAL( active_schedule_2.witness_pay_normalization_factor, active_schedule_1.witness_pay_normalization_factor );
-  BOOST_REQUIRE( active_schedule_2.median_props.account_creation_fee == active_schedule_1.median_props.account_creation_fee );
+  BOOST_REQUIRE_EQUAL( active_schedule_2.median_props.account_creation_fee, active_schedule_1.median_props.account_creation_fee );
   BOOST_REQUIRE_EQUAL( active_schedule_2.median_props.maximum_block_size, active_schedule_1.median_props.maximum_block_size );
   BOOST_REQUIRE_EQUAL( active_schedule_2.median_props.hbd_interest_rate, active_schedule_1.median_props.hbd_interest_rate );
   BOOST_REQUIRE_EQUAL( active_schedule_2.median_props.account_subsidy_budget, active_schedule_1.median_props.account_subsidy_budget );
@@ -190,7 +190,7 @@ BOOST_AUTO_TEST_CASE( get_witness_schedule_test )
     BOOST_REQUIRE( changes.median_props.valid() == true );
     const auto& props_changes = changes.median_props.value();
     BOOST_REQUIRE( props_changes.account_creation_fee.valid() == true );
-    BOOST_REQUIRE( props_changes.account_creation_fee.value() == HIVE_asset( 3'000 ) );
+    BOOST_REQUIRE_EQUAL( props_changes.account_creation_fee.value(), HIVE_asset( 3'000 ) );
     BOOST_REQUIRE( props_changes.maximum_block_size.valid() == false );
     BOOST_REQUIRE( props_changes.hbd_interest_rate.valid() == false );
     BOOST_REQUIRE( props_changes.account_subsidy_budget.valid() == false );

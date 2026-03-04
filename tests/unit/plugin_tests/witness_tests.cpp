@@ -1020,7 +1020,7 @@ BOOST_AUTO_TEST_CASE( start_before_genesis_test )
         ilog( "Block #${n}, ts: ${t}, witness: ${w}", ( "n", block_header.block_num() )
           ( "t", block_header.timestamp )( "w", block_header.witness ) );
         BOOST_REQUIRE_EQUAL( block_header.witness, "initminer" ); // initminer produces all blocks for first two schedules
-        BOOST_REQUIRE( block_header.timestamp == get_genesis_time() + HIVE_BLOCK_INTERVAL );
+        BOOST_REQUIRE_EQUAL( block_header.timestamp, get_genesis_time() + HIVE_BLOCK_INTERVAL );
 
         ilog( "'API' thread finished" );
         test_passed = !theApp.is_interrupt_request();
@@ -1088,7 +1088,7 @@ BOOST_AUTO_TEST_CASE( missing_blocks_test )
             block_num = block_header.block_num();
             ilog( "Block #${n}, ts: ${t}, witness: ${w}", ( "n", block_num )
               ( "t", block_header.timestamp )( "w", block_header.witness ) );
-            BOOST_REQUIRE( block_header.timestamp == next_block_time );
+            BOOST_REQUIRE_EQUAL( block_header.timestamp, next_block_time );
           }
           next_block_time += HIVE_BLOCK_INTERVAL;
           fc::sleep_until( next_block_time );
@@ -1166,7 +1166,7 @@ BOOST_AUTO_TEST_CASE( supplemented_blocks_test )
           block_num = block_header->block_num();
           ilog( "Block #${n}, ts: ${t}, witness: ${w}", ( "n", block_num )
             ( "t", block_header->timestamp )( "w", block_header->witness ) );
-          BOOST_REQUIRE( block_header->timestamp == next_block_time );
+          BOOST_REQUIRE_EQUAL( block_header->timestamp, next_block_time );
           next_block_time += HIVE_BLOCK_INTERVAL;
           fc::sleep_until( next_block_time );
         }
@@ -1276,7 +1276,7 @@ BOOST_FIXTURE_TEST_CASE( not_synced_start_test, restart_witness_fixture )
           block_num = block_header->block_num();
           ilog( "Block #${n}, ts: ${t}, witness: ${w}", ( "n", block_num )
             ( "t", block_header->timestamp )( "w", block_header->witness ) );
-          BOOST_REQUIRE( block_header->timestamp == next_block_time );
+          BOOST_REQUIRE_EQUAL( block_header->timestamp, next_block_time );
           next_block_time += HIVE_BLOCK_INTERVAL;
           should_produce_next = db->get_scheduled_witness( 1 ) == "with";
           fc::sleep_until( next_block_time );
@@ -1663,7 +1663,7 @@ BOOST_AUTO_TEST_CASE( block_lag_test )
         // (3 missing blocks)
         block_header = &get_block_reader().head_block()->get_block_header();
         BOOST_REQUIRE_EQUAL( block_header->block_num(), slow_block_num + 1 );
-        BOOST_REQUIRE( block_header->timestamp == next_block_time + 4 * HIVE_BLOCK_INTERVAL );
+        BOOST_REQUIRE_EQUAL( block_header->timestamp, next_block_time + 4 * HIVE_BLOCK_INTERVAL );
 
         ilog( "'API' thread finished" );
         test_passed = !theApp.is_interrupt_request();

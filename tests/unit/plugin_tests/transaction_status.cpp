@@ -156,7 +156,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
       // Transaction 1 exists in the mem pool
       tso = fixture.db->find< transaction_status_object, by_trx_id >( tx1->get_transaction_id() );
       BOOST_REQUIRE( tso != nullptr );
-      BOOST_REQUIRE( tso->block_num == 0 );
+      BOOST_REQUIRE_EQUAL( tso->block_num, 0 );
       BOOST_REQUIRE_EQUAL( tso->rc_cost, -1 );
 
       api_return = tx_status_api->api->find_transaction( { .transaction_id = tx1->get_transaction_id() } );
@@ -179,12 +179,12 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
       // After block generation transaction's block number is updated in object ...
       tso = fixture.db->find< transaction_status_object, by_trx_id >( tx1->get_transaction_id() );
       BOOST_REQUIRE( tso != nullptr );
-      BOOST_REQUIRE( tso->block_num == tx_block_num );
+      BOOST_REQUIRE_EQUAL( tso->block_num, tx_block_num );
       // ... and the block exists in the mem pool
       tsbo = fixture.db->find< transaction_status_block_object, by_block_num >( tso->block_num );
       BOOST_REQUIRE( tsbo != nullptr );
-      BOOST_REQUIRE( tsbo->block_num == tso->block_num );
-      BOOST_REQUIRE( tsbo->timestamp > fc::time_point_sec() );
+      BOOST_REQUIRE_EQUAL( tsbo->block_num, tso->block_num );
+      BOOST_REQUIRE_GT( tsbo->timestamp, fc::time_point_sec() );
       auto tx1_block_num = tso->block_num;
 
       /*
@@ -220,7 +220,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
       // Transaction 1 exists in a block
       tso = fixture.db->find< transaction_status_object, by_trx_id >( tx1->get_transaction_id() );
       BOOST_REQUIRE( tso != nullptr );
-      BOOST_REQUIRE( tso->block_num == fixture.db->head_block_num() );
+      BOOST_REQUIRE_EQUAL( tso->block_num, fixture.db->head_block_num() );
       BOOST_REQUIRE_GT( tso->rc_cost, 0 );
 
       api_return = tx_status_api->api->find_transaction( { .transaction_id = tx1->get_transaction_id() } );
@@ -240,13 +240,13 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
       // Transaction 1 block exists in the mem pool
       tsbo = fixture.db->find< transaction_status_block_object, by_block_num >( tso->block_num );
       BOOST_REQUIRE( tsbo != nullptr );
-      BOOST_REQUIRE( tsbo->block_num == tso->block_num );
-      BOOST_REQUIRE( tsbo->timestamp > fc::time_point_sec() );
+      BOOST_REQUIRE_EQUAL( tsbo->block_num, tso->block_num );
+      BOOST_REQUIRE_GT( tsbo->timestamp, fc::time_point_sec() );
 
       // Transaction 2 exists in a mem pool
       tso = fixture.db->find< transaction_status_object, by_trx_id >( tx2->get_transaction_id() );
       BOOST_REQUIRE( tso != nullptr );
-      BOOST_REQUIRE( tso->block_num == 0 );
+      BOOST_REQUIRE_EQUAL( tso->block_num, 0 );
       BOOST_REQUIRE_EQUAL( tso->rc_cost, -1 );
 
       api_return = tx_status_api->api->find_transaction( { .transaction_id = tx2->get_transaction_id() } );
@@ -262,7 +262,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
       // Transaction 3 exists in a mem pool
       tso = fixture.db->find< transaction_status_object, by_trx_id >( tx3->get_transaction_id() );
       BOOST_REQUIRE( tso != nullptr );
-      BOOST_REQUIRE( tso->block_num == 0 );
+      BOOST_REQUIRE_EQUAL( tso->block_num, 0 );
       BOOST_REQUIRE_EQUAL( tso->rc_cost, -1 );
 
       api_return = tx_status_api->api->find_transaction( { .transaction_id = tx3->get_transaction_id() } );
@@ -282,7 +282,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
       // Transaction 1 exists in a block
       tso = fixture.db->find< transaction_status_object, by_trx_id >( tx1->get_transaction_id() );
       BOOST_REQUIRE( tso != nullptr );
-      BOOST_REQUIRE( tso->block_num > 0 );
+      BOOST_REQUIRE_GT( tso->block_num, 0 );
       BOOST_REQUIRE_GT( tso->rc_cost, 0 );
 
       api_return = tx_status_api->api->find_transaction( { .transaction_id = tx1->get_transaction_id() } );
@@ -302,13 +302,13 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
       // Transaction 1 block exists in the mem pool
       tsbo = fixture.db->find< transaction_status_block_object, by_block_num >( tso->block_num );
       BOOST_REQUIRE( tsbo != nullptr );
-      BOOST_REQUIRE( tsbo->block_num == tso->block_num );
-      BOOST_REQUIRE( tsbo->timestamp > fc::time_point_sec() );
+      BOOST_REQUIRE_EQUAL( tsbo->block_num, tso->block_num );
+      BOOST_REQUIRE_GT( tsbo->timestamp, fc::time_point_sec() );
 
       // Transaction 2 exists in a block
       tso = fixture.db->find< transaction_status_object, by_trx_id >( tx2->get_transaction_id() );
       BOOST_REQUIRE( tso != nullptr );
-      BOOST_REQUIRE( tso->block_num > 0 );
+      BOOST_REQUIRE_GT( tso->block_num, 0 );
       BOOST_REQUIRE_GT( tso->rc_cost, 0 );
 
       api_return = tx_status_api->api->find_transaction( { .transaction_id = tx2->get_transaction_id() } );
@@ -328,14 +328,14 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
       // Transaction 2 block exists in the mem pool
       tsbo = fixture.db->find< transaction_status_block_object, by_block_num >( tso->block_num );
       BOOST_REQUIRE( tsbo != nullptr );
-      BOOST_REQUIRE( tsbo->block_num == tso->block_num );
-      BOOST_REQUIRE( tsbo->timestamp > fc::time_point_sec() );
+      BOOST_REQUIRE_EQUAL( tsbo->block_num, tso->block_num );
+      BOOST_REQUIRE_GT( tsbo->timestamp, fc::time_point_sec() );
       auto tx2_block_num = tso->block_num;
 
       // Transaction 3 exists in a block
       tso = fixture.db->find< transaction_status_object, by_trx_id >( tx3->get_transaction_id() );
       BOOST_REQUIRE( tso != nullptr );
-      BOOST_REQUIRE( tso->block_num > 0 );
+      BOOST_REQUIRE_GT( tso->block_num, 0 );
       BOOST_REQUIRE_GT( tso->rc_cost, 0 );
 
       api_return = tx_status_api->api->find_transaction( { .transaction_id = tx3->get_transaction_id() } );
@@ -355,8 +355,8 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
       // Transaction 3 block exists in the mem pool
       tsbo = fixture.db->find< transaction_status_block_object, by_block_num >( tso->block_num );
       BOOST_REQUIRE( tsbo != nullptr );
-      BOOST_REQUIRE( tsbo->block_num == tso->block_num );
-      BOOST_REQUIRE( tsbo->timestamp > fc::time_point_sec() );
+      BOOST_REQUIRE_EQUAL( tsbo->block_num, tso->block_num );
+      BOOST_REQUIRE_GT( tsbo->timestamp, fc::time_point_sec() );
       auto tx3_block_num = tso->block_num;
 
       fixture.generate_blocks( HIVE_MAX_TIME_UNTIL_EXPIRATION / HIVE_BLOCK_INTERVAL );
@@ -382,7 +382,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
       // Transaction 2 exists in a block
       tso = fixture.db->find< transaction_status_object, by_trx_id >( tx2->get_transaction_id() );
       BOOST_REQUIRE( tso != nullptr );
-      BOOST_REQUIRE( tso->block_num > 0 );
+      BOOST_REQUIRE_GT( tso->block_num, 0 );
       BOOST_REQUIRE_GT( tso->rc_cost, 0 );
 
       api_return = tx_status_api->api->find_transaction( { .transaction_id = tx2->get_transaction_id() } );
@@ -402,13 +402,13 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
       // Transaction 2 block exists in the mem pool
       tsbo = fixture.db->find< transaction_status_block_object, by_block_num >( tso->block_num );
       BOOST_REQUIRE( tsbo != nullptr );
-      BOOST_REQUIRE( tsbo->block_num == tso->block_num );
-      BOOST_REQUIRE( tsbo->timestamp > fc::time_point_sec() );
+      BOOST_REQUIRE_EQUAL( tsbo->block_num, tso->block_num );
+      BOOST_REQUIRE_GT( tsbo->timestamp, fc::time_point_sec() );
 
       // Transaction 3 exists in a block
       tso = fixture.db->find< transaction_status_object, by_trx_id >( tx3->get_transaction_id() );
       BOOST_REQUIRE( tso != nullptr );
-      BOOST_REQUIRE( tso->block_num > 0 );
+      BOOST_REQUIRE_GT( tso->block_num, 0 );
       BOOST_REQUIRE_GT( tso->rc_cost, 0 );
 
       api_return = tx_status_api->api->find_transaction( { .transaction_id = tx3->get_transaction_id() } );
@@ -428,8 +428,8 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
       // Transaction 3 block exists in the mem pool
       tsbo = fixture.db->find< transaction_status_block_object, by_block_num >( tso->block_num );
       BOOST_REQUIRE( tsbo != nullptr );
-      BOOST_REQUIRE( tsbo->block_num == tso->block_num );
-      BOOST_REQUIRE( tsbo->timestamp > fc::time_point_sec() );
+      BOOST_REQUIRE_EQUAL( tsbo->block_num, tso->block_num );
+      BOOST_REQUIRE_GT( tsbo->timestamp, fc::time_point_sec() );
 
       fixture.generate_block();
 
@@ -479,7 +479,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
       const auto& bidx = fixture.db->get_index< transaction_status_block_index >().indices().get< by_block_num >();
       auto bitr = bidx.begin();
       BOOST_REQUIRE( bitr != bidx.end() );
-      BOOST_REQUIRE( bitr->block_num > lower_bound );
+      BOOST_REQUIRE_GT( bitr->block_num, lower_bound );
 
       fixture.generate_block();
 

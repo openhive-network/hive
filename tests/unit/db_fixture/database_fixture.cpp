@@ -154,13 +154,13 @@ uint32_t database_fixture::generate_blocks_until( const fc::ecc::private_key& ke
 void database_fixture::generate_blocks( uint32_t block_count )
 {
   auto produced = db_plugin->debug_generate_blocks( init_account_priv_key, block_count, default_skip, 0, true );
-  BOOST_REQUIRE( produced == block_count );
+  BOOST_REQUIRE_EQUAL( produced, block_count );
 }
 
 void database_fixture::generate_blocks(fc::time_point_sec timestamp, bool miss_intermediate_blocks)
 {
   db_plugin->debug_generate_blocks_until( init_account_priv_key, timestamp, miss_intermediate_blocks, default_skip, true );
-  BOOST_REQUIRE( ( db->head_block_time() - timestamp ).to_seconds() < HIVE_BLOCK_INTERVAL );
+  BOOST_REQUIRE_LT( ( db->head_block_time() - timestamp ).to_seconds(), HIVE_BLOCK_INTERVAL );
 }
 
 void database_fixture::generate_seconds_blocks( uint32_t seconds, bool skip_interm_blocks )
@@ -824,7 +824,7 @@ int64_t database_fixture::create_proposal( const std::string& creator, const std
   auto itr = proposal_idx.end();
   BOOST_REQUIRE( proposal_idx.begin() != itr );
   --itr;
-  BOOST_REQUIRE( creator == itr->creator );
+  BOOST_REQUIRE_EQUAL( creator, itr->creator );
 
   return itr->proposal_id;
 }

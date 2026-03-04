@@ -397,7 +397,7 @@ void fork_reverts_cashout_scanario( const std::string& comment_archive_type, boo
   auto old_cashout_time = cashout_time;
   get_comment( "alice", "test3" );
   BOOST_CHECK_LT( old_id, comment_id ); // ABW: that is generally true, except when it wraps
-  BOOST_CHECK( old_cashout_time < cashout_time );
+  BOOST_CHECK_LT( old_cashout_time, cashout_time );
 
   // pass cashout point again (last block is considered missing), but this time cashout should not happen (cashout of replacement comment is in the future)
   test.generate_block( database::skip_nothing, HIVE_INIT_PRIVATE_KEY, 1 );

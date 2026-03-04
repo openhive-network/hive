@@ -177,7 +177,7 @@ BOOST_FIXTURE_TEST_CASE( inconsistent_ah_rocksdb_storage, empty_fixture )
       fixture.ah_plugin->find_account_history_data( "alice", -1, 100, false, [&]( unsigned int idx, const account_history_rocksdb::rocksdb_operation_object& op ) {
         hive::protocol::operation raw_op = fc::raw::unpack_from_buffer< hive::protocol::operation >( op.serialized_op );
         auto op_str = fc::json::to_string( fc::variant( raw_op ) );
-        BOOST_REQUIRE( idx < pattern_alice.size() );
+        BOOST_REQUIRE_LT( idx, pattern_alice.size() );
         BOOST_CHECK_EQUAL( op_str, pattern_alice.at( idx ) );
         ++count;
         return true;
@@ -197,7 +197,7 @@ BOOST_FIXTURE_TEST_CASE( inconsistent_ah_rocksdb_storage, empty_fixture )
       fixture.ah_plugin->find_account_history_data( "bob", -1, 100, false, [&]( unsigned int idx, const account_history_rocksdb::rocksdb_operation_object& op ) {
         hive::protocol::operation raw_op = fc::raw::unpack_from_buffer< hive::protocol::operation >( op.serialized_op );
         auto op_str = fc::json::to_string( fc::variant( raw_op ) );
-        BOOST_REQUIRE( idx < pattern_bob.size() );
+        BOOST_REQUIRE_LT( idx, pattern_bob.size() );
         BOOST_CHECK_EQUAL( op_str, pattern_bob.at( idx ) );
         ++count;
         return true;

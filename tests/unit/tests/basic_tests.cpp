@@ -614,7 +614,7 @@ BOOST_AUTO_TEST_CASE( curation_weight_test )
     uint64_t old_weight = fc::uint128_to_uint64(util::evaluate_reward_curve( rshares - i, protocol::convergent_square_root, s ));
     uint64_t new_weight = fc::uint128_to_uint64(util::evaluate_reward_curve( rshares, protocol::convergent_square_root, s ));
 
-    BOOST_REQUIRE( old_weight <= new_weight );
+    BOOST_REQUIRE_LE( old_weight, new_weight );
 
     uint128_t w( new_weight - old_weight );
 

@@ -74,7 +74,7 @@ BOOST_AUTO_TEST_CASE( get_account_history_hf1 )
   auto check_point_tester = [ this ]( uint32_t generate_no_further_than )
   {
     generate_until_irreversible_block( 21 );
-    BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
+    BOOST_REQUIRE_LE( db->head_block_num(), generate_no_further_than );
 
     // Check all low, except hardfork_operation.
     uint64_t filter_low = -1ull & ~GET_LOW_OPERATION( hardfork_operation );
@@ -146,7 +146,7 @@ BOOST_AUTO_TEST_CASE( get_account_history_hf8 )
   auto check_point_tester = [ this ]( uint32_t generate_no_further_than )
   {
     generate_until_irreversible_block( 1200 );
-    BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
+    BOOST_REQUIRE_LE( db->head_block_num(), generate_no_further_than );
 
     expected_t expected_hf8alice_history = { {
       R"~([4,{"trx_id":"3f3954cb82d9b99a071bfd3fea4c1082fe5b9cce","block":5,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:15","op":{"type":"limit_order_create_operation","value":{"owner":"hf8alice","orderid":3,"amount_to_sell":{"amount":"12800","precision":3,"nai":"@@000000021"},"min_to_receive":{"amount":"13300","precision":3,"nai":"@@000000013"},"fill_or_kill":false,"expiration":"2016-01-29T00:00:12"}},"operation_id":0}])~",
@@ -204,7 +204,7 @@ BOOST_AUTO_TEST_CASE( get_account_history_hf12 )
   auto check_point_tester = [ this ]( uint32_t generate_no_further_than )
   {
     generate_until_irreversible_block( 3 );
-    BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
+    BOOST_REQUIRE_LE( db->head_block_num(), generate_no_further_than );
 
     expected_t expected_carol0ah_history = { {
       R"~([0,{"trx_id":"a1ed040184eb05409c6e8f505e957e72a3e9ae19","block":3,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:09","op":{"type":"pow_operation","value":{"worker_account":"carol0ah","block_id":"000000023a9660b4ea628eae209581971b37ff6c","nonce":2,"work":{"worker":"STM5Mwq5o6BruTVbCcxkqVKL4eeRm3Jrs5fjRGHshvGUj29FPh7Yr","input":"df4f8fa003510e85006d2c9df284ad133297b4f9f77cb35a3248d19c2c41481a","signature":"20fcabb003b9e1ba2a8f13ab2167a2dc06278c34cf2753dce190f6bd6dd12094a416cb0591a8e88df92a964272652e210fb10a5b0053003de842c334ef45eb5032","work":"010acf126ce50ff910e665888d4db003d784b9ba028ab98ac6deea9e6226c8ca"},"props":{"account_creation_fee":{"amount":"0","precision":3,"nai":"@@000000021"},"maximum_block_size":131072,"hbd_interest_rate":1000}}},"operation_id":0}])~",
@@ -244,13 +244,13 @@ BOOST_AUTO_TEST_CASE( get_account_history_hf13 )
   auto check_point_tester1 = [ this ]( uint32_t generate_no_further_than )
   {
     generate_until_irreversible_block( 3 );
-    BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
+    BOOST_REQUIRE_LE( db->head_block_num(), generate_no_further_than );
   };
 
   auto check_point_tester2 = [ this ]( uint32_t generate_no_further_than )
   {
     generate_until_irreversible_block( 25 );
-    BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
+    BOOST_REQUIRE_LE( db->head_block_num(), generate_no_further_than );
 
     expected_t expected_dan0ah_history = { {
       R"~([0,{"trx_id":"b131b99f50989ea8ddfb12b6958cc0c0c42a1140","block":3,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:09","op":{"type":"pow2_operation","value":{"work":{"type":"pow2","value":{"input":{"worker_account":"dan0ah","prev_block":"00000002732e04c82c9cf0979e02b2e469ce53bf","nonce":2},"pow_summary":4187863562}},"new_owner_key":"STM7YJmUoKbPQkrMrZbrgPxDMYJA3uD3utaN3WYRwaFGKYbQ9ftKV","props":{"account_creation_fee":{"amount":"0","precision":3,"nai":"@@000000021"},"maximum_block_size":131072,"hbd_interest_rate":1000}}},"operation_id":0}])~",
@@ -337,7 +337,7 @@ BOOST_AUTO_TEST_CASE( get_account_history_hf19 )
   {
     // Make the block with desired vops irreversible.
     generate_until_irreversible_block( 27 );
-    BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
+    BOOST_REQUIRE_LE( db->head_block_num(), generate_no_further_than );
 
     expected_t expected_alice19ah_history = { {
       R"~([4,{"trx_id":"2c670b301475c656d736c135dcbe67255ed4073a","block":4,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":{"type":"witness_update_operation","value":{"owner":"alice19ah","url":"foo.bar","block_signing_key":"STM89H9erzoVqMMEsqN9MqeFdBTdquzeYeXUL2anQVmBdHz55iedM","props":{"account_creation_fee":{"amount":"0","precision":3,"nai":"@@000000021"},"maximum_block_size":131072,"hbd_interest_rate":1000},"fee":{"amount":"1000","precision":3,"nai":"@@000000021"}}},"operation_id":0}])~",
@@ -397,7 +397,7 @@ BOOST_AUTO_TEST_CASE( get_account_history_hf23 )
   auto check_point_tester = [ this ]( uint32_t generate_no_further_than )
   {
     generate_until_irreversible_block( 6 );
-    BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
+    BOOST_REQUIRE_LE( db->head_block_num(), generate_no_further_than );
 
     expected_t expected_steemflower_history = { {
       R"~([0,{"trx_id":"da8ac5d9bb25c37c7d3846799344976a24d72d3d","block":3,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:09","op":{"type":"account_create_operation","value":{"fee":{"amount":"0","precision":3,"nai":"@@000000021"},"creator":"initminer","new_account_name":"steemflower","owner":{"weight_threshold":1,"account_auths":[],"key_auths":[["STM6V7YxA9xvhM6QK5HzAjnMGxPEzpLNrbCvxv9pkvqJhJgst5xNL",1]]},"active":{"weight_threshold":1,"account_auths":[],"key_auths":[["STM6V7YxA9xvhM6QK5HzAjnMGxPEzpLNrbCvxv9pkvqJhJgst5xNL",1]]},"posting":{"weight_threshold":1,"account_auths":[],"key_auths":[["STM55Mrt8AaKKaH3WsggFF6iRqyXH1ijNCHcNqAaD6E1j5PcRG4FG",1]]},"memo_key":"STM6V7YxA9xvhM6QK5HzAjnMGxPEzpLNrbCvxv9pkvqJhJgst5xNL","json_metadata":""}},"operation_id":0}])~",
@@ -460,7 +460,7 @@ BOOST_AUTO_TEST_CASE( get_account_history_comment_and_reward )
   // Generate a number of blocks sufficient that following claim_reward_operation succeeds.
   auto check_point_1_tester = [ this ]( uint32_t generate_no_further_than ) {
     generate_until_irreversible_block( 6 );
-    BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
+    BOOST_REQUIRE_LE( db->head_block_num(), generate_no_further_than );
   };
 
   // Check cumulative history now.
@@ -468,7 +468,7 @@ BOOST_AUTO_TEST_CASE( get_account_history_comment_and_reward )
   auto check_point_2_tester = [ this ]( uint32_t generate_no_further_than )
   { 
     generate_until_irreversible_block( 28 );
-    BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
+    BOOST_REQUIRE_LE( db->head_block_num(), generate_no_further_than );
 
     expected_t expected_dan0ah_history = { {
       R"~([0,{"trx_id":"2493b59d55f9066142c0afef860ebf679695b12e","block":3,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:09","op":{"type":"account_create_operation","value":{"fee":{"amount":"0","precision":3,"nai":"@@000000021"},"creator":"initminer","new_account_name":"dan0ah","owner":{"weight_threshold":1,"account_auths":[],"key_auths":[["STM7YJmUoKbPQkrMrZbrgPxDMYJA3uD3utaN3WYRwaFGKYbQ9ftKV",1]]},"active":{"weight_threshold":1,"account_auths":[],"key_auths":[["STM7YJmUoKbPQkrMrZbrgPxDMYJA3uD3utaN3WYRwaFGKYbQ9ftKV",1]]},"posting":{"weight_threshold":1,"account_auths":[],"key_auths":[["STM6HMjs2nWJ6gLw7eyoUySVHGN2uAoSc3CmCjer489SPC3Kwt1UW",1]]},"memo_key":"STM7YJmUoKbPQkrMrZbrgPxDMYJA3uD3utaN3WYRwaFGKYbQ9ftKV","json_metadata":""}},"operation_id":0}])~",
@@ -565,7 +565,7 @@ BOOST_AUTO_TEST_CASE( get_account_history_convert_and_limit_order )
   auto check_point_tester = [ this ]( uint32_t generate_no_further_than )
   {
     generate_until_irreversible_block( 88 );
-    BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
+    BOOST_REQUIRE_LE( db->head_block_num(), generate_no_further_than );
 
     expected_t expected_carol3ah_history = { {
       R"~([0,{"trx_id":"99b3d543d8dbd7da66dc4939cea81138e9171073","block":3,"trx_in_block":2,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:09","op":{"type":"account_create_operation","value":{"fee":{"amount":"0","precision":3,"nai":"@@000000021"},"creator":"initminer","new_account_name":"carol3ah","owner":{"weight_threshold":1,"account_auths":[],"key_auths":[["STM7jcq47bH93zcuTCdP394BYJLrhGWzyGwqkukB46zyFsghQPeoz",1]]},"active":{"weight_threshold":1,"account_auths":[],"key_auths":[["STM7jcq47bH93zcuTCdP394BYJLrhGWzyGwqkukB46zyFsghQPeoz",1]]},"posting":{"weight_threshold":1,"account_auths":[],"key_auths":[["STM5kavbaHAVwb9mANYyUEubtGybsJ4zySnVrpdmpDM8pDRhKzyN3",1]]},"memo_key":"STM7jcq47bH93zcuTCdP394BYJLrhGWzyGwqkukB46zyFsghQPeoz","json_metadata":""}},"operation_id":0}])~",
@@ -652,7 +652,7 @@ BOOST_AUTO_TEST_CASE( get_account_history_vesting )
   auto check_point_tester = [ this ]( uint32_t generate_no_further_than )
   {
     generate_until_irreversible_block( 9 );
-    BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
+    BOOST_REQUIRE_LE( db->head_block_num(), generate_no_further_than );
 
     expected_t expected_alice4ah_history = { {
       R"~([2,{"trx_id":"a6acc8f4d22b472c0688aac55a7e8cc786003ce9","block":3,"trx_in_block":1,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:09","op":{"type":"transfer_to_vesting_operation","value":{"from":"initminer","to":"alice4ah","amount":{"amount":"100","precision":3,"nai":"@@000000021"}}},"operation_id":0}])~",
@@ -789,7 +789,7 @@ BOOST_AUTO_TEST_CASE( get_account_history_witness )
   auto check_point_tester = [ this ]( uint32_t generate_no_further_than )
   {
     generate_until_irreversible_block( 8 );
-    BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
+    BOOST_REQUIRE_LE( db->head_block_num(), generate_no_further_than );
 
     expected_t expected_alice5ah_history = { {
       R"~([4,{"trx_id":"68dc811e40bbf5298cc49906ac0b07f2b8d91d50","block":4,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":{"type":"witness_update_operation","value":{"owner":"alice5ah","url":"foo.bar","block_signing_key":"STM5x2Aroso4sW7B7wp191Zvzs4mV7vH12g9yccbb2rV7kVUwTC5D","props":{"account_creation_fee":{"amount":"0","precision":3,"nai":"@@000000021"},"maximum_block_size":131072,"hbd_interest_rate":1000},"fee":{"amount":"1000","precision":3,"nai":"@@000000021"}}},"operation_id":0}])~",
@@ -853,7 +853,7 @@ BOOST_AUTO_TEST_CASE( get_account_history_escrow_and_savings )
   auto check_point_tester = [ this ]( uint32_t generate_no_further_than )
   {
     generate_until_irreversible_block( 11 );
-    BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
+    BOOST_REQUIRE_LE( db->head_block_num(), generate_no_further_than );
 
     expected_t expected_alice6ah_history = { {
       R"~([4,{"trx_id":"d991732e509c73b78ef79873cded63346f6c0201","block":5,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:15","op":{"type":"escrow_transfer_operation","value":{"from":"alice6ah","to":"ben6ah","hbd_amount":{"amount":"0","precision":3,"nai":"@@000000013"},"hive_amount":{"amount":"71","precision":3,"nai":"@@000000021"},"escrow_id":30,"agent":"carol6ah","fee":{"amount":"1","precision":3,"nai":"@@000000021"},"json_meta":"","ratification_deadline":"2016-01-01T00:00:42","escrow_expiration":"2016-01-01T00:01:12"}},"operation_id":0}])~",
@@ -994,7 +994,7 @@ BOOST_AUTO_TEST_CASE( get_account_history_proposal )
   auto check_point_tester = [ this ]( uint32_t generate_no_further_than )
   {
     generate_until_irreversible_block( 42 );
-    BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
+    BOOST_REQUIRE_LE( db->head_block_num(), generate_no_further_than );
 
     // Filter out producer_reward_operation
     expected_t expected_alice7ah_history = { {
@@ -1069,7 +1069,7 @@ BOOST_AUTO_TEST_CASE( get_account_history_account )
   auto check_point_tester = [ this ]( uint32_t generate_no_further_than )
   {
     generate_until_irreversible_block( 65 );
-    BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
+    BOOST_REQUIRE_LE( db->head_block_num(), generate_no_further_than );
 
     // Filter out producer_reward_operation
     expected_t expected_initminer_history = { {
@@ -1173,7 +1173,7 @@ BOOST_AUTO_TEST_CASE( get_account_history_custom )
   auto check_point_tester = [ this ]( uint32_t generate_no_further_than )
   {
     generate_until_irreversible_block( 4 );
-    BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
+    BOOST_REQUIRE_LE( db->head_block_num(), generate_no_further_than );
 
     expected_t expected_alice9ah_history = { {
       R"~([4,{"trx_id":"3e44a79c011431391ccb98dff11a0025ee25ecbf","block":4,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":{"type":"custom_operation","value":{"required_auths":["alice9ah"],"id":7,"data":"44415441"}},"operation_id":0}])~",
@@ -1209,7 +1209,7 @@ BOOST_AUTO_TEST_CASE( get_account_history_recurrent_transfer )
   auto check_point_tester = [ this ]( uint32_t generate_no_further_than )
   {
     generate_until_irreversible_block( 1204 );
-    BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
+    BOOST_REQUIRE_LE( db->head_block_num(), generate_no_further_than );
 
     expected_t expected_alice10ah_history = { {
       R"~([4,{"trx_id":"93e35087c9401f6fa910684a849008cca1f85124","block":5,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:15","op":{"type":"recurrent_transfer_operation","value":{"from":"alice10ah","to":"ben10ah","amount":{"amount":"37","precision":3,"nai":"@@000000021"},"memo":"With love","recurrence":1,"executions":2,"extensions":[]}},"operation_id":0}])~",
@@ -1269,7 +1269,7 @@ BOOST_AUTO_TEST_CASE( get_account_history_decline_voting_rights )
   auto check_point_tester = [ this ]( uint32_t generate_no_further_than )
   {
     generate_until_irreversible_block( 23 );
-    BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
+    BOOST_REQUIRE_LE( db->head_block_num(), generate_no_further_than );
 
     expected_t expected_alice11ah_history = { {
       R"~([4,{"trx_id":"60ebbe2fd041e117a5f24e07767d1686cee6c49a","block":4,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:12","op":{"type":"account_witness_proxy_operation","value":{"account":"alice11ah","proxy":"ben11ah"}},"operation_id":0}])~",
@@ -1323,7 +1323,7 @@ BOOST_AUTO_TEST_CASE( get_account_history_combo_1 )
   auto check_point_tester2 = [ this ]( uint32_t generate_no_further_than )
   {
     generate_until_irreversible_block( 4 );
-    BOOST_REQUIRE( db->head_block_num() <= generate_no_further_than );
+    BOOST_REQUIRE_LE( db->head_block_num(), generate_no_further_than );
 
     expected_t expected_alice12ah_history = { {
       R"~([0,{"trx_id":"1abb51849339ddedd0668a95c7384ec546fd4f30","block":3,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:09","op":{"type":"account_create_operation","value":{"fee":{"amount":"0","precision":3,"nai":"@@000000021"},"creator":"initminer","new_account_name":"alice12ah","owner":{"weight_threshold":1,"account_auths":[],"key_auths":[["STM5GohjoP5Uu8yxgxR1BWmbDCNU8zL9Zqr4Ff5CThM7kfH59EX2C",1]]},"active":{"weight_threshold":1,"account_auths":[],"key_auths":[["STM5GohjoP5Uu8yxgxR1BWmbDCNU8zL9Zqr4Ff5CThM7kfH59EX2C",1]]},"posting":{"weight_threshold":1,"account_auths":[],"key_auths":[["STM5GohjoP5Uu8yxgxR1BWmbDCNU8zL9Zqr4Ff5CThM7kfH59EX2C",1]]},"memo_key":"STM5GohjoP5Uu8yxgxR1BWmbDCNU8zL9Zqr4Ff5CThM7kfH59EX2C","json_metadata":""}},"operation_id":0}])~",

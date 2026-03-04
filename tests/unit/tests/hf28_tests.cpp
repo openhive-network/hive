@@ -2304,7 +2304,7 @@ BOOST_AUTO_TEST_CASE( treasury_hbd_does_not_affect_inflation_basic )
     auto after_virtual_supply = props.virtual_supply.amount;
 
     auto initial_inflation = after_virtual_supply - before_virtual_supply;
-    BOOST_REQUIRE( initial_inflation > 0 );
+    BOOST_REQUIRE_GT( initial_inflation, 0 );
 
     before_virtual_supply = props.virtual_supply.amount;
     ISSUE_FUNDS( db->get_treasury_name(), HBD_asset( 5'000'000'000 ) );
@@ -2314,7 +2314,7 @@ BOOST_AUTO_TEST_CASE( treasury_hbd_does_not_affect_inflation_basic )
     after_virtual_supply = props.virtual_supply.amount;
 
     auto inflation_with_hbd = after_virtual_supply - before_virtual_supply;
-    BOOST_REQUIRE( inflation_with_hbd > initial_inflation );
+    BOOST_REQUIRE_GT( inflation_with_hbd, initial_inflation );
 
     // Move to HF28 and check reduced inflation
     inject_hardfork( HIVE_HARDFORK_1_28 );
