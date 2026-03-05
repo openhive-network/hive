@@ -564,7 +564,7 @@ void database::apply_hardfork( uint32_t hardfork )
           const auto& new_dvotes = create< delayed_votes_object >();
           create< tiny_account_object >( new_account, new_assets, new_dvotes );
           push_virtual_operation(
-            *this, account_created_operation( treasury_name, treasury_name, asset(0, VESTS_SYMBOL), asset(0, VESTS_SYMBOL) ) );
+            *this, account_created_operation( treasury_name, treasury_name, VEST_asset( 0 ), VEST_asset( 0 ) ) );
       }
 
       lock_account( get_treasury() );
@@ -674,7 +674,7 @@ void database::apply_hardfork( uint32_t hardfork )
         const auto& new_dvotes = create< delayed_votes_object >();
         create< tiny_account_object >( new_account, new_assets, new_dvotes );
         push_virtual_operation(
-          *this, account_created_operation( treasury_name, treasury_name, asset(0, VESTS_SYMBOL), asset(0, VESTS_SYMBOL) ) );
+          *this, account_created_operation( treasury_name, treasury_name, VEST_asset( 0 ), VEST_asset( 0 ) ) );
     }
 
     lock_account( get_treasury() );

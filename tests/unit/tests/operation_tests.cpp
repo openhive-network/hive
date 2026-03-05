@@ -148,7 +148,7 @@ BOOST_AUTO_TEST_CASE( account_create_apply )
 
     const auto& init = db->get_account( HIVE_INIT_MINER_NAME );
     const auto& init_assets = db->get_asset_account( init.get_id() );
-    asset init_starting_balance = init_assets.get_balance();
+    auto init_starting_balance = init_assets.get_balance();
 
     account_create_operation op;
 
@@ -190,7 +190,7 @@ BOOST_AUTO_TEST_CASE( account_create_apply )
     BOOST_REQUIRE_EQUAL( acct_assets.get_vesting().amount.value, 0 );
     BOOST_REQUIRE_EQUAL( acct_assets.get_vesting_withdraw_rate().amount.value, ASSET( "0.000000 VESTS" ).amount.value );
     BOOST_REQUIRE_EQUAL( acct.proxied_vsf_votes_total().value, 0 );
-    BOOST_REQUIRE_EQUAL( ( init_starting_balance - ASSET( "0.100 TESTS" ) ).amount.value, init_assets.get_balance().amount.value );
+    BOOST_REQUIRE_EQUAL( ( init_starting_balance - HIVE_asset( 100 ) ).amount.value, init_assets.get_balance().amount.value );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test failure of duplicate account creation" );
@@ -208,7 +208,7 @@ BOOST_AUTO_TEST_CASE( account_create_apply )
     BOOST_REQUIRE_EQUAL( acct_assets.get_vesting().amount.value, 0 );
     BOOST_REQUIRE_EQUAL( acct_assets.get_vesting_withdraw_rate().amount.value, ASSET( "0.000000 VESTS" ).amount.value );
     BOOST_REQUIRE_EQUAL( acct.proxied_vsf_votes_total().value, 0 );
-    BOOST_REQUIRE_EQUAL( ( init_starting_balance - ASSET( "0.100 TESTS" ) ).amount.value, init_assets.get_balance().amount.value );
+    BOOST_REQUIRE_EQUAL( ( init_starting_balance - HIVE_asset( 100 ) ).amount.value, init_assets.get_balance().amount.value );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test failure when creator cannot cover fee" );
@@ -824,7 +824,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
     BOOST_REQUIRE_EQUAL( _alice_assets.get_last_vote_time(), db->head_block_time() );
     BOOST_REQUIRE_EQUAL( alice_comment_cashout->get_net_rshares(), ( old_mana - _alice_assets.get_voting_manabar().current_mana ) - HIVE_VOTE_DUST_THRESHOLD );
     BOOST_REQUIRE_EQUAL( alice_comment_cashout->get_cashout_time(), alice_comment_cashout->get_creation_time() + HIVE_CASHOUT_WINDOW_SECONDS );
-    BOOST_REQUIRE_NE( itr, vote_idx.end() );
+    BOOST_REQUIRE( itr != vote_idx.end() );
     BOOST_REQUIRE_EQUAL( itr->get_rshares(), ( old_mana - _alice_assets.get_voting_manabar().current_mana ) - HIVE_VOTE_DUST_THRESHOLD );
     validate_database();
 
@@ -1487,7 +1487,7 @@ BOOST_AUTO_TEST_CASE( transfer_apply )
     tx.operations.push_back( op );
     push_transaction( tx, bob_private_key );
     BOOST_REQUIRE_EQUAL( get_hive_balance( "bob" ), HIVE_asset( 9'000 ) );
-    BOOST_REQUIRE_EQUAL( treasury_assets.get_hbd_balance(), treasury_hbd_balance + ASSET( "1.000 TBD" ) );
+    BOOST_REQUIRE_EQUAL( treasury_assets.get_hbd_balance(), treasury_hbd_balance + HBD_asset( 1'000 ) );
     generate_block();
     validate_database();
 
@@ -1507,7 +1507,7 @@ BOOST_AUTO_TEST_CASE( transfer_apply )
     push_transaction( tx, bob_private_key );
 
     BOOST_REQUIRE_EQUAL( get_hbd_balance( "bob" ), HBD_asset( 0 ) );
-    BOOST_REQUIRE_EQUAL( treasury_assets.get_hbd_balance(), treasury_hbd_balance + ASSET( "1.000 TBD" ) );
+    BOOST_REQUIRE_EQUAL( treasury_assets.get_hbd_balance(), treasury_hbd_balance + HBD_asset( 1'000 ) );
     validate_database();
   }
   FC_LOG_AND_RETHROW()
@@ -1576,10 +1576,10 @@ BOOST_AUTO_TEST_CASE( transfer_to_vesting_apply )
     const auto& alice_assets = db->get_asset_account( alice.get_id() );
     const auto& bob_assets = db->get_asset_account( bob.get_id() );
 
-    BOOST_REQUIRE_EQUAL( alice_assets.get_balance(), ASSET( "10.000 TESTS" ) );
+    BOOST_REQUIRE_EQUAL( alice_assets.get_balance(), HIVE_asset( 10'000 ) );
 
-    auto shares = asset( gpo.get_total_vesting_shares().amount, VESTS_SYMBOL );
-    auto vests = asset( gpo.get_total_vesting_fund_hive().amount, HIVE_SYMBOL );
+    auto shares = gpo.get_total_vesting_shares();
+    auto vests = gpo.get_total_vesting_fund_hive();
     auto alice_shares = alice_assets.get_vesting();
     auto bob_shares = bob_assets.get_vesting();
 
@@ -1598,9 +1598,9 @@ BOOST_AUTO_TEST_CASE( transfer_to_vesting_apply )
     tx.operations.push_back( op );
     push_transaction( tx, alice_private_key );
 
-    auto new_vest = op.get_amount() * VEST_price( shares, vested );
+    auto new_vest = op.get_amount() * VEST_price( shares, vests );
     shares += new_vest;
-    vested += op.get_amount();
+    vests += op.get_amount();
     alice_shares += new_vest;
 
     BOOST_REQUIRE_EQUAL( alice_assets.get_balance().amount.value, ASSET( "2.500 TESTS" ).amount.value );
@@ -1616,9 +1616,9 @@ BOOST_AUTO_TEST_CASE( transfer_to_vesting_apply )
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     push_transaction( tx, alice_private_key );
 
-    new_vest = op.get_amount() * VEST_price( shares, vested );
+    new_vest = op.get_amount() * VEST_price( shares, vests );
     shares += new_vest;
-    vested += op.get_amount();
+    vests += op.get_amount();
     bob_shares += new_vest;
 
     BOOST_REQUIRE_EQUAL( alice_assets.get_balance().amount.value, ASSET( "0.500 TESTS" ).amount.value );
@@ -1779,7 +1779,7 @@ BOOST_AUTO_TEST_CASE( withdraw_vesting_apply )
 
 
     BOOST_TEST_MESSAGE( "--- Test cancelling a withdraw when below the account creation fee" );
-    op.vesting_shares = alice_assets.get_vesting();
+    op.vesting_shares = alice_assets.get_vesting().to_asset();
     tx.clear();
     tx.operations.push_back( op );
     push_transaction( tx, alice_private_key );
@@ -1812,7 +1812,7 @@ BOOST_AUTO_TEST_CASE( withdraw_vesting_apply )
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     push_transaction( tx, alice_private_key );
 
-    BOOST_REQUIRE_EQUAL( GET_ASSETS( "alice" ).get_vesting_withdraw_rate(), ASSET( "0.000000 VESTS" ) );
+    BOOST_REQUIRE_EQUAL( GET_ASSETS( "alice" ).get_vesting_withdraw_rate(), VEST_asset( 0 ) );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test withdrawing minimal VESTS" );
@@ -2172,7 +2172,7 @@ BOOST_AUTO_TEST_CASE(account_witness_vote_apply_delay)
 
     BOOST_REQUIRE_EQUAL( _sam_witness.votes, 0 );
     BOOST_REQUIRE_EQUAL( _alice_assets.get_vesting().amount, _alice_dv.get_sum_delayed_votes().value );
-    BOOST_REQUIRE_NE( witness_vote_idx.find(boost::make_tuple(_sam_witness.owner, _alice.get_name())), witness_vote_idx.end() );
+    BOOST_REQUIRE( witness_vote_idx.find(boost::make_tuple(_sam_witness.owner, _alice.get_name())) != witness_vote_idx.end() );
     validate_database();
     generate_blocks(db->head_block_time() + fc::seconds(HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS));
     BOOST_REQUIRE_EQUAL( _sam_witness.votes, _alice_assets.get_vesting().amount );
@@ -3598,8 +3598,8 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
       amount = ( amount * limit2 ) / ( 2 * HIVE_100_PERCENT - limit2 );
       auto new_hbd = asset( fc::uint128_to_uint64(amount), HIVE_SYMBOL ) * feed.current_median_history.to_price();
       const auto& treasury_assets = db->get_asset_account( db->get_treasury().get_id() );
-      new_hbd -= dgpo.get_current_hbd_supply() - treasury_assets.get_hbd_balance();
-      issue_funds( "alice", new_hbd, false );
+      new_hbd -= ( dgpo.get_current_hbd_supply() - treasury_assets.get_hbd_balance() ).to_asset();
+      issue_funds( "alice", HBD_asset( new_hbd ), false );
       uint16_t percent = db->calculate_HBD_percent();
       BOOST_REQUIRE_EQUAL( percent, dgpo.hbd_stop_percent );
     }
@@ -5168,8 +5168,8 @@ BOOST_AUTO_TEST_CASE( escrow_transfer_apply )
     tx.operations.clear();
     tx.operations.push_back( op );
 
-    auto alice_hive_balance = alice_assets.get_balance() - op.hive_amount - op.fee;
-    auto alice_hbd_balance = alice_assets.get_hbd_balance() - op.hbd_amount;
+    auto alice_hive_balance = alice_assets.get_balance() - HIVE_asset( op.hive_amount ) - HIVE_asset( op.fee );
+    auto alice_hbd_balance = alice_assets.get_hbd_balance() - HBD_asset( op.hbd_amount );
     auto bob_hive_balance = bob_assets.get_balance();
     auto bob_hbd_balance = bob_assets.get_hbd_balance();
     auto sam_hive_balance = sam_assets.get_balance();
@@ -5402,7 +5402,7 @@ BOOST_AUTO_TEST_CASE( escrow_approve_apply )
     }
 
     HIVE_REQUIRE_THROW( db->get_escrow( op.from, op.escrow_id ), fc::exception );
-    BOOST_REQUIRE_EQUAL( alice_assets.get_balance(), ASSET( "10.000 TESTS" ) );
+    BOOST_REQUIRE_EQUAL( alice_assets.get_balance(), HIVE_asset( 10'000 ) );
     validate_database();
 
 
@@ -7423,10 +7423,10 @@ BOOST_AUTO_TEST_CASE( claim_reward_balance_apply )
       const auto& alice_assets = db.get_asset_account( alice_acc.get_id() );
       db.modify( alice_assets, []( assets_object& a )
       {
-        a.set_rewards( ASSET( "10.000 TESTS" ) );
-        a.set_hbd_rewards( ASSET( "10.000 TBD" ) );
-        a.set_vest_rewards( ASSET( "10.000000 VESTS" ) );
-        a.set_vest_rewards_as_hive( ASSET( "10.000 TESTS" ) );
+        a.set_rewards( HIVE_asset( 10'000 ) );
+        a.set_hbd_rewards( HBD_asset( 10'000 ) );
+        a.set_vest_rewards( VEST_asset( 10'000'000 ) );
+        a.set_vest_rewards_as_hive( HIVE_asset( 10'000 ) );
       });
 
       db.modify( db.get_dynamic_global_properties(), []( dynamic_global_property_object& gpo )
@@ -7610,10 +7610,10 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
     const auto& bob_acc = db->get_account( "bob" );
     const auto& bob_assets = db->get_asset_account( bob_acc.get_id() );
 
-    BOOST_REQUIRE_EQUAL( GET_ASSETS( "alice" ).get_delegated_vesting(), ASSET( "10000000.000000 VESTS" ) );
+    BOOST_REQUIRE_EQUAL( GET_ASSETS( "alice" ).get_delegated_vesting(), VEST_asset( 10'000'000'000'000 ) );
     BOOST_REQUIRE_EQUAL( alice_assets.get_voting_manabar().current_mana, old_manabar.current_mana - op.vesting_shares.amount.value );
     BOOST_REQUIRE_EQUAL( alice_assets.get_downvote_manabar().current_mana, old_downvote_manabar.current_mana - op.vesting_shares.amount.value / 4 );
-    BOOST_REQUIRE_EQUAL( GET_ASSETS( "bob" ).get_received_vesting(), ASSET( "10000000.000000 VESTS" ) );
+    BOOST_REQUIRE_EQUAL( GET_ASSETS( "bob" ).get_received_vesting(), VEST_asset( 10'000'000'000'000 ) );
     BOOST_REQUIRE_EQUAL( bob_assets.get_voting_manabar().current_mana, old_bob_manabar.current_mana + op.vesting_shares.amount.value );
     BOOST_REQUIRE_EQUAL( bob_assets.get_downvote_manabar().current_mana, old_bob_downvote_manabar.current_mana + op.vesting_shares.amount.value / 4 );
 
@@ -7653,11 +7653,11 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
 
     BOOST_REQUIRE( delegation != nullptr );
     BOOST_REQUIRE_EQUAL( delegation->get_delegator(), alice_acc.get_id() );
-    BOOST_REQUIRE_EQUAL( delegation->get_vesting(), ASSET( "20000000.000000 VESTS") );
-    BOOST_REQUIRE_EQUAL( GET_ASSETS( "alice" ).get_delegated_vesting(), ASSET( "20000000.000000 VESTS") );
+    BOOST_REQUIRE_EQUAL( delegation->get_vesting(), VEST_asset( 20'000'000'000'000 ) );
+    BOOST_REQUIRE_EQUAL( GET_ASSETS( "alice" ).get_delegated_vesting(), VEST_asset( 20'000'000'000'000 ) );
     BOOST_REQUIRE_EQUAL( alice_assets.get_voting_manabar().current_mana, old_manabar.current_mana - delta );
     BOOST_REQUIRE_EQUAL( alice_assets.get_downvote_manabar().current_mana, old_downvote_manabar.current_mana - delta / 4 );
-    BOOST_REQUIRE_EQUAL( GET_ASSETS( "bob" ).get_received_vesting(), ASSET( "20000000.000000 VESTS") );
+    BOOST_REQUIRE_EQUAL( GET_ASSETS( "bob" ).get_received_vesting(), VEST_asset( 20'000'000'000'000 ) );
     BOOST_REQUIRE_EQUAL( bob_assets.get_voting_manabar().current_mana, old_bob_manabar.current_mana + delta );
     BOOST_REQUIRE_EQUAL( bob_assets.get_downvote_manabar().current_mana, old_bob_downvote_manabar.current_mana + delta / 4 );
 
@@ -7842,7 +7842,7 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
     BOOST_REQUIRE_EQUAL( exp_obj->get_vesting(), sam_vest );
     BOOST_REQUIRE_EQUAL( exp_obj->get_expiration_time(), db->head_block_time() + gpo.delegation_return_period );
     BOOST_REQUIRE_EQUAL( GET_ASSETS( "sam" ).get_delegated_vesting(), sam_vest );
-    BOOST_REQUIRE_EQUAL( GET_ASSETS( "dave" ).get_received_vesting(), ASSET( "0.000000 VESTS" ) );
+    BOOST_REQUIRE_EQUAL( GET_ASSETS( "dave" ).get_received_vesting(), VEST_asset( 0 ) );
     delegation = db->find< vesting_delegation_object, by_delegation >( boost::make_tuple( sam_acc.get_id(), dave_acc.get_id() ) );
     BOOST_REQUIRE( delegation == nullptr );
 
@@ -7881,7 +7881,7 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
     end = db->get_index< vesting_delegation_expiration_index, by_id >().end();
 
     BOOST_REQUIRE( exp_obj == end );
-    BOOST_REQUIRE_EQUAL( GET_ASSETS( "sam" ).get_delegated_vesting(), ASSET( "0.000000 VESTS" ) );
+    BOOST_REQUIRE_EQUAL( GET_ASSETS( "sam" ).get_delegated_vesting(), VEST_asset( 0 ) );
     BOOST_REQUIRE_EQUAL( VOTING_MANABAR( "sam" ).current_mana, old_sam_manabar.current_mana + sam_vest.amount.value );
     BOOST_REQUIRE_EQUAL( DOWNVOTE_MANABAR( "sam" ).current_mana, old_sam_downvote_manabar.current_mana + sam_vest.amount.value / 4 );
     BOOST_REQUIRE_EQUAL( VOTING_MANABAR( "dave" ).current_mana, old_dave_manabar.current_mana );
@@ -7928,8 +7928,8 @@ BOOST_AUTO_TEST_CASE( issue_971_vesting_removal )
     const auto& alice_assets = GET_ASSETS( "alice" );
     const auto& bob_assets = GET_ASSETS( "bob" );
 
-    BOOST_REQUIRE_EQUAL( alice_assets.get_delegated_vesting(), ASSET( "10000000.000000 VESTS") );
-    BOOST_REQUIRE_EQUAL( bob_assets.get_received_vesting(), ASSET( "10000000.000000 VESTS") );
+    BOOST_REQUIRE_EQUAL( alice_assets.get_delegated_vesting(), VEST_asset( 10'000'000'000'000 ) );
+    BOOST_REQUIRE_EQUAL( bob_assets.get_received_vesting(), VEST_asset( 10'000'000'000'000 ) );
 
     generate_block();
 
@@ -7950,8 +7950,8 @@ BOOST_AUTO_TEST_CASE( issue_971_vesting_removal )
     push_transaction( tx, alice_private_key );
     generate_block();
 
-    BOOST_REQUIRE_EQUAL( GET_ASSETS( "alice" ).get_delegated_vesting(), ASSET( "10000000.000000 VESTS") );
-    BOOST_REQUIRE_EQUAL( GET_ASSETS( "bob" ).get_received_vesting(), ASSET( "0.000000 VESTS") );
+    BOOST_REQUIRE_EQUAL( GET_ASSETS( "alice" ).get_delegated_vesting(), VEST_asset( 10'000'000'000'000 ) );
+    BOOST_REQUIRE_EQUAL( GET_ASSETS( "bob" ).get_received_vesting(), VEST_asset( 0 ) );
   }
   FC_LOG_AND_RETHROW()
 }
@@ -8046,7 +8046,7 @@ BOOST_AUTO_TEST_CASE( comment_beneficiaries_apply )
       const auto& treasury_assets = db.get_asset_account( treasury.get_id() );
       db.modify( treasury_assets, [=]( assets_object& a )
       {
-        a.set_hbd_balance( ASSET( "0.000 TBD" ) );
+        a.set_hbd_balance( HBD_asset( 0 ) );
       });
     });
 
@@ -8181,7 +8181,7 @@ BOOST_AUTO_TEST_CASE( comment_options_apply )
       const auto& treasury_assets_obj = db.get_asset_account( treasury.get_id() );
       db.modify( treasury_assets_obj, [=]( assets_object& a )
       {
-        a.set_hbd_balance( ASSET( "5.000 TBD" ) );
+        a.set_hbd_balance( HBD_asset( 5'000 ) );
       } );
     } );
 
@@ -8359,7 +8359,7 @@ BOOST_AUTO_TEST_CASE( comment_options_deleted_permlink_reuse )
       const auto& treasury_assets_obj = db.get_asset_account( treasury.get_id() );
       db.modify( treasury_assets_obj, [=]( assets_object& a )
       {
-        a.set_hbd_balance( ASSET( "5.000 TBD" ) );
+        a.set_hbd_balance( HBD_asset( 5'000 ) );
       } );
     } );
 

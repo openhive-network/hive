@@ -21,7 +21,7 @@ namespace hive { namespace chain {
       template< typename Allocator >
       assets_object( allocator< Allocator > a, uint64_t _id,
         const account_name_type& _name = account_name_type(),
-        const asset& incoming_delegation = asset( 0, VESTS_SYMBOL ),
+        const VEST_asset& incoming_delegation = VEST_asset( 0 ),
         const time_point_sec& _creation_time = time_point_sec(),
         bool _fill_mana = false,
         int64_t _rc_adjustment = 0,

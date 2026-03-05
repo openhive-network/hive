@@ -269,7 +269,7 @@ void database::process_vesting_withdrawals()
       a.set_balance( a.get_balance() + converted_hive );
       a.set_withdrawn( a.get_withdrawn() + to_withdraw );
 
-      if( a.get_total_vesting_withdrawal().amount <= 0 || a.get_vesting().amount == 0 )
+      if( a.get_total_vesting_withdrawal() <= 0 || a.get_vesting().amount == 0 )
       {
         a.set_vesting_withdraw_rate( VEST_asset( 0 ) );
         a.set_to_withdraw( VEST_asset( 0 ) );

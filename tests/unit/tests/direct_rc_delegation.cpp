@@ -787,7 +787,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_many_accounts )
     // We delegate all our vests and we don't have enough to sustain any of our remaining delegations
     const auto& acct = db->get_account( "alice" );
     const auto& acct_assets = db->get_asset_account( acct.get_id() );
-    dvso.vesting_shares = acct_assets.get_vesting();
+    dvso.vesting_shares = acct_assets.get_vesting().to_asset();
     dvso.delegator = "alice";
     dvso.delegatee = "bob";
     push_transaction(dvso, alice_private_key);
@@ -870,11 +870,11 @@ BOOST_AUTO_TEST_CASE( direct_rc_delegation_vesting_withdrawal )
 
     withdraw_vesting_operation op;
     op.account = "alice";
-    op.vesting_shares = new_alice_assets.get_vesting();
+    op.vesting_shares = new_alice_assets.get_vesting().to_asset();
     push_transaction(op, alice_private_key);
 
     auto next_withdrawal = db->head_block_time() + HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS;
-    asset withdraw_rate = new_alice_assets.get_vesting_withdraw_rate();
+    auto withdraw_rate = new_alice_assets.get_vesting_withdraw_rate();
 
     BOOST_TEST_MESSAGE( "Generating block up to first withdrawal" );
     generate_blocks( next_withdrawal - HIVE_BLOCK_INTERVAL );
@@ -1046,7 +1046,7 @@ BOOST_AUTO_TEST_CASE( direct_rc_delegation_vesting_withdrawal_routes )
     push_transaction(op, alice_private_key);
 
     auto next_withdrawal = db->head_block_time() + HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS;
-    asset withdraw_rate = new_alice_assets.get_vesting_withdraw_rate();
+    auto withdraw_rate = new_alice_assets.get_vesting_withdraw_rate();
 
     BOOST_TEST_MESSAGE( "Generating block up to first withdrawal" );
     generate_blocks( next_withdrawal - HIVE_BLOCK_INTERVAL );
@@ -1426,7 +1426,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_delegatee )
 
     // We delegate all our vesting shares to bob
     delegate_vesting_shares_operation dvso;
-    dvso.vesting_shares = alice_assets_initial.get_vesting();
+    dvso.vesting_shares = alice_assets_initial.get_vesting().to_asset();
     dvso.delegator = "alice";
     dvso.delegatee = {"bob"};
     push_transaction(dvso, alice_private_key);
@@ -1547,7 +1547,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_delegatee_performance )
 
     // We delegate all our vesting shares to bob and carol
     delegate_vesting_shares_operation dvso;
-    dvso.vesting_shares = alice_assets_initial.get_vesting();
+    dvso.vesting_shares = alice_assets_initial.get_vesting().to_asset();
     dvso.vesting_shares.amount.value /= 2;
     dvso.delegator = "alice";
     dvso.delegatee = "bob";

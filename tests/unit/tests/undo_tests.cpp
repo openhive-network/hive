@@ -1716,7 +1716,7 @@ BOOST_AUTO_TEST_CASE( debug_update_undo_bug )
     BOOST_REQUIRE_EQUAL( alice_account.get_pending_claimed_accounts().value, 3 );
     BOOST_REQUIRE_EQUAL( alice_assets.get_balance().amount.value, 1000 );
 
-    fund( "alice", ASSET( "1.000 TESTS" ) );
+    fund( "alice", HIVE_asset( 1'000 ) );
     BOOST_REQUIRE_EQUAL( alice_assets.get_balance().amount.value, 2000 );
     revision = db->revision();
     ilog( "Undo revision is ${r}", ( "r", revision ) );
@@ -1739,7 +1739,7 @@ BOOST_AUTO_TEST_CASE( debug_update_undo_bug )
     BOOST_REQUIRE_EQUAL( alice_account.get_pending_claimed_accounts().value, 4 );
     BOOST_REQUIRE_EQUAL( alice_assets.get_balance().amount.value, 2000 );
 
-    fund( "alice", ASSET( "1.000 TESTS" ) );
+    fund( "alice", HIVE_asset( 1'000 ) );
     BOOST_REQUIRE_EQUAL( alice_assets.get_balance().amount.value, 3000 );
     revision = db->revision();
     ilog( "Undo revision is ${r}", ( "r", revision ) );

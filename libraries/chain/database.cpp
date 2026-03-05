@@ -1089,12 +1089,18 @@ VEST_asset database::adjust_account_vesting_balance(const account_object& to_acc
           util::update_manabar( cprops, to_account, a, new_vesting.get_amount() );
         });
         rc().regenerate_rc_mana( to_account, _assets_obj, _now );
-        adjust_balance( to_account, new_vesting, _assets_obj );
+        modify( _assets_obj, [&]( assets_object& a )
+        {
+          a.set_vesting( a.get_vesting() + new_vesting );
+        });
         rc().update_account_after_vest_change( to_account, _assets_obj, _now );
       }
       else
       {
-        adjust_balance( to_account, new_vesting );
+        modify( get_asset_account( to_account.get_id() ), [&]( assets_object& a )
+        {
+          a.set_vesting( a.get_vesting() + new_vesting );
+        });
       }
     }
     // Update global vesting pool numbers.
@@ -1219,8 +1225,8 @@ bool database::collect_account_total_balance( const account_object& account, HIV
   return collect_account_total_balance( account, get_asset_account( account.get_id() ), total_hive, total_hbd, total_vests, vesting_shares_hive_value );
 }
 
-bool database::collect_account_total_balance( const account_object& account, const assets_object& assets, asset* total_hive, asset* total_hbd,
-  asset* total_vests, asset* vesting_shares_hive_value )
+bool database::collect_account_total_balance( const account_object& account, const assets_object& assets, HIVE_asset* total_hive, HBD_asset* total_hbd,
+  VEST_asset* total_vests, HIVE_asset* vesting_shares_hive_value )
 {
   const auto& gpo = get_dynamic_global_properties();
 
@@ -1259,7 +1265,6 @@ void database::clear_null_account_balance()
   const auto& null_account = get_account( HIVE_NULL_ACCOUNT );
   refresh_last_access_block( null_account );
   const auto& null_assets = get_asset_account( null_account.get_id() );
-  const auto& null_delayed_votes = get_delayed_votes_account( null_account.get_id() );
   HIVE_asset total_hive, vesting_shares_hive_value;
   HBD_asset total_hbd;
   VEST_asset total_vests;
@@ -1382,7 +1387,6 @@ void database::consolidate_treasury_balance()
   const auto& old_treasury_account = get_account( old_treasury_name );
   refresh_last_access_block( old_treasury_account );
   const auto& old_treasury_assets = get_asset_account( old_treasury_account.get_id() );
-  const auto& old_treasury_delayed_votes = get_delayed_votes_account( old_treasury_account.get_id() );
   HIVE_asset total_hive, vesting_shares_hive_value;
   HBD_asset total_hbd;
   VEST_asset total_vests;
@@ -3346,9 +3350,9 @@ void database::adjust_balance( const account_object& a, const HIVE_asset& delta,
 {
   if( delta.amount < 0 )
   {
-    FC_ASSERT( a.get_hive_balance() >= -delta,
+    FC_ASSERT( acnt_assets.get_balance() >= -delta,
       "Account ${acc} does not have sufficient funds for balance adjustment. Required: ${r}, Available: ${a}",
-        ("acc", a.get_name())("r", delta)("a", a.get_hive_balance()) );
+        ("acc", a.get_name())("r", delta)("a", acnt_assets.get_balance()) );
   }
 
   const bool trace_balance_change = false; //a.get_name() == "X";
@@ -3568,7 +3572,7 @@ void database::adjust_reward_balance( const account_object& a, const asset& valu
 
 void database::adjust_reward_balance( const account_object& a, const HIVE_asset& value_delta )
 {
-  const auto& _assets = get< assets_object, by_account_id >( a.get_id() );
+  const auto& _assets = get_asset_account( a.get_id() );
   adjust_reward_balance( a, value_delta, _assets );
 }
 
@@ -3583,7 +3587,7 @@ void database::adjust_reward_balance( const account_object& a, const HIVE_asset&
 
 void database::adjust_reward_balance( const account_object& a, const HIVE_asset& value_delta, const VEST_asset& share_delta )
 {
-  const auto& _assets = get< assets_object, by_account_id >( a.get_id() );
+  const auto& _assets = get_asset_account( a.get_id() );
   adjust_reward_balance( a, value_delta, share_delta, _assets );
 }
 
@@ -3606,7 +3610,7 @@ void database::adjust_reward_balance( const account_object& a, const HIVE_asset&
 
 void database::adjust_reward_balance( const account_object& a, const HBD_asset& value_delta )
 {
-  const auto& _assets = get< assets_object, by_account_id >( a.get_id() );
+  const auto& _assets = get_asset_account( a.get_id() );
   adjust_reward_balance( a, value_delta, _assets );
 }
 

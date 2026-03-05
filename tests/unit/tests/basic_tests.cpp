@@ -1457,7 +1457,7 @@ BOOST_AUTO_TEST_CASE( additional_allocations )
 
     ACTOR_DEFAULT_FEE( alice )
     generate_block();
-    ISSUE_FUNDS( "alice", ASSET( "100000.000 TESTS" ) );
+    ISSUE_FUNDS( "alice", HIVE_asset( 100'000'000 ) );
 
     // Creating alice increases authority allocation (shared_authority objects for owner/active/posting)
     BOOST_REQUIRE_GT( authorityIdx.get_item_additional_allocation(), initial_authority_allocations );

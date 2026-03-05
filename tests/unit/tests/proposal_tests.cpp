@@ -4778,7 +4778,7 @@ BOOST_AUTO_TEST_CASE( converting_hive_to_dhf )
       return db->get_asset_account( db->get_treasury().get_id() );
     };
 
-    set_price_feed( price( ASSET( "1.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    set_price_feed( HBD_price( 1'000, 1'000 ) );
 
     auto before_inflation_treasury_hbd_balance = get_treasury_assets().get_hbd_balance();
     generate_block();

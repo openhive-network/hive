@@ -419,7 +419,6 @@ struct database_fixture {
   uint64_t get_nr_blocks_until_proposal_maintenance_block();
   uint64_t get_nr_blocks_until_daily_proposal_maintenance_block();
 
-  account_id_type get_account_id( const string& account_name )const;
   HIVE_asset get_hive_balance( const string& account_name )const;
   HBD_asset get_hbd_balance( const string& account_name )const;
   HIVE_asset get_hive_savings( const string& account_name )const;

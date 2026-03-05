@@ -1652,8 +1652,8 @@ BOOST_AUTO_TEST_CASE( vote_edit_limit )
     inject_hardfork( HIVE_HARDFORK_0_20 ); // we don't care about old voting rules
 
     ACTORS_DEFAULT_FEE( (alice)(bob)(carol) );
-    vest( "bob", ASSET( "1.000 TESTS" ) );
-    vest( "carol", ASSET( "1.000 TESTS" ) );
+    vest( "bob", HIVE_asset( 1'000 ) );
+    vest( "carol", HIVE_asset( 1'000 ) );
     generate_block();
 
     post_comment( "alice", "test", "test", "test", "category", alice_post_key );
@@ -1753,7 +1753,7 @@ BOOST_AUTO_TEST_CASE( artificial_1_on_power_down )
     // HF16 switches from 104 weeks to 13 weeks of power down
     inject_hardfork( HIVE_HARDFORK_0_16 );
 
-    withdraw_vesting( "bob", asset( HIVE_VESTING_WITHDRAW_INTERVALS * 2 - 1, VESTS_SYMBOL ), bob_private_key );
+    withdraw_vesting( "bob", VEST_asset( HIVE_VESTING_WITHDRAW_INTERVALS * 2 - 1 ), bob_private_key );
     BOOST_REQUIRE_EQUAL( GET_ASSETS( "bob" ).get_vesting_withdraw_rate().amount.value, 1 );
 
     // make sure code behaves "properly" (I mean in unchanged way) right before HF28 too
@@ -1766,7 +1766,7 @@ BOOST_AUTO_TEST_CASE( artificial_1_on_power_down )
 
     // also since HF21 there is different rate correction mechanism, so the same operation as for 'bob'
     // before results in different rate
-    withdraw_vesting( "carol", asset( HIVE_VESTING_WITHDRAW_INTERVALS * 2 - 1, VESTS_SYMBOL ), carol_private_key );
+    withdraw_vesting( "carol", VEST_asset( HIVE_VESTING_WITHDRAW_INTERVALS * 2 - 1 ), carol_private_key );
     BOOST_REQUIRE_EQUAL( GET_ASSETS( "carol" ).get_vesting_withdraw_rate().amount.value, 2 );
 
     // HF28 activates code that prevents bug from affecting new power down cancels
@@ -1774,17 +1774,17 @@ BOOST_AUTO_TEST_CASE( artificial_1_on_power_down )
 
     // 'alice' and 'bob' have 1 in vesting withdraw rate, but they are actually performing power down
     // it means they can't change rate to 1, because it is already 1
-    HIVE_REQUIRE_ASSERT( withdraw_vesting( "alice", asset( 1, VESTS_SYMBOL ), alice_private_key ),
+    HIVE_REQUIRE_ASSERT( withdraw_vesting( "alice", VEST_asset( 1 ), alice_private_key ),
       "account_assets.get_vesting_withdraw_rate() != new_vesting_withdraw_rate" );
-    HIVE_REQUIRE_ASSERT( withdraw_vesting( "bob", asset( 1, VESTS_SYMBOL ), bob_private_key ),
+    HIVE_REQUIRE_ASSERT( withdraw_vesting( "bob", VEST_asset( 1 ), bob_private_key ),
       "account_assets.get_vesting_withdraw_rate() != new_vesting_withdraw_rate" );
-    withdraw_vesting( "alice", asset( 0, VESTS_SYMBOL ), alice_private_key );
-    withdraw_vesting( "bob", asset( 0, VESTS_SYMBOL ), bob_private_key );
+    withdraw_vesting( "alice", VEST_asset( 0 ), alice_private_key );
+    withdraw_vesting( "bob", VEST_asset( 0 ), bob_private_key );
     // 'carol' does not have 1 as power down rate, so she can change it to 1 or cancel power down
     withdraw_vesting( "carol", VEST_asset( 1 ), carol_private_key );
     withdraw_vesting( "carol", VEST_asset( 0 ), carol_private_key );
     // only 'dave' does not have power down
-    HIVE_REQUIRE_ASSERT( withdraw_vesting( "dave", asset( 0, VESTS_SYMBOL ), dave_private_key ), "account_assets.has_active_power_down()" );
+    HIVE_REQUIRE_ASSERT( withdraw_vesting( "dave", VEST_asset( 0 ), dave_private_key ), "account_assets.has_active_power_down()" );
     // 'eric' can change rate to 1
     withdraw_vesting( "eric", VEST_asset( 1 ), eric_private_key );
 
@@ -1831,7 +1831,7 @@ BOOST_AUTO_TEST_CASE( vote_stabilization )
       auto permlink = "reply" + std::to_string( i );
       vote( "alice", permlink, voter, weight, key );
       auto reply_id = db->get_comment( "alice", permlink ).get_id();
-      const auto& vote_obj = *vote_idx.find( boost::make_tuple( reply_id, get_id( voter ) ) );
+      const auto& vote_obj = *vote_idx.find( boost::make_tuple( reply_id, get_account_id( voter ) ) );
       return vote_obj.get_rshares();
     };
 

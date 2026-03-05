@@ -225,7 +225,7 @@ BOOST_AUTO_TEST_CASE( comment_beneficiary )
 
     const auto& treasury = db->get_treasury();
     const auto& treasury_assets = db->get_asset_account( treasury.get_id() );
-    asset initial_treasury_balance = treasury_assets.get_hbd_balance();
+    auto initial_treasury_balance = treasury_assets.get_hbd_balance();
     generate_blocks( db->find_comment_cashout( *db->get_comment( "alice", string( "test" ) ) )->get_cashout_time() );
     BOOST_REQUIRE_EQUAL( get_hbd_balance( OBSOLETE_TREASURY_ACCOUNT ).amount.value, 0 );
     BOOST_REQUIRE_EQUAL( treasury_assets.get_hbd_balance().amount.value, 1150 + initial_treasury_balance.amount.value );
@@ -256,17 +256,17 @@ BOOST_AUTO_TEST_CASE( consolidate_balance )
         gpo.proposal_fund_percent = 0;
       } );
       const auto& old_treasury = db.get_account( OBSOLETE_TREASURY_ACCOUNT );
-      db.create_vesting( old_treasury, ASSET( "7.000 TESTS" ) );
-      db.create_vesting( old_treasury, ASSET( "3.000 TESTS" ), true );
+      db.create_vesting( old_treasury, HIVE_asset( 7'000 ) );
+      db.create_vesting( old_treasury, HIVE_asset( 3'000 ), true );
       const auto& old_treasury_assets_init = db.get_asset_account( old_treasury.get_id() );
       db.modify( old_treasury_assets_init, [&]( assets_object& t )
       {
-        t.set_balance( ASSET( "5.000 TESTS" ) );
-        t.set_savings( ASSET( "3.000 TESTS" ) );
-        t.set_rewards( ASSET( "2.000 TESTS" ) );
-        t.set_hbd_balance( ASSET( "5.000 TBD" ) );
-        t.set_hbd_savings( ASSET( "3.000 TBD" ) );
-        t.set_hbd_rewards( ASSET( "2.000 TBD" ) );
+        t.set_balance( HIVE_asset( 5'000 ) );
+        t.set_savings( HIVE_asset( 3'000 ) );
+        t.set_rewards( HIVE_asset( 2'000 ) );
+        t.set_hbd_balance( HBD_asset( 5'000 ) );
+        t.set_hbd_savings( HBD_asset( 3'000 ) );
+        t.set_hbd_rewards( HBD_asset( 2'000 ) );
       } );
     } );
     database_fixture::validate_database();
@@ -285,7 +285,7 @@ BOOST_AUTO_TEST_CASE( consolidate_balance )
 
     const auto& treasury_acct = db->get_treasury();
     const auto& treasury_acct_assets = db->get_asset_account( treasury_acct.get_id() );
-    asset initial_treasury_balance = treasury_acct_assets.get_hbd_balance();
+    auto initial_treasury_balance = treasury_acct_assets.get_hbd_balance();
     generate_block();
     database_fixture::validate_database();
 

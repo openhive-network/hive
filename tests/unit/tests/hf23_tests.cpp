@@ -64,8 +64,8 @@ using namespace hive::protocol;
 using fc::string;
 
 #define GET_ASSETS( account ) (db->get_asset_account( db->get_account( account ).get_id() ))
-#define DELEGATED_VESTS( account ) GET_ASSETS( account ).get_delegated_vesting().amount.value
-#define RECEIVED_VESTS( account ) GET_ASSETS( account ).get_received_vesting().amount.value
+#define DELEGATED_VESTS( account ) GET_ASSETS( account ).get_delegated_vesting()
+#define RECEIVED_VESTS( account ) GET_ASSETS( account ).get_received_vesting()
 
 namespace
 {
@@ -131,8 +131,8 @@ BOOST_AUTO_TEST_CASE( restore_accounts_02 )
 
         idump(( _acc_assets.get_balance() ));
         idump(( _acc_assets.get_hbd_balance() ));
-        BOOST_REQUIRE_EQUAL( _acc_assets.get_balance(), asset( 0, HIVE_SYMBOL ) );
-        BOOST_REQUIRE_EQUAL( _acc_assets.get_hbd_balance(), asset( 0, HBD_SYMBOL ) );
+        BOOST_REQUIRE_EQUAL( _acc_assets.get_balance(), HIVE_asset( 0 ) );
+        BOOST_REQUIRE_EQUAL( _acc_assets.get_hbd_balance(), HBD_asset( 0 ) );
       }
       BOOST_REQUIRE_EQUAL( get_hive_balance( "dude" ), HIVE_asset( 68 ) );
       BOOST_REQUIRE_EQUAL( get_hbd_balance( "dude" ), HBD_asset( 78 ) );
@@ -1268,13 +1268,13 @@ BOOST_AUTO_TEST_CASE( hbd_test_02 )
     generate_block();
 
     BOOST_REQUIRE_EQUAL( get_hbd_balance( "alice" ), HBD_asset( 0 ) );
-    issue_funds( "alice", ASSET( "1000.000 TBD" ) );
+    issue_funds( "alice", HBD_asset( 1'000'000 ) );
     auto start_time = GET_ASSETS( "alice" ).get_hbd_seconds_last_update();
     auto alice_hbd = get_hbd_balance( "alice" );
     const auto& _treasury_hbd_test = db->get_treasury();
     const auto& _treasury_hbd_test_assets = db->get_asset_account( _treasury_hbd_test.get_id() );
-    BOOST_TEST_MESSAGE( "treasury_hbd = " << asset_to_string( _treasury_hbd_test_assets.get_hbd_balance() ) );
-    BOOST_TEST_MESSAGE( "alice_hbd = " << asset_to_string( alice_hbd ) );
+    BOOST_TEST_MESSAGE( "treasury_hbd = " << asset_to_string( _treasury_hbd_test_assets.get_hbd_balance().to_asset() ) );
+    BOOST_TEST_MESSAGE( "alice_hbd = " << asset_to_string( alice_hbd.to_asset() ) );
     BOOST_REQUIRE_EQUAL( alice_hbd, HBD_asset( 1'000'000 ) );
 
     generate_blocks( db->head_block_time() + fc::seconds( HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC ), true );
@@ -1307,8 +1307,8 @@ BOOST_AUTO_TEST_CASE( hbd_test_02 )
     generate_blocks( db->head_block_time() + fc::seconds( HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC ), true );
 
     alice_hbd = get_hbd_balance( "alice" );
-    BOOST_TEST_MESSAGE( "alice_hbd = " << asset_to_string( alice_hbd ) );
-    BOOST_TEST_MESSAGE( "bob_hbd = " << asset_to_string( get_hbd_balance( "bob" ) ) );
+    BOOST_TEST_MESSAGE( "alice_hbd = " << asset_to_string( alice_hbd.to_asset() ) );
+    BOOST_TEST_MESSAGE( "bob_hbd = " << asset_to_string( get_hbd_balance( "bob" ).to_asset() ) );
 
     db->clear_account( db->get_account( "alice" ) );
     BOOST_REQUIRE_EQUAL( get_hbd_balance( "alice" ), HBD_asset( 0 ) );
@@ -1358,9 +1358,9 @@ BOOST_AUTO_TEST_CASE( savings_test_02 )
 
     generate_blocks( db->head_block_time() + fc::seconds( HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC ), true );
 
-    BOOST_TEST_MESSAGE( "alice_savings_hbd before clear = " << asset_to_string( get_hbd_savings( "alice" ) ) );
+    BOOST_TEST_MESSAGE( "alice_savings_hbd before clear = " << asset_to_string( get_hbd_savings( "alice" ).to_asset() ) );
     db->clear_account( db->get_account( "alice" ) );
-    BOOST_TEST_MESSAGE( "alice_savings_hbd after clear = " << asset_to_string( get_hbd_savings( "alice" ) ) );
+    BOOST_TEST_MESSAGE( "alice_savings_hbd after clear = " << asset_to_string( get_hbd_savings( "alice" ).to_asset() ) );
     BOOST_REQUIRE_EQUAL( get_hbd_savings( "alice" ), HBD_asset( 0 ) );
     database_fixture::validate_database();
   }

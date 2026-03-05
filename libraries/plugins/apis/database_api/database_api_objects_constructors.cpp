@@ -242,27 +242,27 @@ api_account_object::api_account_object( const account_object& a, const database&
   last_account_recovery = recovery.get_block_last_account_recovery_time();
 
   // From assets_object
-  balance = assets.get_balance();
-  savings_balance = assets.get_savings();
-  hbd_balance = assets.get_hbd_balance();
+  balance = assets.get_balance().to_asset();
+  savings_balance = assets.get_savings().to_asset();
+  hbd_balance = assets.get_hbd_balance().to_asset();
   hbd_seconds = assets.get_hbd_seconds();
   hbd_seconds_last_update = assets.get_hbd_seconds_last_update();
   hbd_last_interest_payment = assets.get_hbd_last_interest_payment();
-  savings_hbd_balance = assets.get_hbd_savings();
+  savings_hbd_balance = assets.get_hbd_savings().to_asset();
   savings_hbd_seconds = assets.get_savings_hbd_seconds();
   savings_hbd_seconds_last_update = assets.get_savings_hbd_seconds_last_update();
   savings_hbd_last_interest_payment = assets.get_savings_hbd_last_interest_payment();
   savings_withdraw_requests = a.get_savings_withdraw_requests();
-  reward_hbd_balance = assets.get_hbd_rewards();
-  reward_hive_balance = assets.get_rewards();
-  reward_vesting_balance = assets.get_vest_rewards();
-  reward_vesting_hive = assets.get_vest_rewards_as_hive();
+  reward_hbd_balance = assets.get_hbd_rewards().to_asset();
+  reward_hive_balance = assets.get_rewards().to_asset();
+  reward_vesting_balance = assets.get_vest_rewards().to_asset();
+  reward_vesting_hive = assets.get_vest_rewards_as_hive().to_asset();
   curation_rewards = assets.get_curation_rewards().amount;
   posting_rewards = assets.get_posting_rewards().amount;
-  vesting_shares = assets.get_vesting();
-  delegated_vesting_shares = assets.get_delegated_vesting();
-  received_vesting_shares = assets.get_received_vesting();
-  vesting_withdraw_rate = assets.get_vesting_withdraw_rate();
+  vesting_shares = assets.get_vesting().to_asset();
+  delegated_vesting_shares = assets.get_delegated_vesting().to_asset();
+  received_vesting_shares = assets.get_received_vesting().to_asset();
+  vesting_withdraw_rate = assets.get_vesting_withdraw_rate().to_asset();
   withdrawn = assets.get_withdrawn().amount;
   to_withdraw = assets.get_to_withdraw().amount;
 
@@ -292,7 +292,7 @@ api_account_object::api_account_object( const account_object& a, const database&
   if( delayed_votes_active )
     delayed_votes = vector< delayed_votes_data >{ dvotes.get_delayed_votes().begin(), dvotes.get_delayed_votes().end() };
 
-  post_voting_power = VEST_asset(a.get_effective_vesting_shares( assets ));
+  post_voting_power = VEST_asset(a.get_effective_vesting_shares( assets )).to_asset();
 }
 
 
@@ -318,7 +318,7 @@ api_comment_object::api_comment_object( const comment_object& o, const database&
     last_update             = created; // edit time not available here (Hivemind has it)
     cashout_time            = cc->get_cashout_time();
     max_cashout_time        = time_point_sec::maximum(); // since HF17 it is the only possible value
-    max_accepted_payout     = cc->get_max_accepted_payout();
+    max_accepted_payout     = cc->get_max_accepted_payout().to_asset();
     percent_hbd             = cc->get_percent_hbd();
     allow_votes             = cc->allows_votes();
     allow_curation_rewards  = cc->allows_curation_rewards();

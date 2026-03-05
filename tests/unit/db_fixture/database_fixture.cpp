@@ -396,7 +396,7 @@ void database_fixture::issue_funds( const string& account_name, const HIVE_asset
     const auto& acnt_assets = db.get_asset_account( acnt.get_id() );
     db.modify( acnt_assets, [&]( assets_object& a )
     {
-      a.set_balance( a.get_balance() + amount.to_asset() );
+      a.set_balance( a.get_balance() + amount );
     } );
 
     db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
