@@ -61,7 +61,7 @@ repos:
           tests/python/functional/,\
           tests/python/hive-local-tools/hive_local_tools/,\
           tests/python/hive-local-tools/hive_utils/,\
-          tests/python/hive-local-tools/shared-tools/shared_tools/
+          tests/python/shared-tools/shared_tools/
           "
   - repo: local
     hooks:

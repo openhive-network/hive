@@ -1925,7 +1925,7 @@ develop = true
 
 [package.source]
 type = "directory"
-url = "shared-tools"
+url = "../shared-tools"
 
 [[package]]
 name = "simpleeval"
@@ -2281,4 +2281,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.14,<4"
-content-hash = "aa67b3d76d1b59a86c900ade394102fcb0b17a019f70c4b27872441a23ca6ffd"
+content-hash = "66f85b20701f06ddefc1d39c6a60b4e56abf9ffd10b506292678d2d92123d1f6"
