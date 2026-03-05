@@ -1,4 +1,5 @@
 #include <hive/protocol/misc_utilities.hpp>
+#include <hive/protocol/hive_specialised_exceptions.hpp>
 
 namespace hive { namespace protocol {
 
@@ -52,7 +53,7 @@ pack_type serialization_mode_controller::get_another_pack()
     return pack_type::hf26;
   }
 
-  FC_ASSERT( cp == pack_type::hf26, "an incorrect value of pack mode" );
+  HIVE_PROTOCOL_NUMBER_ASSERT( cp == pack_type::hf26, "an incorrect value of pack mode", ("subject", static_cast<uint8_t>(cp))("expected", "hf26") );
 
   return pack_type::legacy;
 }
