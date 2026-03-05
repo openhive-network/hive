@@ -25,9 +25,9 @@ struct operation_validate_visitor
 namespace hive { namespace protocol {                                     \
                                                   \
 void operation_validate( const OperationType& op )                         \
-{                                                                          \
+{ try {                                                                    \
   op.visit( hive::protocol::operation_validate_visitor() );              \
-}                                                                          \
+} FC_CAPTURE_AND_RETHROW( (op) ) }                                                                          \
                                                   \
 void operation_get_required_authorities( const OperationType& op,          \
                             flat_set< account_name_type >& active,         \
