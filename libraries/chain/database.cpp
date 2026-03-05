@@ -3321,13 +3321,7 @@ void database::clear_expired_delegations()
 
 void database::adjust_balance( const account_object& a, const asset& delta )
 {
-  if( delta.symbol.asset_num == HIVE_ASSET_NUM_HIVE )
-    adjust_balance( a, HIVE_asset( delta ) );
-  else
-  {
-    FC_ASSERT( ( delta.symbol.asset_num == HIVE_ASSET_NUM_HBD ) && "liquid", "invalid symbol" );
-    adjust_balance( a, HBD_asset( delta ) );
-  }
+  adjust_balance( a, delta, get_asset_account( a.get_id() ) );
 }
 
 void database::adjust_balance( const account_object& a, const asset& delta, const assets_object& acnt_assets )
@@ -3535,20 +3529,7 @@ void database::adjust_savings_balance( const account_object& a, const HBD_asset&
 void database::adjust_reward_balance( const account_object& a, const asset& value_delta,
                           const asset& share_delta /*= asset(0,VESTS_SYMBOL)*/ )
 {
-  FC_ASSERT( value_delta.symbol.is_vesting() == false && share_delta.symbol.is_vesting() );
-
-  if( value_delta.symbol.asset_num == HIVE_ASSET_NUM_HIVE )
-  {
-    if( share_delta.amount.value == 0 )
-      adjust_reward_balance( a, HIVE_asset( value_delta ) );
-    else
-      adjust_reward_balance( a, HIVE_asset( value_delta ), VEST_asset( share_delta ) );
-  }
-  else
-  {
-    FC_ASSERT( value_delta.symbol.asset_num == HIVE_ASSET_NUM_HBD, "invalid symbol" );
-    adjust_reward_balance( a, HBD_asset( value_delta ) );
-  }
+  adjust_reward_balance( a, value_delta, get_asset_account( a.get_id() ), share_delta );
 }
 
 void database::adjust_reward_balance( const account_object& a, const asset& value_delta,
