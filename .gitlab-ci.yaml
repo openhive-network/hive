@@ -1640,10 +1640,21 @@ build_openapi_spec_image:
       if [ -n "$CI_COMMIT_TAG" ] && [[ "$CI_COMMIT_TAG" =~ ^[01v].* ]]; then
         echo "This is a protected version tag: $CI_COMMIT_TAG"
 
-        # Login to registry.hive.blog for versioned releases
-        echo "$BLOG_REGISTRY_PASSWORD" | docker login -u "$BLOG_REGISTRY_USER" "registry.hive.blog" --password-stdin
+        # Try to login to registry.hive.blog for versioned releases (best-effort)
+        BLOG_REGISTRY_AVAILABLE=false
+        if echo "$BLOG_REGISTRY_PASSWORD" | docker login -u "$BLOG_REGISTRY_USER" "registry.hive.blog" --password-stdin 2>/dev/null; then
+          BLOG_REGISTRY_AVAILABLE=true
+          echo "registry.hive.blog login succeeded"
+        else
+          echo "WARNING: registry.hive.blog login failed, will push to GitLab registry only"
+        fi
 
-        # Build and push to multiple registries with multiple tags in one command
+        TAGS="--tag $CI_REGISTRY_IMAGE/$OPENAPI_IMAGE_NAME:$CI_COMMIT_SHORT_SHA --tag $CI_REGISTRY_IMAGE/$OPENAPI_IMAGE_NAME:$CI_COMMIT_TAG"
+        if [ "$BLOG_REGISTRY_AVAILABLE" = "true" ]; then
+          TAGS="$TAGS --tag registry.hive.blog/hive/$OPENAPI_IMAGE_NAME:$CI_COMMIT_TAG"
+        fi
+
+        # Build and push to available registries
         docker buildx build \
           --file "$OPENAPI_DOCKERFILE_PATH" \
           --build-arg API_VERSION="$API_VERSION" \
@@ -1656,9 +1667,7 @@ build_openapi_spec_image:
           --cache-from "type=registry,ref=$CI_REGISTRY_IMAGE/$OPENAPI_IMAGE_NAME:cache" \
           --cache-to "type=registry,mode=max,ref=$CI_REGISTRY_IMAGE/$OPENAPI_IMAGE_NAME:cache" \
           --provenance=false \
-          --tag "$CI_REGISTRY_IMAGE/$OPENAPI_IMAGE_NAME:$CI_COMMIT_SHORT_SHA" \
-          --tag "$CI_REGISTRY_IMAGE/$OPENAPI_IMAGE_NAME:$CI_COMMIT_TAG" \
-          --tag "registry.hive.blog/hive/$OPENAPI_IMAGE_NAME:$CI_COMMIT_TAG" \
+          $TAGS \
           --push \
           "$OPENAPI_BUILD_CONTEXT"
       else
