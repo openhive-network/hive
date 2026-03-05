@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-import shutil
 import sys
 from pathlib import Path
 
-import toml
 from jinja2 import Environment, FileSystemLoader
 
 
@@ -16,31 +14,20 @@ def generate_root_package(
     template_directory: Path,
 ) -> None:
     """
-    Generate the root hiveio_api package files.
+    Generate the root hiveio_api package files (__init__.py and README.md).
 
-    Structure created:
-        base_directory/python_api_package/       <- PYPROJECT_DIR
-        ├── pyproject.toml
-        └── hiveio_api/                          <- Python package
-            ├── __init__.py
-            ├── README.md
-            ├── py.typed
-            └── {api_name}/                      <- API subpackages
+    These files contain the dynamic API list and are rendered from Jinja2 templates.
+    Infrastructure files (pyproject.toml, poetry.lock, .gitignore) are committed
+    directly in the repository.
 
     Args:
         api_list: List of API names (snake_case).
         base_directory: The base directory containing the api_generation folder.
         template_directory: The directory containing the root template files.
     """
-    # python_api_package/ is the poetry project directory
-    project_directory = base_directory / "python_api_package"
-    # python_api_package/hiveio_api/ is the actual Python package
-    package_directory = project_directory / "hiveio_api"
+    package_directory = base_directory / "python_api_package" / "hiveio_api"
+    package_directory.mkdir(parents=True, exist_ok=True)
 
-    project_directory.mkdir(exist_ok=True)
-    package_directory.mkdir(exist_ok=True)
-
-    # Prepare API data for templates
     apis = []
     for api_name in api_list:
         snake_case = api_name.replace("-", "_")
@@ -50,45 +37,19 @@ def generate_root_package(
             "pascal_case": pascal_case,
         })
 
-    # Load api_generation pyproject.toml for beekeepy version
-    api_generation_pyproject_path = base_directory / "api_generation" / "pyproject.toml"
-    api_generation_pyproject = toml.load(api_generation_pyproject_path)
-
-    # Setup Jinja2 environment
     root_template_dir = template_directory / "root"
     env = Environment(loader=FileSystemLoader(root_template_dir))
 
-    # Render __init__.py (in the Python package directory)
-    init_template = env.get_template("__init__.py.j2")
-    init_content = init_template.render(apis=apis)
-    with open(package_directory / "__init__.py", "w") as f:
-        f.write(init_content)
+    for template_name, output_name in [
+        ("__init__.py.j2", "__init__.py"),
+        ("README.md.j2", "README.md"),
+    ]:
+        template = env.get_template(template_name)
+        content = template.render(apis=apis)
+        with open(package_directory / output_name, "w") as f:
+            f.write(content)
 
-    # Render README.md (in the Python package directory)
-    readme_template = env.get_template("README.md.j2")
-    readme_content = readme_template.render(apis=apis)
-    with open(package_directory / "README.md", "w") as f:
-        f.write(readme_content)
-
-    # Render pyproject.toml (in the project directory, parent of Python package)
-    pyproject_template = env.get_template("pyproject.toml.j2")
-    pyproject_content = pyproject_template.render(
-        apis=apis,
-        api_generation_pyproject=api_generation_pyproject,
-    )
-    with open(project_directory / "pyproject.toml", "w") as f:
-        f.write(pyproject_content)
-
-    # Render .gitignore (in the project directory)
-    gitignore_template = env.get_template(".gitignore.j2")
-    gitignore_content = gitignore_template.render()
-    with open(project_directory / ".gitignore", "w") as f:
-        f.write(gitignore_content)
-
-    # Copy py.typed marker to the Python package directory
-    shutil.copy(template_directory / "py.typed", package_directory)
-
-    print(f"Generated root package with {len(apis)} APIs: {[a['snake_case'] for a in apis]}")
+    print(f"Generated root package files with {len(apis)} APIs: {[a['snake_case'] for a in apis]}")
 
 
 if __name__ == "__main__":

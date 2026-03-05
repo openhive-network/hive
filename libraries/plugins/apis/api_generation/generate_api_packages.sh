@@ -40,7 +40,7 @@ for d in "${API_LIST[@]}"; do
   poetry run -C "${API_GENERATION_PACKAGE_DIR}" python "${BASE_DIR}/api_generation/generate_api_definitions.py" "$d" "${BASE_DIR}"
 done
 
-# Generate root package files (only if generating all APIs or explicitly requested)
+# Generate root package files (__init__.py, README.md) from templates
 echo "Generating root package files for hiveio_api..."
 poetry run -C "${API_GENERATION_PACKAGE_DIR}" python "${BASE_DIR}/api_generation/generate_root_package.py" "${BASE_DIR}" "${API_LIST[@]}"
 

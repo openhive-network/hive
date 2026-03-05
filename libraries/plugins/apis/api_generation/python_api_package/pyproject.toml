@@ -32,7 +32,7 @@ poetry-dynamic-versioning = { version = "1.9.1", extras = ["plugin"] }
 
 [tool.poetry.dependencies]
 python = ">=3.12,<4"
-hiveio-beekeepy = "{{ api_generation_pyproject.tool.poetry.dependencies['hiveio-beekeepy'] }}"
+hiveio-beekeepy = "^1.28.6"  # NOTE: Also update api_generation/pyproject.toml when changing this version
 
 [tool.poetry-dynamic-versioning]
 enable = true
@@ -72,7 +72,6 @@ pattern = "default-unprefixed"
 #   - Feature branch versions are ALWAYS lower than the tag, providing double protection:
 #     1. pre-release filtering (default) 2. numerically lower version
 format-jinja = """
-{% raw %}
     {%- set STABLE_BRANCHES = ['develop', 'master', 'main'] -%}
 
     {%- set effective_branch = branch or env.get('CI_COMMIT_REF_NAME') -%}
@@ -88,7 +87,6 @@ format-jinja = """
     {%- set local_parts = local_parts + ['dirty'] if dirty else local_parts -%}
 
     {{- serialize_pep440(base, stage, revision, post=post, dev=dev, metadata=local_parts) -}}
-{% endraw %}
 """
 
 [tool.poetry-dynamic-versioning.substitution]
