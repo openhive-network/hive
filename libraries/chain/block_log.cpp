@@ -732,7 +732,7 @@ namespace hive { namespace chain {
   void block_log::read_blocks_data_for_artifacts_generation(artifacts_generation_processor processor, const uint32_t target_block_number, const uint32_t starting_block_number,
                                                             const fc::optional<uint64_t> starting_block_position) const
   {
-    FC_ASSERT(target_block_number < starting_block_number);
+    FC_ASSERT(target_block_number <= starting_block_number);
     FC_ASSERT(target_block_number != 0);
     FC_ASSERT(is_open(), "Open block log first!");
     FC_ASSERT(my->block_log_size, "Cannot process blocks from empty block_log.");

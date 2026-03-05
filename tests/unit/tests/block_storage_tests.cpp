@@ -1544,7 +1544,7 @@ BOOST_AUTO_TEST_CASE( write_fallback_false_suppresses_artifacts_auto_repair )
     appbase::application app;
     blockchain_worker_thread_pool thread_pool( app );
 
-    // Create a block log with two blocks (artifacts regeneration needs >1 block).
+    // Create a block log with one block.
     {
       block_log log( app );
       log.open( log_path, thread_pool, false /*read_only*/, false /*write_fallback*/ );
@@ -1555,13 +1555,6 @@ BOOST_AUTO_TEST_CASE( write_fallback_false_suppresses_artifacts_auto_repair )
       b1.previous = hive::protocol::block_id_type();
       auto fb1 = full_block_type::create_from_block_header_and_transactions( b1, full_txs, nullptr );
       log.append( fb1, false );
-
-      hive::protocol::signed_block_header b2;
-      b2.witness = "bob";
-      b2.previous = fb1->get_block_id();
-      auto fb2 = full_block_type::create_from_block_header_and_transactions( b2, full_txs, nullptr );
-      log.append( fb2, false );
-
       log.flush();
       log.close();
     }
@@ -1602,6 +1595,8 @@ BOOST_AUTO_TEST_CASE( write_fallback_true_recreates_missing_artifacts )
   try {
     // Same setup as above, but with write_fallback=true. The missing artifacts
     // file should be automatically recreated (existing hived behavior).
+    // Uses a single-block log to also exercise the edge case where
+    // starting_block_num == target_block_num in artifact generation.
     fc::temp_directory temp_dir( hive::utilities::temp_directory_path() );
     fc::path log_path = temp_dir.path() / "block_log_part.0001";
     fc::path artifacts_path = fc::path( log_path.generic_string() + ".artifacts" );
@@ -1609,7 +1604,7 @@ BOOST_AUTO_TEST_CASE( write_fallback_true_recreates_missing_artifacts )
     appbase::application app;
     blockchain_worker_thread_pool thread_pool( app );
 
-    // Create a block log with two blocks (artifacts regeneration needs >1 block).
+    // Create a block log with one block.
     {
       block_log log( app );
       log.open( log_path, thread_pool, false /*read_only*/, false /*write_fallback*/ );
@@ -1620,13 +1615,6 @@ BOOST_AUTO_TEST_CASE( write_fallback_true_recreates_missing_artifacts )
       b1.previous = hive::protocol::block_id_type();
       auto fb1 = full_block_type::create_from_block_header_and_transactions( b1, full_txs, nullptr );
       log.append( fb1, false );
-
-      hive::protocol::signed_block_header b2;
-      b2.witness = "carol";
-      b2.previous = fb1->get_block_id();
-      auto fb2 = full_block_type::create_from_block_header_and_transactions( b2, full_txs, nullptr );
-      log.append( fb2, false );
-
       log.flush();
       log.close();
     }
@@ -1652,15 +1640,11 @@ BOOST_AUTO_TEST_CASE( write_fallback_true_recreates_missing_artifacts )
       // Artifacts should have been regenerated.
       BOOST_REQUIRE( fc::exists( artifacts_path ) );
 
-      // Verify we can still read the blocks.
+      // Verify we can still read the block.
       auto head = log.head();
       BOOST_REQUIRE( head );
-      BOOST_REQUIRE_EQUAL( head->get_block_num(), 2u );
+      BOOST_REQUIRE_EQUAL( head->get_block_num(), 1u );
       BOOST_REQUIRE_EQUAL( head->get_block_header().witness, "carol" );
-
-      auto block1 = log.read_block_by_num( 1 );
-      BOOST_REQUIRE( block1 );
-      BOOST_REQUIRE_EQUAL( block1->get_block_num(), 1u );
 
       log.close();
     }
