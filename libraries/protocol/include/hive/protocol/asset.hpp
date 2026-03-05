@@ -1,4 +1,5 @@
 #pragma once
+#include <hive/protocol/hive_specialised_exceptions.hpp>
 #include <hive/protocol/types.hpp>
 #include <hive/protocol/asset_symbol.hpp>
 
@@ -32,14 +33,14 @@ namespace hive { namespace protocol {
     asset_symbol_type get_symbol() const { return symbol; }
     asset& operator += ( const asset& o )
     {
-      FC_ASSERT( symbol == o.symbol && "asset symbol mismatch +=", "${l} != ${r}", ( "l", symbol )( "r", o.symbol ) );
+      HIVE_PROTOCOL_ASSET_ASSERT( symbol == o.symbol && "operator+=", "asset symbol mismatch +=", ("subject", symbol)("other", o.symbol) );
       amount += o.amount;
       return *this;
     }
 
     asset& operator -= ( const asset& o )
     {
-      FC_ASSERT( symbol == o.symbol && "asset symbol mismatch -=", "${l} != ${r}", ( "l", symbol )( "r", o.symbol ) );
+      HIVE_PROTOCOL_ASSET_ASSERT( symbol == o.symbol && "operator-=", "asset symbol mismatch -=", ("subject", symbol)("other", o.symbol) );
       amount -= o.amount;
       return *this;
     }
@@ -53,43 +54,43 @@ namespace hive { namespace protocol {
 
     friend bool operator < ( const asset& a, const asset& b )
     {
-      FC_ASSERT( a.symbol == b.symbol && "asset symbol mismatch <", "${a} != ${b}", ( "a", a.symbol )( "b", b.symbol ) );
+      HIVE_PROTOCOL_ASSET_ASSERT( a.symbol == b.symbol && "operator<", "asset symbol mismatch <", ("subject", a.symbol)("other", b.symbol) );
       return a.amount < b.amount;
     }
 
     friend bool operator <= ( const asset& a, const asset& b )
     {
-      FC_ASSERT( a.symbol == b.symbol && "asset symbol mismatch <=", "${a} != ${b}", ( "a", a.symbol )( "b", b.symbol ) );
+      HIVE_PROTOCOL_ASSET_ASSERT( a.symbol == b.symbol && "operator<=", "asset symbol mismatch <=", ("subject", a.symbol)("other", b.symbol) );
       return a.amount <= b.amount;
     }
 
     friend bool operator != ( const asset& a, const asset& b )
     {
-      FC_ASSERT( a.symbol == b.symbol && "asset symbol mismatch !=", "${a} != ${b}", ( "a", a.symbol )( "b", b.symbol ) );
+      HIVE_PROTOCOL_ASSET_ASSERT( a.symbol == b.symbol && "operator!=", "asset symbol mismatch !=", ("subject", a.symbol)("other", b.symbol) );
       return a.amount != b.amount;
     }
 
     friend bool operator > ( const asset& a, const asset& b )
     {
-      FC_ASSERT( a.symbol == b.symbol && "asset symbol mismatch >", "${a} != ${b}", ( "a", a.symbol )( "b", b.symbol ) );
+      HIVE_PROTOCOL_ASSET_ASSERT( a.symbol == b.symbol && "operator>", "asset symbol mismatch >", ("subject", a.symbol)("other", b.symbol) );
       return a.amount > b.amount;
     }
 
     friend bool operator >= ( const asset& a, const asset& b )
     {
-      FC_ASSERT( a.symbol == b.symbol && "asset symbol mismatch >=", "${a} != ${b}", ( "a", a.symbol )( "b", b.symbol ) );
+      HIVE_PROTOCOL_ASSET_ASSERT( a.symbol == b.symbol && "operator>=", "asset symbol mismatch >=", ("subject", a.symbol)("other", b.symbol) );
       return a.amount >= b.amount;
     }
 
     friend asset operator - ( const asset& a, const asset& b )
     {
-      FC_ASSERT( a.symbol == b.symbol && "asset symbol mismatch -", "${a} != ${b}", ( "a", a.symbol )( "b", b.symbol ) );
+      HIVE_PROTOCOL_ASSET_ASSERT( a.symbol == b.symbol && "operator-", "asset symbol mismatch -", ("subject", a.symbol)("other", b.symbol) );
       return asset( a.amount - b.amount, a.symbol );
     }
 
     friend asset operator + ( const asset& a, const asset& b )
     {
-      FC_ASSERT( a.symbol == b.symbol && "asset symbol mismatch +", "${a} != ${b}", ( "a", a.symbol )( "b", b.symbol ) );
+      HIVE_PROTOCOL_ASSET_ASSERT( a.symbol == b.symbol && "operator+", "asset symbol mismatch +", ("subject", a.symbol)("other", b.symbol) );
       return asset( a.amount + b.amount, a.symbol );
     }
   };
@@ -256,7 +257,7 @@ namespace hive { namespace protocol {
 
   private:
     void set( const asset& val ) { check( val ); amount = val.amount; }
-    void check( const asset& val ) const { FC_ASSERT( val.symbol.asset_num == _SYMBOL ); }
+    void check( const asset& val ) const { HIVE_PROTOCOL_ASSET_ASSERT( val.symbol.asset_num == _SYMBOL, "asset symbol mismatch in tiny_asset", ("subject", *this)("incoming", val) ); }
   };
 
   /** Represents thin version of price.
@@ -312,8 +313,8 @@ namespace hive { namespace protocol {
     {
       try
       {
-        FC_ASSERT( base.get_amount() > 0 );
-        FC_ASSERT( quote.get_amount() > 0 );
+        HIVE_PROTOCOL_ASSET_ASSERT( base.get_amount() > 0, "tiny_price base amount must be > 0", ("subject", base) );
+        HIVE_PROTOCOL_ASSET_ASSERT( quote.get_amount() > 0, "tiny_price quote amount must be > 0", ("subject", quote) );
       } FC_CAPTURE_AND_RETHROW( ( base )( quote ) )
     }
 
@@ -369,7 +370,7 @@ namespace hive { namespace protocol {
   template< uint32_t _BASE_SYMBOL, uint32_t _QUOTE_SYMBOL >
   tiny_asset< _BASE_SYMBOL > operator* ( const tiny_asset< _QUOTE_SYMBOL >& a, const tiny_price< _BASE_SYMBOL, _QUOTE_SYMBOL >& p )
   {
-    FC_ASSERT( p.get_quote().get_amount() > 0 );
+    HIVE_PROTOCOL_ASSET_ASSERT( p.get_quote().get_amount() > 0, "tiny_price quote amount must be > 0 for multiplication", ("subject", p.get_quote()) );
     bool is_negative = a.get_amount() < 0;
     uint128_t result( is_negative ? -a.get_amount() : a.get_amount() );
     result = ( result * p.get_base().get_amount() ) / p.get_quote().get_amount();
@@ -379,7 +380,7 @@ namespace hive { namespace protocol {
   template< uint32_t _BASE_SYMBOL, uint32_t _QUOTE_SYMBOL >
   tiny_asset< _QUOTE_SYMBOL > operator* ( const tiny_asset< _BASE_SYMBOL >& a, const tiny_price< _BASE_SYMBOL, _QUOTE_SYMBOL >& p )
   {
-    FC_ASSERT( p.get_base().get_amount() > 0 );
+    HIVE_PROTOCOL_ASSET_ASSERT( p.get_base().get_amount() > 0, "tiny_price base amount must be > 0 for multiplication", ("subject", p.get_base()) );
     bool is_negative = a.get_amount() < 0;
     uint128_t result( is_negative ? -a.get_amount() : a.get_amount() );
     result = ( result * p.get_quote().get_amount() ) / p.get_base().get_amount();
