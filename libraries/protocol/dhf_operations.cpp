@@ -9,7 +9,7 @@ void create_proposal_operation::validate()const
   validate_account_name( creator );
   validate_account_name( receiver );
 
-  HIVE_PROTOCOL_OPERATIONS_ASSERT( end_date > start_date, "end date must be greater than start date", ("subject", *this) );
+  HIVE_PROTOCOL_VALIDATION_ASSERT( end_date > start_date, "end date must be greater than start date", ("subject", *this) );
 
   validate_asset_not_negative(daily_pay, "Daily pay can't be negative value", *this);
   validate_asset_type(daily_pay, HBD_SYMBOL, "Daily pay should be expressed in HBD", *this);
@@ -25,7 +25,7 @@ void create_proposal_operation::validate()const
 void update_proposal_operation::validate()const
 {
   validate_account_name( creator );
-  HIVE_PROTOCOL_OPERATIONS_ASSERT( proposal_id >= 0, "The proposal id can't be negative", ("subject", *this) );
+  HIVE_PROTOCOL_VALIDATION_ASSERT( proposal_id >= 0, "The proposal id can't be negative", ("subject", *this) );
   validate_asset_not_negative(daily_pay, "Daily pay can't be negative value", *this);
   validate_asset_type(daily_pay, HBD_SYMBOL, "Daily pay should be expressed in HBD", *this);
 
@@ -40,23 +40,23 @@ void update_proposal_operation::validate()const
 void update_proposal_votes_operation::validate()const
 {
   validate_account_name( voter );
-  HIVE_PROTOCOL_OPERATIONS_ASSERT(
+  HIVE_PROTOCOL_VALIDATION_ASSERT(
     proposal_ids.empty() == false && "update_proposal_votes_operation", 
     "Proposal id must be provided", 
     ("subject", *this)
   );
-  HIVE_PROTOCOL_OPERATIONS_ASSERT(proposal_ids.size() <= HIVE_PROPOSAL_MAX_IDS_NUMBER, "Too many ids", ("subject", *this));
+  HIVE_PROTOCOL_VALIDATION_ASSERT(proposal_ids.size() <= HIVE_PROPOSAL_MAX_IDS_NUMBER, "Too many ids", ("subject", *this));
 }
 
 void remove_proposal_operation::validate() const
 {
   validate_account_name(proposal_owner);
-  HIVE_PROTOCOL_OPERATIONS_ASSERT(
+  HIVE_PROTOCOL_VALIDATION_ASSERT(
     proposal_ids.empty() == false && "remove_proposal_operation", 
     "Proposal id must be provided", 
     ("subject", *this)
   );
-  HIVE_PROTOCOL_OPERATIONS_ASSERT(proposal_ids.size() <= HIVE_PROPOSAL_MAX_IDS_NUMBER && "remove_proposal_operation", "Too many ids", ("subject", *this));
+  HIVE_PROTOCOL_VALIDATION_ASSERT(proposal_ids.size() <= HIVE_PROPOSAL_MAX_IDS_NUMBER && "remove_proposal_operation", "Too many ids", ("subject", *this));
 }
 
 } } //hive::protocol

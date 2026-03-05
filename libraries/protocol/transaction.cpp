@@ -39,14 +39,14 @@ digest_type transaction::sig_digest( const chain_id_type& chain_id, hive::protoc
 
 void transaction::validate() const
 {
-  HIVE_PROTOCOL_OPERATIONS_ASSERT( operations.size() > 0, "A transaction must have at least one operation", ("subject",*this) );
+  HIVE_PROTOCOL_VALIDATION_ASSERT( operations.size() > 0, "A transaction must have at least one operation", ("subject",*this) );
   for( const auto& op : operations )
     operation_validate(op);
 }
 
 void transaction::validate( const std::function<void( const operation& op, bool post )>& notify ) const
 {
-  HIVE_PROTOCOL_OPERATIONS_ASSERT( 0 < operations.size(), "A transaction must have at least one operation", ("subject",*this) );
+  HIVE_PROTOCOL_VALIDATION_ASSERT( 0 < operations.size(), "A transaction must have at least one operation", ("subject",*this) );
   for( const auto& op : operations )
   {
     notify( op, false );
