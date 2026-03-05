@@ -1530,5 +1530,145 @@ BOOST_AUTO_TEST_CASE( write_fallback_parameter_passed_through_wrapper )
   }
 }
 
+BOOST_AUTO_TEST_CASE( write_fallback_false_suppresses_artifacts_auto_repair )
+{
+  try {
+    // Create a valid block log with artifacts, then delete the artifacts file.
+    // Reopening with write_fallback=false should throw, NOT silently recreate
+    // the artifacts. This verifies the code path at block_log_artifacts::open
+    // where ENOENT is handled differently based on write_fallback.
+    fc::temp_directory temp_dir( hive::utilities::temp_directory_path() );
+    fc::path log_path = temp_dir.path() / "block_log_part.0001";
+    fc::path artifacts_path = fc::path( log_path.generic_string() + ".artifacts" );
+
+    appbase::application app;
+    blockchain_worker_thread_pool thread_pool( app );
+
+    // Create a block log with two blocks (artifacts regeneration needs >1 block).
+    {
+      block_log log( app );
+      log.open( log_path, thread_pool, false /*read_only*/, false /*write_fallback*/ );
+
+      std::vector<std::shared_ptr<full_transaction_type>> full_txs;
+      hive::protocol::signed_block_header b1;
+      b1.witness = "bob";
+      b1.previous = hive::protocol::block_id_type();
+      auto fb1 = full_block_type::create_from_block_header_and_transactions( b1, full_txs, nullptr );
+      log.append( fb1, false );
+
+      hive::protocol::signed_block_header b2;
+      b2.witness = "bob";
+      b2.previous = fb1->get_block_id();
+      auto fb2 = full_block_type::create_from_block_header_and_transactions( b2, full_txs, nullptr );
+      log.append( fb2, false );
+
+      log.flush();
+      log.close();
+    }
+
+    BOOST_REQUIRE( fc::exists( log_path ) );
+    BOOST_REQUIRE( fc::exists( artifacts_path ) );
+
+    // Delete the artifacts file to simulate a missing/corrupt state.
+    fc::remove( artifacts_path );
+    BOOST_REQUIRE( !fc::exists( artifacts_path ) );
+
+    // Reopen with write_fallback=false — should throw because artifacts are
+    // missing and auto-repair is suppressed.
+    {
+      block_log log( app );
+      BOOST_REQUIRE_THROW(
+        log.open_and_init( log_path,
+                           true /*read_only*/,
+                           false /*write_fallback*/,
+                           false /*enable_compression*/,
+                           15 /*compression_level*/,
+                           true /*enable_block_log_auto_fixing*/,
+                           thread_pool ),
+        fc::exception
+      );
+    }
+
+    // Artifacts must NOT have been recreated.
+    BOOST_REQUIRE( !fc::exists( artifacts_path ) );
+  } catch (fc::exception& e) {
+    edump((e.to_detail_string()));
+    throw;
+  }
+}
+
+BOOST_AUTO_TEST_CASE( write_fallback_true_recreates_missing_artifacts )
+{
+  try {
+    // Same setup as above, but with write_fallback=true. The missing artifacts
+    // file should be automatically recreated (existing hived behavior).
+    fc::temp_directory temp_dir( hive::utilities::temp_directory_path() );
+    fc::path log_path = temp_dir.path() / "block_log_part.0001";
+    fc::path artifacts_path = fc::path( log_path.generic_string() + ".artifacts" );
+
+    appbase::application app;
+    blockchain_worker_thread_pool thread_pool( app );
+
+    // Create a block log with two blocks (artifacts regeneration needs >1 block).
+    {
+      block_log log( app );
+      log.open( log_path, thread_pool, false /*read_only*/, false /*write_fallback*/ );
+
+      std::vector<std::shared_ptr<full_transaction_type>> full_txs;
+      hive::protocol::signed_block_header b1;
+      b1.witness = "carol";
+      b1.previous = hive::protocol::block_id_type();
+      auto fb1 = full_block_type::create_from_block_header_and_transactions( b1, full_txs, nullptr );
+      log.append( fb1, false );
+
+      hive::protocol::signed_block_header b2;
+      b2.witness = "carol";
+      b2.previous = fb1->get_block_id();
+      auto fb2 = full_block_type::create_from_block_header_and_transactions( b2, full_txs, nullptr );
+      log.append( fb2, false );
+
+      log.flush();
+      log.close();
+    }
+
+    BOOST_REQUIRE( fc::exists( log_path ) );
+    BOOST_REQUIRE( fc::exists( artifacts_path ) );
+
+    // Delete the artifacts file.
+    fc::remove( artifacts_path );
+    BOOST_REQUIRE( !fc::exists( artifacts_path ) );
+
+    // Reopen with write_fallback=true — should succeed and recreate artifacts.
+    {
+      block_log log( app );
+      log.open_and_init( log_path,
+                         true /*read_only*/,
+                         true /*write_fallback*/,
+                         false /*enable_compression*/,
+                         15 /*compression_level*/,
+                         true /*enable_block_log_auto_fixing*/,
+                         thread_pool );
+
+      // Artifacts should have been regenerated.
+      BOOST_REQUIRE( fc::exists( artifacts_path ) );
+
+      // Verify we can still read the blocks.
+      auto head = log.head();
+      BOOST_REQUIRE( head );
+      BOOST_REQUIRE_EQUAL( head->get_block_num(), 2u );
+      BOOST_REQUIRE_EQUAL( head->get_block_header().witness, "carol" );
+
+      auto block1 = log.read_block_by_num( 1 );
+      BOOST_REQUIRE( block1 );
+      BOOST_REQUIRE_EQUAL( block1->get_block_num(), 1u );
+
+      log.close();
+    }
+  } catch (fc::exception& e) {
+    edump((e.to_detail_string()));
+    throw;
+  }
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 #endif
