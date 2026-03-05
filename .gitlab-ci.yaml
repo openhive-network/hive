@@ -1344,8 +1344,20 @@ test-wax-spec-package:
       cat <<EOT > "index.ts"
       import WaxExtendedData from '@hiveio/wax-api-jsonrpc';
       import { createHiveChain } from '@hiveio/wax';
-      const chainExtended = (await createHiveChain()).extend(WaxExtendedData);
-      console.log(await chainExtended.api.block_api.get_block_range({ starting_block_num: 1, count: 10 }));
+      const endpoints = ['https://api.hive.blog', 'https://api.deathwing.me'];
+      let lastError;
+      for (const endpoint of endpoints) {
+        try {
+          const chainExtended = (await createHiveChain({ apiEndpoint: endpoint })).extend(WaxExtendedData);
+          console.log(await chainExtended.api.block_api.get_block_range({ starting_block_num: 1, count: 10 }));
+          lastError = undefined;
+          break;
+        } catch (e) {
+          console.error(\`Failed with endpoint \${endpoint}: \${e}\`);
+          lastError = e;
+        }
+      }
+      if (lastError) throw lastError;
       EOT
     - pnpm exec tsc -t esnext -m esnext --moduleResolution bundler index.ts # Test if it compiles
     - node index.js # Test if it runs without errors
