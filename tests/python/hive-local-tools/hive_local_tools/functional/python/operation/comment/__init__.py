@@ -343,6 +343,7 @@ class Comment:
         self.__wallet.api.vote(hater.name, self.author, self.permlink, -10)
 
     def assert_is_comment_sent_or_update(self) -> None:
+        # comment_value from wallet is a dict, op.value from hiveio_api is a msgspec struct
         comment_value = self.comment_trx.operations[0].value
         ops_in_block = self.__node.api.account_history.get_ops_in_block(
             block_num=self.comment_trx.block_num, include_reversible=True
@@ -350,8 +351,8 @@ class Comment:
         for operation in ops_in_block.ops:
             if (
                 operation.op.type == "comment_operation"
-                and operation.op.value.author == comment_value.author
-                and operation.op.value.permlink == comment_value.permlink
+                and operation.op.value.author == comment_value["author"]
+                and operation.op.value.permlink == comment_value["permlink"]
             ):
                 return
         raise AssertionError
@@ -586,12 +587,13 @@ class Vote:
             operations = self.__comment_obj.node.api.account_history.get_ops_in_block(
                 block_num=self.__vote_transaction.block_num, include_reversible=True
             ).ops
+            # vote_operation from wallet is a dict, op.op.value from hiveio_api is a msgspec struct
             found = any(
                 op.op.type == "vote_operation"
-                and op.op.value.voter == vote_operation.voter
-                and op.op.value.author == vote_operation.author
-                and op.op.value.permlink == vote_operation.permlink
-                and op.op.value.weight == vote_operation.weight
+                and op.op.value.voter == vote_operation["voter"]
+                and op.op.value.author == vote_operation["author"]
+                and op.op.value.permlink == vote_operation["permlink"]
+                and op.op.value.weight == vote_operation["weight"]
                 for op in operations
             )
             assert found, "Vote_operation not generated, but it should have been"
