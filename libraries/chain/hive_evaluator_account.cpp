@@ -11,7 +11,6 @@
 #include <hive/chain/account_object_multiindex.hpp>
 #include <hive/chain/evaluator_registry.hpp>
 #include <hive/chain/detail/state/assets_object.hpp>
-#include <hive/chain/detail/state/recovery_object.hpp>
 #include <hive/chain/detail/state/delayed_votes_object.hpp>
 #include <hive/chain/detail/state/tiny_account_object.hpp>
 
@@ -158,8 +157,7 @@ const account_object& create_account( database& db, const account_name_type& nam
   // Create the related objects with the same account_id
   bool mana_100_percent = !db.has_hardfork( HIVE_HARDFORK_0_20__2539 );
 
-  db.create< recovery_object >( recovery_account ? recovery_account->get_id() : account_id_type() );
-  const auto& new_assets = db.create< assets_object >( name, initial_delegation, _creation_time, mana_100_percent, rc_adjustment_from_fee );
+  const auto& new_assets = db.create< assets_object >( name, initial_delegation, _creation_time, mana_100_percent, rc_adjustment_from_fee, 0, recovery_account ? recovery_account->get_id() : account_id_type() );
   const auto& new_dvotes = db.create< delayed_votes_object >();
   db.create< tiny_account_object >( new_account, new_assets, new_dvotes );
 
@@ -532,12 +530,12 @@ void create_claimed_account_evaluator::do_apply( const create_claimed_account_op
 void request_account_recovery_evaluator::do_apply( const request_account_recovery_operation& o )
 {
   const auto& account_to_recover = _db.get_account( o.account_to_recover );
-  const auto& recovery_obj = _db.get_recovery_account( account_to_recover.get_id() );
+  const auto& assets_obj = _db.get_asset_account( account_to_recover.get_id() );
 
-  if ( recovery_obj.has_recovery_account() ) // Make sure recovery matches expected recovery account
+  if ( assets_obj.has_recovery_account() ) // Make sure recovery matches expected recovery account
   {
     // Use get_account(id) which goes through accounts_handler to support RocksDB archived accounts
-    const auto& recovery_account = _db.get_account( recovery_obj.get_recovery_account() );
+    const auto& recovery_account = _db.get_account( assets_obj.get_recovery_account() );
     FC_ASSERT( recovery_account.get_name() == o.recovery_account, "Cannot recover an account that does not have you as their recovery partner." );
     if( o.recovery_account == HIVE_TEMP_ACCOUNT )
       wlog( "Recovery by temp account" );
@@ -589,10 +587,10 @@ void request_account_recovery_evaluator::do_apply( const request_account_recover
 void recover_account_evaluator::do_apply( const recover_account_operation& o )
 {
   const auto& account = _db.get_account( o.account_to_recover );
-  const auto& recovery_obj = _db.get_recovery_account( account.get_id() );
+  const auto& assets_obj = _db.get_asset_account( account.get_id() );
 
   if( _db.has_hardfork( HIVE_HARDFORK_0_12 ) )
-    FC_ASSERT( util::owner_update_limit_mgr::check( _db.head_block_time(), recovery_obj.get_last_account_recovery_time() ), "${m}", ("m", util::owner_update_limit_mgr::msg( _db.has_hardfork( HIVE_HARDFORK_1_26_AUTH_UPDATE ) ) ) );
+    FC_ASSERT( util::owner_update_limit_mgr::check( _db.head_block_time(), assets_obj.get_last_account_recovery_time() ), "${m}", ("m", util::owner_update_limit_mgr::msg( _db.has_hardfork( HIVE_HARDFORK_1_26_AUTH_UPDATE ) ) ) );
 
   const auto& recovery_request_idx = _db.get_index< account_recovery_request_index, by_account >();
   auto request = recovery_request_idx.find( o.account_to_recover );
@@ -615,10 +613,10 @@ void recover_account_evaluator::do_apply( const recover_account_operation& o )
 
   _db.remove( *request ); // Remove first, update_owner_authority may invalidate iterator
   _db.update_owner_authority( account, o.new_owner_authority );
-  _db.modify( recovery_obj, [&]( recovery_object& r )
+  _db.modify( assets_obj, [&]( assets_object& a )
   {
-    r.set_last_account_recovery_time( _db.head_block_time() );
-    r.set_block_last_account_recovery_time( _db.get_current_timestamp() );
+    a.set_last_account_recovery_time( _db.head_block_time() );
+    a.set_block_last_account_recovery_time( _db.get_current_timestamp() );
   });
 }
 
@@ -627,7 +625,7 @@ void change_recovery_account_evaluator::do_apply( const change_recovery_account_
   const auto& new_recovery_account = _db.get_account( o.new_recovery_account ); // validate account exists
     //ABW: can't clear existing recovery agent to set it to top voted witness
   const auto& account_to_recover = _db.get_account( o.account_to_recover );
-  const auto& recovery_obj = _db.get_recovery_account( account_to_recover.get_id() );
+  const auto& assets_obj = _db.get_asset_account( account_to_recover.get_id() );
 
   const auto& change_recovery_idx = _db.get_index< change_recovery_account_request_index, by_account >();
   auto request = change_recovery_idx.find( o.account_to_recover );
@@ -637,7 +635,7 @@ void change_recovery_account_evaluator::do_apply( const change_recovery_account_
     //ABW: it is possible to request change to currently set recovery agent (empty operation)
     _db.create< change_recovery_account_request_object >( account_to_recover, new_recovery_account, _db.head_block_time() + HIVE_OWNER_AUTH_RECOVERY_PERIOD );
   }
-  else if( recovery_obj.get_recovery_account() != new_recovery_account.get_id() ) // Change existing request
+  else if( assets_obj.get_recovery_account() != new_recovery_account.get_id() ) // Change existing request
   {
     //ABW: it is possible to request change to already requested new recovery agent (operation only resets timer)
     _db.modify( *request, [&]( change_recovery_account_request_object& req )

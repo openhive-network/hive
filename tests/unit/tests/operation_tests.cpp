@@ -51,7 +51,6 @@
 #include <hive/chain/detail/state/global_property_object.hpp>
 #include <hive/chain/detail/state/assets_object.hpp>
 #include <hive/chain/detail/state/tiny_account_object.hpp>
-#include <hive/chain/detail/state/recovery_object.hpp>
 #include <hive/chain/detail/state/delayed_votes_object.hpp>
 
 #include <fc/macros.hpp>
@@ -76,8 +75,8 @@ using fc::string;
 #define GET_DV( account_name ) (db->get_delayed_votes_account( db->get_account( account_name ).get_id() ))
 #define GET_EFF_VESTS( account_name ) (db->get_account( account_name ).get_effective_vesting_shares( GET_ASSETS( account_name ) ))
 #define GET_GOV_VOTE_POWER( acc ) ((acc).get_direct_governance_vote_power( db->get_asset_account( (acc).get_id() ), db->get_delayed_votes_account( (acc).get_id() ) ))
-#define GET_RECOVERY( account_name ) (db->get_recovery_account( db->get_account( account_name ).get_id() ))
-#define GET_RECOVERY_FOR_ACC( acc ) (db->get_recovery_account( (acc).get_id() ))
+#define GET_RECOVERY( account_name ) (db->get_asset_account( db->get_account( account_name ).get_id() ))
+#define GET_RECOVERY_FOR_ACC( acc ) (db->get_asset_account( (acc).get_id() ))
 #define CHECK_PROXY( account, proxy ) BOOST_REQUIRE( account.get_proxy() == proxy.get_id() )
 #define CHECK_NO_PROXY( account ) BOOST_REQUIRE( account.has_proxy() == false )
 
@@ -9151,7 +9150,6 @@ BOOST_AUTO_TEST_CASE( create_claimed_account_apply )
 
     const auto& bob = db->get_account( "bob" );
     const auto& bob_assets = db->get_asset_account( bob.get_id() );
-    const auto& bob_recovery = db->get_recovery_account( bob.get_id() );
     const auto& bob_auth = db->get_account_authority( "bob" );
 
     BOOST_REQUIRE_EQUAL( bob.get_name(), "bob" );
@@ -9161,7 +9159,7 @@ BOOST_AUTO_TEST_CASE( create_claimed_account_apply )
     BOOST_REQUIRE( bob.get_memo_key() == priv_key.get_public_key() );
 
     CHECK_NO_PROXY( bob );
-    BOOST_REQUIRE_EQUAL( bob_recovery.get_recovery_account(), alice_id );
+    BOOST_REQUIRE_EQUAL( bob_assets.get_recovery_account(), alice_id );
     BOOST_REQUIRE_EQUAL( bob.get_creation_time(), db->head_block_time() );
     BOOST_REQUIRE_EQUAL( bob_assets.get_balance().amount.value, ASSET( "0.000 TESTS" ).amount.value );
     BOOST_REQUIRE_EQUAL( bob_assets.get_hbd_balance().amount.value, ASSET( "0.000 TBD" ).amount.value );
@@ -9194,7 +9192,7 @@ BOOST_AUTO_TEST_CASE( create_claimed_account_apply )
     tx.operations.push_back( op );
     push_transaction( tx );
 
-    BOOST_REQUIRE( !(db->get_recovery_account( db->get_account( "charlie" ).get_id() ).has_recovery_account()) );
+    BOOST_REQUIRE( !(db->get_asset_account( db->get_account( "charlie" ).get_id() ).has_recovery_account()) );
     validate_database();
   }
   FC_LOG_AND_RETHROW()

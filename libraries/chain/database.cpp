@@ -43,7 +43,6 @@
 #include <hive/chain/rc/rc_objects.hpp>
 #include <hive/chain/detail/state/tiny_account_object.hpp>
 #include <hive/chain/detail/state/assets_object.hpp>
-#include <hive/chain/detail/state/recovery_object.hpp>
 #include <hive/chain/detail/state/delayed_votes_object.hpp>
 
 #include <fc/uint128.hpp>
@@ -462,7 +461,6 @@ HIVE_DEFINE_VOLATILE_ACCESSORS( account,           account,           account,  
 
 // --- Split object accessors ---
 HIVE_DEFINE_SPLIT_OBJECT_ACCESSORS( assets_object,        asset_account,         get_asset_account )
-HIVE_DEFINE_SPLIT_OBJECT_ACCESSORS( recovery_object,      recovery_account,      get_recovery_account )
 HIVE_DEFINE_SPLIT_OBJECT_ACCESSORS( delayed_votes_object, delayed_votes_account, get_delayed_votes_account )
 
 #undef HIVE_DEFINE_SPLIT_OBJECT_ACCESSORS
@@ -1529,10 +1527,10 @@ void database::lock_account( const account_object& account )
     } );
   }
 
-  const auto& recovery_obj = get_recovery_account( account.get_id() );
-  modify( recovery_obj, [&]( recovery_object& r )
+  const auto& assets_obj = get_asset_account( account.get_id() );
+  modify( assets_obj, [&]( assets_object& a )
   {
-    r.set_recovery_account( account.get_id() );
+    a.set_recovery_account( account.get_id() );
   } );
 
   modify( account, []( account_object& a )
@@ -2152,14 +2150,14 @@ void database::account_recovery_processing()
   while( change_req != change_req_idx.end() && change_req->get_execution_time() <= head_block_time() )
   {
     const auto& account = get_account( change_req->get_account_to_recover() );
-    const auto& recovery_obj = get_recovery_account( account.get_id() );
+    const auto& assets_obj = get_asset_account( account.get_id() );
     account_name_type old_recovery_account_name;
-    if( recovery_obj.has_recovery_account() )
-      old_recovery_account_name = get_account( recovery_obj.get_recovery_account() ).get_name();
+    if( assets_obj.has_recovery_account() )
+      old_recovery_account_name = get_account( assets_obj.get_recovery_account() ).get_name();
     const auto& new_recovery_account = get_account( change_req->get_recovery_account() );
-    modify( recovery_obj, [&]( recovery_object& ro )
+    modify( assets_obj, [&]( assets_object& a )
     {
-      ro.set_recovery_account( new_recovery_account.get_id() );
+      a.set_recovery_account( new_recovery_account.get_id() );
     });
 
     push_virtual_operation( *this, changed_recovery_account_operation( account.get_name(), old_recovery_account_name, new_recovery_account.get_name() ));

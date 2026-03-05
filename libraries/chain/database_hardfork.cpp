@@ -40,15 +40,6 @@ void database::align_split_object_ids_with_accounts()
   const auto& account_idx = get_index< account_index >();
   const auto next_account_id = account_idx.get_next_id();
 
-  // Align recovery_index
-  {
-    const auto& idx = get_index< recovery_index >();
-    while( idx.get_next_id() < recovery_object::id_type( next_account_id.get_value() ) )
-    {
-      create< recovery_object >();
-    }
-  }
-
   // Align assets_index
   {
     const auto& idx = get_index< assets_index >();
@@ -558,8 +549,7 @@ void database::apply_hardfork( uint32_t hardfork )
           align_split_object_ids_with_accounts();
 
           const auto& new_account = create<account_object>(treasury_name, head_block_time());
-          // Create all split objects for the treasury account
-          create< recovery_object >();
+          // Create split objects for the treasury account
           const auto& new_assets = create< assets_object >( treasury_name );
           const auto& new_dvotes = create< delayed_votes_object >();
           create< tiny_account_object >( new_account, new_assets, new_dvotes );
@@ -668,8 +658,7 @@ void database::apply_hardfork( uint32_t hardfork )
         align_split_object_ids_with_accounts();
 
         const auto& new_account = create<account_object>(treasury_name, head_block_time());
-        // Create all split objects for the treasury account
-        create< recovery_object >();
+        // Create split objects for the treasury account
         const auto& new_assets = create< assets_object >( treasury_name );
         const auto& new_dvotes = create< delayed_votes_object >();
         create< tiny_account_object >( new_account, new_assets, new_dvotes );

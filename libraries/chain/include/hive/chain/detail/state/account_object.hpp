@@ -11,8 +11,7 @@
 #include <hive/chain/witness_objects.hpp>
 #include <hive/chain/shared_authority.hpp>
 
-// Include the new split objects
-#include <hive/chain/detail/state/recovery_object.hpp>
+// Include the split objects
 #include <hive/chain/detail/state/assets_object.hpp>
 #include <hive/chain/detail/state/delayed_votes_object.hpp>
 
@@ -27,8 +26,7 @@ namespace hive { namespace chain {
   /**
    * account_object now only contains the 'misc' structure members and id.
    * All other data has been split into separate objects:
-   * - recovery_object: recovery account info, last recovery times
-   * - assets_object: all balance-related data (HIVE, HBD, VESTS, rewards, delegations, power down, timestamps, voting manabars, RC manabar, RC delegations)
+   * - assets_object: all balance-related data, manabars, RC, timestamps, recovery info
    * - delayed_votes_object: delayed votes data with sum
    */
   class account_object : public object< account_object_type, account_object, std::false_type /* no dynamic alloc */, std::true_type /* enable no undo */ >
@@ -49,7 +47,7 @@ namespace hive { namespace chain {
         mined( _mined ),
         memo_key( _memo_key )
       {
-        // Note: recovery_object, assets_object, delayed_votes_object
+        // Note: assets_object, delayed_votes_object
         // must be created separately with the same account_id
       }
 

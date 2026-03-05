@@ -40,13 +40,7 @@ rocksdb_storage_provider::ColumnDefinitions rocksdb_account_storage_provider::pr
     byTxIdColumn.options.comparator = by_id_Comparator();
   }
 
-  // Split object columns
-  {
-    columnDefs.emplace_back("recovery", ColumnFamilyOptions());
-    auto& column = columnDefs.back();
-    column.options.comparator = by_id_Comparator();
-  }
-
+  // Split object columns (recovery data merged into assets)
   {
     columnDefs.emplace_back("assets", ColumnFamilyOptions());
     auto& column = columnDefs.back();

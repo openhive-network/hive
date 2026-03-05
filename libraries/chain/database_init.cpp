@@ -194,7 +194,6 @@ void database::init_genesis()
     // Helper to create split objects for an account
     const auto create_split_objects = [&]( const account_object& acc )
     {
-      create< recovery_object >();
       const auto& assets_obj = create< assets_object >( acc.get_name() );
       const auto& dvotes_obj = create< delayed_votes_object >();
       create< tiny_account_object >( acc, assets_obj, dvotes_obj );

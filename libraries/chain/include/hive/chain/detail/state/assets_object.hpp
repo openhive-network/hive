@@ -25,8 +25,9 @@ namespace hive { namespace chain {
         const time_point_sec& _creation_time = time_point_sec(),
         bool _fill_mana = false,
         int64_t _rc_adjustment = 0,
-        share_type effective_vesting_shares = 0 )
-        : id( _id ), name( _name ), rc_adjustment( _rc_adjustment )
+        share_type effective_vesting_shares = 0,
+        const account_id_type& _recovery_account = account_id_type() )
+        : id( _id ), name( _name ), rc_adjustment( _rc_adjustment ), recovery_account( _recovery_account )
       {
         received_vesting_shares += incoming_delegation;
         voting_manabar.last_update_time = _creation_time.sec_since_epoch();
@@ -173,6 +174,30 @@ namespace hive { namespace chain {
       uint32_t get_post_bandwidth() const { return post_bandwidth; }
       void set_post_bandwidth( const uint32_t& value ) { post_bandwidth = value; }
 
+      // ===== Fields merged from recovery_object =====
+
+      // Recovery account accessors
+      bool has_recovery_account() const { return recovery_account != account_id_type(); }
+      account_id_type get_recovery_account() const { return recovery_account; }
+      void set_recovery_account( const account_id_type& new_recovery_account )
+      {
+        recovery_account = new_recovery_account;
+      }
+
+      // Timestamp of last time account owner authority was successfully recovered
+      time_point_sec get_last_account_recovery_time() const { return last_account_recovery; }
+      void set_last_account_recovery_time( time_point_sec recovery_time )
+      {
+        last_account_recovery = recovery_time;
+      }
+
+      // Time from a current block
+      time_point_sec get_block_last_account_recovery_time() const { return block_last_account_recovery; }
+      void set_block_last_account_recovery_time( time_point_sec block_recovery_time )
+      {
+        block_last_account_recovery = block_recovery_time;
+      }
+
       // ===== Fields merged from manabars_rc_object =====
 
       // Effective balance of VESTS for RC calculation optionally excluding part that cannot be delegated
@@ -265,6 +290,11 @@ namespace hive { namespace chain {
       uint32_t          post_count = 0;           //(not read by consensus code)
       uint32_t          post_bandwidth = 0;       //influenced root comment reward between HF12 and HF17
 
+      // Fields merged from recovery_object
+      account_id_type   recovery_account;
+      time_point_sec    last_account_recovery;
+      time_point_sec    block_last_account_recovery;
+
     CHAINBASE_UNPACK_CONSTRUCTOR(assets_object);
   };
 
@@ -298,6 +328,7 @@ FC_REFLECT( hive::chain::assets_object,
           (voting_manabar)(downvote_manabar)(rc_manabar)
           (rc_adjustment)(delegated_rc)(received_rc)(last_max_rc)
           (post_count)(post_bandwidth)
+          (recovery_account)(last_account_recovery)(block_last_account_recovery)
         )
 
 CHAINBASE_SET_INDEX_TYPE( hive::chain::assets_object, hive::chain::assets_index )

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <hive/utilities/benchmark_dumper.hpp>
-#include <hive/chain/detail/state/recovery_object.hpp>
 #include <hive/chain/detail/state/assets_object.hpp>
 #include <hive/chain/detail/state/delayed_votes_object.hpp>
 
@@ -10,57 +9,7 @@
 namespace hive { namespace chain {
 
 /**
- * RocksDB serialization class for recovery_object
- */
-class rocksdb_recovery_object
-{
-public:
-  rocksdb_recovery_object() {}
-
-  rocksdb_recovery_object( const recovery_object& obj )
-    : id( obj.get_id() )
-    , recovery_account( obj.get_recovery_account() )
-    , last_account_recovery( obj.get_last_account_recovery_time() )
-    , block_last_account_recovery( obj.get_block_last_account_recovery_time() )
-  {}
-
-  template<typename Return_Type>
-  Return_Type build( chainbase::database& db )
-  {
-    if constexpr ( std::is_same_v<Return_Type, const recovery_object*> )
-    {
-      const auto& obj = db.create_no_undo<recovery_object>(
-                      id.get_value(),
-                      recovery_account );
-      db.modify_no_undo( obj, [this]( recovery_object& o ) { restore_fields( o ); });
-      return &obj;
-    }
-    else
-    {
-      auto obj = std::make_shared<recovery_object>(
-                          allocator_helper::get_allocator<recovery_object, recovery_index>( db ),
-                          id.get_value(),
-                          recovery_account );
-      restore_fields( *obj );
-      return Return_Type( obj );
-    }
-  }
-
-  recovery_id_type      id;
-  account_id_type       recovery_account;
-  time_point_sec        last_account_recovery;
-  time_point_sec        block_last_account_recovery;
-
-private:
-  void restore_fields( recovery_object& o ) const
-  {
-    o.set_last_account_recovery_time( last_account_recovery );
-    o.set_block_last_account_recovery_time( block_last_account_recovery );
-  }
-};
-
-/**
- * RocksDB serialization class for assets_object
+ * RocksDB serialization class for assets_object (includes merged recovery fields)
  */
 class rocksdb_assets_object
 {
@@ -107,6 +56,9 @@ public:
     , last_max_rc( obj.get_last_max_rc() )
     , post_count( obj.get_post_count() )
     , post_bandwidth( obj.get_post_bandwidth() )
+    , recovery_account( obj.get_recovery_account() )
+    , last_account_recovery( obj.get_last_account_recovery_time() )
+    , block_last_account_recovery( obj.get_block_last_account_recovery_time() )
   {}
 
   template<typename Return_Type>
@@ -170,6 +122,10 @@ public:
   share_type            last_max_rc;
   uint32_t              post_count = 0;
   uint32_t              post_bandwidth = 0;
+  // Merged from recovery_object
+  account_id_type       recovery_account;
+  time_point_sec        last_account_recovery;
+  time_point_sec        block_last_account_recovery;
 
 private:
   void restore_fields( assets_object& o ) const
@@ -211,6 +167,9 @@ private:
     o.set_last_max_rc( last_max_rc );
     o.set_post_count( post_count );
     o.set_post_bandwidth( post_bandwidth );
+    o.set_recovery_account( recovery_account );
+    o.set_last_account_recovery_time( last_account_recovery );
+    o.set_block_last_account_recovery_time( block_last_account_recovery );
   }
 };
 
@@ -262,10 +221,6 @@ private:
 
 } } // hive::chain
 
-FC_REFLECT( hive::chain::rocksdb_recovery_object,
-          (id)(recovery_account)(last_account_recovery)(block_last_account_recovery)
-        )
-
 FC_REFLECT( hive::chain::rocksdb_assets_object,
           (id)(name)
           (hbd_balance)(savings_hbd_balance)(reward_hbd_balance)
@@ -283,6 +238,7 @@ FC_REFLECT( hive::chain::rocksdb_assets_object,
           (voting_manabar)(downvote_manabar)(rc_manabar)
           (rc_adjustment)(delegated_rc)(received_rc)(last_max_rc)
           (post_count)(post_bandwidth)
+          (recovery_account)(last_account_recovery)(block_last_account_recovery)
         )
 
 FC_REFLECT( hive::chain::rocksdb_delayed_votes_object,

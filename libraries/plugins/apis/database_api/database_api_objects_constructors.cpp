@@ -23,7 +23,6 @@
 #include <hive/chain/notifications.hpp>
 #include <hive/chain/detail/state/assets_object.hpp>
 #include <hive/chain/detail/state/delayed_votes_object.hpp>
-#include <hive/chain/detail/state/recovery_object.hpp>
 
 namespace hive { namespace plugins { namespace database_api {
 
@@ -224,7 +223,6 @@ api_account_object::api_account_object( const account_object& a, const database&
   // Get split objects
   const auto& assets = db.get_asset_account( a.get_id() );
   const auto& dvotes = db.get_delayed_votes_account( a.get_id() );
-  const auto& recovery = db.get_recovery_account( a.get_id() );
 
   // From assets_object (voting manabars)
   voting_manabar = assets.get_voting_manabar();
@@ -239,7 +237,7 @@ api_account_object::api_account_object( const account_object& a, const database&
   next_vesting_withdrawal = assets.get_next_vesting_withdrawal();
   post_count = assets.get_post_count();
   post_bandwidth = assets.get_post_bandwidth();
-  last_account_recovery = recovery.get_block_last_account_recovery_time();
+  last_account_recovery = assets.get_block_last_account_recovery_time();
 
   // From assets_object
   balance = assets.get_balance().to_asset();
@@ -268,8 +266,8 @@ api_account_object::api_account_object( const account_object& a, const database&
 
   if( a.has_proxy() )
     proxy = db.get_account( a.get_proxy() ).get_name();
-  if( recovery.has_recovery_account() )
-    recovery_account = db.get_account( recovery.get_recovery_account() ).get_name();
+  if( assets.has_recovery_account() )
+    recovery_account = db.get_account( assets.get_recovery_account() ).get_name();
 
   size_t n = a.get_proxied_vsf_votes().size();
   proxied_vsf_votes.reserve( n );
