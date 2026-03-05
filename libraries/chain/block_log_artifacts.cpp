@@ -81,7 +81,7 @@ struct artifact_file_header
 */
 struct artifact_file_chunk
 {
-  union 
+  union
   {
     struct
     {
@@ -108,7 +108,7 @@ struct artifact_file_chunk
     FC_ASSERT(block_log_offset == unpacked_data.first);
 
     block_log_artifacts::artifacts_t artifacts;
-  
+
     artifacts.attributes = unpacked_data.second;
     artifacts.block_log_file_pos = unpacked_data.first;
     artifacts.block_id = unpack_block_id(block_num);
@@ -143,7 +143,7 @@ struct artifact_file_chunk
   block_log_artifacts::block_id_t unpack_block_id(uint32_t block_num) const
   {
     block_log_artifacts::block_id_t block_id;
-    
+
     static_assert(sizeof(block_id._hash) - sizeof(uint32_t) == sizeof(stripped_block_id));
 
     memcpy(block_id._hash + 1, &stripped_block_id, sizeof(stripped_block_id));
@@ -213,7 +213,7 @@ public:
 
   void update_head_block(uint32_t block_num)
   {
-    FC_ASSERT(_is_writable, "Block log artifacts was opened in read only mode.");
+    FC_ASSERT(_is_writable && "update_head_block", "Block log artifacts was opened in read only mode.");
     _header.head_block_num = block_num;
   }
 
@@ -257,7 +257,7 @@ private:
 
   void generate_artifacts_file(const block_log& source_block_provider, hive::chain::blockchain_worker_thread_pool& thread_pool);
   void verify_if_blocks_from_block_log_matches_artifacts(const block_log& source_block_provider, const bool full_match_verification, const bool use_block_log_head_num) const;
-  
+
   template <class Data>
   void write_data(const Data& buffer, off_t offset, const std::string& description) const
   {
@@ -276,7 +276,7 @@ private:
     const auto to_read = sizeof(Data);
     auto total_read = hive::utilities::perform_read(_storage_fd, reinterpret_cast<char*>(buffer), to_read, offset, description);
 
-    FC_ASSERT(total_read == to_read, "Incomplete read: expected: ${r}, performed: ${tr}", ("r", to_read)("tr", total_read));
+    FC_ASSERT(total_read == to_read && "read_data", "Incomplete read: expected: ${r}, performed: ${tr}", ("r", to_read)("tr", total_read));
   }
 
   template <class Data>
@@ -285,7 +285,7 @@ private:
     const auto to_read = item_count*sizeof(Data);
     auto total_read = hive::utilities::perform_read(_storage_fd, reinterpret_cast<char*>(item_buffer), to_read, offset, description);
 
-    FC_ASSERT(total_read == to_read, "Incomplete read: expected: ${r}, performed: ${tr}", ("r", to_read)("tr", total_read));
+    FC_ASSERT(total_read == to_read && "read_data_with_item_count", "Incomplete read: expected: ${r}, performed: ${tr}", ("r", to_read)("tr", total_read));
   }
 
   size_t calculate_offset(uint32_t block_num) const
@@ -358,7 +358,7 @@ void block_log_artifacts::impl::open(const fc::path& block_log_file_path,
       if (errno == ENOENT && allow_artifacts_regeneration)
       {
         // To avoid confusion warn about missing artifacts only when block log existed earlier.
-        open_writeable_fallback(false/*close_fd*/, 
+        open_writeable_fallback(false/*close_fd*/,
           new_block_log_created ? nullptr : "Missing artifacts file ${_artifact_file_name}. Trying creation in read write mode...");
         return;
       }
@@ -380,7 +380,7 @@ void block_log_artifacts::impl::open(const fc::path& block_log_file_path,
       if (!_flock.try_lock_sharable())
         FC_THROW("Unable to get sharable access to artifacts file: ${file_cstr} (some other process opened artifacts in RW mode probably)", ("file_cstr", file_str.c_str()));
     }
-    
+
     if (!load_header())
     {
       if (allow_artifacts_regeneration)
@@ -413,7 +413,7 @@ void block_log_artifacts::impl::open(const fc::path& block_log_file_path,
 
       FC_THROW("Artifacts file generating process is not finished.\nDetails:\n ${details}", ("details", get_artifacts_contents(_header.generating_interrupted_at_block, _header.generating_interrupted_at_block, false)));
     }
-    
+
     verify_if_blocks_from_block_log_matches_artifacts(source_block_provider, full_match_verification, false);
   }
 
@@ -471,7 +471,7 @@ void block_log_artifacts::impl::open(const fc::path& block_log_file_path,
         {
           wlog("block_log head block num: ${block_log_head_block_num}, block_log.artifact head block num: ${artifacts_head_block_num}. Block log file is shorter, the artifact file will be truncated.",
               (block_log_head_block_num)("artifacts_head_block_num", _header.head_block_num));
-          
+
           if (_header.generating_interrupted_at_block > block_log_head_block_num)
             FC_THROW("Artifacts file has been filled up to ${interrupted_at_block} block, truncating artifacts file will result an empty file. Remove artifacts file and create artifacts from the beggining.", ("interrupted_at_block", _header.generating_interrupted_at_block));
 
@@ -553,7 +553,7 @@ bool block_log_artifacts::impl::load_header()
 
 void block_log_artifacts::impl::flush_header() const
 { try {
-  FC_ASSERT(_is_writable);
+  FC_ASSERT(_is_writable && "flush_header");
   dlog("Attempting to write header (pack_size: ${header_pack_size}) containing: git rev: ${gr}, format version: ${major}.${minor}, head_block_num: ${hb}, tail_block_num: ${tb}, generating_interrupted_at_block: ${giat}, dirty_close: ${d}",
       (header_pack_size)("gr", _header.git_version)("major", _header.format_major_version)("minor", _header.format_minor_version)("hb", _header.head_block_num)("tb", _header.tail_block_num)("giat", _header.generating_interrupted_at_block)("d", _header.dirty_close));
   write_data(_header, 0, "Flushing a file header");
@@ -829,7 +829,7 @@ void block_log_artifacts::impl::verify_if_blocks_from_block_log_matches_artifact
 
 void block_log_artifacts::impl::truncate_file(uint32_t last_block)
 {
-  FC_ASSERT(_is_writable, "Block log artifacts was opened in read only mode.");
+  FC_ASSERT(_is_writable && "truncate_file", "Block log artifacts was opened in read only mode.");
   auto last_chunk_position = calculate_offset(last_block);
   /// File truncate should be done just after last data chunk stored.
   auto truncate_position = last_chunk_position + artifact_chunk_size;
@@ -865,7 +865,7 @@ void block_log_artifacts::impl::process_block_artifacts(uint32_t block_num, uint
 void block_log_artifacts::impl::store_block_artifacts(uint32_t block_num, uint64_t block_log_file_pos,
                                                       const block_attributes_t& block_attrs, const block_id_t& block_id)
 {
-  FC_ASSERT(_is_writable, "Block log artifacts was opened in read only mode.");
+  FC_ASSERT(_is_writable && "store_block_artifacts", "Block log artifacts was opened in read only mode.");
 
   if (_header.generating_interrupted_at_block && (block_num > _header.head_block_num))
     FC_THROW("Cannot store new artifacts if generating process isn't finished.");

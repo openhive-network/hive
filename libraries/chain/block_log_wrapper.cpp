@@ -53,7 +53,7 @@ namespace hive { namespace chain {
   const fc::path& dir, appbase::application& app, blockchain_worker_thread_pool& thread_pool,
   uint32_t start_from_part /*= 1*/ )
 {
-  FC_ASSERT( start_from_part > 0 );
+  FC_ASSERT( start_from_part > 0 && "create_limited_wrapper" );
   FC_ASSERT( fc::exists( dir ) && fc::is_directory( dir ),
     "Path ${p} is NOT an existing directory.", ("p", dir) );
 
@@ -73,7 +73,7 @@ namespace hive { namespace chain {
 
 block_log_wrapper::block_log_wrapper( int block_log_split, appbase::application& app,
                                       blockchain_worker_thread_pool& thread_pool )
-  : _app( app ), _thread_pool( thread_pool ), 
+  : _app( app ), _thread_pool( thread_pool ),
     _max_blocks_in_log_file( determine_max_blocks_in_log_file( block_log_split ) ),
     _block_log_split( block_log_split )
 {}
@@ -113,11 +113,11 @@ void block_log_wrapper::close_storage()
   {
     block_log_ptr_t& log_ref = *it;
     if( log_ref )
-    { 
+    {
       log_ref->close();
       log_ref.reset();
     }
-  }  
+  }
 }
 
 void block_log_wrapper::dispose_garbage( bool closing_time )
@@ -127,12 +127,12 @@ void block_log_wrapper::dispose_garbage( bool closing_time )
     if( not (*it) )
       continue;
 
-    block_log_ptr_t& log_ref = *it; 
+    block_log_ptr_t& log_ref = *it;
 
     FC_ASSERT( not closing_time || it->use_count() == 1,
       "Failed to close block log ${file}. Most likely some API thread is still using it.",
       ("file", log_ref->get_log_file()) );
-    
+
     // Is the log ready for closing?
     if( it->use_count() != 1 )
       continue;
@@ -170,14 +170,14 @@ std::tuple<std::unique_ptr<char[]>, size_t, block_attributes_t> block_log_wrappe
 std::tuple<std::unique_ptr<char[]>, size_t, block_log_artifacts::block_attributes_t> block_log_wrapper::read_common_raw_block_data_by_num(uint32_t block_num) const
 {
   const block_log_ptr_t log = get_block_log_corresponding_to( block_num );
-  FC_ASSERT( log, 
+  FC_ASSERT( log && "read_common_raw_block_data_by_num",
              "Unable to find block log corresponding to block number ${block_num}", (block_num));
   return log->read_common_raw_block_data_by_num( block_num );
 }
 
 void block_log_wrapper::append( const std::shared_ptr<full_block_type>& full_block, const bool is_at_live_sync )
 {
-  internal_append( full_block->get_block_num(), 1 /*block_count*/, [&]( block_log_ptr_t log ){ 
+  internal_append( full_block->get_block_num(), 1 /*block_count*/, [&]( block_log_ptr_t log ){
     log->append( full_block, is_at_live_sync );
   });
 }
@@ -186,7 +186,7 @@ uint64_t block_log_wrapper::append_raw( uint32_t block_num, const char* raw_bloc
   size_t raw_block_size, const block_attributes_t& flags, const bool is_at_live_sync )
 {
   uint64_t result = 0;
-  internal_append( block_num, 1 /*block_count*/, [&]( block_log_ptr_t log ){ 
+  internal_append( block_num, 1 /*block_count*/, [&]( block_log_ptr_t log ){
     result = log->append_raw( block_num, raw_block_data, raw_block_size, flags, is_at_live_sync );
   });
   return result;
@@ -205,10 +205,10 @@ void block_log_wrapper::multi_read_raw_block_data(uint32_t first_block_num, uint
   std::unique_ptr<char[]>& block_data_buffer, size_t& block_data_buffer_size ) const
 {
   const block_log_ptr_t log = get_block_log_corresponding_to( first_block_num );
-  FC_ASSERT( log,
+  FC_ASSERT( log && "multi_read_raw_block_data",
              "Unable to find block log corresponding to block number ${first_block_num}", (first_block_num));
-  return log->multi_read_raw_block_data( first_block_num, last_block_num_from_disk, 
-    plural_of_block_artifacts, block_data_buffer, block_data_buffer_size ); 
+  return log->multi_read_raw_block_data( first_block_num, last_block_num_from_disk,
+    plural_of_block_artifacts, block_data_buffer, block_data_buffer_size );
 }
 
 void block_log_wrapper::flush_head_storage()
@@ -221,14 +221,14 @@ std::shared_ptr<full_block_type> block_log_wrapper::head_block() const
   return get_head_block();
 }
 
-uint32_t block_log_wrapper::head_block_num( 
+uint32_t block_log_wrapper::head_block_num(
   fc::microseconds wait_for_microseconds /*= fc::microseconds()*/ ) const
 {
   const auto hb = get_head_block();
   return hb ? hb->get_block_num() : 0;
 }
 
-block_id_type block_log_wrapper::head_block_id( 
+block_id_type block_log_wrapper::head_block_id(
   fc::microseconds wait_for_microseconds /*= fc::microseconds()*/ ) const
 {
   const auto hb = get_head_block();
@@ -253,23 +253,23 @@ void block_log_wrapper::process_blocks(uint32_t starting_block_number,
     if( not current_log )
       return;
 
-    uint32_t last_block_of_part = 
+    uint32_t last_block_of_part =
       get_part_number_for_block( starting_block_number, _max_blocks_in_log_file ) *
       _max_blocks_in_log_file;
     current_log->for_each_block(  starting_block_number, std::min( last_block_of_part, ending_block_number ),
                                   processor, block_log::for_each_purpose::replay, thread_pool );
-    
+
     starting_block_number = last_block_of_part + 1;
   }
   while( ( starting_block_number < ending_block_number && current_log != head_log ) &&
          ( not _app.is_interrupt_request() ) );
 }
 
-std::shared_ptr<full_block_type> block_log_wrapper::fetch_block_by_id( 
+std::shared_ptr<full_block_type> block_log_wrapper::fetch_block_by_id(
   const block_id_type& id ) const
 {
   try {
-    std::shared_ptr<full_block_type> block = 
+    std::shared_ptr<full_block_type> block =
       read_block_by_num( protocol::block_header::num_from_id( id ) );
     if( block && block->get_block_id() == id )
       return block;
@@ -280,9 +280,6 @@ std::shared_ptr<full_block_type> block_log_wrapper::fetch_block_by_id(
 std::shared_ptr<full_block_type> block_log_wrapper::get_block_by_number( uint32_t block_num,
   fc::microseconds wait_for_microseconds ) const
 {
-  // For the time being we'll silently return empty pointer for requests of future blocks.
-  // FC_ASSERT( block_num <= head_block_num(),
-  //           "Got no block with number greater than ${num}.", ("num", head_block_num()) );
   if( block_num > head_block_num() )
     return std::shared_ptr<full_block_type>();
 
@@ -293,24 +290,24 @@ std::shared_ptr<full_block_type> block_log_wrapper::get_block_by_number( uint32_
   const block_log_ptr_t log = get_block_log_corresponding_to( block_num );
   if( _block_log_split <= MAX_FILES_OF_SPLIT_BLOCK_LOG )
   {
-    FC_ASSERT( log,
+    FC_ASSERT( log && "get_block_by_number-if",
       "Block ${num} has been pruned (oldest stored block is ${old}). "
       "Consider disabling pruning or increasing block-log-split value (currently ${part_count}).",
       ("num", block_num)("old", get_actual_tail_block_num())("part_count", _block_log_split) );
   }
   else
   {
-    FC_ASSERT( log,
+    FC_ASSERT( log && "get_block_by_number-else",
       "Internal error, block ${block_num} should have been found in block log file", (block_num) );
   }
 
   return log->read_block_by_num( block_num );
 }
 
-std::vector<std::shared_ptr<full_block_type>> block_log_wrapper::fetch_block_range( 
-  const uint32_t starting_block_num, const uint32_t count, 
+std::vector<std::shared_ptr<full_block_type>> block_log_wrapper::fetch_block_range(
+  const uint32_t starting_block_num, const uint32_t count,
   fc::microseconds wait_for_microseconds /*= fc::microseconds()*/ ) const
-{ 
+{
   try {
     FC_ASSERT(starting_block_num > 0, "Invalid starting block number");
     FC_ASSERT(count > 0, "Why ask for zero blocks?");
@@ -364,7 +361,7 @@ block_id_type block_log_wrapper::find_block_id_for_num( uint32_t block_num ) con
   return result;
 }
 
-std::vector<block_id_type> block_log_wrapper::get_blockchain_synopsis( 
+std::vector<block_id_type> block_log_wrapper::get_blockchain_synopsis(
   const block_id_type& reference_point, uint32_t number_of_blocks_after_reference_point ) const
 {
   //std::vector<block_id_type> synopsis = _fork_db.get_blockchain_synopsis(reference_point, number_of_blocks_after_reference_point, block_number_needed_from_block_log);
@@ -474,27 +471,27 @@ void block_log_wrapper::internal_open_and_init( block_log_ptr_t the_log, const f
                           _thread_pool );
 }
 
-uint32_t block_log_wrapper::validate_tail_part_number( uint32_t tail_part_number, 
+uint32_t block_log_wrapper::validate_tail_part_number( uint32_t tail_part_number,
   uint32_t head_part_number ) const
 {
-  FC_ASSERT( _block_log_split > LEGACY_SINGLE_FILE_BLOCK_LOG );
+  FC_ASSERT( _block_log_split > LEGACY_SINGLE_FILE_BLOCK_LOG && "validate_tail_part_number" );
 
   if( _block_log_split == MAX_FILES_OF_SPLIT_BLOCK_LOG )
   {
     // Expected tail part is obviously 1 - we need each part.
     if( tail_part_number > 1 )
-      throw std::runtime_error( 
+      throw std::runtime_error(
         "Missing block log part file(s), beginning with file #" + std::to_string( tail_part_number-1 ) );
 
     return 1;
   }
 
-  FC_ASSERT( head_part_number >= tail_part_number );
+  FC_ASSERT( head_part_number >= tail_part_number && "validate_tail_part_number" );
 
   // Require configured number of log file parts, unless we're only starting.
   if( tail_part_number > 1 &&
       head_part_number - tail_part_number < (unsigned int)_block_log_split )
-    throw std::runtime_error( 
+    throw std::runtime_error(
       "Too few block log part files found (" + std::to_string( head_part_number - tail_part_number ) +
       "), " + std::to_string( _block_log_split ) + " required." );
 
@@ -531,9 +528,9 @@ void block_log_wrapper::force_parts_exist( uint32_t head_part_number, uint32_t a
   part_file_names_t& part_file_names, bool allow_splitting_monolithic_log,
   full_block_ptr_t state_head_block )
 {
-  FC_ASSERT( _block_log_split > LEGACY_SINGLE_FILE_BLOCK_LOG );
+  FC_ASSERT( _block_log_split > LEGACY_SINGLE_FILE_BLOCK_LOG && "force_parts_exist" );
   uint32_t tail_part_number = part_file_names.cbegin()->part_number;
-  FC_ASSERT( head_part_number >= tail_part_number );
+  FC_ASSERT( head_part_number >= tail_part_number && "force_parts_exist" );
 
   // Walk over existing parts checking numbers continuity.
   uint32_t last_continuous_number = head_part_number;
@@ -551,17 +548,17 @@ void block_log_wrapper::force_parts_exist( uint32_t head_part_number, uint32_t a
   if( tail_part_number > actual_tail_needed ||      // There's too few parts or
       last_continuous_number > actual_tail_needed ) // a part file is missing in the middle and we need it.
   {
-    uint32_t low_missing_part_number = 
+    uint32_t low_missing_part_number =
       last_checked_number == actual_tail_needed ? actual_tail_needed +1: actual_tail_needed;
     uint32_t high_missing_part_number = last_continuous_number -1;
 
     // Is there a separated part in the range of first/last missing ones?
-    bool blocking_part_exists = 
+    bool blocking_part_exists =
       last_checked_number < last_continuous_number && // there's a gap
       last_checked_number > low_missing_part_number; // and a separated part is inside missing range
 
     std::stringstream msg;
-    msg << "Missing block log part file(s) in the range [" 
+    msg << "Missing block log part file(s) in the range ["
       << block_log_file_name_info::get_nth_part_file_name( low_missing_part_number )
       << ","
       << block_log_file_name_info::get_nth_part_file_name( high_missing_part_number )
@@ -578,9 +575,9 @@ void block_log_wrapper::force_parts_exist( uint32_t head_part_number, uint32_t a
     }
 
     size_t needed_part_count = high_missing_part_number - low_missing_part_number + 1;
-    uint32_t head_block_number = 
+    uint32_t head_block_number =
       block_log_wrapper::get_number_of_last_block_in_part( high_missing_part_number, _block_log_split );
-    if( not try_splitting_monolithic_log_file( state_head_block, 
+    if( not try_splitting_monolithic_log_file( state_head_block,
                                                head_block_number,
                                                needed_part_count ) )
     {
@@ -606,7 +603,7 @@ void block_log_wrapper::look_for_part_files( part_file_names_t& part_file_names 
     for( ; it != end_it; it++ )
     {
       uint32_t part_number = 0;
-      if( fc::is_regular_file( *it ) && 
+      if( fc::is_regular_file( *it ) &&
           ( part_number = block_log_file_name_info::is_part_file( *it ) ) > 0 )
       {
         // Part numbers are always positive.
@@ -620,7 +617,7 @@ void block_log_wrapper::common_open_and_init( bool read_only, bool allow_artifac
   bool allow_splitting_monolithic_log,
   full_block_ptr_t state_head_block, uint32_t start_from_part /*= 1*/ )
 {
-  FC_ASSERT( start_from_part > 0 );
+  FC_ASSERT( start_from_part > 0 && "common_open_and_init" );
 
   if( _block_log_split == LEGACY_SINGLE_FILE_BLOCK_LOG )
   {
@@ -643,7 +640,7 @@ void block_log_wrapper::common_open_and_init( bool read_only, bool allow_artifac
   if( part_file_names.empty() )
   {
     // No part file name found. Try splitting legacy monolithic file if allowed & possible.
-    size_t needed_part_count = 
+    size_t needed_part_count =
       _block_log_split == MAX_FILES_OF_SPLIT_BLOCK_LOG ? 0 /*all*/ : _block_log_split +1;
     size_t head_block_number = 0 /*determine head block from source*/;
 
@@ -704,16 +701,16 @@ void block_log_wrapper::common_open_and_init( bool read_only, bool allow_artifac
   {
     if( _open_args.replay && state_head_block && not _open_args.load_snapshot )
     {
-      // For regular replay require all parts beginning from state head block to be 
+      // For regular replay require all parts beginning from state head block to be
       // present & opened (possibly incremental replay).
-      actual_tail_number_needed = 
+      actual_tail_number_needed =
         get_part_number_for_block( state_head_block->get_block_num(), _max_blocks_in_log_file );
     }
 
     if( head_part_number > (uint32_t)_block_log_split )
     {
       // Make sure that we require sufficient number of parts.
-      actual_tail_number_needed = 
+      actual_tail_number_needed =
         std::min<uint32_t>( actual_tail_number_needed, head_part_number - _block_log_split);
     }
   }
@@ -745,12 +742,12 @@ void block_log_wrapper::common_open_and_init( bool read_only, bool allow_artifac
     if( last_block_id != block_id_type() )
     {
       // Verify that part's tail block links with previous part's head block.
-      uint32_t first_block_num = 
+      uint32_t first_block_num =
         get_number_of_first_block_in_part( part_number, MAX_FILES_OF_SPLIT_BLOCK_LOG );
       ilog( "Verifying whether block #${first_block_num} links with previous block's hash (${last_block_id}).",
             (first_block_num)(last_block_id) );
       std::shared_ptr<full_block_type> first_block = nth_part_log->read_block_by_num( first_block_num );
-      FC_ASSERT( first_block, 
+      FC_ASSERT( first_block && "common_open_and_init",
                 "Block #${first_block_num} not found in ${part_file}. Is the file empty?",
                 (first_block_num)("part_file", cit->part_file.generic_string()) );
       block_id_type first_block_prev = first_block->get_block().previous;
@@ -760,7 +757,7 @@ void block_log_wrapper::common_open_and_init( bool read_only, bool allow_artifac
           std::to_string( part_number -1 ) + " is " + last_block_id.str() +
           " while previous block id of first block of part #" +
           std::to_string( part_number ) + " is " + first_block_prev.str()
-         );
+        );
     }
 
     const auto head_block = nth_part_log->head();
@@ -787,7 +784,7 @@ void block_log_wrapper::wipe_storage_files( const fc::path& dir )
     if( exists( legacy_file ) )
       fc::remove( legacy_file );
 
-    remove_artifacts( legacy_file );      
+    remove_artifacts( legacy_file );
     return;
   }
 
@@ -795,7 +792,7 @@ void block_log_wrapper::wipe_storage_files( const fc::path& dir )
   fc::directory_iterator end_it;
   for( ; it != end_it; it++ )
   {
-    if( fc::is_regular_file( *it ) && 
+    if( fc::is_regular_file( *it ) &&
         block_log_file_name_info::is_part_file( *it ) > 0 )
     {
       fc::remove( *it );
@@ -855,7 +852,7 @@ uint32_t block_log_wrapper::get_actual_tail_block_num() const
 {
   //FC_ASSERT( get_head_log(), "Using unopened block log?" );
   size_t log_number = _logs.size();
-  FC_ASSERT( log_number > 0, "Uninitialized block_log_wrapper object?" );
+  FC_ASSERT( log_number > 0 && "get_actual_tail_block_num", "Uninitialized block_log_wrapper object?" );
   FC_ASSERT( std::atomic_load( &(_logs[log_number -1]) ), "Head log not initialized?" );
 
   uint32_t block_num = 0;
@@ -866,7 +863,7 @@ uint32_t block_log_wrapper::get_actual_tail_block_num() const
   } while ( log_number > 0 && std::atomic_load( &(_logs[log_number -1]) ) );
 
   return block_num;
-  
+
   /*uint32_t block_num = 1;
   block_log_ptr_t another_log;
   for(; not another_log; block_num += BLOCKS_IN_SPLIT_BLOCK_LOG_FILE )
