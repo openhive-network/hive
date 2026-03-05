@@ -55,8 +55,8 @@ def load_symbol_from_file(file_path: Path, symbol_name: str) -> dict[str, Any]:
     if file_path.suffix != ".py":
         raise ValueError(f"The file {file_path} is not a Python file.")
 
-    # Create module name relative to hiveio_api project directory (parent of hiveio_api package)
-    # For path like: .../hiveio_api/hiveio_api/rc_api/rc_api_description.py
+    # Create module name relative to python_api_package project directory (parent of hiveio_api package)
+    # For path like: .../python_api_package/hiveio_api/rc_api/rc_api_description.py
     # We want module name: hiveio_api.rc_api.rc_api_description
     # parents[2] is the project directory containing hiveio_api/
     relative_path = file_path.relative_to(file_path.parents[2])
@@ -79,18 +79,18 @@ def create_api_directory_structure(
     Create the directory structure for the API within the hiveio_api package.
 
     Structure:
-        base_directory/hiveio_api/hiveio_api/{api_name}/
+        base_directory/python_api_package/hiveio_api/{api_name}/
 
     Args:
         api_name: The name of the API.
-        base_directory: The base directory where the hiveio_api package will be created.
+        base_directory: The base directory where the python_api_package will be created.
         template_directory: The directory containing the template files for the API.
     """
 
     api_name = api_name.replace("-", "_")
 
-    # hiveio_api/hiveio_api/{api_name}/
-    project_directory = base_directory / "hiveio_api"
+    # python_api_package/hiveio_api/{api_name}/
+    project_directory = base_directory / "python_api_package"
     package_directory = project_directory / "hiveio_api"
     api_subpackage_path = package_directory / api_name
 
@@ -147,7 +147,7 @@ if __name__ == "__main__":
     api = sys.argv[1]
     base_directory = Path(sys.argv[2])
 
-    template_api_path = base_directory / "template_api"
+    template_api_path = base_directory / "python_api_package" / "templates"
     create_api_directory_structure(api, base_directory, template_api_path)
 
     api_description_file = generate_description(api, base_directory)
@@ -164,7 +164,7 @@ if __name__ == "__main__":
 
     api_name_snake_case = api.replace("-", "_")
     api_name_pascal_case = "".join(word.capitalize() for word in api_name_snake_case.split("_"))
-    api_subpackage_path = base_directory / "hiveio_api" / "hiveio_api" / api_name_snake_case
+    api_subpackage_path = base_directory / "python_api_package" / "hiveio_api" / api_name_snake_case
 
     # Extract class names from the generated description file for lazy imports
     description_symbols = extract_class_names_from_file(api_description_file)

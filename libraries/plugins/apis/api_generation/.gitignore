@@ -1,1 +1,2 @@
-hiveio_api/
+python_api_package/*
+!python_api_package/templates/

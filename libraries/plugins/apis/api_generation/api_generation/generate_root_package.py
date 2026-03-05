@@ -19,22 +19,22 @@ def generate_root_package(
     Generate the root hiveio_api package files.
 
     Structure created:
-        base_directory/hiveio_api/          <- PYPROJECT_DIR
+        base_directory/python_api_package/       <- PYPROJECT_DIR
         ├── pyproject.toml
-        └── hiveio_api/                     <- Python package
+        └── hiveio_api/                          <- Python package
             ├── __init__.py
             ├── README.md
             ├── py.typed
-            └── {api_name}/                 <- API subpackages
+            └── {api_name}/                      <- API subpackages
 
     Args:
         api_list: List of API names (snake_case).
         base_directory: The base directory containing the api_generation folder.
         template_directory: The directory containing the root template files.
     """
-    # hiveio_api/ is the poetry project directory
-    project_directory = base_directory / "hiveio_api"
-    # hiveio_api/hiveio_api/ is the actual Python package
+    # python_api_package/ is the poetry project directory
+    project_directory = base_directory / "python_api_package"
+    # python_api_package/hiveio_api/ is the actual Python package
     package_directory = project_directory / "hiveio_api"
 
     project_directory.mkdir(exist_ok=True)
@@ -100,5 +100,5 @@ if __name__ == "__main__":
     base_directory = Path(sys.argv[1])
     api_list = sys.argv[2:]
 
-    template_api_path = base_directory / "template_api"
+    template_api_path = base_directory / "python_api_package" / "templates"
     generate_root_package(api_list, base_directory, template_api_path)
