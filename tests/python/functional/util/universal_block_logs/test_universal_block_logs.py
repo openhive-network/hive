@@ -47,11 +47,12 @@ def test_block_log_with_several_type_of_signatures(replayed_node: tt.InitNode, t
     )
 
     find_account_output = node.api.database.find_accounts(accounts=[account]).accounts[0]
-    assert find_account_output.balance >= tt.Asset.Test(110)
-    assert find_account_output.hbd_balance == TBD_PER_ACCOUNT
+    _nai = lambda b: {"amount": b.amount, "precision": b.precision, "nai": b.nai}
+    assert tt.Asset.from_nai(_nai(find_account_output.balance)) >= tt.Asset.Test(110)
+    assert tt.Asset.from_nai(_nai(find_account_output.hbd_balance)) == TBD_PER_ACCOUNT
     assert find_account_output.delayed_votes == []
-    assert find_account_output.vesting_shares >= tt.Asset.Vest(103000)
-    assert find_account_output.received_vesting_shares == DELEGATION_PER_ACCOUNT
+    assert tt.Asset.from_nai(_nai(find_account_output.vesting_shares)) >= tt.Asset.Vest(103000)
+    assert tt.Asset.from_nai(_nai(find_account_output.received_vesting_shares)) == DELEGATION_PER_ACCOUNT
     assert node.api.database.find_accounts(accounts=[account_names[-1]]).accounts[0].name == account_names[-1]
 
     # custom json
