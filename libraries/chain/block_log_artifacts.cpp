@@ -601,42 +601,42 @@ void block_log_artifacts::impl::generate_artifacts_file(const block_log& source_
     size_t idx = 0;
     uint32_t current_block_number = starting_block_num;
 
-    if (starting_block_num >= target_block_num)
+    FC_ASSERT(starting_block_num >= target_block_num,
+      "starting_block_num (${s}) must be >= target_block_num (${t})",
+      ("s", starting_block_num)("t", target_block_num));
+    do
     {
-      do
+      std::shared_ptr<full_block_with_artifacts> block_with_artifacts;
       {
-        std::shared_ptr<full_block_with_artifacts> block_with_artifacts;
+        std::unique_lock<std::mutex> lock(queue_mutex);
+        while (!theApp.is_interrupt_request() && !full_block_queue.pop(block_with_artifacts))
+          queue_condition.wait(lock);
+
+        if (theApp.is_interrupt_request() || !block_with_artifacts)
         {
-          std::unique_lock<std::mutex> lock(queue_mutex);
-          while (!theApp.is_interrupt_request() && !full_block_queue.pop(block_with_artifacts))
-            queue_condition.wait(lock);
-
-          if (theApp.is_interrupt_request() || !block_with_artifacts)
-          {
-            ilog("Artifacts file generation interrupted at block: ${current_block_number}", (current_block_number));
-            generating_interrupted = true;
-            break;
-          }
-
-          queue_size.fetch_sub(1, std::memory_order_relaxed);
-        }
-        queue_condition.notify_one();
-        current_block_number = block_with_artifacts->full_block->get_block_num();
-        store_block_artifacts(current_block_number, block_with_artifacts->block_log_file_pos, block_with_artifacts->attributes, block_with_artifacts->full_block->get_block_id());
-
-        if (idx >= BLOCKS_COUNT_INTERVAL_FOR_ARTIFACTS_SAVE)
-        {
-          ilog("Artifact generation just processed block ${current_block_number}. Processed blocks count: ${processed_blocks_count}, Target block: ${target_block_num}", (current_block_number)(processed_blocks_count)(target_block_num));
-          idx = 0;
-          _header.generating_interrupted_at_block = current_block_number;
-          flush_header();
+          ilog("Artifacts file generation interrupted at block: ${current_block_number}", (current_block_number));
+          generating_interrupted = true;
+          break;
         }
 
-        ++processed_blocks_count;
-        ++idx;
+        queue_size.fetch_sub(1, std::memory_order_relaxed);
       }
-      while (current_block_number > target_block_num);
+      queue_condition.notify_one();
+      current_block_number = block_with_artifacts->full_block->get_block_num();
+      store_block_artifacts(current_block_number, block_with_artifacts->block_log_file_pos, block_with_artifacts->attributes, block_with_artifacts->full_block->get_block_id());
+
+      if (idx >= BLOCKS_COUNT_INTERVAL_FOR_ARTIFACTS_SAVE)
+      {
+        ilog("Artifact generation just processed block ${current_block_number}. Processed blocks count: ${processed_blocks_count}, Target block: ${target_block_num}", (current_block_number)(processed_blocks_count)(target_block_num));
+        idx = 0;
+        _header.generating_interrupted_at_block = current_block_number;
+        flush_header();
+      }
+
+      ++processed_blocks_count;
+      ++idx;
     }
+    while (current_block_number > target_block_num);
 
     _header.generating_interrupted_at_block = current_block_number;
   });
