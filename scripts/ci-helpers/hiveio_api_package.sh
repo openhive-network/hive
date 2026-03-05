@@ -31,8 +31,8 @@
 #   CI_JOB_TOKEN                GitLab CI job token (required for registry operations)
 #
 # Output:
-#   - Generated package:  ${API_GENERATION_DIR}/hiveio_api/
-#   - Wheel:              ${API_GENERATION_DIR}/hiveio_api/dist/*.whl
+#   - Generated package:  ${API_GENERATION_DIR}/python_api_package/
+#   - Wheel:              ${API_GENERATION_DIR}/python_api_package/dist/*.whl
 #   - Env file:           ${HIVE_PROJECT_ROOT}/build_wheel.env
 #
 
@@ -129,7 +129,7 @@ parse_args() {
 
     # Set derived paths
     GENERATOR_PYPROJECT_DIR="${API_GENERATION_DIR}/api_generation"
-    GENERATED_PACKAGE_DIR="${API_GENERATION_DIR}/hiveio_api"
+    GENERATED_PACKAGE_DIR="${API_GENERATION_DIR}/python_api_package"
     WHEEL_OUTPUT_DIR="${GENERATED_PACKAGE_DIR}/dist"
 }
 
@@ -174,12 +174,42 @@ verify_wheel_exists() {
 # Package Generation
 # ==============================================================================
 
+# Validates that the API list in generate_api_packages.sh matches .gitignore entries.
+# __init__.py is generated from templates, so only committed sources are compared.
+validate_api_list_consistency() {
+    log_info "Validating API list consistency across sources..."
+
+    local generator_script="${API_GENERATION_DIR}/generate_api_packages.sh"
+    local gitignore_file="${GENERATED_PACKAGE_DIR}/hiveio_api/.gitignore"
+
+    # Extract API list from generate_api_packages.sh DEFAULT_API_LIST
+    local generator_apis
+    generator_apis=$(sed -n '/^DEFAULT_API_LIST=(/,/^)/{ /^DEFAULT_API_LIST=(/d; /^)/d; s/^[[:space:]]*"//; s/"[[:space:]]*$//; p; }' "${generator_script}" | sort)
+
+    # Extract API directory entries from .gitignore (only lines ending with /, strip the slash)
+    local gitignore_apis
+    gitignore_apis=$(grep '/$' "${gitignore_file}" | sed 's|/$||' | grep -v -e '^$' -e '^#' | sort)
+
+    if [[ "${generator_apis}" != "${gitignore_apis}" ]]; then
+        log_error "API list mismatch between generate_api_packages.sh and .gitignore"
+        log_error "In generator only: $(comm -23 <(echo "${generator_apis}") <(echo "${gitignore_apis}") | tr '\n' ' ')"
+        log_error "In .gitignore only: $(comm -13 <(echo "${generator_apis}") <(echo "${gitignore_apis}") | tr '\n' ' ')"
+        log_error "API lists are inconsistent. Update both sources to match:"
+        log_error "  - generate_api_packages.sh DEFAULT_API_LIST"
+        log_error "  - python_api_package/hiveio_api/.gitignore"
+        return 1
+    fi
+
+    log_success "API list consistency validated (${generator_apis// /, })"
+}
+
 # Generates the hiveio_api package from API definitions using the generator script.
 # Infrastructure (pyproject.toml, poetry.lock, .gitignore) is committed in the repo.
 # API subpackages, __init__.py, and README.md are generated and gitignored.
 generate_package() {
     log_info "Generating hiveio_api API subpackages..."
     cd "${API_GENERATION_DIR}"
+    validate_api_list_consistency
     poetry -C "${GENERATOR_PYPROJECT_DIR}" install
 
     local apis_dir
@@ -299,6 +329,9 @@ deploy_wheel_to_registry() {
 build_wheel() {
     log_info "Building hiveio-api wheel..."
     cd "${GENERATED_PACKAGE_DIR}"
+
+    log_info "Validating poetry.lock consistency..."
+    poetry check --lock
 
     poetry version
     poetry build --format wheel
