@@ -208,14 +208,12 @@ class Account:
         if len(delayed_votes) == 0:
             return
 
-        last_unlock_date = max(
-            [  # noqa: C419
-                tt.Time.parse(delay_vote["time"], time_zone=timezone.utc)
-                for delay_vote in self._node.api.database.find_accounts(accounts=[self._acc_info.name])
-                .accounts[0]
-                .delayed_votes
-            ]
-        )
+        last_unlock_date = max([  # noqa: C419
+            tt.Time.parse(delay_vote["time"], time_zone=timezone.utc)
+            for delay_vote in self._node.api.database.find_accounts(accounts=[self._acc_info.name])
+            .accounts[0]
+            .delayed_votes
+        ])
         self._node.restart(
             time_control=tt.StartTimeControl(
                 start_time=last_unlock_date + tt.Time.seconds(HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS)
