@@ -39,14 +39,14 @@ digest_type transaction::sig_digest( const chain_id_type& chain_id, hive::protoc
 
 void transaction::validate() const
 {
-  FC_ASSERT( operations.size() > 0, "A transaction must have at least one operation", ("trx",*this) );
+  HIVE_PROTOCOL_NUMBER_ASSERT( operations.size() > 0, "A transaction must have at least one operation", ("subject", operations.size())("trx", *this) );
   for( const auto& op : operations )
     operation_validate(op);
 }
 
 void transaction::validate( const std::function<void( const operation& op, bool post )>& notify ) const
 {
-  FC_ASSERT( 0 < operations.size(), "A transaction must have at least one operation", ("trx",*this) );
+  HIVE_PROTOCOL_NUMBER_ASSERT( 0 < operations.size(), "A transaction must have at least one operation", ("subject", operations.size())("trx", *this) );
   for( const auto& op : operations )
   {
     notify( op, false );
@@ -151,8 +151,16 @@ set<public_key_type> signed_transaction::get_required_signatures(
   if( required_posting.size() ) {
     if( !allow_strict_and_mixed_authorities )
     {
-      FC_ASSERT( !required_owner.size() );
-      FC_ASSERT( !required_active.size() );
+      HIVE_PROTOCOL_AUTHORITY_ASSERT(
+        !required_owner.size(), 
+        "No owner authorities are allowed if posting authority is required since HF28", 
+        ("subject", required_owner)("trx", *this) 
+      );
+      HIVE_PROTOCOL_AUTHORITY_ASSERT(
+        !required_active.size(), 
+        "No active authorities are allowed if posting authority is required since HF28", 
+        ("subject", required_active)("trx", *this) 
+      );
     }
 
     for( auto& posting : required_posting )
