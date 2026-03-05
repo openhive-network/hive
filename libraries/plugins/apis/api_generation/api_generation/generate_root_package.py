@@ -25,7 +25,7 @@ def generate_root_package(
         base_directory: The base directory containing the api_generation folder.
         template_directory: The directory containing the root template files.
     """
-    package_directory = base_directory / "hiveio_api" / "hiveio_api"
+    package_directory = base_directory / "python_api_package" / "hiveio_api"
     package_directory.mkdir(parents=True, exist_ok=True)
 
     apis = []
@@ -61,5 +61,5 @@ if __name__ == "__main__":
     base_directory = Path(sys.argv[1])
     api_list = sys.argv[2:]
 
-    template_api_path = base_directory / "template_api"
+    template_api_path = base_directory / "python_api_package" / "templates"
     generate_root_package(api_list, base_directory, template_api_path)

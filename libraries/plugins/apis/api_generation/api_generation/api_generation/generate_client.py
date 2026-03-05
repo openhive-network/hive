@@ -22,7 +22,7 @@ class _ImportableItem:
 def generate_client(api: AvailableApis, api_description: dict[str, Any], base_directory: Path) -> None:
 
     api = api.replace("-", "_")
-    generated_client_output_path = base_directory / "hiveio_api" / "hiveio_api" / api / f"{api}_client.py"
+    generated_client_output_path = base_directory / "python_api_package" / "hiveio_api" / api / f"{api}_client.py"
 
     # Add UNSET import to fix NameError in generated code
     # Use msgspec.UNSET instead of datamodel_code_generator's version to avoid importing
