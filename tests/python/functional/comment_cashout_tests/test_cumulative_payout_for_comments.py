@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import datetime
+
 import pytest
 
 import test_tools as tt
@@ -7,14 +9,20 @@ import test_tools as tt
 from .block_log.generate_block_log import AMOUNT_OF_ALL_COMMENTS
 
 
+def _to_naive(dt: datetime) -> datetime:
+    return datetime(dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second)
+
+
 @pytest.mark.parametrize("network_type", ["bastion", "complete_graph"])
 def test_cumulative_payout_for_comments(prepare_environment, network_type) -> None:
     networks_builder = prepare_environment
     api_node = networks_builder.networks[0].node("FullApiNode0")
-    cashout_time = tt.Time.parse(
-        api_node.api.database.get_comment_pending_payouts(comments=[["creator-0", "post-creator-0"]])
-        .cashout_infos[0]
-        .cashout_info.cashout_time
+    cashout_time = _to_naive(
+        tt.Time.parse(
+            api_node.api.database.get_comment_pending_payouts(comments=[["creator-0", "post-creator-0"]])
+            .cashout_infos[0]
+            .cashout_info.cashout_time
+        )
     )
     tt.logger.info(f"Cashout time: {cashout_time}")
 

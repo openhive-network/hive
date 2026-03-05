@@ -64,6 +64,8 @@ def _convert_to_asset(asset_obj) -> tt.Asset.AnyT:
     if callable(getattr(asset_obj, "precision", None)):
         # Already a schemas Asset type (precision is a classmethod), return as-is
         return asset_obj
+    if isinstance(asset_obj, dict):
+        return tt.Asset.from_nai(asset_obj)
     return tt.Asset.from_nai({"amount": asset_obj.amount, "precision": asset_obj.precision, "nai": asset_obj.nai})
 
 

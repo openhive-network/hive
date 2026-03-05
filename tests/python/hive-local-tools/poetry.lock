@@ -633,13 +633,13 @@ reference = "gitlab-hive"
 
 [[package]]
 name = "hiveio-test-tools"
-version = "2.0.2.dev20260305090911+unstable"
+version = "2.0.2.dev20260305095454+unstable"
 description = "Tools for testing hive software"
 optional = false
 python-versions = ">=3.12,<4"
 groups = ["main"]
 files = [
-    {file = "hiveio_test_tools-2.0.2.dev20260305090911+unstable-py3-none-any.whl", hash = "sha256:7d2dc523a389f4b56f88b3237b179230f7815e7e10f751c53fb034765edf9462"},
+    {file = "hiveio_test_tools-2.0.2.dev20260305095454+unstable-py3-none-any.whl", hash = "sha256:398a5796e4e2147fd0cc4fec71658d666a10113ed664c308b3c70130ce08be33"},
 ]
 
 [package.dependencies]
@@ -2282,4 +2282,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.14,<4"
-content-hash = "5d78c1686c7d3c678f88ac05156dc7f21b006e1315b3bce20ca968ec33cc605e"
+content-hash = "4fb4e29756db87bd3c174231547e320f525f3cb189df295f752c98fff5df4ad5"

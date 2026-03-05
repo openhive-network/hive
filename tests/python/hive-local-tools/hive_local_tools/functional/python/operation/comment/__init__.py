@@ -351,8 +351,8 @@ class Comment:
         for operation in ops_in_block.ops:
             if (
                 operation.op.type == "comment_operation"
-                and operation.op.value.author == comment_value["author"]
-                and operation.op.value.permlink == comment_value["permlink"]
+                and operation.op.value["author"] == comment_value["author"]
+                and operation.op.value["permlink"] == comment_value["permlink"]
             ):
                 return
         raise AssertionError
@@ -590,10 +590,10 @@ class Vote:
             # vote_operation from wallet is a dict, op.op.value from hiveio_api is a msgspec struct
             found = any(
                 op.op.type == "vote_operation"
-                and op.op.value.voter == vote_operation["voter"]
-                and op.op.value.author == vote_operation["author"]
-                and op.op.value.permlink == vote_operation["permlink"]
-                and op.op.value.weight == vote_operation["weight"]
+                and op.op.value["voter"] == vote_operation["voter"]
+                and op.op.value["author"] == vote_operation["author"]
+                and op.op.value["permlink"] == vote_operation["permlink"]
+                and op.op.value["weight"] == vote_operation["weight"]
                 for op in operations
             )
             assert found, "Vote_operation not generated, but it should have been"
