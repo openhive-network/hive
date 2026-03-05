@@ -163,14 +163,10 @@ verify_wheel_exists() {
 # ==============================================================================
 
 # Generates the hiveio_api package from API definitions using the generator script.
-# Skips generation if the package already exists.
+# Infrastructure (pyproject.toml, poetry.lock, .gitignore) is committed in the repo.
+# API subpackages, __init__.py, and README.md are generated and gitignored.
 generate_package() {
-    if [[ -d "${GENERATED_PACKAGE_DIR}" ]] && [[ -f "${GENERATED_PACKAGE_DIR}/pyproject.toml" ]]; then
-        log_info "Package already generated at ${GENERATED_PACKAGE_DIR}"
-        return 0
-    fi
-
-    log_info "Generating hiveio_api package..."
+    log_info "Generating hiveio_api API subpackages..."
     cd "${API_GENERATION_DIR}"
     poetry -C "${GENERATOR_PYPROJECT_DIR}" install
     "${API_GENERATION_DIR}/generate_api_packages.sh"

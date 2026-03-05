@@ -18,7 +18,6 @@ source = [
 
 [tool.poetry.dependencies]
 python = ">=3.14,<4"
-toml = "^0.10.2"
 jinja2 = "^3.1.6"
-hiveio-beekeepy = "^1.28.6-post.0"  # This version is copied to generated API packages
+hiveio-beekeepy = "^1.28.6-post.0"  # NOTE: Also update hiveio_api/pyproject.toml when changing this version
 hiveio-api-client-generator = "^1.7.1-post.0"
