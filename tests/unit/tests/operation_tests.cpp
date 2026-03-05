@@ -3404,16 +3404,16 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
     collateralized_convert_operation op;
     op.owner = "alice";
     op.amount = ASSET( "5.000 TBD" );
-    HIVE_REQUIRE_ASSERT( push_transaction( op, alice_private_key ), "is_asset_type( amount, HIVE_SYMBOL )" );
+    HIVE_REQUIRE_ASSERT( push_transaction( op, alice_private_key ), "is_asset_type( asset, symbol)" );
     transfer( "alice", db->get_treasury_name(), get_hbd_balance( "alice" ).to_asset(), "", alice_private_key );
 
     BOOST_TEST_MESSAGE( "--- Test failure sending negative collateral" );
     op.amount = ASSET( "-5.000 TESTS" );
-    HIVE_REQUIRE_ASSERT( push_transaction( op, alice_private_key ), "amount.amount > 0 && \"Must convert some HIVE\"" );
+    HIVE_REQUIRE_ASSERT( push_transaction( op, alice_private_key ), "asset.amount > 0" );
 
     BOOST_TEST_MESSAGE( "--- Test failure sending zero collateral" );
     op.amount = ASSET( "0.000 TESTS" );
-    HIVE_REQUIRE_ASSERT( push_transaction( op, alice_private_key ), "amount.amount > 0 && \"Must convert some HIVE\"" );
+    HIVE_REQUIRE_ASSERT( push_transaction( op, alice_private_key ), "asset.amount > 0" );
 
     BOOST_TEST_MESSAGE( "--- Test failure sending too small collateral" );
     op.amount = ASSET( "0.009 TESTS" ); //0.004 TESTS for immediate conversion which would give 0.001 TBD if there was no extra 5% fee
@@ -8514,7 +8514,7 @@ BOOST_AUTO_TEST_CASE( witness_set_properties_validate )
     prop_op.props.clear();
     prop_op.props[ "key" ] = fc::raw::pack_to_vector( signing_key.get_public_key() );
     prop_op.props[ "maximum_block_size" ] = fc::raw::pack_to_vector( HIVE_MAX_BLOCK_SIZE + 1 );
-    HIVE_REQUIRE_ASSERT( push_transaction( prop_op, signing_key ), "maximum_block_size <= HIVE_MAX_BLOCK_SIZE && \"Max block size cannot be more than 2MiB\"" );
+    HIVE_REQUIRE_ASSERT( push_transaction( prop_op, signing_key ), "maximum_block_size <= HIVE_MAX_BLOCK_SIZE && \"witness_set_properties_operation\"" );
   }
   FC_LOG_AND_RETHROW()
 }
