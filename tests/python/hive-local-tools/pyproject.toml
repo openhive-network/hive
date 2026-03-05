@@ -33,7 +33,7 @@ tavern = "^3.0.2"
 msgspec = "^0.20.0"
 types-PyYAML = "^6.0.12"
 shared-tools = { path = "shared-tools", develop = true }
-hiveio-test-tools = "==2.0.2.dev20260303131728"
+hiveio-test-tools = {version = "2.0.2.dev20260305090911", source = "gitlab-hive"}
 hiveio-wax = "^2.0.2-post.0"
 hiveio-beekeepy = "^1.28.6-post.0"
 tests_api = { path = "tests_api", develop = true }
