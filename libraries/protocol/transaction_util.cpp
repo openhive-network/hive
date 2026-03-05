@@ -1,4 +1,5 @@
 #include <hive/protocol/transaction_util.hpp>
+#include <hive/protocol/hive_specialised_exceptions.hpp>
 
 namespace hive { namespace protocol {
 
@@ -78,7 +79,7 @@ FC_EXPAND_MACRO(                                                \
     {
       if constexpr (IS_TRACED)
       {
-        FC_ASSERT(tracer, "Can't trace without tracer");
+        FC_ASSERT( tracer && "required_posting", "Can't trace without tracer" );
         tracer->set_role("posting");
       }
 
@@ -91,7 +92,7 @@ FC_EXPAND_MACRO(                                                \
         auto check_with_role_upgrade = [&](const authority& auth, const string& role) -> bool {
           if constexpr (IS_TRACED)
           {
-            FC_ASSERT(tracer != nullptr, "Can't trace without tracer");
+            FC_ASSERT( tracer && "required_posting_upgrade", "Can't trace without tracer" );
             tracer->trim_final_authority_path();
           }
 
@@ -131,10 +132,10 @@ FC_EXPAND_MACRO(                                                \
   {
     if constexpr (IS_TRACED)
     {
-      FC_ASSERT(tracer && "Can't trace without tracer");
+      FC_ASSERT( tracer && "required_active", "Can't trace without tracer" );
       tracer->set_role("active");
     }
-      
+
     if( allow_strict_and_mixed_authorities )
     {
       VERIFY_AUTHORITY_CHECK( s.check_authority( id ),
@@ -145,7 +146,7 @@ FC_EXPAND_MACRO(                                                \
       auto check_with_role_upgrade = [&]() -> bool {
         if constexpr (IS_TRACED)
         {
-          FC_ASSERT((tracer != nullptr) && "Can't trace without tracer");
+          FC_ASSERT( tracer && "required_active_upgrade", "Can't trace without tracer" );
           tracer->trim_final_authority_path();
         }
 
