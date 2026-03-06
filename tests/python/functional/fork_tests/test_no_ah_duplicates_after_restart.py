@@ -1,20 +1,16 @@
 from __future__ import annotations
 
 import time
-from typing import TYPE_CHECKING
 
 import pytest
 from beekeepy.exceptions import CommunicationError, FailedToStartExecutableError
 
 import test_tools as tt
-from shared_tools.complex_networks_helper_functions import assert_no_duplicates
-
-if TYPE_CHECKING:
-    from shared_tools.networks_architecture import NetworksBuilder
+from test_tools import complex_networks as ttcn
 
 
 @pytest.mark.fork_tests_group_3()
-def test_no_duplicates_in_account_history_plugin_after_restart(prepare_with_many_witnesses: NetworksBuilder) -> None:
+def test_no_duplicates_in_account_history_plugin_after_restart(prepare_with_many_witnesses: ttcn.NetworksBuilder) -> None:
     # TRIGGER
     # We restart one of nodes.
     networks_builder = prepare_with_many_witnesses
@@ -44,4 +40,4 @@ def test_no_duplicates_in_account_history_plugin_after_restart(prepare_with_many
     # Expected behaviour is that restarted node will enter live sync
     # We check there are no duplicates in account_history_api after such scenario (issue #117).
     tt.logger.info("Assert there are no duplicates in account_history.get_ops_in_block after node restart...")
-    assert_no_duplicates(api_node)
+    ttcn.assert_no_duplicates(api_node)

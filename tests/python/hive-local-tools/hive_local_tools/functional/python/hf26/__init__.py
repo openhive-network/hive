@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 import test_tools as tt
-from shared_tools.complex_networks import init_network
+from test_tools import complex_networks as ttcn
 
 
 def parse_datetime(datetime_: str) -> datetime:
@@ -62,7 +62,7 @@ def prepare_environment(hard_fork_26_time: str) -> tt.Network:
     environment_variables: dict | None = {"HIVE_HF26_TIME": f"{date_as_seconds}"}
     alpha_net.run(environment_variables)
 
-    init_network(init_node, all_witness_names)
+    ttcn.init_network(init_node, all_witness_names)
 
     return alpha_net
 
@@ -97,7 +97,7 @@ def prepare_environment_with_2_sub_networks(
     # June 1, 2022 7:41:41 AM
     beta_net.run(environment_variables_beta)
 
-    init_network(init_node, all_witness_names)
+    ttcn.init_network(init_node, all_witness_names)
 
     return alpha_net, beta_net
 

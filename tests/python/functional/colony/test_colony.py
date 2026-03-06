@@ -8,7 +8,7 @@ import pytest
 
 import test_tools as tt
 from hive_local_tools.functional import simultaneous_node_startup
-from shared_tools.complex_networks import generate_free_addresses
+from test_tools import complex_networks as ttcn
 
 WITNESSES = [f"witness-{w}" for w in range(20)]
 
@@ -75,7 +75,7 @@ def test_colony_on_basic_network_structure(
     colony_node.config.shared_file_size = "4G"
 
     # connect nodes
-    colony_node.config.p2p_endpoint = generate_free_addresses(1)[0]
+    colony_node.config.p2p_endpoint = ttcn.generate_free_addresses(1)[0]
     witness_node.config.p2p_seed_node = colony_node.config.p2p_endpoint
 
     prepare_colony_config(colony_node)
@@ -119,7 +119,7 @@ def test_colony_on_complex_network(block_log_single_sign: tt.BlockLog, alternate
 
     nodes[0].config.witness.append("initminer")
     nodes[0].config.private_key.append(tt.PrivateKey("initminer"))
-    open_addresses = generate_free_addresses(4)
+    open_addresses = ttcn.generate_free_addresses(4)
     for wn, address in zip(nodes, open_addresses):
         wn.config.shared_file_size = "4G"
 
@@ -169,7 +169,7 @@ def test_multiple_colony_nodes_communication_with_single_witness_node(
     witness_node.config.witness.append("initminer")
     witness_node.config.private_key.append(tt.PrivateKey("initminer"))
 
-    witness_node_p2p_endpoint = generate_free_addresses(1)
+    witness_node_p2p_endpoint = ttcn.generate_free_addresses(1)
     witness_node.config.p2p_endpoint = witness_node_p2p_endpoint[0]
 
     for num in range(4):

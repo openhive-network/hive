@@ -2,15 +2,11 @@ from __future__ import annotations
 
 import pytest
 
-import shared_tools.networks_architecture as networks
-from shared_tools.complex_networks import (
-    create_block_log_directory_name,
-    prepare_network,
-)
+from test_tools import complex_networks as ttcn
 
 
 @pytest.fixture()
-def prepare_4_4_4_4_4_with_time_offset_and_full_api_node() -> networks.NetworksBuilder:
+def prepare_4_4_4_4_4_with_time_offset_and_full_api_node() -> ttcn.NetworksBuilder:
     config = {
         "networks": [
             {"InitNode": True, "WitnessNodes": [4]},
@@ -20,11 +16,11 @@ def prepare_4_4_4_4_4_with_time_offset_and_full_api_node() -> networks.NetworksB
             {"WitnessNodes": [4]},
         ]
     }
-    architecture = networks.NetworksArchitecture()
+    architecture = ttcn.NetworksArchitecture()
     architecture.load(config)
     time_offsets_list = [0, 0, 0, 0, 0, 0, -4]
-    return prepare_network(
+    return ttcn.prepare_network(
         architecture,
-        create_block_log_directory_name("block_log_4_4_4_4_4_with_full_api_node"),
+        ttcn.create_block_log_directory_name("block_log_4_4_4_4_4_with_full_api_node"),
         time_offsets_list,
     )

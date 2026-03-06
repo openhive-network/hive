@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-import shared_tools.complex_networks_helper_functions as sh
+from test_tools import complex_networks as ttcn
 import test_tools as tt
 
 
@@ -24,7 +24,7 @@ def test_fork_2_sub_networks_03(prepare_fork_2_sub_networks_03):
 
     networks_builder = prepare_fork_2_sub_networks_03
 
-    witness_details_part = sh.get_part_of_witness_details(networks_builder.witness_names, 4, 16)
+    witness_details_part = ttcn.get_part_of_witness_details(networks_builder.witness_names, 4, 16)
 
     minority_api_node = networks_builder.networks[0].node("FullApiNode0")
     majority_api_node = networks_builder.networks[1].node("FullApiNode1")
@@ -39,7 +39,7 @@ def test_fork_2_sub_networks_03(prepare_fork_2_sub_networks_03):
 
     logs = []
 
-    logs.extend((sh.NodeLog("M", majority_witness_wallet), sh.NodeLog("m", tt.Wallet(attach_to=minority_api_node))))
+    logs.extend((ttcn.NodeLog("M", majority_witness_wallet), ttcn.NodeLog("m", tt.Wallet(attach_to=minority_api_node))))
 
     _M = logs[0].collector
     _m = logs[1].collector
@@ -51,37 +51,37 @@ def test_fork_2_sub_networks_03(prepare_fork_2_sub_networks_03):
     tt.logger.info("Before disconnecting")
     cnt = 0
     while True:
-        sh.wait(1, logs, majority_api_node)
+        ttcn.wait(1, logs, majority_api_node)
 
         cnt += 1
         if cnt > blocks_before_disconnect:  # noqa: SIM102
-            if sh.get_last_irreversible_block_num(_M) == sh.get_last_irreversible_block_num(_m):
+            if ttcn.get_last_irreversible_block_num(_M) == ttcn.get_last_irreversible_block_num(_m):
                 break
 
     tt.logger.info("Disconnect sub networks")
-    sh.disconnect_sub_networks(networks_builder.networks)
+    ttcn.disconnect_sub_networks(networks_builder.networks)
 
-    sh.wait(blocks_after_disconnect, logs, majority_api_node)
+    ttcn.wait(blocks_after_disconnect, logs, majority_api_node)
 
     tt.logger.info(f"Disable {len(witness_details_part)} witnesses")
     tt.logger.info(f"{witness_details_part}")
-    sh.disable_witnesses(majority_witness_wallet, witness_details_part)
+    ttcn.disable_witnesses(majority_witness_wallet, witness_details_part)
     tt.logger.info("Witnesses are disabled")
 
-    sh.wait(blocks_after_disable_witness, logs, minority_api_node)
+    ttcn.wait(blocks_after_disable_witness, logs, minority_api_node)
 
     tt.logger.info("Reconnect sub networks")
-    sh.connect_sub_networks(networks_builder.networks)
+    ttcn.connect_sub_networks(networks_builder.networks)
 
     sleep_seconds = 20
     tt.logger.info(f"Wait {sleep_seconds} seconds")
     for _cnt in range(sleep_seconds):
-        sh.wait(1, logs, minority_api_node, False)
+        ttcn.wait(1, logs, minority_api_node, False)
     tt.logger.info(f"{sleep_seconds} seconds passed")
 
     tt.logger.info(f"Enable {len(witness_details_part)} witnesses")
-    sh.enable_witnesses(majority_witness_wallet, witness_details_part)
+    ttcn.enable_witnesses(majority_witness_wallet, witness_details_part)
 
-    sh.wait_for_final_block(minority_api_node, logs, [_m, _M], True, sh.lib_true_condition, False)
+    ttcn.wait_for_final_block(minority_api_node, logs, [_m, _M], True, ttcn.lib_true_condition, False)
 
-    sh.assert_no_duplicates(minority_api_node, majority_api_node)
+    ttcn.assert_no_duplicates(minority_api_node, majority_api_node)

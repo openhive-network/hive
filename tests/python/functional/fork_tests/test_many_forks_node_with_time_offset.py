@@ -5,7 +5,7 @@ from threading import Lock
 
 import pytest
 
-import shared_tools.complex_networks_helper_functions as sh
+from test_tools import complex_networks as ttcn
 import test_tools as tt
 
 memo_cnt = 0
@@ -21,7 +21,7 @@ def generate_break(wallet: tt.Wallet, node: tt.ApiNode, identifier: int):
     global break_limit
 
     while break_cnt < break_limit:
-        sh.info("m4", wallet)
+        ttcn.info("m4", wallet)
         node.wait_number_of_blocks(1)
         break_cnt += 1
     return f"[break {identifier}] Breaking activated..."
@@ -52,7 +52,7 @@ def test_many_forks_node_with_time_offset(prepare_4_4_4_4_4):
     node_under_test = networks_builder.networks[1].node("ApiNode0")
     beta_wallet = tt.Wallet(attach_to=node_under_test)
 
-    _, break_cnt = sh.info("m4", beta_wallet)
+    _, break_cnt = ttcn.info("m4", beta_wallet)
     tt.logger.info(f"initial break_cnt: {break_cnt}")
 
     _futures = []
