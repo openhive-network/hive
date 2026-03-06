@@ -67,7 +67,8 @@ public:
   *   \param block_log_file_path location of source block_log file
   *   \param source_block_provider - provides a block data to generate artifact file.
   *   \param read_only - determines if artifacts file are open in read_only mode.
-  *   \param write_fallback - whether to try create/overwrite artifacts file when opening in read only mode failed.
+  *   \param allow_artifacts_regeneration - when true and read_only is also true, allows auto-regenerating
+  *     the artifacts file (create/overwrite) instead of throwing on errors. Ignored when read_only is false.
   *   \param full_match_verification - if true, all artifacts will be checked if they match block_log. Otherwise only small amount of artifacts will be checked if they match block_log.
   *   \param new_block_log_created - whether corresponding block log file has just been created (and is empty).
   *   Built instance of `block_log_artifacts` will be automaticaly closed before destruction.
@@ -76,7 +77,7 @@ public:
   */
   static block_log_artifacts_ptr_t open(const fc::path& block_log_file_path,
                                         const block_log& source_block_provider,
-                                        const bool read_only, const bool write_fallback,
+                                        const bool read_only, const bool allow_artifacts_regeneration,
                                         const bool full_match_verification,
                                         const bool new_block_log_created,
                                         appbase::application& app,

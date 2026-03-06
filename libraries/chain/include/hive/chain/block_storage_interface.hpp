@@ -49,8 +49,11 @@ namespace hive { namespace chain {
       bool      replay = false;
       bool      force_replay = false;
     };
+    /** @param allow_artifacts_regeneration - when true and read_only is also true, allows
+     *    auto-regenerating artifacts instead of throwing on errors. Ignored in write mode.
+     */
     virtual void open_and_init( const block_log_open_args& bl_open_args, bool read_only,
-                                bool write_fallback, database* lib_access ) = 0;
+                                bool allow_artifacts_regeneration, database* lib_access ) = 0;
     virtual void reopen_for_writing() = 0;
     virtual void close_storage() = 0;
 
