@@ -1325,7 +1325,7 @@ ExitCode merge_block_logs(const fc::path &input_block_log_dir, const fc::path &o
       fc::create_directories(output_block_log_dir);
     }
     const auto block_log_writer = hive::chain::block_log_wrapper::create_opened_wrapper(output_block_log_dir.generic_string() + "/" + hive::chain::block_log_file_name_info::_legacy_file_name,
-      app, thread_pool, false /* read_only */);
+      app, thread_pool, false /*read_only*/, false /*allow_artifacts_regeneration*/);
 
     auto writer_processor = [&block_log_writer](const std::shared_ptr<hive::chain::full_block_type>& full_block) -> bool
     {
