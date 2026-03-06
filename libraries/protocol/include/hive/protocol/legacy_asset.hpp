@@ -72,7 +72,7 @@ inline void pack( Stream& s, const hive::protocol::legacy_hive_asset_symbol_type
     return;
   }
 
-  HIVE_PROTOCOL_ASSET_ASSERT( sym.ser == OBSOLETE_SYMBOL_SER, "Cannot serialize legacy symbol ${s}", ("s", sym.ser) );
+  HIVE_PROTOCOL_ASSET_ASSERT( sym.ser == OBSOLETE_SYMBOL_SER, "Cannot serialize legacy symbol ${subject}", ("subject", sym.ser) );
 
   if( hive::protocol::serialization_mode_controller::get_current_pack() == hive::protocol::pack_type::legacy )
     pack( s, sym.ser );
@@ -107,7 +107,7 @@ inline void unpack( Stream& s, hive::protocol::legacy_hive_asset_symbol_type& sy
              ser == OBSOLETE_SYMBOL_LEGACY_SER_4 ||
              ser == OBSOLETE_SYMBOL_LEGACY_SER_5 ||
              ser == OBSOLETE_SYMBOL_SER,
-             "Cannot deserialize legacy symbol ${s}", ("s", ser) );
+             "Cannot deserialize legacy symbol ${subject}", ("subject", ser) );
 
   if( ser != OBSOLETE_SYMBOL_SER )
     wlog( "unpack legacy serialization ${s}", ("s", ser) );
