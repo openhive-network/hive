@@ -679,6 +679,7 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
   BOOST_CHECK_EQUAL( sizeof( HIVE_asset ), 8u ); //all tiny assets are of the same size
   BOOST_CHECK_EQUAL( sizeof( asset ), 16u );
   BOOST_CHECK_EQUAL( sizeof( account_name_type ), 16u );
+  BOOST_CHECK_EQUAL( sizeof( HBD_price ), 16u ); //all tiny prices are of the same size
   BOOST_CHECK_EQUAL( sizeof( shared_string ), 32u ); //it has dynamic component as well
   BOOST_CHECK_EQUAL( sizeof( price ), 32u );
   BOOST_CHECK_EQUAL( sizeof( t_vector< char > ), 32u ); //it has dynamic component as well, all vectors have the same static size
@@ -1501,7 +1502,7 @@ BOOST_AUTO_TEST_CASE( chain_object_checksum )
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::savings_withdraw_object>(dtds), "7fd02375eac9da2cf26146b2ab7ae9d59bb6d69c" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::liquidity_reward_balance_object>(dtds), "3690a7914aba1105d390489d52328478445a0d29" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::feed_history_object>(dtds), "23f964e467b527855279ab546dd6281ff07fee68" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::limit_order_object>(dtds), "c5472f97a5dc2843f779244110f680e84bbd6b7f" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::limit_order_object>(dtds), "1ca65753791532f28349243bae00f88754ed0a5a" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::withdraw_vesting_route_object>(dtds), "b70b71dab160c4a5fc2f7f896ec85e22e183cce6" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::decline_voting_rights_request_object>(dtds), "4a7b6e131317bdbf49e169e959f913c5e837fdaa" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::reward_fund_object>(dtds), "64ae5bfd8b761363f9b4bb69452c77051b88fe84" );

@@ -133,7 +133,7 @@ api_limit_order_object::api_limit_order_object( const limit_order_object& o, con
   expiration( o.expiration ),
   seller( o.seller ),
   orderid( o.orderid ),
-  for_sale( o.for_sale ),
+  for_sale( o.for_sale.amount ),
   sell_price( o.sell_price )
 {}
 

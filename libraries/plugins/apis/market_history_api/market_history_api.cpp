@@ -102,8 +102,8 @@ DEFINE_API_IMPL( market_history_api_impl, get_order_book )
     order cur;
     cur.order_price = itr->sell_price;
     cur.real_price = ASSET_TO_REAL( itr->sell_price.base ) / ASSET_TO_REAL( itr->sell_price.quote );
-    cur.hive = ( asset( itr->for_sale, HBD_SYMBOL ) * itr->sell_price ).amount;
-    cur.hbd = itr->for_sale;
+    cur.hive = ( itr->for_sale * itr->sell_price ).amount;
+    cur.hbd = itr->for_sale.amount;
     cur.created = itr->created;
     result.bids.push_back( cur );
     ++itr;
@@ -116,8 +116,8 @@ DEFINE_API_IMPL( market_history_api_impl, get_order_book )
     order cur;
     cur.order_price = itr->sell_price;
     cur.real_price = ASSET_TO_REAL( itr->sell_price.quote ) / ASSET_TO_REAL( itr->sell_price.base );
-    cur.hive = itr->for_sale;
-    cur.hbd = ( asset( itr->for_sale, HIVE_SYMBOL ) * itr->sell_price ).amount;
+    cur.hive = itr->for_sale.amount;
+    cur.hbd = ( itr->for_sale * itr->sell_price ).amount;
     cur.created = itr->created;
     result.asks.push_back( cur );
     ++itr;

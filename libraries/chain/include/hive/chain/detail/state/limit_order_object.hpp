@@ -25,8 +25,8 @@ namespace hive { namespace chain {
       limit_order_object( allocator< Allocator > a, uint64_t _id,
         const account_name_type& _seller, const asset& _amount_to_sell, const price& _sell_price,
         const time_point_sec& _creation_time, const time_point_sec& _expiration_time, uint32_t _orderid )
-        : id( _id ), created( _creation_time ), expiration( _expiration_time ), seller( _seller ),
-        orderid( _orderid ), for_sale( _amount_to_sell.amount ), sell_price( _sell_price )
+      : id( _id ), created( _creation_time ), expiration( _expiration_time ), orderid( _orderid ),
+        seller( _seller ), for_sale( _amount_to_sell ), sell_price( _sell_price )
       {
         FC_ASSERT( _amount_to_sell.symbol == _sell_price.base.symbol );
       }
@@ -38,14 +38,14 @@ namespace hive { namespace chain {
           std::make_pair( sell_price.quote.symbol, sell_price.base.symbol );
       }
 
-      asset amount_for_sale() const { return asset( for_sale, sell_price.base.symbol ); }
-      asset amount_to_receive() const { return amount_for_sale() * sell_price; }
+      asset amount_for_sale() const { return for_sale; }
+      asset amount_to_receive() const { return for_sale * sell_price; }
 
       time_point_sec    created;
       time_point_sec    expiration;
-      account_name_type seller; //< TODO: can be replaced with account_id_type
       uint32_t          orderid = 0;
-      share_type        for_sale; ///< asset id is sell_price.base.symbol
+      account_name_type seller; ///< changing to account_id_type is not possible - by_account is used by database_api.list_limit_orders
+      asset             for_sale;
       price             sell_price;
 
       CHAINBASE_UNPACK_CONSTRUCTOR(limit_order_object);
@@ -54,4 +54,4 @@ namespace hive { namespace chain {
 } } // hive::chain
 
 FC_REFLECT( hive::chain::limit_order_object,
-          (id)(created)(expiration)(seller)(orderid)(for_sale)(sell_price) )
+          (id)(created)(expiration)(orderid)(seller)(for_sale)(sell_price) )
