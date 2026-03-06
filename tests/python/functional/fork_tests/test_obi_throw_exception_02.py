@@ -5,15 +5,7 @@ import time
 import pytest
 
 import test_tools as tt
-from shared_tools.complex_networks_helper_functions import (
-    NodeLog,
-    get_blocks_history,
-    get_last_head_block_number,
-    get_last_irreversible_block_num,
-    wait,
-    wait_for_final_block,
-    wait_for_specific_witnesses,
-)
+from test_tools import complex_networks as ttcn
 
 
 @pytest.mark.fork_tests_group_3()
@@ -37,10 +29,10 @@ def test_obi_throw_exception_02(prepare_obi_throw_exception_02):
 
     logs.extend(
         (
-            NodeLog("a0", tt.Wallet(attach_to=api_node_0)),
-            NodeLog("w0", tt.Wallet(attach_to=witness_node_0)),
-            NodeLog("a1", tt.Wallet(attach_to=api_node_1)),
-            NodeLog("w1", tt.Wallet(attach_to=witness_node_1)),
+            ttcn.NodeLog("a0", tt.Wallet(attach_to=api_node_0)),
+            ttcn.NodeLog("w0", tt.Wallet(attach_to=witness_node_0)),
+            ttcn.NodeLog("a1", tt.Wallet(attach_to=api_node_1)),
+            ttcn.NodeLog("w1", tt.Wallet(attach_to=witness_node_1)),
         )
     )
 
@@ -53,9 +45,9 @@ def test_obi_throw_exception_02(prepare_obi_throw_exception_02):
     delay_seconds = 5
 
     tt.logger.info("Before an exception - waiting for specific witnesses")
-    wait_for_specific_witnesses(witness_node_0, logs, [["witness-0"]])
+    ttcn.wait_for_specific_witnesses(witness_node_0, logs, [["witness-0"]])
 
-    last_lib_01 = get_last_irreversible_block_num(_a0)
+    last_lib_01 = ttcn.get_last_irreversible_block_num(_a0)
 
     tt.logger.info(f"Artificial exception is thrown during {delay_seconds} seconds")
     witness_node_0.api.debug_node.debug_throw_exception(throw_exception=True)
@@ -69,10 +61,10 @@ def test_obi_throw_exception_02(prepare_obi_throw_exception_02):
     witness_node_1.api.debug_node.debug_throw_exception(throw_exception=False)
     init_node_0.api.debug_node.debug_throw_exception(throw_exception=False)
 
-    wait(blocks_after_exception, logs, witness_node_0)
+    ttcn.wait(blocks_after_exception, logs, witness_node_0)
 
-    get_blocks_history([_a0, _a1, _w0, _w1])
+    ttcn.get_blocks_history([_a0, _a1, _w0, _w1])
 
-    assert get_last_head_block_number(_a0) > last_lib_01 + 1
+    assert ttcn.get_last_head_block_number(_a0) > last_lib_01 + 1
 
-    wait_for_final_block(witness_node_0, logs, [_a0, _w0, _a1, _w1])
+    ttcn.wait_for_final_block(witness_node_0, logs, [_a0, _w0, _a1, _w1])

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-import shared_tools.complex_networks_helper_functions as sh
+from test_tools import complex_networks as ttcn
 import test_tools as tt
 
 
@@ -24,7 +24,7 @@ def test_no_duplicates_in_account_history_plugin_after_fork(prepare_with_many_wi
     # Expected behaviour is that nodes in one of subnetworks (random one, alpha or beta) will perform undo and enter
     # live sync. We check there are no duplicates in account_history_api after such scenario (issue #117).
     tt.logger.info("Assert there are no duplicates in account_history.get_ops_in_block after fork...")
-    sh.assert_no_duplicates(alpha_node, beta_node)
+    ttcn.assert_no_duplicates(alpha_node, beta_node)
 
 
 def display_current_head_block_number_in_both_networks(info, nodes):
@@ -44,7 +44,7 @@ def trigger_fork(alpha_net, beta_net):
 
     witness_node = alpha_net.node("WitnessNode0")
     tt.logger.info("Correct witnesses detection")
-    sh.wait_for_specific_witnesses(witness_node, [], [["witness[0-9]+-alpha"], ["witness[0-9]+-beta"]])
+    ttcn.wait_for_specific_witnesses(witness_node, [], [["witness[0-9]+-alpha"], ["witness[0-9]+-beta"]])
 
     head_blocks = display_current_head_block_number_in_both_networks(
         "head_block_before_disconnection", [alpha_node, beta_node]

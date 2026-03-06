@@ -1,20 +1,16 @@
 from __future__ import annotations
 
 from functools import partial
-from typing import TYPE_CHECKING
 
 import pytest
 
-import shared_tools.complex_networks_helper_functions as sh
+from test_tools import complex_networks as ttcn
 import test_tools as tt
-
-if TYPE_CHECKING:
-    from shared_tools.networks_architecture import NetworksBuilder
 
 
 @pytest.mark.fork_tests_group_2()
 @pytest.mark.flaky(reruns=3)
-def test_fork_3_sub_networks_01(prepare_fork_3_sub_networks_01: NetworksBuilder):
+def test_fork_3_sub_networks_01(prepare_fork_3_sub_networks_01: ttcn.NetworksBuilder):
     # start - A network consists of a 'minority_7a' network(7 witnesses), a 'minority_7b' network(7 witnesses), a 'minority_7c' network(7 witnesses).
 
     # - the network is split into 2 sub networks: (7 witnesses(the 'minority_7a' network)) and (7 witnesses(the 'minority_7b' network), 7 witnesses(the 'minority_7c' network))
@@ -29,9 +25,9 @@ def test_fork_3_sub_networks_01(prepare_fork_3_sub_networks_01: NetworksBuilder)
     minority_api_node_7c = networks_builder.networks[2].node("ApiNode2")
 
     logs = [
-        sh.NodeLog("m7a", tt.Wallet(attach_to=minority_api_node_7a)),
-        sh.NodeLog("m7b", tt.Wallet(attach_to=minority_api_node_7b)),
-        sh.NodeLog("m7c", tt.Wallet(attach_to=minority_api_node_7c)),
+        ttcn.NodeLog("m7a", tt.Wallet(attach_to=minority_api_node_7a)),
+        ttcn.NodeLog("m7b", tt.Wallet(attach_to=minority_api_node_7b)),
+        ttcn.NodeLog("m7c", tt.Wallet(attach_to=minority_api_node_7c)),
     ]
 
     _m7a = logs[0].collector
@@ -44,30 +40,30 @@ def test_fork_3_sub_networks_01(prepare_fork_3_sub_networks_01: NetworksBuilder)
     tt.logger.info("Before disconnecting")
     cnt = 0
     while True:
-        sh.wait(1, logs, minority_api_node_7a)
+        ttcn.wait(1, logs, minority_api_node_7a)
 
         cnt += 1
         if cnt > blocks_before_disconnect:  # noqa: SIM102
-            if sh.get_last_irreversible_block_num(_m7a) == sh.get_last_irreversible_block_num(
+            if ttcn.get_last_irreversible_block_num(_m7a) == ttcn.get_last_irreversible_block_num(
                 _m7b
-            ) and sh.get_last_irreversible_block_num(_m7a) == sh.get_last_irreversible_block_num(_m7c):
+            ) and ttcn.get_last_irreversible_block_num(_m7a) == ttcn.get_last_irreversible_block_num(_m7c):
                 break
 
-    assert sh.get_last_head_block_number(_m7a) == sh.get_last_head_block_number(_m7b)
-    assert sh.get_last_head_block_number(_m7a) == sh.get_last_head_block_number(_m7c)
+    assert ttcn.get_last_head_block_number(_m7a) == ttcn.get_last_head_block_number(_m7b)
+    assert ttcn.get_last_head_block_number(_m7a) == ttcn.get_last_head_block_number(_m7c)
 
-    assert sh.get_last_irreversible_block_num(_m7a) == sh.get_last_irreversible_block_num(_m7b)
-    assert sh.get_last_irreversible_block_num(_m7a) == sh.get_last_irreversible_block_num(_m7c)
+    assert ttcn.get_last_irreversible_block_num(_m7a) == ttcn.get_last_irreversible_block_num(_m7b)
+    assert ttcn.get_last_irreversible_block_num(_m7a) == ttcn.get_last_irreversible_block_num(_m7c)
 
     tt.logger.info('Disconnect "minority_7a" sub network')
     networks_builder.networks[0].disconnect_from(networks_builder.networks[1])
     networks_builder.networks[0].disconnect_from(networks_builder.networks[2])
 
-    sh.wait(blocks_after_disconnect, logs, minority_api_node_7a)
+    ttcn.wait(blocks_after_disconnect, logs, minority_api_node_7a)
 
-    last_lib_a = sh.get_last_irreversible_block_num(_m7a)
-    last_lib_b = sh.get_last_irreversible_block_num(_m7b)
-    last_lib_c = sh.get_last_irreversible_block_num(_m7c)
+    last_lib_a = ttcn.get_last_irreversible_block_num(_m7a)
+    last_lib_b = ttcn.get_last_irreversible_block_num(_m7b)
+    last_lib_c = ttcn.get_last_irreversible_block_num(_m7c)
 
     assert last_lib_a == last_lib_b
     assert last_lib_b == last_lib_c
@@ -76,6 +72,6 @@ def test_fork_3_sub_networks_01(prepare_fork_3_sub_networks_01: NetworksBuilder)
     networks_builder.networks[0].connect_with(networks_builder.networks[1])
     networks_builder.networks[0].connect_with(networks_builder.networks[2])
 
-    sh.wait_for_final_block(
-        minority_api_node_7a, logs, [_m7a, _m7b, _m7c], True, partial(sh.lib_custom_condition, _m7a, last_lib_a), False
+    ttcn.wait_for_final_block(
+        minority_api_node_7a, logs, [_m7a, _m7b, _m7c], True, partial(ttcn.lib_custom_condition, _m7a, last_lib_a), False
     )

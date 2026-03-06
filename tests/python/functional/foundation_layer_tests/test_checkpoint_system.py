@@ -6,7 +6,7 @@ from typing import Final
 import pytest
 import test_tools as tt
 from hive_local_tools.functional import simultaneous_node_startup
-from shared_tools.complex_networks import generate_free_addresses
+from test_tools import complex_networks as ttcn
 from beekeepy.exceptions import FailedToStartExecutableError
 
 
@@ -58,7 +58,7 @@ def test_set_random_number_of_checkpoints_from_sync(block_log_empty_430_split: t
 
     api_node = tt.ApiNode()
 
-    node.config.p2p_endpoint = generate_free_addresses(1)[0]
+    node.config.p2p_endpoint = ttcn.generate_free_addresses(1)[0]
     api_node.config.p2p_seed_node.append(node.config.p2p_endpoint)
 
     for num in random.sample(range(1, block_log_empty_430_split.get_head_block_number() + 1), checkpoint_num):
@@ -163,7 +163,7 @@ def test_api_node_rejects_mismatched_checkpoint(block_log_empty_430_split: tt.Bl
 
     api_node = tt.ApiNode()
 
-    node.config.p2p_endpoint = generate_free_addresses(1)[0]
+    node.config.p2p_endpoint = ttcn.generate_free_addresses(1)[0]
     api_node.config.p2p_seed_node.append(node.config.p2p_endpoint)
 
     checkpoint_block: Final[int] = block_log_empty_430_split.get_head_block_number() + 20
@@ -202,7 +202,7 @@ def test_checkpoint_missmatch_to_block_from_sync(block_log_empty_430_split: tt.B
     api_node = tt.ApiNode()
 
     # Set P2P endpoint and configure seed node before starting
-    node.config.p2p_endpoint = generate_free_addresses(1)[0]
+    node.config.p2p_endpoint = ttcn.generate_free_addresses(1)[0]
     api_node.config.p2p_seed_node.append(node.config.p2p_endpoint)
 
     checkpoint_block: Final[int] = 50

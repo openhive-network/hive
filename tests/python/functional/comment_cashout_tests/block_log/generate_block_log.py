@@ -4,8 +4,8 @@ import os
 from pathlib import Path
 from typing import Final
 
-import shared_tools.networks_architecture as networks
 import test_tools as tt
+from test_tools import complex_networks as ttcn
 from hive_local_tools.functional import __generate_and_broadcast_transaction
 from hive_local_tools.functional.python import generate_block
 from hive_local_tools.functional.python.block_log_generation import parse_block_log_generator_args
@@ -17,7 +17,6 @@ from schemas.operations.account_create_operation import AccountCreateOperation
 from schemas.operations.transfer_to_vesting_operation import TransferToVestingOperation
 from schemas.operations.vote_operation import VoteOperation
 from schemas.policies import DisableSwapTypesPolicy, set_policies
-from shared_tools.complex_networks import generate_networks
 
 AMOUNT_OF_ALL_COMMENTS: Final[int] = 60
 AMOUNT_OF_ALL_VOTERS: Final[int] = 50_000
@@ -45,12 +44,12 @@ def prepare_blocklog_network(output_block_log_directory: Path) -> None:
     - 4 FullApiNodes,
     - 3 WitnessNodes (each with one witness).
     """
-    architecture = networks.NetworksArchitecture()
+    architecture = ttcn.NetworksArchitecture()
     architecture.load(CONFIG)
 
     tt.logger.info(architecture)
     Path(output_block_log_directory / "base_network_block_log").mkdir(parents=True, exist_ok=True)
-    generate_networks(architecture, output_block_log_directory / "base_network_block_log", terminate_nodes=True)
+    ttcn.generate_networks(architecture, output_block_log_directory / "base_network_block_log", terminate_nodes=True)
     tt.logger.info(f"Save block log file to {output_block_log_directory/'base_network_block_log'}")
 
 
@@ -65,7 +64,7 @@ def prepare_blocklog_with_comments_and_votes(output_block_log_directory: Path) -
     """
     output_block_log_directory.mkdir(parents=True, exist_ok=True)
 
-    architecture = networks.NetworksArchitecture(False)
+    architecture = ttcn.NetworksArchitecture(False)
     architecture.load(CONFIG)
 
     tt.logger.info(architecture)

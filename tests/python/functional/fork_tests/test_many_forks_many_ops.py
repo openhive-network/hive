@@ -7,7 +7,7 @@ from typing import Iterable
 
 import pytest
 
-import shared_tools.complex_networks_helper_functions as sh
+from test_tools import complex_networks as ttcn
 import test_tools as tt
 
 START_TEST_BLOCK = 108
@@ -31,10 +31,10 @@ def generate_break(node: tt.ApiNode, identifier: int):
 
 def fork_activator(
     networks: Iterable[tt.Network],
-    logs: Iterable[sh.NodeLog],
+    logs: Iterable[ttcn.NodeLog],
     majority_api_node: tt.ApiNode,
-    _m: Iterable[sh.info],
-    _M: Iterable[sh.info],
+    _m: Iterable[ttcn.info],
+    _M: Iterable[ttcn.info],
     identifier: int,
 ):
     _cnt = 1
@@ -44,18 +44,18 @@ def fork_activator(
 
     while break_cnt < break_limit:
         tt.logger.info(f"Disconnect sub networks: {_cnt}...")
-        sh.disconnect_sub_networks(networks)
+        ttcn.disconnect_sub_networks(networks)
 
-        sh.wait(5, logs, majority_api_node)
+        ttcn.wait(5, logs, majority_api_node)
 
-        _last_lib_M = sh.get_last_irreversible_block_num(_M)
+        _last_lib_M = ttcn.get_last_irreversible_block_num(_M)
         tt.logger.info(f"last Lib: {_last_lib_M}...")
 
         tt.logger.info(f"Reconnect sub networks: {_cnt}...")
-        sh.connect_sub_networks(networks)
+        ttcn.connect_sub_networks(networks)
 
-        sh.wait_for_final_block(
-            majority_api_node, logs, [_m, _M], True, partial(sh.lib_custom_condition, _M, _last_lib_M), False
+        ttcn.wait_for_final_block(
+            majority_api_node, logs, [_m, _M], True, partial(ttcn.lib_custom_condition, _M, _last_lib_M), False
         )
         tt.logger.info(f"Sub networks reconnected: {_cnt}...")
 
@@ -95,7 +95,7 @@ def test_many_forks_many_ops(prepare_17_3):
 
     majority_wallet = tt.Wallet(attach_to=majority_api_node)
     minority_wallet = tt.Wallet(attach_to=minority_api_node)
-    logs.extend((sh.NodeLog("M", majority_wallet), sh.NodeLog("m", minority_wallet)))
+    logs.extend((ttcn.NodeLog("M", majority_wallet), ttcn.NodeLog("m", minority_wallet)))
 
     _M = logs[0].collector
     _m = logs[1].collector
@@ -106,12 +106,12 @@ def test_many_forks_many_ops(prepare_17_3):
     cnt = 0
     while not (
         cnt > blocks_before_disconnect
-        and sh.get_last_irreversible_block_num(_M) == sh.get_last_irreversible_block_num(_m)
+        and ttcn.get_last_irreversible_block_num(_M) == ttcn.get_last_irreversible_block_num(_m)
     ):
-        sh.wait(1, logs, majority_api_node)
+        ttcn.wait(1, logs, majority_api_node)
         cnt += 1
 
-    break_cnt = sh.get_last_irreversible_block_num(_M)
+    break_cnt = ttcn.get_last_irreversible_block_num(_M)
     tt.logger.info(f"initial break_cnt: {break_cnt}")
 
     _futures = []

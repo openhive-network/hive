@@ -4,7 +4,7 @@ from functools import partial
 
 import pytest
 
-import shared_tools.complex_networks_helper_functions as sh
+from test_tools import complex_networks as ttcn
 import test_tools as tt
 
 
@@ -25,7 +25,7 @@ def test_fork_2_sub_networks_01(prepare_fork_2_sub_networks_01):
 
     networks_builder = prepare_fork_2_sub_networks_01
 
-    witness_details_part = sh.get_part_of_witness_details(networks_builder.witness_names, 6, 14)
+    witness_details_part = ttcn.get_part_of_witness_details(networks_builder.witness_names, 6, 14)
 
     minority_api_node = networks_builder.networks[0].node("FullApiNode0")
     majority_api_node = networks_builder.networks[1].node("FullApiNode1")
@@ -40,8 +40,8 @@ def test_fork_2_sub_networks_01(prepare_fork_2_sub_networks_01):
 
     logs.extend(
         (
-            sh.NodeLog("M", tt.Wallet(attach_to=majority_api_node)),
-            sh.NodeLog("m", tt.Wallet(attach_to=minority_api_node)),
+            ttcn.NodeLog("M", tt.Wallet(attach_to=majority_api_node)),
+            ttcn.NodeLog("m", tt.Wallet(attach_to=minority_api_node)),
         )
     )
 
@@ -60,61 +60,61 @@ def test_fork_2_sub_networks_01(prepare_fork_2_sub_networks_01):
     tt.logger.info("Before disconnecting")
     cnt = 0
     while True:
-        sh.wait(1, logs, majority_api_node)
+        ttcn.wait(1, logs, majority_api_node)
 
         cnt += 1
         if cnt > blocks_before_disconnect:  # noqa: SIM102
-            if sh.get_last_irreversible_block_num(_M) == sh.get_last_irreversible_block_num(_m):
+            if ttcn.get_last_irreversible_block_num(_M) == ttcn.get_last_irreversible_block_num(_m):
                 break
 
-    assert sh.get_last_head_block_number(_M) == sh.get_last_head_block_number(_m)
-    assert sh.get_last_irreversible_block_num(_M) == sh.get_last_irreversible_block_num(_m)
-    last_lib_01 = sh.get_last_irreversible_block_num(_m)
+    assert ttcn.get_last_head_block_number(_M) == ttcn.get_last_head_block_number(_m)
+    assert ttcn.get_last_irreversible_block_num(_M) == ttcn.get_last_irreversible_block_num(_m)
+    last_lib_01 = ttcn.get_last_irreversible_block_num(_m)
 
     tt.logger.info(f"Disable {len(witness_details_part)} witnesses - start")
-    sh.disable_witnesses(minority_witness_wallet, witness_details_part)
+    ttcn.disable_witnesses(minority_witness_wallet, witness_details_part)
 
-    sh.wait(blocks_after_disable_witness, logs, minority_api_node)
+    ttcn.wait(blocks_after_disable_witness, logs, minority_api_node)
 
-    assert sh.get_last_head_block_number(_M) == sh.get_last_head_block_number(_m)
-    assert sh.get_last_irreversible_block_num(_M) == sh.get_last_irreversible_block_num(_m)
-    last_lib_01 = sh.get_last_irreversible_block_num(_m)
+    assert ttcn.get_last_head_block_number(_M) == ttcn.get_last_head_block_number(_m)
+    assert ttcn.get_last_irreversible_block_num(_M) == ttcn.get_last_irreversible_block_num(_m)
+    last_lib_01 = ttcn.get_last_irreversible_block_num(_m)
 
-    sh.wait(blocks_after_disable_witness_2, logs, minority_api_node)
+    ttcn.wait(blocks_after_disable_witness_2, logs, minority_api_node)
 
-    assert sh.get_last_head_block_number(_M) == sh.get_last_head_block_number(_m)
-    assert sh.get_last_irreversible_block_num(_M) == sh.get_last_irreversible_block_num(_m)
-    last_lib_02 = sh.get_last_irreversible_block_num(_m)
+    assert ttcn.get_last_head_block_number(_M) == ttcn.get_last_head_block_number(_m)
+    assert ttcn.get_last_irreversible_block_num(_M) == ttcn.get_last_irreversible_block_num(_m)
+    last_lib_02 = ttcn.get_last_irreversible_block_num(_m)
 
     assert last_lib_01 == last_lib_02
 
     tt.logger.info("Disconnect sub networks - start")
-    sh.disconnect_sub_networks(networks_builder.networks)
+    ttcn.disconnect_sub_networks(networks_builder.networks)
 
-    sh.wait(blocks_after_disconnect, logs, minority_api_node)
+    ttcn.wait(blocks_after_disconnect, logs, minority_api_node)
 
-    assert sh.get_last_head_block_number(_M) < sh.get_last_head_block_number(_m)
-    assert sh.get_last_irreversible_block_num(_M) == sh.get_last_irreversible_block_num(_m)
-    last_lib_03 = sh.get_last_irreversible_block_num(_m)
+    assert ttcn.get_last_head_block_number(_M) < ttcn.get_last_head_block_number(_m)
+    assert ttcn.get_last_irreversible_block_num(_M) == ttcn.get_last_irreversible_block_num(_m)
+    last_lib_03 = ttcn.get_last_irreversible_block_num(_m)
 
     assert last_lib_01 == last_lib_03
 
     tt.logger.info(f"Enable {len(witness_details_part)} witnesses")
-    sh.enable_witnesses(minority_witness_wallet, witness_details_part)
+    ttcn.enable_witnesses(minority_witness_wallet, witness_details_part)
 
-    sh.wait(blocks_after_enable_witness, logs, minority_api_node)
+    ttcn.wait(blocks_after_enable_witness, logs, minority_api_node)
 
-    assert sh.get_last_head_block_number(_M) < sh.get_last_head_block_number(_m)
-    assert sh.get_last_irreversible_block_num(_M) == sh.get_last_irreversible_block_num(_m)
-    last_lib_04 = sh.get_last_irreversible_block_num(_m)
+    assert ttcn.get_last_head_block_number(_M) < ttcn.get_last_head_block_number(_m)
+    assert ttcn.get_last_irreversible_block_num(_M) == ttcn.get_last_irreversible_block_num(_m)
+    last_lib_04 = ttcn.get_last_irreversible_block_num(_m)
 
     assert last_lib_01 == last_lib_04
 
     tt.logger.info("Reconnect sub networks")
-    sh.connect_sub_networks(networks_builder.networks)
+    ttcn.connect_sub_networks(networks_builder.networks)
 
-    sh.wait_for_final_block(
-        minority_api_node, logs, [_m, _M], True, partial(sh.lib_custom_condition, _M, last_lib_04), False
+    ttcn.wait_for_final_block(
+        minority_api_node, logs, [_m, _M], True, partial(ttcn.lib_custom_condition, _M, last_lib_04), False
     )
 
-    sh.assert_no_duplicates(minority_api_node, majority_api_node)
+    ttcn.assert_no_duplicates(minority_api_node, majority_api_node)
