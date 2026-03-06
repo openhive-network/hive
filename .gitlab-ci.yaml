@@ -1486,7 +1486,7 @@ deploy_hiveio_api_to_pypi:
   stage: deploy
   extends: .deploy_wheel_to_pypi_template
   variables:
-    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/hiveio_api"
+    PYPROJECT_DIR: "${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/python_api_package"
   needs:
     - job: hiveio_api_package
       artifacts: true
