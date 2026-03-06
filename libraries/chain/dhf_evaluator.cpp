@@ -6,6 +6,7 @@
 #include <hive/chain/database_virtual_operations.hpp>
 #include <hive/chain/hive_evaluator.hpp>
 #include <hive/chain/account_object_multiindex.hpp>
+#include <hive/chain/detail/state/tiny_account_object.hpp>
 #include <hive/chain/dhf_objects_multiindex.hpp>
 #include <hive/chain/evaluator_registry.hpp>
 
@@ -164,7 +165,10 @@ void update_proposal_votes_evaluator::do_apply( const update_proposal_votes_oper
 
     FC_ASSERT( voter.can_vote() && "Voter declined voting rights, therefore casting votes is forbidden." );
 
-    _db.modify( voter, [&]( account_object& a ) { a.update_governance_vote_expiration_ts(_db.head_block_time()); });
+    {
+      const auto& voter_tiny = *_db.get_index< tiny_account_index, by_name >().find( voter.get_name() );
+      static_cast<chainbase::database&>(_db).modify( voter_tiny, [&]( tiny_account_object& t ) { t.update_governance_vote_expiration_ts(_db.head_block_time()); });
+    }
 
     for( const auto pid : o.proposal_ids )
     {

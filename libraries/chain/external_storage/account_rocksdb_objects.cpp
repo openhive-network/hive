@@ -7,12 +7,10 @@ hive::utilities::benchmark_dumper::account_archive_details_t accounts_stats::sta
 rocksdb_account_object::rocksdb_account_object( const account_object& obj )
 {
   id                          = obj.get_id();
-  proxy                       = obj.get_proxy();
   name                        = obj.get_name();
   pending_claimed_accounts    = obj.get_pending_claimed_accounts();
   created                     = obj.get_creation_time();
   block_created               = obj.get_block_creation_time();
-  governance_vote_expiration_ts = obj.get_governance_vote_expiration_ts();
   withdraw_routes             = obj.get_withdraw_routes();
   pending_escrow_transfers    = obj.get_pending_escrow_transfers();
   open_recurrent_transfers    = obj.get_open_recurrent_transfers();

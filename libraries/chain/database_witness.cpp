@@ -130,8 +130,8 @@ void database::retally_witness_votes()
   // Apply all existing votes by account
   for( auto itr = account_idx.begin(); itr != account_idx.end(); ++itr )
   {
+    if( itr->has_proxy() ) continue;
     const auto& a = get_account( itr->get_name() );
-    if( a.has_proxy() ) continue;
 
     const auto& _assets_obj = get_asset_account( a.get_id() );
     const auto& _dvotes = get_delayed_votes_account( a.get_id() );
@@ -155,7 +155,7 @@ void database::retally_witness_vote_counts( bool force )
   {
     const auto& a = get_account( itr->get_name() );
     uint16_t witnesses_voted_for = 0;
-    if( force || a.has_proxy() )
+    if( force || itr->has_proxy() )
     {
       const auto& vidx = get_index< witness_vote_index >().indices().get< by_account_witness >();
       auto wit_itr = vidx.lower_bound( boost::make_tuple( a.get_name(), account_name_type() ) );

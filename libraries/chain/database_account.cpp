@@ -8,11 +8,13 @@
 #include <chainbase/chainbase.inl>
 
 #include <hive/chain/util/type_registrar_definition.hpp>
+#include <hive/protocol/config.hpp>
 
 namespace hive { namespace chain {
 
-// tiny_account_object constructor and modify methods
+// tiny_account_object constructor and methods
 // Defined here because they need full definitions of account_object, assets_object, delayed_votes_object
+// and protocol constants (hardfork definitions)
 
 template< typename Allocator >
 tiny_account_object::tiny_account_object( allocator< Allocator > a, uint64_t _id,
@@ -20,8 +22,7 @@ tiny_account_object::tiny_account_object( allocator< Allocator > a, uint64_t _id
   : id( _id )
 {
   name = acc.get_name();
-  proxy = acc.get_proxy();
-  governance_vote_expiration_ts = acc.get_governance_vote_expiration_ts();
+  // proxy and governance_vote_expiration_ts start at defaults (no proxy, maximum expiration)
   oldest_delayed_vote_time = dvotes.get_oldest_delayed_vote_time();
 }
 
@@ -29,10 +30,14 @@ tiny_account_object::tiny_account_object( allocator< Allocator > a, uint64_t _id
 template tiny_account_object::tiny_account_object( allocator< tiny_account_object > a, uint64_t _id,
   const account_object& acc, const assets_object& assets_obj, const delayed_votes_object& dvotes );
 
-void tiny_account_object::modify_from_account( const account_object& acc )
+void tiny_account_object::update_governance_vote_expiration_ts( const time_point_sec vote_time )
 {
-  proxy = acc.get_proxy();
-  governance_vote_expiration_ts = acc.get_governance_vote_expiration_ts();
+  governance_vote_expiration_ts = vote_time + HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD;
+  if( governance_vote_expiration_ts < HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP )
+  {
+    const int64_t DIVIDER = HIVE_HARDFORK_1_25_MAX_OLD_GOVERNANCE_VOTE_EXPIRE_SHIFT.to_seconds();
+    governance_vote_expiration_ts = HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP + fc::seconds(governance_vote_expiration_ts.sec_since_epoch() % DIVIDER);
+  }
 }
 
 void tiny_account_object::modify_from_delayed_votes( const delayed_votes_object& dvotes )

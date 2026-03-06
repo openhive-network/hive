@@ -2,6 +2,7 @@
 #include <hive/chain/detail/state/recurrent_transfer_object_multiindex.hpp>
 #include <hive/chain/detail/state/decline_voting_rights_request_object_multiindex.hpp>
 #include <hive/chain/account_object_multiindex.hpp>
+#include <hive/chain/detail/state/tiny_account_object.hpp>
 
 #include <hive/chain/database_virtual_operations.hpp>
 #include <hive/chain/util/dhf_helper.hpp>
@@ -225,15 +226,20 @@ void database::process_decline_voting_rights()
       nullify_proxied_witness_votes( account );
       clear_witness_votes( account );
 
-      if( account.has_proxy() )
-        push_virtual_operation( *this, proxy_cleared_operation( account.get_name(), get_account( account.get_proxy() ).get_name()) );
+      const auto& account_tiny = *get_index< tiny_account_index, by_name >().find( account.get_name() );
+      if( account_tiny.has_proxy() )
+        push_virtual_operation( *this, proxy_cleared_operation( account.get_name(), get_account( account_tiny.get_proxy() ).get_name()) );
 
       push_virtual_operation( *this, declined_voting_rights_operation( itr->account ) );
 
       modify( account, [&]( account_object& a )
       {
         a.set_can_vote( false );
-        a.clear_proxy();
+      });
+
+      static_cast<chainbase::database&>(*this).modify( account_tiny, [&]( tiny_account_object& t )
+      {
+        t.clear_proxy();
       });
 
       remove( *itr );

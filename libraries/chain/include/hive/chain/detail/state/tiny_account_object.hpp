@@ -19,18 +19,29 @@ namespace hive { namespace chain {
         const account_object& acc, const assets_object& assets_obj, const delayed_votes_object& dvotes );
 
       const account_name_type& get_name() const { return name; }
+
+      // ===== Proxy =====
       account_id_type get_proxy() const { return proxy; }
       bool has_proxy() const { return proxy != account_id_type(); }
+      void clear_proxy() { proxy = account_id_type(); }
+      void set_proxy_by_id( const account_id_type& proxy_id ) { proxy = proxy_id; }
+
+      // ===== Vesting withdrawal =====
       time_point_sec get_next_vesting_withdrawal() const { return next_vesting_withdrawal; }
       void set_next_vesting_withdrawal( const time_point_sec& value ) { next_vesting_withdrawal = value; }
       bool has_active_power_down() const { return next_vesting_withdrawal != fc::time_point_sec::maximum(); }
-      time_point_sec get_governance_vote_expiration_ts() const { return governance_vote_expiration_ts; }
-      bool has_delayed_votes() const { return oldest_delayed_vote_time != time_point_sec::maximum(); }
 
+      // ===== Governance vote expiration =====
+      time_point_sec get_governance_vote_expiration_ts() const { return governance_vote_expiration_ts; }
+      void set_governance_vote_expired() { governance_vote_expiration_ts = time_point_sec::maximum(); }
+      void update_governance_vote_expiration_ts( const time_point_sec vote_time ); // impl in database_account.cpp
+      void restore_governance_vote_expiration_ts( const time_point_sec ts ) { governance_vote_expiration_ts = ts; }
+
+      // ===== Delayed votes =====
+      bool has_delayed_votes() const { return oldest_delayed_vote_time != time_point_sec::maximum(); }
       time_point_sec get_oldest_delayed_vote_time() const { return oldest_delayed_vote_time; }
       void set_oldest_delayed_vote_time( const time_point_sec& value ) { oldest_delayed_vote_time = value; }
 
-      void modify_from_account( const account_object& acc );
       void modify_from_delayed_votes( const delayed_votes_object& dvotes );
 
     private:

@@ -219,7 +219,7 @@ api_account_object::api_account_object( const account_object& a, const database&
   last_post_edit(),
   pending_claimed_accounts( a.get_pending_claimed_accounts() ),
   open_recurrent_transfers( a.get_open_recurrent_transfers() ),
-  governance_vote_expiration_ts( a.get_governance_vote_expiration_ts())
+  governance_vote_expiration_ts()
 {
   // Get split objects
   const auto& assets = db.get_asset_account( a.get_id() );
@@ -239,7 +239,12 @@ api_account_object::api_account_object( const account_object& a, const database&
     const auto& tiny_idx = db.get_index< chain::tiny_account_index, chain::by_name >();
     auto tiny_it = tiny_idx.find( a.get_name() );
     if( tiny_it != tiny_idx.end() )
+    {
       next_vesting_withdrawal = tiny_it->get_next_vesting_withdrawal();
+      governance_vote_expiration_ts = tiny_it->get_governance_vote_expiration_ts();
+      if( tiny_it->has_proxy() )
+        proxy = db.get_account( tiny_it->get_proxy() ).get_name();
+    }
   }
   post_count = assets.get_post_count();
   post_bandwidth = assets.get_post_bandwidth();
@@ -270,8 +275,6 @@ api_account_object::api_account_object( const account_object& a, const database&
   withdrawn = assets.get_withdrawn().amount;
   to_withdraw = assets.get_to_withdraw().amount;
 
-  if( a.has_proxy() )
-    proxy = db.get_account( a.get_proxy() ).get_name();
   if( assets.has_recovery_account() )
     recovery_account = db.get_account( assets.get_recovery_account() ).get_name();
 

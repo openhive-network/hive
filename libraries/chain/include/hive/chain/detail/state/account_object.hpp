@@ -40,7 +40,6 @@ namespace hive { namespace chain {
         const time_point_sec& _creation_time, const time_point_sec& _block_creation_time, bool _mined,
         const account_object* _recovery_account )
       : id( _id ),
-        proxy(),
         name( _name ),
         created( _creation_time ),
         block_created( _block_creation_time ),
@@ -73,51 +72,9 @@ namespace hive { namespace chain {
       void set_name( const account_name_type& new_name ) { name = new_name; }
 #endif
 
-      // ===== Proxy =====
-      bool has_proxy() const { return proxy != account_id_type(); }
-      account_id_type get_proxy() const { return proxy; }
-      void clear_proxy() { proxy = account_id_type(); }
-      void set_proxy(const account_object& new_proxy)
-      {
-        FC_ASSERT( &new_proxy != this );
-        proxy = new_proxy.get_id();
-      }
-      /// Set proxy directly by account id (used for RocksDB restore)
-      void set_proxy_by_id( const account_id_type& proxy_id )
-      {
-        proxy = proxy_id;
-      }
-
       // ===== Restore methods for RocksDB =====
       void restore_block_created( const time_point_sec& ts ) { block_created = ts; }
       void restore_mined( bool value ) { mined = value; }
-
-      // ===== Governance vote expiration =====
-      time_point_sec get_governance_vote_expiration_ts() const
-      {
-        return governance_vote_expiration_ts;
-      }
-
-      void set_governance_vote_expired()
-      {
-        governance_vote_expiration_ts = time_point_sec::maximum();
-      }
-
-      void update_governance_vote_expiration_ts(const time_point_sec vote_time)
-      {
-        governance_vote_expiration_ts = vote_time + HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD;
-        if( governance_vote_expiration_ts < HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP )
-        {
-          const int64_t DIVIDER = HIVE_HARDFORK_1_25_MAX_OLD_GOVERNANCE_VOTE_EXPIRE_SHIFT.to_seconds();
-          governance_vote_expiration_ts = HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP + fc::seconds(governance_vote_expiration_ts.sec_since_epoch() % DIVIDER);
-        }
-      }
-
-      /// Restore governance_vote_expiration_ts from stored value (used for RocksDB restore)
-      void restore_governance_vote_expiration_ts( const time_point_sec ts )
-      {
-        governance_vote_expiration_ts = ts;
-      }
 
       // ===== Voting =====
       bool can_vote() const { return can_vote_flag; }
@@ -210,17 +167,12 @@ namespace hive { namespace chain {
       }
 
     private:
-      // Members from misc structure (now directly in account_object)
-      account_id_type   proxy;
-
       account_name_type name;
 
       share_type        pending_claimed_accounts = 0; ///< claimed and not yet used account creation tokens
 
       time_point_sec    created;        //(not read by consensus code)
       time_point_sec    block_created;
-
-      time_point_sec    governance_vote_expiration_ts = fc::time_point_sec::maximum();
 
       uint16_t          withdraw_routes = 0;          //max 10
       uint16_t          pending_escrow_transfers = 0; //max 255
@@ -487,11 +439,9 @@ namespace hive { namespace chain {
 
 FC_REFLECT( hive::chain::account_object,
           (id)
-          (proxy)
           (name)
           (pending_claimed_accounts)
           (created)(block_created)
-          (governance_vote_expiration_ts)
           (withdraw_routes)(pending_escrow_transfers)(open_recurrent_transfers)(witnesses_voted_for)
           (savings_withdraw_requests)(can_vote_flag)(mined)
           (memo_key)

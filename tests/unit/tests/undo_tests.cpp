@@ -73,7 +73,7 @@ BOOST_AUTO_TEST_CASE( undo_basic )
 
     undo_db udb( *db );
     undo_scenario< account_object > ao( *db );
-    const auto& pxy = ao.create( "proxy00", time );
+    ao.create( "proxy00", time );
 
     BOOST_TEST_MESSAGE( "--- No object added" );
     ao.remember_old_values< account_index >();
@@ -119,7 +119,7 @@ BOOST_AUTO_TEST_CASE( undo_basic )
     udb.undo_begin();
 
     const auto& obj4 = ao.create( "name00", time );
-    ao.modify( obj4, [&]( account_object& obj ){ obj.set_proxy(pxy); } );
+    ao.modify( obj4, [&]( account_object& obj ){ obj.set_witnesses_voted_for(1); } );
     ao.remove( obj4 );
     ao.remove<account_index>( obj4.get_name() );
 
@@ -143,7 +143,7 @@ BOOST_AUTO_TEST_CASE( undo_basic )
     udb.undo_begin();
 
     const auto& obj6 = ao.create( "name00", time );
-    ao.modify( obj6, [&]( account_object& obj ){ obj.set_proxy(pxy); } );
+    ao.modify( obj6, [&]( account_object& obj ){ obj.set_witnesses_voted_for(1); } );
     ao.remove( obj6 );
     ao.remove<account_index>( obj6.get_name() );
     ao.create( "name00", time );
@@ -269,15 +269,15 @@ BOOST_AUTO_TEST_CASE( undo_object_disappear )
     undo_db udb( *db );
     undo_scenario< account_object > ao( *db );
 
-    const auto& pxy0 = ao.create( "proxy00", time );
-    const auto& pxy1 = ao.create( "proxy01", time );
+    ao.create( "proxy00", time );
+    ao.create( "proxy01", time );
 
     uint32_t old_size = ao.size< account_index >();
 
-    const auto& obj0 = ao.create( "name00", time ); ao.modify( obj0, [&]( account_object& obj ){ obj.set_proxy(pxy0); } );
+    const auto& obj0 = ao.create( "name00", time ); ao.modify( obj0, [&]( account_object& obj ){ obj.set_witnesses_voted_for(10); } );
     BOOST_REQUIRE_EQUAL( old_size + 1, ao.size< account_index >() );
 
-    const auto& obj1 = ao.create( "name01", time ); ao.modify( obj1, [&]( account_object& obj ){ obj.set_proxy(pxy1); } );
+    const auto& obj1 = ao.create( "name01", time ); ao.modify( obj1, [&]( account_object& obj ){ obj.set_witnesses_voted_for(20); } );
     BOOST_REQUIRE_EQUAL( old_size + 2, ao.size< account_index >() );
 
     ao.remember_old_values< account_index >();
@@ -291,7 +291,7 @@ BOOST_AUTO_TEST_CASE( undo_object_disappear )
       Status:
         Done
     */
-    HIVE_REQUIRE_THROW( ao.modify( obj1, [&]( account_object& obj ){ obj.set_name( "name00" ); obj.set_proxy(pxy0); } ), boost::exception );
+    HIVE_REQUIRE_THROW( ao.modify( obj1, [&]( account_object& obj ){ obj.set_name( "name00" ); obj.set_witnesses_voted_for(10); } ), boost::exception );
 
     udb.undo_end();
     BOOST_REQUIRE_EQUAL( old_size + 2, ao.size< account_index >() );
@@ -449,11 +449,11 @@ BOOST_AUTO_TEST_CASE( undo_different_indexes )
     old_size_co_cashout = co.size< comment_cashout_index >();
     udb.undo_begin();
 
-    const auto& pxy = ao.create( "name00", time );
+    ao.create( "name00", time );
     const auto& obja1 = ao.create( "name01", time );
     const auto& obja2 = ao.create( "name02", time );
     BOOST_REQUIRE_EQUAL( old_size_ao + 3, ao.size< account_index >() );
-    ao.modify( obja1, [&]( account_object& obj ){ obj.set_proxy(pxy); } );
+    ao.modify( obja1, [&]( account_object& obj ){ obj.set_witnesses_voted_for(1); } );
     ao.remove( obja2 );
     BOOST_REQUIRE_EQUAL( old_size_ao + 2, ao.size< account_index >() );
 

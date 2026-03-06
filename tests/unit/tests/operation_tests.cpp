@@ -77,8 +77,10 @@ using fc::string;
 #define GET_GOV_VOTE_POWER( acc ) ((acc).get_direct_governance_vote_power( db->get_asset_account( (acc).get_id() ), db->get_delayed_votes_account( (acc).get_id() ) ))
 #define GET_RECOVERY( account_name ) (db->get_asset_account( db->get_account( account_name ).get_id() ))
 #define GET_RECOVERY_FOR_ACC( acc ) (db->get_asset_account( (acc).get_id() ))
-#define CHECK_PROXY( account, proxy ) BOOST_REQUIRE( account.get_proxy() == proxy.get_id() )
-#define CHECK_NO_PROXY( account ) BOOST_REQUIRE( account.has_proxy() == false )
+#define GET_TINY( account_name ) (*db->get_index< tiny_account_index, by_name >().find( account_name ))
+#define GET_TINY_ACC( acc ) (*db->get_index< tiny_account_index, by_name >().find( (acc).get_name() ))
+#define CHECK_PROXY( account, proxy ) BOOST_REQUIRE( GET_TINY_ACC( account ).get_proxy() == proxy.get_id() )
+#define CHECK_NO_PROXY( account ) BOOST_REQUIRE( GET_TINY_ACC( account ).has_proxy() == false )
 
 #define HIVE_MIN_TRANSACTION_EXPIRATION_LIMIT 15
 
@@ -2012,7 +2014,7 @@ BOOST_AUTO_TEST_CASE( account_witness_vote_authorities )
     HIVE_REQUIRE_THROW( push_transaction( tx, sam_private_key ), tx_missing_active_auth );
 
     BOOST_TEST_MESSAGE( "--- Up to HF28 it was a test failure when signed by an additional signature not in the creator's authority. Now is a failure because of logic of given operation." );
-    HIVE_REQUIRE_ASSERT( push_transaction( tx, { bob_private_key, alice_private_key } ), "!voter.has_proxy()" );
+    HIVE_REQUIRE_ASSERT( push_transaction( tx, { bob_private_key, alice_private_key } ), "!voter_tiny.has_proxy()" );
 
     validate_database();
   }
@@ -2085,7 +2087,7 @@ BOOST_AUTO_TEST_CASE( account_witness_vote_apply )
     tx.operations.clear();
     op.account = "alice";
     tx.operations.push_back( op );
-    HIVE_REQUIRE_ASSERT( push_transaction( tx, alice_private_key ), "!voter.has_proxy()" );
+    HIVE_REQUIRE_ASSERT( push_transaction( tx, alice_private_key ), "!voter_tiny.has_proxy()" );
 
     BOOST_REQUIRE_EQUAL( sam_witness.votes, ( bob.proxied_vsf_votes_total() + GET_GOV_VOTE_POWER( bob ) ) );
     BOOST_REQUIRE( witness_vote_idx.find( boost::make_tuple( sam_witness.owner, bob.get_name() ) ) != witness_vote_idx.end() );
@@ -2214,7 +2216,7 @@ BOOST_AUTO_TEST_CASE(account_witness_vote_apply_delay)
     tx.operations.clear();
     op.account = "alice";
     tx.operations.push_back(op);
-    HIVE_REQUIRE_ASSERT( push_transaction( tx, alice_private_key ), "!voter.has_proxy()" );
+    HIVE_REQUIRE_ASSERT( push_transaction( tx, alice_private_key ), "!voter_tiny.has_proxy()" );
 
     BOOST_REQUIRE_EQUAL( _alice_assets.get_vesting().amount, _bob.proxied_vsf_votes_total() );
     BOOST_REQUIRE_EQUAL( _sam_witness.votes, (_alice_assets.get_vesting().amount + _bob_assets.get_vesting().amount) );
@@ -2306,9 +2308,9 @@ BOOST_AUTO_TEST_CASE( account_object_by_governance_vote_expiration_ts_idx )
     generate_block();
 
 
-    BOOST_REQUIRE_NE( db->get_account( "acc1" ).get_governance_vote_expiration_ts(), db->get_account( "acc2" ).get_governance_vote_expiration_ts() );
-    BOOST_REQUIRE_EQUAL( db->get_account( "acc2" ).get_governance_vote_expiration_ts(), db->get_account( "acc3" ).get_governance_vote_expiration_ts() );
-    BOOST_REQUIRE_NE( db->get_account( "acc4" ).get_governance_vote_expiration_ts(), db->get_account( "acc3" ).get_governance_vote_expiration_ts() );
+    BOOST_REQUIRE_NE( GET_TINY("acc1").get_governance_vote_expiration_ts(), GET_TINY("acc2").get_governance_vote_expiration_ts() );
+    BOOST_REQUIRE_EQUAL( GET_TINY("acc2").get_governance_vote_expiration_ts(), GET_TINY("acc3").get_governance_vote_expiration_ts() );
+    BOOST_REQUIRE_NE( GET_TINY("acc4").get_governance_vote_expiration_ts(), GET_TINY("acc3").get_governance_vote_expiration_ts() );
 
     const auto& accounts = db->get_index< tiny_account_index, by_governance_vote_expiration_ts >();
     time_point_sec governance_vote_expiration_ts = accounts.begin()->get_governance_vote_expiration_ts();
@@ -2365,7 +2367,7 @@ BOOST_AUTO_TEST_CASE( account_witness_proxy_authorities )
 
     BOOST_TEST_MESSAGE( "--- Up to HF28 it was a test failure when signed by an additional signature not in the creator's authority. Now is a failure because of logic of given operation." );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION - HIVE_BLOCK_INTERVAL );
-    HIVE_REQUIRE_ASSERT( push_transaction( tx, { bob_private_key, alice_private_key } ), "account.get_proxy() != new_proxy.get_id()" );
+    HIVE_REQUIRE_ASSERT( push_transaction( tx, { bob_private_key, alice_private_key } ), "account_tiny.get_proxy() != new_proxy.get_id()" );
 
     BOOST_TEST_MESSAGE( "--- Test failure with proxy signature" );
     HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key ), tx_missing_active_auth );
@@ -2473,18 +2475,18 @@ BOOST_AUTO_TEST_CASE( proxy_cleared_operation_basic )
 
       generate_block();
 
-      BOOST_REQUIRE_EQUAL( db->get_account( "bob" ).get_proxy(), db->get_account( "carol" ).get_id() );
-      BOOST_REQUIRE_EQUAL( db->get_account( "carol" ).has_proxy(), false );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "bob" ).get_proxy(), db->get_account( "carol" ).get_id() );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "carol" ).has_proxy(), false );
 
       generate_blocks( db->head_block_time() + HIVE_OWNER_AUTH_RECOVERY_PERIOD - fc::seconds( HIVE_BLOCK_INTERVAL ) - fc::seconds( HIVE_BLOCK_INTERVAL ), false );
 
-      BOOST_REQUIRE_EQUAL( db->get_account( "bob" ).get_proxy(), db->get_account( "carol" ).get_id() );
-      BOOST_REQUIRE_EQUAL( db->get_account( "carol" ).has_proxy(), false );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "bob" ).get_proxy(), db->get_account( "carol" ).get_id() );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "carol" ).has_proxy(), false );
 
       generate_blocks( db->head_block_time() + fc::seconds( HIVE_BLOCK_INTERVAL ) );
 
-      BOOST_REQUIRE_EQUAL( db->get_account( "bob" ).has_proxy(), false );
-      BOOST_REQUIRE_EQUAL( db->get_account( "carol" ).has_proxy(), false );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "bob" ).has_proxy(), false );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "carol" ).has_proxy(), false );
 
       auto recent_ops = get_last_operations( 2 );
       auto reject_op = recent_ops.back().get< proxy_cleared_operation >();
@@ -2512,13 +2514,13 @@ BOOST_AUTO_TEST_CASE( proxy_cleared_operation_basic )
 
       generate_block();
 
-      BOOST_REQUIRE_EQUAL( db->get_account( "carol" ).get_proxy(), db->get_account( "dan" ).get_id() );
-      BOOST_REQUIRE_EQUAL( db->get_account( "dan" ).has_proxy(), false );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "carol" ).get_proxy(), db->get_account( "dan" ).get_id() );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "dan" ).has_proxy(), false );
 
       generate_blocks( db->head_block_time() + HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD );
 
-      BOOST_REQUIRE_EQUAL( db->get_account( "carol" ).has_proxy(), false );
-      BOOST_REQUIRE_EQUAL( db->get_account( "dan" ).has_proxy(), false );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "carol" ).has_proxy(), false );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "dan" ).has_proxy(), false );
 
       auto recent_ops = get_last_operations( 2 );
       auto reject_op = recent_ops.back().get< proxy_cleared_operation >();

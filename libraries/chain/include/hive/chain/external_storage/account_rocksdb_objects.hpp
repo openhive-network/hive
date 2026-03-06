@@ -49,9 +49,7 @@ class rocksdb_account_object
       {
         o.restore_block_created( this->block_created );
         o.restore_mined( this->mined );
-        o.set_proxy_by_id( this->proxy );
         o.set_pending_claimed_accounts( this->pending_claimed_accounts );
-        o.restore_governance_vote_expiration_ts( this->governance_vote_expiration_ts );
         o.set_withdraw_routes( this->withdraw_routes );
         o.set_pending_escrow_transfers( this->pending_escrow_transfers );
         o.set_open_recurrent_transfers( this->open_recurrent_transfers );
@@ -73,9 +71,7 @@ class rocksdb_account_object
       // Populate the rest of the fields for shared_ptr case too
       obj->restore_block_created( this->block_created );
       obj->restore_mined( this->mined );
-      obj->set_proxy_by_id( this->proxy );
       obj->set_pending_claimed_accounts( this->pending_claimed_accounts );
-      obj->restore_governance_vote_expiration_ts( this->governance_vote_expiration_ts );
       obj->set_withdraw_routes( this->withdraw_routes );
       obj->set_pending_escrow_transfers( this->pending_escrow_transfers );
       obj->set_open_recurrent_transfers( this->open_recurrent_transfers );
@@ -90,12 +86,11 @@ class rocksdb_account_object
   account_id_type                         id;
 
   // Fields from account_object (split architecture)
-  account_id_type   proxy;
+  // Note: proxy and governance_vote_expiration_ts are canonical on tiny_account_object
   account_name_type name;
   share_type        pending_claimed_accounts = 0;
   time_point_sec    created;
   time_point_sec    block_created;
-  time_point_sec    governance_vote_expiration_ts = fc::time_point_sec::maximum();
   uint16_t          withdraw_routes = 0;
   uint16_t          pending_escrow_transfers = 0;
   uint16_t          open_recurrent_transfers = 0;
@@ -123,11 +118,9 @@ class rocksdb_account_object_by_id
 
 FC_REFLECT( hive::chain::rocksdb_account_object,
           (id)
-          (proxy)
           (name)
           (pending_claimed_accounts)
           (created)(block_created)
-          (governance_vote_expiration_ts)
           (withdraw_routes)(pending_escrow_transfers)(open_recurrent_transfers)(witnesses_voted_for)
           (savings_withdraw_requests)(can_vote_flag)(mined)
           (memo_key)

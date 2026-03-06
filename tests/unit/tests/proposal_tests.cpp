@@ -66,6 +66,7 @@ using namespace hive::protocol;
 using fc::string;
 
 #define GET_GOV_VOTE_POWER( acc ) ((acc).get_direct_governance_vote_power( db->get_asset_account( (acc).get_id() ), db->get_delayed_votes_account( (acc).get_id() ) ))
+#define GET_TINY( account_name ) (*db->get_index< tiny_account_index, by_name >().find( account_name ))
 
 template< typename PROPOSAL_IDX >
 int64_t calc_proposals( const PROPOSAL_IDX& proposal_idx, const std::vector< int64_t >& proposals_id )
@@ -379,32 +380,32 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
     generate_days_blocks(25);
     proxy("acc6", "pxy", acc6_private_key); //51 days before HF25
     {
-      time_point_sec acc_6_vote_expiration_ts_before_proxy_action = db->get_account( "acc6" ).get_governance_vote_expiration_ts();
+      time_point_sec acc_6_vote_expiration_ts_before_proxy_action = GET_TINY( "acc6" ).get_governance_vote_expiration_ts();
       //being set as someone's proxy does not affect expiration
-      BOOST_REQUIRE_EQUAL( db->get_account( "pxy" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "pxy" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
       generate_days_blocks(25);
       witness_vote("pxy", "accw2", pxy_private_key); //26 days before HF25
-      time_point_sec acc_6_vote_expiration_ts_after_proxy_action = db->get_account( "acc6" ).get_governance_vote_expiration_ts();
+      time_point_sec acc_6_vote_expiration_ts_after_proxy_action = GET_TINY( "acc6" ).get_governance_vote_expiration_ts();
       //governance action on a proxy does not affect expiration on account that uses that proxy...
       BOOST_REQUIRE_EQUAL( acc_6_vote_expiration_ts_before_proxy_action, acc_6_vote_expiration_ts_after_proxy_action );
       proxy("acc6", "", acc6_private_key); //26 days before HF25
-      time_point_sec acc_6_vote_expiration_ts_after_proxy_removal = db->get_account( "acc6" ).get_governance_vote_expiration_ts();
+      time_point_sec acc_6_vote_expiration_ts_after_proxy_removal = GET_TINY( "acc6" ).get_governance_vote_expiration_ts();
       //...but clearing proxy does
-      BOOST_REQUIRE_EQUAL( acc_6_vote_expiration_ts_after_proxy_removal, db->get_account( "pxy" ).get_governance_vote_expiration_ts() );
+      BOOST_REQUIRE_EQUAL( acc_6_vote_expiration_ts_after_proxy_removal, GET_TINY( "pxy" ).get_governance_vote_expiration_ts() );
     }
     //unvoting proposal (even the one that the account did not vote for before) also resets expiration (same with witness, but you can't unvote witness you didn't vote for)
     vote_proposal("acc7", {proposal_2}, false, acc7_private_key); //26 days before HF25
     generate_block();
 
     {
-      time_point_sec acc_1_vote_expiration_ts = db->get_account( "acc1" ).get_governance_vote_expiration_ts();
-      time_point_sec acc_2_vote_expiration_ts = db->get_account( "acc2" ).get_governance_vote_expiration_ts();
-      time_point_sec acc_3_vote_expiration_ts = db->get_account( "acc3" ).get_governance_vote_expiration_ts();
-      time_point_sec acc_4_vote_expiration_ts = db->get_account( "acc4" ).get_governance_vote_expiration_ts();
-      time_point_sec acc_5_vote_expiration_ts = db->get_account( "acc5" ).get_governance_vote_expiration_ts();
-      time_point_sec acc_6_vote_expiration_ts = db->get_account( "acc6" ).get_governance_vote_expiration_ts();
-      time_point_sec acc_7_vote_expiration_ts = db->get_account( "acc7" ).get_governance_vote_expiration_ts();
-      time_point_sec pxy_vote_expiration_ts   = db->get_account( "pxy" ).get_governance_vote_expiration_ts();
+      time_point_sec acc_1_vote_expiration_ts = GET_TINY( "acc1" ).get_governance_vote_expiration_ts();
+      time_point_sec acc_2_vote_expiration_ts = GET_TINY( "acc2" ).get_governance_vote_expiration_ts();
+      time_point_sec acc_3_vote_expiration_ts = GET_TINY( "acc3" ).get_governance_vote_expiration_ts();
+      time_point_sec acc_4_vote_expiration_ts = GET_TINY( "acc4" ).get_governance_vote_expiration_ts();
+      time_point_sec acc_5_vote_expiration_ts = GET_TINY( "acc5" ).get_governance_vote_expiration_ts();
+      time_point_sec acc_6_vote_expiration_ts = GET_TINY( "acc6" ).get_governance_vote_expiration_ts();
+      time_point_sec acc_7_vote_expiration_ts = GET_TINY( "acc7" ).get_governance_vote_expiration_ts();
+      time_point_sec pxy_vote_expiration_ts   = GET_TINY( "pxy" ).get_governance_vote_expiration_ts();
 
       BOOST_REQUIRE(acc_1_vote_expiration_ts > HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP && acc_1_vote_expiration_ts <= LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS);
       BOOST_REQUIRE(acc_2_vote_expiration_ts > HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP && acc_2_vote_expiration_ts <= LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS);
@@ -432,14 +433,14 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
     generate_blocks(LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS);
 
     {
-      BOOST_REQUIRE_EQUAL( db->get_account( "acc1" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
-      BOOST_REQUIRE_EQUAL( db->get_account( "acc2" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
-      BOOST_REQUIRE_EQUAL( db->get_account( "acc3" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
-      BOOST_REQUIRE_EQUAL( db->get_account( "acc4" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
-      BOOST_REQUIRE_EQUAL( db->get_account( "acc5" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
-      BOOST_REQUIRE_EQUAL( db->get_account( "acc6" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
-      BOOST_REQUIRE_EQUAL( db->get_account( "acc7" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
-      BOOST_REQUIRE_EQUAL( db->get_account( "acc8" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "acc1" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "acc2" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "acc3" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "acc4" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "acc5" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "acc6" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "acc7" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "acc8" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
 
       const auto& witness_votes = db->get_index<witness_vote_index, by_account_witness>();
       BOOST_REQUIRE(witness_votes.empty());
@@ -465,14 +466,14 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
     generate_blocks( expected_expiration_time - fc::seconds( HIVE_BLOCK_INTERVAL ) );
 
     {
-      BOOST_REQUIRE_EQUAL( db->get_account( "acc1" ).get_governance_vote_expiration_ts(), expected_expiration_time );
-      BOOST_REQUIRE_EQUAL( db->get_account( "acc2" ).get_governance_vote_expiration_ts(), expected_expiration_time );
-      BOOST_REQUIRE_EQUAL( db->get_account( "acc3" ).get_governance_vote_expiration_ts(), expected_expiration_time_2 );
-      BOOST_REQUIRE_EQUAL( db->get_account( "acc4" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
-      BOOST_REQUIRE_EQUAL( db->get_account( "acc5" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
-      BOOST_REQUIRE_EQUAL( db->get_account( "acc6" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
-      BOOST_REQUIRE_EQUAL( db->get_account( "acc7" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
-      BOOST_REQUIRE_EQUAL( db->get_account( "acc8" ).get_governance_vote_expiration_ts(), expected_expiration_time_2 + fc::days(1) );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "acc1" ).get_governance_vote_expiration_ts(), expected_expiration_time );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "acc2" ).get_governance_vote_expiration_ts(), expected_expiration_time );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "acc3" ).get_governance_vote_expiration_ts(), expected_expiration_time_2 );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "acc4" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "acc5" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "acc6" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "acc7" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "acc8" ).get_governance_vote_expiration_ts(), expected_expiration_time_2 + fc::days(1) );
 
       const auto& witness_votes = db->get_index<witness_vote_index, by_account_witness>();
       BOOST_REQUIRE_EQUAL( witness_votes.count("acc1"), 2 );
@@ -485,15 +486,15 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
     }
     generate_block();
     {
-      BOOST_REQUIRE_EQUAL( db->get_account( "acc1" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
-      BOOST_REQUIRE_EQUAL( db->get_account( "acc2" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
-      BOOST_REQUIRE_EQUAL( db->get_account( "acc3" ).get_governance_vote_expiration_ts(), expected_expiration_time_2 );
-      BOOST_REQUIRE_EQUAL( db->get_account( "acc8" ).get_governance_vote_expiration_ts(), expected_expiration_time_2 + fc::days(1) );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "acc1" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "acc2" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "acc3" ).get_governance_vote_expiration_ts(), expected_expiration_time_2 );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "acc8" ).get_governance_vote_expiration_ts(), expected_expiration_time_2 + fc::days(1) );
     }
     generate_block();
     {
-      BOOST_REQUIRE_EQUAL( db->get_account( "acc3" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
-      BOOST_REQUIRE_EQUAL( db->get_account( "acc8" ).get_governance_vote_expiration_ts(), expected_expiration_time_2 + fc::days(1) );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "acc3" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "acc8" ).get_governance_vote_expiration_ts(), expected_expiration_time_2 + fc::days(1) );
 
       const auto& witness_votes = db->get_index<witness_vote_index,by_account_witness>();
       BOOST_REQUIRE_EQUAL( witness_votes.count("acc8"), 1 );
@@ -501,7 +502,7 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
     }
     generate_days_blocks(1, false);
     {
-      BOOST_REQUIRE_EQUAL( db->get_account( "acc8" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "acc8" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
       const auto& witness_votes = db->get_index<witness_vote_index,by_account_witness>();
       BOOST_REQUIRE(witness_votes.empty());
     }
@@ -528,14 +529,14 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
     generate_blocks( expected_expiration_time - fc::seconds( HIVE_BLOCK_INTERVAL ) );
 
     {
-      BOOST_REQUIRE_EQUAL( db->get_account( "acc1" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
-      BOOST_REQUIRE_EQUAL( db->get_account( "acc2" ).get_governance_vote_expiration_ts(), expected_expiration_time_2 );
-      BOOST_REQUIRE_EQUAL( db->get_account( "acc3" ).get_governance_vote_expiration_ts(), expected_expiration_time );
-      BOOST_REQUIRE_EQUAL( db->get_account( "acc4" ).get_governance_vote_expiration_ts(), expected_expiration_time );
-      BOOST_REQUIRE_EQUAL( db->get_account( "acc5" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
-      BOOST_REQUIRE_EQUAL( db->get_account( "acc6" ).get_governance_vote_expiration_ts(), expected_expiration_time_2 );
-      BOOST_REQUIRE_EQUAL( db->get_account( "acc7" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
-      BOOST_REQUIRE_EQUAL( db->get_account( "acc8" ).get_governance_vote_expiration_ts(), expected_expiration_time_2 + fc::days(1) );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "acc1" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "acc2" ).get_governance_vote_expiration_ts(), expected_expiration_time_2 );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "acc3" ).get_governance_vote_expiration_ts(), expected_expiration_time );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "acc4" ).get_governance_vote_expiration_ts(), expected_expiration_time );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "acc5" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "acc6" ).get_governance_vote_expiration_ts(), expected_expiration_time_2 );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "acc7" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "acc8" ).get_governance_vote_expiration_ts(), expected_expiration_time_2 + fc::days(1) );
 
       const auto& witness_votes = db->get_index<witness_vote_index, by_account_witness>();
       BOOST_REQUIRE(witness_votes.empty());
@@ -548,17 +549,17 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
     }
     generate_block();
     {
-      BOOST_REQUIRE_EQUAL( db->get_account( "acc2" ).get_governance_vote_expiration_ts(), expected_expiration_time_2 );
-      BOOST_REQUIRE_EQUAL( db->get_account( "acc3" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
-      BOOST_REQUIRE_EQUAL( db->get_account( "acc4" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
-      BOOST_REQUIRE_EQUAL( db->get_account( "acc6" ).get_governance_vote_expiration_ts(), expected_expiration_time_2 );
-      BOOST_REQUIRE_EQUAL( db->get_account( "acc8" ).get_governance_vote_expiration_ts(), expected_expiration_time_2 + fc::days(1) );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "acc2" ).get_governance_vote_expiration_ts(), expected_expiration_time_2 );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "acc3" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "acc4" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "acc6" ).get_governance_vote_expiration_ts(), expected_expiration_time_2 );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "acc8" ).get_governance_vote_expiration_ts(), expected_expiration_time_2 + fc::days(1) );
     }
     generate_block();
     {
-      BOOST_REQUIRE_EQUAL( db->get_account( "acc2" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
-      BOOST_REQUIRE_EQUAL( db->get_account( "acc6" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
-      BOOST_REQUIRE_EQUAL( db->get_account( "acc8" ).get_governance_vote_expiration_ts(), expected_expiration_time_2 + fc::days(1) );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "acc2" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "acc6" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "acc8" ).get_governance_vote_expiration_ts(), expected_expiration_time_2 + fc::days(1) );
 
       const auto& proposal_votes = db->get_index<proposal_vote_index, by_voter_proposal>();
       BOOST_REQUIRE_EQUAL( proposal_votes.count("acc8"), 1 );
@@ -566,7 +567,7 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
     }
     generate_days_blocks(1, false);
     {
-      BOOST_REQUIRE_EQUAL( db->get_account( "acc8" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "acc8" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
       const auto& proposal_votes = db->get_index<proposal_vote_index, by_voter_proposal>();
       BOOST_REQUIRE(proposal_votes.empty());
     }
@@ -585,14 +586,14 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
     generate_blocks( expected_expiration_time - fc::seconds( HIVE_BLOCK_INTERVAL ) );
 
     {
-      BOOST_REQUIRE_EQUAL( db->get_account( "acc1" ).get_governance_vote_expiration_ts(), expected_expiration_time );
-      BOOST_REQUIRE_EQUAL( db->get_account( "acc2" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
-      BOOST_REQUIRE_EQUAL( db->get_account( "acc3" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
-      BOOST_REQUIRE_EQUAL( db->get_account( "acc4" ).get_governance_vote_expiration_ts(), expected_expiration_time );
-      BOOST_REQUIRE_EQUAL( db->get_account( "acc5" ).get_governance_vote_expiration_ts(), expected_expiration_time );
-      BOOST_REQUIRE_EQUAL( db->get_account( "acc6" ).get_governance_vote_expiration_ts(), expected_expiration_time );
-      BOOST_REQUIRE_EQUAL( db->get_account( "acc7" ).get_governance_vote_expiration_ts(), expected_expiration_time );
-      BOOST_REQUIRE_EQUAL( db->get_account( "acc8" ).get_governance_vote_expiration_ts(), expected_expiration_time );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "acc1" ).get_governance_vote_expiration_ts(), expected_expiration_time );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "acc2" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "acc3" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "acc4" ).get_governance_vote_expiration_ts(), expected_expiration_time );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "acc5" ).get_governance_vote_expiration_ts(), expected_expiration_time );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "acc6" ).get_governance_vote_expiration_ts(), expected_expiration_time );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "acc7" ).get_governance_vote_expiration_ts(), expected_expiration_time );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "acc8" ).get_governance_vote_expiration_ts(), expected_expiration_time );
 
       const auto& witness_votes = db->get_index<witness_vote_index, by_account_witness>();
       BOOST_REQUIRE_EQUAL( witness_votes.count("acc1"), 1 );
@@ -618,14 +619,14 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
     }
     generate_block();
     {
-      BOOST_REQUIRE_EQUAL( db->get_account( "acc1" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
-      BOOST_REQUIRE_EQUAL( db->get_account( "acc2" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
-      BOOST_REQUIRE_EQUAL( db->get_account( "acc3" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
-      BOOST_REQUIRE_EQUAL( db->get_account( "acc4" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
-      BOOST_REQUIRE_EQUAL( db->get_account( "acc5" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
-      BOOST_REQUIRE_EQUAL( db->get_account( "acc6" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
-      BOOST_REQUIRE_EQUAL( db->get_account( "acc7" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
-      BOOST_REQUIRE_EQUAL( db->get_account( "acc8" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "acc1" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "acc2" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "acc3" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "acc4" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "acc5" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "acc6" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "acc7" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "acc8" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
 
       const auto& witness_votes = db->get_index<witness_vote_index, by_account_witness>();
       BOOST_REQUIRE(witness_votes.empty());
@@ -665,10 +666,10 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
     proxy("acc1", "acc2", acc1_private_key);
 
     generate_blocks(2);
-    BOOST_REQUIRE(!db->get_account("acc3").has_proxy());
-    BOOST_REQUIRE(!db->get_account("acc4").has_proxy());
-    BOOST_REQUIRE_EQUAL( db->get_account("acc5").get_proxy(), db->get_account("acc1").get_id() );
-    BOOST_REQUIRE_EQUAL( db->get_account("acc1").get_proxy(), db->get_account("acc2").get_id() );
+    BOOST_REQUIRE(!GET_TINY("acc3").has_proxy());
+    BOOST_REQUIRE(!GET_TINY("acc4").has_proxy());
+    BOOST_REQUIRE_EQUAL( GET_TINY("acc5").get_proxy(), db->get_account("acc1").get_id() );
+    BOOST_REQUIRE_EQUAL( GET_TINY("acc1").get_proxy(), db->get_account("acc2").get_id() );
     BOOST_REQUIRE_EQUAL( db->get_account("acc1").proxied_vsf_votes_total(), GET_GOV_VOTE_POWER( db->get_account("acc5") ) );
     BOOST_REQUIRE_EQUAL( db->get_account("acc2").proxied_vsf_votes_total(), (GET_GOV_VOTE_POWER( db->get_account("acc1") ) + GET_GOV_VOTE_POWER( db->get_account("acc5") )) );
 
@@ -755,8 +756,8 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes_with_proxy )
       BOOST_REQUIRE_EQUAL( calc_total_votes( _proposal_idx, _id_proposal_01 ), get_vesting( "bobproxy" ).amount.value + get_vesting( "carol" ).amount.value );
     }
     {
-      BOOST_REQUIRE_NE( db->get_account( "alice" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
-      BOOST_REQUIRE_NE( db->get_account( "bobproxy" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_NE( GET_TINY( "alice" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_NE( GET_TINY( "bobproxy" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
     }
     {
       generate_blocks( LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS );
@@ -770,8 +771,8 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes_with_proxy )
       BOOST_REQUIRE_EQUAL( calc_total_votes( _proposal_idx, _id_proposal_01 ), get_vesting( "bobproxy" ).amount.value + get_vesting( "carol" ).amount.value );
     }
     {
-      BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
-      BOOST_REQUIRE_EQUAL( db->get_account( "bobproxy" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "alice" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+      BOOST_REQUIRE_EQUAL( GET_TINY( "bobproxy" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
     }
     {
       auto _next_block = get_nr_blocks_until_proposal_maintenance_block();
@@ -823,7 +824,7 @@ BOOST_AUTO_TEST_CASE( proposals_with_decline_voting_rights )
       tx.operations.push_back( op );
       push_transaction( tx, dwr_private_key );
       generate_block();
-      time_point_sec dwr_vote_expiration_ts = db->get_account( "dwr" ).get_governance_vote_expiration_ts();
+      time_point_sec dwr_vote_expiration_ts = GET_TINY( "dwr" ).get_governance_vote_expiration_ts();
       //it takes only 60 seconds in testnet to finish declining, but it is not finished yet
       BOOST_REQUIRE( dwr_vote_expiration_ts > HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP && dwr_vote_expiration_ts <= LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS );
     }
@@ -831,9 +832,9 @@ BOOST_AUTO_TEST_CASE( proposals_with_decline_voting_rights )
     //TODO: check balance of acc1 (0) and acc2 (50 days worth of proposal pay, maybe more if it caught one more payout before decline finalized)
 
     //at this point dwr successfully declined voting rights (long ago) - his expiration should be set in stone even if he tries to clear his (nonexisting) votes
-    BOOST_REQUIRE_EQUAL( db->get_account( "dwr" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+    BOOST_REQUIRE_EQUAL( GET_TINY( "dwr" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
     vote_proposal( "dwr", { proposal_2 }, false, dwr_private_key );
-    BOOST_REQUIRE_EQUAL( db->get_account( "dwr" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+    BOOST_REQUIRE_EQUAL( GET_TINY( "dwr" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
     //TODO: decide if finalization of decline should remove existing proposal votes (and if so add tests on number of active votes)
 
     generate_blocks( LAST_POSSIBLE_OLD_VOTE_EXPIRE_TS );
@@ -841,7 +842,7 @@ BOOST_AUTO_TEST_CASE( proposals_with_decline_voting_rights )
 
     generate_days_blocks( 25 );
     //TODO: check balance of acc1 and acc2 (no change since last time)
-    BOOST_REQUIRE_EQUAL( db->get_account( "dwr" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
+    BOOST_REQUIRE_EQUAL( GET_TINY( "dwr" ).get_governance_vote_expiration_ts(), fc::time_point_sec::maximum() );
 
     validate_database();
   }

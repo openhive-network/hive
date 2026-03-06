@@ -1158,13 +1158,15 @@ void database::adjust_proxied_witness_votes( const account_object& a,
                         const std::array< share_type, HIVE_MAX_PROXY_RECURSION_DEPTH+1 >& delta,
                         int depth )
 {
-  if( a.has_proxy() )
+  // Proxy is canonical on tiny_account_object
+  const auto* tiny = chainbase::database::find< tiny_account_object, by_name >( a.get_name() );
+  if( tiny && tiny->has_proxy() )
   {
     /// nested proxies are not supported, vote will not propagate
     if( depth >= HIVE_MAX_PROXY_RECURSION_DEPTH )
       return;
 
-    const auto& proxy = get_account( a.get_proxy() );
+    const auto& proxy = get_account( tiny->get_proxy() );
 
     modify( proxy, [&]( account_object& a )
     {
@@ -1187,13 +1189,15 @@ void database::adjust_proxied_witness_votes( const account_object& a,
 
 void database::adjust_proxied_witness_votes( const account_object& a, share_type delta, int depth )
 {
-  if( a.has_proxy() )
+  // Proxy is canonical on tiny_account_object
+  const auto* tiny = chainbase::database::find< tiny_account_object, by_name >( a.get_name() );
+  if( tiny && tiny->has_proxy() )
   {
     /// nested proxies are not supported, vote will not propagate
     if( depth >= HIVE_MAX_PROXY_RECURSION_DEPTH )
       return;
 
-    const auto& proxy = get_account( a.get_proxy() );
+    const auto& proxy = get_account( tiny->get_proxy() );
 
     modify( proxy, [&]( account_object& a )
     {
@@ -3716,7 +3720,7 @@ void database::validate_invariants()const
       total_vesting += _assets_obj.get_vesting();
       total_vesting += _assets_obj.get_vest_rewards();
       pending_vesting_hive += _assets_obj.get_vest_rewards_as_hive();
-      total_vsf_votes += ( !acc.has_proxy() ?
+      total_vsf_votes += ( !itr->has_proxy() ?
                       acc.get_governance_vote_power( _assets_obj, _delayed_votes_obj ) :
                       ( HIVE_MAX_PROXY_RECURSION_DEPTH > 0 ?
                           acc.get_proxied_vsf_votes()[HIVE_MAX_PROXY_RECURSION_DEPTH - 1] :
@@ -3788,6 +3792,7 @@ void database::remove_expired_governance_votes()
   while( acc_it != accounts.end() && acc_it->get_governance_vote_expiration_ts() <= now )
   {
     const auto& account = get_account( acc_it->get_name() );
+    const auto& account_tiny = *acc_it;
     ++acc_it;
 
     if( dhf_helper::remove_proposal_votes( account, proposal_votes, *this, obj_perf ) )
@@ -3795,13 +3800,13 @@ void database::remove_expired_governance_votes()
       nullify_proxied_witness_votes( account );
       clear_witness_votes( account );
 
-      if( account.has_proxy() )
-        push_virtual_operation( *this, proxy_cleared_operation( account.get_name(), get_account( account.get_proxy() ).get_name()) );
+      if( account_tiny.has_proxy() )
+        push_virtual_operation( *this, proxy_cleared_operation( account.get_name(), get_account( account_tiny.get_proxy() ).get_name()) );
 
-      modify( account, [&]( account_object& a )
+      static_cast<chainbase::database&>(*this).modify( account_tiny, [&]( tiny_account_object& t )
       {
-        a.clear_proxy();
-        a.set_governance_vote_expired();
+        t.clear_proxy();
+        t.set_governance_vote_expired();
       } );
       push_virtual_operation( *this, expired_account_notification_operation( account.get_name() ) );
     }

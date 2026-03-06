@@ -7,6 +7,7 @@
 #include <hive/chain/database_virtual_operations.hpp>
 #include <hive/chain/custom_operation_interpreter.hpp>
 #include <hive/chain/account_object_multiindex.hpp>
+#include <hive/chain/detail/state/tiny_account_object.hpp>
 #include <hive/chain/global_property_object_multiindex.hpp>
 #include <hive/chain/block_summary_object.hpp>
 #include <hive/chain/witness_objects_multiindex.hpp>
@@ -209,37 +210,48 @@ void account_witness_proxy_evaluator::do_apply( const account_witness_proxy_oper
 {
   const auto& account = _db.get_account( o.account );
   FC_ASSERT( account.can_vote() && "Account has declined the ability to vote and cannot proxy votes." );
-  _db.modify( account, [&]( account_object& a) { a.update_governance_vote_expiration_ts(_db.head_block_time()); });
+
+  // Proxy and governance_vote_expiration_ts are canonical on tiny_account_object
+  const auto& tiny_idx = _db.get_index< tiny_account_index, by_name >();
+  const auto& account_tiny = *tiny_idx.find( account.get_name() );
+
+  static_cast<chainbase::database&>(_db).modify( account_tiny, [&]( tiny_account_object& t )
+  {
+    t.update_governance_vote_expiration_ts( _db.head_block_time() );
+  } );
 
   _db.nullify_proxied_witness_votes( account );
 
   if( !o.is_clearing_proxy() ) {
     const auto& new_proxy = _db.get_account( o.proxy );
-    FC_ASSERT( account.get_proxy() != new_proxy.get_id(), "Proxy must change." );
+    FC_ASSERT( account_tiny.get_proxy() != new_proxy.get_id(), "Proxy must change." );
     flat_set<account_id_type> proxy_chain( { account.get_id(), new_proxy.get_id() } );
     proxy_chain.reserve( HIVE_MAX_PROXY_RECURSION_DEPTH + 1 );
 
     /// check for proxy loops and fail to update the proxy if it would create a loop
     auto cprox = &new_proxy;
-    while( cprox->has_proxy() )
+    auto cprox_tiny_it = tiny_idx.find( new_proxy.get_name() );
+    while( cprox_tiny_it != tiny_idx.end() && cprox_tiny_it->has_proxy() )
     {
-      const auto& next_proxy = _db.get_account( cprox->get_proxy() );
+      const auto& next_proxy = _db.get_account( cprox_tiny_it->get_proxy() );
       FC_ASSERT( proxy_chain.insert( next_proxy.get_id() ).second, "This proxy would create a proxy loop." );
       cprox = &next_proxy;
+      cprox_tiny_it = tiny_idx.find( next_proxy.get_name() );
       FC_ASSERT( proxy_chain.size() <= HIVE_MAX_PROXY_RECURSION_DEPTH, "Proxy chain is too long." );
     }
 
     /// clear all individual vote records
     _db.clear_witness_votes( account );
 
-    _db.modify( account, [&]( account_object& a ) {
-      if( account.has_proxy() )
-      {
-        push_virtual_operation( _db, proxy_cleared_operation( account.get_name(), _db.get_account( account.get_proxy() ).get_name() ) );
-      }
+    if( account_tiny.has_proxy() )
+    {
+      push_virtual_operation( _db, proxy_cleared_operation( account.get_name(), _db.get_account( account_tiny.get_proxy() ).get_name() ) );
+    }
 
-      a.set_proxy( new_proxy );
-    });
+    static_cast<chainbase::database&>(_db).modify( account_tiny, [&]( tiny_account_object& t )
+    {
+      t.set_proxy_by_id( new_proxy.get_id() );
+    } );
 
     /// add all new votes
     std::array<share_type, HIVE_MAX_PROXY_RECURSION_DEPTH + 1> delta;
@@ -248,13 +260,14 @@ void account_witness_proxy_evaluator::do_apply( const account_witness_proxy_oper
       delta[i+1] = account.get_proxied_vsf_votes()[i];
     _db.adjust_proxied_witness_votes( account, delta );
   } else { /// we are clearing the proxy which means we simply update the account
-    FC_ASSERT( account.has_proxy(), "Proxy must change." );
+    FC_ASSERT( account_tiny.has_proxy(), "Proxy must change." );
 
-    push_virtual_operation( _db, proxy_cleared_operation( account.get_name(), _db.get_account( account.get_proxy() ).get_name() ) );
+    push_virtual_operation( _db, proxy_cleared_operation( account.get_name(), _db.get_account( account_tiny.get_proxy() ).get_name() ) );
 
-    _db.modify( account, [&]( account_object& a ) {
-      a.clear_proxy();
-    });
+    static_cast<chainbase::database&>(_db).modify( account_tiny, [&]( tiny_account_object& t )
+    {
+      t.clear_proxy();
+    } );
   }
 }
 
@@ -262,9 +275,10 @@ void account_witness_proxy_evaluator::do_apply( const account_witness_proxy_oper
 void account_witness_vote_evaluator::do_apply( const account_witness_vote_operation& o )
 {
   const auto& voter = _db.get_account( o.account );
-  FC_ASSERT( !voter.has_proxy(), "A proxy is currently set, please clear the proxy before voting for a witness." );
+  const auto& voter_tiny = *_db.get_index< tiny_account_index, by_name >().find( voter.get_name() );
+  FC_ASSERT( !voter_tiny.has_proxy(), "A proxy is currently set, please clear the proxy before voting for a witness." );
   FC_ASSERT( voter.can_vote() && "Account has declined its voting rights." );
-  _db.modify( voter, [&]( account_object& a) { a.update_governance_vote_expiration_ts(_db.head_block_time()); });
+  static_cast<chainbase::database&>(_db).modify( voter_tiny, [&]( tiny_account_object& t ) { t.update_governance_vote_expiration_ts(_db.head_block_time()); });
 
   const auto& witness = _db.get_witness( o.witness );
 
