@@ -20,13 +20,13 @@ bool authority_verification_tracer::detect_cycle(std::string account) const
 
 authority_verification_trace::path_entry& authority_verification_tracer::get_root_entry()
 {
-  HIVE_PROTOCOL_AUTHORITY_ASSERT( not _trace.root.empty() && "get_root_entry()", "trace root is empty" );
+  HIVE_PROTOCOL_AUTHORITY_ASSERT( not _trace.root.empty() && "get_root_entry()", "trace root is empty", ("subject", _trace.root.size()) );
   return _trace.root.back();
 }
 
 const authority_verification_trace::path_entry& authority_verification_tracer::get_root_entry() const
 {
-  HIVE_PROTOCOL_AUTHORITY_ASSERT( not _trace.root.empty() && "get_root_entry() const", "trace root is empty" );
+  HIVE_PROTOCOL_AUTHORITY_ASSERT( not _trace.root.empty() && "get_root_entry() const", "trace root is empty", ("subject", _trace.root.size()) );
   return _trace.root.back();
 }
 
@@ -49,7 +49,7 @@ void authority_verification_tracer::push_parent_entry()
 
 void authority_verification_tracer::pop_parent_entry()
 {
-  HIVE_PROTOCOL_AUTHORITY_ASSERT(not _current_authority_path.empty(), "Pop parent entry on empty stack!");
+  HIVE_PROTOCOL_AUTHORITY_ASSERT(not _current_authority_path.empty(), "Pop parent entry on empty stack!", ("subject", _current_authority_path.size()));
   _current_authority_path.pop_back();
 }
 
@@ -248,7 +248,7 @@ void authority_verification_tracer::on_leaving_account_entry( unsigned int effec
 
 void authority_verification_tracer::trim_final_authority_path()
 {
-  HIVE_PROTOCOL_AUTHORITY_ASSERT(not _trace.final_authority_path.empty(), "trim on empty final authority path!");
+  HIVE_PROTOCOL_AUTHORITY_ASSERT(not _trace.final_authority_path.empty(), "trim on empty final authority path!", ("subject", _trace.final_authority_path.size()));
   _trace.final_authority_path.pop_back();
 }
 

@@ -468,7 +468,7 @@ namespace hive { namespace protocol {
     props.validate< true >();
     validate_account_name( worker_account );
     const auto winput = work_input();
-    HIVE_PROTOCOL_STRING_ASSERT( winput == work.input, "Determninistic input does not match recorded input",
+    HIVE_PROTOCOL_STRING_ASSERT( winput == work.input, "Deterministic input does not match recorded input",
       ("subject", work.input)("expected", winput)("actual", work.input)
     );
     work.validate();
