@@ -19,7 +19,7 @@ namespace hive { namespace chain {
 
     // Required by block_storage_i:
     virtual void open_and_init( const block_log_open_args& bl_open_args, bool read_only,
-                                bool write_fallback, database* lib_access ) override;
+                                bool allow_artifacts_regeneration, database* lib_access ) override;
     virtual void reopen_for_writing() override;
     virtual void close_storage() override;
     virtual void append( const full_block_ptr_t& full_block, const bool is_at_live_sync ) override;

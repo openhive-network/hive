@@ -10,7 +10,7 @@ single_block_storage::single_block_storage( appbase::application& app,
 {}
 
 void single_block_storage::open_and_init( const block_log_open_args& bl_open_args, bool read_only,
-  bool write_fallback, database* db )
+  bool allow_artifacts_regeneration, database* db )
 {
   FC_ASSERT(db);
   

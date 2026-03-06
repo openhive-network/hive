@@ -1368,19 +1368,19 @@ BOOST_AUTO_TEST_CASE( snapshot_replay_pruned_to_pruned )
 }
 
 /**
- * Tests for the write_fallback parameter added to block_log open chain.
+ * Tests for the allow_artifacts_regeneration parameter added to block_log open chain.
  * See: https://gitlab.syncad.com/hive/hive/-/issues/817
  *
- * When write_fallback=false and read_only=true, block_log should NOT attempt
+ * When allow_artifacts_regeneration=false and read_only=true, block_log should NOT attempt
  * to create missing files or auto-repair artifacts.
- * When write_fallback=true and read_only=true, the existing behavior
+ * When allow_artifacts_regeneration=true and read_only=true, the existing behavior
  * (create empty files, auto-repair artifacts) should be preserved.
  */
 
-BOOST_AUTO_TEST_CASE( write_fallback_false_rejects_nonexistent_block_log )
+BOOST_AUTO_TEST_CASE( allow_artifacts_regeneration_false_rejects_nonexistent_block_log )
 {
   try {
-    // write_fallback=false + read_only=true on a nonexistent block log
+    // allow_artifacts_regeneration=false + read_only=true on a nonexistent block log
     // should fail, not silently create the file.
     fc::temp_directory temp_dir( hive::utilities::temp_directory_path() );
     fc::path nonexistent_part = temp_dir.path() / "block_log_part.0001";
@@ -1390,11 +1390,11 @@ BOOST_AUTO_TEST_CASE( write_fallback_false_rejects_nonexistent_block_log )
     blockchain_worker_thread_pool thread_pool( app );
     block_log log( app );
 
-    // With write_fallback=false, opening a nonexistent file read-only should throw.
+    // With allow_artifacts_regeneration=false, opening a nonexistent file read-only should throw.
     BOOST_REQUIRE_THROW(
       log.open_and_init( nonexistent_part,
                          true /*read_only*/,
-                         false /*write_fallback*/,
+                         false /*allow_artifacts_regeneration*/,
                          false /*enable_compression*/,
                          15 /*compression_level*/,
                          true /*enable_block_log_auto_fixing*/,
@@ -1410,10 +1410,10 @@ BOOST_AUTO_TEST_CASE( write_fallback_false_rejects_nonexistent_block_log )
   }
 }
 
-BOOST_AUTO_TEST_CASE( write_fallback_true_creates_nonexistent_block_log )
+BOOST_AUTO_TEST_CASE( allow_artifacts_regeneration_true_creates_nonexistent_block_log )
 {
   try {
-    // write_fallback=true + read_only=true on a nonexistent block log
+    // allow_artifacts_regeneration=true + read_only=true on a nonexistent block log
     // should create the empty file (preserving existing hived behavior).
     fc::temp_directory temp_dir( hive::utilities::temp_directory_path() );
     fc::path nonexistent_part = temp_dir.path() / "block_log_part.0001";
@@ -1423,10 +1423,10 @@ BOOST_AUTO_TEST_CASE( write_fallback_true_creates_nonexistent_block_log )
     blockchain_worker_thread_pool thread_pool( app );
     block_log log( app );
 
-    // With write_fallback=true, the file should be created even in read-only mode.
+    // With allow_artifacts_regeneration=true, the file should be created even in read-only mode.
     log.open_and_init( nonexistent_part,
                        true /*read_only*/,
-                       true /*write_fallback*/,
+                       true /*allow_artifacts_regeneration*/,
                        false /*enable_compression*/,
                        15 /*compression_level*/,
                        true /*enable_block_log_auto_fixing*/,
@@ -1440,11 +1440,11 @@ BOOST_AUTO_TEST_CASE( write_fallback_true_creates_nonexistent_block_log )
   }
 }
 
-BOOST_AUTO_TEST_CASE( write_fallback_false_opens_existing_block_log_readonly )
+BOOST_AUTO_TEST_CASE( allow_artifacts_regeneration_false_opens_existing_block_log_readonly )
 {
   try {
     // First create a block log with some data, then reopen it with
-    // write_fallback=false to verify read-only access works on existing files.
+    // allow_artifacts_regeneration=false to verify read-only access works on existing files.
     fc::temp_directory temp_dir( hive::utilities::temp_directory_path() );
     fc::path log_path = temp_dir.path() / "block_log_part.0001";
 
@@ -1454,7 +1454,7 @@ BOOST_AUTO_TEST_CASE( write_fallback_false_opens_existing_block_log_readonly )
     // Create a block log with one block.
     {
       block_log log( app );
-      log.open( log_path, thread_pool, false /*read_only*/, false /*write_fallback*/ );
+      log.open( log_path, thread_pool, false /*read_only*/, false /*allow_artifacts_regeneration*/ );
 
       std::vector<std::shared_ptr<full_transaction_type>> full_txs;
       hive::protocol::signed_block_header b1;
@@ -1468,13 +1468,13 @@ BOOST_AUTO_TEST_CASE( write_fallback_false_opens_existing_block_log_readonly )
 
     BOOST_REQUIRE( fc::exists( log_path ) );
 
-    // Reopen with write_fallback=false, read_only=true — should succeed
+    // Reopen with allow_artifacts_regeneration=false, read_only=true — should succeed
     // on existing file with valid artifacts.
     {
       block_log log( app );
       log.open_and_init( log_path,
                          true /*read_only*/,
-                         false /*write_fallback*/,
+                         false /*allow_artifacts_regeneration*/,
                          false /*enable_compression*/,
                          15 /*compression_level*/,
                          true /*enable_block_log_auto_fixing*/,
@@ -1498,10 +1498,10 @@ BOOST_AUTO_TEST_CASE( write_fallback_false_opens_existing_block_log_readonly )
   }
 }
 
-BOOST_AUTO_TEST_CASE( write_fallback_parameter_passed_through_wrapper )
+BOOST_AUTO_TEST_CASE( allow_artifacts_regeneration_parameter_passed_through_wrapper )
 {
   try {
-    // Verify that write_fallback=false propagates through block_log_wrapper
+    // Verify that allow_artifacts_regeneration=false propagates through block_log_wrapper
     // to block_log, preventing file creation for nonexistent split log dirs.
     fc::temp_directory temp_dir( hive::utilities::temp_directory_path() );
     fc::path data_dir = temp_dir.path() / "empty_dir";
@@ -1514,10 +1514,10 @@ BOOST_AUTO_TEST_CASE( write_fallback_parameter_passed_through_wrapper )
     block_log_wrapper::block_log_open_args args;
     args.data_dir = data_dir;
 
-    // With write_fallback=false on an empty directory, opening should throw
+    // With allow_artifacts_regeneration=false on an empty directory, opening should throw
     // because there's no block log to read and no file creation is allowed.
     BOOST_REQUIRE_THROW(
-      wrapper->open_and_init( args, true /*read_only*/, false /*write_fallback*/, nullptr ),
+      wrapper->open_and_init( args, true /*read_only*/, false /*allow_artifacts_regeneration*/, nullptr ),
       fc::exception
     );
 
@@ -1530,13 +1530,13 @@ BOOST_AUTO_TEST_CASE( write_fallback_parameter_passed_through_wrapper )
   }
 }
 
-BOOST_AUTO_TEST_CASE( write_fallback_false_suppresses_artifacts_auto_repair )
+BOOST_AUTO_TEST_CASE( allow_artifacts_regeneration_false_suppresses_artifacts_auto_repair )
 {
   try {
     // Create a valid block log with artifacts, then delete the artifacts file.
-    // Reopening with write_fallback=false should throw, NOT silently recreate
+    // Reopening with allow_artifacts_regeneration=false should throw, NOT silently recreate
     // the artifacts. This verifies the code path at block_log_artifacts::open
-    // where ENOENT is handled differently based on write_fallback.
+    // where ENOENT is handled differently based on allow_artifacts_regeneration.
     fc::temp_directory temp_dir( hive::utilities::temp_directory_path() );
     fc::path log_path = temp_dir.path() / "block_log_part.0001";
     fc::path artifacts_path = fc::path( log_path.generic_string() + ".artifacts" );
@@ -1547,7 +1547,7 @@ BOOST_AUTO_TEST_CASE( write_fallback_false_suppresses_artifacts_auto_repair )
     // Create a block log with one block.
     {
       block_log log( app );
-      log.open( log_path, thread_pool, false /*read_only*/, false /*write_fallback*/ );
+      log.open( log_path, thread_pool, false /*read_only*/, false /*allow_artifacts_regeneration*/ );
 
       std::vector<std::shared_ptr<full_transaction_type>> full_txs;
       hive::protocol::signed_block_header b1;
@@ -1566,14 +1566,14 @@ BOOST_AUTO_TEST_CASE( write_fallback_false_suppresses_artifacts_auto_repair )
     fc::remove( artifacts_path );
     BOOST_REQUIRE( !fc::exists( artifacts_path ) );
 
-    // Reopen with write_fallback=false — should throw because artifacts are
+    // Reopen with allow_artifacts_regeneration=false — should throw because artifacts are
     // missing and auto-repair is suppressed.
     {
       block_log log( app );
       BOOST_REQUIRE_THROW(
         log.open_and_init( log_path,
                            true /*read_only*/,
-                           false /*write_fallback*/,
+                           false /*allow_artifacts_regeneration*/,
                            false /*enable_compression*/,
                            15 /*compression_level*/,
                            true /*enable_block_log_auto_fixing*/,
@@ -1590,10 +1590,10 @@ BOOST_AUTO_TEST_CASE( write_fallback_false_suppresses_artifacts_auto_repair )
   }
 }
 
-BOOST_AUTO_TEST_CASE( write_fallback_true_recreates_missing_artifacts )
+BOOST_AUTO_TEST_CASE( allow_artifacts_regeneration_true_recreates_missing_artifacts )
 {
   try {
-    // Same setup as above, but with write_fallback=true. The missing artifacts
+    // Same setup as above, but with allow_artifacts_regeneration=true. The missing artifacts
     // file should be automatically recreated (existing hived behavior).
     // Uses a single-block log to also exercise the edge case where
     // starting_block_num == target_block_num in artifact generation.
@@ -1607,7 +1607,7 @@ BOOST_AUTO_TEST_CASE( write_fallback_true_recreates_missing_artifacts )
     // Create a block log with one block.
     {
       block_log log( app );
-      log.open( log_path, thread_pool, false /*read_only*/, false /*write_fallback*/ );
+      log.open( log_path, thread_pool, false /*read_only*/, false /*allow_artifacts_regeneration*/ );
 
       std::vector<std::shared_ptr<full_transaction_type>> full_txs;
       hive::protocol::signed_block_header b1;
@@ -1626,12 +1626,12 @@ BOOST_AUTO_TEST_CASE( write_fallback_true_recreates_missing_artifacts )
     fc::remove( artifacts_path );
     BOOST_REQUIRE( !fc::exists( artifacts_path ) );
 
-    // Reopen with write_fallback=true — should succeed and recreate artifacts.
+    // Reopen with allow_artifacts_regeneration=true — should succeed and recreate artifacts.
     {
       block_log log( app );
       log.open_and_init( log_path,
                          true /*read_only*/,
-                         true /*write_fallback*/,
+                         true /*allow_artifacts_regeneration*/,
                          false /*enable_compression*/,
                          15 /*compression_level*/,
                          true /*enable_block_log_auto_fixing*/,

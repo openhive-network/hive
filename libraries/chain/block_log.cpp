@@ -198,7 +198,7 @@ namespace hive { namespace chain {
     }
   }
 
-  void block_log::open(const fc::path& file, hive::chain::blockchain_worker_thread_pool& thread_pool, bool read_only /* = false */, bool write_fallback /*= false*/, bool auto_open_artifacts /*= true*/ )
+  void block_log::open(const fc::path& file, hive::chain::blockchain_worker_thread_pool& thread_pool, bool read_only /* = false */, bool allow_artifacts_regeneration /*= false*/, bool auto_open_artifacts /*= true*/ )
   {
       FC_ASSERT(!fc::is_directory(file), "${file} should point to block_log file, not directory", (file));
       close();
@@ -218,7 +218,7 @@ namespace hive { namespace chain {
       if (read_only)
       {
         flags = O_RDONLY | O_CLOEXEC;
-        if(not file_existed && write_fallback)
+        if(not file_existed && allow_artifacts_regeneration)
         {
           int temp_flags = flags | O_CREAT;
           int temp_fd = ::open(file_str.c_str(), temp_flags, 0644);
@@ -289,7 +289,7 @@ namespace hive { namespace chain {
       }
 
       if (auto_open_artifacts)
-          my->_artifacts = block_log_artifacts::open(file, *this, read_only, write_fallback, 
+          my->_artifacts = block_log_artifacts::open(file, *this, read_only, allow_artifacts_regeneration,
                                                      false /*full_match_verification*/,
                                                      not file_existed /*log_file_created*/,
                                                      theApp, thread_pool);
@@ -657,12 +657,12 @@ namespace hive { namespace chain {
     return my->head;
   }
 
-  void block_log::open_and_init( const fc::path& file, bool read_only, bool write_fallback,
+  void block_log::open_and_init( const fc::path& file, bool read_only, bool allow_artifacts_regeneration,
     bool enable_compression, int compression_level, bool enable_block_log_auto_fixing,
     hive::chain::blockchain_worker_thread_pool& thread_pool )
   {
     my->auto_fixing_enabled = enable_block_log_auto_fixing;
-    open( file, thread_pool, read_only, write_fallback );
+    open( file, thread_pool, read_only, allow_artifacts_regeneration );
     my->compression_enabled = enable_compression;
     my->zstd_level = compression_level;
   }

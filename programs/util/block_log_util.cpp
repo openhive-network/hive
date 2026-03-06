@@ -127,18 +127,18 @@ bool artifacts_file_is_not_valid(const fc::path& block_log_file_path, const bool
   return false;
 }
 
-hive::chain::block_log_wrapper::block_log_wrapper_t get_block_log_wrapper(const fc::path &block_log_path, appbase::application &app, hive::chain::blockchain_worker_thread_pool &thread_pool, bool read_only, bool write_fallback)
+hive::chain::block_log_wrapper::block_log_wrapper_t get_block_log_wrapper(const fc::path &block_log_path, appbase::application &app, hive::chain::blockchain_worker_thread_pool &thread_pool, bool read_only, bool allow_artifacts_regeneration)
 {
   if (fc::is_directory(block_log_path))
   {
     auto wrapper = hive::chain::block_log_wrapper::create_limited_wrapper(block_log_path, app, thread_pool);
     hive::chain::block_log_wrapper::block_log_open_args args;
     args.data_dir = block_log_path;
-    wrapper->open_and_init(args, read_only, write_fallback, nullptr);
+    wrapper->open_and_init(args, read_only, allow_artifacts_regeneration, nullptr);
     return wrapper;
   }
   else
-    return hive::chain::block_log_wrapper::create_opened_wrapper(block_log_path, app, thread_pool, read_only, write_fallback);
+    return hive::chain::block_log_wrapper::create_opened_wrapper(block_log_path, app, thread_pool, read_only, allow_artifacts_regeneration);
 }
 
 void print_simple_error_or_result_message(const std::string& message, const fc::path &block_log_path, const bool json_output, const bool is_error)
@@ -483,7 +483,7 @@ ExitCode compare_block_logs(const fc::path &first_bl_path, const fc::path &secon
   try
   {
     // open both block log files
-    auto first_block_log_wrapper = get_block_log_wrapper(first_bl_path, app, thread_pool, true/*read_only*/, false/*write_fallback*/);
+    auto first_block_log_wrapper = get_block_log_wrapper(first_bl_path, app, thread_pool, true/*read_only*/, false/*allow_artifacts_regeneration*/);
     const uint32_t first_head_block_num = first_block_log_wrapper->head_block_num();
     if (!first_head_block_num)
     {
@@ -494,7 +494,7 @@ ExitCode compare_block_logs(const fc::path &first_bl_path, const fc::path &secon
     const uint32_t first_tail_block_num = first_block_log_wrapper->get_actual_tail_block_num();
     const auto [first_log_first_block_num, first_log_last_block_num] = get_effective_range_of_blocks(first_block_arg, last_block_arg, first_head_block_num, first_tail_block_num);
 
-    auto second_block_log_wrapper = get_block_log_wrapper(second_bl_path, app, thread_pool, true/*read_only*/, false/*write_fallback*/);
+    auto second_block_log_wrapper = get_block_log_wrapper(second_bl_path, app, thread_pool, true/*read_only*/, false/*allow_artifacts_regeneration*/);
     const uint32_t second_head_block_num = second_block_log_wrapper->head_block_num();
 
     if (!second_head_block_num)
@@ -897,7 +897,7 @@ ExitCode get_head_block_number(const fc::path &block_log_path, appbase::applicat
 {
   try
   {
-    auto block_log_wrapper = get_block_log_wrapper(block_log_path, app, thread_pool, true/*read_only*/, false/*write_fallback*/);
+    auto block_log_wrapper = get_block_log_wrapper(block_log_path, app, thread_pool, true/*read_only*/, false/*allow_artifacts_regeneration*/);
     const uint32_t head_block_num = block_log_wrapper->head_block_num();
     ilog("${block_log_filename} head block number: ${head_block_num}", (block_log_path)(head_block_num));
     if (json_output)
@@ -919,7 +919,7 @@ ExitCode get_block_ids(const fc::path &block_log_path, const int32_t first_block
 {
   try
   {
-    auto block_log_wrapper = get_block_log_wrapper(block_log_path, app, thread_pool, true/*read_only*/, false/*write_fallback*/);
+    auto block_log_wrapper = get_block_log_wrapper(block_log_path, app, thread_pool, true/*read_only*/, false/*allow_artifacts_regeneration*/);
     const uint32_t head_block_num = block_log_wrapper->head_block_num();
     if (!head_block_num)
     {
@@ -984,7 +984,7 @@ ExitCode get_block_range(const fc::path &block_log_path, const int32_t first_blo
 
   try
   {
-    auto block_log_wrapper = get_block_log_wrapper(block_log_path, app, thread_pool, true/*read_only*/, false/*write_fallback*/);
+    auto block_log_wrapper = get_block_log_wrapper(block_log_path, app, thread_pool, true/*read_only*/, false/*allow_artifacts_regeneration*/);
     const uint32_t head_block_num = block_log_wrapper->head_block_num();
     if (!head_block_num)
     {
@@ -1132,7 +1132,7 @@ ExitCode get_block_artifacts(const fc::path &block_log_path, const int32_t first
 
     hive::chain::block_log_artifacts::block_log_artifacts_ptr_t artifacts =
       hive::chain::block_log_artifacts::block_log_artifacts::open(block_log_path, block_log,
-        true /*read_only*/, false /*write_fallback*/, full_match_verification,
+        true /*read_only*/, false /*allow_artifacts_regeneration*/, full_match_verification,
         not block_log_existed /*new_block_log_created*/, app, thread_pool);
 
     if (full_match_verification)
@@ -1168,7 +1168,7 @@ ExitCode generate_artifacts(const fc::path &block_log_path, appbase::application
 {
   try
   {
-    auto block_log_reader = get_block_log_wrapper(block_log_path, app, thread_pool, false/*read_only*/, true/*write_fallback*/);
+    auto block_log_reader = get_block_log_wrapper(block_log_path, app, thread_pool, false/*read_only*/, true/*allow_artifacts_regeneration*/);
     block_log_reader->close_storage();
     if (json_output)
       print_simple_error_or_result_message("Opened and closed block log file. Artifacts were generated if needed", block_log_path, json_output, false);
@@ -1306,7 +1306,7 @@ ExitCode merge_block_logs(const fc::path &input_block_log_dir, const fc::path &o
     const auto block_log_reader = hive::chain::block_log_wrapper::create_limited_wrapper(input_block_log_dir, app, thread_pool);
     hive::chain::block_log_wrapper::block_log_open_args args;
     args.data_dir = input_block_log_dir;
-    block_log_reader->open_and_init(args, true/*read_only*/, false/*write_fallback*/, nullptr);
+    block_log_reader->open_and_init(args, true/*read_only*/, false/*allow_artifacts_regeneration*/, nullptr);
     const uint32_t head_block_num = block_log_reader->head_block_num();
     if (head_block_num == 0)
     {
@@ -1707,7 +1707,7 @@ int main(int argc, char **argv)
           const auto block_log_reader = hive::chain::block_log_wrapper::create_limited_wrapper(block_log_path, se.the_app, se.thread_pool);
           hive::chain::block_log_wrapper::block_log_open_args args;
           args.data_dir = block_log_path;
-          block_log_reader->open_and_init(args, true/*read_only*/, false/*write_fallback*/, nullptr);
+          block_log_reader->open_and_init(args, true/*read_only*/, false/*allow_artifacts_regeneration*/, nullptr);
           head_block_num = block_log_reader->head_block_num();
         }
         else

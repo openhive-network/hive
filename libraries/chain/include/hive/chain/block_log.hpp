@@ -106,10 +106,15 @@ namespace hive { namespace chain {
       block_log( appbase::application& app );
       ~block_log();
 
-      void open( const fc::path& file, hive::chain::blockchain_worker_thread_pool& thread_pool, bool read_only = false, bool write_fallback = false, bool auto_open_artifacts = true );
+      /** Opens the block log file.
+       *  @param allow_artifacts_regeneration - when true and read_only is also true, allows creating
+       *    missing block_log file and auto-regenerating artifacts instead of throwing on errors.
+       *    Ignored when read_only is false (write mode always handles creation/repair).
+       */
+      void open( const fc::path& file, hive::chain::blockchain_worker_thread_pool& thread_pool, bool read_only = false, bool allow_artifacts_regeneration = false, bool auto_open_artifacts = true );
       void open_and_init( const fc::path& file,
                           bool read_only,
-                          bool write_fallback,
+                          bool allow_artifacts_regeneration,
                           bool enable_compression,
                           int compression_level,
                           bool enable_block_log_auto_fixing,

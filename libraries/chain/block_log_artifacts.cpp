@@ -181,7 +181,7 @@ public:
   impl( appbase::application& app );
 
   void open(const fc::path& block_log_file_path, const block_log& source_block_provider,
-            const bool read_only, const bool write_fallback, const bool full_match_verification,
+            const bool read_only, const bool allow_artifacts_regeneration, const bool full_match_verification,
             const bool new_block_log_created,
             hive::chain::blockchain_worker_thread_pool& thread_pool);
 
@@ -322,7 +322,7 @@ block_log_artifacts::impl::impl( appbase::application& app ): theApp( app )
 }
 
 void block_log_artifacts::impl::open(const fc::path& block_log_file_path,
-  const block_log& source_block_provider, const bool read_only, const bool write_fallback,
+  const block_log& source_block_provider, const bool read_only, const bool allow_artifacts_regeneration,
   const bool full_match_verification, const bool new_block_log_created,
   hive::chain::blockchain_worker_thread_pool& thread_pool)
 {
@@ -350,12 +350,12 @@ void block_log_artifacts::impl::open(const fc::path& block_log_file_path,
       if (close_fd)
         close();
       open(block_log_file_path, source_block_provider, false /*read_only*/,
-           false /*write_fallback*/, full_match_verification, new_block_log_created, thread_pool);
+           false /*allow_artifacts_regeneration*/, full_match_verification, new_block_log_created, thread_pool);
     };
 
     if (_storage_fd == -1)
     {
-      if (errno == ENOENT && write_fallback)
+      if (errno == ENOENT && allow_artifacts_regeneration)
       {
         // To avoid confusion warn about missing artifacts only when block log existed earlier.
         open_writeable_fallback(false/*close_fd*/, 
@@ -383,7 +383,7 @@ void block_log_artifacts::impl::open(const fc::path& block_log_file_path,
     
     if (!load_header())
     {
-      if (write_fallback)
+      if (allow_artifacts_regeneration)
       {
         open_writeable_fallback(true/*close_fd*/, "Cannot load header of artifacts file: ${_artifact_file_name}. Trying to overwrite...");
         return;
@@ -394,7 +394,7 @@ void block_log_artifacts::impl::open(const fc::path& block_log_file_path,
 
     if (block_log_head_block_num != _header.head_block_num)
     {
-      if (write_fallback)
+      if (allow_artifacts_regeneration)
       {
         open_writeable_fallback(true/*close_fd*/, "Head block num mismatch between block_log and artifacts file: ${_artifact_file_name}. Trying to overwrite...");
         return;
@@ -405,7 +405,7 @@ void block_log_artifacts::impl::open(const fc::path& block_log_file_path,
 
     if (_header.generating_interrupted_at_block)
     {
-      if (write_fallback)
+      if (allow_artifacts_regeneration)
       {
         open_writeable_fallback(true/*close_fd*/, "Artifacts file generating process was not finished. Trying to overwrite...");
         return;
@@ -997,13 +997,13 @@ block_log_artifacts::~block_log_artifacts()
 
 block_log_artifacts::block_log_artifacts_ptr_t block_log_artifacts::open(
   const fc::path& block_log_file_path, const block_log& source_block_provider,
-  const bool read_only, const bool write_fallback, const bool full_match_verification,
+  const bool read_only, const bool allow_artifacts_regeneration, const bool full_match_verification,
   const bool new_block_log_created, appbase::application& app,
   hive::chain::blockchain_worker_thread_pool& thread_pool)
 {
   block_log_artifacts_ptr_t block_artifacts(new block_log_artifacts( app ));
   block_artifacts->_impl->open(block_log_file_path, source_block_provider, read_only,
-                               write_fallback, full_match_verification, new_block_log_created,
+                               allow_artifacts_regeneration, full_match_verification, new_block_log_created,
                                thread_pool );
   return block_artifacts;
 }
