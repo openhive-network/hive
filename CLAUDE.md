@@ -21,7 +21,6 @@ All contributions must follow the established workflow rules. Claude Code sessio
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Contribution guidelines (bug reports, enhancements, PR process) | **Yes** |
 
 **Key requirements:**
-- Always create MRs as **Draft** until maintainer approval
 - Build and test locally **before pushing** changes
 - Monitor pipeline after push; fix failures promptly
 - Keep commits atomic; use fixup commits for review feedback
