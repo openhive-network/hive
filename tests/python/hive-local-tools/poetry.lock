@@ -571,17 +571,17 @@ hyperframe = ">=6.1,<7"
 
 [[package]]
 name = "hiveio-api"
-version = "1.28.6rc8.post20260227150305"
+version = "1.28.6rc10.post20260306095536"
 description = "Hive JSON-RPC API client package with lazy-loaded submodules for all Hive APIs"
 optional = false
 python-versions = ">=3.12,<4"
 groups = ["main"]
 files = [
-    {file = "hiveio_api-1.28.6rc8.post20260227150305-py3-none-any.whl", hash = "sha256:c4e26a4e2b0b3f7ee9f816e48a62466e5f8b0e6fb3209edb6d41b3ef72f14c17"},
+    {file = "hiveio_api-1.28.6rc10.post20260306095536-py3-none-any.whl", hash = "sha256:44514f3968ccf21819433e8ac0bf34cb873712e638b154802e143bcaca7312a6"},
 ]
 
 [package.dependencies]
-hiveio-beekeepy = ">=1.28.6,<2.0.0"
+hiveio-beekeepy = ">=1.28.6-post.0,<2.0.0"
 
 [package.source]
 type = "legacy"
@@ -633,20 +633,20 @@ reference = "gitlab-hive"
 
 [[package]]
 name = "hiveio-test-tools"
-version = "2.0.2.post20260307075758"
+version = "2.0.2.post20260310145050"
 description = "Tools for testing hive software"
 optional = false
 python-versions = ">=3.12,<4"
 groups = ["main"]
 files = [
-    {file = "hiveio_test_tools-2.0.2.post20260307075758-py3-none-any.whl", hash = "sha256:77205437daaec958d7999d2cfee16267877405eb9c4c290d7a4a1487dd1c6f21"},
+    {file = "hiveio_test_tools-2.0.2.post20260310145050-py3-none-any.whl", hash = "sha256:ae88382d39885d92f1554d455959a2be6436181fce3ea73aef10d3ff7cc29c74"},
 ]
 
 [package.dependencies]
 abstractcp = ">=1.0.0,<2.0.0"
 hiveio-beekeepy = ">=1.28.6-post.0,<2.0.0"
 hiveio-schemas = ">=1.28.2-post.0,<2.0.0"
-hiveio-wax = ">=0.0.0"
+hiveio-wax = "2.0.2.post20260310145050"
 loguru = ">=0.7.2,<0.8.0"
 msgspec = ">=0.20.0,<0.21.0"
 python-dateutil = ">=2.8.2,<3.0.0"
@@ -658,18 +658,18 @@ reference = "gitlab-hive"
 
 [[package]]
 name = "hiveio-wax"
-version = "2.0.2.post20260307075758"
+version = "2.0.2.post20260310145050"
 description = ""
 optional = false
 python-versions = ">=3.12,<4"
 groups = ["main"]
 files = [
-    {file = "hiveio_wax-2.0.2.post20260307075758-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:badff9cd3f70a8694ea4154c5ec6d3482ff68b6868c8080e62c1d91e6f8e715f"},
-    {file = "hiveio_wax-2.0.2.post20260307075758-cp314-cp314-manylinux_2_28_x86_64.whl", hash = "sha256:2693a281cee937fd7710e51661b86039a097997dc9e137474d0dadabfe3fe4d6"},
+    {file = "hiveio_wax-2.0.2.post20260310145050-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:ebff63dd4a554efddaef2a4232ba64524d00258d5fe662ac71064d3435756a78"},
+    {file = "hiveio_wax-2.0.2.post20260310145050-cp314-cp314-manylinux_2_28_x86_64.whl", hash = "sha256:ad1877288ad4de56268b8c421d5f77eb414756747ea7577d00da2e2a80618241"},
 ]
 
 [package.dependencies]
-hiveio-api = "1.28.6rc8.post20260227150305"
+hiveio-api = "1.28.6rc10.post20260306095536"
 httpx = {version = ">=0.28.0,<0.29.0", extras = ["http2"]}
 loguru = ">=0.7.2,<0.8.0"
 protobuf = ">=6.33.0,<7.0.0"
@@ -1914,20 +1914,6 @@ test = ["build[virtualenv] (>=1.0.3)", "filelock (>=3.4.0)", "ini2toml[lite] (>=
 type = ["importlib_metadata (>=7.0.2) ; python_version < \"3.10\"", "jaraco.develop (>=7.21) ; sys_platform != \"cygwin\"", "mypy (==1.14.*)", "pytest-mypy"]
 
 [[package]]
-name = "shared-tools"
-version = "0.0.0"
-description = "Tools shared by tests in hive projects"
-optional = false
-python-versions = ">=3.14,<4"
-groups = ["main"]
-files = []
-develop = true
-
-[package.source]
-type = "directory"
-url = "shared-tools"
-
-[[package]]
 name = "simpleeval"
 version = "1.0.3"
 description = "A simple, safe single expression evaluator library."
@@ -2281,4 +2267,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.14,<4"
-content-hash = "aa67b3d76d1b59a86c900ade394102fcb0b17a019f70c4b27872441a23ca6ffd"
+content-hash = "695ec3692f00f69bfb0a5b8be3996b8e0a7ec1ead5d7c0fd9de878e2c5f6cfc6"
