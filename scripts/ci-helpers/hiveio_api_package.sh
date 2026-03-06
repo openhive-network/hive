@@ -219,7 +219,7 @@ get_package_version() {
     cd "${GENERATED_PACKAGE_DIR}"
     # Workaround: installs plugins from [tool.poetry.requires-plugins] without installing project dependencies.
     # See: https://github.com/python-poetry/poetry/issues/9990#issuecomment-2737176168
-    poetry install --dry-run
+    poetry install --dry-run >&2
     poetry version -s
 }
 
