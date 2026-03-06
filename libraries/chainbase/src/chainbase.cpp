@@ -7,6 +7,11 @@
 
 #include <filesystem>
 
+#ifdef __linux__
+#include <fcntl.h>
+#include <unistd.h>
+#endif
+
 namespace chainbase {
 
 size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache_max_size() const
@@ -224,6 +229,21 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
 
         _file_size = shared_file_size;
       }
+
+#ifdef __linux__
+      // Evict any stale pages from the Linux page cache before mmap.
+      // After a ZFS/LVM snapshot rollback, the page cache may still contain
+      // pre-rollback data. Without this, mmap can return stale pages instead
+      // of reading the rolled-back data from disk.
+      {
+        int fd = ::open( abs_path.generic_string().c_str(), O_RDONLY );
+        if( fd >= 0 )
+        {
+          posix_fadvise( fd, 0, 0, POSIX_FADV_DONTNEED );
+          ::close( fd );
+        }
+      }
+#endif
 
       _segment.reset( new bip::managed_mapped_file( bip::open_only,
                                       abs_path.generic_string().c_str()
