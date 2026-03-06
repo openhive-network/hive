@@ -153,12 +153,12 @@ set<public_key_type> signed_transaction::get_required_signatures(
     {
       HIVE_PROTOCOL_AUTHORITY_ASSERT(
         !required_owner.size(), 
-        "No owner authorities are allowed if posting authority is required since HF28", 
+        "No owner authorities are allowed if posting authority is required before HF28", 
         ("subject", required_owner)("trx", *this) 
       );
       HIVE_PROTOCOL_AUTHORITY_ASSERT(
         !required_active.size(), 
-        "No active authorities are allowed if posting authority is required since HF28", 
+        "No active authorities are allowed if posting authority is required before HF28", 
         ("subject", required_active)("trx", *this) 
       );
     }
