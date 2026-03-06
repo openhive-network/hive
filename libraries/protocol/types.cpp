@@ -14,7 +14,7 @@ namespace hive { namespace protocol {
   void validate_hash_of_unpacked_key( const fc::ripemd160& hash, const KeyType& bin_key, const std::string& base58str )
   {
     HIVE_PROTOCOL_NUMBER_ASSERT( hash._hash[0] == bin_key.check,
-               "First character in hash does not match bin_key.check. '${subject}' != '${expected}'",
+               "First element in hash does not match bin_key.check. '${subject}' != '${expected}'",
                ("subject", hash._hash[0])("hash", hash)
                ("expected", bin_key.check)("base58str", base58str)
               );
