@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import ast
-import shutil
 from pathlib import Path
 from typing import Any
 from jinja2 import Environment, FileSystemLoader
@@ -97,8 +96,6 @@ def create_api_directory_structure(
     project_directory.mkdir(exist_ok=True)
     package_directory.mkdir(exist_ok=True)
     api_subpackage_path.mkdir(exist_ok=True)
-
-    shutil.copy(template_directory / "py.typed", api_subpackage_path)
 
 
 def render_package_templates(
