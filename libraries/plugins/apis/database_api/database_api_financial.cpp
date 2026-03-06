@@ -708,8 +708,8 @@ DEFINE_API_IMPL( database_api_impl, get_order_book )
     cur.order_price = itr->sell_price;
     cur.real_price  = 0.0;
     // cur.real_price  = (cur.order_price).to_real();
-    cur.hbd = itr->for_sale;
-    cur.hive = ( asset( itr->for_sale, HBD_SYMBOL ) * cur.order_price ).amount;
+    cur.hbd = itr->for_sale.amount;
+    cur.hive = ( itr->for_sale * cur.order_price ).amount;
     cur.created = itr->created;
     result.bids.emplace_back( std::move( cur ) );
     ++sell_itr;
@@ -721,8 +721,8 @@ DEFINE_API_IMPL( database_api_impl, get_order_book )
     cur.order_price = itr->sell_price;
     cur.real_price = 0.0;
     // cur.real_price  = (~cur.order_price).to_real();
-    cur.hive    = itr->for_sale;
-    cur.hbd     = ( asset( itr->for_sale, HIVE_SYMBOL ) * cur.order_price ).amount;
+    cur.hive    = itr->for_sale.amount;
+    cur.hbd     = ( itr->for_sale * cur.order_price ).amount;
     cur.created = itr->created;
     result.asks.emplace_back( std::move( cur ) );
     ++buy_itr;

@@ -253,7 +253,7 @@ int database::match( const limit_order_object& new_order, const limit_order_obje
   HIVE_ASSERT( new_order.sell_price.base.symbol  == old_order.sell_price.quote.symbol,
     order_match_exception, "error matching orders: ${new_order} ${old_order} ${match_price}",
     ("new_order", new_order)("old_order", old_order)("match_price", match_price) );
-  HIVE_ASSERT( new_order.for_sale > 0 && old_order.for_sale > 0,
+  HIVE_ASSERT( new_order.for_sale.amount > 0 && old_order.for_sale.amount > 0,
     order_match_exception, "error matching orders: ${new_order} ${old_order} ${match_price}",
     ("new_order", new_order)("old_order", old_order)("match_price", match_price) );
   HIVE_ASSERT( match_price.quote.symbol == new_order.sell_price.base.symbol,
@@ -346,7 +346,7 @@ bool database::fill_order( const limit_order_object& order, const asset& pays, c
 
       modify( order, [&]( limit_order_object& b )
       {
-        b.for_sale -= pays.amount;
+        b.for_sale -= pays;
       } );
       /**
         *  There are times when the AMOUNT_FOR_SALE * SALE_PRICE == 0 which means that we
@@ -394,11 +394,11 @@ void database::get_limit_order_totals( HIVE_asset& total_hive, HBD_asset& total_
 
   for( auto itr = limit_order_idx.begin(); itr != limit_order_idx.end(); ++itr )
   {
-    if( itr->sell_price.base.symbol == HIVE_SYMBOL )
+    if( itr->for_sale.symbol == HIVE_SYMBOL )
     {
       total_hive += HIVE_asset( itr->for_sale );
     }
-    else if ( itr->sell_price.base.symbol == HBD_SYMBOL )
+    else if ( itr->for_sale.symbol == HBD_SYMBOL )
     {
       total_hbd += HBD_asset( itr->for_sale );
     }
