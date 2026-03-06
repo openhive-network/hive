@@ -192,6 +192,12 @@ generate_package() {
     fi
 
     if [[ -n "${OPT_APIS}" ]]; then
+        for api in ${OPT_APIS}; do
+            if [[ ! "${api}" =~ ^[a-z_][a-z0-9_]*$ ]]; then
+                log_error "Invalid API name: '${api}' (must match [a-z_][a-z0-9_]*)"
+                exit 1
+            fi
+        done
         # shellcheck disable=SC2086
         "${API_GENERATION_DIR}/generate_api_packages.sh" ${OPT_APIS}
     else
@@ -199,8 +205,10 @@ generate_package() {
     fi
 
     if [[ -n "${OPT_FLATTEN_OPENAPI}" ]]; then
-        log_info "Cleaning up flattened OpenAPI file..."
+        log_info "Cleaning up flattened OpenAPI artifacts..."
         rm -f "${apis_dir}/documentation/openapi_flattened.json"
+        rm -rf "${API_GENERATION_DIR}/node_modules"
+        rm -f "${API_GENERATION_DIR}/package.json" "${API_GENERATION_DIR}/package-lock.json"
     fi
 
     log_success "Package generated successfully"
@@ -402,6 +410,11 @@ build_test_and_deploy() {
 
 main() {
     parse_args "$@"
+
+    if [[ ! "${OPT_ENV_VAR_NAME}" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
+        log_error "Invalid --env-var-name: '${OPT_ENV_VAR_NAME}' (must be a valid shell variable name)"
+        exit 1
+    fi
 
     log_info "=========================================="
     log_info "hiveio-api package build"
