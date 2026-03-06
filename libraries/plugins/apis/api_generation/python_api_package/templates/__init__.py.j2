@@ -12,8 +12,8 @@ __all__ = [
 {% endfor %}]
 
 if TYPE_CHECKING:
-    from hiveio_api.{{ api_name_snake_case }}.{{ api_name_snake_case }}_client import {{ api_name_pascal_case }}
-    from hiveio_api.{{ api_name_snake_case }}.{{ api_name_snake_case }}_description import (
+    from hiveio_api.apis.{{ api_name_snake_case }}.{{ api_name_snake_case }}_client import {{ api_name_pascal_case }}
+    from hiveio_api.apis.{{ api_name_snake_case }}.{{ api_name_snake_case }}_description import (
 {% for symbol in description_symbols %}        {{ symbol }},
 {% endfor %}    )
 
@@ -21,10 +21,10 @@ __getattr__ = lazy_module_factory(
     globals(),
     *aggregate_same_import(
         "{{ api_name_pascal_case }}",
-        module="hiveio_api.{{ api_name_snake_case }}.{{ api_name_snake_case }}_client",
+        module="hiveio_api.apis.{{ api_name_snake_case }}.{{ api_name_snake_case }}_client",
     ),
     *aggregate_same_import(
 {% for symbol in description_symbols %}        "{{ symbol }}",
-{% endfor %}        module="hiveio_api.{{ api_name_snake_case }}.{{ api_name_snake_case }}_description",
+{% endfor %}        module="hiveio_api.apis.{{ api_name_snake_case }}.{{ api_name_snake_case }}_description",
     ),
 )
