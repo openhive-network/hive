@@ -312,7 +312,11 @@ void rocksdb_storage_provider::load_lib()
 
   uint32_t lib = lib_slice_t::unpackSlice( _value );
 
-  FC_ASSERT( lib == _cached_irreversible_block, "Inconsistency in last irreversible block - expected ${c}, stored ${s}",
+  FC_ASSERT( lib == _cached_irreversible_block,
+    "Inconsistency in last irreversible block - expected ${c} (from shared_memory), stored ${s} (from RocksDB). "
+    "If this occurs after a ZFS/LVM snapshot rollback, it may be caused by stale data in the Linux page cache. "
+    "Try: echo 3 > /proc/sys/vm/drop_caches, then restart. "
+    "Or use the rollback_zfs_datasets.sh script which handles cache invalidation automatically.",
     ( "c", static_cast< uint32_t >( _cached_irreversible_block ) )( "s", lib ) );
 
   ilog( "`${name}` RocksDB database LIB loaded with value ${l}.", ("name", name)( "l", lib ) );
