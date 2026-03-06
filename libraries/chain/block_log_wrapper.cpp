@@ -9,7 +9,7 @@ namespace hive { namespace chain {
 
 /*static*/ std::shared_ptr< block_log_wrapper > block_log_wrapper::create_opened_wrapper(
   const fc::path& the_path, appbase::application& app,
-  blockchain_worker_thread_pool& thread_pool, bool read_only, bool allow_artifacts_regeneration /*= true*/ )
+  blockchain_worker_thread_pool& thread_pool, bool read_only, bool allow_artifacts_regeneration /*= false*/ )
 {
   FC_ASSERT( not fc::exists( the_path ) || fc::is_regular_file( the_path ),
     "Path ${p} does NOT point to regular file.", ("p", the_path) );

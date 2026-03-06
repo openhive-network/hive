@@ -25,8 +25,9 @@ void split_block_log( fc::path monolith_path, uint32_t head_block_number, size_t
     "${monolith_path} is not legacy monolithic block log file.", (monolith_path) );
 
   ilog( "Opening legacy monolithic block log as source." );
-  auto mono_log = block_log_wrapper::create_opened_wrapper( monolith_path, app, thread_pool, 
-                                                            true /*read_only*/ );
+  auto mono_log = block_log_wrapper::create_opened_wrapper( monolith_path, app, thread_pool,
+                                                            true /*read_only*/,
+                                                            true /*allow_artifacts_regeneration*/ );
   uint32_t source_head_block_num = mono_log->head_block_num();
   idump((source_head_block_num));
 

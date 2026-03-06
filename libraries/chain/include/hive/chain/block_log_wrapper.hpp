@@ -19,9 +19,12 @@ namespace hive { namespace chain {
 
     /// Accepts path to any split part file or legacy single file (no pruned logs accepted).
     /// For part 1, opens all parts from part 1 onward. For non-first parts, opens just the single file.
+    /// @param allow_artifacts_regeneration - when true and read_only is also true, allows
+    ///   auto-regenerating missing/corrupt artifacts instead of throwing. Defaults to false
+    ///   (strict mode) — callers that need auto-repair (e.g. hived startup) must pass true explicitly.
     static block_log_wrapper_t create_opened_wrapper( const fc::path& the_path,
       appbase::application& app, blockchain_worker_thread_pool& thread_pool,
-      bool read_only, bool allow_artifacts_regeneration = true );
+      bool read_only, bool allow_artifacts_regeneration = false );
     static block_log_wrapper_t create_limited_wrapper( const fc::path& dir,
       appbase::application& app, blockchain_worker_thread_pool& thread_pool,
       uint32_t start_from_part = 1 );
