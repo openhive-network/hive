@@ -21,6 +21,9 @@
 #   --skip-registry-check         Skip checking if package exists in registry (always build)
 #   --skip-deploy                 Skip deployment to GitLab PyPI registry
 #   --skip-tests                  Skip running tests (example verification)
+#   --apis=<list>                 Space-separated list of APIs to generate (default: all)
+#   --flatten-openapi             Flatten OpenAPI definitions before generation
+#   --env-var-name=<name>         Environment variable name in build_wheel.env (default: WHEEL_BUILD_VERSION)
 #   --help                        Show this help message
 #
 # Environment variables (GitLab CI):
@@ -64,6 +67,9 @@ PACKAGE_REGISTRY_PROJECT_ID=""
 OPT_SKIP_DEPLOY=""
 OPT_SKIP_TESTS=""
 OPT_SKIP_REGISTRY_CHECK=""
+OPT_APIS=""
+OPT_FLATTEN_OPENAPI=""
+OPT_ENV_VAR_NAME="WHEEL_BUILD_VERSION"
 
 # ==============================================================================
 # Logging
@@ -80,7 +86,7 @@ log_error()   { echo -e "${TXT_RED}$*${TXT_CLEAR}"; }
 
 # Prints usage information extracted from script header comments.
 show_help() {
-    head -50 "$0" | grep -E '^#' | sed 's/^# \?//'
+    head -53 "$0" | grep -E '^#' | sed 's/^# \?//'
     exit 0
 }
 
@@ -102,6 +108,12 @@ parse_args() {
                 OPT_SKIP_TESTS="true"; shift ;;
             --skip-registry-check)
                 OPT_SKIP_REGISTRY_CHECK="true"; shift ;;
+            --apis=*)
+                OPT_APIS="${1#*=}"; shift ;;
+            --flatten-openapi)
+                OPT_FLATTEN_OPENAPI="true"; shift ;;
+            --env-var-name=*)
+                OPT_ENV_VAR_NAME="${1#*=}"; shift ;;
             --help|-h)
                 show_help ;;
             *)
@@ -169,7 +181,28 @@ generate_package() {
     log_info "Generating hiveio_api API subpackages..."
     cd "${API_GENERATION_DIR}"
     poetry -C "${GENERATOR_PYPROJECT_DIR}" install
-    "${API_GENERATION_DIR}/generate_api_packages.sh"
+
+    local apis_dir
+    apis_dir="$(dirname "${API_GENERATION_DIR}")"
+
+    if [[ -n "${OPT_FLATTEN_OPENAPI}" ]]; then
+        log_info "Flattening OpenAPI definitions..."
+        npm --prefix "${API_GENERATION_DIR}" install @apidevtools/json-schema-ref-parser@14.2.1 json-schema-merge-allof@0.8.1
+        node "${API_GENERATION_DIR}/flatten_swagger.js" "${apis_dir}/documentation/openapi.json" > "${apis_dir}/documentation/openapi_flattened.json"
+    fi
+
+    if [[ -n "${OPT_APIS}" ]]; then
+        # shellcheck disable=SC2086
+        "${API_GENERATION_DIR}/generate_api_packages.sh" ${OPT_APIS}
+    else
+        "${API_GENERATION_DIR}/generate_api_packages.sh"
+    fi
+
+    if [[ -n "${OPT_FLATTEN_OPENAPI}" ]]; then
+        log_info "Cleaning up flattened OpenAPI file..."
+        rm -f "${apis_dir}/documentation/openapi_flattened.json"
+    fi
+
     log_success "Package generated successfully"
 }
 
@@ -306,7 +339,7 @@ create_build_env_file() {
     log_info "Creating ${env_file}..."
 
     cat > "${env_file}" << EOF
-WHEEL_BUILD_VERSION=${version}
+${OPT_ENV_VAR_NAME}=${version}
 PACKAGE_DOWNLOADED=${was_downloaded}
 EOF
 
