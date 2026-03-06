@@ -39,8 +39,8 @@
 #                               to the upstream (hive) project's registry
 #
 # Artifacts:
-#   - ${API_GENERATION_DIR}/hiveio_api/     Generated package directory
-#   - ${API_GENERATION_DIR}/hiveio_api/dist/*.whl   Built or downloaded wheel
+#   - ${API_GENERATION_DIR}/python_api_package/           Generated package directory
+#   - ${API_GENERATION_DIR}/python_api_package/dist/*.whl Built or downloaded wheel
 #   - build_wheel.env                        Environment file with WHEEL_BUILD_VERSION
 
 .hiveio_api_package_template:
@@ -67,7 +67,7 @@
   artifacts:
     expire_in: 1 week
     paths:
-      - "${API_GENERATION_DIR}/hiveio_api"
+      - "${API_GENERATION_DIR}/python_api_package"
       - "build_wheel.env"
     reports:
       dotenv: build_wheel.env
