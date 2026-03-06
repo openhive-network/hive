@@ -43,7 +43,7 @@ namespace hive { namespace chain {
         }
       }
 
-      // Account name (needed for by_next_vesting_withdrawal index to match old sort order)
+      // Account name
       const account_name_type& get_name() const { return name; }
 
       // Liquid HIVE balance
@@ -127,12 +127,8 @@ namespace hive { namespace chain {
 
       // ===== Fields merged from time_object =====
 
-      // Tells if account has active power down
-      bool has_active_power_down() const { return next_vesting_withdrawal != fc::time_point_sec::maximum(); }
-
-      // Next vesting withdrawal time
-      time_point_sec get_next_vesting_withdrawal() const { return next_vesting_withdrawal; }
-      void set_next_vesting_withdrawal( const time_point_sec& value ) { next_vesting_withdrawal = value; }
+      // Tells if account has active power down (next_vesting_withdrawal is canonical in tiny_account_object)
+      bool has_active_power_down() const { return to_withdraw.amount > withdrawn.amount; }
 
       // HBD seconds (liquid HBD * how long it has been held)
       uint128_t get_hbd_seconds() const { return hbd_seconds; }
@@ -274,7 +270,6 @@ namespace hive { namespace chain {
       time_point_sec    last_root_post;           //influenced root comment reward between HF12 and HF17
       time_point_sec    last_post_edit;           //(we could probably remove limit on post edits)
       time_point_sec    last_vote_time;           //(only used by outdated consensus checks - up to HF26)
-      time_point_sec    next_vesting_withdrawal = fc::time_point_sec::maximum(); ///< after every withdrawal this is incremented by 1 week
 
       // Fields merged from manabars_rc_object
       util::manabar     voting_manabar;
@@ -324,7 +319,7 @@ FC_REFLECT( hive::chain::assets_object,
           (hbd_seconds)
           (hbd_seconds_last_update)(hbd_last_interest_payment)
           (last_account_update)(last_post)(last_root_post)
-          (last_post_edit)(last_vote_time)(next_vesting_withdrawal)
+          (last_post_edit)(last_vote_time)
           (voting_manabar)(downvote_manabar)(rc_manabar)
           (rc_adjustment)(delegated_rc)(received_rc)(last_max_rc)
           (post_count)(post_bandwidth)

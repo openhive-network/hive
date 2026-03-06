@@ -1693,7 +1693,6 @@ void database::clear_account( const account_object& account )
       a.set_vesting_withdraw_rate( VEST_asset( 0 ) );
       a.set_to_withdraw( VEST_asset( 0 ) );
       a.set_withdrawn( VEST_asset( 0 ) );
-      a.set_next_vesting_withdrawal( fc::time_point_sec::maximum() );
     } );
 
     // Update delayed_votes_object
@@ -1714,7 +1713,7 @@ void database::clear_account( const account_object& account )
       {
         modify( *tiny_it, [&]( tiny_account_object& t )
         {
-          t.modify_from_assets( assets );
+          t.set_next_vesting_withdrawal( fc::time_point_sec::maximum() );
           t.modify_from_delayed_votes( dvotes );
         } );
       }

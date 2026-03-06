@@ -1499,7 +1499,7 @@ BOOST_AUTO_TEST_CASE( chain_object_checksum )
 {
   hive::chain::util::decoded_types_data_storage dtds;
 
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::assets_object>(dtds), "1b9d195958145ec635334e02b3ae449351628f41" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::assets_object>(dtds), "c9801a9336d8419e175cc58458f3d7692fb4ffba" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::delayed_votes_object>(dtds), "4bb1eaf49d4a10f24cb990eab033f710502f767b" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::account_object>(dtds), "1c689ded12f36e149c4a5d504451b4548b1380fd" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::account_metadata_object>(dtds), "379587b74d3b399774c0daceb8df6626ab0adb22" );

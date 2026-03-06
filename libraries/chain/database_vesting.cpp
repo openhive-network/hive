@@ -274,18 +274,13 @@ void database::process_vesting_withdrawals()
         a.set_vesting_withdraw_rate( VEST_asset( 0 ) );
         a.set_to_withdraw( VEST_asset( 0 ) );
         a.set_withdrawn( VEST_asset( 0 ) );
-        a.set_next_vesting_withdrawal( fc::time_point_sec::maximum() );
-      }
-      else
-      {
-        a.set_next_vesting_withdrawal( a.get_next_vesting_withdrawal() + fc::seconds( HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS ) );
       }
     });
     {
-      const auto& tiny_idx = get_index< tiny_account_index, by_name >();
-      auto tiny_it = tiny_idx.find( from_account.get_name() );
-      if( tiny_it != tiny_idx.end() )
-        modify( *tiny_it, [&]( tiny_account_object& t ) { t.modify_from_assets( from_assets ); } );
+      time_point_sec new_nvw = from_assets.has_active_power_down()
+        ? time_point_sec( tiny_obj.get_next_vesting_withdrawal() + fc::seconds( HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS ) )
+        : fc::time_point_sec::maximum();
+      modify( tiny_obj, [&]( tiny_account_object& t ) { t.set_next_vesting_withdrawal( new_nvw ); } );
     }
 
     if( has_hardfork( HIVE_HARDFORK_0_20 ) )

@@ -355,13 +355,12 @@ void withdraw_vesting_evaluator::do_apply( const withdraw_vesting_operation& o )
       a.set_vesting_withdraw_rate( VEST_asset( 0 ) );
       a.set_to_withdraw( VEST_asset( 0 ) );
       a.set_withdrawn( VEST_asset( 0 ) );
-      a.set_next_vesting_withdrawal( time_point_sec::maximum() );
     } );
     {
       const auto& tiny_idx = _db.get_index< tiny_account_index, by_name >();
       auto tiny_it = tiny_idx.find( account.get_name() );
       if( tiny_it != tiny_idx.end() )
-        _db.modify( *tiny_it, [&]( tiny_account_object& t ) { t.modify_from_assets( account_assets ); } );
+        _db.modify( *tiny_it, [&]( tiny_account_object& t ) { t.set_next_vesting_withdrawal( time_point_sec::maximum() ); } );
     }
   }
   else
@@ -388,13 +387,12 @@ void withdraw_vesting_evaluator::do_apply( const withdraw_vesting_operation& o )
       a.set_vesting_withdraw_rate( new_vesting_withdraw_rate );
       a.set_to_withdraw( o_vesting_shares );
       a.set_withdrawn( VEST_asset( 0 ) );
-      a.set_next_vesting_withdrawal( now + fc::seconds( HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS ) );
     } );
     {
       const auto& tiny_idx = _db.get_index< tiny_account_index, by_name >();
       auto tiny_it = tiny_idx.find( account.get_name() );
       if( tiny_it != tiny_idx.end() )
-        _db.modify( *tiny_it, [&]( tiny_account_object& t ) { t.modify_from_assets( account_assets ); } );
+        _db.modify( *tiny_it, [&]( tiny_account_object& t ) { t.set_next_vesting_withdrawal( now + fc::seconds( HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS ) ); } );
     }
   }
   if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
@@ -759,7 +757,7 @@ void delegate_vesting_shares_evaluator::do_apply( const delegate_vesting_shares_
     available_shares.amount = std::min( available_shares.amount, max_mana - delegator_assets.get_received_vesting().amount );
     available_downvote_shares.amount = std::min( available_downvote_shares.amount, max_mana - delegator_assets.get_received_vesting().amount );
 
-    if( delegator_assets.get_next_vesting_withdrawal() < fc::time_point_sec::maximum()
+    if( delegator_assets.has_active_power_down()
       && delegator_assets.get_total_vesting_withdrawal() > delegator_assets.get_vesting_withdraw_rate().amount )
     {
       /*

@@ -364,11 +364,16 @@ void account_update_evaluator::do_apply( const account_update_operation& o )
     } );
   }
 
-  const auto& account_assets = _db.get_asset_account( account.get_id() );
-  _db.modify( account_assets, [&]( assets_object& a )
+  // Only update last_account_update when keys or authority are actually changing.
+  // Metadata-only updates (json_metadata) don't need this informational timestamp.
+  if( needs_authority || o.memo_key != public_key_type() )
   {
-    a.set_last_account_update( _db.head_block_time() );
-  } );
+    const auto& account_assets = _db.get_asset_account( account.get_id() );
+    _db.modify( account_assets, [&]( assets_object& a )
+    {
+      a.set_last_account_update( _db.head_block_time() );
+    } );
+  }
 
   if( needs_authority && ( o.active || *_auth_posting ) )
   {
@@ -413,11 +418,17 @@ void account_update2_evaluator::do_apply( const account_update2_operation& o )
     } );
   }
 
-  const auto& account_assets = _db.get_asset_account( account.get_id() );
-  _db.modify( account_assets, [&]( assets_object& a )
+  // Only update last_account_update when keys or authority are actually changing.
+  // Metadata-only updates (json_metadata, posting_json_metadata) don't need this informational timestamp.
+  const bool needs_authority_update2 = o.owner || o.active || o.posting;
+  if( needs_authority_update2 || ( o.memo_key && *o.memo_key != public_key_type() ) )
   {
-    a.set_last_account_update( _db.head_block_time() );
-  } );
+    const auto& account_assets = _db.get_asset_account( account.get_id() );
+    _db.modify( account_assets, [&]( assets_object& a )
+    {
+      a.set_last_account_update( _db.head_block_time() );
+    } );
+  }
 
   if( o.active || o.posting )
   {

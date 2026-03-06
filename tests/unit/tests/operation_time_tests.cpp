@@ -47,6 +47,7 @@
 #include <hive/chain/detail/state/liquidity_reward_balance_object_multiindex.hpp>
 #include <hive/chain/detail/state/withdraw_vesting_route_object_multiindex.hpp>
 #include <hive/chain/detail/state/assets_object.hpp>
+#include <hive/chain/detail/state/tiny_account_object.hpp>
 
 #include <fc/crypto/digest.hpp>
 
@@ -61,6 +62,8 @@ using namespace hive::protocol;
 
 #define GET_ASSETS( account_name ) (db->get_asset_account( db->get_account( account_name ).get_id() ))
 #define GET_ASSETS_FOR_ACC( acc ) (db->get_asset_account( (acc).get_id() ))
+#define GET_TINY( account_name ) (*db->get_index< tiny_account_index, by_name >().find( account_name ))
+#define GET_TINY_FOR_ACC( acc ) (*db->get_index< tiny_account_index, by_name >().find( (acc).get_name() ))
 
 BOOST_FIXTURE_TEST_SUITE( operation_time_tests, clean_database_fixture )
 
@@ -1188,7 +1191,7 @@ BOOST_AUTO_TEST_CASE( vesting_withdrawals )
 
     vesting_shares = get_vesting( "alice" );
     auto balance = get_hive_balance( "alice" );
-    auto old_next_vesting = db->get_asset_account( db->get_account( "alice" ).get_id() ).get_next_vesting_withdrawal();
+    auto old_next_vesting = GET_TINY( "alice" ).get_next_vesting_withdrawal();
 
     for( int i = 1; i < HIVE_VESTING_WITHDRAW_INTERVALS - 1; i++ )
     {
@@ -1207,21 +1210,21 @@ BOOST_AUTO_TEST_CASE( vesting_withdrawals )
       BOOST_REQUIRE_LE( std::abs( ( fill_op.deposited.amount.value - ( fill_op.withdrawn * gpo.get_vesting_share_price() ).amount.value ) ), 1 );
 
       if ( i == HIVE_VESTING_WITHDRAW_INTERVALS - 1 )
-        BOOST_REQUIRE_EQUAL( GET_ASSETS_FOR_ACC( alice ).get_next_vesting_withdrawal(), fc::time_point_sec::maximum() );
+        BOOST_REQUIRE_EQUAL( GET_TINY_FOR_ACC( alice ).get_next_vesting_withdrawal(), fc::time_point_sec::maximum() );
       else
-        BOOST_REQUIRE_EQUAL( GET_ASSETS_FOR_ACC( alice ).get_next_vesting_withdrawal().sec_since_epoch(), ( old_next_vesting + HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS ).sec_since_epoch() );
+        BOOST_REQUIRE_EQUAL( GET_TINY_FOR_ACC( alice ).get_next_vesting_withdrawal().sec_since_epoch(), ( old_next_vesting + HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS ).sec_since_epoch() );
 
       validate_database();
 
       vesting_shares = alice_assets.get_vesting();
       balance = alice_assets.get_balance();
-      old_next_vesting = GET_ASSETS_FOR_ACC( alice ).get_next_vesting_withdrawal();
+      old_next_vesting = GET_TINY_FOR_ACC( alice ).get_next_vesting_withdrawal();
     }
 
     BOOST_TEST_MESSAGE( "Generating one more block to finish vesting withdrawal" );
     generate_blocks( db->head_block_time() + HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS, true );
 
-    BOOST_REQUIRE_EQUAL( GET_ASSETS( "alice" ).get_next_vesting_withdrawal().sec_since_epoch(), fc::time_point_sec::maximum().sec_since_epoch() );
+    BOOST_REQUIRE_EQUAL( GET_TINY( "alice" ).get_next_vesting_withdrawal().sec_since_epoch(), fc::time_point_sec::maximum().sec_since_epoch() );
     BOOST_REQUIRE_EQUAL( get_vesting( "alice" ).amount.value, ( original_vesting - VEST_asset( op.vesting_shares ) ).amount.value );
 
     validate_database();
@@ -1284,7 +1287,7 @@ BOOST_AUTO_TEST_CASE( vesting_withdraw_route )
     auto old_sam_balance = sam_assets.get_balance();
     auto old_sam_vesting = sam_assets.get_vesting();
 
-    generate_blocks( db->get_asset_account( alice.get_id() ).get_next_vesting_withdrawal() - HIVE_BLOCK_INTERVAL, true );
+    generate_blocks( GET_TINY_FOR_ACC( alice ).get_next_vesting_withdrawal() - HIVE_BLOCK_INTERVAL, true );
     generate_block();
 
     {
@@ -1342,7 +1345,7 @@ BOOST_AUTO_TEST_CASE( vesting_withdraw_route )
     tx.operations.push_back( op );
     push_transaction( tx, alice_private_key );
 
-    generate_blocks( db->get_asset_account( db->get_account( "alice" ).get_id() ).get_next_vesting_withdrawal() - HIVE_BLOCK_INTERVAL, true );
+    generate_blocks( GET_TINY( "alice" ).get_next_vesting_withdrawal() - HIVE_BLOCK_INTERVAL, true );
     generate_block();
 
     {

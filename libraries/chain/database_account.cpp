@@ -17,13 +17,12 @@ namespace hive { namespace chain {
 template< typename Allocator >
 tiny_account_object::tiny_account_object( allocator< Allocator > a, uint64_t _id,
   const account_object& acc, const assets_object& assets_obj, const delayed_votes_object& dvotes )
-  : id( _id ), delayed_votes( a )
+  : id( _id )
 {
   name = acc.get_name();
   proxy = acc.get_proxy();
   governance_vote_expiration_ts = acc.get_governance_vote_expiration_ts();
-  next_vesting_withdrawal = assets_obj.get_next_vesting_withdrawal();
-  clone_delayed_votes( dvotes.get_delayed_votes() );
+  oldest_delayed_vote_time = dvotes.get_oldest_delayed_vote_time();
 }
 
 // Explicit instantiation for the allocator type used by chainbase
@@ -36,14 +35,9 @@ void tiny_account_object::modify_from_account( const account_object& acc )
   governance_vote_expiration_ts = acc.get_governance_vote_expiration_ts();
 }
 
-void tiny_account_object::modify_from_assets( const assets_object& assets_obj )
-{
-  next_vesting_withdrawal = assets_obj.get_next_vesting_withdrawal();
-}
-
 void tiny_account_object::modify_from_delayed_votes( const delayed_votes_object& dvotes )
 {
-  clone_delayed_votes( dvotes.get_delayed_votes() );
+  oldest_delayed_vote_time = dvotes.get_oldest_delayed_vote_time();
 }
 
 void initialize_core_indexes_01( database& db )

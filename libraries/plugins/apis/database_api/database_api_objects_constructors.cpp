@@ -23,6 +23,7 @@
 #include <hive/chain/notifications.hpp>
 #include <hive/chain/detail/state/assets_object.hpp>
 #include <hive/chain/detail/state/delayed_votes_object.hpp>
+#include <hive/chain/detail/state/tiny_account_object.hpp>
 
 namespace hive { namespace plugins { namespace database_api {
 
@@ -234,7 +235,12 @@ api_account_object::api_account_object( const account_object& a, const database&
   last_post = assets.get_last_post();
   last_root_post = assets.get_last_root_post();
   last_post_edit = assets.get_last_post_edit();
-  next_vesting_withdrawal = assets.get_next_vesting_withdrawal();
+  {
+    const auto& tiny_idx = db.get_index< chain::tiny_account_index, chain::by_name >();
+    auto tiny_it = tiny_idx.find( a.get_name() );
+    if( tiny_it != tiny_idx.end() )
+      next_vesting_withdrawal = tiny_it->get_next_vesting_withdrawal();
+  }
   post_count = assets.get_post_count();
   post_bandwidth = assets.get_post_bandwidth();
   last_account_recovery = assets.get_block_last_account_recovery_time();

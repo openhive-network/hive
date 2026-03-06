@@ -46,7 +46,6 @@ public:
     , last_root_post( obj.get_last_root_post() )
     , last_post_edit( obj.get_last_post_edit() )
     , last_vote_time( obj.get_last_vote_time() )
-    , next_vesting_withdrawal( obj.get_next_vesting_withdrawal() )
     , voting_manabar( obj.get_voting_manabar() )
     , downvote_manabar( obj.get_downvote_manabar() )
     , rc_manabar( obj.get_rc_manabar() )
@@ -112,7 +111,6 @@ public:
   time_point_sec        last_root_post;
   time_point_sec        last_post_edit;
   time_point_sec        last_vote_time;
-  time_point_sec        next_vesting_withdrawal = fc::time_point_sec::maximum();
   util::manabar         voting_manabar;
   util::manabar         downvote_manabar;
   util::manabar         rc_manabar;
@@ -157,7 +155,6 @@ private:
     o.set_last_root_post( last_root_post );
     o.set_last_post_edit( last_post_edit );
     o.set_last_vote_time( last_vote_time );
-    o.set_next_vesting_withdrawal( next_vesting_withdrawal );
     o.get_voting_manabar() = voting_manabar;
     o.get_downvote_manabar() = downvote_manabar;
     o.get_rc_manabar() = rc_manabar;
@@ -234,7 +231,7 @@ FC_REFLECT( hive::chain::rocksdb_assets_object,
           (hbd_seconds)
           (hbd_seconds_last_update)(hbd_last_interest_payment)
           (last_account_update)(last_post)(last_root_post)
-          (last_post_edit)(last_vote_time)(next_vesting_withdrawal)
+          (last_post_edit)(last_vote_time)
           (voting_manabar)(downvote_manabar)(rc_manabar)
           (rc_adjustment)(delegated_rc)(received_rc)(last_max_rc)
           (post_count)(post_bandwidth)

@@ -1707,7 +1707,7 @@ BOOST_AUTO_TEST_CASE( withdraw_vesting_apply )
     {
     const auto& alice = db->get_account( "alice" );
     const auto& alice_assets = db->get_asset_account( alice.get_id() );
-    const auto& alice_time = db->get_asset_account( alice.get_id() );
+    const auto& alice_time = *db->get_index< tiny_account_index, by_name >().find( alice.get_name() );
 
     withdraw_vesting_operation op;
     op.account = "alice";
