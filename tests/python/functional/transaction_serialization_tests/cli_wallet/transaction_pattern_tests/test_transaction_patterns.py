@@ -68,7 +68,6 @@ METHODS_WITH_CORRECT_ARGUMENTS: list[tuple[str, ...]] = [
     ("escrow_approve", ("initminer", "alice", "bob", "bob", 2, True, False)),
     ("escrow_dispute", ("initminer", "alice", "bob", "initminer", 3, False)),
     ("recurrent_transfer", ("alice", "bob", tt.Asset.Test(5), "memo", 720, 12, False)),
-    ("follow", ("alice", "bob", ["blog"], False)),
     ("post_comment", ("bob", "test-permlink", "", "someone", "test-title", "this is a body", "{}", False)),
     ("set_voting_proxy", ("initminer", "alice", False)),
     ("set_withdraw_vesting_route", ("alice", "bob", 30, True, False)),

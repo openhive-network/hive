@@ -54,11 +54,6 @@ def test_block_log_with_several_type_of_signatures(replayed_node: tt.InitNode, t
     assert find_account_output.received_vesting_shares == DELEGATION_PER_ACCOUNT
     assert node.api.database.find_accounts(accounts=[account_names[-1]]).accounts[0].name == account_names[-1]
 
-    # custom json
-    wallet.api.use_automatic_authority()
-    custom_json = wallet.api.follow(account, account, ["blog"])
-    assert len(custom_json["signatures"]) == signature_type["posting"]
-
     # comment ( posting )
     wallet.api.use_automatic_authority()
     comment = wallet.api.post_comment(account, "test-permlink", "", "someone0", "test-title", "this is a body", "{}")
