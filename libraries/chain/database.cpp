@@ -855,6 +855,10 @@ void database::notify_comment_reward(const comment_reward_notification& note)
 void database::notify_end_of_syncing()
 {
   flush_to_all_storages();
+  // In live sync, blocks arrive every 3 seconds — flush shared_memory after each one
+  // so that on crash, hived's state is at most 1 block behind. The user-configurable
+  // flush-state-interval only matters during massive/P2P sync where throughput matters.
+  set_flush_interval( 1 );
   get_comments_handler().on_end_of_syncing();
 
   HIVE_TRY_NOTIFY(_my->_end_of_syncing_signal)
