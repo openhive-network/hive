@@ -46,7 +46,7 @@ USER hived_admin
 WORKDIR /home/hived_admin
 
 # Build stage uses centralized ci-base-image from common-ci-configuration
-# This image includes: build toolchain, ccache, Pythons 3.8 - 3.14, glibc 2.28, Docker CLI, hived_admin and hived users
+# This image includes: build toolchain, sccache, Pythons 3.8 - 3.14, glibc 2.28, Docker CLI, hived_admin and hived users
 FROM ${CI_BASE_IMAGE} AS build
 
 ARG BUILD_HIVE_TESTNET=OFF
@@ -61,6 +61,9 @@ ENV HIVE_LINT=${HIVE_LINT}
 ARG HIVE_SUBDIR=.
 ENV HIVE_SUBDIR=${HIVE_SUBDIR}
 
+ARG SCCACHE_REDIS=""
+ENV SCCACHE_REDIS=${SCCACHE_REDIS}
+
 USER hived_admin
 WORKDIR /home/hived_admin
 SHELL ["/bin/bash", "-c"]
@@ -70,6 +73,12 @@ COPY --chown=hived_admin:users . /home/hived_admin/source
 
 RUN <<-EOF
   set -e
+
+  # If SCCACHE_REDIS is empty, unset it so sccache uses local disk cache
+  # instead of trying to connect to Redis with a malformed URL
+  if [ -z "${SCCACHE_REDIS}" ]; then
+    unset SCCACHE_REDIS
+  fi
 
   INSTALLATION_DIR="/home/hived/bin"
   sudo mkdir -p "${INSTALLATION_DIR}"
@@ -81,6 +90,12 @@ RUN <<-EOF
   --cmake-arg="-DHIVE_LINT=${HIVE_LINT}" \
   --flat-binary-directory="${INSTALLATION_DIR}" \
   --clean-after-build
+
+  # Show sccache statistics to verify distributed caching is working
+  if command -v sccache &> /dev/null; then
+    echo "=== sccache statistics ==="
+    sccache --show-stats || true
+  fi
 
   sudo chown -R hived:users "${INSTALLATION_DIR}/"*
 EOF
