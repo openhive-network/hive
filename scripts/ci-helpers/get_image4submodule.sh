@@ -50,7 +50,7 @@ print_help () {
     echo
 }
 
-IMGNAME_INSTANCE=
+IMGNAME_INSTANCE="${PG_IMAGE_SUBPATH:-}"
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -58,20 +58,23 @@ while [ $# -gt 0 ]; do
         NETWORK_TYPE="${1#*=}"
         echo "using NETWORK_TYPE $NETWORK_TYPE"
 
-        case $NETWORK_TYPE in
-          "testnet"*)
-            IMGNAME_INSTANCE=testnet
-            ;;
-          "mirrornet"*)
-            IMGNAME_INSTANCE=mirrornet
-            ;;
-          "mainnet"*)
-            ;;
-           *)
-            echo "ERROR: '$NETWORK_TYPE' is not a valid network type"
-            echo
-            exit 3
-        esac
+        # Only derive IMGNAME_INSTANCE from network type if PG_IMAGE_SUBPATH not set
+        if [[ -z "${PG_IMAGE_SUBPATH:-}" ]]; then
+          case $NETWORK_TYPE in
+            "testnet"*)
+              IMGNAME_INSTANCE=testnet
+              ;;
+            "mirrornet"*)
+              IMGNAME_INSTANCE=mirrornet
+              ;;
+            "mainnet"*)
+              ;;
+             *)
+              echo "ERROR: '$NETWORK_TYPE' is not a valid network type"
+              echo
+              exit 3
+          esac
+        fi
         ;;
     --export-binaries=*)
         # Ignored - binaries exported via BINARY_CACHE_PATH env var
