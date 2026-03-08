@@ -154,7 +154,14 @@ else
     # Build new image from current checkout (source files are identical to $commit)
     # This avoids an extra clone since GitLab already checked out the code
     echo "${img_instance} image is missing. Building from current checkout..."
-    "$SCRIPTPATH/build_instance.sh" "$short_commit" "$submodule_path" "$REGISTRY" \
+    # When PG_IMAGE_SUBPATH is set, pass img_path (e.g., registry/haf/pg18) as the
+    # registry so build_instance.sh tags the image at the right path. For testnet/
+    # mirrornet, --network-type already handles the subpath via IMAGE_TAG_PREFIX.
+    BUILD_REGISTRY="$REGISTRY"
+    if [[ -n "${PG_IMAGE_SUBPATH:-}" ]]; then
+      BUILD_REGISTRY="$img_path"
+    fi
+    "$SCRIPTPATH/build_instance.sh" "$short_commit" "$submodule_path" "$BUILD_REGISTRY" \
         --export-binaries="${BINARY_CACHE_PATH}" --network-type="$NETWORK_TYPE"
     time docker push "$img_instance"
 fi
