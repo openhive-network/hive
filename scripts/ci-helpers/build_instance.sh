@@ -164,6 +164,7 @@ if docker buildx version &>/dev/null && [[ "${USE_BUILDX:-true}" != "false" ]]; 
       --build-arg HIVE_SUBDIR="$HIVE_SUBDIR" \
       --build-arg IMAGE_TAG_PREFIX="${IMAGE_TAG_PREFIX:+$IMAGE_TAG_PREFIX-}" \
       --build-arg SCCACHE_REDIS="${SCCACHE_REDIS:-}" \
+      --build-arg POSTGRES_VERSION="${POSTGRES_VERSION:-17}" \
       --tag "${REGISTRY}${IMAGE_TAG_PREFIX:+/$IMAGE_TAG_PREFIX}/build:${BUILD_IMAGE_TAG}" \
       --push \
       --file Dockerfile "$SOURCE_DIR"
@@ -177,6 +178,7 @@ else
       --build-arg HIVE_SUBDIR="$HIVE_SUBDIR" \
       --build-arg IMAGE_TAG_PREFIX="${IMAGE_TAG_PREFIX:+$IMAGE_TAG_PREFIX-}" \
       --build-arg SCCACHE_REDIS="${SCCACHE_REDIS:-}" \
+      --build-arg POSTGRES_VERSION="${POSTGRES_VERSION:-17}" \
       --tag "${REGISTRY}${IMAGE_TAG_PREFIX:+/$IMAGE_TAG_PREFIX}/build:${BUILD_IMAGE_TAG}" \
       --file Dockerfile "$SOURCE_DIR"
 fi
@@ -200,6 +202,7 @@ if docker buildx version &>/dev/null && [[ "${USE_BUILDX:-true}" != "false" ]]; 
       --build-arg GIT_LAST_COMMIT_DATE="$GIT_LAST_COMMIT_DATE" \
       --build-arg HIVE_SUBDIR="$HIVE_SUBDIR" \
       --build-arg IMAGE_TAG_PREFIX="${IMAGE_TAG_PREFIX:+$IMAGE_TAG_PREFIX-}" \
+      --build-arg POSTGRES_VERSION="${POSTGRES_VERSION:-17}" \
       --build-context "build=docker-image://${REGISTRY}${IMAGE_TAG_PREFIX:+/$IMAGE_TAG_PREFIX}/build:${BUILD_IMAGE_TAG}" \
       --tag "${REGISTRY}${IMAGE_TAG_PREFIX:+/$IMAGE_TAG_PREFIX}:${BUILD_IMAGE_TAG}" \
       --load \
@@ -218,6 +221,7 @@ else
       --build-arg GIT_LAST_COMMIT_DATE="$GIT_LAST_COMMIT_DATE" \
       --build-arg HIVE_SUBDIR="$HIVE_SUBDIR" \
       --build-arg IMAGE_TAG_PREFIX="${IMAGE_TAG_PREFIX:+$IMAGE_TAG_PREFIX-}" \
+      --build-arg POSTGRES_VERSION="${POSTGRES_VERSION:-17}" \
       --build-context "build=docker-image://${REGISTRY}${IMAGE_TAG_PREFIX:+/$IMAGE_TAG_PREFIX}/build:${BUILD_IMAGE_TAG}" \
       --tag "${REGISTRY}${IMAGE_TAG_PREFIX:+/$IMAGE_TAG_PREFIX}:${BUILD_IMAGE_TAG}" \
       --file Dockerfile "$SOURCE_DIR"
