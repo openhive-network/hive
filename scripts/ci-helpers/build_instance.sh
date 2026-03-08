@@ -32,6 +32,7 @@ cat <<-EOF
   ENVIRONMENT VARIABLES:
       USE_BUILDX                Set to 'false' to disable BuildKit registry caching (default: true)
       SCCACHE_REDIS             Redis URL for sccache distributed compilation caching
+      POSTGRES_VERSION          PostgreSQL major version to build against (e.g., 17, 18). Passed as Docker build-arg.
 EOF
 }
 
@@ -143,6 +144,17 @@ else
     CACHE_KEY="mainnet-build"
 fi
 
+# Separate cache keys per PostgreSQL version to avoid mixing PG17/PG18 build caches
+if [[ -n "${POSTGRES_VERSION:-}" ]]; then
+    CACHE_KEY="${CACHE_KEY}-pg${POSTGRES_VERSION}"
+fi
+
+# Build POSTGRES_VERSION build-arg if set
+PG_BUILD_ARG=""
+if [[ -n "${POSTGRES_VERSION:-}" ]]; then
+    PG_BUILD_ARG="--build-arg POSTGRES_VERSION=${POSTGRES_VERSION}"
+fi
+
 # Build cache arguments for buildx
 CACHE_FROM_BUILD="type=registry,ref=${CACHE_REPO}:${CACHE_KEY}"
 CACHE_TO_BUILD="type=registry,ref=${CACHE_REPO}:${CACHE_KEY},mode=max"
@@ -164,6 +176,7 @@ if docker buildx version &>/dev/null && [[ "${USE_BUILDX:-true}" != "false" ]]; 
       --build-arg HIVE_SUBDIR="$HIVE_SUBDIR" \
       --build-arg IMAGE_TAG_PREFIX="${IMAGE_TAG_PREFIX:+$IMAGE_TAG_PREFIX-}" \
       --build-arg SCCACHE_REDIS="${SCCACHE_REDIS:-}" \
+      ${PG_BUILD_ARG:+$PG_BUILD_ARG} \
       --tag "${REGISTRY}${IMAGE_TAG_PREFIX:+/$IMAGE_TAG_PREFIX}/build:${BUILD_IMAGE_TAG}" \
       --push \
       --file Dockerfile "$SOURCE_DIR"
@@ -177,6 +190,7 @@ else
       --build-arg HIVE_SUBDIR="$HIVE_SUBDIR" \
       --build-arg IMAGE_TAG_PREFIX="${IMAGE_TAG_PREFIX:+$IMAGE_TAG_PREFIX-}" \
       --build-arg SCCACHE_REDIS="${SCCACHE_REDIS:-}" \
+      ${PG_BUILD_ARG:+$PG_BUILD_ARG} \
       --tag "${REGISTRY}${IMAGE_TAG_PREFIX:+/$IMAGE_TAG_PREFIX}/build:${BUILD_IMAGE_TAG}" \
       --file Dockerfile "$SOURCE_DIR"
 fi
@@ -200,6 +214,7 @@ if docker buildx version &>/dev/null && [[ "${USE_BUILDX:-true}" != "false" ]]; 
       --build-arg GIT_LAST_COMMIT_DATE="$GIT_LAST_COMMIT_DATE" \
       --build-arg HIVE_SUBDIR="$HIVE_SUBDIR" \
       --build-arg IMAGE_TAG_PREFIX="${IMAGE_TAG_PREFIX:+$IMAGE_TAG_PREFIX-}" \
+      ${PG_BUILD_ARG:+$PG_BUILD_ARG} \
       --build-context "build=docker-image://${REGISTRY}${IMAGE_TAG_PREFIX:+/$IMAGE_TAG_PREFIX}/build:${BUILD_IMAGE_TAG}" \
       --tag "${REGISTRY}${IMAGE_TAG_PREFIX:+/$IMAGE_TAG_PREFIX}:${BUILD_IMAGE_TAG}" \
       --load \
@@ -218,6 +233,7 @@ else
       --build-arg GIT_LAST_COMMIT_DATE="$GIT_LAST_COMMIT_DATE" \
       --build-arg HIVE_SUBDIR="$HIVE_SUBDIR" \
       --build-arg IMAGE_TAG_PREFIX="${IMAGE_TAG_PREFIX:+$IMAGE_TAG_PREFIX-}" \
+      ${PG_BUILD_ARG:+$PG_BUILD_ARG} \
       --build-context "build=docker-image://${REGISTRY}${IMAGE_TAG_PREFIX:+/$IMAGE_TAG_PREFIX}/build:${BUILD_IMAGE_TAG}" \
       --tag "${REGISTRY}${IMAGE_TAG_PREFIX:+/$IMAGE_TAG_PREFIX}:${BUILD_IMAGE_TAG}" \
       --file Dockerfile "$SOURCE_DIR"
