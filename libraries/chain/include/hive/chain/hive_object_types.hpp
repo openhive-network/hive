@@ -89,9 +89,7 @@ enum object_type
   tiny_account_object_type,
 
   // Account split objects
-  RESERVED_recovery_object_type, // kept as placeholder to preserve account_details_object_type value
   account_details_object_type,
-  RESERVED_delayed_votes_object_type, // merged into account_details_object
 };
 
 class dynamic_global_property_object;
@@ -338,9 +336,7 @@ FC_REFLECT_ENUM( hive::chain::object_type,
             (rc_expired_delegation_object_type)
             (tiny_account_object_type)
 
-            (RESERVED_recovery_object_type)
             (account_details_object_type)
-            (RESERVED_delayed_votes_object_type)
           )
 
 FC_REFLECT_TYPENAME( hive::chain::shared_string )

@@ -954,11 +954,18 @@ namespace chain {
       }
 
       /// Direct chainbase modify — bypasses accounts_handler hooks and last_access_block tracking.
-      /// Use when the handler itself is modifying objects (to avoid infinite recursion)
+      /// Use ONLY when the handler itself is modifying objects (to avoid infinite recursion)
       /// or when only internal tracking fields like last_access_block need updating.
+      /// WARNING: Handler objects modified via modify_direct() will NOT update last_access_block
+      /// and will NOT trigger on_object_modified() — use database::modify() for normal operations.
       template<typename ObjectType, typename Modifier>
       void modify_direct( const ObjectType& obj, Modifier&& m )
       {
+        if constexpr( is_accounts_handler_object_v<ObjectType> )
+        {
+          dlog( "modify_direct called on handler object ${t} — ensure this is intentional (handler-internal use only)",
+                ("t", typeid(ObjectType).name()) );
+        }
         chainbase::database::modify( obj, std::forward<Modifier>( m ) );
       }
 

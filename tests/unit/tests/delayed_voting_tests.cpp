@@ -76,11 +76,10 @@ uint32_t nr_intervals_in_delayed_voting()
   return configuration_data.get_hive_delayed_voting_total_interval_seconds() / configuration_data.get_hive_delayed_voting_interval_seconds();
 }
 
-#define GET_DV( name ) db->get_account_details( db->get_account( name ).get_id() )
 #define GET_ASSETS( name ) db->get_account_details( db->get_account( name ).get_id() )
 #define VOTING_POWER( account ) db->get_account( account ).get_governance_vote_power( GET_ASSETS( account ) ).value
 #define PROXIED_VSF( account ) db->get_account( account ).proxied_vsf_votes_total().value
-#define DELAYED_VOTES( account ) static_cast<int64_t>( GET_DV( account ).get_sum_delayed_votes().value )
+#define DELAYED_VOTES( account ) static_cast<int64_t>( GET_ASSETS( account ).get_sum_delayed_votes().value )
 #define CAN_VOTE( account ) db->get_account( account ).can_vote()
 
 // Tests with combined delayed voting and proposals
@@ -310,7 +309,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
 
     auto fill = [ this ]( proxy_data& proxy, const std::string& account_name, size_t nr_interval, size_t seconds )
     {
-      const auto& dq = GET_DV( account_name ).get_delayed_votes();
+      const auto& dq = GET_ASSETS( account_name ).get_delayed_votes();
 
       fc::optional< size_t > idx = get_position_in_delayed_voting_array( dq, nr_interval, seconds );
       if( !idx.valid() )
@@ -326,7 +325,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
 
     auto cmp = [ this ]( proxy_data& proxy, const std::string& account_name, size_t val, size_t nr_interval, size_t seconds )
     {
-      const auto& dq = GET_DV( account_name ).get_delayed_votes();
+      const auto& dq = GET_ASSETS( account_name ).get_delayed_votes();
 
       fc::optional< size_t > idx = get_position_in_delayed_voting_array( dq, nr_interval, seconds );
       if( !idx.valid() )
@@ -1647,31 +1646,31 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_02 )
 
   fc::time_point_sec time = db->head_block_time() + fc::minutes( 5 );
 
-  const auto& __alice_dv_obj = GET_DV( "alice" );
+  const auto& __alice_dv_obj = GET_ASSETS( "alice" );
   auto alice_dv = __alice_dv_obj.get_delayed_votes();
   auto alice_sum = __alice_dv_obj.get_sum_delayed_votes();
 
-  const auto& __bob_dv_obj = GET_DV( "bob" );
+  const auto& __bob_dv_obj = GET_ASSETS( "bob" );
   auto bob_dv = __bob_dv_obj.get_delayed_votes();
   auto bob_sum = __bob_dv_obj.get_sum_delayed_votes();
 
   {
     delayed_voting::opt_votes_update_data_items _items;
     dv.update_votes( _items, time );
-    const auto& _alice_dv = GET_DV( "alice" );
+    const auto& _alice_dv = GET_ASSETS( "alice" );
     BOOST_REQUIRE( vcmp( { { alice_dv[0].time, alice_dv[0].val } }, _alice_dv.get_delayed_votes() ) );
     BOOST_REQUIRE_EQUAL( alice_sum, _alice_dv.get_sum_delayed_votes() );
   }
   {
     dv.update_votes( items, time );
-    const auto& _alice_dv = GET_DV( "alice" );
+    const auto& _alice_dv = GET_ASSETS( "alice" );
     BOOST_REQUIRE( vcmp( { { alice_dv[0].time, alice_dv[0].val } }, _alice_dv.get_delayed_votes() ) );
     BOOST_REQUIRE_EQUAL( alice_sum, _alice_dv.get_sum_delayed_votes() );
   }
   {
     dv.add_votes( items, false/*withdraw_executor*/, 0/*val*/, db->get_account( "alice" ) );
     dv.update_votes( items, time );
-    const auto& _alice_dv = GET_DV( "alice" );
+    const auto& _alice_dv = GET_ASSETS( "alice" );
     BOOST_REQUIRE( vcmp( { { alice_dv[0].time, alice_dv[0].val } }, _alice_dv.get_delayed_votes() ) );
     BOOST_REQUIRE_EQUAL( alice_sum, _alice_dv.get_sum_delayed_votes() );
   }
@@ -1697,11 +1696,11 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_02 )
     dv.add_votes( items, true/*withdraw_executor*/, -8/*val*/, db->get_account( "bob" ) );
     dv.update_votes( items, time );
 
-    const auto& alice2_dv = GET_DV( "alice" );
+    const auto& alice2_dv = GET_ASSETS( "alice" );
     BOOST_REQUIRE( vcmp( { { alice_dv[0].time, alice_dv[0].val + 70 + 7 } }, alice2_dv.get_delayed_votes() ) );
     BOOST_REQUIRE_EQUAL( alice_sum + 70 + 7, alice2_dv.get_sum_delayed_votes() );
 
-    const auto& bob2_dv = GET_DV( "bob" );
+    const auto& bob2_dv = GET_ASSETS( "bob" );
     BOOST_REQUIRE( vcmp( { { bob_dv[0].time, bob_dv[0].val + 88 - 8 } }, bob2_dv.get_delayed_votes() ) );
     BOOST_REQUIRE_EQUAL( bob_sum + 88 - 8, bob2_dv.get_sum_delayed_votes() );
   }
