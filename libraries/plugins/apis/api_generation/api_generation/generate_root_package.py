@@ -37,8 +37,7 @@ def generate_root_package(
             "pascal_case": pascal_case,
         })
 
-    root_template_dir = template_directory / "root"
-    env = Environment(loader=FileSystemLoader(root_template_dir))
+    env = Environment(loader=FileSystemLoader(template_directory))
 
     for template_name, output_name in [
         ("__init__.py.j2", "__init__.py"),

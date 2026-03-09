@@ -1,30 +1,9 @@
-"""{{ api_name_pascal_case }} - Hive JSON-RPC API client subpackage."""
+"""Hive JSON-RPC API client package with lazy-loaded submodules."""
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
-from beekeepy._utilities.smart_lazy_import import aggregate_same_import, lazy_module_factory
+__version__ = "0.0.0"
 
 __all__ = [
-    "{{ api_name_pascal_case }}",
-{% for symbol in description_symbols %}    "{{ symbol }}",
+{% for api in apis %}    "{{ api.snake_case }}",
 {% endfor %}]
-
-if TYPE_CHECKING:
-    from hiveio_api.{{ api_name_snake_case }}.{{ api_name_snake_case }}_client import {{ api_name_pascal_case }}
-    from hiveio_api.{{ api_name_snake_case }}.{{ api_name_snake_case }}_description import (
-{% for symbol in description_symbols %}        {{ symbol }},
-{% endfor %}    )
-
-__getattr__ = lazy_module_factory(
-    globals(),
-    *aggregate_same_import(
-        "{{ api_name_pascal_case }}",
-        module="hiveio_api.{{ api_name_snake_case }}.{{ api_name_snake_case }}_client",
-    ),
-    *aggregate_same_import(
-{% for symbol in description_symbols %}        "{{ symbol }}",
-{% endfor %}        module="hiveio_api.{{ api_name_snake_case }}.{{ api_name_snake_case }}_description",
-    ),
-)
