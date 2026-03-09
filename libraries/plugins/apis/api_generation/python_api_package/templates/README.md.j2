@@ -1,6 +1,6 @@
-### {{ api_name_pascal_case }} - Hive JSON-RPC API subpackage
+## Hive JSON-RPC API Package
 
-This is a subpackage of `hiveio-api` providing the {{ api_name_pascal_case }} client.
+A unified Python package providing lazy-loaded clients for all Hive blockchain JSON-RPC APIs.
 
 ### Installation
 
@@ -8,21 +8,42 @@ This is a subpackage of `hiveio-api` providing the {{ api_name_pascal_case }} cl
 pip install hiveio-api
 ```
 
+### Available APIs
+
+{% for api in apis %}- `{{ api.snake_case }}` - {{ api.pascal_case }}
+{% endfor %}
+
 ### Usage
 
 ```python
 from wax import create_hive_chain
-from hiveio_api.{{ api_name_snake_case }} import {{ api_name_pascal_case }}
+from hiveio_api.database_api import DatabaseApi
 
 class MyApiCollection:
     def __init__(self):
-        self.{{ api_name_snake_case }} = {{ api_name_pascal_case }}
+        self.database_api = DatabaseApi
 
 chain = create_hive_chain().extends(MyApiCollection)
 ```
 
-### Running Example
+### Lazy Loading
+
+Each API submodule is lazily loaded, meaning importing `hiveio_api` does not load all APIs into memory. Only the APIs you explicitly import are loaded:
+
+```python
+# Only loads database_api module
+from hiveio_api.database_api import DatabaseApi
+
+# Or access via the main package (still lazy)
+from hiveio_api import database_api
+```
+
+### Running Examples
+
+Each API includes an example that can be run as a module:
 
 ```bash
-python3 -m hiveio_api.{{ api_name_snake_case }}
+python3 -m hiveio_api.database_api
+python3 -m hiveio_api.condenser_api
+python3 -m hiveio_api.rc_api
 ```

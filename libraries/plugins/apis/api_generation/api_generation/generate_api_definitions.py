@@ -144,7 +144,7 @@ if __name__ == "__main__":
     api = sys.argv[1]
     base_directory = Path(sys.argv[2])
 
-    template_api_path = base_directory / "python_api_package" / "templates"
+    template_api_path = base_directory / "python_api_package" / "templates" / "api"
     create_api_directory_structure(api, base_directory, template_api_path)
 
     api_description_file = generate_description(api, base_directory)
