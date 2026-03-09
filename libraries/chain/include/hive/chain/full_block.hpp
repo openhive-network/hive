@@ -103,11 +103,16 @@ class full_block_type
     static std::atomic<uint32_t> number_of_instances_created;
     static std::atomic<uint32_t> number_of_instances_destroyed;
 
-    static block_id_type construct_block_id(const char* signed_block_header_begin, size_t signed_block_header_size, uint32_t block_num);
-
     fc::ecc::public_key signee(const signature_type& witness_signature, const digest_type& digest) const;
 
   public:
+    static block_id_type construct_block_id(const char* signed_block_header_begin, size_t signed_block_header_size, uint32_t block_num);
+
+    /// Compute block_id from compressed block data without constructing a full_block_type.
+    /// Decompresses the block, parses the signed_block_header boundary, and computes SHA224.
+    static block_id_type compute_block_id_from_compressed_data(const char* compressed_data, size_t compressed_size,
+                                                               const block_attributes_t& attributes);
+
     full_block_type();
     ~full_block_type();
 
@@ -126,6 +131,7 @@ class full_block_type
     void decode_block() const; // immediately decompresses & unpacks the block, called by the worker thread
     const signed_block& get_block() const;
     void decode_block_header() const;
+    void decode_block_id_only() const; // like decode_block_header but skips SHA256 digest computation
     const signed_block_header& get_block_header() const;
     const block_id_type& get_block_id() const;
     uint32_t get_block_num() const;

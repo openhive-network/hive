@@ -581,23 +581,43 @@ void block_log_artifacts::impl::generate_artifacts_file(const block_log& source_
 
   std::mutex queue_mutex;
   std::condition_variable queue_condition;
-  struct full_block_with_artifacts
+  struct block_artifact_data
   {
-    std::shared_ptr<full_block_type> full_block;
     uint64_t block_log_file_pos;
     block_attributes_t attributes;
+    block_id_type block_id;
+    uint32_t block_num;
   };
 
-  typedef boost::lockfree::spsc_queue<std::shared_ptr<full_block_with_artifacts>> queue_type;
+  typedef boost::lockfree::spsc_queue<std::shared_ptr<block_artifact_data>> queue_type;
   constexpr size_t MAX_BLOCK_TO_PREFETCH = 10000;
-  queue_type full_block_queue{MAX_BLOCK_TO_PREFETCH};
-  std::atomic<size_t> queue_size = { 0 }; // approx full_block_queue size
+  queue_type artifact_queue{MAX_BLOCK_TO_PREFETCH};
+  std::atomic<size_t> queue_size = { 0 }; // approx artifact_queue size
 
   std::thread artifacts_writer_thread([&]() {
     fc::set_thread_name("artifact_writer"); // tells the OS the thread's name
     fc::thread::current().set_name("artifact_writer"); // tells fc the thread's name for logging
 
     constexpr uint32_t BLOCKS_COUNT_INTERVAL_FOR_ARTIFACTS_SAVE = 1000000;
+    // Batch write buffer: accumulate chunks and write them in a single pwrite call.
+    // Blocks arrive in decreasing block_num order, so we fill the buffer from back to front
+    // and flush when full or at boundaries.
+    constexpr size_t WRITE_BATCH_SIZE = 4096;
+    std::vector<artifact_file_chunk> write_buffer(WRITE_BATCH_SIZE);
+    size_t buffer_count = 0; // number of chunks buffered (filled from the end of write_buffer)
+    uint32_t buffer_lowest_block_num = 0; // lowest block_num in the buffer
+
+    auto flush_write_buffer = [&]()
+    {
+      if (buffer_count == 0)
+        return;
+      auto write_position = calculate_offset(buffer_lowest_block_num);
+      // Chunks are stored at the end of write_buffer, starting at index (WRITE_BATCH_SIZE - buffer_count)
+      write_data(write_buffer[WRITE_BATCH_SIZE - buffer_count], buffer_count, write_position,
+                 "Batch writing artifact file chunks");
+      buffer_count = 0;
+    };
+
     size_t idx = 0;
     uint32_t current_block_number = starting_block_num;
 
@@ -606,14 +626,15 @@ void block_log_artifacts::impl::generate_artifacts_file(const block_log& source_
       ("s", starting_block_num)("t", target_block_num));
     do
     {
-      std::shared_ptr<full_block_with_artifacts> block_with_artifacts;
+      std::shared_ptr<block_artifact_data> block_with_artifacts;
       {
         std::unique_lock<std::mutex> lock(queue_mutex);
-        while (!theApp.is_interrupt_request() && !full_block_queue.pop(block_with_artifacts))
+        while (!theApp.is_interrupt_request() && !artifact_queue.pop(block_with_artifacts))
           queue_condition.wait(lock);
 
         if (theApp.is_interrupt_request() || !block_with_artifacts)
         {
+          flush_write_buffer();
           ilog("Artifacts file generation interrupted at block: ${current_block_number}", (current_block_number));
           generating_interrupted = true;
           break;
@@ -622,11 +643,30 @@ void block_log_artifacts::impl::generate_artifacts_file(const block_log& source_
         queue_size.fetch_sub(1, std::memory_order_relaxed);
       }
       queue_condition.notify_one();
-      current_block_number = block_with_artifacts->full_block->get_block_num();
-      store_block_artifacts(current_block_number, block_with_artifacts->block_log_file_pos, block_with_artifacts->attributes, block_with_artifacts->full_block->get_block_id());
+
+      current_block_number = block_with_artifacts->block_num;
+      const block_id_type& the_block_id = block_with_artifacts->block_id;
+
+      // Pack the chunk into the write buffer
+      artifact_file_chunk data_chunk;
+      data_chunk.pack_data(block_with_artifacts->block_log_file_pos, block_with_artifacts->attributes);
+      data_chunk.pack_block_id(current_block_number, the_block_id);
+
+      // If buffer is full or this block is not contiguous with buffered range, flush first
+      if (buffer_count > 0 && (buffer_count >= WRITE_BATCH_SIZE || current_block_number != buffer_lowest_block_num - 1))
+        flush_write_buffer();
+
+      // Place chunk at the appropriate position (filling from the end since blocks arrive in decreasing order)
+      write_buffer[WRITE_BATCH_SIZE - buffer_count - 1] = data_chunk;
+      if (buffer_count == 0)
+        buffer_lowest_block_num = current_block_number;
+      else
+        buffer_lowest_block_num = current_block_number; // current is always the new lowest
+      ++buffer_count;
 
       if (idx >= BLOCKS_COUNT_INTERVAL_FOR_ARTIFACTS_SAVE)
       {
+        flush_write_buffer();
         ilog("Artifact generation just processed block ${current_block_number}. Processed blocks count: ${processed_blocks_count}, Target block: ${target_block_num}", (current_block_number)(processed_blocks_count)(target_block_num));
         idx = 0;
         _header.generating_interrupted_at_block = current_block_number;
@@ -638,10 +678,11 @@ void block_log_artifacts::impl::generate_artifacts_file(const block_log& source_
     }
     while (current_block_number > target_block_num);
 
+    flush_write_buffer();
     _header.generating_interrupted_at_block = current_block_number;
   });
 
-  auto block_processor = [&](const std::shared_ptr<full_block_type>& full_block, const uint64_t block_pos, const uint32_t block_num, const block_attributes_t attributes) -> bool
+  auto block_processor = [&](const block_id_type& block_id, const uint64_t block_pos, const uint32_t block_num, const block_attributes_t attributes) -> bool
   {
     if (!theApp.is_interrupt_request() && queue_size.load(std::memory_order_relaxed) >= MAX_BLOCK_TO_PREFETCH)
     {
@@ -652,10 +693,14 @@ void block_log_artifacts::impl::generate_artifacts_file(const block_log& source_
     if (theApp.is_interrupt_request())
       return false;
 
-    std::shared_ptr<full_block_with_artifacts> block_with_artifacts(new full_block_with_artifacts{full_block, block_pos, attributes});
-    full_block_queue.push(block_with_artifacts);
+    auto block_with_artifacts = std::make_shared<block_artifact_data>();
+    block_with_artifacts->block_log_file_pos = block_pos;
+    block_with_artifacts->attributes = attributes;
+    block_with_artifacts->block_id = block_id;
+    block_with_artifacts->block_num = block_num;
+
+    artifact_queue.push(block_with_artifacts);
     queue_size.fetch_add(1, std::memory_order_relaxed);
-    thread_pool.enqueue_work(full_block, blockchain_worker_thread_pool::data_source_type::block_log_for_artifact_generation);
     queue_condition.notify_one();
     return true;
   };
@@ -664,7 +709,7 @@ void block_log_artifacts::impl::generate_artifacts_file(const block_log& source_
   {
     {
       std::unique_lock<std::mutex> lock(queue_mutex);
-      full_block_queue.push(nullptr);
+      artifact_queue.push(nullptr);
       queue_condition.notify_one();
     }
     artifacts_writer_thread.join();

@@ -761,46 +761,155 @@ namespace hive { namespace chain {
     char* block_log_ptr = (char*)mmap(0, my->block_log_size, PROT_READ, MAP_SHARED, my->block_log_fd, 0);
     if (block_log_ptr == (char*)-1)
       FC_THROW("Failed to mmap block log file: ${error}", ("error", strerror(errno)));
-    if (madvise(block_log_ptr, my->block_log_size, MADV_WILLNEED) == -1)
+    // Use MADV_RANDOM since we're scanning backward; we'll issue targeted MADV_WILLNEED prefetches
+    if (madvise(block_log_ptr, my->block_log_size, MADV_RANDOM) == -1)
       wlog("madvise failed: ${error}", ("error", strerror(errno)));
 
     ilog("Processing blocks in reverse order for artifact file from block: ${starting_block_number} (position: ${block_position}, is head: ${starting_from_head_block} ) to ${target_block_number} ...",
       (starting_block_number)(block_position)(starting_from_head_block)(target_block_number));
-    
+
     block_position -= sizeof(uint64_t);
     const fc::time_point start_time = fc::time_point::now();
 
-    while (current_block_num >= target_block_number)
+    // Prefetch state for backward scanning: prefetch 64MB chunks ahead in the backward direction
+    constexpr size_t PREFETCH_CHUNK_SIZE = 64 * 1024 * 1024; // 64MB
+    constexpr uint32_t PREFETCH_INTERVAL_BLOCKS = 10000;
+    uint32_t blocks_since_prefetch = 0;
+    uint64_t last_prefetch_end = block_position + sizeof(uint64_t);
+
+    // Issue initial prefetch for the region we're about to scan backward into
     {
+      uint64_t prefetch_start = last_prefetch_end > PREFETCH_CHUNK_SIZE ? last_prefetch_end - PREFETCH_CHUNK_SIZE : 0;
+      madvise(block_log_ptr + prefetch_start, last_prefetch_end - prefetch_start, MADV_WILLNEED);
+      last_prefetch_end = prefetch_start;
+    }
+
+    // Batch-parallel block_id computation: gather block metadata in batches,
+    // compute block_ids in parallel, then deliver to processor in order.
+    struct block_entry
+    {
+      uint64_t block_pos;
+      uint32_t block_num;
+      uint32_t data_size;
+      block_attributes_t attributes;
+      block_id_type block_id; // filled by parallel computation
+    };
+
+    constexpr size_t BATCH_SIZE = 4096;
+    std::vector<block_entry> batch;
+    batch.reserve(BATCH_SIZE);
+
+    // Helper: compute block_id for a single entry directly from mmap'd data
+    auto compute_block_id = [block_log_ptr](block_entry& entry)
+    {
+      const char* raw_ptr = block_log_ptr + entry.block_pos;
+      if (entry.attributes.flags == block_flags::uncompressed)
+      {
+        fc::datastream<const char*> ds(raw_ptr, entry.data_size);
+        block_header hdr;
+        fc::raw::unpack(ds, hdr);
+        signature_type sig;
+        fc::raw::unpack(ds, sig);
+        entry.block_id = full_block_type::construct_block_id(raw_ptr, ds.tellp(), hdr.block_num());
+      }
+      else
+      {
+        entry.block_id = full_block_type::compute_block_id_from_compressed_data(
+            raw_ptr, entry.data_size, entry.attributes);
+      }
+    };
+
+    // Determine thread count for parallel computation
+    const unsigned num_threads = std::max(1u, std::thread::hardware_concurrency());
+    std::vector<std::thread> workers;
+
+    // Helper: process a filled batch — compute block_ids in parallel, then deliver to processor
+    bool stop_requested = false;
+    auto process_batch = [&]()
+    {
+      if (batch.empty())
+        return;
+
+      // Parallel block_id computation: divide batch among threads
+      if (batch.size() >= 64 && num_threads > 1)
+      {
+        workers.clear();
+        const size_t chunk = (batch.size() + num_threads - 1) / num_threads;
+        for (unsigned t = 0; t < num_threads; ++t)
+        {
+          size_t begin = t * chunk;
+          size_t end = std::min(begin + chunk, batch.size());
+          if (begin >= end)
+            break;
+          workers.emplace_back([&batch, &compute_block_id, begin, end]()
+          {
+            for (size_t i = begin; i < end; ++i)
+              compute_block_id(batch[i]);
+          });
+        }
+        for (auto& w : workers)
+          w.join();
+      }
+      else
+      {
+        // Small batch — compute sequentially
+        for (auto& entry : batch)
+          compute_block_id(entry);
+      }
+
+      // Deliver results to processor in order (blocks are in decreasing block_num order)
+      for (const auto& entry : batch)
+      {
+        if (!processor(entry.block_id, entry.block_pos, entry.block_num, entry.attributes))
+        {
+          ilog("Block log reading for artifacts stopped on caller request. Last read block: ${block_num}", ("block_num", entry.block_num));
+          stop_requested = true;
+          break;
+        }
+      }
+
+      batch.clear();
+    };
+
+    while (current_block_num >= target_block_number && !stop_requested)
+    {
+      // Periodically prefetch the next backward chunk
+      if (++blocks_since_prefetch >= PREFETCH_INTERVAL_BLOCKS && block_position < last_prefetch_end + PREFETCH_CHUNK_SIZE)
+      {
+        uint64_t prefetch_start = last_prefetch_end > PREFETCH_CHUNK_SIZE ? last_prefetch_end - PREFETCH_CHUNK_SIZE : 0;
+        if (prefetch_start < last_prefetch_end)
+        {
+          madvise(block_log_ptr + prefetch_start, last_prefetch_end - prefetch_start, MADV_WILLNEED);
+          last_prefetch_end = prefetch_start;
+        }
+        blocks_since_prefetch = 0;
+      }
+
       // read the file offset of the start of the block from the block log
       uint64_t higher_block_position = block_position;
       // read next block pos offset from the block log
       uint64_t block_position_with_flags = *(uint64_t*)(block_log_ptr + block_position);
       block_attributes_t attributes;
       std::tie(block_position, attributes) = detail::split_block_start_pos_with_flags(block_position_with_flags);
-    
+
       if (higher_block_position <= block_position) //this is a sanity check on index values stored in the block log
         FC_THROW("bad block offset at block ${current_block_num} because higher block pos: ${higher_block_pos} <= lower block pos: ${block_position}",
                  (current_block_num)(higher_block_position)(block_position));
-    
-      uint32_t block_serialized_data_size = higher_block_position - block_position;
-    
-      std::unique_ptr<char[]> serialized_data(new char[block_serialized_data_size]);
-      memcpy(serialized_data.get(), block_log_ptr + block_position, block_serialized_data_size);
-      std::shared_ptr<full_block_type> full_block = attributes.flags == block_flags::uncompressed ? 
-          full_block_type::create_from_uncompressed_block_data(std::move(serialized_data), block_serialized_data_size) : 
-          full_block_type::create_from_compressed_block_data(std::move(serialized_data), block_serialized_data_size, attributes);
 
-      if (!processor(full_block, block_position, current_block_num, attributes))
-      {
-        ilog("Block log reading for artifacts stopped on caller request. Last read block: ${current_block_num}", (current_block_num));
-        break;
-      }
-    
+      uint32_t block_serialized_data_size = higher_block_position - block_position;
+
+      batch.push_back({block_position, current_block_num, block_serialized_data_size, attributes, {}});
+
+      if (batch.size() >= BATCH_SIZE)
+        process_batch();
+
       /// Move to the offset of previous block
       block_position -= sizeof(uint64_t);
       --current_block_num;
     }
+
+    // Process remaining blocks
+    process_batch();
     
     if (munmap(block_log_ptr, my->block_log_size) == -1)
       elog("error unmapping block_log: ${error}", ("error", strerror(errno)));

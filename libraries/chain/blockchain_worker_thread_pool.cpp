@@ -226,7 +226,7 @@ void blockchain_worker_thread_pool::impl::perform_work(const std::weak_ptr<full_
         full_block->alternate_compress_block();
         break;
       case blockchain_worker_thread_pool::data_source_type::block_log_for_artifact_generation:
-        full_block->decode_block_header();
+        full_block->decode_block_id_only();
         break;
       case blockchain_worker_thread_pool::data_source_type::block_log_for_replay:
         // fully decompress (if necessary) the block and unpack it
