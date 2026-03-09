@@ -406,7 +406,7 @@ void full_block_type::decode_block_id_only() const
 
     fc::time_point decode_block_header_begin = fc::time_point::now();
     assert(!decoded_block_storage->block);
-    FC_ASSERT(!decoded_block_storage->block, "It seems like the block header has already been unpacked");
+    FC_ASSERT(!decoded_block_storage->block, "Block header has already been unpacked (in decode_block_id_only)");
 
     decoded_block_storage->block = signed_block();
     fc::datastream<const char*> datastream(decoded_block_storage->uncompressed_block.raw_bytes.get(),
@@ -419,8 +419,6 @@ void full_block_type::decode_block_id_only() const
     block_id = construct_block_id(decoded_block_storage->uncompressed_block.raw_bytes.get(), signed_block_header_size, decoded_block_storage->block->block_num());
     has_block_id.store(true, std::memory_order_release);
 
-    // Skip digest computation — not needed for artifact generation
-
     fc::time_point decode_block_header_end = fc::time_point::now();
     decode_block_header_time = decode_block_header_end - decode_block_header_begin;
 
@@ -428,7 +426,6 @@ void full_block_type::decode_block_id_only() const
   }
   else if (!has_block_id.load(std::memory_order_consume))
   {
-    // Header was already unpacked but block_id wasn't set (shouldn't normally happen)
     block_id = construct_block_id(decoded_block_storage->uncompressed_block.raw_bytes.get(), signed_block_header_size, decoded_block_storage->block->block_num());
     has_block_id.store(true, std::memory_order_release);
   }
