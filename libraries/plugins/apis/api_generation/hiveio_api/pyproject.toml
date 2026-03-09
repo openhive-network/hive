@@ -45,16 +45,15 @@ pattern = "default-unprefixed"
 #   Tag (distance=0, dirty):       1.2.3rc1+dirty
 #   develop (distance>0):          1.2.3rc1.post20260129082556
 #   develop (dirty):               1.2.3rc1.post20260129082556+dirty
-#   feature branch (distance>0):   1.2.3rc1.dev20260129082556+unstable
-#   feature branch (dirty):        1.2.3rc1.dev20260129082556+unstable.dirty
+#   feature branch (distance>0):   1.2.3rc1.dev20260129082556
+#   feature branch (dirty):        1.2.3rc1.dev20260129082556+dirty
 #   feature branch (distance=0):   1.2.3rc1  (same as tag)
 #
 # Logic:
 #   - distance=0           -> exact tag version
 #   - distance>0, stable   -> tag + .post{timestamp} (post-release, after tag)
-#   - distance>0, unstable -> tag + .dev{timestamp}+unstable (pre-release, before tag)
+#   - distance>0, unstable -> tag + .dev{timestamp} (pre-release, before tag)
 #   - dirty                -> + 'dirty' marker
-#   - unstable             -> + 'unstable' marker
 #
 # Stability detection:
 #   - stable: develop/master/main branches OR tag checkout (detached HEAD with distance=0)
@@ -63,8 +62,8 @@ pattern = "default-unprefixed"
 #     use CI_COMMIT_REF_NAME env var as fallback for branch detection
 #
 # Version ordering (newest last):
-#   1.2.3rc1.dev20260129082556+unstable < 1.2.3rc1 < 1.2.3rc1.post20260129082556
-#   (feature branch, before tag)          (tag)      (develop, after tag)
+#   1.2.3rc1.dev20260129082556 < 1.2.3rc1 < 1.2.3rc1.post20260129082556
+#   (feature branch, before tag)   (tag)      (develop, after tag)
 #
 # pip/poetry behavior:
 #   - `poetry update` / `pip install pkg>=1.0` -> selects stable only (ignores .dev pre-releases)
@@ -83,7 +82,7 @@ format-jinja = """
 
     {%- set post = timestamp|int if is_after_tag and not is_feature_branch else none -%}
     {%- set dev = timestamp|int if is_feature_branch else none -%}
-    {%- set local_parts = ['unstable'] if is_feature_branch else [] -%}
+    {%- set local_parts = [] -%}
     {%- set local_parts = local_parts + ['dirty'] if dirty else local_parts -%}
 
     {{- serialize_pep440(base, stage, revision, post=post, dev=dev, metadata=local_parts) -}}
