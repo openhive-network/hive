@@ -405,8 +405,8 @@ void full_block_type::decode_block_id_only() const
     decompress_block();
 
     fc::time_point decode_block_header_begin = fc::time_point::now();
-    assert(!decoded_block_storage->block);
-    FC_ASSERT(!decoded_block_storage->block, "Block header has already been unpacked (in decode_block_id_only)");
+    assert(!decoded_block_storage->block.has_value());
+    FC_ASSERT(!decoded_block_storage->block.has_value(), "Block header has already been unpacked (in decode_block_id_only)");
 
     decoded_block_storage->block = signed_block();
     fc::datastream<const char*> datastream(decoded_block_storage->uncompressed_block.raw_bytes.get(),
