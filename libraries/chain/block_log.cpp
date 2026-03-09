@@ -784,7 +784,94 @@ namespace hive { namespace chain {
       last_prefetch_end = prefetch_start;
     }
 
-    while (current_block_num >= target_block_number)
+    // Batch-parallel block_id computation: gather block metadata in batches,
+    // compute block_ids in parallel, then deliver to processor in order.
+    struct block_entry
+    {
+      uint64_t block_pos;
+      uint32_t block_num;
+      uint32_t data_size;
+      block_attributes_t attributes;
+      block_id_type block_id; // filled by parallel computation
+    };
+
+    constexpr size_t BATCH_SIZE = 4096;
+    std::vector<block_entry> batch;
+    batch.reserve(BATCH_SIZE);
+
+    // Helper: compute block_id for a single entry directly from mmap'd data
+    auto compute_block_id = [block_log_ptr](block_entry& entry)
+    {
+      const char* raw_ptr = block_log_ptr + entry.block_pos;
+      if (entry.attributes.flags == block_flags::uncompressed)
+      {
+        fc::datastream<const char*> ds(raw_ptr, entry.data_size);
+        block_header hdr;
+        fc::raw::unpack(ds, hdr);
+        signature_type sig;
+        fc::raw::unpack(ds, sig);
+        entry.block_id = full_block_type::construct_block_id(raw_ptr, ds.tellp(), hdr.block_num());
+      }
+      else
+      {
+        entry.block_id = full_block_type::compute_block_id_from_compressed_data(
+            raw_ptr, entry.data_size, entry.attributes);
+      }
+    };
+
+    // Determine thread count for parallel computation
+    const unsigned num_threads = std::max(1u, std::thread::hardware_concurrency());
+    std::vector<std::thread> workers;
+
+    // Helper: process a filled batch — compute block_ids in parallel, then deliver to processor
+    bool stop_requested = false;
+    auto process_batch = [&]()
+    {
+      if (batch.empty())
+        return;
+
+      // Parallel block_id computation: divide batch among threads
+      if (batch.size() >= 64 && num_threads > 1)
+      {
+        workers.clear();
+        const size_t chunk = (batch.size() + num_threads - 1) / num_threads;
+        for (unsigned t = 0; t < num_threads; ++t)
+        {
+          size_t begin = t * chunk;
+          size_t end = std::min(begin + chunk, batch.size());
+          if (begin >= end)
+            break;
+          workers.emplace_back([&batch, &compute_block_id, begin, end]()
+          {
+            for (size_t i = begin; i < end; ++i)
+              compute_block_id(batch[i]);
+          });
+        }
+        for (auto& w : workers)
+          w.join();
+      }
+      else
+      {
+        // Small batch — compute sequentially
+        for (auto& entry : batch)
+          compute_block_id(entry);
+      }
+
+      // Deliver results to processor in order (blocks are in decreasing block_num order)
+      for (const auto& entry : batch)
+      {
+        if (!processor(entry.block_id, entry.block_pos, entry.block_num, entry.attributes))
+        {
+          ilog("Block log reading for artifacts stopped on caller request. Last read block: ${block_num}", ("block_num", entry.block_num));
+          stop_requested = true;
+          break;
+        }
+      }
+
+      batch.clear();
+    };
+
+    while (current_block_num >= target_block_number && !stop_requested)
     {
       // Periodically prefetch the next backward chunk
       if (++blocks_since_prefetch >= PREFETCH_INTERVAL_BLOCKS && block_position < last_prefetch_end + PREFETCH_CHUNK_SIZE)
@@ -811,37 +898,18 @@ namespace hive { namespace chain {
 
       uint32_t block_serialized_data_size = higher_block_position - block_position;
 
-      // Compute block_id directly from mmap'd/raw bytes — no full_block_type needed.
-      // For uncompressed blocks: parse signed_block_header boundary from mmap'd data.
-      // For compressed blocks: decompress, parse, and compute SHA224.
-      block_id_type computed_block_id;
-      if (attributes.flags == block_flags::uncompressed)
-      {
-        const char* raw_ptr = block_log_ptr + block_position;
-        fc::datastream<const char*> ds(raw_ptr, block_serialized_data_size);
-        block_header hdr;
-        fc::raw::unpack(ds, hdr);
-        signature_type sig;
-        fc::raw::unpack(ds, sig);
-        size_t signed_hdr_size = ds.tellp();
-        computed_block_id = full_block_type::construct_block_id(raw_ptr, signed_hdr_size, hdr.block_num());
-      }
-      else
-      {
-        computed_block_id = full_block_type::compute_block_id_from_compressed_data(
-            block_log_ptr + block_position, block_serialized_data_size, attributes);
-      }
+      batch.push_back({block_position, current_block_num, block_serialized_data_size, attributes, {}});
 
-      if (!processor(computed_block_id, block_position, current_block_num, attributes))
-      {
-        ilog("Block log reading for artifacts stopped on caller request. Last read block: ${current_block_num}", (current_block_num));
-        break;
-      }
+      if (batch.size() >= BATCH_SIZE)
+        process_batch();
 
       /// Move to the offset of previous block
       block_position -= sizeof(uint64_t);
       --current_block_num;
     }
+
+    // Process remaining blocks
+    process_batch();
     
     if (munmap(block_log_ptr, my->block_log_size) == -1)
       elog("error unmapping block_log: ${error}", ("error", strerror(errno)));
