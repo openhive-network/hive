@@ -8176,8 +8176,8 @@ BOOST_AUTO_TEST_CASE( comment_options_apply )
       } );
 
       const auto& treasury = db.get_treasury();
-      const auto& treasury_assets_obj = db.get_account_details( treasury.get_id() );
-      db.modify( treasury_assets_obj, [=]( account_details_object& a )
+      const auto& treasury_details_obj = db.get_account_details( treasury.get_id() );
+      db.modify( treasury_details_obj, [=]( account_details_object& a )
       {
         a.set_hbd_balance( HBD_asset( 5'000 ) );
       } );
@@ -8354,8 +8354,8 @@ BOOST_AUTO_TEST_CASE( comment_options_deleted_permlink_reuse )
       } );
 
       const auto& treasury = db.get_treasury();
-      const auto& treasury_assets_obj = db.get_account_details( treasury.get_id() );
-      db.modify( treasury_assets_obj, [=]( account_details_object& a )
+      const auto& treasury_details_obj = db.get_account_details( treasury.get_id() );
+      db.modify( treasury_details_obj, [=]( account_details_object& a )
       {
         a.set_hbd_balance( HBD_asset( 5'000 ) );
       } );
