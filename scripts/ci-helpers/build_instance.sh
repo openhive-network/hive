@@ -33,6 +33,7 @@ cat <<-EOF
       USE_BUILDX                Set to 'false' to disable BuildKit registry caching (default: true)
       SCCACHE_REDIS             Redis URL for sccache distributed compilation caching
       POSTGRES_VERSION          PostgreSQL major version to build against (e.g., 17, 18). Passed as Docker build-arg.
+      USE_ALTERNATE_LINKER      Use alternate linker (mold, lld, gold). Default: mold.
 EOF
 }
 
@@ -176,6 +177,7 @@ if docker buildx version &>/dev/null && [[ "${USE_BUILDX:-true}" != "false" ]]; 
       --build-arg HIVE_SUBDIR="$HIVE_SUBDIR" \
       --build-arg IMAGE_TAG_PREFIX="${IMAGE_TAG_PREFIX:+$IMAGE_TAG_PREFIX-}" \
       --build-arg SCCACHE_REDIS="${SCCACHE_REDIS:-}" \
+      --build-arg USE_ALTERNATE_LINKER="${USE_ALTERNATE_LINKER:-mold}" \
       ${PG_BUILD_ARG:+$PG_BUILD_ARG} \
       --tag "${REGISTRY}${IMAGE_TAG_PREFIX:+/$IMAGE_TAG_PREFIX}/build:${BUILD_IMAGE_TAG}" \
       --push \
@@ -190,6 +192,7 @@ else
       --build-arg HIVE_SUBDIR="$HIVE_SUBDIR" \
       --build-arg IMAGE_TAG_PREFIX="${IMAGE_TAG_PREFIX:+$IMAGE_TAG_PREFIX-}" \
       --build-arg SCCACHE_REDIS="${SCCACHE_REDIS:-}" \
+      --build-arg USE_ALTERNATE_LINKER="${USE_ALTERNATE_LINKER:-mold}" \
       ${PG_BUILD_ARG:+$PG_BUILD_ARG} \
       --tag "${REGISTRY}${IMAGE_TAG_PREFIX:+/$IMAGE_TAG_PREFIX}/build:${BUILD_IMAGE_TAG}" \
       --file Dockerfile "$SOURCE_DIR"

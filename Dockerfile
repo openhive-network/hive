@@ -64,6 +64,8 @@ ENV HIVE_SUBDIR=${HIVE_SUBDIR}
 ARG SCCACHE_REDIS=""
 ENV SCCACHE_REDIS=${SCCACHE_REDIS}
 
+ARG USE_ALTERNATE_LINKER=""
+
 USER hived_admin
 WORKDIR /home/hived_admin
 SHELL ["/bin/bash", "-c"]
@@ -73,6 +75,22 @@ COPY --chown=hived_admin:users . /home/hived_admin/source
 
 RUN <<-EOF
   set -e
+
+  # Install alternate linker if requested and not already available
+  if [ -n "${USE_ALTERNATE_LINKER}" ] && ! command -v "${USE_ALTERNATE_LINKER}" &> /dev/null; then
+    echo "Installing ${USE_ALTERNATE_LINKER}..."
+    if [ "${USE_ALTERNATE_LINKER}" = "mold" ]; then
+      MOLD_VERSION=2.35.1
+      curl -fsSL "https://github.com/rui314/mold/releases/download/v${MOLD_VERSION}/mold-${MOLD_VERSION}-x86_64-linux.tar.gz" \
+        | sudo tar xz -C /usr/local --strip-components=1
+    elif [ "${USE_ALTERNATE_LINKER}" = "lld" ]; then
+      if command -v dnf &> /dev/null; then
+        sudo dnf install -y lld
+      else
+        sudo apt-get update && sudo apt-get install -y lld && sudo rm -rf /var/lib/apt/lists/*
+      fi
+    fi
+  fi
 
   # If SCCACHE_REDIS is empty, unset it so sccache uses local disk cache
   # instead of trying to connect to Redis with a malformed URL
@@ -84,10 +102,16 @@ RUN <<-EOF
   sudo mkdir -p "${INSTALLATION_DIR}"
   sudo chown hived:users "${INSTALLATION_DIR}"
 
+  LINKER_ARG=""
+  if [ -n "${USE_ALTERNATE_LINKER}" ]; then
+    LINKER_ARG="--cmake-arg=-DUSE_ALTERNATE_LINKER=${USE_ALTERNATE_LINKER}"
+  fi
+
   ./source/${HIVE_SUBDIR}/scripts/build.sh --source-dir="./source/${HIVE_SUBDIR}" --binary-dir="./build" \
   --cmake-arg="-DBUILD_HIVE_TESTNET=${BUILD_HIVE_TESTNET}" \
   --cmake-arg="-DHIVE_CONVERTER_BUILD=${HIVE_CONVERTER_BUILD}" \
   --cmake-arg="-DHIVE_LINT=${HIVE_LINT}" \
+  ${LINKER_ARG} \
   --flat-binary-directory="${INSTALLATION_DIR}" \
   --clean-after-build
 

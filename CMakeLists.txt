@@ -148,6 +148,19 @@ else( WIN32 ) # Apple AND Linux
 
     set( CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG")
 
+    # Alternate linker support (mold, lld, gold) for faster linking
+    SET( USE_ALTERNATE_LINKER "" CACHE STRING "Use alternate linker: mold, lld, or gold" )
+    if( USE_ALTERNATE_LINKER )
+      find_program( LINKER_EXECUTABLE ${USE_ALTERNATE_LINKER} )
+      if( LINKER_EXECUTABLE )
+        message( STATUS "Using alternate linker: ${USE_ALTERNATE_LINKER} (${LINKER_EXECUTABLE})" )
+        set( CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=${USE_ALTERNATE_LINKER}" )
+        set( CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fuse-ld=${USE_ALTERNATE_LINKER}" )
+      else()
+        message( FATAL_ERROR "Alternate linker '${USE_ALTERNATE_LINKER}' not found" )
+      endif()
+    endif()
+
     # based on http://www.delorie.com/gnu/docs/gdb/gdb_70.html
     # uncomment this line to tell GDB about macros (slows compile times)
     # set( CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -gdwarf-2 -g3" )
