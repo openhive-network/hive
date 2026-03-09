@@ -108,59 +108,14 @@ namespace hive { namespace chain {
       public_key_type get_memo_key() const { return memo_key; }
       void set_memo_key( const public_key_type& value ) { memo_key = value; }
 
-      // ===== Cross-object helper methods =====
-      // These methods need data from account_details_object (which now includes delayed votes)
+      // ===== Cross-object helper method =====
 
-      // Governance vote power of this account does not include "delayed votes"
-      // Needs: account_details_object (for vesting and sum_delayed_votes)
-      share_type get_direct_governance_vote_power( const account_details_object& account_details ) const
-      {
-        FC_ASSERT( account_details.get_sum_delayed_votes().value <= account_details.get_vesting().amount, "",
-                ( "sum_delayed_votes",     account_details.get_sum_delayed_votes() )
-                ( "vesting_shares.amount", account_details.get_vesting().amount )
-                ( "account",               name ) );
-
-        return asset( account_details.get_vesting().amount - account_details.get_sum_delayed_votes().value, VESTS_SYMBOL ).amount;
-      }
-
-      /// This function should be used only when the account votes for a witness directly
-      // Needs: account_details_object (which now includes delayed votes)
+      /// This function should be used only when the account votes for a witness directly.
+      /// Includes proxied votes. Needs: account_details_object (for vesting and sum_delayed_votes).
       share_type get_governance_vote_power( const account_details_object& account_details ) const
       {
         return std::accumulate( proxied_vsf_votes.begin(), proxied_vsf_votes.end(),
-          get_direct_governance_vote_power( account_details ) );
-      }
-
-      // Effective balance of VESTS including delegations and optionally excluding active step of pending power down
-      // Needs: account_details_object
-      share_type get_effective_vesting_shares( const account_details_object& account_details, bool excludeWeeklyPowerDown = true ) const
-      {
-        share_type total = account_details.get_vesting().amount - account_details.get_delegated_vesting().amount + account_details.get_received_vesting().amount;
-        if( excludeWeeklyPowerDown && account_details.has_active_power_down() )
-        {
-          // Value of active step of pending power down (or zero)
-          share_type active_withdrawal = std::min( account_details.get_vesting_withdraw_rate().amount, account_details.get_total_vesting_withdrawal() );
-          total -= active_withdrawal;
-        }
-        return total;
-      }
-
-      // Effective balance of VESTS for RC calculation optionally excluding part that cannot be delegated
-      // Needs: account_details_object (which now contains RC fields)
-      share_type get_maximum_rc( const account_details_object& account_details, bool only_delegable = false ) const
-      {
-        share_type effective_vesting = get_effective_vesting_shares( account_details );
-        return account_details.get_maximum_rc( effective_vesting, only_delegable );
-      }
-
-      // Value of active step of pending power down (or zero)
-      // Needs: account_details_object
-      share_type get_active_next_vesting_withdrawal( const account_details_object& account_details ) const
-      {
-        if( account_details.has_active_power_down() )
-          return std::min( account_details.get_vesting_withdraw_rate().amount, account_details.get_total_vesting_withdrawal() );
-        else
-          return 0;
+          account_details.get_direct_governance_vote_power( name ) );
       }
 
     private:

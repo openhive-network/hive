@@ -78,7 +78,7 @@ struct rc_account_api_object
 
     rc_manabar = assets.get_rc_manabar();
     max_rc_creation_adjustment = asset( assets.get_rc_adjustment(), VESTS_SYMBOL );
-    max_rc = a.get_maximum_rc( assets ).value;
+    max_rc = assets.get_maximum_rc( false ).value;
     delegated_rc = assets.get_delegated_rc().value;
     received_delegated_rc = assets.get_received_rc().value;
   }

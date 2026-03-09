@@ -1213,7 +1213,7 @@ void database::adjust_proxied_witness_votes( const account_object& a, share_type
 void database::nullify_proxied_witness_votes( const account_object& a )
 {
   std::array<share_type, HIVE_MAX_PROXY_RECURSION_DEPTH + 1> delta;
-  delta[ 0 ] = -a.get_direct_governance_vote_power( get_account_details( a.get_id() ) );
+  delta[ 0 ] = -get_account_details( a.get_id() ).get_direct_governance_vote_power( a.get_name() );
   for( int i = 0; i < HIVE_MAX_PROXY_RECURSION_DEPTH; ++i )
     delta[ i + 1 ] = -a.get_proxied_vsf_votes()[ i ];
   adjust_proxied_witness_votes( a, delta );
@@ -3715,7 +3715,7 @@ void database::validate_invariants()const
                       acc.get_governance_vote_power( _details_obj ) :
                       ( HIVE_MAX_PROXY_RECURSION_DEPTH > 0 ?
                           acc.get_proxied_vsf_votes()[HIVE_MAX_PROXY_RECURSION_DEPTH - 1] :
-                          acc.get_direct_governance_vote_power( _details_obj ) ) );
+                          _details_obj.get_direct_governance_vote_power( acc.get_name() ) ) );
       total_delayed_votes += _details_obj.get_sum_delayed_votes();
       ushare_type sum_delayed_votes{ 0ul };
       for( auto& dv : _details_obj.get_delayed_votes() )

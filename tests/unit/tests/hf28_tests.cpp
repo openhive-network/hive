@@ -48,7 +48,7 @@ using namespace hive::chain;
 using namespace hive::chain::util;
 
 #define GET_ASSETS( account_name ) (db->get_account_details( db->get_account( account_name ).get_id() ))
-#define GET_ACTIVE_NEXT_VW( account_name ) (db->get_account( account_name ).get_active_next_vesting_withdrawal( GET_ASSETS( account_name ) ))
+#define GET_ACTIVE_NEXT_VW( account_name ) (GET_ASSETS( account_name ).get_active_next_vesting_withdrawal())
 
 BOOST_FIXTURE_TEST_SUITE( hf28_tests, cluster_database_fixture )
 

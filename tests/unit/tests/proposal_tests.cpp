@@ -64,7 +64,7 @@ using namespace hive::chain;
 using namespace hive::protocol;
 using fc::string;
 
-#define GET_GOV_VOTE_POWER( acc ) ((acc).get_direct_governance_vote_power( db->get_account_details( (acc).get_id() ) ))
+#define GET_GOV_VOTE_POWER( acc ) (db->get_account_details( (acc).get_id() ).get_direct_governance_vote_power( (acc).get_name() ))
 #define GET_TINY( account_name ) (*db->get_index< tiny_account_index, by_name >().find( account_name ))
 
 template< typename PROPOSAL_IDX >

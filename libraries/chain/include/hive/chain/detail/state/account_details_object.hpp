@@ -251,6 +251,48 @@ namespace hive { namespace chain {
       ushare_type& get_sum_delayed_votes() { return sum_delayed_votes; }
       void set_sum_delayed_votes( const ushare_type& value ) { sum_delayed_votes = value; }
 
+      // ===== Cross-object helper methods (moved from account_object) =====
+
+      // Governance vote power of this account (does not include "delayed votes")
+      share_type get_direct_governance_vote_power( const account_name_type& name ) const
+      {
+        FC_ASSERT( sum_delayed_votes.value <= vesting_shares.amount, "",
+                ( "sum_delayed_votes",     sum_delayed_votes )
+                ( "vesting_shares.amount", vesting_shares.amount )
+                ( "account",               name ) );
+
+        return asset( vesting_shares.amount - sum_delayed_votes.value, VESTS_SYMBOL ).amount;
+      }
+
+      // Effective balance of VESTS including delegations and optionally excluding active step of pending power down
+      share_type get_effective_vesting_shares( bool excludeWeeklyPowerDown = true ) const
+      {
+        share_type total = vesting_shares.amount - delegated_vesting_shares.amount + received_vesting_shares.amount;
+        if( excludeWeeklyPowerDown && has_active_power_down() )
+        {
+          share_type active_withdrawal = std::min( vesting_withdraw_rate.amount, get_total_vesting_withdrawal() );
+          total -= active_withdrawal;
+        }
+        return total;
+      }
+
+      // Effective balance of VESTS for RC calculation optionally excluding part that cannot be delegated
+      // (computes effective_vesting_shares internally, then delegates to the share_type overload)
+      share_type get_maximum_rc( bool only_delegable ) const
+      {
+        share_type effective_vesting = get_effective_vesting_shares();
+        return get_maximum_rc( effective_vesting, only_delegable );
+      }
+
+      // Value of active step of pending power down (or zero)
+      share_type get_active_next_vesting_withdrawal() const
+      {
+        if( has_active_power_down() )
+          return std::min( vesting_withdraw_rate.amount, get_total_vesting_withdrawal() );
+        else
+          return 0;
+      }
+
       // Access to delayed votes collection
       t_delayed_votes& get_delayed_votes() { return delayed_votes; }
       const t_delayed_votes& get_delayed_votes() const { return delayed_votes; }

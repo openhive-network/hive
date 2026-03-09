@@ -297,7 +297,7 @@ api_account_object::api_account_object( const account_object& a, const database&
   if( delayed_votes_active )
     delayed_votes = vector< delayed_votes_data >{ assets.get_delayed_votes().begin(), assets.get_delayed_votes().end() };
 
-  post_voting_power = VEST_asset(a.get_effective_vesting_shares( assets )).to_asset();
+  post_voting_power = VEST_asset(assets.get_effective_vesting_shares()).to_asset();
 }
 
 

@@ -255,7 +255,7 @@ void account_witness_proxy_evaluator::do_apply( const account_witness_proxy_oper
 
     /// add all new votes
     std::array<share_type, HIVE_MAX_PROXY_RECURSION_DEPTH + 1> delta;
-    delta[0] = account.get_direct_governance_vote_power( _db.get_account_details( account.get_id() ) );
+    delta[0] = _db.get_account_details( account.get_id() ).get_direct_governance_vote_power( account.get_name() );
     for( int i = 0; i < HIVE_MAX_PROXY_RECURSION_DEPTH; ++i )
       delta[i+1] = account.get_proxied_vsf_votes()[i];
     _db.adjust_proxied_witness_votes( account, delta );

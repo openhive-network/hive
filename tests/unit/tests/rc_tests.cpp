@@ -48,7 +48,7 @@ int64_t regenerate_rc_mana( debug_node::debug_node_plugin* db_plugin, const acco
     const auto& account_details = db.get_account_details( acc.get_id() );
     db.modify( account_details, [&]( account_details_object& a )
     {
-      auto max_rc = acc.get_maximum_rc( a );
+      auto max_rc = a.get_maximum_rc( false );
       hive::chain::util::manabar_params manabar_params( max_rc.value, HIVE_RC_REGEN_TIME );
       a.get_rc_manabar().regenerate_mana( manabar_params, db.head_block_time() );
     } );

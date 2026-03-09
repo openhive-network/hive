@@ -1047,7 +1047,7 @@ share_type database_fixture::get_effective_vesting_shares( const string& account
 {
   const auto& acnt = db->get_account( account_name );
   const auto& account_details = db->get_account_details( acnt.get_id() );
-  return acnt.get_effective_vesting_shares( account_details );
+  return account_details.get_effective_vesting_shares();
 }
 
 time_point_sec database_fixture::get_last_vote_time( const string& account_name )const

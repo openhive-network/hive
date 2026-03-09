@@ -725,7 +725,7 @@ void delegate_vesting_shares_evaluator::do_apply( const delegate_vesting_shares_
 
   if( _db.has_hardfork( HIVE_HARDFORK_0_20__2539 ) )
   {
-    auto max_mana = delegator.get_effective_vesting_shares( delegator_details );
+    auto max_mana = delegator_details.get_effective_vesting_shares();
 
     _db.modify( delegator_details, [&]( account_details_object& a )
     {

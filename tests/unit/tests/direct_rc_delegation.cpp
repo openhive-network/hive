@@ -1162,7 +1162,7 @@ BOOST_AUTO_TEST_CASE( rc_delegation_regeneration )
     {
       const auto& account = db->get_account( account_name );
       const auto& account_details = db->get_account_details( account.get_id() );
-      hive::chain::util::manabar_params manabar_params( account.get_maximum_rc( account_details ).value, HIVE_RC_REGEN_TIME );
+      hive::chain::util::manabar_params manabar_params( account_details.get_maximum_rc( false ).value, HIVE_RC_REGEN_TIME );
       auto manabar = account_details.get_rc_manabar();
       // Magic number: we regenerate based off the future, because otherwise the manabar will already be up to date and won't regenerate
       manabar.regenerate_mana( manabar_params, db->get_dynamic_global_properties().time.sec_since_epoch() + 1 );
@@ -1279,7 +1279,7 @@ BOOST_AUTO_TEST_CASE( rc_delegation_removal_no_rc )
     const auto& bob_account = db->get_account( "bob" );
     const auto& bob_assets_2 = GET_ASSETS( "bob" );
     BOOST_REQUIRE_EQUAL( bob_assets_2.get_rc_manabar().current_mana, 0 );
-    BOOST_REQUIRE_GE( bob_account.get_maximum_rc( bob_assets_2 ), 0 );
+    BOOST_REQUIRE_GE( bob_assets_2.get_maximum_rc( false ), 0 );
 
     validate_database();
   }
@@ -1382,7 +1382,7 @@ BOOST_AUTO_TEST_CASE( rc_negative_regeneration_bug )
     push_transaction( power_down, delegator1_private_key );
     const auto& delegator1_acct = db->get_account( "delegator1" );
     const auto& delegator1_assets = GET_ASSETS( "delegator1" );
-    int64_t undelegated = delegator1_acct.get_active_next_vesting_withdrawal( delegator1_assets ).value;
+    int64_t undelegated = delegator1_assets.get_active_next_vesting_withdrawal().value;
     rc_delegate( "delegator3", "pattern3", full_vest - undelegated, delegator3_post_key );
     generate_block();
     //pattern2 RC regeneration used to be triggered by author_reward_operation, but since it doesn't modify RC, that was removed

@@ -129,7 +129,7 @@ void database::process_vesting_withdrawals()
     const auto& from_account = get_account( tiny_obj.get_name() );
     const auto& from_details = get_account_details( from_account.get_id() );
 
-    VEST_asset to_withdraw( from_account.get_active_next_vesting_withdrawal( from_details ) );
+    VEST_asset to_withdraw( from_details.get_active_next_vesting_withdrawal() );
     if( !has_hardfork( HIVE_HARDFORK_1_28_FIX_POWER_DOWN ) && to_withdraw < from_details.get_vesting_withdraw_rate() )
       to_withdraw = from_details.get_to_withdraw() % from_details.get_vesting_withdraw_rate().get_amount();
     // see history of first (and so far the only) power down of 'gil' account: https://hiveblocks.com/@gil

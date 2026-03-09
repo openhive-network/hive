@@ -512,7 +512,7 @@ void database::apply_hardfork( uint32_t hardfork )
           {
             a.set_rc_adjustment( HIVE_RC_HISTORICAL_ACCOUNT_CREATION_ADJUSTMENT );
             a.get_rc_manabar().last_update_time = now.sec_since_epoch();
-            auto max_rc = acc.get_maximum_rc( a ).value;
+            auto max_rc = a.get_maximum_rc( false ).value;
             a.get_rc_manabar().current_mana = max_rc;
             a.set_last_max_rc( max_rc );
           } );
