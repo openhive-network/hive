@@ -167,7 +167,7 @@ void update_proposal_votes_evaluator::do_apply( const update_proposal_votes_oper
 
     {
       const auto& voter_tiny = *_db.get_index< tiny_account_index, by_name >().find( voter.get_name() );
-      static_cast<chainbase::database&>(_db).modify( voter_tiny, [&]( tiny_account_object& t ) { t.update_governance_vote_expiration_ts(_db.head_block_time()); });
+      _db.modify( voter_tiny, [&]( tiny_account_object& t ) { t.update_governance_vote_expiration_ts(_db.head_block_time()); });
     }
 
     for( const auto pid : o.proposal_ids )

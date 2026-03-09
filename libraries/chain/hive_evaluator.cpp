@@ -215,7 +215,7 @@ void account_witness_proxy_evaluator::do_apply( const account_witness_proxy_oper
   const auto& tiny_idx = _db.get_index< tiny_account_index, by_name >();
   const auto& account_tiny = *tiny_idx.find( account.get_name() );
 
-  static_cast<chainbase::database&>(_db).modify( account_tiny, [&]( tiny_account_object& t )
+  _db.modify( account_tiny, [&]( tiny_account_object& t )
   {
     t.update_governance_vote_expiration_ts( _db.head_block_time() );
   } );
@@ -248,7 +248,7 @@ void account_witness_proxy_evaluator::do_apply( const account_witness_proxy_oper
       push_virtual_operation( _db, proxy_cleared_operation( account.get_name(), _db.get_account( account_tiny.get_proxy() ).get_name() ) );
     }
 
-    static_cast<chainbase::database&>(_db).modify( account_tiny, [&]( tiny_account_object& t )
+    _db.modify( account_tiny, [&]( tiny_account_object& t )
     {
       t.set_proxy_by_id( new_proxy.get_id() );
     } );
@@ -264,7 +264,7 @@ void account_witness_proxy_evaluator::do_apply( const account_witness_proxy_oper
 
     push_virtual_operation( _db, proxy_cleared_operation( account.get_name(), _db.get_account( account_tiny.get_proxy() ).get_name() ) );
 
-    static_cast<chainbase::database&>(_db).modify( account_tiny, [&]( tiny_account_object& t )
+    _db.modify( account_tiny, [&]( tiny_account_object& t )
     {
       t.clear_proxy();
     } );
@@ -278,7 +278,7 @@ void account_witness_vote_evaluator::do_apply( const account_witness_vote_operat
   const auto& voter_tiny = *_db.get_index< tiny_account_index, by_name >().find( voter.get_name() );
   FC_ASSERT( !voter_tiny.has_proxy(), "A proxy is currently set, please clear the proxy before voting for a witness." );
   FC_ASSERT( voter.can_vote() && "Account has declined its voting rights." );
-  static_cast<chainbase::database&>(_db).modify( voter_tiny, [&]( tiny_account_object& t ) { t.update_governance_vote_expiration_ts(_db.head_block_time()); });
+  _db.modify( voter_tiny, [&]( tiny_account_object& t ) { t.update_governance_vote_expiration_ts(_db.head_block_time()); });
 
   const auto& witness = _db.get_witness( o.witness );
 

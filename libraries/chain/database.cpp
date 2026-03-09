@@ -1251,7 +1251,7 @@ void database::refresh_last_access_block( const account_object& account )
 {
   if( account.get_last_access_block() != head_block_num() )
   {
-    static_cast<chainbase::database&>(*this).modify( account, [&]( account_object& a )
+    modify_direct( account, [&]( account_object& a )
     {
       a.set_last_access_block( head_block_num() );
     } );
@@ -3794,7 +3794,7 @@ void database::remove_expired_governance_votes()
       if( account_tiny.has_proxy() )
         push_virtual_operation( *this, proxy_cleared_operation( account.get_name(), get_account( account_tiny.get_proxy() ).get_name()) );
 
-      static_cast<chainbase::database&>(*this).modify( account_tiny, [&]( tiny_account_object& t )
+      modify( account_tiny, [&]( tiny_account_object& t )
       {
         t.clear_proxy();
         t.set_governance_vote_expired();

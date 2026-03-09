@@ -43,7 +43,7 @@ void database::align_split_object_ids_with_accounts()
   // Align account_details_index
   {
     const auto& idx = get_index< account_details_index >();
-    while( idx.get_next_id() < account_details_object::id_type( next_account_id.get_value() ) )
+    while( idx.get_next_id() < to_split_id<account_details_object>( next_account_id ) )
     {
       create< account_details_object >();
     }

@@ -156,10 +156,9 @@ struct rocksdb_reader<account_object, account_name_type, Return_Type>
     if constexpr ( std::is_same_v<Return_Type, const account_object*> )
     {
       const account_id_type account_id = result->get_id();
-      const auto aid = account_id.get_value();
 
       // Restore the account_details_object (includes merged recovery + delayed_votes fields)
-      if( !db.find< account_details_object, by_id >( account_details_object::id_type( aid ) ) )
+      if( !db.find< account_details_object, by_id >( database::to_split_id<account_details_object>( account_id ) ) )
       {
         PinnableSlice _assets_buffer;
         uint32_slice_t key_slice( account_id );
@@ -309,6 +308,33 @@ bool rocksdb_account_archive::on_irreversible_block_impl( uint32_t block_num, co
   return _do_flush;
 }
 
+/// Returns true if the account can be archived (not a system account, no pending governance votes,
+/// no active power-down). Uses tiny_account_object for governance/power-down checks since it
+/// persists in chainbase even for archived accounts.
+template<typename TinyByNameIndex>
+static bool is_archivable( const database& db, const account_object& account, const TinyByNameIndex& tiny_idx )
+{
+  const auto& account_name = account.get_name();
+
+  // Skip system accounts (null, treasury) - they are accessed every block and must never be archived.
+  if( account_name == HIVE_NULL_ACCOUNT || db.is_treasury( account_name ) )
+    return false;
+
+  auto tiny_it = tiny_idx.find( account_name );
+  if( tiny_it != tiny_idx.end() )
+  {
+    // Skip accounts with pending governance votes - they need to stay in chainbase
+    if( tiny_it->get_governance_vote_expiration_ts() != fc::time_point_sec::maximum() )
+      return false;
+
+    // Skip accounts with active power-down - they need to stay in chainbase
+    if( tiny_it->get_next_vesting_withdrawal() != fc::time_point_sec::maximum() )
+      return false;
+  }
+
+  return true;
+}
+
 // Specialized implementation for account_object which skips accounts with pending governance votes
 // Also archives the associated split object (account_details_object, which includes merged recovery + delayed_votes)
 bool rocksdb_account_archive::on_irreversible_block_impl_account( uint32_t block_num, const std::vector<ColumnTypes>& column_types )
@@ -326,6 +352,9 @@ bool rocksdb_account_archive::on_irreversible_block_impl_account( uint32_t block
     Regarding: `itr->get_last_access_block() < block_num`
     Here must be `<` not `<=` because `get_last_access_block` is a number of last block, but `block_num` is the current block.
   */
+  // Cache the tiny_account_index reference outside the loop to avoid repeated lookups
+  const auto& tiny_idx = db.get_index< tiny_account_index, by_name >();
+
   uint32_t _archived = 0;
   while( _itr != _idx.end() && _itr->get_last_access_block() + retention_blocks < block_num && _archived < max_archives_per_block )
   {
@@ -333,29 +362,12 @@ bool rocksdb_account_archive::on_irreversible_block_impl_account( uint32_t block
     ++_itr;
 
     const account_id_type account_id = _current.get_id();
-    const auto aid = account_id.get_value();
 
-    // Skip system accounts (null, treasury) - they are accessed every block and must never be archived.
-    // This is a safety net: normally refresh_last_access_block() keeps these fresh, but an explicit
-    // guard prevents catastrophic archive-restore churn if that mechanism is ever changed.
-    const auto& account_name = _current.get_name();
-    if( account_name == HIVE_NULL_ACCOUNT || db.is_treasury( account_name ) )
-      continue;
-
-    // Use tiny_account_object to check archival guards (it is always in chainbase)
-    const auto& tiny_idx = db.get_index< tiny_account_index, by_name >();
-    auto tiny_it = tiny_idx.find( account_name );
-
-    // Skip accounts with pending governance votes - they need to stay in chainbase
-    if( tiny_it != tiny_idx.end() && tiny_it->get_governance_vote_expiration_ts() != fc::time_point_sec::maximum() )
-      continue;
-
-    // Skip accounts with active power-down - they need to stay in chainbase
-    if( tiny_it != tiny_idx.end() && tiny_it->get_next_vesting_withdrawal() != fc::time_point_sec::maximum() )
+    if( !is_archivable( db, _current, tiny_idx ) )
       continue;
 
     // Find the assets split object before removing anything - use by_id index
-    const auto* assets_ptr = db.find< account_details_object, by_id >( account_details_object::id_type( aid ) );
+    const auto* assets_ptr = db.find< account_details_object, by_id >( database::to_split_id<account_details_object>( account_id ) );
 
     // Archive changed account data to RocksDB
     if( _current.changed() )
@@ -611,7 +623,7 @@ Return_Type rocksdb_account_archive::get_object( const Key_Type& key, const std:
       // Set last_access_block on restored object and its split objects to prevent immediate re-archival
       if constexpr ( std::is_same_v<Return_Type, const SHM_Object_Type*> )
       {
-        static_cast<chainbase::database&>(db).modify( *_external_found, [&]( SHM_Object_Type& o )
+        db.modify_direct( *_external_found, [&]( SHM_Object_Type& o )
         {
           o.set_last_access_block( db.head_block_num() );
         });
@@ -635,8 +647,8 @@ void rocksdb_account_archive::create_object( const account_metadata_object& obj 
   uint32_t head_block = dgpo ? dgpo->head_block_number : 0;
 
   // Set last_access_block to mark the object as changed, so it will be written to RocksDB when archived
-  // Use static_cast to bypass accounts_handler and avoid infinite recursion
-  static_cast<chainbase::database&>(db).modify( obj, [head_block]( account_metadata_object& o )
+  // Use modify_direct to bypass accounts_handler and avoid infinite recursion
+  db.modify_direct( obj, [head_block]( account_metadata_object& o )
   {
     o.set_last_access_block( head_block );
   } );
@@ -679,7 +691,7 @@ const account_metadata_object* rocksdb_account_archive::get_account_metadata( co
   if( _external_found )
   {
     // Set last_access_block to prevent immediate re-archival
-    static_cast<chainbase::database&>(db).modify( *_external_found, [&]( account_metadata_object& o )
+    db.modify_direct( *_external_found, [&]( account_metadata_object& o )
     {
       o.set_last_access_block( db.head_block_num() );
     });
@@ -724,8 +736,8 @@ void rocksdb_account_archive::create_object( const account_authority_object& obj
   uint32_t head_block = dgpo ? dgpo->head_block_number : 0;
 
   // Set last_access_block to mark the object as changed, so it will be written to RocksDB when archived
-  // Use static_cast to bypass accounts_handler and avoid infinite recursion
-  static_cast<chainbase::database&>(db).modify( obj, [head_block]( account_authority_object& o )
+  // Use modify_direct to bypass accounts_handler and avoid infinite recursion
+  db.modify_direct( obj, [head_block]( account_authority_object& o )
   {
     o.set_last_access_block( head_block );
   } );
@@ -754,7 +766,7 @@ const account_authority_object* rocksdb_account_archive::get_account_authority( 
   if( _external_found )
   {
     // Set last_access_block to prevent immediate re-archival
-    static_cast<chainbase::database&>(db).modify( *_external_found, [&]( account_authority_object& o )
+    db.modify_direct( *_external_found, [&]( account_authority_object& o )
     {
       o.set_last_access_block( db.head_block_num() );
     });
@@ -799,8 +811,8 @@ void rocksdb_account_archive::create_object( const account_object& obj )
   uint32_t head_block = dgpo ? dgpo->head_block_number : 0;
 
   // Set last_access_block to mark the object as changed, so it will be written to RocksDB when archived
-  // Use static_cast to bypass accounts_handler and avoid infinite recursion
-  static_cast<chainbase::database&>(db).modify( obj, [head_block]( account_object& o )
+  // Use modify_direct to bypass accounts_handler and avoid infinite recursion
+  db.modify_direct( obj, [head_block]( account_object& o )
   {
     o.set_last_access_block( head_block );
   } );
@@ -809,8 +821,7 @@ void rocksdb_account_archive::create_object( const account_object& obj )
   // During genesis (init_genesis), account_object is created before its split objects,
   // so we must check for their existence. In normal account creation (evaluators),
   // split objects are always created before account_object.
-  const auto aid = obj.get_id().get_value();
-  const auto* assets_ptr = db.find< account_details_object, by_id >( account_details_object::id_type( aid ) );
+  const auto* assets_ptr = db.find< account_details_object, by_id >( database::to_split_id<account_details_object>( obj.get_id() ) );
   if( assets_ptr )
   {
     db.create< tiny_account_object >( obj, *assets_ptr );
@@ -839,7 +850,7 @@ const account_object* rocksdb_account_archive::get_account( const account_name_t
   if( _external_found )
   {
     // Set last_access_block to prevent immediate re-archival
-    static_cast<chainbase::database&>(db).modify( *_external_found, [&]( account_object& o )
+    db.modify_direct( *_external_found, [&]( account_object& o )
     {
       o.set_last_access_block( db.head_block_num() );
     });
@@ -871,7 +882,7 @@ const account_object* rocksdb_account_archive::get_account( const account_id_typ
   if( _external_found )
   {
     // Set last_access_block to prevent immediate re-archival
-    static_cast<chainbase::database&>(db).modify( *_external_found, [&]( account_object& o )
+    db.modify_direct( *_external_found, [&]( account_object& o )
     {
       o.set_last_access_block( db.head_block_num() );
     });
@@ -928,15 +939,15 @@ void rocksdb_account_archive::on_object_modified( const account_object& obj )
 
 const account_details_object* rocksdb_account_archive::get_account_details( const account_id_type& account_id, bool is_required ) const
 {
-  const auto aid = account_id.get_value();
-  const auto* _found = db.find< account_details_object, by_id >( account_details_object::id_type( aid ) );
+  const auto split_id = database::to_split_id<account_details_object>( account_id );
+  const auto* _found = db.find< account_details_object, by_id >( split_id );
   if( _found )
     return _found;
 
   // Try to restore from RocksDB (get_account restores all split objects)
   if( get_account( account_id, false /*account_is_required*/ ) )
   {
-    _found = db.find< account_details_object, by_id >( account_details_object::id_type( aid ) );
+    _found = db.find< account_details_object, by_id >( split_id );
     if( _found )
       return _found;
   }

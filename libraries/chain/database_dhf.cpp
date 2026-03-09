@@ -237,7 +237,7 @@ void database::process_decline_voting_rights()
         a.set_can_vote( false );
       });
 
-      static_cast<chainbase::database&>(*this).modify( account_tiny, [&]( tiny_account_object& t )
+      modify( account_tiny, [&]( tiny_account_object& t )
       {
         t.clear_proxy();
       });

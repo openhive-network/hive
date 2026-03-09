@@ -953,6 +953,23 @@ namespace chain {
         }
       }
 
+      /// Direct chainbase modify — bypasses accounts_handler hooks and last_access_block tracking.
+      /// Use when the handler itself is modifying objects (to avoid infinite recursion)
+      /// or when only internal tracking fields like last_access_block need updating.
+      template<typename ObjectType, typename Modifier>
+      void modify_direct( const ObjectType& obj, Modifier&& m )
+      {
+        chainbase::database::modify( obj, std::forward<Modifier>( m ) );
+      }
+
+      /// Type-safe conversion from account_id_type to a split object's id_type.
+      /// Split objects share the same numeric id as their parent account_object.
+      template<typename SplitObjectType>
+      static typename SplitObjectType::id_type to_split_id( const account_id_type& id )
+      {
+        return typename SplitObjectType::id_type( id.get_value() );
+      }
+
     private:
 
       flat_map< custom_id_type, std::shared_ptr< custom_operation_interpreter > >   _custom_operation_interpreters;
