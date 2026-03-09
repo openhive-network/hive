@@ -182,9 +182,9 @@ HIVE_asset database::pay_curators( const comment_object& comment, const comment_
               pre_push_virtual_operation( *this, vop );
             } );
 
-            modify( get_asset_account( voter.get_id() ), [&]( assets_object& assets )
+            modify( get_account_details( voter.get_id() ), [&]( account_details_object& account_details )
             {
-              assets.set_curation_rewards( assets.get_curation_rewards() + claim );
+              account_details.set_curation_rewards( account_details.get_curation_rewards() + claim );
             });
           post_push_virtual_operation( *this, vop );
         }
@@ -318,9 +318,9 @@ HIVE_asset database::cashout_comment_helper( util::comment_reward_context& ctx, 
         push_virtual_operation( *this, comment_reward_operation( comment_author, to_string( comment_cashout.get_permlink() ),
           to_hbd( claimed_reward ), author_tokens, payout, curator_payout, beneficiary_payout ) );
 
-        modify( get_asset_account( author.get_id() ), [&]( assets_object& assets )
+        modify( get_account_details( author.get_id() ), [&]( account_details_object& account_details )
         {
-          assets.set_posting_rewards( assets.get_posting_rewards() + author_tokens );
+          account_details.set_posting_rewards( account_details.get_posting_rewards() + author_tokens );
         });
       }
 
@@ -625,10 +625,10 @@ void database::perform_vesting_share_split( uint32_t magnitude )
     for( const auto& tiny : get_index< tiny_account_index, by_id >() )
     {
       const auto& account = get_account( tiny.get_name() );
-      const auto& account_assets = get_asset_account( account.get_id() );
-      VEST_asset old_vesting_shares = account_assets.get_vesting();
+      const auto& account_details = get_account_details( account.get_id() );
+      VEST_asset old_vesting_shares = account_details.get_vesting();
       VEST_asset new_vesting_shares = old_vesting_shares;
-      modify( account_assets, [&]( assets_object& a )
+      modify( account_details, [&]( account_details_object& a )
       {
         a.set_vesting( a.get_vesting() * magnitude );
         new_vesting_shares = a.get_vesting();

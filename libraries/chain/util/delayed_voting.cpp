@@ -1,7 +1,6 @@
 #include <hive/chain/util/delayed_voting.hpp>
 #include <hive/chain/util/delayed_voting_processor.hpp>
-#include <hive/chain/detail/state/assets_object.hpp>
-#include <hive/chain/detail/state/delayed_votes_object.hpp>
+#include <hive/chain/detail/state/account_details_object.hpp>
 #include <hive/chain/detail/state/tiny_account_object.hpp>
 #include <hive/chain/database_virtual_operations.hpp>
 
@@ -9,34 +8,34 @@ namespace hive { namespace chain {
 
 void delayed_voting::add_delayed_value( const account_object& account, const time_point_sec& head_time, const ushare_type val )
 {
-  const auto& dvotes = db.get_delayed_votes_account( account.get_id() );
-  db.modify( dvotes, [&]( delayed_votes_object& dv )
+  const auto& account_details = db.get_account_details( account.get_id() );
+  db.modify( account_details, [&]( account_details_object& a )
   {
-    delayed_voting_processor::add( dv.get_delayed_votes(), dv.get_sum_delayed_votes(), head_time, val );
+    delayed_voting_processor::add( a.get_delayed_votes(), a.get_sum_delayed_votes(), head_time, val );
   } );
   {
     const auto& tiny_idx = db.get_index< tiny_account_index, by_name >();
     auto tiny_it = tiny_idx.find( account.get_name() );
     if( tiny_it != tiny_idx.end() )
-      db.modify( *tiny_it, [&]( tiny_account_object& t ) { t.modify_from_delayed_votes( dvotes ); } );
+      db.modify( *tiny_it, [&]( tiny_account_object& t ) { t.modify_from_delayed_votes( account_details ); } );
   }
 }
 
 void delayed_voting::erase_delayed_value( const account_object& account, const ushare_type val )
 {
-  const auto& dvotes = db.get_delayed_votes_account( account.get_id() );
-  if( dvotes.get_sum_delayed_votes() == 0 )
+  const auto& account_details = db.get_account_details( account.get_id() );
+  if( account_details.get_sum_delayed_votes() == 0 )
     return;
 
-  db.modify( dvotes, [&]( delayed_votes_object& dv )
+  db.modify( account_details, [&]( account_details_object& a )
   {
-    delayed_voting_processor::erase( dv.get_delayed_votes(), dv.get_sum_delayed_votes(), val );
+    delayed_voting_processor::erase( a.get_delayed_votes(), a.get_sum_delayed_votes(), val );
   } );
   {
     const auto& tiny_idx = db.get_index< tiny_account_index, by_name >();
     auto tiny_it = tiny_idx.find( account.get_name() );
     if( tiny_it != tiny_idx.end() )
-      db.modify( *tiny_it, [&]( tiny_account_object& t ) { t.modify_from_delayed_votes( dvotes ); } );
+      db.modify( *tiny_it, [&]( tiny_account_object& t ) { t.modify_from_delayed_votes( account_details ); } );
   }
 }
 
@@ -80,11 +79,11 @@ fc::optional< ushare_type > delayed_voting::update_votes( const opt_votes_update
     else
     {
       const ushare_type abs_val{ static_cast< ushare_type >( -item.val.value ) };
-      const auto& dvotes = db.get_delayed_votes_account( item.account->get_id() );
-      if( abs_val >= dvotes.get_sum_delayed_votes() )
+      const auto& account_details = db.get_account_details( item.account->get_id() );
+      if( abs_val >= account_details.get_sum_delayed_votes() )
       {
-        res = abs_val - dvotes.get_sum_delayed_votes();
-        erase_delayed_value( *item.account, dvotes.get_sum_delayed_votes() );
+        res = abs_val - account_details.get_sum_delayed_votes();
+        erase_delayed_value( *item.account, account_details.get_sum_delayed_votes() );
       }
       else
         erase_delayed_value( *item.account, abs_val );
@@ -106,14 +105,14 @@ void delayed_voting::run( const fc::time_point_sec& head_time )
         head_time >= ( current->get_oldest_delayed_vote_time() + HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS )
       )
   {
-    // Look up the delayed_votes_object for this account to get the actual vote data
-    const auto& dvotes = db.get_delayed_votes_account( account_id_type( account_object::id_type( current->get_id().get_value() ) ) );
-    const ushare_type _val{ dvotes.get_delayed_votes().begin()->val };
+    // Look up the account_details_object for this account to get the actual delayed vote data
+    const auto& account_details = db.get_account_details( account_id_type( account_object::id_type( current->get_id().get_value() ) ) );
+    const ushare_type _val{ account_details.get_delayed_votes().begin()->val };
 
     // Get the account_object
     const auto& account = db.get_account( current->get_name() );
 
-    //dlog( "account: ${acc} delayed_votes: ${dv} time: ${time}", ( "acc", account.get_name() )( "dv", _val )( "time", dvotes.get_delayed_votes().begin()->time.to_iso_string() ) );
+    //dlog( "account: ${acc} delayed_votes: ${dv} time: ${time}", ( "acc", account.get_name() )( "dv", _val )( "time", account_details.get_delayed_votes().begin()->time.to_iso_string() ) );
 
     operation vop = hive::protocol::delayed_voting_operation( account.get_name(), _val );
     /// Push vop to be recorded by other parts (like AH plugin etc.)
@@ -122,7 +121,7 @@ void delayed_voting::run( const fc::time_point_sec& head_time )
     db.adjust_proxied_witness_votes( account, _val.value );
 
     /*
-      The operation `transfer_to_vesting` always adds elements to `delayed_votes` collection in `delayed_votes_object`.
+      The operation `transfer_to_vesting` always adds elements to `delayed_votes` collection in `account_details_object`.
       In terms of performance is necessary to hold size of `delayed_votes` not greater than `30`.
 
       Why `30`? HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS / HIVE_DELAYED_VOTING_INTERVAL_SECONDS == 30
@@ -130,14 +129,14 @@ void delayed_voting::run( const fc::time_point_sec& head_time )
       Solution:
         The best solution is to add new record at the back and to remove at the front.
     */
-    db.modify( dvotes, [&]( delayed_votes_object& dv )
+    db.modify( account_details, [&]( account_details_object& a )
     {
-      delayed_voting_processor::erase_front( dv.get_delayed_votes(), dv.get_sum_delayed_votes() );
+      delayed_voting_processor::erase_front( a.get_delayed_votes(), a.get_sum_delayed_votes() );
     } );
     // Sync tiny_account_object with delayed_votes changes
     db.modify( *current, [&]( tiny_account_object& t )
     {
-      t.modify_from_delayed_votes( dvotes );
+      t.modify_from_delayed_votes( account_details );
     } );
 
     current = idx.begin();

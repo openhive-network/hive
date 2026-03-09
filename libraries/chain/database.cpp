@@ -42,8 +42,7 @@
 
 #include <hive/chain/rc/rc_objects.hpp>
 #include <hive/chain/detail/state/tiny_account_object.hpp>
-#include <hive/chain/detail/state/assets_object.hpp>
-#include <hive/chain/detail/state/delayed_votes_object.hpp>
+#include <hive/chain/detail/state/account_details_object.hpp>
 
 #include <fc/uint128.hpp>
 
@@ -460,8 +459,7 @@ HIVE_DEFINE_VOLATILE_ACCESSORS( account,           account,           account,  
 HIVE_DEFINE_VOLATILE_ACCESSORS( account,           account,           account,            account_name_type )
 
 // --- Split object accessors ---
-HIVE_DEFINE_SPLIT_OBJECT_ACCESSORS( assets_object,        asset_account,         get_asset_account )
-HIVE_DEFINE_SPLIT_OBJECT_ACCESSORS( delayed_votes_object, delayed_votes_account, get_delayed_votes_account )
+HIVE_DEFINE_SPLIT_OBJECT_ACCESSORS( account_details_object,        account_details,       get_account_details )
 
 #undef HIVE_DEFINE_SPLIT_OBJECT_ACCESSORS
 #undef HIVE_DEFINE_HANDLER_ACCESSORS_BY_NAME
@@ -1017,12 +1015,12 @@ uint32_t database::get_slot_at_time(fc::time_point_sec when)const
   */
 std::pair< HBD_asset, HIVE_asset > database::create_hbd( const account_object& to_account, const HIVE_asset& hive, bool to_reward_balance )
 {
-  std::pair< HBD_asset, HIVE_asset > assets;
+  std::pair< HBD_asset, HIVE_asset > account_details;
 
   try
   {
     if( hive.get_amount() == 0 )
-      return assets;
+      return account_details;
 
     const auto& median_price = get_feed_history().current_median_history;
     const auto& gpo = get_dynamic_global_properties();
@@ -1047,18 +1045,18 @@ std::pair< HBD_asset, HIVE_asset > database::create_hbd( const account_object& t
 
       adjust_supply( -to_hbd );
       adjust_supply( hbd );
-      assets.first = hbd;
-      assets.second = to_hive;
+      account_details.first = hbd;
+      account_details.second = to_hive;
     }
     else
     {
       adjust_balance( to_account, hive );
-      assets.second = hive;
+      account_details.second = hive;
     }
   }
   FC_CAPTURE_LOG_AND_RETHROW( (to_account.get_name())(hive) )
 
-  return assets;
+  return account_details;
 }
 
 VEST_asset database::adjust_account_vesting_balance(const account_object& to_account, const HIVE_asset& liquid, bool to_reward_balance, Before&& before_vesting_callback )
@@ -1080,22 +1078,22 @@ VEST_asset database::adjust_account_vesting_balance(const account_object& to_acc
     {
       if( has_hardfork( HIVE_HARDFORK_0_20 ) )
       {
-        const auto& _assets_obj = get_asset_account( to_account.get_id() );
+        const auto& _details_obj = get_account_details( to_account.get_id() );
 
-        modify( _assets_obj, [&]( assets_object& a )
+        modify( _details_obj, [&]( account_details_object& a )
         {
           util::update_manabar( cprops, to_account, a, new_vesting.get_amount() );
         });
-        rc().regenerate_rc_mana( to_account, _assets_obj, _now );
-        modify( _assets_obj, [&]( assets_object& a )
+        rc().regenerate_rc_mana( to_account, _details_obj, _now );
+        modify( _details_obj, [&]( account_details_object& a )
         {
           a.set_vesting( a.get_vesting() + new_vesting );
         });
-        rc().update_account_after_vest_change( to_account, _assets_obj, _now );
+        rc().update_account_after_vest_change( to_account, _details_obj, _now );
       }
       else
       {
-        modify( get_asset_account( to_account.get_id() ), [&]( assets_object& a )
+        modify( get_account_details( to_account.get_id() ), [&]( account_details_object& a )
         {
           a.set_vesting( a.get_vesting() + new_vesting );
         });
@@ -1215,7 +1213,7 @@ void database::adjust_proxied_witness_votes( const account_object& a, share_type
 void database::nullify_proxied_witness_votes( const account_object& a )
 {
   std::array<share_type, HIVE_MAX_PROXY_RECURSION_DEPTH + 1> delta;
-  delta[ 0 ] = -a.get_direct_governance_vote_power( get_asset_account( a.get_id() ), get_delayed_votes_account( a.get_id() ) );
+  delta[ 0 ] = -a.get_direct_governance_vote_power( get_account_details( a.get_id() ) );
   for( int i = 0; i < HIVE_MAX_PROXY_RECURSION_DEPTH; ++i )
     delta[ i + 1 ] = -a.get_proxied_vsf_votes()[ i ];
   adjust_proxied_witness_votes( a, delta );
@@ -1224,27 +1222,27 @@ void database::nullify_proxied_witness_votes( const account_object& a )
 bool database::collect_account_total_balance( const account_object& account, HIVE_asset* total_hive, HBD_asset* total_hbd,
   VEST_asset* total_vests, HIVE_asset* vesting_shares_hive_value )
 {
-  return collect_account_total_balance( account, get_asset_account( account.get_id() ), total_hive, total_hbd, total_vests, vesting_shares_hive_value );
+  return collect_account_total_balance( account, get_account_details( account.get_id() ), total_hive, total_hbd, total_vests, vesting_shares_hive_value );
 }
 
-bool database::collect_account_total_balance( const account_object& account, const assets_object& assets, HIVE_asset* total_hive, HBD_asset* total_hbd,
+bool database::collect_account_total_balance( const account_object& account, const account_details_object& account_details, HIVE_asset* total_hive, HBD_asset* total_hbd,
   VEST_asset* total_vests, HIVE_asset* vesting_shares_hive_value )
 {
   const auto& gpo = get_dynamic_global_properties();
 
-  *vesting_shares_hive_value = assets.get_vesting() * gpo.get_vesting_share_price();
+  *vesting_shares_hive_value = account_details.get_vesting() * gpo.get_vesting_share_price();
   *total_hive = *vesting_shares_hive_value;
-  *total_vests = assets.get_vesting();
-  *total_hive += assets.get_vest_rewards_as_hive();
-  *total_vests += assets.get_vest_rewards();
+  *total_vests = account_details.get_vesting();
+  *total_hive += account_details.get_vest_rewards_as_hive();
+  *total_vests += account_details.get_vest_rewards();
 
-  *total_hive += assets.get_balance();
-  *total_hive += assets.get_savings();
-  *total_hive += assets.get_rewards();
+  *total_hive += account_details.get_balance();
+  *total_hive += account_details.get_savings();
+  *total_hive += account_details.get_rewards();
 
-  *total_hbd = assets.get_hbd_balance();
-  *total_hbd += assets.get_hbd_savings();
-  *total_hbd += assets.get_hbd_rewards();
+  *total_hbd = account_details.get_hbd_balance();
+  *total_hbd += account_details.get_hbd_savings();
+  *total_hbd += account_details.get_hbd_rewards();
 
   return ( total_hive->amount.value != 0 ) || ( total_hbd->amount.value != 0 ) || ( total_vests->amount.value != 0 );
 }
@@ -1266,12 +1264,12 @@ void database::clear_null_account_balance()
 
   const auto& null_account = get_account( HIVE_NULL_ACCOUNT );
   refresh_last_access_block( null_account );
-  const auto& null_assets = get_asset_account( null_account.get_id() );
+  const auto& null_details = get_account_details( null_account.get_id() );
   HIVE_asset total_hive, vesting_shares_hive_value;
   HBD_asset total_hbd;
   VEST_asset total_vests;
 
-  if( !( collect_account_total_balance( null_account, null_assets, &total_hive, &total_hbd, &total_vests, &vesting_shares_hive_value ) ) )
+  if( !( collect_account_total_balance( null_account, null_details, &total_hive, &total_hbd, &total_vests, &vesting_shares_hive_value ) ) )
     return;
 
   operation vop_op = clear_null_account_balance_operation();
@@ -1286,81 +1284,77 @@ void database::clear_null_account_balance()
 
   /////////////////////////////////////////////////////////////////////////////////////
 
-  if( null_assets.get_balance().amount > 0 )
+  if( null_details.get_balance().amount > 0 )
   {
-    adjust_balance( null_account, -null_assets.get_balance(), null_assets );
+    adjust_balance( null_account, -null_details.get_balance(), null_details );
   }
 
-  if( null_assets.get_savings().amount > 0 )
+  if( null_details.get_savings().amount > 0 )
   {
-    adjust_savings_balance( null_account, -null_assets.get_savings() );
+    adjust_savings_balance( null_account, -null_details.get_savings() );
   }
 
-  if( null_assets.get_hbd_balance().amount > 0 )
+  if( null_details.get_hbd_balance().amount > 0 )
   {
-    adjust_balance( null_account, -null_assets.get_hbd_balance(), null_assets );
+    adjust_balance( null_account, -null_details.get_hbd_balance(), null_details );
   }
 
-  if( null_assets.get_hbd_savings().amount > 0 )
+  if( null_details.get_hbd_savings().amount > 0 )
   {
-    adjust_savings_balance( null_account, -null_assets.get_hbd_savings() );
+    adjust_savings_balance( null_account, -null_details.get_hbd_savings() );
   }
 
-  if( null_assets.get_vesting().amount > 0 )
+  if( null_details.get_vesting().amount > 0 )
   {
     const auto& gpo = get_dynamic_global_properties();
     auto _now = gpo.time;
 
     modify( gpo, [&]( dynamic_global_property_object& g )
     {
-      g.total_vesting_shares -= null_assets.get_vesting();
+      g.total_vesting_shares -= null_details.get_vesting();
       g.total_vesting_fund_hive -= vesting_shares_hive_value;
     });
 
     if( has_hardfork( HIVE_HARDFORK_0_20 ) )
-      rc().regenerate_rc_mana( null_account, null_assets, _now ); //we could just always set RC value on 'null' to 0
-    modify( null_assets, [&]( assets_object& a )
+      rc().regenerate_rc_mana( null_account, null_details, _now ); //we could just always set RC value on 'null' to 0
+    modify( null_details, [&]( account_details_object& a )
     {
       a.set_vesting( VEST_asset( 0 ) );
-    });
-    const auto& null_delayed_votes = get_delayed_votes_account( null_account.get_id() );
-    modify( null_delayed_votes, [&]( delayed_votes_object& dv )
-    {
-      dv.set_sum_delayed_votes( 0 );
-      dv.get_delayed_votes().clear();
+      a.set_sum_delayed_votes( 0 );
+      a.get_delayed_votes().clear();
     });
     // Sync tiny_account_object with delayed_votes changes
     {
       const auto& tiny_idx = get_index< tiny_account_index, by_name >();
       auto tiny_it = tiny_idx.find( null_account.get_name() );
       if( tiny_it != tiny_idx.end() )
-        modify( *tiny_it, [&]( tiny_account_object& t ) { t.modify_from_delayed_votes( null_delayed_votes ); } );
+        modify( *tiny_it, [&]( tiny_account_object& t ) { t.modify_from_delayed_votes( null_details ); } );
     }
     if( has_hardfork( HIVE_HARDFORK_0_20 ) )
-      rc().update_account_after_vest_change( null_account, null_assets, _now );
+      rc().update_account_after_vest_change( null_account, null_details, _now );
   }
 
-  if( null_assets.get_rewards().amount > 0 )
+  if( null_details.get_rewards().amount > 0 )
   {
-    adjust_reward_balance( null_account, -null_assets.get_rewards(), null_assets );
+    adjust_reward_balance( null_account, -null_details.get_rewards(), null_details );
   }
 
-  if( null_assets.get_hbd_rewards().amount > 0 )
+  if( null_details.get_hbd_rewards().amount > 0 )
   {
-    adjust_reward_balance( null_account, -null_assets.get_hbd_rewards(), null_assets );
+    adjust_reward_balance( null_account, -null_details.get_hbd_rewards(), null_details );
   }
 
-  if( null_assets.get_vest_rewards().amount > 0 )
+  if( null_details.get_vest_rewards().amount > 0 )
   {
     const auto& gpo = get_dynamic_global_properties();
 
     modify( gpo, [&]( dynamic_global_property_object& g )
     {
-      g.pending_rewarded_vesting_shares -= null_assets.get_vest_rewards();
-      g.pending_rewarded_vesting_hive -= null_assets.get_vest_rewards_as_hive();
+      g.pending_rewarded_vesting_shares -= null_details.get_vest_rewards();
+      g.pending_rewarded_vesting_hive -= null_details.get_vest_rewards_as_hive();
     });
 
-    modify( null_assets, [&]( assets_object& a )
+    modify( null_details, [&]( account_details_object& a )
     {
       a.set_vest_rewards_as_hive( HIVE_asset( 0 ) );
       a.set_vest_rewards( VEST_asset( 0 ) );
@@ -1388,7 +1382,7 @@ void database::consolidate_treasury_balance()
 
   const auto& old_treasury_account = get_account( old_treasury_name );
   refresh_last_access_block( old_treasury_account );
-  const auto& old_treasury_assets = get_asset_account( old_treasury_account.get_id() );
+  const auto& old_treasury_assets = get_account_details( old_treasury_account.get_id() );
   HIVE_asset total_hive, vesting_shares_hive_value;
   HBD_asset total_hbd;
   VEST_asset total_vests;
@@ -1448,22 +1442,21 @@ void database::consolidate_treasury_balance()
       g.total_vesting_fund_hive -= vesting_shares_hive_value;
     } );
 
-    modify( old_treasury_assets, [&]( assets_object& a )
+    modify( old_treasury_assets, [&]( account_details_object& a )
     {
       a.set_vesting( VEST_asset( 0 ) );
     } );
-    const auto& old_treasury_delayed_votes = get_delayed_votes_account( old_treasury_account.get_id() );
-    modify( old_treasury_delayed_votes, [&]( delayed_votes_object& dv )
+    modify( old_treasury_assets, [&]( account_details_object& a )
     {
-      dv.set_sum_delayed_votes( 0 );
-      dv.get_delayed_votes().clear();
+      a.set_sum_delayed_votes( 0 );
+      a.get_delayed_votes().clear();
     } );
     // Sync tiny_account_object with delayed_votes changes
     {
       const auto& tiny_idx = get_index< tiny_account_index, by_name >();
       auto tiny_it = tiny_idx.find( old_treasury_account.get_name() );
       if( tiny_it != tiny_idx.end() )
-        modify( *tiny_it, [&]( tiny_account_object& t ) { t.modify_from_delayed_votes( old_treasury_delayed_votes ); } );
+        modify( *tiny_it, [&]( tiny_account_object& t ) { t.modify_from_delayed_votes( old_treasury_assets ); } );
     }
   }
 
@@ -1491,7 +1484,7 @@ void database::consolidate_treasury_balance()
       g.pending_rewarded_vesting_hive -= old_treasury_assets.get_vest_rewards_as_hive();
     } );
 
-    modify( old_treasury_assets, [&]( assets_object& a )
+    modify( old_treasury_assets, [&]( account_details_object& a )
     {
       a.set_vest_rewards_as_hive( HIVE_asset( 0 ) );
       a.set_vest_rewards( VEST_asset( 0 ) );
@@ -1531,8 +1524,8 @@ void database::lock_account( const account_object& account )
     } );
   }
 
-  const auto& assets_obj = get_asset_account( account.get_id() );
-  modify( assets_obj, [&]( assets_object& a )
+  const auto& details_obj = get_account_details( account.get_id() );
+  modify( details_obj, [&]( account_details_object& a )
   {
     a.set_recovery_account( account.get_id() );
   } );
@@ -1622,12 +1615,11 @@ void database::clear_account( const account_object& account )
   HIVE_asset total_hive_from_vests( 0 );
 
   // Get split objects for the account
-  const auto& assets = get_asset_account( account.get_id() );
-  const auto& dvotes = get_delayed_votes_account( account.get_id() );
+  const auto& account_details = get_account_details( account.get_id() );
 
-  if( assets.get_vesting().amount > 0 )
+  if( account_details.get_vesting().amount > 0 )
   {
-    rc().regenerate_rc_mana( account, assets, now );
+    rc().regenerate_rc_mana( account, account_details, now );
 
     // Remove all active delegations
     VEST_asset freed_delegations( 0 );
@@ -1643,11 +1635,11 @@ void database::clear_account( const account_object& account )
       vop.other_affected_accounts.emplace_back( delegatee.get_name() );
 
       // Get split objects for the delegatee
-      const auto& delegatee_assets = get_asset_account( delegatee.get_id() );
+      const auto& delegatee_details = get_account_details( delegatee.get_id() );
 
-      rc().regenerate_rc_mana( delegatee, delegatee_assets, now );
+      rc().regenerate_rc_mana( delegatee, delegatee_details, now );
 
-      modify( delegatee_assets, [&]( assets_object& a )
+      modify( delegatee_details, [&]( account_details_object& a )
       {
         util::update_manabar( cprops, delegatee, a );
         a.get_voting_manabar().use_mana( delegation.get_vesting().amount.value );
@@ -1662,7 +1654,7 @@ void database::clear_account( const account_object& account )
 
       remove( delegation );
 
-      rc().update_account_after_vest_change( delegatee, delegatee_assets, now, true, true );
+      rc().update_account_after_vest_change( delegatee, delegatee_details, now, true, true );
     }
 
     // Remove pending expired delegations
@@ -1677,15 +1669,15 @@ void database::clear_account( const account_object& account )
       remove( delegation );
     }
 
-    VEST_asset vests_to_convert = assets.get_vesting();
+    VEST_asset vests_to_convert = account_details.get_vesting();
     HIVE_asset converted_hive = vests_to_convert * cprops.get_vesting_share_price();
-    total_converted_vests += assets.get_vesting();
+    total_converted_vests += account_details.get_vesting();
     total_hive_from_vests += converted_hive;
 
-    adjust_proxied_witness_votes( account, -assets.get_vesting().amount );
+    adjust_proxied_witness_votes( account, -account_details.get_vesting().amount );
 
-    // Update assets_object (including merged manabar fields)
-    modify( assets, [&]( assets_object& a )
+    // Update account_details_object (including merged manabar fields)
+    modify( account_details, [&]( account_details_object& a )
     {
       util::update_manabar( cprops, account, a );
       a.get_voting_manabar().current_mana = 0;
@@ -1699,17 +1691,17 @@ void database::clear_account( const account_object& account )
       a.set_withdrawn( VEST_asset( 0 ) );
     } );
 
-    // Update delayed_votes_object
+    // Clear delayed votes (merged into account_details_object)
     if( has_hardfork( HIVE_HARDFORK_1_24 ) )
     {
-      modify( dvotes, [&]( delayed_votes_object& d )
+      modify( account_details, [&]( account_details_object& a )
       {
-        d.get_delayed_votes().clear();
-        d.set_sum_delayed_votes( 0 );
+        a.get_delayed_votes().clear();
+        a.set_sum_delayed_votes( 0 );
       } );
     }
 
-    // Sync tiny_account_object with assets and delayed_votes changes
+    // Sync tiny_account_object with account_details and delayed_votes changes
     {
       const auto& tiny_idx = get_index< tiny_account_index, by_name >();
       auto tiny_it = tiny_idx.find( account.get_name() );
@@ -1718,12 +1710,12 @@ void database::clear_account( const account_object& account )
         modify( *tiny_it, [&]( tiny_account_object& t )
         {
           t.set_next_vesting_withdrawal( fc::time_point_sec::maximum() );
-          t.modify_from_delayed_votes( dvotes );
+          t.modify_from_delayed_votes( account_details );
         } );
       }
     }
 
-    rc().update_account_after_vest_change( account, assets, now, true, true );
+    rc().update_account_after_vest_change( account, account_details, now, true, true );
 
     adjust_balance( treasury_account, converted_hive );
     modify( cprops, [&]( dynamic_global_property_object& o )
@@ -1751,41 +1743,41 @@ void database::clear_account( const account_object& account )
   }
 
   // Remove remaining savings balances
-  total_transferred_hive += assets.get_savings();
-  total_transferred_hbd += assets.get_hbd_savings();
-  adjust_balance( treasury_account, assets.get_savings() );
-  adjust_savings_balance( account, -assets.get_savings() );
-  adjust_balance( treasury_account, assets.get_hbd_savings() );
-  adjust_savings_balance( account, -assets.get_hbd_savings() );
+  total_transferred_hive += account_details.get_savings();
+  total_transferred_hbd += account_details.get_hbd_savings();
+  adjust_balance( treasury_account, account_details.get_savings() );
+  adjust_savings_balance( account, -account_details.get_savings() );
+  adjust_balance( treasury_account, account_details.get_hbd_savings() );
+  adjust_savings_balance( account, -account_details.get_hbd_savings() );
 
   // Remove HBD and HIVE balances
-  total_transferred_hive += assets.get_balance();
-  total_transferred_hbd += assets.get_hbd_balance();
-  adjust_balance( treasury_account, assets.get_balance() );
-  adjust_balance( account, -assets.get_balance() );
-  adjust_balance( treasury_account, assets.get_hbd_balance() );
-  adjust_balance( account, -assets.get_hbd_balance() );
+  total_transferred_hive += account_details.get_balance();
+  total_transferred_hbd += account_details.get_hbd_balance();
+  adjust_balance( treasury_account, account_details.get_balance() );
+  adjust_balance( account, -account_details.get_balance() );
+  adjust_balance( treasury_account, account_details.get_hbd_balance() );
+  adjust_balance( account, -account_details.get_hbd_balance() );
 
   // Transfer reward balances
-  total_transferred_hive += assets.get_rewards();
-  total_transferred_hbd += assets.get_hbd_rewards();
-  adjust_balance( treasury_account, assets.get_rewards() );
-  adjust_reward_balance( account, -assets.get_rewards() );
-  adjust_balance( treasury_account, assets.get_hbd_rewards() );
-  adjust_reward_balance( account, -assets.get_hbd_rewards() );
+  total_transferred_hive += account_details.get_rewards();
+  total_transferred_hbd += account_details.get_hbd_rewards();
+  adjust_balance( treasury_account, account_details.get_rewards() );
+  adjust_reward_balance( account, -account_details.get_rewards() );
+  adjust_balance( treasury_account, account_details.get_hbd_rewards() );
+  adjust_reward_balance( account, -account_details.get_hbd_rewards() );
 
   // Convert and transfer vesting rewards
-  adjust_balance( treasury_account, assets.get_vest_rewards_as_hive() );
-  total_converted_vests += assets.get_vest_rewards();
-  total_hive_from_vests += assets.get_vest_rewards_as_hive();
+  adjust_balance( treasury_account, account_details.get_vest_rewards_as_hive() );
+  total_converted_vests += account_details.get_vest_rewards();
+  total_hive_from_vests += account_details.get_vest_rewards_as_hive();
 
   modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
   {
-    gpo.pending_rewarded_vesting_shares -= assets.get_vest_rewards();
-    gpo.pending_rewarded_vesting_hive -= assets.get_vest_rewards_as_hive();
+    gpo.pending_rewarded_vesting_shares -= account_details.get_vest_rewards();
+    gpo.pending_rewarded_vesting_hive -= account_details.get_vest_rewards_as_hive();
   } );
 
-  modify( assets, []( assets_object& a )
+  modify( account_details, []( account_details_object& a )
   {
     a.set_vest_rewards( VEST_asset( 0 ) );
     a.set_vest_rewards_as_hive( HIVE_asset( 0 ) );
@@ -1888,8 +1880,8 @@ void database::process_funds()
 
       p_treasury_account = &get_treasury();
       refresh_last_access_block( *p_treasury_account );
-      const auto& treasury_assets = get_asset_account( p_treasury_account->get_id() );
-      const auto hbd_supply_without_treasury = (props.get_current_hbd_supply() - treasury_assets.get_hbd_balance()).amount < 0 ? HBD_asset(0) : (props.get_current_hbd_supply() - treasury_assets.get_hbd_balance());
+      const auto& treasury_details = get_account_details( p_treasury_account->get_id() );
+      const auto hbd_supply_without_treasury = (props.get_current_hbd_supply() - treasury_details.get_hbd_balance()).amount < 0 ? HBD_asset(0) : (props.get_current_hbd_supply() - treasury_details.get_hbd_balance());
       const auto virtual_supply_without_treasury = hbd_supply_without_treasury * median_price + props.get_current_supply();
 
       new_hive = ( virtual_supply_without_treasury * current_inflation_rate ) / (int64_t(HIVE_100_PERCENT) * int64_t(HIVE_BLOCKS_PER_YEAR));
@@ -2034,10 +2026,10 @@ HIVE_asset database::get_producer_reward()
   HIVE_asset percent( protocol::calc_percent_reward_per_block< HIVE_PRODUCER_APR_PERCENT >( props.virtual_supply.amount ) );
   auto pay = std::max( percent, HIVE_MIN_PRODUCER_REWARD );
   const auto& witness_account = get_account( props.current_witness );
-  const auto& witness_assets = get_asset_account( witness_account.get_id() );
+  const auto& witness_details = get_account_details( witness_account.get_id() );
 
   /// pay witness in vesting shares
-  if( props.head_block_number >= HIVE_START_MINER_VOTING_BLOCK || (witness_assets.get_vesting().amount.value == 0) )
+  if( props.head_block_number >= HIVE_START_MINER_VOTING_BLOCK || (witness_details.get_vesting().amount.value == 0) )
   {
     // const auto& witness_obj = get_witness( props.current_witness );
     auto vop = producer_reward_operation( witness_account.get_name(), asset( 0, VESTS_SYMBOL ) );
@@ -2051,7 +2043,7 @@ HIVE_asset database::get_producer_reward()
   }
   else
   {
-    modify( witness_assets, [&]( assets_object& a )
+    modify( witness_details, [&]( account_details_object& a )
     {
       a.set_balance( a.get_balance() + pay );
     } );
@@ -2153,12 +2145,12 @@ void database::account_recovery_processing()
   while( change_req != change_req_idx.end() && change_req->get_execution_time() <= head_block_time() )
   {
     const auto& account = get_account( change_req->get_account_to_recover() );
-    const auto& assets_obj = get_asset_account( account.get_id() );
+    const auto& details_obj = get_account_details( account.get_id() );
     account_name_type old_recovery_account_name;
-    if( assets_obj.has_recovery_account() )
-      old_recovery_account_name = get_account( assets_obj.get_recovery_account() ).get_name();
+    if( details_obj.has_recovery_account() )
+      old_recovery_account_name = get_account( details_obj.get_recovery_account() ).get_name();
     const auto& new_recovery_account = get_account( change_req->get_recovery_account() );
-    modify( assets_obj, [&]( assets_object& a )
+    modify( details_obj, [&]( account_details_object& a )
     {
       a.set_recovery_account( new_recovery_account.get_id() );
     });
@@ -2651,8 +2643,8 @@ try {
           if( has_hardfork( HIVE_HARDFORK_1_25_HBD_HARD_CAP ) )
           {
             const auto& treasury_acct = get_treasury();
-            const auto& treasury_assets_local = get_asset_account( treasury_acct.get_id() );
-            hbd_supply -= treasury_assets_local.get_hbd_balance();
+            const auto& treasury_details_local = get_account_details( treasury_acct.get_id() );
+            hbd_supply -= treasury_details_local.get_hbd_balance();
           }
           if( hbd_supply.amount > 0 )
           {
@@ -3023,8 +3015,8 @@ uint16_t database::calculate_HBD_percent()
   {
     // Removing the hbd in the treasury from the debt ratio calculations
     const auto& treasury_acct = get_treasury();
-    const auto& treasury_assets_debt = get_asset_account( treasury_acct.get_id() );
-    hbd_supply -= treasury_assets_debt.get_hbd_balance();
+    const auto& treasury_details_debt = get_account_details( treasury_acct.get_id() );
+    hbd_supply -= treasury_details_debt.get_hbd_balance();
     if( hbd_supply.amount < 0 )
       hbd_supply = HBD_asset( 0 );
     virtual_supply = hbd_supply * median_price + dgpo.get_current_supply();
@@ -3291,7 +3283,7 @@ void database::clear_expired_delegations()
   {
     const auto& delegator = get_account( itr->get_delegator() );
 
-    const auto& delegator_assets = get_asset_account( delegator.get_id() );
+    const auto& delegator_details = get_account_details( delegator.get_id() );
 
     operation vop = return_vesting_delegation_operation( delegator.get_name(), itr->get_vesting() );
     try{
@@ -3299,19 +3291,19 @@ void database::clear_expired_delegations()
 
     if( has_hardfork( HIVE_HARDFORK_0_20 ) )
     {
-      modify( delegator_assets, [&]( assets_object& a )
+      modify( delegator_details, [&]( account_details_object& a )
       {
         util::update_manabar( gpo, delegator, a, itr->get_vesting().amount.value );
       });
-      rc().regenerate_rc_mana( delegator, delegator_assets, now );
+      rc().regenerate_rc_mana( delegator, delegator_details, now );
     }
 
-    modify( delegator_assets, [&]( assets_object& a )
+    modify( delegator_details, [&]( account_details_object& a )
     {
       a.set_delegated_vesting( a.get_delegated_vesting() - itr->get_vesting() );
     });
     if( has_hardfork( HIVE_HARDFORK_0_20 ) )
-      rc().update_account_after_vest_change( delegator, delegator_assets, now );
+      rc().update_account_after_vest_change( delegator, delegator_details, now );
 
     post_push_virtual_operation( *this, vop );
 
@@ -3322,32 +3314,32 @@ void database::clear_expired_delegations()
 
 void database::adjust_balance( const account_object& a, const asset& delta )
 {
-  adjust_balance( a, delta, get_asset_account( a.get_id() ) );
+  adjust_balance( a, delta, get_account_details( a.get_id() ) );
 }
 
-void database::adjust_balance( const account_object& a, const asset& delta, const assets_object& acnt_assets )
+void database::adjust_balance( const account_object& a, const asset& delta, const account_details_object& acnt_details )
 {
   if( delta.symbol.asset_num == HIVE_ASSET_NUM_HIVE )
-    adjust_balance( a, HIVE_asset( delta ), acnt_assets );
+    adjust_balance( a, HIVE_asset( delta ), acnt_details );
   else
   {
     FC_ASSERT( ( delta.symbol.asset_num == HIVE_ASSET_NUM_HBD ) && "liquid", "invalid symbol" );
-    adjust_balance( a, HBD_asset( delta ), acnt_assets );
+    adjust_balance( a, HBD_asset( delta ), acnt_details );
   }
 }
 
 void database::adjust_balance( const account_object& a, const HIVE_asset& delta )
 {
-  adjust_balance( a, delta, get_asset_account( a.get_id() ) );
+  adjust_balance( a, delta, get_account_details( a.get_id() ) );
 }
 
-void database::adjust_balance( const account_object& a, const HIVE_asset& delta, const assets_object& acnt_assets )
+void database::adjust_balance( const account_object& a, const HIVE_asset& delta, const account_details_object& acnt_details )
 {
   if( delta.amount < 0 )
   {
-    FC_ASSERT( acnt_assets.get_balance() >= -delta,
+    FC_ASSERT( acnt_details.get_balance() >= -delta,
       "Account ${acc} does not have sufficient funds for balance adjustment. Required: ${r}, Available: ${a}",
-        ("acc", a.get_name())("r", delta)("a", acnt_assets.get_balance()) );
+        ("acc", a.get_name())("r", delta)("a", acnt_details.get_balance()) );
   }
 
   const bool trace_balance_change = false; //a.get_name() == "X";
@@ -3361,7 +3353,7 @@ void database::adjust_balance( const account_object& a, const HIVE_asset& delta,
       op_context = "No operation context";
   }
 
-  modify( acnt_assets, [&]( assets_object& acnt )
+  modify( acnt_details, [&]( account_details_object& acnt )
   {
     auto b = acnt.get_balance();
     acnt.set_balance( acnt.get_balance() + delta );
@@ -3374,16 +3366,16 @@ void database::adjust_balance( const account_object& a, const HIVE_asset& delta,
 
 void database::adjust_balance( const account_object& a, const HBD_asset& delta )
 {
-  adjust_balance( a, delta, get_asset_account( a.get_id() ) );
+  adjust_balance( a, delta, get_account_details( a.get_id() ) );
 }
 
-void database::adjust_balance( const account_object& a, const HBD_asset& delta, const assets_object& acnt_assets )
+void database::adjust_balance( const account_object& a, const HBD_asset& delta, const account_details_object& acnt_details )
 {
   if( delta.amount < 0 )
   {
-    FC_ASSERT( acnt_assets.get_hbd_balance() >= -delta,
+    FC_ASSERT( acnt_details.get_hbd_balance() >= -delta,
       "Account ${acc} does not have sufficient funds for balance adjustment. Required: ${r}, Available: ${a}",
-        ("acc", a.get_name())("r", delta)("a", acnt_assets.get_hbd_balance()) );
+        ("acc", a.get_name())("r", delta)("a", acnt_details.get_hbd_balance()) );
   }
 
   const bool trace_balance_change = false; //a.get_name() == "X";
@@ -3399,14 +3391,14 @@ void database::adjust_balance( const account_object& a, const HBD_asset& delta, 
 
   /// Starting from HF 25 HBD interest will be paid only from saving balance.
   HBD_asset interest_paid( 0 );
-  if( has_hardfork(HIVE_HARDFORK_1_25) == false && acnt_assets.get_hbd_seconds_last_update() != head_block_time() )
+  if( has_hardfork(HIVE_HARDFORK_1_25) == false && acnt_details.get_hbd_seconds_last_update() != head_block_time() )
   {
     const auto _head_block_time = head_block_time();
-    const bool update_hdb_balance = (_head_block_time - acnt_assets.get_hbd_last_interest_payment()).to_seconds() > HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC;
+    const bool update_hdb_balance = (_head_block_time - acnt_details.get_hbd_last_interest_payment()).to_seconds() > HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC;
 
     // Need to track interest calculation state
-    uint128_t _hbd_seconds = acnt_assets.get_hbd_seconds();
-    const auto interest = hive::protocol::hbd_interest::evaluate_hbd_interest(&_hbd_seconds, _head_block_time, acnt_assets.get_hbd_balance(), acnt_assets.get_hbd_seconds_last_update(),
+    uint128_t _hbd_seconds = acnt_details.get_hbd_seconds();
+    const auto interest = hive::protocol::hbd_interest::evaluate_hbd_interest(&_hbd_seconds, _head_block_time, acnt_details.get_hbd_balance(), acnt_details.get_hbd_seconds_last_update(),
       get_dynamic_global_properties().get_hbd_interest_rate(), update_hdb_balance);
 
     const bool do_interest_reset = _hbd_seconds > 0 && update_hdb_balance;
@@ -3414,8 +3406,8 @@ void database::adjust_balance( const account_object& a, const HBD_asset& delta, 
       interest_paid = HBD_asset( fc::uint128_to_uint64( interest ) );
 
     // Combined interest modify: update HBD seconds tracking, apply interest, and reset
-    // in a single modify to avoid redundant undo copies of the 500+ byte assets_object.
-    modify( acnt_assets, [&]( assets_object& t )
+    // in a single modify to avoid redundant undo copies of the 500+ byte account_details_object.
+    modify( acnt_details, [&]( account_details_object& t )
     {
       if( interest_paid.amount > 0 )
         t.set_hbd_balance( t.get_hbd_balance() + interest_paid );
@@ -3447,7 +3439,7 @@ void database::adjust_balance( const account_object& a, const HBD_asset& delta, 
     }
   }
 
-  modify( acnt_assets, [&]( assets_object& acnt )
+  modify( acnt_details, [&]( account_details_object& acnt )
   {
     auto b = acnt.get_hbd_balance();
     acnt.set_hbd_balance( acnt.get_hbd_balance() + delta );
@@ -3472,41 +3464,41 @@ void database::adjust_savings_balance( const account_object& a, const asset& del
 
 void database::adjust_savings_balance( const account_object& a, const HIVE_asset& delta )
 {
-  const auto& _assets = get_asset_account( a.get_id() );
+  const auto& _details = get_account_details( a.get_id() );
 
-  modify( _assets, [&]( assets_object& assets )
+  modify( _details, [&]( account_details_object& account_details )
   {
-    assets.set_savings( assets.get_savings() + delta );
-    FC_ASSERT( assets.get_savings().amount.value >= 0, "Insufficient savings HIVE funds" );
+    account_details.set_savings( account_details.get_savings() + delta );
+    FC_ASSERT( account_details.get_savings().amount.value >= 0, "Insufficient savings HIVE funds" );
   } );
 }
 
 void database::adjust_savings_balance( const account_object& a, const HBD_asset& delta )
 {
-  const auto& _assets = get_asset_account( a.get_id() );
+  const auto& _details = get_account_details( a.get_id() );
 
-  if( _assets.get_savings_hbd_seconds_last_update() != head_block_time() )
+  if( _details.get_savings_hbd_seconds_last_update() != head_block_time() )
   {
     const auto _head_block_time = head_block_time();
-    const bool update_savings_hdb_balance = (_head_block_time - _assets.get_savings_hbd_last_interest_payment()).to_seconds() > HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC;
-    auto _savings_hbd_seconds = _assets.get_savings_hbd_seconds();
-    const auto interest = hive::protocol::hbd_interest::evaluate_hbd_interest(&_savings_hbd_seconds, _head_block_time, _assets.get_hbd_savings(), _assets.get_savings_hbd_seconds_last_update(),
+    const bool update_savings_hdb_balance = (_head_block_time - _details.get_savings_hbd_last_interest_payment()).to_seconds() > HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC;
+    auto _savings_hbd_seconds = _details.get_savings_hbd_seconds();
+    const auto interest = hive::protocol::hbd_interest::evaluate_hbd_interest(&_savings_hbd_seconds, _head_block_time, _details.get_hbd_savings(), _details.get_savings_hbd_seconds_last_update(),
       get_dynamic_global_properties().get_hbd_interest_rate(), update_savings_hdb_balance);
 
-    modify( _assets, [&]( assets_object& assets )
+    modify( _details, [&]( account_details_object& account_details )
     {
-      assets.set_savings_hbd_seconds( _savings_hbd_seconds );
-      assets.set_savings_hbd_seconds_last_update( _head_block_time );
+      account_details.set_savings_hbd_seconds( _savings_hbd_seconds );
+      account_details.set_savings_hbd_seconds_last_update( _head_block_time );
     });
 
     if( _savings_hbd_seconds > 0 && update_savings_hdb_balance )
     {
       HBD_asset interest_paid( fc::uint128_to_uint64( interest ) );
-      modify( _assets, [&]( assets_object& assets )
+      modify( _details, [&]( account_details_object& account_details )
       {
-        assets.set_hbd_savings( assets.get_hbd_savings() + interest_paid );
-        assets.set_savings_hbd_seconds( 0 );
-        assets.set_savings_hbd_last_interest_payment( _head_block_time );
+        account_details.set_hbd_savings( account_details.get_hbd_savings() + interest_paid );
+        account_details.set_savings_hbd_seconds( 0 );
+        account_details.set_savings_hbd_last_interest_payment( _head_block_time );
       });
 
       if( interest > 0 )
@@ -3520,47 +3512,47 @@ void database::adjust_savings_balance( const account_object& a, const HBD_asset&
     }
   }
 
-  modify( _assets, [&]( assets_object& assets )
+  modify( _details, [&]( account_details_object& account_details )
   {
-    assets.set_hbd_savings( assets.get_hbd_savings() + delta );
-    FC_ASSERT( assets.get_hbd_savings().amount.value >= 0, "Insufficient savings HBD funds" );
+    account_details.set_hbd_savings( account_details.get_hbd_savings() + delta );
+    FC_ASSERT( account_details.get_hbd_savings().amount.value >= 0, "Insufficient savings HBD funds" );
   } );
 }
 
 void database::adjust_reward_balance( const account_object& a, const asset& value_delta,
                           const asset& share_delta /*= asset(0,VESTS_SYMBOL)*/ )
 {
-  adjust_reward_balance( a, value_delta, get_asset_account( a.get_id() ), share_delta );
+  adjust_reward_balance( a, value_delta, get_account_details( a.get_id() ), share_delta );
 }
 
 void database::adjust_reward_balance( const account_object& a, const asset& value_delta,
-                          const assets_object& acnt_assets, const asset& share_delta /*= asset(0,VESTS_SYMBOL)*/ )
+                          const account_details_object& acnt_details, const asset& share_delta /*= asset(0,VESTS_SYMBOL)*/ )
 {
   FC_ASSERT( value_delta.symbol.is_vesting() == false && share_delta.symbol.is_vesting() );
 
   if( value_delta.symbol.asset_num == HIVE_ASSET_NUM_HIVE )
   {
     if( share_delta.amount.value == 0 )
-      adjust_reward_balance( a, HIVE_asset( value_delta ), acnt_assets );
+      adjust_reward_balance( a, HIVE_asset( value_delta ), acnt_details );
     else
-      adjust_reward_balance( a, HIVE_asset( value_delta ), VEST_asset( share_delta ), acnt_assets );
+      adjust_reward_balance( a, HIVE_asset( value_delta ), VEST_asset( share_delta ), acnt_details );
   }
   else
   {
     FC_ASSERT( value_delta.symbol.asset_num == HIVE_ASSET_NUM_HBD, "invalid symbol" );
-    adjust_reward_balance( a, HBD_asset( value_delta ), acnt_assets );
+    adjust_reward_balance( a, HBD_asset( value_delta ), acnt_details );
   }
 }
 
 void database::adjust_reward_balance( const account_object& a, const HIVE_asset& value_delta )
 {
-  const auto& _assets = get_asset_account( a.get_id() );
-  adjust_reward_balance( a, value_delta, _assets );
+  const auto& _details = get_account_details( a.get_id() );
+  adjust_reward_balance( a, value_delta, _details );
 }
 
-void database::adjust_reward_balance( const account_object& a, const HIVE_asset& value_delta, const assets_object& acnt_assets )
+void database::adjust_reward_balance( const account_object& a, const HIVE_asset& value_delta, const account_details_object& acnt_details )
 {
-  modify( acnt_assets, [&]( assets_object& acnt )
+  modify( acnt_details, [&]( account_details_object& acnt )
   {
     acnt.set_rewards( acnt.get_rewards() + value_delta );
     FC_ASSERT( acnt.get_rewards().amount.value >= 0, "Insufficient reward HIVE funds" );
@@ -3569,13 +3561,13 @@ void database::adjust_reward_balance( const account_object& a, const HIVE_asset&
 
 void database::adjust_reward_balance( const account_object& a, const HIVE_asset& value_delta, const VEST_asset& share_delta )
 {
-  const auto& _assets = get_asset_account( a.get_id() );
-  adjust_reward_balance( a, value_delta, share_delta, _assets );
+  const auto& _details = get_account_details( a.get_id() );
+  adjust_reward_balance( a, value_delta, share_delta, _details );
 }
 
-void database::adjust_reward_balance( const account_object& a, const HIVE_asset& value_delta, const VEST_asset& share_delta, const assets_object& acnt_assets )
+void database::adjust_reward_balance( const account_object& a, const HIVE_asset& value_delta, const VEST_asset& share_delta, const account_details_object& acnt_details )
 {
-  modify( acnt_assets, [&]( assets_object& acnt )
+  modify( acnt_details, [&]( account_details_object& acnt )
   {
     acnt.set_vest_rewards_as_hive( acnt.get_vest_rewards_as_hive() + value_delta );
     acnt.set_vest_rewards( acnt.get_vest_rewards() + share_delta );
@@ -3592,13 +3584,13 @@ void database::adjust_reward_balance( const account_object& a, const HIVE_asset&
 
 void database::adjust_reward_balance( const account_object& a, const HBD_asset& value_delta )
 {
-  const auto& _assets = get_asset_account( a.get_id() );
-  adjust_reward_balance( a, value_delta, _assets );
+  const auto& _details = get_account_details( a.get_id() );
+  adjust_reward_balance( a, value_delta, _details );
 }
 
-void database::adjust_reward_balance( const account_object& a, const HBD_asset& value_delta, const assets_object& acnt_assets )
+void database::adjust_reward_balance( const account_object& a, const HBD_asset& value_delta, const account_details_object& acnt_details )
 {
-  modify( acnt_assets, [&]( assets_object& acnt )
+  modify( acnt_details, [&]( account_details_object& acnt )
   {
     acnt.set_hbd_rewards( acnt.get_hbd_rewards() + value_delta );
     FC_ASSERT( acnt.get_hbd_rewards().amount.value >= 0, "Insufficient reward HBD funds" );
@@ -3646,32 +3638,32 @@ void database::adjust_supply( const HBD_asset& delta )
 
 asset database::get_balance( const account_object& a, asset_symbol_type symbol )const
 {
-  // Get assets_object for the account
-  const auto& assets = get_asset_account( a.get_id() );
+  // Get account_details_object for the account
+  const auto& account_details = get_account_details( a.get_id() );
 
   if( symbol.asset_num == HIVE_ASSET_NUM_HIVE )
   {
-    return assets.get_balance().to_asset();
+    return account_details.get_balance().to_asset();
   }
   else
   {
     FC_ASSERT( symbol.asset_num == HIVE_ASSET_NUM_HBD, "Invalid symbol: ${s}", ("s", symbol) );
-    return assets.get_hbd_balance().to_asset();
+    return account_details.get_hbd_balance().to_asset();
   }
 }
 
 asset database::get_savings( const account_object& a, asset_symbol_type symbol )const
 {
-  const auto& _assets_obj = get_asset_account( a.get_id() );
+  const auto& _details_obj = get_account_details( a.get_id() );
 
   if( symbol.asset_num == HIVE_ASSET_NUM_HIVE )
   {
-    return _assets_obj.get_savings().to_asset();
+    return _details_obj.get_savings().to_asset();
   }
   else
   {
     FC_ASSERT( symbol.asset_num == HIVE_ASSET_NUM_HBD && "invalid symbol" );
-    return _assets_obj.get_hbd_savings().to_asset();
+    return _details_obj.get_hbd_savings().to_asset();
   }
 }
 
@@ -3708,29 +3700,28 @@ void database::validate_invariants()const
     for( auto itr = account_idx.begin(); itr != account_idx.end(); ++itr )
     {
       const auto& acc = get_account( itr->get_name() );
-      const auto& _assets_obj = get_asset_account( acc.get_id() );
-      const auto& _delayed_votes_obj = get_delayed_votes_account( acc.get_id() );
+      const auto& _details_obj = get_account_details( acc.get_id() );
 
-      total_supply += _assets_obj.get_balance();
-      total_supply += _assets_obj.get_savings();
-      total_supply += _assets_obj.get_rewards();
-      total_hbd += _assets_obj.get_hbd_balance();
-      total_hbd += _assets_obj.get_hbd_savings();
-      total_hbd += _assets_obj.get_hbd_rewards();
-      total_vesting += _assets_obj.get_vesting();
-      total_vesting += _assets_obj.get_vest_rewards();
-      pending_vesting_hive += _assets_obj.get_vest_rewards_as_hive();
+      total_supply += _details_obj.get_balance();
+      total_supply += _details_obj.get_savings();
+      total_supply += _details_obj.get_rewards();
+      total_hbd += _details_obj.get_hbd_balance();
+      total_hbd += _details_obj.get_hbd_savings();
+      total_hbd += _details_obj.get_hbd_rewards();
+      total_vesting += _details_obj.get_vesting();
+      total_vesting += _details_obj.get_vest_rewards();
+      pending_vesting_hive += _details_obj.get_vest_rewards_as_hive();
       total_vsf_votes += ( !itr->has_proxy() ?
-                      acc.get_governance_vote_power( _assets_obj, _delayed_votes_obj ) :
+                      acc.get_governance_vote_power( _details_obj ) :
                       ( HIVE_MAX_PROXY_RECURSION_DEPTH > 0 ?
                           acc.get_proxied_vsf_votes()[HIVE_MAX_PROXY_RECURSION_DEPTH - 1] :
-                          acc.get_direct_governance_vote_power( _assets_obj, _delayed_votes_obj ) ) );
-      total_delayed_votes += _delayed_votes_obj.get_sum_delayed_votes();
+                          acc.get_direct_governance_vote_power( _details_obj ) ) );
+      total_delayed_votes += _details_obj.get_sum_delayed_votes();
       ushare_type sum_delayed_votes{ 0ul };
-      for( auto& dv : _delayed_votes_obj.get_delayed_votes() )
+      for( auto& dv : _details_obj.get_delayed_votes() )
         sum_delayed_votes += dv.val;
-      FC_ASSERT( sum_delayed_votes == _delayed_votes_obj.get_sum_delayed_votes(), "", ("sum_delayed_votes",sum_delayed_votes)("_delayed_votes_obj.get_sum_delayed_votes()",_delayed_votes_obj.get_sum_delayed_votes()) );
-      FC_ASSERT( sum_delayed_votes.value <= _assets_obj.get_vesting().amount, "", ("sum_delayed_votes",sum_delayed_votes)("_assets_obj.get_vesting().amount",_assets_obj.get_vesting().amount)("account",acc.get_name()) );
+      FC_ASSERT( sum_delayed_votes == _details_obj.get_sum_delayed_votes(), "", ("sum_delayed_votes",sum_delayed_votes)("_details_obj.get_sum_delayed_votes()",_details_obj.get_sum_delayed_votes()) );
+      FC_ASSERT( sum_delayed_votes.value <= _details_obj.get_vesting().amount, "", ("sum_delayed_votes",sum_delayed_votes)("_details_obj.get_vesting().amount",_details_obj.get_vesting().amount)("account",acc.get_name()) );
       ++account_no;
     }
 

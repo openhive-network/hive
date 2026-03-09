@@ -127,27 +127,27 @@ void database::process_vesting_withdrawals()
 
     // Get the account and its split objects via tiny_account_object
     const auto& from_account = get_account( tiny_obj.get_name() );
-    const auto& from_assets = get_asset_account( from_account.get_id() );
+    const auto& from_details = get_account_details( from_account.get_id() );
 
-    VEST_asset to_withdraw( from_account.get_active_next_vesting_withdrawal( from_assets ) );
-    if( !has_hardfork( HIVE_HARDFORK_1_28_FIX_POWER_DOWN ) && to_withdraw < from_assets.get_vesting_withdraw_rate() )
-      to_withdraw = from_assets.get_to_withdraw() % from_assets.get_vesting_withdraw_rate().get_amount();
+    VEST_asset to_withdraw( from_account.get_active_next_vesting_withdrawal( from_details ) );
+    if( !has_hardfork( HIVE_HARDFORK_1_28_FIX_POWER_DOWN ) && to_withdraw < from_details.get_vesting_withdraw_rate() )
+      to_withdraw = from_details.get_to_withdraw() % from_details.get_vesting_withdraw_rate().get_amount();
     // see history of first (and so far the only) power down of 'gil' account: https://hiveblocks.com/@gil
     // the situation was caused by HF1, where vesting_withdraw_rate changed from 9615 before split to 9615.384615
     // (instead of correct 9615.000000); that is the source of nonequivalence between taking all the rest of power down
     // (0.769270 VESTS) and modulo of "all % weekly rate" (0.000040 VESTS);
     // it is possible that other accounts were also affected in similar way, 'gil' was just the first where the difference
     // occurred
-    bool invalid_power_down = to_withdraw > from_assets.get_vesting();
+    bool invalid_power_down = to_withdraw > from_details.get_vesting();
     if( invalid_power_down )
     {
       elog( "NOTIFYALERT! somehow account was scheduled to power down more than it has on balance (${s} vs ${h})",
-        ( "s", to_withdraw )( "h", from_assets.get_vesting().amount ) );
+        ( "s", to_withdraw )( "h", from_details.get_vesting().amount ) );
 #ifdef USE_ALTERNATE_CHAIN_ID
       FC_ASSERT( not invalid_power_down, "Somehow account was scheduled to power down more than it has on balance (${s} vs ${h})",
-        ( "s", to_withdraw )( "h", from_assets.get_vesting().amount ) );
+        ( "s", to_withdraw )( "h", from_details.get_vesting().amount ) );
 #endif
-      to_withdraw = from_assets.get_vesting();
+      to_withdraw = from_details.get_vesting();
     }
 
     optional< delayed_voting > dv;
@@ -176,7 +176,7 @@ void database::process_vesting_withdrawals()
           {
             const auto& to_account = get_account( itr->to_account );
             bool to_self = to_account.get_id() == from_account.get_id();
-            const auto& to_assets = get_asset_account( to_account.get_id() );
+            const auto& to_details = get_account_details( to_account.get_id() );
 
             VEST_asset routed_vests;
             HIVE_asset routed_hive;
@@ -193,10 +193,10 @@ void database::process_vesting_withdrawals()
             if( auto_vest_mode )
             {
               if( has_hardfork( HIVE_HARDFORK_0_20 ) )
-                rc().regenerate_rc_mana( to_account, to_assets, now );
+                rc().regenerate_rc_mana( to_account, to_details, now );
             }
 
-            modify( to_assets, [&]( assets_object& a )
+            modify( to_details, [&]( account_details_object& a )
             {
               if( auto_vest_mode )
               {
@@ -211,7 +211,7 @@ void database::process_vesting_withdrawals()
             if( auto_vest_mode )
             {
               if( has_hardfork( HIVE_HARDFORK_0_20 ) )
-                rc().update_account_after_vest_change( to_account, to_assets, now );
+                rc().update_account_after_vest_change( to_account, to_details, now );
 
               if( has_hardfork( HIVE_HARDFORK_1_24 ) )
               {
@@ -254,7 +254,7 @@ void database::process_vesting_withdrawals()
     pre_push_virtual_operation( *this, vop );
 
     if( has_hardfork( HIVE_HARDFORK_0_20 ) )
-      rc().regenerate_rc_mana( from_account, from_assets, now );
+      rc().regenerate_rc_mana( from_account, from_details, now );
     if( has_hardfork( HIVE_HARDFORK_1_24 ) )
     {
       FC_ASSERT( dv.valid() && "The object processing `delayed votes` must exist" );
@@ -263,7 +263,7 @@ void database::process_vesting_withdrawals()
         -to_withdraw.amount, from_account );
     }
 
-    modify( from_assets, [&]( assets_object& a )
+    modify( from_details, [&]( account_details_object& a )
     {
       a.set_vesting( a.get_vesting() - to_withdraw );
       a.set_balance( a.get_balance() + converted_hive );
@@ -277,14 +277,14 @@ void database::process_vesting_withdrawals()
       }
     });
     {
-      time_point_sec new_nvw = from_assets.has_active_power_down()
+      time_point_sec new_nvw = from_details.has_active_power_down()
         ? time_point_sec( tiny_obj.get_next_vesting_withdrawal() + fc::seconds( HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS ) )
         : fc::time_point_sec::maximum();
       modify( tiny_obj, [&]( tiny_account_object& t ) { t.set_next_vesting_withdrawal( new_nvw ); } );
     }
 
     if( has_hardfork( HIVE_HARDFORK_0_20 ) )
-      rc().update_account_after_vest_change( from_account, from_assets, now, true, true );
+      rc().update_account_after_vest_change( from_account, from_details, now, true, true );
 
     modify( cprops, [&]( dynamic_global_property_object& o )
     {

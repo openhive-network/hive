@@ -6,8 +6,7 @@
 namespace hive { namespace chain {
 
   class account_object;
-  class assets_object;
-  class delayed_votes_object;
+  class account_details_object;
 
   class tiny_account_object : public object< tiny_account_object_type, tiny_account_object, std::false_type /* no dynamic alloc */ >
   {
@@ -16,7 +15,7 @@ namespace hive { namespace chain {
 
       template< typename Allocator >
       tiny_account_object( allocator< Allocator > a, uint64_t _id,
-        const account_object& acc, const assets_object& assets_obj, const delayed_votes_object& dvotes );
+        const account_object& acc, const account_details_object& details_obj );
 
       const account_name_type& get_name() const { return name; }
 
@@ -42,7 +41,7 @@ namespace hive { namespace chain {
       time_point_sec get_oldest_delayed_vote_time() const { return oldest_delayed_vote_time; }
       void set_oldest_delayed_vote_time( const time_point_sec& value ) { oldest_delayed_vote_time = value; }
 
-      void modify_from_delayed_votes( const delayed_votes_object& dvotes );
+      void modify_from_delayed_votes( const account_details_object& account_details );
 
     private:
       account_name_type     name;

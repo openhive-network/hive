@@ -27,10 +27,10 @@ namespace hive { namespace chain {
  * Helper function to align split object IDs with account IDs.
  *
  * When treasury accounts are created during hardforks, there may already be many
- * regular accounts. The split object indexes (recovery, assets, time,
- * delayed_votes) may have lower next_id values than the account index. This function
- * creates placeholder split objects to advance the split object indexes' next_id
- * to match the account index's next_id, ensuring 1:1 ID correspondence.
+ * regular accounts. The split object indexes (account_details) may have lower next_id
+ * values than the account index. This function creates placeholder split objects
+ * to advance the split object indexes' next_id to match the account index's
+ * next_id, ensuring 1:1 ID correspondence.
  *
  * The placeholder objects use account_id_type() (id=0) as their account_id, which
  * won't match any real account lookups since lookups use the account's actual ID.
@@ -40,21 +40,12 @@ void database::align_split_object_ids_with_accounts()
   const auto& account_idx = get_index< account_index >();
   const auto next_account_id = account_idx.get_next_id();
 
-  // Align assets_index
+  // Align account_details_index
   {
-    const auto& idx = get_index< assets_index >();
-    while( idx.get_next_id() < assets_object::id_type( next_account_id.get_value() ) )
+    const auto& idx = get_index< account_details_index >();
+    while( idx.get_next_id() < account_details_object::id_type( next_account_id.get_value() ) )
     {
-      create< assets_object >();
-    }
-  }
-
-  // Align delayed_votes_index
-  {
-    const auto& idx = get_index< delayed_votes_index >();
-    while( idx.get_next_id() < delayed_votes_object::id_type( next_account_id.get_value() ) )
-    {
-      create< delayed_votes_object >();
+      create< account_details_object >();
     }
   }
 }
@@ -515,9 +506,9 @@ void database::apply_hardfork( uint32_t hardfork )
         for( auto it = idx.begin(); it != idx.end(); ++it )
         {
           const auto& acc = get_account( it->get_name() );
-          const auto& _assets_obj = get_asset_account( acc.get_id() );
+          const auto& _details_obj = get_account_details( acc.get_id() );
 
-          modify( _assets_obj, [&]( assets_object& a )
+          modify( _details_obj, [&]( account_details_object& a )
           {
             a.set_rc_adjustment( HIVE_RC_HISTORICAL_ACCOUNT_CREATION_ADJUSTMENT );
             a.get_rc_manabar().last_update_time = now.sec_since_epoch();
@@ -550,9 +541,8 @@ void database::apply_hardfork( uint32_t hardfork )
 
           const auto& new_account = create<account_object>(treasury_name, head_block_time());
           // Create split objects for the treasury account
-          const auto& new_assets = create< assets_object >( treasury_name );
-          const auto& new_dvotes = create< delayed_votes_object >();
-          create< tiny_account_object >( new_account, new_assets, new_dvotes );
+          const auto& new_assets = create< account_details_object >();
+          create< tiny_account_object >( new_account, new_assets );
           push_virtual_operation(
             *this, account_created_operation( treasury_name, treasury_name, VEST_asset( 0 ), VEST_asset( 0 ) ) );
       }
@@ -659,9 +649,8 @@ void database::apply_hardfork( uint32_t hardfork )
 
         const auto& new_account = create<account_object>(treasury_name, head_block_time());
         // Create split objects for the treasury account
-        const auto& new_assets = create< assets_object >( treasury_name );
-        const auto& new_dvotes = create< delayed_votes_object >();
-        create< tiny_account_object >( new_account, new_assets, new_dvotes );
+        const auto& new_assets = create< account_details_object >();
+        create< tiny_account_object >( new_account, new_assets );
         push_virtual_operation(
           *this, account_created_operation( treasury_name, treasury_name, VEST_asset( 0 ), VEST_asset( 0 ) ) );
     }

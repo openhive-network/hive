@@ -47,7 +47,7 @@
 using namespace hive::chain;
 using namespace hive::chain::util;
 
-#define GET_ASSETS( account_name ) (db->get_asset_account( db->get_account( account_name ).get_id() ))
+#define GET_ASSETS( account_name ) (db->get_account_details( db->get_account( account_name ).get_id() ))
 #define GET_ACTIVE_NEXT_VW( account_name ) (db->get_account( account_name ).get_active_next_vesting_withdrawal( GET_ASSETS( account_name ) ))
 
 BOOST_FIXTURE_TEST_SUITE( hf28_tests, cluster_database_fixture )
@@ -1775,16 +1775,16 @@ BOOST_AUTO_TEST_CASE( artificial_1_on_power_down )
     // 'alice' and 'bob' have 1 in vesting withdraw rate, but they are actually performing power down
     // it means they can't change rate to 1, because it is already 1
     HIVE_REQUIRE_ASSERT( withdraw_vesting( "alice", VEST_asset( 1 ), alice_private_key ),
-      "account_assets.get_vesting_withdraw_rate() != new_vesting_withdraw_rate" );
+      "account_details.get_vesting_withdraw_rate() != new_vesting_withdraw_rate" );
     HIVE_REQUIRE_ASSERT( withdraw_vesting( "bob", VEST_asset( 1 ), bob_private_key ),
-      "account_assets.get_vesting_withdraw_rate() != new_vesting_withdraw_rate" );
+      "account_details.get_vesting_withdraw_rate() != new_vesting_withdraw_rate" );
     withdraw_vesting( "alice", VEST_asset( 0 ), alice_private_key );
     withdraw_vesting( "bob", VEST_asset( 0 ), bob_private_key );
     // 'carol' does not have 1 as power down rate, so she can change it to 1 or cancel power down
     withdraw_vesting( "carol", VEST_asset( 1 ), carol_private_key );
     withdraw_vesting( "carol", VEST_asset( 0 ), carol_private_key );
     // only 'dave' does not have power down
-    HIVE_REQUIRE_ASSERT( withdraw_vesting( "dave", VEST_asset( 0 ), dave_private_key ), "account_assets.has_active_power_down()" );
+    HIVE_REQUIRE_ASSERT( withdraw_vesting( "dave", VEST_asset( 0 ), dave_private_key ), "account_details.has_active_power_down()" );
     // 'eric' can change rate to 1
     withdraw_vesting( "eric", VEST_asset( 1 ), eric_private_key );
 
@@ -1879,7 +1879,7 @@ BOOST_AUTO_TEST_CASE( vote_stabilization )
       BOOST_REQUIRE_EQUAL( rshares, full_power ); // power stays the same on all votes
     }
     HIVE_REQUIRE_ASSERT( vote_reply( i, HIVE_100_PERCENT, "carol", carol_post_key ),
-      "voter_assets.get_voting_manabar().has_mana( fc::uint128_to_int64( used_mana ) )" );
+      "voter_details.get_voting_manabar().has_mana( fc::uint128_to_int64( used_mana ) )" );
 
     generate_block();
     // after single block 'carol' should regenerate enough mana to counter "round-up" mentioned above
@@ -1887,17 +1887,17 @@ BOOST_AUTO_TEST_CASE( vote_stabilization )
     // but further voting is not possible, unless she waits or lowers weight significantly
     ++i;
     HIVE_REQUIRE_ASSERT( vote_reply( i, HIVE_100_PERCENT, "carol", carol_post_key ),
-      "voter_assets.get_voting_manabar().has_mana( fc::uint128_to_int64( used_mana ) )" );
+      "voter_details.get_voting_manabar().has_mana( fc::uint128_to_int64( used_mana ) )" );
 
     generate_blocks( HIVE_BLOCKS_PER_DAY / 10 - 1 );
     HIVE_REQUIRE_ASSERT( vote_reply( i, HIVE_100_PERCENT, "carol", carol_post_key ),
-      "voter_assets.get_voting_manabar().has_mana( fc::uint128_to_int64( used_mana ) )" );
+      "voter_details.get_voting_manabar().has_mana( fc::uint128_to_int64( used_mana ) )" );
     generate_block();
     vote_reply( i, HIVE_100_PERCENT, "carol", carol_post_key );
     // only one full vote is possible after 1/10 of day of mana regen
     ++i;
     HIVE_REQUIRE_ASSERT( vote_reply( i, HIVE_100_PERCENT, "carol", carol_post_key ),
-      "voter_assets.get_voting_manabar().has_mana( fc::uint128_to_int64( used_mana ) )" );
+      "voter_details.get_voting_manabar().has_mana( fc::uint128_to_int64( used_mana ) )" );
 
     // downvote all replies with 'anticarol'
     for( i = 0; i < 12+1+49; ++i )
@@ -1908,26 +1908,26 @@ BOOST_AUTO_TEST_CASE( vote_stabilization )
     // 13'th downvote started to eat upvote mana, eating half-vote worth, however due to "round-up" code
     // mentioned earlier, it will come couple points short
     HIVE_REQUIRE_ASSERT( vote_reply( i, -50 * HIVE_1_PERCENT, "anticarol", anticarol_post_key ),
-      "voter_assets.get_voting_manabar().current_mana + voter_assets.get_downvote_manabar().current_mana > fc::uint128_to_int64( used_mana )" );
+      "voter_details.get_voting_manabar().current_mana + voter_details.get_downvote_manabar().current_mana > fc::uint128_to_int64( used_mana )" );
     generate_block();
     // after single block 'anticarol' should regenerate enough mana to counter "round-up" mentioned above
     vote_reply( i, -50 * HIVE_1_PERCENT, "anticarol", anticarol_post_key );
     // but further downvoting is not possible, unless she waits or lowers weight significantly
     ++i;
     HIVE_REQUIRE_ASSERT( vote_reply( i, -HIVE_100_PERCENT, "anticarol", anticarol_post_key ),
-      "voter_assets.get_voting_manabar().current_mana + voter_assets.get_downvote_manabar().current_mana > fc::uint128_to_int64( used_mana )" );
+      "voter_details.get_voting_manabar().current_mana + voter_details.get_downvote_manabar().current_mana > fc::uint128_to_int64( used_mana )" );
 
     generate_blocks( HIVE_BLOCKS_PER_DAY * 10 / 125 - 1 );
     // since downvote can burn both downvote and upvote mana at the same time and they regenerate concurrently,
     // with downvote manabar being 1/4 of upvote, we need to wait less to be able to cast next downvote
     HIVE_REQUIRE_ASSERT( vote_reply( i, -HIVE_100_PERCENT, "anticarol", anticarol_post_key ),
-      "voter_assets.get_voting_manabar().current_mana + voter_assets.get_downvote_manabar().current_mana > fc::uint128_to_int64( used_mana )" );
+      "voter_details.get_voting_manabar().current_mana + voter_details.get_downvote_manabar().current_mana > fc::uint128_to_int64( used_mana )" );
     generate_block();
     vote_reply( i, -HIVE_100_PERCENT, "anticarol", anticarol_post_key );
     // only one full downvote is possible after (1/10 of day / 125%) of mana regen
     ++i;
     HIVE_REQUIRE_ASSERT( vote_reply( i, -HIVE_100_PERCENT, "anticarol", anticarol_post_key ),
-      "voter_assets.get_voting_manabar().current_mana + voter_assets.get_downvote_manabar().current_mana > fc::uint128_to_int64( used_mana )" );
+      "voter_details.get_voting_manabar().current_mana + voter_details.get_downvote_manabar().current_mana > fc::uint128_to_int64( used_mana )" );
 
     validate_database();
   }
@@ -1956,7 +1956,7 @@ BOOST_AUTO_TEST_CASE( empty_voting )
     vote( "alice", "test", "bob", HIVE_100_PERCENT, bob_post_key );
     // downvoting requires more than is used - it is probably a bug
     HIVE_REQUIRE_ASSERT( vote( "alice", "test", "antibob", -HIVE_100_PERCENT, antibob_post_key ),
-      "voter_assets.get_voting_manabar().current_mana + voter_assets.get_downvote_manabar().current_mana > fc::uint128_to_int64( used_mana )" );
+      "voter_details.get_voting_manabar().current_mana + voter_details.get_downvote_manabar().current_mana > fc::uint128_to_int64( used_mana )" );
     generate_block();
 
     BOOST_TEST_MESSAGE( "Testing voting and downvoting with no mana after HF28" );
@@ -1966,7 +1966,7 @@ BOOST_AUTO_TEST_CASE( empty_voting )
     vote( "alice", "test", "carol", HIVE_100_PERCENT, carol_post_key );
     // even though it is probably a bug and it was actually fixed briefly, final decision was to not change it
     HIVE_REQUIRE_ASSERT( vote( "alice", "test", "anticarol", -HIVE_100_PERCENT, anticarol_post_key ),
-      "voter_assets.get_voting_manabar().current_mana + voter_assets.get_downvote_manabar().current_mana > fc::uint128_to_int64( used_mana )" );
+      "voter_details.get_voting_manabar().current_mana + voter_details.get_downvote_manabar().current_mana > fc::uint128_to_int64( used_mana )" );
     generate_block();
 
     auto post_id = db->get_comment( "alice", std::string( "test" ) ).get_id();
@@ -2420,8 +2420,8 @@ BOOST_AUTO_TEST_CASE(treasury_hbd_does_not_affect_inflation_advanced)
             auto new_hive = (props.virtual_supply.amount * current_inflation_rate) / (int64_t(HIVE_100_PERCENT) * int64_t(HIVE_BLOCKS_PER_YEAR));
             if (db->has_hardfork(HIVE_HARDFORK_1_28_NO_DHF_HBD_IN_INFLATION)) {
               const auto &treasury_account = db->get_treasury();
-              const auto &treasury_assets = db->get_asset_account( treasury_account.get_id() );
-              const HBD_asset hbd_supply_without_treasury = props.get_current_hbd_supply() - treasury_assets.get_hbd_balance();
+              const auto &treasury_details = db->get_account_details( treasury_account.get_id() );
+              const HBD_asset hbd_supply_without_treasury = props.get_current_hbd_supply() - treasury_details.get_hbd_balance();
               BOOST_REQUIRE_GE( hbd_supply_without_treasury.amount.value, 0 );
               const auto virtual_supply_without_treasury = hbd_supply_without_treasury * db->get_feed_history().current_median_history + props.get_current_supply();
 

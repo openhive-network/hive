@@ -101,14 +101,14 @@ struct manabar
   }
 };
 
-template< typename PropType, typename AccountType, typename AssetsType >
-void update_manabar( const PropType& gpo, AccountType& account, AssetsType& assets, int64_t new_mana = 0 )
+template< typename PropType, typename AccountType, typename AccountDetailsType >
+void update_manabar( const PropType& gpo, AccountType& account, AccountDetailsType& account_details, int64_t new_mana = 0 )
 {
-  auto effective_vests = account.get_effective_vesting_shares( assets ).value;
+  auto effective_vests = account.get_effective_vesting_shares( account_details ).value;
   try {
   manabar_params params( effective_vests, HIVE_VOTING_MANA_REGENERATION_SECONDS );
-  assets.get_voting_manabar().regenerate_mana( params, gpo.time );
-  assets.get_voting_manabar().use_mana( -new_mana );
+  account_details.get_voting_manabar().regenerate_mana( params, gpo.time );
+  account_details.get_voting_manabar().use_mana( -new_mana );
   } FC_CAPTURE_LOG_AND_RETHROW( (account)(effective_vests) )
 
   try{
@@ -134,8 +134,8 @@ void update_manabar( const PropType& gpo, AccountType& account, AssetsType& asse
       params.max_mana = ( effective_vests * gpo.downvote_pool_percent ) / HIVE_100_PERCENT;
     }
 
-    assets.get_downvote_manabar().regenerate_mana( params, gpo.time );
-    assets.get_downvote_manabar().use_mana( ( -new_mana * gpo.downvote_pool_percent ) / HIVE_100_PERCENT );
+    account_details.get_downvote_manabar().regenerate_mana( params, gpo.time );
+    account_details.get_downvote_manabar().use_mana( ( -new_mana * gpo.downvote_pool_percent ) / HIVE_100_PERCENT );
   }
   } FC_CAPTURE_LOG_AND_RETHROW( (account)(effective_vests) )
 }

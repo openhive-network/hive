@@ -2,6 +2,7 @@
 #include <boost/test/unit_test.hpp>
 
 #include <hive/chain/account_object.hpp>
+#include <hive/chain/detail/state/account_details_object.hpp>
 
 #include <hive/plugins/state_snapshot/state_snapshot_plugin.hpp>
 
@@ -45,7 +46,7 @@ BOOST_AUTO_TEST_CASE( additional_allocation_after_snapshot_load )
 
       generate_block();
 
-      const auto& index = db()->get_index<delayed_votes_index>();
+      const auto& index = db()->get_index<account_details_index>();
       const size_t initial_allocations = index.get_item_additional_allocation();
 
       ACTOR_DEFAULT_FEE( alice )
@@ -73,7 +74,7 @@ BOOST_AUTO_TEST_CASE( additional_allocation_after_snapshot_load )
       db()->set_hardfork( 24 );
       generate_block();
 
-      const auto& index = db()->get_index<delayed_votes_index>();
+      const auto& index = db()->get_index<account_details_index>();
       BOOST_REQUIRE_GT(index.get_item_additional_allocation(), 0);
     }
 

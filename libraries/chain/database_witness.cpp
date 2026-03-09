@@ -133,14 +133,13 @@ void database::retally_witness_votes()
     if( itr->has_proxy() ) continue;
     const auto& a = get_account( itr->get_name() );
 
-    const auto& _assets_obj = get_asset_account( a.get_id() );
-    const auto& _dvotes = get_delayed_votes_account( a.get_id() );
+    const auto& _details_obj = get_account_details( a.get_id() );
 
     const auto& vidx = get_index<witness_vote_index>().indices().get<by_account_witness>();
     auto wit_itr = vidx.lower_bound( boost::make_tuple( a.get_name(), account_name_type() ) );
     while( wit_itr != vidx.end() && wit_itr->account == a.get_name() )
     {
-      adjust_witness_vote( get< witness_object, by_name >(wit_itr->witness), a.get_governance_vote_power( _assets_obj, _dvotes ) );
+      adjust_witness_vote( get< witness_object, by_name >(wit_itr->witness), a.get_governance_vote_power( _details_obj ) );
       ++wit_itr;
     }
   }

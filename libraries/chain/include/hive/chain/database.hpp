@@ -312,11 +312,8 @@ namespace chain {
       account get_volatile_account(  const account_name_type& name )const;
       account find_volatile_account( const account_name_type& name )const;
 
-      const assets_object& get_asset_account(  const account_id_type& id )const;
-      const assets_object* find_asset_account( const account_id_type& id )const;
-
-      const delayed_votes_object& get_delayed_votes_account(  const account_id_type& id )const;
-      const delayed_votes_object* find_delayed_votes_account( const account_id_type& id )const;
+      const account_details_object& get_account_details(  const account_id_type& id )const;
+      const account_details_object* find_account_details( const account_id_type& id )const;
 
       const comment_object*  find_comment( comment_id_type comment_id )const;
 
@@ -533,11 +530,11 @@ namespace chain {
       void adjust_liquidity_reward( const account_object& owner, const asset& volume, bool is_hbd );
 
       void adjust_balance( const account_object& a, const asset& delta );
-      void adjust_balance( const account_object& a, const asset& delta, const assets_object& acnt_assets );
+      void adjust_balance( const account_object& a, const asset& delta, const account_details_object& acnt_details );
       void adjust_balance( const account_object& a, const HIVE_asset& delta );
-      void adjust_balance( const account_object& a, const HIVE_asset& delta, const assets_object& acnt_assets );
+      void adjust_balance( const account_object& a, const HIVE_asset& delta, const account_details_object& acnt_details );
       void adjust_balance( const account_object& a, const HBD_asset& delta );
-      void adjust_balance( const account_object& a, const HBD_asset& delta, const assets_object& acnt_assets );
+      void adjust_balance( const account_object& a, const HBD_asset& delta, const account_details_object& acnt_details );
       void adjust_balance( const account_name_type& name, const asset& delta ) { adjust_balance( get_account( name ), delta ); }
       void adjust_balance( const account_name_type& name, const HIVE_asset& delta ) { adjust_balance( get_account( name ), delta ); }
       void adjust_balance( const account_name_type& name, const HBD_asset& delta ) { adjust_balance( get_account( name ), delta ); }
@@ -547,13 +544,13 @@ namespace chain {
       void adjust_savings_balance( const account_object& a, const HBD_asset& delta );
 
       void adjust_reward_balance( const account_object& a, const asset& value_delta, const asset& share_delta = asset(0,VESTS_SYMBOL) );
-      void adjust_reward_balance( const account_object& a, const asset& value_delta, const assets_object& acnt_assets, const asset& share_delta = asset(0,VESTS_SYMBOL) );
+      void adjust_reward_balance( const account_object& a, const asset& value_delta, const account_details_object& acnt_details, const asset& share_delta = asset(0,VESTS_SYMBOL) );
       void adjust_reward_balance( const account_object& a, const HIVE_asset& value_delta );
-      void adjust_reward_balance( const account_object& a, const HIVE_asset& value_delta, const assets_object& acnt_assets );
+      void adjust_reward_balance( const account_object& a, const HIVE_asset& value_delta, const account_details_object& acnt_details );
       void adjust_reward_balance( const account_object& a, const HBD_asset& value_delta );
-      void adjust_reward_balance( const account_object& a, const HBD_asset& value_delta, const assets_object& acnt_assets );
+      void adjust_reward_balance( const account_object& a, const HBD_asset& value_delta, const account_details_object& acnt_details );
       void adjust_reward_balance( const account_object& a, const HIVE_asset& value_delta, const VEST_asset& share_delta );
-      void adjust_reward_balance( const account_object& a, const HIVE_asset& value_delta, const VEST_asset& share_delta, const assets_object& acnt_assets );
+      void adjust_reward_balance( const account_object& a, const HIVE_asset& value_delta, const VEST_asset& share_delta, const account_details_object& acnt_details );
       void adjust_reward_balance( const account_name_type& name, const asset& value_delta, const asset& share_delta = asset(0,VESTS_SYMBOL) )
       {
         adjust_reward_balance( get_account( name ), value_delta, share_delta );
@@ -772,7 +769,7 @@ namespace chain {
       //calculates sum of all balances stored on given account, returns true if any is nonzero
       bool collect_account_total_balance( const account_object& account, HIVE_asset* total_hive, HBD_asset* total_hbd,
         VEST_asset* total_vests, HIVE_asset* vesting_shares_hive_value );
-      bool collect_account_total_balance( const account_object& account, const assets_object& assets, HIVE_asset* total_hive, HBD_asset* total_hbd,
+      bool collect_account_total_balance( const account_object& account, const account_details_object& account_details, HIVE_asset* total_hive, HBD_asset* total_hbd,
         VEST_asset* total_vests, HIVE_asset* vesting_shares_hive_value );
       //updates last_access_block on account_object without handler overhead,
       //preventing unnecessary RocksDB archive-restore cycles for accounts

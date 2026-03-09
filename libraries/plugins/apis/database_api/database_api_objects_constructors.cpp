@@ -21,8 +21,7 @@
 #include <hive/chain/witness_objects.hpp>
 #include <hive/chain/database.hpp>
 #include <hive/chain/notifications.hpp>
-#include <hive/chain/detail/state/assets_object.hpp>
-#include <hive/chain/detail/state/delayed_votes_object.hpp>
+#include <hive/chain/detail/state/account_details_object.hpp>
 #include <hive/chain/detail/state/tiny_account_object.hpp>
 
 namespace hive { namespace plugins { namespace database_api {
@@ -222,14 +221,13 @@ api_account_object::api_account_object( const account_object& a, const database&
   governance_vote_expiration_ts()
 {
   // Get split objects
-  const auto& assets = db.get_asset_account( a.get_id() );
-  const auto& dvotes = db.get_delayed_votes_account( a.get_id() );
+  const auto& assets = db.get_account_details( a.get_id() );
 
-  // From assets_object (voting manabars)
+  // From account_details_object (voting manabars)
   voting_manabar = assets.get_voting_manabar();
   downvote_manabar = assets.get_downvote_manabar();
 
-  // From assets_object (time-related fields)
+  // From account_details_object (time-related fields)
   last_vote_time = assets.get_last_vote_time();
   last_account_update = assets.get_last_account_update();
   last_post = assets.get_last_post();
@@ -250,7 +248,7 @@ api_account_object::api_account_object( const account_object& a, const database&
   post_bandwidth = assets.get_post_bandwidth();
   last_account_recovery = assets.get_block_last_account_recovery_time();
 
-  // From assets_object
+  // From account_details_object
   balance = assets.get_balance().to_asset();
   savings_balance = assets.get_savings().to_asset();
   hbd_balance = assets.get_hbd_balance().to_asset();
@@ -297,7 +295,7 @@ api_account_object::api_account_object( const account_object& a, const database&
   }
 
   if( delayed_votes_active )
-    delayed_votes = vector< delayed_votes_data >{ dvotes.get_delayed_votes().begin(), dvotes.get_delayed_votes().end() };
+    delayed_votes = vector< delayed_votes_data >{ assets.get_delayed_votes().begin(), assets.get_delayed_votes().end() };
 
   post_voting_power = VEST_asset(a.get_effective_vesting_shares( assets )).to_asset();
 }

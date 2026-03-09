@@ -22,7 +22,7 @@ struct accounts_stats
  * - savings_withdraw_requests, can_vote_flag, mined, memo_key, proxied_vsf_votes
  *
  * Other account data (assets/recovery, delayed_votes) are stored
- * in separate split objects (assets_object, delayed_votes_object)
+ * in separate split objects (account_details_object, delayed_votes_object)
  */
 class rocksdb_account_object
 {

@@ -1293,7 +1293,7 @@ void account_history_rocksdb_plugin::impl::on_post_apply_block(const block_notif
              account_iter->get_name() <= upper)
       {
         const auto& account = *account_iter;
-        const auto& assets = _mainDb.get_asset_account( account.get_id() );
+        const auto& assets = _mainDb.get_account_details( account.get_id() );
 
         auto saved_balance_iter = _saved_balances.find(account.get_name());
         bool balances_changed = saved_balance_iter == _saved_balances.end();

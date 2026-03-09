@@ -255,7 +255,7 @@ void account_witness_proxy_evaluator::do_apply( const account_witness_proxy_oper
 
     /// add all new votes
     std::array<share_type, HIVE_MAX_PROXY_RECURSION_DEPTH + 1> delta;
-    delta[0] = account.get_direct_governance_vote_power( _db.get_asset_account( account.get_id() ), _db.get_delayed_votes_account( account.get_id() ) );
+    delta[0] = account.get_direct_governance_vote_power( _db.get_account_details( account.get_id() ) );
     for( int i = 0; i < HIVE_MAX_PROXY_RECURSION_DEPTH; ++i )
       delta[i+1] = account.get_proxied_vsf_votes()[i];
     _db.adjust_proxied_witness_votes( account, delta );
@@ -283,9 +283,8 @@ void account_witness_vote_evaluator::do_apply( const account_witness_vote_operat
   const auto& witness = _db.get_witness( o.witness );
 
   // Pre-fetch split objects once to avoid redundant chainbase lookups in each branch below.
-  const auto& voter_assets = _db.get_asset_account( voter.get_id() );
-  const auto& voter_dvotes = _db.get_delayed_votes_account( voter.get_id() );
-  auto vote_power = voter.get_governance_vote_power( voter_assets, voter_dvotes );
+  const auto& voter_details = _db.get_account_details( voter.get_id() );
+  auto vote_power = voter.get_governance_vote_power( voter_details );
 
   const auto& by_account_witness_idx = _db.get_index< witness_vote_index >().indices().get< by_account_witness >();
   auto itr = by_account_witness_idx.find( boost::make_tuple( voter.get_name(), witness.owner ) );

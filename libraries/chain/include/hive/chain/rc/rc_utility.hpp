@@ -20,7 +20,7 @@ struct signed_transaction;
 namespace hive { namespace chain {
 
 class account_object;
-class assets_object;
+class account_details_object;
 class database;
 template< typename CustomOperationType >
 class generic_custom_operation_interpreter;
@@ -105,9 +105,9 @@ class resource_credits
 
     // regenerates RC mana on given account - must be called before any operation that changes max RC mana
     void regenerate_rc_mana( const account_object& account, const fc::time_point_sec now ) const;
-    // overload accepting pre-fetched assets_object to avoid redundant index lookups
+    // overload accepting pre-fetched account_details_object to avoid redundant index lookups
     void regenerate_rc_mana( const account_object& account,
-      const assets_object& assets,
+      const account_details_object& account_details,
       const fc::time_point_sec now ) const;
 
     // updates RC related data on account after change in RC delegation
@@ -122,10 +122,10 @@ class resource_credits
       const fc::time_point_sec now,
       bool _fill_new_mana = true,
       bool _check_for_rc_delegation_overflow = false ) const;
-    // overload accepting pre-fetched assets_object to avoid redundant index lookups
+    // overload accepting pre-fetched account_details_object to avoid redundant index lookups
     void update_account_after_vest_change(
       const account_object& account,
-      const assets_object& assets,
+      const account_details_object& account_details,
       const fc::time_point_sec now,
       bool _fill_new_mana = true,
       bool _check_for_rc_delegation_overflow = false ) const;

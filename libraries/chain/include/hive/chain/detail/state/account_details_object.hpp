@@ -6,28 +6,32 @@
 #include <hive/chain/hive_object_types.hpp>
 #include <hive/protocol/asset.hpp>
 #include <hive/chain/util/manabar.hpp>
+#include <hive/chain/util/delayed_voting_processor.hpp>
 
 namespace hive { namespace chain {
+
+  using chainbase::t_vector;
+  using t_delayed_votes = t_vector< delayed_votes_data >;
 
   using hive::protocol::HBD_asset;
   using hive::protocol::HIVE_asset;
   using hive::protocol::VEST_asset;
   using hive::protocol::asset;
 
-  class assets_object : public object< assets_object_type, assets_object, std::false_type /* no dynamic alloc */, std::true_type /* enable no undo remove */ >
+  class account_details_object : public object< account_details_object_type, account_details_object, std::true_type /* dynamic alloc (delayed_votes vector) */, std::true_type /* enable no undo remove */ >
   {
-    CHAINBASE_OBJECT( assets_object );
+    CHAINBASE_OBJECT( account_details_object );
     public:
       template< typename Allocator >
-      assets_object( allocator< Allocator > a, uint64_t _id,
-        const account_name_type& _name = account_name_type(),
+      account_details_object( allocator< Allocator > a, uint64_t _id,
         const VEST_asset& incoming_delegation = VEST_asset( 0 ),
         const time_point_sec& _creation_time = time_point_sec(),
         bool _fill_mana = false,
         int64_t _rc_adjustment = 0,
         share_type effective_vesting_shares = 0,
         const account_id_type& _recovery_account = account_id_type() )
-        : id( _id ), name( _name ), rc_adjustment( _rc_adjustment ), recovery_account( _recovery_account )
+        : id( _id ), rc_adjustment( _rc_adjustment ), recovery_account( _recovery_account ),
+          delayed_votes( a )
       {
         received_vesting_shares += incoming_delegation;
         voting_manabar.last_update_time = _creation_time.sec_since_epoch();
@@ -42,9 +46,6 @@ namespace hive { namespace chain {
           last_max_rc = max_rc;
         }
       }
-
-      // Account name
-      const account_name_type& get_name() const { return name; }
 
       // Liquid HIVE balance
       const HIVE_asset& get_balance() const { return balance; }
@@ -231,9 +232,64 @@ namespace hive { namespace chain {
       util::manabar& get_downvote_manabar() { return downvote_manabar; }
       const util::manabar& get_downvote_manabar() const { return downvote_manabar; }
 
-    private:
-      account_name_type name;                     // Account name (for index sort order compatibility)
+      // ===== Fields merged from delayed_votes_object =====
 
+      // Check if there are delayed votes
+      bool has_delayed_votes() const { return !delayed_votes.empty(); }
+
+      // Start time of oldest delayed vote bucket (the one closest to activation)
+      time_point_sec get_oldest_delayed_vote_time() const
+      {
+        if( has_delayed_votes() )
+          return ( delayed_votes.begin() )->time;
+        else
+          return time_point_sec::maximum();
+      }
+
+      // Sum of delayed votes
+      ushare_type get_sum_delayed_votes() const { return sum_delayed_votes; }
+      ushare_type& get_sum_delayed_votes() { return sum_delayed_votes; }
+      void set_sum_delayed_votes( const ushare_type& value ) { sum_delayed_votes = value; }
+
+      // Access to delayed votes collection
+      t_delayed_votes& get_delayed_votes() { return delayed_votes; }
+      const t_delayed_votes& get_delayed_votes() const { return delayed_votes; }
+
+      size_t get_dynamic_alloc() const
+      {
+        size_t size = 0;
+        size += delayed_votes.capacity() * sizeof( decltype( delayed_votes )::value_type );
+        return size;
+      }
+
+      // Helper methods for cloning delayed_votes data
+      template<typename COLLECTION_TYPE>
+      void clone( const COLLECTION_TYPE& src )
+      {
+        delayed_votes.clear();
+        if( src.size() )
+        {
+          delayed_votes.reserve( src.size() );
+          for( const auto& item : src )
+            delayed_votes.push_back( item );
+        }
+      }
+
+      template<typename COLLECTION_TYPE>
+      static std::vector< delayed_votes_data > convert( const COLLECTION_TYPE& src )
+      {
+        std::vector< delayed_votes_data > _result;
+        _result.clear();
+        if( src.size() )
+        {
+          _result.reserve( src.size() );
+          for( const auto& item : src )
+            _result.push_back( item );
+        }
+        return _result;
+      }
+
+    private:
       HBD_asset         hbd_balance;              ///< HBD liquid balance
       HBD_asset         savings_hbd_balance;      ///< HBD balance guarded by 3 day withdrawal (also earns interest)
       HBD_asset         reward_hbd_balance;       ///< HBD balance author rewards that can be claimed
@@ -290,24 +346,28 @@ namespace hive { namespace chain {
       time_point_sec    last_account_recovery;
       time_point_sec    block_last_account_recovery;
 
-    CHAINBASE_UNPACK_CONSTRUCTOR(assets_object);
+      // Fields merged from delayed_votes_object
+      ushare_type       sum_delayed_votes = 0;    ///< sum of delayed_votes (should be changed to VEST_asset)
+      t_delayed_votes   delayed_votes;
+
+    CHAINBASE_UNPACK_CONSTRUCTOR(account_details_object, (delayed_votes));
   };
 
 
 
   typedef multi_index_container<
-    assets_object,
+    account_details_object,
     indexed_by<
       ordered_unique< tag< by_id >,
-        const_mem_fun< assets_object, assets_object::id_type, &assets_object::get_id > >
+        const_mem_fun< account_details_object, account_details_object::id_type, &account_details_object::get_id > >
     >,
-    multi_index_allocator< assets_object >
-  > assets_index;
+    multi_index_allocator< account_details_object >
+  > account_details_index;
 
 } } // hive::chain
 
-FC_REFLECT( hive::chain::assets_object,
-          (id)(name)
+FC_REFLECT( hive::chain::account_details_object,
+          (id)
           (hbd_balance)(savings_hbd_balance)(reward_hbd_balance)
           (reward_hive_balance)(reward_vesting_hive)(balance)(savings_balance)
           (reward_vesting_balance)(vesting_shares)(delegated_vesting_shares)
@@ -324,6 +384,7 @@ FC_REFLECT( hive::chain::assets_object,
           (rc_adjustment)(delegated_rc)(received_rc)(last_max_rc)
           (post_count)(post_bandwidth)
           (recovery_account)(last_account_recovery)(block_last_account_recovery)
+          (sum_delayed_votes)(delayed_votes)
         )
 
-CHAINBASE_SET_INDEX_TYPE( hive::chain::assets_object, hive::chain::assets_index )
+CHAINBASE_SET_INDEX_TYPE( hive::chain::account_details_object, hive::chain::account_details_index )

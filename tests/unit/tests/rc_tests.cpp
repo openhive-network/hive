@@ -8,7 +8,7 @@
 #include <hive/chain/witness_objects.hpp>
 #include <hive/chain/detail/state/hardfork_property_object.hpp>
 #include <hive/chain/detail/state/global_property_object.hpp>
-#include <hive/chain/detail/state/assets_object.hpp>
+#include <hive/chain/detail/state/account_details_object.hpp>
 // Multiindex headers for index type definitions
 #include <hive/chain/comment_object_multiindex.hpp>
 #include <hive/chain/transaction_object_multiindex.hpp>
@@ -39,29 +39,29 @@ using namespace hive::chain;
 using namespace hive::protocol;
 using namespace hive::plugins;
 
-#define GET_MRC_FOR_ACC( acc ) (db->get_asset_account( (acc).get_id() ))
+#define GET_MRC_FOR_ACC( acc ) (db->get_account_details( (acc).get_id() ))
 
 int64_t regenerate_rc_mana( debug_node::debug_node_plugin* db_plugin, const account_object& acc )
 {
   db_plugin->debug_update( [&]( database& db )
   {
-    const auto& assets = db.get_asset_account( acc.get_id() );
-    db.modify( assets, [&]( assets_object& a )
+    const auto& account_details = db.get_account_details( acc.get_id() );
+    db.modify( account_details, [&]( account_details_object& a )
     {
       auto max_rc = acc.get_maximum_rc( a );
       hive::chain::util::manabar_params manabar_params( max_rc.value, HIVE_RC_REGEN_TIME );
       a.get_rc_manabar().regenerate_mana( manabar_params, db.head_block_time() );
     } );
   } );
-  return db_plugin->database().get_asset_account( acc.get_id() ).get_rc_manabar().current_mana;
+  return db_plugin->database().get_account_details( acc.get_id() ).get_rc_manabar().current_mana;
 }
 
 void clear_mana( debug_node::debug_node_plugin* db_plugin, const account_object& acc )
 {
   db_plugin->debug_update( [&]( database& db )
   {
-    const auto& assets = db.get_asset_account( acc.get_id() );
-    db.modify( assets, [&]( assets_object& a )
+    const auto& account_details = db.get_account_details( acc.get_id() );
+    db.modify( account_details, [&]( account_details_object& a )
     {
       a.get_rc_manabar().current_mana = 0;
       a.get_rc_manabar().last_update_time = db.head_block_time().sec_since_epoch();

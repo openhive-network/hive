@@ -16,8 +16,7 @@
 #include <hive/chain/external_storage/split_rocksdb_objects.hpp>
 
 // Split object headers for multiindex access
-#include <hive/chain/detail/state/assets_object.hpp>
-#include <hive/chain/detail/state/delayed_votes_object.hpp>
+#include <hive/chain/detail/state/account_details_object.hpp>
 #include <hive/chain/detail/state/tiny_account_object.hpp>
 
 #include <boost/scope_exit.hpp>
@@ -159,48 +158,17 @@ struct rocksdb_reader<account_object, account_name_type, Return_Type>
       const account_id_type account_id = result->get_id();
       const auto aid = account_id.get_value();
 
-      // Determine which split objects need restoring
-      const bool need_assets = !db.find< assets_object, by_id >( assets_object::id_type( aid ) );
-      const bool need_delayed = !db.find< delayed_votes_object, by_id >( delayed_votes_object::id_type( aid ) );
-
-      if( need_assets || need_delayed )
+      // Restore the account_details_object (includes merged recovery + delayed_votes fields)
+      if( !db.find< account_details_object, by_id >( account_details_object::id_type( aid ) ) )
       {
-        // Batch all needed split object reads into a single MultiGet call
-        std::vector<ColumnTypes> columns;
-        std::vector<Slice> keys;
+        PinnableSlice _assets_buffer;
         uint32_slice_t key_slice( account_id );
 
-        // Track which position in the results corresponds to which object type
-        int assets_idx = -1, delayed_idx = -1;
-
-        if( need_assets )
+        if( rocksdb_storage_reader<uint32_slice_t>::read_from_storage( provider, key_slice, ColumnTypes::ASSETS, _assets_buffer ) )
         {
-          assets_idx = static_cast<int>( columns.size() );
-          columns.push_back( ColumnTypes::ASSETS );
-          keys.push_back( key_slice );
-        }
-        if( need_delayed )
-        {
-          delayed_idx = static_cast<int>( columns.size() );
-          columns.push_back( ColumnTypes::DELAYED_VOTES );
-          keys.push_back( key_slice );
-        }
-
-        std::vector<std::string> values;
-        auto results_ok = provider->multi_read( columns, keys, values );
-
-        if( assets_idx >= 0 && results_ok[assets_idx] )
-        {
-          rocksdb_assets_object split_obj;
-          load( split_obj, values[assets_idx].data(), values[assets_idx].size() );
-          split_obj.build<const assets_object*>( db );
-        }
-
-        if( delayed_idx >= 0 && results_ok[delayed_idx] )
-        {
-          rocksdb_delayed_votes_object split_obj;
-          load( split_obj, values[delayed_idx].data(), values[delayed_idx].size() );
-          split_obj.build<const delayed_votes_object*>( db );
+          rocksdb_account_details_object split_obj;
+          load( split_obj, _assets_buffer.data(), _assets_buffer.size() );
+          split_obj.build<const account_details_object*>( db );
         }
       }
 
@@ -342,7 +310,7 @@ bool rocksdb_account_archive::on_irreversible_block_impl( uint32_t block_num, co
 }
 
 // Specialized implementation for account_object which skips accounts with pending governance votes
-// Also archives the associated split objects (recovery, assets, delayed_votes)
+// Also archives the associated split object (account_details_object, which includes merged recovery + delayed_votes)
 bool rocksdb_account_archive::on_irreversible_block_impl_account( uint32_t block_num, const std::vector<ColumnTypes>& column_types )
 {
   const auto& _idx = db.get_index<account_index, by_block>();
@@ -386,9 +354,8 @@ bool rocksdb_account_archive::on_irreversible_block_impl_account( uint32_t block
     if( tiny_it != tiny_idx.end() && tiny_it->get_next_vesting_withdrawal() != fc::time_point_sec::maximum() )
       continue;
 
-    // Find all split objects before removing anything - use by_id index
-    const auto* assets_ptr = db.find< assets_object, by_id >( assets_object::id_type( aid ) );
-    const auto* delayed_votes_ptr = db.find< delayed_votes_object, by_id >( delayed_votes_object::id_type( aid ) );
+    // Find the assets split object before removing anything - use by_id index
+    const auto* assets_ptr = db.find< account_details_object, by_id >( account_details_object::id_type( aid ) );
 
     // Archive changed account data to RocksDB
     if( _current.changed() )
@@ -401,26 +368,22 @@ bool rocksdb_account_archive::on_irreversible_block_impl_account( uint32_t block
         _do_flush = true;
     }
 
-    // Always archive split objects to RocksDB (even if account hasn't changed)
+    // Always archive account_details_object to RocksDB (even if account hasn't changed)
     // This ensures split object data is preserved when account is archived
     if( assets_ptr )
-      rocksdb_split_writer<assets_object, rocksdb_assets_object>::write_to_storage( provider, *assets_ptr, ColumnTypes::ASSETS );
+    {
+      rocksdb_split_writer<account_details_object, rocksdb_account_details_object>::write_to_storage( provider, *assets_ptr, ColumnTypes::ASSETS );
 
-    if( delayed_votes_ptr )
-      rocksdb_split_writer<delayed_votes_object, rocksdb_delayed_votes_object>::write_to_storage( provider, *delayed_votes_ptr, ColumnTypes::DELAYED_VOTES );
-
-    if( !_do_flush && (assets_ptr || delayed_votes_ptr) )
-      _do_flush = true;
+      if( !_do_flush )
+        _do_flush = true;
+    }
 
     // Remove the account from chainbase
     db.remove_no_undo( _current );
 
-    // Also remove the split objects from chainbase
+    // Also remove the assets split object from chainbase
     if( assets_ptr )
       db.remove_no_undo( *assets_ptr );
-
-    if( delayed_votes_ptr )
-      db.remove_no_undo( *delayed_votes_ptr );
 
     // NOTE: tiny_account_object is NOT removed during archival. It must persist
     // for all accounts (even archived ones) because validate_invariants and other
@@ -847,11 +810,10 @@ void rocksdb_account_archive::create_object( const account_object& obj )
   // so we must check for their existence. In normal account creation (evaluators),
   // split objects are always created before account_object.
   const auto aid = obj.get_id().get_value();
-  const auto* assets_ptr = db.find< assets_object, by_id >( assets_object::id_type( aid ) );
-  const auto* dvotes_ptr = db.find< delayed_votes_object, by_id >( delayed_votes_object::id_type( aid ) );
-  if( assets_ptr && dvotes_ptr )
+  const auto* assets_ptr = db.find< account_details_object, by_id >( account_details_object::id_type( aid ) );
+  if( assets_ptr )
   {
-    db.create< tiny_account_object >( obj, *assets_ptr, *dvotes_ptr );
+    db.create< tiny_account_object >( obj, *assets_ptr );
   }
 
   accounts_stats::stats.account_created.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
@@ -964,44 +926,23 @@ void rocksdb_account_archive::on_object_modified( const account_object& obj )
 
 //==========================================split objects==========================================
 
-const assets_object* rocksdb_account_archive::get_asset_account( const account_id_type& account_id, bool is_required ) const
+const account_details_object* rocksdb_account_archive::get_account_details( const account_id_type& account_id, bool is_required ) const
 {
   const auto aid = account_id.get_value();
-  const auto* _found = db.find< assets_object, by_id >( assets_object::id_type( aid ) );
+  const auto* _found = db.find< account_details_object, by_id >( account_details_object::id_type( aid ) );
   if( _found )
     return _found;
 
   // Try to restore from RocksDB (get_account restores all split objects)
   if( get_account( account_id, false /*account_is_required*/ ) )
   {
-    _found = db.find< assets_object, by_id >( assets_object::id_type( aid ) );
+    _found = db.find< account_details_object, by_id >( account_details_object::id_type( aid ) );
     if( _found )
       return _found;
   }
 
   if( is_required )
     FC_ASSERT( !"ASSETS_NOT_FOUND", "Assets object for account with id `${id}` not found", ("id", account_id) );
-
-  return nullptr;
-}
-
-const delayed_votes_object* rocksdb_account_archive::get_delayed_votes_account( const account_id_type& account_id, bool is_required ) const
-{
-  const auto aid = account_id.get_value();
-  const auto* _found = db.find< delayed_votes_object, by_id >( delayed_votes_object::id_type( aid ) );
-  if( _found )
-    return _found;
-
-  // Try to restore from RocksDB (get_account restores all split objects)
-  if( get_account( account_id, false /*account_is_required*/ ) )
-  {
-    _found = db.find< delayed_votes_object, by_id >( delayed_votes_object::id_type( aid ) );
-    if( _found )
-      return _found;
-  }
-
-  if( is_required )
-    FC_ASSERT( !"DELAYED_VOTES_NOT_FOUND", "Delayed votes object for account with id `${id}` not found", ("id", account_id) );
 
   return nullptr;
 }

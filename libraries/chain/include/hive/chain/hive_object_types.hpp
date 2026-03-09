@@ -89,9 +89,9 @@ enum object_type
   tiny_account_object_type,
 
   // Account split objects
-  RESERVED_recovery_object_type, // kept as placeholder to preserve assets_object_type/delayed_votes_object_type values
-  assets_object_type,
-  delayed_votes_object_type,
+  RESERVED_recovery_object_type, // kept as placeholder to preserve account_details_object_type value
+  account_details_object_type,
+  RESERVED_delayed_votes_object_type, // merged into account_details_object
 };
 
 class dynamic_global_property_object;
@@ -138,8 +138,7 @@ class rc_expired_delegation_object;
 class tiny_account_object;
 
 // Account split objects
-class assets_object;
-class delayed_votes_object;
+class account_details_object;
 
 
 typedef oid_ref< dynamic_global_property_object         > dynamic_global_property_id_type;
@@ -185,8 +184,7 @@ typedef oid_ref< rc_stats_object                        > rc_stats_id_type;
 typedef oid_ref< rc_expired_delegation_object           > rc_expired_delegtion_id_type;
 
 // Account split objects id types
-typedef oid_ref< assets_object                          > assets_id_type;
-typedef oid_ref< delayed_votes_object                   > delayed_votes_id_type;
+typedef oid_ref< account_details_object                          > account_details_id_type;
 
 enum bandwidth_type
 {
@@ -341,8 +339,8 @@ FC_REFLECT_ENUM( hive::chain::object_type,
             (tiny_account_object_type)
 
             (RESERVED_recovery_object_type)
-            (assets_object_type)
-            (delayed_votes_object_type)
+            (account_details_object_type)
+            (RESERVED_delayed_votes_object_type)
           )
 
 FC_REFLECT_TYPENAME( hive::chain::shared_string )

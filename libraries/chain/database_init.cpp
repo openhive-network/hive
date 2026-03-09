@@ -9,7 +9,7 @@
 #include <hive/chain/custom_operation_interpreter.hpp>
 #include <hive/chain/witness_schedule.hpp>
 #include <hive/chain/account_object_multiindex.hpp>
-#include <hive/chain/detail/state/assets_object.hpp>
+#include <hive/chain/detail/state/account_details_object.hpp>
 #include <hive/chain/detail/state/tiny_account_object.hpp>
 #include <hive/chain/global_property_object_multiindex.hpp>
 #include <hive/chain/hardfork_property_object_multiindex.hpp>
@@ -194,9 +194,8 @@ void database::init_genesis()
     // Helper to create split objects for an account
     const auto create_split_objects = [&]( const account_object& acc )
     {
-      const auto& assets_obj = create< assets_object >( acc.get_name() );
-      const auto& dvotes_obj = create< delayed_votes_object >();
-      create< tiny_account_object >( acc, assets_obj, dvotes_obj );
+      const auto& details_obj = create< account_details_object >();
+      create< tiny_account_object >( acc, details_obj );
     };
 
     // Create blockchain accounts
@@ -325,8 +324,8 @@ void database::init_genesis()
       VEST_asset initial_vests( to_vest * HIVE_INITIAL_VESTING_PRICE );
 
       const auto& init_account = get_account( HIVE_INIT_MINER_NAME );
-      const auto& init_assets = get_asset_account( init_account.get_id() );
-      modify( init_assets, [&]( assets_object& a )
+      const auto& init_details = get_account_details( init_account.get_id() );
+      modify( init_details, [&]( account_details_object& a )
       {
         a.set_balance( HIVE_asset( HIVE_INIT_SUPPLY ) - to_vest );
         a.set_hbd_balance( HBD_asset( HIVE_HBD_INIT_SUPPLY ) );

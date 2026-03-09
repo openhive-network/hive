@@ -1,24 +1,22 @@
 #pragma once
 
 #include <hive/utilities/benchmark_dumper.hpp>
-#include <hive/chain/detail/state/assets_object.hpp>
-#include <hive/chain/detail/state/delayed_votes_object.hpp>
+#include <hive/chain/detail/state/account_details_object.hpp>
 
 #include <hive/chain/external_storage/allocator_helper.hpp>
 
 namespace hive { namespace chain {
 
 /**
- * RocksDB serialization class for assets_object (includes merged recovery fields)
+ * RocksDB serialization class for account_details_object (includes merged recovery + delayed_votes fields)
  */
-class rocksdb_assets_object
+class rocksdb_account_details_object
 {
 public:
-  rocksdb_assets_object() {}
+  rocksdb_account_details_object() {}
 
-  rocksdb_assets_object( const assets_object& obj )
+  rocksdb_account_details_object( const account_details_object& obj )
     : id( obj.get_id() )
-    , name( obj.get_name() )
     , hbd_balance( obj.get_hbd_balance() )
     , savings_hbd_balance( obj.get_hbd_savings() )
     , reward_hbd_balance( obj.get_hbd_rewards() )
@@ -58,32 +56,31 @@ public:
     , recovery_account( obj.get_recovery_account() )
     , last_account_recovery( obj.get_last_account_recovery_time() )
     , block_last_account_recovery( obj.get_block_last_account_recovery_time() )
+    , sum_delayed_votes( obj.get_sum_delayed_votes() )
+    , delayed_votes( account_details_object::convert( obj.get_delayed_votes() ) )
   {}
 
   template<typename Return_Type>
   Return_Type build( chainbase::database& db )
   {
-    if constexpr ( std::is_same_v<Return_Type, const assets_object*> )
+    if constexpr ( std::is_same_v<Return_Type, const account_details_object*> )
     {
-      const auto& obj = db.create_no_undo<assets_object>(
-                      id.get_value(),
-                      name );
-      db.modify_no_undo( obj, [this]( assets_object& o ) { restore_fields( o ); });
+      const auto& obj = db.create_no_undo<account_details_object>(
+                      id.get_value() );
+      db.modify_no_undo( obj, [this]( account_details_object& o ) { restore_fields( o ); });
       return &obj;
     }
     else
     {
-      auto obj = std::make_shared<assets_object>(
-                          allocator_helper::get_allocator<assets_object, assets_index>( db ),
-                          id.get_value(),
-                          name );
+      auto obj = std::make_shared<account_details_object>(
+                          allocator_helper::get_allocator<account_details_object, account_details_index>( db ),
+                          id.get_value() );
       restore_fields( *obj );
       return Return_Type( obj );
     }
   }
 
-  assets_id_type        id;
-  account_name_type     name;
+  account_details_id_type        id;
   HBD_asset             hbd_balance;
   HBD_asset             savings_hbd_balance;
   HBD_asset             reward_hbd_balance;
@@ -124,9 +121,12 @@ public:
   account_id_type       recovery_account;
   time_point_sec        last_account_recovery;
   time_point_sec        block_last_account_recovery;
+  // Merged from delayed_votes_object
+  ushare_type           sum_delayed_votes = 0;
+  std::vector<delayed_votes_data> delayed_votes;
 
 private:
-  void restore_fields( assets_object& o ) const
+  void restore_fields( account_details_object& o ) const
   {
     o.set_hbd_balance( hbd_balance );
     o.set_hbd_savings( savings_hbd_balance );
@@ -167,50 +167,6 @@ private:
     o.set_recovery_account( recovery_account );
     o.set_last_account_recovery_time( last_account_recovery );
     o.set_block_last_account_recovery_time( block_last_account_recovery );
-  }
-};
-
-/**
- * RocksDB serialization class for delayed_votes_object
- */
-class rocksdb_delayed_votes_object
-{
-public:
-  rocksdb_delayed_votes_object() {}
-
-  rocksdb_delayed_votes_object( const delayed_votes_object& obj )
-    : id( obj.get_id() )
-    , sum_delayed_votes( obj.get_sum_delayed_votes() )
-    , delayed_votes( delayed_votes_object::convert( obj.get_delayed_votes() ) )
-  {}
-
-  template<typename Return_Type>
-  Return_Type build( chainbase::database& db )
-  {
-    if constexpr ( std::is_same_v<Return_Type, const delayed_votes_object*> )
-    {
-      const auto& obj = db.create_no_undo<delayed_votes_object>(
-                      id.get_value() );
-      db.modify_no_undo( obj, [this]( delayed_votes_object& o ) { restore_fields( o ); });
-      return &obj;
-    }
-    else
-    {
-      auto obj = std::make_shared<delayed_votes_object>(
-                          allocator_helper::get_allocator<delayed_votes_object, delayed_votes_index>( db ),
-                          id.get_value() );
-      restore_fields( *obj );
-      return Return_Type( obj );
-    }
-  }
-
-  delayed_votes_id_type id;
-  ushare_type           sum_delayed_votes = 0;
-  std::vector<delayed_votes_data> delayed_votes;
-
-private:
-  void restore_fields( delayed_votes_object& o ) const
-  {
     o.set_sum_delayed_votes( sum_delayed_votes );
     o.clone( delayed_votes );
   }
@@ -218,8 +174,8 @@ private:
 
 } } // hive::chain
 
-FC_REFLECT( hive::chain::rocksdb_assets_object,
-          (id)(name)
+FC_REFLECT( hive::chain::rocksdb_account_details_object,
+          (id)
           (hbd_balance)(savings_hbd_balance)(reward_hbd_balance)
           (reward_hive_balance)(reward_vesting_hive)(balance)(savings_balance)
           (reward_vesting_balance)(vesting_shares)(delegated_vesting_shares)
@@ -236,8 +192,5 @@ FC_REFLECT( hive::chain::rocksdb_assets_object,
           (rc_adjustment)(delegated_rc)(received_rc)(last_max_rc)
           (post_count)(post_bandwidth)
           (recovery_account)(last_account_recovery)(block_last_account_recovery)
-        )
-
-FC_REFLECT( hive::chain::rocksdb_delayed_votes_object,
-          (id)(sum_delayed_votes)(delayed_votes)
+          (sum_delayed_votes)(delayed_votes)
         )

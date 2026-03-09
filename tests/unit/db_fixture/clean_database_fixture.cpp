@@ -95,7 +95,7 @@ void clean_database_fixture::validate_database()
     for( const auto& tiny : idx )
     {
       const auto& account = db->get_account( tiny.get_name() );
-      const auto& assets = db->get_asset_account( account.get_id() );
+      const auto& assets = db->get_account_details( account.get_id() );
       int64_t max_rc = account.get_maximum_rc( assets ).value;
       FC_ASSERT( max_rc == assets.get_last_max_rc(),
         "Account ${a} max RC changed from ${old} to ${new} without triggering an op, noticed on block ${b} in validate_database()",

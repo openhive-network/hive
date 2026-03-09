@@ -37,9 +37,8 @@ enum ColumnTypes
   ACCOUNT_AUTHORITY,
   ACCOUNT,
   ACCOUNT_BY_ID,
-  // Split object columns (recovery data merged into ASSETS)
-  ASSETS,
-  DELAYED_VOTES
+  // Split object columns (recovery + delayed_votes merged into ASSETS)
+  ASSETS
 };
 
 enum Columns

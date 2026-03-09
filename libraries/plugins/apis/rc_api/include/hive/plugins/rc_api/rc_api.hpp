@@ -29,7 +29,7 @@ using hive::chain::account_id_type;
 using hive::protocol::asset;
 using hive::chain::account_object;
 using hive::chain::database;
-using hive::chain::assets_object;
+using hive::chain::account_details_object;
 
 
 namespace detail
@@ -74,7 +74,7 @@ struct rc_account_api_object
   rc_account_api_object( const account_object& a, const database& db ) :
     account( a.get_name() )
   {
-    const auto& assets = db.get_asset_account( a.get_id() );
+    const auto& assets = db.get_account_details( a.get_id() );
 
     rc_manabar = assets.get_rc_manabar();
     max_rc_creation_adjustment = asset( assets.get_rc_adjustment(), VESTS_SYMBOL );
