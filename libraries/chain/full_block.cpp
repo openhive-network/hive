@@ -315,6 +315,24 @@ const compressed_block_data& full_block_type::get_alternate_compressed_block() c
   return block_id;
 }
 
+/* static */ block_id_type full_block_type::compute_block_id_from_compressed_data(
+    const char* compressed_data, size_t compressed_size,
+    const block_attributes_t& attributes)
+{
+  // Decompress the block data
+  auto [raw_bytes, raw_size] = block_log_compression::decompress_raw_block(compressed_data, compressed_size, attributes);
+
+  // Parse signed_block_header boundary from the decompressed bytes
+  fc::datastream<const char*> ds(raw_bytes.get(), raw_size);
+  block_header hdr;
+  fc::raw::unpack(ds, hdr);
+  signature_type sig;
+  fc::raw::unpack(ds, sig);
+  size_t signed_hdr_size = ds.tellp();
+
+  return construct_block_id(raw_bytes.get(), signed_hdr_size, hdr.block_num());
+}
+
 fc::ecc::public_key full_block_type::signee( const signature_type& witness_signature, const digest_type& digest ) const
 {
   return fc::ecc::public_key( witness_signature, digest );
@@ -371,6 +389,48 @@ void full_block_type::decode_block_header() const
     decode_block_header_time = decode_block_header_end - decode_block_header_begin;
 
     has_unpacked_block_header.store(true, std::memory_order_release);
+  }
+}
+
+void full_block_type::decode_block_id_only() const
+{
+  // Fast path for artifact generation: computes only the block_id (SHA224),
+  // skipping the SHA256 digest computation that decode_block_header() does.
+  if (has_block_id.load(std::memory_order_consume))
+    return;
+
+  std::lock_guard<std::mutex> guard(unpacked_block_header_mutex);
+  if (!has_unpacked_block_header.load(std::memory_order_consume))
+  {
+    decompress_block();
+
+    fc::time_point decode_block_header_begin = fc::time_point::now();
+    assert(!decoded_block_storage->block);
+    FC_ASSERT(!decoded_block_storage->block, "It seems like the block header has already been unpacked");
+
+    decoded_block_storage->block = signed_block();
+    fc::datastream<const char*> datastream(decoded_block_storage->uncompressed_block.raw_bytes.get(),
+                                           decoded_block_storage->uncompressed_block.raw_size);
+    fc::raw::unpack(datastream, (block_header&)*decoded_block_storage->block);
+    block_header_size = datastream.tellp();
+    fc::raw::unpack(datastream, decoded_block_storage->block->witness_signature);
+    signed_block_header_size = datastream.tellp();
+
+    block_id = construct_block_id(decoded_block_storage->uncompressed_block.raw_bytes.get(), signed_block_header_size, decoded_block_storage->block->block_num());
+    has_block_id.store(true, std::memory_order_release);
+
+    // Skip digest computation — not needed for artifact generation
+
+    fc::time_point decode_block_header_end = fc::time_point::now();
+    decode_block_header_time = decode_block_header_end - decode_block_header_begin;
+
+    has_unpacked_block_header.store(true, std::memory_order_release);
+  }
+  else if (!has_block_id.load(std::memory_order_consume))
+  {
+    // Header was already unpacked but block_id wasn't set (shouldn't normally happen)
+    block_id = construct_block_id(decoded_block_storage->uncompressed_block.raw_bytes.get(), signed_block_header_size, decoded_block_storage->block->block_num());
+    has_block_id.store(true, std::memory_order_release);
   }
 }
 
