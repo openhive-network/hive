@@ -283,7 +283,8 @@ bool rocksdb_account_archive::on_irreversible_block_impl( uint32_t block_num, co
     Here must be `<` not `<=` because `get_last_access_block` is a number of last block, but `block_num` is the current block.
   */
   uint32_t _archived = 0;
-  while( _itr != _idx.end() && _itr->get_last_access_block() + retention_blocks < block_num && _archived < max_archives_per_block )
+  while( _itr != _idx.end() && block_num > _itr->get_last_access_block()
+         && ( block_num - _itr->get_last_access_block() ) > retention_blocks && _archived < max_archives_per_block )
   {
     const auto& _current = *_itr;
     ++_itr;
@@ -356,7 +357,8 @@ bool rocksdb_account_archive::on_irreversible_block_impl_account( uint32_t block
   const auto& tiny_idx = db.get_index< tiny_account_index, by_name >();
 
   uint32_t _archived = 0;
-  while( _itr != _idx.end() && _itr->get_last_access_block() + retention_blocks < block_num && _archived < max_archives_per_block )
+  while( _itr != _idx.end() && block_num > _itr->get_last_access_block()
+         && ( block_num - _itr->get_last_access_block() ) > retention_blocks && _archived < max_archives_per_block )
   {
     const auto& _current = *_itr;
     ++_itr;
@@ -423,7 +425,8 @@ bool rocksdb_account_archive::on_irreversible_block_impl_metadata( uint32_t bloc
   uint32_t _cnt = 0;
 
   uint32_t _archived = 0;
-  while( _itr != _idx.end() && _itr->get_last_access_block() + retention_blocks < block_num && _archived < max_archives_per_block )
+  while( _itr != _idx.end() && block_num > _itr->get_last_access_block()
+         && ( block_num - _itr->get_last_access_block() ) > retention_blocks && _archived < max_archives_per_block )
   {
     const auto& _current = *_itr;
     ++_itr;
@@ -456,13 +459,16 @@ bool rocksdb_account_archive::on_irreversible_block_impl_metadata( uint32_t bloc
 
 uint32_t rocksdb_account_archive::compute_next_archival_check() const
 {
-  uint32_t min_block = std::numeric_limits<uint32_t>::max();
+  // Use uint64_t to avoid overflow when retention_blocks is very large.
+  // When retention_blocks is e.g. 2,000,000,000, candidates exceed uint32_t range,
+  // and the function returns UINT32_MAX, effectively disabling archival scans.
+  uint64_t min_block = std::numeric_limits<uint32_t>::max();
 
   {
     const auto& idx = db.get_index<account_metadata_index, by_block>();
     if( !idx.empty() )
     {
-      uint32_t candidate = idx.begin()->get_last_access_block() + retention_blocks + 1;
+      uint64_t candidate = static_cast<uint64_t>( idx.begin()->get_last_access_block() ) + retention_blocks + 1;
       if( candidate < min_block )
         min_block = candidate;
     }
@@ -472,7 +478,7 @@ uint32_t rocksdb_account_archive::compute_next_archival_check() const
     const auto& idx = db.get_index<account_authority_index, by_block>();
     if( !idx.empty() )
     {
-      uint32_t candidate = idx.begin()->get_last_access_block() + retention_blocks + 1;
+      uint64_t candidate = static_cast<uint64_t>( idx.begin()->get_last_access_block() ) + retention_blocks + 1;
       if( candidate < min_block )
         min_block = candidate;
     }
@@ -482,51 +488,45 @@ uint32_t rocksdb_account_archive::compute_next_archival_check() const
     const auto& idx = db.get_index<account_index, by_block>();
     if( !idx.empty() )
     {
-      uint32_t candidate = idx.begin()->get_last_access_block() + retention_blocks + 1;
+      uint64_t candidate = static_cast<uint64_t>( idx.begin()->get_last_access_block() ) + retention_blocks + 1;
       if( candidate < min_block )
         min_block = candidate;
     }
   }
 
-  return min_block;
+  // Cap at uint32_t max — compared against block_num which is uint32_t.
+  return ( min_block > std::numeric_limits<uint32_t>::max() )
+         ? std::numeric_limits<uint32_t>::max()
+         : static_cast<uint32_t>( min_block );
 }
 
 void rocksdb_account_archive::on_irreversible_block( uint32_t block_num )
 {
   provider->update_cached_lib( block_num );
 
-  // During replay, all accounts will likely be needed again soon by subsequent blocks.
-  // Archiving them to RocksDB only to restore them moments later creates a costly
-  // archive-restore churn cycle. Skip archival entirely during replay.
-  // Also skip persist_cached_lib() during replay — it adds a WriteBatch Put on every
-  // block, accumulating millions of unnecessary operations that are never flushed until
-  // close(). The cached LIB (atomic) is sufficient; it will be persisted when replay ends.
-  if( db.is_replaying_block() )
-  {
-    _was_replaying = true;
-    return;
-  }
+  // Archival is controlled by retention_blocks, not by replay/live mode.
+  // With a small retention_blocks value, archival runs during replay too.
+  // With a large value (e.g. 2,000,000,000), archival is effectively disabled.
+  // The objects_limit mechanism provides additional throttling during replay.
 
-  // Persist the cached LIB to the WriteBatch now that we're in live mode.
-  provider->persist_cached_lib();
-
-  if( _was_replaying )
+  // Log the replay→live transition once
+  if( _was_replaying && !db.is_replaying_block() )
   {
     _was_replaying = false;
-
-    // Flush the LIB immediately on the replay→live transition so the database
-    // has a valid LIB stored before any archival or snapshot operations.
-    provider->flushWriteBuffer();
 
     size_t _nr_accounts = db.get_index<account_index, by_block>().size();
     size_t _nr_metadata = db.get_index<account_metadata_index, by_block>().size();
     size_t _nr_authority = db.get_index<account_authority_index, by_block>().size();
 
-    ilog( "Replay finished. Account archival is now active. "
-          "Pending objects in chainbase: ${a} accounts, ${m} metadata, ${u} authority. "
-          "Archival will process up to ${max} objects per block.",
-          ("a", _nr_accounts)("m", _nr_metadata)("u", _nr_authority)("max", max_archives_per_block) );
+    ilog( "Replay finished. Account archival is now active in live mode. "
+          "Objects in chainbase: ${a} accounts, ${m} metadata, ${u} authority. "
+          "retention_blocks=${r}, objects_limit=${lim}.",
+          ("a", _nr_accounts)("m", _nr_metadata)("u", _nr_authority)
+          ("r", retention_blocks)("lim", objects_limit) );
   }
+
+  if( db.is_replaying_block() )
+    _was_replaying = true;
 
   // Skip archival scan if no objects can possibly need archiving yet
   if( block_num < _next_archival_check_block )
@@ -558,6 +558,12 @@ void rocksdb_account_archive::on_irreversible_block( uint32_t block_num )
   if( _any_data_changed )
   {
     auto time_start = std::chrono::high_resolution_clock::now();
+
+    // Persist the cached LIB to the WriteBatch before flushing archived data,
+    // ensuring the RocksDB LIB is consistent with the archived state.
+    // This is only done when data was actually archived (not on every block),
+    // avoiding millions of unnecessary WriteBatch operations during replay.
+    provider->persist_cached_lib();
 
     // Use flushWriteBuffer() instead of flushDb() to avoid expensive per-column-family
     // Flush() calls (memtable→SST). flushWriteBuffer() applies the WriteBatch to the
