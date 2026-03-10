@@ -19,11 +19,30 @@
 #include <hive/chain/detail/state/account_details_object.hpp>
 #include <hive/chain/detail/state/tiny_account_object.hpp>
 
-#include <boost/scope_exit.hpp>
-
 #include <limits>
 
 namespace hive { namespace chain {
+
+/// RAII timer that accumulates elapsed time and increments a call counter
+/// on destruction. Replaces verbose BOOST_SCOPE_EXIT_ALL timing boilerplate.
+struct scoped_stat_timer
+{
+  hive::utilities::benchmark_dumper::counter_t& entry;
+  std::chrono::high_resolution_clock::time_point start;
+
+  explicit scoped_stat_timer( hive::utilities::benchmark_dumper::counter_t& e )
+    : entry( e ), start( std::chrono::high_resolution_clock::now() ) {}
+
+  ~scoped_stat_timer()
+  {
+    entry.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >(
+      std::chrono::high_resolution_clock::now() - start ).count();
+    ++entry.count;
+  }
+
+  scoped_stat_timer( const scoped_stat_timer& ) = delete;
+  scoped_stat_timer& operator=( const scoped_stat_timer& ) = delete;
+};
 
 template<typename SHM_Object_Type, typename RocksDB_Object_Type, typename Slice_Type>
 struct rocksdb_storage_writer
@@ -331,6 +350,11 @@ static bool is_archivable( const database& db, const account_object& account, co
     // Skip accounts with active power-down - they need to stay in chainbase
     if( tiny_it->get_next_vesting_withdrawal() != fc::time_point_sec::maximum() )
       return false;
+
+    // Skip accounts with active delayed votes - they are scanned by process_delayed_voting()
+    // every block and would be immediately restored, wasting I/O
+    if( tiny_it->has_delayed_votes() )
+      return false;
   }
 
   return true;
@@ -462,35 +486,18 @@ uint32_t rocksdb_account_archive::compute_next_archival_check() const
   // and the function returns UINT32_MAX, effectively disabling archival scans.
   uint64_t min_block = std::numeric_limits<uint32_t>::max();
 
+  auto update_min = [&]( auto& idx )
   {
-    const auto& idx = db.get_index<account_metadata_index, by_block>();
     if( !idx.empty() )
     {
       uint64_t candidate = static_cast<uint64_t>( idx.begin()->get_last_access_block() ) + retention_blocks + 1;
-      if( candidate < min_block )
-        min_block = candidate;
+      min_block = std::min( min_block, candidate );
     }
-  }
+  };
 
-  {
-    const auto& idx = db.get_index<account_authority_index, by_block>();
-    if( !idx.empty() )
-    {
-      uint64_t candidate = static_cast<uint64_t>( idx.begin()->get_last_access_block() ) + retention_blocks + 1;
-      if( candidate < min_block )
-        min_block = candidate;
-    }
-  }
-
-  {
-    const auto& idx = db.get_index<account_index, by_block>();
-    if( !idx.empty() )
-    {
-      uint64_t candidate = static_cast<uint64_t>( idx.begin()->get_last_access_block() ) + retention_blocks + 1;
-      if( candidate < min_block )
-        min_block = candidate;
-    }
-  }
+  update_min( db.get_index<account_metadata_index, by_block>() );
+  update_min( db.get_index<account_authority_index, by_block>() );
+  update_min( db.get_index<account_index, by_block>() );
 
   // Cap at uint32_t max — compared against block_num which is uint32_t.
   return ( min_block > std::numeric_limits<uint32_t>::max() )
@@ -642,34 +649,30 @@ Return_Type rocksdb_account_archive::get_object( const Key_Type& key, const std:
 }
 
 //==========================================account_metadata_object==========================================
-void rocksdb_account_archive::create_object( const account_metadata_object& obj )
-{
-  auto time_start = std::chrono::high_resolution_clock::now();
 
-  // Get head block number safely (returns 0 during genesis when dynamic_global_property_object doesn't exist yet)
+/// Set last_access_block on a newly created handler object.
+/// Gets head block safely (returns 0 during genesis when dynamic_global_property_object doesn't exist yet).
+/// Uses modify_direct to bypass accounts_handler and avoid infinite recursion.
+template<typename ObjectType>
+void rocksdb_account_archive::init_last_access_block( const ObjectType& obj )
+{
   const auto* dgpo = db.find< dynamic_global_property_object >();
   uint32_t head_block = dgpo ? dgpo->head_block_number : 0;
-
-  // Set last_access_block to mark the object as changed, so it will be written to RocksDB when archived
-  // Use modify_direct to bypass accounts_handler and avoid infinite recursion
-  db.modify_direct( obj, [head_block]( account_metadata_object& o )
+  db.modify_direct( obj, [head_block]( ObjectType& o )
   {
     o.set_last_access_block( head_block );
   } );
+}
 
-  accounts_stats::stats.account_metadata_created.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
-  ++accounts_stats::stats.account_metadata_created.count;
+void rocksdb_account_archive::create_object( const account_metadata_object& obj )
+{
+  scoped_stat_timer _timer( accounts_stats::stats.account_metadata_created );
+  init_last_access_block( obj );
 }
 
 const account_metadata_object* rocksdb_account_archive::get_account_metadata( const account_name_type& account_name, bool account_metadata_is_required ) const
 {
-  auto time_start = std::chrono::high_resolution_clock::now();
-
-  BOOST_SCOPE_EXIT_ALL(&)
-  {
-    accounts_stats::stats.account_metadata_accessed_by_name.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
-    ++accounts_stats::stats.account_metadata_accessed_by_name.count;
-  };
+  scoped_stat_timer _timer( accounts_stats::stats.account_metadata_accessed_by_name );
 
   // In split architecture, we need to first find the account, then get metadata by account_id
   const auto* account_ptr = db.find< account_object, by_name >( account_name );
@@ -710,13 +713,7 @@ const account_metadata_object* rocksdb_account_archive::get_account_metadata( co
 
 account_metadata rocksdb_account_archive::get_volatile_account_metadata( const account_name_type& account_name, bool account_metadata_is_required ) const
 {
-  auto time_start = std::chrono::high_resolution_clock::now();
-
-  BOOST_SCOPE_EXIT_ALL(&)
-  {
-    accounts_stats::stats.account_metadata_accessed_by_name.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
-    ++accounts_stats::stats.account_metadata_accessed_by_name.count;
-  };
+  scoped_stat_timer _timer( accounts_stats::stats.account_metadata_accessed_by_name );
 
   const auto* _found = get_account_metadata( account_name, account_metadata_is_required );
   if( _found )
@@ -733,32 +730,13 @@ void rocksdb_account_archive::on_object_modified( const account_metadata_object&
 //==========================================account_authority_object==========================================
 void rocksdb_account_archive::create_object( const account_authority_object& obj )
 {
-  auto time_start = std::chrono::high_resolution_clock::now();
-
-  // Get head block number safely (returns 0 during genesis when dynamic_global_property_object doesn't exist yet)
-  const auto* dgpo = db.find< dynamic_global_property_object >();
-  uint32_t head_block = dgpo ? dgpo->head_block_number : 0;
-
-  // Set last_access_block to mark the object as changed, so it will be written to RocksDB when archived
-  // Use modify_direct to bypass accounts_handler and avoid infinite recursion
-  db.modify_direct( obj, [head_block]( account_authority_object& o )
-  {
-    o.set_last_access_block( head_block );
-  } );
-
-  accounts_stats::stats.account_authority_created.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
-  ++accounts_stats::stats.account_authority_created.count;
+  scoped_stat_timer _timer( accounts_stats::stats.account_authority_created );
+  init_last_access_block( obj );
 }
 
 const account_authority_object* rocksdb_account_archive::get_account_authority( const account_name_type& account_name, bool account_authority_is_required ) const
 {
-  auto time_start = std::chrono::high_resolution_clock::now();
-
-  BOOST_SCOPE_EXIT_ALL(&)
-  {
-    accounts_stats::stats.account_authority_accessed_by_name.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
-    ++accounts_stats::stats.account_authority_accessed_by_name.count;
-  };
+  scoped_stat_timer _timer( accounts_stats::stats.account_authority_accessed_by_name );
 
   // In split architecture, by_account uses composite key with account_name as first element
   const auto* _found = db.find< account_authority_object, by_account >( account_name );
@@ -785,13 +763,7 @@ const account_authority_object* rocksdb_account_archive::get_account_authority( 
 
 account_authority rocksdb_account_archive::get_volatile_account_authority( const account_name_type& account_name, bool account_authority_is_required ) const
 {
-  auto time_start = std::chrono::high_resolution_clock::now();
-
-  BOOST_SCOPE_EXIT_ALL(&)
-  {
-    accounts_stats::stats.account_authority_accessed_by_name.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
-    ++accounts_stats::stats.account_authority_accessed_by_name.count;
-  };
+  scoped_stat_timer _timer( accounts_stats::stats.account_authority_accessed_by_name );
 
   const auto* _found = get_account_authority( account_name, account_authority_is_required );
   if( _found )
@@ -808,18 +780,8 @@ void rocksdb_account_archive::on_object_modified( const account_authority_object
 //==========================================account_object==========================================
 void rocksdb_account_archive::create_object( const account_object& obj )
 {
-  auto time_start = std::chrono::high_resolution_clock::now();
-
-  // Get head block number safely (returns 0 during genesis when dynamic_global_property_object doesn't exist yet)
-  const auto* dgpo = db.find< dynamic_global_property_object >();
-  uint32_t head_block = dgpo ? dgpo->head_block_number : 0;
-
-  // Set last_access_block to mark the object as changed, so it will be written to RocksDB when archived
-  // Use modify_direct to bypass accounts_handler and avoid infinite recursion
-  db.modify_direct( obj, [head_block]( account_object& o )
-  {
-    o.set_last_access_block( head_block );
-  } );
+  scoped_stat_timer _timer( accounts_stats::stats.account_created );
+  init_last_access_block( obj );
 
   // Create the tiny_account_object that stays in chainbase permanently.
   // During genesis (init_genesis), account_object is created before its split objects,
@@ -830,20 +792,11 @@ void rocksdb_account_archive::create_object( const account_object& obj )
   {
     db.create< tiny_account_object >( obj, *assets_ptr );
   }
-
-  accounts_stats::stats.account_created.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
-  ++accounts_stats::stats.account_created.count;
 }
 
 const account_object* rocksdb_account_archive::get_account( const account_name_type& account_name, bool account_is_required ) const
 {
-  auto time_start = std::chrono::high_resolution_clock::now();
-
-  BOOST_SCOPE_EXIT_ALL(&)
-  {
-    accounts_stats::stats.account_accessed_by_name.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
-    ++accounts_stats::stats.account_accessed_by_name.count;
-  };
+  scoped_stat_timer _timer( accounts_stats::stats.account_accessed_by_name );
 
   const auto* _found = db.find< account_object, by_name >( account_name );
   if( _found )
@@ -869,13 +822,7 @@ const account_object* rocksdb_account_archive::get_account( const account_name_t
 
 const account_object* rocksdb_account_archive::get_account( const account_id_type& account_id, bool account_is_required ) const
 {
-  auto time_start = std::chrono::high_resolution_clock::now();
-
-  BOOST_SCOPE_EXIT_ALL(&)
-  {
-    accounts_stats::stats.account_accessed_by_id.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
-    ++accounts_stats::stats.account_accessed_by_id.count;
-  };
+  scoped_stat_timer _timer( accounts_stats::stats.account_accessed_by_id );
 
   const auto* _found = db.find< account_object, by_id >( account_id );
   if( _found )
@@ -901,13 +848,7 @@ const account_object* rocksdb_account_archive::get_account( const account_id_typ
 
 account rocksdb_account_archive::get_volatile_account( const account_name_type& account_name, bool account_is_required ) const
 {
-  auto time_start = std::chrono::high_resolution_clock::now();
-
-  BOOST_SCOPE_EXIT_ALL(&)
-  {
-    accounts_stats::stats.account_accessed_by_name.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
-    ++accounts_stats::stats.account_accessed_by_name.count;
-  };
+  scoped_stat_timer _timer( accounts_stats::stats.account_accessed_by_name );
 
   const auto* _found = get_account( account_name, account_is_required );
   if( _found )
@@ -917,13 +858,7 @@ account rocksdb_account_archive::get_volatile_account( const account_name_type& 
 
 account rocksdb_account_archive::get_volatile_account( const account_id_type& account_id, bool account_is_required ) const
 {
-  auto time_start = std::chrono::high_resolution_clock::now();
-
-  BOOST_SCOPE_EXIT_ALL(&)
-  {
-    accounts_stats::stats.account_accessed_by_id.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
-    ++accounts_stats::stats.account_accessed_by_id.count;
-  };
+  scoped_stat_timer _timer( accounts_stats::stats.account_accessed_by_id );
 
   const auto* _found = get_account( account_id, account_is_required );
   if( _found )

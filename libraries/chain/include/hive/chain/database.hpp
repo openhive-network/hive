@@ -858,6 +858,8 @@ namespace chain {
     public:
       resource_credits& rc();
       const resource_credits& rc() const;
+      //syncs tiny_account_object.oldest_delayed_vote_time with account_details_object after delayed_votes change
+      void sync_tiny_delayed_votes( const account_object& account, const account_details_object& details );
     private:
 
       std::unique_ptr< database_impl > _my;

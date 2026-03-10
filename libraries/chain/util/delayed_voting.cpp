@@ -13,12 +13,7 @@ void delayed_voting::add_delayed_value( const account_object& account, const tim
   {
     delayed_voting_processor::add( a.get_delayed_votes(), a.get_sum_delayed_votes(), head_time, val );
   } );
-  {
-    const auto& tiny_idx = db.get_index< tiny_account_index, by_name >();
-    auto tiny_it = tiny_idx.find( account.get_name() );
-    if( tiny_it != tiny_idx.end() )
-      db.modify( *tiny_it, [&]( tiny_account_object& t ) { t.modify_from_delayed_votes( account_details ); } );
-  }
+  db.sync_tiny_delayed_votes( account, account_details );
 }
 
 void delayed_voting::erase_delayed_value( const account_object& account, const ushare_type val )
@@ -31,12 +26,7 @@ void delayed_voting::erase_delayed_value( const account_object& account, const u
   {
     delayed_voting_processor::erase( a.get_delayed_votes(), a.get_sum_delayed_votes(), val );
   } );
-  {
-    const auto& tiny_idx = db.get_index< tiny_account_index, by_name >();
-    auto tiny_it = tiny_idx.find( account.get_name() );
-    if( tiny_it != tiny_idx.end() )
-      db.modify( *tiny_it, [&]( tiny_account_object& t ) { t.modify_from_delayed_votes( account_details ); } );
-  }
+  db.sync_tiny_delayed_votes( account, account_details );
 }
 
 void delayed_voting::add_votes( opt_votes_update_data_items& items, const bool withdraw_executor, const share_type& val, const account_object& account )

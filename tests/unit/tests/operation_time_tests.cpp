@@ -60,9 +60,8 @@ using namespace hive::chain;
 using namespace hive::chain::util;
 using namespace hive::protocol;
 
-#define GET_ASSETS( account_name ) (db->get_account_details( db->get_account( account_name ).get_id() ))
-#define GET_ASSETS_FOR_ACC( acc ) (db->get_account_details( (acc).get_id() ))
-#define GET_TINY( account_name ) (*db->get_index< tiny_account_index, by_name >().find( account_name ))
+#include "split_object_test_helpers.hpp"
+
 #define GET_TINY_FOR_ACC( acc ) (*db->get_index< tiny_account_index, by_name >().find( (acc).get_name() ))
 
 BOOST_FIXTURE_TEST_SUITE( operation_time_tests, clean_database_fixture )

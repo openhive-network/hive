@@ -76,7 +76,8 @@ uint32_t nr_intervals_in_delayed_voting()
   return configuration_data.get_hive_delayed_voting_total_interval_seconds() / configuration_data.get_hive_delayed_voting_interval_seconds();
 }
 
-#define GET_ASSETS( name ) db->get_account_details( db->get_account( name ).get_id() )
+#include "split_object_test_helpers.hpp"
+
 #define VOTING_POWER( account ) db->get_account( account ).get_governance_vote_power( GET_ASSETS( account ) ).value
 #define PROXIED_VSF( account ) db->get_account( account ).proxied_vsf_votes_total().value
 #define DELAYED_VOTES( account ) static_cast<int64_t>( GET_ASSETS( account ).get_sum_delayed_votes().value )

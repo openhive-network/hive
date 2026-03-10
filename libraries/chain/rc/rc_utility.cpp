@@ -388,23 +388,21 @@ void resource_credits::update_account_after_rc_delegation( const account_object&
   // Check if RC state was never properly initialized (last_max_rc == 0).
   // This can happen in alternate chain configurations where hardforks are applied out of order.
   bool rc_uninitialized = ( account_details.get_last_max_rc().value == 0 );
-  if( rc_uninitialized )
-  {
-    int64_t max_rc = account_details.get_maximum_rc( false ).value;
-    if( max_rc != 0 )
-    {
-      // Initialize the RC manabar with current time and full mana (similar to HF20 initialization)
-      db.modify( account_details, [&]( account_details_object& details_obj )
-      {
-        details_obj.get_rc_manabar().last_update_time = now.sec_since_epoch();
-        details_obj.get_rc_manabar().current_mana = max_rc;
-        details_obj.set_last_max_rc( max_rc );
-      } );
-    }
-  }
 
   db.modify( account_details, [&]( account_details_object& details_obj )
   {
+    // If RC was never initialized and account has nonzero max RC, initialize the manabar first
+    if( rc_uninitialized )
+    {
+      int64_t init_max_rc = account_details.get_maximum_rc( false ).value;
+      if( init_max_rc != 0 )
+      {
+        details_obj.get_rc_manabar().last_update_time = now.sec_since_epoch();
+        details_obj.get_rc_manabar().current_mana = init_max_rc;
+        details_obj.set_last_max_rc( init_max_rc );
+      }
+    }
+
     auto max_rc = account_details.get_maximum_rc( false ).value;
     util::manabar_params manabar_params( max_rc, HIVE_RC_REGEN_TIME );
     if( regenerate_mana )

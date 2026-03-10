@@ -1258,6 +1258,14 @@ void database::refresh_last_access_block( const account_object& account )
   }
 }
 
+void database::sync_tiny_delayed_votes( const account_object& account, const account_details_object& details )
+{
+  const auto& tiny_idx = get_index< tiny_account_index, by_name >();
+  auto tiny_it = tiny_idx.find( account.get_name() );
+  if( tiny_it != tiny_idx.end() )
+    modify( *tiny_it, [&]( tiny_account_object& t ) { t.modify_from_delayed_votes( details ); } );
+}
+
 void database::clear_null_account_balance()
 {
   if( !has_hardfork( HIVE_HARDFORK_0_14__327 ) ) return;
@@ -1323,13 +1331,7 @@ void database::clear_null_account_balance()
       a.set_sum_delayed_votes( 0 );
       a.get_delayed_votes().clear();
     });
-    // Sync tiny_account_object with delayed_votes changes
-    {
-      const auto& tiny_idx = get_index< tiny_account_index, by_name >();
-      auto tiny_it = tiny_idx.find( null_account.get_name() );
-      if( tiny_it != tiny_idx.end() )
-        modify( *tiny_it, [&]( tiny_account_object& t ) { t.modify_from_delayed_votes( null_details ); } );
-    }
+    sync_tiny_delayed_votes( null_account, null_details );
     if( has_hardfork( HIVE_HARDFORK_0_20 ) )
       rc().update_account_after_vest_change( null_account, null_details, _now );
   }
@@ -1445,19 +1447,10 @@ void database::consolidate_treasury_balance()
     modify( old_treasury_assets, [&]( account_details_object& a )
     {
       a.set_vesting( VEST_asset( 0 ) );
-    } );
-    modify( old_treasury_assets, [&]( account_details_object& a )
-    {
       a.set_sum_delayed_votes( 0 );
       a.get_delayed_votes().clear();
     } );
-    // Sync tiny_account_object with delayed_votes changes
-    {
-      const auto& tiny_idx = get_index< tiny_account_index, by_name >();
-      auto tiny_it = tiny_idx.find( old_treasury_account.get_name() );
-      if( tiny_it != tiny_idx.end() )
-        modify( *tiny_it, [&]( tiny_account_object& t ) { t.modify_from_delayed_votes( old_treasury_assets ); } );
-    }
+    sync_tiny_delayed_votes( old_treasury_account, old_treasury_assets );
   }
 
   if( old_treasury_assets.get_rewards().amount > 0 )

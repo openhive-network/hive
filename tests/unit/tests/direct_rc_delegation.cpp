@@ -39,8 +39,7 @@
 using namespace hive::chain;
 using namespace hive::protocol;
 
-// Helper to get account_details_object for an account
-#define GET_ASSETS( account_name ) db->get_account_details( db->get_account( account_name ).get_id() )
+#include "split_object_test_helpers.hpp"
 
 BOOST_FIXTURE_TEST_SUITE( direct_rc_delegation, clean_database_fixture )
 

@@ -63,7 +63,8 @@ using namespace hive::chain;
 using namespace hive::protocol;
 using fc::string;
 
-#define GET_ASSETS( account ) (db->get_account_details( db->get_account( account ).get_id() ))
+#include "split_object_test_helpers.hpp"
+
 #define DELEGATED_VESTS( account ) GET_ASSETS( account ).get_delegated_vesting()
 #define RECEIVED_VESTS( account ) GET_ASSETS( account ).get_received_vesting()
 

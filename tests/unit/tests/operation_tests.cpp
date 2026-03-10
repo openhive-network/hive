@@ -67,13 +67,12 @@ using namespace hive::chain;
 using namespace hive::protocol;
 using fc::string;
 
-#define GET_ASSETS( account_name ) (db->get_account_details( db->get_account( account_name ).get_id() ))
-#define GET_ASSETS_FOR_ACC( acc ) (db->get_account_details( (acc).get_id() ))
+#include "split_object_test_helpers.hpp"
+
 #define VOTING_MANABAR( account_name ) (GET_ASSETS( account_name ).get_voting_manabar())
 #define DOWNVOTE_MANABAR( account_name ) (GET_ASSETS( account_name ).get_downvote_manabar())
 #define GET_EFF_VESTS( account_name ) (GET_ASSETS( account_name ).get_effective_vesting_shares())
 #define GET_GOV_VOTE_POWER( acc ) (GET_ASSETS_FOR_ACC( acc ).get_direct_governance_vote_power( (acc).get_name() ))
-#define GET_TINY( account_name ) (*db->get_index< tiny_account_index, by_name >().find( account_name ))
 #define GET_TINY_ACC( acc ) (*db->get_index< tiny_account_index, by_name >().find( (acc).get_name() ))
 #define CHECK_PROXY( account, proxy ) BOOST_REQUIRE( GET_TINY_ACC( account ).get_proxy() == proxy.get_id() )
 #define CHECK_NO_PROXY( account ) BOOST_REQUIRE( GET_TINY_ACC( account ).has_proxy() == false )

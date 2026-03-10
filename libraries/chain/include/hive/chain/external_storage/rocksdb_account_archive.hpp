@@ -34,6 +34,9 @@ class rocksdb_account_archive : public accounts_handler
     rocksdb_account_storage_provider::ptr   provider;
     external_storage_snapshot::ptr          snapshot;
 
+    template<typename ObjectType>
+    void init_last_access_block( const ObjectType& obj );
+
     template<typename Key_Type, typename SHM_Object_Type, typename SHM_Object_Sub_Index, typename Return_Type>
     Return_Type get_object( const Key_Type& key, const std::vector<ColumnTypes>& column_types, bool is_required ) const;
 
