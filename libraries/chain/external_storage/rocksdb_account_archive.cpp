@@ -435,16 +435,14 @@ bool rocksdb_account_archive::on_irreversible_block_impl_metadata( uint32_t bloc
     {
       ++_cnt;
 
-      // For account_metadata_object, we need to look up the account name from the account_id
-      const auto* account_ptr = db.find< account_object, by_id >( _current.account );
-      if( account_ptr )
-      {
-        rocksdb_writer<account_metadata_object, rocksdb_account_metadata_object, rocksdb_account_metadata_object>::write_to_storage( provider, _current, column_types, account_ptr->get_name() );
+      // Look up account name via tiny_account_object which is always in chainbase (never archived).
+      const auto* tiny_ptr = db.find< tiny_account_object, by_id >( database::to_split_id<tiny_account_object>( _current.account ) );
+      FC_ASSERT( tiny_ptr, "tiny_account_object not found for account_id ${id}", ("id", _current.account) );
 
-        if( !_do_flush )
-          _do_flush = true;
-      }
-      // If account not found in chainbase, it may already be in RocksDB - skip writing metadata without account
+      rocksdb_writer<account_metadata_object, rocksdb_account_metadata_object, rocksdb_account_metadata_object>::write_to_storage( provider, _current, column_types, tiny_ptr->get_name() );
+
+      if( !_do_flush )
+        _do_flush = true;
     }
 
     db.remove_no_undo( _current );

@@ -3572,12 +3572,6 @@ void database::adjust_reward_balance( const account_object& a, const HIVE_asset&
     acnt.set_vest_rewards_as_hive( acnt.get_vest_rewards_as_hive() + value_delta );
     acnt.set_vest_rewards( acnt.get_vest_rewards() + share_delta );
 
-    if( a.get_name() == "votovzla" )
-    {
-      ilog("00 Rewarding votovzla: ${block} ${xxx} ${vests}",
-        ("block", head_block_num())("xxx", acnt.get_vest_rewards())("vests", share_delta));
-    }
-
     FC_ASSERT( acnt.get_vest_rewards().amount.value >= 0, "Insufficient reward VESTS funds" );
   } );
 }
