@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import contextlib
 from concurrent.futures import ThreadPoolExecutor
-from datetime import timedelta
+from datetime import datetime, timedelta
 from functools import partial
 from typing import TYPE_CHECKING
 
@@ -29,11 +29,11 @@ def _warmup_msgspec_decoders() -> None:
     before any threads are spawned, ensuring thread-safe operation.
     """
     with contextlib.suppress(Exception):
-        # Import and access schemas types to trigger annotation resolution
+        # Import and access API types to trigger annotation resolution
         # This ensures msgspec decoders are initialized before parallel operations
+        import hiveio_api.database_api  # noqa: F401
+
         import schemas.apis.app_status_api  # Used by beekeepy.__discover_ports()
-        import schemas.apis.database_api.fundaments_of_reponses
-        import schemas.apis.database_api.response_schemas
         import schemas.apis.network_node_api
         import schemas.apis.wallet_bridge_api
         import schemas.transaction  # noqa: F401
@@ -114,7 +114,8 @@ def __generate_and_broadcast_transaction(
     default_transaction_data = {
         "ref_block_num": HiveInt(ref_block_num),
         "ref_block_prefix": HiveInt(ref_block_prefix),
-        "expiration": gdpo.time + timedelta(seconds=1800),
+        "expiration": (datetime.fromisoformat(gdpo.time) if isinstance(gdpo.time, str) else gdpo.time)
+        + timedelta(seconds=1800),
         "extensions": [],
         "signatures": [],
         "operations": [],

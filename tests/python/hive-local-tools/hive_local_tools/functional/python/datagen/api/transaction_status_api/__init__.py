@@ -9,7 +9,7 @@ def read_transaction_ids(directory: str) -> list:
 
 
 def assert_transaction_status(node, transaction_ids: str, reference_status: str):
-    assert node.api.transaction_status.find_transaction(transaction_id=transaction_ids)["status"] == reference_status
+    assert node.api.transaction_status.find_transaction(transaction_id=transaction_ids).status == reference_status
 
 
 def verify_transaction_status_in_block_range(
