@@ -306,7 +306,7 @@ namespace hive { namespace chain {
                 ( "vesting_shares.amount", vesting_shares.amount )
                 ( "account",               name ) );
   
-        return asset( vesting_shares.amount - sum_delayed_votes.value, VESTS_SYMBOL ).amount;
+        return ( vesting_shares - VEST_asset( sum_delayed_votes.value ) ).amount;
       }
 
       /// This function should be used only when the account votes for a witness directly
