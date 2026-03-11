@@ -3,8 +3,19 @@ from __future__ import annotations
 import pytest
 from beekeepy.exceptions import ErrorInResponseError
 
+import json
+
+import msgspec
 import test_tools as tt
 from hive_local_tools import run_for
+
+
+def _normalize_to_json(obj):
+    """Serialize to JSON and back to get plain dicts for comparison."""
+    if hasattr(obj, "json"):
+        # Pydantic model (schemas Transaction)
+        return json.loads(obj.json())
+    return json.loads(msgspec.json.encode(obj))
 
 
 @pytest.mark.parametrize(
@@ -25,7 +36,9 @@ def test_get_transaction_in_reversible_block(node: tt.InitNode, include_reversib
     response = node.api.account_history.get_transaction(
         id=transaction["transaction_id"], include_reversible=include_reversible
     )
-    assert transaction.dict(exclude_none=True) == response.dict(exclude_none=True)
+    response_dict = _normalize_to_json(response)
+    transaction_dict = _normalize_to_json(transaction)
+    assert transaction_dict == response_dict
 
 
 @pytest.mark.parametrize(

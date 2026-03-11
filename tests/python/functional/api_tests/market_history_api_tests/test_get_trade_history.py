@@ -5,6 +5,7 @@ from beekeepy.exceptions import ErrorInResponseError
 
 import test_tools as tt
 from hive_local_tools import run_for
+from hive_local_tools.functional.python.operation import convert_to_asset
 
 
 @pytest.mark.skip(reason="https://gitlab.syncad.com/hive/hive/-/issues/449")
@@ -41,8 +42,8 @@ def test_trade_history_with_different_values(node: tt.InitNode, tests_amount: in
     ).trades
 
     assert len(response) == 1
-    assert response[0].current_pays == tt.Asset.Tbd(tbds_amount)
-    assert response[0].open_pays == tt.Asset.Hive(tests_amount)
+    assert convert_to_asset(response[0].current_pays) == tt.Asset.Tbd(tbds_amount)
+    assert convert_to_asset(response[0].open_pays) == tt.Asset.Test(tests_amount)
     assert response[0].maker == "alice"
     assert response[0].taker == "initminer"
 

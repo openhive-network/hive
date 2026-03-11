@@ -17,5 +17,5 @@ def test_get_order_book(node: tt.InitNode | tt.RemoteNode, should_prepare: bool)
         wallet.api.create_order("bob", 0, tt.Asset.Tbd(50), tt.Asset.Test(100), False, 3600)  # Buy 100 HIVE for 50 HBD
 
     response = node.api.database.get_order_book(limit=100)
-    assert len(response["asks"]) != 0
-    assert len(response["bids"]) != 0
+    assert len(response.asks) != 0
+    assert len(response.bids) != 0

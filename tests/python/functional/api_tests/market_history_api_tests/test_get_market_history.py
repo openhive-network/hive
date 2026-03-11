@@ -51,9 +51,9 @@ def test_create_better_offer_and_cancel_it(node: tt.InitNode) -> None:
     wallet.api.create_order("initminer", 2, tt.Asset.Tbd(100), tt.Asset.Test(1000), False, 3600)
     buckets = node.api.market_history.get_market_history(
         bucket_seconds=15, start=tt.Time.from_now(weeks=-1), end=tt.Time.from_now(weeks=1)
-    )["buckets"]
-    assert buckets[0]["hive"]["low"] != 301000
-    assert buckets[0]["non_hive"]["low"] != 20000
+    ).buckets
+    assert buckets[0].hive.low != 301000
+    assert buckets[0].non_hive.low != 20000
 
 
 @run_for("testnet", enable_plugins=["market_history_api"])
@@ -69,7 +69,7 @@ def test_get_empty_market_history(node: tt.InitNode) -> None:
     # ask for history from last 15 seconds
     buckets = node.api.market_history.get_market_history(
         bucket_seconds=15, start=tt.Time.from_now(seconds=-15), end=tt.Time.from_now(weeks=1)
-    )["buckets"]
+    ).buckets
     assert len(buckets) == 0
 
 
@@ -94,7 +94,7 @@ def test_get_two_buckets(node: tt.InitNode, bucket_seconds: int, blocks_to_wait:
     wallet.api.create_order("alice", 2, tt.Asset.Test(100), tt.Asset.Tbd(10), False, 3600)
     buckets = node.api.market_history.get_market_history(
         bucket_seconds=bucket_seconds, start=tt.Time.from_now(weeks=-1), end=tt.Time.from_now(weeks=1)
-    )["buckets"]
+    ).buckets
     assert len(buckets) == 2
 
 
@@ -118,7 +118,7 @@ def test_bucket_output_parameters(
 ) -> None:
     wallet = tt.Wallet(attach_to=node)
     wallet.create_account("alice", hives=tt.Asset.Test(1000), vests=tt.Asset.Test(100))
-    epoch_time_zero = tt.Time.parse("1970-01-01T00:00:00")
+    epoch_time_zero = tt.Time.parse("1970-01-01T00:00:00").replace(tzinfo=None)
     time_needed_for_transactions = 15  # in seconds
     transactions_done = False
 
@@ -159,17 +159,17 @@ def test_bucket_output_parameters(
     ).buckets
 
     assert len(buckets) == 1
-    assert buckets[0]["hive"]["open"] == 100_000
-    assert buckets[0]["non_hive"]["open"] == 10_000
+    assert buckets[0].hive.open == 100_000
+    assert buckets[0].non_hive.open == 10_000
 
-    assert buckets[0]["hive"]["close"] == 300_000
-    assert buckets[0]["non_hive"]["close"] == 40_000
+    assert buckets[0].hive.close == 300_000
+    assert buckets[0].non_hive.close == 40_000
 
-    assert buckets[0]["hive"]["volume"] == 600_000
-    assert buckets[0]["non_hive"]["volume"] == non_hive_volume
+    assert buckets[0].hive.volume == 600_000
+    assert buckets[0].non_hive.volume == non_hive_volume
 
-    assert buckets[0]["hive"]["high"] == hive_high
-    assert buckets[0]["non_hive"]["high"] == non_hive_high
+    assert buckets[0].hive.high == hive_high
+    assert buckets[0].non_hive.high == non_hive_high
 
-    assert buckets[0]["hive"]["low"] == hive_low
-    assert buckets[0]["non_hive"]["low"] == non_hive_low
+    assert buckets[0].hive.low == hive_low
+    assert buckets[0].non_hive.low == non_hive_low
