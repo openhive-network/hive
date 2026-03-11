@@ -54,6 +54,17 @@ class rocksdb_account_archive : public accounts_handler
     /// Prevents I/O spikes when many accounts become archival-eligible simultaneously.
     static constexpr uint32_t max_archives_per_block = 10'000;
 
+    /// Minimum floor for adaptive throttling — never archive fewer than this per block.
+    static constexpr uint32_t min_archives_per_block = 500;
+
+    /// Time budget for archival per block (microseconds). When exceeded, the batch
+    /// size is halved; when archival completes in under 1/4 of the budget, it is
+    /// increased by 50%, up to max_archives_per_block.
+    static constexpr uint64_t ARCHIVAL_TIME_BUDGET_US = 50'000; // 50ms
+
+    /// Current adaptive batch size, adjusted based on observed archival latency.
+    uint32_t _current_max_archives = max_archives_per_block;
+
     /// The earliest block number at which any account could possibly need archival.
     /// When block_num < this value, the entire archival scan is skipped.
     uint32_t _next_archival_check_block = 0;
