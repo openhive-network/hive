@@ -12,14 +12,14 @@ namespace hive { namespace chain {
         const_mem_fun< escrow_object, escrow_object::id_type, &escrow_object::get_id > >,
       ordered_unique< tag< by_from_id >,
         composite_key< escrow_object,
-          member< escrow_object, account_name_type, &escrow_object::from >,
-          member< escrow_object, uint32_t, &escrow_object::escrow_id >
+          const_mem_fun< escrow_object, const account_name_type&, &escrow_object::get_from >,
+          const_mem_fun< escrow_object, uint32_t, &escrow_object::get_escrow_id >
         >
       >,
       ordered_unique< tag< by_ratification_deadline >,
         composite_key< escrow_object,
           const_mem_fun< escrow_object, bool, &escrow_object::is_approved >,
-          member< escrow_object, time_point_sec, &escrow_object::ratification_deadline >,
+          const_mem_fun< escrow_object, time_point_sec, &escrow_object::get_ratification_deadline >,
           const_mem_fun< escrow_object, escrow_object::id_type, &escrow_object::get_id >
         >,
         composite_key_compare< std::less< bool >, std::less< time_point_sec >, std::less< escrow_id_type > >

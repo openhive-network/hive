@@ -57,18 +57,18 @@ api_witness_vote_object::api_witness_vote_object( const witness_vote_object& o, 
 // api_escrow_object constructor
 api_escrow_object::api_escrow_object( const escrow_object& o, const database& db ):
   id( o.get_id() ),
-  escrow_id( o.escrow_id ),
-  from( o.from ),
-  to( o.to ),
-  agent( o.agent ),
-  ratification_deadline( o.ratification_deadline ),
-  escrow_expiration( o.escrow_expiration ),
-  hbd_balance( o.hbd_balance.to_asset() ),
-  hive_balance( o.hive_balance.to_asset() ),
-  pending_fee( o.pending_fee ),
-  to_approved( o.to_approved ),
-  agent_approved( o.agent_approved ),
-  disputed( o.disputed )
+  escrow_id( o.get_escrow_id() ),
+  from( o.get_from() ),
+  to( o.get_to() ),
+  agent( o.get_agent() ),
+  ratification_deadline( o.get_ratification_deadline() ),
+  escrow_expiration( o.get_escrow_expiration() ),
+  hbd_balance( o.get_hbd_balance().to_asset() ),
+  hive_balance( o.get_hive_balance().to_asset() ),
+  pending_fee( o.get_fee() ),
+  to_approved( o.is_to_approved() ),
+  agent_approved( o.is_agent_approved() ),
+  disputed( o.is_disputed() )
 {}
 
 // api_withdraw_vesting_route_object constructors

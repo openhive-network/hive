@@ -57,22 +57,23 @@ const limit_order_object* database::find_limit_order( const account_name_type& n
 
 void database::expire_escrow_ratification()
 {
-  const auto& escrow_idx = get_index< escrow_index >().indices().get< by_ratification_deadline >();
+  const auto& escrow_idx = get_index< escrow_index, by_ratification_deadline >();
   auto escrow_itr = escrow_idx.lower_bound( false );
+  auto now = head_block_time();
 
-  while( escrow_itr != escrow_idx.end() && !escrow_itr->is_approved() && escrow_itr->ratification_deadline <= head_block_time() )
+  while( escrow_itr != escrow_idx.end() && !escrow_itr->is_approved() && escrow_itr->get_ratification_deadline() <= now )
   {
     const auto& old_escrow = *escrow_itr;
     ++escrow_itr;
 
-    adjust_balance( old_escrow.from, old_escrow.get_hive_balance() );
-    adjust_balance( old_escrow.from, old_escrow.get_hbd_balance() );
-    adjust_balance( old_escrow.from, old_escrow.get_fee() );
+    adjust_balance( old_escrow.get_from(), old_escrow.get_hive_balance() );
+    adjust_balance( old_escrow.get_from(), old_escrow.get_hbd_balance() );
+    adjust_balance( old_escrow.get_from(), old_escrow.get_fee() );
 
-    push_virtual_operation( *this, escrow_rejected_operation( old_escrow.from, old_escrow.to, old_escrow.agent, old_escrow.escrow_id,
+    push_virtual_operation( *this, escrow_rejected_operation( old_escrow.get_from(), old_escrow.get_to(), old_escrow.get_agent(), old_escrow.get_escrow_id(),
       old_escrow.get_hbd_balance(), old_escrow.get_hive_balance(), old_escrow.get_fee() ) );
 
-    modify( get_account( old_escrow.from ), []( account_object& a )
+    modify( get_account( old_escrow.get_from() ), []( account_object& a )
     {
       a.pending_escrow_transfers--;
     } );
@@ -86,7 +87,7 @@ void database::remove_pending_escrows( const account_object& account, const acco
   // Remove pending escrows (return balance to account - compare with expire_escrow_ratification())
   const auto& escrow_idx = get_index< escrow_index, by_from_id >();
   auto escrow_itr = escrow_idx.lower_bound( account_name );
-  while( escrow_itr != escrow_idx.end() && escrow_itr->from == account_name )
+  while( escrow_itr != escrow_idx.end() && escrow_itr->get_from() == account_name )
   {
     auto& escrow = *escrow_itr;
     ++escrow_itr;

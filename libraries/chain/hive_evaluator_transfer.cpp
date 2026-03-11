@@ -112,33 +112,33 @@ void escrow_approve_evaluator::do_apply( const escrow_approve_operation& o )
 
     const auto& escrow = _db.get_escrow( o.from, o.escrow_id );
 
-    HIVE_CHAIN_STATE_ASSERT( escrow.to == o.to, o.to, "Operation 'to' (${o}) does not match escrow 'to' (${e}).", ("o", o.to)("e", escrow.to) );
-    HIVE_CHAIN_STATE_ASSERT( escrow.agent == o.agent, o.agent, "Operation 'agent' (${a}) does not match escrow 'agent' (${e}).", ("o", o.agent)("e", escrow.agent) );
-    HIVE_CHAIN_TIME_ASSERT( escrow.ratification_deadline >= _db.head_block_time(), escrow.ratification_deadline, "The escrow ratification deadline has passed. Escrow can no longer be ratified." );
+    HIVE_CHAIN_STATE_ASSERT( escrow.get_to() == o.to, o.to, "Operation 'to' (${o}) does not match escrow 'to' (${e}).", ("o", o.to)("e", escrow.get_to()) );
+    HIVE_CHAIN_STATE_ASSERT( escrow.get_agent() == o.agent, o.agent, "Operation 'agent' (${a}) does not match escrow 'agent' (${e}).", ("o", o.agent)("e", escrow.get_agent()) );
+    HIVE_CHAIN_TIME_ASSERT( escrow.get_ratification_deadline() >= _db.head_block_time(), escrow.get_ratification_deadline(), "The escrow ratification deadline has passed. Escrow can no longer be ratified." );
 
     bool reject_escrow = !o.approve;
 
     if( o.who == o.to )
     {
-      HIVE_CHAIN_STATE_ASSERT( !escrow.to_approved, o.to, "Account 'to' (${t}) has already approved the escrow.", ("t", o.to) );
+      HIVE_CHAIN_STATE_ASSERT( !escrow.is_to_approved(), o.to, "Account 'to' (${t}) has already approved the escrow.", ("t", o.to) );
 
       if( !reject_escrow )
       {
         _db.modify( escrow, [&]( escrow_object& esc )
         {
-          esc.to_approved = true;
+          esc.approve_to();
         });
       }
     }
     if( o.who == o.agent )
     {
-      HIVE_CHAIN_STATE_ASSERT( !escrow.agent_approved, o.agent, "Account 'agent' (${a}) has already approved the escrow.", ("a", o.agent) );
+      HIVE_CHAIN_STATE_ASSERT( !escrow.is_agent_approved(), o.agent, "Account 'agent' (${a}) has already approved the escrow.", ("a", o.agent) );
 
       if( !reject_escrow )
       {
         _db.modify( escrow, [&]( escrow_object& esc )
         {
-          esc.agent_approved = true;
+          esc.approve_agent();
         });
       }
     }
@@ -152,13 +152,13 @@ void escrow_approve_evaluator::do_apply( const escrow_approve_operation& o )
       push_virtual_operation( _db, escrow_rejected_operation( o.from, o.to, o.agent, o.escrow_id,
         escrow.get_hbd_balance(), escrow.get_hive_balance(), escrow.get_fee() ) );
 
-      _db.modify( _db.get_account( escrow.from ), []( account_object& a )
+      _db.modify( _db.get_account( escrow.get_from() ), []( account_object& a )
       {
         a.pending_escrow_transfers--;
       } );
       _db.remove( escrow );
     }
-    else if( escrow.to_approved && escrow.agent_approved )
+    else if( escrow.is_to_approved() && escrow.is_agent_approved() )
     {
       _db.adjust_balance( o.agent, escrow.get_fee() );
 
@@ -167,7 +167,7 @@ void escrow_approve_evaluator::do_apply( const escrow_approve_operation& o )
 
       _db.modify( escrow, [&]( escrow_object& esc )
       {
-        esc.pending_fee.amount = 0;
+        esc.access_fee().amount = 0;
       });
     }
   }
@@ -181,15 +181,15 @@ void escrow_dispute_evaluator::do_apply( const escrow_dispute_operation& o )
     _db.get_account( o.from ); // Verify from account exists
 
     const auto& e = _db.get_escrow( o.from, o.escrow_id );
-    HIVE_CHAIN_TIME_ASSERT( _db.head_block_time() < e.escrow_expiration, e.escrow_expiration, "Disputing the escrow must happen before expiration." );
-    HIVE_CHAIN_STATE_ASSERT( e.to_approved && e.agent_approved && "The escrow must be approved by all parties before a dispute can be raised.", o.from, "Escrow for '${subject}' is not fully approved." );
-    HIVE_CHAIN_STATE_ASSERT( !e.disputed, o.from, "The escrow is already under dispute." );
-    HIVE_CHAIN_STATE_ASSERT( e.to == o.to && "dispute", o.to, "Operation 'to' (${o}) does not match escrow 'to' (${e}).", ("o", o.to)("e", e.to) );
-    HIVE_CHAIN_STATE_ASSERT( e.agent == o.agent && "dispute", o.agent, "Operation 'agent' (${a}) does not match escrow 'agent' (${e}).", ("o", o.agent)("e", e.agent) );
+    HIVE_CHAIN_TIME_ASSERT( _db.head_block_time() < e.get_escrow_expiration(), e.get_escrow_expiration(), "Disputing the escrow must happen before expiration." );
+    HIVE_CHAIN_STATE_ASSERT( e.is_approved() && "The escrow must be approved by all parties before a dispute can be raised.", o.from, "Escrow for '${subject}' is not fully approved." );
+    HIVE_CHAIN_STATE_ASSERT( !e.is_disputed(), o.from, "The escrow is already under dispute." );
+    HIVE_CHAIN_STATE_ASSERT( e.get_to() == o.to && "dispute", o.to, "Operation 'to' (${o}) does not match escrow 'to' (${e}).", ("o", o.to)("e", e.get_to()) );
+    HIVE_CHAIN_STATE_ASSERT( e.get_agent() == o.agent && "dispute", o.agent, "Operation 'agent' (${a}) does not match escrow 'agent' (${e}).", ("o", o.agent)("e", e.get_agent()) );
 
     _db.modify( e, [&]( escrow_object& esc )
     {
-      esc.disputed = true;
+      esc.start_dispute();
     });
   }
   FC_CAPTURE_AND_RETHROW( (o) )
@@ -207,30 +207,30 @@ void escrow_release_evaluator::do_apply( const escrow_release_operation& o )
 
     HIVE_CHAIN_BALANCE_ASSERT( e.get_hive_balance() >= o_hive_amount, o.from, "Release amount exceeds escrow balance. Amount: ${a}, Balance: ${b}", ("a", o_hive_amount)("b", e.get_hive_balance()) );
     HIVE_CHAIN_BALANCE_ASSERT( e.get_hbd_balance() >= o_hbd_amount, o.from, "Release amount exceeds escrow balance. Amount: ${a}, Balance: ${b}", ("a", o_hbd_amount)("b", e.get_hbd_balance()) );
-    HIVE_CHAIN_STATE_ASSERT( e.to == o.to && "release", o.to, "Operation 'to' (${o}) does not match escrow 'to' (${e}).", ("o", o.to)("e", e.to) );
-    HIVE_CHAIN_STATE_ASSERT( e.agent == o.agent && "release", o.agent, "Operation 'agent' (${a}) does not match escrow 'agent' (${e}).", ("o", o.agent)("e", e.agent) );
-    HIVE_CHAIN_PERMISSION_ASSERT( o.receiver == e.from || o.receiver == e.to, o.receiver, "Funds must be released to 'from' (${f}) or 'to' (${t})", ("f", e.from)("t", e.to) );
-    HIVE_CHAIN_STATE_ASSERT( e.to_approved && e.agent_approved && "Funds cannot be released prior to escrow approval.", o.from, "Escrow for '${subject}' is not approved." );
+    HIVE_CHAIN_STATE_ASSERT( e.get_to() == o.to && "release", o.to, "Operation 'to' (${o}) does not match escrow 'to' (${e}).", ("o", o.to)("e", e.get_to()) );
+    HIVE_CHAIN_STATE_ASSERT( e.get_agent() == o.agent && "release", o.agent, "Operation 'agent' (${a}) does not match escrow 'agent' (${e}).", ("o", o.agent)("e", e.get_agent()) );
+    HIVE_CHAIN_PERMISSION_ASSERT( o.receiver == e.get_from() || o.receiver == e.get_to(), o.receiver, "Funds must be released to 'from' (${f}) or 'to' (${t})", ("f", e.get_from())("t", e.get_to()) );
+    HIVE_CHAIN_STATE_ASSERT( e.is_approved() && "Funds cannot be released prior to escrow approval.", o.from, "Escrow for '${subject}' is not approved." );
 
     // If there is a dispute regardless of expiration, the agent can release funds to either party
-    if( e.disputed )
+    if( e.is_disputed() )
     {
-      HIVE_CHAIN_PERMISSION_ASSERT( o.who == e.agent, o.who, "Only 'agent' (${a}) can release funds in a disputed escrow.", ("a", e.agent) );
+      HIVE_CHAIN_PERMISSION_ASSERT( o.who == e.get_agent(), o.who, "Only 'agent' (${a}) can release funds in a disputed escrow.", ("a", e.get_agent()) );
     }
     else
     {
-      HIVE_CHAIN_PERMISSION_ASSERT( o.who == e.from || o.who == e.to, o.who, "Only 'from' (${f}) and 'to' (${t}) can release funds from a non-disputed escrow", ("f", e.from)("t", e.to) );
+      HIVE_CHAIN_PERMISSION_ASSERT( o.who == e.get_from() || o.who == e.get_to(), o.who, "Only 'from' (${f}) and 'to' (${t}) can release funds from a non-disputed escrow", ("f", e.get_from())("t", e.get_to()) );
 
-      if( e.escrow_expiration > _db.head_block_time() )
+      if( e.get_escrow_expiration() > _db.head_block_time() )
       {
         // If there is no dispute and escrow has not expired, either party can release funds to the other.
-        if( o.who == e.from )
+        if( o.who == e.get_from() )
         {
-          HIVE_CHAIN_PERMISSION_ASSERT( o.receiver == e.to, o.who, "Only 'from' (${f}) can release funds to 'to' (${t}).", ("f", e.from)("t", e.to) );
+          HIVE_CHAIN_PERMISSION_ASSERT( o.receiver == e.get_to(), o.who, "Only 'from' (${f}) can release funds to 'to' (${t}).", ("f", e.get_from())("t", e.get_to()) );
         }
-        else if( o.who == e.to )
+        else if( o.who == e.get_to() )
         {
-          HIVE_CHAIN_PERMISSION_ASSERT( o.receiver == e.from, o.who, "Only 'to' (${t}) can release funds to 'from' (${t}).", ("f", e.from)("t", e.to) );
+          HIVE_CHAIN_PERMISSION_ASSERT( o.receiver == e.get_from(), o.who, "Only 'to' (${t}) can release funds to 'from' (${t}).", ("f", e.get_from())("t", e.get_to()) );
         }
       }
     }
@@ -241,8 +241,8 @@ void escrow_release_evaluator::do_apply( const escrow_release_operation& o )
 
     _db.modify( e, [&]( escrow_object& esc )
     {
-      esc.hive_balance -= o_hive_amount;
-      esc.hbd_balance -= o_hbd_amount;
+      esc.access_hive_balance() -= o_hive_amount;
+      esc.access_hbd_balance() -= o_hbd_amount;
     } );
 
     if( e.get_hive_balance().amount == 0 && e.get_hbd_balance().amount == 0 )
@@ -472,8 +472,7 @@ void convert_evaluator::do_apply( const convert_operation& o )
 
 void collateralized_convert_evaluator::do_apply( const collateralized_convert_operation& o )
 {
-  HIVE_CHAIN_HARDFORK_ASSERT( _db.has_hardfork( HIVE_HARDFORK_1_25 ) && "Operation not available until HF25",
-    "" );
+  HIVE_CHAIN_HARDFORK_ASSERT( _db.has_hardfork( HIVE_HARDFORK_1_25 ) && "Operation not available until HF25", "" );
 
   const auto& owner = _db.get_account( o.owner );
   HIVE_asset o_amount = o.get_amount();
@@ -911,7 +910,7 @@ void recurrent_transfer_evaluator::do_apply( const recurrent_transfer_operation&
   const auto& to_account = _db.get_account( op.to );
 
   asset available = _db.get_balance( from_account, op.amount.symbol );
-  HIVE_CHAIN_BALANCE_ASSERT( available >= op.amount, op.from, "Account does not have enough tokens for the first transfer, has ${has} needs ${needs}", ("has",  available)("needs", op.amount) );
+  HIVE_CHAIN_BALANCE_ASSERT( available >= op.amount, op.from, "Account does not have enough tokens for the first transfer, has ${has} needs ${needs}", ("has", available)("needs", op.amount) );
 
   uint8_t rtp_id = op.get_pair_id();
 
