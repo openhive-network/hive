@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+from datetime import timezone
 from typing import TYPE_CHECKING
 
 import test_tools as tt
@@ -134,12 +135,12 @@ class RecurrentTransfer:
         )
 
     def execute_future_transfer(self, execution_date=None):
-        actual_head_block_time = self._node.get_head_block_time()
+        actual_head_block_time = self._node.get_head_block_time().replace(tzinfo=timezone.utc)
         if not execution_date:
             for num, t in enumerate(self._current_schedule):
                 if t > actual_head_block_time:
                     self._node.restart(time_control=tt.StartTimeControl(start_time=self._current_schedule[num]))
-                    time_after_restart = self._node.get_head_block_time()
+                    time_after_restart = self._node.get_head_block_time().replace(tzinfo=timezone.utc)
                     self._last_execution_time = self._current_schedule[num]
                     assert time_after_restart >= self._current_schedule[num]
                     break
@@ -149,11 +150,15 @@ class RecurrentTransfer:
     def execute_last_transfer(self):
         self._node.restart(time_control=tt.StartTimeControl(start_time=self._current_schedule[-1]))
         self._node.wait_number_of_blocks(1)
-        assert self._node.get_head_block_time() > self._current_schedule[-1]
+        assert self._node.get_head_block_time().replace(tzinfo=timezone.utc) > self._current_schedule[-1]
         self._last_execution_time = self._current_schedule[-1]
 
     def get_next_execution_date(self):
-        return next(date for date in self._current_schedule if self._node.get_head_block_time() < date)
+        return next(
+            date
+            for date in self._current_schedule
+            if self._node.get_head_block_time().replace(tzinfo=timezone.utc) < date
+        )
 
     def assert_fill_recurrent_transfer_operation_was_generated(self, expected_vop: int):
         err = "virtual operation - `fill_recurrent_transfer_operation` hasn't been generated."

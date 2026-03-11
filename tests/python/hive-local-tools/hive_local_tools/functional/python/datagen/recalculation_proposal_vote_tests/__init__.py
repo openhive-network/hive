@@ -1,21 +1,24 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from datetime import datetime
 
 import test_tools as tt
 
-if TYPE_CHECKING:
-    from datetime import datetime
-
 
 def get_next_maintenance_time(node: tt.InitNode) -> datetime:
-    return node.api.database.get_dynamic_global_properties().next_maintenance_time
+    nmt = node.api.database.get_dynamic_global_properties().next_maintenance_time
+    return datetime.fromisoformat(nmt) if isinstance(nmt, str) else nmt
+
+
+def _to_naive(dt: datetime) -> datetime:
+    return datetime(dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second)
 
 
 def wait_for_maintenance_block(node: tt.InitNode, maintenance_time: datetime) -> None:
     def is_maintenance_time() -> bool:
-        tt.logger.info(f"hbt: {node.get_head_block_time()}, maintenance_time: {maintenance_time}")
-        return node.get_head_block_time() > maintenance_time
+        hbt = node.get_head_block_time()
+        tt.logger.info(f"hbt: {hbt}, maintenance_time: {maintenance_time}")
+        return _to_naive(hbt) > _to_naive(maintenance_time)
 
     tt.logger.info("Wait for maintenance block.")
     tt.Time.wait_for(is_maintenance_time)

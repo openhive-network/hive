@@ -36,5 +36,5 @@ class WitnessVote(Operation):
     def get_number_of_votes(self) -> list:
         votes = self._node.api.database.list_witness_votes(
             start=[self._voter, ""], limit=1000, order="by_account_witness"
-        )["votes"]
-        return len([vote for vote in votes if vote["witness"] == self._witness])
+        ).votes
+        return len([vote for vote in votes if vote.witness == self._witness])
