@@ -5,6 +5,7 @@ from beekeepy.exceptions import ErrorInResponseError
 
 import test_tools as tt
 from hive_local_tools import run_for
+from hive_local_tools.functional.python.operation import _convert_to_asset
 
 
 @pytest.mark.parametrize(
@@ -24,12 +25,12 @@ def test_get_order_book_with_different_values(
     assert len(response.asks) == 1
     assert len(response.bids) == 1
 
-    assert response.asks[0].order_price.base == tt.Asset.Test(ask_hive_amount)
-    assert response.asks[0].order_price.quote == tt.Asset.Tbd(ask_hbd_amount)
+    assert _convert_to_asset(response.asks[0].order_price.base) == tt.Asset.Test(ask_hive_amount)
+    assert _convert_to_asset(response.asks[0].order_price.quote) == tt.Asset.Tbd(ask_hbd_amount)
     assert float(response.asks[0].real_price) == ask_hbd_amount / ask_hive_amount
 
-    assert response.bids[0].order_price.base == tt.Asset.Tbd(bid_hbd_amount)
-    assert response.bids[0].order_price.quote == tt.Asset.Test(bid_hive_amount)
+    assert _convert_to_asset(response.bids[0].order_price.base) == tt.Asset.Tbd(bid_hbd_amount)
+    assert _convert_to_asset(response.bids[0].order_price.quote) == tt.Asset.Test(bid_hive_amount)
     assert float(response.bids[0].real_price) == bid_hbd_amount / bid_hive_amount
 
 

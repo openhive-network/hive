@@ -64,7 +64,7 @@ def test_pagination(node: tt.InitNode, step: int) -> None:
         )
         assert len(output.history) > 0 or start == 0, f"history was empty for start={start}"
         ops_from_pagination += output.history
-        tt.logger.info(f"for start={start}, history has length of {len(output['history'])}")
+        tt.logger.info(f"for start={start}, history has length of {len(output.history)}")
 
     ops_from_pagination = sorted(ops_from_pagination, key=lambda x: x[0])
     assert ops_from_pagination == response.history

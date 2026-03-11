@@ -13,7 +13,7 @@ def test_find_escrows(node: tt.InitNode | tt.RemoteNode, should_prepare: bool) -
         wallet = tt.Wallet(attach_to=node)
         prepare_escrow(wallet, sender="alice")
 
-    account = node.api.database.list_escrows(start=["", 0], limit=5, order="by_from_id").escrows[0]["from"]
+    account = node.api.database.list_escrows(start=["", 0], limit=5, order="by_from_id").escrows[0].from_
     # "from" is a Python keyword and needs workaround
     escrows = node.api.database.find_escrows(**{"from": account}).escrows
     assert len(escrows) != 0

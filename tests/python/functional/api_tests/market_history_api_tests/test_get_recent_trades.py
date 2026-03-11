@@ -4,6 +4,7 @@ import pytest
 
 import test_tools as tt
 from hive_local_tools import run_for
+from hive_local_tools.functional.python.operation import _convert_to_asset
 
 
 @pytest.mark.parametrize(
@@ -62,8 +63,9 @@ def test_recent_trades_output_parameters(node: tt.InitNode, limit_orders: dict) 
 
     # trades appear in response from last to first
     for x in range(len(response)):
-        assert tt.Asset.Tbd(limit_orders["order_" + str(x)]["tbds"]) == response[len(response) - x - 1]["current_pays"]
-        assert tt.Asset.Test(limit_orders["order_" + str(x)]["tests"]) == response[len(response) - x - 1]["open_pays"]
+        trade = response[len(response) - x - 1]
+        assert tt.Asset.Tbd(limit_orders["order_" + str(x)]["tbds"]) == _convert_to_asset(trade.current_pays)
+        assert tt.Asset.Test(limit_orders["order_" + str(x)]["tests"]) == _convert_to_asset(trade.open_pays)
 
 
 @pytest.mark.parametrize("limit", [1, 2])
