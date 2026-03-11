@@ -75,7 +75,7 @@ DEFINE_API_IMPL( database_api_impl, find_escrows )
   const auto& escrow_idx = _db.get_index< chain::escrow_index, chain::by_from_id >();
   auto itr = escrow_idx.lower_bound( args.from );
 
-  while( itr != escrow_idx.end() && itr->from == args.from && result.escrows.size() <= DATABASE_API_SINGLE_QUERY_LIMIT )
+  while( itr != escrow_idx.end() && itr->get_from() == args.from && result.escrows.size() <= DATABASE_API_SINGLE_QUERY_LIMIT )
   {
     result.escrows.emplace_back( *itr, _db );
     ++itr;

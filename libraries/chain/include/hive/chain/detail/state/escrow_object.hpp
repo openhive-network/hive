@@ -27,6 +27,15 @@ namespace hive { namespace chain {
         init( _from, _to, _agent );
       }
 
+    // getters:
+
+      uint32_t get_escrow_id() const { return escrow_id; }
+      const account_name_type& get_from() const { return from; }
+      const account_name_type& get_to() const { return to; }
+      const account_name_type& get_agent() const { return agent; }
+      time_point_sec get_ratification_deadline() const { return ratification_deadline; }
+      time_point_sec get_escrow_expiration() const { return escrow_expiration; }
+
       //HIVE portion of transfer balance
       const HIVE_asset& get_hive_balance() const { return hive_balance; }
       //HBD portion of transfer balance
@@ -34,8 +43,22 @@ namespace hive { namespace chain {
       //fee offered to escrow (can be either in HIVE or HBD)
       const asset& get_fee() const { return pending_fee; }
 
+      bool is_to_approved() const { return to_approved; }
+      bool is_agent_approved() const { return agent_approved; }
       bool is_approved() const { return to_approved && agent_approved; }
+      bool is_disputed() const { return disputed; }
 
+   // setters:
+
+      HIVE_asset& access_hive_balance() { return hive_balance; }
+      HBD_asset& access_hbd_balance() { return hbd_balance; }
+      asset& access_fee() { return pending_fee; }
+
+      void approve_to() { to_approved = true; }
+      void approve_agent() { agent_approved = true; }
+      void start_dispute() { disputed = true; }
+
+    private:
       uint32_t          escrow_id = 20;
       account_name_type from; //< TODO: can be replaced with account_id_type (ABW: would make looking for escrow object harder)
       account_name_type to; //< TODO: can be replaced with account_id_type (ABW: would make looking for escrow object harder)
@@ -49,10 +72,9 @@ namespace hive { namespace chain {
       bool              agent_approved = false;
       bool              disputed = false;
 
-    private:
       void init( const account_object& _from, const account_object& _to, const account_object& _agent );
 
-    CHAINBASE_UNPACK_CONSTRUCTOR(escrow_object);
+    CHAINBASE_UNPACK_CONSTRUCTOR( escrow_object );
   };
 
 } } // hive::chain

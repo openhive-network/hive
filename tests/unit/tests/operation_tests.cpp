@@ -5134,18 +5134,18 @@ BOOST_AUTO_TEST_CASE( escrow_transfer_apply )
 
     const auto& escrow = db->get_escrow( op.from, op.escrow_id );
 
-    BOOST_REQUIRE_EQUAL( escrow.escrow_id, op.escrow_id );
-    BOOST_REQUIRE_EQUAL( escrow.from, op.from );
-    BOOST_REQUIRE_EQUAL( escrow.to, op.to );
-    BOOST_REQUIRE_EQUAL( escrow.agent, op.agent );
-    BOOST_REQUIRE_EQUAL( escrow.ratification_deadline, op.ratification_deadline );
-    BOOST_REQUIRE_EQUAL( escrow.escrow_expiration, op.escrow_expiration );
+    BOOST_REQUIRE_EQUAL( escrow.get_escrow_id(), op.escrow_id );
+    BOOST_REQUIRE_EQUAL( escrow.get_from(), op.from );
+    BOOST_REQUIRE_EQUAL( escrow.get_to(), op.to );
+    BOOST_REQUIRE_EQUAL( escrow.get_agent(), op.agent );
+    BOOST_REQUIRE_EQUAL( escrow.get_ratification_deadline(), op.ratification_deadline );
+    BOOST_REQUIRE_EQUAL( escrow.get_escrow_expiration(), op.escrow_expiration );
     BOOST_REQUIRE_EQUAL( escrow.get_hbd_balance(), op.get_hbd_amount() );
     BOOST_REQUIRE_EQUAL( escrow.get_hive_balance(), op.get_hive_amount() );
     BOOST_REQUIRE_EQUAL( escrow.get_fee(), op.fee );
-    BOOST_REQUIRE( !escrow.to_approved );
-    BOOST_REQUIRE( !escrow.agent_approved );
-    BOOST_REQUIRE( !escrow.disputed );
+    BOOST_REQUIRE( !escrow.is_to_approved() );
+    BOOST_REQUIRE( !escrow.is_agent_approved() );
+    BOOST_REQUIRE( !escrow.is_disputed() );
     BOOST_REQUIRE_EQUAL( alice.get_hive_balance(), alice_hive_balance );
     BOOST_REQUIRE_EQUAL( alice.get_hbd_balance(), alice_hbd_balance );
     BOOST_REQUIRE_EQUAL( bob.get_hive_balance(), bob_hive_balance );
@@ -5283,16 +5283,16 @@ BOOST_AUTO_TEST_CASE( escrow_approve_apply )
     push_transaction( tx, bob_private_key );
 
     auto& escrow = db->get_escrow( op.from, op.escrow_id );
-    BOOST_REQUIRE_EQUAL( escrow.to, "bob" );
-    BOOST_REQUIRE_EQUAL( escrow.agent, "sam" );
-    BOOST_REQUIRE_EQUAL( escrow.ratification_deadline, et_op.ratification_deadline );
-    BOOST_REQUIRE_EQUAL( escrow.escrow_expiration, et_op.escrow_expiration );
+    BOOST_REQUIRE_EQUAL( escrow.get_to(), "bob" );
+    BOOST_REQUIRE_EQUAL( escrow.get_agent(), "sam" );
+    BOOST_REQUIRE_EQUAL( escrow.get_ratification_deadline(), et_op.ratification_deadline );
+    BOOST_REQUIRE_EQUAL( escrow.get_escrow_expiration(), et_op.escrow_expiration );
     BOOST_REQUIRE_EQUAL( escrow.get_hbd_balance(), HBD_asset( 0 ) );
     BOOST_REQUIRE_EQUAL( escrow.get_hive_balance(), HIVE_asset( 1'000 ) );
     BOOST_REQUIRE_EQUAL( escrow.get_fee(), ASSET( "0.100 TESTS" ) );
-    BOOST_REQUIRE( escrow.to_approved );
-    BOOST_REQUIRE( !escrow.agent_approved );
-    BOOST_REQUIRE( !escrow.disputed );
+    BOOST_REQUIRE( escrow.is_to_approved() );
+    BOOST_REQUIRE( !escrow.is_agent_approved() );
+    BOOST_REQUIRE( !escrow.is_disputed() );
 
 
     BOOST_TEST_MESSAGE( "--- failure on repeat approval" );
@@ -5300,16 +5300,16 @@ BOOST_AUTO_TEST_CASE( escrow_approve_apply )
     tx.set_expiration( db->head_block_time() + HIVE_BLOCK_INTERVAL );
     HIVE_REQUIRE_THROW( push_transaction( tx, bob_private_key ), fc::exception );
 
-    BOOST_REQUIRE_EQUAL( escrow.to, "bob" );
-    BOOST_REQUIRE_EQUAL( escrow.agent, "sam" );
-    BOOST_REQUIRE_EQUAL( escrow.ratification_deadline, et_op.ratification_deadline );
-    BOOST_REQUIRE_EQUAL( escrow.escrow_expiration, et_op.escrow_expiration );
+    BOOST_REQUIRE_EQUAL( escrow.get_to(), "bob" );
+    BOOST_REQUIRE_EQUAL( escrow.get_agent(), "sam" );
+    BOOST_REQUIRE_EQUAL( escrow.get_ratification_deadline(), et_op.ratification_deadline );
+    BOOST_REQUIRE_EQUAL( escrow.get_escrow_expiration(), et_op.escrow_expiration );
     BOOST_REQUIRE_EQUAL( escrow.get_hbd_balance(), HBD_asset( 0 ) );
     BOOST_REQUIRE_EQUAL( escrow.get_hive_balance(), HIVE_asset( 1'000 ) );
     BOOST_REQUIRE_EQUAL( escrow.get_fee(), ASSET( "0.100 TESTS" ) );
-    BOOST_REQUIRE( escrow.to_approved );
-    BOOST_REQUIRE( !escrow.agent_approved );
-    BOOST_REQUIRE( !escrow.disputed );
+    BOOST_REQUIRE( escrow.is_to_approved() );
+    BOOST_REQUIRE( !escrow.is_agent_approved() );
+    BOOST_REQUIRE( !escrow.is_disputed() );
 
 
     BOOST_TEST_MESSAGE( "--- failure trying to repeal after approval" );
@@ -5320,16 +5320,16 @@ BOOST_AUTO_TEST_CASE( escrow_approve_apply )
     tx.operations.push_back( op );
     HIVE_REQUIRE_THROW( push_transaction( tx, bob_private_key ), fc::exception );
 
-    BOOST_REQUIRE_EQUAL( escrow.to, "bob" );
-    BOOST_REQUIRE_EQUAL( escrow.agent, "sam" );
-    BOOST_REQUIRE_EQUAL( escrow.ratification_deadline, et_op.ratification_deadline );
-    BOOST_REQUIRE_EQUAL( escrow.escrow_expiration, et_op.escrow_expiration );
+    BOOST_REQUIRE_EQUAL( escrow.get_to(), "bob" );
+    BOOST_REQUIRE_EQUAL( escrow.get_agent(), "sam" );
+    BOOST_REQUIRE_EQUAL( escrow.get_ratification_deadline(), et_op.ratification_deadline );
+    BOOST_REQUIRE_EQUAL( escrow.get_escrow_expiration(), et_op.escrow_expiration );
     BOOST_REQUIRE_EQUAL( escrow.get_hbd_balance(), HBD_asset( 0 ) );
     BOOST_REQUIRE_EQUAL( escrow.get_hive_balance(), HIVE_asset( 1'000 ) );
     BOOST_REQUIRE_EQUAL( escrow.get_fee(), ASSET( "0.100 TESTS" ) );
-    BOOST_REQUIRE( escrow.to_approved );
-    BOOST_REQUIRE( !escrow.agent_approved );
-    BOOST_REQUIRE( !escrow.disputed );
+    BOOST_REQUIRE( escrow.is_to_approved() );
+    BOOST_REQUIRE( !escrow.is_agent_approved() );
+    BOOST_REQUIRE( !escrow.is_disputed() );
 
 
     BOOST_TEST_MESSAGE( "--- success refunding from because of repeal" );
@@ -5485,16 +5485,16 @@ BOOST_AUTO_TEST_CASE( escrow_approve_apply )
       BOOST_REQUIRE_EQUAL( accept_op.fee, et_op.fee );
 
       const auto& escrow = db->get_escrow( op.from, op.escrow_id );
-      BOOST_REQUIRE_EQUAL( escrow.to, "bob" );
-      BOOST_REQUIRE_EQUAL( escrow.agent, "sam" );
-      BOOST_REQUIRE_EQUAL( escrow.ratification_deadline, et_op.ratification_deadline );
-      BOOST_REQUIRE_EQUAL( escrow.escrow_expiration, et_op.escrow_expiration );
+      BOOST_REQUIRE_EQUAL( escrow.get_to(), "bob" );
+      BOOST_REQUIRE_EQUAL( escrow.get_agent(), "sam" );
+      BOOST_REQUIRE_EQUAL( escrow.get_ratification_deadline(), et_op.ratification_deadline );
+      BOOST_REQUIRE_EQUAL( escrow.get_escrow_expiration(), et_op.escrow_expiration );
       BOOST_REQUIRE_EQUAL( escrow.get_hbd_balance(), HBD_asset( 0 ) );
       BOOST_REQUIRE_EQUAL( escrow.get_hive_balance(), HIVE_asset( 1'000 ) );
       BOOST_REQUIRE_EQUAL( escrow.get_fee(), ASSET( "0.000 TESTS" ) );
-      BOOST_REQUIRE( escrow.to_approved );
-      BOOST_REQUIRE( escrow.agent_approved );
-      BOOST_REQUIRE( !escrow.disputed );
+      BOOST_REQUIRE( escrow.is_to_approved() );
+      BOOST_REQUIRE( escrow.is_agent_approved() );
+      BOOST_REQUIRE( !escrow.is_disputed() );
     }
 
     BOOST_REQUIRE_EQUAL( get_hive_balance( "sam" ), HIVE_asset( et_op.fee ) );
@@ -5506,16 +5506,16 @@ BOOST_AUTO_TEST_CASE( escrow_approve_apply )
     generate_blocks( et_op.ratification_deadline + HIVE_BLOCK_INTERVAL, true );
     {
       const auto& escrow = db->get_escrow( op.from, op.escrow_id );
-      BOOST_REQUIRE_EQUAL( escrow.to, "bob" );
-      BOOST_REQUIRE_EQUAL( escrow.agent, "sam" );
-      BOOST_REQUIRE_EQUAL( escrow.ratification_deadline, et_op.ratification_deadline );
-      BOOST_REQUIRE_EQUAL( escrow.escrow_expiration, et_op.escrow_expiration );
+      BOOST_REQUIRE_EQUAL( escrow.get_to(), "bob" );
+      BOOST_REQUIRE_EQUAL( escrow.get_agent(), "sam" );
+      BOOST_REQUIRE_EQUAL( escrow.get_ratification_deadline(), et_op.ratification_deadline );
+      BOOST_REQUIRE_EQUAL( escrow.get_escrow_expiration(), et_op.escrow_expiration );
       BOOST_REQUIRE_EQUAL( escrow.get_hbd_balance(), HBD_asset( 0 ) );
       BOOST_REQUIRE_EQUAL( escrow.get_hive_balance(), HIVE_asset( 1'000 ) );
       BOOST_REQUIRE_EQUAL( escrow.get_fee(), ASSET( "0.000 TESTS" ) );
-      BOOST_REQUIRE( escrow.to_approved );
-      BOOST_REQUIRE( escrow.agent_approved );
-      BOOST_REQUIRE( !escrow.disputed );
+      BOOST_REQUIRE( escrow.is_to_approved() );
+      BOOST_REQUIRE( escrow.is_agent_approved() );
+      BOOST_REQUIRE( !escrow.is_disputed() );
     }
 
     BOOST_REQUIRE_EQUAL( get_hive_balance( "sam" ), HIVE_asset( et_op.fee ) );
@@ -5625,16 +5625,16 @@ BOOST_AUTO_TEST_CASE( escrow_dispute_apply )
     HIVE_REQUIRE_THROW( push_transaction( tx, bob_private_key ), fc::exception );
 
     const auto& escrow = db->get_escrow( et_op.from, et_op.escrow_id );
-    BOOST_REQUIRE_EQUAL( escrow.to, "bob" );
-    BOOST_REQUIRE_EQUAL( escrow.agent, "sam" );
-    BOOST_REQUIRE_EQUAL( escrow.ratification_deadline, et_op.ratification_deadline );
-    BOOST_REQUIRE_EQUAL( escrow.escrow_expiration, et_op.escrow_expiration );
+    BOOST_REQUIRE_EQUAL( escrow.get_to(), "bob" );
+    BOOST_REQUIRE_EQUAL( escrow.get_agent(), "sam" );
+    BOOST_REQUIRE_EQUAL( escrow.get_ratification_deadline(), et_op.ratification_deadline );
+    BOOST_REQUIRE_EQUAL( escrow.get_escrow_expiration(), et_op.escrow_expiration );
     BOOST_REQUIRE_EQUAL( escrow.get_hbd_balance(), et_op.get_hbd_amount() );
     BOOST_REQUIRE_EQUAL( escrow.get_hive_balance(), et_op.get_hive_amount() );
     BOOST_REQUIRE_EQUAL( escrow.get_fee(), et_op.fee );
-    BOOST_REQUIRE( escrow.to_approved );
-    BOOST_REQUIRE( !escrow.agent_approved );
-    BOOST_REQUIRE( !escrow.disputed );
+    BOOST_REQUIRE( escrow.is_to_approved() );
+    BOOST_REQUIRE( !escrow.is_agent_approved() );
+    BOOST_REQUIRE( !escrow.is_disputed() );
 
 
     BOOST_TEST_MESSAGE( "--- failure when to does not match escrow" );
@@ -5655,16 +5655,16 @@ BOOST_AUTO_TEST_CASE( escrow_dispute_apply )
     tx.operations.push_back( op );
     HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::exception );
 
-    BOOST_REQUIRE_EQUAL( escrow.to, "bob" );
-    BOOST_REQUIRE_EQUAL( escrow.agent, "sam" );
-    BOOST_REQUIRE_EQUAL( escrow.ratification_deadline, et_op.ratification_deadline );
-    BOOST_REQUIRE_EQUAL( escrow.escrow_expiration, et_op.escrow_expiration );
+    BOOST_REQUIRE_EQUAL( escrow.get_to(), "bob" );
+    BOOST_REQUIRE_EQUAL( escrow.get_agent(), "sam" );
+    BOOST_REQUIRE_EQUAL( escrow.get_ratification_deadline(), et_op.ratification_deadline );
+    BOOST_REQUIRE_EQUAL( escrow.get_escrow_expiration(), et_op.escrow_expiration );
     BOOST_REQUIRE_EQUAL( escrow.get_hbd_balance(), et_op.get_hbd_amount() );
     BOOST_REQUIRE_EQUAL( escrow.get_hive_balance(), et_op.get_hive_amount() );
     BOOST_REQUIRE_EQUAL( escrow.get_fee(), ASSET( "0.000 TESTS" ) );
-    BOOST_REQUIRE( escrow.to_approved );
-    BOOST_REQUIRE( escrow.agent_approved );
-    BOOST_REQUIRE( !escrow.disputed );
+    BOOST_REQUIRE( escrow.is_to_approved() );
+    BOOST_REQUIRE( escrow.is_agent_approved() );
+    BOOST_REQUIRE( !escrow.is_disputed() );
 
 
     BOOST_TEST_MESSAGE( "--- failure when agent does not match escrow" );
@@ -5675,16 +5675,16 @@ BOOST_AUTO_TEST_CASE( escrow_dispute_apply )
     tx.operations.push_back( op );
     HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::exception );
 
-    BOOST_REQUIRE_EQUAL( escrow.to, "bob" );
-    BOOST_REQUIRE_EQUAL( escrow.agent, "sam" );
-    BOOST_REQUIRE_EQUAL( escrow.ratification_deadline, et_op.ratification_deadline );
-    BOOST_REQUIRE_EQUAL( escrow.escrow_expiration, et_op.escrow_expiration );
+    BOOST_REQUIRE_EQUAL( escrow.get_to(), "bob" );
+    BOOST_REQUIRE_EQUAL( escrow.get_agent(), "sam" );
+    BOOST_REQUIRE_EQUAL( escrow.get_ratification_deadline(), et_op.ratification_deadline );
+    BOOST_REQUIRE_EQUAL( escrow.get_escrow_expiration(), et_op.escrow_expiration );
     BOOST_REQUIRE_EQUAL( escrow.get_hbd_balance(), et_op.get_hbd_amount() );
     BOOST_REQUIRE_EQUAL( escrow.get_hive_balance(), et_op.get_hive_amount() );
     BOOST_REQUIRE_EQUAL( escrow.get_fee(), ASSET( "0.000 TESTS" ) );
-    BOOST_REQUIRE( escrow.to_approved );
-    BOOST_REQUIRE( escrow.agent_approved );
-    BOOST_REQUIRE( !escrow.disputed );
+    BOOST_REQUIRE( escrow.is_to_approved() );
+    BOOST_REQUIRE( escrow.is_agent_approved() );
+    BOOST_REQUIRE( !escrow.is_disputed() );
 
 
     BOOST_TEST_MESSAGE( "--- failure when escrow is expired" );
@@ -5698,16 +5698,16 @@ BOOST_AUTO_TEST_CASE( escrow_dispute_apply )
 
     {
       const auto& escrow = db->get_escrow( et_op.from, et_op.escrow_id );
-      BOOST_REQUIRE_EQUAL( escrow.to, "bob" );
-      BOOST_REQUIRE_EQUAL( escrow.agent, "sam" );
-      BOOST_REQUIRE_EQUAL( escrow.ratification_deadline, et_op.ratification_deadline );
-      BOOST_REQUIRE_EQUAL( escrow.escrow_expiration, et_op.escrow_expiration );
+      BOOST_REQUIRE_EQUAL( escrow.get_to(), "bob" );
+      BOOST_REQUIRE_EQUAL( escrow.get_agent(), "sam" );
+      BOOST_REQUIRE_EQUAL( escrow.get_ratification_deadline(), et_op.ratification_deadline );
+      BOOST_REQUIRE_EQUAL( escrow.get_escrow_expiration(), et_op.escrow_expiration );
       BOOST_REQUIRE_EQUAL( escrow.get_hbd_balance(), et_op.get_hbd_amount() );
       BOOST_REQUIRE_EQUAL( escrow.get_hive_balance(), et_op.get_hive_amount() );
       BOOST_REQUIRE_EQUAL( escrow.get_fee(), ASSET( "0.000 TESTS" ) );
-      BOOST_REQUIRE( escrow.to_approved );
-      BOOST_REQUIRE( escrow.agent_approved );
-      BOOST_REQUIRE( !escrow.disputed );
+      BOOST_REQUIRE( escrow.is_to_approved() );
+      BOOST_REQUIRE( escrow.is_agent_approved() );
+      BOOST_REQUIRE( !escrow.is_disputed() );
     }
 
 
@@ -5731,16 +5731,16 @@ BOOST_AUTO_TEST_CASE( escrow_dispute_apply )
 
     {
       const auto& escrow = db->get_escrow( et_op.from, et_op.escrow_id );
-      BOOST_REQUIRE_EQUAL( escrow.to, "bob" );
-      BOOST_REQUIRE_EQUAL( escrow.agent, "sam" );
-      BOOST_REQUIRE_EQUAL( escrow.ratification_deadline, et_op.ratification_deadline );
-      BOOST_REQUIRE_EQUAL( escrow.escrow_expiration, et_op.escrow_expiration );
+      BOOST_REQUIRE_EQUAL( escrow.get_to(), "bob" );
+      BOOST_REQUIRE_EQUAL( escrow.get_agent(), "sam" );
+      BOOST_REQUIRE_EQUAL( escrow.get_ratification_deadline(), et_op.ratification_deadline );
+      BOOST_REQUIRE_EQUAL( escrow.get_escrow_expiration(), et_op.escrow_expiration );
       BOOST_REQUIRE_EQUAL( escrow.get_hbd_balance(), et_op.get_hbd_amount() );
       BOOST_REQUIRE_EQUAL( escrow.get_hive_balance(), et_op.get_hive_amount() );
       BOOST_REQUIRE_EQUAL( escrow.get_fee(), ASSET( "0.000 TESTS" ) );
-      BOOST_REQUIRE( escrow.to_approved );
-      BOOST_REQUIRE( escrow.agent_approved );
-      BOOST_REQUIRE( escrow.disputed );
+      BOOST_REQUIRE( escrow.is_to_approved() );
+      BOOST_REQUIRE( escrow.is_agent_approved() );
+      BOOST_REQUIRE( escrow.is_disputed() );
     }
 
 
@@ -5752,16 +5752,16 @@ BOOST_AUTO_TEST_CASE( escrow_dispute_apply )
 
     {
       const auto& escrow = db->get_escrow( et_op.from, et_op.escrow_id );
-      BOOST_REQUIRE_EQUAL( escrow.to, "bob" );
-      BOOST_REQUIRE_EQUAL( escrow.agent, "sam" );
-      BOOST_REQUIRE_EQUAL( escrow.ratification_deadline, et_op.ratification_deadline );
-      BOOST_REQUIRE_EQUAL( escrow.escrow_expiration, et_op.escrow_expiration );
+      BOOST_REQUIRE_EQUAL( escrow.get_to(), "bob" );
+      BOOST_REQUIRE_EQUAL( escrow.get_agent(), "sam" );
+      BOOST_REQUIRE_EQUAL( escrow.get_ratification_deadline(), et_op.ratification_deadline );
+      BOOST_REQUIRE_EQUAL( escrow.get_escrow_expiration(), et_op.escrow_expiration );
       BOOST_REQUIRE_EQUAL( escrow.get_hbd_balance(), et_op.get_hbd_amount() );
       BOOST_REQUIRE_EQUAL( escrow.get_hive_balance(), et_op.get_hive_amount() );
       BOOST_REQUIRE_EQUAL( escrow.get_fee(), ASSET( "0.000 TESTS" ) );
-      BOOST_REQUIRE( escrow.to_approved );
-      BOOST_REQUIRE( escrow.agent_approved );
-      BOOST_REQUIRE( escrow.disputed );
+      BOOST_REQUIRE( escrow.is_to_approved() );
+      BOOST_REQUIRE( escrow.is_agent_approved() );
+      BOOST_REQUIRE( escrow.is_disputed() );
     }
   }
   FC_LOG_AND_RETHROW()
