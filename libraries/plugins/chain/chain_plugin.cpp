@@ -1283,6 +1283,9 @@ uint32_t chain_plugin_impl::reindex_internal( const open_args& args,
            (current_block_num)(last_block_num)
            ("free_memory_megabytes", db.get_free_memory() >> 20)
            ("rss_mb", rss_mb)("vm_mb", vm_mb));
+      ilog("Memory at block ${current_block_num}: ${rss_mb}MB RSS, ${vm_mb}MB VM, ${free_memory_megabytes}MB shm free",
+           (current_block_num)("rss_mb", rss_mb)("vm_mb", vm_mb)
+           ("free_memory_megabytes", db.get_free_memory() >> 20));
     }
 
     db.apply_block(full_block, skip_flags);
