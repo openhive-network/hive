@@ -46,8 +46,6 @@ void rocksdb_storage_provider::openDb( uint32_t expected_lib )
   options.IncreaseParallelism();
   options.OptimizeLevelStyleCompaction();
   options.max_open_files = OPEN_FILE_LIMIT;
-  // R-ARCH-3: More background threads for parallel compaction during heavy archival
-  options.max_background_jobs = 4;
 
   auto status = DB::Open( DBOptions( options ), strPath, columnDefs, &_columnHandles, &_db );
   ilog( "Database is ${status}.", ("status", status.ok() ? "opened" : "not opened") );
