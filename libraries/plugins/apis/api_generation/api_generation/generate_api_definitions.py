@@ -13,13 +13,13 @@ from api_generation.generate_client import generate_client
 
 def extract_class_names_from_file(file_path: Path) -> list[str]:
     """
-    Extract all class names from a Python file using AST parsing.
+    Extract all exported symbol names (classes and TypeAlias) from a Python file using AST parsing.
 
     Args:
-        file_path: The path to the Python file from which to extract class names.
+        file_path: The path to the Python file from which to extract symbol names.
 
     Returns:
-        A list of class names defined in the file.
+        A list of symbol names defined in the file.
 
     Raises:
         FileNotFoundError: If the specified file does not exist.
@@ -30,7 +30,13 @@ def extract_class_names_from_file(file_path: Path) -> list[str]:
     with open(file_path, "r") as f:
         tree = ast.parse(f.read(), filename=str(file_path))
 
-    return [node.name for node in ast.walk(tree) if isinstance(node, ast.ClassDef)]
+    symbols = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ClassDef):
+            symbols.append(node.name)
+        elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
+            symbols.append(node.target.id)
+    return symbols
 
 
 def load_symbol_from_file(file_path: Path, symbol_name: str) -> dict[str, Any]:
