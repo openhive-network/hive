@@ -38,6 +38,9 @@
 #include <boost/scope_exit.hpp>
 #include <boost/thread/future.hpp>
 
+#include <fstream>
+#include <unistd.h>
+
 #include <thread>
 #include <chrono>
 #include <memory>
@@ -1260,10 +1263,26 @@ uint32_t chain_plugin_impl::reindex_internal( const open_args& args,
     {
       std::ostringstream percent_complete_stream;
       percent_complete_stream << std::fixed << std::setprecision(2) << double(current_block_num) * 100 / last_block_num;
-      ulog("   ${current_block_num} of ${last_block_num} blocks = ${percent_complete}%   (${free_memory_megabytes}MB shared memory free)",
+
+      // Read process memory stats from /proc/self/statm (pages)
+      uint64_t rss_mb = 0, vm_mb = 0;
+      {
+        std::ifstream statm("/proc/self/statm");
+        if (statm.is_open())
+        {
+          uint64_t vm_pages = 0, rss_pages = 0;
+          statm >> vm_pages >> rss_pages;
+          const uint64_t page_size = sysconf(_SC_PAGESIZE);
+          rss_mb = (rss_pages * page_size) >> 20;
+          vm_mb = (vm_pages * page_size) >> 20;
+        }
+      }
+
+      ulog("   ${current_block_num} of ${last_block_num} blocks = ${percent_complete}%   (${free_memory_megabytes}MB shm free, ${rss_mb}MB RSS, ${vm_mb}MB VM)",
            ("percent_complete", percent_complete_stream.str())
            (current_block_num)(last_block_num)
-           ("free_memory_megabytes", db.get_free_memory() >> 20));
+           ("free_memory_megabytes", db.get_free_memory() >> 20)
+           ("rss_mb", rss_mb)("vm_mb", vm_mb));
     }
 
     db.apply_block(full_block, skip_flags);
