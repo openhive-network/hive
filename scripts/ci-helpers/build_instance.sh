@@ -156,85 +156,56 @@ if [[ -n "${POSTGRES_VERSION:-}" ]]; then
 fi
 
 # Build cache arguments for buildx
+# Pull from both old refs (build + instance) for smooth transition, write to single ref with mode=max
 CACHE_FROM_BUILD="type=registry,ref=${CACHE_REPO}:${CACHE_KEY}"
-CACHE_TO_BUILD="type=registry,ref=${CACHE_REPO}:${CACHE_KEY},mode=max"
 CACHE_FROM_INSTANCE="type=registry,ref=${CACHE_REPO}:${CACHE_KEY}-instance"
-CACHE_TO_INSTANCE="type=registry,ref=${CACHE_REPO}:${CACHE_KEY}-instance,mode=max"
+CACHE_TO="type=registry,ref=${CACHE_REPO}:${CACHE_KEY},mode=max,compression=zstd,force-compression=false"
 
-echo -e "Building Docker build image...\n"
+echo -e "Building Docker instance image (includes build stage)...\n"
 
-# Use buildx with registry caching if available, otherwise fall back to regular docker build
+# Single buildx invocation builds both build and instance stages.
+# BuildKit resolves the build stage from the Dockerfile directly (no registry round-trip).
+# mode=max caches all layers from all stages for future builds.
 if docker buildx version &>/dev/null && [[ "${USE_BUILDX:-true}" != "false" ]]; then
     echo "Using docker buildx with registry caching (cache key: ${CACHE_KEY})..."
-    docker buildx build --provenance=false --progress=plain --target=build \
-      --cache-from="$CACHE_FROM_BUILD" \
-      --cache-to="$CACHE_TO_BUILD" \
-      --build-arg CI_REGISTRY_IMAGE="$REGISTRY/" \
-      --build-arg BUILD_HIVE_TESTNET=$BUILD_HIVE_TESTNET \
-      --build-arg HIVE_CONVERTER_BUILD=$HIVE_CONVERTER_BUILD \
-      --build-arg BUILD_IMAGE_TAG="$BUILD_IMAGE_TAG" \
-      --build-arg HIVE_SUBDIR="$HIVE_SUBDIR" \
-      --build-arg IMAGE_TAG_PREFIX="${IMAGE_TAG_PREFIX:+$IMAGE_TAG_PREFIX-}" \
-      --build-arg SCCACHE_REDIS="${SCCACHE_REDIS:-}" \
-      ${PG_BUILD_ARG:+$PG_BUILD_ARG} \
-      --tag "${REGISTRY}${IMAGE_TAG_PREFIX:+/$IMAGE_TAG_PREFIX}/build:${BUILD_IMAGE_TAG}" \
-      --push \
-      --file Dockerfile "$SOURCE_DIR"
-else
-    echo "Buildx not available or disabled, using docker build..."
-    docker build --provenance=false --target=build \
-      --build-arg CI_REGISTRY_IMAGE="$REGISTRY/" \
-      --build-arg BUILD_HIVE_TESTNET=$BUILD_HIVE_TESTNET \
-      --build-arg HIVE_CONVERTER_BUILD=$HIVE_CONVERTER_BUILD \
-      --build-arg BUILD_IMAGE_TAG="$BUILD_IMAGE_TAG" \
-      --build-arg HIVE_SUBDIR="$HIVE_SUBDIR" \
-      --build-arg IMAGE_TAG_PREFIX="${IMAGE_TAG_PREFIX:+$IMAGE_TAG_PREFIX-}" \
-      --build-arg SCCACHE_REDIS="${SCCACHE_REDIS:-}" \
-      ${PG_BUILD_ARG:+$PG_BUILD_ARG} \
-      --tag "${REGISTRY}${IMAGE_TAG_PREFIX:+/$IMAGE_TAG_PREFIX}/build:${BUILD_IMAGE_TAG}" \
-      --file Dockerfile "$SOURCE_DIR"
-fi
-
-echo -e "\nDone!\nBuilding Docker instance image...\n"
-
-if docker buildx version &>/dev/null && [[ "${USE_BUILDX:-true}" != "false" ]]; then
-    echo "Using docker buildx with registry caching (cache key: ${CACHE_KEY}-instance)..."
     docker buildx build --provenance=false --progress=plain --target=instance \
+      --cache-from="$CACHE_FROM_BUILD" \
       --cache-from="$CACHE_FROM_INSTANCE" \
-      --cache-to="$CACHE_TO_INSTANCE" \
+      --cache-to="$CACHE_TO" \
       --build-arg CI_REGISTRY_IMAGE="$REGISTRY/" \
-      --build-arg BUILD_IMAGE_TAG="$BUILD_IMAGE_TAG" \
       --build-arg BUILD_HIVE_TESTNET=$BUILD_HIVE_TESTNET \
       --build-arg HIVE_CONVERTER_BUILD=$HIVE_CONVERTER_BUILD \
+      --build-arg BUILD_IMAGE_TAG="$BUILD_IMAGE_TAG" \
+      --build-arg HIVE_SUBDIR="$HIVE_SUBDIR" \
+      --build-arg IMAGE_TAG_PREFIX="${IMAGE_TAG_PREFIX:+$IMAGE_TAG_PREFIX-}" \
+      --build-arg SCCACHE_REDIS="${SCCACHE_REDIS:-}" \
       --build-arg BUILD_TIME="$BUILD_TIME" \
       --build-arg GIT_COMMIT_SHA="$GIT_COMMIT_SHA" \
       --build-arg GIT_CURRENT_BRANCH="$GIT_CURRENT_BRANCH" \
       --build-arg GIT_LAST_LOG_MESSAGE="$GIT_LAST_LOG_MESSAGE" \
       --build-arg GIT_LAST_COMMITTER="$GIT_LAST_COMMITTER" \
       --build-arg GIT_LAST_COMMIT_DATE="$GIT_LAST_COMMIT_DATE" \
-      --build-arg HIVE_SUBDIR="$HIVE_SUBDIR" \
-      --build-arg IMAGE_TAG_PREFIX="${IMAGE_TAG_PREFIX:+$IMAGE_TAG_PREFIX-}" \
       ${PG_BUILD_ARG:+$PG_BUILD_ARG} \
-      --build-context "build=docker-image://${REGISTRY}${IMAGE_TAG_PREFIX:+/$IMAGE_TAG_PREFIX}/build:${BUILD_IMAGE_TAG}" \
       --tag "${REGISTRY}${IMAGE_TAG_PREFIX:+/$IMAGE_TAG_PREFIX}:${BUILD_IMAGE_TAG}" \
       --load \
       --file Dockerfile "$SOURCE_DIR"
 else
+    echo "Buildx not available or disabled, using docker build..."
     docker build --provenance=false --target=instance \
       --build-arg CI_REGISTRY_IMAGE="$REGISTRY/" \
-      --build-arg BUILD_IMAGE_TAG="$BUILD_IMAGE_TAG" \
       --build-arg BUILD_HIVE_TESTNET=$BUILD_HIVE_TESTNET \
       --build-arg HIVE_CONVERTER_BUILD=$HIVE_CONVERTER_BUILD \
+      --build-arg BUILD_IMAGE_TAG="$BUILD_IMAGE_TAG" \
+      --build-arg HIVE_SUBDIR="$HIVE_SUBDIR" \
+      --build-arg IMAGE_TAG_PREFIX="${IMAGE_TAG_PREFIX:+$IMAGE_TAG_PREFIX-}" \
+      --build-arg SCCACHE_REDIS="${SCCACHE_REDIS:-}" \
       --build-arg BUILD_TIME="$BUILD_TIME" \
       --build-arg GIT_COMMIT_SHA="$GIT_COMMIT_SHA" \
       --build-arg GIT_CURRENT_BRANCH="$GIT_CURRENT_BRANCH" \
       --build-arg GIT_LAST_LOG_MESSAGE="$GIT_LAST_LOG_MESSAGE" \
       --build-arg GIT_LAST_COMMITTER="$GIT_LAST_COMMITTER" \
       --build-arg GIT_LAST_COMMIT_DATE="$GIT_LAST_COMMIT_DATE" \
-      --build-arg HIVE_SUBDIR="$HIVE_SUBDIR" \
-      --build-arg IMAGE_TAG_PREFIX="${IMAGE_TAG_PREFIX:+$IMAGE_TAG_PREFIX-}" \
       ${PG_BUILD_ARG:+$PG_BUILD_ARG} \
-      --build-context "build=docker-image://${REGISTRY}${IMAGE_TAG_PREFIX:+/$IMAGE_TAG_PREFIX}/build:${BUILD_IMAGE_TAG}" \
       --tag "${REGISTRY}${IMAGE_TAG_PREFIX:+/$IMAGE_TAG_PREFIX}:${BUILD_IMAGE_TAG}" \
       --file Dockerfile "$SOURCE_DIR"
 fi
@@ -245,6 +216,6 @@ popd
 
 if [ -n "${EXPORT_PATH}" ];
 then
-  "$SCRIPTPATH/export-data-from-docker-image.sh" "${REGISTRY}${IMAGE_TAG_PREFIX:+/$IMAGE_TAG_PREFIX}/build:${BUILD_IMAGE_TAG}" "${EXPORT_PATH}"
+  "$SCRIPTPATH/export-data-from-docker-image.sh" "${REGISTRY}${IMAGE_TAG_PREFIX:+/$IMAGE_TAG_PREFIX}:${BUILD_IMAGE_TAG}" "${EXPORT_PATH}"
 fi
 
