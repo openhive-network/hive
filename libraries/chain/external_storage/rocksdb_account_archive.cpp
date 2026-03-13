@@ -303,7 +303,7 @@ bool rocksdb_account_archive::on_irreversible_block_impl( uint32_t block_num, co
   */
   uint32_t _archived = 0;
   while( _itr != _idx.end() && block_num > _itr->get_last_access_block()
-         && ( block_num - _itr->get_last_access_block() ) > retention_blocks && _archived < _current_max_archives )
+         && ( block_num - _itr->get_last_access_block() ) > retention_blocks && _archived < max_archives_per_block )
   {
     const auto& _current = *_itr;
     ++_itr;
@@ -382,7 +382,7 @@ bool rocksdb_account_archive::on_irreversible_block_impl_account( uint32_t block
 
   uint32_t _archived = 0;
   while( _itr != _idx.end() && block_num > _itr->get_last_access_block()
-         && ( block_num - _itr->get_last_access_block() ) > retention_blocks && _archived < _current_max_archives )
+         && ( block_num - _itr->get_last_access_block() ) > retention_blocks && _archived < max_archives_per_block )
   {
     const auto& _current = *_itr;
     ++_itr;
@@ -450,7 +450,7 @@ bool rocksdb_account_archive::on_irreversible_block_impl_metadata( uint32_t bloc
 
   uint32_t _archived = 0;
   while( _itr != _idx.end() && block_num > _itr->get_last_access_block()
-         && ( block_num - _itr->get_last_access_block() ) > retention_blocks && _archived < _current_max_archives )
+         && ( block_num - _itr->get_last_access_block() ) > retention_blocks && _archived < max_archives_per_block )
   {
     const auto& _current = *_itr;
     ++_itr;
@@ -548,9 +548,6 @@ void rocksdb_account_archive::on_irreversible_block( uint32_t block_num )
       return;
   }
 
-  // R-ARCH-1: Time the archival passes to adaptively throttle batch size
-  auto archival_start = std::chrono::high_resolution_clock::now();
-
   // Use specialized method for account_metadata_object (needs account name lookup)
   bool _do_flush_meta = on_irreversible_block_impl_metadata( block_num, { ColumnTypes::ACCOUNT_METADATA } );
 
@@ -562,32 +559,6 @@ void rocksdb_account_archive::on_irreversible_block( uint32_t block_num )
   bool _do_flush_account = on_irreversible_block_impl_account( block_num, { ColumnTypes::ACCOUNT, ColumnTypes::ACCOUNT_BY_ID } );
 
   bool _any_data_changed = _do_flush_meta || _do_flush_authority || _do_flush_account;
-
-  // R-ARCH-1: Adaptive throttling — adjust batch size based on observed archival latency
-  if( _any_data_changed )
-  {
-    uint64_t elapsed_us = std::chrono::duration_cast< std::chrono::microseconds >(
-      std::chrono::high_resolution_clock::now() - archival_start ).count();
-
-    uint32_t prev = _current_max_archives;
-
-    if( elapsed_us > ARCHIVAL_TIME_BUDGET_US )
-    {
-      // Archival took too long — halve the batch size (floor at minimum)
-      _current_max_archives = std::max( _current_max_archives / 2, min_archives_per_block );
-    }
-    else if( elapsed_us < ARCHIVAL_TIME_BUDGET_US / 4 )
-    {
-      // Archival was fast — increase batch size by 50% (cap at maximum)
-      _current_max_archives = std::min( _current_max_archives + _current_max_archives / 2, max_archives_per_block );
-    }
-
-    if( _current_max_archives != prev )
-    {
-      dlog( "Archival throttle adjusted: ${old} -> ${new} (elapsed ${us}us, budget ${budget}us) at block ${b}",
-            ("old", prev)("new", _current_max_archives)("us", elapsed_us)("budget", ARCHIVAL_TIME_BUDGET_US)("b", block_num) );
-    }
-  }
 
   if( _any_data_changed )
   {
