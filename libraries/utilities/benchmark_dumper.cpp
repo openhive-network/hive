@@ -1,5 +1,6 @@
 
 #include <hive/utilities/benchmark_dumper.hpp>
+#include <algorithm>
 
 namespace hive { namespace utilities {
 
