@@ -23,10 +23,10 @@ ADD ./scripts/setup_ubuntu.sh /usr/local/src/scripts/
 
 # Install base runtime packages
 RUN userdel --remove ubuntu
-RUN ./scripts/setup_ubuntu.sh --runtime --hived-admin-account="hived_admin" --hived-account="hived"
+RUN ./scripts/setup_ubuntu.sh --runtime --hived-account="hived"
 
-USER hived_admin
-WORKDIR /home/hived_admin
+USER hived
+WORKDIR /home/hived
 
 FROM ubuntu:24.04 AS minimal-runtime
 
@@ -40,10 +40,10 @@ ADD ./scripts/openssl.conf ./scripts/setup_ubuntu.sh /usr/local/src/scripts/
 
 # Install base runtime packages
 RUN userdel --remove ubuntu
-RUN ./scripts/setup_ubuntu.sh --runtime --hived-admin-account="hived_admin" --hived-account="hived"
+RUN ./scripts/setup_ubuntu.sh --runtime --hived-account="hived"
 
-USER hived_admin
-WORKDIR /home/hived_admin
+USER hived
+WORKDIR /home/hived
 
 # Build stage uses centralized ci-base-image from common-ci-configuration
 # This image includes: build toolchain, sccache, Pythons 3.8 - 3.14, glibc 2.28, Docker CLI, hived_admin and hived users
@@ -155,12 +155,9 @@ COPY --from=build --chown=hived:users \
 
 COPY --from=build --chown=hived:users /home/hived_admin/source/${HIVE_SUBDIR}/doc/example_config.ini /home/hived/datadir/example_config.ini
 
-USER hived_admin
-WORKDIR /home/hived_admin
+COPY --from=build --chown=hived:users /home/hived_admin/source/${HIVE_SUBDIR}/scripts /home/hived/scripts
 
-COPY --from=build --chown=hived_admin:users /home/hived_admin/source/${HIVE_SUBDIR}/scripts ./scripts
-
-COPY --chown=hived_admin:users ./${HIVE_SUBDIR}/docker/docker_entrypoint.sh .
+COPY --chown=hived:users ./${HIVE_SUBDIR}/docker/docker_entrypoint.sh /home/hived/
 
 VOLUME [ "/home/hived/datadir", "/home/hived/shm_dir" ]
 
@@ -180,4 +177,4 @@ EXPOSE ${WS_PORT}
 # Port specific to HTTP cli_wallet server
 EXPOSE ${CLI_WALLET_PORT}
 
-ENTRYPOINT [ "/home/hived_admin/docker_entrypoint.sh" ]
+ENTRYPOINT [ "/home/hived/docker_entrypoint.sh" ]
