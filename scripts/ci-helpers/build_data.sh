@@ -96,7 +96,6 @@ echo "Attempting to perform replay basing on image ${IMG}..."
     --docker-option=--volume="$DATA_CACHE":"$DATA_CACHE" \
     --data-dir="$DATA_CACHE/datadir" \
     --shared-file-dir="$DATA_CACHE/shm_dir" \
-    --docker-option=--env=HIVED_UID="$(id -u)" \
     --docker-option=--env=HAF_CI_MODE="${HAF_CI_MODE:-0}" \
     "$IMG" --replay-blockchain --stop-at-block=5000000 --exit-before-sync
 
@@ -104,8 +103,6 @@ echo "Logs from container hived_instance:"
 docker logs -f hived_instance &
 
 status=$(docker wait hived_instance)
-
-echo "HIVED_UID=$(id -u)" > "$DATA_CACHE/datadir/hived_uid.env"
 
 echo "$status" > "$DATA_CACHE/datadir/status"
 

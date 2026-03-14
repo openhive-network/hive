@@ -215,6 +215,6 @@ fi
 # echo "DOCKER_ARGS: ${DOCKER_ARGS[*]}"
 
 # Scritps should use long options for better readability
-docker run --interactive --tty --env HIVED_UID="$(id --user)" --name "$CONTAINER_NAME" --stop-timeout=180 "${DOCKER_ARGS[@]}" "${IMAGE_NAME}" "${CMD_ARGS[@]}"
+docker run --interactive --tty --name "$CONTAINER_NAME" --stop-timeout=180 "${DOCKER_ARGS[@]}" "${IMAGE_NAME}" "${CMD_ARGS[@]}"
 
 
