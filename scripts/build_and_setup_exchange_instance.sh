@@ -160,9 +160,9 @@ prepare_data_directory() {
   local _image_name=${2}
   local block_log_base_url=${3}
 
-  # --mode only applies to the blockchain directory when combined with -p.
-  # Let's make that explicit to avoid confusion.
-  mkdir -p "${data_dir}"
+  # hived runs as UID 2001 inside the container, so the data directory
+  # must be writable by that user. Use mode 777 for both directories.
+  mkdir -p --mode=777 "${data_dir}"
   mkdir --mode=777 "${data_dir}/blockchain"
 
   if [ "${DOWNLOAD_BLOCK_LOG}" -eq 1 ];
