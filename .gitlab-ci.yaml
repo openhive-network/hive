@@ -934,8 +934,7 @@ patterns_tests:
   variables:
     FF_NETWORK_PER_BUILD: 1
     TEST_SUITE: "(condenser_api_patterns and (get_block or get_block_header) ) or block_api_patterns or (not get_transaction_hex and (get_transaction or get_account_history or enum_virtual_ops or get_ops_in_block))"
-    HIVED_UID: $HIVED_UID
-    HIVED_COMMIT: $HIVED_COMMIT # HIVED_COMMIT and HIVED_UID must be in this section to be passed to service
+    HIVED_COMMIT: $HIVED_COMMIT # HIVED_COMMIT must be in this section to be passed to service
   needs:
     - job: prepare_hived_data
       artifacts: true  # Blocked until prepare_hived_data completes
@@ -991,7 +990,6 @@ python_pattern_mainnet_tests:
     TEST_TOOLS_NODE_DEFAULT_WAIT_FOR_LIVE_TIMEOUT: "60"
     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/api_tests/python_patterns_tests/report.xml
     BINARY_CACHE_PATH: "hived-binaries"
-    HIVED_UID: $HIVED_UID
     HIVED_COMMIT: $HIVED_COMMIT
   needs:
     - job: prepare_hived_image
@@ -1081,7 +1079,6 @@ message_format_mainnet_5m_tests:
     PYTEST_TIMEOUT_MINUTES: 10
     NODE_ADDRESS: "hived-instance:8091"
     NODE_TYPE: "mainnet_5m"
-    HIVED_UID: $HIVED_UID
     HIVED_COMMIT: $HIVED_COMMIT
   before_script:
     - !reference [.wait-for-hived, script]
@@ -1150,7 +1147,6 @@ witness_tests:
     NODE_ADDRESS: "hived-instance:8091"
     PYTEST_TIMEOUT_MINUTES: 5
     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/witness_tests/report.xml
-    HIVED_UID: $HIVED_UID
     HIVED_COMMIT: $HIVED_COMMIT
   script:
     - !reference [.wait-for-hived, script]

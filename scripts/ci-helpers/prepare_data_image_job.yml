@@ -266,11 +266,6 @@ include:
 
       if "$CACHE_MANAGER" get hive "$CACHE_KEY" "${DATA_CACHE_DIR}"; then
         echo "Cache hit for HIVED commit $CACHE_KEY"
-        # Ensure hived_uid.env exists (best-effort write to cache, fallback to local)
-        if [[ ! -f "${DATA_CACHE_DIR}/datadir/hived_uid.env" ]]; then
-          echo "HIVED_UID=$(id -u)" > "${DATA_CACHE_DIR}/datadir/hived_uid.env" 2>/dev/null || \
-            echo "HIVED_UID=$(id -u)" > "$CI_PROJECT_DIR/hived_uid.env"
-        fi
       else
         echo "Cache miss for HIVED commit $CACHE_KEY - performing replay"
         mkdir "${DATA_CACHE_DIR}/datadir" -pv
@@ -283,7 +278,6 @@ include:
         # Push to NFS cache for future use
         "$CACHE_MANAGER" put hive "$CACHE_KEY" "${DATA_CACHE_DIR}" || echo "Warning: Failed to push to NFS cache"
       fi
-    - cp "${DATA_CACHE_DIR}/datadir/hived_uid.env" "$CI_PROJECT_DIR/hived_uid.env" 2>/dev/null || echo "HIVED_UID=$(id -u)" > "$CI_PROJECT_DIR/hived_uid.env"
     - cp "${DATA_CACHE_DIR}/datadir/docker_entrypoint.log" "${CI_PROJECT_DIR}/docker_entrypoint.log" 2>/dev/null || true
     - ls -la "${DATA_CACHE_DIR}/datadir/"
   after_script:
@@ -293,6 +287,5 @@ include:
     reports:
       dotenv:
         - docker_image_name.env
-        - hived_uid.env
     paths:
       - docker_entrypoint.log
