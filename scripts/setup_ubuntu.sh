@@ -16,8 +16,7 @@ Usage: $0 [OPTION[=VALUE]]...
 
 Setup this machine for hived installation
 OPTIONS:
-  --hived-admin-account=NAME  Specify the account name with sudo privileges.
-  --hived-account=NAME        Specify the account name to be used for hived process.
+  --hived-account=NAME        Specify the account name to be used for hived process (UID 1000, with sudo).
   --runtime                   Installs all packages required to run a pre-built hived binary.
   --dev                       Installs all packages required to build and test hived project (in addition to the required runtime packages).
   --user                      Installs all packages to the user's home directory).
@@ -26,7 +25,6 @@ OPTIONS:
 EOF
 }
 
-hived_admin_unix_account="hived_admin"
 hived_unix_account="hived"
 
 assert_is_root() {
@@ -138,18 +136,6 @@ install_docker_cli() {
   sudo chmod +x /usr/libexec/docker/cli-plugins/docker-buildx
 }
 
-create_hived_admin_account() {
-  echo "Attempting to create $hived_admin_unix_account account..."
-  assert_is_root
-
-  # Unfortunetely hived_admin must be able to su as root, because it must be able to modify hived account uid
-  if id "$hived_admin_unix_account" &>/dev/null; then
-      echo "Account $hived_admin_unix_account already exists. Creation skipped."
-  else
-      useradd -ms /bin/bash -u 2000 -g users -c "Hived admin account" "$hived_admin_unix_account" && echo "$hived_admin_unix_account ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
-  fi
-}
-
 create_hived_account() {
   echo "Attempting to create $hived_unix_account account..."
   assert_is_root
@@ -157,7 +143,7 @@ create_hived_account() {
   if id "$hived_unix_account" &>/dev/null; then
       echo "Account $hived_unix_account already exists. Creation skipped."
   else
-      useradd -ms /bin/bash -u 2001 -g users -c "Hived daemon account" "$hived_unix_account"
+      useradd -ms /bin/bash -u 1000 -g users -c "Hived daemon account" "$hived_unix_account" && echo "$hived_unix_account ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
   fi
 }
 
@@ -176,8 +162,7 @@ while [ $# -gt 0 ]; do
         install_docker_cli "${1#*=}"
         ;;
     --hived-admin-account=*)
-        hived_admin_unix_account="${1#*=}"
-        create_hived_admin_account
+        echo "Warning: --hived-admin-account is deprecated and ignored. Use --hived-account instead."
         ;;
     --hived-account=*)
         hived_unix_account="${1#*=}"

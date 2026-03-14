@@ -2,6 +2,13 @@
 
 set -euo pipefail
 
+# Optional UID override: if HIVED_UID is set, remap the hived user to that UID.
+# This is only needed when bind-mounting volumes owned by a non-1000 UID.
+if [[ -n "${HIVED_UID:-}" ]] && [[ "${HIVED_UID}" =~ ^[0-9]+$ ]] && [[ "${HIVED_UID}" -ne 0 ]] && [[ "${HIVED_UID}" -ne "$(id -u)" ]]; then
+  echo "Remapping hived UID to ${HIVED_UID}"
+  sudo -n usermod -o -u "${HIVED_UID}" hived
+fi
+
 SCRIPTDIR="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 SCRIPTSDIR="$SCRIPTDIR/scripts"
 
@@ -16,25 +23,22 @@ if [ -n "${DATA_SOURCE+x}" ]; then
 fi
 
 
-if sudo -Enu hived test ! -d "$DATADIR"
-then
+if [[ ! -d "$DATADIR" ]]; then
     echo "Data directory (DATADIR) $DATADIR does not exist. Exiting."
     exit 1
 fi
 
 # Be sure this directory exists
-sudo -Enu hived mkdir --mode=775 -p "$DATADIR/blockchain"
+mkdir --mode=775 -p "$DATADIR/blockchain"
 
-if sudo -Enu hived test ! -d "$SHM_DIR"
-then
+if [[ ! -d "$SHM_DIR" ]]; then
     echo "Shared memory file directory (SHM_DIR) $SHM_DIR does not exist. Exiting."
     exit 1
 fi
 
 LOG_FILE="${DATADIR}/${LOG_FILE:=docker_entrypoint.log}"
-sudo -n touch "$LOG_FILE"
-sudo -n chown -Rc hived:users "$LOG_FILE"
-sudo -n chmod a+rw "$LOG_FILE"
+touch "$LOG_FILE"
+chmod a+rw "$LOG_FILE"
 
 # shellcheck source=../scripts/common.sh
 source "$SCRIPTSDIR/common.sh"
@@ -48,7 +52,7 @@ cleanup () {
 
   jobs -l
 
-  [[ -z "$hived_pid" ]] || sudo -n kill -INT "$hived_pid"
+  [[ -z "$hived_pid" ]] || kill -INT "$hived_pid"
 
   echo "Waiting for hived finish..."
   [[ -z "$hived_pid" ]] || tail --pid="$hived_pid" -f /dev/null || true
@@ -62,16 +66,13 @@ HIVED_ARGS+=("$@")
 export HIVED_ARGS
 
 run_instance() {
-# What can be a difference to catch EXIT instead of SIGINT ? Found here: https://gist.github.com/CMCDragonkai/e2cde09b688170fb84268cafe7a2b509
-#trap 'exit' INT QUIT TERM
-#trap cleanup EXIT
 trap cleanup INT TERM
 trap cleanup EXIT
 
 echo "Attempting to execute hived using additional command line arguments: ${HIVED_ARGS[*]}"
 
 {
-sudo -Enu hived /bin/bash << EOF
+/bin/bash << EOF
 echo "Attempting to execute hived using additional command line arguments: ${HIVED_ARGS[*]}"
 set -euo pipefail
 
