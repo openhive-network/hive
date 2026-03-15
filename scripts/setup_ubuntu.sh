@@ -167,9 +167,6 @@ while [ $# -gt 0 ]; do
     --docker-cli=*)
         install_docker_cli "${1#*=}"
         ;;
-    --hived-admin-account=*)
-        echo "Warning: --hived-admin-account is deprecated and ignored. Use --hived-account instead."
-        ;;
     --hived-account=*)
         hived_unix_account="${1#*=}"
         create_hived_account
