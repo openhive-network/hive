@@ -147,40 +147,40 @@ popd
 if [[ -d "$HIVED_INSTALLATION_DIR" ]]; then
 
     # Move all the binaries to the $HIVED_INSTALLATION_DIR directory
-    sudo mv "$abs_build_dir/${HAF_BUILD:+"hive/"}programs/hived/hived" \
+    mv "$abs_build_dir/${HAF_BUILD:+"hive/"}programs/hived/hived" \
     "$abs_build_dir/${HAF_BUILD:+"hive/"}programs/cli_wallet/cli_wallet" \
     "$abs_build_dir/${HAF_BUILD:+"hive/"}programs/util/"* \
     "$HIVED_INSTALLATION_DIR/"
 
-    sudo rm -rf "$HIVED_INSTALLATION_DIR/CMakeFiles"
+    rm -rf "$HIVED_INSTALLATION_DIR/CMakeFiles"
 
     if [[ -n "$(shopt -s nullglob; echo "$abs_build_dir/${HAF_BUILD:+"hive/"}programs/blockchain_converter/blockchain_converter"*)" ]]; then
-        sudo mv "$abs_build_dir/${HAF_BUILD:+"hive/"}programs/blockchain_converter/blockchain_converter"* \
+        mv "$abs_build_dir/${HAF_BUILD:+"hive/"}programs/blockchain_converter/blockchain_converter"* \
             "$HIVED_INSTALLATION_DIR/"
     fi
 
     if [[ -n "$(shopt -s nullglob; echo "$abs_build_dir/${HAF_BUILD:+"hive/"}bin/"*)" ]]; then
-        sudo mv "$abs_build_dir/${HAF_BUILD:+"hive/"}bin/"* \
+        mv "$abs_build_dir/${HAF_BUILD:+"hive/"}bin/"* \
             "$HIVED_INSTALLATION_DIR/"
     fi
 
     if [[ -n "$(shopt -s nullglob; echo "$abs_build_dir/bin/"*)" ]]; then
-        sudo mv "$abs_build_dir/bin/"* \
+        mv "$abs_build_dir/bin/"* \
             "$HIVED_INSTALLATION_DIR/"
     fi
 
     if [[ -n "$(shopt -s nullglob; echo "$abs_build_dir/tests/unit/"*)" ]]; then
-        sudo mv "$abs_build_dir/tests/unit/"* "$HIVED_INSTALLATION_DIR/"
+        mv "$abs_build_dir/tests/unit/"* "$HIVED_INSTALLATION_DIR/"
     fi
 
-    sudo rm -rf "$HIVED_INSTALLATION_DIR/CMakeFiles" "$HIVED_INSTALLATION_DIR/cmake_install.cmake"
+    rm -rf "$HIVED_INSTALLATION_DIR/CMakeFiles" "$HIVED_INSTALLATION_DIR/cmake_install.cmake"
 
     # Copy sst_dump tools - check build directory first, then preinstalled path
     _sst_dump_found=false
 
     # Source build path (current behavior)
     if [[ -n "$(shopt -s nullglob; echo "$abs_build_dir/${HAF_BUILD:+"hive/"}libraries/vendor/rocksdb/tools/sst_dum"*)" ]]; then
-        sudo mv "$abs_build_dir/${HAF_BUILD:+"hive/"}libraries/vendor/rocksdb/tools/sst_dum"* \
+        mv "$abs_build_dir/${HAF_BUILD:+"hive/"}libraries/vendor/rocksdb/tools/sst_dum"* \
             "$HIVED_INSTALLATION_DIR/"
         _sst_dump_found=true
     fi
@@ -192,7 +192,7 @@ if [[ -d "$HIVED_INSTALLATION_DIR" ]]; then
             _preinstalled_tools=$(cat "$_tools_dir_file")
             if [[ -n "$_preinstalled_tools" && -n "$(shopt -s nullglob; echo "$_preinstalled_tools/sst_dum"*)" ]]; then
                 # Use cp, not mv — do not modify the preinstalled directory
-                sudo cp "$_preinstalled_tools/sst_dum"* "$HIVED_INSTALLATION_DIR/"
+                cp "$_preinstalled_tools/sst_dum"* "$HIVED_INSTALLATION_DIR/"
             fi
         fi
     fi
