@@ -9,7 +9,7 @@ ARG IMAGE_TAG_PREFIX
 # CI base image for build stage - must be at top level for FROM to see it
 # Using commit hash instead of tag to pin to a specific docker image for build repeatability.
 # Tags can be moved/overwritten, but commit hashes are immutable. May switch to tags in future.
-ARG CI_BASE_IMAGE=registry.gitlab.syncad.com/hive/common-ci-configuration/ci-base-image:463736e3915caa64573af655583a040408fbd02b
+ARG CI_BASE_IMAGE=registry.gitlab.syncad.com/hive/common-ci-configuration/ci-base-image:58a2bdad8d40d0b7b06b0aac5f97c7d5a8b3e799
 
 FROM phusion/baseimage:noble-1.0.1 AS runtime
 
