@@ -141,7 +141,15 @@ create_hived_account() {
   assert_is_root
 
   if id "$hived_unix_account" &>/dev/null; then
-      echo "Account $hived_unix_account already exists. Creation skipped."
+      echo "Account $hived_unix_account already exists. Ensuring UID 1000 and sudo access..."
+      usermod -o -u 1000 "$hived_unix_account" 2>/dev/null || true
+      # Ensure home directory exists and is owned correctly
+      mkdir -p "/home/$hived_unix_account"
+      chown -R "$hived_unix_account":users "/home/$hived_unix_account"
+      # Ensure sudo access
+      if ! grep -q "^$hived_unix_account " /etc/sudoers 2>/dev/null; then
+          echo "$hived_unix_account ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+      fi
   else
       useradd -ms /bin/bash -u 1000 -g users -c "Hived daemon account" "$hived_unix_account" && echo "$hived_unix_account ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
   fi
