@@ -40,6 +40,7 @@ CONTAINER_NAME=instance
 IMAGE_NAME=
 HIVED_DATADIR=
 HIVED_SHM_FILE_DIR=
+DETACH_MODE=0
 
 HTTP_ENDPOINT="0.0.0.0:8091"
 WS_ENDPOINT="0.0.0.0:8090"
@@ -117,6 +118,7 @@ while [ $# -gt 0 ]; do
 
     --detach)
       add_docker_arg "--detach"
+      DETACH_MODE=1
       ;;
 
     --preserve-container)
@@ -214,7 +216,13 @@ fi
 
 # echo "DOCKER_ARGS: ${DOCKER_ARGS[*]}"
 
-# Scritps should use long options for better readability
-docker run --interactive --tty --name "$CONTAINER_NAME" --stop-timeout=180 "${DOCKER_ARGS[@]}" "${IMAGE_NAME}" "${CMD_ARGS[@]}"
+# Only use --interactive --tty for foreground mode. In detached mode (DinD CI),
+# --tty can cause non-root containers to fail when devpts isn't accessible.
+TTY_ARGS=()
+if [ ${DETACH_MODE} -eq 0 ]; then
+  TTY_ARGS+=(--interactive --tty)
+fi
+
+docker run "${TTY_ARGS[@]}" --name "$CONTAINER_NAME" --stop-timeout=180 "${DOCKER_ARGS[@]}" "${IMAGE_NAME}" "${CMD_ARGS[@]}"
 
 
