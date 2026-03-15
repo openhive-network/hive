@@ -46,7 +46,7 @@ USER hived
 WORKDIR /home/hived
 
 # Build stage uses centralized ci-base-image from common-ci-configuration
-# This image includes: build toolchain, sccache, Pythons 3.8 - 3.14, glibc 2.28, Docker CLI, hived_admin and hived users
+# This image includes: build toolchain, sccache, Pythons 3.8 - 3.14, glibc 2.28, Docker CLI, hived user
 FROM ${CI_BASE_IMAGE} AS build
 
 ARG BUILD_HIVE_TESTNET=OFF
@@ -64,12 +64,12 @@ ENV HIVE_SUBDIR=${HIVE_SUBDIR}
 ARG SCCACHE_REDIS=""
 ENV SCCACHE_REDIS=${SCCACHE_REDIS}
 
-USER hived_admin
-WORKDIR /home/hived_admin
+USER hived
+WORKDIR /home/hived
 SHELL ["/bin/bash", "-c"]
 
 # Get everything from cwd as sources to be built.
-COPY --chown=hived_admin:users . /home/hived_admin/source
+COPY --chown=hived:users . /home/hived/source
 
 RUN <<-EOF
   set -e
@@ -153,9 +153,9 @@ RUN mkdir -p /home/hived/bin && \
 COPY --from=build --chown=hived:users \
     /home/hived/bin/*  /home/hived/bin/
 
-COPY --from=build --chown=hived:users /home/hived_admin/source/${HIVE_SUBDIR}/doc/example_config.ini /home/hived/datadir/example_config.ini
+COPY --from=build --chown=hived:users /home/hived/source/${HIVE_SUBDIR}/doc/example_config.ini /home/hived/datadir/example_config.ini
 
-COPY --from=build --chown=hived:users /home/hived_admin/source/${HIVE_SUBDIR}/scripts /home/hived/scripts
+COPY --from=build --chown=hived:users /home/hived/source/${HIVE_SUBDIR}/scripts /home/hived/scripts
 
 COPY --chown=hived:users ./${HIVE_SUBDIR}/docker/docker_entrypoint.sh /home/hived/
 
