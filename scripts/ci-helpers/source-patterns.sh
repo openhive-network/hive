@@ -24,7 +24,9 @@ contrib/
 Dockerfile
 cmake
 CMakeLists.txt
-.gitmodules"
+.gitmodules
+scripts/setup_ubuntu.sh
+scripts/openssl.conf"
 
 case "${1:-}" in
     --regex)
