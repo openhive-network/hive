@@ -23,7 +23,7 @@ inline bool is_asset_type( const asset& asset, asset_symbol_type symbol )
 template<typename ExtraContextObjectT = NoExtraObjectProvided>
 inline void validate_asset_type( const asset& asset, asset_symbol_type symbol, const char* context = "", const ExtraContextObjectT& extra_context_obj = ExtraContextObjectT{} )
 {
-  HIVE_SPECIALISED_ASSERT_WITH_SUBJECT( is_asset_type( asset, symbol), "protocol", "asset", asset,
+  HIVE_PROTOCOL_ASSET_ASSERT_WITH_SUBJECT( is_asset_type( asset, symbol), asset,
     "Asset symbol does not match expected symbol. Expected: ${expected}, Actual: ${subject}",
     ("expected", symbol)("context", context)(extra_context_obj) );
 }
@@ -31,7 +31,7 @@ inline void validate_asset_type( const asset& asset, asset_symbol_type symbol, c
 template<typename ExtraContextObjectT = NoExtraObjectProvided>
 inline void validate_asset_type_one_of( const asset& asset, const std::set<asset_symbol_type>& symbols, const char* context = "", const ExtraContextObjectT& extra_context_obj = ExtraContextObjectT{} )
 {
-  HIVE_SPECIALISED_ASSERT_WITH_SUBJECT( symbols.find(asset.symbol) != symbols.end(), "protocol", "asset", asset,
+  HIVE_PROTOCOL_ASSET_ASSERT_WITH_SUBJECT( symbols.find(asset.symbol) != symbols.end(), asset,
     "Asset symbol does not match expected symbol. Expected: ${expected}, Actual: ${subject}",
     ("expected", symbols)("context", context)(extra_context_obj) );
 }
@@ -39,7 +39,7 @@ inline void validate_asset_type_one_of( const asset& asset, const std::set<asset
 template<typename ExtraContextObjectT = NoExtraObjectProvided>
 inline void validate_asset_greater_than_zero( const asset& asset, const char* context = "", const ExtraContextObjectT& extra_context_obj = ExtraContextObjectT{} )
 {
-  HIVE_SPECIALISED_ASSERT_WITH_SUBJECT( asset.amount > 0, "protocol", "asset", asset,
+  HIVE_PROTOCOL_ASSET_ASSERT_WITH_SUBJECT( asset.amount > 0, asset,
     "Asset amount must be greater than zero. Actual: ${subject}",
     ("context", context)(extra_context_obj) );
 }
@@ -47,7 +47,7 @@ inline void validate_asset_greater_than_zero( const asset& asset, const char* co
 template<typename ExtraContextObjectT = NoExtraObjectProvided>
 inline void validate_asset_not_negative( const asset& asset, const char* context = "", const ExtraContextObjectT& extra_context_obj = ExtraContextObjectT{} )
 {
-  HIVE_SPECIALISED_ASSERT_WITH_SUBJECT( asset.amount >= 0, "protocol", "asset", asset,
+  HIVE_PROTOCOL_ASSET_ASSERT_WITH_SUBJECT( asset.amount >= 0, asset,
     "Asset amount cannot be negative. Actual: ${subject}",
     ("context", context)(extra_context_obj) );
 }
@@ -55,7 +55,7 @@ inline void validate_asset_not_negative( const asset& asset, const char* context
 template<typename ExtraContextObjectT = NoExtraObjectProvided>
 inline void validate_asset_is_not_vesting( const asset& asset, const char* context = "", const ExtraContextObjectT& extra_context_obj = ExtraContextObjectT{} )
 {
-  HIVE_SPECIALISED_ASSERT_WITH_SUBJECT( not asset.symbol.is_vesting(), "protocol", "asset", asset,
+  HIVE_PROTOCOL_ASSET_ASSERT_WITH_SUBJECT( not asset.symbol.is_vesting(), asset,
     "Asset cannot be of VESTS type. Actual: ${subject}",
     ("context", context)(extra_context_obj) );
 }
@@ -63,7 +63,7 @@ inline void validate_asset_is_not_vesting( const asset& asset, const char* conte
 template<typename ExtraContextObjectT = NoExtraObjectProvided>
 inline void validate_string_max_size(const fc::string& str, const size_t max_size, const char* context = "", const ExtraContextObjectT& extra_context_obj = ExtraContextObjectT{} )
 {
-  HIVE_SPECIALISED_ASSERT_WITH_SUBJECT( str.size() <= max_size, "protocol", "string", str,
+  HIVE_PROTOCOL_STRING_ASSERT_WITH_SUBJECT( str.size() <= max_size, str,
     "String is too large. Size: ${size}, Max: ${max}",
     ("size", str.size())("max", max_size)("context", context)(extra_context_obj) );
 }
@@ -71,7 +71,7 @@ inline void validate_string_max_size(const fc::string& str, const size_t max_siz
 template<typename ExtraContextObjectT = NoExtraObjectProvided>
 inline void validate_is_utf8(const fc::string& str, const char* context = "", const ExtraContextObjectT& extra_context_obj = ExtraContextObjectT{} )
 {
-  HIVE_SPECIALISED_ASSERT_WITH_SUBJECT( fc::is_utf8( str ), "protocol", "string", str,
+  HIVE_PROTOCOL_STRING_ASSERT_WITH_SUBJECT( fc::is_utf8( str ), str,
     "String is not valid UTF8.",
     ("context", context)(extra_context_obj) );
 }
@@ -79,7 +79,7 @@ inline void validate_is_utf8(const fc::string& str, const char* context = "", co
 template<typename ExtraContextObjectT = NoExtraObjectProvided>
 inline void validate_string_is_not_empty(const fc::string& str, const char* context = "", const ExtraContextObjectT& extra_context_obj = ExtraContextObjectT{} )
 {
-  HIVE_SPECIALISED_ASSERT_WITH_SUBJECT( str.size() > 0, "protocol", "string", str,
+  HIVE_PROTOCOL_STRING_ASSERT_WITH_SUBJECT( str.size() > 0, str,
     "String is empty.",
     ("context", context)(extra_context_obj) );
 }
@@ -87,7 +87,7 @@ inline void validate_string_is_not_empty(const fc::string& str, const char* cont
 template<typename int_t, typename ExtraContextObjectT = NoExtraObjectProvided>
 inline void validate_number_in_100_percent_range(const int_t number, const char* context = "", const ExtraContextObjectT& extra_context_obj = ExtraContextObjectT{} )
 {
-  HIVE_SPECIALISED_ASSERT_WITH_SUBJECT( number <= HIVE_100_PERCENT, "protocol", "number", number,
+  HIVE_PROTOCOL_NUMBER_ASSERT_WITH_SUBJECT( number <= HIVE_100_PERCENT, number,
     "Number exceeds 100 percent. Value: ${subject}, Max: ${max}",
     ("context", context)("max", HIVE_100_PERCENT)(extra_context_obj) );
 }
