@@ -213,8 +213,8 @@ HIVE_asset database::cashout_comment_helper( util::comment_reward_context& ctx, 
       if( has_hardfork( HIVE_HARDFORK_0_17__774 ) )
       {
         const auto& rf = get_reward_fund();
-        ctx.reward_curve = rf.author_reward_curve;
-        ctx.content_constant = rf.content_constant;
+        ctx.reward_curve = rf.get_author_reward_curve();
+        ctx.content_constant = rf.get_content_constant();
       }
 
       const HIVE_asset reward = util::get_rshare_reward( ctx );
@@ -405,16 +405,16 @@ void database::process_comment_cashout()
       else
         decay_time = HIVE_RECENT_RSHARES_DECAY_TIME_HF17;
 
-      if( ( _now - rfo.last_update ) <= decay_time )
-        rfo.recent_claims -= ( rfo.recent_claims * ( _now - rfo.last_update ).to_seconds() ) / decay_time.to_seconds();
+      if( ( _now - rfo.get_last_update() ) <= decay_time )
+        rfo.access_recent_claims() -= ( rfo.get_recent_claims() * ( _now - rfo.get_last_update() ).to_seconds() ) / decay_time.to_seconds();
       else
-        rfo.recent_claims = 0; // this should never happen - requires chain to be inactive for more than decay_time
-      rfo.last_update = _now;
+        rfo.access_recent_claims() = 0; // this should never happen - requires chain to be inactive for more than decay_time
+      rfo.access_last_update() = _now;
     });
 
     reward_fund_context rf_ctx;
-    rf_ctx.recent_claims = itr->recent_claims;
-    rf_ctx.reward_balance = itr->reward_balance;
+    rf_ctx.recent_claims = itr->get_recent_claims();
+    rf_ctx.reward_balance = itr->get_reward_balance();
 
     // The index is by ID, so the ID should be the current size of the vector (0, 1, 2, etc...)
     assert( funds.size() == itr->get_id().get_value() );
@@ -434,7 +434,7 @@ void database::process_comment_cashout()
       if( _current->get_net_rshares() > 0 )
       {
         const auto& rf = get_reward_fund();
-        funds[ rf.get_id() ].recent_claims += util::evaluate_reward_curve( _current->get_net_rshares(), rf.author_reward_curve, rf.content_constant );
+        funds[ rf.get_id() ].recent_claims += util::evaluate_reward_curve( _current->get_net_rshares(), rf.get_author_reward_curve(), rf.get_content_constant() );
       }
 
       ++_current;
@@ -519,8 +519,8 @@ void database::process_comment_cashout()
     {
       modify( get< reward_fund_object, by_id >( reward_fund_object::id_type( i ) ), [&]( reward_fund_object& rfo )
       {
-        rfo.recent_claims = funds[ i ].recent_claims;
-        rfo.reward_balance -= funds[ i ].hive_awarded;
+        rfo.access_recent_claims() = funds[ i ].recent_claims;
+        rfo.access_reward_balance() -= funds[ i ].hive_awarded;
       });
     }
   }

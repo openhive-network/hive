@@ -306,10 +306,10 @@ void database::apply_hardfork( uint32_t hardfork )
         modify( get< reward_fund_object, by_name >( HIVE_POST_REWARD_FUND_NAME ), [&]( reward_fund_object &rfo )
         {
 #ifndef IS_TEST_NET
-          rfo.recent_claims = HIVE_HF_19_RECENT_CLAIMS;
+          rfo.access_recent_claims() = HIVE_HF_19_RECENT_CLAIMS;
 #endif
-          rfo.author_reward_curve = curve_id::linear;
-          rfo.curation_reward_curve = curve_id::square_root;
+          rfo.set_author_reward_curve( curve_id::linear );
+          rfo.set_curation_reward_curve( curve_id::square_root );
         });
 
         /* Remove all 0 delegation objects */
@@ -439,12 +439,12 @@ void database::apply_hardfork( uint32_t hardfork )
 
       modify( get< reward_fund_object, by_name >( HIVE_POST_REWARD_FUND_NAME ), [&]( reward_fund_object& rfo )
       {
-        rfo.percent_curation_rewards = 50 * HIVE_1_PERCENT;
-        rfo.author_reward_curve = convergent_linear;
-        rfo.curation_reward_curve = convergent_square_root;
-        rfo.content_constant = HIVE_CONTENT_CONSTANT_HF21;
+        rfo.set_percent_curation_rewards( 50 * HIVE_1_PERCENT );
+        rfo.set_author_reward_curve( convergent_linear );
+        rfo.set_curation_reward_curve( convergent_square_root );
+        rfo.set_content_constant( HIVE_CONTENT_CONSTANT_HF21 );
 #ifndef  IS_TEST_NET
-        rfo.recent_claims = HIVE_HF21_CONVERGENT_LINEAR_RECENT_CLAIMS;
+        rfo.access_recent_claims() = HIVE_HF21_CONVERGENT_LINEAR_RECENT_CLAIMS;
 #endif
       });
     }
@@ -482,8 +482,8 @@ void database::apply_hardfork( uint32_t hardfork )
     {
       modify( get< reward_fund_object, by_name >( HIVE_POST_REWARD_FUND_NAME ), [&]( reward_fund_object& rfo )
       {
-        rfo.curation_reward_curve = linear;
-        rfo.author_reward_curve   = linear;
+        rfo.set_curation_reward_curve( linear );
+        rfo.set_author_reward_curve( linear );
       });
       modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
       {

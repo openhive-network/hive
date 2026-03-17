@@ -1918,7 +1918,7 @@ HIVE_asset database::get_pow_reward()const
 uint16_t database::get_curation_rewards_percent() const
 {
   if( has_hardfork( HIVE_HARDFORK_0_17__774 ) )
-    return get_reward_fund().percent_curation_rewards;
+    return get_reward_fund().get_percent_curation_rewards();
   else if( has_hardfork( HIVE_HARDFORK_0_8__116 ) )
     return HIVE_1_PERCENT * 25;
   else
@@ -1933,11 +1933,11 @@ HIVE_asset database::pay_reward_funds( const HIVE_asset& reward )
   for( auto itr = reward_idx.begin(); itr != reward_idx.end(); ++itr )
   {
     // reward is a per block reward and the percents are 16-bit. This should never overflow
-    auto r = ( reward * itr->percent_content_rewards ) / HIVE_100_PERCENT;
+    auto r = ( reward * itr->get_percent_content_rewards() ) / HIVE_100_PERCENT;
 
     modify( *itr, [&]( reward_fund_object& rfo )
     {
-      rfo.reward_balance += r;
+      rfo.access_reward_balance() += r;
     });
 
     used_rewards += r;
@@ -3470,7 +3470,7 @@ void database::validate_invariants()const
 
     for( auto itr = reward_idx.begin(); itr != reward_idx.end(); ++itr )
     {
-      total_supply += itr->reward_balance;
+      total_supply += itr->get_reward_balance();
       ++reward_fund_no;
     }
 
