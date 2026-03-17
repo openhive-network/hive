@@ -16,6 +16,8 @@
 #include <fc/uint128.hpp>
 #include <fc/utf8.hpp>
 
+#include <hive/protocol/hive_specialised_exceptions.hpp>
+
 namespace hive { namespace chain {
 
 HIVE_DEFINE_EVALUATOR( comment )
@@ -33,17 +35,17 @@ void register_social_evaluators( evaluator_registry<operation>& registry )
 
 inline void validate_permlink_0_1( const string& permlink )
 {
-  FC_ASSERT( permlink.size() > HIVE_MIN_PERMLINK_LENGTH && permlink.size() < HIVE_MAX_PERMLINK_LENGTH, "Permlink is not of valid size (${s}).", ( "s", permlink.size() ) );
+  HIVE_CHAIN_STATE_ASSERT( permlink.size() > HIVE_MIN_PERMLINK_LENGTH && permlink.size() < HIVE_MAX_PERMLINK_LENGTH, permlink, "Permlink is not of valid size (${s}).", ( "s", permlink.size() ) );
 
   for( const auto& c : permlink )
   {
-    FC_ASSERT( c == 'a' || c == 'b' || c == 'c' || c == 'd' || c == 'e' || c == 'f' ||
+    HIVE_CHAIN_STATE_ASSERT( c == 'a' || c == 'b' || c == 'c' || c == 'd' || c == 'e' || c == 'f' ||
       c == 'g' || c == 'h' || c == 'i' || c == 'j' || c == 'k' || c == 'l' || c == 'm' ||
       c == 'n' || c == 'o' || c == 'p' || c == 'q' || c == 'r' || c == 's' || c == 't' ||
       c == 'u' || c == 'v' || c == 'w' || c == 'x' || c == 'y' || c == 'z' || c == '0' ||
       c == '1' || c == '2' || c == '3' || c == '4' || c == '5' || c == '6' || c == '7' ||
       c == '8' || c == '9' || c == '-',
-      "Invalid permlink character: ${s}", ("s", std::string() + c ) );
+      permlink, "Invalid permlink character: ${s}", ("s", std::string() + c ) );
   }
 }
 
@@ -55,16 +57,16 @@ void delete_comment_evaluator::do_apply( const delete_comment_operation& o )
   auto comment = _db.get_comment( o.author, o.permlink );
   const comment_cashout_object* comment_cashout = _db.find_comment_cashout( *comment );
   if( comment_cashout )
-    FC_ASSERT( !comment_cashout->has_replies(), "Cannot delete a comment with replies." );
+    HIVE_CHAIN_STATE_ASSERT( !comment_cashout->has_replies(), o.author, "Cannot delete a comment with replies." );
 
   /*
     Before `HF19`: `comment_cashout` exists for sure -  following assertion is always true
     After  `HF19`: when `comment_cashout` doesn't exist( it's possible ), then assertion should be triggered
   */
-  FC_ASSERT( comment_cashout && "Cannot delete comment after payout." );
+  HIVE_CHAIN_STATE_ASSERT( comment_cashout && "Cannot delete comment after payout.", o.author, "Cannot delete comment after payout." );
 
   if( _db.has_hardfork( HIVE_HARDFORK_0_19__977 ) )
-    FC_ASSERT( comment_cashout->get_net_rshares() <= 0, "Cannot delete a comment with net positive votes." );
+    HIVE_CHAIN_HARDFORK_ASSERT( comment_cashout->get_net_rshares() <= 0, "Cannot delete a comment with net positive votes." );
 
   if( comment_cashout->get_net_rshares() > 0 )
   {
@@ -114,18 +116,18 @@ struct comment_options_extension_visitor
 
   void operator()( const comment_payout_beneficiaries& cpb ) const
   {
-    FC_ASSERT( _c.get_beneficiaries().size() == 0, "Comment already has beneficiaries specified." );
-    FC_ASSERT( !_c.has_votes() && "Comment must not have been voted on before specifying beneficiaries." );
+    HIVE_CHAIN_STATE_ASSERT( _c.get_beneficiaries().size() == 0, _c.get_author_id(), "Comment already has beneficiaries specified." );
+    HIVE_CHAIN_VOTING_ASSERT( !_c.has_votes() && "Comment must not have been voted on before specifying beneficiaries.", _c.get_author_id(), "Comment must not have been voted on before specifying beneficiaries." );
     // check below moved from witness plugin, it remains softfork check
-    FC_ASSERT( !_db.is_in_control() || cpb.beneficiaries.size() <= HIVE_MAX_COMMENT_BENEFICIARIES,
-      "Cannot specify more than ${x} beneficiaries.", ( "x", HIVE_MAX_COMMENT_BENEFICIARIES ) );
+    HIVE_CHAIN_LIMIT_ASSERT( !_db.is_in_control() || cpb.beneficiaries.size() <= HIVE_MAX_COMMENT_BENEFICIARIES,
+      cpb.beneficiaries.size(), "Cannot specify more than ${x} beneficiaries.", ( "x", HIVE_MAX_COMMENT_BENEFICIARIES ) );
 
     _db.modify( _c, [&]( comment_cashout_object& c )
     {
       for( auto& b : cpb.beneficiaries )
       {
         auto acc = _db.find< account_object, by_name >( b.account );
-        FC_ASSERT( acc != nullptr, "Beneficiary \"${a}\" must exist.", ("a", b.account) );
+        HIVE_CHAIN_STATE_ASSERT( acc != nullptr, b.account, "Beneficiary \"${a}\" must exist.", ("a", b.account) );
         c.add_beneficiary( *acc, b.weight );
       }
     });
@@ -144,19 +146,19 @@ void comment_options_evaluator::do_apply( const comment_options_operation& o )
   */
   if( !comment_cashout )
   {
-    FC_ASSERT( !_db.has_hardfork( HIVE_HARDFORK_1_24 ), "Updating parameters for comment that is paid out is forbidden." );
+    HIVE_CHAIN_HARDFORK_ASSERT( !_db.has_hardfork( HIVE_HARDFORK_1_24 ), "Updating parameters for comment that is paid out is forbidden." );
     return;
   }
 
   HBD_asset o_max_accepted_payout = o.get_max_accepted_payout();
 
   if( !o.allow_curation_rewards || !o.allow_votes || o_max_accepted_payout < comment_cashout->get_max_accepted_payout() )
-    FC_ASSERT( !comment_cashout->has_votes(), "One of the included comment options requires the comment to have no rshares allocated to it." );
+    HIVE_CHAIN_VOTING_ASSERT( !comment_cashout->has_votes(), o.author, "One of the included comment options requires the comment to have no rshares allocated to it." );
 
-  FC_ASSERT( comment_cashout->allows_curation_rewards() >= o.allow_curation_rewards, "Curation rewards cannot be re-enabled." );
-  FC_ASSERT( comment_cashout->allows_votes() >= o.allow_votes, "Voting cannot be re-enabled." );
-  FC_ASSERT( comment_cashout->get_max_accepted_payout() >= o_max_accepted_payout, "A comment cannot accept a greater payout." );
-  FC_ASSERT( comment_cashout->get_percent_hbd() >= o.percent_hbd, "A comment cannot accept a greater percent HBD." );
+  HIVE_CHAIN_STATE_ASSERT( comment_cashout->allows_curation_rewards() >= o.allow_curation_rewards, o.author, "Curation rewards cannot be re-enabled." );
+  HIVE_CHAIN_VOTING_ASSERT( comment_cashout->allows_votes() >= o.allow_votes, o.author, "Voting cannot be re-enabled." );
+  HIVE_CHAIN_STATE_ASSERT( comment_cashout->get_max_accepted_payout() >= o_max_accepted_payout, o.author, "A comment cannot accept a greater payout." );
+  HIVE_CHAIN_STATE_ASSERT( comment_cashout->get_percent_hbd() >= o.percent_hbd, o.author, "A comment cannot accept a greater percent HBD." );
 
   _db.modify( *comment_cashout, [&]( comment_cashout_object& c )
   {
@@ -183,31 +185,31 @@ void comment_evaluator::do_apply( const comment_operation& o )
     uint16_t depth_limit = !_db.has_hardfork( HIVE_HARDFORK_0_17__767 ) ? HIVE_MAX_COMMENT_DEPTH_PRE_HF17 : HIVE_MAX_COMMENT_DEPTH;
     if( _db.is_in_control() && depth_limit > HIVE_SOFT_MAX_COMMENT_DEPTH )
       depth_limit = HIVE_SOFT_MAX_COMMENT_DEPTH; // soft check moved from witness plugin
-    FC_ASSERT( parent->get_depth() < depth_limit,
-      "Comment is nested ${x} posts deep, maximum depth is ${y}.", ( "x", parent->get_depth() )( "y", depth_limit ) );
+    HIVE_CHAIN_LIMIT_ASSERT( parent->get_depth() < depth_limit,
+      parent->get_depth(), "Comment is nested ${x} posts deep, maximum depth is ${y}.", ( "x", parent->get_depth() )( "y", depth_limit ) );
   }
 
-  FC_ASSERT( fc::is_utf8( o.json_metadata ), "JSON Metadata must be UTF-8" );
+  HIVE_CHAIN_STATE_ASSERT( fc::is_utf8( o.json_metadata ), o.author, "JSON Metadata must be UTF-8" );
 
   if ( !_comment )
   {
     if( parent )
     {
       if( _db.has_hardfork( HIVE_HARDFORK_0_12__177 ) && !_db.has_hardfork( HIVE_HARDFORK_0_17__869 ) )
-        FC_ASSERT( _db.calculate_discussion_payout_time( *parent ) != fc::time_point_sec::maximum(), "Discussion is frozen." );
+        HIVE_CHAIN_HARDFORK_ASSERT( _db.calculate_discussion_payout_time( *parent ) != fc::time_point_sec::maximum(), "Discussion is frozen." );
     }
 
     if( !_db.has_hardfork( HIVE_HARDFORK_0_6__113 ) ) // there are cases of root posts more frequent than current rules
     {
-      FC_ASSERT( ( _now - auth.last_post ) > fc::seconds( 60 ), "You may only post once per minute.", ( "now", _now )( "auth.last_post", auth.last_post ) );
+      HIVE_CHAIN_TIME_ASSERT( ( _now - auth.last_post ) > fc::seconds( 60 ), o.author, "You may only post once per minute.", ( "now", _now )( "auth.last_post", auth.last_post ) );
     }
     else
     {
       // the rules below are originally from HIVE_HARDFORK_0_20__2019, earlier rules for HIVE_HARDFORK_0_12__176 and HIVE_HARDFORK_0_6__113 were more strict
       if( !parent )
-        FC_ASSERT( ( _now - auth.last_root_post ) > HIVE_MIN_ROOT_COMMENT_INTERVAL, "You may only post once every 5 minutes.", ("now",_now)("last_root_post", auth.last_root_post) );
+        HIVE_CHAIN_TIME_ASSERT( ( _now - auth.last_root_post ) > HIVE_MIN_ROOT_COMMENT_INTERVAL, o.author, "You may only post once every 5 minutes.", ("now",_now)("last_root_post", auth.last_root_post) );
       else
-        FC_ASSERT( ( _now - auth.last_post ) >= HIVE_MIN_REPLY_INTERVAL, "You may only comment once every 3 seconds.", ("now",_now)("auth.last_post",auth.last_post) );
+        HIVE_CHAIN_TIME_ASSERT( ( _now - auth.last_post ) >= HIVE_MIN_REPLY_INTERVAL, o.author, "You may only comment once every 3 seconds.", ("now",_now)("auth.last_post",auth.last_post) );
       FC_TODO( "Fix bug when you can edit post and then post new reply in the same block" ); // the opposite is not possible, so we have inconsistency; requires HF29
     }
 
@@ -275,21 +277,21 @@ void comment_evaluator::do_apply( const comment_operation& o )
   else // start edit case
   {
     if( _db.has_hardfork( HIVE_HARDFORK_0_21__3313 ) ) // see block 1119418 (new post also counts as post edit)
-      FC_ASSERT( _now - auth.last_post_edit >= HIVE_MIN_COMMENT_EDIT_INTERVAL, "Can only perform one comment edit per block." ); // the check is here to match delay on new posts
+      HIVE_CHAIN_TIME_ASSERT( _now - auth.last_post_edit >= HIVE_MIN_COMMENT_EDIT_INTERVAL, o.author, "Can only perform one comment edit per block." ); // the check is here to match delay on new posts
 
     if( !_db.has_hardfork( HIVE_HARDFORK_0_17__772 ) )
     {
       const comment_cashout_object* comment_cashout = _db.find_comment_cashout( *_comment );
-      FC_ASSERT( comment_cashout && "Comment cashout object must exist" );
+      HIVE_CHAIN_STATE_ASSERT( comment_cashout && "Comment cashout object must exist", o.author, "Comment cashout object must exist" );
       if( _db.has_hardfork( HIVE_HARDFORK_0_14__306 ) )
-        FC_ASSERT( _db.calculate_discussion_payout_time( *_comment, *comment_cashout ) != fc::time_point_sec::maximum(), "The comment is archived." );
+        HIVE_CHAIN_STATE_ASSERT( _db.calculate_discussion_payout_time( *_comment, *comment_cashout ) != fc::time_point_sec::maximum(), o.author, "The comment is archived." );
       else if( _db.has_hardfork( HIVE_HARDFORK_0_10 ) )
-        FC_ASSERT( !_db.find_comment_cashout_ex( *_comment )->was_paid(), "Can only edit during the first 24 hours." );
+        HIVE_CHAIN_STATE_ASSERT( !_db.find_comment_cashout_ex( *_comment )->was_paid(), o.author, "Can only edit during the first 24 hours." );
     }
 
     if( !parent )
     {
-      FC_ASSERT( _comment->is_root(), "The parent of a comment cannot change." );
+      HIVE_CHAIN_STATE_ASSERT( _comment->is_root(), o.author, "The parent of a comment cannot change." );
       //note for HiveMind: if someone tries to change 'category' (that no longer is part of consensus)
       //by providing different 'o.parent_permlink' than before, such change should be silently ignored
     }
@@ -297,7 +299,7 @@ void comment_evaluator::do_apply( const comment_operation& o )
     {
       //ABW: see creation tx 11ad62ee8f8e892cd5bd75fc2d3098427f7e47ac and edit tx dca209592c7129be36b069d033dfdb0f1f143b4e
       //both happened prior to HF21 when check was slightly more relaxed
-      FC_ASSERT( _comment->get_parent_id() == parent->get_id(), "The parent of a comment cannot change." );
+      HIVE_CHAIN_STATE_ASSERT( _comment->get_parent_id() == parent->get_id(), o.author, "The parent of a comment cannot change." );
     }
 
     _db.modify( auth, [&]( account_object& a )
@@ -316,11 +318,11 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
 
   const auto& voter = _db.get_account( o.voter );
 
-  FC_ASSERT( voter.can_vote && "Voter has declined their voting rights." );
+  HIVE_CHAIN_VOTING_ASSERT( voter.can_vote && "Voter has declined their voting rights.", o.voter, "Voter has declined their voting rights." );
 
   if( comment_cashout )
   {
-    if( o.weight > 0 ) FC_ASSERT( comment_cashout->allows_votes(), "Votes are not allowed on the comment." );
+    if( o.weight > 0 ) HIVE_CHAIN_VOTING_ASSERT( comment_cashout->allows_votes(), o.author, "Votes are not allowed on the comment." );
   }
 
   if( !comment_cashout || ( _db.has_hardfork( HIVE_HARDFORK_0_12__177 ) &&
@@ -336,7 +338,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
     int64_t elapsed_seconds = _now.sec_since_epoch() - voter.voting_manabar.last_update_time;
     int64_t regenerated_power = (HIVE_100_PERCENT * elapsed_seconds) / HIVE_VOTING_MANA_REGENERATION_SECONDS;
     current_power = std::min( int64_t(voter.voting_manabar.current_mana) + regenerated_power, int64_t(HIVE_100_PERCENT) );
-    FC_ASSERT( current_power > 0, "Account currently does not have voting power." );
+    HIVE_CHAIN_BALANCE_ASSERT( current_power > 0, o.voter, "Account currently does not have voting power." );
   }
   int64_t abs_weight = abs(o.weight);
   // Less rounding error would occur if we did the division last, but we need to maintain backward
@@ -347,7 +349,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
 
   // The second multiplication is rounded up as of HF14#259
   int64_t max_vote_denom = dgpo.vote_power_reserve_rate * HIVE_VOTING_MANA_REGENERATION_SECONDS;
-  FC_ASSERT( max_vote_denom > 0 && "Pre HF20" );
+  HIVE_CHAIN_UNREACHABLE_CODE_ASSERT( max_vote_denom > 0 && "Pre HF20", "Maximum vote denominator must be positive." );
 
   if( !_db.has_hardfork( HIVE_HARDFORK_0_14__259 ) )
   {
@@ -357,18 +359,18 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
   {
     used_power = (used_power + max_vote_denom - 1) / max_vote_denom;
   }
-  FC_ASSERT( used_power <= current_power, "Account does not have enough power to vote." );
+  HIVE_CHAIN_BALANCE_ASSERT( used_power <= current_power, o.voter, "Account does not have enough power to vote." );
 
   int64_t abs_rshares = fc::uint128_to_int64( ( uint128_t( voter.get_effective_vesting_shares( false ).get_amount() ) * used_power ) / HIVE_100_PERCENT );
   if( !_db.has_hardfork( HIVE_HARDFORK_0_14__259 ) && abs_rshares == 0 ) abs_rshares = 1;
 
   if( _db.has_hardfork( HIVE_HARDFORK_0_14__259 ) )
   {
-    FC_ASSERT( abs_rshares > HIVE_VOTE_DUST_THRESHOLD || o.weight == 0, "Voting weight is too small, please accumulate more voting power or Hive Power." );
+    HIVE_CHAIN_BALANCE_ASSERT( abs_rshares > HIVE_VOTE_DUST_THRESHOLD || o.weight == 0, o.voter, "Voting weight is too small, please accumulate more voting power or Hive Power." );
   }
   else if( _db.has_hardfork( HIVE_HARDFORK_0_13__248 ) )
   {
-    FC_ASSERT( abs_rshares > HIVE_VOTE_DUST_THRESHOLD || abs_rshares == 1, "Voting weight is too small, please accumulate more voting power or Hive Power." );
+    HIVE_CHAIN_BALANCE_ASSERT( abs_rshares > HIVE_VOTE_DUST_THRESHOLD || abs_rshares == 1, o.voter, "Voting weight is too small, please accumulate more voting power or Hive Power." );
   }
 
   const auto& comment_vote_idx = _db.get_index< comment_vote_index, by_comment_voter >();
@@ -381,9 +383,9 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
     if( rshares > previous_vote_rshares )
     {
       if( _db.has_hardfork( HIVE_HARDFORK_0_17__900 ) )
-        FC_ASSERT( _now < comment_cashout->get_cashout_time() - HIVE_UPVOTE_LOCKOUT_HF17, "Cannot increase payout within last twelve hours before payout." );
+        HIVE_CHAIN_TIME_ASSERT( _now < comment_cashout->get_cashout_time() - HIVE_UPVOTE_LOCKOUT_HF17, o.voter, "Cannot increase payout within last twelve hours before payout." );
       else if( _db.has_hardfork( HIVE_HARDFORK_0_7 ) )
-        FC_ASSERT( _now < _db.calculate_discussion_payout_time( *comment, *comment_cashout ) - HIVE_UPVOTE_LOCKOUT_HF7, "Cannot increase payout within last minute before payout." );
+        HIVE_CHAIN_TIME_ASSERT( _now < _db.calculate_discussion_payout_time( *comment, *comment_cashout ) - HIVE_UPVOTE_LOCKOUT_HF7, o.voter, "Cannot increase payout within last minute before payout." );
     }
   }
 
@@ -403,7 +405,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
     const auto& root = _db.get( comment_cashout_ex->get_root_id() );
     const comment_cashout_object* root_cashout = _db.find_comment_cashout( root );
     const comment_cashout_ex_object* root_cashout_ex = _db.find_comment_cashout_ex( root );
-    FC_ASSERT( root_cashout && root_cashout_ex );
+    HIVE_CHAIN_STATE_ASSERT( root_cashout && root_cashout_ex, o.author, "Root comment cashout objects must exist." );
 
     _db.modify( *root_cashout, [&]( comment_cashout_object& c )
     {
@@ -451,8 +453,8 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
 
   if( itr == comment_vote_idx.end() ) // new vote
   {
-    FC_ASSERT( o.weight != 0, "Vote weight cannot be 0." );
-    FC_ASSERT( abs_rshares > 0, "Cannot vote with 0 rshares." );
+    HIVE_CHAIN_VOTING_ASSERT( o.weight != 0, o.voter, "Vote weight cannot be 0." );
+    HIVE_CHAIN_VOTING_ASSERT( abs_rshares > 0, o.voter, "Cannot vote with 0 rshares." );
 
     auto old_vote_rshares = comment_cashout->get_vote_rshares();
 
@@ -567,7 +569,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
     // there used to be limit on number of changes made on vote (5) until HF28 - removed along with related data member
 
     if( _db.has_hardfork( HIVE_HARDFORK_0_6__112 ) ) // look for self-votes on @spaninv/segundo-post (https://hivescan.info/@spaninv?page=2&filters=00000001_h)
-      FC_ASSERT( itr->get_vote_percent() != o.weight && "You have already voted in a similar way." );
+      HIVE_CHAIN_VOTING_ASSERT( itr->get_vote_percent() != o.weight && "You have already voted in a similar way.", o.voter, "You have already voted in a similar way." );
 
     _db.modify( *comment_cashout, [&]( comment_cashout_object& c )
     {
@@ -608,11 +610,11 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
   const auto& voter   = _db.get_account( o.voter );
   const auto& dgpo    = _db.get_dynamic_global_properties();
 
-  FC_ASSERT( voter.can_vote, "Voter has declined their voting rights." );
+  HIVE_CHAIN_VOTING_ASSERT( voter.can_vote, o.voter, "Voter has declined their voting rights." );
 
   if( comment_cashout )
   {
-    if( o.weight > 0 ) FC_ASSERT( comment_cashout->allows_votes() && "Votes are not allowed on the comment." );
+    if( o.weight > 0 ) HIVE_CHAIN_VOTING_ASSERT( comment_cashout->allows_votes() && "Votes are not allowed on the comment.", o.author, "Votes are not allowed on the comment." );
   }
 
   if( !comment_cashout || _db.calculate_discussion_payout_time( *comment, *comment_cashout ) == fc::time_point_sec::maximum() )
@@ -621,7 +623,7 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
   }
 
   auto _now = _db.head_block_time();
-  FC_ASSERT( _now < comment_cashout->get_cashout_time(), "Comment is actively being rewarded. Cannot vote on comment." );
+  HIVE_CHAIN_TIME_ASSERT( _now < comment_cashout->get_cashout_time(), o.voter, "Comment is actively being rewarded. Cannot vote on comment." );
   // there used to be a "one vote per block per user" limit, between HF11 and HF26
 
   const auto& comment_vote_idx = _db.get_index< comment_vote_index, by_comment_voter >();
@@ -633,12 +635,12 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
   uint64_t previous_vote_weight = 0;
   if( itr == comment_vote_idx.end() )
   {
-    FC_ASSERT( o.weight != 0 && "Vote weight cannot be 0." );
+    HIVE_CHAIN_VOTING_ASSERT( o.weight != 0 && "Vote weight cannot be 0.", o.voter, "Vote weight cannot be 0." );
   }
   else
   {
     // there used to be limit on number of changes made on vote (5) until HF28 - removed along with related data member
-    FC_ASSERT( itr->get_vote_percent() != o.weight && "Your current vote on this comment is identical to this vote." );
+    HIVE_CHAIN_VOTING_ASSERT( itr->get_vote_percent() != o.weight && "Your current vote on this comment is identical to this vote.", o.voter, "Your current vote on this comment is identical to this vote." );
     previous_vote_percent = itr->get_vote_percent();
     previous_rshares = itr->get_rshares();
     if( previous_rshares > 0 )
@@ -679,7 +681,7 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
   }
 
   int64_t max_vote_denom = dgpo.vote_power_reserve_rate * HIVE_VOTING_MANA_REGENERATION_SECONDS;
-  FC_ASSERT( max_vote_denom > 0 );
+  HIVE_CHAIN_UNREACHABLE_CODE_ASSERT( max_vote_denom > 0, "Maximum vote denominator must be positive." );
 
   used_mana = ( used_mana + max_vote_denom - 1 ) / max_vote_denom;
   if( dgpo.downvote_pool_percent && o.weight < 0 )
@@ -687,15 +689,15 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
     // note that downvote requires more mana than necessary, which prevents accounts with no stake from downvoting;
     // while the effect might be unintentional, it was like that for long time and there is enough drama with
     // downvotes as it is, enabling "no effect" downvotes is not necessary, so we are not correcting it
-    FC_ASSERT( voter.voting_manabar.current_mana + voter.downvote_manabar.current_mana > fc::uint128_to_int64( used_mana ),
-      "Account does not have enough mana to downvote. voting_mana: ${v} downvote_mana: ${d} required_mana: ${r}",
+    HIVE_CHAIN_BALANCE_ASSERT( voter.voting_manabar.current_mana + voter.downvote_manabar.current_mana > fc::uint128_to_int64( used_mana ),
+      o.voter, "Account does not have enough mana to downvote. voting_mana: ${v} downvote_mana: ${d} required_mana: ${r}",
       ( "v", voter.voting_manabar.current_mana )( "d", voter.downvote_manabar.current_mana )( "r", fc::uint128_to_int64( used_mana ) ) );
   }
   else
   {
     // even after HF28 it is not possible to burn all mana in one 50 vote transaction due to "round up" code above
-    FC_ASSERT( voter.voting_manabar.has_mana( fc::uint128_to_int64( used_mana ) ),
-      "Account does not have enough mana to vote. voting_mana: ${v} required_mana: ${r}",
+    HIVE_CHAIN_BALANCE_ASSERT( voter.voting_manabar.has_mana( fc::uint128_to_int64( used_mana ) ),
+      o.voter, "Account does not have enough mana to vote. voting_mana: ${v} required_mana: ${r}",
       ( "v", voter.voting_manabar.current_mana )( "r", fc::uint128_to_int64( used_mana ) ) );
   }
 
