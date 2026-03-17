@@ -1988,12 +1988,12 @@ BOOST_AUTO_TEST_CASE( global_witness_props_basic_test )
     const auto& witness = db->get_witness( HIVE_INIT_MINER_NAME );
 
     // default global block size and interest rate are initially different than default wso value and witness value
-    BOOST_REQUIRE_EQUAL( dgpo.maximum_block_size, HIVE_MAX_BLOCK_SIZE );
+    BOOST_REQUIRE_EQUAL( dgpo.get_maximum_block_size(), HIVE_MAX_BLOCK_SIZE );
     BOOST_REQUIRE_EQUAL( wso.median_props.maximum_block_size, default_block_size );
     BOOST_REQUIRE_EQUAL( future_wso.median_props.maximum_block_size, default_block_size );
     BOOST_REQUIRE_EQUAL( witness.props.maximum_block_size, default_block_size );
 
-    BOOST_REQUIRE_EQUAL( dgpo.hbd_interest_rate, 0 );
+    BOOST_REQUIRE_EQUAL( dgpo.get_hbd_interest_rate(), 0 );
     BOOST_REQUIRE_EQUAL( wso.median_props.hbd_interest_rate, default_hbd_apr );
     BOOST_REQUIRE_EQUAL( future_wso.median_props.hbd_interest_rate, default_hbd_apr );
     BOOST_REQUIRE_EQUAL( witness.props.hbd_interest_rate, default_hbd_apr );
@@ -2009,8 +2009,8 @@ BOOST_AUTO_TEST_CASE( global_witness_props_basic_test )
     generate_blocks( db->head_block_time() + 63 * HIVE_BLOCK_INTERVAL, false );
 
     // the global values should propagate all the way from witness(es)
-    BOOST_REQUIRE_EQUAL( witness.props.maximum_block_size, dgpo.maximum_block_size );
-    BOOST_REQUIRE_EQUAL( witness.props.hbd_interest_rate, dgpo.hbd_interest_rate );
+    BOOST_REQUIRE_EQUAL( witness.props.maximum_block_size, dgpo.get_maximum_block_size() );
+    BOOST_REQUIRE_EQUAL( witness.props.hbd_interest_rate, dgpo.get_hbd_interest_rate() );
 
     // change witness properties
     uint32_t new_block_size1 = HIVE_MIN_BLOCK_SIZE_LIMIT * 3;
@@ -2037,8 +2037,8 @@ BOOST_AUTO_TEST_CASE( global_witness_props_basic_test )
     BOOST_REQUIRE_EQUAL( wso.median_props.account_creation_fee, default_fee );
 
     // dgpo incorrectly has new values, because they were activated when future wso was filled
-    BOOST_REQUIRE_EQUAL( dgpo.maximum_block_size, new_block_size1 );
-    BOOST_REQUIRE_EQUAL( dgpo.hbd_interest_rate, new_hbd_apr1 );
+    BOOST_REQUIRE_EQUAL( dgpo.get_maximum_block_size(), new_block_size1 );
+    BOOST_REQUIRE_EQUAL( dgpo.get_hbd_interest_rate(), new_hbd_apr1 );
 
     // run one schedule to make the state consistent (future wso activated)
     generate_blocks( db->head_block_time() + 21 * HIVE_BLOCK_INTERVAL, false );
@@ -2055,8 +2055,8 @@ BOOST_AUTO_TEST_CASE( global_witness_props_basic_test )
     BOOST_REQUIRE_EQUAL( wso.median_props.maximum_block_size, new_block_size1 );
     BOOST_REQUIRE_EQUAL( wso.median_props.hbd_interest_rate, new_hbd_apr1 );
     BOOST_REQUIRE_EQUAL( wso.median_props.account_creation_fee, new_fee1 );
-    BOOST_REQUIRE_EQUAL( dgpo.maximum_block_size, new_block_size1 );
-    BOOST_REQUIRE_EQUAL( dgpo.hbd_interest_rate, new_hbd_apr1 );
+    BOOST_REQUIRE_EQUAL( dgpo.get_maximum_block_size(), new_block_size1 );
+    BOOST_REQUIRE_EQUAL( dgpo.get_hbd_interest_rate(), new_hbd_apr1 );
 
     // change witness properties again
     uint32_t new_block_size2 = HIVE_MIN_BLOCK_SIZE_LIMIT * 5;
@@ -2083,8 +2083,8 @@ BOOST_AUTO_TEST_CASE( global_witness_props_basic_test )
     BOOST_REQUIRE_EQUAL( wso.median_props.account_creation_fee, new_fee1 );
 
     // dgpo also has previous values
-    BOOST_REQUIRE_EQUAL( dgpo.maximum_block_size, new_block_size1 );
-    BOOST_REQUIRE_EQUAL( dgpo.hbd_interest_rate, new_hbd_apr1 );
+    BOOST_REQUIRE_EQUAL( dgpo.get_maximum_block_size(), new_block_size1 );
+    BOOST_REQUIRE_EQUAL( dgpo.get_hbd_interest_rate(), new_hbd_apr1 );
 
     // run one schedule so changed properties are propagated to wso and activated
     generate_blocks( db->head_block_time() + 21 * HIVE_BLOCK_INTERVAL, false );
@@ -2099,8 +2099,8 @@ BOOST_AUTO_TEST_CASE( global_witness_props_basic_test )
     BOOST_REQUIRE_EQUAL( wso.median_props.maximum_block_size, new_block_size2 );
     BOOST_REQUIRE_EQUAL( wso.median_props.hbd_interest_rate, new_hbd_apr2 );
     BOOST_REQUIRE_EQUAL( wso.median_props.account_creation_fee, new_fee2 );
-    BOOST_REQUIRE_EQUAL( dgpo.maximum_block_size, new_block_size2 );
-    BOOST_REQUIRE_EQUAL( dgpo.hbd_interest_rate, new_hbd_apr2 );
+    BOOST_REQUIRE_EQUAL( dgpo.get_maximum_block_size(), new_block_size2 );
+    BOOST_REQUIRE_EQUAL( dgpo.get_hbd_interest_rate(), new_hbd_apr2 );
   }
   FC_LOG_AND_RETHROW()
 }
@@ -2148,8 +2148,8 @@ BOOST_AUTO_TEST_CASE( global_witness_props_change_noticed_after_hf_test )
     BOOST_REQUIRE_EQUAL( wso.median_props.maximum_block_size, default_block_size );
     BOOST_REQUIRE_EQUAL( wso.median_props.hbd_interest_rate, default_hbd_apr );
     BOOST_REQUIRE_EQUAL( wso.median_props.account_creation_fee, default_fee );
-    BOOST_REQUIRE_EQUAL( dgpo.maximum_block_size, default_block_size );
-    BOOST_REQUIRE_EQUAL( dgpo.hbd_interest_rate, default_hbd_apr );
+    BOOST_REQUIRE_EQUAL( dgpo.get_maximum_block_size(), default_block_size );
+    BOOST_REQUIRE_EQUAL( dgpo.get_hbd_interest_rate(), default_hbd_apr );
 
     inject_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
 
@@ -2164,8 +2164,8 @@ BOOST_AUTO_TEST_CASE( global_witness_props_change_noticed_after_hf_test )
     BOOST_REQUIRE_EQUAL( wso.median_props.maximum_block_size, default_block_size );
     BOOST_REQUIRE_EQUAL( wso.median_props.hbd_interest_rate, default_hbd_apr );
     BOOST_REQUIRE_EQUAL( wso.median_props.account_creation_fee, default_fee );
-    BOOST_REQUIRE_EQUAL( dgpo.maximum_block_size, default_block_size );
-    BOOST_REQUIRE_EQUAL( dgpo.hbd_interest_rate, default_hbd_apr );
+    BOOST_REQUIRE_EQUAL( dgpo.get_maximum_block_size(), default_block_size );
+    BOOST_REQUIRE_EQUAL( dgpo.get_hbd_interest_rate(), default_hbd_apr );
 
     // run one schedule
     generate_blocks( db->head_block_time() + 21 * HIVE_BLOCK_INTERVAL, false );
@@ -2178,8 +2178,8 @@ BOOST_AUTO_TEST_CASE( global_witness_props_change_noticed_after_hf_test )
     BOOST_REQUIRE_EQUAL( future_wso.median_props.hbd_interest_rate, new_hbd_apr );
     BOOST_REQUIRE_EQUAL( future_wso.median_props.account_creation_fee, new_fee );
 
-    BOOST_REQUIRE_EQUAL( dgpo.maximum_block_size, default_block_size );
-    BOOST_REQUIRE_EQUAL( dgpo.hbd_interest_rate, default_hbd_apr );
+    BOOST_REQUIRE_EQUAL( dgpo.get_maximum_block_size(), default_block_size );
+    BOOST_REQUIRE_EQUAL( dgpo.get_hbd_interest_rate(), default_hbd_apr );
     BOOST_REQUIRE_EQUAL( wso.median_props.maximum_block_size, default_block_size );
     BOOST_REQUIRE_EQUAL( wso.median_props.hbd_interest_rate, default_hbd_apr );
     BOOST_REQUIRE_EQUAL( wso.median_props.account_creation_fee, default_fee );
@@ -2230,8 +2230,8 @@ BOOST_AUTO_TEST_CASE( global_witness_props_change_applied_after_hf_test )
     BOOST_REQUIRE_EQUAL( future_wso.median_props.maximum_block_size, new_block_size1 );
     BOOST_REQUIRE_EQUAL( future_wso.median_props.hbd_interest_rate, new_hbd_apr1 );
     BOOST_REQUIRE_EQUAL( future_wso.median_props.account_creation_fee, new_fee1 );
-    BOOST_REQUIRE_EQUAL( dgpo.maximum_block_size, new_block_size1 );
-    BOOST_REQUIRE_EQUAL( dgpo.hbd_interest_rate, new_hbd_apr1 );
+    BOOST_REQUIRE_EQUAL( dgpo.get_maximum_block_size(), new_block_size1 );
+    BOOST_REQUIRE_EQUAL( dgpo.get_hbd_interest_rate(), new_hbd_apr1 );
 
     BOOST_REQUIRE_EQUAL( wso.median_props.maximum_block_size, default_block_size );
     BOOST_REQUIRE_EQUAL( wso.median_props.hbd_interest_rate, default_hbd_apr );
@@ -2246,8 +2246,8 @@ BOOST_AUTO_TEST_CASE( global_witness_props_change_applied_after_hf_test )
     BOOST_REQUIRE_EQUAL( future_wso.median_props.maximum_block_size, new_block_size1 );
     BOOST_REQUIRE_EQUAL( future_wso.median_props.hbd_interest_rate, new_hbd_apr1 );
     BOOST_REQUIRE_EQUAL( future_wso.median_props.account_creation_fee, new_fee1 );
-    BOOST_REQUIRE_EQUAL( dgpo.maximum_block_size, new_block_size1 );
-    BOOST_REQUIRE_EQUAL( dgpo.hbd_interest_rate, new_hbd_apr1 );
+    BOOST_REQUIRE_EQUAL( dgpo.get_maximum_block_size(), new_block_size1 );
+    BOOST_REQUIRE_EQUAL( dgpo.get_hbd_interest_rate(), new_hbd_apr1 );
 
     BOOST_REQUIRE_EQUAL( wso.median_props.maximum_block_size, default_block_size );
     BOOST_REQUIRE_EQUAL( wso.median_props.hbd_interest_rate, default_hbd_apr );
@@ -2272,8 +2272,8 @@ BOOST_AUTO_TEST_CASE( global_witness_props_change_applied_after_hf_test )
     BOOST_REQUIRE_EQUAL( future_wso.median_props.hbd_interest_rate, new_hbd_apr2 );
     BOOST_REQUIRE_EQUAL( future_wso.median_props.account_creation_fee, new_fee2 );
 
-    BOOST_REQUIRE_EQUAL( dgpo.maximum_block_size, new_block_size1 );
-    BOOST_REQUIRE_EQUAL( dgpo.hbd_interest_rate, new_hbd_apr1 );
+    BOOST_REQUIRE_EQUAL( dgpo.get_maximum_block_size(), new_block_size1 );
+    BOOST_REQUIRE_EQUAL( dgpo.get_hbd_interest_rate(), new_hbd_apr1 );
     BOOST_REQUIRE_EQUAL( wso.median_props.maximum_block_size, new_block_size1 );
     BOOST_REQUIRE_EQUAL( wso.median_props.hbd_interest_rate, new_hbd_apr1 );
     BOOST_REQUIRE_EQUAL( wso.median_props.account_creation_fee, new_fee1 );
@@ -2297,21 +2297,21 @@ BOOST_AUTO_TEST_CASE( treasury_hbd_does_not_affect_inflation_basic )
 
     // First inflation check at HF27
     const auto& props = db->get_dynamic_global_properties();
-    auto before_virtual_supply = props.virtual_supply.amount;
+    auto before_virtual_supply = props.get_virtual_supply().amount;
 
     generate_blocks( db->head_block_time() + 50 * HIVE_BLOCK_INTERVAL, false );
 
-    auto after_virtual_supply = props.virtual_supply.amount;
+    auto after_virtual_supply = props.get_virtual_supply().amount;
 
     auto initial_inflation = after_virtual_supply - before_virtual_supply;
     BOOST_REQUIRE_GT( initial_inflation, 0 );
 
-    before_virtual_supply = props.virtual_supply.amount;
+    before_virtual_supply = props.get_virtual_supply().amount;
     ISSUE_FUNDS( db->get_treasury_name(), HBD_asset( 5'000'000'000 ) );
     
     generate_blocks( db->head_block_time() + 50 * HIVE_BLOCK_INTERVAL, false );
 
-    after_virtual_supply = props.virtual_supply.amount;
+    after_virtual_supply = props.get_virtual_supply().amount;
 
     auto inflation_with_hbd = after_virtual_supply - before_virtual_supply;
     BOOST_REQUIRE_GT( inflation_with_hbd, initial_inflation );
@@ -2320,11 +2320,11 @@ BOOST_AUTO_TEST_CASE( treasury_hbd_does_not_affect_inflation_basic )
     inject_hardfork( HIVE_HARDFORK_1_28 );
     BOOST_REQUIRE_EQUAL( db->has_hardfork( HIVE_HARDFORK_1_28 ), true );
 
-    before_virtual_supply = props.virtual_supply.amount;
+    before_virtual_supply = props.get_virtual_supply().amount;
     // we wait 49 because inject_hardfork generates a block
     generate_blocks( db->head_block_time() + 49 * HIVE_BLOCK_INTERVAL, false );
 
-    after_virtual_supply = props.virtual_supply.amount;
+    after_virtual_supply = props.get_virtual_supply().amount;
 
     auto inflation_after_hf28 = after_virtual_supply - before_virtual_supply;
     BOOST_REQUIRE( inflation_after_hf28 < inflation_with_hbd );
@@ -2352,10 +2352,10 @@ BOOST_AUTO_TEST_CASE(treasury_hbd_does_not_affect_inflation_advanced)
         {
             const auto& props = db->get_dynamic_global_properties();
             const auto& wso = db->get_witness_schedule_object();
-            const auto& cwit = db->get_witness(props.current_witness);
+            const auto& cwit = db->get_witness(props.get_current_witness());
 
             int64_t current_inflation_rate = calculate_current_inflation_rate();
-            auto new_hive = (props.virtual_supply.amount * current_inflation_rate) / (int64_t(HIVE_100_PERCENT) * int64_t(HIVE_BLOCKS_PER_YEAR));
+            auto new_hive = (props.get_virtual_supply().amount * current_inflation_rate) / (int64_t(HIVE_100_PERCENT) * int64_t(HIVE_BLOCKS_PER_YEAR));
             if (db->has_hardfork(HIVE_HARDFORK_1_28_NO_DHF_HBD_IN_INFLATION)) {
               const auto &treasury_account = db->get_treasury();
               const HBD_asset hbd_supply_without_treasury = props.get_current_hbd_supply() - treasury_account.get_hbd_balance();
@@ -2365,7 +2365,7 @@ BOOST_AUTO_TEST_CASE(treasury_hbd_does_not_affect_inflation_advanced)
               new_hive = (virtual_supply_without_treasury.amount * current_inflation_rate) / (int64_t(HIVE_100_PERCENT) * int64_t(HIVE_BLOCKS_PER_YEAR));
             }
 
-            auto content_reward = (new_hive * props.content_reward_percent) / HIVE_100_PERCENT;
+            auto content_reward = ( new_hive * props.get_content_reward_percent() ) / HIVE_100_PERCENT;
 
             const auto& reward_idx = db->get_index<reward_fund_index, by_id>();
             share_type used_rewards = 0;
@@ -2376,8 +2376,8 @@ BOOST_AUTO_TEST_CASE(treasury_hbd_does_not_affect_inflation_advanced)
 
             content_reward = used_rewards;
 
-            auto vesting_reward = (new_hive * props.vesting_reward_percent) / HIVE_100_PERCENT;
-            auto dhf_new_funds = (new_hive * props.proposal_fund_percent) / HIVE_100_PERCENT;
+            auto vesting_reward = ( new_hive * props.get_vesting_reward_percent() ) / HIVE_100_PERCENT;
+            auto dhf_new_funds = ( new_hive * props.get_proposal_fund_percent() ) / HIVE_100_PERCENT;
             auto witness_reward = new_hive - content_reward - vesting_reward - dhf_new_funds;
 
             witness_reward *= HIVE_MAX_WITNESSES;
@@ -2401,22 +2401,22 @@ BOOST_AUTO_TEST_CASE(treasury_hbd_does_not_affect_inflation_advanced)
         generate_block();
         ISSUE_FUNDS(db->get_treasury_name(), HBD_asset( 50'000'000'000 ));
 
-        auto before_virtual_supply = props.virtual_supply.amount;
+        auto before_virtual_supply = props.get_virtual_supply().amount;
         auto expected_new_virtual_supply = calculate_expected_new_virtual_supply();
 
         // check hf28 inflation
         generate_block();
-        auto actual_new_virtual_supply = props.virtual_supply.amount - before_virtual_supply;
+        auto actual_new_virtual_supply = props.get_virtual_supply().amount - before_virtual_supply;
         BOOST_REQUIRE_EQUAL( expected_new_virtual_supply, actual_new_virtual_supply );
 
         inject_hardfork(HIVE_HARDFORK_1_28);
         generate_blocks( db->head_block_time() + 20 * HIVE_BLOCK_INTERVAL, false );
 
-        before_virtual_supply = props.virtual_supply.amount;
+        before_virtual_supply = props.get_virtual_supply().amount;
         expected_new_virtual_supply = calculate_expected_new_virtual_supply();
 
         generate_block();
-        actual_new_virtual_supply = props.virtual_supply.amount - before_virtual_supply;
+        actual_new_virtual_supply = props.get_virtual_supply().amount - before_virtual_supply;
 
         BOOST_REQUIRE_EQUAL( expected_new_virtual_supply, actual_new_virtual_supply );
 

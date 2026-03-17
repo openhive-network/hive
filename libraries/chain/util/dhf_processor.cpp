@@ -27,7 +27,7 @@ const std::string dhf_processor::calculating_name = "dhf_processor_calculate";
 
 bool dhf_processor::is_maintenance_period( const time_point_sec& head_time ) const
 {
-  auto due_time = db.get_dynamic_global_properties().next_maintenance_time;
+  auto due_time = db.get_dynamic_global_properties().get_next_maintenance_time();
   return due_time <= head_time;
 }
 
@@ -36,7 +36,7 @@ bool dhf_processor::is_daily_maintenance_period( const time_point_sec& head_time
   /// No DHF conversion until HF24 !
   if( !db.has_hardfork( HIVE_HARDFORK_1_24 ) )
     return false;
-  auto due_time = db.get_dynamic_global_properties().next_daily_maintenance_time;
+  auto due_time = db.get_dynamic_global_properties().get_next_daily_maintenance_time();
   return due_time <= head_time;
 }
 
@@ -148,7 +148,7 @@ HBD_asset dhf_processor::calculate_maintenance_budget( const time_point_sec& hea
   HBD_asset treasury_fund = get_treasury_fund();
 
   //Calculate budget for given maintenance period
-  uint32_t passed_time_seconds = ( head_time - db.get_dynamic_global_properties().last_budget_time ).to_seconds();
+  uint32_t passed_time_seconds = ( head_time - db.get_dynamic_global_properties().get_last_budget_time() ).to_seconds();
 
   //Calculate daily_budget_limit
   int64_t daily_budget_limit = treasury_fund.amount.value / total_amount_divider;
@@ -165,7 +165,7 @@ void dhf_processor::transfer_payments( const time_point_sec& head_time, HBD_asse
 
   const auto& treasury_account = db.get_treasury();
 
-  uint32_t passed_time_seconds = ( head_time - db.get_dynamic_global_properties().last_budget_time ).to_seconds();
+  uint32_t passed_time_seconds = ( head_time - db.get_dynamic_global_properties().get_last_budget_time() ).to_seconds();
 
   auto processing = [this, &treasury_account]( const proposal_object& _item, const HBD_asset& payment )
   {
@@ -217,8 +217,7 @@ void dhf_processor::update_settings( const time_point_sec& head_time )
   {
     //shifting from current time instead of proper maintenance time causes drift
     //when maintenance block was missed, but the fix is problematic - see MR!168 for details
-    _dgpo.next_maintenance_time = head_time + fc::seconds( HIVE_PROPOSAL_MAINTENANCE_PERIOD );
-    _dgpo.last_budget_time = head_time;
+    _dgpo.set_next_maintenance_time( head_time, HIVE_PROPOSAL_MAINTENANCE_PERIOD );
   } );
 }
 
@@ -310,15 +309,15 @@ void dhf_processor::record_funding( const block_notification& note )
 
   const auto& props = db.get_dynamic_global_properties();
 
-  if( props.dhf_interval_ledger.amount.value <= 0 )
+  if( props.get_dhf_interval_ledger().amount.value <= 0 )
     return;
 
-  operation vop = dhf_funding_operation( db.get_treasury_name(), props.dhf_interval_ledger );
+  operation vop = dhf_funding_operation( db.get_treasury_name(), props.get_dhf_interval_ledger() );
   push_virtual_operation( db, vop );
 
   db.modify( props, []( dynamic_global_property_object& dgpo )
   {
-    dgpo.dhf_interval_ledger = HBD_asset( 0 );
+    dgpo.clear_dhf_interval_ledger();
   } );
 }
 
@@ -332,7 +331,7 @@ void dhf_processor::convert_funds( const block_notification& note )
   {
     //shifting from current time instead of proper maintenance time causes drift
     //when maintenance block was missed, but the fix is problematic - see MR!168 for details
-    _dgpo.next_daily_maintenance_time = block_ts + fc::seconds( HIVE_DAILY_PROPOSAL_MAINTENANCE_PERIOD );
+    _dgpo.set_next_daily_maintenance_time( block_ts, HIVE_DAILY_PROPOSAL_MAINTENANCE_PERIOD );
   } );
 
   const auto& treasury_account = db.get_treasury();

@@ -582,7 +582,7 @@ BOOST_AUTO_TEST_CASE( comment_apply )
 
       db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& o )
       {
-        o.total_reward_shares2 = hive::chain::util::evaluate_reward_curve( 10 );
+        o.access_total_reward_shares2() = hive::chain::util::evaluate_reward_curve( 10 );
       } );
     } );
 
@@ -807,7 +807,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
     vote( "alice", "foo", "alice", HIVE_100_PERCENT, alice_post_key );
 
     auto itr = vote_idx.find( boost::make_tuple( alice_comment->get_id(), alice_id ) );
-    int64_t max_vote_denom = ( db->get_dynamic_global_properties().vote_power_reserve_rate * HIVE_VOTING_MANA_REGENERATION_SECONDS ) / (60*60*24);
+    int64_t max_vote_denom = ( db->get_dynamic_global_properties().get_vote_power_reserve_rate() * HIVE_VOTING_MANA_REGENERATION_SECONDS ) / (60*60*24);
 
     BOOST_REQUIRE_EQUAL( _alice.last_vote_time, db->head_block_time() );
     BOOST_REQUIRE_EQUAL( alice_comment_cashout->get_net_rshares(), ( old_mana - _alice.voting_manabar.current_mana ) - HIVE_VOTE_DUST_THRESHOLD );
@@ -972,7 +972,7 @@ BOOST_AUTO_TEST_CASE( vote_apply )
     old_manabar.regenerate_mana( params, db->head_block_time() );
     old_downvote_manabar.regenerate_mana( params, db->head_block_time() );
     alice_weight = params.max_mana * 60 * 60 * 24;
-    max_vote_denom = db->get_dynamic_global_properties().vote_power_reserve_rate * HIVE_VOTING_MANA_REGENERATION_SECONDS;
+    max_vote_denom = db->get_dynamic_global_properties().get_vote_power_reserve_rate() * HIVE_VOTING_MANA_REGENERATION_SECONDS;
     alice_weight = ( alice_weight + max_vote_denom - 1 ) / max_vote_denom;
 
     old_net_rshares = bob_comment_cashout->get_net_rshares();
@@ -1136,7 +1136,7 @@ BOOST_AUTO_TEST_CASE( vote_weights )
     }
 
     //votes in early window
-    generate_blocks( creation_time + fc::seconds( dgpo.early_voting_seconds - 6 ), false );
+    generate_blocks( creation_time + fc::seconds( dgpo.get_early_voting_seconds() - 6 ), false );
     vote_op.weight = PAT_UPVOTE_PERCENT; //pattern vote and vote edits into pattern upvote
     for( auto i : { 0,8,16,24 } )
       VOTE( i );
@@ -1150,7 +1150,7 @@ BOOST_AUTO_TEST_CASE( vote_weights )
     generate_block();
 
     //votes in mid window
-    generate_blocks( creation_time + fc::seconds( dgpo.early_voting_seconds + dgpo.mid_voting_seconds / 2 ), false );
+    generate_blocks( creation_time + fc::seconds( dgpo.get_early_voting_seconds() + dgpo.get_mid_voting_seconds() / 2 ), false );
     vote_op.weight = PAT_UPVOTE_PERCENT; //pattern vote and edits into pattern upvote
     for( auto i : { 1,9,17,25 } )
       VOTE( i );
@@ -1771,8 +1771,8 @@ BOOST_AUTO_TEST_CASE( withdraw_vesting_apply )
 
       db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
       {
-        gpo.current_supply += wso.median_props.account_creation_fee - HIVE_asset( 1 ) - gpo.get_total_vesting_fund_hive();
-        gpo.total_vesting_fund_hive = wso.median_props.account_creation_fee - HIVE_asset( 1 );
+        gpo.access_current_supply() += wso.median_props.account_creation_fee - HIVE_asset( 1 ) - gpo.get_total_vesting_fund_hive();
+        gpo.access_total_vesting_fund_hive() = wso.median_props.account_creation_fee - HIVE_asset( 1 );
       });
 
       db.update_virtual_supply();
@@ -3559,18 +3559,18 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
     BOOST_TEST_MESSAGE( "--- Setting amount of HBD in the system to the edge of upper soft limit" );
     {
       fc::uint128_t amount( dgpo.get_current_supply().amount.value );
-      uint16_t limit2 = 2 * dgpo.hbd_stop_percent + HIVE_1_BASIS_POINT; //there is rounding when percent is calculated, hence some strange correction
+      uint16_t limit2 = 2 * dgpo.get_hbd_stop_percent() + HIVE_1_BASIS_POINT; //there is rounding when percent is calculated, hence some strange correction
       amount = ( amount * limit2 ) / ( 2 * HIVE_100_PERCENT - limit2 );
       HBD_asset new_hbd = HIVE_asset( fc::uint128_to_int64(amount) ) * feed.current_median_history;
       new_hbd -= dgpo.get_current_hbd_supply() - db->get_treasury().get_hbd_balance();
       issue_funds( "alice", new_hbd, false );
       uint16_t percent = db->calculate_HBD_percent();
-      BOOST_REQUIRE_EQUAL( percent, dgpo.hbd_stop_percent );
+      BOOST_REQUIRE_EQUAL( percent, dgpo.get_hbd_stop_percent() );
     }
 
     BOOST_TEST_MESSAGE( "--- Test failure on too many HBD in the system" );
     op.amount = ASSET( "0.042 TESTS" ); //minimal amount of collateral that gives nonzero HBD at current price
-    HIVE_REQUIRE_ASSERT( push_transaction( op, alice_private_key ), "percent_hbd <= dgpo.hbd_stop_percent" );
+    HIVE_REQUIRE_ASSERT( push_transaction( op, alice_private_key ), "percent_hbd <= dgpo.get_hbd_stop_percent()" );
 
     const auto& collateralized_convert_request_idx = db->get_index< collateralized_convert_request_index, by_owner >();
     BOOST_REQUIRE( collateralized_convert_request_idx.empty() );
@@ -3595,25 +3595,25 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
       convert_hbd_to_hive( "bob", 0, HBD_asset( 20'000 ), bob_private_key );
     }
     generate_block();
-    BOOST_REQUIRE_EQUAL( dgpo.hbd_print_rate, 0 );
+    BOOST_REQUIRE_EQUAL( dgpo.get_hbd_print_rate(), 0 );
 
     BOOST_TEST_MESSAGE( "--- Test failed - conversion initiated while at or above upper soft limit" );
     op.amount = ASSET( "1000.000 TESTS" );
-    HIVE_REQUIRE_ASSERT( push_transaction( op, alice_private_key ), "dgpo.hbd_print_rate > 0" );
+    HIVE_REQUIRE_ASSERT( push_transaction( op, alice_private_key ), "dgpo.get_hbd_print_rate() > 0" );
 
     //since we are already on the edge of HBD upper soft limit which means we can't convert more anyway,
     //let's use the opportunity and test what happens when we try to cross hard limit
     {
       auto extra_hbd = dgpo.get_current_hbd_supply();
-      int16_t diff = HIVE_HBD_HARD_LIMIT - dgpo.hbd_stop_percent;
+      int16_t diff = HIVE_HBD_HARD_LIMIT - dgpo.get_hbd_stop_percent();
       if( diff < 0 )
         diff = 0; //just in case we'd have incorrect configuration with hard limit below upper soft limit
       extra_hbd.amount *= diff;
-      extra_hbd.amount /= dgpo.hbd_stop_percent; //HBD supply multiplied by the same factor as a difference between hard and upper soft limit
+      extra_hbd.amount /= dgpo.get_hbd_stop_percent(); //HBD supply multiplied by the same factor as a difference between hard and upper soft limit
       extra_hbd += dgpo.get_current_hbd_supply(); //to always have some value above hard limit
       issue_funds( "bob", extra_hbd );
 
-      generate_blocks( HIVE_FEED_INTERVAL_BLOCKS - ( dgpo.head_block_number % HIVE_FEED_INTERVAL_BLOCKS ) );
+      generate_blocks( HIVE_FEED_INTERVAL_BLOCKS - ( dgpo.get_head_block_number() % HIVE_FEED_INTERVAL_BLOCKS ) );
       //last feed update should've put up artificial price of HIVE
       auto recent_ops = get_last_operations( 2 );
       auto sys_warn_op = recent_ops.back().get< system_warning_operation >();
@@ -3643,9 +3643,9 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
 
     BOOST_TEST_MESSAGE( "--- Test failed - conversion initiated while artificial price is active" );
     op.amount = ASSET( "1000.000 TESTS" );
-    HIVE_REQUIRE_ASSERT( push_transaction( op, alice_private_key ), "dgpo.hbd_print_rate > 0" );
+    HIVE_REQUIRE_ASSERT( push_transaction( op, alice_private_key ), "dgpo.get_hbd_print_rate() > 0" );
 
-    generate_blocks( HIVE_FEED_INTERVAL_BLOCKS - ( dgpo.head_block_number % HIVE_FEED_INTERVAL_BLOCKS ) );
+    generate_blocks( HIVE_FEED_INTERVAL_BLOCKS - ( dgpo.get_head_block_number() % HIVE_FEED_INTERVAL_BLOCKS ) );
 
     //since HBD on treasury does not count the price should now be back to normal price
     BOOST_REQUIRE_EQUAL( feed.current_median_history, price_1_for_20 );
@@ -3758,7 +3758,7 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_wide_price )
     collateralized_convert_operation op;
     op.owner = "alice";
     op.amount = ASSET( "42000000.000 TESTS" );
-    HIVE_REQUIRE_ASSERT( push_transaction( op, alice_private_key ), "percent_hbd <= dgpo.hbd_stop_percent" );
+    HIVE_REQUIRE_ASSERT( push_transaction( op, alice_private_key ), "percent_hbd <= dgpo.get_hbd_stop_percent()" );
 
     BOOST_TEST_MESSAGE( "--- Test ok - conversion at 50 cents per HIVE, both initial and actual" );
     op.amount = ASSET( "4200000.000 TESTS" );
@@ -7382,11 +7382,11 @@ BOOST_AUTO_TEST_CASE( claim_reward_balance_apply )
 
       db.modify( db.get_dynamic_global_properties(), []( dynamic_global_property_object& gpo )
       {
-        gpo.current_supply += HIVE_asset( 20'000 );
-        gpo.current_hbd_supply += HBD_asset( 10'000 );
-        gpo.virtual_supply += HIVE_asset( 20'000 );
-        gpo.pending_rewarded_vesting_shares += VEST_asset( 10'000'000 );
-        gpo.pending_rewarded_vesting_hive += HIVE_asset( 10'000 );
+        gpo.access_current_supply() += HIVE_asset( 20'000 );
+        gpo.access_current_hbd_supply() += HBD_asset( 10'000 );
+        gpo.access_virtual_supply() += HIVE_asset( 20'000 );
+        gpo.access_pending_rewarded_vesting_shares() += VEST_asset( 10'000'000 );
+        gpo.access_pending_rewarded_vesting_hive() += HIVE_asset( 10'000 );
       });
     });
 
@@ -7778,12 +7778,12 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
     auto end = db->get_index< vesting_delegation_expiration_index, by_id >().end();
     auto& gpo = db->get_dynamic_global_properties();
 
-    BOOST_REQUIRE_EQUAL( gpo.delegation_return_period, HIVE_DELEGATION_RETURN_PERIOD_HF20 );
+    BOOST_REQUIRE_EQUAL( gpo.get_delegation_return_period(), HIVE_DELEGATION_RETURN_PERIOD_HF20 );
 
     BOOST_REQUIRE( exp_obj != end );
     BOOST_REQUIRE_EQUAL( exp_obj->get_delegator(), sam_id );
     BOOST_REQUIRE_EQUAL( exp_obj->get_vesting(), sam_vest );
-    BOOST_REQUIRE_EQUAL( exp_obj->get_expiration_time(), db->head_block_time() + gpo.delegation_return_period );
+    BOOST_REQUIRE_EQUAL( exp_obj->get_expiration_time(), db->head_block_time() + gpo.get_delegation_return_period() );
     BOOST_REQUIRE_EQUAL( db->get_account( "sam" ).get_delegated_vesting(), sam_vest );
     BOOST_REQUIRE_EQUAL( db->get_account( "dave" ).get_received_vesting(), VEST_asset( 0 ) );
     delegation = db->find< vesting_delegation_object, by_delegation >( boost::make_tuple( sam_acc.get_id(), dave_acc.get_id() ) );
@@ -7980,7 +7980,7 @@ BOOST_AUTO_TEST_CASE( comment_beneficiaries_apply )
     {
       db.modify( db.get_dynamic_global_properties(), [=]( dynamic_global_property_object& gpo )
       {
-        gpo.proposal_fund_percent = 0;
+        gpo.set_proposal_fund_percent( 0 );
       });
 
       db.modify( db.get_treasury(), [=]( account_object& a )
@@ -8078,9 +8078,9 @@ BOOST_AUTO_TEST_CASE( comment_beneficiaries_apply )
     {
       db.modify( db.get_dynamic_global_properties(), [=]( dynamic_global_property_object& gpo )
       {
-        gpo.current_supply -= gpo.get_total_reward_fund_hive();
-        gpo.total_reward_fund_hive = HIVE_asset( 100'000 );
-        gpo.current_supply += gpo.get_total_reward_fund_hive();
+        gpo.access_current_supply() -= gpo.get_total_reward_fund_hive();
+        gpo.access_total_reward_fund_hive() = HIVE_asset( 100'000 );
+        gpo.access_current_supply() += gpo.get_total_reward_fund_hive();
       });
     });
 
@@ -8112,7 +8112,7 @@ BOOST_AUTO_TEST_CASE( comment_options_apply )
     {
       db.modify( db.get_dynamic_global_properties(), [=]( dynamic_global_property_object& gpo )
       {
-        gpo.proposal_fund_percent = 0;
+        gpo.set_proposal_fund_percent( 0 );
       } );
 
       db.modify( db.get_treasury(), [=]( account_object& a )
@@ -8229,9 +8229,9 @@ BOOST_AUTO_TEST_CASE( comment_options_apply )
     {
       db.modify( db.get_dynamic_global_properties(), [=]( dynamic_global_property_object& gpo )
       {
-        gpo.current_supply -= gpo.get_total_reward_fund_hive();
-        gpo.total_reward_fund_hive = HIVE_asset( 100'000 );
-        gpo.current_supply += gpo.get_total_reward_fund_hive();
+        gpo.access_current_supply() -= gpo.get_total_reward_fund_hive();
+        gpo.access_total_reward_fund_hive() = HIVE_asset( 100'000 );
+        gpo.access_current_supply() += gpo.get_total_reward_fund_hive();
       } );
     };
 
@@ -8288,7 +8288,7 @@ BOOST_AUTO_TEST_CASE( comment_options_deleted_permlink_reuse )
     {
       db.modify( db.get_dynamic_global_properties(), [=]( dynamic_global_property_object& gpo )
       {
-        gpo.proposal_fund_percent = 0;
+        gpo.set_proposal_fund_percent( 0 );
       } );
 
       db.modify( db.get_treasury(), [=]( account_object& a )
@@ -8772,7 +8772,7 @@ BOOST_AUTO_TEST_CASE( claim_account_apply )
     auto get_subsidy_pools = [&]( int64_t& con_subs, int64_t &ncon_subs )
     {
       // get consensus and non-consensus subsidies
-      con_subs = db->get_dynamic_global_properties().available_account_subsidies;
+      con_subs = db->get_dynamic_global_properties().get_available_account_subsidies();
       ncon_subs = db->get< rc_pool_object >().get_pool( resource_new_accounts );
     };
 
@@ -8915,7 +8915,7 @@ BOOST_AUTO_TEST_CASE( claim_account_apply )
     {
       db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
       {
-        gpo.available_account_subsidies = 0;
+        gpo.set_available_account_subsidies( 0 );
       });
     });
     generate_block();

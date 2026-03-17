@@ -214,7 +214,7 @@ BOOST_AUTO_TEST_CASE( inactive_proposals_have_votes )
     generate_block();
 
     const auto& dgpo = db->get_dynamic_global_properties();
-    auto old_hbd_supply = dgpo.current_hbd_supply;
+    auto old_hbd_supply = dgpo.get_current_hbd_supply();
 
 
     const account_object& _creator = db->get_account( creator );
@@ -234,7 +234,7 @@ BOOST_AUTO_TEST_CASE( inactive_proposals_have_votes )
       generate_blocks( next_block - 1 );
       generate_block();
 
-      auto treasury_hbd_inflation = dgpo.current_hbd_supply - old_hbd_supply;
+      auto treasury_hbd_inflation = dgpo.get_current_hbd_supply() - old_hbd_supply;
       auto after_creator_hbd_balance = _creator.hbd_balance;
       auto after_receiver_hbd_balance = _receiver.hbd_balance;
       auto after_voter_01_hbd_balance = _voter_01.hbd_balance;
@@ -1317,7 +1317,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_02 )
     }
 
     generate_blocks( start_date, false );
-    generate_blocks( db->get_dynamic_global_properties().next_maintenance_time - block_interval, false );
+    generate_blocks( db->get_dynamic_global_properties().get_next_maintenance_time() - block_interval, false );
 
     {
       remove_proposal( item_creator.account, {0}, item_creator.active_key );
@@ -4745,14 +4745,14 @@ BOOST_AUTO_TEST_CASE( converting_hive_to_dhf )
     const HBD_asset hbd_converted( hive_converted.amount );
     // Generate until the next daily maintenance
     auto next_block = get_nr_blocks_until_daily_proposal_maintenance_block();
-    auto before_daily_maintenance_time = dgpo.next_daily_maintenance_time;
+    auto before_daily_maintenance_time = dgpo.get_next_daily_maintenance_time();
     generate_blocks( next_block - 1);
 
     auto treasury_hbd_inflation =  _treasury.get_hbd_balance() - before_treasury_hbd_balance;
     generate_block();
 
     treasury_hbd_inflation += treasury_per_block_inflation;
-    auto after_daily_maintenance_time = dgpo.next_daily_maintenance_time;
+    auto after_daily_maintenance_time = dgpo.get_next_daily_maintenance_time();
     auto after_treasury_hbd_balance =  _treasury.get_hbd_balance();
     auto after_treasury_hive_balance =  _treasury.get_hive_balance();
 

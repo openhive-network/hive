@@ -287,8 +287,8 @@ void database::apply_hardfork( uint32_t hardfork )
 
         modify( gpo, [&]( dynamic_global_property_object& g )
         {
-          g.total_reward_fund_hive = HIVE_asset( 0 );
-          g.total_reward_shares2 = 0;
+          g.access_total_reward_fund_hive() = HIVE_asset( 0 );
+          g.access_total_reward_shares2() = 0;
         });
 
         apply_hardfork_17_comment_cashout_fix();
@@ -300,7 +300,7 @@ void database::apply_hardfork( uint32_t hardfork )
       {
         modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
         {
-          gpo.vote_power_reserve_rate = HIVE_REDUCED_VOTE_POWER_RATE;
+          gpo.set_vote_power_reserve_rate( HIVE_REDUCED_VOTE_POWER_RATE );
         });
 
         modify( get< reward_fund_object, by_name >( HIVE_POST_REWARD_FUND_NAME ), [&]( reward_fund_object &rfo )
@@ -338,11 +338,11 @@ void database::apply_hardfork( uint32_t hardfork )
         const auto& dgpo = get_dynamic_global_properties();
         modify( dgpo, [&]( dynamic_global_property_object& gpo )
         {
-          gpo.delegation_return_period = HIVE_DELEGATION_RETURN_PERIOD_HF20;
-          gpo.reverse_auction_seconds = HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF20;
-          gpo.hbd_stop_percent = HIVE_HBD_STOP_PERCENT_HF20;
-          gpo.hbd_start_percent = HIVE_HBD_START_PERCENT_HF20;
-          gpo.available_account_subsidies = 0;
+          gpo.set_delegation_return_period( HIVE_DELEGATION_RETURN_PERIOD_HF20 );
+          gpo.set_reverse_auction_seconds( HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF20 );
+          gpo.set_hbd_stop_percent( HIVE_HBD_STOP_PERCENT_HF20 );
+          gpo.set_hbd_start_percent( HIVE_HBD_START_PERCENT_HF20 );
+          gpo.set_available_account_subsidies( 0 );
         } );
 
         const auto& wso = get_witness_schedule_object();
@@ -370,7 +370,7 @@ void database::apply_hardfork( uint32_t hardfork )
         fc::variant resource_params_var = fc::json::from_string( resource_params_json, fc::json::format_validation_mode::full, fc::json::strict_parser );
         std::vector< std::pair< fc::variant, std::pair< fc::variant_object, fc::variant_object > > > resource_params_pairs;
         fc::from_variant( resource_params_var, resource_params_pairs );
-        fc::time_point_sec now = dgpo.time;
+        fc::time_point_sec now = dgpo.get_head_block_time();
 
         const auto& rc_params = create< rc_resource_param_object >( [&]( rc_resource_param_object& params_obj )
         {
@@ -419,10 +419,10 @@ void database::apply_hardfork( uint32_t hardfork )
     {
       modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
       {
-        gpo.proposal_fund_percent = HIVE_PROPOSAL_FUND_PERCENT_HF21;
-        gpo.content_reward_percent = HIVE_CONTENT_REWARD_PERCENT_HF21;
-        gpo.downvote_pool_percent = HIVE_DOWNVOTE_POOL_PERCENT_HF21;
-        gpo.reverse_auction_seconds = HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF21;
+        gpo.set_proposal_fund_percent( HIVE_PROPOSAL_FUND_PERCENT_HF21 );
+        gpo.set_content_reward_percent( HIVE_CONTENT_REWARD_PERCENT_HF21 );
+        gpo.set_downvote_pool_percent( HIVE_DOWNVOTE_POOL_PERCENT_HF21 );
+        gpo.set_reverse_auction_seconds( HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF21 );
       });
 
       const auto treasury_name = get_treasury_name();
@@ -487,9 +487,9 @@ void database::apply_hardfork( uint32_t hardfork )
       });
       modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
       {
-        gpo.reverse_auction_seconds = HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF25;
-        gpo.early_voting_seconds    = HIVE_EARLY_VOTING_SECONDS_HF25;
-        gpo.mid_voting_seconds      = HIVE_MID_VOTING_SECONDS_HF25;
+        gpo.set_reverse_auction_seconds( HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF25 );
+        gpo.set_early_voting_seconds( HIVE_EARLY_VOTING_SECONDS_HF25 );
+        gpo.set_mid_voting_seconds( HIVE_MID_VOTING_SECONDS_HF25 );
       });
       break;
     }
@@ -497,8 +497,8 @@ void database::apply_hardfork( uint32_t hardfork )
     {
       modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
       {
-        gpo.hbd_stop_percent = HIVE_HBD_STOP_PERCENT_HF26;
-        gpo.hbd_start_percent = HIVE_HBD_START_PERCENT_HF26;
+        gpo.set_hbd_stop_percent( HIVE_HBD_STOP_PERCENT_HF26 );
+        gpo.set_hbd_start_percent( HIVE_HBD_START_PERCENT_HF26 );
       } );
       const auto& fwso = create<witness_schedule_object>( [&]( witness_schedule_object& future_witness_schedule )
       {

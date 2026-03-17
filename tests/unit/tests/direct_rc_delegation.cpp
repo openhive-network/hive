@@ -1143,7 +1143,7 @@ BOOST_AUTO_TEST_CASE( rc_delegation_regeneration )
       hive::chain::util::manabar_params manabar_params( account.get_maximum_rc().value, HIVE_RC_REGEN_TIME );
       auto manabar = account.rc_manabar;
       // Magic number: we regenerate based off the future, because otherwise the manabar will already be up to date and won't regenerate
-      manabar.regenerate_mana( manabar_params, db->get_dynamic_global_properties().time.sec_since_epoch() + 1 );
+      manabar.regenerate_mana( manabar_params, db->get_dynamic_global_properties().get_head_block_time().sec_since_epoch() + 1 );
       return manabar.current_mana - current_mana;
     };
 

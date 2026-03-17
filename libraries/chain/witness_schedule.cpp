@@ -42,16 +42,16 @@ void reset_virtual_schedule_time( database& db )
 void update_global_witness_properties( database& db, const witness_schedule_object& wso )
 { try {
   const dynamic_global_property_object& dgpo = db.get_dynamic_global_properties();
-  if( dgpo.maximum_block_size != wso.median_props.maximum_block_size )
+  if( dgpo.get_maximum_block_size() != wso.median_props.maximum_block_size )
   {
     push_virtual_operation( db, hive::protocol::system_warning_operation( FC_LOG_MESSAGE( warn,
       "Changing maximum block size from ${old} to ${new}",
-      ( "old", dgpo.maximum_block_size )( "new", wso.median_props.maximum_block_size ) ).get_message() ) );
+      ( "old", dgpo.get_maximum_block_size() )( "new", wso.median_props.maximum_block_size ) ).get_message() ) );
   }
   db.modify( dgpo, [&]( dynamic_global_property_object& _dgpo )
   {
-    _dgpo.maximum_block_size = wso.median_props.maximum_block_size;
-    _dgpo.hbd_interest_rate = wso.median_props.hbd_interest_rate;
+    _dgpo.set_maximum_block_size( wso.median_props.maximum_block_size );
+    _dgpo.set_hbd_interest_rate( wso.median_props.hbd_interest_rate );
   } );
 } FC_CAPTURE_AND_RETHROW() }
 
@@ -200,7 +200,7 @@ void update_witness_schedule4(database& db, const witness_schedule_object& wso)
     } );
     db.modify( gprops, [&]( dynamic_global_property_object& obj )
     {
-      obj.num_pow_witnesses--;
+      obj.remove_pow_witness();
     } );
   }
 
@@ -447,7 +447,7 @@ void update_witness_schedule(database& db)
     fc::uint128 new_virtual_time = 0;
 
     /// only use vote based scheduling after the first 1M HIVE is created or if there is no POW queued
-    if( props.num_pow_witnesses == 0 || db.head_block_num() > HIVE_START_MINER_VOTING_BLOCK )
+    if( props.get_current_pow_witnesses() == 0 || db.head_block_num() > HIVE_START_MINER_VOTING_BLOCK )
     {
       const auto& widx = db.get_index<witness_index>().indices().get<by_vote_name>();
 
@@ -500,7 +500,7 @@ void update_witness_schedule(database& db)
 
     auto itr = pow_idx.lower_bound(1);
     /// if there is more than 1 POW witness, then pop the first one from the queue...
-    if( props.num_pow_witnesses > HIVE_MAX_WITNESSES )
+    if( props.get_current_pow_witnesses() > HIVE_MAX_WITNESSES )
     {
       if( itr != pow_idx.end() )
       {
@@ -510,7 +510,7 @@ void update_witness_schedule(database& db)
         } );
         db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& obj )
         {
-          obj.num_pow_witnesses--;
+          obj.remove_pow_witness();
         } );
       }
     }
@@ -560,7 +560,7 @@ void update_witness_schedule(database& db)
                 _wso.current_shuffled_witnesses[j] );
       }
 
-      if( props.num_pow_witnesses == 0 || db.head_block_num() > HIVE_START_MINER_VOTING_BLOCK )
+      if( props.get_current_pow_witnesses() == 0 || db.head_block_num() > HIVE_START_MINER_VOTING_BLOCK )
         _wso.current_virtual_time = new_virtual_time;
 
       _wso.next_shuffle_block_num = db.head_block_num() + _wso.num_scheduled_witnesses;

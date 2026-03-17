@@ -1029,7 +1029,7 @@ BOOST_FIXTURE_TEST_CASE( rsf_missed_blocks, clean_database_fixture )
 
     auto rsf = [&]() -> string
     {
-      fc::uint128 rsf = db->get_dynamic_global_properties().recent_slots_filled;
+      fc::uint128 rsf = db->get_dynamic_global_properties().get_recent_slots_filled();
       string result = "";
       result.reserve(128);
       for( int i=0; i<128; i++ )
@@ -1300,7 +1300,7 @@ BOOST_FIXTURE_TEST_CASE( generate_block_size, clean_database_fixture )
     {
       db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
       {
-        gpo.maximum_block_size = HIVE_MIN_BLOCK_SIZE_LIMIT;
+        gpo.set_maximum_block_size( HIVE_MIN_BLOCK_SIZE_LIMIT );
       });
     });
     generate_block();
@@ -1929,7 +1929,7 @@ BOOST_FIXTURE_TEST_CASE( init_hive_hbd_supply, init_supply_database_fixture )
     const auto& dgpo = db->get_dynamic_global_properties();
     BOOST_CHECK_EQUAL( dgpo.get_current_supply().amount.value, HIVE_INIT_SUPPLY );
     BOOST_CHECK_EQUAL( dgpo.get_current_hbd_supply().amount.value, HIVE_HBD_INIT_SUPPLY );
-    BOOST_CHECK_EQUAL( dgpo.virtual_supply.amount.value, HIVE_INIT_SUPPLY + HIVE_HBD_INIT_SUPPLY ); //initial HIVE price is 1-1 with HBD
+    BOOST_CHECK_EQUAL( dgpo.get_virtual_supply().amount.value, HIVE_INIT_SUPPLY + HIVE_HBD_INIT_SUPPLY ); //initial HIVE price is 1-1 with HBD
 
     // 'null' account balances are cleared only starting at HF14 and supply checks, that were the assertion
     // raised as result of the, bug are performed since HF20
@@ -1948,7 +1948,7 @@ BOOST_FIXTURE_TEST_CASE( init_hive_hbd_supply, init_supply_database_fixture )
     // HIVE and HBD global balances (HBD goes to treasury)
     BOOST_CHECK_GT( dgpo.get_current_supply().amount.value, HIVE_INIT_SUPPLY - 100'000 );
     BOOST_CHECK_GT( dgpo.get_current_hbd_supply().amount.value, HIVE_HBD_INIT_SUPPLY - 100'000 );
-    BOOST_CHECK_GT( dgpo.virtual_supply.amount.value, HIVE_INIT_SUPPLY + HIVE_HBD_INIT_SUPPLY - 200'000 );
+    BOOST_CHECK_GT( dgpo.get_virtual_supply().amount.value, HIVE_INIT_SUPPLY + HIVE_HBD_INIT_SUPPLY - 200'000 );
 
     validate_database(); // fix for the bug included change in validate_invariants() called here
   }

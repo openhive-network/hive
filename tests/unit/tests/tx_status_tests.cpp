@@ -180,7 +180,7 @@ BOOST_AUTO_TEST_CASE( regular_transactions )
     {
       db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& dgpo )
       {
-        dgpo.maximum_block_size = HIVE_MIN_BLOCK_SIZE_LIMIT;
+        dgpo.set_maximum_block_size( HIVE_MIN_BLOCK_SIZE_LIMIT );
       } );
     } );
 
@@ -470,7 +470,7 @@ BOOST_AUTO_TEST_CASE( transactions_in_forks )
       tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION/2 );
         //if we used max expiration time, popped transactions would fail not due to tapos, but because
         //their expiration time is too much into the future
-      tx.set_reference_block( dgpo.head_block_id );
+      tx.set_reference_block( dgpo.get_head_block_id() );
         //normal database_fixture::push_transaction() does not set tapos - they all point to genesis
       tx.operations.push_back( op );
       push_transaction( tx, key );

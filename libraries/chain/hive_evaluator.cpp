@@ -417,7 +417,7 @@ void pow_apply( database& db, Operation o )
   auto itr = accounts_by_name.find( o.worker_account );
   if(itr == accounts_by_name.end())
   {
-    const auto& new_account = create_account( db, o.worker_account, o.work.worker, dgp.time, db.get_current_timestamp(),
+    const auto& new_account = create_account( db, o.worker_account, o.work.worker, dgp.get_head_block_time(), db.get_current_timestamp(),
       true /*mined*/, HIVE_asset( 0 ) );
     // ^ empty recovery account parameter means highest voted witness at time of recovery
 
@@ -450,8 +450,7 @@ void pow_apply( database& db, Operation o )
 
   db.modify( dgp, [&]( dynamic_global_property_object& p )
   {
-    p.total_pow++; // make sure this doesn't break anything...
-    p.num_pow_witnesses++;
+    p.on_pow_witness();
   } );
 
 
@@ -462,7 +461,7 @@ void pow_apply( database& db, Operation o )
     db.modify(*cur_witness, [&]( witness_object& w )
     {
       copy_legacy_chain_properties( w.props, o.props );
-      w.pow_worker = dgp.total_pow;
+      w.pow_worker = dgp.get_total_pow();
       w.last_work = o.work.work;
     } );
   }
@@ -474,7 +473,7 @@ void pow_apply( database& db, Operation o )
       copy_legacy_chain_properties( w.props, o.props );
       w.created = db.head_block_time();
       w.signing_key = o.work.worker;
-      w.pow_worker = dgp.total_pow;
+      w.pow_worker = dgp.get_total_pow();
       w.last_work = o.work.work;
     } );
   }
@@ -485,7 +484,7 @@ void pow_apply( database& db, Operation o )
   db.adjust_supply( pow_reward, true );
 
   /// pay the witness that includes this POW
-  const auto& inc_witness = db.get_account( dgp.current_witness );
+  const auto& inc_witness = db.get_account( dgp.get_current_witness() );
   asset actual_reward;
   if( db.head_block_num() < HIVE_START_MINER_VOTING_BLOCK )
   {
@@ -496,7 +495,7 @@ void pow_apply( database& db, Operation o )
   {
     actual_reward = db.create_vesting( inc_witness, pow_reward ).to_asset();
   }
-  push_virtual_operation( db, pow_reward_operation( dgp.current_witness, actual_reward ) );
+  push_virtual_operation( db, pow_reward_operation( dgp.get_current_witness(), actual_reward ) );
 }
 
 void pow_evaluator::do_apply( const pow_operation& o ) {
@@ -545,8 +544,7 @@ void pow2_evaluator::do_apply( const pow2_operation& o )
 
   db.modify( dgp, [&]( dynamic_global_property_object& p )
   {
-    p.total_pow++;
-    p.num_pow_witnesses++;
+    p.on_pow_witness();
   });
 
   const auto& accounts_by_name = db.get_index<account_index>().indices().get<by_name>();
@@ -554,7 +552,7 @@ void pow2_evaluator::do_apply( const pow2_operation& o )
   if(itr == accounts_by_name.end())
   {
     HIVE_CHAIN_STATE_ASSERT( o.new_owner_key.valid(), worker_account, "New owner key is not valid." );
-    const auto& new_account = create_account( db, worker_account, *o.new_owner_key, dgp.time, _db.get_current_timestamp(),
+    const auto& new_account = create_account( db, worker_account, *o.new_owner_key, dgp.get_head_block_time(), _db.get_current_timestamp(),
       true /*mined*/, HIVE_asset( 0 ) );
     // ^ empty recovery account parameter means highest voted witness at time of recovery
 
@@ -572,7 +570,7 @@ void pow2_evaluator::do_apply( const pow2_operation& o )
       copy_legacy_chain_properties( w.props, o.props );
       w.created = db.head_block_time();
       w.signing_key = *o.new_owner_key;
-      w.pow_worker = dgp.total_pow;
+      w.pow_worker = dgp.get_total_pow();
     } );
 
     push_virtual_operation( _db, account_created_operation( new_account.get_name(), worker_account, VEST_asset( 0 ), VEST_asset( 0 ) ) );
@@ -586,7 +584,7 @@ void pow2_evaluator::do_apply( const pow2_operation& o )
     db.modify(*cur_witness, [&]( witness_object& w )
     {
       copy_legacy_chain_properties( w.props, o.props );
-      w.pow_worker = dgp.total_pow;
+      w.pow_worker = dgp.get_total_pow();
     } );
   }
 
@@ -596,9 +594,9 @@ void pow2_evaluator::do_apply( const pow2_operation& o )
     HIVE_asset inc_reward = db.get_pow_reward();
     db.adjust_supply( inc_reward, true );
 
-    const auto& inc_witness = db.get_account( dgp.current_witness );
+    const auto& inc_witness = db.get_account( dgp.get_current_witness() );
     VEST_asset actual_reward = db.create_vesting( inc_witness, inc_reward );
-    push_virtual_operation( db, pow_reward_operation( dgp.current_witness, actual_reward.to_asset() ) );
+    push_virtual_operation( db, pow_reward_operation( dgp.get_current_witness(), actual_reward.to_asset() ) );
   }
 }
 
