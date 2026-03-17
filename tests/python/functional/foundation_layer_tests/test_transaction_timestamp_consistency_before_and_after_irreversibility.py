@@ -54,4 +54,6 @@ def test_account_history_data_consistency_on_replayed_and_full_pruned_node(
 
     assert api_node.get_last_block_number() == node.get_last_block_number()
     assert len(vops) == node.get_last_block_number()
-    assert vops[check_at_block - 5].op.value == ProducerRewardOperation(producer=AccountName("initminer"), vesting_shares=tt.Asset.Vest(0.140274))
+    vop_value = vops[check_at_block - 5].op.value
+    assert vop_value["producer"] == "initminer"
+    assert tt.Asset.from_nai(vop_value["vesting_shares"]) == tt.Asset.Vest(0.140274)

@@ -7,17 +7,17 @@ import pytest
 import test_tools as tt
 
 
-@pytest.fixture()
+@pytest.fixture
 def unconfigured_offline_wallet() -> tt.OldWallet:
     return tt.OldWallet(preconfigure=False)
 
 
-@pytest.fixture()
+@pytest.fixture
 def unconfigured_online_wallet(node) -> tt.OldWallet:
     return tt.OldWallet(attach_to=node, preconfigure=False)
 
 
-@pytest.fixture()
+@pytest.fixture
 def configured_offline_wallet() -> tt.OldWallet:
     return tt.OldWallet()
 
@@ -154,8 +154,8 @@ def test_set_transaction_expiration() -> None:
         debug_key=tt.Account("initminer").private_key, count=20, skip=0, miss_blocks=0
     )
 
-    response = node.api.block.get_block(block_num=23)["block"]
-    last_block_time_point = tt.Time.parse(response["timestamp"])
+    response = node.api.block.get_block(block_num=23).block
+    last_block_time_point = tt.Time.parse(response.timestamp)
 
     wallet = tt.OldWallet(attach_to=node)
 

@@ -59,7 +59,12 @@ class Operation:
 ApiAccountItem = AccountItemFundament
 
 
-def _convert_to_asset(asset_obj) -> tt.Asset.AnyT:
+def to_naive(dt: datetime) -> datetime:
+    """Strip timezone info from datetime, keeping only date and time components."""
+    return datetime(dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second)
+
+
+def convert_to_asset(asset_obj) -> tt.Asset.AnyT:
     """Convert database_api asset types (Balance, VestingShares, etc.) to tt.Asset types."""
     if isinstance(asset_obj, dict):
         return tt.Asset.from_nai(asset_obj)
@@ -94,11 +99,11 @@ class Account:
 
     @property
     def hive(self) -> tt.Asset.TestT:
-        return _convert_to_asset(self._acc_info.balance)
+        return convert_to_asset(self._acc_info.balance)
 
     @property
     def hbd(self) -> tt.Asset.TbdT:
-        return _convert_to_asset(self._acc_info.hbd_balance)
+        return convert_to_asset(self._acc_info.hbd_balance)
 
     @property
     def rc_manabar(self) -> _RcManabar:
@@ -114,19 +119,19 @@ class Account:
 
     @property
     def vest(self) -> tt.Asset.VestsT:
-        return _convert_to_asset(self._acc_info.vesting_shares)
+        return convert_to_asset(self._acc_info.vesting_shares)
 
     @property
     def reward_hive(self) -> tt.Asset.TestT:
-        return _convert_to_asset(self._acc_info.reward_hive_balance)
+        return convert_to_asset(self._acc_info.reward_hive_balance)
 
     @property
     def reward_hbd(self) -> tt.Asset.TbdT:
-        return _convert_to_asset(self._acc_info.reward_hbd_balance)
+        return convert_to_asset(self._acc_info.reward_hbd_balance)
 
     @property
     def reward_vests(self) -> tt.Asset.VestsT:
-        return _convert_to_asset(self._acc_info.reward_vesting_balance)
+        return convert_to_asset(self._acc_info.reward_vesting_balance)
 
     @property
     def proxy(self) -> str:
@@ -400,35 +405,35 @@ def get_governance_voting_power(node: tt.InitNode, wallet: tt.Wallet, account_na
 
 
 def get_hbd_balance(node: tt.InitNode, account_name: str) -> tt.Asset.TbdT:
-    return _convert_to_asset(_find_account(node, account_name).hbd_balance)
+    return convert_to_asset(_find_account(node, account_name).hbd_balance)
 
 
 def get_reward_hbd_balance(node: tt.InitNode, account_name: str) -> tt.Asset.TbdT:
-    return _convert_to_asset(_find_account(node, account_name).reward_hbd_balance)
+    return convert_to_asset(_find_account(node, account_name).reward_hbd_balance)
 
 
 def get_vesting_shares(node: tt.InitNode, account_name: str) -> tt.Asset.VestsT:
-    return _convert_to_asset(_find_account(node, account_name).vesting_shares)
+    return convert_to_asset(_find_account(node, account_name).vesting_shares)
 
 
 def get_reward_vesting_balance(node: tt.InitNode, account_name: str) -> tt.Asset.VestsT:
-    return _convert_to_asset(_find_account(node, account_name).reward_vesting_balance)
+    return convert_to_asset(_find_account(node, account_name).reward_vesting_balance)
 
 
 def get_hbd_savings_balance(node: tt.InitNode, account_name: str) -> tt.Asset.TbdT:
-    return _convert_to_asset(_find_account(node, account_name).savings_hbd_balance)
+    return convert_to_asset(_find_account(node, account_name).savings_hbd_balance)
 
 
 def get_hive_balance(node: tt.InitNode, account_name: str) -> tt.Asset.TestT:
-    return _convert_to_asset(_find_account(node, account_name).balance)
+    return convert_to_asset(_find_account(node, account_name).balance)
 
 
 def get_reward_hive_balance(node: tt.InitNode, account_name: str) -> tt.Asset.TestT:
-    return _convert_to_asset(_find_account(node, account_name).reward_hive_balance)
+    return convert_to_asset(_find_account(node, account_name).reward_hive_balance)
 
 
 def get_hive_power(node: tt.InitNode, account_name: str) -> tt.Asset.VestsT:
-    return _convert_to_asset(_find_account(node, account_name).vesting_shares)
+    return convert_to_asset(_find_account(node, account_name).vesting_shares)
 
 
 def get_current_median_history_price(node: tt.InitNode) -> dict:
@@ -511,7 +516,7 @@ def get_virtual_operations(
 
     if skip_price_stabilization:
         for vop_number, vop in enumerate(result.ops):
-            if vop.op.type == "transfer_to_vesting_completed_operation" and _convert_to_asset(
+            if vop.op.type == "transfer_to_vesting_completed_operation" and convert_to_asset(
                 vop.op.value["hive_vested"]
             ) == tt.Asset.Test(10_000_000):
                 result.ops.pop(vop_number)  # noqa: B909
@@ -524,9 +529,6 @@ def get_rc_max_mana(node: tt.InitNode, account_name: str) -> int:
 
 def get_transaction_timestamp(node: tt.InitNode, transaction) -> datetime:
     timestamp = node.api.block.get_block(block_num=transaction["block_num"]).block.timestamp
-    # Return timezone-aware datetime (UTC) for consistent comparisons
-    if isinstance(timestamp, datetime):
-        return timestamp if timestamp.tzinfo is not None else timestamp.replace(tzinfo=timezone.utc)
     return tt.Time.parse(timestamp, time_zone=timezone.utc)
 
 
@@ -534,9 +536,6 @@ def get_previous_block_timestamp(node: tt.InitNode, block_num: int) -> datetime:
     """Get timestamp of the block immediately before the given block number."""
     prev_block = node.api.block.get_block(block_num=block_num - 1)
     timestamp = prev_block.block.timestamp
-    # Return timezone-aware datetime (UTC) for consistent comparisons
-    if isinstance(timestamp, datetime):
-        return timestamp if timestamp.tzinfo is not None else timestamp.replace(tzinfo=timezone.utc)
     return tt.Time.parse(timestamp, time_zone=timezone.utc)
 
 
@@ -605,7 +604,7 @@ class Proposal:
         self.daily_pay = self._proposal_info.daily_pay
         self.subject = self._proposal_info.subject
         self.permlink = self._proposal_info.permlink
-        self.total_votes = tt.Asset.Vest(self._proposal_info.total_votes / 1_000_000)
+        self.total_votes = tt.Asset.Vest(int(self._proposal_info.total_votes) / 1_000_000)
         self.status = self._proposal_info.status
 
     def update_proposal_info(self):

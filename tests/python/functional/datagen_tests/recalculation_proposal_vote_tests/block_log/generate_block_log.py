@@ -136,7 +136,7 @@ def prepare_block_log_with_many_vote_for_proposals(output_block_log_directory: P
     tt.logger.info(f"Unlock delayed votes! @Block: {node.get_last_block_number()}")
     generate_block(node, 1, miss_blocks=HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD // 3)
     tt.logger.info(f"Unlock delayed votes after RC delegation - restart. @Block {node.get_last_block_number()}")
-    next_maintenance_time = tt.Time.parse(node.api.database.get_dynamic_global_properties().next_maintenance_time)
+    next_maintenance_time = datetime.fromisoformat(node.api.database.get_dynamic_global_properties().next_maintenance_time)
 
     # create comments
     tt.logger.info(f"Start create comments: {node.get_head_block_time()}, block num: {node.get_last_block_number()}.")
@@ -206,7 +206,7 @@ def prepare_block_log_with_many_vote_for_proposals(output_block_log_directory: P
         == 0
     ), "Votes for proposals were not removed correctly."
     tt.logger.info(f"Headblock time before reverse voting: {node.get_head_block_time()}")
-    next_maintenance_time = tt.Time.parse(node.api.database.get_dynamic_global_properties().next_maintenance_time)
+    next_maintenance_time = datetime.fromisoformat(node.api.database.get_dynamic_global_properties().next_maintenance_time)
 
     # reverse vote for proposals
     tt.logger.info(f"Remaining time for reverse voting: {next_maintenance_time - node.get_head_block_time()}")
