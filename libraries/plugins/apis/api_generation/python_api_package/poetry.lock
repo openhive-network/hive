@@ -472,13 +472,13 @@ files = [
 
 [[package]]
 name = "hiveio-beekeepy"
-version = "1.28.6.post20260303100405"
+version = "1.28.6.post20260317125034"
 description = "All in one package for beekeeper interaction via Python interface."
 optional = false
 python-versions = ">=3.12,<4"
 groups = ["main"]
 files = [
-    {file = "hiveio_beekeepy-1.28.6.post20260303100405-py3-none-any.whl", hash = "sha256:3861762ebeb6aeb68224e0fd83b0d42e14168b4887c6f96e34ebe731d96508d1"},
+    {file = "hiveio_beekeepy-1.28.6.post20260317125034-py3-none-any.whl", hash = "sha256:2f55786c285190206b14843039a1e82bfcab7b655e640f07720c61ee5bb7aeb7"},
 ]
 
 [package.dependencies]
@@ -1183,4 +1183,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<4"
-content-hash = "99a0cb399f7e8c4f55b55bd340cf3b562f9ef09569e54845235cd5ba78669385"
+content-hash = "eb1a421c30c981908dff4d46118c2f1913e9bbd7eb9f7865c2b872e015ccb836"
