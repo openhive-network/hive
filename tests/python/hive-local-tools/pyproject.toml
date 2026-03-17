@@ -31,8 +31,8 @@ pytest-repeat = "^0.9.3"
 pytest-xdist = "^3.6.1"
 tavern = "^3.0.2"
 types-PyYAML = "^6.0.12"
-hiveio-test-tools = {version = "2.0.2.dev20260317091729", source = "gitlab-hive"}
-hiveio-wax = {version = "2.0.2.dev20260317091729", source = "gitlab-hive"}
+hiveio-test-tools = {version = "2.0.2.dev20260317172759", source = "gitlab-hive"}
+hiveio-wax = {version = "2.0.2.dev20260317172759", source = "gitlab-hive"}
 hiveio-beekeepy = "^1.28.6.post20260317125034"
 tests_api = { path = "tests_api", develop = true }
 
