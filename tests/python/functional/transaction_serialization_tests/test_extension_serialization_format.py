@@ -90,12 +90,12 @@ def test_update_proposal_operation(node, api, expected_extension):
 def get_extension_from_operation(node, api: str, block_num: int):
     if api == "block":
         block = getattr(node.api, api).get_block(block_num=block_num)
-        operation = block["block"]["transactions"][0]["operations"][0]
-        return operation["value"]["extensions"][0]
+        operation = block.block.transactions[0].operations[0]
+        return operation.value["extensions"][0]
 
     if api == "condenser":
         block = getattr(node.api, api).get_block(block_num)
-        operation = block["transactions"][0]["operations"][0][1]
+        operation = block.transactions[0].operations[0][1]
         return operation["extensions"][0]
 
     raise RuntimeError("Shouldn't be ever reached")
