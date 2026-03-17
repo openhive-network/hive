@@ -145,7 +145,7 @@ def test_try_to_release_escrow_with_forbidden_arguments_before_or_after_expirati
 
     with pytest.raises(ErrorInResponseError) as exception:
         escrow.release(who=release_author, receiver=release_target, hbd_amount=hbd_amount, hive_amount=hive_amount)
-    assert "release" in exception.value.error, "Message other than expected."
+    assert "release" in str(exception.value), "Message other than expected."
 
 
 @pytest.mark.parametrize(
@@ -515,7 +515,7 @@ def test_try_to_release_escrow_with_dispute(prepare_escrow, hbd_amount, hive_amo
     ):
         with pytest.raises(ErrorInResponseError) as exception:
             escrow.release(who=release_author, receiver=release_target, hbd_amount=hbd_amount, hive_amount=hive_amount)
-        assert "release funds in a disputed escrow" in exception.value.error, "Message other than expected."
+        assert "release funds in a disputed escrow" in str(exception.value), "Message other than expected."
 
 
 @pytest.mark.parametrize(

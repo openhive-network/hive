@@ -76,4 +76,4 @@ def test_try_to_remove_proposal_from_unauthorised_account(
     bob.create_proposal("alice", tt.Time.now(), end_date)
     with pytest.raises(ErrorInResponseError) as exception:
         alice.remove_proposal(proposal_to_remove_details=bob.proposal_parameters)
-    assert "Only proposal owner can remove it..." in exception.value.error
+    assert "Only proposal owner can remove it..." in str(exception.value)

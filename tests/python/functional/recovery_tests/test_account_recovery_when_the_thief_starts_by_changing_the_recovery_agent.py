@@ -87,7 +87,7 @@ def test_steal_account_scenario_start_from_change_recovery_agent_by_thief_0(prep
     with pytest.raises(ErrorInResponseError) as exception:
         wallet_thief.api.request_account_recovery("thief", "alice", thief_authority)
 
-    assert "Cannot recover an account that does not have you as their recovery partner." in exception.value.error
+    assert "Cannot recover an account that does not have you as their recovery partner." in str(exception.value)
 
 
 def test_steal_account_scenario_start_from_change_recovery_agent_by_thief_1(prepare_environment: tuple) -> None:
@@ -131,18 +131,18 @@ def test_steal_account_scenario_start_from_change_recovery_agent_by_thief_1(prep
     # alice is trying to change the owner authority
     with pytest.raises(ErrorInResponseError) as exception:
         wallet_alice.api.update_account("alice", "{}", alice_new_key, alice_new_key, alice_new_key, alice_new_key)
-    assert "Missing Owner Authority" in exception.value.error
+    assert "Missing Owner Authority" in str(exception.value)
 
     # alice tries to change the recovery agent
     with pytest.raises(ErrorInResponseError) as exception:
         wallet_alice.api.change_recovery_account("alice", "alice.agent")
-    assert "Missing Owner Authority" in exception.value.error
+    assert "Missing Owner Authority" in str(exception.value)
 
     # alice-agent trying to recover an alice account
     with pytest.raises(ErrorInResponseError) as exception:
         wallet_alice_agent.api.request_account_recovery("alice.agent", "alice", alice_new_authority)
     error_message = "Cannot recover an account that does not have you as their recovery partner."
-    assert error_message in exception.value.error
+    assert error_message in str(exception.value)
 
 
 def test_account_recovery_after_the_thief_changed_the_key_but_before_changing_the_recovery_agent(
@@ -188,18 +188,18 @@ def test_account_recovery_after_the_thief_changed_the_key_but_before_changing_th
     # alice is trying to change the owner authority
     with pytest.raises(ErrorInResponseError) as exception:
         wallet_alice.api.update_account("alice", "{}", alice_new_key, alice_new_key, alice_new_key, alice_new_key)
-    assert "Missing Owner Authority" in exception.value.error
+    assert "Missing Owner Authority" in str(exception.value)
 
     # alice tries to change the recovery agent
     with pytest.raises(ErrorInResponseError) as exception:
         wallet_alice.api.change_recovery_account("alice", "alice.agent")
-    assert "Missing Owner Authority" in exception.value.error
+    assert "Missing Owner Authority" in str(exception.value)
 
     # alice-agent trying to recover an alice account
     with pytest.raises(ErrorInResponseError) as exception:
         wallet_alice_agent.api.request_account_recovery("alice.agent", "alice", alice_new_authority)
     error_message = "Cannot recover an account that does not have you as their recovery partner."
-    assert error_message in exception.value.error
+    assert error_message in str(exception.value)
 
 
 def test_account_recovery_after_the_key_and_agent_was_changed_by_the_thief(prepare_environment: tuple) -> None:
@@ -246,13 +246,13 @@ def test_account_recovery_after_the_key_and_agent_was_changed_by_the_thief(prepa
             alice_new_key,
             alice_new_key,
         )
-    assert "Missing Owner Authority" in exception.value.error
+    assert "Missing Owner Authority" in str(exception.value)
 
     get_recovery_agent(node, "alice", wait_for_agent="thief")
 
     with pytest.raises(ErrorInResponseError) as exception:
         wallet_alice_agent.api.request_account_recovery("alice.agent", "alice", alice_new_authority)
-    assert "Cannot recover an account that does not have you as their recovery partner." in exception.value.error
+    assert "Cannot recover an account that does not have you as their recovery partner." in str(exception.value)
 
 
 def test_steal_account_scenario_start_from_change_recovery_agent_by_thief_2(prepare_environment: tuple) -> None:
@@ -422,4 +422,4 @@ def test_steal_account_scenario_start_from_change_recovery_agent_by_thief_4(prep
     with pytest.raises(ErrorInResponseError) as exception:
         wallet_thief.api.request_account_recovery("thief", "alice", thief_authority)
 
-    assert "Cannot recover an account that does not have you as their recovery partner." in exception.value.error
+    assert "Cannot recover an account that does not have you as their recovery partner." in str(exception.value)

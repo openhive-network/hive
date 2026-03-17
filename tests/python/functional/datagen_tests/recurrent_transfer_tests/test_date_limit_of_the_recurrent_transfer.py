@@ -46,7 +46,7 @@ def test_exceed_date_limit_of_recurrent_transfers(node: tt.InitNode, executions:
     expected_error_message = (
         f"Cannot set a transfer that would last for longer than {MAX_RECURRENT_TRANSFER_END_DATE} days"
     )
-    assert expected_error_message in exception.value.get_response_error_messages()[0]
+    assert expected_error_message in str(exception.value)
 
 
 @pytest.mark.parametrize("executions", [2, 3, 4])

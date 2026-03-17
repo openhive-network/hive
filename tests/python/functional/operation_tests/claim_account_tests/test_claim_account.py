@@ -55,7 +55,7 @@ def test_crate_claim_account_token_without_enough_rc(
     with pytest.raises(ErrorInResponseError) as exception:
         wallet_alice.api.claim_account_creation(alice.name, fee)
 
-    assert "Account: alice has 0 RC, needs " in exception.value.error
+    assert "Account: alice has 0 RC, needs " in str(exception.value)
     assert (
         alice.get_pending_claimed_accounts() == 0
     ), "Claim token was created. It should not be possible to create a token without enough RC."
@@ -72,7 +72,7 @@ def test_crate_claim_account_token_without_enough_hive_balance_to_cover_fee(
     with pytest.raises(ErrorInResponseError) as exception:
         wallet_alice.api.claim_account_creation(alice.name, fee)
 
-    assert "Insufficient balance to create account." in exception.value.error
+    assert "Insufficient balance to create account." in str(exception.value)
     assert (
         alice.get_pending_claimed_accounts() == 0
     ), "Claim token was created. It should not be possible to create a token without enough RC."
@@ -90,7 +90,7 @@ def test_crate_claim_account_token_with_insufficient_fee(
     with pytest.raises(ErrorInResponseError) as exception:
         wallet_alice.api.claim_account_creation(alice.name, fee + tt.Asset.Test(1))
 
-    assert "Must pay the exact account creation fee (or zero if subsidy is to be used)." in exception.value.error
+    assert "Must pay the exact account creation fee (or zero if subsidy is to be used)." in str(exception.value)
     assert (
         alice.get_pending_claimed_accounts() == 0
     ), "Claim token was created. It should not be possible to create a token without enough RC."
@@ -108,7 +108,7 @@ def test_claim_account_creation_token_with_excessive_fee(
     with pytest.raises(ErrorInResponseError) as exception:
         wallet_alice.api.claim_account_creation(alice.name, fee - tt.Asset.Test(1))
 
-    assert "Must pay the exact account creation fee (or zero if subsidy is to be used)." in exception.value.error
+    assert "Must pay the exact account creation fee (or zero if subsidy is to be used)." in str(exception.value)
     assert (
         alice.get_pending_claimed_accounts() == 0
     ), "Claim token was created. It should not be possible to create a token without enough RC."

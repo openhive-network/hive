@@ -18,7 +18,7 @@ def test_direct_rc_delegations(wallet: tt.Wallet) -> None:
     wallet.api.transfer_to_vesting(creator, delegator, tt.Asset.from_legacy("0.010 TESTS"), "true")
     with pytest.raises(ErrorInResponseError) as exception:
         wallet.api.transfer(receiver, receiver, tt.Asset.from_legacy("0.001 TESTS"), "", "true")
-    assert "receiver has 0 RC, needs 1 RC. Please wait to transact" in exception.value.error
+    assert "receiver has 0 RC, needs 1 RC. Please wait to transact" in str(exception.value)
 
     rc_receiver = wallet.api.find_rc_accounts([receiver])[0]
     rc_receiver2 = wallet.api.find_rc_accounts([receiver2])[0]

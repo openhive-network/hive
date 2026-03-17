@@ -84,4 +84,4 @@ def test_delegate(node: tt.InitNode, wallet: tt.OldWallet):
     with pytest.raises(CommunicationError) as exception:
         wallet.api.claim_reward_balance("initminer", tt.Asset.Test(0), tt.Asset.Tbd(0), tt.Asset.Vest(0.000001))
 
-    assert "Cannot claim that much VESTS" in exception.value.get_response_error_messages()[0]
+    assert "Cannot claim that much VESTS" in str(exception.value)
