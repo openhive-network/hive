@@ -12,6 +12,8 @@
 #include <hive/chain/witness_objects_multiindex.hpp>
 #include <hive/chain/evaluator_registry.hpp>
 
+#include <hive/protocol/hive_specialised_exceptions.hpp>
+
 #include <fc/macros.hpp>
 
 #include <fc/uint128.hpp>
@@ -63,7 +65,7 @@ void witness_update_evaluator::do_apply( const witness_update_operation& o )
 
   if ( _db.has_hardfork( HIVE_HARDFORK_0_14__410 ) )
   {
-    FC_ASSERT( o.props.account_creation_fee.symbol.is_canon() );
+    HIVE_CHAIN_ASSET_ASSERT( o.props.account_creation_fee.symbol.is_canon(), o.props.account_creation_fee, "Account creation fee symbol is not canonical: ${subject}" );
   }
   else if( !o.props.account_creation_fee.symbol.is_canon() )
   {
@@ -110,7 +112,7 @@ struct witness_properties_change_flags
 
 void witness_set_properties_evaluator::do_apply( const witness_set_properties_operation& o )
 {
-  FC_ASSERT( _db.has_hardfork( HIVE_HARDFORK_0_20__1620 ), "witness_set_properties_evaluator not enabled until HF 20" );
+  HIVE_CHAIN_HARDFORK_ASSERT( _db.has_hardfork( HIVE_HARDFORK_0_20__1620 ), "witness_set_properties_evaluator not enabled until HF 20" );
 
   const auto& witness = _db.get< witness_object, by_name >( o.owner ); // verifies witness exists;
 
@@ -127,7 +129,7 @@ void witness_set_properties_evaluator::do_apply( const witness_set_properties_op
 
   // This existence of 'key' is checked in witness_set_properties_operation::validate
   fc::raw::unpack_from_vector( itr->second, signing_key );
-  FC_ASSERT( signing_key == witness.signing_key, "'key' does not match witness signing key.",
+  HIVE_CHAIN_STATE_ASSERT( signing_key == witness.signing_key, signing_key, "'key' does not match witness signing key.",
     ("key", signing_key)("signing_key", witness.signing_key) );
 
   itr = o.props.find( "account_creation_fee" );
@@ -208,14 +210,14 @@ void witness_set_properties_evaluator::do_apply( const witness_set_properties_op
 void account_witness_proxy_evaluator::do_apply( const account_witness_proxy_operation& o )
 {
   const auto& account = _db.get_account( o.account );
-  FC_ASSERT( account.can_vote && "Account has declined the ability to vote and cannot proxy votes." );
+  HIVE_CHAIN_VOTING_ASSERT( account.can_vote && "Account has declined the ability to vote and cannot proxy votes.", o.account, "Account '${subject}' cannot proxy votes." );
   _db.modify( account, [&]( account_object& a) { a.update_governance_vote_expiration_ts(_db.head_block_time()); });
 
   _db.nullify_proxied_witness_votes( account );
 
   if( !o.is_clearing_proxy() ) {
     const auto& new_proxy = _db.get_account( o.proxy );
-    FC_ASSERT( account.get_proxy() != new_proxy.get_id(), "Proxy must change." );
+    HIVE_CHAIN_STATE_ASSERT( account.get_proxy() != new_proxy.get_id(), o.account, "Proxy must change." );
     flat_set<account_id_type> proxy_chain( { account.get_id(), new_proxy.get_id() } );
     proxy_chain.reserve( HIVE_MAX_PROXY_RECURSION_DEPTH + 1 );
 
@@ -224,9 +226,9 @@ void account_witness_proxy_evaluator::do_apply( const account_witness_proxy_oper
     while( cprox->has_proxy() )
     {
       const auto& next_proxy = _db.get_account( cprox->get_proxy() );
-      FC_ASSERT( proxy_chain.insert( next_proxy.get_id() ).second, "This proxy would create a proxy loop." );
+      HIVE_CHAIN_STATE_ASSERT( proxy_chain.insert( next_proxy.get_id() ).second, o.account, "This proxy would create a proxy loop." );
       cprox = &next_proxy;
-      FC_ASSERT( proxy_chain.size() <= HIVE_MAX_PROXY_RECURSION_DEPTH, "Proxy chain is too long." );
+      HIVE_CHAIN_LIMIT_ASSERT( proxy_chain.size() <= HIVE_MAX_PROXY_RECURSION_DEPTH, proxy_chain.size(), "Proxy chain is too long." );
     }
 
     /// clear all individual vote records
@@ -248,7 +250,7 @@ void account_witness_proxy_evaluator::do_apply( const account_witness_proxy_oper
       delta[i+1] = account.proxied_vsf_votes[i];
     _db.adjust_proxied_witness_votes( account, delta );
   } else { /// we are clearing the proxy which means we simply update the account
-    FC_ASSERT( account.has_proxy(), "Proxy must change." );
+    HIVE_CHAIN_STATE_ASSERT( account.has_proxy(), o.account, "Proxy must change." );
 
     push_virtual_operation( _db, proxy_cleared_operation( account.get_name(), _db.get_account( account.get_proxy() ).get_name() ) );
 
@@ -262,8 +264,8 @@ void account_witness_proxy_evaluator::do_apply( const account_witness_proxy_oper
 void account_witness_vote_evaluator::do_apply( const account_witness_vote_operation& o )
 {
   const auto& voter = _db.get_account( o.account );
-  FC_ASSERT( !voter.has_proxy(), "A proxy is currently set, please clear the proxy before voting for a witness." );
-  FC_ASSERT( voter.can_vote && "Account has declined its voting rights." );
+  HIVE_CHAIN_STATE_ASSERT( !voter.has_proxy(), o.account, "A proxy is currently set, please clear the proxy before voting for a witness." );
+  HIVE_CHAIN_VOTING_ASSERT( voter.can_vote && "Account has declined its voting rights.", o.account, "Account '${subject}' has declined voting rights." );
   _db.modify( voter, [&]( account_object& a) { a.update_governance_vote_expiration_ts(_db.head_block_time()); });
 
   const auto& witness = _db.get_witness( o.witness );
@@ -273,10 +275,10 @@ void account_witness_vote_evaluator::do_apply( const account_witness_vote_operat
 
   if( itr == by_account_witness_idx.end() )
   {
-    FC_ASSERT( o.approve, "Vote doesn't exist, user must indicate a desire to approve witness." );
+    HIVE_CHAIN_STATE_ASSERT( o.approve, o.account, "Vote doesn't exist, user must indicate a desire to approve witness." );
 
     if( _db.has_hardfork( HIVE_HARDFORK_0_2 ) ) // a49e13be78bf337c95967418d6ead76565515385 pushed fminerten above limit
-      FC_ASSERT( voter.witnesses_voted_for < HIVE_MAX_ACCOUNT_WITNESS_VOTES, "Account has voted for too many witnesses." );
+      HIVE_CHAIN_LIMIT_ASSERT( voter.witnesses_voted_for < HIVE_MAX_ACCOUNT_WITNESS_VOTES, voter.witnesses_voted_for, "Account has voted for too many witnesses." );
 
     _db.create<witness_vote_object>( [&]( witness_vote_object& v )
     {
@@ -302,7 +304,7 @@ void account_witness_vote_evaluator::do_apply( const account_witness_vote_operat
   }
   else
   {
-    FC_ASSERT( !o.approve, "Vote currently exists, user must indicate a desire to reject witness." );
+    HIVE_CHAIN_STATE_ASSERT( !o.approve, o.account, "Vote currently exists, user must indicate a desire to reject witness." );
 
     if( _db.has_hardfork( HIVE_HARDFORK_0_3 ) )
       _db.adjust_witness_vote( witness, -voter.get_governance_vote_power() );
@@ -327,7 +329,7 @@ void custom_evaluator::do_apply( const custom_operation& o )
 {
   if( _db.has_hardfork( HIVE_HARDFORK_1_26_SOLIDIFY_OLD_SOFTFORKS ) ) // ab28c8e3a10d24f56476653d6a525e712e2e912e example tx with big op
   {
-    FC_ASSERT( o.data.size() <= HIVE_CUSTOM_OP_DATA_MAX_LENGTH,
+    HIVE_CHAIN_LIMIT_ASSERT( o.data.size() <= HIVE_CUSTOM_OP_DATA_MAX_LENGTH, o.data.size(),
       "Operation data must be less than ${bytes} bytes.", ("bytes", HIVE_CUSTOM_OP_DATA_MAX_LENGTH) );
   }
 }
@@ -338,7 +340,7 @@ void custom_json_evaluator::do_apply( const custom_json_operation& o )
 
   if( _db.has_hardfork( HIVE_HARDFORK_1_26_SOLIDIFY_OLD_SOFTFORKS ) ) // 803bcc0dae4d242e0a6539948d998a4410b19655 example tx of big json
   {
-    FC_ASSERT( o.json.length() <= HIVE_CUSTOM_OP_DATA_MAX_LENGTH,
+    HIVE_CHAIN_LIMIT_ASSERT( o.json.length() <= HIVE_CUSTOM_OP_DATA_MAX_LENGTH, o.json.length(),
       "Operation JSON must be less than ${bytes} bytes.", ("bytes", HIVE_CUSTOM_OP_DATA_MAX_LENGTH) );
   }
 
@@ -373,9 +375,9 @@ void custom_json_evaluator::do_apply( const custom_json_operation& o )
 
 void custom_binary_evaluator::do_apply( const custom_binary_operation& o )
 {
-  FC_ASSERT( false && "custom_binary_operation is disallowed" ); //ABW: since no one used it in practice
+  HIVE_CHAIN_UNREACHABLE_CODE_ASSERT( false && "custom_binary_operation is disallowed", "Operation disallowed." ); //ABW: since no one used it in practice
     //it waits for potential redesign until it is reenabled
-  FC_ASSERT( _db.has_hardfork( HIVE_HARDFORK_0_14__317 ) );
+  HIVE_CHAIN_HARDFORK_ASSERT( _db.has_hardfork( HIVE_HARDFORK_0_14__317 ), "Operation not available until HF 14." );
 
   std::shared_ptr< custom_operation_interpreter > eval = _db.get_custom_json_evaluator( o.id );
   if( !eval )
@@ -407,7 +409,7 @@ void pow_apply( database& db, Operation o )
     const auto& witness_by_work = db.get_index<witness_index>().indices().get<by_work>();
     auto work_itr = witness_by_work.find( o.work.work );
     if( work_itr != witness_by_work.end() )
-      FC_ASSERT( !"DUPLICATE WORK DISCOVERED", "${w}  ${witness}",("w",o)("wit",*work_itr) );
+      HIVE_CHAIN_STATE_ASSERT( !"DUPLICATE WORK DISCOVERED", o.worker_account, "${w}  ${witness}",("w",o)("wit",*work_itr) );
   }
 
   const auto& accounts_by_name = db.get_index<account_index>().indices().get<by_name>();
@@ -433,17 +435,17 @@ void pow_apply( database& db, Operation o )
   const auto& worker_account = db.get_account( o.worker_account ); // verify it exists
 #ifndef HIVE_CONVERTER_BUILD // disable these checks, since there is a 2nd auth applied on all the accs in the alternate chain generated using hive blockchain converter
   const auto& worker_auth = db.get< account_authority_object, by_account >( o.worker_account );
-  FC_ASSERT( worker_auth.active.num_auths() == 1, "Miners can only have one key authority. ${a}", ("a",worker_auth.active) );
-  FC_ASSERT( worker_auth.active.key_auths.size() == 1, "Miners may only have one key authority." );
-  FC_ASSERT( worker_auth.active.key_auths.begin()->first == o.work.worker, "Work must be performed by key that signed the work." );
+  HIVE_CHAIN_STATE_ASSERT( worker_auth.active.num_auths() == 1, o.worker_account, "Miners can only have one key authority. ${a}", ("a",worker_auth.active) );
+  HIVE_CHAIN_STATE_ASSERT( worker_auth.active.key_auths.size() == 1, o.worker_account, "Miners may only have one key authority." );
+  HIVE_CHAIN_STATE_ASSERT( worker_auth.active.key_auths.begin()->first == o.work.worker, o.worker_account, "Work must be performed by key that signed the work." );
 #endif
-  FC_ASSERT( o.block_id == db.head_block_id(), "pow not for last block" );
+  HIVE_CHAIN_STATE_ASSERT( o.block_id == db.head_block_id(), o.worker_account, "pow not for last block" );
   // there used to be limit preventing pow operation following worker account update in the same block (since HF13)
 
 #ifndef HIVE_CONVERTER_BUILD // due to the optimization issues with blockchain_converter performing proof of work for every pow operations, this check is applied only in mainnet
   fc::sha256 target = db.get_pow_target();
 
-  FC_ASSERT( o.work.work < target, "Work lacks sufficient difficulty." );
+  HIVE_CHAIN_STATE_ASSERT( o.work.work < target, o.worker_account, "Work lacks sufficient difficulty." );
 #endif
 
   db.modify( dgp, [&]( dynamic_global_property_object& p )
@@ -456,7 +458,7 @@ void pow_apply( database& db, Operation o )
   const witness_object* cur_witness = db.find_witness( worker_account.get_name() );
   if( cur_witness )
   {
-    FC_ASSERT( cur_witness->pow_worker == 0, "This account is already scheduled for pow block production." );
+    HIVE_CHAIN_STATE_ASSERT( cur_witness->pow_worker == 0, o.worker_account, "This account is already scheduled for pow block production." );
     db.modify(*cur_witness, [&]( witness_object& w )
     {
       copy_legacy_chain_properties( w.props, o.props );
@@ -498,7 +500,7 @@ void pow_apply( database& db, Operation o )
 }
 
 void pow_evaluator::do_apply( const pow_operation& o ) {
-  FC_ASSERT( !db().has_hardfork( HIVE_HARDFORK_0_13__256 ), "pow is deprecated. Use pow2 instead" );
+  HIVE_CHAIN_HARDFORK_ASSERT( !db().has_hardfork( HIVE_HARDFORK_0_13__256 ), "pow is deprecated. Use pow2 instead" );
   pow_apply( db(), o );
 }
 
@@ -506,7 +508,7 @@ void pow_evaluator::do_apply( const pow_operation& o ) {
 void pow2_evaluator::do_apply( const pow2_operation& o )
 {
   database& db = this->db();
-  FC_ASSERT( !db.has_hardfork( HIVE_HARDFORK_0_17__770 ), "mining is now disabled" );
+  HIVE_CHAIN_HARDFORK_ASSERT( !db.has_hardfork( HIVE_HARDFORK_0_17__770 ), "mining is now disabled" );
 
   const auto& dgp = db.get_dynamic_global_properties();
 #ifndef HIVE_CONVERTER_BUILD // due to the optimization issues with blockchain_converter performing proof of work for every pow operations, this check is applied only in mainnet
@@ -517,29 +519,29 @@ void pow2_evaluator::do_apply( const pow2_operation& o )
   if( db.has_hardfork( HIVE_HARDFORK_0_16__551 ) )
   {
     const auto& work = o.work.get< equihash_pow >();
-    FC_ASSERT( work.prev_block == db.head_block_id(), "Equihash pow op not for last block" );
+    HIVE_CHAIN_STATE_ASSERT( work.prev_block == db.head_block_id(), work.input.worker_account, "Equihash pow op not for last block" );
 //    auto recent_block_num = protocol::block_header::num_from_id( work.input.prev_block );
 //    FC_ASSERT( recent_block_num >= db.get_last_irreversible_block_num(),
 //      "Equihash pow done for block older than last irreversible block num. pow block: ${recent_block_num}, last irreversible block: ${lib}", (recent_block_num)("lib", db.get_last_irreversible_block_num()));
 // ABW: above check was not really valid because LIB is not strict part of consensus; we can remove it
 //      safely because there are no new pow operations (and it conflicts with "undo-less" checkpoints)
 #ifndef HIVE_CONVERTER_BUILD
-    FC_ASSERT( work.pow_summary < target_pow && "Post HF16", "Insufficient work difficulty. Work: ${w}, Target: ${t}", ("w",work.pow_summary)("t", target_pow) );
+    HIVE_CHAIN_STATE_ASSERT( work.pow_summary < target_pow && "Post HF16", work.input.worker_account, "Insufficient work difficulty. Work: ${w}, Target: ${t}", ("w",work.pow_summary)("t", target_pow) );
 #endif
     worker_account = work.input.worker_account;
   }
   else
   {
     const auto& work = o.work.get< pow2 >();
-    FC_ASSERT( work.input.prev_block == db.head_block_id(), "Work not for last block" );
+    HIVE_CHAIN_STATE_ASSERT( work.input.prev_block == db.head_block_id(), work.input.worker_account, "Work not for last block" );
 
 #ifndef HIVE_CONVERTER_BUILD
-    FC_ASSERT( work.pow_summary < target_pow, "Insufficient work difficulty. Work: ${w}, Target: ${t}", ("w",work.pow_summary)("t", target_pow) );
+    HIVE_CHAIN_STATE_ASSERT( work.pow_summary < target_pow, work.input.worker_account, "Insufficient work difficulty. Work: ${w}, Target: ${t}", ("w",work.pow_summary)("t", target_pow) );
 #endif
     worker_account = work.input.worker_account;
   }
 
-  FC_ASSERT( o.props.maximum_block_size >= HIVE_MIN_BLOCK_SIZE_LIMIT * 2, "Voted maximum block size is too small." );
+  HIVE_CHAIN_LIMIT_ASSERT( o.props.maximum_block_size >= HIVE_MIN_BLOCK_SIZE_LIMIT * 2, o.props.maximum_block_size, "Voted maximum block size is too small." );
 
   db.modify( dgp, [&]( dynamic_global_property_object& p )
   {
@@ -551,7 +553,7 @@ void pow2_evaluator::do_apply( const pow2_operation& o )
   auto itr = accounts_by_name.find( worker_account );
   if(itr == accounts_by_name.end())
   {
-    FC_ASSERT( o.new_owner_key.valid(), "New owner key is not valid." );
+    HIVE_CHAIN_STATE_ASSERT( o.new_owner_key.valid(), worker_account, "New owner key is not valid." );
     const auto& new_account = create_account( db, worker_account, *o.new_owner_key, dgp.time, _db.get_current_timestamp(),
       true /*mined*/, HIVE_asset( 0 ) );
     // ^ empty recovery account parameter means highest voted witness at time of recovery
@@ -577,10 +579,10 @@ void pow2_evaluator::do_apply( const pow2_operation& o )
   }
   else
   {
-    FC_ASSERT( !o.new_owner_key.valid(), "Cannot specify an owner key unless creating account." );
+    HIVE_CHAIN_STATE_ASSERT( !o.new_owner_key.valid(), worker_account, "Cannot specify an owner key unless creating account." );
     const witness_object* cur_witness = db.find_witness( worker_account );
-    FC_ASSERT( cur_witness, "Witness must be created for existing account before mining.");
-    FC_ASSERT( cur_witness->pow_worker == 0 && "This account is already scheduled for pow block production." );
+    HIVE_CHAIN_STATE_ASSERT( cur_witness, worker_account, "Witness must be created for existing account before mining." );
+    HIVE_CHAIN_STATE_ASSERT( cur_witness->pow_worker == 0 && "This account is already scheduled for pow block production.", worker_account, "Account '${subject}' already scheduled for PoW." );
     db.modify(*cur_witness, [&]( witness_object& w )
     {
       copy_legacy_chain_properties( w.props, o.props );
@@ -606,8 +608,8 @@ void feed_publish_evaluator::do_apply( const feed_publish_operation& o )
   {
     // ABW: unfortunately existence of reversed feed means we won't be able to use "tiny price" for feeds;
     // we can't normalize it either, because it would change price sorting, therefore also median price
-    FC_ASSERT( is_asset_type( o.exchange_rate.base, HBD_SYMBOL ) && is_asset_type( o.exchange_rate.quote, HIVE_SYMBOL ),
-      "Price feed must be a HBD/HIVE price" );
+    HIVE_CHAIN_ASSET_ASSERT( is_asset_type( o.exchange_rate.base, HBD_SYMBOL ) && is_asset_type( o.exchange_rate.quote, HIVE_SYMBOL ),
+      o.exchange_rate, "Price feed must be a HBD/HIVE price" );
   }
 
   const auto& witness = _db.get_witness( o.publisher );
@@ -622,7 +624,7 @@ void witness_block_approve_evaluator::do_apply(const witness_block_approve_opera
 {
   // This transaction si /updait's handled in database::process_fast_confirm_transaction
   // and never reaches the
-  FC_ASSERT( false && "This operation may not be included in a block");
+  HIVE_CHAIN_UNREACHABLE_CODE_ASSERT( false && "This operation may not be included in a block", "Operation excluded from blocks.");
 }
 
 } } // hive::chain
