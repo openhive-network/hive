@@ -487,7 +487,7 @@ void database::process_comment_cashout()
       while( itr != com_by_root.end() && itr->get_root_id() == root_id )
       {
         const auto& comment_cashout_ex = *itr; ++itr;
-        ctx.total_reward_shares2 = gpo.total_reward_shares2;
+        ctx.total_reward_shares2 = gpo.get_total_reward_shares2();
         ctx.total_reward_fund_hive = gpo.get_total_reward_fund_hive();
 
         const comment_object* comment = find_comment( comment_cashout_ex.get_comment_id() );
@@ -501,7 +501,7 @@ void database::process_comment_cashout()
         {
           modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& p )
           {
-            p.total_reward_fund_hive -= reward;
+            p.access_total_reward_fund_hive() -= reward;
           });
         }
       }
@@ -615,8 +615,8 @@ void database::perform_vesting_share_split( uint32_t magnitude )
   {
     modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& d )
     {
-      d.total_vesting_shares.amount *= magnitude;
-      d.total_reward_shares2 = 0;
+      d.access_total_vesting_shares().amount *= magnitude;
+      d.access_total_reward_shares2() = 0;
     } );
 
     // Need to update all VESTS in accounts and the total VESTS in the dgpo

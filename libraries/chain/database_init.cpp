@@ -316,11 +316,11 @@ void database::init_genesis()
       } );
       modify( dgpo, [&]( dynamic_global_property_object& gpo )
       {
-        gpo.current_supply += HIVE_asset( HIVE_INIT_SUPPLY );
-        gpo.current_hbd_supply += HBD_asset( HIVE_HBD_INIT_SUPPLY );
-        gpo.init_hbd_supply = HBD_asset( HIVE_HBD_INIT_SUPPLY );
-        gpo.total_vesting_fund_hive += to_vest;
-        gpo.total_vesting_shares += initial_vests;
+        gpo.access_current_supply() += HIVE_asset( HIVE_INIT_SUPPLY );
+        gpo.access_current_hbd_supply() += HBD_asset( HIVE_HBD_INIT_SUPPLY );
+        gpo.access_initial_hbd_supply() = HBD_asset( HIVE_HBD_INIT_SUPPLY );
+        gpo.access_total_vesting_fund_hive() += to_vest;
+        gpo.access_total_vesting_shares() += initial_vests;
       } );
       update_virtual_supply();
     }

@@ -43,7 +43,7 @@ struct supplement_operations_visitor
     if( _db.has_hardfork( HIVE_HARDFORK_0_17__774 ) )
       total_r2 = chain::util::to256( rf->recent_claims );
     else
-      total_r2 = chain::util::to256( props.total_reward_shares2 );
+      total_r2 = chain::util::to256( props.get_total_reward_shares2() );
 
     if( total_r2 > 0 )
     {
@@ -57,7 +57,7 @@ struct supplement_operations_visitor
       }
       else
       {
-        reward_hive = props.total_reward_fund_hive;
+        reward_hive = props.get_total_reward_fund_hive();
         vshares = chain::util::evaluate_reward_curve( cashout->get_net_rshares() );
       }
 

@@ -153,8 +153,8 @@ const protocol::transaction_id_type& debug_node_plugin::make_artificial_transact
 
   const auto& dgpo = database().get_dynamic_global_properties();
   protocol::signed_transaction tx;
-  tx.set_reference_block( dgpo.head_block_id );
-  tx.set_expiration( dgpo.time + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+  tx.set_reference_block( dgpo.get_head_block_id() );
+  tx.set_expiration( dgpo.get_head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
   tx.operations.push_back( op );
 
   const auto pack_type = serialization_mode_controller::get_current_pack();
@@ -297,11 +297,11 @@ void debug_node_plugin::debug_set_vest_price( const VEST_price& new_price,
   HIVE_asset hive_modifier;
 
   const auto& dgpo = database().get_dynamic_global_properties();
-  calculate_modifiers_according_to_new_price( new_price, dgpo.total_vesting_fund_hive, dgpo.total_vesting_shares, hive_modifier, vest_modifier );
+  calculate_modifiers_according_to_new_price( new_price, dgpo.get_total_vesting_fund_hive(), dgpo.get_total_vesting_shares(), hive_modifier, vest_modifier );
   ilog( "vest_modifier=${vest_modifier}, hive_modifier=${hive_modifier}", ( vest_modifier ) ( hive_modifier ) );
 
   ilog( "Before modification: total_vesting_shares=${vest}, total_vesting_fund_hive=${hive}",
-    ( "vest", dgpo.total_vesting_shares )( "hive", dgpo.total_vesting_fund_hive ) );
+    ( "vest", dgpo.get_total_vesting_shares() )( "hive", dgpo.get_total_vesting_fund_hive() ) );
 
   debug_update( [ this, vest_modifier, hive_modifier ]( chain::database& db )
   {
@@ -318,15 +318,15 @@ void debug_node_plugin::debug_set_vest_price( const VEST_price& new_price,
 
     db.modify( db.get_dynamic_global_properties(), [ &vest_modifier, &hive_modifier ]( hive::chain::dynamic_global_property_object& p )
     {
-      p.total_vesting_shares += vest_modifier;
-      p.total_vesting_fund_hive += hive_modifier;
-      p.current_supply += hive_modifier;
-      p.virtual_supply += hive_modifier;
+      p.access_total_vesting_shares() += vest_modifier;
+      p.access_total_vesting_fund_hive() += hive_modifier;
+      p.access_current_supply() += hive_modifier;
+      p.access_virtual_supply() += hive_modifier;
     } );
   }, hive::chain::database::skip_nothing, transaction_id );
 
   ilog( "After modification: total_vesting_shares=${vest}, total_vesting_fund_hive=${hive}",
-    ( "vest", dgpo.total_vesting_shares )( "hive", dgpo.total_vesting_fund_hive ) );
+    ( "vest", dgpo.get_total_vesting_shares() )( "hive", dgpo.get_total_vesting_fund_hive() ) );
   ilog( "Final price=${p}", ( "p", dgpo.get_vesting_share_price() ) );
 }
 

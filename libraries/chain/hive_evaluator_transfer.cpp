@@ -481,7 +481,7 @@ void collateralized_convert_evaluator::do_apply( const collateralized_convert_op
   const auto& fhistory = _db.get_feed_history();
   validate_price_feed_available( fhistory, "convert HIVE" );
   const auto& dgpo = _db.get_dynamic_global_properties();
-  HIVE_CHAIN_STATE_ASSERT( dgpo.hbd_print_rate > 0, dgpo.hbd_print_rate, "Creation of new HBD blocked at this time due to global limit." );
+  HIVE_CHAIN_STATE_ASSERT( dgpo.get_hbd_print_rate() > 0, dgpo.get_hbd_print_rate(), "Creation of new HBD blocked at this time due to global limit." );
     //note that feed and therefore print rate is updated once per hour, so without above check there could be
     //enough room for new HBD, but there is a chance the official price would still be artificial (artificial
     //price is not used in this conversion, but users might think it is - better to stop them from making mistake)
@@ -501,8 +501,8 @@ void collateralized_convert_evaluator::do_apply( const collateralized_convert_op
   _db.modify( dgpo, [&]( dynamic_global_property_object& p )
   {
     //HIVE supply (and virtual supply in part related to HIVE) will be corrected after actual conversion
-    p.current_hbd_supply += converted_amount;
-    p.virtual_supply += converted_amount * fhistory.current_median_history;
+    p.access_current_hbd_supply() += converted_amount;
+    p.access_virtual_supply() += converted_amount * fhistory.current_median_history;
   } );
   //note that we created new HBD out of thin air and we will burn the related HIVE when actual conversion takes
   //place; there is alternative approach - we could burn all collateral now and print back excess when we are
@@ -510,7 +510,7 @@ void collateralized_convert_evaluator::do_apply( const collateralized_convert_op
   //allow slightly more HBD to be printed
 
   uint16_t percent_hbd = _db.calculate_HBD_percent();
-  HIVE_CHAIN_LIMIT_ASSERT( percent_hbd <= dgpo.hbd_stop_percent, percent_hbd, "Creation of new ${hbd} violates global limit.", ( "hbd", converted_amount ) );
+  HIVE_CHAIN_LIMIT_ASSERT( percent_hbd <= dgpo.get_hbd_stop_percent(), percent_hbd, "Creation of new ${hbd} violates global limit.", ( "hbd", converted_amount ) );
 
   _db.create<collateralized_convert_request_object>( owner, o_amount, converted_amount,
     _db.head_block_time() + HIVE_COLLATERALIZED_CONVERSION_DELAY, o.requestid );
@@ -621,7 +621,7 @@ void claim_reward_balance_evaluator::do_apply( const claim_reward_balance_operat
 {
   const auto& acnt = _db.get_account( op.account );
   const auto& dgpo = _db.get_dynamic_global_properties();
-  auto now = dgpo.time;
+  auto now = dgpo.get_head_block_time();
 
   HIVE_asset op_reward_hive = op.get_reward_hive();
   HBD_asset op_reward_hbd = op.get_reward_hbd();
@@ -663,11 +663,11 @@ void claim_reward_balance_evaluator::do_apply( const claim_reward_balance_operat
 
   _db.modify( dgpo, [&]( dynamic_global_property_object& gpo )
   {
-    gpo.total_vesting_shares += op_reward_vests;
-    gpo.total_vesting_fund_hive += reward_vesting_hive_to_move;
+    gpo.access_total_vesting_shares() += op_reward_vests;
+    gpo.access_total_vesting_fund_hive() += reward_vesting_hive_to_move;
 
-    gpo.pending_rewarded_vesting_shares -= op_reward_vests;
-    gpo.pending_rewarded_vesting_hive -= reward_vesting_hive_to_move;
+    gpo.access_pending_rewarded_vesting_shares() -= op_reward_vests;
+    gpo.access_pending_rewarded_vesting_hive() -= reward_vesting_hive_to_move;
   } );
 
   _db.adjust_proxied_witness_votes( acnt, op_reward_vests.amount );
@@ -680,7 +680,7 @@ void delegate_vesting_shares_evaluator::do_apply( const delegate_vesting_shares_
   auto* delegation = _db.find< vesting_delegation_object, by_delegation >( boost::make_tuple( delegator.get_id(), delegatee.get_id() ) );
 
   const auto& gpo = _db.get_dynamic_global_properties();
-  auto now = gpo.time;
+  auto now = gpo.get_head_block_time();
 
   VEST_asset op_vesting_shares = op.get_vesting_shares();
   VEST_asset available_shares;
@@ -702,19 +702,19 @@ void delegate_vesting_shares_evaluator::do_apply( const delegate_vesting_shares_
     } );
 
     available_shares = VEST_asset( delegator.voting_manabar.current_mana );
-    if( gpo.downvote_pool_percent )
+    if( gpo.get_downvote_pool_percent() )
     {
       if( _db.has_hardfork( HIVE_HARDFORK_0_22__3485 ) )
       {
         available_downvote_shares = VEST_asset(
-          fc::uint128_to_int64( ( uint128_t( delegator.downvote_manabar.current_mana ) * HIVE_100_PERCENT ) / gpo.downvote_pool_percent
-          + ( HIVE_100_PERCENT / gpo.downvote_pool_percent ) - 1 ) );
+          fc::uint128_to_int64( ( uint128_t( delegator.downvote_manabar.current_mana ) * HIVE_100_PERCENT ) / gpo.get_downvote_pool_percent()
+          + ( HIVE_100_PERCENT / gpo.get_downvote_pool_percent() ) - 1 ) );
       }
       else
       {
         available_downvote_shares = VEST_asset(
-          ( delegator.downvote_manabar.current_mana * HIVE_100_PERCENT ) / gpo.downvote_pool_percent
-          + ( HIVE_100_PERCENT / gpo.downvote_pool_percent ) - 1 );
+          ( delegator.downvote_manabar.current_mana * HIVE_100_PERCENT ) / gpo.get_downvote_pool_percent()
+          + ( HIVE_100_PERCENT / gpo.get_downvote_pool_percent() ) - 1 );
       }
     }
     else
@@ -775,7 +775,7 @@ void delegate_vesting_shares_evaluator::do_apply( const delegate_vesting_shares_
 
         if( _db.has_hardfork( HIVE_HARDFORK_0_22__3485 ) )
         {
-          a.downvote_manabar.use_mana( fc::uint128_to_int64( ( uint128_t( op_vesting_shares.amount.value ) * gpo.downvote_pool_percent ) / HIVE_100_PERCENT ) );
+          a.downvote_manabar.use_mana( fc::uint128_to_int64( ( uint128_t( op_vesting_shares.amount.value ) * gpo.get_downvote_pool_percent() ) / HIVE_100_PERCENT ) );
         }
         else if( _db.has_hardfork( HIVE_HARDFORK_0_21__3336 ) )
         {
@@ -814,7 +814,7 @@ void delegate_vesting_shares_evaluator::do_apply( const delegate_vesting_shares_
 
         if( _db.has_hardfork( HIVE_HARDFORK_0_22__3485 ) )
         {
-          a.downvote_manabar.use_mana( fc::uint128_to_int64( ( uint128_t( delta.amount.value ) * gpo.downvote_pool_percent ) / HIVE_100_PERCENT ) );
+          a.downvote_manabar.use_mana( fc::uint128_to_int64( ( uint128_t( delta.amount.value ) * gpo.get_downvote_pool_percent() ) / HIVE_100_PERCENT ) );
         }
         else if( _db.has_hardfork( HIVE_HARDFORK_0_21__3336 ) )
         {
@@ -853,7 +853,7 @@ void delegate_vesting_shares_evaluator::do_apply( const delegate_vesting_shares_
     }
 
     _db.create< vesting_delegation_expiration_object >( delegator, delta,
-      std::max( now + gpo.delegation_return_period, delegation->get_min_delegation_time() ) );
+      std::max( now + gpo.get_delegation_return_period(), delegation->get_min_delegation_time() ) );
 
     _db.modify( delegatee, [&]( account_object& a )
     {
@@ -872,7 +872,7 @@ void delegate_vesting_shares_evaluator::do_apply( const delegate_vesting_shares_
         {
           if( _db.has_hardfork( HIVE_HARDFORK_0_22__3485 ) )
           {
-            a.downvote_manabar.use_mana( fc::uint128_to_int64( ( uint128_t( delta.amount.value ) * gpo.downvote_pool_percent ) / HIVE_100_PERCENT ) );
+            a.downvote_manabar.use_mana( fc::uint128_to_int64( ( uint128_t( delta.amount.value ) * gpo.get_downvote_pool_percent() ) / HIVE_100_PERCENT ) );
           }
           else
           {

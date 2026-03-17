@@ -219,7 +219,7 @@ BOOST_AUTO_TEST_CASE( comment_payout_dust )
     push_transaction( tx, bob_post_key );
     validate_database();
 
-    generate_blocks( db->head_block_time() + db->get_dynamic_global_properties().reverse_auction_seconds );
+    generate_blocks( db->head_block_time() + db->get_dynamic_global_properties().get_reverse_auction_seconds() );
 
     vote_operation vote;
     vote.voter = "alice";
@@ -477,7 +477,7 @@ BOOST_AUTO_TEST_CASE( comment_payout )
     //generate_blocks( db->get_comment( "bob", string( "test" ) ).get_cashout_time() - HIVE_BLOCK_INTERVAL, true );
 
     auto reward_hive = db->get_dynamic_global_properties().get_total_reward_fund_hive() + HIVE_asset( 1'667 );
-    auto total_rshares2 = db->get_dynamic_global_properties().total_reward_shares2;
+    auto total_rshares2 = db->get_dynamic_global_properties().get_total_reward_shares2();
     auto bob_comment_rshares = db->get_comment( "bob", string( "test" ) ).get_net_rshares();
     auto bob_vest_shares = get_vesting( "bob" );
     auto bob_hbd_balance = get_hbd_balance( "bob" );
@@ -653,7 +653,7 @@ BOOST_AUTO_TEST_CASE( comment_payout )
     validate_database();
 
     auto reward_hive = db->get_dynamic_global_properties().get_total_reward_fund_hive() + HIVE_asset( 2'000 );
-    auto total_rshares2 = db->get_dynamic_global_properties().total_reward_shares2;
+    auto total_rshares2 = db->get_dynamic_global_properties().get_total_reward_shares2();
     auto bob_comment_vote_total = db->get_comment( "bob", string( "test" ) ).get_total_vote_weight();
     auto bob_comment_rshares = db->get_comment( "bob", string( "test" ) ).get_net_rshares();
     auto bob_hbd_balance = get_hbd_balance( "bob" );
@@ -722,7 +722,7 @@ BOOST_AUTO_TEST_CASE( comment_payout )
     BOOST_TEST_MESSAGE( "Generate block to cause payout" );
 
     reward_hive = db->get_dynamic_global_properties().get_total_reward_fund_hive() + HIVE_asset( 2'000 );
-    total_rshares2 = db->get_dynamic_global_properties().total_reward_shares2;
+    total_rshares2 = db->get_dynamic_global_properties().get_total_reward_shares2();
     auto alice_comment_vote_total = db->get_comment( "alice", string( "test" ) ).get_total_vote_weight();
     auto alice_comment_rshares = db->get_comment( "alice", string( "test" ) ).get_net_rshares();
     auto alice_hbd_balance = get_hbd_balance( "alice" );
@@ -909,7 +909,7 @@ OOST_AUTO_TEST_CASE( nested_comments )
 
     auto& gpo = db->get_dynamic_global_properties();
     uint128_t reward_hive = ( gpo.get_total_reward_fund_hive() + HIVE_asset( 2'000 ) ).amount.value;
-    uint128_t total_rshares2 = gpo.total_reward_shares2;
+    uint128_t total_rshares2 = gpo.get_total_reward_shares2();
 
     auto alice_comment = db->get_comment( "alice", string( "test" ) );
     auto bob_comment = db->get_comment( "bob", string( "test" ) );
@@ -1528,14 +1528,14 @@ BOOST_AUTO_TEST_CASE( hive_inflation )
     BOOST_TEST_MESSAGE( "Testing HIVE Inflation until the vesting start block" );
 
     auto& gpo = db->get_dynamic_global_properties();
-    auto virtual_supply = gpo.virtual_supply;
+    auto virtual_supply = gpo.get_virtual_supply();
     auto witness_name = db->get_scheduled_witness(1);
     auto old_witness_balance = get_hive_balance( witness_name );
     auto old_witness_shares = get_vesting( witness_name );
 
-    auto new_rewards = std::max( HIVE_MIN_CONTENT_REWARD, asset( ( HIVE_CONTENT_APR * gpo.virtual_supply.amount ) / ( HIVE_BLOCKS_PER_YEAR * 100 ), HIVE_SYMBOL ) )
-      + std::max( HIVE_MIN_CURATE_REWARD, asset( ( HIVE_CURATE_APR * gpo.virtual_supply.amount ) / ( HIVE_BLOCKS_PER_YEAR * 100 ), HIVE_SYMBOL ) );
-    auto witness_pay = std::max( HIVE_MIN_PRODUCER_REWARD, asset( ( HIVE_PRODUCER_APR * gpo.virtual_supply.amount ) / ( HIVE_BLOCKS_PER_YEAR * 100 ), HIVE_SYMBOL ) );
+    auto new_rewards = std::max( HIVE_MIN_CONTENT_REWARD, asset( ( HIVE_CONTENT_APR * gpo.get_virtual_supply().amount ) / ( HIVE_BLOCKS_PER_YEAR * 100 ), HIVE_SYMBOL ) )
+      + std::max( HIVE_MIN_CURATE_REWARD, asset( ( HIVE_CURATE_APR * gpo.get_virtual_supply().amount ) / ( HIVE_BLOCKS_PER_YEAR * 100 ), HIVE_SYMBOL ) );
+    auto witness_pay = std::max( HIVE_MIN_PRODUCER_REWARD, asset( ( HIVE_PRODUCER_APR * gpo.get_virtual_supply().amount ) / ( HIVE_BLOCKS_PER_YEAR * 100 ), HIVE_SYMBOL ) );
     auto witness_pay_shares = asset( 0, VESTS_SYMBOL );
     auto new_vesting_hive = asset( 0, HIVE_SYMBOL );
     auto new_vesting_shares = gpo.get_total_vesting_shares();
@@ -1553,7 +1553,7 @@ BOOST_AUTO_TEST_CASE( hive_inflation )
     generate_block();
 
     BOOST_REQUIRE_EQUAL( gpo.get_current_supply(), new_supply );
-    BOOST_REQUIRE_EQUAL( gpo.virtual_supply, new_supply );
+    BOOST_REQUIRE_EQUAL( gpo.get_virtual_supply(), new_supply );
     BOOST_REQUIRE_EQUAL( gpo.get_total_reward_fund_hive(), new_rewards );
     BOOST_REQUIRE_EQUAL( gpo.get_total_vesting_fund_hive(), new_vesting_hive );
     BOOST_REQUIRE_EQUAL( gpo.get_total_vesting_shares(), new_vesting_shares );
@@ -1563,15 +1563,15 @@ BOOST_AUTO_TEST_CASE( hive_inflation )
 
     while( db->head_block_num() < HIVE_START_VESTING_BLOCK - 1)
     {
-      virtual_supply = gpo.virtual_supply;
+      virtual_supply = gpo.get_virtual_supply();
       witness_name = db->get_scheduled_witness(1);
       old_witness_balance = get_hive_balance( witness_name );
       old_witness_shares = get_vesting( witness_name );
 
 
-      new_rewards = std::max( HIVE_MIN_CONTENT_REWARD, asset( ( HIVE_CONTENT_APR * gpo.virtual_supply.amount ) / ( HIVE_BLOCKS_PER_YEAR * 100 ), HIVE_SYMBOL ) )
-        + std::max( HIVE_MIN_CURATE_REWARD, asset( ( HIVE_CURATE_APR * gpo.virtual_supply.amount ) / ( HIVE_BLOCKS_PER_YEAR * 100 ), HIVE_SYMBOL ) );
-      witness_pay = std::max( HIVE_MIN_PRODUCER_REWARD, asset( ( HIVE_PRODUCER_APR * gpo.virtual_supply.amount ) / ( HIVE_BLOCKS_PER_YEAR * 100 ), HIVE_SYMBOL ) );
+      new_rewards = std::max( HIVE_MIN_CONTENT_REWARD, asset( ( HIVE_CONTENT_APR * gpo.get_virtual_supply().amount ) / ( HIVE_BLOCKS_PER_YEAR * 100 ), HIVE_SYMBOL ) )
+        + std::max( HIVE_MIN_CURATE_REWARD, asset( ( HIVE_CURATE_APR * gpo.get_virtual_supply().amount ) / ( HIVE_BLOCKS_PER_YEAR * 100 ), HIVE_SYMBOL ) );
+      witness_pay = std::max( HIVE_MIN_PRODUCER_REWARD, asset( ( HIVE_PRODUCER_APR * gpo.get_virtual_supply().amount ) / ( HIVE_BLOCKS_PER_YEAR * 100 ), HIVE_SYMBOL ) );
       new_vesting_hive = asset( 0, HIVE_SYMBOL );
       new_vesting_shares = gpo.get_total_vesting_shares();
 
@@ -1591,7 +1591,7 @@ BOOST_AUTO_TEST_CASE( hive_inflation )
       generate_block();
 
       BOOST_REQUIRE_EQUAL( gpo.get_current_supply(), new_supply );
-      BOOST_REQUIRE_EQUAL( gpo.virtual_supply, new_supply );
+      BOOST_REQUIRE_EQUAL( gpo.get_virtual_supply(), new_supply );
       BOOST_REQUIRE_EQUAL( gpo.get_total_reward_fund_hive(), new_rewards );
       BOOST_REQUIRE_EQUAL( gpo.get_total_vesting_fund_hive(), new_vesting_hive );
       BOOST_REQUIRE_EQUAL( gpo.get_total_vesting_shares(), new_vesting_shares );
@@ -1605,13 +1605,13 @@ BOOST_AUTO_TEST_CASE( hive_inflation )
 
     while( db->head_block_num() < HIVE_START_MINER_VOTING_BLOCK - 1 )
     {
-      virtual_supply = gpo.virtual_supply;
+      virtual_supply = gpo.get_virtual_supply();
       witness_name = db->get_scheduled_witness(1);
       old_witness_balance = get_hive_balance( witness_name );
 
-      new_rewards = std::max( HIVE_MIN_CONTENT_REWARD, asset( ( HIVE_CONTENT_APR * gpo.virtual_supply.amount ) / ( HIVE_BLOCKS_PER_YEAR * 100 ), HIVE_SYMBOL ) )
-        + std::max( HIVE_MIN_CURATE_REWARD, asset( ( HIVE_CURATE_APR * gpo.virtual_supply.amount ) / ( HIVE_BLOCKS_PER_YEAR * 100 ), HIVE_SYMBOL ) );
-      witness_pay = std::max( HIVE_MIN_PRODUCER_REWARD, asset( ( HIVE_PRODUCER_APR * gpo.virtual_supply.amount ) / ( HIVE_BLOCKS_PER_YEAR * 100 ), HIVE_SYMBOL ) );
+      new_rewards = std::max( HIVE_MIN_CONTENT_REWARD, asset( ( HIVE_CONTENT_APR * gpo.get_virtual_supply().amount ) / ( HIVE_BLOCKS_PER_YEAR * 100 ), HIVE_SYMBOL ) )
+        + std::max( HIVE_MIN_CURATE_REWARD, asset( ( HIVE_CURATE_APR * gpo.get_virtual_supply().amount ) / ( HIVE_BLOCKS_PER_YEAR * 100 ), HIVE_SYMBOL ) );
+      witness_pay = std::max( HIVE_MIN_PRODUCER_REWARD, asset( ( HIVE_PRODUCER_APR * gpo.get_virtual_supply().amount ) / ( HIVE_BLOCKS_PER_YEAR * 100 ), HIVE_SYMBOL ) );
       auto witness_pay_shares = asset( 0, VESTS_SYMBOL );
       new_vesting_hive = asset( ( witness_pay + new_rewards ).amount * 9, HIVE_SYMBOL );
       new_vesting_shares = gpo.get_total_vesting_shares();
@@ -1632,7 +1632,7 @@ BOOST_AUTO_TEST_CASE( hive_inflation )
       generate_block();
 
       BOOST_REQUIRE_EQUAL( gpo.get_current_supply(), new_supply );
-      BOOST_REQUIRE_EQUAL( gpo.virtual_supply, new_supply );
+      BOOST_REQUIRE_EQUAL( gpo.get_virtual_supply(), new_supply );
       BOOST_REQUIRE_EQUAL( gpo.get_total_reward_fund_hive(), new_rewards );
       BOOST_REQUIRE_EQUAL( gpo.get_total_vesting_fund_hive(), new_vesting_hive );
       BOOST_REQUIRE_EQUAL( gpo.get_total_vesting_shares(), new_vesting_shares );
@@ -1644,13 +1644,13 @@ BOOST_AUTO_TEST_CASE( hive_inflation )
 
     for( int i = 0; i < HIVE_BLOCKS_PER_DAY; i++ )
     {
-      virtual_supply = gpo.virtual_supply;
+      virtual_supply = gpo.get_virtual_supply();
       witness_name = db->get_scheduled_witness(1);
       old_witness_balance = get_hive_balance( witness_name );
 
-      new_rewards = std::max( HIVE_MIN_CONTENT_REWARD, asset( ( HIVE_CONTENT_APR * gpo.virtual_supply.amount ) / ( HIVE_BLOCKS_PER_YEAR * 100 ), HIVE_SYMBOL ) )
-        + std::max( HIVE_MIN_CURATE_REWARD, asset( ( HIVE_CURATE_APR * gpo.virtual_supply.amount ) / ( HIVE_BLOCKS_PER_YEAR * 100 ), HIVE_SYMBOL ) );
-      witness_pay = std::max( HIVE_MIN_PRODUCER_REWARD, asset( ( HIVE_PRODUCER_APR * gpo.virtual_supply.amount ) / ( HIVE_BLOCKS_PER_YEAR * 100 ), HIVE_SYMBOL ) );
+      new_rewards = std::max( HIVE_MIN_CONTENT_REWARD, asset( ( HIVE_CONTENT_APR * gpo.get_virtual_supply().amount ) / ( HIVE_BLOCKS_PER_YEAR * 100 ), HIVE_SYMBOL ) )
+        + std::max( HIVE_MIN_CURATE_REWARD, asset( ( HIVE_CURATE_APR * gpo.get_virtual_supply().amount ) / ( HIVE_BLOCKS_PER_YEAR * 100 ), HIVE_SYMBOL ) );
+      witness_pay = std::max( HIVE_MIN_PRODUCER_REWARD, asset( ( HIVE_PRODUCER_APR * gpo.get_virtual_supply().amount ) / ( HIVE_BLOCKS_PER_YEAR * 100 ), HIVE_SYMBOL ) );
       witness_pay_shares = witness_pay * gpo.get_vesting_share_price().to_price();
       new_vesting_hive = asset( ( witness_pay + new_rewards ).amount * 9, HIVE_SYMBOL ) + witness_pay;
       new_vesting_shares = gpo.get_total_vesting_shares() + witness_pay_shares;
@@ -1661,7 +1661,7 @@ BOOST_AUTO_TEST_CASE( hive_inflation )
       generate_block();
 
       BOOST_REQUIRE_EQUAL( gpo.get_current_supply(), new_supply );
-      BOOST_REQUIRE_EQUAL( gpo.virtual_supply, new_supply );
+      BOOST_REQUIRE_EQUAL( gpo.get_virtual_supply(), new_supply );
       BOOST_REQUIRE_EQUAL( gpo.get_total_reward_fund_hive(), new_rewards );
       BOOST_REQUIRE_EQUAL( gpo.get_total_vesting_fund_hive(), new_vesting_hive );
       BOOST_REQUIRE_EQUAL( gpo.get_total_vesting_shares(), new_vesting_shares );
@@ -1670,7 +1670,7 @@ BOOST_AUTO_TEST_CASE( hive_inflation )
       validate_database();
     }
 
-    virtual_supply = gpo.virtual_supply;
+    virtual_supply = gpo.get_virtual_supply();
     vesting_shares = gpo.get_total_vesting_shares();
     vesting_hive = gpo.get_total_vesting_fund_hive();
     reward_hive = gpo.get_total_reward_fund_hive();
@@ -2653,7 +2653,7 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
     {
       db.modify( dgpo, [&]( dynamic_global_property_object& gpo )
       {
-        gpo.proposal_fund_percent = 0;
+        gpo.set_proposal_fund_percent( 0 );
       });
     } );
 
@@ -2696,8 +2696,8 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
 
     BOOST_TEST_MESSAGE( "Changing sam and gpo to set up market cap conditions" );
 
-    int correction = ( dgpo.hbd_stop_percent * dgpo.hbd_stop_percent ) / ( HIVE_100_PERCENT - dgpo.hbd_stop_percent ) + 1;
-    HBD_asset hbd_balance = ( ( dgpo.current_supply * ( dgpo.hbd_stop_percent + correction ) ) / HIVE_100_PERCENT ) * exchange_rate;
+    int correction = ( dgpo.get_hbd_stop_percent() * dgpo.get_hbd_stop_percent() ) / ( HIVE_100_PERCENT - dgpo.get_hbd_stop_percent() ) + 1;
+    HBD_asset hbd_balance = ( ( dgpo.get_current_supply() * ( dgpo.get_hbd_stop_percent() + correction ) ) / HIVE_100_PERCENT ) * exchange_rate;
     db_plugin->debug_update( [=]( database& db )
     {
       db.modify( db.get_account( "sam" ), [&]( account_object& a )
@@ -2710,8 +2710,8 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
     {
       db.modify( dgpo, [&]( dynamic_global_property_object& gpo )
       {
-        gpo.current_hbd_supply = hbd_balance + db.get_treasury().get_hbd_balance();
-        gpo.virtual_supply = gpo.current_supply + gpo.current_hbd_supply * exchange_rate;
+        gpo.access_current_hbd_supply() = hbd_balance + db.get_treasury().get_hbd_balance();
+        gpo.access_virtual_supply() = gpo.get_current_supply() + gpo.get_current_hbd_supply() * exchange_rate;
       });
     } );
 
@@ -2739,10 +2739,10 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
     BOOST_TEST_MESSAGE( "Letting percent market cap fall to hbd_start_percent to verify printing of HBD turns back on" );
 
     // Get slightly above hbd_start_percent (about 10% of distance between start and stop)
-    uint16_t percent = ( dgpo.hbd_stop_percent - dgpo.hbd_start_percent ) / 10;
-    percent += dgpo.hbd_start_percent;
+    uint16_t percent = ( dgpo.get_hbd_stop_percent() - dgpo.get_hbd_start_percent() ) / 10;
+    percent += dgpo.get_hbd_start_percent();
     correction = ( percent * percent ) / ( HIVE_100_PERCENT - percent ) + 1;
-    hbd_balance = ( ( dgpo.current_supply * ( dgpo.hbd_start_percent + correction ) ) / HIVE_100_PERCENT ) * exchange_rate;
+    hbd_balance = ( ( dgpo.get_current_supply() * ( dgpo.get_hbd_start_percent() + correction ) ) / HIVE_100_PERCENT ) * exchange_rate;
     db_plugin->debug_update( [&]( database& db )
     {
       db.modify( db.get_account( "sam" ), [&]( account_object& a )
@@ -2755,8 +2755,8 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
     {
       db.modify( dgpo, [&]( dynamic_global_property_object& gpo )
       {
-        gpo.current_hbd_supply = hbd_balance + db.get_treasury().get_hbd_balance();
-        gpo.virtual_supply = gpo.current_supply + gpo.current_hbd_supply * exchange_rate;
+        gpo.access_current_hbd_supply() = hbd_balance + db.get_treasury().get_hbd_balance();
+        gpo.access_virtual_supply() = gpo.get_current_supply() + gpo.get_current_hbd_supply() * exchange_rate;
       } );
     } );
 
@@ -2768,7 +2768,7 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
     auto last_print_rate = dgpo.get_hbd_print_rate();
 
     // Keep producing blocks until printing HBD is back
-    while( db->calculate_HBD_percent() >= dgpo.hbd_start_percent )
+    while( db->calculate_HBD_percent() >= dgpo.get_hbd_start_percent() )
     {
       BOOST_REQUIRE_GE( dgpo.get_hbd_print_rate(), last_print_rate );
       last_print_rate = dgpo.get_hbd_print_rate();
@@ -2902,11 +2902,11 @@ BOOST_AUTO_TEST_CASE( clear_null_account )
 
       db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
       {
-        gpo.current_supply += HIVE_asset( 2'000 );
-        gpo.virtual_supply += HIVE_asset( 3'000 );
-        gpo.current_hbd_supply += HBD_asset( 1'000 );
-        gpo.pending_rewarded_vesting_shares += VEST_asset( 1'000'000 );
-        gpo.pending_rewarded_vesting_hive += HIVE_asset( 1'000 );
+        gpo.access_current_supply() += HIVE_asset( 2'000 );
+        gpo.access_virtual_supply() += HIVE_asset( 3'000 );
+        gpo.access_current_hbd_supply() += HBD_asset( 1'000 );
+        gpo.access_pending_rewarded_vesting_shares() += VEST_asset( 1'000'000 );
+        gpo.access_pending_rewarded_vesting_hive() += HIVE_asset( 1'000 );
       });
     });
 
@@ -2979,13 +2979,13 @@ BOOST_AUTO_TEST_CASE( generate_account_subsidies )
     BOOST_CHECK(  is_pool_in_equilibrium( int64_t( wso.account_subsidy_rd.pool_eq )  , wso.account_subsidy_rd.budget_per_time_unit, wso.account_subsidy_rd.decay_params ) );
     BOOST_CHECK( !is_pool_in_equilibrium( int64_t( wso.account_subsidy_rd.pool_eq )-1, wso.account_subsidy_rd.budget_per_time_unit, wso.account_subsidy_rd.decay_params ) );
 
-    int64_t pool = db->get_dynamic_global_properties().available_account_subsidies;
+    int64_t pool = db->get_dynamic_global_properties().get_available_account_subsidies();
 
     while( true )
     {
       const dynamic_global_property_object& gpo = db->get_dynamic_global_properties();
-      BOOST_CHECK_EQUAL( pool, gpo.available_account_subsidies );
-      if( gpo.available_account_subsidies >= 100 * HIVE_ACCOUNT_SUBSIDY_PRECISION )
+      BOOST_CHECK_EQUAL( pool, gpo.get_available_account_subsidies() );
+      if( gpo.get_available_account_subsidies() >= 100 * HIVE_ACCOUNT_SUBSIDY_PRECISION )
         break;
       generate_block();
       pool = pool + 5123 - ((249617279 * pool) >> HIVE_RD_DECAY_DENOM_SHIFT);
@@ -3022,7 +3022,7 @@ BOOST_AUTO_TEST_CASE( account_subsidy_witness_limits )
     while( true )
     {
       const dynamic_global_property_object& gpo = db->get_dynamic_global_properties();
-      if( gpo.available_account_subsidies >= 100 * HIVE_ACCOUNT_SUBSIDY_PRECISION )
+      if( gpo.get_available_account_subsidies() >= 100 * HIVE_ACCOUNT_SUBSIDY_PRECISION )
         break;
       generate_block();
     }

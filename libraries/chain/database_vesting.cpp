@@ -115,7 +115,7 @@ void database::process_vesting_withdrawals()
   auto current = widx.begin();
 
   const auto& cprops = get_dynamic_global_properties();
-  auto now = cprops.time;
+  auto now = cprops.get_head_block_time();
 
   int count = 0;
   if( _benchmark_dumper.is_enabled() )
@@ -219,8 +219,8 @@ void database::process_vesting_withdrawals()
             {
               modify( cprops, [&]( dynamic_global_property_object& o )
               {
-                o.total_vesting_fund_hive -= routed_hive;
-                o.total_vesting_shares    -= to_deposit;
+                o.access_total_vesting_fund_hive() -= routed_hive;
+                o.access_total_vesting_shares()    -= to_deposit;
               });
             }
 
@@ -277,8 +277,8 @@ void database::process_vesting_withdrawals()
 
     modify( cprops, [&]( dynamic_global_property_object& o )
     {
-      o.total_vesting_fund_hive -= converted_hive;
-      o.total_vesting_shares -= to_convert;
+      o.access_total_vesting_fund_hive() -= converted_hive;
+      o.access_total_vesting_shares() -= to_convert;
     } );
 
     if( has_hardfork( HIVE_HARDFORK_1_24 ) )

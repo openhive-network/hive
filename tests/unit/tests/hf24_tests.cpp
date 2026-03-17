@@ -177,7 +177,7 @@ BOOST_AUTO_TEST_CASE( comment_beneficiary )
     {
       db.modify( db.get_dynamic_global_properties(), []( dynamic_global_property_object& gpo )
       {
-        gpo.proposal_fund_percent = 0;
+        gpo.set_proposal_fund_percent( 0 );
       } );
     } );
     issue_funds( "alice", HIVE_asset( 10'000 ) );
@@ -251,7 +251,7 @@ BOOST_AUTO_TEST_CASE( consolidate_balance )
       vested_7 = HIVE_asset( 7'000 ) * dgpo.get_vesting_share_price();
       db.modify( dgpo, []( dynamic_global_property_object& gpo )
       {
-        gpo.proposal_fund_percent = 0;
+        gpo.set_proposal_fund_percent( 0 );
       } );
       auto& old_treasury = db.get_account( OBSOLETE_TREASURY_ACCOUNT );
       db.create_vesting( old_treasury, HIVE_asset( 7'000 ) );
@@ -318,14 +318,14 @@ BOOST_AUTO_TEST_CASE( treasury_debt_ratio )
     set_price_feed( HBD_price( 1000, 10000 ) );
     generate_block();
     auto& dgpo = db->get_dynamic_global_properties();
-    const auto before_hbd_print_rate = dgpo.hbd_print_rate;
+    const auto before_hbd_print_rate = dgpo.get_hbd_print_rate();
 
     ISSUE_FUNDS("alice", HBD_asset( 1'000'000'000 ));
-    const auto during_hbd_print_rate = dgpo.hbd_print_rate;
+    const auto during_hbd_print_rate = dgpo.get_hbd_print_rate();
 
     transfer( "alice", db->get_treasury_name(), asset( 1000000000, HBD_SYMBOL ), "", alice_private_key );
     generate_block();
-    const auto after_hbd_print_rate = dgpo.hbd_print_rate;
+    const auto after_hbd_print_rate = dgpo.get_hbd_print_rate();
 
     BOOST_REQUIRE_EQUAL( after_hbd_print_rate, before_hbd_print_rate );
     BOOST_REQUIRE_NE( after_hbd_print_rate, during_hbd_print_rate );

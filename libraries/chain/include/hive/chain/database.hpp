@@ -861,7 +861,7 @@ namespace chain {
         if( _current_timestamp )
           return *_current_timestamp;
         else
-          return get_dynamic_global_properties().time;
+          return get_dynamic_global_properties().get_head_block_time();
       }
 
       void set_comments_handler( comments_handler_ptr obj )

@@ -394,7 +394,7 @@ void database_fixture::issue_funds( const string& account_name, const HIVE_asset
 
     db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
     {
-      gpo.current_supply += amount;
+      gpo.access_current_supply() += amount;
     } );
 
     if( update_print_rate )
@@ -426,8 +426,8 @@ void database_fixture::issue_funds( const string& account_name, const HBD_asset&
 
     db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
     {
-      gpo.current_hbd_supply += amount;
-      gpo.virtual_supply = gpo.current_supply + gpo.current_hbd_supply * median_feed.current_median_history;
+      gpo.access_current_hbd_supply() += amount;
+      gpo.access_virtual_supply() = gpo.get_current_supply() + gpo.get_current_hbd_supply() * median_feed.current_median_history;
     } );
 
     if( update_print_rate )
@@ -934,7 +934,7 @@ uint64_t database_fixture::get_nr_blocks_until_proposal_maintenance_block()
 {
   auto block_time = db->head_block_time();
 
-  auto next_maintenance_time = db->get_dynamic_global_properties().next_maintenance_time;
+  auto next_maintenance_time = db->get_dynamic_global_properties().get_next_maintenance_time();
   auto ret = ( next_maintenance_time - block_time ).to_seconds() / HIVE_BLOCK_INTERVAL;
 
   FC_ASSERT( next_maintenance_time >= block_time );
@@ -946,7 +946,7 @@ uint64_t database_fixture::get_nr_blocks_until_daily_proposal_maintenance_block(
 {
   auto block_time = db->head_block_time();
 
-  auto next_maintenance_time = db->get_dynamic_global_properties().next_daily_maintenance_time;
+  auto next_maintenance_time = db->get_dynamic_global_properties().get_next_daily_maintenance_time();
   auto ret = ( next_maintenance_time - block_time ).to_seconds() / HIVE_BLOCK_INTERVAL;
 
   FC_ASSERT( next_maintenance_time >= block_time );

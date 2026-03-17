@@ -107,12 +107,12 @@ void update_manabar( const PropType& gpo, AccountType& account, int64_t new_mana
   auto effective_vests = account.get_effective_vesting_shares().get_amount();
   try {
   manabar_params params( effective_vests, HIVE_VOTING_MANA_REGENERATION_SECONDS );
-  account.voting_manabar.regenerate_mana( params, gpo.time );
+  account.voting_manabar.regenerate_mana( params, gpo.get_head_block_time() );
   account.voting_manabar.use_mana( -new_mana );
   } FC_CAPTURE_LOG_AND_RETHROW( (account)(effective_vests) )
 
   try{
-  if( gpo.downvote_pool_percent )
+  if( gpo.get_downvote_pool_percent() )
   {
     manabar_params params;
     params.regen_time = HIVE_VOTING_MANA_REGENERATION_SECONDS;
@@ -120,22 +120,22 @@ void update_manabar( const PropType& gpo, AccountType& account, int64_t new_mana
 #if defined(IS_TEST_NET) || defined(HIVE_CONVERTER_ICEBERG_PLUGIN_ENABLED)
     if( true )
 #else //mainnet and regular mirrornet
-    if( gpo.head_block_number > HIVE_HF_21_STALL_BLOCK )
+    if( gpo.get_head_block_number() > HIVE_HF_21_STALL_BLOCK )
 #endif
     {
-      params.max_mana = fc::uint128_to_int64( ( uint128_t( effective_vests ) * gpo.downvote_pool_percent ) / HIVE_100_PERCENT );
+      params.max_mana = fc::uint128_to_int64( ( uint128_t( effective_vests ) * gpo.get_downvote_pool_percent() ) / HIVE_100_PERCENT );
     }
     else
     {
-      uint128_t numerator = uint128_t( effective_vests ) * gpo.downvote_pool_percent;
+      uint128_t numerator = uint128_t( effective_vests ) * gpo.get_downvote_pool_percent();
       if( fc::uint128_high_bits(numerator) != 0 )
-        dlog( "NOTIFYALERT! max mana overflow made it in to the chain at block ${b}", ( "b", gpo.head_block_number ) );
+        dlog( "NOTIFYALERT! max mana overflow made it in to the chain at block ${b}", ( "b", gpo.get_head_block_number() ) );
 
-      params.max_mana = ( effective_vests * gpo.downvote_pool_percent ) / HIVE_100_PERCENT;
+      params.max_mana = ( effective_vests * gpo.get_downvote_pool_percent() ) / HIVE_100_PERCENT;
     }
 
-    account.downvote_manabar.regenerate_mana( params, gpo.time );
-    account.downvote_manabar.use_mana( ( -new_mana * gpo.downvote_pool_percent ) / HIVE_100_PERCENT );
+    account.downvote_manabar.regenerate_mana( params, gpo.get_head_block_time() );
+    account.downvote_manabar.use_mana( ( -new_mana * gpo.get_downvote_pool_percent() ) / HIVE_100_PERCENT );
   }
   } FC_CAPTURE_LOG_AND_RETHROW( (account)(effective_vests) )
 }

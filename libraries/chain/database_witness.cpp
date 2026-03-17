@@ -77,7 +77,7 @@ void database::adjust_witness_vote( const witness_object& witness, share_type de
 
     w.virtual_last_update = wso.current_virtual_time;
     w.votes += delta;
-    FC_ASSERT( w.votes <= get_dynamic_global_properties().total_vesting_shares.amount, "", ("w.votes", w.votes)("props",get_dynamic_global_properties().total_vesting_shares) );
+    FC_ASSERT( w.votes <= get_dynamic_global_properties().get_total_vesting_shares().amount, "", ("w.votes", w.votes)("props",get_dynamic_global_properties().get_total_vesting_shares()) );
 
     if( has_hardfork( HIVE_HARDFORK_0_2 ) )
       w.virtual_scheduled_time = w.virtual_last_update + (HIVE_VIRTUAL_SCHEDULE_LAP_LENGTH2 - w.virtual_position)/(w.votes.value+1);
@@ -175,7 +175,7 @@ void database::retally_witness_vote_counts( bool force )
 void database::update_signing_witness(const witness_object& signing_witness, const signed_block& new_block)
 { try {
   const dynamic_global_property_object& dpo = get_dynamic_global_properties();
-  uint64_t new_block_aslot = dpo.current_aslot + get_slot_at_time( new_block.timestamp );
+  uint64_t new_block_aslot = dpo.get_current_aslot() + get_slot_at_time( new_block.timestamp );
 
   modify( signing_witness, [&]( witness_object& _wit )
   {
@@ -275,7 +275,7 @@ uint64_t database::validate_witness_votes_invariant() const
   const auto& witness_idx = get_index< witness_index >().indices();
   for( auto itr = witness_idx.begin(); itr != witness_idx.end(); ++itr )
   {
-    FC_ASSERT( itr->votes <= gpo.total_vesting_shares.amount, "", ("itr",*itr) );
+    FC_ASSERT( itr->votes <= gpo.get_total_vesting_shares().amount, "", ("itr",*itr) );
     ++witness_no;
   }
   return witness_no;

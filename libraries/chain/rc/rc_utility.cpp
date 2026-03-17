@@ -43,7 +43,7 @@ void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )
     FC_ASSERT( op.max_rc >= min_delegation, "Cannot delegate less than ${min_delegation} rc", (min_delegation) );
   }
 
-  auto now = gpo.time;
+  auto now = gpo.get_head_block_time();
   const account_object& from_account = _db.get_account( op.from );
   _db.rc().regenerate_rc_mana( from_account, now );
   FC_ASSERT( !_db.is_in_control() || !_db.rc().has_expired_delegation( from_account ), "Cannot delegate RC while processing of previous delegation has not finished." );
@@ -107,7 +107,7 @@ void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )
     acc.last_max_rc = acc.get_maximum_rc();
   } );
 
-  _db.rc().handle_custom_op_usage( op, gpo.time ); //we have to handle it here because later we'd have to reinterpret json into concrete custom op
+  _db.rc().handle_custom_op_usage( op, gpo.get_head_block_time() ); //we have to handle it here because later we'd have to reinterpret json into concrete custom op
 }
 
 void resource_credits::set_auto_report( const std::string& _option_type, const std::string& _option_output )
@@ -500,12 +500,12 @@ bool resource_credits::use_account_rcs( int64_t rc )
   {
     db.modify( account, [&]( account_object& acc )
     {
-      acc.rc_manabar.regenerate_mana< true >( mbparams, dgpo.time.sec_since_epoch() );
+      acc.rc_manabar.regenerate_mana< true >( mbparams, dgpo.get_head_block_time().sec_since_epoch() );
       tx_info.rc = acc.rc_manabar.current_mana; // update after regeneration
       int64_t surcharge = 0;
       if( db.is_validating_one_tx() || db.is_reapplying_one_tx() )
       {
-        uint64_t blocks_in_mempool = db._pending_tx_size / dgpo.maximum_block_size;
+        uint64_t blocks_in_mempool = db._pending_tx_size / dgpo.get_maximum_block_size();
         if( blocks_in_mempool > flood_level )
         {
           // check if transaction might be privileged - top witness transaction containing only
@@ -575,8 +575,8 @@ bool resource_credits::use_account_rcs( int64_t rc )
               ( "account", account_name )
               ( "rc_needed", rc )
               ( "rc_current", tx_info.rc )
-              ( "b", dgpo.head_block_number )
-              ( "w", dgpo.current_witness )
+              ( "b", dgpo.get_head_block_number() )
+              ( "w", dgpo.get_current_witness() )
             );
           }
         }
@@ -737,9 +737,9 @@ void resource_credits::finalize_block() const
     return;
 
   const auto& dgpo = db.get_dynamic_global_properties();
-  auto now = dgpo.time;
-  auto block_num = dgpo.head_block_number;
-  int64_t regen = ( dgpo.total_vesting_shares.amount.value / ( HIVE_RC_REGEN_TIME / HIVE_BLOCK_INTERVAL ) );
+  auto now = dgpo.get_head_block_time();
+  auto block_num = dgpo.get_head_block_number();
+  int64_t regen = ( dgpo.get_total_vesting_shares().amount.value / ( HIVE_RC_REGEN_TIME / HIVE_BLOCK_INTERVAL ) );
 
   const auto& params_obj = db.get< rc_resource_param_object, by_id >( rc_resource_param_id_type() );
 
@@ -769,7 +769,7 @@ void resource_credits::finalize_block() const
 
       if( i == resource_new_accounts )
       {
-        int64_t new_consensus_pool = dgpo.available_account_subsidies;
+        int64_t new_consensus_pool = dgpo.get_available_account_subsidies();
         if( new_consensus_pool != new_pool )
         {
           ilog( "resource_new_accounts adjustment on block ${b}: ${a}",

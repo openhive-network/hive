@@ -125,10 +125,10 @@ void database::process_conversions()
   {
     modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& p )
     {
-      p.current_supply += net_hive;
-      p.current_hbd_supply += net_hbd;
-      p.virtual_supply += net_hive;
-      p.virtual_supply += net_hbd * fhistory.current_median_history;
+      p.access_current_supply() += net_hive;
+      p.access_current_hbd_supply() += net_hbd;
+      p.access_virtual_supply() += net_hive;
+      p.access_virtual_supply() += net_hbd * fhistory.current_median_history;
     } );
   }
 }

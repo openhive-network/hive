@@ -533,9 +533,9 @@ struct curation_rewards_handler
 
       uint64_t _seconds = static_cast<uint64_t>( ( item.time - curve_printers[ comment_idx ].start_time ).to_seconds() );
 
-      if( _seconds >= dgpo.early_voting_seconds )
+      if( _seconds >= dgpo.get_early_voting_seconds() )
       {
-        if( _seconds < ( dgpo.early_voting_seconds + dgpo.mid_voting_seconds ) )
+        if( _seconds < ( dgpo.get_early_voting_seconds() + dgpo.get_mid_voting_seconds() ) )
           mid_stats.emplace_back( reward_stat{ HIVE_asset( item.reward ) } );
         else
           late_stats.emplace_back( reward_stat{ HIVE_asset( item.reward ) } );
@@ -560,7 +560,7 @@ struct curation_rewards_handler
 
       uint64_t _seconds = static_cast<uint64_t>( ( item.time - curve_printers[ comment_idx ].start_time ).to_seconds() );
 
-      if( _seconds >= dgpo.reverse_auction_seconds )
+      if( _seconds >= dgpo.get_reverse_auction_seconds() )
       {
         late_stats.emplace_back( reward_stat{ HIVE_asset( item.reward ) } );
       }
@@ -595,8 +595,8 @@ struct curation_rewards_handler
     // below subtraction cannot underflow int64_t because inflation_rate_adjustment is <2^32
     int64_t current_inflation_rate = std::max( start_inflation_rate - inflation_rate_adjustment, inflation_rate_floor );
 
-    auto new_hive = ( props.virtual_supply * current_inflation_rate ) / ( int64_t( HIVE_100_PERCENT ) * int64_t( HIVE_BLOCKS_PER_YEAR ) );
-    return new_hive * props.content_reward_percent / HIVE_100_PERCENT;
+    auto new_hive = ( props.get_virtual_supply() * current_inflation_rate ) / ( int64_t( HIVE_100_PERCENT ) * int64_t( HIVE_BLOCKS_PER_YEAR ) );
+    return new_hive * props.get_content_reward_percent() / HIVE_100_PERCENT;
   }
 
   HIVE_asset current_total_reward()

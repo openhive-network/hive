@@ -81,14 +81,14 @@ BOOST_AUTO_TEST_CASE( state_modification )
 
     char _buffer[500];
 
-    sprintf( _buffer, "dgpo.total_vesting_fund_hive (%ld) dgpo.total_vesting_shares (%ld)", _dgpo.total_vesting_fund_hive.amount.value, _dgpo.total_vesting_shares.amount.value );
+    sprintf( _buffer, "dgpo.total_vesting_fund_hive (%ld) dgpo.total_vesting_shares (%ld)", _dgpo.get_total_vesting_fund_hive().amount.value, _dgpo.get_total_vesting_shares().amount.value );
     BOOST_TEST_MESSAGE( _buffer );
 
-    HIVE_asset _old_current_supply = _dgpo.current_supply;
-    HIVE_asset _old_virtual_supply = _dgpo.virtual_supply;
+    HIVE_asset _old_current_supply = _dgpo.get_current_supply();
+    HIVE_asset _old_virtual_supply = _dgpo.get_virtual_supply();
 
-    HIVE_asset _old_total_vested_hive  = _dgpo.total_vesting_fund_hive;
-    VEST_asset _old_total_vests = _dgpo.total_vesting_shares;
+    HIVE_asset _old_total_vested_hive  = _dgpo.get_total_vesting_fund_hive();
+    VEST_asset _old_total_vests = _dgpo.get_total_vesting_shares();
     HIVE_asset _hive_modifier;
     VEST_asset _vest_modifier;
 
@@ -96,23 +96,23 @@ BOOST_AUTO_TEST_CASE( state_modification )
 
     db_plugin->debug_set_vest_price( _new_price );
 
-    sprintf( _buffer, "dgpo.current_supply (%ld) == _old_current_supply (%ld) + _hive_modifier (%ld)", _dgpo.current_supply.amount.value, _old_current_supply.amount.value, _hive_modifier.amount.value );
+    sprintf( _buffer, "dgpo.current_supply (%ld) == _old_current_supply (%ld) + _hive_modifier (%ld)", _dgpo.get_current_supply().amount.value, _old_current_supply.amount.value, _hive_modifier.amount.value );
     BOOST_TEST_MESSAGE( _buffer );
 
-    sprintf( _buffer, "dgpo.virtual_supply (%ld) == _old_virtual_supply (%ld) + _hive_modifier (%ld)", _dgpo.virtual_supply.amount.value, _old_virtual_supply.amount.value, _hive_modifier.amount.value );
+    sprintf( _buffer, "dgpo.virtual_supply (%ld) == _old_virtual_supply (%ld) + _hive_modifier (%ld)", _dgpo.get_virtual_supply().amount.value, _old_virtual_supply.amount.value, _hive_modifier.amount.value );
     BOOST_TEST_MESSAGE( _buffer );
 
-    sprintf( _buffer, "dgpo.total_vesting_fund_hive (%ld) == _old_total_vested_hive (%ld) + _hive_modifier (%ld)", _dgpo.total_vesting_fund_hive.amount.value, _old_total_vested_hive.amount.value, _hive_modifier.amount.value );
+    sprintf( _buffer, "dgpo.total_vesting_fund_hive (%ld) == _old_total_vested_hive (%ld) + _hive_modifier (%ld)", _dgpo.get_total_vesting_fund_hive().amount.value, _old_total_vested_hive.amount.value, _hive_modifier.amount.value );
     BOOST_TEST_MESSAGE( _buffer );
 
-    sprintf( _buffer, "dgpo.total_vesting_shares (%ld) == _old_total_vests (%ld) + _vest_modifier (%ld)", _dgpo.total_vesting_shares.amount.value, _old_total_vests.amount.value, _vest_modifier.amount.value );
+    sprintf( _buffer, "dgpo.total_vesting_shares (%ld) == _old_total_vests (%ld) + _vest_modifier (%ld)", _dgpo.get_total_vesting_shares().amount.value, _old_total_vests.amount.value, _vest_modifier.amount.value );
     BOOST_TEST_MESSAGE( _buffer );
 
-    BOOST_CHECK_EQUAL( _dgpo.current_supply, _old_current_supply + _hive_modifier );
-    BOOST_CHECK_EQUAL( _dgpo.virtual_supply, _old_virtual_supply + _hive_modifier );
+    BOOST_CHECK_EQUAL( _dgpo.get_current_supply(), _old_current_supply + _hive_modifier );
+    BOOST_CHECK_EQUAL( _dgpo.get_virtual_supply(), _old_virtual_supply + _hive_modifier );
 
-    BOOST_CHECK_EQUAL( _dgpo.total_vesting_fund_hive, _old_total_vested_hive + _hive_modifier );
-    BOOST_CHECK_EQUAL( _dgpo.total_vesting_shares, _old_total_vests + _vest_modifier );
+    BOOST_CHECK_EQUAL( _dgpo.get_total_vesting_fund_hive(), _old_total_vested_hive + _hive_modifier );
+    BOOST_CHECK_EQUAL( _dgpo.get_total_vesting_shares(), _old_total_vests + _vest_modifier );
 
     generate_block();
     validate_database();
@@ -139,7 +139,7 @@ BOOST_AUTO_TEST_CASE( debug_update_use_bug )
     BOOST_TEST_MESSAGE( "First set some value in state so we can check if it was changed later" );
     db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
     {
-      gpo.maximum_block_size = HIVE_MIN_BLOCK_SIZE_LIMIT;
+      gpo.set_maximum_block_size( HIVE_MIN_BLOCK_SIZE_LIMIT );
     } );
   } );
 
@@ -153,7 +153,7 @@ BOOST_AUTO_TEST_CASE( debug_update_use_bug )
   uint32_t* stack_cleaner = ( uint32_t* )alloca( sizeof( BAADF00D ) * 100 );
   std::fill_n( stack_cleaner, 100, BAADF00D );
 
-  BOOST_REQUIRE_EQUAL( db->get_dynamic_global_properties().maximum_block_size, HIVE_MIN_BLOCK_SIZE_LIMIT );
+  BOOST_REQUIRE_EQUAL( db->get_dynamic_global_properties().get_maximum_block_size(), HIVE_MIN_BLOCK_SIZE_LIMIT );
   const uint32_t new_value = HIVE_MIN_BLOCK_SIZE_LIMIT * 4;
 
   // in order to show the bug it is important that this debug_update is called in the same block as
@@ -163,17 +163,17 @@ BOOST_AUTO_TEST_CASE( debug_update_use_bug )
     BOOST_TEST_MESSAGE( "Second call to debug_update within the same block reveals problem" );
     db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
     {
-      gpo.maximum_block_size = new_value;
+      gpo.set_maximum_block_size( new_value );
     } );
   } );
 
   BOOST_TEST_MESSAGE( "Make sure the value we've set in second debug_update was actually changed" );
-  BOOST_REQUIRE_EQUAL( db->get_dynamic_global_properties().maximum_block_size, new_value );
+  BOOST_REQUIRE_EQUAL( db->get_dynamic_global_properties().get_maximum_block_size(), new_value );
 
   generate_block();
   BOOST_TEST_MESSAGE( "The value should still be set after generating block" );
     // if we generated more blocks the value would eventually be overwritten from witness values
-  BOOST_REQUIRE_EQUAL( db->get_dynamic_global_properties().maximum_block_size, new_value );
+  BOOST_REQUIRE_EQUAL( db->get_dynamic_global_properties().get_maximum_block_size(), new_value );
 
   validate_database();
 }

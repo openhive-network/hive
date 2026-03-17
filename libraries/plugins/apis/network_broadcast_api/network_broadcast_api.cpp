@@ -47,7 +47,7 @@ namespace detail
       fc::time_point_sec now = fc::time_point::now();
       const auto& dgpo = _chain.db().get_dynamic_global_properties();
 
-      return ( dgpo.time < now - fc::seconds( max_block_age ) );
+      return ( dgpo.get_head_block_time() < now - fc::seconds( max_block_age ) );
     }, fc::seconds(1));
   }
 

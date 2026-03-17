@@ -348,7 +348,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
   const dynamic_global_property_object& dgpo = _db.get_dynamic_global_properties();
 
   // The second multiplication is rounded up as of HF14#259
-  int64_t max_vote_denom = dgpo.vote_power_reserve_rate * HIVE_VOTING_MANA_REGENERATION_SECONDS;
+  int64_t max_vote_denom = dgpo.get_vote_power_reserve_rate() * HIVE_VOTING_MANA_REGENERATION_SECONDS;
   HIVE_CHAIN_UNREACHABLE_CODE_ASSERT( max_vote_denom > 0 && "Pre HF20", "Maximum vote denominator must be positive." );
 
   if( !_db.has_hardfork( HIVE_HARDFORK_0_14__259 ) )
@@ -545,10 +545,10 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
         {
           /// discount weight by time
           uint128_t w(max_vote_weight);
-          uint64_t delta_t = std::min( uint64_t((_now - comment_cashout->get_creation_time()).to_seconds()), dgpo.reverse_auction_seconds );
+          uint64_t delta_t = std::min( uint64_t((_now - comment_cashout->get_creation_time()).to_seconds()), dgpo.get_reverse_auction_seconds() );
 
           w *= delta_t;
-          w /= dgpo.reverse_auction_seconds;
+          w /= dgpo.get_reverse_auction_seconds();
           vote_weight = fc::uint128_to_uint64(w);
         }
       }
@@ -660,17 +660,17 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
   {
     used_mana = ( uint128_t( voter.get_effective_vesting_shares().get_amount() ) * abs_weight * 60 * 60 * 24 ) / HIVE_100_PERCENT;
   }
-  else if( dgpo.downvote_pool_percent && o.weight < 0 )
+  else if( dgpo.get_downvote_pool_percent() && o.weight < 0 )
   {
     if( _db.has_hardfork( HIVE_HARDFORK_0_22__3485 ) )
     {
-      used_mana = ( std::max( ( ( uint128_t( voter.downvote_manabar.current_mana ) * HIVE_100_PERCENT ) / dgpo.downvote_pool_percent ),
+      used_mana = ( std::max( ( ( uint128_t( voter.downvote_manabar.current_mana ) * HIVE_100_PERCENT ) / dgpo.get_downvote_pool_percent() ),
                       uint128_t( voter.voting_manabar.current_mana ) )
             * abs_weight * 60 * 60 * 24 ) / HIVE_100_PERCENT;
     }
     else
     {
-      used_mana = ( std::max( ( uint128_t( voter.downvote_manabar.current_mana * HIVE_100_PERCENT ) / dgpo.downvote_pool_percent ),
+      used_mana = ( std::max( ( uint128_t( voter.downvote_manabar.current_mana * HIVE_100_PERCENT ) / dgpo.get_downvote_pool_percent() ),
                       uint128_t( voter.voting_manabar.current_mana ) )
             * abs_weight * 60 * 60 * 24 ) / HIVE_100_PERCENT;
     }
@@ -680,11 +680,11 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
     used_mana = ( uint128_t( voter.voting_manabar.current_mana ) * abs_weight * 60 * 60 * 24 ) / HIVE_100_PERCENT;
   }
 
-  int64_t max_vote_denom = dgpo.vote_power_reserve_rate * HIVE_VOTING_MANA_REGENERATION_SECONDS;
+  int64_t max_vote_denom = dgpo.get_vote_power_reserve_rate() * HIVE_VOTING_MANA_REGENERATION_SECONDS;
   HIVE_CHAIN_UNREACHABLE_CODE_ASSERT( max_vote_denom > 0, "Maximum vote denominator must be positive." );
 
   used_mana = ( used_mana + max_vote_denom - 1 ) / max_vote_denom;
-  if( dgpo.downvote_pool_percent && o.weight < 0 )
+  if( dgpo.get_downvote_pool_percent() && o.weight < 0 )
   {
     // note that downvote requires more mana than necessary, which prevents accounts with no stake from downvoting;
     // while the effect might be unintentional, it was like that for long time and there is enough drama with
@@ -715,7 +715,7 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
 
   _db.modify( voter, [&]( account_object& a )
   {
-    if( dgpo.downvote_pool_percent && o.weight < 0 )
+    if( dgpo.get_downvote_pool_percent() && o.weight < 0 )
     {
       if( fc::uint128_to_int64(used_mana) > a.downvote_manabar.current_mana )
       {
@@ -795,25 +795,25 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
             vote_weight = new_weight - old_weight;
 
             //In HF25 `dgpo.reverse_auction_seconds` is set to zero. It's replaced by `dgpo.early_voting_seconds` and `dgpo.mid_voting_seconds`.
-            if( _seconds < dgpo.reverse_auction_seconds )
+            if( _seconds < dgpo.get_reverse_auction_seconds() )
             {
               max_vote_weight = vote_weight;
 
               /// discount weight by time
               uint128_t w( max_vote_weight );
-              uint64_t delta_t = std::min( _seconds, uint64_t( dgpo.reverse_auction_seconds ) );
+              uint64_t delta_t = std::min( _seconds, uint64_t( dgpo.get_reverse_auction_seconds() ) );
 
               w *= delta_t;
-              w /= dgpo.reverse_auction_seconds;
+              w /= dgpo.get_reverse_auction_seconds();
               vote_weight = fc::uint128_to_uint64(w);
             }
-            else if( _seconds >= dgpo.early_voting_seconds && dgpo.early_voting_seconds )
+            else if( _seconds >= dgpo.get_early_voting_seconds() && dgpo.get_early_voting_seconds() )
             {
               //Following values are chosen empirically
               const uint32_t phase_1_factor = 2;
               const uint32_t phase_2_factor = 8;
 
-              if( _seconds < ( dgpo.early_voting_seconds + dgpo.mid_voting_seconds ) )
+              if( _seconds < ( dgpo.get_early_voting_seconds() + dgpo.get_mid_voting_seconds() ) )
                 vote_weight /= phase_1_factor;
               else
                 vote_weight /= phase_2_factor;
