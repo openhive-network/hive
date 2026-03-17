@@ -8,7 +8,7 @@ from beekeepy.exceptions import ErrorInResponseError
 from hive_local_tools import run_for
 from hive_local_tools.constants import TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS
 from hive_local_tools.functional.python.hf28 import create_proposal
-from hive_local_tools.functional.python.operation import Account, get_transaction_timestamp, get_virtual_operations
+from hive_local_tools.functional.python.operation import Account, get_virtual_operations
 from schemas.operations.virtual import DeclinedVotingRightsOperation
 
 if TYPE_CHECKING:
@@ -47,17 +47,17 @@ def test_vote_for_proposal_from_account_that_has_declined_its_voting_rights(
     # decline voting rights -> wait 30 days (60s in testnet) for approval decline voting rights -> vote for proposal
     transaction = wallet.api.decline_voting_rights(voter.name, True)
     voter.rc_manabar.assert_rc_current_mana_is_reduced(transaction)
-    assert len(node.api.database.find_decline_voting_rights_requests(accounts=[voter.name])["requests"]) == 1
+    assert len(node.api.database.find_decline_voting_rights_requests(accounts=[voter.name]).requests) == 1
 
     node.wait_number_of_blocks(TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS)
 
     assert node.api.database.find_accounts(accounts=[voter.name]).accounts[0].can_vote is False
-    assert len(node.api.database.find_decline_voting_rights_requests(accounts=[voter.name])["requests"]) == 0
+    assert len(node.api.database.find_decline_voting_rights_requests(accounts=[voter.name]).requests) == 0
     assert len(get_virtual_operations(node, DeclinedVotingRightsOperation)) == 1
     with pytest.raises(ErrorInResponseError) as error:
         wallet.api.update_proposal_votes(voter.name, [0], True)
     assert (
-        "Voter declined voting rights, therefore casting votes is forbidden." in error.value.error
+        "Voter declined voting rights, therefore casting votes is forbidden." in str(error.value)
     ), "Error message other than expected."
 
 
@@ -72,7 +72,7 @@ def test_vote_for_proposal_when_decline_voting_rights_request_is_being_executed(
     transaction = wallet.api.decline_voting_rights(voter.name, True)
     voter.rc_manabar.assert_rc_current_mana_is_reduced(transaction)
     voter.rc_manabar.update()
-    assert len(node.api.database.find_decline_voting_rights_requests(accounts=[voter.name])["requests"]) == 1
+    assert len(node.api.database.find_decline_voting_rights_requests(accounts=[voter.name]).requests) == 1
 
     node.wait_for_block_with_number(transaction["block_num"] + (TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS // 2))
     transaction = wallet.api.update_proposal_votes(voter.name, [0], True)
@@ -82,5 +82,5 @@ def test_vote_for_proposal_when_decline_voting_rights_request_is_being_executed(
     assert len(node.api.condenser.list_proposal_votes([""], 1000, "by_voter_proposal", "ascending", "all")) == 0
 
     assert node.api.database.find_accounts(accounts=[voter.name]).accounts[0].can_vote is False
-    assert len(node.api.database.find_decline_voting_rights_requests(accounts=[voter.name])["requests"]) == 0
+    assert len(node.api.database.find_decline_voting_rights_requests(accounts=[voter.name]).requests) == 0
     assert len(get_virtual_operations(node, DeclinedVotingRightsOperation)) == 1

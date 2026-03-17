@@ -9,7 +9,7 @@ import test_tools as tt
 from hive_local_tools import run_for
 
 
-@pytest.fixture()
+@pytest.fixture
 def node() -> tt.InitNode:
     node = tt.InitNode()
     time_of_hf_23 = "2020-03-20T14:00:00"
@@ -90,7 +90,7 @@ def __get_resources_from_account(node: tt.InitNode, account_name: str) -> dict:
 
 def assert_cleared_resources_in_hardfork_hive_operation(node: tt.InitNode, account_name: str) -> None:
     hardfork_hive_virtual_operations: list = [
-        op[1]["op"]["value"]
+        op[1].op.value
         for op in node.api.account_history.get_account_history(
             account=account_name,
             start=-1,

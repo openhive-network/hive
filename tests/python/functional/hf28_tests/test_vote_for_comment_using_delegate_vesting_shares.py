@@ -4,7 +4,7 @@ import test_tools as tt
 from hive_local_tools import run_for
 from hive_local_tools.constants import TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS
 from hive_local_tools.functional.python.hf28 import post_comment
-from hive_local_tools.functional.python.operation import Account, get_transaction_timestamp, get_virtual_operations
+from hive_local_tools.functional.python.operation import Account, get_virtual_operations
 from schemas.operations.virtual import DeclinedVotingRightsOperation
 
 
@@ -25,12 +25,12 @@ def test_delegate_vesting_shares_without_voting_rights(node: tt.InitNode) -> Non
 
     transaction = wallet.api.decline_voting_rights("alice", True)
     alice.rc_manabar.assert_rc_current_mana_is_reduced(transaction)
-    assert len(node.api.database.find_decline_voting_rights_requests(accounts=["alice"])["requests"]) == 1
+    assert len(node.api.database.find_decline_voting_rights_requests(accounts=["alice"]).requests) == 1
 
     node.wait_number_of_blocks(TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS)
 
     assert node.api.database.find_accounts(accounts=["alice"]).accounts[0].can_vote is False
-    assert len(node.api.database.find_decline_voting_rights_requests(accounts=["alice"])["requests"]) == 0
+    assert len(node.api.database.find_decline_voting_rights_requests(accounts=["alice"]).requests) == 0
     assert len(get_virtual_operations(node, DeclinedVotingRightsOperation)) == 1
 
     wallet.api.delegate_vesting_shares("alice", "bob", tt.Asset.Vest(5))
@@ -64,11 +64,11 @@ def test_vote_for_comment_with_vests_from_delegation_before_decline_voting_right
         .cashout_info.net_votes
         == 1
     )
-    assert len(node.api.database.find_decline_voting_rights_requests(accounts=["alice"])["requests"]) == 1
+    assert len(node.api.database.find_decline_voting_rights_requests(accounts=["alice"]).requests) == 1
     node.wait_number_of_blocks(TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS)
 
     assert node.api.database.find_accounts(accounts=["alice"]).accounts[0].can_vote is False
-    assert len(node.api.database.find_decline_voting_rights_requests(accounts=["alice"])["requests"]) == 0
+    assert len(node.api.database.find_decline_voting_rights_requests(accounts=["alice"]).requests) == 0
     assert len(get_virtual_operations(node, DeclinedVotingRightsOperation)) == 1
     assert (
         node.api.database.get_comment_pending_payouts(comments=[["creator-0", "comment-of-creator-0"]])
@@ -103,7 +103,7 @@ def test_vote_for_comment_with_vests_from_delegation_when_decline_voting_rights_
     transaction = wallet.api.decline_voting_rights("alice", True)
     alice.rc_manabar.assert_rc_current_mana_is_reduced(transaction)
 
-    assert len(node.api.database.find_decline_voting_rights_requests(accounts=["alice"])["requests"]) == 1
+    assert len(node.api.database.find_decline_voting_rights_requests(accounts=["alice"]).requests) == 1
 
     wallet.api.delegate_vesting_shares("alice", "bob", tt.Asset.Vest(10_000))
     bob.rc_manabar.update()
@@ -113,7 +113,7 @@ def test_vote_for_comment_with_vests_from_delegation_when_decline_voting_rights_
     node.wait_number_of_blocks(TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS)
 
     assert node.api.database.find_accounts(accounts=["alice"]).accounts[0].can_vote is False
-    assert len(node.api.database.find_decline_voting_rights_requests(accounts=["alice"])["requests"]) == 0
+    assert len(node.api.database.find_decline_voting_rights_requests(accounts=["alice"]).requests) == 0
     assert len(get_virtual_operations(node, DeclinedVotingRightsOperation)) == 1
 
     node.restart(time_control=tt.OffsetTimeControl(offset="+62m"))
@@ -140,7 +140,7 @@ def test_vote_for_comment_with_vests_from_delegation_after_creating_a_decline_vo
     alice.rc_manabar.update()
     transaction = wallet.api.decline_voting_rights("alice", True)
     alice.rc_manabar.assert_rc_current_mana_is_reduced(transaction)
-    assert len(node.api.database.find_decline_voting_rights_requests(accounts=["alice"])["requests"]) == 1
+    assert len(node.api.database.find_decline_voting_rights_requests(accounts=["alice"]).requests) == 1
 
     wallet.api.vote("bob", "creator-0", "comment-of-creator-0", 100)
     assert (
@@ -152,7 +152,7 @@ def test_vote_for_comment_with_vests_from_delegation_after_creating_a_decline_vo
     node.wait_number_of_blocks(TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS)
 
     assert node.api.database.find_accounts(accounts=["alice"]).accounts[0].can_vote is False
-    assert len(node.api.database.find_decline_voting_rights_requests(accounts=["alice"])["requests"]) == 0
+    assert len(node.api.database.find_decline_voting_rights_requests(accounts=["alice"]).requests) == 0
     assert len(get_virtual_operations(node, DeclinedVotingRightsOperation)) == 1
     assert (
         node.api.database.get_comment_pending_payouts(comments=[["creator-0", "comment-of-creator-0"]])
