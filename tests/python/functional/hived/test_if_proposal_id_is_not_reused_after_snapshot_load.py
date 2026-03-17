@@ -71,7 +71,7 @@ def test_if_proposal_id_is_not_reused_after_snapshot_load() -> None:
 def get_last_proposal_id(node: tt.AnyNode) -> int:
     return node.api.database.list_proposals(
         start=["alice"], limit=100, order="by_creator", order_direction="ascending", status="all"
-    ).proposals[-1]["id"]
+    ).proposals[-1].id
 
 
 def create_proposal(wallet: tt.Wallet) -> None:

@@ -4,6 +4,9 @@ import pytest
 from beekeepy.exceptions import FailedToStartExecutableError
 
 import test_tools as tt
+# UNSET is a sentinel value used by hiveio_api (msgspec) for optional fields
+# not present in the API response — distinct from None which means "field present, value null".
+from schemas.convert import UNSET
 
 
 @pytest.mark.parametrize(
@@ -40,7 +43,7 @@ def test_clears_state_with_resync_blockchain_option(
 
     # 2. Verify block_num exists
     block_last = node.api.block.get_block(block_num=block_num)
-    assert block_last.is_set() is True, f"Block {block_num} should exist after replay"
+    assert block_last.block is not None, f"Block {block_num} should exist after replay"
     assert isinstance(block_last.block.block_id, str), f"Block {block_num} block_id should be a string"
     tt.logger.info(f"Block {block_num} exists: {block_last.block.block_id}")
 
@@ -57,7 +60,7 @@ def test_clears_state_with_resync_blockchain_option(
     # The original block_num should not be available
     block_last_after = node.api.block.get_block(block_num=block_num)
     assert (
-        block_last_after.is_set() is False
+        block_last_after.block is None or block_last_after.block is UNSET
     ), f"Block {block_num} should not exist after resync (block_log was deleted)"
 
     # Verify we're actually at block 10 (or close to it)
