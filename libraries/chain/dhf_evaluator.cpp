@@ -11,6 +11,8 @@
 
 #include <hive/chain/util/dhf_helper.hpp>
 
+#include <hive/protocol/hive_specialised_exceptions.hpp>
+
 
 namespace hive { namespace chain {
 
@@ -31,14 +33,14 @@ void create_proposal_evaluator::do_apply( const create_proposal_operation& o )
 {
   try
   {
-    FC_ASSERT( _db.has_hardfork( HIVE_HARDFORK_0_21_PROPOSALS ) && "Premature proposal creation",
+    HIVE_CHAIN_HARDFORK_ASSERT( _db.has_hardfork( HIVE_HARDFORK_0_21_PROPOSALS ) && "Premature proposal creation",
       "Proposals functionality not enabled until hardfork ${hf}", ( "hf", HIVE_HARDFORK_0_21_PROPOSALS ) );
 
     /** start date can be earlier than head_block_time - otherwise creating a proposal can be difficult,
         since passed date should be adjusted by potential transaction execution delay (i.e. 3 sec
         as a time for processed next block).
     */
-    FC_ASSERT( o.end_date > _db.head_block_time(), "Can't create inactive proposals..." );
+    HIVE_CHAIN_TIME_ASSERT( o.end_date > _db.head_block_time(), o.end_date, "Can't create inactive proposals..." );
 
     HBD_asset fee_hbd( HIVE_TREASURY_FEE );
 
@@ -60,14 +62,14 @@ void create_proposal_evaluator::do_apply( const create_proposal_operation& o )
     const auto* receiver_account = _db.find_account( o.receiver );
 
     /// Just to check the receiver account exists.
-    FC_ASSERT(receiver_account != nullptr, "Specified receiver account: ${r} must exist in the blockchain",
+    HIVE_CHAIN_STATE_ASSERT(receiver_account != nullptr, o.receiver, "Specified receiver account: ${r} must exist in the blockchain",
       ("r", o.receiver));
 
     auto commentObject = _db.find_comment(o.creator, o.permlink);
     if(!commentObject)
     {
       commentObject = _db.find_comment(o.receiver, o.permlink);
-      FC_ASSERT(commentObject && "Proposal permlink must point to the article posted by creator or receiver");
+      HIVE_CHAIN_STATE_ASSERT(commentObject && "Proposal permlink must point to the article posted by creator or receiver", o.permlink, "Permlink '${subject}' not found under creator or receiver.");
     }
 
     uint32_t proposal_id = 0;
@@ -102,37 +104,37 @@ void update_proposal_evaluator::do_apply( const update_proposal_operation& o )
 {
   try
   {
-    FC_ASSERT( _db.has_hardfork( HIVE_HARDFORK_1_24 ), "The update proposal functionality not enabled until hardfork ${hf}", ("hf", HIVE_HARDFORK_1_24) );
+    HIVE_CHAIN_HARDFORK_ASSERT( _db.has_hardfork( HIVE_HARDFORK_1_24 ), "The update proposal functionality not enabled until hardfork ${hf}", ("hf", HIVE_HARDFORK_1_24) );
 
     const auto& proposal = _db.get< proposal_object, by_proposal_id >( o.proposal_id );
 
-    FC_ASSERT(o.creator == proposal.creator, "Cannot edit a proposal you are not the creator of");
+    HIVE_CHAIN_PERMISSION_ASSERT(o.creator == proposal.creator, o.creator, "Cannot edit a proposal you are not the creator of");
 
     auto commentObject = _db.find_comment(proposal.creator, o.permlink);
     if(!commentObject)
     {
       commentObject = _db.find_comment(proposal.receiver, o.permlink);
-      FC_ASSERT(commentObject && "Proposal permlink must point to the article posted by creator or the receiver");
+      HIVE_CHAIN_STATE_ASSERT(commentObject && "Proposal permlink must point to the article posted by creator or the receiver", o.permlink, "Permlink '${subject}' not found under creator or receiver.");
     }
 
     HBD_asset o_daily_pay( o.daily_pay );
-    FC_ASSERT( o_daily_pay <= proposal.daily_pay, "You cannot increase the daily pay" );
+    HIVE_CHAIN_LIMIT_ASSERT( o_daily_pay <= proposal.daily_pay, o_daily_pay, "You cannot increase the daily pay" );
 
     const update_proposal_end_date* ed = nullptr;
     if( _db.has_hardfork( HIVE_HARDFORK_1_25 ) )
     {
-      FC_ASSERT( o.extensions.size() < 2, "Cannot have more than 1 extension" );
+      HIVE_CHAIN_LIMIT_ASSERT( o.extensions.size() < 2, o.extensions.size(), "Cannot have more than 1 extension" );
       // NOTE: This assumes there is only one extension and it's of type proposal_end_date, if you add more, update this code
       if( o.extensions.size() == 1 )
       {
         ed = &(o.extensions.begin()->get<update_proposal_end_date>());
-        FC_ASSERT( ed->end_date <= proposal.end_date, "You cannot increase the end date of the proposal" );
-        FC_ASSERT( ed->end_date > proposal.start_date, "The new end date must be after the start date" );
+        HIVE_CHAIN_TIME_ASSERT( ed->end_date <= proposal.end_date, ed->end_date, "You cannot increase the end date of the proposal" );
+        HIVE_CHAIN_TIME_ASSERT( ed->end_date > proposal.start_date, ed->end_date, "The new end date must be after the start date" );
       }
     }
     else
     {
-      FC_ASSERT( o.extensions.empty() , "Cannot set extensions" );
+      HIVE_CHAIN_HARDFORK_ASSERT( o.extensions.empty() , "Cannot set extensions" );
     }
 
     _db.modify( proposal, [&]( proposal_object& p )
@@ -154,7 +156,7 @@ void update_proposal_votes_evaluator::do_apply( const update_proposal_votes_oper
 {
   try
   {
-    FC_ASSERT( _db.has_hardfork( HIVE_HARDFORK_0_21_PROPOSALS ) && "Premature proposal votes update",
+    HIVE_CHAIN_HARDFORK_ASSERT( _db.has_hardfork( HIVE_HARDFORK_0_21_PROPOSALS ) && "Premature proposal votes update",
       "Proposals functionality not enabled until hardfork ${hf}", ( "hf", HIVE_HARDFORK_0_21_PROPOSALS ) );
 
     const auto& pidx = _db.get_index< proposal_index >().indices().get< by_proposal_id >();
@@ -162,7 +164,7 @@ void update_proposal_votes_evaluator::do_apply( const update_proposal_votes_oper
 
     const auto& voter = _db.get_account(o.voter);
 
-    FC_ASSERT( voter.can_vote && "Voter declined voting rights, therefore casting votes is forbidden." );
+    HIVE_CHAIN_VOTING_ASSERT( voter.can_vote && "Voter declined voting rights, therefore casting votes is forbidden.", o.voter, "Voter '${subject}' declined voting rights." );
 
     _db.modify( voter, [&](account_object& a) { a.update_governance_vote_expiration_ts(_db.head_block_time()); });
 
@@ -173,7 +175,7 @@ void update_proposal_votes_evaluator::do_apply( const update_proposal_votes_oper
       if( found_id == pidx.end() || found_id->removed )
       {
         if( _db.has_hardfork( HIVE_HARDFORK_1_28_DONT_TRY_VOTE_FOR_NONEXISTENT_PROPOSAL ) ) // 9b128fbcbc1d0d2758853240f46989a5a221905e unvoted removed proposal
-          FC_ASSERT( false && "proposal not found", "Can't vote for nonexistent proposal with id: ${pid}",(pid) );
+          HIVE_CHAIN_STATE_ASSERT( false && "proposal not found", pid, "Can't vote for nonexistent proposal with id: ${pid}",(pid) );
         continue;
       }
 
@@ -184,7 +186,7 @@ void update_proposal_votes_evaluator::do_apply( const update_proposal_votes_oper
           During the account's deactivation, all votes have to be removed immediately, so it's a risk of potential performance issue.
           Better it not to allow vote on expired proposal.
         */
-        FC_ASSERT(_db.head_block_time() <= found_id->end_date, "Voting on expired proposals is not allowed...");
+        HIVE_CHAIN_TIME_ASSERT(_db.head_block_time() <= found_id->end_date, found_id->end_date, "Voting on expired proposals is not allowed...");
       }
 
       auto found = pvidx.find( boost::make_tuple( o.voter, pid ) );
@@ -212,7 +214,7 @@ void remove_proposal_evaluator::do_apply(const remove_proposal_operation& op)
 {
   try
   {
-    FC_ASSERT( _db.has_hardfork( HIVE_HARDFORK_0_21_PROPOSALS ) && "Premature proposal removal",
+    HIVE_CHAIN_HARDFORK_ASSERT( _db.has_hardfork( HIVE_HARDFORK_0_21_PROPOSALS ) && "Premature proposal removal",
       "Proposals functionality not enabled until hardfork ${hf}", ( "hf", HIVE_HARDFORK_0_21_PROPOSALS ) );
 
     // Remove proposals and related votes...
