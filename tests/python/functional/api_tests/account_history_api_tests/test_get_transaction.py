@@ -1,21 +1,29 @@
 from __future__ import annotations
 
-import pytest
-from beekeepy.exceptions import ErrorInResponseError
-
 import json
 
-import msgspec
+import pytest
+from beekeepy.exceptions import ErrorInResponseError
+from schemas.convert import json_encode
+
 import test_tools as tt
 from hive_local_tools import run_for
 
 
 def _normalize_to_json(obj):
-    """Serialize to JSON and back to get plain dicts for comparison."""
-    if hasattr(obj, "json"):
-        # Pydantic model (schemas Transaction)
-        return json.loads(obj.json())
-    return json.loads(msgspec.json.encode(obj))
+    """Serialize to JSON and back to get plain dicts for comparison.
+
+    Handles both plain msgspec Structs (hiveio_api responses) and schemas Structs
+    with custom field types like HiveInt that msgspec.json.encode cannot serialize.
+    """
+    try:
+        result = json.loads(json_encode(obj))
+    except TypeError:
+        return json.loads(obj.json(exclude_none=True))
+    # Strip None values to match exclude_none=True behavior of the fallback path
+    if isinstance(result, dict):
+        return {k: v for k, v in result.items() if v is not None}
+    return result
 
 
 @pytest.mark.parametrize(

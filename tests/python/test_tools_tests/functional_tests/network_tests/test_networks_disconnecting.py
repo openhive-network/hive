@@ -4,8 +4,8 @@ from enum import Enum
 from typing import TYPE_CHECKING
 
 import pytest
-import test_tools as tt
 
+import test_tools as tt
 from wax.helpy import Hf26Asset as Asset
 from wax.helpy import Time
 
@@ -65,7 +65,7 @@ def prepare_witness(node: AnyNode, account: tt.Account) -> int:
     tt.logger.info(f"Waiting for witness {account.name} to be listed in the schedule")
     maximum_time_when_witness_should_be_capable_of_producing_blocks = 2 * 21 * 3
     Time.wait_for(
-        lambda: account.name in node.api.database.get_witness_schedule()["current_shuffled_witnesses"],
+        lambda: account.name in node.api.database.get_witness_schedule().current_shuffled_witnesses,
         timeout=maximum_time_when_witness_should_be_capable_of_producing_blocks,
     )
     return node.get_last_block_number()
@@ -220,9 +220,7 @@ def test_separating_2_networks_producing_blocks_from_3_networks(three_networks_c
     assert head_block_numbers[second_network] > head_block_numbers[third_network]
 
     assert (
-        second_network_witness_node.api.block.get_block(block_num=block_number_to_check)["block"]["witness"]
+        second_network_witness_node.api.block.get_block(block_num=block_number_to_check).block.witness
         == witness_account.name
     )
-    assert (
-        first_network_init_node.api.block.get_block(block_num=block_number_to_check)["block"]["witness"] == "initminer"
-    )
+    assert first_network_init_node.api.block.get_block(block_num=block_number_to_check).block.witness == "initminer"

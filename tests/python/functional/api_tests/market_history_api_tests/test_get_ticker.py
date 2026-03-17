@@ -4,7 +4,7 @@ import pytest
 
 import test_tools as tt
 from hive_local_tools import run_for
-from hive_local_tools.functional.python.operation import _convert_to_asset
+from hive_local_tools.functional.python.operation import convert_to_asset
 
 HIVE_AND_HBD_AMOUNTS = (
     ([153, 241], [1095, 1331]),
@@ -75,8 +75,8 @@ def test_ticker_output_parameters(node: tt.InitNode, limit_orders: dict) -> None
     open = limit_orders["order_0"]["tbds"] / limit_orders["order_0"]["tests"]
 
     assert float(response.percent_change) == (latest - open) / open * 100
-    assert _convert_to_asset(response.hive_volume) == tt.Asset.Test(hive_volume)
-    assert _convert_to_asset(response.hbd_volume) == tt.Asset.Tbd(hbd_volume)
+    assert convert_to_asset(response.hive_volume) == tt.Asset.Test(hive_volume)
+    assert convert_to_asset(response.hbd_volume) == tt.Asset.Tbd(hbd_volume)
     assert float(response.latest) == latest
 
 

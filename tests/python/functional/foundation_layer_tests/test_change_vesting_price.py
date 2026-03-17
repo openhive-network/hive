@@ -26,4 +26,4 @@ def test_change_vesting_price(node: tt.InitNode | tt.RemoteNode) -> None:
 def report_vest_price(node: tt.InitNode | tt.RemoteNode, msg: str) -> None:
     dgpo = node.api.database.get_dynamic_global_properties()
 
-    tt.logger.info(f"{msg} vests price (from dgpo): {dgpo['total_vesting_shares']}/{dgpo['total_vesting_fund_hive']}.")
+    tt.logger.info(f"{msg} vests price (from dgpo): {dgpo.total_vesting_shares}/{dgpo.total_vesting_fund_hive}.")

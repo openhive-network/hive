@@ -4,6 +4,7 @@ import tempfile
 
 import pytest
 import test_tools as tt
+from hive_local_tools.functional.python.operation import to_naive
 from test_tools.__private.exceptions import BlockLogUtilError
 
 
@@ -34,7 +35,7 @@ def test_get_block(node: tt.InitNode) -> None:
 
     block_from_block_log = block_log.get_block(block_number=10)
     assert (
-        block_from_node.ensure.block.previous == block_from_block_log.previous
+        block_from_node.block.previous == block_from_block_log.previous
     ), "Get_block from block_log getting other block than get_block from node"
 
 
@@ -49,8 +50,9 @@ def test_get_head_block_time(node: tt.InitNode) -> None:
         serialize=True, serialize_format=tt.TimeFormats.FAKETIME_FORMAT
     )
 
+    # Normalize: node returns naive datetime, block_log may return HiveDateTime (aware, UTC)
     assert (
-        head_block_time_from_node == head_block_time_from_block_log
+        to_naive(head_block_time_from_node) == to_naive(head_block_time_from_block_log)
     ), "Head_block_time from block_log is other than head_block_time from node"
 
     assert (
@@ -95,7 +97,7 @@ def test_get_block_ids(node: tt.InitNode) -> None:
 
     block_id_from_block_log = block_log.get_block_ids(block_number=10)
     assert (
-        block_id_from_node.ensure.block.block_id == block_id_from_block_log
+        block_id_from_node.block.block_id == block_id_from_block_log
     ), "The block_id in node differs from the block_id in block_log."
 
 

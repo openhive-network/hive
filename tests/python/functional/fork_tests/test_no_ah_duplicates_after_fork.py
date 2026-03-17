@@ -6,7 +6,7 @@ from test_tools import complex_networks as ttcn
 import test_tools as tt
 
 
-@pytest.mark.fork_tests_group_3()
+@pytest.mark.fork_tests_group_3
 def test_no_duplicates_in_account_history_plugin_after_fork(prepare_with_many_witnesses):
     networks_builder = prepare_with_many_witnesses
     alpha_net = networks_builder.networks[0]
@@ -31,7 +31,7 @@ def display_current_head_block_number_in_both_networks(info, nodes):
     res = {}
 
     for node in nodes:
-        current_head_block = node.api.database.get_dynamic_global_properties()["head_block_number"]
+        current_head_block = node.api.database.get_dynamic_global_properties().head_block_number
         res[str(node)] = current_head_block
         tt.logger.info(f"{info}: {node}: {current_head_block}")
 
@@ -58,13 +58,11 @@ def trigger_fork(alpha_net, beta_net):
     )
 
     tt.logger.info("Waiting until head block increases in both subnetworks")
-    cnt = 0
-    for node in [alpha_node, beta_node]:
-        tt.logger.info(f'Processing {"alpha" if cnt == 0 else "beta"} network')
-        cnt += 1
+    for cnt, node in enumerate([alpha_node, beta_node]):
+        tt.logger.info(f"Processing {'alpha' if cnt == 0 else 'beta'} network")
         while True:
             old_head_block = head_blocks[str(node)]
-            current_head_block = node.api.database.get_dynamic_global_properties()["head_block_number"]
+            current_head_block = node.api.database.get_dynamic_global_properties().head_block_number
             tt.logger.info(f"{node}: current_head_block: {current_head_block} old_head_block: {old_head_block}")
 
             if current_head_block > old_head_block:
