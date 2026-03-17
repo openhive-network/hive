@@ -34,10 +34,10 @@ def test_if_transaction_ids_order_corresponds_to_transactions_order(node: tt.Ini
     node.wait_number_of_blocks(1)  # waiting for the above transactions to be in the block log
     block = node.api.condenser.get_block(node.get_last_block_number())
     # make sure that all created transactions go into single block
-    assert len(block["transactions"]) == len(names)
+    assert len(block.transactions) == len(names)
 
-    for transaction_id, transaction in zip(block["transaction_ids"], block["transactions"]):
-        assert transaction_id == transaction["transaction_id"]
+    for transaction_id, transaction in zip(block.transaction_ids, block.transactions):
+        assert transaction_id == transaction.transaction_id
 
 
 def batch_send(node: tt.InitNode | tt.RemoteNode, requests: list[dict[str, Any]]) -> None:

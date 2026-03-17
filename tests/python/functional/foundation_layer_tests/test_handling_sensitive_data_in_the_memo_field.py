@@ -60,7 +60,7 @@ def test_handling_sensitive_data_in_the_memo_field(
             broadcast_transaction_by_wallet(wallet, operation, memo_message)
 
         error_message = f"Detected private {role} key in memo field. You should change your {role} key"
-        assert error_message in error.value.error
+        assert error_message in str(error.value)
 
 
 @run_for("testnet")

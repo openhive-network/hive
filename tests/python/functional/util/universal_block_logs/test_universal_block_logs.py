@@ -6,7 +6,7 @@ import random
 import pytest
 
 import test_tools as tt
-from hive_local_tools.functional.python.operation import get_vesting_price
+from hive_local_tools.functional.python.operation import convert_to_asset, get_vesting_price
 from python.functional.util.universal_block_logs.generate_universal_block_logs import (
     ACCOUNT_NAMES,
     DELEGATION_PER_ACCOUNT,
@@ -47,11 +47,11 @@ def test_block_log_with_several_type_of_signatures(replayed_node: tt.InitNode, t
     )
 
     find_account_output = node.api.database.find_accounts(accounts=[account]).accounts[0]
-    assert find_account_output.balance >= tt.Asset.Test(110)
-    assert find_account_output.hbd_balance == TBD_PER_ACCOUNT
+    assert convert_to_asset(find_account_output.balance) >= tt.Asset.Test(110)
+    assert convert_to_asset(find_account_output.hbd_balance) == TBD_PER_ACCOUNT
     assert find_account_output.delayed_votes == []
-    assert find_account_output.vesting_shares >= tt.Asset.Vest(103000)
-    assert find_account_output.received_vesting_shares == DELEGATION_PER_ACCOUNT
+    assert convert_to_asset(find_account_output.vesting_shares) >= tt.Asset.Vest(103000)
+    assert convert_to_asset(find_account_output.received_vesting_shares) == DELEGATION_PER_ACCOUNT
     assert node.api.database.find_accounts(accounts=[account_names[-1]]).accounts[0].name == account_names[-1]
 
     # comment ( posting )

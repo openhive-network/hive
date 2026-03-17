@@ -4,7 +4,7 @@ import pytest
 
 import test_tools as tt
 from hive_local_tools import run_for
-from hive_local_tools.functional.python.operation import _convert_to_asset
+from hive_local_tools.functional.python.operation import convert_to_asset
 
 
 @pytest.mark.parametrize(
@@ -30,8 +30,8 @@ def test_check_if_get_volume_returns_correct_values(node, number_of_transactions
         wallet.api.create_order("initminer", 6, tt.Asset.Tbd(40), tt.Asset.Test(300), False, 3600)
 
     response = node.api.market_history.get_volume()
-    assert _convert_to_asset(response.hive_volume) == tt.Asset.Test(tests_volume)
-    assert _convert_to_asset(response.hbd_volume) == tt.Asset.Tbd(tbds_volume)
+    assert convert_to_asset(response.hive_volume) == tt.Asset.Test(tests_volume)
+    assert convert_to_asset(response.hbd_volume) == tt.Asset.Tbd(tbds_volume)
 
 
 @pytest.mark.parametrize(
@@ -50,5 +50,5 @@ def test_get_zero_volume(node, operations, first_order, second_order):
         wallet.api.create_order("initminer", 0, first_order[0], first_order[1], False, 3600)
         wallet.api.create_order("initminer", 1, second_order[0], second_order[1], False, 3600)
     response = node.api.market_history.get_volume()
-    assert _convert_to_asset(response.hive_volume) == tt.Asset.Test(0)
-    assert _convert_to_asset(response.hbd_volume) == tt.Asset.Tbd(0)
+    assert convert_to_asset(response.hive_volume) == tt.Asset.Test(0)
+    assert convert_to_asset(response.hbd_volume) == tt.Asset.Tbd(0)

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from datetime import timezone
 from pathlib import Path
 from typing import Final
 
@@ -50,7 +51,7 @@ def prepare_blocklog_network(output_block_log_directory: Path) -> None:
     tt.logger.info(architecture)
     Path(output_block_log_directory / "base_network_block_log").mkdir(parents=True, exist_ok=True)
     ttcn.generate_networks(architecture, output_block_log_directory / "base_network_block_log", terminate_nodes=True)
-    tt.logger.info(f"Save block log file to {output_block_log_directory/'base_network_block_log'}")
+    tt.logger.info(f"Save block log file to {output_block_log_directory / 'base_network_block_log'}")
 
 
 def prepare_blocklog_with_comments_and_votes(output_block_log_directory: Path) -> None:
@@ -166,7 +167,7 @@ def prepare_blocklog_with_comments_and_votes(output_block_log_directory: Path) -
 
     wait_for_comment_payment(init_node)
 
-    timestamp = init_node.api.block.get_block(block_num=init_node.get_last_block_number())["block"]["timestamp"]
+    timestamp = init_node.api.block.get_block(block_num=init_node.get_last_block_number()).block.timestamp
     tt.logger.info(f"Final block_log head block number: {init_node.get_last_block_number()}")
     tt.logger.info(f"Final block_log head block timestamp: {timestamp}")
 
@@ -186,7 +187,8 @@ def wait_for_comment_payment(node: tt.InitNode) -> None:
     tt.logger.info(f"Cashout time: {cashout_time}")
     tt.logger.info(f"Head block time: {node.get_head_block_time()}")
 
-    time_diff = ((cashout_time - node.get_head_block_time()) - tt.Time.seconds(60)).seconds
+    head_block_time = node.get_head_block_time().replace(tzinfo=timezone.utc)
+    time_diff = ((cashout_time - head_block_time) - tt.Time.seconds(60)).seconds
     generate_block(node, time_diff // 3)
     tt.logger.info(f"Finished waiting: {node.get_head_block_time()}")
 

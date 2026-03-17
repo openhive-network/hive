@@ -640,7 +640,6 @@ quick_test_setup:
   before_script:
     - !reference [.fetch_test_submodules, before_script]
     - pip install ${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/python_api_package/dist/*.whl
-    - pip list | grep hiveio-api
   variables:
     HIVED_PATH: "$CI_PROJECT_DIR/hived-testnet-binaries/hived"
     CLI_WALLET_PATH: "$CI_PROJECT_DIR/hived-testnet-binaries/cli_wallet"
