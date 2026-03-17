@@ -157,7 +157,7 @@ def test_try_change_comment_option_again(
     with pytest.raises(ErrorInResponseError) as error:
         comment.options(**updated_comment_options)
 
-    assert error_message in error.value.error, "Appropriate error message is not raise"
+    assert error_message in str(error.value), "Appropriate error message is not raise"
     comment.assert_rc_mana_after_change_comment_options("is_unchanged")
 
 
@@ -233,7 +233,7 @@ def test_change_comment_options_after_vote(
 
     assert (
         "One of the included comment options requires the comment to have no rshares allocated to it."
-        in error.value.error
+        in str(error.value)
     ), "Appropriate error message is not raise"
     comment.assert_rc_mana_after_change_comment_options("is_unchanged")
 

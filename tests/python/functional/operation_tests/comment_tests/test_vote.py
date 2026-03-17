@@ -131,7 +131,7 @@ def test_vote_on_not_paid_out_comment_with_not_allowed_votes(
     with pytest.raises(ErrorInResponseError) as error:
         vote.vote(100)
 
-    assert "Votes are not allowed on the comment." in error.value.error
+    assert "Votes are not allowed on the comment." in str(error.value)
 
     vote.assert_vote("not_occurred")
     vote.assert_rc_mana_after_vote_or_downvote("is_unchanged")

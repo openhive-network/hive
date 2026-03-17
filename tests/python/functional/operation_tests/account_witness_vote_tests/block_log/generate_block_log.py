@@ -42,20 +42,20 @@ def prepare_blocklog_with_witnesses():
     tt.logger.info("Wait 21 blocks to schedule newly created witnesses into future slate")
     node.wait_number_of_blocks(21)
 
-    future_witnesses = node.api.database.get_active_witnesses(include_future=True)["future_witnesses"]
+    future_witnesses = node.api.database.get_active_witnesses(include_future=True).future_witnesses
     tt.logger.info(f"Future witnesses after voting: {future_witnesses}")
 
     tt.logger.info("Wait 21 blocks for future slate to become active slate")
     node.wait_number_of_blocks(21)
 
-    active_witnesses = node.api.database.get_active_witnesses()["witnesses"]
+    active_witnesses = node.api.database.get_active_witnesses().witnesses
     tt.logger.info(f"Witness state after voting: {active_witnesses}")
 
     # Reason of this wait is to enable moving forward of irreversible block
     tt.logger.info("Wait 21 blocks (when every witness sign at least one block)")
     node.wait_number_of_blocks(21)
 
-    timestamp = node.api.block.get_block(block_num=node.get_last_block_number())["block"]["timestamp"]
+    timestamp = node.api.block.get_block(block_num=node.get_last_block_number()).block.timestamp
     tt.logger.info(f"Final block_log head block number: {node.get_last_block_number()}")
     tt.logger.info(f"Final block_log head block timestamp: {timestamp}")
 
