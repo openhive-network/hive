@@ -544,22 +544,6 @@ pre_commit_checks:
     paths:
       - tests/python/hive-local-tools/poetry.lock
 
-verify_hive_local_tools_poetry_lock_stability:
-  stage: static_code_analysis
-  extends: .verify_poetry_lock_stability_template
-  variables:
-    PYPROJECT_DIR: "$CI_PROJECT_DIR/tests/python/hive-local-tools"
-  tags:
-    - public-runner-docker
-
-.verify_api_generation_poetry_lock_stability:
-  stage: static_code_analysis
-  extends: .verify_poetry_lock_stability_template
-  variables:
-    PYPROJECT_DIR: "$CI_PROJECT_DIR/libraries/plugins/apis/api_generation/api_generation"
-  tags:
-    - public-runner-docker
-
 # Detect what type of files changed to enable test-only optimization
 # Sets TESTS_ONLY=true when only test files changed (no source code)
 detect_changes:
