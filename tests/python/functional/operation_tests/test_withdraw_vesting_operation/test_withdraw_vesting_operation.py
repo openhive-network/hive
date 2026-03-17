@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import timezone
+
 import pytest
 
 import test_tools as tt
@@ -10,7 +12,7 @@ from hive_local_tools.functional.python.operation import jump_to_date
 from hive_local_tools.functional.python.operation.withdrawe_vesting import PowerDown, PowerDownAccount
 
 
-@pytest.mark.testnet()
+@pytest.mark.testnet
 def test_power_down(prepared_node: tt.InitNode, wallet: tt.Wallet, alice: PowerDownAccount):
     """
     User creates Power down
@@ -45,7 +47,7 @@ def test_power_down(prepared_node: tt.InitNode, wallet: tt.Wallet, alice: PowerD
     alice.rc_manabar.assert_max_rc_mana_state("unchanged")
 
 
-@pytest.mark.testnet()
+@pytest.mark.testnet
 def test_cancel_power_down(prepared_node: tt.InitNode, wallet: tt.Wallet, alice: PowerDownAccount):
     """
     User wants to stop Power down a few days after creating Power down.
@@ -79,7 +81,7 @@ def test_cancel_power_down(prepared_node: tt.InitNode, wallet: tt.Wallet, alice:
     assert alice.get_rc_max_mana() == alice.rc_manabar.max_mana + int(power_down.weekly_vest_reduction.amount), err_msg
 
 
-@pytest.mark.testnet()
+@pytest.mark.testnet
 @pytest.mark.parametrize(
     ("first_pd_amount", "second_pd_amount"),
     [
@@ -119,7 +121,7 @@ def test_modify_power_down_amount(
     err = "The headblock timing is not between the 2nd and 3rd week of power down."
     assert (
         power_down._tranche_schedule[1]  # noqa: SLF001
-        < prepared_node.get_head_block_time()
+        < prepared_node.get_head_block_time().replace(tzinfo=timezone.utc)
         < power_down._tranche_schedule[2]  # noqa: SLF001
     ), err
     second_pd_vest_amount = PowerDown.convert_to_vest(prepared_node, second_pd_amount)

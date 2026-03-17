@@ -87,7 +87,7 @@ async def test_change_active_authority_sign_with_owner_key_negative(node, alice_
 
     with pytest.raises(ErrorInResponseError) as e:
         alice_wallet.api.sign_transaction(Transaction.parse_raw(trx.to_api_json()), broadcast=True)
-    assert "missing required active authority" in e.value.error
+    assert "missing required active authority" in str(e.value)
 
 
 @pytest.mark.asyncio

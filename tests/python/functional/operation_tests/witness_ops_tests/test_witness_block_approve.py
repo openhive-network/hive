@@ -22,7 +22,7 @@ def test_try_to_sign_witness_block_approve_operation_by_non_witness(
 
     with pytest.raises(ErrorInResponseError) as error:
         alice.witness_block_approve(block_id=INCORRECT_VALUE_OF_BLOCK_ID)
-    assert "Missing Witness Authority" in error.value.error, "Error message other than expected."
+    assert "Missing Witness Authority" in str(error.value), "Error message other than expected."
     alice.assert_rc_current_mana_was_unchanged()
 
 
@@ -40,5 +40,5 @@ def test_try_to_sign_witness_block_approve_operation_by_non_witness_authority(
     wallet.api.use_authority("active", "alice")
     with pytest.raises(ErrorInResponseError) as error:
         alice.witness_block_approve(block_id=INCORRECT_VALUE_OF_BLOCK_ID)
-    assert "Missing Witness Authority" in error.value.error, "Error message other than expected."
+    assert "Missing Witness Authority" in str(error.value), "Error message other than expected."
     alice.assert_rc_current_mana_was_unchanged()

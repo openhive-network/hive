@@ -48,7 +48,7 @@ def test_transfer_vests(prepared_node: tt.InitNode, wallet: tt.Wallet, sender: s
     amount = tt.Asset.Test(0.001)
     wallet.create_account(sender, hives=1000)
     sender_initial_balance = get_hive_balance(prepared_node, sender)
-    if receiver and not len(prepared_node.api.database.find_accounts(accounts=[receiver])["accounts"]):
+    if receiver and not len(prepared_node.api.database.find_accounts(accounts=[receiver]).accounts):
         wallet.create_account(receiver)
 
     transaction = wallet.api.transfer_to_vesting(sender, receiver, amount)

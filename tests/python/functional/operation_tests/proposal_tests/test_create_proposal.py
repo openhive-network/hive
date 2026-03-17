@@ -91,5 +91,5 @@ def test_try_to_create_proposal(
     wallet.api.post_comment("alice", "comment-permlink", "", "category", "title", "body", "{}")
     with pytest.raises(ErrorInResponseError) as error:
         proposal_creator.create_proposal(proposal_receiver, tt.Time.now(), end_date)
-    assert "Proposal permlink must point to the article posted by creator or receiver" in error.value.error
+    assert "Proposal permlink must point to the article posted by creator or receiver" in str(error.value)
     assert get_number_of_active_proposals(prepared_node) == 0, "It shouldn't be any active proposals."

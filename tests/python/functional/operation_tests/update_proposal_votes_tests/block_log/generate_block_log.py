@@ -21,7 +21,7 @@ def prepare_blocklog_with_proposals():
 
     node.wait_for_irreversible_block()
 
-    timestamp = node.api.block.get_block(block_num=node.get_last_block_number())["block"]["timestamp"]
+    timestamp = node.api.block.get_block(block_num=node.get_last_block_number()).block.timestamp
     tt.logger.info(f"Final block_log head block number: {node.get_last_block_number()}")
     tt.logger.info(f"Final block_log head block timestamp: {timestamp}")
 
