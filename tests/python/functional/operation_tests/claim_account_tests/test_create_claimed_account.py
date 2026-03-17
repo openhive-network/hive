@@ -57,7 +57,7 @@ def test_try_to_create_claimed_account_operation_without_available_token(
     with pytest.raises(ErrorInResponseError) as exception:
         CreateClaimedAccount(node, wallet_alice, alice.name, "bob")
 
-    assert "alice has no claimed accounts to create" in exception.value.error
+    assert "alice has no claimed accounts to create" in str(exception.value)
 
 
 @pytest.mark.parametrize("fee", [tt.Asset.Test(3)], indirect=["fee"])
@@ -75,5 +75,5 @@ def test_try_to_create_claimed_account_operation_with_already_existing_account(
     with pytest.raises(ErrorInResponseError) as exception:
         CreateClaimedAccount(node, wallet_alice, alice.name, "bob")
 
-    assert "Account bob already exists." in exception.value.error
+    assert "Account bob already exists." in str(exception.value)
     assert alice.get_pending_claimed_accounts() == 1, "Claim token was used. Shouldn't be."

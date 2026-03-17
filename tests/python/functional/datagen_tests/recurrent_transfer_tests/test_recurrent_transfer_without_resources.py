@@ -22,4 +22,4 @@ def test_recurrent_transfer_without_resources(node: tt.InitNode) -> None:
         )
 
     expected_error_message = "Account does not have enough tokens for the first transfer, has"
-    assert expected_error_message in exception.value.error
+    assert expected_error_message in str(exception.value)

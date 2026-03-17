@@ -219,9 +219,8 @@ def test_too_long_account_name_length(node, api, method, arguments, keyword_argu
     with pytest.raises(ErrorInResponseError) as exception:
         call(node, api, method, *arguments, **keyword_arguments)
 
-    response = exception.value.error
+    response = str(exception.value)
     assert (
         f"Assert Exception:in_len <= sizeof(data): Input too large: `{TOO_LONG_ACCOUNT_NAME}`"
         f" ({len(TOO_LONG_ACCOUNT_NAME)}) for fixed size string: (16)"
-        == response
-    )
+    ) in response

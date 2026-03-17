@@ -303,7 +303,7 @@ def test_recurrent_transfer_with_extension_cases_11_and_12(
             executions=RECURRENT_TRANSFER_DEFINITIONS[1].executions,
             pair_id=2,
         )
-    assert "Account does not have enough tokens for the first transfer" in exception.value.error
+    assert "Account does not have enough tokens for the first transfer" in str(exception.value)
 
     rtd3_amount = asset(10)
     rtd3 = RecurrentTransfer(

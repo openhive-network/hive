@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 @pytest.mark.parametrize("authority_level", ["posting", "active", "owner"])
 def test_posting_account_authority(node: tt.InitNode, authority_level: str, alice: Account, bob: Account) -> None:
     alice.wallet.api.update_account_auth_account(alice.name, authority_level, bob.name, 1)
-    assert (bob.name, 1) in get_authority(
+    assert [bob.name, 1] in get_authority(
         node, alice.name, authority_level
     ).account_auths, f"Account {bob.name} was not set as account_auths for the account {alice.name}."
 
@@ -36,14 +36,14 @@ def test_posting_account_authority(node: tt.InitNode, authority_level: str, alic
         assert not is_bob_authorized_to_sign_alice_transaction
         with pytest.raises(ErrorInResponseError) as exception:
             bob.wallet.api.post_comment(alice.name, "test-permlink", "", "someone0", "test-title", "body", "{}")
-        assert "missing required posting authority" in exception.value.error
+        assert "missing required posting authority" in str(exception.value)
 
 
 @run_for("testnet")
 @pytest.mark.parametrize("authority_level", ["posting", "active", "owner"])
 def test_active_account_authority(node: tt.InitNode, authority_level: str, alice: Account, bob: Account) -> None:
     alice.wallet.api.update_account_auth_account(alice.name, authority_level, bob.name, 1)
-    assert (bob.name, 1) in get_authority(
+    assert [bob.name, 1] in get_authority(
         node, alice.name, authority_level
     ).account_auths, f"Account {bob.name} was not set as account_auths for the account {alice.name}."
 
@@ -62,14 +62,14 @@ def test_active_account_authority(node: tt.InitNode, authority_level: str, alice
         assert not is_bob_authorized_to_sign_alice_transaction
         with pytest.raises(ErrorInResponseError) as exception:
             bob.wallet.api.transfer("alice", "initminer", tt.Asset.Test(10), "bob signed alice transfer.")
-        assert "missing required active authority" in exception.value.error
+        assert "missing required active authority" in str(exception.value)
 
 
 @run_for("testnet")
 @pytest.mark.parametrize("authority_level", ["posting", "active", "owner"])
 def test_owner_account_authority(node: tt.InitNode, authority_level: str, alice: Account, bob: Account) -> None:
     alice.wallet.api.update_account_auth_account(alice.name, authority_level, bob.name, 1)
-    assert (bob.name, 1) in get_authority(
+    assert [bob.name, 1] in get_authority(
         node, alice.name, authority_level
     ).account_auths, f"Account {bob.name} was not set as account_auths for the account {alice.name}."
 
@@ -107,7 +107,7 @@ def test_owner_account_authority(node: tt.InitNode, authority_level: str, alice:
                 active=tt.Account("alice", secret="active").public_key,
                 memo=tt.Account("alice", secret="memo").public_key,
             )
-        assert "missing required owner authority" in exception.value.error
+        assert "missing required owner authority" in str(exception.value)
 
 
 @run_for("testnet")
@@ -157,9 +157,10 @@ def test_signing_with_circular_account_authority(
            │                                           │
            ● posting                                   ● posting
     """
-    initminer_wallet.api.import_keys(
-        [tt.PrivateKey(account_name=bob.name, secret="owner"), tt.PrivateKey(account_name=carol.name, secret="owner")]
-    )
+    initminer_wallet.api.import_keys([
+        tt.PrivateKey(account_name=bob.name, secret="owner"),
+        tt.PrivateKey(account_name=carol.name, secret="owner"),
+    ])
 
     bob.wallet.api.import_key(tt.PrivateKey(account_name=bob.name, secret="active"))
     assert len(bob.wallet.api.list_keys()) == 1, "Bob's wallet has an incorrect number of imported keys. Expected 1"
@@ -219,4 +220,4 @@ def test_automatic_transaction_signing_by_key_with_higher_authority_level(
     post = bob.wallet.api.post_comment(bob.name, "test-permlink", "", "someone", "title", "body", "{}", broadcast=False)
     with pytest.raises(ErrorInResponseError) as error:
         bob.wallet.api.sign_transaction(post)
-    assert "missing required posting authority" in error.value.error
+    assert "missing required posting authority" in str(error.value)

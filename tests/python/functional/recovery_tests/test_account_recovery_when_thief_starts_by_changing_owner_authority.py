@@ -121,7 +121,7 @@ def test_steal_account_scenario_1(prepare_environment: tuple) -> None:
 
     with pytest.raises(ErrorInResponseError) as exception:
         wallet_thief.api.request_account_recovery("thief", "alice", basic_authority(tt.Account("thief").public_key))
-    assert "Cannot recover an account that does not have you as their recovery partner." in exception.value.error
+    assert "Cannot recover an account that does not have you as their recovery partner." in str(exception.value)
 
 
 def test_steal_account_scenario_2(prepare_environment: tuple) -> None:
@@ -168,4 +168,4 @@ def test_steal_account_scenario_2(prepare_environment: tuple) -> None:
 
     with pytest.raises(ErrorInResponseError) as exception:
         wallet_alice.api.recover_account("alice", alice_original_authority, alice_new_authority)
-    assert "Recent authority not found in authority history." in exception.value.error
+    assert "Recent authority not found in authority history." in str(exception.value)

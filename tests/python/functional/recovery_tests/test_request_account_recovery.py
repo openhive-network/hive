@@ -99,7 +99,7 @@ def test_recovery_account_process_without_changing_owner_key(node: tt.InitNode) 
     with pytest.raises(ErrorInResponseError) as exception:
         wallet.api.recover_account("alice", primary_authority, new_authority)
 
-    assert "Recent authority not found in authority history." in exception.value.error
+    assert "Recent authority not found in authority history." in str(exception.value)
 
 
 @run_for("testnet")
@@ -117,7 +117,7 @@ def test_confirm_account_recovery_without_account_recovery_request(node: tt.Init
     with pytest.raises(ErrorInResponseError) as exception:
         wallet.api.recover_account("alice", primary_authority, new_authority)
 
-    assert "There are no active recovery requests for this account." in exception.value.error
+    assert "There are no active recovery requests for this account." in str(exception.value)
 
 
 @run_for("testnet")
@@ -145,7 +145,7 @@ def test_account_recovery_process_with_mismatched_key(node: tt.InitNode) -> None
         # The key does not match the key provided in the recovery request
         wallet.api.recover_account("alice", primary_authority, random_authority)
 
-    assert "New owner authority does not match recovery request." in exception.value.error
+    assert "New owner authority does not match recovery request." in str(exception.value)
 
 
 @pytest.mark.skip(reason="https://gitlab.syncad.com/hive/hive/-/issues/506")
@@ -186,7 +186,7 @@ def test_create_account_recovery_request_from_random_account_as_recovery_agent(n
         # alice confirms the request made by random account
         wallet.api.request_account_recovery("random-account", "alice", authority)
 
-    assert "Cannot recover an account that does not have you as their recovery partner." in exception.value.error
+    assert "Cannot recover an account that does not have you as their recovery partner." in str(exception.value)
 
 
 @run_for("testnet")
@@ -202,7 +202,7 @@ def test_create_recovery_account_request_from_future_recovery_agent(node: tt.Ini
     with pytest.raises(ErrorInResponseError) as exception:
         wallet.api.request_account_recovery("future-agent", "alice", new_authority)
 
-    assert "Cannot recover an account that does not have you as their recovery partner." in exception.value.error
+    assert "Cannot recover an account that does not have you as their recovery partner." in str(exception.value)
 
 
 @run_for("testnet")
@@ -267,7 +267,7 @@ def test_try_to_confirm_account_recovery_request_with_expired_key(node: tt.InitN
         # alice confirms the request made by her agent
         wallet.api.recover_account("alice", alice_original_authority, new_authority)
 
-    assert "Recent authority not found in authority history." in exception.value.error
+    assert "Recent authority not found in authority history." in str(exception.value)
 
 
 @run_for("testnet")
