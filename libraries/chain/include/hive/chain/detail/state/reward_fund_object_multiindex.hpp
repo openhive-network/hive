@@ -9,7 +9,7 @@ namespace hive { namespace chain {
       ordered_unique< tag< by_id >,
         const_mem_fun< reward_fund_object, reward_fund_object::id_type, &reward_fund_object::get_id > >,
       ordered_unique< tag< by_name >,
-        member< reward_fund_object, reward_fund_name_type, &reward_fund_object::name > >
+        const_mem_fun< reward_fund_object, const reward_fund_name_type&, &reward_fund_object::get_name > >
     >,
     multi_index_allocator< reward_fund_object, 2 > // singleton (plus one internal)
   > reward_fund_index;

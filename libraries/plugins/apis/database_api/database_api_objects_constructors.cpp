@@ -36,15 +36,15 @@ using namespace hive::protocol;
 // api_reward_fund_object constructor
 api_reward_fund_object::api_reward_fund_object( const reward_fund_object& o, const database& db ):
   id( o.get_id() ),
-  name( o.name ),
-  reward_balance( o.reward_balance.to_asset() ),
-  recent_claims( o.recent_claims ),
-  last_update( o.last_update ),
-  content_constant( o.content_constant ),
-  percent_curation_rewards( o.percent_curation_rewards ),
-  percent_content_rewards( o.percent_content_rewards ),
-  author_reward_curve( o.author_reward_curve ),
-  curation_reward_curve( o.curation_reward_curve )
+  name( o.get_name() ),
+  reward_balance( o.get_reward_balance().to_asset() ),
+  recent_claims( o.get_recent_claims() ),
+  last_update( o.get_last_update() ),
+  content_constant( o.get_content_constant() ),
+  percent_curation_rewards( o.get_percent_curation_rewards() ),
+  percent_content_rewards( o.get_percent_content_rewards() ),
+  author_reward_curve( o.get_author_reward_curve() ),
+  curation_reward_curve( o.get_curation_reward_curve() )
 {}
 
 // api_witness_vote_object constructor

@@ -353,8 +353,8 @@ BOOST_AUTO_TEST_CASE( recent_claims_decay )
     push_transaction( tx, alice_post_key );
 
     auto alice_vshares = util::evaluate_reward_curve( db->find_comment_cashout( *db->get_comment( "alice", string( "test" ) ) )->get_net_rshares(),
-      db->get< reward_fund_object, by_name >( HIVE_POST_REWARD_FUND_NAME ).author_reward_curve,
-      db->get< reward_fund_object, by_name >( HIVE_POST_REWARD_FUND_NAME ).content_constant );
+      db->get< reward_fund_object, by_name >( HIVE_POST_REWARD_FUND_NAME ).get_author_reward_curve(),
+      db->get< reward_fund_object, by_name >( HIVE_POST_REWARD_FUND_NAME ).get_content_constant() );
 
     generate_blocks( 5 );
 
@@ -371,14 +371,14 @@ BOOST_AUTO_TEST_CASE( recent_claims_decay )
     {
       const auto& post_rf = db->get< reward_fund_object, by_name >( HIVE_POST_REWARD_FUND_NAME );
 
-      BOOST_REQUIRE( post_rf.recent_claims == alice_vshares );
+      BOOST_REQUIRE( post_rf.get_recent_claims() == alice_vshares );
       validate_database();
     }
 
     auto bob_cashout_time = db->find_comment_cashout( *db->get_comment( "bob", string( "test" ) ) )->get_cashout_time();
     auto bob_vshares = util::evaluate_reward_curve( db->find_comment_cashout( *db->get_comment( "bob", string( "test" ) ) )->get_net_rshares(),
-      db->get< reward_fund_object, by_name >( HIVE_POST_REWARD_FUND_NAME ).author_reward_curve,
-      db->get< reward_fund_object, by_name >( HIVE_POST_REWARD_FUND_NAME ).content_constant );
+      db->get< reward_fund_object, by_name >( HIVE_POST_REWARD_FUND_NAME ).get_author_reward_curve(),
+      db->get< reward_fund_object, by_name >( HIVE_POST_REWARD_FUND_NAME ).get_content_constant() );
 
     generate_block();
 
@@ -387,7 +387,7 @@ BOOST_AUTO_TEST_CASE( recent_claims_decay )
       alice_vshares -= ( alice_vshares * HIVE_BLOCK_INTERVAL ) / HIVE_RECENT_RSHARES_DECAY_TIME_HF19.to_seconds();
       const auto& post_rf = db->get< reward_fund_object, by_name >( HIVE_POST_REWARD_FUND_NAME );
 
-      BOOST_REQUIRE( post_rf.recent_claims == alice_vshares );
+      BOOST_REQUIRE( post_rf.get_recent_claims() == alice_vshares );
 
       generate_block();
 
@@ -397,7 +397,7 @@ BOOST_AUTO_TEST_CASE( recent_claims_decay )
       alice_vshares -= ( alice_vshares * HIVE_BLOCK_INTERVAL ) / HIVE_RECENT_RSHARES_DECAY_TIME_HF19.to_seconds();
       const auto& post_rf = db->get< reward_fund_object, by_name >( HIVE_POST_REWARD_FUND_NAME );
 
-      BOOST_REQUIRE( post_rf.recent_claims == alice_vshares + bob_vshares );
+      BOOST_REQUIRE( post_rf.get_recent_claims() == alice_vshares + bob_vshares );
       validate_database();
     }
   }

@@ -2371,7 +2371,7 @@ BOOST_AUTO_TEST_CASE(treasury_hbd_does_not_affect_inflation_advanced)
             share_type used_rewards = 0;
             for (auto itr = reward_idx.begin(); itr != reward_idx.end(); ++itr)
             {
-                used_rewards += (content_reward * itr->percent_content_rewards) / HIVE_100_PERCENT;
+                used_rewards += (content_reward * itr->get_percent_content_rewards()) / HIVE_100_PERCENT;
             }
 
             content_reward = used_rewards;

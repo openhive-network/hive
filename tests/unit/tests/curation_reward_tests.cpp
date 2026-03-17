@@ -609,7 +609,7 @@ struct curation_rewards_handler
     if( found == reward_idx.end() )
       return HIVE_asset( 0 );
 
-    return found->reward_balance;
+    return found->get_reward_balance();
   }
 
 };
@@ -1290,7 +1290,7 @@ void two_comments_in_the_same_blocks_impl( cluster_database_fixture& cluster, bo
         {
           db.modify( db.get< reward_fund_object, by_name >( HIVE_POST_REWARD_FUND_NAME ), [&]( reward_fund_object& rfo )
           {
-            rfo.author_reward_curve = convergent_linear;
+            rfo.set_author_reward_curve( convergent_linear );
           });
         });
       }
@@ -1575,7 +1575,7 @@ void two_comments_in_different_blocks_impl( cluster_database_fixture& cluster, b
         {
           db.modify( db.get< reward_fund_object, by_name >( HIVE_POST_REWARD_FUND_NAME ), [&]( reward_fund_object& rfo )
           {
-            rfo.author_reward_curve = convergent_linear;
+            rfo.set_author_reward_curve( convergent_linear );
           });
         });
       }

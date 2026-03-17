@@ -520,9 +520,9 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
           {
             const auto& reward_fund = _db.get_reward_fund();
             auto curve = !_db.has_hardfork( HIVE_HARDFORK_0_19__1052 ) && comment_cashout->get_creation_time() > HIVE_HF_19_SQRT_PRE_CALC
-                      ? curve_id::square_root : reward_fund.curation_reward_curve;
-            uint64_t old_weight = fc::uint128_to_uint64(util::evaluate_reward_curve( old_vote_rshares, curve, reward_fund.content_constant ));
-            uint64_t new_weight = fc::uint128_to_uint64(util::evaluate_reward_curve( comment_cashout->get_vote_rshares(), curve, reward_fund.content_constant ));
+                      ? curve_id::square_root : reward_fund.get_curation_reward_curve();
+            uint64_t old_weight = fc::uint128_to_uint64(util::evaluate_reward_curve( old_vote_rshares, curve, reward_fund.get_content_constant() ));
+            uint64_t new_weight = fc::uint128_to_uint64(util::evaluate_reward_curve( comment_cashout->get_vote_rshares(), curve, reward_fund.get_content_constant() ));
             vote_weight = new_weight - old_weight;
           }
           else if ( _db.has_hardfork( HIVE_HARDFORK_0_1 ) )
@@ -784,9 +784,9 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
         {
           // cv.weight = W(R_1) - W(R_0)
           const auto& reward_fund = _db.get_reward_fund();
-          auto curve = reward_fund.curation_reward_curve;
-          uint64_t old_weight = fc::uint128_to_uint64(util::evaluate_reward_curve( old_vote_rshares, curve, reward_fund.content_constant ));
-          uint64_t new_weight = fc::uint128_to_uint64(util::evaluate_reward_curve( c.get_vote_rshares(), curve, reward_fund.content_constant ));
+          auto curve = reward_fund.get_curation_reward_curve();
+          uint64_t old_weight = fc::uint128_to_uint64(util::evaluate_reward_curve( old_vote_rshares, curve, reward_fund.get_content_constant() ));
+          uint64_t new_weight = fc::uint128_to_uint64(util::evaluate_reward_curve( c.get_vote_rshares(), curve, reward_fund.get_content_constant() ));
 
           if( old_weight < new_weight ) // old_weight > new_weight should never happen, but == is ok
           {
