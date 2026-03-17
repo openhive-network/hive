@@ -118,7 +118,7 @@ def test_bucket_output_parameters(
 ) -> None:
     wallet = tt.Wallet(attach_to=node)
     wallet.create_account("alice", hives=tt.Asset.Test(1000), vests=tt.Asset.Test(100))
-    epoch_time_zero = tt.Time.parse("1970-01-01T00:00:00").replace(tzinfo=None)
+    epoch_time_zero = tt.Time.parse("1970-01-01T00:00:00", time_zone=None)
     time_needed_for_transactions = 15  # in seconds
     transactions_done = False
 

@@ -213,7 +213,7 @@ def get_witness_votes(node: tt.InitNode, witness_name: str) -> tt.Asset.Vest:
 
 def move_to_next_maintenance_time(node: tt.InitNode) -> None:
     next_maintenance_time = tt.Time.parse(
-        node.api.database.get_dynamic_global_properties().next_maintenance_time
-    ).replace(tzinfo=None)
+        node.api.database.get_dynamic_global_properties().next_maintenance_time, time_zone=None
+    )
     node.restart(time_control=tt.StartTimeControl(start_time=next_maintenance_time))
     assert node.get_head_block_time() >= next_maintenance_time
