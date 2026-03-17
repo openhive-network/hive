@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import contextlib
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timedelta
+from datetime import timedelta
 from functools import partial
 from typing import TYPE_CHECKING
 
@@ -114,7 +114,7 @@ def __generate_and_broadcast_transaction(
     default_transaction_data = {
         "ref_block_num": HiveInt(ref_block_num),
         "ref_block_prefix": HiveInt(ref_block_prefix),
-        "expiration": (datetime.fromisoformat(gdpo.time) if isinstance(gdpo.time, str) else gdpo.time)
+        "expiration": (tt.Time.parse(gdpo.time, time_zone=None) if isinstance(gdpo.time, str) else gdpo.time)
         + timedelta(seconds=1800),
         "extensions": [],
         "signatures": [],

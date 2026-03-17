@@ -1,8 +1,9 @@
 from __future__ import annotations
+
 import json
 import os
 import random
-from datetime import datetime, timedelta
+from datetime import timedelta
 from pathlib import Path
 from typing import Final, Literal
 
@@ -138,8 +139,7 @@ def prepare_block_log(
     generate_block(node, 43)  # wait for the block size to change to 2mb
 
     if signature_type == "maximum_sign":
-        global NUMBER_OF_ACCOUNTS
-        global ACCOUNT_NAMES
+        global NUMBER_OF_ACCOUNTS, ACCOUNT_NAMES
         NUMBER_OF_ACCOUNTS = 10_000
         ACCOUNT_NAMES = ACCOUNT_NAMES[:NUMBER_OF_ACCOUNTS]
         tt.logger.info(f"Start creating signers! @Block: {node.get_last_block_number()}")
@@ -426,7 +426,7 @@ def __generate_and_broadcast_transaction(
     transaction = SimpleTransactionLegacy(
         ref_block_num=HiveInt(ref_block_num),
         ref_block_prefix=HiveInt(ref_block_prefix),
-        expiration=(datetime.fromisoformat(gdpo.time) if isinstance(gdpo.time, str) else gdpo.time)
+        expiration=(tt.Time.parse(gdpo.time, time_zone=None) if isinstance(gdpo.time, str) else gdpo.time)
         + timedelta(seconds=1800),
         extensions=[],
         signatures=[],
