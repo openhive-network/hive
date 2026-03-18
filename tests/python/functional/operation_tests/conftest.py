@@ -330,7 +330,12 @@ class LimitOrderAccount(Account):
         currency = tt.Asset.Tbd if hbd else tt.Asset.Test
         expected = currency(amount)
         token = expected.get_asset_information().get_symbol()
-        # Compare amounts directly (for_sale is in raw units, expected.amount is in raw units too)
+        # Verify currency type matches (for_sale is plain int, currency info is in sell_price.base.nai)
+        expected_nai = expected.nai()
+        assert query.sell_price.base.nai == expected_nai, (
+            f"Currency mismatch for {self._name}'s order: "
+            f"expected {expected_nai} but got {query.sell_price.base.nai}"
+        )
         assert int(for_sale) == int(expected.amount), (
             f"Amount of {token} that are still available for sale "
             f"is not correct. {self._name} should have now {amount} {token}"
