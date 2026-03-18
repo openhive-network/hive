@@ -36,8 +36,6 @@
   "dhf_interval_ledger": "0.000 HBD",
   "time": "2016-09-15T19:47:21",
   "total_pow": 238139,
-  "total_reward_fund_hive": "66003.975 HIVE",
-  "total_reward_shares2": "763454540462239354401757185454",
   "total_vesting_fund_hive": "149190428.013 HIVE",
   "total_vesting_shares": "448144916705.468383 VESTS",
   "vesting_reward_percent": 1500,

@@ -4138,8 +4138,6 @@
                                     "reverse_auction_seconds": 0,
                                     "time": "2025-09-02T10:34:30",
                                     "total_pow": 514415,
-                                    "total_reward_fund_hive": "0.000 HIVE",
-                                    "total_reward_shares2": "0",
                                     "total_vesting_fund_hive": "189150209.131 HIVE",
                                     "total_vesting_shares": "313853921114.393221 VESTS",
                                     "vesting_reward_percent": 1500,
@@ -7976,12 +7974,6 @@
                                     "reverse_auction_seconds": 0,
                                     "time": "2025-05-06T13:23:24",
                                     "total_pow": 514415,
-                                    "total_reward_fund_hive": {
-                                        "amount": "0",
-                                        "nai": "@@000000021",
-                                        "precision": 3
-                                    },
-                                    "total_reward_shares2": "0",
                                     "total_vesting_fund_hive": {
                                         "amount": "183947751106",
                                         "nai": "@@000000021",
@@ -16675,10 +16667,6 @@
                         "$ref": "#/components/schemas/hive_int",
                         "description": "Total accumulated proof-of-work, which is usually zero or not applicable in pure proof-of-stake systems like HIVE unless PoW is used temporarily."
                     },
-                    "total_reward_shares2": {
-                        "$ref": "#/components/schemas/hive_int",
-                        "description": "String representing reward shares (possibly an internal accounting value)."
-                    },
                     "vesting_reward_percent": {
                         "type": "integer",
                         "description": "Percentage (basis points) of reward allocated to vesting."
@@ -16720,7 +16708,6 @@
                     "reverse_auction_seconds",
                     "time",
                     "total_pow",
-                    "total_reward_shares2",
                     "vesting_reward_percent",
                     "vote_power_reserve_rate"
                 ]
@@ -16757,10 +16744,6 @@
                                 "$ref": "#/components/schemas/balance",
                                 "description": "The amount of vesting shares slated to be awarded as part of pending rewards."
                             },
-                            "total_reward_fund_hive": {
-                                "$ref": "#/components/schemas/balance",
-                                "description": "The total reward fund HIVE."
-                            },
                             "total_vesting_fund_hive": {
                                 "$ref": "#/components/schemas/balance",
                                 "description": "Total HIVE allocated to vesting (vesting fund) \u2014 funds set aside for vesting."
@@ -16781,7 +16764,6 @@
                             "init_hbd_supply",
                             "pending_rewarded_vesting_hive",
                             "pending_rewarded_vesting_shares",
-                            "total_reward_fund_hive",
                             "total_vesting_fund_hive",
                             "total_vesting_shares",
                             "virtual_supply"
@@ -16821,10 +16803,6 @@
                                 "type": "string",
                                 "description": "The amount of vesting shares slated to be awarded as part of pending rewards."
                             },
-                            "total_reward_fund_hive": {
-                                "type": "string",
-                                "description": "The total reward fund HIVE."
-                            },
                             "total_vesting_fund_hive": {
                                 "type": "string",
                                 "description": "Total HIVE allocated to vesting (vesting fund) \u2014 funds set aside for vesting."
@@ -16845,7 +16823,6 @@
                             "init_hbd_supply",
                             "pending_rewarded_vesting_hive",
                             "pending_rewarded_vesting_shares",
-                            "total_reward_fund_hive",
                             "total_vesting_fund_hive",
                             "total_vesting_shares",
                             "virtual_supply"

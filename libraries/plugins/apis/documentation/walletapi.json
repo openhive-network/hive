@@ -5555,10 +5555,6 @@
             "$ref": "#/components/schemas/hive_asset",
             "description": "Total vesting shares (VESTS)"
           },
-          "total_reward_fund_hive": {
-            "$ref": "#/components/schemas/hive_asset",
-            "description": "Total HIVE in reward fund"
-          },
           "pending_rewarded_vesting_shares": {
             "$ref": "#/components/schemas/hive_asset",
             "description": "Pending rewarded vesting shares"

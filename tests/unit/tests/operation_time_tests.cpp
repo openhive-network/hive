@@ -150,12 +150,8 @@ BOOST_AUTO_TEST_CASE( comment_payout_equalize )
       push_transaction( tx, voter.post_key );
     }
 
-    //auto& reward_hive = db->get_dynamic_global_properties().get_total_reward_fund_hive();
-
     // generate a few blocks to seed the reward fund
     generate_blocks(10);
-    //const auto& rf = db->get_reward_fund();
-    //idump( (rf) );
 
     generate_blocks( db->find_comment_cashout( *db->get_comment( "alice", string( "mypost" ) ) )->get_cashout_time(), true );
     /*
