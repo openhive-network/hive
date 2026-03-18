@@ -32,34 +32,15 @@ struct supplement_operations_visitor
     if( cashout == nullptr || cashout->get_net_rshares() <= 0 )
       return; //voting can happen even after cashout; there will be no new payout though
 
-    const auto& props = _db.get_dynamic_global_properties();
     const auto& hist = _db.get_feed_history();
+    const auto& rf = _db.get_reward_fund();
 
-    const chain::reward_fund_object* rf = nullptr;
-    if( _db.has_hardfork( HIVE_HARDFORK_0_17__774 ) )
-      rf = &_db.get_reward_fund();
-
-    u256 total_r2 = 0;
-    if( _db.has_hardfork( HIVE_HARDFORK_0_17__774 ) )
-      total_r2 = chain::util::to256( rf->get_recent_claims() );
-    else
-      total_r2 = chain::util::to256( props.get_total_reward_shares2() );
+    u256 total_r2 = chain::util::to256( rf.get_recent_claims() );
 
     if( total_r2 > 0 )
     {
-      HIVE_asset reward_hive;
-      uint128_t vshares = 0;
-
-      if( _db.has_hardfork( HIVE_HARDFORK_0_17__774 ) )
-      {
-        reward_hive = rf->get_reward_balance();
-        vshares = chain::util::evaluate_reward_curve( cashout->get_net_rshares(), rf->get_author_reward_curve(), rf->get_content_constant() );
-      }
-      else
-      {
-        reward_hive = props.get_total_reward_fund_hive();
-        vshares = chain::util::evaluate_reward_curve( cashout->get_net_rshares() );
-      }
+      HIVE_asset reward_hive = rf.get_reward_balance();
+      uint128_t vshares = chain::util::evaluate_reward_curve( cashout->get_net_rshares(), rf.get_author_reward_curve(), rf.get_content_constant() );
 
       HBD_asset reward_hbd( 0 );
       if( !hist.current_median_history.is_null() )

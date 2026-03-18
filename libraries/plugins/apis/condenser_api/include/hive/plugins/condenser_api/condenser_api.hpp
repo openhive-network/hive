@@ -286,8 +286,6 @@ struct extended_dynamic_global_properties
     current_hbd_supply( legacy_asset::from_asset( o.current_hbd_supply ) ),
     total_vesting_fund_hive( legacy_asset::from_asset( o.total_vesting_fund_hive ) ),
     total_vesting_shares( legacy_asset::from_asset( o.total_vesting_shares ) ),
-    total_reward_fund_hive( legacy_asset::from_asset( o.total_reward_fund_hive ) ),
-    total_reward_shares2( o.total_reward_shares2 ),
     pending_rewarded_vesting_shares( legacy_asset::from_asset( o.pending_rewarded_vesting_shares ) ),
     pending_rewarded_vesting_hive( legacy_asset::from_asset( o.pending_rewarded_vesting_hive ) ),
     hbd_interest_rate( o.hbd_interest_rate ),
@@ -335,8 +333,6 @@ struct extended_dynamic_global_properties
   legacy_asset      current_hbd_supply = legacy_asset::from_asset( asset( 0, HBD_SYMBOL ) );
   legacy_asset      total_vesting_fund_hive;
   legacy_asset      total_vesting_shares;
-  legacy_asset      total_reward_fund_hive;
-  fc::uint128       total_reward_shares2 = 0;
   legacy_asset      pending_rewarded_vesting_shares;
   legacy_asset      pending_rewarded_vesting_hive;
 
@@ -1068,7 +1064,7 @@ FC_REFLECT( hive::plugins::condenser_api::extended_dynamic_global_properties,
         (current_witness)(total_pow)(num_pow_witnesses)
         (virtual_supply)(current_supply)(init_hbd_supply)(current_hbd_supply)
         (total_vesting_fund_hive)(total_vesting_shares)
-        (total_reward_fund_hive)(total_reward_shares2)(pending_rewarded_vesting_shares)(pending_rewarded_vesting_hive)
+        (pending_rewarded_vesting_shares)(pending_rewarded_vesting_hive)
         (hbd_interest_rate)(hbd_print_rate)
         (maximum_block_size)(current_aslot)(recent_slots_filled)(participation_count)(last_irreversible_block_num)
         (vote_power_reserve_rate)(delegation_return_period)(reverse_auction_seconds)(available_account_subsidies)(hbd_stop_percent)(hbd_start_percent)

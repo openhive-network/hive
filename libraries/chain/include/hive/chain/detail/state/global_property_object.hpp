@@ -75,14 +75,6 @@ public:
     return VEST_price( total_vesting_shares, total_vesting_fund_hive );
   }
 
-  //pool of HIVE tokens for pending (liquid) rewards
-  const HIVE_asset& get_total_reward_fund_hive() const { return total_reward_fund_hive; }
-  //running total of REWARD^2
-  fc::uint128 get_total_reward_shares2() const { return total_reward_shares2; }
-
-  HIVE_asset& access_total_reward_fund_hive() { return total_reward_fund_hive; }
-  fc::uint128& access_total_reward_shares2() { return total_reward_shares2; }
-
   //pool of HIVE tokens for pending (vested) rewards
   const HIVE_asset& get_pending_rewarded_vesting_hive() const { return pending_rewarded_vesting_hive; }
   //amount of VESTS produced from HIVE held in pending reward vested fund
@@ -198,8 +190,6 @@ private:
   HBD_asset   current_hbd_supply;
   HIVE_asset  total_vesting_fund_hive;
   VEST_asset  total_vesting_shares;
-  HIVE_asset  total_reward_fund_hive; // check if it could be replaced with similar data in reward_fund_object, even for old posts
-  fc::uint128 total_reward_shares2 = 0; // check if it could be replaced with similar data in reward_fund_object, even for old posts
   VEST_asset  pending_rewarded_vesting_shares;
   HIVE_asset  pending_rewarded_vesting_hive;
 
@@ -289,8 +279,6 @@ FC_REFLECT( hive::chain::dynamic_global_property_object,
           (current_hbd_supply)
           (total_vesting_fund_hive)
           (total_vesting_shares)
-          (total_reward_fund_hive)
-          (total_reward_shares2)
           (pending_rewarded_vesting_shares)
           (pending_rewarded_vesting_hive)
           (hbd_interest_rate)

@@ -580,9 +580,9 @@ BOOST_AUTO_TEST_CASE( comment_apply )
         com.accumulate_vote_rshares( -com.get_net_rshares() + 10, 0 ); //com.net_rshares = 10;
       } );
 
-      db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& o )
+      db.modify( db.get_reward_fund(), [&]( reward_fund_object& rfo )
       {
-        o.access_total_reward_shares2() = hive::chain::util::evaluate_reward_curve( 10 );
+        rfo.access_recent_claims() = hive::chain::util::evaluate_reward_curve( 10 );
       } );
     } );
 
@@ -8076,11 +8076,15 @@ BOOST_AUTO_TEST_CASE( comment_beneficiaries_apply )
 
     db_plugin->debug_update( [=]( database& db )
     {
+      auto old_reward_balance = db.get_reward_fund().get_reward_balance();
+      db.modify( db.get_reward_fund(), [=]( reward_fund_object& rfo )
+      {
+        rfo.access_reward_balance() = HIVE_asset( 100'000 );
+      });
       db.modify( db.get_dynamic_global_properties(), [=]( dynamic_global_property_object& gpo )
       {
-        gpo.access_current_supply() -= gpo.get_total_reward_fund_hive();
-        gpo.access_total_reward_fund_hive() = HIVE_asset( 100'000 );
-        gpo.access_current_supply() += gpo.get_total_reward_fund_hive();
+        gpo.access_current_supply() -= old_reward_balance;
+        gpo.access_current_supply() += HIVE_asset( 100'000 );
       });
     });
 
@@ -8227,11 +8231,15 @@ BOOST_AUTO_TEST_CASE( comment_options_apply )
 
     auto set_reward_pool = [=]( database& db )
     {
+      auto old_reward_balance = db.get_reward_fund().get_reward_balance();
+      db.modify( db.get_reward_fund(), [=]( reward_fund_object& rfo )
+      {
+        rfo.access_reward_balance() = HIVE_asset( 100'000 );
+      } );
       db.modify( db.get_dynamic_global_properties(), [=]( dynamic_global_property_object& gpo )
       {
-        gpo.access_current_supply() -= gpo.get_total_reward_fund_hive();
-        gpo.access_total_reward_fund_hive() = HIVE_asset( 100'000 );
-        gpo.access_current_supply() += gpo.get_total_reward_fund_hive();
+        gpo.access_current_supply() -= old_reward_balance;
+        gpo.access_current_supply() += HIVE_asset( 100'000 );
       } );
     };
 
@@ -8253,8 +8261,8 @@ BOOST_AUTO_TEST_CASE( comment_options_apply )
     BOOST_REQUIRE( db->find_comment_cashout( *db->get_comment( "alice", string( "test2" ) ) ) == nullptr );
     //alice got reward for test2 comment as author...
     BOOST_REQUIRE_EQUAL( get_hive_rewards( "alice" ), HIVE_asset( 0 ) );
-    BOOST_REQUIRE_EQUAL( get_hbd_rewards( "alice" ), HBD_asset( 18635 ) );
-    BOOST_REQUIRE_EQUAL( get_vest_rewards_as_hive( "alice" ), HIVE_asset( 18635 ) );
+    BOOST_REQUIRE_EQUAL( get_hbd_rewards( "alice" ), HBD_asset( 25015 ) );
+    BOOST_REQUIRE_EQUAL( get_vest_rewards_as_hive( "alice" ), HIVE_asset( 25015 ) );
     //...but no curation for sam
     BOOST_REQUIRE_EQUAL( get_hive_rewards( "sam" ), HIVE_asset( 0 ) );
     BOOST_REQUIRE_EQUAL( get_hbd_rewards( "sam" ), HBD_asset( 0 ) );
@@ -8266,8 +8274,8 @@ BOOST_AUTO_TEST_CASE( comment_options_apply )
     BOOST_REQUIRE( db->find_comment_cashout( *db->get_comment( "alice", string( "test3" ) ) ) == nullptr );
     //alice and dave got reward for test3 comment but they sum to 0.010 HBD
     BOOST_REQUIRE_EQUAL( get_hive_rewards( "alice" ), HIVE_asset( 0 ) );
-    BOOST_REQUIRE_EQUAL( get_hbd_rewards( "alice" ), HBD_asset( 18635 + 2 ) );
-    BOOST_REQUIRE_EQUAL( get_vest_rewards_as_hive( "alice" ), HIVE_asset( 18635 + 3 ) );
+    BOOST_REQUIRE_EQUAL( get_hbd_rewards( "alice" ), HBD_asset( 25015 + 2 ) );
+    BOOST_REQUIRE_EQUAL( get_vest_rewards_as_hive( "alice" ), HIVE_asset( 25015 + 3 ) );
     BOOST_REQUIRE_EQUAL( get_hive_rewards( "dave" ), HIVE_asset( 0 ) );
     BOOST_REQUIRE_EQUAL( get_hbd_rewards( "dave" ), HBD_asset( 0 ) );
     BOOST_REQUIRE_EQUAL( get_vest_rewards_as_hive( "dave" ), HIVE_asset( 5 ) );
