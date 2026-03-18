@@ -1288,7 +1288,7 @@ void two_comments_in_the_same_blocks_impl( cluster_database_fixture& cluster, bo
       {
         executor->db_plugin->debug_update( []( database& db )
         {
-          db.modify( db.get< reward_fund_object, by_name >( HIVE_POST_REWARD_FUND_NAME ), [&]( reward_fund_object& rfo )
+          db.modify( db.get_reward_fund(), [&]( reward_fund_object& rfo )
           {
             rfo.set_author_reward_curve( convergent_linear );
           });
@@ -1573,7 +1573,7 @@ void two_comments_in_different_blocks_impl( cluster_database_fixture& cluster, b
       {
         executor->db_plugin->debug_update( []( database& db )
         {
-          db.modify( db.get< reward_fund_object, by_name >( HIVE_POST_REWARD_FUND_NAME ), [&]( reward_fund_object& rfo )
+          db.modify( db.get_reward_fund(), [&]( reward_fund_object& rfo )
           {
             rfo.set_author_reward_curve( convergent_linear );
           });

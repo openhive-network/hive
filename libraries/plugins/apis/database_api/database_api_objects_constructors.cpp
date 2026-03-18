@@ -153,8 +153,6 @@ api_dynamic_global_property_object::api_dynamic_global_property_object( const dy
   current_hbd_supply( o.get_current_hbd_supply().to_asset() ),
   total_vesting_fund_hive( o.get_total_vesting_fund_hive().to_asset() ),
   total_vesting_shares( o.get_total_vesting_shares().to_asset() ),
-  total_reward_fund_hive( o.get_total_reward_fund_hive().to_asset() ),
-  total_reward_shares2( o.get_total_reward_shares2() ),
   pending_rewarded_vesting_shares( o.get_pending_rewarded_vesting_shares().to_asset() ),
   pending_rewarded_vesting_hive( o.get_pending_rewarded_vesting_hive().to_asset() ),
   hbd_interest_rate( o.get_hbd_interest_rate() ),

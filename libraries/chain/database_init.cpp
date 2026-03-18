@@ -13,6 +13,7 @@
 #include <hive/chain/hardfork_property_object_multiindex.hpp>
 #include <hive/chain/block_summary_object_multiindex.hpp>
 #include <hive/chain/detail/state/feed_history_object_multiindex.hpp>
+#include <hive/chain/detail/state/reward_fund_object_multiindex.hpp>
 #include <hive/chain/witness_objects_multiindex.hpp>
 
 #include <hive/chain/util/rd_setup.hpp>
@@ -292,6 +293,10 @@ void database::init_genesis()
 
     const auto& dgpo = create< dynamic_global_property_object >( HIVE_INIT_MINER_NAME );
     create< hardfork_property_object >( HIVE_GENESIS_TIME );
+    const auto& rf = create< reward_fund_object >( HIVE_POST_REWARD_FUND_NAME, HIVE_asset( 0 ), HIVE_GENESIS_TIME );
+    // As a shortcut in payout processing, we use the id as an array index.
+    // The IDs must be assigned this way. The assertion is a dummy check to ensure this happens.
+    FC_ASSERT( rf.get_id() == reward_fund_id_type() );
 
 #if defined(IS_TEST_NET) || defined(HIVE_CONVERTER_ICEBERG_PLUGIN_ENABLED)
     create< feed_history_object >( [&]( feed_history_object& o )

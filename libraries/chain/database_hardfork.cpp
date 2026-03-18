@@ -254,7 +254,7 @@ void database::apply_hardfork( uint32_t hardfork )
         {
           while( fho.price_history.size() > HIVE_FEED_HISTORY_WINDOW )
             fho.price_history.pop_front();
-        });
+        } );
       }
       break;
     case HIVE_HARDFORK_0_17:
@@ -271,25 +271,14 @@ void database::apply_hardfork( uint32_t hardfork )
           wso.max_voted_witnesses = HIVE_MAX_VOTED_WITNESSES_HF17;
           wso.max_miner_witnesses = HIVE_MAX_MINER_WITNESSES_HF17;
           wso.max_runner_witnesses = HIVE_MAX_RUNNER_WITNESSES_HF17;
-        });
+        } );
 
-        const auto& gpo = get_dynamic_global_properties();
-
-        auto& post_rf = create< reward_fund_object >( HIVE_POST_REWARD_FUND_NAME, gpo.get_total_reward_fund_hive(), head_block_time()
-#ifndef IS_TEST_NET
-          , HIVE_HF_17_RECENT_CLAIMS
-#endif
-          );
-
-        // As a shortcut in payout processing, we use the id as an array index.
-        // The IDs must be assigned this way. The assertion is a dummy check to ensure this happens.
-        FC_ASSERT( post_rf.get_id() == reward_fund_id_type() );
-
-        modify( gpo, [&]( dynamic_global_property_object& g )
+        modify( get_reward_fund(), [&]( reward_fund_object& rfo )
         {
-          g.access_total_reward_fund_hive() = HIVE_asset( 0 );
-          g.access_total_reward_shares2() = 0;
-        });
+#ifndef IS_TEST_NET
+          rfo.access_recent_claims() = HIVE_HF_17_RECENT_CLAIMS;
+#endif
+        } );
 
         apply_hardfork_17_comment_cashout_fix();
       }
@@ -303,14 +292,14 @@ void database::apply_hardfork( uint32_t hardfork )
           gpo.set_vote_power_reserve_rate( HIVE_REDUCED_VOTE_POWER_RATE );
         });
 
-        modify( get< reward_fund_object, by_name >( HIVE_POST_REWARD_FUND_NAME ), [&]( reward_fund_object &rfo )
+        modify( get_reward_fund(), [&]( reward_fund_object& rfo )
         {
 #ifndef IS_TEST_NET
           rfo.access_recent_claims() = HIVE_HF_19_RECENT_CLAIMS;
 #endif
           rfo.set_author_reward_curve( curve_id::linear );
           rfo.set_curation_reward_curve( curve_id::square_root );
-        });
+        } );
 
         /* Remove all 0 delegation objects */
         vector< const vesting_delegation_object* > to_remove;
@@ -423,7 +412,7 @@ void database::apply_hardfork( uint32_t hardfork )
         gpo.set_content_reward_percent( HIVE_CONTENT_REWARD_PERCENT_HF21 );
         gpo.set_downvote_pool_percent( HIVE_DOWNVOTE_POOL_PERCENT_HF21 );
         gpo.set_reverse_auction_seconds( HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF21 );
-      });
+      } );
 
       const auto treasury_name = get_treasury_name();
 
@@ -437,7 +426,7 @@ void database::apply_hardfork( uint32_t hardfork )
 
       lock_account( get_treasury() );
 
-      modify( get< reward_fund_object, by_name >( HIVE_POST_REWARD_FUND_NAME ), [&]( reward_fund_object& rfo )
+      modify( get_reward_fund(), [&]( reward_fund_object& rfo )
       {
         rfo.set_percent_curation_rewards( 50 * HIVE_1_PERCENT );
         rfo.set_author_reward_curve( convergent_linear );
@@ -446,7 +435,7 @@ void database::apply_hardfork( uint32_t hardfork )
 #ifndef  IS_TEST_NET
         rfo.access_recent_claims() = HIVE_HF21_CONVERGENT_LINEAR_RECENT_CLAIMS;
 #endif
-      });
+      } );
     }
     break;
     case HIVE_HARDFORK_0_22:
@@ -480,17 +469,17 @@ void database::apply_hardfork( uint32_t hardfork )
     }
     case HIVE_HARDFORK_1_25:
     {
-      modify( get< reward_fund_object, by_name >( HIVE_POST_REWARD_FUND_NAME ), [&]( reward_fund_object& rfo )
+      modify( get_reward_fund(), [&]( reward_fund_object& rfo )
       {
         rfo.set_curation_reward_curve( linear );
         rfo.set_author_reward_curve( linear );
-      });
+      } );
       modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
       {
         gpo.set_reverse_auction_seconds( HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF25 );
         gpo.set_early_voting_seconds( HIVE_EARLY_VOTING_SECONDS_HF25 );
         gpo.set_mid_voting_seconds( HIVE_MID_VOTING_SECONDS_HF25 );
-      });
+      } );
       break;
     }
     case HIVE_HARDFORK_1_26:
@@ -543,7 +532,7 @@ void database::apply_hardfork( uint32_t hardfork )
     consolidate_treasury_balance();
   }
   // HF 24 updates blockchain configuration.
-  if (hardfork == HIVE_HARDFORK_1_24)
+  if( hardfork == HIVE_HARDFORK_1_24 )
   {
     const auto current_blockchain_config = protocol::get_config(get_treasury_name(), get_chain_id());
     fc::variant current_blockchain_config_as_variant;

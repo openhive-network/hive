@@ -1661,17 +1661,16 @@ void database::process_delayed_voting( const block_notification& note )
 }
 
 /**
-  * This method updates total_reward_shares2 on DGPO, and children_rshares2 on comments, when a comment's rshares2 changes
-  * from old_rshares2 to new_rshares2.  Maintaining invariants that children_rshares2 is the sum of all descendants' rshares2,
-  * and dgpo.total_reward_shares2 is the total number of rshares2 outstanding.
+  * This method updates recent_claims in the reward_fund_object when a comment's rshares2 changes
+  * from old_rshares2 to new_rshares2. Only called pre-HF17 where recent_claims stores the sum of
+  * all outstanding rshares2 (without decay).
   */
 void database::adjust_rshares2( fc::uint128_t old_rshares2, fc::uint128_t new_rshares2 )
 {
-  const auto& dgpo = get_dynamic_global_properties();
-  modify( dgpo, [&]( dynamic_global_property_object& p )
+  modify( get_reward_fund(), [&]( reward_fund_object& rfo )
   {
-    p.access_total_reward_shares2() -= old_rshares2;
-    p.access_total_reward_shares2() += new_rshares2;
+    rfo.access_recent_claims() -= old_rshares2;
+    rfo.access_recent_claims() += new_rshares2;
   } );
 }
 
@@ -1739,8 +1738,7 @@ void database::process_funds()
     }
 
     auto content_reward = ( new_hive * props.get_content_reward_percent() ) / HIVE_100_PERCENT;
-    if( has_hardfork( HIVE_HARDFORK_0_17__774 ) )
-      content_reward = pay_reward_funds( content_reward );
+    content_reward = pay_reward_funds( content_reward );
     auto vesting_reward = ( new_hive * props.get_vesting_reward_percent() ) / HIVE_100_PERCENT;
     auto dhf_new_funds = ( new_hive * props.get_proposal_fund_percent() ) / HIVE_100_PERCENT;
     auto witness_reward = new_hive - content_reward - vesting_reward - dhf_new_funds;
@@ -1775,8 +1773,6 @@ void database::process_funds()
     modify( props, [&]( dynamic_global_property_object& p )
     {
       p.access_total_vesting_fund_hive() += vesting_reward;
-      if( !has_hardfork( HIVE_HARDFORK_0_17__774 ) )
-        p.access_total_reward_fund_hive() += content_reward;
       p.access_current_supply()      += new_hive;
       p.access_current_hbd_supply()  += new_hbd;
       p.access_virtual_supply()      += new_hive + dhf_new_funds;
@@ -1806,10 +1802,10 @@ void database::process_funds()
     else
       vesting_reward *= 9;
 
+    content_reward = pay_reward_funds( content_reward );
     modify( props, [&]( dynamic_global_property_object& p )
     {
         p.access_total_vesting_fund_hive() += vesting_reward;
-        p.access_total_reward_fund_hive()  += content_reward;
         p.access_current_supply() += content_reward + witness_pay + vesting_reward;
         p.access_virtual_supply() += content_reward + witness_pay + vesting_reward;
     } );
@@ -3474,7 +3470,7 @@ void database::validate_invariants()const
       ++reward_fund_no;
     }
 
-    total_supply += gpo.get_total_vesting_fund_hive() + gpo.get_total_reward_fund_hive() + gpo.get_pending_rewarded_vesting_hive();
+    total_supply += gpo.get_total_vesting_fund_hive() + gpo.get_pending_rewarded_vesting_hive();
 
     FC_ASSERT( gpo.get_current_supply() == total_supply, "", ("gpo.current_supply",gpo.get_current_supply())("total_supply",total_supply) );
     FC_ASSERT( gpo.get_current_hbd_supply() == total_hbd, "", ("gpo.current_hbd_supply",gpo.get_current_hbd_supply())("total_hbd",total_hbd) );
