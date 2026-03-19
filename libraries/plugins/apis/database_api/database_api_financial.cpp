@@ -249,7 +249,7 @@ DEFINE_API_IMPL( database_api_impl, find_savings_withdrawals )
   const auto& withdraw_idx = _db.get_index< chain::savings_withdraw_index, chain::by_from_rid >();
   auto itr = withdraw_idx.lower_bound( args.account );
 
-  while( itr != withdraw_idx.end() && itr->from == args.account && result.withdrawals.size() <= DATABASE_API_SINGLE_QUERY_LIMIT )
+  while( itr != withdraw_idx.end() && itr->get_from() == args.account && result.withdrawals.size() <= DATABASE_API_SINGLE_QUERY_LIMIT )
   {
     result.withdrawals.emplace_back( *itr, _db );
     ++itr;

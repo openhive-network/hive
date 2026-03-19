@@ -6800,12 +6800,12 @@ BOOST_AUTO_TEST_CASE( transfer_from_savings_apply )
     BOOST_REQUIRE_EQUAL( get_hive_balance( "alice" ), HIVE_asset( 0 ) );
     BOOST_REQUIRE_EQUAL( get_hive_savings( "alice" ), HIVE_asset( 9'000 ) );
     BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).savings_withdraw_requests, op.request_id + 1 );
-    BOOST_REQUIRE_EQUAL( db->get_savings_withdraw( "alice", op.request_id ).from, op.from );
-    BOOST_REQUIRE_EQUAL( db->get_savings_withdraw( "alice", op.request_id ).to, op.to );
-    BOOST_REQUIRE_EQUAL( to_string( db->get_savings_withdraw( "alice", op.request_id ).memo ), op.memo );
-    BOOST_REQUIRE_EQUAL( db->get_savings_withdraw( "alice", op.request_id ).request_id, op.request_id );
-    BOOST_REQUIRE_EQUAL( db->get_savings_withdraw( "alice", op.request_id ).amount, op.amount );
-    BOOST_REQUIRE_EQUAL( db->get_savings_withdraw( "alice", op.request_id ).complete, db->head_block_time() + HIVE_SAVINGS_WITHDRAW_TIME );
+    BOOST_REQUIRE_EQUAL( db->get_savings_withdraw( "alice", op.request_id ).get_from(), op.from );
+    BOOST_REQUIRE_EQUAL( db->get_savings_withdraw( "alice", op.request_id ).get_to(), op.to );
+    BOOST_REQUIRE_EQUAL( to_string( db->get_savings_withdraw( "alice", op.request_id ).get_memo() ), op.memo );
+    BOOST_REQUIRE_EQUAL( db->get_savings_withdraw( "alice", op.request_id ).get_request_id(), op.request_id );
+    BOOST_REQUIRE_EQUAL( db->get_savings_withdraw( "alice", op.request_id ).get_withdraw_amount(), op.amount );
+    BOOST_REQUIRE_EQUAL( db->get_savings_withdraw( "alice", op.request_id ).get_completion_time(), db->head_block_time() + HIVE_SAVINGS_WITHDRAW_TIME );
     validate_database();
 
 
@@ -6820,12 +6820,12 @@ BOOST_AUTO_TEST_CASE( transfer_from_savings_apply )
     BOOST_REQUIRE_EQUAL( get_hbd_balance( "alice" ), HBD_asset( 0 ) );
     BOOST_REQUIRE_EQUAL( get_hbd_savings( "alice" ), HBD_asset( 8'000 ) );
     BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).savings_withdraw_requests, op.request_id + 1 );
-    BOOST_REQUIRE_EQUAL( db->get_savings_withdraw( "alice", op.request_id ).from, op.from );
-    BOOST_REQUIRE_EQUAL( db->get_savings_withdraw( "alice", op.request_id ).to, op.to );
-    BOOST_REQUIRE_EQUAL( to_string( db->get_savings_withdraw( "alice", op.request_id ).memo ), op.memo );
-    BOOST_REQUIRE_EQUAL( db->get_savings_withdraw( "alice", op.request_id ).request_id, op.request_id );
-    BOOST_REQUIRE_EQUAL( db->get_savings_withdraw( "alice", op.request_id ).amount, op.amount );
-    BOOST_REQUIRE_EQUAL( db->get_savings_withdraw( "alice", op.request_id ).complete, db->head_block_time() + HIVE_SAVINGS_WITHDRAW_TIME );
+    BOOST_REQUIRE_EQUAL( db->get_savings_withdraw( "alice", op.request_id ).get_from(), op.from );
+    BOOST_REQUIRE_EQUAL( db->get_savings_withdraw( "alice", op.request_id ).get_to(), op.to );
+    BOOST_REQUIRE_EQUAL( to_string( db->get_savings_withdraw( "alice", op.request_id ).get_memo() ), op.memo );
+    BOOST_REQUIRE_EQUAL( db->get_savings_withdraw( "alice", op.request_id ).get_request_id(), op.request_id );
+    BOOST_REQUIRE_EQUAL( db->get_savings_withdraw( "alice", op.request_id ).get_withdraw_amount(), op.amount );
+    BOOST_REQUIRE_EQUAL( db->get_savings_withdraw( "alice", op.request_id ).get_completion_time(), db->head_block_time() + HIVE_SAVINGS_WITHDRAW_TIME );
     validate_database();
 
 
@@ -6849,12 +6849,12 @@ BOOST_AUTO_TEST_CASE( transfer_from_savings_apply )
     BOOST_REQUIRE_EQUAL( get_hive_balance( "alice" ), HIVE_asset( 0 ) );
     BOOST_REQUIRE_EQUAL( get_hive_savings( "alice" ), HIVE_asset( 8'000 ) );
     BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).savings_withdraw_requests, op.request_id + 1 );
-    BOOST_REQUIRE_EQUAL( db->get_savings_withdraw( "alice", op.request_id ).from, op.from );
-    BOOST_REQUIRE_EQUAL( db->get_savings_withdraw( "alice", op.request_id ).to, op.to );
-    BOOST_REQUIRE_EQUAL( to_string( db->get_savings_withdraw( "alice", op.request_id ).memo ), op.memo );
-    BOOST_REQUIRE_EQUAL( db->get_savings_withdraw( "alice", op.request_id ).request_id, op.request_id );
-    BOOST_REQUIRE_EQUAL( db->get_savings_withdraw( "alice", op.request_id ).amount, op.amount );
-    BOOST_REQUIRE_EQUAL( db->get_savings_withdraw( "alice", op.request_id ).complete, db->head_block_time() + HIVE_SAVINGS_WITHDRAW_TIME );
+    BOOST_REQUIRE_EQUAL( db->get_savings_withdraw( "alice", op.request_id ).get_from(), op.from );
+    BOOST_REQUIRE_EQUAL( db->get_savings_withdraw( "alice", op.request_id ).get_to(), op.to );
+    BOOST_REQUIRE_EQUAL( to_string( db->get_savings_withdraw( "alice", op.request_id ).get_memo() ), op.memo );
+    BOOST_REQUIRE_EQUAL( db->get_savings_withdraw( "alice", op.request_id ).get_request_id(), op.request_id );
+    BOOST_REQUIRE_EQUAL( db->get_savings_withdraw( "alice", op.request_id ).get_withdraw_amount(), op.amount );
+    BOOST_REQUIRE_EQUAL( db->get_savings_withdraw( "alice", op.request_id ).get_completion_time(), db->head_block_time() + HIVE_SAVINGS_WITHDRAW_TIME );
     validate_database();
 
 
@@ -6869,12 +6869,12 @@ BOOST_AUTO_TEST_CASE( transfer_from_savings_apply )
     BOOST_REQUIRE_EQUAL( get_hbd_balance( "alice" ), HBD_asset( 0 ) );
     BOOST_REQUIRE_EQUAL( get_hbd_savings( "alice" ), HBD_asset( 7'000 ) );
     BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).savings_withdraw_requests, op.request_id + 1 );
-    BOOST_REQUIRE_EQUAL( db->get_savings_withdraw( "alice", op.request_id ).from, op.from );
-    BOOST_REQUIRE_EQUAL( db->get_savings_withdraw( "alice", op.request_id ).to, op.to );
-    BOOST_REQUIRE_EQUAL( to_string( db->get_savings_withdraw( "alice", op.request_id ).memo ), op.memo );
-    BOOST_REQUIRE_EQUAL( db->get_savings_withdraw( "alice", op.request_id ).request_id, op.request_id );
-    BOOST_REQUIRE_EQUAL( db->get_savings_withdraw( "alice", op.request_id ).amount, op.amount );
-    BOOST_REQUIRE_EQUAL( db->get_savings_withdraw( "alice", op.request_id ).complete, db->head_block_time() + HIVE_SAVINGS_WITHDRAW_TIME );
+    BOOST_REQUIRE_EQUAL( db->get_savings_withdraw( "alice", op.request_id ).get_from(), op.from );
+    BOOST_REQUIRE_EQUAL( db->get_savings_withdraw( "alice", op.request_id ).get_to(), op.to );
+    BOOST_REQUIRE_EQUAL( to_string( db->get_savings_withdraw( "alice", op.request_id ).get_memo() ), op.memo );
+    BOOST_REQUIRE_EQUAL( db->get_savings_withdraw( "alice", op.request_id ).get_request_id(), op.request_id );
+    BOOST_REQUIRE_EQUAL( db->get_savings_withdraw( "alice", op.request_id ).get_withdraw_amount(), op.amount );
+    BOOST_REQUIRE_EQUAL( db->get_savings_withdraw( "alice", op.request_id ).get_completion_time(), db->head_block_time() + HIVE_SAVINGS_WITHDRAW_TIME );
     validate_database();
 
 

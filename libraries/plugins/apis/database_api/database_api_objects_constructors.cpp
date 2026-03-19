@@ -296,12 +296,12 @@ api_account_recovery_request_object::api_account_recovery_request_object( const 
 // api_savings_withdraw_object constructors
 api_savings_withdraw_object::api_savings_withdraw_object( const savings_withdraw_object& o, const database& db ) :
   id( o.get_id() ),
-  from( o.from ),
-  to( o.to ),
-  memo( to_string( o.memo ) ),
-  request_id( o.request_id ),
-  amount( o.amount ),
-  complete( o.complete )
+  from( o.get_from() ),
+  to( o.get_to() ),
+  memo( to_string( o.get_memo() ) ),
+  request_id( o.get_request_id() ),
+  amount( o.get_withdraw_amount() ),
+  complete( o.get_completion_time() )
 {}
 
 
