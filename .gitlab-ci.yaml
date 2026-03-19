@@ -623,7 +623,7 @@ quick_test_setup:
   # Jobs that support QUICK_TEST_JOBS override these rules.
   before_script:
     - !reference [.fetch_test_submodules, before_script]
-    - pip install ${CI_PROJECT_DIR}/libraries/plugins/apis/api_generation/python_api_package/dist/*.whl
+    - pip install "hiveio-api==${WHEEL_BUILD_VERSION}" --extra-index-url "https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.syncad.com/api/v4/groups/136/-/packages/pypi/simple"
   variables:
     HIVED_PATH: "$CI_PROJECT_DIR/hived-testnet-binaries/hived"
     CLI_WALLET_PATH: "$CI_PROJECT_DIR/hived-testnet-binaries/cli_wallet"
@@ -633,7 +633,7 @@ quick_test_setup:
     TEST_TOOLS_NODE_DEFAULT_WAIT_FOR_LIVE_TIMEOUT: "60"
   needs:
     - job: hiveio_api_package
-      artifacts: true  # provides hiveio-api wheel for direct installation
+      artifacts: true  # provides WHEEL_BUILD_VERSION via dotenv
     - job: testnet_node_build
       artifacts: true
       optional: true  # Not needed if build was skipped (docs-only changes)

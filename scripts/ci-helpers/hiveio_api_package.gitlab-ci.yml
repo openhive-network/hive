@@ -14,12 +14,12 @@
 # Template for building and deploying the unified hiveio-api Python package
 #
 # This template uses hiveio_api_package.sh script which:
-#   1. Generates the hiveio_api package from API definitions
+#   1. Determines package version from git state (no generation needed)
 #   2. Checks if the package version already exists in GitLab PyPI registry
-#   3. If exists: downloads the wheel (skips build/test/deploy)
-#   4. If not: builds the wheel, runs tests, and deploys to registry
+#   3. If exists: creates env file and exits (skips generation/build entirely)
+#   4. If not: generates package, builds wheel, runs tests, and deploys to registry
 #
-# The output artifacts are identical regardless of build or download path.
+# Downstream test jobs install hiveio-api from registry using WHEEL_BUILD_VERSION.
 #
 # Usage:
 #   include:
@@ -39,9 +39,8 @@
 #                               to the upstream (hive) project's registry
 #
 # Artifacts:
-#   - ${API_GENERATION_DIR}/python_api_package/           Generated package directory
-#   - ${API_GENERATION_DIR}/python_api_package/dist/*.whl Built or downloaded wheel
-#   - build_wheel.env                        Environment file with WHEEL_BUILD_VERSION
+#   - ${API_GENERATION_DIR}/python_api_package/dist/*.whl Built wheel (only present when built locally)
+#   - build_wheel.env                                     Environment file with WHEEL_BUILD_VERSION (always)
 
 .hiveio_api_package_template:
   extends: .build_wheel_template
@@ -67,7 +66,7 @@
   artifacts:
     expire_in: 1 week
     paths:
-      - "${API_GENERATION_DIR}/python_api_package"
+      - "${API_GENERATION_DIR}/python_api_package/dist"
       - "build_wheel.env"
     reports:
       dotenv: build_wheel.env
