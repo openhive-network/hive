@@ -63,6 +63,9 @@
       [[ "${SKIP_WHEEL_DEPLOY}" == "true" ]] && SCRIPT_ARGS+=("--skip-deploy")
       [[ "${SKIP_REGISTRY_CHECK}" == "true" ]] && SCRIPT_ARGS+=("--skip-registry-check")
       "${HIVE_PROJECT_ROOT}/scripts/ci-helpers/hiveio_api_package.sh" "${SCRIPT_ARGS[@]}"
+  # Override after_script from .build_wheel_template — it uses PYPROJECT_DIR (api_generation/)
+  # which has version 0.0.0. Our script already creates build_wheel.env with the correct version.
+  after_script: []
   artifacts:
     expire_in: 1 week
     paths:
