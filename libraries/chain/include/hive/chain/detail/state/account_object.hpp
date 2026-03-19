@@ -17,516 +17,522 @@
 
 namespace hive { namespace chain {
 
-  using chainbase::t_vector;
-  using hive::protocol::authority;
-  using hive::protocol::asset;
-  using hive::protocol::HBD_asset;
-  using hive::protocol::HIVE_asset;
-  using hive::protocol::VEST_asset;
+using chainbase::t_vector;
+using hive::protocol::authority;
+using hive::protocol::asset;
+using hive::protocol::HBD_asset;
+using hive::protocol::HIVE_asset;
+using hive::protocol::VEST_asset;
 
-  class account_object : public object< account_object_type, account_object, std::true_type >
+class account_object : public object< account_object_type, account_object, std::true_type >
+{
+  CHAINBASE_OBJECT( account_object );
+
+public:
+  //constructor for creation of regular accounts
+  template< typename Allocator >
+  account_object( allocator< Allocator > a, uint64_t _id,
+    const account_name_type& _name, const public_key_type& _memo_key,
+    const time_point_sec& _creation_time, const time_point_sec& _block_creation_time, bool _mined,
+    const account_object* _recovery_account,
+    bool _fill_mana, const VEST_asset& incoming_delegation, int64_t _rc_adjustment = 0 )
+  : id( _id ), name( _name ), rc_adjustment( _rc_adjustment ), created( _creation_time ), block_created( _block_creation_time ),
+    mined( _mined ), memo_key( _memo_key ), delayed_votes( a )
   {
-    CHAINBASE_OBJECT( account_object );
-    public:
-      //constructor for creation of regular accounts
-      template< typename Allocator >
-      account_object( allocator< Allocator > a, uint64_t _id,
-        const account_name_type& _name, const public_key_type& _memo_key,
-        const time_point_sec& _creation_time, const time_point_sec& _block_creation_time, bool _mined,
-        const account_object* _recovery_account,
-        bool _fill_mana, const VEST_asset& incoming_delegation, int64_t _rc_adjustment = 0 )
-      : id( _id ), name( _name ), rc_adjustment( _rc_adjustment ), created( _creation_time ), block_created( _block_creation_time ),
-        mined( _mined ), memo_key( _memo_key ), delayed_votes( a )
-      {
-        /*
-          Explanation:
-            _creation_time = time is retrieved from a head block
-            _block_creation_time = time from a current block
-        */
-        if( _recovery_account != nullptr )
-          recovery_account = _recovery_account->get_id();
-        received_vesting_shares += incoming_delegation;
-        voting_manabar.last_update_time = _creation_time.sec_since_epoch();
-        downvote_manabar.last_update_time = _creation_time.sec_since_epoch();
-        if( _fill_mana )
-          voting_manabar.current_mana = HIVE_100_PERCENT; //looks like nonsense, but that's because pre-HF20 manabars carried percentage, not actual value
-        if( rc_adjustment.value )
-        {
-          rc_manabar.last_update_time = _creation_time.sec_since_epoch();
-          auto max_rc = get_maximum_rc().value;
-          rc_manabar.current_mana = max_rc;
-          last_max_rc = max_rc;
-        }
-      }
+    /*
+      Explanation:
+        _creation_time = time is retrieved from a head block
+        _block_creation_time = time from a current block
+    */
+    if( _recovery_account != nullptr )
+      recovery_account = _recovery_account->get_id();
+    received_vesting_shares += incoming_delegation;
+    voting_manabar.last_update_time = _creation_time.sec_since_epoch();
+    downvote_manabar.last_update_time = _creation_time.sec_since_epoch();
+    if( _fill_mana )
+      voting_manabar.current_mana = HIVE_100_PERCENT; //looks like nonsense, but that's because pre-HF20 manabars carried percentage, not actual value
+    if( rc_adjustment.value )
+    {
+      rc_manabar.last_update_time = _creation_time.sec_since_epoch();
+      auto max_rc = get_maximum_rc().value;
+      rc_manabar.current_mana = max_rc;
+      last_max_rc = max_rc;
+    }
+  }
 
-      //minimal constructor used for creation of accounts at genesis and in tests
-      template< typename Allocator >
-      account_object( allocator< Allocator > a, uint64_t _id,
-        const account_name_type& _name, const time_point_sec& _creation_time, const public_key_type& _memo_key = public_key_type() )
-        : id( _id ), name( _name ), created( _creation_time ), block_created( _creation_time ), memo_key( _memo_key ), delayed_votes( a )
-      {}
+  //minimal constructor used for creation of accounts at genesis and in tests
+  template< typename Allocator >
+  account_object( allocator< Allocator > a, uint64_t _id,
+    const account_name_type& _name, const time_point_sec& _creation_time, const public_key_type& _memo_key = public_key_type() )
+    : id( _id ), name( _name ), created( _creation_time ), block_created( _creation_time ), memo_key( _memo_key ), delayed_votes( a )
+  {}
 
-      //liquid HIVE balance
-      const HIVE_asset& get_hive_balance() const { return balance; }
-      //HIVE balance in savings
-      const HIVE_asset& get_hive_savings() const { return savings_balance; }
-      //unclaimed HIVE rewards
-      const HIVE_asset& get_hive_rewards() const { return reward_hive_balance; }
+  //liquid HIVE balance
+  const HIVE_asset& get_hive_balance() const { return balance; }
+  //HIVE balance in savings
+  const HIVE_asset& get_hive_savings() const { return savings_balance; }
+  //unclaimed HIVE rewards
+  const HIVE_asset& get_hive_rewards() const { return reward_hive_balance; }
 
-      //liquid HBD balance
-      const HBD_asset& get_hbd_balance() const { return hbd_balance; }
-      //HBD balance in savings
-      const HBD_asset& get_hbd_savings() const { return savings_hbd_balance; }
-      //unclaimed HBD rewards
-      const HBD_asset& get_hbd_rewards() const { return reward_hbd_balance; }
+  //liquid HBD balance
+  const HBD_asset& get_hbd_balance() const { return hbd_balance; }
+  //HBD balance in savings
+  const HBD_asset& get_hbd_savings() const { return savings_hbd_balance; }
+  //unclaimed HBD rewards
+  const HBD_asset& get_hbd_rewards() const { return reward_hbd_balance; }
 
-      //all VESTS held by the account - use other routines to get active VESTS for specific uses
-      const VEST_asset& get_vesting() const { return vesting_shares; }
-      //VESTS that were delegated to other accounts
-      const VEST_asset& get_delegated_vesting() const { return delegated_vesting_shares; }
-      //VESTS that were borrowed from other accounts
-      const VEST_asset& get_received_vesting() const { return received_vesting_shares; }
-      //whole remainder of active power down (zero when not active)
-      VEST_asset get_total_vesting_withdrawal() const { return to_withdraw - withdrawn; }
-      //tells if account has active power down
-      bool has_active_power_down() const { return next_vesting_withdrawal != fc::time_point_sec::maximum(); }
-      //value of active step of pending power down (or zero)
-      VEST_asset get_next_vesting_withdrawal() const
-      {
-        if( has_active_power_down() )
-          return std::min( vesting_withdraw_rate, get_total_vesting_withdrawal() );
-        else
-          return VEST_asset( 0 );
-      }
-      //effective balance of VESTS including delegations and optionally excluding active step of pending power down
-      VEST_asset get_effective_vesting_shares( bool excludeWeeklyPowerDown = true ) const
-      {
-        VEST_asset total = vesting_shares - delegated_vesting_shares + received_vesting_shares;
-        if( excludeWeeklyPowerDown && next_vesting_withdrawal != fc::time_point_sec::maximum() )
-          total -= get_next_vesting_withdrawal();
-        return total;
-      }
-      //unclaimed VESTS rewards
-      const VEST_asset& get_vest_rewards() const { return reward_vesting_balance; }
-      //value of unclaimed VESTS rewards in HIVE (HIVE held on global balance)
-      const HIVE_asset& get_vest_rewards_as_hive() const { return reward_vesting_hive; }
+  //all VESTS held by the account - use other routines to get active VESTS for specific uses
+  const VEST_asset& get_vesting() const { return vesting_shares; }
+  //VESTS that were delegated to other accounts
+  const VEST_asset& get_delegated_vesting() const { return delegated_vesting_shares; }
+  //VESTS that were borrowed from other accounts
+  const VEST_asset& get_received_vesting() const { return received_vesting_shares; }
+  //whole remainder of active power down (zero when not active)
+  VEST_asset get_total_vesting_withdrawal() const { return to_withdraw - withdrawn; }
+  //tells if account has active power down
+  bool has_active_power_down() const { return next_vesting_withdrawal != fc::time_point_sec::maximum(); }
+  //value of active step of pending power down (or zero)
+  VEST_asset get_next_vesting_withdrawal() const
+  {
+    if( has_active_power_down() )
+      return std::min( vesting_withdraw_rate, get_total_vesting_withdrawal() );
+    else
+      return VEST_asset( 0 );
+  }
+  //effective balance of VESTS including delegations and optionally excluding active step of pending power down
+  VEST_asset get_effective_vesting_shares( bool excludeWeeklyPowerDown = true ) const
+  {
+    VEST_asset total = vesting_shares - delegated_vesting_shares + received_vesting_shares;
+    if( excludeWeeklyPowerDown && next_vesting_withdrawal != fc::time_point_sec::maximum() )
+      total -= get_next_vesting_withdrawal();
+    return total;
+  }
+  //unclaimed VESTS rewards
+  const VEST_asset& get_vest_rewards() const { return reward_vesting_balance; }
+  //value of unclaimed VESTS rewards in HIVE (HIVE held on global balance)
+  const HIVE_asset& get_vest_rewards_as_hive() const { return reward_vesting_hive; }
 
-      //effective balance of VESTS for RC calculation optionally excluding part that cannot be delegated
-      share_type get_maximum_rc( bool only_delegable = false ) const
-      {
-        share_type total = get_effective_vesting_shares().amount - delegated_rc;
-        if( only_delegable == false )
-          total += rc_adjustment + received_rc;
-        return total;
-      }
-      //RC compensation for account creation fee
-      share_type get_rc_adjustment() const { return rc_adjustment; }
-      //RC that were delegated to other accounts
-      share_type get_delegated_rc() const { return delegated_rc; }
-      //RC that were borrowed from other accounts
-      share_type get_received_rc() const { return received_rc; }
+  //effective balance of VESTS for RC calculation optionally excluding part that cannot be delegated
+  share_type get_maximum_rc( bool only_delegable = false ) const
+  {
+    share_type total = get_effective_vesting_shares().amount - delegated_rc;
+    if( only_delegable == false )
+      total += rc_adjustment + received_rc;
+    return total;
+  }
+  //RC compensation for account creation fee
+  share_type get_rc_adjustment() const { return rc_adjustment; }
+  //RC that were delegated to other accounts
+  share_type get_delegated_rc() const { return delegated_rc; }
+  //RC that were borrowed from other accounts
+  share_type get_received_rc() const { return received_rc; }
 
-      //gives name of the account
-      const account_name_type& get_name() const { return name; }
-      //account creation time
-      time_point_sec get_creation_time() const { return created; }
-      //tells if account was created through pow/pow2 mining operation or is one of builtin accounts created during genesis
-      //account creation time according to a block
-      time_point_sec get_block_creation_time() const { return block_created; }
-      bool was_mined() const { return mined; }
+  //gives name of the account
+  const account_name_type& get_name() const { return name; }
+  //account creation time
+  time_point_sec get_creation_time() const { return created; }
+  //tells if account was created through pow/pow2 mining operation or is one of builtin accounts created during genesis
+  //account creation time according to a block
+  time_point_sec get_block_creation_time() const { return block_created; }
+  bool was_mined() const { return mined; }
 
-      //tells if account has some other account casting governance votes in its name
-      bool has_proxy() const { return proxy != account_id_type(); }
-      //account's proxy (if any)
-      account_id_type get_proxy() const { return proxy; }
-      //sets proxy to neutral (account will vote for itself)
-      void clear_proxy() { proxy = account_id_type(); }
-      //sets proxy to given account
-      void set_proxy(const account_object& new_proxy)
-      {
-        FC_ASSERT( &new_proxy != this );
-        proxy = new_proxy.get_id();
-      }
+  //tells if account has some other account casting governance votes in its name
+  bool has_proxy() const { return proxy != account_id_type(); }
+  //account's proxy (if any)
+  account_id_type get_proxy() const { return proxy; }
+  //sets proxy to neutral (account will vote for itself)
+  void clear_proxy() { proxy = account_id_type(); }
+  //sets proxy to given account
+  void set_proxy(const account_object& new_proxy)
+  {
+    FC_ASSERT( &new_proxy != this );
+    proxy = new_proxy.get_id();
+  }
 
-      //tells if account has some designated account that can initiate recovery (if not, top witness can)
-      bool has_recovery_account() const { return recovery_account != account_id_type(); }
-      //account's recovery account (if any), that is, an account that can authorize request_account_recovery_operation
-      account_id_type get_recovery_account() const { return recovery_account; }
-      //sets new recovery account
-      void set_recovery_account(const account_object& new_recovery_account)
-      {
-        recovery_account = new_recovery_account.get_id();
-      }
-      //timestamp of last time account owner authority was successfully recovered
-      time_point_sec get_last_account_recovery_time() const { return last_account_recovery; }
-      //sets time of owner authority recovery
-      void set_last_account_recovery_time( time_point_sec recovery_time )
-      {
-        last_account_recovery = recovery_time;
-      }
+  //tells if account has some designated account that can initiate recovery (if not, top witness can)
+  bool has_recovery_account() const { return recovery_account != account_id_type(); }
+  //account's recovery account (if any), that is, an account that can authorize request_account_recovery_operation
+  account_id_type get_recovery_account() const { return recovery_account; }
+  //sets new recovery account
+  void set_recovery_account(const account_object& new_recovery_account)
+  {
+    recovery_account = new_recovery_account.get_id();
+  }
+  //timestamp of last time account owner authority was successfully recovered
+  time_point_sec get_last_account_recovery_time() const { return last_account_recovery; }
+  //sets time of owner authority recovery
+  void set_last_account_recovery_time( time_point_sec recovery_time )
+  {
+    last_account_recovery = recovery_time;
+  }
 
-      //time from a current block
-      time_point_sec get_block_last_account_recovery_time() const { return block_last_account_recovery; }
-      void set_block_last_account_recovery_time( time_point_sec block_recovery_time )
-      {
-        block_last_account_recovery = block_recovery_time;
-      }
+  //time from a current block
+  time_point_sec get_block_last_account_recovery_time() const { return block_last_account_recovery; }
+  void set_block_last_account_recovery_time( time_point_sec block_recovery_time )
+  {
+    block_last_account_recovery = block_recovery_time;
+  }
 
-      //members are organized in such a way that the object takes up as little space as possible (note that object starts with 4byte id).
+private:
+  //members are organized in such a way that the object takes up as little space as possible (note that object starts with 4byte id).
 
-    private:
-      account_id_type   proxy;
+  account_id_type   proxy;
 
-      account_id_type   recovery_account;
-      time_point_sec    last_account_recovery;
-      time_point_sec    block_last_account_recovery; // REMOVE - not used by consensus checks (only API)
+  account_id_type   recovery_account;
+  time_point_sec    last_account_recovery;
+  time_point_sec    block_last_account_recovery; // REMOVE - not used by consensus checks (only API)
 
-      account_name_type name;
+  account_name_type name;
 
-    public:
-      uint128_t         hbd_seconds = 0; ///< liquid HBD * how long it has been held
-      uint128_t         savings_hbd_seconds = 0; ///< savings HBD * how long it has been held
+public:
+  uint128_t         hbd_seconds = 0; ///< liquid HBD * how long it has been held
+  uint128_t         savings_hbd_seconds = 0; ///< savings HBD * how long it has been held
 
-      util::manabar     voting_manabar;
-      util::manabar     downvote_manabar;
-      util::manabar     rc_manabar;
+  util::manabar     voting_manabar;
+  util::manabar     downvote_manabar;
+  util::manabar     rc_manabar;
 
-      HBD_asset         hbd_balance; ///< HBD liquid balance
-      HBD_asset         savings_hbd_balance; ///< HBD balance guarded by 3 day withdrawal (also earns interest)
-      HBD_asset         reward_hbd_balance; ///< HBD balance author rewards that can be claimed
+  HBD_asset         hbd_balance; ///< HBD liquid balance
+  HBD_asset         savings_hbd_balance; ///< HBD balance guarded by 3 day withdrawal (also earns interest)
+  HBD_asset         reward_hbd_balance; ///< HBD balance author rewards that can be claimed
 
-      HIVE_asset        reward_hive_balance; ///< HIVE balance author rewards that can be claimed
-      HIVE_asset        reward_vesting_hive; ///< HIVE counterweight to reward_vesting_balance
-      HIVE_asset        balance;  ///< HIVE liquid balance
-      HIVE_asset        savings_balance;  ///< HIVE balance guarded by 3 day withdrawal
+  HIVE_asset        reward_hive_balance; ///< HIVE balance author rewards that can be claimed
+  HIVE_asset        reward_vesting_hive; ///< HIVE counterweight to reward_vesting_balance
+  HIVE_asset        balance;  ///< HIVE liquid balance
+  HIVE_asset        savings_balance;  ///< HIVE balance guarded by 3 day withdrawal
 
-      VEST_asset        reward_vesting_balance; ///< VESTS balance author/curation rewards that can be claimed
-      VEST_asset        vesting_shares; ///< VESTS balance, controls governance voting power
-      VEST_asset        delegated_vesting_shares; ///< VESTS delegated out to other accounts
-      VEST_asset        received_vesting_shares; ///< VESTS delegated to this account
-      VEST_asset        vesting_withdraw_rate; ///< weekly power down rate
+  VEST_asset        reward_vesting_balance; ///< VESTS balance author/curation rewards that can be claimed
+  VEST_asset        vesting_shares; ///< VESTS balance, controls governance voting power
+  VEST_asset        delegated_vesting_shares; ///< VESTS delegated out to other accounts
+  VEST_asset        received_vesting_shares; ///< VESTS delegated to this account
+  VEST_asset        vesting_withdraw_rate; ///< weekly power down rate
 
-      HIVE_asset        curation_rewards; ///< not used by consensus - sum of all curations (value before conversion to VESTS)
-      HIVE_asset        posting_rewards; ///< not used by consensus - sum of all author rewards (value before conversion to VESTS/HBD)
+  HIVE_asset        curation_rewards; ///< not used by consensus - sum of all curations (value before conversion to VESTS)
+  HIVE_asset        posting_rewards; ///< not used by consensus - sum of all author rewards (value before conversion to VESTS/HBD)
 
-      VEST_asset        withdrawn; ///< VESTS already withdrawn in currently active power down (why do we even need this?)
-      VEST_asset        to_withdraw; ///< VESTS yet to be withdrawn in currently active power down (withdown should just be subtracted from this)
+  VEST_asset        withdrawn; ///< VESTS already withdrawn in currently active power down (why do we even need this?)
+  VEST_asset        to_withdraw; ///< VESTS yet to be withdrawn in currently active power down (withdown should just be subtracted from this)
 
-      share_type        rc_adjustment; ///< compensation for account creation fee in form of extra RC
-      share_type        delegated_rc; ///< RC delegated out to other accounts
-      share_type        received_rc; ///< RC delegated to this account
-      share_type        last_max_rc; ///< (for bug catching with RC code, can be removed once RC becomes part of consensus)
+  share_type        rc_adjustment; ///< compensation for account creation fee in form of extra RC
+  share_type        delegated_rc; ///< RC delegated out to other accounts
+  share_type        received_rc; ///< RC delegated to this account
+  share_type        last_max_rc; ///< (for bug catching with RC code, can be removed once RC becomes part of consensus)
 
-      share_type        pending_claimed_accounts = 0; ///< claimed and not yet used account creation tokens (could be 32bit)
+  share_type        pending_claimed_accounts = 0; ///< claimed and not yet used account creation tokens (could be 32bit)
 
-      ushare_type       sum_delayed_votes = 0; ///< sum of delayed_votes (should be changed to VEST_asset)
+  ushare_type       sum_delayed_votes = 0; ///< sum of delayed_votes (should be changed to VEST_asset)
 
-      time_point_sec    hbd_seconds_last_update; ///< the last time the hbd_seconds was updated
-      time_point_sec    hbd_last_interest_payment; ///< used to pay interest at most once per month
-      time_point_sec    savings_hbd_seconds_last_update; ///< the last time the hbd_seconds was updated
-      time_point_sec    savings_hbd_last_interest_payment; ///< used to pay interest at most once per month
-    private:
-      time_point_sec    created; // REMOVE - not used by consensus checks (only unit tests)
-      time_point_sec    block_created; // REMOVE - not used by consensus checks (only API and colony)
-    public:
-      time_point_sec    last_account_update; // REMOVE - not used by consensus checks
-      time_point_sec    last_post; //(we could probably remove limit on posting replies)
-      time_point_sec    last_root_post; //influenced root comment reward between HF12 and HF17
-      time_point_sec    last_post_edit; //(that limit could be coupled with last_post - no need for separate field; NOTE: requires HF)
-      time_point_sec    last_vote_time; // REMOVE - not used by consensus checks
-      time_point_sec    next_vesting_withdrawal = fc::time_point_sec::maximum(); ///< after every withdrawal this is incremented by 1 week
+  time_point_sec    hbd_seconds_last_update; ///< the last time the hbd_seconds was updated
+  time_point_sec    hbd_last_interest_payment; ///< used to pay interest at most once per month
+  time_point_sec    savings_hbd_seconds_last_update; ///< the last time the hbd_seconds was updated
+  time_point_sec    savings_hbd_last_interest_payment; ///< used to pay interest at most once per month
+private:
+  time_point_sec    created; // REMOVE - not used by consensus checks (only unit tests)
+  time_point_sec    block_created; // REMOVE - not used by consensus checks (only API and colony)
+public:
+  time_point_sec    last_account_update; // REMOVE - not used by consensus checks
+  time_point_sec    last_post; //(we could probably remove limit on posting replies)
+  time_point_sec    last_root_post; //influenced root comment reward between HF12 and HF17
+  time_point_sec    last_post_edit; //(that limit could be coupled with last_post - no need for separate field; NOTE: requires HF)
+  time_point_sec    last_vote_time; // REMOVE - not used by consensus checks
+  time_point_sec    next_vesting_withdrawal = fc::time_point_sec::maximum(); ///< after every withdrawal this is incremented by 1 week
 
-    private:
-      time_point_sec    governance_vote_expiration_ts = fc::time_point_sec::maximum();
+private:
+  time_point_sec    governance_vote_expiration_ts = fc::time_point_sec::maximum();
 
-    public:
-      uint32_t          post_count = 0; // REMOVE - not used by consensus checks (only API)
-      uint32_t          post_bandwidth = 0; //influenced root comment reward between HF12 and HF17
+public:
+  uint32_t          post_count = 0; // REMOVE - not used by consensus checks (only API)
+  uint32_t          post_bandwidth = 0; //influenced root comment reward between HF12 and HF17
 
-      uint16_t          withdraw_routes = 0; //max 10, why is it 16bit?
-      uint16_t          pending_escrow_transfers = 0; //for now max is 255, but it might change
-      uint16_t          open_recurrent_transfers = 0; //for now max is 255, but it might change
-      uint16_t          witnesses_voted_for = 0; //max 30, why is it 16bit?
+  uint16_t          withdraw_routes = 0; //max 10, why is it 16bit?
+  uint16_t          pending_escrow_transfers = 0; //for now max is 255, but it might change
+  uint16_t          open_recurrent_transfers = 0; //for now max is 255, but it might change
+  uint16_t          witnesses_voted_for = 0; //max 30, why is it 16bit?
 
-      uint8_t           savings_withdraw_requests = 0;
-      bool              can_vote = true;
-    private:
-      bool              mined = true; // REMOVE - not used by consensus checks (only API)
+  uint8_t           savings_withdraw_requests = 0;
+  bool              can_vote = true;
+private:
+  bool              mined = true; // REMOVE - not used by consensus checks (only API)
 
-    public:
-      public_key_type   memo_key; //33 bytes with alignment of 1; (it belongs to metadata as it is not used by consensus, but witnesses need it here since they don't use metadata plugin)
+public:
+  public_key_type   memo_key; //33 bytes with alignment of 1; (it belongs to metadata as it is not used by consensus, but witnesses need it here since they don't use metadata plugin)
 
-      fc::array<share_type, HIVE_MAX_PROXY_RECURSION_DEPTH> proxied_vsf_votes; ///< the total VFS votes proxied to this account
+  fc::array<share_type, HIVE_MAX_PROXY_RECURSION_DEPTH> proxied_vsf_votes; ///< the total VFS votes proxied to this account
 
-      using t_delayed_votes = t_vector< delayed_votes_data >;
-      /*
-        Holds sum of VESTS per day.
-        VESTS from day `X` will be matured after `X` + 30 days ( because `HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS` == 30 days )
-      */
-      t_delayed_votes   delayed_votes; // TODO: check how frequently it is filled - maybe separate index would be better
+  using t_delayed_votes = t_vector< delayed_votes_data >;
+  /*
+    Holds sum of VESTS per day.
+    VESTS from day `X` will be matured after `X` + 30 days ( because `HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS` == 30 days )
+  */
+  t_delayed_votes   delayed_votes; // TODO: check how frequently it is filled - maybe separate index would be better
 
-      //methods
+//methods
 
-      time_point_sec get_governance_vote_expiration_ts() const
-      {
-        return governance_vote_expiration_ts;
-      }
+  time_point_sec get_governance_vote_expiration_ts() const
+  {
+    return governance_vote_expiration_ts;
+  }
 
-      void set_governance_vote_expired()
-      {
-        governance_vote_expiration_ts = time_point_sec::maximum();
-      }
+  void set_governance_vote_expired()
+  {
+    governance_vote_expiration_ts = time_point_sec::maximum();
+  }
 
-      void update_governance_vote_expiration_ts(const time_point_sec vote_time)
-      {
-        governance_vote_expiration_ts = vote_time + HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD;
-        if (governance_vote_expiration_ts < HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP)
-        {
-          const int64_t DIVIDER = HIVE_HARDFORK_1_25_MAX_OLD_GOVERNANCE_VOTE_EXPIRE_SHIFT.to_seconds();
-          governance_vote_expiration_ts = HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP + fc::seconds(governance_vote_expiration_ts.sec_since_epoch() % DIVIDER);
-        }
-      }
+  void update_governance_vote_expiration_ts(const time_point_sec vote_time)
+  {
+    governance_vote_expiration_ts = vote_time + HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD;
+    if (governance_vote_expiration_ts < HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP)
+    {
+      const int64_t DIVIDER = HIVE_HARDFORK_1_25_MAX_OLD_GOVERNANCE_VOTE_EXPIRE_SHIFT.to_seconds();
+      governance_vote_expiration_ts = HARDFORK_1_25_FIRST_GOVERNANCE_VOTE_EXPIRE_TIMESTAMP + fc::seconds(governance_vote_expiration_ts.sec_since_epoch() % DIVIDER);
+    }
+  }
 
-      bool has_delayed_votes() const { return !delayed_votes.empty(); }
+  bool has_delayed_votes() const { return !delayed_votes.empty(); }
 
-      // start time of oldest delayed vote bucket (the one closest to activation)
-      time_point_sec get_oldest_delayed_vote_time() const
-      {
-        if( has_delayed_votes() )
-          return ( delayed_votes.begin() )->time;
-        else
-          return time_point_sec::maximum();
-      }
+  // start time of oldest delayed vote bucket (the one closest to activation)
+  time_point_sec get_oldest_delayed_vote_time() const
+  {
+    if( has_delayed_votes() )
+      return ( delayed_votes.begin() )->time;
+    else
+      return time_point_sec::maximum();
+  }
 
-      // governance vote power of this account does not include "delayed votes"
-      share_type get_direct_governance_vote_power() const
-      {
-        FC_ASSERT( sum_delayed_votes.value <= vesting_shares.amount, "",
-                ( "sum_delayed_votes",     sum_delayed_votes )
-                ( "vesting_shares.amount", vesting_shares.amount )
-                ( "account",               name ) );
-  
-        return ( vesting_shares - VEST_asset( sum_delayed_votes.value ) ).amount;
-      }
+  // governance vote power of this account does not include "delayed votes"
+  share_type get_direct_governance_vote_power() const
+  {
+    FC_ASSERT( sum_delayed_votes.value <= vesting_shares.amount, "",
+            ( "sum_delayed_votes",     sum_delayed_votes )
+            ( "vesting_shares.amount", vesting_shares.amount )
+            ( "account",               name ) );
 
-      /// This function should be used only when the account votes for a witness directly
-      share_type get_governance_vote_power() const
-      {
-        return std::accumulate( proxied_vsf_votes.begin(), proxied_vsf_votes.end(),
-          get_direct_governance_vote_power() );
-      }
-      share_type proxied_vsf_votes_total() const
-      {
-        return std::accumulate( proxied_vsf_votes.begin(), proxied_vsf_votes.end(),
-          share_type() );
-      }
+    return ( vesting_shares - VEST_asset( sum_delayed_votes.value ) ).amount;
+  }
+
+  /// This function should be used only when the account votes for a witness directly
+  share_type get_governance_vote_power() const
+  {
+    return std::accumulate( proxied_vsf_votes.begin(), proxied_vsf_votes.end(),
+      get_direct_governance_vote_power() );
+  }
+  share_type proxied_vsf_votes_total() const
+  {
+    return std::accumulate( proxied_vsf_votes.begin(), proxied_vsf_votes.end(),
+      share_type() );
+  }
 
 #ifdef IS_TEST_NET
-      //ABW: it is needed for some low level tests (they would need to be rewritten)
-      void set_name( const account_name_type& new_name ) { name = new_name; }
+  //ABW: it is needed for some low level tests (they would need to be rewritten)
+  void set_name( const account_name_type& new_name ) { name = new_name; }
 #endif
 
-      size_t get_dynamic_alloc() const
-      {
-        size_t size = 0;
-        size += delayed_votes.capacity() * sizeof( decltype( delayed_votes )::value_type );
-        return size;
-      }
-
-    CHAINBASE_UNPACK_CONSTRUCTOR(account_object, (delayed_votes));
-  };
-
-  class account_authority_object : public object< account_authority_object_type, account_authority_object, std::true_type >
+  size_t get_dynamic_alloc() const
   {
-    CHAINBASE_OBJECT( account_authority_object );
-    public:
-      CHAINBASE_DEFAULT_CONSTRUCTOR( account_authority_object, (owner)(active)(posting) )
+    size_t size = 0;
+    size += delayed_votes.capacity() * sizeof( decltype( delayed_votes )::value_type );
+    return size;
+  }
 
-      account_name_type account;
+  CHAINBASE_UNPACK_CONSTRUCTOR( account_object, (delayed_votes) );
+};
 
-      shared_authority  owner;   ///< used for backup control, can set owner or active
-      shared_authority  active;  ///< used for all monetary operations, can set active or posting
-      shared_authority  posting; ///< used for voting and posting
+class account_authority_object : public object< account_authority_object_type, account_authority_object, std::true_type >
+{
+  CHAINBASE_OBJECT( account_authority_object );
 
-      time_point_sec    previous_owner_update;
-      time_point_sec    last_owner_update;
+public:
+  CHAINBASE_DEFAULT_CONSTRUCTOR( account_authority_object, (owner)(active)(posting) )
 
-      size_t get_dynamic_alloc() const
-      {
-        size_t size = 0;
-        size += owner.get_dynamic_alloc();
-        size += active.get_dynamic_alloc();
-        size += posting.get_dynamic_alloc();
-        return size;
-      }
-
-    CHAINBASE_UNPACK_CONSTRUCTOR(account_authority_object, (owner)(active)(posting));
-  };
-
-  class vesting_delegation_object : public object< vesting_delegation_object_type, vesting_delegation_object >
+  size_t get_dynamic_alloc() const
   {
-    CHAINBASE_OBJECT( vesting_delegation_object );
-    public:
-      template< typename Allocator >
-      vesting_delegation_object( allocator< Allocator > a, uint64_t _id,
-        const account_object& _from, const account_object& _to,
-        const VEST_asset& _amount, const time_point_sec& _min_delegation_time )
-      : id( _id ), delegator( _from.get_id() ), delegatee( _to.get_id() ),
-        min_delegation_time( _min_delegation_time ), vesting_shares( _amount )
-      {}
+    size_t size = 0;
+    size += owner.get_dynamic_alloc();
+    size += active.get_dynamic_alloc();
+    size += posting.get_dynamic_alloc();
+    return size;
+  }
 
-      //id of "delegation sender"
-      account_id_type get_delegator() const { return delegator; }
-      //id of "delegation receiver"
-      account_id_type get_delegatee() const { return delegatee; }
-      //amount of delegated VESTS
-      const VEST_asset& get_vesting() const { return vesting_shares; }
-      //minimal time when delegation will not be returned to the delegator (can be taken from delegatee though)
-      time_point_sec get_min_delegation_time() const { return min_delegation_time; }
+  account_name_type account;
 
-      void set_vesting( const VEST_asset& _new_amount )
-      {
-        FC_ASSERT( _new_amount.amount > 0 );
-        vesting_shares = _new_amount;
-      }
+  shared_authority  owner;   ///< used for backup control, can set owner or active
+  shared_authority  active;  ///< used for all monetary operations, can set active or posting
+  shared_authority  posting; ///< used for voting and posting
 
-    private:
-      account_id_type delegator;
-      account_id_type delegatee;
-      time_point_sec  min_delegation_time;
-      VEST_asset      vesting_shares;
+  time_point_sec    previous_owner_update;
+  time_point_sec    last_owner_update;
 
-    CHAINBASE_UNPACK_CONSTRUCTOR(vesting_delegation_object);
-  };
+  CHAINBASE_UNPACK_CONSTRUCTOR( account_authority_object, (owner)(active)(posting) );
+};
 
-  class vesting_delegation_expiration_object : public object< vesting_delegation_expiration_object_type, vesting_delegation_expiration_object >
+class vesting_delegation_object : public object< vesting_delegation_object_type, vesting_delegation_object >
+{
+  CHAINBASE_OBJECT( vesting_delegation_object );
+
+public:
+  template< typename Allocator >
+  vesting_delegation_object( allocator< Allocator > a, uint64_t _id,
+    const account_object& _from, const account_object& _to,
+    const VEST_asset& _amount, const time_point_sec& _min_delegation_time )
+  : id( _id ), delegator( _from.get_id() ), delegatee( _to.get_id() ),
+    min_delegation_time( _min_delegation_time ), vesting_shares( _amount )
+  {}
+
+  //id of "delegation sender"
+  account_id_type get_delegator() const { return delegator; }
+  //id of "delegation receiver"
+  account_id_type get_delegatee() const { return delegatee; }
+  //amount of delegated VESTS
+  const VEST_asset& get_vesting() const { return vesting_shares; }
+  //minimal time when delegation will not be returned to the delegator (can be taken from delegatee though)
+  time_point_sec get_min_delegation_time() const { return min_delegation_time; }
+
+  void set_vesting( const VEST_asset& _new_amount )
   {
-    CHAINBASE_OBJECT( vesting_delegation_expiration_object );
-    public:
-      template< typename Allocator >
-      vesting_delegation_expiration_object( allocator< Allocator > a, uint64_t _id,
-        const account_object& _delegator, const VEST_asset& _amount, const time_point_sec& _expiration )
-      : id( _id ), delegator( _delegator.get_id() ), vesting_shares( _amount ), expiration( _expiration )
-      {}
+    FC_ASSERT( _new_amount.amount > 0 );
+    vesting_shares = _new_amount;
+  }
 
-      //id of "delegation sender" where VESTs are to be returned
-      account_id_type get_delegator() const { return delegator; }
-      //amount of expiring delegated VESTs
-      const VEST_asset& get_vesting() const { return vesting_shares; }
-      //time when VESTs are to be returned to delegator
-      time_point_sec get_expiration_time() const { return expiration; }
+private:
+  account_id_type delegator;
+  account_id_type delegatee;
+  time_point_sec  min_delegation_time;
+  VEST_asset      vesting_shares;
 
-    private:
-      account_id_type delegator;
-      VEST_asset      vesting_shares;
-      time_point_sec  expiration;
+  CHAINBASE_UNPACK_CONSTRUCTOR( vesting_delegation_object );
+};
 
-    CHAINBASE_UNPACK_CONSTRUCTOR(vesting_delegation_expiration_object);
-  };
+class vesting_delegation_expiration_object : public object< vesting_delegation_expiration_object_type, vesting_delegation_expiration_object >
+{
+  CHAINBASE_OBJECT( vesting_delegation_expiration_object );
 
-  class owner_authority_history_object : public object< owner_authority_history_object_type, owner_authority_history_object, std::true_type >
+public:
+  template< typename Allocator >
+  vesting_delegation_expiration_object( allocator< Allocator > a, uint64_t _id,
+    const account_object& _delegator, const VEST_asset& _amount, const time_point_sec& _expiration )
+  : id( _id ), delegator( _delegator.get_id() ), vesting_shares( _amount ), expiration( _expiration )
+  {}
+
+  //id of "delegation sender" where VESTs are to be returned
+  account_id_type get_delegator() const { return delegator; }
+  //amount of expiring delegated VESTs
+  const VEST_asset& get_vesting() const { return vesting_shares; }
+  //time when VESTs are to be returned to delegator
+  time_point_sec get_expiration_time() const { return expiration; }
+
+private:
+  account_id_type delegator;
+  VEST_asset      vesting_shares;
+  time_point_sec  expiration;
+
+  CHAINBASE_UNPACK_CONSTRUCTOR( vesting_delegation_expiration_object );
+};
+
+class owner_authority_history_object : public object< owner_authority_history_object_type, owner_authority_history_object, std::true_type >
+{
+  CHAINBASE_OBJECT( owner_authority_history_object );
+
+public:
+  template< typename Allocator >
+  owner_authority_history_object( allocator< Allocator > a, uint64_t _id,
+    const account_object& _account, const shared_authority& _previous_owner, const time_point_sec& _creation_time )
+    : id( _id ), account( _account.get_name() ), previous_owner_authority( allocator< shared_authority >( a ) ),
+    last_valid_time( _creation_time )
   {
-    CHAINBASE_OBJECT( owner_authority_history_object );
-    public:
-      template< typename Allocator >
-      owner_authority_history_object( allocator< Allocator > a, uint64_t _id,
-        const account_object& _account, const shared_authority& _previous_owner, const time_point_sec& _creation_time )
-        : id( _id ), account( _account.get_name() ), previous_owner_authority( allocator< shared_authority >( a ) ),
-        last_valid_time( _creation_time )
-      {
-        previous_owner_authority = _previous_owner;
-      }
+    previous_owner_authority = _previous_owner;
+  }
 
-      account_name_type account;
-      shared_authority  previous_owner_authority;
-      time_point_sec    last_valid_time;
-
-      size_t get_dynamic_alloc() const
-      {
-        size_t size = 0;
-        size += previous_owner_authority.get_dynamic_alloc();
-        return size;
-      }
-
-    CHAINBASE_UNPACK_CONSTRUCTOR(owner_authority_history_object, (previous_owner_authority));
-  };
-
-  class account_recovery_request_object : public object< account_recovery_request_object_type, account_recovery_request_object, std::true_type >
+  size_t get_dynamic_alloc() const
   {
-    CHAINBASE_OBJECT( account_recovery_request_object );
-    public:
-      template< typename Allocator >
-      account_recovery_request_object( allocator< Allocator > a, uint64_t _id,
-        const account_object& _account_to_recover, const authority& _new_owner_authority, const time_point_sec& _expiration_time )
-        : id( _id ), expires( _expiration_time ), account_to_recover( _account_to_recover.get_name() ),
-        new_owner_authority( allocator< shared_authority >( a ) )
-      {
-        new_owner_authority = _new_owner_authority;
-      }
+    size_t size = 0;
+    size += previous_owner_authority.get_dynamic_alloc();
+    return size;
+  }
 
-      //account whos owner authority is being modified
-      const account_name_type& get_account_to_recover() const { return account_to_recover; }
+  account_name_type account;
+  shared_authority  previous_owner_authority;
+  time_point_sec    last_valid_time;
 
-      //new owner authority requested to be set during recovery operation
-      const shared_authority& get_new_owner_authority() const { return new_owner_authority; }
-      //sets different new owner authority (also moves time when request will expire)
-      void set_new_owner_authority( const authority& _new_owner_authority, const time_point_sec& _new_expiration_time )
-      {
-        new_owner_authority = _new_owner_authority;
-        expires = _new_expiration_time;
-      }
+  CHAINBASE_UNPACK_CONSTRUCTOR( owner_authority_history_object, (previous_owner_authority) );
+};
 
-      //time when the request will be automatically removed if not used
-      time_point_sec get_expiration_time() const { return expires; }
+class account_recovery_request_object : public object< account_recovery_request_object_type, account_recovery_request_object, std::true_type >
+{
+  CHAINBASE_OBJECT( account_recovery_request_object );
 
-    private:
-      time_point_sec    expires;
-      account_name_type account_to_recover;
-      shared_authority  new_owner_authority;
-
-    public:
-      size_t get_dynamic_alloc() const
-      {
-        size_t size = 0;
-        size += new_owner_authority.get_dynamic_alloc();
-        return size;
-      }
-      
-    CHAINBASE_UNPACK_CONSTRUCTOR(account_recovery_request_object, (new_owner_authority));
-  };
-
-  class change_recovery_account_request_object : public object< change_recovery_account_request_object_type, change_recovery_account_request_object >
+public:
+  template< typename Allocator >
+  account_recovery_request_object( allocator< Allocator > a, uint64_t _id,
+    const account_object& _account_to_recover, const authority& _new_owner_authority, const time_point_sec& _expiration_time )
+    : id( _id ), expires( _expiration_time ), account_to_recover( _account_to_recover.get_name() ),
+    new_owner_authority( allocator< shared_authority >( a ) )
   {
-    CHAINBASE_OBJECT( change_recovery_account_request_object );
-    public:
-      template< typename Allocator >
-      change_recovery_account_request_object( allocator< Allocator > a, uint64_t _id,
-        const account_object& _account_to_recover, const account_object& _recovery_account, const time_point_sec& _effect_time )
-        : id( _id ), effective_on( _effect_time ), account_to_recover( _account_to_recover.get_name() ), recovery_account( _recovery_account.get_name() )
-      {}
+    new_owner_authority = _new_owner_authority;
+  }
 
-      //account whos recovery account is being modified
-      const account_name_type& get_account_to_recover() const { return account_to_recover; }
+  //account whos owner authority is being modified
+  const account_name_type& get_account_to_recover() const { return account_to_recover; }
 
-      //new recovery account being set
-      const account_name_type& get_recovery_account() const { return recovery_account; }
-      //sets different new recovery account (also moves time when actual change will take place)
-      void set_recovery_account( const account_object& new_recovery_account, const time_point_sec& _new_effect_time )
-      {
-        recovery_account = new_recovery_account.get_name();
-        effective_on = _new_effect_time;
-      }
+  //new owner authority requested to be set during recovery operation
+  const shared_authority& get_new_owner_authority() const { return new_owner_authority; }
+  //sets different new owner authority (also moves time when request will expire)
+  void set_new_owner_authority( const authority& _new_owner_authority, const time_point_sec& _new_expiration_time )
+  {
+    new_owner_authority = _new_owner_authority;
+    expires = _new_expiration_time;
+  }
 
-      //time when actual change of recovery account is to be executed
-      time_point_sec get_execution_time() const { return effective_on; }
+  //time when the request will be automatically removed if not used
+  time_point_sec get_expiration_time() const { return expires; }
 
-    private:
-      time_point_sec    effective_on;
-      account_name_type account_to_recover; //changing it to id would influence response from database_api.list_change_recovery_account_requests
-      account_name_type recovery_account; //could be changed to id
-      
-    CHAINBASE_UNPACK_CONSTRUCTOR(change_recovery_account_request_object);
-  };
+  size_t get_dynamic_alloc() const
+  {
+    size_t size = 0;
+    size += new_owner_authority.get_dynamic_alloc();
+    return size;
+  }
+
+private:
+  time_point_sec    expires;
+  account_name_type account_to_recover;
+  shared_authority  new_owner_authority;
+
+  CHAINBASE_UNPACK_CONSTRUCTOR( account_recovery_request_object, (new_owner_authority) );
+};
+
+class change_recovery_account_request_object : public object< change_recovery_account_request_object_type, change_recovery_account_request_object >
+{
+  CHAINBASE_OBJECT( change_recovery_account_request_object );
+
+public:
+  template< typename Allocator >
+  change_recovery_account_request_object( allocator< Allocator > a, uint64_t _id,
+    const account_object& _account_to_recover, const account_object& _recovery_account, const time_point_sec& _effect_time )
+    : id( _id ), effective_on( _effect_time ), account_to_recover( _account_to_recover.get_name() ), recovery_account( _recovery_account.get_name() )
+  {}
+
+  //account whos recovery account is being modified
+  const account_name_type& get_account_to_recover() const { return account_to_recover; }
+
+  //new recovery account being set
+  const account_name_type& get_recovery_account() const { return recovery_account; }
+  //sets different new recovery account (also moves time when actual change will take place)
+  void set_recovery_account( const account_object& new_recovery_account, const time_point_sec& _new_effect_time )
+  {
+    recovery_account = new_recovery_account.get_name();
+    effective_on = _new_effect_time;
+  }
+
+  //time when actual change of recovery account is to be executed
+  time_point_sec get_execution_time() const { return effective_on; }
+
+private:
+  time_point_sec    effective_on;
+  account_name_type account_to_recover; //changing it to id would influence response from database_api.list_change_recovery_account_requests
+  account_name_type recovery_account; //could be changed to id
+
+  CHAINBASE_UNPACK_CONSTRUCTOR( change_recovery_account_request_object );
+};
 
 } }
 
