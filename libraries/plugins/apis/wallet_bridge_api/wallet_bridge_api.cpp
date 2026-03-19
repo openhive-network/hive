@@ -545,7 +545,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, get_open_orders )
   const auto& idx = _db.get_index< chain::limit_order_index, chain::by_account >();
   auto itr = idx.lower_bound( account );
 
-  while( itr != idx.end() && itr->seller == account )
+  while( itr != idx.end() && itr->get_seller() == account )
   {
     _result.push_back( database_api::api_limit_order_object(*itr, _db) );
     ++itr;

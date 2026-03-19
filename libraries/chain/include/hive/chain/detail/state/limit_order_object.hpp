@@ -20,35 +20,49 @@ namespace hive { namespace chain {
   class limit_order_object : public object< limit_order_object_type, limit_order_object >
   {
     CHAINBASE_OBJECT( limit_order_object );
-    public:
-      template< typename Allocator >
-      limit_order_object( allocator< Allocator > a, uint64_t _id,
-        const account_name_type& _seller, const asset& _amount_to_sell, const price& _sell_price,
-        const time_point_sec& _creation_time, const time_point_sec& _expiration_time, uint32_t _orderid )
-      : id( _id ), created( _creation_time ), expiration( _expiration_time ), orderid( _orderid ),
-        seller( _seller ), for_sale( _amount_to_sell ), sell_price( _sell_price )
-      {
-        FC_ASSERT( _amount_to_sell.symbol == _sell_price.base.symbol );
-      }
 
-      pair< asset_symbol_type, asset_symbol_type > get_market() const
-      {
-        return sell_price.base.symbol < sell_price.quote.symbol ?
-          std::make_pair( sell_price.base.symbol, sell_price.quote.symbol ) :
-          std::make_pair( sell_price.quote.symbol, sell_price.base.symbol );
-      }
+  public:
+    template< typename Allocator >
+    limit_order_object( allocator< Allocator > a, uint64_t _id,
+      const account_name_type& _seller, const asset& _amount_to_sell, const price& _sell_price,
+      const time_point_sec& _creation_time, const time_point_sec& _expiration_time, uint32_t _orderid )
+    : id( _id ), created( _creation_time ), expiration( _expiration_time ), orderid( _orderid ),
+      seller( _seller ), for_sale( _amount_to_sell ), sell_price( _sell_price )
+    {
+      FC_ASSERT( _amount_to_sell.symbol == _sell_price.base.symbol );
+    }
 
-      asset amount_for_sale() const { return for_sale; }
-      asset amount_to_receive() const { return for_sale * sell_price; }
+    pair< asset_symbol_type, asset_symbol_type > get_market() const
+    {
+      return sell_price.base.symbol < sell_price.quote.symbol ?
+        std::make_pair( sell_price.base.symbol, sell_price.quote.symbol ) :
+        std::make_pair( sell_price.quote.symbol, sell_price.base.symbol );
+    }
 
-      time_point_sec    created;
-      time_point_sec    expiration;
-      uint32_t          orderid = 0;
-      account_name_type seller; ///< changing to account_id_type is not possible - by_account is used by database_api.list_limit_orders
-      asset             for_sale;
-      price             sell_price;
+  // getters:
 
-      CHAINBASE_UNPACK_CONSTRUCTOR(limit_order_object);
+    const asset& amount_for_sale() const { return for_sale; }
+    asset amount_to_receive() const { return for_sale * sell_price; }
+
+    time_point_sec get_created() const { return created; }
+    time_point_sec get_expiration() const { return expiration; }
+    uint32_t get_orderid() const { return orderid; }
+    const account_name_type& get_seller() const { return seller; }
+    const price& get_sell_price() const { return sell_price; }
+
+  // setters:
+
+    asset& access_amount_for_sale() { return for_sale; }
+
+  private:
+    time_point_sec    created;
+    time_point_sec    expiration;
+    uint32_t          orderid = 0;
+    account_name_type seller; ///< changing to account_id_type is not possible - by_account is used by database_api.list_limit_orders
+    asset             for_sale;
+    price             sell_price;
+
+    CHAINBASE_UNPACK_CONSTRUCTOR(limit_order_object);
   };
 
 } } // hive::chain

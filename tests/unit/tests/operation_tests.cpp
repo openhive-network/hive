@@ -3912,10 +3912,10 @@ BOOST_AUTO_TEST_CASE( limit_order_create_apply )
 
     auto limit_order = limit_order_idx.find( boost::make_tuple( "alice", op.orderid ) );
     BOOST_REQUIRE( limit_order != limit_order_idx.end() );
-    BOOST_REQUIRE_EQUAL( limit_order->seller, op.owner );
-    BOOST_REQUIRE_EQUAL( limit_order->orderid, op.orderid );
-    BOOST_REQUIRE_EQUAL( limit_order->for_sale, op.amount_to_sell );
-    BOOST_REQUIRE_EQUAL( limit_order->sell_price, price( op.amount_to_sell, op.min_to_receive ) );
+    BOOST_REQUIRE_EQUAL( limit_order->get_seller(), op.owner );
+    BOOST_REQUIRE_EQUAL( limit_order->get_orderid(), op.orderid );
+    BOOST_REQUIRE_EQUAL( limit_order->amount_for_sale(), op.amount_to_sell );
+    BOOST_REQUIRE_EQUAL( limit_order->get_sell_price(), price( op.amount_to_sell, op.min_to_receive ) );
     BOOST_REQUIRE( limit_order->get_market() == std::make_pair( HBD_SYMBOL, HIVE_SYMBOL ) );
     BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).get_hive_balance(), HIVE_asset( 990'000 ) );
     BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).get_hbd_balance(), HBD_asset( 0 ) );
@@ -3930,10 +3930,10 @@ BOOST_AUTO_TEST_CASE( limit_order_create_apply )
 
     limit_order = limit_order_idx.find( boost::make_tuple( "alice", op.orderid ) );
     BOOST_REQUIRE( limit_order != limit_order_idx.end() );
-    BOOST_REQUIRE_EQUAL( limit_order->seller, op.owner );
-    BOOST_REQUIRE_EQUAL( limit_order->orderid, op.orderid );
-    BOOST_REQUIRE_EQUAL( limit_order->for_sale, ASSET( "10.000 TESTS" ) );
-    BOOST_REQUIRE_EQUAL( limit_order->sell_price, price( ASSET( "10.000 TESTS" ), op.min_to_receive ) );
+    BOOST_REQUIRE_EQUAL( limit_order->get_seller(), op.owner );
+    BOOST_REQUIRE_EQUAL( limit_order->get_orderid(), op.orderid );
+    BOOST_REQUIRE_EQUAL( limit_order->amount_for_sale(), ASSET( "10.000 TESTS" ) );
+    BOOST_REQUIRE_EQUAL( limit_order->get_sell_price(), price( ASSET( "10.000 TESTS" ), op.min_to_receive ) );
     BOOST_REQUIRE( limit_order->get_market() == std::make_pair( HBD_SYMBOL, HIVE_SYMBOL ) );
     BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).get_hive_balance(), HIVE_asset( 990'000 ) );
     BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).get_hbd_balance(), HBD_asset( 0 ) );
@@ -3971,10 +3971,10 @@ BOOST_AUTO_TEST_CASE( limit_order_create_apply )
 
     limit_order = limit_order_idx.find( boost::make_tuple( "alice", 1 ) );
     BOOST_REQUIRE( limit_order != limit_order_idx.end() );
-    BOOST_REQUIRE_EQUAL( limit_order->seller, "alice" );
-    BOOST_REQUIRE_EQUAL( limit_order->orderid, op.orderid );
-    BOOST_REQUIRE_EQUAL( limit_order->for_sale, ASSET( "5.000 TESTS" ) );
-    BOOST_REQUIRE_EQUAL( limit_order->sell_price, price( ASSET( "10.000 TESTS" ), ASSET( "15.000 TBD" ) ) );
+    BOOST_REQUIRE_EQUAL( limit_order->get_seller(), "alice" );
+    BOOST_REQUIRE_EQUAL( limit_order->get_orderid(), op.orderid );
+    BOOST_REQUIRE_EQUAL( limit_order->amount_for_sale(), ASSET( "5.000 TESTS" ) );
+    BOOST_REQUIRE_EQUAL( limit_order->get_sell_price(), price( ASSET( "10.000 TESTS" ), ASSET( "15.000 TBD" ) ) );
     BOOST_REQUIRE( limit_order->get_market() == std::make_pair( HBD_SYMBOL, HIVE_SYMBOL ) );
     BOOST_REQUIRE( limit_order_idx.find( boost::make_tuple( "bob", op.orderid ) ) == limit_order_idx.end() );
     BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).get_hive_balance(), HIVE_asset( 990'000 ) );
@@ -3999,10 +3999,10 @@ BOOST_AUTO_TEST_CASE( limit_order_create_apply )
 
     limit_order = limit_order_idx.find( boost::make_tuple( "bob", 1 ) );
     BOOST_REQUIRE( limit_order != limit_order_idx.end() );
-    BOOST_REQUIRE_EQUAL( limit_order->seller, "bob" );
-    BOOST_REQUIRE_EQUAL( limit_order->orderid, 1 );
-    BOOST_REQUIRE_EQUAL( limit_order->for_sale, ASSET( "7.500 TBD" ) );
-    BOOST_REQUIRE_EQUAL( limit_order->sell_price, price( ASSET( "15.000 TBD" ), ASSET( "10.000 TESTS" ) ) );
+    BOOST_REQUIRE_EQUAL( limit_order->get_seller(), "bob" );
+    BOOST_REQUIRE_EQUAL( limit_order->get_orderid(), 1 );
+    BOOST_REQUIRE_EQUAL( limit_order->amount_for_sale(), ASSET( "7.500 TBD" ) );
+    BOOST_REQUIRE_EQUAL( limit_order->get_sell_price(), price( ASSET( "15.000 TBD" ), ASSET( "10.000 TESTS" ) ) );
     BOOST_REQUIRE( limit_order->get_market() == std::make_pair( HBD_SYMBOL, HIVE_SYMBOL ) );
     BOOST_REQUIRE( limit_order_idx.find( boost::make_tuple( "alice", 1 ) ) == limit_order_idx.end() );
     BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).get_hive_balance(), HIVE_asset( 990'000 ) );
@@ -4050,10 +4050,10 @@ BOOST_AUTO_TEST_CASE( limit_order_create_apply )
     limit_order = limit_order_idx.find( boost::make_tuple( "bob", 4 ) );
     BOOST_REQUIRE( limit_order != limit_order_idx.end() );
     BOOST_REQUIRE( limit_order_idx.find(boost::make_tuple( "alice", 4 ) ) == limit_order_idx.end() );
-    BOOST_REQUIRE_EQUAL( limit_order->seller, "bob" );
-    BOOST_REQUIRE_EQUAL( limit_order->orderid, 4 );
-    BOOST_REQUIRE_EQUAL( limit_order->for_sale, ASSET( "1.000 TBD" ) );
-    BOOST_REQUIRE_EQUAL( limit_order->sell_price, price( ASSET( "12.000 TBD" ), ASSET( "10.000 TESTS" ) ) );
+    BOOST_REQUIRE_EQUAL( limit_order->get_seller(), "bob" );
+    BOOST_REQUIRE_EQUAL( limit_order->get_orderid(), 4 );
+    BOOST_REQUIRE_EQUAL( limit_order->amount_for_sale(), ASSET( "1.000 TBD" ) );
+    BOOST_REQUIRE_EQUAL( limit_order->get_sell_price(), price( ASSET( "12.000 TBD" ), ASSET( "10.000 TESTS" ) ) );
     BOOST_REQUIRE( limit_order->get_market() == std::make_pair( HBD_SYMBOL, HIVE_SYMBOL ) );
     BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).get_hive_balance(), HIVE_asset( 975'000 ) );
     BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).get_hbd_balance(), HBD_asset( 33'500 ) );
@@ -4092,10 +4092,10 @@ BOOST_AUTO_TEST_CASE( limit_order_create_apply )
     limit_order = limit_order_idx.find( boost::make_tuple( "alice", 5 ) );
     BOOST_REQUIRE( limit_order != limit_order_idx.end() );
     BOOST_REQUIRE( limit_order_idx.find(boost::make_tuple( "bob", 5 ) ) == limit_order_idx.end() );
-    BOOST_REQUIRE_EQUAL( limit_order->seller, "alice" );
-    BOOST_REQUIRE_EQUAL( limit_order->orderid, 5 );
-    BOOST_REQUIRE_EQUAL( limit_order->for_sale, ASSET( "9.091 TESTS" ) );
-    BOOST_REQUIRE_EQUAL( limit_order->sell_price, price( ASSET( "20.000 TESTS" ), ASSET( "22.000 TBD" ) ) );
+    BOOST_REQUIRE_EQUAL( limit_order->get_seller(), "alice" );
+    BOOST_REQUIRE_EQUAL( limit_order->get_orderid(), 5 );
+    BOOST_REQUIRE_EQUAL( limit_order->amount_for_sale(), ASSET( "9.091 TESTS" ) );
+    BOOST_REQUIRE_EQUAL( limit_order->get_sell_price(), price( ASSET( "20.000 TESTS" ), ASSET( "22.000 TBD" ) ) );
     BOOST_REQUIRE( limit_order->get_market() == std::make_pair( HBD_SYMBOL, HIVE_SYMBOL ) );
     BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).get_hive_balance(), HIVE_asset( 955'000 ) );
     BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).get_hbd_balance(), HBD_asset( 45'500 ) );
@@ -4251,10 +4251,10 @@ BOOST_AUTO_TEST_CASE( limit_order_create2_apply )
 
     auto limit_order = limit_order_idx.find( boost::make_tuple( "alice", op.orderid ) );
     BOOST_REQUIRE( limit_order != limit_order_idx.end() );
-    BOOST_REQUIRE_EQUAL( limit_order->seller, op.owner );
-    BOOST_REQUIRE_EQUAL( limit_order->orderid, op.orderid );
-    BOOST_REQUIRE_EQUAL( limit_order->for_sale, op.amount_to_sell );
-    BOOST_REQUIRE_EQUAL( limit_order->sell_price, op.exchange_rate );
+    BOOST_REQUIRE_EQUAL( limit_order->get_seller(), op.owner );
+    BOOST_REQUIRE_EQUAL( limit_order->get_orderid(), op.orderid );
+    BOOST_REQUIRE_EQUAL( limit_order->amount_for_sale(), op.amount_to_sell );
+    BOOST_REQUIRE_EQUAL( limit_order->get_sell_price(), op.exchange_rate );
     BOOST_REQUIRE( limit_order->get_market() == std::make_pair( HBD_SYMBOL, HIVE_SYMBOL ) );
     BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).get_hive_balance(), HIVE_asset( 990'000 ) );
     BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).get_hbd_balance(), HBD_asset( 0 ) );
@@ -4269,10 +4269,10 @@ BOOST_AUTO_TEST_CASE( limit_order_create2_apply )
 
     limit_order = limit_order_idx.find( boost::make_tuple( "alice", op.orderid ) );
     BOOST_REQUIRE( limit_order != limit_order_idx.end() );
-    BOOST_REQUIRE_EQUAL( limit_order->seller, op.owner );
-    BOOST_REQUIRE_EQUAL( limit_order->orderid, op.orderid );
-    BOOST_REQUIRE_EQUAL( limit_order->for_sale, ASSET( "10.000 TESTS" ) );
-    BOOST_REQUIRE_EQUAL( limit_order->sell_price, op.exchange_rate );
+    BOOST_REQUIRE_EQUAL( limit_order->get_seller(), op.owner );
+    BOOST_REQUIRE_EQUAL( limit_order->get_orderid(), op.orderid );
+    BOOST_REQUIRE_EQUAL( limit_order->amount_for_sale(), ASSET( "10.000 TESTS" ) );
+    BOOST_REQUIRE_EQUAL( limit_order->get_sell_price(), op.exchange_rate );
     BOOST_REQUIRE( limit_order->get_market() == std::make_pair( HBD_SYMBOL, HIVE_SYMBOL ) );
     BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).get_hive_balance(), HIVE_asset( 990'000 ) );
     BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).get_hbd_balance(), HBD_asset( 0 ) );
@@ -4310,10 +4310,10 @@ BOOST_AUTO_TEST_CASE( limit_order_create2_apply )
 
     limit_order = limit_order_idx.find( boost::make_tuple( "alice", 1 ) );
     BOOST_REQUIRE( limit_order != limit_order_idx.end() );
-    BOOST_REQUIRE_EQUAL( limit_order->seller, "alice" );
-    BOOST_REQUIRE_EQUAL( limit_order->orderid, op.orderid );
-    BOOST_REQUIRE_EQUAL( limit_order->for_sale, ASSET( "5.000 TESTS" ) );
-    BOOST_REQUIRE_EQUAL( limit_order->sell_price, price( ASSET( "2.000 TESTS" ), ASSET( "3.000 TBD" ) ) );
+    BOOST_REQUIRE_EQUAL( limit_order->get_seller(), "alice" );
+    BOOST_REQUIRE_EQUAL( limit_order->get_orderid(), op.orderid );
+    BOOST_REQUIRE_EQUAL( limit_order->amount_for_sale(), ASSET( "5.000 TESTS" ) );
+    BOOST_REQUIRE_EQUAL( limit_order->get_sell_price(), price( ASSET( "2.000 TESTS" ), ASSET( "3.000 TBD" ) ) );
     BOOST_REQUIRE( limit_order->get_market() == std::make_pair( HBD_SYMBOL, HIVE_SYMBOL ) );
     BOOST_REQUIRE( limit_order_idx.find( boost::make_tuple( "bob", op.orderid ) ) == limit_order_idx.end() );
     BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).get_hive_balance(), HIVE_asset( 990'000 ) );
@@ -4338,10 +4338,10 @@ BOOST_AUTO_TEST_CASE( limit_order_create2_apply )
 
     limit_order = limit_order_idx.find( boost::make_tuple( "bob", 1 ) );
     BOOST_REQUIRE( limit_order != limit_order_idx.end() );
-    BOOST_REQUIRE_EQUAL( limit_order->seller, "bob" );
-    BOOST_REQUIRE_EQUAL( limit_order->orderid, 1 );
-    BOOST_REQUIRE_EQUAL( limit_order->for_sale, ASSET( "7.500 TBD" ) );
-    BOOST_REQUIRE_EQUAL( limit_order->sell_price, price( ASSET( "3.000 TBD" ), ASSET( "2.000 TESTS" ) ) );
+    BOOST_REQUIRE_EQUAL( limit_order->get_seller(), "bob" );
+    BOOST_REQUIRE_EQUAL( limit_order->get_orderid(), 1 );
+    BOOST_REQUIRE_EQUAL( limit_order->amount_for_sale(), ASSET( "7.500 TBD" ) );
+    BOOST_REQUIRE_EQUAL( limit_order->get_sell_price(), price( ASSET( "3.000 TBD" ), ASSET( "2.000 TESTS" ) ) );
     BOOST_REQUIRE( limit_order->get_market() == std::make_pair( HBD_SYMBOL, HIVE_SYMBOL ) );
     BOOST_REQUIRE( limit_order_idx.find( boost::make_tuple( "alice", 1 ) ) == limit_order_idx.end() );
     BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).get_hive_balance(), HIVE_asset( 990'000 ) );
@@ -4389,10 +4389,10 @@ BOOST_AUTO_TEST_CASE( limit_order_create2_apply )
     limit_order = limit_order_idx.find( boost::make_tuple( "bob", 4 ) );
     BOOST_REQUIRE( limit_order != limit_order_idx.end() );
     BOOST_REQUIRE( limit_order_idx.find(boost::make_tuple( "alice", 4 ) ) == limit_order_idx.end() );
-    BOOST_REQUIRE_EQUAL( limit_order->seller, "bob" );
-    BOOST_REQUIRE_EQUAL( limit_order->orderid, 4 );
-    BOOST_REQUIRE_EQUAL( limit_order->for_sale, ASSET( "1.000 TBD" ) );
-    BOOST_REQUIRE_EQUAL( limit_order->sell_price, op.exchange_rate );
+    BOOST_REQUIRE_EQUAL( limit_order->get_seller(), "bob" );
+    BOOST_REQUIRE_EQUAL( limit_order->get_orderid(), 4 );
+    BOOST_REQUIRE_EQUAL( limit_order->amount_for_sale(), ASSET( "1.000 TBD" ) );
+    BOOST_REQUIRE_EQUAL( limit_order->get_sell_price(), op.exchange_rate );
     BOOST_REQUIRE( limit_order->get_market() == std::make_pair( HBD_SYMBOL, HIVE_SYMBOL ) );
     BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).get_hive_balance(), HIVE_asset( 975'000 ) );
     BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).get_hbd_balance(), HBD_asset( 33'500 ) );
@@ -4432,10 +4432,10 @@ BOOST_AUTO_TEST_CASE( limit_order_create2_apply )
     limit_order = limit_order_idx.find( boost::make_tuple( "alice", 5 ) );
     BOOST_REQUIRE( limit_order != limit_order_idx.end() );
     BOOST_REQUIRE( limit_order_idx.find(boost::make_tuple( "bob", 5 ) ) == limit_order_idx.end() );
-    BOOST_REQUIRE_EQUAL( limit_order->seller, "alice" );
-    BOOST_REQUIRE_EQUAL( limit_order->orderid, 5 );
-    BOOST_REQUIRE_EQUAL( limit_order->for_sale, ASSET( "9.091 TESTS" ) );
-    BOOST_REQUIRE_EQUAL( limit_order->sell_price, price( ASSET( "1.000 TESTS" ), ASSET( "1.100 TBD" ) ) );
+    BOOST_REQUIRE_EQUAL( limit_order->get_seller(), "alice" );
+    BOOST_REQUIRE_EQUAL( limit_order->get_orderid(), 5 );
+    BOOST_REQUIRE_EQUAL( limit_order->amount_for_sale(), ASSET( "9.091 TESTS" ) );
+    BOOST_REQUIRE_EQUAL( limit_order->get_sell_price(), price( ASSET( "1.000 TESTS" ), ASSET( "1.100 TBD" ) ) );
     BOOST_REQUIRE( limit_order->get_market() == std::make_pair( HBD_SYMBOL, HIVE_SYMBOL ) );
     BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).get_hive_balance(), HIVE_asset( 955'000 ) );
     BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).get_hbd_balance(), HBD_asset( 45'500 ) );
@@ -4499,16 +4499,16 @@ BOOST_AUTO_TEST_CASE( limit_order_create2_apply )
     BOOST_REQUIRE_EQUAL( fill_order_op.current_pays, ASSET( "15.000 TBD" ) );
 
     limit_order = limit_order_idx.find( boost::make_tuple( "bob", 6 ) );
-    BOOST_REQUIRE_EQUAL( limit_order->seller, "bob" );
-    BOOST_REQUIRE_EQUAL( limit_order->orderid, 6 );
-    BOOST_REQUIRE_EQUAL( limit_order->for_sale, ASSET( "5.000 TESTS" ) );
-    BOOST_REQUIRE_EQUAL( limit_order->sell_price, price( ASSET( "1.000 TESTS" ), ASSET( "1.000 TBD" ) ) );
+    BOOST_REQUIRE_EQUAL( limit_order->get_seller(), "bob" );
+    BOOST_REQUIRE_EQUAL( limit_order->get_orderid(), 6 );
+    BOOST_REQUIRE_EQUAL( limit_order->amount_for_sale(), ASSET( "5.000 TESTS" ) );
+    BOOST_REQUIRE_EQUAL( limit_order->get_sell_price(), price( ASSET( "1.000 TESTS" ), ASSET( "1.000 TBD" ) ) );
 
     limit_order = limit_order_idx.find( boost::make_tuple( "alice", 6 ) );
-    BOOST_REQUIRE_EQUAL( limit_order->seller, "alice" );
-    BOOST_REQUIRE_EQUAL( limit_order->orderid, 6 );
-    BOOST_REQUIRE_EQUAL( limit_order->for_sale, ASSET( "20.000 TESTS" ) );
-    BOOST_REQUIRE_EQUAL( limit_order->sell_price, price( ASSET( "1.000 TESTS" ), ASSET( "2.000 TBD" ) ) );
+    BOOST_REQUIRE_EQUAL( limit_order->get_seller(), "alice" );
+    BOOST_REQUIRE_EQUAL( limit_order->get_orderid(), 6 );
+    BOOST_REQUIRE_EQUAL( limit_order->amount_for_sale(), ASSET( "20.000 TESTS" ) );
+    BOOST_REQUIRE_EQUAL( limit_order->get_sell_price(), price( ASSET( "1.000 TESTS" ), ASSET( "2.000 TBD" ) ) );
     validate_database();
   }
   FC_LOG_AND_RETHROW()
