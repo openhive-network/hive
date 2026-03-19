@@ -676,7 +676,7 @@ DEFINE_API_IMPL( database_api_impl, find_limit_orders )
   const auto& order_idx = _db.get_index< chain::limit_order_index, chain::by_account >();
   auto itr = order_idx.lower_bound( args.account );
 
-  while( itr != order_idx.end() && itr->seller == args.account && result.orders.size() <= DATABASE_API_SINGLE_QUERY_LIMIT )
+  while( itr != order_idx.end() && itr->get_seller() == args.account && result.orders.size() <= DATABASE_API_SINGLE_QUERY_LIMIT )
   {
     result.orders.emplace_back( *itr, _db );
     ++itr;
@@ -701,29 +701,29 @@ DEFINE_API_IMPL( database_api_impl, get_order_book )
   auto buy_itr  = limit_price_idx.lower_bound( max_buy );
   auto end = limit_price_idx.end();
 
-  while( sell_itr != end && sell_itr->sell_price.base.symbol == HBD_SYMBOL && result.bids.size() < args.limit )
+  while( sell_itr != end && sell_itr->get_sell_price().base.symbol == HBD_SYMBOL && result.bids.size() < args.limit )
   {
     auto itr = sell_itr;
     order cur;
-    cur.order_price = itr->sell_price;
+    cur.order_price = itr->get_sell_price();
     cur.real_price  = 0.0;
     // cur.real_price  = (cur.order_price).to_real();
-    cur.hbd = itr->for_sale.amount;
-    cur.hive = ( itr->for_sale * cur.order_price ).amount;
-    cur.created = itr->created;
+    cur.hbd = itr->amount_for_sale().amount;
+    cur.hive = ( itr->amount_for_sale() * cur.order_price ).amount;
+    cur.created = itr->get_created();
     result.bids.emplace_back( std::move( cur ) );
     ++sell_itr;
   }
-  while( buy_itr != end && buy_itr->sell_price.base.symbol == HIVE_SYMBOL && result.asks.size() < args.limit )
+  while( buy_itr != end && buy_itr->get_sell_price().base.symbol == HIVE_SYMBOL && result.asks.size() < args.limit )
   {
     auto itr = buy_itr;
     order cur;
-    cur.order_price = itr->sell_price;
+    cur.order_price = itr->get_sell_price();
     cur.real_price = 0.0;
     // cur.real_price  = (~cur.order_price).to_real();
-    cur.hive    = itr->for_sale.amount;
-    cur.hbd     = ( itr->for_sale * cur.order_price ).amount;
-    cur.created = itr->created;
+    cur.hive    = itr->amount_for_sale().amount;
+    cur.hbd     = ( itr->amount_for_sale() * cur.order_price ).amount;
+    cur.created = itr->get_created();
     result.asks.emplace_back( std::move( cur ) );
     ++buy_itr;
   }

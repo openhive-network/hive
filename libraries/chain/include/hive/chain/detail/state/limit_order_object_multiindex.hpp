@@ -13,21 +13,21 @@ namespace hive { namespace chain {
         const_mem_fun< limit_order_object, limit_order_object::id_type, &limit_order_object::get_id > >,
       ordered_unique< tag< by_expiration >,
         composite_key< limit_order_object,
-          member< limit_order_object, time_point_sec, &limit_order_object::expiration >,
+          const_mem_fun< limit_order_object, time_point_sec, &limit_order_object::get_expiration >,
           const_mem_fun< limit_order_object, limit_order_object::id_type, &limit_order_object::get_id >
         >
       >,
       ordered_unique< tag< by_price >,
         composite_key< limit_order_object,
-          member< limit_order_object, price, &limit_order_object::sell_price >,
+          const_mem_fun< limit_order_object, const price&, &limit_order_object::get_sell_price >,
           const_mem_fun< limit_order_object, limit_order_object::id_type, &limit_order_object::get_id >
         >,
         composite_key_compare< std::greater< price >, std::less< limit_order_id_type > >
       >,
       ordered_unique< tag< by_account >,
         composite_key< limit_order_object,
-          member< limit_order_object, account_name_type, &limit_order_object::seller >,
-          member< limit_order_object, uint32_t, &limit_order_object::orderid >
+          const_mem_fun< limit_order_object, const account_name_type&, &limit_order_object::get_seller >,
+          const_mem_fun< limit_order_object, uint32_t, &limit_order_object::get_orderid >
         >
       >
     >,

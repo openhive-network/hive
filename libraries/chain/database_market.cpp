@@ -230,7 +230,7 @@ bool database::apply_order( const limit_order_object& new_order_object )
 
   const auto& limit_price_idx = get_index<limit_order_index>().indices().get<by_price>();
 
-  auto max_price = ~new_order_object.sell_price;
+  auto max_price = ~new_order_object.get_sell_price();
   auto limit_itr = limit_price_idx.lower_bound(max_price.max());
   auto limit_end = limit_price_idx.upper_bound(max_price);
 
@@ -240,7 +240,7 @@ bool database::apply_order( const limit_order_object& new_order_object )
     auto old_limit_itr = limit_itr;
     ++limit_itr;
     // match returns 2 when only the old order was fully filled. In this case, we keep matching; otherwise, we stop.
-    finished = ( match(new_order_object, *old_limit_itr, old_limit_itr->sell_price) & 0x1 );
+    finished = ( match(new_order_object, *old_limit_itr, old_limit_itr->get_sell_price()) & 0x1 );
   }
 
   return find< limit_order_object >( order_id ) == nullptr;
@@ -248,19 +248,19 @@ bool database::apply_order( const limit_order_object& new_order_object )
 
 int database::match( const limit_order_object& new_order, const limit_order_object& old_order, const price& match_price )
 {
-  HIVE_ASSERT( new_order.sell_price.quote.symbol == old_order.sell_price.base.symbol,
+  HIVE_ASSERT( new_order.get_sell_price().quote.symbol == old_order.get_sell_price().base.symbol,
     order_match_exception, "error matching orders: ${new_order} ${old_order} ${match_price}",
     ("new_order", new_order)("old_order", old_order)("match_price", match_price) );
-  HIVE_ASSERT( new_order.sell_price.base.symbol  == old_order.sell_price.quote.symbol,
+  HIVE_ASSERT( new_order.get_sell_price().base.symbol  == old_order.get_sell_price().quote.symbol,
     order_match_exception, "error matching orders: ${new_order} ${old_order} ${match_price}",
     ("new_order", new_order)("old_order", old_order)("match_price", match_price) );
-  HIVE_ASSERT( new_order.for_sale.amount > 0 && old_order.for_sale.amount > 0,
+  HIVE_ASSERT( new_order.amount_for_sale().amount > 0 && old_order.amount_for_sale().amount > 0,
     order_match_exception, "error matching orders: ${new_order} ${old_order} ${match_price}",
     ("new_order", new_order)("old_order", old_order)("match_price", match_price) );
-  HIVE_ASSERT( match_price.quote.symbol == new_order.sell_price.base.symbol,
+  HIVE_ASSERT( match_price.quote.symbol == new_order.get_sell_price().base.symbol,
     order_match_exception, "error matching orders: ${new_order} ${old_order} ${match_price}",
     ("new_order", new_order)("old_order", old_order)("match_price", match_price) );
-  HIVE_ASSERT( match_price.base.symbol == old_order.sell_price.base.symbol,
+  HIVE_ASSERT( match_price.base.symbol == old_order.get_sell_price().base.symbol,
     order_match_exception, "error matching orders: ${new_order} ${old_order} ${match_price}",
     ("new_order", new_order)("old_order", old_order)("match_price", match_price) );
 
@@ -292,24 +292,24 @@ int database::match( const limit_order_object& new_order, const limit_order_obje
     order_match_exception, "error matching orders: ${new_order} ${old_order} ${match_price}",
     ("new_order", new_order)("old_order", old_order)("match_price", match_price) );
 
-  auto age = head_block_time() - old_order.created;
+  auto age = head_block_time() - old_order.get_created();
   if( !has_hardfork( HIVE_HARDFORK_0_12__178 ) &&
       ( (age >= HIVE_MIN_LIQUIDITY_REWARD_PERIOD_SEC && !has_hardfork( HIVE_HARDFORK_0_10__149)) ||
       (age >= HIVE_MIN_LIQUIDITY_REWARD_PERIOD_SEC_HF10 && has_hardfork( HIVE_HARDFORK_0_10__149) ) ) )
   {
     if( old_order_receives.symbol == HIVE_SYMBOL )
     {
-      adjust_liquidity_reward( get_account( old_order.seller ), old_order_receives, false );
-      adjust_liquidity_reward( get_account( new_order.seller ), -old_order_receives, false );
+      adjust_liquidity_reward( get_account( old_order.get_seller() ), old_order_receives, false );
+      adjust_liquidity_reward( get_account( new_order.get_seller() ), -old_order_receives, false );
     }
     else
     {
-      adjust_liquidity_reward( get_account( old_order.seller ), new_order_receives, true );
-      adjust_liquidity_reward( get_account( new_order.seller ), -new_order_receives, true );
+      adjust_liquidity_reward( get_account( old_order.get_seller() ), new_order_receives, true );
+      adjust_liquidity_reward( get_account( new_order.get_seller() ), -new_order_receives, true );
     }
   }
 
-  push_virtual_operation( *this, fill_order_operation( new_order.seller, new_order.orderid, new_order_pays, old_order.seller, old_order.orderid, old_order_pays ) );
+  push_virtual_operation( *this, fill_order_operation( new_order.get_seller(), new_order.get_orderid(), new_order_pays, old_order.get_seller(), old_order.get_orderid(), old_order_pays ) );
 
   int result = 0;
   result |= fill_order( new_order, new_order_pays, new_order_receives );
@@ -332,7 +332,7 @@ bool database::fill_order( const limit_order_object& order, const asset& pays, c
       order_fill_exception, "error filling orders: ${order} ${pays} ${receives}",
       ("order", order)("pays", pays)("receives", receives) );
 
-    adjust_balance( order.seller, receives );
+    adjust_balance( order.get_seller(), receives );
 
     if( pays == order.amount_for_sale() )
     {
@@ -347,7 +347,7 @@ bool database::fill_order( const limit_order_object& order, const asset& pays, c
 
       modify( order, [&]( limit_order_object& b )
       {
-        b.for_sale -= pays;
+        b.access_amount_for_sale() -= pays;
       } );
       /**
         *  There are times when the AMOUNT_FOR_SALE * SALE_PRICE == 0 which means that we
@@ -370,9 +370,9 @@ void database::cancel_order( const limit_order_object& order, bool suppress_vop 
 {
   auto amount_back = order.amount_for_sale();
 
-  adjust_balance( order.seller, amount_back );
+  adjust_balance( order.get_seller(), amount_back );
   if( !suppress_vop )
-    push_virtual_operation( *this, limit_order_cancelled_operation(order.seller, order.orderid, amount_back));
+    push_virtual_operation( *this, limit_order_cancelled_operation(order.get_seller(), order.get_orderid(), amount_back));
 
   remove(order);
 }
@@ -382,7 +382,7 @@ void database::clear_expired_orders()
   auto now = head_block_time();
   const auto& orders_by_exp = get_index<limit_order_index>().indices().get<by_expiration>();
   auto itr = orders_by_exp.begin();
-  while( itr != orders_by_exp.end() && itr->expiration < now )
+  while( itr != orders_by_exp.end() && itr->get_expiration() < now )
   {
     cancel_order( *itr );
     itr = orders_by_exp.begin();
@@ -395,13 +395,13 @@ void database::get_limit_order_totals( HIVE_asset& total_hive, HBD_asset& total_
 
   for( auto itr = limit_order_idx.begin(); itr != limit_order_idx.end(); ++itr )
   {
-    if( itr->for_sale.symbol == HIVE_SYMBOL )
+    if( itr->amount_for_sale().symbol == HIVE_SYMBOL )
     {
-      total_hive += HIVE_asset( itr->for_sale );
+      total_hive += HIVE_asset( itr->amount_for_sale() );
     }
-    else if ( itr->for_sale.symbol == HBD_SYMBOL )
+    else if ( itr->amount_for_sale().symbol == HBD_SYMBOL )
     {
-      total_hbd += HBD_asset( itr->for_sale );
+      total_hbd += HBD_asset( itr->amount_for_sale() );
     }
     ++order_count;
   }
@@ -411,7 +411,7 @@ void database::remove_pending_limit_orders( const account_object& account, const
 {
   const auto& order_idx = get_index< limit_order_index, by_account >();
   auto order_itr = order_idx.lower_bound( account_name );
-  while( order_itr != order_idx.end() && order_itr->seller == account_name )
+  while( order_itr != order_idx.end() && order_itr->get_seller() == account_name )
   {
     auto& order = *order_itr;
     ++order_itr;

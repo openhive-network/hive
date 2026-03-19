@@ -97,28 +97,28 @@ DEFINE_API_IMPL( market_history_api_impl, get_order_book )
 
   get_order_book_return result;
 
-  while( itr != order_idx.end() && itr->sell_price.base.symbol == HBD_SYMBOL && result.bids.size() < args.limit )
+  while( itr != order_idx.end() && itr->get_sell_price().base.symbol == HBD_SYMBOL && result.bids.size() < args.limit )
   {
     order cur;
-    cur.order_price = itr->sell_price;
-    cur.real_price = ASSET_TO_REAL( itr->sell_price.base ) / ASSET_TO_REAL( itr->sell_price.quote );
-    cur.hive = ( itr->for_sale * itr->sell_price ).amount;
-    cur.hbd = itr->for_sale.amount;
-    cur.created = itr->created;
+    cur.order_price = itr->get_sell_price();
+    cur.real_price = ASSET_TO_REAL( itr->get_sell_price().base ) / ASSET_TO_REAL( itr->get_sell_price().quote );
+    cur.hive = ( itr->amount_for_sale() * itr->get_sell_price() ).amount;
+    cur.hbd = itr->amount_for_sale().amount;
+    cur.created = itr->get_created();
     result.bids.push_back( cur );
     ++itr;
   }
 
   itr = order_idx.lower_bound( price::max( HIVE_SYMBOL, HBD_SYMBOL ) );
 
-  while( itr != order_idx.end() && itr->sell_price.base.symbol == HIVE_SYMBOL && result.asks.size() < args.limit )
+  while( itr != order_idx.end() && itr->get_sell_price().base.symbol == HIVE_SYMBOL && result.asks.size() < args.limit )
   {
     order cur;
-    cur.order_price = itr->sell_price;
-    cur.real_price = ASSET_TO_REAL( itr->sell_price.quote ) / ASSET_TO_REAL( itr->sell_price.base );
-    cur.hive = itr->for_sale.amount;
-    cur.hbd = ( itr->for_sale * itr->sell_price ).amount;
-    cur.created = itr->created;
+    cur.order_price = itr->get_sell_price();
+    cur.real_price = ASSET_TO_REAL( itr->get_sell_price().quote ) / ASSET_TO_REAL( itr->get_sell_price().base );
+    cur.hive = itr->amount_for_sale().amount;
+    cur.hbd = ( itr->amount_for_sale() * itr->get_sell_price() ).amount;
+    cur.created = itr->get_created();
     result.asks.push_back( cur );
     ++itr;
   }

@@ -733,14 +733,14 @@ namespace detail
     const auto& idx = _db.get_index< limit_order_index, by_account >();
     auto itr = idx.lower_bound( owner );
 
-    while( itr != idx.end() && itr->seller == owner )
+    while( itr != idx.end() && itr->get_seller() == owner )
     {
       result.push_back( *itr );
 
-      if( itr->sell_price.base.symbol == HIVE_SYMBOL )
-        result.back().real_price = ASSET_TO_REAL( itr->sell_price.quote ) / ASSET_TO_REAL( itr->sell_price.base );
+      if( itr->get_sell_price().base.symbol == HIVE_SYMBOL )
+        result.back().real_price = ASSET_TO_REAL( itr->get_sell_price().quote ) / ASSET_TO_REAL( itr->get_sell_price().base );
       else
-        result.back().real_price =  ASSET_TO_REAL( itr->sell_price.base ) / ASSET_TO_REAL( itr->sell_price.quote );
+        result.back().real_price =  ASSET_TO_REAL( itr->get_sell_price().base ) / ASSET_TO_REAL( itr->get_sell_price().quote );
       ++itr;
     }
 

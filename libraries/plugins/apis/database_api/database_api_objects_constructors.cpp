@@ -129,12 +129,12 @@ api_decline_voting_rights_request_object::api_decline_voting_rights_request_obje
 // api_limit_order_object constructors
 api_limit_order_object::api_limit_order_object( const limit_order_object& o, const database& db ):
   id( o.get_id() ),
-  created( o.created ),
-  expiration( o.expiration ),
-  seller( o.seller ),
-  orderid( o.orderid ),
-  for_sale( o.for_sale.amount ),
-  sell_price( o.sell_price )
+  created( o.get_created() ),
+  expiration( o.get_expiration() ),
+  seller( o.get_seller() ),
+  orderid( o.get_orderid() ),
+  for_sale( o.amount_for_sale().amount ),
+  sell_price( o.get_sell_price() )
 {}
 
 
