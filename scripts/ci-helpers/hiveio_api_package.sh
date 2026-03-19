@@ -3,10 +3,10 @@
 # hiveio_api_package.sh - Build, test, and deploy the hiveio-api Python package
 #
 # This script handles the full package lifecycle:
-#   1. Generates the hiveio_api package from API definitions
+#   1. Determines package version from git state (no generation needed)
 #   2. Checks if the package version already exists in GitLab PyPI registry
-#   3. If exists: downloads the wheel (skips build/test/deploy)
-#   4. If not: builds the wheel, runs tests, and deploys to registry
+#   3. If exists: creates env file and exits (skips generation/build entirely)
+#   4. If not: generates package, builds wheel, runs tests, and deploys to registry
 #
 # The output artifacts are identical regardless of build or download path.
 #
@@ -425,28 +425,29 @@ main() {
     log_info "HIVE_PROJECT_ROOT: ${HIVE_PROJECT_ROOT}"
     log_info "API_GENERATION_DIR: ${API_GENERATION_DIR}"
 
-    # Step 1: Generate package (required to determine version)
-    generate_package
-
-    # Step 2: Get version
+    # Step 1: Get version (before generation — only needs git state + pyproject.toml)
     local version
     version=$(get_package_version)
     log_info "Package version: ${version}"
 
-    # Step 3: Try to use existing package, otherwise build
-    local package_was_downloaded="false"
-
+    # Step 2: Try to use existing package from registry (skip generation entirely)
     if try_download_existing_package "${version}"; then
-        package_was_downloaded="true"
-    else
-        build_test_and_deploy
+        create_build_env_file "${version}" "true"
+        log_success "=========================================="
+        log_success "hiveio-api package build completed (from registry)"
+        log_success "=========================================="
+        return
     fi
 
-    # Step 4: Create env file (always, for artifact consistency)
-    create_build_env_file "${version}" "${package_was_downloaded}"
+    # Step 3: Package not in registry — generate, build, test, deploy
+    generate_package
+    build_test_and_deploy
+
+    # Step 4: Create env file
+    create_build_env_file "${version}" "false"
 
     log_success "=========================================="
-    log_success "hiveio-api package build completed"
+    log_success "hiveio-api package build completed (built locally)"
     log_success "=========================================="
 }
 
