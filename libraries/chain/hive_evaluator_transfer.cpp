@@ -607,7 +607,7 @@ void transfer_from_savings_evaluator::do_apply( const transfer_from_savings_oper
 void cancel_transfer_from_savings_evaluator::do_apply( const cancel_transfer_from_savings_operation& op )
 {
   const auto& swo = _db.get_savings_withdraw( op.from, op.request_id );
-  _db.adjust_savings_balance( _db.get_account( swo.from ), swo.amount );
+  _db.adjust_savings_balance( _db.get_account( swo.get_from() ), swo.get_withdraw_amount() );
   _db.remove( swo );
 
   const auto& from = _db.get_account( op.from );

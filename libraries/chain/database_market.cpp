@@ -142,16 +142,16 @@ void database::process_savings_withdraws()
     _benchmark_dumper.begin();
   while( itr != idx.end() )
   {
-    if( itr->complete > head_block_time() )
+    if( itr->get_completion_time() > head_block_time() )
       break;
-    adjust_balance( get_account( itr->to ), itr->amount );
+    adjust_balance( get_account( itr->get_to() ), itr->get_withdraw_amount() );
 
-    modify( get_account( itr->from ), [&]( account_object& a )
+    modify( get_account( itr->get_from() ), [&]( account_object& a )
     {
       a.savings_withdraw_requests--;
-    });
+    } );
 
-    push_virtual_operation( *this, fill_transfer_from_savings_operation( itr->from, itr->to, itr->amount, itr->request_id, to_string( itr->memo) ) );
+    push_virtual_operation( *this, fill_transfer_from_savings_operation( itr->get_from(), itr->get_to(), itr->get_withdraw_amount(), itr->get_request_id(), to_string( itr->get_memo() ) ) );
 
     remove( *itr );
     itr = idx.begin();
@@ -166,12 +166,12 @@ void database::remove_pending_savings_withdraws( const account_object& account, 
   // Remove ongoing saving withdrawals (return/pass balance to account)
   const auto& withdraw_from_idx = get_index< savings_withdraw_index, by_from_rid >();
   auto withdraw_from_itr = withdraw_from_idx.lower_bound( account_name );
-  while( withdraw_from_itr != withdraw_from_idx.end() && withdraw_from_itr->from == account_name )
+  while( withdraw_from_itr != withdraw_from_idx.end() && withdraw_from_itr->get_from() == account_name )
   {
     auto& withdrawal = *withdraw_from_itr;
     ++withdraw_from_itr;
 
-    adjust_balance( account, withdrawal.amount );
+    adjust_balance( account, withdrawal.get_withdraw_amount() );
     modify( account, []( account_object& a )
     {
       a.savings_withdraw_requests--;
@@ -182,13 +182,13 @@ void database::remove_pending_savings_withdraws( const account_object& account, 
 
   const auto& withdraw_to_idx = get_index< savings_withdraw_index, by_to_complete >();
   auto withdraw_to_itr = withdraw_to_idx.lower_bound( account_name );
-  while( withdraw_to_itr != withdraw_to_idx.end() && withdraw_to_itr->to == account_name )
+  while( withdraw_to_itr != withdraw_to_idx.end() && withdraw_to_itr->get_to() == account_name )
   {
     auto& withdrawal = *withdraw_to_itr;
     ++withdraw_to_itr;
 
-    adjust_balance( account, withdrawal.amount );
-    modify( get_account( withdrawal.from ), []( account_object& a )
+    adjust_balance( account, withdrawal.get_withdraw_amount() );
+    modify( get_account( withdrawal.get_from() ), []( account_object& a )
     {
       a.savings_withdraw_requests--;
     } );
@@ -203,12 +203,12 @@ void database::get_savings_withdraw_totals( HIVE_asset& total_hive, HBD_asset& t
 
   for( auto itr = savings_withdraw_idx.begin(); itr != savings_withdraw_idx.end(); ++itr )
   {
-    if( itr->amount.symbol == HIVE_SYMBOL )
-      total_hive += HIVE_asset( itr->amount );
+    if( itr->get_withdraw_amount().symbol == HIVE_SYMBOL )
+      total_hive += HIVE_asset( itr->get_withdraw_amount() );
     else
     {
-      FC_ASSERT( itr->amount.symbol == HBD_SYMBOL, "found savings withdraw that is not HBD or HIVE" );
-      total_hbd += HBD_asset( itr->amount );
+      FC_ASSERT( itr->get_withdraw_amount().symbol == HBD_SYMBOL, "found savings withdraw that is not HBD or HIVE" );
+      total_hbd += HBD_asset( itr->get_withdraw_amount() );
     }
     ++withdrawal_count;
   }

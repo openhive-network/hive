@@ -542,7 +542,7 @@ namespace detail
 
     const auto& to_complete_idx = _db.get_index< savings_withdraw_index, by_to_complete >();
     auto itr = to_complete_idx.lower_bound( account );
-    while( itr != to_complete_idx.end() && itr->to == account )
+    while( itr != to_complete_idx.end() && itr->get_to() == account )
     {
       result.emplace_back( database_api::api_savings_withdraw_object( *itr, _db ) );
       ++itr;
