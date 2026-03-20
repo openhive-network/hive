@@ -61,7 +61,7 @@ namespace hive { namespace chain {
       key_auths( key_pair_allocator_type( alloc ) )
     {}
 
-    operator authority()const;
+    authority to_authority()const;
 
     shared_authority& operator=( const authority& a );
 

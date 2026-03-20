@@ -2,7 +2,7 @@
 
 namespace hive { namespace chain {
 
-shared_authority::operator authority()const
+authority shared_authority::to_authority()const
 {
   authority result;
 
@@ -82,12 +82,12 @@ bool operator == ( const shared_authority& a, const shared_authority& b )
 
 bool operator == ( const authority& a, const shared_authority& b )
 {
-  return a == authority( b );
+  return a == b.to_authority();
 }
 
 bool operator == ( const shared_authority& a, const authority& b )
 {
-  return authority( a ) == b;
+  return a.to_authority() == b;
 }
 
 } } // hive::chain

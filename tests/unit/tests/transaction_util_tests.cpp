@@ -79,7 +79,7 @@ public:
     {
       const auto* authorities = db.find< account_authority_object, by_account >( name );
       FC_ASSERT( authorities != nullptr, "Account ${name} not found", ( name ) );
-      approving_account_lut.emplace( name, account_authorities{ authorities->get_active(), authorities->get_owner(), authorities->get_posting() } );
+      approving_account_lut.emplace( name, account_authorities{ authorities->get_active().to_authority(), authorities->get_owner().to_authority(), authorities->get_posting().to_authority() } );
     }
   }
 

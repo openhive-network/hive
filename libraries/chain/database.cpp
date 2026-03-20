@@ -2578,9 +2578,9 @@ void database::validate_transaction(const std::shared_ptr<full_transaction_type>
 
   if (!(skip & (skip_transaction_signatures | skip_authority_check)))
   {
-    auto get_active  =    [&]( const string& name ) { return authority( get< account_authority_object, by_account >( name ).get_active() ); };
-    auto get_owner   =    [&]( const string& name ) { return authority( get< account_authority_object, by_account >( name ).get_owner() );  };
-    auto get_posting =    [&]( const string& name ) { return authority( get< account_authority_object, by_account >( name ).get_posting() );  };
+    auto get_active  =    [&]( const string& name ) { return get< account_authority_object, by_account >( name ).get_active().to_authority(); };
+    auto get_owner   =    [&]( const string& name ) { return get< account_authority_object, by_account >( name ).get_owner().to_authority();  };
+    auto get_posting =    [&]( const string& name ) { return get< account_authority_object, by_account >( name ).get_posting().to_authority();  };
     auto get_witness_key = [&]( const string& name ) { try { return get_witness( name ).signing_key; } FC_CAPTURE_AND_RETHROW((name)) };
 
     try
