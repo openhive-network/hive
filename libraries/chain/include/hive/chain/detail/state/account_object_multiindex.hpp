@@ -54,8 +54,8 @@ namespace hive { namespace chain {
         const_mem_fun< owner_authority_history_object, owner_authority_history_object::id_type, &owner_authority_history_object::get_id > >,
       ordered_unique< tag< by_account >,
         composite_key< owner_authority_history_object,
-          member< owner_authority_history_object, account_name_type, &owner_authority_history_object::account >,
-          member< owner_authority_history_object, time_point_sec, &owner_authority_history_object::last_valid_time >,
+          const_mem_fun< owner_authority_history_object, const account_name_type&, &owner_authority_history_object::get_account >,
+          const_mem_fun< owner_authority_history_object, time_point_sec, &owner_authority_history_object::get_last_valid_time >,
           const_mem_fun< owner_authority_history_object, owner_authority_history_object::id_type, &owner_authority_history_object::get_id >
         >,
         composite_key_compare< std::less< account_name_type >, std::less< time_point_sec >, std::less< owner_authority_history_id_type > >

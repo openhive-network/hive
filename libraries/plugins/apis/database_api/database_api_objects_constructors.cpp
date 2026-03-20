@@ -278,9 +278,9 @@ api_account_object::api_account_object( const account_object& a, const database&
 // api_owner_authority_history_object constructors
 api_owner_authority_history_object::api_owner_authority_history_object( const owner_authority_history_object& o, const database& db ) :
   id( o.get_id() ),
-  account( o.account ),
-  previous_owner_authority( authority( o.previous_owner_authority ) ),
-  last_valid_time( o.last_valid_time )
+  account( o.get_account() ),
+  previous_owner_authority( authority( o.get_previous_owner_authority() ) ),
+  last_valid_time( o.get_last_valid_time() )
 {}
 
 

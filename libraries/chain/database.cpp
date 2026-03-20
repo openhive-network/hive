@@ -1971,7 +1971,7 @@ void database::account_recovery_processing()
   const auto& hist_idx = get_index< owner_authority_history_index >().indices(); //by id
   auto hist = hist_idx.begin();
 
-  while( hist != hist_idx.end() && time_point_sec( hist->last_valid_time + HIVE_OWNER_AUTH_RECOVERY_PERIOD ) < head_block_time() )
+  while( hist != hist_idx.end() && time_point_sec( hist->get_last_valid_time() + HIVE_OWNER_AUTH_RECOVERY_PERIOD ) < head_block_time() )
   {
     remove( *hist );
     hist = hist_idx.begin();
