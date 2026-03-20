@@ -3026,7 +3026,7 @@ BOOST_AUTO_TEST_CASE( custom_binary_authorities )
   op.required_owner_auths.insert( "alice" );
   op.required_active_auths.insert( "bob" );
   op.required_posting_auths.insert( "sam" );
-  op.required_auths.push_back( db->get< account_authority_object, by_account >( "alice" ).get_posting() );
+  op.required_auths.push_back( db->get< account_authority_object, by_account >( "alice" ).get_posting().to_authority() );
 
   flat_set< account_name_type > acc_auths;
   flat_set< account_name_type > acc_expected;
@@ -3049,7 +3049,7 @@ BOOST_AUTO_TEST_CASE( custom_binary_authorities )
   op.get_required_posting_authorities( acc_auths );
   BOOST_REQUIRE( acc_auths == acc_expected );
 
-  expected.push_back( db->get< account_authority_object, by_account >( "alice" ).get_posting() );
+  expected.push_back( db->get< account_authority_object, by_account >( "alice" ).get_posting().to_authority() );
   op.get_required_authorities( auths );
   BOOST_REQUIRE( auths == expected );
 }
@@ -9164,10 +9164,10 @@ BOOST_AUTO_TEST_CASE( account_auth_tests )
     {
       db.modify( db.get< account_authority_object, by_account >( "alice"), [&]( account_authority_object& auth )
       {
-        authority new_active( auth.get_active() );
+        authority new_active = auth.get_active().to_authority();
         new_active.add_authority( "bob", 1 );
         auth.set_active( new_active );
-        authority new_posting( auth.get_posting() );
+        authority new_posting = auth.get_posting().to_authority();
         new_posting.add_authority( "charlie", 1 );
         auth.set_posting( new_posting );
       } );
