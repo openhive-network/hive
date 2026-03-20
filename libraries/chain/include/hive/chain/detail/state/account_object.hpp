@@ -465,8 +465,7 @@ public:
   template< typename Allocator >
   owner_authority_history_object( allocator< Allocator > a, uint64_t _id,
     const account_object& _account, const shared_authority& _previous_owner, const time_point_sec& _creation_time )
-    : id( _id ), account( _account.get_name() ), previous_owner_authority( allocator< shared_authority >( a ) ),
-    last_valid_time( _creation_time )
+  : id( _id ), account( _account.get_name() ), previous_owner_authority( a ), last_valid_time( _creation_time )
   {
     previous_owner_authority = _previous_owner;
   }

@@ -36,9 +36,11 @@ namespace hive { namespace chain {
       weight_threshold = a.weight_threshold;
     }
 
-    shared_authority( const shared_authority& cpy ) :
-      weight_threshold( cpy.weight_threshold ),
-      account_auths( cpy.account_auths ), key_auths( cpy.key_auths ) {}
+    shared_authority( const shared_authority& ) = default;
+    shared_authority( shared_authority&& ) = default;
+
+    shared_authority& operator=( const shared_authority& ) = default;
+    shared_authority& operator=( shared_authority&& ) = default;
 
     template< typename Allocator >
     explicit shared_authority( const Allocator& alloc ) :
