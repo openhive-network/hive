@@ -63,12 +63,10 @@
       [[ "${SKIP_WHEEL_DEPLOY}" == "true" ]] && SCRIPT_ARGS+=("--skip-deploy")
       [[ "${SKIP_REGISTRY_CHECK}" == "true" ]] && SCRIPT_ARGS+=("--skip-registry-check")
       "${HIVE_PROJECT_ROOT}/scripts/ci-helpers/hiveio_api_package.sh" "${SCRIPT_ARGS[@]}"
-  # Override after_script from .build_wheel_template — the base template uses PYPROJECT_DIR
-  # (api_generation/) which has static version 0.0.0. Use python_api_package/ instead.
-  after_script:
-    - WHEEL_BUILD_VERSION=$(poetry -C "${API_GENERATION_DIR}/python_api_package" version -s)
-    - echo "WHEEL_BUILD_VERSION is ${WHEEL_BUILD_VERSION}"
-    - echo "WHEEL_BUILD_VERSION=${WHEEL_BUILD_VERSION}" > build_wheel.env
+  # Disable after_script from .build_wheel_template — it would overwrite build_wheel.env
+  # created by hiveio_api_package.sh (the base template uses PYPROJECT_DIR=api_generation/
+  # which has static version 0.0.0, not the dynamic version from python_api_package/).
+  after_script: []
   artifacts:
     expire_in: 1 week
     paths:
