@@ -1560,9 +1560,9 @@ BOOST_AUTO_TEST_CASE( authorization_speed )
   {
     try
     {
-      auto get_active = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).active ); };
-      auto get_owner = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).owner ); };
-      auto get_posting = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).posting ); };
+      auto get_active = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).get_active() ); };
+      auto get_owner = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).get_owner() ); };
+      auto get_posting = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).get_posting() ); };
       auto get_witness_key = [&]( const std::string& name ) { try { return db->get_witness( name ).signing_key; } FC_CAPTURE_AND_RETHROW( ( name ) ) };
 
       required_authorities_type required_authorities;
@@ -1589,9 +1589,9 @@ BOOST_AUTO_TEST_CASE( authorization_speed )
   {
     try
     {
-      auto get_active = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).active ); };
-      auto get_owner = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).owner ); };
-      auto get_posting = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).posting ); };
+      auto get_active = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).get_active() ); };
+      auto get_owner = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).get_owner() ); };
+      auto get_posting = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).get_posting() ); };
       auto get_witness_key = [&]( const std::string& name ) { try { return db->get_witness( name ).signing_key; } FC_CAPTURE_AND_RETHROW( ( name ) ) };
 
       required_authorities_type required_authorities;
@@ -1618,9 +1618,9 @@ BOOST_AUTO_TEST_CASE( authorization_speed )
   {
     try
     {
-      auto get_active = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).active ); };
-      auto get_owner = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).owner ); };
-      auto get_posting = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).posting ); };
+      auto get_active = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).get_active() ); };
+      auto get_owner = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).get_owner() ); };
+      auto get_posting = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).get_posting() ); };
       auto get_witness_key = [&]( const std::string& name ) { try { return db->get_witness( name ).signing_key; } FC_CAPTURE_AND_RETHROW( ( name ) ) };
 
       required_authorities_type required_authorities;
@@ -1645,9 +1645,9 @@ BOOST_AUTO_TEST_CASE( authorization_speed )
   counter = 0;
   for( int i = 0; i < ITERATIONS; ++i )
   {
-    auto get_active = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).active ); };
-    auto get_owner = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).owner ); };
-    auto get_posting = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).posting ); };
+    auto get_active = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).get_active() ); };
+    auto get_owner = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).get_owner() ); };
+    auto get_posting = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).get_posting() ); };
     auto get_witness_key = [&]( const std::string& name ) { try { return db->get_witness( name ).signing_key; } FC_CAPTURE_AND_RETHROW( ( name ) ) };
 
     required_authorities_type required_authorities;
@@ -1670,9 +1670,9 @@ BOOST_AUTO_TEST_CASE( authorization_speed )
   counter = 0;
   for( int i = 0; i < ITERATIONS; ++i )
   {
-    auto get_active = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).active ); };
-    auto get_owner = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).owner ); };
-    auto get_posting = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).posting ); };
+    auto get_active = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).get_active() ); };
+    auto get_owner = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).get_owner() ); };
+    auto get_posting = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).get_posting() ); };
     auto get_witness_key = [&]( const std::string& name ) { try { return db->get_witness( name ).signing_key; } FC_CAPTURE_AND_RETHROW( ( name ) ) };
 
     required_authorities_type required_authorities;
@@ -1695,9 +1695,9 @@ BOOST_AUTO_TEST_CASE( authorization_speed )
   counter = 0;
   for( int i = 0; i < ITERATIONS; ++i )
   {
-    auto get_active = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).active ); };
-    auto get_owner = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).owner ); };
-    auto get_posting = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).posting ); };
+    auto get_active = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).get_active() ); };
+    auto get_owner = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).get_owner() ); };
+    auto get_posting = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).get_posting() ); };
     auto get_witness_key = [&]( const std::string& name ) { try { return db->get_witness( name ).signing_key; } FC_CAPTURE_AND_RETHROW( ( name ) ) };
 
     required_authorities_type required_authorities;
@@ -1798,9 +1798,9 @@ BOOST_AUTO_TEST_CASE( authorization_redirections )
   // alice has her own keys for each role, but she also redirects to bob for posting,
   // carol for active and dan for owner
 
-  auto get_active = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).active ); };
-  auto get_owner = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).owner ); };
-  auto get_posting = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).posting ); };
+  auto get_active = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).get_active() ); };
+  auto get_owner = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).get_owner() ); };
+  auto get_posting = [&]( const std::string& name ) { return authority( db->get< account_authority_object, by_account >( name ).get_posting() ); };
   auto get_witness_key = [&]( const std::string& name ) { try { return db->get_witness( name ).signing_key; } FC_CAPTURE_AND_RETHROW( ( name ) ) };
 
   required_authorities_type required_authorities;
@@ -1815,21 +1815,21 @@ BOOST_AUTO_TEST_CASE( authorization_redirections )
 
   auto check_authorizations = [&]( std::array<bool,12> expected )
   {
-    ilog( "alice_posting_key: ${x}", ( "x", has_authorization( { alice_auth.posting.key_auths.begin()->first }, expected[0] ) ) );
-    ilog( "alice_active_key: ${x}", ( "x", has_authorization( { alice_auth.active.key_auths.begin()->first }, expected[1] ) ) );
-    ilog( "alice_owner_key: ${x}", ( "x", has_authorization( { alice_auth.owner.key_auths.begin()->first }, expected[2] ) ) );
+    ilog( "alice_posting_key: ${x}", ( "x", has_authorization( { alice_auth.get_posting().key_auths.begin()->first }, expected[0] ) ) );
+    ilog( "alice_active_key: ${x}", ( "x", has_authorization( { alice_auth.get_active().key_auths.begin()->first }, expected[1] ) ) );
+    ilog( "alice_owner_key: ${x}", ( "x", has_authorization( { alice_auth.get_owner().key_auths.begin()->first }, expected[2] ) ) );
     ilog( "bob is redirected to from alice posting role" );
-    ilog( "bob_posting_key: ${x}", ( "x", has_authorization( { bob_auth.posting.key_auths.begin()->first }, expected[3] ) ) );
-    ilog( "bob_active_key: ${x}", ( "x", has_authorization( { bob_auth.active.key_auths.begin()->first }, expected[4] ) ) );
-    ilog( "bob_owner_key: ${x}", ( "x", has_authorization( { bob_auth.owner.key_auths.begin()->first }, expected[5] ) ) );
+    ilog( "bob_posting_key: ${x}", ( "x", has_authorization( { bob_auth.get_posting().key_auths.begin()->first }, expected[3] ) ) );
+    ilog( "bob_active_key: ${x}", ( "x", has_authorization( { bob_auth.get_active().key_auths.begin()->first }, expected[4] ) ) );
+    ilog( "bob_owner_key: ${x}", ( "x", has_authorization( { bob_auth.get_owner().key_auths.begin()->first }, expected[5] ) ) );
     ilog( "carol is redirected to from alice active role" );
-    ilog( "carol_posting_key: ${x}", ( "x", has_authorization( { carol_auth.posting.key_auths.begin()->first }, expected[6] ) ) );
-    ilog( "carol_active_key: ${x}", ( "x", has_authorization( { carol_auth.active.key_auths.begin()->first }, expected[7] ) ) );
-    ilog( "carol_owner_key: ${x}", ( "x", has_authorization( { carol_auth.owner.key_auths.begin()->first }, expected[8] ) ) );
+    ilog( "carol_posting_key: ${x}", ( "x", has_authorization( { carol_auth.get_posting().key_auths.begin()->first }, expected[6] ) ) );
+    ilog( "carol_active_key: ${x}", ( "x", has_authorization( { carol_auth.get_active().key_auths.begin()->first }, expected[7] ) ) );
+    ilog( "carol_owner_key: ${x}", ( "x", has_authorization( { carol_auth.get_owner().key_auths.begin()->first }, expected[8] ) ) );
     ilog( "dan is redirected to from alice owner role" );
-    ilog( "dan_posting_key: ${x}", ( "x", has_authorization( { dan_auth.posting.key_auths.begin()->first }, expected[9] ) ) );
-    ilog( "dan_active_key: ${x}", ( "x", has_authorization( { dan_auth.active.key_auths.begin()->first }, expected[10] ) ) );
-    ilog( "dan_owner_key: ${x}", ( "x", has_authorization( { dan_auth.owner.key_auths.begin()->first }, expected[11] ) ) );
+    ilog( "dan_posting_key: ${x}", ( "x", has_authorization( { dan_auth.get_posting().key_auths.begin()->first }, expected[9] ) ) );
+    ilog( "dan_active_key: ${x}", ( "x", has_authorization( { dan_auth.get_active().key_auths.begin()->first }, expected[10] ) ) );
+    ilog( "dan_owner_key: ${x}", ( "x", has_authorization( { dan_auth.get_owner().key_auths.begin()->first }, expected[11] ) ) );
   };
 
   ilog( "" );
@@ -1860,13 +1860,13 @@ BOOST_AUTO_TEST_CASE( authorization_redirections )
   // for active authority
   required_authorities.required_posting.insert( "alice.pay" );
   required_authorities.required_active.insert( "alice.pay" );
-  ilog( "bob_posting_key: ${x}", ( "x", has_authorization( { bob_auth.posting.key_auths.begin()->first }, false ) ) );
+  ilog( "bob_posting_key: ${x}", ( "x", has_authorization( { bob_auth.get_posting().key_auths.begin()->first }, false ) ) );
   // but the mix of posting and active is ok (since HF28) when proper authorization is given
   ilog( "bob_posting_key+carol_active_key: ${x}", ( "x", has_authorization(
-    { bob_auth.posting.key_auths.begin()->first, carol_auth.active.key_auths.begin()->first }, true ) ) );
+    { bob_auth.get_posting().key_auths.begin()->first, carol_auth.get_active().key_auths.begin()->first }, true ) ) );
   // if alice were to sign, she has to provide both posting and active as well
   ilog( "alice_posting_key+alice_active_key: ${x}", ( "x", has_authorization(
-    { alice_auth.posting.key_auths.begin()->first, alice_auth.active.key_auths.begin()->first }, true ) ) );
+    { alice_auth.get_posting().key_auths.begin()->first, alice_auth.get_active().key_auths.begin()->first }, true ) ) );
   required_authorities.required_posting.clear();
   required_authorities.required_active.clear();
 
@@ -1889,13 +1889,13 @@ BOOST_AUTO_TEST_CASE( authorization_redirections )
     transfer.amount = ASSET( "100000.000 TBD" );
     tx.operations.emplace_back( transfer );
     auto signature_set = tx.get_required_signatures( true, false, HIVE_CHAIN_ID,
-      { bob_auth.posting.key_auths.begin()->first, carol_auth.active.key_auths.begin()->first,
-      dan_auth.active.key_auths.begin()->first },
+      { bob_auth.get_posting().key_auths.begin()->first, carol_auth.get_active().key_auths.begin()->first,
+      dan_auth.get_active().key_auths.begin()->first },
       get_active, get_owner, get_posting, get_witness_key,
       HIVE_MAX_SIG_CHECK_DEPTH, HIVE_MAX_AUTHORITY_MEMBERSHIP, HIVE_MAX_SIG_CHECK_ACCOUNTS );
     BOOST_REQUIRE_EQUAL( signature_set.size(), 2 );
-    BOOST_REQUIRE( signature_set.find( bob_auth.posting.key_auths.begin()->first ) != signature_set.end() );
-    BOOST_REQUIRE( signature_set.find( carol_auth.active.key_auths.begin()->first ) != signature_set.end() );
+    BOOST_REQUIRE( signature_set.find( bob_auth.get_posting().key_auths.begin()->first ) != signature_set.end() );
+    BOOST_REQUIRE( signature_set.find( carol_auth.get_active().key_auths.begin()->first ) != signature_set.end() );
   }
 
 #undef CREATE_ACCOUNT

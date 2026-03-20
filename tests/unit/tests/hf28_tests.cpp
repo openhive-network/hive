@@ -1357,9 +1357,9 @@ BOOST_AUTO_TEST_CASE( verify_authority_limits_for_temp_account )
         uint32_t _hive_max_authority_membership  = 3;
         uint32_t _hive_max_sig_check_accounts    = 4;
 
-        auto _get_active = [&]( const std::string& name ) { return authority( executor->db->get< account_authority_object, by_account >( name ).active ); };
-        auto _get_owner = [&]( const std::string& name ) { return authority( executor->db->get< account_authority_object, by_account >( name ).owner ); };
-        auto _get_posting = [&]( const std::string& name ) { return authority( executor->db->get< account_authority_object, by_account >( name ).posting ); };
+        auto _get_active = [&]( const std::string& name ) { return authority( executor->db->get< account_authority_object, by_account >( name ).get_active() ); };
+        auto _get_owner = [&]( const std::string& name ) { return authority( executor->db->get< account_authority_object, by_account >( name ).get_owner() ); };
+        auto _get_posting = [&]( const std::string& name ) { return authority( executor->db->get< account_authority_object, by_account >( name ).get_posting() ); };
         auto _get_witness_key = [&]( const std::string& name ) { try { return executor->db->get_witness( name ).signing_key; } FC_CAPTURE_AND_RETHROW( ( name ) ) };
 
         {

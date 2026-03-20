@@ -22,6 +22,8 @@ namespace hive { namespace protocol {
       add_authorities( auths... );
     }
 
+    explicit authority( uint32_t threshold ) : weight_threshold( threshold ) {}
+
     void add_authority( const public_key_type& k, weight_type w );
     void add_authority( const account_name_type& k, weight_type w );
 

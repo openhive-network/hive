@@ -256,11 +256,11 @@ api_account_object::api_account_object( const account_object& a, const database&
     proxied_vsf_votes.push_back( a.proxied_vsf_votes[i] );
 
   const auto& auth = db.get< account_authority_object, by_account >( name );
-  owner = authority( auth.owner );
-  active = authority( auth.active );
-  posting = authority( auth.posting );
-  previous_owner_update = auth.previous_owner_update;
-  last_owner_update = auth.last_owner_update;
+  owner = authority( auth.get_owner() );
+  active = authority( auth.get_active() );
+  posting = authority( auth.get_posting() );
+  previous_owner_update = auth.get_previous_owner_update();
+  last_owner_update = auth.get_last_owner_update();
   if( metadata_plugin )
   {
     auto meta = metadata_plugin->get_account_metadata( a );

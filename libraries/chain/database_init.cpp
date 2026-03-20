@@ -191,66 +191,31 @@ void database::init_genesis()
     } inhibitor(*this);
 
     // Create blockchain accounts
-    public_key_type      init_public_key(HIVE_INIT_PUBLIC_KEY);
+    public_key_type init_public_key( HIVE_INIT_PUBLIC_KEY );
+    const authority locked_auth( 1 );
 
-    create< account_object >( HIVE_MINER_ACCOUNT, HIVE_GENESIS_TIME );
-    create< account_authority_object >( [&]( account_authority_object& auth )
-    {
-      auth.account = HIVE_MINER_ACCOUNT;
-      auth.owner.weight_threshold = 1;
-      auth.active.weight_threshold = 1;
-      auth.posting.weight_threshold = 1;
-    });
+    const auto& miner_account = create< account_object >( HIVE_MINER_ACCOUNT, HIVE_GENESIS_TIME );
+    create< account_authority_object >( miner_account, locked_auth, locked_auth, locked_auth );
 
-    create< account_object >( HIVE_NULL_ACCOUNT, HIVE_GENESIS_TIME );
-    create< account_authority_object >( [&]( account_authority_object& auth )
-    {
-      auth.account = HIVE_NULL_ACCOUNT;
-      auth.owner.weight_threshold = 1;
-      auth.active.weight_threshold = 1;
-      auth.posting.weight_threshold = 1;
-    });
+    const auto& null_account = create< account_object >( HIVE_NULL_ACCOUNT, HIVE_GENESIS_TIME );
+    create< account_authority_object >( null_account, locked_auth, locked_auth, locked_auth );
 
 #if defined(IS_TEST_NET) || defined(HIVE_CONVERTER_ICEBERG_PLUGIN_ENABLED)
-    create< account_object >( OBSOLETE_TREASURY_ACCOUNT, HIVE_GENESIS_TIME );
-    create< account_authority_object >([&](account_authority_object& auth)
-    {
-      auth.account = OBSOLETE_TREASURY_ACCOUNT;
-      auth.owner.weight_threshold = 1;
-      auth.active.weight_threshold = 1;
-      auth.posting.weight_threshold = 1;
-    } );
-    create< account_object >( NEW_HIVE_TREASURY_ACCOUNT, HIVE_GENESIS_TIME );
-    create< account_authority_object >([&](account_authority_object& auth)
-    {
-      auth.account = NEW_HIVE_TREASURY_ACCOUNT;
-      auth.owner.weight_threshold = 1;
-      auth.active.weight_threshold = 1;
-      auth.posting.weight_threshold = 1;
-    } );
+    const auto& old_treasury = create< account_object >( OBSOLETE_TREASURY_ACCOUNT, HIVE_GENESIS_TIME );
+    create< account_authority_object >( old_treasury, locked_auth, locked_auth, locked_auth );
+    const auto& new_treasury = create< account_object >( NEW_HIVE_TREASURY_ACCOUNT, HIVE_GENESIS_TIME );
+    create< account_authority_object >( new_treasury, locked_auth, locked_auth, locked_auth );
 #endif
 
-    create< account_object >( HIVE_TEMP_ACCOUNT, HIVE_GENESIS_TIME );
-    create< account_authority_object >( [&]( account_authority_object& auth )
-    {
-      auth.account = HIVE_TEMP_ACCOUNT;
-      auth.owner.weight_threshold = 0;
-      auth.active.weight_threshold = 0;
-      auth.posting.weight_threshold = 0;
-    });
+    const authority open_auth( 0 );
+    const auto& temp_account = create< account_object >( HIVE_TEMP_ACCOUNT, HIVE_GENESIS_TIME );
+    create< account_authority_object >( temp_account, open_auth, open_auth, open_auth );
 
     const auto init_witness = [&]( const account_name_type& account_name )
     {
-      create< account_object >( account_name, HIVE_GENESIS_TIME, init_public_key );
-
-      create< account_authority_object >( [&]( account_authority_object& auth )
-      {
-        auth.account = account_name;
-        auth.owner.add_authority( init_public_key, 1 );
-        auth.owner.weight_threshold = 1;
-        auth.active  = auth.owner;
-        auth.posting = auth.active;
-      });
+      const auto& witness_account = create< account_object >( account_name, HIVE_GENESIS_TIME, init_public_key );
+      const authority init_auth( 1, init_public_key, 1 );
+      create< account_authority_object >( witness_account, init_auth, init_auth, init_auth );
 
       create< witness_object >( [&]( witness_object& w )
       {
@@ -277,18 +242,15 @@ void database::init_genesis()
     {
       const char* STEEM_ACCOUNT_NAME = "steem";
       auto STEEM_PUBLIC_KEY = public_key_type( HIVE_STEEM_PUBLIC_KEY_STR );
-      create< account_object >( STEEM_ACCOUNT_NAME, STEEM_PUBLIC_KEY, HIVE_GENESIS_TIME, HIVE_GENESIS_TIME, true, nullptr, true, VEST_asset( 0 ) );
-      create< account_authority_object >( [&]( account_authority_object& auth )
+      const auto& steem_account = create< account_object >( STEEM_ACCOUNT_NAME, STEEM_PUBLIC_KEY, HIVE_GENESIS_TIME, HIVE_GENESIS_TIME, true, nullptr, true, VEST_asset( 0 ) );
       {
-        auth.account = STEEM_ACCOUNT_NAME;
 #ifdef USE_ALTERNATE_CHAIN_ID
-        auth.owner = authority( 1, STEEM_PUBLIC_KEY, 1, init_public_key, 1 );
+        const authority steem_auth( 1, STEEM_PUBLIC_KEY, 1, init_public_key, 1 );
 #else
-        auth.owner = authority( 1, STEEM_PUBLIC_KEY, 1 );
+        const authority steem_auth( 1, STEEM_PUBLIC_KEY, 1 );
 #endif
-        auth.active = auth.owner;
-        auth.posting = auth.owner;
-      } );
+        create< account_authority_object >( steem_account, steem_auth, steem_auth, steem_auth );
+      }
     }
 
     const auto& dgpo = create< dynamic_global_property_object >( HIVE_INIT_MINER_NAME );

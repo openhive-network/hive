@@ -1378,29 +1378,20 @@ void database::consolidate_treasury_balance()
 
 void database::lock_account( const account_object& account )
 {
+  authority locked_auth;
+  locked_auth.weight_threshold = 1;
   auto* account_auth = find< account_authority_object, by_account >( account.get_name() );
   if( account_auth == nullptr )
   {
-    create< account_authority_object >( [&]( account_authority_object& auth )
-    {
-      auth.account = account.get_name();
-      auth.owner.weight_threshold = 1;
-      auth.active.weight_threshold = 1;
-      auth.posting.weight_threshold = 1;
-    } );
+    create< account_authority_object >( account, locked_auth, locked_auth, locked_auth );
   }
   else
   {
-    modify( *account_auth, []( account_authority_object& auth )
+    modify( *account_auth, [&]( account_authority_object& auth )
     {
-      auth.owner.weight_threshold = 1;
-      auth.owner.clear();
-
-      auth.active.weight_threshold = 1;
-      auth.active.clear();
-
-      auth.posting.weight_threshold = 1;
-      auth.posting.clear();
+      auth.set_owner( locked_auth, head_block_time() );
+      auth.set_active( locked_auth );
+      auth.set_posting( locked_auth );
     } );
   }
 
@@ -1678,15 +1669,13 @@ void database::update_owner_authority( const account_object& account, const auth
 {
   if( head_block_num() >= HIVE_OWNER_AUTH_HISTORY_TRACKING_START_BLOCK_NUM )
   {
-    create< owner_authority_history_object >( account, get< account_authority_object, by_account >( account.get_name() ).owner, head_block_time() );
+    create< owner_authority_history_object >( account, get< account_authority_object, by_account >( account.get_name() ).get_owner(), head_block_time() );
   }
 
   modify( get< account_authority_object, by_account >( account.get_name() ), [&]( account_authority_object& auth )
   {
-    auth.owner = owner_authority;
-    auth.previous_owner_update = auth.last_owner_update;
-    auth.last_owner_update = head_block_time();
-  });
+    auth.set_owner( owner_authority, head_block_time() );
+  } );
 }
 
 
@@ -2589,9 +2578,9 @@ void database::validate_transaction(const std::shared_ptr<full_transaction_type>
 
   if (!(skip & (skip_transaction_signatures | skip_authority_check)))
   {
-    auto get_active  =    [&]( const string& name ) { return authority( get< account_authority_object, by_account >( name ).active ); };
-    auto get_owner   =    [&]( const string& name ) { return authority( get< account_authority_object, by_account >( name ).owner );  };
-    auto get_posting =    [&]( const string& name ) { return authority( get< account_authority_object, by_account >( name ).posting );  };
+    auto get_active  =    [&]( const string& name ) { return authority( get< account_authority_object, by_account >( name ).get_active() ); };
+    auto get_owner   =    [&]( const string& name ) { return authority( get< account_authority_object, by_account >( name ).get_owner() );  };
+    auto get_posting =    [&]( const string& name ) { return authority( get< account_authority_object, by_account >( name ).get_posting() );  };
     auto get_witness_key = [&]( const string& name ) { try { return get_witness( name ).signing_key; } FC_CAPTURE_AND_RETHROW((name)) };
 
     try
