@@ -442,6 +442,12 @@ public:
     previous_owner_authority = _previous_owner;
   }
 
+// getters:
+
+  const account_name_type& get_account() const { return account; }
+  const shared_authority& get_previous_owner_authority() const { return previous_owner_authority; }
+  time_point_sec get_last_valid_time() const { return last_valid_time; }
+
   size_t get_dynamic_alloc() const
   {
     size_t size = 0;
@@ -449,7 +455,8 @@ public:
     return size;
   }
 
-  account_name_type account;
+private:
+  account_name_type account; // changing it to id would influence database_api.list_owner_histories
   shared_authority  previous_owner_authority;
   time_point_sec    last_valid_time;
 

@@ -566,9 +566,9 @@ void recover_account_evaluator::do_apply( const recover_account_operation& o )
   auto hist = recent_auth_idx.lower_bound( o.account_to_recover );
   bool found = false;
 
-  while( hist != recent_auth_idx.end() && hist->account == o.account_to_recover && !found )
+  while( hist != recent_auth_idx.end() && hist->get_account() == o.account_to_recover && !found )
   {
-    found = hist->previous_owner_authority == o.recent_owner_authority;
+    found = hist->get_previous_owner_authority() == o.recent_owner_authority;
     if( found ) break;
     ++hist;
   }
