@@ -214,11 +214,11 @@ void account_by_key_plugin_impl::clear_cache()
 
 void account_by_key_plugin_impl::cache_auths( const account_authority_object& a )
 {
-  for( const auto& item : a.owner.key_auths )
+  for( const auto& item : a.get_owner().key_auths )
     cached_keys.insert( item.first );
-  for( const auto& item : a.active.key_auths )
+  for( const auto& item : a.get_active().key_auths )
     cached_keys.insert( item.first );
-  for( const auto& item : a.posting.key_auths )
+  for( const auto& item : a.get_posting().key_auths )
     cached_keys.insert( item.first );
 }
 
@@ -227,11 +227,11 @@ void account_by_key_plugin_impl::update_key_lookup( const account_authority_obje
   flat_set< public_key_type > new_keys;
 
   // Construct the set of keys in the account's authority
-  for( const auto& item : a.owner.key_auths )
+  for( const auto& item : a.get_owner().key_auths )
     new_keys.insert( item.first );
-  for( const auto& item : a.active.key_auths )
+  for( const auto& item : a.get_active().key_auths )
     new_keys.insert( item.first );
-  for( const auto& item : a.posting.key_auths )
+  for( const auto& item : a.get_posting().key_auths )
     new_keys.insert( item.first );
 
   // For each key that needs a lookup
@@ -240,14 +240,14 @@ void account_by_key_plugin_impl::update_key_lookup( const account_authority_obje
     // If the key was not in the authority, add it to the lookup
     if( cached_keys.find( key ) == cached_keys.end() )
     {
-      auto lookup_itr = _db.find< key_lookup_object, by_key >( boost::make_tuple( key, a.account ) );
+      auto lookup_itr = _db.find< key_lookup_object, by_key >( boost::make_tuple( key, a.get_account() ) );
 
       if( lookup_itr == nullptr )
       {
         _db.create< key_lookup_object >( [&]( key_lookup_object& o )
         {
           o.key = key;
-          o.account = a.account;
+          o.account = a.get_account();
         });
       }
     }
@@ -261,7 +261,7 @@ void account_by_key_plugin_impl::update_key_lookup( const account_authority_obje
   // Loop over the keys that were in authority but are no longer and remove them from the lookup
   for( const auto& key : cached_keys )
   {
-    auto lookup_itr = _db.find< key_lookup_object, by_key >( boost::make_tuple( key, a.account ) );
+    auto lookup_itr = _db.find< key_lookup_object, by_key >( boost::make_tuple( key, a.get_account() ) );
 
     if( lookup_itr != nullptr )
     {

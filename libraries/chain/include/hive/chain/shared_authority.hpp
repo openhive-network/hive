@@ -54,6 +54,13 @@ namespace hive { namespace chain {
       add_authorities( auths... );
     }
 
+    template< typename Allocator >
+    shared_authority( const Allocator& alloc, uint32_t weight_threshold ) :
+      weight_threshold( weight_threshold ),
+      account_auths( account_pair_allocator_type( alloc ) ),
+      key_auths( key_pair_allocator_type( alloc ) )
+    {}
+
     operator authority()const;
 
     shared_authority& operator=( const authority& a );

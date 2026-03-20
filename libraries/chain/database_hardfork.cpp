@@ -222,9 +222,9 @@ void database::apply_hardfork( uint32_t hardfork )
 
           modify( get< account_authority_object, by_account >( account->get_name() ), [&]( account_authority_object& auth )
           {
-            auth.active  = authority( 1, public_key_type(HIVE_HF_9_COMPROMISED_ACCOUNTS_PUBLIC_KEY_STR), 1 );
-            auth.posting = authority( 1, public_key_type(HIVE_HF_9_COMPROMISED_ACCOUNTS_PUBLIC_KEY_STR), 1 );
-          });
+            auth.set_active( authority( 1, public_key_type( HIVE_HF_9_COMPROMISED_ACCOUNTS_PUBLIC_KEY_STR ), 1 ) );
+            auth.set_posting( authority( 1, public_key_type( HIVE_HF_9_COMPROMISED_ACCOUNTS_PUBLIC_KEY_STR ), 1 ) );
+          } );
         }
       }
       break;

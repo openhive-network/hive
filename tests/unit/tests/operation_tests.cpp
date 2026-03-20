@@ -170,8 +170,8 @@ BOOST_AUTO_TEST_CASE( account_create_apply )
     const account_authority_object& acct_auth = db->get< account_authority_object, by_account >( "alice" );
 
     BOOST_REQUIRE_EQUAL( acct.get_name(), "alice" );
-    BOOST_REQUIRE( acct_auth.owner == authority( 1, priv_key.get_public_key(), 1 ) );
-    BOOST_REQUIRE( acct_auth.active == authority( 2, priv_key.get_public_key(), 2 ) );
+    BOOST_REQUIRE( acct_auth.get_owner() == authority( 1, priv_key.get_public_key(), 1 ) );
+    BOOST_REQUIRE( acct_auth.get_active() == authority( 2, priv_key.get_public_key(), 2 ) );
     BOOST_REQUIRE( acct.memo_key == priv_key.get_public_key() );
     CHECK_NO_PROXY( acct );
     BOOST_REQUIRE_EQUAL( acct.get_creation_time(), db->head_block_time() );
@@ -190,8 +190,8 @@ BOOST_AUTO_TEST_CASE( account_create_apply )
     HIVE_REQUIRE_ASSERT( push_transaction( tx, init_account_priv_key ), "db.find_account( name ) == nullptr" );
 
     BOOST_REQUIRE_EQUAL( acct.get_name(), "alice" );
-    BOOST_REQUIRE( acct_auth.owner == authority( 1, priv_key.get_public_key(), 1 ) );
-    BOOST_REQUIRE( acct_auth.active == authority( 2, priv_key.get_public_key(), 2 ) );
+    BOOST_REQUIRE( acct_auth.get_owner() == authority( 1, priv_key.get_public_key(), 1 ) );
+    BOOST_REQUIRE( acct_auth.get_active() == authority( 2, priv_key.get_public_key(), 2 ) );
     BOOST_REQUIRE( acct.memo_key == priv_key.get_public_key() );
     CHECK_NO_PROXY( acct );
     BOOST_REQUIRE_EQUAL( acct.get_creation_time(), db->head_block_time() );
@@ -294,7 +294,7 @@ BOOST_AUTO_TEST_CASE( account_update_authorities )
     {
       db.modify( db.get< account_authority_object, by_account >( "alice" ), [&]( account_authority_object& a )
       {
-        a.active = authority( 1, active_key.get_public_key(), 1 );
+        a.set_active( authority( 1, active_key.get_public_key(), 1 ) );
       } );
     } );
 
@@ -346,7 +346,7 @@ BOOST_AUTO_TEST_CASE( account_update_authorities )
     BOOST_TEST_MESSAGE( "--- Up to HF28 it was a test failure when owner key and active key are present. Now the transaction passes." );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION - 3*HIVE_BLOCK_INTERVAL );
     HIVE_REQUIRE_ASSERT( push_transaction( tx, {active_key, alice_private_key} ),
-      "util::owner_update_limit_mgr::check( _db.has_hardfork( HIVE_HARDFORK_1_26_AUTH_UPDATE ), _db.head_block_time(), account_auth.previous_owner_update, account_auth.last_owner_update ) && \"update\"" );
+      "util::owner_update_limit_mgr::check( _db.has_hardfork( HIVE_HARDFORK_1_26_AUTH_UPDATE ), _db.head_block_time(), account_auth.get_previous_owner_update(), account_auth.get_last_owner_update() ) && \"update\"" );
 
     validate_database();
   }
@@ -380,8 +380,8 @@ BOOST_AUTO_TEST_CASE( account_update_apply )
     const account_authority_object& acct_auth = db->get< account_authority_object, by_account >( "alice" );
 
     BOOST_REQUIRE_EQUAL( acct.get_name(), "alice" );
-    BOOST_REQUIRE( acct_auth.owner == authority( 1, new_private_key.get_public_key(), 1 ) );
-    BOOST_REQUIRE( acct_auth.active == authority( 2, new_private_key.get_public_key(), 2 ) );
+    BOOST_REQUIRE( acct_auth.get_owner() == authority( 1, new_private_key.get_public_key(), 1 ) );
+    BOOST_REQUIRE( acct_auth.get_active() == authority( 2, new_private_key.get_public_key(), 2 ) );
     BOOST_REQUIRE( acct.memo_key == new_private_key.get_public_key() );
 
     validate_database();
@@ -3026,7 +3026,7 @@ BOOST_AUTO_TEST_CASE( custom_binary_authorities )
   op.required_owner_auths.insert( "alice" );
   op.required_active_auths.insert( "bob" );
   op.required_posting_auths.insert( "sam" );
-  op.required_auths.push_back( db->get< account_authority_object, by_account >( "alice" ).posting );
+  op.required_auths.push_back( db->get< account_authority_object, by_account >( "alice" ).get_posting() );
 
   flat_set< account_name_type > acc_auths;
   flat_set< account_name_type > acc_expected;
@@ -3049,7 +3049,7 @@ BOOST_AUTO_TEST_CASE( custom_binary_authorities )
   op.get_required_posting_authorities( acc_auths );
   BOOST_REQUIRE( acc_auths == acc_expected );
 
-  expected.push_back( db->get< account_authority_object, by_account >( "alice" ).posting );
+  expected.push_back( db->get< account_authority_object, by_account >( "alice" ).get_posting() );
   op.get_required_authorities( auths );
   BOOST_REQUIRE( auths == expected );
 }
@@ -4698,7 +4698,7 @@ BOOST_AUTO_TEST_CASE( account_recovery )
     vest( "bob", HIVE_asset( 1'000 ) );
 
     const auto& bob_auth = db->get< account_authority_object, by_account >( "bob" );
-    BOOST_REQUIRE( bob_auth.owner == acc_create.owner );
+    BOOST_REQUIRE( bob_auth.get_owner() == acc_create.owner );
 
 
     BOOST_TEST_MESSAGE( "Changing bob's owner authority" );
@@ -4714,7 +4714,7 @@ BOOST_AUTO_TEST_CASE( account_recovery )
     tx.operations.push_back( acc_update );
     push_transaction( tx, generate_private_key( "bob_owner" ) );
 
-    BOOST_REQUIRE( bob_auth.owner == *acc_update.owner );
+    BOOST_REQUIRE( bob_auth.get_owner() == *acc_update.owner );
 
 
     BOOST_TEST_MESSAGE( "Creating recover request for bob with alice" );
@@ -4729,7 +4729,7 @@ BOOST_AUTO_TEST_CASE( account_recovery )
     tx.operations.push_back( request );
     push_transaction( tx, alice_private_key );
 
-    BOOST_REQUIRE( bob_auth.owner == *acc_update.owner );
+    BOOST_REQUIRE( bob_auth.get_owner() == *acc_update.owner );
 
 
     BOOST_TEST_MESSAGE( "Recovering bob's account with original owner auth and new secret" );
@@ -4745,7 +4745,7 @@ BOOST_AUTO_TEST_CASE( account_recovery )
 
     tx.operations.push_back( recover );
     push_transaction( tx, {generate_private_key( "bob_owner" ), generate_private_key( "new_key" )} );
-    const auto& owner1 = db->get< account_authority_object, by_account >("bob").owner;
+    const auto& owner1 = db->get< account_authority_object, by_account >("bob").get_owner();
 
     BOOST_REQUIRE( owner1 == recover.new_owner_authority );
 
@@ -4770,7 +4770,7 @@ BOOST_AUTO_TEST_CASE( account_recovery )
 
     tx.operations.push_back( recover );
     HIVE_REQUIRE_THROW( push_transaction( tx, {generate_private_key( "bob_owner" ), generate_private_key( "idontknow" )} ), fc::exception );
-    const auto& owner2 = db->get< account_authority_object, by_account >("bob").owner;
+    const auto& owner2 = db->get< account_authority_object, by_account >("bob").get_owner();
     BOOST_REQUIRE( owner2 == authority( 1, generate_private_key( "new_key" ).get_public_key(), 1 ) );
 
 
@@ -4783,7 +4783,7 @@ BOOST_AUTO_TEST_CASE( account_recovery )
 
     tx.operations.push_back( recover );
     HIVE_REQUIRE_THROW( push_transaction( tx, {generate_private_key( "foo bar" ), generate_private_key( "idontknow" )} ), fc::exception );
-    const auto& owner3 = db->get< account_authority_object, by_account >("bob").owner;
+    const auto& owner3 = db->get< account_authority_object, by_account >("bob").get_owner();
     BOOST_REQUIRE( owner3 == authority( 1, generate_private_key( "new_key" ).get_public_key(), 1 ) );
 
 
@@ -4797,7 +4797,7 @@ BOOST_AUTO_TEST_CASE( account_recovery )
     tx.operations.push_back( recover );
     push_transaction( tx, {generate_private_key( "bob_owner" ), generate_private_key( "foo bar" )} );
 
-    const auto& owner4 = db->get< account_authority_object, by_account >("bob").owner;
+    const auto& owner4 = db->get< account_authority_object, by_account >("bob").get_owner();
     BOOST_REQUIRE( owner4 == recover.new_owner_authority );
 
     BOOST_TEST_MESSAGE( "Creating a recovery request that will expire" );
@@ -4836,7 +4836,7 @@ BOOST_AUTO_TEST_CASE( account_recovery )
     tx.operations.push_back( recover );
     tx.set_expiration( db->head_block_time() );
     HIVE_REQUIRE_THROW( push_transaction( tx, {generate_private_key( "expire" ), generate_private_key( "bob_owner" )} ), fc::exception );
-    const auto& owner5 = db->get< account_authority_object, by_account >("bob").owner;
+    const auto& owner5 = db->get< account_authority_object, by_account >("bob").get_owner();
     BOOST_REQUIRE( owner5 == authority( 1, generate_private_key( "foo bar" ).get_public_key(), 1 ) );
 
     BOOST_TEST_MESSAGE( "Expiring owner authority history" );
@@ -4868,7 +4868,7 @@ BOOST_AUTO_TEST_CASE( account_recovery )
     tx.operations.push_back( recover );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     HIVE_REQUIRE_THROW( push_transaction( tx, {generate_private_key( "bob_owner" ), generate_private_key( "last key" )} ), fc::exception );
-    const auto& owner6 = db->get< account_authority_object, by_account >("bob").owner;
+    const auto& owner6 = db->get< account_authority_object, by_account >("bob").get_owner();
     BOOST_REQUIRE( owner6 == authority( 1, generate_private_key( "new_key" ).get_public_key(), 1 ) );
 
     recover.recent_owner_authority = authority( 1, generate_private_key( "foo bar" ).get_public_key(), 1 );
@@ -4878,7 +4878,7 @@ BOOST_AUTO_TEST_CASE( account_recovery )
     tx.operations.push_back( recover );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     push_transaction( tx, {generate_private_key( "foo bar" ), generate_private_key( "last key" )} );
-    const auto& owner7 = db->get< account_authority_object, by_account >("bob").owner;
+    const auto& owner7 = db->get< account_authority_object, by_account >("bob").get_owner();
     BOOST_REQUIRE( owner7 == authority( 1, generate_private_key( "last key" ).get_public_key(), 1 ) );
   }
   FC_LOG_AND_RETHROW()
@@ -9095,9 +9095,9 @@ BOOST_AUTO_TEST_CASE( create_claimed_account_apply )
     const auto& bob_auth = db->get< account_authority_object, by_account >( "bob" );
 
     BOOST_REQUIRE_EQUAL( bob.get_name(), "bob" );
-    BOOST_REQUIRE( bob_auth.owner == authority( 1, priv_key.get_public_key(), 1 ) );
-    BOOST_REQUIRE( bob_auth.active == authority( 2, priv_key.get_public_key(), 2 ) );
-    BOOST_REQUIRE( bob_auth.posting == authority( 3, priv_key.get_public_key(), 3 ) );
+    BOOST_REQUIRE( bob_auth.get_owner() == authority( 1, priv_key.get_public_key(), 1 ) );
+    BOOST_REQUIRE( bob_auth.get_active() == authority( 2, priv_key.get_public_key(), 2 ) );
+    BOOST_REQUIRE( bob_auth.get_posting() == authority( 3, priv_key.get_public_key(), 3 ) );
     BOOST_REQUIRE( bob.memo_key == priv_key.get_public_key() );
 
     CHECK_NO_PROXY( bob );
@@ -9164,19 +9164,23 @@ BOOST_AUTO_TEST_CASE( account_auth_tests )
     {
       db.modify( db.get< account_authority_object, by_account >( "alice"), [&]( account_authority_object& auth )
       {
-        auth.active.add_authority( "bob", 1 );
-        auth.posting.add_authority( "charlie", 1 );
-      });
+        authority new_active( auth.get_active() );
+        new_active.add_authority( "bob", 1 );
+        auth.set_active( new_active );
+        authority new_posting( auth.get_posting() );
+        new_posting.add_authority( "charlie", 1 );
+        auth.set_posting( new_posting );
+      } );
 
       db.modify( db.get< account_authority_object, by_account >( "bob" ), [&]( account_authority_object& auth )
       {
-        auth.posting = authority( 1, bob_posting_private_key.get_public_key(), 1 );
-      });
+        auth.set_posting( authority( 1, bob_posting_private_key.get_public_key(), 1 ) );
+      } );
 
       db.modify( db.get< account_authority_object, by_account >( "charlie" ), [&]( account_authority_object& auth )
       {
-        auth.posting = authority( 1, charlie_posting_private_key.get_public_key(), 1 );
-      });
+        auth.set_posting( authority( 1, charlie_posting_private_key.get_public_key(), 1 ) );
+      } );
     });
 
     generate_block();
@@ -9539,8 +9543,8 @@ BOOST_AUTO_TEST_CASE( account_update2_apply )
     const account_authority_object& acct_auth = db->get< account_authority_object, by_account >( "alice" );
 
     BOOST_REQUIRE_EQUAL( acct.get_name(), "alice" );
-    BOOST_REQUIRE( acct_auth.owner == authority( 1, new_private_key.get_public_key(), 1 ) );
-    BOOST_REQUIRE( acct_auth.active == authority( 2, new_private_key.get_public_key(), 2 ) );
+    BOOST_REQUIRE( acct_auth.get_owner() == authority( 1, new_private_key.get_public_key(), 1 ) );
+    BOOST_REQUIRE( acct_auth.get_active() == authority( 2, new_private_key.get_public_key(), 2 ) );
     BOOST_REQUIRE( acct.memo_key == new_private_key.get_public_key() );
 
     validate_database();

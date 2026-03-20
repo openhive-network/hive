@@ -342,7 +342,35 @@ class account_authority_object : public object< account_authority_object_type, a
   CHAINBASE_OBJECT( account_authority_object );
 
 public:
-  CHAINBASE_DEFAULT_CONSTRUCTOR( account_authority_object, (owner)(active)(posting) )
+  template< typename Allocator >
+  account_authority_object( allocator< Allocator > a, uint64_t _id,
+    const account_object& _account, const authority& _owner,
+    const authority& _active, const authority& _posting )
+  : id( _id ), account( _account.get_name() ), owner( _owner, a ), active( _active, a ), posting( _posting, a ),
+    previous_owner_update( time_point_sec::min() ), last_owner_update( time_point_sec::min() )
+  {}
+
+// getters:
+
+  const account_name_type& get_account() const { return account; }
+
+  const shared_authority& get_owner() const { return owner; }
+  const shared_authority& get_active() const { return active; }
+  const shared_authority& get_posting() const { return posting; }
+
+  time_point_sec get_previous_owner_update() const { return previous_owner_update; }
+  time_point_sec get_last_owner_update() const { return last_owner_update; }
+
+// setters:
+
+  void set_owner( const authority& new_owner, time_point_sec now )
+  {
+    owner = new_owner;
+    previous_owner_update = last_owner_update;
+    last_owner_update = now;
+  }
+  void set_active( const authority& new_active ) { active = new_active; }
+  void set_posting( const authority& new_posting ){ posting = new_posting; }
 
   size_t get_dynamic_alloc() const
   {
@@ -353,6 +381,7 @@ public:
     return size;
   }
 
+private:
   account_name_type account;
 
   shared_authority  owner;   ///< used for backup control, can set owner or active

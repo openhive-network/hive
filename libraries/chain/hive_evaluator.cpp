@@ -421,13 +421,10 @@ void pow_apply( database& db, Operation o )
       true /*mined*/, HIVE_asset( 0 ) );
     // ^ empty recovery account parameter means highest voted witness at time of recovery
 
-    db.create< account_authority_object >( [&]( account_authority_object& auth )
     {
-      auth.account = o.worker_account;
-      auth.owner = authority( 1, o.work.worker, 1 );
-      auth.active = auth.owner;
-      auth.posting = auth.owner;
-    } );
+      const authority pow_auth( 1, o.work.worker, 1 );
+      db.create< account_authority_object >( new_account, pow_auth, pow_auth, pow_auth );
+    }
 
     push_virtual_operation( db, account_created_operation( new_account.get_name(), o.worker_account, VEST_asset( 0 ), VEST_asset( 0 ) ) );
   }
@@ -435,9 +432,9 @@ void pow_apply( database& db, Operation o )
   const auto& worker_account = db.get_account( o.worker_account ); // verify it exists
 #ifndef HIVE_CONVERTER_BUILD // disable these checks, since there is a 2nd auth applied on all the accs in the alternate chain generated using hive blockchain converter
   const auto& worker_auth = db.get< account_authority_object, by_account >( o.worker_account );
-  HIVE_CHAIN_STATE_ASSERT( worker_auth.active.num_auths() == 1, o.worker_account, "Miners can only have one key authority. ${a}", ("a",worker_auth.active) );
-  HIVE_CHAIN_STATE_ASSERT( worker_auth.active.key_auths.size() == 1, o.worker_account, "Miners may only have one key authority." );
-  HIVE_CHAIN_STATE_ASSERT( worker_auth.active.key_auths.begin()->first == o.work.worker, o.worker_account, "Work must be performed by key that signed the work." );
+  HIVE_CHAIN_STATE_ASSERT( worker_auth.get_active().num_auths() == 1, o.worker_account, "Miners can only have one key authority. ${a}", ("a",worker_auth.get_active()) );
+  HIVE_CHAIN_STATE_ASSERT( worker_auth.get_active().key_auths.size() == 1, o.worker_account, "Miners may only have one key authority." );
+  HIVE_CHAIN_STATE_ASSERT( worker_auth.get_active().key_auths.begin()->first == o.work.worker, o.worker_account, "Work must be performed by key that signed the work." );
 #endif
   HIVE_CHAIN_STATE_ASSERT( o.block_id == db.head_block_id(), o.worker_account, "pow not for last block" );
   // there used to be limit preventing pow operation following worker account update in the same block (since HF13)
@@ -556,13 +553,10 @@ void pow2_evaluator::do_apply( const pow2_operation& o )
       true /*mined*/, HIVE_asset( 0 ) );
     // ^ empty recovery account parameter means highest voted witness at time of recovery
 
-    db.create< account_authority_object >( [&]( account_authority_object& auth )
     {
-      auth.account = worker_account;
-      auth.owner = authority( 1, *o.new_owner_key, 1 );
-      auth.active = auth.owner;
-      auth.posting = auth.owner;
-    } );
+      const authority pow2_auth( 1, *o.new_owner_key, 1 );
+      db.create< account_authority_object >( new_account, pow2_auth, pow2_auth, pow2_auth );
+    }
 
     db.create<witness_object>( [&]( witness_object& w )
     {

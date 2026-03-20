@@ -194,15 +194,7 @@ void account_create_evaluator::do_apply( const account_create_operation& o )
   else if( o_fee.amount > 0 )
     initial_vesting_shares = _db.create_vesting( new_account, o_fee );
 
-  _db.create< account_authority_object >( [&]( account_authority_object& auth )
-  {
-    auth.account = o.new_account_name;
-    auth.owner = o.owner;
-    auth.active = o.active;
-    auth.posting = o.posting;
-    auth.previous_owner_update = fc::time_point_sec::min();
-    auth.last_owner_update = fc::time_point_sec::min();
-  } );
+  _db.create< account_authority_object >( new_account, o.owner, o.active, o.posting );
 
   push_virtual_operation( _db, account_created_operation( o.new_account_name, o.creator, initial_vesting_shares, VEST_asset( 0 ) ) );
 }
@@ -255,15 +247,7 @@ void account_create_with_delegation_evaluator::do_apply( const account_create_wi
   else if( o_fee.amount > 0 )
     initial_vesting_shares = _db.create_vesting( new_account, o_fee );
 
-  _db.create< account_authority_object >( [&]( account_authority_object& auth )
-  {
-    auth.account = o.new_account_name;
-    auth.owner = o.owner;
-    auth.active = o.active;
-    auth.posting = o.posting;
-    auth.previous_owner_update = fc::time_point_sec::min();
-    auth.last_owner_update = fc::time_point_sec::min();
-  } );
+  _db.create< account_authority_object >( new_account, o.owner, o.active, o.posting );
 
   if( o_delegation.amount > 0 || !_db.has_hardfork( HIVE_HARDFORK_0_19__997 ) )
   {
@@ -310,9 +294,11 @@ void account_update_evaluator::do_apply( const account_update_operation& o )
 //       in HF21, so only this operation is applicable to our needs
 # ifndef HIVE_CONVERTER_BUILD
     if( _db.has_hardfork( HIVE_HARDFORK_0_11 ) )
+    {
       HIVE_CHAIN_TIME_ASSERT( util::owner_update_limit_mgr::check( _db.has_hardfork( HIVE_HARDFORK_1_26_AUTH_UPDATE ), _db.head_block_time(),
-                                                                        account_auth.previous_owner_update, account_auth.last_owner_update ) && "update",
+        account_auth.get_previous_owner_update(), account_auth.get_last_owner_update() ) && "update",
         o.account, "${m}", ( "m", util::owner_update_limit_mgr::msg( _db.has_hardfork( HIVE_HARDFORK_1_26_AUTH_UPDATE ) ) ) );
+    }
 # endif
 
     verify_authority_accounts_exist( _db, *o.owner, o.account, authority::owner );
@@ -350,8 +336,8 @@ void account_update_evaluator::do_apply( const account_update_operation& o )
   {
     _db.modify( account_auth, [&]( account_authority_object& auth)
     {
-      if( o.active )       auth.active  = *o.active;
-      if( *_auth_posting ) auth.posting = **_auth_posting;
+      if( o.active )       auth.set_active( *o.active );
+      if( *_auth_posting ) auth.set_posting( **_auth_posting );
     } );
   }
 
@@ -368,7 +354,7 @@ void account_update2_evaluator::do_apply( const account_update2_operation& o )
   if( o.owner )
   {
     HIVE_CHAIN_TIME_ASSERT( util::owner_update_limit_mgr::check( _db.has_hardfork( HIVE_HARDFORK_1_26_AUTH_UPDATE ), _db.head_block_time(),
-                                                                      account_auth.previous_owner_update, account_auth.last_owner_update ) && "update2",
+      account_auth.get_previous_owner_update(), account_auth.get_last_owner_update() ) && "update2",
       o.account, "${m}", ( "m", util::owner_update_limit_mgr::msg( _db.has_hardfork( HIVE_HARDFORK_1_26_AUTH_UPDATE ) ) ) );
 
     verify_authority_accounts_exist( _db, *o.owner, o.account, authority::owner );
@@ -392,8 +378,8 @@ void account_update2_evaluator::do_apply( const account_update2_operation& o )
   {
     _db.modify( account_auth, [&]( account_authority_object& auth)
     {
-      if( o.active )  auth.active  = *o.active;
-      if( o.posting ) auth.posting = *o.posting;
+      if( o.active )  auth.set_active( *o.active );
+      if( o.posting ) auth.set_posting( *o.posting );
     } );
   }
 
@@ -481,15 +467,7 @@ void create_claimed_account_evaluator::do_apply( const create_claimed_account_op
   const auto& new_account = create_account( _db, o.new_account_name, o.memo_key, props.get_head_block_time(), _db.get_current_timestamp(),
     false /*mined*/, _db.get_witness_schedule_object().median_props.account_creation_fee, &creator );
 
-  _db.create< account_authority_object >( [&]( account_authority_object& auth )
-  {
-    auth.account = o.new_account_name;
-    auth.owner = o.owner;
-    auth.active = o.active;
-    auth.posting = o.posting;
-    auth.previous_owner_update = fc::time_point_sec::min();
-    auth.last_owner_update = fc::time_point_sec::min();
-  } );
+  _db.create< account_authority_object >( new_account, o.owner, o.active, o.posting );
 
   push_virtual_operation( _db, account_created_operation( new_account.get_name(), o.creator, VEST_asset( 0 ), VEST_asset( 0 ) ) );
 }
