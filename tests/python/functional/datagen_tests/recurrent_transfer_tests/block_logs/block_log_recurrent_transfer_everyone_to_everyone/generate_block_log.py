@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Final
 import test_tools as tt
 from hive_local_tools.constants import MAX_OPEN_RECURRENT_TRANSFERS, MAX_RECURRENT_TRANSFERS_PER_BLOCK
 from hive_local_tools.functional import __generate_and_broadcast_transaction
+from hive_local_tools.functional.python.operation import convert_to_asset
 from hive_local_tools.functional.python import generate_block
 from hive_local_tools.functional.python.block_log_generation import parse_block_log_generator_args
 from hive_local_tools.functional.python.datagen.recurrent_transfer import execute_function_in_threads
@@ -112,7 +113,8 @@ def prepare_block_log(output_block_log_directory: Path) -> None:
     tt.logger.info("Started transfer HIVE to accounts...")
 
     liquid_per_account = (
-        node.api.database.find_accounts(accounts=["initminer"]).accounts[0].balance / AMOUNT_OF_ALL_ACCOUNTS
+        convert_to_asset(node.api.database.find_accounts(accounts=["initminer"]).accounts[0].balance)
+        / AMOUNT_OF_ALL_ACCOUNTS
     ).amount
     execute_function_in_threads(
         __generate_and_broadcast_transaction,
@@ -128,7 +130,8 @@ def prepare_block_log(output_block_log_directory: Path) -> None:
 
     # vesting delegate
     vs_per_account = (
-        node.api.database.find_accounts(accounts=["initminer"]).accounts[0].vesting_shares / AMOUNT_OF_ALL_ACCOUNTS
+        convert_to_asset(node.api.database.find_accounts(accounts=["initminer"]).accounts[0].vesting_shares)
+        / AMOUNT_OF_ALL_ACCOUNTS
     )
     tt.logger.info("Started vesting delegate to accounts...")
     execute_function_in_threads(
