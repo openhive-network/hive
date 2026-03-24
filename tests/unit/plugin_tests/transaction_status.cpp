@@ -129,7 +129,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
       BOOST_REQUIRE( api_return.block_num.valid() == false );
       BOOST_REQUIRE( api_return.rc_cost.valid() == false );
 
-      api_return = tx_status_api->api->find_transaction( { .transaction_id = tx0->get_transaction_id(), _tx0_expiration  } );
+      api_return = tx_status_api->api->find_transaction( { .transaction_id = tx0->get_transaction_id(), .expiration = _tx0_expiration  } );
       BOOST_REQUIRE( api_return.status == unknown );
       BOOST_REQUIRE( api_return.block_num.valid() == false );
       BOOST_REQUIRE( api_return.rc_cost.valid() == false );
@@ -164,7 +164,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
       BOOST_REQUIRE( api_return.block_num.valid() == false );
       BOOST_REQUIRE( api_return.rc_cost.valid() == false );
 
-      api_return = tx_status_api->api->find_transaction( { .transaction_id = tx1->get_transaction_id(), _tx1_expiration } );
+      api_return = tx_status_api->api->find_transaction( { .transaction_id = tx1->get_transaction_id(), .expiration =  _tx1_expiration } );
       BOOST_REQUIRE( api_return.status == within_mempool );
       BOOST_REQUIRE( api_return.block_num.valid() == false );
       BOOST_REQUIRE( api_return.rc_cost.valid() == false );
@@ -230,7 +230,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
       BOOST_REQUIRE( api_return.rc_cost.valid() );
       BOOST_REQUIRE_EQUAL( *api_return.rc_cost, tso->rc_cost );
 
-      api_return = tx_status_api->api->find_transaction( { .transaction_id = tx1->get_transaction_id(), _tx1_expiration } );
+      api_return = tx_status_api->api->find_transaction( { .transaction_id = tx1->get_transaction_id(), .expiration =  _tx1_expiration } );
       BOOST_REQUIRE( api_return.status == within_reversible_block );
       BOOST_REQUIRE( api_return.block_num.valid() );
       BOOST_REQUIRE_EQUAL( *api_return.block_num, fixture.db->head_block_num() );
@@ -254,7 +254,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
       BOOST_REQUIRE( api_return.block_num.valid() == false );
       BOOST_REQUIRE( api_return.rc_cost.valid() == false );
 
-      api_return = tx_status_api->api->find_transaction( { .transaction_id = tx2->get_transaction_id(), _tx2_expiration } );
+      api_return = tx_status_api->api->find_transaction( { .transaction_id = tx2->get_transaction_id(), .expiration =  _tx2_expiration } );
       BOOST_REQUIRE( api_return.status == within_mempool );
       BOOST_REQUIRE( api_return.block_num.valid() == false );
       BOOST_REQUIRE( api_return.rc_cost.valid() == false );
@@ -270,7 +270,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
       BOOST_REQUIRE( api_return.block_num.valid() == false );
       BOOST_REQUIRE( api_return.rc_cost.valid() == false );
 
-      api_return = tx_status_api->api->find_transaction( { .transaction_id = tx3->get_transaction_id(), _tx3_expiration } );
+      api_return = tx_status_api->api->find_transaction( { .transaction_id = tx3->get_transaction_id(), .expiration =  _tx3_expiration } );
       BOOST_REQUIRE( api_return.status == within_mempool );
       BOOST_REQUIRE( api_return.block_num.valid() == false );
       BOOST_REQUIRE( api_return.rc_cost.valid() == false );
@@ -292,7 +292,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
       BOOST_REQUIRE( api_return.rc_cost.valid() );
       BOOST_REQUIRE_EQUAL( *api_return.rc_cost, tso->rc_cost );
 
-      api_return = tx_status_api->api->find_transaction( { .transaction_id = tx1->get_transaction_id(), _tx1_expiration } );
+      api_return = tx_status_api->api->find_transaction( { .transaction_id = tx1->get_transaction_id(), .expiration =  _tx1_expiration } );
       BOOST_REQUIRE( api_return.status == within_irreversible_block );
       BOOST_REQUIRE( api_return.block_num.valid() );
       BOOST_REQUIRE_EQUAL( *api_return.block_num, tso->block_num );
@@ -318,7 +318,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
       BOOST_REQUIRE( api_return.rc_cost.valid() );
       BOOST_REQUIRE_EQUAL( *api_return.rc_cost, tso->rc_cost );
 
-      api_return = tx_status_api->api->find_transaction( { .transaction_id = tx2->get_transaction_id(), _tx2_expiration } );
+      api_return = tx_status_api->api->find_transaction( { .transaction_id = tx2->get_transaction_id(), .expiration =  _tx2_expiration } );
       BOOST_REQUIRE( api_return.status == within_irreversible_block );
       BOOST_REQUIRE( api_return.block_num.valid() );
       BOOST_REQUIRE_EQUAL( *api_return.block_num, tso->block_num );
@@ -345,7 +345,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
       BOOST_REQUIRE( api_return.rc_cost.valid() );
       BOOST_REQUIRE_EQUAL( *api_return.rc_cost, tso->rc_cost );
 
-      api_return = tx_status_api->api->find_transaction( { .transaction_id = tx3->get_transaction_id(), _tx3_expiration } );
+      api_return = tx_status_api->api->find_transaction( { .transaction_id = tx3->get_transaction_id(), .expiration =  _tx3_expiration } );
       BOOST_REQUIRE( api_return.status == within_irreversible_block );
       BOOST_REQUIRE( api_return.block_num.valid() );
       BOOST_REQUIRE_EQUAL( *api_return.block_num, tso->block_num );
@@ -370,7 +370,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
       BOOST_REQUIRE( api_return.block_num.valid() == false );
       BOOST_REQUIRE( api_return.rc_cost.valid() == false );
 
-      api_return = tx_status_api->api->find_transaction( { .transaction_id = tx1->get_transaction_id(), _tx1_expiration } );
+      api_return = tx_status_api->api->find_transaction( { .transaction_id = tx1->get_transaction_id(), .expiration =  _tx1_expiration } );
       BOOST_REQUIRE( api_return.status == too_old );
       BOOST_REQUIRE( api_return.block_num.valid() == false );
       BOOST_REQUIRE( api_return.rc_cost.valid() == false );
@@ -392,7 +392,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
       BOOST_REQUIRE( api_return.rc_cost.valid() );
       BOOST_REQUIRE_EQUAL( *api_return.rc_cost, tso->rc_cost );
 
-      api_return = tx_status_api->api->find_transaction( { .transaction_id = tx2->get_transaction_id(), _tx2_expiration } );
+      api_return = tx_status_api->api->find_transaction( { .transaction_id = tx2->get_transaction_id(), .expiration =  _tx2_expiration } );
       BOOST_REQUIRE( api_return.status == within_irreversible_block );
       BOOST_REQUIRE( api_return.block_num.valid() );
       BOOST_REQUIRE_EQUAL( *api_return.block_num, tso->block_num );
@@ -418,7 +418,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
       BOOST_REQUIRE( api_return.rc_cost.valid() );
       BOOST_REQUIRE_EQUAL( *api_return.rc_cost, tso->rc_cost );
 
-      api_return = tx_status_api->api->find_transaction( { .transaction_id = tx3->get_transaction_id(), _tx3_expiration } );
+      api_return = tx_status_api->api->find_transaction( { .transaction_id = tx3->get_transaction_id(), .expiration =  _tx3_expiration } );
       BOOST_REQUIRE( api_return.status == within_irreversible_block );
       BOOST_REQUIRE( api_return.block_num.valid() );
       BOOST_REQUIRE_EQUAL( *api_return.block_num, tso->block_num );
@@ -442,7 +442,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
       BOOST_REQUIRE( api_return.block_num.valid() == false );
       BOOST_REQUIRE( api_return.rc_cost.valid() == false );
 
-      api_return = tx_status_api->api->find_transaction( { .transaction_id = tx2->get_transaction_id(), _tx2_expiration } );
+      api_return = tx_status_api->api->find_transaction( { .transaction_id = tx2->get_transaction_id(), .expiration =  _tx2_expiration } );
       BOOST_REQUIRE( api_return.status == too_old );
       BOOST_REQUIRE( api_return.block_num.valid() == false );
       BOOST_REQUIRE( api_return.rc_cost.valid() == false );
@@ -460,7 +460,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
       BOOST_REQUIRE( api_return.block_num.valid() == false );
       BOOST_REQUIRE( api_return.rc_cost.valid() == false );
 
-      api_return = tx_status_api->api->find_transaction( { .transaction_id = tx3->get_transaction_id(), _tx3_expiration } );
+      api_return = tx_status_api->api->find_transaction( { .transaction_id = tx3->get_transaction_id(), .expiration =  _tx3_expiration } );
       BOOST_REQUIRE( api_return.status == too_old );
       BOOST_REQUIRE( api_return.block_num.valid() == false );
       BOOST_REQUIRE( api_return.rc_cost.valid() == false );
@@ -488,7 +488,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
       BOOST_REQUIRE( api_return.block_num.valid() == false );
       BOOST_REQUIRE( api_return.rc_cost.valid() == false );
 
-      api_return = tx_status_api->api->find_transaction( { .transaction_id = tx1->get_transaction_id(), _tx1_expiration } );
+      api_return = tx_status_api->api->find_transaction( { .transaction_id = tx1->get_transaction_id(), .expiration =  _tx1_expiration } );
       BOOST_REQUIRE( api_return.status == too_old );
       BOOST_REQUIRE( api_return.block_num.valid() == false );
       BOOST_REQUIRE( api_return.rc_cost.valid() == false );
@@ -498,7 +498,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
       BOOST_REQUIRE( api_return.block_num.valid() == false );
       BOOST_REQUIRE( api_return.rc_cost.valid() == false );
 
-      api_return = tx_status_api->api->find_transaction( { .transaction_id = tx2->get_transaction_id(), _tx2_expiration } );
+      api_return = tx_status_api->api->find_transaction( { .transaction_id = tx2->get_transaction_id(), .expiration =  _tx2_expiration } );
       BOOST_REQUIRE( api_return.status == too_old );
       BOOST_REQUIRE( api_return.block_num.valid() == false );
       BOOST_REQUIRE( api_return.rc_cost.valid() == false );
@@ -518,7 +518,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
 
       // One second after our last irreversible block
       auto after_lib_time = lib_time + fc::seconds(1);
-      api_return = tx_status_api->api->find_transaction( { .transaction_id = transaction_id_type(), after_lib_time } );
+      api_return = tx_status_api->api->find_transaction( { .transaction_id = transaction_id_type(), .expiration =  after_lib_time } );
       BOOST_REQUIRE( api_return.status == status_01 );
       BOOST_REQUIRE( api_return.block_num.valid() == false );
       BOOST_REQUIRE( api_return.rc_cost.valid() == false );
@@ -526,7 +526,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
       // One second before our block depth
       auto old_time = fixture.get_block_reader().get_block_by_number( 
         fixture.db->head_block_num() - TRANSACTION_STATUS_TEST_BLOCK_DEPTH + 1 )->get_block_header().timestamp - fc::seconds(1);
-      api_return = tx_status_api->api->find_transaction( { .transaction_id = transaction_id_type(), old_time } );
+      api_return = tx_status_api->api->find_transaction( { .transaction_id = transaction_id_type(), .expiration = old_time } );
       BOOST_REQUIRE( api_return.status == too_old );
       BOOST_REQUIRE( api_return.block_num.valid() == false );
       BOOST_REQUIRE( api_return.rc_cost.valid() == false );
