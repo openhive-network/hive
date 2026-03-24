@@ -7374,10 +7374,10 @@ BOOST_AUTO_TEST_CASE( claim_reward_balance_apply )
     {
       db.modify( db.get_account( "alice" ), []( account_object& a )
       {
-        a.reward_hive_balance = HIVE_asset( 10'000 );
-        a.reward_hbd_balance = HBD_asset( 10'000 );
-        a.reward_vesting_balance = VEST_asset( 10'000'000 );
-        a.reward_vesting_hive = HIVE_asset( 10'000 );
+        a.access_hive_rewards() = HIVE_asset( 10'000 );
+        a.access_hbd_rewards() = HBD_asset( 10'000 );
+        a.access_vest_rewards() = VEST_asset( 10'000'000 );
+        a.access_vest_rewards_as_hive() = HIVE_asset( 10'000 );
       });
 
       db.modify( db.get_dynamic_global_properties(), []( dynamic_global_property_object& gpo )
@@ -7985,7 +7985,7 @@ BOOST_AUTO_TEST_CASE( comment_beneficiaries_apply )
 
       db.modify( db.get_treasury(), [=]( account_object& a )
       {
-        a.hbd_balance.amount.value = 0;
+        a.access_hbd_balance().amount.value = 0;
       });
     });
 
@@ -8121,7 +8121,7 @@ BOOST_AUTO_TEST_CASE( comment_options_apply )
 
       db.modify( db.get_treasury(), [=]( account_object& a )
       {
-        a.hbd_balance.amount.value = 0;
+        a.access_hbd_balance().amount.value = 0;
       } );
     } );
 
@@ -8301,7 +8301,7 @@ BOOST_AUTO_TEST_CASE( comment_options_deleted_permlink_reuse )
 
       db.modify( db.get_treasury(), [=]( account_object& a )
       {
-        a.hbd_balance.amount.value = 0;
+        a.access_hbd_balance().amount.value = 0;
       } );
     } );
 

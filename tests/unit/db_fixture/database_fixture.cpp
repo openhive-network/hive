@@ -389,7 +389,7 @@ void database_fixture::issue_funds( const string& account_name, const HIVE_asset
   {
     db.modify( db.get_account( account_name ), [&]( account_object& a )
     {
-      a.balance += amount;
+      a.access_hive_balance() += amount;
     } );
 
     db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
@@ -420,7 +420,7 @@ void database_fixture::issue_funds( const string& account_name, const HBD_asset&
 
     db.modify( db.get_account( account_name ), [&]( account_object& a )
     {
-      a.hbd_balance += amount;
+      a.access_hbd_balance() += amount;
       a.hbd_seconds_last_update = db.head_block_time();
     } );
 

@@ -234,8 +234,8 @@ void account_create_with_delegation_evaluator::do_apply( const account_create_wi
 
   _db.modify( creator, [&]( account_object& c )
   {
-    c.balance -= o_fee;
-    c.delegated_vesting_shares += o_delegation;
+    c.access_hive_balance() -= o_fee;
+    c.access_delegated_vesting() += o_delegation;
   } );
 
   const auto& new_account = create_account( _db, o.new_account_name, o.memo_key, props.get_head_block_time(), _db.get_current_timestamp(),
@@ -441,7 +441,7 @@ void claim_account_evaluator::do_apply( const claim_account_operation& o )
 
   _db.modify( creator, [&]( account_object& a )
   {
-    a.balance -= o_fee;
+    a.access_hive_balance() -= o_fee;
     a.pending_claimed_accounts++;
   } );
 }

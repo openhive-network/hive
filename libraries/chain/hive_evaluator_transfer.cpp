@@ -654,9 +654,9 @@ void claim_reward_balance_evaluator::do_apply( const claim_reward_balance_operat
       _db.rc().regenerate_rc_mana( a, now );
     }
 
-    a.vesting_shares += op_reward_vests;
-    a.reward_vesting_balance -= op_reward_vests;
-    a.reward_vesting_hive -= reward_vesting_hive_to_move;
+    a.access_vesting() += op_reward_vests;
+    a.access_vest_rewards() -= op_reward_vests;
+    a.access_vest_rewards_as_hive() -= reward_vesting_hive_to_move;
   } );
   if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
     _db.rc().update_account_after_vest_change( acnt, now );
@@ -723,8 +723,8 @@ void delegate_vesting_shares_evaluator::do_apply( const delegate_vesting_shares_
     }
 
     // Assume delegated VESTS are used first when consuming mana. You cannot delegate received vesting shares
-    available_shares.amount = std::min( available_shares.amount, max_mana - delegator.received_vesting_shares.amount );
-    available_downvote_shares.amount = std::min( available_downvote_shares.amount, max_mana - delegator.received_vesting_shares.amount );
+    available_shares.amount = std::min( available_shares.amount, max_mana - delegator.get_received_vesting().amount );
+    available_downvote_shares.amount = std::min( available_downvote_shares.amount, max_mana - delegator.get_received_vesting().amount );
 
     if( delegator.next_vesting_withdrawal < fc::time_point_sec::maximum()
       && delegator.get_total_vesting_withdrawal() > delegator.vesting_withdraw_rate )
@@ -767,7 +767,7 @@ void delegate_vesting_shares_evaluator::do_apply( const delegate_vesting_shares_
 
     _db.modify( delegator, [&]( account_object& a )
     {
-      a.delegated_vesting_shares += op_vesting_shares;
+      a.access_delegated_vesting() += op_vesting_shares;
 
       if( _db.has_hardfork( HIVE_HARDFORK_0_20__2539 ) )
       {
@@ -791,7 +791,7 @@ void delegate_vesting_shares_evaluator::do_apply( const delegate_vesting_shares_
         util::update_manabar( gpo, a, op_vesting_shares.amount.value );
       }
 
-      a.received_vesting_shares += op_vesting_shares;
+      a.access_received_vesting() += op_vesting_shares;
     } );
   }
   else if( op_vesting_shares >= delegation->get_vesting() ) // delegation is increasing
@@ -806,7 +806,7 @@ void delegate_vesting_shares_evaluator::do_apply( const delegate_vesting_shares_
 
     _db.modify( delegator, [&]( account_object& a )
     {
-      a.delegated_vesting_shares += delta;
+      a.access_delegated_vesting() += delta;
 
       if( _db.has_hardfork( HIVE_HARDFORK_0_20__2539 ) )
       {
@@ -830,7 +830,7 @@ void delegate_vesting_shares_evaluator::do_apply( const delegate_vesting_shares_
         util::update_manabar( gpo, a, delta.amount.value );
       }
 
-      a.received_vesting_shares += delta;
+      a.access_received_vesting() += delta;
     } );
 
     _db.modify( *delegation, [&]( vesting_delegation_object& obj )
@@ -862,7 +862,7 @@ void delegate_vesting_shares_evaluator::do_apply( const delegate_vesting_shares_
         util::update_manabar( gpo, a );
       }
 
-      a.received_vesting_shares -= delta;
+      a.access_received_vesting() -= delta;
 
       if( _db.has_hardfork( HIVE_HARDFORK_0_20__2539 ) )
       {

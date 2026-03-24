@@ -2685,7 +2685,7 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
     {
       db.modify( db.get_account( "sam" ), [&]( account_object& a )
       {
-        a.hbd_balance = hbd_balance - get_hbd_balance( HIVE_INIT_MINER_NAME ); // initial HBD balance is still on 'initminer'
+        a.access_hbd_balance() = hbd_balance - get_hbd_balance( HIVE_INIT_MINER_NAME ); // initial HBD balance is still on 'initminer'
       } );
     } );
 
@@ -2730,7 +2730,7 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
     {
       db.modify( db.get_account( "sam" ), [&]( account_object& a )
       {
-        a.hbd_balance = hbd_balance - get_hbd_balance( HIVE_INIT_MINER_NAME ); // initial HBD balance is still on 'initminer'
+        a.access_hbd_balance() = hbd_balance - get_hbd_balance( HIVE_INIT_MINER_NAME ); // initial HBD balance is still on 'initminer'
       });
     } );
 
@@ -2877,10 +2877,10 @@ BOOST_AUTO_TEST_CASE( clear_null_account )
     {
       db.modify( db.get_account( HIVE_NULL_ACCOUNT ), [&]( account_object& a )
       {
-        a.reward_hive_balance = HIVE_asset( 1'000 );
-        a.reward_hbd_balance = HBD_asset( 1'000 );
-        a.reward_vesting_balance = VEST_asset( 1'000'000 );
-        a.reward_vesting_hive = HIVE_asset( 1'000 );
+        a.access_hive_rewards() = HIVE_asset( 1'000 );
+        a.access_hbd_rewards() = HBD_asset( 1'000 );
+        a.access_vest_rewards() = VEST_asset( 1'000'000 );
+        a.access_vest_rewards_as_hive() = HIVE_asset( 1'000 );
       });
 
       db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
