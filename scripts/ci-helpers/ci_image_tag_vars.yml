@@ -2,7 +2,7 @@ variables:
   # Using commit hash instead of tag to pin to a specific ci-base-image version.
   # This ensures build repeatability - tags can be moved/overwritten, but commit hashes are immutable.
   # In future we may switch to tags once our tagging workflow is stable.
-  CI_BASE_IMAGE_TAG: ":58a2bdad8d40d0b7b06b0aac5f97c7d5a8b3e799"
+  CI_BASE_IMAGE_TAG: ":pypa_2_28-pg18-3"
   CI_BASE_IMAGE: "registry.gitlab.syncad.com/hive/common-ci-configuration/ci-base-image${CI_BASE_IMAGE_TAG}"
   # Legacy variable for backwards compatibility (deprecated - use CI_BASE_IMAGE instead)
   TEST_IMAGE_TAG: "${CI_BASE_IMAGE_TAG}"
