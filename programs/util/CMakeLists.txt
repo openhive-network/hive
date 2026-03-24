@@ -1,8 +1,7 @@
 add_executable( get_dev_key get_dev_key.cpp )
 
 target_link_libraries( get_dev_key
-                       PRIVATE hive_chain hive_protocol hive_utilities fc ${CMAKE_DL_LIBS} ${PLATFORM_SPECIFIC_LIBS} )
-
+                       PRIVATE hive_chain hive_protocol fc ${CMAKE_DL_LIBS} ${PLATFORM_SPECIFIC_LIBS} )
 install( TARGETS
    get_dev_key
 
@@ -15,12 +14,12 @@ install( TARGETS
 add_executable( test_shared_mem test_shared_mem.cpp )
 
 target_link_libraries( test_shared_mem
-                       PRIVATE  hive_chain hive_protocol hive_utilities fc ${CMAKE_DL_LIBS} ${PLATFORM_SPECIFIC_LIBS} )
+                       PRIVATE  hive_chain hive_protocol fc ${CMAKE_DL_LIBS} ${PLATFORM_SPECIFIC_LIBS} )
 
 add_executable( sign_digest sign_digest.cpp )
 
 target_link_libraries( sign_digest
-                       PRIVATE hive_chain hive_protocol hive_utilities fc ${CMAKE_DL_LIBS} ${PLATFORM_SPECIFIC_LIBS} )
+                       PRIVATE hive_chain hive_protocol fc ${CMAKE_DL_LIBS} ${PLATFORM_SPECIFIC_LIBS} )
 
 install( TARGETS
    sign_digest
@@ -36,7 +35,7 @@ add_executable( sign_transaction sign_transaction.cpp )
 set_target_properties(sign_transaction PROPERTIES ENABLE_EXPORTS true)
 
 target_link_libraries( sign_transaction
-                       PRIVATE hive_chain hive_protocol hive_utilities fc ${CMAKE_DL_LIBS} ${PLATFORM_SPECIFIC_LIBS} )
+                       PRIVATE hive_chain hive_protocol fc ${CMAKE_DL_LIBS} ${PLATFORM_SPECIFIC_LIBS} )
 
 install( TARGETS
    sign_transaction
@@ -49,7 +48,7 @@ install( TARGETS
 add_executable( serialize_set_properties serialize_set_properties.cpp )
 
 target_link_libraries( serialize_set_properties
-                       PRIVATE hive_chain hive_protocol hive_utilities fc ${CMAKE_DL_LIBS} ${PLATFORM_SPECIFIC_LIBS} )
+                       PRIVATE hive_chain hive_protocol fc ${CMAKE_DL_LIBS} ${PLATFORM_SPECIFIC_LIBS} )
 
 install( TARGETS
    serialize_set_properties
