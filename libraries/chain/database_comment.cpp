@@ -633,7 +633,7 @@ void database::perform_vesting_share_split( uint32_t magnitude )
       VEST_asset new_vesting_shares = old_vesting_shares;
       modify( account, [&]( account_object& a )
       {
-        a.vesting_shares *= magnitude;
+        a.access_vesting() *= magnitude;
         new_vesting_shares = a.get_vesting();
         a.withdrawn *= magnitude;
         a.to_withdraw *= magnitude;

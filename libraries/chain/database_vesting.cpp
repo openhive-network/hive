@@ -190,11 +190,11 @@ void database::process_vesting_withdrawals()
               {
                 if( has_hardfork( HIVE_HARDFORK_0_20 ) )
                   rc().regenerate_rc_mana( a, now );
-                a.vesting_shares += routed_vests;
+                a.access_vesting() += routed_vests;
               }
               else
               {
-                a.balance += routed_hive;
+                a.access_hive_balance() += routed_hive;
               }
             });
 
@@ -255,8 +255,8 @@ void database::process_vesting_withdrawals()
 
     modify( from_account, [&]( account_object& a )
     {
-      a.vesting_shares -= to_withdraw;
-      a.balance += converted_hive;
+      a.access_vesting() -= to_withdraw;
+      a.access_hive_balance() += converted_hive;
       a.withdrawn += to_withdraw;
 
       if( a.get_total_vesting_withdrawal().amount <= 0 || a.get_vesting().amount == 0 )

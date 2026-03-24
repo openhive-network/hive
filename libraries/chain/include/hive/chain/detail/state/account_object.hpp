@@ -68,11 +68,15 @@ public:
   {}
 
   //liquid HIVE balance
-  const HIVE_asset& get_hive_balance() const { return balance; }
+  const HIVE_asset& get_hive_balance() const { return hive_balance; }
   //HIVE balance in savings
-  const HIVE_asset& get_hive_savings() const { return savings_balance; }
+  const HIVE_asset& get_hive_savings() const { return savings_hive_balance; }
   //unclaimed HIVE rewards
   const HIVE_asset& get_hive_rewards() const { return reward_hive_balance; }
+
+  HIVE_asset& access_hive_balance() { return hive_balance; }
+  HIVE_asset& access_hive_savings() { return savings_hive_balance; }
+  HIVE_asset& access_hive_rewards() { return reward_hive_balance; }
 
   //liquid HBD balance
   const HBD_asset& get_hbd_balance() const { return hbd_balance; }
@@ -80,6 +84,10 @@ public:
   const HBD_asset& get_hbd_savings() const { return savings_hbd_balance; }
   //unclaimed HBD rewards
   const HBD_asset& get_hbd_rewards() const { return reward_hbd_balance; }
+
+  HBD_asset& access_hbd_balance() { return hbd_balance; }
+  HBD_asset& access_hbd_savings() { return savings_hbd_balance; }
+  HBD_asset& access_hbd_rewards() { return reward_hbd_balance; }
 
   //all VESTS held by the account - use other routines to get active VESTS for specific uses
   const VEST_asset& get_vesting() const { return vesting_shares; }
@@ -112,6 +120,12 @@ public:
   //value of unclaimed VESTS rewards in HIVE (HIVE held on global balance)
   const HIVE_asset& get_vest_rewards_as_hive() const { return reward_vesting_hive; }
 
+  VEST_asset& access_vesting() { return vesting_shares; }
+  VEST_asset& access_delegated_vesting() { return delegated_vesting_shares; }
+  VEST_asset& access_received_vesting() { return received_vesting_shares; }
+  VEST_asset& access_vest_rewards() { return reward_vesting_balance; } //TODO: combine this with access_vest_rewards_as_hive into single setter
+  HIVE_asset& access_vest_rewards_as_hive() { return reward_vesting_hive; }
+
   //effective balance of VESTS for RC calculation optionally excluding part that cannot be delegated
   share_type get_maximum_rc( bool only_delegable = false ) const
   {
@@ -143,7 +157,7 @@ public:
   //sets proxy to neutral (account will vote for itself)
   void clear_proxy() { proxy = account_id_type(); }
   //sets proxy to given account
-  void set_proxy(const account_object& new_proxy)
+  void set_proxy( const account_object& new_proxy )
   {
     FC_ASSERT( &new_proxy != this );
     proxy = new_proxy.get_id();
@@ -154,7 +168,7 @@ public:
   //account's recovery account (if any), that is, an account that can authorize request_account_recovery_operation
   account_id_type get_recovery_account() const { return recovery_account; }
   //sets new recovery account
-  void set_recovery_account(const account_object& new_recovery_account)
+  void set_recovery_account( const account_object& new_recovery_account )
   {
     recovery_account = new_recovery_account.get_id();
   }
@@ -191,20 +205,21 @@ public:
   util::manabar     voting_manabar;
   util::manabar     downvote_manabar;
   util::manabar     rc_manabar;
-
+private:
   HBD_asset         hbd_balance; ///< HBD liquid balance
   HBD_asset         savings_hbd_balance; ///< HBD balance guarded by 3 day withdrawal (also earns interest)
   HBD_asset         reward_hbd_balance; ///< HBD balance author rewards that can be claimed
 
   HIVE_asset        reward_hive_balance; ///< HIVE balance author rewards that can be claimed
   HIVE_asset        reward_vesting_hive; ///< HIVE counterweight to reward_vesting_balance
-  HIVE_asset        balance;  ///< HIVE liquid balance
-  HIVE_asset        savings_balance;  ///< HIVE balance guarded by 3 day withdrawal
+  HIVE_asset        hive_balance;  ///< HIVE liquid balance
+  HIVE_asset        savings_hive_balance;  ///< HIVE balance guarded by 3 day withdrawal
 
   VEST_asset        reward_vesting_balance; ///< VESTS balance author/curation rewards that can be claimed
   VEST_asset        vesting_shares; ///< VESTS balance, controls governance voting power
   VEST_asset        delegated_vesting_shares; ///< VESTS delegated out to other accounts
   VEST_asset        received_vesting_shares; ///< VESTS delegated to this account
+public:
   VEST_asset        vesting_withdraw_rate; ///< weekly power down rate
 
   HIVE_asset        curation_rewards; ///< not used by consensus - sum of all curations (value before conversion to VESTS)
@@ -581,8 +596,8 @@ FC_REFLECT( hive::chain::account_object,
           (rc_manabar)
           (hbd_balance)(savings_hbd_balance)
           (reward_hbd_balance)(reward_hive_balance)
-          (reward_vesting_hive)(balance)
-          (savings_balance)(reward_vesting_balance)
+          (reward_vesting_hive)(hive_balance)
+          (savings_hive_balance)(reward_vesting_balance)
           (vesting_shares)(delegated_vesting_shares)
           (received_vesting_shares)(vesting_withdraw_rate)
           (curation_rewards)(posting_rewards)

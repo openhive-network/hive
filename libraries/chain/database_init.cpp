@@ -276,10 +276,10 @@ void database::init_genesis()
 
       modify( get_account( HIVE_INIT_MINER_NAME ), [&]( account_object& a )
       {
-        a.balance = HIVE_asset( HIVE_INIT_SUPPLY ) - to_vest;
-        a.hbd_balance = HBD_asset( HIVE_HBD_INIT_SUPPLY );
-        a.vesting_shares = initial_vests;
-        FC_ASSERT( a.balance.amount >= 0 && a.hbd_balance.amount >= 0 && a.vesting_shares.amount >= 0, "Invalid testnet configuration" );
+        a.access_hive_balance() = HIVE_asset( HIVE_INIT_SUPPLY ) - to_vest;
+        a.access_hbd_balance() = HBD_asset( HIVE_HBD_INIT_SUPPLY );
+        a.access_vesting() = initial_vests;
+        FC_ASSERT( a.get_hive_balance().amount >= 0 && a.get_hbd_balance().amount >= 0 && a.get_vesting().amount >= 0, "Invalid testnet configuration" );
       } );
       modify( dgpo, [&]( dynamic_global_property_object& gpo )
       {
