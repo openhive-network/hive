@@ -30,7 +30,7 @@ list(APPEND sources "${CMAKE_CURRENT_BINARY_DIR}/git_revision.cpp")
 add_library( hive_utilities
              ${sources}
              ${HEADERS} )
-target_link_libraries( hive_utilities appbase fc hive_protocol )
+target_link_libraries( hive_utilities hive_protocol fc )
 target_include_directories( hive_utilities
                             PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" )
 if (USE_PCH)
