@@ -1338,7 +1338,7 @@ test-wax-spec-package:
     - cd "${WAX_TEST_DIR}"
     - npm init es6
     - echo "@hiveio:registry=https://gitlab.syncad.com/api/v4/groups/136/-/packages/npm/" >> .npmrc
-    - pnpm add typescript @hiveio/wax @hiveio/wax-api-jsonrpc@file:${PACKAGE_TGZ_PATH} # Install dependencies
+    - pnpm add @hiveio/wax @hiveio/wax-api-jsonrpc@file:${PACKAGE_TGZ_PATH} # Install dependencies
     - |
       cat <<EOT > "index.ts"
       import WaxExtendedData from '@hiveio/wax-api-jsonrpc';
@@ -1358,7 +1358,7 @@ test-wax-spec-package:
       }
       if (lastError) throw lastError;
       EOT
-    - pnpm exec tsc -t esnext -m esnext --moduleResolution bundler index.ts # Test if it compiles
+    - tsc -t esnext -m esnext --moduleResolution bundler index.ts # Test if it compiles
     - node index.js # Test if it runs without errors
   needs:
     - job: generate-wax-spec
