@@ -5104,6 +5104,10 @@ namespace graphene { namespace net {
           try
           {
             fc::tcp_server temporary_server;
+            // Set SO_REUSEADDR (without SO_REUSEPORT) so the check succeeds when
+            // the port is only in TIME_WAIT from a previous run, but still fails
+            // if another process is actively listening on it.
+            temporary_server.set_reuse_address(true, false);
             if (listen_endpoint.get_address() != fc::ip::address())
               temporary_server.listen(listen_endpoint);
             else
@@ -5219,7 +5223,10 @@ namespace graphene { namespace net {
 
     void node_impl::initiate_connect_to(const peer_connection_ptr& new_peer)
     {
-      new_peer->get_socket().open();
+      if (new_peer->get_remote_endpoint() && new_peer->get_remote_endpoint()->get_address().is_ipv6())
+        new_peer->get_socket().open_for_endpoint(*new_peer->get_remote_endpoint());
+      else
+        new_peer->get_socket().open();
       new_peer->get_socket().set_reuse_address();
       int peer_send_buffer_size = new_peer->get_socket().set_send_buffer_size(MAX_MESSAGE_SIZE);
       idump((peer_send_buffer_size));
