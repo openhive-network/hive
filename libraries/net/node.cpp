@@ -738,6 +738,10 @@ namespace graphene { namespace net {
       void accept_connection_task(const peer_connection_ptr& new_peer);
       void accept_loop();
       void send_hello_message(const peer_connection_ptr& peer);
+      void send_connection_rejected_message(peer_connection* peer,
+                                            const fc::ip::endpoint& remote_endpoint,
+                                            rejection_reason_code reason_code,
+                                            const std::string& reason_string);
       void connect_to_task(const peer_connection_ptr& new_peer, const fc::ip::endpoint& remote_endpoint);
       bool is_connection_to_endpoint_in_progress(const fc::ip::endpoint& remote_endpoint);
 
@@ -1948,20 +1952,89 @@ namespace graphene { namespace net {
            ("endpoint", originating_peer->get_remote_endpoint()));
       switch (received_message.msg_type)
       {
+      // New IPv6-aware message types (5018-5022)
       case core_message_type_enum::hello_message_type:
+        originating_peer->peer_supports_ipv6 = true;
         on_hello_message(originating_peer, received_message.as<hello_message>());
-        break;
-      case core_message_type_enum::connection_accepted_message_type:
-        on_connection_accepted_message(originating_peer, received_message.as<connection_accepted_message>());
         break;
       case core_message_type_enum::connection_rejected_message_type:
         on_connection_rejected_message(originating_peer, received_message.as<connection_rejected_message>());
         break;
-      case core_message_type_enum::address_request_message_type:
-        on_address_request_message(originating_peer, received_message.as<address_request_message>());
-        break;
       case core_message_type_enum::address_message_type:
         on_address_message(originating_peer, received_message.as<address_message>());
+        break;
+      case core_message_type_enum::check_firewall_message_type:
+        on_check_firewall_message(originating_peer, received_message.as<check_firewall_message>());
+        break;
+      case core_message_type_enum::check_firewall_reply_message_type:
+        on_check_firewall_reply_message(originating_peer, received_message.as<check_firewall_reply_message>());
+        break;
+
+      // Legacy IPv4-only message types (5006, 5008, 5010, 5014, 5015)
+      // These are converted to new types and dispatched to the same handlers.
+      // If a new-type message was already processed, the legacy one is skipped.
+      case core_message_type_enum::legacy_hello_message_type:
+      {
+        if (originating_peer->peer_supports_ipv6)
+          break; // already processed new hello_message (5018)
+        auto legacy_msg = received_message.as<legacy_hello_message>();
+        hello_message converted(legacy_msg.user_agent, legacy_msg.core_protocol_version,
+                                legacy_msg.inbound_address.to_address(), legacy_msg.inbound_port,
+                                legacy_msg.outbound_port, legacy_msg.node_public_key,
+                                legacy_msg.signed_shared_secret, legacy_msg.user_data);
+        on_hello_message(originating_peer, converted);
+        break;
+      }
+      case core_message_type_enum::legacy_connection_rejected_message_type:
+      {
+        auto legacy_msg = received_message.as<legacy_connection_rejected_message>();
+        connection_rejected_message converted(legacy_msg.user_agent, legacy_msg.core_protocol_version,
+                                              legacy_msg.remote_endpoint.to_endpoint(),
+                                              legacy_msg.reason_code, legacy_msg.reason_string);
+        on_connection_rejected_message(originating_peer, converted);
+        break;
+      }
+      case core_message_type_enum::legacy_address_message_type:
+      {
+        auto legacy_msg = received_message.as<legacy_address_message>();
+        address_message converted;
+        converted.addresses.reserve(legacy_msg.addresses.size());
+        for (const auto& legacy_addr : legacy_msg.addresses)
+          converted.addresses.emplace_back(legacy_addr.remote_endpoint.to_endpoint(),
+                                           legacy_addr.last_seen_time,
+                                           legacy_addr.latency,
+                                           legacy_addr.node_id,
+                                           legacy_addr.direction,
+                                           legacy_addr.firewalled);
+        on_address_message(originating_peer, converted);
+        break;
+      }
+      case core_message_type_enum::legacy_check_firewall_message_type:
+      {
+        auto legacy_msg = received_message.as<legacy_check_firewall_message>();
+        check_firewall_message converted;
+        converted.node_id = legacy_msg.node_id;
+        converted.endpoint_to_check = legacy_msg.endpoint_to_check.to_endpoint();
+        on_check_firewall_message(originating_peer, converted);
+        break;
+      }
+      case core_message_type_enum::legacy_check_firewall_reply_message_type:
+      {
+        auto legacy_msg = received_message.as<legacy_check_firewall_reply_message>();
+        check_firewall_reply_message converted;
+        converted.node_id = legacy_msg.node_id;
+        converted.endpoint_checked = legacy_msg.endpoint_checked.to_endpoint();
+        converted.result = legacy_msg.result;
+        on_check_firewall_reply_message(originating_peer, converted);
+        break;
+      }
+
+      // Unchanged message types
+      case core_message_type_enum::connection_accepted_message_type:
+        on_connection_accepted_message(originating_peer, received_message.as<connection_accepted_message>());
+        break;
+      case core_message_type_enum::address_request_message_type:
+        on_address_request_message(originating_peer, received_message.as<address_request_message>());
         break;
       case core_message_type_enum::fetch_blockchain_item_ids_message_type:
         on_fetch_blockchain_item_ids_message(originating_peer, received_message.as<fetch_blockchain_item_ids_message>());
@@ -1993,12 +2066,6 @@ namespace graphene { namespace net {
         break;
       case core_message_type_enum::current_time_reply_message_type:
         on_current_time_reply_message(originating_peer, received_message.as<current_time_reply_message>());
-        break;
-      case core_message_type_enum::check_firewall_message_type:
-        on_check_firewall_message(originating_peer, received_message.as<check_firewall_message>());
-        break;
-      case core_message_type_enum::check_firewall_reply_message_type:
-        on_check_firewall_reply_message(originating_peer, received_message.as<check_firewall_reply_message>());
         break;
       case core_message_type_enum::get_current_connections_request_message_type:
         on_get_current_connections_request_message(originating_peer, received_message.as<get_current_connections_request_message>());
@@ -2131,14 +2198,11 @@ namespace graphene { namespace net {
         if (hello_message_received.node_public_key != expected_node_public_key.serialize())
         {
           wlog("Invalid signature in hello message from peer ${peer}", ("peer", originating_peer->get_remote_endpoint()));
-          std::string rejection_message("Invalid signature in hello message");
-          connection_rejected_message connection_rejected(_user_agent_string, core_protocol_version,
-                                                          originating_peer->get_socket().remote_endpoint(),
-                                                          rejection_reason_code::invalid_hello_message,
-                                                          rejection_message);
-
           originating_peer->their_state = peer_connection::their_connection_state::connection_rejected;
-          originating_peer->send_message( message(connection_rejected ) );
+          send_connection_rejected_message(originating_peer,
+                                           originating_peer->get_socket().remote_endpoint(),
+                                           rejection_reason_code::invalid_hello_message,
+                                           "Invalid signature in hello message");
           // for this type of message, we're immediately disconnecting this peer
           fc::exception detailed_error(FC_LOG_MESSAGE(warn, "Invalid signature in hello message"));
           disconnect_from_peer(originating_peer, "Invalid signature in hello message", true, detailed_error);
@@ -2161,13 +2225,11 @@ namespace graphene { namespace net {
                    ("their_hard_fork", next_fork_block_number)("my_block_number", head_block_num));
               std::ostringstream rejection_message;
               rejection_message << "Your client is outdated -- you can only understand blocks up to #" << next_fork_block_number << ", but I'm already on block #" << head_block_num;
-              connection_rejected_message connection_rejected(_user_agent_string, core_protocol_version,
-                                                              originating_peer->get_socket().remote_endpoint(),
-                                                              rejection_reason_code::unspecified,
-                                                              rejection_message.str() );
-
               originating_peer->their_state = peer_connection::their_connection_state::connection_rejected;
-              originating_peer->send_message(message(connection_rejected));
+              send_connection_rejected_message(originating_peer,
+                                               originating_peer->get_socket().remote_endpoint(),
+                                               rejection_reason_code::unspecified,
+                                               rejection_message.str());
               // for this type of message, we're immediately disconnecting this peer, instead of trying to
               // allowing her to ask us for peers (any of our peers will be on the same chain as us, so there's no
               // benefit of sharing them)
@@ -2183,15 +2245,11 @@ namespace graphene { namespace net {
             wlog("Received hello message from peer running a node for different blockchain. Old chain-id: '${old_chain_id}'. New chain-id: '${new_chain_id}'. Their chain-id: '${their_chain_id}'.",
                ("old_chain_id", _delegate->get_old_chain_id())("new_chain_id", _delegate->get_new_chain_id())("their_chain_id", originating_peer->chain_id) );
 
-            std::ostringstream rejection_message;
-            rejection_message << "Your client is running a different chain id";
-            connection_rejected_message connection_rejected(_user_agent_string, core_protocol_version,
-                                                            originating_peer->get_socket().remote_endpoint(),
-                                                            rejection_reason_code::different_chain,
-                                                            rejection_message.str() );
-
             originating_peer->their_state = peer_connection::their_connection_state::connection_rejected;
-            originating_peer->send_message( message( connection_rejected ) );
+            send_connection_rejected_message(originating_peer,
+                                             originating_peer->get_socket().remote_endpoint(),
+                                             rejection_reason_code::different_chain,
+                                             "Your client is running a different chain id");
             // for this type of message, we're immediately disconnecting this peer, instead of trying to
             // allowing her to ask us for peers (any of our peers will be on the same chain as us, so there's no
             // benefit of sharing them)
@@ -2202,19 +2260,17 @@ namespace graphene { namespace net {
         if (already_connected_to_this_peer)
         {
 
-          connection_rejected_message connection_rejected;
-          if (_node_id == originating_peer->node_id)
-            connection_rejected = connection_rejected_message(_user_agent_string, core_protocol_version,
-                                                              originating_peer->get_socket().remote_endpoint(),
-                                                              rejection_reason_code::connected_to_self,
-                                                              "I'm connecting to myself");
-          else
-            connection_rejected = connection_rejected_message(_user_agent_string, core_protocol_version,
-                                                              originating_peer->get_socket().remote_endpoint(),
-                                                              rejection_reason_code::already_connected,
-                                                              "I'm already connected to you");
           originating_peer->their_state = peer_connection::their_connection_state::connection_rejected;
-          originating_peer->send_message(message(connection_rejected));
+          if (_node_id == originating_peer->node_id)
+            send_connection_rejected_message(originating_peer,
+                                             originating_peer->get_socket().remote_endpoint(),
+                                             rejection_reason_code::connected_to_self,
+                                             "I'm connecting to myself");
+          else
+            send_connection_rejected_message(originating_peer,
+                                             originating_peer->get_socket().remote_endpoint(),
+                                             rejection_reason_code::already_connected,
+                                             "I'm already connected to you");
           wlog("Received a hello_message from peer ${peer} that I'm already connected to (with id ${id}), rejection",
                ("peer", originating_peer->get_remote_endpoint())
                ("id", originating_peer->node_id));
@@ -2223,12 +2279,11 @@ namespace graphene { namespace net {
         else if(!_allowed_peers.empty() &&
                 _allowed_peers.find(originating_peer->node_id) == _allowed_peers.end())
         {
-          connection_rejected_message connection_rejected(_user_agent_string, core_protocol_version,
-                                                          originating_peer->get_socket().remote_endpoint(),
-                                                          rejection_reason_code::blocked,
-                                                          "you are not in my allowed_peers list");
           originating_peer->their_state = peer_connection::their_connection_state::connection_rejected;
-          originating_peer->send_message( message(connection_rejected ) );
+          send_connection_rejected_message(originating_peer,
+                                           originating_peer->get_socket().remote_endpoint(),
+                                           rejection_reason_code::blocked,
+                                           "you are not in my allowed_peers list");
           wlog( "Received a hello_message from peer ${peer} who isn't in my allowed_peers list, rejection", ("peer", originating_peer->get_remote_endpoint() ) );
         }
 #endif // ENABLE_P2P_DEBUGGING_API
@@ -2271,12 +2326,11 @@ namespace graphene { namespace net {
 
           if (!is_accepting_new_connections())
           {
-            connection_rejected_message connection_rejected(_user_agent_string, core_protocol_version,
-                                                            originating_peer->get_socket().remote_endpoint(),
-                                                            rejection_reason_code::not_accepting_connections,
-                                                            "not accepting any more incoming connections");
             originating_peer->their_state = peer_connection::their_connection_state::connection_rejected;
-            originating_peer->send_message(message(connection_rejected));
+            send_connection_rejected_message(originating_peer,
+                                             originating_peer->get_socket().remote_endpoint(),
+                                             rejection_reason_code::not_accepting_connections,
+                                             "not accepting any more incoming connections");
             wlog("Received a hello_message from peer ${peer}, but I'm not accepting any more connections, rejection",
                  ("peer", originating_peer->get_remote_endpoint()));
           }
@@ -2324,7 +2378,10 @@ namespace graphene { namespace net {
              ("peer", originating_peer->get_remote_endpoint()));
         originating_peer->firewall_check_state = new firewall_check_state_data;
 
-        originating_peer->send_message(check_firewall_message());
+        if (originating_peer->peer_supports_ipv6)
+          originating_peer->send_message(check_firewall_message());
+        else
+          originating_peer->send_message(legacy_check_firewall_message());
         _last_firewall_check_message_sent = now;
       }
     }
@@ -2375,23 +2432,46 @@ namespace graphene { namespace net {
       VERIFY_CORRECT_THREAD();
       dlog("Received an address request message");
 
-      address_message reply;
-      if (!_node_configuration.peer_advertising_disabled)
+      if (originating_peer->peer_supports_ipv6)
       {
-        reply.addresses.reserve(_active_connections.size());
-        for (const peer_connection_ptr& active_peer : _active_connections)
+        address_message reply;
+        if (!_node_configuration.peer_advertising_disabled)
         {
-          fc::optional<fc::ip::endpoint> endpoint_for_db = active_peer->get_endpoint_for_db();
-          if (endpoint_for_db)
-            reply.addresses.emplace_back(address_info(*endpoint_for_db,
-                                                    fc::time_point::now(),
-                                                    active_peer->round_trip_delay,
-                                                    active_peer->node_id,
-                                                    active_peer->direction,
-                                                    active_peer->is_firewalled));
+          reply.addresses.reserve(_active_connections.size());
+          for (const peer_connection_ptr& active_peer : _active_connections)
+          {
+            fc::optional<fc::ip::endpoint> endpoint_for_db = active_peer->get_endpoint_for_db();
+            if (endpoint_for_db)
+              reply.addresses.emplace_back(address_info(*endpoint_for_db,
+                                                      fc::time_point::now(),
+                                                      active_peer->round_trip_delay,
+                                                      active_peer->node_id,
+                                                      active_peer->direction,
+                                                      active_peer->is_firewalled));
+          }
         }
+        originating_peer->send_message(reply);
       }
-      originating_peer->send_message(reply);
+      else
+      {
+        legacy_address_message reply;
+        if (!_node_configuration.peer_advertising_disabled)
+        {
+          reply.addresses.reserve(_active_connections.size());
+          for (const peer_connection_ptr& active_peer : _active_connections)
+          {
+            fc::optional<fc::ip::endpoint> endpoint_for_db = active_peer->get_endpoint_for_db();
+            if (endpoint_for_db && endpoint_for_db->get_address().is_ipv4())
+              reply.addresses.emplace_back(legacy_address_info(fc::ip::legacy_endpoint(*endpoint_for_db),
+                                                              fc::time_point::now(),
+                                                              active_peer->round_trip_delay,
+                                                              active_peer->node_id,
+                                                              active_peer->direction,
+                                                              active_peer->is_firewalled));
+          }
+        }
+        originating_peer->send_message(reply);
+      }
     }
 
     void node_impl::on_address_message(peer_connection* originating_peer, const address_message& address_message_received)
@@ -4064,10 +4144,20 @@ namespace graphene { namespace net {
                ("checker", peer->get_remote_endpoint()));
           firewall_check_state->nodes_already_tested.insert(peer->node_id);
           peer->firewall_check_state = firewall_check_state;
-          check_firewall_message check_request;
-          check_request.endpoint_to_check = firewall_check_state->endpoint_to_test;
-          check_request.node_id = firewall_check_state->expected_node_id;
-          peer->send_message(check_request);
+          if (peer->peer_supports_ipv6)
+          {
+            check_firewall_message check_request;
+            check_request.endpoint_to_check = firewall_check_state->endpoint_to_test;
+            check_request.node_id = firewall_check_state->expected_node_id;
+            peer->send_message(check_request);
+          }
+          else
+          {
+            legacy_check_firewall_message check_request;
+            check_request.endpoint_to_check = fc::ip::legacy_endpoint(firewall_check_state->endpoint_to_test);
+            check_request.node_id = firewall_check_state->expected_node_id;
+            peer->send_message(check_request);
+          }
           return;
         }
       }
@@ -4077,11 +4167,22 @@ namespace graphene { namespace net {
       peer_connection_ptr originating_peer = get_peer_by_node_id(firewall_check_state->expected_node_id);
       if (originating_peer)
       {
-        check_firewall_reply_message reply;
-        reply.node_id = firewall_check_state->expected_node_id;
-        reply.endpoint_checked = firewall_check_state->endpoint_to_test;
-        reply.result = firewall_check_result::unable_to_check;
-        originating_peer->send_message(reply);
+        if (originating_peer->peer_supports_ipv6)
+        {
+          check_firewall_reply_message reply;
+          reply.node_id = firewall_check_state->expected_node_id;
+          reply.endpoint_checked = firewall_check_state->endpoint_to_test;
+          reply.result = firewall_check_result::unable_to_check;
+          originating_peer->send_message(reply);
+        }
+        else
+        {
+          legacy_check_firewall_reply_message reply;
+          reply.node_id = firewall_check_state->expected_node_id;
+          reply.endpoint_checked = fc::ip::legacy_endpoint(firewall_check_state->endpoint_to_test);
+          reply.result = firewall_check_result::unable_to_check;
+          originating_peer->send_message(reply);
+        }
       }
       delete firewall_check_state;
     }
@@ -4179,7 +4280,18 @@ namespace graphene { namespace net {
                 }
               }
             }
-            original_peer->send_message(check_firewall_reply_message_received);
+            if (original_peer->peer_supports_ipv6)
+            {
+              original_peer->send_message(check_firewall_reply_message_received);
+            }
+            else
+            {
+              legacy_check_firewall_reply_message legacy_reply;
+              legacy_reply.node_id = check_firewall_reply_message_received.node_id;
+              legacy_reply.endpoint_checked = fc::ip::legacy_endpoint(check_firewall_reply_message_received.endpoint_checked);
+              legacy_reply.result = check_firewall_reply_message_received.result;
+              original_peer->send_message(legacy_reply);
+            }
           }
           delete originating_peer->firewall_check_state;
           originating_peer->firewall_check_state = nullptr;
@@ -4687,6 +4799,26 @@ namespace graphene { namespace net {
       }
     } // accept_loop()
 
+    void node_impl::send_connection_rejected_message(peer_connection* peer,
+                                                     const fc::ip::endpoint& remote_endpoint,
+                                                     rejection_reason_code reason_code,
+                                                     const std::string& reason_string)
+    {
+      if (peer->peer_supports_ipv6)
+      {
+        connection_rejected_message rejection(_user_agent_string, core_protocol_version,
+                                              remote_endpoint, reason_code, reason_string);
+        peer->send_message(message(rejection));
+      }
+      else
+      {
+        legacy_connection_rejected_message rejection(_user_agent_string, core_protocol_version,
+                                                     fc::ip::legacy_endpoint(remote_endpoint),
+                                                     reason_code, reason_string);
+        peer->send_message(message(rejection));
+      }
+    }
+
     void node_impl::send_hello_message(const peer_connection_ptr& peer)
     {
       VERIFY_CORRECT_THREAD();
@@ -4717,6 +4849,11 @@ namespace graphene { namespace net {
         listening_port = _publicly_visible_listening_endpoint->port();
       }
 
+      fc::variant_object user_data = generate_hello_user_data();
+
+      // Send new IPv6-aware hello first, then legacy hello.
+      // New nodes process the new hello and skip the legacy one.
+      // Old nodes ignore the new hello (unknown message type) and process the legacy one.
       hello_message hello(_user_agent_string,
                           core_protocol_version,
                           local_endpoint.get_address(),
@@ -4724,9 +4861,18 @@ namespace graphene { namespace net {
                           local_endpoint.port(),
                           _node_public_key,
                           signature,
-                          generate_hello_user_data());
-
+                          user_data);
       peer->send_message(message(hello));
+
+      legacy_hello_message legacy_hello(_user_agent_string,
+                                        core_protocol_version,
+                                        fc::ip::legacy_address(local_endpoint.get_address()),
+                                        listening_port,
+                                        local_endpoint.port(),
+                                        _node_public_key,
+                                        signature,
+                                        user_data);
+      peer->send_message(message(legacy_hello));
     }
 
     void node_impl::connect_to_task(const peer_connection_ptr& new_peer,

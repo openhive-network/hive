@@ -773,7 +773,7 @@ void webserver_plugin::plugin_initialize( const variables_map& options )
     FC_ASSERT( endpoints.size(), "${http-endpoint-type} ${hostname} did not resolve",
               ("http-endpoint-type", my->tls ? "webserver-https-endpoint" : "webserver-http-endpoint")("hostname", _http_or_https_endpoint) );
 
-    my->http_endpoint = tcp::endpoint( boost::asio::ip::make_address_v4( ( string )endpoints[0].get_address() ), endpoints[0].port() );
+    my->http_endpoint = tcp::endpoint( boost::asio::ip::make_address( ( string )endpoints[0].get_address() ), endpoints[0].port() );
     ilog( "configured ${type} to listen on ${ep}", ("type", my->tls ? "https" : "http")("ep", endpoints[0]) );
   }
 
@@ -790,7 +790,7 @@ void webserver_plugin::plugin_initialize( const variables_map& options )
     auto ws_endpoint = options.at( "webserver-ws-endpoint" ).as< string >();
     auto endpoints = fc::resolve_string_to_ip_endpoints( ws_endpoint );
     FC_ASSERT( endpoints.size(), "ws-server-endpoint ${hostname} did not resolve", ("hostname", ws_endpoint) );
-    my->ws_endpoint = tcp::endpoint( boost::asio::ip::make_address_v4( ( string )endpoints[0].get_address() ), endpoints[0].port() );
+    my->ws_endpoint = tcp::endpoint( boost::asio::ip::make_address( ( string )endpoints[0].get_address() ), endpoints[0].port() );
     ilog( "configured ws to listen on ${ep}", ("ep", endpoints[0]) );
   }
 }

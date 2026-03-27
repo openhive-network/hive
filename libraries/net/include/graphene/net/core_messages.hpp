@@ -72,28 +72,33 @@ namespace graphene { namespace net {
 
   enum core_message_type_enum
   {
-    trx_message_type                             = 1000,
-    block_message_type                           = 1001,
-    compressed_block_message_type                = 1002,
-    core_message_type_first                      = 5000,
-    item_ids_inventory_message_type              = 5001,
-    blockchain_item_ids_inventory_message_type   = 5002,
-    fetch_blockchain_item_ids_message_type       = 5003,
-    fetch_items_message_type                     = 5004,
-    item_not_available_message_type              = 5005,
-    hello_message_type                           = 5006,
-    connection_accepted_message_type             = 5007,
-    connection_rejected_message_type             = 5008,
-    address_request_message_type                 = 5009,
-    address_message_type                         = 5010,
-    closing_connection_message_type              = 5011,
-    current_time_request_message_type            = 5012,
-    current_time_reply_message_type              = 5013,
-    check_firewall_message_type                  = 5014,
-    check_firewall_reply_message_type            = 5015,
-    get_current_connections_request_message_type = 5016,
-    get_current_connections_reply_message_type   = 5017,
-    core_message_type_last                       = 5099
+    trx_message_type                                    = 1000,
+    block_message_type                                  = 1001,
+    compressed_block_message_type                       = 1002,
+    core_message_type_first                             = 5000,
+    item_ids_inventory_message_type                     = 5001,
+    blockchain_item_ids_inventory_message_type          = 5002,
+    fetch_blockchain_item_ids_message_type              = 5003,
+    fetch_items_message_type                            = 5004,
+    item_not_available_message_type                     = 5005,
+    legacy_hello_message_type                           = 5006,
+    connection_accepted_message_type                    = 5007,
+    legacy_connection_rejected_message_type             = 5008,
+    address_request_message_type                        = 5009,
+    legacy_address_message_type                         = 5010,
+    closing_connection_message_type                     = 5011,
+    current_time_request_message_type                   = 5012,
+    current_time_reply_message_type                     = 5013,
+    legacy_check_firewall_message_type                  = 5014,
+    legacy_check_firewall_reply_message_type            = 5015,
+    get_current_connections_request_message_type        = 5016,
+    get_current_connections_reply_message_type          = 5017,
+    hello_message_type                                  = 5018,
+    connection_rejected_message_type                    = 5019,
+    address_message_type                                = 5020,
+    check_firewall_message_type                         = 5021,
+    check_firewall_reply_message_type                   = 5022,
+    core_message_type_last                              = 5099
   };
 
   const uint32_t core_protocol_version = GRAPHENE_NET_PROTOCOL_VERSION;
@@ -123,12 +128,12 @@ namespace graphene { namespace net {
     std::shared_ptr<full_block_type> full_block;
   };
 
-  // though this message looks identical to block_message, it serializes to the 
+  // though this message looks identical to block_message, it serializes to the
   // zstd-compressed version of the block that we store in the block log.
   // Note that compressed blocks currently behave a little different.  If a
   // source node wants to broadcast a block, it will advertise an uncompressed
   // block message for the block, type 1001, using the message hash that an uncompressed
-  // block message would need.  When receiving this inventory, a sink node would 
+  // block message would need.  When receiving this inventory, a sink node would
   // request it as an uncompressed block (again, type 1001).  The source node would
   // When the source node sends the block, though, it would see from the protocol version
   // that the sink node understands compressed_block_messages, and it will send a
@@ -220,6 +225,47 @@ namespace graphene { namespace net {
     {}
   };
 
+  //////////////////////////////////////////////////////////////////////////////
+  // Legacy message types (IPv4-only wire format, using legacy_address/legacy_endpoint)
+  //////////////////////////////////////////////////////////////////////////////
+
+  struct legacy_hello_message
+  {
+    static const core_message_type_enum type;
+
+    std::string                user_agent;
+    uint32_t                   core_protocol_version;
+    fc::ip::legacy_address     inbound_address;
+    uint16_t                   inbound_port;
+    uint16_t                   outbound_port;
+    node_id_t                  node_public_key;
+    fc::ecc::compact_signature signed_shared_secret;
+    fc::variant_object         user_data;
+
+    legacy_hello_message() {}
+    legacy_hello_message(const std::string& user_agent,
+                         uint32_t core_protocol_version,
+                         const fc::ip::legacy_address& inbound_address,
+                         uint16_t inbound_port,
+                         uint16_t outbound_port,
+                         const node_id_t& node_public_key,
+                         const fc::ecc::compact_signature& signed_shared_secret,
+                         const fc::variant_object& user_data) :
+      user_agent(user_agent),
+      core_protocol_version(core_protocol_version),
+      inbound_address(inbound_address),
+      inbound_port(inbound_port),
+      outbound_port(outbound_port),
+      node_public_key(node_public_key),
+      signed_shared_secret(signed_shared_secret),
+      user_data(user_data)
+    {}
+  };
+
+  //////////////////////////////////////////////////////////////////////////////
+  // New message types (IPv6-aware wire format)
+  //////////////////////////////////////////////////////////////////////////////
+
   struct hello_message
   {
     static const core_message_type_enum type;
@@ -241,7 +287,7 @@ namespace graphene { namespace net {
                   uint16_t outbound_port,
                   const node_id_t& node_public_key,
                   const fc::ecc::compact_signature& signed_shared_secret,
-                  const fc::variant_object& user_data ) :
+                  const fc::variant_object& user_data) :
       user_agent(user_agent),
       core_protocol_version(core_protocol_version),
       inbound_address(inbound_address),
@@ -268,6 +314,28 @@ namespace graphene { namespace net {
                                      blocked,
                                      invalid_hello_message,
                                      client_too_old };
+
+  struct legacy_connection_rejected_message
+  {
+    static const core_message_type_enum type;
+
+    std::string                                   user_agent;
+    uint32_t                                      core_protocol_version;
+    fc::ip::legacy_endpoint                       remote_endpoint;
+    std::string                                   reason_string;
+    fc::enum_type<uint8_t, rejection_reason_code> reason_code;
+
+    legacy_connection_rejected_message() {}
+    legacy_connection_rejected_message(const std::string& user_agent, uint32_t core_protocol_version,
+                                       const fc::ip::legacy_endpoint& remote_endpoint, rejection_reason_code reason_code,
+                                       const std::string& reason_string) :
+      user_agent(user_agent),
+      core_protocol_version(core_protocol_version),
+      remote_endpoint(remote_endpoint),
+      reason_string(reason_string),
+      reason_code(reason_code)
+    {}
+  };
 
   struct connection_rejected_message
   {
@@ -301,6 +369,31 @@ namespace graphene { namespace net {
   enum class peer_connection_direction { unknown, inbound, outbound };
   enum class firewalled_state { unknown, firewalled, not_firewalled };
 
+  struct legacy_address_info
+  {
+    fc::ip::legacy_endpoint   remote_endpoint;
+    fc::time_point_sec        last_seen_time;
+    fc::microseconds          latency;
+    node_id_t                 node_id;
+    fc::enum_type<uint8_t, peer_connection_direction> direction;
+    fc::enum_type<uint8_t, firewalled_state> firewalled;
+
+    legacy_address_info() {}
+    legacy_address_info(const fc::ip::legacy_endpoint& remote_endpoint,
+                        const fc::time_point_sec last_seen_time,
+                        const fc::microseconds latency,
+                        const node_id_t& node_id,
+                        peer_connection_direction direction,
+                        firewalled_state firewalled) :
+      remote_endpoint(remote_endpoint),
+      last_seen_time(last_seen_time),
+      latency(latency),
+      node_id(node_id),
+      direction(direction),
+      firewalled(firewalled)
+    {}
+  };
+
   struct address_info
   {
     fc::ip::endpoint          remote_endpoint;
@@ -324,6 +417,13 @@ namespace graphene { namespace net {
       direction(direction),
       firewalled(firewalled)
     {}
+  };
+
+  struct legacy_address_message
+  {
+    static const core_message_type_enum type;
+
+    std::vector<legacy_address_info> addresses;
   };
 
   struct address_message
@@ -379,6 +479,13 @@ namespace graphene { namespace net {
     {}
   };
 
+  struct legacy_check_firewall_message
+  {
+    static const core_message_type_enum type;
+    node_id_t node_id;
+    fc::ip::legacy_endpoint endpoint_to_check;
+  };
+
   struct check_firewall_message
   {
     static const core_message_type_enum type;
@@ -391,6 +498,14 @@ namespace graphene { namespace net {
     unable_to_check,
     unable_to_connect,
     connection_successful
+  };
+
+  struct legacy_check_firewall_reply_message
+  {
+    static const core_message_type_enum type;
+    node_id_t node_id;
+    fc::ip::legacy_endpoint endpoint_checked;
+    fc::enum_type<uint8_t, firewall_check_result> result;
   };
 
   struct check_firewall_reply_message
@@ -442,18 +557,23 @@ FC_REFLECT_ENUM( graphene::net::core_message_type_enum,
                  (fetch_blockchain_item_ids_message_type)
                  (fetch_items_message_type)
                  (item_not_available_message_type)
-                 (hello_message_type)
+                 (legacy_hello_message_type)
                  (connection_accepted_message_type)
-                 (connection_rejected_message_type)
+                 (legacy_connection_rejected_message_type)
                  (address_request_message_type)
-                 (address_message_type)
+                 (legacy_address_message_type)
                  (closing_connection_message_type)
                  (current_time_request_message_type)
                  (current_time_reply_message_type)
-                 (check_firewall_message_type)
-                 (check_firewall_reply_message_type)
+                 (legacy_check_firewall_message_type)
+                 (legacy_check_firewall_reply_message_type)
                  (get_current_connections_request_message_type)
                  (get_current_connections_reply_message_type)
+                 (hello_message_type)
+                 (connection_rejected_message_type)
+                 (address_message_type)
+                 (check_firewall_message_type)
+                 (check_firewall_reply_message_type)
                  (core_message_type_last) )
 
 //FC_REFLECT( graphene::net::trx_message, (full_transaction) )        // explicit serialization
@@ -470,6 +590,18 @@ FC_REFLECT( graphene::net::fetch_blockchain_item_ids_message, (item_type)
 FC_REFLECT( graphene::net::fetch_items_message, (item_type)
                                            (items_to_fetch) )
 FC_REFLECT( graphene::net::item_not_available_message, (requested_item) )
+
+// Legacy messages (IPv4-only wire format)
+FC_REFLECT( graphene::net::legacy_hello_message, (user_agent)
+                                            (core_protocol_version)
+                                            (inbound_address)
+                                            (inbound_port)
+                                            (outbound_port)
+                                            (node_public_key)
+                                            (signed_shared_secret)
+                                            (user_data) )
+
+// New messages (IPv6-aware wire format)
 FC_REFLECT( graphene::net::hello_message, (user_agent)
                                      (core_protocol_version)
                                      (inbound_address)
@@ -488,28 +620,45 @@ FC_REFLECT_ENUM(graphene::net::rejection_reason_code, (unspecified)
                                                  (blocked)
                                                  (invalid_hello_message)
                                                  (client_too_old))
+
+FC_REFLECT( graphene::net::legacy_connection_rejected_message, (user_agent)
+                                                          (core_protocol_version)
+                                                          (remote_endpoint)
+                                                          (reason_code)
+                                                          (reason_string))
 FC_REFLECT( graphene::net::connection_rejected_message, (user_agent)
                                                    (core_protocol_version)
                                                    (remote_endpoint)
                                                    (reason_code)
                                                    (reason_string))
+
 FC_REFLECT_EMPTY( graphene::net::address_request_message )
-FC_REFLECT( graphene::net::address_info, (remote_endpoint)
-                                    (last_seen_time)
-                                    (latency)
-                                    (node_id)
-                                    (direction)
-                                    (firewalled) )
-FC_REFLECT( graphene::net::address_message, (addresses) )
-FC_REFLECT( graphene::net::closing_connection_message, (reason_for_closing)
-                                                  (closing_due_to_error)
-                                                  (error) )
 FC_REFLECT_ENUM(graphene::net::peer_connection_direction, (unknown)
                                                      (inbound)
                                                      (outbound))
 FC_REFLECT_ENUM(graphene::net::firewalled_state, (unknown)
                                             (firewalled)
                                             (not_firewalled))
+
+FC_REFLECT( graphene::net::legacy_address_info, (remote_endpoint)
+                                           (last_seen_time)
+                                           (latency)
+                                           (node_id)
+                                           (direction)
+                                           (firewalled) )
+FC_REFLECT( graphene::net::address_info, (remote_endpoint)
+                                    (last_seen_time)
+                                    (latency)
+                                    (node_id)
+                                    (direction)
+                                    (firewalled) )
+
+FC_REFLECT( graphene::net::legacy_address_message, (addresses) )
+FC_REFLECT( graphene::net::address_message, (addresses) )
+
+FC_REFLECT( graphene::net::closing_connection_message, (reason_for_closing)
+                                                  (closing_due_to_error)
+                                                  (error) )
 
 FC_REFLECT(graphene::net::current_time_request_message, (request_sent_time))
 FC_REFLECT(graphene::net::current_time_reply_message, (request_sent_time)
@@ -518,8 +667,12 @@ FC_REFLECT(graphene::net::current_time_reply_message, (request_sent_time)
 FC_REFLECT_ENUM(graphene::net::firewall_check_result, (unable_to_check)
                                                  (unable_to_connect)
                                                  (connection_successful))
+
+FC_REFLECT(graphene::net::legacy_check_firewall_message, (node_id)(endpoint_to_check))
 FC_REFLECT(graphene::net::check_firewall_message, (node_id)(endpoint_to_check))
+FC_REFLECT(graphene::net::legacy_check_firewall_reply_message, (node_id)(endpoint_checked)(result))
 FC_REFLECT(graphene::net::check_firewall_reply_message, (node_id)(endpoint_checked)(result))
+
 FC_REFLECT_EMPTY(graphene::net::get_current_connections_request_message)
 FC_REFLECT(graphene::net::current_connection_data, (connection_duration)
                                               (remote_endpoint)
