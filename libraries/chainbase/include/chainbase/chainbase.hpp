@@ -168,6 +168,17 @@ namespace chainbase {
       }
   };
 
+  // SFINAE trait: detects if a type has check_on_remove() method.
+  // Used by generic_index::remove()/erase() to call object-specific invariant
+  // checks (e.g. non-empty balance detection) on explicit removal, while allowing
+  // silent destruction during undo, squash or database shutdown.
+  template<typename T, typename = void>
+  struct needs_remove_check : std::false_type {};
+
+  template<typename T>
+  struct needs_remove_check<T, std::void_t<decltype(std::declval<const T&>().check_on_remove())>>
+    : std::true_type {};
+
   template<uint16_t TypeNumber, typename Derived, typename HasDynamicAlloc = std::false_type, typename EnableNoUndo = std::false_type>
   struct object
   {
@@ -487,6 +498,8 @@ namespace chainbase {
 
       void remove( const value_type& obj )
       {
+        if constexpr( needs_remove_check<value_type>::value )
+          obj.check_on_remove();
         size_t size = 0;
         if constexpr( value_type::has_dynamic_alloc_t::value )
           size = obj.get_dynamic_alloc();
@@ -499,6 +512,8 @@ namespace chainbase {
       template< typename ByIndex >
       typename MultiIndexType::template index_iterator<ByIndex>::type erase(typename MultiIndexType::template index_iterator<ByIndex>::type objI)
       {
+        if constexpr( needs_remove_check<value_type>::value )
+          objI->check_on_remove();
         auto& idx = _indices.template get< ByIndex >();
         size_t size = 0;
         if constexpr( value_type::has_dynamic_alloc_t::value )

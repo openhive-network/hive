@@ -71,6 +71,7 @@
 #include <hive/chain/detail/state/withdraw_vesting_route_object_multiindex.hpp>
 
 #include <hive/chain/util/reward.hpp>
+#include <hive/chain/util/balance.hpp>
 
 #include <hive/chain/util/decoded_types_data_storage.hpp>
 
@@ -677,7 +678,9 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
   BOOST_CHECK_EQUAL( sizeof( time_point_sec ), 4u );
   BOOST_CHECK_EQUAL( sizeof( share_type ), 8u );
   BOOST_CHECK_EQUAL( sizeof( HIVE_asset ), 8u ); //all tiny assets are of the same size
+  BOOST_CHECK_EQUAL( sizeof( HIVE_balance ), 8u ); //all tiny balances are of the same size
   BOOST_CHECK_EQUAL( sizeof( asset ), 16u );
+  BOOST_CHECK_EQUAL( sizeof( balance ), 16u );
   BOOST_CHECK_EQUAL( sizeof( account_name_type ), 16u );
   BOOST_CHECK_EQUAL( sizeof( HBD_price ), 16u ); //all tiny prices are of the same size
   BOOST_CHECK_EQUAL( sizeof( shared_string ), 32u ); //it has dynamic component as well
@@ -1915,6 +1918,92 @@ BOOST_AUTO_TEST_CASE( get_word_list )
   BOOST_CHECK_EQUAL( word_list[0], "a" );
   BOOST_CHECK_EQUAL( word_list[hive::words::get_word_list_size()-5], "zymosis" );
   BOOST_CHECK_EQUAL( word_list[hive::words::get_word_list_size()-1], "zythum" );
+}
+
+BOOST_AUTO_TEST_CASE( temp_balance_nonzero_destruction_is_bug )
+{
+  // When not unwinding from an exception, destroying a temp balance with non-zero amount
+  // signals a coding bug (funds would be silently lost). The destructor detects this.
+  BOOST_TEST_MESSAGE( "Testing: temp_balance destruction with non-zero amount signals bug" );
+
+  // temp_tiny_balance version
+  HIVE_REQUIRE_ASSERT(
+    {
+      temp_HIVE_balance lost_funds;
+      lost_funds.set_from_asset( HIVE_asset( 100 ) ); // TODO: change to dgpo.issue
+    },
+    "this->is_empty() && \"temp_tiny_balance\""
+  );
+
+  // temp_balance (dynamic symbol) version
+  HIVE_REQUIRE_ASSERT(
+    {
+      temp_HIVE_balance tmp;
+      tmp.set_from_asset( HIVE_asset( 100 ) ); // TODO: change to dgpo.issue
+      temp_balance lost_funds( HIVE_SYMBOL );
+      lost_funds.transfer_from( tmp );
+    },
+    "is_empty() && \"temp_balance\""
+  );
+
+  // Verify that zero-amount temp is fine
+  {
+    temp_HIVE_balance no_funds_from_start, no_funds_after_burn, no_funds_after_transfer;
+    no_funds_after_burn.set_from_asset( HIVE_asset( 200 ) ); // TODO: change to dgpo.issue
+    no_funds_after_burn.transfer_to( no_funds_after_transfer, HIVE_asset( 100 ) );
+    BOOST_REQUIRE_EQUAL( no_funds_after_burn, HIVE_asset( 100 ) ); // funds were on the balance
+    BOOST_REQUIRE_EQUAL( no_funds_after_transfer, HIVE_asset( 100 ) ); // funds were on the balance
+    no_funds_after_burn.transfer_from( no_funds_after_transfer );
+    no_funds_after_burn.set_from_asset( HIVE_asset( 0 ) ); // TODO: change to dgpo.burn
+    BOOST_REQUIRE_EQUAL( no_funds_after_burn, HIVE_asset( 0 ) ); // funds were removed from balance
+    BOOST_REQUIRE_EQUAL( no_funds_after_transfer, HIVE_asset( 0 ) ); // funds were removed from balance
+  } // No throw
+
+  // Verify that zero-amount temp is fine (dynamic symbol version)
+  {
+    temp_HIVE_balance tmp;
+    tmp.set_from_asset( HIVE_asset( 100 ) ); // TODO: change to dgpo.issue
+    temp_balance no_funds_from_start( HIVE_SYMBOL ), no_funds_after_transfer( HIVE_SYMBOL ); // there is no burn for dynamic asset balance
+    tmp.transfer_to( no_funds_after_transfer );
+    BOOST_REQUIRE_EQUAL( no_funds_after_transfer, ASSET( "0.100 TESTS" ) ); // funds were on the balance
+    no_funds_after_transfer.transfer_to( tmp );
+    BOOST_REQUIRE_EQUAL( no_funds_after_transfer, ASSET( "0.000 TESTS" ) ); // funds were removed from balance
+    tmp.set_from_asset( HIVE_asset( 0 ) ); // TODO: change to dgpo.burn
+  } // No throw
+}
+
+BOOST_AUTO_TEST_CASE( temp_balance_nonzero_during_undo )
+{
+  // During undo (exception-based stack unwinding), a temp balance with non-zero amount
+  // is expected - the transaction is being reverted. The destructor must NOT throw
+  // a second exception (which would call std::terminate).
+  BOOST_TEST_MESSAGE( "Testing: temp_balance destruction during exception unwinding (undo path)" );
+
+  // temp_tiny_balance: exception thrown while temp has non-zero amount
+  HIVE_REQUIRE_ASSERT(
+    {
+      temp_HIVE_balance nonempty_funds;
+      nonempty_funds.set_from_asset( HIVE_asset( 100 ) ); // TODO: change to dgpo.issue
+      BOOST_REQUIRE_EQUAL(nonempty_funds, HIVE_asset(100));
+      FC_ASSERT(false && "simulating undo - transaction rejected");
+    },
+    "false && \"simulating undo - transaction rejected\""
+  );
+  // If the destructor threw during unwinding, std::terminate would have been called
+  // and this line would never execute. Reaching here proves correct behavior.
+
+  // temp_balance (dynamic symbol) version
+  HIVE_REQUIRE_ASSERT(
+    {
+      temp_HIVE_balance tmp;
+      tmp.set_from_asset( HIVE_asset( 100 ) ); // TODO: change to dgpo.issue
+      temp_balance nonempty_funds( HIVE_SYMBOL );
+      nonempty_funds.transfer_from( tmp );
+      BOOST_REQUIRE_EQUAL( nonempty_funds, ASSET( "0.100 TESTS" ) );
+      FC_ASSERT( false && "simulating undo - evaluator failure" );
+    },
+    "false && \"simulating undo - evaluator failure\""
+  );
 }
 
 BOOST_AUTO_TEST_SUITE_END()
