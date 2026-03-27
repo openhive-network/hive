@@ -379,6 +379,17 @@ void webserver_plugin_impl<websocket_server_type>::start_webserver()
         {
           ilog( "start listening for http requests on ${endpoint}", ( "endpoint", boost::lexical_cast<fc::string>( *http_endpoint ) ) );
         }
+        if (ws_endpoint->address().is_v6())
+        {
+          ws_server.set_tcp_pre_bind_handler(
+            [](websocketpp::lib::shared_ptr<boost::asio::ip::tcp::acceptor> acceptor)
+              -> websocketpp::lib::error_code {
+              boost::system::error_code ec;
+              acceptor->set_option(boost::asio::ip::v6_only(false), ec);
+              return ec;
+            });
+        }
+
         ilog( "start listening for ws requests on ${endpoint}", ( "endpoint", boost::lexical_cast<fc::string>( *ws_endpoint ) ) );
         ws_server.listen( *ws_endpoint );
         update_ws_endpoint();
@@ -428,6 +439,17 @@ void webserver_plugin_impl<websocket_server_type>::start_webserver()
 
         if( tls )
           tls->set_tls_handlers( http_server );
+
+        if (http_endpoint->address().is_v6())
+        {
+          http_server.set_tcp_pre_bind_handler(
+            [](websocketpp::lib::shared_ptr<boost::asio::ip::tcp::acceptor> acceptor)
+              -> websocketpp::lib::error_code {
+              boost::system::error_code ec;
+              acceptor->set_option(boost::asio::ip::v6_only(false), ec);
+              return ec;
+            });
+        }
 
         ilog( "start listening for ${type} requests on ${endpoint}",
             ("type", tls ? "https" : "http")( "endpoint", boost::lexical_cast<fc::string>( *http_endpoint ) ) );
