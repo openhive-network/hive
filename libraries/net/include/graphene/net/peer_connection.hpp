@@ -219,6 +219,10 @@ namespace graphene { namespace net
       fc::ip::address inbound_address;
       uint16_t inbound_port = 0;
       uint16_t outbound_port = 0;
+
+      // true if the peer sent us a new-style hello (message type 5018),
+      // indicating it understands IPv6-aware message types
+      bool peer_supports_ipv6 = false;
       /// @}
 
       typedef std::unordered_map<item_id, fc::time_point> item_to_time_map_type;

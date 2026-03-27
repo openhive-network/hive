@@ -39,36 +39,6 @@ using hive::protocol::block_id_type;
 
 namespace detail {
 
-// This exists in p2p_plugin and http_plugin. It should be added to fc.
-std::vector<fc::ip::endpoint> resolve_string_to_ip_endpoints( const std::string& endpoint_string )
-{
-  try
-  {
-    string::size_type colon_pos = endpoint_string.find( ':' );
-    if( colon_pos == std::string::npos )
-      FC_THROW( "Missing required port number in endpoint string \"${endpoint_string}\"", ("endpoint_string", endpoint_string) );
-
-    std::string port_string = endpoint_string.substr( colon_pos + 1 );
-
-    try
-    {
-      uint16_t port = boost::lexical_cast< uint16_t >( port_string );
-      std::string hostname = endpoint_string.substr( 0, colon_pos );
-      std::vector< fc::ip::endpoint > endpoints = fc::resolve( hostname, port );
-
-      if( endpoints.empty() )
-        FC_THROW_EXCEPTION( fc::unknown_host_exception, "The host name can not be resolved: ${hostname}", ("hostname", hostname) );
-
-      return endpoints;
-    }
-    catch( const boost::bad_lexical_cast& )
-    {
-      FC_THROW("Bad port: ${port}", ("port", port_string) );
-    }
-  }
-  FC_CAPTURE_AND_RETHROW( (endpoint_string) )
-}
-
 class p2p_plugin_impl : public graphene::net::node_delegate
 {
 public:
@@ -431,7 +401,7 @@ void p2p_plugin::plugin_initialize(const boost::program_options::variables_map& 
     {
       try
       {
-        std::vector<fc::ip::endpoint> endpoints = detail::resolve_string_to_ip_endpoints(endpoint_string);
+        std::vector<fc::ip::endpoint> endpoints = fc::resolve_string_to_ip_endpoints(endpoint_string);
         my->seeds.insert(my->seeds.end(), endpoints.begin(), endpoints.end());
       }
       catch (const fc::exception &e)

@@ -40,16 +40,26 @@ namespace graphene { namespace net {
   const core_message_type_enum fetch_blockchain_item_ids_message::type       = core_message_type_enum::fetch_blockchain_item_ids_message_type;
   const core_message_type_enum fetch_items_message::type                     = core_message_type_enum::fetch_items_message_type;
   const core_message_type_enum item_not_available_message::type              = core_message_type_enum::item_not_available_message_type;
+  // Legacy message types (IPv4-only wire format)
+  const core_message_type_enum legacy_hello_message::type                    = core_message_type_enum::legacy_hello_message_type;
+  const core_message_type_enum legacy_connection_rejected_message::type      = core_message_type_enum::legacy_connection_rejected_message_type;
+  const core_message_type_enum legacy_address_message::type                  = core_message_type_enum::legacy_address_message_type;
+  const core_message_type_enum legacy_check_firewall_message::type           = core_message_type_enum::legacy_check_firewall_message_type;
+  const core_message_type_enum legacy_check_firewall_reply_message::type     = core_message_type_enum::legacy_check_firewall_reply_message_type;
+
+  // New message types (IPv6-aware wire format)
   const core_message_type_enum hello_message::type                           = core_message_type_enum::hello_message_type;
-  const core_message_type_enum connection_accepted_message::type             = core_message_type_enum::connection_accepted_message_type;
   const core_message_type_enum connection_rejected_message::type             = core_message_type_enum::connection_rejected_message_type;
-  const core_message_type_enum address_request_message::type                 = core_message_type_enum::address_request_message_type;
   const core_message_type_enum address_message::type                         = core_message_type_enum::address_message_type;
+  const core_message_type_enum check_firewall_message::type                  = core_message_type_enum::check_firewall_message_type;
+  const core_message_type_enum check_firewall_reply_message::type            = core_message_type_enum::check_firewall_reply_message_type;
+
+  // Unchanged message types
+  const core_message_type_enum connection_accepted_message::type             = core_message_type_enum::connection_accepted_message_type;
+  const core_message_type_enum address_request_message::type                 = core_message_type_enum::address_request_message_type;
   const core_message_type_enum closing_connection_message::type              = core_message_type_enum::closing_connection_message_type;
   const core_message_type_enum current_time_request_message::type            = core_message_type_enum::current_time_request_message_type;
   const core_message_type_enum current_time_reply_message::type              = core_message_type_enum::current_time_reply_message_type;
-  const core_message_type_enum check_firewall_message::type                  = core_message_type_enum::check_firewall_message_type;
-  const core_message_type_enum check_firewall_reply_message::type            = core_message_type_enum::check_firewall_reply_message_type;
   const core_message_type_enum get_current_connections_request_message::type = core_message_type_enum::get_current_connections_request_message_type;
   const core_message_type_enum get_current_connections_reply_message::type   = core_message_type_enum::get_current_connections_reply_message_type;
 
