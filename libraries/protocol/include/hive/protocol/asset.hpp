@@ -237,12 +237,12 @@ namespace hive { namespace protocol {
     tiny_asset& operator/=( const share_type& x ) { amount /= x; return *this; }
     tiny_asset& operator%=( const share_type& x ) { amount %= x; return *this; }
 
-    bool operator==( const tiny_asset& other ) const { return amount == other.amount; }
-    bool operator!=( const tiny_asset& other ) const { return amount != other.amount; }
-    bool operator<( const tiny_asset& other ) const { return amount < other.amount; }
-    bool operator<=( const tiny_asset& other ) const { return amount <= other.amount; }
-    bool operator>( const tiny_asset& other ) const { return amount > other.amount; }
-    bool operator>=( const tiny_asset& other ) const { return amount >= other.amount; }
+    friend bool operator==( const tiny_asset& a, const tiny_asset& b ) { return a.amount == b.amount; }
+    friend bool operator!=( const tiny_asset& a, const tiny_asset& b ) { return a.amount != b.amount; }
+    friend bool operator< ( const tiny_asset& a, const tiny_asset& b ) { return a.amount <  b.amount; }
+    friend bool operator<=( const tiny_asset& a, const tiny_asset& b ) { return a.amount <= b.amount; }
+    friend bool operator> ( const tiny_asset& a, const tiny_asset& b ) { return a.amount >  b.amount; }
+    friend bool operator>=( const tiny_asset& a, const tiny_asset& b ) { return a.amount >= b.amount; }
 
     tiny_asset operator+() const { return tiny_asset( amount ); }
     tiny_asset operator-() const { return tiny_asset( -amount ); }

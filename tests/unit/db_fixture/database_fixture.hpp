@@ -2,6 +2,7 @@
 
 #include <appbase/application.hpp>
 #include <hive/chain/database.hpp>
+#include <hive/chain/util/balance.hpp>
 #include <hive/chain/util/delayed_voting.hpp>
 #include <fc/io/json.hpp>
 #include <fc/smart_ref_impl.hpp>
@@ -559,7 +560,33 @@ inline std::ostream& operator<<( std::ostream& os, const fixed_string_impl<Stora
   return os << std::string( s );
 }
 
-} }
+} } // hive::protocol
+
+namespace hive { namespace chain {
+
+inline std::ostream& operator<<( std::ostream& os, const balance& b )
+{
+  return os << hive::chain::database_fixture::asset_to_string( b.as_asset() );
+}
+
+inline std::ostream& operator<<( std::ostream& os, const temp_balance& b )
+{
+  return os << hive::chain::database_fixture::asset_to_string( b.as_asset() );
+}
+
+template< uint32_t _SYMBOL >
+inline std::ostream& operator<<( std::ostream& os, const tiny_balance<_SYMBOL>& b )
+{
+  return os << hive::chain::database_fixture::asset_to_string( b.as_asset().to_asset() );
+}
+
+template< uint32_t _SYMBOL >
+inline std::ostream& operator<<( std::ostream& os, const temp_tiny_balance<_SYMBOL>& b )
+{
+  return os << hive::chain::database_fixture::asset_to_string( b.as_asset().to_asset() );
+}
+
+} } // hive::chain
 
 namespace fc
 {
