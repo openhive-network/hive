@@ -10,6 +10,7 @@
 
 #include <hive/chain/account_object_multiindex.hpp>
 #include <hive/chain/block_summary_object_multiindex.hpp>
+#include <hive/chain/comment_object_multiindex.hpp>
 #include <hive/chain/global_property_object_multiindex.hpp>
 #include <hive/chain/witness_objects.hpp>
 #include <hive/chain/hardfork_property_object.hpp>

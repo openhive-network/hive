@@ -8,6 +8,7 @@
 #include <boost/interprocess/managed_mapped_file.hpp>
 #include <boost/core/demangle.hpp>
 
+#include <cstring>
 #include <limits>
 #include <memory>
 
@@ -148,6 +149,13 @@ namespace chainbase {
               ((reinterpret_cast<std::size_t>(chunk) - reinterpret_cast<std::size_t>(chunks)) % sizeof(T)) == 0);
             chunk->next = current;
             current = chunk - chunks;
+#ifdef CHAINBASE_POISON_FREED_MEMORY
+            // Poison freed memory after the free-list pointer to detect use-after-free.
+            // The first sizeof(uint32_t) bytes hold the free-list 'next' pointer; fill the rest with 0xDE.
+            constexpr size_t poison_offset = sizeof(uint32_t);
+            if constexpr( sizeof(T) > poison_offset )
+              std::memset( chunk->memory + poison_offset, 0xDE, sizeof(T) - poison_offset );
+#endif
             return ++free_count == BLOCK_SIZE;
             }
 
