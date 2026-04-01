@@ -1984,8 +1984,8 @@ BOOST_AUTO_TEST_CASE( temp_balance_nonzero_during_undo )
     {
       temp_HIVE_balance nonempty_funds;
       nonempty_funds.set_from_asset( HIVE_asset( 100 ) ); // TODO: change to dgpo.issue
-      BOOST_REQUIRE_EQUAL(nonempty_funds, HIVE_asset(100));
-      FC_ASSERT(false && "simulating undo - transaction rejected");
+      BOOST_REQUIRE_EQUAL( nonempty_funds, HIVE_asset( 100 ) );
+      FC_ASSERT( false && "simulating undo - transaction rejected" );
     },
     "false && \"simulating undo - transaction rejected\""
   );
@@ -2004,6 +2004,60 @@ BOOST_AUTO_TEST_CASE( temp_balance_nonzero_during_undo )
     },
     "false && \"simulating undo - evaluator failure\""
   );
+}
+
+BOOST_AUTO_TEST_CASE( temp_balance_nonzero_overwrite_is_bug )
+{
+  // Balance objects that reside in chain objects have to allow overwriting nonzero funds
+  // with move operator, because that happens naturally when undo is executed, however it is
+  // not allowed for temp balances
+  BOOST_TEST_MESSAGE( "Testing: temp_balance with non-zero amount overwritten signals bug" );
+
+  // temp_tiny_balance: exception thrown while temp is overwritten while with non-zero amount
+  HIVE_REQUIRE_ASSERT(
+    {
+      temp_HIVE_balance nonempty_funds;
+      temp_HIVE_balance tmp;
+      tmp.set_from_asset( HIVE_asset( 100 ) ); // TODO: change to dgpo.issue
+      nonempty_funds.transfer_from( tmp, HIVE_asset( 80 ) );
+      BOOST_REQUIRE_EQUAL( nonempty_funds, HIVE_asset( 80 ) );
+      nonempty_funds = std::move( tmp ); // not allowed
+    },
+    "this->is_empty() && \"temp_tiny_balance move assign\""
+  );
+
+  // move assign is ok as long as target balance is empty
+  {
+    temp_HIVE_balance empty_funds, tmp;
+    tmp.set_from_asset( HIVE_asset( 100 ) ); // TODO: change to dgpo.issue
+    BOOST_REQUIRE_EQUAL( empty_funds, HIVE_asset( 0 ) );
+    empty_funds = std::move( tmp ); // ok
+    BOOST_REQUIRE_EQUAL( empty_funds, HIVE_asset( 100 ) );
+    empty_funds.set_from_asset( HIVE_asset( 0 ) ); // TODO: replace with dgpo.burn
+  }
+
+  // temp_balance: exception thrown while temp is overwritten while with non-zero amount
+  HIVE_REQUIRE_ASSERT(
+    {
+      temp_balance nonempty_funds( HIVE_SYMBOL );
+      temp_balance tmp( HIVE_SYMBOL );
+      tmp.set_from_asset( ASSET( "0.100 TESTS" ) ); // TODO: change to dgpo.issue
+      nonempty_funds.transfer_from( tmp, ASSET( "0.080 TESTS" ) );
+      BOOST_REQUIRE_EQUAL( nonempty_funds, ASSET( "0.080 TESTS" ) );
+      nonempty_funds = std::move( tmp ); // not allowed
+    },
+    "is_empty() && \"temp_balance move assign\""
+  );
+
+  // move assign is ok as long as target balance is empty, even when assets are different
+  {
+    temp_balance empty_funds( HIVE_SYMBOL ), tmp( HBD_SYMBOL );
+    tmp.set_from_asset( ASSET( "0.100 TBD" ) ); // TODO: change to dgpo.issue
+    BOOST_REQUIRE_EQUAL( empty_funds, ASSET( "0.000 TESTS" ) );
+    empty_funds = std::move( tmp ); // ok
+    BOOST_REQUIRE_EQUAL( empty_funds, ASSET( "0.100 TBD" ) );
+    empty_funds.set_from_asset( ASSET( "0.000 TBD" ) ); // TODO: replace with dgpo.burn
+  }
 }
 
 BOOST_AUTO_TEST_CASE( balance_transfer )
