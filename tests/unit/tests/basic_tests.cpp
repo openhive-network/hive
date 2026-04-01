@@ -1930,18 +1930,24 @@ BOOST_AUTO_TEST_CASE( temp_balance_nonzero_destruction_is_bug )
   HIVE_REQUIRE_ASSERT(
     {
       temp_HIVE_balance lost_funds;
-      lost_funds.set_from_asset( HIVE_asset( 100 ) ); // TODO: change to dgpo.issue
+      db->modify( db->get_dynamic_global_properties(), [&]( dynamic_global_property_object& dgpo )
+      {
+        lost_funds = dgpo.issue_HIVE( HIVE_asset( 100 ) );
+      } );
     },
     "this->is_empty() && \"temp_tiny_balance\""
   );
+  // total supply is now invalid, losing funds is a fatal error in the code, but let's continue anyway
 
   // temp_balance (dynamic symbol) version
   HIVE_REQUIRE_ASSERT(
     {
-      temp_HIVE_balance tmp;
-      tmp.set_from_asset( HIVE_asset( 100 ) ); // TODO: change to dgpo.issue
       temp_balance lost_funds( HIVE_SYMBOL );
-      lost_funds.transfer_from( tmp );
+      db->modify( db->get_dynamic_global_properties(), [&]( dynamic_global_property_object& dgpo )
+      {
+        auto tmp = dgpo.issue_HIVE( HIVE_asset( 100 ) );
+        lost_funds.transfer_from( tmp );
+      } );
     },
     "is_empty() && \"temp_balance\""
   );
@@ -1949,26 +1955,39 @@ BOOST_AUTO_TEST_CASE( temp_balance_nonzero_destruction_is_bug )
   // Verify that zero-amount temp is fine
   {
     temp_HIVE_balance no_funds_from_start, no_funds_after_burn, no_funds_after_transfer;
-    no_funds_after_burn.set_from_asset( HIVE_asset( 200 ) ); // TODO: change to dgpo.issue
+    db->modify( db->get_dynamic_global_properties(), [&]( dynamic_global_property_object& dgpo )
+    {
+      no_funds_after_burn = dgpo.issue_HIVE( HIVE_asset( 200 ) );
+    } );
     no_funds_after_burn.transfer_to( no_funds_after_transfer, HIVE_asset( 100 ) );
     BOOST_REQUIRE_EQUAL( no_funds_after_burn, HIVE_asset( 100 ) ); // funds were on the balance
     BOOST_REQUIRE_EQUAL( no_funds_after_transfer, HIVE_asset( 100 ) ); // funds were on the balance
     no_funds_after_burn.transfer_from( no_funds_after_transfer );
-    no_funds_after_burn.set_from_asset( HIVE_asset( 0 ) ); // TODO: change to dgpo.burn
+    db->modify( db->get_dynamic_global_properties(), [&]( dynamic_global_property_object& dgpo )
+    {
+      dgpo.burn_HIVE( no_funds_after_burn );
+    } );
     BOOST_REQUIRE_EQUAL( no_funds_after_burn, HIVE_asset( 0 ) ); // funds were removed from balance
     BOOST_REQUIRE_EQUAL( no_funds_after_transfer, HIVE_asset( 0 ) ); // funds were removed from balance
   } // No throw
 
   // Verify that zero-amount temp is fine (dynamic symbol version)
   {
-    temp_HIVE_balance tmp;
-    tmp.set_from_asset( HIVE_asset( 100 ) ); // TODO: change to dgpo.issue
-    temp_balance no_funds_from_start( HIVE_SYMBOL ), no_funds_after_transfer( HIVE_SYMBOL ); // there is no burn for dynamic asset balance
-    tmp.transfer_to( no_funds_after_transfer );
-    BOOST_REQUIRE_EQUAL( no_funds_after_transfer, ASSET( "0.100 TESTS" ) ); // funds were on the balance
+    const auto& exchange_rate = db->get_feed_history().current_median_history;
+    temp_HBD_balance tmp;
+    temp_balance no_funds_from_start( HBD_SYMBOL ), no_funds_after_transfer( HBD_SYMBOL ); // there is no burn for dynamic asset balance
+    db->modify( db->get_dynamic_global_properties(), [&]( dynamic_global_property_object& dgpo )
+    {
+      tmp = dgpo.issue_HBD( HBD_asset( 100 ), exchange_rate );
+      tmp.transfer_to( no_funds_after_transfer );
+    } );
+    BOOST_REQUIRE_EQUAL( no_funds_after_transfer, ASSET( "0.100 TBD" ) ); // funds were on the balance
     no_funds_after_transfer.transfer_to( tmp );
-    BOOST_REQUIRE_EQUAL( no_funds_after_transfer, ASSET( "0.000 TESTS" ) ); // funds were removed from balance
-    tmp.set_from_asset( HIVE_asset( 0 ) ); // TODO: change to dgpo.burn
+    BOOST_REQUIRE_EQUAL( no_funds_after_transfer, ASSET( "0.000 TBD" ) ); // funds were removed from balance
+    db->modify( db->get_dynamic_global_properties(), [&]( dynamic_global_property_object& dgpo )
+    {
+      dgpo.burn_HBD( tmp, exchange_rate );
+    } );
   } // No throw
 }
 
@@ -1979,11 +1998,17 @@ BOOST_AUTO_TEST_CASE( temp_balance_nonzero_during_undo )
   // a second exception (which would call std::terminate).
   BOOST_TEST_MESSAGE( "Testing: temp_balance destruction during exception unwinding (undo path)" );
 
+  temp_HIVE_balance tmp;
+  db->modify( db->get_dynamic_global_properties(), [&]( dynamic_global_property_object& dgpo )
+  {
+    tmp = dgpo.issue_HIVE( HIVE_asset( 200 ) );
+  } );
+
   // temp_tiny_balance: exception thrown while temp has non-zero amount
   HIVE_REQUIRE_ASSERT(
     {
       temp_HIVE_balance nonempty_funds;
-      nonempty_funds.set_from_asset( HIVE_asset( 100 ) ); // TODO: change to dgpo.issue
+      nonempty_funds.transfer_from( tmp, HIVE_asset( 100 ) );
       BOOST_REQUIRE_EQUAL( nonempty_funds, HIVE_asset( 100 ) );
       FC_ASSERT( false && "simulating undo - transaction rejected" );
     },
@@ -1991,12 +2016,12 @@ BOOST_AUTO_TEST_CASE( temp_balance_nonzero_during_undo )
   );
   // If the destructor threw during unwinding, std::terminate would have been called
   // and this line would never execute. Reaching here proves correct behavior.
+  // Note: normally the issue_HIVE would also be reverted, but we are in the test so
+  // without full undo we actually have broken invariants now; let's continue anyway
 
   // temp_balance (dynamic symbol) version
   HIVE_REQUIRE_ASSERT(
     {
-      temp_HIVE_balance tmp;
-      tmp.set_from_asset( HIVE_asset( 100 ) ); // TODO: change to dgpo.issue
       temp_balance nonempty_funds( HIVE_SYMBOL );
       nonempty_funds.transfer_from( tmp );
       BOOST_REQUIRE_EQUAL( nonempty_funds, ASSET( "0.100 TESTS" ) );
@@ -2018,22 +2043,33 @@ BOOST_AUTO_TEST_CASE( temp_balance_nonzero_overwrite_is_bug )
     {
       temp_HIVE_balance nonempty_funds;
       temp_HIVE_balance tmp;
-      tmp.set_from_asset( HIVE_asset( 100 ) ); // TODO: change to dgpo.issue
+      db->modify( db->get_dynamic_global_properties(), [&]( dynamic_global_property_object& dgpo )
+      {
+        tmp = dgpo.issue_HIVE( HIVE_asset( 100 ) );
+      } );
       nonempty_funds.transfer_from( tmp, HIVE_asset( 80 ) );
       BOOST_REQUIRE_EQUAL( nonempty_funds, HIVE_asset( 80 ) );
       nonempty_funds = std::move( tmp ); // not allowed
     },
     "this->is_empty() && \"temp_tiny_balance move assign\""
   );
+  // what just happened was a fatal error, normally it would be handled by undo, but we don't have it here;
+  // let's continue anyway
 
   // move assign is ok as long as target balance is empty
   {
     temp_HIVE_balance empty_funds, tmp;
-    tmp.set_from_asset( HIVE_asset( 100 ) ); // TODO: change to dgpo.issue
+    db->modify( db->get_dynamic_global_properties(), [&]( dynamic_global_property_object& dgpo )
+    {
+      tmp = dgpo.issue_HIVE( HIVE_asset( 100 ) );
+    } );
     BOOST_REQUIRE_EQUAL( empty_funds, HIVE_asset( 0 ) );
     empty_funds = std::move( tmp ); // ok
     BOOST_REQUIRE_EQUAL( empty_funds, HIVE_asset( 100 ) );
-    empty_funds.set_from_asset( HIVE_asset( 0 ) ); // TODO: replace with dgpo.burn
+    db->modify( db->get_dynamic_global_properties(), [&]( dynamic_global_property_object& dgpo )
+    {
+      dgpo.burn_HIVE( empty_funds );
+    } );
   }
 
   // temp_balance: exception thrown while temp is overwritten while with non-zero amount
@@ -2041,7 +2077,11 @@ BOOST_AUTO_TEST_CASE( temp_balance_nonzero_overwrite_is_bug )
     {
       temp_balance nonempty_funds( HIVE_SYMBOL );
       temp_balance tmp( HIVE_SYMBOL );
-      tmp.set_from_asset( ASSET( "0.100 TESTS" ) ); // TODO: change to dgpo.issue
+      db->modify( db->get_dynamic_global_properties(), [&]( dynamic_global_property_object& dgpo )
+      {
+        auto new_hive = dgpo.issue_HIVE( HIVE_asset( 100 ) );
+        tmp.transfer_from( new_hive );
+      } );
       nonempty_funds.transfer_from( tmp, ASSET( "0.080 TESTS" ) );
       BOOST_REQUIRE_EQUAL( nonempty_funds, ASSET( "0.080 TESTS" ) );
       nonempty_funds = std::move( tmp ); // not allowed
@@ -2051,12 +2091,22 @@ BOOST_AUTO_TEST_CASE( temp_balance_nonzero_overwrite_is_bug )
 
   // move assign is ok as long as target balance is empty, even when assets are different
   {
+    const auto& exchange_rate = db->get_feed_history().current_median_history;
     temp_balance empty_funds( HIVE_SYMBOL ), tmp( HBD_SYMBOL );
-    tmp.set_from_asset( ASSET( "0.100 TBD" ) ); // TODO: change to dgpo.issue
+    db->modify( db->get_dynamic_global_properties(), [&]( dynamic_global_property_object& dgpo )
+    {
+      auto new_hbd = dgpo.issue_HBD( HBD_asset( 100 ), exchange_rate );
+      tmp.transfer_from( new_hbd );
+    } );
     BOOST_REQUIRE_EQUAL( empty_funds, ASSET( "0.000 TESTS" ) );
     empty_funds = std::move( tmp ); // ok
     BOOST_REQUIRE_EQUAL( empty_funds, ASSET( "0.100 TBD" ) );
-    empty_funds.set_from_asset( ASSET( "0.000 TBD" ) ); // TODO: replace with dgpo.burn
+    db->modify( db->get_dynamic_global_properties(), [&]( dynamic_global_property_object& dgpo )
+    {
+      temp_HBD_balance hbd;
+      hbd.transfer_from( empty_funds );
+      dgpo.burn_HBD( hbd, exchange_rate );
+    } );
   }
 }
 
@@ -2938,10 +2988,12 @@ BOOST_AUTO_TEST_CASE( removal_of_nonempty_balance_is_a_bug )
     any.transfer_from( e.access_fee() );
   } );
   db->remove( *escrow );
-  // TODO: return balance to alice or burn with dgpo once it is available
-  hive.set_from_asset( HIVE_asset( 0 ) );
-  hbd.set_from_asset( HBD_asset( 0 ) );
-  any.set_from_asset( asset( 0, any.as_asset().symbol ) );
+  db->modify( db->get_dynamic_global_properties(), [&]( dynamic_global_property_object& dgpo )
+  {
+    dgpo.burn_HIVE( hive );
+    hbd.transfer_from( any );
+    dgpo.burn_HBD( hbd, db->get_feed_history().current_median_history );
+  } );
 }
 
 BOOST_AUTO_TEST_SUITE_END()
