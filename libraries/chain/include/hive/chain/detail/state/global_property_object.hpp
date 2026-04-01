@@ -4,6 +4,7 @@
 #include <fc/uint128.hpp>
 
 #include <hive/chain/hive_object_types.hpp>
+#include <hive/chain/util/balance.hpp>
 
 #include <hive/protocol/asset.hpp>
 #include <hive/protocol/config.hpp>
@@ -38,6 +39,10 @@ public:
 
   //main HIVE token counter
   const HIVE_asset& get_current_supply() const { return current_supply; }
+  //creates HIVE out of thin air - for inflation
+  inline temp_HIVE_balance issue_HIVE( const HIVE_asset& hive_amount );
+  //burns all HIVE on given balance into the void - for clearing null
+  inline void burn_HIVE( temp_HIVE_balance& hive_balance );
   //all HIVE in existence including those that would be created if all HBD was converted to HIVE
   const HIVE_asset& get_virtual_supply() const { return virtual_supply; }
 
@@ -48,6 +53,10 @@ public:
   const HBD_asset& get_current_hbd_supply() const { return current_hbd_supply; }
   //initial HBD tokens
   const HBD_asset& get_initial_hbd_supply() const { return init_hbd_supply; }
+  //creates HBD out of thin air - for interest
+  inline temp_HBD_balance issue_HBD( const HBD_asset& hbd_amount, const HBD_price& exchange_rate );
+  //burns all HBD on given balance into the void - for clearing null
+  inline void burn_HBD( temp_HBD_balance& hbd_balance, const HBD_price& exchange_rate );
 
   HBD_asset& access_current_hbd_supply() { return current_hbd_supply; } //TODO: should not be needed with init/burn/convert
   HBD_asset& access_initial_hbd_supply() { return init_hbd_supply; } //TODO: should not be needed with proper genesis rework
@@ -262,6 +271,40 @@ private:
 
   CHAINBASE_UNPACK_CONSTRUCTOR( dynamic_global_property_object );
 };
+
+inline temp_HIVE_balance dynamic_global_property_object::issue_HIVE( const HIVE_asset& hive_amount )
+{
+  temp_HIVE_balance hive_balance;
+  hive_balance.issue_asset( hive_amount );
+  current_supply += hive_amount;
+  virtual_supply += hive_amount;
+  return hive_balance;
+}
+
+inline void dynamic_global_property_object::burn_HIVE( temp_HIVE_balance& hive_balance )
+{
+  const HIVE_asset& hive_amount = hive_balance;
+  current_supply -= hive_amount;
+  virtual_supply -= hive_amount;
+  hive_balance.burn_asset( hive_amount );
+}
+
+inline temp_HBD_balance dynamic_global_property_object::issue_HBD( const HBD_asset& hbd_amount, const HBD_price& exchange_rate )
+{
+  temp_HBD_balance hbd_balance;
+  hbd_balance.issue_asset( hbd_amount );
+  current_hbd_supply += hbd_amount;
+  virtual_supply += hbd_amount * exchange_rate;
+  return hbd_balance;
+}
+
+inline void dynamic_global_property_object::burn_HBD( temp_HBD_balance& hbd_balance, const HBD_price& exchange_rate )
+{
+  const HBD_asset& hbd_amount = hbd_balance;
+  current_hbd_supply -= hbd_amount;
+  virtual_supply -= hbd_amount * exchange_rate;
+  hbd_balance.burn_asset( hbd_amount );
+}
 
 } } // hive::chain
 
