@@ -1501,7 +1501,7 @@ BOOST_AUTO_TEST_CASE( chain_object_checksum )
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::hardfork_property_object>(dtds), "4ecdccee8197fee89331b329ee3f79f143299fea" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::convert_request_object>(dtds), "c6900c99e4d305d0e6a387b9078a06b182e1f9fb" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::collateralized_convert_request_object>(dtds), "dd45554db965f67de4942d51bca7701102daf896" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::escrow_object>(dtds), "d50d91fae93723aa444a3b993d448d48ff313b7e" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::escrow_object>(dtds), "b05c6649d3a19c9b1fab77dddcca61cd387b1c17" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::savings_withdraw_object>(dtds), "7fd02375eac9da2cf26146b2ab7ae9d59bb6d69c" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::liquidity_reward_balance_object>(dtds), "3690a7914aba1105d390489d52328478445a0d29" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::feed_history_object>(dtds), "23f964e467b527855279ab546dd6281ff07fee68" );
@@ -2004,6 +2004,890 @@ BOOST_AUTO_TEST_CASE( temp_balance_nonzero_during_undo )
     },
     "false && \"simulating undo - evaluator failure\""
   );
+}
+
+BOOST_AUTO_TEST_CASE( balance_transfer )
+{
+  BOOST_TEST_MESSAGE( "Testing: balance transfer_from/_to methods" );
+
+  ACTORS( (alice)(bob)(carol) );
+  fund( "alice", HIVE_asset( 10000 ) );
+  fund( "alice", HBD_asset( 10000 ) );
+  generate_block();
+
+  escrow_transfer( "alice", "bob", "carol", HIVE_asset( 1000 ), HBD_asset( 1000 ), ASSET( "0.500 TBD" ),
+    "", fc::minutes( 10 ), fc::days( 7 ), 1, alice_private_key );
+  escrow_transfer( "alice", "bob", "carol", HIVE_asset( 1000 ), HBD_asset( 1000 ), ASSET( "0.500 TBD" ),
+    "", fc::minutes( 10 ), fc::days( 7 ), 2, alice_private_key );
+  generate_block();
+
+  const auto* escrow1 = db->find_escrow( "alice", 1 );
+  const auto* escrow2 = db->find_escrow( "alice", 2 );
+  BOOST_REQUIRE_NE( escrow1, nullptr );
+  BOOST_REQUIRE_NE( escrow2, nullptr );
+
+  auto check_values = []( const escrow_object& escrow, int64_t hive, int64_t hbd, int64_t fee )
+  {
+    BOOST_REQUIRE_EQUAL( escrow.get_hive_balance(), HIVE_asset( hive ) );
+    BOOST_REQUIRE_EQUAL( escrow.get_hbd_balance(), HBD_asset( hbd ) );
+    BOOST_REQUIRE_EQUAL( escrow.get_fee(), asset( fee, HBD_SYMBOL ) );
+  };
+
+  // initial check
+  check_values( *escrow1, 1000, 1000, 500 );
+  check_values( *escrow2, 1000, 1000, 500 );
+
+  // check transfer_from( matching_class, matching_asset ) - positive delta
+  {
+    auto undo = db->start_undo_session();
+    db->modify( *escrow1, [&]( escrow_object& e1 )
+    {
+      db->modify( *escrow2, [&]( escrow_object& e2 )
+      {
+        e1.access_hive_balance().transfer_from( e2.access_hive_balance(), HIVE_asset( 200 ) );
+        e1.access_hbd_balance().transfer_from( e2.access_hbd_balance(), HBD_asset( 200 ) );
+        e1.access_fee().transfer_from( e2.access_fee(), ASSET( "0.200 TBD" ) );
+      } );
+    } );
+    check_values( *escrow1, 1000 + 200, 1000 + 200, 500 + 200 );
+    check_values( *escrow2, 1000 - 200, 1000 - 200, 500 - 200 );
+  }
+  // validate the undo works as expected
+  check_values( *escrow1, 1000, 1000, 500 );
+  check_values( *escrow2, 1000, 1000, 500 );
+  // with temporaries
+  {
+    auto undo = db->start_undo_session();
+    temp_HIVE_balance hive;
+    temp_HBD_balance hbd;
+    temp_balance any( HBD_SYMBOL );
+    db->modify( *escrow2, [&]( escrow_object& e2 )
+    {
+      hive.transfer_from( e2.access_hive_balance(), HIVE_asset( 200 ) );
+      hbd.transfer_from( e2.access_hbd_balance(), HBD_asset( 200 ) );
+      any.transfer_from( e2.access_fee(), ASSET( "0.200 TBD" ) );
+    } );
+    check_values( *escrow2, 1000 - 200, 1000 - 200, 500 - 200 );
+    db->modify( *escrow1, [&]( escrow_object& e1 )
+    {
+      e1.access_hive_balance().transfer_from( hive, HIVE_asset( 200 ) );
+      e1.access_hbd_balance().transfer_from( hbd, HBD_asset( 200 ) );
+      e1.access_fee().transfer_from( any, ASSET( "0.200 TBD" ) );
+    } );
+    check_values( *escrow1, 1000 + 200, 1000 + 200, 500 + 200 );
+  }
+
+  // check transfer_from( matching_class, matching_asset ) - zero delta
+  {
+    auto undo = db->start_undo_session();
+    db->modify( *escrow1, [&]( escrow_object& e1 )
+    {
+      db->modify( *escrow2, [&]( escrow_object& e2 )
+      {
+        e1.access_hive_balance().transfer_from( e2.access_hive_balance(), HIVE_asset( 0 ) );
+        e1.access_hbd_balance().transfer_from( e2.access_hbd_balance(), HBD_asset( 0 ) );
+        e1.access_fee().transfer_from( e2.access_fee(), ASSET( "0.000 TBD" ) );
+      } );
+    } );
+    check_values( *escrow1, 1000, 1000, 500 );
+    check_values( *escrow2, 1000, 1000, 500 );
+  }
+  // with temporaries
+  {
+    auto undo = db->start_undo_session();
+    temp_HIVE_balance hive;
+    temp_HBD_balance hbd;
+    temp_balance any( HBD_SYMBOL );
+    db->modify( *escrow2, [&]( escrow_object& e2 )
+    {
+      hive.transfer_from( e2.access_hive_balance(), HIVE_asset( 0 ) );
+      hbd.transfer_from( e2.access_hbd_balance(), HBD_asset( 0 ) );
+      any.transfer_from( e2.access_fee(), ASSET( "0.000 TBD" ) );
+    } );
+    check_values( *escrow2, 1000, 1000, 500 );
+    db->modify( *escrow1, [&]( escrow_object& e1 )
+    {
+      e1.access_hive_balance().transfer_from( hive, HIVE_asset( 0 ) );
+      e1.access_hbd_balance().transfer_from( hbd, HBD_asset( 0 ) );
+      e1.access_fee().transfer_from( any, ASSET( "0.000 TBD" ) );
+    } );
+    check_values( *escrow1, 1000, 1000, 500 );
+  }
+
+  // check transfer_from( matching_class, matching_asset ) - negative delta
+  {
+    auto undo = db->start_undo_session();
+    db->modify( *escrow1, [&]( escrow_object& e1 )
+    {
+      db->modify( *escrow2, [&]( escrow_object& e2 )
+      {
+        e1.access_hive_balance().transfer_from( e2.access_hive_balance(), -HIVE_asset( 200 ) );
+        e1.access_hbd_balance().transfer_from( e2.access_hbd_balance(), -HBD_asset( 200 ) );
+        e1.access_fee().transfer_from( e2.access_fee(), -ASSET( "0.200 TBD" ) );
+      } );
+    } );
+    check_values( *escrow1, 1000 - 200, 1000 - 200, 500 - 200 );
+    check_values( *escrow2, 1000 + 200, 1000 + 200, 500 + 200 );
+  }
+  // with temporaries
+  {
+    auto undo = db->start_undo_session();
+    temp_HIVE_balance hive;
+    temp_HBD_balance hbd;
+    temp_balance any( HBD_SYMBOL );
+    db->modify( *escrow2, [&]( escrow_object& e2 )
+    {
+      e2.access_hive_balance().transfer_from( hive, -HIVE_asset( 200 ) );
+      e2.access_hbd_balance().transfer_from( hbd, -HBD_asset( 200 ) );
+      e2.access_fee().transfer_from( any, -ASSET( "0.200 TBD" ) );
+    } );
+    check_values( *escrow2, 1000 - 200, 1000 - 200, 500 - 200 );
+    db->modify( *escrow1, [&]( escrow_object& e1 )
+    {
+      hive.transfer_from( e1.access_hive_balance(), -HIVE_asset( 200 ) );
+      hbd.transfer_from( e1.access_hbd_balance(), -HBD_asset( 200 ) );
+      any.transfer_from( e1.access_fee(), -ASSET( "0.200 TBD" ) );
+    } );
+    check_values( *escrow1, 1000 + 200, 1000 + 200, 500 + 200 );
+  }
+
+  // check transfer_from( matching_class, matching_asset ) - balance underflow, positive delta
+  {
+    auto undo = db->start_undo_session();
+    HIVE_REQUIRE_ASSERT(
+    {
+      db->modify( *escrow1, [&]( escrow_object& e1 )
+      {
+        db->modify( *escrow2, [&]( escrow_object& e2 )
+        {
+          e1.access_hive_balance().transfer_from( e2.access_hive_balance(), HIVE_asset( 1200 ) );
+        } );
+      } );
+    }, "this->is_valid() && source.is_valid() && \"transfer tiny_asset to tiny_balance\"" );
+    HIVE_REQUIRE_ASSERT(
+    {
+      db->modify( *escrow1, [&]( escrow_object& e1 )
+      {
+        db->modify( *escrow2, [&]( escrow_object& e2 )
+        {
+          e1.access_fee().transfer_from( e2.access_fee(), ASSET( "1.200 TBD" ) );
+        } );
+      } );
+    }, "is_valid() && source.is_valid() && \"transfer asset to balance\"" );
+  }
+
+  // check transfer_from( matching_class, matching_asset ) - balance underflow, negative delta
+  {
+    auto undo = db->start_undo_session();
+    HIVE_REQUIRE_ASSERT(
+    {
+      db->modify( *escrow1, [&]( escrow_object& e1 )
+      {
+        db->modify( *escrow2, [&]( escrow_object& e2 )
+        {
+          e1.access_hive_balance().transfer_from( e2.access_hive_balance(), -HIVE_asset( 1200 ) );
+        } );
+      } );
+    }, "this->is_valid() && source.is_valid() && \"transfer tiny_asset to tiny_balance\"" );
+    HIVE_REQUIRE_ASSERT(
+    {
+      db->modify( *escrow1, [&]( escrow_object& e1 )
+      {
+        db->modify( *escrow2, [&]( escrow_object& e2 )
+        {
+          e1.access_fee().transfer_from( e2.access_fee(), -ASSET( "1.200 TBD" ) );
+        } );
+      } );
+    }, "is_valid() && source.is_valid() && \"transfer asset to balance\"" );
+  }
+
+  // check transfer_from( matching_class )
+  {
+    auto undo = db->start_undo_session();
+    db->modify( *escrow1, [&]( escrow_object& e1 )
+    {
+      db->modify( *escrow2, [&]( escrow_object& e2 )
+      {
+        e1.access_hive_balance().transfer_from( e2.access_hive_balance() );
+        e1.access_hbd_balance().transfer_from( e2.access_hbd_balance() );
+        e1.access_fee().transfer_from( e2.access_fee() );
+      } );
+    } );
+    check_values( *escrow1, 1000 + 1000, 1000 + 1000, 500 + 500 );
+    check_values( *escrow2, 1000 - 1000, 1000 - 1000, 500 - 500 );
+  }
+  // with temporaries
+  {
+    auto undo = db->start_undo_session();
+    temp_HIVE_balance hive;
+    temp_HBD_balance hbd;
+    temp_balance any( HBD_SYMBOL );
+    db->modify( *escrow2, [&]( escrow_object& e2 )
+    {
+      hive.transfer_from( e2.access_hive_balance() );
+      hbd.transfer_from( e2.access_hbd_balance() );
+      any.transfer_from( e2.access_fee() );
+    } );
+    check_values( *escrow2, 1000 - 1000, 1000 - 1000, 500 - 500 );
+    db->modify( *escrow1, [&]( escrow_object& e1 )
+    {
+      e1.access_hive_balance().transfer_from( hive );
+      e1.access_hbd_balance().transfer_from( hbd );
+      e1.access_fee().transfer_from( any );
+    } );
+    check_values( *escrow1, 1000 + 1000, 1000 + 1000, 500 + 500 );
+  }
+
+  // check transfer_from( cross_class, cross_asset ) - positive delta
+  {
+    auto undo = db->start_undo_session();
+    db->modify( *escrow1, [&]( escrow_object& e1 )
+    {
+      db->modify( *escrow2, [&]( escrow_object& e2 )
+      {
+        e1.access_hbd_balance().transfer_from( e2.access_fee(), ASSET( "0.200 TBD" ) );
+        e1.access_fee().transfer_from( e2.access_hbd_balance(), HBD_asset( 200 ) );
+      } );
+    } );
+    check_values( *escrow1, 1000, 1000 + 200, 500 + 200 );
+    check_values( *escrow2, 1000, 1000 - 200, 500 - 200 );
+  }
+  // with temporaries
+  {
+    auto undo = db->start_undo_session();
+    temp_HBD_balance hbd;
+    temp_balance any( HBD_SYMBOL );
+    db->modify( *escrow2, [&]( escrow_object& e2 )
+    {
+      hbd.transfer_from( e2.access_fee(), ASSET( "0.200 TBD" ) );
+      any.transfer_from( e2.access_hbd_balance(), HBD_asset( 200 ) );
+    } );
+    check_values( *escrow2, 1000, 1000 - 200, 500 - 200 );
+    db->modify( *escrow1, [&]( escrow_object& e1 )
+    {
+      e1.access_hbd_balance().transfer_from( any, ASSET( "0.200 TBD" ) );
+      e1.access_fee().transfer_from( hbd, HBD_asset( 200 ) );
+    } );
+    check_values( *escrow1, 1000, 1000 + 200, 500 + 200 );
+  }
+
+  // check transfer_from( cross_class, cross_asset ) - zero delta
+  {
+    auto undo = db->start_undo_session();
+    db->modify( *escrow1, [&]( escrow_object& e1 )
+    {
+      db->modify( *escrow2, [&]( escrow_object& e2 )
+      {
+        e1.access_hbd_balance().transfer_from( e2.access_fee(), ASSET( "0.000 TBD" ) );
+        e1.access_fee().transfer_from( e2.access_hbd_balance(), HBD_asset( 0 ) );
+      } );
+    } );
+    check_values( *escrow1, 1000, 1000, 500 );
+    check_values( *escrow2, 1000, 1000, 500 );
+  }
+  // with temporaries
+  {
+    auto undo = db->start_undo_session();
+    temp_HBD_balance hbd;
+    temp_balance any( HBD_SYMBOL );
+    db->modify( *escrow2, [&]( escrow_object& e2 )
+    {
+      hbd.transfer_from( e2.access_fee(), ASSET( "0.000 TBD" ) );
+      any.transfer_from( e2.access_hbd_balance(), HBD_asset( 0 ) );
+    } );
+    check_values( *escrow2, 1000, 1000, 500 );
+    db->modify( *escrow1, [&]( escrow_object& e1 )
+    {
+      e1.access_hbd_balance().transfer_from( any, ASSET( "0.000 TBD" ) );
+      e1.access_fee().transfer_from( hbd, HBD_asset( 0 ) );
+    } );
+    check_values( *escrow1, 1000, 1000, 500 );
+  }
+
+  // check transfer_from( cross_class, cross_asset ) - negative delta
+  {
+    auto undo = db->start_undo_session();
+    db->modify( *escrow1, [&]( escrow_object& e1 )
+    {
+      db->modify( *escrow2, [&]( escrow_object& e2 )
+      {
+        e1.access_hbd_balance().transfer_from( e2.access_fee(), -ASSET( "0.200 TBD" ) );
+        e1.access_fee().transfer_from( e2.access_hbd_balance(), -HBD_asset( 200 ) );
+      } );
+    } );
+    check_values( *escrow1, 1000, 1000 - 200, 500 - 200 );
+    check_values( *escrow2, 1000, 1000 + 200, 500 + 200 );
+  }
+  // with temporaries
+  {
+    auto undo = db->start_undo_session();
+    temp_HBD_balance hbd;
+    temp_balance any( HBD_SYMBOL );
+    db->modify( *escrow2, [&]( escrow_object& e2 )
+    {
+      e2.access_hbd_balance().transfer_from( any, -ASSET( "0.200 TBD" ) );
+      e2.access_fee().transfer_from( hbd, -HBD_asset( 200 ) );
+    } );
+    check_values( *escrow2, 1000, 1000 - 200, 500 - 200 );
+    db->modify( *escrow1, [&]( escrow_object& e1 )
+    {
+      hbd.transfer_from( e1.access_fee(), -ASSET( "0.200 TBD" ) );
+      any.transfer_from( e1.access_hbd_balance(), -HBD_asset( 200 ) );
+    } );
+    check_values( *escrow1, 1000, 1000 + 200, 500 + 200 );
+  }
+
+  // check transfer_from( cross_class, cross_asset ) - balance underflow, positive delta
+  {
+    auto undo = db->start_undo_session();
+    HIVE_REQUIRE_ASSERT(
+    {
+      db->modify( *escrow1, [&]( escrow_object& e1 )
+      {
+        db->modify( *escrow2, [&]( escrow_object& e2 )
+        {
+          e1.access_hbd_balance().transfer_from( e2.access_fee(), ASSET( "1.200 TBD" ) );
+        } );
+      } );
+    }, "this->is_valid() && source.is_valid() && \"transfer asset to tiny_balance\"" );
+    HIVE_REQUIRE_ASSERT(
+    {
+      db->modify( *escrow1, [&]( escrow_object& e1 )
+      {
+        db->modify( *escrow2, [&]( escrow_object& e2 )
+        {
+          e1.access_fee().transfer_from( e2.access_hbd_balance(), HBD_asset( 1200 ) );
+        } );
+      } );
+    }, "this->is_valid() && source.is_valid() && \"transfer tiny_asset to balance\"" );
+  }
+
+  // check transfer_from( cross_class, cross_asset ) - balance underflow, negative delta
+  {
+    auto undo = db->start_undo_session();
+    HIVE_REQUIRE_ASSERT(
+    {
+      db->modify( *escrow1, [&]( escrow_object& e1 )
+      {
+        db->modify( *escrow2, [&]( escrow_object& e2 )
+        {
+          e1.access_hbd_balance().transfer_from( e2.access_fee(), -ASSET( "1.200 TBD" ) );
+        } );
+      } );
+    }, "this->is_valid() && source.is_valid() && \"transfer asset to tiny_balance\"" );
+    HIVE_REQUIRE_ASSERT(
+    {
+      db->modify( *escrow1, [&]( escrow_object& e1 )
+      {
+        db->modify( *escrow2, [&]( escrow_object& e2 )
+        {
+          e1.access_fee().transfer_from( e2.access_hbd_balance(), -HBD_asset( 1200 ) );
+        } );
+      } );
+    }, "this->is_valid() && source.is_valid() && \"transfer tiny_asset to balance\"" );
+  }
+
+  // check transfer_from( cross_class, cross_asset ) - asset mismatch
+  {
+    auto undo = db->start_undo_session();
+    HIVE_REQUIRE_ASSERT(
+    {
+      db->modify( *escrow1, [&]( escrow_object& e1 )
+      {
+        db->modify( *escrow2, [&]( escrow_object& e2 )
+        {
+          e1.access_hive_balance().transfer_from( e2.access_fee(), ASSET( "0.200 TBD" ) );
+        } );
+      } );
+    }, "val.symbol.asset_num == _SYMBOL" );
+    HIVE_REQUIRE_ASSERT(
+    {
+      db->modify( *escrow1, [&]( escrow_object& e1 )
+      {
+        db->modify( *escrow2, [&]( escrow_object& e2 )
+        {
+          e1.access_fee().transfer_from( e2.access_hive_balance(), HIVE_asset( 200 ) );
+        } );
+      } );
+    }, "symbol == o.symbol && \"asset symbol mismatch +=\"" );
+  }
+
+  // check transfer_from( cross_class )
+  {
+    auto undo = db->start_undo_session();
+    db->modify( *escrow1, [&]( escrow_object& e1 )
+    {
+      db->modify( *escrow2, [&]( escrow_object& e2 )
+      {
+        e1.access_hbd_balance().transfer_from( e2.access_fee() );
+        e1.access_fee().transfer_from( e2.access_hbd_balance() );
+      } );
+    } );
+    check_values( *escrow1, 1000, 1000 + 500, 500 + 1000 );
+    check_values( *escrow2, 1000, 1000 - 1000, 500 - 500 );
+  }
+  // with temporaries
+  {
+    auto undo = db->start_undo_session();
+    temp_HBD_balance hbd;
+    temp_balance any( HBD_SYMBOL );
+    db->modify( *escrow2, [&]( escrow_object& e2 )
+    {
+      hbd.transfer_from( e2.access_fee() );
+      any.transfer_from( e2.access_hbd_balance() );
+    } );
+    check_values( *escrow2, 1000, 1000 - 1000, 500 - 500 );
+    db->modify( *escrow1, [&]( escrow_object& e1 )
+    {
+      e1.access_hbd_balance().transfer_from( any );
+      e1.access_fee().transfer_from( hbd );
+    } );
+    check_values( *escrow1, 1000, 1000 + 1000, 500 + 500 );
+  }
+
+  // check transfer_to( matching_class, matching_asset ) - positive delta
+  {
+    auto undo = db->start_undo_session();
+    db->modify( *escrow1, [&]( escrow_object& e1 )
+    {
+      db->modify( *escrow2, [&]( escrow_object& e2 )
+      {
+        e1.access_hive_balance().transfer_to( e2.access_hive_balance(), HIVE_asset( 200 ) );
+        e1.access_hbd_balance().transfer_to( e2.access_hbd_balance(), HBD_asset( 200 ) );
+        e1.access_fee().transfer_to( e2.access_fee(), ASSET( "0.200 TBD" ) );
+      } );
+    } );
+    check_values( *escrow1, 1000 - 200, 1000 - 200, 500 - 200 );
+    check_values( *escrow2, 1000 + 200, 1000 + 200, 500 + 200 );
+  }
+  // with temporaries
+  {
+    auto undo = db->start_undo_session();
+    temp_HIVE_balance hive;
+    temp_HBD_balance hbd;
+    temp_balance any( HBD_SYMBOL );
+    db->modify( *escrow1, [&]( escrow_object& e1 )
+    {
+      e1.access_hive_balance().transfer_to( hive, HIVE_asset( 200 ) );
+      e1.access_hbd_balance().transfer_to( hbd, HBD_asset( 200 ) );
+      e1.access_fee().transfer_to( any, ASSET( "0.200 TBD" ) );
+    } );
+    check_values( *escrow1, 1000 - 200, 1000 - 200, 500 - 200 );
+    db->modify( *escrow2, [&]( escrow_object& e2 )
+    {
+      hive.transfer_to( e2.access_hive_balance(), HIVE_asset( 200 ) );
+      hbd.transfer_to( e2.access_hbd_balance(), HBD_asset( 200 ) );
+      any.transfer_to( e2.access_fee(), ASSET( "0.200 TBD" ) );
+    } );
+    check_values( *escrow2, 1000 + 200, 1000 + 200, 500 + 200 );
+  }
+
+  // check transfer_to( matching_class, matching_asset ) - zero delta
+  {
+    auto undo = db->start_undo_session();
+    db->modify( *escrow1, [&]( escrow_object& e1 )
+    {
+      db->modify( *escrow2, [&]( escrow_object& e2 )
+      {
+        e1.access_hive_balance().transfer_to( e2.access_hive_balance(), HIVE_asset( 0 ) );
+        e1.access_hbd_balance().transfer_to( e2.access_hbd_balance(), HBD_asset( 0 ) );
+        e1.access_fee().transfer_to( e2.access_fee(), ASSET( "0.000 TBD" ) );
+      } );
+    } );
+    check_values( *escrow1, 1000, 1000, 500 );
+    check_values( *escrow2, 1000, 1000, 500 );
+  }
+  // with temporaries
+  {
+    auto undo = db->start_undo_session();
+    temp_HIVE_balance hive;
+    temp_HBD_balance hbd;
+    temp_balance any( HBD_SYMBOL );
+    db->modify( *escrow1, [&]( escrow_object& e1 )
+    {
+      e1.access_hive_balance().transfer_to( hive, HIVE_asset( 0 ) );
+      e1.access_hbd_balance().transfer_to( hbd, HBD_asset( 0 ) );
+      e1.access_fee().transfer_to( any, ASSET( "0.000 TBD" ) );
+    } );
+    check_values( *escrow1, 1000, 1000, 500 );
+    db->modify( *escrow2, [&]( escrow_object& e2 )
+    {
+      hive.transfer_to( e2.access_hive_balance(), HIVE_asset( 0 ) );
+      hbd.transfer_to( e2.access_hbd_balance(), HBD_asset( 0 ) );
+      any.transfer_to( e2.access_fee(), ASSET( "0.000 TBD" ) );
+    } );
+    check_values( *escrow2, 1000, 1000, 500 );
+  }
+
+  // check transfer_to( matching_class, matching_asset ) - negative delta
+  {
+    auto undo = db->start_undo_session();
+    db->modify( *escrow1, [&]( escrow_object& e1 )
+    {
+      db->modify( *escrow2, [&]( escrow_object& e2 )
+      {
+        e1.access_hive_balance().transfer_to( e2.access_hive_balance(), -HIVE_asset( 200 ) );
+        e1.access_hbd_balance().transfer_to( e2.access_hbd_balance(), -HBD_asset( 200 ) );
+        e1.access_fee().transfer_to( e2.access_fee(), -ASSET( "0.200 TBD" ) );
+      } );
+    } );
+    check_values( *escrow1, 1000 + 200, 1000 + 200, 500 + 200 );
+    check_values( *escrow2, 1000 - 200, 1000 - 200, 500 - 200 );
+  }
+  // with temporaries
+  {
+    auto undo = db->start_undo_session();
+    temp_HIVE_balance hive;
+    temp_HBD_balance hbd;
+    temp_balance any( HBD_SYMBOL );
+    db->modify( *escrow1, [&]( escrow_object& e1 )
+    {
+      hive.transfer_to( e1.access_hive_balance(), -HIVE_asset( 200 ) );
+      hbd.transfer_to( e1.access_hbd_balance(), -HBD_asset( 200 ) );
+      any.transfer_to( e1.access_fee(), -ASSET( "0.200 TBD" ) );
+    } );
+    check_values( *escrow1, 1000 - 200, 1000 - 200, 500 - 200 );
+    db->modify( *escrow2, [&]( escrow_object& e2 )
+    {
+      e2.access_hive_balance().transfer_to( hive, -HIVE_asset( 200 ) );
+      e2.access_hbd_balance().transfer_to( hbd, -HBD_asset( 200 ) );
+      e2.access_fee().transfer_to( any, -ASSET( "0.200 TBD" ) );
+    } );
+    check_values( *escrow2, 1000 + 200, 1000 + 200, 500 + 200 );
+  }
+
+  // check transfer_to( matching_class, matching_asset ) - balance underflow, positive delta
+  {
+    auto undo = db->start_undo_session();
+    HIVE_REQUIRE_ASSERT(
+    {
+      db->modify( *escrow1, [&]( escrow_object& e1 )
+      {
+        db->modify( *escrow2, [&]( escrow_object& e2 )
+        {
+          e1.access_hive_balance().transfer_to( e2.access_hive_balance(), HIVE_asset( 1200 ) );
+        } );
+      } );
+    }, "this->is_valid() && source.is_valid() && \"transfer tiny_asset to tiny_balance\"" );
+    HIVE_REQUIRE_ASSERT(
+    {
+      db->modify( *escrow1, [&]( escrow_object& e1 )
+      {
+        db->modify( *escrow2, [&]( escrow_object& e2 )
+        {
+          e1.access_fee().transfer_to( e2.access_fee(), ASSET( "1.200 TBD" ) );
+        } );
+      } );
+    }, "is_valid() && source.is_valid() && \"transfer asset to balance\"" );
+  }
+
+  // check transfer_to( matching_class, matching_asset ) - balance underflow, negative delta
+  {
+    auto undo = db->start_undo_session();
+    HIVE_REQUIRE_ASSERT(
+    {
+      db->modify( *escrow1, [&]( escrow_object& e1 )
+      {
+        db->modify( *escrow2, [&]( escrow_object& e2 )
+        {
+          e1.access_hive_balance().transfer_to( e2.access_hive_balance(), -HIVE_asset( 1200 ) );
+        } );
+      } );
+    }, "this->is_valid() && source.is_valid() && \"transfer tiny_asset to tiny_balance\"" );
+    HIVE_REQUIRE_ASSERT(
+    {
+      db->modify( *escrow1, [&]( escrow_object& e1 )
+      {
+        db->modify( *escrow2, [&]( escrow_object& e2 )
+        {
+          e1.access_fee().transfer_to( e2.access_fee(), -ASSET( "1.200 TBD" ) );
+        } );
+      } );
+    }, "is_valid() && source.is_valid() && \"transfer asset to balance\"" );
+  }
+
+  // check transfer_to( matching_class )
+  {
+    auto undo = db->start_undo_session();
+    db->modify( *escrow1, [&]( escrow_object& e1 )
+    {
+      db->modify( *escrow2, [&]( escrow_object& e2 )
+      {
+        e1.access_hive_balance().transfer_to( e2.access_hive_balance() );
+        e1.access_hbd_balance().transfer_to( e2.access_hbd_balance() );
+        e1.access_fee().transfer_to( e2.access_fee() );
+      } );
+    } );
+    check_values( *escrow1, 1000 - 1000, 1000 - 1000, 500 - 500 );
+    check_values( *escrow2, 1000 + 1000, 1000 + 1000, 500 + 500 );
+  }
+  // with temporaries
+  {
+    auto undo = db->start_undo_session();
+    temp_HIVE_balance hive;
+    temp_HBD_balance hbd;
+    temp_balance any( HBD_SYMBOL );
+    db->modify( *escrow1, [&]( escrow_object& e1 )
+    {
+      e1.access_hive_balance().transfer_to( hive );
+      e1.access_hbd_balance().transfer_to( hbd );
+      e1.access_fee().transfer_to( any );
+    } );
+    check_values( *escrow1, 1000 - 1000, 1000 - 1000, 500 - 500 );
+    db->modify( *escrow2, [&]( escrow_object& e2 )
+    {
+      hive.transfer_to( e2.access_hive_balance() );
+      hbd.transfer_to( e2.access_hbd_balance() );
+      any.transfer_to( e2.access_fee() );
+    } );
+    check_values( *escrow2, 1000 + 1000, 1000 + 1000, 500 + 500 );
+  }
+
+  // check transfer_to( cross_class, cross_asset ) - positive delta
+  {
+    auto undo = db->start_undo_session();
+    db->modify( *escrow1, [&]( escrow_object& e1 )
+    {
+      db->modify( *escrow2, [&]( escrow_object& e2 )
+      {
+        e1.access_hbd_balance().transfer_to( e2.access_fee(), ASSET( "0.200 TBD" ) );
+        e1.access_fee().transfer_to( e2.access_hbd_balance(), HBD_asset( 200 ) );
+      } );
+    } );
+    check_values( *escrow1, 1000, 1000 - 200, 500 - 200 );
+    check_values( *escrow2, 1000, 1000 + 200, 500 + 200 );
+  }
+  // with temporaries
+  {
+    auto undo = db->start_undo_session();
+    temp_HBD_balance hbd;
+    temp_balance any( HBD_SYMBOL );
+    db->modify( *escrow1, [&]( escrow_object& e1 )
+    {
+      e1.access_hbd_balance().transfer_to( any, ASSET( "0.200 TBD" ) );
+      e1.access_fee().transfer_to( hbd, HBD_asset( 200 ) );
+    } );
+    check_values( *escrow1, 1000, 1000 - 200, 500 - 200 );
+    db->modify( *escrow2, [&]( escrow_object& e2 )
+    {
+      hbd.transfer_to( e2.access_fee(), ASSET( "0.200 TBD" ) );
+      any.transfer_to( e2.access_hbd_balance(), HBD_asset( 200 ) );
+    } );
+    check_values( *escrow2, 1000, 1000 + 200, 500 + 200 );
+  }
+
+  // check transfer_to( cross_class, cross_asset ) - zero delta
+  {
+    auto undo = db->start_undo_session();
+    db->modify( *escrow1, [&]( escrow_object& e1 )
+    {
+      db->modify( *escrow2, [&]( escrow_object& e2 )
+      {
+        e1.access_hbd_balance().transfer_to( e2.access_fee(), ASSET( "0.000 TBD" ) );
+        e1.access_fee().transfer_to( e2.access_hbd_balance(), HBD_asset( 0 ) );
+      } );
+    } );
+    check_values( *escrow1, 1000, 1000, 500 );
+    check_values( *escrow2, 1000, 1000, 500 );
+  }
+  // with temporaries
+  {
+    auto undo = db->start_undo_session();
+    temp_HBD_balance hbd;
+    temp_balance any( HBD_SYMBOL );
+    db->modify( *escrow1, [&]( escrow_object& e1 )
+    {
+      e1.access_hbd_balance().transfer_to( any, ASSET( "0.000 TBD" ) );
+      e1.access_fee().transfer_to( hbd, HBD_asset( 0 ) );
+    } );
+    check_values( *escrow1, 1000, 1000, 500 );
+    db->modify( *escrow2, [&]( escrow_object& e2 )
+    {
+      hbd.transfer_to( e2.access_fee(), ASSET( "0.000 TBD" ) );
+      any.transfer_to( e2.access_hbd_balance(), HBD_asset( 0 ) );
+    } );
+    check_values( *escrow2, 1000, 1000, 500 );
+  }
+
+  // check transfer_to( cross_class, cross_asset ) - negative delta
+  {
+    auto undo = db->start_undo_session();
+    db->modify( *escrow1, [&]( escrow_object& e1 )
+    {
+      db->modify( *escrow2, [&]( escrow_object& e2 )
+      {
+        e1.access_hbd_balance().transfer_to( e2.access_fee(), -ASSET( "0.200 TBD" ) );
+        e1.access_fee().transfer_to( e2.access_hbd_balance(), -HBD_asset( 200 ) );
+      } );
+    } );
+    check_values( *escrow1, 1000, 1000 + 200, 500 + 200 );
+    check_values( *escrow2, 1000, 1000 - 200, 500 - 200 );
+  }
+  // with temporaries
+  {
+    auto undo = db->start_undo_session();
+    temp_HBD_balance hbd;
+    temp_balance any( HBD_SYMBOL );
+    db->modify( *escrow1, [&]( escrow_object& e1 )
+    {
+      hbd.transfer_to( e1.access_fee(), -ASSET( "0.200 TBD" ) );
+      any.transfer_to( e1.access_hbd_balance(), -HBD_asset( 200 ) );
+    } );
+    check_values( *escrow1, 1000, 1000 - 200, 500 - 200 );
+    db->modify( *escrow2, [&]( escrow_object& e2 )
+    {
+      e2.access_hbd_balance().transfer_to( any, -ASSET( "0.200 TBD" ) );
+      e2.access_fee().transfer_to( hbd, -HBD_asset( 200 ) );
+    } );
+    check_values( *escrow2, 1000, 1000 + 200, 500 + 200 );
+  }
+
+  // check transfer_to( cross_class, cross_asset ) - balance underflow, positive delta
+  {
+    auto undo = db->start_undo_session();
+    HIVE_REQUIRE_ASSERT(
+    {
+      db->modify( *escrow1, [&]( escrow_object& e1 )
+      {
+        db->modify( *escrow2, [&]( escrow_object& e2 )
+        {
+          e1.access_hbd_balance().transfer_to( e2.access_fee(), ASSET( "1.200 TBD" ) );
+        } );
+      } );
+    }, "this->is_valid() && source.is_valid() && \"transfer tiny_asset to balance\"" );
+    HIVE_REQUIRE_ASSERT(
+    {
+      db->modify( *escrow1, [&]( escrow_object& e1 )
+      {
+        db->modify( *escrow2, [&]( escrow_object& e2 )
+        {
+          e1.access_fee().transfer_to( e2.access_hbd_balance(), HBD_asset( 1200 ) );
+        } );
+      } );
+    }, "this->is_valid() && source.is_valid() && \"transfer asset to tiny_balance\"" );
+  }
+
+  // check transfer_to( cross_class, cross_asset ) - balance underflow, negative delta
+  {
+    auto undo = db->start_undo_session();
+    HIVE_REQUIRE_ASSERT(
+    {
+      db->modify( *escrow1, [&]( escrow_object& e1 )
+      {
+        db->modify( *escrow2, [&]( escrow_object& e2 )
+        {
+          e1.access_hbd_balance().transfer_to( e2.access_fee(), -ASSET( "1.200 TBD" ) );
+        } );
+      } );
+    }, "this->is_valid() && source.is_valid() && \"transfer tiny_asset to balance\"" );
+    HIVE_REQUIRE_ASSERT(
+    {
+      db->modify( *escrow1, [&]( escrow_object& e1 )
+      {
+        db->modify( *escrow2, [&]( escrow_object& e2 )
+        {
+          e1.access_fee().transfer_to( e2.access_hbd_balance(), -HBD_asset( 1200 ) );
+        } );
+      } );
+    }, "this->is_valid() && source.is_valid() && \"transfer asset to tiny_balance\"" );
+  }
+
+  // check transfer_to( cross_class, cross_asset ) - asset mismatch
+  {
+    auto undo = db->start_undo_session();
+    HIVE_REQUIRE_ASSERT(
+    {
+      db->modify( *escrow1, [&]( escrow_object& e1 )
+      {
+        db->modify( *escrow2, [&]( escrow_object& e2 )
+        {
+          e1.access_hive_balance().transfer_to( e2.access_fee(), ASSET( "0.200 TBD" ) );
+        } );
+      } );
+    }, "val.symbol.asset_num == _SYMBOL" );
+    HIVE_REQUIRE_ASSERT(
+    {
+      db->modify( *escrow1, [&]( escrow_object& e1 )
+      {
+        db->modify( *escrow2, [&]( escrow_object& e2 )
+        {
+          e1.access_fee().transfer_to( e2.access_hive_balance(), HIVE_asset( 200 ) );
+        } );
+      } );
+    }, "symbol == o.symbol && \"asset symbol mismatch -=\"" );
+  }
+
+  // check transfer_to( cross_class )
+  {
+    auto undo = db->start_undo_session();
+    db->modify( *escrow1, [&]( escrow_object& e1 )
+    {
+      db->modify( *escrow2, [&]( escrow_object& e2 )
+      {
+        e1.access_hbd_balance().transfer_to( e2.access_fee() );
+        e1.access_fee().transfer_to( e2.access_hbd_balance() );
+      } );
+    } );
+    check_values( *escrow1, 1000, 1000 - 1000, 500 - 500 );
+    check_values( *escrow2, 1000, 1000 + 500, 500 + 1000 );
+  }
+  // with temporaries
+  {
+    auto undo = db->start_undo_session();
+    temp_HBD_balance hbd;
+    temp_balance any( HBD_SYMBOL );
+    db->modify( *escrow1, [&]( escrow_object& e1 )
+    {
+      e1.access_hbd_balance().transfer_to( any );
+      e1.access_fee().transfer_to( hbd );
+    } );
+    check_values( *escrow1, 1000, 1000 - 1000, 500 - 500 );
+    db->modify( *escrow2, [&]( escrow_object& e2 )
+    {
+      hbd.transfer_to( e2.access_fee() );
+      any.transfer_to( e2.access_hbd_balance() );
+    } );
+    check_values( *escrow2, 1000, 1000 + 1000, 500 + 500 );
+  }
+}
+
+BOOST_AUTO_TEST_CASE( removal_of_nonempty_balance_is_a_bug )
+{
+  BOOST_TEST_MESSAGE( "Testing: removal of chain object contaning nonempty balance is a bug" );
+
+  ACTORS( (alice)(bob)(carol) );
+  fund( "alice", HIVE_asset( 10000 ) );
+  fund( "alice", HBD_asset( 10000 ) );
+  generate_block();
+
+  escrow_transfer( "alice", "bob", "carol", HIVE_asset( 1000 ), HBD_asset( 1000 ), ASSET( "0.500 TBD" ),
+    "", fc::minutes( 10 ), fc::days( 7 ), 1, alice_private_key );
+  generate_block();
+
+  const auto* escrow = db->find_escrow( "alice", 1 );
+  BOOST_REQUIRE_NE( escrow, nullptr );
+
+  // you can't remove chain object that contains nonempty balance, because that would lead to destruction of funds
+  HIVE_REQUIRE_ASSERT(
+  {
+    db->remove( *escrow );
+  }, "hive_balance.is_empty() && hbd_balance.is_empty() && pending_fee.is_empty()" );
+
+  // first the balances need to be freed - transfered to other external balances or officially burned
+  temp_HIVE_balance hive;
+  temp_HBD_balance hbd;
+  temp_balance any( escrow->get_fee().symbol );
+  db->modify( *escrow, [&]( escrow_object& e )
+  {
+    hive.transfer_from( e.access_hive_balance() );
+    e.access_hbd_balance().transfer_to( hbd );
+    any.transfer_from( e.access_fee() );
+  } );
+  db->remove( *escrow );
+  // TODO: return balance to alice or burn with dgpo once it is available
+  hive.set_from_asset( HIVE_asset( 0 ) );
+  hbd.set_from_asset( HBD_asset( 0 ) );
+  any.set_from_asset( asset( 0, any.as_asset().symbol ) );
 }
 
 BOOST_AUTO_TEST_SUITE_END()

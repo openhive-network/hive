@@ -64,6 +64,7 @@ namespace chain {
   struct prepare_snapshot_supplement_notification;
   struct load_snapshot_supplement_notification;
 
+  class escrow_object;
   class database;
 
   struct hardfork_versions
@@ -586,6 +587,7 @@ namespace chain {
       void process_subsidized_accounts();
       void account_recovery_processing();
       void expire_escrow_ratification();
+      void remove_escrow( const escrow_object& escrow, bool emit_rejected_vop = true );
       void remove_pending_escrows( const account_object& account, const account_name_type& account_name );
       void get_escrow_totals( HIVE_asset& total_hive, HBD_asset& total_hbd, uint64_t& escrow_count ) const;
       void remove_pending_savings_withdraws( const account_object& account, const account_name_type& account_name );
