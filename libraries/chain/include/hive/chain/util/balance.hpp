@@ -316,7 +316,12 @@ public:
   temp_balance( asset_symbol_type id ) : balance_base( id ) {} // no default argument, because it leads to easy to make bugs
 
   temp_balance( temp_balance&& b ) = default;
-  temp_balance& operator=( temp_balance&& b ) = default;
+  temp_balance& operator=( temp_balance&& b )
+  {
+    FC_ASSERT( is_empty() && "temp_balance move assign", "Destruction of funds" );
+    balance_base::operator=( std::move( b ) );
+    return *this;
+  }
 
   ~temp_balance() noexcept( false )
   {
@@ -360,7 +365,12 @@ public:
   temp_tiny_balance() {}
 
   temp_tiny_balance( temp_tiny_balance&& b ) = default;
-  temp_tiny_balance& operator=( temp_tiny_balance&& b ) = default;
+  temp_tiny_balance& operator=( temp_tiny_balance&& b )
+  {
+    FC_ASSERT( this->is_empty() && "temp_tiny_balance move assign", "Destruction of funds" );
+    tiny_balance_base< _SYMBOL >::operator=( std::move( b ) );
+    return *this;
+  }
 
   ~temp_tiny_balance() noexcept( false )
   {
