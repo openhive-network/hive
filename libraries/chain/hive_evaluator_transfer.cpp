@@ -88,15 +88,35 @@ void escrow_transfer_evaluator::do_apply( const escrow_transfer_operation& o )
     HBD_asset o_hbd_amount = o.get_hbd_amount();
     HIVE_asset hive_spent = o_hive_amount;
     HBD_asset hbd_spent = o_hbd_amount;
+    HIVE_asset hive_fee;
+    HBD_asset hbd_fee;
     if( o.fee.symbol == HIVE_SYMBOL )
-      hive_spent += HIVE_asset( o.fee );
+    {
+      hive_fee = HIVE_asset( o.fee );
+      hive_spent += hive_fee;
+    }
     else
-      hbd_spent += HBD_asset( o.fee );
+    {
+      hbd_fee = HBD_asset( o.fee );
+      hbd_spent += hbd_fee;
+    }
 
+    temp_HIVE_balance escrow_hive;
     _db.adjust_balance( from_account, -hive_spent );
+    escrow_hive.set_from_asset( hive_spent );
+    temp_HBD_balance escrow_hbd;
     _db.adjust_balance( from_account, -hbd_spent );
+    escrow_hbd.set_from_asset( hbd_spent );
 
-    _db.create<escrow_object>( from_account, to_account, agent_account, o_hive_amount, o_hbd_amount, o.fee, o.ratification_deadline, o.escrow_expiration, o.escrow_id );
+    temp_balance escrow_fee( o.fee.symbol );
+    if( o.fee.symbol == HIVE_SYMBOL )
+      escrow_fee.transfer_from( escrow_hive, hive_fee );
+    else
+      escrow_fee.transfer_from( escrow_hbd, hbd_fee );
+
+    _db.create<escrow_object>( from_account, to_account, agent_account,
+      std::move( escrow_hive ), std::move( escrow_hbd ), std::move( escrow_fee ),
+      o.ratification_deadline, o.escrow_expiration, o.escrow_id );
     _db.modify( from_account, []( account_object& a )
     {
       a.pending_escrow_transfers++;
@@ -109,7 +129,6 @@ void escrow_approve_evaluator::do_apply( const escrow_approve_operation& o )
 {
   try
   {
-
     const auto& escrow = _db.get_escrow( o.from, o.escrow_id );
 
     HIVE_CHAIN_STATE_ASSERT( escrow.get_to() == o.to, o.to, "Operation 'to' (${o}) does not match escrow 'to' (${e}).", ("o", o.to)("e", escrow.get_to()) );
@@ -127,7 +146,7 @@ void escrow_approve_evaluator::do_apply( const escrow_approve_operation& o )
         _db.modify( escrow, [&]( escrow_object& esc )
         {
           esc.approve_to();
-        });
+        } );
       }
     }
     if( o.who == o.agent )
@@ -139,36 +158,26 @@ void escrow_approve_evaluator::do_apply( const escrow_approve_operation& o )
         _db.modify( escrow, [&]( escrow_object& esc )
         {
           esc.approve_agent();
-        });
+        } );
       }
     }
 
     if( reject_escrow )
     {
-      _db.adjust_balance( o.from, escrow.get_hive_balance() );
-      _db.adjust_balance( o.from, escrow.get_hbd_balance() );
-      _db.adjust_balance( o.from, escrow.get_fee() );
-
-      push_virtual_operation( _db, escrow_rejected_operation( o.from, o.to, o.agent, o.escrow_id,
-        escrow.get_hbd_balance(), escrow.get_hive_balance(), escrow.get_fee() ) );
-
-      _db.modify( _db.get_account( escrow.get_from() ), []( account_object& a )
-      {
-        a.pending_escrow_transfers--;
-      } );
-      _db.remove( escrow );
+      _db.remove_escrow( escrow );
     }
     else if( escrow.is_to_approved() && escrow.is_agent_approved() )
     {
-      _db.adjust_balance( o.agent, escrow.get_fee() );
-
-      push_virtual_operation( _db, escrow_approved_operation( o.from, o.to, o.agent,
-        o.escrow_id, escrow.get_fee() ) );
-
+      temp_balance fee_released( escrow.get_fee().symbol );
       _db.modify( escrow, [&]( escrow_object& esc )
       {
-        esc.access_fee().amount = 0;
-      });
+        esc.access_fee().transfer_to( fee_released );
+      } );
+
+      auto vop = escrow_approved_operation( o.from, o.to, o.agent, o.escrow_id, fee_released.as_asset() );
+      _db.adjust_balance( o.agent, fee_released.as_asset() );
+      fee_released.set_from_asset( asset( 0, fee_released.as_asset().symbol ) );
+      push_virtual_operation( _db, vop );
     }
   }
   FC_CAPTURE_AND_RETHROW( (o) )
@@ -190,7 +199,7 @@ void escrow_dispute_evaluator::do_apply( const escrow_dispute_operation& o )
     _db.modify( e, [&]( escrow_object& esc )
     {
       esc.start_dispute();
-    });
+    } );
   }
   FC_CAPTURE_AND_RETHROW( (o) )
 }
@@ -236,14 +245,18 @@ void escrow_release_evaluator::do_apply( const escrow_release_operation& o )
     }
     // If escrow expires and there is no dispute, either party can release funds to either party.
 
-    _db.adjust_balance( o.receiver, o_hive_amount );
-    _db.adjust_balance( o.receiver, o_hbd_amount );
-
+    temp_HIVE_balance hive_released;
+    temp_HBD_balance hbd_released;
     _db.modify( e, [&]( escrow_object& esc )
     {
-      esc.access_hive_balance() -= o_hive_amount;
-      esc.access_hbd_balance() -= o_hbd_amount;
+      esc.access_hive_balance().transfer_to( hive_released, o_hive_amount );
+      esc.access_hbd_balance().transfer_to( hbd_released, o_hbd_amount );
     } );
+
+    _db.adjust_balance( o.receiver, hive_released.as_asset() );
+    hive_released.set_from_asset( HIVE_asset( 0 ) );
+    _db.adjust_balance( o.receiver, hbd_released.as_asset() );
+    hbd_released.set_from_asset( HBD_asset( 0 ) );
 
     if( e.get_hive_balance().amount == 0 && e.get_hbd_balance().amount == 0 )
     {

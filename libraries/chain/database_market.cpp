@@ -55,6 +55,42 @@ const limit_order_object* database::find_limit_order( const account_name_type& n
   return find< limit_order_object, by_account >( boost::make_tuple( name, orderid ) );
 }
 
+void database::remove_escrow( const escrow_object& escrow, bool emit_rejected_vop )
+{
+  // Extract all funds via temp balances
+  temp_HIVE_balance hive_ret;
+  temp_HBD_balance hbd_ret;
+  temp_balance fee_ret( escrow.get_fee().symbol );
+  modify( escrow, [&]( escrow_object& esc )
+  {
+    esc.access_hive_balance().transfer_to( hive_ret );
+    esc.access_hbd_balance().transfer_to( hbd_ret );
+    esc.access_fee().transfer_to( fee_ret );
+  } );
+
+  auto vop = escrow_rejected_operation( escrow.get_from(), escrow.get_to(), escrow.get_agent(),
+    escrow.get_escrow_id(), hbd_ret.as_asset(), hive_ret.as_asset(), fee_ret.as_asset() );
+
+  // Return funds to originator
+  const auto& from_account = get_account( escrow.get_from() );
+  adjust_balance( from_account, hive_ret.as_asset() );
+  hive_ret.set_from_asset( HIVE_asset( 0 ) );
+  adjust_balance( from_account, hbd_ret.as_asset() );
+  hbd_ret.set_from_asset( HBD_asset( 0 ) );
+  adjust_balance( from_account, fee_ret.as_asset() );
+  fee_ret.set_from_asset( asset( 0, fee_ret.as_asset().symbol ) );
+
+  if( emit_rejected_vop )
+    push_virtual_operation( *this, vop );
+
+  // Decrement counter and remove
+  modify( from_account, []( account_object& a )
+  {
+    a.pending_escrow_transfers--;
+  } );
+  remove( escrow );
+}
+
 void database::expire_escrow_ratification()
 {
   const auto& escrow_idx = get_index< escrow_index, by_ratification_deadline >();
@@ -65,20 +101,7 @@ void database::expire_escrow_ratification()
   {
     const auto& old_escrow = *escrow_itr;
     ++escrow_itr;
-
-    adjust_balance( old_escrow.get_from(), old_escrow.get_hive_balance() );
-    adjust_balance( old_escrow.get_from(), old_escrow.get_hbd_balance() );
-    adjust_balance( old_escrow.get_from(), old_escrow.get_fee() );
-
-    push_virtual_operation( *this, escrow_rejected_operation( old_escrow.get_from(), old_escrow.get_to(), old_escrow.get_agent(), old_escrow.get_escrow_id(),
-      old_escrow.get_hbd_balance(), old_escrow.get_hive_balance(), old_escrow.get_fee() ) );
-
-    modify( get_account( old_escrow.get_from() ), []( account_object& a )
-    {
-      a.pending_escrow_transfers--;
-    } );
-
-    remove( old_escrow );
+    remove_escrow( old_escrow );
   }
 }
 
@@ -91,17 +114,7 @@ void database::remove_pending_escrows( const account_object& account, const acco
   {
     auto& escrow = *escrow_itr;
     ++escrow_itr;
-
-    adjust_balance( account, escrow.get_hive_balance() );
-    adjust_balance( account, escrow.get_hbd_balance() );
-    adjust_balance( account, escrow.get_fee() );
-
-    modify( account, []( account_object& a )
-    {
-      a.pending_escrow_transfers--;
-    } );
-
-    remove( escrow );
+    remove_escrow( escrow, false /*emit_rejected_vop*/ );
   }
 }
 
