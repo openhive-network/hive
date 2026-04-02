@@ -32,6 +32,8 @@
 
 using namespace boost::placeholders;
 
+#define HIVE_MAX_HTTP_REQUEST_BODY_SIZE (1024 * 1024 * 2) // 2MB
+
 namespace hive { namespace plugins { namespace webserver {
 
 namespace asio = boost::asio;
@@ -579,6 +581,11 @@ void webserver_plugin_impl<websocket_server_type>::handle_ws_message( websocket_
       if( msg->get_opcode() == websocketpp::frame::opcode::text )
       {
         auto body = msg->get_payload();
+        if( body.size() > HIVE_MAX_HTTP_REQUEST_BODY_SIZE )
+        {
+          con->send( "Request body too large" );
+          return;
+        }
         LOG_DELAY(arrival_time, fc::seconds(4), "Excessive delay to get ws payload");
 
         auto response =  api->call( body );
@@ -621,6 +628,15 @@ void webserver_plugin_impl<websocket_server_type>::handle_http_message( websocke
 {
   auto con = server->get_con_from_hdl( std::move( hdl ) );
   con->defer_http_response();
+
+  auto body = con->get_request_body();
+  if( body.size() > HIVE_MAX_HTTP_REQUEST_BODY_SIZE )
+  {
+    con->set_body( "Request body too large" );
+    con->set_status( websocketpp::http::status_code::request_entity_too_large );
+    con->send_http_response();
+    return;
+  }
 
   fc::time_point arrival_time = fc::time_point::now();
   boost::asio::post(thread_pool_ios, [con, this, arrival_time]() {

@@ -15,6 +15,7 @@
 #include <fc/io/fstream.hpp>
 
 #define ENABLE_JSON_RPC_LOG
+#define HIVE_JSON_RPC_MAX_BATCH_SIZE 100
 
 namespace hive { namespace plugins { namespace json_rpc {
 
@@ -654,6 +655,9 @@ string json_rpc_plugin::call( const string& message )
     if( v.is_array() )
     {
       vector< fc::variant > messages = v.as< vector< fc::variant > >();
+      FC_ASSERT( messages.size() <= HIVE_JSON_RPC_MAX_BATCH_SIZE,
+        "JSON-RPC batch request exceeds maximum allowed size of ${max}",
+        ("max", HIVE_JSON_RPC_MAX_BATCH_SIZE) );
       vector< json_rpc_response > responses;
 
       if( messages.size() )
