@@ -8,7 +8,8 @@
 #   3. If exists: creates env file and exits (skips generation/build entirely)
 #   4. If not: generates package, builds wheel, runs tests, and deploys to registry
 #
-# The output artifacts are identical regardless of build or download path.
+# The build_wheel.env artifact is always created with the resolved version.
+# When the version exists in the registry, generation and build are skipped entirely.
 #
 # Usage:
 #   ./hiveio_api_package.sh [options]

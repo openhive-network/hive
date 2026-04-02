@@ -39,7 +39,7 @@
 #                               to the upstream (hive) project's registry
 #
 # Artifacts:
-#   - ${API_GENERATION_DIR}/python_api_package/dist/*.whl Built wheel (only present when built locally)
+#   - ${API_GENERATION_DIR}/python_api_package/dist/*.whl Built or downloaded wheel
 #   - build_wheel.env                                     Environment file with WHEEL_BUILD_VERSION (always)
 
 .hiveio_api_package_template:
