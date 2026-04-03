@@ -1,12 +1,11 @@
 #pragma once
 
-#include <fc/string.hpp>
-
-#include<map>
+#include <map>
+#include <string>
 
 namespace type_extractor
 {
-  using fc::string;
+  using std::string;
 
   class operation_extractor
   {
