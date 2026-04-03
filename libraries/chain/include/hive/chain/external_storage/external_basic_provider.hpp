@@ -1,6 +1,8 @@
 #pragma once
 
-#include <rocksdb/db.h>
+#include <memory>
+
+namespace rocksdb { class DB; }
 
 namespace hive { namespace chain {
 

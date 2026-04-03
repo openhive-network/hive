@@ -1,9 +1,7 @@
 
 #pragma once
 
-#include <memory>
-#include <string>
-#include <vector>
+namespace appbase { class application; }
 
 namespace hive { namespace plugins {
 
