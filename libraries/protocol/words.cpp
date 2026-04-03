@@ -26,8 +26,8 @@
 #include <fc/crypto/base64.hpp>
 #include <fc/compress/zlib.hpp>
 
-#include <algorithm>
 #include <cstring>
+#include <string>
 #include <vector>
 
 namespace
