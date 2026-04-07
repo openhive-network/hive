@@ -1535,6 +1535,11 @@ void state_snapshot_plugin::impl::prepare_snapshot(const std::string& snapshotNa
         std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
       }
     });
+    /// RAII guard: ensures interrupt_monitor is joined even if an exception is thrown
+    struct monitor_guard {
+      std::thread& t; std::atomic_bool& done;
+      ~monitor_guard() { done.store( true ); if( t.joinable() ) t.join(); }
+    } dump_monitor_guard{ interrupt_monitor, dump_done };
 
     ilog("Waiting for dumping jobs completion");
     work.reset();
@@ -1542,7 +1547,7 @@ void state_snapshot_plugin::impl::prepare_snapshot(const std::string& snapshotNa
     dump_done.store( true );
     interrupt_monitor.join();
 
-    if( is_interrupted() )
+    if( _is_error.load() && is_interrupted() )
       FC_THROW_EXCEPTION( fc::sigint_exception, "Snapshot dumping was interrupted by user request (SIGINT)." );
 
     if( _exception )
@@ -1594,6 +1599,16 @@ void state_snapshot_plugin::impl::prepare_snapshot(const std::string& snapshotNa
 
   ilog("Snapshot generation finished");
   return;
+  }
+  catch( fc::sigint_exception& )
+  {
+    bfs::path partial = (_storagePath / snapshotName).lexically_normal();
+    if( bfs::exists(partial) )
+    {
+      wlog("Cleaning up partial snapshot directory: ${p}", ("p", partial.string()));
+      try { bfs::remove_all(partial); } catch(...) { elog("Failed to clean up partial snapshot directory: ${p}", ("p", partial.string())); }
+    }
+    throw;
   }
   FC_CAPTURE_AND_LOG(());
 
@@ -1690,6 +1705,11 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
         std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
       }
     });
+    /// RAII guard: ensures interrupt_monitor is joined even if an exception is thrown
+    struct monitor_guard {
+      std::thread& t; std::atomic_bool& done;
+      ~monitor_guard() { done.store( true ); if( t.joinable() ) t.join(); }
+    } load_monitor_guard{ interrupt_monitor, load_done };
 
     ilog("Waiting for loading jobs completion");
     work.reset();
@@ -1697,7 +1717,7 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
     load_done.store( true );
     interrupt_monitor.join();
 
-    if( is_interrupted() )
+    if( _is_error.load() && is_interrupted() )
       FC_THROW_EXCEPTION( fc::sigint_exception, "Snapshot loading was interrupted by user request (SIGINT). Partial state has been discarded." );
 
     if( _exception )
