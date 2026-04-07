@@ -1544,10 +1544,8 @@ void state_snapshot_plugin::impl::prepare_snapshot(const std::string& snapshotNa
     ilog("Waiting for dumping jobs completion");
     work.reset();
     threadpool.join_all();
-    dump_done.store( true );
-    interrupt_monitor.join();
 
-    if( _is_error.load() && is_interrupted() )
+    if( is_interrupted() )
       FC_THROW_EXCEPTION( fc::sigint_exception, "Snapshot dumping was interrupted by user request (SIGINT)." );
 
     if( _exception )
@@ -1714,10 +1712,8 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
     ilog("Waiting for loading jobs completion");
     work.reset();
     threadpool.join_all();
-    load_done.store( true );
-    interrupt_monitor.join();
 
-    if( _is_error.load() && is_interrupted() )
+    if( is_interrupted() )
       FC_THROW_EXCEPTION( fc::sigint_exception, "Snapshot loading was interrupted by user request (SIGINT). Partial state has been discarded." );
 
     if( _exception )
