@@ -1,4 +1,5 @@
 #include <hive/chain/hive_fwd.hpp>
+#include <chrono>
 #include <thread>
 
 #include <hive/chain/external_storage/comments_handler.hpp>
@@ -905,6 +906,8 @@ class state_snapshot_plugin::impl final : protected chain::state_snapshot_provid
 
       void load_snapshot_impl(const std::string& snapshotName, const hive::chain::open_args& openArgs);
 
+      bool is_interrupted() const;
+
     private:
       state_snapshot_plugin&  _self;
       database&               _mainDb;
@@ -962,8 +965,16 @@ std::string state_snapshot_plugin::impl::generate_name() const
   return "snapshot_" + std::to_string(fc::time_point::now().sec_since_epoch());
   }
 
+bool state_snapshot_plugin::impl::is_interrupted() const
+  {
+  return _self.get_app().is_interrupt_request();
+  }
+
 void state_snapshot_plugin::impl::safe_spawn_snapshot_dump(const chainbase::abstract_index* idx, index_dump_writer* writer)
   {
+  if( BOOST_UNLIKELY( _is_error.load() ) )
+    throw boost::thread_interrupted();
+
   try
   {
     writer->set_processing_success(false);
@@ -1412,6 +1423,9 @@ void state_snapshot_plugin::impl::load_snapshot_external_data(const plugin_exter
 
 void state_snapshot_plugin::impl::safe_spawn_snapshot_load(chainbase::abstract_index* idx, index_dump_reader* reader)
   {
+  if( BOOST_UNLIKELY( _is_error.load() ) )
+    throw boost::thread_interrupted();
+
   try
   {
     reader->set_processing_success(false);
@@ -1484,6 +1498,9 @@ void state_snapshot_plugin::impl::prepare_snapshot(const std::string& snapshotNa
     FC_ASSERT(bfs::is_empty(actualStoragePath), "Directory ${p} is not empty. Creating snapshot rejected.", ("p", actualStoragePath.string()));
   }
   
+  _is_error.store( false );
+  _exception = nullptr;
+
   const auto& indices = _mainDb.get_abstract_index_cntr();
   ilog("Attempting to dump contents of ${n} indices using ${_num_threads} thread(s).", ("n", indices.size())(_num_threads));
   std::vector<std::unique_ptr<index_dump_writer>> builtWriters;
@@ -1503,9 +1520,31 @@ void state_snapshot_plugin::impl::prepare_snapshot(const std::string& snapshotNa
       index_dump_writer* writer = builtWriters.back().get();
       boost::asio::post(ioContext, boost::bind(&impl::safe_spawn_snapshot_dump, this, idx, writer));
     }
+
+    /// Monitor for SIGINT and bridge to _is_error so workers abort
+    std::atomic_bool dump_done{ false };
+    std::thread interrupt_monitor([this, &dump_done]() {
+      while( !dump_done.load( std::memory_order_relaxed ) && !_is_error.load( std::memory_order_relaxed ) )
+      {
+        if( is_interrupted() )
+        {
+          wlog("Snapshot dumping interrupted by user request (SIGINT). Aborting worker threads...");
+          _is_error.store( true );
+          return;
+        }
+        std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
+      }
+    });
+
     ilog("Waiting for dumping jobs completion");
     work.reset();
     threadpool.join_all();
+    dump_done.store( true );
+    interrupt_monitor.join();
+
+    if( is_interrupted() )
+      FC_THROW_EXCEPTION( fc::sigint_exception, "Snapshot dumping was interrupted by user request (SIGINT)." );
+
     if( _exception )
     {
       wlog("Snapshot writing is aborted because of some errors");
@@ -1516,6 +1555,9 @@ void state_snapshot_plugin::impl::prepare_snapshot(const std::string& snapshotNa
   {
     for(const chainbase::abstract_index* idx : indices)
     {
+      if( is_interrupted() )
+        FC_THROW_EXCEPTION( fc::sigint_exception, "Snapshot dumping was interrupted by user request (SIGINT)." );
+
       builtWriters.emplace_back(std::make_unique<index_dump_writer>(_mainDb, *idx, actualStoragePath, false /* allow_concurrency */, _is_error));
       index_dump_writer* writer = builtWriters.back().get();
       safe_spawn_snapshot_dump(idx, writer);
@@ -1610,6 +1652,9 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
   _mainDb.set_blockchain_config(full_loaded_blockchain_configuration_json);
   _mainDb.open(openArgs);
 
+  _is_error.store( false );
+  _exception = nullptr;
+
   const auto& indices = _mainDb.get_abstract_index_cntr();
   ilog("Attempting to load contents of ${n} indices using ${_num_threads} thread(s).", ("n", indices.size())(_num_threads));
 
@@ -1631,9 +1676,30 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
       boost::asio::post(ioContext, boost::bind(&impl::safe_spawn_snapshot_load, this, idx, reader));
     }
 
+    /// Monitor for SIGINT and bridge to _is_error so workers abort
+    std::atomic_bool load_done{ false };
+    std::thread interrupt_monitor([this, &load_done]() {
+      while( !load_done.load( std::memory_order_relaxed ) && !_is_error.load( std::memory_order_relaxed ) )
+      {
+        if( is_interrupted() )
+        {
+          wlog("Snapshot loading interrupted by user request (SIGINT). Aborting worker threads...");
+          _is_error.store( true );
+          return;
+        }
+        std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
+      }
+    });
+
     ilog("Waiting for loading jobs completion");
     work.reset();
     threadpool.join_all();
+    load_done.store( true );
+    interrupt_monitor.join();
+
+    if( is_interrupted() )
+      FC_THROW_EXCEPTION( fc::sigint_exception, "Snapshot loading was interrupted by user request (SIGINT). Partial state has been discarded." );
+
     if( _exception )
     {
       wlog("Snapshot loading is aborted because of some errors");
@@ -1644,6 +1710,9 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
   {
     for(chainbase::abstract_index* idx : indices)
     {
+      if( is_interrupted() )
+        FC_THROW_EXCEPTION( fc::sigint_exception, "Snapshot loading was interrupted by user request (SIGINT)." );
+
       std::unique_ptr< index_dump_reader> reader = std::make_unique<index_dump_reader>(std::get<0>(snapshotManifest), actualStoragePath, _is_error);
       safe_spawn_snapshot_load(idx, reader.get());
     }
