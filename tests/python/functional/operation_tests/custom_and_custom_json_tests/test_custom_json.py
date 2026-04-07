@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 from beekeepy.exceptions import ErrorInResponseError
+from wax.exceptions.wax_error import WaxProtocolAuthorityAssertionError
 
 import test_tools as tt
 from hive_local_tools.functional.python.operation.custom_and_custom_json import CustomJson
@@ -108,7 +109,7 @@ def test_correct_custom_json_with_mixed_posting_and_active_auth(
     alice, bob = create_alice_and_bob
     custom_json = CustomJson(prepared_node, wallet)
     json = '{"this": "is", "test": "json"}'
-    with pytest.raises(RuntimeError):  # noqa: PT012
+    with pytest.raises(WaxProtocolAuthorityAssertionError):  # noqa: PT012
         trx = custom_json.generate_transaction(required_auths, required_posting_auths, 1, json)
         custom_json.sign_transaction(trx, broadcast=True)
     alice.check_if_rc_mana_was_unchanged()
