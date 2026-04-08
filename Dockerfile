@@ -38,6 +38,11 @@ USER root
 WORKDIR /usr/local/src
 ADD ./scripts/openssl.conf ./scripts/setup_ubuntu.sh /usr/local/src/scripts/
 
+# Install auto-apt-proxy for automatic apt caching proxy detection.
+# On networks with an 'apt-proxy' DNS entry (our CI runners), apt traffic
+# is routed through apt-cacher-ng. Silently falls back to direct on other networks.
+RUN apt-get update && apt-get install -y --no-install-recommends auto-apt-proxy && rm -rf /var/lib/apt/lists/*
+
 # Install base runtime packages
 RUN userdel --remove ubuntu
 RUN ./scripts/setup_ubuntu.sh --runtime --hived-account="hived"
