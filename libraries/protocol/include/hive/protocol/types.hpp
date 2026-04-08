@@ -16,7 +16,6 @@
 #include <fc/optional.hpp>
 #include <fc/container/flat.hpp>
 #include <fc/string.hpp>
-#include <fc/io/raw.hpp>
 #include <fc/uint128.hpp>
 #include <fc/static_variant.hpp>
 #include <fc/smart_ref_fwd.hpp>
