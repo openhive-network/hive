@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 import test_tools as tt
 from beekeepy.exceptions import ErrorInResponseError
+from wax.exceptions import WaxUnhandledAssertionError
 
 from wax.helpy import Hf26Asset as Asset
 
@@ -13,7 +14,7 @@ def wallet(node: tt.InitNode) -> tt.Wallet:
 
 
 def test_if_raise_when_parameters_are_bad(wallet: tt.Wallet) -> None:
-    with pytest.raises(RuntimeError):
+    with pytest.raises(WaxUnhandledAssertionError):
         wallet.api.create_account("surely", "bad", "arguments")
 
 
