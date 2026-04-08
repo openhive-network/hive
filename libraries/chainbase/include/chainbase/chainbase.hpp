@@ -572,12 +572,20 @@ namespace chainbase {
         check_object_not_poisoned( obj, "remove" );
 #endif
 #ifdef CHAINBASE_CHECK_TREE_INTEGRITY
-        verify_neighbors( obj, "remove (before erase)" );
+        verify_neighbors( obj, "remove (before on_remove)" );
 #endif
         size_t size = 0;
         if constexpr( value_type::has_dynamic_alloc_t::value )
           size = obj.get_dynamic_alloc();
         on_remove( obj );
+#ifdef CHAINBASE_CHECK_TREE_INTEGRITY
+        verify_neighbors( obj, "remove (after on_remove, before erase)" );
+        {
+          static thread_local uint64_t remove_count = 0;
+          if( ++remove_count % 10000 == 0 )
+            verify_full_order( "remove (periodic full check)" );
+        }
+#endif
         _indices.erase( _indices.iterator_to( obj ) );
         if constexpr( value_type::has_dynamic_alloc_t::value )
           _item_additional_allocation -= size;
@@ -705,6 +713,40 @@ namespace chainbase {
         constexpr int num_indices = boost::mpl::size<typename index_type::index_type_list>::value;
         chainbase_detail::check_all_indices<num_indices - 1, index_type>::run(
           _indices, obj, context, boost::core::demangle( typeid(value_type).name() ).c_str() );
+      }
+
+      /// Full ordered-walk validation of index 0. O(n) — use sparingly.
+      void verify_full_order( const char* context ) const
+      {
+        auto& idx = _indices.template get<0>();
+        size_t count = 0;
+        auto prev = idx.begin();
+        for( auto it = idx.begin(); it != idx.end(); ++it )
+        {
+          if( it != prev )
+          {
+            if( !idx.key_comp()( idx.key_extractor()( *prev ), idx.key_extractor()( *it ) ) )
+            {
+              std::cerr << "!!! FULL TREE WALK CORRUPTION in " << context
+                        << " for type " << boost::core::demangle( typeid(value_type).name() )
+                        << " at element #" << count
+                        << std::endl;
+              std::cerr.flush();
+              abort();
+            }
+            prev = it;
+          }
+          ++count;
+        }
+        if( count != idx.size() )
+        {
+          std::cerr << "!!! SIZE MISMATCH in " << context
+                    << " for type " << boost::core::demangle( typeid(value_type).name() )
+                    << " walked " << count << " but size() = " << idx.size()
+                    << std::endl;
+          std::cerr.flush();
+          abort();
+        }
       }
 #endif
 
