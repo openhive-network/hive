@@ -12,6 +12,7 @@
 #include <boost/interprocess/sync/file_lock.hpp>
 
 #include <boost/any.hpp>
+#include <boost/mpl/size.hpp>
 #include <boost/chrono.hpp>
 #include <boost/config.hpp>
 #include <boost/filesystem.hpp>
@@ -53,6 +54,79 @@
       fc::record_assert_trip( __FILE__, __LINE__, ex.what(), "" ); \
     BOOST_THROW_EXCEPTION( ex );                                   \
   } while( false )
+
+namespace chainbase_detail
+{
+  /// Check that an element's neighbors in one ordered index are properly ordered.
+  /// If the tree is corrupted, the predecessor/successor ordering invariant will be violated.
+  template<typename Index>
+  void check_neighbors_in_index( const Index& idx,
+    typename Index::iterator it, const char* context, const char* type_name, int index_num )
+  {
+    if( it == idx.end() )
+      return;
+
+    // Check predecessor
+    if( it != idx.begin() )
+    {
+      auto prev = it;
+      --prev;
+      if( !idx.key_comp()( idx.key_extractor()( *prev ), idx.key_extractor()( *it ) ) )
+      {
+        std::cerr << "!!! TREE CORRUPTION DETECTED in " << context
+                  << " for type " << type_name
+                  << " index #" << index_num
+                  << ": predecessor is NOT less than current element"
+                  << std::endl;
+        std::cerr.flush();
+        abort();
+      }
+    }
+
+    // Check successor
+    auto next = it;
+    ++next;
+    if( next != idx.end() )
+    {
+      if( !idx.key_comp()( idx.key_extractor()( *it ), idx.key_extractor()( *next ) ) )
+      {
+        std::cerr << "!!! TREE CORRUPTION DETECTED in " << context
+                  << " for type " << type_name
+                  << " index #" << index_num
+                  << ": current element is NOT less than successor"
+                  << std::endl;
+        std::cerr.flush();
+        abort();
+      }
+    }
+  }
+
+  /// Recursively check neighbors across all ordered indices (compile-time iteration)
+  template<int N, typename MultiIndex>
+  struct check_all_indices
+  {
+    static void run( const MultiIndex& indices,
+      const typename MultiIndex::value_type& obj, const char* context, const char* type_name )
+    {
+      check_all_indices<N-1, MultiIndex>::run( indices, obj, context, type_name );
+      auto& idx = indices.template get<N>();
+      auto it = idx.iterator_to( obj );
+      check_neighbors_in_index( idx, it, context, type_name, N );
+    }
+  };
+
+  template<typename MultiIndex>
+  struct check_all_indices<0, MultiIndex>
+  {
+    static void run( const MultiIndex& indices,
+      const typename MultiIndex::value_type& obj, const char* context, const char* type_name )
+    {
+      auto& idx = indices.template get<0>();
+      auto it = idx.iterator_to( obj );
+      check_neighbors_in_index( idx, it, context, type_name, 0 );
+    }
+  };
+}
 
 namespace helpers
 {
@@ -441,6 +515,9 @@ namespace chainbase {
 
       template<typename Modifier>
       void modify( const value_type& obj, Modifier&& m ) {
+#ifdef CHAINBASE_POISON_FREED_MEMORY
+        check_object_not_poisoned( obj, "modify" );
+#endif
         on_modify( obj );
 
         fc::exception_ptr fc_exception_ptr;
@@ -483,10 +560,20 @@ namespace chainbase {
 
         if constexpr( value_type::has_dynamic_alloc_t::value )
           _item_additional_allocation += new_size - old_size;
+
+#ifdef CHAINBASE_CHECK_TREE_INTEGRITY
+        verify_neighbors( obj, "modify (after)" );
+#endif
       }
 
       void remove( const value_type& obj )
       {
+#ifdef CHAINBASE_POISON_FREED_MEMORY
+        check_object_not_poisoned( obj, "remove" );
+#endif
+#ifdef CHAINBASE_CHECK_TREE_INTEGRITY
+        verify_neighbors( obj, "remove (before erase)" );
+#endif
         size_t size = 0;
         if constexpr( value_type::has_dynamic_alloc_t::value )
           size = obj.get_dynamic_alloc();
@@ -500,6 +587,9 @@ namespace chainbase {
       typename MultiIndexType::template index_iterator<ByIndex>::type erase(typename MultiIndexType::template index_iterator<ByIndex>::type objI)
       {
         auto& idx = _indices.template get< ByIndex >();
+#ifdef CHAINBASE_CHECK_TREE_INTEGRITY
+        verify_neighbors( *objI, "erase (before)" );
+#endif
         size_t size = 0;
         if constexpr( value_type::has_dynamic_alloc_t::value )
           size = objI->get_dynamic_alloc();
@@ -553,10 +643,81 @@ namespace chainbase {
         }
       }
 
+#ifdef CHAINBASE_POISON_FREED_MEMORY
+      static bool is_object_poisoned( const value_type& obj )
+      {
+        const unsigned char* bytes = reinterpret_cast<const unsigned char*>( &obj );
+        // Freed memory has bytes [sizeof(uint32_t)..sizeof(T)-1] set to 0xDE.
+        // Check a sample of bytes after the free-list pointer.
+        constexpr size_t skip = sizeof(uint32_t);
+        if constexpr( sizeof(value_type) > skip + 16 )
+        {
+          // Check 16 bytes at various offsets for the poison pattern
+          size_t poison_count = 0;
+          for( size_t i = skip; i < skip + 16 && i < sizeof(value_type); ++i )
+          {
+            if( bytes[i] == 0xDE ) ++poison_count;
+          }
+          return poison_count >= 12; // if 12+ out of 16 bytes are 0xDE, it's poisoned
+        }
+        return false;
+      }
+
+      static void check_object_not_poisoned( const value_type& obj, const char* context )
+      {
+        if( is_object_poisoned( obj ) )
+        {
+          std::cerr << "!!! USE-AFTER-FREE DETECTED in " << context
+                    << " for type " << boost::core::demangle( typeid(value_type).name() )
+                    << " at address " << (const void*)&obj
+                    << std::endl;
+          std::cerr.flush();
+          abort();
+        }
+      }
+
+      /// Walk every object in the index and verify none are poisoned.
+      /// Returns the number of objects checked.
+      size_t verify_index_integrity( const char* context ) const
+      {
+        size_t count = 0;
+        for( auto it = _indices.begin(); it != _indices.end(); ++it, ++count )
+        {
+          if( is_object_poisoned( *it ) )
+          {
+            std::cerr << "!!! USE-AFTER-FREE in index walk at " << context
+                      << " for type " << boost::core::demangle( typeid(value_type).name() )
+                      << " object #" << count
+                      << " at address " << (const void*)&(*it)
+                      << std::endl;
+            std::cerr.flush();
+            abort();
+          }
+        }
+        return count;
+      }
+#endif
+
+#ifdef CHAINBASE_CHECK_TREE_INTEGRITY
+      void verify_neighbors( const value_type& obj, const char* context ) const
+      {
+        // Use MPL to get the number of indices at compile time
+        constexpr int num_indices = boost::mpl::size<typename index_type::index_type_list>::value;
+        chainbase_detail::check_all_indices<num_indices - 1, index_type>::run(
+          _indices, obj, context, boost::core::demangle( typeid(value_type).name() ).c_str() );
+      }
+#endif
+
       template<typename CompatibleKey>
       const value_type* find( CompatibleKey&& key )const {
         auto itr = _indices.find( std::forward<CompatibleKey>( key ) );
-        if( itr != _indices.end() ) return &*itr;
+        if( itr != _indices.end() )
+        {
+#ifdef CHAINBASE_POISON_FREED_MEMORY
+          check_object_not_poisoned( *itr, "find" );
+#endif
+          return &*itr;
+        }
         return nullptr;
       }
 
