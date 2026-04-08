@@ -5,6 +5,8 @@
 
 #include <boost/algorithm/string.hpp>
 
+#include <iostream>
+
 using namespace hive::protocol;
 using boost::container::flat_map;
 using std::string;

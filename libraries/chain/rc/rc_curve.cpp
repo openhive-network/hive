@@ -6,6 +6,7 @@
 #include <fc/log/logger.hpp>
 #include <fc/uint128.hpp>
 
+#include <boost/multiprecision/cpp_int.hpp>
 #include <cstdint>
 
 namespace hive { namespace chain {
