@@ -11,6 +11,7 @@
 #include <hive/chain/evaluator_registry.hpp>
 
 #include <hive/chain/util/reward.hpp>
+#include <hive/chain/util/uint256.hpp>
 #include <hive/chain/util/manabar.hpp>
 
 #include <fc/uint128.hpp>
