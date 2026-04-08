@@ -2,7 +2,13 @@
 
 #include <hive/protocol/types.hpp>
 
+#include <boost/multiprecision/cpp_int.hpp>
 #include <fc/uint128.hpp>
+
+namespace hive {
+  typedef boost::multiprecision::uint256_t u256;
+  typedef boost::multiprecision::uint512_t u512;
+}
 
 namespace hive { namespace chain { namespace util {
 

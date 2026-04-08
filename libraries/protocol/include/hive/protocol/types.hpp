@@ -21,8 +21,6 @@
 #include <fc/static_variant.hpp>
 #include <fc/smart_ref_fwd.hpp>
 
-#include <boost/multiprecision/cpp_int.hpp>
-
 #include <memory>
 #include <vector>
 #include <deque>
@@ -31,8 +29,6 @@
 namespace hive {
 
   using                               fc::uint128_t;
-  typedef boost::multiprecision::uint256_t u256;
-  typedef boost::multiprecision::uint512_t u512;
 
   using                               std::map;
   using                               std::vector;
