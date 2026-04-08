@@ -407,14 +407,15 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
     const comment_cashout_ex_object* root_cashout_ex = _db.find_comment_cashout_ex( root );
     HIVE_CHAIN_STATE_ASSERT( root_cashout && root_cashout_ex, o.author, "Root comment cashout objects must exist." );
 
+    auto old_root_abs_rshares = root_cashout_ex->get_children_abs_rshares();
+
+    _db.modify( *root_cashout_ex, [&]( comment_cashout_ex_object& c_ex )
+    {
+      c_ex.accumulate_children_abs_rshares( abs_rshares );
+    } );
+
     _db.modify( *root_cashout, [&]( comment_cashout_object& c )
     {
-      auto old_root_abs_rshares = root_cashout_ex->get_children_abs_rshares();
-      _db.modify( *root_cashout_ex, [&]( comment_cashout_ex_object& c_ex )
-      {
-        c_ex.accumulate_children_abs_rshares( abs_rshares );
-      } );
-
       if( _db.has_hardfork( HIVE_HARDFORK_0_12__177 ) && root_cashout_ex->was_paid() )
       {
         c.set_cashout_time( root_cashout_ex->get_last_payout() + HIVE_SECOND_CASHOUT_WINDOW );
@@ -438,15 +439,15 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
         }
         c.set_cashout_time( fc::time_point_sec( std::min( uint32_t( fc::uint128_to_uint64(avg_cashout_sec) ), root_cashout_ex->get_max_cashout_time().sec_since_epoch() ) ) );
       }
-
-      if( root_cashout_ex->get_max_cashout_time() == fc::time_point_sec::maximum() )
-      {
-        _db.modify( *root_cashout_ex, [&]( comment_cashout_ex_object& c_ex )
-        {
-          c_ex.set_max_cashout_time( _now + fc::seconds( HIVE_MAX_CASHOUT_WINDOW_SECONDS ) );
-        } );
-      }
     } );
+
+    if( root_cashout_ex->get_max_cashout_time() == fc::time_point_sec::maximum() )
+    {
+      _db.modify( *root_cashout_ex, [&]( comment_cashout_ex_object& c_ex )
+      {
+        c_ex.set_max_cashout_time( _now + fc::seconds( HIVE_MAX_CASHOUT_WINDOW_SECONDS ) );
+      } );
+    }
   }
 
   uint64_t vote_weight = 0;
