@@ -185,6 +185,7 @@ if docker buildx version &>/dev/null && [[ "${USE_BUILDX:-true}" != "false" ]]; 
       --build-arg GIT_LAST_LOG_MESSAGE="$GIT_LAST_LOG_MESSAGE" \
       --build-arg GIT_LAST_COMMITTER="$GIT_LAST_COMMITTER" \
       --build-arg GIT_LAST_COMMIT_DATE="$GIT_LAST_COMMIT_DATE" \
+      --build-arg PIP_INDEX_URL --build-arg PIP_TRUSTED_HOST \
       ${PG_BUILD_ARG:+$PG_BUILD_ARG} \
       --tag "${REGISTRY}${IMAGE_TAG_PREFIX:+/$IMAGE_TAG_PREFIX}:${BUILD_IMAGE_TAG}" \
       --load \
@@ -205,6 +206,7 @@ else
       --build-arg GIT_LAST_LOG_MESSAGE="$GIT_LAST_LOG_MESSAGE" \
       --build-arg GIT_LAST_COMMITTER="$GIT_LAST_COMMITTER" \
       --build-arg GIT_LAST_COMMIT_DATE="$GIT_LAST_COMMIT_DATE" \
+      --build-arg PIP_INDEX_URL --build-arg PIP_TRUSTED_HOST \
       ${PG_BUILD_ARG:+$PG_BUILD_ARG} \
       --tag "${REGISTRY}${IMAGE_TAG_PREFIX:+/$IMAGE_TAG_PREFIX}:${BUILD_IMAGE_TAG}" \
       --file Dockerfile "$SOURCE_DIR"
