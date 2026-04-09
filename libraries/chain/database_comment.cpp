@@ -141,6 +141,11 @@ HIVE_asset database::pay_curators( const comment_object& comment, const comment_
 
   try
   {
+#ifdef CHAINBASE_OBJECT_CANARY
+    comment_cashout.check_object_canary( "pay_curators: entry" );
+    comment.check_object_canary( "pay_curators: entry (comment)" );
+#endif
+
     HIVE_asset unclaimed_rewards = max_rewards;
 
     if( !comment_cashout.allows_curation_rewards() )
@@ -184,11 +189,21 @@ HIVE_asset database::pay_curators( const comment_object& comment, const comment_
             {
               a.curation_rewards += claim;
             });
+
+#ifdef CHAINBASE_OBJECT_CANARY
+          // Check the outer comment_cashout canary stayed intact across the modify(voter)
+          comment_cashout.check_object_canary( "pay_curators: after modify(voter)" );
+#endif
           post_push_virtual_operation( *this, vop );
         }
       } FC_CAPTURE_AND_RETHROW( (*item) ) }
     }
     max_rewards -= unclaimed_rewards;
+
+#ifdef CHAINBASE_OBJECT_CANARY
+    comment_cashout.check_object_canary( "pay_curators: exit" );
+    comment.check_object_canary( "pay_curators: exit (comment)" );
+#endif
 
     return unclaimed_rewards;
   } FC_CAPTURE_AND_RETHROW( (max_rewards) )
@@ -200,6 +215,11 @@ HIVE_asset database::cashout_comment_helper( util::comment_reward_context& ctx, 
   try
   {
     HIVE_asset claimed_reward;
+
+#ifdef CHAINBASE_OBJECT_CANARY
+    comment_cashout.check_object_canary( "cashout_comment_helper: entry" );
+    comment.check_object_canary( "cashout_comment_helper: entry (comment)" );
+#endif
 
     if( comment_cashout.get_net_rshares() > 0 )
     {
@@ -228,6 +248,11 @@ HIVE_asset database::cashout_comment_helper( util::comment_reward_context& ctx, 
         author_tokens = reward - curation_tokens;
 
         HIVE_asset curation_remainder = pay_curators( comment, comment_cashout, curation_tokens );
+
+#ifdef CHAINBASE_OBJECT_CANARY
+        comment_cashout.check_object_canary( "cashout_comment_helper: after pay_curators" );
+        comment.check_object_canary( "cashout_comment_helper: after pay_curators (comment)" );
+#endif
 
         if( forward_curation_remainder )
           author_tokens += curation_remainder;
@@ -363,6 +388,11 @@ HIVE_asset database::cashout_comment_helper( util::comment_reward_context& ctx, 
       push_virtual_operation( *this, comment_payout_update_operation( get_account( comment_cashout.get_author_id() ).get_name(), to_string( comment_cashout.get_permlink() ) ) );
     }
 
+#ifdef CHAINBASE_OBJECT_CANARY
+    comment_cashout.check_object_canary( "cashout_comment_helper: before vote erase loop" );
+    comment.check_object_canary( "cashout_comment_helper: before vote erase loop (comment)" );
+#endif
+
     const auto& vote_idx = get_index< comment_vote_index, by_comment_voter >();
     auto vote_itr = vote_idx.lower_bound( comment.get_id() );
     while( vote_itr != vote_idx.end() && vote_itr->get_comment() == comment.get_id() )
@@ -374,6 +404,11 @@ HIVE_asset database::cashout_comment_helper( util::comment_reward_context& ctx, 
 #endif
       remove( cur_vote );
     }
+
+#ifdef CHAINBASE_OBJECT_CANARY
+    comment_cashout.check_object_canary( "cashout_comment_helper: after vote erase loop" );
+    comment.check_object_canary( "cashout_comment_helper: after vote erase loop (comment)" );
+#endif
 
     return claimed_reward;
   } FC_CAPTURE_AND_RETHROW( (comment)(comment_cashout)(ctx) )
@@ -472,14 +507,34 @@ void database::process_comment_cashout()
       ctx.total_reward_shares2 = funds[ fund_id ].recent_claims;
       ctx.total_reward_fund_hive = funds[ fund_id ].reward_balance;
 
+#ifdef CHAINBASE_OBJECT_CANARY
+      _current->check_object_canary( "process_comment_cashout: loop start (current)" );
+#endif
+
       const comment_object& _comment = get_comment( *_current );
+
+#ifdef CHAINBASE_OBJECT_CANARY
+      _current->check_object_canary( "process_comment_cashout: after get_comment (current)" );
+      _comment.check_object_canary( "process_comment_cashout: after get_comment (_comment)" );
+#endif
+
       funds[ fund_id ].hive_awarded += cashout_comment_helper( ctx, _comment, *_current,
         find_comment_cashout_ex( _comment ), forward_curation_remainder );
       ++count;
 
+#ifdef CHAINBASE_OBJECT_CANARY
+      _current->check_object_canary( "process_comment_cashout: after cashout_comment_helper (current)" );
+      _comment.check_object_canary( "process_comment_cashout: after cashout_comment_helper (_comment)" );
+#endif
+
       if( has_hardfork( HIVE_HARDFORK_0_19 ) )
       {
         get_comments_handler().on_cashout( block_num, _comment, *_current );
+
+#ifdef CHAINBASE_OBJECT_CANARY
+        _current->check_object_canary( "process_comment_cashout: after on_cashout (current)" );
+#endif
+
         remove( *_current );
       }
     }
