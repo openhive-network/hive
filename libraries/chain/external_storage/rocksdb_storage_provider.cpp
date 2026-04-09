@@ -2,6 +2,7 @@
 #include <hive/chain/external_storage/rocksdb_storage_provider.hpp>
 
 #include <hive/chain/external_storage/comment_rocksdb_objects.hpp>
+#include <hive/chain/external_storage/fd_budget.hpp>
 #include <hive/chain/external_storage/utilities.hpp>
 #include <hive/chain/external_storage/types.hpp>
 
@@ -45,7 +46,7 @@ void rocksdb_storage_provider::openDb( uint32_t expected_lib )
   /// Optimize RocksDB. This is the easiest way to get RocksDB to perform well
   options.IncreaseParallelism();
   options.OptimizeLevelStyleCompaction();
-  options.max_open_files = OPEN_FILE_LIMIT;
+  raise_fd_limit();
 
   auto status = DB::Open( DBOptions( options ), strPath, columnDefs, &_columnHandles, &_db );
   ilog( "Database is ${status}.", ("status", status.ok() ? "opened" : "not opened") );
@@ -123,7 +124,7 @@ std::tuple<bool, bool> rocksdb_storage_provider::createDbSchema( const bfs::path
   /// Optimize RocksDB. This is the easiest way to get RocksDB to perform well
   options.IncreaseParallelism();
   options.OptimizeLevelStyleCompaction();
-  options.max_open_files = OPEN_FILE_LIMIT;
+  raise_fd_limit();
 
   std::tuple<bool, bool> _result{ false, false };
 

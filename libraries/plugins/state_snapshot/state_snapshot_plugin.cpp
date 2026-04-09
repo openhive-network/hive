@@ -15,6 +15,7 @@
 #include <hive/chain/util/decoded_types_data_storage.hpp>
 #include <hive/chain/util/state_checker_tools.hpp>
 
+#include <hive/chain/external_storage/fd_budget.hpp>
 #include <hive/chain/external_storage/state_snapshot_provider.hpp>
 #include <hive/chain/external_storage/types.hpp>
 
@@ -292,8 +293,7 @@ class snapshot_processor_data : public BaseClass
       {
       ::rocksdb::Options opts;
       opts.comparator = &_size_t_comparator;
-
-      opts.max_open_files = 1024;
+      hive::chain::raise_fd_limit();
 
       return opts;
       }
@@ -1022,9 +1022,9 @@ void state_snapshot_plugin::impl::store_snapshot_manifest(const bfs::path& actua
   if(bfs::exists(manifestDbPath) == false)
     bfs::create_directories(manifestDbPath);
 
+  hive::chain::raise_fd_limit();
   ::rocksdb::Options dbOptions;
   dbOptions.create_if_missing = true;
-  dbOptions.max_open_files = 1024;
 
   rocksdb_cleanup_helper db = rocksdb_cleanup_helper::open(dbOptions, manifestDbPath);
   ::rocksdb::ColumnFamilyHandle* manifestCF = db.create_column_family("INDEX_MANIFEST");
@@ -1174,10 +1174,10 @@ state_snapshot_plugin::impl::load_snapshot_manifest(const bfs::path& actualStora
   bfs::path manifestDbPath(actualStoragePath);
   manifestDbPath /= "snapshot-manifest";
 
+  hive::chain::raise_fd_limit();
   ::rocksdb::Options dbOptions;
   dbOptions.create_if_missing = false;
-  dbOptions.max_open_files = 1024;
-  
+
   ::rocksdb::ColumnFamilyDescriptor cfDescriptor;
   cfDescriptor.name = "INDEX_MANIFEST";
 
