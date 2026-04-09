@@ -245,6 +245,28 @@ namespace chainbase {
   template<uint16_t TypeNumber, typename Derived, typename HasDynamicAlloc = std::false_type, typename EnableNoUndo = std::false_type>
   struct object
   {
+#ifdef CHAINBASE_OBJECT_CANARY
+    // Leading canary: every chain object starts with this 8-byte magic value.
+    // Detects writes to offset 0 of any chain object (wild pointer pattern).
+    static constexpr uint64_t OBJECT_CANARY_MAGIC = 0xFEEDFACEDEADBEEFULL;
+    uint64_t __object_canary = OBJECT_CANARY_MAGIC;
+
+    void check_object_canary( const char* context ) const
+    {
+      if( __object_canary != OBJECT_CANARY_MAGIC )
+      {
+        std::cerr << "!!! OBJECT CANARY CORRUPTION at " << context
+                  << " type_id=" << TypeNumber
+                  << " addr=" << (const void*)this
+                  << " canary=0x" << std::hex << __object_canary << std::dec
+                  << " expected=0x" << std::hex << OBJECT_CANARY_MAGIC << std::dec
+                  << std::endl;
+        std::cerr.flush();
+        abort();
+      }
+    }
+#endif
+
     typedef oid<Derived> id_type;
     typedef oid_ref<Derived> id_ref_type;
     enum { type_id = TypeNumber };
@@ -482,6 +504,9 @@ namespace chainbase {
         on_create( *insert_result.first );
         if constexpr( value_type::has_dynamic_alloc_t::value )
           _item_additional_allocation += insert_result.first->get_dynamic_alloc();
+#ifdef CHAINBASE_OBJECT_CANARY
+        insert_result.first->check_object_canary( "generic_index::emplace (after)" );
+#endif
         return *insert_result.first;
       }
 
@@ -517,6 +542,9 @@ namespace chainbase {
       void modify( const value_type& obj, Modifier&& m ) {
 #ifdef CHAINBASE_POISON_FREED_MEMORY
         check_object_not_poisoned( obj, "modify" );
+#endif
+#ifdef CHAINBASE_OBJECT_CANARY
+        obj.check_object_canary( "generic_index::modify (before)" );
 #endif
         on_modify( obj );
 
@@ -570,6 +598,9 @@ namespace chainbase {
       {
 #ifdef CHAINBASE_POISON_FREED_MEMORY
         check_object_not_poisoned( obj, "remove" );
+#endif
+#ifdef CHAINBASE_OBJECT_CANARY
+        obj.check_object_canary( "generic_index::remove (before)" );
 #endif
 #ifdef CHAINBASE_CHECK_TREE_INTEGRITY
         verify_neighbors( obj, "remove (before on_remove)" );
@@ -757,6 +788,9 @@ namespace chainbase {
         {
 #ifdef CHAINBASE_POISON_FREED_MEMORY
           check_object_not_poisoned( *itr, "find" );
+#endif
+#ifdef CHAINBASE_OBJECT_CANARY
+          itr->check_object_canary( "generic_index::find" );
 #endif
           return &*itr;
         }

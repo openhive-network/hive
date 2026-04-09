@@ -369,6 +369,9 @@ HIVE_asset database::cashout_comment_helper( util::comment_reward_context& ctx, 
     {
       const auto& cur_vote = *vote_itr;
       ++vote_itr;
+#ifdef CHAINBASE_VALUE_CANARY
+      cur_vote.check_canary( "cashout_comment_helper: before remove" );
+#endif
       remove( cur_vote );
     }
 

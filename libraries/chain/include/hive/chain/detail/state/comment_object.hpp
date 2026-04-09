@@ -51,6 +51,25 @@ namespace hive { namespace chain {
       //returns comment depth (distance to root)
       uint16_t get_depth() const { return depth; }
 
+#ifdef CHAINBASE_VALUE_CANARY
+      static constexpr uint64_t CANARY_MAGIC = 0x1234567890ABCDEFULL;
+      void check_canary( const char* context ) const
+      {
+        if( canary != CANARY_MAGIC )
+        {
+          std::cerr << "!!! VALUE CANARY CORRUPTION in comment_object at " << context
+                    << " canary=0x" << std::hex << canary << std::dec
+                    << " expected=0x" << std::hex << CANARY_MAGIC << std::dec
+                    << " id=" << id.get_value()
+                    << " parent_comment=" << parent_comment.get_value()
+                    << " depth=" << depth
+                    << std::endl;
+          std::cerr.flush();
+          abort();
+        }
+      }
+#endif
+
     private:
       comment_id_type parent_comment;
 
@@ -59,6 +78,10 @@ namespace hive { namespace chain {
 
       uint16_t        depth = 0; //looks like a candidate for removal (see https://github.com/steemit/steem/issues/767 )
         //currently soft limited to HIVE_SOFT_MAX_COMMENT_DEPTH in witness plugin; consensus doesn't need limit, but HiveMind might
+
+#ifdef CHAINBASE_VALUE_CANARY
+      uint64_t canary = CANARY_MAGIC;
+#endif
 
       CHAINBASE_UNPACK_CONSTRUCTOR(comment_object);
   };
@@ -393,6 +416,25 @@ namespace hive { namespace chain {
       int16_t         get_vote_percent() const { return vote_percent; }
       time_point_sec  get_last_update() const { return last_update; }
 
+#ifdef CHAINBASE_VALUE_CANARY
+      static constexpr uint64_t CANARY_MAGIC = 0x1234567890ABCDEFULL;
+      void check_canary( const char* context ) const
+      {
+        if( canary != CANARY_MAGIC )
+        {
+          std::cerr << "!!! VALUE CANARY CORRUPTION in comment_vote_object at " << context
+                    << " canary=0x" << std::hex << canary << std::dec
+                    << " expected=0x" << std::hex << CANARY_MAGIC << std::dec
+                    << " id=" << id.get_value()
+                    << " voter=" << voter.get_value()
+                    << " comment=" << comment.get_value()
+                    << std::endl;
+          std::cerr.flush();
+          abort();
+        }
+      }
+#endif
+
     private:
       comment_vote_object( uint64_t _id, const account_object& _voter, const comment_object& _comment,
         const time_point_sec& _creation_time, int16_t _vote_percent, uint64_t _weight, int64_t _rshares );
@@ -403,6 +445,10 @@ namespace hive { namespace chain {
       int64_t           rshares = 0; ///< The number of rshares this vote is responsible for
       int16_t           vote_percent = 0; ///< The percent weight of the vote
       time_point_sec    last_update; /// REMOVE - not used by consensus checks (only API)
+
+#ifdef CHAINBASE_VALUE_CANARY
+      uint64_t          canary = CANARY_MAGIC;
+#endif
 
     CHAINBASE_UNPACK_CONSTRUCTOR(comment_vote_object);
   };

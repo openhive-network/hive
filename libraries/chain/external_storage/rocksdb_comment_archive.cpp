@@ -138,6 +138,7 @@ void rocksdb_comment_archive::on_irreversible_block( uint32_t block_num )
 
 #ifdef CHAINBASE_VALUE_CANARY
     _current.check_canary( "on_irreversible_block: before remove comment" );
+    _comment->check_canary( "on_irreversible_block: before remove comment (_comment)" );
 #endif
 
     db.remove( *_comment );
