@@ -92,6 +92,7 @@ set( SOURCES
              external_storage/rocksdb_comment_archive.cpp
              external_storage/rocksdb_snapshot.cpp
              external_storage/types.cpp
+             external_storage/fd_budget.cpp
 
              ${HEADERS}
            )

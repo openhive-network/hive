@@ -21,8 +21,6 @@ using ::rocksdb::Comparator;
 #define STORE_MAJOR_VERSION          1
 #define STORE_MINOR_VERSION          1
 
-#define OPEN_FILE_LIMIT 750
-
 #define checkStatus(s) FC_ASSERT((s).ok(), "Data access failed: ${m}", ("m", (s).ToString()))
 
 /** Because localtion_id_pair stores block_number paired with operation_id_vop_pair, which stores operation id on 63 bits,
