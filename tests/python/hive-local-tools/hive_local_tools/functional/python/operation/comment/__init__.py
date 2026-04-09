@@ -3,8 +3,6 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import TYPE_CHECKING, Any, Literal
 
-from beekeepy.exceptions import ErrorInResponseError
-
 import test_tools as tt
 import wax
 from hive_local_tools.functional.python.operation import (
@@ -29,6 +27,7 @@ from schemas.operations.virtual.comment_benefactor_reward_operation import Comme
 from schemas.operations.virtual.curation_reward_operation import CurationRewardOperation
 from schemas.operations.virtual.effective_comment_vote_operation import EffectiveCommentVoteOperation
 from schemas.transaction import TransactionLegacy
+from wax._private.api.overseer import WaxAssertionInResponseError
 
 if TYPE_CHECKING:
     from schemas.fields.hive_int import HiveInt
@@ -445,7 +444,7 @@ class Comment:
         try:
             self.__wallet.api.vote(voter.name, self.author, self.permlink, 1)
             vote_send = True
-        except ErrorInResponseError:
+        except WaxAssertionInResponseError:
             vote_send = False
 
         if mode == "deleted":

@@ -5,7 +5,6 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, Literal
 
-from beekeepy.exceptions import ErrorInResponseError
 from hiveio_api.database_api.database_api_description import Account as AccountItemFundament
 
 import test_tools as tt
@@ -22,6 +21,7 @@ from schemas.operations.virtual.fill_transfer_from_savings_operation import Fill
 from schemas.operations.virtual.transfer_to_vesting_completed_operation import (
     TransferToVestingCompletedOperation as TransferToVestingCompletedOperation,
 )
+from wax._private.api.overseer import WaxAssertionInResponseError
 
 if TYPE_CHECKING:
     from hiveio_api.account_history_api.account_history_api_description import EnumVirtualOpsResponse
@@ -397,7 +397,7 @@ def create_transaction_with_any_operation(
 def get_governance_voting_power(node: tt.InitNode, wallet: tt.Wallet, account_name: str) -> int:
     try:
         wallet.api.set_voting_proxy(account_name, "initminer")
-    except ErrorInResponseError as error:
+    except WaxAssertionInResponseError as error:
         if "Proxy must change" not in str(error):
             raise
 
