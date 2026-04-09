@@ -9,6 +9,7 @@
 #include <boost/core/demangle.hpp>
 
 #include <cstring>
+#include <iostream>
 #include <limits>
 #include <memory>
 
@@ -67,6 +68,9 @@ namespace chainbase {
         {
         assert(n == 1);
         ++allocated_count;
+#ifdef CHAINBASE_POOL_LOG
+        log_sampled_alloc();
+#endif
         return pointer(get_object_memory());
         }
 
@@ -74,8 +78,44 @@ namespace chainbase {
         {
         assert(n == 1);
         --allocated_count;
+#ifdef CHAINBASE_POOL_LOG
+        log_sampled_dealloc(&(*p));
+#endif
         return_object_memory(&(*p));
         }
+
+#ifdef CHAINBASE_POOL_LOG
+      // Sampled logging: every LOG_SAMPLE_EVERY-th call prints a one-line summary to stderr.
+      // Uses per-type static counters to avoid per-call log overhead.
+      static constexpr uint64_t LOG_SAMPLE_EVERY = 10000;
+
+      void log_sampled_alloc()
+        {
+        static thread_local uint64_t counter = 0;
+        if( (++counter % LOG_SAMPLE_EVERY) == 0 )
+          {
+          std::cerr << "[POOL] " << get_allocator_name()
+                    << " alloc#" << counter
+                    << " allocated=" << allocated_count
+                    << " blocks=" << blocks_allocated_count - blocks_released_count
+                    << std::endl;
+          }
+        }
+
+      void log_sampled_dealloc(T* obj)
+        {
+        static thread_local uint64_t counter = 0;
+        if( (++counter % LOG_SAMPLE_EVERY) == 0 )
+          {
+          std::cerr << "[POOL] " << get_allocator_name()
+                    << " dealloc#" << counter
+                    << " obj=" << (void*)obj
+                    << " allocated=" << allocated_count
+                    << " blocks=" << blocks_allocated_count - blocks_released_count
+                    << std::endl;
+          }
+        }
+#endif
 
       segment_manager_t* get_segment_manager() const noexcept
         {
@@ -111,6 +151,29 @@ namespace chainbase {
         }
 
     private:
+#ifdef CHAINBASE_POOL_GUARD
+      // alignas(T) + alignas(uint64_t): struct takes the strictest of T's alignment and uint64's (8).
+      struct alignas(T) alignas(uint64_t) chunk_t
+        {
+        static constexpr uint64_t GUARD_MAGIC = 0xABCDEF0123456789ULL;
+        static constexpr uint64_t GUARD_FREED = 0xFEEDDEADBEEFCAFEULL;
+
+        union {
+          char      memory[sizeof(T)];
+          uint32_t  next;
+        };
+        uint64_t  guard_end;
+
+        T* get_memory_address() noexcept
+          {
+          return reinterpret_cast<T*>(memory);
+          }
+
+        void init_guard_alloc() noexcept { guard_end = GUARD_MAGIC; }
+        void init_guard_freed() noexcept { guard_end = GUARD_FREED; }
+        bool check_guard_alloc() const noexcept { return guard_end == GUARD_MAGIC; }
+        };
+#else
       union alignas(T) chunk_t
         {
         char      memory[sizeof(T)];
@@ -121,12 +184,21 @@ namespace chainbase {
           return reinterpret_cast<T*>(memory);
           }
         };
+#endif
 
       class block_t
         {
         public:
+#ifdef CHAINBASE_CHECK_SEGMENT_MANAGER
+          static constexpr uint64_t CANARY_VALUE = 0xDEADBEEFCAFEBABEULL;
+#endif
+
           block_t() noexcept
             {
+#ifdef CHAINBASE_CHECK_SEGMENT_MANAGER
+            canary_start = CANARY_VALUE;
+            canary_end = CANARY_VALUE;
+#endif
             for (uint32_t i = 1; i < BLOCK_SIZE; ++i, ++current)
               chunks[current].next = i;
             chunks[current].next = invalid_index;
@@ -136,9 +208,21 @@ namespace chainbase {
           T* get_object_memory() noexcept
             {
             assert(!empty());
+#ifdef CHAINBASE_CHECK_SEGMENT_MANAGER
+            verify_canaries("get_object_memory");
+#endif
+#ifdef CHAINBASE_POOL_GUARD
+            // If this chunk was previously allocated and freed, its guard should be in "freed" state.
+            // If it was never allocated (fresh block), its guard is uninitialized — that's also fine on first alloc.
+            // After giving it to the user, set the "alloc" magic.
+#endif
             T* result = chunks[current].get_memory_address();
             current = chunks[current].next;
             --free_count;
+#ifdef CHAINBASE_POOL_GUARD
+            // Set guard to 'alloc' magic. User payload overwrites `memory` but never `guard_end`.
+            reinterpret_cast<chunk_t*>(result)->init_guard_alloc();
+#endif
             return result;
             }
 
@@ -146,7 +230,26 @@ namespace chainbase {
             {
             chunk_t* chunk = reinterpret_cast<chunk_t*>(object);
             assert(check_address_in_block(object) &&
-              ((reinterpret_cast<std::size_t>(chunk) - reinterpret_cast<std::size_t>(chunks)) % sizeof(T)) == 0);
+              ((reinterpret_cast<std::size_t>(chunk) - reinterpret_cast<std::size_t>(chunks)) % sizeof(chunk_t)) == 0);
+#ifdef CHAINBASE_CHECK_SEGMENT_MANAGER
+            verify_canaries("return_object_memory");
+#endif
+#ifdef CHAINBASE_POOL_GUARD
+            // The chunk should still have its 'alloc' guard magic. If it's corrupted,
+            // something wrote past sizeof(T) into the guard area.
+            if (!chunk->check_guard_alloc())
+              {
+              std::cerr << "!!! POOL GUARD CORRUPTION in " << get_allocator_name()
+                        << " at return_object_memory"
+                        << " chunk=" << (void*)chunk
+                        << " guard=0x" << std::hex << chunk->guard_end << std::dec
+                        << " expected=0x" << std::hex << chunk_t::GUARD_MAGIC << std::dec
+                        << " => something wrote past sizeof(T)=" << sizeof(T)
+                        << std::endl;
+              std::cerr.flush();
+              abort();
+              }
+#endif
             chunk->next = current;
             current = chunk - chunks;
 #ifdef CHAINBASE_POISON_FREED_MEMORY
@@ -155,6 +258,9 @@ namespace chainbase {
             constexpr size_t poison_offset = sizeof(uint32_t);
             if constexpr( sizeof(T) > poison_offset )
               std::memset( chunk->memory + poison_offset, 0xDE, sizeof(T) - poison_offset );
+#endif
+#ifdef CHAINBASE_POOL_GUARD
+            chunk->init_guard_freed();
 #endif
             return ++free_count == BLOCK_SIZE;
             }
@@ -202,13 +308,47 @@ namespace chainbase {
             return chunks;
             }
 
+          const void* get_block_start() const noexcept
+            {
+            return reinterpret_cast<const void*>(this);
+            }
+
+          const void* get_block_end() const noexcept
+            {
+            return reinterpret_cast<const char*>(this) + sizeof(block_t);
+            }
+
+#ifdef CHAINBASE_CHECK_SEGMENT_MANAGER
+          void verify_canaries(const char* context) const
+            {
+            if (canary_start != CANARY_VALUE || canary_end != CANARY_VALUE)
+              {
+              std::cerr << "!!! BLOCK CANARY CORRUPTION in " << get_allocator_name()
+                        << " at " << context
+                        << " block=" << (const void*)this
+                        << " canary_start=" << std::hex << canary_start
+                        << " canary_end=" << canary_end << std::dec
+                        << " expected=" << std::hex << CANARY_VALUE << std::dec
+                        << std::endl;
+              std::cerr.flush();
+              abort();
+              }
+            }
+#endif
+
           static constexpr uint32_t invalid_index = std::numeric_limits<uint32_t>::max();
 
         private:
+#ifdef CHAINBASE_CHECK_SEGMENT_MANAGER
+          uint64_t  canary_start = CANARY_VALUE;
+#endif
           chunk_t   chunks[BLOCK_SIZE];
           uint32_t  current = 0;
           uint32_t  free_count = BLOCK_SIZE;
           uint32_t  on_list_index = invalid_index;
+#ifdef CHAINBASE_CHECK_SEGMENT_MANAGER
+          uint64_t  canary_end = CANARY_VALUE;
+#endif
         };
 
       struct block_comparator_t
@@ -263,29 +403,12 @@ namespace chainbase {
           last_found_block = block;
           }
 
-        if (block->return_object_memory(object) && ( !PRESERVE_LAST_BLOCK || allocated_count > 0 ))
-          {
-          if (block != current_block)
-            {
-            const auto index = block->get_on_list_index();
-
-            if (index == (block_list.size()-1))
-              block_list.pop_back();
-            else
-              block_list[index] = nullptr;
-            }
-          else
-            {
-            current_block = nullptr;
-            }
-
-          if (block == last_found_block)
-            last_found_block = nullptr;
-
-          block_index.erase(*block);
-          ++blocks_released_count;
-          }
-        else if (block != current_block)
+        block->return_object_memory(object);
+        // Never release blocks back to segment_manager. Keep empty blocks in
+        // the pool for reuse. Releasing blocks causes use-after-free when
+        // segment_manager reuses the memory while tree node pointers still
+        // reference addresses within the released block.
+        if (block != current_block)
           {
           push_to_block_list(block);
           }
@@ -296,8 +419,75 @@ namespace chainbase {
         auto insert_result = block_index.emplace();
         ++blocks_allocated_count;
         block_ptr_t block = const_cast<block_t*>(&(*insert_result.first));
+#ifdef CHAINBASE_CHECK_SEGMENT_MANAGER
+        check_block_overlap(insert_result.first);
+#endif
+#ifdef CHAINBASE_POOL_LOG
+        std::cerr << "[POOL] " << get_allocator_name()
+                  << " allocate_block#" << blocks_allocated_count
+                  << " block=" << (void*)(&(*block))
+                  << " size=" << sizeof(block_t)
+                  << " [" << (void*)block->get_block_start()
+                  << ", " << (void*)block->get_block_end() << ")"
+                  << std::endl;
+#endif
         return block;
         }
+
+#ifdef CHAINBASE_CHECK_SEGMENT_MANAGER
+      void check_block_overlap(typename block_index_t::iterator it)
+        {
+        const block_t& new_block = *it;
+        const char* new_start = reinterpret_cast<const char*>(new_block.get_block_start());
+        const char* new_end = reinterpret_cast<const char*>(new_block.get_block_end());
+
+        // block_index is sorted by descending address, so:
+        // - prev (toward begin) has HIGHER address
+        // - next (toward end) has LOWER address
+
+        // Check prev (higher address): overlap if new_end extends up into prev
+        if (it != block_index.begin())
+          {
+          auto prev = std::prev(it);
+          const char* prev_start = reinterpret_cast<const char*>(prev->get_block_start());
+          if (new_end > prev_start)
+            {
+            std::cerr << "!!! SEGMENT MANAGER CORRUPTION: OVERLAPPING BLOCKS in " << get_allocator_name()
+                      << "\n  new  block: [" << (const void*)new_start
+                      << ", " << (const void*)new_end << ")"
+                      << "\n  prev block: [" << (const void*)prev_start
+                      << ", " << (const void*)prev->get_block_end() << ")"
+                      << "\n  overlap: " << (new_end - prev_start) << " bytes"
+                      << "\n  blocks_allocated: " << blocks_allocated_count
+                      << "\n  blocks_released: " << blocks_released_count
+                      << std::endl;
+            std::cerr.flush();
+            abort();
+            }
+          }
+
+        // Check next (lower address): overlap if next_end extends up into new
+        auto next = std::next(it);
+        if (next != block_index.end())
+          {
+          const char* next_end = reinterpret_cast<const char*>(next->get_block_end());
+          if (next_end > new_start)
+            {
+            std::cerr << "!!! SEGMENT MANAGER CORRUPTION: OVERLAPPING BLOCKS in " << get_allocator_name()
+                      << "\n  next block: [" << (const void*)next->get_block_start()
+                      << ", " << (const void*)next_end << ")"
+                      << "\n  new  block: [" << (const void*)new_start
+                      << ", " << (const void*)new_end << ")"
+                      << "\n  overlap: " << (next_end - new_start) << " bytes"
+                      << "\n  blocks_allocated: " << blocks_allocated_count
+                      << "\n  blocks_released: " << blocks_released_count
+                      << std::endl;
+            std::cerr.flush();
+            abort();
+            }
+          }
+        }
+#endif
 
       void push_to_block_list(block_t* block)
         {
