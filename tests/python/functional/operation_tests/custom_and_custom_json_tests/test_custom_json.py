@@ -3,11 +3,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pytest
-from beekeepy.exceptions import ErrorInResponseError
-from wax.exceptions.wax_error import WaxProtocolAuthorityAssertionError
 
 import test_tools as tt
 from hive_local_tools.functional.python.operation.custom_and_custom_json import CustomJson
+from wax._private.api.overseer import WaxAssertionInResponseError
+from wax.exceptions.wax_error import WaxProtocolAuthorityAssertionError
 
 if TYPE_CHECKING:
     from hive_local_tools.functional.python.operation import Account
@@ -84,7 +84,7 @@ def test_incorrect_custom_json(
     wallet = tt.OldWallet(attach_to=prepared_node)
     wallet.api.use_authority(authority_type, alice.name)
     signed_trx = wallet.api.sign_transaction(trx, broadcast=False)
-    with pytest.raises(ErrorInResponseError):
+    with pytest.raises(WaxAssertionInResponseError):
         prepared_node.api.network_broadcast.broadcast_transaction(trx=signed_trx)
     alice.check_if_rc_mana_was_unchanged()
 

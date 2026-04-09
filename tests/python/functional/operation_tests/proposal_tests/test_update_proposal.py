@@ -3,10 +3,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pytest
-from beekeepy.exceptions import ErrorInResponseError
 
 import test_tools as tt
 from schemas.fields.hive_datetime import HiveDateTime
+from wax._private.api.overseer import WaxAssertionInResponseError
 
 if TYPE_CHECKING:
     from python.functional.operation_tests.conftest import ProposalAccount
@@ -95,7 +95,7 @@ def test_update_one_parameter_in_proposal(
         proposal_creator.check_if_proposal_was_updated(proposal_parameter_to_change)
         proposal_creator.assert_hbd_balance_wasnt_changed()
     else:
-        with pytest.raises(ErrorInResponseError) as exception:
+        with pytest.raises(WaxAssertionInResponseError) as exception:
             proposal_creator.update_proposal(**update_proposal_args)
         expected_error_message = (
             "You cannot increase the end date of the proposal"
@@ -135,6 +135,6 @@ def test_try_to_update_proposal_from_unauthorised_account(
     wallet.api.post_comment("alice", "comment-permlink", "", "category", "title", "body", "{}")
     alice.update_account_info()  # to update mana after creating post
     bob.create_proposal("alice", tt.Time.now(), end_date)
-    with pytest.raises(ErrorInResponseError) as exception:
+    with pytest.raises(WaxAssertionInResponseError) as exception:
         alice.update_proposal(proposal_to_update_details=bob.proposal_parameters, **update_proposal_args)
     assert "Cannot edit a proposal you are not the creator of" in str(exception.value)

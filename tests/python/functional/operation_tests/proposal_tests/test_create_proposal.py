@@ -3,11 +3,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pytest
-from beekeepy.exceptions import ErrorInResponseError
 
 import test_tools as tt
 from hive_local_tools.functional.python.operation import get_number_of_active_proposals, get_virtual_operations
 from schemas.operations.virtual.proposal_fee_operation import ProposalFeeOperation
+from wax._private.api.overseer import WaxAssertionInResponseError
 
 if TYPE_CHECKING:
     from python.functional.operation_tests.conftest import ProposalAccount
@@ -89,7 +89,7 @@ def test_try_to_create_proposal(
     # test cases 7-10 from https://gitlab.syncad.com/hive/hive/-/issues/594
     proposal_creator = eval(proposal_creator)
     wallet.api.post_comment("alice", "comment-permlink", "", "category", "title", "body", "{}")
-    with pytest.raises(ErrorInResponseError) as error:
+    with pytest.raises(WaxAssertionInResponseError) as error:
         proposal_creator.create_proposal(proposal_receiver, tt.Time.now(), end_date)
     assert "Proposal permlink must point to the article posted by creator or receiver" in str(error.value)
     assert get_number_of_active_proposals(prepared_node) == 0, "It shouldn't be any active proposals."

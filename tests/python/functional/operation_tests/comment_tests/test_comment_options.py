@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import pytest
-from beekeepy.exceptions import BeekeepyError, ErrorInResponseError
 
 import test_tools as tt
 from hive_local_tools.functional.python.operation.comment import Comment
+from wax._private.api.overseer import WaxAssertionInResponseError
 from wax.exceptions import WaxError
 from wax.exceptions.wax_error import WaxProtocolNumberAssertionError
 
@@ -155,7 +155,7 @@ def test_try_change_comment_option_again(
         options_and_values_to_modify_after_creating_comment[1]
     )
 
-    with pytest.raises(ErrorInResponseError) as error:
+    with pytest.raises(WaxAssertionInResponseError) as error:
         comment.options(**updated_comment_options)
 
     assert error_message in str(error.value), "Appropriate error message is not raise"
@@ -229,12 +229,11 @@ def test_change_comment_options_after_vote(
     comment.send(reply_type=reply_type)
     comment.vote()
 
-    with pytest.raises(ErrorInResponseError) as error:
+    with pytest.raises(WaxAssertionInResponseError) as error:
         comment.options(**comment_options)
 
-    assert (
-        "One of the included comment options requires the comment to have no rshares allocated to it."
-        in str(error.value)
+    assert "One of the included comment options requires the comment to have no rshares allocated to it." in str(
+        error.value
     ), "Appropriate error message is not raise"
     comment.assert_rc_mana_after_change_comment_options("is_unchanged")
 
@@ -266,7 +265,7 @@ def test_adds_the_beneficiary_after_comment(prepared_node: tt.InitNode, wallet: 
         (
             [{"account": "alice", "weight": 20}, {"account": "initminer", "weight": 20}],
             "Comment already has beneficiaries specified.",
-            ErrorInResponseError,
+            WaxAssertionInResponseError,
         ),
     ],
     ids=["try_remove_the_beneficiary_after_comment", "try_add_another_beneficiary_after_comment"],
@@ -277,7 +276,7 @@ def test_beneficiary_after_comment(
     reply_type: str,
     beneficiaries: list,
     error_message: str,
-    error_type: BeekeepyError | WaxError,
+    error_type: WaxAssertionInResponseError | WaxError,
 ) -> None:
     """
     Test case 26, 27, 29, 30 from issue: https://gitlab.syncad.com/hive/hive/-/issues/509
@@ -304,13 +303,13 @@ def test_beneficiary_after_comment(
         (
             [{"account": "initminer", "weight": 100}],
             "Comment must not have been voted on before specifying beneficiaries.",
-            ErrorInResponseError,
+            WaxAssertionInResponseError,
         ),
         ([], "Must specify at least one beneficiary", WaxProtocolNumberAssertionError),
         (
             [{"account": "alice", "weight": 20}, {"account": "initminer", "weight": 20}],
             "Comment must not have been voted on before specifying beneficiaries.",
-            ErrorInResponseError,
+            WaxAssertionInResponseError,
         ),
     ],
     ids=[
@@ -325,7 +324,7 @@ def test_beneficiary_after_vote(
     reply_type: str,
     beneficiaries: list,
     error_message: str,
-    error_type: WaxError | BeekeepyError,
+    error_type: WaxError | WaxAssertionInResponseError,
 ) -> None:
     """
     Test case 31:36 from issue: https://gitlab.syncad.com/hive/hive/-/issues/509

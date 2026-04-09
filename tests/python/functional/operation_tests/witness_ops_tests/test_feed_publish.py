@@ -3,9 +3,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pytest
-from beekeepy.exceptions import ErrorInResponseError
 
 import test_tools as tt
+from wax._private.api.overseer import WaxAssertionInResponseError
 
 if TYPE_CHECKING:
     from python.functional.operation_tests.conftest import WitnessAccount
@@ -29,7 +29,7 @@ def test_publish_feed_from_non_witness_account(
     prepared_node: tt.InitNode, wallet: tt.Wallet, alice: WitnessAccount
 ) -> None:
     # test case 2.1 from https://gitlab.syncad.com/hive/hive/-/issues/633
-    with pytest.raises(ErrorInResponseError) as error:
+    with pytest.raises(WaxAssertionInResponseError) as error:
         alice.feed_publish(base=1000, quote=100)
     assert "Witness alice doesn't exist" in str(error.value), "Message other than expected."
     alice.check_if_account_has_witness_role(expected_witness_role=False)

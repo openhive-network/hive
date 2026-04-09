@@ -3,9 +3,8 @@ from __future__ import annotations
 import pytest
 
 import test_tools as tt
-
-from beekeepy._exceptions.overseer import ErrorInResponseError
 from schemas.transaction import Transaction
+from wax._private.api.overseer import WaxAssertionInResponseError
 from wax.complex_operations.account_update import AccountAuthorityUpdateOperation
 
 
@@ -85,7 +84,7 @@ async def test_change_active_authority_sign_with_owner_key_negative(node, alice_
     active_role.replace(active.public_key, 1, new_active.public_key)
     trx.push_operation(account_update)
 
-    with pytest.raises(ErrorInResponseError) as e:
+    with pytest.raises(WaxAssertionInResponseError) as e:
         alice_wallet.api.sign_transaction(Transaction.parse_raw(trx.to_api_json()), broadcast=True)
     assert "missing required active authority" in str(e.value)
 

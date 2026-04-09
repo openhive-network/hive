@@ -7,7 +7,6 @@ from __future__ import annotations
 from datetime import timezone
 
 import pytest
-from beekeepy.exceptions import ErrorInResponseError
 
 import test_tools as tt
 from hive_local_tools.constants import (
@@ -18,6 +17,7 @@ from hive_local_tools.constants import (
 from hive_local_tools.functional.python.operation import get_virtual_operations
 from hive_local_tools.functional.python.operation.recurrent_transfer import RecurrentTransfer, RecurrentTransferAccount
 from schemas.operations.virtual import FailedRecurrentTransferOperation
+from wax._private.api.overseer import WaxAssertionInResponseError
 
 
 @pytest.mark.testnet
@@ -803,7 +803,7 @@ def test_recurrent_transfer_cases_27_and_28(
     """
     User tries to create a recurrent transfer in Hive / HBD to be executed 3 times every 366 days.
     """
-    with pytest.raises(ErrorInResponseError) as exception:
+    with pytest.raises(WaxAssertionInResponseError) as exception:
         RecurrentTransfer(
             node,
             wallet,

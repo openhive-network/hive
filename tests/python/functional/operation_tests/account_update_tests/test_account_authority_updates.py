@@ -3,10 +3,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pytest
-from beekeepy.exceptions import ErrorInResponseError
 
 import test_tools as tt
 from hive_local_tools.functional.python.operation import get_transaction_timestamp
+from wax._private.api.overseer import WaxAssertionInResponseError
 
 if TYPE_CHECKING:
     from python.functional.operation_tests.conftest import UpdateAccount
@@ -27,7 +27,7 @@ def test_update_account_owner_authority(alice: UpdateAccount, authority_type: st
     alice.use_authority(authority_type)
     new_auth = alice.generate_new_authority()
     if authority_type != "owner":
-        with pytest.raises(ErrorInResponseError) as exception:
+        with pytest.raises(WaxAssertionInResponseError) as exception:
             alice.update_account(owner=new_auth, use_account_update2=use_account_update2)
         alice.assert_if_rc_current_mana_was_unchanged()
         error_response = str(exception.value)
@@ -53,7 +53,7 @@ def test_update_account_active_authority(alice: UpdateAccount, authority_type: s
     alice.use_authority(authority_type)
     new_auth = alice.generate_new_authority()
     if authority_type == "posting" or authority_type == "owner":
-        with pytest.raises(ErrorInResponseError) as exception:
+        with pytest.raises(WaxAssertionInResponseError) as exception:
             alice.update_account(active=new_auth, use_account_update2=use_account_update2)
         alice.assert_if_rc_current_mana_was_unchanged()
         error_response = str(exception.value)
@@ -79,7 +79,7 @@ def test_update_account_posting_authority(alice: UpdateAccount, authority_type: 
     alice.use_authority(authority_type)
     new_auth = alice.generate_new_authority()
     if authority_type == "posting" or authority_type == "owner":
-        with pytest.raises(ErrorInResponseError) as exception:
+        with pytest.raises(WaxAssertionInResponseError) as exception:
             alice.update_account(posting=new_auth, use_account_update2=use_account_update2)
         alice.assert_if_rc_current_mana_was_unchanged()
         error_response = str(exception.value)
@@ -105,7 +105,7 @@ def test_update_account_memo_key(alice: UpdateAccount, authority_type: str, use_
     alice.use_authority(authority_type)
     new_key = alice.generate_new_key()
     if authority_type == "posting" or authority_type == "owner":
-        with pytest.raises(ErrorInResponseError) as exception:
+        with pytest.raises(WaxAssertionInResponseError) as exception:
             alice.update_account(memo_key=new_key, use_account_update2=use_account_update2)
         alice.assert_if_rc_current_mana_was_unchanged()
         error_response = str(exception.value)
@@ -131,7 +131,7 @@ def test_update_json_metadata(alice: UpdateAccount, authority_type: str, use_acc
     alice.use_authority(authority_type)
     new_json_meta = '{"foo": "bar"}'
     if authority_type == "posting" or authority_type == "owner":
-        with pytest.raises(ErrorInResponseError) as exception:
+        with pytest.raises(WaxAssertionInResponseError) as exception:
             alice.update_account(json_metadata=new_json_meta, use_account_update2=use_account_update2)
         alice.assert_if_rc_current_mana_was_unchanged()
         error_response = str(exception.value)
@@ -154,7 +154,7 @@ def test_update_posting_json_metadata(alice: UpdateAccount, authority_type: str)
     alice.use_authority(authority_type)
     new_posting_json_meta = '{"foo": "bar"}'
     if authority_type == "active" or authority_type == "owner":
-        with pytest.raises(ErrorInResponseError) as exception:
+        with pytest.raises(WaxAssertionInResponseError) as exception:
             alice.update_account(posting_json_metadata=new_posting_json_meta, use_account_update2=True)
         alice.assert_if_rc_current_mana_was_unchanged()
         error_response = str(exception.value)
@@ -281,7 +281,7 @@ def test_update_owner_authority_two_and_three_times_within_one_hour(
     for iteration in range(2, 2 + iterations):
         new_auth = {"account_auths": [], "key_auths": [(current_key, iteration)], "weight_threshold": iteration}
         if iteration == 4:
-            with pytest.raises(ErrorInResponseError) as exception:
+            with pytest.raises(WaxAssertionInResponseError) as exception:
                 alice.update_account(owner=new_auth, use_account_update2=use_account_update2)
             alice.assert_if_rc_current_mana_was_unchanged()
             error_response = str(exception.value)

@@ -3,10 +3,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pytest
-from beekeepy.exceptions import ErrorInResponseError
 
 import test_tools as tt
 from hive_local_tools.functional.python.operation import get_number_of_active_proposals
+from wax._private.api.overseer import WaxAssertionInResponseError
 
 if TYPE_CHECKING:
     from python.functional.operation_tests.conftest import ProposalAccount
@@ -74,6 +74,6 @@ def test_try_to_remove_proposal_from_unauthorised_account(
     wallet.api.post_comment("alice", "comment-permlink", "", "category", "title", "body", "{}")
     alice.update_account_info()  # to update mana after creating post
     bob.create_proposal("alice", tt.Time.now(), end_date)
-    with pytest.raises(ErrorInResponseError) as exception:
+    with pytest.raises(WaxAssertionInResponseError) as exception:
         alice.remove_proposal(proposal_to_remove_details=bob.proposal_parameters)
     assert "Only proposal owner can remove it..." in str(exception.value)

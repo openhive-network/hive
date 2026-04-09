@@ -1,10 +1,10 @@
 """https://gitlab.syncad.com/hive/hive/-/issues/694"""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
 import pytest
-from beekeepy.exceptions import ErrorInResponseError
 
 import test_tools as tt
 from hive_local_tools.functional.python.operation import assert_account_was_created
@@ -12,6 +12,7 @@ from hive_local_tools.functional.python.operation.claim_account import (
     ClaimAccountToken,
     CreateClaimedAccount,
 )
+from wax._private.api.overseer import WaxAssertionInResponseError
 
 if TYPE_CHECKING:
     from hive_local_tools.functional.python.operation import Account
@@ -54,7 +55,7 @@ def test_create_claimed_account_operation(
 def test_try_to_create_claimed_account_operation_without_available_token(
     node: tt.InitNode, wallet_alice: tt.Wallet, alice: Account, fee: tt.Asset.TestT
 ) -> None:
-    with pytest.raises(ErrorInResponseError) as exception:
+    with pytest.raises(WaxAssertionInResponseError) as exception:
         CreateClaimedAccount(node, wallet_alice, alice.name, "bob")
 
     assert "alice has no claimed accounts to create" in str(exception.value)
@@ -72,7 +73,7 @@ def test_try_to_create_claimed_account_operation_with_already_existing_account(
     initminer_wallet.create_account("bob")
     initminer_wallet.api.delegate_rc("initminer", [alice.name], 200000000000)
 
-    with pytest.raises(ErrorInResponseError) as exception:
+    with pytest.raises(WaxAssertionInResponseError) as exception:
         CreateClaimedAccount(node, wallet_alice, alice.name, "bob")
 
     assert "Account bob already exists." in str(exception.value)
