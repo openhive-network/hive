@@ -123,12 +123,29 @@ void rocksdb_comment_archive::on_irreversible_block( uint32_t block_num )
     const auto& _current = *_itr;
     ++_itr;
 
+#ifdef CHAINBASE_VALUE_CANARY
+    _current.check_canary( "on_irreversible_block: before move" );
+#endif
+
     move_to_external_storage_impl( block_num, _current );
+
+#ifdef CHAINBASE_VALUE_CANARY
+    _current.check_canary( "on_irreversible_block: after move, before find" );
+#endif
 
     const auto* _comment = db.find_comment( _current.comment_id );
     FC_ASSERT( _comment );
 
+#ifdef CHAINBASE_VALUE_CANARY
+    _current.check_canary( "on_irreversible_block: before remove comment" );
+#endif
+
     db.remove( *_comment );
+
+#ifdef CHAINBASE_VALUE_CANARY
+    _current.check_canary( "on_irreversible_block: before remove volatile" );
+#endif
+
     db.remove( _current );
 
     ++count;

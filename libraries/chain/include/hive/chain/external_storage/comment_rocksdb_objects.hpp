@@ -27,6 +27,25 @@ class volatile_comment_object : public object< volatile_comment_object_type, vol
     const comment_object::author_and_permlink_hash_type& get_author_and_permlink_hash() const { return author_and_permlink_hash; }
     void set_author_and_permlink_hash( const comment_object::author_and_permlink_hash_type& val ) { author_and_permlink_hash = val; }
 
+#ifdef CHAINBASE_VALUE_CANARY
+    static constexpr uint64_t CANARY_MAGIC = 0x1234567890ABCDEFULL;
+    void check_canary( const char* context ) const
+    {
+      if( canary != CANARY_MAGIC )
+      {
+        std::cerr << "!!! VALUE CANARY CORRUPTION in volatile_comment_object at " << context
+                  << " canary=0x" << std::hex << canary << std::dec
+                  << " expected=0x" << std::hex << CANARY_MAGIC << std::dec
+                  << " id=" << id.get_value()
+                  << " comment_id=" << comment_id.get_value()
+                  << " block_number=" << block_number
+                  << std::endl;
+        std::cerr.flush();
+        abort();
+      }
+    }
+#endif
+
     comment_id_type                               comment_id;
     comment_id_type                               parent_comment;
     uint16_t                                      depth = 0;
@@ -36,6 +55,9 @@ class volatile_comment_object : public object< volatile_comment_object_type, vol
   private:
 
     comment_object::author_and_permlink_hash_type author_and_permlink_hash;
+#ifdef CHAINBASE_VALUE_CANARY
+    uint64_t                                      canary = CANARY_MAGIC;
+#endif
 };
 
 typedef oid_ref< volatile_comment_object > volatile_comment_id_type;
