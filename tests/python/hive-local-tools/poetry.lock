@@ -1993,10 +1993,10 @@ files = []
 develop = true
 
 [package.dependencies]
-deepdiff = "6.3.0"
-prettytable = "3.8.0"
-requests = "2.32.3"
-types-requests = "2.31.0.2"
+deepdiff = "^6.3.0"
+prettytable = "^3.8.0"
+requests = "^2.32.3"
+types-requests = "^2.31.0.2"
 
 [package.source]
 type = "directory"
