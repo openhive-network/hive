@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 
 import test_tools as tt
+from beekeepy.exceptions import ErrorInResponseError
 from wax._private.api.overseer import WaxAssertionInResponseError
 from hive_local_tools import run_for
 
@@ -19,7 +20,7 @@ def test_broadcast_transaction_synchronous_with_correct_value(node: tt.InitNode)
 def test_broadcast_transaction_synchronous_with_incorrect_type_of_argument(
     node: tt.InitNode, transaction_name: bool | int | list | str
 ) -> None:
-    with pytest.raises(WaxAssertionInResponseError):
+    with pytest.raises((ErrorInResponseError, WaxAssertionInResponseError)):
         node.api.wallet_bridge.broadcast_transaction_synchronous(transaction_name)
 
 

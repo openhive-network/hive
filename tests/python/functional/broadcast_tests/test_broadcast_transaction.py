@@ -7,6 +7,7 @@ from time import sleep
 import pytest
 
 import test_tools as tt
+from beekeepy.exceptions import ErrorInResponseError
 from wax._private.api.overseer import WaxAssertionInResponseError
 from hive_local_tools import run_for
 
@@ -72,5 +73,5 @@ def test_broadcasting_manually_signed_transaction(node, wallet, way_of_broadcast
 @run_for("testnet")
 def test_broadcasting_manually_signed_transaction_with_condenser(node, wallet):
     transaction = wallet.api.create_account("initminer", "alice", "{}", broadcast=False)
-    with pytest.raises(WaxAssertionInResponseError):
+    with pytest.raises(ErrorInResponseError):
         node.api.condenser.broadcast_transaction(transaction)

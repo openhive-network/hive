@@ -9,6 +9,7 @@ from hive_local_tools.api.message_format import as_string
 
 if TYPE_CHECKING:
     import test_tools as tt
+from beekeepy.exceptions import ErrorInResponseError
 from wax._private.api.overseer import WaxAssertionInResponseError
 
 UINT64_MAX = 2**64 - 1
@@ -48,12 +49,12 @@ def test_get_block_with_correct_value(
 )
 @run_for("testnet", "mainnet_5m", "live_mainnet")
 def test_get_block_with_incorrect_value(node: tt.InitNode | tt.RemoteNode, block_number: int) -> None:
-    with pytest.raises(WaxAssertionInResponseError):
+    with pytest.raises((ErrorInResponseError, WaxAssertionInResponseError)):
         node.api.wallet_bridge.get_block(block_number)
 
 
 @pytest.mark.parametrize("block_number", [[0], "incorrect_string_argument", "true"])
 @run_for("testnet", "mainnet_5m", "live_mainnet")
 def test_get_block_with_incorrect_type_of_argument(node: tt.InitNode | tt.RemoteNode, block_number: list | str) -> None:
-    with pytest.raises(WaxAssertionInResponseError):
+    with pytest.raises((ErrorInResponseError, WaxAssertionInResponseError)):
         node.api.wallet_bridge.get_block(block_number)

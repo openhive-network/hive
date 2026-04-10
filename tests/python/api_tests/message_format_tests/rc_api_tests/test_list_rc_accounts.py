@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 
 import test_tools as tt
+from beekeepy.exceptions import ErrorInResponseError
 from wax._private.api.overseer import WaxAssertionInResponseError
 from hive_local_tools import run_for
 from hive_local_tools.api.message_format import as_string
@@ -59,7 +60,7 @@ def test_list_rc_accounts_with_correct_values(
 def test_list_rc_accounts_with_incorrect_values(
     ready_node: tt.InitNode | tt.RemoteNode, rc_account: str, limit: int
 ) -> None:
-    with pytest.raises(WaxAssertionInResponseError):
+    with pytest.raises((ErrorInResponseError, WaxAssertionInResponseError)):
         ready_node.api.rc.list_rc_accounts(start=rc_account, limit=limit)
 
 
@@ -78,7 +79,7 @@ def test_list_rc_accounts_with_incorrect_values(
 def test_list_rc_accounts_with_incorrect_type_of_arguments(
     ready_node: tt.InitNode | tt.RemoteNode, rc_account: list | str, limit: int | list | str
 ) -> None:
-    with pytest.raises(WaxAssertionInResponseError):
+    with pytest.raises((ErrorInResponseError, WaxAssertionInResponseError)):
         ready_node.api.rc.list_rc_accounts(start=rc_account, limit=limit)
 
 
@@ -89,5 +90,5 @@ def test_list_rc_account_with_additional_argument(ready_node: tt.InitNode | tt.R
 
 @run_for("testnet", "mainnet_5m", "live_mainnet")
 def test_list_rc_account_with_missing_argument(ready_node: tt.InitNode | tt.RemoteNode) -> None:
-    with pytest.raises(WaxAssertionInResponseError):
+    with pytest.raises((ErrorInResponseError, WaxAssertionInResponseError)):
         ready_node.api.rc.list_rc_accounts(start=ACCOUNT)

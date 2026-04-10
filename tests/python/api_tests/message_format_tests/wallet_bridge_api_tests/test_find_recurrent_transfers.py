@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 
 import test_tools as tt
+from beekeepy.exceptions import ErrorInResponseError
 from wax._private.api.overseer import WaxAssertionInResponseError
 from hive_local_tools import run_for
 from hive_local_tools.api.message_format import as_string
@@ -46,7 +47,7 @@ INCORRECT_VALUES = [
 def test_find_recurrent_transfers_with_incorrect_value(
     node: tt.InitNode | tt.RemoteNode, reward_fund_name: int | list | str
 ) -> None:
-    with pytest.raises(WaxAssertionInResponseError):
+    with pytest.raises((ErrorInResponseError, WaxAssertionInResponseError)):
         node.api.wallet_bridge.find_recurrent_transfers(reward_fund_name)
 
 
@@ -60,7 +61,7 @@ def test_find_recurrent_transfers_with_incorrect_type_of_argument(
         wallet = tt.Wallet(attach_to=node)
         create_accounts_and_make_recurrent_transfer(wallet, from_account="alice", to_account="bob", asset=asset)
 
-    with pytest.raises(WaxAssertionInResponseError):
+    with pytest.raises((ErrorInResponseError, WaxAssertionInResponseError)):
         node.api.wallet_bridge.find_recurrent_transfers(reward_fund_name)
 
 

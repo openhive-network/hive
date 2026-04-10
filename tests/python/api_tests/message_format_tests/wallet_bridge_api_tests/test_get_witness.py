@@ -11,6 +11,7 @@ from hive_local_tools.api.message_format.wallet_bridge_api.constants import WITN
 
 if TYPE_CHECKING:
     import test_tools as tt
+from beekeepy.exceptions import ErrorInResponseError
 from wax._private.api.overseer import WaxAssertionInResponseError
 
 CORRECT_VALUES = [
@@ -42,5 +43,5 @@ def test_get_witness_with_correct_value(
 @pytest.mark.parametrize("witness_account", [["example-array"]])
 @run_for("testnet", "mainnet_5m", "live_mainnet")
 def test_get_witness_with_incorrect_type_of_argument(node: tt.InitNode | tt.RemoteNode, witness_account: list) -> None:
-    with pytest.raises(WaxAssertionInResponseError):
+    with pytest.raises((ErrorInResponseError, WaxAssertionInResponseError)):
         node.api.wallet_bridge.get_witness(witness_account)

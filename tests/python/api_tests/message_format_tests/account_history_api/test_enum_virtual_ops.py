@@ -8,6 +8,7 @@ from hive_local_tools import run_for
 
 if TYPE_CHECKING:
     import test_tools as tt
+from beekeepy.exceptions import ErrorInResponseError
 from wax._private.api.overseer import WaxAssertionInResponseError
 
 
@@ -81,7 +82,7 @@ def test_enum_virtual_ops_with_incorrect_values(
     block_range_end: bool | int | str,
     group_by_block: bool | dict | int | list | str,
 ) -> None:
-    with pytest.raises(WaxAssertionInResponseError):
+    with pytest.raises((ErrorInResponseError, WaxAssertionInResponseError)):
         node.api.account_history.enum_virtual_ops(
             block_range_begin=block_range_begin,
             block_range_end=block_range_end,

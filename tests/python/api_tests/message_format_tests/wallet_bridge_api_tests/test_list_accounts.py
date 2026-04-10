@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 
 import test_tools as tt
+from beekeepy.exceptions import ErrorInResponseError
 from wax._private.api.overseer import WaxAssertionInResponseError
 from hive_local_tools import run_for
 from hive_local_tools.api.message_format import as_string
@@ -57,7 +58,7 @@ def test_list_accounts_with_incorrect_values(
         wallet = tt.Wallet(attach_to=node)
         wallet.create_accounts(len(ACCOUNTS))
 
-    with pytest.raises(WaxAssertionInResponseError):
+    with pytest.raises((ErrorInResponseError, WaxAssertionInResponseError)):
         node.api.wallet_bridge.list_accounts(lowerbound_account, limit)
 
 
@@ -75,5 +76,5 @@ def test_list_accounts_with_incorrect_values(
 def test_list_accounts_with_incorrect_type_of_argument(
     node: tt.InitNode | tt.RemoteNode, lowerbound_account: list | str, limit: list | int | str
 ) -> None:
-    with pytest.raises(WaxAssertionInResponseError):
+    with pytest.raises((ErrorInResponseError, WaxAssertionInResponseError)):
         node.api.wallet_bridge.list_accounts(lowerbound_account, limit)

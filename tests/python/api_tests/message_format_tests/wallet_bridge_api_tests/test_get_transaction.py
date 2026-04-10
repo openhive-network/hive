@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 
 import test_tools as tt
+from beekeepy.exceptions import ErrorInResponseError
 from wax._private.api.overseer import WaxAssertionInResponseError
 from hive_local_tools import run_for
 from hive_local_tools.api.message_format.wallet_bridge_api import get_transaction_id_from_head_block
@@ -28,7 +29,7 @@ def test_get_transaction_with_correct_value(node: tt.InitNode | tt.RemoteNode, s
 )
 @run_for("testnet", "mainnet_5m", "live_mainnet")
 def test_get_transaction_with_incorrect_value(node: tt.InitNode | tt.RemoteNode, transaction_id: str) -> None:
-    with pytest.raises(WaxAssertionInResponseError):
+    with pytest.raises((ErrorInResponseError, WaxAssertionInResponseError)):
         node.api.wallet_bridge.get_transaction(transaction_id)
 
 
@@ -44,7 +45,7 @@ def test_get_transaction_with_incorrect_value(node: tt.InitNode | tt.RemoteNode,
 def test_get_transaction_with_incorrect_type_of_argument(
     node: tt.InitNode | tt.RemoteNode, transaction_id: bool | int | list
 ) -> None:
-    with pytest.raises(WaxAssertionInResponseError):
+    with pytest.raises((ErrorInResponseError, WaxAssertionInResponseError)):
         node.api.wallet_bridge.get_transaction(transaction_id)
 
 

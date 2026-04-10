@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 
 import test_tools as tt
+from beekeepy.exceptions import ErrorInResponseError
 from wax._private.api.overseer import WaxAssertionInResponseError
 from hive_local_tools import run_for
 from hive_local_tools.api.message_format import as_string
@@ -43,5 +44,5 @@ def test_get_open_orders_with_incorrect_type_of_argument(
         wallet = tt.Wallet(attach_to=node)
         create_account_and_create_order(wallet, account_name="alice")
 
-    with pytest.raises(WaxAssertionInResponseError):
+    with pytest.raises((ErrorInResponseError, WaxAssertionInResponseError)):
         node.api.wallet_bridge.get_open_orders(account_name)

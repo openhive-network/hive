@@ -7,12 +7,34 @@ import pytest
 import test_tools as tt
 from loguru import logger
 from test_tools.__private.scope.scope_fixtures import *  # noqa: F403
+from test_tools.__private.wallet import wallet as _wallet_module
+from wax._private.api.overseer import WaxAssertionInResponseError
 
 from schemas.policies.policy import set_policies
 from schemas.policies.testnet_assets import TestnetAssetsPolicy
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
+
+
+# Monkeypatch: test_tools' Wallet.run() only catches ErrorInResponseError for "wallet already exists",
+# but with WaxOverseer these errors are now raised as WaxAssertionInResponseError.
+_original_wallet_run = _wallet_module.Wallet.run
+
+
+def _patched_wallet_run(self: _wallet_module.Wallet, preconfigure: bool = True) -> None:
+    try:
+        _original_wallet_run(self, preconfigure=preconfigure)
+    except WaxAssertionInResponseError as exception:
+        if f"Wallet with name: '{self.name}' already exists" in str(exception):
+            self._beekeeper_wallet = self._Wallet__beekeeper_session.open_wallet(name=self.name).unlock(
+                _wallet_module.DEFAULT_PASSWORD
+            )
+        else:
+            raise
+
+
+_wallet_module.Wallet.run = _patched_wallet_run
 
 
 @pytest.fixture(autouse=True)

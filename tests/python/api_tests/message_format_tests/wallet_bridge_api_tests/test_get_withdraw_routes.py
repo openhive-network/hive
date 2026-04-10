@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 
 import test_tools as tt
+from beekeepy.exceptions import ErrorInResponseError
 from wax._private.api.overseer import WaxAssertionInResponseError
 from hive_local_tools import run_for
 from hive_local_tools.api.message_format import as_string
@@ -65,7 +66,7 @@ def test_get_withdraw_routes_with_incorrect_value(
         wallet = tt.Wallet(attach_to=node)
         create_accounts_and_set_withdraw_vesting_route_between_them(wallet, from_="alice", to="bob")
 
-    with pytest.raises(WaxAssertionInResponseError):
+    with pytest.raises((ErrorInResponseError, WaxAssertionInResponseError)):
         node.api.wallet_bridge.get_withdraw_routes(account_name, withdraw_route_type)
 
 
@@ -90,7 +91,7 @@ def test_get_withdraw_routes_with_incorrect_type_of_arguments(
         wallet = tt.Wallet(attach_to=node)
         create_accounts_and_set_withdraw_vesting_route_between_them(wallet, from_="alice", to="bob")
 
-    with pytest.raises(WaxAssertionInResponseError):
+    with pytest.raises((ErrorInResponseError, WaxAssertionInResponseError)):
         node.api.wallet_bridge.get_withdraw_routes(account_name, withdraw_route_type)
 
 
@@ -109,7 +110,7 @@ def test_get_withdraw_routes_with_missing_argument(node: tt.InitNode | tt.Remote
         wallet = tt.Wallet(attach_to=node)
         create_accounts_and_set_withdraw_vesting_route_between_them(wallet, from_="alice", to="bob")
 
-    with pytest.raises(WaxAssertionInResponseError):
+    with pytest.raises((ErrorInResponseError, WaxAssertionInResponseError)):
         node.api.wallet_bridge.get_withdraw_routes("alice")
 
 

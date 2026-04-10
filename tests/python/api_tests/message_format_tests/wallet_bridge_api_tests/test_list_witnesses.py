@@ -11,6 +11,7 @@ from hive_local_tools.api.message_format.wallet_bridge_api.constants import WITN
 
 if TYPE_CHECKING:
     import test_tools as tt
+from beekeepy.exceptions import ErrorInResponseError
 from wax._private.api.overseer import WaxAssertionInResponseError
 
 CORRECT_VALUES = [
@@ -60,7 +61,7 @@ def test_list_witnesses_with_incorrect_value(
 ) -> None:
     if should_prepare:
         node = prepare_node_with_witnesses(node, WITNESSES_NAMES)
-    with pytest.raises(WaxAssertionInResponseError):
+    with pytest.raises((ErrorInResponseError, WaxAssertionInResponseError)):
         node.api.wallet_bridge.list_witnesses(witness_account, limit)
 
 
@@ -80,5 +81,5 @@ def test_list_witnesses_with_incorrect_type_of_arguments(
 ) -> None:
     if should_prepare:
         node = prepare_node_with_witnesses(node, WITNESSES_NAMES)
-    with pytest.raises(WaxAssertionInResponseError):
+    with pytest.raises((ErrorInResponseError, WaxAssertionInResponseError)):
         node.api.wallet_bridge.list_witnesses(witness_account, limit)

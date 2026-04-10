@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 
 import test_tools as tt
+from beekeepy.exceptions import ErrorInResponseError
 from wax._private.api.overseer import WaxAssertionInResponseError
 from hive_local_tools import run_for
 
@@ -22,5 +23,5 @@ def test_get_transaction_with_correct_values(node: tt.InitNode | tt.RemoteNode, 
 @run_for("testnet", "mainnet_5m", "live_mainnet", enable_plugins=["account_history_api"])
 def test_get_transaction_with_incorrect_values(node: tt.InitNode | tt.RemoteNode) -> None:
     wrong_transaction_id = -1
-    with pytest.raises(WaxAssertionInResponseError):
+    with pytest.raises((ErrorInResponseError, WaxAssertionInResponseError)):
         node.api.account_history.get_transaction(id=wrong_transaction_id, include_reversible=True)

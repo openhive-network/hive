@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 
 import test_tools as tt
+from beekeepy.exceptions import ErrorInResponseError
 from wax._private.api.overseer import WaxAssertionInResponseError
 from hive_local_tools import run_for
 from hive_local_tools.api.message_format import as_string
@@ -35,7 +36,7 @@ def test_get_conversion_requests_with_correct_value(node: tt.InitNode | tt.Remot
 def test_get_conversion_requests_with_incorrect_value(
     node: tt.InitNode | tt.RemoteNode, account_name: int | list | str
 ) -> None:
-    with pytest.raises(WaxAssertionInResponseError):
+    with pytest.raises((ErrorInResponseError, WaxAssertionInResponseError)):
         node.api.wallet_bridge.get_conversion_requests(account_name)
 
 
@@ -48,7 +49,7 @@ def test_get_conversion_requests_with_incorrect_type_of_argument(
         wallet = tt.Wallet(attach_to=node)
         create_account_with_converted_hbd(wallet, account_name="alice")
 
-    with pytest.raises(WaxAssertionInResponseError):
+    with pytest.raises((ErrorInResponseError, WaxAssertionInResponseError)):
         node.api.wallet_bridge.get_conversion_requests(account_name)
 
 
