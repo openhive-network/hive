@@ -77,9 +77,10 @@ def set_beneficiaries(
         beneficiaries = []
         benefactors = []
         for beneficiary_weight in beneficiaries_weight:
-            beneficiaries.append(
-                {"account": beneficiary_accounts[beneficiary_account_number].name, "weight": beneficiary_weight}
-            )
+            beneficiaries.append({
+                "account": beneficiary_accounts[beneficiary_account_number].name,
+                "weight": beneficiary_weight,
+            })
             benefactors.append(beneficiary_accounts[beneficiary_account_number])
             beneficiary_account_number += 1
 

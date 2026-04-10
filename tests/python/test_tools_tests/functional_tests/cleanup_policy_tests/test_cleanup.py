@@ -97,8 +97,7 @@ class RunForAllCases(Protocol):
         *,
         remove_important_files: bool,
         remove_unneeded_files: bool,
-    ) -> Any:
-        ...
+    ) -> Any: ...
 
 
 @run_for_all_cases

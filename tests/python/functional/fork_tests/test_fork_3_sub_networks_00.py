@@ -25,13 +25,11 @@ def test_fork_3_sub_networks_00(prepare_fork_3_sub_networks_00):
 
     logs = []
 
-    logs.extend(
-        (
-            ttcn.NodeLog("m3", tt.Wallet(attach_to=minority_api_node_3)),
-            ttcn.NodeLog("m4", tt.Wallet(attach_to=minority_api_node_4)),
-            ttcn.NodeLog("M", tt.Wallet(attach_to=majority_api_node)),
-        )
-    )
+    logs.extend((
+        ttcn.NodeLog("m3", tt.Wallet(attach_to=minority_api_node_3)),
+        ttcn.NodeLog("m4", tt.Wallet(attach_to=minority_api_node_4)),
+        ttcn.NodeLog("M", tt.Wallet(attach_to=majority_api_node)),
+    ))
 
     _m3 = logs[0].collector
     _m4 = logs[1].collector

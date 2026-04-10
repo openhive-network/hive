@@ -99,9 +99,12 @@ def perform_replay(node_bin_path, node_work_dir_path):
     logger.info(f"Performing replay with {node_bin_path}")
     node = hive_utils.hive_node.HiveNodeInScreen(node_bin_path, node_work_dir_path, None, True)
     if node is not None:
-        node.run_hive_node(
-            ["--enable-stale-production", "--replay-blockchain", "--cashout-logging-log-path-dir", node_work_dir_path]
-        )
+        node.run_hive_node([
+            "--enable-stale-production",
+            "--replay-blockchain",
+            "--cashout-logging-log-path-dir",
+            node_work_dir_path,
+        ])
     return node
 
 

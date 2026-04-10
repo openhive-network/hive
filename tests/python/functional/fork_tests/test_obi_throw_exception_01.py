@@ -54,14 +54,12 @@ def test_obi_throw_exception_01(prepare_obi_throw_exception_01):
 
     logs = []
 
-    logs.extend(
-        (
-            ttcn.NodeLog("a0", tt.Wallet(attach_to=api_node_0)),
-            ttcn.NodeLog("w0", tt.Wallet(attach_to=witness_node_0)),
-            ttcn.NodeLog("a1", tt.Wallet(attach_to=api_node_1)),
-            ttcn.NodeLog("w1", tt.Wallet(attach_to=witness_node_1)),
-        )
-    )
+    logs.extend((
+        ttcn.NodeLog("a0", tt.Wallet(attach_to=api_node_0)),
+        ttcn.NodeLog("w0", tt.Wallet(attach_to=witness_node_0)),
+        ttcn.NodeLog("a1", tt.Wallet(attach_to=api_node_1)),
+        ttcn.NodeLog("w1", tt.Wallet(attach_to=witness_node_1)),
+    ))
 
     blocks_after_exception = 20
     delay_seconds = 5

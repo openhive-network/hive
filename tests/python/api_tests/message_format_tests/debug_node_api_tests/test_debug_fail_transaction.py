@@ -18,10 +18,12 @@ def test_debug_fail_transaction() -> None:
 
             # Queen plugin will automatically generate a block when the number of transactions is reached
             node.config.queen_tx_count = 1
-            node.run(alternate_chain_specs=tt.AlternateChainSpecs(
-                genesis_time=int(tt.Time.now(serialize=False).timestamp()),
-                hardfork_schedule=[tt.HardforkSchedule(hardfork=28, block_num=1)],
-            ))
+            node.run(
+                alternate_chain_specs=tt.AlternateChainSpecs(
+                    genesis_time=int(tt.Time.now(serialize=False).timestamp()),
+                    hardfork_schedule=[tt.HardforkSchedule(hardfork=28, block_num=1)],
+                )
+            )
 
             wallet = tt.Wallet(attach_to=node)
 
@@ -55,7 +57,9 @@ def test_debug_fail_transaction() -> None:
             return
         except (FailedToStartExecutableError, CommunicationError, TimeoutError) as e:
             if attempt < max_retries - 1:
-                logger.warning(f"Test failed with {type(e).__name__} (attempt {attempt + 1}/{max_retries}), retrying...")
+                logger.warning(
+                    f"Test failed with {type(e).__name__} (attempt {attempt + 1}/{max_retries}), retrying..."
+                )
                 time.sleep(1)
             else:
                 raise

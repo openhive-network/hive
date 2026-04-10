@@ -1,6 +1,7 @@
 """
 All test are described in https://gitlab.syncad.com/hive/hive/-/issues/493
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING

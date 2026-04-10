@@ -52,7 +52,9 @@ def test_set_random_number_of_checkpoints_from_replay(
 
 
 @pytest.mark.parametrize("checkpoint_num", [0, 1, 10, 100, 430])
-def test_set_random_number_of_checkpoints_from_sync(block_log_empty_430_split: tt.BlockLog, checkpoint_num: int) -> None:
+def test_set_random_number_of_checkpoints_from_sync(
+    block_log_empty_430_split: tt.BlockLog, checkpoint_num: int
+) -> None:
     node = tt.InitNode()
     node.run(replay_from=block_log_empty_430_split, exit_before_synchronization=True)
 

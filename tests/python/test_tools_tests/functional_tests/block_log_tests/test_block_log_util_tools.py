@@ -51,8 +51,8 @@ def test_get_head_block_time(node: tt.InitNode) -> None:
     )
 
     # Normalize: node returns naive datetime, block_log may return HiveDateTime (aware, UTC)
-    assert (
-        to_naive(head_block_time_from_node) == to_naive(head_block_time_from_block_log)
+    assert to_naive(head_block_time_from_node) == to_naive(
+        head_block_time_from_block_log
     ), "Head_block_time from block_log is other than head_block_time from node"
 
     assert (

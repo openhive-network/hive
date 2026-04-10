@@ -100,9 +100,9 @@ def node(request: pytest.FixtureRequest) -> tt.InitNode | tt.RemoteNode:  # noqa
         parametrize_mark = __get_mark_set_by_run_for()
 
         number_of_nodes_specified_in_run_for = len(parametrize_mark.args[1])
-        number_of_unique_nodes_given_in_the_run_for_parameters = len(
-            {mark_obj.values[0][0] for mark_obj in parametrize_mark.args[1]}
-        )
+        number_of_unique_nodes_given_in_the_run_for_parameters = len({
+            mark_obj.values[0][0] for mark_obj in parametrize_mark.args[1]
+        })
 
         if number_of_nodes_specified_in_run_for != number_of_unique_nodes_given_in_the_run_for_parameters:
             raise AssertionError("Unallowed duplication of `@run_for()' decorator arguments.\n" + hint_message)
@@ -119,8 +119,7 @@ def node(request: pytest.FixtureRequest) -> tt.InitNode | tt.RemoteNode:  # noqa
             if mark not in __get_marks_created_by_run_for_only():
                 raise AssertionError(
                     f"Unallowed usage of a mark: `{mark}`.\n"
-                    "Please use the `@run_for()` decorator to mark test instead.\n"
-                    + hint_message
+                    "Please use the `@run_for()` decorator to mark test instead.\n" + hint_message
                 )
 
     all_marks = request.node.own_markers

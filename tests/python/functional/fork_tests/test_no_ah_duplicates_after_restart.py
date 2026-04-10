@@ -10,7 +10,9 @@ from test_tools import complex_networks as ttcn
 
 
 @pytest.mark.fork_tests_group_3
-def test_no_duplicates_in_account_history_plugin_after_restart(prepare_with_many_witnesses: ttcn.NetworksBuilder) -> None:
+def test_no_duplicates_in_account_history_plugin_after_restart(
+    prepare_with_many_witnesses: ttcn.NetworksBuilder,
+) -> None:
     # TRIGGER
     # We restart one of nodes.
     networks_builder = prepare_with_many_witnesses

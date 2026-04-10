@@ -70,23 +70,19 @@ def parse_text_response(text: str) -> dict[str, Any]:
         for line_to_parse in lines_to_parse:
             splitted_values = re.split(r"\s*\|\s*|\s{2,}", line_to_parse.strip())
 
-            bids.append(
-                {
-                    "hive": splitted_values[2],
-                    "hbd": splitted_values[1],
-                    "sum_hbd": splitted_values[0],
-                    "price": splitted_values[3],
-                }
-            )
+            bids.append({
+                "hive": splitted_values[2],
+                "hbd": splitted_values[1],
+                "sum_hbd": splitted_values[0],
+                "price": splitted_values[3],
+            })
 
-            asks.append(
-                {
-                    "hive": splitted_values[5],
-                    "hbd": splitted_values[6],
-                    "sum_hbd": splitted_values[7],
-                    "price": splitted_values[4],
-                }
-            )
+            asks.append({
+                "hive": splitted_values[5],
+                "hbd": splitted_values[6],
+                "sum_hbd": splitted_values[7],
+                "price": splitted_values[4],
+            })
 
         return {
             "bids": bids,

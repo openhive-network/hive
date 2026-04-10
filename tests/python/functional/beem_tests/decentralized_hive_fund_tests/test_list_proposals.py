@@ -56,17 +56,15 @@ def create_proposals(node_client, creator_account, receiver_account):
         start_date, end_date = hive_utils.common.get_isostr_start_end_date(
             now, start_end_subject[0], start_end_subject[1]
         )
-        op = Create_proposal(
-            **{
-                "creator": creator["name"],
-                "receiver": receiver["name"],
-                "start_date": start_date,
-                "end_date": end_date,
-                "daily_pay": "16.000 TBD",
-                "subject": start_end_subject[2],
-                "permlink": "hivepy-proposal-title",
-            }
-        )
+        op = Create_proposal(**{
+            "creator": creator["name"],
+            "receiver": receiver["name"],
+            "start_date": start_date,
+            "end_date": end_date,
+            "daily_pay": "16.000 TBD",
+            "subject": start_end_subject[2],
+            "permlink": "hivepy-proposal-title",
+        })
         try:
             node_client.finalizeOp(op, creator["name"], "active")
         except Exception as ex:

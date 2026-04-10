@@ -72,17 +72,15 @@ class ProposalsCreatorThread(threading.Thread):
                     proposal["permlink"],
                 )
             )
-            op = Create_proposal(
-                **{
-                    "creator": proposal["creator"],
-                    "receiver": proposal["receiver"],
-                    "start_date": proposal["start_date"],
-                    "end_date": proposal["end_date"],
-                    "daily_pay": proposal["daily_pay"],
-                    "subject": proposal["subject"],
-                    "permlink": proposal["permlink"],
-                }
-            )
+            op = Create_proposal(**{
+                "creator": proposal["creator"],
+                "receiver": proposal["receiver"],
+                "start_date": proposal["start_date"],
+                "end_date": proposal["end_date"],
+                "daily_pay": proposal["daily_pay"],
+                "subject": proposal["subject"],
+                "permlink": proposal["permlink"],
+            })
             self.node_client.finalizeOp(op, proposal["creator"], "active")
 
 

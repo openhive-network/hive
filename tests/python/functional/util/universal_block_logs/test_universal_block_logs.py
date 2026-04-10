@@ -1,4 +1,5 @@
 """This test verifies the correctness of generated block_logs. It is not included in the CI tests."""
+
 from __future__ import annotations
 
 import random

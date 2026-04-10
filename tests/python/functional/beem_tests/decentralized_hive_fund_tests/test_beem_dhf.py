@@ -43,17 +43,15 @@ def create_proposal(node, creator_account, receiver_account, wif, subject):
         tags="proposals",
     )
 
-    op = Create_proposal(
-        **{
-            "creator": creator["name"],
-            "receiver": receiver["name"],
-            "start_date": start_date,
-            "end_date": end_date,
-            "daily_pay": "16.000 TBD",
-            "subject": subject,
-            "permlink": "hivepy-proposal-title",
-        }
-    )
+    op = Create_proposal(**{
+        "creator": creator["name"],
+        "receiver": receiver["name"],
+        "start_date": start_date,
+        "end_date": end_date,
+        "daily_pay": "16.000 TBD",
+        "subject": subject,
+        "permlink": "hivepy-proposal-title",
+    })
     ret = None
     try:
         ret = node.finalizeOp(op, creator["name"], "active")
@@ -224,17 +222,15 @@ def iterate_results_test(node, creator_account, receiver_account, wif, subject, 
 
     for start_end_pair in start_end_pairs:
         start_date, end_date = test_utils.get_start_and_end_date(now, start_end_pair[0], start_end_pair[1])
-        op = Create_proposal(
-            **{
-                "creator": creator["name"],
-                "receiver": receiver["name"],
-                "start_date": start_date,
-                "end_date": end_date,
-                "daily_pay": "16.000 TBD",
-                "subject": subject,
-                "permlink": "hivepy-proposal-title",
-            }
-        )
+        op = Create_proposal(**{
+            "creator": creator["name"],
+            "receiver": receiver["name"],
+            "start_date": start_date,
+            "end_date": end_date,
+            "daily_pay": "16.000 TBD",
+            "subject": subject,
+            "permlink": "hivepy-proposal-title",
+        })
         try:
             node.finalizeOp(op, creator["name"], "active")
         except Exception as ex:
@@ -307,15 +303,13 @@ def update_proposal(node, creator, wif):
     print(proposals[0])
     new_subject = "Some new proposal subject"
     new_daily_pay = "15.000 TBD"
-    op = Update_proposal(
-        **{
-            "proposal_id": proposals[0]["proposal_id"],
-            "creator": proposals[0]["creator"],
-            "daily_pay": new_daily_pay,
-            "subject": new_subject,
-            "permlink": proposals[0]["permlink"],
-        }
-    )
+    op = Update_proposal(**{
+        "proposal_id": proposals[0]["proposal_id"],
+        "creator": proposals[0]["creator"],
+        "daily_pay": new_daily_pay,
+        "subject": new_subject,
+        "permlink": proposals[0]["permlink"],
+    })
     try:
         node.finalizeOp(op, creator, "active")
     except Exception as ex:
@@ -331,17 +325,15 @@ def update_proposal(node, creator, wif):
     tt.logger.info("Testing: update_proposal and updating the end date")
     end_date = test_utils.date_to_iso(dateutil.parser.parse(proposals[0]["end_date"]) - timedelta(days=1))
 
-    op = Update_proposal(
-        **{
-            "proposal_id": proposals[0]["proposal_id"],
-            "creator": proposals[0]["creator"],
-            "daily_pay": "15.000 TBD",
-            "subject": new_subject,
-            "prefix": "STM",
-            "permlink": proposals[0]["permlink"],
-            "end_date": end_date,
-        }
-    )
+    op = Update_proposal(**{
+        "proposal_id": proposals[0]["proposal_id"],
+        "creator": proposals[0]["creator"],
+        "daily_pay": "15.000 TBD",
+        "subject": new_subject,
+        "prefix": "STM",
+        "permlink": proposals[0]["permlink"],
+        "end_date": end_date,
+    })
     try:
         node.finalizeOp(op, creator, "active")
     except Exception as ex:

@@ -42,17 +42,15 @@ config.witness = None
 config.private_key = None
 config.webserver_http_endpoint = "127.0.0.1:8100"
 config.exclude_plugins(["witness"])
-config.update_plugins(
-    [
-        "account_by_key",
-        "account_by_key_api",
-        "condenser_api",
-        "account_history_rocksdb",
-        "account_history_api",
-        "block_api",
-        "chain_api",
-    ]
-)
+config.update_plugins([
+    "account_by_key",
+    "account_by_key_api",
+    "condenser_api",
+    "account_history_rocksdb",
+    "account_history_api",
+    "block_api",
+    "chain_api",
+])
 
 # creating working dir
 

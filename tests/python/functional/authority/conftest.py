@@ -30,14 +30,12 @@ def alice(node: tt.InitNode, initminer_wallet: tt.Wallet) -> Account:
         memo=tt.Account(alice.name, secret="memo").public_key,
     )
 
-    alice.wallet.api.import_keys(
-        [
-            tt.Account(alice.name, secret="posting").private_key,
-            tt.Account(alice.name, secret="active").private_key,
-            tt.Account(alice.name, secret="owner").private_key,
-            tt.Account(alice.name, secret="memo").private_key,
-        ]
-    )
+    alice.wallet.api.import_keys([
+        tt.Account(alice.name, secret="posting").private_key,
+        tt.Account(alice.name, secret="active").private_key,
+        tt.Account(alice.name, secret="owner").private_key,
+        tt.Account(alice.name, secret="memo").private_key,
+    ])
 
     initminer_wallet.api.transfer_to_vesting("initminer", alice.name, tt.Asset.Test(100))
     initminer_wallet.api.transfer("initminer", alice.name, tt.Asset.Test(100), f"transfer hive to {alice.name}.")

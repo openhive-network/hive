@@ -25,18 +25,14 @@ def prepare_environment(node) -> tuple[tt.InitNode, tt.Wallet]:  # noqa: ARG001
         init_node.config.plugin.append("condenser_api")
         init_node.config.plugin.append("transaction_status_api")
         try:
-            init_node.run(
-                timeout=120.0, time_control=tt.SpeedUpRateTimeControl(speed_up_rate=5)
-            )
+            init_node.run(timeout=120.0, time_control=tt.SpeedUpRateTimeControl(speed_up_rate=5))
             wallet = tt.Wallet(attach_to=init_node)
             # price stabilization prevents zero payout for comment votes.
             init_node.set_vest_price(tt.Asset.Vest(1800))
             return init_node, wallet
         except (FailedToStartExecutableError, CommunicationError, TimeoutError):
             if attempt < max_retries - 1:
-                logger.warning(
-                    f"Node startup failed (attempt {attempt + 1}/{max_retries}), retrying..."
-                )
+                logger.warning(f"Node startup failed (attempt {attempt + 1}/{max_retries}), retrying...")
                 time.sleep(1)
             else:
                 raise
@@ -49,9 +45,7 @@ def prepare_environment_on_hf_27(node) -> tuple[tt.InitNode, tt.Wallet]:  # noqa
     # run on a node with a date earlier than the start date of hardfork 28 (february 8, 2023 1:00:00 am)
     max_retries = 3
     for attempt in range(max_retries):
-        witness_node = tt.WitnessNode(
-            witnesses=[f"witness{i}-alpha" for i in range(20)]
-        )
+        witness_node = tt.WitnessNode(witnesses=[f"witness{i}-alpha" for i in range(20)])
         witness_node.config.block_log_split = -1
 
         block_log_directory = Path(__file__).parent / "block_log"
@@ -71,9 +65,7 @@ def prepare_environment_on_hf_27(node) -> tuple[tt.InitNode, tt.Wallet]:  # noqa
             return witness_node, wallet
         except (FailedToStartExecutableError, CommunicationError, TimeoutError):
             if attempt < max_retries - 1:
-                logger.warning(
-                    f"Node startup failed (attempt {attempt + 1}/{max_retries}), retrying..."
-                )
+                logger.warning(f"Node startup failed (attempt {attempt + 1}/{max_retries}), retrying...")
                 time.sleep(1)
             else:
                 raise

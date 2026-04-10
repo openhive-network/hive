@@ -48,7 +48,9 @@ def artifacts_stub(source_directory: Path) -> None:
 
 
 def test_paths_in_copied_block_log(
-    block_log_stub: list[BlockLog], artifacts_stub: Path, destination_directory: Path  # noqa: ARG001
+    block_log_stub: list[BlockLog],
+    artifacts_stub: Path,
+    destination_directory: Path,  # noqa: ARG001
 ) -> None:
     # split log:
     copied_block_log = block_log_stub[0].copy_to(destination_directory, artifacts="required")
@@ -65,7 +67,9 @@ def test_paths_in_copied_block_log(
 
 
 def test_copying_when_required_artifacts_exists(
-    block_log_stub: list[BlockLog], artifacts_stub: Path, destination_directory: Path  # noqa: ARG001
+    block_log_stub: list[BlockLog],
+    artifacts_stub: Path,
+    destination_directory: Path,  # noqa: ARG001
 ) -> None:
     # split log:
     copied_block_log = block_log_stub[0].copy_to(destination_directory, artifacts="required")
@@ -96,7 +100,9 @@ def test_copying_when_required_artifacts_are_missing(
 
 
 def test_copying_when_optional_artifacts_exists(
-    block_log_stub: list[BlockLog], artifacts_stub: Path, destination_directory: Path  # noqa: ARG001
+    block_log_stub: list[BlockLog],
+    artifacts_stub: Path,
+    destination_directory: Path,  # noqa: ARG001
 ) -> None:
     # split log:
     copied_block_log = block_log_stub[0].copy_to(destination_directory, artifacts="optional")
@@ -126,7 +132,9 @@ def test_copying_when_optional_artifacts_are_missing(
 
 
 def test_copying_when_excluded_artifacts_exists(
-    block_log_stub: list[BlockLog], artifacts_stub: Path, destination_directory: Path  # noqa: ARG001
+    block_log_stub: list[BlockLog],
+    artifacts_stub: Path,
+    destination_directory: Path,  # noqa: ARG001
 ) -> None:
     # split log:
     copied_block_log = block_log_stub[0].copy_to(destination_directory, artifacts="excluded")

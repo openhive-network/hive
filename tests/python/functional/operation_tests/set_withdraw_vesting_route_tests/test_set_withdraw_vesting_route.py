@@ -97,9 +97,9 @@ def test_set_withdraw_vesting_route_after_first_power_down(
         user_a.rc_manabar.assert_max_rc_mana_state("reduced")
         user_a.assert_hive_power_balance_is_reduced_by_weekly_amount(power_down.weekly_vest_reduction)
 
-        remaining_power_down_percentage = HIVE_100_PERCENT - sum(
-            [parameter.percent for parameter in vesting_route_init_parameters]
-        )
+        remaining_power_down_percentage = HIVE_100_PERCENT - sum([
+            parameter.percent for parameter in vesting_route_init_parameters
+        ])
         err = "Unexpected number of fill_vesting_withdraw_operation virtual operations."
         if remaining_power_down_percentage:
             assert len(get_virtual_operations(node, FillVestingWithdrawOperation)) == (len(users) + 1) * week, err
@@ -170,9 +170,9 @@ def test_set_withdraw_vesting_route_when_the_power_down_doesnt_exist(
         user_a.rc_manabar.assert_max_rc_mana_state("reduced")
         user_a.assert_hive_power_balance_is_reduced_by_weekly_amount(power_down.weekly_vest_reduction)
 
-        remaining_power_down_percentage = HIVE_100_PERCENT - sum(
-            [parameter.percent for parameter in vesting_route_init_parameters]
-        )
+        remaining_power_down_percentage = HIVE_100_PERCENT - sum([
+            parameter.percent for parameter in vesting_route_init_parameters
+        ])
         if remaining_power_down_percentage:
             assert (
                 len(get_virtual_operations(node, FillVestingWithdrawOperation)) == (len(users) + 1) * week

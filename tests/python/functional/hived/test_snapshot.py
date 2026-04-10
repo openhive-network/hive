@@ -12,7 +12,9 @@ from hive_local_tools.functional.python.compare_snapshot import compare_snapshot
 from beekeepy.exceptions import FailedToStartExecutableError
 
 
-def _dump_snapshot_with_retry(node: tt.InitNode | tt.ApiNode, name: str = "snapshot", close: bool = False, max_retries: int = 3):
+def _dump_snapshot_with_retry(
+    node: tt.InitNode | tt.ApiNode, name: str = "snapshot", close: bool = False, max_retries: int = 3
+):
     """Dump snapshot with retry logic for flaky CI environments."""
     for attempt in range(max_retries):
         try:
@@ -28,6 +30,7 @@ def _dump_snapshot_with_retry(node: tt.InitNode | tt.ApiNode, name: str = "snaps
 def _run_node_with_retry(node: tt.InitNode | tt.ApiNode, max_retries: int = 3, **kwargs) -> None:
     """Run node with retry logic for flaky CI environments."""
     from beekeepy.exceptions import CommunicationError
+
     for attempt in range(max_retries):
         try:
             node.run(**kwargs)
@@ -43,16 +46,19 @@ def _run_node_with_retry(node: tt.InitNode | tt.ApiNode, max_retries: int = 3, *
             else:
                 raise
 
+
 if TYPE_CHECKING:
     from pathlib import Path
 
     from test_tools import Snapshot
 
-def clear_state(node: tt.InitNode):
-        from os.path import join as join_paths
-        from shutil import rmtree
 
-        rmtree(join_paths(str(node.directory), "blockchain", "shared_memory.bin"), ignore_errors=True)
+def clear_state(node: tt.InitNode):
+    from os.path import join as join_paths
+    from shutil import rmtree
+
+    rmtree(join_paths(str(node.directory), "blockchain", "shared_memory.bin"), ignore_errors=True)
+
 
 def test_snapshots_content_binary(block_log: Path) -> None:
     node: list[tt.ApiNode] = []
@@ -187,6 +193,7 @@ def test_dump_snapshot_on_enabled_account_history_plugin_node() -> None:
         len(snap_node.api.database.list_accounts(start="", limit=100, order="by_name").accounts)
         == len(BASE_ACCOUNTS) + number_of_accounts
     )
+
 
 def test_load_dump_snapshot_at_once(block_log: Path, block_log_length: int) -> None:
     node = tt.InitNode()

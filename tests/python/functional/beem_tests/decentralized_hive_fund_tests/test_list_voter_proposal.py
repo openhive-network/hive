@@ -74,17 +74,15 @@ def create_proposals(node, account, start_date, end_date, proposal_count):
             f"New proposal ==> ({account['name']},{account['name']},{start_date},{end_date},24.000 TBD,Proposal from"
             f" account {account['name']} {idx}/{proposal_count},{get_permlink(account['name'])})"
         )
-        op = Create_proposal(
-            **{
-                "creator": account["name"],
-                "receiver": account["name"],
-                "start_date": start_date,
-                "end_date": end_date,
-                "daily_pay": "24.000 TBD",
-                "subject": f"Proposal from account {account['name']}",
-                "permlink": get_permlink(account["name"]),
-            }
-        )
+        op = Create_proposal(**{
+            "creator": account["name"],
+            "receiver": account["name"],
+            "start_date": start_date,
+            "end_date": end_date,
+            "daily_pay": "24.000 TBD",
+            "subject": f"Proposal from account {account['name']}",
+            "permlink": get_permlink(account["name"]),
+        })
         try:
             node.finalizeOp(op, account["name"], "active")
         except Exception as ex:

@@ -1,4 +1,5 @@
 """Scenarios description: https://gitlab.syncad.com/hive/hive/-/issues/511"""
+
 from __future__ import annotations
 
 import datetime

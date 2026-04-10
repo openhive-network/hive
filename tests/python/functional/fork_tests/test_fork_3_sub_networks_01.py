@@ -73,5 +73,10 @@ def test_fork_3_sub_networks_01(prepare_fork_3_sub_networks_01: ttcn.NetworksBui
     networks_builder.networks[0].connect_with(networks_builder.networks[2])
 
     ttcn.wait_for_final_block(
-        minority_api_node_7a, logs, [_m7a, _m7b, _m7c], True, partial(ttcn.lib_custom_condition, _m7a, last_lib_a), False
+        minority_api_node_7a,
+        logs,
+        [_m7a, _m7b, _m7c],
+        True,
+        partial(ttcn.lib_custom_condition, _m7a, last_lib_a),
+        False,
     )

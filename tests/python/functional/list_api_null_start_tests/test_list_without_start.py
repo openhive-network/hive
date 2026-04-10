@@ -185,16 +185,16 @@ def test_list_without_start(
 
     result = response["result"]
     assert expected_key in result, f"Result missing expected key '{expected_key}': {list(result.keys())}"
-    assert isinstance(result[expected_key], list), (
-        f"Expected list for '{expected_key}', got {type(result[expected_key])}"
-    )
+    assert isinstance(
+        result[expected_key], list
+    ), f"Expected list for '{expected_key}', got {type(result[expected_key])}"
 
     if min_start is not None:
         params_with_start = {**params, "start": min_start}
         response_with_start = call_api(prepared_node, method, params_with_start)
-        assert "error" not in response_with_start, (
-            f"API returned error with explicit start: {response_with_start.get('error')}"
-        )
-        assert response_with_start["result"][expected_key] == result[expected_key], (
-            f"Results differ between no-start and explicit min-start for {method}"
-        )
+        assert (
+            "error" not in response_with_start
+        ), f"API returned error with explicit start: {response_with_start.get('error')}"
+        assert (
+            response_with_start["result"][expected_key] == result[expected_key]
+        ), f"Results differ between no-start and explicit min-start for {method}"

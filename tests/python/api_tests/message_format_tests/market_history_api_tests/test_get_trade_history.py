@@ -11,7 +11,9 @@ def _is_mainnet_5m(request: pytest.FixtureRequest) -> bool:
 
 
 @run_for("testnet", "mainnet_5m", "live_mainnet", enable_plugins=["market_history_api"])
-def test_get_trade_history(node: tt.InitNode | tt.RemoteNode, should_prepare: bool, request: pytest.FixtureRequest) -> None:
+def test_get_trade_history(
+    node: tt.InitNode | tt.RemoteNode, should_prepare: bool, request: pytest.FixtureRequest
+) -> None:
     if should_prepare:
         wallet = tt.Wallet(attach_to=node)
         wallet.create_account("alice", hives=tt.Asset.Test(1000), vests=tt.Asset.Test(1000))
@@ -23,9 +25,7 @@ def test_get_trade_history(node: tt.InitNode | tt.RemoteNode, should_prepare: bo
         wallet.api.create_order(
             "bob", 0, tt.Asset.Tbd(100), tt.Asset.Test(100), False, 3600
         )  # Buy 100 HIVE for 100 HBD
-    history = node.api.market_history.get_trade_history(
-        start="2016-03-24T16:05:00", end=tt.Time.now(), limit=10
-    ).trades
+    history = node.api.market_history.get_trade_history(start="2016-03-24T16:05:00", end=tt.Time.now(), limit=10).trades
     # mainnet_5m may not have trades in the queried time window (depends on block log contents)
     if not _is_mainnet_5m(request):
         assert len(history) != 0

@@ -11,7 +11,9 @@ def _is_mainnet_5m(request: pytest.FixtureRequest) -> bool:
 
 
 @run_for("testnet", "mainnet_5m", "live_mainnet", enable_plugins=["market_history_api"])
-def test_get_trade_history(node: tt.InitNode | tt.RemoteNode, should_prepare: bool, request: pytest.FixtureRequest) -> None:
+def test_get_trade_history(
+    node: tt.InitNode | tt.RemoteNode, should_prepare: bool, request: pytest.FixtureRequest
+) -> None:
     preparation_for_testnet_node(node, should_prepare)
 
     history = node.api.condenser.get_trade_history("2016-03-24T16:05:00", tt.Time.now(), 10)

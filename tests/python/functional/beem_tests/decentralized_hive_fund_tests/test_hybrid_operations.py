@@ -107,17 +107,15 @@ def test_hybrid_operations(node_client: NodeClientMaker):
     with pytest.raises(beemapi.exceptions.UnhandledRPCError) as exception:  # noqa: PT012
         tx = TransactionBuilder(hive_instance=node_client)
         ops = []
-        op = operations.Comment_options(
-            **{
-                "author": accounts[0]["name"],
-                "permlink": f"hivepy-proposal-title-{accounts[0]['name']}",
-                "max_accepted_payout": "1000.000 TBD",
-                "percent_steem_dollars": 5000,
-                "allow_votes": True,
-                "allow_curation_rewards": True,
-                "prefix": node_client.prefix,
-            }
-        )
+        op = operations.Comment_options(**{
+            "author": accounts[0]["name"],
+            "permlink": f"hivepy-proposal-title-{accounts[0]['name']}",
+            "max_accepted_payout": "1000.000 TBD",
+            "percent_steem_dollars": 5000,
+            "allow_votes": True,
+            "allow_curation_rewards": True,
+            "prefix": node_client.prefix,
+        })
         ops.append(op)
         tx.appendOps(ops)
         tx.appendWif(accounts[0]["private_key"])
@@ -132,17 +130,15 @@ def test_hybrid_operations(node_client: NodeClientMaker):
     tt.logger.info("Using hybrid op with new keys")
     tx = TransactionBuilder(hive_instance=node_client)
     ops = []
-    op = operations.Comment_options(
-        **{
-            "author": accounts[0]["name"],
-            "permlink": f"hivepy-proposal-title-{accounts[0]['name']}",
-            "max_accepted_payout": "1000.000 TBD",
-            "percent_hbd": 5000,
-            "allow_votes": True,
-            "allow_curation_rewards": True,
-            "prefix": node_client.prefix,
-        }
-    )
+    op = operations.Comment_options(**{
+        "author": accounts[0]["name"],
+        "permlink": f"hivepy-proposal-title-{accounts[0]['name']}",
+        "max_accepted_payout": "1000.000 TBD",
+        "percent_hbd": 5000,
+        "allow_votes": True,
+        "allow_curation_rewards": True,
+        "prefix": node_client.prefix,
+    })
     ops.append(op)
     tx.appendOps(ops)
     tx.appendWif(accounts[0]["private_key"])
