@@ -147,24 +147,33 @@ const savings_withdraw_object& database::get_savings_withdraw( const account_nam
 
 void database::process_savings_withdraws()
 {
-  const auto& idx = get_index< savings_withdraw_index >().indices().get< by_complete_from_rid >();
+  const auto& idx = get_index< savings_withdraw_index, by_complete_from_rid >();
   auto itr = idx.begin();
 
+  auto now = head_block_time();
   int count = 0;
   if( _benchmark_dumper.is_enabled() )
     _benchmark_dumper.begin();
-  while( itr != idx.end() )
+  while( itr != idx.end() && itr->get_completion_time() <= now )
   {
-    if( itr->get_completion_time() > head_block_time() )
-      break;
-    adjust_balance( get_account( itr->get_to() ), itr->get_withdraw_amount() );
+    temp_balance withdrawn( itr->get_withdraw_amount().symbol );
+    auto vop = fill_transfer_from_savings_operation( itr->get_from(), itr->get_to(),
+      itr->get_withdraw_amount(), itr->get_request_id(), to_string( itr->get_memo() ) );
+
+    modify( *itr, [&]( savings_withdraw_object& swo )
+    {
+      swo.access_amount().transfer_to( withdrawn );
+    } );
+
+    adjust_balance( get_account( itr->get_to() ), withdrawn.as_asset() );
+    withdrawn.set_from_asset( asset( 0, withdrawn.as_asset().symbol ) );
 
     modify( get_account( itr->get_from() ), [&]( account_object& a )
     {
       a.savings_withdraw_requests--;
     } );
 
-    push_virtual_operation( *this, fill_transfer_from_savings_operation( itr->get_from(), itr->get_to(), itr->get_withdraw_amount(), itr->get_request_id(), to_string( itr->get_memo() ) ) );
+    push_virtual_operation( *this, vop );
 
     remove( *itr );
     itr = idx.begin();
@@ -184,7 +193,14 @@ void database::remove_pending_savings_withdraws( const account_object& account, 
     auto& withdrawal = *withdraw_from_itr;
     ++withdraw_from_itr;
 
-    adjust_balance( account, withdrawal.get_withdraw_amount() );
+    temp_balance drained( withdrawal.get_withdraw_amount().symbol );
+    modify( withdrawal, [&]( savings_withdraw_object& swo )
+    {
+      swo.access_amount().transfer_to( drained );
+    } );
+
+    adjust_balance( account, drained.as_asset() );
+    drained.set_from_asset( asset( 0, drained.as_asset().symbol ) );
     modify( account, []( account_object& a )
     {
       a.savings_withdraw_requests--;
@@ -200,7 +216,14 @@ void database::remove_pending_savings_withdraws( const account_object& account, 
     auto& withdrawal = *withdraw_to_itr;
     ++withdraw_to_itr;
 
-    adjust_balance( account, withdrawal.get_withdraw_amount() );
+    temp_balance drained( withdrawal.get_withdraw_amount().symbol );
+    modify( withdrawal, [&]( savings_withdraw_object& swo )
+    {
+      swo.access_amount().transfer_to( drained );
+    } );
+
+    adjust_balance( account, drained.as_asset() );
+    drained.set_from_asset( asset( 0, drained.as_asset().symbol ) );
     modify( get_account( withdrawal.get_from() ), []( account_object& a )
     {
       a.savings_withdraw_requests--;

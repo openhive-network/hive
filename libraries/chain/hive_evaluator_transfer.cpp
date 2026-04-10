@@ -607,15 +607,19 @@ void transfer_to_savings_evaluator::do_apply( const transfer_to_savings_operatio
 void transfer_from_savings_evaluator::do_apply( const transfer_from_savings_operation& op )
 {
   const auto& from = _db.get_account( op.from );
-  _db.get_account(op.to); // Verify to account exists
+  const auto& to   = _db.get_account( op.to );
 
   HIVE_CHAIN_LIMIT_ASSERT( from.savings_withdraw_requests < HIVE_SAVINGS_WITHDRAW_REQUEST_LIMIT, from.savings_withdraw_requests, "Account has reached limit for pending withdraw requests." );
 
   HIVE_CHAIN_TREASURY_ASSERT( op.amount.symbol == HBD_SYMBOL || !_db.is_treasury( op.to ), op.to, "Can only transfer HBD to ${s}", ("s", op.to ) );
 
   HIVE_CHAIN_BALANCE_ASSERT( _db.get_savings_balance( from, op.amount.symbol ) >= op.amount, op.from, "Insufficient savings balance for '${subject}'." );
+  temp_balance withdraw_amount( op.amount.symbol );
   _db.adjust_savings_balance( from, -op.amount );
-  _db.create<savings_withdraw_object>( op.from, op.to, op.amount, op.memo, _db.head_block_time() + HIVE_SAVINGS_WITHDRAW_TIME, op.request_id );
+  withdraw_amount.set_from_asset( op.amount );
+
+  _db.create<savings_withdraw_object>( from, to, std::move( withdraw_amount ),
+    op.memo, _db.head_block_time() + HIVE_SAVINGS_WITHDRAW_TIME, op.request_id );
 
   _db.modify( from, [&]( account_object& a )
   {
@@ -626,7 +630,15 @@ void transfer_from_savings_evaluator::do_apply( const transfer_from_savings_oper
 void cancel_transfer_from_savings_evaluator::do_apply( const cancel_transfer_from_savings_operation& op )
 {
   const auto& swo = _db.get_savings_withdraw( op.from, op.request_id );
-  _db.adjust_savings_balance( _db.get_account( swo.get_from() ), swo.get_withdraw_amount() );
+
+  temp_balance returned( swo.get_withdraw_amount().symbol );
+  _db.modify( swo, [&]( savings_withdraw_object& s )
+  {
+    s.access_amount().transfer_to( returned );
+  } );
+
+  _db.adjust_savings_balance( _db.get_account( swo.get_from() ), returned.as_asset() );
+  returned.set_from_asset( asset( 0, returned.as_asset().symbol ) );
   _db.remove( swo );
 
   const auto& from = _db.get_account( op.from );

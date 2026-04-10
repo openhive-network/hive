@@ -4,6 +4,7 @@
 #include <hive/chain/detail/state/escrow_object.hpp>
 #include <hive/chain/detail/state/convert_request_object.hpp>
 #include <hive/chain/detail/state/collateralized_convert_request_object.hpp>
+#include <hive/chain/detail/state/savings_withdraw_object.hpp>
 
 #include <fc/uint128.hpp>
 
@@ -59,6 +60,14 @@ void convert_request_object::init( const account_object& _owner )
 void collateralized_convert_request_object::init( const account_object& _owner )
 {
   owner = _owner.get_id();
+}
+
+// savings_withdraw_object init helper
+void savings_withdraw_object::init( const account_object& _from, const account_object& _to, const string& _memo )
+{
+  from = _from.get_name();
+  to = _to.get_name();
+  from_string( memo, _memo );
 }
 
 } } // hive::chain

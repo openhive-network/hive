@@ -1502,7 +1502,7 @@ BOOST_AUTO_TEST_CASE( chain_object_checksum )
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::convert_request_object>(dtds), "e11f8b8a97c6fa8331d80b239191a6f63f090d0e" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::collateralized_convert_request_object>(dtds), "f744ead843c2ff616d121097d4c56581d0a91ca4" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::escrow_object>(dtds), "b05c6649d3a19c9b1fab77dddcca61cd387b1c17" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::savings_withdraw_object>(dtds), "7fd02375eac9da2cf26146b2ab7ae9d59bb6d69c" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::savings_withdraw_object>(dtds), "91c5c80def34fd1884a740a509b09285637ac3cf" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::liquidity_reward_balance_object>(dtds), "3690a7914aba1105d390489d52328478445a0d29" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::feed_history_object>(dtds), "23f964e467b527855279ab546dd6281ff07fee68" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::limit_order_object>(dtds), "1ca65753791532f28349243bae00f88754ed0a5a" );
