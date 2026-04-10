@@ -1499,8 +1499,8 @@ BOOST_AUTO_TEST_CASE( chain_object_checksum )
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::proposal_object>(dtds), "271d1069441c109c3232723ffc2df5529f6ca8ff" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::proposal_vote_object>(dtds), "051b5701bcff97241e81b5c5b2b0218fcac6430d" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::hardfork_property_object>(dtds), "4ecdccee8197fee89331b329ee3f79f143299fea" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::convert_request_object>(dtds), "c6900c99e4d305d0e6a387b9078a06b182e1f9fb" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::collateralized_convert_request_object>(dtds), "dd45554db965f67de4942d51bca7701102daf896" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::convert_request_object>(dtds), "e11f8b8a97c6fa8331d80b239191a6f63f090d0e" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::collateralized_convert_request_object>(dtds), "f744ead843c2ff616d121097d4c56581d0a91ca4" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::escrow_object>(dtds), "b05c6649d3a19c9b1fab77dddcca61cd387b1c17" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::savings_withdraw_object>(dtds), "7fd02375eac9da2cf26146b2ab7ae9d59bb6d69c" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::liquidity_reward_balance_object>(dtds), "3690a7914aba1105d390489d52328478445a0d29" );

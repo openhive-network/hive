@@ -471,7 +471,9 @@ void convert_evaluator::do_apply( const convert_operation& o )
 {
   const auto& owner = _db.get_account( o.owner );
   HBD_asset o_amount = o.get_amount();
+  temp_HBD_balance convert_amount;
   _db.adjust_balance( owner, -o_amount );
+  convert_amount.set_from_asset( o_amount );
 
   const auto& fhistory = _db.get_feed_history();
   validate_price_feed_available( fhistory, "convert HBD" );
@@ -480,7 +482,8 @@ void convert_evaluator::do_apply( const convert_operation& o )
   if( _db.has_hardfork( HIVE_HARDFORK_0_16__551) )
     hive_conversion_delay = HIVE_CONVERSION_DELAY;
 
-  _db.create<convert_request_object>( owner, o_amount, _db.head_block_time() + hive_conversion_delay, o.requestid );
+  _db.create<convert_request_object>( owner, std::move( convert_amount ),
+    _db.head_block_time() + hive_conversion_delay, o.requestid );
 }
 
 void collateralized_convert_evaluator::do_apply( const collateralized_convert_operation& o )
@@ -489,7 +492,9 @@ void collateralized_convert_evaluator::do_apply( const collateralized_convert_op
 
   const auto& owner = _db.get_account( o.owner );
   HIVE_asset o_amount = o.get_amount();
+  temp_HIVE_balance collateral;
   _db.adjust_balance( owner, -o_amount );
+  collateral.set_from_asset( o_amount );
 
   const auto& fhistory = _db.get_feed_history();
   validate_price_feed_available( fhistory, "convert HIVE" );
@@ -509,23 +514,24 @@ void collateralized_convert_evaluator::do_apply( const collateralized_convert_op
   HBD_asset converted_amount = multiply_with_fee< HIVE_ASSET_NUM_HIVE >( for_immediate_conversion,
     fhistory.current_min_history, HIVE_COLLATERALIZED_CONVERSION_FEE );
   HIVE_CHAIN_ASSET_ASSERT( converted_amount.amount > 0, converted_amount, "Amount of collateral too low - conversion gives no HBD" );
-  _db.adjust_balance( owner, converted_amount );
 
+  temp_HBD_balance converted;
   _db.modify( dgpo, [&]( dynamic_global_property_object& p )
   {
     //HIVE supply (and virtual supply in part related to HIVE) will be corrected after actual conversion
-    p.access_current_hbd_supply() += converted_amount;
-    p.access_virtual_supply() += converted_amount * fhistory.current_median_history;
+    converted = p.issue_HBD( converted_amount, fhistory.current_median_history );
   } );
   //note that we created new HBD out of thin air and we will burn the related HIVE when actual conversion takes
   //place; there is alternative approach - we could burn all collateral now and print back excess when we are
   //to return it to the user; the difference slightly changes calculations below, that is, currently we might
   //allow slightly more HBD to be printed
+  _db.adjust_balance( owner, converted );
+  converted.set_from_asset( HBD_asset( 0 ) );
 
   uint16_t percent_hbd = _db.calculate_HBD_percent();
   HIVE_CHAIN_LIMIT_ASSERT( percent_hbd <= dgpo.get_hbd_stop_percent(), percent_hbd, "Creation of new ${hbd} violates global limit.", ( "hbd", converted_amount ) );
 
-  _db.create<collateralized_convert_request_object>( owner, o_amount, converted_amount,
+  _db.create<collateralized_convert_request_object>( owner, std::move( collateral ), converted_amount,
     _db.head_block_time() + HIVE_COLLATERALIZED_CONVERSION_DELAY, o.requestid );
 
   push_virtual_operation( _db, collateralized_convert_immediate_conversion_operation( o.owner, o.requestid, converted_amount ) );
