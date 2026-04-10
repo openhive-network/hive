@@ -633,13 +633,13 @@ reference = "gitlab-hive"
 
 [[package]]
 name = "hiveio-test-tools"
-version = "2.0.2.dev20260409102824"
+version = "2.0.2.dev20260410063132"
 description = "Tools for testing hive software"
 optional = false
 python-versions = ">=3.12,<4"
 groups = ["main"]
 files = [
-    {file = "hiveio_test_tools-2.0.2.dev20260409102824-py3-none-any.whl", hash = "sha256:e302356cf5e36c06167fe04d0e3fe352e3030ec2118fb9f7869a8628e318c45c"},
+    {file = "hiveio_test_tools-2.0.2.dev20260410063132-py3-none-any.whl", hash = "sha256:4f2bad21fc16f9bb1bf28e2fa41ea26c381523bf782eec1676f49d133fdd8297"},
 ]
 
 [package.dependencies]
@@ -647,7 +647,7 @@ abstractcp = ">=1.0.0,<2.0.0"
 hiveio-api = ">=1.28.8rc12.dev0"
 hiveio-beekeepy = ">=1.28.6-post.0,<2.0.0"
 hiveio-schemas = ">=1.28.2-post.0,<2.0.0"
-hiveio-wax = "2.0.2.dev20260409102824"
+hiveio-wax = "2.0.2.dev20260410063132"
 loguru = ">=0.7.2,<0.8.0"
 msgspec = ">=0.20.0,<0.21.0"
 python-dateutil = ">=2.8.2,<3.0.0"
@@ -659,14 +659,14 @@ reference = "gitlab-hive"
 
 [[package]]
 name = "hiveio-wax"
-version = "2.0.2.dev20260409102824"
+version = "2.0.2.dev20260410063132"
 description = ""
 optional = false
 python-versions = ">=3.12,<4"
 groups = ["main"]
 files = [
-    {file = "hiveio_wax-2.0.2.dev20260409102824-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:0be25f30844fd7b66137186bc9b7c7d16d63dcba77098464766c1ce5dfeb7802"},
-    {file = "hiveio_wax-2.0.2.dev20260409102824-cp314-cp314-manylinux_2_28_x86_64.whl", hash = "sha256:196c4f8ffbd407ecb9e442018b42e42dc5050bed5d2d2882b4a31b4c6b9f585a"},
+    {file = "hiveio_wax-2.0.2.dev20260410063132-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:4cf37556ac6dc9cadc2e1d29a4c29c7e4517a31092954c239db9951bbaf3fb4f"},
+    {file = "hiveio_wax-2.0.2.dev20260410063132-cp314-cp314-manylinux_2_28_x86_64.whl", hash = "sha256:e0bdb67ce436b900891a1020e7540b5308239ff23a87b7f068965807add546b0"},
 ]
 
 [package.dependencies]
@@ -2268,4 +2268,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.14,<4"
-content-hash = "7899e8479fc215d75cbeec9c7f11edfa84857a87cd222e3bcb244a64df70b909"
+content-hash = "87e33678da4f0caf37b403cfe8294f7edd89be08d6da3dc59894dea195edf610"
