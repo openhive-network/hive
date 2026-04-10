@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 import test_tools as tt
-from beekeepy.exceptions import ErrorInResponseError
+from wax._private.api.overseer import WaxAssertionInResponseError
 from wax.exceptions import WaxUnhandledAssertionError
 
 from wax.helpy import Hf26Asset as Asset
@@ -19,6 +19,6 @@ def test_if_raise_when_parameters_are_bad(wallet: tt.Wallet) -> None:
 
 
 def test_if_raise_when_operation_is_invalid(wallet: tt.Wallet) -> None:
-    with pytest.raises(ErrorInResponseError):
+    with pytest.raises(WaxAssertionInResponseError):
         # Operation is invalid because account "alice" doesn't exists
         wallet.api.transfer("initminer", "alice", Asset.Test(1), "memo")

@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pytest
-from beekeepy.exceptions import ErrorInResponseError
 
 from hive_local_tools import run_for
 from hive_local_tools.constants import TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS
@@ -13,6 +12,7 @@ from schemas.operations.virtual import DeclinedVotingRightsOperation
 
 if TYPE_CHECKING:
     import test_tools as tt
+from wax._private.api.overseer import WaxAssertionInResponseError
 
 
 @run_for("testnet")
@@ -54,10 +54,10 @@ def test_vote_for_proposal_from_account_that_has_declined_its_voting_rights(
     assert node.api.database.find_accounts(accounts=[voter.name]).accounts[0].can_vote is False
     assert len(node.api.database.find_decline_voting_rights_requests(accounts=[voter.name]).requests) == 0
     assert len(get_virtual_operations(node, DeclinedVotingRightsOperation)) == 1
-    with pytest.raises(ErrorInResponseError) as error:
+    with pytest.raises(WaxAssertionInResponseError) as error:
         wallet.api.update_proposal_votes(voter.name, [0], True)
-    assert (
-        "Voter declined voting rights, therefore casting votes is forbidden." in str(error.value)
+    assert "Voter declined voting rights, therefore casting votes is forbidden." in str(
+        error.value
     ), "Error message other than expected."
 
 

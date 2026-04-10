@@ -3,9 +3,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Callable
 
 import pytest
-from beekeepy.exceptions import ErrorInResponseError
 
 import test_tools as tt
+from wax._private.api.overseer import WaxAssertionInResponseError
 from hive_local_tools import run_for
 
 if TYPE_CHECKING:
@@ -45,7 +45,7 @@ def test_broadcast_transaction_with_rejected_transaction(
     wallet.api.create_account("initminer", ACCOUNT, "{}")
     transaction = wallet.api.transfer(ACCOUNT, "initminer", tt.Asset.Test(100), "{}", broadcast=False)
 
-    with pytest.raises(ErrorInResponseError) as exception:
+    with pytest.raises(WaxAssertionInResponseError) as exception:
         broadcast(node, transaction)
 
     assert f"Account {ACCOUNT} does not have sufficient funds for balance adjustment." in str(exception.value)
@@ -66,7 +66,7 @@ def test_broadcast_transaction_synchronous_with_rejected_transaction(
     wallet.api.create_account("initminer", ACCOUNT, "{}")
     transaction = wallet.api.transfer(ACCOUNT, "initminer", tt.Asset.Test(100), "{}", broadcast=False)
 
-    with pytest.raises(ErrorInResponseError) as exception:
+    with pytest.raises(WaxAssertionInResponseError) as exception:
         getattr(node.api, api).broadcast_transaction_synchronous(transaction)
 
     assert f"Account {ACCOUNT} does not have sufficient funds for balance adjustment." in str(exception.value)

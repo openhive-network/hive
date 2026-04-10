@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import pytest
-from beekeepy.exceptions import ErrorInResponseError
 
 import test_tools as tt
+from wax._private.api.overseer import WaxAssertionInResponseError
 from hive_local_tools import run_for
 from hive_local_tools.functional.python.operation import convert_to_asset
 
@@ -11,13 +11,13 @@ from hive_local_tools.functional.python.operation import convert_to_asset
 @pytest.mark.skip(reason="https://gitlab.syncad.com/hive/hive/-/issues/449")
 @run_for("testnet")
 def test_get_trade_history_with_start_date_after_end(node: tt.InitNode) -> None:
-    with pytest.raises(ErrorInResponseError):
+    with pytest.raises(WaxAssertionInResponseError):
         node.api.market_history.get_trade_history(start=tt.Time.from_now(weeks=10), end=tt.Time.from_now(weeks=-1))
 
 
 @run_for("testnet", enable_plugins=["market_history_api"])
 def test_exceed_time_range(node: tt.InitNode) -> None:
-    with pytest.raises(ErrorInResponseError):
+    with pytest.raises(WaxAssertionInResponseError):
         node.api.market_history.get_trade_history(start=tt.Time.from_now(years=-100), end=tt.Time.from_now(years=100))
 
 

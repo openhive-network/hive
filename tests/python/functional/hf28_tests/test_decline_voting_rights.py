@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pytest
-from beekeepy.exceptions import ErrorInResponseError
 
 from hive_local_tools import run_for
 from hive_local_tools.constants import OWNER_AUTH_RECOVERY_PERIOD, TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS
@@ -12,6 +11,7 @@ from schemas.operations.virtual import DeclinedVotingRightsOperation
 
 if TYPE_CHECKING:
     import test_tools as tt
+from wax._private.api.overseer import WaxAssertionInResponseError
 
 
 @run_for("testnet")
@@ -47,11 +47,10 @@ def test_decline_voting_rights_more_than_once(
     assert node.api.database.find_accounts(accounts=[voter.name]).accounts[0].can_vote is False
     assert len(get_virtual_operations(node, DeclinedVotingRightsOperation)) == 1
 
-    with pytest.raises(ErrorInResponseError) as error:
+    with pytest.raises(WaxAssertionInResponseError) as error:
         wallet.api.decline_voting_rights(voter.name, True)
-    assert (
-        "Voter declined voting rights already, therefore trying to decline voting rights again is forbidden."
-        in str(error.value)
+    assert "Voter declined voting rights already, therefore trying to decline voting rights again is forbidden." in str(
+        error.value
     ), "Error message other than expected."
 
 
@@ -65,11 +64,11 @@ def test_create_two_decline_voting_rights_requests(
     voter.rc_manabar.assert_rc_current_mana_is_reduced(transaction)
     assert len(node.api.database.find_decline_voting_rights_requests(accounts=[voter.name]).requests) == 1
 
-    with pytest.raises(ErrorInResponseError) as exception:
+    with pytest.raises(WaxAssertionInResponseError) as exception:
         wallet.api.decline_voting_rights(voter.name, True)
 
-    assert (
-        "Cannot create new request because one already exists." in str(exception.value)
+    assert "Cannot create new request because one already exists." in str(
+        exception.value
     ), "Error message other than expected."
 
     node.wait_number_of_blocks(OWNER_AUTH_RECOVERY_PERIOD)
@@ -85,11 +84,11 @@ def test_remove_non_existent_decline_voting_rights_request(
 ) -> None:
     _, wallet = prepare_environment
 
-    with pytest.raises(ErrorInResponseError) as exception:
+    with pytest.raises(WaxAssertionInResponseError) as exception:
         wallet.api.decline_voting_rights(voter.name, False)
 
-    assert (
-        "Cannot cancel the request because it does not exist." in str(exception.value)
+    assert "Cannot cancel the request because it does not exist." in str(
+        exception.value
     ), "Error message other than expected."
 
 

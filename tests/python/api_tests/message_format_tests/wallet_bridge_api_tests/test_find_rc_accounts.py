@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import pytest
-from beekeepy.exceptions import ErrorInResponseError
 
 import test_tools as tt
+from wax._private.api.overseer import WaxAssertionInResponseError
 from hive_local_tools import run_for
 from hive_local_tools.api.message_format import as_string
 from hive_local_tools.api.message_format.wallet_bridge_api.constants import ACCOUNTS, MAINNET_ACCOUNT
@@ -84,5 +84,5 @@ def test_find_rc_accounts_with_correct_values_and_non_existing_accounts(
 def test_find_rc_accounts_with_incorrect_type_of_argument(
     node: tt.InitNode | tt.RemoteNode, rc_accounts: bool | int | str
 ) -> None:
-    with pytest.raises(ErrorInResponseError):
+    with pytest.raises(WaxAssertionInResponseError):
         node.api.wallet_bridge.find_rc_accounts(rc_accounts)

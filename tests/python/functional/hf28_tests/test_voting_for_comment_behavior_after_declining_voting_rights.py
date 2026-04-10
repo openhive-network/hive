@@ -3,9 +3,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pytest
-from beekeepy.exceptions import ErrorInResponseError
 
 import test_tools as tt
+from wax._private.api.overseer import WaxAssertionInResponseError
 from hive_local_tools import run_for
 from hive_local_tools.constants import TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS
 from hive_local_tools.functional.python.hf28 import post_comment
@@ -40,7 +40,7 @@ def test_vote_for_comment_from_account_that_has_declined_its_voting_rights(
     assert len(node.api.database.find_decline_voting_rights_requests(accounts=["alice"]).requests) == 0
     assert len(get_virtual_operations(node, DeclinedVotingRightsOperation)) == 1
 
-    with pytest.raises(ErrorInResponseError) as exception:
+    with pytest.raises(WaxAssertionInResponseError) as exception:
         wallet.api.vote("alice", "creator-0", "comment-of-creator-0", 100)
 
     assert "Voter has declined their voting rights." in str(exception.value), "Error message other than expected"
@@ -144,7 +144,7 @@ def test_edit_comment_vote_without_voting_rights_before_comment_reward_pay_out(n
     wallet.api.decline_voting_rights("alice", True)
     node.wait_number_of_blocks(TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS)
 
-    with pytest.raises(ErrorInResponseError):
+    with pytest.raises(WaxAssertionInResponseError):
         wallet.api.vote("alice", "creator-0", "comment-of-creator-0", 50)
 
 

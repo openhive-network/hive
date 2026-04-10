@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import pytest
-from beekeepy.exceptions import ErrorInResponseError
 
 import test_tools as tt
+from wax._private.api.overseer import WaxAssertionInResponseError
 from hive_local_tools import run_for
 from hive_local_tools.api.message_format import as_string
 from hive_local_tools.api.message_format.wallet_bridge_api import create_accounts_with_vests_and_tbd, prepare_proposals
@@ -52,7 +52,7 @@ def test_find_proposals_with_incorrect_values(
         wallet = tt.Wallet(attach_to=node)
         create_accounts_with_vests_and_tbd(wallet, ACCOUNTS)
         prepare_proposals(wallet, ACCOUNTS)
-    with pytest.raises(ErrorInResponseError):
+    with pytest.raises(WaxAssertionInResponseError):
         node.api.wallet_bridge.find_proposals(proposal_id)
 
 
@@ -67,5 +67,5 @@ def test_find_proposals_with_incorrect_values(
 def test_find_proposals_with_incorrect_type_of_argument(
     node: tt.InitNode | tt.RemoteNode, proposal_id: list | str
 ) -> None:
-    with pytest.raises(ErrorInResponseError):
+    with pytest.raises(WaxAssertionInResponseError):
         node.api.wallet_bridge.find_proposals(proposal_id)

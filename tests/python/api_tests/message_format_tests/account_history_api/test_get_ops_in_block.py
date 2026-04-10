@@ -3,12 +3,12 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pytest
-from beekeepy.exceptions import ErrorInResponseError
 
 from hive_local_tools import run_for
 
 if TYPE_CHECKING:
     import test_tools as tt
+from wax._private.api.overseer import WaxAssertionInResponseError
 
 
 @pytest.mark.parametrize(
@@ -79,7 +79,7 @@ def test_get_ops_in_block_with_incorrect_type_of_arguments(
     virtual_operation: bool | dict | list | str,
     include_reversible: bool | dict | list | str,
 ) -> None:
-    with pytest.raises(ErrorInResponseError):
+    with pytest.raises(WaxAssertionInResponseError):
         node.api.account_history.get_ops_in_block(
             block_num=block_num,
             only_virtual=virtual_operation,

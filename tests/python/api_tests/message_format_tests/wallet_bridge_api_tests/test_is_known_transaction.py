@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import pytest
-from beekeepy.exceptions import ErrorInResponseError
 
 import test_tools as tt
+from wax._private.api.overseer import WaxAssertionInResponseError
 from hive_local_tools import run_for
 from hive_local_tools.api.message_format.wallet_bridge_api import get_transaction_id_from_head_block
 
@@ -53,5 +53,5 @@ def test_is_know_transaction_with_correct_value_and_non_existing_transaction(
 def test_is_know_transaction_with_incorrect_type_of_argument(
     node: tt.InitNode | tt.RemoteNode, transaction_id: bool | list | str
 ) -> None:
-    with pytest.raises(ErrorInResponseError):
+    with pytest.raises(WaxAssertionInResponseError):
         node.api.wallet_bridge.is_known_transaction(transaction_id)

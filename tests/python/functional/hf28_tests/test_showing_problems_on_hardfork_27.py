@@ -2,14 +2,15 @@
 This file contains tests showing abnormalities on hardfork 27, and behavior after hardfork 28.
 Related issue: https://gitlab.syncad.com/hive/hive/-/issues/441
 """
+
 from __future__ import annotations
 
 import time
 
 import pytest
-from beekeepy.exceptions import ErrorInResponseError
 
 import test_tools as tt
+from wax._private.api.overseer import WaxAssertionInResponseError
 from hive_local_tools import run_for
 from hive_local_tools.constants import TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS
 from hive_local_tools.functional.python.hf28 import create_proposal
@@ -18,7 +19,7 @@ from hive_local_tools.functional.python.hf28.constants import VOTER_ACCOUNT
 
 @run_for("testnet")
 def test_decline_voting_rights_more_than_once_on_hf_27(
-    prepare_environment_on_hf_27: tuple[tt.WitnessNode, tt.Wallet]
+    prepare_environment_on_hf_27: tuple[tt.WitnessNode, tt.Wallet],
 ) -> None:
     node, wallet = prepare_environment_on_hf_27
 
@@ -30,20 +31,20 @@ def test_decline_voting_rights_more_than_once_on_hf_27(
         "Voter declined voting rights already, therefore trying to decline voting rights again is forbidden."
     )
 
-    with pytest.raises(ErrorInResponseError) as exception_from_hf_27:
+    with pytest.raises(WaxAssertionInResponseError) as exception_from_hf_27:
         wallet.api.decline_voting_rights(VOTER_ACCOUNT, True)
     assert error_message in str(exception_from_hf_27.value)
 
     wait_for_hardfork_28_application(node)
 
-    with pytest.raises(ErrorInResponseError) as exception_from_hf_28:
+    with pytest.raises(WaxAssertionInResponseError) as exception_from_hf_28:
         wallet.api.decline_voting_rights(VOTER_ACCOUNT, True)
     assert error_message in str(exception_from_hf_28.value)
 
 
 @run_for("testnet")
 def test_if_proposal_votes_were_removed_after_declining_voting_rights_on_hf_27(
-    prepare_environment_on_hf_27: tuple[tt.WitnessNode, tt.Wallet]
+    prepare_environment_on_hf_27: tuple[tt.WitnessNode, tt.Wallet],
 ) -> None:
     node, wallet = prepare_environment_on_hf_27
     create_proposal(wallet)
@@ -75,7 +76,7 @@ def test_if_proposal_votes_were_removed_after_declining_voting_rights_on_hf_27(
 
 @run_for("testnet")
 def test_vote_for_proposal_from_account_that_has_declined_its_voting_rights_on_hf_27(
-    prepare_environment_on_hf_27: tuple[tt.WitnessNode, tt.Wallet]
+    prepare_environment_on_hf_27: tuple[tt.WitnessNode, tt.Wallet],
 ) -> None:
     node, wallet = prepare_environment_on_hf_27
     create_proposal(wallet)
@@ -85,20 +86,20 @@ def test_vote_for_proposal_from_account_that_has_declined_its_voting_rights_on_h
     node.wait_number_of_blocks(TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS)
 
     error_message = "Voter declined voting rights, therefore casting votes is forbidden."
-    with pytest.raises(ErrorInResponseError) as exception_from_hf_27:
+    with pytest.raises(WaxAssertionInResponseError) as exception_from_hf_27:
         wallet.api.update_proposal_votes(VOTER_ACCOUNT, [0], True)
     assert error_message in str(exception_from_hf_27.value)
 
     wait_for_hardfork_28_application(node)
 
-    with pytest.raises(ErrorInResponseError) as exception_from_hf_28:
+    with pytest.raises(WaxAssertionInResponseError) as exception_from_hf_28:
         wallet.api.update_proposal_votes(VOTER_ACCOUNT, [0], True)
     assert error_message in str(exception_from_hf_28.value)
 
 
 @run_for("testnet")
 def test_vote_for_proposal_when_decline_voting_rights_request_is_being_executed_on_hf_27(
-    prepare_environment_on_hf_27: tuple[tt.WitnessNode, tt.Wallet]
+    prepare_environment_on_hf_27: tuple[tt.WitnessNode, tt.Wallet],
 ) -> None:
     node, wallet = prepare_environment_on_hf_27
     create_proposal(wallet)

@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import pytest
-from beekeepy.exceptions import ErrorInResponseError
 
 import test_tools as tt
+from wax._private.api.overseer import WaxAssertionInResponseError
 from hive_local_tools.constants import OWNER_AUTH_RECOVERY_PERIOD
 from hive_local_tools.functional.python import basic_authority
 from hive_local_tools.functional.python.recovery import get_owner_key, get_recovery_agent
@@ -119,7 +119,7 @@ def test_steal_account_scenario_1(prepare_environment: tuple) -> None:
     assert len(node.api.database.find_account_recovery_requests(accounts=["alice"]).requests) == 0
     assert get_recovery_agent(node, "alice") == "alice.agent"
 
-    with pytest.raises(ErrorInResponseError) as exception:
+    with pytest.raises(WaxAssertionInResponseError) as exception:
         wallet_thief.api.request_account_recovery("thief", "alice", basic_authority(tt.Account("thief").public_key))
     assert "Cannot recover an account that does not have you as their recovery partner." in str(exception.value)
 
@@ -166,6 +166,6 @@ def test_steal_account_scenario_2(prepare_environment: tuple) -> None:
     wallet_alice.api.import_key(tt.Account("alice", secret="new_key").private_key)
     wallet_alice_agent.api.request_account_recovery("alice.agent", "alice", alice_new_authority)
 
-    with pytest.raises(ErrorInResponseError) as exception:
+    with pytest.raises(WaxAssertionInResponseError) as exception:
         wallet_alice.api.recover_account("alice", alice_original_authority, alice_new_authority)
     assert "Recent authority not found in authority history." in str(exception.value)

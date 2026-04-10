@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import pytest
-from beekeepy.exceptions import ErrorInResponseError
 
 import test_tools as tt
+from wax._private.api.overseer import WaxAssertionInResponseError
 from hive_local_tools import run_for
 from hive_local_tools.api.message_format import as_string
 
@@ -41,7 +41,7 @@ def test_get_owner_history_with_incorrect_type_of_argument(
     if should_prepare:
         wallet = tt.Wallet(attach_to=node)
         create_and_update_account(wallet, account_name="alice")
-    with pytest.raises(ErrorInResponseError):
+    with pytest.raises(WaxAssertionInResponseError):
         node.api.wallet_bridge.get_owner_history(account_name)
 
 

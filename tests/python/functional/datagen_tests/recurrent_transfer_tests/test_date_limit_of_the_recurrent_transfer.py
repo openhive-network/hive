@@ -3,9 +3,9 @@ from __future__ import annotations
 import math
 
 import pytest
-from beekeepy.exceptions import ErrorInResponseError
 
 import test_tools as tt
+from wax._private.api.overseer import WaxAssertionInResponseError
 from hive_local_tools import run_for
 from hive_local_tools.constants import MAX_RECURRENT_TRANSFER_END_DATE
 
@@ -32,7 +32,7 @@ def test_exceed_date_limit_of_recurrent_transfers(node: tt.InitNode, executions:
     wallet.create_account("receiver")
     wallet.create_account("sender", hives=tt.Asset.Test(100), vests=tt.Asset.Test(100))
 
-    with pytest.raises(ErrorInResponseError) as exception:
+    with pytest.raises(WaxAssertionInResponseError) as exception:
         wallet.api.recurrent_transfer(
             "sender",
             "receiver",

@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import pytest
-from beekeepy.exceptions import ErrorInResponseError
 
 import test_tools as tt
+from wax._private.api.overseer import WaxAssertionInResponseError
 from hive_local_tools import run_for
 
 
@@ -19,7 +19,7 @@ def test_broadcast_transaction(node: tt.InitNode) -> None:
 def test_broadcast_transaction_with_incorrect_type_of_argument(
     node: tt.InitNode, transaction_name: bool | int | list | str
 ) -> None:
-    with pytest.raises(ErrorInResponseError):
+    with pytest.raises(WaxAssertionInResponseError):
         node.api.condenser.broadcast_transaction(transaction_name)
 
 
@@ -28,5 +28,5 @@ def test_broadcast_transaction_with_additional_argument(node: tt.InitNode) -> No
     wallet = tt.OldWallet(attach_to=node)
     transaction = wallet.api.create_account("initminer", "alice", "{}", broadcast=False)
 
-    with pytest.raises(ErrorInResponseError):
+    with pytest.raises(WaxAssertionInResponseError):
         node.api.condenser.broadcast_transaction(transaction, "additional_argument")

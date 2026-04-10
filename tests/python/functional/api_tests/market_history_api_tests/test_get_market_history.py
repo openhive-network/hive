@@ -3,16 +3,16 @@ from __future__ import annotations
 import datetime
 
 import pytest
-from beekeepy.exceptions import ErrorInResponseError
 
 import test_tools as tt
+from wax._private.api.overseer import WaxAssertionInResponseError
 from hive_local_tools import run_for
 
 
 @pytest.mark.skip(reason="https://gitlab.syncad.com/hive/hive/-/issues/449")
 @run_for("testnet")
 def test_get_market_history_with_start_date_after_end(node: tt.InitNode) -> None:
-    with pytest.raises(ErrorInResponseError):
+    with pytest.raises(WaxAssertionInResponseError):
         node.api.market_history.get_market_history(
             bucket_seconds=60, start=tt.Time.from_now(weeks=10), end=tt.Time.from_now(weeks=-1)
         )
@@ -20,7 +20,7 @@ def test_get_market_history_with_start_date_after_end(node: tt.InitNode) -> None
 
 @run_for("testnet", enable_plugins=["market_history_api"])
 def test_exceed_time_range(node: tt.InitNode) -> None:
-    with pytest.raises(ErrorInResponseError):
+    with pytest.raises(WaxAssertionInResponseError):
         node.api.market_history.get_market_history(
             bucket_seconds=60, start=tt.Time.from_now(years=-100), end=tt.Time.from_now(years=100)
         )
@@ -30,7 +30,7 @@ def test_exceed_time_range(node: tt.InitNode) -> None:
 @pytest.mark.skip(reason="https://gitlab.syncad.com/hive/hive/-/issues/450")
 @run_for("testnet")
 def test_get_market_history_with_wrong_bucket_seconds_value(node: tt.InitNode | tt.RemoteNode, bucket_seconds: int):
-    with pytest.raises(ErrorInResponseError):
+    with pytest.raises(WaxAssertionInResponseError):
         node.api.market_history.get_market_history(
             bucket_seconds=bucket_seconds, start=tt.Time.from_now(weeks=-1), end=tt.Time.from_now(weeks=1)
         )

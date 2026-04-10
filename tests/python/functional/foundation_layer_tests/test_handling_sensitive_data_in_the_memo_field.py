@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import pytest
-from beekeepy.exceptions import ErrorInResponseError
 
 import test_tools as tt
+from wax._private.api.overseer import WaxAssertionInResponseError
 from hive_local_tools import run_for
 from test_tools.__private.exceptions import PrivateKeyInMemoError
 
@@ -56,7 +56,7 @@ def test_handling_sensitive_data_in_the_memo_field(
             broadcast_transaction_by_wallet(wallet, operation, memo_message)
 
     else:
-        with pytest.raises(ErrorInResponseError) as error:
+        with pytest.raises(WaxAssertionInResponseError) as error:
             broadcast_transaction_by_wallet(wallet, operation, memo_message)
 
         error_message = f"Detected private {role} key in memo field. You should change your {role} key"

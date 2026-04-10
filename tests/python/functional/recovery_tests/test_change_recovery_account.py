@@ -3,10 +3,10 @@ from __future__ import annotations
 import pytest
 
 import test_tools as tt
+from wax._private.api.overseer import WaxAssertionInResponseError
 from hive_local_tools import run_for
 from hive_local_tools.constants import OWNER_AUTH_RECOVERY_PERIOD
 from hive_local_tools.functional.python.recovery import get_recovery_agent
-from beekeepy.exceptions import ErrorInResponseError
 from schemas.errors import ValidationError
 
 
@@ -92,7 +92,7 @@ def test_change_recovery_agent_to_non_existing_account(node: tt.InitNode) -> Non
     wallet = tt.Wallet(attach_to=node)
     wallet.create_account("alice", vests=tt.Asset.Test(10))
 
-    with pytest.raises(ErrorInResponseError):
+    with pytest.raises(WaxAssertionInResponseError):
         wallet.api.change_recovery_account("alice", "non-existing-acc")
 
 
@@ -154,5 +154,5 @@ def test_change_recovery_agent_with_too_low_threshold_authority(node: tt.InitNod
 
     wallet.api.use_authority(authority, "alice")
 
-    with pytest.raises(ErrorInResponseError):
+    with pytest.raises(WaxAssertionInResponseError):
         wallet.api.change_recovery_account("alice", "bob")

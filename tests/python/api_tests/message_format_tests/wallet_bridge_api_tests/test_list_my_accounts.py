@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import pytest
-from beekeepy.exceptions import ErrorInResponseError
 
 import test_tools as tt
+from wax._private.api.overseer import WaxAssertionInResponseError
 from hive_local_tools import run_for
 from hive_local_tools.api.message_format.wallet_bridge_api.constants import ACCOUNTS
 
@@ -49,7 +49,7 @@ def test_list_my_accounts_with_incorrect_values(
         wallet = tt.Wallet(attach_to=node)
         wallet.create_accounts(len(ACCOUNTS))
 
-    with pytest.raises(ErrorInResponseError):
+    with pytest.raises(WaxAssertionInResponseError):
         node.api.wallet_bridge.list_my_accounts([account_key])
 
 
@@ -58,7 +58,7 @@ def test_list_my_accounts_with_incorrect_values(
 def test_list_my_accounts_with_incorrect_type_of_argument(
     node: tt.InitNode | tt.RemoteNode, account_key: bool | int | list | str
 ) -> None:
-    with pytest.raises(ErrorInResponseError):
+    with pytest.raises(WaxAssertionInResponseError):
         node.api.wallet_bridge.list_my_accounts([account_key])
 
 
@@ -78,5 +78,5 @@ def test_list_my_accounts_with_additional_argument(node: tt.InitNode | tt.Remote
 
 @run_for("testnet", "mainnet_5m", "live_mainnet")
 def test_list_my_accounts_with_missing_argument(node: tt.InitNode | tt.RemoteNode) -> None:
-    with pytest.raises(ErrorInResponseError):
+    with pytest.raises(WaxAssertionInResponseError):
         node.api.wallet_bridge.list_my_accounts()

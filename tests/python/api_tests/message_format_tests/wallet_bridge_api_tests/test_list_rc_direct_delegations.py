@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import pytest
-from beekeepy.exceptions import ErrorInResponseError
 
 import test_tools as tt
+from wax._private.api.overseer import WaxAssertionInResponseError
 from hive_local_tools import run_for
 from hive_local_tools.api.message_format import as_string
 from hive_local_tools.api.message_format.wallet_bridge_api.constants import ACCOUNTS
@@ -68,7 +68,7 @@ def test_list_rc_direct_delegations_with_incorrect_value_in_testnet(
     wallet = tt.Wallet(attach_to=node)
     create_accounts_and_delegate_rc_from_account0_to_account1(wallet, accounts=ACCOUNTS[0:2])
 
-    with pytest.raises(ErrorInResponseError):
+    with pytest.raises(WaxAssertionInResponseError):
         node.api.wallet_bridge.list_rc_direct_delegations([from_, to], limit)
 
 
@@ -90,7 +90,7 @@ def test_list_rc_direct_delegations_with_incorrect_value_in_testnet(
 def test_list_rc_direct_delegations_with_incorrect_value_in_mainnet(
     node: tt.RemoteNode, from_: str, to: str, limit: int
 ) -> None:
-    with pytest.raises(ErrorInResponseError):
+    with pytest.raises(WaxAssertionInResponseError):
         node.api.wallet_bridge.list_rc_direct_delegations([from_, to], limit)
 
 
@@ -121,7 +121,7 @@ def test_list_rc_direct_delegations_with_incorrect_type_of_arguments_in_testnet(
     wallet = tt.Wallet(attach_to=node)
     create_accounts_and_delegate_rc_from_account0_to_account1(wallet, accounts=ACCOUNTS)
 
-    with pytest.raises(ErrorInResponseError):
+    with pytest.raises(WaxAssertionInResponseError):
         node.api.wallet_bridge.list_rc_direct_delegations([from_, to], limit)
 
 
@@ -147,7 +147,7 @@ def test_list_rc_direct_delegations_with_incorrect_type_of_arguments_in_testnet(
 def test_list_rc_direct_delegations_with_incorrect_type_of_arguments_in_mainnet(
     node: tt.RemoteNode, from_: int | list | str, to: int | list | str, limit: int | list | str
 ) -> None:
-    with pytest.raises(ErrorInResponseError):
+    with pytest.raises(WaxAssertionInResponseError):
         node.api.wallet_bridge.list_rc_direct_delegations([from_, to], limit)
 
 

@@ -3,10 +3,10 @@ from __future__ import annotations
 import json
 
 import pytest
-from beekeepy.exceptions import ErrorInResponseError
 from schemas.convert import json_encode
 
 import test_tools as tt
+from wax._private.api.overseer import WaxAssertionInResponseError
 from hive_local_tools import run_for
 
 
@@ -67,5 +67,5 @@ def test_get_transaction_in_reversible_block(node: tt.InitNode, include_reversib
 )
 @run_for("testnet", enable_plugins=["account_history_api"])
 def test_wrong_transaction_id(node: tt.InitNode, incorrect_id: str, include_reversible: bool) -> None:
-    with pytest.raises(ErrorInResponseError):
+    with pytest.raises(WaxAssertionInResponseError):
         node.api.account_history.get_transaction(id=incorrect_id, include_reversible=include_reversible)

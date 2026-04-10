@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import pytest
-from beekeepy.exceptions import ErrorInResponseError
 
 import test_tools as tt
+from wax._private.api.overseer import WaxAssertionInResponseError
 from hive_local_tools import run_for
 from hive_local_tools.constants import TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS
 from hive_local_tools.functional.python.operation import Account, get_virtual_operations
@@ -60,11 +60,11 @@ def test_set_proxy_after_waiving_voting_rights(
     assert len(node.api.database.find_decline_voting_rights_requests(accounts=[voter.name]).requests) == 0
     assert len(get_virtual_operations(node, DeclinedVotingRightsOperation)) == 1
 
-    with pytest.raises(ErrorInResponseError) as exception:
+    with pytest.raises(WaxAssertionInResponseError) as exception:
         wallet.api.set_voting_proxy(voter.name, proxy.name)
 
-    assert (
-        "Account has declined the ability to vote and cannot proxy votes." in str(exception.value)
+    assert "Account has declined the ability to vote and cannot proxy votes." in str(
+        exception.value
     ), "Error message other than expected."
 
 

@@ -3,7 +3,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pytest
-from beekeepy.exceptions import ApiNotFoundError, ErrorInResponseError
+from beekeepy.exceptions import ApiNotFoundError
+from wax._private.api.overseer import WaxAssertionInResponseError
 
 if TYPE_CHECKING:
     import test_tools as tt
@@ -44,7 +45,7 @@ def test_no_api_is_missing(node: tt.InitNode, wallet_bridge_api_command: str) ->
 )
 @pytest.mark.enabled_plugins("witness", "wallet_bridge_api")
 def test_reporting_exception_when_database_api_is_missing(node: tt.InitNode, wallet_bridge_api_command: str) -> None:
-    with pytest.raises(ErrorInResponseError) as exception:
+    with pytest.raises(WaxAssertionInResponseError) as exception:
         getattr(node.api.wallet_bridge, wallet_bridge_api_command)()
 
     assert "Assert Exception:_database_api: database_api_plugin not enabled." not in str(exception.value)
@@ -59,7 +60,7 @@ def test_reporting_exception_when_database_api_is_missing(node: tt.InitNode, wal
 )
 @pytest.mark.enabled_plugins("witness", "wallet_bridge_api")
 def test_reporting_exception_when_rc_api_is_missing(node: tt.InitNode, wallet_bridge_api_command: str) -> None:
-    with pytest.raises(ErrorInResponseError) as exception:
+    with pytest.raises(WaxAssertionInResponseError) as exception:
         getattr(node.api.wallet_bridge, wallet_bridge_api_command)()
 
     assert "Assert Exception:_rc_api: rc_api_plugin not enabled." not in str(exception.value)
@@ -67,7 +68,7 @@ def test_reporting_exception_when_rc_api_is_missing(node: tt.InitNode, wallet_br
 
 @pytest.mark.enabled_plugins("witness", "wallet_bridge_api")
 def test_reporting_exception_when_block_api_is_missing(node: tt.InitNode) -> None:
-    with pytest.raises(ErrorInResponseError) as exception:
+    with pytest.raises(WaxAssertionInResponseError) as exception:
         node.api.wallet_bridge.get_block()
 
     assert "Assert Exception:_block_api: block_api_plugin not enabled." not in str(exception.value)
@@ -85,7 +86,7 @@ def test_reporting_exception_when_block_api_is_missing(node: tt.InitNode) -> Non
 def test_reporting_exception_when_account_history_api_is_missing(
     node: tt.InitNode, wallet_bridge_api_command: str
 ) -> None:
-    with pytest.raises(ErrorInResponseError) as exception:
+    with pytest.raises(WaxAssertionInResponseError) as exception:
         getattr(node.api.wallet_bridge, wallet_bridge_api_command)()
 
     assert "Assert Exception:_account_history_api: account_history_api_plugin not enabled." in str(exception.value)
@@ -93,7 +94,7 @@ def test_reporting_exception_when_account_history_api_is_missing(
 
 @pytest.mark.enabled_plugins("witness", "wallet_bridge_api")
 def test_reporting_exception_when_account_by_key_api_is_missing(node: tt.InitNode) -> None:
-    with pytest.raises(ErrorInResponseError) as exception:
+    with pytest.raises(WaxAssertionInResponseError) as exception:
         node.api.wallet_bridge.list_my_accounts()
 
     assert "Assert Exception:_account_by_key_api: account_by_key_api_plugin not enabled." not in str(exception.value)
@@ -101,7 +102,7 @@ def test_reporting_exception_when_account_by_key_api_is_missing(node: tt.InitNod
 
 @pytest.mark.enabled_plugins("witness", "wallet_bridge_api")
 def test_reporting_exception_when_market_history_api_is_missing(node: tt.InitNode) -> None:
-    with pytest.raises(ErrorInResponseError) as exception:
+    with pytest.raises(WaxAssertionInResponseError) as exception:
         node.api.wallet_bridge.get_order_book()
 
     assert "Assert Exception:_market_history_api: market_history_api_plugin not enabled." not in str(exception.value)

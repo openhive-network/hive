@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import pytest
-from beekeepy.exceptions import ErrorInResponseError
 
 import test_tools as tt
+from wax._private.api.overseer import WaxAssertionInResponseError
 from hive_local_tools import run_for
 from hive_local_tools.api.message_format import as_string
 
@@ -57,7 +57,7 @@ def test_list_rc_direct_delegations_with_incorrect_value(
 ) -> None:
     create_account_and_delegate_its_rc(wallet, accounts=ACCOUNTS)
 
-    with pytest.raises(ErrorInResponseError):
+    with pytest.raises(WaxAssertionInResponseError):
         node.api.condenser.list_rc_direct_delegations([from_, to], limit)
 
 
@@ -65,7 +65,7 @@ def test_list_rc_direct_delegations_with_incorrect_value(
 def test_list_rc_direct_delegations_with_additional_argument(node: tt.InitNode, wallet: tt.Wallet) -> None:
     create_account_and_delegate_its_rc(wallet, accounts=ACCOUNTS)
 
-    with pytest.raises(ErrorInResponseError):
+    with pytest.raises(WaxAssertionInResponseError):
         node.api.condenser.list_rc_direct_delegations([ACCOUNTS[0], ACCOUNTS[1]], 100, "additional-argument")
 
 
@@ -95,7 +95,7 @@ def test_list_rc_direct_delegations_with_incorrect_type_of_arguments(
 ) -> None:
     create_account_and_delegate_its_rc(wallet, accounts=ACCOUNTS)
 
-    with pytest.raises(ErrorInResponseError):
+    with pytest.raises(WaxAssertionInResponseError):
         node.api.condenser.list_rc_direct_delegations([from_, to], limit)
 
 
@@ -103,7 +103,7 @@ def test_list_rc_direct_delegations_with_incorrect_type_of_arguments(
 def test_list_rc_direct_delegations_with_missing_argument(node: tt.InitNode, wallet: tt.Wallet) -> None:
     create_account_and_delegate_its_rc(wallet, accounts=ACCOUNTS)
 
-    with pytest.raises(ErrorInResponseError):
+    with pytest.raises(WaxAssertionInResponseError):
         node.api.condenser.list_rc_direct_delegations([ACCOUNTS[0], ACCOUNTS[1]])
 
 

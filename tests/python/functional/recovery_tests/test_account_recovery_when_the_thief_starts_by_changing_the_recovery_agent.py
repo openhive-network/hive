@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import pytest
-from beekeepy.exceptions import ErrorInResponseError
 
 import test_tools as tt
+from wax._private.api.overseer import WaxAssertionInResponseError
 from hive_local_tools.constants import OWNER_AUTH_RECOVERY_PERIOD
 from hive_local_tools.functional.python import basic_authority
 from hive_local_tools.functional.python.recovery import get_owner_key, get_recovery_agent
@@ -84,7 +84,7 @@ def test_steal_account_scenario_start_from_change_recovery_agent_by_thief_0(prep
     thief_account_key = tt.Account("thief").public_key
     thief_authority = basic_authority(thief_account_key)
 
-    with pytest.raises(ErrorInResponseError) as exception:
+    with pytest.raises(WaxAssertionInResponseError) as exception:
         wallet_thief.api.request_account_recovery("thief", "alice", thief_authority)
 
     assert "Cannot recover an account that does not have you as their recovery partner." in str(exception.value)
@@ -129,17 +129,17 @@ def test_steal_account_scenario_start_from_change_recovery_agent_by_thief_1(prep
     alice_new_authority = basic_authority(alice_new_key)
 
     # alice is trying to change the owner authority
-    with pytest.raises(ErrorInResponseError) as exception:
+    with pytest.raises(WaxAssertionInResponseError) as exception:
         wallet_alice.api.update_account("alice", "{}", alice_new_key, alice_new_key, alice_new_key, alice_new_key)
     assert "Missing Owner Authority" in str(exception.value)
 
     # alice tries to change the recovery agent
-    with pytest.raises(ErrorInResponseError) as exception:
+    with pytest.raises(WaxAssertionInResponseError) as exception:
         wallet_alice.api.change_recovery_account("alice", "alice.agent")
     assert "Missing Owner Authority" in str(exception.value)
 
     # alice-agent trying to recover an alice account
-    with pytest.raises(ErrorInResponseError) as exception:
+    with pytest.raises(WaxAssertionInResponseError) as exception:
         wallet_alice_agent.api.request_account_recovery("alice.agent", "alice", alice_new_authority)
     error_message = "Cannot recover an account that does not have you as their recovery partner."
     assert error_message in str(exception.value)
@@ -186,17 +186,17 @@ def test_account_recovery_after_the_thief_changed_the_key_but_before_changing_th
     alice_new_authority = basic_authority(alice_new_key)
 
     # alice is trying to change the owner authority
-    with pytest.raises(ErrorInResponseError) as exception:
+    with pytest.raises(WaxAssertionInResponseError) as exception:
         wallet_alice.api.update_account("alice", "{}", alice_new_key, alice_new_key, alice_new_key, alice_new_key)
     assert "Missing Owner Authority" in str(exception.value)
 
     # alice tries to change the recovery agent
-    with pytest.raises(ErrorInResponseError) as exception:
+    with pytest.raises(WaxAssertionInResponseError) as exception:
         wallet_alice.api.change_recovery_account("alice", "alice.agent")
     assert "Missing Owner Authority" in str(exception.value)
 
     # alice-agent trying to recover an alice account
-    with pytest.raises(ErrorInResponseError) as exception:
+    with pytest.raises(WaxAssertionInResponseError) as exception:
         wallet_alice_agent.api.request_account_recovery("alice.agent", "alice", alice_new_authority)
     error_message = "Cannot recover an account that does not have you as their recovery partner."
     assert error_message in str(exception.value)
@@ -237,7 +237,7 @@ def test_account_recovery_after_the_key_and_agent_was_changed_by_the_thief(prepa
     alice_new_key = tt.Account("alice", secret="new_key").public_key
     alice_new_authority = basic_authority(alice_new_key)
 
-    with pytest.raises(ErrorInResponseError) as exception:
+    with pytest.raises(WaxAssertionInResponseError) as exception:
         wallet_alice.api.update_account(
             "alice",
             "{}",
@@ -250,7 +250,7 @@ def test_account_recovery_after_the_key_and_agent_was_changed_by_the_thief(prepa
 
     get_recovery_agent(node, "alice", wait_for_agent="thief")
 
-    with pytest.raises(ErrorInResponseError) as exception:
+    with pytest.raises(WaxAssertionInResponseError) as exception:
         wallet_alice_agent.api.request_account_recovery("alice.agent", "alice", alice_new_authority)
     assert "Cannot recover an account that does not have you as their recovery partner." in str(exception.value)
 
@@ -419,7 +419,7 @@ def test_steal_account_scenario_start_from_change_recovery_agent_by_thief_4(prep
     thief_account_key = tt.Account("thief").public_key
     thief_authority = basic_authority(thief_account_key)
 
-    with pytest.raises(ErrorInResponseError) as exception:
+    with pytest.raises(WaxAssertionInResponseError) as exception:
         wallet_thief.api.request_account_recovery("thief", "alice", thief_authority)
 
     assert "Cannot recover an account that does not have you as their recovery partner." in str(exception.value)

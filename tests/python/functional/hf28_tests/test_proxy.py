@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import pytest
-from beekeepy.exceptions import ErrorInResponseError
 
 import test_tools as tt
+from wax._private.api.overseer import WaxAssertionInResponseError
 from hive_local_tools import run_for
 
 
@@ -95,7 +95,7 @@ def test_too_long_proxy_chain(node: tt.InitNode) -> None:
         for i in range(3):
             wallet.api.set_voting_proxy(f"account-layer-{i + 1}", f"account-layer-{i}")
 
-    with pytest.raises(ErrorInResponseError) as exception:
+    with pytest.raises(WaxAssertionInResponseError) as exception:
         wallet.api.set_voting_proxy("account-layer-4", "account-layer-3")
     assert "Proxy chain is too long." in str(exception.value)
 
@@ -133,7 +133,7 @@ def test_set_the_proxy_on_the_same_account_twice(node: tt.InitNode) -> None:
 
     wallet.api.set_voting_proxy("alice", "bob")
 
-    with pytest.raises(ErrorInResponseError) as exception:
+    with pytest.raises(WaxAssertionInResponseError) as exception:
         wallet.api.set_voting_proxy("alice", "bob")
 
     assert "Proxy must change." in str(exception.value)

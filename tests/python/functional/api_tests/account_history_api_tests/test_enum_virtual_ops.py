@@ -3,9 +3,9 @@ from __future__ import annotations
 import itertools
 
 import pytest
-from beekeepy.exceptions import ErrorInResponseError
 
 import test_tools as tt
+from wax._private.api.overseer import WaxAssertionInResponseError
 from hive_local_tools import run_for
 
 
@@ -16,7 +16,7 @@ def send_transfers_to_vesting_from_initminer_to_alice(wallet: tt.Wallet, *, amou
 
 @run_for("testnet", enable_plugins=["account_history_api"])
 def test_exceed_block_range(node: tt.InitNode) -> None:
-    with pytest.raises(ErrorInResponseError):
+    with pytest.raises(WaxAssertionInResponseError):
         node.api.account_history.enum_virtual_ops(block_range_begin=1, block_range_end=2002)
 
 
@@ -233,5 +233,5 @@ def test_pagination(node: tt.InitNode) -> None:
 
 @run_for("testnet", enable_plugins=["account_history_api"])
 def test_same_block_range_begin_and_end(node: tt.InitNode) -> None:
-    with pytest.raises(ErrorInResponseError):
+    with pytest.raises(WaxAssertionInResponseError):
         node.api.account_history.enum_virtual_ops(block_range_begin=1, block_range_end=1)

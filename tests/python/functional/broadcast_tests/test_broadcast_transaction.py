@@ -5,9 +5,9 @@ from __future__ import annotations
 from time import sleep
 
 import pytest
-from beekeepy.exceptions import ErrorInResponseError
 
 import test_tools as tt
+from wax._private.api.overseer import WaxAssertionInResponseError
 from hive_local_tools import run_for
 
 
@@ -26,14 +26,14 @@ def test_broadcast_account_creating_with_correct_values(node, wallet, max_block_
 
 @run_for("testnet", enable_plugins=["account_history_api"])
 def test_broadcast_account_creating_with_incorrect_value(node, wallet):
-    with pytest.raises(ErrorInResponseError):  # noqa: PT012
+    with pytest.raises(WaxAssertionInResponseError):  # noqa: PT012
         for i in range(6):
             transaction = wallet.api.create_account("initminer", f"alice{i}", "{}", broadcast=False)
             node.api.network_broadcast.broadcast_transaction(trx=transaction, max_block_age=0)
             sleep(1)
     node.wait_number_of_blocks(1)
 
-    with pytest.raises(ErrorInResponseError):
+    with pytest.raises(WaxAssertionInResponseError):
         node.api.account_history.get_transaction(id=transaction["transaction_id"], include_reversible=True)
 
     with pytest.raises(tt.exceptions.AccountNotExistError):
@@ -50,7 +50,7 @@ def test_broadcast_same_transaction_twice(node, wallet):
     assert len(accounts) == 1
     assert accounts[0].name == "alice"
 
-    with pytest.raises(ErrorInResponseError):
+    with pytest.raises(WaxAssertionInResponseError):
         node.api.network_broadcast.broadcast_transaction(trx=transaction)
 
 
@@ -72,5 +72,5 @@ def test_broadcasting_manually_signed_transaction(node, wallet, way_of_broadcast
 @run_for("testnet")
 def test_broadcasting_manually_signed_transaction_with_condenser(node, wallet):
     transaction = wallet.api.create_account("initminer", "alice", "{}", broadcast=False)
-    with pytest.raises(ErrorInResponseError):
+    with pytest.raises(WaxAssertionInResponseError):
         node.api.condenser.broadcast_transaction(transaction)

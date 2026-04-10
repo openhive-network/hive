@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import pytest
-from beekeepy.exceptions import ErrorInResponseError
 
 import test_tools as tt
+from wax._private.api.overseer import WaxAssertionInResponseError
 from hive_local_tools import run_for
 from hive_local_tools.constants import MAX_OPEN_RECURRENT_TRANSFERS
 
@@ -43,7 +43,7 @@ def test_try_to_send_more_than_the_maximum_limit_of_recurrent_transfers_from_one
     )
 
     # Validate there is exception after sending 256th recurrent transfer from the same sender
-    with pytest.raises(ErrorInResponseError):
+    with pytest.raises(WaxAssertionInResponseError):
         wallet.api.recurrent_transfer(
             account_that_sends_all_recurrent_transfers,
             account_that_exceed_transfers_limit,

@@ -3,9 +3,9 @@ from __future__ import annotations
 from typing import Final
 
 import pytest
-from beekeepy.exceptions import ErrorInResponseError
 
 import test_tools as tt
+from wax._private.api.overseer import WaxAssertionInResponseError
 from hive_local_tools import run_for
 
 TOO_LONG_ACCOUNT_NAME: Final[str] = "too-long-account-name"
@@ -216,7 +216,7 @@ def test_too_long_account_name_length(node, api, method, arguments, keyword_argu
         selected_method = getattr(selected_api, method_)
         return selected_method(*arguments_, **keyword_arguments_)
 
-    with pytest.raises(ErrorInResponseError) as exception:
+    with pytest.raises(WaxAssertionInResponseError) as exception:
         call(node, api, method, *arguments, **keyword_arguments)
 
     response = str(exception.value)
