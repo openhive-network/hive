@@ -5,7 +5,7 @@ from beekeepy.exceptions import BeekeepyError, ErrorInResponseError
 
 import test_tools as tt
 from hive_local_tools.functional.python.operation.comment import Comment
-from wax.exceptions import WaxError, WaxValidationFailedError
+from wax.exceptions import WaxAssertionError, WaxError
 
 UPDATED_COMMENT_OPTIONS = {
     "max_accepted_payout": tt.Asset.Tbd(100),
@@ -231,9 +231,8 @@ def test_change_comment_options_after_vote(
     with pytest.raises(ErrorInResponseError) as error:
         comment.options(**comment_options)
 
-    assert (
-        "One of the included comment options requires the comment to have no rshares allocated to it."
-        in str(error.value)
+    assert "One of the included comment options requires the comment to have no rshares allocated to it." in str(
+        error.value
     ), "Appropriate error message is not raise"
     comment.assert_rc_mana_after_change_comment_options("is_unchanged")
 
@@ -261,7 +260,7 @@ def test_adds_the_beneficiary_after_comment(prepared_node: tt.InitNode, wallet: 
 @pytest.mark.parametrize(
     ("beneficiaries", "error_message", "error_type"),
     [
-        ([], "Must specify at least one beneficiary", WaxValidationFailedError),
+        ([], "Must specify at least one beneficiary", WaxAssertionError),
         (
             [{"account": "alice", "weight": 20}, {"account": "initminer", "weight": 20}],
             "Comment already has beneficiaries specified.",
@@ -305,7 +304,7 @@ def test_beneficiary_after_comment(
             "Comment must not have been voted on before specifying beneficiaries.",
             ErrorInResponseError,
         ),
-        ([], "Must specify at least one beneficiary", WaxValidationFailedError),
+        ([], "Must specify at least one beneficiary", WaxAssertionError),
         (
             [{"account": "alice", "weight": 20}, {"account": "initminer", "weight": 20}],
             "Comment must not have been voted on before specifying beneficiaries.",
