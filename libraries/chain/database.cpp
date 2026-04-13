@@ -424,6 +424,8 @@ comment database::find_comment( const account_name_type& author, const shared_st
   return get_comments_handler().get_comment( _account->get_id(), to_string( permlink ), false /*comment_is_required*/ );
 }
 
+#ifndef ENABLE_STD_ALLOCATOR
+
 comment database::get_comment( const account_id_type& author, const string& permlink )const
 {
   return get_comments_handler().get_comment( author, permlink, true /*comment_is_required*/ );
@@ -449,6 +451,8 @@ comment database::find_comment( const account_name_type& author, const string& p
 
   return get_comments_handler().get_comment( _account->get_id(), permlink, false /*comment_is_required*/ );
 }
+
+#endif
 
 const dynamic_global_property_object&database::get_dynamic_global_properties() const
 { try {

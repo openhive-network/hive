@@ -664,6 +664,8 @@ BOOST_AUTO_TEST_CASE( fc_uint128_to_string )
 
 }
 
+#ifndef ENABLE_STD_ALLOCATOR
+
 BOOST_AUTO_TEST_CASE( chain_object_size )
 {
   BOOST_CHECK_EQUAL( sizeof( dummy ), 4u );
@@ -791,6 +793,7 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
   BOOST_CHECK_EQUAL( sizeof( full_transaction_type ), 464 ); //not a chain object but potentially very numerous
 
 }
+#endif
 
 BOOST_AUTO_TEST_CASE( fc_static_variant_alignment )
 {
