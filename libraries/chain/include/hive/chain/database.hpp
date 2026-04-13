@@ -12,8 +12,8 @@
 #include <hive/chain/util/type_registrar.hpp>
 #include <hive/chain/external_storage/comments_handler_ptr.hpp>
 #include <hive/chain/external_storage/comment.hpp>
+#include <hive/chain/util/balance.hpp>
 
-#include <hive/protocol/asset.hpp>
 #include <hive/protocol/hardfork.hpp>
 #include <hive/protocol/block_header.hpp>
 
@@ -657,7 +657,7 @@ namespace chain {
       std::unordered_map<account_name_type, uint8_t>           _pending_tx_custom_op_count;
 
       bool apply_order( const limit_order_object& new_order_object );
-      bool fill_order( const limit_order_object& order, const asset& pays, const asset& receives );
+      bool fill_order( const limit_order_object& order, const asset& pays, temp_balance&& receives );
       void cancel_order( const limit_order_object& obj, bool suppress_vop = false );
       int  match( const limit_order_object& bid, const limit_order_object& ask, const price& trade_price );
 
