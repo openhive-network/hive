@@ -5,6 +5,7 @@
 #include <hive/chain/detail/state/convert_request_object.hpp>
 #include <hive/chain/detail/state/collateralized_convert_request_object.hpp>
 #include <hive/chain/detail/state/savings_withdraw_object.hpp>
+#include <hive/chain/detail/state/limit_order_object.hpp>
 
 #include <fc/uint128.hpp>
 
@@ -68,6 +69,12 @@ void savings_withdraw_object::init( const account_object& _from, const account_o
   from = _from.get_name();
   to = _to.get_name();
   from_string( memo, _memo );
+}
+
+// limit_order_object init helper
+void limit_order_object::init( const account_object& _seller )
+{
+  seller = _seller.get_name();
 }
 
 } } // hive::chain

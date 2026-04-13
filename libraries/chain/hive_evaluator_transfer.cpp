@@ -556,8 +556,13 @@ void limit_order_create_evaluator::do_apply( const limit_order_create_operation&
   }
 #endif
 
-  _db.adjust_balance( o.owner, -o.amount_to_sell );
-  const auto& order = _db.create<limit_order_object>( o.owner, o.amount_to_sell, o.get_price(), _db.head_block_time(), expiration, o.orderid );
+  const auto& seller = _db.get_account( o.owner );
+  temp_balance amount_to_sell( o.amount_to_sell.symbol );
+  _db.adjust_balance( seller, -o.amount_to_sell );
+  amount_to_sell.set_from_asset( o.amount_to_sell );
+
+  const auto& order = _db.create<limit_order_object>( seller, std::move( amount_to_sell ),
+    o.get_price(), _db.head_block_time(), expiration, o.orderid );
 
   bool filled = _db.apply_order( order );
 
@@ -580,8 +585,13 @@ void limit_order_create2_evaluator::do_apply( const limit_order_create2_operatio
     expiration = std::min( o.expiration, fc::time_point_sec( HIVE_HARDFORK_0_20_TIME + HIVE_MAX_LIMIT_ORDER_EXPIRATION ) );
   }
 
-  _db.adjust_balance( o.owner, -o.amount_to_sell );
-  const auto& order = _db.create<limit_order_object>( o.owner, o.amount_to_sell, o.exchange_rate, _db.head_block_time(), expiration, o.orderid );
+  const auto& seller = _db.get_account( o.owner );
+  temp_balance amount_to_sell( o.amount_to_sell.symbol );
+  _db.adjust_balance( seller, -o.amount_to_sell );
+  amount_to_sell.set_from_asset( o.amount_to_sell );
+
+  const auto& order = _db.create<limit_order_object>( seller, std::move( amount_to_sell ),
+    o.exchange_rate, _db.head_block_time(), expiration, o.orderid );
 
   bool filled = _db.apply_order( order );
 

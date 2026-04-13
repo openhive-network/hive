@@ -348,69 +348,86 @@ int database::match( const limit_order_object& new_order, const limit_order_obje
   push_virtual_operation( *this, fill_order_operation( new_order.get_seller(), new_order.get_orderid(), new_order_pays, old_order.get_seller(), old_order.get_orderid(), old_order_pays ) );
 
   int result = 0;
-  result |= fill_order( new_order, new_order_pays, new_order_receives );
-  result |= fill_order( old_order, old_order_pays, old_order_receives ) << 1;
+
+  // pull adequate amounts from both orders
+  temp_balance old_order_balance( old_order.amount_for_sale().symbol );
+  temp_balance new_order_balance( new_order.amount_for_sale().symbol );
+  modify( old_order, [&]( limit_order_object& o )
+  {
+    o.access_amount_for_sale().transfer_to( old_order_balance, new_order_receives );
+  } );
+  modify( new_order, [&]( limit_order_object& o )
+  {
+    o.access_amount_for_sale().transfer_to( new_order_balance, old_order_receives );
+  } );
+  // execute orders
+  result |= fill_order( new_order, new_order_pays, std::move( old_order_balance ) );
+  result |= fill_order( old_order, old_order_pays, std::move( new_order_balance ) ) << 1;
 
   HIVE_ASSERT( result != 0,
     order_match_exception, "error matching orders: ${new_order} ${old_order} ${match_price}",
     ("new_order", new_order)("old_order", old_order)("match_price", match_price) );
+    // ABW: note that above assertion should never fire, and if it does, it means neither of
+    // limit_order_objects were removed, which means it is safe to use them in assertion;
+    // the objects are already (partially) drained though
   return result;
 }
 
-bool database::fill_order( const limit_order_object& order, const asset& pays, const asset& receives )
+bool database::fill_order( const limit_order_object& order, const asset& pays, temp_balance&& receives )
 {
+  bool fully_filled = false;
   try
   {
     HIVE_ASSERT( order.amount_for_sale().symbol == pays.symbol,
       order_fill_exception, "error filling orders: ${order} ${pays} ${receives}",
       ("order", order)("pays", pays)("receives", receives) );
-    HIVE_ASSERT( pays.symbol != receives.symbol,
+    HIVE_ASSERT( pays.symbol != receives.as_asset().symbol,
       order_fill_exception, "error filling orders: ${order} ${pays} ${receives}",
       ("order", order)("pays", pays)("receives", receives) );
 
-    adjust_balance( order.get_seller(), receives );
+    adjust_balance( order.get_seller(), receives.as_asset() );
+    receives.set_from_asset( asset( 0, receives.as_asset().symbol ) );
 
-    if( pays == order.amount_for_sale() )
+    if( order.amount_for_sale().amount == 0 )
     {
       remove( order );
-      return true;
+      fully_filled = true;
     }
-    else
+    else // order still has funds
     {
-      HIVE_ASSERT( pays < order.amount_for_sale(),
-        order_fill_exception, "error filling orders: ${order} ${pays} ${receives}",
-        ("order", order)("pays", pays)("receives", receives) );
-
-      modify( order, [&]( limit_order_object& b )
-      {
-        b.access_amount_for_sale() -= pays;
-      } );
-      /**
-        *  There are times when the AMOUNT_FOR_SALE * SALE_PRICE == 0 which means that we
-        *  have hit the limit where the seller is asking for nothing in return.  When this
-        *  happens we must refund any balance back to the seller, it is too small to be
-        *  sold at the sale price.
-        */
+      /*
+      There are times when the AMOUNT_FOR_SALE * SALE_PRICE == 0 which means that we
+      have hit the limit where the seller is asking for nothing in return. When this
+      happens we must refund any balance back to the seller, it is too small to be
+      sold at the sale price.
+      */
       if( order.amount_to_receive().amount == 0 )
       {
-        cancel_order(order);
-        return true;
+        cancel_order( order );
+        fully_filled = true;
       }
-      return false;
     }
   }
   FC_CAPTURE_AND_RETHROW( (order)(pays)(receives) )
+  return fully_filled;
 }
 
 void database::cancel_order( const limit_order_object& order, bool suppress_vop )
 {
-  auto amount_back = order.amount_for_sale();
+  auto vop = limit_order_cancelled_operation( order.get_seller(), order.get_orderid(), order.amount_for_sale() );
 
-  adjust_balance( order.get_seller(), amount_back );
+  temp_balance amount_back( order.amount_for_sale().symbol );
+  modify( order, [&]( limit_order_object& o )
+  {
+    o.access_amount_for_sale().transfer_to( amount_back );
+  } );
+
+  adjust_balance( order.get_seller(), amount_back.as_asset() );
+  amount_back.set_from_asset( asset( 0, amount_back.as_asset().symbol ) );
   if( !suppress_vop )
-    push_virtual_operation( *this, limit_order_cancelled_operation(order.get_seller(), order.get_orderid(), amount_back));
+    push_virtual_operation( *this, vop );
 
-  remove(order);
+  remove( order );
 }
 
 void database::clear_expired_orders()
