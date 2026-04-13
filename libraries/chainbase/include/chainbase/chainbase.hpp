@@ -151,6 +151,7 @@ namespace chainbase {
       return less( a.c_str(), b.c_str() );
     }
 
+#ifndef ENABLE_STD_ALLOCATOR
     bool operator()( const shared_string& a, const std::string& b )const
     {
       return less( a.c_str(), b.c_str() );
@@ -160,6 +161,7 @@ namespace chainbase {
     {
       return less( a.c_str(), b.c_str() );
     }
+#endif
 
     private:
       inline bool less( const char* a, const char* b )const
@@ -1408,6 +1410,7 @@ namespace chainbase {
           CHAINBASE_THROW_EXCEPTION( std::logic_error( type_name + "::type_id is already in use" ) );
         }
         index_type* idx_ptr =  nullptr;
+#ifndef ENABLE_STD_ALLOCATOR
         auto _found = _segment->find< index_type >( type_name.c_str() );
         if( !_found.first )
         {
@@ -1423,6 +1426,9 @@ namespace chainbase {
           if( _at_least_one_index_is_created_now && _at_least_one_index_was_created_earlier )
             CHAINBASE_THROW_EXCEPTION( std::logic_error( "Inconsistency occurs. A new index is found in `shared_memory_file` file, but other indexes are created. A replay is needed. Problem with: " + type_name ) );
         }
+#else
+        idx_ptr = new index_type( index_alloc() );
+#endif
 
         if( type_id >= _index_map.size() )
           _index_map.resize( type_id + 1 );
