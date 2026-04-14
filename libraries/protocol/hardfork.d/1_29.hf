@@ -1,0 +1,16 @@
+#ifndef HIVE_HARDFORK_1_29
+#define HIVE_HARDFORK_1_29 29
+
+long next_hf_time();
+
+#ifdef USE_ALTERNATE_CHAIN_ID
+#define HIVE_HARDFORK_1_29_TIME (hive::protocol::testnet_blockchain_configuration::configuration_data.get_hf_time(HIVE_HARDFORK_1_29, next_hf_time()))
+#else
+#define HIVE_HARDFORK_1_29_TIME next_hf_time()
+#endif
+
+#define HIVE_HARDFORK_1_29_VERSION hive::protocol::hardfork_version( 1, 29 )
+
+// allow modification of existing recurrent transfer with executions=1 (issue #786)
+#define HIVE_HARDFORK_1_29_ALLOW_MODIFY_LAST_RECURRENT_TRANSFER (HIVE_HARDFORK_1_29)
+#endif
