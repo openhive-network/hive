@@ -28,14 +28,15 @@ namespace chainbase {
       using allocator_t = std::conditional_t<USE_MANAGED_MAPPED_FILE, bip::allocator<T2, segment_manager_t>, std::allocator<T2>>;
       using base_class_t = allocator_t<T>;
 
-      typedef typename base_class_t::value_type value_type;
-      typedef typename base_class_t::void_pointer void_pointer;
-      typedef typename base_class_t::pointer pointer;
-      typedef typename base_class_t::const_pointer const_pointer;
-      typedef typename base_class_t::reference reference;
-      typedef typename base_class_t::const_reference const_reference;
-      typedef typename base_class_t::size_type size_type;
-      typedef typename base_class_t::difference_type difference_type;
+      using alloc_traits = std::allocator_traits<base_class_t>;
+      typedef typename alloc_traits::value_type value_type;
+      typedef typename alloc_traits::void_pointer void_pointer;
+      typedef typename alloc_traits::pointer pointer;
+      typedef typename alloc_traits::const_pointer const_pointer;
+      typedef typename alloc_traits::size_type size_type;
+      typedef typename alloc_traits::difference_type difference_type;
+      typedef value_type& reference;
+      typedef const value_type& const_reference;
 
       template <typename U>
       struct rebind

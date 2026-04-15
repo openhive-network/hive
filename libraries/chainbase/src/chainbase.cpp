@@ -54,10 +54,10 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
       {
 #ifndef ENABLE_STD_ALLOCATOR
         plugins = other.plugins;
-#endif
         version_info = other.version_info;
         decoded_state_objects_data_json = other.decoded_state_objects_data_json;
         blockchain_config_json = other.blockchain_config_json;
+#endif
         compiler_version = other.compiler_version;
         debug = other.debug;
         apple = other.apple;
@@ -416,6 +416,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
     return undo_session_guard( *this );
   }
 
+#ifndef ENABLE_STD_ALLOCATOR
   void database::set_decoded_state_objects_data(const std::string& json)
   {
     assert(_is_open);
@@ -476,6 +477,14 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
     const environment_check* const env = _segment->find< environment_check >( "environment" ).first;
     return env->dump();
   }
+#else
+  void database::set_decoded_state_objects_data(const std::string&) {}
+  std::string database::get_decoded_state_objects_data_from_shm() const { return "{}"; }
+  void database::set_blockchain_config(const std::string&) {}
+  std::string database::get_blockchain_config_from_shm() const { return "{}"; }
+  std::string database::get_plugins_from_shm() const { return "[]"; }
+  std::string database::get_environment_details() const { return "{}"; }
+#endif
 }  // namespace chainbase
 
 
