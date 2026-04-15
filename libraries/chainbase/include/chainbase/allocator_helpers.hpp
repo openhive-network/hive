@@ -17,8 +17,8 @@
 #include <map>
 #include <type_traits>
 
-// If you want to use the std allocator instead of the boost::interprocess one (for testing purposes) uncomment the following line:
-#define ENABLE_STD_ALLOCATOR // Enabled for std::allocator diagnostic test
+// ENABLE_STD_ALLOCATOR is controlled via CMake option (cmake -DENABLE_STD_ALLOCATOR=ON)
+// It is auto-enabled for sanitizer builds (CMAKE_BUILD_TYPE=Asan)
 
 #define ENABLE_MULTI_INDEX_POOL_ALLOCATOR
 #define ENABLE_UNDO_STATE_POOL_ALLOCATOR

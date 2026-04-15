@@ -21,6 +21,11 @@ SET(WITH_LIBURING ON CACHE BOOL "build with io_uring support")
 SET(WITH_TESTS OFF CACHE BOOL "build with tests")
 SET(WITH_TOOLS OFF CACHE BOOL "build with tools")
 
+# Enable RocksDB sanitizers when building with Asan
+if(CMAKE_BUILD_TYPE STREQUAL "Asan")
+  SET(WITH_ASAN ON CACHE BOOL "build with ASAN" FORCE)
+endif()
+
 # If we don't have CMake variables defined, try to get them from the environment
 if (NOT DEFINED ZLIB_ROOT_DIR)
    if (EXISTS "$ENV{ZLIB_ROOT_DIR}")
@@ -78,7 +83,8 @@ set(_use_preinstalled OFF)
 if(HIVE_USE_PREINSTALLED_VENDOR
    AND _rocksdb_git_result EQUAL 0
    AND EXISTS "${_rocksdb_preinstalled_dir}/lib/librocksdb.a"
-   AND NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
+   AND NOT CMAKE_BUILD_TYPE STREQUAL "Debug"
+   AND NOT CMAKE_BUILD_TYPE STREQUAL "Asan")
 
   # Ensure uring::uring is available before find_package(RocksDB).
   # RocksDBConfig.cmake does NOT call find_dependency(uring), but
@@ -129,7 +135,7 @@ endif()
 if(NOT _use_preinstalled)
   if(_rocksdb_git_result EQUAL 0 AND HIVE_USE_PREINSTALLED_VENDOR)
     message(STATUS "No preinstalled RocksDB for commit ${_rocksdb_commit} "
-                   "(or Debug build), building from source")
+                   "(or Debug/Asan build), building from source")
   elseif(NOT HIVE_USE_PREINSTALLED_VENDOR)
     message(STATUS "Preinstalled vendor libraries disabled, building RocksDB from source")
   else()
