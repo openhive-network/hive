@@ -21,9 +21,14 @@ SET(WITH_LIBURING ON CACHE BOOL "build with io_uring support")
 SET(WITH_TESTS OFF CACHE BOOL "build with tests")
 SET(WITH_TOOLS OFF CACHE BOOL "build with tools")
 
-# Enable RocksDB sanitizers when building with Asan
+# Enable RocksDB sanitizers when building with sanitizer build types
 if(CMAKE_BUILD_TYPE STREQUAL "Asan")
   SET(WITH_ASAN ON CACHE BOOL "build with ASAN" FORCE)
+elseif(CMAKE_BUILD_TYPE STREQUAL "Msan")
+  # RocksDB has no WITH_MSAN option; inject flags via CMAKE variables
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=memory -fsanitize-memory-track-origins -fno-omit-frame-pointer")
+  SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=memory -fsanitize-memory-track-origins -fno-omit-frame-pointer")
+  SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=memory")
 endif()
 
 # If we don't have CMake variables defined, try to get them from the environment
@@ -84,7 +89,8 @@ if(HIVE_USE_PREINSTALLED_VENDOR
    AND _rocksdb_git_result EQUAL 0
    AND EXISTS "${_rocksdb_preinstalled_dir}/lib/librocksdb.a"
    AND NOT CMAKE_BUILD_TYPE STREQUAL "Debug"
-   AND NOT CMAKE_BUILD_TYPE STREQUAL "Asan")
+   AND NOT CMAKE_BUILD_TYPE STREQUAL "Asan"
+   AND NOT CMAKE_BUILD_TYPE STREQUAL "Msan")
 
   # Ensure uring::uring is available before find_package(RocksDB).
   # RocksDBConfig.cmake does NOT call find_dependency(uring), but
@@ -135,7 +141,7 @@ endif()
 if(NOT _use_preinstalled)
   if(_rocksdb_git_result EQUAL 0 AND HIVE_USE_PREINSTALLED_VENDOR)
     message(STATUS "No preinstalled RocksDB for commit ${_rocksdb_commit} "
-                   "(or Debug/Asan build), building from source")
+                   "(or Debug/Asan/Msan build), building from source")
   elseif(NOT HIVE_USE_PREINSTALLED_VENDOR)
     message(STATUS "Preinstalled vendor libraries disabled, building RocksDB from source")
   else()

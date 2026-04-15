@@ -8,9 +8,12 @@ if(isMultiConfig)
     if(NOT "Asan" IN_LIST CMAKE_CONFIGURATION_TYPES)
         LIST(APPEND CMAKE_CONFIGURATION_TYPES Asan)
     endif()
+    if(NOT "Msan" IN_LIST CMAKE_CONFIGURATION_TYPES)
+        LIST(APPEND CMAKE_CONFIGURATION_TYPES Msan)
+    endif()
 else()
     SET(allowedBuildTypes )
-    LIST(APPEND allowedBuildTypes Asan Debug Release RelWithDebInfo)
+    LIST(APPEND allowedBuildTypes Asan Msan Debug Release RelWithDebInfo)
 
     IF(NOT CMAKE_BUILD_TYPE)
       SET(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING "Choose the type of build, options are: ${allowedBuildTypes}" FORCE)
@@ -51,3 +54,33 @@ set(CMAKE_SHARED_LINKER_FLAGS_ASAN
     "Linker lags to be used to create shared libraries for Asan build type." FORCE)
 
 MESSAGE(STATUS "CMAKE_SHARED_LINKER_FLAGS_ASAN value is based on: CMAKE_SHARED_LINKER_FLAGS_${asanBaseConfig} and points to value: ${CMAKE_SHARED_LINKER_FLAGS_ASAN}" )
+
+# set base configuration to initialize MSAN settings
+STRING(TOUPPER "RelWithDebInfo" msanBaseConfig)
+
+SET(HIVE_MSAN_COMPILE_OPTIONS -fsanitize=memory -fsanitize-memory-track-origins -fno-omit-frame-pointer -fno-optimize-sibling-calls)
+SET(HIVE_MSAN_LINK_OPTIONS "-fsanitize=memory")
+
+set(CMAKE_C_FLAGS_MSAN
+    "${CMAKE_C_FLAGS_${msanBaseConfig}} " CACHE STRING
+    "Flags used by the C compiler for Msan build type or configuration." FORCE)
+
+MESSAGE(STATUS "CMAKE_C_FLAGS_MSAN value is based on: CMAKE_C_FLAGS_${msanBaseConfig} and points to value: ${CMAKE_C_FLAGS_MSAN}" )
+
+set(CMAKE_CXX_FLAGS_MSAN
+    "${CMAKE_CXX_FLAGS_${msanBaseConfig}} " CACHE STRING
+    "Flags used by the C++ compiler for Msan build type or configuration." FORCE)
+
+MESSAGE(STATUS "CMAKE_CXX_FLAGS_MSAN value is based on: CMAKE_CXX_FLAGS_${msanBaseConfig} and points to value: ${CMAKE_CXX_FLAGS_MSAN}" )
+
+set(CMAKE_EXE_LINKER_FLAGS_MSAN
+    "${CMAKE_EXE_LINKER_FLAGS_${msanBaseConfig}} " CACHE STRING
+    "Linker flags to be used to create executables for Msan build type." FORCE)
+
+MESSAGE(STATUS "CMAKE_EXE_LINKER_FLAGS_MSAN value is based on: CMAKE_EXE_LINKER_FLAGS_${msanBaseConfig} and points to value: ${CMAKE_EXE_LINKER_FLAGS_MSAN}" )
+
+set(CMAKE_SHARED_LINKER_FLAGS_MSAN
+    "${CMAKE_SHARED_LINKER_FLAGS_${msanBaseConfig}} " CACHE STRING
+    "Linker flags to be used to create shared libraries for Msan build type." FORCE)
+
+MESSAGE(STATUS "CMAKE_SHARED_LINKER_FLAGS_MSAN value is based on: CMAKE_SHARED_LINKER_FLAGS_${msanBaseConfig} and points to value: ${CMAKE_SHARED_LINKER_FLAGS_MSAN}" )

@@ -1,8 +1,8 @@
 
 OPTION( ENABLE_STD_ALLOCATOR "Use std::allocator instead of boost::interprocess allocator (enables sanitizer instrumentation of chainbase)" OFF )
 # Sanitizer builds require std::allocator (mmap-based allocators bypass sanitizer instrumentation)
-if( CMAKE_BUILD_TYPE STREQUAL "Asan" AND NOT ENABLE_STD_ALLOCATOR )
-  MESSAGE( STATUS "ENABLE_STD_ALLOCATOR forced ON for Asan build type" )
+if( (CMAKE_BUILD_TYPE STREQUAL "Asan" OR CMAKE_BUILD_TYPE STREQUAL "Msan") AND NOT ENABLE_STD_ALLOCATOR )
+  MESSAGE( STATUS "ENABLE_STD_ALLOCATOR forced ON for ${CMAKE_BUILD_TYPE} build type" )
   SET( ENABLE_STD_ALLOCATOR ON CACHE BOOL "" FORCE )
 endif()
 if( ENABLE_STD_ALLOCATOR )
