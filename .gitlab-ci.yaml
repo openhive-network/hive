@@ -1630,6 +1630,7 @@ colony_tests:
 build_openapi_spec_image:
   extends: .docker_image_builder_job
   stage: build
+  needs: []
   variables:
     OPENAPI_IMAGE_NAME: "openapi-spec"
     OPENAPI_DOCKERFILE_PATH: "libraries/plugins/apis/documentation/Dockerfile"
