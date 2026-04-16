@@ -32,7 +32,7 @@
 
 using namespace boost::placeholders;
 
-#define HIVE_MAX_HTTP_REQUEST_BODY_SIZE (1024 * 1024 * 2) // 2MB
+#define HIVE_MAX_BODY_SIZE (1024 * 1024 * 2) // 2MB
 
 namespace hive { namespace plugins { namespace webserver {
 
@@ -369,6 +369,8 @@ void webserver_plugin_impl<websocket_server_type>::start_webserver()
         ws_server.clear_error_channels( websocketpp::log::elevel::all );
         ws_server.init_asio( &ws_ios );
         ws_server.set_reuse_addr( true );
+        ws_server.set_max_http_body_size( HIVE_MAX_BODY_SIZE );
+        ws_server.set_max_message_size( HIVE_MAX_BODY_SIZE );
 
         ws_server.set_message_handler( boost::bind( &webserver_plugin_impl<websocket_server_type>::handle_ws_message, this, &ws_server, _1, _2 ) );
 
@@ -436,6 +438,7 @@ void webserver_plugin_impl<websocket_server_type>::start_webserver()
         http_server.clear_error_channels( websocketpp::log::elevel::all );
         http_server.init_asio( &http_ios );
         http_server.set_reuse_addr( true );
+        http_server.set_max_http_body_size( HIVE_MAX_BODY_SIZE );
 
         http_server.set_http_handler( boost::bind( &webserver_plugin_impl<websocket_server_type>::handle_http_message, this, &http_server, _1 ) );
 
@@ -494,6 +497,7 @@ void webserver_plugin_impl<websocket_server_type>::start_webserver()
         unix_server.clear_access_channels( websocketpp::log::alevel::all );
         unix_server.clear_error_channels( websocketpp::log::elevel::all );
         unix_server.init_asio( &http_ios );
+        unix_server.set_max_http_body_size( HIVE_MAX_BODY_SIZE );
 
         unix_server.set_http_handler( boost::bind( &webserver_plugin_impl<websocket_server_type>::handle_http_request, this, &unix_server, _1 ) );
         //unix_server.set_http_handler([&](connection_hdl hdl) {
@@ -581,11 +585,6 @@ void webserver_plugin_impl<websocket_server_type>::handle_ws_message( websocket_
       if( msg->get_opcode() == websocketpp::frame::opcode::text )
       {
         auto body = msg->get_payload();
-        if( body.size() > HIVE_MAX_HTTP_REQUEST_BODY_SIZE )
-        {
-          con->send( "Request body too large" );
-          return;
-        }
         LOG_DELAY(arrival_time, fc::seconds(4), "Excessive delay to get ws payload");
 
         auto response =  api->call( body );
@@ -628,15 +627,6 @@ void webserver_plugin_impl<websocket_server_type>::handle_http_message( websocke
 {
   auto con = server->get_con_from_hdl( std::move( hdl ) );
   con->defer_http_response();
-
-  auto body = con->get_request_body();
-  if( body.size() > HIVE_MAX_HTTP_REQUEST_BODY_SIZE )
-  {
-    con->set_body( "Request body too large" );
-    con->set_status( websocketpp::http::status_code::request_entity_too_large );
-    con->send_http_response();
-    return;
-  }
 
   fc::time_point arrival_time = fc::time_point::now();
   boost::asio::post(thread_pool_ios, [con, this, arrival_time]() {
