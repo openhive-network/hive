@@ -15,7 +15,11 @@ namespace chainbase {
 
   // BLOCK_SIZE - it means how many objects fit in allocated memory block
   template <typename T, uint32_t BLOCK_SIZE, bool PRESERVE_LAST_BLOCK, bool USE_MANAGED_MAPPED_FILE = !_ENABLE_STD_ALLOCATOR>
-  class pool_allocator_t : public std::conditional_t<USE_MANAGED_MAPPED_FILE, bip::allocator<T, bip::managed_mapped_file::segment_manager>, std::allocator<T>>
+#if defined(ENABLE_STD_ALLOCATOR)
+  class pool_allocator_t : public std::allocator<T>
+#else
+  class pool_allocator_t : public bip::allocator<T, bip::managed_mapped_file::segment_manager>
+#endif // ENABLE_STD_ALLOCATOR
     {
     static_assert( BLOCK_SIZE > 0 && (BLOCK_SIZE & (BLOCK_SIZE-1)) == 0, "BLOCK_SIZE should be power of 2!" );
 
