@@ -6,9 +6,8 @@
   * Does NOT use chainbase::database — tests pool_allocator_t directly.
   */
 #define BOOST_TEST_MODULE std_allocator_test
-#define BOOST_TEST_DYN_LINK
 
-#include <boost/test/unit_test.hpp>
+#include <boost/test/included/unit_test.hpp>
 #include <chainbase/pool_allocator.hpp>
 
 using namespace chainbase;
