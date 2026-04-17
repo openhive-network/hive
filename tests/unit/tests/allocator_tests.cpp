@@ -17,8 +17,8 @@ using namespace boost::multi_index;
 
 namespace bfs = boost::filesystem;
 
-// Use type number 1 to avoid conflict with book (type 0) in test.cpp
-class widget : public chainbase::object<1, widget>
+// Use a high type number to avoid conflict with chain object types
+class widget : public chainbase::object<9999, widget>
 {
   CHAINBASE_OBJECT( widget );
 

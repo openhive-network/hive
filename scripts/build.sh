@@ -173,10 +173,6 @@ if [[ -d "$HIVED_INSTALLATION_DIR" ]]; then
         mv "$abs_build_dir/tests/unit/"* "$HIVED_INSTALLATION_DIR/"
     fi
 
-    if [[ -f "$abs_build_dir/libraries/chainbase/test/chainbase_test" ]]; then
-        mv "$abs_build_dir/libraries/chainbase/test/chainbase_test" "$HIVED_INSTALLATION_DIR/"
-    fi
-
     rm -rf "$HIVED_INSTALLATION_DIR/CMakeFiles" "$HIVED_INSTALLATION_DIR/cmake_install.cmake"
 
     # Copy sst_dump tools - check build directory first, then preinstalled path

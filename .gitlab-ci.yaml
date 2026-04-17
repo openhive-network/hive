@@ -408,18 +408,6 @@ chain_test:
     when: always
     expire_in: 1 week
 
-chainbase_test:
-  extends: .unit_tests_base
-  script:
-    - timeout 5m ./hived-testnet-binaries/chainbase_test --run_test=pool_allocator_tests --log_format=JUNIT --log_sink=chainbase_test_results.xml --log_level=test_suite > chainbase_test.log 2>&1
-  artifacts:
-    reports:
-      junit: chainbase_test_results.xml
-    paths:
-      - chainbase_test.log
-    when: always
-    expire_in: 1 week
-
 # Split plugin_test into two parallel jobs:
 # - witness_tests uses real-time block production (slow, ~15 min)
 # - other suites use debug_generate_blocks (fast, ~5 min)

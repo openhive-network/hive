@@ -27,9 +27,15 @@ namespace chainbase {
       static constexpr uint32_t block_size = BLOCK_SIZE;
       static constexpr bool use_managed_mapped_file = USE_MANAGED_MAPPED_FILE;
 
-      using segment_manager_t = std::conditional_t<USE_MANAGED_MAPPED_FILE, bip::managed_mapped_file::segment_manager, void>;
+#if defined(ENABLE_STD_ALLOCATOR)
+      using segment_manager_t = void;
       template <typename T2>
-      using allocator_t = std::conditional_t<USE_MANAGED_MAPPED_FILE, bip::allocator<T2, segment_manager_t>, std::allocator<T2>>;
+      using allocator_t = std::allocator<T2>;
+#else
+      using segment_manager_t = bip::managed_mapped_file::segment_manager;
+      template <typename T2>
+      using allocator_t = bip::allocator<T2, segment_manager_t>;
+#endif // ENABLE_STD_ALLOCATOR
       using base_class_t = allocator_t<T>;
 
       using alloc_traits = std::allocator_traits<base_class_t>;
@@ -50,28 +56,29 @@ namespace chainbase {
 
       typedef std::false_type is_always_equal;
 
-      template <bool _USE_MANAGED_MAPPED_FILE = USE_MANAGED_MAPPED_FILE>
-      pool_allocator_t(segment_manager_t* segment_manager, std::enable_if_t<_USE_MANAGED_MAPPED_FILE>* = nullptr)
+#if defined(ENABLE_STD_ALLOCATOR)
+      pool_allocator_t()
+        {
+        }
+      template <typename Allocator>
+      pool_allocator_t(const Allocator& /*other*/)
+        {
+        }
+#else
+      pool_allocator_t(segment_manager_t* segment_manager)
         : base_class_t(segment_manager),
           block_index(typename decltype(block_index)::allocator_type(segment_manager)),
           block_list(typename decltype(block_list)::allocator_type(segment_manager))
         {
         }
-      template <bool _USE_MANAGED_MAPPED_FILE = USE_MANAGED_MAPPED_FILE>
-      pool_allocator_t(std::enable_if_t<!_USE_MANAGED_MAPPED_FILE>* = nullptr)
-        {
-        }
-      template <typename Allocator, bool _USE_MANAGED_MAPPED_FILE = USE_MANAGED_MAPPED_FILE>
-      pool_allocator_t(const Allocator& other, std::enable_if_t<_USE_MANAGED_MAPPED_FILE>* = nullptr)
+      template <typename Allocator>
+      pool_allocator_t(const Allocator& other)
         : base_class_t(other.get_segment_manager()),
           block_index(typename decltype(block_index)::allocator_type(other.get_segment_manager())),
           block_list(typename decltype(block_list)::allocator_type(other.get_segment_manager()))
         {
         }
-      template <typename Allocator, bool _USE_MANAGED_MAPPED_FILE = USE_MANAGED_MAPPED_FILE>
-      pool_allocator_t(const Allocator& other, std::enable_if_t<!_USE_MANAGED_MAPPED_FILE>* = nullptr)
-        {
-        }
+#endif // ENABLE_STD_ALLOCATOR
 
       ~pool_allocator_t()
         {
@@ -93,28 +100,31 @@ namespace chainbase {
 
       segment_manager_t* get_segment_manager() const noexcept
         {
-        if constexpr (USE_MANAGED_MAPPED_FILE)
-          return base_class_t::get_segment_manager();
-        else
-          return nullptr;
+#if defined(ENABLE_STD_ALLOCATOR)
+        return nullptr;
+#else
+        return base_class_t::get_segment_manager();
+#endif // ENABLE_STD_ALLOCATOR
         }
 
       template <typename T2>
       auto get_generic_allocator() const
         {
-        if constexpr (USE_MANAGED_MAPPED_FILE)
-          return allocator_t<T2>(get_segment_manager());
-        else
-          return allocator_t<T2>();
+#if defined(ENABLE_STD_ALLOCATOR)
+        return allocator_t<T2>();
+#else
+        return allocator_t<T2>(get_segment_manager());
+#endif // ENABLE_STD_ALLOCATOR
         }
 
       template <typename T2, uint32_t BLOCK_SIZE2 = BLOCK_SIZE>
       auto get_pool_allocator() const
         {
-        if constexpr (USE_MANAGED_MAPPED_FILE)
-          return pool_allocator_t<T2, BLOCK_SIZE2, false, true>(get_segment_manager());
-        else
-          return pool_allocator_t<T2, BLOCK_SIZE2, false, false>();
+#if defined(ENABLE_STD_ALLOCATOR)
+        return pool_allocator_t<T2, BLOCK_SIZE2, false, false>();
+#else
+        return pool_allocator_t<T2, BLOCK_SIZE2, false, true>(get_segment_manager());
+#endif // ENABLE_STD_ALLOCATOR
         }
 
       uint32_t get_block_count() const noexcept { return block_index.size(); }
@@ -235,13 +245,15 @@ namespace chainbase {
           }
         };
 
-      using block_ptr_t = std::conditional_t<USE_MANAGED_MAPPED_FILE, bip::offset_ptr<block_t>, block_t*>;
-      using block_index_t = std::conditional_t<USE_MANAGED_MAPPED_FILE,
-        bip::set<block_t, block_comparator_t, bip::allocator<block_t, segment_manager_t>>,
-        std::set<block_t, block_comparator_t>>;
-      using block_list_t = std::conditional_t<USE_MANAGED_MAPPED_FILE,
-        bip::vector<block_ptr_t, bip::allocator<block_ptr_t, segment_manager_t>>,
-        std::vector<block_ptr_t>>;
+#if defined(ENABLE_STD_ALLOCATOR)
+      using block_ptr_t = block_t*;
+      using block_index_t = std::set<block_t, block_comparator_t>;
+      using block_list_t = std::vector<block_ptr_t>;
+#else
+      using block_ptr_t = bip::offset_ptr<block_t>;
+      using block_index_t = bip::set<block_t, block_comparator_t, bip::allocator<block_t, segment_manager_t>>;
+      using block_list_t = bip::vector<block_ptr_t, bip::allocator<block_ptr_t, segment_manager_t>>;
+#endif // ENABLE_STD_ALLOCATOR
 
     private:
       T* get_object_memory()
