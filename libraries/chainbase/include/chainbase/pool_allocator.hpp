@@ -38,15 +38,24 @@ namespace chainbase {
 #endif // ENABLE_STD_ALLOCATOR
       using base_class_t = allocator_t<T>;
 
-      using alloc_traits = std::allocator_traits<base_class_t>;
-      typedef typename alloc_traits::value_type value_type;
-      typedef typename alloc_traits::void_pointer void_pointer;
-      typedef typename alloc_traits::pointer pointer;
-      typedef typename alloc_traits::const_pointer const_pointer;
-      typedef typename alloc_traits::size_type size_type;
-      typedef typename alloc_traits::difference_type difference_type;
+      typedef typename base_class_t::value_type value_type;
+#if defined(ENABLE_STD_ALLOCATOR)
+      typedef typename std::allocator_traits<base_class_t>::void_pointer void_pointer;
+      typedef typename std::allocator_traits<base_class_t>::pointer pointer;
+      typedef typename std::allocator_traits<base_class_t>::const_pointer const_pointer;
+      typedef typename std::allocator_traits<base_class_t>::size_type size_type;
+      typedef typename std::allocator_traits<base_class_t>::difference_type difference_type;
       typedef value_type& reference;
       typedef const value_type& const_reference;
+#else
+      typedef typename base_class_t::void_pointer void_pointer;
+      typedef typename base_class_t::pointer pointer;
+      typedef typename base_class_t::const_pointer const_pointer;
+      typedef typename base_class_t::reference reference;
+      typedef typename base_class_t::const_reference const_reference;
+      typedef typename base_class_t::size_type size_type;
+      typedef typename base_class_t::difference_type difference_type;
+#endif // ENABLE_STD_ALLOCATOR
 
       template <typename U>
       struct rebind
@@ -476,16 +485,20 @@ namespace chainbase {
   constexpr uint32_t DEFAULT_UNDO_STATE_POOL_ALLOCATOR_BLOCK_SIZE = 1 << 8; // 256
 
   template <typename T, uint32_t BLOCK_SIZE = DEFAULT_MULTI_INDEX_POOL_ALLOCATOR_BLOCK_SIZE>
-  using multi_index_allocator = std::conditional_t<_ENABLE_MULTI_INDEX_POOL_ALLOCATOR,
-    //bip::adaptive_pool<T, bip::managed_mapped_file::segment_manager, BLOCK_SIZE>, <-- ABW: it is way slower
-    //  than pool_allocator_t, especially for large amounts of data that we have in mainnet
-    pool_allocator_t<T, BLOCK_SIZE, false>,
-    allocator<T> >;
+#if defined(ENABLE_MULTI_INDEX_POOL_ALLOCATOR)
+  //bip::adaptive_pool<T, bip::managed_mapped_file::segment_manager, BLOCK_SIZE>, <-- ABW: it is way slower
+  //  than pool_allocator_t, especially for large amounts of data that we have in mainnet
+  using multi_index_allocator = pool_allocator_t<T, BLOCK_SIZE, false>;
+#else
+  using multi_index_allocator = allocator<T>;
+#endif // ENABLE_MULTI_INDEX_POOL_ALLOCATOR
 
   template <typename T, uint32_t BLOCK_SIZE = DEFAULT_UNDO_STATE_POOL_ALLOCATOR_BLOCK_SIZE>
-  using undo_state_allocator = std::conditional_t<_ENABLE_UNDO_STATE_POOL_ALLOCATOR,
-    pool_allocator_t<T, BLOCK_SIZE, true>,
-    allocator<T> >;
+#if defined(ENABLE_UNDO_STATE_POOL_ALLOCATOR)
+  using undo_state_allocator = pool_allocator_t<T, BLOCK_SIZE, true>;
+#else
+  using undo_state_allocator = allocator<T>;
+#endif // ENABLE_UNDO_STATE_POOL_ALLOCATOR
 
   template <typename T, uint32_t BLOCK_SIZE = DEFAULT_UNDO_STATE_POOL_ALLOCATOR_BLOCK_SIZE>
   using undo_allocator_carrier = shared_allocator_carrier<T, BLOCK_SIZE>;
