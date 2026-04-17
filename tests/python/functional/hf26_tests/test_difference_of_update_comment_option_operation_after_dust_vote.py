@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from beekeepy.exceptions import CommunicationError
+from test_tools.exceptions import CommunicationError
 
 import test_tools as tt
 

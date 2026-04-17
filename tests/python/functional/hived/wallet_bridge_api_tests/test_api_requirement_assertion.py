@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pytest
-from beekeepy.exceptions import ApiNotFoundError, ErrorInResponseError
+from test_tools.exceptions import ApiNotFoundError, ErrorInResponseError
 
 if TYPE_CHECKING:
     import test_tools as tt

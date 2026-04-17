@@ -5,7 +5,7 @@ from typing import Final
 import pytest
 import test_tools as tt
 
-from wax.helpy.exceptions import BlockWaitTimeoutError
+from test_tools.exceptions import BlockWaitTimeoutError
 
 
 def test_raising_timeout(node: tt.InitNode) -> None:

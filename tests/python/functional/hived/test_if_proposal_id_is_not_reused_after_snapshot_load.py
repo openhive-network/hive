@@ -3,7 +3,7 @@ from __future__ import annotations
 import time
 
 import pytest
-from beekeepy.exceptions import FailedToStartExecutableError
+from test_tools.exceptions import FailedToStartExecutableError
 
 import test_tools as tt
 from hive_local_tools.functional import connect_nodes

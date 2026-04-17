@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 
 import test_tools as tt
-from beekeepy.exceptions import FailedToStartExecutableError
+from test_tools.exceptions import FailedToStartExecutableError
 from hive_local_tools.functional.python import generate_to_block
 
 
