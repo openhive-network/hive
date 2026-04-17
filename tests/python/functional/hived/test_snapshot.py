@@ -9,7 +9,7 @@ import pytest
 import test_tools as tt
 from hive_local_tools.constants import BASE_ACCOUNTS
 from hive_local_tools.functional.python.compare_snapshot import compare_snapshots_contents
-from beekeepy.exceptions import FailedToStartExecutableError
+from test_tools.exceptions import FailedToStartExecutableError
 
 
 def _dump_snapshot_with_retry(node: tt.InitNode | tt.ApiNode, name: str = "snapshot", close: bool = False, max_retries: int = 3):
@@ -27,7 +27,7 @@ def _dump_snapshot_with_retry(node: tt.InitNode | tt.ApiNode, name: str = "snaps
 
 def _run_node_with_retry(node: tt.InitNode | tt.ApiNode, max_retries: int = 3, **kwargs) -> None:
     """Run node with retry logic for flaky CI environments."""
-    from beekeepy.exceptions import CommunicationError
+    from test_tools.exceptions import CommunicationError
     for attempt in range(max_retries):
         try:
             node.run(**kwargs)

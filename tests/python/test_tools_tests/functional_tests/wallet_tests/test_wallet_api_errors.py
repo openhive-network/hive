@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import pytest
 import test_tools as tt
-from beekeepy.exceptions import ErrorInResponseError
+from test_tools.exceptions import ErrorInResponseError
 
-from wax.exceptions import WaxAssertionError
+from test_tools.exceptions import WaxAssertionError
 from wax.helpy import Hf26Asset as Asset
 
 

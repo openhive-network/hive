@@ -4,7 +4,7 @@ import pytest
 
 import test_tools as tt
 from hive_local_tools import run_for
-from wax.exceptions import WaxAssertionError
+from test_tools.exceptions import WaxAssertionError
 
 
 @run_for("testnet")

@@ -3,8 +3,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pytest
-from beekeepy.exceptions import ErrorInResponseError
-from wax.exceptions import WaxAssertionError
+from test_tools.exceptions import ErrorInResponseError
+from test_tools.exceptions import WaxAssertionError
 
 import test_tools as tt
 from hive_local_tools.functional.python.operation.custom_and_custom_json import CustomJson

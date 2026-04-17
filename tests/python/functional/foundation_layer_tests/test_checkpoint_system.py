@@ -7,7 +7,7 @@ import pytest
 import test_tools as tt
 from hive_local_tools.functional import simultaneous_node_startup
 from test_tools import complex_networks as ttcn
-from beekeepy.exceptions import FailedToStartExecutableError
+from test_tools.exceptions import FailedToStartExecutableError
 
 
 def set_checkpoint(node: tt.InitNode | tt.ApiNode, block_log: tt.BlockLog, block_num: int) -> None:

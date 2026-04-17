@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 
 import test_tools as tt
-from beekeepy.exceptions import FailedToStartExecutableError
+from test_tools.exceptions import FailedToStartExecutableError
 
 
 @pytest.mark.testnet()
