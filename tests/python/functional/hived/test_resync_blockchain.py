@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import pytest
-from beekeepy.exceptions import FailedToStartExecutableError
+from test_tools.exceptions import FailedToStartExecutableError
 
 import test_tools as tt
 # UNSET is a sentinel value used by hiveio_api (msgspec) for optional fields

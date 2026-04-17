@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 import msgspec
 import pytest
-from beekeepy.exceptions import ApiNotFoundError, ErrorInResponseError
+from test_tools.exceptions import ApiNotFoundError, ErrorInResponseError
 
 if TYPE_CHECKING:
     import test_tools as tt

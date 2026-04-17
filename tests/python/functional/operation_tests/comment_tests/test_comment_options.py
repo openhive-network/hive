@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import pytest
-from beekeepy.exceptions import BeekeepyError, ErrorInResponseError
+from test_tools.exceptions import BeekeepyError, ErrorInResponseError
 
 import test_tools as tt
 from hive_local_tools.functional.python.operation.comment import Comment
-from wax.exceptions import WaxError, WaxAssertionError
+from test_tools.exceptions import WaxError, WaxAssertionError
 
 UPDATED_COMMENT_OPTIONS = {
     "max_accepted_payout": tt.Asset.Tbd(100),
