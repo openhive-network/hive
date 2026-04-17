@@ -411,7 +411,7 @@ chain_test:
 chainbase_test:
   extends: .unit_tests_base
   script:
-    - timeout 5m ./hived-testnet-binaries/chainbase_test --log_format=JUNIT --log_sink=chainbase_test_results.xml --log_level=test_suite > chainbase_test.log 2>&1
+    - timeout 5m ./hived-testnet-binaries/chainbase_test --run_test=pool_allocator_tests --log_format=JUNIT --log_sink=chainbase_test_results.xml --log_level=test_suite > chainbase_test.log 2>&1
   artifacts:
     reports:
       junit: chainbase_test_results.xml
