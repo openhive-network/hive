@@ -14,7 +14,7 @@
 namespace chainbase {
 
   // BLOCK_SIZE - it means how many objects fit in allocated memory block
-  template <typename T, uint32_t BLOCK_SIZE, bool PRESERVE_LAST_BLOCK, bool USE_MANAGED_MAPPED_FILE = !_ENABLE_STD_ALLOCATOR>
+  template <typename T, uint32_t BLOCK_SIZE, bool PRESERVE_LAST_BLOCK>
 #if defined(ENABLE_STD_ALLOCATOR)
   class pool_allocator_t : public std::allocator<T>
 #else
@@ -25,7 +25,7 @@ namespace chainbase {
 
     public:
       static constexpr uint32_t block_size = BLOCK_SIZE;
-      static constexpr bool use_managed_mapped_file = USE_MANAGED_MAPPED_FILE;
+      static constexpr bool use_managed_mapped_file = !_ENABLE_STD_ALLOCATOR;
 
 #if defined(ENABLE_STD_ALLOCATOR)
       using segment_manager_t = void;
@@ -121,9 +121,9 @@ namespace chainbase {
       auto get_pool_allocator() const
         {
 #if defined(ENABLE_STD_ALLOCATOR)
-        return pool_allocator_t<T2, BLOCK_SIZE2, false, false>();
+        return pool_allocator_t<T2, BLOCK_SIZE2, false>();
 #else
-        return pool_allocator_t<T2, BLOCK_SIZE2, false, true>(get_segment_manager());
+        return pool_allocator_t<T2, BLOCK_SIZE2, false>(get_segment_manager());
 #endif // ENABLE_STD_ALLOCATOR
         }
 
@@ -381,17 +381,17 @@ namespace chainbase {
       static size_t             blocks_popped_count;
     };
 
-  template <typename T, uint32_t BLOCK_SIZE, bool PRESERVE_LAST_BLOCK, bool USE_MANAGED_MAPPED_FILE>
-  size_t pool_allocator_t<T, BLOCK_SIZE, PRESERVE_LAST_BLOCK, USE_MANAGED_MAPPED_FILE>::blocks_allocated_count = 0;
-  template <typename T, uint32_t BLOCK_SIZE, bool PRESERVE_LAST_BLOCK, bool USE_MANAGED_MAPPED_FILE>
-  size_t pool_allocator_t<T, BLOCK_SIZE, PRESERVE_LAST_BLOCK, USE_MANAGED_MAPPED_FILE>::blocks_released_count = 0;
-  template <typename T, uint32_t BLOCK_SIZE, bool PRESERVE_LAST_BLOCK, bool USE_MANAGED_MAPPED_FILE>
-  size_t pool_allocator_t<T, BLOCK_SIZE, PRESERVE_LAST_BLOCK, USE_MANAGED_MAPPED_FILE>::blocks_pushed_count = 0;
-  template <typename T, uint32_t BLOCK_SIZE, bool PRESERVE_LAST_BLOCK, bool USE_MANAGED_MAPPED_FILE>
-  size_t pool_allocator_t<T, BLOCK_SIZE, PRESERVE_LAST_BLOCK, USE_MANAGED_MAPPED_FILE>::blocks_popped_count = 0;
+  template <typename T, uint32_t BLOCK_SIZE, bool PRESERVE_LAST_BLOCK>
+  size_t pool_allocator_t<T, BLOCK_SIZE, PRESERVE_LAST_BLOCK>::blocks_allocated_count = 0;
+  template <typename T, uint32_t BLOCK_SIZE, bool PRESERVE_LAST_BLOCK>
+  size_t pool_allocator_t<T, BLOCK_SIZE, PRESERVE_LAST_BLOCK>::blocks_released_count = 0;
+  template <typename T, uint32_t BLOCK_SIZE, bool PRESERVE_LAST_BLOCK>
+  size_t pool_allocator_t<T, BLOCK_SIZE, PRESERVE_LAST_BLOCK>::blocks_pushed_count = 0;
+  template <typename T, uint32_t BLOCK_SIZE, bool PRESERVE_LAST_BLOCK>
+  size_t pool_allocator_t<T, BLOCK_SIZE, PRESERVE_LAST_BLOCK>::blocks_popped_count = 0;
 
-  template <typename T, uint32_t BLOCK_SIZE, bool PRESERVE_LAST_BLOCK, bool USE_MANAGED_MAPPED_FILE>
-  constexpr uint32_t pool_allocator_t<T, BLOCK_SIZE, PRESERVE_LAST_BLOCK, USE_MANAGED_MAPPED_FILE>::block_t::invalid_index;
+  template <typename T, uint32_t BLOCK_SIZE, bool PRESERVE_LAST_BLOCK>
+  constexpr uint32_t pool_allocator_t<T, BLOCK_SIZE, PRESERVE_LAST_BLOCK>::block_t::invalid_index;
 
   template <typename POOL_ALLOCATOR>
   class shared_pool_allocator_t;
@@ -402,12 +402,12 @@ namespace chainbase {
     * created and used. It means those allocators are only created for the constructor call and immediately destroyed.
     * They are never used. Hence it does not even provide allocation related methods.
     */
-  template <typename T, uint32_t BLOCK_SIZE, bool USE_MANAGED_MAPPED_FILE = !_ENABLE_STD_ALLOCATOR>
+  template <typename T, uint32_t BLOCK_SIZE>
   class shared_allocator_carrier
   {
   public:
     template<typename U>
-    using impl_allocator_t = pool_allocator_t<U, BLOCK_SIZE, true, USE_MANAGED_MAPPED_FILE>;
+    using impl_allocator_t = pool_allocator_t<U, BLOCK_SIZE, true>;
 
     using value_type = typename impl_allocator_t<T>::value_type;
     using void_pointer = typename impl_allocator_t<T>::void_pointer;
@@ -453,7 +453,7 @@ namespace chainbase {
     typedef std::false_type is_always_equal;
 
     template <typename T>
-    shared_pool_allocator_t( const shared_allocator_carrier<T, POOL_ALLOCATOR::block_size, POOL_ALLOCATOR::use_managed_mapped_file>& carrier )
+    shared_pool_allocator_t( const shared_allocator_carrier<T, POOL_ALLOCATOR::block_size>& carrier )
       : impl( carrier.template get_carried_allocator<value_type>() ) {}
 
     ~shared_pool_allocator_t() {}
@@ -462,7 +462,11 @@ namespace chainbase {
     void deallocate( pointer p, size_type n = 1 ) { impl->deallocate( p, n ); }
 
   private:
-    using impl_ptr_t = std::conditional_t<POOL_ALLOCATOR::use_managed_mapped_file, bip::offset_ptr<POOL_ALLOCATOR>, POOL_ALLOCATOR* >;
+#if defined(ENABLE_STD_ALLOCATOR)
+    using impl_ptr_t = POOL_ALLOCATOR*;
+#else
+    using impl_ptr_t = bip::offset_ptr<POOL_ALLOCATOR>;
+#endif // ENABLE_STD_ALLOCATOR
 
     impl_ptr_t impl;
   };

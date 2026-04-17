@@ -59,16 +59,16 @@ namespace type_traits {
 template <typename T>
 struct get_allocator_helper_t
 {
-  template <template <typename, uint32_t, bool> class Allocator,
-            typename T2, uint32_t BLOCK_SIZE, bool USE_MANAGED_MAPPED_FILE>
-  static auto get_generic_allocator(const Allocator<T2, BLOCK_SIZE, USE_MANAGED_MAPPED_FILE>& a)
+  template <template <typename, uint32_t> class Allocator,
+            typename T2, uint32_t BLOCK_SIZE>
+  static auto get_generic_allocator(const Allocator<T2, BLOCK_SIZE>& a)
   {
     return a.template get_generic_allocator<T>();
   }
 
-  template <template <typename, uint32_t, bool, bool> class Allocator,
-            typename T2, uint32_t BLOCK_SIZE, bool PRESERVE_LAST_BLOCK, bool USE_MANAGED_MAPPED_FILE>
-  static auto get_generic_allocator(const Allocator<T2, BLOCK_SIZE, PRESERVE_LAST_BLOCK, USE_MANAGED_MAPPED_FILE>& a)
+  template <template <typename, uint32_t, bool> class Allocator,
+            typename T2, uint32_t BLOCK_SIZE, bool PRESERVE_LAST_BLOCK>
+  static auto get_generic_allocator(const Allocator<T2, BLOCK_SIZE, PRESERVE_LAST_BLOCK>& a)
   {
     return a.template get_generic_allocator<T>();
   }
