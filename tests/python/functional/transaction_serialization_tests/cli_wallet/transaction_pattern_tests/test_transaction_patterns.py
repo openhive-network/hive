@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 import test_tools as tt
-from beekeepy.exceptions import ErrorInResponseError
+from test_tools.exceptions import ErrorInResponseError
 from hive_local_tools.functional.python.transaction_serialization.cli_wallet.transaction_pattern import (
     VerifyPatternFunctionT,
     verify_generated_transaction_with_binary_pattern,

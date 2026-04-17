@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Iterable
 
 import pytest
-from beekeepy.exceptions import ErrorInResponseError
+from test_tools.exceptions import ErrorInResponseError
 
 from hive_local_tools.functional.python.operation import (
     get_number_of_fill_order_operations,

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import test_tools as tt
-from beekeepy.exceptions import CommunicationError
+from test_tools.exceptions import CommunicationError
 from .utilities import check_keys, create_accounts
 
 key = "STM8grZpsMPnH7sxbMVZHWEu1D26F3GwLW1fYnZEuwzT4Rtd57AER"

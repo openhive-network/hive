@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 
 import pytest
-from beekeepy.exceptions import ErrorInResponseError
+from test_tools.exceptions import ErrorInResponseError
 from schemas.convert import json_encode
 
 import test_tools as tt

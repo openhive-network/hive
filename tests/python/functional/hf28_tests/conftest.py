@@ -4,7 +4,7 @@ import time
 from pathlib import Path
 
 import pytest
-from beekeepy.exceptions import CommunicationError, FailedToStartExecutableError
+from test_tools.exceptions import CommunicationError, FailedToStartExecutableError
 from loguru import logger
 
 import test_tools as tt

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import time
 
-from beekeepy.exceptions import CommunicationError, FailedToStartExecutableError
+from test_tools.exceptions import CommunicationError, FailedToStartExecutableError
 from loguru import logger
 
 import test_tools as tt

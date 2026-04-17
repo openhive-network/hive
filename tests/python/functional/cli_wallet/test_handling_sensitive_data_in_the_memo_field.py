@@ -4,7 +4,7 @@ from copy import deepcopy
 from typing import Any
 
 import pytest
-from beekeepy.exceptions import CommunicationError
+from test_tools.exceptions import CommunicationError
 
 import test_tools as tt
 from hive_local_tools import run_for

@@ -3,7 +3,7 @@ from __future__ import annotations
 import time
 
 import pytest
-from beekeepy.exceptions import CommunicationError, FailedToStartExecutableError
+from test_tools.exceptions import CommunicationError, FailedToStartExecutableError
 
 import test_tools as tt
 from test_tools import complex_networks as ttcn
