@@ -106,14 +106,18 @@ namespace chainbase {
   using allocator = bip::allocator<T, bip::managed_mapped_file::segment_manager>;
 #endif // ENABLE_STD_ALLOCATOR
 
-  using shared_string = std::conditional_t< _ENABLE_STD_ALLOCATOR,
-    std::string,
-    bip::basic_string< char, std::char_traits< char >, allocator< char > > >;
+#if defined(ENABLE_STD_ALLOCATOR)
+  using shared_string = std::string;
+#else
+  using shared_string = bip::basic_string< char, std::char_traits< char >, allocator< char > >;
+#endif // ENABLE_STD_ALLOCATOR
 
   template<typename T>
-  using t_vector = typename std::conditional_t< _ENABLE_STD_ALLOCATOR,
-    std::vector< T, allocator<T> >,
-    bip::vector< T, allocator<T> > >;
+#if defined(ENABLE_STD_ALLOCATOR)
+  using t_vector = std::vector< T, allocator<T> >;
+#else
+  using t_vector = bip::vector< T, allocator<T> >;
+#endif // ENABLE_STD_ALLOCATOR
 
   template< typename FIRST_TYPE, typename SECOND_TYPE >
   using t_pair = std::pair< FIRST_TYPE, SECOND_TYPE >;
@@ -122,28 +126,38 @@ namespace chainbase {
   using t_allocator_pair = allocator< t_pair< const FIRST_TYPE, SECOND_TYPE > >;
 
   template< typename KEY_TYPE, typename LESS_FUNC = std::less<KEY_TYPE>>
-  using t_flat_set = typename std::conditional_t< _ENABLE_STD_ALLOCATOR,
-    boost::container::flat_set< KEY_TYPE, LESS_FUNC, allocator< KEY_TYPE > >,
-    bip::flat_set< KEY_TYPE, LESS_FUNC, allocator< KEY_TYPE > > >;
+#if defined(ENABLE_STD_ALLOCATOR)
+  using t_flat_set = boost::container::flat_set< KEY_TYPE, LESS_FUNC, allocator< KEY_TYPE > >;
+#else
+  using t_flat_set = bip::flat_set< KEY_TYPE, LESS_FUNC, allocator< KEY_TYPE > >;
+#endif // ENABLE_STD_ALLOCATOR
 
   template< typename KEY_TYPE, typename LESS_FUNC = std::less<KEY_TYPE>, typename ALLOC = allocator< KEY_TYPE > >
-  using t_set = typename std::conditional_t< _ENABLE_STD_ALLOCATOR,
-    std::set< KEY_TYPE, LESS_FUNC, ALLOC >,
-    bip::set< KEY_TYPE, LESS_FUNC, ALLOC > >;
+#if defined(ENABLE_STD_ALLOCATOR)
+  using t_set = std::set< KEY_TYPE, LESS_FUNC, ALLOC >;
+#else
+  using t_set = bip::set< KEY_TYPE, LESS_FUNC, ALLOC >;
+#endif // ENABLE_STD_ALLOCATOR
 
   template< typename KEY_TYPE, typename VALUE_TYPE, typename LESS_FUNC = std::less<KEY_TYPE>>
-  using t_flat_map = typename std::conditional_t< _ENABLE_STD_ALLOCATOR,
-    boost::container::flat_map< KEY_TYPE, VALUE_TYPE, LESS_FUNC, allocator< t_pair< KEY_TYPE, VALUE_TYPE > > >,
-    bip::flat_map< KEY_TYPE, VALUE_TYPE, LESS_FUNC, allocator< t_pair< KEY_TYPE, VALUE_TYPE > > > >;
+#if defined(ENABLE_STD_ALLOCATOR)
+  using t_flat_map = boost::container::flat_map< KEY_TYPE, VALUE_TYPE, LESS_FUNC, allocator< t_pair< KEY_TYPE, VALUE_TYPE > > >;
+#else
+  using t_flat_map = bip::flat_map< KEY_TYPE, VALUE_TYPE, LESS_FUNC, allocator< t_pair< KEY_TYPE, VALUE_TYPE > > >;
+#endif // ENABLE_STD_ALLOCATOR
 
   template< typename KEY_TYPE, typename VALUE_TYPE, typename LESS_FUNC = std::less<KEY_TYPE>, typename ALLOC = allocator< t_pair< KEY_TYPE, VALUE_TYPE > > >
-  using t_map = typename std::conditional_t< _ENABLE_STD_ALLOCATOR,
-    std::map< KEY_TYPE, VALUE_TYPE, LESS_FUNC, ALLOC >,
-    bip::map< KEY_TYPE, VALUE_TYPE, LESS_FUNC, ALLOC > >;
+#if defined(ENABLE_STD_ALLOCATOR)
+  using t_map = std::map< KEY_TYPE, VALUE_TYPE, LESS_FUNC, ALLOC >;
+#else
+  using t_map = bip::map< KEY_TYPE, VALUE_TYPE, LESS_FUNC, ALLOC >;
+#endif // ENABLE_STD_ALLOCATOR
 
   template< typename T, typename ALLOC = allocator< T > >
-  using t_deque = typename std::conditional_t< _ENABLE_STD_ALLOCATOR,
-    std::deque< T, ALLOC >,
-    bip::deque< T, ALLOC > >;
+#if defined(ENABLE_STD_ALLOCATOR)
+  using t_deque = std::deque< T, ALLOC >;
+#else
+  using t_deque = bip::deque< T, ALLOC >;
+#endif // ENABLE_STD_ALLOCATOR
 
 } // namespace chainbase

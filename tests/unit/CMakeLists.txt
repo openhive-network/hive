@@ -14,6 +14,8 @@ ENABLE_TESTING()
 file(GLOB UNIT_TESTS
    "tests/*.cpp"
 )
+# Exclude std_allocator test — it has its own target with -DENABLE_STD_ALLOCATOR
+list(FILTER UNIT_TESTS EXCLUDE REGEX "test_std_allocator\\.cpp$")
 
 include(BoostTestTargets.cmake)
 
@@ -98,5 +100,15 @@ target_link_libraries( plugin_test db_fixture hive_chain hive_protocol account_h
 if(MSVC)
   set_source_files_properties( tests/serialization_tests.cpp PROPERTIES COMPILE_FLAGS "/bigobj" )
 endif(MSVC)
+
+# Standalone test for pool_allocator_t in std::allocator mode.
+# Compiled with -DENABLE_STD_ALLOCATOR to exercise the code path that uses
+# std::allocator instead of boost::interprocess allocator.
+# Uses header-only Boost.Test to avoid static/shared library mismatch.
+add_executable( std_allocator_test tests/test_std_allocator.cpp )
+target_compile_definitions( std_allocator_test PRIVATE ENABLE_STD_ALLOCATOR )
+target_include_directories( std_allocator_test PRIVATE
+  "${CMAKE_SOURCE_DIR}/libraries/chainbase/include" )
+target_link_libraries( std_allocator_test ${PLATFORM_SPECIFIC_LIBS} )
 
 #add_subdirectory( generate_empty_blocks )
