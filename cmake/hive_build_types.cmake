@@ -1,21 +1,23 @@
 # This file encapsulates custom build configuration types to be specified to CMake. It must be included before first `project()` or `enable_language()` statement.
+#
+# Sanitizer build types (Asan, Msan) are mutually exclusive — CMAKE_BUILD_TYPE
+# accepts only a single value, so only one sanitizer can be active per build.
+# Each sanitizer is defined via define_sanitizer_build_type() below.
 
 cmake_policy(SET CMP0057 NEW) # Related to IN_LIST operator behavior
-
-# List of sanitizer build types — add new sanitizers here
-set(HIVE_SANITIZER_BUILD_TYPES Asan Msan)
 
 GET_PROPERTY(isMultiConfig GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
 
 if(isMultiConfig)
-    foreach(sanitizer ${HIVE_SANITIZER_BUILD_TYPES})
-        if(NOT "${sanitizer}" IN_LIST CMAKE_CONFIGURATION_TYPES)
-            LIST(APPEND CMAKE_CONFIGURATION_TYPES ${sanitizer})
-        endif()
-    endforeach()
+    if(NOT "Asan" IN_LIST CMAKE_CONFIGURATION_TYPES)
+        LIST(APPEND CMAKE_CONFIGURATION_TYPES Asan)
+    endif()
+    if(NOT "Msan" IN_LIST CMAKE_CONFIGURATION_TYPES)
+        LIST(APPEND CMAKE_CONFIGURATION_TYPES Msan)
+    endif()
 else()
     SET(allowedBuildTypes )
-    LIST(APPEND allowedBuildTypes ${HIVE_SANITIZER_BUILD_TYPES} Debug Release RelWithDebInfo)
+    LIST(APPEND allowedBuildTypes Asan Msan Debug Release RelWithDebInfo)
 
     IF(NOT CMAKE_BUILD_TYPE)
       SET(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING "Choose the type of build, options are: ${allowedBuildTypes}" FORCE)
