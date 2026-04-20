@@ -25,7 +25,6 @@ namespace chainbase {
 
     public:
       static constexpr uint32_t block_size = BLOCK_SIZE;
-      static constexpr bool use_managed_mapped_file = !_ENABLE_STD_ALLOCATOR;
 
 #if defined(ENABLE_STD_ALLOCATOR)
       using segment_manager_t = void;

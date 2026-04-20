@@ -13,7 +13,9 @@
 using namespace chainbase;
 
 // Verify we are actually in std::allocator mode
-static_assert( _ENABLE_STD_ALLOCATOR, "This test must be compiled with ENABLE_STD_ALLOCATOR" );
+#if !defined(ENABLE_STD_ALLOCATOR)
+#error "This test must be compiled with ENABLE_STD_ALLOCATOR"
+#endif
 
 BOOST_AUTO_TEST_SUITE( std_allocator_pool_tests )
 
@@ -149,14 +151,6 @@ BOOST_AUTO_TEST_CASE( get_segment_manager_returns_nullptr )
 {
   pool_allocator_t<int, 16, false> alloc;
   BOOST_CHECK( alloc.get_segment_manager() == nullptr );
-}
-
-BOOST_AUTO_TEST_CASE( use_managed_mapped_file_is_false )
-{
-  using alloc_t = pool_allocator_t<int, 16, false>;
-  static_assert( !alloc_t::use_managed_mapped_file,
-    "use_managed_mapped_file must be false in ENABLE_STD_ALLOCATOR mode" );
-  BOOST_CHECK( true );
 }
 
 BOOST_AUTO_TEST_SUITE_END()

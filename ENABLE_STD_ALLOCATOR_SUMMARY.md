@@ -20,8 +20,7 @@ build type alongside Asan. Added a standalone test that exercises the
 ### Chainbase allocator headers
 - **allocator_helpers.hpp** — Added `#ifdef ENABLE_STD_ALLOCATOR` blocks for
   `allocator`, `shared_string`, `t_vector`, `t_flat_set`, `t_set`, `t_flat_map`,
-  `t_map`, `t_deque`. Added `_ENABLE_STD_ALLOCATOR` macro. Added 2-param
-  template matcher in `get_allocator_helper_t` for `shared_allocator_carrier`.
+  `t_map`, `t_deque`.
 - **pool_allocator.hpp** — Replaced all `std::conditional_t` and SFINAE
   constructors with `#ifdef`. Removed `USE_MANAGED_MAPPED_FILE` template
   parameter (was 4th param, now 3-param template). Same for
@@ -63,44 +62,20 @@ build type alongside Asan. Added a standalone test that exercises the
 - **tests/unit/tests/basic_tests.cpp** — Guard `chain_object_size` test.
 - **libraries/fc** — Submodule update.
 
-## Possible simplifications
+## Applied simplifications
 
-1. **Remove `_ENABLE_STD_ALLOCATOR`, `_ENABLE_MULTI_INDEX_POOL_ALLOCATOR`,
-   `_ENABLE_UNDO_STATE_POOL_ALLOCATOR` true/false macros** from
-   `allocator_helpers.hpp`. They were used by `std::conditional_t` which is now
-   gone. `_ENABLE_STD_ALLOCATOR` is still referenced by
-   `pool_allocator_t::use_managed_mapped_file` — replace with
-   `!defined(ENABLE_STD_ALLOCATOR)` or a constexpr. The other two are completely
-   unused.
+1. Removed `_ENABLE_STD_ALLOCATOR`, `_ENABLE_MULTI_INDEX_POOL_ALLOCATOR`,
+   `_ENABLE_UNDO_STATE_POOL_ALLOCATOR` true/false macros — they were only used
+   by `std::conditional_t` which is gone.
 
-2. **`pool_allocator_t::use_managed_mapped_file` member** — still exists as
-   `static constexpr bool use_managed_mapped_file = !_ENABLE_STD_ALLOCATOR`.
-   Only consumed by `shared_pool_allocator_t` constructor (to match
-   `shared_allocator_carrier` template). Since `shared_allocator_carrier` lost
-   its `USE_MANAGED_MAPPED_FILE` parameter, this member may no longer be needed.
-   Check if anything else reads it.
+2. Removed `pool_allocator_t::use_managed_mapped_file` static member — nothing
+   reads it after `shared_allocator_carrier` lost its template parameter.
 
-3. **`shared_pool_allocator_t` constructor** takes
-   `shared_allocator_carrier<T, POOL_ALLOCATOR::block_size>`. The
-   `POOL_ALLOCATOR::block_size` is accessed — but `use_managed_mapped_file` is
-   not accessed in the constructor anymore. If nothing else reads
-   `use_managed_mapped_file`, it can be removed.
+3. Removed 2-param `get_generic_allocator` overload — dead code.
+   `shared_allocator_carrier` doesn't have `get_generic_allocator()`, so the
+   overload would never compile if matched.
 
-4. **Squash commits** — there are 16 commits on this branch. Many are
-   incremental fixes (CI fix, move test file, rename parameter back, etc.).
-   Before merge, squash into logical units:
-   - One commit for CMake changes (Msan build type + ENABLE_STD_ALLOCATOR option
-     + hive_build_types refactor)
-   - One commit for allocator #ifdef refactoring (pool_allocator.hpp +
-     allocator_helpers.hpp)
-   - One commit for chainbase/chain ENABLE_STD_ALLOCATOR guards
-   - One commit for the std_allocator_test
+## Remaining TODO
 
-5. **The 4-param `get_generic_allocator` overload** in `allocator_helpers.hpp`
-   (matching `<typename, uint32_t, bool, bool>`) was removed because
-   `pool_allocator_t` lost its 4th parameter. The original 3-param overload
-   (matching `<typename, uint32_t, bool>`) now matches `pool_allocator_t`. The
-   new 2-param overload (matching `<typename, uint32_t>`) matches
-   `shared_allocator_carrier`. Verify both are actually called — if
-   `shared_allocator_carrier` never goes through `get_allocator_helper_t`, the
-   2-param overload is dead code.
+- **Squash commits** before merge — incremental fixes should be folded into
+  logical units.

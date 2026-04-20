@@ -23,24 +23,6 @@
 #define ENABLE_MULTI_INDEX_POOL_ALLOCATOR
 #define ENABLE_UNDO_STATE_POOL_ALLOCATOR
 
-#if defined(ENABLE_STD_ALLOCATOR)
-#define _ENABLE_STD_ALLOCATOR true
-#else
-#define _ENABLE_STD_ALLOCATOR false
-#endif // ENABLE_STD_ALLOCATOR
-
-#if defined(ENABLE_MULTI_INDEX_POOL_ALLOCATOR)
-#define _ENABLE_MULTI_INDEX_POOL_ALLOCATOR true
-#else
-#define _ENABLE_MULTI_INDEX_POOL_ALLOCATOR false
-#endif // ENABLE_MULTI_INDEX_POOL_ALLOCATOR
-
-#if defined(ENABLE_UNDO_STATE_POOL_ALLOCATOR)
-#define _ENABLE_UNDO_STATE_POOL_ALLOCATOR true
-#else
-#define _ENABLE_UNDO_STATE_POOL_ALLOCATOR false
-#endif // ENABLE_UNDO_STATE_POOL_ALLOCATOR
-
 namespace helpers {
 
 namespace type_traits {
@@ -59,13 +41,6 @@ namespace type_traits {
 template <typename T>
 struct get_allocator_helper_t
 {
-  template <template <typename, uint32_t> class Allocator,
-            typename T2, uint32_t BLOCK_SIZE>
-  static auto get_generic_allocator(const Allocator<T2, BLOCK_SIZE>& a)
-  {
-    return a.template get_generic_allocator<T>();
-  }
-
   template <template <typename, uint32_t, bool> class Allocator,
             typename T2, uint32_t BLOCK_SIZE, bool USE_MANAGED_MAPPED_FILE>
   static auto get_generic_allocator(const Allocator<T2, BLOCK_SIZE, USE_MANAGED_MAPPED_FILE>& a)
