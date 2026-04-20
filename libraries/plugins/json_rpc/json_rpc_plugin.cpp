@@ -15,7 +15,7 @@
 #include <fc/io/fstream.hpp>
 
 #define ENABLE_JSON_RPC_LOG
-#define HIVE_JSON_RPC_MAX_BATCH_SIZE 100
+#define HIVE_JSON_RPC_MAX_BATCH_SIZE 1000
 
 namespace hive { namespace plugins { namespace json_rpc {
 
