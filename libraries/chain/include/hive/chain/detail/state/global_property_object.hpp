@@ -57,6 +57,8 @@ public:
   inline temp_HBD_balance issue_HBD( const HBD_asset& hbd_amount, const HBD_price& exchange_rate );
   //burns all HBD on given balance into the void - for clearing null
   inline void burn_HBD( temp_HBD_balance& hbd_balance, const HBD_price& exchange_rate );
+  //converts all HIVE on given balance to HBD
+  inline temp_HBD_balance convert_HIVE_to_HBD( temp_HIVE_balance& hive_balance, const HBD_price& exchange_rate, bool update_virtual_supply = true );
 
   HBD_asset& access_current_hbd_supply() { return current_hbd_supply; } //TODO: should not be needed with init/burn/convert
   HBD_asset& access_initial_hbd_supply() { return init_hbd_supply; } //TODO: should not be needed with proper genesis rework
@@ -304,6 +306,21 @@ inline void dynamic_global_property_object::burn_HBD( temp_HBD_balance& hbd_bala
   current_hbd_supply -= hbd_amount;
   virtual_supply -= hbd_amount * exchange_rate;
   hbd_balance.burn_asset( hbd_amount );
+}
+
+inline temp_HBD_balance dynamic_global_property_object::convert_HIVE_to_HBD( temp_HIVE_balance& hive_balance, const HBD_price& exchange_rate, bool update_virtual_supply )
+{
+  temp_HBD_balance hbd_balance;
+  const HIVE_asset& hive_amount = hive_balance;
+  HBD_asset hbd_amount = hive_amount * exchange_rate;
+  hbd_balance.issue_asset( hbd_amount );
+  current_hbd_supply += hbd_amount;
+  current_supply -= hive_amount;
+  hive_balance.burn_asset( hive_amount );
+  //virtual_supply does not change in principle, but this routine is a replacement for one that did full update which means it repaired prior accumulated truncations
+  if( update_virtual_supply )
+    virtual_supply = current_hbd_supply * exchange_rate + current_supply;
+  return hbd_balance;
 }
 
 } } // hive::chain

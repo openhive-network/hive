@@ -2996,4 +2996,74 @@ BOOST_AUTO_TEST_CASE( removal_of_nonempty_balance_is_a_bug )
   } );
 }
 
+BOOST_AUTO_TEST_CASE( asset_conversion_test )
+{
+  BOOST_TEST_MESSAGE( "Testing asset conversions" );
+
+  // dgpo supports converting some assets (only HIVE to HBD at the moment)
+  // Use price that causes truncation: HBD_price(3, 7) means 3 HBD per 7 HIVE
+  // HBD->HIVE conversion (for virtual_supply): (hbd_amount * 7) / 3 truncates
+  // HIVE->HBD conversion: (hive_amount * 3) / 7 truncates
+
+  set_price_feed( HBD_price( 3, 7 ) );
+  generate_block();
+  const auto& exchange_rate = db->get_feed_history().current_median_history;
+
+  // Accumulate truncation errors through multiple issue_HBD calls, then convert HIVE to HBD.
+  // With update_virtual_supply=true the recalculation repairs accumulated truncation;
+  // with false virtual_supply is not touched at all.
+  auto test_convert = [&]( bool update_virtual_supply )
+  {
+    temp_HBD_balance hbd1, hbd2, hbd3;
+    temp_HIVE_balance hive_to_convert;
+    db->modify( db->get_dynamic_global_properties(), [&]( dynamic_global_property_object& dgpo )
+    {
+      // Issue 1 HBD three times: each adds (1*7)/3 = 2 HIVE to virtual_supply (truncated from 2.333)
+      // Total added to virtual_supply: 3 * 2 = 6 HIVE (instead of correct 7)
+      hbd1 = dgpo.issue_HBD( HBD_asset( 1 ), exchange_rate );
+      hbd2 = dgpo.issue_HBD( HBD_asset( 1 ), exchange_rate );
+      hbd3 = dgpo.issue_HBD( HBD_asset( 1 ), exchange_rate );
+      hive_to_convert = dgpo.issue_HIVE( HIVE_asset( 7 ) );
+    } );
+
+    HIVE_asset virtual_before = db->get_dynamic_global_properties().get_virtual_supply();
+
+    temp_HBD_balance converted;
+    db->modify( db->get_dynamic_global_properties(), [&]( dynamic_global_property_object& dgpo )
+    {
+      converted = dgpo.convert_HIVE_to_HBD( hive_to_convert, exchange_rate, update_virtual_supply );
+    } );
+
+    HIVE_asset virtual_after = db->get_dynamic_global_properties().get_virtual_supply();
+    // HIVE->HBD: (7 * 3) / 7 = 3 HBD
+    BOOST_REQUIRE_EQUAL( converted, HBD_asset( 3 ) );
+
+    if( update_virtual_supply )
+    {
+      // virtual_supply = current_hbd_supply * exchange_rate + current_supply
+      // Single multiplication of total 6 HBD: (6*7)/3 = 14 HIVE - repairs accumulated truncation
+      // The +1 difference vs virtual_before is the repaired truncation error (3 * floor(7/3) = 6 vs 7)
+      BOOST_REQUIRE_EQUAL( virtual_after - virtual_before, HIVE_asset( 1 ) );
+    }
+    else
+    {
+      // virtual_supply is NOT recalculated - stays unchanged, truncation errors remain
+      BOOST_REQUIRE_EQUAL( virtual_after, virtual_before );
+    }
+
+    // Clean up - merge all HBD into one balance to avoid further truncation in burns
+    hbd1.transfer_to( converted );
+    hbd2.transfer_to( converted );
+    hbd3.transfer_to( converted );
+    db->modify( db->get_dynamic_global_properties(), [&]( dynamic_global_property_object& dgpo )
+    {
+      dgpo.burn_HBD( converted, exchange_rate );
+    } );
+  };
+
+  test_convert( true );
+  test_convert( false );
+
+}
+
 BOOST_AUTO_TEST_SUITE_END()
