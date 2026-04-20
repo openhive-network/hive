@@ -397,6 +397,7 @@ chain_test:
     - curl -fsSL "${CI_SERVER_URL}/${CI_PROJECT_PATH}/-/raw/${CI_COMMIT_SHA}/scripts/run_chain_tests_parallel.sh" -o run_chain_tests_parallel.sh
     - chmod +x run_chain_tests_parallel.sh
     - ./run_chain_tests_parallel.sh ./hived-testnet-binaries/chain_test 6
+    - timeout 5m ./hived-testnet-binaries/std_allocator_test --log_level=test_suite > hived-testnet-binaries/std_allocator_test.log 2>&1
   artifacts:
     reports:
       junit: hived-testnet-binaries/chain_test_results.xml
@@ -405,18 +406,7 @@ chain_test:
       - hived-testnet-binaries/chain_test_parallel.log
       - hived-testnet-binaries/chain_test_list.txt
       - hived-testnet-binaries/chain_test_logs/
-    when: always
-    expire_in: 1 week
-
-std_allocator_test:
-  extends: .unit_tests_base
-  script:
-    - timeout 5m ./hived-testnet-binaries/std_allocator_test --log_format=JUNIT --log_sink=std_allocator_test_results.xml --log_level=test_suite > std_allocator_test.log 2>&1
-  artifacts:
-    reports:
-      junit: std_allocator_test_results.xml
-    paths:
-      - std_allocator_test.log
+      - hived-testnet-binaries/std_allocator_test.log
     when: always
     expire_in: 1 week
 
