@@ -34,13 +34,8 @@ using hive::protocol::comment_payout_update_operation;
 using hive::protocol::curation_reward_operation;
 using hive::protocol::vesting_shares_split_operation;
 
-// Local struct for process_comment_cashout
-struct reward_fund_context
-{
-  uint128_t          recent_claims = 0;
-  HIVE_asset         reward_balance_snapshot; // snapshot for rshare calculation (post-HF17)
-  temp_HIVE_balance  reward_balance;          // actual balance being spent
-};
+// Note: reward_fund_object is always singular (only "post" fund exists).
+// process_comment_cashout operates directly on get_reward_fund() without multi-fund abstraction.
 
 void initialize_core_indexes_03( database& db )
 {
@@ -397,59 +392,56 @@ void database::process_comment_cashout()
   util::comment_reward_context ctx;
   ctx.current_hive_price = get_feed_history().current_median_history;
 
-  vector< reward_fund_context > funds;
-  const auto& reward_idx = get_index< reward_fund_index, by_id >();
+  const auto& rf = get_reward_fund();
+
+  // Snapshot reward fund state into local variables
+  uint128_t recent_claims = 0;
+  HIVE_asset reward_balance_snapshot;
+  temp_HIVE_balance reward_balance;
 
   if( has_hardfork( HIVE_HARDFORK_0_17__774 ) )
   {
-    // Decay recent rshares of each fund
-    for( auto itr = reward_idx.begin(); itr != reward_idx.end(); ++itr )
+    // Decay recent rshares
+    modify( rf, [&]( reward_fund_object& rfo )
     {
-      // Add all reward funds to the local cache and decay their recent rshares
-      reward_fund_context rf_ctx;
-      modify( *itr, [&]( reward_fund_object& rfo )
-      {
-        fc::microseconds decay_time;
+      fc::microseconds decay_time;
 
-        if( has_hardfork( HIVE_HARDFORK_0_19__1051 ) )
-          decay_time = HIVE_RECENT_RSHARES_DECAY_TIME_HF19;
-        else
-          decay_time = HIVE_RECENT_RSHARES_DECAY_TIME_HF17;
+      if( has_hardfork( HIVE_HARDFORK_0_19__1051 ) )
+        decay_time = HIVE_RECENT_RSHARES_DECAY_TIME_HF19;
+      else
+        decay_time = HIVE_RECENT_RSHARES_DECAY_TIME_HF17;
 
-        if( ( _now - rfo.get_last_update() ) <= decay_time )
-          rfo.access_recent_claims() -= ( rfo.get_recent_claims() * ( _now - rfo.get_last_update() ).to_seconds() ) / decay_time.to_seconds();
-        else
-          rfo.access_recent_claims() = 0; // this should never happen - requires chain to be inactive for more than decay_time
-        rfo.access_last_update() = _now;
+      if( ( _now - rfo.get_last_update() ) <= decay_time )
+        rfo.access_recent_claims() -= ( rfo.get_recent_claims() * ( _now - rfo.get_last_update() ).to_seconds() ) / decay_time.to_seconds();
+      else
+        rfo.access_recent_claims() = 0; // this should never happen - requires chain to be inactive for more than decay_time
+      rfo.access_last_update() = _now;
 
-        rfo.access_reward_balance().transfer_to( rf_ctx.reward_balance );
-      } );
+      rfo.access_reward_balance().transfer_to( reward_balance );
+    } );
 
-      rf_ctx.recent_claims = itr->get_recent_claims();
-      rf_ctx.reward_balance_snapshot = rf_ctx.reward_balance.as_asset();
-
-      // The index is by ID, so the ID should be the current size of the vector (0, 1, 2, etc...)
-      assert( funds.size() == itr->get_id().get_value() );
-
-      funds.emplace_back( std::move( rf_ctx ) );
-    }
+    recent_claims = rf.get_recent_claims();
+    reward_balance_snapshot = reward_balance.as_asset();
+  }
+  else
+  {
+    modify( rf, [&]( reward_fund_object& rfo )
+    {
+      rfo.access_reward_balance().transfer_to( reward_balance );
+    } );
   }
 
   const auto& cidx        = get_index< comment_cashout_index, by_cashout_time >();
   const auto& com_by_root = get_index< comment_cashout_ex_index, by_root >();
 
   auto _current = cidx.begin();
-  // add all rshares about to be cashed out to the reward funds. This ensures equal satoshi per rshare payment
+  // add all rshares about to be cashed out to the reward fund. This ensures equal satoshi per rshare payment
   if( has_hardfork( HIVE_HARDFORK_0_17__771 ) )
   {
     while( _current != cidx.end() && _current->get_cashout_time() <= _now )
     {
       if( _current->get_net_rshares() > 0 )
-      {
-        const auto& rf = get_reward_fund();
-        funds[ rf.get_id() ].recent_claims += util::evaluate_reward_curve( _current->get_net_rshares(), rf.get_author_reward_curve(), rf.get_content_constant() );
-      }
-
+        recent_claims += util::evaluate_reward_curve( _current->get_net_rshares(), rf.get_author_reward_curve(), rf.get_content_constant() );
       ++_current;
     }
 
@@ -459,11 +451,6 @@ void database::process_comment_cashout()
   bool forward_curation_remainder = !has_hardfork( HIVE_HARDFORK_0_20__1877 );
   /*
     * Payout all comments
-    *
-    * Each payout follows a similar pattern, but for a different reason.
-    * Cashout comment helper does not know about the reward fund it is paying from.
-    * The helper only does token allocation based on curation rewards and the HBD
-    * global %, etc.
     *
     * Each context is used by get_rshare_reward to determine what part of each budget
     * the comment is entitled to. Prior to hardfork 17, all payouts are done against
@@ -478,12 +465,11 @@ void database::process_comment_cashout()
   {
     if( has_hardfork( HIVE_HARDFORK_0_17__771 ) )
     {
-      auto fund_id = get_reward_fund().get_id();
-      ctx.total_reward_shares2 = funds[ fund_id ].recent_claims;
-      ctx.total_reward_fund_hive = funds[ fund_id ].reward_balance_snapshot;
+      ctx.total_reward_shares2 = recent_claims;
+      ctx.total_reward_fund_hive = reward_balance_snapshot;
 
       const comment_object& _comment = get_comment( *_current );
-      cashout_comment_helper( ctx, funds[ fund_id ].reward_balance, _comment, *_current,
+      cashout_comment_helper( ctx, reward_balance, _comment, *_current,
         find_comment_cashout_ex( _comment ), forward_curation_remainder );
       ++count;
 
@@ -497,33 +483,21 @@ void database::process_comment_cashout()
     {
       comment_id_type root_id = find_comment_cashout_ex( _current->get_comment_id() )->get_root_id();
       auto itr = com_by_root.lower_bound( root_id );
-      const auto& rf = get_reward_fund();
-
-      temp_HIVE_balance fund_balance;
-      modify( rf, [&]( reward_fund_object& rfo )
-      {
-        rfo.access_reward_balance().transfer_to( fund_balance );
-      } );
 
       while( itr != com_by_root.end() && itr->get_root_id() == root_id )
       {
         const auto& comment_cashout_ex = *itr; ++itr;
         ctx.total_reward_shares2 = rf.get_recent_claims();
-        ctx.total_reward_fund_hive = fund_balance.as_asset();
+        ctx.total_reward_fund_hive = reward_balance.as_asset();
 
         const comment_object* comment = find_comment( comment_cashout_ex.get_comment_id() );
         FC_ASSERT( comment );
         const comment_cashout_object* comment_cashout = find_comment_cashout( comment_cashout_ex.get_comment_id() );
         FC_ASSERT( comment_cashout && "Not found" );
 
-        cashout_comment_helper( ctx, fund_balance, *comment, *comment_cashout, &comment_cashout_ex );
+        cashout_comment_helper( ctx, reward_balance, *comment, *comment_cashout, &comment_cashout_ex );
         ++count;
       }
-
-      modify( rf, [&]( reward_fund_object& rfo )
-      {
-        rfo.access_reward_balance().transfer_from( fund_balance );
-      } );
     }
 
     _current = cidx.begin();
@@ -532,19 +506,12 @@ void database::process_comment_cashout()
     _benchmark_dumper.end( "processing", "hive::protocol::comment_operation", count );
 
   // Write the cached fund state back to the database
-  if( funds.size() )
+  modify( rf, [&]( reward_fund_object& rfo )
   {
-    FC_ASSERT( has_hardfork( HIVE_HARDFORK_0_17__774 ) );
-    for( size_t i = 0; i < funds.size(); i++ )
-    {
-      // Return remainder to reward_fund
-      modify( get< reward_fund_object, by_id >( reward_fund_object::id_type( i ) ), [&]( reward_fund_object& rfo )
-      {
-        rfo.access_recent_claims() = funds[ i ].recent_claims;
-        rfo.access_reward_balance().transfer_from( funds[ i ].reward_balance );
-      } );
-    }
-  }
+    if( has_hardfork( HIVE_HARDFORK_0_17__774 ) )
+      rfo.access_recent_claims() = recent_claims;
+    rfo.access_reward_balance().transfer_from( reward_balance );
+  } );
 }
 
 void database::apply_hardfork_17_comment_cashout_fix()
