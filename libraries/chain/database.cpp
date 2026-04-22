@@ -943,12 +943,12 @@ uint32_t database::get_slot_at_time(fc::time_point_sec when)const
 }
 
 /**
-  *  Converts HIVE into HBD and adds it to to_account while reducing the HIVE supply
-  *  by HIVE and increasing the HBD supply by the specified amount.
+  *  Converts given HIVE into HBD as author reward and adds it to to_account.
   */
-std::pair< HBD_asset, HIVE_asset > database::create_hbd( const account_object& to_account, const HIVE_asset& hive, bool to_reward_balance )
+std::pair< HBD_asset, HIVE_asset > database::award_hbd( const account_object& to_account, temp_HIVE_balance& hive_balance, bool to_reward_balance )
 {
   std::pair< HBD_asset, HIVE_asset > assets;
+  HIVE_asset hive = hive_balance;
 
   try
   {
@@ -960,31 +960,37 @@ std::pair< HBD_asset, HIVE_asset > database::create_hbd( const account_object& t
 
     if( !median_price.is_null() )
     {
-      auto to_hbd = ( gpo.get_hbd_print_rate() * hive ) / HIVE_100_PERCENT;
-      auto to_hive = hive - to_hbd;
+      temp_HIVE_balance to_hbd_balance;
+      auto to_hbd = ( gpo.get_hbd_print_rate() * hive_balance.as_asset() ) / HIVE_100_PERCENT;
+      to_hbd_balance.transfer_from( hive_balance, to_hbd );
 
-      auto hbd = to_hbd * median_price;
+      temp_HBD_balance hbd_balance;
+      modify( gpo, [&]( dynamic_global_property_object& p )
+      {
+        hbd_balance = p.convert_HIVE_to_HBD( to_hbd_balance, median_price );
+      } );
+
+      assets.first = hbd_balance;
+      assets.second = hive_balance;
 
       if( to_reward_balance )
       {
-        adjust_reward_balance( to_account, hbd );
-        adjust_reward_balance( to_account, to_hive );
+        adjust_reward_balance( to_account, hbd_balance.as_asset() );
+        adjust_reward_balance( to_account, hive_balance.as_asset() );
       }
       else
       {
-        adjust_balance( to_account, hbd );
-        adjust_balance( to_account, to_hive );
+        adjust_balance( to_account, hbd_balance.as_asset() );
+        adjust_balance( to_account, hive_balance.as_asset() );
       }
-
-      adjust_supply( -to_hbd );
-      adjust_supply( hbd );
-      assets.first = hbd;
-      assets.second = to_hive;
+      hbd_balance.set_from_asset( HBD_asset( 0 ) );
+      hive_balance.set_from_asset( HIVE_asset( 0 ) );
     }
     else
     {
-      adjust_balance( to_account, hive );
-      assets.second = hive;
+      assets.second = hive_balance;
+      adjust_balance( to_account, hive_balance.as_asset() );
+      hive_balance.set_from_asset( HIVE_asset( 0 ) );
     }
   }
   FC_CAPTURE_LOG_AND_RETHROW( (to_account.get_name())(hive) )
@@ -1727,7 +1733,6 @@ void database::process_funds()
     }
 
     auto content_reward = ( new_hive * props.get_content_reward_percent() ) / HIVE_100_PERCENT;
-    content_reward = pay_reward_funds( content_reward );
     auto vesting_reward = ( new_hive * props.get_vesting_reward_percent() ) / HIVE_100_PERCENT;
     auto dhf_new_funds = ( new_hive * props.get_proposal_fund_percent() ) / HIVE_100_PERCENT;
     auto witness_reward = new_hive - content_reward - vesting_reward - dhf_new_funds;
@@ -1749,25 +1754,32 @@ void database::process_funds()
 
     witness_reward /= wso.witness_pay_normalization_factor;
 
-    HBD_asset new_hbd( 0 );
-
-    if( dhf_new_funds.get_amount() != 0 )
-    {
-      new_hbd = dhf_new_funds * feed.current_median_history;
-      adjust_balance( get_treasury_name(), new_hbd );
-    }
-
     new_hive = content_reward + vesting_reward + witness_reward;
 
+    // Issue HIVE and HBD first, then distribute
+    temp_HIVE_balance hive_issued;
+    temp_HBD_balance hbd_issued;
     modify( props, [&]( dynamic_global_property_object& p )
     {
+      temp_HIVE_balance to_hbd;
+      hive_issued = p.issue_HIVE( new_hive + dhf_new_funds );
+      to_hbd.transfer_from( hive_issued, dhf_new_funds );
       p.access_total_vesting_fund_hive() += vesting_reward;
-      p.access_current_supply()      += new_hive;
-      p.access_current_hbd_supply()  += new_hbd;
-      p.access_virtual_supply()      += new_hive + dhf_new_funds;
-      p.add_to_dhf_interval_ledger( new_hbd );
+      hive_issued.set_from_asset( hive_issued.as_asset() - vesting_reward );
+      hbd_issued = p.convert_HIVE_to_HBD( to_hbd, feed.current_median_history, false );
+      p.add_to_dhf_interval_ledger( hbd_issued );
     } );
 
+    // Distribute content reward to reward funds
+    pay_reward_funds( hive_issued, content_reward );
+    // Distribute DHF HBD to treasury
+    if( hbd_issued.as_asset().get_amount() != 0 )
+    {
+      adjust_balance( get_treasury_name(), hbd_issued.as_asset() );
+      hbd_issued.set_from_asset( HBD_asset( 0 ) );
+    }
+
+    // Create vesting for witness and account for it in temp
     auto vop = producer_reward_operation( cwit.owner, asset( 0, VESTS_SYMBOL ) );
     create_vesting2( *this, get_account( cwit.owner ), witness_reward, false,
       [&]( const VEST_asset& vesting_shares )
@@ -1776,6 +1788,7 @@ void database::process_funds()
         pre_push_virtual_operation( *this, vop );
       } );
     post_push_virtual_operation( *this, vop );
+    hive_issued.set_from_asset( hive_issued.as_asset() - witness_reward );
   }
   else
   {
@@ -1791,12 +1804,41 @@ void database::process_funds()
     else
       vesting_reward *= 9;
 
-    content_reward = pay_reward_funds( content_reward );
+    temp_HIVE_balance hive_issued;
     modify( props, [&]( dynamic_global_property_object& p )
     {
-        p.access_total_vesting_fund_hive() += vesting_reward;
-        p.access_current_supply() += content_reward + witness_pay + vesting_reward;
-        p.access_virtual_supply() += content_reward + witness_pay + vesting_reward;
+      hive_issued = p.issue_HIVE( content_reward + witness_pay + vesting_reward );
+    } );
+
+    pay_reward_funds( hive_issued, content_reward );
+
+    /// pay witness in vesting shares
+    const auto& witness_account = get_account( props.get_current_witness() );
+    if( props.get_head_block_number() >= HIVE_START_MINER_VOTING_BLOCK || ( witness_account.get_vesting().amount.value == 0 ) )
+    {
+      auto vop = producer_reward_operation( witness_account.get_name(), asset( 0, VESTS_SYMBOL ) );
+      create_vesting2( *this, witness_account, witness_pay, false,
+        [&]( const VEST_asset& vesting_shares )
+        {
+          vop.vesting_shares = vesting_shares.to_asset();
+          pre_push_virtual_operation( *this, vop );
+        } );
+      post_push_virtual_operation( *this, vop );
+    }
+    else
+    {
+      modify( get_account( witness_account.get_name() ), [&]( account_object& a )
+      {
+        a.access_hive_balance() += witness_pay;
+      } );
+      push_virtual_operation( *this, producer_reward_operation( witness_account.get_name(), witness_pay.to_asset() ) );
+    }
+    hive_issued.set_from_asset( hive_issued.as_asset() - witness_pay );
+
+    modify( props, [&]( dynamic_global_property_object& p )
+    {
+      p.access_total_vesting_fund_hive() += vesting_reward;
+      hive_issued.set_from_asset( hive_issued.as_asset() - vesting_reward );
     } );
   }
 }
@@ -1847,38 +1889,13 @@ HIVE_asset database::get_curation_reward()const
   return std::max( percent, HIVE_MIN_CURATE_REWARD );
 }
 
-HIVE_asset database::get_producer_reward()
+HIVE_asset database::get_producer_reward()const
 {
   // There is no need to update virtual_supply to take into account treasury as it's done in process_funds
   const auto& props = get_dynamic_global_properties();
   static_assert( HIVE_BLOCK_INTERVAL == 3, "this code assumes a 3-second time interval" );
   HIVE_asset percent( protocol::calc_percent_reward_per_block< HIVE_PRODUCER_APR_PERCENT >( props.get_virtual_supply().amount ) );
-  auto pay = std::max( percent, HIVE_MIN_PRODUCER_REWARD );
-  const auto& witness_account = get_account( props.get_current_witness() );
-
-  /// pay witness in vesting shares
-  if( props.get_head_block_number() >= HIVE_START_MINER_VOTING_BLOCK || (witness_account.get_vesting().amount.value == 0) )
-  {
-    // const auto& witness_obj = get_witness( props.current_witness );
-    auto vop = producer_reward_operation( witness_account.get_name(), asset( 0, VESTS_SYMBOL ) );
-    create_vesting2( *this, witness_account, pay, false,
-      [&]( const VEST_asset& vesting_shares )
-      {
-        vop.vesting_shares = vesting_shares.to_asset();
-        pre_push_virtual_operation( *this, vop );
-      } );
-    post_push_virtual_operation( *this, vop );
-  }
-  else
-  {
-    modify( get_account( witness_account.get_name() ), [&]( account_object& a )
-    {
-      a.access_hive_balance() += pay;
-    } );
-    push_virtual_operation( *this, producer_reward_operation( witness_account.get_name(), pay.to_asset() ) );
-  }
-
-  return pay;
+  return std::max( percent, HIVE_MIN_PRODUCER_REWARD );
 }
 
 HIVE_asset database::get_pow_reward()const
@@ -1910,7 +1927,7 @@ uint16_t database::get_curation_rewards_percent() const
     return HIVE_1_PERCENT * 50;
 }
 
-HIVE_asset database::pay_reward_funds( const HIVE_asset& reward )
+void database::pay_reward_funds( temp_HIVE_balance& reward_balance, const HIVE_asset& content_reward )
 {
   const auto& reward_idx = get_index< reward_fund_index, by_id >();
   HIVE_asset used_rewards( 0 );
@@ -1918,20 +1935,20 @@ HIVE_asset database::pay_reward_funds( const HIVE_asset& reward )
   for( auto itr = reward_idx.begin(); itr != reward_idx.end(); ++itr )
   {
     // reward is a per block reward and the percents are 16-bit. This should never overflow
-    auto r = ( reward * itr->get_percent_content_rewards() ) / HIVE_100_PERCENT;
+    auto r = ( content_reward * itr->get_percent_content_rewards() ) / HIVE_100_PERCENT;
 
     modify( *itr, [&]( reward_fund_object& rfo )
     {
-      rfo.access_reward_balance() += r;
-    });
+      rfo.access_reward_balance().transfer_from( reward_balance, r );
+    } );
 
     used_rewards += r;
 
     // Sanity check to ensure we aren't printing more HIVE than has been allocated through inflation
-    FC_ASSERT( used_rewards <= reward );
+    // ABW: in case we ever have more than one fund, which might lead to their sum being less than
+    // designated reward, we need to add burning of excess reward here
+    FC_ASSERT( used_rewards == content_reward );
   }
-
-  return used_rewards;
 }
 
 HBD_asset database::to_hbd( const HIVE_asset& hive )const

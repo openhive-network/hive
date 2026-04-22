@@ -1508,7 +1508,7 @@ BOOST_AUTO_TEST_CASE( chain_object_checksum )
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::limit_order_object>(dtds), "a69d25782e9eca8afd52a893b60ca4fba94ee73a" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::withdraw_vesting_route_object>(dtds), "b70b71dab160c4a5fc2f7f896ec85e22e183cce6" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::decline_voting_rights_request_object>(dtds), "4a7b6e131317bdbf49e169e959f913c5e837fdaa" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::reward_fund_object>(dtds), "64ae5bfd8b761363f9b4bb69452c77051b88fe84" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::reward_fund_object>(dtds), "b0a2329385135b40f6e71fda0e741f21c9562218" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::recurrent_transfer_object>(dtds), "d3196040e50d8e61e8efff85623030d985f6e6f2" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::transaction_object>(dtds), "e731dc38c978db7dc455b5d7b58680534ece0d98" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::witness_vote_object>(dtds), "3e0889f0fb4a54d281437774045bc9344680bc11" );

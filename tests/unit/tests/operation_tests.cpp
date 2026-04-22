@@ -8076,17 +8076,25 @@ BOOST_AUTO_TEST_CASE( comment_beneficiaries_apply )
 
     db_plugin->debug_update( [=]( database& db )
     {
-      auto old_reward_balance = db.get_reward_fund().get_reward_balance();
-      db.modify( db.get_reward_fund(), [=]( reward_fund_object& rfo )
+      db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
       {
-        rfo.access_reward_balance() = HIVE_asset( 100'000 );
-      });
-      db.modify( db.get_dynamic_global_properties(), [=]( dynamic_global_property_object& gpo )
-      {
-        gpo.access_current_supply() -= old_reward_balance;
-        gpo.access_current_supply() += HIVE_asset( 100'000 );
-      });
-    });
+        db.modify( db.get_reward_fund(), [&]( reward_fund_object& rfo )
+        {
+          HIVE_asset difference( rfo.get_reward_balance() - HIVE_asset( 100'000 ) );
+          temp_HIVE_balance tmp;
+          if( difference.amount >= 0 )
+          {
+            rfo.access_reward_balance().transfer_to( tmp, difference );
+            gpo.burn_HIVE( tmp );
+          }
+          else
+          {
+            tmp = gpo.issue_HIVE( -difference );
+            rfo.access_reward_balance().transfer_from( tmp );
+          }
+        } );
+      } );
+    } );
 
     generate_block();
 
@@ -8231,15 +8239,23 @@ BOOST_AUTO_TEST_CASE( comment_options_apply )
 
     auto set_reward_pool = [=]( database& db )
     {
-      auto old_reward_balance = db.get_reward_fund().get_reward_balance();
-      db.modify( db.get_reward_fund(), [=]( reward_fund_object& rfo )
+      db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
       {
-        rfo.access_reward_balance() = HIVE_asset( 100'000 );
-      } );
-      db.modify( db.get_dynamic_global_properties(), [=]( dynamic_global_property_object& gpo )
-      {
-        gpo.access_current_supply() -= old_reward_balance;
-        gpo.access_current_supply() += HIVE_asset( 100'000 );
+        db.modify( db.get_reward_fund(), [&]( reward_fund_object& rfo )
+        {
+          HIVE_asset difference( rfo.get_reward_balance() - HIVE_asset( 100'000 ) );
+          temp_HIVE_balance tmp;
+          if( difference.amount >= 0 )
+          {
+            rfo.access_reward_balance().transfer_to( tmp, difference );
+            gpo.burn_HIVE( tmp );
+          }
+          else
+          {
+            tmp = gpo.issue_HIVE( -difference );
+            rfo.access_reward_balance().transfer_from( tmp );
+          }
+        } );
       } );
     };
 
