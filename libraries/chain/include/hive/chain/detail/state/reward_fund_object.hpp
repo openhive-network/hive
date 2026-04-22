@@ -1,6 +1,6 @@
 #pragma once
 #include <hive/chain/hive_fwd.hpp>
-#include <hive/protocol/asset.hpp>
+#include <hive/chain/util/balance.hpp>
 #include <hive/protocol/config.hpp>
 #include <hive/protocol/misc_utilities.hpp>
 #include <hive/chain/hive_object_types.hpp>
@@ -18,8 +18,8 @@ class reward_fund_object : public object< reward_fund_object_type, reward_fund_o
 public:
   template< typename Allocator >
   reward_fund_object( allocator< Allocator > a, uint64_t _id,
-    const string& _name, const HIVE_asset& _balance, const time_point_sec& _creation_time, const uint128_t& _claims = 0 )
-    : id( _id ), name( _name ), reward_balance( _balance ), recent_claims( _claims ), last_update( _creation_time )
+    const string& _name, temp_HIVE_balance&& _balance, const time_point_sec& _creation_time, const uint128_t& _claims = 0 )
+  : id( _id ), name( _name ), reward_balance( std::move( _balance ) ), recent_claims( _claims ), last_update( _creation_time )
   {}
 
 // getters:
@@ -38,9 +38,14 @@ public:
   protocol::curve_id get_author_reward_curve() const { return author_reward_curve; }
   protocol::curve_id get_curation_reward_curve() const { return curation_reward_curve; }
 
+  void check_on_remove() const
+  {
+    FC_ASSERT( reward_balance.is_empty(), "Removing reward_fund_object with non-empty balance field" );
+  }
+
 // setters:
 
-  HIVE_asset& access_reward_balance() { return reward_balance; }
+  HIVE_balance& access_reward_balance() { return reward_balance; }
   uint128_t& access_recent_claims() { return recent_claims; }
   time_point_sec& access_last_update() { return last_update; }
 
@@ -54,7 +59,7 @@ public:
 
 private:
   reward_fund_name_type   name;
-  HIVE_asset              reward_balance;
+  HIVE_balance            reward_balance;
   uint128_t               recent_claims = 0;
   time_point_sec          last_update;
   uint128_t               content_constant = HIVE_CONTENT_CONSTANT_HF0;
@@ -63,7 +68,7 @@ private:
   protocol::curve_id      author_reward_curve = protocol::curve_id::quadratic;
   protocol::curve_id      curation_reward_curve = protocol::curve_id::bounded_curation;
 
-  CHAINBASE_UNPACK_CONSTRUCTOR(reward_fund_object);
+  CHAINBASE_UNPACK_CONSTRUCTOR( reward_fund_object );
 };
 
 } } // hive::chain

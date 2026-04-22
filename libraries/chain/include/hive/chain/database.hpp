@@ -498,7 +498,7 @@ namespace chain {
       uint32_t get_slot_at_time(fc::time_point_sec when)const;
 
       /** @return the HBD created and deposited to_account, may return HIVE if there is no median feed */
-      std::pair< HBD_asset, HIVE_asset > create_hbd( const account_object& to_account, const HIVE_asset& hive, bool to_reward_balance=false );
+      std::pair< HBD_asset, HIVE_asset > award_hbd( const account_object& to_account, temp_HIVE_balance& hive_balance, bool to_reward_balance=false );
 
       using Before = std::function< void( const VEST_asset& ) >;
       VEST_asset adjust_account_vesting_balance( const account_object& to_account, const HIVE_asset& liquid, bool to_reward_balance, Before&& before_vesting_callback );
@@ -574,10 +574,11 @@ namespace chain {
         */
       void clear_witness_votes( const account_object& a );
       void process_vesting_withdrawals();
-      HIVE_asset pay_curators( const comment_object& comment, const comment_cashout_object& comment_cashout, HIVE_asset& max_rewards );
-      HIVE_asset cashout_comment_helper( util::comment_reward_context& ctx, const comment_object& comment,
-        const comment_cashout_object& comment_cashout, const comment_cashout_ex_object* comment_cashout_ex,
-        bool forward_curation_remainder = true );
+      HIVE_asset pay_curators( const comment_object& comment, const comment_cashout_object& comment_cashout,
+        HIVE_asset& max_rewards, temp_HIVE_balance& reward_balance );
+      HIVE_asset cashout_comment_helper( util::comment_reward_context& ctx, temp_HIVE_balance& reward_balance,
+        const comment_object& comment, const comment_cashout_object& comment_cashout,
+        const comment_cashout_ex_object* comment_cashout_ex, bool forward_curation_remainder = true );
       void process_comment_cashout();
       void process_funds();
       void process_conversions();
@@ -599,15 +600,14 @@ namespace chain {
 
       HIVE_asset get_liquidity_reward()const;
       HIVE_asset get_content_reward()const;
-      HIVE_asset get_producer_reward();
+      HIVE_asset get_producer_reward()const;
       HIVE_asset get_curation_reward()const;
       HIVE_asset get_pow_reward()const;
 
       uint16_t get_curation_rewards_percent() const;
 
-      HIVE_asset pay_reward_funds( const HIVE_asset& reward );
-
-      void  pay_liquidity_reward();
+      void pay_reward_funds( temp_HIVE_balance& reward_balance, const HIVE_asset& content_reward );
+      void pay_liquidity_reward();
 
       /**
         * Helper method to return the current HBD value of a given amount of
