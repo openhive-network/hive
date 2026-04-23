@@ -518,26 +518,9 @@ namespace chain {
       void adjust_savings_balance( const account_object& a, const HIVE_asset& delta );
       void adjust_savings_balance( const account_object& a, const HBD_asset& delta );
 
-      void adjust_reward_balance( const account_object& a, const asset& value_delta, const asset& share_delta = asset(0,VESTS_SYMBOL) );
       void adjust_reward_balance( const account_object& a, const HIVE_asset& value_delta );
       void adjust_reward_balance( const account_object& a, const HBD_asset& value_delta );
       void adjust_reward_balance( const account_object& a, const HIVE_asset& value_delta, const VEST_asset& share_delta );
-      void adjust_reward_balance( const account_name_type& name, const asset& value_delta, const asset& share_delta = asset(0,VESTS_SYMBOL) )
-      {
-        adjust_reward_balance( get_account( name ), value_delta, share_delta );
-      }
-      void adjust_reward_balance( const account_name_type& name, const HIVE_asset& value_delta )
-      {
-        adjust_reward_balance( get_account( name ), value_delta );
-      }
-      void adjust_reward_balance( const account_name_type& name, const HBD_asset& value_delta )
-      {
-        adjust_reward_balance( get_account( name ), value_delta );
-      }
-      void adjust_reward_balance( const account_name_type& name, const HIVE_asset& value_delta, const VEST_asset& share_delta )
-      {
-        adjust_reward_balance( get_account( name ), value_delta, share_delta );
-      }
 
       temp_HIVE_balance issue_mining_reward( const HIVE_asset& reward );
       void adjust_rshares2( fc::uint128_t old_rshares2, fc::uint128_t new_rshares2 );
