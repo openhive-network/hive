@@ -327,7 +327,8 @@ void dhf_processor::convert_funds( const block_notification& note )
   if( !is_daily_maintenance_period( block_ts ))
     return;
 
-  db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& _dgpo )
+  const auto& dgpo = db.get_dynamic_global_properties();
+  db.modify( dgpo, [&]( dynamic_global_property_object& _dgpo )
   {
     //shifting from current time instead of proper maintenance time causes drift
     //when maintenance block was missed, but the fix is problematic - see MR!168 for details
@@ -348,11 +349,16 @@ void dhf_processor::convert_funds( const block_notification& note )
   if( converted_hbd < HIVE_MIN_PAYOUT_HBD )
     return;
 
+  temp_HIVE_balance to_convert_balance;
+  temp_HBD_balance converted_hbd_balance;
   db.adjust_balance( treasury_account, -to_convert );
-  db.adjust_balance( treasury_account, converted_hbd );
-
-  db.adjust_supply( -to_convert );
-  db.adjust_supply( converted_hbd );
+  to_convert_balance.set_from_asset( to_convert );
+  db.modify( dgpo, [&]( dynamic_global_property_object& _dgpo )
+  {
+    converted_hbd_balance = _dgpo.convert_HIVE_to_HBD( to_convert_balance, fhistory.current_median_history );
+  } );
+  db.adjust_balance( treasury_account, converted_hbd_balance.as_asset() );
+  converted_hbd_balance.set_from_asset( HBD_asset( 0 ) );
 
   operation vop = dhf_conversion_operation( treasury_account.get_name(), to_convert, converted_hbd );
   push_virtual_operation( db, vop );

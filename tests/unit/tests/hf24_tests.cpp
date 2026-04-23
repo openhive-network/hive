@@ -245,25 +245,37 @@ BOOST_AUTO_TEST_CASE( consolidate_balance )
     db_plugin->debug_update( [&]( database& db )
     {
       auto& dgpo = db.get_dynamic_global_properties();
-      db.adjust_supply( HIVE_asset( 20'000 ) );
-      db.adjust_supply( HBD_asset( 10'000 ) );
-      vested_3 = HIVE_asset( 3'000 ) * dgpo.get_vesting_share_price();
-      vested_7 = HIVE_asset( 7'000 ) * dgpo.get_vesting_share_price();
-      db.modify( dgpo, []( dynamic_global_property_object& gpo )
+
+      temp_HIVE_balance hive_balance;
+      temp_HBD_balance hbd_balance;
+      db.modify( dgpo, [&]( dynamic_global_property_object& gpo )
       {
         gpo.set_proposal_fund_percent( 0 );
+        hive_balance = gpo.issue_HIVE( HIVE_asset( 20'000 ) );
+        hbd_balance = gpo.issue_HBD( HBD_asset( 10'000 ), db.get_feed_history().current_median_history );
       } );
+
+      vested_3 = HIVE_asset( 3'000 ) * dgpo.get_vesting_share_price();
+      vested_7 = HIVE_asset( 7'000 ) * dgpo.get_vesting_share_price();
       auto& old_treasury = db.get_account( OBSOLETE_TREASURY_ACCOUNT );
       db.create_vesting( old_treasury, HIVE_asset( 7'000 ) );
+      hive_balance.set_from_asset( hive_balance.as_asset() - HIVE_asset( 7'000 ) );
       db.create_vesting( old_treasury, HIVE_asset( 3'000 ), true );
+      hive_balance.set_from_asset( hive_balance.as_asset() - HIVE_asset( 3'000 ) );
       db.modify( old_treasury, [&]( account_object& t )
       {
         t.access_hive_balance() = HIVE_asset( 5'000 );
+        hive_balance.set_from_asset( hive_balance.as_asset() - HIVE_asset( 5'000 ) );
         t.access_hive_savings() = HIVE_asset( 3'000 );
+        hive_balance.set_from_asset( hive_balance.as_asset() - HIVE_asset( 3'000 ) );
         t.access_hive_rewards() = HIVE_asset( 2'000 );
+        hive_balance.set_from_asset( hive_balance.as_asset() - HIVE_asset( 2'000 ) );
         t.access_hbd_balance() = HBD_asset( 5'000 );
+        hbd_balance.set_from_asset( hbd_balance.as_asset() - HBD_asset( 5'000 ) );
         t.access_hbd_savings() = HBD_asset( 3'000 );
+        hbd_balance.set_from_asset( hbd_balance.as_asset() - HBD_asset( 3'000 ) );
         t.access_hbd_rewards() = HBD_asset( 2'000 );
+        hbd_balance.set_from_asset( hbd_balance.as_asset() - HBD_asset( 2'000 ) );
       } );
     } );
     database_fixture::validate_database();

@@ -539,9 +539,7 @@ namespace chain {
         adjust_reward_balance( get_account( name ), value_delta, share_delta );
       }
 
-      void adjust_supply( const asset& delta, bool adjust_vesting = false );
-      void adjust_supply( const HIVE_asset& delta, bool adjust_vesting = false );
-      void adjust_supply( const HBD_asset& delta );
+      temp_HIVE_balance issue_mining_reward( const HIVE_asset& reward );
       void adjust_rshares2( fc::uint128_t old_rshares2, fc::uint128_t new_rshares2 );
       void update_owner_authority( const account_object& account, const authority& owner_authority );
 

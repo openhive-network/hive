@@ -475,27 +475,30 @@ void pow_apply( database& db, Operation o )
     } );
   }
   /// POW reward depends upon whether we are before or after MINER_VOTING kicks in
-  HIVE_asset pow_reward = db.get_pow_reward();
+  HIVE_asset pow_reward_amount = db.get_pow_reward();
   if( db.head_block_num() < HIVE_START_MINER_VOTING_BLOCK )
-    pow_reward.amount *= HIVE_MAX_WITNESSES;
-  db.adjust_supply( pow_reward, true );
+    pow_reward_amount.amount *= HIVE_MAX_WITNESSES;
+  temp_HIVE_balance pow_reward = db.issue_mining_reward( pow_reward_amount );
 
   /// pay the witness that includes this POW
   const auto& inc_witness = db.get_account( dgp.get_current_witness() );
   asset actual_reward;
   if( db.head_block_num() < HIVE_START_MINER_VOTING_BLOCK )
   {
-    db.adjust_balance( inc_witness, pow_reward );
-    actual_reward = pow_reward.to_asset();
+    actual_reward = pow_reward.as_asset().to_asset();
+    db.adjust_balance( inc_witness, pow_reward.as_asset() );
+    pow_reward.set_from_asset( HIVE_asset( 0 ) );
   }
   else
   {
     actual_reward = db.create_vesting( inc_witness, pow_reward ).to_asset();
+    pow_reward.set_from_asset( HIVE_asset( 0 ) );
   }
   push_virtual_operation( db, pow_reward_operation( dgp.get_current_witness(), actual_reward ) );
 }
 
-void pow_evaluator::do_apply( const pow_operation& o ) {
+void pow_evaluator::do_apply( const pow_operation& o )
+{
   HIVE_CHAIN_HARDFORK_ASSERT( !db().has_hardfork( HIVE_HARDFORK_0_13__256 ), "pow is deprecated. Use pow2 instead" );
   pow_apply( db(), o );
 }
@@ -585,11 +588,11 @@ void pow2_evaluator::do_apply( const pow2_operation& o )
   if( !db.has_hardfork( HIVE_HARDFORK_0_16__551) )
   {
     /// pay the witness that includes this POW
-    HIVE_asset inc_reward = db.get_pow_reward();
-    db.adjust_supply( inc_reward, true );
+    temp_HIVE_balance inc_reward = db.issue_mining_reward( db.get_pow_reward() );
 
     const auto& inc_witness = db.get_account( dgp.get_current_witness() );
     VEST_asset actual_reward = db.create_vesting( inc_witness, inc_reward );
+    inc_reward.set_from_asset( HIVE_asset( 0 ) );
     push_virtual_operation( db, pow_reward_operation( dgp.get_current_witness(), actual_reward.to_asset() ) );
   }
 }
