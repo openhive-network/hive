@@ -3322,25 +3322,6 @@ void database::adjust_savings_balance( const account_object& a, const HBD_asset&
   } );
 }
 
-void database::adjust_reward_balance( const account_object& a, const asset& value_delta,
-                          const asset& share_delta /*= asset(0,VESTS_SYMBOL)*/ )
-{
-  FC_ASSERT( value_delta.symbol.is_vesting() == false && share_delta.symbol.is_vesting() );
-
-  if( value_delta.symbol.asset_num == HIVE_ASSET_NUM_HIVE )
-  {
-    if( share_delta.amount.value == 0 )
-      adjust_reward_balance( a, HIVE_asset( value_delta ) );
-    else
-      adjust_reward_balance( a, HIVE_asset( value_delta ), VEST_asset( share_delta ) );
-  }
-  else
-  {
-    FC_ASSERT( value_delta.symbol.asset_num == HIVE_ASSET_NUM_HBD, "invalid symbol" );
-    adjust_reward_balance( a, HBD_asset( value_delta ) );
-  }
-}
-
 void database::adjust_reward_balance( const account_object& a, const HIVE_asset& value_delta )
 {
   modify( a, [&]( account_object& acnt )
