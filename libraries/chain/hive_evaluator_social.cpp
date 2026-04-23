@@ -338,7 +338,7 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
     int64_t elapsed_seconds = _now.sec_since_epoch() - voter.voting_manabar.last_update_time;
     int64_t regenerated_power = (HIVE_100_PERCENT * elapsed_seconds) / HIVE_VOTING_MANA_REGENERATION_SECONDS;
     current_power = std::min( int64_t(voter.voting_manabar.current_mana) + regenerated_power, int64_t(HIVE_100_PERCENT) );
-    HIVE_CHAIN_BALANCE_ASSERT( current_power > 0, o.voter, "Account currently does not have voting power." );
+    HIVE_CHAIN_BALANCE_ASSERT( current_power > 0, current_power, "Account currently does not have voting power.", ("account", o.voter) );
   }
   int64_t abs_weight = abs(o.weight);
   // Less rounding error would occur if we did the division last, but we need to maintain backward
@@ -359,18 +359,18 @@ void pre_hf20_vote_evaluator( const vote_operation& o, database& _db )
   {
     used_power = (used_power + max_vote_denom - 1) / max_vote_denom;
   }
-  HIVE_CHAIN_BALANCE_ASSERT( used_power <= current_power, o.voter, "Account does not have enough power to vote." );
+  HIVE_CHAIN_BALANCE_ASSERT( used_power <= current_power, current_power, "Account does not have enough power to vote.", ("account", o.voter) );
 
   int64_t abs_rshares = fc::uint128_to_int64( ( uint128_t( voter.get_effective_vesting_shares( false ).get_amount() ) * used_power ) / HIVE_100_PERCENT );
   if( !_db.has_hardfork( HIVE_HARDFORK_0_14__259 ) && abs_rshares == 0 ) abs_rshares = 1;
 
   if( _db.has_hardfork( HIVE_HARDFORK_0_14__259 ) )
   {
-    HIVE_CHAIN_BALANCE_ASSERT( abs_rshares > HIVE_VOTE_DUST_THRESHOLD || o.weight == 0, o.voter, "Voting weight is too small, please accumulate more voting power or Hive Power." );
+    HIVE_CHAIN_BALANCE_ASSERT( abs_rshares > HIVE_VOTE_DUST_THRESHOLD || o.weight == 0, abs_rshares, "Voting weight is too small, please accumulate more voting power or Hive Power.", ("account", o.voter) );
   }
   else if( _db.has_hardfork( HIVE_HARDFORK_0_13__248 ) )
   {
-    HIVE_CHAIN_BALANCE_ASSERT( abs_rshares > HIVE_VOTE_DUST_THRESHOLD || abs_rshares == 1, o.voter, "Voting weight is too small, please accumulate more voting power or Hive Power." );
+    HIVE_CHAIN_BALANCE_ASSERT( abs_rshares > HIVE_VOTE_DUST_THRESHOLD || abs_rshares == 1, abs_rshares, "Voting weight is too small, please accumulate more voting power or Hive Power.", ("account", o.voter) );
   }
 
   const auto& comment_vote_idx = _db.get_index< comment_vote_index, by_comment_voter >();
@@ -690,15 +690,15 @@ void hf20_vote_evaluator( const vote_operation& o, database& _db )
     // while the effect might be unintentional, it was like that for long time and there is enough drama with
     // downvotes as it is, enabling "no effect" downvotes is not necessary, so we are not correcting it
     HIVE_CHAIN_BALANCE_ASSERT( voter.voting_manabar.current_mana + voter.downvote_manabar.current_mana > fc::uint128_to_int64( used_mana ),
-      o.voter, "Account does not have enough mana to downvote. voting_mana: ${v} downvote_mana: ${d} required_mana: ${r}",
-      ( "v", voter.voting_manabar.current_mana )( "d", voter.downvote_manabar.current_mana )( "r", fc::uint128_to_int64( used_mana ) ) );
+      voter.voting_manabar.current_mana + voter.downvote_manabar.current_mana, "Account does not have enough mana to downvote. voting_mana: ${v} downvote_mana: ${d} required_mana: ${r}",
+      ( "account", o.voter )( "v", voter.voting_manabar.current_mana )( "d", voter.downvote_manabar.current_mana )( "r", fc::uint128_to_int64( used_mana ) ) );
   }
   else
   {
     // even after HF28 it is not possible to burn all mana in one 50 vote transaction due to "round up" code above
     HIVE_CHAIN_BALANCE_ASSERT( voter.voting_manabar.has_mana( fc::uint128_to_int64( used_mana ) ),
-      o.voter, "Account does not have enough mana to vote. voting_mana: ${v} required_mana: ${r}",
-      ( "v", voter.voting_manabar.current_mana )( "r", fc::uint128_to_int64( used_mana ) ) );
+      voter.voting_manabar.current_mana, "Account does not have enough mana to vote. voting_mana: ${v} required_mana: ${r}",
+      ( "account", o.voter )( "v", voter.voting_manabar.current_mana )( "r", fc::uint128_to_int64( used_mana ) ) );
   }
 
   int64_t abs_rshares = fc::uint128_to_int64(used_mana);

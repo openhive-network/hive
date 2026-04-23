@@ -205,8 +205,8 @@ void escrow_release_evaluator::do_apply( const escrow_release_operation& o )
     HIVE_asset o_hive_amount = o.get_hive_amount();
     HBD_asset o_hbd_amount = o.get_hbd_amount();
 
-    HIVE_CHAIN_BALANCE_ASSERT( e.get_hive_balance() >= o_hive_amount, o.from, "Release amount exceeds escrow balance. Amount: ${a}, Balance: ${b}", ("a", o_hive_amount)("b", e.get_hive_balance()) );
-    HIVE_CHAIN_BALANCE_ASSERT( e.get_hbd_balance() >= o_hbd_amount, o.from, "Release amount exceeds escrow balance. Amount: ${a}, Balance: ${b}", ("a", o_hbd_amount)("b", e.get_hbd_balance()) );
+    HIVE_CHAIN_BALANCE_ASSERT( e.get_hive_balance() >= o_hive_amount, e.get_hive_balance(), "Release amount exceeds escrow balance. Amount: ${a}, Balance: ${b}", ("account", o.from)("a", o_hive_amount)("b", e.get_hive_balance()) );
+    HIVE_CHAIN_BALANCE_ASSERT( e.get_hbd_balance() >= o_hbd_amount, e.get_hbd_balance(), "Release amount exceeds escrow balance. Amount: ${a}, Balance: ${b}", ("account", o.from)("a", o_hbd_amount)("b", e.get_hbd_balance()) );
     HIVE_CHAIN_STATE_ASSERT( e.to == o.to && "release", o.to, "Operation 'to' (${o}) does not match escrow 'to' (${e}).", ("o", o.to)("e", e.to) );
     HIVE_CHAIN_STATE_ASSERT( e.agent == o.agent && "release", o.agent, "Operation 'agent' (${a}) does not match escrow 'agent' (${e}).", ("o", o.agent)("e", e.agent) );
     HIVE_CHAIN_PERMISSION_ASSERT( o.receiver == e.from || o.receiver == e.to, o.receiver, "Funds must be released to 'from' (${f}) or 'to' (${t})", ("f", e.from)("t", e.to) );
@@ -339,8 +339,8 @@ void withdraw_vesting_evaluator::do_apply( const withdraw_vesting_operation& o )
     return;
   }
 
-  HIVE_CHAIN_BALANCE_ASSERT( account.get_vesting() >= VEST_asset( 0 ), o.account, "Account does not have sufficient Hive Power for withdraw." );
-  HIVE_CHAIN_BALANCE_ASSERT( account.get_vesting() - account.get_delegated_vesting() >= o_vesting_shares, o.account, "Account does not have sufficient Hive Power for withdraw." );
+  HIVE_CHAIN_BALANCE_ASSERT( account.get_vesting() >= VEST_asset( 0 ), account.get_vesting(), "Account does not have sufficient Hive Power for withdraw.", ("account", o.account) );
+  HIVE_CHAIN_BALANCE_ASSERT( account.get_vesting() - account.get_delegated_vesting() >= o_vesting_shares, account.get_vesting() - account.get_delegated_vesting(), "Account does not have sufficient Hive Power for withdraw.", ("account", o.account) );
 
   if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
     _db.rc().regenerate_rc_mana( account, now );
@@ -595,7 +595,7 @@ void transfer_from_savings_evaluator::do_apply( const transfer_from_savings_oper
 
   HIVE_CHAIN_TREASURY_ASSERT( op.amount.symbol == HBD_SYMBOL || !_db.is_treasury( op.to ), op.to, "Can only transfer HBD to ${s}", ("s", op.to ) );
 
-  HIVE_CHAIN_BALANCE_ASSERT( _db.get_savings_balance( from, op.amount.symbol ) >= op.amount, op.from, "Insufficient savings balance for '${subject}'." );
+  HIVE_CHAIN_BALANCE_ASSERT( _db.get_savings_balance( from, op.amount.symbol ) >= op.amount, _db.get_savings_balance( from, op.amount.symbol ), "Insufficient savings balance ${subject} for '${account}'.", ("account", op.from) );
   _db.adjust_savings_balance( from, -op.amount );
   _db.create<savings_withdraw_object>( op.from, op.to, op.amount, op.memo, _db.head_block_time() + HIVE_SAVINGS_WITHDRAW_TIME, op.request_id );
 
@@ -628,12 +628,12 @@ void claim_reward_balance_evaluator::do_apply( const claim_reward_balance_operat
   HBD_asset op_reward_hbd = op.get_reward_hbd();
   VEST_asset op_reward_vests = op.get_reward_vests();
 
-  HIVE_CHAIN_BALANCE_ASSERT( op_reward_hive <= acnt.get_hive_rewards(), op.account, "Cannot claim that much HIVE. Claim: ${c} Actual: ${a}",
-    ( "c", op_reward_hive )( "a", acnt.get_hive_rewards() ) );
-  HIVE_CHAIN_BALANCE_ASSERT( op_reward_hbd <= acnt.get_hbd_rewards(), op.account, "Cannot claim that much HBD. Claim: ${c} Actual: ${a}",
-    ( "c", op_reward_hbd )( "a", acnt.get_hbd_rewards() ) );
-  HIVE_CHAIN_BALANCE_ASSERT( op_reward_vests <= acnt.get_vest_rewards(), op.account, "Cannot claim that much VESTS. Claim: ${c} Actual: ${a}",
-    ( "c", op_reward_vests )( "a", acnt.get_vest_rewards() ) );
+  HIVE_CHAIN_BALANCE_ASSERT( op_reward_hive <= acnt.get_hive_rewards(), acnt.get_hive_rewards(), "Cannot claim that much HIVE. Claim: ${c} Actual: ${a}",
+    ( "account", op.account )( "c", op_reward_hive )( "a", acnt.get_hive_rewards() ) );
+  HIVE_CHAIN_BALANCE_ASSERT( op_reward_hbd <= acnt.get_hbd_rewards(), acnt.get_hbd_rewards(), "Cannot claim that much HBD. Claim: ${c} Actual: ${a}",
+    ( "account", op.account )( "c", op_reward_hbd )( "a", acnt.get_hbd_rewards() ) );
+  HIVE_CHAIN_BALANCE_ASSERT( op_reward_vests <= acnt.get_vest_rewards(), acnt.get_vest_rewards(), "Cannot claim that much VESTS. Claim: ${c} Actual: ${a}",
+    ( "account", op.account )( "c", op_reward_vests )( "a", acnt.get_vest_rewards() ) );
 
   HIVE_asset reward_vesting_hive_to_move = HIVE_asset( 0 );
   if( op_reward_vests == acnt.get_vest_rewards() )
@@ -758,10 +758,10 @@ void delegate_vesting_shares_evaluator::do_apply( const delegate_vesting_shares_
 
   if( delegation == nullptr ) // delegation doesn't exist, create it
   {
-    HIVE_CHAIN_BALANCE_ASSERT( available_shares >= op_vesting_shares, op.delegator, "Account ${acc} does not have enough mana to delegate. required: ${r} available: ${a}",
-      ( "acc", op.delegator )( "r", op_vesting_shares )( "a", available_shares ) );
-    HIVE_CHAIN_BALANCE_ASSERT( available_downvote_shares >= op_vesting_shares, op.delegator, "Account ${acc} does not have enough downvote mana to delegate. required: ${r} available: ${a}",
-      ( "acc", op.delegator )( "r", op_vesting_shares )( "a", available_downvote_shares ) );
+    HIVE_CHAIN_BALANCE_ASSERT( available_shares >= op_vesting_shares, available_shares, "Account ${account} does not have enough mana to delegate. required: ${r} available: ${a}",
+      ( "account", op.delegator )( "r", op_vesting_shares )( "a", available_shares ) );
+    HIVE_CHAIN_BALANCE_ASSERT( available_downvote_shares >= op_vesting_shares, available_downvote_shares, "Account ${account} does not have enough downvote mana to delegate. required: ${r} available: ${a}",
+      ( "account", op.delegator )( "r", op_vesting_shares )( "a", available_downvote_shares ) );
     HIVE_CHAIN_LIMIT_ASSERT( op_vesting_shares >= min_delegation && "Minimum not reached", op_vesting_shares, "Account must delegate a minimum of ${v}", ( "v", min_delegation ) );
 
     _db.create< vesting_delegation_object >( delegator, delegatee, op_vesting_shares, now );
@@ -800,10 +800,10 @@ void delegate_vesting_shares_evaluator::do_apply( const delegate_vesting_shares_
     auto delta = op_vesting_shares - delegation->get_vesting();
 
     HIVE_CHAIN_LIMIT_ASSERT( delta >= min_update && "Wrong increase", delta, "Hive Power increase is not enough of a difference. min_update: ${min}", ("min", min_update) );
-    HIVE_CHAIN_BALANCE_ASSERT( available_shares >= delta, op.delegator, "Account ${acc} does not have enough mana to delegate. required: ${r} available: ${a}",
-      ( "acc", op.delegator )( "r", delta )( "a", available_shares ) );
-    HIVE_CHAIN_BALANCE_ASSERT( available_downvote_shares >= delta, op.delegator, "Account ${acc} does not have enough downvote mana to delegate. required: ${r} available: ${a}",
-      ( "acc", op.delegator )( "r", delta )( "a", available_downvote_shares ) );
+    HIVE_CHAIN_BALANCE_ASSERT( available_shares >= delta, available_shares, "Account ${account} does not have enough mana to delegate. required: ${r} available: ${a}",
+      ( "account", op.delegator )( "r", delta )( "a", available_shares ) );
+    HIVE_CHAIN_BALANCE_ASSERT( available_downvote_shares >= delta, available_downvote_shares, "Account ${account} does not have enough downvote mana to delegate. required: ${r} available: ${a}",
+      ( "account", op.delegator )( "r", delta )( "a", available_downvote_shares ) );
 
     _db.modify( delegator, [&]( account_object& a )
     {
@@ -911,7 +911,7 @@ void recurrent_transfer_evaluator::do_apply( const recurrent_transfer_operation&
   const auto& to_account = _db.get_account( op.to );
 
   asset available = _db.get_balance( from_account, op.amount.symbol );
-  HIVE_CHAIN_BALANCE_ASSERT( available >= op.amount, op.from, "Account does not have enough tokens for the first transfer, has ${has} needs ${needs}", ("has",  available)("needs", op.amount) );
+  HIVE_CHAIN_BALANCE_ASSERT( available >= op.amount, available, "Account does not have enough tokens for the first transfer, has ${has} needs ${needs}", ("account", op.from)("has",  available)("needs", op.amount) );
 
   uint8_t rtp_id = op.get_pair_id();
 
