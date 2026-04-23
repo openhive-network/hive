@@ -281,13 +281,16 @@ void transfer_evaluator::do_apply( const transfer_operation& o )
     HIVE_asset o_amount( o.amount );
     auto amount_to_transfer = o_amount * fhistory.current_median_history;
 
+    temp_HIVE_balance hive_balance;
     _db.adjust_balance( o.from, -o_amount );
-    _db.adjust_balance( o.to, amount_to_transfer );
-
-    _db.adjust_supply( -o_amount );
-
-    if( amount_to_transfer.amount > 0 )
-      _db.adjust_supply( amount_to_transfer );
+    hive_balance.set_from_asset( o_amount );
+    temp_HBD_balance converted_hbd_balance;
+    _db.modify( _db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& dgpo )
+    {
+      converted_hbd_balance = dgpo.convert_HIVE_to_HBD( hive_balance, fhistory.current_median_history, amount_to_transfer.amount > 0 );
+    } );
+    _db.adjust_balance( o.to, converted_hbd_balance.as_asset() );
+    converted_hbd_balance.set_from_asset( HBD_asset( 0 ) );
 
     // o.to will always be the treasury so no need to call _db.get_treasury
     push_virtual_operation( _db, dhf_conversion_operation( o.to, o_amount, amount_to_transfer ) );

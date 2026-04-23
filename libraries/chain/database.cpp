@@ -1169,6 +1169,8 @@ void database::clear_null_account_balance()
 {
   if( !has_hardfork( HIVE_HARDFORK_0_14__327 ) ) return;
 
+  const auto& gpo = get_dynamic_global_properties();
+
   const auto& null_account = get_account( HIVE_NULL_ACCOUNT );
   HIVE_asset total_hive, vesting_shares_hive_value;
   HBD_asset total_hbd;
@@ -1189,36 +1191,47 @@ void database::clear_null_account_balance()
 
   /////////////////////////////////////////////////////////////////////////////////////
 
+  temp_HIVE_balance hive_balance;
+  temp_HBD_balance hbd_balance;
+
   if( null_account.get_hive_balance().amount > 0 )
   {
-    adjust_balance( null_account, -null_account.get_hive_balance() );
+    auto hive = null_account.get_hive_balance();
+    adjust_balance( null_account, -hive );
+    hive_balance.set_from_asset( hive_balance.as_asset() + hive );
   }
 
   if( null_account.get_hive_savings().amount > 0 )
   {
-    adjust_savings_balance( null_account, -null_account.get_hive_savings() );
+    auto hive = null_account.get_hive_savings();
+    adjust_savings_balance( null_account, -hive );
+    hive_balance.set_from_asset( hive_balance.as_asset() + hive );
   }
 
   if( null_account.get_hbd_balance().amount > 0 )
   {
-    adjust_balance( null_account, -null_account.get_hbd_balance() );
+    auto hbd = null_account.get_hbd_balance();
+    adjust_balance( null_account, -hbd );
+    hbd_balance.set_from_asset( hbd_balance.as_asset() + hbd );
   }
 
   if( null_account.get_hbd_savings().amount > 0 )
   {
-    adjust_savings_balance( null_account, -null_account.get_hbd_savings() );
+    auto hbd = null_account.get_hbd_savings();
+    adjust_savings_balance( null_account, -hbd );
+    hbd_balance.set_from_asset( hbd_balance.as_asset() + hbd );
   }
 
   if( null_account.get_vesting().amount > 0 )
   {
-    const auto& gpo = get_dynamic_global_properties();
     auto _now = gpo.get_head_block_time();
 
     modify( gpo, [&]( dynamic_global_property_object& g )
     {
       g.access_total_vesting_shares() -= null_account.get_vesting();
       g.access_total_vesting_fund_hive() -= vesting_shares_hive_value;
-    });
+      hive_balance.set_from_asset( hive_balance.as_asset() + vesting_shares_hive_value );
+    } );
 
     if( has_hardfork( HIVE_HARDFORK_0_20 ) )
       rc().regenerate_rc_mana( null_account, _now ); //we could just always set RC value on 'null' to 0
@@ -1227,45 +1240,58 @@ void database::clear_null_account_balance()
       a.access_vesting().amount = 0;
       a.sum_delayed_votes = 0;
       a.delayed_votes.clear();
-    });
+    } );
     if( has_hardfork( HIVE_HARDFORK_0_20 ) )
       rc().update_account_after_vest_change( null_account, _now );
   }
 
   if( null_account.get_hive_rewards().amount > 0 )
   {
-    adjust_reward_balance( null_account, -null_account.get_hive_rewards() );
+    auto hive = null_account.get_hive_rewards();
+    adjust_reward_balance( null_account, -hive );
+    hive_balance.set_from_asset( hive_balance.as_asset() + hive );
   }
 
   if( null_account.get_hbd_rewards().amount > 0 )
   {
-    adjust_reward_balance( null_account, -null_account.get_hbd_rewards() );
+    auto hbd = null_account.get_hbd_rewards();
+    adjust_reward_balance( null_account, -hbd );
+    hbd_balance.set_from_asset( hbd_balance.as_asset() + hbd );
   }
 
   if( null_account.get_vest_rewards().amount > 0 )
   {
-    const auto& gpo = get_dynamic_global_properties();
-
     modify( gpo, [&]( dynamic_global_property_object& g )
     {
       g.access_pending_rewarded_vesting_shares() -= null_account.get_vest_rewards();
       g.access_pending_rewarded_vesting_hive() -= null_account.get_vest_rewards_as_hive();
-    });
+      hive_balance.set_from_asset( hive_balance.as_asset() + null_account.get_vest_rewards_as_hive() );
+    } );
 
     modify( null_account, [&]( account_object& a )
     {
       a.access_vest_rewards_as_hive().amount = 0;
       a.access_vest_rewards().amount = 0;
-    });
+    } );
   }
 
   //////////////////////////////////////////////////////////////
 
-  if( total_hive.amount > 0 )
-    adjust_supply( -total_hive );
+  if( not hive_balance.is_empty() )
+  {
+    modify( gpo, [&]( dynamic_global_property_object& g )
+    {
+      g.burn_HIVE( hive_balance );
+    } );
+  }
 
-  if( total_hbd.amount > 0 )
-    adjust_supply( -total_hbd );
+  if( not hbd_balance.is_empty() )
+  {
+    modify( gpo, [&]( dynamic_global_property_object& g )
+    {
+      g.burn_HBD( hbd_balance, get_feed_history().current_median_history, true );
+    } );
+  }
 
   post_push_virtual_operation( *this, vop_op );
 }
@@ -3343,44 +3369,22 @@ void database::adjust_reward_balance( const account_object& a, const HBD_asset& 
   } );
 }
 
-void database::adjust_supply( const asset& delta, bool adjust_vesting )
+temp_HIVE_balance database::issue_mining_reward( const HIVE_asset& reward )
 {
-  if( delta.symbol.asset_num == HIVE_ASSET_NUM_HIVE )
-    adjust_supply( HIVE_asset( delta ), adjust_vesting );
-  else
-  {
-    FC_ASSERT( ( delta.symbol.asset_num == HIVE_ASSET_NUM_HBD ) && "supply", "invalid symbol" );
-    adjust_supply( HBD_asset( delta ) );
-  }
-}
-
-void database::adjust_supply( const HIVE_asset& delta, bool adjust_vesting )
-{
+  temp_HIVE_balance new_hive;
   const auto& props = get_dynamic_global_properties();
-  if( props.get_head_block_number() < HIVE_BLOCKS_PER_DAY*7 )
-    adjust_vesting = false;
+  bool adjust_vesting = reward.amount > 0 && props.get_head_block_number() >= HIVE_BLOCKS_PER_DAY * 7;
 
   modify( props, [&]( dynamic_global_property_object& props )
   {
-    HIVE_asset new_vesting( (adjust_vesting && delta.amount > 0) ? delta.amount * 9 : 0 );
-    props.access_current_supply() += delta + new_vesting;
-    props.access_virtual_supply() += delta + new_vesting;
+    HIVE_asset new_vesting( adjust_vesting ? reward.amount * 9 : 0 );
+    new_hive = props.issue_HIVE( reward + new_vesting );
     props.access_total_vesting_fund_hive() += new_vesting;
-    FC_ASSERT( props.get_current_supply().amount.value >= 0 );
+    new_hive.set_from_asset( new_hive.as_asset() - new_vesting );
   } );
-}
 
-void database::adjust_supply( const HBD_asset& delta )
-{
-  const auto& props = get_dynamic_global_properties();
-  modify( props, [&]( dynamic_global_property_object& props )
-  {
-    props.access_current_hbd_supply() += delta;
-    props.access_virtual_supply() = props.get_current_hbd_supply() * get_feed_history().current_median_history + props.get_current_supply();
-    FC_ASSERT( props.get_current_hbd_supply().amount.value >= 0 );
-  } );
+  return new_hive;
 }
-
 
 asset database::get_balance( const account_object& a, asset_symbol_type symbol )const
 {

@@ -35,17 +35,18 @@ void database::pay_liquidity_reward()
 
   if( (head_block_num() % HIVE_LIQUIDITY_REWARD_BLOCKS) == 0 )
   {
-    auto reward = get_liquidity_reward();
+    auto reward_amount = get_liquidity_reward();
 
-    if( reward.amount == 0 )
+    if( reward_amount.amount == 0 )
       return;
 
-    const auto& ridx = get_index< liquidity_reward_balance_index >().indices().get< by_volume_weight >();
+    const auto& ridx = get_index< liquidity_reward_balance_index, by_volume_weight >();
     auto itr = ridx.begin();
     if( itr != ridx.end() && itr->volume_weight() > 0 )
     {
-      adjust_supply( reward, true );
-      adjust_balance( get(itr->owner), reward );
+      temp_HIVE_balance reward = issue_mining_reward( reward_amount );
+      adjust_balance( get(itr->owner), reward.as_asset() );
+      reward.set_from_asset( HIVE_asset( 0 ) );
       modify( *itr, [&]( liquidity_reward_balance_object& obj )
       {
         obj.hive_volume = 0;
@@ -54,7 +55,7 @@ void database::pay_liquidity_reward()
         obj.weight      = 0;
       } );
 
-      push_virtual_operation( *this, liquidity_reward_operation( get(itr->owner).get_name(), reward ) );
+      push_virtual_operation( *this, liquidity_reward_operation( get(itr->owner).get_name(), reward_amount ) );
     }
   }
 }
