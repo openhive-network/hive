@@ -236,6 +236,8 @@ BOOST_AUTO_TEST_CASE( inactive_proposals_have_votes )
     fund( db->get_treasury_name(), HBD_asset( 1 ) );
     generate_block();
 
+    issue_funds( HIVE_INIT_MINER_NAME, HIVE_asset( 3'000'000'000 ) );
+
     const auto& dgpo = db->get_dynamic_global_properties();
     auto old_hbd_supply = dgpo.current_hbd_supply;
 
@@ -1142,6 +1144,8 @@ BOOST_AUTO_TEST_CASE( generating_payments )
     fund( db->get_treasury_name(), HBD_asset( 1 ) );
     generate_block( 5 );
 
+    issue_funds( HIVE_INIT_MINER_NAME, HIVE_asset( 3'000'000'000 ) );
+
     const auto& dgpo = db->get_dynamic_global_properties();
     auto old_hbd_supply = dgpo.get_current_hbd_supply();
 
@@ -1232,6 +1236,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_01 )
     auto paid = HBD_asset( 5'000 );
 
     ISSUE_FUNDS( db->get_treasury_name(), HBD_asset( 5'000'000'000 ) );
+    issue_funds( HIVE_INIT_MINER_NAME, HIVE_asset( 10'000'000'000 ) );
     //=====================preparing=====================
     for( int32_t i = 0; i < nr_proposals; ++i )
     {
@@ -1441,6 +1446,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_03 )
     auto daily_pay = HBD_asset( 24'000 );
 
     ISSUE_FUNDS( db->get_treasury_name(), HBD_asset( 5'000'000'000 ) );
+    issue_funds( HIVE_INIT_MINER_NAME, HIVE_asset( 2'000'000'000'000 ) );
     //=====================preparing=====================
     uint16_t i = 0;
     for( auto item : inits )
@@ -1590,6 +1596,8 @@ try
     fund( db->get_treasury_name(), HBD_asset( 1 ) );
     generate_block();
 
+    issue_funds( HIVE_INIT_MINER_NAME, HIVE_asset( 100'000'000'000 ) );
+
     const auto& dgpo = db->get_dynamic_global_properties();
     auto old_hbd_supply = dgpo.get_current_hbd_supply();
 
@@ -1677,6 +1685,8 @@ try
     generate_block();
     fund( db->get_treasury_name(), HBD_asset( 1 ) );
     generate_block();
+
+    issue_funds( HIVE_INIT_MINER_NAME, HIVE_asset( 100'000'000'000 ) );
 
     const auto& dgpo = db->get_dynamic_global_properties();
     auto old_hbd_supply = dgpo.get_current_hbd_supply();
@@ -4821,6 +4831,7 @@ BOOST_AUTO_TEST_CASE( generating_payments )
      */
 
     ISSUE_FUNDS( db->get_treasury_name(), HBD_asset( 5'000'000'000 ) );
+    issue_funds( HIVE_INIT_MINER_NAME, HIVE_asset( 10'000'000'000 ) );
     //=====================preparing=====================
     for( int32_t i = 0; i < nr_proposals; ++i )
     {

@@ -8,6 +8,12 @@ import test_tools as tt
 STACK_LEVEL: Final[int] = 2
 
 
+def asset_amount(value) -> int:
+    if isinstance(value, dict):
+        return int(value["amount"])
+    return int(str(value).split()[0].replace(".", ""))
+
+
 # create_account "initminer" "pychol" "" true
 def create_accounts(node, creator, accounts):
     for account in accounts:
@@ -211,12 +217,17 @@ def calculate_propsal_budget(node, treasury, wif=None) -> int:
         tt.logger.info(f"Fast-forwarding to: {date_to_iso(period)}", stacklevel=STACK_LEVEL)
         hive_utils.debug_generate_blocks_until(node.rpc.url, wif, date_to_iso(period), False)
 
-    v = int(print_balance(node, [{"name": treasury}])[0])
+    treasury_balance = asset_amount(print_balance(node, [{"name": treasury}])[0])
+    props = node.get_dynamic_global_properties(False)
+    current_supply = asset_amount(props["current_supply"])
 
     if wif is not None:
         hive_utils.debug_generate_blocks(node.rpc.url, wif, 1)
 
-    return round((v * 0.01) / 24.0)
+    treasury_budget = round((treasury_balance * 0.01) / 24.0)
+    market_cap_budget = current_supply // (100 * 365 * 24)
+
+    return min(treasury_budget, market_cap_budget)
 
 
 def calculate_hourly_pay(budget: int, daily_pay: int) -> int:
