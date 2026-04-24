@@ -8,6 +8,7 @@
 
 #include <hive/chain/util/dhf_helper.hpp>
 
+#include <hive/protocol/config.hpp>
 #include <hive/protocol/dhf_operations.hpp>
 
 namespace hive { namespace chain {
@@ -22,7 +23,8 @@ class dhf_processor
 
     const static std::string removing_name;
     const static std::string calculating_name;
-    const static uint32_t total_amount_divider = 100;
+    const static uint32_t treasury_daily_budget_divider = 100;
+    const static uint16_t market_cap_yearly_budget_percent = HIVE_1_PERCENT;
 
     //Get number of microseconds for 1 day( daily_ms )
     const int64_t daily_seconds = fc::days(1).to_seconds();

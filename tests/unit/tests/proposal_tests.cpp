@@ -117,6 +117,29 @@ struct expired_account_notification_operation_visitor
   }
 };
 
+namespace {
+
+HBD_asset calculate_treasury_dhf_budget( const HBD_asset& treasury_fund, uint32_t passed_time_seconds )
+{
+  uint128_t budget = uint128_t( treasury_fund.amount.value / 100 ) * passed_time_seconds;
+  budget /= fc::days( 1 ).to_seconds();
+  return HBD_asset( fc::uint128_to_int64( budget ) );
+}
+
+HBD_asset calculate_market_cap_dhf_budget( const database& db, uint32_t passed_time_seconds )
+{
+  const auto& feed = db.get_feed_history();
+  FC_ASSERT( !feed.market_median_history.is_null() );
+
+  const auto& props = db.get_dynamic_global_properties();
+  const HBD_asset hive_market_cap = props.get_current_supply() * feed.market_median_history;
+  uint128_t budget = uint128_t( hive_market_cap.amount.value ) * HIVE_1_PERCENT * passed_time_seconds;
+  budget /= uint128_t( HIVE_100_PERCENT ) * HIVE_SECONDS_PER_YEAR;
+  return HBD_asset( fc::uint128_to_int64( budget ) );
+}
+
+} // namespace
+
 BOOST_FIXTURE_TEST_SUITE( proposal_tests, clean_database_fixture )
 
 BOOST_AUTO_TEST_CASE( inactive_proposals_have_votes )
@@ -1687,6 +1710,128 @@ try
       BOOST_REQUIRE_EQUAL( before_voter_01_hbd_balance, after_voter_01_hbd_balance );
       BOOST_REQUIRE_EQUAL( before_treasury_hbd_balance, after_treasury_hbd_balance - treasury_hbd_inflation + hourly_pay );
     }
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( dhf_market_cap_budget_limits_payments )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: DHF payments are limited by 1% yearly HIVE market cap when it is lower than treasury budget" );
+
+    ACTORS( (alice)(bob)(carol) )
+    generate_block();
+
+    set_price_feed( HBD_price( 1000, 1000 ) );
+    generate_block();
+
+    auto creator = "alice";
+    auto receiver = "bob";
+    auto voter = "carol";
+
+    ISSUE_FUNDS( creator, HBD_asset( 100'000'000 ) );
+    ISSUE_FUNDS( db->get_treasury_name(), HBD_asset( 20'000'000'000 ) );
+    vest( voter, HIVE_asset( 1'000 ) );
+
+    auto start_date = db->head_block_time() + fc::seconds( HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS );
+    generate_blocks( start_date );
+
+    issue_funds( HIVE_INIT_MINER_NAME, HIVE_asset( 100'000'000'000 ) ); // 100M HIVE market cap at 1:1 feed
+
+    auto end_date = start_date + fc::days( 2 );
+    auto daily_pay = HBD_asset( 1'000'000'000 );
+
+    int64_t id_proposal = create_proposal( creator, receiver, start_date, end_date, daily_pay, alice_private_key, alice_post_key );
+    generate_block();
+
+    vote_proposal( voter, { id_proposal }, true/*approve*/, carol_private_key );
+    generate_block();
+
+    auto before_receiver_hbd_balance = db->get_account( receiver ).get_hbd_balance();
+
+    auto next_block = get_nr_blocks_until_proposal_maintenance_block();
+    generate_blocks( next_block - 1 );
+
+    const auto& dgpo_before = db->get_dynamic_global_properties();
+    auto previous_budget_time = dgpo_before.last_budget_time;
+    auto old_hbd_supply = dgpo_before.get_current_hbd_supply();
+    auto treasury_hbd_balance = db->get_treasury().get_hbd_balance();
+
+    generate_block();
+
+    const auto& dgpo_after = db->get_dynamic_global_properties();
+    uint32_t passed_time_seconds = ( dgpo_after.last_budget_time - previous_budget_time ).to_seconds();
+    auto treasury_hbd_inflation = dgpo_after.get_current_hbd_supply() - old_hbd_supply;
+
+    auto treasury_budget = calculate_treasury_dhf_budget( treasury_hbd_balance + treasury_hbd_inflation, passed_time_seconds );
+    auto market_cap_budget = calculate_market_cap_dhf_budget( *db, passed_time_seconds );
+
+    BOOST_REQUIRE_LT( market_cap_budget, treasury_budget );
+    BOOST_REQUIRE_EQUAL( db->get_account( receiver ).get_hbd_balance(), before_receiver_hbd_balance + market_cap_budget );
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( dhf_treasury_budget_limits_payments_when_market_cap_budget_is_higher )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: DHF payments use existing treasury budget when 1% yearly HIVE market cap is higher" );
+
+    ACTORS( (alice)(bob)(carol) )
+    generate_block();
+
+    set_price_feed( HBD_price( 1000, 1000 ) );
+    generate_block();
+
+    auto creator = "alice";
+    auto receiver = "bob";
+    auto voter = "carol";
+
+    ISSUE_FUNDS( creator, HBD_asset( 100'000'000 ) );
+    ISSUE_FUNDS( db->get_treasury_name(), HBD_asset( 20'000'000'000 ) );
+    vest( voter, HIVE_asset( 1'000 ) );
+
+    auto start_date = db->head_block_time() + fc::seconds( HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS );
+    generate_blocks( start_date );
+
+    issue_funds( HIVE_INIT_MINER_NAME, HIVE_asset( 10'000'000'000'000 ) ); // 10B HIVE market cap at 1:1 feed
+
+    auto end_date = start_date + fc::days( 2 );
+    auto daily_pay = HBD_asset( 1'000'000'000 );
+
+    int64_t id_proposal = create_proposal( creator, receiver, start_date, end_date, daily_pay, alice_private_key, alice_post_key );
+    generate_block();
+
+    vote_proposal( voter, { id_proposal }, true/*approve*/, carol_private_key );
+    generate_block();
+
+    auto before_receiver_hbd_balance = db->get_account( receiver ).get_hbd_balance();
+
+    auto next_block = get_nr_blocks_until_proposal_maintenance_block();
+    generate_blocks( next_block - 1 );
+
+    const auto& dgpo_before = db->get_dynamic_global_properties();
+    auto previous_budget_time = dgpo_before.last_budget_time;
+    auto old_hbd_supply = dgpo_before.get_current_hbd_supply();
+    auto treasury_hbd_balance = db->get_treasury().get_hbd_balance();
+
+    generate_block();
+
+    const auto& dgpo_after = db->get_dynamic_global_properties();
+    uint32_t passed_time_seconds = ( dgpo_after.last_budget_time - previous_budget_time ).to_seconds();
+    auto treasury_hbd_inflation = dgpo_after.get_current_hbd_supply() - old_hbd_supply;
+
+    auto treasury_budget = calculate_treasury_dhf_budget( treasury_hbd_balance + treasury_hbd_inflation, passed_time_seconds );
+    auto market_cap_budget = calculate_market_cap_dhf_budget( *db, passed_time_seconds );
+
+    BOOST_REQUIRE_LT( treasury_budget, market_cap_budget );
+    BOOST_REQUIRE_EQUAL( db->get_account( receiver ).get_hbd_balance(), before_receiver_hbd_balance + treasury_budget );
 
     validate_database();
   }

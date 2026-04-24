@@ -150,12 +150,25 @@ HBD_asset dhf_processor::calculate_maintenance_budget( const time_point_sec& hea
   //Calculate budget for given maintenance period
   uint32_t passed_time_seconds = ( head_time - db.get_dynamic_global_properties().last_budget_time ).to_seconds();
 
-  //Calculate daily_budget_limit
-  int64_t daily_budget_limit = treasury_fund.amount.value / total_amount_divider;
+  //Calculate budget from the existing 1% of treasury per day rule
+  int64_t daily_budget_limit = treasury_fund.amount.value / treasury_daily_budget_divider;
 
   daily_budget_limit = fc::uint128_to_uint64( ( uint128_t( passed_time_seconds ) * daily_budget_limit ) / daily_seconds );
 
-  return HBD_asset( daily_budget_limit );
+  HBD_asset treasury_budget_limit( daily_budget_limit );
+
+  const auto& feed = db.get_feed_history();
+  if( feed.market_median_history.is_null() )
+    return treasury_budget_limit;
+
+  // Add an annual cap of 1% of HIVE market cap, prorated to this maintenance period.
+  const auto& props = db.get_dynamic_global_properties();
+  const HBD_asset hive_market_cap = props.get_current_supply() * feed.market_median_history;
+  uint128_t market_cap_budget = uint128_t( hive_market_cap.amount.value ) * market_cap_yearly_budget_percent * passed_time_seconds;
+  market_cap_budget /= uint128_t( HIVE_100_PERCENT ) * HIVE_SECONDS_PER_YEAR;
+
+  HBD_asset market_cap_budget_limit( fc::uint128_to_int64( market_cap_budget ) );
+  return market_cap_budget_limit < treasury_budget_limit ? market_cap_budget_limit : treasury_budget_limit;
 }
 
 void dhf_processor::transfer_payments( const time_point_sec& head_time, HBD_asset& maintenance_budget_limit, const t_proposals& proposals )
