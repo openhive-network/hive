@@ -4,15 +4,13 @@
 
 namespace hive { namespace chain {
 
-/// Validates that a price feed is available.
-/// @param fhistory  Feed history object to check.
-/// @param context   Human-readable context for the error message.
-template<typename FeedHistoryT>
-inline void validate_price_feed_available( const FeedHistoryT& fhistory, const char* context )
+/// Validates that a price is available.
+/// @param exchange_rate Price to check.
+/// @param context       Human-readable context for the error message.
+inline void validate_price_feed_available( const HBD_price& exchange_rate, const char* context )
 {
-  HIVE_CHAIN_STATE_ASSERT( !fhistory.current_median_history.is_null(), fhistory.current_median_history,
-    "Cannot ${context} because there is no price feed.",
-    ("context", context) );
+  HIVE_CHAIN_STATE_ASSERT( !exchange_rate.is_null(), exchange_rate,
+    "Cannot ${context} because there is no price feed.", ( "context", context ) );
 }
 
 } } // hive::chain

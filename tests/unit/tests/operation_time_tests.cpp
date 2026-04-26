@@ -2876,7 +2876,7 @@ BOOST_AUTO_TEST_CASE( clear_null_account )
       db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
       {
         new_hive = gpo.issue_HIVE( HIVE_asset( 2'000 ) );
-        new_hbd = gpo.issue_HBD( HBD_asset( 1'000 ), db.get_feed_history().current_median_history );
+        new_hbd = gpo.issue_HBD( HBD_asset( 1'000 ), db.get_hbd_price() );
         gpo.access_pending_rewarded_vesting_shares() += VEST_asset( 1'000'000 );
         gpo.access_pending_rewarded_vesting_hive() += HIVE_asset( 1'000 );
         new_hive.set_from_asset( new_hive.as_asset() - HIVE_asset( 1'000 ) );

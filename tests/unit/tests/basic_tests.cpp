@@ -1998,7 +1998,7 @@ BOOST_AUTO_TEST_CASE( temp_balance_nonzero_destruction_is_bug )
 
   // Verify that zero-amount temp is fine (dynamic symbol version)
   {
-    const auto& exchange_rate = db->get_feed_history().current_median_history;
+    const auto& exchange_rate = db->get_hbd_price();
     temp_HBD_balance tmp;
     temp_balance no_funds_from_start( HBD_SYMBOL ), no_funds_after_transfer( HBD_SYMBOL ); // there is no burn for dynamic asset balance
     db->modify( db->get_dynamic_global_properties(), [&]( dynamic_global_property_object& dgpo )
@@ -2116,7 +2116,7 @@ BOOST_AUTO_TEST_CASE( temp_balance_nonzero_overwrite_is_bug )
 
   // move assign is ok as long as target balance is empty, even when assets are different
   {
-    const auto& exchange_rate = db->get_feed_history().current_median_history;
+    const auto& exchange_rate = db->get_hbd_price();
     temp_balance empty_funds( HIVE_SYMBOL ), tmp( HBD_SYMBOL );
     db->modify( db->get_dynamic_global_properties(), [&]( dynamic_global_property_object& dgpo )
     {
@@ -3017,7 +3017,7 @@ BOOST_AUTO_TEST_CASE( removal_of_nonempty_balance_is_a_bug )
   {
     dgpo.burn_HIVE( hive );
     hbd.transfer_from( any );
-    dgpo.burn_HBD( hbd, db->get_feed_history().current_median_history );
+    dgpo.burn_HBD( hbd, db->get_hbd_price() );
   } );
 }
 
@@ -3032,7 +3032,7 @@ BOOST_AUTO_TEST_CASE( asset_conversion_test )
 
   set_price_feed( HBD_price( 3, 7 ) );
   generate_block();
-  const auto& exchange_rate = db->get_feed_history().current_median_history;
+  const auto& exchange_rate = db->get_hbd_price();
 
   // Accumulate truncation errors through multiple issue_HBD calls, then convert HIVE to HBD.
   // With update_virtual_supply=true the recalculation repairs accumulated truncation;

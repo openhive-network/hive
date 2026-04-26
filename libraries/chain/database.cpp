@@ -483,6 +483,11 @@ const feed_history_object& database::get_feed_history()const
   return get< feed_history_object >();
 } FC_CAPTURE_AND_RETHROW() }
 
+const HBD_price& database::get_hbd_price()const
+{
+  return get_feed_history().current_median_history;
+}
+
 const time_point_sec database::calculate_discussion_payout_time( const comment_object& comment )const
 {
   const comment_object& _comment = get_comment_for_payout_time( comment );
@@ -955,10 +960,10 @@ std::pair< HBD_asset, HIVE_asset > database::award_hbd( const account_object& to
     if( hive.get_amount() == 0 )
       return assets;
 
-    const auto& median_price = get_feed_history().current_median_history;
+    const auto& exchange_rate = get_hbd_price();
     const auto& gpo = get_dynamic_global_properties();
 
-    if( !median_price.is_null() )
+    if( !exchange_rate.is_null() )
     {
       temp_HIVE_balance to_hbd_balance;
       auto to_hbd = ( gpo.get_hbd_print_rate() * hive_balance.as_asset() ) / HIVE_100_PERCENT;
@@ -967,7 +972,7 @@ std::pair< HBD_asset, HIVE_asset > database::award_hbd( const account_object& to
       temp_HBD_balance hbd_balance;
       modify( gpo, [&]( dynamic_global_property_object& p )
       {
-        hbd_balance = p.convert_HIVE_to_HBD( to_hbd_balance, median_price );
+        hbd_balance = p.convert_HIVE_to_HBD( to_hbd_balance, exchange_rate );
       } );
 
       assets.first = hbd_balance;
@@ -1280,7 +1285,7 @@ void database::clear_null_account_balance()
   {
     modify( gpo, [&]( dynamic_global_property_object& g )
     {
-      g.burn_HBD( hbd_balance, get_feed_history().current_median_history, true );
+      g.burn_HBD( hbd_balance, get_hbd_price(), true );
     } );
   }
 
@@ -1758,7 +1763,7 @@ void database::process_funds()
 {
   const auto& props = get_dynamic_global_properties();
   const auto& wso = get_witness_schedule_object();
-  const auto& feed = get_feed_history();
+  const auto& exchange_rate = get_hbd_price();
 
   if( has_hardfork( HIVE_HARDFORK_0_16__551) )
   {
@@ -1776,13 +1781,12 @@ void database::process_funds()
     HIVE_asset new_hive( 0 );
     if( has_hardfork( HIVE_HARDFORK_1_28_NO_DHF_HBD_IN_INFLATION ) )
     {
-      auto median_price = get_feed_history().current_median_history;
-      FC_ASSERT( median_price.is_null() == false );
+      FC_ASSERT( exchange_rate.is_null() == false );
 
       const auto& treasury_account = get_treasury();
       const HBD_asset hbd_supply_without_treasury = props.get_current_hbd_supply() - treasury_account.get_hbd_balance();
       FC_ASSERT( hbd_supply_without_treasury.amount.value >= 0 ); // ABW: not needed
-      const auto virtual_supply_without_treasury = hbd_supply_without_treasury * median_price + props.get_current_supply();
+      const auto virtual_supply_without_treasury = hbd_supply_without_treasury * exchange_rate + props.get_current_supply();
 
       new_hive = ( virtual_supply_without_treasury * current_inflation_rate ) / (int64_t(HIVE_100_PERCENT) * int64_t(HIVE_BLOCKS_PER_YEAR));
     }
@@ -1825,7 +1829,7 @@ void database::process_funds()
       to_hbd.transfer_from( hive_issued, dhf_new_funds );
       p.access_total_vesting_fund_hive() += vesting_reward;
       hive_issued.set_from_asset( hive_issued.as_asset() - vesting_reward );
-      hbd_issued = p.convert_HIVE_to_HBD( to_hbd, feed.current_median_history, false );
+      hbd_issued = p.convert_HIVE_to_HBD( to_hbd, exchange_rate, false );
       p.add_to_dhf_interval_ledger( hbd_issued );
     } );
 
@@ -2009,12 +2013,12 @@ void database::pay_reward_funds( temp_HIVE_balance& reward_balance, const HIVE_a
 
 HBD_asset database::to_hbd( const HIVE_asset& hive )const
 {
-  return util::to_hbd( get_feed_history().current_median_history, hive );
+  return util::to_hbd( get_hbd_price(), hive );
 }
 
 HIVE_asset database::to_hive( const HBD_asset& hbd )const
 {
-  return util::to_hive( get_feed_history().current_median_history, hbd );
+  return util::to_hive( get_hbd_price(), hbd );
 }
 
 void database::account_recovery_processing()
@@ -2898,8 +2902,8 @@ void database::update_global_dynamic_data( const signed_block& b )
 
 uint16_t database::calculate_HBD_percent()
 {
-  auto median_price = get_feed_history().current_median_history;
-  if( median_price.is_null() )
+  const auto& exchange_rate = get_hbd_price();
+  if( exchange_rate.is_null() )
     return 0;
 
   const auto& dgpo = get_dynamic_global_properties();
@@ -2911,10 +2915,10 @@ uint16_t database::calculate_HBD_percent()
     hbd_supply -= get_treasury().get_hbd_balance();
     if( hbd_supply.amount < 0 )
       hbd_supply = HBD_asset( 0 );
-    virtual_supply = hbd_supply * median_price + dgpo.get_current_supply();
+    virtual_supply = hbd_supply * exchange_rate + dgpo.get_current_supply();
   }
 
-  auto hbd_as_hive = fc::uint128_t( ( hbd_supply * median_price ).amount.value );
+  auto hbd_as_hive = fc::uint128_t( ( hbd_supply * exchange_rate ).amount.value );
   hbd_as_hive *= HIVE_100_PERCENT;
   if( has_hardfork( HIVE_HARDFORK_0_21 ) )
     hbd_as_hive += virtual_supply.amount.value / 2; // added rounding
@@ -2925,12 +2929,12 @@ void database::update_virtual_supply()
 { try {
   modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& dgp )
   {
-    auto median_price = get_feed_history().current_median_history;
+    const auto& exchange_rate = get_hbd_price();
     //current_median_history was null until block 933600
     dgp.access_virtual_supply() = dgp.get_current_supply()
-      + ( median_price.is_null() ? HIVE_asset( 0 ) : dgp.get_current_hbd_supply() * median_price );
+      + ( exchange_rate.is_null() ? HIVE_asset( 0 ) : dgp.get_current_hbd_supply() * exchange_rate );
 
-    if( !median_price.is_null() && has_hardfork( HIVE_HARDFORK_0_14__230 ) )
+    if( !exchange_rate.is_null() && has_hardfork( HIVE_HARDFORK_0_14__230 ) )
     {
       uint16_t percent_hbd = calculate_HBD_percent();
 
@@ -3275,7 +3279,7 @@ void database::adjust_balance( const account_object& a, HBD_balance_base& hbd_ba
         temp_HBD_balance interest_balance;
         modify( dgpo, [&]( dynamic_global_property_object& props )
         {
-          interest_balance = props.issue_HBD( interest_to_pay, get_feed_history().current_median_history );
+          interest_balance = props.issue_HBD( interest_to_pay, get_hbd_price() );
         } );
         acnt.access_hbd_balance().transfer_from( interest_balance );
         acnt.hbd_seconds = 0;
@@ -3349,7 +3353,7 @@ void database::adjust_savings_balance( const account_object& a, HBD_balance_base
         temp_HBD_balance interest_balance;
         modify( dgpo, [&]( dynamic_global_property_object& props )
         {
-          interest_balance = props.issue_HBD( interest_to_pay, get_feed_history().current_median_history );
+          interest_balance = props.issue_HBD( interest_to_pay, get_hbd_price() );
         } );
         acnt.access_hbd_savings().transfer_from( interest_balance );
         acnt.savings_hbd_seconds = 0;
@@ -3509,10 +3513,11 @@ void database::validate_invariants()const
     FC_ASSERT( gpo.get_pending_rewarded_vesting_hive() == pending_vesting_hive, "", ("pending_rewarded_vesting_hive",gpo.get_pending_rewarded_vesting_hive())("pending_vesting_hive", pending_vesting_hive));
 
     FC_ASSERT( gpo.get_virtual_supply() >= gpo.get_current_supply() );
-    if ( !get_feed_history().current_median_history.is_null() )
+    const auto& exchange_rate = get_hbd_price();
+    if ( !exchange_rate.is_null() )
     {
-      FC_ASSERT( gpo.get_current_hbd_supply()* get_feed_history().current_median_history + gpo.get_current_supply()
-        == gpo.get_virtual_supply(), "", ("gpo.current_hbd_supply",gpo.get_current_hbd_supply())("get_feed_history().current_median_history",get_feed_history().current_median_history)("gpo.current_supply",gpo.get_current_supply())("gpo.virtual_supply",gpo.get_virtual_supply()) );
+      FC_ASSERT( gpo.get_current_hbd_supply()* exchange_rate + gpo.get_current_supply()
+        == gpo.get_virtual_supply(), "", ("gpo.current_hbd_supply",gpo.get_current_hbd_supply())("get_hbd_price()",exchange_rate)("gpo.current_supply",gpo.get_current_supply())("gpo.virtual_supply",gpo.get_virtual_supply()) );
     }
 
     ilog( "validate_invariants @${b}:", ( "b", head_block_num() ) );

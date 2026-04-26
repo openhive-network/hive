@@ -342,10 +342,10 @@ void dhf_processor::convert_funds( const block_notification& note )
 
   const auto to_convert = HIVE_PROPOSAL_CONVERSION_RATE * treasury_account.get_hive_balance() / HIVE_100_PERCENT;
 
-  const feed_history_object& fhistory = db.get_feed_history();
-  FC_ASSERT( not fhistory.current_median_history.is_null() ); //current_median_history was null only until block 933600
+  const auto& exchange_rate = db.get_hbd_price();
+  FC_ASSERT( not exchange_rate.is_null() ); //current_median_history was null only until block 933600
 
-  auto converted_hbd = to_convert * fhistory.current_median_history;
+  auto converted_hbd = to_convert * exchange_rate;
   // Don't convert if the conversion would result in an amount lower than the dust threshold
   if( converted_hbd < HIVE_MIN_PAYOUT_HBD )
     return;
@@ -355,7 +355,7 @@ void dhf_processor::convert_funds( const block_notification& note )
   db.adjust_balance( treasury_account, to_convert_balance, -to_convert );
   db.modify( dgpo, [&]( dynamic_global_property_object& _dgpo )
   {
-    converted_hbd_balance = _dgpo.convert_HIVE_to_HBD( to_convert_balance, fhistory.current_median_history );
+    converted_hbd_balance = _dgpo.convert_HIVE_to_HBD( to_convert_balance, exchange_rate );
   } );
   db.adjust_balance( treasury_account, converted_hbd_balance, converted_hbd_balance.as_asset() );
 

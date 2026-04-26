@@ -32,7 +32,7 @@ struct supplement_operations_visitor
     if( cashout == nullptr || cashout->get_net_rshares() <= 0 )
       return; //voting can happen even after cashout; there will be no new payout though
 
-    const auto& hist = _db.get_feed_history();
+    const auto& exchange_rate = _db.get_hbd_price();
     const auto& rf = _db.get_reward_fund();
 
     u256 total_r2 = chain::util::to256( rf.get_recent_claims() );
@@ -43,8 +43,8 @@ struct supplement_operations_visitor
       uint128_t vshares = chain::util::evaluate_reward_curve( cashout->get_net_rshares(), rf.get_author_reward_curve(), rf.get_content_constant() );
 
       HBD_asset reward_hbd( 0 );
-      if( !hist.current_median_history.is_null() )
-        reward_hbd = reward_hive * hist.current_median_history;
+      if( !exchange_rate.is_null() )
+        reward_hbd = reward_hive * exchange_rate;
 
       u256 r2 = chain::util::to256( vshares );
       r2 *= reward_hbd.get_amount();

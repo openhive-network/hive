@@ -2360,7 +2360,7 @@ BOOST_AUTO_TEST_CASE(treasury_hbd_does_not_affect_inflation_advanced)
               const auto &treasury_account = db->get_treasury();
               const HBD_asset hbd_supply_without_treasury = props.get_current_hbd_supply() - treasury_account.get_hbd_balance();
               BOOST_REQUIRE_GE( hbd_supply_without_treasury, HBD_asset( 0 ) );
-              const auto virtual_supply_without_treasury = hbd_supply_without_treasury * db->get_feed_history().current_median_history + props.get_current_supply();
+              const auto virtual_supply_without_treasury = hbd_supply_without_treasury * db->get_hbd_price() + props.get_current_supply();
 
               new_hive = (virtual_supply_without_treasury.amount * current_inflation_rate) / (int64_t(HIVE_100_PERCENT) * int64_t(HIVE_BLOCKS_PER_YEAR));
             }

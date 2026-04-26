@@ -320,6 +320,8 @@ namespace chain {
       uint32_t                               get_node_skip_flags()const;
       void                                   set_node_skip_flags( uint32_t skip_flags );
       const feed_history_object&             get_feed_history()const;
+      // returns current internal HBD-HIVE exchange rate
+      const HBD_price&                       get_hbd_price()const;
       const witness_schedule_object&         get_witness_schedule_object()const;
       const witness_schedule_object&         get_future_witness_schedule_object() const;
 
