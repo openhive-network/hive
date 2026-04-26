@@ -181,17 +181,21 @@ BOOST_AUTO_TEST_CASE( restore_accounts_01 )
 
       {
         db->gather_balance( _alice.get_name(), _alice.get_hive_balance(), _alice.get_hbd_balance() );
-        db->adjust_balance( db->get_treasury_name(), _alice.get_hive_balance() );
-        db->adjust_balance( db->get_treasury_name(), _alice.get_hbd_balance() );
-        db->adjust_balance( "alice", -_alice.get_hive_balance() );
-        db->adjust_balance( "alice", -_alice.get_hbd_balance() );
+        temp_HIVE_balance hive_transfer;
+        db->adjust_balance( "alice", hive_transfer, -_alice.get_hive_balance() );
+        db->adjust_balance( db->get_treasury_name(), hive_transfer, hive_transfer.as_asset() );
+        temp_HBD_balance hbd_transfer;
+        db->adjust_balance( "alice", hbd_transfer, -_alice.get_hbd_balance() );
+        db->adjust_balance( db->get_treasury_name(), hbd_transfer, hbd_transfer.as_asset() );
       }
       {
         db->gather_balance( _bob.get_name(), _bob.get_hive_balance(), _bob.get_hbd_balance() );
-        db->adjust_balance( db->get_treasury_name(), _bob.get_hive_balance() );
-        db->adjust_balance( db->get_treasury_name(), _bob.get_hbd_balance() );
-        db->adjust_balance( "bob", -_bob.get_hive_balance() );
-        db->adjust_balance( "bob", -_bob.get_hbd_balance() );
+        temp_HIVE_balance hive_transfer;
+        db->adjust_balance( "bob", hive_transfer, -_bob.get_hive_balance() );
+        db->adjust_balance( db->get_treasury_name(), hive_transfer, hive_transfer.as_asset() );
+        temp_HBD_balance hbd_transfer;
+        db->adjust_balance( "bob", hbd_transfer, -_bob.get_hbd_balance() );
+        db->adjust_balance( db->get_treasury_name(), hbd_transfer, hbd_transfer.as_asset() );
       }
 
       HIVE_asset _2000( 2'000'000 );
@@ -203,10 +207,12 @@ BOOST_AUTO_TEST_CASE( restore_accounts_01 )
 
       {
         //Create another balances for `alice`
-        db->adjust_balance( "carol", -_2000 );
-        db->adjust_balance( "carol", -_10 );
-        db->adjust_balance( "alice", _2000 );
-        db->adjust_balance( "alice", _10 );
+        temp_HIVE_balance hive_transfer;
+        db->adjust_balance( "carol", hive_transfer, -_2000 );
+        db->adjust_balance( "alice", hive_transfer, _2000 );
+        temp_HBD_balance hbd_transfer;
+        db->adjust_balance( "carol", hbd_transfer, -_10 );
+        db->adjust_balance( "alice", hbd_transfer, _10 );
 
         generate_block();
 
@@ -215,10 +221,12 @@ BOOST_AUTO_TEST_CASE( restore_accounts_01 )
       }
       {
         //Create another balances for `bob`
-        db->adjust_balance( "carol", -_800 );
-        db->adjust_balance( "carol", -_70 );
-        db->adjust_balance( "bob", _800 );
-        db->adjust_balance( "bob", _70 );
+        temp_HIVE_balance hive_transfer;
+        db->adjust_balance( "carol", hive_transfer, -_800 );
+        db->adjust_balance( "bob", hive_transfer, _800 );
+        temp_HBD_balance hbd_transfer;
+        db->adjust_balance( "carol", hbd_transfer, -_70 );
+        db->adjust_balance( "bob", hbd_transfer, _70 );
 
         generate_block();
 

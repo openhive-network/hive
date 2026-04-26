@@ -102,11 +102,9 @@ void escrow_transfer_evaluator::do_apply( const escrow_transfer_operation& o )
     }
 
     temp_HIVE_balance escrow_hive;
-    _db.adjust_balance( from_account, -hive_spent );
-    escrow_hive.set_from_asset( hive_spent );
+    _db.adjust_balance( from_account, escrow_hive, -hive_spent );
     temp_HBD_balance escrow_hbd;
-    _db.adjust_balance( from_account, -hbd_spent );
-    escrow_hbd.set_from_asset( hbd_spent );
+    _db.adjust_balance( from_account, escrow_hbd, -hbd_spent );
 
     temp_balance escrow_fee( o.fee.symbol );
     if( o.fee.symbol == HIVE_SYMBOL )
@@ -175,8 +173,7 @@ void escrow_approve_evaluator::do_apply( const escrow_approve_operation& o )
       } );
 
       auto vop = escrow_approved_operation( o.from, o.to, o.agent, o.escrow_id, fee_released.as_asset() );
-      _db.adjust_balance( o.agent, fee_released.as_asset() );
-      fee_released.set_from_asset( asset( 0, fee_released.as_asset().symbol ) );
+      _db.adjust_balance( o.agent, fee_released, fee_released.as_asset() );
       push_virtual_operation( _db, vop );
     }
   }
@@ -253,10 +250,8 @@ void escrow_release_evaluator::do_apply( const escrow_release_operation& o )
       esc.access_hbd_balance().transfer_to( hbd_released, o_hbd_amount );
     } );
 
-    _db.adjust_balance( o.receiver, hive_released.as_asset() );
-    hive_released.set_from_asset( HIVE_asset( 0 ) );
-    _db.adjust_balance( o.receiver, hbd_released.as_asset() );
-    hbd_released.set_from_asset( HBD_asset( 0 ) );
+    _db.adjust_balance( o.receiver, hive_released, hive_released.as_asset() );
+    _db.adjust_balance( o.receiver, hbd_released, hbd_released.as_asset() );
 
     if( e.get_hive_balance().amount == 0 && e.get_hbd_balance().amount == 0 )
     {
@@ -282,15 +277,13 @@ void transfer_evaluator::do_apply( const transfer_operation& o )
     auto amount_to_transfer = o_amount * fhistory.current_median_history;
 
     temp_HIVE_balance hive_balance;
-    _db.adjust_balance( o.from, -o_amount );
-    hive_balance.set_from_asset( o_amount );
+    _db.adjust_balance( o.from, hive_balance, -o_amount );
     temp_HBD_balance converted_hbd_balance;
     _db.modify( _db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& dgpo )
     {
       converted_hbd_balance = dgpo.convert_HIVE_to_HBD( hive_balance, fhistory.current_median_history, amount_to_transfer.amount > 0 );
     } );
-    _db.adjust_balance( o.to, converted_hbd_balance.as_asset() );
-    converted_hbd_balance.set_from_asset( HBD_asset( 0 ) );
+    _db.adjust_balance( o.to, converted_hbd_balance, converted_hbd_balance.as_asset() );
 
     // o.to will always be the treasury so no need to call _db.get_treasury
     push_virtual_operation( _db, dhf_conversion_operation( o.to, o_amount, amount_to_transfer ) );
@@ -301,8 +294,9 @@ void transfer_evaluator::do_apply( const transfer_operation& o )
     HIVE_CHAIN_TREASURY_ASSERT( o.amount.symbol == HBD_SYMBOL || !_db.is_treasury( o.to ), o.to, "Can only transfer HBD or HIVE to ${s}", ( "s", o.to ) );
   }
 
-  _db.adjust_balance( o.from, -o.amount );
-  _db.adjust_balance( o.to, o.amount );
+  temp_balance transfer( o.amount.symbol );
+  _db.adjust_balance( o.from, transfer, -o.amount );
+  _db.adjust_balance( o.to, transfer, o.amount );
 }
 
 void transfer_to_vesting_evaluator::do_apply( const transfer_to_vesting_operation& o )
@@ -314,7 +308,8 @@ void transfer_to_vesting_evaluator::do_apply( const transfer_to_vesting_operatio
     HIVE_CHAIN_TREASURY_ASSERT( !_db.is_treasury( o.to ), o.to, "Cannot vest on behalf of ${s}", ("s", o.to ) );
 
   HIVE_asset o_amount( o.get_amount() );
-  _db.adjust_balance( from_account, -o_amount );
+  temp_HIVE_balance vesting_funds;
+  _db.adjust_balance( from_account, vesting_funds, -o_amount );
 
   VEST_asset amount_vested;
 
@@ -326,15 +321,16 @@ void transfer_to_vesting_evaluator::do_apply( const transfer_to_vesting_operatio
   */
   if( _db.has_hardfork( HIVE_HARDFORK_1_24 ) )
   {
-    amount_vested = _db.adjust_account_vesting_balance( to_account, o_amount, false/*to_reward_balance*/, []( VEST_asset vests_created ) {} );
+    amount_vested = _db.adjust_account_vesting_balance( to_account, vesting_funds.as_asset(), false/*to_reward_balance*/, []( VEST_asset vests_created ) {} );
 
     delayed_voting dv( _db );
     dv.add_delayed_value( to_account, _db.head_block_time(), amount_vested.get_amount() );
   }
   else
   {
-    amount_vested = _db.create_vesting( to_account, o_amount );
+    amount_vested = _db.create_vesting( to_account, vesting_funds.as_asset() );
   }
+  vesting_funds.set_from_asset( HIVE_asset( 0 ) );
 
   /// Emit this vop unconditionally, since VESTS balance changed immediately, indepdenent to subsequent updates of account voting power done inside `delayed_voting` mechanism.
   push_virtual_operation( _db, transfer_to_vesting_completed_operation( from_account.get_name(), to_account.get_name(), o_amount, amount_vested ) );
@@ -475,8 +471,7 @@ void convert_evaluator::do_apply( const convert_operation& o )
   const auto& owner = _db.get_account( o.owner );
   HBD_asset o_amount = o.get_amount();
   temp_HBD_balance convert_amount;
-  _db.adjust_balance( owner, -o_amount );
-  convert_amount.set_from_asset( o_amount );
+  _db.adjust_balance( owner, convert_amount, -o_amount );
 
   const auto& fhistory = _db.get_feed_history();
   validate_price_feed_available( fhistory, "convert HBD" );
@@ -496,8 +491,7 @@ void collateralized_convert_evaluator::do_apply( const collateralized_convert_op
   const auto& owner = _db.get_account( o.owner );
   HIVE_asset o_amount = o.get_amount();
   temp_HIVE_balance collateral;
-  _db.adjust_balance( owner, -o_amount );
-  collateral.set_from_asset( o_amount );
+  _db.adjust_balance( owner, collateral, -o_amount );
 
   const auto& fhistory = _db.get_feed_history();
   validate_price_feed_available( fhistory, "convert HIVE" );
@@ -528,8 +522,7 @@ void collateralized_convert_evaluator::do_apply( const collateralized_convert_op
   //place; there is alternative approach - we could burn all collateral now and print back excess when we are
   //to return it to the user; the difference slightly changes calculations below, that is, currently we might
   //allow slightly more HBD to be printed
-  _db.adjust_balance( owner, converted );
-  converted.set_from_asset( HBD_asset( 0 ) );
+  _db.adjust_balance( owner, converted, converted.as_asset() );
 
   uint16_t percent_hbd = _db.calculate_HBD_percent();
   HIVE_CHAIN_LIMIT_ASSERT( percent_hbd <= dgpo.get_hbd_stop_percent(), percent_hbd, "Creation of new ${hbd} violates global limit.", ( "hbd", converted_amount ) );
@@ -561,8 +554,7 @@ void limit_order_create_evaluator::do_apply( const limit_order_create_operation&
 
   const auto& seller = _db.get_account( o.owner );
   temp_balance amount_to_sell( o.amount_to_sell.symbol );
-  _db.adjust_balance( seller, -o.amount_to_sell );
-  amount_to_sell.set_from_asset( o.amount_to_sell );
+  _db.adjust_balance( seller, amount_to_sell, -o.amount_to_sell );
 
   const auto& order = _db.create<limit_order_object>( seller, std::move( amount_to_sell ),
     o.get_price(), _db.head_block_time(), expiration, o.orderid );
@@ -590,8 +582,7 @@ void limit_order_create2_evaluator::do_apply( const limit_order_create2_operatio
 
   const auto& seller = _db.get_account( o.owner );
   temp_balance amount_to_sell( o.amount_to_sell.symbol );
-  _db.adjust_balance( seller, -o.amount_to_sell );
-  amount_to_sell.set_from_asset( o.amount_to_sell );
+  _db.adjust_balance( seller, amount_to_sell, -o.amount_to_sell );
 
   const auto& order = _db.create<limit_order_object>( seller, std::move( amount_to_sell ),
     o.exchange_rate, _db.head_block_time(), expiration, o.orderid );
@@ -613,8 +604,9 @@ void transfer_to_savings_evaluator::do_apply( const transfer_to_savings_operatio
 
   HIVE_CHAIN_TREASURY_ASSERT( !_db.is_treasury( op.to ), op.to, "Cannot transfer to savings of treasury ${s}", ("s", op.to ) );
 
-  _db.adjust_balance( from, -op.amount );
-  _db.adjust_savings_balance( to, op.amount );
+  temp_balance transfer( op.amount.symbol );
+  _db.adjust_balance( from, transfer, -op.amount );
+  _db.adjust_savings_balance( to, transfer, op.amount );
 }
 
 void transfer_from_savings_evaluator::do_apply( const transfer_from_savings_operation& op )
@@ -628,8 +620,7 @@ void transfer_from_savings_evaluator::do_apply( const transfer_from_savings_oper
 
   HIVE_CHAIN_BALANCE_ASSERT( _db.get_savings_balance( from, op.amount.symbol ) >= op.amount, op.from, "Insufficient savings balance for '${subject}'." );
   temp_balance withdraw_amount( op.amount.symbol );
-  _db.adjust_savings_balance( from, -op.amount );
-  withdraw_amount.set_from_asset( op.amount );
+  _db.adjust_savings_balance( from, withdraw_amount, -op.amount );
 
   _db.create<savings_withdraw_object>( from, to, std::move( withdraw_amount ),
     op.memo, _db.head_block_time() + HIVE_SAVINGS_WITHDRAW_TIME, op.request_id );
@@ -650,8 +641,7 @@ void cancel_transfer_from_savings_evaluator::do_apply( const cancel_transfer_fro
     s.access_amount().transfer_to( returned );
   } );
 
-  _db.adjust_savings_balance( _db.get_account( swo.get_from() ), returned.as_asset() );
-  returned.set_from_asset( asset( 0, returned.as_asset().symbol ) );
+  _db.adjust_savings_balance( _db.get_account( swo.get_from() ), returned, returned.as_asset() );
   _db.remove( swo );
 
   const auto& from = _db.get_account( op.from );
@@ -685,10 +675,12 @@ void claim_reward_balance_evaluator::do_apply( const claim_reward_balance_operat
     reward_vesting_hive_to_move = HIVE_asset( fc::uint128_to_uint64( ( uint128_t( op_reward_vests.amount.value ) * uint128_t( acnt.get_vest_rewards_as_hive().amount.value ) )
       / uint128_t( acnt.get_vest_rewards().amount.value ) ) );
 
-  _db.adjust_reward_balance( acnt, -op_reward_hive );
-  _db.adjust_reward_balance( acnt, -op_reward_hbd );
-  _db.adjust_balance( acnt, op_reward_hive );
-  _db.adjust_balance( acnt, op_reward_hbd );
+  temp_HIVE_balance hive_reward;
+  _db.adjust_reward_balance( acnt, hive_reward, -op_reward_hive );
+  _db.adjust_balance( acnt, hive_reward, op_reward_hive );
+  temp_HBD_balance hbd_reward;
+  _db.adjust_reward_balance( acnt, hbd_reward, -op_reward_hbd );
+  _db.adjust_balance( acnt, hbd_reward, op_reward_hbd );
 
   _db.modify( acnt, [&]( account_object& a )
   {

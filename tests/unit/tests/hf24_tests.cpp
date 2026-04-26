@@ -264,18 +264,12 @@ BOOST_AUTO_TEST_CASE( consolidate_balance )
       hive_balance.set_from_asset( hive_balance.as_asset() - HIVE_asset( 3'000 ) );
       db.modify( old_treasury, [&]( account_object& t )
       {
-        t.access_hive_balance() = HIVE_asset( 5'000 );
-        hive_balance.set_from_asset( hive_balance.as_asset() - HIVE_asset( 5'000 ) );
-        t.access_hive_savings() = HIVE_asset( 3'000 );
-        hive_balance.set_from_asset( hive_balance.as_asset() - HIVE_asset( 3'000 ) );
-        t.access_hive_rewards() = HIVE_asset( 2'000 );
-        hive_balance.set_from_asset( hive_balance.as_asset() - HIVE_asset( 2'000 ) );
-        t.access_hbd_balance() = HBD_asset( 5'000 );
-        hbd_balance.set_from_asset( hbd_balance.as_asset() - HBD_asset( 5'000 ) );
-        t.access_hbd_savings() = HBD_asset( 3'000 );
-        hbd_balance.set_from_asset( hbd_balance.as_asset() - HBD_asset( 3'000 ) );
-        t.access_hbd_rewards() = HBD_asset( 2'000 );
-        hbd_balance.set_from_asset( hbd_balance.as_asset() - HBD_asset( 2'000 ) );
+        t.access_hive_balance().transfer_from( hive_balance, HIVE_asset( 5'000 ) );
+        t.access_hive_savings().transfer_from( hive_balance, HIVE_asset( 3'000 ) );
+        t.access_hive_rewards().transfer_from( hive_balance, HIVE_asset( 2'000 ) );
+        t.access_hbd_balance().transfer_from( hbd_balance, HBD_asset( 5'000 ) );
+        t.access_hbd_savings().transfer_from( hbd_balance, HBD_asset( 3'000 ) );
+        t.access_hbd_rewards().transfer_from( hbd_balance, HBD_asset( 2'000 ) );
       } );
     } );
     database_fixture::validate_database();

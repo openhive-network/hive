@@ -7372,23 +7372,25 @@ BOOST_AUTO_TEST_CASE( claim_reward_balance_apply )
 
     db_plugin->debug_update( []( database& db )
     {
-      db.modify( db.get_account( "alice" ), []( account_object& a )
+      temp_HIVE_balance hive;
+      temp_HBD_balance hbd;
+      db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
       {
-        a.access_hive_rewards() = HIVE_asset( 10'000 );
-        a.access_hbd_rewards() = HBD_asset( 10'000 );
-        a.access_vest_rewards() = VEST_asset( 10'000'000 );
-        a.access_vest_rewards_as_hive() = HIVE_asset( 10'000 );
-      });
-
-      db.modify( db.get_dynamic_global_properties(), []( dynamic_global_property_object& gpo )
-      {
-        gpo.access_current_supply() += HIVE_asset( 20'000 );
-        gpo.access_current_hbd_supply() += HBD_asset( 10'000 );
-        gpo.access_virtual_supply() += HIVE_asset( 20'000 );
+        hive = gpo.issue_HIVE( HIVE_asset( 20'000 ) );
+        hbd = gpo.issue_HBD( HBD_asset( 10'000 ), db.get_feed_history().current_median_history );
         gpo.access_pending_rewarded_vesting_shares() += VEST_asset( 10'000'000 );
         gpo.access_pending_rewarded_vesting_hive() += HIVE_asset( 10'000 );
-      });
-    });
+        hive.set_from_asset( hive.as_asset() - HIVE_asset( 10'000 ) );
+      } );
+
+      db.modify( db.get_account( "alice" ), [&]( account_object& a )
+      {
+        a.access_hive_rewards().transfer_from( hive, HIVE_asset( 10'000 ) );
+        a.access_hbd_rewards().transfer_from( hbd, HBD_asset( 10'000 ) );
+        a.access_vest_rewards() = VEST_asset( 10'000'000 );
+        a.access_vest_rewards_as_hive() = HIVE_asset( 10'000 );
+      } );
+    } );
 
     generate_block();
     validate_database();
@@ -7978,16 +7980,18 @@ BOOST_AUTO_TEST_CASE( comment_beneficiaries_apply )
 
     db_plugin->debug_update( [=]( database& db )
     {
-      db.modify( db.get_dynamic_global_properties(), [=]( dynamic_global_property_object& gpo )
+      temp_HBD_balance cleared;
+      db.modify( db.get_treasury(), [&]( account_object& a )
+      {
+        a.access_hbd_balance().transfer_to( cleared );
+      } );
+
+      db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
       {
         gpo.set_proposal_fund_percent( 0 );
-      });
-
-      db.modify( db.get_treasury(), [=]( account_object& a )
-      {
-        a.access_hbd_balance().amount.value = 0;
-      });
-    });
+        gpo.burn_HBD( cleared, db.get_feed_history().current_median_history );
+      } );
+    } );
 
     set_price_feed( HBD_price( 1000, 1000 ) );
 
@@ -8122,14 +8126,16 @@ BOOST_AUTO_TEST_CASE( comment_options_apply )
 
     db_plugin->debug_update( [=]( database& db )
     {
-      db.modify( db.get_dynamic_global_properties(), [=]( dynamic_global_property_object& gpo )
+      temp_HBD_balance cleared;
+      db.modify( db.get_treasury(), [&]( account_object& a )
       {
-        gpo.set_proposal_fund_percent( 0 );
+        a.access_hbd_balance().transfer_to( cleared );
       } );
 
-      db.modify( db.get_treasury(), [=]( account_object& a )
+      db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
       {
-        a.access_hbd_balance().amount.value = 0;
+        gpo.set_proposal_fund_percent( 0 );
+        gpo.burn_HBD( cleared, db.get_feed_history().current_median_history );
       } );
     } );
 
@@ -8310,14 +8316,16 @@ BOOST_AUTO_TEST_CASE( comment_options_deleted_permlink_reuse )
 
     db_plugin->debug_update( [=]( database& db )
     {
-      db.modify( db.get_dynamic_global_properties(), [=]( dynamic_global_property_object& gpo )
+      temp_HBD_balance cleared;
+      db.modify( db.get_treasury(), [&]( account_object& a )
       {
-        gpo.set_proposal_fund_percent( 0 );
+        a.access_hbd_balance().transfer_to( cleared );
       } );
 
-      db.modify( db.get_treasury(), [=]( account_object& a )
+      db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
       {
-        a.access_hbd_balance().amount.value = 0;
+        gpo.set_proposal_fund_percent( 0 );
+        gpo.burn_HBD( cleared, db.get_feed_history().current_median_history );
       } );
     } );
 

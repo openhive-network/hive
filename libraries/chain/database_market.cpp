@@ -73,12 +73,9 @@ void database::remove_escrow( const escrow_object& escrow, bool emit_rejected_vo
 
   // Return funds to originator
   const auto& from_account = get_account( escrow.get_from() );
-  adjust_balance( from_account, hive_ret.as_asset() );
-  hive_ret.set_from_asset( HIVE_asset( 0 ) );
-  adjust_balance( from_account, hbd_ret.as_asset() );
-  hbd_ret.set_from_asset( HBD_asset( 0 ) );
-  adjust_balance( from_account, fee_ret.as_asset() );
-  fee_ret.set_from_asset( asset( 0, fee_ret.as_asset().symbol ) );
+  adjust_balance( from_account, hive_ret, hive_ret.as_asset() );
+  adjust_balance( from_account, hbd_ret, hbd_ret.as_asset() );
+  adjust_balance( from_account, fee_ret, fee_ret.as_asset() );
 
   if( emit_rejected_vop )
     push_virtual_operation( *this, vop );
@@ -165,8 +162,7 @@ void database::process_savings_withdraws()
       swo.access_amount().transfer_to( withdrawn );
     } );
 
-    adjust_balance( get_account( itr->get_to() ), withdrawn.as_asset() );
-    withdrawn.set_from_asset( asset( 0, withdrawn.as_asset().symbol ) );
+    adjust_balance( get_account( itr->get_to() ), withdrawn, withdrawn.as_asset() );
 
     modify( get_account( itr->get_from() ), [&]( account_object& a )
     {
@@ -199,8 +195,7 @@ void database::remove_pending_savings_withdraws( const account_object& account, 
       swo.access_amount().transfer_to( drained );
     } );
 
-    adjust_balance( account, drained.as_asset() );
-    drained.set_from_asset( asset( 0, drained.as_asset().symbol ) );
+    adjust_balance( account, drained, drained.as_asset() );
     modify( account, []( account_object& a )
     {
       a.savings_withdraw_requests--;
@@ -222,8 +217,7 @@ void database::remove_pending_savings_withdraws( const account_object& account, 
       swo.access_amount().transfer_to( drained );
     } );
 
-    adjust_balance( account, drained.as_asset() );
-    drained.set_from_asset( asset( 0, drained.as_asset().symbol ) );
+    adjust_balance( account, drained, drained.as_asset() );
     modify( get_account( withdrawal.get_from() ), []( account_object& a )
     {
       a.savings_withdraw_requests--;
@@ -385,8 +379,7 @@ bool database::fill_order( const limit_order_object& order, const asset& pays, t
       order_fill_exception, "error filling orders: ${order} ${pays} ${receives}",
       ("order", order)("pays", pays)("receives", receives) );
 
-    adjust_balance( order.get_seller(), receives.as_asset() );
-    receives.set_from_asset( asset( 0, receives.as_asset().symbol ) );
+    adjust_balance( order.get_seller(), receives, receives.as_asset() );
 
     if( order.amount_for_sale().amount == 0 )
     {
@@ -422,8 +415,7 @@ void database::cancel_order( const limit_order_object& order, bool suppress_vop 
     o.access_amount_for_sale().transfer_to( amount_back );
   } );
 
-  adjust_balance( order.get_seller(), amount_back.as_asset() );
-  amount_back.set_from_asset( asset( 0, amount_back.as_asset().symbol ) );
+  adjust_balance( order.get_seller(), amount_back, amount_back.as_asset() );
   if( !suppress_vop )
     push_virtual_operation( *this, vop );
 

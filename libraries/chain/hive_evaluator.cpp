@@ -486,8 +486,7 @@ void pow_apply( database& db, Operation o )
   if( db.head_block_num() < HIVE_START_MINER_VOTING_BLOCK )
   {
     actual_reward = pow_reward.as_asset().to_asset();
-    db.adjust_balance( inc_witness, pow_reward.as_asset() );
-    pow_reward.set_from_asset( HIVE_asset( 0 ) );
+    db.adjust_balance( inc_witness, pow_reward, pow_reward.as_asset() );
   }
   else
   {
