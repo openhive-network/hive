@@ -26,8 +26,17 @@ def prepare_environment(request: pytest.FixtureRequest) -> tuple[tt.InitNode, tt
             tt.HardforkSchedule(hardfork=hardfork_number + 1, block_num=2000),
         ]
     else:
-        blockchain_version = int(node.get_version()["version"]["blockchain_version"].split(".")[1])
-        hardfork_schedule = [tt.HardforkSchedule(hardfork=blockchain_version, block_num=1)]
+        # Mirror the schedule the saved block_log was generated with (see
+        # block_log/generate_block_log.py). The witnesses in that block_log signed up to
+        # HF28, so the replay schedule must match. Without this, bumping
+        # HIVE_BLOCKCHAIN_VERSION past 1.28 (e.g. for HF29) would push "current" to HF29,
+        # which would auto-apply at block 1 and trip the witness running_version check
+        # because the replayed blocks were produced against 1.28. Regenerate the block_log
+        # if you need to test a later hardfork as "current".
+        hardfork_schedule = [
+            tt.HardforkSchedule(hardfork=27, block_num=1),
+            tt.HardforkSchedule(hardfork=28, block_num=2000),
+        ]
 
     node.run(
         time_control=tt.StartTimeControl(start_time="head_block_time", speed_up_rate=10),
