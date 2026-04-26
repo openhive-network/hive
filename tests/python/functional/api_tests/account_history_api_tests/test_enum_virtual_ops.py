@@ -27,8 +27,13 @@ def test_filter_only_hardfork_operations(node: tt.InitNode) -> None:
     response = node.api.account_history.enum_virtual_ops(
         block_range_begin=block_to_start, block_range_end=block_to_start + 1, include_reversible=True, filter=0x000400
     )
-    number_of_hardforks = int(node.api.database.get_config().HIVE_BLOCKCHAIN_HARDFORK_VERSION.split(".")[1])
-    assert len(response.ops) == number_of_hardforks
+    # Count hardforks actually applied on this chain rather than the binary's max supported
+    # version, since not every known hardfork auto-activates on a fresh testnet (e.g. HF29
+    # is held back until tests opt in via alternate_chain_specs).
+    current_hardfork = int(
+        node.api.database.get_hardfork_properties().current_hardfork_version.split(".")[1]
+    )
+    assert len(response.ops) == current_hardfork
 
 
 @run_for("testnet", enable_plugins=["account_history_api"])
