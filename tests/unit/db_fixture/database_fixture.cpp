@@ -585,7 +585,7 @@ void database_fixture::set_price_feed( const HBD_price& new_price, bool stop_at_
 #ifdef IS_TEST_NET
     !db->skip_price_feed_limit_check ||
 #endif
-    db->get(feed_history_id_type()).current_median_history == new_price
+    db->get_hbd_price() == new_price
   ); // the check fails if you call set_price_feed more than once with different price
 }
 

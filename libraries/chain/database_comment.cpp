@@ -250,7 +250,7 @@ HIVE_asset database::cashout_comment_helper( util::comment_reward_context& ctx, 
             temp_HBD_balance hbd_balance;
             modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& p )
             {
-              hbd_balance = p.convert_HIVE_to_HBD( benefactor_balance, get_feed_history().current_median_history );
+              hbd_balance = p.convert_HIVE_to_HBD( benefactor_balance, get_hbd_price() );
             } );
             vop.hbd_payout = hbd_balance;
             vop.payout_must_be_claimed = false;
@@ -389,7 +389,7 @@ void database::process_comment_cashout()
 
   auto _now = head_block_time();
   util::comment_reward_context ctx;
-  ctx.current_hive_price = get_feed_history().current_median_history;
+  ctx.current_hive_price = get_hbd_price();
 
   const auto& rf = get_reward_fund();
 

@@ -252,7 +252,7 @@ BOOST_AUTO_TEST_CASE( consolidate_balance )
       {
         gpo.set_proposal_fund_percent( 0 );
         hive_balance = gpo.issue_HIVE( HIVE_asset( 20'000 ) );
-        hbd_balance = gpo.issue_HBD( HBD_asset( 10'000 ), db.get_feed_history().current_median_history );
+        hbd_balance = gpo.issue_HBD( HBD_asset( 10'000 ), db.get_hbd_price() );
       } );
 
       vested_3 = HIVE_asset( 3'000 ) * dgpo.get_vesting_share_price();

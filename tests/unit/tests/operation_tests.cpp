@@ -3696,12 +3696,12 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_narrow_price )
 
     generate_block();
 
-    const auto& feed = db->get_feed_history();
+    const auto& exchange_rate = db->get_hbd_price();
     db->skip_price_feed_limit_check = false;
 
     HBD_price price_1_for_2( 1, 2 );
     set_price_feed( price_1_for_2 );
-    BOOST_REQUIRE_EQUAL( feed.current_median_history, price_1_for_2 );
+    BOOST_REQUIRE_EQUAL( exchange_rate, price_1_for_2 );
 
     //prevent HBD interest from interfering with the test
     flat_map< string, vector<char> > props;
@@ -3740,12 +3740,12 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_wide_price )
 
     generate_block();
 
-    const auto& feed = db->get_feed_history();
+    const auto& exchange_rate = db->get_hbd_price();
     db->skip_price_feed_limit_check = false;
 
     HBD_price price_1_for_2( 4611686018427387000, 9223372036854774000 );
     set_price_feed( price_1_for_2 );
-    BOOST_REQUIRE_EQUAL( feed.current_median_history, price_1_for_2 );
+    BOOST_REQUIRE_EQUAL( exchange_rate, price_1_for_2 );
 
     //prevent HBD interest from interfering with the test
     flat_map< string, vector<char> > props;
@@ -7377,7 +7377,7 @@ BOOST_AUTO_TEST_CASE( claim_reward_balance_apply )
       db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
       {
         hive = gpo.issue_HIVE( HIVE_asset( 20'000 ) );
-        hbd = gpo.issue_HBD( HBD_asset( 10'000 ), db.get_feed_history().current_median_history );
+        hbd = gpo.issue_HBD( HBD_asset( 10'000 ), db.get_hbd_price() );
         gpo.access_pending_rewarded_vesting_shares() += VEST_asset( 10'000'000 );
         gpo.access_pending_rewarded_vesting_hive() += HIVE_asset( 10'000 );
         hive.set_from_asset( hive.as_asset() - HIVE_asset( 10'000 ) );
@@ -7989,7 +7989,7 @@ BOOST_AUTO_TEST_CASE( comment_beneficiaries_apply )
       db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
       {
         gpo.set_proposal_fund_percent( 0 );
-        gpo.burn_HBD( cleared, db.get_feed_history().current_median_history );
+        gpo.burn_HBD( cleared, db.get_hbd_price() );
       } );
     } );
 
@@ -8135,7 +8135,7 @@ BOOST_AUTO_TEST_CASE( comment_options_apply )
       db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
       {
         gpo.set_proposal_fund_percent( 0 );
-        gpo.burn_HBD( cleared, db.get_feed_history().current_median_history );
+        gpo.burn_HBD( cleared, db.get_hbd_price() );
       } );
     } );
 
@@ -8325,7 +8325,7 @@ BOOST_AUTO_TEST_CASE( comment_options_deleted_permlink_reuse )
       db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
       {
         gpo.set_proposal_fund_percent( 0 );
-        gpo.burn_HBD( cleared, db.get_feed_history().current_median_history );
+        gpo.burn_HBD( cleared, db.get_hbd_price() );
       } );
     } );
 

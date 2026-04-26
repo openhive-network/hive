@@ -269,19 +269,19 @@ void transfer_evaluator::do_apply( const transfer_operation& o )
 {
   if( _db.has_hardfork( HIVE_HARDFORK_1_24 ) && o.amount.symbol == HIVE_SYMBOL && _db.is_treasury( o.to ) )
   {
-    const auto &fhistory = _db.get_feed_history();
+    const auto& exchange_rate = _db.get_hbd_price();
 
-    validate_price_feed_available( fhistory, "send HIVE to treasury" );
+    validate_price_feed_available( exchange_rate, "send HIVE to treasury" );
 
     HIVE_asset o_amount( o.amount );
-    auto amount_to_transfer = o_amount * fhistory.current_median_history;
+    auto amount_to_transfer = o_amount * exchange_rate;
 
     temp_HIVE_balance hive_balance;
     _db.adjust_balance( o.from, hive_balance, -o_amount );
     temp_HBD_balance converted_hbd_balance;
     _db.modify( _db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& dgpo )
     {
-      converted_hbd_balance = dgpo.convert_HIVE_to_HBD( hive_balance, fhistory.current_median_history, amount_to_transfer.amount > 0 );
+      converted_hbd_balance = dgpo.convert_HIVE_to_HBD( hive_balance, exchange_rate, amount_to_transfer.amount > 0 );
     } );
     _db.adjust_balance( o.to, converted_hbd_balance, converted_hbd_balance.as_asset() );
 
@@ -473,8 +473,8 @@ void convert_evaluator::do_apply( const convert_operation& o )
   temp_HBD_balance convert_amount;
   _db.adjust_balance( owner, convert_amount, -o_amount );
 
-  const auto& fhistory = _db.get_feed_history();
-  validate_price_feed_available( fhistory, "convert HBD" );
+  const auto& exchange_rate = _db.get_hbd_price();
+  validate_price_feed_available( exchange_rate, "convert HBD" );
 
   auto hive_conversion_delay = HIVE_CONVERSION_DELAY_PRE_HF_16;
   if( _db.has_hardfork( HIVE_HARDFORK_0_16__551) )
@@ -494,7 +494,7 @@ void collateralized_convert_evaluator::do_apply( const collateralized_convert_op
   _db.adjust_balance( owner, collateral, -o_amount );
 
   const auto& fhistory = _db.get_feed_history();
-  validate_price_feed_available( fhistory, "convert HIVE" );
+  validate_price_feed_available( fhistory.current_median_history, "convert HIVE" );
   const auto& dgpo = _db.get_dynamic_global_properties();
   HIVE_CHAIN_STATE_ASSERT( dgpo.get_hbd_print_rate() > 0, dgpo.get_hbd_print_rate(), "Creation of new HBD blocked at this time due to global limit." );
     //note that feed and therefore print rate is updated once per hour, so without above check there could be
