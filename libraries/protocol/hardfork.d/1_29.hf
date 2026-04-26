@@ -1,12 +1,19 @@
 #ifndef HIVE_HARDFORK_1_29
 #define HIVE_HARDFORK_1_29 29
 
-long next_hf_time();
+// Far-future default so HF29 never auto-activates on testnets that don't explicitly
+// schedule it. Tests that exercise HF29 behavior must either (a) include HF29 in their
+// alternate-chain-spec hardfork_schedule, or (b) update the test scaffolding so that
+// fresh testnet nodes schedule it. next_hf_time()'s default is in the past for
+// in-progress hardforks, which would auto-activate HF29 and break the witness
+// running_version check when replaying block_logs produced before HF29 existed.
+// 4102444800 = 2100-01-01T00:00:00Z
+#define HIVE_HARDFORK_1_29_DEFAULT_TIME 4102444800L
 
 #ifdef USE_ALTERNATE_CHAIN_ID
-#define HIVE_HARDFORK_1_29_TIME (hive::protocol::testnet_blockchain_configuration::configuration_data.get_hf_time(HIVE_HARDFORK_1_29, next_hf_time()))
+#define HIVE_HARDFORK_1_29_TIME (hive::protocol::testnet_blockchain_configuration::configuration_data.get_hf_time(HIVE_HARDFORK_1_29, HIVE_HARDFORK_1_29_DEFAULT_TIME))
 #else
-#define HIVE_HARDFORK_1_29_TIME next_hf_time()
+#define HIVE_HARDFORK_1_29_TIME HIVE_HARDFORK_1_29_DEFAULT_TIME
 #endif
 
 #define HIVE_HARDFORK_1_29_VERSION hive::protocol::hardfork_version( 1, 29 )
