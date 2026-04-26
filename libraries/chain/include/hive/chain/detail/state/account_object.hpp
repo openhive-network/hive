@@ -5,10 +5,10 @@
 
 #include <hive/protocol/fixed_string.hpp>
 #include <hive/protocol/authority.hpp>
-#include <hive/protocol/asset.hpp>
 
 #include <hive/chain/hive_object_types.hpp>
 #include <hive/chain/shared_authority.hpp>
+#include <hive/chain/util/balance.hpp>
 #include <hive/chain/util/manabar.hpp>
 
 #include <hive/chain/util/delayed_voting_processor.hpp>
@@ -74,9 +74,9 @@ public:
   //unclaimed HIVE rewards
   const HIVE_asset& get_hive_rewards() const { return reward_hive_balance; }
 
-  HIVE_asset& access_hive_balance() { return hive_balance; }
-  HIVE_asset& access_hive_savings() { return savings_hive_balance; }
-  HIVE_asset& access_hive_rewards() { return reward_hive_balance; }
+  HIVE_balance& access_hive_balance() { return hive_balance; }
+  HIVE_balance& access_hive_savings() { return savings_hive_balance; }
+  HIVE_balance& access_hive_rewards() { return reward_hive_balance; }
 
   //liquid HBD balance
   const HBD_asset& get_hbd_balance() const { return hbd_balance; }
@@ -85,9 +85,9 @@ public:
   //unclaimed HBD rewards
   const HBD_asset& get_hbd_rewards() const { return reward_hbd_balance; }
 
-  HBD_asset& access_hbd_balance() { return hbd_balance; }
-  HBD_asset& access_hbd_savings() { return savings_hbd_balance; }
-  HBD_asset& access_hbd_rewards() { return reward_hbd_balance; }
+  HBD_balance& access_hbd_balance() { return hbd_balance; }
+  HBD_balance& access_hbd_savings() { return savings_hbd_balance; }
+  HBD_balance& access_hbd_rewards() { return reward_hbd_balance; }
 
   //all VESTS held by the account - use other routines to get active VESTS for specific uses
   const VEST_asset& get_vesting() const { return vesting_shares; }
@@ -187,6 +187,15 @@ public:
     block_last_account_recovery = block_recovery_time;
   }
 
+  // accounts are never removed, so this routine should never be called
+  void check_on_remove() const
+  {
+    FC_ASSERT( hbd_balance.is_empty() && savings_hbd_balance.is_empty() && reward_hbd_balance.is_empty() &&
+      hive_balance.is_empty() && savings_hive_balance.is_empty() && reward_hive_balance.is_empty() &&
+      //vesting_shares.is_empty() && reward_vesting_balance.is_empty() && reward_vesting_hive.is_empty() &&
+      "Removing account_object with non-empty balance fields" );
+  }
+
 private:
   //members are organized in such a way that the object takes up as little space as possible (note that object starts with 4byte id).
 
@@ -206,14 +215,14 @@ public:
   util::manabar     downvote_manabar;
   util::manabar     rc_manabar;
 private:
-  HBD_asset         hbd_balance; ///< HBD liquid balance
-  HBD_asset         savings_hbd_balance; ///< HBD balance guarded by 3 day withdrawal (also earns interest)
-  HBD_asset         reward_hbd_balance; ///< HBD balance author rewards that can be claimed
+  HBD_balance       hbd_balance; ///< HBD liquid balance
+  HBD_balance       savings_hbd_balance; ///< HBD balance guarded by 3 day withdrawal (also earns interest)
+  HBD_balance       reward_hbd_balance; ///< HBD balance author rewards that can be claimed
 
-  HIVE_asset        reward_hive_balance; ///< HIVE balance author rewards that can be claimed
+  HIVE_balance      reward_hive_balance; ///< HIVE balance author rewards that can be claimed
   HIVE_asset        reward_vesting_hive; ///< HIVE counterweight to reward_vesting_balance
-  HIVE_asset        hive_balance;  ///< HIVE liquid balance
-  HIVE_asset        savings_hive_balance;  ///< HIVE balance guarded by 3 day withdrawal
+  HIVE_balance      hive_balance;  ///< HIVE liquid balance
+  HIVE_balance      savings_hive_balance;  ///< HIVE balance guarded by 3 day withdrawal
 
   VEST_asset        reward_vesting_balance; ///< VESTS balance author/curation rewards that can be claimed
   VEST_asset        vesting_shares; ///< VESTS balance, controls governance voting power

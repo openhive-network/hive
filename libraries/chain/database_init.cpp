@@ -262,7 +262,7 @@ void database::init_genesis()
     FC_ASSERT( rf.get_id() == reward_fund_id_type() );
 
 #if defined(IS_TEST_NET) || defined(HIVE_CONVERTER_ICEBERG_PLUGIN_ENABLED)
-    create< feed_history_object >( [&]( feed_history_object& o )
+    const auto& feed_history = create< feed_history_object >( [&]( feed_history_object& o )
     {
       o.current_median_history = HBD_price( 1, 1 );
       o.market_median_history = o.current_median_history;
@@ -275,20 +275,22 @@ void database::init_genesis()
       HIVE_asset to_vest( HIVE_INITIAL_VESTING );
       VEST_asset initial_vests( to_vest * HIVE_INITIAL_VESTING_PRICE );
 
-      modify( get_account( HIVE_INIT_MINER_NAME ), [&]( account_object& a )
-      {
-        a.access_hive_balance() = HIVE_asset( HIVE_INIT_SUPPLY ) - to_vest;
-        a.access_hbd_balance() = HBD_asset( HIVE_HBD_INIT_SUPPLY );
-        a.access_vesting() = initial_vests;
-        FC_ASSERT( a.get_hive_balance().amount >= 0 && a.get_hbd_balance().amount >= 0 && a.get_vesting().amount >= 0, "Invalid testnet configuration" );
-      } );
+      temp_HIVE_balance init_hive_balance;
+      temp_HBD_balance init_hbd_balance;
       modify( dgpo, [&]( dynamic_global_property_object& gpo )
       {
-        gpo.access_current_supply() += HIVE_asset( HIVE_INIT_SUPPLY );
-        gpo.access_current_hbd_supply() += HBD_asset( HIVE_HBD_INIT_SUPPLY );
+        init_hive_balance = gpo.issue_HIVE( HIVE_asset( HIVE_INIT_SUPPLY ) );
+        init_hbd_balance = gpo.issue_HBD( HBD_asset( HIVE_HBD_INIT_SUPPLY ), feed_history.current_median_history );
         gpo.access_initial_hbd_supply() = HBD_asset( HIVE_HBD_INIT_SUPPLY );
         gpo.access_total_vesting_fund_hive() += to_vest;
         gpo.access_total_vesting_shares() += initial_vests;
+        init_hive_balance.set_from_asset( init_hive_balance.as_asset() - to_vest );
+      } );
+      modify( get_account( HIVE_INIT_MINER_NAME ), [&]( account_object& a )
+      {
+        a.access_hive_balance().transfer_from( init_hive_balance );
+        a.access_hbd_balance().transfer_from( init_hbd_balance );
+        a.access_vesting() = initial_vests;
       } );
       update_virtual_supply();
     }

@@ -75,8 +75,9 @@ void database::process_recurrent_transfers()
     // If we have enough money, we proceed with the transfer
     if (available >= current_recurrent_transfer.amount)
     {
-      adjust_balance(from_account, -current_recurrent_transfer.amount);
-      adjust_balance(to_account, current_recurrent_transfer.amount);
+      temp_balance transfer( current_recurrent_transfer.amount.symbol );
+      adjust_balance( from_account, transfer, -current_recurrent_transfer.amount );
+      adjust_balance( to_account, transfer, current_recurrent_transfer.amount );
 
       // No need to update the object if we know that we will remove it
       if (remaining_executions == 0)

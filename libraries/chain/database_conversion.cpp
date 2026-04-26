@@ -170,8 +170,7 @@ void database::process_conversions()
   {
     const auto& owner = get_account( pending_data[i].account );
     const auto& amount = pending_data[i].transfer_to_account;
-    adjust_balance( owner, amount );
-    hive_balance.set_from_asset( hive_balance.as_asset() - amount );
+    adjust_balance( owner, hive_balance, amount );
     push_virtual_operation( *this, pending_data[i].vop );
     ++i;
   }
@@ -189,8 +188,7 @@ void database::process_conversions()
     }
     else
     {
-      adjust_balance( owner, amount );
-      hive_balance.set_from_asset( hive_balance.as_asset() - amount );
+      adjust_balance( owner, hive_balance, amount );
     }
     push_virtual_operation( *this, pending_data[i].vop );
     ++i;
@@ -213,8 +211,7 @@ void database::remove_pending_conversion_requests( const account_object& account
       req.access_amount().transfer_to( hbd_drained );
     } );
 
-    adjust_balance( account, hbd_drained );
-    hbd_drained.set_from_asset( HBD_asset( 0 ) );
+    adjust_balance( account, hbd_drained, hbd_drained.as_asset() );
     remove( request );
   }
 

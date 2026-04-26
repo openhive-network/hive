@@ -175,8 +175,9 @@ void dhf_processor::transfer_payments( const time_point_sec& head_time, HBD_asse
     /// Push vop to be recorded by other parts (like AH plugin etc.)
     push_virtual_operation( db, vop);
     /// Virtual ops have no evaluators, so operation must be immediately "evaluated"
-    db.adjust_balance( treasury_account, -payment );
-    db.adjust_balance( receiver_account, payment );
+    temp_HBD_balance transfer;
+    db.adjust_balance( treasury_account, transfer, -payment );
+    db.adjust_balance( receiver_account, transfer, payment );
   };
 
   for( auto& item : proposals )
@@ -351,14 +352,12 @@ void dhf_processor::convert_funds( const block_notification& note )
 
   temp_HIVE_balance to_convert_balance;
   temp_HBD_balance converted_hbd_balance;
-  db.adjust_balance( treasury_account, -to_convert );
-  to_convert_balance.set_from_asset( to_convert );
+  db.adjust_balance( treasury_account, to_convert_balance, -to_convert );
   db.modify( dgpo, [&]( dynamic_global_property_object& _dgpo )
   {
     converted_hbd_balance = _dgpo.convert_HIVE_to_HBD( to_convert_balance, fhistory.current_median_history );
   } );
-  db.adjust_balance( treasury_account, converted_hbd_balance.as_asset() );
-  converted_hbd_balance.set_from_asset( HBD_asset( 0 ) );
+  db.adjust_balance( treasury_account, converted_hbd_balance, converted_hbd_balance.as_asset() );
 
   operation vop = dhf_conversion_operation( treasury_account.get_name(), to_convert, converted_hbd );
   push_virtual_operation( db, vop );

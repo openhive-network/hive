@@ -183,16 +183,20 @@ void account_create_evaluator::do_apply( const account_create_operation& o )
   verify_authority_accounts_exist( _db, o.active, o.new_account_name, authority::active );
   verify_authority_accounts_exist( _db, o.posting, o.new_account_name, authority::posting );
 
-  _db.adjust_balance( creator, -o_fee );
+  temp_HIVE_balance fee;
+  _db.adjust_balance( creator, fee, -o_fee );
 
   const auto& new_account = create_account( _db, o.new_account_name, o.memo_key, props.get_head_block_time(), _db.get_current_timestamp(),
-    false /*mined*/, o_fee, &creator );
+    false /*mined*/, fee.as_asset(), &creator );
 
   VEST_asset initial_vesting_shares( 0 );
   if( _db.has_hardfork( HIVE_HARDFORK_0_20__1762 ) )
-    _db.adjust_balance( _db.get< account_object, by_name >( HIVE_NULL_ACCOUNT ), o_fee );
+    _db.adjust_balance( _db.get< account_object, by_name >( HIVE_NULL_ACCOUNT ), fee, fee.as_asset() );
   else if( o_fee.amount > 0 )
-    initial_vesting_shares = _db.create_vesting( new_account, o_fee );
+  {
+    initial_vesting_shares = _db.create_vesting( new_account, fee.as_asset() );
+    fee.set_from_asset( HIVE_asset( 0 ) );
+  }
 
   _db.create< account_authority_object >( new_account, o.owner, o.active, o.posting );
 
@@ -232,20 +236,24 @@ void account_create_with_delegation_evaluator::do_apply( const account_create_wi
   verify_authority_accounts_exist( _db, o.active, o.new_account_name, authority::active );
   verify_authority_accounts_exist( _db, o.posting, o.new_account_name, authority::posting );
 
+  temp_HIVE_balance fee;
   _db.modify( creator, [&]( account_object& c )
   {
-    c.access_hive_balance() -= o_fee;
+    c.access_hive_balance().transfer_to( fee, o_fee );
     c.access_delegated_vesting() += o_delegation;
   } );
 
   const auto& new_account = create_account( _db, o.new_account_name, o.memo_key, props.get_head_block_time(), _db.get_current_timestamp(),
-    false /*mined*/, o_fee, &creator, o_delegation );
+    false /*mined*/, fee.as_asset(), &creator, o_delegation );
 
   VEST_asset initial_vesting_shares( 0 );
   if( _db.has_hardfork( HIVE_HARDFORK_0_20__1762 ) )
-    _db.adjust_balance( _db.get< account_object, by_name >( HIVE_NULL_ACCOUNT ), o_fee );
+    _db.adjust_balance( _db.get< account_object, by_name >( HIVE_NULL_ACCOUNT ), fee, fee.as_asset() );
   else if( o_fee.amount > 0 )
-    initial_vesting_shares = _db.create_vesting( new_account, o_fee );
+  {
+    initial_vesting_shares = _db.create_vesting( new_account, fee.as_asset() );
+    fee.set_from_asset( HIVE_asset( 0 ) );
+  }
 
   _db.create< account_authority_object >( new_account, o.owner, o.active, o.posting );
 
@@ -437,13 +445,13 @@ void claim_account_evaluator::do_apply( const claim_account_operation& o )
       ( "p", o_fee )( "f", wso.median_props.account_creation_fee ) );
   }
 
-  _db.adjust_balance( _db.get_account( HIVE_NULL_ACCOUNT ), o_fee );
-
+  temp_HIVE_balance fee;
   _db.modify( creator, [&]( account_object& a )
   {
-    a.access_hive_balance() -= o_fee;
+    a.access_hive_balance().transfer_to( fee, o_fee );
     a.pending_claimed_accounts++;
   } );
+  _db.adjust_balance( _db.get_account( HIVE_NULL_ACCOUNT ), fee, fee.as_asset() );
 }
 
 void create_claimed_account_evaluator::do_apply( const create_claimed_account_operation& o )

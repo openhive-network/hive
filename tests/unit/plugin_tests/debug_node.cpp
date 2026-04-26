@@ -29,8 +29,9 @@ void direct_transfer( const account_name_type& from, const account_name_type& to
   const HIVE_asset& delta_from, const HIVE_asset& delta_to, database& db )
 {
   ilog( "Transfering directly from ${from} to ${to}", ( from ) ( to ) );
-  db.adjust_balance( from, delta_from );
-  db.adjust_balance( to, delta_to );
+  temp_HIVE_balance transfer;
+  db.adjust_balance( from, transfer, delta_from );
+  db.adjust_balance( to, transfer, delta_to );
 }
 
 BOOST_FIXTURE_TEST_SUITE( debug_node, clean_database_fixture )

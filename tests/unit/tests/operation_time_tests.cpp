@@ -2681,26 +2681,25 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
 
     int correction = ( dgpo.get_hbd_stop_percent() * dgpo.get_hbd_stop_percent() ) / ( HIVE_100_PERCENT - dgpo.get_hbd_stop_percent() ) + 1;
     HBD_asset hbd_balance = ( ( dgpo.get_current_supply() * ( dgpo.get_hbd_stop_percent() + correction ) ) / HIVE_100_PERCENT ) * exchange_rate;
-    db_plugin->debug_update( [=]( database& db )
-    {
-      db.modify( db.get_account( "sam" ), [&]( account_object& a )
-      {
-        a.access_hbd_balance() = hbd_balance - get_hbd_balance( HIVE_INIT_MINER_NAME ); // initial HBD balance is still on 'initminer'
-      } );
-    } );
-
     db_plugin->debug_update( [&]( database& db )
     {
+      temp_HBD_balance new_hbd;
       db.modify( dgpo, [&]( dynamic_global_property_object& gpo )
       {
-        gpo.access_current_hbd_supply() = hbd_balance + db.get_treasury().get_hbd_balance();
-        gpo.access_virtual_supply() = gpo.get_current_supply() + gpo.get_current_hbd_supply() * exchange_rate;
-      });
+        new_hbd = gpo.issue_HBD( hbd_balance + db.get_treasury().get_hbd_balance() - gpo.get_current_hbd_supply(), exchange_rate, true );
+      } );
+
+      db.modify( db.get_account( "sam" ), [&]( account_object& a )
+      {
+        a.access_hbd_balance().transfer_from( new_hbd );
+      } );
     } );
 
     validate_database();
 
     generate_block();
+
+    BOOST_REQUIRE_EQUAL( get_hbd_balance( "sam" ), hbd_balance - get_hbd_balance( HIVE_INIT_MINER_NAME ) ); // initial HBD balance is still on 'initminer'
 
     BOOST_TEST_MESSAGE( "Checking printing HBD has stopped" );
     BOOST_REQUIRE_EQUAL( dgpo.get_hbd_print_rate(), 0 );
@@ -2728,18 +2727,15 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
     hbd_balance = ( ( dgpo.get_current_supply() * ( dgpo.get_hbd_start_percent() + correction ) ) / HIVE_100_PERCENT ) * exchange_rate;
     db_plugin->debug_update( [&]( database& db )
     {
-      db.modify( db.get_account( "sam" ), [&]( account_object& a )
-      {
-        a.access_hbd_balance() = hbd_balance - get_hbd_balance( HIVE_INIT_MINER_NAME ); // initial HBD balance is still on 'initminer'
-      });
-    } );
-
-    db_plugin->debug_update( [&]( database& db )
-    {
+      temp_HBD_balance new_hbd;
       db.modify( dgpo, [&]( dynamic_global_property_object& gpo )
       {
-        gpo.access_current_hbd_supply() = hbd_balance + db.get_treasury().get_hbd_balance();
-        gpo.access_virtual_supply() = gpo.get_current_supply() + gpo.get_current_hbd_supply() * exchange_rate;
+        new_hbd = gpo.issue_HBD( hbd_balance + db.get_treasury().get_hbd_balance() - gpo.get_current_hbd_supply(), exchange_rate, true );
+      } );
+
+      db.modify( db.get_account( "sam" ), [&]( account_object& a )
+      {
+        a.access_hbd_balance().transfer_from( new_hbd );
       } );
     } );
 
@@ -2875,23 +2871,25 @@ BOOST_AUTO_TEST_CASE( clear_null_account )
 
     db_plugin->debug_update( [=]( database& db )
     {
-      db.modify( db.get_account( HIVE_NULL_ACCOUNT ), [&]( account_object& a )
-      {
-        a.access_hive_rewards() = HIVE_asset( 1'000 );
-        a.access_hbd_rewards() = HBD_asset( 1'000 );
-        a.access_vest_rewards() = VEST_asset( 1'000'000 );
-        a.access_vest_rewards_as_hive() = HIVE_asset( 1'000 );
-      });
-
+      temp_HIVE_balance new_hive;
+      temp_HBD_balance new_hbd;
       db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
       {
-        gpo.access_current_supply() += HIVE_asset( 2'000 );
-        gpo.access_virtual_supply() += HIVE_asset( 3'000 );
-        gpo.access_current_hbd_supply() += HBD_asset( 1'000 );
+        new_hive = gpo.issue_HIVE( HIVE_asset( 2'000 ) );
+        new_hbd = gpo.issue_HBD( HBD_asset( 1'000 ), db.get_feed_history().current_median_history );
         gpo.access_pending_rewarded_vesting_shares() += VEST_asset( 1'000'000 );
         gpo.access_pending_rewarded_vesting_hive() += HIVE_asset( 1'000 );
-      });
-    });
+        new_hive.set_from_asset( new_hive.as_asset() - HIVE_asset( 1'000 ) );
+      } );
+
+      db.modify( db.get_account( HIVE_NULL_ACCOUNT ), [&]( account_object& a )
+      {
+        a.access_hive_rewards().transfer_from( new_hive );
+        a.access_hbd_rewards().transfer_from( new_hbd );
+        a.access_vest_rewards() = VEST_asset( 1'000'000 );
+        a.access_vest_rewards_as_hive() = HIVE_asset( 1'000 );
+      } );
+    } );
 
     validate_database();
 

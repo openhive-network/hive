@@ -91,9 +91,10 @@ void create_proposal_evaluator::do_apply( const create_proposal_operation& o )
       proposal.permlink = o.permlink.c_str();
     } );
 
-    _db.adjust_balance( owner_account, -fee_hbd );
+    temp_HBD_balance fee;
+    _db.adjust_balance( owner_account, fee, -fee_hbd );
     /// Fee shall be paid to the treasury
-    _db.adjust_balance( treasury_account, fee_hbd );
+    _db.adjust_balance( treasury_account, fee, fee_hbd );
 
     push_virtual_operation( _db,  proposal_fee_operation( o.creator, treasury_account.get_name(), proposal_id, fee_hbd ) );
   }

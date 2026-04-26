@@ -254,8 +254,7 @@ HIVE_asset database::cashout_comment_helper( util::comment_reward_context& ctx, 
             } );
             vop.hbd_payout = hbd_balance;
             vop.payout_must_be_claimed = false;
-            adjust_balance( get_treasury(), hbd_balance.as_asset() );
-            hbd_balance.set_from_asset( HBD_asset( 0 ) );
+            adjust_balance( get_treasury(), hbd_balance, hbd_balance.as_asset() );
           }
           else if( has_hardfork( HIVE_HARDFORK_0_20__2022 ) )
           {

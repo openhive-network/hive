@@ -45,8 +45,7 @@ void database::pay_liquidity_reward()
     if( itr != ridx.end() && itr->volume_weight() > 0 )
     {
       temp_HIVE_balance reward = issue_mining_reward( reward_amount );
-      adjust_balance( get(itr->owner), reward.as_asset() );
-      reward.set_from_asset( HIVE_asset( 0 ) );
+      adjust_balance( get(itr->owner), reward, reward.as_asset() );
       modify( *itr, [&]( liquidity_reward_balance_object& obj )
       {
         obj.hive_volume = 0;
@@ -195,9 +194,11 @@ void database::process_vesting_withdrawals()
               }
               else
               {
-                a.access_hive_balance() += routed_hive;
+                temp_HIVE_balance hive_from_vesting;
+                hive_from_vesting.set_from_asset( routed_hive );
+                a.access_hive_balance().transfer_from( hive_from_vesting );
               }
-            });
+            } );
 
             if( auto_vest_mode )
             {
@@ -257,7 +258,11 @@ void database::process_vesting_withdrawals()
     modify( from_account, [&]( account_object& a )
     {
       a.access_vesting() -= to_withdraw;
-      a.access_hive_balance() += converted_hive;
+      {
+        temp_HIVE_balance hive_from_vesting;
+        hive_from_vesting.set_from_asset( converted_hive );
+        a.access_hive_balance().transfer_from( hive_from_vesting );
+      }
       a.withdrawn += to_withdraw;
 
       if( a.get_total_vesting_withdrawal().amount <= 0 || a.get_vesting().amount == 0 )

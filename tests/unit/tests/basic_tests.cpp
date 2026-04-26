@@ -565,27 +565,52 @@ BOOST_AUTO_TEST_CASE( adjust_balance_test )
   generate_block();
 
   BOOST_TEST_MESSAGE( "Testing adjust_balance" );
+  temp_HIVE_balance hive_balance;
+  temp_HBD_balance hbd_balance;
+  db_plugin->debug_update( [&]( database& db)
+  {
+    db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
+    {
+      hive_balance = gpo.issue_HIVE( HIVE_asset( 50'000 ) );
+      hbd_balance = gpo.issue_HBD( HBD_asset( 100'000 ), HBD_price( 1, 1 ) );
+    } );
+  }, default_skip );
 
   BOOST_TEST_MESSAGE( " --- Testing adding HIVE_SYMBOL" );
-  db->adjust_balance( "alice", asset( 50000, HIVE_SYMBOL ) );
+  temp_balance any_balance( HIVE_SYMBOL );
+  any_balance.transfer_from( hive_balance );
+  db->adjust_balance( "alice", any_balance, asset( 50000, HIVE_SYMBOL ) );
   BOOST_REQUIRE_EQUAL( db->get_balance( "alice", HIVE_SYMBOL ), asset( 50000, HIVE_SYMBOL ) );
 
   BOOST_TEST_MESSAGE( " --- Testing deducting HIVE_SYMBOL" );
-  HIVE_REQUIRE_THROW( db->adjust_balance( "alice", asset( -50001, HIVE_SYMBOL ) ), fc::assert_exception );
-  db->adjust_balance( "alice", asset( -30000, HIVE_SYMBOL ) );
-  db->adjust_balance( "alice", asset( -20000, HIVE_SYMBOL ) );
+  HIVE_REQUIRE_THROW( db->adjust_balance( "alice", any_balance, asset( -50001, HIVE_SYMBOL ) ), fc::assert_exception );
+  db->adjust_balance( "alice", any_balance, asset( -30000, HIVE_SYMBOL ) );
+  db->adjust_balance( "alice", any_balance, asset( -20000, HIVE_SYMBOL ) );
   BOOST_REQUIRE_EQUAL( db->get_balance( "alice", HIVE_SYMBOL ), asset( 0, HIVE_SYMBOL ) );
+  any_balance.transfer_to( hive_balance );
 
   BOOST_TEST_MESSAGE( " --- Testing adding HBD_SYMBOL" );
-  db->adjust_balance( "alice", asset( 100000, HBD_SYMBOL ) );
+  any_balance = temp_balance( HBD_SYMBOL );
+  any_balance.transfer_from( hbd_balance );
+  db->adjust_balance( "alice", any_balance, asset( 100000, HBD_SYMBOL ) );
   BOOST_REQUIRE_EQUAL( db->get_balance( "alice", HBD_SYMBOL ), asset( 100000, HBD_SYMBOL ) );
 
   BOOST_TEST_MESSAGE( " --- Testing deducting HBD_SYMBOL" );
-  HIVE_REQUIRE_THROW( db->adjust_balance( "alice", asset( -100001, HBD_SYMBOL ) ), fc::assert_exception );
-  db->adjust_balance( "alice", asset( -50000, HBD_SYMBOL ) );
-  db->adjust_balance( "alice", asset( -25000, HBD_SYMBOL ) );
-  db->adjust_balance( "alice", asset( -25000, HBD_SYMBOL ) );
+  HIVE_REQUIRE_THROW( db->adjust_balance( "alice", any_balance, asset( -100001, HBD_SYMBOL ) ), fc::assert_exception );
+  db->adjust_balance( "alice", any_balance, asset( -50000, HBD_SYMBOL ) );
+  db->adjust_balance( "alice", any_balance, asset( -25000, HBD_SYMBOL ) );
+  db->adjust_balance( "alice", any_balance, asset( -25000, HBD_SYMBOL ) );
   BOOST_REQUIRE_EQUAL( db->get_balance( "alice", HBD_SYMBOL ), asset( 0, HBD_SYMBOL ) );
+  any_balance.transfer_to( hbd_balance );
+
+  db_plugin->debug_update( [&]( database& db)
+  {
+    db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
+    {
+      gpo.burn_HIVE( hive_balance );
+      gpo.burn_HBD( hbd_balance, HBD_price( 1, 1 ) );
+    } );
+  }, default_skip );
 }
 
 BOOST_AUTO_TEST_CASE( curation_weight_test )
@@ -1107,7 +1132,7 @@ BOOST_AUTO_TEST_CASE( decoding_types_mechanism_test )
     We should have new types like: hive::protocol::public_key_type (reflected) and hive::chain::account_object (reflected).
   */
   dtds.register_new_type<hive::chain::account_object>();
-  BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 28 );
+  BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 30 );
   {
     const hive::chain::util::decoded_type_data& decoded_public_key_type = dtds.get_decoded_type_data<hive::protocol::public_key_type>();
 
@@ -1141,19 +1166,19 @@ BOOST_AUTO_TEST_CASE( decoding_types_mechanism_test )
     BOOST_CHECK_EQUAL( decoded_account_object.members->size(), 58 );
   }
 
-  BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 28 ); // decoded types map size shouldn't change.
+  BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 30 ); // decoded types map size shouldn't change.
 
   BOOST_CHECK_NO_THROW(dtds.register_new_type<fc::static_variant<>>());
-  BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 29 );
+  BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 31 );
   BOOST_CHECK_NO_THROW(dtds.register_new_type<fc::static_variant<int>>());
-  BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 30 );
+  BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 32 );
   BOOST_CHECK_NO_THROW((dtds.register_new_type<fc::static_variant<fc::erpair<fc::sha256, long>, fc::erpair<double, long double>, fc::erpair<float, long>>>()));
-  BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 35 );
+  BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 37 );
   BOOST_CHECK_NO_THROW(dtds.register_new_type<fc::sha256>());
-  BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 35 );
+  BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 37 );
   {
     BOOST_CHECK_NO_THROW(dtds.register_new_type<hive::void_t>());
-    BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 36 );
+    BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 38 );
     const hive::chain::util::decoded_type_data& decoded_hive_void_t =dtds.get_decoded_type_data<hive::void_t>();
     BOOST_CHECK( decoded_hive_void_t.reflected );
     BOOST_CHECK( !decoded_hive_void_t.enum_values );
@@ -1485,7 +1510,7 @@ BOOST_AUTO_TEST_CASE( chain_object_checksum )
 {
   hive::chain::util::decoded_types_data_storage dtds;
 
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::account_object>(dtds), "ae0d6dddd8ce5a9a9b56be99c52e1177248f1b79" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::account_object>(dtds), "9c9dfa27df75b6a6092547674ab3f851be249e17" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::account_authority_object>(dtds), "e492c85b420461ce856b14b80edb3649e4996d86" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::vesting_delegation_object>(dtds), "2c140c595e4a83e6aab21cb3090816206b07a5ad" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::vesting_delegation_expiration_object>(dtds), "cf8a309d076970b83c8e7ada88b01277a43dc726" );
