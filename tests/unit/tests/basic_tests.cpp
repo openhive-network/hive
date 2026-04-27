@@ -2330,6 +2330,50 @@ BOOST_AUTO_TEST_CASE( balance_transfer )
     }, "is_valid() && source.is_valid() && \"transfer asset to balance\"" );
   }
 
+  // check transfer_from( matching_class, matching_asset ) with this used as matching_asset
+  {
+    auto undo = db->start_undo_session();
+    db->modify( *escrow1, [&]( escrow_object& e1 )
+    {
+      db->modify( *escrow2, [&]( escrow_object& e2 )
+      {
+        e1.access_hive_balance().transfer_from( e2.access_hive_balance(), e1.get_hive_balance() );
+        e1.access_hbd_balance().transfer_from( e2.access_hbd_balance(), e1.get_hbd_balance() );
+        e1.access_fee().transfer_from( e2.access_fee(), e1.get_fee() );
+      } );
+    } );
+    check_values( *escrow1, 1000 + 1000, 1000 + 1000, 500 + 500 );
+    check_values( *escrow2, 1000 - 1000, 1000 - 1000, 500 - 500 );
+  }
+
+  // check transfer_from( matching_class, matching_asset ) with source used as matching_asset
+  {
+    auto undo = db->start_undo_session();
+    db->modify( *escrow1, [&]( escrow_object& e1 )
+    {
+      db->modify( *escrow2, [&]( escrow_object& e2 )
+      {
+        e1.access_hive_balance().transfer_from( e2.access_hive_balance(), e2.get_hive_balance() );
+        e1.access_hbd_balance().transfer_from( e2.access_hbd_balance(), e2.get_hbd_balance() );
+        e1.access_fee().transfer_from( e2.access_fee(), e2.get_fee() );
+      } );
+    } );
+    check_values( *escrow1, 1000 + 1000, 1000 + 1000, 500 + 500 );
+    check_values( *escrow2, 1000 - 1000, 1000 - 1000, 500 - 500 );
+  }
+
+  // check transfer_from( matching_class, matching_asset ) with all objects being the same object
+  {
+    auto undo = db->start_undo_session();
+    db->modify( *escrow1, [&]( escrow_object& e1 )
+    {
+      e1.access_hive_balance().transfer_from( e1.access_hive_balance(), e1.get_hive_balance() );
+      e1.access_hbd_balance().transfer_from( e1.access_hbd_balance(), e1.get_hbd_balance() );
+      e1.access_fee().transfer_from( e1.access_fee(), e1.get_fee() );
+    } );
+    check_values( *escrow1, 1000, 1000, 500 );
+  }
+
   // check transfer_from( matching_class )
   {
     auto undo = db->start_undo_session();
@@ -2365,6 +2409,18 @@ BOOST_AUTO_TEST_CASE( balance_transfer )
       e1.access_fee().transfer_from( any );
     } );
     check_values( *escrow1, 1000 + 1000, 1000 + 1000, 500 + 500 );
+  }
+
+  // check transfer_from( matching_class ) with both objects being the same object
+  {
+    auto undo = db->start_undo_session();
+    db->modify( *escrow1, [&]( escrow_object& e1 )
+    {
+      e1.access_hive_balance().transfer_from( e1.access_hive_balance() );
+      e1.access_hbd_balance().transfer_from( e1.access_hbd_balance() );
+      e1.access_fee().transfer_from( e1.access_fee() );
+    } );
+    check_values( *escrow1, 1000, 1000, 500 );
   }
 
   // check transfer_from( cross_class, cross_asset ) - positive delta
@@ -2539,6 +2595,21 @@ BOOST_AUTO_TEST_CASE( balance_transfer )
         } );
       } );
     }, "symbol == o.symbol && \"operator+=\"" );
+  }
+
+  // check transfer_from( cross_class, cross_asset ) with source used as cross_asset
+  {
+    auto undo = db->start_undo_session();
+    db->modify( *escrow1, [&]( escrow_object& e1 )
+    {
+      db->modify( *escrow2, [&]( escrow_object& e2 )
+      {
+        e1.access_hbd_balance().transfer_from( e2.access_fee(), e2.get_fee() );
+        e1.access_fee().transfer_from( e2.access_hbd_balance(), e2.get_hbd_balance() );
+      } );
+    } );
+    check_values( *escrow1, 1000, 1000 + 500, 500 + 1000 );
+    check_values( *escrow2, 1000, 1000 - 1000, 500 - 500 );
   }
 
   // check transfer_from( cross_class )
@@ -2735,6 +2806,50 @@ BOOST_AUTO_TEST_CASE( balance_transfer )
     }, "is_valid() && source.is_valid() && \"transfer asset to balance\"" );
   }
 
+  // check transfer_to( matching_class, matching_asset ) with this used as matching_asset
+  {
+    auto undo = db->start_undo_session();
+    db->modify( *escrow1, [&]( escrow_object& e1 )
+    {
+      db->modify( *escrow2, [&]( escrow_object& e2 )
+      {
+        e1.access_hive_balance().transfer_to( e2.access_hive_balance(), e1.get_hive_balance() );
+        e1.access_hbd_balance().transfer_to( e2.access_hbd_balance(), e1.get_hbd_balance() );
+        e1.access_fee().transfer_to( e2.access_fee(), e1.get_fee() );
+      } );
+    } );
+    check_values( *escrow1, 1000 - 1000, 1000 - 1000, 500 - 500 );
+    check_values( *escrow2, 1000 + 1000, 1000 + 1000, 500 + 500 );
+  }
+
+  // check transfer_to( matching_class, matching_asset ) with destination used as matching_asset
+  {
+    auto undo = db->start_undo_session();
+    db->modify( *escrow1, [&]( escrow_object& e1 )
+    {
+      db->modify( *escrow2, [&]( escrow_object& e2 )
+      {
+        e1.access_hive_balance().transfer_to( e2.access_hive_balance(), e2.get_hive_balance() );
+        e1.access_hbd_balance().transfer_to( e2.access_hbd_balance(), e2.get_hbd_balance() );
+        e1.access_fee().transfer_to( e2.access_fee(), e2.get_fee() );
+      } );
+    } );
+    check_values( *escrow1, 1000 - 1000, 1000 - 1000, 500 - 500 );
+    check_values( *escrow2, 1000 + 1000, 1000 + 1000, 500 + 500 );
+  }
+
+  // check transfer_to( matching_class, matching_asset ) with all objects being the same object
+  {
+    auto undo = db->start_undo_session();
+    db->modify( *escrow1, [&]( escrow_object& e1 )
+    {
+      e1.access_hive_balance().transfer_to( e1.access_hive_balance(), e1.get_hive_balance() );
+      e1.access_hbd_balance().transfer_to( e1.access_hbd_balance(), e1.get_hbd_balance() );
+      e1.access_fee().transfer_to( e1.access_fee(), e1.get_fee() );
+    } );
+    check_values( *escrow1, 1000, 1000, 500 );
+  }
+
   // check transfer_to( matching_class )
   {
     auto undo = db->start_undo_session();
@@ -2770,6 +2885,18 @@ BOOST_AUTO_TEST_CASE( balance_transfer )
       any.transfer_to( e2.access_fee() );
     } );
     check_values( *escrow2, 1000 + 1000, 1000 + 1000, 500 + 500 );
+  }
+
+  // check transfer_to( matching_class ) with both objects being the same object
+  {
+    auto undo = db->start_undo_session();
+    db->modify( *escrow1, [&]( escrow_object& e1 )
+    {
+      e1.access_hive_balance().transfer_to( e1.access_hive_balance() );
+      e1.access_hbd_balance().transfer_to( e1.access_hbd_balance() );
+      e1.access_fee().transfer_to( e1.access_fee() );
+    } );
+    check_values( *escrow1, 1000, 1000, 500 );
   }
 
   // check transfer_to( cross_class, cross_asset ) - positive delta
@@ -2944,6 +3071,24 @@ BOOST_AUTO_TEST_CASE( balance_transfer )
         } );
       } );
     }, "symbol == o.symbol && \"operator-=\"" );
+  }
+
+  // check transfer_to( cross_class, cross_asset ) with destination used as cross_asset
+  {
+    auto undo = db->start_undo_session();
+    db->modify( *escrow1, [&]( escrow_object& e1 )
+    {
+      db->modify( *escrow2, [&]( escrow_object& e2 )
+      {
+        e1.access_hbd_balance().transfer_to( e2.access_fee(), e2.get_fee() );
+        temp_HBD_balance temp;
+        e2.access_hbd_balance().transfer_to( temp, HBD_asset( 600 ) ); // take away some balance, because otherwise next line would cause underflow
+        e1.access_fee().transfer_to( e2.access_hbd_balance(), e2.get_hbd_balance() );
+        e2.access_hbd_balance().transfer_from( temp );
+      } );
+    } );
+    check_values( *escrow1, 1000, 1000 - 500, 500 - 400 );
+    check_values( *escrow2, 1000, 1000 - 600 + 400 + 600, 500 + 500 );
   }
 
   // check transfer_to( cross_class )

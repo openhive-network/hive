@@ -100,10 +100,10 @@ public:
   bool is_valid() const { return funds.amount >= 0; }
 
   /// Transfer delta funds from source to this (positive delta moves from source to this).
-  inline void transfer_from( balance_base& source, const asset& delta );
+  inline void transfer_from( balance_base& source, asset delta );
   /// Transfer delta funds from source to this (positive delta moves from source to this).
   template< uint32_t _SYMBOL >
-  inline void transfer_from( tiny_balance_base<_SYMBOL>& source, const tiny_asset<_SYMBOL>& delta );
+  inline void transfer_from( tiny_balance_base<_SYMBOL>& source, tiny_asset<_SYMBOL> delta );
   // Moves all funds from source to this
   inline void transfer_from( balance_base& source );
   // Moves all funds from source to this
@@ -111,10 +111,10 @@ public:
   inline void transfer_from( tiny_balance_base< _SYMBOL >& source );
 
   // Moves delta funds from this to destination (positive delta moves from this to destination).
-  inline void transfer_to( balance_base& destination, const asset& delta );
+  inline void transfer_to( balance_base& destination, asset delta );
   // Moves delta funds from this to destination (positive delta moves from this to destination).
   template< uint32_t _SYMBOL >
-  inline void transfer_to( tiny_balance_base< _SYMBOL >& destination, const tiny_asset< _SYMBOL >& delta );
+  inline void transfer_to( tiny_balance_base< _SYMBOL >& destination, tiny_asset< _SYMBOL > delta );
   // Moves all funds from this to destination.
   inline void transfer_to( balance_base& destination );
   // Moves all funds from this to destination.
@@ -173,25 +173,25 @@ public:
   bool is_valid() const { return funds.amount >= 0; }
 
   /// Transfer delta funds from source to this (positive delta moves from source to this).
-  inline void transfer_from( balance_base& source, const asset& delta );
+  inline void transfer_from( balance_base& source, asset delta );
   /// Transfer delta funds from source to this (positive delta moves from source to this).
-  inline void transfer_from( tiny_balance_base& source, const matching_asset& delta );
+  inline void transfer_from( tiny_balance_base& source, matching_asset delta );
   // Moves all funds from source to this
   void transfer_from( balance_base& source ) { transfer_from( source, source.as_asset() ); }
   // Moves all funds from source to this
   void transfer_from( tiny_balance_base& source ) { transfer_from( source, source.as_asset() ); }
 
   // Moves delta funds from this to destination (positive delta moves from this to destination).
-  void transfer_to( balance_base& destination, const asset& delta ) { destination.transfer_from( *this, matching_asset( delta ) ); }
+  void transfer_to( balance_base& destination, asset delta ) { destination.transfer_from( *this, matching_asset( delta ) ); }
   // Moves delta funds from this to destination (positive delta moves from this to destination).
-  void transfer_to( tiny_balance_base& destination, const matching_asset& delta ) { destination.transfer_from( *this, delta ); }
+  void transfer_to( tiny_balance_base& destination, matching_asset delta ) { destination.transfer_from( *this, delta ); }
   // Moves all funds from this to destination.
   void transfer_to( balance_base& destination ) { destination.transfer_from( *this, as_asset() ); }
   // Moves all funds from this to destination.
   void transfer_to( tiny_balance_base& destination ) { destination.transfer_from( *this, as_asset() ); }
 };
 
-inline void balance_base::transfer_from( balance_base& source, const asset& delta )
+inline void balance_base::transfer_from( balance_base& source, asset delta )
 {
   funds += delta;
   source.funds -= delta;
@@ -200,7 +200,7 @@ inline void balance_base::transfer_from( balance_base& source, const asset& delt
 }
 
 template< uint32_t _SYMBOL >
-inline void balance_base::transfer_from( tiny_balance_base< _SYMBOL >& source, const tiny_asset< _SYMBOL >& delta )
+inline void balance_base::transfer_from( tiny_balance_base< _SYMBOL >& source, tiny_asset< _SYMBOL > delta )
 {
   this->funds += delta.to_asset();
   source.funds -= delta;
@@ -219,13 +219,13 @@ inline void balance_base::transfer_from( tiny_balance_base< _SYMBOL >& source )
   transfer_from( source, source.as_asset() );
 }
 
-inline void balance_base::transfer_to( balance_base& destination, const asset& delta )
+inline void balance_base::transfer_to( balance_base& destination, asset delta )
 {
   destination.transfer_from( *this, delta );
 }
 
 template< uint32_t _SYMBOL >
-inline void balance_base::transfer_to( tiny_balance_base< _SYMBOL >& destination, const tiny_asset< _SYMBOL >& delta )
+inline void balance_base::transfer_to( tiny_balance_base< _SYMBOL >& destination, tiny_asset< _SYMBOL > delta )
 {
   destination.transfer_from( *this, delta.to_asset() );
 }
@@ -242,7 +242,7 @@ inline void balance_base::transfer_to( tiny_balance_base< _SYMBOL >& destination
 }
 
 template< uint32_t _SYMBOL >
-inline void tiny_balance_base< _SYMBOL >::transfer_from( balance_base& source, const asset& delta )
+inline void tiny_balance_base< _SYMBOL >::transfer_from( balance_base& source, asset delta )
 {
   this->funds += matching_asset( delta );
   source.funds -= delta;
@@ -251,7 +251,7 @@ inline void tiny_balance_base< _SYMBOL >::transfer_from( balance_base& source, c
 }
 
 template< uint32_t _SYMBOL >
-inline void tiny_balance_base< _SYMBOL >::transfer_from( tiny_balance_base& source, const matching_asset& delta )
+inline void tiny_balance_base< _SYMBOL >::transfer_from( tiny_balance_base& source, matching_asset delta )
 {
   this->funds += delta;
   source.funds -= delta;
