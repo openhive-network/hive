@@ -237,7 +237,13 @@ namespace hive { namespace chain {
         FC_THROW("Error opening block log file ${filename} in ${mode} mode: ${error}",
           ("filename", my->block_file)("error", strerror(errno))("mode", read_only ? "read only" : "read write"));
 
+      // Linux's AT_EMPTY_PATH lets us probe the open fd directly; on macOS
+      // it doesn't exist, so re-check the path (file was just opened above).
+#ifdef __APPLE__
+      if( access( file_str.c_str(), W_OK ) == -1 )
+#else
       if( faccessat( my->block_log_fd, "", W_OK, AT_EACCESS|AT_EMPTY_PATH) == -1 )
+#endif
       {
         auto e = errno;
         if( e == EACCES )

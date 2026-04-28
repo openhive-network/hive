@@ -1,6 +1,12 @@
 
 #include <hive/utilities/benchmark_dumper.hpp>
 
+#ifdef __APPLE__
+#include <mach/mach.h>
+#include <mach/task.h>
+#include <mach/task_info.h>
+#endif
+
 namespace hive { namespace utilities {
 
 #define PROC_STATUS_LINE_LENGTH 1028
@@ -105,6 +111,7 @@ const benchmark_dumper::measurement& benchmark_dumper::dump( bool finalMeasure, 
   return _all_data.total_measurement;
 }
 
+#ifndef __APPLE__
 typedef std::function<void(const char* key)> TScanErrorCallback;
 
 unsigned long long read_u64_value_from(FILE* input, const char* key, unsigned key_length, const TScanErrorCallback& error_callback)
@@ -129,9 +136,27 @@ unsigned long long read_u64_value_from(FILE* input, const char* key, unsigned ke
   error_callback(key);
   return 0;
 }
+#endif
 
 bool benchmark_dumper::read_mem(pid_t pid, uint64_t* current_virtual, uint64_t* peak_virtual)
 {
+#ifdef __APPLE__
+  // macOS has no /proc filesystem; query the kernel task port directly.
+  // No native equivalent for "peak virtual" — report current as both so
+  // downstream consumers stay numerically sensible.
+  mach_task_basic_info_data_t info;
+  mach_msg_type_number_t count = MACH_TASK_BASIC_INFO_COUNT;
+  if( task_info( mach_task_self(), MACH_TASK_BASIC_INFO,
+                 reinterpret_cast<task_info_t>(&info), &count ) != KERN_SUCCESS )
+  {
+    elog( "task_info(MACH_TASK_BASIC_INFO) failed" );
+    return false;
+  }
+  // /proc/self/status reports kilobytes; mirror that here.
+  *current_virtual = info.virtual_size / 1024;
+  *peak_virtual    = *current_virtual;
+  return true;
+#else
   const char* procPath = "/proc/self/status";
   FILE* input = fopen(procPath, "re");
   if(input == NULL)
@@ -150,6 +175,7 @@ bool benchmark_dumper::read_mem(pid_t pid, uint64_t* current_virtual, uint64_t* 
 
   fclose(input);
   return true;
+#endif
 }
 
 } }

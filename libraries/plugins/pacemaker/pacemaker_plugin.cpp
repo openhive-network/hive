@@ -223,7 +223,7 @@ void pacemaker_plugin::plugin_initialize( const boost::program_options::variable
 
   my->_min_offset = options.at( "pacemaker-min-offset" ).as< int >() * 1000;
   my->_max_offset = options.at( "pacemaker-max-offset" ).as< int >() * 1000;
-  FC_ASSERT( my->_max_offset > std::min( my->_min_offset, 0l ), "pacemaker-max-offset needs to be positive value greater than pacemaker-min-offset" );
+  FC_ASSERT( my->_max_offset > std::min<int64_t>( my->_min_offset, 0 ), "pacemaker-max-offset needs to be positive value greater than pacemaker-min-offset" );
 
   //allow up to 1/3 of the block interval for emitting blocks (2x a normal node)
   my->_chain_plugin.set_write_lock_hold_time( HIVE_BLOCK_INTERVAL * 1000 / 3 ); // units = milliseconds

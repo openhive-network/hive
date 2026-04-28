@@ -119,7 +119,10 @@ else( WIN32 ) # Apple AND Linux
     if( APPLE )
         # Apple Specific Options Here
         message( STATUS "Configuring Hive on OS X" )
-        set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++ -Wall -Wno-conversion -Wno-deprecated-declarations" )
+        # -Wno-missing-template-arg-list-after-template-kw silences a Clang 17+
+        # diagnostic triggered by Boost 1.88's segment_manager.hpp; harmless and
+        # already fixed upstream in Boost 1.89.
+        set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++ -Wall -Wno-conversion -Wno-deprecated-declarations -Wno-missing-template-arg-list-after-template-kw" )
     else( APPLE )
         # Linux Specific Options Here
         message( STATUS "Configuring Hive on Linux" )
@@ -155,9 +158,12 @@ else( WIN32 ) # Apple AND Linux
     # liburing-dev does not provide default finduring cmake file, but rocksdb does
     # The io_uring engine is able to perform batch submissions and reaps through a single syscall,
     # and thus will improve the overall performance of the system on high-version Linux kernels above 5.x
-    include(libraries/vendor/rocksdb/cmake/modules/Finduring.cmake)
-    if (NOT uring_FOUND)
-        message(FATAL_ERROR "Usage of the io_uring engine is preferred in this project")
+    # io_uring is Linux-kernel-only; macOS falls back to RocksDB's portable async I/O.
+    if( NOT APPLE )
+        include(libraries/vendor/rocksdb/cmake/modules/Finduring.cmake)
+        if (NOT uring_FOUND)
+            message(FATAL_ERROR "Usage of the io_uring engine is preferred in this project")
+        endif()
     endif()
 
 endif( WIN32 )

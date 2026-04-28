@@ -11,6 +11,9 @@ B64_FILE="${3}"
 zopfli -c --deflate -i1000 "${INPUT_FILE}" > "${DEFLATE_FILE}"
 echo -n '"' >"${B64_FILE}"
 
-base64 -w0 "${DEFLATE_FILE}" >> "${B64_FILE}"
+# GNU coreutils accepts `base64 -w0 FILE`; BSD base64 (macOS) needs stdin
+# redirection and emits no line wrapping by default. `tr -d '\n'` strips the
+# trailing newline that GNU adds, keeping the output a single quoted token.
+base64 < "${DEFLATE_FILE}" | tr -d '\n' >> "${B64_FILE}"
 
 echo -n '"' >>"${B64_FILE}"

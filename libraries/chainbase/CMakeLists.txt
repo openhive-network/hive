@@ -16,7 +16,9 @@ ENDIF(WIN32)
 if( APPLE )
   # Apple Specific Options Here
   message( STATUS "Configuring ChainBase on OS X" )
-  set( CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -stdlib=libc++ -Wall -Wno-conversion" )
+  # -Wno-missing-template-arg-list-after-template-kw silences a Clang 17+
+  # diagnostic triggered by Boost 1.88's segment_manager.hpp.
+  set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++ -Wall -Wno-conversion -Wno-missing-template-arg-list-after-template-kw" )
 else( APPLE )
   # Linux Specific Options Here
   message( STATUS "Configuring ChainBase on Linux" )
