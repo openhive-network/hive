@@ -22,6 +22,7 @@
 #define REWARD_TYPES   10
 
 using hive::protocol::asset;
+using hive::protocol::HIVE_asset;
 using hive::protocol::share_type;
 using hive::protocol::calc_percent_reward_per_block;
 using hive::protocol::calc_percent_reward_per_round;
