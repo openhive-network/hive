@@ -366,7 +366,13 @@ void block_log_artifacts::impl::open(const fc::path& block_log_file_path,
       FC_THROW("Cannot open artifacts file in read only mode. File path: ${_artifact_file_name}, error: ${error}", (_artifact_file_name)("error", strerror(errno)));
     }
 
+    // Linux's AT_EMPTY_PATH lets us probe the open fd directly; on macOS
+    // it doesn't exist, so re-check the path (file was just opened above).
+#ifdef __APPLE__
+    if( access( file_str.c_str(), W_OK ) == -1 )
+#else
     if( faccessat( _storage_fd, "", W_OK, AT_EACCESS|AT_EMPTY_PATH) == -1 )
+#endif
     {
       auto e = errno;
       if( e == EACCES )

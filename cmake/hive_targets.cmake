@@ -22,7 +22,7 @@ MACRO( ADD_TARGET_BOOST_LIBRARIES target_name components )
     ELSEIF (_target_type  STREQUAL "SHARED_LIBRARY")
       # Shared library shall always link against shared Boost libraries
       SET( Boost_USE_STATIC_LIBS OFF CACHE STRING "ON or OFF" FORCE )
-      SET( CMAKE_FIND_LIBRARY_SUFFIXES ".so")
+      SET( CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_SHARED_LIBRARY_SUFFIX})
 
     ELSE() 
       # Nothing to do for static libraries - they does not need to know dependencies at library level, since all symbols must be finally solved at .so or exec level
@@ -32,7 +32,7 @@ MACRO( ADD_TARGET_BOOST_LIBRARIES target_name components )
       IF ( ${_target_PIC} )
         MESSAGE( STATUS "Target: ${target_name} requires boost dynamic linkage" )
         SET( Boost_USE_STATIC_LIBS OFF CACHE STRING "ON or OFF" FORCE )
-        SET( CMAKE_FIND_LIBRARY_SUFFIXES ".so")
+        SET( CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_SHARED_LIBRARY_SUFFIX})
       ELSE()
         MESSAGE( STATUS "Target: ${target_name} can use boost static linkage" )
         SET( Boost_USE_STATIC_LIBS ON CACHE STRING "ON or OFF" FORCE )
@@ -64,9 +64,9 @@ MACRO( ADD_TARGET_PACKAGE_LIBRARIES target_name _package_name use_static_libs )
     MESSAGE( STATUS "Setting up ${_package_name} STATIC libraries for target: ${target_name}" )
     SET(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_STATIC_LIBRARY_SUFFIX})
     SET( ${package_name}_USE_STATIC_LIBS TRUE )
-  ELSE() 
+  ELSE()
     MESSAGE( STATUS "Setting up ${_package_name} SHARED libraries for target: ${target_name}" )
-    SET(CMAKE_FIND_LIBRARY_SUFFIXES ".so")
+    SET(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_SHARED_LIBRARY_SUFFIX})
     SET( ${package_name}_USE_STATIC_LIBS FALSE )
   ENDIF ()
 
@@ -140,14 +140,21 @@ MACRO( ADD_HIVE_EXECUTABLE)
     LIST( APPEND PLATFORM_SPECIFIC_LIBS tcmalloc )
   endif()
 
-  TARGET_LINK_LIBRARIES( ${HIVE_EXE_NAME} PUBLIC
-     "-static-libstdc++ -static-libgcc"
+  # Apple Clang + libc++ does not support -static-libstdc++/-static-libgcc.
+  IF( APPLE )
+    TARGET_LINK_LIBRARIES( ${HIVE_EXE_NAME} PUBLIC
+       ${HIVE_EXE_LIBRARIES}
+      )
+  ELSE()
+    TARGET_LINK_LIBRARIES( ${HIVE_EXE_NAME} PUBLIC
+       "-static-libstdc++ -static-libgcc"
 
-     ${HIVE_EXE_LIBRARIES}
+       ${HIVE_EXE_LIBRARIES}
 
 #     ${CMAKE_DL_LIBS}
 #     ${PLATFORM_SPECIFIC_LIBS}
-    )
+      )
+  ENDIF()
 
   set(_libs )
 

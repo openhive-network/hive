@@ -383,7 +383,7 @@ void transaction_builder::build_transaction()
           if( _common._overflowing_tx == 0 ) // transactions didn't overflow - go with given max
             effective_total = _common._max_tx_per_block;
           else // use adjusted rate
-            effective_total = std::max( 0l, ( int64_t ) _common._dynamic_tx_per_block - _common._overflowing_tx );
+            effective_total = std::max<int64_t>( 0, ( int64_t ) _common._dynamic_tx_per_block - _common._overflowing_tx );
           _tx_to_produce = ( effective_total + _common._max_threads - 1 ) / _common._max_threads;
           dlog( "${n} scheduling production of ${x} transactions, previous overflow was ${o}",
             ( "n", _worker.name() )( "x", _tx_to_produce )( "o", _common._overflowing_tx ) );
