@@ -206,19 +206,19 @@ namespace shared_memory_file_util
     const size_t num_threads = allow_concurrency ? std::min(workers.size(), static_cast<size_t>(16)) : 1;
     if (num_threads > 1)
     {
-      boost::asio::io_service io_service;
+      boost::asio::io_context io_context;
       boost::thread_group threadpool;
-      std::unique_ptr<boost::asio::io_service::work> work = std::make_unique<boost::asio::io_service::work>(io_service);
+      auto work = boost::asio::make_work_guard(io_context);
 
       for (unsigned int i = 0; i < num_threads; ++i)
-        threadpool.create_thread(boost::bind(&boost::asio::io_service::run, &io_service));
+        threadpool.create_thread(boost::bind(&boost::asio::io_context::run, &io_context));
 
       for (size_t i = 0; i < snapshot_writer_workers.size(); ++i)
       {
         dumping_worker *w = snapshot_writer_workers[i].get();
         FC_ASSERT(w == workers[i]);
 
-        io_service.post(boost::bind(&dumping_worker::perform_dump, w));
+        boost::asio::post(io_context, boost::bind(&dumping_worker::perform_dump, w));
       }
 
       dlog("Waiting for dumping-workers jobs completion");
@@ -430,14 +430,14 @@ namespace shared_memory_file_util
 
   void App::perform_dump_indices()
   {
-    boost::asio::io_service io_service;
+    boost::asio::io_context io_context;
     boost::thread_group threadpool;
-    std::unique_ptr<boost::asio::io_service::work> work = std::make_unique<boost::asio::io_service::work>(io_service);
+    auto work = boost::asio::make_work_guard(io_context);
 
     const bool parallel_dumping = dump_threads > 1;
 
     for (unsigned int i = 0; parallel_dumping && i < dump_threads; ++i)
-      threadpool.create_thread(boost::bind(&boost::asio::io_service::run, &io_service));
+      threadpool.create_thread(boost::bind(&boost::asio::io_context::run, &io_context));
 
     std::vector<std::unique_ptr<index_dump_writer>> writers;
     const auto indices = db.get_abstract_index_cntr();
@@ -455,7 +455,7 @@ namespace shared_memory_file_util
       index_dump_writer *writer = writers.back().get();
 
       if (parallel_dumping)
-        io_service.post(boost::bind<void>(run_dump_snapshot_process, idx, writer));
+        boost::asio::post(io_context, boost::bind<void>(run_dump_snapshot_process, idx, writer));
       else
         idx->dump_snapshot(*writer);
     }
