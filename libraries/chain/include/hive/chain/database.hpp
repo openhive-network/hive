@@ -558,7 +558,7 @@ namespace chain {
       void clear_witness_votes( const account_object& a );
       void process_vesting_withdrawals();
       HIVE_asset pay_curators( const comment_object& comment, const comment_cashout_object& comment_cashout,
-        HIVE_asset& max_rewards, temp_HIVE_balance& reward_balance );
+        HIVE_asset& max_rewards, VEST_asset& total_paid_reward, temp_HIVE_balance& reward_balance );
       HIVE_asset cashout_comment_helper( util::comment_reward_context& ctx, temp_HIVE_balance& reward_balance,
         const comment_object& comment, const comment_cashout_object& comment_cashout,
         const comment_cashout_ex_object* comment_cashout_ex, bool forward_curation_remainder = true );

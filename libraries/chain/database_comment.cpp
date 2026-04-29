@@ -122,7 +122,7 @@ void database::remove_old_cashouts()
   *  @returns unclaimed rewards.
   */
 HIVE_asset database::pay_curators( const comment_object& comment, const comment_cashout_object& comment_cashout,
-  HIVE_asset& max_rewards, temp_HIVE_balance& reward_balance )
+  HIVE_asset& max_rewards, VEST_asset& total_paid_reward, temp_HIVE_balance& reward_balance )
 {
   struct cmp
   {
@@ -173,6 +173,7 @@ HIVE_asset database::pay_curators( const comment_object& comment, const comment_
             [&]( const VEST_asset& reward )
             {
               vop.reward = reward;
+              total_paid_reward += reward;
               pre_push_virtual_operation( *this, vop );
             } );
           reward_balance.set_from_asset( reward_balance.as_asset() - claim );
@@ -225,7 +226,12 @@ HIVE_asset database::cashout_comment_helper( util::comment_reward_context& ctx, 
         curation_tokens = HIVE_asset( fc::uint128_to_int64( ( reward_tokens * get_curation_rewards_percent() ) / HIVE_100_PERCENT ) );
         author_tokens = reward - curation_tokens;
 
-        HIVE_asset curation_remainder = pay_curators( comment, comment_cashout, curation_tokens, reward_balance );
+        /*
+          Total payout for curators is calculated due to the performance in third party softwares(f.e. `hivemind`).
+          During payments calculations it's enough to catch `author_reward_operation`, without adding all values from `curation_reward_operation`.
+        */
+        VEST_asset curators_vesting_payout;
+        HIVE_asset curation_remainder = pay_curators( comment, comment_cashout, curation_tokens, curators_vesting_payout, reward_balance );
 
         if( forward_curation_remainder )
           author_tokens += curation_remainder;
@@ -284,12 +290,6 @@ HIVE_asset database::cashout_comment_helper( util::comment_reward_context& ctx, 
         auto vesting_hive = author_balance.as_asset();
 
         auto hbd_payout_record = award_hbd( author, hbd_hive, has_hardfork( HIVE_HARDFORK_0_17__659 ) );
-
-        /*
-          Total payout for curators is calculated due to the performance in third party softwares(f.e. `hivemind`).
-          During payments calculations it's enough to catch `author_reward_operation`, without adding all values from `curation_reward_operation`.
-        */
-        auto curators_vesting_payout = calculate_vesting( *this, curation_tokens, has_hardfork( HIVE_HARDFORK_0_17__659 ) );
 
         auto vop = author_reward_operation( comment_author, to_string( comment_cashout.get_permlink() ), hbd_payout_record.first, hbd_payout_record.second,
           VEST_asset( 0 ), curators_vesting_payout, has_hardfork( HIVE_HARDFORK_0_17__659 ) );
