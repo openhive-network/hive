@@ -3448,6 +3448,7 @@ void database::validate_invariants()const
     HIVE_asset total_supply;
     HBD_asset total_hbd;
     VEST_asset total_vesting;
+    VEST_asset total_reward_vesting;
     HIVE_asset pending_vesting_hive;
     share_type total_vsf_votes = share_type( 0 );
     ushare_type total_delayed_votes = ushare_type( 0 );
@@ -3475,7 +3476,7 @@ void database::validate_invariants()const
       total_hbd += itr->get_hbd_savings();
       total_hbd += itr->get_hbd_rewards();
       total_vesting += itr->get_vesting();
-      total_vesting += itr->get_vest_rewards();
+      total_reward_vesting += itr->get_vest_rewards();
       pending_vesting_hive += itr->get_vest_rewards_as_hive();
       total_vsf_votes += ( !itr->has_proxy() ?
                       itr->get_governance_vote_power() :
@@ -3508,7 +3509,8 @@ void database::validate_invariants()const
 
     FC_ASSERT( gpo.get_current_supply() == total_supply, "", ("gpo.current_supply",gpo.get_current_supply())("total_supply",total_supply) );
     FC_ASSERT( gpo.get_current_hbd_supply() == total_hbd, "", ("gpo.current_hbd_supply",gpo.get_current_hbd_supply())("total_hbd",total_hbd) );
-    FC_ASSERT( gpo.get_total_vesting_shares() + gpo.get_pending_rewarded_vesting_shares() == total_vesting, "", ("gpo.total_vesting_shares",gpo.get_total_vesting_shares())("total_vesting",total_vesting) );
+    FC_ASSERT( gpo.get_total_vesting_shares() == total_vesting, "", ("gpo.total_vesting_shares",gpo.get_total_vesting_shares())("total_vesting",total_vesting) );
+    FC_ASSERT( gpo.get_pending_rewarded_vesting_shares() == total_reward_vesting, "", ("gpo.pending_rewarded_vesting_shares",gpo.get_pending_rewarded_vesting_shares())("total_reward_vesting",total_reward_vesting) );
     FC_ASSERT( gpo.get_total_vesting_shares().amount == total_vsf_votes + total_delayed_votes.value, "", ("total_vesting_shares",gpo.get_total_vesting_shares())("total_vsf_votes + total_delayed_votes",total_vsf_votes + total_delayed_votes.value) );
     FC_ASSERT( gpo.get_pending_rewarded_vesting_hive() == pending_vesting_hive, "", ("pending_rewarded_vesting_hive",gpo.get_pending_rewarded_vesting_hive())("pending_vesting_hive", pending_vesting_hive));
 
