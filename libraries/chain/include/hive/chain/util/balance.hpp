@@ -332,9 +332,6 @@ public:
     if( std::uncaught_exceptions() == 0 )
       HIVE_CHAIN_BALANCE_ASSERT( is_empty() && "temp_balance", funds, "Destruction of funds" );
   }
-
-  // can set or clear balance with arbitrary value; temporary - to be removed once balance_object.md task is fully done
-  void set_from_asset( const asset& value ) { funds = value; }
 };
 
 /**
@@ -380,12 +377,6 @@ public:
   {
     if( std::uncaught_exceptions() == 0 )
       HIVE_CHAIN_BALANCE_ASSERT( this->is_empty() && "temp_tiny_balance", this->funds, "Destruction of funds" );
-  }
-
-  // can set or clear balance with arbitrary value; temporary - to be removed once balance_object.md task is fully done
-  void set_from_asset( const matching_asset& value )
-  {
-    this->funds = value;
   }
 };
 
