@@ -194,8 +194,7 @@ void account_create_evaluator::do_apply( const account_create_operation& o )
     _db.adjust_balance( _db.get< account_object, by_name >( HIVE_NULL_ACCOUNT ), fee, fee.as_asset() );
   else if( o_fee.amount > 0 )
   {
-    initial_vesting_shares = _db.create_vesting( new_account, fee.as_asset() );
-    fee.set_from_asset( HIVE_asset( 0 ) );
+    initial_vesting_shares = _db.create_vesting( new_account, fee );
   }
 
   _db.create< account_authority_object >( new_account, o.owner, o.active, o.posting );
@@ -251,8 +250,7 @@ void account_create_with_delegation_evaluator::do_apply( const account_create_wi
     _db.adjust_balance( _db.get< account_object, by_name >( HIVE_NULL_ACCOUNT ), fee, fee.as_asset() );
   else if( o_fee.amount > 0 )
   {
-    initial_vesting_shares = _db.create_vesting( new_account, fee.as_asset() );
-    fee.set_from_asset( HIVE_asset( 0 ) );
+    initial_vesting_shares = _db.create_vesting( new_account, fee );
   }
 
   _db.create< account_authority_object >( new_account, o.owner, o.active, o.posting );

@@ -169,14 +169,15 @@ HIVE_asset database::pay_curators( const comment_object& comment, const comment_
           const auto& voter = get( item->get_voter() );
           auto vop = curation_reward_operation( voter.get_name(), VEST_asset( 0 ), comment_author_name,
             to_string( comment_cashout.get_permlink() ), has_hardfork( HIVE_HARDFORK_0_17__659 ) );
-          create_vesting2( *this, voter, claim, has_hardfork( HIVE_HARDFORK_0_17__659 ),
+          temp_HIVE_balance voter_claim;
+          voter_claim.transfer_from( reward_balance, claim );
+          create_vesting2( *this, voter, voter_claim, has_hardfork( HIVE_HARDFORK_0_17__659 ),
             [&]( const VEST_asset& reward )
             {
               vop.reward = reward;
               total_paid_reward += reward;
               pre_push_virtual_operation( *this, vop );
             } );
-          reward_balance.set_from_asset( reward_balance.as_asset() - claim );
 
           modify( voter, [&]( account_object& a )
           {
@@ -277,7 +278,6 @@ HIVE_asset database::cashout_comment_helper( util::comment_reward_context& ctx, 
               vop.vesting_payout = reward;
               pre_push_virtual_operation( *this, vop );
             } );
-          benefactor_balance.set_from_asset( HIVE_asset( 0 ) );
           post_push_virtual_operation( *this, vop );
         }
 
@@ -300,7 +300,6 @@ HIVE_asset database::cashout_comment_helper( util::comment_reward_context& ctx, 
             vop.vesting_payout = vesting_payout;
             pre_push_virtual_operation( *this, vop );
           } );
-        author_balance.set_from_asset( HIVE_asset( 0 ) );
         post_push_virtual_operation( *this, vop );
 
         HBD_asset payout = hbd_payout_record.first + to_hbd( hbd_payout_record.second + vesting_hive );
@@ -600,9 +599,11 @@ void database::perform_vesting_share_split( uint32_t magnitude )
 {
   try
   {
+    temp_VEST_balance multiplied_vests;
     modify( get_dynamic_global_properties(), [&]( dynamic_global_property_object& d )
     {
-      d.access_total_vesting_shares().amount *= magnitude;
+      //d.total_vesting_shares *= magnitude;
+      multiplied_vests = d.issue_VESTS( d.get_total_vesting_shares() * ( magnitude - 1 ) );
     } );
     modify( get_reward_fund(), [&]( reward_fund_object& rfo )
     {
@@ -610,13 +611,15 @@ void database::perform_vesting_share_split( uint32_t magnitude )
     } );
 
     // Need to update all VESTS in accounts and the total VESTS in the dgpo
+    // VESTS not multiplied: delegations, rewards
     for( const auto& account : get_index< account_index, by_id >() )
     {
       VEST_asset old_vesting_shares = account.get_vesting();
       VEST_asset new_vesting_shares = old_vesting_shares;
       modify( account, [&]( account_object& a )
       {
-        a.access_vesting() *= magnitude;
+        //a.vesting_shares *= magnitude;
+        a.access_vesting().transfer_from( multiplied_vests, a.get_vesting() * ( magnitude - 1 ) );
         new_vesting_shares = a.get_vesting();
         a.withdrawn *= magnitude;
         a.to_withdraw *= magnitude;

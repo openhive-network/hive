@@ -258,10 +258,16 @@ BOOST_AUTO_TEST_CASE( consolidate_balance )
       vested_3 = HIVE_asset( 3'000 ) * dgpo.get_vesting_share_price();
       vested_7 = HIVE_asset( 7'000 ) * dgpo.get_vesting_share_price();
       auto& old_treasury = db.get_account( OBSOLETE_TREASURY_ACCOUNT );
-      db.create_vesting( old_treasury, HIVE_asset( 7'000 ) );
-      hive_balance.set_from_asset( hive_balance.as_asset() - HIVE_asset( 7'000 ) );
-      db.create_vesting( old_treasury, HIVE_asset( 3'000 ), true );
-      hive_balance.set_from_asset( hive_balance.as_asset() - HIVE_asset( 3'000 ) );
+      {
+        temp_HIVE_balance to_vest;
+        to_vest.transfer_from( hive_balance, HIVE_asset( 7'000 ) );
+        db.create_vesting( old_treasury, to_vest );
+      }
+      {
+        temp_HIVE_balance to_vest;
+        to_vest.transfer_from( hive_balance, HIVE_asset( 3'000 ) );
+        db.create_vesting( old_treasury, to_vest, true );
+      }
       db.modify( old_treasury, [&]( account_object& t )
       {
         t.access_hive_balance().transfer_from( hive_balance, HIVE_asset( 5'000 ) );

@@ -110,7 +110,7 @@ public:
   //effective balance of VESTS including delegations and optionally excluding active step of pending power down
   VEST_asset get_effective_vesting_shares( bool excludeWeeklyPowerDown = true ) const
   {
-    VEST_asset total = vesting_shares - delegated_vesting_shares + received_vesting_shares;
+    VEST_asset total = vesting_shares.as_asset() - delegated_vesting_shares + received_vesting_shares;
     if( excludeWeeklyPowerDown && next_vesting_withdrawal != fc::time_point_sec::maximum() )
       total -= get_next_vesting_withdrawal();
     return total;
@@ -120,11 +120,11 @@ public:
   //value of unclaimed VESTS rewards in HIVE (HIVE held on global balance)
   const HIVE_asset& get_vest_rewards_as_hive() const { return reward_vesting_hive; }
 
-  VEST_asset& access_vesting() { return vesting_shares; }
-  VEST_asset& access_delegated_vesting() { return delegated_vesting_shares; }
-  VEST_asset& access_received_vesting() { return received_vesting_shares; }
-  VEST_asset& access_vest_rewards() { return reward_vesting_balance; } //TODO: combine this with access_vest_rewards_as_hive into single setter
-  HIVE_asset& access_vest_rewards_as_hive() { return reward_vesting_hive; }
+  VEST_balance& access_vesting() { return vesting_shares; }
+  VEST_asset&   access_delegated_vesting() { return delegated_vesting_shares; }
+  VEST_asset&   access_received_vesting() { return received_vesting_shares; }
+  VEST_balance& access_vest_rewards() { return reward_vesting_balance; } //TODO: combine this with access_vest_rewards_as_hive into single setter
+  HIVE_balance& access_vest_rewards_as_hive() { return reward_vesting_hive; }
 
   //effective balance of VESTS for RC calculation optionally excluding part that cannot be delegated
   share_type get_maximum_rc( bool only_delegable = false ) const
@@ -187,12 +187,12 @@ public:
     block_last_account_recovery = block_recovery_time;
   }
 
-  // accounts are never removed, so this routine should never be called
+  // accounts are never removed so this routine should never be called
   void check_on_remove() const
   {
     FC_ASSERT( hbd_balance.is_empty() && savings_hbd_balance.is_empty() && reward_hbd_balance.is_empty() &&
       hive_balance.is_empty() && savings_hive_balance.is_empty() && reward_hive_balance.is_empty() &&
-      //vesting_shares.is_empty() && reward_vesting_balance.is_empty() && reward_vesting_hive.is_empty() &&
+      vesting_shares.is_empty() && reward_vesting_balance.is_empty() && reward_vesting_hive.is_empty(),
       "Removing account_object with non-empty balance fields" );
   }
 
@@ -220,12 +220,12 @@ private:
   HBD_balance       reward_hbd_balance; ///< HBD balance author rewards that can be claimed
 
   HIVE_balance      reward_hive_balance; ///< HIVE balance author rewards that can be claimed
-  HIVE_asset        reward_vesting_hive; ///< HIVE counterweight to reward_vesting_balance
+  HIVE_balance      reward_vesting_hive; ///< HIVE counterweight to reward_vesting_balance
   HIVE_balance      hive_balance;  ///< HIVE liquid balance
   HIVE_balance      savings_hive_balance;  ///< HIVE balance guarded by 3 day withdrawal
 
-  VEST_asset        reward_vesting_balance; ///< VESTS balance author/curation rewards that can be claimed
-  VEST_asset        vesting_shares; ///< VESTS balance, controls governance voting power
+  VEST_balance      reward_vesting_balance; ///< VESTS balance author/curation rewards that can be claimed
+  VEST_balance      vesting_shares; ///< VESTS balance, controls governance voting power
   VEST_asset        delegated_vesting_shares; ///< VESTS delegated out to other accounts
   VEST_asset        received_vesting_shares; ///< VESTS delegated to this account
 public:
@@ -326,12 +326,12 @@ public:
   // governance vote power of this account does not include "delayed votes"
   share_type get_direct_governance_vote_power() const
   {
-    FC_ASSERT( sum_delayed_votes.value <= vesting_shares.amount, "",
+    FC_ASSERT( sum_delayed_votes.value <= vesting_shares.as_asset().amount, "",
             ( "sum_delayed_votes",     sum_delayed_votes )
-            ( "vesting_shares.amount", vesting_shares.amount )
+            ( "vesting_shares.amount", vesting_shares.as_asset().amount )
             ( "account",               name ) );
 
-    return ( vesting_shares - VEST_asset( sum_delayed_votes.value ) ).amount;
+    return ( vesting_shares.as_asset() - VEST_asset( sum_delayed_votes.value ) ).amount;
   }
 
   /// This function should be used only when the account votes for a witness directly

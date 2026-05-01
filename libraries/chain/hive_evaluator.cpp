@@ -491,7 +491,6 @@ void pow_apply( database& db, Operation o )
   else
   {
     actual_reward = db.create_vesting( inc_witness, pow_reward ).to_asset();
-    pow_reward.set_from_asset( HIVE_asset( 0 ) );
   }
   push_virtual_operation( db, pow_reward_operation( dgp.get_current_witness(), actual_reward ) );
 }
@@ -591,7 +590,6 @@ void pow2_evaluator::do_apply( const pow2_operation& o )
 
     const auto& inc_witness = db.get_account( dgp.get_current_witness() );
     VEST_asset actual_reward = db.create_vesting( inc_witness, inc_reward );
-    inc_reward.set_from_asset( HIVE_asset( 0 ) );
     push_virtual_operation( db, pow_reward_operation( dgp.get_current_witness(), actual_reward.to_asset() ) );
   }
 }

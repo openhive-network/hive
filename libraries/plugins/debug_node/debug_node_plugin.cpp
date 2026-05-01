@@ -305,24 +305,23 @@ void debug_node_plugin::debug_set_vest_price( const VEST_price& new_price,
 
   debug_update( [ this, vest_modifier, hive_modifier ]( chain::database& db )
   {
-    const hive::chain::account_object& miner_account = db.get_account( HIVE_INIT_MINER_NAME );
-    auto _update_initminer = [ &db, &vest_modifier, &miner_account ]()
+    hive::chain::temp_VEST_balance new_vests;
+    db.modify( db.get_dynamic_global_properties(), [&]( hive::chain::dynamic_global_property_object& p )
     {
-      /// If we increased vests pool, we need to put them to initminer account to avoid validate_invariants failure 
-      db.modify( miner_account, [ &vest_modifier ]( hive::chain::account_object& account )
+      new_vests = p.issue_VESTS( vest_modifier );
+      hive::chain::temp_HIVE_balance new_hive = p.issue_HIVE( hive_modifier );
+      p.access_total_vesting_fund_hive().transfer_from( new_hive );
+    } );
+    const hive::chain::account_object& miner_account = db.get_account( HIVE_INIT_MINER_NAME );
+    auto _update_initminer = [&]()
+    {
+      // new vests need to be put somewhere, on initminer account in this case
+      db.modify( miner_account, [&]( hive::chain::account_object& account )
       {
-        account.access_vesting() += vest_modifier;
+        account.access_vesting().transfer_from( new_vests );
       } );
     };
     db.rc().update_rc_for_custom_action( _update_initminer, miner_account );
-
-    db.modify( db.get_dynamic_global_properties(), [ &vest_modifier, &hive_modifier ]( hive::chain::dynamic_global_property_object& p )
-    {
-      p.access_total_vesting_shares() += vest_modifier;
-      p.access_total_vesting_fund_hive() += hive_modifier;
-      p.access_current_supply() += hive_modifier;
-      p.access_virtual_supply() += hive_modifier;
-    } );
   }, hive::chain::database::skip_nothing, transaction_id );
 
   ilog( "After modification: total_vesting_shares=${vest}, total_vesting_fund_hive=${hive}",

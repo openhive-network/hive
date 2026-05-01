@@ -154,7 +154,14 @@ void database::process_vesting_withdrawals()
       _votes_update_data_items = delayed_voting::votes_update_data_items();
     }
 
-    VEST_asset vests_deposited;
+    // ABW: in order to keep original order (and it matters) we need to first create vests to distribute,
+    // but in a way that won't change general vest price (therefore reward vests), process everything and
+    // only then pull vests to power down from from_account and burn them
+    temp_VEST_balance power_down_balance;
+    modify( cprops, [&]( dynamic_global_property_object& dgpo )
+    {
+      power_down_balance = dgpo.issue_VESTS( to_withdraw, true );
+    } );
 
     auto process_routing = [ &, this ]( bool auto_vest_mode )
     {
@@ -165,19 +172,24 @@ void database::process_vesting_withdrawals()
         if( !( auto_vest_mode ^ itr->auto_vest ) )
         {
           VEST_asset to_deposit( fc::uint128_to_int64( ( fc::uint128_t( to_withdraw.get_amount() ) * itr->percent ) / HIVE_100_PERCENT ) );
-          vests_deposited += to_deposit;
 
           if( to_deposit.amount > 0 )
           {
             const auto& to_account = get< account_object, by_name >( itr->to_account );
             bool to_self = to_account.get_id() == from_account.get_id();
 
-            VEST_asset routed_vests;
-            HIVE_asset routed_hive;
-            if( auto_vest_mode )
-              routed_vests = to_deposit;
-            else
-              routed_hive = to_deposit * cprops.get_vesting_share_price();
+            temp_VEST_balance routed_vest_balance;
+            temp_HIVE_balance routed_hive_balance;
+            routed_vest_balance.transfer_from( power_down_balance, to_deposit );
+            if( not auto_vest_mode )
+            {
+              modify( cprops, [&]( dynamic_global_property_object& dgpo )
+              {
+                routed_hive_balance = dgpo.convert_VESTS_to_HIVE( routed_vest_balance );
+              } );
+            }
+            VEST_asset routed_vests = routed_vest_balance.as_asset();
+            HIVE_asset routed_hive = routed_hive_balance.as_asset();
 
             auto vop = fill_vesting_withdraw_operation( from_account.get_name(), to_account.get_name(),
               to_deposit, auto_vest_mode ? routed_vests.to_asset() : routed_hive.to_asset() );
@@ -190,41 +202,25 @@ void database::process_vesting_withdrawals()
               {
                 if( has_hardfork( HIVE_HARDFORK_0_20 ) )
                   rc().regenerate_rc_mana( a, now );
-                a.access_vesting() += routed_vests;
+                a.access_vesting().transfer_from( routed_vest_balance );
+                if( has_hardfork( HIVE_HARDFORK_0_20 ) )
+                  rc().update_account_after_vest_change( a, now );
+
+                if( has_hardfork( HIVE_HARDFORK_1_24 ) )
+                {
+                  FC_ASSERT( dv.valid(), "The object processing `delayed votes` must exist" );
+                  dv->add_votes( _votes_update_data_items, to_self, routed_vests.amount, a );
+                }
+                else
+                {
+                  adjust_proxied_witness_votes( a, routed_vests.amount );
+                }
               }
               else
               {
-                temp_HIVE_balance hive_from_vesting;
-                hive_from_vesting.set_from_asset( routed_hive );
-                a.access_hive_balance().transfer_from( hive_from_vesting );
+                a.access_hive_balance().transfer_from( routed_hive_balance );
               }
             } );
-
-            if( auto_vest_mode )
-            {
-              if( has_hardfork( HIVE_HARDFORK_0_20 ) )
-                rc().update_account_after_vest_change( to_account, now );
-
-              if( has_hardfork( HIVE_HARDFORK_1_24 ) )
-              {
-                FC_ASSERT( dv.valid(), "The object processing `delayed votes` must exist" );
-
-                dv->add_votes( _votes_update_data_items, to_self,
-                  routed_vests.amount, to_account );
-              }
-              else
-              {
-                adjust_proxied_witness_votes( to_account, to_deposit.amount );
-              }
-            }
-            else
-            {
-              modify( cprops, [&]( dynamic_global_property_object& o )
-              {
-                o.access_total_vesting_fund_hive() -= routed_hive;
-                o.access_total_vesting_shares()    -= to_deposit;
-              });
-            }
 
             post_push_virtual_operation( *this, vop );
           }
@@ -236,10 +232,19 @@ void database::process_vesting_withdrawals()
     process_routing( true/*auto_vest_mode*/ );
     process_routing( false/*auto_vest_mode*/ );
 
-    VEST_asset to_convert = to_withdraw - vests_deposited;
-    FC_ASSERT( to_convert.amount >= 0, "Deposited more vests than were supposed to be withdrawn" );
+    // all vests remaining on power_down_balance are to be handled like implicit vesting route
+    // with auto_vest == false and from_account == to_account
+    VEST_asset to_convert = power_down_balance.as_asset();
+    temp_HIVE_balance converted_hive_balance;
+    if( not power_down_balance.is_empty() )
+    {
+      modify( cprops, [&]( dynamic_global_property_object& dgpo )
+      {
+        converted_hive_balance = dgpo.convert_VESTS_to_HIVE( power_down_balance );
+      } );
+    }
+    HIVE_asset converted_hive = converted_hive_balance.as_asset();
 
-    auto converted_hive = to_convert * cprops.get_vesting_share_price();
     auto vop = fill_vesting_withdraw_operation( from_account.get_name(), from_account.get_name(), to_convert, converted_hive.to_asset() );
     //note: it has to be generated even if to_convert is zero because we've accumulated change on from_account
     //and only now we are going to update that account's VESTS (see issue #337)
@@ -250,19 +255,13 @@ void database::process_vesting_withdrawals()
     if( has_hardfork( HIVE_HARDFORK_1_24 ) )
     {
       FC_ASSERT( dv.valid() && "The object processing `delayed votes` must exist" );
-
-      dv->add_votes( _votes_update_data_items, true,
-        -to_withdraw.amount, from_account );
+      dv->add_votes( _votes_update_data_items, true, -to_withdraw.amount, from_account );
     }
 
     modify( from_account, [&]( account_object& a )
     {
-      a.access_vesting() -= to_withdraw;
-      {
-        temp_HIVE_balance hive_from_vesting;
-        hive_from_vesting.set_from_asset( converted_hive );
-        a.access_hive_balance().transfer_from( hive_from_vesting );
-      }
+      a.access_vesting().transfer_to( power_down_balance, to_withdraw ); // return distributed vests to temporary balance
+      a.access_hive_balance().transfer_from( converted_hive_balance );
       a.withdrawn += to_withdraw;
 
       if( a.get_total_vesting_withdrawal().amount <= 0 || a.get_vesting().amount == 0 )
@@ -276,15 +275,15 @@ void database::process_vesting_withdrawals()
       {
         a.next_vesting_withdrawal += fc::seconds( HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS );
       }
-    });
+    } );
 
     if( has_hardfork( HIVE_HARDFORK_0_20 ) )
       rc().update_account_after_vest_change( from_account, now, true, true );
 
-    modify( cprops, [&]( dynamic_global_property_object& o )
+    // burn vests that were "borrowed from the void"
+    modify( cprops, [&]( dynamic_global_property_object& dgpo )
     {
-      o.access_total_vesting_fund_hive() -= converted_hive;
-      o.access_total_vesting_shares() -= to_convert;
+      dgpo.burn_VESTS( power_down_balance, true );
     } );
 
     if( has_hardfork( HIVE_HARDFORK_1_24 ) )

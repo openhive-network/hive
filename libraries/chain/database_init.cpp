@@ -273,24 +273,24 @@ void database::init_genesis()
     if( HIVE_INIT_SUPPLY != 0 || HIVE_HBD_INIT_SUPPLY != 0 )
     {
       HIVE_asset to_vest( HIVE_INITIAL_VESTING );
-      VEST_asset initial_vests( to_vest * HIVE_INITIAL_VESTING_PRICE );
 
       temp_HIVE_balance init_hive_balance;
       temp_HBD_balance init_hbd_balance;
+      temp_VEST_balance init_vest_balance;
       modify( dgpo, [&]( dynamic_global_property_object& gpo )
       {
         init_hive_balance = gpo.issue_HIVE( HIVE_asset( HIVE_INIT_SUPPLY ) );
         init_hbd_balance = gpo.issue_HBD( HBD_asset( HIVE_HBD_INIT_SUPPLY ), feed_history.current_median_history );
         gpo.access_initial_hbd_supply() = HBD_asset( HIVE_HBD_INIT_SUPPLY );
-        gpo.access_total_vesting_fund_hive() += to_vest;
-        gpo.access_total_vesting_shares() += initial_vests;
-        init_hive_balance.set_from_asset( init_hive_balance.as_asset() - to_vest );
+        temp_HIVE_balance to_be_vested;
+        to_be_vested.transfer_from( init_hive_balance, to_vest );
+        init_vest_balance = gpo.convert_HIVE_to_VESTS( to_be_vested, HIVE_INITIAL_VESTING_PRICE );
       } );
       modify( get_account( HIVE_INIT_MINER_NAME ), [&]( account_object& a )
       {
         a.access_hive_balance().transfer_from( init_hive_balance );
         a.access_hbd_balance().transfer_from( init_hbd_balance );
-        a.access_vesting() = initial_vests;
+        a.access_vesting().transfer_from( init_vest_balance );
       } );
       update_virtual_supply();
     }

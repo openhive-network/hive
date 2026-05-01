@@ -13,8 +13,8 @@ namespace hive { namespace chain {
     public:
       CHAINBASE_DEFAULT_CONSTRUCTOR( withdraw_vesting_route_object )
 
-      account_name_type from_account;
-      account_name_type to_account;
+      account_name_type from_account; // cannot be made into account_object_id because power down uses name order
+      account_name_type to_account; // cannot be made into account_object_id because power down uses name order
       uint16_t          percent = 0;
       bool              auto_vest = false;
 
