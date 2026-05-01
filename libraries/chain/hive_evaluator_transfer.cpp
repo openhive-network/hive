@@ -321,16 +321,15 @@ void transfer_to_vesting_evaluator::do_apply( const transfer_to_vesting_operatio
   */
   if( _db.has_hardfork( HIVE_HARDFORK_1_24 ) )
   {
-    amount_vested = _db.adjust_account_vesting_balance( to_account, vesting_funds.as_asset(), false/*to_reward_balance*/, []( VEST_asset vests_created ) {} );
+    amount_vested = _db.adjust_account_vesting_balance( to_account, vesting_funds, false, []( VEST_asset vests_created ) {} );
 
     delayed_voting dv( _db );
     dv.add_delayed_value( to_account, _db.head_block_time(), amount_vested.get_amount() );
   }
   else
   {
-    amount_vested = _db.create_vesting( to_account, vesting_funds.as_asset() );
+    amount_vested = _db.create_vesting( to_account, vesting_funds );
   }
-  vesting_funds.set_from_asset( HIVE_asset( 0 ) );
 
   /// Emit this vop unconditionally, since VESTS balance changed immediately, indepdenent to subsequent updates of account voting power done inside `delayed_voting` mechanism.
   push_virtual_operation( _db, transfer_to_vesting_completed_operation( from_account.get_name(), to_account.get_name(), o_amount, amount_vested ) );
@@ -682,6 +681,7 @@ void claim_reward_balance_evaluator::do_apply( const claim_reward_balance_operat
   _db.adjust_reward_balance( acnt, hbd_reward, -op_reward_hbd );
   _db.adjust_balance( acnt, hbd_reward, op_reward_hbd );
 
+  temp_HIVE_balance reward_vesting_hive_balance;
   _db.modify( acnt, [&]( account_object& a )
   {
     if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
@@ -690,9 +690,8 @@ void claim_reward_balance_evaluator::do_apply( const claim_reward_balance_operat
       _db.rc().regenerate_rc_mana( a, now );
     }
 
-    a.access_vesting() += op_reward_vests;
-    a.access_vest_rewards() -= op_reward_vests;
-    a.access_vest_rewards_as_hive() -= reward_vesting_hive_to_move;
+    a.access_vesting().transfer_from( a.access_vest_rewards(), op_reward_vests );
+    reward_vesting_hive_balance.transfer_from( a.access_vest_rewards_as_hive(), reward_vesting_hive_to_move );
   } );
   if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
     _db.rc().update_account_after_vest_change( acnt, now );
@@ -700,7 +699,7 @@ void claim_reward_balance_evaluator::do_apply( const claim_reward_balance_operat
   _db.modify( dgpo, [&]( dynamic_global_property_object& gpo )
   {
     gpo.access_total_vesting_shares() += op_reward_vests;
-    gpo.access_total_vesting_fund_hive() += reward_vesting_hive_to_move;
+    gpo.access_total_vesting_fund_hive().transfer_from( reward_vesting_hive_balance );
 
     gpo.access_pending_rewarded_vesting_shares() -= op_reward_vests;
     gpo.access_pending_rewarded_vesting_hive() -= reward_vesting_hive_to_move;

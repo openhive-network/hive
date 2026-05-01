@@ -38,6 +38,7 @@ public:
   protocol::curve_id get_author_reward_curve() const { return author_reward_curve; }
   protocol::curve_id get_curation_reward_curve() const { return curation_reward_curve; }
 
+  // reward fund is never removed so this routine should never be called
   void check_on_remove() const
   {
     FC_ASSERT( reward_balance.is_empty(), "Removing reward_fund_object with non-empty balance field" );

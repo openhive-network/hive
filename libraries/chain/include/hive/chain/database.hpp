@@ -500,12 +500,12 @@ namespace chain {
       uint32_t get_slot_at_time(fc::time_point_sec when)const;
 
       /** @return the HBD created and deposited to_account, may return HIVE if there is no median feed */
-      std::pair< HBD_asset, HIVE_asset > award_hbd( const account_object& to_account, temp_HIVE_balance& hive_balance, bool to_reward_balance=false );
+      std::pair< HBD_asset, HIVE_asset > award_hbd( const account_object& to_account, temp_HIVE_balance& hive_balance, bool is_reward );
 
       using Before = std::function< void( const VEST_asset& ) >;
-      VEST_asset adjust_account_vesting_balance( const account_object& to_account, const HIVE_asset& liquid, bool to_reward_balance, Before&& before_vesting_callback );
+      VEST_asset adjust_account_vesting_balance( const account_object& to_account, temp_HIVE_balance& liquid, bool is_reward, Before&& before_vesting_callback );
 
-      VEST_asset create_vesting( const account_object& to_account, const HIVE_asset& liquid, bool to_reward_balance=false );
+      VEST_asset create_vesting( const account_object& to_account, temp_HIVE_balance& liquid, bool is_reward = false );
 
       void adjust_liquidity_reward( const account_object& owner, const asset& volume, bool is_hbd );
 
@@ -522,7 +522,6 @@ namespace chain {
 
       void adjust_reward_balance( const account_object& a, HIVE_balance_base& hive_balance, const HIVE_asset& value_delta );
       void adjust_reward_balance( const account_object& a, HBD_balance_base& hbd_balance, const HBD_asset& value_delta );
-      void adjust_reward_balance( const account_object& a, const HIVE_asset& value_delta, const VEST_asset& share_delta );
 
       temp_HIVE_balance issue_mining_reward( const HIVE_asset& reward );
       void adjust_rshares2( fc::uint128_t old_rshares2, fc::uint128_t new_rshares2 );
@@ -722,8 +721,9 @@ namespace chain {
       void create_block_summary(const std::shared_ptr<full_block_type>& full_block);
 
       //calculates sum of all balances stored on given account, returns true if any is nonzero
-      bool collect_account_total_balance( const account_object& account, HIVE_asset* total_hive, HBD_asset* total_hbd,
-        VEST_asset* total_vests, HIVE_asset* vesting_shares_hive_value );
+      bool collect_account_total_balance( const account_object& account, HIVE_asset* total_hive, HBD_asset* total_hbd, VEST_asset* total_vests );
+      //liquifies vesting rewards held on given account returning liquid balance
+      temp_HIVE_balance liquify_reward_balance( const account_object& account );
       //removes (burns) balances held on null account
       void clear_null_account_balance();
       //moves balances from old treasury account to current one

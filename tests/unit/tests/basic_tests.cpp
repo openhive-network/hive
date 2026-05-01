@@ -1132,7 +1132,7 @@ BOOST_AUTO_TEST_CASE( decoding_types_mechanism_test )
     We should have new types like: hive::protocol::public_key_type (reflected) and hive::chain::account_object (reflected).
   */
   dtds.register_new_type<hive::chain::account_object>();
-  BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 30 );
+  BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 31 );
   {
     const hive::chain::util::decoded_type_data& decoded_public_key_type = dtds.get_decoded_type_data<hive::protocol::public_key_type>();
 
@@ -1166,19 +1166,19 @@ BOOST_AUTO_TEST_CASE( decoding_types_mechanism_test )
     BOOST_CHECK_EQUAL( decoded_account_object.members->size(), 58 );
   }
 
-  BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 30 ); // decoded types map size shouldn't change.
+  BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 31 ); // decoded types map size shouldn't change.
 
   BOOST_CHECK_NO_THROW(dtds.register_new_type<fc::static_variant<>>());
-  BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 31 );
-  BOOST_CHECK_NO_THROW(dtds.register_new_type<fc::static_variant<int>>());
   BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 32 );
+  BOOST_CHECK_NO_THROW(dtds.register_new_type<fc::static_variant<int>>());
+  BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 33 );
   BOOST_CHECK_NO_THROW((dtds.register_new_type<fc::static_variant<fc::erpair<fc::sha256, long>, fc::erpair<double, long double>, fc::erpair<float, long>>>()));
-  BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 37 );
+  BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 38 );
   BOOST_CHECK_NO_THROW(dtds.register_new_type<fc::sha256>());
-  BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 37 );
+  BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 38 );
   {
     BOOST_CHECK_NO_THROW(dtds.register_new_type<hive::void_t>());
-    BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 38 );
+    BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 39 );
     const hive::chain::util::decoded_type_data& decoded_hive_void_t =dtds.get_decoded_type_data<hive::void_t>();
     BOOST_CHECK( decoded_hive_void_t.reflected );
     BOOST_CHECK( !decoded_hive_void_t.enum_values );
@@ -1510,7 +1510,7 @@ BOOST_AUTO_TEST_CASE( chain_object_checksum )
 {
   hive::chain::util::decoded_types_data_storage dtds;
 
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::account_object>(dtds), "9c9dfa27df75b6a6092547674ab3f851be249e17" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::account_object>(dtds), "68bef721194d58112110fba1b848ee7fdae451e7" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::account_authority_object>(dtds), "e492c85b420461ce856b14b80edb3649e4996d86" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::vesting_delegation_object>(dtds), "2c140c595e4a83e6aab21cb3090816206b07a5ad" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::vesting_delegation_expiration_object>(dtds), "cf8a309d076970b83c8e7ada88b01277a43dc726" );
@@ -1546,7 +1546,7 @@ BOOST_AUTO_TEST_CASE( chain_object_checksum )
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::rc_usage_bucket_object>(dtds), "64fed99b3018ca29394f48592aec3a0a2a04ff28" );
 
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::comment_cashout_object>(dtds), "38b356fdf295b2a709ac9d77b94fbe0fcd3c9267" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::dynamic_global_property_object>(dtds), "96fed98203c7f7d6f241ecd5cf7718d7c29832de" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::dynamic_global_property_object>(dtds), "4f0a890f53fd55b8ae173cfa9e23fea4e54b2453" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::rc_stats_object>(dtds), "5ecebd9e709ff9f511dc2600e72c071e022223ca" );
 
 }

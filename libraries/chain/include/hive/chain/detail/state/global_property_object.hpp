@@ -75,13 +75,25 @@ public:
   const HIVE_asset& get_total_vesting_fund_hive() const { return total_vesting_fund_hive; }
   //amount of VESTS produced from HIVE held in normal vested fund
   const VEST_asset& get_total_vesting_shares() const { return total_vesting_shares; }
+  //issues a specified amount of VESTS - used internally, also for use in debug plugin and unit tests (used f.e. for initial vest price stabilization)
+  inline temp_VEST_balance issue_VESTS( const VEST_asset& vest_amount, bool is_reward = false );
+  //burns all VESTS on given balance - used internally, also for clearing null
+  inline void burn_VESTS( temp_VEST_balance& vest_balance, bool is_reward = false );
+  //creates new VESTS out of all HIVE on given balance, HIVE is moved to total_vesting_fund_hive if not is_reward
+  inline temp_VEST_balance convert_HIVE_to_VESTS( temp_HIVE_balance& hive_balance, bool is_reward = false );
+  //creates new VESTS out of all HIVE on given balance (with use of passed price), HIVE is moved to total_vesting_fund_hive if not is_reward
+  inline temp_VEST_balance convert_HIVE_to_VESTS( temp_HIVE_balance& hive_balance, const VEST_price& vest_price, bool is_reward = false );
+  //burns all VESTS on given balance and gives out associated HIVE from total_vesting_fund_hive
+  temp_HIVE_balance convert_VESTS_to_HIVE( temp_VEST_balance& vest_balance ) { return convert_VESTS_to_HIVE( vest_balance, get_vesting_share_price() ); }
+  //burns all VESTS on given balance (with use of passed price) and gives out associated HIVE from total_vesting_fund_hive
+  inline temp_HIVE_balance convert_VESTS_to_HIVE( temp_VEST_balance& vest_balance, const VEST_price& vest_price );
 
-  HIVE_asset& access_total_vesting_fund_hive() { return total_vesting_fund_hive; } //TODO: should not be needed when convert is defined and used
+  HIVE_balance& access_total_vesting_fund_hive() { return total_vesting_fund_hive; } //TODO: should not be needed when convert is defined and used
   VEST_asset& access_total_vesting_shares() { return total_vesting_shares; } //TODO: should not be needed when convert is defined and used
 
   VEST_price get_vesting_share_price() const
   {
-    if ( total_vesting_fund_hive.amount == 0 || total_vesting_shares.amount == 0 )
+    if ( total_vesting_fund_hive.is_empty() || total_vesting_shares.amount == 0 )
       return VEST_price( 1000000, 1000 );
     return VEST_price( total_vesting_shares, total_vesting_fund_hive );
   }
@@ -97,7 +109,7 @@ public:
   VEST_price get_reward_vesting_share_price() const
   {
     return VEST_price( total_vesting_shares + pending_rewarded_vesting_shares,
-      total_vesting_fund_hive + pending_rewarded_vesting_hive );
+      total_vesting_fund_hive.as_asset() + pending_rewarded_vesting_hive );
   }
 
   const HBD_asset& get_dhf_interval_ledger() const { return dhf_interval_ledger; }
@@ -183,6 +195,12 @@ public:
   void set_min_recurrent_transfers_recurrence( uint8_t value ) { min_recurrent_transfers_recurrence = value; }
   void set_max_open_recurrent_transfers( uint16_t value ) { max_open_recurrent_transfers = value; }
 
+  // dgpo is never removed so this routine should never be called
+  void check_on_remove() const
+  {
+    FC_ASSERT( total_vesting_fund_hive.is_empty(), "Removing dgpo with non-empty balance field" );
+  }
+
 private:
   uint32_t          head_block_number = 0;
   block_id_type     head_block_id;
@@ -195,14 +213,14 @@ private:
   //The current count of how many pending POW witnesses there are, determines the difficulty of doing pow
   uint32_t num_pow_witnesses = 0;
 
-  HIVE_asset  virtual_supply;
-  HIVE_asset  current_supply;
-  HBD_asset   init_hbd_supply;
-  HBD_asset   current_hbd_supply;
-  HIVE_asset  total_vesting_fund_hive;
-  VEST_asset  total_vesting_shares;
-  VEST_asset  pending_rewarded_vesting_shares;
-  HIVE_asset  pending_rewarded_vesting_hive;
+  HIVE_asset   virtual_supply;
+  HIVE_asset   current_supply;
+  HBD_asset    init_hbd_supply;
+  HBD_asset    current_hbd_supply;
+  HIVE_balance total_vesting_fund_hive;
+  VEST_asset   total_vesting_shares;
+  VEST_asset   pending_rewarded_vesting_shares;
+  HIVE_asset   pending_rewarded_vesting_hive; // not a balance, just total sum of account_object::reward_vesting_hive
 
   uint16_t hbd_interest_rate = 0;
   uint16_t hbd_print_rate = HIVE_100_PERCENT;
@@ -327,6 +345,54 @@ inline temp_HBD_balance dynamic_global_property_object::convert_HIVE_to_HBD( tem
   if( full_update_virtual_supply )
     virtual_supply = current_hbd_supply * exchange_rate + current_supply;
   return hbd_balance;
+}
+
+inline temp_VEST_balance dynamic_global_property_object::issue_VESTS( const VEST_asset& vest_amount, bool is_reward )
+{
+  temp_VEST_balance vest_balance;
+  vest_balance.issue_asset( vest_amount );
+  if( is_reward )
+    pending_rewarded_vesting_shares += vest_amount;
+  else
+    total_vesting_shares += vest_amount;
+  return vest_balance;
+}
+
+inline void dynamic_global_property_object::burn_VESTS( temp_VEST_balance& vest_balance, bool is_reward )
+{
+  const VEST_asset& vest_amount = vest_balance;
+  if( is_reward )
+    pending_rewarded_vesting_shares -= vest_amount;
+  else
+    total_vesting_shares -= vest_amount;
+  vest_balance.burn_asset( vest_amount );
+}
+
+inline temp_VEST_balance dynamic_global_property_object::convert_HIVE_to_VESTS( temp_HIVE_balance& hive_balance, bool is_reward )
+{
+  VEST_price vest_price = is_reward ? get_reward_vesting_share_price() : get_vesting_share_price();
+  return convert_HIVE_to_VESTS( hive_balance, vest_price, is_reward );
+}
+
+inline temp_VEST_balance dynamic_global_property_object::convert_HIVE_to_VESTS( temp_HIVE_balance& hive_balance, const VEST_price& vest_price, bool is_reward )
+{
+  const HIVE_asset& hive_amount = hive_balance;
+  VEST_asset vest_amount = hive_amount * vest_price;
+  if( is_reward )
+    pending_rewarded_vesting_hive += hive_amount;
+  else
+    total_vesting_fund_hive.transfer_from( hive_balance );
+  return issue_VESTS( vest_amount, is_reward );
+}
+
+inline temp_HIVE_balance dynamic_global_property_object::convert_VESTS_to_HIVE( temp_VEST_balance& vest_balance, const VEST_price& vest_price )
+{
+  temp_HIVE_balance hive_balance;
+  const VEST_asset& vest_amount = vest_balance;
+  HIVE_asset hive_amount = vest_amount * vest_price;
+  hive_balance.transfer_from( total_vesting_fund_hive, hive_amount );
+  burn_VESTS( vest_balance );
+  return hive_balance;
 }
 
 } } // hive::chain

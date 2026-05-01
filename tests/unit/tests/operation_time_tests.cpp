@@ -2871,23 +2871,24 @@ BOOST_AUTO_TEST_CASE( clear_null_account )
 
     db_plugin->debug_update( [=]( database& db )
     {
-      temp_HIVE_balance new_hive;
+      temp_HIVE_balance new_hive, reward_as_hive;
       temp_HBD_balance new_hbd;
+      temp_VEST_balance reward_vests;
       db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
       {
         new_hive = gpo.issue_HIVE( HIVE_asset( 2'000 ) );
         new_hbd = gpo.issue_HBD( HBD_asset( 1'000 ), db.get_hbd_price() );
-        gpo.access_pending_rewarded_vesting_shares() += VEST_asset( 1'000'000 );
-        gpo.access_pending_rewarded_vesting_hive() += HIVE_asset( 1'000 );
-        new_hive.set_from_asset( new_hive.as_asset() - HIVE_asset( 1'000 ) );
+        reward_vests = gpo.issue_VESTS( VEST_asset( 1'000'000 ), true );
+        reward_as_hive.transfer_from( new_hive, HIVE_asset( 1'000 ) );
+        gpo.access_pending_rewarded_vesting_hive() += reward_as_hive.as_asset();
       } );
 
       db.modify( db.get_account( HIVE_NULL_ACCOUNT ), [&]( account_object& a )
       {
         a.access_hive_rewards().transfer_from( new_hive );
         a.access_hbd_rewards().transfer_from( new_hbd );
-        a.access_vest_rewards() = VEST_asset( 1'000'000 );
-        a.access_vest_rewards_as_hive() = HIVE_asset( 1'000 );
+        a.access_vest_rewards().transfer_from( reward_vests );
+        a.access_vest_rewards_as_hive().transfer_from( reward_as_hive );
       } );
     } );
 

@@ -1767,13 +1767,15 @@ BOOST_AUTO_TEST_CASE( withdraw_vesting_apply )
       db.modify( wso, [&]( witness_schedule_object& w )
       {
         w.median_props.account_creation_fee = HIVE_asset( 10'000 );
-      });
+      } );
 
       db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
       {
-        gpo.access_current_supply() += wso.median_props.account_creation_fee - HIVE_asset( 1 ) - gpo.get_total_vesting_fund_hive();
-        gpo.access_total_vesting_fund_hive() = wso.median_props.account_creation_fee - HIVE_asset( 1 );
-      });
+        temp_HIVE_balance hive_to_burn;
+        gpo.access_total_vesting_fund_hive().transfer_to( hive_to_burn,
+          gpo.get_total_vesting_fund_hive() - wso.median_props.account_creation_fee + HIVE_asset( 1 ) );
+        gpo.burn_HIVE( hive_to_burn );
+      } );
 
       db.update_virtual_supply();
     } );
@@ -7372,23 +7374,24 @@ BOOST_AUTO_TEST_CASE( claim_reward_balance_apply )
 
     db_plugin->debug_update( []( database& db )
     {
-      temp_HIVE_balance hive;
+      temp_HIVE_balance hive, reward_as_hive;
       temp_HBD_balance hbd;
+      temp_VEST_balance reward_vests;
       db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& gpo )
       {
         hive = gpo.issue_HIVE( HIVE_asset( 20'000 ) );
         hbd = gpo.issue_HBD( HBD_asset( 10'000 ), db.get_hbd_price() );
-        gpo.access_pending_rewarded_vesting_shares() += VEST_asset( 10'000'000 );
-        gpo.access_pending_rewarded_vesting_hive() += HIVE_asset( 10'000 );
-        hive.set_from_asset( hive.as_asset() - HIVE_asset( 10'000 ) );
+        reward_vests = gpo.issue_VESTS( VEST_asset( 10'000'000 ), true );
+        reward_as_hive.transfer_from( hive, HIVE_asset( 10'000 ) );
+        gpo.access_pending_rewarded_vesting_hive() += reward_as_hive.as_asset();
       } );
 
       db.modify( db.get_account( "alice" ), [&]( account_object& a )
       {
         a.access_hive_rewards().transfer_from( hive, HIVE_asset( 10'000 ) );
         a.access_hbd_rewards().transfer_from( hbd, HBD_asset( 10'000 ) );
-        a.access_vest_rewards() = VEST_asset( 10'000'000 );
-        a.access_vest_rewards_as_hive() = HIVE_asset( 10'000 );
+        a.access_vest_rewards().transfer_from( reward_vests );
+        a.access_vest_rewards_as_hive().transfer_from( reward_as_hive );
       } );
     } );
 
