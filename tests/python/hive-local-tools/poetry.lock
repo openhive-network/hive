@@ -633,21 +633,21 @@ reference = "gitlab-hive"
 
 [[package]]
 name = "hiveio-test-tools"
-version = "2.0.2.post20260403121416"
+version = "2.0.2.post20260511170517"
 description = "Tools for testing hive software"
 optional = false
 python-versions = ">=3.12,<4"
 groups = ["main"]
 files = [
-    {file = "hiveio_test_tools-2.0.2.post20260403121416-py3-none-any.whl", hash = "sha256:a6223265b491f4bb589c80537f823814e28d987a9dcba786cdeff0090965c590"},
+    {file = "hiveio_test_tools-2.0.2.post20260511170517-py3-none-any.whl", hash = "sha256:4a0f920fb2a0d6ee77da685cc864d88bdc90152ba54911502c194a6b97969e5a"},
 ]
 
 [package.dependencies]
 abstractcp = ">=1.0.0,<2.0.0"
 hiveio-api = ">=1.28.8rc12.dev0"
-hiveio-beekeepy = ">=1.28.6-post.0,<2.0.0"
+hiveio-beekeepy = ">=1.28.6.dev0,<2.0.0"
 hiveio-schemas = ">=1.28.2-post.0,<2.0.0"
-hiveio-wax = "2.0.2.post20260403121416"
+hiveio-wax = "2.0.2.post20260511170517"
 loguru = ">=0.7.2,<0.8.0"
 msgspec = ">=0.20.0,<0.21.0"
 python-dateutil = ">=2.8.2,<3.0.0"
@@ -659,14 +659,14 @@ reference = "gitlab-hive"
 
 [[package]]
 name = "hiveio-wax"
-version = "2.0.2.post20260403121416"
+version = "2.0.2.post20260511170517"
 description = ""
 optional = false
 python-versions = ">=3.12,<4"
 groups = ["main"]
 files = [
-    {file = "hiveio_wax-2.0.2.post20260403121416-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:b14ef112edc098f4bec9417c9b644c73d9670853705e3d499b995cd4dd545288"},
-    {file = "hiveio_wax-2.0.2.post20260403121416-cp314-cp314-manylinux_2_28_x86_64.whl", hash = "sha256:f4e58b0d8dfd1bd841c7b97a7c1a0c99c803686d7a891aa8148f7bbbe22d1d34"},
+    {file = "hiveio_wax-2.0.2.post20260511170517-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:1d8865da5199208089cf11aa9fd0e298570b3923aecdbfcfb9a4d1b2029c61c0"},
+    {file = "hiveio_wax-2.0.2.post20260511170517-cp314-cp314-manylinux_2_28_x86_64.whl", hash = "sha256:c980fc1b8f0396be26dc6d6bf58070c622e939e7255087a99282ae8e2aa3dcc0"},
 ]
 
 [package.dependencies]
@@ -2268,4 +2268,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.14,<4"
-content-hash = "b5577b1a33675bba6c1a7c7c565cf4cfc45067943cdaac8bb2c61363f1b17645"
+content-hash = "e80938d3a9b1426f0684e1be1874c9870976743514eaa4510f0e639fe55775dc"
