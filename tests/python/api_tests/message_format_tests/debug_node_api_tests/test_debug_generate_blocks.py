@@ -8,7 +8,7 @@ from hive_local_tools import run_for
 @run_for("testnet")
 def test_debug_generate_blocks(node: tt.InitNode) -> None:
     head_block_number_before_generation_of_blocks = (
-        node.api.wallet_bridge.get_dynamic_global_properties().head_block_number
+        node.api.database.get_dynamic_global_properties().head_block_number
     )
     blocks_to_generate = 100
     node.api.debug_node.debug_generate_blocks(

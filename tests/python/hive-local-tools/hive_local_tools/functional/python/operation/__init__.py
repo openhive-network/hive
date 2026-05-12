@@ -214,7 +214,8 @@ class Account:
 
         last_unlock_date = max([  # noqa: C419
             tt.Time.parse(delay_vote.time, time_zone=timezone.utc)
-            for delay_vote in self._node.api.database.find_accounts(accounts=[self._acc_info.name])
+            for delay_vote in self._node.api.database
+            .find_accounts(accounts=[self._acc_info.name])
             .accounts[0]
             .delayed_votes
         ])
@@ -320,9 +321,9 @@ class _RcManabar(_BaseManabar):
                 assert actual_max_rc_mana > self.max_mana, error_message
 
     def assert_current_mana_is_unchanged(self) -> None:
-        assert (
-            get_rc_current_mana(self._node, self._name) == self.current_mana
-        ), f"The {self._name} account rc_current_mana has been changed."
+        assert get_rc_current_mana(self._node, self._name) == self.current_mana, (
+            f"The {self._name} account rc_current_mana has been changed."
+        )
 
 
 class _VoteManabarBase(_BaseManabar):
@@ -474,7 +475,7 @@ def get_vesting_price(node: tt.InitNode) -> int:
     """
     Current exchange rate - `1` Hive to Vest conversion price.
     """
-    dgpo = node.api.wallet_bridge.get_dynamic_global_properties()
+    dgpo = node.api.database.get_dynamic_global_properties()
     total_vesting_shares = dgpo.total_vesting_shares.amount
     total_vesting_fund_hive = dgpo.total_vesting_fund_hive.amount
 

@@ -13,6 +13,6 @@ def test_debug_generate_blocks_until(node: tt.InitNode) -> None:
         generate_sparsely="false",
     )
     head_block_number_after_generation_of_blocks = (
-        node.api.wallet_bridge.get_dynamic_global_properties().head_block_number
+        node.api.database.get_dynamic_global_properties().head_block_number
     )
     assert 21 <= head_block_number_after_generation_of_blocks <= 22
