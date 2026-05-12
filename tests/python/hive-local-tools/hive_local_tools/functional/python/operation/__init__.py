@@ -214,8 +214,7 @@ class Account:
 
         last_unlock_date = max([  # noqa: C419
             tt.Time.parse(delay_vote.time, time_zone=timezone.utc)
-            for delay_vote in self._node.api.database
-            .find_accounts(accounts=[self._acc_info.name])
+            for delay_vote in self._node.api.database.find_accounts(accounts=[self._acc_info.name])
             .accounts[0]
             .delayed_votes
         ])
@@ -321,9 +320,9 @@ class _RcManabar(_BaseManabar):
                 assert actual_max_rc_mana > self.max_mana, error_message
 
     def assert_current_mana_is_unchanged(self) -> None:
-        assert get_rc_current_mana(self._node, self._name) == self.current_mana, (
-            f"The {self._name} account rc_current_mana has been changed."
-        )
+        assert (
+            get_rc_current_mana(self._node, self._name) == self.current_mana
+        ), f"The {self._name} account rc_current_mana has been changed."
 
 
 class _VoteManabarBase(_BaseManabar):

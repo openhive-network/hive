@@ -43,7 +43,7 @@ def run_for_all_cases(**assets: tt.Asset.AnyT):
         )
 
         @pytest.mark.parametrize(  # noqa: RET503
-            f'description, formats_matches, prepared_wallet{"".join([f", {key}" for key in assets])}',
+            f"description, formats_matches, prepared_wallet{''.join([f', {key}' for key in assets])}",
             [
                 ("legacy wallet and legacy assets (matched)", True, "legacy", *__serialize_legacy(assets.values())),
                 ("modern wallet and modern assets (matched)", True, "modern", *__serialize_modern(assets.values())),
