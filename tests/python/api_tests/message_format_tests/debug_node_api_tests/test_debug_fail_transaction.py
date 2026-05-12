@@ -43,12 +43,12 @@ def test_debug_fail_transaction() -> None:
             # THEN
             # Non-failing transaction passes
             node.api.network_broadcast.broadcast_transaction(trx=tx_to_pass)
-            head_block_number = node.api.wallet_bridge.get_dynamic_global_properties().head_block_number
+            head_block_number = node.api.database.get_dynamic_global_properties().head_block_number
             assert head_block_number == 2
 
             # failing transaction was not applied with newly produced bloc
             node.api.network_broadcast.broadcast_transaction(trx=tx_to_fail)
-            head_block_number = node.api.wallet_bridge.get_dynamic_global_properties().head_block_number
+            head_block_number = node.api.database.get_dynamic_global_properties().head_block_number
             assert head_block_number == 2
 
             # Test passed, exit retry loop
