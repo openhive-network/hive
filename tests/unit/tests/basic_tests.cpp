@@ -2513,7 +2513,7 @@ BOOST_AUTO_TEST_CASE( balance_transfer )
           e1.access_fee().transfer_from( e2.access_hive_balance(), HIVE_asset( 200 ) );
         } );
       } );
-    }, "symbol == o.symbol && \"asset symbol mismatch +=\"" );
+    }, "symbol == o.symbol && \"operator+=\"" );
   }
 
   // check transfer_from( cross_class )
@@ -2918,7 +2918,7 @@ BOOST_AUTO_TEST_CASE( balance_transfer )
           e1.access_fee().transfer_to( e2.access_hive_balance(), HIVE_asset( 200 ) );
         } );
       } );
-    }, "symbol == o.symbol && \"asset symbol mismatch -=\"" );
+    }, "symbol == o.symbol && \"operator-=\"" );
   }
 
   // check transfer_to( cross_class )
