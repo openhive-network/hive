@@ -3365,7 +3365,7 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_authorities )
     tx.operations.clear();
     tx.operations.push_back( op );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    HIVE_REQUIRE_ASSERT( push_transaction( tx, alice_private_key ), "!fhistory.current_median_history.is_null()" );
+    HIVE_REQUIRE_ASSERT( push_transaction( tx, alice_private_key ), "!exchange_rate.is_null()" );
 
     validate_database();
   }
