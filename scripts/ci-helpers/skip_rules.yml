@@ -82,6 +82,13 @@ variables:
       if echo "$CHANGED_FILES" | grep -qE "$SOURCE_PATTERN"; then
         SOURCE_CHANGED="true"
       fi
+      # tests/unit/ contains C++ sources compiled into the chain_test binary,
+      # so changes there require rebuilding even though they live under tests/.
+      # Kept here rather than in source-patterns.sh because downstream consumers
+      # of that file (hived image lookup, clive) do not care about chain_test.
+      if echo "$CHANGED_FILES" | grep -qE '^tests/unit/'; then
+        SOURCE_CHANGED="true"
+      fi
 
       # Check if tests changed
       TESTS_CHANGED="false"

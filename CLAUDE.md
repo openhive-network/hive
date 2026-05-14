@@ -393,18 +393,21 @@ The CI automatically optimizes pipeline execution based on what files changed. T
 | Changed Files | Build Jobs | Test Jobs | Notes |
 |--------------|------------|-----------|-------|
 | `doc/**`, `*.md` only | Skipped | Skipped | Docs-only changes |
-| `tests/**` only | Skipped | Run | Uses cached binaries via `quick_test_setup` |
+| `tests/python/**`, `tests/integration/**` only | Skipped | Run | Uses cached binaries via `quick_test_setup` |
+| `tests/unit/**` (any) | Run | Run | C++ sources compiled into `chain_test` — treated as source change |
 | `libraries/**`, `programs/**` | Run | Run | Source code changes |
 | `scripts/**`, `.gitlab-ci.yaml` | Run | Run | CI/scripts changes |
 
 **How test-only optimization works:**
 1. `detect_changes` job analyzes what files changed
-2. If only `tests/**` changed (no source code):
+2. If only non-compiled test files changed (e.g., `tests/python/**`, `tests/integration/**`) and no source code:
    - Queries registry API to verify cached binaries exist
    - If cache exists: sets `TESTS_ONLY=true`, skips builds
    - If no cache: runs full build (self-healing fallback)
 3. `quick_test_setup` fetches cached binaries when `TESTS_ONLY=true`
 4. Test jobs run using the cached binaries
+
+Note: changes under `tests/unit/**` are deliberately classified as source changes because those `.cpp` files are compiled into the `chain_test` binary — skipping the build would run tests against a stale binary.
 
 **Override variables:**
 - `FORCE_FULL_PIPELINE=true` - Run all jobs regardless of changes
