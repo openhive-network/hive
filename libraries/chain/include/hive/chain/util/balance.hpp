@@ -195,7 +195,8 @@ inline void balance_base::transfer_from( balance_base& source, const asset& delt
 {
   funds += delta;
   source.funds -= delta;
-  FC_ASSERT( is_valid() && source.is_valid() && "transfer asset to balance", "balance underflow" );
+  HIVE_CHAIN_BALANCE_ASSERT( is_valid() && source.is_valid() && "transfer asset to balance",
+    delta, "balance underflow", ( "destination", funds )( "source", source.funds ) );
 }
 
 template< uint32_t _SYMBOL >
@@ -203,7 +204,8 @@ inline void balance_base::transfer_from( tiny_balance_base< _SYMBOL >& source, c
 {
   this->funds += delta.to_asset();
   source.funds -= delta;
-  FC_ASSERT( this->is_valid() && source.is_valid() && "transfer tiny_asset to balance", "balance underflow" );
+  HIVE_CHAIN_BALANCE_ASSERT( this->is_valid() && source.is_valid() && "transfer tiny_asset to balance",
+    delta, "balance underflow", ( "destination", this->funds )( "source", source.funds ) );
 }
 
 inline void balance_base::transfer_from( balance_base& source )
@@ -244,7 +246,8 @@ inline void tiny_balance_base< _SYMBOL >::transfer_from( balance_base& source, c
 {
   this->funds += matching_asset( delta );
   source.funds -= delta;
-  FC_ASSERT( this->is_valid() && source.is_valid() && "transfer asset to tiny_balance", "balance underflow" );
+  HIVE_CHAIN_BALANCE_ASSERT( this->is_valid() && source.is_valid() && "transfer asset to tiny_balance",
+    delta, "balance underflow", ( "destination", this->funds )( "source", source.funds ) );
 }
 
 template< uint32_t _SYMBOL >
@@ -252,7 +255,8 @@ inline void tiny_balance_base< _SYMBOL >::transfer_from( tiny_balance_base& sour
 {
   this->funds += delta;
   source.funds -= delta;
-  FC_ASSERT( this->is_valid() && source.is_valid() && "transfer tiny_asset to tiny_balance", "balance underflow" );
+  HIVE_CHAIN_BALANCE_ASSERT( this->is_valid() && source.is_valid() && "transfer tiny_asset to tiny_balance",
+    delta, "balance underflow", ( "destination", this->funds )( "source", source.funds ) );
 }
 
 /**
@@ -318,7 +322,7 @@ public:
   temp_balance( temp_balance&& b ) = default;
   temp_balance& operator=( temp_balance&& b )
   {
-    FC_ASSERT( is_empty() && "temp_balance move assign", "Destruction of funds" );
+    HIVE_CHAIN_BALANCE_ASSERT( is_empty() && "temp_balance move assign", funds, "Destruction of funds" );
     balance_base::operator=( std::move( b ) );
     return *this;
   }
@@ -326,7 +330,7 @@ public:
   ~temp_balance() noexcept( false )
   {
     if( std::uncaught_exceptions() == 0 )
-      FC_ASSERT( is_empty() && "temp_balance", "Destruction of funds" );
+      HIVE_CHAIN_BALANCE_ASSERT( is_empty() && "temp_balance", funds, "Destruction of funds" );
   }
 
   // can set or clear balance with arbitrary value; temporary - to be removed once balance_object.md task is fully done
@@ -347,15 +351,15 @@ class temp_tiny_balance final : public tiny_balance_base< _SYMBOL >
   // creates asset out of thin air (remember to update total counters in dgpo after call)
   void issue_asset( const matching_asset& a )
   {
-    FC_ASSERT( a.amount >= 0 && "issue", "Can't issue negative funds" );
+    HIVE_CHAIN_ASSET_ASSERT( a.amount >= 0 && "issue", a, "Can't issue negative funds" );
     this->funds += a;
   }
   // burns asset into void (remember to update total counters in dgpo after call)
   void burn_asset( const matching_asset& a )
   {
-    FC_ASSERT( a.amount >= 0 && "burn", "Can't burn negative funds" );
+    HIVE_CHAIN_ASSET_ASSERT( a.amount >= 0 && "burn", a, "Can't burn negative funds" );
     this->funds -= a;
-    FC_ASSERT( this->is_valid(), "Balance underflow" );
+    HIVE_CHAIN_BALANCE_ASSERT( this->is_valid(), a, "Balance underflow", ( "balance", this->funds ) );
   }
 
   temp_tiny_balance( const temp_tiny_balance& ) = delete;
@@ -367,7 +371,7 @@ public:
   temp_tiny_balance( temp_tiny_balance&& b ) = default;
   temp_tiny_balance& operator=( temp_tiny_balance&& b )
   {
-    FC_ASSERT( this->is_empty() && "temp_tiny_balance move assign", "Destruction of funds" );
+    HIVE_CHAIN_BALANCE_ASSERT( this->is_empty() && "temp_tiny_balance move assign", this->funds, "Destruction of funds" );
     tiny_balance_base< _SYMBOL >::operator=( std::move( b ) );
     return *this;
   }
@@ -375,7 +379,7 @@ public:
   ~temp_tiny_balance() noexcept( false )
   {
     if( std::uncaught_exceptions() == 0 )
-      FC_ASSERT( this->is_empty() && "temp_tiny_balance", "Destruction of funds" );
+      HIVE_CHAIN_BALANCE_ASSERT( this->is_empty() && "temp_tiny_balance", this->funds, "Destruction of funds" );
   }
 
   // can set or clear balance with arbitrary value; temporary - to be removed once balance_object.md task is fully done
