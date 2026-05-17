@@ -275,6 +275,7 @@ void database::apply_hardfork( uint32_t hardfork )
 
         modify( get_reward_fund(), [&]( reward_fund_object& rfo )
         {
+          rfo.access_last_update() = head_block_time();
 #ifndef IS_TEST_NET
           rfo.access_recent_claims() = HIVE_HF_17_RECENT_CLAIMS;
 #endif
