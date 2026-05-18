@@ -509,19 +509,19 @@ namespace chain {
 
       void adjust_liquidity_reward( const account_object& owner, const asset& volume, bool is_hbd );
 
-      void adjust_balance( const account_object& a, balance_base& any_balance, const asset& delta );
-      void adjust_balance( const account_object& a, HIVE_balance_base& hive_balance, const HIVE_asset& delta );
-      void adjust_balance( const account_object& a, HBD_balance_base& hbd_balance, const HBD_asset& delta );
-      void adjust_balance( const account_name_type& name, balance_base& any_balance, const asset& delta ) { adjust_balance( get_account( name ), any_balance, delta ); }
-      void adjust_balance( const account_name_type& name, HIVE_balance_base& hive_balance, const HIVE_asset& delta ) { adjust_balance( get_account( name ), hive_balance, delta ); }
-      void adjust_balance( const account_name_type& name, HBD_balance_base& hbd_balance, const HBD_asset& delta ) { adjust_balance( get_account( name ), hbd_balance, delta ); }
+      void adjust_balance( const account_object& a, temp_balance& any_balance, const asset& delta );
+      void adjust_balance( const account_object& a, temp_HIVE_balance& hive_balance, const HIVE_asset& delta );
+      void adjust_balance( const account_object& a, temp_HBD_balance& hbd_balance, const HBD_asset& delta );
+      void adjust_balance( const account_name_type& name, temp_balance& any_balance, const asset& delta ) { adjust_balance( get_account( name ), any_balance, delta ); }
+      void adjust_balance( const account_name_type& name, temp_HIVE_balance& hive_balance, const HIVE_asset& delta ) { adjust_balance( get_account( name ), hive_balance, delta ); }
+      void adjust_balance( const account_name_type& name, temp_HBD_balance& hbd_balance, const HBD_asset& delta ) { adjust_balance( get_account( name ), hbd_balance, delta ); }
 
-      void adjust_savings_balance( const account_object& a, balance_base& any_balance, const asset& delta );
-      void adjust_savings_balance( const account_object& a, HIVE_balance_base& hive_balance, const HIVE_asset& delta );
-      void adjust_savings_balance( const account_object& a, HBD_balance_base& hbd_balance, const HBD_asset& delta );
+      void adjust_savings_balance( const account_object& a, temp_balance& any_balance, const asset& delta );
+      void adjust_savings_balance( const account_object& a, temp_HIVE_balance& hive_balance, const HIVE_asset& delta );
+      void adjust_savings_balance( const account_object& a, temp_HBD_balance& hbd_balance, const HBD_asset& delta );
 
-      void adjust_reward_balance( const account_object& a, HIVE_balance_base& hive_balance, const HIVE_asset& value_delta );
-      void adjust_reward_balance( const account_object& a, HBD_balance_base& hbd_balance, const HBD_asset& value_delta );
+      void adjust_reward_balance( const account_object& a, temp_HIVE_balance& hive_balance, const HIVE_asset& value_delta );
+      void adjust_reward_balance( const account_object& a, temp_HBD_balance& hbd_balance, const HBD_asset& value_delta );
 
       temp_HIVE_balance issue_mining_reward( const HIVE_asset& reward );
       void adjust_rshares2( fc::uint128_t old_rshares2, fc::uint128_t new_rshares2 );
