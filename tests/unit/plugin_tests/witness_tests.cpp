@@ -1,7 +1,7 @@
 #ifdef IS_TEST_NET
 #include <boost/test/unit_test.hpp>
 
-#include <hive/chain/comment_object.hpp>
+#include <hive/chain/detail/state/comment_object.hpp>
 #include <hive/chain/full_transaction.hpp>
 
 #include <hive/utilities/signal.hpp>

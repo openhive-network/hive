@@ -8,7 +8,7 @@
 
 #include <hive/chain/notifications.hpp>
 #include <hive/chain/database_exceptions.hpp>
-#include <hive/chain/witness_objects.hpp>
+#include <hive/chain/detail/state/witness_objects.hpp>
 
 #define DEFAULT_QUEEN_TARGET_BLOCK_SIZE 0 // max blocks allowed by witnesses
 #define DEFAULT_QUEEN_TARGET_TX_COUNT 0 // unlimited transactions

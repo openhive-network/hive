@@ -12,7 +12,7 @@
 #include <hive/chain/util/asset.hpp>
 #include <hive/chain/util/delayed_voting.hpp>
 #include <hive/chain/util/rd_dynamics.hpp>
-#include <hive/chain/witness_objects.hpp>
+#include <hive/chain/detail/state/witness_objects.hpp>
 
 #include <hive/plugins/metadata/metadata_plugin.hpp>
 

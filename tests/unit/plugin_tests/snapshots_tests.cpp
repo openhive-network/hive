@@ -1,7 +1,7 @@
 #ifdef IS_TEST_NET
 #include <boost/test/unit_test.hpp>
 
-#include <hive/chain/account_object.hpp>
+#include <hive/chain/detail/state/account_object.hpp>
 
 #include <hive/plugins/state_snapshot/state_snapshot_plugin.hpp>
 

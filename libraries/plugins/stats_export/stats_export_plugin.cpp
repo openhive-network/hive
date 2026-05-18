@@ -4,7 +4,7 @@
 
 #include <hive/plugins/stats_export/stats_export_plugin.hpp>
 
-#include <hive/chain/account_object.hpp>
+#include <hive/chain/detail/state/account_object.hpp>
 #include <hive/chain/database.hpp>
 #include <hive/chain/notifications.hpp>
 #include <hive/chain/index.hpp>

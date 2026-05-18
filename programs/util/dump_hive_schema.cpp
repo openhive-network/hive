@@ -14,7 +14,7 @@
 #include <string>
 #include <vector>
 
-#include <hive/chain/account_object.hpp>
+#include <hive/chain/detail/state/account_object.hpp>
 #include <hive/chain/block_storage_interface.hpp>
 #include <hive/chain/sync_block_writer.hpp>
 #include <hive/chain/detail/state/convert_request_object.hpp>

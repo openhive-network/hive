@@ -5,8 +5,8 @@
 #include <hive/chain/database.hpp>
 #include <hive/chain/database_virtual_operations.hpp>
 #include <hive/chain/hive_evaluator.hpp>
-#include <hive/chain/account_object_multiindex.hpp>
-#include <hive/chain/dhf_objects_multiindex.hpp>
+#include <hive/chain/detail/state/account_object_multiindex.hpp>
+#include <hive/chain/detail/state/dhf_objects_multiindex.hpp>
 #include <hive/chain/evaluator_registry.hpp>
 
 #include <hive/chain/util/dhf_helper.hpp>

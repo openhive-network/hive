@@ -1,11 +1,11 @@
 #include <hive/chain/rc/rc_utility.hpp>
 #include <hive/chain/rc/rc_objects.hpp>
 #include <hive/chain/rc/rc_curve.hpp>
-#include <hive/chain/account_object_multiindex.hpp>
+#include <hive/chain/detail/state/account_object_multiindex.hpp>
 #include <hive/chain/database.hpp>
 #include <hive/chain/full_transaction.hpp>
 #include <hive/chain/database_exceptions.hpp>
-#include <hive/chain/witness_objects.hpp>
+#include <hive/chain/detail/state/witness_objects.hpp>
 #include <hive/chain/generic_custom_operation_interpreter.hpp>
 #include <hive/chain/util/remove_guard.hpp>
 

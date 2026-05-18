@@ -20,15 +20,15 @@
 #include <hive/chain/util/reward.hpp>
 #include <hive/chain/util/uint256.hpp>
 #include <hive/chain/notifications.hpp>
-#include <hive/chain/account_object_multiindex.hpp>
-#include <hive/chain/hardfork_property_object_multiindex.hpp>
-#include <hive/chain/comment_object_multiindex.hpp>
-#include <hive/chain/dhf_objects_multiindex.hpp>
+#include <hive/chain/detail/state/account_object_multiindex.hpp>
+#include <hive/chain/detail/state/hardfork_property_object_multiindex.hpp>
+#include <hive/chain/detail/state/comment_object_multiindex.hpp>
+#include <hive/chain/detail/state/dhf_objects_multiindex.hpp>
 #include <hive/chain/detail/state/feed_history_object_multiindex.hpp>
 #include <hive/chain/detail/state/limit_order_object_multiindex.hpp>
 #include <hive/chain/detail/state/reward_fund_object_multiindex.hpp>
 #include <hive/chain/detail/state/savings_withdraw_object_multiindex.hpp>
-#include <hive/chain/witness_objects_multiindex.hpp>
+#include <hive/chain/detail/state/witness_objects_multiindex.hpp>
 
 #include <fc/git_revision.hpp>
 

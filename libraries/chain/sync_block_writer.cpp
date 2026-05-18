@@ -4,7 +4,7 @@
 #include <hive/chain/block_storage_interface.hpp>
 #include <hive/chain/fork_database.hpp>
 #include <hive/chain/full_block.hpp>
-#include <hive/chain/witness_objects.hpp>
+#include <hive/chain/detail/state/witness_objects.hpp>
 
 #include <boost/scope_exit.hpp>
 

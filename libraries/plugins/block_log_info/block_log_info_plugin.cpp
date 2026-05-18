@@ -4,10 +4,10 @@
 #include <hive/plugins/block_log_info/block_log_info_plugin.hpp>
 #include <hive/plugins/block_log_info/block_log_info_objects.hpp>
 
-#include <hive/chain/account_object.hpp>
+#include <hive/chain/detail/state/account_object.hpp>
 #include <hive/chain/database.hpp>
 #include <hive/chain/notifications.hpp>
-#include <hive/chain/global_property_object.hpp>
+#include <hive/chain/detail/state/global_property_object.hpp>
 #include <hive/chain/index.hpp>
 #include <chainbase/chainbase.inl>
 #include <hive/chain/util/type_registrar_definition.hpp>

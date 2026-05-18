@@ -14,7 +14,7 @@
 #include <hive/plugins/metadata/metadata_plugin.hpp>
 
 #include <hive/chain/database.hpp>
-#include <hive/chain/dhf_objects.hpp>
+#include <hive/chain/detail/state/dhf_objects.hpp>
 
 #include <optional>
 

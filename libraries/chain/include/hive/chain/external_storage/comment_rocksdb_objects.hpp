@@ -1,7 +1,7 @@
 #pragma once
 
 #include <hive/chain/hive_object_types.hpp>
-#include <hive/chain/comment_object.hpp>
+#include <hive/chain/detail/state/comment_object.hpp>
 
 #include <hive/chain/util/type_registrar_definition.hpp>
 

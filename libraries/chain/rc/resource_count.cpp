@@ -6,9 +6,9 @@
 
 #include <hive/protocol/hive_custom_operations.hpp>
 
-#include <hive/chain/account_object_multiindex.hpp>
+#include <hive/chain/detail/state/account_object_multiindex.hpp>
 #include <hive/chain/database.hpp>
-#include <hive/chain/witness_objects_multiindex.hpp>
+#include <hive/chain/detail/state/witness_objects_multiindex.hpp>
 
 namespace hive { namespace chain {
 

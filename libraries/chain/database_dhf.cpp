@@ -1,7 +1,7 @@
-#include <hive/chain/dhf_objects_multiindex.hpp>
+#include <hive/chain/detail/state/dhf_objects_multiindex.hpp>
 #include <hive/chain/detail/state/recurrent_transfer_object_multiindex.hpp>
 #include <hive/chain/detail/state/decline_voting_rights_request_object_multiindex.hpp>
-#include <hive/chain/account_object_multiindex.hpp>
+#include <hive/chain/detail/state/account_object_multiindex.hpp>
 
 #include <hive/chain/database_virtual_operations.hpp>
 #include <hive/chain/util/dhf_helper.hpp>

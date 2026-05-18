@@ -1,7 +1,7 @@
 #pragma once
 
 #include <hive/chain/database.hpp>
-#include <hive/chain/global_property_object.hpp>
+#include <hive/chain/detail/state/global_property_object.hpp>
 #include <hive/chain/util/manabar.hpp>
 
 namespace hive { namespace chain {

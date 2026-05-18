@@ -8,21 +8,21 @@
 #include <hive/chain/external_storage/comments_handler.hpp>
 #include <hive/chain/notifications.hpp>
 
-#include <hive/chain/account_object_multiindex.hpp>
-#include <hive/chain/block_summary_object_multiindex.hpp>
-#include <hive/chain/global_property_object_multiindex.hpp>
-#include <hive/chain/witness_objects.hpp>
-#include <hive/chain/hardfork_property_object.hpp>
+#include <hive/chain/detail/state/account_object_multiindex.hpp>
+#include <hive/chain/detail/state/block_summary_object_multiindex.hpp>
+#include <hive/chain/detail/state/global_property_object_multiindex.hpp>
+#include <hive/chain/detail/state/witness_objects.hpp>
+#include <hive/chain/detail/state/hardfork_property_object.hpp>
 #include <hive/chain/block_write_interface.hpp>
 #include <hive/chain/compound.hpp>
 #include <hive/chain/database.hpp>
 #include <hive/chain/database_exceptions.hpp>
 #include <hive/chain/db_with.hpp>
 #include <hive/chain/irreversible_block_data.hpp>
-#include <hive/chain/dhf_objects.hpp>
+#include <hive/chain/detail/state/dhf_objects.hpp>
 #include <hive/chain/detail/state/feed_history_object_multiindex.hpp>
 #include <hive/chain/detail/state/reward_fund_object_multiindex.hpp>
-#include <hive/chain/transaction_object_multiindex.hpp>
+#include <hive/chain/detail/state/transaction_object_multiindex.hpp>
 #include <hive/chain/shared_db_merkle.hpp>
 #include <hive/chain/witness_schedule.hpp>
 

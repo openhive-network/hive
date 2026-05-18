@@ -2,7 +2,7 @@
 #include <hive/chain/hive_fwd.hpp>
 #include <hive/protocol/asset.hpp>
 #include <hive/chain/hive_object_types.hpp>
-#include <hive/chain/account_object.hpp>
+#include <hive/chain/detail/state/account_object.hpp>
 
 namespace hive { namespace chain {
 
