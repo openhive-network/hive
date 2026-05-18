@@ -1,6 +1,6 @@
-#include <hive/chain/witness_objects_multiindex.hpp>
-#include <hive/chain/account_object_multiindex.hpp>
-#include <hive/chain/global_property_object_multiindex.hpp>
+#include <hive/chain/detail/state/witness_objects_multiindex.hpp>
+#include <hive/chain/detail/state/account_object_multiindex.hpp>
+#include <hive/chain/detail/state/global_property_object_multiindex.hpp>
 #include <hive/chain/database_virtual_operations.hpp>
 
 #include <hive/chain/index.hpp>

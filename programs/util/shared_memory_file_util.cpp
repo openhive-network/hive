@@ -14,18 +14,18 @@
 
 #include <hive/chain/irreversible_block_data_fwd.hpp>
 
-#include <hive/chain/account_object.hpp>
-#include <hive/chain/account_object_multiindex.hpp>
-#include <hive/chain/block_summary_object.hpp>
-#include <hive/chain/block_summary_object_multiindex.hpp>
-#include <hive/chain/comment_object.hpp>
-#include <hive/chain/comment_object_multiindex.hpp>
-#include <hive/chain/dhf_objects.hpp>
-#include <hive/chain/dhf_objects_multiindex.hpp>
-#include <hive/chain/global_property_object.hpp>
-#include <hive/chain/global_property_object_multiindex.hpp>
-#include <hive/chain/hardfork_property_object.hpp>
-#include <hive/chain/hardfork_property_object_multiindex.hpp>
+#include <hive/chain/detail/state/account_object.hpp>
+#include <hive/chain/detail/state/account_object_multiindex.hpp>
+#include <hive/chain/detail/state/block_summary_object.hpp>
+#include <hive/chain/detail/state/block_summary_object_multiindex.hpp>
+#include <hive/chain/detail/state/comment_object.hpp>
+#include <hive/chain/detail/state/comment_object_multiindex.hpp>
+#include <hive/chain/detail/state/dhf_objects.hpp>
+#include <hive/chain/detail/state/dhf_objects_multiindex.hpp>
+#include <hive/chain/detail/state/global_property_object.hpp>
+#include <hive/chain/detail/state/global_property_object_multiindex.hpp>
+#include <hive/chain/detail/state/hardfork_property_object.hpp>
+#include <hive/chain/detail/state/hardfork_property_object_multiindex.hpp>
 #include <hive/chain/detail/state/convert_request_object_multiindex.hpp>
 #include <hive/chain/detail/state/collateralized_convert_request_object_multiindex.hpp>
 #include <hive/chain/detail/state/escrow_object_multiindex.hpp>
@@ -37,10 +37,10 @@
 #include <hive/chain/detail/state/decline_voting_rights_request_object_multiindex.hpp>
 #include <hive/chain/detail/state/reward_fund_object_multiindex.hpp>
 #include <hive/chain/detail/state/recurrent_transfer_object_multiindex.hpp>
-#include <hive/chain/transaction_object.hpp>
-#include <hive/chain/transaction_object_multiindex.hpp>
-#include <hive/chain/witness_objects.hpp>
-#include <hive/chain/witness_objects_multiindex.hpp>
+#include <hive/chain/detail/state/transaction_object.hpp>
+#include <hive/chain/detail/state/transaction_object_multiindex.hpp>
+#include <hive/chain/detail/state/witness_objects.hpp>
+#include <hive/chain/detail/state/witness_objects_multiindex.hpp>
 #include <hive/chain/rc/rc_objects.hpp>
 
 #include <hive/plugins/account_by_key/account_by_key_objects.hpp>

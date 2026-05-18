@@ -3,7 +3,7 @@
 #include <hive/chain/detail/state/decline_voting_rights_request_object_multiindex.hpp>
 #include <hive/chain/detail/state/limit_order_object_multiindex.hpp>
 
-#include <hive/chain/account_object_multiindex.hpp>
+#include <hive/chain/detail/state/account_object_multiindex.hpp>
 #include <hive/chain/database_virtual_operations.hpp>
 #include <hive/chain/database_exceptions.hpp>
 #include <hive/chain/index.hpp>

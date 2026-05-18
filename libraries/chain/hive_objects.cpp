@@ -1,6 +1,6 @@
 #include <hive/chain/hive_fwd.hpp>
-#include <hive/chain/comment_object.hpp>
-#include <hive/chain/account_object.hpp>
+#include <hive/chain/detail/state/comment_object.hpp>
+#include <hive/chain/detail/state/account_object.hpp>
 #include <hive/chain/detail/state/escrow_object.hpp>
 #include <hive/chain/detail/state/convert_request_object.hpp>
 #include <hive/chain/detail/state/collateralized_convert_request_object.hpp>

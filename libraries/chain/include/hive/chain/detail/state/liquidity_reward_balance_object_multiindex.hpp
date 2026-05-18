@@ -1,6 +1,6 @@
 #pragma once
 #include <hive/chain/detail/state/liquidity_reward_balance_object.hpp>
-#include <hive/chain/account_object.hpp>
+#include <hive/chain/detail/state/account_object.hpp>
 
 namespace hive { namespace chain {
 

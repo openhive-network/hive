@@ -5,7 +5,7 @@
   * Copyright (c) 2015 Cryptonomex, Inc., and contributors.
   */
 #pragma once
-#include <hive/chain/global_property_object.hpp>
+#include <hive/chain/detail/state/global_property_object.hpp>
 #include <hive/chain/node_property_object.hpp>
 
 #include <hive/chain/util/advanced_benchmark_dumper.hpp>

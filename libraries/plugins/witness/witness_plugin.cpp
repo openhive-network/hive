@@ -3,11 +3,11 @@
 
 #include <hive/chain/database_exceptions.hpp>
 #include <hive/chain/notifications.hpp>
-#include <hive/chain/account_object.hpp>
-#include <hive/chain/account_object_multiindex.hpp>
-#include <hive/chain/comment_object.hpp>
-#include <hive/chain/witness_objects.hpp>
-#include <hive/chain/witness_objects_multiindex.hpp>
+#include <hive/chain/detail/state/account_object.hpp>
+#include <hive/chain/detail/state/account_object_multiindex.hpp>
+#include <hive/chain/detail/state/comment_object.hpp>
+#include <hive/chain/detail/state/witness_objects.hpp>
+#include <hive/chain/detail/state/witness_objects_multiindex.hpp>
 #include <hive/chain/index.hpp>
 #include <hive/chain/util/impacted.hpp>
 #include <hive/chain/util/type_registrar_definition.hpp>

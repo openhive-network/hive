@@ -1,8 +1,8 @@
 #pragma once
 
 #include <hive/chain/database.hpp>
-#include <hive/chain/dhf_objects_multiindex.hpp>
-#include <hive/chain/account_object.hpp>
+#include <hive/chain/detail/state/dhf_objects_multiindex.hpp>
+#include <hive/chain/detail/state/account_object.hpp>
 #include <hive/chain/util/remove_guard.hpp>
 
 #include <boost/container/flat_set.hpp>

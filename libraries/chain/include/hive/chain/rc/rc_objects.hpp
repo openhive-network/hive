@@ -9,7 +9,7 @@
 #include <hive/chain/rc/rc_utility.hpp>
 #include <hive/chain/rc/resource_count.hpp>
 
-#include <hive/chain/account_object.hpp>
+#include <hive/chain/detail/state/account_object.hpp>
 #include <hive/chain/hive_object_types.hpp>
 
 #include <fc/int_array.hpp>

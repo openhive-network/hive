@@ -7,9 +7,9 @@
 #include <hive/chain/database.hpp>
 #include <hive/chain/database_exceptions.hpp>
 #include <hive/chain/db_with.hpp>
-#include <hive/chain/hardfork_property_object.hpp>
-#include <hive/chain/global_property_object_multiindex.hpp>
-#include <hive/chain/witness_objects.hpp>
+#include <hive/chain/detail/state/hardfork_property_object.hpp>
+#include <hive/chain/detail/state/global_property_object_multiindex.hpp>
+#include <hive/chain/detail/state/witness_objects.hpp>
 
 #include <fc/macros.hpp>
 

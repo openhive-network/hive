@@ -5,9 +5,9 @@
 #include <hive/chain/external_storage/comments_handler.hpp>
 #include <hive/chain/notifications.hpp>
 
-#include <hive/chain/account_object_multiindex.hpp>
-#include <hive/chain/block_summary_object_multiindex.hpp>
-#include <hive/chain/comment_object_multiindex.hpp>
+#include <hive/chain/detail/state/account_object_multiindex.hpp>
+#include <hive/chain/detail/state/block_summary_object_multiindex.hpp>
+#include <hive/chain/detail/state/comment_object_multiindex.hpp>
 #include <hive/chain/detail/state/reward_fund_object_multiindex.hpp>
 #include <hive/chain/detail/state/feed_history_object.hpp>
 
@@ -16,7 +16,7 @@
 
 #include <hive/chain/util/type_registrar_definition.hpp>
 #include <hive/chain/util/reward.hpp>
-#include <hive/chain/global_property_object_multiindex.hpp>
+#include <hive/chain/detail/state/global_property_object_multiindex.hpp>
 
 #include <hive/protocol/hive_operations.hpp>
 #include <hive/protocol/hive_virtual_operations.hpp>

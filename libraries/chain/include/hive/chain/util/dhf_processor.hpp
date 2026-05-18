@@ -1,10 +1,10 @@
 #pragma once
 
-#include <hive/chain/dhf_objects.hpp>
+#include <hive/chain/detail/state/dhf_objects.hpp>
 #include <hive/chain/notifications.hpp>
 #include <hive/chain/database.hpp>
 #include <hive/chain/index.hpp>
-#include <hive/chain/account_object.hpp>
+#include <hive/chain/detail/state/account_object.hpp>
 
 #include <hive/chain/util/dhf_helper.hpp>
 

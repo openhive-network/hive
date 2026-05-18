@@ -1,4 +1,4 @@
-#include <hive/chain/account_object_multiindex.hpp>
+#include <hive/chain/detail/state/account_object_multiindex.hpp>
 
 #include <hive/chain/index.hpp>
 #include <chainbase/chainbase.inl>

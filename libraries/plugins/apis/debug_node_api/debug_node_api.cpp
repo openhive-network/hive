@@ -5,9 +5,9 @@
 #include <fc/optional.hpp>
 #include <fc/variant_object.hpp>
 
-#include <hive/chain/account_object.hpp>
+#include <hive/chain/detail/state/account_object.hpp>
 #include <hive/chain/database.hpp>
-#include <hive/chain/witness_objects.hpp>
+#include <hive/chain/detail/state/witness_objects.hpp>
 
 namespace hive { namespace plugins { namespace debug_node {
 

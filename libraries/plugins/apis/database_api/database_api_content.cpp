@@ -1,8 +1,8 @@
 #include <hive/plugins/database_api/database_api_impl.hpp>
 
-#include <hive/chain/comment_object.hpp>
-#include <hive/chain/dhf_objects.hpp>
-#include <hive/chain/dhf_objects_multiindex.hpp>
+#include <hive/chain/detail/state/comment_object.hpp>
+#include <hive/chain/detail/state/dhf_objects.hpp>
+#include <hive/chain/detail/state/dhf_objects_multiindex.hpp>
 
 namespace hive { namespace plugins { namespace database_api {
 

@@ -1,8 +1,8 @@
 #ifdef IS_TEST_NET
 #include <boost/test/unit_test.hpp>
 
-#include <hive/chain/account_object.hpp>
-#include <hive/chain/comment_object.hpp>
+#include <hive/chain/detail/state/account_object.hpp>
+#include <hive/chain/detail/state/comment_object.hpp>
 #include <hive/protocol/hive_operations.hpp>
 #include <hive/plugins/json_rpc/json_rpc_plugin.hpp>
 

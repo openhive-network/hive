@@ -1,5 +1,5 @@
 #ifdef IS_TEST_NET
-#include <hive/chain/account_object.hpp>
+#include <hive/chain/detail/state/account_object.hpp>
 #include <hive/chain/database.hpp>
 #include <hive/chain/generic_custom_operation_interpreter.hpp>
 

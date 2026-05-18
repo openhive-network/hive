@@ -19,8 +19,8 @@ struct votable_asset_info_v1;
 #include <string>
 #include <vector>
 
-#include <hive/chain/account_object.hpp>
-#include <hive/chain/comment_object.hpp>
+#include <hive/chain/detail/state/account_object.hpp>
+#include <hive/chain/detail/state/comment_object.hpp>
 #include <hive/chain/detail/state/convert_request_object.hpp>
 #include <hive/chain/detail/state/collateralized_convert_request_object.hpp>
 #include <hive/chain/detail/state/escrow_object.hpp>

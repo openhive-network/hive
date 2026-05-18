@@ -7,7 +7,7 @@
 #include <hive/chain/detail/state/limit_order_object.hpp>
 #include <hive/chain/detail/state/reward_fund_object.hpp>
 #include <hive/chain/detail/state/recurrent_transfer_object.hpp>
-#include <hive/chain/dhf_objects.hpp>
+#include <hive/chain/detail/state/dhf_objects.hpp>
 
 #include <hive/plugins/database_api/database_api.hpp>
 #include <hive/plugins/block_api/block_api.hpp>

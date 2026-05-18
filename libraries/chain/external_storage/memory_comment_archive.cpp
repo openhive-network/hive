@@ -1,5 +1,5 @@
 #include <hive/chain/database.hpp>
-#include <hive/chain/comment_object_multiindex.hpp>
+#include <hive/chain/detail/state/comment_object_multiindex.hpp>
 
 #include <hive/chain/external_storage/memory_comment_archive.hpp>
 

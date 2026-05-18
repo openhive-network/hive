@@ -6,7 +6,7 @@
 #include <hive/chain/external_storage/comments_handler_ptr.hpp>
 
 #include <hive/chain/hive_object_types.hpp>
-#include <hive/chain/comment_object.hpp>
+#include <hive/chain/detail/state/comment_object.hpp>
 
 #include <hive/utilities/benchmark_dumper.hpp>
 
