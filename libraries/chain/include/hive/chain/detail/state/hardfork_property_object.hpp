@@ -9,42 +9,42 @@
 
 namespace hive { namespace chain {
 
-  using chainbase::t_vector;
-  using chainbase::t_flat_map;
+using chainbase::t_vector;
+using chainbase::t_flat_map;
 
-  class hardfork_property_object : public object< hardfork_property_object_type, hardfork_property_object, std::true_type >
+class hardfork_property_object : public object< hardfork_property_object_type, hardfork_property_object, std::true_type >
+{
+  CHAINBASE_OBJECT( hardfork_property_object );
+public:
+  template< typename Allocator >
+  hardfork_property_object( allocator< Allocator > a, uint64_t _id, fc::time_point_sec genesis_time )
+    : id( _id ), processed_hardforks( a ), h23_balances( a )
   {
-    CHAINBASE_OBJECT( hardfork_property_object );
-    public:
-      template< typename Allocator >
-      hardfork_property_object( allocator< Allocator > a, uint64_t _id, fc::time_point_sec genesis_time )
-        : id( _id ), processed_hardforks( a ), h23_balances( a )
-      {
-        processed_hardforks.push_back( genesis_time );
-      }
+    processed_hardforks.push_back( genesis_time );
+  }
 
-      using t_processed_hardforks = t_vector< fc::time_point_sec >;
-      using t_hf23_items          = t_flat_map< account_name_type, hf23_item >;
+  using t_processed_hardforks = t_vector< fc::time_point_sec >;
+  using t_hf23_items          = t_flat_map< account_name_type, hf23_item >;
 
-      t_processed_hardforks       processed_hardforks;
-      uint32_t                    last_hardfork = 0;
-      protocol::hardfork_version  current_hardfork_version;
-      protocol::hardfork_version  next_hardfork;
-      fc::time_point_sec          next_hardfork_time;
+  t_processed_hardforks       processed_hardforks;
+  uint32_t                    last_hardfork = 0;
+  protocol::hardfork_version  current_hardfork_version;
+  protocol::hardfork_version  next_hardfork;
+  fc::time_point_sec          next_hardfork_time;
 
-      //Here are saved balances for given accounts, that were cleared during HF23
-      t_hf23_items                h23_balances;
+  //Here are saved balances for given accounts, that were cleared during HF23
+  t_hf23_items                h23_balances;
 
-      size_t get_dynamic_alloc() const
-      {
-        size_t size = 0;
-        size += processed_hardforks.capacity() * sizeof( decltype( processed_hardforks )::value_type );
-        size += h23_balances.capacity() * sizeof( decltype( h23_balances )::value_type );
-        return size;
-      }
+  size_t get_dynamic_alloc() const
+  {
+    size_t size = 0;
+    size += processed_hardforks.capacity() * sizeof( decltype( processed_hardforks )::value_type );
+    size += h23_balances.capacity() * sizeof( decltype( h23_balances )::value_type );
+    return size;
+  }
 
-    CHAINBASE_UNPACK_CONSTRUCTOR(hardfork_property_object, (processed_hardforks)(h23_balances));
-  };
+  CHAINBASE_UNPACK_CONSTRUCTOR( hardfork_property_object, (processed_hardforks)(h23_balances) );
+};
 
 } } // hive::chain
 

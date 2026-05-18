@@ -25,26 +25,26 @@ class volatile_operation_object : public object< volatile_operation_object_type,
 {
   CHAINBASE_OBJECT( volatile_operation_object );
 
-  public:
-    CHAINBASE_DEFAULT_CONSTRUCTOR( volatile_operation_object, (serialized_op)(impacted) )
+public:
+  CHAINBASE_DEFAULT_CONSTRUCTOR( volatile_operation_object, (serialized_op)(impacted) )
 
-    protocol::transaction_id_type            trx_id;
-    uint32_t                                 block = 0;
-    uint32_t                                 trx_in_block = 0;
-    uint32_t                                 op_in_trx = 0;
-    time_point_sec                           timestamp;
-    buffer_type                              serialized_op;
-    chainbase::t_vector< account_name_type > impacted;
-    bool                                     is_virtual = false;
-    uint8_t                                  transaction_status = 0;
+  protocol::transaction_id_type            trx_id;
+  uint32_t                                 block = 0;
+  uint32_t                                 trx_in_block = 0;
+  uint32_t                                 op_in_trx = 0;
+  time_point_sec                           timestamp;
+  buffer_type                              serialized_op;
+  chainbase::t_vector< account_name_type > impacted;
+  bool                                     is_virtual = false;
+  uint8_t                                  transaction_status = 0;
 
-    size_t get_dynamic_alloc() const
-    {
-      size_t size = 0;
-      size += serialized_op.capacity() * sizeof( decltype( serialized_op )::value_type );
-      size += impacted.capacity() * sizeof( decltype( impacted )::value_type );
-      return size;
-    }
+  size_t get_dynamic_alloc() const
+  {
+    size_t size = 0;
+    size += serialized_op.capacity() * sizeof( decltype( serialized_op )::value_type );
+    size += impacted.capacity() * sizeof( decltype( impacted )::value_type );
+    return size;
+  }
 };
 
 typedef oid_ref< volatile_operation_object > volatile_operation_id_type;
@@ -56,46 +56,46 @@ typedef oid_ref< volatile_operation_object > volatile_operation_id_type;
   */
 class rocksdb_operation_object
 {
-  public:
-    rocksdb_operation_object() {}
-    rocksdb_operation_object( const volatile_operation_object& o ) :
-      trx_id( o.trx_id ),
-      block( o.block ),
-      trx_in_block( o.trx_in_block ),
-      op_in_trx( o.op_in_trx ),
-      timestamp( o.timestamp ),
-      is_virtual(o.is_virtual)
-    {
-      serialized_op.insert( serialized_op.end(), o.serialized_op.begin(), o.serialized_op.end() );
-    }
+public:
+  rocksdb_operation_object() {}
+  rocksdb_operation_object( const volatile_operation_object& o ) :
+    trx_id( o.trx_id ),
+    block( o.block ),
+    trx_in_block( o.trx_in_block ),
+    op_in_trx( o.op_in_trx ),
+    timestamp( o.timestamp ),
+    is_virtual(o.is_virtual)
+  {
+    serialized_op.insert( serialized_op.end(), o.serialized_op.begin(), o.serialized_op.end() );
+  }
 
-    uint64_t                      id = 0;
+  uint64_t                      id = 0;
 
-    protocol::transaction_id_type trx_id;
-    uint32_t                      block = 0;
-    uint32_t                      trx_in_block = 0;
-    uint32_t                      op_in_trx = 0;
-    time_point_sec                timestamp;
-    serialize_buffer_t            serialized_op;
-    bool                          is_virtual = false;
+  protocol::transaction_id_type trx_id;
+  uint32_t                      block = 0;
+  uint32_t                      trx_in_block = 0;
+  uint32_t                      op_in_trx = 0;
+  time_point_sec                timestamp;
+  serialize_buffer_t            serialized_op;
+  bool                          is_virtual = false;
 };
 
 struct by_block;
 
 typedef multi_index_container<
-    volatile_operation_object,
-    indexed_by<
-      ordered_unique< tag< by_id >,
-        const_mem_fun< volatile_operation_object, volatile_operation_object::id_type, &volatile_operation_object::get_id > >,
-      ordered_unique< tag< by_block >,
-        composite_key< volatile_operation_object,
-          member< volatile_operation_object, uint32_t, &volatile_operation_object::block>,
-          const_mem_fun< volatile_operation_object, volatile_operation_object::id_type, &volatile_operation_object::get_id >
-        >
+  volatile_operation_object,
+  indexed_by<
+    ordered_unique< tag< by_id >,
+      const_mem_fun< volatile_operation_object, volatile_operation_object::id_type, &volatile_operation_object::get_id > >,
+    ordered_unique< tag< by_block >,
+      composite_key< volatile_operation_object,
+        member< volatile_operation_object, uint32_t, &volatile_operation_object::block>,
+        const_mem_fun< volatile_operation_object, volatile_operation_object::id_type, &volatile_operation_object::get_id >
       >
-    >,
-    multi_index_allocator< volatile_operation_object >
-  > volatile_operation_index;
+    >
+  >,
+  multi_index_allocator< volatile_operation_object >
+> volatile_operation_index;
 
 } } } // hive::plugins::account_history_rocksdb
 

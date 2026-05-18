@@ -14,224 +14,222 @@
 
 namespace hive { namespace chain {
 
-  using hive::protocol::digest_type;
-  using hive::protocol::public_key_type;
-  using hive::protocol::version;
-  using hive::protocol::hardfork_version;
-  using hive::protocol::price;
-  using hive::protocol::HBD_asset;
-  using hive::protocol::HIVE_asset;
-  using hive::protocol::VEST_asset;
-  using hive::protocol::asset;
-  using hive::protocol::asset_symbol_type;
-  using hive::chain::util::rd_dynamics_params;
+using hive::protocol::digest_type;
+using hive::protocol::public_key_type;
+using hive::protocol::version;
+using hive::protocol::hardfork_version;
+using hive::protocol::price;
+using hive::protocol::HBD_asset;
+using hive::protocol::HIVE_asset;
+using hive::protocol::VEST_asset;
+using hive::protocol::asset;
+using hive::protocol::asset_symbol_type;
+using hive::chain::util::rd_dynamics_params;
+
+/**
+  * Witnesses must vote on how to set certain chain properties to ensure a smooth
+  * and well functioning network.  Any time @owner is in the active set of witnesses these
+  * properties will be used to control the blockchain configuration.
+  */
+struct chain_properties
+{
+  /**
+    *  This fee, paid in HIVE, is converted into VESTING SHARES for the new account. Accounts
+    *  without vesting shares cannot earn usage rations and therefore are powerless. This minimum
+    *  fee requires all accounts to have some kind of commitment to the network that includes the
+    *  ability to vote and make transactions.
+    */
+  HIVE_asset        account_creation_fee = HIVE_asset( HIVE_MIN_ACCOUNT_CREATION_FEE );
 
   /**
-    * Witnesses must vote on how to set certain chain properties to ensure a smooth
-    * and well functioning network.  Any time @owner is in the active set of witnesses these
-    * properties will be used to control the blockchain configuration.
+    *  This witnesses vote for the maximum_block_size which is used by the network
+    *  to tune rate limiting and capacity
     */
-  struct chain_properties
-  {
-    /**
-      *  This fee, paid in HIVE, is converted into VESTING SHARES for the new account. Accounts
-      *  without vesting shares cannot earn usage rations and therefore are powerless. This minimum
-      *  fee requires all accounts to have some kind of commitment to the network that includes the
-      *  ability to vote and make transactions.
-      */
-    HIVE_asset        account_creation_fee = HIVE_asset( HIVE_MIN_ACCOUNT_CREATION_FEE );
-
-    /**
-      *  This witnesses vote for the maximum_block_size which is used by the network
-      *  to tune rate limiting and capacity
-      */
-    uint32_t          maximum_block_size = HIVE_MIN_BLOCK_SIZE_LIMIT * 2;
-    uint16_t          hbd_interest_rate  = HIVE_DEFAULT_HBD_INTEREST_RATE;
-    /**
-      * How many free accounts should be created per elected witness block.
-      * Scaled so that HIVE_ACCOUNT_SUBSIDY_PRECISION represents one account.
-      */
-    int32_t           account_subsidy_budget = HIVE_DEFAULT_ACCOUNT_SUBSIDY_BUDGET;
-
-    /**
-      * What fraction of the "stockpiled" free accounts "expire" per elected witness block.
-      * Scaled so that 1 << HIVE_RD_DECAY_DENOM_SHIFT represents 100% of accounts
-      * expiring.
-      */
-    uint32_t          account_subsidy_decay = HIVE_DEFAULT_ACCOUNT_SUBSIDY_DECAY;
-  };
+  uint32_t          maximum_block_size = HIVE_MIN_BLOCK_SIZE_LIMIT * 2;
+  uint16_t          hbd_interest_rate  = HIVE_DEFAULT_HBD_INTEREST_RATE;
+  /**
+    * How many free accounts should be created per elected witness block.
+    * Scaled so that HIVE_ACCOUNT_SUBSIDY_PRECISION represents one account.
+    */
+  int32_t           account_subsidy_budget = HIVE_DEFAULT_ACCOUNT_SUBSIDY_BUDGET;
 
   /**
-    *  All witnesses with at least 1% net positive approval and
-    *  at least 2 weeks old are able to participate in block
-    *  production.
+    * What fraction of the "stockpiled" free accounts "expire" per elected witness block.
+    * Scaled so that 1 << HIVE_RD_DECAY_DENOM_SHIFT represents 100% of accounts
+    * expiring.
     */
-  class witness_object : public object< witness_object_type, witness_object, std::true_type >
+  uint32_t          account_subsidy_decay = HIVE_DEFAULT_ACCOUNT_SUBSIDY_DECAY;
+};
+
+/**
+  *  All witnesses with at least 1% net positive approval and
+  *  at least 2 weeks old are able to participate in block
+  *  production.
+  */
+class witness_object : public object< witness_object_type, witness_object, std::true_type >
+{
+  CHAINBASE_OBJECT( witness_object );
+public:
+  enum witness_schedule_type
   {
-    CHAINBASE_OBJECT( witness_object );
-    public:
-      enum witness_schedule_type
-      {
-        elected,
-        timeshare,
-        miner,
-        none
-      };
-
-      CHAINBASE_DEFAULT_CONSTRUCTOR( witness_object, (url) )
-
-      //HBD to HIVE ratio proposed by the witness
-      const price& get_hbd_exchange_rate() const { return hbd_exchange_rate; } // note: this has to return price
-      //time when HBD/HIVE price ratio was last confirmed (TODO: add routine to check if price feed is valid)
-      const time_point_sec& get_last_hbd_exchange_update() const { return last_hbd_exchange_update; }
-      //tells if witness is disabled (can't be chosen to schedule nor sign blocks)
-      bool is_disabled() const { return signing_key == public_key_type(); }
-
-      /** the account that has authority over this witness */
-      account_name_type owner;
-      time_point_sec    created;
-      shared_string     url;
-      uint32_t          total_missed = 0;
-      uint64_t          last_aslot = 0;
-      uint64_t          last_confirmed_block_num = 0;
-
-      /**
-        * Some witnesses have the job because they did a proof of work,
-        * this field indicates where they were in the POW order. After
-        * each round, the witness with the lowest pow_worker value greater
-        * than 0 is removed.
-        */
-      uint64_t          pow_worker = 0;
-
-      /**
-        *  This is the key used to sign blocks on behalf of this witness
-        */
-      public_key_type   signing_key;
-
-      chain_properties  props;
-      price             hbd_exchange_rate; // note: this has to be price - see database::update_median_feed
-      time_point_sec    last_hbd_exchange_update;
-
-
-      /**
-        *  The total votes for this witness. This determines how the witness is ranked for
-        *  scheduling.  The top N witnesses by votes are scheduled every round, every one
-        *  else takes turns being scheduled proportional to their votes.
-        */
-      share_type        votes;
-      witness_schedule_type schedule = none; /// How the witness was scheduled the last time it was scheduled
-
-      /**
-        * These fields are used for the witness scheduling algorithm which uses
-        * virtual time to ensure that all witnesses are given proportional time
-        * for producing blocks.
-        *
-        * @ref votes is used to determine speed. The @ref virtual_scheduled_time is
-        * the expected time at which this witness should complete a virtual lap which
-        * is defined as the position equal to 1000 times MAXVOTES.
-        *
-        * virtual_scheduled_time = virtual_last_update + (1000*MAXVOTES - virtual_position) / votes
-        *
-        * Every time the number of votes changes the virtual_position and virtual_scheduled_time must
-        * update.  There is a global current virtual_scheduled_time which gets updated every time
-        * a witness is scheduled.  To update the virtual_position the following math is performed.
-        *
-        * virtual_position       = virtual_position + votes * (virtual_current_time - virtual_last_update)
-        * virtual_last_update    = virtual_current_time
-        * votes                  += delta_vote
-        * virtual_scheduled_time = virtual_last_update + (1000*MAXVOTES - virtual_position) / votes
-        *
-        * @defgroup virtual_time Virtual Time Scheduling
-        */
-      ///@{
-      fc::uint128       virtual_last_update = 0;
-      fc::uint128       virtual_position = 0;
-      fc::uint128       virtual_scheduled_time = fc::uint128_max_value();
-      ///@}
-
-      digest_type       last_work;
-
-      /**
-        * This field represents the Hive blockchain version the witness is running.
-        */
-      version           running_version;
-
-      hardfork_version  hardfork_version_vote;
-      time_point_sec    hardfork_time_vote = HIVE_GENESIS_TIME;
-
-      int64_t           available_witness_account_subsidies = 0;
-
-      size_t get_dynamic_alloc() const
-      {
-        size_t size = 0;
-        size += url.capacity() * sizeof( decltype( url )::value_type );
-        return size;
-      }
+    elected,
+    timeshare,
+    miner,
+    none
   };
 
+  CHAINBASE_DEFAULT_CONSTRUCTOR( witness_object, (url) )
 
-  class witness_vote_object : public object< witness_vote_object_type, witness_vote_object >
+  //HBD to HIVE ratio proposed by the witness
+  const price& get_hbd_exchange_rate() const { return hbd_exchange_rate; } // note: this has to return price
+  //time when HBD/HIVE price ratio was last confirmed (TODO: add routine to check if price feed is valid)
+  const time_point_sec& get_last_hbd_exchange_update() const { return last_hbd_exchange_update; }
+  //tells if witness is disabled (can't be chosen to schedule nor sign blocks)
+  bool is_disabled() const { return signing_key == public_key_type(); }
+
+  /** the account that has authority over this witness */
+  account_name_type owner;
+  time_point_sec    created;
+  shared_string     url;
+  uint32_t          total_missed = 0;
+  uint64_t          last_aslot = 0;
+  uint64_t          last_confirmed_block_num = 0;
+
+  /**
+    * Some witnesses have the job because they did a proof of work,
+    * this field indicates where they were in the POW order. After
+    * each round, the witness with the lowest pow_worker value greater
+    * than 0 is removed.
+    */
+  uint64_t          pow_worker = 0;
+
+  /**
+    *  This is the key used to sign blocks on behalf of this witness
+    */
+  public_key_type   signing_key;
+
+  chain_properties  props;
+  price             hbd_exchange_rate; // note: this has to be price - see database::update_median_feed
+  time_point_sec    last_hbd_exchange_update;
+
+  /**
+    *  The total votes for this witness. This determines how the witness is ranked for
+    *  scheduling.  The top N witnesses by votes are scheduled every round, every one
+    *  else takes turns being scheduled proportional to their votes.
+    */
+  share_type        votes;
+  witness_schedule_type schedule = none; /// How the witness was scheduled the last time it was scheduled
+
+  /**
+    * These fields are used for the witness scheduling algorithm which uses
+    * virtual time to ensure that all witnesses are given proportional time
+    * for producing blocks.
+    *
+    * @ref votes is used to determine speed. The @ref virtual_scheduled_time is
+    * the expected time at which this witness should complete a virtual lap which
+    * is defined as the position equal to 1000 times MAXVOTES.
+    *
+    * virtual_scheduled_time = virtual_last_update + (1000*MAXVOTES - virtual_position) / votes
+    *
+    * Every time the number of votes changes the virtual_position and virtual_scheduled_time must
+    * update.  There is a global current virtual_scheduled_time which gets updated every time
+    * a witness is scheduled.  To update the virtual_position the following math is performed.
+    *
+    * virtual_position       = virtual_position + votes * (virtual_current_time - virtual_last_update)
+    * virtual_last_update    = virtual_current_time
+    * votes                  += delta_vote
+    * virtual_scheduled_time = virtual_last_update + (1000*MAXVOTES - virtual_position) / votes
+    *
+    * @defgroup virtual_time Virtual Time Scheduling
+    */
+  ///@{
+  fc::uint128       virtual_last_update = 0;
+  fc::uint128       virtual_position = 0;
+  fc::uint128       virtual_scheduled_time = fc::uint128_max_value();
+  ///@}
+
+  digest_type       last_work;
+
+  /**
+    * This field represents the Hive blockchain version the witness is running.
+    */
+  version           running_version;
+
+  hardfork_version  hardfork_version_vote;
+  time_point_sec    hardfork_time_vote = HIVE_GENESIS_TIME;
+
+  int64_t           available_witness_account_subsidies = 0;
+
+  size_t get_dynamic_alloc() const
   {
-    CHAINBASE_OBJECT( witness_vote_object );
-    public:
-      CHAINBASE_DEFAULT_CONSTRUCTOR( witness_vote_object )
+    size_t size = 0;
+    size += url.capacity() * sizeof( decltype( url )::value_type );
+    return size;
+  }
+};
 
-      account_name_type witness;
-      account_name_type account;
-  };
+class witness_vote_object : public object< witness_vote_object_type, witness_vote_object >
+{
+  CHAINBASE_OBJECT( witness_vote_object );
+public:
+  CHAINBASE_DEFAULT_CONSTRUCTOR( witness_vote_object )
 
-  class witness_schedule_object : public object< witness_schedule_object_type, witness_schedule_object >
+  account_name_type witness;
+  account_name_type account;
+};
+
+class witness_schedule_object : public object< witness_schedule_object_type, witness_schedule_object >
+{
+  CHAINBASE_OBJECT( witness_schedule_object );
+public:
+  CHAINBASE_DEFAULT_CONSTRUCTOR( witness_schedule_object )
+
+  fc::uint128                                        current_virtual_time = 0;
+  uint32_t                                           next_shuffle_block_num = 1;
+  fc::array< account_name_type, HIVE_MAX_WITNESSES > current_shuffled_witnesses;
+  uint8_t                                            num_scheduled_witnesses = 1;
+  uint8_t                                            elected_weight = 1;
+  uint8_t                                            timeshare_weight = 5;
+  uint8_t                                            miner_weight = 1;
+  uint32_t                                           witness_pay_normalization_factor = 25;
+  chain_properties                                   median_props;
+  version                                            majority_version;
+
+  uint8_t max_voted_witnesses            = HIVE_MAX_VOTED_WITNESSES_HF0;
+  uint8_t max_miner_witnesses            = HIVE_MAX_MINER_WITNESSES_HF0;
+  uint8_t max_runner_witnesses           = HIVE_MAX_RUNNER_WITNESSES_HF0;
+  uint8_t hardfork_required_witnesses    = HIVE_HARDFORK_REQUIRED_WITNESSES;
+
+  // Derived fields that are stored for easy caching and reading of values.
+  rd_dynamics_params account_subsidy_rd;
+  rd_dynamics_params account_subsidy_witness_rd;
+  int64_t            min_witness_account_subsidy_decay = 0;
+  
+  void copy_values_from( const witness_schedule_object& rhs )
   {
-    CHAINBASE_OBJECT( witness_schedule_object );
-    public:
-      CHAINBASE_DEFAULT_CONSTRUCTOR( witness_schedule_object )
+    current_virtual_time = rhs.current_virtual_time;
 
-      fc::uint128                                        current_virtual_time = 0;
-      uint32_t                                           next_shuffle_block_num = 1;
-      fc::array< account_name_type, HIVE_MAX_WITNESSES > current_shuffled_witnesses;
-      uint8_t                                            num_scheduled_witnesses = 1;
-      uint8_t                                            elected_weight = 1;
-      uint8_t                                            timeshare_weight = 5;
-      uint8_t                                            miner_weight = 1;
-      uint32_t                                           witness_pay_normalization_factor = 25;
-      chain_properties                                   median_props;
-      version                                            majority_version;
+    next_shuffle_block_num = rhs.next_shuffle_block_num;
+    current_shuffled_witnesses = rhs.current_shuffled_witnesses;
+    num_scheduled_witnesses = rhs.num_scheduled_witnesses;
+    elected_weight = rhs.elected_weight;
+    timeshare_weight = rhs.timeshare_weight;
+    miner_weight = rhs.miner_weight;
+    witness_pay_normalization_factor = rhs.witness_pay_normalization_factor;
+    median_props = rhs.median_props;
+    majority_version = rhs.majority_version;
 
-      uint8_t max_voted_witnesses            = HIVE_MAX_VOTED_WITNESSES_HF0;
-      uint8_t max_miner_witnesses            = HIVE_MAX_MINER_WITNESSES_HF0;
-      uint8_t max_runner_witnesses           = HIVE_MAX_RUNNER_WITNESSES_HF0;
-      uint8_t hardfork_required_witnesses    = HIVE_HARDFORK_REQUIRED_WITNESSES;
+    max_voted_witnesses = rhs.max_voted_witnesses;
+    max_miner_witnesses = rhs.max_miner_witnesses;
+    max_runner_witnesses = rhs.max_runner_witnesses;
+    hardfork_required_witnesses = rhs.hardfork_required_witnesses;
 
-      // Derived fields that are stored for easy caching and reading of values.
-      rd_dynamics_params account_subsidy_rd;
-      rd_dynamics_params account_subsidy_witness_rd;
-      int64_t            min_witness_account_subsidy_decay = 0;
-      
-      void copy_values_from(const witness_schedule_object& rhs)
-      {
-        current_virtual_time = rhs.current_virtual_time;
-
-        next_shuffle_block_num = rhs.next_shuffle_block_num;
-        current_shuffled_witnesses = rhs.current_shuffled_witnesses;
-        num_scheduled_witnesses = rhs.num_scheduled_witnesses;
-        elected_weight = rhs.elected_weight;
-        timeshare_weight = rhs.timeshare_weight;
-        miner_weight = rhs.miner_weight;
-        witness_pay_normalization_factor = rhs.witness_pay_normalization_factor;
-        median_props = rhs.median_props;
-        majority_version = rhs.majority_version;
-
-        max_voted_witnesses = rhs.max_voted_witnesses;
-        max_miner_witnesses = rhs.max_miner_witnesses;
-        max_runner_witnesses = rhs.max_runner_witnesses;
-        hardfork_required_witnesses = rhs.hardfork_required_witnesses;
-
-        // Derived fields that are stored for easy caching and reading of values.
-        account_subsidy_rd = rhs.account_subsidy_rd;
-        account_subsidy_witness_rd = rhs.account_subsidy_witness_rd;
-        min_witness_account_subsidy_decay = rhs.min_witness_account_subsidy_decay;
-      }
-  };
+    // Derived fields that are stored for easy caching and reading of values.
+    account_subsidy_rd = rhs.account_subsidy_rd;
+    account_subsidy_witness_rd = rhs.account_subsidy_witness_rd;
+    min_witness_account_subsidy_decay = rhs.min_witness_account_subsidy_decay;
+  }
+};
 
 } }
 

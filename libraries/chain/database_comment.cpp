@@ -34,9 +34,6 @@ using hive::protocol::comment_payout_update_operation;
 using hive::protocol::curation_reward_operation;
 using hive::protocol::vesting_shares_split_operation;
 
-// Note: reward_fund_object is always singular (only "post" fund exists).
-// process_comment_cashout operates directly on get_reward_fund() without multi-fund abstraction.
-
 void initialize_core_indexes_03( database& db )
 {
   HIVE_ADD_CORE_INDEX(db, block_summary_index);
