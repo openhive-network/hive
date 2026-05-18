@@ -5,36 +5,36 @@
 
 namespace hive { namespace chain {
 
-  using hive::protocol::HBD_price;
-  using chainbase::t_deque;
+using hive::protocol::HBD_price;
+using chainbase::t_deque;
 
-  /**
-    *  This object gets updated once per hour, on the hour. Tracks price of HIVE (technically in HBD, but
-    *  the meaning is in dollars).
-    */
-  class feed_history_object : public object< feed_history_object_type, feed_history_object, std::true_type >
+/**
+  *  This object gets updated once per hour, on the hour. Tracks price of HIVE (technically in HBD, but
+  *  the meaning is in dollars).
+  */
+class feed_history_object : public object< feed_history_object_type, feed_history_object, std::true_type >
+{
+  CHAINBASE_OBJECT( feed_history_object );
+public:
+  CHAINBASE_DEFAULT_CONSTRUCTOR( feed_history_object, (price_history) )
+
+  HBD_price current_median_history; ///< the current median of the price history, used as the base for most convert operations
+  HBD_price market_median_history; ///< same as current_median_history except when the latter is artificially changed upward
+  HBD_price current_min_history; ///< used as immediate price for collateralized conversion (after fee correction)
+  HBD_price current_max_history;
+
+  using t_price_history = t_deque< HBD_price >;
+  t_price_history price_history; ///< tracks this last week of median_feed one per hour
+
+  size_t get_dynamic_alloc() const
   {
-    CHAINBASE_OBJECT( feed_history_object );
-    public:
-      CHAINBASE_DEFAULT_CONSTRUCTOR( feed_history_object, (price_history) )
+    size_t size = 0;
+    size += price_history.size() * sizeof( decltype( price_history )::value_type );
+    return size;
+  }
 
-      HBD_price current_median_history; ///< the current median of the price history, used as the base for most convert operations
-      HBD_price market_median_history; ///< same as current_median_history except when the latter is artificially changed upward
-      HBD_price current_min_history; ///< used as immediate price for collateralized conversion (after fee correction)
-      HBD_price current_max_history;
-
-      using t_price_history = t_deque< HBD_price >;
-      t_price_history price_history; ///< tracks this last week of median_feed one per hour
-
-      size_t get_dynamic_alloc() const
-      {
-        size_t size = 0;
-        size += price_history.size() * sizeof( decltype( price_history )::value_type );
-        return size;
-      }
-
-    CHAINBASE_UNPACK_CONSTRUCTOR(feed_history_object, (price_history));
-  };
+  CHAINBASE_UNPACK_CONSTRUCTOR( feed_history_object, (price_history) );
+};
 
 } } // hive::chain
 

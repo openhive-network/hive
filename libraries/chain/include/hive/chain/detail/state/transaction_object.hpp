@@ -10,23 +10,23 @@
 
 namespace hive { namespace chain {
 
-  using hive::protocol::signed_transaction;
-  using chainbase::t_vector;
+using hive::protocol::signed_transaction;
+using chainbase::t_vector;
 
-  /**
-    * The purpose of this object is to enable the detection of duplicate transactions. When a transaction is included
-    * in a block a transaction_object is added. At the end of block processing all transaction_objects that have
-    * expired can be removed from the index.
-    */
-  class transaction_object : public object< transaction_object_type, transaction_object >
-  {
-    CHAINBASE_OBJECT( transaction_object );
-    public:
-      CHAINBASE_DEFAULT_CONSTRUCTOR( transaction_object )
+/**
+  * The purpose of this object is to enable the detection of duplicate transactions. When a transaction is included
+  * in a block a transaction_object is added. At the end of block processing all transaction_objects that have
+  * expired can be removed from the index.
+  */
+class transaction_object : public object< transaction_object_type, transaction_object >
+{
+  CHAINBASE_OBJECT( transaction_object );
+public:
+  CHAINBASE_DEFAULT_CONSTRUCTOR( transaction_object )
 
-      transaction_id_type  trx_id;
-      time_point_sec       expiration;
-  };
+  transaction_id_type  trx_id;
+  time_point_sec       expiration;
+};
 
 } } // hive::chain
 

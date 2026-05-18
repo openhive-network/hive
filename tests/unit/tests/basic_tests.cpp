@@ -110,9 +110,9 @@ namespace
 {
 
 struct dummy : public object< 1111, dummy >
-  {
+{
   CHAINBASE_OBJECT( dummy );
-  };
+};
 
 struct __test_for_alignment
 {

@@ -23,12 +23,12 @@ enum block_log_info_object_types
 class block_log_hash_state_object : public object< block_log_hash_state_object_type, block_log_hash_state_object >
 {
   CHAINBASE_OBJECT( block_log_hash_state_object );
-  public:
-    CHAINBASE_DEFAULT_CONSTRUCTOR( block_log_hash_state_object )
+public:
+  CHAINBASE_DEFAULT_CONSTRUCTOR( block_log_hash_state_object )
 
-    uint64_t                 total_size = 0;
-    fc::restartable_sha256   rsha256;
-    uint64_t                 last_interval = 0;
+  uint64_t                 total_size = 0;
+  fc::restartable_sha256   rsha256;
+  uint64_t                 last_interval = 0;
 };
 
 struct block_log_message_data
@@ -42,10 +42,10 @@ struct block_log_message_data
 class block_log_pending_message_object : public object< block_log_pending_message_object_type, block_log_pending_message_object >
 {
   CHAINBASE_OBJECT( block_log_pending_message_object );
-  public:
-    CHAINBASE_DEFAULT_CONSTRUCTOR( block_log_pending_message_object )
+public:
+  CHAINBASE_DEFAULT_CONSTRUCTOR( block_log_pending_message_object )
 
-    block_log_message_data   data;
+  block_log_message_data   data;
 };
 
 typedef oid_ref< block_log_hash_state_object > block_log_hash_state_id_type;

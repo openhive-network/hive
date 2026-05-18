@@ -25,11 +25,11 @@ enum reputation_plugin_object_type
 class reputation_object : public object< reputation_object_type, reputation_object >
 {
   CHAINBASE_OBJECT( reputation_object );
-  public:
-    CHAINBASE_DEFAULT_CONSTRUCTOR( reputation_object )
+public:
+  CHAINBASE_DEFAULT_CONSTRUCTOR( reputation_object )
 
-    account_name_type account;
-    share_type        reputation;
+  account_name_type account;
+  share_type        reputation;
 };
 
 typedef oid_ref< reputation_object > reputation_id_type;

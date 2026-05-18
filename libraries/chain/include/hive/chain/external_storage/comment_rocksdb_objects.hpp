@@ -20,22 +20,22 @@ class volatile_comment_object : public object< volatile_comment_object_type, vol
 {
   CHAINBASE_OBJECT( volatile_comment_object );
 
-  public:
+public:
 
-    CHAINBASE_DEFAULT_CONSTRUCTOR( volatile_comment_object )
+  CHAINBASE_DEFAULT_CONSTRUCTOR( volatile_comment_object )
 
-    const comment_object::author_and_permlink_hash_type& get_author_and_permlink_hash() const { return author_and_permlink_hash; }
-    void set_author_and_permlink_hash( const comment_object::author_and_permlink_hash_type& val ) { author_and_permlink_hash = val; }
+  const comment_object::author_and_permlink_hash_type& get_author_and_permlink_hash() const { return author_and_permlink_hash; }
+  void set_author_and_permlink_hash( const comment_object::author_and_permlink_hash_type& val ) { author_and_permlink_hash = val; }
 
-    comment_id_type                               comment_id;
-    comment_id_type                               parent_comment;
-    uint16_t                                      depth = 0;
+  comment_id_type                               comment_id;
+  comment_id_type                               parent_comment;
+  uint16_t                                      depth = 0;
 
-    uint32_t                                      block_number = 0;
+  uint32_t                                      block_number = 0;
 
-  private:
+private:
 
-    comment_object::author_and_permlink_hash_type author_and_permlink_hash;
+  comment_object::author_and_permlink_hash_type author_and_permlink_hash;
 };
 
 typedef oid_ref< volatile_comment_object > volatile_comment_id_type;
@@ -44,38 +44,37 @@ struct by_block;
 struct by_permlink;
 
 typedef multi_index_container<
-    volatile_comment_object,
-    indexed_by<
-      ordered_unique< tag< by_id >,
-        const_mem_fun< volatile_comment_object, volatile_comment_object::id_type, &volatile_comment_object::get_id > >,
-      ordered_unique< tag< by_block >,
-        composite_key< volatile_comment_object,
-          member< volatile_comment_object, uint32_t, &volatile_comment_object::block_number>,
-          const_mem_fun< volatile_comment_object, volatile_comment_object::id_type, &volatile_comment_object::get_id >
-        >
-      >,
-      ordered_unique< tag< by_permlink >,
-        const_mem_fun< volatile_comment_object, const comment_object::author_and_permlink_hash_type&, &volatile_comment_object::get_author_and_permlink_hash > >
+  volatile_comment_object,
+  indexed_by<
+    ordered_unique< tag< by_id >,
+      const_mem_fun< volatile_comment_object, volatile_comment_object::id_type, &volatile_comment_object::get_id > >,
+    ordered_unique< tag< by_block >,
+      composite_key< volatile_comment_object,
+        member< volatile_comment_object, uint32_t, &volatile_comment_object::block_number>,
+        const_mem_fun< volatile_comment_object, volatile_comment_object::id_type, &volatile_comment_object::get_id >
+      >
     >,
-    multi_index_allocator< volatile_comment_object >
-  > volatile_comment_index;
+    ordered_unique< tag< by_permlink >,
+      const_mem_fun< volatile_comment_object, const comment_object::author_and_permlink_hash_type&, &volatile_comment_object::get_author_and_permlink_hash > >
+  >,
+  multi_index_allocator< volatile_comment_object >
+> volatile_comment_index;
 
 class rocksdb_comment_object
 {
-  public:
+public:
+  rocksdb_comment_object(){}
 
-    rocksdb_comment_object(){}
+  rocksdb_comment_object( const volatile_comment_object& obj )
+  {
+    comment_id     = obj.comment_id;
+    parent_comment = obj.parent_comment;
+    depth          = obj.depth;
+  }
 
-    rocksdb_comment_object( const volatile_comment_object& obj )
-    {
-      comment_id                = obj.comment_id;
-      parent_comment            = obj.parent_comment;
-      depth                     = obj.depth;
-    }
-
-    comment_id_type comment_id;
-    comment_id_type parent_comment;
-    uint16_t        depth = 0;
+  comment_id_type comment_id;
+  comment_id_type parent_comment;
+  uint16_t        depth = 0;
 };
 
 } } // hive::chain
