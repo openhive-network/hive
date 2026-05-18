@@ -3165,7 +3165,7 @@ void database::clear_expired_delegations()
   } FC_CAPTURE_AND_RETHROW( (vop) ) }
 }
 
-void database::adjust_balance( const account_object& a, balance_base& any_balance, const asset& delta )
+void database::adjust_balance( const account_object& a, temp_balance& any_balance, const asset& delta )
 {
   if( delta.symbol.asset_num == HIVE_ASSET_NUM_HIVE )
   {
@@ -3186,7 +3186,7 @@ void database::adjust_balance( const account_object& a, balance_base& any_balanc
   }
 }
 
-void database::adjust_balance( const account_object& a, HIVE_balance_base& hive_balance, const HIVE_asset& delta )
+void database::adjust_balance( const account_object& a, temp_HIVE_balance& hive_balance, const HIVE_asset& delta )
 {
   if( delta.amount < 0 )
   {
@@ -3213,7 +3213,7 @@ void database::adjust_balance( const account_object& a, HIVE_balance_base& hive_
   } );
 }
 
-void database::adjust_balance( const account_object& a, HBD_balance_base& hbd_balance, const HBD_asset& delta )
+void database::adjust_balance( const account_object& a, temp_HBD_balance& hbd_balance, const HBD_asset& delta )
 {
   if( delta.amount < 0 )
   {
@@ -3268,7 +3268,7 @@ void database::adjust_balance( const account_object& a, HBD_balance_base& hbd_ba
   } );
 }
 
-void database::adjust_savings_balance( const account_object& a, balance_base& any_balance, const asset& delta )
+void database::adjust_savings_balance( const account_object& a, temp_balance& any_balance, const asset& delta )
 {
   if( delta.symbol.asset_num == HIVE_ASSET_NUM_HIVE )
   {
@@ -3289,7 +3289,7 @@ void database::adjust_savings_balance( const account_object& a, balance_base& an
   }
 }
 
-void database::adjust_savings_balance( const account_object& a, HIVE_balance_base& hive_balance, const HIVE_asset& delta )
+void database::adjust_savings_balance( const account_object& a, temp_HIVE_balance& hive_balance, const HIVE_asset& delta )
 {
   modify( a, [&]( account_object& acnt )
   {
@@ -3297,7 +3297,7 @@ void database::adjust_savings_balance( const account_object& a, HIVE_balance_bas
   } );
 }
 
-void database::adjust_savings_balance( const account_object& a, HBD_balance_base& hbd_balance, const HBD_asset& delta )
+void database::adjust_savings_balance( const account_object& a, temp_HBD_balance& hbd_balance, const HBD_asset& delta )
 {
   modify( a, [&]( account_object& acnt )
   {
@@ -3331,7 +3331,7 @@ void database::adjust_savings_balance( const account_object& a, HBD_balance_base
   } );
 }
 
-void database::adjust_reward_balance( const account_object& a, HIVE_balance_base& hive_balance, const HIVE_asset& value_delta )
+void database::adjust_reward_balance( const account_object& a, temp_HIVE_balance& hive_balance, const HIVE_asset& value_delta )
 {
   modify( a, [&]( account_object& acnt )
   {
@@ -3339,7 +3339,7 @@ void database::adjust_reward_balance( const account_object& a, HIVE_balance_base
   } );
 }
 
-void database::adjust_reward_balance( const account_object& a, HBD_balance_base& hbd_balance, const HBD_asset& value_delta )
+void database::adjust_reward_balance( const account_object& a, temp_HBD_balance& hbd_balance, const HBD_asset& value_delta )
 {
   modify( a, [&]( account_object& acnt )
   {
