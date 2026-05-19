@@ -1,7 +1,7 @@
 #pragma once
 
 #include <chainbase/allocators.hpp>
-#include <chainbase/chainbase.hpp>
+#include <chainbase/util/object.hpp>
 
 #include <fc/crypto/ripemd160.hpp>
 #include <fc/crypto/sha256.hpp>
