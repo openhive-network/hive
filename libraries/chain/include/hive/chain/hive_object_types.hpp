@@ -2,7 +2,8 @@
 
 #include <hive/chain/hive_fwd.hpp>
 
-#include <chainbase/chainbase.hpp>
+#include <chainbase/util/object.hpp>
+#include <chainbase/allocators.hpp>
 #include <chainbase/util/object_id_serialization.hpp>
 
 #include <hive/protocol/types.hpp>

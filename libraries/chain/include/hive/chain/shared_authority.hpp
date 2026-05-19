@@ -2,7 +2,7 @@
 #include <hive/chain/hive_object_types.hpp>
 
 #include <hive/protocol/authority.hpp>
-#include <chainbase/chainbase.hpp>
+#include <chainbase/util/object.hpp>
 #include <boost/interprocess/managed_mapped_file.hpp>
 
 namespace hive { namespace chain {
