@@ -1,5 +1,5 @@
 #include <hive/chain/rc/rc_utility.hpp>
-#include <hive/chain/rc/rc_objects.hpp>
+#include <hive/chain/rc/rc_objects_multiindex.hpp>
 #include <hive/chain/rc/rc_curve.hpp>
 #include <hive/chain/detail/state/account_object_multiindex.hpp>
 #include <hive/chain/database.hpp>

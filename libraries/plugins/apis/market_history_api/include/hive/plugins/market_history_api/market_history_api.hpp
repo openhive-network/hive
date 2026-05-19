@@ -1,6 +1,6 @@
 #pragma once
 #include <hive/plugins/json_rpc/utility.hpp>
-#include <hive/plugins/market_history/market_history_plugin.hpp>
+#include <hive/plugins/market_history/market_history_objects.hpp>
 
 #include <hive/protocol/hive_virtual_operations.hpp>
 #include <hive/protocol/types.hpp>

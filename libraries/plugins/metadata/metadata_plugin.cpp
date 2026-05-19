@@ -2,6 +2,7 @@
 #include <hive/chain/hive_fwd.hpp>
 
 #include <hive/plugins/metadata/metadata_plugin.hpp>
+#include <hive/plugins/metadata/metadata_objects_multiindex.hpp>
 
 #include <hive/chain/database.hpp>
 #include <hive/chain/index.hpp>

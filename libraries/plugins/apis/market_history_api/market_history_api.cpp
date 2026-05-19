@@ -1,5 +1,6 @@
 #include <hive/plugins/market_history_api/market_history_api_plugin.hpp>
 #include <hive/plugins/market_history_api/market_history_api.hpp>
+#include <hive/plugins/market_history/market_history_objects_multiindex.hpp>
 
 #include <hive/chain/detail/state/limit_order_object_multiindex.hpp>
 

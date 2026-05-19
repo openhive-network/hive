@@ -4,7 +4,7 @@
 #include <hive/protocol/hive_operations.hpp>
 #include <hive/protocol/config.hpp>
 #include <hive/plugins/transaction_status/transaction_status_plugin.hpp>
-#include <hive/plugins/transaction_status/transaction_status_objects.hpp>
+#include <hive/plugins/transaction_status/transaction_status_objects_multiindex.hpp>
 #include <hive/plugins/transaction_status_api/transaction_status_api_plugin.hpp>
 #include <hive/plugins/transaction_status_api/transaction_status_api.hpp>
 

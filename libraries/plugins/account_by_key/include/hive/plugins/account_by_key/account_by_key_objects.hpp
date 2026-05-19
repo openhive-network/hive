@@ -30,25 +30,7 @@ public:
 
 typedef oid_ref< key_lookup_object > key_lookup_id_type;
 
-struct by_key;
-
-typedef multi_index_container<
-  key_lookup_object,
-  indexed_by<
-    ordered_unique< tag< by_id >,
-      const_mem_fun< key_lookup_object, key_lookup_object::id_type, &key_lookup_object::get_id > >,
-    ordered_unique< tag< by_key >,
-      composite_key< key_lookup_object,
-        member< key_lookup_object, public_key_type, &key_lookup_object::key >,
-        member< key_lookup_object, account_name_type, &key_lookup_object::account >
-      >
-    >
-  >,
-  multi_index_allocator< key_lookup_object >
-> key_lookup_index;
-
 } } } // hive::plugins::account_by_key
 
 
 FC_REFLECT( hive::plugins::account_by_key::key_lookup_object, (id)(key)(account) )
-CHAINBASE_SET_INDEX_TYPE( hive::plugins::account_by_key::key_lookup_object, hive::plugins::account_by_key::key_lookup_index )

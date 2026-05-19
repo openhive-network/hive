@@ -51,31 +51,11 @@ public:
 typedef oid_ref< block_log_hash_state_object > block_log_hash_state_id_type;
 typedef oid_ref< block_log_pending_message_object > block_log_pending_message_id_type;
 
-typedef multi_index_container<
-  block_log_hash_state_object,
-  indexed_by<
-    ordered_unique< tag< by_id >,
-      const_mem_fun< block_log_hash_state_object, block_log_hash_state_object::id_type, &block_log_hash_state_object::get_id > >
-  >,
-  multi_index_allocator< block_log_hash_state_object >
-> block_log_hash_state_index;
-
-typedef multi_index_container<
-  block_log_pending_message_object,
-  indexed_by<
-    ordered_unique< tag< by_id >,
-      const_mem_fun< block_log_pending_message_object, block_log_pending_message_object::id_type, &block_log_pending_message_object::get_id > >
-  >,
-  multi_index_allocator< block_log_pending_message_object >
-> block_log_pending_message_index;
-
 } } } // hive::plugins::block_log_info
 
 
 FC_REFLECT( hive::plugins::block_log_info::block_log_hash_state_object, (id)(total_size)(rsha256)(last_interval) )
-CHAINBASE_SET_INDEX_TYPE( hive::plugins::block_log_info::block_log_hash_state_object, hive::plugins::block_log_info::block_log_hash_state_index )
 
 FC_REFLECT( hive::plugins::block_log_info::block_log_message_data, (block_num)(total_size)(current_interval)(rsha256) )
 
 FC_REFLECT( hive::plugins::block_log_info::block_log_pending_message_object, (id)(data) )
-CHAINBASE_SET_INDEX_TYPE( hive::plugins::block_log_info::block_log_pending_message_object, hive::plugins::block_log_info::block_log_pending_message_index )

@@ -30,22 +30,7 @@ public:
 
 typedef oid_ref<account_metadata_object> account_metadata_id_type;
 
-struct by_account {};
-
-typedef multi_index_container <
-  account_metadata_object,
-  indexed_by<
-    ordered_unique< tag< by_id >,
-      const_mem_fun< account_metadata_object, account_metadata_object::id_type, &account_metadata_object::get_id > >,
-    ordered_unique< tag< by_account >,
-      member< account_metadata_object, account_id_type, &account_metadata_object::account > >
-  >,
-  multi_index_allocator< account_metadata_object >
-> account_metadata_index;
-
 }}}
 
 FC_REFLECT( hive::plugins::metadata::account_metadata_object,
           (id)(account)(json_metadata)(posting_json_metadata) )
-
-CHAINBASE_SET_INDEX_TYPE( hive::plugins::metadata::account_metadata_object, hive::plugins::metadata::account_metadata_index )

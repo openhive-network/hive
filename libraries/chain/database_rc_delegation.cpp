@@ -1,4 +1,4 @@
-#include <hive/chain/rc/rc_objects.hpp>
+#include <hive/chain/rc/rc_objects_multiindex.hpp>
 
 #include <hive/chain/index.hpp>
 #include <chainbase/chainbase.inl>

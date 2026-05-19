@@ -2,7 +2,7 @@
 #include <hive/chain/hive_fwd.hpp>
 
 #include <hive/plugins/block_log_info/block_log_info_plugin.hpp>
-#include <hive/plugins/block_log_info/block_log_info_objects.hpp>
+#include <hive/plugins/block_log_info/block_log_info_objects_multiindex.hpp>
 
 #include <hive/chain/detail/state/account_object.hpp>
 #include <hive/chain/database.hpp>

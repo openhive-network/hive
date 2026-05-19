@@ -80,26 +80,8 @@ public:
   bool                          is_virtual = false;
 };
 
-struct by_block;
-
-typedef multi_index_container<
-  volatile_operation_object,
-  indexed_by<
-    ordered_unique< tag< by_id >,
-      const_mem_fun< volatile_operation_object, volatile_operation_object::id_type, &volatile_operation_object::get_id > >,
-    ordered_unique< tag< by_block >,
-      composite_key< volatile_operation_object,
-        member< volatile_operation_object, uint32_t, &volatile_operation_object::block>,
-        const_mem_fun< volatile_operation_object, volatile_operation_object::id_type, &volatile_operation_object::get_id >
-      >
-    >
-  >,
-  multi_index_allocator< volatile_operation_object >
-> volatile_operation_index;
-
 } } } // hive::plugins::account_history_rocksdb
 
 FC_REFLECT( hive::plugins::account_history_rocksdb::volatile_operation_object, (id)(trx_id)(block)(trx_in_block)(op_in_trx)(is_virtual)(timestamp)(serialized_op)(impacted)(transaction_status) )
-CHAINBASE_SET_INDEX_TYPE( hive::plugins::account_history_rocksdb::volatile_operation_object, hive::plugins::account_history_rocksdb::volatile_operation_index )
 
 FC_REFLECT( hive::plugins::account_history_rocksdb::rocksdb_operation_object, (id)(trx_id)(block)(trx_in_block)(op_in_trx)(is_virtual)(timestamp)(serialized_op) )

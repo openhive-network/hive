@@ -74,6 +74,7 @@
 #include <hive/chain/detail/state/withdraw_vesting_route_object_multiindex.hpp>
 
 #include <hive/plugins/account_history_rocksdb/account_history_rocksdb_plugin.hpp>
+#include <hive/plugins/account_history_rocksdb/account_history_rocksdb_objects_multiindex.hpp>
 #include <hive/plugins/witness/block_producer.hpp>
 
 #include <hive/utilities/tempdir.hpp>
