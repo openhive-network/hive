@@ -29,7 +29,7 @@
 #include <hive/protocol/hive_operations.hpp>
 #include <hive/protocol/hive_custom_operations.hpp>
 
-#include <hive/chain/rc/rc_objects.hpp>
+#include <hive/chain/rc/rc_objects_multiindex.hpp>
 
 #include "../db_fixture/clean_database_fixture.hpp"
 

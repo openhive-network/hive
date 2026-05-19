@@ -2,7 +2,7 @@
 #include <hive/chain/hive_fwd.hpp>
 
 #include <hive/plugins/reputation/reputation_plugin.hpp>
-#include <hive/plugins/reputation/reputation_objects.hpp>
+#include <hive/plugins/reputation/reputation_objects_multiindex.hpp>
 
 #include <hive/chain/util/impacted.hpp>
 

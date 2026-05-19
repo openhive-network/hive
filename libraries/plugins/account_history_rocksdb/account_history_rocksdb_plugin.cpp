@@ -2,6 +2,7 @@
 #include <hive/chain/hive_fwd.hpp>
 
 #include <hive/plugins/account_history_rocksdb/account_history_rocksdb_plugin.hpp>
+#include <hive/plugins/account_history_rocksdb/account_history_rocksdb_objects_multiindex.hpp>
 
 #include <hive/chain/database.hpp>
 #include <hive/chain/notifications.hpp>

@@ -17,7 +17,7 @@
 #include <hive/chain/full_transaction.hpp>
 #include <hive/protocol/hive_operations.hpp>
 
-#include <hive/plugins/market_history/market_history_plugin.hpp>
+#include <hive/plugins/market_history/market_history_objects_multiindex.hpp>
 #include <hive/plugins/market_history_api/market_history_api_plugin.hpp>
 #include <hive/plugins/market_history_api/market_history_api.hpp>
 

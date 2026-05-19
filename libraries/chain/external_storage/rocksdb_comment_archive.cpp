@@ -6,7 +6,7 @@
 
 #include <hive/chain/util/type_registrar_definition.hpp>
 
-#include <hive/chain/external_storage/comment_rocksdb_objects.hpp>
+#include <hive/chain/external_storage/comment_rocksdb_objects_multiindex.hpp>
 #include <hive/chain/external_storage/rocksdb_comment_archive.hpp>
 #include <hive/chain/external_storage/utilities.hpp>
 #include <hive/chain/external_storage/rocksdb_comment_storage_provider.hpp>

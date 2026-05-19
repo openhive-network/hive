@@ -1,7 +1,7 @@
 #ifdef IS_TEST_NET
 #include <boost/test/unit_test.hpp>
 
-#include <hive/chain/rc/rc_objects.hpp>
+#include <hive/chain/rc/rc_objects_multiindex.hpp>
 #include <hive/chain/database_exceptions.hpp>
 #include <hive/protocol/hive_custom_operations.hpp>
 #include <hive/chain/detail/state/comment_object.hpp>

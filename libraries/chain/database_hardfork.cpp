@@ -12,7 +12,7 @@
 #include <hive/chain/detail/state/witness_objects_multiindex.hpp>
 #include <hive/chain/witness_schedule.hpp>
 
-#include <hive/chain/rc/rc_objects.hpp>
+#include <hive/chain/rc/rc_objects_multiindex.hpp>
 
 #include <hive/protocol/get_config.hpp>
 #include <hive/protocol/hardfork.hpp>

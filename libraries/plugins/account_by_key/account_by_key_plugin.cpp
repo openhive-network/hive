@@ -2,7 +2,7 @@
 #include <hive/chain/hive_fwd.hpp>
 
 #include <hive/plugins/account_by_key/account_by_key_plugin.hpp>
-#include <hive/plugins/account_by_key/account_by_key_objects.hpp>
+#include <hive/plugins/account_by_key/account_by_key_objects_multiindex.hpp>
 
 #include <hive/chain/detail/state/account_object_multiindex.hpp>
 #include <hive/chain/database.hpp>

@@ -15,7 +15,7 @@
 #include <hive/chain/detail/state/recurrent_transfer_object.hpp>
 #include <hive/chain/detail/state/dhf_objects.hpp>
 #include <hive/chain/detail/state/transaction_object.hpp>
-#include <hive/chain/rc/rc_objects.hpp>
+#include <hive/chain/rc/rc_objects_multiindex.hpp>
 
 namespace hive { namespace chain {
 

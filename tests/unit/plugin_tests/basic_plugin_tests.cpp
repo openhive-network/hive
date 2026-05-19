@@ -1,13 +1,13 @@
 #if defined IS_TEST_NET
 #include <boost/test/unit_test.hpp>
 
-#include <hive/plugins/account_by_key/account_by_key_objects.hpp>
-#include <hive/plugins/account_history_rocksdb/account_history_rocksdb_objects.hpp>
+#include <hive/plugins/account_by_key/account_by_key_objects_multiindex.hpp>
+#include <hive/plugins/account_history_rocksdb/account_history_rocksdb_objects_multiindex.hpp>
 #include <hive/plugins/block_log_info/block_log_info_objects.hpp>
-#include <hive/plugins/market_history/market_history_plugin.hpp>
-#include <hive/plugins/metadata/metadata_objects.hpp>
-#include <hive/plugins/reputation/reputation_objects.hpp>
-#include <hive/plugins/transaction_status/transaction_status_objects.hpp>
+#include <hive/plugins/market_history/market_history_objects_multiindex.hpp>
+#include <hive/plugins/metadata/metadata_objects_multiindex.hpp>
+#include <hive/plugins/reputation/reputation_objects_multiindex.hpp>
+#include <hive/plugins/transaction_status/transaction_status_objects_multiindex.hpp>
 
 #include "../db_fixture/clean_database_fixture.hpp"
 

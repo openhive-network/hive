@@ -2,6 +2,7 @@
 #include <hive/chain/hive_fwd.hpp>
 
 #include <hive/plugins/market_history/market_history_plugin.hpp>
+#include <hive/plugins/market_history/market_history_objects_multiindex.hpp>
 
 #include <hive/chain/database.hpp>
 #include <hive/protocol/operations.hpp>

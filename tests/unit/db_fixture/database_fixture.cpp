@@ -34,6 +34,7 @@
 #include <sstream>
 
 #include "database_fixture.hpp"
+#include <hive/plugins/account_history_rocksdb/account_history_rocksdb_objects_multiindex.hpp>
 
 //using namespace hive::chain::test;
 
