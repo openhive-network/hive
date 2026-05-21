@@ -63,7 +63,7 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 
 #ifdef IS_TEST_NET
 
-#define HIVE_BLOCKCHAIN_VERSION             ( version(1, 28, 6) ) /// no new HF atm
+#define HIVE_BLOCKCHAIN_VERSION             ( version(1, 29, 0) )
 
 #define OLD_CHAIN_ID                          (fc::sha256::hash("testnet"))
 #define HIVE_CHAIN_ID                         (fc::sha256::hash("testnet"))
