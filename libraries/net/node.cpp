@@ -4897,7 +4897,30 @@ namespace graphene { namespace net {
 
       try
       {
-        new_peer->connect_to(remote_endpoint, _actual_listening_endpoint);  // blocks until the connection is established and secure connection is negotiated
+        // Bind the outbound socket's local side to our advertised listening port so
+        // peers see us connecting from it. initiate_connect_to() opened the socket for
+        // the remote peer's address family, so the local bind address must use that same
+        // family or the bind fails (EINVAL for an IPv4 address on an IPv6 socket,
+        // EAFNOSUPPORT for an IPv6 address on an IPv4 socket). When we listen on a
+        // wildcard address, substitute the wildcard of the remote's family while keeping
+        // the port; when we listen on a specific address, only bind it if the families
+        // match, otherwise let the OS choose the local endpoint.
+        fc::optional<fc::ip::endpoint> local_endpoint;
+        if (_actual_listening_endpoint.port() != 0)
+        {
+          static const fc::ip::address ipv4_any;                       // 0.0.0.0
+          static const fc::ip::address ipv6_any{ fc::string("::") };   // ::
+          const fc::ip::address& listen_address = _actual_listening_endpoint.get_address();
+          const bool remote_is_ipv6 = remote_endpoint.get_address().is_ipv6();
+          if (listen_address == ipv4_any || listen_address == ipv6_any)
+            local_endpoint = fc::ip::endpoint(remote_is_ipv6 ? ipv6_any : ipv4_any,
+                                              _actual_listening_endpoint.port());
+          else if (listen_address.is_ipv6() == remote_is_ipv6)
+            local_endpoint = _actual_listening_endpoint;
+          // else: specific listening address of the other family; let the OS pick the local endpoint
+        }
+
+        new_peer->connect_to(remote_endpoint, local_endpoint);  // blocks until the connection is established and secure connection is negotiated
 
         // we connected to the peer.  guess they're not firewalled....
         new_peer->is_firewalled = firewalled_state::not_firewalled;
