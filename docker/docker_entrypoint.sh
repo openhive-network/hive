@@ -71,12 +71,22 @@ trap cleanup EXIT
 
 echo "Attempting to execute hived using additional command line arguments: ${HIVED_ARGS[*]}"
 
+# Listening endpoints for hived, overridable via the container environment so a
+# node can opt into IPv6, e.g. P2P_ENDPOINT=[::]:2001 (dual-stack on Linux) or a
+# specific address such as P2P_ENDPOINT=[2001:db8::1]:2001.
+# Defaults stay 0.0.0.0 (IPv4) for now: switching the default to dual-stack [::]
+# is deferred until a release includes the P2P outbound-connection bind fix, so
+# that current binaries keep sourcing outbound connections from the listening port.
+P2P_ENDPOINT="${P2P_ENDPOINT:-0.0.0.0:${P2P_PORT}}"
+WS_ENDPOINT="${WS_ENDPOINT:-0.0.0.0:${WS_PORT}}"
+HTTP_ENDPOINT="${HTTP_ENDPOINT:-0.0.0.0:${HTTP_PORT}}"
+
 {
 /bin/bash << EOF
 echo "Attempting to execute hived using additional command line arguments: ${HIVED_ARGS[*]}"
 set -euo pipefail
 
-/home/hived/bin/hived --webserver-ws-endpoint=0.0.0.0:${WS_PORT} --webserver-http-endpoint=0.0.0.0:${HTTP_PORT} --p2p-endpoint=0.0.0.0:${P2P_PORT} \
+/home/hived/bin/hived --webserver-ws-endpoint="${WS_ENDPOINT}" --webserver-http-endpoint="${HTTP_ENDPOINT}" --p2p-endpoint="${P2P_ENDPOINT}" \
   --data-dir="$DATADIR" --shared-file-dir="$SHM_DIR"  \
   ${HIVED_ARGS[@]} 2>&1 | tee -i "$DATADIR/hived.log"
 hived_return_code="\$?"
