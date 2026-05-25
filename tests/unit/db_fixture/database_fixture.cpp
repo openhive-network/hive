@@ -141,6 +141,11 @@ void database_fixture::generate_block(uint32_t skip, const fc::ecc::private_key&
   db_plugin->debug_generate_blocks( key, 1, skip, miss_blocks, true );
 }
 
+void database_fixture::generate_block_from_pending()
+{
+  db_plugin->debug_generate_blocks( fc::optional< fc::ecc::private_key >(), 1, default_skip, 0, true, true );
+}
+
 uint32_t database_fixture::generate_blocks(const fc::ecc::private_key& debug_key, uint32_t count, uint32_t skip)
 {
   return db_plugin->debug_generate_blocks(debug_key, count, skip, 0, true);
