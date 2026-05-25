@@ -257,6 +257,12 @@ struct database_fixture {
                       const fc::ecc::private_key& key = committee,
                       int miss_blocks = 0);
 
+  /**
+    * Generates block "in queen mode" - putting pending transactions into block without checking.
+    * Best used with db_plugin->debug_push_pending_transaction
+    */
+  void generate_block_from_pending();
+
   uint32_t generate_blocks( const fc::ecc::private_key& key, uint32_t count, uint32_t skip );
 
   uint32_t generate_blocks_until( const fc::ecc::private_key& key, const fc::time_point_sec& head_block_time,

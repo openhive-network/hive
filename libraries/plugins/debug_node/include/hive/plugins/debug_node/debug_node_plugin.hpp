@@ -109,7 +109,8 @@ class debug_node_plugin : public plugin< debug_node_plugin >
       uint32_t count,
       uint32_t skip,
       uint32_t miss_blocks,
-      bool immediate_generation
+      bool immediate_generation,
+      bool skip_tx_reapplication = false // uses transactions from pending "as is" without reapplication
       );
     uint32_t debug_generate_blocks_until(
       fc::optional<fc::ecc::private_key> debug_key,

@@ -36,9 +36,12 @@ class debug_generate_block_flow_control final : public hive::chain::generate_blo
 public:
   using hive::chain::generate_block_flow_control::generate_block_flow_control;
   debug_generate_block_flow_control( const fc::time_point_sec _block_ts, const protocol::account_name_type& _wo,
-    const fc::ecc::private_key& _key, uint32_t _skip, bool _print_stats )
-    : generate_block_flow_control( _block_ts, _wo, _key, _skip ), print_stats( _print_stats ) {}
+    const fc::ecc::private_key& _key, uint32_t _skip, bool _print_stats, bool _skip_tx_reapplication )
+  : generate_block_flow_control( _block_ts, _wo, _key, _skip ),
+    print_stats( _print_stats ), skip_tx_reapplication( _skip_tx_reapplication ) {}
   virtual ~debug_generate_block_flow_control() = default;
+
+  virtual bool skip_transaction_reapplication() const override { return skip_tx_reapplication; }
 
   virtual void on_worker_done( appbase::application& app ) const override
   {
@@ -53,6 +56,7 @@ private:
   virtual const char* buffer_type() const override { return "debug"; }
 
   bool print_stats = true;
+  bool skip_tx_reapplication = false;
 };
 
 class debug_node_plugin_impl
@@ -355,7 +359,7 @@ void debug_node_plugin::debug_set_vest_price( const VEST_price& new_price,
 }
 
 uint32_t debug_node_plugin::debug_generate_blocks( fc::optional<fc::ecc::private_key> debug_private_key,
-  uint32_t count, uint32_t skip, uint32_t miss_blocks, bool immediate_generation )
+  uint32_t count, uint32_t skip, uint32_t miss_blocks, bool immediate_generation, bool skip_tx_reapplication )
 {
   if( count == 0 )
     return 0;
@@ -400,8 +404,8 @@ uint32_t debug_node_plugin::debug_generate_blocks( fc::optional<fc::ecc::private
       break;
     }
 
-    auto generate_block_ctrl = std::make_shared< detail::debug_generate_block_flow_control >(scheduled_time,
-      scheduled_witness_name, private_key, skip, logging);
+    auto generate_block_ctrl = std::make_shared< detail::debug_generate_block_flow_control >( scheduled_time,
+      scheduled_witness_name, private_key, skip, logging, skip_tx_reapplication );
 
     if( immediate_generation ) // use this mode when called from debug node API (it takes write lock) - also in most unit tests
     {
