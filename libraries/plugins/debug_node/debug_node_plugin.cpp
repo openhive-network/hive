@@ -65,7 +65,7 @@ class debug_node_plugin_impl
     chain::database&                          _db;
     plugins::witness::witness_plugin*         _witness_plugin_ptr = nullptr;
 
-    typedef std::vector< std::pair< protocol::transaction_id_type, bool> > current_debug_update_transactions;
+    typedef std::vector< std::pair< protocol::transaction_id_type, bool > > current_debug_update_transactions;
     current_debug_update_transactions         _current_debug_update_txs;
     bool                                      _force_new_artificial_transaction_for_debug_update = true;
 
@@ -172,6 +172,31 @@ const protocol::transaction_id_type& debug_node_plugin::make_artificial_transact
   return my->_current_debug_update_txs.back().first;
 }
 
+void debug_node_plugin::debug_push_pending_transaction( const std::shared_ptr<hive::chain::full_transaction_type>& tx )
+{
+  auto& db = database();
+  auto now = db.head_block_time();
+
+  if( tx->get_runtime_expiration() == fc::time_point_sec::min() )
+  {
+    auto expiration = tx->get_transaction().expiration;
+    if( db.has_hardfork( HIVE_HARDFORK_1_28_EXPIRATION_TIME ) )
+    {
+      HIVE_ASSERT( expiration <= now + HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION, hive::chain::transaction_expiration_exception,
+        "", (expiration)(now)("max_til_exp", HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION) );
+      tx->set_runtime_expiration( std::min( expiration, now + HIVE_MAX_TIME_UNTIL_EXPIRATION ) );
+    }
+    else
+    {
+      HIVE_ASSERT( expiration <= now + HIVE_MAX_TIME_UNTIL_EXPIRATION, hive::chain::transaction_expiration_exception,
+        "", (expiration)(now)("max_til_exp", HIVE_MAX_TIME_UNTIL_EXPIRATION) );
+      tx->set_runtime_expiration( expiration );
+    }
+  }
+
+  db._pending_tx.push_back( tx );
+  db._pending_tx_size += tx->get_transaction_size();
+}
 
 /*
 void debug_apply_update( chain::database& db, const fc::variant_object& vo, bool logging )
