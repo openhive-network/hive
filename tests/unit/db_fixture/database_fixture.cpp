@@ -485,6 +485,26 @@ void database_fixture::recurrent_transfer( const string& from, const string& to,
   push_transaction( op, key );
 }
 
+full_transaction_ptr database_fixture::build_transaction( const operation& op, const fc::ecc::private_key& key )
+{
+  signed_transaction tx;
+  tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+  tx.operations.push_back( op );
+  auto pack = hive::protocol::serialization_mode_controller::get_current_pack();
+  if( key == fc::ecc::private_key() )
+    return build_transaction( tx, std::vector<fc::ecc::private_key>(), pack );
+  else
+    return build_transaction( tx, std::vector<fc::ecc::private_key>{ key }, pack );
+}
+
+full_transaction_ptr database_fixture::build_transaction( const signed_transaction& tx, const std::vector<fc::ecc::private_key>& keys,
+  hive::protocol::pack_type pack )
+{
+  full_transaction_ptr _tx = hive::chain::full_transaction_type::create_from_signed_transaction( tx, pack, false );
+  _tx->sign_transaction( keys, db->get_chain_id(), pack );
+  return _tx;
+}
+
 void database_fixture::push_transaction( const operation& op, const fc::ecc::private_key& key )
 {
   signed_transaction tx;
@@ -505,8 +525,7 @@ full_transaction_ptr database_fixture::push_transaction_ex( const signed_transac
 full_transaction_ptr database_fixture::push_transaction_ex( const signed_transaction& tx, const std::vector<fc::ecc::private_key>& keys,
   uint32_t skip_flags, hive::protocol::pack_type pack_type )
 {
-  full_transaction_ptr _tx = hive::chain::full_transaction_type::create_from_signed_transaction( tx, pack_type, false );
-  _tx->sign_transaction( keys, db->get_chain_id(), pack_type );
+  full_transaction_ptr _tx = build_transaction( tx, keys, pack_type );
   get_chain_plugin().push_transaction( _tx, skip_flags );
   return _tx;
 }

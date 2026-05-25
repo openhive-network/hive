@@ -328,6 +328,10 @@ struct database_fixture {
                         optional<public_key_type> memo_key, const string& metadata, const string& posting_metadata,
                         const fc::ecc::private_key& key );
 
+  full_transaction_ptr build_transaction( const operation& op, const fc::ecc::private_key& key );
+  full_transaction_ptr build_transaction( const signed_transaction& tx, const std::vector<fc::ecc::private_key>& keys,
+    hive::protocol::pack_type pack = hive::protocol::serialization_mode_controller::get_current_pack() );
+
   void push_transaction( const operation& op, const fc::ecc::private_key& key );
   full_transaction_ptr push_transaction( const signed_transaction& tx, const fc::ecc::private_key& key = fc::ecc::private_key() ) { return push_transaction_ex( tx, key ); }
   full_transaction_ptr push_transaction( const signed_transaction& tx, const std::vector<fc::ecc::private_key>& keys ) { return push_transaction_ex( tx, keys ); }

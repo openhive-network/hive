@@ -761,5 +761,98 @@ BOOST_AUTO_TEST_CASE( failure_during_fork_switch )
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( skip_faulty_tx_during_block_production )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Test if faulty transaction is skipped when block is produced" );
+
+    ACTORS( (alice)(bob) )
+    fund( "alice", HIVE_asset( 2000 ) );
+    generate_block();
+
+    transfer_operation transfer;
+    transfer.from = "alice";
+    transfer.to = "bob";
+    transfer.amount = ASSET( "1.000 TESTS" );
+    db_plugin->debug_push_pending_transaction( build_transaction( transfer, alice_private_key ) );
+    transfer.amount = ASSET( "2.000 TESTS" );
+    db_plugin->debug_push_pending_transaction( build_transaction( transfer, alice_private_key ) );
+    transfer.amount = ASSET( "0.500 TESTS" );
+    db_plugin->debug_push_pending_transaction( build_transaction( transfer, alice_private_key ) );
+    transfer.from = "bob";
+    transfer.to = "alice";
+    transfer.amount = ASSET( "1.500 TESTS" );
+    db_plugin->debug_push_pending_transaction( build_transaction( transfer, bob_private_key ) );
+
+    // transactions pushed directly to pending without evaluation
+    BOOST_REQUIRE_EQUAL( get_hive_balance( "alice" ), HIVE_asset( 2000 ) );
+    BOOST_REQUIRE_EQUAL( get_hive_balance( "bob" ), HIVE_asset( 0 ) );
+
+    // block contains 3 transactions, second one is skipped, but applied after the block from pending
+    expectation_set check( *db );
+    check.expect( expectation::gen_block( expectation::PRE_TX ) );
+    check.expect( expectation::gen_block( expectation::POST_TX ) );
+    check.expect( expectation::gen_block( expectation::PRE_TX ) ); // transfer too big - skipped
+    check.expect( expectation::gen_block( expectation::PRE_TX ) );
+    check.expect( expectation::gen_block( expectation::POST_TX ) );
+    check.expect( expectation::gen_block( expectation::PRE_TX ) );
+    check.expect( expectation::gen_block( expectation::POST_TX ) );
+    check.expect( expectation::p2p_block( expectation::PRE_BLOCK ) );
+    check.expect( expectation::p2p_block( expectation::PRE_TX ) );
+    check.expect( expectation::p2p_block( expectation::POST_TX ) );
+    check.expect( expectation::p2p_block( expectation::PRE_TX ) );
+    check.expect( expectation::p2p_block( expectation::POST_TX ) );
+    check.expect( expectation::p2p_block( expectation::PRE_TX ) );
+    check.expect( expectation::p2p_block( expectation::POST_TX ) );
+    check.expect( expectation::p2p_block( expectation::POST_BLOCK ) );
+    check.expect( expectation::pending_transaction( expectation::PRE_TX ) ); // transfer ok after last tx
+    check.expect( expectation::pending_transaction( expectation::POST_TX ) );
+    generate_block();
+    check.check_empty();
+
+    BOOST_REQUIRE_EQUAL( get_hive_balance( "alice" ), HIVE_asset( 0 ) );
+    BOOST_REQUIRE_EQUAL( get_hive_balance( "bob" ), HIVE_asset( 2000 ) );
+
+    // when pending are removed, effects also disappear
+    db->clear_pending();
+    check.expect( expectation::p2p_block( expectation::PRE_BLOCK ) );
+    check.expect( expectation::p2p_block( expectation::POST_BLOCK ) );
+    generate_block();
+    check.check_empty();
+
+    BOOST_REQUIRE_EQUAL( get_hive_balance( "alice" ), HIVE_asset( 2000 ) );
+    BOOST_REQUIRE_EQUAL( get_hive_balance( "bob" ), HIVE_asset( 0 ) );
+
+    // do the same again but without transfer back from bob
+    transfer.from = "alice";
+    transfer.to = "bob";
+    transfer.amount = ASSET( "1.000 TESTS" );
+    db_plugin->debug_push_pending_transaction( build_transaction( transfer, alice_private_key ) );
+    transfer.amount = ASSET( "2.000 TESTS" );
+    db_plugin->debug_push_pending_transaction( build_transaction( transfer, alice_private_key ) );
+    transfer.amount = ASSET( "0.500 TESTS" );
+    db_plugin->debug_push_pending_transaction( build_transaction( transfer, alice_private_key ) );
+
+    check.expect( expectation::gen_block( expectation::PRE_TX ) );
+    check.expect( expectation::gen_block( expectation::POST_TX ) );
+    check.expect( expectation::gen_block( expectation::PRE_TX ) ); // transfer too big - skipped
+    check.expect( expectation::gen_block( expectation::PRE_TX ) );
+    check.expect( expectation::gen_block( expectation::POST_TX ) );
+    check.expect( expectation::p2p_block( expectation::PRE_BLOCK ) );
+    check.expect( expectation::p2p_block( expectation::PRE_TX ) );
+    check.expect( expectation::p2p_block( expectation::POST_TX ) );
+    check.expect( expectation::p2p_block( expectation::PRE_TX ) );
+    check.expect( expectation::p2p_block( expectation::POST_TX ) );
+    check.expect( expectation::p2p_block( expectation::POST_BLOCK ) );
+    check.expect( expectation::pending_transaction( expectation::PRE_TX ) ); // transfer fails and is removed from pending
+    generate_block();
+    check.check_empty();
+
+    BOOST_REQUIRE_EQUAL( get_hive_balance( "alice" ), HIVE_asset( 500 ) );
+    BOOST_REQUIRE_EQUAL( get_hive_balance( "bob" ), HIVE_asset( 1500 ) );
+  }
+  FC_LOG_AND_RETHROW()
+}
 
 BOOST_AUTO_TEST_SUITE_END()
