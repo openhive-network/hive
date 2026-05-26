@@ -334,8 +334,10 @@ void webserver_plugin_impl<websocket_server_type>::notify( const std::string& ty
   collector_t collector;
   const fc::string address = endpoint->address().to_string();
   const uint16_t port = endpoint->port();
+  // Bracket IPv6 addresses for display so e.g. "::" doesn't render as ":::8091".
+  const fc::string log_address = endpoint->address().is_v6() ? "[" + address + "]" : address;
 
-  ilog( "Reserved endpoint for ${type} is ${address}:${port}", ( "type", type )( "address", address )( "port", port ) );
+  ilog( "Reserved endpoint for ${type} is ${address}:${port}", ( "type", type )( "address", log_address )( "port", port ) );
 
   collector.assign_values(
     "type",     type,
