@@ -1497,12 +1497,12 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
       ("block-log-compression-level", bpo::value<int>()->default_value(15), "Block log zstd compression level 0 (fast, low compression) - 22 (slow, high compression)" )
       ("blockchain-thread-pool-size", bpo::value<uint32_t>()->default_value(8)->value_name("size"), "Number of worker threads used to pre-validate transactions and blocks")
       ("block-stats-report-type", bpo::value<string>()->default_value("FULL"), "Level of detail of block stat reports: NONE, MINIMAL, REGULAR, FULL. Default FULL (recommended for API nodes)." )
-      ("block-stats-report-output", bpo::value<string>()->default_value("ILOG"), "Where to put block stat reports: DLOG, ILOG, NOTIFY, LOG_NOTIFY. Default ILOG." )
+      ("block-stats-report-output", bpo::value<string>()->default_value("ILOG"), "Where to put block stat reports: DLOG, ILOG, NOTIFY, LOG_NOTIFY, JSONL. Default ILOG. JSONL puts output to block_stats.jsonl" )
 #ifdef USE_ALTERNATE_CHAIN_ID
       ("alternate-chain-spec", boost::program_options::value<string>(), "Filepath for the alternate chain specification in JSON format")
 #endif
       ("rc-stats-report-type", bpo::value<string>()->default_value( "REGULAR" ), "Level of detail of daily RC stat reports: NONE, MINIMAL, REGULAR, FULL. Default REGULAR." )
-      ("rc-stats-report-output", bpo::value<string>()->default_value( "ILOG" ), "Where to put daily RC stat reports: DLOG, ILOG, NOTIFY, LOG_NOTIFY. Default ILOG." )
+      ("rc-stats-report-output", bpo::value<string>()->default_value( "ILOG" ), "Where to put daily RC stat reports: DLOG, ILOG, NOTIFY, LOG_NOTIFY, JSONL. Default ILOG. JSONL puts output to rc_stats.jsonl" )
       ("block-log-split", bpo::value<int>()->default_value( 9999 ), "Whether the block log should be single file (-1), not used at all & keeping only head block in memory (0), or split into files each containing 1M blocks & keeping N full million latest blocks (N). Default 9999." )
       ("max-mempool-size", bpo::value<string>()->default_value( "100M" ), "Postponed transactions that exceed limit are dropped from pending. Setting 0 means only pending transactions that fit in reapplication window of 200ms will stay in mempool.")
       ("rc-flood-level", bpo::value<uint16_t>()->default_value( 20 ), "Number of full blocks that can be present in mempool before RC surcharge is applied. 0-65535. Default 20 (one minute of full blocks).")

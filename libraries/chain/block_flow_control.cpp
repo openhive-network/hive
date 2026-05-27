@@ -4,7 +4,19 @@
 
 #include <hive/utilities/notifications.hpp>
 
+#include <fc/io/json.hpp>
+
+#include <fstream>
+
 namespace hive { namespace chain {
+
+namespace {
+  std::ofstream& get_block_stats_jsonl_stream()
+  {
+    static std::ofstream stream( "block_stats.jsonl", std::ios::out | std::ios::app );
+    return stream;
+  }
+}
 
 block_flow_control::report_type block_flow_control::auto_report_type = block_flow_control::report_type::FULL;
 block_flow_control::report_output block_flow_control::auto_report_output = block_flow_control::report_output::ILOG;
@@ -39,6 +51,8 @@ void block_flow_control::set_auto_report( const std::string& _option_type, const
     auto_report_output = report_output::ILOG;
   else if( _option_output == "DLOG" )
     auto_report_output = report_output::DLOG;
+  else if( _option_output == "JSONL" )
+    auto_report_output = report_output::JSONL;
   else
     FC_THROW_EXCEPTION( fc::parse_error_exception, "Unknown block stats report output" );
 }
@@ -111,6 +125,13 @@ void block_flow_control::on_worker_done( appbase::application& app ) const
     //  continue to ILOG
   case report_output::ILOG:
     ilog( "Block stats:${report}", ( report ) );
+    break;
+  case report_output::JSONL:
+    {
+      auto& stream = get_block_stats_jsonl_stream();
+      stream << fc::json::to_string( fc::variant( report ) ) << '\n';
+      stream.flush();
+    }
     break;
   default:
     dlog( "Block stats:${report}", ( report ) );
