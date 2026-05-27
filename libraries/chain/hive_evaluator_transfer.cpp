@@ -534,9 +534,16 @@ void collateralized_convert_evaluator::do_apply( const collateralized_convert_op
 
 void limit_order_create_evaluator::do_apply( const limit_order_create_operation& o )
 {
-  HIVE_CHAIN_TIME_ASSERT( o.expiration > _db.head_block_time(), o.expiration, "Limit order has to expire after head block time." );
+  HIVE_CHAIN_TIME_ASSERT( o.expiration > _db.head_block_time() && "Limit order", o.expiration,
+    "Limit order has to expire after head block time." );
 
-  FC_TODO( "Limit to HIVE/HBD after next hardfork (HF29)" ); // if possible edit check in validate after hardfork triggers
+  // once HF29 triggers try trimming the check in validate
+  if( _db.is_in_control() || _db.has_hardfork( HIVE_HARDFORK_1_29_FIX_LIMIT_ORDER_ASSETS ) )
+  {
+    HIVE_PROTOCOL_ASSET_ASSERT( ( is_asset_type( o.amount_to_sell, HIVE_SYMBOL ) && is_asset_type( o.min_to_receive, HBD_SYMBOL ) )
+      || ( is_asset_type( o.amount_to_sell, HBD_SYMBOL ) && is_asset_type( o.min_to_receive, HIVE_SYMBOL ) ),
+      "Limit order must be for the HIVE:HBD market", ("subject", o.amount_to_sell)(o.min_to_receive) );
+  }
 
   time_point_sec expiration = o.expiration;
   if( _db.has_hardfork( HIVE_HARDFORK_0_20__1449 ) ) // 307842c657d54f576615cd312a425c517ad68db4 example tx with extra long expiration
@@ -565,9 +572,16 @@ void limit_order_create_evaluator::do_apply( const limit_order_create_operation&
 
 void limit_order_create2_evaluator::do_apply( const limit_order_create2_operation& o )
 {
-  HIVE_CHAIN_TIME_ASSERT( o.expiration > _db.head_block_time() && "Limit order has to expire after head block time.", o.expiration, "Order expiration ${subject} is not after head block time." );
+  HIVE_CHAIN_TIME_ASSERT( o.expiration > _db.head_block_time() && "Limit order 2",
+    o.expiration, "Limit order has to expire after head block time." );
 
-  FC_TODO( "Limit to HIVE/HBD after next hardfork (HF29)" ); // if possible edit check in validate after hardfork triggers
+  // once HF29 triggers try trimming the check in validate
+  if( _db.is_in_control() || _db.has_hardfork( HIVE_HARDFORK_1_29_FIX_LIMIT_ORDER_ASSETS ) )
+  {
+    HIVE_PROTOCOL_ASSET_ASSERT( ( is_asset_type( o.amount_to_sell, HIVE_SYMBOL ) && is_asset_type( o.exchange_rate.quote, HBD_SYMBOL ) )
+      || ( is_asset_type( o.amount_to_sell, HBD_SYMBOL ) && is_asset_type( o.exchange_rate.quote, HIVE_SYMBOL ) ),
+      "Limit order must be for the HIVE:HBD market", ("subject", o.amount_to_sell)(o.exchange_rate) );
+  }
 
   time_point_sec expiration = o.expiration;
   if( _db.has_hardfork( HIVE_HARDFORK_0_20__1449 ) ) // 8bce7ca4b2bea9af848db927342a88f82eea0684 example tx with extra long expiration
