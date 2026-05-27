@@ -22,4 +22,6 @@
 #define HIVE_HARDFORK_1_29_ALLOW_MODIFY_LAST_RECURRENT_TRANSFER (HIVE_HARDFORK_1_29)
 // authority size limit can no longer be circumvented with use of account recovery
 #define HIVE_HARDFORK_1_29_FIX_ENFORCEMENT_OF_AUTHORITY_SIZE_ON_RECOVERY_REQUEST (HIVE_HARDFORK_1_29)
+// it is no longer possible to use nonexisting asset to post limit order
+#define HIVE_HARDFORK_1_29_FIX_LIMIT_ORDER_ASSETS (HIVE_HARDFORK_1_29)
 #endif
