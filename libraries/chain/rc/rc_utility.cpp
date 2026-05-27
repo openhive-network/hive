@@ -11,12 +11,23 @@
 
 #include <appbase/application.hpp>
 
+#include <fc/io/json.hpp>
 #include <fc/reflect/variant.hpp>
 #include <fc/uint128.hpp>
+
+#include <fstream>
 
 namespace hive { namespace chain {
 
 using fc::uint128_t;
+
+namespace {
+  std::ofstream& get_rc_stats_jsonl_stream()
+  {
+    static std::ofstream stream( "rc_stats.jsonl", std::ios::out | std::ios::app );
+    return stream;
+  }
+}
 
 resource_credits::report_type resource_credits::auto_report_type = resource_credits::report_type::REGULAR;
 resource_credits::report_output resource_credits::auto_report_output = resource_credits::report_output::ILOG;
@@ -134,6 +145,8 @@ void resource_credits::set_auto_report( const std::string& _option_type, const s
     ro = report_output::ILOG;
   else if( _option_output == "DLOG" )
     ro = report_output::DLOG;
+  else if( _option_output == "JSONL" )
+    ro = report_output::JSONL;
   else
     FC_THROW_EXCEPTION( fc::parse_error_exception, "Unknown RC stats report output" );
 
@@ -697,6 +710,13 @@ void resource_credits::handle_auto_report( uint32_t block_num, int64_t global_re
       //  continue to ILOG
     case report_output::ILOG:
       ilog( "RC stats:${report}", ( report ) );
+      break;
+    case report_output::JSONL:
+      {
+        auto& stream = get_rc_stats_jsonl_stream();
+        stream << fc::json::to_string( fc::variant( report ) ) << '\n';
+        stream.flush();
+      }
       break;
     default:
       dlog( "RC stats:${report}", ( report ) );

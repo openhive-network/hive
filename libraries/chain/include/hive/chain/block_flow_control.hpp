@@ -123,7 +123,7 @@ public:
     REGULAR, //almost everything, useful for non-API nodes
     FULL //everything, useful for API nodes
   };
-  enum class report_output { DLOG, ILOG, NOTIFY, BOTH };
+  enum class report_output { DLOG, ILOG, NOTIFY, BOTH, JSONL };
 
   static void set_auto_report( const std::string& _option_type, const std::string& _option_output );
   static void set_auto_report( report_type _type, report_output _output )

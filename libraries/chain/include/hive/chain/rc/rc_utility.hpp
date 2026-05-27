@@ -43,7 +43,7 @@ struct rc_resource_params
 class resource_credits
 {
   public:
-    enum class report_output { DLOG, ILOG, NOTIFY, BOTH };
+    enum class report_output { DLOG, ILOG, NOTIFY, BOTH, JSONL };
     enum class report_type
     {
       NONE, //no report
