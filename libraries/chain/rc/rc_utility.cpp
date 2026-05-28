@@ -725,12 +725,17 @@ void resource_credits::handle_auto_report( uint32_t block_num, int64_t global_re
   }
 
   const auto& old_stats_obj = db.get< rc_stats_object, by_id >( RC_ARCHIVE_STATS_ID );
+  db.modify( new_stats_obj, [&]( rc_stats_object& new_stats )
+  {
+    new_stats.finalize_stats();
+  } );
   db.modify( old_stats_obj, [&]( rc_stats_object& old_stats )
   {
-    db.modify( new_stats_obj, [&]( rc_stats_object& new_stats )
-    {
-      new_stats.archive_and_reset_stats( old_stats, rc_pool, block_num, global_regen );
-    } );
+    old_stats.archive_stats( new_stats_obj );
+  } );
+  db.modify( new_stats_obj, [&]( rc_stats_object& new_stats )
+  {
+    new_stats.reset_stats( rc_pool, block_num, global_regen );
   } );
 }
 

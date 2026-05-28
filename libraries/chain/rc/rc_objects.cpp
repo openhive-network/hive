@@ -2,18 +2,16 @@
 
 namespace hive { namespace chain {
 
-void rc_stats_object::archive_and_reset_stats( rc_stats_object& archive, const rc_pool_object& pool_obj,
-  uint32_t _block_num, int64_t _regen )
+void rc_stats_object::archive_stats( const rc_stats_object& to_archive )
 {
-  stamp.finish();
-
   //copy all data to archive (but not the id)
-  {
-    auto _id = archive.id;
-    archive = copy_chain_object();
-    archive.id = _id;
-  }
+  auto _id = id;
+  *this = to_archive.copy_chain_object();
+  id = _id;
+}
 
+void rc_stats_object::reset_stats( const rc_pool_object& pool_obj, uint32_t _block_num, int64_t _regen )
+{
   block_num = _block_num;
   regen = _regen;
   stamp = fc::restartable_sha256();
