@@ -135,9 +135,12 @@ public:
   rc_stats_object( allocator< Allocator > a, uint64_t _id, uint32_t _forced_id )
     : id( _forced_id ) {}
 
-  //for copying stats from pending to archive and reseting pending - call on pending object (RC_PENDING_STATS_ID)
-  void archive_and_reset_stats( rc_stats_object& archive, const rc_pool_object& pool_obj,
-    uint32_t _block_num, int64_t _regen );
+  //closes RC stamp - call before archiving on pending object (RC_PENDING_STATS_ID)
+  void finalize_stats() { stamp.finish(); }
+  //archives given stats - call before resetting by passing pending object
+  void archive_stats( const rc_stats_object& to_archive );
+  //resets stats in preparation for next run - call on pending object (RC_PENDING_STATS_ID)
+  void reset_stats( const rc_pool_object& pool_obj, uint32_t _block_num, int64_t _regen );
   //collects stats using given transaction data
   void add_stats( const rc_transaction_info& tx_info );
 
