@@ -46,6 +46,11 @@ void rocksdb_storage_provider::openDb( uint32_t expected_lib )
   /// Optimize RocksDB. This is the easiest way to get RocksDB to perform well
   options.IncreaseParallelism();
   options.OptimizeLevelStyleCompaction();
+  // Keep the RocksDB info LOG bounded: defaults never rotate it (max_log_file_size=0,
+  // keep_log_file_num=1000, INFO level), so it grows unbounded and can fill a small tmpfs.
+  options.info_log_level    = ::rocksdb::WARN_LEVEL;
+  options.max_log_file_size = 8 * 1024 * 1024; // 8 MiB per LOG file
+  options.keep_log_file_num = 1;               // retain only the active LOG
   raise_fd_limit();
 
   auto status = DB::Open( DBOptions( options ), strPath, columnDefs, &_columnHandles, &_db );
@@ -124,6 +129,11 @@ std::tuple<bool, bool> rocksdb_storage_provider::createDbSchema( const bfs::path
   /// Optimize RocksDB. This is the easiest way to get RocksDB to perform well
   options.IncreaseParallelism();
   options.OptimizeLevelStyleCompaction();
+  // Keep the RocksDB info LOG bounded: defaults never rotate it (max_log_file_size=0,
+  // keep_log_file_num=1000, INFO level), so it grows unbounded and can fill a small tmpfs.
+  options.info_log_level    = ::rocksdb::WARN_LEVEL;
+  options.max_log_file_size = 8 * 1024 * 1024; // 8 MiB per LOG file
+  options.keep_log_file_num = 1;               // retain only the active LOG
   raise_fd_limit();
 
   std::tuple<bool, bool> _result{ false, false };
