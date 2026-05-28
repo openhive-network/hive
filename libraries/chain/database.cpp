@@ -1015,6 +1015,8 @@ VEST_asset database::adjust_account_vesting_balance(const account_object& to_acc
 
     VEST_asset new_vesting = new_vest_balance.as_asset();
     before_vesting_callback( new_vesting );
+    if( !is_reward && has_hardfork( HIVE_HARDFORK_0_20 ) )
+      rc().regenerate_rc_mana( to_account, _now );
     modify( to_account, [&]( account_object& a )
     {
       if( is_reward )
@@ -1025,15 +1027,12 @@ VEST_asset database::adjust_account_vesting_balance(const account_object& to_acc
       else
       {
         if( has_hardfork( HIVE_HARDFORK_0_20 ) )
-        {
           util::update_manabar( cprops, a, new_vesting.get_amount() );
-          rc().regenerate_rc_mana( a, _now );
-        }
         a.access_vesting().transfer_from( new_vest_balance );
-        if( has_hardfork( HIVE_HARDFORK_0_20 ) )
-          rc().update_account_after_vest_change( a, _now );
       }
     } );
+    if( !is_reward && has_hardfork( HIVE_HARDFORK_0_20 ) )
+      rc().update_account_after_vest_change( to_account, _now );
 
     return new_vesting;
   }
@@ -1573,9 +1572,8 @@ void database::clear_account( const account_object& account )
         a.delayed_votes.clear();
         a.sum_delayed_votes = 0;
       }
-
-      rc().update_account_after_vest_change( account, now, true, true );
     } );
+    rc().update_account_after_vest_change( account, now, true, true );
 
     temp_HIVE_balance hive_from_vests;
     modify( cprops, [&]( dynamic_global_property_object& o )
@@ -3142,16 +3140,14 @@ void database::clear_expired_delegations()
     try{
     pre_push_virtual_operation( *this, vop );
 
+    if( has_hardfork( HIVE_HARDFORK_0_20 ) )
+      rc().regenerate_rc_mana( delegator, now );
     modify( delegator, [&]( account_object& a )
     {
       if( has_hardfork( HIVE_HARDFORK_0_20 ) )
-      {
         util::update_manabar( gpo, a, itr->get_vesting().amount.value );
-        rc().regenerate_rc_mana( a, now );
-      }
-
       a.access_delegated_vesting() -= itr->get_vesting();
-    });
+    } );
     if( has_hardfork( HIVE_HARDFORK_0_20 ) )
       rc().update_account_after_vest_change( delegator, now );
 
