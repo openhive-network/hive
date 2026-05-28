@@ -3234,6 +3234,7 @@ void database::adjust_balance( const account_object& a, temp_HBD_balance& hbd_ba
       {
         HBD_asset interest_to_pay( fc::uint128_to_uint64( interest ) );
         temp_HBD_balance interest_balance;
+        // nested modify is safe here, because two separate multiindexes are modified
         modify( dgpo, [&]( dynamic_global_property_object& props )
         {
           interest_balance = props.issue_HBD( interest_to_pay, get_hbd_price() );
@@ -3308,6 +3309,7 @@ void database::adjust_savings_balance( const account_object& a, temp_HBD_balance
       {
         HBD_asset interest_to_pay( fc::uint128_to_uint64( interest ) );
         temp_HBD_balance interest_balance;
+        // nested modify is safe here, because two separate multiindexes are modified
         modify( dgpo, [&]( dynamic_global_property_object& props )
         {
           interest_balance = props.issue_HBD( interest_to_pay, get_hbd_price() );
