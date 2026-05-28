@@ -695,15 +695,13 @@ void claim_reward_balance_evaluator::do_apply( const claim_reward_balance_operat
   _db.adjust_reward_balance( acnt, hbd_reward, -op_reward_hbd );
   _db.adjust_balance( acnt, hbd_reward, op_reward_hbd );
 
+  if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
+    _db.rc().regenerate_rc_mana( acnt, now );
   temp_HIVE_balance reward_vesting_hive_balance;
   _db.modify( acnt, [&]( account_object& a )
   {
     if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
-    {
       util::update_manabar( dgpo, a, op_reward_vests.amount.value );
-      _db.rc().regenerate_rc_mana( a, now );
-    }
-
     a.access_vesting().transfer_from( a.access_vest_rewards(), op_reward_vests );
     reward_vesting_hive_balance.transfer_from( a.access_vest_rewards_as_hive(), reward_vesting_hive_to_move );
   } );

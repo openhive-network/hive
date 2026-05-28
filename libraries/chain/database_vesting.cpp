@@ -196,31 +196,30 @@ void database::process_vesting_withdrawals()
 
             pre_push_virtual_operation( *this, vop );
 
+            if( auto_vest_mode && has_hardfork( HIVE_HARDFORK_0_20 ) )
+              rc().regenerate_rc_mana( to_account, now );
             modify( to_account, [&]( account_object& a )
             {
               if( auto_vest_mode )
-              {
-                if( has_hardfork( HIVE_HARDFORK_0_20 ) )
-                  rc().regenerate_rc_mana( a, now );
                 a.access_vesting().transfer_from( routed_vest_balance );
-                if( has_hardfork( HIVE_HARDFORK_0_20 ) )
-                  rc().update_account_after_vest_change( a, now );
+              else
+                a.access_hive_balance().transfer_from( routed_hive_balance );
+            } );
+            if( auto_vest_mode )
+            {
+              if( has_hardfork( HIVE_HARDFORK_0_20 ) )
+                rc().update_account_after_vest_change( to_account, now );
 
-                if( has_hardfork( HIVE_HARDFORK_1_24 ) )
-                {
-                  FC_ASSERT( dv.valid(), "The object processing `delayed votes` must exist" );
-                  dv->add_votes( _votes_update_data_items, to_self, routed_vests.amount, a );
-                }
-                else
-                {
-                  adjust_proxied_witness_votes( a, routed_vests.amount );
-                }
+              if( has_hardfork( HIVE_HARDFORK_1_24 ) )
+              {
+                FC_ASSERT( dv.valid(), "The object processing `delayed votes` must exist" );
+                dv->add_votes( _votes_update_data_items, to_self, routed_vests.amount, to_account );
               }
               else
               {
-                a.access_hive_balance().transfer_from( routed_hive_balance );
+                adjust_proxied_witness_votes( to_account, routed_vests.amount );
               }
-            } );
+            }
 
             post_push_virtual_operation( *this, vop );
           }
