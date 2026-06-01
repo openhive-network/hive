@@ -987,6 +987,13 @@ void recurrent_transfer_evaluator::do_apply( const recurrent_transfer_operation&
   }
   else if( op.amount.amount == 0 )
   {
+    // Pre-HF29 nodes reject executions == 1 on every path (incl. delete) in validate(); keep that here until HF29. Distinct expression text avoids assertion-id collision with the create/modify paths.
+    if( !_db.has_hardfork( HIVE_HARDFORK_1_29_ALLOW_MODIFY_LAST_RECURRENT_TRANSFER ) )
+    {
+      HIVE_CHAIN_LIMIT_ASSERT( 2 <= op.executions, op.executions,
+        "Executions must be at least 2 when deleting a recurrent transfer before HF29, "
+        "setting executions to 1 was rejected by pre-HF29 nodes" );
+    }
     _db.remove( *itr );
     _db.modify( from_account, [&](account_object& a )
     {
