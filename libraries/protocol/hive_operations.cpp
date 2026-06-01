@@ -806,8 +806,6 @@ namespace hive { namespace protocol {
 
   void recurrent_transfer_operation::validate()const
   { try {
-      const size_t minimum_amount_of_executions{2};
-
       validate_account_name( from );
       validate_account_name( to );
       validate_asset_is_not_vesting(amount, "Recurrent transfer amount cannot be VESTS");
@@ -816,10 +814,13 @@ namespace hive { namespace protocol {
       validate_string_max_size(memo, HIVE_MAX_MEMO_SIZE - 1, "Recurrent transfer memo is too large");
       validate_is_utf8(memo, "Recurrent transfer memo is not UTF8");
       HIVE_PROTOCOL_ACCOUNT_NAME_ASSERT( from != to, "Cannot set a transfer to yourself", ("subject", to) );
+      // The minimum number of executions (>= 2 when creating, and since HF29 >= 1 when modifying an
+      // existing transfer) is enforced in the evaluator, which has access to hardfork state and knows
+      // whether the operation creates or modifies a transfer. Here we only reject executions == 0.
       HIVE_PROTOCOL_NUMBER_ASSERT(
-        executions >= minimum_amount_of_executions,
-        "Executions must be at least 2, if you set executions to 1 the recurrent transfer will execute immediately and delete itself. You should use a normal transfer operation",
-        ("subject", executions)("min", minimum_amount_of_executions)
+        executions >= 1,
+        "Executions must be at least 1",
+        ("subject", executions)("min", 1)
       );
     } FC_CAPTURE_AND_RETHROW( (*this) )
   }

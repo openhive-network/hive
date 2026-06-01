@@ -39,7 +39,7 @@ The global parameters:
 | amount         | The amount of asset to transfer from @ref from to @ref to. <br> If the recurrent transfer failed 10  (HIVE_MAX_CONSECUTIVE_RECURRENT_TRANSFER_FAILURES) times because of the lack of funds, the recurrent transfer will be deleted. <br> Allowed currency: Hive and HBD. |  |
 | memo           | must be shorter than 2048 |              |
 | recurrence = 0; | How often will the payment be triggered, unit: hours.<br> The first transfer is executed immediately.<br> The minimum value of the parameter is 24 h. |              |
-| executions = 0; | How many times the recurrent payment will be executed.<br> Executions must be at least 2, if you set executions to 1 the recurrent transfer will not be executed. |              |
+| executions = 0; | How many times the recurrent payment will be executed.<br> Executions must be at least 2 when creating a new recurrent transfer.<br> Since HF 29 executions may be set to 1 when modifying an existing recurrent transfer (for example to update the amount or memo of the last remaining payment). |              |
 | extensions | Extensions.<br> Since HF 28 it may contain the {pair_id} - it allows to define more than one recurrent transfer from sender to the same receiver {to}.<br> Default value {pair_id=0}. |              |
 
 

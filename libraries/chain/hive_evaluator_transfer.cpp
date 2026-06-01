@@ -969,6 +969,13 @@ void recurrent_transfer_evaluator::do_apply( const recurrent_transfer_operation&
     HIVE_CHAIN_LIMIT_ASSERT( from_account.open_recurrent_transfers < HIVE_MAX_OPEN_RECURRENT_TRANSFERS, from_account.open_recurrent_transfers, "Account can't have more than ${rt} recurrent transfers", ( "rt", HIVE_MAX_OPEN_RECURRENT_TRANSFERS ) );
     // If the recurrent transfer is not found and the amount is 0 it means the user wants to delete a transfer that doesn't exist
     HIVE_CHAIN_ASSET_ASSERT( op.amount.amount != 0, op.amount, "Cannot create a recurrent transfer with 0 amount" );
+    // A new recurrent transfer always requires at least 2 executions - a single execution would fire
+    // immediately and delete itself, in which case a normal transfer should be used instead.
+    // NB: the create and modify paths must use textually distinct assertion expressions
+    // ('>= 2' here vs '> 1' below) so the assertion-id generator does not produce a hash collision.
+    HIVE_CHAIN_LIMIT_ASSERT( op.executions >= 2, op.executions,
+      "Executions must be at least 2, if you set executions to 1 the recurrent transfer will execute immediately "
+      "and delete itself. You should use a normal transfer operation" );
     const auto& recurrent_transfer = _db.create< recurrent_transfer_object >( _db.head_block_time(), from_account, to_account, op.amount, op.memo, op.recurrence, op.executions, rtp_id );
     HIVE_CHAIN_TIME_ASSERT( recurrent_transfer.get_final_trigger_date() <= _db.head_block_time() + fc::days( HIVE_MAX_RECURRENT_TRANSFER_END_DATE ),
       recurrent_transfer.get_final_trigger_date(), "Cannot set a transfer that would last for longer than ${days} days", ( "days", HIVE_MAX_RECURRENT_TRANSFER_END_DATE ) );
@@ -989,6 +996,17 @@ void recurrent_transfer_evaluator::do_apply( const recurrent_transfer_operation&
   }
   else
   {
+    // Modifying an existing recurrent transfer. Before HF29 a modification also required at least 2
+    // executions; since HF29 executions may be set to 1 so users can update the last remaining
+    // execution (e.g. change the amount or memo on the final payment) - see issue #786.
+    // The expression is kept textually different from the create path above ('> 1' vs '>= 2') so the
+    // two assertions hash to distinct assertion ids.
+    if( !_db.has_hardfork( HIVE_HARDFORK_1_29_ALLOW_MODIFY_LAST_RECURRENT_TRANSFER ) )
+    {
+      HIVE_CHAIN_LIMIT_ASSERT( op.executions > 1, op.executions,
+        "Executions must be at least 2 when modifying a recurrent transfer before HF29, "
+        "setting executions to 1 would cause the transfer to execute immediately and delete itself" );
+    }
     const auto& recurrent_transfer = *itr;
     _db.modify( recurrent_transfer, [&]( recurrent_transfer_object& rt )
     {
