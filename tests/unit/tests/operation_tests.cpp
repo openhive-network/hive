@@ -9651,12 +9651,13 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_validate )
     HIVE_REQUIRE_THROW( op.validate(), fc::assert_exception );
     op.from = "alice";
 
-    //ABW: we might consider moving that check to execution and allow 1 execution in case of edit, so users
-    //can modify amount on last transfer without changing schedule (like last lease payment is usually connected
-    //with buyout sum, so it is larger than usual)
-    BOOST_TEST_MESSAGE( " --- executions is less than 2" );
+    // Since HF29 a single execution is allowed at the protocol level so that an existing recurrent
+    // transfer can be modified down to its last remaining execution (the >= 2 requirement for creation
+    // is now enforced in the evaluator). validate() therefore only rejects executions == 0.
+    BOOST_TEST_MESSAGE( " --- executions equal to 1 is valid at protocol level" );
     op.executions = 1;
-    HIVE_REQUIRE_THROW( op.validate(), fc::assert_exception );
+    op.validate();
+    BOOST_TEST_MESSAGE( " --- executions equal to 0 is invalid" );
     op.executions = 0;
     HIVE_REQUIRE_THROW( op.validate(), fc::assert_exception );
 
