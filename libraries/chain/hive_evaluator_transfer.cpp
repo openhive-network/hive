@@ -987,7 +987,7 @@ void recurrent_transfer_evaluator::do_apply( const recurrent_transfer_operation&
   }
   else if( op.amount.amount == 0 )
   {
-    // Pre-HF29 nodes reject executions == 1 on every path (incl. delete) in validate(); TODO: delete post HF29
+    // Pre-HF29 nodes reject executions == 1 on every path (incl. delete) in validate()
     if( !_db.has_hardfork( HIVE_HARDFORK_1_29_ALLOW_MODIFY_LAST_RECURRENT_TRANSFER ) )
     {
       HIVE_CHAIN_LIMIT_ASSERT( 2 <= op.executions, op.executions,
