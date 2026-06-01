@@ -7,6 +7,8 @@
 #include <hive/chain/detail/state/account_object_multiindex.hpp>
 #include <hive/chain/detail/state/limit_order_object.hpp>
 #include <hive/chain/detail/state/limit_order_object_multiindex.hpp>
+#include <hive/chain/detail/state/recurrent_transfer_object.hpp>
+#include <hive/chain/detail/state/recurrent_transfer_object_multiindex.hpp>
 
 #include <hive/plugins/debug_node/debug_node_plugin.hpp>
 
@@ -279,6 +281,103 @@ BOOST_AUTO_TEST_CASE( limit_order_with_nonexisting_asset )
         BOOST_REQUIRE_EQUAL( executor->db->get_account( "dave" ).get_hive_balance(), HIVE_asset( 1'000'000 ) );
         executor->db->clear_pending();
       }
+    };
+
+    BOOST_TEST_MESSAGE( "*****HF-28*****" );
+    execute_hardfork<28>( _content );
+
+    is_hf29 = true;
+
+    BOOST_TEST_MESSAGE( "*****HF-29*****" );
+    execute_hardfork<29>( _content );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( recurrent_transfer_modify_last_execution )
+{
+  try
+  {
+    bool is_hf29 = false;
+
+    // Stringified evaluator assertion expressions (must exactly match the source). The create and modify
+    // paths intentionally use different expressions so they get distinct assertion ids.
+    const std::string create_executions_assert_expr = "op.executions >= 2";
+    const std::string modify_executions_assert_expr = "op.executions > 1";
+
+    auto _content = [ &is_hf29, &create_executions_assert_expr, &modify_executions_assert_expr ]( ptr_hardfork_database_fixture& executor )
+    {
+      BOOST_TEST_MESSAGE( "Testing: modifying a recurrent transfer down to a single remaining execution (issue #786)" );
+      BOOST_REQUIRE_EQUAL( (bool)executor, true );
+
+      ACTORS_EXT( (*executor), (alice)(bob) )
+      executor->fund( "alice", HIVE_asset( 10'000 ) );
+      executor->generate_block();
+
+      BOOST_TEST_MESSAGE( "--- Create a recurrent transfer with 2 executions (valid on every hardfork)" );
+      recurrent_transfer_operation op;
+      op.from = "alice";
+      op.to = "bob";
+      op.memo = "original";
+      op.amount = ASSET( "1.000 TESTS" );
+      op.recurrence = 24;
+      op.executions = 2;
+      executor->push_transaction( op, alice_private_key );
+
+      // the first execution fires on the next produced block, leaving a single execution remaining
+      executor->generate_block();
+      BOOST_REQUIRE_EQUAL( executor->get_hive_balance( "bob" ), HIVE_asset( 1'000 ) );
+      {
+        const auto* rt = executor->db->find< recurrent_transfer_object, by_from_to_id >( boost::make_tuple( alice_id, bob_id ) );
+        BOOST_REQUIRE( rt != nullptr );
+        BOOST_REQUIRE_EQUAL( rt->remaining_executions, 1 );
+      }
+
+      BOOST_TEST_MESSAGE( "--- Creating a NEW recurrent transfer with executions = 1 must fail on every hardfork" );
+      recurrent_transfer_operation new_op;
+      new_op.from = "alice";
+      new_op.to = "bob";
+      new_op.memo = "new";
+      new_op.amount = ASSET( "1.000 TESTS" );
+      new_op.recurrence = 24;
+      new_op.executions = 1;
+      recurrent_transfer_pair_id rtpi;
+      rtpi.pair_id = 1; // different pair_id => a brand new transfer rather than a modification
+      new_op.extensions.insert( rtpi );
+      HIVE_REQUIRE_ASSERT( executor->push_transaction( new_op, alice_private_key ), create_executions_assert_expr );
+
+      BOOST_TEST_MESSAGE( "--- Modifying the existing transfer with executions = 1" );
+      op.memo = "updated_last_payment";
+      op.executions = 1;
+
+      if( is_hf29 )
+      {
+        // since HF29 the modification is allowed so the amount/memo of the last payment can be tweaked
+        executor->push_transaction( op, alice_private_key );
+        {
+          const auto* rt = executor->db->find< recurrent_transfer_object, by_from_to_id >( boost::make_tuple( alice_id, bob_id ) );
+          BOOST_REQUIRE( rt != nullptr );
+          BOOST_REQUIRE_EQUAL( rt->remaining_executions, 1 );
+          BOOST_REQUIRE_EQUAL( rt->memo, "updated_last_payment" );
+        }
+
+        BOOST_TEST_MESSAGE( "--- The single remaining execution still fires and removes the transfer" );
+        executor->generate_blocks( executor->db->head_block_time() + fc::hours( op.recurrence ) );
+        BOOST_REQUIRE_EQUAL( executor->get_hive_balance( "bob" ), HIVE_asset( 2'000 ) );
+        const auto* rt_after = executor->db->find< recurrent_transfer_object, by_from_to_id >( boost::make_tuple( alice_id, bob_id ) );
+        BOOST_REQUIRE( rt_after == nullptr );
+      }
+      else
+      {
+        // old behavior must be preserved before HF29: a single execution is rejected even on modification
+        HIVE_REQUIRE_ASSERT( executor->push_transaction( op, alice_private_key ), modify_executions_assert_expr );
+        const auto* rt = executor->db->find< recurrent_transfer_object, by_from_to_id >( boost::make_tuple( alice_id, bob_id ) );
+        BOOST_REQUIRE( rt != nullptr );
+        BOOST_REQUIRE_EQUAL( rt->remaining_executions, 1 ); // unchanged
+        BOOST_REQUIRE_EQUAL( rt->memo, "original" ); // unchanged
+      }
+
+      executor->validate_database();
     };
 
     BOOST_TEST_MESSAGE( "*****HF-28*****" );
