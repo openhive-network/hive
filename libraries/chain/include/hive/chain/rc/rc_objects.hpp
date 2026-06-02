@@ -135,7 +135,7 @@ public:
   rc_stats_object( allocator< Allocator > a, uint64_t _id, uint32_t _forced_id )
     : id( _forced_id ) {}
 
-  //closes RC stamp - call before archiving on pending object (RC_PENDING_STATS_ID)
+  //closes RC stamp - call before report/archiving on pending object (RC_PENDING_STATS_ID)
   void finalize_stats() { stamp.finish(); }
   //archives given stats - call before resetting by passing pending object
   void archive_stats( const rc_stats_object& to_archive );

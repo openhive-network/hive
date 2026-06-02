@@ -696,6 +696,10 @@ void resource_credits::handle_auto_report( uint32_t block_num, int64_t global_re
     return;
 
   const auto& new_stats_obj = db.get< rc_stats_object >( RC_PENDING_STATS_ID );
+  db.modify( new_stats_obj, [&]( rc_stats_object& new_stats )
+  {
+    new_stats.finalize_stats();
+  } );
   if( auto_report_type != report_type::NONE && new_stats_obj.get_starting_block() )
   {
     fc::variant_object report = get_report( auto_report_type, new_stats_obj );
@@ -725,10 +729,6 @@ void resource_credits::handle_auto_report( uint32_t block_num, int64_t global_re
   }
 
   const auto& old_stats_obj = db.get< rc_stats_object, by_id >( RC_ARCHIVE_STATS_ID );
-  db.modify( new_stats_obj, [&]( rc_stats_object& new_stats )
-  {
-    new_stats.finalize_stats();
-  } );
   db.modify( old_stats_obj, [&]( rc_stats_object& old_stats )
   {
     old_stats.archive_stats( new_stats_obj );
