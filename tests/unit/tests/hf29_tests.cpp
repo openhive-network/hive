@@ -391,6 +391,90 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_modify_last_execution )
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( recurrent_transfer_delete_with_single_execution )
+{
+  try
+  {
+    bool is_hf29 = false;
+
+    // Stringified evaluator assertion expression for the delete (amount == 0) path. It is intentionally
+    // textually different from the create ('op.executions >= 2') and modify ('op.executions > 1') paths
+    // so it gets its own assertion id.
+    const std::string delete_executions_assert_expr = "2 <= op.executions";
+
+    auto _content = [ &is_hf29, &delete_executions_assert_expr ]( ptr_hardfork_database_fixture& executor )
+    {
+      BOOST_TEST_MESSAGE( "Testing: deleting a recurrent transfer with executions == 1 must match pre-HF29 nodes (issue #786)" );
+      BOOST_REQUIRE_EQUAL( (bool)executor, true );
+
+      ACTORS_EXT( (*executor), (alice)(bob) )
+      executor->fund( "alice", HIVE_asset( 10'000 ) );
+      executor->generate_block();
+
+      BOOST_TEST_MESSAGE( "--- Create a recurrent transfer with 2 executions" );
+      recurrent_transfer_operation op;
+      op.from = "alice";
+      op.to = "bob";
+      op.memo = "original";
+      op.amount = ASSET( "1.000 TESTS" );
+      op.recurrence = 24;
+      op.executions = 2;
+      executor->push_transaction( op, alice_private_key );
+
+      // the first execution fires on the next produced block, leaving a single execution remaining
+      executor->generate_block();
+      {
+        const auto* rt = executor->db->find< recurrent_transfer_object, by_from_to_id >( boost::make_tuple( alice_id, bob_id ) );
+        BOOST_REQUIRE( rt != nullptr );
+        BOOST_REQUIRE_EQUAL( rt->remaining_executions, 1 );
+      }
+
+      BOOST_TEST_MESSAGE( "--- Deleting the transfer (amount == 0) with executions == 1" );
+      recurrent_transfer_operation del_op;
+      del_op.from = "alice";
+      del_op.to = "bob";
+      del_op.memo = "delete";
+      del_op.amount = ASSET( "0.000 TESTS" );
+      del_op.recurrence = 24;
+      del_op.executions = 1;
+
+      if( is_hf29 )
+      {
+        // since HF29 executions == 1 is accepted, so the deletion goes through
+        executor->push_transaction( del_op, alice_private_key );
+        const auto* rt = executor->db->find< recurrent_transfer_object, by_from_to_id >( boost::make_tuple( alice_id, bob_id ) );
+        BOOST_REQUIRE( rt == nullptr );
+      }
+      else
+      {
+        // Old behavior must be preserved before HF29: pre-HF29 nodes reject executions == 1 in validate(),
+        // so the evaluator must reject it on the delete path too - otherwise a new node would accept a
+        // transaction an old node rejects, splitting the network before the hardfork activates.
+        HIVE_REQUIRE_ASSERT( executor->push_transaction( del_op, alice_private_key ), delete_executions_assert_expr );
+        const auto* rt = executor->db->find< recurrent_transfer_object, by_from_to_id >( boost::make_tuple( alice_id, bob_id ) );
+        BOOST_REQUIRE( rt != nullptr ); // not deleted
+
+        BOOST_TEST_MESSAGE( "--- Deleting with executions >= 2 still works before HF29" );
+        del_op.executions = 2;
+        executor->push_transaction( del_op, alice_private_key );
+        const auto* rt_after = executor->db->find< recurrent_transfer_object, by_from_to_id >( boost::make_tuple( alice_id, bob_id ) );
+        BOOST_REQUIRE( rt_after == nullptr );
+      }
+
+      executor->validate_database();
+    };
+
+    BOOST_TEST_MESSAGE( "*****HF-28*****" );
+    execute_hardfork<28>( _content );
+
+    is_hf29 = true;
+
+    BOOST_TEST_MESSAGE( "*****HF-29*****" );
+    execute_hardfork<29>( _content );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 #endif
