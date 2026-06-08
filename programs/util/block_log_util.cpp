@@ -466,6 +466,7 @@ ExitCode validate_block_log_checksums_from_file(const fc::path &checksums_file, 
     {
       print_simple_error_or_result_message("checksums file had " + std::to_string(fail_count) + " checksums that did NOT match", checksums_file, json_output, true);
       elog("checksums file had ${fail_count} checksums that did NOT match", (fail_count));
+      return ExitCode::OperationFailed;
     }
     else
     {
