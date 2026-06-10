@@ -3,6 +3,8 @@
 #include <hive/chain/block_log_artifacts.hpp>
 #include <hive/chain/block_storage_interface.hpp>
 #include <hive/chain/detail/block_attributes.hpp>
+#include <atomic>
+#include <deque>
 
 namespace hive { namespace chain {
 
@@ -196,7 +198,20 @@ namespace hive { namespace chain {
     const uint32_t                    _max_blocks_in_log_file = 0;
     const int                         _block_log_split = 0;
     block_log_open_args               _open_args;
-    std::deque< block_log_ptr_t >     _logs;
+    // Wrapper allowing atomic shared_ptr slots to live inside a deque.
+    // std::atomic is neither copyable nor movable, so we provide a copy that
+    // performs an atomic load/store (used only during structural changes that
+    // happen under the writer thread, never concurrently with slot swaps).
+    struct atomic_block_log_ptr_t
+    {
+      std::atomic< block_log_ptr_t > ptr;
+      atomic_block_log_ptr_t() noexcept = default;
+      atomic_block_log_ptr_t( block_log_ptr_t p ) noexcept : ptr( std::move( p ) ) {}
+      atomic_block_log_ptr_t( const atomic_block_log_ptr_t& o ) noexcept : ptr( o.ptr.load() ) {}
+      atomic_block_log_ptr_t& operator=( const atomic_block_log_ptr_t& o ) noexcept
+      { ptr.store( o.ptr.load() ); return *this; }
+    };
+    std::deque< atomic_block_log_ptr_t > _logs;
     std::deque< block_log_ptr_t >     _garbage_collection;
   };
 
