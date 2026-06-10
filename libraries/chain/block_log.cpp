@@ -7,6 +7,7 @@
 #include <hive/chain/detail/block_attributes.hpp>
 #include <hive/chain/blockchain_worker_thread_pool.hpp>
 
+#include <atomic>
 #include <queue>
 #include <thread>
 #include <condition_variable>
@@ -96,7 +97,7 @@ namespace hive { namespace chain {
   namespace detail {
     class block_log_impl {
       public:
-        std::shared_ptr<full_block_type> head;
+        std::atomic< std::shared_ptr< full_block_type > > head;
 
         // these don't change after opening, don't need locking
         int block_log_fd;
@@ -285,7 +286,7 @@ namespace hive { namespace chain {
       {
         sanity_check(read_only);
         idump((my->block_log_size));
-        std::atomic_store(&my->head, read_head());
+        my->head.store(read_head());
       }
 
       if (auto_open_artifacts)
@@ -303,7 +304,7 @@ namespace hive { namespace chain {
       ::close(my->block_log_fd);
       my->block_log_fd = -1;
     }
-    std::atomic_store(&my->head, std::shared_ptr<full_block_type>());
+    my->head.store(std::shared_ptr<full_block_type>());
   }
 
   bool block_log::is_open()const
@@ -454,7 +455,7 @@ namespace hive { namespace chain {
       }
 
       // update our cached head block
-      std::atomic_store(&my->head, full_block);
+      my->head.store(full_block);
 
       return block_start_pos;
     }
@@ -471,7 +472,7 @@ namespace hive { namespace chain {
 
   hive::protocol::block_id_type block_log::read_block_id_by_num(uint32_t block_num) const
   {
-    std::shared_ptr<full_block_type> head_block = my->head;
+    std::shared_ptr<full_block_type> head_block = my->head.load();
 
     /// \warning ignore block 0 which is invalid, but old API also returned empty result for it (instead of assert).
     if(block_num == 0 || !head_block || block_num > head_block->get_block_num())
@@ -495,7 +496,7 @@ namespace hive { namespace chain {
       // first, check if it's the current head block; if so, we can just return it.  If the
       // block number is less than than the current head, it's guaranteed to have been fully
       // written to the log+index
-      std::shared_ptr<full_block_type> head_block = my->head;
+      std::shared_ptr<full_block_type> head_block = my->head.load();
       /// \warning ignore block 0 which is invalid, but old API also returned empty result for it (instead of assert).
       if (block_num == 0 || !head_block || block_num > head_block->get_block_num())
         return std::shared_ptr<full_block_type>();
@@ -556,7 +557,7 @@ namespace hive { namespace chain {
 
       // first, check if the last block we want is the current head block; if so, we can
       // will use it and then load the previous blocks from the block log
-      std::shared_ptr<full_block_type> head_block = my->head;
+      std::shared_ptr<full_block_type> head_block = my->head.load();
       if (!head_block || first_block_num > head_block->get_block_num())
         return result; // the caller is asking for blocks after the head block, we don't have them
 
@@ -654,7 +655,7 @@ namespace hive { namespace chain {
 
   std::shared_ptr<full_block_type> block_log::head() const
   {
-    return my->head;
+    return my->head.load();
   }
 
   void block_log::open_and_init( const fc::path& file, bool read_only, bool allow_artifacts_regeneration,
@@ -676,7 +677,7 @@ namespace hive { namespace chain {
 
     uint64_t time_begin = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 
-    std::shared_ptr<full_block_type> head_block = my->head;
+    std::shared_ptr<full_block_type> head_block = my->head.load();
 
     FC_ASSERT(head_block != nullptr);
 
@@ -737,7 +738,7 @@ namespace hive { namespace chain {
     FC_ASSERT(is_open() && "read_blocks_data_for_artifacts_generation", "Open block log first!");
     FC_ASSERT(my->block_log_size, "Cannot process blocks from empty block_log.");
 
-    const std::shared_ptr<full_block_type> head_block = my->head;
+    const std::shared_ptr<full_block_type> head_block = my->head.load();
     FC_ASSERT(head_block);
 
     const uint32_t head_block_num = head_block->get_block_num();
@@ -1023,7 +1024,7 @@ namespace hive { namespace chain {
   void block_log::truncate(uint32_t new_head_block_num)
   {
     dlog("truncating block log to ${new_head_block_num} blocks", (new_head_block_num));
-    std::shared_ptr<full_block_type> head_block = my->head;
+    std::shared_ptr<full_block_type> head_block = my->head.load();
     const uint32_t current_head_block_num = head_block ? head_block->get_block_num() : 0;
 
     if (new_head_block_num > current_head_block_num)
@@ -1040,7 +1041,7 @@ namespace hive { namespace chain {
     FC_ASSERT(ftruncate(my->block_log_fd, final_block_log_size) == 0,
               "failed to truncate block log, ${error}", ("error", strerror(errno)));
     my->_artifacts->truncate(new_head_block_num);
-    std::atomic_store(&my->head, read_head());
+    my->head.store(read_head());
   }
 
   void block_log::sanity_check(const bool read_only)
