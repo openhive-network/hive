@@ -1764,7 +1764,7 @@ namespace graphene { namespace net {
       _bandwidth_monitor_last_update_time = current_time;
 
       if (!node_is_shutting_down() && !_bandwidth_monitor_loop_done.canceled())
-        _bandwidth_monitor_loop_done = schedule_task( [=](){ bandwidth_monitor_loop(); },
+        _bandwidth_monitor_loop_done = schedule_task( [=, this](){ bandwidth_monitor_loop(); },
                                                      fc::time_point::now() + fc::seconds(GRAPHENE_NET_BANDWIDTH_MONITOR_INTERVAL_SECONDS),
                                                      "bandwidth_monitor_loop" );
       dlog("end bandwidth_monitor_loop (not a loop)");
@@ -1774,7 +1774,7 @@ namespace graphene { namespace net {
     {
       dump_node_status();
       if (!node_is_shutting_down() && !_dump_node_status_task_done.canceled())
-        _dump_node_status_task_done = schedule_task([=](){ dump_node_status_task(); },
+        _dump_node_status_task_done = schedule_task([=, this](){ dump_node_status_task(); },
                                                    fc::time_point::now() + fc::minutes(GRAPHENE_NET_DUMP_NODE_STATUS_INTERVAL_MINUTES),
                                                    "dump_node_status_task");
     }
@@ -2056,7 +2056,7 @@ namespace graphene { namespace net {
         break;
       case core_message_type_enum::block_message_type:
       case core_message_type_enum::compressed_block_message_type:
-        fc::async( [=]() { process_block_message(originating_peer, received_message, message_hash); }, "process_block_msg");
+        fc::async( [=, this]() { process_block_message(originating_peer, received_message, message_hash); }, "process_block_msg");
         break;
       case core_message_type_enum::trx_message_type:
         process_trx_message(originating_peer, received_message.as_trx_message( _thread_pool ));
@@ -2079,7 +2079,7 @@ namespace graphene { namespace net {
         // to allow us to add messages in the future
         if (received_message.msg_type < core_message_type_enum::core_message_type_first ||
             received_message.msg_type > core_message_type_enum::core_message_type_last)
-          fc::async([=](){ process_ordinary_message(originating_peer, received_message, message_hash); }, "process_ord_msg");
+          fc::async([=, this](){ process_ordinary_message(originating_peer, received_message, message_hash); }, "process_ord_msg");
         break;
       }
     }
@@ -3570,7 +3570,7 @@ namespace graphene { namespace net {
           (!_process_backlog_of_sync_blocks_done.valid() || _process_backlog_of_sync_blocks_done.ready()) &&
           get_number_of_handle_message_calls_in_progress() < _node_configuration.maximum_number_of_blocks_to_handle_at_one_time / 2 //DLN add hystersis to reduce number of times we process_backlog_of_sync_blocks
          )
-        _process_backlog_of_sync_blocks_done = async_task([=](){ process_backlog_of_sync_blocks(); }, "process_backlog_of_sync_blocks");
+        _process_backlog_of_sync_blocks_done = async_task([=, this](){ process_backlog_of_sync_blocks(); }, "process_backlog_of_sync_blocks");
     }
 
     uint32_t node_impl::get_number_of_handle_message_calls_in_progress()
@@ -3763,7 +3763,7 @@ namespace graphene { namespace net {
     {
       if (!node_is_shutting_down() &&
           (!_process_backlog_of_sync_blocks_done.valid() || _process_backlog_of_sync_blocks_done.ready()))
-        _process_backlog_of_sync_blocks_done = async_task([=](){ process_backlog_of_sync_blocks(); }, "process_backlog_of_sync_blocks");
+        _process_backlog_of_sync_blocks_done = async_task([=, this](){ process_backlog_of_sync_blocks(); }, "process_backlog_of_sync_blocks");
     }
 
     void node_impl::process_block_during_sync(peer_connection* originating_peer, const std::shared_ptr<full_block_type>& full_block)
@@ -5218,15 +5218,15 @@ namespace graphene { namespace net {
              !_bandwidth_monitor_loop_done.valid() &&
              !_dump_node_status_task_done.valid());
       if (_node_configuration.accept_incoming_connections)
-        _accept_loop_complete = async_task( [=](){ accept_loop(); }, "accept_loop");
-      _p2p_network_connect_loop_done = async_task( [=]() { p2p_network_connect_loop(); }, "p2p_network_connect_loop" );
-      _fetch_sync_items_loop_done = async_task( [=]() { fetch_sync_items_loop(); }, "fetch_sync_items_loop" );
-      _fetch_item_loop_done = async_task( [=]() { fetch_items_loop(); }, "fetch_items_loop" );
-      _advertise_inventory_loop_done = async_task( [=]() { advertise_inventory_loop(); }, "advertise_inventory_loop" );
-      _terminate_inactive_connections_loop_done = async_task( [=]() { terminate_inactive_connections_loop(); }, "terminate_inactive_connections_loop" );
-      _fetch_updated_peer_lists_loop_done = async_task([=](){ fetch_updated_peer_lists_loop(); }, "fetch_updated_peer_lists_loop");
-      _bandwidth_monitor_loop_done = async_task([=](){ bandwidth_monitor_loop(); }, "bandwidth_monitor_loop");
-      _dump_node_status_task_done = async_task([=](){ dump_node_status_task(); }, "dump_node_status_task");
+        _accept_loop_complete = async_task( [=, this](){ accept_loop(); }, "accept_loop");
+      _p2p_network_connect_loop_done = async_task( [=, this]() { p2p_network_connect_loop(); }, "p2p_network_connect_loop" );
+      _fetch_sync_items_loop_done = async_task( [=, this]() { fetch_sync_items_loop(); }, "fetch_sync_items_loop" );
+      _fetch_item_loop_done = async_task( [=, this]() { fetch_items_loop(); }, "fetch_items_loop" );
+      _advertise_inventory_loop_done = async_task( [=, this]() { advertise_inventory_loop(); }, "advertise_inventory_loop" );
+      _terminate_inactive_connections_loop_done = async_task( [=, this]() { terminate_inactive_connections_loop(); }, "terminate_inactive_connections_loop" );
+      _fetch_updated_peer_lists_loop_done = async_task([=, this](){ fetch_updated_peer_lists_loop(); }, "fetch_updated_peer_lists_loop");
+      _bandwidth_monitor_loop_done = async_task([=, this](){ bandwidth_monitor_loop(); }, "bandwidth_monitor_loop");
+      _dump_node_status_task_done = async_task([=, this](){ dump_node_status_task(); }, "dump_node_status_task");
     }
 
     void node_impl::add_node(const fc::ip::endpoint& ep)
@@ -6207,7 +6207,7 @@ namespace graphene { namespace net {
     {
       network_node_info->messages_to_deliver.emplace(full_block);
       if (!network_node_info->message_sender_task_done.valid() || network_node_info->message_sender_task_done.ready())
-        network_node_info->message_sender_task_done = fc::async([=](){ message_sender(network_node_info); }, "simulated_network_sender");
+        network_node_info->message_sender_task_done = fc::async([=, this](){ message_sender(network_node_info); }, "simulated_network_sender");
     }
   }
 
@@ -6217,7 +6217,7 @@ namespace graphene { namespace net {
     {
       network_node_info->messages_to_deliver.emplace(full_transaction);
       if (!network_node_info->message_sender_task_done.valid() || network_node_info->message_sender_task_done.ready())
-        network_node_info->message_sender_task_done = fc::async([=](){ message_sender(network_node_info); }, "simulated_network_sender");
+        network_node_info->message_sender_task_done = fc::async([=, this](){ message_sender(network_node_info); }, "simulated_network_sender");
     }
   }
 

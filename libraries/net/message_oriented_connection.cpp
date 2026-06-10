@@ -122,7 +122,7 @@ namespace graphene { namespace net {
       VERIFY_CORRECT_THREAD();
       _sock.accept();
       assert(!_read_loop_done.valid()); // check to be sure we never launch two read loops
-      _read_loop_done = fc::async([=](){ read_loop(); }, "message read_loop");
+      _read_loop_done = fc::async([=, this](){ read_loop(); }, "message read_loop");
     }
 
     void message_oriented_connection_impl::connect_to(const fc::ip::endpoint& remote_endpoint)
@@ -130,7 +130,7 @@ namespace graphene { namespace net {
       VERIFY_CORRECT_THREAD();
       _sock.connect_to(remote_endpoint);
       FC_ASSERT(!_read_loop_done.valid()); // check to be sure we never launch two read loops
-      _read_loop_done = fc::async([=](){ read_loop(); }, "message read_loop");
+      _read_loop_done = fc::async([=, this](){ read_loop(); }, "message read_loop");
     }
 
     void message_oriented_connection_impl::bind(const fc::ip::endpoint& local_endpoint)
