@@ -38,7 +38,7 @@ tests_api = { path = "tests_api", develop = true }
 
 [tool.poetry.group.static-analysis.dependencies]
 pre-commit = "^4.0.0"
-ruff = "^0.6.5"
+ruff = "^0.15.0"
 
 [tool.ruff]
 preview = true
