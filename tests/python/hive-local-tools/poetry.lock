@@ -571,17 +571,17 @@ hyperframe = ">=6.1,<7"
 
 [[package]]
 name = "hiveio-api"
-version = "1.28.8rc12.post20260511173553"
+version = "1.28.8rc12.post20260513130649"
 description = "Hive JSON-RPC API client package with lazy-loaded submodules for all Hive APIs"
 optional = false
 python-versions = ">=3.12,<4"
 groups = ["main"]
 files = [
-    {file = "hiveio_api-1.28.8rc12.post20260511173553-py3-none-any.whl", hash = "sha256:0f6d17356dc921c7dc0bb27e7bb516f6908ca220ece75df85ef65fef2c207725"},
+    {file = "hiveio_api-1.28.8rc12.post20260513130649-py3-none-any.whl", hash = "sha256:35eb4fa84fe7d61cfa889e11a895b25e8fb4b3476cc6fbfdc3b66384504d2717"},
 ]
 
 [package.dependencies]
-hiveio-beekeepy = ">=1.28.6.post20260317125034,<2.0.0"
+hiveio-beekeepy = ">=1.28.6-post.0,<2.0.0"
 
 [package.source]
 type = "legacy"
@@ -633,13 +633,13 @@ reference = "gitlab-hive"
 
 [[package]]
 name = "hiveio-test-tools"
-version = "2.0.2.post20260601084824"
+version = "2.0.2.post20260603084159"
 description = "Tools for testing hive software"
 optional = false
 python-versions = ">=3.12,<4"
 groups = ["main"]
 files = [
-    {file = "hiveio_test_tools-2.0.2.post20260601084824-py3-none-any.whl", hash = "sha256:3121c9a5c8d51198fa2c6b7974c442bf4a00063c8c62edb7542cac3be8d35f92"},
+    {file = "hiveio_test_tools-2.0.2.post20260603084159-py3-none-any.whl", hash = "sha256:7f276c3998da5f6b73faf77b67c224b63e41d2cf39d01bd717d9019c70d1ab35"},
 ]
 
 [package.dependencies]
@@ -647,7 +647,7 @@ abstractcp = ">=1.0.0,<2.0.0"
 hiveio-api = ">=1.28.8rc12.dev0"
 hiveio-beekeepy = ">=1.28.6.dev0,<2.0.0"
 hiveio-schemas = ">=1.28.2-post.0,<2.0.0"
-hiveio-wax = "2.0.2.post20260601084824"
+hiveio-wax = "2.0.2.post20260603084159"
 loguru = ">=0.7.2,<0.8.0"
 msgspec = ">=0.20.0,<0.21.0"
 python-dateutil = ">=2.8.2,<3.0.0"
@@ -659,18 +659,18 @@ reference = "gitlab-hive"
 
 [[package]]
 name = "hiveio-wax"
-version = "2.0.2.post20260601084824"
+version = "2.0.2.post20260603084159"
 description = ""
 optional = false
 python-versions = ">=3.12,<4"
 groups = ["main"]
 files = [
-    {file = "hiveio_wax-2.0.2.post20260601084824-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:982cd0342736e8a220311794203258b94b6f97be55c975f2b5fe0656279c6bce"},
-    {file = "hiveio_wax-2.0.2.post20260601084824-cp314-cp314-manylinux_2_28_x86_64.whl", hash = "sha256:fc0247baf87167c5673fee1c257f6da1e718f748a5e490f2726f4b67398bc112"},
+    {file = "hiveio_wax-2.0.2.post20260603084159-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:d350853d4b34e6f70002f38fbd0aeb0c26c54d50a20e6aa1e728d301b92b29cb"},
+    {file = "hiveio_wax-2.0.2.post20260603084159-cp314-cp314-manylinux_2_28_x86_64.whl", hash = "sha256:f89fbcebe1c4533f9aa6a0cbc93d899f945cdcd5a15da31894713652b3701f4b"},
 ]
 
 [package.dependencies]
-hiveio-api = "1.28.8rc12.post20260511173553"
+hiveio-api = "1.28.8rc12.post20260513130649"
 httpx = {version = ">=0.28.0,<0.29.0", extras = ["http2"]}
 loguru = ">=0.7.2,<0.8.0"
 protobuf = ">=6.33.0,<7.0.0"
@@ -2268,4 +2268,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.14,<4"
-content-hash = "ce139176d5d7edeba96db531e18fc924249695f8a1aeedb88e3c4f42dfa68c54"
+content-hash = "a7da272b78452c7ac8b7e088e40c2d4211d58efcdf795b6f894bec3e7c79b6bd"
