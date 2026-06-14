@@ -1955,14 +1955,14 @@ pbr = ">=2.0.0,<2.1.0 || >2.1.0"
 
 [[package]]
 name = "tavern"
-version = "3.2.0"
+version = "3.6.1"
 description = "Simple testing of RESTful APIs"
 optional = false
 python-versions = ">=3.11"
 groups = ["main"]
 files = [
-    {file = "tavern-3.2.0-py3-none-any.whl", hash = "sha256:9636e95a7f3870cd16a7773d3c3ea4e4b188f6af87dbe5011093220ef96764d9"},
-    {file = "tavern-3.2.0.tar.gz", hash = "sha256:cd779cb3ffe5fc789993f9c917ea8defc62cbe7b7d1581433298f4bb7d724161"},
+    {file = "tavern-3.6.1-py3-none-any.whl", hash = "sha256:a2c8ed9fbc291e5391bc997f35d08a66fdf9e9b4b622253b35d5f598000630e1"},
+    {file = "tavern-3.6.1.tar.gz", hash = "sha256:2f875ac6dae8c0112df6a4dc9f918c022c464707512248c5940f889cfdb68d57"},
 ]
 
 [package.dependencies]
