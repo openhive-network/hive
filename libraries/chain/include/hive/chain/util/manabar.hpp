@@ -135,7 +135,9 @@ void update_manabar( const PropType& gpo, AccountType& account, int64_t new_mana
     }
 
     account.downvote_manabar.regenerate_mana( params, gpo.time );
-    account.downvote_manabar.use_mana( ( -new_mana * gpo.downvote_pool_percent ) / HIVE_100_PERCENT );
+    // Scale via unsigned arithmetic so the int64 wrap is defined rather than signed-overflow UB,
+    // and bit-identical to the historical result. See hive#858.
+    account.downvote_manabar.use_mana( ( (int64_t)( (uint64_t)( -new_mana ) * (uint64_t)gpo.downvote_pool_percent ) ) / HIVE_100_PERCENT );
   }
   } FC_CAPTURE_LOG_AND_RETHROW( (account)(effective_vests) )
 }
