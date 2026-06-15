@@ -1,5 +1,6 @@
 #include <hive/protocol/transaction_util.hpp>
 #include <hive/protocol/hive_specialised_exceptions.hpp>
+#include <algorithm>
 
 namespace hive { namespace protocol {
 
