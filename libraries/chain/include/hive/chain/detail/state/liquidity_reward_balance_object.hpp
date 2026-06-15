@@ -33,7 +33,9 @@ namespace hive { namespace chain {
       /// this is the sort index
       uint128_t volume_weight()const
       {
-        return hive_volume * hbd_volume * is_positive();
+        // Compute the int64 product via unsigned arithmetic so the two's-complement wrap is well-defined
+        // rather than signed-overflow UB, and bit-identical to the historical result. See hive#857.
+        return uint128_t( (int64_t)( (uint64_t)hive_volume * (uint64_t)hbd_volume ) * is_positive() );
       }
 
       uint128_t min_volume_weight()const
