@@ -292,7 +292,7 @@ struct database_fixture {
 
   fc::string get_current_time_iso_string() const;
 
-  const account_object& account_create(
+  void account_create(
     const string& name,
     const string& creator,
     const private_key_type& creator_key,
@@ -302,24 +302,24 @@ struct database_fixture {
     const string& json_metadata
   );
 
-  const account_object& account_create(
+  void account_create(
     const string& name,
     const public_key_type& key,
     const public_key_type& post_key
   );
 
-  const account_object& account_create_default_fee(
+  void account_create_default_fee(
     const string& name,
     const public_key_type& key,
     const public_key_type& post_key
   );
 
-  const account_object& account_create(
+  void account_create(
     const string& name,
     const public_key_type& key
   );
 
-  const witness_object& witness_create(
+  void witness_create(
     const string& owner,
     const private_key_type& owner_key,
     const string& url,

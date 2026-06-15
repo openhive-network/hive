@@ -204,7 +204,7 @@ fc::string database_fixture::get_current_time_iso_string() const
   return current_time.to_iso_string();
 }
 
-const account_object& database_fixture::account_create(
+void database_fixture::account_create(
   const string& name,
   const string& creator,
   const private_key_type& creator_key,
@@ -235,15 +235,11 @@ const account_object& database_fixture::account_create(
     {
       vest( name, HIVE_asset( fee_remainder ) );
     }
-
-    const account_object& acct = db->get_account( name );
-
-    return acct;
   }
   FC_CAPTURE_AND_RETHROW( (name)(creator) )
 }
 
-const account_object& database_fixture::account_create(
+void database_fixture::account_create(
   const string& name,
   const public_key_type& key,
   const public_key_type& post_key
@@ -251,7 +247,7 @@ const account_object& database_fixture::account_create(
 {
   try
   {
-    return account_create(
+    account_create(
       name,
       HIVE_INIT_MINER_NAME,
       init_account_priv_key,
@@ -263,7 +259,7 @@ const account_object& database_fixture::account_create(
   FC_CAPTURE_AND_RETHROW( (name) );
 }
 
-const account_object& database_fixture::account_create_default_fee(
+void database_fixture::account_create_default_fee(
   const string& name,
   const public_key_type& key,
   const public_key_type& post_key
@@ -271,7 +267,7 @@ const account_object& database_fixture::account_create_default_fee(
 {
   try
   {
-    return account_create(
+    account_create(
       name,
       HIVE_INIT_MINER_NAME,
       init_account_priv_key,
@@ -283,15 +279,15 @@ const account_object& database_fixture::account_create_default_fee(
   FC_CAPTURE_AND_RETHROW( (name) );
 }
 
-const account_object& database_fixture::account_create(
+void database_fixture::account_create(
   const string& name,
   const public_key_type& key
 )
 {
-  return account_create( name, key, key );
+  account_create( name, key, key );
 }
 
-const witness_object& database_fixture::witness_create(
+void database_fixture::witness_create(
   const string& owner,
   const private_key_type& owner_key,
   const string& url,
@@ -307,8 +303,6 @@ const witness_object& database_fixture::witness_create(
     op.fee = asset( fee, HIVE_SYMBOL );
 
     push_transaction( op, owner_key );
-
-    return db->get_witness( owner );
   }
   FC_CAPTURE_AND_RETHROW( (owner)(url) )
 }
