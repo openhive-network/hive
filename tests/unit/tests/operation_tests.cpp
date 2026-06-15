@@ -8873,7 +8873,7 @@ BOOST_AUTO_TEST_CASE( claim_account_apply )
     tx.clear();
     tx.operations.push_back( op );
     tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    HIVE_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::assert_exception );
+    HIVE_REQUIRE_ASSERT( push_transaction( tx, alice_private_key ), "o_fee == wso.median_props.account_creation_fee && \"Wrong fee\"" );
     validate_database();
 
 
