@@ -1548,6 +1548,9 @@ BOOST_AUTO_TEST_CASE( transfer_to_vesting_apply )
     BOOST_TEST_MESSAGE( "Testing: transfer_to_vesting_apply" );
 
     ACTORS( (alice)(bob) )
+    generate_block();
+    const auto& alice = db->get_account( "alice" );
+    const auto& bob = db->get_account( "bob" );
     fund( "alice", HIVE_asset( 10'000 ) );
 
     const auto& gpo = db->get_dynamic_global_properties();
@@ -1899,7 +1902,7 @@ BOOST_AUTO_TEST_CASE( witness_update_apply )
     BOOST_REQUIRE( alice_witness.virtual_last_update == 0 );
     BOOST_REQUIRE( alice_witness.virtual_position == 0 );
     BOOST_REQUIRE( alice_witness.virtual_scheduled_time == fc::uint128_max_value() );
-    BOOST_REQUIRE_EQUAL( alice.get_hive_balance(), HIVE_asset( 10'000 ) ); // No fee
+    BOOST_REQUIRE_EQUAL( get_hive_balance( "alice" ), HIVE_asset( 10'000 ) ); // No fee
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test updating a witness" );
@@ -1924,7 +1927,7 @@ BOOST_AUTO_TEST_CASE( witness_update_apply )
     BOOST_REQUIRE( alice_witness.virtual_last_update == 0 );
     BOOST_REQUIRE( alice_witness.virtual_position == 0 );
     BOOST_REQUIRE( alice_witness.virtual_scheduled_time == fc::uint128_max_value() );
-    BOOST_REQUIRE_EQUAL( alice.get_hive_balance(), HIVE_asset( 10'000 ) );
+    BOOST_REQUIRE_EQUAL( get_hive_balance( "alice" ), HIVE_asset( 10'000 ) );
     validate_database();
 
     BOOST_TEST_MESSAGE( "--- Test failure when upgrading a non-existent account" );
@@ -2002,6 +2005,9 @@ BOOST_AUTO_TEST_CASE( account_witness_vote_apply )
     BOOST_TEST_MESSAGE( "Testing: account_witness_vote_apply" );
 
     ACTORS( (alice)(bob)(sam) )
+    generate_block();
+    const auto& alice = db->get_account( "alice" );
+    const auto& bob = db->get_account( "bob" );
     vest( "alice" , HIVE_asset( 5'000 ) );
     fund( "sam", HIVE_asset( 1'000 ) );
 
@@ -2375,6 +2381,9 @@ BOOST_AUTO_TEST_CASE( proxy_cleared_operation_basic )
     BOOST_TEST_MESSAGE( "Testing: 'proxy_cleared_operation' virtual operation" );
 
     ACTORS( (alice)(bob)(carol)(dan) )
+    generate_block();
+    const auto& alice = db->get_account( "alice" );
+    const auto& bob = db->get_account( "bob" );
     vest( "alice", HIVE_asset( 1'000 ) );
     vest( "bob", HIVE_asset( 3'000 ) );
     vest( "carol", HIVE_asset( 3'000 ) );
@@ -2509,6 +2518,11 @@ BOOST_AUTO_TEST_CASE( account_witness_proxy_apply )
     BOOST_TEST_MESSAGE( "Testing: account_witness_proxy_apply" );
 
     ACTORS( (alice)(bob)(sam)(dave) )
+    generate_block();
+    const auto& alice = db->get_account( "alice" );
+    const auto& bob = db->get_account( "bob" );
+    const auto& sam = db->get_account( "sam" );
+    const auto& dave = db->get_account( "dave" );
     vest( "alice", HIVE_asset( 1'000 ) );
     vest( "bob", HIVE_asset( 3'000 ) );
     vest( "sam", HIVE_asset( 5'000 ) );
@@ -4626,8 +4640,8 @@ BOOST_AUTO_TEST_CASE( limit_order_cancel_apply )
     push_transaction( tx, alice_private_key );
 
     BOOST_REQUIRE( limit_order_idx.find( boost::make_tuple( "alice", 5 ) ) == limit_order_idx.end() );
-    BOOST_REQUIRE_EQUAL( alice.get_hive_balance(), HIVE_asset( 10'000 ) );
-    BOOST_REQUIRE_EQUAL( alice.get_hbd_balance(), HBD_asset( 0 ) );
+    BOOST_REQUIRE_EQUAL( get_hive_balance( "alice" ), HIVE_asset( 10'000 ) );
+    BOOST_REQUIRE_EQUAL( get_hbd_balance( "alice" ), HBD_asset( 0 ) );
   }
   FC_LOG_AND_RETHROW()
 }
@@ -5078,6 +5092,10 @@ BOOST_AUTO_TEST_CASE( escrow_transfer_apply )
     BOOST_TEST_MESSAGE( "Testing: escrow_transfer_apply" );
 
     ACTORS( (alice)(bob)(sam) )
+    generate_block();
+    const auto& alice = db->get_account( "alice" );
+    const auto& bob = db->get_account( "bob" );
+    const auto& sam = db->get_account( "sam" );
 
     fund( "alice", HIVE_asset( 10'000 ) );
 

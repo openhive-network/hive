@@ -139,8 +139,8 @@ do {                                                              \
 
 #define ACTOR(name) \
   PREP_ACTOR(name) \
-  const auto& name = account_create(BOOST_PP_STRINGIZE(name), name ## _public_key, name ## _post_key.get_public_key()); \
-  account_id_type name ## _id = name.get_id(); (void)name ## _id;
+  account_create(BOOST_PP_STRINGIZE(name), name ## _public_key, name ## _post_key.get_public_key()); \
+  account_id_type name ## _id = get_account_id(BOOST_PP_STRINGIZE(name)); (void)name ## _id;
 
 #define ACTORS_IMPL(r, data, elem) ACTOR(elem)
 #define ACTORS(names) BOOST_PP_SEQ_FOR_EACH(ACTORS_IMPL, ~, names) \
@@ -150,8 +150,8 @@ do {                                                              \
 // Generate accounts with the account creation fee instead of vesting 100 hive
 #define ACTOR_DEFAULT_FEE(name) \
   PREP_ACTOR(name) \
-  const auto& name = account_create_default_fee(BOOST_PP_STRINGIZE(name), name ## _public_key, name ## _post_key.get_public_key()); \
-  account_id_type name ## _id = name.get_id(); (void)name ## _id;
+  account_create_default_fee(BOOST_PP_STRINGIZE(name), name ## _public_key, name ## _post_key.get_public_key()); \
+  account_id_type name ## _id = get_account_id(BOOST_PP_STRINGIZE(name)); (void)name ## _id;
 
 #define ACTORS_DEFAULT_FEE_IMPL(r, data, elem) ACTOR_DEFAULT_FEE(elem)
 #define ACTORS_DEFAULT_FEE(names) BOOST_PP_SEQ_FOR_EACH(ACTORS_DEFAULT_FEE_IMPL, ~, names) \
@@ -164,8 +164,8 @@ do {                                                              \
 
 #define ACTOR_EXT(object, name) \
   PREP_ACTOR_EXT(object, name) \
-  const auto& name = object.account_create(BOOST_PP_STRINGIZE(name), name ## _public_key, name ## _post_key.get_public_key()); \
-  account_id_type name ## _id = name.get_id(); (void)name ## _id;
+  object.account_create(BOOST_PP_STRINGIZE(name), name ## _public_key, name ## _post_key.get_public_key()); \
+  account_id_type name ## _id = object.get_account_id(BOOST_PP_STRINGIZE(name)); (void)name ## _id;
 
 #define ACTORS_EXT_IMPL(r, data, elem) ACTOR_EXT(data, elem)
 #define ACTORS_EXT(object, names) BOOST_PP_SEQ_FOR_EACH(ACTORS_EXT_IMPL, object, names) \

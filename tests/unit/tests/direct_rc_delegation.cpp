@@ -109,7 +109,7 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_single )
     BOOST_TEST_MESSAGE( "Testing:  delegate_rc_operation_apply_single to a single account" );
     ACTORS( (alice)(bob)(dave) )
     vest( "alice", HIVE_asset( 10'000 ) );
-    int64_t alice_vests = alice.get_vesting().amount.value;
+    int64_t alice_vests = get_vesting( "alice" ).amount.value;
 
     // Delegating more rc than I have should fail
     delegate_rc_operation op;
@@ -260,7 +260,7 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_many )
     BOOST_TEST_MESSAGE( "Testing:  delegate_rc_operation_apply_many to many accounts" );
     ACTORS( (alice)(bob)(dave)(dan) )
     vest( "alice", HIVE_asset( 10'000 ) );
-    int64_t alice_vests = alice.get_vesting().amount.value;
+    int64_t alice_vests = get_vesting( "alice" ).amount.value;
 
     // Delegating more rc than alice has should fail
     delegate_rc_operation op;
@@ -421,7 +421,7 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_many_different )
     BOOST_TEST_MESSAGE( "Testing:  delegate_rc_operation_apply_many_different to many accounts" );
     ACTORS( (alice)(bob)(dave)(dan)(carol) )
     vest( "alice", HIVE_asset( 10'000 ) );
-    uint64_t alice_vests = alice.get_vesting().amount.value;
+    uint64_t alice_vests = get_vesting( "alice" ).amount.value;
 
     std::string json = "[";
     delegate_rc_operation op;
