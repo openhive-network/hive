@@ -165,17 +165,17 @@ void account_create_evaluator::do_apply( const account_create_operation& o )
 
   if( _db.has_hardfork( HIVE_HARDFORK_0_20__1771 ) )
   {
-    HIVE_CHAIN_BALANCE_ASSERT( o_fee == wso.median_props.account_creation_fee, o_fee, "Must pay the exact account creation fee. paid: ${p} fee: ${f}",
+    HIVE_CHAIN_FEE_ASSERT( o_fee == wso.median_props.account_creation_fee, wso.median_props.account_creation_fee, "Must pay the exact account creation fee. paid: ${p} fee: ${f}",
       ( "p", o_fee )( "f", wso.median_props.account_creation_fee ) );
   }
   else if( !_db.has_hardfork( HIVE_HARDFORK_0_20__1761 ) && _db.has_hardfork( HIVE_HARDFORK_0_19__987 ) )
   {
-    HIVE_CHAIN_BALANCE_ASSERT( o_fee >= HIVE_asset( wso.median_props.account_creation_fee.amount * HIVE_CREATE_ACCOUNT_WITH_HIVE_MODIFIER ), o_fee, "Insufficient Fee: ${f} required, ${p} provided.",
+    HIVE_CHAIN_FEE_ASSERT( o_fee >= HIVE_asset( wso.median_props.account_creation_fee.amount * HIVE_CREATE_ACCOUNT_WITH_HIVE_MODIFIER ), HIVE_asset( wso.median_props.account_creation_fee.amount * HIVE_CREATE_ACCOUNT_WITH_HIVE_MODIFIER ), "Insufficient Fee: ${f} required, ${p} provided.",
       ( "f", HIVE_asset( wso.median_props.account_creation_fee.amount * HIVE_CREATE_ACCOUNT_WITH_HIVE_MODIFIER ) )( "p", o_fee ) );
   }
   else if( _db.has_hardfork( HIVE_HARDFORK_0_1 ) )
   {
-    HIVE_CHAIN_BALANCE_ASSERT( o_fee >= wso.median_props.account_creation_fee && "Can't create", o_fee, "Insufficient Fee: ${f} required, ${p} provided.",
+    HIVE_CHAIN_FEE_ASSERT( o_fee >= wso.median_props.account_creation_fee && "Can't create", wso.median_props.account_creation_fee, "Insufficient Fee: ${f} required, ${p} provided.",
       ( "f", wso.median_props.account_creation_fee )( "p", o_fee ) );
   }
 
@@ -228,7 +228,7 @@ void account_create_with_delegation_evaluator::do_apply( const account_create_wi
   HIVE_CHAIN_BALANCE_ASSERT( current_delegation >= target_delegation, current_delegation, "Insufficient Delegation ${f} required, ${p} provided.",
     ( "f", target_delegation )( "p", current_delegation )( "account_creation_fee", wso.median_props.account_creation_fee )( "o.fee", o_fee )( "o.delegation", o_delegation ) );
 
-  HIVE_CHAIN_BALANCE_ASSERT( o_fee >= wso.median_props.account_creation_fee, o_fee, "Insufficient Fee: ${f} required, ${p} provided.",
+  HIVE_CHAIN_FEE_ASSERT( o_fee >= wso.median_props.account_creation_fee, wso.median_props.account_creation_fee, "Insufficient Fee: ${f} required, ${p} provided.",
     ( "f", wso.median_props.account_creation_fee )( "p", o_fee ) );
 
   verify_authority_accounts_exist( _db, o.owner, o.new_account_name, authority::owner );
@@ -438,8 +438,8 @@ void claim_account_evaluator::do_apply( const claim_account_operation& o )
   }
   else
   {
-    HIVE_CHAIN_BALANCE_ASSERT( o_fee == wso.median_props.account_creation_fee && "Wrong fee",
-      o_fee, "Must pay the exact account creation fee (or zero if subsidy is to be used). paid: ${p} fee: ${f}",
+    HIVE_CHAIN_FEE_ASSERT( o_fee == wso.median_props.account_creation_fee && "Wrong fee",
+      wso.median_props.account_creation_fee, "Must pay the exact account creation fee (or zero if subsidy is to be used). paid: ${p} fee: ${f}",
       ( "p", o_fee )( "f", wso.median_props.account_creation_fee ) );
   }
 

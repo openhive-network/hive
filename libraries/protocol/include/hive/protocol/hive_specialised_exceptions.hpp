@@ -62,6 +62,7 @@
 // Chain-level assertion macros with subject capture (category="chain")
 #define HIVE_CHAIN_ASSET_ASSERT( expr, subject, ... )             HIVE_SPECIALISED_ASSERT_WITH_SUBJECT( expr, "chain", "asset",            subject, #expr, __VA_ARGS__ )
 #define HIVE_CHAIN_BALANCE_ASSERT( expr, subject, ... )            HIVE_SPECIALISED_ASSERT_WITH_SUBJECT( expr, "chain", "balance",          subject, #expr, __VA_ARGS__ )
+#define HIVE_CHAIN_FEE_ASSERT( expr, subject, ... )                HIVE_SPECIALISED_ASSERT_WITH_SUBJECT( expr, "chain", "fee",              subject, #expr, __VA_ARGS__ )
 #define HIVE_CHAIN_HARDFORK_ASSERT_WITH_SUBJECT( expr, subject, ... )           HIVE_SPECIALISED_ASSERT_WITH_SUBJECT( expr, "chain", "hardfork",         subject, #expr, __VA_ARGS__ )
 #define HIVE_CHAIN_TREASURY_ASSERT( expr, subject, ... )           HIVE_SPECIALISED_ASSERT_WITH_SUBJECT( expr, "chain", "treasury",         subject, #expr, __VA_ARGS__ )
 #define HIVE_CHAIN_TIME_ASSERT( expr, subject, ... )               HIVE_SPECIALISED_ASSERT_WITH_SUBJECT( expr, "chain", "time",             subject, #expr, __VA_ARGS__ )
