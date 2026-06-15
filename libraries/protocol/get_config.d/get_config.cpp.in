@@ -3,6 +3,7 @@
 #include <hive/protocol/asset.hpp>
 #include <hive/protocol/types.hpp>
 #include <hive/protocol/version.hpp>
+#include <algorithm>
 
 namespace hive { namespace protocol {
 
