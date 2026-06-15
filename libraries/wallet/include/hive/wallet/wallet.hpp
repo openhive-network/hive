@@ -1592,4 +1592,4 @@ FC_API( hive::wallet::wallet_api,
       (list_rc_direct_delegations)
     )
 
-FC_REFLECT_DERIVED( hive::wallet::annotated_signed_transaction_ex, (hive::plugins::account_history::annotated_signed_transaction), (rc_cost) );
+FC_REFLECT_DERIVED( hive::wallet::annotated_signed_transaction_ex, (hive::plugins::account_history::annotated_signed_transaction), (rc_cost) )

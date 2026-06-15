@@ -1213,12 +1213,23 @@ BOOST_AUTO_TEST_CASE( vesting_withdraw_route )
     auto auto_reset( set_mainnet_cashout_values() ); // Test on mainnet values
 
     ACTORS( (alice)(bob)(sam) )
+    generate_block();
+    const auto& alice = db->get_account( "alice" );
+    const auto& bob = db->get_account( "bob" );
+    const auto& sam = db->get_account( "sam" );
 
     auto original_vesting = alice.get_vesting();
 
     vest( "alice", HIVE_asset( 1'040'000 ) );
 
     auto withdraw_amount = alice.get_vesting() - original_vesting;
+    // Round the withdrawal down so that the per-interval withdraw rate is even. This guarantees
+    // the 50%/50% split between bob and sam in the second phase leaves exactly 0 for the implied
+    // route back to alice; an odd rate would leave 1 satoshi on the implied route, emitting a
+    // non-empty implied-route vop that breaks the "no implied route" check below. The exact rate
+    // otherwise depends on the vesting share price (sensitive to block timing).
+    int64_t even_rate = ( withdraw_amount.amount.value / HIVE_VESTING_WITHDRAW_INTERVALS ) & ~int64_t( 1 );
+    withdraw_amount = VEST_asset( even_rate * HIVE_VESTING_WITHDRAW_INTERVALS );
 
     BOOST_TEST_MESSAGE( "Setup vesting withdraw" );
     withdraw_vesting_operation wv;
@@ -1261,10 +1272,6 @@ BOOST_AUTO_TEST_CASE( vesting_withdraw_route )
     generate_block();
 
     {
-      const auto& alice = db->get_account( "alice" );
-      const auto& bob = db->get_account( "bob" );
-      const auto& sam = db->get_account( "sam" );
-
       // check vops
       auto vops = get_last_operations( 3 );
       auto implied_route = vops[0].get< fill_vesting_withdraw_operation >();
@@ -1316,10 +1323,6 @@ BOOST_AUTO_TEST_CASE( vesting_withdraw_route )
     generate_block();
 
     {
-      const auto& alice = db->get_account( "alice" );
-      const auto& bob = db->get_account( "bob" );
-      const auto& sam = db->get_account( "sam" );
-
       // check vops - unlike previous time, this time there is no vop for implied route, since its "power" is 0%
       // note: the vop for implied route is actually emitted, but AH filters it out when it is not effective (see issue #337)
       auto vops = get_last_operations( 2 );
