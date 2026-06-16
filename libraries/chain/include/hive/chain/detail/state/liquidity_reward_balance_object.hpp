@@ -33,12 +33,20 @@ public:
   /// this is the sort index
   uint128_t volume_weight()const
   {
-    return hive_volume * hbd_volume * is_positive();
+    // #857: compute in uint128 so the int64*int64 product cannot overflow; gated by is_positive()
+    // so the committed value is unchanged from the historical form (every overflow had is_positive()==0).
+    if( is_positive() )
+      return uint128_t( hive_volume ) * uint128_t( hbd_volume );
+    else
+      return 0;
   }
 
   uint128_t min_volume_weight()const
   {
-    return std::min( hive_volume, hbd_volume ) * is_positive();
+    if( is_positive() )
+      return uint128_t( std::min( hive_volume, hbd_volume ) );
+    else
+      return 0;
   }
 
   void update_weight( bool hf9 )
@@ -46,9 +54,9 @@ public:
     weight = hf9 ? min_volume_weight() : volume_weight();
   }
 
-  inline int is_positive()const
+  bool is_positive()const
   {
-    return ( hive_volume > 0 && hbd_volume > 0 ) ? 1 : 0;
+    return hive_volume > 0 && hbd_volume > 0;
   }
 
   CHAINBASE_UNPACK_CONSTRUCTOR( liquidity_reward_balance_object );
