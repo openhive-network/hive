@@ -258,7 +258,7 @@ void fork_reverts_cashout_scanario( const std::string& comment_archive_type, boo
   {
     test.account_create( HIVE_INIT_MINER_NAME + fc::to_string( i ), test.init_account_pub_key );
     test.fund( HIVE_INIT_MINER_NAME + fc::to_string( i ), HIVE_MIN_PRODUCER_REWARD );
-    test.witness_create( HIVE_INIT_MINER_NAME + fc::to_string( i ), test.init_account_priv_key, "foo.bar", test.init_account_pub_key, HIVE_MIN_PRODUCER_REWARD.amount );
+    test.witness_create( HIVE_INIT_MINER_NAME + fc::to_string( i ), test.init_account_priv_key, "foo.bar", test.init_account_pub_key, HIVE_MIN_PRODUCER_REWARD );
   }
   // disable OBI to allow forking
   test.witness_plugin->disable_fast_confirm();

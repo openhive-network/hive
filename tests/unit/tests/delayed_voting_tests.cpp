@@ -367,9 +367,9 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
       ISSUE_FUNDS( "witness1", HIVE_asset( 10'000'000 ) );
       ISSUE_FUNDS( "witness2", HIVE_asset( 10'000'000 ) );
 
-      witness_create( "witness1", witness1_private_key, "url.witness1", witness1_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD.amount );
+      witness_create( "witness1", witness1_private_key, "url.witness1", witness1_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD );
       witness_plugin->add_signing_key( witness1_private_key );
-      witness_create( "witness2", witness2_private_key, "url.witness2", witness2_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD.amount );
+      witness_create( "witness2", witness2_private_key, "url.witness2", witness2_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD );
       witness_plugin->add_signing_key( witness2_private_key );
       generate_block();
 
@@ -882,7 +882,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_01 )
     {
       BOOST_TEST_MESSAGE( "Preparing witnesses..." );
 
-      witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD.amount );
+      witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD );
       witness_plugin->add_signing_key( witness_private_key );
       generate_block();
     }
@@ -1023,7 +1023,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_many_vesting_01 )
     {
       BOOST_TEST_MESSAGE( "Preparing witnesses..." );
 
-      witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD.amount );
+      witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD );
       witness_plugin->add_signing_key( witness_private_key );
       generate_block();
     }
@@ -1122,7 +1122,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_01 )
     ISSUE_FUNDS( "witness", HIVE_asset( 10'000'000 ) );
     //Prepare witnesses
     
-    witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD.amount );
+    witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD );
     witness_plugin->add_signing_key( witness_private_key );
     generate_block();
 
@@ -1169,7 +1169,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_04 )
     ISSUE_FUNDS( "witness", HIVE_asset( 10'000'000 ) );
     
     //Prepare witnesses
-    witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD.amount );
+    witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD );
     witness_plugin->add_signing_key( witness_private_key );
     generate_block();
 
@@ -1219,9 +1219,9 @@ BOOST_AUTO_TEST_CASE( delayed_voting_05 )
     ISSUE_FUNDS( "witness2", HIVE_asset( 10'000'000 ) );
     
     //Prepare witnesses
-    witness_create( "witness1", witness1_private_key, "url.witness1", witness1_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD.amount );
+    witness_create( "witness1", witness1_private_key, "url.witness1", witness1_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD );
     witness_plugin->add_signing_key( witness1_private_key );
-    witness_create( "witness2", witness2_private_key, "url.witness2", witness2_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD.amount );
+    witness_create( "witness2", witness2_private_key, "url.witness2", witness2_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD );
     witness_plugin->add_signing_key( witness2_private_key );
     generate_block();
 
@@ -1279,7 +1279,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_06 )
     
     //Prepare witnesses
     const auto start_time = db->head_block_time();
-    witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD.amount );
+    witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD );
     witness_plugin->add_signing_key( witness_private_key );
     generate_block();
 
@@ -1460,7 +1460,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_03 )
     ISSUE_FUNDS( "witness", HIVE_asset( 100'000'000 ) );
     
     //Prepare witnesses
-    witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD.amount );
+    witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD );
     witness_plugin->add_signing_key( witness_private_key );
     generate_block();
     vest( "bob", "bob", HIVE_asset( 100'000 ), bob_private_key );
@@ -2041,7 +2041,7 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_01 )
     ISSUE_FUNDS( "witness", HIVE_asset( 10'000'000 ) );
     
     //Prepare witnesses
-    witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD.amount );
+    witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD );
     witness_plugin->add_signing_key( witness_private_key );
     generate_block();
 
@@ -2091,7 +2091,7 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_02 )
     ISSUE_FUNDS( "witness", HIVE_asset( 10'000'000 ) );
     
     //Prepare witnesses
-    witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD.amount );
+    witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD );
     witness_plugin->add_signing_key( witness_private_key );
     generate_block();
 
@@ -2162,9 +2162,9 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_03 )
     ISSUE_FUNDS( "witness2", HIVE_asset( 10'000'000 ) );
     
     //Prepare witnesses
-    witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD.amount );
+    witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD );
     witness_plugin->add_signing_key( witness_private_key );
-    witness_create( "witness2", witness2_private_key, "url.witness2", witness2_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD.amount );
+    witness_create( "witness2", witness2_private_key, "url.witness2", witness2_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD );
     witness_plugin->add_signing_key( witness2_private_key );
     generate_block();
 
@@ -2239,7 +2239,7 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_04 )
     ISSUE_FUNDS( "witness", HIVE_asset( 10'000'000 ) );
     
     //Prepare witnesses
-    witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD.amount );
+    witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD );
     witness_plugin->add_signing_key( witness_private_key );
     generate_block();
 
@@ -2296,7 +2296,7 @@ BOOST_AUTO_TEST_CASE( small_common_test_01 )
     ISSUE_FUNDS( "witness", HIVE_asset( 10'000'000 ) );
     //Prepare witnesses
     
-    witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD.amount );
+    witness_create( "witness", witness_private_key, "url.witness", witness_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD );
     witness_plugin->add_signing_key( witness_private_key );
     generate_block();
 
@@ -2433,9 +2433,9 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
   BOOST_TEST_MESSAGE( "[scenario_01]: alice has " << asset_to_string( get_vesting( "alice" )) );
   BOOST_TEST_MESSAGE( "[scenario_01]: alice has " << asset_to_string( get_hive_balance( "alice" )) );
 
-  witness_create( "alice0bp", alice0bp_private_key, "url.alice.bp", alice0bp_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD.amount );
+  witness_create( "alice0bp", alice0bp_private_key, "url.alice.bp", alice0bp_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD );
   witness_plugin->add_signing_key( alice0bp_private_key );
-  witness_create( "bob0bp", bob0bp_private_key, "url.bob.bp", bob0bp_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD.amount );
+  witness_create( "bob0bp", bob0bp_private_key, "url.bob.bp", bob0bp_private_key.get_public_key(), HIVE_MIN_PRODUCER_REWARD );
   witness_plugin->add_signing_key( bob0bp_private_key );
   generate_block();
 

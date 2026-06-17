@@ -1383,7 +1383,7 @@ BOOST_AUTO_TEST_CASE( feed_publish_mean )
     for( int i = 0; i < 7; i++ )
     {
       fund( accounts[i], HIVE_asset( 10'000 ) );
-      witness_create( accounts[i], keys[i], "foo.bar", keys[i].get_public_key(), 1000 );
+      witness_create( accounts[i], keys[i], "foo.bar", keys[i].get_public_key(), HIVE_asset( 1000 ) );
       witness_plugin->add_signing_key( keys[i] );
 
       ops.push_back( feed_publish_operation() );

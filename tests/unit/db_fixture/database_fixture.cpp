@@ -291,7 +291,7 @@ void database_fixture::witness_create(
   const private_key_type& owner_key,
   const string& url,
   const public_key_type& signing_key,
-  const share_type& fee )
+  const HIVE_asset& fee )
 {
   try
   {
@@ -299,7 +299,7 @@ void database_fixture::witness_create(
     op.owner = owner;
     op.url = url;
     op.block_signing_key = signing_key;
-    op.fee = asset( fee, HIVE_SYMBOL );
+    op.fee = fee.to_asset();
 
     push_transaction( op, owner_key );
   }

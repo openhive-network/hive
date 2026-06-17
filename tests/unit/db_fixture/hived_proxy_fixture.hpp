@@ -157,7 +157,7 @@ public:
     const private_key_type& owner_key,
     const fc::string& url,
     const public_key_type& signing_key,
-    const share_type& fee
+    const HIVE_asset& fee
   )
   {
     FC_ASSERT(fixture);
