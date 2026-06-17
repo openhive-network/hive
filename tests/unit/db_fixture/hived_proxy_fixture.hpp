@@ -113,14 +113,14 @@ public:
     const fc::string& name,
     const fc::string& creator,
     const private_key_type& creator_key,
-    const share_type& fee,
+    const HIVE_asset& initial_vesting,
     const public_key_type& key,
     const public_key_type& post_key,
     const fc::string& json_metadata
   )
   {
     FC_ASSERT(fixture);
-    fixture->account_create(name, creator, creator_key, fee, key, post_key, json_metadata);
+    fixture->account_create(name, creator, creator_key, initial_vesting, key, post_key, json_metadata);
   }
 
   void account_create(
