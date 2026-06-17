@@ -1962,7 +1962,7 @@ BOOST_AUTO_TEST_CASE( account_witness_vote_authorities )
 
     fund( "alice", HIVE_asset( 1'000 ) );
     private_key_type alice_witness_key = generate_private_key( "alice_witness" );
-    witness_create( "alice", alice_private_key, "foo.bar", alice_witness_key.get_public_key(), 1000 );
+    witness_create( "alice", alice_private_key, "foo.bar", alice_witness_key.get_public_key(), HIVE_asset( 1000 ) );
     witness_plugin->add_signing_key( alice_witness_key );
 
     account_witness_vote_operation op;
@@ -2012,7 +2012,7 @@ BOOST_AUTO_TEST_CASE( account_witness_vote_apply )
     fund( "sam", HIVE_asset( 1'000 ) );
 
     private_key_type sam_witness_key = generate_private_key( "sam_key" );
-    witness_create( "sam", sam_private_key, "foo.bar", sam_witness_key.get_public_key(), 1000 );
+    witness_create( "sam", sam_private_key, "foo.bar", sam_witness_key.get_public_key(), HIVE_asset( 1000 ) );
     witness_plugin->add_signing_key( sam_witness_key );
     const witness_object& sam_witness = db->get_witness( "sam" );
 
@@ -2124,7 +2124,7 @@ BOOST_AUTO_TEST_CASE(account_witness_vote_apply_delay)
     fund("sam", HIVE_asset( 1'000 ));
 
     private_key_type sam_witness_key = generate_private_key("sam_key");
-    witness_create("sam", sam_private_key, "foo.bar", sam_witness_key.get_public_key(), 1000);
+    witness_create("sam", sam_private_key, "foo.bar", sam_witness_key.get_public_key(), HIVE_asset( 1000 ) );
     witness_plugin->add_signing_key( sam_witness_key );
 
     generate_block();
@@ -2241,7 +2241,7 @@ BOOST_AUTO_TEST_CASE( account_object_by_governance_vote_expiration_ts_idx )
     ACTORS( (alice)(bob)(acc1)(acc2)(acc3)(acc4)(accw) )
     signed_transaction tx;
     private_key_type accw_witness_key = generate_private_key( "accw_key" );
-    witness_create( "accw", accw_private_key, "foo.bar", accw_witness_key.get_public_key(), 1000 );
+    witness_create( "accw", accw_private_key, "foo.bar", accw_witness_key.get_public_key(), HIVE_asset( 1000 ) );
     witness_plugin->add_signing_key( accw_witness_key );
 
     //Cannot use vote_proposal() and witness_vote() because of differ DB Fixture
@@ -3087,7 +3087,7 @@ BOOST_AUTO_TEST_CASE( feed_publish_authorities )
 
     ACTORS( (alice)(bob) )
     fund( "alice", HIVE_asset( 10'000 ) );
-    witness_create( "alice", alice_private_key, "foo.bar", alice_private_key.get_public_key(), 1000 );
+    witness_create( "alice", alice_private_key, "foo.bar", alice_private_key.get_public_key(), HIVE_asset( 1000 ) );
     witness_plugin->add_signing_key( alice_private_key );
 
     feed_publish_operation op;
@@ -3127,7 +3127,7 @@ BOOST_AUTO_TEST_CASE( feed_publish_apply )
 
     ACTORS( (alice) )
     fund( "alice", HIVE_asset( 10'000 ) );
-    witness_create( "alice", alice_private_key, "foo.bar", alice_private_key.get_public_key(), 1000 );
+    witness_create( "alice", alice_private_key, "foo.bar", alice_private_key.get_public_key(), HIVE_asset( 1000 ) );
     witness_plugin->add_signing_key( alice_private_key );
 
     BOOST_TEST_MESSAGE( "--- Test publishing price feed" );
@@ -7158,7 +7158,7 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_apply )
 
     generate_blocks( db->head_block_time() + HIVE_OWNER_AUTH_RECOVERY_PERIOD - fc::seconds( HIVE_BLOCK_INTERVAL ), true );
     BOOST_REQUIRE( db->get_account( "alice" ).can_vote );
-    witness_create( "alice", alice_private_key, "foo.bar", alice_private_key.get_public_key(), 0 );
+    witness_create( "alice", alice_private_key, "foo.bar", alice_private_key.get_public_key(), HIVE_asset( 0 ) );
     witness_plugin->add_signing_key( alice_private_key );
 
     account_witness_vote_operation witness_vote;
@@ -10509,7 +10509,7 @@ BOOST_AUTO_TEST_CASE( account_witness_block_approve_authorities )
     ACTORS( (alice)(bob) )
 
     private_key_type alice_witness_key = generate_private_key( "alice_witness" );
-    witness_create( "alice", alice_private_key, "foo.bar", alice_witness_key.get_public_key(), 0 );
+    witness_create( "alice", alice_private_key, "foo.bar", alice_witness_key.get_public_key(), HIVE_asset( 0 ) );
     witness_plugin->add_signing_key( alice_witness_key );
 
     generate_block();
@@ -10791,7 +10791,7 @@ struct timeshare_test_fixture : clean_database_fixture
     {
       const private_key_type account_key = generate_private_key(witness_name);
       const private_key_type witness_key = generate_private_key(witness_name + "_witness");
-      witness_create(witness_name, account_key, witness_name + ".com", witness_key.get_public_key(), 1000);
+      witness_create(witness_name, account_key, witness_name + ".com", witness_key.get_public_key(), HIVE_asset( 1000 ) );
       witness_plugin->add_signing_key( witness_key );
       //const witness_object& sam_witness = db->get_witness("sam");
     };

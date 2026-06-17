@@ -164,9 +164,9 @@ void condenser_api_fixture::hf19_scenario( check_point_tester_t check_point_test
   ACTORS( (alice19ah)(ben19ah) );
   generate_block();
   
-  witness_create( "alice19ah", alice19ah_private_key, "foo.bar", alice19ah_private_key.get_public_key(), 1000 );
+  witness_create( "alice19ah", alice19ah_private_key, "foo.bar", alice19ah_private_key.get_public_key(), HIVE_asset( 1000 ) );
   witness_plugin->add_signing_key( alice19ah_private_key );
-  witness_create( "ben19ah", ben19ah_private_key, "foo.bar", ben19ah_private_key.get_public_key(), 1000 );
+  witness_create( "ben19ah", ben19ah_private_key, "foo.bar", ben19ah_private_key.get_public_key(), HIVE_asset( 1000 ) );
   witness_plugin->add_signing_key( ben19ah_private_key );
 
   // Make witness operations irreversible.
@@ -178,7 +178,7 @@ void condenser_api_fixture::hf19_scenario( check_point_tester_t check_point_test
   // only in next schedule, but then we'd fail in witness update anyway, because it is expected that all witnesses are
   // active if there is less than 21); we need at least 3 by the way, because witness next to his missed block will disable
   // him and one more is needed to accept transaction that reenables him before its his time to produce again
-  witness_create( "ben19ah", ben19ah_private_key, "foo.bar", ben19ah_private_key.get_public_key(), 1000 );
+  witness_create( "ben19ah", ben19ah_private_key, "foo.bar", ben19ah_private_key.get_public_key(), HIVE_asset( 1000 ) );
 
   // Now all the operations mentioned above can be checked. They can appear as early as 27th block, depending on configuration.
   check_point_tester( std::numeric_limits<uint32_t>::max() ); // <- no limit to max number of block generated inside.
@@ -301,7 +301,7 @@ void condenser_api_fixture::witness_scenario( check_point_tester_t check_point_t
   ACTORS( (alice5ah)(ben5ah)(carol5ah) );
   generate_block();
   
-  witness_create( "alice5ah", alice5ah_private_key, "foo.bar", alice5ah_private_key.get_public_key(), 1000 );
+  witness_create( "alice5ah", alice5ah_private_key, "foo.bar", alice5ah_private_key.get_public_key(), HIVE_asset( 1000 ) );
   witness_plugin->add_signing_key( alice5ah_private_key );
   witness_feed_publish( "alice5ah", HBD_price( 1000, 1000 ), alice5ah_private_key );
   proxy( "ben5ah", "carol5ah", ben5ah_private_key );

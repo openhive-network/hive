@@ -324,7 +324,7 @@ struct database_fixture {
     const private_key_type& owner_key,
     const string& url,
     const public_key_type& signing_key,
-    const share_type& fee
+    const HIVE_asset& fee
   );
 
   void account_update( const string& account, const fc::ecc::public_key& memo_key, const string& metadata,
