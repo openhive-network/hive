@@ -208,7 +208,7 @@ void database_fixture::account_create(
   const string& name,
   const string& creator,
   const private_key_type& creator_key,
-  const share_type& fee,
+  const HIVE_asset& initial_vesting,
   const public_key_type& key,
   const public_key_type& post_key,
   const string& json_metadata
@@ -216,13 +216,10 @@ void database_fixture::account_create(
 {
   try
   {
-    auto actual_fee = std::min( fee, db->get_witness_schedule_object().median_props.account_creation_fee.amount );
-    auto fee_remainder = fee - actual_fee;
-
     account_create_operation op;
     op.new_account_name = name;
     op.creator = creator;
-    op.fee = asset( actual_fee, HIVE_SYMBOL );
+    op.fee = db->get_witness_schedule_object().median_props.account_creation_fee.to_asset();
     op.owner = authority( 1, key, 1 );
     op.active = authority( 1, key, 1 );
     op.posting = authority( 1, post_key, 1 );
@@ -231,10 +228,8 @@ void database_fixture::account_create(
 
     push_transaction( op, creator_key );
 
-    if( fee_remainder > 0 )
-    {
-      vest( name, HIVE_asset( fee_remainder ) );
-    }
+    if( initial_vesting.amount > 0 )
+      vest( name, initial_vesting );
   }
   FC_CAPTURE_AND_RETHROW( (name)(creator) )
 }
@@ -247,11 +242,15 @@ void database_fixture::account_create(
 {
   try
   {
+    // The actual creation fee is always median_props.account_creation_fee (charged inside the 7-arg
+    // overload). Historically this overload requested a larger fee and the surplus was vested to the
+    // new account; preserve that behavior by passing the surplus as initial_vesting.
+    auto median_fee = db->get_witness_schedule_object().median_props.account_creation_fee.amount;
     account_create(
       name,
       HIVE_INIT_MINER_NAME,
       init_account_priv_key,
-      std::max( db->get_witness_schedule_object().median_props.account_creation_fee.amount * HIVE_CREATE_ACCOUNT_WITH_HIVE_MODIFIER, share_type( 100 ) ),
+      HIVE_asset( std::max( median_fee * HIVE_CREATE_ACCOUNT_WITH_HIVE_MODIFIER, share_type( 100 ) ) - median_fee ),
       key,
       post_key,
       "" );
@@ -271,7 +270,7 @@ void database_fixture::account_create_default_fee(
       name,
       HIVE_INIT_MINER_NAME,
       init_account_priv_key,
-      db->get_witness_schedule_object().median_props.account_creation_fee.amount,
+      HIVE_asset( 0 ),
       key,
       post_key,
       "" );

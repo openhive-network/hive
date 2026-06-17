@@ -296,7 +296,7 @@ struct database_fixture {
     const string& name,
     const string& creator,
     const private_key_type& creator_key,
-    const share_type& fee,
+    const HIVE_asset& initial_vesting,
     const public_key_type& key,
     const public_key_type& post_key,
     const string& json_metadata

@@ -504,7 +504,7 @@ void condenser_api_fixture::combo_1_scenario( check_point_tester_t check_point_t
   post_comment( "alice12ah", "permlink12-1", "Title 12-1", "Body 12-1", "parentpermlink12", alice12ah_private_key );
 
   PREP_ACTOR( ben12ah );
-  account_create( "ben12ah", "alice12ah", alice12ah_private_key, 0, ben12ah_public_key, ben12ah_public_key, "{\"relation\":\"sibling\"}" );
+  account_create( "ben12ah", "alice12ah", alice12ah_private_key, HIVE_asset( 0 ), ben12ah_public_key, ben12ah_public_key, "{\"relation\":\"sibling\"}" );
   delegate_vest( "alice12ah", "ben12ah", VEST_asset( 3003 ), alice12ah_private_key );
 
   post_comment_to_comment( "ben12ah", "permlink12-2", "Title 12-1", "Body 12-1", "alice12ah", "permlink12-1", ben12ah_private_key );
