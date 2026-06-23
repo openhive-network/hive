@@ -247,6 +247,69 @@ mirrornet_node_build:
         docker push ${IMAGE_NAME_PREFIX}${CI_COMMIT_TAG}
       fi
 
+# --- Multiarch (x86_64 + aarch64) production images ---------------------------------------
+# Build a multi-arch manifest: amd64 compiled natively + arm64 CROSS-compiled (never emulated)
+# using the toolchain + preinstalled aarch64 RocksDB baked into ci-base-image. The arm64 runtime
+# layer is built inline from the multiarch ubuntu:24.04 base (emulated apt only). A manifest
+# cannot be loaded into the local daemon, so it is pushed.
+#
+# Gated to develop, master, protected tags, or a manual BUILD_MULTIARCH=true trigger, so feature/MR
+# pipelines stay x86_64-only and fast. The single-arch prepare_hived_image / mirrornet_node_build
+# jobs above keep running every pipeline (they also export x86_64 binaries for the replay/test jobs).
+.prepare_hived_image_multiarch:
+  extends: .docker_image_builder_job
+  stage: build
+  needs:
+    - job: detect_changes
+      optional: true
+  variables:
+    # IMAGE_PATH: "" for mainnet, "/mirrornet" for mirrornet (set per job)
+    IMAGE_PATH: ""
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "develop"'
+    - if: '$CI_COMMIT_BRANCH == "master"'
+    - if: '$CI_COMMIT_TAG && $CI_COMMIT_REF_PROTECTED == "true"'
+    - if: '$BUILD_MULTIARCH == "true"'
+      when: manual
+    - when: never
+  tags:
+    - bigjob
+  script:
+    - |
+      set -euo pipefail
+      echo "$HIVED_CI_IMGBUILDER_PASSWORD" | docker login -u "$HIVED_CI_IMGBUILDER_USER" registry.gitlab.syncad.com --password-stdin
+      # Register qemu/binfmt for the (cheap, emulated) arm64 runtime stage. The cross-compiled
+      # build stage runs natively on the amd64 builder and is NOT emulated.
+      docker run --rm --privileged tonistiigi/binfmt --install arm64,amd64 || true
+      # A docker-container buildx builder (required to produce & push a manifest list) is already
+      # created and selected by the .docker_image_builder_job before_script as "docker-container-builder",
+      # wired to the dind endpoint + registry BUILDKIT_CONFIG_ARG. Reuse it rather than creating a second
+      # builder here (a bare "docker buildx create --driver docker-container" lacks that endpoint/config
+      # and fails). build_instance.sh's buildx build runs on this active builder.
+      # Build + push the multi-arch manifest (tagged with the commit short SHA).
+      "$CI_PROJECT_DIR/scripts/ci-helpers/build_instance.sh" \
+        "$CI_COMMIT_SHORT_SHA" "$CI_PROJECT_DIR" registry.gitlab.syncad.com/hive/hive \
+        --network-type="$HIVE_NETWORK_TYPE" \
+        --platforms="linux/amd64,linux/arm64"
+      # Apply published tags onto the pushed multi-arch manifest (no pull needed).
+      SRC="registry.gitlab.syncad.com/hive/hive${IMAGE_PATH}:${CI_COMMIT_SHORT_SHA}"
+      apply_tag() { docker buildx imagetools create -t "registry.gitlab.syncad.com/hive/hive${IMAGE_PATH}:$1" "$SRC"; }
+      [[ "$CI_COMMIT_BRANCH" == "develop" ]] && apply_tag latest || true
+      [[ "$CI_COMMIT_BRANCH" == "master" ]] && apply_tag stable || true
+      if [[ -n "${CI_COMMIT_TAG:-}" && "$CI_COMMIT_REF_PROTECTED" == "true" ]]; then apply_tag "$CI_COMMIT_TAG"; fi
+
+prepare_hived_image_multiarch:
+  extends: .prepare_hived_image_multiarch
+  variables:
+    HIVE_NETWORK_TYPE: mainnet
+    IMAGE_PATH: ""
+
+mirrornet_node_build_multiarch:
+  extends: .prepare_hived_image_multiarch
+  variables:
+    HIVE_NETWORK_TYPE: mirrornet
+    IMAGE_PATH: "/mirrornet"
+
 extended_block_log_creation:
   extends: .extended_block_log_creation
   stage: build

@@ -89,18 +89,83 @@ Or if you want to build only specific binary targets use:
   Intel and Microsoft compilers. These compilers may work, but the
   developers do not use them. Pull requests fixing warnings / errors from
   these compilers are accepted.
-- Support for ARM:
-  To target aarch64 architecture, we need to build cross toolchain operating on x64 host and building for aarch64 target. To do it let's use a buildroot in version `2025.02.4`.
-  - get buildroot: `git clone https://github.com/buildroot/buildroot.git`
-  - checkout given tag: `git checkout tags/2025.02.4`
-  - copy ./aarch64/buildroot/.config into <src-root>/buildroot/.config
-  - copy ./aarch64/buildroot/glibc_downgrade.patch into <src-root>/buildroot/glibc_downgrade.patch
-  - copy ./aarch64/buildroot/snappy_static_build.patch <src-root>/buildroot/snappy_static_build.patch
-  - go into <src-root>/buildroot/
-  - Optionally execute make menuconfig to review configuration
-  - execute make to build toolchain
-  - copy ./aarch64/Toolchain.cmake to <src-root>/buildroot/output/host
-  - pack built toolchain located in: <src-root>/buildroot/output/host for futher use
-  - build hived using <src-root>/scripts/build_arm.sh script (specify actual toolchain path first as `CROSS_ROOT` variable in the script
-  Hived was initially tested on Raspberry Pi 4B, 8GB RAM, 128GB SD-CARD storage using Raspian OS 64 bit, https://downloads.raspberrypi.com/raspios_full_arm64/images/raspios_full_arm64-2024-11-19/2024-11-19-raspios-bookworm-arm64-full.img.xz
-  Preferred usage scenario is to generate a hived snapshot on x64 platform (using regular x64 build), then copy it into ARM machine and load to continue syncing to reach head block.
+- Support for ARM (aarch64): see the dedicated section below.
+
+## Building for ARM (aarch64)
+
+aarch64 `hived` is produced by **cross-compiling on an x86_64 host** — the heavy C++ compile is always run natively and is **never emulated under QEMU** (full emulation of a Boost + RocksDB + chain build is many hours and memory-heavy, so it is not used).
+
+The cross toolchain (buildroot `2025.02.4`: GCC 14.2.0 / binutils 2.43.1 / glibc 2.35, plus aarch64 builds of Boost 1.88, OpenSSL, snappy, zlib, bzip2, readline, liburing, icu) **and** a preinstalled aarch64 RocksDB are **baked into the `ci-base-image`**. As long as you use that image you do **not** need to build the toolchain yourself.
+
+The authoritative, CI-tested procedure is the `build` stage of the [Dockerfile](../Dockerfile) (its `TARGETARCH=arm64` branch). Everything below mirrors it.
+
+### What the ci-base-image provides
+
+The arm-enabled `ci-base-image` exports these paths (used by every cross build):
+
+| Variable | Value | Purpose |
+|----------|-------|---------|
+| `CROSS_ROOT` | `/opt/hive/cross/aarch64` | toolchain root; portable `Toolchain.cmake` lives at `$CROSS_ROOT/Toolchain.cmake` |
+| `HIVE_AARCH64_VENDOR_DIR` | `/opt/hive/vendor-aarch64` | preinstalled aarch64 RocksDB, so the ~2000-file RocksDB build is skipped |
+
+The exact image reference is pinned in [Dockerfile](../Dockerfile) (`ARG CI_BASE_IMAGE`) and [scripts/ci-helpers/ci_image_tag_vars.yml](../scripts/ci-helpers/ci_image_tag_vars.yml) (`CI_BASE_IMAGE_TAG`); use that value as `<ci-base-image>` below.
+
+### Option A — Build the aarch64 / multiarch image (recommended; identical to CI)
+
+This drives the tested Dockerfile end to end. QEMU/binfmt is needed only for the small, apt-based arm64 *runtime* layer; the compile itself is cross (native speed).
+
+```bash
+# register binfmt so the emulated arm64 runtime stage can run
+docker run --rm --privileged tonistiigi/binfmt --install arm64
+
+mkdir workdir && cd workdir
+../hive/scripts/ci-helpers/build_instance.sh my-tag ../hive <registry> \
+  --network-type=mainnet --platforms="linux/amd64,linux/arm64"
+```
+
+Notes:
+- A multi-arch manifest **cannot be `--load`ed** into the local docker daemon, so `build_instance.sh` **pushes** it when `--platforms` is given. Point `<registry>` at one you can push to (for purely local use, run a `registry:2` container and push there). `--platforms="linux/arm64"` builds aarch64 only.
+- To run the image, pull it on an arm64 host (or under emulation). To extract the binaries instead of running a container, use Option B.
+
+### Option B — Cross-compile directly inside the ci-base-image (fast iteration; produces aarch64 binaries)
+
+Use this for a quick edit/compile loop or to obtain raw aarch64 binaries without docker buildx. Your local `hive` checkout must already have its submodules initialised (`git clone --recurse ...`). Start an interactive container of the **arm-enabled ci-base-image** with the source mounted read-write (the secp256k1 autotools sub-build writes generated files into the tree):
+
+```bash
+docker run --rm -it -v "$PWD/hive:/home/hived/source" <ci-base-image> bash
+```
+
+Then, inside the container, a single `--cross-root` flag drives the whole cross build. The toolchain (`$CROSS_ROOT`) and preinstalled aarch64 RocksDB (`$HIVE_AARCH64_VENDOR_DIR`) are already exported by the image, so no other environment setup is needed:
+
+```bash
+cd /home/hived
+./source/scripts/build.sh --source-dir=./source --binary-dir=./build \
+  --cross-root="$CROSS_ROOT" \
+  --flat-binary-directory=/home/hived/bin --clean-after-build
+```
+
+`--cross-root` handles everything that previously had to be set by hand — the toolchain compilers, OpenSSL lookup, the qemu-aarch64 emulator, static readline/ncurses, the CMake toolchain file, and (via `$HIVE_AARCH64_VENDOR_DIR`) the preinstalled RocksDB. sccache is left disabled for cross builds automatically (the top-level `CMakeLists.txt` skips it when `CMAKE_CROSSCOMPILING` is set, because wrapping the buildroot cross-gcc breaks `-MF` dependency-file generation).
+
+The aarch64 binaries land in `/home/hived/bin`. Confirm the target architecture with `file /home/hived/bin/hived` (expect `ELF 64-bit LSB ... ARM aarch64`).
+
+> `--cross-root` defaults the vendor libs to `$HIVE_AARCH64_VENDOR_DIR`; pass `--vendor-dir=PATH` to override, or omit it (build RocksDB from source) when cross-compiling against a self-built toolchain that has no preinstalled vendor libs.
+
+### Running the aarch64 build
+
+- aarch64 `hived` links buildroot glibc 2.35; `ubuntu:24.04` arm64 ships glibc 2.39 (forward-compatible), so the minimal runtime satisfies it.
+- Initially tested on a Raspberry Pi 4B (8GB RAM, 128GB SD card) running 64-bit Raspberry Pi OS (https://downloads.raspberrypi.com/raspios_full_arm64/images/raspios_full_arm64-2024-11-19/2024-11-19-raspios-bookworm-arm64-full.img.xz).
+- Preferred usage scenario: generate a `hived` snapshot on an x86_64 node (regular x64 build), copy it to the ARM machine, and load it there to continue syncing to the head block.
+
+### Appendix — building the cross toolchain yourself
+
+You only need this to (re)generate the toolchain that gets baked into `ci-base-image` — e.g. when bumping its versions. For normal aarch64 builds use the prebuilt image (Options A/B). The buildroot configuration and patches live in [doc/aarch64/buildroot](aarch64/buildroot).
+
+1. `git clone https://github.com/buildroot/buildroot.git && cd buildroot && git checkout tags/2025.02.4`
+2. Install buildroot host prerequisites (not in `setup_ubuntu.sh`): `cpio unzip bc rsync file wget`.
+3. Copy `doc/aarch64/buildroot/.config` to `buildroot/.config`.
+4. **Apply** (do not just copy) the patches — they modify buildroot's own packages:
+   `git apply /path/to/doc/aarch64/buildroot/glibc_downgrade.patch /path/to/doc/aarch64/buildroot/snappy_static_build.patch`
+   (the `boost_1_88_upgrade.patch` used by the image build lives in `hive/common-ci-configuration`.)
+5. Optionally `make menuconfig` to review, then `make` to build the toolchain into `output/host`.
+6. Pack `output/host` for reuse, ensuring it contains a `Toolchain.cmake` that honours `$CROSS_ROOT` (the `ci-base-image` ships such a portable one; the copy in [doc/aarch64/Toolchain.cmake](aarch64/Toolchain.cmake) is a legacy variant with a hardcoded path).
+7. Build against your self-built toolchain with the same flag as Option B — just point `--cross-root` at the packed path and omit the vendor libs so RocksDB is built from source: `scripts/build.sh --cross-root=<path-to>/output/host ...`. You will need `qemu-user-static` installed (it provides `qemu-aarch64-static`); `--cross-root` provisions it automatically when missing. (The older [scripts/build_arm.sh](../scripts/build_arm.sh) wrapper predates the `--cross-root` flag and is kept only for reference.)

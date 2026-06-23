@@ -26,6 +26,16 @@ Allows to build Hive sources
                            Directory where all binaries are moved after build while flattening
                            the directory structure, that is installation directory (optional, not set by default, must exist)
   --cmake-arg=ARG          Specify additional arguments to the CMake tool spawn.
+  --cross-root=DIRECTORY_PATH
+                           Cross-compile for aarch64 using the buildroot toolchain rooted at the
+                           given path (e.g. the ci-base-image's \$CROSS_ROOT). This sets up the
+                           whole cross environment for you - toolchain compilers, OpenSSL lookup,
+                           the qemu-aarch64 emulator, static readline/ncurses and the CMake
+                           toolchain file - so no manual environment variables are required.
+  --vendor-dir=DIRECTORY_PATH
+                           When cross-compiling, use preinstalled aarch64 vendor libs (RocksDB)
+                           from this directory. Defaults to \$HIVE_AARCH64_VENDOR_DIR when set
+                           (the ci-base-image exports it), otherwise RocksDB is built from source.
   --clean-after-build      Remove compiled files after build
   --haf-build              Set if build is called from HAF
   --jobs=N                 Number of parallel build jobs (default: auto-detected based on CPU/RAM).
@@ -40,6 +50,8 @@ HIVED_INSTALLATION_DIR=""
 CLEAN_AFTER_BUILD="false"
 HAF_BUILD=""
 USER_JOBS=""
+CROSS_ROOT_ARG=""
+VENDOR_DIR_ARG=""
 
 CMAKE_ARGS=()
 
@@ -65,11 +77,92 @@ add_cmake_arg () {
   CMAKE_ARGS+=("$1")
 }
 
+# Configure the whole aarch64 cross-compilation environment from a single --cross-root path.
+# This centralises everything the cross build needs (previously duplicated inline in the Dockerfile
+# and forced onto anyone building locally): toolchain compilers, OpenSSL lookup, the qemu emulator,
+# static readline/ncurses and the CMake toolchain file. sccache is left disabled by the top-level
+# CMakeLists when CMAKE_CROSSCOMPILING is set, so nothing to do here for that.
+setup_cross_environment () {
+  local cross_root="$1"
+  local cross_tripple="aarch64-buildroot-linux-gnu"
+
+  if [[ ! -d "$cross_root" ]]; then
+    echo "ERROR: --cross-root path does not exist: $cross_root"
+    exit 1
+  fi
+  local toolchain_file="$cross_root/Toolchain.cmake"
+  if [[ ! -f "$toolchain_file" ]]; then
+    echo "ERROR: CMake toolchain file not found: $toolchain_file"
+    echo "       --cross-root must point at a buildroot toolchain that ships Toolchain.cmake"
+    echo "       (the ci-base-image provides it at \$CROSS_ROOT/Toolchain.cmake)."
+    exit 1
+  fi
+
+  echo "Cross-compiling for aarch64 using toolchain at $cross_root"
+
+  # The (x86_64) ci-base-image exports OPENSSL_* pointing at its /usr/local OpenSSL; under the cross
+  # toolchain (finds restricted to the sysroot) these misdirect find_package(OpenSSL). Drop them so
+  # OpenSSL and the other deps are found in the aarch64 sysroot.
+  unset OPENSSL_ROOT_DIR OPENSSL_INCLUDE_DIR OPENSSL_CRYPTO_LIBRARY OPENSSL_SSL_LIBRARY || true
+
+  # Export the cross toolchain so non-CMake sub-builds that read CC/CXX/AR/... from the environment
+  # (e.g. fc's autotools secp256k1) also cross-compile instead of using the host x86_64 compiler.
+  export ARCH=aarch64
+  export CROSS_COMPILE="$cross_tripple"
+  export CROSS_ROOT="$cross_root"
+  export AS="$cross_root/bin/$cross_tripple-as"   AR="$cross_root/bin/$cross_tripple-ar"
+  export CC="$cross_root/bin/$cross_tripple-gcc"  CPP="$cross_root/bin/$cross_tripple-cpp"
+  export CXX="$cross_root/bin/$cross_tripple-g++" LD="$cross_root/bin/$cross_tripple-ld"
+
+  # The build RUNs freshly-built aarch64 codegen tools (the protocol/chain assertion-id generators),
+  # so a qemu-aarch64 user-mode emulator must be available; Toolchain.cmake auto-detects it and
+  # QEMU_LD_PREFIX lets the emulated tools resolve their loader and shared libs from the sysroot.
+  local sysroot="$cross_root/$cross_tripple/sysroot"
+  export QEMU_LD_PREFIX="$sysroot"
+  export QEMU_SET_ENV="LD_LIBRARY_PATH=$cross_root/lib:$sysroot"
+  if ! command -v qemu-aarch64-static >/dev/null 2>&1 && ! command -v qemu-aarch64 >/dev/null 2>&1; then
+    echo "qemu-aarch64 user-mode emulator not found; provisioning a static build..."
+    local qemu_url="https://github.com/multiarch/qemu-user-static/releases/download/v7.2.0-1/qemu-aarch64-static"
+    if ! { command -v curl >/dev/null 2>&1 \
+           && sudo curl -fsSL "$qemu_url" -o /usr/bin/qemu-aarch64-static \
+           && sudo chmod +x /usr/bin/qemu-aarch64-static; }; then
+      echo "ERROR: could not provision qemu-aarch64. Install it manually, e.g.:"
+      echo "       sudo apt-get install -y qemu-user-static"
+      exit 1
+    fi
+  fi
+
+  # Force static linking of readline/ncurses (mirrors the x64 ci-base-image) by removing the
+  # unversioned .so symlinks from the sysroot, so the cross-built hived needs only glibc at runtime
+  # (the minimal runtime image ships no readline/ncurses).
+  local lib
+  for lib in readline history ncurses curses; do
+    rm -f "$sysroot/usr/lib/lib$lib.so" 2>/dev/null || sudo rm -f "$sysroot/usr/lib/lib$lib.so" 2>/dev/null || true
+  done
+
+  add_cmake_arg "-DCMAKE_TOOLCHAIN_FILE=$toolchain_file"
+
+  # Use the preinstalled aarch64 vendor libs (RocksDB) when available, so the cross build skips the
+  # ~2000-file RocksDB compile. The ci-base-image exports HIVE_AARCH64_VENDOR_DIR; --vendor-dir wins.
+  local vendor_dir="${VENDOR_DIR_ARG:-${HIVE_AARCH64_VENDOR_DIR:-}}"
+  if [[ -n "$vendor_dir" ]]; then
+    echo "Using preinstalled aarch64 vendor libs at: $vendor_dir"
+    add_cmake_arg "-DHIVE_USE_PREINSTALLED_VENDOR=ON"
+    add_cmake_arg "-DHIVE_VENDOR_PREINSTALLED_DIR=$vendor_dir"
+  fi
+}
+
 while [ $# -gt 0 ]; do
   case "$1" in
     --cmake-arg=*)
         arg="${1#*=}"
         add_cmake_arg "$arg"
+        ;;
+    --cross-root=*)
+        CROSS_ROOT_ARG="${1#*=}"
+        ;;
+    --vendor-dir=*)
+        VENDOR_DIR_ARG="${1#*=}"
         ;;
     --binary-dir=*)
         HIVED_BINARY_DIR="${1#*=}"
@@ -105,6 +198,11 @@ while [ $# -gt 0 ]; do
     esac
     shift
 done
+
+# When --cross-root is given, set up the entire aarch64 cross-compilation environment.
+if [[ -n "$CROSS_ROOT_ARG" ]]; then
+  setup_cross_environment "$CROSS_ROOT_ARG"
+fi
 
 # Determine number of parallel jobs
 if [[ -n "$USER_JOBS" ]]; then

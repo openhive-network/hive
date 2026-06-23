@@ -18,6 +18,7 @@ BUILD_HIVE_TESTNET=OFF
 HIVE_CONVERTER_BUILD=OFF
 
 EXPORT_PATH=""
+PLATFORMS=""
 
 print_help () {
 cat <<-EOF
@@ -26,6 +27,11 @@ cat <<-EOF
   Builds docker image containing Hived installation
   OPTIONS:
       --network-type=TYPE       Allows to specify type of blockchain network supported by built hived. Allowed values: mainnet, testnet, mirrornet
+      --platforms=LIST          Build a multi-arch image for the given comma-separated buildx platform
+                                list (e.g. "linux/amd64,linux/arm64"). aarch64 is cross-compiled, not
+                                emulated (see the Dockerfile build stage). A multi-arch manifest cannot
+                                be loaded into the local docker daemon, so the result is pushed to the
+                                registry instead of being --load'ed. Omit for a single-arch local build.
       --export-binaries=PATH    Allows to specify a path where binaries shall be exported from built image.
       --help|-h|-?              Display this help screen and exit
 
@@ -61,6 +67,9 @@ while [ $# -gt 0 ]; do
             echo
             exit 3
         esac
+        ;;
+    --platforms=*)
+        PLATFORMS="${1#*=}"
         ;;
     --export-binaries=*)
         arg="${1#*=}"
@@ -161,6 +170,24 @@ CACHE_FROM_BUILD="type=registry,ref=${CACHE_REPO}:${CACHE_KEY}"
 CACHE_FROM_INSTANCE="type=registry,ref=${CACHE_REPO}:${CACHE_KEY}-instance"
 CACHE_TO="type=registry,ref=${CACHE_REPO}:${CACHE_KEY},mode=max,compression=zstd,force-compression=false"
 
+# Multiarch support.
+# When --platforms is given (e.g. "linux/amd64,linux/arm64") a multi-arch manifest is built. The
+# aarch64 target is CROSS-compiled, not emulated: the build stage is pinned to the native
+# $BUILDPLATFORM in the Dockerfile and uses the toolchain baked into ci-base-image. The runtime is
+# built inline per-arch by setting INSTANCE_BASE_IMAGE=minimal-runtime (the multiarch
+# ubuntu:24.04-based stage), so no separate multiarch minimal-runtime image is needed. A multi-arch
+# manifest cannot be --load'ed into the local daemon, so it is --push'ed. The builder needs
+# qemu/binfmt registered for the (cheap, emulated) arm64 runtime stage.
+PLATFORM_ARGS=()
+INSTANCE_BASE_ARG=()
+BUILDX_OUTPUT="--load"
+if [[ -n "$PLATFORMS" ]]; then
+  echo "Multiarch build requested for platforms: ${PLATFORMS} (manifest will be pushed)"
+  PLATFORM_ARGS=( --platform "${PLATFORMS}" )
+  INSTANCE_BASE_ARG=( --build-arg INSTANCE_BASE_IMAGE=minimal-runtime )
+  BUILDX_OUTPUT="--push"
+fi
+
 echo -e "Building Docker instance image (includes build stage)...\n"
 
 # Single buildx invocation builds both build and instance stages.
@@ -187,8 +214,10 @@ if docker buildx version &>/dev/null && [[ "${USE_BUILDX:-true}" != "false" ]]; 
       --build-arg GIT_LAST_COMMIT_DATE="$GIT_LAST_COMMIT_DATE" \
       --build-arg PIP_INDEX_URL --build-arg PIP_TRUSTED_HOST \
       ${PG_BUILD_ARG:+$PG_BUILD_ARG} \
+      "${PLATFORM_ARGS[@]}" \
+      "${INSTANCE_BASE_ARG[@]}" \
       --tag "${REGISTRY}${IMAGE_TAG_PREFIX:+/$IMAGE_TAG_PREFIX}:${BUILD_IMAGE_TAG}" \
-      --load \
+      ${BUILDX_OUTPUT} \
       --file Dockerfile "$SOURCE_DIR"
 else
     echo "Buildx not available or disabled, using docker build..."
