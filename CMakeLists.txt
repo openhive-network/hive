@@ -30,11 +30,17 @@ set( INSTALLER_APP_ID "68ad7005-8eee-49c9-95ce-9eed97e5b347" )
 set(CMAKE_EXPORT_COMPILE_COMMANDS "ON")
 set(CMAKE_VERBOSE_MAKEFILE "ON")
 
-# Compiler caching support (sccache preferred, ccache fallback)
+# Compiler caching support (sccache preferred, ccache fallback).
+# Disabled when cross-compiling: wrapping the buildroot aarch64 cross-gcc with sccache mishandles
+# the -MF dependency-file output (the in-tree equihash/blake2b C compile fails with
+# "opening dependency file ...o.d: No such file or directory"). The gated cross build runs
+# infrequently, so losing the cache there is acceptable. Native (x86_64) builds are unaffected.
 find_program(SCCACHE_PROGRAM sccache)
 find_program(CCACHE_PROGRAM ccache)
 
-if(SCCACHE_PROGRAM)
+if(CMAKE_CROSSCOMPILING)
+  message(STATUS "Cross-compiling: compiler caching (sccache/ccache) disabled")
+elseif(SCCACHE_PROGRAM)
   message(STATUS "Found sccache: ${SCCACHE_PROGRAM}")
   set(CMAKE_C_COMPILER_LAUNCHER "${SCCACHE_PROGRAM}")
   set(CMAKE_CXX_COMPILER_LAUNCHER "${SCCACHE_PROGRAM}")
