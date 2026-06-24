@@ -408,6 +408,65 @@ BOOST_AUTO_TEST_CASE( account_update_apply )
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( account_update_open_owner_authority )
+{
+  // Regression test for #586: a double-nested owner JSON deserializes into an "open" authority
+  // (weight_threshold 0, no auths) that any signer satisfies; account_update/2 must now reject it for every role.
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: account_update_open_owner_authority (issue #586)" );
+
+    ACTORS( DEFAULT_VESTING, (alice) );
+
+    // The #586 mistake deserializes into this exact end state: an open authority (threshold 0, no auths).
+    authority open_auth; // default-constructed: weight_threshold 0, empty auths
+    BOOST_REQUIRE_EQUAL( open_auth.weight_threshold, 0u );
+    BOOST_REQUIRE( open_auth.key_auths.empty() );
+    BOOST_REQUIRE( open_auth.account_auths.empty() );
+
+    const account_authority_object& acct_auth = db->get< account_authority_object, by_account >( "alice" );
+    BOOST_REQUIRE_EQUAL( acct_auth.get_owner().weight_threshold, 1u );
+
+    // Every role on both account_update and account_update2 must be rejected (all signed with alice's current
+    // owner key); the "auth.weight_threshold" assert condition pins the rejection to validate_account_update_authority.
+    auto require_open_rejected = [&]( const operation& update_op )
+    {
+      signed_transaction tx;
+      tx.operations.push_back( update_op );
+      tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+      HIVE_REQUIRE_ASSERT( push_transaction( tx, alice_private_key ), "auth.weight_threshold" );
+    };
+
+    { account_update_operation  op; op.account = "alice"; op.owner   = open_auth; require_open_rejected( op ); }
+    { account_update_operation  op; op.account = "alice"; op.active  = open_auth; require_open_rejected( op ); }
+    { account_update_operation  op; op.account = "alice"; op.posting = open_auth; require_open_rejected( op ); }
+    { account_update2_operation op; op.account = "alice"; op.owner   = open_auth; require_open_rejected( op ); }
+    { account_update2_operation op; op.account = "alice"; op.active  = open_auth; require_open_rejected( op ); }
+    { account_update2_operation op; op.account = "alice"; op.posting = open_auth; require_open_rejected( op ); }
+
+    // The stored authorities must be untouched by the rejected updates (the #586 erasure must not happen).
+    BOOST_REQUIRE_EQUAL( acct_auth.get_owner().weight_threshold, 1u );
+    BOOST_REQUIRE( !acct_auth.get_owner().key_auths.empty() );
+
+    // Sanity: a normal, satisfiable owner update is still accepted (the guard must not over-reject).
+    {
+      private_key_type new_key = generate_private_key( "alice_owner_new" );
+      account_update_operation op;
+      op.account = "alice";
+      op.owner = authority( 1, new_key.get_public_key(), 1 );
+
+      signed_transaction tx;
+      tx.operations.push_back( op );
+      tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+      push_transaction( tx, alice_private_key );
+      BOOST_REQUIRE( acct_auth.get_owner() == authority( 1, new_key.get_public_key(), 1 ) );
+    }
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_CASE( comment_validate )
 {
   try

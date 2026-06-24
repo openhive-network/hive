@@ -24,4 +24,8 @@
 #define HIVE_HARDFORK_1_29_FIX_ENFORCEMENT_OF_AUTHORITY_SIZE_ON_RECOVERY_REQUEST (HIVE_HARDFORK_1_29)
 // it is no longer possible to use nonexisting asset to post limit order
 #define HIVE_HARDFORK_1_29_FIX_LIMIT_ORDER_ASSETS (HIVE_HARDFORK_1_29)
+// account_update/account_update2 can no longer set an open (weight_threshold == 0) or
+// otherwise impossible-to-satisfy authority, which would permanently lock the account out
+// of that role (e.g. owner authority erased by malformed JSON - issue #586)
+#define HIVE_HARDFORK_1_29_FIX_OPEN_AUTHORITY (HIVE_HARDFORK_1_29)
 #endif

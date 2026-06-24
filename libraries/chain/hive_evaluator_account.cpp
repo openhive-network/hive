@@ -86,6 +86,15 @@ void verify_authority_accounts_exist(
   verify_authority_accounts_exist_impl( db, auth, auth_account, auth_class, true/*is_required*/ );
 }
 
+// Reject an "open" authority (weight_threshold == 0): it needs no signatures, and is the erased-owner state
+// produced by malformed JSON (#586). Non-empty unsatisfiable auths are left alone (recover_account guards owner).
+void validate_account_update_authority(
+  const authority& auth,
+  const account_name_type& account )
+{
+  HIVE_CHAIN_STATE_ASSERT( auth.weight_threshold, account, "Cannot set an open authority." );
+}
+
 optional< authority > check_authority_accounts_exist(
   const database& db,
   const authority& auth,
@@ -290,6 +299,14 @@ void account_update_evaluator::do_apply( const account_update_operation& o )
       validate_auth_size( *o.posting );
   }
 
+  // TODO: after activation of HF29 check if the check can be moved to operation validate
+  if( _db.is_in_control() || _db.has_hardfork( HIVE_HARDFORK_1_29_FIX_OPEN_AUTHORITY ) )
+  {
+    if( o.owner )   validate_account_update_authority( *o.owner, o.account );
+    if( o.active )  validate_account_update_authority( *o.active, o.account );
+    if( o.posting ) validate_account_update_authority( *o.posting, o.account );
+  }
+
   if( o.owner )
   {
 // Blockchain converter uses the `account_update` operation to change the private keys of the pow-mined accounts within the same transaction
@@ -356,6 +373,14 @@ void account_update2_evaluator::do_apply( const account_update2_operation& o )
 
   const auto& account = _db.get_account( o.account );
   const auto& account_auth = _db.get< account_authority_object, by_account >( o.account );
+
+  // TODO: after activation of HF29 check if the check can be moved to operation validate
+  if( _db.is_in_control() || _db.has_hardfork( HIVE_HARDFORK_1_29_FIX_OPEN_AUTHORITY ) )
+  {
+    if( o.owner )   validate_account_update_authority( *o.owner, o.account );
+    if( o.active )  validate_account_update_authority( *o.active, o.account );
+    if( o.posting ) validate_account_update_authority( *o.posting, o.account );
+  }
 
   if( o.owner )
   {
