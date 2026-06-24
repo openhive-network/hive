@@ -21,6 +21,8 @@
 #include <fc/network/http/connection.hpp>
 #include <fc/network/ip.hpp>
 
+#include <boost/preprocessor/tuple/elem.hpp>
+
 #include <array>
 #include <iostream>
 
@@ -132,29 +134,25 @@ do {                                                              \
 /// i.e. This allows a test on update_account to begin with the database at the end state of create_account.
 #define INVOKE(test) ((struct test*)this)->test_method(); trx.clear()
 
+// Default amount of VESTS (expressed in HIVE) implicitly granted to accounts created via ACTOR(S)
+// macros. Most tests are not sensitive to the exact value; tests that are should pass an explicit
+// amount (or NO_VESTING) and verify the chosen value does not change their results.
+#define DEFAULT_VESTING HIVE_asset( 100 )
+// Use when the created account should receive no initial vesting at all.
+#define NO_VESTING HIVE_asset( 0 )
+
 #define PREP_ACTOR(name) \
   fc::ecc::private_key name ## _private_key = generate_private_key(BOOST_PP_STRINGIZE(name));   \
   fc::ecc::private_key name ## _post_key = generate_private_key(std::string( BOOST_PP_STRINGIZE(name) ) + "_post" ); \
   public_key_type name ## _public_key = name ## _private_key.get_public_key();
 
-#define ACTOR(name) \
+#define ACTOR(initial_vesting, name) \
   PREP_ACTOR(name) \
-  account_create(BOOST_PP_STRINGIZE(name), name ## _public_key, name ## _post_key.get_public_key()); \
+  account_create(BOOST_PP_STRINGIZE(name), name ## _public_key, name ## _post_key.get_public_key(), initial_vesting); \
   account_id_type name ## _id = get_account_id(BOOST_PP_STRINGIZE(name)); (void)name ## _id;
 
-#define ACTORS_IMPL(r, data, elem) ACTOR(elem)
-#define ACTORS(names) BOOST_PP_SEQ_FOR_EACH(ACTORS_IMPL, ~, names) \
-  validate_database();
-
-
-// Generate accounts with the account creation fee instead of vesting 100 hive
-#define ACTOR_DEFAULT_FEE(name) \
-  PREP_ACTOR(name) \
-  account_create_default_fee(BOOST_PP_STRINGIZE(name), name ## _public_key, name ## _post_key.get_public_key()); \
-  account_id_type name ## _id = get_account_id(BOOST_PP_STRINGIZE(name)); (void)name ## _id;
-
-#define ACTORS_DEFAULT_FEE_IMPL(r, data, elem) ACTOR_DEFAULT_FEE(elem)
-#define ACTORS_DEFAULT_FEE(names) BOOST_PP_SEQ_FOR_EACH(ACTORS_DEFAULT_FEE_IMPL, ~, names) \
+#define ACTORS_IMPL(r, data, elem) ACTOR(data, elem)
+#define ACTORS(initial_vesting, names) BOOST_PP_SEQ_FOR_EACH(ACTORS_IMPL, initial_vesting, names) \
   validate_database();
 
 #define PREP_ACTOR_EXT(object, name) \
@@ -162,13 +160,13 @@ do {                                                              \
   fc::ecc::private_key name ## _post_key = object.generate_private_key(std::string( BOOST_PP_STRINGIZE(name) ) + "_post" ); \
   public_key_type name ## _public_key = name ## _private_key.get_public_key();
 
-#define ACTOR_EXT(object, name) \
+#define ACTOR_EXT(object, initial_vesting, name) \
   PREP_ACTOR_EXT(object, name) \
-  object.account_create(BOOST_PP_STRINGIZE(name), name ## _public_key, name ## _post_key.get_public_key()); \
+  object.account_create(BOOST_PP_STRINGIZE(name), name ## _public_key, name ## _post_key.get_public_key(), initial_vesting); \
   account_id_type name ## _id = object.get_account_id(BOOST_PP_STRINGIZE(name)); (void)name ## _id;
 
-#define ACTORS_EXT_IMPL(r, data, elem) ACTOR_EXT(data, elem)
-#define ACTORS_EXT(object, names) BOOST_PP_SEQ_FOR_EACH(ACTORS_EXT_IMPL, object, names) \
+#define ACTORS_EXT_IMPL(r, data, elem) ACTOR_EXT(BOOST_PP_TUPLE_ELEM(2, 0, data), BOOST_PP_TUPLE_ELEM(2, 1, data), elem)
+#define ACTORS_EXT(object, initial_vesting, names) BOOST_PP_SEQ_FOR_EACH(ACTORS_EXT_IMPL, (object, initial_vesting), names) \
   object.validate_database();
 
 #define ASSET( s ) \
@@ -305,13 +303,8 @@ struct database_fixture {
   void account_create(
     const string& name,
     const public_key_type& key,
-    const public_key_type& post_key
-  );
-
-  void account_create_default_fee(
-    const string& name,
-    const public_key_type& key,
-    const public_key_type& post_key
+    const public_key_type& post_key,
+    const HIVE_asset& initial_vesting
   );
 
   void account_create(

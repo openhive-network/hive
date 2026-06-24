@@ -70,7 +70,7 @@ BOOST_AUTO_TEST_CASE( blocked_operations )
   {
     BOOST_TEST_MESSAGE( "Even after HF24 steem.dao is considered a treasury account" );
 
-    ACTORS( ( alice ) )
+    ACTORS( DEFAULT_VESTING, ( alice ) )
     generate_block();
     issue_funds( "alice", HIVE_asset( 10'000 ) );
     issue_funds( "alice", HBD_asset( 10'000 ) );
@@ -170,7 +170,7 @@ BOOST_AUTO_TEST_CASE( comment_beneficiary )
   {
     BOOST_TEST_MESSAGE( "After HF24 steem.dao as comment beneficiary gives directly to new treasury account" );
 
-    ACTORS( ( alice ) )
+    ACTORS( DEFAULT_VESTING, ( alice ) )
     generate_block();
 
     db_plugin->debug_update( []( database& db )
@@ -325,7 +325,7 @@ BOOST_AUTO_TEST_CASE( treasury_debt_ratio )
 {
   try
   {
-    ACTORS((alice))
+    ACTORS( DEFAULT_VESTING, (alice) )
     BOOST_TEST_MESSAGE( "After HF24 funds in the treasury don't count towards the HBD debt ratio" );
     set_price_feed( HBD_price( 1000, 10000 ) );
     generate_block();

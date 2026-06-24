@@ -239,25 +239,25 @@ struct curation_rewards_handler
     {
       if( author == 3 )
       {
-        ACTORS_EXT( test_object, (author3) );
+        ACTORS_EXT( test_object, DEFAULT_VESTING, (author3) );
         authors.insert( std::make_pair( 3, "author3" ) );
         author_keys.insert( std::make_pair( 3, std::make_pair( active_key(author3), post_key(author3) ) ) );
       }
       if( author == 2 )
       {
-        ACTORS_EXT( test_object, (author2) );
+        ACTORS_EXT( test_object, DEFAULT_VESTING, (author2) );
         authors.insert( std::make_pair( 2, "author2" ) );
         author_keys.insert( std::make_pair( 2, std::make_pair( active_key(author2), post_key(author2) ) ) );
       }
       if( author == 1 )
       {
-        ACTORS_EXT( test_object, (author1) );
+        ACTORS_EXT( test_object, DEFAULT_VESTING, (author1) );
         authors.insert( std::make_pair( 1, "author1" ) );
         author_keys.insert( std::make_pair( 1, std::make_pair( active_key(author1), post_key(author1) ) ) );
       }
       if( author == 0 )
       {
-        ACTORS_EXT( test_object, (author0) );
+        ACTORS_EXT( test_object, DEFAULT_VESTING, (author0) );
         authors.insert( std::make_pair( 0, "author0" ) );
         author_keys.insert( std::make_pair( 0, std::make_pair( active_key(author0), post_key(author0) ) ) );
       }
@@ -266,7 +266,7 @@ struct curation_rewards_handler
 
   void prepare_voters_0_80()
   {
-    ACTORS_EXT( test_object,
+    ACTORS_EXT( test_object, DEFAULT_VESTING,
             (aoa00)(aoa01)(aoa02)(aoa03)(aoa04)(aoa05)(aoa06)(aoa07)(aoa08)(aoa09)
             (aoa10)(aoa11)(aoa12)(aoa13)(aoa14)(aoa15)(aoa16)(aoa17)(aoa18)(aoa19)
             (aoa20)(aoa21)(aoa22)(aoa23)(aoa24)(aoa25)(aoa26)(aoa27)(aoa28)(aoa29)
@@ -323,7 +323,7 @@ struct curation_rewards_handler
 
   void prepare_voters_80_160()
   {
-    ACTORS_EXT( test_object,
+    ACTORS_EXT( test_object, DEFAULT_VESTING,
             (coc00)(coc01)(coc02)(coc03)(coc04)(coc05)(coc06)(coc07)(coc08)(coc09)
             (coc10)(coc11)(coc12)(coc13)(coc14)(coc15)(coc16)(coc17)(coc18)(coc19)
             (coc20)(coc21)(coc22)(coc23)(coc24)(coc25)(coc26)(coc27)(coc28)(coc29)
@@ -386,7 +386,7 @@ struct curation_rewards_handler
 
   void prepare_10_voters()
   {
-    ACTORS_EXT( test_object,
+    ACTORS_EXT( test_object, DEFAULT_VESTING,
             (aoa00)(aoa01)(aoa02)(aoa03)(aoa04)(aoa05)(aoa06)(aoa07)(aoa08)(aoa09)
           )
 

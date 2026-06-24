@@ -90,7 +90,7 @@ void condenser_api_fixture::hf8_scenario( check_point_tester_t check_point_teste
   db->set_hardfork( HIVE_HARDFORK_0_8 );
   generate_block(); // block 1
   
-  ACTORS( (hf8alice)(hf8ben) );
+  ACTORS( DEFAULT_VESTING, (hf8alice)(hf8ben) );
   generate_block();
 
   issue_funds( "hf8alice", HIVE_asset( 2'000'000 ) );
@@ -161,7 +161,7 @@ void condenser_api_fixture::hf19_scenario( check_point_tester_t check_point_test
   db->set_hardfork( HIVE_HARDFORK_0_19 );
   generate_block();
 
-  ACTORS( (alice19ah)(ben19ah) );
+  ACTORS( DEFAULT_VESTING, (alice19ah)(ben19ah) );
   generate_block();
   
   witness_create( "alice19ah", alice19ah_private_key, "foo.bar", alice19ah_private_key.get_public_key(), HIVE_asset( 1000 ) );
@@ -189,7 +189,7 @@ void condenser_api_fixture::hf23_scenario( check_point_tester_t check_point_test
   db->set_hardfork( HIVE_HARDFORK_0_22 );
   generate_block();
 
-  ACTORS( (steemflower) );
+  ACTORS( DEFAULT_VESTING, (steemflower) );
   generate_block();
   issue_funds( "steemflower", HBD_asset( 123'456'789'012 ) );
   generate_block();
@@ -217,7 +217,7 @@ void condenser_api_fixture::comment_and_reward_scenario( check_point_tester_t ch
   db->set_hardfork( HIVE_HARDFORK_1_28 );
   generate_block();
   
-  ACTORS( (dan0ah)(edgar0ah) );
+  ACTORS( DEFAULT_VESTING, (dan0ah)(edgar0ah) );
 
   beneficiary_route_type beneficiary( account_name_type( "dan0ah" ), HIVE_1_PERCENT*50 );
   comment_payout_beneficiaries beneficiaries;
@@ -248,7 +248,7 @@ void condenser_api_fixture::convert_and_limit_order_scenario( check_point_tester
   db->set_hardfork( HIVE_HARDFORK_1_27 );
   generate_block();
 
-  ACTORS( (edgar3ah)(carol3ah) );
+  ACTORS( DEFAULT_VESTING, (edgar3ah)(carol3ah) );
   generate_block();
 
   issue_funds( "edgar3ah", HBD_asset( 300'000 ) );
@@ -275,7 +275,7 @@ void condenser_api_fixture::vesting_scenario( check_point_tester_t check_point_t
   db->set_hardfork( HIVE_HARDFORK_0_19 );
   generate_block();
 
-  ACTORS( (alice4ah)(ben4ah)(carol4ah) );
+  ACTORS( DEFAULT_VESTING, (alice4ah)(ben4ah)(carol4ah) );
   generate_block();
   issue_funds( "alice4ah", HIVE_asset( 2'900 ) );
   generate_block();
@@ -298,7 +298,7 @@ void condenser_api_fixture::witness_scenario( check_point_tester_t check_point_t
   db->set_hardfork( HIVE_HARDFORK_1_27 );
   generate_block();
 
-  ACTORS( (alice5ah)(ben5ah)(carol5ah) );
+  ACTORS( DEFAULT_VESTING, (alice5ah)(ben5ah)(carol5ah) );
   generate_block();
   
   witness_create( "alice5ah", alice5ah_private_key, "foo.bar", alice5ah_private_key.get_public_key(), HIVE_asset( 1000 ) );
@@ -329,7 +329,7 @@ void condenser_api_fixture::escrow_and_savings_scenario( check_point_tester_t ch
   db->set_hardfork( HIVE_HARDFORK_1_27 );
   generate_block();
 
-  ACTORS( (alice6ah)(ben6ah)(carol6ah) );
+  ACTORS( DEFAULT_VESTING, (alice6ah)(ben6ah)(carol6ah) );
   generate_block();
   issue_funds( "alice6ah", HIVE_asset( 1'111 ) );
   issue_funds( "alice6ah", HBD_asset( 2'121 ) );
@@ -363,7 +363,7 @@ void condenser_api_fixture::proposal_scenario( check_point_tester_t check_point_
   db->set_hardfork( HIVE_HARDFORK_1_27 );
   generate_block();
 
-  ACTORS( (alice7ah)(ben7ah)(carol7ah) );
+  ACTORS( DEFAULT_VESTING, (alice7ah)(ben7ah)(carol7ah) );
   generate_block();
   issue_funds( "alice7ah", HBD_asset( 800'000 ) );
   issue_funds( "carol7ah", HIVE_asset( 100'000'000 ) );
@@ -404,7 +404,7 @@ void condenser_api_fixture::account_scenario( check_point_tester_t check_point_t
   db->set_hardfork( HIVE_HARDFORK_1_27 );
   generate_block();
 
-  ACTORS( (alice8ah)(carol8ah) );
+  ACTORS( DEFAULT_VESTING, (alice8ah)(carol8ah) );
   // We need elected witness for claim_account_operation to succeed.
   vest( "alice8ah", HIVE_asset( 5'000 ) );
   generate_block();
@@ -446,7 +446,7 @@ void condenser_api_fixture::custom_scenario( check_point_tester_t check_point_te
   db->set_hardfork( HIVE_HARDFORK_1_27 );
   generate_block();
 
-  ACTORS( (alice9ah) );
+  ACTORS( DEFAULT_VESTING, (alice9ah) );
   generate_block();
 
   push_custom_operation( { "alice9ah" }, 7, { 'D', 'A', 'T', 'A' }, alice9ah_private_key );
@@ -461,7 +461,7 @@ void condenser_api_fixture::recurrent_transfer_scenario( check_point_tester_t ch
   db->set_hardfork( HIVE_HARDFORK_1_27 );
   generate_block();
 
-  ACTORS( (alice10ah)(ben10ah) );
+  ACTORS( DEFAULT_VESTING, (alice10ah)(ben10ah) );
   generate_block();
   issue_funds( "alice10ah", HIVE_asset( 40 ) );
   issue_funds( "ben10ah", HBD_asset( 13'777 ) );
@@ -482,7 +482,7 @@ void condenser_api_fixture::decline_voting_rights_scenario( check_point_tester_t
   db->set_hardfork( HIVE_HARDFORK_1_28 );
   generate_block();
 
-  ACTORS( (alice11ah)(ben11ah) );
+  ACTORS( DEFAULT_VESTING, (alice11ah)(ben11ah) );
   generate_block();
 
   proxy( "alice11ah", "ben11ah", alice11ah_private_key );

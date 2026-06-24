@@ -64,7 +64,7 @@ BOOST_AUTO_TEST_CASE( comment_payout_equalize )
 {
   try
   {
-    ACTORS( (alice)(bob)(dave)
+    ACTORS( DEFAULT_VESTING, (alice)(bob)(dave)
           (ulysses)(vivian)(wendy) )
 
     struct author_actor
@@ -184,7 +184,7 @@ BOOST_AUTO_TEST_CASE( comment_payout_dust )
   {
     BOOST_TEST_MESSAGE( "Testing: comment_payout_dust" );
 
-    ACTORS( (alice)(bob) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob) )
     generate_block();
 
     vest( "alice", HIVE_asset( 10'000 ) );
@@ -258,7 +258,7 @@ BOOST_AUTO_TEST_CASE( reward_funds )
   {
     BOOST_TEST_MESSAGE( "Testing: reward_funds" );
 
-    ACTORS( (alice)(bob) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob) )
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -324,7 +324,7 @@ BOOST_AUTO_TEST_CASE( recent_claims_decay )
   try
   {
     BOOST_TEST_MESSAGE( "Testing: recent_rshares_2decay" );
-    ACTORS( (alice)(bob) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob) )
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -392,7 +392,7 @@ BOOST_AUTO_TEST_CASE( comment_payout )
 {
   try
   {
-    ACTORS( (alice)(bob)(sam)(dave) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob)(sam)(dave) )
     vest( "alice", HIVE_asset( 10'000 ) );
     vest( "bob", HIVE_asset( 7'500 ) );
     vest( "sam", HIVE_asset( 8'000 ) );
@@ -535,7 +535,7 @@ BOOST_AUTO_TEST_CASE( comment_payout )
 {
   try
   {
-    ACTORS( (alice)(bob)(sam)(dave) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob)(sam)(dave) )
     vest( "alice", HIVE_asset( 10'000 ) );
     vest( "bob", HIVE_asset( 7'500 ) );
     vest( "sam", HIVE_asset( 8'000 ) );
@@ -817,7 +817,7 @@ OOST_AUTO_TEST_CASE( nested_comments )
 {
   try
   {
-    ACTORS( (alice)(bob)(sam)(dave) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob)(sam)(dave) )
     vest( "alice", HIVE_asset( 10'000 ) );
     vest( "bob", HIVE_asset( 10'000 ) );
     vest( "sam", HIVE_asset( 10'000 ) );
@@ -1123,7 +1123,7 @@ BOOST_AUTO_TEST_CASE( vesting_withdrawals )
   {
     auto auto_reset( set_mainnet_cashout_values() ); // Test on mainnet values
 
-    ACTORS( (alice) )
+    ACTORS( DEFAULT_VESTING, (alice) )
     vest( "alice", HIVE_asset( 100'000 ) );
 
     const auto& new_alice = db->get_account( "alice" );
@@ -1212,7 +1212,7 @@ BOOST_AUTO_TEST_CASE( vesting_withdraw_route )
   {
     auto auto_reset( set_mainnet_cashout_values() ); // Test on mainnet values
 
-    ACTORS( (alice)(bob)(sam) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob)(sam) )
     generate_block();
     const auto& alice = db->get_account( "alice" );
     const auto& bob = db->get_account( "bob" );
@@ -1352,7 +1352,7 @@ BOOST_AUTO_TEST_CASE( feed_publish_mean )
     // Testing mainnet feed values here.
     auto auto_reset( set_mainnet_feed_values() );
 
-    ACTORS( (alice0)(alice1)(alice2)(alice3)(alice4)(alice5)(alice6) )
+    ACTORS( DEFAULT_VESTING, (alice0)(alice1)(alice2)(alice3)(alice4)(alice5)(alice6) )
 
     BOOST_TEST_MESSAGE( "Setup" );
 
@@ -1452,7 +1452,7 @@ BOOST_AUTO_TEST_CASE( convert_delay )
 {
   try
   {
-    ACTORS( (alice) )
+    ACTORS( DEFAULT_VESTING, (alice) )
     generate_block();
     vest( "alice", HIVE_asset( 10'000 ) );
     issue_funds( "alice", HBD_asset( 25'000 ) );
@@ -1686,7 +1686,7 @@ BOOST_AUTO_TEST_CASE( hbd_interest )
 {
   try
   {
-    ACTORS( (alice)(bob) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob) )
     generate_block();
     vest( "alice", HIVE_asset( 10'000 ) );
     vest( "bob", HIVE_asset( 10'000 ) );
@@ -1781,7 +1781,7 @@ BOOST_AUTO_TEST_CASE(hbd_savings_interest)
 
   try
   {
-    ACTORS((alice))
+    ACTORS( DEFAULT_VESTING,(alice))
       generate_block();
     vest("alice", HIVE_asset( 10'000 ));
 
@@ -1874,7 +1874,7 @@ BOOST_AUTO_TEST_CASE( liquidity_rewards )
   {
     db->liquidity_rewards_enabled = false;
 
-    ACTORS( (alice)(bob)(sam)(dave) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob)(sam)(dave) )
     generate_block();
     vest( "alice", HIVE_asset( 10'000 ) );
     vest( "bob", HIVE_asset( 10'000 ) );
@@ -2468,7 +2468,7 @@ BOOST_AUTO_TEST_CASE( post_rate_limit )
 {
   try
   {
-    ACTORS( (alice) )
+    ACTORS( DEFAULT_VESTING, (alice) )
 
     vest( "alice", HIVE_asset( 10'000 ) );
 
@@ -2528,7 +2528,7 @@ BOOST_AUTO_TEST_CASE( comment_freeze )
 {
   try
   {
-    ACTORS( (alice)(bob)(sam)(dave) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob)(sam)(dave) )
     vest( "alice", HIVE_asset( 10'000 ) );
     vest( "bob", HIVE_asset( 10'000 ) );
     vest( "sam", HIVE_asset( 10'000 ) );
@@ -2643,7 +2643,7 @@ BOOST_AUTO_TEST_CASE( hbd_stability )
       });
     } );
 
-    ACTORS( (alice)(bob)(sam) );
+    ACTORS( DEFAULT_VESTING, (alice)(bob)(sam) );
 
     vest( "alice", HIVE_asset( 10'000 ) );
     vest( "bob", HIVE_asset( 10'000 ) );
@@ -2770,7 +2770,7 @@ BOOST_AUTO_TEST_CASE( hbd_price_feed_limit )
 {
   try
   {
-    ACTORS( (alice) );
+    ACTORS( DEFAULT_VESTING, (alice) );
     generate_block();
     vest( "alice", HIVE_asset( 10'000 ) );
 
@@ -2827,7 +2827,7 @@ BOOST_AUTO_TEST_CASE( clear_null_account )
   {
     BOOST_TEST_MESSAGE( "Testing clearing the null account's balances on block" );
 
-    ACTORS( (alice) );
+    ACTORS( DEFAULT_VESTING, (alice) );
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -2987,7 +2987,7 @@ BOOST_AUTO_TEST_CASE( account_subsidy_witness_limits )
   {
     BOOST_TEST_MESSAGE( "Testing: account_subsidy_witness_limits" );
 
-    ACTORS( (alice)(bob) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob) )
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -3100,7 +3100,7 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_expiration )
   {
     BOOST_TEST_MESSAGE( "Testing: recurrent transfer expiration" );
 
-    ACTORS( (alice)(bob) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob) )
     generate_block();
 
     BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).open_recurrent_transfers, 0 );
@@ -3164,7 +3164,7 @@ BOOST_FIXTURE_TEST_CASE( recurrent_transfer_consecutive_failure_deletion, pruned
   {
     BOOST_TEST_MESSAGE( "Testing: recurrent transfer failure deletion" );
 
-    ACTORS( (alice)(bob) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob) )
     generate_block();
 
     BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).open_recurrent_transfers, 0 );

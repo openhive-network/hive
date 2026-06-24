@@ -560,7 +560,7 @@ BOOST_AUTO_TEST_CASE( merkle_root )
 
 BOOST_AUTO_TEST_CASE( adjust_balance_test )
 {
-  ACTORS( (alice) );
+  ACTORS( DEFAULT_VESTING, (alice) );
 
   generate_block();
 
@@ -1470,7 +1470,7 @@ BOOST_AUTO_TEST_CASE( additional_allocations )
     const size_t initial_account_allocations = accountIdx.get_item_additional_allocation();
     const size_t all_initial_allocations = get_all_dynamic_alloc();
 
-    ACTOR_DEFAULT_FEE( alice )
+    ACTOR( NO_VESTING,  alice )
     generate_block();
     ISSUE_FUNDS( "alice", HIVE_asset( 100'000'000 ) );
     BOOST_REQUIRE_EQUAL( accountIdx.get_item_additional_allocation(), initial_account_allocations );
@@ -2139,7 +2139,7 @@ BOOST_AUTO_TEST_CASE( balance_transfer )
 {
   BOOST_TEST_MESSAGE( "Testing: balance transfer_from/_to methods" );
 
-  ACTORS( (alice)(bob)(carol) );
+  ACTORS( DEFAULT_VESTING, (alice)(bob)(carol) );
   fund( "alice", HIVE_asset( 10000 ) );
   fund( "alice", HBD_asset( 10000 ) );
   generate_block();
@@ -3129,7 +3129,7 @@ BOOST_AUTO_TEST_CASE( removal_of_nonempty_balance_is_a_bug )
 {
   BOOST_TEST_MESSAGE( "Testing: removal of chain object contaning nonempty balance is a bug" );
 
-  ACTORS( (alice)(bob)(carol) );
+  ACTORS( DEFAULT_VESTING, (alice)(bob)(carol) );
   fund( "alice", HIVE_asset( 10000 ) );
   fund( "alice", HBD_asset( 10000 ) );
   generate_block();

@@ -70,7 +70,7 @@ BOOST_AUTO_TEST_CASE( mh_test )
 
     validate_database();
 
-    ACTORS( (alice)(bob)(sam) );
+    ACTORS( DEFAULT_VESTING, (alice)(bob)(sam) );
     generate_block();
 
     issue_funds( "alice", HIVE_asset( 1'000'000 ) );
