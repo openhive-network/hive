@@ -66,7 +66,7 @@ BOOST_AUTO_TEST_CASE( basic_checks )
 {
   try
   {
-    ACTORS( (alice)(bob) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob) )
     vest( "alice", HIVE_asset( 10'000 ) );
     vest( "bob", HIVE_asset( 10'000 ) );
 
@@ -144,7 +144,7 @@ BOOST_AUTO_TEST_CASE( nested_comments )
 {
   try
   {
-    ACTORS( (alice)(bob)(sam)(dave) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob)(sam)(dave) )
     vest( "alice", HIVE_asset( 10'000 ) );
     vest( "bob", HIVE_asset( 10'000 ) );
     vest( "sam", HIVE_asset( 10'000 ) );
@@ -266,7 +266,7 @@ void fork_reverts_cashout_scanario( const std::string& comment_archive_type, boo
   // create 'alice'
   fc::ecc::private_key alice_private_key = test.generate_private_key( "alice" );
   fc::ecc::private_key alice_post_key = test.generate_private_key( "alice_post" );
-  test.account_create( "alice", alice_private_key.get_public_key(), alice_post_key.get_public_key() );
+  test.account_create( "alice", alice_private_key.get_public_key(), alice_post_key.get_public_key(), DEFAULT_VESTING );
 
   test.generate_block();
 

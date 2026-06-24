@@ -892,7 +892,7 @@ BOOST_FIXTURE_TEST_CASE( optional_tapos, clean_database_fixture )
   try
   {
     idump((db->get_account("initminer")));
-    ACTORS( (alice)(bob) );
+    ACTORS( DEFAULT_VESTING, (alice)(bob) );
 
     generate_block();
 
@@ -946,7 +946,7 @@ BOOST_FIXTURE_TEST_CASE( optional_tapos, clean_database_fixture )
 BOOST_FIXTURE_TEST_CASE( double_sign_check, clean_database_fixture )
 { try {
   generate_block();
-  ACTOR(bob);
+  ACTOR( DEFAULT_VESTING, bob );
   share_type amount = 1000;
 
   signed_transaction trx;

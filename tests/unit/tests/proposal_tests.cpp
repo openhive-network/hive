@@ -125,7 +125,7 @@ BOOST_AUTO_TEST_CASE( inactive_proposals_have_votes )
   {
     BOOST_TEST_MESSAGE( "Testing: proposals before activation can have votes" );
 
-    ACTORS( (alice)(bob)(carol)(dan) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob)(carol)(dan) )
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -312,7 +312,7 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
   try
   {
     BOOST_TEST_MESSAGE( "Testing: db_remove_expired_governance_votes" );
-    ACTORS( (acc1)(acc2)(acc3)(acc4)(acc5)(acc6)(acc7)(acc8)(accw)(accw2)(accp)(pxy) )
+    ACTORS( DEFAULT_VESTING, (acc1)(acc2)(acc3)(acc4)(acc5)(acc6)(acc7)(acc8)(accw)(accw2)(accp)(pxy) )
     vest( "acc1", HIVE_asset( 1'000 ) );
     vest( "acc2", HIVE_asset( 2'000 ) );
     vest( "acc3", HIVE_asset( 3'000 ) );
@@ -671,7 +671,7 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes_with_proxy )
 {
   try
   {
-    ACTORS( (witness)(witness2)(propcreator)(propcreator2)(alice)(bobproxy)(carol) )
+    ACTORS( DEFAULT_VESTING, (witness)(witness2)(propcreator)(propcreator2)(alice)(bobproxy)(carol) )
 
     vest( "witness", HIVE_asset( 1'000 ) );
     vest( "witness2", HIVE_asset( 1'000 ) );
@@ -783,7 +783,7 @@ BOOST_AUTO_TEST_CASE( proposals_with_decline_voting_rights )
   try
   {
     BOOST_TEST_MESSAGE( "Testing: proposals_with_decline_voting_rights" );
-    ACTORS((acc1)(acc2)(accp)(dwr))
+    ACTORS( DEFAULT_VESTING,(acc1)(acc2)(accp)(dwr))
     vest( "dwr", HIVE_asset( 1'000 ) );
 
     generate_block();
@@ -845,7 +845,7 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes_threshold_exceeded )
   {
     BOOST_TEST_MESSAGE( "Testing: db_remove_expired_governance_votes when threshold stops processing" );
 
-    ACTORS(
+    ACTORS( DEFAULT_VESTING,
     (a00)(a01)(a02)(a03)(a04)(a05)(a06)(a07)(a08)(a09)
     (a10)(a11)(a12)(a13)(a14)(a15)(a16)(a17)(a18)(a19)
     (a20)(a21)(a22)(a23)(a24)(a25)(a26)(a27)(a28)(a29)
@@ -1077,7 +1077,7 @@ BOOST_AUTO_TEST_CASE( generating_payments )
   {
     BOOST_TEST_MESSAGE( "Testing: generating payments" );
 
-    ACTORS( (alice)(bob)(carol) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob)(carol) )
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -1163,7 +1163,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_01 )
   {
     BOOST_TEST_MESSAGE( "Testing: generating payments" );
 
-    ACTORS( (tester001)(tester002)(tester003)(tester004)(tester005) )
+    ACTORS( DEFAULT_VESTING, (tester001)(tester002)(tester003)(tester004)(tester005) )
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -1251,7 +1251,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_02 )
   {
     BOOST_TEST_MESSAGE( "Testing: generating payments, but proposal are removed" );
 
-    ACTORS(
+    ACTORS( DEFAULT_VESTING,
           (a00)(a01)(a02)(a03)(a04)(a05)(a06)(a07)(a08)(a09)
           (a10)(a11)(a12)(a13)(a14)(a15)(a16)(a17)(a18)(a19)
           (a20)(a21)(a22)(a23)(a24)(a25)(a26)(a27)(a28)(a29)
@@ -1366,7 +1366,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_03 )
     std::string tester01_account = "tester01";
     std::string tester02_account = "tester02";
 
-    ACTORS( (tester00)(tester01)(tester02) )
+    ACTORS( DEFAULT_VESTING, (tester00)(tester01)(tester02) )
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -1524,7 +1524,7 @@ try
   {
     BOOST_TEST_MESSAGE( "Testing: payment truncating" );
 
-    ACTORS( (alice)(bob)(carol)(dave) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob)(carol)(dave) )
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -1612,7 +1612,7 @@ try
   {
     BOOST_TEST_MESSAGE( "Testing: payment not truncating" );
 
-    ACTORS( (alice)(bob)(carol)(dave) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob)(carol)(dave) )
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -1699,7 +1699,7 @@ BOOST_AUTO_TEST_CASE( expired_proposals_forbidden_voting)
   {
     BOOST_TEST_MESSAGE( "Testing: when proposals are expired, then voting on such proposals are not allowed" );
 
-    ACTORS( (alice)(bob)(carol)(carol1)(carol2) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob)(carol)(carol1)(carol2) )
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -1778,7 +1778,7 @@ BOOST_AUTO_TEST_CASE( proposals_maintenance)
   {
     BOOST_TEST_MESSAGE( "Testing: removing inactive proposals" );
 
-    ACTORS( (alice)(bob) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob) )
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -1865,7 +1865,7 @@ BOOST_AUTO_TEST_CASE( proposal_object_apply )
   {
     BOOST_TEST_MESSAGE( "Testing: create_proposal_operation" );
 
-    ACTORS( (alice)(bob) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob) )
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -1962,7 +1962,7 @@ BOOST_AUTO_TEST_CASE( proposal_object_apply_fee_increase )
   {
     BOOST_TEST_MESSAGE( "Testing: create_proposal_operation with fee increase" );
 
-    ACTORS( (alice)(bob) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob) )
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -2060,7 +2060,7 @@ BOOST_AUTO_TEST_CASE( proposal_vote_object_apply )
   {
     BOOST_TEST_MESSAGE( "Testing: proposal_vote_object_operation" );
 
-    ACTORS( (alice)(bob)(carol)(dan) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob)(carol)(dan) )
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -2128,7 +2128,7 @@ BOOST_AUTO_TEST_CASE( proposal_vote_object_01_apply )
   {
     BOOST_TEST_MESSAGE( "Testing: proposal_vote_object_operation" );
 
-    ACTORS( (alice)(bob)(carol)(dan) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob)(carol)(dan) )
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -2369,7 +2369,7 @@ BOOST_AUTO_TEST_CASE( create_proposal_000 )
 {
   try {
     BOOST_TEST_MESSAGE( "Testing: create proposal: operation arguments validation - all args are ok" );
-    ACTORS( (alice)(bob) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob) )
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -2397,7 +2397,7 @@ BOOST_AUTO_TEST_CASE( create_proposal_001 )
     BOOST_TEST_MESSAGE( "Testing: create proposal: operation arguments validation - invalid creator" );
     {
       dhf_database::create_proposal_data cpd(db->head_block_time());
-      ACTORS( (alice)(bob) )
+      ACTORS( DEFAULT_VESTING, (alice)(bob) )
       generate_block();
       ISSUE_FUNDS( cpd.creator, HBD_asset( 80'000 ) );
       HIVE_REQUIRE_THROW( create_proposal( "", cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, alice_post_key ), fc::exception);
@@ -2414,7 +2414,7 @@ BOOST_AUTO_TEST_CASE( create_proposal_002 )
   {
     BOOST_TEST_MESSAGE( "Testing: create proposal: operation arguments validation - invalid receiver" );
     dhf_database::create_proposal_data cpd(db->head_block_time());
-    ACTORS( (alice)(bob) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob) )
     generate_block();
     ISSUE_FUNDS( cpd.creator, HBD_asset( 80'000 ) );
     HIVE_REQUIRE_THROW(create_proposal( cpd.creator, "", cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, alice_post_key ), fc::exception);
@@ -2429,7 +2429,7 @@ BOOST_AUTO_TEST_CASE( create_proposal_003 )
   {
     BOOST_TEST_MESSAGE( "Testing: create proposal: operation arguments validation - invalid start date" );
     dhf_database::create_proposal_data cpd(db->head_block_time());
-    ACTORS( (alice)(bob) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob) )
     generate_block();
     ISSUE_FUNDS( cpd.creator, HBD_asset( 80'000 ) );
     cpd.start_date = cpd.end_date + fc::days(2);
@@ -2445,7 +2445,7 @@ BOOST_AUTO_TEST_CASE( create_proposal_004 )
   {
     BOOST_TEST_MESSAGE( "Testing: create proposal: operation arguments validation - invalid end date" );
     dhf_database::create_proposal_data cpd(db->head_block_time());
-    ACTORS( (alice)(bob) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob) )
     generate_block();
     ISSUE_FUNDS( cpd.creator, HBD_asset( 80'000 ) );
     cpd.end_date = cpd.start_date - fc::days(2);
@@ -2460,7 +2460,7 @@ BOOST_AUTO_TEST_CASE( create_proposal_005 )
   try
   {
     BOOST_TEST_MESSAGE( "Testing: create proposal: operation arguments validation - invalid subject(empty)" );
-    ACTORS( (alice)(bob) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob) )
     generate_block();
     create_proposal_operation cpo;
     cpo.creator    = "alice";
@@ -2487,7 +2487,7 @@ BOOST_AUTO_TEST_CASE( create_proposal_006 )
   try
   {
     BOOST_TEST_MESSAGE( "Testing: create proposal: operation arguments validation - invalid subject(too long)" );
-    ACTORS( (alice)(bob) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob) )
     generate_block();
     create_proposal_operation cpo;
     cpo.creator    = "alice";
@@ -2514,7 +2514,7 @@ BOOST_AUTO_TEST_CASE( create_proposal_007 )
   try
   {
     BOOST_TEST_MESSAGE( "Testing: create proposal: authorization test" );
-    ACTORS( (alice)(bob) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob) )
     generate_block();
     create_proposal_operation cpo;
     cpo.creator    = "alice";
@@ -2549,7 +2549,7 @@ BOOST_AUTO_TEST_CASE( create_proposal_008 )
   {
     BOOST_TEST_MESSAGE( "Testing: create proposal: operation arguments validation - invalid daily payement (negative value)" );
     dhf_database::create_proposal_data cpd(db->head_block_time());
-    ACTORS( (alice)(bob) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob) )
     generate_block();
     ISSUE_FUNDS( cpd.creator, HBD_asset( 80'000 ) );
     generate_block();
@@ -2568,7 +2568,7 @@ BOOST_AUTO_TEST_CASE( create_proposal_009 )
   {
     BOOST_TEST_MESSAGE( "Testing: create proposal: insufficient funds for operation" );
     dhf_database::create_proposal_data cpd(db->head_block_time());
-    ACTORS( (alice)(bob) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob) )
     generate_block();
     ISSUE_FUNDS( cpd.creator, HBD_asset( 15'000 ) );
     generate_block();
@@ -2587,7 +2587,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_votes_000 )
   {
     BOOST_TEST_MESSAGE( "Testing: update proposal votes: operation arguments validation - all ok (approve true)" );
     dhf_database::create_proposal_data cpd(db->head_block_time());
-    ACTORS( (alice)(bob)(carol) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob)(carol) )
     generate_block();
     ISSUE_FUNDS( cpd.creator, HBD_asset( 80'000 ) );
     generate_block();
@@ -2607,7 +2607,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_votes_001 )
   {
     BOOST_TEST_MESSAGE( "Testing: update proposal votes: operation arguments validation - all ok (approve false)" );
     dhf_database::create_proposal_data cpd(db->head_block_time());
-    ACTORS( (alice)(bob)(carol) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob)(carol) )
     generate_block();
     ISSUE_FUNDS( cpd.creator, HBD_asset( 80'000 ) );
     generate_block();
@@ -2627,7 +2627,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_votes_002 )
   {
     BOOST_TEST_MESSAGE( "Testing: update proposal votes: operation arguments validation - all ok (empty array)" );
     dhf_database::create_proposal_data cpd(db->head_block_time());
-    ACTORS( (alice)(bob)(carol) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob)(carol) )
     generate_block();
     ISSUE_FUNDS( cpd.creator, HBD_asset( 80'000 ) );
     generate_block();
@@ -2647,7 +2647,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_votes_003 )
   {
     BOOST_TEST_MESSAGE( "Testing: update proposal votes: operation arguments validation - all ok (array with negative digits), but none of them exist therefore there is an error" );
     dhf_database::create_proposal_data cpd(db->head_block_time());
-    ACTORS( (alice)(bob)(carol) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob)(carol) )
     generate_block();
     ISSUE_FUNDS( cpd.creator, HBD_asset( 80'000 ) );
     generate_block();
@@ -2665,7 +2665,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_votes_004 )
   {
     BOOST_TEST_MESSAGE( "Testing: update proposal votes: operation arguments validation - invalid voter" );
     dhf_database::create_proposal_data cpd(db->head_block_time());
-    ACTORS( (alice)(bob)(carol) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob)(carol) )
     generate_block();
     ISSUE_FUNDS( cpd.creator, HBD_asset( 80'000 ) );
     generate_block();
@@ -2685,7 +2685,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_votes_005 )
   {
     BOOST_TEST_MESSAGE( "Testing: update proposal votes: operation arguments validation - invalid id array (array with greater number of digits than allowed)" );
     dhf_database::create_proposal_data cpd(db->head_block_time());
-    ACTORS( (alice)(bob)(carol) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob)(carol) )
     generate_block();
     ISSUE_FUNDS( cpd.creator, HBD_asset( 80'000 ) );
     generate_block();
@@ -2706,7 +2706,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_votes_006 )
   try
   {
     BOOST_TEST_MESSAGE( "Testing: update proposal votes: authorization test" );
-    ACTORS( (alice)(bob) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob) )
     generate_block();
     update_proposal_votes_operation upv;
     upv.voter = "alice";
@@ -2737,7 +2737,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_000 )
   {
     BOOST_TEST_MESSAGE( "Testing: remove proposal: basic verification operation - proposal removal (only one)." );
     dhf_database::create_proposal_data cpd(db->head_block_time());
-    ACTORS( (alice)(bob) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob) )
     generate_block();
     ISSUE_FUNDS( cpd.creator, HBD_asset( 80'000 ) );
     generate_block();
@@ -2768,7 +2768,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_001 )
   {
     BOOST_TEST_MESSAGE( "Testing: remove proposal: basic verification operation - proposal removal (one from many)." );
     dhf_database::create_proposal_data cpd(db->head_block_time());
-    ACTORS( (alice)(bob) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob) )
     generate_block();
     ISSUE_FUNDS( cpd.creator, HBD_asset( 80'000 ) );
     generate_block();
@@ -2820,7 +2820,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_002 )
   {
     BOOST_TEST_MESSAGE( "Testing: remove proposal: basic verification operation - proposal removal (n from many in two steps)." );
     dhf_database::create_proposal_data cpd(db->head_block_time());
-    ACTORS( (alice)(bob) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob) )
     generate_block();
     ISSUE_FUNDS( cpd.creator, HBD_asset( 80'000 ) );
     generate_block();
@@ -2867,7 +2867,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_003 )
   {
     BOOST_TEST_MESSAGE( "Testing: remove proposal: basic verification operation - proper proposal deletion check (one at time)." );
     dhf_database::create_proposal_data cpd(db->head_block_time());
-    ACTORS( (alice)(bob) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob) )
     generate_block();
     ISSUE_FUNDS( cpd.creator, HBD_asset( 80'000 ) );
     generate_block();
@@ -2914,7 +2914,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_004 )
   {
     BOOST_TEST_MESSAGE( "Testing: remove proposal: basic verification operation - proper proposal deletion check (two at one time)." );
     dhf_database::create_proposal_data cpd(db->head_block_time());
-    ACTORS( (alice)(bob) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob) )
     generate_block();
     ISSUE_FUNDS( cpd.creator, HBD_asset( 80'000 ) );
     generate_block();
@@ -2979,7 +2979,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_005 )
   {
     BOOST_TEST_MESSAGE( "Testing: remove proposal: basic verification operation - proposal with votes removal (only one)." );
     dhf_database::create_proposal_data cpd(db->head_block_time());
-    ACTORS( (alice)(bob) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob) )
     generate_block();
     ISSUE_FUNDS( cpd.creator, HBD_asset( 80'000 ) );
     generate_block();
@@ -3016,7 +3016,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_006 )
   {
     BOOST_TEST_MESSAGE( "Testing: remove proposal: basic verification operation - remove proposal with votes and one voteless at same time." );
     dhf_database::create_proposal_data cpd(db->head_block_time());
-    ACTORS( (alice)(bob) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob) )
     generate_block();
     ISSUE_FUNDS( cpd.creator, HBD_asset( 80'000 ) );
     generate_block();
@@ -3054,7 +3054,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_007 )
   {
     BOOST_TEST_MESSAGE( "Testing: remove proposal: basic verification operation - remove proposals with votes at same time." );
     dhf_database::create_proposal_data cpd(db->head_block_time());
-    ACTORS( (alice)(bob)(carol) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob)(carol) )
     generate_block();
     ISSUE_FUNDS( cpd.creator, HBD_asset( 80'000 ) );
     generate_block();
@@ -3095,7 +3095,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_008 )
   {
     BOOST_TEST_MESSAGE( "Testing: remove proposal: operation arguments validation - all ok" );
     dhf_database::create_proposal_data cpd(db->head_block_time());
-    ACTORS( (alice)(bob) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob) )
     generate_block();
     ISSUE_FUNDS( cpd.creator, HBD_asset( 80'000 ) );
     generate_block();
@@ -3112,7 +3112,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_009 )
   {
     BOOST_TEST_MESSAGE( "Testing: remove proposal: operation arguments validation - invalid deleter" );
     dhf_database::create_proposal_data cpd(db->head_block_time());
-    ACTORS( (alice)(bob) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob) )
     generate_block();
     ISSUE_FUNDS( cpd.creator, HBD_asset( 80'000 ) );
     generate_block();
@@ -3130,7 +3130,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_010 )
   {
     BOOST_TEST_MESSAGE( "Testing: remove proposal: operation arguments validation - invalid array(empty array)" );
     dhf_database::create_proposal_data cpd(db->head_block_time());
-    ACTORS( (alice)(bob) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob) )
     generate_block();
     ISSUE_FUNDS( cpd.creator, HBD_asset( 80'000 ) );
     generate_block();
@@ -3147,7 +3147,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_011 )
   {
     BOOST_TEST_MESSAGE( "Testing: remove proposal: operation arguments validation - invalid array(array with greater number of digits than allowed)" );
     dhf_database::create_proposal_data cpd(db->head_block_time());
-    ACTORS( (alice)(bob) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob) )
     generate_block();
     ISSUE_FUNDS( cpd.creator, HBD_asset( 80'000 ) );
     generate_block();
@@ -3166,7 +3166,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_012 )
   try
   {
     BOOST_TEST_MESSAGE( "Testing: remove proposal: authorization test" );
-    ACTORS( (alice)(bob) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob) )
     generate_block();
     remove_proposal_operation rpo;
     rpo.proposal_owner = "alice";
@@ -3196,7 +3196,7 @@ BOOST_AUTO_TEST_CASE( proposals_maintenance_01 )
   {
     BOOST_TEST_MESSAGE( "Testing: removing of old proposals using threshold" );
 
-    ACTORS( (a00)(a01)(a02)(a03)(a04) )
+    ACTORS( DEFAULT_VESTING, (a00)(a01)(a02)(a03)(a04) )
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -3287,7 +3287,7 @@ BOOST_AUTO_TEST_CASE( proposals_maintenance_02 )
   {
     BOOST_TEST_MESSAGE( "Testing: removing of old proposals + votes using threshold" );
 
-    ACTORS( (a00)(a01)(a02)(a03)(a04) )
+    ACTORS( DEFAULT_VESTING, (a00)(a01)(a02)(a03)(a04) )
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -3396,7 +3396,7 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold )
   {
     BOOST_TEST_MESSAGE( "Testing: removing of old proposals + votes using threshold" );
 
-    ACTORS( (a00)(a01)(a02)(a03)(a04) )
+    ACTORS( DEFAULT_VESTING, (a00)(a01)(a02)(a03)(a04) )
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -3495,7 +3495,7 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_01 )
   {
     BOOST_TEST_MESSAGE( "Testing: removing of old proposals/votes using threshold " );
 
-    ACTORS( (a00)(a01)(a02)(a03)(a04)(a05) )
+    ACTORS( DEFAULT_VESTING, (a00)(a01)(a02)(a03)(a04)(a05) )
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -3735,7 +3735,7 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_02 )
   {
     BOOST_TEST_MESSAGE( "Testing: removing of old proposals/votes using threshold " );
 
-    ACTORS(
+    ACTORS( DEFAULT_VESTING,
           (a00)(a01)(a02)(a03)(a04)(a05)(a06)(a07)(a08)(a09)
           (a10)(a11)(a12)(a13)(a14)(a15)(a16)(a17)(a18)(a19)
           (a20)(a21)(a22)(a23)(a24)(a25)(a26)(a27)(a28)(a29)
@@ -4055,7 +4055,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_000 )
   {
     BOOST_TEST_MESSAGE( "Testing: update proposal - update subject" );
 
-    ACTORS( (alice)(bob) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob) )
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -4150,7 +4150,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_001 )
   try
   {
     BOOST_TEST_MESSAGE( "Testing: update proposal: operation arguments validation - invalid id" );
-    ACTORS( (alice)(bob) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob) )
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -4196,7 +4196,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_002 )
   try
   {
     BOOST_TEST_MESSAGE( "Testing: update proposal: operation arguments validation - invalid creator" );
-    ACTORS( (alice)(bob) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob) )
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -4244,7 +4244,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_003 )
   try
   {
     BOOST_TEST_MESSAGE( "Testing: update proposal: operation arguments validation - invalid daily pay" );
-    ACTORS( (alice)(bob) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob) )
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -4295,7 +4295,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_004 )
   try
   {
     BOOST_TEST_MESSAGE( "Testing: update proposal: operation arguments validation - invalid subject" );
-    ACTORS( (alice)(bob) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob) )
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -4346,7 +4346,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_005 )
   try
   {
     BOOST_TEST_MESSAGE( "Testing: update proposal: operation arguments validation - invalid permlink" );
-    ACTORS( (alice)(bob)(dave) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob)(dave) )
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -4400,7 +4400,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_006 )
   try
   {
     BOOST_TEST_MESSAGE( "Testing: update proposal: operation arguments validation - invalid end_date" );
-    ACTORS( (alice)(bob) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob) )
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );

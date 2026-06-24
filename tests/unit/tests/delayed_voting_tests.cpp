@@ -102,7 +102,7 @@ BOOST_AUTO_TEST_CASE( delayed_proposal_test_01 )
     const auto TBD_100 = HBD_asset( 100'000 );
     
     //setup
-    ACTORS( (alice)(bob)(carol) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob)(carol) )
 
     set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
@@ -171,7 +171,7 @@ BOOST_AUTO_TEST_CASE( delayed_proposal_test_02 )
     const auto TBD_100 = HBD_asset( 100'000 );
 
     //setup
-    ACTORS( (alice)(bob)(carol) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob)(carol) )
 
     set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
@@ -278,7 +278,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
 
     auto start_time = db->head_block_time();
 
-    ACTORS( (alice)(bob)(celine)(witness1)(witness2) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob)(celine)(witness1)(witness2) )
     generate_block();
 
     HIVE_asset _1( 1'000 );
@@ -865,7 +865,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_01 )
   {
     BOOST_TEST_MESSAGE( "Testing: Setting proxy" );
 
-    ACTORS( (alice)(bob)(celine)(witness) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob)(celine)(witness) )
     generate_block();
 
     {
@@ -1007,7 +1007,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_many_vesting_01 )
   {
     BOOST_TEST_MESSAGE( "Testing: Transferring vests many times from one person to another" );
 
-    ACTORS( (alice)(bob)(witness) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob)(witness) )
     generate_block();
 
     {
@@ -1109,7 +1109,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_01 )
   {
     BOOST_TEST_MESSAGE( "Testing: delaying voting" );
 
-    ACTORS( (alice)(bob)(witness) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob)(witness) )
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -1157,7 +1157,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_04 )
   {
     BOOST_TEST_MESSAGE( "Testing: delaying voting v4" );
 
-    ACTORS( (bob)(witness) )
+    ACTORS( DEFAULT_VESTING, (bob)(witness) )
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -1206,7 +1206,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_05 )
   {
     BOOST_TEST_MESSAGE( "Testing: delaying voting v5" );
 
-    ACTORS( (bob)(witness1)(witness2) )
+    ACTORS( DEFAULT_VESTING, (bob)(witness1)(witness2) )
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -1266,7 +1266,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_06 )
   {
     BOOST_TEST_MESSAGE( "Testing: delaying voting v6" );
 
-    ACTORS( (bob)(witness) )
+    ACTORS( DEFAULT_VESTING, (bob)(witness) )
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -1315,7 +1315,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_06 )
   {
     BOOST_TEST_MESSAGE( "Complex scenario for `delayed_voting` class" );
 
-    ACTORS( (user0)(user1)(user2)(user3)(user4)(user5)(user6)(user7)(user8)(user9) )
+    ACTORS( DEFAULT_VESTING, (user0)(user1)(user2)(user3)(user4)(user5)(user6)(user7)(user8)(user9) )
 
     std::array< std::string, 10 > accs{
                             "user0",
@@ -1380,7 +1380,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_05 )
   {
     BOOST_TEST_MESSAGE( "Complex scenario for `delayed_voting` class" );
 
-    ACTORS( (user0)(user1)(user2)(user3)(user4)(user5)(user6)(user7)(user8)(user9) )
+    ACTORS( DEFAULT_VESTING, (user0)(user1)(user2)(user3)(user4)(user5)(user6)(user7)(user8)(user9) )
 
     std::array< std::string, 10 > accs{
                             "user0",
@@ -1452,7 +1452,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_03 )
     // user setup
     BOOST_TEST_MESSAGE( "Testing: `delayed_voting::run` method" );
     const auto start_time = db->head_block_time();
-    ACTORS( (alice)(celine)(bob)(witness) )
+    ACTORS( DEFAULT_VESTING, (alice)(celine)(bob)(witness) )
     generate_block();
     ISSUE_FUNDS( "bob", HIVE_asset( 100'000'000 ) );
     ISSUE_FUNDS( "celine", HIVE_asset( 100'000'000 ) );
@@ -1538,7 +1538,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_04 )
   {
     BOOST_TEST_MESSAGE( "Complex scenario for `delayed_voting` class" );
 
-    ACTORS( (user0)(user1)(user2)(user3)(user4)(user5)(user6)(user7)(user8)(user9) )
+    ACTORS( DEFAULT_VESTING, (user0)(user1)(user2)(user3)(user4)(user5)(user6)(user7)(user8)(user9) )
 
     std::array< std::string, 10 > accs{
                             "user0",
@@ -1622,7 +1622,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_02 )
   set_price_feed( HBD_price( 1000, 1000 ) );
   generate_block();
 
-  ACTORS( (alice)(bob) )
+  ACTORS( DEFAULT_VESTING, (alice)(bob) )
   generate_block();
 
   ISSUE_FUNDS( "alice", HIVE_asset( 10'000'000 ) );
@@ -1726,7 +1726,7 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_01 )
 
   BOOST_TEST_MESSAGE( "Testing: `delayed_voting::add_votes` method" );
 
-  ACTORS( (alice)(bob)(celine) )
+  ACTORS( DEFAULT_VESTING, (alice)(bob)(celine) )
 
   std::array< const account_object*, 3 > accs{ &db->get_account( "alice" ),
                                 &db->get_account( "bob" ),
@@ -2029,7 +2029,7 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_01 )
   {
     BOOST_TEST_MESSAGE( "Testing: decline voting rights: casual use" );
 
-    ACTORS( (bob)(alice)(witness) )
+    ACTORS( DEFAULT_VESTING, (bob)(alice)(witness) )
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -2080,7 +2080,7 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_02 )
   {
     BOOST_TEST_MESSAGE( "Testing: decline voting rights: casual use with spontaneus vote" );
 
-    ACTORS( (bob)(alice)(witness) )
+    ACTORS( DEFAULT_VESTING, (bob)(alice)(witness) )
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -2149,7 +2149,7 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_03 )
       return request_idx.find( name ) == request_idx.end();
     };
 
-    ACTORS( (bob)(alice)(witness)(witness2) )
+    ACTORS( DEFAULT_VESTING, (bob)(alice)(witness)(witness2) )
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -2230,7 +2230,7 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_04 )
       return request_idx.find( name ) == request_idx.end();
     };
 
-    ACTORS( (bob)(alice)(witness) )
+    ACTORS( DEFAULT_VESTING, (bob)(alice)(witness) )
     generate_block();
 
     // auto start_time = db->head_block_time();
@@ -2287,7 +2287,7 @@ BOOST_AUTO_TEST_CASE( small_common_test_01 )
     set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
-    ACTORS( (alice)(witness) )
+    ACTORS( DEFAULT_VESTING, (alice)(witness) )
     generate_block();
 
     //auto start_time = db->head_block_time();
@@ -2426,7 +2426,7 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
 
   actors: alice, alice.bp (witness of alice choice), bob, bob.bp (witness of bob choice), carol
 */
-  ACTORS( (alice)(alice0bp)(bob)(bob0bp)(carol) );
+  ACTORS( DEFAULT_VESTING, (alice)(alice0bp)(bob)(bob0bp)(carol) );
   generate_block();
 
   BOOST_TEST_MESSAGE( "[scenario_01]: after account creation" );

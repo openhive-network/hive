@@ -184,7 +184,7 @@ BOOST_AUTO_TEST_CASE( regular_transactions )
       } );
     } );
 
-    ACTORS( (alice)(bob)(carol)(dan) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob)(carol)(dan) )
     generate_block();
 
     expectation_set check( *db );
@@ -294,7 +294,7 @@ BOOST_AUTO_TEST_CASE( popped_transactions )
   {
     BOOST_TEST_MESSAGE( "Testing popped transactions" );
 
-    ACTORS( (alice)(bob)(carol) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob)(carol) )
     generate_block();
     fund( "alice", HIVE_asset( 10'000 ) );
     fund( "bob", HIVE_asset( 10'000 ) );
@@ -452,7 +452,7 @@ BOOST_AUTO_TEST_CASE( transactions_in_forks )
   {
     BOOST_TEST_MESSAGE( "Testing transactions in forked database" );
 
-    ACTORS( (alice)(bob)(carol) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob)(carol) )
     generate_block();
     fund( "alice", HIVE_asset( 10'000 ) );
     fund( "bob", HIVE_asset( 10'000 ) );
@@ -652,7 +652,7 @@ BOOST_AUTO_TEST_CASE( failure_during_fork_switch )
   {
     BOOST_TEST_MESSAGE( "Testing transactions during failed for switch" );
 
-    ACTORS( (alice)(bob)(carol) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob)(carol) )
     generate_block();
     fund( "alice", HIVE_asset( 10'000 ) );
     generate_block();
@@ -767,7 +767,7 @@ BOOST_AUTO_TEST_CASE( skip_faulty_tx_during_block_production )
   {
     BOOST_TEST_MESSAGE( "Test if faulty transaction is skipped when block is produced" );
 
-    ACTORS( (alice)(bob) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob) )
     fund( "alice", HIVE_asset( 2000 ) );
     generate_block();
 

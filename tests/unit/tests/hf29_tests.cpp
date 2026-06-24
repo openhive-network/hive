@@ -30,7 +30,7 @@ BOOST_AUTO_TEST_CASE( recovery_request_oversized_authority )
       BOOST_TEST_MESSAGE( "Testing: oversized authority in recovery request edit/cancel" );
       BOOST_REQUIRE_EQUAL( (bool)executor, true );
 
-      ACTORS_EXT( (*executor), (alice)(bob) )
+      ACTORS_EXT( (*executor), DEFAULT_VESTING, (alice)(bob) )
       executor->fund( "alice", HIVE_asset( 1'000'000 ) );
       executor->db_plugin->debug_update( []( database& db )
       {
@@ -149,7 +149,7 @@ BOOST_AUTO_TEST_CASE( limit_order_with_nonexisting_asset )
       BOOST_TEST_MESSAGE( "Testing: limit_order_create / limit_order_create2 with nonexisting asset" );
       BOOST_REQUIRE_EQUAL( (bool)executor, true );
 
-      ACTORS_EXT( (*executor), (alice)(bob)(carol)(dave) )
+      ACTORS_EXT( (*executor), DEFAULT_VESTING, (alice)(bob)(carol)(dave) )
       executor->fund( "alice", HIVE_asset( 1'000'000 ) );
       executor->fund( "bob", HIVE_asset( 1'000'000 ) );
       executor->fund( "carol", HIVE_asset( 1'000'000 ) );
@@ -310,7 +310,7 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_modify_last_execution )
       BOOST_TEST_MESSAGE( "Testing: modifying a recurrent transfer down to a single remaining execution (issue #786)" );
       BOOST_REQUIRE_EQUAL( (bool)executor, true );
 
-      ACTORS_EXT( (*executor), (alice)(bob) )
+      ACTORS_EXT( (*executor), DEFAULT_VESTING, (alice)(bob) )
       executor->fund( "alice", HIVE_asset( 10'000 ) );
       executor->generate_block();
 
@@ -407,7 +407,7 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_delete_with_single_execution )
       BOOST_TEST_MESSAGE( "Testing: deleting a recurrent transfer with executions == 1 must match pre-HF29 nodes (issue #786)" );
       BOOST_REQUIRE_EQUAL( (bool)executor, true );
 
-      ACTORS_EXT( (*executor), (alice)(bob) )
+      ACTORS_EXT( (*executor), DEFAULT_VESTING, (alice)(bob) )
       executor->fund( "alice", HIVE_asset( 10'000 ) );
       executor->generate_block();
 

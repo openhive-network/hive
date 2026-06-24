@@ -118,8 +118,8 @@ BOOST_FIXTURE_TEST_CASE( inconsistent_ah_rocksdb_storage, empty_fixture )
     {
       clean_database_fixture fixture;
       ah_rocksdb_dir = fixture.ah_plugin->storage_dir();
-      fixture.account_create_default_fee( "alice", fixture.init_account_pub_key, fixture.init_account_pub_key );
-      fixture.account_create_default_fee( "bob", fixture.init_account_pub_key, fixture.init_account_pub_key );
+      fixture.account_create( "alice", fixture.init_account_pub_key, fixture.init_account_pub_key, NO_VESTING );
+      fixture.account_create( "bob", fixture.init_account_pub_key, fixture.init_account_pub_key, NO_VESTING );
       fixture.post_comment( "alice", "test", "test", "test body", "category", fixture.init_account_priv_key );
       // first 30 blocks use different LIB mechanics
       fixture.generate_blocks( 3 * HIVE_MAX_WITNESSES );

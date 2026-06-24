@@ -11,9 +11,9 @@ condenser_api_reversible_fixture::condenser_api_reversible_fixture()
     db->set_hardfork( HIVE_NUM_HARDFORKS );
     generate_block();
 
-    ACTORS((top1)(top2)(top3)(top4)(top5)(top6)(top7)(top8)(top9)(top10)
-           (top11)(top12)(top13)(top14)(top15)(top16)(top17)(top18)(top19)(top20))
-    ACTORS((backup1)(backup2)(backup3)(backup4)(backup5)(backup6)(backup7)(backup8)(backup9)(backup10))
+    ACTORS( DEFAULT_VESTING, (top1)(top2)(top3)(top4)(top5)(top6)(top7)(top8)(top9)(top10)
+           (top11)(top12)(top13)(top14)(top15)(top16)(top17)(top18)(top19)(top20) )
+    ACTORS( DEFAULT_VESTING, (backup1)(backup2)(backup3)(backup4)(backup5)(backup6)(backup7)(backup8)(backup9)(backup10) )
 
     const auto create_witness = [&]( const std::string& witness_name )
     {
@@ -27,7 +27,7 @@ condenser_api_reversible_fixture::condenser_api_reversible_fixture()
     for( int i = 1; i <= 10; ++i )
       create_witness( "backup" + std::to_string(i) );
 
-    ACTORS((whale)(voter1)(voter2)(voter3)(voter4)(voter5)(voter6)(voter7)(voter8)(voter9)(voter10))
+    ACTORS( DEFAULT_VESTING, (whale)(voter1)(voter2)(voter3)(voter4)(voter5)(voter6)(voter7)(voter8)(voter9)(voter10) )
 
     vest( "whale", HIVE_asset( 500'000'000 ) );
 

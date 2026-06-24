@@ -143,7 +143,7 @@ BOOST_AUTO_TEST_CASE( rc_usage_buckets )
     for( const auto& bucket : bucketIdx )
       check_eq( bucket.get_usage(), {} );
 
-    ACTORS( (alice)(bob)(sam) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob)(sam) )
     fund( "alice", HIVE_asset( 1'000 ) );
     fund( "bob", HIVE_asset( 1'000 ) );
     fund( "sam", HIVE_asset( 1'000 ) );
@@ -350,7 +350,7 @@ BOOST_AUTO_TEST_CASE( rc_single_recover_account )
     inject_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
     configuration_data.allow_not_enough_rc = false;
 
-    ACTORS( (agent)(victim)(thief) )
+    ACTORS( DEFAULT_VESTING, (agent)(victim)(thief) )
     generate_block(); 
     vest( "agent", HIVE_asset( 1'000'000 ) );
     issue_funds( "victim", HIVE_asset( 1'000 ) );
@@ -467,7 +467,7 @@ BOOST_AUTO_TEST_CASE( rc_many_recover_accounts )
     inject_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
     configuration_data.allow_not_enough_rc = false;
 
-    ACTORS( (agent)(victim1)(victim2)(victim3)(thief1)(thief2)(thief3) )
+    ACTORS( DEFAULT_VESTING, (agent)(victim1)(victim2)(victim3)(thief1)(thief2)(thief3) )
     generate_block();
     vest( "agent", HIVE_asset( 1'000'000 ) );
     issue_funds( "victim1", HIVE_asset( 1'000 ) );
@@ -628,7 +628,7 @@ BOOST_AUTO_TEST_CASE( rc_multisig_recover_account )
     set_witness_props( props ); //simple tx with maxed authority uses over 300kB
     const auto fee = db->get_witness_schedule_object().median_props.account_creation_fee;
 
-    ACTORS( (agent)(thief) )
+    ACTORS( DEFAULT_VESTING, (agent)(thief) )
     generate_block();
     vest( "agent", HIVE_asset( 1'000'000 ) );
     vest( "thief", HIVE_asset( 1'000'000 ) );
@@ -812,7 +812,7 @@ BOOST_AUTO_TEST_CASE( rc_tx_order_bug )
     inject_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
     configuration_data.allow_not_enough_rc = false;
 
-    ACTORS( (alice)(bob) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob) )
     generate_block();
     vest( "bob", HIVE_asset( 35'000'000 ) ); //<- change that amount to tune RC cost
     issue_funds( "alice", HIVE_asset( 1'000'000 ) );
@@ -914,7 +914,7 @@ BOOST_AUTO_TEST_CASE( rc_pending_data_reset )
     inject_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
     configuration_data.allow_not_enough_rc = false;
 
-    ACTORS( (alice)(bob) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob) )
     generate_block();
     fund( "alice", HIVE_asset( 1'000'000 ) );
     generate_block();
@@ -1047,7 +1047,7 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_operations )
 
     generate_block();
 
-    ACTORS( (alice)(bob)(sam) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob)(sam) )
     generate_block();
     fund( "alice", HIVE_asset( 1'000'000 ) );
     vest( "alice", HIVE_asset( 10'000 ) );
@@ -1513,7 +1513,7 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_many_ops )
     inject_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
     configuration_data.allow_not_enough_rc = false;
 
-    ACTORS( (alice)(carol) )
+    ACTORS( DEFAULT_VESTING, (alice)(carol) )
     generate_block();
     vest( "alice", HIVE_asset( 10'000 ) );
     vest( "carol", HIVE_asset( 10'000 ) );
@@ -1575,7 +1575,7 @@ BOOST_AUTO_TEST_CASE( rc_exception_during_modify )
     inject_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
     configuration_data.allow_not_enough_rc = false;
 
-    ACTORS((dave))
+    ACTORS( DEFAULT_VESTING,(dave))
     generate_block();
     vest( "dave", HIVE_asset( 70'000'000 ) ); //<- change that amount to tune RC cost
     issue_funds( "dave", HIVE_asset( 1'000'000 ) );

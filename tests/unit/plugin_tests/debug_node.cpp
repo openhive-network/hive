@@ -183,7 +183,7 @@ BOOST_AUTO_TEST_CASE( debug_update_with_explicit_hook )
 {
   BOOST_TEST_MESSAGE( "Hooking debug_update to transactions" );
 
-  ACTORS( (alice)(bob)(carol)(dan) );
+  ACTORS( DEFAULT_VESTING, (alice)(bob)(carol)(dan) );
   generate_block();
 
   auto alice_to_bob = make_transfer( "alice", "bob", ASSET( "1.000 TESTS" ), alice_private_key, *db );
@@ -279,7 +279,7 @@ BOOST_AUTO_TEST_CASE( debug_update_transaction_order )
 {
   BOOST_TEST_MESSAGE( "Calling many debug_update in the same block mixed with transactions" );
 
-  ACTORS( (alice)(bob)(carol)(dan)(eric)(frank)(greg) );
+  ACTORS( DEFAULT_VESTING, (alice)(bob)(carol)(dan)(eric)(frank)(greg) );
   generate_block();
 
   // we are going to pass single token and leave increasing amount of satoshis in each step:

@@ -86,7 +86,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
 
       fixture.validate_database();
 
-      ACTORS_EXT( (fixture), (alice)(bob) );
+      ACTORS_EXT( (fixture), DEFAULT_VESTING, (alice)(bob) );
       fixture.generate_block();
 
       fixture.issue_funds( "alice", HIVE_asset( 1'000'000 ) );

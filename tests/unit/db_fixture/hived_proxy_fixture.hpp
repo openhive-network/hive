@@ -126,21 +126,12 @@ public:
   void account_create(
     const fc::string& name,
     const public_key_type& key,
-    const public_key_type& post_key
+    const public_key_type& post_key,
+    const HIVE_asset& initial_vesting
   )
   {
     FC_ASSERT(fixture);
-    fixture->account_create(name, key, post_key);
-  }
-
-  void account_create_default_fee(
-    const fc::string& name,
-    const public_key_type& key,
-    const public_key_type& post_key
-  )
-  {
-    FC_ASSERT(fixture);
-    fixture->account_create_default_fee(name, key, post_key);
+    fixture->account_create(name, key, post_key, initial_vesting);
   }
 
   void account_create(

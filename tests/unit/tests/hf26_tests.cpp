@@ -69,7 +69,7 @@ BOOST_AUTO_TEST_CASE( update_operation )
 
       BOOST_REQUIRE_EQUAL( (bool)executor, true );
 
-      ACTORS_EXT( (*executor), (alice) );
+      ACTORS_EXT( (*executor), DEFAULT_VESTING, (alice) );
       executor->fund( "alice", HIVE_asset( 1'000'000 ) );
       executor->generate_block();
 
@@ -291,7 +291,7 @@ BOOST_AUTO_TEST_CASE( pack_transaction_basic )
       BOOST_TEST_MESSAGE( "Testing: transaction's pack before and after HF26" );
       BOOST_REQUIRE_EQUAL( (bool)executor, true );
 
-      ACTORS_EXT( (*executor), (alice)(bob) );
+      ACTORS_EXT( (*executor), DEFAULT_VESTING, (alice)(bob) );
       executor->fund( "alice", HIVE_asset( 1'000'000 ) );
       executor->fund( "bob", HIVE_asset( 1'000'000 ) );
       executor->generate_block();

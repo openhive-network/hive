@@ -65,7 +65,7 @@ BOOST_AUTO_TEST_CASE( get_transaction_signatures )
 
   BOOST_TEST_MESSAGE( "testing get_transaction with different number of signatures" );
 
-  ACTORS( (alice1trx)(bob1trx) );
+  ACTORS( DEFAULT_VESTING, (alice1trx)(bob1trx) );
   fund( "alice1trx", HIVE_asset( 100'000 ) );
   fund( "temp", HIVE_asset( 3'333 ) );
 
@@ -131,7 +131,7 @@ BOOST_AUTO_TEST_CASE( get_transaction_0234 )
   db->set_hardfork( HIVE_HARDFORK_1_27 );
   generate_block();
 
-  ACTORS( (alice2trx)(bob2trx) );
+  ACTORS( DEFAULT_VESTING, (alice2trx)(bob2trx) );
   generate_block();
   issue_funds( "alice2trx", HIVE_asset( 300'000 ) );
   issue_funds( "alice2trx", HBD_asset( 300'000 ) );

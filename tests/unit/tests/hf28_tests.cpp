@@ -60,7 +60,7 @@ BOOST_AUTO_TEST_CASE( declined_voting_rights_basic )
         BOOST_TEST_MESSAGE( "Testing: 'declined_voting_rights_operation'" );
         BOOST_REQUIRE_EQUAL( (bool)executor, true );
 
-        ACTORS_EXT( (*executor), (alice)(bob) );
+        ACTORS_EXT( (*executor), DEFAULT_VESTING, (alice)(bob) );
         executor->vest( "alice", HIVE_asset( 1'000 ) );
         executor->vest( "bob", HIVE_asset( 1'000 ) );
 
@@ -131,7 +131,7 @@ BOOST_AUTO_TEST_CASE( declined_voting_rights_basic_2 )
         BOOST_TEST_MESSAGE( "Testing: 'declined_voting_rights_operation' is created twice" );
         BOOST_REQUIRE_EQUAL( (bool)executor, true );
 
-        ACTORS_EXT( (*executor), (alice) );
+        ACTORS_EXT( (*executor), DEFAULT_VESTING, (alice) );
         executor->vest( "alice", HIVE_asset( 1'000 ) );
 
         auto _create_decline_voting_rights_operation = []( ptr_hardfork_database_fixture& executor, const fc::ecc::private_key& key )
@@ -186,7 +186,7 @@ BOOST_AUTO_TEST_CASE( declined_voting_rights_proposal_votes )
       BOOST_TEST_MESSAGE( "Testing: create 'decline_voting_rights' before an user casts votes on proposal" );
       BOOST_REQUIRE_EQUAL( (bool)executor, true );
 
-      ACTORS_EXT( (*executor), (alice)(bob) );
+      ACTORS_EXT( (*executor), DEFAULT_VESTING, (alice)(bob) );
 
       executor->generate_block();
 
@@ -251,7 +251,7 @@ BOOST_AUTO_TEST_CASE( declined_voting_rights_proposal_votes_2 )
       BOOST_TEST_MESSAGE( "Testing: create 'decline_voting_rights'. When 'declined_voting_rights_operation' is generated, an user tries to cast a vote on proposal" );
       BOOST_REQUIRE_EQUAL( (bool)executor, true );
 
-      ACTORS_EXT( (*executor), (alice)(bob) );
+      ACTORS_EXT( (*executor), DEFAULT_VESTING, (alice)(bob) );
 
       executor->generate_block();
 
@@ -541,7 +541,7 @@ BOOST_AUTO_TEST_CASE( declined_voting_rights_between_hf27_and_hf28_2 )
       BOOST_TEST_MESSAGE( "Testing: It's necessary to remove proposal votes for accounts that declined voting rights" );
       BOOST_REQUIRE_EQUAL( (bool)executor, true );
 
-      ACTORS_EXT( (*executor), (alice)(bob)(carol)(diana) );
+      ACTORS_EXT( (*executor), DEFAULT_VESTING, (alice)(bob)(carol)(diana) );
       executor->generate_block();
 
       struct account_data
@@ -633,7 +633,7 @@ BOOST_AUTO_TEST_CASE( basic_expiration_test )
     {
       BOOST_TEST_MESSAGE( "Testing: transactions with different expiration time" );
 
-      ACTORS_EXT( (*executor), (alice)(bob) );
+      ACTORS_EXT( (*executor), DEFAULT_VESTING, (alice)(bob) );
       executor->vest( "alice", HIVE_asset( 100'000 ) );
       executor->vest( "bob", HIVE_asset( 100'000 ) );
       executor->issue_funds( "alice", HIVE_asset( 200'000 ) );
@@ -853,7 +853,7 @@ BOOST_AUTO_TEST_CASE( mixed_authorities_in_one_transaction )
         BOOST_TEST_MESSAGE( "Testing: 'mixed_authorities_in_one_transaction'" );
         BOOST_REQUIRE_EQUAL( (bool)executor, true );
 
-        ACTORS_EXT( (*executor), (alice)(bob) );
+        ACTORS_EXT( (*executor), DEFAULT_VESTING, (alice)(bob) );
         executor->vest( "alice", HIVE_asset( 1'000 ) );
         executor->vest( "bob", HIVE_asset( 1'000 ) );
         executor->issue_funds( "alice", HIVE_asset( 100'000 ) );
@@ -921,7 +921,7 @@ BOOST_AUTO_TEST_CASE( mixed_authorities_in_one_transaction_2 )
         BOOST_TEST_MESSAGE( "Testing: 'mixed_authorities_in_one_transaction'" );
         BOOST_REQUIRE_EQUAL( (bool)executor, true );
 
-        ACTORS_EXT( (*executor), (alice)(bob) );
+        ACTORS_EXT( (*executor), DEFAULT_VESTING, (alice)(bob) );
         executor->vest( "alice", HIVE_asset( 1'000 ) );
         executor->vest( "bob", HIVE_asset( 1'000 ) );
         executor->issue_funds( "alice", HIVE_asset( 100'000 ) );
@@ -1433,7 +1433,7 @@ BOOST_AUTO_TEST_CASE( different_behaviour_for_nonexistent_proposals )
       BOOST_TEST_MESSAGE( "Testing: different_behaviour for not existing proposals" );
       BOOST_REQUIRE_EQUAL( (bool)executor, true );
 
-      ACTORS_EXT( (*executor), (alice)(bob) );
+      ACTORS_EXT( (*executor), DEFAULT_VESTING, (alice)(bob) );
 
       executor->generate_block();
 
@@ -1530,7 +1530,7 @@ BOOST_AUTO_TEST_CASE( disturbed_power_down )
     static_assert( ( gil_amount / 104 == 9615 ) && ( gil_amount * split / 104 == 9615384615 ) );
     BOOST_REQUIRE_EQUAL( db->get_dynamic_global_properties().get_vesting_share_price(), VEST_price( 1000000, 1000 ) );
 
-    ACTORS_DEFAULT_FEE( (bob)(gil) );
+    ACTORS( NO_VESTING, (bob)(gil) );
     vest( "bob", HIVE_asset( bob_amount / 1000 ) );
     vest( "gil", HIVE_asset( gil_amount / 1000 ) );
     generate_block();
@@ -1649,7 +1649,7 @@ BOOST_AUTO_TEST_CASE( artificial_1_on_power_down )
     //run replay to detect safe time to activate "no op" checks before HF28, but I'm not sure it is
     //worth the time
 
-    ACTORS_DEFAULT_FEE( (alice)(bob)(carol)(dave)(eric) );
+    ACTORS( NO_VESTING, (alice)(bob)(carol)(dave)(eric) );
     vest( "alice", HIVE_asset( 1'000 ) );
     vest( "bob", HIVE_asset( 1'000 ) );
     vest( "carol", HIVE_asset( 1'000 ) );
@@ -1741,7 +1741,7 @@ BOOST_AUTO_TEST_CASE( vote_stabilization )
 
     inject_hardfork( HIVE_HARDFORK_1_27 );
 
-    ACTORS_DEFAULT_FEE( (alice)(bob)(carol)(antibob)(anticarol) );
+    ACTORS( NO_VESTING, (alice)(bob)(carol)(antibob)(anticarol) );
     vest( "alice", HIVE_asset( 1'000'000 ) );
     vest( "bob", HIVE_asset( 1'000'000 ) );
     vest( "carol", HIVE_asset( 1'000'000 ) );
@@ -1882,7 +1882,7 @@ BOOST_AUTO_TEST_CASE( empty_voting )
 
     inject_hardfork( HIVE_HARDFORK_1_27 );
 
-    ACTORS_DEFAULT_FEE( (alice)(bob)(carol)(antibob)(anticarol) );
+    ACTORS( NO_VESTING, (alice)(bob)(carol)(antibob)(anticarol) );
     vest( "alice", HIVE_asset( 1'000'000 ) );
     generate_block();
 

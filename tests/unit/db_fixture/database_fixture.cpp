@@ -237,31 +237,8 @@ void database_fixture::account_create(
 void database_fixture::account_create(
   const string& name,
   const public_key_type& key,
-  const public_key_type& post_key
-)
-{
-  try
-  {
-    // The actual creation fee is always median_props.account_creation_fee (charged inside the 7-arg
-    // overload). Historically this overload requested a larger fee and the surplus was vested to the
-    // new account; preserve that behavior by passing the surplus as initial_vesting.
-    auto median_fee = db->get_witness_schedule_object().median_props.account_creation_fee.amount;
-    account_create(
-      name,
-      HIVE_INIT_MINER_NAME,
-      init_account_priv_key,
-      HIVE_asset( std::max( median_fee * HIVE_CREATE_ACCOUNT_WITH_HIVE_MODIFIER, share_type( 100 ) ) - median_fee ),
-      key,
-      post_key,
-      "" );
-  }
-  FC_CAPTURE_AND_RETHROW( (name) );
-}
-
-void database_fixture::account_create_default_fee(
-  const string& name,
-  const public_key_type& key,
-  const public_key_type& post_key
+  const public_key_type& post_key,
+  const HIVE_asset& initial_vesting
 )
 {
   try
@@ -270,7 +247,7 @@ void database_fixture::account_create_default_fee(
       name,
       HIVE_INIT_MINER_NAME,
       init_account_priv_key,
-      HIVE_asset( 0 ),
+      initial_vesting,
       key,
       post_key,
       "" );
@@ -283,7 +260,7 @@ void database_fixture::account_create(
   const public_key_type& key
 )
 {
-  account_create( name, key, key );
+  account_create( name, key, key, DEFAULT_VESTING );
 }
 
 void database_fixture::witness_create(
@@ -1342,7 +1319,7 @@ namespace performance
     active_key = db->generate_private_key( account );
     post_key = db->generate_private_key( account + "_post" );
 
-    db->account_create( account, active_key.get_public_key(), post_key.get_public_key() );
+    db->account_create( account, active_key.get_public_key(), post_key.get_public_key(), DEFAULT_VESTING );
   }
 
   std::vector< initial_data > generate_accounts( database_fixture* db, int32_t number_accounts )
