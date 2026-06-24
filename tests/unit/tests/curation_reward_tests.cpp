@@ -276,7 +276,7 @@ struct curation_rewards_handler
             (bob10)(bob11)(bob12)(bob13)(bob14)(bob15)(bob16)(bob17)(bob18)(bob19)
             (bob20)(bob21)(bob22)(bob23)(bob24)(bob25)(bob26)(bob27)(bob28)(bob29)
             (bob30)(bob31)(bob32)(bob33)(bob34)(bob35)(bob36)(bob37)(bob38)(bob39)
-          )
+          );
 
     auto _voters =
       {
@@ -333,7 +333,7 @@ struct curation_rewards_handler
             (dod10)(dod11)(dod12)(dod13)(dod14)(dod15)(dod16)(dod17)(dod18)(dod19)
             (dod20)(dod21)(dod22)(dod23)(dod24)(dod25)(dod26)(dod27)(dod28)(dod29)
             (dod30)(dod31)(dod32)(dod33)(dod34)(dod35)(dod36)(dod37)(dod38)(dod39)
-          )
+          );
 
     auto _voters =
       {
@@ -388,7 +388,7 @@ struct curation_rewards_handler
   {
     ACTORS_EXT( test_object, DEFAULT_VESTING,
             (aoa00)(aoa01)(aoa02)(aoa03)(aoa04)(aoa05)(aoa06)(aoa07)(aoa08)(aoa09)
-          )
+          );
 
     auto _voters =
       {

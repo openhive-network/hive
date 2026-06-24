@@ -188,7 +188,7 @@ BOOST_AUTO_TEST_CASE( undo_delayed_votes )
     performs such check on feed history object, where allocation depends on size instead
     */
 
-    ACTOR( NO_VESTING,  alice )
+    ACTOR( NO_VESTING,  alice );
     generate_block();
     ISSUE_FUNDS( "alice", HIVE_asset( 100'000'000 ) );
     BOOST_REQUIRE( compare_delayed_vote_count("alice", {}) );
@@ -532,7 +532,7 @@ BOOST_AUTO_TEST_CASE( undo_generate_blocks )
   {
     BOOST_TEST_MESSAGE( "--- Testing: undo_generate_blocks" );
 
-    ACTORS( DEFAULT_VESTING, (alice)(bob)(chuck)(dan) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob)(chuck)(dan) );
 
     struct _data
     {
@@ -1637,7 +1637,7 @@ BOOST_AUTO_TEST_CASE( debug_update_undo_bug )
   {
     BOOST_TEST_MESSAGE( "--- Test for undo related bug with debug_update" );
 
-    ACTOR( DEFAULT_VESTING, alice)
+    ACTOR( DEFAULT_VESTING, alice);
     generate_block();
 
     const auto& alice_account = db->get_account( "alice" );

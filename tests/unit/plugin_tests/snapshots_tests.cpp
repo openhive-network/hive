@@ -48,7 +48,7 @@ BOOST_AUTO_TEST_CASE( additional_allocation_after_snapshot_load )
       const auto& index = db()->get_index<account_index>();
       const size_t initial_allocations = index.get_item_additional_allocation();
 
-      ACTOR( NO_VESTING, alice )
+      ACTOR( NO_VESTING, alice );
       generate_block();
       ISSUE_FUNDS( "alice", HIVE_asset( 100'000'000 ) );
       BOOST_REQUIRE( compare_delayed_vote_count("alice", {}) );

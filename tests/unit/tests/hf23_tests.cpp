@@ -72,7 +72,7 @@ BOOST_AUTO_TEST_CASE( restore_accounts_02 )
   {
     BOOST_TEST_MESSAGE( "Saving during HF23 and restoring balances during HF24" );
 
-    ACTORS( DEFAULT_VESTING, (alice0)(alice1)(alice2)(alice3)(alice4)(dude) )
+    ACTORS( DEFAULT_VESTING, (alice0)(alice1)(alice2)(alice3)(alice4)(dude) );
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -155,7 +155,7 @@ BOOST_AUTO_TEST_CASE( restore_accounts_01 )
   {
     BOOST_TEST_MESSAGE( "Saving during HF23 and restoring balances during HF24" );
 
-    ACTORS( DEFAULT_VESTING, (alice)(bob)(carol) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob)(carol) );
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -294,7 +294,7 @@ BOOST_AUTO_TEST_CASE( save_test_02 )
   {
     BOOST_TEST_MESSAGE( "Saving one account balances" );
 
-    ACTORS( DEFAULT_VESTING, (alice) )
+    ACTORS( DEFAULT_VESTING, (alice) );
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -329,7 +329,7 @@ BOOST_AUTO_TEST_CASE( save_test_01 )
   {
     BOOST_TEST_MESSAGE( "Saving accounts balances" );
 
-    ACTORS( DEFAULT_VESTING, (alice)(bob) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob) );
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -374,7 +374,7 @@ BOOST_AUTO_TEST_CASE( basic_test_06 )
   {
     BOOST_TEST_MESSAGE( "VEST delegations - object of type `vesting_delegation_expiration_object` is generated" );
 
-    ACTORS( DEFAULT_VESTING, (alice)(bob) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob) );
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -451,7 +451,7 @@ BOOST_AUTO_TEST_CASE( basic_test_05 )
   {
     BOOST_TEST_MESSAGE( "VEST delegations - more complex scenarios" );
 
-    ACTORS( DEFAULT_VESTING, (alice)(bob)(carol) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob)(carol) );
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -541,7 +541,7 @@ BOOST_AUTO_TEST_CASE( basic_test_04 )
   {
     BOOST_TEST_MESSAGE( "VEST delegations" );
 
-    ACTORS( DEFAULT_VESTING, (alice)(bob)(carol) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob)(carol) );
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -620,7 +620,7 @@ BOOST_AUTO_TEST_CASE( basic_test_03 )
   {
     BOOST_TEST_MESSAGE( "Vesting every account to anothers accounts" );
 
-    ACTORS( DEFAULT_VESTING, (alice)(bob)(carol) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob)(carol) );
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -682,7 +682,7 @@ BOOST_AUTO_TEST_CASE( basic_test_02 )
   {
     BOOST_TEST_MESSAGE( "Vesting" );
 
-    ACTORS( DEFAULT_VESTING, (alice)(bob) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob) );
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -727,7 +727,7 @@ BOOST_AUTO_TEST_CASE( basic_test_01 )
   {
     BOOST_TEST_MESSAGE( "Calling clear_account" );
 
-    ACTORS( DEFAULT_VESTING, (alice) )
+    ACTORS( DEFAULT_VESTING, (alice) );
     generate_block();
 
     const auto& _alice = db->get_account( "alice" );
@@ -761,7 +761,7 @@ BOOST_AUTO_TEST_CASE( escrow_cleanup_test )
   {
     BOOST_TEST_MESSAGE( "Calling escrow_cleanup_test" );
 
-    ACTORS( DEFAULT_VESTING, (alice)(bob)(carol) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob)(carol) );
     generate_block();
 
     issue_funds( "alice", HIVE_asset( 10'000 ) ); //<- note! extra 0.1 is in form of vests
@@ -1020,7 +1020,7 @@ BOOST_AUTO_TEST_CASE( limit_order_cleanup_test )
   try
   {
     BOOST_TEST_MESSAGE( "Calling limit_order_cleanup_test" );
-    ACTORS( DEFAULT_VESTING, (alice)(bob) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob) );
     generate_block();
 
     issue_funds( "alice", HIVE_asset( 10'000 ) ); //<- note! extra 0.1 is in form of vests
@@ -1142,7 +1142,7 @@ BOOST_AUTO_TEST_CASE( convert_request_cleanup_test )
   try
   {
     BOOST_TEST_MESSAGE( "Calling convert_request_cleanup_test" );
-    ACTORS( DEFAULT_VESTING, (alice) )
+    ACTORS( DEFAULT_VESTING, (alice) );
     generate_block();
 
     //note! extra 0.1 TESTS is in form of vests
@@ -1213,7 +1213,7 @@ BOOST_AUTO_TEST_CASE( hbd_test_01 )
 {
   try
   {
-    ACTORS( DEFAULT_VESTING, (alice) )
+    ACTORS( DEFAULT_VESTING, (alice) );
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -1238,7 +1238,7 @@ BOOST_AUTO_TEST_CASE( hbd_test_02 )
 {
   try
   {
-    ACTORS( DEFAULT_VESTING, (alice)(bob) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob) );
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -1297,7 +1297,7 @@ BOOST_AUTO_TEST_CASE( savings_test_01 )
 {
   try
   {
-    ACTORS( DEFAULT_VESTING, (alice) )
+    ACTORS( DEFAULT_VESTING, (alice) );
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -1319,7 +1319,7 @@ BOOST_AUTO_TEST_CASE( savings_test_02 )
 {
   try
   {
-    ACTORS( DEFAULT_VESTING, (alice)(bob) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob) );
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
