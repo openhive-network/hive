@@ -119,7 +119,7 @@ void condenser_api_fixture::hf12_scenario( check_point_tester_t check_point_test
   db->set_hardfork( HIVE_HARDFORK_0_12 );
   generate_block(); // block 1
 
-  PREP_ACTOR( carol0ah )
+  PREP_ACTOR( carol0ah );
   create_with_pow( "carol0ah", carol0ah_public_key, carol0ah_private_key );
   witness_plugin->add_signing_key( carol0ah_private_key );
 
@@ -132,11 +132,11 @@ void condenser_api_fixture::hf13_scenario( check_point_tester_t check_point_1_te
   vest( HIVE_INIT_MINER_NAME, HIVE_asset( 1'000'000 ) );
   generate_block();
   
-  PREP_ACTOR( dan0ah )
+  PREP_ACTOR( dan0ah );
   create_with_pow2( "dan0ah", dan0ah_public_key, dan0ah_private_key );
   witness_plugin->add_signing_key( dan0ah_private_key );
 
-  PREP_ACTOR( edgar0ah )
+  PREP_ACTOR( edgar0ah );
   create_with_delegation( HIVE_INIT_MINER_NAME, "edgar0ah", edgar0ah_public_key, edgar0ah_post_key, VEST_asset( 100'000'000'000'000 ), init_account_priv_key );
 
   post_comment("edgar0ah", "permlink1", "Title 1", "Body 1", "parentpermlink1", edgar0ah_post_key);
@@ -417,7 +417,7 @@ void condenser_api_fixture::account_scenario( check_point_tester_t check_point_t
                   fc::optional<authority>(), fc::optional<authority>(), fc::optional<authority>(), alice8ah_private_key );
 
   claim_account( "alice8ah", HIVE_asset( 0 ), alice8ah_private_key );
-  PREP_ACTOR( ben8ah )
+  PREP_ACTOR( ben8ah );
   create_claimed_account( "alice8ah", "ben8ah", ben8ah_public_key, ben8ah_post_key.get_public_key(), R"~("{"go":"now"}")~", alice8ah_private_key );
 
   vest( "ben8ah", HIVE_asset( 1'000'000 ) );

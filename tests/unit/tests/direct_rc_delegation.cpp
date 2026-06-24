@@ -107,7 +107,7 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_single )
     }
 
     BOOST_TEST_MESSAGE( "Testing:  delegate_rc_operation_apply_single to a single account" );
-    ACTORS( DEFAULT_VESTING, (alice)(bob)(dave) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob)(dave) );
     vest( "alice", HIVE_asset( 10'000 ) );
     int64_t alice_vests = get_vesting( "alice" ).amount.value;
 
@@ -258,7 +258,7 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_many )
     }
 
     BOOST_TEST_MESSAGE( "Testing:  delegate_rc_operation_apply_many to many accounts" );
-    ACTORS( DEFAULT_VESTING, (alice)(bob)(dave)(dan) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob)(dave)(dan) );
     vest( "alice", HIVE_asset( 10'000 ) );
     int64_t alice_vests = get_vesting( "alice" ).amount.value;
 
@@ -419,7 +419,7 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_many_different )
   try
   {
     BOOST_TEST_MESSAGE( "Testing:  delegate_rc_operation_apply_many_different to many accounts" );
-    ACTORS( DEFAULT_VESTING, (alice)(bob)(dave)(dan)(carol) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob)(dave)(dan)(carol) );
     vest( "alice", HIVE_asset( 10'000 ) );
     uint64_t alice_vests = get_vesting( "alice" ).amount.value;
 
@@ -562,7 +562,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow )
     });
     generate_block();
 
-    ACTORS( NO_VESTING, (alice)(bob)(dave)(eve)(martin) )
+    ACTORS( NO_VESTING, (alice)(bob)(dave)(eve)(martin) );
     generate_block();
     vest( "alice", HIVE_asset( 10 ) );
     generate_block();
@@ -686,7 +686,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_many_accounts )
     #define NUM_ACTORS 250
     #define CREATE_ACTORS(z, n, text) ACTORS( NO_VESTING, (actor ## n) );
     BOOST_PP_REPEAT(NUM_ACTORS, CREATE_ACTORS, )
-    ACTORS( NO_VESTING, (alice)(bob) )
+    ACTORS( NO_VESTING, (alice)(bob) );
     generate_block();
 
     vest( "alice", HIVE_asset( 10 ) );
@@ -829,7 +829,7 @@ BOOST_AUTO_TEST_CASE( direct_rc_delegation_vesting_withdrawal )
       });
     });
     generate_block();
-    ACTORS( NO_VESTING, (alice)(bob)(dave) )
+    ACTORS( NO_VESTING, (alice)(bob)(dave) );
     generate_block();
 
     vest( "alice", HIVE_asset( 10 ) );
@@ -993,7 +993,7 @@ BOOST_AUTO_TEST_CASE( direct_rc_delegation_vesting_withdrawal_routes )
       });
     });
     generate_block();
-    ACTORS( NO_VESTING, (alice)(bob)(dave) )
+    ACTORS( NO_VESTING, (alice)(bob)(dave) );
     generate_block();
 
     vest( "alice", HIVE_asset( 10 ) );
@@ -1113,7 +1113,7 @@ BOOST_AUTO_TEST_CASE( rc_delegation_regeneration )
     });
     generate_block();
 
-    ACTORS( NO_VESTING, (alice)(bob) )
+    ACTORS( NO_VESTING, (alice)(bob) );
     generate_block();
 
     fund( "bob", HBD_asset( 100'000 ) );
@@ -1210,7 +1210,7 @@ BOOST_AUTO_TEST_CASE( rc_delegation_removal_no_rc )
     });
     generate_block();
 
-    ACTORS( NO_VESTING, (alice)(bob) )
+    ACTORS( NO_VESTING, (alice)(bob) );
     generate_block();
     fund( "bob", HIVE_asset( 9'000'000'000 ) );
     vest( "alice", HIVE_asset( 1'000 ) );
@@ -1275,7 +1275,7 @@ BOOST_AUTO_TEST_CASE( rc_negative_regeneration_bug )
     //went negative and the moment it lost delegation - the bug shows as delegatee having less RC
     //than he would have if RC regeneration was triggered by other means
 
-    ACTORS( DEFAULT_VESTING, (delegator1)(delegator2)(delegator3)(delegatee)(pattern2)(pattern3) )
+    ACTORS( DEFAULT_VESTING, (delegator1)(delegator2)(delegator3)(delegatee)(pattern2)(pattern3) );
     generate_block();
     vest( "delegator1", HIVE_asset( 1'000'000 ) );
     vest( "delegator2", HIVE_asset( 1'000'000 ) );
@@ -1384,7 +1384,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_delegatee )
     });
     generate_block();
 
-    ACTORS( NO_VESTING, (alice)(bob)(dave)(eve)(martin) )
+    ACTORS( NO_VESTING, (alice)(bob)(dave)(eve)(martin) );
     generate_block();
     vest( "alice", HIVE_asset( 10 ) );
     generate_block();
@@ -1490,7 +1490,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_delegatee_performance )
     });
     generate_block();
 
-    ACTORS( NO_VESTING, (alice)(bob)(carol) )
+    ACTORS( NO_VESTING, (alice)(bob)(carol) );
     generate_block();
     vest( "alice", HIVE_asset( 2'000'000 ) );
     generate_block();

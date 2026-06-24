@@ -86,7 +86,7 @@ BOOST_FIXTURE_TEST_SUITE( serialization_tests, clean_database_fixture )
 BOOST_AUTO_TEST_CASE( serialization_raw_test )
 {
   try {
-    ACTORS( DEFAULT_VESTING, (alice)(bob) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob) );
     transfer_operation op;
     op.from = "alice";
     op.to = "bob";
@@ -110,7 +110,7 @@ BOOST_AUTO_TEST_CASE( serialization_raw_test )
 BOOST_AUTO_TEST_CASE( serialization_json_test )
 {
   try {
-    ACTORS( DEFAULT_VESTING, (alice)(bob) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob) );
     transfer_operation op;
     op.from = "alice";
     op.to = "bob";

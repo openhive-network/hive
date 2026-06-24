@@ -66,7 +66,7 @@ BOOST_AUTO_TEST_CASE( basic_checks )
 {
   try
   {
-    ACTORS( DEFAULT_VESTING, (alice)(bob) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob) );
     vest( "alice", HIVE_asset( 10'000 ) );
     vest( "bob", HIVE_asset( 10'000 ) );
 
@@ -144,7 +144,7 @@ BOOST_AUTO_TEST_CASE( nested_comments )
 {
   try
   {
-    ACTORS( DEFAULT_VESTING, (alice)(bob)(sam)(dave) )
+    ACTORS( DEFAULT_VESTING, (alice)(bob)(sam)(dave) );
     vest( "alice", HIVE_asset( 10'000 ) );
     vest( "bob", HIVE_asset( 10'000 ) );
     vest( "sam", HIVE_asset( 10'000 ) );

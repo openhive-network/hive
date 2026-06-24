@@ -1470,7 +1470,7 @@ BOOST_AUTO_TEST_CASE( additional_allocations )
     const size_t initial_account_allocations = accountIdx.get_item_additional_allocation();
     const size_t all_initial_allocations = get_all_dynamic_alloc();
 
-    ACTOR( NO_VESTING,  alice )
+    ACTOR( NO_VESTING,  alice );
     generate_block();
     ISSUE_FUNDS( "alice", HIVE_asset( 100'000'000 ) );
     BOOST_REQUIRE_EQUAL( accountIdx.get_item_additional_allocation(), initial_account_allocations );

@@ -37,46 +37,11 @@ extern uint32_t HIVE_TESTING_GENESIS_TIMESTAMP;
 #define GENERATE_BLOCK \
   hive::chain::test::_generate_block
 
-// See below
-#define REQUIRE_OP_VALIDATION_SUCCESS( op, field, value ) \
-{ \
-  const auto temp = op.field; \
-  op.field = value; \
-  op.validate(); \
-  op.field = temp; \
-}
-#define REQUIRE_OP_EVALUATION_SUCCESS( op, field, value ) \
-{ \
-  const auto temp = op.field; \
-  op.field = value; \
-  trx.operations.back() = op; \
-  op.field = temp; \
-  push_transaction( trx, fc::ecc::private_key(), ~0 ); \
-}
-
-/*#define HIVE_REQUIRE_THROW( expr, exc_type )            \
-{                                                         \
-  std::string req_throw_info = fc::json::to_string(      \
-    fc::mutable_variant_object()                        \
-    ("source_file", __FILE__)                           \
-    ("source_lineno", __LINE__)                         \
-    ("expr", #expr)                                     \
-    ("exc_type", #exc_type)                             \
-    );                                                  \
-  if( fc::enable_record_assert_trip )                    \
-    std::cout << "HIVE_REQUIRE_THROW begin "            \
-      << req_throw_info << std::endl;                  \
-  BOOST_REQUIRE_THROW( expr, exc_type );                 \
-  if( fc::enable_record_assert_trip )                    \
-    std::cout << "HIVE_REQUIRE_THROW end "              \
-      << req_throw_info << std::endl;                  \
-}*/
-
 #define HIVE_REQUIRE_THROW( expr, exc_type )           \
-  BOOST_REQUIRE_THROW( expr, exc_type );
+  BOOST_REQUIRE_THROW( expr, exc_type )
 
 #define HIVE_CHECK_THROW( expr, exc_type )             \
-{                                                      \
+do {                                                   \
   std::string req_throw_info = fc::json::to_string(    \
     fc::mutable_variant_object()                       \
     ("source_file", __FILE__)                          \
@@ -91,7 +56,7 @@ extern uint32_t HIVE_TESTING_GENESIS_TIMESTAMP;
   if( fc::enable_record_assert_trip )                  \
     std::cout << "HIVE_CHECK_THROW end "               \
       << req_throw_info << std::endl;                  \
-}
+} while(false)
 
 #define HIVE_REQUIRE_EXCEPTION( expr, assert_test, ex_type )      \
 do {                                                              \
@@ -105,35 +70,6 @@ do {                                                              \
 #define HIVE_REQUIRE_ASSERT( expr, assert_test ) HIVE_REQUIRE_EXCEPTION( expr, assert_test, fc::assert_exception )
 #define HIVE_REQUIRE_CHAINBASE_ASSERT( expr, assert_msg ) HIVE_REQUIRE_EXCEPTION( expr, assert_msg, fc::exception )
 
-#define REQUIRE_OP_VALIDATION_FAILURE_2( op, field, value, exc_type ) \
-{ \
-  const auto temp = op.field; \
-  op.field = value; \
-  HIVE_REQUIRE_THROW( op.validate(), exc_type ); \
-  op.field = temp; \
-}
-#define REQUIRE_OP_VALIDATION_FAILURE( op, field, value ) \
-  REQUIRE_OP_VALIDATION_FAILURE_2( op, field, value, fc::exception )
-
-#define REQUIRE_THROW_WITH_VALUE_2(op, field, value, exc_type) \
-{ \
-  auto bak = op.field; \
-  op.field = value; \
-  trx.operations.back() = op; \
-  op.field = bak; \
-  HIVE_REQUIRE_THROW(push_transaction(trx, ~0), exc_type); \
-}
-
-#define REQUIRE_THROW_WITH_VALUE( op, field, value ) \
-  REQUIRE_THROW_WITH_VALUE_2( op, field, value, fc::exception )
-
-///This simply resets v back to its default-constructed value. Requires v to have a working assignment operator and
-/// default constructor.
-#define RESET(v) v = decltype(v)()
-///This allows me to build consecutive test cases. It's pretty ugly, but it works well enough for unit tests.
-/// i.e. This allows a test on update_account to begin with the database at the end state of create_account.
-#define INVOKE(test) ((struct test*)this)->test_method(); trx.clear()
-
 // Default amount of VESTS (expressed in HIVE) implicitly granted to accounts created via ACTOR(S)
 // macros. Most tests are not sensitive to the exact value; tests that are should pass an explicit
 // amount (or NO_VESTING) and verify the chosen value does not change their results.
@@ -144,55 +80,37 @@ do {                                                              \
 #define PREP_ACTOR(name) \
   fc::ecc::private_key name ## _private_key = generate_private_key(BOOST_PP_STRINGIZE(name));   \
   fc::ecc::private_key name ## _post_key = generate_private_key(std::string( BOOST_PP_STRINGIZE(name) ) + "_post" ); \
-  public_key_type name ## _public_key = name ## _private_key.get_public_key();
+  public_key_type name ## _public_key = name ## _private_key.get_public_key()
 
 #define ACTOR(initial_vesting, name) \
-  PREP_ACTOR(name) \
+  PREP_ACTOR(name); \
   account_create(BOOST_PP_STRINGIZE(name), name ## _public_key, name ## _post_key.get_public_key(), initial_vesting); \
-  account_id_type name ## _id = get_account_id(BOOST_PP_STRINGIZE(name)); (void)name ## _id;
+  account_id_type name ## _id = get_account_id(BOOST_PP_STRINGIZE(name)); (void)name ## _id
 
-#define ACTORS_IMPL(r, data, elem) ACTOR(data, elem)
+#define ACTORS_IMPL(r, data, elem) ACTOR(data, elem);
 #define ACTORS(initial_vesting, names) BOOST_PP_SEQ_FOR_EACH(ACTORS_IMPL, initial_vesting, names) \
-  validate_database();
+  validate_database()
 
 #define PREP_ACTOR_EXT(object, name) \
   fc::ecc::private_key name ## _private_key = object.generate_private_key(BOOST_PP_STRINGIZE(name));   \
   fc::ecc::private_key name ## _post_key = object.generate_private_key(std::string( BOOST_PP_STRINGIZE(name) ) + "_post" ); \
-  public_key_type name ## _public_key = name ## _private_key.get_public_key();
+  public_key_type name ## _public_key = name ## _private_key.get_public_key()
 
 #define ACTOR_EXT(object, initial_vesting, name) \
-  PREP_ACTOR_EXT(object, name) \
+  PREP_ACTOR_EXT(object, name); \
   object.account_create(BOOST_PP_STRINGIZE(name), name ## _public_key, name ## _post_key.get_public_key(), initial_vesting); \
-  account_id_type name ## _id = object.get_account_id(BOOST_PP_STRINGIZE(name)); (void)name ## _id;
+  account_id_type name ## _id = object.get_account_id(BOOST_PP_STRINGIZE(name)); (void)name ## _id
 
-#define ACTORS_EXT_IMPL(r, data, elem) ACTOR_EXT(BOOST_PP_TUPLE_ELEM(2, 0, data), BOOST_PP_TUPLE_ELEM(2, 1, data), elem)
+#define ACTORS_EXT_IMPL(r, data, elem) ACTOR_EXT(BOOST_PP_TUPLE_ELEM(2, 0, data), BOOST_PP_TUPLE_ELEM(2, 1, data), elem);
 #define ACTORS_EXT(object, initial_vesting, names) BOOST_PP_SEQ_FOR_EACH(ACTORS_EXT_IMPL, (object, initial_vesting), names) \
-  object.validate_database();
+  object.validate_database()
 
 #define ASSET( s ) \
   hive::protocol::legacy_asset::from_string( s ).to_asset()
 
 #define ISSUE_FUNDS( account_name, _asset ) \
   issue_funds( account_name, _asset ); \
-  generate_block();
-
-#define OP2TX(OP,TX) \
-TX.operations.push_back( OP ); \
-TX.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-
-#define PUSH_OP(OP,KEY) \
-{ \
-  signed_transaction tx; \
-  OP2TX(OP,tx) \
-  push_transaction( tx, KEY ); \
-}
-
-#define FAIL_WITH_OP(OP,KEY,EXCEPTION) \
-{ \
-  signed_transaction tx; \
-  OP2TX(OP,tx) \
-  HIVE_REQUIRE_THROW( push_transaction( tx, KEY ), EXCEPTION ); \
-}
+  generate_block()
 
 namespace hive { namespace chain {
 
