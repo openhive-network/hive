@@ -21,8 +21,6 @@
 #include <fc/network/http/connection.hpp>
 #include <fc/network/ip.hpp>
 
-#include <boost/preprocessor/tuple/elem.hpp>
-
 #include <array>
 #include <iostream>
 
@@ -274,6 +272,8 @@ struct database_fixture {
   void proxy( const string& _account, const string& _proxy, const fc::ecc::private_key& _key );
   void set_price_feed( const HBD_price& new_price, bool stop_at_update_block = false ); //sets on initminer(s)
   void set_witness_props( const flat_map< string, vector< char > >& new_props, bool wait_for_activation = true ); //sets on initminer(s)
+  //forces the account creation fee on the schedule median and on every witness (so it survives median recomputation)
+  void set_account_creation_fee( const HIVE_asset& fee );
   void witness_feed_publish( const string& publisher, const HBD_price& exchange_rate, const private_key_type& key );
   share_type get_votes( const string& witness_name );
   void witness_vote( account_name_type voter, account_name_type witness, const fc::ecc::private_key& key, bool approve = true );
