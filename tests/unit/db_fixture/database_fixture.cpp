@@ -219,7 +219,12 @@ void database_fixture::account_create(
     account_create_operation op;
     op.new_account_name = name;
     op.creator = creator;
-    op.fee = db->get_witness_schedule_object().median_props.account_creation_fee.to_asset();
+    // pay the exact fee required by the evaluator for the current hardfork: between HF19 and HF20
+    // the account creation cost is the median fee multiplied by HIVE_CREATE_ACCOUNT_WITH_HIVE_MODIFIER
+    HIVE_asset fee = db->get_witness_schedule_object().median_props.account_creation_fee;
+    if( db->has_hardfork( HIVE_HARDFORK_0_19__987 ) && !db->has_hardfork( HIVE_HARDFORK_0_20__1761 ) )
+      fee = HIVE_asset( fee.amount * HIVE_CREATE_ACCOUNT_WITH_HIVE_MODIFIER );
+    op.fee = fee.to_asset();
     op.owner = authority( 1, key, 1 );
     op.active = authority( 1, key, 1 );
     op.posting = authority( 1, post_key, 1 );
