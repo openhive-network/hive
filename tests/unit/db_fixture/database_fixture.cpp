@@ -624,6 +624,37 @@ void database_fixture::set_witness_props( const flat_map< string, vector< char >
   FC_ASSERT( false, "Couldn't apply properties in ${n} blocks", ("n", 2*HIVE_MAX_WITNESSES+1) );
 }
 
+void database_fixture::set_account_creation_fee( const HIVE_asset& fee )
+{
+  BOOST_REQUIRE_GE( fee, HIVE_asset( HIVE_MIN_ACCOUNT_CREATION_FEE ) );
+  db_plugin->debug_update( [fee]( database& db )
+  {
+    db.modify( db.get_witness_schedule_object(), [&]( witness_schedule_object& w )
+    {
+      w.median_props.account_creation_fee = fee;
+    } );
+    //set it on the future schedule too (if it already exists), otherwise the still pending (old)
+    //future schedule gets activated a round later and reverts the current median back to its previous value
+    const auto* future_wso = db.find< witness_schedule_object >( witness_schedule_object::id_type( 1 ) );
+    if( future_wso != nullptr )
+    {
+      db.modify( *future_wso, [&]( witness_schedule_object& w )
+      {
+        w.median_props.account_creation_fee = fee;
+      } );
+    }
+    //set it on every witness as well, otherwise the next median recomputation reverts the change
+    const auto& widx = db.get_index< witness_index, by_name >();
+    for( const auto& witness : widx )
+    {
+      db.modify( witness, [&]( witness_object& w )
+      {
+        w.props.account_creation_fee = fee;
+      } );
+    }
+  } );
+}
+
 void database_fixture::limit_order_create( const string& owner, const asset& amount_to_sell, const asset& min_to_receive, bool fill_or_kill,
                                            const fc::microseconds& expiration_shift, uint32_t orderid, const fc::ecc::private_key& key )
 {
