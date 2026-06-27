@@ -553,13 +553,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow )
   {
     BOOST_TEST_MESSAGE( "Testing:  update_outdel_overflow" );
     generate_block();
-    db_plugin->debug_update( [=]( database& db )
-    {
-      db.modify( db.get_witness_schedule_object(), [&]( witness_schedule_object& wso )
-      {
-        wso.median_props.account_creation_fee = HIVE_asset( 1 ); //it effectively turns off minimum HP delegation limit
-      });
-    });
+    set_account_creation_fee( HIVE_asset( 1 ) ); //it effectively turns off minimum HP delegation limit
     generate_block();
 
     ACTORS( NO_VESTING, (alice)(bob)(dave)(eve)(martin) );
@@ -674,14 +668,11 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_many_accounts )
     BOOST_TEST_MESSAGE( "Testing:  update_outdel_overflow with many actors" );
     generate_block();
     const int removal_limit = 200; //current mainnet value - if we increase it (we should, but it requires HF) we need to change it here as well
+    set_account_creation_fee( HIVE_asset( 1 ) ); //it effectively turns off minimum HP delegation limit
     db_plugin->debug_update( [=]( database& db )
     {
-      db.modify( db.get_witness_schedule_object(), [&]( witness_schedule_object& wso )
-      {
-        wso.median_props.account_creation_fee = HIVE_asset( 1 ); //it effectively turns off minimum HP delegation limit
-      });
       db.set_remove_threshold( removal_limit );
-    });
+    } );
     generate_block();
     #define NUM_ACTORS 250
     #define CREATE_ACTORS(z, n, text) ACTORS( NO_VESTING, (actor ## n) );
@@ -821,13 +812,7 @@ BOOST_AUTO_TEST_CASE( direct_rc_delegation_vesting_withdrawal )
   try
   {
     generate_block();
-    db_plugin->debug_update( [=]( database& db )
-    {
-      db.modify( db.get_witness_schedule_object(), [&]( witness_schedule_object& wso )
-      {
-        wso.median_props.account_creation_fee = HIVE_asset( 1 ); //it effectively turns off minimum HP delegation limit
-      });
-    });
+    set_account_creation_fee( HIVE_asset( 1 ) ); //it effectively turns off minimum HP delegation limit
     generate_block();
     ACTORS( NO_VESTING, (alice)(bob)(dave) );
     generate_block();
@@ -985,13 +970,7 @@ BOOST_AUTO_TEST_CASE( direct_rc_delegation_vesting_withdrawal_routes )
   try
   {
     generate_block();
-    db_plugin->debug_update( [=]( database& db )
-    {
-      db.modify( db.get_witness_schedule_object(), [&]( witness_schedule_object& wso )
-      {
-        wso.median_props.account_creation_fee = HIVE_asset( 1 ); //it effectively turns off minimum HP delegation limit
-      });
-    });
+    set_account_creation_fee( HIVE_asset( 1 ) ); //it effectively turns off minimum HP delegation limit
     generate_block();
     ACTORS( NO_VESTING, (alice)(bob)(dave) );
     generate_block();
@@ -1104,13 +1083,7 @@ BOOST_AUTO_TEST_CASE( rc_delegation_regeneration )
   try
   {
     generate_block();
-    db_plugin->debug_update( [=]( database& db )
-    {
-      db.modify( db.get_witness_schedule_object(), [&]( witness_schedule_object& wso )
-      {
-        wso.median_props.account_creation_fee = HIVE_asset( 1 ); //it effectively turns off minimum HP delegation limit
-      });
-    });
+    set_account_creation_fee( HIVE_asset( 1 ) ); //it effectively turns off minimum HP delegation limit
     generate_block();
 
     ACTORS( NO_VESTING, (alice)(bob) );
@@ -1201,13 +1174,7 @@ BOOST_AUTO_TEST_CASE( rc_delegation_removal_no_rc )
   try
   {
     generate_block();
-    db_plugin->debug_update( [=]( database& db )
-    {
-      db.modify( db.get_witness_schedule_object(), [&]( witness_schedule_object& wso )
-      {
-        wso.median_props.account_creation_fee = HIVE_asset( 1 ); //it effectively turns off minimum HP delegation limit
-      });
-    });
+    set_account_creation_fee( HIVE_asset( 1 ) ); //it effectively turns off minimum HP delegation limit
     generate_block();
 
     ACTORS( NO_VESTING, (alice)(bob) );
@@ -1232,13 +1199,13 @@ BOOST_AUTO_TEST_CASE( rc_delegation_removal_no_rc )
     auto current_mana = bob_rc_account_initial.rc_manabar.current_mana;
 
     // Magic number, it's hard to exactly hit 0 RC, but since we delegated 100k rc, removing the delegation would put us to 0
-    while (current_mana > 50000) {
-      signed_transaction tx;
+    while( current_mana > 50000 )
+    {
       transfer_to_vesting_operation op;
       op.from = "bob";
       op.to = "alice";
       op.amount = ASSET( "0.001 TESTS" );
-      push_transaction(op, bob_private_key);
+      push_transaction( op, bob_private_key );
       generate_block();
       const account_object& bob_rc_account_current = db->get_account( "bob" );
       current_mana = bob_rc_account_current.rc_manabar.current_mana;
@@ -1375,13 +1342,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_delegatee )
   {
     BOOST_TEST_MESSAGE( "Testing: update_outdel_overflow with a vesting delegation" );
     generate_block();
-    db_plugin->debug_update( [=]( database& db )
-    {
-      db.modify( db.get_witness_schedule_object(), [&]( witness_schedule_object& wso )
-      {
-        wso.median_props.account_creation_fee = HIVE_asset( 1 ); //it effectively turns off minimum HP delegation limit
-      });
-    });
+    set_account_creation_fee( HIVE_asset( 1 ) ); //it effectively turns off minimum HP delegation limit
     generate_block();
 
     ACTORS( NO_VESTING, (alice)(bob)(dave)(eve)(martin) );
@@ -1480,14 +1441,11 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_delegatee_performance )
     BOOST_TEST_MESSAGE( "Testing: performance is taken into consideration, when `rc_direct_delegation_object` are removed" );
     generate_block();
     const int removal_limit = 200; //current mainnet value - if we increase it (we should, but it requires HF) we need to change it here as well
+    set_account_creation_fee( HIVE_asset( 1 ) ); //it effectively turns off minimum HP delegation limit
     db_plugin->debug_update( [=]( database& db )
     {
-      db.modify( db.get_witness_schedule_object(), [&]( witness_schedule_object& wso )
-      {
-        wso.median_props.account_creation_fee = HIVE_asset( 1 ); //it effectively turns off minimum HP delegation limit
-      });
       db.set_remove_threshold( removal_limit );
-    });
+    } );
     generate_block();
 
     ACTORS( NO_VESTING, (alice)(bob)(carol) );

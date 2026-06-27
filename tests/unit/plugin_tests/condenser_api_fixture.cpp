@@ -282,10 +282,16 @@ void condenser_api_fixture::vesting_scenario( check_point_tester_t check_point_t
 
   vest( "alice4ah", "alice4ah", HIVE_asset( 2'000 ), alice4ah_private_key );
   set_withdraw_vesting_route( "alice4ah", "ben4ah", HIVE_1_PERCENT * 50, true, alice4ah_private_key);
-  delegate_vest( "alice4ah", "carol4ah", VEST_asset(3), alice4ah_private_key );
+  // Before HF20 the minimum vesting delegation is (account_creation_fee * 10) in HP and a delegation
+  // change must be at least (account_creation_fee) in HP.
+  const auto price = db->get_dynamic_global_properties().get_vesting_share_price();
+  const HIVE_asset fee = db->get_witness_schedule_object().median_props.account_creation_fee;
+  const VEST_asset min_delegation = ( fee * 10 ) * price;
+  const VEST_asset min_update = fee * price;
+  delegate_vest( "alice4ah", "carol4ah", min_delegation + min_update, alice4ah_private_key );
   withdraw_vesting( "alice4ah", VEST_asset( 123 ), alice4ah_private_key );
-  // Now decrease delegation to trigger return_vesting_delegation_operation
-  delegate_vest( "alice4ah", "carol4ah", VEST_asset(2), alice4ah_private_key );
+  // Now decrease delegation by min_update to trigger return_vesting_delegation_operation
+  delegate_vest( "alice4ah", "carol4ah", min_delegation, alice4ah_private_key );
   
   // Now all the operations mentioned above can be checked. The immediate ones will appear in 5th block.
   // The delayed ones will appear in blocks, which number depends of test configuration.
@@ -496,10 +502,15 @@ void condenser_api_fixture::decline_voting_rights_scenario( check_point_tester_t
 void condenser_api_fixture::combo_1_scenario( check_point_tester_t check_point_tester1, check_point_tester_t check_point_tester2 )
 {
   db->set_hardfork( HIVE_HARDFORK_1_27 );
+  // keep the account creation fee at its minimum so the small delegation below stays valid and the
+  // amount alice12ah needs to create ben12ah stays minimal. Do it before the block below so the internal
+  // debug_update transaction lands in an unobserved block instead of polluting the tested one.
+  set_account_creation_fee( HIVE_asset( 1 ) );
   generate_block();
 
   PREP_ACTOR( alice12ah );
   account_create( "alice12ah", alice12ah_public_key );
+  fund( "alice12ah", HIVE_asset( 1 ) ); // so alice12ah can pay the account creation fee for ben12ah below
 
   post_comment( "alice12ah", "permlink12-1", "Title 12-1", "Body 12-1", "parentpermlink12", alice12ah_private_key );
 

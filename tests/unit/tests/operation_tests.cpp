@@ -3861,6 +3861,7 @@ BOOST_AUTO_TEST_CASE( limit_order_create_apply )
     BOOST_TEST_MESSAGE( "Testing: limit_order_create_apply" );
 
     ACTORS( DEFAULT_VESTING, (alice)(bob) );
+    generate_block();
     fund( "alice", HIVE_asset( 1'000'000 ) );
     fund( "bob", HBD_asset( 1'000'000 ) );
 
@@ -4180,6 +4181,7 @@ BOOST_AUTO_TEST_CASE( limit_order_create2_apply )
     BOOST_TEST_MESSAGE( "Testing: limit_order_create2_apply" );
 
     ACTORS( DEFAULT_VESTING, (alice)(bob) );
+    generate_block();
     fund( "alice", HIVE_asset( 1'000'000 ) );
     fund( "bob", HBD_asset( 1'000'000 ) );
 
@@ -4425,10 +4427,6 @@ BOOST_AUTO_TEST_CASE( limit_order_create2_apply )
 
     BOOST_TEST_MESSAGE( "--- Test filling limit order with better order when partial order is worse." );
 
-    //auto& gpo = db->get_dynamic_global_properties();
-    //auto start_hbd = gpo.get_current_hbd_supply();
-
-
     op.owner = "alice";
     op.orderid = 5;
     op.amount_to_sell = ASSET( "20.000 TESTS" );
@@ -4460,6 +4458,7 @@ BOOST_AUTO_TEST_CASE( limit_order_create2_apply )
 
     BOOST_TEST_MESSAGE( "--- Test filling best order with multiple matches." );
     ACTORS( DEFAULT_VESTING, (sam)(dave) );
+    generate_block();
     fund( "sam", HIVE_asset( 1'000'000 ) );
     fund( "dave", HBD_asset( 1'000'000 ) );
 
@@ -5253,6 +5252,7 @@ BOOST_AUTO_TEST_CASE( escrow_approve_apply )
   {
     BOOST_TEST_MESSAGE( "Testing: escrow_approve_apply" );
     ACTORS( DEFAULT_VESTING, (alice)(bob)(sam)(dave) );
+    generate_block();
     fund( "alice", HIVE_asset( 10'000 ) );
 
     escrow_transfer_operation et_op;
@@ -7501,7 +7501,7 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_authorities )
     vest( "alice", HIVE_asset( 10'000'000 ) );
 
     delegate_vesting_shares_operation op;
-    op.vesting_shares = ASSET( "300.000000 VESTS" );
+    op.vesting_shares = ASSET( "2000000.000000 VESTS" );
     op.delegator = "alice";
     op.delegatee = "bob";
 

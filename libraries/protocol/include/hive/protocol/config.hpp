@@ -79,10 +79,6 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_UPVOTE_LOCKOUT_SECONDS           (configuration_data.get_hive_upvote_lockout_seconds())
 #define HIVE_UPVOTE_LOCKOUT_HF17              (fc::minutes(5))
 
-
-#define HIVE_MIN_ACCOUNT_CREATION_FEE         0
-#define HIVE_MAX_ACCOUNT_CREATION_FEE         int64_t(1000000000)
-
 #define HIVE_OWNER_AUTH_RECOVERY_PERIOD                   fc::seconds(60)
 #define HIVE_ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD   fc::seconds(12)
 #define HIVE_OWNER_UPDATE_LIMIT                           fc::seconds(configuration_data.get_hive_owner_update_limit())
@@ -160,9 +156,6 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_UPVOTE_LOCKOUT_HF7               (fc::minutes(1))
 #define HIVE_UPVOTE_LOCKOUT_SECONDS           (60*60*12)    /// 12 hours
 #define HIVE_UPVOTE_LOCKOUT_HF17              (fc::hours(12))
-
-#define HIVE_MIN_ACCOUNT_CREATION_FEE         1
-#define HIVE_MAX_ACCOUNT_CREATION_FEE         int64_t(1000000000)
 
 #define HIVE_OWNER_AUTH_RECOVERY_PERIOD                   fc::days(30)
 #define HIVE_ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD   fc::days(1)
@@ -274,6 +267,9 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_MAX_COMMENT_DEPTH                0xffff // 64k
 #define HIVE_SOFT_MAX_COMMENT_DEPTH           0xff // 255
 #define HIVE_MAX_COMMENT_BENEFICIARIES        8
+
+#define HIVE_MIN_ACCOUNT_CREATION_FEE         1
+#define HIVE_MAX_ACCOUNT_CREATION_FEE         int64_t(1000000000)
 
 #define HIVE_CREATE_ACCOUNT_WITH_HIVE_MODIFIER   30
 #define HIVE_CREATE_ACCOUNT_DELEGATION_RATIO     5
