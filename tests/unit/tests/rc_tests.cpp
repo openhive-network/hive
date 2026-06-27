@@ -1044,6 +1044,9 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_operations )
 
     inject_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
     configuration_data.allow_not_enough_rc = false;
+    // keep the minimum RC delegation at 0 (account_creation_fee/3 rounds down to 0) so the small test
+    // delegations below are accepted; the measured resource usage does not depend on the creation fee
+    set_account_creation_fee( HIVE_asset( 1 ) );
 
     generate_block();
 
@@ -1343,6 +1346,9 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_negative )
 
     inject_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
     configuration_data.allow_not_enough_rc = false;
+    // keep the minimum RC delegation at 0 (account_creation_fee/3 rounds down to 0) so the small test
+    // delegations below are accepted; the measured resource usage does not depend on the creation fee
+    set_account_creation_fee( HIVE_asset( 1 ) );
 
     generate_block();
 

@@ -1531,8 +1531,11 @@ BOOST_AUTO_TEST_CASE( disturbed_power_down )
     BOOST_REQUIRE_EQUAL( db->get_dynamic_global_properties().get_vesting_share_price(), VEST_price( 1000000, 1000 ) );
 
     ACTORS( NO_VESTING, (bob)(gil) );
-    vest( "bob", HIVE_asset( bob_amount / 1000 ) );
-    vest( "gil", HIVE_asset( gil_amount / 1000 ) );
+    // accounts are created before HF20, so the creation fee is converted to vesting,
+    // so we need to vest only the remainder needed to reach the intended stake
+    // (vesting share price is 1000 VEST-satoshi per HIVE-satoshi here, see assert above)
+    vest( "bob", HIVE_asset( ( bob_amount - get_vesting( "bob" ).amount.value ) / 1000 ) );
+    vest( "gil", HIVE_asset( ( gil_amount - get_vesting( "gil" ).amount.value ) / 1000 ) );
     generate_block();
 
     BOOST_CHECK_EQUAL( get_vesting( "bob" ).amount.value, bob_amount );
@@ -1981,6 +1984,11 @@ BOOST_AUTO_TEST_CASE( global_witness_props_basic_test )
   try
   {
     inject_hardfork( HIVE_HARDFORK_1_27 );
+
+    // establish a consistent default account creation fee: the genesis value is multiplied by 30 at
+    // HF20 (only for the scheduled witness), which would otherwise make the initial median differ
+    // from the witness default that is checked below
+    set_account_creation_fee( default_fee );
 
     const auto& wso = db->get_witness_schedule_object();
     const auto& future_wso = db->get_future_witness_schedule_object();
