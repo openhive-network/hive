@@ -467,6 +467,101 @@ BOOST_AUTO_TEST_CASE( account_update_open_owner_authority )
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( account_create_open_and_impossible_authority )
+{
+  // Gap test (MR !2060 follow-up): the open/impossible-authority guard on account_update/2 is NOT applied to
+  // account_create. Documents current behavior - creation SUCCEEDS; update this test if account_create is hardened.
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: account_create_open_and_impossible_authority (MR !2060 follow-up gap)" );
+
+    set_price_feed( HBD_price( 1000, 1000 ) );
+    db_plugin->debug_update( [=]( database& db )
+    {
+      db.modify( db.get_witness_schedule_object(), [&]( witness_schedule_object& wso )
+      {
+        wso.median_props.account_creation_fee = HIVE_asset( 100 );
+      } );
+    } );
+    generate_block();
+
+    const auto create_account = [&]( const string& name, const authority& auth )
+    {
+      account_create_operation op;
+      op.new_account_name = name;
+      op.creator = HIVE_INIT_MINER_NAME;
+      op.fee = asset( 100, HIVE_SYMBOL );
+      op.owner = auth;
+      op.active = auth;
+      op.posting = auth;
+      op.memo_key = generate_private_key( name + "_memo" ).get_public_key();
+
+      signed_transaction tx;
+      tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+      tx.operations.push_back( op );
+      tx.validate(); // NB: passes - validate() does not reject open/impossible authorities
+      push_transaction( tx, init_account_priv_key );
+    };
+
+    // Case 1: OPEN authority (threshold 0) - the #586 result. Satisfied by zero signatures, so the account
+    // is UNSECURED (not locked): anyone can transact as it without holding any key.
+    BOOST_TEST_MESSAGE( "--- account_create accepts an OPEN authority -> unsecured account" );
+    authority open_auth; // default-constructed: weight_threshold 0, no auths
+    BOOST_REQUIRE_EQUAL( open_auth.weight_threshold, 0u );
+    create_account( "opener", open_auth );
+
+    const account_authority_object& opener_auth = db->get< account_authority_object, by_account >( "opener" );
+    BOOST_REQUIRE_EQUAL( opener_auth.get_owner().weight_threshold, 0u ); // the broken authority was stored verbatim
+    BOOST_REQUIRE_EQUAL( opener_auth.get_active().weight_threshold, 0u );
+
+    issue_funds( "opener", HIVE_asset( 1000 ) );
+    const HIVE_asset opener_balance_before = get_hive_balance( "opener" );
+
+    // Drain "opener" with a transaction that carries NO signature at all. It is accepted because the
+    // (open) active authority needs none. This is the concrete "anyone can take it over" consequence.
+    {
+      transfer_operation op;
+      op.from = "opener";
+      op.to = HIVE_INIT_MINER_NAME;
+      op.amount = asset( 1000, HIVE_SYMBOL );
+
+      signed_transaction tx;
+      tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+      tx.operations.push_back( op );
+      push_transaction( tx ); // <-- no key passed: zero-signature transaction succeeds
+    }
+    BOOST_REQUIRE_EQUAL( get_hive_balance( "opener" ), opener_balance_before - HIVE_asset( 1000 ) );
+
+    // Case 2: IMPOSSIBLE authority (threshold > sum of key weights): no signature set can ever reach the
+    // threshold, so the account can never authorize anything and its funds are permanently frozen.
+    BOOST_TEST_MESSAGE( "--- account_create accepts an IMPOSSIBLE authority -> locked, unusable account" );
+    private_key_type frozen_key = generate_private_key( "frozen_key" );
+    authority impossible_auth( 2, frozen_key.get_public_key(), 1 ); // threshold 2, only weight 1 available
+    BOOST_REQUIRE( impossible_auth.is_impossible() );
+    create_account( "frozen", impossible_auth );
+
+    issue_funds( "frozen", HIVE_asset( 1000 ) );
+
+    // Even signing with the account's own key cannot satisfy the active authority (1 < 2), so the
+    // transfer is rejected and the funds can never be moved - the account is unusable.
+    {
+      transfer_operation op;
+      op.from = "frozen";
+      op.to = HIVE_INIT_MINER_NAME;
+      op.amount = asset( 1000, HIVE_SYMBOL );
+
+      signed_transaction tx;
+      tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+      tx.operations.push_back( op );
+      HIVE_REQUIRE_THROW( push_transaction( tx, frozen_key ), tx_missing_active_auth );
+    }
+    BOOST_REQUIRE_EQUAL( get_hive_balance( "frozen" ), HIVE_asset( 1000 ) ); // funds stuck
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_CASE( comment_validate )
 {
   try
