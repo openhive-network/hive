@@ -56,10 +56,16 @@ def prepare_environment_on_hf_27(node) -> tuple[tt.InitNode, tt.Wallet]:  # noqa
 
         block_log_directory = Path(__file__).parent / "block_log"
         block_log = tt.BlockLog(block_log_directory, "auto")
+        # The block log is part of an alternate chain (HF27 active, HF28 scheduled by block number);
+        # it must be replayed with the very same chain spec the generator used.
+        alternate_chain_specs = tt.AlternateChainSpecs.parse_file(
+            block_log_directory / tt.AlternateChainSpecs.FILENAME
+        )
 
         try:
             witness_node.run(
                 replay_from=block_log,
+                alternate_chain_specs=alternate_chain_specs,
                 time_control=tt.StartTimeControl(start_time="head_block_time"),
                 timeout=180.0,
             )
