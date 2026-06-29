@@ -12,6 +12,7 @@ PROPOSALS = ["proposal-x", "proposal-y", "proposal-z"]
 
 def prepare_blocklog_with_witnesses_and_active_proposals() -> None:
     node = tt.InitNode()
+    node.config.block_log_split = -1
 
     for name in WITNESSES:
         node.config.witness.append(name)
