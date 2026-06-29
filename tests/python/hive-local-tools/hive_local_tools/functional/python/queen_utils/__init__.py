@@ -23,7 +23,7 @@ def __create_account(name: str) -> AccountCreateOperation:
         creator=AccountName("initminer"),
         new_account_name=AccountName(name),
         json_metadata="{}",
-        fee=tt.Asset.Test(0),
+        fee=tt.Asset.Test(0.001),
         owner=Authority(weight_threshold=1, account_auths=[], key_auths=[(key, 1)]),
         active=Authority(weight_threshold=1, account_auths=[], key_auths=[(key, 1)]),
         posting=Authority(weight_threshold=1, account_auths=[], key_auths=[(key, 1)]),

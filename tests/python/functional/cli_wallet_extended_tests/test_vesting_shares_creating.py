@@ -25,7 +25,7 @@ def test_delegate(node: tt.InitNode, wallet: tt.OldWallet):
 
     _result = wallet.api.get_account("alice")
     assert tt.Asset.from_legacy(_result["delegated_vesting_shares"]) == tt.Asset.Vest(1.123456)
-    assert tt.Asset.from_legacy(_result["balance"]) == tt.Asset.Test(125)
+    assert tt.Asset.from_legacy(_result["balance"]) == tt.Asset.Test(124.970)  # 125 - 0.030 account_creation_fee for bob
     assert tt.Asset.from_legacy(_result["hbd_balance"]) == tt.Asset.Tbd(100)
 
     _result = wallet.api.get_account("bob")
@@ -37,7 +37,7 @@ def test_delegate(node: tt.InitNode, wallet: tt.OldWallet):
 
     _result = wallet.api.get_account("alice")
     assert tt.Asset.from_legacy(_result["delegated_vesting_shares"]) == tt.Asset.Vest(1.123456)
-    assert tt.Asset.from_legacy(_result["balance"]) == tt.Asset.Test(125)
+    assert tt.Asset.from_legacy(_result["balance"]) == tt.Asset.Test(124.970)  # 125 - 0.030 account_creation_fee for bob
     assert tt.Asset.from_legacy(_result["hbd_balance"]) == tt.Asset.Tbd(93.334)
 
     _result = wallet.api.get_account("bob")
@@ -53,7 +53,7 @@ def test_delegate(node: tt.InitNode, wallet: tt.OldWallet):
     _result = wallet.api.get_account("alice")
     assert tt.Asset.from_legacy(_result["delegated_vesting_shares"]) == tt.Asset.Vest(1.123456)
     assert tt.Asset.from_legacy(_result["received_vesting_shares"]) == tt.Asset.Vest(0.1)
-    assert tt.Asset.from_legacy(_result["balance"]) == tt.Asset.Test(125)
+    assert tt.Asset.from_legacy(_result["balance"]) == tt.Asset.Test(124.970)  # 125 - 0.030 account_creation_fee for bob
     assert tt.Asset.from_legacy(_result["hbd_balance"]) == tt.Asset.Tbd(93.334)
 
     _result = wallet.api.get_account("bob")
@@ -63,7 +63,7 @@ def test_delegate(node: tt.InitNode, wallet: tt.OldWallet):
     assert tt.Asset.from_legacy(_result["hbd_balance"]) == tt.Asset.Tbd(6.666)
 
     wallet.api.delegate_vesting_shares_and_transfer_nonblocking(
-        "bob", "alice", tt.Asset.Vest(0.1), tt.Asset.Tbd(6.555), "pear"
+        "bob", "alice", tt.Asset.Vest(0.2), tt.Asset.Tbd(6.555), "pear"
     )
 
     tt.logger.info("Waiting...")
@@ -71,12 +71,12 @@ def test_delegate(node: tt.InitNode, wallet: tt.OldWallet):
 
     _result = wallet.api.get_account("alice")
     assert tt.Asset.from_legacy(_result["delegated_vesting_shares"]) == tt.Asset.Vest(1.123456)
-    assert tt.Asset.from_legacy(_result["received_vesting_shares"]) == tt.Asset.Vest(0.1)
-    assert tt.Asset.from_legacy(_result["balance"]) == tt.Asset.Test(125)
+    assert tt.Asset.from_legacy(_result["received_vesting_shares"]) == tt.Asset.Vest(0.2)
+    assert tt.Asset.from_legacy(_result["balance"]) == tt.Asset.Test(124.970)  # 125 - 0.030 account_creation_fee for bob
     assert tt.Asset.from_legacy(_result["hbd_balance"]) == tt.Asset.Tbd(99.889)
 
     _result = wallet.api.get_account("bob")
-    assert tt.Asset.from_legacy(_result["delegated_vesting_shares"]) == tt.Asset.Vest(0.1)
+    assert tt.Asset.from_legacy(_result["delegated_vesting_shares"]) == tt.Asset.Vest(0.2)
     assert tt.Asset.from_legacy(_result["received_vesting_shares"]) == tt.Asset.Vest(1)
     assert tt.Asset.from_legacy(_result["balance"]) == tt.Asset.Test(50)
     assert tt.Asset.from_legacy(_result["hbd_balance"]) == tt.Asset.Tbd(0.111)

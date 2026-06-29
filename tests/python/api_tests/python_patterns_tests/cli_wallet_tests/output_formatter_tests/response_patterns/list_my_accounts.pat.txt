@@ -1,5 +1,5 @@
-bob                   100.000 TESTS            23.842996 VESTS      120.000 TBD
-carol                 200.000 TESTS            45.370444 VESTS      220.000 TBD
-dan                   300.000 TESTS            66.865772 VESTS      320.000 TBD
+bob                   100.000 TESTS            39.225836 VESTS      120.000 TBD
+carol                 200.000 TESTS            74.763064 VESTS      220.000 TBD
+dan                   300.000 TESTS           110.273741 VESTS      320.000 TBD
 -------------------------------------------------------------------------------
-TOTAL                 600.000 TESTS           136.079212 VESTS      660.000 TBD
+TOTAL                 600.000 TESTS           224.262641 VESTS      660.000 TBD

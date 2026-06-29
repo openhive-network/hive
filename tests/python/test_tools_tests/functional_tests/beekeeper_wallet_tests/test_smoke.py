@@ -208,7 +208,7 @@ def test_delegate_vesting_shares(wallet: tt.Wallet) -> None:
 def test_delegate_vesting_shares_and_transfer(wallet: tt.Wallet) -> None:
     wallet.api.create_account("initminer", "alice", "{}")
     wallet.api.delegate_vesting_shares_and_transfer(
-        "initminer", "alice", tt.Asset.Vest(0.0001), tt.Asset.Test(6), "transfer_memo"
+        "initminer", "alice", tt.Asset.Vest(0.01), tt.Asset.Test(6), "transfer_memo"
     )
 
 
@@ -328,7 +328,7 @@ def test_set_voting_proxy(wallet: tt.Wallet) -> None:
 
 
 def test_set_withdraw_vesting_route(wallet: tt.Wallet) -> None:
-    wallet.create_account("blocktrades", vests=tt.Asset.Test(100))
+    wallet.create_account("blocktrades", hives=tt.Asset.Test(1), vests=tt.Asset.Test(100))
 
     wallet.api.create_account("blocktrades", "alice", "{}")
     wallet.api.set_withdraw_vesting_route("blocktrades", "alice", 15, True)

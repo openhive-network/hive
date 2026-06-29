@@ -107,4 +107,4 @@ def test_list_rc_direct_delegations_with_missing_argument(ready_node: tt.InitNod
 
 def create_account_and_delegate_its_rc(wallet: tt.Wallet, accounts: list) -> None:
     wallet.create_account(accounts[1], vests=tt.Asset.Test(50))
-    wallet.api.delegate_rc(accounts[0], [accounts[1]], 5)
+    wallet.api.delegate_rc(accounts[0], [accounts[1]], 100_000)

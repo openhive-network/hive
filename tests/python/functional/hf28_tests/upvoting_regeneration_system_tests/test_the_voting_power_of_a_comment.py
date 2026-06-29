@@ -111,7 +111,7 @@ def test_voting_power_of_a_comment_on_current_hardfork(
                     if num < 12:
                         assert downvote < previous_downvoting_mana_value, "Downvote mana did not change after voting."
                         err_msg = "Upvote mana decreased unexpectedly during downvote."
-                        assert voting_mana == alice.rc_manabar.max_mana, err_msg
+                        assert voting_mana == alice.vote_manabar.max_mana, err_msg
                     else:
                         err_msg = "When downvoting with 0% downvote mana, the upvote mana was not correctly retrieved."
                         assert voting_mana < previous_voting_mana_value, err_msg

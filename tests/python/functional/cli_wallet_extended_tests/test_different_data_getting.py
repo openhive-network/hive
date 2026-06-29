@@ -45,8 +45,8 @@ def test_getters(node: tt.InitNode, wallet: tt.OldWallet) -> None:
 
     _result = wallet.api.get_ops_in_block(block_number, False)
 
-    assert len(_result) == 5
-    trx = _result[4]
+    assert len(_result) == 6
+    trx = _result[5]
 
     assert "vesting_shares" in trx["op"][1]
     assert trx["op"][1]["vesting_shares"] != tt.Asset.Vest(0)
@@ -62,4 +62,4 @@ def test_getters(node: tt.InitNode, wallet: tt.OldWallet) -> None:
     assert _ops[0][0] == "account_create"
 
     assert "fee" in _ops[0][1]
-    assert tt.Asset.from_legacy(_ops[0][1]["fee"]) == tt.Asset.Test(0)
+    assert tt.Asset.from_legacy(_ops[0][1]["fee"]) == tt.Asset.Test(0.030)
