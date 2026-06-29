@@ -33,9 +33,9 @@ def test_delegate_vesting_shares_without_voting_rights(node: tt.InitNode) -> Non
     assert len(node.api.database.find_decline_voting_rights_requests(accounts=["alice"]).requests) == 0
     assert len(get_virtual_operations(node, DeclinedVotingRightsOperation)) == 1
 
-    wallet.api.delegate_vesting_shares("alice", "bob", tt.Asset.Vest(5))
+    wallet.api.delegate_vesting_shares("alice", "bob", tt.Asset.Vest(100))
 
-    assert node.api.wallet_bridge.get_accounts(["bob"])[0].post_voting_power == tt.Asset.Vest(5)
+    assert node.api.wallet_bridge.get_accounts(["bob"])[0].post_voting_power == tt.Asset.Vest(100)
 
 
 @run_for("testnet", enable_plugins=["account_history_api"])

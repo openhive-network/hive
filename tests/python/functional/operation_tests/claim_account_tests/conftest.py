@@ -43,7 +43,8 @@ def node(request, fee: tt.Asset.TestT) -> tt.InitNode:
             )
 
     init_node.wait_number_of_blocks(42)
-    assert init_node.api.wallet_bridge.get_chain_properties().account_creation_fee == fee
+    if fee > tt.Asset.Test(0):
+        assert init_node.api.wallet_bridge.get_chain_properties().account_creation_fee == fee
 
     return init_node
 

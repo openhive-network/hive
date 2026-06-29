@@ -24,7 +24,8 @@ def test_escrow(wallet: tt.OldWallet) -> None:
     assert len(_result) == 3
 
     _alice = _result[0]
-    assert tt.Asset.from_legacy(_alice["balance"]) == tt.Asset.Test(125)
+    # alice paid the account_creation_fee for bob and carol (2 x 0.030)
+    assert tt.Asset.from_legacy(_alice["balance"]) == tt.Asset.Test(124.940)
     assert tt.Asset.from_legacy(_alice["hbd_balance"]) == tt.Asset.Tbd(100)
 
     _bob = _result[1]
@@ -52,7 +53,7 @@ def test_escrow(wallet: tt.OldWallet) -> None:
     assert len(_result) == 3
 
     _alice = _result[0]
-    assert tt.Asset.from_legacy(_alice["balance"]) == tt.Asset.Test(123)
+    assert tt.Asset.from_legacy(_alice["balance"]) == tt.Asset.Test(122.940)
     assert tt.Asset.from_legacy(_alice["hbd_balance"]) == tt.Asset.Tbd(94)
 
     _bob = _result[1]
@@ -71,7 +72,7 @@ def test_escrow(wallet: tt.OldWallet) -> None:
     assert len(_result) == 3
 
     _alice = _result[0]
-    assert tt.Asset.from_legacy(_alice["balance"]) == tt.Asset.Test(123)
+    assert tt.Asset.from_legacy(_alice["balance"]) == tt.Asset.Test(122.940)
     assert tt.Asset.from_legacy(_alice["hbd_balance"]) == tt.Asset.Tbd(94)
 
     _bob = _result[1]
@@ -88,7 +89,7 @@ def test_escrow(wallet: tt.OldWallet) -> None:
     assert len(_result) == 3
 
     _alice = _result[0]
-    assert tt.Asset.from_legacy(_alice["balance"]) == tt.Asset.Test(123)
+    assert tt.Asset.from_legacy(_alice["balance"]) == tt.Asset.Test(122.940)
     assert tt.Asset.from_legacy(_alice["hbd_balance"]) == tt.Asset.Tbd(94)
 
     _bob = _result[1]
@@ -105,7 +106,7 @@ def test_escrow(wallet: tt.OldWallet) -> None:
     assert len(_result) == 3
 
     _alice = _result[0]
-    assert tt.Asset.from_legacy(_alice["balance"]) == tt.Asset.Test(123)
+    assert tt.Asset.from_legacy(_alice["balance"]) == tt.Asset.Test(122.940)
     assert tt.Asset.from_legacy(_alice["hbd_balance"]) == tt.Asset.Tbd(94)
 
     _bob = _result[1]
@@ -122,7 +123,7 @@ def test_escrow(wallet: tt.OldWallet) -> None:
     assert len(_result) == 3
 
     _alice = _result[0]
-    assert tt.Asset.from_legacy(_alice["balance"]) == tt.Asset.Test(123)
+    assert tt.Asset.from_legacy(_alice["balance"]) == tt.Asset.Test(122.940)
     assert tt.Asset.from_legacy(_alice["hbd_balance"]) == tt.Asset.Tbd(94)
 
     _bob = _result[1]

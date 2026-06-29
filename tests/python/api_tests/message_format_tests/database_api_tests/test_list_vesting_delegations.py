@@ -10,9 +10,10 @@ from hive_local_tools import run_for
 def test_list_vesting_delegations(node: tt.InitNode | tt.RemoteNode, should_prepare: bool) -> None:
     if should_prepare:
         wallet = tt.Wallet(attach_to=node)
-        wallet.create_account("catharsis", vests=tt.Asset.Test(100))
+        node.set_vest_price(tt.Asset.Vest(1800))
+        wallet.create_account("catharsis", hives=tt.Asset.Test(1), vests=tt.Asset.Test(100))
         wallet.api.create_account("catharsis", "veshu1230", "{}")
-        wallet.api.delegate_vesting_shares("catharsis", "veshu1230", tt.Asset.Vest(5))
+        wallet.api.delegate_vesting_shares("catharsis", "veshu1230", tt.Asset.Vest(100))
     delegations = node.api.database.list_vesting_delegations(
         start=["catharsis", "veshu1230"], limit=100, order="by_delegation"
     ).delegations

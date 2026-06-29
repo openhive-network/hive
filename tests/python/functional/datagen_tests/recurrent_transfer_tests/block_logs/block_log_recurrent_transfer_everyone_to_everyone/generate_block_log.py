@@ -88,7 +88,7 @@ def prepare_block_log(output_block_log_directory: Path) -> None:
                 witness,
                 "http://url.html",
                 tt.Account("initminer").public_key,
-                {"account_creation_fee": tt.Asset.Test(0), "maximum_block_size": 2097152, "hbd_interest_rate": 1000},
+                {"account_creation_fee": tt.Asset.Test(0.001), "maximum_block_size": 2097152, "hbd_interest_rate": 1000},
             )
     node.api.network_broadcast.broadcast_transaction(trx=tx.get_response())
     generate_block(node, 43)

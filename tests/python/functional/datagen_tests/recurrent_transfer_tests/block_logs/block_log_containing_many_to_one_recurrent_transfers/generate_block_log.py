@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+# NOTE: the cached testing block log is keyed by the sha256 of this generator script (see
+# scripts/ci-helpers/testing_block_log_image_generator.sh). Touch this file to force regeneration -
+# required because the accounts here are now created with a non-zero account_creation_fee, so a block
+# log produced by the old fee=0 binary no longer replays.
 import os
 from pathlib import Path
 from typing import Final
@@ -55,6 +59,19 @@ def prepare_block_log_with_many_to_one_recurrent_transfers(output_block_log_dire
 
     wallet = tt.Wallet(attach_to=init_node)
     wallet.api.import_key(tt.PrivateKey("secret"))
+
+    # lower the account_creation_fee to its minimum so it matches the fee used by __create_account
+    # (queen_utils); otherwise the default median 0.030 would reject those fee=0.001 account_create ops.
+    # broadcast non-blocking - with the queen plugin blocks are only produced by generate_block, so a
+    # blocking broadcast would wait forever for inclusion
+    with wallet.in_single_transaction(blocking=False):
+        wallet.api.update_witness(
+            "initminer",
+            "https://initminer.com",
+            tt.Account("initminer").public_key,
+            {"account_creation_fee": tt.Asset.Test(0.001), "maximum_block_size": 2097152, "hbd_interest_rate": 0},
+        )
+    generate_block(init_node, 43)  # produce blocks so the vote is applied and the median fee updates
 
     with wallet.in_single_transaction(blocking=False):
         wallet.api.create_account("initminer", RECEIVER_ACCOUNT_NAME, "{}")

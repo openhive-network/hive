@@ -153,5 +153,5 @@ def test_list_rc_direct_delegations_with_incorrect_type_of_arguments_in_mainnet(
 
 def create_accounts_and_delegate_rc_from_account0_to_account1(wallet: tt.Wallet, accounts: list) -> None:
     wallet.create_accounts(len(accounts))
-    wallet.api.transfer_to_vesting("initminer", accounts[0], tt.Asset.Test(0.1))
-    wallet.api.delegate_rc(accounts[0], [accounts[1]], 5)
+    wallet.api.transfer_to_vesting("initminer", accounts[0], tt.Asset.Test(1))
+    wallet.api.delegate_rc(accounts[0], [accounts[1]], 100_000)

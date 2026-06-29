@@ -25,7 +25,7 @@ def test_get_withdraw_routes_with_default_second_argument(
 def preparation_for_testnet_node(node: tt.InitNode | tt.RemoteNode, should_prepare: bool) -> None:
     if should_prepare:
         wallet = tt.Wallet(attach_to=node)
-        wallet.create_account("blocktrades", vests=tt.Asset.Test(100))
+        wallet.create_account("blocktrades", hives=tt.Asset.Test(1), vests=tt.Asset.Test(100))
 
         wallet.api.create_account("blocktrades", "alice", "{}")
         wallet.api.set_withdraw_vesting_route("blocktrades", "alice", 15, True)

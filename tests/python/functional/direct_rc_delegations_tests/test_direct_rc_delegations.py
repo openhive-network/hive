@@ -1,8 +1,5 @@
 from __future__ import annotations
 
-import pytest
-from test_tools.exceptions import ErrorInResponseError
-
 import test_tools as tt
 
 
@@ -16,14 +13,14 @@ def test_direct_rc_delegations(wallet: tt.Wallet) -> None:
     wallet.api.create_account(creator, receiver2, "{}")
     wallet.api.transfer(creator, receiver, tt.Asset.from_legacy("10.000 TESTS"), "", "true")
     wallet.api.transfer_to_vesting(creator, delegator, tt.Asset.from_legacy("0.010 TESTS"), "true")
-    with pytest.raises(ErrorInResponseError) as exception:
-        wallet.api.transfer(receiver, receiver, tt.Asset.from_legacy("0.001 TESTS"), "", "true")
-    assert "receiver has 0 RC, needs 1 RC. Please wait to transact" in str(exception.value)
 
     rc_receiver = wallet.api.find_rc_accounts([receiver])[0]
     rc_receiver2 = wallet.api.find_rc_accounts([receiver2])[0]
     rc_delegator = wallet.api.find_rc_accounts([delegator])[0]
     rc_delegator_before = rc_delegator
+    # receiver does no operations and ends with no net delegation, so its current_mana stays at the
+    # base reserve a freshly created account has (rc_adjustment).
+    receiver_base_mana = rc_receiver["rc_manabar"]["current_mana"]
 
     assert rc_receiver["delegated_rc"] == 0
     assert rc_receiver["received_delegated_rc"] == 0
@@ -119,6 +116,6 @@ def test_direct_rc_delegations(wallet: tt.Wallet) -> None:
     accounts_offset = wallet.api.list_rc_accounts("receiver", 3)
     assert len(accounts_offset) == 3
     assert accounts_offset[0]["account"] == "receiver"
-    assert accounts_offset[0]["rc_manabar"]["current_mana"] == 0
+    assert accounts_offset[0]["rc_manabar"]["current_mana"] == receiver_base_mana
     assert accounts_offset[1]["account"] == "steem"
     assert accounts_offset[2]["account"] == "steem.dao"

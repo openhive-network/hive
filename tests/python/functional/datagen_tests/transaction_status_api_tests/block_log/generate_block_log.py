@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+# NOTE: the cached testing block log is keyed by the sha256 of this generator script (see
+# scripts/ci-helpers/testing_block_log_image_generator.sh). Touch this file to force regeneration -
+# required because the accounts here are now created with a non-zero account_creation_fee, so a block
+# log produced by the old fee=0 binary no longer replays.
 import json
 from pathlib import Path
 
