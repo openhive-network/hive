@@ -7,6 +7,7 @@ import test_tools as tt
 
 def prepare_blocklog():
     node = tt.InitNode()
+    node.config.block_log_split = -1
     node.run()
 
     wallet = tt.OldWallet(attach_to=node, additional_arguments=["--transaction-serialization=legacy"])

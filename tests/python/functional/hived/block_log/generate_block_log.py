@@ -7,16 +7,22 @@ from typing import Final
 import test_tools as tt
 from hive_local_tools.constants import TRANSACTION_TEMPLATE
 from hive_local_tools.functional.python.datagen.recurrent_transfer import execute_function_in_threads
+from schemas.operations.transfer_to_vesting_operation import TransferToVestingOperation
+from schemas.operations.update_proposal_votes_operation import UpdateProposalVotesOperation
+from test_tools.__private.wallet.constants import SimpleTransactionLegacy
 
 AMOUNT_OF_ALL_ACCOUNTS: Final[int] = 20_000
-ACCOUNTS_PER_CHUNK: Final[int] = 750
+ACCOUNTS_PER_CHUNK: Final[int] = 300
 MAX_WORKERS: Final[int] = 6
 
 
 def prepare_node_with_proposal_votes():
     node = tt.InitNode()
+    node.config.block_log_split = -1
     node.run()
     wallet = tt.Wallet(attach_to=node)
+    # long expiration so the threaded bulk broadcasts below do not expire while many keys are being signed
+    wallet.api.set_transaction_expiration(3600 - 1)
 
     account_names = [account.name for account in wallet.create_accounts(AMOUNT_OF_ALL_ACCOUNTS)]
 
@@ -53,18 +59,18 @@ def __create_proposal(wallet: tt.Wallet) -> None:
 
 
 def __generate_operations_for_receiver(receiver: str) -> list:
-    amount = tt.Asset.Test(0.1)
     return [
-        ["transfer_to_vesting", {"from": "initminer", "to": receiver, "amount": str(amount)}],
-        ["update_proposal_votes", {"voter": receiver, "proposal_ids": [0], "approve": True, "extensions": []}],
+        TransferToVestingOperation(from_="initminer", to=receiver, amount=tt.Asset.Test(0.1)),
+        UpdateProposalVotesOperation(voter=receiver, proposal_ids=[0], approve=True, extensions=[]),
     ]
 
 
 def __generate_and_broadcast(wallet: tt.Wallet, account_names: list[str]) -> None:
-    transaction = deepcopy(TRANSACTION_TEMPLATE)
+    transaction = SimpleTransactionLegacy(**deepcopy(TRANSACTION_TEMPLATE))
 
     for name in account_names:
-        transaction["operations"].extend(__generate_operations_for_receiver(name))
+        for operation in __generate_operations_for_receiver(name):
+            transaction.add_operation(operation)
 
     wallet.api.sign_transaction(transaction)
     tt.logger.info(f"Finished: {account_names[-1]}")

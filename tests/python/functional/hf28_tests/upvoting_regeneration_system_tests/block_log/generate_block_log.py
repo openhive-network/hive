@@ -13,6 +13,7 @@ def prepare_blocklog_with_comments() -> None:
         file.write(f"{int(genesis_time.timestamp())}")
 
     node = tt.InitNode()
+    node.config.block_log_split = -1
     node.run(
         time_control=tt.SpeedUpRateTimeControl(speed_up_rate=20),
         alternate_chain_specs=tt.AlternateChainSpecs(
