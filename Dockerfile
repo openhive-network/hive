@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.6
+# syntax=docker/dockerfile:1.25
 # Base docker file having defined environment for build and run of hived instance.
 # Build stage uses ci-base-image from common-ci-configuration (centralized build toolchain)
 # To be started from cloned hive source directory.
