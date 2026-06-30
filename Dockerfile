@@ -34,7 +34,7 @@ RUN ./scripts/setup_ubuntu.sh --runtime --hived-account="hived"
 USER hived
 WORKDIR /home/hived
 
-FROM ubuntu:24.04 AS minimal-runtime
+FROM ubuntu:26.04 AS minimal-runtime
 
 ENV LANG=en_US.UTF-8
 
