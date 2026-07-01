@@ -77,6 +77,9 @@ def prepare_blocklog_with_comments_and_votes(output_block_log_directory: Path) -
     init_node = tt.InitNode()
     init_node.config.shared_file_size = "1G"
     init_node.config.plugin.append("queen")
+    # the complex_networks loader (NetworksBuilder) runs nodes with block_log_split = -1, so the saved
+    # comments_and_votes block log must be monolithic too, otherwise the test node fails to start on it
+    init_node.config.block_log_split = -1
 
     # private-keys to witnesses [witness0-alpha, witness1-alpha, witness2-alpha]
     init_node.config.private_key.append("5JcCHFFWPW2DryUFDVd7ZXVj2Zo67rqMcvcq5inygZGBAPR1JoR")
