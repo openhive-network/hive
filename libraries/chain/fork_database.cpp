@@ -74,9 +74,17 @@ void fork_database::_push_block(const item_ptr& item)
 {
   if (_head) // make sure the block is within the range that we are caching
   {
-    FC_ASSERT(item->get_block_num() > std::max<int64_t>(0, int64_t(_head->get_block_num()) - _max_size),
-              "attempting to push a block that is too old",
-              ("item->num", item->get_block_num())("head", _head->get_block_num())("max_size", _max_size));
+    // A block below our cache window is most likely an honest block from a peer that is a little
+    // behind us (e.g. it was briefly disconnected, or is relaying a soon-to-be-orphaned fork branch).
+    // With one-block irreversibility the window is typically only a couple of blocks deep, so this
+    // is easy to hit during any network hiccup.  Throw unlinkable_block_exception so the p2p layer
+    // treats it like any other block it can't attach (triggering fork reconciliation via sync)
+    // instead of treating the peer as if it had sent an invalid block and disconnecting it -- that
+    // punitive reaction turned a routine micro-fork into a network-wide disconnect storm on 2026-07-09.
+    HIVE_ASSERT(item->get_block_num() > std::max<int64_t>(0, int64_t(_head->get_block_num()) - _max_size),
+                unlinkable_block_exception,
+                "attempting to push a block that is too old",
+                ("item->num", item->get_block_num())("head", _head->get_block_num())("max_size", _max_size));
   }
   //if we can't link the new item all the way back to genesis block,
   // throw an unlinkable block exception
