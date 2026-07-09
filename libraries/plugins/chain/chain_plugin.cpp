@@ -1043,6 +1043,7 @@ bool chain_plugin_impl::push_block( const block_flow_control& block_ctrl, uint32
   const signed_block_header& new_block_header = new_block;
 
   uint32_t block_num = full_block->get_block_num();
+  const block_id_type block_id = full_block->get_block_id();
   if( !checkpoints.empty() && block_num <= checkpoints.rbegin()->first )
   {
     skip = database::skip_witness_signature
@@ -1083,7 +1084,10 @@ bool chain_plugin_impl::push_block( const block_flow_control& block_ctrl, uint32
         // we only need header (if anything at all) in most common case of block from unknown fork
         FC_RETHROW_EXCEPTION( er, warn, "", FC_FORMAT_ARG_PARAMS( (new_block_header) ) );
       }
-      FC_CAPTURE_AND_RETHROW( (new_block) )
+      // capture only the block's identity, not the full block: this exception is sent to the
+      // offending peer inside a closing_connection_message, and a full block nests deeper than
+      // the serializer's recursion limit, making the message undecodable by the receiver
+      FC_CAPTURE_AND_RETHROW( (block_num)(block_id) )
 
       db.check_free_memory( false, full_block->get_block_num() );
     });
