@@ -2052,8 +2052,25 @@ namespace graphene { namespace net {
         on_item_ids_inventory_message(originating_peer, received_message.as<item_ids_inventory_message>());
         break;
       case core_message_type_enum::closing_connection_message_type:
-        on_closing_connection_message(originating_peer, received_message.as<closing_connection_message>());
-        break;
+        {
+          closing_connection_message closing_message_received;
+          try
+          {
+            closing_message_received = received_message.as<closing_connection_message>();
+          }
+          catch (const fc::exception& e)
+          {
+            // The peer is closing the connection regardless of whether we can read its reason for
+            // doing so, so don't treat an undecodable goodbye as a protocol error (e.g. older peers
+            // embed an exception whose serialization can nest deeper than our recursion limit).
+            wlog("Unable to decode closing_connection_message from peer ${peer}, treating it as a close request "
+                 "with no details: ${e}",
+                 ("peer", originating_peer->get_remote_endpoint())("e", e.to_detail_string()));
+            closing_message_received.reason_for_closing = "<unable to decode the closing_connection_message this peer sent us>";
+          }
+          on_closing_connection_message(originating_peer, closing_message_received);
+          break;
+        }
       case core_message_type_enum::block_message_type:
       case core_message_type_enum::compressed_block_message_type:
         fc::async( [=]() { process_block_message(originating_peer, received_message, message_hash); }, "process_block_msg");
