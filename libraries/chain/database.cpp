@@ -2139,7 +2139,10 @@ void database::apply_block( const std::shared_ptr<full_block_type>& full_block, 
     }
   }
 
-} FC_CAPTURE_AND_RETHROW((full_block->get_block())) }
+// capture only the block's identity, not the full block: exception captures are additive across
+// rethrow sites, this exception can be sent to the offending peer inside a closing_connection_message,
+// and a captured full block nests deeper than the serializer's unpack recursion limit
+} FC_CAPTURE_AND_RETHROW((full_block->get_block_num())(full_block->get_block_id())) }
 
 void database::apply_block_extended(
   const std::shared_ptr<full_block_type>& full_block,
