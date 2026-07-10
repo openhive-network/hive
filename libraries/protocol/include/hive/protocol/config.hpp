@@ -133,7 +133,7 @@ using namespace hive::protocol::testnet_blockchain_configuration;
   #define HIVE_CHAIN_ID                         fc::sha256("4200000000000000000000000000000000000000000000000000000000000000")
 #else
   /// Hive mainnet
-  #define HIVE_BLOCKCHAIN_VERSION               ( version(1, 28, 6) )
+  #define HIVE_BLOCKCHAIN_VERSION               ( version(1, 28, 7) )
   #define OLD_CHAIN_ID                          fc::sha256()
   #define HIVE_CHAIN_ID                         fc::sha256("beeab0de00000000000000000000000000000000000000000000000000000000")
 #endif
