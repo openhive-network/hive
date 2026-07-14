@@ -1251,6 +1251,60 @@ publish_docker_image:
     # Publish mainnet (root) and mirrornet images to registry.hive.blog
     # Note: testnet is not published externally (internal use only)
     PUBLISH_IMAGES: "hive mirrornet"
+    # The mainnet image is additionally published to Docker Hub, the public registry that our own
+    # documentation tells operators to pull from (README.md, doc/exchangequickstart.md).
+    DOCKER_HUB_IMAGE: "hiveio/hive"
+  script:
+    - !reference [.docker_publish_job_template, script]
+    - |
+      echo -e "\e[0Ksection_start:$(date +%s):docker_hub[collapsed=true]\r\e[0KPublishing to Docker Hub..."
+
+      if [[ -z "${DOCKER_HUB_USER:-}" || -z "${DOCKER_HUB_PASSWORD:-}" ]]; then
+        echo "ERROR: DOCKER_HUB_USER / DOCKER_HUB_PASSWORD are not set, cannot publish to Docker Hub."
+        exit 1
+      fi
+      echo "$DOCKER_HUB_PASSWORD" | docker login -u "$DOCKER_HUB_USER" --password-stdin docker.io
+
+      SOURCE="${CI_REGISTRY_IMAGE}:${CI_COMMIT_TAG}"
+      TARGET="docker.io/${DOCKER_HUB_IMAGE}:${CI_COMMIT_TAG}"
+      SOURCE_DIGEST=$(docker buildx imagetools inspect "$SOURCE" --format '{{.Manifest.Digest}}')
+
+      echo "Publishing: ${DOCKER_HUB_IMAGE}"
+      echo "  Source: $SOURCE ($SOURCE_DIGEST)"
+      echo "  Target: $TARGET"
+
+      docker pull "$SOURCE"
+      docker tag "$SOURCE" "$TARGET"
+
+      # Retry push with exponential backoff (handles transient registry issues)
+      MAX_RETRIES=5
+      RETRY_DELAY=10
+      for attempt in $(seq 1 $MAX_RETRIES); do
+        if docker push "$TARGET"; then
+          break
+        fi
+        if [ $attempt -eq $MAX_RETRIES ]; then
+          echo "ERROR: Push to Docker Hub failed after $MAX_RETRIES attempts"
+          exit 1
+        fi
+        echo "Push attempt $attempt failed, retrying in ${RETRY_DELAY}s..."
+        sleep $RETRY_DELAY
+        RETRY_DELAY=$((RETRY_DELAY * 2))
+      done
+
+      # The published image must be the exact one CI built and tested, so that anyone can verify
+      # hiveio/hive:<tag> against the image this pipeline produced by comparing digests.
+      # pull/tag/push preserves the manifest; do NOT substitute `docker buildx imagetools create`,
+      # which republishes the image wrapped in a manifest list and so changes the tag's digest.
+      PUBLISHED_DIGEST=$(docker buildx imagetools inspect "$TARGET" --format '{{.Manifest.Digest}}')
+      if [[ "$PUBLISHED_DIGEST" != "$SOURCE_DIGEST" ]]; then
+        echo "ERROR: published digest ($PUBLISHED_DIGEST) does not match the image built by this pipeline ($SOURCE_DIGEST)"
+        exit 1
+      fi
+
+      docker logout docker.io
+      echo "  Published successfully: ${TARGET} (${PUBLISHED_DIGEST})"
+      echo -e "\e[0Ksection_end:$(date +%s):docker_hub\r\e[0K"
 
 hardfork_schedule_tests:
   extends: .simple_pytest_job
