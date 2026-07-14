@@ -427,7 +427,10 @@ mirrornet_replay_test:
       curl -fsSL "https://gitlab.syncad.com/hive/common-ci-configuration/-/raw/develop/scripts/cache-manager.sh" -o "$CACHE_MANAGER"
       chmod +x "$CACHE_MANAGER"
       "$CACHE_MANAGER" put hive block_log_5m_mirrornet "$MIRRORNET_BLOCKCHAIN_DATA_DIR/blockchain" || echo "Warning: cache-manager put failed"
-    - ls -lAh /nfs/ci-cache/hive/
+      # Diagnostic listing only, so it must not decide the fate of the job. The replay above has
+      # already succeeded by this point and the cache push itself is non-fatal (see above), yet an
+      # unreadable cache directory here used to fail the whole pipeline - including on release tags.
+      ls -lAh /nfs/ci-cache/hive/ || echo "Warning: unable to list the NFS cache directory"
   artifacts:
     paths:
       - "$BINARIES_DIR/*.log"
