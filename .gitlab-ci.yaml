@@ -1240,6 +1240,13 @@ functional_api_tests:
 
 publish_docker_image:
   extends: .docker_publish_job_template
+  # This job pulls already-built images from the container registry by tag; it consumes no artifacts.
+  # Without an explicit empty list, GitLab implicitly makes it depend on every job in every earlier
+  # stage, so once the shortest-lived artifact expires the job can no longer start at all - it fails
+  # with `missing_dependency_failure` before running a single line. fork_tests keeps its artifacts for
+  # 2 days, so a tagged release became impossible to publish (or re-publish) 2 days after tagging,
+  # even though the images it publishes live in the registry indefinitely.
+  dependencies: []
   variables:
     # Publish mainnet (root) and mirrornet images to registry.hive.blog
     # Note: testnet is not published externally (internal use only)
