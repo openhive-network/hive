@@ -34,6 +34,8 @@ else
   API_LIST=("${DEFAULT_API_LIST[@]}")
 fi
 
+rm -f "${BASE_DIR}/python_api_package/hiveio_api/common.py"
+
 # Generate each API subpackage
 for d in "${API_LIST[@]}"; do
   echo "Processing API: $d"

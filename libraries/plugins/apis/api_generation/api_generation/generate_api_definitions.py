@@ -1,14 +1,15 @@
+# ruff: noqa: INP001
 from __future__ import annotations
 
 import ast
+import importlib.util
+import sys
 from pathlib import Path
 from typing import Any
-from jinja2 import Environment, FileSystemLoader
-import sys
-import importlib.util
 
-from api_generation.generate_description import generate_description
 from api_generation.generate_client import generate_client
+from api_generation.generate_description import generate_description
+from jinja2 import Environment, FileSystemLoader
 
 
 def extract_class_names_from_file(file_path: Path) -> list[str]:
@@ -27,15 +28,20 @@ def extract_class_names_from_file(file_path: Path) -> list[str]:
     if not file_path.exists():
         raise FileNotFoundError(f"The file {file_path} does not exist.")
 
-    with open(file_path, "r") as f:
-        tree = ast.parse(f.read(), filename=str(file_path))
+    tree = ast.parse(file_path.read_text(), filename=str(file_path))
 
     symbols = []
-    for node in ast.walk(tree):
+    for node in tree.body:
         if isinstance(node, ast.ClassDef):
             symbols.append(node.name)
-        elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
+        elif (
+            isinstance(node, ast.AnnAssign)
+            and isinstance(node.target, ast.Name)
+            and ast.unparse(node.annotation) == "TypeAlias"
+        ):
             symbols.append(node.target.id)
+        elif isinstance(node, ast.ImportFrom) and node.module == "hiveio_api.common":
+            symbols.extend(alias.asname or alias.name for alias in node.names)
     return symbols
 
 
@@ -64,7 +70,11 @@ def load_symbol_from_file(file_path: Path, symbol_name: str) -> dict[str, Any]:
     # For path like: .../python_api_package/hiveio_api/rc_api/rc_api_description.py
     # We want module name: hiveio_api.rc_api.rc_api_description
     # parents[2] is the project directory containing hiveio_api/
-    relative_path = file_path.relative_to(file_path.parents[2])
+    project_directory = file_path.parents[2]
+    if str(project_directory) not in sys.path:
+        sys.path.insert(0, str(project_directory))
+
+    relative_path = file_path.relative_to(project_directory)
     module_name = ".".join(relative_path.with_suffix("").parts)
 
     spec = importlib.util.spec_from_file_location(module_name, str(file_path))
@@ -137,15 +147,12 @@ def render_package_templates(
     ]:
         template = env.get_template(template_name)
         content = template.render(**template_context)
-        with open(api_subpackage_path / output_name, "w") as f:
-            f.write(content)
+        (api_subpackage_path / output_name).write_text(content)
 
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
-        raise ValueError(
-            "Usage: python generate_api_definitions.py <api_name> <base_directory>"
-        )
+        raise ValueError("Usage: python generate_api_definitions.py <api_name> <base_directory>")
 
     api = sys.argv[1]
     base_directory = Path(sys.argv[2])
@@ -156,13 +163,9 @@ if __name__ == "__main__":
     api_description_file = generate_description(api, base_directory)
     description_symbol_name = f"{api.replace('-', '_')}_description"
 
-    print(
-        f"Loading generated API descriptor: {description_symbol_name} from generated file: {api_description_file}"
-    )
+    print(f"Loading generated API descriptor: {description_symbol_name} from generated file: {api_description_file}")
 
-    api_descriptor = load_symbol_from_file(
-        api_description_file, description_symbol_name
-    )
+    api_descriptor = load_symbol_from_file(api_description_file, description_symbol_name)
     generate_client(api, api_descriptor, base_directory)
 
     api_name_snake_case = api.replace("-", "_")

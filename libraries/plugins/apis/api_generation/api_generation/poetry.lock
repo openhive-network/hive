@@ -569,13 +569,13 @@ files = [
 
 [[package]]
 name = "hiveio-api-client-generator"
-version = "1.7.1.post20260313094857"
+version = "1.7.1.dev20260715111856+unstable"
 description = ""
 optional = false
 python-versions = ">=3.14,<4"
 groups = ["main"]
 files = [
-    {file = "hiveio_api_client_generator-1.7.1.post20260313094857-py3-none-any.whl", hash = "sha256:52bec5c33ca94b427b77e305b85706b32d71e99b698fdf65ae070f8cccfdff31"},
+    {file = "hiveio_api_client_generator-1.7.1.dev20260715111856+unstable-py3-none-any.whl", hash = "sha256:3ba37d2a309fb1f79757387af93c500747ad87bc2c34b42869563ec897b89e28"},
 ]
 
 [package.dependencies]
@@ -1825,4 +1825,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.14,<4"
-content-hash = "c753ccb76d32c1300746e866fede7343e10a1180c2be53d6e0675dab1fe8a083"
+content-hash = "cc9d28c47ada0eca47033f5a14091b3e924b1cb5d667c97d79aece74e0c64c79"
