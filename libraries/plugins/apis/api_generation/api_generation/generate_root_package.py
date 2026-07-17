@@ -1,3 +1,4 @@
+# ruff: noqa: INP001
 """Generate root package files for hiveio_api."""
 
 from __future__ import annotations
@@ -41,21 +42,19 @@ def generate_root_package(
 
     for template_name, output_name in [
         ("__init__.py.j2", "__init__.py"),
+        ("_optional.py.j2", "_optional.py"),
         ("README.md.j2", "README.md"),
     ]:
         template = env.get_template(template_name)
         content = template.render(apis=apis)
-        with open(package_directory / output_name, "w") as f:
-            f.write(content)
+        (package_directory / output_name).write_text(content)
 
     print(f"Generated root package files with {len(apis)} APIs: {[a['snake_case'] for a in apis]}")
 
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
-        raise ValueError(
-            "Usage: python generate_root_package.py <base_directory> <api_name1> [api_name2] ..."
-        )
+        raise ValueError("Usage: python generate_root_package.py <base_directory> <api_name1> [api_name2] ...")
 
     base_directory = Path(sys.argv[1])
     api_list = sys.argv[2:]
