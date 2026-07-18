@@ -7502,6 +7502,16 @@
                 ],
                 "summary": "Returns the list of active witnesses.",
                 "operationId": "get_active_witnesses",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/get_active_witnesses"
+                            }
+                        }
+                    },
+                    "required": false
+                },
                 "responses": {
                     "200": {
                         "description": "Successful operation",
@@ -7533,7 +7543,8 @@
                                         "drakos",
                                         "someguy123",
                                         "good-karma"
-                                    ]
+                                    ],
+                                    "future_witnesses": []
                                 }
                             }
                         }
@@ -12944,7 +12955,9 @@
                                     "$ref": "#/components/schemas/find_transaction_response"
                                 },
                                 "example": {
-                                    "status": "unknown"
+                                    "status": "within_irreversible_block",
+                                    "block_num": 108228760,
+                                    "rc_cost": 146036130
                                 }
                             }
                         }
@@ -17531,6 +17544,14 @@
                     "status": {
                         "type": "string",
                         "description": "The status of the transaction."
+                    },
+                    "block_num": {
+                        "type": "integer",
+                        "description": "Block containing the transaction, when the transaction has been included in a block."
+                    },
+                    "rc_cost": {
+                        "type": "integer",
+                        "description": "Resource-credit cost, when known for an included transaction."
                     }
                 },
                 "required": [
@@ -18523,6 +18544,16 @@
                 "type": "array",
                 "items": {
                     "$ref": "#/components/schemas/post_bridge_api"
+                }
+            },
+            "get_active_witnesses": {
+                "type": "object",
+                "properties": {
+                    "include_future": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Include the future witness schedule in future_witnesses."
+                    }
                 }
             },
             "get_active_witnesses_response": {
@@ -24210,6 +24241,14 @@
                         },
                         "example": [],
                         "description": "An array of strings representing the required posting keys."
+                    },
+                    "required_witness": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "example": [],
+                        "description": "Witness accounts whose signing authorities must be satisfied."
                     },
                     "required_other": {
                         "type": "array",
