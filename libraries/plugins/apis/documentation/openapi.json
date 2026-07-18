@@ -14973,24 +14973,24 @@
                 }
             },
             "condenser_get_active_votes": {
-                "type": "object",
-                "properties": {
-                    "account": {
+                "type": "array",
+                "prefixItems": [
+                    {
                         "type": "string",
+                        "description": "Author of the post.",
                         "example": "hiveio"
                     },
-                    "permlink": {
+                    {
                         "type": "string",
+                        "description": "Permlink of the post.",
                         "example": "around-the-hive-reflections"
-                    },
-                    "observer": {
-                        "type": "string",
-                        "example": "bob"
                     }
-                },
-                "required": [
-                    "account",
-                    "permlink"
+                ],
+                "minItems": 2,
+                "maxItems": 2,
+                "example": [
+                    "hiveio",
+                    "around-the-hive-reflections"
                 ]
             },
             "condenser_get_active_votes_response": {
