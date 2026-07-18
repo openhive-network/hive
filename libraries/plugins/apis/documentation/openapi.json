@@ -2461,13 +2461,13 @@
                 "tags": [
                     "condenser_api"
                 ],
-                "summary": "Returns the list of active witnesses.",
+                "summary": "Returns active witnesses, optionally followed by the future schedule.",
                 "operationId": "condenser_get_active_witnesses",
                 "requestBody": {
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/empty_array"
+                                "$ref": "#/components/schemas/condenser_optional_include_future"
                             }
                         }
                     },
@@ -5757,13 +5757,13 @@
                 "tags": [
                     "condenser_api"
                 ],
-                "summary": "Returns the current witness schedule.",
+                "summary": "Returns the current witness schedule, optionally including future fields.",
                 "operationId": "condenser_get_witness_schedule",
                 "requestBody": {
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/empty_array"
+                                "$ref": "#/components/schemas/condenser_optional_include_future"
                             }
                         }
                     },
@@ -15011,6 +15011,14 @@
                 "items": {
                     "$ref": "#/components/schemas/active_votes_default"
                 }
+            },
+            "condenser_optional_include_future": {
+                "type": "array",
+                "maxItems": 1,
+                "items": {
+                    "type": "boolean"
+                },
+                "description": "An optional positional boolean. When true, include future witness schedule data."
             },
             "condenser_get_active_witnesses_response": {
                 "type": "array",
@@ -24721,6 +24729,20 @@
                             "witness1",
                             "witness2"
                         ]
+                    },
+                    "future_shuffled_witnesses": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "Future shuffled witnesses. Present only when requested."
+                    },
+                    "future_changes": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "description": "Future witness schedule changes. Present only when requested and changes are available."
                     },
                     "current_virtual_time": {
                         "$ref": "#/components/schemas/hive_int",
