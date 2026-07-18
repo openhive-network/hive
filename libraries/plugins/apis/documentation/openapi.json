@@ -15025,7 +15025,7 @@
                     }
                 },
                 "required": [
-                    "accounts"
+                    "account"
                 ]
             },
             "condenser_get_blog_response": {
@@ -20256,7 +20256,7 @@
                     }
                 },
                 "required": [
-                    "account"
+                    "accounts"
                 ]
             },
             "get_profiles_response": {
