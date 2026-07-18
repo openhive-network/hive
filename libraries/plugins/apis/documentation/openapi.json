@@ -15025,7 +15025,7 @@
                     }
                 },
                 "required": [
-                    "account"
+                    "accounts"
                 ]
             },
             "condenser_get_blog_response": {
@@ -22595,19 +22595,6 @@
             },
             "post_condenser_api": {
                 "allOf": [
-                    {
-                        "type": "object",
-                        "properties": {
-                            "post_id": {
-                                "type": "integer",
-                                "example": 1,
-                                "description": "Unique identifier for the resource; appears only when post_id is absent."
-                            }
-                        },
-                        "required": [
-                            "post_id"
-                        ]
-                    },
                     {
                         "$ref": "#/components/schemas/post_template"
                     },
