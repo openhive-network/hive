@@ -21798,18 +21798,27 @@
             "normalize_post": {
                 "type": "object",
                 "properties": {
-                    "author": {
-                        "type": "string",
-                        "description": "The author of the post to be normalized."
-                    },
-                    "permlink": {
-                        "type": "string",
-                        "description": "The permlink of the post to be normalized."
+                    "post": {
+                        "type": "object",
+                        "description": "The legacy post object to normalize.",
+                        "properties": {
+                            "author": {
+                                "type": "string",
+                                "description": "The author of the post to be normalized."
+                            },
+                            "permlink": {
+                                "type": "string",
+                                "description": "The permlink of the post to be normalized."
+                            }
+                        },
+                        "required": [
+                            "author",
+                            "permlink"
+                        ]
                     }
                 },
                 "required": [
-                    "author",
-                    "permlink"
+                    "post"
                 ]
             },
             "normalize_post_response": {
