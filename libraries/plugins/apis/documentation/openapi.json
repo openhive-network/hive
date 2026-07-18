@@ -14973,24 +14973,46 @@
                 }
             },
             "condenser_get_active_votes": {
-                "type": "array",
-                "prefixItems": [
+                "oneOf": [
                     {
-                        "type": "string",
-                        "description": "Author of the post.",
-                        "example": "hiveio"
+                        "type": "array",
+                        "description": "Legacy positional form: [author, permlink].",
+                        "prefixItems": [
+                            {
+                                "type": "string",
+                                "description": "Author of the post."
+                            },
+                            {
+                                "type": "string",
+                                "description": "Permlink of the post."
+                            }
+                        ],
+                        "minItems": 2,
+                        "maxItems": 2,
+                        "example": [
+                            "hiveio",
+                            "around-the-hive-reflections"
+                        ]
                     },
                     {
-                        "type": "string",
-                        "description": "Permlink of the post.",
-                        "example": "around-the-hive-reflections"
+                        "type": "object",
+                        "description": "Named Hivemind-compatible form.",
+                        "properties": {
+                            "author": {
+                                "type": "string",
+                                "example": "hiveio"
+                            },
+                            "permlink": {
+                                "type": "string",
+                                "example": "around-the-hive-reflections"
+                            }
+                        },
+                        "required": [
+                            "author",
+                            "permlink"
+                        ],
+                        "additionalProperties": false
                     }
-                ],
-                "minItems": 2,
-                "maxItems": 2,
-                "example": [
-                    "hiveio",
-                    "around-the-hive-reflections"
                 ]
             },
             "condenser_get_active_votes_response": {
