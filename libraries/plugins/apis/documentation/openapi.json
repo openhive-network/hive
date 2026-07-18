@@ -14973,47 +14973,23 @@
                 }
             },
             "condenser_get_active_votes": {
-                "oneOf": [
-                    {
-                        "type": "array",
-                        "description": "Legacy positional form: [author, permlink].",
-                        "prefixItems": [
-                            {
-                                "type": "string",
-                                "description": "Author of the post."
-                            },
-                            {
-                                "type": "string",
-                                "description": "Permlink of the post."
-                            }
-                        ],
-                        "minItems": 2,
-                        "maxItems": 2,
-                        "example": [
-                            "hiveio",
-                            "around-the-hive-reflections"
-                        ]
+                "type": "object",
+                "description": "Named parameter shape. Legacy condenser transport serializes these fields positionally as [author, permlink].",
+                "properties": {
+                    "author": {
+                        "type": "string",
+                        "example": "hiveio"
                     },
-                    {
-                        "type": "object",
-                        "description": "Named Hivemind-compatible form.",
-                        "properties": {
-                            "author": {
-                                "type": "string",
-                                "example": "hiveio"
-                            },
-                            "permlink": {
-                                "type": "string",
-                                "example": "around-the-hive-reflections"
-                            }
-                        },
-                        "required": [
-                            "author",
-                            "permlink"
-                        ],
-                        "additionalProperties": false
+                    "permlink": {
+                        "type": "string",
+                        "example": "around-the-hive-reflections"
                     }
-                ]
+                },
+                "required": [
+                    "author",
+                    "permlink"
+                ],
+                "additionalProperties": false
             },
             "condenser_get_active_votes_response": {
                 "type": "array",
