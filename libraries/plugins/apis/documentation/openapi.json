@@ -8406,8 +8406,18 @@
                 "tags": [
                     "database_api"
                 ],
-                "summary": "Returns the current witness schedule.",
+                "summary": "Returns the current witness schedule, optionally including future fields.",
                 "operationId": "get_witness_schedule",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/get_witness_schedule"
+                            }
+                        }
+                    },
+                    "required": true
+                },
                 "responses": {
                     "200": {
                         "description": "Successful operation",
@@ -20960,6 +20970,17 @@
                     "chain_id",
                     "node_type"
                 ]
+            },
+            "get_witness_schedule": {
+                "type": "object",
+                "properties": {
+                    "include_future": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Include future_shuffled_witnesses and any available future_changes."
+                    }
+                },
+                "additionalProperties": false
             },
             "get_witness_schedule_response": {
                 "$ref": "#/components/schemas/witness_schedule_default"
