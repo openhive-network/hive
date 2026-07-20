@@ -130,11 +130,14 @@ def _build_groups(api: str, classes: dict[str, ClassInfo]) -> tuple[SemanticMode
 
     price_members = _classes_matching(classes, _PRICE_PAIR_FIELDS, replacements)
     if len(price_members) > 1:
+        price_aliases = ["FeedPriceHistoryItem"]
+        if api == "database_api":
+            price_aliases.append("GetCurrentPriceFeedResponse")
         groups.append(
             SemanticModelAlias(
                 "PricePair",
                 price_members,
-                ("FeedPriceHistoryItem",),
+                tuple(price_aliases),
                 emit_compatibility_aliases=False,
             )
         )

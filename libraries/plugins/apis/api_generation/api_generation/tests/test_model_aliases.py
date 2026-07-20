@@ -223,7 +223,9 @@ def test_database_api_exposes_stable_asset_price_and_endpoint_aliases(tmp_path: 
     assert "WitnessProperties" in common_classes
     assert {"Account", "NaiAsset", "PricePair", "Witness", "WitnessProperties"} <= common_imports
     assert aliases["FeedPriceHistoryItem"] == "PricePair"
+    assert aliases["GetCurrentPriceFeedResponse"] == "PricePair"
     assert aliases["OperationEnvelope"] == "Operation"
+    assert "GetCurrentPriceFeedResponse" in extract_class_names_from_file(description)
     assert "Balance" not in aliases
     assert "HbdBalance" not in aliases
     assert "Base" not in aliases
