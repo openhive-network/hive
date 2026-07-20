@@ -324,6 +324,55 @@ run_package_tests() {
 
     log_info "Verifying package by running examples for all APIs..."
 
+    python3 - <<'PY'
+from __future__ import annotations
+
+import importlib
+import inspect
+from pathlib import Path
+from typing import get_type_hints
+
+import hiveio_api
+
+
+errors: list[str] = []
+
+for api_name in hiveio_api.__all__:
+    module_name = f"hiveio_api.{api_name}"
+    module = importlib.import_module(module_name)
+    for symbol in module.__all__:
+        try:
+            getattr(module, symbol)
+        except Exception as exception:
+            errors.append(f"{module_name}.{symbol}: {type(exception).__name__}: {exception}")
+
+try:
+    import test_tools.__private.hived.api as hived_api
+except ModuleNotFoundError:
+    hived_api = None
+
+if hived_api is not None:
+    hived_api_dir = Path(hived_api.__file__).parent
+    for sync_api_path in sorted(hived_api_dir.glob("*/sync_api.py")):
+        module_name = f"{hived_api.__name__}.{sync_api_path.parent.name}.sync_api"
+        module = importlib.import_module(module_name)
+        for obj in vars(module).values():
+            if not inspect.isclass(obj) or obj.__module__ != module_name:
+                continue
+            for method_name, method in vars(obj).items():
+                if method_name == "api":
+                    continue
+                if not callable(method) or "return" not in getattr(method, "__annotations__", {}):
+                    continue
+                try:
+                    get_type_hints(method)
+                except Exception as exception:
+                    errors.append(f"{module_name}.{obj.__name__}.{method_name}: {type(exception).__name__}: {exception}")
+
+if errors:
+    raise SystemExit("\n".join(errors))
+PY
+
     local api_list
     api_list=$(python3 -c "import hiveio_api; print(' '.join(hiveio_api.__all__))")
     log_info "APIs to test: ${api_list}"
