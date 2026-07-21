@@ -36,7 +36,18 @@ BOOST_AUTO_TEST_CASE( mh_test )
   {
     market_history_api_plugin* mh_plug = nullptr;
 
-    configuration_data.set_initial_asset_supply( INITIAL_TEST_SUPPLY, HBD_INITIAL_TEST_SUPPLY );
+    configuration_data.set_initial_asset_supply( HIVE_INITIAL_TEST_SUPPLY, HBD_INITIAL_TEST_SUPPLY, HP_INITIAL_TEST_SUPPLY );
+    // the accounts here trade/vest small amounts and can't cover the RC of every operation at the realistic
+    // vest price; this test isn't about RC, so allow the shortage (restored at end so it doesn't leak).
+    const bool _prev_allow_not_enough_rc = configuration_data.allow_not_enough_rc;
+    configuration_data.allow_not_enough_rc = true;
+    autoscope _restore_allow_not_enough_rc( [_prev_allow_not_enough_rc]() { configuration_data.allow_not_enough_rc = _prev_allow_not_enough_rc; } );
+    {
+      std::vector< std::string > init_witnesses;
+      for( int i = HIVE_NUM_INIT_MINERS; i < HIVE_MAX_WITNESSES; ++i )
+        init_witnesses.push_back( HIVE_INIT_MINER_NAME + fc::to_string( i ) );
+      configuration_data.set_init_witnesses( init_witnesses );
+    }
 
     postponed_init(
       { 
@@ -59,15 +70,6 @@ BOOST_AUTO_TEST_CASE( mh_test )
     db->_log_hardforks = true;
 
     vest( HIVE_INIT_MINER_NAME, HIVE_asset( 10'000 ) );
-
-    // Fill up the rest of the required miners
-    for( int i = HIVE_NUM_INIT_MINERS; i < HIVE_MAX_WITNESSES; i++ )
-    {
-      account_create( HIVE_INIT_MINER_NAME + fc::to_string( i ), init_account_pub_key );
-      fund( HIVE_INIT_MINER_NAME + fc::to_string( i ), HIVE_MIN_PRODUCER_REWARD );
-      witness_create( HIVE_INIT_MINER_NAME + fc::to_string( i ), init_account_priv_key, "foo.bar", init_account_pub_key, HIVE_MIN_PRODUCER_REWARD );
-    }
-
     validate_database();
 
     ACTORS( DEFAULT_VESTING, (alice)(bob)(sam) );

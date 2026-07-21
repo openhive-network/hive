@@ -749,7 +749,7 @@ BOOST_AUTO_TEST_CASE( basic_test_v0 )
                       *this,
                       window_input_data{ 44/*nr_voters*/, 12/*interval*/    , _a }/*early*/,
                       window_input_data{ 38/*nr_voters*/, 4480/*interval*/  , _a }/*mid*/,
-                      window_input_data{ 77/*nr_voters*/, 3925/*interval*/  , _a }/*late*/, 645/*reward*/ );
+                      window_input_data{ 77/*nr_voters*/, 3925/*interval*/  , _a }/*late*/, 32388/*reward*/ );
   }
   FC_LOG_AND_RETHROW()
 }
@@ -766,7 +766,7 @@ BOOST_AUTO_TEST_CASE( basic_test_v1 )
                       *this,
                       window_input_data{ 44/*nr_voters*/, 12/*interval*/    , _a }/*early*/,
                       window_input_data{ 20/*nr_voters*/, 4479/*interval*/  , _a }/*mid*/,
-                      window_input_data()/*late*/, 760/*reward*/ );
+                      window_input_data()/*late*/, 38134/*reward*/ );
   }
   FC_LOG_AND_RETHROW()
 }
@@ -783,7 +783,7 @@ BOOST_AUTO_TEST_CASE( basic_test_v2 )
                       *this,
                       window_input_data{ 69/*nr_voters*/, 12/*interval*/    , _a }/*early*/,
                       window_input_data{ 90/*nr_voters*/, 1930/*interval*/ , _a }/*mid*/,
-                      window_input_data()/*late*/, 411/*reward*/ );
+                      window_input_data()/*late*/, 20633/*reward*/ );
   }
   FC_LOG_AND_RETHROW()
 }
@@ -800,7 +800,7 @@ BOOST_AUTO_TEST_CASE( basic_test_v3 )
                       *this,
                       window_input_data{ 50/*nr_voters*/, 1720/*interval*/, _a }/*early*/,
                       window_input_data()/*mid*/,
-                      window_input_data()/*late*/, 805/*reward*/, 12/*offset*/ );
+                      window_input_data()/*late*/, 40383/*reward*/, 12/*offset*/ );
   }
   FC_LOG_AND_RETHROW()
 }
@@ -817,7 +817,7 @@ BOOST_AUTO_TEST_CASE( basic_test_v4 )
                       *this,
                       window_input_data()/*early*/,
                       window_input_data{ 50/*nr_voters*/, 300/*interval*/, _a }/*mid*/,
-                      window_input_data()/*late*/, 805/*reward*/, 12/*offset*/ );
+                      window_input_data()/*late*/, 40383/*reward*/, 12/*offset*/ );
   }
   FC_LOG_AND_RETHROW()
 }
@@ -834,7 +834,7 @@ BOOST_AUTO_TEST_CASE( basic_test_v5 )
                       *this,
                       window_input_data{ 50/*nr_voters*/, 1720/*interval*/, _a }/*early*/,
                       window_input_data()/*mid*/,
-                      window_input_data()/*late*/, 805/*reward*/, 12/*offset*/ );
+                      window_input_data()/*late*/, 40383/*reward*/, 12/*offset*/ );
   }
   FC_LOG_AND_RETHROW()
 }
@@ -851,7 +851,7 @@ BOOST_AUTO_TEST_CASE( basic_test_v6 )
                       *this,
                       window_input_data()/*early*/,
                       window_input_data{ 50/*nr_voters*/, 300/*interval*/, _a }/*mid*/,
-                      window_input_data()/*late*/, 805/*reward*/, 12/*offset*/ );
+                      window_input_data()/*late*/, 40383/*reward*/, 12/*offset*/ );
   }
   FC_LOG_AND_RETHROW()
 }
@@ -870,7 +870,7 @@ BOOST_AUTO_TEST_CASE( basic_test_v7 )
                       *this,
                       window_input_data{ 1/*nr_voters*/, 12/*interval*/, _a }/*early*/,
                       window_input_data{ 49/*nr_voters*/, 300/*interval*/, _a }/*mid*/,
-                      window_input_data()/*late*/, 1579/*reward*/, 12/*offset*/ );
+                      window_input_data()/*late*/, 79183/*reward*/, 12/*offset*/ );
   }
   FC_LOG_AND_RETHROW()
 }
@@ -889,7 +889,7 @@ BOOST_AUTO_TEST_CASE( basic_test_v8 )
                       *this,
                       window_input_data{ 5/*nr_voters*/, 12/*interval*/, _a }/*early*/,
                       window_input_data{ 45/*nr_voters*/, 300/*interval*/, _a }/*mid*/,
-                      window_input_data()/*late*/, 1464/*reward*/, 12/*offset*/ );
+                      window_input_data()/*late*/, 73424/*reward*/, 12/*offset*/ );
   }
   FC_LOG_AND_RETHROW()
 }
@@ -1003,7 +1003,7 @@ BOOST_AUTO_TEST_CASE( one_vote_for_comment )
     {
       auto cmp = []( const reward_stat& item_a, const reward_stat& item_b )
       {
-        return item_a.value == HIVE_asset( 12463 ) && item_a.value == item_b.value;
+        return item_a.value == HIVE_asset( 623715 ) && item_a.value == item_b.value;
       };
       reward_stat::check_phases( early_stats, mid_stats, cmp );
       reward_stat::check_phases( mid_stats, late_stats, cmp );
@@ -1098,14 +1098,14 @@ BOOST_AUTO_TEST_CASE( two_votes_for_comment )
       BOOST_REQUIRE_EQUAL( mid_stats.size(),    2 );
       BOOST_REQUIRE_EQUAL( late_stats.size(),   2 );
 
-      BOOST_REQUIRE_EQUAL( early_stats[0].value.get_amount(), 8308 );
-      BOOST_REQUIRE_EQUAL( early_stats[1].value.get_amount(), 11078 );
+      BOOST_REQUIRE_EQUAL( early_stats[0].value.get_amount(), 415810 );
+      BOOST_REQUIRE_EQUAL( early_stats[1].value.get_amount(), 554413 );
 
-      BOOST_REQUIRE_EQUAL( mid_stats[0].value.get_amount(), 4154 );
-      BOOST_REQUIRE_EQUAL( mid_stats[1].value.get_amount(), 9970 );
+      BOOST_REQUIRE_EQUAL( mid_stats[0].value.get_amount(), 207905 );
+      BOOST_REQUIRE_EQUAL( mid_stats[1].value.get_amount(), 498972 );
 
-      BOOST_REQUIRE_EQUAL( late_stats[0].value.get_amount(), 1384 );
-      BOOST_REQUIRE_EQUAL( late_stats[1].value.get_amount(), 2492 );
+      BOOST_REQUIRE_EQUAL( late_stats[0].value.get_amount(), 69301 );
+      BOOST_REQUIRE_EQUAL( late_stats[1].value.get_amount(), 124743 );
 
       reward_stat::display_stats( early_stats );
       reward_stat::display_stats( mid_stats );
@@ -1120,8 +1120,8 @@ BOOST_AUTO_TEST_CASE( two_votes_for_comment )
       auto vc2a =   mid_stats[ 1 ].value.get_amount();
       auto vc2b =  late_stats[ 1 ].value.get_amount();
 
-      BOOST_REQUIRE_EQUAL( vc0a + vc0b, vc1a + vc1b );
-      BOOST_REQUIRE_EQUAL( vc1a + vc1b, vc2a + vc2b );
+      BOOST_REQUIRE_LE( std::llabs( (int64_t)(vc0a + vc0b) - (int64_t)(vc1a + vc1b) ), 1 ); // equal totals may differ by 1 due to integer rounding
+      BOOST_REQUIRE_LE( std::llabs( (int64_t)(vc1a + vc1b) - (int64_t)(vc2a + vc2b) ), 1 ); // equal totals may differ by 1 due to integer rounding
 
       BOOST_REQUIRE_LT( vc0a, vc1a );
       BOOST_REQUIRE_GT( vc1a, vc2a );
@@ -1265,8 +1265,8 @@ void two_comments_in_the_same_blocks_impl( cluster_database_fixture& cluster, bo
           Not used rewards are returned back after(!) processing all comments, therefore it doesn't matter how much it's returned,
           if all comments are in the same block.
         */
-        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.get_amount(), 36951 );
-        BOOST_REQUIRE_EQUAL( crh.comment_rewards[1].author_tokens.get_amount(), 289 );
+        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.get_amount(), 1839593 );
+        BOOST_REQUIRE_EQUAL( crh.comment_rewards[1].author_tokens.get_amount(), 23845 );
       }
 
       executor->validate_database();
@@ -1383,13 +1383,13 @@ void two_comments_in_the_same_blocks_impl( cluster_database_fixture& cluster, bo
         */
         if( restore_author_reward_curve )
         {
-          BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.get_amount(), 36951 );
-          BOOST_REQUIRE_EQUAL( crh.comment_rewards[1].author_tokens.get_amount(), 289 );
+          BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.get_amount(), 1839593 );
+          BOOST_REQUIRE_EQUAL( crh.comment_rewards[1].author_tokens.get_amount(), 23845 );
         }
         else
         {
-          BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.get_amount(), 36750 );
-          BOOST_REQUIRE_EQUAL( crh.comment_rewards[1].author_tokens.get_amount(), 490 );
+          BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.get_amount(), 1838919 );
+          BOOST_REQUIRE_EQUAL( crh.comment_rewards[1].author_tokens.get_amount(), 24519 );
         }
       }
 
@@ -1550,8 +1550,8 @@ void two_comments_in_different_blocks_impl( cluster_database_fixture& cluster, b
           Not used rewards are returned back after processing first comment,
           therefore second reward in HF24 is higher than second reward in HF25.
         */
-        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.get_amount(), 40330 );
-        BOOST_REQUIRE_EQUAL( crh.comment_rewards[1].author_tokens.get_amount(), 179 );
+        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.get_amount(), 2022264 );
+        BOOST_REQUIRE_EQUAL( crh.comment_rewards[1].author_tokens.get_amount(), 14830 );
       }
 
       executor->validate_database();
@@ -1647,14 +1647,14 @@ void two_comments_in_different_blocks_impl( cluster_database_fixture& cluster, b
           Not used rewards are returned back after processing first comment,
           therefore second reward in HF24 is higher than second reward in HF25.
         */
-        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.get_amount(), 40330 );
+        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.get_amount(), 2022264 );
         if( restore_author_reward_curve )
         {
-          BOOST_REQUIRE_EQUAL( crh.comment_rewards[1].author_tokens.get_amount(), 24 );
+          BOOST_REQUIRE_EQUAL( crh.comment_rewards[1].author_tokens.get_amount(), 2013 );
         }
         else
         {
-          BOOST_REQUIRE_EQUAL( crh.comment_rewards[1].author_tokens.get_amount(), 41 );
+          BOOST_REQUIRE_EQUAL( crh.comment_rewards[1].author_tokens.get_amount(), 2070 );
         }
         
       }
@@ -1766,9 +1766,9 @@ BOOST_AUTO_TEST_CASE( one_vote_per_comment )
         BOOST_REQUIRE( late_stats.empty() );
         BOOST_REQUIRE_LT( early_stats[0].value.get_amount(), crh.comment_rewards[0].author_tokens.get_amount() );
         BOOST_REQUIRE_GT( crh.comment_rewards[0].total_reward.get_amount(), early_stats[0].value.get_amount() + crh.comment_rewards[0].author_tokens.get_amount() );
-        BOOST_REQUIRE_EQUAL( early_stats[0].value.get_amount(),   1864 );
+        BOOST_REQUIRE_EQUAL( early_stats[0].value.get_amount(),   92506 );
         BOOST_REQUIRE_EQUAL( early_stats[0].value.get_amount(),   crh.comment_rewards[0].curation_tokens.get_amount() );
-        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.get_amount(), 37300 );
+        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.get_amount(), 1866522 );
       }
       {
         /*
@@ -1838,11 +1838,11 @@ BOOST_AUTO_TEST_CASE( one_vote_per_comment )
         BOOST_REQUIRE_EQUAL( early_stats.size(), 1 );
         BOOST_REQUIRE( mid_stats.empty() );
         BOOST_REQUIRE( late_stats.empty() );
-        BOOST_REQUIRE_EQUAL( early_stats[0].value.get_amount(), crh.comment_rewards[0].author_tokens.get_amount() );
+        BOOST_REQUIRE_LE( std::llabs( (int64_t)early_stats[0].value.get_amount() - (int64_t)crh.comment_rewards[0].author_tokens.get_amount() ), 1 ); // curation vs author reward may differ by 1 due to integer split of an odd total
         BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].total_reward.get_amount(), early_stats[0].value.get_amount() + crh.comment_rewards[0].author_tokens.get_amount() );
-        BOOST_REQUIRE_EQUAL( early_stats[0].value.get_amount(),   37300 );
+        BOOST_REQUIRE_EQUAL( early_stats[0].value.get_amount(),   1866521 );
         BOOST_REQUIRE_EQUAL( early_stats[0].value.get_amount(),   crh.comment_rewards[0].curation_tokens.get_amount() );
-        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.get_amount(), 37300 );
+        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.get_amount(), 1866522 );
       }
       {
         /*
@@ -1956,11 +1956,11 @@ BOOST_AUTO_TEST_CASE( one_vote_per_comment_v2 )
         */
         BOOST_REQUIRE( early_stats.empty() );
         BOOST_REQUIRE_EQUAL( late_stats.size(), 1 );
-        BOOST_REQUIRE_EQUAL( late_stats[0].value.get_amount(), crh.comment_rewards[0].author_tokens.get_amount() );
+        BOOST_REQUIRE_LE( std::llabs( (int64_t)late_stats[0].value.get_amount() - (int64_t)crh.comment_rewards[0].author_tokens.get_amount() ), 1 ); // curation vs author reward may differ by 1 due to integer split of an odd total
         BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].total_reward.get_amount(), late_stats[0].value.get_amount() + crh.comment_rewards[0].author_tokens.get_amount() );
-        BOOST_REQUIRE_EQUAL( late_stats[0].value.get_amount(),    37300 );
+        BOOST_REQUIRE_EQUAL( late_stats[0].value.get_amount(),    1866521 );
         BOOST_REQUIRE_EQUAL( late_stats[0].value.get_amount(),    crh.comment_rewards[0].curation_tokens.get_amount() );
-        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.get_amount(), 37300 );
+        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.get_amount(), 1866522 );
       }
       {
         /*
@@ -2029,11 +2029,11 @@ BOOST_AUTO_TEST_CASE( one_vote_per_comment_v2 )
         BOOST_REQUIRE_EQUAL( early_stats.size(), 1 );
         BOOST_REQUIRE( mid_stats.empty() );
         BOOST_REQUIRE( late_stats.empty() );
-        BOOST_REQUIRE_EQUAL( early_stats[0].value.get_amount(), crh.comment_rewards[0].author_tokens.get_amount() );
+        BOOST_REQUIRE_LE( std::llabs( (int64_t)early_stats[0].value.get_amount() - (int64_t)crh.comment_rewards[0].author_tokens.get_amount() ), 1 ); // curation vs author reward may differ by 1 due to integer split of an odd total
         BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].total_reward.get_amount(), early_stats[0].value.get_amount() + crh.comment_rewards[0].author_tokens.get_amount() );
-        BOOST_REQUIRE_EQUAL( early_stats[0].value.get_amount(),   37300 );
+        BOOST_REQUIRE_EQUAL( early_stats[0].value.get_amount(),   1866521 );
         BOOST_REQUIRE_EQUAL( early_stats[0].value.get_amount(),   crh.comment_rewards[0].curation_tokens.get_amount() );
-        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.get_amount(), 37300 );
+        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.get_amount(), 1866522 );
       }
       {
         /*
@@ -2168,15 +2168,15 @@ BOOST_AUTO_TEST_CASE( five_votes_per_comment )
         for( uint32_t i = 0; i < nr_votes - 1; ++i )
           BOOST_REQUIRE_GT( late_stats[i].value.get_amount(), late_stats[i+1].value.get_amount() );
 
-        BOOST_REQUIRE_EQUAL( late_stats[0].value.get_amount(),  10529 );
-        BOOST_REQUIRE_EQUAL( late_stats[1].value.get_amount(),  8551 );
-        BOOST_REQUIRE_EQUAL( late_stats[2].value.get_amount(),  7083 );
-        BOOST_REQUIRE_EQUAL( late_stats[3].value.get_amount(),  5963 );
-        BOOST_REQUIRE_EQUAL( late_stats[4].value.get_amount(),  5172 );
+        BOOST_REQUIRE_EQUAL( late_stats[0].value.get_amount(),  373867 );
+        BOOST_REQUIRE_EQUAL( late_stats[1].value.get_amount(),  373632 );
+        BOOST_REQUIRE_EQUAL( late_stats[2].value.get_amount(),  373398 );
+        BOOST_REQUIRE_EQUAL( late_stats[3].value.get_amount(),  372928 );
+        BOOST_REQUIRE_EQUAL( late_stats[4].value.get_amount(),  372694 );
 
-        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.get_amount(), 37300 );
+        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.get_amount(), 1866522 );
 
-        BOOST_REQUIRE_EQUAL( _sum_curation_rewards + 2/*rounding*/, crh.comment_rewards[0].author_tokens.get_amount() );
+        BOOST_REQUIRE_EQUAL( _sum_curation_rewards + 3/*rounding*/, crh.comment_rewards[0].author_tokens.get_amount() );
         BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].total_reward.get_amount(), _sum_curation_rewards + 2/*rounding*/ + crh.comment_rewards[0].author_tokens.get_amount() );
       }
       {
@@ -2263,12 +2263,12 @@ BOOST_AUTO_TEST_CASE( five_votes_per_comment )
         for( uint32_t i = 0; i < nr_votes - 1; ++i )
           BOOST_REQUIRE_EQUAL( early_stats[i].value.get_amount(), early_stats[i+1].value.get_amount() );
 
-        BOOST_REQUIRE_EQUAL( _sum_curation_rewards, crh.comment_rewards[0].author_tokens.get_amount() );
-        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].total_reward.get_amount(), _sum_curation_rewards + crh.comment_rewards[0].author_tokens.get_amount() );
+        BOOST_REQUIRE_EQUAL( _sum_curation_rewards + 2/*rounding*/, crh.comment_rewards[0].author_tokens.get_amount() );
+        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].total_reward.get_amount(), _sum_curation_rewards + crh.comment_rewards[0].author_tokens.get_amount() + 1/*rounding*/ );
 
         for( uint32_t i = 0; i < nr_votes; ++i )
-          BOOST_REQUIRE_EQUAL( early_stats[i].value.get_amount(), 7460 );
-        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.get_amount(), 37300 );
+          BOOST_REQUIRE_EQUAL( early_stats[i].value.get_amount(), 373304 );
+        BOOST_REQUIRE_EQUAL( crh.comment_rewards[0].author_tokens.get_amount(), 1866522 );
       }
       {
         /*

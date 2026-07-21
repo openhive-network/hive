@@ -8,14 +8,25 @@ namespace hive { namespace chain {
 
 struct clean_database_fixture : public hived_fixture
 {
-  clean_database_fixture( 
+  clean_database_fixture(
     uint16_t shared_file_size_in_mb = shared_file_size_big,
     fc::optional<uint32_t> hardfork = fc::optional<uint32_t>(),
-    bool init_ah_plugin = true, int block_log_split = 9999 );
+    bool init_ah_plugin = true, int block_log_split = 9999,
+    // Initial asset supply passed to set_initial_asset_supply. Defaults emulate a chain that already
+    // ran through its whole history (mainnet-like amounts). Fixtures that operate close to genesis
+    // (see genesis_database_fixture) should override these, since that emulation distorts such tests.
+    const HIVE_asset& init_hive_supply = HIVE_INITIAL_TEST_SUPPLY,
+    const HBD_asset& init_hbd_supply = HBD_INITIAL_TEST_SUPPLY,
+    const HIVE_asset& init_vesting_supply = HP_INITIAL_TEST_SUPPLY );
   virtual ~clean_database_fixture();
 
   void validate_database();
   void inject_hardfork( uint32_t hardfork );
+
+private:
+  // clean_database_fixture forces allow_not_enough_rc on; remember the previous value so the destructor
+  // restores it instead of clobbering a value a surrounding test (or outer fixture) intentionally set.
+  bool _prev_allow_not_enough_rc = false;
 };
 
 struct pruned_database_fixture : public clean_database_fixture

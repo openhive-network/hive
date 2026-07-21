@@ -15,7 +15,7 @@ struct database_api_fixture_basic : hived_fixture
 {
   database_api_fixture_basic()
   {
-    configuration_data.set_initial_asset_supply( INITIAL_TEST_SUPPLY, HBD_INITIAL_TEST_SUPPLY );
+    configuration_data.set_initial_asset_supply( HIVE_INITIAL_TEST_SUPPLY, HBD_INITIAL_TEST_SUPPLY, HP_INITIAL_TEST_SUPPLY );
 
     hive::plugins::database_api::database_api_plugin* db_api_plugin = nullptr;
     postponed_init(

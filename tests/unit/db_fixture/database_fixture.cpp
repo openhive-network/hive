@@ -485,12 +485,12 @@ full_transaction_ptr database_fixture::build_transaction( const signed_transacti
   return _tx;
 }
 
-void database_fixture::push_transaction( const operation& op, const fc::ecc::private_key& key )
+full_transaction_ptr database_fixture::push_transaction( const operation& op, const fc::ecc::private_key& key )
 {
   signed_transaction tx;
   tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
   tx.operations.push_back( op );
-  push_transaction_ex( tx, key );
+  return push_transaction_ex( tx, key );
 }
 
 full_transaction_ptr database_fixture::push_transaction_ex( const signed_transaction& tx, const fc::ecc::private_key& key,

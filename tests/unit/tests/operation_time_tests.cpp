@@ -171,7 +171,7 @@ BOOST_AUTO_TEST_CASE( comment_payout_equalize )
     const account_object& bob_account   = db->get_account("bob");
     const account_object& dave_account  = db->get_account("dave");
 
-    BOOST_CHECK_EQUAL( alice_account.get_hbd_rewards(), HBD_asset( 6'140'000 ) );
+    BOOST_CHECK_EQUAL( alice_account.get_hbd_rewards(), HBD_asset( 250'000'000 ) );
     BOOST_CHECK_EQUAL( bob_account.get_hbd_rewards(), HBD_asset( 0 ) );
     BOOST_CHECK_EQUAL( dave_account.get_hbd_rewards(), alice_account.get_hbd_rewards() );
   }

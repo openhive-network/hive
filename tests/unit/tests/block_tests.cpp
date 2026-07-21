@@ -135,7 +135,7 @@ void open_test_database( database& db, block_storage_i& block_storage,
   args.shared_mem_dir = dir;
   args.shared_file_size = TEST_SHARED_MEM_SIZE;
   args.database_cfg = hive::utilities::default_database_configuration();
-  configuration_data.set_initial_asset_supply( INITIAL_TEST_SUPPLY, HBD_INITIAL_TEST_SUPPLY );
+  configuration_data.set_initial_asset_supply( HIVE_INITIAL_TEST_SUPPLY, HBD_INITIAL_TEST_SUPPLY, HP_INITIAL_TEST_SUPPLY );
   db._log_hardforks = log_hardforks;
   bl_args.data_dir = dir;
   db.pre_open( args );
@@ -1900,6 +1900,9 @@ struct init_supply_database_fixture : public hived_fixture
   {
     try
     {
+      // This test assumes the whole initial supply sits liquid on 'initminer', so seed no initial
+      // vesting here (otherwise the vested part would be missing from initminer's liquid balance).
+      configuration_data.set_initial_asset_supply( HIVE_INITIAL_TEST_SUPPLY, HBD_INITIAL_TEST_SUPPLY );
       postponed_init( {
         config_line_t( { "shared-file-size", { std::to_string( 1024 * 1024 * shared_file_size_small ) } } )
       } );

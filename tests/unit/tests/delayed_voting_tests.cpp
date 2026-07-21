@@ -2829,8 +2829,8 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
   INTERVAL_REPORT( today );
 
   expected_alice_vests  = initial_alice_vests - VEST_asset( new_vests );
-  expected_alice_vests += VEST_asset( quarter - 6 );
-  expected_bob_vests = initial_bob_vests + VEST_asset( quarter - 6 );
+  expected_alice_vests += VEST_asset( quarter - 9 );
+  expected_bob_vests = initial_bob_vests + VEST_asset( quarter - 9 );
   BOOST_REQUIRE_EQUAL( get_vesting( "alice" ), get_vesting( "bob" ) );
   DAY_CHECK;
   

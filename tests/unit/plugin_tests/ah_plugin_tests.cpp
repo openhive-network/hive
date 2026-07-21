@@ -113,6 +113,12 @@ BOOST_FIXTURE_TEST_CASE( inconsistent_ah_rocksdb_storage, empty_fixture )
 
     configuration_data.set_cashout_related_values( 0, 9, 9 * 2, 9 * 7, 3 );
     autoscope( []() { configuration_data.reset_cashout_values(); } );
+    // alice/bob are created with NO_VESTING, so they have no RC to pay for the comments/votes below;
+    // this test isn't about RC, so allow the shortage. Set it here (not via a fixture) because the test
+    // spans several fixtures - the inner clean_database_fixture now restores this on destruction.
+    const bool _prev_allow_not_enough_rc = configuration_data.allow_not_enough_rc;
+    configuration_data.allow_not_enough_rc = true;
+    autoscope _restore_allow_not_enough_rc( [_prev_allow_not_enough_rc]() { configuration_data.allow_not_enough_rc = _prev_allow_not_enough_rc; } );
 
     fc::path ah_rocksdb_dir;
     {

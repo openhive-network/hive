@@ -41,7 +41,14 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
       configuration_data.set_hardfork_schedule(
         fc::time_point::now() - fc::seconds( TRANSACTION_STATUS_TEST_GENESIS_BLOCK_OFFSET * HIVE_BLOCK_INTERVAL ),
         immediate_hf_schedule );
-      configuration_data.set_initial_asset_supply( INITIAL_TEST_SUPPLY, HBD_INITIAL_TEST_SUPPLY );
+      configuration_data.set_initial_asset_supply( HIVE_INITIAL_TEST_SUPPLY, HBD_INITIAL_TEST_SUPPLY, HP_INITIAL_TEST_SUPPLY );
+      {
+        std::vector< std::string > init_witnesses;
+        for( int i = HIVE_NUM_INIT_MINERS; i < HIVE_MAX_WITNESSES; ++i )
+          init_witnesses.push_back( HIVE_INIT_MINER_NAME + fc::to_string( i ) );
+        configuration_data.set_init_witnesses( init_witnesses );
+      }
+
       configuration_data.allow_not_enough_rc = false;
 
       fixture.postponed_init(
@@ -75,15 +82,6 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
       fixture.db->_log_hardforks = true;
 
       fixture.vest( HIVE_INIT_MINER_NAME, HIVE_asset( 10'000 ) );
-
-      // Fill up the rest of the required miners
-      for( int i = HIVE_NUM_INIT_MINERS; i < HIVE_MAX_WITNESSES; i++ )
-      {
-        fixture.account_create( HIVE_INIT_MINER_NAME + fc::to_string( i ), fixture.init_account_pub_key );
-        fixture.fund( HIVE_INIT_MINER_NAME + fc::to_string( i ), HIVE_MIN_PRODUCER_REWARD );
-        fixture.witness_create( HIVE_INIT_MINER_NAME + fc::to_string( i ), fixture.init_account_priv_key, "foo.bar", fixture.init_account_pub_key, HIVE_MIN_PRODUCER_REWARD );
-      }
-
       fixture.validate_database();
 
       ACTORS_EXT( (fixture), DEFAULT_VESTING, (alice)(bob) );

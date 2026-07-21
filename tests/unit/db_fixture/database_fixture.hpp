@@ -24,8 +24,9 @@
 #include <array>
 #include <iostream>
 
-#define INITIAL_TEST_SUPPLY     HIVE_asset(9'900'000'000ll)
-#define HBD_INITIAL_TEST_SUPPLY HBD_asset(100'000'000ll)
+#define HIVE_INITIAL_TEST_SUPPLY HIVE_asset( 500'000'000'000ll )
+#define HBD_INITIAL_TEST_SUPPLY  HBD_asset( 10'000'000'000ll )
+#define HP_INITIAL_TEST_SUPPLY   HIVE_asset( 200'000'000'000ll )
 
 extern uint32_t HIVE_TESTING_GENESIS_TIMESTAMP;
 
@@ -247,7 +248,7 @@ struct database_fixture {
   full_transaction_ptr build_transaction( const signed_transaction& tx, const std::vector<fc::ecc::private_key>& keys,
     hive::protocol::pack_type pack = hive::protocol::serialization_mode_controller::get_current_pack() );
 
-  void push_transaction( const operation& op, const fc::ecc::private_key& key );
+  full_transaction_ptr push_transaction( const operation& op, const fc::ecc::private_key& key );
   full_transaction_ptr push_transaction( const signed_transaction& tx, const fc::ecc::private_key& key = fc::ecc::private_key() ) { return push_transaction_ex( tx, key ); }
   full_transaction_ptr push_transaction( const signed_transaction& tx, const std::vector<fc::ecc::private_key>& keys ) { return push_transaction_ex( tx, keys ); }
   full_transaction_ptr push_transaction_ex( const signed_transaction& tx, const fc::ecc::private_key& key = fc::ecc::private_key(),
