@@ -3395,6 +3395,9 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
     // Testing mainnet convert values here, which are dependent on feed values.
     auto auto_reset( set_mainnet_feed_values() );
 
+    // move HBD from initminer to treasury to avoid hitting debt limit earlier than the test requires
+    transfer( HIVE_INIT_MINER_NAME, db->get_treasury_name(), get_hbd_balance( HIVE_INIT_MINER_NAME ).to_asset(), "", init_account_priv_key );
+
     ACTORS( DEFAULT_VESTING, (alice)(bob) );
 
     generate_block();
@@ -3620,13 +3623,16 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
     //since we are already on the edge of HBD upper soft limit which means we can't convert more anyway,
     //let's use the opportunity and test what happens when we try to cross hard limit
     {
-      auto extra_hbd = dgpo.get_current_hbd_supply();
+      //use circulating HBD (treasury HBD does not count towards the debt) so the parked initial supply
+      //does not inflate the amount needed to cross the hard limit
+      auto circulating_hbd = dgpo.get_current_hbd_supply() - db->get_treasury().get_hbd_balance();
+      auto extra_hbd = circulating_hbd;
       int16_t diff = HIVE_HBD_HARD_LIMIT - dgpo.get_hbd_stop_percent();
       if( diff < 0 )
         diff = 0; //just in case we'd have incorrect configuration with hard limit below upper soft limit
       extra_hbd.amount *= diff;
       extra_hbd.amount /= dgpo.get_hbd_stop_percent(); //HBD supply multiplied by the same factor as a difference between hard and upper soft limit
-      extra_hbd += dgpo.get_current_hbd_supply(); //to always have some value above hard limit
+      extra_hbd += circulating_hbd; //to always have some value above hard limit
       issue_funds( "bob", extra_hbd );
 
       generate_blocks( HIVE_FEED_INTERVAL_BLOCKS - ( dgpo.get_head_block_number() % HIVE_FEED_INTERVAL_BLOCKS ) );
@@ -3648,7 +3654,7 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_apply )
     generate_block(); //actual conversion
     alice_balance += HIVE_asset( 500'011 ); //excess collateral (1000 - 23.809 * 21/1) - alice used fee corrected market_median_price...
     BOOST_REQUIRE_EQUAL( get_hive_balance( "alice" ), alice_balance );
-    BOOST_REQUIRE_EQUAL( get_hive_balance( "bob" ), HIVE_asset( 273'619 ) ); //...but bob used artificial current_median_history
+    BOOST_REQUIRE_EQUAL( get_hive_balance( "bob" ), HIVE_asset( 274'204 ) ); //...but bob used artificial current_median_history
       //(for HF25 values of 9%/10%/10% lower/upper/hard cap expected value is 199.102)
       //(for 9%/10%/30% expected value is 383.222)
       //with different limits value will change, but should be less than 400.000 TESTS
@@ -3768,32 +3774,32 @@ BOOST_AUTO_TEST_CASE( collateralized_convert_wide_price )
     props[ "hbd_interest_rate" ] = fc::raw::pack_to_vector( 0 );
     set_witness_props( props );
 
-    issue_funds( "alice", HIVE_asset( 50'000'000'000 ) );
+    issue_funds( "alice", HIVE_asset( 2'500'000'000'000 ) );
 
     BOOST_TEST_MESSAGE( "--- Test failure on too many HBD in the system" );
     collateralized_convert_operation op;
     op.owner = "alice";
-    op.amount = ASSET( "42000000.000 TESTS" );
+    op.amount = ASSET( "2100000000.000 TESTS" );
     HIVE_REQUIRE_ASSERT( push_transaction( op, alice_private_key ), "percent_hbd <= dgpo.get_hbd_stop_percent()" );
 
     BOOST_TEST_MESSAGE( "--- Test ok - conversion at 50 cents per HIVE, both initial and actual" );
-    op.amount = ASSET( "4200000.000 TESTS" );
+    op.amount = ASSET( "210000000.000 TESTS" );
     auto conversion_time = db->head_block_time();
     auto alice_balance = get_hive_balance( "alice" );
     push_transaction( op, alice_private_key );
-    alice_balance -= HIVE_asset( 4'200'000'000 );
+    alice_balance -= HIVE_asset( 210'000'000'000 );
 
     BOOST_REQUIRE_EQUAL( get_hive_balance( "alice" ), alice_balance );
-    BOOST_REQUIRE_EQUAL( get_hbd_balance( "alice" ), HBD_asset( 1'000'000'000 ) );
+    BOOST_REQUIRE_EQUAL( get_hbd_balance( "alice" ), HBD_asset( 50'000'000'000 ) );
 
     generate_blocks( conversion_time + HIVE_COLLATERALIZED_CONVERSION_DELAY - fc::seconds( HIVE_BLOCK_INTERVAL ) );
 
     BOOST_REQUIRE_EQUAL( get_hive_balance( "alice" ), alice_balance );
-    BOOST_REQUIRE_EQUAL( get_hbd_balance( "alice" ), HBD_asset( 1'000'000'000 ) );
+    BOOST_REQUIRE_EQUAL( get_hbd_balance( "alice" ), HBD_asset( 50'000'000'000 ) );
     generate_block(); //actual conversion
-    alice_balance += HIVE_asset( 2'100'000'000 );
+    alice_balance += HIVE_asset( 105'000'000'000 );
     BOOST_REQUIRE_EQUAL( get_hive_balance( "alice" ), alice_balance );
-    BOOST_REQUIRE_EQUAL( get_hbd_balance( "alice" ), HBD_asset( 1'000'000'000 ) );
+    BOOST_REQUIRE_EQUAL( get_hbd_balance( "alice" ), HBD_asset( 50'000'000'000 ) );
 
     validate_database();
   }
@@ -7540,7 +7546,7 @@ BOOST_AUTO_TEST_CASE( delegate_vesting_shares_apply )
     ACTORS( DEFAULT_VESTING, (alice)(bob)(charlie) );
     generate_block();
 
-    vest( "alice", HIVE_asset( 1'000'000 ) );
+    vest( "alice", HIVE_asset( 15'000'000 ) );
 
     generate_block();
 
@@ -7865,7 +7871,7 @@ BOOST_AUTO_TEST_CASE( issue_971_vesting_removal )
     ACTORS( DEFAULT_VESTING, (alice)(bob) );
     generate_block();
 
-    vest( "alice", HIVE_asset( 1'000'000 ) );
+    vest( "alice", HIVE_asset( 8'000'000 ) );
 
     generate_block();
 
@@ -7998,6 +8004,7 @@ BOOST_AUTO_TEST_CASE( comment_beneficiaries_apply )
     BOOST_TEST_MESSAGE( "Test Comment Beneficiaries" );
     ACTORS( DEFAULT_VESTING, (alice)(bob)(sam)(dave) );
     generate_block();
+    vest( "bob", HIVE_asset( 20'000 ) ); // vest enough for bob's votes to not fall below HIVE_VOTE_DUST_THRESHOLD
 
     db_plugin->debug_update( [=]( database& db )
     {
@@ -8142,7 +8149,7 @@ BOOST_AUTO_TEST_CASE( comment_options_apply )
   try
   {
     BOOST_TEST_MESSAGE( "Test Comment options" );
-    ACTORS( DEFAULT_VESTING, (alice)(bob)(sam)(dave) );
+    ACTORS( HIVE_asset( 20'000 ), (alice)(bob)(sam)(dave) ); // vest enough to cross HIVE_VOTE_DUST_THRESHOLD
     generate_block();
 
     db_plugin->debug_update( [=]( database& db )
@@ -8304,8 +8311,8 @@ BOOST_AUTO_TEST_CASE( comment_options_apply )
     BOOST_REQUIRE( db->find_comment_cashout( *db->get_comment( "alice", string( "test2" ) ) ) == nullptr );
     //alice got reward for test2 comment as author...
     BOOST_REQUIRE_EQUAL( get_hive_rewards( "alice" ), HIVE_asset( 0 ) );
-    BOOST_REQUIRE_EQUAL( get_hbd_rewards( "alice" ), HBD_asset( 25015 ) );
-    BOOST_REQUIRE_EQUAL( get_vest_rewards_as_hive( "alice" ), HIVE_asset( 25015 ) );
+    BOOST_REQUIRE_EQUAL( get_hbd_rewards( "alice" ), HBD_asset( 25771 ) );
+    BOOST_REQUIRE_EQUAL( get_vest_rewards_as_hive( "alice" ), HIVE_asset( 25771 ) );
     //...but no curation for sam
     BOOST_REQUIRE_EQUAL( get_hive_rewards( "sam" ), HIVE_asset( 0 ) );
     BOOST_REQUIRE_EQUAL( get_hbd_rewards( "sam" ), HBD_asset( 0 ) );
@@ -8317,8 +8324,8 @@ BOOST_AUTO_TEST_CASE( comment_options_apply )
     BOOST_REQUIRE( db->find_comment_cashout( *db->get_comment( "alice", string( "test3" ) ) ) == nullptr );
     //alice and dave got reward for test3 comment but they sum to 0.010 HBD
     BOOST_REQUIRE_EQUAL( get_hive_rewards( "alice" ), HIVE_asset( 0 ) );
-    BOOST_REQUIRE_EQUAL( get_hbd_rewards( "alice" ), HBD_asset( 25015 + 2 ) );
-    BOOST_REQUIRE_EQUAL( get_vest_rewards_as_hive( "alice" ), HIVE_asset( 25015 + 3 ) );
+    BOOST_REQUIRE_EQUAL( get_hbd_rewards( "alice" ), HBD_asset( 25771 + 2 ) );
+    BOOST_REQUIRE_EQUAL( get_vest_rewards_as_hive( "alice" ), HIVE_asset( 25771 + 3 ) );
     BOOST_REQUIRE_EQUAL( get_hive_rewards( "dave" ), HIVE_asset( 0 ) );
     BOOST_REQUIRE_EQUAL( get_hbd_rewards( "dave" ), HBD_asset( 0 ) );
     BOOST_REQUIRE_EQUAL( get_vest_rewards_as_hive( "dave" ), HIVE_asset( 5 ) );

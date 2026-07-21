@@ -8,6 +8,7 @@
 
 condenser_api_reversible_fixture::condenser_api_reversible_fixture()
 {
+    configuration_data.allow_not_enough_rc = true;
     db->set_hardfork( HIVE_NUM_HARDFORKS );
     generate_block();
 

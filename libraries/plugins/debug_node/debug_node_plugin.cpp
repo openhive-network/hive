@@ -298,23 +298,24 @@ void debug_node_plugin::calculate_modifiers_according_to_new_price(const VEST_pr
   hive_modifier = HIVE_asset( 0 );
   vest_modifier = VEST_asset( 0 );
 
-  auto alpha_x = new_price.get_base().amount * total_hive.amount;
-  auto alpha_y = new_price.get_quote().amount * total_vests.amount;
+  fc::uint128_t a = total_vests.amount.value;
+  fc::uint128_t b = total_hive.amount.value;
+
+  auto alpha_x = fc::uint128_t( new_price.get_base().amount.value ) * b;
+  auto alpha_y = fc::uint128_t( new_price.get_quote().amount.value ) * a;
 
   if( alpha_x >= alpha_y )
   {
     /// Means that alpha is >= 1, so we will be increasing vests pool
-    fc::uint128_t a = total_vests.amount.value;
-    a *= ( alpha_x - alpha_y ).value;
-    a /= alpha_y.value;
+    a *= alpha_x - alpha_y;
+    a /= alpha_y;
     vest_modifier = VEST_asset( fc::uint128_to_int64(a) );
   }
   else
   {
     /// Means that alpha is < 1, so we will be increasing Hive pool
-    fc::uint128_t b = total_hive.amount.value;
-    b *= ( alpha_y - alpha_x ).value;
-    b /= alpha_x.value;
+    b *= alpha_y - alpha_x;
+    b /= alpha_x;
     hive_modifier = HIVE_asset( fc::uint128_to_int64(b) );
   }
 }

@@ -17,13 +17,21 @@ namespace bpo = boost::program_options;
 namespace hive { namespace chain {
 
 
-clean_database_fixture::clean_database_fixture( 
-  uint16_t shared_file_size_in_mb, fc::optional<uint32_t> hardfork, bool init_ah_plugin, int block_log_split )
+clean_database_fixture::clean_database_fixture(
+  uint16_t shared_file_size_in_mb, fc::optional<uint32_t> hardfork, bool init_ah_plugin, int block_log_split,
+  const HIVE_asset& init_hive_supply, const HBD_asset& init_hbd_supply, const HIVE_asset& init_vesting_supply )
 {
   try {
 
-  configuration_data.set_initial_asset_supply( INITIAL_TEST_SUPPLY, HBD_INITIAL_TEST_SUPPLY );
+  configuration_data.set_initial_asset_supply( init_hive_supply, init_hbd_supply, init_vesting_supply );
+  _prev_allow_not_enough_rc = configuration_data.allow_not_enough_rc;
   configuration_data.allow_not_enough_rc = true;
+  {
+    std::vector< std::string > init_witnesses;
+    for( int i = HIVE_NUM_INIT_MINERS; i < HIVE_MAX_WITNESSES; ++i )
+      init_witnesses.push_back( HIVE_INIT_MINER_NAME + fc::to_string( i ) );
+    configuration_data.set_init_witnesses( init_witnesses );
+  }
 
   if( init_ah_plugin )
   {
@@ -62,16 +70,8 @@ clean_database_fixture::clean_database_fixture(
   db->_log_hardforks = true;
 
   vest( HIVE_INIT_MINER_NAME, HIVE_asset( 10'000 ) );
-
-  // Fill up the rest of the required miners
-  for( int i = HIVE_NUM_INIT_MINERS; i < HIVE_MAX_WITNESSES; i++ )
-  {
-    account_create( HIVE_INIT_MINER_NAME + fc::to_string( i ), init_account_pub_key );
-    fund( HIVE_INIT_MINER_NAME + fc::to_string( i ), HIVE_MIN_PRODUCER_REWARD );
-    witness_create( HIVE_INIT_MINER_NAME + fc::to_string( i ), init_account_priv_key, "foo.bar", init_account_pub_key, HIVE_MIN_PRODUCER_REWARD );
-  }
-
   validate_database();
+
   } catch ( const fc::exception& e )
   {
     edump( (e.to_detail_string()) );
@@ -81,7 +81,11 @@ clean_database_fixture::clean_database_fixture(
   return;
 }
 
-clean_database_fixture::~clean_database_fixture() {}
+clean_database_fixture::~clean_database_fixture()
+{
+  configuration_data.set_init_witnesses( {} );
+  configuration_data.allow_not_enough_rc = _prev_allow_not_enough_rc; // restore so it doesn't leak into later fixtures
+}
 
 void clean_database_fixture::validate_database()
 {
@@ -145,7 +149,11 @@ config_database_fixture::~config_database_fixture()
 {}
 
 genesis_database_fixture::genesis_database_fixture( uint16_t shared_file_size_in_mb )
-  : clean_database_fixture( shared_file_size_in_mb, 0 )
+  // Genesis-era fixtures act close to the chain start, so use the pre-history asset amounts (mainnet
+  // started with neither 500M HIVE nor 200M HP). The "already ran through history" emulation baked into
+  // clean_database_fixture defaults distorts tests that operate right after genesis.
+  : clean_database_fixture( shared_file_size_in_mb, 0, true, 9999,
+      HIVE_asset( 9'900'000'000 ), HBD_asset( 100'000'000 ), HIVE_asset( 0 ) )
 {}
 
 genesis_database_fixture::~genesis_database_fixture()

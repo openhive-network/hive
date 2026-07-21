@@ -120,12 +120,12 @@ BOOST_AUTO_TEST_CASE( state_modification )
   };
 
   {
-    BOOST_TEST_MESSAGE("hive_modifier == 0 and vest_modifier > 0");
-    _check_state( VEST_price( 2'000'000'000, 1 ) );
+    BOOST_TEST_MESSAGE( "hive_modifier == 0 and vest_modifier > 0" );
+    _check_state( VEST_price( 2'000'000, 1 ) );
   }
 
   {
-    BOOST_TEST_MESSAGE("hive_modifier > 0 and vest_modifier == 0");
+    BOOST_TEST_MESSAGE( "hive_modifier > 0 and vest_modifier == 0" );
     _check_state( VEST_price( 10'000, 1 ) );
   }
 

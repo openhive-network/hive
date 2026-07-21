@@ -1497,7 +1497,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_03 )
       `tester02` - got payout, because voted for his proposal
     */
     ilog("");
-    payment_checker( { HBD_asset( 3'000 ), HBD_asset( 1'000 ), HBD_asset( 2'082'361 ) } );
+    payment_checker( { HBD_asset( 3'000 ), HBD_asset( 1'000 ), HBD_asset( 2'083'236 ) } );
 
     {
       BOOST_TEST_MESSAGE( "Proxy doesn't exist. Now proposal with id = 3 has the most votes. This proposal grabs all payouts." );
@@ -1511,7 +1511,7 @@ BOOST_AUTO_TEST_CASE( generating_payments_03 )
       `tester02` - got payout, because voted for his proposal
     */
     ilog("");
-    payment_checker( { HBD_asset( 3'000 ), HBD_asset( 1'000 ), HBD_asset( 4'164'858 ) } );
+    payment_checker( { HBD_asset( 3'000 ), HBD_asset( 1'000 ), HBD_asset( 4'166'840 ) } );
 
     validate_database();
   }

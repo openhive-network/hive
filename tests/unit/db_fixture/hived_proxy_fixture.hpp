@@ -170,10 +170,10 @@ public:
     return fixture->account_update2(account, owner, active, posting, memo_key, metadata, posting_metadata, key);
   }
 
-  void push_transaction( const operation& op, const fc::ecc::private_key& key )
+  full_transaction_ptr push_transaction( const operation& op, const fc::ecc::private_key& key )
   {
     FC_ASSERT(fixture);
-    return fixture->push_transaction(op, key);
+    return fixture->push_transaction( op, key );
   }
   full_transaction_ptr push_transaction( const signed_transaction& tx, const fc::ecc::private_key& key = fc::ecc::private_key() )
   {

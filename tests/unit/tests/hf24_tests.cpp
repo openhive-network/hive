@@ -170,7 +170,7 @@ BOOST_AUTO_TEST_CASE( comment_beneficiary )
   {
     BOOST_TEST_MESSAGE( "After HF24 steem.dao as comment beneficiary gives directly to new treasury account" );
 
-    ACTORS( DEFAULT_VESTING, ( alice ) );
+    ACTORS( HIVE_asset( 20'000 ), ( alice ) ); // give more vests to clear HIVE_VOTE_DUST_THRESHOLD
     generate_block();
 
     db_plugin->debug_update( []( database& db )
@@ -180,8 +180,8 @@ BOOST_AUTO_TEST_CASE( comment_beneficiary )
         gpo.set_proposal_fund_percent( 0 );
       } );
     } );
-    issue_funds( "alice", HIVE_asset( 10'000 ) );
-    issue_funds( "alice", HBD_asset( 10'000 ) );
+    fund( "alice", HIVE_asset( 10'000 ) );
+    fund( "alice", HBD_asset( 10'000 ) );
     generate_block();
 
     signed_transaction tx;
@@ -224,9 +224,11 @@ BOOST_AUTO_TEST_CASE( comment_beneficiary )
     tx.clear();
 
     HBD_asset initial_treasury_balance = db->get_treasury().get_hbd_balance();
+    ilog( "initial treasury balance = ${b}", ( "b", initial_treasury_balance ) );
     generate_blocks( db->find_comment_cashout( *db->get_comment( "alice", string( "test" ) ) )->get_cashout_time() );
+    ilog( "treasury balance after cashout = ${b}", ( "b", db->get_treasury().get_hbd_balance() ) );
     BOOST_REQUIRE_EQUAL( get_hbd_balance( OBSOLETE_TREASURY_ACCOUNT ), HBD_asset( 0 ) );
-    BOOST_REQUIRE_EQUAL( db->get_treasury().get_hbd_balance(), HBD_asset( 1150 ) + initial_treasury_balance );
+    BOOST_REQUIRE_EQUAL( db->get_treasury().get_hbd_balance(), HBD_asset( 9011 ) + initial_treasury_balance );
 
     database_fixture::validate_database();
   }
@@ -332,10 +334,10 @@ BOOST_AUTO_TEST_CASE( treasury_debt_ratio )
     auto& dgpo = db->get_dynamic_global_properties();
     const auto before_hbd_print_rate = dgpo.get_hbd_print_rate();
 
-    ISSUE_FUNDS("alice", HBD_asset( 1'000'000'000 ));
+    ISSUE_FUNDS("alice", HBD_asset( 50'000'000'000 ));
     const auto during_hbd_print_rate = dgpo.get_hbd_print_rate();
 
-    transfer( "alice", db->get_treasury_name(), asset( 1000000000, HBD_SYMBOL ), "", alice_private_key );
+    transfer( "alice", db->get_treasury_name(), asset( 50000000000, HBD_SYMBOL ), "", alice_private_key );
     generate_block();
     const auto after_hbd_print_rate = dgpo.get_hbd_print_rate();
 
