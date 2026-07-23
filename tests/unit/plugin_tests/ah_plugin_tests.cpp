@@ -113,19 +113,13 @@ BOOST_FIXTURE_TEST_CASE( inconsistent_ah_rocksdb_storage, empty_fixture )
 
     configuration_data.set_cashout_related_values( 0, 9, 9 * 2, 9 * 7, 3 );
     autoscope( []() { configuration_data.reset_cashout_values(); } );
-    // alice/bob are created with NO_VESTING, so they have no RC to pay for the comments/votes below;
-    // this test isn't about RC, so allow the shortage. Set it here (not via a fixture) because the test
-    // spans several fixtures - the inner clean_database_fixture now restores this on destruction.
-    const bool _prev_allow_not_enough_rc = configuration_data.allow_not_enough_rc;
-    configuration_data.allow_not_enough_rc = true;
-    autoscope _restore_allow_not_enough_rc( [_prev_allow_not_enough_rc]() { configuration_data.allow_not_enough_rc = _prev_allow_not_enough_rc; } );
 
     fc::path ah_rocksdb_dir;
     {
       clean_database_fixture fixture;
       ah_rocksdb_dir = fixture.ah_plugin->storage_dir();
       fixture.account_create( "alice", fixture.init_account_pub_key, fixture.init_account_pub_key, NO_VESTING );
-      fixture.account_create( "bob", fixture.init_account_pub_key, fixture.init_account_pub_key, NO_VESTING );
+      fixture.account_create( "bob", fixture.init_account_pub_key, fixture.init_account_pub_key, HIVE_asset( 3'000 ) ); // needs extra vests to cover RC for multiple comments
       fixture.post_comment( "alice", "test", "test", "test body", "category", fixture.init_account_priv_key );
       // first 30 blocks use different LIB mechanics
       fixture.generate_blocks( 3 * HIVE_MAX_WITNESSES );
@@ -170,11 +164,11 @@ BOOST_FIXTURE_TEST_CASE( inconsistent_ah_rocksdb_storage, empty_fixture )
 
       // check existence of all previous operations
       std::vector<fc::string> pattern_alice = {
-        R"~({"type":"account_create_operation","value":{"fee":{"amount":"30","precision":3,"nai":"@@000000021"},"creator":"initminer","new_account_name":"alice","owner":{"weight_threshold":1,"account_auths":[],"key_auths":[["STM6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4",1]]},"active":{"weight_threshold":1,"account_auths":[],"key_auths":[["STM6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4",1]]},"posting":{"weight_threshold":1,"account_auths":[],"key_auths":[["STM6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4",1]]},"memo_key":"STM6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4","json_metadata":""}})~",
+        R"~({"type":"account_create_operation","value":{"fee":{"amount":"3000","precision":3,"nai":"@@000000021"},"creator":"initminer","new_account_name":"alice","owner":{"weight_threshold":1,"account_auths":[],"key_auths":[["STM6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4",1]]},"active":{"weight_threshold":1,"account_auths":[],"key_auths":[["STM6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4",1]]},"posting":{"weight_threshold":1,"account_auths":[],"key_auths":[["STM6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4",1]]},"memo_key":"STM6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4","json_metadata":""}})~",
         R"~({"type":"account_created_operation","value":{"new_account_name":"alice","creator":"initminer","initial_vesting_shares":{"amount":"0","precision":6,"nai":"@@000000037"},"initial_delegation":{"amount":"0","precision":6,"nai":"@@000000037"}}})~",
         R"~({"type":"comment_operation","value":{"parent_author":"","parent_permlink":"category","author":"alice","permlink":"test","title":"test","body":"test body","json_metadata":""}})~",
         R"~({"type":"vote_operation","value":{"voter":"bob","author":"alice","permlink":"test","weight":10000}})~",
-        R"~({"type":"effective_comment_vote_operation","value":{"voter":"bob","author":"alice","permlink":"test","weight":0,"rshares":0,"total_vote_weight":0,"pending_payout":{"amount":"0","precision":3,"nai":"@@000000013"}}})~",
+        R"~({"type":"effective_comment_vote_operation","value":{"voter":"bob","author":"alice","permlink":"test","weight":58000000,"rshares":58000000,"total_vote_weight":58000000,"pending_payout":{"amount":"0","precision":3,"nai":"@@000000013"}}})~",
         R"~({"type":"vote_operation","value":{"voter":"alice","author":"bob","permlink":"test","weight":5000}})~",
         R"~({"type":"effective_comment_vote_operation","value":{"voter":"alice","author":"bob","permlink":"test","weight":0,"rshares":0,"total_vote_weight":0,"pending_payout":{"amount":"0","precision":3,"nai":"@@000000013"}}})~",
         R"~({"type":"comment_operation","value":{"parent_author":"alice","parent_permlink":"test","author":"bob","permlink":"reply","title":"reply","body":"I'm replying","json_metadata":""}})~"
@@ -191,10 +185,12 @@ BOOST_FIXTURE_TEST_CASE( inconsistent_ah_rocksdb_storage, empty_fixture )
       BOOST_CHECK_EQUAL( count, pattern_alice.size() );
       count = 0;
       std::vector<fc::string> pattern_bob = {
-        R"~({"type":"account_create_operation","value":{"fee":{"amount":"30","precision":3,"nai":"@@000000021"},"creator":"initminer","new_account_name":"bob","owner":{"weight_threshold":1,"account_auths":[],"key_auths":[["STM6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4",1]]},"active":{"weight_threshold":1,"account_auths":[],"key_auths":[["STM6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4",1]]},"posting":{"weight_threshold":1,"account_auths":[],"key_auths":[["STM6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4",1]]},"memo_key":"STM6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4","json_metadata":""}})~",
+        R"~({"type":"account_create_operation","value":{"fee":{"amount":"3000","precision":3,"nai":"@@000000021"},"creator":"initminer","new_account_name":"bob","owner":{"weight_threshold":1,"account_auths":[],"key_auths":[["STM6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4",1]]},"active":{"weight_threshold":1,"account_auths":[],"key_auths":[["STM6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4",1]]},"posting":{"weight_threshold":1,"account_auths":[],"key_auths":[["STM6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4",1]]},"memo_key":"STM6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4","json_metadata":""}})~",
         R"~({"type":"account_created_operation","value":{"new_account_name":"bob","creator":"initminer","initial_vesting_shares":{"amount":"0","precision":6,"nai":"@@000000037"},"initial_delegation":{"amount":"0","precision":6,"nai":"@@000000037"}}})~",
+        R"~({"type":"transfer_to_vesting_operation","value":{"from":"initminer","to":"bob","amount":{"amount":"3000","precision":3,"nai":"@@000000021"}}})~",
+        R"~({"type":"transfer_to_vesting_completed_operation","value":{"from_account":"initminer","to_account":"bob","hive_vested":{"amount":"3000","precision":3,"nai":"@@000000021"},"vesting_shares_received":{"amount":"5399999980","precision":6,"nai":"@@000000037"}}})~",
         R"~({"type":"vote_operation","value":{"voter":"bob","author":"alice","permlink":"test","weight":10000}})~",
-        R"~({"type":"effective_comment_vote_operation","value":{"voter":"bob","author":"alice","permlink":"test","weight":0,"rshares":0,"total_vote_weight":0,"pending_payout":{"amount":"0","precision":3,"nai":"@@000000013"}}})~",
+        R"~({"type":"effective_comment_vote_operation","value":{"voter":"bob","author":"alice","permlink":"test","weight":58000000,"rshares":58000000,"total_vote_weight":58000000,"pending_payout":{"amount":"0","precision":3,"nai":"@@000000013"}}})~",
         R"~({"type":"comment_operation","value":{"parent_author":"","parent_permlink":"category","author":"bob","permlink":"test","title":"test","body":"test body","json_metadata":""}})~",
         R"~({"type":"vote_operation","value":{"voter":"alice","author":"bob","permlink":"test","weight":5000}})~",
         R"~({"type":"effective_comment_vote_operation","value":{"voter":"alice","author":"bob","permlink":"test","weight":0,"rshares":0,"total_vote_weight":0,"pending_payout":{"amount":"0","precision":3,"nai":"@@000000013"}}})~",

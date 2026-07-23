@@ -377,6 +377,9 @@ void condenser_api_fixture::escrow_and_savings_scenario( check_point_tester_t ch
 void condenser_api_fixture::proposal_scenario( check_point_tester_t check_point_tester )
 {
   db->set_hardfork( HIVE_HARDFORK_1_27 );
+  generate_block(); // observe that block, not the one below, because it contains
+    // dhf_funding_operation - also block below has custom operation (from debug_update)
+    // that contains static "data" field that changes when test is run solo vs all
   set_account_creation_fee( HIVE_asset( 3000 ) ); //3.000 HIVE, same as mainnet
   generate_block();
 

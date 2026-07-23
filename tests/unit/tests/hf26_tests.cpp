@@ -69,18 +69,10 @@ BOOST_AUTO_TEST_CASE( update_operation )
 
       BOOST_REQUIRE_EQUAL( (bool)executor, true );
 
-      ACTORS_EXT( (*executor), DEFAULT_VESTING, (alice) );
+      ACTORS_EXT( (*executor), HIVE_asset( 50'000 ), (alice) ); // extra RC for account creation
       executor->fund( "alice", HIVE_asset( 1'000'000 ) );
       executor->generate_block();
-
-      executor->db_plugin->debug_update( [=]( database& db )
-      {
-        db.modify( db.get_witness_schedule_object(), [&]( witness_schedule_object& wso )
-        {
-          wso.median_props.account_creation_fee = HIVE_asset( 100 );
-        });
-      });
-
+      executor->set_account_creation_fee( HIVE_asset( 100 ) );
       executor->generate_block();
 
       BOOST_TEST_MESSAGE( "Creating account bob with alice" );
@@ -291,7 +283,7 @@ BOOST_AUTO_TEST_CASE( pack_transaction_basic )
       BOOST_TEST_MESSAGE( "Testing: transaction's pack before and after HF26" );
       BOOST_REQUIRE_EQUAL( (bool)executor, true );
 
-      ACTORS_EXT( (*executor), DEFAULT_VESTING, (alice)(bob) );
+      ACTORS_EXT( (*executor), HIVE_asset( 15'000 ), (alice)(bob) ); // extra RC for various operations
       executor->fund( "alice", HIVE_asset( 1'000'000 ) );
       executor->fund( "bob", HIVE_asset( 1'000'000 ) );
       executor->generate_block();

@@ -444,10 +444,10 @@ namespace performance
     fc::ecc::private_key active_key;
     fc::ecc::private_key post_key;
 
-    initial_data( database_fixture* db, const std::string& _account );
+    initial_data( database_fixture* db, const std::string& _account, const HIVE_asset& initial_vesting = DEFAULT_VESTING );
   };
 
-  std::vector< initial_data > generate_accounts( database_fixture* db, int32_t number_accounts );
+  std::vector< initial_data > generate_accounts( database_fixture* db, int32_t number_accounts, const HIVE_asset& initial_vesting = DEFAULT_VESTING );
 }
 
 } }

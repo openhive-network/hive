@@ -667,10 +667,11 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_many_accounts )
 {
   try
   {
-    BOOST_TEST_MESSAGE( "Testing:  update_outdel_overflow with many actors" );
+    BOOST_TEST_MESSAGE( "Testing: update_outdel_overflow with many actors" );
     generate_block();
     const int removal_limit = 200; //current mainnet value - if we increase it (we should, but it requires HF) we need to change it here as well
-    set_account_creation_fee( HIVE_asset( 3'000 ) ); //realistic fee gives accounts a sizable non-delegatable RC adjustment
+    set_account_creation_fee( HIVE_asset( 300'000 ) ); //large non-delegatable RC adjustment so alice can still transact (and regenerate) after
+      // delegating all her vesting-based RC away; actors share the same fee so creation_rc stays consistent for the checks below
     db_plugin->debug_update( [=]( database& db )
     {
       db.set_remove_threshold( removal_limit );
@@ -1453,7 +1454,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_delegatee_performance )
     BOOST_TEST_MESSAGE( "Testing: performance is taken into consideration, when `rc_direct_delegation_object` are removed" );
     generate_block();
     const int removal_limit = 200; //current mainnet value - if we increase it (we should, but it requires HF) we need to change it here as well
-    set_account_creation_fee( HIVE_asset( 1 ) ); //it effectively turns off minimum HP delegation limit
+    set_account_creation_fee( HIVE_asset( 300'000 ) ); //give the actors a sizable non-delegatable RC adjustment so alice can still transact after delegating all her vesting away
     db_plugin->debug_update( [=]( database& db )
     {
       db.set_remove_threshold( removal_limit );
@@ -1461,6 +1462,8 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_delegatee_performance )
     generate_block();
 
     ACTORS( NO_VESTING, (alice)(bob)(carol) );
+    generate_block();
+    set_account_creation_fee( HIVE_asset( 1 ) ); //now that the actors exist, turn off the minimum HP delegation limit
     generate_block();
     vest( "alice", HIVE_asset( 2'000'000 ) );
     generate_block();

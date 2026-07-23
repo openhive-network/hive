@@ -551,47 +551,42 @@ bool resource_credits::use_account_rcs( int64_t rc )
       }
       bool has_mana = acc.rc_manabar.has_mana( rc + surcharge );
 
-#ifdef USE_ALTERNATE_CHAIN_ID
-      if( configuration_data.allow_not_enough_rc == false )
-#endif
+      FC_TODO( "Add || db.has_hardfork( X ) to make RC part of consensus since X" );
+        //we should also replace all NOTIFYALERT warnings in RC with assertions, since they can't ever happen
+      if( db.is_in_control() || db.is_reapplying_one_tx() )
       {
-        FC_TODO( "Add || db.has_hardfork( X ) to make RC part of consensus since X" );
-          //we should also replace all NOTIFYALERT warnings in RC with assertions, since they can't ever happen
-        if( db.is_in_control() || db.is_reapplying_one_tx() )
+        if( surcharge && acc.rc_manabar.has_mana( rc ) )
         {
-          if( surcharge && acc.rc_manabar.has_mana( rc ) )
-          {
-            HIVE_ASSERT( has_mana, not_enough_rc_exception,
-              "Account: ${account_name} has ${rc_current} RC, needs ${rc} RC with ${surcharge} flood prevention surcharge. "
-              "Please wait to transact, power up HIVE or ask your witnesses to increase block size to deal with increased traffic.",
-              ( account_name )( "rc_current", tx_info.rc )( rc )( surcharge )
-            );
-          }
           HIVE_ASSERT( has_mana, not_enough_rc_exception,
-            "Account: ${account_name} has ${rc_current} RC, needs ${rc} RC. Please wait to transact or power up HIVE.",
-            ( account_name )( "rc_current", tx_info.rc )( rc )
+            "Account: ${account_name} has ${rc_current} RC, needs ${rc} RC with ${surcharge} flood prevention surcharge. "
+            "Please wait to transact, power up HIVE or ask your witnesses to increase block size to deal with increased traffic.",
+            ( account_name )( "rc_current", tx_info.rc )( rc )( surcharge )
           );
         }
-        else
+        HIVE_ASSERT( has_mana, not_enough_rc_exception,
+          "Account: ${account_name} has ${rc_current} RC, needs ${rc} RC. Please wait to transact or power up HIVE.",
+          ( account_name )( "rc_current", tx_info.rc )( rc )
+        );
+      }
+      else
+      {
+        if( !has_mana && db.is_processing_block() && db.has_hardfork( HIVE_HARDFORK_1_26 ) )
         {
-          if( !has_mana && db.is_processing_block() && db.has_hardfork( HIVE_HARDFORK_1_26 ) )
-          {
-            //when we didn't have is_processing_block as part of condition the messages below would also
-            //be produced when pending transactions were reapplied after new block arrived even though
-            //they are not part of any block yet;
-            //if we put that part of condition as alternative for db.is_in_control() above it would mean
-            //the transactions that were validated before but started to lack RC after new block arrived,
-            //would be dropped from mempool (note the difference: when user lacks RC while sending transaction
-            //he can notice and react to it; however when his transaction is rejected after validation due
-            //to changes in RC, it seems better to retry tx execution like we currently do)
-            ilog( "Accepting transaction by ${account}, has ${rc_current} RC, needs ${rc_needed} RC, block ${b}, witness ${w}.",
-              ( "account", account_name )
-              ( "rc_needed", rc )
-              ( "rc_current", tx_info.rc )
-              ( "b", dgpo.get_head_block_number() )
-              ( "w", dgpo.get_current_witness() )
-            );
-          }
+          //when we didn't have is_processing_block as part of condition the messages below would also
+          //be produced when pending transactions were reapplied after new block arrived even though
+          //they are not part of any block yet;
+          //if we put that part of condition as alternative for db.is_in_control() above it would mean
+          //the transactions that were validated before but started to lack RC after new block arrived,
+          //would be dropped from mempool (note the difference: when user lacks RC while sending transaction
+          //he can notice and react to it; however when his transaction is rejected after validation due
+          //to changes in RC, it seems better to retry tx execution like we currently do)
+          ilog( "Accepting transaction by ${account}, has ${rc_current} RC, needs ${rc_needed} RC, block ${b}, witness ${w}.",
+            ( "account", account_name )
+            ( "rc_needed", rc )
+            ( "rc_current", tx_info.rc )
+            ( "b", dgpo.get_head_block_number() )
+            ( "w", dgpo.get_current_witness() )
+          );
         }
       }
 

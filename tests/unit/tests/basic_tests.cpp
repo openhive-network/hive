@@ -2142,6 +2142,7 @@ BOOST_AUTO_TEST_CASE( balance_transfer )
   ACTORS( DEFAULT_VESTING, (alice)(bob)(carol) );
   fund( "alice", HIVE_asset( 10000 ) );
   fund( "alice", HBD_asset( 10000 ) );
+  vest( "alice", HIVE_asset( 15'000 ) ); // escrow transfers are costly
   generate_block();
 
   escrow_transfer( "alice", "bob", "carol", HIVE_asset( 1000 ), HBD_asset( 1000 ), ASSET( "0.500 TBD" ),

@@ -1352,7 +1352,7 @@ BOOST_AUTO_TEST_CASE( feed_publish_mean )
     // Testing mainnet feed values here.
     auto auto_reset( set_mainnet_feed_values() );
 
-    ACTORS( DEFAULT_VESTING, (alice0)(alice1)(alice2)(alice3)(alice4)(alice5)(alice6) );
+    ACTORS( HIVE_asset( 20'000 ), (alice0)(alice1)(alice2)(alice3)(alice4)(alice5)(alice6) ); // extra RC for witness work
 
     BOOST_TEST_MESSAGE( "Setup" );
 
@@ -2987,7 +2987,7 @@ BOOST_AUTO_TEST_CASE( account_subsidy_witness_limits )
   {
     BOOST_TEST_MESSAGE( "Testing: account_subsidy_witness_limits" );
 
-    ACTORS( DEFAULT_VESTING, (alice)(bob) );
+    ACTORS( HIVE_asset( 50'000'000 ), (alice)(bob) ); // a lot of extra RC for account token claims
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );

@@ -278,7 +278,8 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_02 )
 
     auto start_time = db->head_block_time();
 
-    ACTORS( DEFAULT_VESTING, (alice)(bob)(celine)(witness1)(witness2) );
+    ACTORS( DEFAULT_VESTING, (alice)(bob)(celine) );
+    ACTORS( HIVE_asset( 15'000 ), (witness1)(witness2) ); // extra RC for witness_create
     generate_block();
 
     HIVE_asset _1( 1'000 );
@@ -865,7 +866,8 @@ BOOST_AUTO_TEST_CASE( delayed_voting_proxy_01 )
   {
     BOOST_TEST_MESSAGE( "Testing: Setting proxy" );
 
-    ACTORS( DEFAULT_VESTING, (alice)(bob)(celine)(witness) );
+    ACTORS( DEFAULT_VESTING, (alice)(bob)(celine) );
+    ACTORS( HIVE_asset( 15'000 ), (witness) ); // extra RC for witness_create
     generate_block();
 
     {
@@ -1007,7 +1009,8 @@ BOOST_AUTO_TEST_CASE( delayed_voting_many_vesting_01 )
   {
     BOOST_TEST_MESSAGE( "Testing: Transferring vests many times from one person to another" );
 
-    ACTORS( DEFAULT_VESTING, (alice)(bob)(witness) );
+    ACTORS( DEFAULT_VESTING, (alice)(bob) );
+    ACTORS( HIVE_asset( 15'000 ), (witness) ); // extra RC for witness_create
     generate_block();
 
     {
@@ -1109,7 +1112,8 @@ BOOST_AUTO_TEST_CASE( delayed_voting_01 )
   {
     BOOST_TEST_MESSAGE( "Testing: delaying voting" );
 
-    ACTORS( DEFAULT_VESTING, (alice)(bob)(witness) );
+    ACTORS( DEFAULT_VESTING, (alice)(bob) );
+    ACTORS( HIVE_asset( 15'000 ), (witness) ); // extra RC for witness_create
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -1157,7 +1161,8 @@ BOOST_AUTO_TEST_CASE( delayed_voting_04 )
   {
     BOOST_TEST_MESSAGE( "Testing: delaying voting v4" );
 
-    ACTORS( DEFAULT_VESTING, (bob)(witness) );
+    ACTORS( DEFAULT_VESTING, (bob) );
+    ACTORS( HIVE_asset( 15'000 ), (witness) ); // extra RC for witness_create
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -1206,7 +1211,8 @@ BOOST_AUTO_TEST_CASE( delayed_voting_05 )
   {
     BOOST_TEST_MESSAGE( "Testing: delaying voting v5" );
 
-    ACTORS( DEFAULT_VESTING, (bob)(witness1)(witness2) );
+    ACTORS( DEFAULT_VESTING, (bob) );
+    ACTORS( HIVE_asset( 15'000 ), (witness1)(witness2) ); // extra RC for witness_create
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -1266,7 +1272,8 @@ BOOST_AUTO_TEST_CASE( delayed_voting_06 )
   {
     BOOST_TEST_MESSAGE( "Testing: delaying voting v6" );
 
-    ACTORS( DEFAULT_VESTING, (bob)(witness) );
+    ACTORS( DEFAULT_VESTING, (bob) );
+    ACTORS( HIVE_asset( 15'000 ), (witness) ); // extra RC for witness_create
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -1452,7 +1459,8 @@ BOOST_AUTO_TEST_CASE( delayed_voting_basic_03 )
     // user setup
     BOOST_TEST_MESSAGE( "Testing: `delayed_voting::run` method" );
     const auto start_time = db->head_block_time();
-    ACTORS( DEFAULT_VESTING, (alice)(celine)(bob)(witness) );
+    ACTORS( DEFAULT_VESTING, (alice)(celine)(bob) );
+    ACTORS( HIVE_asset( 15'000 ), (witness) ); // extra RC for witness_create
     generate_block();
     ISSUE_FUNDS( "bob", HIVE_asset( 100'000'000 ) );
     ISSUE_FUNDS( "celine", HIVE_asset( 100'000'000 ) );
@@ -2029,7 +2037,8 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_01 )
   {
     BOOST_TEST_MESSAGE( "Testing: decline voting rights: casual use" );
 
-    ACTORS( DEFAULT_VESTING, (bob)(alice)(witness) );
+    ACTORS( DEFAULT_VESTING, (bob)(alice) );
+    ACTORS( HIVE_asset( 15'000 ), (witness) ); // extra RC for witness_create
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -2080,7 +2089,8 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_02 )
   {
     BOOST_TEST_MESSAGE( "Testing: decline voting rights: casual use with spontaneus vote" );
 
-    ACTORS( DEFAULT_VESTING, (bob)(alice)(witness) );
+    ACTORS( DEFAULT_VESTING, (bob)(alice) );
+    ACTORS( HIVE_asset( 15'000 ), (witness) ); // extra RC for witness_create
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -2149,7 +2159,8 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_03 )
       return request_idx.find( name ) == request_idx.end();
     };
 
-    ACTORS( DEFAULT_VESTING, (bob)(alice)(witness)(witness2) );
+    ACTORS( DEFAULT_VESTING, (bob)(alice) );
+    ACTORS( HIVE_asset( 15'000 ), (witness)(witness2) ); // extra RC for witness_create
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -2230,7 +2241,8 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_04 )
       return request_idx.find( name ) == request_idx.end();
     };
 
-    ACTORS( DEFAULT_VESTING, (bob)(alice)(witness) );
+    ACTORS( DEFAULT_VESTING, (bob)(alice) );
+    ACTORS( HIVE_asset( 15'000 ), (witness) ); // extra RC for witness_create
     generate_block();
 
     // auto start_time = db->head_block_time();
@@ -2287,7 +2299,8 @@ BOOST_AUTO_TEST_CASE( small_common_test_01 )
     set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
-    ACTORS( DEFAULT_VESTING, (alice)(witness) );
+    ACTORS( DEFAULT_VESTING, (alice) );
+    ACTORS( HIVE_asset( 15'000 ), (witness) ); // extra RC for witness_create
     generate_block();
 
     //auto start_time = db->head_block_time();
@@ -2426,7 +2439,7 @@ BOOST_AUTO_TEST_CASE( scenario_01 )
 
   actors: alice, alice.bp (witness of alice choice), bob, bob.bp (witness of bob choice), carol
 */
-  ACTORS( DEFAULT_VESTING, (alice)(alice0bp)(bob)(bob0bp)(carol) );
+  ACTORS( HIVE_asset( 15'000 ), (alice)(alice0bp)(bob)(bob0bp)(carol) ); // extra RC for various operations
   generate_block();
 
   BOOST_TEST_MESSAGE( "[scenario_01]: after account creation" );

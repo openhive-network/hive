@@ -38,6 +38,9 @@ struct database_api_fixture_basic : hived_fixture
     generate_block();
     db->_log_hardforks = true;
 
+    BOOST_REQUIRE( db->has_hardfork( HIVE_HARDFORK_0_20 ) );
+    set_account_creation_fee( HIVE_asset( 3000 ) ); //3.000 HIVE, same as mainnet
+
     ACTORS( DEFAULT_VESTING, (top1)(top2)(top3)(top4)(top5)(top6)(top7)(top8)(top9)(top10)
            (top11)(top12)(top13)(top14)(top15)(top16)(top17)(top18)(top19)(top20) );
     ACTORS( DEFAULT_VESTING, (backup1)(backup2)(backup3)(backup4)(backup5)(backup6)(backup7)(backup8)(backup9)(backup10) );

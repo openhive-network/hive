@@ -1350,15 +1350,15 @@ void _push_transaction( hive::plugins::chain::chain_plugin& cp, const signed_tra
 
 namespace performance
 {
-  initial_data::initial_data( database_fixture* db, const std::string& _account ): account( _account )
+  initial_data::initial_data( database_fixture* db, const std::string& _account, const HIVE_asset& initial_vesting ): account( _account )
   {
     active_key = db->generate_private_key( account );
     post_key = db->generate_private_key( account + "_post" );
 
-    db->account_create( account, active_key.get_public_key(), post_key.get_public_key(), DEFAULT_VESTING );
+    db->account_create( account, active_key.get_public_key(), post_key.get_public_key(), initial_vesting );
   }
 
-  std::vector< initial_data > generate_accounts( database_fixture* db, int32_t number_accounts )
+  std::vector< initial_data > generate_accounts( database_fixture* db, int32_t number_accounts, const HIVE_asset& initial_vesting )
   {
     const std::string basic_name = "tester";
 
@@ -1367,7 +1367,7 @@ namespace performance
     for( int32_t i = 0; i< number_accounts; ++i  )
     {
       std::string name = basic_name + std::to_string( i );
-      res.push_back( initial_data( db, name ) );
+      res.push_back( initial_data( db, name, initial_vesting ) );
 
       if( ( i + 1 ) % 100 == 0 )
         db->generate_block();

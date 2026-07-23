@@ -35,22 +35,29 @@ void test_get_account_history( const condenser_api_fixture& caf, const std::vect
 
     auto ah1 = caf.account_history_api->get_account_history( {account_name, start, limit, false /*include_reversible*/, filter_low, filter_high } );
     auto ah2 = caf.condenser_api->get_account_history( condenser_api::get_account_history_args( {account_name, start, limit, filter_low, filter_high} ) );
-    BOOST_REQUIRE_EQUAL( ah1.history.size(), ah2.size() );
+    if( expected_for_account.size() != ah1.history.size() || expected_for_account.size() != ah2.size() )
+    {
+      ilog( "account ${account}, ${op} operations from condenser, ${ah} operations from account history",
+        ( "account", account_name )( "op", ah2.size() )( "ah", ah1.history.size() ) );
+      ilog( "condenser:" );
+      for( const auto& op : ah2 )
+        ilog( "${op}", (op) );
+      ilog( "AH:" );
+      for( const auto& op : ah1.history )
+        ilog( "${op}", (op) );
+    }
+    BOOST_REQUIRE_EQUAL( expected_for_account.size(), ah1.history.size() );
     BOOST_REQUIRE_EQUAL( expected_for_account.size(), ah2.size() );
-    ilog( "${n} operation(s) in account ${account} history", ("n", ah2.size())("account", account_name) );
 
     // For each event (operation) in account history ...
     auto it_ah = ah1.history.begin();
     auto it_cn = ah2.begin();
     for( size_t op_index = 0; it_cn != ah2.end(); ++it_ah, ++it_cn, ++op_index )
     {
-      ilog("ah op: ${op}", ("op", *it_ah));
-      ilog("cn op: ${op}", ("op", *it_cn));
-
       // Compare operations in their serialized form with expected patterns:
       const auto expected = expected_for_account[ op_index ];
-      BOOST_REQUIRE_EQUAL( expected.first, fc::json::to_string(*it_ah) );
-      BOOST_REQUIRE_EQUAL( expected.second, fc::json::to_string(*it_cn) );
+      BOOST_CHECK_EQUAL( expected.first, fc::json::to_string(*it_ah) );
+      BOOST_CHECK_EQUAL( expected.second, fc::json::to_string(*it_cn) );
     }
 
     // Do additional checks of condenser variant
@@ -1013,49 +1020,49 @@ BOOST_AUTO_TEST_CASE( get_account_history_proposal )
 
     // Filter out producer_reward_operation
     expected_t expected_alice7ah_history = { {
-      R"~([4,{"trx_id":"3a20708685a9510a1a03a58499cc2a0cd42985d8","block":5,"trx_in_block":1,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:15","op":{"type":"comment_operation","value":{"parent_author":"","parent_permlink":"test","author":"alice7ah","permlink":"permlink0","title":"title","body":"body","json_metadata":""}},"operation_id":0}])~",
-      R"~([4,{"trx_id":"3a20708685a9510a1a03a58499cc2a0cd42985d8","block":5,"trx_in_block":1,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:15","op":["comment",{"parent_author":"","parent_permlink":"test","author":"alice7ah","permlink":"permlink0","title":"title","body":"body","json_metadata":""}]}])~"
+      R"~([4,{"trx_id":"bd3db3e43a7df03810f6ac790de7de57e9e192f6","block":6,"trx_in_block":1,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:18","op":{"type":"comment_operation","value":{"parent_author":"","parent_permlink":"test","author":"alice7ah","permlink":"permlink0","title":"title","body":"body","json_metadata":""}},"operation_id":0}])~",
+      R"~([4,{"trx_id":"bd3db3e43a7df03810f6ac790de7de57e9e192f6","block":6,"trx_in_block":1,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:18","op":["comment",{"parent_author":"","parent_permlink":"test","author":"alice7ah","permlink":"permlink0","title":"title","body":"body","json_metadata":""}]}])~"
       }, {
-      R"~([5,{"trx_id":"3984630fffc862924860434b613595a3ef6f4925","block":5,"trx_in_block":2,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:15","op":{"type":"create_proposal_operation","value":{"creator":"alice7ah","receiver":"ben7ah","start_date":"2015-12-31T00:00:12","end_date":"2016-01-03T00:00:12","daily_pay":{"amount":"100","precision":3,"nai":"@@000000013"},"subject":"0","permlink":"permlink0","extensions":[]}},"operation_id":0}])~",
-      R"~([5,{"trx_id":"3984630fffc862924860434b613595a3ef6f4925","block":5,"trx_in_block":2,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:15","op":["create_proposal",{"creator":"alice7ah","receiver":"ben7ah","start_date":"2015-12-31T00:00:12","end_date":"2016-01-03T00:00:12","daily_pay":"0.100 TBD","subject":"0","permlink":"permlink0","extensions":[]}]}])~"
+      R"~([5,{"trx_id":"0a538f9760ba9e06c4fe413374dbcb17e0cebf64","block":6,"trx_in_block":2,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:18","op":{"type":"create_proposal_operation","value":{"creator":"alice7ah","receiver":"ben7ah","start_date":"2015-12-31T00:00:15","end_date":"2016-01-03T00:00:15","daily_pay":{"amount":"100","precision":3,"nai":"@@000000013"},"subject":"0","permlink":"permlink0","extensions":[]}},"operation_id":0}])~",
+      R"~([5,{"trx_id":"0a538f9760ba9e06c4fe413374dbcb17e0cebf64","block":6,"trx_in_block":2,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:18","op":["create_proposal",{"creator":"alice7ah","receiver":"ben7ah","start_date":"2015-12-31T00:00:15","end_date":"2016-01-03T00:00:15","daily_pay":"0.100 TBD","subject":"0","permlink":"permlink0","extensions":[]}]}])~"
       }, {
-      R"~([6,{"trx_id":"3984630fffc862924860434b613595a3ef6f4925","block":5,"trx_in_block":2,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:15","op":{"type":"proposal_fee_operation","value":{"creator":"alice7ah","treasury":"hive.fund","proposal_id":0,"fee":{"amount":"10000","precision":3,"nai":"@@000000013"}}},"operation_id":0}])~",
-      R"~([6,{"trx_id":"3984630fffc862924860434b613595a3ef6f4925","block":5,"trx_in_block":2,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:15","op":["proposal_fee",{"creator":"alice7ah","treasury":"hive.fund","proposal_id":0,"fee":"10.000 TBD"}]}])~"
+      R"~([6,{"trx_id":"0a538f9760ba9e06c4fe413374dbcb17e0cebf64","block":6,"trx_in_block":2,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:18","op":{"type":"proposal_fee_operation","value":{"creator":"alice7ah","treasury":"hive.fund","proposal_id":0,"fee":{"amount":"10000","precision":3,"nai":"@@000000013"}}},"operation_id":0}])~",
+      R"~([6,{"trx_id":"0a538f9760ba9e06c4fe413374dbcb17e0cebf64","block":6,"trx_in_block":2,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:18","op":["proposal_fee",{"creator":"alice7ah","treasury":"hive.fund","proposal_id":0,"fee":"10.000 TBD"}]}])~"
       }, {
-      R"~([7,{"trx_id":"4aa8d1fc867bfaf9c50f3272f5899a2b153d4500","block":5,"trx_in_block":3,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:15","op":{"type":"update_proposal_operation","value":{"proposal_id":0,"creator":"alice7ah","daily_pay":{"amount":"80","precision":3,"nai":"@@000000013"},"subject":"new subject","permlink":"permlink0","extensions":[]}},"operation_id":0}])~",
-      R"~([7,{"trx_id":"4aa8d1fc867bfaf9c50f3272f5899a2b153d4500","block":5,"trx_in_block":3,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:15","op":["update_proposal",{"proposal_id":0,"creator":"alice7ah","daily_pay":"0.080 TBD","subject":"new subject","permlink":"permlink0","extensions":[]}]}])~"
+      R"~([7,{"trx_id":"c9ba69cf38ea89990ff5b3b75a4053e381d6e643","block":6,"trx_in_block":3,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:18","op":{"type":"update_proposal_operation","value":{"proposal_id":0,"creator":"alice7ah","daily_pay":{"amount":"80","precision":3,"nai":"@@000000013"},"subject":"new subject","permlink":"permlink0","extensions":[]}},"operation_id":0}])~",
+      R"~([7,{"trx_id":"c9ba69cf38ea89990ff5b3b75a4053e381d6e643","block":6,"trx_in_block":3,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:18","op":["update_proposal",{"proposal_id":0,"creator":"alice7ah","daily_pay":"0.080 TBD","subject":"new subject","permlink":"permlink0","extensions":[]}]}])~"
       }, {
-      R"~([8,{"trx_id":"e7a3be6db61976dcb884009a0aad7b01ae5c5221","block":5,"trx_in_block":5,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:15","op":{"type":"remove_proposal_operation","value":{"proposal_owner":"alice7ah","proposal_ids":[0],"extensions":[]}},"operation_id":0}])~",
-      R"~([8,{"trx_id":"e7a3be6db61976dcb884009a0aad7b01ae5c5221","block":5,"trx_in_block":5,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:15","op":["remove_proposal",{"proposal_owner":"alice7ah","proposal_ids":[0],"extensions":[]}]}])~"
+      R"~([8,{"trx_id":"7ecb01ad110dbe71345e616219645c52c3174ecc","block":6,"trx_in_block":5,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:18","op":{"type":"remove_proposal_operation","value":{"proposal_owner":"alice7ah","proposal_ids":[0],"extensions":[]}},"operation_id":0}])~",
+      R"~([8,{"trx_id":"7ecb01ad110dbe71345e616219645c52c3174ecc","block":6,"trx_in_block":5,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:18","op":["remove_proposal",{"proposal_owner":"alice7ah","proposal_ids":[0],"extensions":[]}]}])~"
       }, {
-      R"~([9,{"trx_id":"0a538f9760ba9e06c4fe413374dbcb17e0cebf64","block":6,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:18","op":{"type":"create_proposal_operation","value":{"creator":"alice7ah","receiver":"ben7ah","start_date":"2015-12-31T00:00:15","end_date":"2016-01-03T00:00:15","daily_pay":{"amount":"100","precision":3,"nai":"@@000000013"},"subject":"0","permlink":"permlink0","extensions":[]}},"operation_id":0}])~",
-      R"~([9,{"trx_id":"0a538f9760ba9e06c4fe413374dbcb17e0cebf64","block":6,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:18","op":["create_proposal",{"creator":"alice7ah","receiver":"ben7ah","start_date":"2015-12-31T00:00:15","end_date":"2016-01-03T00:00:15","daily_pay":"0.100 TBD","subject":"0","permlink":"permlink0","extensions":[]}]}])~"
+      R"~([9,{"trx_id":"537ef3a9b834e8401a59d385f6e1ed6555198304","block":7,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:21","op":{"type":"create_proposal_operation","value":{"creator":"alice7ah","receiver":"ben7ah","start_date":"2015-12-31T00:00:18","end_date":"2016-01-03T00:00:18","daily_pay":{"amount":"100","precision":3,"nai":"@@000000013"},"subject":"0","permlink":"permlink0","extensions":[]}},"operation_id":0}])~",
+      R"~([9,{"trx_id":"537ef3a9b834e8401a59d385f6e1ed6555198304","block":7,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:21","op":["create_proposal",{"creator":"alice7ah","receiver":"ben7ah","start_date":"2015-12-31T00:00:18","end_date":"2016-01-03T00:00:18","daily_pay":"0.100 TBD","subject":"0","permlink":"permlink0","extensions":[]}]}])~"
       }, {
-      R"~([10,{"trx_id":"0a538f9760ba9e06c4fe413374dbcb17e0cebf64","block":6,"trx_in_block":0,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:18","op":{"type":"proposal_fee_operation","value":{"creator":"alice7ah","treasury":"hive.fund","proposal_id":1,"fee":{"amount":"10000","precision":3,"nai":"@@000000013"}}},"operation_id":0}])~",
-      R"~([10,{"trx_id":"0a538f9760ba9e06c4fe413374dbcb17e0cebf64","block":6,"trx_in_block":0,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:18","op":["proposal_fee",{"creator":"alice7ah","treasury":"hive.fund","proposal_id":1,"fee":"10.000 TBD"}]}])~"
+      R"~([10,{"trx_id":"537ef3a9b834e8401a59d385f6e1ed6555198304","block":7,"trx_in_block":0,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:21","op":{"type":"proposal_fee_operation","value":{"creator":"alice7ah","treasury":"hive.fund","proposal_id":1,"fee":{"amount":"10000","precision":3,"nai":"@@000000013"}}},"operation_id":0}])~",
+      R"~([10,{"trx_id":"537ef3a9b834e8401a59d385f6e1ed6555198304","block":7,"trx_in_block":0,"op_in_trx":1,"virtual_op":true,"timestamp":"2016-01-01T00:00:21","op":["proposal_fee",{"creator":"alice7ah","treasury":"hive.fund","proposal_id":1,"fee":"10.000 TBD"}]}])~"
       }, {
-      R"~([11,{"trx_id":"0000000000000000000000000000000000000000","block":8,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T00:00:24","op":{"type":"comment_payout_update_operation","value":{"author":"alice7ah","permlink":"permlink0"}},"operation_id":0}])~",
-      R"~([11,{"trx_id":"0000000000000000000000000000000000000000","block":8,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T00:00:24","op":["comment_payout_update",{"author":"alice7ah","permlink":"permlink0"}]}])~"
-      } };
+      R"~([11,{"trx_id":"0000000000000000000000000000000000000000","block":9,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T00:00:27","op":{"type":"comment_payout_update_operation","value":{"author":"alice7ah","permlink":"permlink0"}},"operation_id":0}])~",
+      R"~([11,{"trx_id":"0000000000000000000000000000000000000000","block":9,"trx_in_block":4294967295,"op_in_trx":2,"virtual_op":true,"timestamp":"2016-01-01T00:00:27","op":["comment_payout_update",{"author":"alice7ah","permlink":"permlink0"}]}])~"
+    } };
 
     expected_t expected_ben7ah_history = { {
-      R"~([4,{"trx_id":"3984630fffc862924860434b613595a3ef6f4925","block":5,"trx_in_block":2,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:15","op":{"type":"create_proposal_operation","value":{"creator":"alice7ah","receiver":"ben7ah","start_date":"2015-12-31T00:00:12","end_date":"2016-01-03T00:00:12","daily_pay":{"amount":"100","precision":3,"nai":"@@000000013"},"subject":"0","permlink":"permlink0","extensions":[]}},"operation_id":0}])~",
-      R"~([4,{"trx_id":"3984630fffc862924860434b613595a3ef6f4925","block":5,"trx_in_block":2,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:15","op":["create_proposal",{"creator":"alice7ah","receiver":"ben7ah","start_date":"2015-12-31T00:00:12","end_date":"2016-01-03T00:00:12","daily_pay":"0.100 TBD","subject":"0","permlink":"permlink0","extensions":[]}]}])~"
+      R"~([4,{"trx_id":"0a538f9760ba9e06c4fe413374dbcb17e0cebf64","block":6,"trx_in_block":2,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:18","op":{"type":"create_proposal_operation","value":{"creator":"alice7ah","receiver":"ben7ah","start_date":"2015-12-31T00:00:15","end_date":"2016-01-03T00:00:15","daily_pay":{"amount":"100","precision":3,"nai":"@@000000013"},"subject":"0","permlink":"permlink0","extensions":[]}},"operation_id":0}])~",
+      R"~([4,{"trx_id":"0a538f9760ba9e06c4fe413374dbcb17e0cebf64","block":6,"trx_in_block":2,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:18","op":["create_proposal",{"creator":"alice7ah","receiver":"ben7ah","start_date":"2015-12-31T00:00:15","end_date":"2016-01-03T00:00:15","daily_pay":"0.100 TBD","subject":"0","permlink":"permlink0","extensions":[]}]}])~"
       }, {
-      R"~([5,{"trx_id":"0a538f9760ba9e06c4fe413374dbcb17e0cebf64","block":6,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:18","op":{"type":"create_proposal_operation","value":{"creator":"alice7ah","receiver":"ben7ah","start_date":"2015-12-31T00:00:15","end_date":"2016-01-03T00:00:15","daily_pay":{"amount":"100","precision":3,"nai":"@@000000013"},"subject":"0","permlink":"permlink0","extensions":[]}},"operation_id":0}])~",
-      R"~([5,{"trx_id":"0a538f9760ba9e06c4fe413374dbcb17e0cebf64","block":6,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:18","op":["create_proposal",{"creator":"alice7ah","receiver":"ben7ah","start_date":"2015-12-31T00:00:15","end_date":"2016-01-03T00:00:15","daily_pay":"0.100 TBD","subject":"0","permlink":"permlink0","extensions":[]}]}])~"
-      } };
+      R"~([5,{"trx_id":"537ef3a9b834e8401a59d385f6e1ed6555198304","block":7,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:21","op":{"type":"create_proposal_operation","value":{"creator":"alice7ah","receiver":"ben7ah","start_date":"2015-12-31T00:00:18","end_date":"2016-01-03T00:00:18","daily_pay":{"amount":"100","precision":3,"nai":"@@000000013"},"subject":"0","permlink":"permlink0","extensions":[]}},"operation_id":0}])~",
+      R"~([5,{"trx_id":"537ef3a9b834e8401a59d385f6e1ed6555198304","block":7,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:21","op":["create_proposal",{"creator":"alice7ah","receiver":"ben7ah","start_date":"2015-12-31T00:00:18","end_date":"2016-01-03T00:00:18","daily_pay":"0.100 TBD","subject":"0","permlink":"permlink0","extensions":[]}]}])~"
+    } };
 
     expected_t expected_carol7ah_history = { {
-      R"~([4,{"trx_id":"5c9221cfc5835c86be71425d55cdee6e334d6967","block":5,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:15","op":{"type":"transfer_operation","value":{"from":"carol7ah","to":"hive.fund","amount":{"amount":"30000333","precision":3,"nai":"@@000000021"},"memo":""}},"operation_id":0}])~",
-      R"~([4,{"trx_id":"5c9221cfc5835c86be71425d55cdee6e334d6967","block":5,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:15","op":["transfer",{"from":"carol7ah","to":"hive.fund","amount":"30000.333 TESTS","memo":""}]}])~"
+      R"~([4,{"trx_id":"78e016fc1e3a8cc114622f73e7927b9758093d65","block":6,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:18","op":{"type":"transfer_operation","value":{"from":"carol7ah","to":"hive.fund","amount":{"amount":"30000333","precision":3,"nai":"@@000000021"},"memo":""}},"operation_id":0}])~",
+      R"~([4,{"trx_id":"78e016fc1e3a8cc114622f73e7927b9758093d65","block":6,"trx_in_block":0,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:18","op":["transfer",{"from":"carol7ah","to":"hive.fund","amount":"30000.333 TESTS","memo":""}]}])~"
       }, {
-      R"~([5,{"trx_id":"7407474904e92ad5c9e27c8b611defc7900bc8a7","block":5,"trx_in_block":4,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:15","op":{"type":"update_proposal_votes_operation","value":{"voter":"carol7ah","proposal_ids":[0],"approve":false,"extensions":[]}},"operation_id":0}])~",
-      R"~([5,{"trx_id":"7407474904e92ad5c9e27c8b611defc7900bc8a7","block":5,"trx_in_block":4,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:15","op":["update_proposal_votes",{"voter":"carol7ah","proposal_ids":[0],"approve":false,"extensions":[]}]}])~"
+      R"~([5,{"trx_id":"23f1d022fd294e4cb774607147a9f6d8f2bdbcbe","block":6,"trx_in_block":4,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:18","op":{"type":"update_proposal_votes_operation","value":{"voter":"carol7ah","proposal_ids":[0],"approve":false,"extensions":[]}},"operation_id":0}])~",
+      R"~([5,{"trx_id":"23f1d022fd294e4cb774607147a9f6d8f2bdbcbe","block":6,"trx_in_block":4,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:18","op":["update_proposal_votes",{"voter":"carol7ah","proposal_ids":[0],"approve":false,"extensions":[]}]}])~"
       }, {
-      R"~([6,{"trx_id":"d3a94298b2ad8534770934d9157526ccfa9b35ab","block":6,"trx_in_block":1,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:18","op":{"type":"update_proposal_votes_operation","value":{"voter":"carol7ah","proposal_ids":[1],"approve":true,"extensions":[]}},"operation_id":0}])~",
-      R"~([6,{"trx_id":"d3a94298b2ad8534770934d9157526ccfa9b35ab","block":6,"trx_in_block":1,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:18","op":["update_proposal_votes",{"voter":"carol7ah","proposal_ids":[1],"approve":true,"extensions":[]}]}])~"
-      } };
+      R"~([6,{"trx_id":"7d7640421a85698856579928132152e1ef32916e","block":7,"trx_in_block":1,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:21","op":{"type":"update_proposal_votes_operation","value":{"voter":"carol7ah","proposal_ids":[1],"approve":true,"extensions":[]}},"operation_id":0}])~",
+      R"~([6,{"trx_id":"7d7640421a85698856579928132152e1ef32916e","block":7,"trx_in_block":1,"op_in_trx":0,"virtual_op":false,"timestamp":"2016-01-01T00:00:21","op":["update_proposal_votes",{"voter":"carol7ah","proposal_ids":[1],"approve":true,"extensions":[]}]}])~"
+    } };
     // Filter out usual account_create(d) and transfer to vesting (completed)_operations checked in other tests.
     uint64_t filter_low = -1ull & ~GET_LOW_OPERATION( account_create_operation ) & ~GET_LOW_OPERATION( transfer_to_vesting_operation );
     uint64_t filter_high = -1ull & ~GET_HIGH_OPERATION( account_created_operation ) & ~GET_HIGH_OPERATION( transfer_to_vesting_completed_operation );

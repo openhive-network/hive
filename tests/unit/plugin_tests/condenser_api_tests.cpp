@@ -18,6 +18,7 @@ BOOST_AUTO_TEST_CASE( get_witness_schedule_test )
   // to allow other tests using condenser_api_fixture with earlier hardforks.
   {
     db->set_hardfork( HIVE_NUM_HARDFORKS );
+    set_account_creation_fee( HIVE_asset( 3000 ) ); //3.000 HIVE, same as mainnet
     generate_block();
 
     ACTORS( DEFAULT_VESTING, (top1)(top2)(top3)(top4)(top5)(top6)(top7)(top8)(top9)(top10)

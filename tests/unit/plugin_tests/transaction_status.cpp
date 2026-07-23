@@ -28,7 +28,7 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
   try
   {
     auto _content =[]( hived_fixture& fixture, uint32_t nr_hardforks, uint32_t block_num,
-                                const trx_status& status_00, const trx_status& status_01 )
+                       const trx_status& status_00, const trx_status& status_01 )
     {
       hive::plugins::transaction_status_api::transaction_status_api_plugin* tx_status_api = nullptr;
       hive::plugins::transaction_status::transaction_status_plugin* tx_status = nullptr;
@@ -48,8 +48,6 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
           init_witnesses.push_back( HIVE_INIT_MINER_NAME + fc::to_string( i ) );
         configuration_data.set_init_witnesses( init_witnesses );
       }
-
-      configuration_data.allow_not_enough_rc = false;
 
       fixture.postponed_init(
         { 
@@ -80,6 +78,9 @@ BOOST_AUTO_TEST_CASE( transaction_status_test )
       fixture.db->set_hardfork( nr_hardforks );
       fixture.generate_block();
       fixture.db->_log_hardforks = true;
+
+      BOOST_REQUIRE( fixture.db->has_hardfork( HIVE_HARDFORK_0_20 ) );
+      fixture.set_account_creation_fee( HIVE_asset( 3000 ) ); //3.000 HIVE, same as mainnet
 
       fixture.vest( HIVE_INIT_MINER_NAME, HIVE_asset( 10'000 ) );
       fixture.validate_database();

@@ -126,6 +126,7 @@ BOOST_AUTO_TEST_CASE( inactive_proposals_have_votes )
     BOOST_TEST_MESSAGE( "Testing: proposals before activation can have votes" );
 
     ACTORS( DEFAULT_VESTING, (alice)(bob)(carol)(dan) );
+    vest( "alice", HIVE_asset( 50'000 ) ); // alice is creating proposals
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -323,6 +324,9 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes )
     vest( "acc8", HIVE_asset( 8'000 ) );
 
     generate_block();
+    vest( "accp", HIVE_asset( 50'000 ) ); // accp is creating proposals
+    vest( "accw", HIVE_asset( 20'000 ) ); // accw becomes a witness
+    vest( "accw2", HIVE_asset( 20'000 ) ); // accw2 becomes a witness
     set_price_feed( HBD_price( 1000, 1000 ) );
     generate_block();
 
@@ -671,17 +675,7 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes_with_proxy )
 {
   try
   {
-    ACTORS( DEFAULT_VESTING, (witness)(witness2)(propcreator)(propcreator2)(alice)(bobproxy)(carol) );
-
-    vest( "witness", HIVE_asset( 1'000 ) );
-    vest( "witness2", HIVE_asset( 1'000 ) );
-
-    vest( "propcreator", HIVE_asset( 3'000 ) );
-    vest( "propcreator2", HIVE_asset( 3'000 ) );
-
-    vest( "alice", HIVE_asset( 5'000 ) );
-    vest( "bobproxy", HIVE_asset( 5'000 ) );
-    vest( "carol", HIVE_asset( 5'000 ) );
+    ACTORS( HIVE_asset( 20'000 ), (witness)(witness2)(propcreator)(propcreator2)(alice)(bobproxy)(carol) );
 
     generate_block();
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -713,9 +707,9 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes_with_proxy )
 
     {
       BOOST_TEST_MESSAGE( "vesting: [alice, bobproxy, carol]: " +
-                    std::to_string( get_vesting( "alice" ).amount.value ) + ", " +
-                    std::to_string( get_vesting( "bobproxy" ).amount.value ) + ", " +
-                    std::to_string( get_vesting( "carol" ).amount.value ) );
+                          std::to_string( get_vesting( "alice" ).amount.value ) + ", " +
+                          std::to_string( get_vesting( "bobproxy" ).amount.value ) + ", " +
+                          std::to_string( get_vesting( "carol" ).amount.value ) );
     }
     {
       witness_vote( "alice", "witness", alice_private_key );
@@ -845,7 +839,7 @@ BOOST_AUTO_TEST_CASE( db_remove_expired_governance_votes_threshold_exceeded )
   {
     BOOST_TEST_MESSAGE( "Testing: db_remove_expired_governance_votes when threshold stops processing" );
 
-    ACTORS( DEFAULT_VESTING,
+    ACTORS( HIVE_asset( 50'000 ),
     (a00)(a01)(a02)(a03)(a04)(a05)(a06)(a07)(a08)(a09)
     (a10)(a11)(a12)(a13)(a14)(a15)(a16)(a17)(a18)(a19)
     (a20)(a21)(a22)(a23)(a24)(a25)(a26)(a27)(a28)(a29)
@@ -1693,13 +1687,14 @@ try
   FC_LOG_AND_RETHROW()
 }
 
-BOOST_AUTO_TEST_CASE( expired_proposals_forbidden_voting)
+BOOST_AUTO_TEST_CASE( expired_proposals_forbidden_voting )
 {
   try
   {
     BOOST_TEST_MESSAGE( "Testing: when proposals are expired, then voting on such proposals are not allowed" );
 
     ACTORS( DEFAULT_VESTING, (alice)(bob)(carol)(carol1)(carol2) );
+    vest( "alice", HIVE_asset( 50'000 ) ); // alice is creating proposals
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -1772,13 +1767,14 @@ BOOST_AUTO_TEST_CASE( expired_proposals_forbidden_voting)
   FC_LOG_AND_RETHROW()
 }
 
-BOOST_AUTO_TEST_CASE( proposals_maintenance)
+BOOST_AUTO_TEST_CASE( proposals_maintenance )
 {
   try
   {
     BOOST_TEST_MESSAGE( "Testing: removing inactive proposals" );
 
     ACTORS( DEFAULT_VESTING, (alice)(bob) );
+    vest( "alice", HIVE_asset( 50'000 ) ); // alice is creating proposals
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -2129,6 +2125,7 @@ BOOST_AUTO_TEST_CASE( proposal_vote_object_01_apply )
     BOOST_TEST_MESSAGE( "Testing: proposal_vote_object_operation" );
 
     ACTORS( DEFAULT_VESTING, (alice)(bob)(carol)(dan) );
+    vest( "alice", HIVE_asset( 50'000 ) ); // alice is creating proposals
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -2769,6 +2766,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_001 )
     BOOST_TEST_MESSAGE( "Testing: remove proposal: basic verification operation - proposal removal (one from many)." );
     dhf_database::create_proposal_data cpd(db->head_block_time());
     ACTORS( DEFAULT_VESTING, (alice)(bob) );
+    vest( "alice", HIVE_asset( 50'000 ) ); // alice is creating proposals
     generate_block();
     ISSUE_FUNDS( cpd.creator, HBD_asset( 80'000 ) );
     generate_block();
@@ -2821,6 +2819,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_002 )
     BOOST_TEST_MESSAGE( "Testing: remove proposal: basic verification operation - proposal removal (n from many in two steps)." );
     dhf_database::create_proposal_data cpd(db->head_block_time());
     ACTORS( DEFAULT_VESTING, (alice)(bob) );
+    vest( "alice", HIVE_asset( 50'000 ) ); // alice is creating proposals
     generate_block();
     ISSUE_FUNDS( cpd.creator, HBD_asset( 80'000 ) );
     generate_block();
@@ -2868,6 +2867,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_003 )
     BOOST_TEST_MESSAGE( "Testing: remove proposal: basic verification operation - proper proposal deletion check (one at time)." );
     dhf_database::create_proposal_data cpd(db->head_block_time());
     ACTORS( DEFAULT_VESTING, (alice)(bob) );
+    vest( "alice", HIVE_asset( 50'000 ) ); // alice is creating proposals
     generate_block();
     ISSUE_FUNDS( cpd.creator, HBD_asset( 80'000 ) );
     generate_block();
@@ -2915,6 +2915,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_004 )
     BOOST_TEST_MESSAGE( "Testing: remove proposal: basic verification operation - proper proposal deletion check (two at one time)." );
     dhf_database::create_proposal_data cpd(db->head_block_time());
     ACTORS( DEFAULT_VESTING, (alice)(bob) );
+    vest( "alice", HIVE_asset( 50'000 ) ); // alice is creating proposals
     generate_block();
     ISSUE_FUNDS( cpd.creator, HBD_asset( 80'000 ) );
     generate_block();
@@ -3017,6 +3018,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_006 )
     BOOST_TEST_MESSAGE( "Testing: remove proposal: basic verification operation - remove proposal with votes and one voteless at same time." );
     dhf_database::create_proposal_data cpd(db->head_block_time());
     ACTORS( DEFAULT_VESTING, (alice)(bob) );
+    vest( "alice", HIVE_asset( 50'000 ) ); // alice is creating proposals
     generate_block();
     ISSUE_FUNDS( cpd.creator, HBD_asset( 80'000 ) );
     generate_block();
@@ -3055,6 +3057,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_007 )
     BOOST_TEST_MESSAGE( "Testing: remove proposal: basic verification operation - remove proposals with votes at same time." );
     dhf_database::create_proposal_data cpd(db->head_block_time());
     ACTORS( DEFAULT_VESTING, (alice)(bob)(carol) );
+    vest( "alice", HIVE_asset( 50'000 ) ); // alice is creating proposals
     generate_block();
     ISSUE_FUNDS( cpd.creator, HBD_asset( 80'000 ) );
     generate_block();
@@ -3148,6 +3151,7 @@ BOOST_AUTO_TEST_CASE( remove_proposal_011 )
     BOOST_TEST_MESSAGE( "Testing: remove proposal: operation arguments validation - invalid array(array with greater number of digits than allowed)" );
     dhf_database::create_proposal_data cpd(db->head_block_time());
     ACTORS( DEFAULT_VESTING, (alice)(bob) );
+    vest( "alice", HIVE_asset( 50'000 ) ); // alice is creating proposals
     generate_block();
     ISSUE_FUNDS( cpd.creator, HBD_asset( 80'000 ) );
     generate_block();
@@ -3196,7 +3200,7 @@ BOOST_AUTO_TEST_CASE( proposals_maintenance_01 )
   {
     BOOST_TEST_MESSAGE( "Testing: removing of old proposals using threshold" );
 
-    ACTORS( DEFAULT_VESTING, (a00)(a01)(a02)(a03)(a04) );
+    ACTORS( HIVE_asset( 100'000 ), (a00)(a01)(a02)(a03)(a04) ); // extra vesting to cover RC costs of proposals
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -3287,7 +3291,7 @@ BOOST_AUTO_TEST_CASE( proposals_maintenance_02 )
   {
     BOOST_TEST_MESSAGE( "Testing: removing of old proposals + votes using threshold" );
 
-    ACTORS( DEFAULT_VESTING, (a00)(a01)(a02)(a03)(a04) );
+    ACTORS( HIVE_asset( 50'000 ), (a00)(a01)(a02)(a03)(a04) ); // extra vesting to cover RC costs of proposals
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -3397,6 +3401,7 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold )
     BOOST_TEST_MESSAGE( "Testing: removing of old proposals + votes using threshold" );
 
     ACTORS( DEFAULT_VESTING, (a00)(a01)(a02)(a03)(a04) );
+    vest( "a00", HIVE_asset( 50'000 ) ); // a00 is creating proposals
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -3495,7 +3500,7 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_01 )
   {
     BOOST_TEST_MESSAGE( "Testing: removing of old proposals/votes using threshold " );
 
-    ACTORS( DEFAULT_VESTING, (a00)(a01)(a02)(a03)(a04)(a05) );
+    ACTORS( HIVE_asset( 50'000 ), (a00)(a01)(a02)(a03)(a04)(a05) ); // extra vesting to cover RC costs of proposals
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -3742,6 +3747,7 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_02 )
           (a30)(a31)(a32)(a33)(a34)(a35)(a36)(a37)(a38)(a39)
           (a40)(a41)(a42)(a43)(a44)(a45)(a46)(a47)(a48)(a49)
         );
+    vest( "a00", HIVE_asset( 50'000 ) ); // a00 is creating proposals
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -4056,6 +4062,7 @@ BOOST_AUTO_TEST_CASE( update_proposal_000 )
     BOOST_TEST_MESSAGE( "Testing: update proposal - update subject" );
 
     ACTORS( DEFAULT_VESTING, (alice)(bob) );
+    vest( "alice", HIVE_asset( 50'000 ) ); // alice is creating proposals
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
@@ -4510,7 +4517,8 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_03 )
   {
     BOOST_TEST_MESSAGE( "Testing: removing of all proposals/votes in one block using threshold = -1" );
 
-    std::vector< performance::initial_data > inits = performance::generate_accounts( this, 200 );
+    // extra vesting so each account has enough RC to create a proposal and cast many proposal votes
+    std::vector< performance::initial_data > inits = performance::generate_accounts( this, 200, HIVE_asset( 200'000 ) );
 
     generate_block();
 

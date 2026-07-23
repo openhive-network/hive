@@ -274,7 +274,6 @@ class configuration
     fc::microseconds min_comment_edit_interval = fc::seconds(3);
     uint64_t         custom_op_block_limit = 5;
 
-    bool allow_not_enough_rc = false;
     uint32_t rc_stats_report_frequency = // in blocks
 #ifdef IS_TEST_NET
       400; // HIVE_BLOCKS_PER_HOUR/3 - three reports per hour for testnet
