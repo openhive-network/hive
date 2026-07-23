@@ -238,8 +238,10 @@ BOOST_AUTO_TEST_CASE( nested_comments )
 
 void fork_reverts_cashout_scanario( const std::string& comment_archive_type, bool migrate, bool undoable_migration, const char* assertion_message )
 {
+  configuration_data = configuration(); // start with fresh configuration
   configuration_data.set_cashout_related_values( 0, 9, 9 * 2, 9 * 7, 3 );
   autoscope( []() { configuration_data.reset_cashout_values(); } );
+  // note: the test does not stabilize vest price, so RC costs remain minimal while rc_adjustment is large
 
   hived_fixture test;
   test.postponed_init( {
@@ -436,8 +438,8 @@ BOOST_FIXTURE_TEST_CASE( inconsistent_comment_archive, empty_fixture )
     {
       clean_database_fixture fixture( 512U, fc::optional<uint32_t>(), false ); // don't init AH (there is separate test for that)
       comment_archive_dir = fixture.get_chain_plugin().comment_storage_dir();
-      fixture.account_create( "alice", fixture.init_account_pub_key );
-      fixture.account_create( "bob", fixture.init_account_pub_key );
+      fixture.account_create( "alice", fixture.init_account_pub_key, fixture.init_account_pub_key, HIVE_asset( 10'000 ) );
+      fixture.account_create( "bob", fixture.init_account_pub_key, fixture.init_account_pub_key, HIVE_asset( 10'000 ) );
       fixture.post_comment( "alice", "test", "test", "test body", "category", fixture.init_account_priv_key );
       // first 30 blocks use different LIB mechanics
       fixture.generate_blocks( 3 * HIVE_MAX_WITNESSES ); // the comment should be archived after that

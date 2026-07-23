@@ -532,7 +532,7 @@ BOOST_AUTO_TEST_CASE( undo_generate_blocks )
   {
     BOOST_TEST_MESSAGE( "--- Testing: undo_generate_blocks" );
 
-    ACTORS( DEFAULT_VESTING, (alice)(bob)(chuck)(dan) );
+    ACTORS( HIVE_asset( 15'000 ), (alice)(bob)(chuck)(dan) ); // extra RC for comments
 
     struct _data
     {

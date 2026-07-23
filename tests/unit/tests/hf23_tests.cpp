@@ -378,6 +378,7 @@ BOOST_AUTO_TEST_CASE( basic_test_06 )
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
+    set_account_creation_fee( HIVE_asset( 1 ) ); // turn off minimum limit on delegation size
     generate_block();
 
     HIVE_asset _10( 10'000 );
@@ -455,6 +456,7 @@ BOOST_AUTO_TEST_CASE( basic_test_05 )
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
+    set_account_creation_fee( HIVE_asset( 1 ) ); // turn off minimum delegation limit
     generate_block();
 
     HIVE_asset _10( 10'000 );
@@ -545,6 +547,7 @@ BOOST_AUTO_TEST_CASE( basic_test_04 )
     generate_block();
 
     set_price_feed( HBD_price( 1000, 1000 ) );
+    set_account_creation_fee( HIVE_asset( 1 ) ); // turn off minimum delegation limit
     generate_block();
 
     HIVE_asset _10( 10'000 );

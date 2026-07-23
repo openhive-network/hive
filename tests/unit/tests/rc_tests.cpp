@@ -141,7 +141,13 @@ BOOST_AUTO_TEST_CASE( rc_usage_buckets )
     for( const auto& bucket : bucketIdx )
       check_eq( bucket.get_usage(), {} );
 
-    ACTORS( DEFAULT_VESTING, (alice)(bob)(sam) );
+    // This test deliberately spams operations to drive the RC resource weights around (that is what it
+    // measures), so the base per-operation RC cost keeps climbing as the test progresses - by the end a
+    // single transfer/custom_json costs many trillions of RC. The accounts therefore need a large stake to
+    // afford the most expensive operations. The extra vesting is negligible next to the ~200M HP genesis
+    // supply and does not affect the measured RC costs (those depend on resource usage, not on the payer's
+    // balance).
+    ACTORS( HIVE_asset( 100'000'000 ), (alice)(bob)(sam) );
     fund( "alice", HIVE_asset( 1'000 ) );
     fund( "bob", HIVE_asset( 1'000 ) );
     fund( "sam", HIVE_asset( 1'000 ) );
@@ -343,12 +349,7 @@ BOOST_AUTO_TEST_CASE( rc_single_recover_account )
 {
   try
   {
-    set_account_creation_fee( HIVE_asset( 3'000 ) ); // realistic fee gives accounts necessary base RC mana
-    generate_block();
-
     BOOST_TEST_MESSAGE( "Testing rc resource cost of single recover_account_operation" );
-
-    configuration_data.allow_not_enough_rc = false;
 
     ACTORS( DEFAULT_VESTING, (agent)(victim)(thief) );
     generate_block(); 
@@ -466,8 +467,6 @@ BOOST_AUTO_TEST_CASE( rc_many_recover_accounts )
   try
   {
     BOOST_TEST_MESSAGE( "Testing rc resource cost of many recover_account_operations" );
-
-    configuration_data.allow_not_enough_rc = false;
 
     ACTORS( DEFAULT_VESTING, (agent)(victim1)(victim2)(victim3)(thief1)(thief2)(thief3) );
     generate_block();
@@ -617,12 +616,7 @@ BOOST_AUTO_TEST_CASE( rc_multisig_recover_account )
 {
   try
   {
-    set_account_creation_fee( HIVE_asset( 3'000 ) ); // realistic fee gives accounts necessary base RC mana
-    generate_block();
-
     BOOST_TEST_MESSAGE( "Testing rc resource cost of recover_account_operation with complex authority" );
-
-    configuration_data.allow_not_enough_rc = false;
 
     static_assert( HIVE_MAX_SIG_CHECK_DEPTH >= 2 );
     static_assert( HIVE_MAX_SIG_CHECK_ACCOUNTS >= 3 * HIVE_MAX_AUTHORITY_MEMBERSHIP );
@@ -811,12 +805,7 @@ BOOST_AUTO_TEST_CASE( rc_tx_order_bug )
 {
   try
   {
-    set_account_creation_fee( HIVE_asset( 3'000 ) ); // realistic fee gives accounts necessary base RC mana
-    generate_block();
-
     BOOST_TEST_MESSAGE( "Testing different transaction order in pending transactions vs actual block" );
-
-    configuration_data.allow_not_enough_rc = false;
 
     ACTORS( DEFAULT_VESTING, (alice)(bob) );
     generate_block();
@@ -914,8 +903,6 @@ BOOST_AUTO_TEST_CASE( rc_pending_data_reset )
   try
   {
     BOOST_TEST_MESSAGE( "Testing if block info (formely rc_pending_data) resets properly" );
-
-    configuration_data.allow_not_enough_rc = false;
 
     ACTORS( DEFAULT_VESTING, (alice)(bob) );
     generate_block();
@@ -1043,21 +1030,16 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_operations )
 {
   try
   {
-    set_account_creation_fee( HIVE_asset( 3'000 ) ); // realistic fee gives accounts necessary base RC mana
-    generate_block();
-
     BOOST_TEST_MESSAGE( "Testing differential RC usage for selected operations" );
-
-    configuration_data.allow_not_enough_rc = false;
-    // keep the minimum RC delegation at 0 (account_creation_fee/3 rounds down to 0) so the small test
-    // delegations below are accepted; the measured resource usage does not depend on the creation fee
-    set_account_creation_fee( HIVE_asset( 1 ) );
 
     generate_block();
 
     ACTORS( HIVE_asset( 50'000 ), (alice)(bob)(sam) );
     generate_block();
     fund( "alice", HIVE_asset( 1'000'000 ) );
+    // keep the minimum RC delegation at 0 (account_creation_fee/3 rounds down to 0) so the small test
+    // delegations below are accepted; the measured resource usage does not depend on the creation fee
+    set_account_creation_fee( HIVE_asset( 1 ) );
     generate_block();
 
     auto alice_owner_key = generate_private_key( "alice_owner" );
@@ -1347,11 +1329,9 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_negative )
   {
     BOOST_TEST_MESSAGE( "Testing differential RC usage with potentially negative value" );
 
-    configuration_data.allow_not_enough_rc = false;
     // keep the minimum RC delegation at 0 (account_creation_fee/3 rounds down to 0) so the small test
     // delegations below are accepted; the measured resource usage does not depend on the creation fee
     set_account_creation_fee( HIVE_asset( 1 ) );
-
     generate_block();
 
     PREP_ACTOR( alice );
@@ -1516,12 +1496,7 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_many_ops )
 {
   try
   {
-    set_account_creation_fee( HIVE_asset( 3'000 ) ); // realistic fee gives accounts necessary base RC mana
-    generate_block();
-
     BOOST_TEST_MESSAGE( "Testing differential RC usage with multiple operations" );
-
-    configuration_data.allow_not_enough_rc = false;
 
     ACTORS( HIVE_asset( 10'000 ), (alice)(carol) );
     generate_block();
@@ -1579,7 +1554,6 @@ BOOST_AUTO_TEST_CASE( rc_exception_during_modify )
   try
   {
     BOOST_TEST_MESSAGE( "Testing exception throw during rc_account modify" );
-    configuration_data.allow_not_enough_rc = false;
 
     ACTORS( DEFAULT_VESTING, (dave) );
     generate_block();

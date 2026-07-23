@@ -24,8 +24,6 @@ clean_database_fixture::clean_database_fixture(
   try {
 
   configuration_data.set_initial_asset_supply( init_hive_supply, init_hbd_supply, init_vesting_supply );
-  _prev_allow_not_enough_rc = configuration_data.allow_not_enough_rc;
-  configuration_data.allow_not_enough_rc = true;
   {
     std::vector< std::string > init_witnesses;
     for( int i = HIVE_NUM_INIT_MINERS; i < HIVE_MAX_WITNESSES; ++i )
@@ -69,6 +67,14 @@ clean_database_fixture::clean_database_fixture(
   inject_hardfork( hardfork.valid() ? ( *hardfork ) : HIVE_BLOCKCHAIN_VERSION.minor_v() );
   db->_log_hardforks = true;
 
+  // Make test accounts behave like real ones with respect to RC. On testnet the
+  // default account_creation_fee is 0.001 (promptly changing to 0.030 during activation of HF20),
+  // so post-HF20 accounts get very small rc_adjustment - they risk running out of RC pretty quickly.
+  // Mainnet has used 3.000 HIVE for a long time, which gives every account a reserve that is not
+  // lost even when it delegates away or fails to accumulate any vesting stake.
+  if( db->has_hardfork( HIVE_HARDFORK_0_20 ) )
+    set_account_creation_fee( HIVE_asset( 3000 ) ); //3.000 HIVE, same as mainnet
+
   vest( HIVE_INIT_MINER_NAME, HIVE_asset( 10'000 ) );
   validate_database();
 
@@ -84,7 +90,6 @@ clean_database_fixture::clean_database_fixture(
 clean_database_fixture::~clean_database_fixture()
 {
   configuration_data.set_init_witnesses( {} );
-  configuration_data.allow_not_enough_rc = _prev_allow_not_enough_rc; // restore so it doesn't leak into later fixtures
 }
 
 void clean_database_fixture::validate_database()

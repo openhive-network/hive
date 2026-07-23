@@ -229,7 +229,7 @@ BOOST_AUTO_TEST_CASE( account_create_apply )
     validate_database();
 
     issue_funds( HIVE_TEMP_ACCOUNT, HIVE_asset( 10'000 ) );
-    vest( HIVE_TEMP_ACCOUNT, HIVE_asset( 10'000 ) );
+    vest( HIVE_TEMP_ACCOUNT, HIVE_asset( 30'000 ) ); // extra RC for account creation
 
     BOOST_TEST_MESSAGE( "--- Test account creation with temp account does not set recovery account" );
     op.creator = HIVE_TEMP_ACCOUNT;
@@ -471,6 +471,7 @@ BOOST_AUTO_TEST_CASE( comment_apply )
     BOOST_TEST_MESSAGE( "Testing: comment_apply" );
 
     ACTORS( DEFAULT_VESTING, (alice)(bob)(sam) );
+    vest( "sam", HIVE_asset( 15'000 ) ); // extra RC for various operations
     generate_blocks( 60 / HIVE_BLOCK_INTERVAL );
 
     comment_operation op;
@@ -2005,6 +2006,7 @@ BOOST_AUTO_TEST_CASE( account_witness_vote_apply )
     BOOST_TEST_MESSAGE( "Testing: account_witness_vote_apply" );
 
     ACTORS( DEFAULT_VESTING, (alice)(bob)(sam) );
+    vest( "sam", HIVE_asset( 25'000 ) ); // extra RC for various operations
     generate_block();
     const auto& alice = db->get_account( "alice" );
     const auto& bob = db->get_account( "bob" );
@@ -4684,7 +4686,7 @@ BOOST_AUTO_TEST_CASE( account_recovery )
   {
     BOOST_TEST_MESSAGE( "Testing: account recovery" );
 
-    ACTORS( DEFAULT_VESTING, (alice) );
+    ACTORS( HIVE_asset( 40'000 ), (alice) ); // extra RC for various operations
     fund( "alice", HIVE_asset( 1'000'000 ) );
     generate_block();
 
@@ -5258,6 +5260,7 @@ BOOST_AUTO_TEST_CASE( escrow_approve_apply )
   {
     BOOST_TEST_MESSAGE( "Testing: escrow_approve_apply" );
     ACTORS( DEFAULT_VESTING, (alice)(bob)(sam)(dave) );
+    vest( "alice", HIVE_asset( 15'000 ) ); // extra RC for various operations
     generate_block();
     fund( "alice", HIVE_asset( 10'000 ) );
 
@@ -6302,6 +6305,7 @@ BOOST_AUTO_TEST_CASE( escrow_limit )
     BOOST_TEST_MESSAGE( "Testing: escrow_limit" );
 
     ACTORS( DEFAULT_VESTING, (alice)(bob)(sam) );
+    vest( "alice", HIVE_asset( 1'500'000 ) ); // extra RC - alice runs ton of escrow_transfers in a row
     fund( "alice", HIVE_asset( 10'000 ) );
     generate_block();
 
@@ -7099,10 +7103,7 @@ BOOST_AUTO_TEST_CASE( decline_voting_rights_apply )
   {
     BOOST_TEST_MESSAGE( "Testing: decline_voting_rights_apply" );
 
-    ACTORS( DEFAULT_VESTING, (alice)(bob) );
-    generate_block();
-    vest( "alice", HIVE_asset( 10'000 ) );
-    vest( "bob", HIVE_asset( 10'000 ) );
+    ACTORS( HIVE_asset( 25'000 ), (alice)(bob) );
     generate_block();
 
     account_witness_proxy_operation proxy;
@@ -8340,6 +8341,7 @@ BOOST_AUTO_TEST_CASE( comment_options_deleted_permlink_reuse )
   {
     BOOST_TEST_MESSAGE( "Test if comment options persist through deleted comment reuse" );
     ACTORS( DEFAULT_VESTING, (alice)(bob) );
+    vest( "alice", HIVE_asset( 15'000 ) ); // extra RC for various operations
     generate_block();
 
     db_plugin->debug_update( [=]( database& db )
@@ -8634,7 +8636,7 @@ BOOST_AUTO_TEST_CASE( witness_set_properties_apply )
   {
     BOOST_TEST_MESSAGE( "Testing: witness_set_properties_apply" );
 
-    ACTORS( DEFAULT_VESTING, (alice) );
+    ACTORS( HIVE_asset( 15'000 ), (alice) ); // extra RC for various operations
     fund( "alice", HIVE_asset( 10'000 ) );
     private_key_type signing_key = generate_private_key( "old_key" );
 
@@ -8815,7 +8817,7 @@ BOOST_AUTO_TEST_CASE( claim_account_apply )
   try
   {
     BOOST_TEST_MESSAGE( "Testing: claim_account_apply" );
-    ACTORS( DEFAULT_VESTING, (alice) );
+    ACTORS( HIVE_asset( 10'000'000 ), (alice) ); // alice needs a lot of RC for account token claims
     generate_block();
 
     issue_funds( "alice", HIVE_asset( 20'000 ) );
@@ -9100,8 +9102,8 @@ BOOST_AUTO_TEST_CASE( create_claimed_account_apply )
   {
     BOOST_TEST_MESSAGE( "Testing: create_claimed_account_apply" );
 
-    ACTORS( DEFAULT_VESTING, (alice) );
-    vest( HIVE_TEMP_ACCOUNT, HIVE_asset( 10'000 ) );
+    ACTORS( HIVE_asset( 50'000 ), (alice) ); // extra RC for account creation
+    vest( HIVE_TEMP_ACCOUNT, HIVE_asset( 50'000 ) ); // temp also creates account
     generate_block();
 
     signed_transaction tx;
@@ -9133,7 +9135,8 @@ BOOST_AUTO_TEST_CASE( create_claimed_account_apply )
     generate_block();
     op.owner = authority( 1, "bob", 1 );
     tx.clear();
-    BOOST_REQUIRE_THROW( push_transaction( tx, alice_private_key ), fc::exception );
+    tx.operations.push_back( op );
+    HIVE_REQUIRE_ASSERT( push_transaction( tx, alice_private_key ), "a != nullptr" );
     validate_database();
 
 
@@ -9863,6 +9866,7 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_max_open_transfers )
   {
     BOOST_TEST_MESSAGE( "Testing: too many open recurrent transfers" );
     ACTORS( DEFAULT_VESTING, (alice)(bob) );
+    vest( "alice", HIVE_asset( 60'000 ) ); // extra RC - alice runs tons of recurrent_transfers in one block
 
     generate_block();
 
@@ -9881,7 +9885,8 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_max_open_transfers )
     op.recurrence = 72;
     op.executions = 13;
 
-    for (int i = 0; i < HIVE_MAX_OPEN_RECURRENT_TRANSFERS; i++) {
+    for( int i = 0; i < HIVE_MAX_OPEN_RECURRENT_TRANSFERS; ++i )
+    {
       op.to = "actor" + std::to_string(i);
       push_transaction(op, alice_private_key);
     }
@@ -9943,7 +9948,7 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_max_transfer_processed_per_block )
   try
   {
     BOOST_TEST_MESSAGE( "Testing: too many open recurrent transfers" );
-    ACTORS( DEFAULT_VESTING, (alice)(bob)(eve)(martin) );
+    ACTORS( HIVE_asset( 60'000 ), (alice)(bob)(eve)(martin) ); // extra RC to cover tons of recurrent transfers in single block
     generate_block();
 
     #define CREATE_ACTORS(z, n, text) ACTORS( DEFAULT_VESTING, (actor ## n) );
@@ -9965,20 +9970,23 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_max_transfer_processed_per_block )
     op.executions = 25;
 
     // 1000 recurrent transfers
-    for (int k = 0; k < 4; k++) {
+    for( int k = 0; k < 4; ++k )
+    {
       op.from = senders[k];
-      for (int i = 0; i < 250; i++) {
+      for( int i = 0; i < 250; ++i )
+      {
         op.to = "actor" + std::to_string(i);
-        push_transaction(op, senders_keys[k]);
+        push_transaction( op, senders_keys[k] );
       }
     }
 
     // Those transfers won't be executed on the first block but on the second
-    for (int k = 0; k < 4; k++) {
+    for( int k = 0; k < 4; ++k )
+    {
       op.from = senders[k];
       op.to = "actor250";
       op.amount = ASSET( "3.000 TESTS" );
-      push_transaction(op, senders_keys[k]);
+      push_transaction( op, senders_keys[k] );
     }
 
     BOOST_TEST_MESSAGE( "Testing: executing the first 1000 recurrent transfers");
@@ -10275,6 +10283,7 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_exact_max )
     BOOST_TEST_MESSAGE( "recurrent_transfer with exactly max allowed end date" );
 
     ACTORS( DEFAULT_VESTING, (alice)(bob) );
+    vest( "alice", HIVE_asset( 10'000 ) ); // extra RC for recurrent transfers
     generate_block();
 
     issue_funds( "alice", HBD_asset( 200'000 ) );
@@ -10431,6 +10440,7 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_edit_overextended )
     BOOST_TEST_MESSAGE( "recurrent_transfer edit that overextends duration" );
 
     ACTORS( DEFAULT_VESTING, (alice)(bob) );
+    vest( "alice", HIVE_asset( 10'000 ) ); // extra RC for recurrent transfers
     generate_block();
 
     issue_funds( "alice", HBD_asset( 200'000 ) );
@@ -10788,7 +10798,17 @@ struct timeshare_test_fixture : clean_database_fixture
     vest( "timesharevoter2", HIVE_asset( 10'000'000 ) );
     vest( "timesharevoter3", HIVE_asset( 100 ) );
 
+    // littlevoter1 toggles its witness vote ~2100 times below. It must stay a tiny-weight voter (the test
+    // relies on its vote being too small to alter the schedule), so instead of extra vesting we give the
+    // littlevoters a large non-delegatable rc_adjustment floor by creating them under a high
+    // account_creation_fee - that is pure RC, it does not count as vote weight, and (unlike direct RC
+    // delegation) it works pre-HF26 too.
+    set_account_creation_fee( HIVE_asset( 1'500'000 ) );
+    generate_block();
     ACTORS( DEFAULT_VESTING, (littlevoter1)(littlevoter2)(littlevoter3)(littlevoter4)(littlevoter5)(littlevoter6)(littlevoter7)(littlevoter8)(littlevoter9)(littlevoter10) );
+    generate_block();
+    set_account_creation_fee( HIVE_asset( 3'000 ) ); // restore mainnet-like fee
+    generate_block();
     for( unsigned i = 1; i <= 10; ++i )
       vest( "littlevoter" + std::to_string(i), HIVE_asset( 1 ) );
 

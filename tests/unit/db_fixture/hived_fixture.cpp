@@ -231,6 +231,8 @@ json_rpc_database_fixture::json_rpc_database_fixture()
   generate_block();
   db->_log_hardforks = true;
 
+  set_account_creation_fee( HIVE_asset( 3000 ) ); //3.000 HIVE, same as mainnet
+
   vest( HIVE_INIT_MINER_NAME, HIVE_asset( 10'000 ) );
   validate_database();
 

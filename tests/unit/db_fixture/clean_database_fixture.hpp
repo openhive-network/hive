@@ -22,11 +22,6 @@ struct clean_database_fixture : public hived_fixture
 
   void validate_database();
   void inject_hardfork( uint32_t hardfork );
-
-private:
-  // clean_database_fixture forces allow_not_enough_rc on; remember the previous value so the destructor
-  // restores it instead of clobbering a value a surrounding test (or outer fixture) intentionally set.
-  bool _prev_allow_not_enough_rc = false;
 };
 
 struct pruned_database_fixture : public clean_database_fixture

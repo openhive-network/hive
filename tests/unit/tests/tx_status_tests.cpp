@@ -184,7 +184,7 @@ BOOST_AUTO_TEST_CASE( regular_transactions )
       } );
     } );
 
-    ACTORS( DEFAULT_VESTING, (alice)(bob)(carol)(dan) );
+    ACTORS( HIVE_asset( 15'000 ), (alice)(bob)(carol)(dan) ); // extra RC for comments
     generate_block();
 
     expectation_set check( *db );
