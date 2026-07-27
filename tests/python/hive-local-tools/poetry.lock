@@ -633,13 +633,13 @@ reference = "gitlab-hive"
 
 [[package]]
 name = "hiveio-test-tools"
-version = "2.0.2.post20260630234420"
+version = "2.0.3rc0.post20260717004842"
 description = "Tools for testing hive software"
 optional = false
 python-versions = ">=3.12,<4"
 groups = ["main"]
 files = [
-    {file = "hiveio_test_tools-2.0.2.post20260630234420-py3-none-any.whl", hash = "sha256:f13fbbaf48661cc8efa08aff0a61a89b613e7e4b09133e94abe356778372b705"},
+    {file = "hiveio_test_tools-2.0.3rc0.post20260717004842-py3-none-any.whl", hash = "sha256:ca43ce2742ed728887a9e2e8e6fb6167d7d2001f6be2b9e0e45d6a44a6a979c7"},
 ]
 
 [package.dependencies]
@@ -647,7 +647,7 @@ abstractcp = ">=1.0.0,<2.0.0"
 hiveio-api = ">=1.28.8rc12.dev0"
 hiveio-beekeepy = ">=1.28.6.dev0,<2.0.0"
 hiveio-schemas = ">=1.28.2-post.0,<2.0.0"
-hiveio-wax = "2.0.2.post20260630234420"
+hiveio-wax = "2.0.3rc0.post20260717004842"
 loguru = ">=0.7.2,<0.8.0"
 msgspec = ">=0.20.0,<0.21.0"
 python-dateutil = ">=2.8.2,<3.0.0"
@@ -659,14 +659,14 @@ reference = "gitlab-hive"
 
 [[package]]
 name = "hiveio-wax"
-version = "2.0.2.post20260630234420"
+version = "2.0.3rc0.post20260717004842"
 description = ""
 optional = false
 python-versions = ">=3.12,<4"
 groups = ["main"]
 files = [
-    {file = "hiveio_wax-2.0.2.post20260630234420-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:75ccd592cd3a8faf4e6dd880b6e0ba4c8f175d9ea9a862d32ee919a1775f09ff"},
-    {file = "hiveio_wax-2.0.2.post20260630234420-cp314-cp314-manylinux_2_28_x86_64.whl", hash = "sha256:e4765cda17e3ba46fe6bceea5f95c660cfcf9a91e764bb124ef6f6f5a8a7cec9"},
+    {file = "hiveio_wax-2.0.3rc0.post20260717004842-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:b9736e39b780044b4ca9d92dfa9f0c39dad665b59c61deffb3d6bcc2a858a0ec"},
+    {file = "hiveio_wax-2.0.3rc0.post20260717004842-cp314-cp314-manylinux_2_28_x86_64.whl", hash = "sha256:db202c566489b02452d6fd62bda29806e0277cabc4d159f5597295efc28c121f"},
 ]
 
 [package.dependencies]
@@ -2268,4 +2268,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.14,<4"
-content-hash = "c91ba720f020d053dddd5b063d66bd66cf7deeccd7577b80a8f20ee355dc831b"
+content-hash = "0d27f40bccde0c4ff27318c9d1973d670f28d08160672b5d0ab59136c4d5e8b2"
