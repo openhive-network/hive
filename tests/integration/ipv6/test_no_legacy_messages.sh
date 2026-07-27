@@ -56,8 +56,10 @@ write_config() {
   mkdir -p "$datadir"
   {
     # p2p logger at "all" so node_impl::on_message's per-message dlog (which names
-    # the handled message type) lands in logs/p2p/p2p.log
-    echo 'log-appender = {"appender":"stderr","stream":"std_error","time_format":"iso_8601_milliseconds"} {"appender":"p2p","file":"logs/p2p/p2p.log","time_format":"iso_8601_milliseconds"}'
+    # the handled message type) lands in logs/p2p/p2p.log; rotation off - hived
+    # rotates hourly by default, which would move startup-time lines out of the
+    # file we grep
+    echo 'log-appender = {"appender":"stderr","stream":"std_error","time_format":"iso_8601_milliseconds"} {"appender":"p2p","file":"logs/p2p/p2p.log","rotate":false,"time_format":"iso_8601_milliseconds"}'
     echo 'log-logger = {"name":"default","level":"info","appender":"stderr"} {"name":"p2p","level":"all","appender":"p2p"}'
     echo 'shared-file-size = 1G'
     echo 'required-participation = 0'
