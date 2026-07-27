@@ -74,6 +74,7 @@
 #include <fc/crypto/rand.hpp>
 #include <fc/network/rate_limiting.hpp>
 #include <fc/network/ip.hpp>
+#include <fc/network/udp_socket.hpp>
 #include <fc/smart_ref_impl.hpp>
 #include <fc/bitutil.hpp>
 
@@ -463,6 +464,10 @@ namespace graphene { namespace net {
       fc::promise<void>::ptr    _retrigger_connect_loop_promise;
       bool                      _potential_peer_database_updated;
       fc::future<void>          _p2p_network_connect_loop_done;
+      /// cached results of the address-family origination probe (expire so interface changes are picked up)
+      bool                      _can_originate_ipv4 = true;
+      bool                      _can_originate_ipv6 = true;
+      fc::time_point            _address_family_probe_expiration; // default epoch: first use probes
       // @}
 
       /// used by the task that fetches sync items during synchronization
@@ -618,6 +623,7 @@ namespace graphene { namespace net {
 
       void save_node_configuration();
 
+      bool can_originate_address_family(const fc::ip::address& addr);
       void p2p_network_connect_loop();
       void trigger_p2p_network_connect_loop();
 
@@ -986,6 +992,47 @@ namespace graphene { namespace net {
       }
     }
 
+    // Tests whether this host can originate connections of the given address family.
+    // A UDP connect() sends no packets; it only performs a kernel route lookup and
+    // source-address selection, so it fails exactly when the host has no usable route
+    // for the family.  The TEST-NET-1 / documentation-prefix targets are never contacted.
+    static bool probe_address_family_originable(bool ipv6)
+    {
+      try
+      {
+        fc::ip::endpoint probe_target(fc::ip::address(ipv6 ? "2001:db8::1" : "192.0.2.1"), 53);
+        fc::udp_socket probe_socket;
+        probe_socket.open_for_endpoint(probe_target);
+        probe_socket.connect(probe_target);
+        return true;
+      }
+      catch (...)
+      {
+        return false;
+      }
+    }
+
+    bool node_impl::can_originate_address_family(const fc::ip::address& addr)
+    {
+      VERIFY_CORRECT_THREAD();
+      // loopback is reachable through the loopback interface even when the host has no
+      // usable route for the family (e.g. ::1 on a host without global IPv6)
+      if (addr.is_loopback_address())
+        return true;
+      if (fc::time_point::now() > _address_family_probe_expiration)
+      {
+        bool could_originate_ipv4 = _can_originate_ipv4;
+        bool could_originate_ipv6 = _can_originate_ipv6;
+        _can_originate_ipv4 = probe_address_family_originable(false);
+        _can_originate_ipv6 = probe_address_family_originable(true);
+        _address_family_probe_expiration = fc::time_point::now() + fc::seconds(60);
+        if (could_originate_ipv4 != _can_originate_ipv4 || could_originate_ipv6 != _can_originate_ipv6)
+          ilog("address families this node can originate connections with: IPv4: ${ipv4}, IPv6: ${ipv6}",
+               ("ipv4", _can_originate_ipv4)("ipv6", _can_originate_ipv6));
+      }
+      return addr.is_ipv6() ? _can_originate_ipv6 : _can_originate_ipv4;
+    }
+
     void node_impl::p2p_network_connect_loop()
     {
       while (!_p2p_network_connect_loop_done.canceled() && !node_is_shutting_down())
@@ -1026,6 +1073,13 @@ namespace graphene { namespace net {
                  ++iter)
             {
               dlog("potential peer to connect to: ${iter}",("iter",*iter));
+              // skip peers we have no way to reach, but keep their entries: we still store
+              // and advertise them to peers that may be able to use them
+              if (!can_originate_address_family(iter->endpoint.get_address()))
+              {
+                dlog("skipping ${peer}: this node cannot originate connections to its address family", ("peer", iter->endpoint));
+                continue;
+              }
               fc::microseconds delay_until_retry = fc::seconds((iter->number_of_failed_connection_attempts + 1) * _node_configuration.peer_connection_retry_timeout);
               if (_active_connections.size() == 0) //if no active connections, we should try more often to find a peer, so limit the amount of delay time
               {
