@@ -4286,15 +4286,18 @@ namespace graphene { namespace net {
       else
       {
         // we're being asked to check another node
-        // first, find out if we're currently connected to that node.  If we are, we
-        // can't perform the test
+        // we can't perform the test if we're currently connected to that node, or if
+        // we can't originate connections of the endpoint's address family (attempting
+        // it anyway would report unable_to_connect, falsely branding them firewalled)
         if (is_already_connected_to_id(check_firewall_message_received.node_id) ||
-            is_connection_to_endpoint_in_progress(check_firewall_message_received.endpoint_to_check))
+            is_connection_to_endpoint_in_progress(check_firewall_message_received.endpoint_to_check) ||
+            !can_originate_address_family(check_firewall_message_received.endpoint_to_check.get_address()))
         {
           check_firewall_reply_message reply;
           reply.node_id = check_firewall_message_received.node_id;
           reply.endpoint_checked = check_firewall_message_received.endpoint_to_check;
           reply.result = firewall_check_result::unable_to_check;
+          originating_peer->send_message(reply);
         }
         else
         {
