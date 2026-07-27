@@ -4208,7 +4208,9 @@ namespace graphene { namespace net {
         if (firewall_check_state->expected_node_id != peer->node_id && // it's not the node who is asking us to test
             !peer->firewall_check_state && // the peer isn't already performing a check for another node
             firewall_check_state->nodes_already_tested.find(peer->node_id) == firewall_check_state->nodes_already_tested.end() &&
-            peer->core_protocol_version >= GRAPHENE_NET_PROTOCOL_FIREWALL_CHECK_VERSION)
+            peer->core_protocol_version >= GRAPHENE_NET_PROTOCOL_FIREWALL_CHECK_VERSION &&
+            // a legacy peer can't be asked to check an IPv6 endpoint (not encodable in the legacy message)
+            (peer->peer_supports_ipv6 || firewall_check_state->endpoint_to_test.get_address().is_ipv4()))
         {
           wlog("forwarding firewall check for node ${to_check} to peer ${checker}",
                ("to_check", firewall_check_state->endpoint_to_test)
@@ -4246,7 +4248,7 @@ namespace graphene { namespace net {
           reply.result = firewall_check_result::unable_to_check;
           originating_peer->send_message(reply);
         }
-        else
+        else if (firewall_check_state->endpoint_to_test.get_address().is_ipv4())
         {
           legacy_check_firewall_reply_message reply;
           reply.node_id = firewall_check_state->expected_node_id;
@@ -4254,6 +4256,10 @@ namespace graphene { namespace net {
           reply.result = firewall_check_result::unable_to_check;
           originating_peer->send_message(reply);
         }
+        else
+          wlog("Not sending 'unable' firewall check reply to legacy peer ${peer}: endpoint ${endpoint} is not encodable in the legacy message",
+               ("peer", originating_peer->get_remote_endpoint())
+               ("endpoint", firewall_check_state->endpoint_to_test));
       }
       delete firewall_check_state;
     }
@@ -4358,7 +4364,7 @@ namespace graphene { namespace net {
             {
               original_peer->send_message(check_firewall_reply_message_received);
             }
-            else
+            else if (check_firewall_reply_message_received.endpoint_checked.get_address().is_ipv4())
             {
               legacy_check_firewall_reply_message legacy_reply;
               legacy_reply.node_id = check_firewall_reply_message_received.node_id;
@@ -4366,6 +4372,10 @@ namespace graphene { namespace net {
               legacy_reply.result = check_firewall_reply_message_received.result;
               original_peer->send_message(legacy_reply);
             }
+            else
+              wlog("Not forwarding firewall check reply to legacy peer ${peer}: endpoint ${endpoint} is not encodable in the legacy message",
+                   ("peer", original_peer->get_remote_endpoint())
+                   ("endpoint", check_firewall_reply_message_received.endpoint_checked));
           }
           delete originating_peer->firewall_check_state;
           originating_peer->firewall_check_state = nullptr;
@@ -4878,7 +4888,10 @@ namespace graphene { namespace net {
                                                      rejection_reason_code reason_code,
                                                      const std::string& reason_string)
     {
-      if (peer->peer_supports_ipv6)
+      // The legacy message can only encode an IPv4 endpoint.  A peer on an IPv6 socket that
+      // hasn't identified as IPv6-aware (nonconforming client) still gets the new message:
+      // legacy nodes ignore unknown message types, and callers disconnect afterward anyway.
+      if (peer->peer_supports_ipv6 || !remote_endpoint.get_address().is_ipv4())
       {
         connection_rejected_message rejection(_user_agent_string, core_protocol_version,
                                               remote_endpoint, reason_code, reason_string);
@@ -4938,15 +4951,20 @@ namespace graphene { namespace net {
                           user_data);
       peer->send_message(message(hello));
 
-      legacy_hello_message legacy_hello(_user_agent_string,
-                                        core_protocol_version,
-                                        fc::ip::legacy_address(local_endpoint.get_address()),
-                                        listening_port,
-                                        local_endpoint.port(),
-                                        _node_public_key,
-                                        signature,
-                                        user_data);
-      peer->send_message(message(legacy_hello));
+      // The legacy hello can't encode a native IPv6 address, and a peer reached over IPv6
+      // runs IPv6-aware code that already processed the new hello above.
+      if (local_endpoint.get_address().is_ipv4())
+      {
+        legacy_hello_message legacy_hello(_user_agent_string,
+                                          core_protocol_version,
+                                          fc::ip::legacy_address(local_endpoint.get_address()),
+                                          listening_port,
+                                          local_endpoint.port(),
+                                          _node_public_key,
+                                          signature,
+                                          user_data);
+        peer->send_message(message(legacy_hello));
+      }
     }
 
     void node_impl::connect_to_task(const peer_connection_ptr& new_peer,
