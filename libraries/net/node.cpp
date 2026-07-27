@@ -1068,32 +1068,43 @@ namespace graphene { namespace net {
             bool initiated_connection_this_pass = false;
             _potential_peer_database_updated = false;
 
-            for (peer_database::iterator iter = _potential_peer_db.begin();
-                 iter != _potential_peer_db.end() && is_wanting_new_connections();
-                 ++iter)
+            // Dial IPv6 candidates before IPv4 ones.  A node reachable over both
+            // families appears as two unrelated entries here; whichever connection
+            // finishes its handshake first is kept and the other is dropped as a
+            // duplicate, so dialing order biases dual-stack peers toward IPv6
+            // without affecting single-family peers.
+            for (int family_pass = 0; family_pass < 2 && is_wanting_new_connections(); ++family_pass)
             {
-              dlog("potential peer to connect to: ${iter}",("iter",*iter));
-              // skip peers we have no way to reach, but keep their entries: we still store
-              // and advertise them to peers that may be able to use them
-              if (!can_originate_address_family(iter->endpoint.get_address()))
+              const bool ipv6_pass = (family_pass == 0);
+              for (peer_database::iterator iter = _potential_peer_db.begin();
+                   iter != _potential_peer_db.end() && is_wanting_new_connections();
+                   ++iter)
               {
-                dlog("skipping ${peer}: this node cannot originate connections to its address family", ("peer", iter->endpoint));
-                continue;
-              }
-              fc::microseconds delay_until_retry = fc::seconds((iter->number_of_failed_connection_attempts + 1) * _node_configuration.peer_connection_retry_timeout);
-              if (_active_connections.size() == 0) //if no active connections, we should try more often to find a peer, so limit the amount of delay time
-              {
-                delay_until_retry = std::min(delay_until_retry,fc::seconds(180));
-              }
+                if (iter->endpoint.get_address().is_ipv6() != ipv6_pass)
+                  continue;
+                dlog("potential peer to connect to: ${iter}",("iter",*iter));
+                // skip peers we have no way to reach, but keep their entries: we still store
+                // and advertise them to peers that may be able to use them
+                if (!can_originate_address_family(iter->endpoint.get_address()))
+                {
+                  dlog("skipping ${peer}: this node cannot originate connections to its address family", ("peer", iter->endpoint));
+                  continue;
+                }
+                fc::microseconds delay_until_retry = fc::seconds((iter->number_of_failed_connection_attempts + 1) * _node_configuration.peer_connection_retry_timeout);
+                if (_active_connections.size() == 0) //if no active connections, we should try more often to find a peer, so limit the amount of delay time
+                {
+                  delay_until_retry = std::min(delay_until_retry,fc::seconds(180));
+                }
 
-              if (!is_connection_to_endpoint_in_progress(iter->endpoint) &&
-                  ((iter->last_connection_disposition != last_connection_failed &&
-                    iter->last_connection_disposition != last_connection_rejected &&
-                    iter->last_connection_disposition != last_connection_handshaking_failed) ||
-                   (fc::time_point::now() - iter->last_connection_attempt_time) > delay_until_retry))
-              {
-                connect_to_endpoint(iter->endpoint);
-                initiated_connection_this_pass = true;
+                if (!is_connection_to_endpoint_in_progress(iter->endpoint) &&
+                    ((iter->last_connection_disposition != last_connection_failed &&
+                      iter->last_connection_disposition != last_connection_rejected &&
+                      iter->last_connection_disposition != last_connection_handshaking_failed) ||
+                     (fc::time_point::now() - iter->last_connection_attempt_time) > delay_until_retry))
+                {
+                  connect_to_endpoint(iter->endpoint);
+                  initiated_connection_this_pass = true;
+                }
               }
             }
 
