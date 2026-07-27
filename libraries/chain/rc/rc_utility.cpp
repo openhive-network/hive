@@ -551,9 +551,9 @@ bool resource_credits::use_account_rcs( int64_t rc )
       }
       bool has_mana = acc.rc_manabar.has_mana( rc + surcharge );
 
-      FC_TODO( "Add || db.has_hardfork( X ) to make RC part of consensus since X" );
+      FC_TODO( "Leave only hardfork condition after it triggers" ); //we might want to activate consensus retroactively (HF27 perhaps?) - test it once HF29 triggers
         //we should also replace all NOTIFYALERT warnings in RC with assertions, since they can't ever happen
-      if( db.is_in_control() || db.is_reapplying_one_tx() )
+      if( db.is_in_control() || db.is_reapplying_one_tx() || db.has_hardfork( HIVE_HARDFORK_1_29_RC_IS_CONSENSUS ) )
       {
         if( surcharge && acc.rc_manabar.has_mana( rc ) )
         {
