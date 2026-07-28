@@ -155,7 +155,7 @@ class resource_credits
 
     /** Calculates resources used (on top of potential discount and extra costs of custom ops),
       * their cost and consumes RC from transaction payer.
-      * Throws exception when payer does not have enough mana (only when is_in_control() for now).
+      * Throws not_enough_rc_exception when payer does not have enough mana (softfork check before HF29).
       */
     void finalize_transaction( const full_transaction_type& full_tx );
     // adjusts pools, rotates buckets and RC stats

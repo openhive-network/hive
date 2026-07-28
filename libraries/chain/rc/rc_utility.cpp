@@ -343,13 +343,17 @@ void resource_credits::regenerate_rc_mana( const account_object& account, const 
   {
     if( mbparams.max_mana != account.last_max_rc )
     {
-#ifdef USE_ALTERNATE_CHAIN_ID
       // this situation indicates a bug in RC code, most likely some operation that affects RC was not
       // properly handled by setting new value for last_max_rc after RC changed
-      HIVE_ASSERT( false, plugin_exception,
-        "Account ${a} max RC changed from ${old} to ${new} without triggering an op, noticed on block ${b}",
-        ( "a", account.get_name() )( "old", account.last_max_rc )( "new", mbparams.max_mana )( "b", db.head_block_num() ) );
+      FC_TODO( "Make it an unconditional assertion after HF29" ); // <- needs to be checked with replay
+#ifdef USE_ALTERNATE_CHAIN_ID
+      FC_ASSERT( mbparams.max_mana == account.last_max_rc,
+        "Account ${a} max RC changed from ${old} to ${new} without triggering an op",
+        ( "a", account.get_name() )( "old", account.last_max_rc )( "new", mbparams.max_mana ) );
 #else
+      FC_ASSERT( mbparams.max_mana == account.last_max_rc || !db.has_hardfork( HIVE_HARDFORK_1_29_RC_IS_CONSENSUS ),
+        "Account ${a} max RC changed from ${old} to ${new} without triggering an op",
+        ( "a", account.get_name() )( "old", account.last_max_rc )( "new", mbparams.max_mana ) );
       wlog( "NOTIFYALERT! Account ${a} max RC changed from ${old} to ${new} without triggering an op, noticed on block ${b}",
         ( "a", account.get_name() )( "old", account.last_max_rc )( "new", mbparams.max_mana )( "b", db.head_block_num() ) );
 #endif
@@ -379,11 +383,14 @@ void resource_credits::update_account_after_rc_delegation( const account_object&
       if( regenerate_condition_rc )
       {
         //most likely cause: there is no regenerate_rc_mana() call before operation changing vests
-        wlog( "NOTIFYALERT! Account ${a} not regenerated prior to RC change, noticed on block ${b}",
-          ( "a", acc.get_name() )( "b", db.head_block_num() ) );
+        FC_TODO( "Make it an unconditional assertion after HF29" ); // <- needs to be checked with replay
 #ifdef USE_ALTERNATE_CHAIN_ID
-        FC_ASSERT( not regenerate_condition_rc,
-          "Account ${a} not regenerated prior to RC change, noticed on block ${b}",
+        FC_ASSERT( not regenerate_condition_rc, "Account ${a} not regenerated prior to RC change",
+          ( "a", acc.get_name() ) );
+#else
+        FC_ASSERT( not regenerate_condition_rc || !db.has_hardfork( HIVE_HARDFORK_1_29_RC_IS_CONSENSUS ),
+          "Account ${a} not regenerated prior to RC change", ( "a", acc.get_name() ) );
+        wlog( "NOTIFYALERT! Account ${a} not regenerated prior to RC change, noticed on block ${b}",
           ( "a", acc.get_name() )( "b", db.head_block_num() ) );
 #endif
       }
@@ -404,11 +411,14 @@ void resource_credits::update_account_after_vest_change( const account_object& a
   if( regenerate_condition )
   {
     //most likely cause: there is no regenerate_rc_mana() call before operation changing vests
-    wlog( "NOTIFYALERT! Account ${a} not regenerated prior to VEST change, noticed on block ${b}",
-      ( "a", account.get_name() )( "b", db.head_block_num() ) );
+    FC_TODO( "Make it an unconditional assertion after HF29" ); // <- needs to be checked with replay
 #ifdef USE_ALTERNATE_CHAIN_ID
-    FC_ASSERT( not regenerate_condition,
-      "Account ${a} not regenerated prior to VEST change, noticed on block ${b}",
+    FC_ASSERT( not regenerate_condition, "Account ${a} not regenerated prior to VEST change",
+      ( "a", account.get_name() ) );
+#else
+    FC_ASSERT( !db.has_hardfork( HIVE_HARDFORK_1_29_RC_IS_CONSENSUS ),
+      "Account ${a} not regenerated prior to VEST change", ( "a", account.get_name() ) );
+    wlog( "NOTIFYALERT! Account ${a} not regenerated prior to VEST change, noticed on block ${b}",
       ( "a", account.get_name() )( "b", db.head_block_num() ) );
 #endif
   }
@@ -493,8 +503,9 @@ bool resource_credits::use_account_rcs( int64_t rc )
   const account_name_type& account_name = tx_info.payer;
   if( account_name == account_name_type() )
   {
-    if( db.is_in_control() )
-      HIVE_ASSERT( false, plugin_exception, "Tried to execute transaction with no resource user", );
+    FC_TODO( "Make it an unconditional assertion after HF29" ); // <- needs to be checked with replay
+    FC_ASSERT( !db.is_in_control() && !db.has_hardfork( HIVE_HARDFORK_1_29_RC_IS_CONSENSUS ),
+      "Tried to execute transaction with no resource user" );
     return false;
   }
 
