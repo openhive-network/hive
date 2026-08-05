@@ -2305,6 +2305,29 @@ namespace graphene { namespace net {
           disconnect_from_peer(originating_peer, "Invalid signature in hello message", true, detailed_error);
           return;
         }
+        if (hello_message_received.core_protocol_version < GRAPHENE_NET_MINIMUM_PROTOCOL_VERSION)
+        {
+          wlog("Received hello message from peer ${peer} reporting protocol version ${version}, below the minimum ${minimum} this node accepts",
+               ("peer", originating_peer->get_remote_endpoint())
+               ("version", hello_message_received.core_protocol_version)
+               ("minimum", GRAPHENE_NET_MINIMUM_PROTOCOL_VERSION));
+          originating_peer->their_state = peer_connection::their_connection_state::connection_rejected;
+          send_connection_rejected_message(originating_peer,
+                                           originating_peer->get_socket().remote_endpoint(),
+                                           rejection_reason_code::client_too_old,
+                                           "Your p2p protocol version is older than the minimum this node accepts, please upgrade");
+          fc::exception detailed_error(FC_LOG_MESSAGE(warn, "Your p2p protocol version is older than the minimum this node accepts, please upgrade"));
+          disconnect_from_peer(originating_peer, "Your p2p protocol version is older than the minimum this node accepts, please upgrade", true, detailed_error);
+          return;
+        }
+        // note: we do NOT require last_known_fork_block_number to be reported.  Although the
+        // receive side has parsed it (and the obsolete-client check below has consumed it) since
+        // the BitShares era, hive's own hello has never actually sent it: generate_hello_user_data
+        // only includes it when _hard_fork_block_numbers is non-empty, and hive's p2p_plugin has
+        // always initialized that list empty (it likewise never sets graphene_git_revision_*, so
+        // the estimate fallback above can never fire either).  Requiring the field would reject
+        // every hived on the network.  Making the obsolete-client mechanism real -- or deleting
+        // it as vestigial -- is tracked separately.
         if (originating_peer->last_known_fork_block_number != 0)
         {
           uint32_t next_fork_block_number = get_next_known_hard_fork_block_number(originating_peer->last_known_fork_block_number);
