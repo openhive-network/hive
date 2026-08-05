@@ -329,6 +329,8 @@ namespace chain {
 
       const hardfork_property_object&        get_hardfork_property_object()const;
 
+      const state_stamp_data_object&         get_state_stamp_data()const;
+
     private:
 
       const comment_object&                  get_comment_for_payout_time( const comment_object& comment )const;
