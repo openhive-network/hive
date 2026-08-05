@@ -2336,11 +2336,15 @@ namespace graphene { namespace net {
             }
           }
         }
-        if ( !originating_peer->chain_id ||
-              ( ( *originating_peer->chain_id != _delegate->get_old_chain_id() ) && ( *originating_peer->chain_id != _delegate->get_new_chain_id() ) ) )
+        // Only the current chain id is accepted.  We used to also accept the pre-split (legacy)
+        // chain id so that a node syncing from scratch could obtain early blocks from either
+        // network while there were few nodes on the new one; that bootstrap rationale has long
+        // expired, and accepting the legacy id let nodes of the other network occupy connection
+        // slots and a sync exchange before eventually being dropped as unreachable-fork peers.
+        if ( !originating_peer->chain_id || *originating_peer->chain_id != _delegate->get_new_chain_id() )
         {
-            wlog("Received hello message from peer running a node for different blockchain. Old chain-id: '${old_chain_id}'. New chain-id: '${new_chain_id}'. Their chain-id: '${their_chain_id}'.",
-               ("old_chain_id", _delegate->get_old_chain_id())("new_chain_id", _delegate->get_new_chain_id())("their_chain_id", originating_peer->chain_id) );
+            wlog("Received hello message from peer running a node for different blockchain. My chain-id: '${my_chain_id}'. Their chain-id: '${their_chain_id}'.",
+               ("my_chain_id", _delegate->get_new_chain_id())("their_chain_id", originating_peer->chain_id) );
 
             originating_peer->their_state = peer_connection::their_connection_state::connection_rejected;
             send_connection_rejected_message(originating_peer,
