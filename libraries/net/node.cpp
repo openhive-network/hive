@@ -785,6 +785,7 @@ namespace graphene { namespace net {
 
       void broadcast(const std::shared_ptr<full_block_type>& full_block, const message_propagation_data& propagation_data);
       void broadcast(const std::shared_ptr<full_transaction_type>& full_transaction, const message_propagation_data& propagation_data);
+      void advertise_block(const std::shared_ptr<full_block_type>& full_block);
       void broadcast(const std::shared_ptr<full_block_type>& full_block);
       void broadcast(const std::shared_ptr<hive::chain::full_transaction_type>& full_transaction);
 
@@ -3974,8 +3975,19 @@ namespace graphene { namespace net {
           }
           peer->clear_old_inventory();
         }
-        message_propagation_data propagation_data{message_receive_time, message_validated_time, originating_peer->node_id};
-        broadcast(full_block, propagation_data);
+        if (block_has_been_accepted)
+        {
+          // we didn't push this copy of the block -- an earlier copy was already accepted,
+          // typically through the sync mechanism, which does not advertise.  Offer it to our
+          // peers, but skip the rest of the broadcast bookkeeping: this copy was already cached
+          // and recorded as accepted when the first copy arrived
+          advertise_block(full_block);
+        }
+        else
+        {
+          message_propagation_data propagation_data{message_receive_time, message_validated_time, originating_peer->node_id};
+          broadcast(full_block, propagation_data);
+        }
 
         if (is_hard_fork_block(block_num))
         {
@@ -5892,6 +5904,19 @@ namespace graphene { namespace net {
       return (uint32_t)_active_connections.size();
     }
 
+    // queue a block for advertisement to our in-sync peers via the inventory loop.
+    // Unlike broadcast(), this does not touch the message cache or the recently-accepted
+    // list, so it is safe to call for a block that was already accepted earlier (a duplicate
+    // delivery must not add duplicate entries to those bounded structures, and must not
+    // advance the message cache's block clock -- doing so shrinks both duplicate-detection
+    // windows exactly when duplicates are most common).
+    void node_impl::advertise_block(const std::shared_ptr<full_block_type>& full_block)
+    {
+      VERIFY_CORRECT_THREAD();
+      _new_block_inventory.insert(full_block);
+      trigger_advertise_inventory_loop();
+    }
+
     void node_impl::broadcast(const std::shared_ptr<full_block_type>& full_block, const message_propagation_data& propagation_data)
     {
       VERIFY_CORRECT_THREAD();
@@ -5900,8 +5925,7 @@ namespace graphene { namespace net {
 
       _most_recent_blocks_accepted.push_back(block_id);
       _block_message_cache.cache_message(full_block, propagation_data);
-      _new_block_inventory.insert(full_block);
-      trigger_advertise_inventory_loop();
+      advertise_block(full_block);
 
       /** Trigger block_accepted methods to potentially flush caches in both cases:
           - when node receives a block,
