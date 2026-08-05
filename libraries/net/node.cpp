@@ -5879,6 +5879,21 @@ namespace graphene { namespace net {
     void node_impl::advertise_block(const std::shared_ptr<full_block_type>& full_block)
     {
       VERIFY_CORRECT_THREAD();
+      // Never advertise a block older than our peers' duplicate-detection horizon (their message
+      // cache holds the last GRAPHENE_NET_MESSAGE_CACHE_DURATION_IN_BLOCKS blocks).  A peer can't
+      // recognize an older advertisement as something it already has, so it would fetch and
+      // re-push the block: wasted bandwidth and a chain-thread round trip at best, and
+      // historically the seed of the 2026-07-09 disconnect storm.  Only fresh blocks -- the only
+      // ones whose advertisement helps anyone -- pass.  Peers that genuinely lack older blocks
+      // obtain them through the sync path instead.
+      fc::time_point oldest_block_time_to_advertise =
+        fc::time_point::now() - fc::seconds(uint32_t(_recent_block_interval_in_seconds) * GRAPHENE_NET_MESSAGE_CACHE_DURATION_IN_BLOCKS);
+      if (fc::time_point(full_block->get_block_header().timestamp) < oldest_block_time_to_advertise)
+      {
+        dlog("not advertising block ${num} because it is older than the network's duplicate-detection window",
+             ("num", full_block->get_block_num()));
+        return;
+      }
       _new_block_inventory.insert(full_block);
       trigger_advertise_inventory_loop();
     }
