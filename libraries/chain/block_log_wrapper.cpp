@@ -2,6 +2,7 @@
 
 #include <hive/chain/block_log.hpp>
 #include <hive/chain/database.hpp>
+#include <hive/chain/database_exceptions.hpp>
 #include <hive/chain/split_block_log.hpp>
 //#include <regex>
 
@@ -384,9 +385,10 @@ std::vector<block_id_type> block_log_wrapper::get_blockchain_synopsis(
         wlog("Unable to generate a usable synopsis because the peer we're generating it for forked too long ago "
              "(our chains diverge before block #${reference_point_block_num}",
              (reference_point_block_num));
-        // TODO: get the right type of exception here
-        //FC_THROW_EXCEPTION(graphene::net::block_older_than_undo_history, "Peer is on a fork I'm unable to switch to");
-        FC_THROW("Peer is on a fork I'm unable to switch to");
+        // throw the typed internal exception so the p2p plugin can translate it for the network
+        // layer, which knows how to disconnect this peer with a meaningful reason.  A generic
+        // exception here escapes the network layer's handling entirely.
+        FC_THROW_EXCEPTION(internal_peer_is_on_an_unreachable_fork, "Peer is on a fork I'm unable to switch to");
       }
     }
     else
