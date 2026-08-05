@@ -3482,6 +3482,7 @@ namespace graphene { namespace net {
 
       bool client_accepted_block = false;
       bool discontinue_fetching_blocks_from_peer = false;
+      bool sync_block_could_not_link = false;
       const uint32_t block_number = full_block->get_block_num();
       const block_id_type& block_id = full_block->get_block_id();
 
@@ -3507,6 +3508,22 @@ namespace graphene { namespace net {
              (block_number)(block_id));
         handle_message_exception = e;
         discontinue_fetching_blocks_from_peer = true;
+      }
+      catch (const unlinkable_block_exception& e)
+      {
+        // This is almost always a benign race rather than peer misbehavior: while this block was
+        // queued or in flight, our chain advanced past it (we received it first from another peer,
+        // or it was on a micro-fork branch that has since been orphaned).  The fork database also
+        // reports blocks that have fallen below its window as unlinkable.  Skip the block and keep
+        // the peers: disconnecting everyone who had it in flight is how routine delivery races
+        // amplified into the network-wide disconnect storm of 2026-07-09 (the live-mode path was
+        // made tolerant then; this is the sync-mode counterpart).
+        fc_wlog(fc::logger::get("sync"), "p2p could not link sync block #${block_number} ${block_id}, likely a stale delivery race; ignoring it: ${e}",
+                (block_number)(block_id)("e", (fc::exception)e));
+        wlog("Could not link sync block #${block_number} (id:${block_id}), likely a stale delivery race; ignoring it",
+             (block_number)(block_id));
+        handle_message_exception = e;
+        sync_block_could_not_link = true;
       }
       catch (const fc::canceled_exception&)
       {
@@ -3606,6 +3623,22 @@ namespace graphene { namespace net {
           }
 
         } //for active peers
+      }
+      else if (sync_block_could_not_link)
+      {
+        // The block was stale (or on an orphaned branch) by the time we processed it -- see the
+        // catch above.  This is not peer misbehavior: clean up the in-flight bookkeeping exactly
+        // as if the block had been handled, and let the sync state machine ask the affected peers
+        // for their next batch of item ids.  The fresh synopsis exchange naturally skips anything
+        // we already have.
+        if (_total_number_of_unfetched_items > 0)
+          --_total_number_of_unfetched_items;
+        for (const peer_connection_ptr& peer : _active_connections)
+        {
+          ASSERT_TASK_NOT_PREEMPTED(); // don't yield while iterating over _active_connections
+          if (peer->ids_of_items_being_processed.erase(block_id) > 0 && peer->idle())
+            peers_to_fetch_ids_from.insert(peer);
+        }
       }
       else //client did not accept block
       {
