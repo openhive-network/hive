@@ -2275,6 +2275,20 @@ namespace graphene { namespace net {
         originating_peer->last_known_fork_block_number = _delegate->estimate_last_known_fork_from_git_revision_timestamp(unix_timestamp);
       }
 
+      // log what kind of node this is while we still have all the identifying details in one
+      // place; when diagnosing network incidents it is otherwise impossible to tell after the
+      // fact which software/version a given peer endpoint was running
+      ilog("Received hello from ${endpoint}: user_agent '${agent}', protocol version ${version}, platform ${platform}, "
+           "graphene revision ${rev} (${rev_time}), last known fork block ${fork}, node_id ${node_id}",
+           ("endpoint", originating_peer->get_remote_endpoint())
+           ("agent", hello_message_received.user_agent)
+           ("version", hello_message_received.core_protocol_version)
+           ("platform", originating_peer->platform)
+           ("rev", originating_peer->graphene_git_revision_sha)
+           ("rev_time", originating_peer->graphene_git_revision_unix_timestamp)
+           ("fork", originating_peer->last_known_fork_block_number)
+           ("node_id", originating_peer->node_id));
+
       // now decide what to do with it
       if (originating_peer->their_state == peer_connection::their_connection_state::just_connected)
       {
@@ -5895,6 +5909,9 @@ namespace graphene { namespace net {
 
         if (peer->platform)
           peer_details["platform"] = *peer->platform;
+
+        peer_details["user_agent"] = peer->user_agent;
+        peer_details["core_protocol_version"] = peer->core_protocol_version;
 
         // provide these for debugging
         // warning: these are just approximations, if the peer is "downstream" of us, they may
