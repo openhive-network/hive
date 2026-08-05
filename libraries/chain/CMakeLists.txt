@@ -30,6 +30,7 @@ set( SOURCES
              database_dhf.cpp
              database_rc_core.cpp
              database_rc_delegation.cpp
+             database_state_stamp.cpp
 
              full_block.cpp
              full_transaction.cpp

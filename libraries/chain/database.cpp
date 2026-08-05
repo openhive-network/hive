@@ -11,6 +11,7 @@
 #include <hive/chain/detail/state/account_object_multiindex.hpp>
 #include <hive/chain/detail/state/block_summary_object_multiindex.hpp>
 #include <hive/chain/detail/state/global_property_object_multiindex.hpp>
+#include <hive/chain/detail/state/state_stamp_data_object_multiindex.hpp>
 #include <hive/chain/detail/state/witness_objects.hpp>
 #include <hive/chain/detail/state/hardfork_property_object.hpp>
 #include <hive/chain/block_write_interface.hpp>
@@ -453,6 +454,11 @@ comment database::find_comment( const account_name_type& author, const string& p
 const dynamic_global_property_object&database::get_dynamic_global_properties() const
 { try {
   return get< dynamic_global_property_object >();
+} FC_CAPTURE_AND_RETHROW() }
+
+const state_stamp_data_object& database::get_state_stamp_data() const
+{ try {
+  return get< state_stamp_data_object >();
 } FC_CAPTURE_AND_RETHROW() }
 
 int16_t database::get_remove_threshold() const
