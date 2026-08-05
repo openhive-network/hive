@@ -266,8 +266,18 @@ hive::protocol::chain_id_type p2p_plugin_impl::get_chain_id() const
 
 std::vector< graphene::net::item_hash_t > p2p_plugin_impl::get_blockchain_synopsis( const graphene::net::item_hash_t& reference_point, uint32_t number_of_blocks_after_reference_point )
 { try {
-  return chain.block_reader().get_blockchain_synopsis(reference_point, number_of_blocks_after_reference_point);
-} FC_LOG_AND_RETHROW() }
+  try
+  {
+    return chain.block_reader().get_blockchain_synopsis(reference_point, number_of_blocks_after_reference_point);
+  }
+  catch (const hive::chain::internal_peer_is_on_an_unreachable_fork&)
+  {
+    // translate to the exception type the network layer's synopsis-construction path handles:
+    // it disconnects the peer with a clear "you are on a fork I'm unable to switch to" reason
+    // instead of letting a generic exception escape its handling
+    FC_THROW_EXCEPTION(graphene::net::block_older_than_undo_history, "Unable to construct a blockchain synopsis for this peer; it is on a fork we cannot reconcile with");
+  }
+} FC_CAPTURE_AND_RETHROW((reference_point)(number_of_blocks_after_reference_point)) }
 
 void p2p_plugin_impl::sync_status( uint32_t item_type, uint32_t item_count )
 {
