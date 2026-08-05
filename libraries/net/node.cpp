@@ -3908,6 +3908,13 @@ namespace graphene { namespace net {
           // well, we already got them, so remove those from our items_to_fetch
           for (const std::shared_ptr<full_transaction_type>& full_transaction : full_block->get_full_transactions())
             _items_to_fetch.get<item_id_index>().erase(item_id(trx_message_type, full_transaction->get_legacy_transaction_message_hash()));
+
+          // the same block may also be queued for fetching under its other alias (old peers
+          // advertise blocks by legacy message hash, newer peers by block id, and we can't tell
+          // they name the same block until we have it).  We just accepted it, so drop any
+          // still-unrequested fetch entries for either alias
+          _items_to_fetch.get<item_id_index>().erase(item_id(block_message_type, block_id));
+          _items_to_fetch.get<item_id_index>().erase(item_id(block_message_type, legacy_block_message_hash));
         }
         else
         {
