@@ -28,6 +28,12 @@
 #define GRAPHENE_NET_PROTOCOL_ADVERTISE_BLOCKS_BY_BLOCK_ID_VERSION 107 // share blocks by block_id instead of by block_message hash added in 107
 #define GRAPHENE_NET_PROTOCOL_FIREWALL_CHECK_VERSION               106 // support for the firewall check was added in 106
 
+// the minimum protocol version we accept a connection from.  Version 106 shipped many years ago
+// (steem era); every known client since has reported its protocol version, chain id, and last
+// known hardfork block, so requiring them costs nothing and closes the loophole where a peer
+// reporting none of them silently bypassed every compatibility check
+#define GRAPHENE_NET_MINIMUM_PROTOCOL_VERSION                      106
+
 /**
  * Define this to enable debugging code in the p2p network interface.
  * This is code that would never be executed in normal operation, but is
