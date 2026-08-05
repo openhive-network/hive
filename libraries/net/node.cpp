@@ -3168,8 +3168,12 @@ namespace graphene { namespace net {
           else
             originating_peer->send_message(item_not_available_message(item_id(block_message_type, fetch_items_message_received.items_to_fetch[i])));
 
-        // if we sent them a block, update our record of the last block they've seen accordingly
-        if (last_full_block_sent)
+        // if we sent them a block newer than the newest we already knew they had, update our
+        // record of the last block they've seen.  Serving an *older* block (e.g. one they are
+        // backfilling) must not regress the estimate: it feeds synopsis construction and sync
+        // decisions, and regressing it makes us treat an up-to-date peer as far behind
+        if (last_full_block_sent &&
+            last_full_block_sent->get_block_num() > _delegate->get_block_number(originating_peer->last_block_delegate_has_seen))
         {
           originating_peer->last_block_delegate_has_seen = last_full_block_sent->get_block_id();
           originating_peer->last_block_time_delegate_has_seen = last_full_block_sent->get_block_header().timestamp;
