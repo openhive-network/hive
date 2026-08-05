@@ -1,6 +1,7 @@
 #include <hive/chain/full_block.hpp>
 #include <hive/chain/block_compression_dictionaries.hpp>
 #include <hive/chain/block_log_compression.hpp>
+#include <hive/protocol/merkle.hpp>
 #include <fc/bitutil.hpp>
 
 #include <fc/io/json.hpp>
@@ -619,32 +620,12 @@ uint32_t full_block_type::get_uncompressed_block_size() const
 
 /* static */ checksum_type full_block_type::compute_merkle_root(const std::vector<std::shared_ptr<full_transaction_type>>& full_transactions)
 {
-  if (full_transactions.empty())
-    return checksum_type();
-
   std::vector<digest_type> ids;
   ids.resize(full_transactions.size());
-  std::transform(full_transactions.begin(), full_transactions.end(), ids.begin(), 
+  std::transform(full_transactions.begin(), full_transactions.end(), ids.begin(),
                  [](const std::shared_ptr<full_transaction_type>& transaction) { return transaction->get_merkle_digest(); });
 
-  hive::protocol::serialization_mode_controller::pack_guard guard(hive::protocol::pack_type::legacy);
-
-  vector<digest_type>::size_type current_number_of_hashes = ids.size();
-  while (current_number_of_hashes > 1)
-  {
-    // hash ID's in pairs
-    uint32_t i_max = current_number_of_hashes - (current_number_of_hashes & 1);
-    uint32_t k = 0;
-
-    for (uint32_t i = 0; i < i_max; i += 2)
-      ids[k++] = digest_type::hash(std::make_pair(ids[i], ids[i + 1]));
-
-    if (current_number_of_hashes & 1)
-      ids[k++] = ids[i_max];
-    current_number_of_hashes = k;
-  }
-
-  return checksum_type::hash(ids[0]);
+  return hive::protocol::calculate_merkle_root(std::move(ids));
 }
 
 void full_block_type::compute_merkle_root() const
