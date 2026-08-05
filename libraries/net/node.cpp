@@ -4014,7 +4014,7 @@ namespace graphene { namespace net {
       }
       catch (const fc::exception& e)
       {
-        // client rejected the block.  Disconnect the client and any other clients that offered us this block
+        // client rejected the block.  Disconnect the peer that sent it to us
         wlog("Failed to push block ${num} (id:${id}), client rejected block sent by peer",
              ("num", block_num)
              ("id", block_id));
@@ -4022,10 +4022,11 @@ namespace graphene { namespace net {
         disconnect_exception = e;
         disconnect_reason = "You offered me a block that I have deemed to be invalid";
 
+        // Only the peer that actually delivered the rejected block is disconnected.  We used to
+        // also disconnect every peer that merely had the same block queued for fetching; those
+        // peers had sent us nothing yet, and that collective punishment turned single rejections
+        // into the mass peer-list wipes seen in the 2026-07-09 incident.
         peers_to_disconnect.insert( originating_peer->shared_from_this() );
-        for (const peer_connection_ptr& peer : _active_connections)
-          if (!peer->ids_of_items_to_get.empty() && peer->ids_of_items_to_get.front() == block_id)
-            peers_to_disconnect.insert(peer);
       }
 
       if (restart_sync_exception)
