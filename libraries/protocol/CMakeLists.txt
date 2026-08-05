@@ -42,6 +42,7 @@ SET( STATIC_SOURCES authority_verification_tracer.cpp
    transaction.cpp
    transaction_util.cpp
    block.cpp
+   merkle.cpp
    asset.cpp
    version.cpp
    key_utils.cpp
