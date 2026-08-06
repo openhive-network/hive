@@ -9,7 +9,11 @@
 #   - downstream repos like clive (find hived images via URL fetch)
 #
 # NOT included here (handled separately in skip_rules.yml):
-#   - Test patterns (tests/) - trigger test runs, not rebuilds
+#   - Test patterns (tests/) - trigger test runs, not rebuilds.
+#     Exception: tests/unit/ IS source for testnet image builds, since those .cpp files
+#     compile into the chain_test/plugin_test binaries that ship in the testnet image.
+#     skip_rules.yml and prepare_data_image_job.yml both add it back for that case; it stays
+#     out of this list so mainnet builds and downstream hived image lookups are unaffected.
 #   - Doc patterns (*.md, doc/) - skip CI entirely
 #   - CI patterns (scripts/ci-helpers/) - trigger full pipeline
 #

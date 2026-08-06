@@ -57,7 +57,8 @@ include:
       #
       # Decision logic:
       #   - Source files changed: full build (via get_image4submodule.sh)
-      #   - Only tests/docs changed:
+      #     (for testnet, "source" includes tests/unit/ - see below)
+      #   - Only docs or non-compiled tests changed:
       #     - Small gap: use cached image (skip)
       #     - Medium gap: re-tag cached image to current commit
       #     - Large gap: force rebuild (fail-safe)
@@ -87,6 +88,17 @@ include:
 
       # Get source patterns from single source of truth
       SOURCE_PATTERNS=$("$SCRIPTS_PATH/ci-helpers/source-patterns.sh")
+
+      # tests/unit/ holds C++ sources compiled into the chain_test and plugin_test binaries,
+      # which ship inside the testnet image. Leaving them out here means a commit that only
+      # changes unit tests reuses an image built before them, and the pipeline then reports
+      # success having never compiled or run the changed tests. skip_rules.yml already counts
+      # tests/unit/ as source for the same reason; this keeps the image cache consistent with it.
+      # Added here rather than in source-patterns.sh so that mainnet builds, which carry no test
+      # binaries, and downstream consumers looking up plain hived images are left alone.
+      if [[ "$HIVE_NETWORK_TYPE" == "testnet" ]]; then
+        SOURCE_PATTERNS="${SOURCE_PATTERNS},tests/unit/"
+      fi
 
       # Find the last commit that changed source files
       IFS=',' read -ra PATTERN_ARRAY <<< "$SOURCE_PATTERNS"
