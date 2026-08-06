@@ -994,6 +994,7 @@ patterns_tests:
     FF_NETWORK_PER_BUILD: 1
     TEST_SUITE: "(condenser_api_patterns and (get_block or get_block_header) ) or block_api_patterns or (not get_transaction_hex and (get_transaction or get_account_history or enum_virtual_ops or get_ops_in_block))"
     HIVED_COMMIT: $HIVED_COMMIT # HIVED_COMMIT must be in this section to be passed to service
+    COMMON_CI_REF: $COMMON_CI_REF # likewise, so the service's entrypoint can pick the common-ci revision
   needs:
     - job: prepare_hived_data
       artifacts: true  # Blocked until prepare_hived_data completes
@@ -1050,6 +1051,7 @@ python_pattern_mainnet_tests:
     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/api_tests/python_patterns_tests/report.xml
     BINARY_CACHE_PATH: "hived-binaries"
     HIVED_COMMIT: $HIVED_COMMIT
+    COMMON_CI_REF: $COMMON_CI_REF # likewise, so the service's entrypoint can pick the common-ci revision
   needs:
     - job: hiveio_api_package
       artifacts: true
@@ -1143,6 +1145,7 @@ message_format_mainnet_5m_tests:
     NODE_ADDRESS: "hived-instance:8091"
     NODE_TYPE: "mainnet_5m"
     HIVED_COMMIT: $HIVED_COMMIT
+    COMMON_CI_REF: $COMMON_CI_REF # likewise, so the service's entrypoint can pick the common-ci revision
   before_script:
     - !reference [.wait-for-hived, script]
     - !reference [.message_format_tests, before_script]
@@ -1213,6 +1216,7 @@ witness_tests:
     PYTEST_TIMEOUT_MINUTES: 5
     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/witness_tests/report.xml
     HIVED_COMMIT: $HIVED_COMMIT
+    COMMON_CI_REF: $COMMON_CI_REF # likewise, so the service's entrypoint can pick the common-ci revision
   script:
     - !reference [.wait-for-hived, script]
     - cd tests/python/functional/witness_tests
