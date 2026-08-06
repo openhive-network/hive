@@ -199,9 +199,17 @@ void rocksdb_comment_archive::wipe()
   provider->wipeDb();
 }
 
-void rocksdb_comment_archive::flush()
+void rocksdb_comment_archive::flush( bool force_storage_flush )
 {
-  provider->flushDb();
+  // Submitting the pending write batch is what keeps this archive in step with flushed shared
+  // memory: on_irreversible_block moves a comment here and then removes it from state, so the
+  // batch must reach the WAL before that removal can be persisted. Forcing the memtables out
+  // into files is a separate, much more expensive step that only the explicit flush points
+  // need (issue #869).
+  if( force_storage_flush )
+    provider->flushDb();
+  else
+    provider->flushWriteBuffer();
 }
 
 void rocksdb_comment_archive::on_end_of_syncing()

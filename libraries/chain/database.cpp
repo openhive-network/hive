@@ -6,6 +6,7 @@
 #include <hive/protocol/hbd_interest.hpp>
 
 #include <hive/chain/external_storage/comments_handler.hpp>
+#include <hive/chain/external_storage/fd_budget.hpp>
 #include <hive/chain/notifications.hpp>
 
 #include <hive/chain/detail/state/account_object_multiindex.hpp>
@@ -300,7 +301,7 @@ void database::close()
     // DB state (issue #336).
     clear_pending();
 
-    flush_to_all_storages();
+    flush_to_all_storages( true );
     get_comments_handler().close();
 
     auto lib = this->get_last_irreversible_block_num();
@@ -859,12 +860,15 @@ void database::notify_comment_reward(const comment_reward_notification& note)
 
 void database::notify_end_of_syncing()
 {
-  flush_to_all_storages();
+  flush_to_all_storages( true );
 #ifndef IS_TEST_NET
-  // In live sync, blocks arrive every 3 seconds — flush shared_memory after each one
-  // so that on crash, hived's state is at most 1 block behind. The user-configurable
-  // flush-state-interval only matters during massive/P2P sync where throughput matters.
-  set_flush_interval( 1 );
+  // Blocks arrive every 3 seconds in live mode, so state is flushed far more often than during
+  // massive/P2P sync where flush-state-interval trades crash freshness for throughput. The live
+  // cadence is configurable (flush-state-interval-live) rather than hardcoded, so operators can
+  // see and change the value that is actually in effect (issue #869).
+  ilog( "Entering live mode: switching flush interval from ${old} to ${live} block(s).",
+        ("old", _flush_blocks)("live", _live_flush_blocks) );
+  set_flush_interval( _live_flush_blocks );
 #endif
   get_comments_handler().on_end_of_syncing();
 
@@ -891,9 +895,9 @@ void database::notify_wipe()
   HIVE_TRY_NOTIFY(_my->_wipe_signal)
 }
 
-void database::notify_flush()
+void database::notify_flush( bool force_storage_flush )
 {
-  HIVE_TRY_NOTIFY( _my->_flush_signal )
+  HIVE_TRY_NOTIFY( _my->_flush_signal, force_storage_flush )
 }
 
 void database::notify_pre_reindex( const reindex_notification& note )
@@ -2114,28 +2118,17 @@ void database::apply_block( const std::shared_ptr<full_block_type>& full_block, 
   //fc::microseconds dt = end_time - begin_time;
   if( _flush_blocks != 0 )
   {
-    if( _next_flush_block == 0 )
+    // _next_flush_block == 0 means nothing is scheduled yet - the node has just started, or the
+    // interval has just changed - so flush right away and schedule from here.
+    if( _next_flush_block == 0 || _next_flush_block == block_num )
     {
-      uint32_t lep = block_num + 1 + _flush_blocks * 9 / 10;
-      uint32_t rep = block_num + 1 + _flush_blocks;
-
-      // use time_point::now() as RNG source to pick block randomly between lep and rep
-      uint32_t span = rep - lep;
-      uint32_t x = lep;
-      if( span > 0 )
-      {
-        uint64_t now = uint64_t( fc::time_point::now().time_since_epoch().count() );
-        x += now % span;
-      }
-      _next_flush_block = x;
-      //ilog( "Next flush scheduled at block ${b}", ("b", x) );
-    }
-
-    if( _next_flush_block == block_num )
-    {
-      _next_flush_block = 0;
+      // Schedule the following flush straight away. Resetting to 0 here would leave the next
+      // block to do the scheduling, spending one block idle between every pair of flushes, so
+      // an interval of N would flush every N+1 blocks -- most visibly with N == 1, which
+      // flushed every second block despite the "after each block" intent (issue #869).
+      _next_flush_block = schedule_next_flush_block( block_num );
       //ilog( "Flushing database shared memory at block ${b}", ("b", block_num) );
-      flush_to_all_storages();
+      flush_to_all_storages( false );
     }
   }
 
@@ -2769,13 +2762,35 @@ void database_impl::apply_operation(const operation& op)
   _self.notify_post_apply_operation( note );
 }
 
-void database::flush_to_all_storages()
+uint32_t database::schedule_next_flush_block( uint32_t block_num ) const
 {
-  get_comments_handler().flush();
+  // Pick the next flush block randomly inside the last tenth of the interval so that nodes
+  // started together do not all flush on the same block.
+  uint32_t lep = block_num + 1 + _flush_blocks * 9 / 10;
+  uint32_t rep = block_num + 1 + _flush_blocks;
+
+  uint32_t span = rep - lep;
+  uint32_t x = lep;
+  if( span > 0 )
+  {
+    // use time_point::now() as RNG source to pick block randomly between lep and rep
+    uint64_t now = uint64_t( fc::time_point::now().time_since_epoch().count() );
+    x += now % span;
+  }
+  return x;
+}
+
+void database::flush_to_all_storages( bool force_storage_flush )
+{
+  get_comments_handler().flush( force_storage_flush );
 
   chainbase::database::flush();
 
-  notify_flush();
+  notify_flush( force_storage_flush );
+
+  // Cheap, heavily rate-limited sampling: descriptor usage grows silently between restarts
+  // and the startup-only limit check cannot see it (issue #869).
+  report_fd_usage_if_needed();
 }
 
 const witness_object& database::validate_block_header( uint32_t skip, const std::shared_ptr<full_block_type>& full_block )const

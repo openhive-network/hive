@@ -155,6 +155,7 @@ class chain_plugin_impl
     bool                             validate_during_replay = false;
     uint32_t                         benchmark_interval = 0;
     uint32_t                         flush_interval = 0;
+    uint32_t                         live_flush_interval = 1;
     bool                             replay_in_memory = false;
     std::vector< std::string >       replay_memory_indices{};
     bool                             enable_block_log_compression = true;
@@ -826,6 +827,7 @@ void chain_plugin_impl::initial_settings()
   ilog( "Starting chain with shared_file_size: ${n} bytes", ("n", shared_memory_size) );
 
   db.set_flush_interval( flush_interval );
+  db.set_live_flush_interval( live_flush_interval );
   if( !checkpoints.empty() )
     thread_pool.set_last_checkpoint( checkpoints.rbegin()->first );
   db.set_require_locking( check_locks );
@@ -1495,7 +1497,9 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
         "A 2 precision percentage (0-10000) that defines how quickly to scale the shared memory file. When autoscaling occurs the file's size will be increased by this percent. Setting this to 0 disables autoscaling. Recommended value is between 1000-2000 (10-20%)" )
       ("checkpoint,c", bpo::value<vector<string>>()->composing(), "Pairs of [BLOCK_NUM,BLOCK_ID] that should be enforced as checkpoints.")
       ("flush-state-interval", bpo::value<uint32_t>(),
-        "flush shared memory changes to disk every N blocks")
+        "flush shared memory changes to disk every N blocks while syncing")
+      ("flush-state-interval-live", bpo::value<uint32_t>()->default_value(1),
+        "flush shared memory changes to disk every N blocks once the node is in live mode. 1 means after every block, so a crash leaves state at most one block behind. Raise it on slow or low energy devices that should not be woken up on every block")
       ("enable-block-log-compression", boost::program_options::value<bool>()->default_value(true), "Compress blocks using zstd as they're added to the block log" )
       ("enable-block-log-auto-fixing", boost::program_options::value<bool>()->default_value(true), "If enabled, corrupted block_log will try to fix itself automatically." )
       ("block-log-compression-level", bpo::value<int>()->default_value(15), "Block log zstd compression level 0 (fast, low compression) - 22 (slow, high compression)" )
@@ -1635,6 +1639,8 @@ void chain_plugin::plugin_initialize(const variables_map& options)
     my->flush_interval = options.at( "flush-state-interval" ).as<uint32_t>();
   else
     my->flush_interval = 10000;
+
+  my->live_flush_interval = options.at( "flush-state-interval-live" ).as<uint32_t>();
 
   if( options.count( "checkpoint" ) )
   {
