@@ -14,7 +14,13 @@ SCRIPTSDIR="$SCRIPTDIR/scripts"
 
 # Copy datadir from cache (CI only - DATA_SOURCE is not set in production)
 if [ -n "${DATA_SOURCE+x}" ]; then
-    COMMON_CI_URL="${COMMON_CI_URL:-https://gitlab.syncad.com/hive/common-ci-configuration/-/raw/develop}"
+    # COMMON_CI_REF selects which common-ci-configuration revision the cache scripts
+    # come from, so a pipeline can be run against a branch of that repo before it is
+    # merged (these scripts are fetched at runtime, not pinned by common_includes.yml).
+    # It is exported because copy_datadir.sh builds its own cache-manager.sh URL.
+    COMMON_CI_REF="${COMMON_CI_REF:-develop}"
+    COMMON_CI_URL="${COMMON_CI_URL:-https://gitlab.syncad.com/hive/common-ci-configuration/-/raw/${COMMON_CI_REF}}"
+    export COMMON_CI_REF COMMON_CI_URL
     COPY_DATADIR_SCRIPT="/tmp/copy_datadir.sh"
     echo "Fetching copy_datadir.sh from common-ci-configuration..."
     wget -qO "$COPY_DATADIR_SCRIPT" "${COMMON_CI_URL}/haf-app-tools/scripts/copy_datadir.sh"
