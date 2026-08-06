@@ -12,7 +12,8 @@ using hive::plugins::account_history::annotated_signed_transaction;
 typedef static_variant<
       void_t,
       version,
-      hardfork_version_vote
+      hardfork_version_vote,
+      state_stamp
     > legacy_block_header_extensions;
 
 typedef vector< legacy_block_header_extensions > legacy_block_header_extensions_type;
@@ -41,11 +42,11 @@ struct legacy_signed_block
 
     for( const auto& t : b.transactions )
     {
-      annotated_signed_transaction& legcy_tx = 
+      annotated_signed_transaction& legacy_tx = 
         transactions.emplace_back( annotated_signed_transaction( t, b.transaction_ids[tx_no] ) );
 
-      legcy_tx.transaction_num = tx_no++;
-      legcy_tx.block_num = block_num;
+      legacy_tx.transaction_num = tx_no++;
+      legacy_tx.block_num = block_num;
     }
 
     transaction_ids.insert( transaction_ids.end(), b.transaction_ids.begin(), b.transaction_ids.end() );

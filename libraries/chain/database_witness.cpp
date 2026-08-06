@@ -1,6 +1,7 @@
 #include <hive/chain/detail/state/witness_objects_multiindex.hpp>
 #include <hive/chain/detail/state/account_object_multiindex.hpp>
 #include <hive/chain/detail/state/global_property_object_multiindex.hpp>
+#include <hive/chain/detail/state/state_stamp_data_object_multiindex.hpp>
 #include <hive/chain/database_virtual_operations.hpp>
 
 #include <hive/chain/index.hpp>
@@ -226,6 +227,7 @@ struct process_header_visitor
 
   const std::string& _witness;
   database& _db;
+  mutable const checksum_type* _state_merkle_root = nullptr;
 
   void operator()( const void_t& obj ) const
   {
@@ -258,6 +260,14 @@ struct process_header_visitor
         wo.hardfork_time_vote = hfv.hf_time;
       });
   }
+
+  void operator()( const hive::protocol::state_stamp& stamp ) const
+  {
+    FC_ASSERT( _db.has_hardfork( HIVE_HARDFORK_1_29_STAMP_BLOCK_EXTENSION ),
+      "State stamp block extension is not allowed before HF29" );
+    FC_ASSERT( _state_merkle_root == nullptr, "Duplicate state stamp block extension" );
+    _state_merkle_root = &stamp.merkle_root;
+  }
 };
 
 void database::process_header_extensions( const signed_block& next_block )
@@ -266,6 +276,27 @@ void database::process_header_extensions( const signed_block& next_block )
 
   for( const auto& e : next_block.extensions )
     e.visit( _v );
+
+  if( has_hardfork( HIVE_HARDFORK_1_29_STAMP_BLOCK_EXTENSION ) )
+  {
+    // all nodes must have collected exactly the same stamps since the previous stamp-carrying
+    // block; a producer publishes their merkle root only when there is something to publish
+    const auto& ssdo = get_state_stamp_data();
+    if( ssdo.is_empty() )
+    {
+      FC_ASSERT( _v._state_merkle_root == nullptr, "Unexpected state stamp block extension" );
+    }
+    else
+    {
+      FC_ASSERT( _v._state_merkle_root != nullptr, "Block is missing the required state stamp block extension" );
+      auto expected = ssdo.finalize();
+      FC_ASSERT( *_v._state_merkle_root == expected,
+        "State stamp mismatch - node diverged on stamped consensus state, got ${g}, expected ${e}",
+        ( "g", *_v._state_merkle_root )( "e", expected ) );
+      // consume the collected stamps so the next block starts a fresh accumulation
+      modify( ssdo, []( state_stamp_data_object& o ) { o.reset(); } );
+    }
+  }
 }
 
 uint64_t database::validate_witness_votes_invariant() const

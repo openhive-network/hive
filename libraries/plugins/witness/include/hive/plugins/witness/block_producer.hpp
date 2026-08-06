@@ -29,6 +29,10 @@ private:
 
   void adjust_hardfork_version_vote(const chain::witness_object& witness, chain::signed_block_header& pending_block);
 
+  // since HF29: if there are state stamps accumulated since the last stamp-carrying block,
+  // publishes their merkle root as a block header extension
+  void add_state_stamp( chain::signed_block_header& pending_block );
+
   void apply_pending_transactions( const chain::account_name_type& witness_owner,
                                    fc::time_point_sec when,
                                    chain::signed_block_header& pending_block,

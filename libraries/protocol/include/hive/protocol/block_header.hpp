@@ -4,10 +4,18 @@
 
 namespace hive { namespace protocol {
 
+  // Merkle root of all state stamps collected since the previous stamp-carrying block
+  // (see hive::chain::state_stamp_data_object). Present only in blocks produced since HF29.
+  struct state_stamp
+  {
+    checksum_type merkle_root;
+  };
+
   typedef static_variant<
     void_t,
     version,                // Normal witness version reporting, for diagnostics and voting
-    hardfork_version_vote   // Voting for the next hardfork to trigger
+    hardfork_version_vote,  // Voting for the next hardfork to trigger
+    state_stamp             // Merkle root of arbitrary consensus-state stamps (since HF29)
   >                                block_header_extensions;
 
   typedef flat_set<block_header_extensions > block_header_extensions_type;
@@ -59,5 +67,6 @@ struct variant_creator_functor< block_header_extensions >
 
 FC_REFLECT_TYPENAME( hive::protocol::block_header_extensions )
 
+FC_REFLECT( hive::protocol::state_stamp, (merkle_root) )
 FC_REFLECT( hive::protocol::block_header, (previous)(timestamp)(witness)(transaction_merkle_root)(extensions) )
 FC_REFLECT_DERIVED( hive::protocol::signed_block_header, (hive::protocol::block_header), (witness_signature) )
