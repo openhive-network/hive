@@ -64,7 +64,7 @@ void placeholder_comment_archive::wipe()
   // do nothing - there is no extra data
 }
 
-void placeholder_comment_archive::flush()
+void placeholder_comment_archive::flush( bool force_storage_flush )
 {
   // do nothing - there is no extra data
 }

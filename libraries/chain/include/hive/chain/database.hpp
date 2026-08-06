@@ -388,7 +388,7 @@ namespace chain {
       void notify_pre_apply_custom_operation( const custom_operation_notification& note );
       void notify_post_apply_custom_operation( const custom_operation_notification& note );
       void notify_finish_push_block( const block_notification& note );
-      void notify_flush();
+      void notify_flush( bool force_storage_flush );
 
       using apply_operation_handler_t = std::function< void(const operation_notification&) >;
       using apply_transaction_handler_t = std::function< void(const transaction_notification&) >;
@@ -396,7 +396,7 @@ namespace chain {
       using push_block_handler_t = std::function< void(const block_notification&) >;
       using apply_custom_operation_handler_t = std::function< void(const custom_operation_notification&) >;
       using irreversible_block_handler_t = std::function< void(uint32_t) >;
-      using flush_handler_t = std::function< void() >;
+      using flush_handler_t = std::function< void( bool /* force_storage_flush */ ) >;
       using switch_fork_handler_t = std::function< void(uint32_t) >;
       using reindex_handler_t = std::function< void(const reindex_notification&) >;
       using prepare_snapshot_handler_t = std::function < void(const database&, const database::abstract_index_cntr_t&)>;
@@ -465,7 +465,20 @@ namespace chain {
 
       //////////////////// db_witness_schedule.cpp ////////////////////
 
-      void flush_to_all_storages();
+      /**
+        * Persist state and external storages as one unit.
+        *
+        * @param force_storage_flush when true the external storages additionally force their
+        * in-memory tables out into immutable files. That is only wanted at the explicit flush
+        * points (shutdown, snapshot, end of syncing). On the per-block path it must stay false:
+        * submitting the pending write batch is what keeps the external storages in step with
+        * flushed shared memory, while forcing files out on every block creates a near-empty file
+        * per column family per flush (issue #869).
+        */
+      void flush_to_all_storages( bool force_storage_flush = false );
+
+      /// Block on which the flush after the one at @p block_num should happen.
+      uint32_t schedule_next_flush_block( uint32_t block_num ) const;
 
       /**
         * @brief Get the witness scheduled for block production in a slot.
@@ -668,6 +681,10 @@ namespace chain {
       const std::string& get_json_schema() const;
 
       void set_flush_interval( uint32_t flush_blocks );
+      /// Interval applied when the node leaves syncing and enters live mode. Configured through
+      /// the `flush-state-interval-live` option; defaults to flushing on every block so that a
+      /// crash leaves state at most one block behind.
+      void set_live_flush_interval( uint32_t flush_blocks );
       void check_free_memory( bool force_print, uint32_t current_block_num );
 
       void apply_transaction( const std::shared_ptr<full_transaction_type>& trx, uint32_t skip = skip_nothing );
@@ -828,6 +845,7 @@ namespace chain {
       node_property_object          _node_property_object;
 
       uint32_t                      _flush_blocks = 0;
+      uint32_t                      _live_flush_blocks = 1;
       uint32_t                      _next_flush_block = 0;
 
       uint32_t                      _last_free_gb_printed = 0;

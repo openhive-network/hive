@@ -38,7 +38,7 @@ class rocksdb_comment_archive : public comments_handler
 
     void open() override;
     void close() override;
-    void flush() override;
+    void flush( bool force_storage_flush ) override;
     void wipe() override;
 
     void on_end_of_syncing() override;

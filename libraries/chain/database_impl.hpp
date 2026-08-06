@@ -132,7 +132,7 @@ class database_impl
     /**
       *  This signal is emitted when storages have to be flushed
       */
-    fc::signal<void()>                                    _flush_signal;
+    fc::signal<void(bool)>                                _flush_signal;
 };
 
 } } // hive::chain
