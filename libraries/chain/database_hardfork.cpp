@@ -9,6 +9,7 @@
 #include <hive/chain/detail/state/feed_history_object_multiindex.hpp>
 #include <hive/chain/detail/state/liquidity_reward_balance_object_multiindex.hpp>
 #include <hive/chain/detail/state/reward_fund_object_multiindex.hpp>
+#include <hive/chain/detail/state/state_stamp_data_object_multiindex.hpp>
 #include <hive/chain/detail/state/witness_objects_multiindex.hpp>
 #include <hive/chain/witness_schedule.hpp>
 
@@ -505,6 +506,12 @@ void database::apply_hardfork( uint32_t hardfork )
     case HIVE_HARDFORK_1_28:
     {
       remove_proposal_votes_for_accounts_without_voting_rights();
+      break;
+    }
+    case HIVE_HARDFORK_1_29:
+    {
+      create<state_stamp_data_object>();
+      // TODO: if any state from before HF29 needs to be stamped and preserved, put the publish calls here
       break;
     }
     default:

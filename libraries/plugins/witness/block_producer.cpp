@@ -10,6 +10,7 @@
 #include <hive/chain/detail/state/hardfork_property_object.hpp>
 #include <hive/chain/detail/state/global_property_object_multiindex.hpp>
 #include <hive/chain/detail/state/witness_objects.hpp>
+#include <hive/chain/detail/state/state_stamp_data_object.hpp>
 
 #include <fc/macros.hpp>
 
@@ -50,6 +51,7 @@ void block_producer::_generate_block( chain::generate_block_flow_control* genera
   pending_block_header.witness = witness_owner;
 
   adjust_hardfork_version_vote( _db.get_witness( witness_owner ), pending_block_header );
+  add_state_stamp( pending_block_header );
 
   std::vector<std::shared_ptr<hive::chain::full_transaction_type>> full_transactions;
   if( generate_block_ctrl->skip_transaction_reapplication() )
@@ -106,6 +108,21 @@ void block_producer::adjust_hardfork_version_vote(const chain::witness_object& w
     // Make vote match binary configuration. This is vote to not apply the new hardfork.
     pending_block_header.extensions.insert( block_header_extensions( hardfork_version_vote( hf_versions.versions[ hfp.last_hardfork ], hf_versions.times[ hfp.last_hardfork ] ) ) );
   }
+}
+
+void block_producer::add_state_stamp( chain::signed_block_header& pending_block_header )
+{
+  using namespace hive::protocol;
+
+  // the state_stamp_data_object only exists once HF29 is active
+  if( !_db.has_hardfork( HIVE_HARDFORK_1_29_STAMP_BLOCK_EXTENSION ) )
+    return;
+
+  const auto& ssd = _db.get_state_stamp_data();
+  if( ssd.is_empty() )
+    return;
+
+  pending_block_header.extensions.insert( block_header_extensions( state_stamp{ ssd.finalize() } ) );
 }
 
 void block_producer::apply_pending_transactions(const chain::account_name_type& witness_owner,

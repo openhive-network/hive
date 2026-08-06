@@ -2307,7 +2307,7 @@ void database::_apply_block( const std::shared_ptr<full_block_type>& full_block,
     dgp.set_current_witness( block.witness );
   });
 
-  /// parse witness version reporting
+  /// parse witness version reporting and, since HF29, validate/reset the state stamp extension
   process_header_extensions( block );
 
   if( has_hardfork( HIVE_HARDFORK_0_5__54 ) ) // Cannot remove after hardfork

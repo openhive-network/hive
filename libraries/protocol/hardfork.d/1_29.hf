@@ -26,4 +26,6 @@
 #define HIVE_HARDFORK_1_29_FIX_LIMIT_ORDER_ASSETS (HIVE_HARDFORK_1_29)
 // RC is part of consensus
 #define HIVE_HARDFORK_1_29_RC_IS_CONSENSUS (HIVE_HARDFORK_1_29)
+// activate block extension for storing extra merkle root made from arbitrary hashes of internal state or automated actions
+#define HIVE_HARDFORK_1_29_STAMP_BLOCK_EXTENSION (HIVE_HARDFORK_1_29)
 #endif
