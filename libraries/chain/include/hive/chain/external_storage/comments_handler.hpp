@@ -25,7 +25,7 @@ class comments_handler : public external_storage_snapshot
 
     virtual void open() = 0;
     virtual void close() = 0;
-    virtual void flush() = 0;
+    virtual void flush( bool force_storage_flush ) = 0;
     virtual void wipe() = 0;
 
     virtual void on_end_of_syncing() = 0;

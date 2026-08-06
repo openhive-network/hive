@@ -111,7 +111,7 @@ void memory_comment_archive::wipe()
   // since storage is part of SHM, database::wipe clears it, nothing extra to do here
 }
 
-void memory_comment_archive::flush()
+void memory_comment_archive::flush( bool force_storage_flush )
 {
   // nothing extra to do here
 }

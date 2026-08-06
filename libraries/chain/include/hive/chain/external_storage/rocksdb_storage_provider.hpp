@@ -92,6 +92,7 @@ class rocksdb_storage_provider: public external_basic_provider
     void shutdownDb() override;
     void flushDb() override;
     void flushWriteBuffer() override;
+    void flushStorage() override;
     void wipeDb() override;
 
     //stores new value of last irreversible block in DB and _cached_irreversible_block

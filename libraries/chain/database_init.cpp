@@ -334,9 +334,15 @@ void database::init_genesis()
   FC_CAPTURE_AND_RETHROW()
 }
 
+void database::set_live_flush_interval( uint32_t flush_blocks )
+{
+  _live_flush_blocks = flush_blocks;
+}
+
 void database::set_flush_interval( uint32_t flush_blocks )
 {
   _flush_blocks = flush_blocks;
+  // 0 means "nothing scheduled" - the next applied block flushes and schedules from itself.
   _next_flush_block = 0;
 }
 

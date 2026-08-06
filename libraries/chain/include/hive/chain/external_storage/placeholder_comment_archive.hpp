@@ -25,7 +25,7 @@ class placeholder_comment_archive final : public comments_handler
 
     virtual void open() override;
     virtual void close() override;
-    virtual void flush() override;
+    virtual void flush( bool force_storage_flush ) override;
     virtual void wipe() override;
 
     void on_end_of_syncing() override{ /*nothing to do here*/};

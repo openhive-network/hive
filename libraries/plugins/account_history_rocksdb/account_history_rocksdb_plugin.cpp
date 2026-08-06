@@ -168,9 +168,9 @@ public:
       on_wipe();
     }, _self );
 
-    _on_flush_conn = _mainDb.add_flush_handler( [&]()
+    _on_flush_conn = _mainDb.add_flush_handler( [&]( bool force_storage_flush )
     {
-      on_flush();
+      on_flush( force_storage_flush );
     }, _self );
 
     HIVE_ADD_PLUGIN_INDEX(_mainDb, volatile_operation_index);
@@ -301,7 +301,7 @@ private:
   void on_post_apply_block(const block_notification& bn);
 
   void on_wipe();
-  void on_flush();
+  void on_flush( bool force_storage_flush );
 
   void collectOptions(const bpo::variables_map& options);
 
@@ -1272,9 +1272,16 @@ void account_history_rocksdb_plugin::impl::on_irreversible_block( uint32_t block
   _provider->update_lib(block_num);
 }
 
-void account_history_rocksdb_plugin::impl::on_flush()
+void account_history_rocksdb_plugin::impl::on_flush( bool force_storage_flush )
 {
-  _provider->flushDb();
+  // On the per-block path only the pending write batch is submitted: that is what keeps this
+  // store in step with flushed shared memory. Forcing all column families out into SST files
+  // on every flush is what produced a near-empty file per column family per flush, growing the
+  // open-file count without bound (issue #869).
+  if( force_storage_flush )
+    _provider->flushDb();
+  else
+    _provider->flushWriteBuffer();
 }
 
 void account_history_rocksdb_plugin::impl::on_post_apply_block(const block_notification& bn)
