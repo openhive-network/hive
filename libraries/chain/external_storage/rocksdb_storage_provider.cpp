@@ -52,6 +52,14 @@ void rocksdb_storage_provider::openDb( uint32_t expected_lib )
   options.max_log_file_size = 8 * 1024 * 1024; // 8 MiB per LOG file
   options.keep_log_file_num = 1;               // retain only the active LOG
   raise_fd_limit();
+  // Bound on how many SST files this database may keep open at once. With RocksDB's default of
+  // -1 every live SST file is opened on first touch and then never closed, so the descriptor
+  // count grows with the file count while the process limit stays fixed; once the process runs
+  // out of descriptors, writes start failing. With a finite value the open files live in a
+  // bounded table cache (LRU): opening file N+1 closes the least recently used one and drops its
+  // index/filter blocks, so reaching an evicted file costs a reopen - reads get slower - but the
+  // descriptor count stays bounded and correctness is unaffected (issue #869).
+  options.max_open_files = max_open_files_budget();
 
   auto status = DB::Open( DBOptions( options ), strPath, columnDefs, &_columnHandles, &_db );
   ilog( "Database is ${status}.", ("status", status.ok() ? "opened" : "not opened") );
@@ -135,6 +143,14 @@ std::tuple<bool, bool> rocksdb_storage_provider::createDbSchema( const bfs::path
   options.max_log_file_size = 8 * 1024 * 1024; // 8 MiB per LOG file
   options.keep_log_file_num = 1;               // retain only the active LOG
   raise_fd_limit();
+  // Bound on how many SST files this database may keep open at once. With RocksDB's default of
+  // -1 every live SST file is opened on first touch and then never closed, so the descriptor
+  // count grows with the file count while the process limit stays fixed; once the process runs
+  // out of descriptors, writes start failing. With a finite value the open files live in a
+  // bounded table cache (LRU): opening file N+1 closes the least recently used one and drops its
+  // index/filter blocks, so reaching an evicted file costs a reopen - reads get slower - but the
+  // descriptor count stays bounded and correctness is unaffected (issue #869).
+  options.max_open_files = max_open_files_budget();
 
   std::tuple<bool, bool> _result{ false, false };
 
@@ -249,11 +265,9 @@ void rocksdb_storage_provider::flushWriteBuffer()
   getWriteBuffer().Clear();
 }
 
-void rocksdb_storage_provider::flushDb()
+void rocksdb_storage_provider::flushStorage()
 {
-  FC_ASSERT( getStorage() != nullptr && "Database pointer is null" );
-
-  flushWriteBuffer();
+  FC_ASSERT( getStorage() != nullptr && "Database pointer is null on storage flush" );
 
   ::rocksdb::FlushOptions fOptions;
   for( const auto& cf : _columnHandles )
@@ -261,6 +275,14 @@ void rocksdb_storage_provider::flushDb()
     auto s = getStorage()->Flush( fOptions, cf );
     checkStatus(s);
   }
+}
+
+void rocksdb_storage_provider::flushDb()
+{
+  FC_ASSERT( getStorage() != nullptr && "Database pointer is null" );
+
+  flushWriteBuffer();
+  flushStorage();
 }
 
 void rocksdb_storage_provider::saveStoreVersion()
