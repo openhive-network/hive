@@ -16,9 +16,9 @@ namespace hive { namespace protocol {
     version,                // Normal witness version reporting, for diagnostics and voting
     hardfork_version_vote,  // Voting for the next hardfork to trigger
     state_stamp             // Merkle root of arbitrary consensus-state stamps (since HF29)
-  >                                block_header_extensions;
+  > block_header_extensions;
 
-  typedef flat_set<block_header_extensions > block_header_extensions_type;
+  typedef flat_set< block_header_extensions > block_header_extensions_type;
 
   struct block_header
   {

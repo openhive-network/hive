@@ -266,6 +266,7 @@ struct process_header_visitor
     FC_ASSERT( _db.has_hardfork( HIVE_HARDFORK_1_29_STAMP_BLOCK_EXTENSION ),
       "State stamp block extension is not allowed before HF29" );
     FC_ASSERT( _state_merkle_root == nullptr, "Duplicate state stamp block extension" );
+      //ABW: above assertion can't ever fire because flat_set<static_variant> naturally prevents duplicates
     _state_merkle_root = &stamp.merkle_root;
   }
 };
