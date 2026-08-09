@@ -2536,6 +2536,12 @@ namespace graphene { namespace net {
               updated_peer_record->last_connection_disposition = last_connection_rejected;
               updated_peer_record->last_connection_attempt_time = fc::time_point::now();
               updated_peer_record->last_failed_time = updated_peer_record->last_connection_attempt_time;
+              // count the rejection like a failed attempt so the retry backoff grows.  Without
+              // this, a node that rejects us (full, incompatible, ...) is redialed every
+              // peer_connection_retry_timeout forever -- against a node with a reduced
+              // connection limit this was measured at ~75 attempts/minute network-wide,
+              // sustained for as long as the condition lasted
+              updated_peer_record->number_of_failed_connection_attempts++;
               _potential_peer_db.update_entry(*updated_peer_record);
             }
           }
@@ -2629,6 +2635,9 @@ namespace graphene { namespace net {
             if (updated_peer_record)
             {
               updated_peer_record->last_connection_disposition = last_connection_succeeded;
+              // a completed handshake clears the retry backoff accumulated from earlier
+              // failures or rejections
+              updated_peer_record->number_of_failed_connection_attempts = 0;
               _potential_peer_db.update_entry(*updated_peer_record);
             }
           }
@@ -2752,6 +2761,9 @@ namespace graphene { namespace net {
           // mark the connection as successful in the database
           potential_peer_record updated_peer_record = _potential_peer_db.lookup_or_create_entry_for_endpoint(*endpoint_for_db);
           updated_peer_record.last_connection_disposition = last_connection_succeeded;
+          // a completed handshake clears the retry backoff accumulated from earlier
+          // failures or rejections
+          updated_peer_record.number_of_failed_connection_attempts = 0;
           _potential_peer_db.update_entry(updated_peer_record);
         }
 
