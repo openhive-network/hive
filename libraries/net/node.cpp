@@ -3288,7 +3288,13 @@ namespace graphene { namespace net {
       {
         originating_peer->items_requested_from_peer.erase( regular_item_iter );
         originating_peer->inventory_peer_advertised_to_us.erase( requested_item );
-        if (is_item_in_any_peers_inventory(requested_item))
+        // before handing the request to another peer, re-check that we still need the item:
+        // the chain may have advanced past it while it was in flight.  (Only possible for
+        // block ids -- legacy message hashes carry no block number to reason about.)
+        bool still_needed = true;
+        if (requested_item.item_type == block_message_type && originating_peer->advertise_blocks_by_block_id())
+          still_needed = classify_advertised_block_id(requested_item.item_hash) == block_id_classification::fetchable;
+        if (still_needed && is_item_in_any_peers_inventory(requested_item))
           _items_to_fetch.insert(prioritized_item_id(requested_item, _items_to_fetch_sequence_counter++));
         wlog("Peer doesn't have the requested item.");
         trigger_fetch_items_loop();
@@ -3560,7 +3566,12 @@ namespace graphene { namespace net {
       {
         for (const auto& item_and_time : originating_peer->items_requested_from_peer)
         {
-          if (is_item_in_any_peers_inventory(item_and_time.first))
+          // as in on_item_not_available_message: don't reschedule fetches for blocks the chain
+          // has already moved past while the request was in flight with the dead peer
+          bool still_needed = true;
+          if (item_and_time.first.item_type == block_message_type && originating_peer->advertise_blocks_by_block_id())
+            still_needed = classify_advertised_block_id(item_and_time.first.item_hash) == block_id_classification::fetchable;
+          if (still_needed && is_item_in_any_peers_inventory(item_and_time.first))
             _items_to_fetch.insert(prioritized_item_id(item_and_time.first, _items_to_fetch_sequence_counter++));
         }
         trigger_fetch_items_loop();
