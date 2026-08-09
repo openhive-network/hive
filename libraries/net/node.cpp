@@ -556,6 +556,7 @@ namespace graphene { namespace net {
       std::unordered_set<peer_connection_ptr>                     _terminating_connections;
 
       boost::circular_buffer<item_hash_t> _most_recent_blocks_accepted; // the /n/ most recent blocks we've accepted (currently tuned to the max number of connections)
+      std::deque<fc::time_point> _recent_invalid_block_disconnect_times; // when we recently disconnected peers over "invalid" blocks (circuit breaker state)
 
       uint32_t _sync_item_type;
       uint32_t _total_number_of_unfetched_items; /// the number of items we still need to fetch while syncing
@@ -720,6 +721,7 @@ namespace graphene { namespace net {
 
       void on_connection_closed(peer_connection* originating_peer) override;
 
+      bool invalid_block_disconnect_breaker_tripped();
       void send_sync_block_to_node_delegate(const std::shared_ptr<full_block_type>& full_block);
       uint32_t get_number_of_handle_message_calls_in_progress();
       void discard_abandoned_sync_blocks();
@@ -3532,6 +3534,21 @@ namespace graphene { namespace net {
       schedule_peer_for_deletion(originating_peer_ptr);
     } //on_connection_closed
 
+    // Returns true when we have already disconnected so many peers over "invalid" blocks in
+    // the recent window that our own judgment is suspect (see the config constants).  When it
+    // returns false, the caller's impending disconnect is recorded against the window.
+    bool node_impl::invalid_block_disconnect_breaker_tripped()
+    {
+      VERIFY_CORRECT_THREAD();
+      fc::time_point window_start = fc::time_point::now() - fc::seconds(GRAPHENE_NET_INVALID_BLOCK_DISCONNECT_BREAKER_WINDOW_SEC);
+      while (!_recent_invalid_block_disconnect_times.empty() && _recent_invalid_block_disconnect_times.front() < window_start)
+        _recent_invalid_block_disconnect_times.pop_front();
+      if (_recent_invalid_block_disconnect_times.size() >= GRAPHENE_NET_INVALID_BLOCK_DISCONNECT_BREAKER_COUNT)
+        return true;
+      _recent_invalid_block_disconnect_times.push_back(fc::time_point::now());
+      return false;
+    }
+
     void node_impl::send_sync_block_to_node_delegate(const std::shared_ptr<full_block_type>& full_block)
     {
       dlog("in send_sync_block_to_node_delegate()");
@@ -3700,6 +3717,7 @@ namespace graphene { namespace net {
       {
         fc::exception disconnect_exception(FC_LOG_MESSAGE(error, "You offered us a block that we reject as invalid.  The invalid block was number: ${block_number} with hash ${block_id}",
                                                           (block_number)(block_id)));
+        const bool breaker_tripped = !discontinue_fetching_blocks_from_peer && invalid_block_disconnect_breaker_tripped();
         // invalid message received
         for (const peer_connection_ptr& peer : _active_connections)
         {
@@ -3712,6 +3730,16 @@ namespace graphene { namespace net {
               wlog("inhibiting fetching sync blocks from peer ${endpoint} because it is on a fork that's too old",
                    ("endpoint", peer->get_remote_endpoint()));
               peer->inhibit_fetching_sync_blocks = true;
+            }
+            else if (breaker_tripped)
+            {
+              // too many "invalid" rejections too quickly -- distrust our own judgment and keep
+              // the peer; clean up bookkeeping the same way the stale-delivery path does
+              wlog("invalid-block disconnect circuit breaker tripped: keeping peer ${endpoint} despite rejected sync block #${block_number}",
+                   ("endpoint", peer->get_remote_endpoint())(block_number));
+              peer->ids_of_items_being_processed.erase(block_id);
+              if (peer->idle())
+                peers_to_fetch_ids_from.insert(peer);
             }
             else
               peers_to_disconnect[peer] = std::make_pair(std::string("You offered us a block that we reject as invalid"), disconnect_exception);
@@ -4093,14 +4121,26 @@ namespace graphene { namespace net {
              ("num", block_num)
              ("id", block_id));
 
-        disconnect_exception = e;
-        disconnect_reason = "You offered me a block that I have deemed to be invalid";
+        if (invalid_block_disconnect_breaker_tripped())
+        {
+          // too many "invalid" rejections too quickly -- the likely explanation is a systemic
+          // event or a local problem, not this many independently-misbehaving peers.  Keep the
+          // peer and use the reconciliation path instead of the punitive one
+          wlog("invalid-block disconnect circuit breaker tripped: keeping peer ${peer} despite rejected block ${num} (id:${id})",
+               ("peer", originating_peer->get_remote_endpoint())("num", block_num)("id", block_id));
+          restart_sync_exception = e;
+        }
+        else
+        {
+          disconnect_exception = e;
+          disconnect_reason = "You offered me a block that I have deemed to be invalid";
 
-        // Only the peer that actually delivered the rejected block is disconnected.  We used to
-        // also disconnect every peer that merely had the same block queued for fetching; those
-        // peers had sent us nothing yet, and that collective punishment turned single rejections
-        // into the mass peer-list wipes seen in the 2026-07-09 incident.
-        peers_to_disconnect.insert( originating_peer->shared_from_this() );
+          // Only the peer that actually delivered the rejected block is disconnected.  We used to
+          // also disconnect every peer that merely had the same block queued for fetching; those
+          // peers had sent us nothing yet, and that collective punishment turned single rejections
+          // into the mass peer-list wipes seen in the 2026-07-09 incident.
+          peers_to_disconnect.insert( originating_peer->shared_from_this() );
+        }
       }
 
       if (restart_sync_exception)

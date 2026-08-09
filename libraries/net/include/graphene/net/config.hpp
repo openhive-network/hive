@@ -34,6 +34,15 @@
 // reporting none of them silently bypassed every compatibility check
 #define GRAPHENE_NET_MINIMUM_PROTOCOL_VERSION                      106
 
+// circuit breaker for invalid-block punitive disconnects: if we find ourselves kicking more
+// than COUNT peers within WINDOW seconds for offering "invalid" blocks, the far more likely
+// explanation is a systemic event (fork storm, local latency, a bug of ours) than that many
+// simultaneous attackers -- stop disconnecting and fall back to reconciliation until the
+// window drains.  The 2026-07-09 incident was exactly this signature: hundreds of honest
+// peers punished in minutes, every rejection a false positive.
+#define GRAPHENE_NET_INVALID_BLOCK_DISCONNECT_BREAKER_COUNT        5
+#define GRAPHENE_NET_INVALID_BLOCK_DISCONNECT_BREAKER_WINDOW_SEC   60
+
 /**
  * Define this to enable debugging code in the p2p network interface.
  * This is code that would never be executed in normal operation, but is
