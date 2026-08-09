@@ -140,6 +140,13 @@ namespace graphene { namespace net {
     struct block_clock_index{};
 
 
+    // Cache of recently-seen messages, kept so we can serve peers' fetch requests without
+    // hitting deeper storage.  NOTE: with the introduction of authoritative chain-state checks
+    // (classify_advertised_block_id / has_item at delivery), this cache is no longer the
+    // arbiter of "have we seen this block?" for block-id-capable peers -- it retains that duty
+    // only for legacy message-hash advertisements, whose hashes cannot be checked against the
+    // chain.  Its block-clock expiry semantics are a serving-window bound, not a correctness
+    // boundary.
     template <typename smart_ptr_type>
     class blockchain_tied_message_cache
     {
@@ -4080,7 +4087,13 @@ namespace graphene { namespace net {
         // we don't know they're the same (for the peer in normal operation, it has only told us the
         // message id, for the peer in the sync case we only known the block_id).
         fc::time_point message_validated_time;
-        bool block_has_been_accepted = std::find(_most_recent_blocks_accepted.begin(), _most_recent_blocks_accepted.end(), block_id) != _most_recent_blocks_accepted.end();
+        // the recently-accepted list is a fast bounded check, but it is not authoritative:
+        // under heavy duplicate traffic its 200 entries can churn in under a minute, and the
+        // 2026-07-09 forensics recorded nodes re-pushing blocks they had accepted less than a
+        // minute earlier after exactly such a miss.  Fall back to asking the chain itself --
+        // one fork-db/block-log lookup per delivered block is trivial next to a push
+        bool block_has_been_accepted = std::find(_most_recent_blocks_accepted.begin(), _most_recent_blocks_accepted.end(), block_id) != _most_recent_blocks_accepted.end() ||
+                                       _delegate->has_item(item_id(block_message_type, block_id));
         if (!block_has_been_accepted &&
             _message_ids_currently_being_processed.find(block_id) == _message_ids_currently_being_processed.end())
         {
