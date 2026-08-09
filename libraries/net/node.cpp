@@ -728,6 +728,14 @@ namespace graphene { namespace net {
       void on_connection_closed(peer_connection* originating_peer) override;
 
       void refresh_cached_chain_state();
+      enum class block_id_classification
+      {
+        known,               // we already have this exact block (main chain or fork database)
+        dead_fork,           // at or below our last irreversible block and not ours: can never apply
+        fetchable,           // plausible block we don't have
+        implausible_future   // claims a height so far past our head it can't be a real new block
+      };
+      block_id_classification classify_advertised_block_id(const item_hash_t& block_id_hash);
       bool invalid_block_disconnect_breaker_tripped();
       void send_sync_block_to_node_delegate(const std::shared_ptr<full_block_type>& full_block);
       uint32_t get_number_of_handle_message_calls_in_progress();
@@ -3350,13 +3358,35 @@ namespace graphene { namespace net {
           // how we interpret the item_hash depends on the peer's protocol version
           if (originating_peer->advertise_blocks_by_block_id())
           {
-            // then it's a block_id
-            if (_block_message_cache.contains_item_by_contents_hash(item_hash))
+            // it's a block_id: judge it against the real chain state rather than the bounded
+            // recent-message cache, which forgets anything older than ~20 blocks and therefore
+            // mistook stale re-advertisements for new blocks
+            bool skip_this_item = false;
+            switch (classify_advertised_block_id(item_hash))
+            {
+            case block_id_classification::known:
+              skip_this_item = true; // we already have it; nothing to fetch
+              break;
+            case block_id_classification::dead_fork:
+              dlog("ignoring advertisement of block ${hash} from ${endpoint}: it is at or below our last irreversible block and is not ours",
+                   ("hash", item_hash)("endpoint", originating_peer->get_remote_endpoint()));
+              skip_this_item = true;
+              break;
+            case block_id_classification::implausible_future:
+              wlog("ignoring advertisement of block ${hash} from ${endpoint}: it claims a height implausibly far past our head",
+                   ("hash", item_hash)("endpoint", originating_peer->get_remote_endpoint()));
+              skip_this_item = true;
+              break;
+            case block_id_classification::fetchable:
+              break;
+            }
+            if (skip_this_item)
               continue;
           }
           else
           {
-            // then it's a legacy_block_message_hash
+            // then it's a legacy_block_message_hash: it has no embedded block number, so the
+            // recent-message cache remains the only dedupe available for these peers
             if (_block_message_cache.contains_item(item_hash))
               continue;
           }
@@ -3546,6 +3576,28 @@ namespace graphene { namespace net {
       VERIFY_CORRECT_THREAD();
       _cached_head_block_num = std::max(_cached_head_block_num, _delegate->get_block_number(_delegate->get_head_block_id()));
       _cached_last_irreversible_block_num = std::max(_cached_last_irreversible_block_num, _delegate->get_last_irreversible_block_num());
+    }
+
+    // Judge an advertised block id against the actual chain state.  Only valid for hashes that
+    // really are block ids (protocol >= GRAPHENE_NET_PROTOCOL_ADVERTISE_BLOCKS_BY_BLOCK_ID_VERSION
+    // peers); legacy block-message hashes have no embedded block number and must not be passed
+    // here.  This replaces dedupe decisions previously made against the bounded recent-message
+    // cache, whose ~20-block horizon made anything older look brand new -- the root enabler of
+    // the stale-refetch cascades in the 2026-07-09 incident.
+    node_impl::block_id_classification node_impl::classify_advertised_block_id(const item_hash_t& block_id_hash)
+    {
+      VERIFY_CORRECT_THREAD();
+      const uint32_t block_num = _delegate->get_block_number(block_id_hash); // decoded from the id itself
+      if (block_num == 0)
+        return block_id_classification::fetchable; // not decodable; let the fetch machinery sort it out
+      refresh_cached_chain_state();
+      if (block_num > _cached_head_block_num + GRAPHENE_NET_FUTURE_BLOCK_IDS_GRACE_BLOCKS)
+        return block_id_classification::implausible_future;
+      if (_delegate->has_item(item_id(block_message_type, block_id_hash)))
+        return block_id_classification::known;
+      if (block_num <= _cached_last_irreversible_block_num)
+        return block_id_classification::dead_fork;
+      return block_id_classification::fetchable;
     }
 
     // Returns true when we have already disconnected so many peers over "invalid" blocks in

@@ -43,6 +43,11 @@
 #define GRAPHENE_NET_INVALID_BLOCK_DISCONNECT_BREAKER_COUNT        5
 #define GRAPHENE_NET_INVALID_BLOCK_DISCONNECT_BREAKER_WINDOW_SEC   60
 
+// how far past our current head an advertised block id may claim to be and still be worth
+// fetching.  Legitimate live adverts are at most a block or two ahead; this allows for
+// generous clock skew and momentary head lag while rejecting fabricated far-future ids
+#define GRAPHENE_NET_FUTURE_BLOCK_IDS_GRACE_BLOCKS                 20
+
 /**
  * Define this to enable debugging code in the p2p network interface.
  * This is code that would never be executed in normal operation, but is
