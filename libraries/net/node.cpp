@@ -424,6 +424,7 @@ namespace graphene { namespace net {
       fc::time_point_sec get_block_time(const item_hash_t& block_id) override;
       fc::time_point_sec get_blockchain_now() override;
       item_hash_t get_head_block_id() const override;
+      uint32_t get_last_irreversible_block_num() const override;
       uint32_t estimate_last_known_fork_from_git_revision_timestamp(uint32_t unix_timestamp) const override;
       void error_encountered(const std::string& message, const fc::oexception& error) override;
       std::deque<block_id_type>::const_iterator find_first_item_not_in_blockchain(const std::deque<block_id_type>& item_hashes_received) override;
@@ -557,6 +558,11 @@ namespace graphene { namespace net {
 
       boost::circular_buffer<item_hash_t> _most_recent_blocks_accepted; // the /n/ most recent blocks we've accepted (currently tuned to the max number of connections)
       std::deque<fc::time_point> _recent_invalid_block_disconnect_times; // when we recently disconnected peers over "invalid" blocks (circuit breaker state)
+      // monotone mirrors of the chain state used to judge advertised/queued block ids without a
+      // delegate round trip per decision; refreshed on every accepted block (staleness is
+      // conservative: at worst we briefly treat a just-dead fork block as still fetchable)
+      uint32_t _cached_head_block_num = 0;
+      uint32_t _cached_last_irreversible_block_num = 0;
 
       uint32_t _sync_item_type;
       uint32_t _total_number_of_unfetched_items; /// the number of items we still need to fetch while syncing
@@ -721,6 +727,7 @@ namespace graphene { namespace net {
 
       void on_connection_closed(peer_connection* originating_peer) override;
 
+      void refresh_cached_chain_state();
       bool invalid_block_disconnect_breaker_tripped();
       void send_sync_block_to_node_delegate(const std::shared_ptr<full_block_type>& full_block);
       uint32_t get_number_of_handle_message_calls_in_progress();
@@ -3534,6 +3541,13 @@ namespace graphene { namespace net {
       schedule_peer_for_deletion(originating_peer_ptr);
     } //on_connection_closed
 
+    void node_impl::refresh_cached_chain_state()
+    {
+      VERIFY_CORRECT_THREAD();
+      _cached_head_block_num = std::max(_cached_head_block_num, _delegate->get_block_number(_delegate->get_head_block_id()));
+      _cached_last_irreversible_block_num = std::max(_cached_last_irreversible_block_num, _delegate->get_last_irreversible_block_num());
+    }
+
     // Returns true when we have already disconnected so many peers over "invalid" blocks in
     // the recent window that our own judgment is suspect (see the config constants).  When it
     // returns false, the caller's impending disconnect is recorded against the window.
@@ -3570,6 +3584,7 @@ namespace graphene { namespace net {
           ilog("Successfully pushed sync block ${block_number} ${block_id}", (block_number)(block_id));
 
         _most_recent_blocks_accepted.push_back(block_id);
+        refresh_cached_chain_state();
 
         client_accepted_block = true;
       }
@@ -6045,6 +6060,7 @@ namespace graphene { namespace net {
 
       _most_recent_blocks_accepted.push_back(block_id);
       _block_message_cache.cache_message(full_block, propagation_data);
+      refresh_cached_chain_state();
       advertise_block(full_block);
 
       /** Trigger block_accepted methods to potentially flush caches in both cases:
@@ -6085,6 +6101,7 @@ namespace graphene { namespace net {
       _most_recent_blocks_accepted.clear();
       _sync_item_type = current_head_block.item_type;
       _most_recent_blocks_accepted.push_back(current_head_block.item_hash);
+      refresh_cached_chain_state();
       _hard_fork_block_numbers = hard_fork_block_numbers;
     }
 
@@ -6639,6 +6656,11 @@ namespace graphene { namespace net {
     item_hash_t statistics_gathering_node_delegate_wrapper::get_head_block_id() const
     {
       INVOKE_AND_COLLECT_STATISTICS(get_head_block_id);
+    }
+
+    uint32_t statistics_gathering_node_delegate_wrapper::get_last_irreversible_block_num() const
+    {
+      INVOKE_AND_COLLECT_STATISTICS(get_last_irreversible_block_num);
     }
 
     uint32_t statistics_gathering_node_delegate_wrapper::estimate_last_known_fork_from_git_revision_timestamp(uint32_t unix_timestamp) const
