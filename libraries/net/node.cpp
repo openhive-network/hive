@@ -406,7 +406,6 @@ namespace graphene { namespace net {
 
       fc::variant_object get_call_statistics();
 
-      hive::protocol::chain_id_type get_old_chain_id() const override;
       hive::protocol::chain_id_type get_new_chain_id() const override;
       hive::protocol::chain_id_type get_chain_id() const override;
       bool has_item( const net::item_id& id ) override;
@@ -6507,11 +6506,6 @@ namespace graphene { namespace net {
 // mutations are serialized through the chain plugin's write queue.
 #define INVOKE_AND_COLLECT_STATISTICS( method_name, ... ) \
    return _node_delegate->method_name(__VA_ARGS__);
-
-    hive::protocol::chain_id_type statistics_gathering_node_delegate_wrapper::get_old_chain_id() const
-    {
-      INVOKE_AND_COLLECT_STATISTICS(get_old_chain_id);
-    }
 
     hive::protocol::chain_id_type statistics_gathering_node_delegate_wrapper::get_new_chain_id() const
     {
