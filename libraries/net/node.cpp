@@ -304,7 +304,6 @@ namespace graphene { namespace net {
     {
     private:
       node_delegate *_node_delegate;
-      fc::thread *_thread;
 
       typedef boost::accumulators::accumulator_set<int64_t, boost::accumulators::stats<boost::accumulators::tag::min,
                                                                                        boost::accumulators::tag::rolling_mean,
@@ -403,7 +402,7 @@ namespace graphene { namespace net {
         }
       };
     public:
-      statistics_gathering_node_delegate_wrapper(node_delegate* delegate, fc::thread* thread_for_delegate_calls);
+      statistics_gathering_node_delegate_wrapper(node_delegate* delegate);
 
       fc::variant_object get_call_statistics();
 
@@ -768,7 +767,7 @@ namespace graphene { namespace net {
                                 const fc::oexception& additional_data = fc::oexception());
 
       // methods implementing node's public interface
-      void set_node_delegate(node_delegate* del, fc::thread* thread_for_delegate_calls);
+      void set_node_delegate(node_delegate* del);
       void load_configuration( const fc::path& configuration_directory );
       void listen_to_p2p_network( std::function<bool()> break_callback );
       void connect_to_p2p_network();
@@ -5208,12 +5207,12 @@ namespace graphene { namespace net {
     }
 
     // methods implementing node's public interface
-    void node_impl::set_node_delegate(node_delegate* del, fc::thread* thread_for_delegate_calls)
+    void node_impl::set_node_delegate(node_delegate* del)
     {
       VERIFY_CORRECT_THREAD();
       _delegate.reset();
       if (del)
-        _delegate.reset(new statistics_gathering_node_delegate_wrapper(del, thread_for_delegate_calls));
+        _delegate.reset(new statistics_gathering_node_delegate_wrapper(del));
     }
 
     void node_impl::load_configuration( const fc::path& configuration_directory )
@@ -6241,8 +6240,7 @@ namespace graphene { namespace net {
 
   void node::set_node_delegate( node_delegate* del )
   {
-    fc::thread* delegate_thread = &fc::thread::current();
-    INVOKE_IN_IMPL(set_node_delegate, del, delegate_thread);
+    INVOKE_IN_IMPL(set_node_delegate, del);
   }
 
   void node::load_configuration( const fc::path& configuration_directory )
@@ -6466,9 +6464,8 @@ namespace graphene { namespace net {
       , BOOST_PP_CAT(_, BOOST_PP_CAT(method_name, _delay_after_accumulator))(boost::accumulators::tag::rolling_window::window_size = ROLLING_WINDOW_SIZE)
 
 
-    statistics_gathering_node_delegate_wrapper::statistics_gathering_node_delegate_wrapper(node_delegate* delegate, fc::thread* thread_for_delegate_calls) :
-      _node_delegate(delegate),
-      _thread(thread_for_delegate_calls)
+    statistics_gathering_node_delegate_wrapper::statistics_gathering_node_delegate_wrapper(node_delegate* delegate) :
+      _node_delegate(delegate)
       BOOST_PP_SEQ_FOR_EACH(INITIALIZE_ACCUMULATOR, unused, NODE_DELEGATE_METHOD_NAMES)
     {}
 #undef INITIALIZE_ACCUMULATOR
@@ -6503,72 +6500,13 @@ namespace graphene { namespace net {
       return statistics;
     }
 
-// define VERBOSE_NODE_DELEGATE_LOGGING to log whenever the node delegate throws exceptions
-//#define VERBOSE_NODE_DELEGATE_LOGGING
-#ifdef VERBOSE_NODE_DELEGATE_LOGGING
-#  define INVOKE_AND_COLLECT_STATISTICS(method_name, ...) \
-    try \
-    { \
-      if (_thread->is_current()) \
-      { \
-         call_statistics_collector statistics_collector(#method_name, \
-            &_ ## method_name ## _execution_accumulator, \
-            &_ ## method_name ## _delay_before_accumulator, \
-            &_ ## method_name ## _delay_after_accumulator); \
-        call_statistics_collector::actual_execution_measurement_helper helper(statistics_collector); \
-        return _node_delegate->method_name(__VA_ARGS__); \
-      } \
-      else \
-        return _thread->async([&](){ \
-         call_statistics_collector statistics_collector(#method_name, \
-            &_ ## method_name ## _execution_accumulator, \
-            &_ ## method_name ## _delay_before_accumulator, \
-            &_ ## method_name ## _delay_after_accumulator); \
-          call_statistics_collector::actual_execution_measurement_helper helper(statistics_collector); \
-          return _node_delegate->method_name(__VA_ARGS__); \
-        }, "invoke " BOOST_STRINGIZE(method_name)).wait(); \
-    } \
-    catch (const fc::exception& e) \
-    { \
-      dlog("node_delegate threw fc::exception: ${e}", ("e", e)); \
-      throw; \
-    } \
-    catch (const std::exception& e) \
-    { \
-      dlog("node_delegate threw std::exception: ${e}", ("e", e.what())); \
-      throw; \
-    } \
-    catch (...) \
-    { \
-      dlog("node_delegate threw unrecognized exception"); \
-      throw; \
-    }
-#else
+// The node delegate is always invoked directly on the p2p thread: the old cross-thread
+// marshalling (and the VERBOSE_NODE_DELEGATE_LOGGING debug variant that retained it) was
+// removed after years of disuse.  Thread safety is the callee's responsibility -- the block
+// log supports concurrent readers, the fork database takes its own locks, and chain
+// mutations are serialized through the chain plugin's write queue.
 #define INVOKE_AND_COLLECT_STATISTICS( method_name, ... ) \
-   FC_UNUSED( _thread ) \
    return _node_delegate->method_name(__VA_ARGS__);
-/*
-#  define INVOKE_AND_COLLECT_STATISTICS(method_name, ...) \
-    if ( _thread->is_current()) \
-    { \
-      call_statistics_collector statistics_collector(#method_name, \
-         &_ ## method_name ## _execution_accumulator, \
-         &_ ## method_name ## _delay_before_accumulator, \
-         &_ ## method_name ## _delay_after_accumulator); \
-      call_statistics_collector::actual_execution_measurement_helper helper(statistics_collector); \
-      return _node_delegate->method_name(__VA_ARGS__); \
-    } \
-    else \
-      return _thread->async([&](){ \
-         call_statistics_collector statistics_collector(#method_name, \
-            &_ ## method_name ## _execution_accumulator, \
-            &_ ## method_name ## _delay_before_accumulator, \
-            &_ ## method_name ## _delay_after_accumulator); \
-        call_statistics_collector::actual_execution_measurement_helper helper(statistics_collector); \
-        return _node_delegate->method_name(__VA_ARGS__); \
-      }, "invoke " BOOST_STRINGIZE(method_name)).wait()
-*/
-#endif
 
     hive::protocol::chain_id_type statistics_gathering_node_delegate_wrapper::get_old_chain_id() const
     {
