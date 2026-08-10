@@ -33,6 +33,23 @@ variables:
   DATA_CACHE_HIVE_CLEANUP_PATTERN: "/nfs/ci-cache/hive/replay_data_hive_*"
   BLOCK_LOG_SOURCE_DIR_5M: /blockchain/block_log_5m
 
+  # Which common-ci-configuration revision the runtime-fetched cache scripts
+  # (copy_datadir.sh, cache-manager.sh) come from.  Override at pipeline level
+  # to test a common-ci-configuration branch before merging it.
+  #
+  # How the value travels (all three pieces are needed - measured, pipelines
+  # 176644/176870/176876):
+  #   - this global default reaches service containers directly;
+  #   - a pipeline-level override does NOT - it reaches a service only by
+  #     overriding a job-level 'COMMON_CI_REF: $COMMON_CI_REF' declaration,
+  #     which the service-running jobs therefore keep;
+  #   - with no override, that self-referential declaration is NOT resolved
+  #     against this global scope - the service receives the literal string
+  #     '$COMMON_CI_REF', and docker_entrypoint.sh detects it and falls back.
+  # (HIVED_COMMIT's identical-looking re-declaration resolves because dotenv
+  # artifact variables outrank yaml job variables.)
+  COMMON_CI_REF: "develop"
+
   # sccache distributed compiler cache (Redis backend on builder-10)
   SCCACHE_REDIS: "redis://192.168.50.109:6379"
   SCCACHE_CACHE_SIZE: "50G"
@@ -994,7 +1011,7 @@ patterns_tests:
     FF_NETWORK_PER_BUILD: 1
     TEST_SUITE: "(condenser_api_patterns and (get_block or get_block_header) ) or block_api_patterns or (not get_transaction_hex and (get_transaction or get_account_history or enum_virtual_ops or get_ops_in_block))"
     HIVED_COMMIT: $HIVED_COMMIT # HIVED_COMMIT must be in this section to be passed to service
-    COMMON_CI_REF: "92aba08c85b62bccfe83ef5b9b4c6f82d8cb3d9d" # TEMPORARY pin: last-good common-ci commit before !378. Its cache-script rewrite (staging/swap + flock) stalls the shared mainnet_5m datadir restore, so the hived service never opens its ports (300s timeout). Revert to '$COMMON_CI_REF' once common-ci-configuration is fixed.
+    COMMON_CI_REF: $COMMON_CI_REF # override conduit: pipeline-level vars reach services ONLY by overriding a job declaration; unset -> passed literally, entrypoint falls back to the default
   needs:
     - job: prepare_hived_data
       artifacts: true  # Blocked until prepare_hived_data completes
@@ -1051,7 +1068,7 @@ python_pattern_mainnet_tests:
     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/api_tests/python_patterns_tests/report.xml
     BINARY_CACHE_PATH: "hived-binaries"
     HIVED_COMMIT: $HIVED_COMMIT
-    COMMON_CI_REF: "92aba08c85b62bccfe83ef5b9b4c6f82d8cb3d9d" # TEMPORARY pin: last-good common-ci commit before !378. Its cache-script rewrite (staging/swap + flock) stalls the shared mainnet_5m datadir restore, so the hived service never opens its ports (300s timeout). Revert to '$COMMON_CI_REF' once common-ci-configuration is fixed.
+    COMMON_CI_REF: $COMMON_CI_REF # override conduit: pipeline-level vars reach services ONLY by overriding a job declaration; unset -> passed literally, entrypoint falls back to the default
   needs:
     - job: hiveio_api_package
       artifacts: true
@@ -1145,7 +1162,7 @@ message_format_mainnet_5m_tests:
     NODE_ADDRESS: "hived-instance:8091"
     NODE_TYPE: "mainnet_5m"
     HIVED_COMMIT: $HIVED_COMMIT
-    COMMON_CI_REF: "92aba08c85b62bccfe83ef5b9b4c6f82d8cb3d9d" # TEMPORARY pin: last-good common-ci commit before !378. Its cache-script rewrite (staging/swap + flock) stalls the shared mainnet_5m datadir restore, so the hived service never opens its ports (300s timeout). Revert to '$COMMON_CI_REF' once common-ci-configuration is fixed.
+    COMMON_CI_REF: $COMMON_CI_REF # override conduit: pipeline-level vars reach services ONLY by overriding a job declaration; unset -> passed literally, entrypoint falls back to the default
   before_script:
     - !reference [.wait-for-hived, script]
     - !reference [.message_format_tests, before_script]
@@ -1216,7 +1233,7 @@ witness_tests:
     PYTEST_TIMEOUT_MINUTES: 5
     PYTEST_JUNIT_REPORT: $CI_PROJECT_DIR/tests/python/functional/witness_tests/report.xml
     HIVED_COMMIT: $HIVED_COMMIT
-    COMMON_CI_REF: "92aba08c85b62bccfe83ef5b9b4c6f82d8cb3d9d" # TEMPORARY pin: last-good common-ci commit before !378. Its cache-script rewrite (staging/swap + flock) stalls the shared mainnet_5m datadir restore, so the hived service never opens its ports (300s timeout). Revert to '$COMMON_CI_REF' once common-ci-configuration is fixed.
+    COMMON_CI_REF: $COMMON_CI_REF # override conduit: pipeline-level vars reach services ONLY by overriding a job declaration; unset -> passed literally, entrypoint falls back to the default
   script:
     - !reference [.wait-for-hived, script]
     - cd tests/python/functional/witness_tests

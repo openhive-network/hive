@@ -18,12 +18,26 @@ if [ -n "${DATA_SOURCE+x}" ]; then
     # come from, so a pipeline can be run against a branch of that repo before it is
     # merged (these scripts are fetched at runtime, not pinned by common_includes.yml).
     # It is exported because copy_datadir.sh builds its own cache-manager.sh URL.
+    #
+    # A value starting with '$' is an unexpanded GitLab variable reference (a job
+    # re-declaring COMMON_CI_REF in terms of itself is passed through literally when
+    # no higher-precedence source defines it); treat it as unset rather than baking
+    # it into the URL.
     COMMON_CI_REF="${COMMON_CI_REF:-develop}"
+    if [[ "$COMMON_CI_REF" == \$* ]]; then
+        echo "COMMON_CI_REF not overridden (got unexpanded literal) - using develop"
+        COMMON_CI_REF="develop"
+    fi
     COMMON_CI_URL="${COMMON_CI_URL:-https://gitlab.syncad.com/hive/common-ci-configuration/-/raw/${COMMON_CI_REF}}"
     export COMMON_CI_REF COMMON_CI_URL
     COPY_DATADIR_SCRIPT="/tmp/copy_datadir.sh"
-    echo "Fetching copy_datadir.sh from common-ci-configuration..."
-    wget -qO "$COPY_DATADIR_SCRIPT" "${COMMON_CI_URL}/haf-app-tools/scripts/copy_datadir.sh"
+    echo "Fetching copy_datadir.sh from common-ci-configuration (ref: ${COMMON_CI_REF})..."
+    # Not wget -q: this fetch failing used to kill the container silently under
+    # set -e, leaving a one-line log that was misattributed for days.  Fail loudly.
+    if ! wget -nv -O "$COPY_DATADIR_SCRIPT" "${COMMON_CI_URL}/haf-app-tools/scripts/copy_datadir.sh"; then
+        echo "ERROR: failed to fetch copy_datadir.sh from ${COMMON_CI_URL} - check COMMON_CI_REF/COMMON_CI_URL"
+        exit 1
+    fi
     chmod +x "$COPY_DATADIR_SCRIPT"
     source "$COPY_DATADIR_SCRIPT"
 fi
