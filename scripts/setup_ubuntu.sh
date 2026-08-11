@@ -5,9 +5,10 @@ set -euo pipefail
 SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 
 # This script installs all packages required to build and run a hived instance.
-# After changing it, be sure to update and push to the registry a docker image defined in https://gitlab.syncad.com/hive/hive/-/blob/develop/Dockerfile
-
-# The updated docker image must be also explicitly referenced in the https://gitlab.syncad.com/hive/hive/-/blob/develop/.gitlab-ci.yml#L11
+# The docker images built from this repo's Dockerfile use only the --runtime path.
+# CI build images (which cover the --dev toolchain) are defined separately in
+# https://gitlab.syncad.com/hive/common-ci-configuration - keep the package lists
+# in sync when changing dev dependencies here.
 
 
 print_help () {
@@ -48,42 +49,73 @@ install_all_runtime_packages() {
   fi
 }
 
+# Earlier versions of this script repointed /usr/bin/python3 to python3.14 via
+# update-alternatives. That breaks apt on Ubuntu <= 24.04: apt's helper tooling
+# (apt_pkg, add-apt-repository, command-not-found, py3compile) is built only for
+# the distro's own Python, so the system can no longer install or update
+# packages. Undo the damage if present.
+repair_python3_symlink() {
+  if update-alternatives --query python3 &>/dev/null; then
+    echo "Repairing /usr/bin/python3 (was repointed by an earlier version of this script)..."
+    local distro_python
+    distro_python=$(dpkg-query -W -f='${Depends}' python3 2>/dev/null | grep -oE 'python3\.[0-9]+' | head -1 || true)
+    update-alternatives --remove-all python3 2>/dev/null || true
+    if [ -n "$distro_python" ] && [ -x "/usr/bin/$distro_python" ]; then
+      ln -sf "$distro_python" /usr/bin/python3
+      echo "Restored /usr/bin/python3 -> $distro_python"
+    else
+      echo "WARNING: could not determine the distro python3; restore the /usr/bin/python3 symlink manually."
+    fi
+  fi
+}
+
 install_all_dev_packages() {
   echo "Attempting to install all dev packages..."
   assert_is_root
 
+  repair_python3_symlink
+
   apt-get update
 
-  # Add deadsnakes PPA for Python 3.14 if not already present
-  if ! apt-cache policy python3.14 2>/dev/null | grep -q "Candidate:"; then
-    apt-get install -y software-properties-common
-    # Use python3.12 explicitly for add-apt-repository to avoid apt_pkg issues
-    # when Python 3.14 is already set as default
-    if command -v python3.12 &> /dev/null; then
-      python3.12 /usr/bin/add-apt-repository -y ppa:deadsnakes/ppa
-    else
+  local ubuntu_major
+  ubuntu_major=$(lsb_release -rs | cut -d. -f1)
+
+  # Hive's test tooling requires Python 3.14. Ubuntu 26.04+ ships it as the
+  # system python3; on older releases install it side by side from the
+  # deadsnakes PPA, leaving the distro python3 untouched.
+  local python314_packages=""
+  # Package renames on 26.04: libxml2 -> libxml2-16; python3-lib2to3 dropped
+  # (lib2to3 was removed from Python 3.13+).
+  local compat_packages="libxml2-16"
+  if [ "$ubuntu_major" -lt 26 ]; then
+    compat_packages="libxml2 python3-lib2to3"
+    if ! apt-cache policy python3.14 2>/dev/null | grep -q "Candidate:"; then
+      apt-get install -y software-properties-common
       add-apt-repository -y ppa:deadsnakes/ppa
+      apt-get update
     fi
-    apt-get update
+    python314_packages="python3.14 python3.14-venv python3.14-dev"
   fi
 
   apt-get install -y \
-  git python3 build-essential gir1.2-glib-2.0 libgirepository-1.0-1 libglib2.0-0 libglib2.0-data libxml2 python3-lib2to3 python3-pkg-resources shared-mime-info xdg-user-dirs ca-certificates \
+  git python3 build-essential gir1.2-glib-2.0 libgirepository-1.0-1 libglib2.0-0 libglib2.0-data ${compat_packages} python3-pkg-resources shared-mime-info xdg-user-dirs ca-certificates \
   autoconf automake cmake clang clang-tidy g++ git libbz2-dev libsnappy-dev libssl-dev libtool make pkg-config python3-jinja2 libboost-all-dev doxygen libncurses5-dev libreadline-dev perl ninja-build zopfli \
   xxd liburing-dev \
   \
   screen python3-pip python3-dateutil tzdata python3-junit.xml python3-venv python3-dateutil \
   python3-dev p7zip-full \
   \
-  python3.14 python3.14-venv python3.14-dev \
+  ${python314_packages} \
   && \
-  (if [ "$(lsb_release -rs | cut -d. -f1)" -ge 24 ]; then apt-get install -y python3-setuptools; else apt-get install -y python3-distutils; fi) && \
-  apt-get clean && rm -r /var/lib/apt/lists/* && \
-  # Skip secp256k1prp for now - it requires pytest-runner which doesn't work on Python 3.14
-  # The package is not actively used in tests (see https://gitlab.syncad.com/hive/hive/-/issues/XXXX)
-  # pip3 install --break-system-packages -U secp256k1prp && \
-  # Set python3.14 as default python3
-  update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.14 1
+  (if [ "$ubuntu_major" -ge 24 ]; then apt-get install -y python3-setuptools; else apt-get install -y python3-distutils; fi) && \
+  apt-get clean && rm -r /var/lib/apt/lists/*
+
+  # NEVER repoint /usr/bin/python3 (e.g. via update-alternatives) to a non-distro
+  # Python: apt depends on helpers built for the distro interpreter and the
+  # system becomes unable to install or update packages.
+  if [ "$ubuntu_major" -lt 26 ]; then
+    echo "Python 3.14 installed as 'python3.14'; system python3 left unchanged."
+  fi
 }
 
 preconfigure_faketime() {
@@ -117,7 +149,11 @@ install_user_packages() {
 
   popd
 
-  curl -sSL https://install.python-poetry.org | python3 -  # install poetry in an isolated environment
+  # Install poetry in an isolated environment, based on Python 3.14 (falls back
+  # to the system python3, which is already 3.14 on Ubuntu 26.04+).
+  local poetry_python
+  poetry_python=$(command -v python3.14 || command -v python3)
+  curl -sSL https://install.python-poetry.org | "$poetry_python" -
   poetry self update 2.1.3
   poetry self add "poetry-dynamic-versioning[plugin]@>=1.0.0,<2.2.0"
 }
