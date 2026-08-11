@@ -138,7 +138,7 @@ HIVED_IMAGE_TAG="${HIVED_IMAGE_NAME##*:}"
   --checkpoint="[\"${CHECKPOINT_BLOCK}\",\"${CHECKPOINT_BLOCK_ID}\"]" \
   --plugin=app_status_api \
   "$@"
-monitor_container "sync-instance" 600  # 10 minutes timeout
+monitor_container "sync-instance" 1200  # 20 minutes: a passing run has been observed at 563s, so 600 flaked on loaded runners (issue #874)
 
 # STEP 2: Dump snapshot at 1.1M (saves chainbase state to skip replay in STEP 3)
 "$SCRIPTS_PATH/run_hived_img.sh" \
@@ -151,7 +151,7 @@ monitor_container "sync-instance" 600  # 10 minutes timeout
   --detach \
   --preserve-container \
   --plugin=app_status_api
-monitor_container "dump-snapshot-instance" 600  # 10 minutes timeout
+monitor_container "dump-snapshot-instance" 1200  # 20 minutes (see issue #874)
 
 # STEP 3: Load snapshot + sync 1.1M→5.1M with pruning (split=1 deletes parts 0001-0004, keeps 0005-0006)
 echo "Starting load snapshot with pruned block log..."
