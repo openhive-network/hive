@@ -3,21 +3,21 @@
 # Build stage uses ci-base-image from common-ci-configuration (centralized build toolchain)
 # To be started from cloned hive source directory.
 ARG CI_REGISTRY_IMAGE=registry.gitlab.syncad.com/hive/hive/
-ARG CI_IMAGE_TAG=ubuntu24.04-py3.14-1
+ARG CI_IMAGE_TAG=ubuntu26.04-1
 ARG BUILD_IMAGE_TAG
 ARG IMAGE_TAG_PREFIX
 # CI base image for build stage - must be at top level for FROM to see it.
 # Pinned to the published ci-base-image version tag that ships the aarch64 cross toolchain +
 # preinstalled aarch64 RocksDB (hive/common-ci-configuration!377).
-ARG CI_BASE_IMAGE=registry.gitlab.syncad.com/hive/common-ci-configuration/ci-base-image:pypa_2_28-pg18-arm-1
+ARG CI_BASE_IMAGE=registry.gitlab.syncad.com/hive/common-ci-configuration/ci-base-image:pypa_2_28-pg18-4
 
 # Runtime base for the final `instance` image. Default: the pre-published, commit-tagged
 # minimal-runtime image (x86_64 fast path). Multiarch builds pass
 # INSTANCE_BASE_IMAGE=minimal-runtime to build the runtime inline per-arch from the
-# multiarch ubuntu:24.04 base, so no separately-published multiarch minimal-runtime is needed.
+# multiarch ubuntu:26.04 base, so no separately-published multiarch minimal-runtime is needed.
 ARG INSTANCE_BASE_IMAGE=${CI_REGISTRY_IMAGE}minimal-runtime:${CI_IMAGE_TAG}
 
-FROM phusion/baseimage:noble-1.0.1 AS runtime
+FROM phusion/baseimage:resolute-1.0.11 AS runtime
 
 ENV LANG=en_US.UTF-8
 
@@ -34,7 +34,7 @@ RUN ./scripts/setup_ubuntu.sh --runtime --hived-account="hived"
 USER hived
 WORKDIR /home/hived
 
-FROM ubuntu:24.04 AS minimal-runtime
+FROM ubuntu:26.04 AS minimal-runtime
 
 ENV LANG=en_US.UTF-8
 
