@@ -48,6 +48,13 @@
 // generous clock skew and momentary head lag while rejecting fabricated far-future ids
 #define GRAPHENE_NET_FUTURE_BLOCK_IDS_GRACE_BLOCKS                 20
 
+// if the invalid-block disconnect breaker has been keeping peers whose blocks we rejected,
+// but our head hasn't advanced for this long, the breaker's systemic-blip assumption is
+// falsified -- those peers may be all that's occupying our slots while none of them can
+// feed us the chain.  Revoke the deferral and disconnect them so the connect loop can
+// find replacements
+#define GRAPHENE_NET_BREAKER_STALL_OVERRIDE_SEC                    60
+
 /**
  * Define this to enable debugging code in the p2p network interface.
  * This is code that would never be executed in normal operation, but is

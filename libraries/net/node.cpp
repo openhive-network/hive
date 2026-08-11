@@ -570,6 +570,7 @@ namespace graphene { namespace net {
       // conservative: at worst we briefly treat a just-dead fork block as still fetchable)
       uint32_t _cached_head_block_num = 0;
       uint32_t _cached_last_irreversible_block_num = 0;
+      fc::time_point _last_head_advance_time; // when _cached_head_block_num last increased
 
       uint32_t _sync_item_type;
       uint32_t _total_number_of_unfetched_items; /// the number of items we still need to fetch while syncing
@@ -1566,6 +1567,7 @@ namespace graphene { namespace net {
     {
       dlog("checking if we can terminate inactive connections");
       std::list<peer_connection_ptr> peers_to_disconnect_gently;
+      std::list<peer_connection_ptr> peers_to_disconnect_for_rejected_blocks;
       std::list<peer_connection_ptr> peers_to_disconnect_forcibly;
       std::list<peer_connection_ptr> peers_to_send_keep_alive;
       std::list<peer_connection_ptr> peers_to_terminate;
@@ -1584,6 +1586,27 @@ namespace graphene { namespace net {
         // peers need action (disconneting, sending keepalives, etc), then we walk through
         // those lists yielding at our leisure later.
         ASSERT_TASK_NOT_PREEMPTED();
+
+        // The invalid-block circuit breaker keeps peers that would otherwise have been
+        // disconnected, on the theory that mass rejections indicate a systemic event rather
+        // than genuinely bad peers.  That theory holds only while the chain keeps advancing.
+        // If our head has stalled and we are still holding peers whose blocks we rejected,
+        // the breaker may be preserving a peer set that cannot feed us the chain (all slots
+        // occupied, connect loop satisfied, no progress) -- revoke the deferral for the
+        // flagged peers so their slots open up for replacements.
+        if (_cached_head_block_num > 0 &&
+            _last_head_advance_time != fc::time_point() &&
+            fc::time_point::now() - _last_head_advance_time > fc::seconds(GRAPHENE_NET_BREAKER_STALL_OVERRIDE_SEC))
+        {
+          for (const peer_connection_ptr& active_peer : _active_connections)
+            if (active_peer->block_rejected_while_breaker_tripped)
+            {
+              wlog("disconnecting peer ${peer}: it delivered a block we rejected while the disconnect circuit breaker "
+                   "was active, and our chain has made no progress in the ${timeout} seconds since",
+                   ("peer", active_peer->get_remote_endpoint())("timeout", GRAPHENE_NET_BREAKER_STALL_OVERRIDE_SEC));
+              peers_to_disconnect_for_rejected_blocks.push_back(active_peer);
+            }
+        }
 
         uint32_t handshaking_timeout = _node_configuration.peer_inactivity_timeout;
         fc::time_point handshaking_disconnect_threshold = fc::time_point::now() - fc::seconds(handshaking_timeout);
@@ -1763,6 +1786,13 @@ namespace graphene { namespace net {
         disconnect_from_peer(peer.get(), "Disconnecting due to inactivity", false, detailed_error);
       }
       peers_to_disconnect_gently.clear();
+
+      for( const peer_connection_ptr& peer : peers_to_disconnect_for_rejected_blocks )
+      {
+        fc::exception detailed_error(FC_LOG_MESSAGE(warn, "You delivered a block we rejected, and our chain has made no progress since"));
+        disconnect_from_peer(peer.get(), "You delivered a block we rejected, and our chain has made no progress since", true, detailed_error);
+      }
+      peers_to_disconnect_for_rejected_blocks.clear();
 
       for( const peer_connection_ptr& peer : peers_to_send_keep_alive )
         peer->send_message(current_time_request_message(),
@@ -3592,7 +3622,12 @@ namespace graphene { namespace net {
     void node_impl::refresh_cached_chain_state()
     {
       VERIFY_CORRECT_THREAD();
-      _cached_head_block_num = std::max(_cached_head_block_num, _delegate->get_block_number(_delegate->get_head_block_id()));
+      const uint32_t head_block_num = _delegate->get_block_number(_delegate->get_head_block_id());
+      if (head_block_num > _cached_head_block_num)
+      {
+        _cached_head_block_num = head_block_num;
+        _last_head_advance_time = fc::time_point::now();
+      }
       _cached_last_irreversible_block_num = std::max(_cached_last_irreversible_block_num, _delegate->get_last_irreversible_block_num());
     }
 
@@ -3822,6 +3857,7 @@ namespace graphene { namespace net {
               // the peer; clean up bookkeeping the same way the stale-delivery path does
               wlog("invalid-block disconnect circuit breaker tripped: keeping peer ${endpoint} despite rejected sync block #${block_number}",
                    ("endpoint", peer->get_remote_endpoint())(block_number));
+              peer->block_rejected_while_breaker_tripped = true;
               peer->ids_of_items_being_processed.erase(block_id);
               if (peer->idle())
                 peers_to_fetch_ids_from.insert(peer);
@@ -4219,6 +4255,7 @@ namespace graphene { namespace net {
           // peer and use the reconciliation path instead of the punitive one
           wlog("invalid-block disconnect circuit breaker tripped: keeping peer ${peer} despite rejected block ${num} (id:${id})",
                ("peer", originating_peer->get_remote_endpoint())("num", block_num)("id", block_id));
+          originating_peer->block_rejected_while_breaker_tripped = true;
           restart_sync_exception = e;
         }
         else

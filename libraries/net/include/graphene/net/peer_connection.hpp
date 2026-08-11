@@ -242,6 +242,10 @@ namespace graphene { namespace net
       item_hash_t last_block_delegate_has_seen; /// the hash of the last block  this peer has told us about that the peer knows
       fc::time_point_sec last_block_time_delegate_has_seen;
       bool inhibit_fetching_sync_blocks = false;
+      // this peer delivered a block we rejected while the invalid-block disconnect circuit
+      // breaker was suppressing punitive disconnects.  If the chain later stalls, the
+      // inactivity sweep revokes the breaker's deferral and disconnects flagged peers
+      bool block_rejected_while_breaker_tripped = false;
       /// @}
       void reset_id_search_for_peer() { last_requested_block_number_for_peers_on_this_fork = first_id_block_number - 1; }
       /// latency timing data
