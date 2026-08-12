@@ -9,6 +9,9 @@
 #include <hive/protocol/hardfork.hpp>
 #include <hive/protocol/testnet_blockchain_configuration.hpp>
 
+#include <algorithm>
+#include <limits>
+
 // WARNING!
 // Every symbol defined here needs to be handled appropriately in get_config.cpp
 // This is checked by get_config_check.sh called from Dockerfile
