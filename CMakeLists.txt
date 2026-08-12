@@ -164,6 +164,8 @@ endif( WIN32 )
 
 
 SET( BOOST_COMPONENTS )
+# NOTE: boost_system is header-only since 1.69; its compiled stub (and CMake
+# config) were removed in Boost 1.89, so it must not be requested as a component.
 LIST( APPEND  BOOST_COMPONENTS
       atomic
       chrono
@@ -173,7 +175,6 @@ LIST( APPEND  BOOST_COMPONENTS
       filesystem
       iostreams
       regex
-      system
       thread
       program_options
       unit_test_framework )
