@@ -10,6 +10,13 @@ INCLUDE(hive_build_types)
 project( Hive )
 cmake_minimum_required( VERSION 3.22.1 )
 
+# Vendored subprojects (e.g. libraries/vendor/zstd) declare cmake minimums
+# below 3.5, which CMake 4 rejects outright. This is the documented escape
+# hatch for third-party code we do not patch.
+if( NOT DEFINED CMAKE_POLICY_VERSION_MINIMUM )
+  set( CMAKE_POLICY_VERSION_MINIMUM 3.5 )
+endif()
+
 if(POLICY CMP0167)
    cmake_policy(SET CMP0167 OLD)
 endif()
