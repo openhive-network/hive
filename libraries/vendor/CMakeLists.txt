@@ -137,6 +137,12 @@ if(NOT _use_preinstalled)
   endif()
 
   # Current behavior — build from source
+  # The pinned RocksDB predates the <cstdint> include hygiene that newer
+  # libstdc++ headers require (uint64_t etc. no longer provided transitively;
+  # hard error with GCC 15 on Ubuntu 26.04). Force-include it for this subtree.
+  if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 13)
+    add_compile_options("SHELL:$<$<COMPILE_LANGUAGE:CXX>:-include cstdint>")
+  endif()
   add_subdirectory(rocksdb)
 endif()
 
