@@ -26,6 +26,7 @@
   */
 
 #include <boost/test/unit_test.hpp>
+#include <boost/version.hpp>
 
 #include <hive/chain/hive_fwd.hpp>
 
@@ -804,8 +805,13 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
   BOOST_CHECK_EQUAL( sizeof( block_summary_index::MULTIINDEX_NODE_TYPE ), 56u );
   BOOST_CHECK_EQUAL( sizeof( hardfork_property_object ), 120u );
   BOOST_CHECK_EQUAL( sizeof( hardfork_property_index::MULTIINDEX_NODE_TYPE ), 152u );
+#if BOOST_VERSION >= 109000 // boost::container::deque layout shrank between 1.88 and 1.90
+  BOOST_CHECK_EQUAL( sizeof( feed_history_object ), 120u ); //dynamic size worth 7*24 of sizeof(HBD_price)
+  BOOST_CHECK_EQUAL( sizeof( feed_history_index::MULTIINDEX_NODE_TYPE ), 152u );
+#else
   BOOST_CHECK_EQUAL( sizeof( feed_history_object ), 168u ); //dynamic size worth 7*24 of sizeof(HBD_price)
   BOOST_CHECK_EQUAL( sizeof( feed_history_index::MULTIINDEX_NODE_TYPE ), 200u );
+#endif
   BOOST_CHECK_EQUAL( sizeof( witness_schedule_object ), 544u );
   BOOST_CHECK_EQUAL( sizeof( witness_schedule_index::MULTIINDEX_NODE_TYPE ), 576u );
   BOOST_CHECK_EQUAL( sizeof( rc_resource_param_object ), 368u );
@@ -1529,7 +1535,11 @@ BOOST_AUTO_TEST_CASE( chain_object_checksum )
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::escrow_object>(dtds), "b05c6649d3a19c9b1fab77dddcca61cd387b1c17" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::savings_withdraw_object>(dtds), "91c5c80def34fd1884a740a509b09285637ac3cf" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::liquidity_reward_balance_object>(dtds), "3690a7914aba1105d390489d52328478445a0d29" );
+#if BOOST_VERSION >= 109000 // boost::container::deque layout shrank between 1.88 and 1.90
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::feed_history_object>(dtds), "d52b9913bf81f7b4120a34abc6d546505d8d01eb" );
+#else
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::feed_history_object>(dtds), "23f964e467b527855279ab546dd6281ff07fee68" );
+#endif
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::limit_order_object>(dtds), "a69d25782e9eca8afd52a893b60ca4fba94ee73a" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::withdraw_vesting_route_object>(dtds), "b70b71dab160c4a5fc2f7f896ec85e22e183cce6" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::decline_voting_rights_request_object>(dtds), "4a7b6e131317bdbf49e169e959f913c5e837fdaa" );
