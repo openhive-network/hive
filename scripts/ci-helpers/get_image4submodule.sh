@@ -110,6 +110,14 @@ echo "Attempting to get commit for: $submodule_path"
 # Source patterns from single source of truth (also used by skip_rules.yml and downstream repos like clive)
 IFS=',' read -ra SOURCE_PATTERNS <<< "$("$SCRIPTPATH/source-patterns.sh")"
 
+# Testnet images ship the chain_test/plugin_test binaries compiled from tests/unit/,
+# so those sources must be part of the cache key or a unit-test-only change reuses an
+# image built before it and the pipeline never runs the changed tests. Mirrors the
+# same append in prepare_data_image_job.yml (mainnet images carry no test binaries).
+if [[ "${NETWORK_TYPE:-}" == testnet* ]]; then
+    SOURCE_PATTERNS+=("tests/unit/")
+fi
+
 # Find the last commit that changed source files
 commit=$("$CI_SCRIPTS_DIR/find-last-source-commit.sh" --dir="$submodule_path" --full --quiet "${SOURCE_PATTERNS[@]}")
 short_commit=$("$CI_SCRIPTS_DIR/find-last-source-commit.sh" --dir="$submodule_path" --quiet "${SOURCE_PATTERNS[@]}")
