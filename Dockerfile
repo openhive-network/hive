@@ -9,7 +9,7 @@ ARG IMAGE_TAG_PREFIX
 # CI base image for build stage - must be at top level for FROM to see it.
 # Pinned to the published ci-base-image version tag that ships the aarch64 cross toolchain +
 # preinstalled aarch64 RocksDB (hive/common-ci-configuration!377).
-ARG CI_BASE_IMAGE=registry.gitlab.syncad.com/hive/common-ci-configuration/ci-base-image:pypa_2_28-pg18-4
+ARG CI_BASE_IMAGE=registry.gitlab.syncad.com/hive/common-ci-configuration/ci-base-image:pypa_2_28-pg18-5
 
 # Runtime base for the final `instance` image. Default: the pre-published, commit-tagged
 # minimal-runtime image (x86_64 fast path). Multiarch builds pass

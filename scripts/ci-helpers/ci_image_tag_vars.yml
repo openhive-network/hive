@@ -1,7 +1,7 @@
 variables:
   # Pinned to the canonical ci-base-image tag (Python 3.14; includes the aarch64 cross
   # toolchain + preinstalled aarch64 RocksDB from hive/common-ci-configuration!377).
-  CI_BASE_IMAGE_TAG: ":pypa_2_28-pg18-4"
+  CI_BASE_IMAGE_TAG: ":pypa_2_28-pg18-5"
   CI_BASE_IMAGE: "registry.gitlab.syncad.com/hive/common-ci-configuration/ci-base-image${CI_BASE_IMAGE_TAG}"
   # Legacy variable for backwards compatibility (deprecated - use CI_BASE_IMAGE instead)
   TEST_IMAGE_TAG: "${CI_BASE_IMAGE_TAG}"
