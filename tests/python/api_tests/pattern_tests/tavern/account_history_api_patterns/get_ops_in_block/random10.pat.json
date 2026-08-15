@@ -101,9 +101,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "teego",
-          "permlink": "steem-docker-images-roadmap",
           "curator": "steempower",
           "payout_must_be_claimed": false,
+          "permlink": "steem-docker-images-roadmap",
           "reward": {
             "amount": "655141675",
             "nai": "@@000000037",
@@ -124,9 +124,9 @@
         "type": "curation_reward_operation",
         "value": {
           "author": "teego",
-          "permlink": "steem-docker-images-roadmap",
           "curator": "drinkzya",
           "payout_must_be_claimed": false,
+          "permlink": "steem-docker-images-roadmap",
           "reward": {
             "amount": "7239134",
             "nai": "@@000000037",
@@ -148,7 +148,7 @@
         "value": {
           "author": "teego",
           "curators_vesting_payout": {
-            "amount": "662380810",
+            "amount": "662380809",
             "nai": "@@000000037",
             "precision": 6
           },
