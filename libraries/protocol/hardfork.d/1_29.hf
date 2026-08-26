@@ -26,4 +26,10 @@
 #define HIVE_HARDFORK_1_29_FIX_LIMIT_ORDER_ASSETS (HIVE_HARDFORK_1_29)
 // RC is part of consensus
 #define HIVE_HARDFORK_1_29_RC_IS_CONSENSUS (HIVE_HARDFORK_1_29)
+// account creation and account update can no longer set an "open" (weight_threshold == 0) or
+// an "impossible" (weight_threshold > sum of weights) authority; the former leaves the role
+// satisfied by anyone, the latter locks the account out of it - both are what happens when an
+// authority is accidentally erased by a malformed JSON payload (issue #586). An open authority
+// can still be set deliberately, with account_update2's allow_open_authority extension.
+#define HIVE_HARDFORK_1_29_FIX_INVALID_AUTHORITY (HIVE_HARDFORK_1_29)
 #endif

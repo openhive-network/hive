@@ -71,6 +71,17 @@ namespace hive { namespace protocol {
     { if( !owner ) a.insert( account ); }
   };
 
+  /// Opt-in for setting an open authority (weight_threshold == 0) since HF29; does not permit an
+  /// impossible one (issue #586).
+  struct allow_open_authority {};
+
+  typedef static_variant<
+        void_t,
+        allow_open_authority
+        > account_update2_extension;
+
+  typedef flat_set< account_update2_extension > account_update2_extensions_type;
+
   struct account_update2_operation : public base_operation
   {
     account_name_type             account;
@@ -81,7 +92,10 @@ namespace hive { namespace protocol {
     json_string                   json_metadata;
     json_string                   posting_json_metadata;
 
-    extensions_type               extensions;
+    /// Extensions, only allow_open_authority is supported so far
+    account_update2_extensions_type extensions;
+
+    bool is_open_authority_allowed() const;
 
     void validate()const;
 
@@ -1113,6 +1127,17 @@ namespace fc
       return extended_variant_creator_functor< recurrent_transfer_extension >().create( v, recurrent_transfer_extension::tag<T>::value );
     }
   };
+
+  using hive::protocol::account_update2_extension;
+  template<>
+  struct variant_creator_functor< account_update2_extension >
+  {
+    template<typename T>
+    fc::variant operator()( const T& v ) const
+    {
+      return extended_variant_creator_functor< account_update2_extension >().create( v, account_update2_extension::tag<T>::value );
+    }
+  };
 }
 
 FC_REFLECT( hive::protocol::transfer_to_savings_operation, (from)(to)(amount)(memo) )
@@ -1179,6 +1204,8 @@ FC_REFLECT( hive::protocol::account_update2_operation,
         (json_metadata)
         (posting_json_metadata)
         (extensions) )
+FC_REFLECT( hive::protocol::allow_open_authority, )
+FC_REFLECT_TYPENAME( hive::protocol::account_update2_extension )
 
 FC_REFLECT( hive::protocol::transfer_operation, (from)(to)(amount)(memo) )
 FC_REFLECT( hive::protocol::transfer_to_vesting_operation, (from)(to)(amount) )

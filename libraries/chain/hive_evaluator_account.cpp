@@ -86,6 +86,24 @@ void verify_authority_accounts_exist(
   verify_authority_accounts_exist_impl( db, auth, auth_account, auth_class, true/*is_required*/ );
 }
 
+// Since HF29 (issue #586): an "open" authority (weight_threshold == 0) needs no signature at all, an
+// "impossible" one (threshold above sum of weights) can never be satisfied. Only account_update2 can
+// opt in to open, via allow_open_authority; impossible is never allowed anywhere.
+void validate_new_authority(
+  const authority& auth,
+  const account_name_type& account,
+  authority::classification auth_class,
+  bool allow_open = false )
+{
+  if( !allow_open )
+  {
+    HIVE_CHAIN_STATE_ASSERT( auth.weight_threshold, account,
+      "Cannot set an open ${ac} authority on account '${subject}'.", ("ac", auth_class) );
+  }
+  HIVE_CHAIN_STATE_ASSERT( !auth.is_impossible(), account,
+    "Cannot set an impossible ${ac} authority on account '${subject}'.", ("ac", auth_class) );
+}
+
 optional< authority > check_authority_accounts_exist(
   const database& db,
   const authority& auth,
@@ -179,6 +197,14 @@ void account_create_evaluator::do_apply( const account_create_operation& o )
       ( "f", wso.median_props.account_creation_fee )( "p", o_fee ) );
   }
 
+  // TODO: after activation of HF29 check if the check can be moved to operation validate
+  if( _db.is_in_control() || _db.has_hardfork( HIVE_HARDFORK_1_29_FIX_INVALID_AUTHORITY ) )
+  {
+    validate_new_authority( o.owner, o.new_account_name, authority::owner );
+    validate_new_authority( o.active, o.new_account_name, authority::active );
+    validate_new_authority( o.posting, o.new_account_name, authority::posting );
+  }
+
   verify_authority_accounts_exist( _db, o.owner, o.new_account_name, authority::owner );
   verify_authority_accounts_exist( _db, o.active, o.new_account_name, authority::active );
   verify_authority_accounts_exist( _db, o.posting, o.new_account_name, authority::posting );
@@ -204,6 +230,7 @@ void account_create_evaluator::do_apply( const account_create_operation& o )
 
 void account_create_with_delegation_evaluator::do_apply( const account_create_with_delegation_operation& o )
 {
+  // no HF29 authority check - this operation is rejected from HF20 on, so HF29 can never reach it
   HIVE_CHAIN_HARDFORK_ASSERT( !_db.has_hardfork( HIVE_HARDFORK_0_20__1760 ), "Account creation with delegation is deprecated as of Hardfork 20" );
 
   const auto& creator = _db.get_account( o.creator );
@@ -290,6 +317,15 @@ void account_update_evaluator::do_apply( const account_update_operation& o )
       validate_auth_size( *o.posting );
   }
 
+  // TODO: after activation of HF29 check if the check can be moved to operation validate
+  // account_update has no extensions, so it can never opt in to an open authority
+  if( _db.is_in_control() || _db.has_hardfork( HIVE_HARDFORK_1_29_FIX_INVALID_AUTHORITY ) )
+  {
+    if( o.owner )   validate_new_authority( *o.owner, o.account, authority::owner );
+    if( o.active )  validate_new_authority( *o.active, o.account, authority::active );
+    if( o.posting ) validate_new_authority( *o.posting, o.account, authority::posting );
+  }
+
   if( o.owner )
   {
 // Blockchain converter uses the `account_update` operation to change the private keys of the pow-mined accounts within the same transaction
@@ -356,6 +392,27 @@ void account_update2_evaluator::do_apply( const account_update2_operation& o )
 
   const auto& account = _db.get_account( o.account );
   const auto& account_auth = _db.get< account_authority_object, by_account >( o.account );
+
+  bool _allow_open = false;
+  if( _db.has_hardfork( HIVE_HARDFORK_1_29_FIX_INVALID_AUTHORITY ) )
+  {
+    _allow_open = o.is_open_authority_allowed();
+  }
+  else if( _db.is_in_control() )
+  {
+    // nodes predating HF29 cannot deserialize the extension, so keep it out of new blocks until then;
+    // guarded by is_in_control() rather than asserted outright, so pre-HF29 blocks still replay
+    HIVE_CHAIN_HARDFORK_ASSERT( o.extensions.empty() && "account_update2",
+      "Extensions of 'account_update2' are not enabled until HF 29" );
+  }
+
+  // TODO: after activation of HF29 check if the check can be moved to operation validate
+  if( _db.is_in_control() || _db.has_hardfork( HIVE_HARDFORK_1_29_FIX_INVALID_AUTHORITY ) )
+  {
+    if( o.owner )   validate_new_authority( *o.owner, o.account, authority::owner, _allow_open );
+    if( o.active )  validate_new_authority( *o.active, o.account, authority::active, _allow_open );
+    if( o.posting ) validate_new_authority( *o.posting, o.account, authority::posting, _allow_open );
+  }
 
   if( o.owner )
   {
@@ -460,6 +517,14 @@ void create_claimed_account_evaluator::do_apply( const create_claimed_account_op
   const auto& props = _db.get_dynamic_global_properties();
 
   HIVE_CHAIN_STATE_ASSERT( creator.pending_claimed_accounts > 0, o.creator, "${creator} has no claimed accounts to create", ( "creator", o.creator ) );
+
+  // TODO: after activation of HF29 check if the check can be moved to operation validate
+  if( _db.is_in_control() || _db.has_hardfork( HIVE_HARDFORK_1_29_FIX_INVALID_AUTHORITY ) )
+  {
+    validate_new_authority( o.owner, o.new_account_name, authority::owner );
+    validate_new_authority( o.active, o.new_account_name, authority::active );
+    validate_new_authority( o.posting, o.new_account_name, authority::posting );
+  }
 
   verify_authority_accounts_exist( _db, o.owner, o.new_account_name, authority::owner );
   verify_authority_accounts_exist( _db, o.active, o.new_account_name, authority::active );

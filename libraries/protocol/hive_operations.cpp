@@ -102,6 +102,16 @@ namespace hive { namespace protocol {
       validate_json_with_fallback(json_metadata);
   }
 
+  bool account_update2_operation::is_open_authority_allowed() const
+  {
+    for( const auto& e : extensions )
+    {
+      if( e.which() == account_update2_extension::tag< allow_open_authority >::value )
+        return true;
+    }
+    return false;
+  }
+
   void account_update2_operation::validate() const
   {
     validate_account_name( account );
