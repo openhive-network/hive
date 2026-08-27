@@ -409,6 +409,42 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_many )
     BOOST_REQUIRE_EQUAL( dave_rc_account_deleted.get_received_rc(), 0 );
     BOOST_REQUIRE_EQUAL( dan_rc_account_deleted.get_delegated_rc(), 0 );
     BOOST_REQUIRE_EQUAL( dan_rc_account_deleted.get_received_rc(), 0 );
+
+    vest( "alice", HIVE_asset( 10'000'000 ) );
+    generate_block();
+
+    op.from = "alice";
+    op.delegatees = { "bob", "dave" };
+    op.max_rc = db->get_dynamic_global_properties().get_total_vesting_shares().amount.value + 1;
+    custom_op.json = fc::json::to_string( hive::protocol::rc_custom_operation( op ) );
+    BOOST_REQUIRE_THROW( push_transaction( custom_op, alice_post_key ), fc::exception );
+
+    const int num_delegatees = 30;
+    for( int i = 0; i < num_delegatees; ++i )
+      account_create( "actor" + std::to_string( i ), init_account_pub_key, init_account_pub_key, NO_VESTING );
+    generate_block();
+
+    op.delegatees = {};
+    for( int i = 0; i < num_delegatees; ++i )
+      op.delegatees.insert( "actor" + std::to_string( i ) );
+    op.max_rc = db->get_dynamic_global_properties().get_total_vesting_shares().amount.value;
+    custom_op.json = fc::json::to_string( hive::protocol::rc_custom_operation( op ) );
+    BOOST_REQUIRE_THROW( push_transaction( custom_op, alice_post_key ), fc::exception );
+
+    generate_block();
+
+    BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).get_delegated_rc(), 0 );
+    BOOST_REQUIRE_EQUAL( db->get_account( "bob" ).get_received_rc(), 0 );
+    BOOST_REQUIRE_EQUAL( db->get_account( "actor0" ).get_received_rc(), 0 );
+
+    op.max_rc = min_delegation;
+    custom_op.json = fc::json::to_string( hive::protocol::rc_custom_operation( op ) );
+    push_transaction( custom_op, alice_post_key );
+    generate_block();
+
+    BOOST_REQUIRE_EQUAL( db->get_account( "actor0" ).get_received_rc(), min_delegation );
+    BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).get_delegated_rc(), min_delegation * num_delegatees );
+
     validate_database();
   }
   FC_LOG_AND_RETHROW()

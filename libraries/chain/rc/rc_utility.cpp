@@ -16,6 +16,7 @@
 #include <fc/uint128.hpp>
 
 #include <fstream>
+#include <limits>
 
 namespace hive { namespace chain {
 
@@ -53,6 +54,9 @@ void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )
 
     FC_ASSERT( op.max_rc >= min_delegation, "Cannot delegate less than ${min_delegation} rc", (min_delegation) );
   }
+
+  auto max_delegation = gpo.get_total_vesting_shares().amount.value;
+  FC_ASSERT( op.max_rc <= max_delegation, "Cannot delegate more than ${max_delegation} rc", (max_delegation) );
 
   auto now = gpo.get_head_block_time();
   const account_object& from_account = _db.get_account( op.from );
@@ -97,6 +101,10 @@ void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )
         } );
       }
     }
+    FC_ASSERT( delta > 0 ? delta_total <= std::numeric_limits< int64_t >::max() - delta
+                         : delta_total >= std::numeric_limits< int64_t >::min() - delta,
+      "Total amount of rc covered by the delegation is out of range" );
+
     _db.rc().update_account_after_rc_delegation( to_account, now, delta );
     delta_total += delta;
   }
