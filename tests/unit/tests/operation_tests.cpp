@@ -149,6 +149,7 @@ BOOST_AUTO_TEST_CASE( account_create_apply )
     op.creator = HIVE_INIT_MINER_NAME;
     op.owner = authority( 1, priv_key.get_public_key(), 1 );
     op.active = authority( 2, priv_key.get_public_key(), 2 );
+    op.posting = authority( 1, priv_key.get_public_key(), 1 ); // HF29 rejects an open (default) posting authority
     op.memo_key = priv_key.get_public_key();
     op.json_metadata = "{\"foo\":\"bar\"}";
 
@@ -172,6 +173,7 @@ BOOST_AUTO_TEST_CASE( account_create_apply )
     BOOST_REQUIRE_EQUAL( acct.get_name(), "alice" );
     BOOST_REQUIRE( acct_auth.get_owner() == authority( 1, priv_key.get_public_key(), 1 ) );
     BOOST_REQUIRE( acct_auth.get_active() == authority( 2, priv_key.get_public_key(), 2 ) );
+    BOOST_REQUIRE( acct_auth.get_posting() == authority( 1, priv_key.get_public_key(), 1 ) );
     BOOST_REQUIRE( acct.memo_key == priv_key.get_public_key() );
     CHECK_NO_PROXY( acct );
     BOOST_REQUIRE_EQUAL( acct.get_creation_time(), db->head_block_time() );
@@ -192,6 +194,7 @@ BOOST_AUTO_TEST_CASE( account_create_apply )
     BOOST_REQUIRE_EQUAL( acct.get_name(), "alice" );
     BOOST_REQUIRE( acct_auth.get_owner() == authority( 1, priv_key.get_public_key(), 1 ) );
     BOOST_REQUIRE( acct_auth.get_active() == authority( 2, priv_key.get_public_key(), 2 ) );
+    BOOST_REQUIRE( acct_auth.get_posting() == authority( 1, priv_key.get_public_key(), 1 ) );
     BOOST_REQUIRE( acct.memo_key == priv_key.get_public_key() );
     CHECK_NO_PROXY( acct );
     BOOST_REQUIRE_EQUAL( acct.get_creation_time(), db->head_block_time() );
@@ -403,6 +406,158 @@ BOOST_AUTO_TEST_CASE( account_update_apply )
     op.posting->add_authorities( "dave", 1 );
     tx.operations.push_back( op );
     HIVE_REQUIRE_THROW( push_transaction( tx, new_private_key ), fc::exception );
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( account_update_invalid_authority )
+{
+  // Regression test for #586: a mis-nested owner JSON deserializes into a default-constructed "open"
+  // authority, which used to be applied verbatim. The hardfork boundary and the allow_open_authority
+  // opt-in are covered by hf29_tests/open_and_impossible_authority.
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: account_update_invalid_authority (issue #586)" );
+
+    ACTORS( DEFAULT_VESTING, (alice) );
+
+    authority open_auth; // default-constructed: weight_threshold 0, empty auths
+    BOOST_REQUIRE_EQUAL( open_auth.weight_threshold, 0u );
+    BOOST_REQUIRE( open_auth.key_auths.empty() );
+    BOOST_REQUIRE( open_auth.account_auths.empty() );
+    BOOST_REQUIRE( !open_auth.is_impossible() ); // "open" and "impossible" are disjoint states
+
+    authority impossible_auth( 2, generate_private_key( "lonely" ).get_public_key(), 1 );
+    BOOST_REQUIRE( impossible_auth.is_impossible() ); // needs weight 2, only 1 can ever be gathered
+
+    const account_authority_object& acct_auth = db->get< account_authority_object, by_account >( "alice" );
+    BOOST_REQUIRE_EQUAL( acct_auth.get_owner().weight_threshold, 1u );
+
+    // expected strings are the stringified conditions of the asserts in validate_new_authority
+    auto require_rejected = [&]( const operation& update_op, const char* expected )
+    {
+      signed_transaction tx;
+      tx.operations.push_back( update_op );
+      tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+      HIVE_REQUIRE_ASSERT( push_transaction( tx, alice_private_key ), expected );
+    };
+
+    for( const authority* bad : { &open_auth, &impossible_auth } )
+    {
+      const char* expected = bad->weight_threshold == 0 ? "auth.weight_threshold" : "!auth.is_impossible()";
+
+      { account_update_operation  op; op.account = "alice"; op.owner   = *bad; require_rejected( op, expected ); }
+      { account_update_operation  op; op.account = "alice"; op.active  = *bad; require_rejected( op, expected ); }
+      { account_update_operation  op; op.account = "alice"; op.posting = *bad; require_rejected( op, expected ); }
+      { account_update2_operation op; op.account = "alice"; op.owner   = *bad; require_rejected( op, expected ); }
+      { account_update2_operation op; op.account = "alice"; op.active  = *bad; require_rejected( op, expected ); }
+      { account_update2_operation op; op.account = "alice"; op.posting = *bad; require_rejected( op, expected ); }
+    }
+
+    // stored authorities must be untouched - the #586 erasure must not happen
+    BOOST_REQUIRE_EQUAL( acct_auth.get_owner().weight_threshold, 1u );
+    BOOST_REQUIRE( !acct_auth.get_owner().key_auths.empty() );
+
+    // sanity: the guard must not over-reject
+    {
+      private_key_type new_key = generate_private_key( "alice_owner_new" );
+      account_update_operation op;
+      op.account = "alice";
+      op.owner = authority( 1, new_key.get_public_key(), 1 );
+
+      signed_transaction tx;
+      tx.operations.push_back( op );
+      tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+      push_transaction( tx, alice_private_key );
+      BOOST_REQUIRE( acct_auth.get_owner() == authority( 1, new_key.get_public_key(), 1 ) );
+    }
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( account_create_invalid_authority )
+{
+  // The #586 follow-up agreed in !2060: creation gets the same guard as update, with no
+  // allow_open_authority opt-in of its own.
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: account_create_invalid_authority (issue #586 follow-up)" );
+
+    generate_block();
+
+    authority open_auth; // default-constructed: weight_threshold 0, no auths
+    BOOST_REQUIRE_EQUAL( open_auth.weight_threshold, 0u );
+    authority impossible_auth( 2, generate_private_key( "frozen_key" ).get_public_key(), 1 );
+    BOOST_REQUIRE( impossible_auth.is_impossible() );
+
+    const HIVE_asset creation_fee = db->get_witness_schedule_object().median_props.account_creation_fee;
+
+    const auto require_create_rejected = [&]( const string& name, const authority& bad, const char* expected )
+    {
+      account_create_operation op;
+      op.creator = HIVE_INIT_MINER_NAME;
+      op.new_account_name = name;
+      op.fee = creation_fee.to_asset();
+      op.owner = bad;
+      op.active = bad;
+      op.posting = bad;
+      op.memo_key = generate_private_key( name + "_memo" ).get_public_key();
+
+      signed_transaction tx;
+      tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+      tx.operations.push_back( op );
+      tx.validate(); // passes - the check lives in the evaluator, it cannot be in validate()
+      HIVE_REQUIRE_ASSERT( push_transaction( tx, init_account_priv_key ), expected );
+      BOOST_REQUIRE( db->find_account( name ) == nullptr );
+    };
+
+    require_create_rejected( "opener", open_auth, "auth.weight_threshold" );
+    require_create_rejected( "frozen", impossible_auth, "!auth.is_impossible()" );
+
+    claim_account( HIVE_INIT_MINER_NAME, creation_fee, init_account_priv_key );
+
+    const auto require_claimed_create_rejected = [&]( const string& name, const authority& bad, const char* expected )
+    {
+      create_claimed_account_operation op;
+      op.creator = HIVE_INIT_MINER_NAME;
+      op.new_account_name = name;
+      op.owner = bad;
+      op.active = bad;
+      op.posting = bad;
+      op.memo_key = generate_private_key( name + "_memo" ).get_public_key();
+
+      signed_transaction tx;
+      tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+      tx.operations.push_back( op );
+      HIVE_REQUIRE_ASSERT( push_transaction( tx, init_account_priv_key ), expected );
+      BOOST_REQUIRE( db->find_account( name ) == nullptr );
+    };
+
+    require_claimed_create_rejected( "opener", open_auth, "auth.weight_threshold" );
+    require_claimed_create_rejected( "frozen", impossible_auth, "!auth.is_impossible()" );
+
+    // sanity: the guard must not over-reject
+    {
+      const authority good_auth( 1, generate_private_key( "carol" ).get_public_key(), 1 );
+      account_create_operation op;
+      op.creator = HIVE_INIT_MINER_NAME;
+      op.new_account_name = "carol";
+      op.fee = creation_fee.to_asset();
+      op.owner = good_auth;
+      op.active = good_auth;
+      op.posting = good_auth;
+      op.memo_key = generate_private_key( "carol_memo" ).get_public_key();
+
+      signed_transaction tx;
+      tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+      tx.operations.push_back( op );
+      push_transaction( tx, init_account_priv_key );
+      BOOST_REQUIRE( db->find_account( "carol" ) != nullptr );
+    }
+
     validate_database();
   }
   FC_LOG_AND_RETHROW()

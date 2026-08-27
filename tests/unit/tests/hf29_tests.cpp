@@ -475,6 +475,204 @@ BOOST_AUTO_TEST_CASE( recurrent_transfer_delete_with_single_execution )
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( open_and_impossible_authority )
+{
+  try
+  {
+    bool is_hf29 = false;
+
+    auto _content = [ &is_hf29 ]( ptr_hardfork_database_fixture& executor )
+    {
+      BOOST_TEST_MESSAGE( "Testing: open/impossible authority on account creation and update (issue #586)" );
+      BOOST_REQUIRE_EQUAL( (bool)executor, true );
+
+      ACTORS_EXT( (*executor), DEFAULT_VESTING, (alice) );
+      executor->fund( "alice", HIVE_asset( 1'000'000 ) );
+      executor->generate_block();
+
+      // open and impossible are disjoint states
+      authority open_auth; // default constructed - what a mis-nested JSON payload leaves behind
+      BOOST_REQUIRE_EQUAL( open_auth.weight_threshold, 0u );
+      BOOST_REQUIRE( !open_auth.is_impossible() );
+
+      const private_key_type lonely_key = executor->generate_private_key( "lonely" );
+      authority impossible_auth( 2, lonely_key.get_public_key(), 1 ); // needs 2, only 1 can ever be gathered
+      BOOST_REQUIRE( impossible_auth.is_impossible() );
+      BOOST_REQUIRE( impossible_auth.weight_threshold != 0u );
+
+      // stringified conditions of the asserts in validate_new_authority
+      const char* OPEN_ASSERT = "auth.weight_threshold";
+      const char* IMPOSSIBLE_ASSERT = "!auth.is_impossible()";
+
+      const authority good_auth( 1, executor->generate_private_key( "good" ).get_public_key(), 1 );
+
+      BOOST_TEST_MESSAGE( "--- account_update / account_update2 reject both, in every role" );
+
+      // "is_in_control" refuses these from a user right away, hardfork or not
+      const auto require_update_rejected = [&]( const operation& op, const char* expected )
+      {
+        HIVE_REQUIRE_ASSERT( executor->push_transaction( op, alice_private_key ), expected );
+      };
+
+      for( const authority* bad : { &open_auth, &impossible_auth } )
+      {
+        const char* expected = bad->weight_threshold == 0 ? OPEN_ASSERT : IMPOSSIBLE_ASSERT;
+
+        { account_update_operation  op; op.account = "alice"; op.owner   = *bad; require_update_rejected( op, expected ); }
+        { account_update_operation  op; op.account = "alice"; op.active  = *bad; require_update_rejected( op, expected ); }
+        { account_update_operation  op; op.account = "alice"; op.posting = *bad; require_update_rejected( op, expected ); }
+        { account_update2_operation op; op.account = "alice"; op.owner   = *bad; require_update_rejected( op, expected ); }
+        { account_update2_operation op; op.account = "alice"; op.active  = *bad; require_update_rejected( op, expected ); }
+        { account_update2_operation op; op.account = "alice"; op.posting = *bad; require_update_rejected( op, expected ); }
+      }
+
+      // stored authorities must be untouched - the #586 erasure must not happen
+      const auto& alice_auth = executor->db->get< account_authority_object, by_account >( "alice" );
+      BOOST_REQUIRE_EQUAL( alice_auth.get_owner().weight_threshold, 1u );
+      BOOST_REQUIRE( !alice_auth.get_owner().key_auths.empty() );
+
+      BOOST_TEST_MESSAGE( "--- a block carrying an open authority is only rejected from HF29 on" );
+
+      // work around "is_in_control" by pushing it as if it arrived from the network
+      account_update_operation open_update;
+      open_update.account = "alice";
+      open_update.posting = open_auth;
+      executor->db_plugin->debug_push_pending_transaction(
+        executor->build_transaction( open_update, alice_private_key ) );
+
+      if( is_hf29 )
+      {
+        HIVE_REQUIRE_ASSERT( executor->generate_block_from_pending(), OPEN_ASSERT );
+        executor->db->clear_pending();
+        BOOST_REQUIRE( alice_auth.get_posting().weight_threshold != 0u ); // authority survived
+      }
+      else
+      {
+        // before HF29 the old rule stands, so the erasure still goes through inside a block
+        executor->generate_block_from_pending();
+        BOOST_REQUIRE_EQUAL( alice_auth.get_posting().weight_threshold, 0u );
+
+        // put alice back together before continuing
+        account_update_operation restore;
+        restore.account = "alice";
+        restore.posting = authority( 1, alice_post_key.get_public_key(), 1 );
+        executor->push_transaction( restore, alice_private_key );
+        BOOST_REQUIRE( alice_auth.get_posting().weight_threshold != 0u );
+      }
+
+      BOOST_TEST_MESSAGE( "--- account_update2's allow_open_authority extension" );
+
+      account_update2_operation opt_in;
+      opt_in.account = "alice";
+      opt_in.posting = open_auth;
+      opt_in.extensions.insert( allow_open_authority() );
+      BOOST_REQUIRE( opt_in.is_open_authority_allowed() );
+
+      if( is_hf29 )
+      {
+        // an open authority set on purpose is allowed again
+        executor->push_transaction( opt_in, alice_private_key );
+        BOOST_REQUIRE_EQUAL( alice_auth.get_posting().weight_threshold, 0u );
+
+        // ...but the extension only lifts the "open" restriction, never the "impossible" one
+        account_update2_operation still_bad;
+        still_bad.account = "alice";
+        still_bad.active = impossible_auth;
+        still_bad.extensions.insert( allow_open_authority() );
+        HIVE_REQUIRE_ASSERT( executor->push_transaction( still_bad, alice_private_key ), IMPOSSIBLE_ASSERT );
+
+        // restore a sane posting authority for the final sanity check
+        account_update2_operation restore;
+        restore.account = "alice";
+        restore.posting = good_auth;
+        executor->push_transaction( restore, alice_private_key );
+      }
+      else
+      {
+        // the extension must not reach a block before the hardfork activates it
+        HIVE_REQUIRE_ASSERT( executor->push_transaction( opt_in, alice_private_key ),
+          "o.extensions.empty() && \"account_update2\"" );
+      }
+
+      BOOST_TEST_MESSAGE( "--- account creation rejects both, with no opt-in of its own" );
+
+      const HIVE_asset creation_fee = executor->db->get_witness_schedule_object().median_props.account_creation_fee;
+
+      const auto require_create_rejected = [&]( const std::string& name, const authority& bad, const char* expected )
+      {
+        account_create_operation op;
+        op.creator = HIVE_INIT_MINER_NAME; // initminer pays the RC; alice has only DEFAULT_VESTING
+        op.new_account_name = name;
+        op.fee = creation_fee.to_asset();
+        op.owner = bad;
+        op.active = bad;
+        op.posting = bad;
+        op.memo_key = executor->generate_private_key( name + "_memo" ).get_public_key();
+        HIVE_REQUIRE_ASSERT( executor->push_transaction( op, executor->init_account_priv_key ), expected );
+        BOOST_REQUIRE( executor->db->find_account( name ) == nullptr );
+      };
+
+      require_create_rejected( "opener", open_auth, OPEN_ASSERT );
+      require_create_rejected( "frozen", impossible_auth, IMPOSSIBLE_ASSERT );
+
+      // ...and the same for create_claimed_account, the other way to bring an account into existence
+      executor->claim_account( HIVE_INIT_MINER_NAME, creation_fee, executor->init_account_priv_key );
+
+      const auto require_claimed_create_rejected = [&]( const std::string& name, const authority& bad, const char* expected )
+      {
+        create_claimed_account_operation op;
+        op.creator = HIVE_INIT_MINER_NAME;
+        op.new_account_name = name;
+        op.owner = bad;
+        op.active = bad;
+        op.posting = bad;
+        op.memo_key = executor->generate_private_key( name + "_memo" ).get_public_key();
+        HIVE_REQUIRE_ASSERT( executor->push_transaction( op, executor->init_account_priv_key ), expected );
+        BOOST_REQUIRE( executor->db->find_account( name ) == nullptr );
+      };
+
+      require_claimed_create_rejected( "opener", open_auth, OPEN_ASSERT );
+      require_claimed_create_rejected( "frozen", impossible_auth, IMPOSSIBLE_ASSERT );
+
+      BOOST_TEST_MESSAGE( "--- ordinary authorities are unaffected" );
+
+      // the guard must not over-reject
+      {
+        account_create_operation op;
+        op.creator = HIVE_INIT_MINER_NAME;
+        op.new_account_name = "carol";
+        op.fee = creation_fee.to_asset();
+        op.owner = good_auth;
+        op.active = good_auth;
+        op.posting = good_auth;
+        op.memo_key = executor->generate_private_key( "carol_memo" ).get_public_key();
+        executor->push_transaction( op, executor->init_account_priv_key );
+        BOOST_REQUIRE( executor->db->find_account( "carol" ) != nullptr );
+      }
+      {
+        // done last - it replaces the key alice signs her active-authority transactions with
+        account_update_operation op;
+        op.account = "alice";
+        op.active = good_auth;
+        executor->push_transaction( op, alice_private_key );
+        BOOST_REQUIRE( alice_auth.get_active() == good_auth );
+      }
+
+      executor->generate_block();
+      executor->validate_database();
+    };
+
+    BOOST_TEST_MESSAGE( "*****HF-28*****" );
+    execute_hardfork<28>( _content );
+
+    is_hf29 = true;
+
+    BOOST_TEST_MESSAGE( "*****HF-29*****" );
+    execute_hardfork<29>( _content );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 #endif

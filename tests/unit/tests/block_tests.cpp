@@ -388,6 +388,7 @@ BOOST_AUTO_TEST_CASE( switch_forks_undo_create )
     cop.creator = HIVE_INIT_MINER_NAME;
     cop.owner = authority(1, init_account_pub_key, 1);
     cop.active = cop.owner;
+    cop.posting = cop.owner; // since HF29 an open (default) posting authority is rejected
     trx.operations.push_back(cop);
     trx.set_expiration( db1.head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     PUSH_TX( chain_plugin1, trx, init_account_priv_key );
@@ -804,6 +805,7 @@ BOOST_AUTO_TEST_CASE( duplicate_transactions )
     cop.creator = HIVE_INIT_MINER_NAME;
     cop.owner = authority(1, init_account_pub_key, 1);
     cop.active = cop.owner;
+    cop.posting = cop.owner; // since HF29 an open (default) posting authority is rejected
     trx.operations.push_back(cop);
     trx.set_expiration( db1.head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     PUSH_TX( chain_plugin1, trx, init_account_priv_key, skip_sigs );
@@ -857,6 +859,7 @@ BOOST_AUTO_TEST_CASE( tapos )
     cop.creator = HIVE_INIT_MINER_NAME;
     cop.owner = authority(1, init_account_pub_key, 1);
     cop.active = cop.owner;
+    cop.posting = cop.owner; // since HF29 an open (default) posting authority is rejected
     trx.operations.push_back(cop);
     trx.set_expiration( db.head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
 

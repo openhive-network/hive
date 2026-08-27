@@ -370,6 +370,9 @@ def test_update_account_auth_key(wallet: tt.Wallet) -> None:
 
 def test_update_account_auth_threshold(wallet: tt.Wallet) -> None:
     wallet.create_account("alice", hives=tt.Asset.Test(100), vests=tt.Asset.Test(100))
+    # since HF29 a threshold above the sum of the role's weights is rejected as an impossible
+    # authority (#586), so add weight before raising the threshold
+    wallet.api.update_account_auth_key("alice", "posting", tt.Account("extra-key").public_key, 3)
     wallet.api.update_account_auth_threshold("alice", "posting", 4)
 
 

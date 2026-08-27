@@ -290,15 +290,27 @@ BOOST_AUTO_TEST_CASE( verify_account_authority_test )
     push_transaction( op, init_account_priv_key );
   }
   {
+    // since HF29 an open authority can no longer be set through account_create (#586), so the account
+    // is created with a regular authority and opened up directly in state
     account_create_operation op;
     op.creator = HIVE_INIT_MINER_NAME;
     op.fee = fee.to_asset();
     op.new_account_name = "open";
-    op.owner = authority();
-    op.active = authority();
-    op.posting = authority();
+    op.owner = authority( 1, multi3_memo, 1 );
+    op.active = op.owner;
+    op.posting = op.owner;
     op.memo_key = multi3_memo; // has to have some key
     push_transaction( op, init_account_priv_key );
+
+    db_plugin->debug_update( []( database& db )
+    {
+      db.modify( db.get< account_authority_object, by_account >( "open" ), [&db]( account_authority_object& auth )
+      {
+        auth.set_owner( authority(), db.head_block_time() );
+        auth.set_active( authority() );
+        auth.set_posting( authority() );
+      } );
+    } );
   }
   {
     account_create_operation op;
@@ -616,15 +628,27 @@ BOOST_AUTO_TEST_CASE( verify_account_authority_test )
     push_transaction( op, init_account_priv_key );
   }
   {
+    // since HF29 an open authority can no longer be set through account_create (#586), so the account
+    // is created with a regular authority and opened up directly in state
     account_create_operation op;
     op.creator = HIVE_INIT_MINER_NAME;
     op.fee = fee.to_asset();
     op.new_account_name = "open";
-    op.owner = authority();
-    op.active = authority();
-    op.posting = authority();
+    op.owner = authority( 1, multi3_memo, 1 );
+    op.active = op.owner;
+    op.posting = op.owner;
     op.memo_key = multi3_memo; // has to have some key
     push_transaction( op, init_account_priv_key );
+
+    db_plugin->debug_update( []( database& db )
+    {
+      db.modify( db.get< account_authority_object, by_account >( "open" ), [&db]( account_authority_object& auth )
+      {
+        auth.set_owner( authority(), db.head_block_time() );
+        auth.set_active( authority() );
+        auth.set_posting( authority() );
+      } );
+    } );
   }
   {
     account_create_operation op;

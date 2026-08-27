@@ -98,6 +98,18 @@ METHODS_WITH_CORRECT_ARGUMENTS: list[tuple[str, ...]] = [
 ]
 
 
+# Wallet calls broadcast before the pattern transaction, for methods whose arguments are only valid
+# after a state change. The setup transaction is dumped under the same name and then overwritten by
+# the pattern transaction, so only the latter is compared against the stored pattern.
+SETUP_CALLS: dict[str, list[tuple[str, tuple]]] = {
+    # a threshold may not exceed the sum of the role's weights - since HF29 an impossible authority
+    # is rejected (#586) - so raise the key's weight before raising the threshold to 4
+    "update_account_auth_threshold": [
+        ("update_account_auth_key", ("alice", "posting", tt.Account("alice").public_key, 4, False)),
+    ],
+}
+
+
 @pytest.mark.testnet()
 @pytest.mark.parametrize(("cli_wallet_method", "arguments"), METHODS_WITH_CORRECT_ARGUMENTS)
 @pytest.mark.parametrize("verify_pattern", WAYS_OF_PATTERN_VERIFICATION)
@@ -110,6 +122,9 @@ def test_transaction_patterns(
     arguments,
 ):
     wallet, pattern_name = wallet_with_pattern_name
+
+    for setup_method, setup_arguments in SETUP_CALLS.get(cli_wallet_method, []):
+        replayed_node.api.wallet_bridge.broadcast_transaction(getattr(wallet.api, setup_method)(*setup_arguments))
 
     transaction = getattr(wallet.api, cli_wallet_method)(*arguments)
     replayed_node.api.wallet_bridge.broadcast_transaction(transaction)
