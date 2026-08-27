@@ -47,6 +47,7 @@ Global parameters:
 | memo\_key      | optional< public\_key\_type > <br> In order to update the {memo\_key}, the active authority is required.<br>If a user provides a new key, the old one will be deleted.                             |         |
 | json\_metadata | json\_string <br> In order to update the {json\_metadata}, the active authority is required.                      |         |
 | posting\_json\_metadata | json\_stringIn order to update the { posting\_json\_metadata }, the posting authority is required.       |         |
+| extensions     | Extensions.<br> Since HF 29 it may contain {allow\_open\_authority} - it permits setting an open authority (weight\_threshold = 0) for a role.<br> It does not permit an impossible authority. |         |
 
 ## 3.  Authority
 
@@ -61,6 +62,8 @@ You need the posting (or active or owner) authority to update the { posting\_jso
 You need:
 
 \- enough Resource Credit (RC) to make an operation.
+
+\- since HF 29, an authority you set may be neither *open* (weight\_threshold = 0, which is satisfied without any signature) nor *impossible* (weight\_threshold above the sum of all weights, which locks the role out for good). An open authority may still be set deliberately, by passing the {allow\_open\_authority} extension.
 
 ## 5. Impacted state
 

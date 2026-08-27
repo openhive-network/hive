@@ -38,6 +38,8 @@ You need:
 \- enough Resource Credit (RC) to make an operation.
 
 
+\- since HF 29, an authority of the new account may be neither *open* (weight\_threshold = 0, which is satisfied without any signature) nor *impossible* (weight\_threshold above the sum of all weights, which locks the role out for good). There is no opt-in for this on creation - an account that wants an open role is created normally and opened up with account\_update2\_operation afterwards.
+
 ## 5. Impacted state
 
 After the operation:

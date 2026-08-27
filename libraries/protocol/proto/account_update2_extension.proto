@@ -1,0 +1,18 @@
+syntax = "proto2";
+
+package hive.protocol.buffers;
+
+import "future_extensions.proto";
+
+/* Opt-in allowing account_update2_operation to set an "open" authority (weight_threshold = 0),
+ * rejected by default since HF 29. It does not permit an "impossible" authority
+ * (weight_threshold above the sum of all weights), which stays rejected.
+ */
+message allow_open_authority {}
+
+message account_update2_extension {
+  oneof value {
+    void_t void_t = 1 [json_name = "void_t"];
+    allow_open_authority allow_open_authority = 2 [json_name = "allow_open_authority"];
+  }
+}

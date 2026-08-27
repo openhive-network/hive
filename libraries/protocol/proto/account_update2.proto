@@ -1,7 +1,7 @@
 syntax = "proto2";
 
 import "authority.proto";
-import "future_extensions.proto";
+import "account_update2_extension.proto";
 
 package hive.protocol.buffers;
 
@@ -64,7 +64,9 @@ message account_update2 {
   //                                         the posting authority is required.
   required string            posting_json_metadata = 7 [json_name = "posting_json_metadata"];
 
-  // @param {future_extensions} extensions
-  repeated future_extensions extensions = 8;
+  // @param {account_update2_extension} extensions - Extensions. Since HF 29 it may contain
+  //                                                  'allow_open_authority', permitting an open
+  //                                                  authority (weight_threshold = 0) for a role.
+  repeated account_update2_extension extensions = 8;
 }
 

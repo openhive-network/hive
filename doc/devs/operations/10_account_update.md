@@ -42,6 +42,8 @@ You need:
 \- enough Resource Credit (RC) to make an operation.
 
 
+\- since HF 29, an authority you set may be neither *open* (weight\_threshold = 0, which is satisfied without any signature) nor *impossible* (weight\_threshold above the sum of all weights, which locks the role out for good). An open authority may still be set deliberately, using account\_update2\_operation with the {allow\_open\_authority} extension.
+
 ## 5. Impacted state
 
 After the operation:
