@@ -71,6 +71,13 @@ void create_proposal_evaluator::do_apply( const create_proposal_operation& o )
       HIVE_CHAIN_STATE_ASSERT(commentObject && "Proposal permlink must point to the article posted by creator or receiver", o.permlink, "Permlink '${subject}' not found under creator or receiver.");
     }
 
+    // reject a daily_pay that would overflow the maintenance-period payment computation
+    if( _db.is_in_control() || _db.has_hardfork( HIVE_HARDFORK_1_29_FIX_DHF_DAILY_PAY_OVERFLOW ) )
+    {
+      HIVE_CHAIN_LIMIT_ASSERT( o.daily_pay.amount <= HIVE_PROPOSAL_MAX_DAILY_PAY, o.daily_pay,
+        "Proposal daily pay is too high" );
+    }
+
     uint32_t proposal_id = 0;
     _db.create< proposal_object >( [&]( proposal_object& proposal )
     {

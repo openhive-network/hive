@@ -4456,6 +4456,63 @@ BOOST_AUTO_TEST_CASE( update_proposal_006 )
   } FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( proposal_daily_pay_overflow_bound )
+{
+  // daily_pay above the cap must be rejected (would overflow the maintenance payment - chain halt)
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: proposal_daily_pay_overflow_bound (DHF daily_pay chain-halt)" );
+
+    ACTORS( DEFAULT_VESTING, (alice) );
+    generate_block();
+
+    std::string permlink = "proposalpermlink";
+    post_comment_with_block_generation( "alice", permlink, "title", "body", "test", alice_post_key );
+
+    ISSUE_FUNDS( "alice", HBD_asset( 100'000 ) ); // plenty for the proposal fee
+    generate_block();
+
+    auto start_date = db->head_block_time() + fc::days( 1 );
+    auto end_date   = start_date + fc::days( 10 );
+
+    const auto build_op = [&]( const asset& daily_pay )
+    {
+      create_proposal_operation op;
+      op.creator = "alice";
+      op.receiver = "alice";
+      op.start_date = start_date;
+      op.end_date = end_date;
+      op.daily_pay = daily_pay;
+      op.subject = "subject";
+      op.permlink = permlink;
+      return op;
+    };
+
+    { // over the cap -> rejected
+      signed_transaction tx;
+      tx.operations.push_back( build_op( asset( HIVE_PROPOSAL_MAX_DAILY_PAY + 1, HBD_SYMBOL ) ) );
+      tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+      HIVE_REQUIRE_ASSERT( push_transaction( tx, alice_private_key ), "o.daily_pay.amount <= HIVE_PROPOSAL_MAX_DAILY_PAY" );
+    }
+
+    { // at the cap -> accepted
+      signed_transaction tx;
+      tx.operations.push_back( build_op( asset( HIVE_PROPOSAL_MAX_DAILY_PAY, HBD_SYMBOL ) ) );
+      tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+      push_transaction( tx, alice_private_key );
+    }
+    generate_block();
+
+    const auto& proposal_idx = db->get_index< proposal_index >().indices().get< by_creator >();
+    auto proposal = proposal_idx.find( account_name_type( "alice" ) );
+    BOOST_REQUIRE( proposal != proposal_idx.end() );
+    BOOST_REQUIRE_EQUAL( proposal->daily_pay.amount.value, HIVE_PROPOSAL_MAX_DAILY_PAY );
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 
