@@ -466,6 +466,8 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_PROPOSAL_FEE_INCREASE_DAYS_SEC        (60*60*24*HIVE_PROPOSAL_FEE_INCREASE_DAYS) /// 60 days
 #define HIVE_PROPOSAL_FEE_INCREASE_AMOUNT          (1 * HIVE_BLOCKCHAIN_PRECISION)
 #define HIVE_PROPOSAL_CONVERSION_RATE             (5 * HIVE_1_BASIS_POINT)
+// daily_pay bound so a full year of maintenance catch-up can't overflow the int64 payment multiply (INT64_MAX/(365*86400)); ~292.5M HBD/day, above return proposal #0
+#define HIVE_PROPOSAL_MAX_DAILY_PAY                292471208677
 
 /// (former) witness related constants
 
