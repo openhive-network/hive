@@ -10,6 +10,7 @@
 #include <hive/chain/detail/state/liquidity_reward_balance_object_multiindex.hpp>
 #include <hive/chain/detail/state/reward_fund_object_multiindex.hpp>
 #include <hive/chain/detail/state/witness_objects_multiindex.hpp>
+#include <hive/chain/detail/state/dhf_objects_multiindex.hpp>
 #include <hive/chain/witness_schedule.hpp>
 
 #include <hive/chain/rc/rc_objects_multiindex.hpp>
@@ -505,6 +506,17 @@ void database::apply_hardfork( uint32_t hardfork )
     case HIVE_HARDFORK_1_28:
     {
       remove_proposal_votes_for_accounts_without_voting_rights();
+      break;
+    }
+    case HIVE_HARDFORK_1_29:
+    {
+      // clamp pre-existing proposals so the bounded maintenance-payment math holds for all state (return proposal id 0 excluded)
+      const auto& pidx = get_index< proposal_index, by_proposal_id >();
+      for( auto itr = pidx.begin(); itr != pidx.end(); ++itr )
+      {
+        if( itr->proposal_id != 0 && itr->daily_pay.amount > HIVE_PROPOSAL_MAX_DAILY_PAY )
+          modify( *itr, []( proposal_object& p ) { p.daily_pay = HBD_asset( HIVE_PROPOSAL_MAX_DAILY_PAY ); } );
+      }
       break;
     }
     default:

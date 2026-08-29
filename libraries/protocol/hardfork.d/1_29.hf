@@ -28,4 +28,6 @@
 #define HIVE_HARDFORK_1_29_RC_IS_CONSENSUS (HIVE_HARDFORK_1_29)
 // validate all proposal ids while processing proposal removal
 #define HIVE_HARDFORK_1_29_VALIDATE_ALL_PROPOSAL_IDS (HIVE_HARDFORK_1_29)
+// daily_pay is bounded and the maintenance payment is computed in 128-bit so it cannot overflow/halt the chain
+#define HIVE_HARDFORK_1_29_FIX_DHF_DAILY_PAY_OVERFLOW (HIVE_HARDFORK_1_29)
 #endif
