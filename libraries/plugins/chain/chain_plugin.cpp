@@ -173,6 +173,13 @@ class chain_plugin_impl
     };
     comment_archive_type             comment_archive_choice = comment_archive_type::ROCKSDB;
 
+    // A block whose timestamp is at most this far ahead of the local clock is pushed immediately.
+    // Witnesses intentionally produce up to 500ms before their slot time (see witness_plugin), so
+    // this must stay comfortably above that; the remainder is the clock skew (relative to the
+    // producer) a node tolerates before it starts delaying blocks.
+    fc::microseconds block_accept_lead_time = fc::seconds(1);
+    // A block further ahead than block_accept_lead_time, but no further than this, is held and
+    // pushed once it comes within block_accept_lead_time. Anything beyond this is rejected.
     uint32_t allow_future_time = 5;
 
     std::shared_ptr< std::thread >   write_processor_thread;
@@ -2170,8 +2177,30 @@ int16_t chain_plugin::set_write_lock_hold_time( int16_t new_time )
 
 void chain_plugin::check_time_in_block(const hive::chain::signed_block& block)
 {
-  const fc::time_point_sec max_accept_time = fc::time_point_sec(fc::time_point::now()) + my->allow_future_time;
-  FC_ASSERT(block.timestamp <= max_accept_time, "Refusing to accept block that's too far in the future (> ${max_accept_time})", (max_accept_time));
+  const fc::time_point now = fc::time_point::now();
+  const fc::time_point block_time(block.timestamp);
+  const fc::time_point max_accept_time = now + fc::seconds(my->allow_future_time);
+  FC_ASSERT(block_time <= max_accept_time, "Refusing to accept block that's too far in the future (> ${max_accept_time})", (max_accept_time));
+
+  // A block that is only slightly ahead of our clock is not invalid, just early: either the
+  // producer's clock is fast or ours is slow. Rejecting it would make the p2p layer treat the
+  // peer that delivered it as having sent an invalid block and disconnect it, and it would let a
+  // fast-clock witness's block be applied before the slot of the witness ahead of it has even
+  // begun in real time, leapfrogging that (blameless) witness and charging it a missed block.
+  // Instead, hold the block until it comes within block_accept_lead_time of our clock. If the
+  // preceding witness's block arrives in the meantime it is applied first, and the early block
+  // then lands as a same-height fork that nobody switches to.
+  const fc::time_point release_time = block_time - my->block_accept_lead_time;
+  if (release_time > now)
+  {
+    const fc::microseconds hold_time = release_time - now;
+    wlog("Block #${n} by ${w} has timestamp ${t}, ${ahead} ms ahead of local clock; holding it for ${hold} ms before applying",
+         ("n", block.block_num())("w", block.witness)("t", block.timestamp)
+         ("ahead", (block_time - now).count() / 1000)("hold", hold_time.count() / 1000));
+    fc::usleep(hold_time);
+    if (is_finished_write_processing())
+      FC_THROW_EXCEPTION(fc::canceled_exception, "Interrupt request occurred while holding an early block");
+  }
 }
 
 void chain_plugin::register_block_generator( const std::string& plugin_name, std::shared_ptr< abstract_block_producer > block_producer )
