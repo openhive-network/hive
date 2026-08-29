@@ -189,7 +189,14 @@ void dhf_processor::transfer_payments( const time_point_sec& head_time, HBD_asse
       break;
 
     HBD_asset period_pay;
-    if( db.has_hardfork(HIVE_HARDFORK_1_25) )
+    if( db.has_hardfork(HIVE_HARDFORK_1_29_FIX_DHF_DAILY_PAY_OVERFLOW) )
+    {
+      // scale in 128-bit and clamp to the budget so the int64 narrowing cannot overflow/throw
+      uint128_t scaled_pay = ( uint128_t( passed_time_seconds ) * _item.daily_pay.amount.value ) / daily_seconds;
+      uint128_t budget_128 = uint128_t( static_cast<uint64_t>( maintenance_budget_limit.amount.value ) );
+      period_pay = HBD_asset( fc::uint128_to_int64( scaled_pay < budget_128 ? scaled_pay : budget_128 ) );
+    }
+    else if( db.has_hardfork(HIVE_HARDFORK_1_25) )
     {
       period_pay = passed_time_seconds * _item.daily_pay / daily_seconds;
     }
