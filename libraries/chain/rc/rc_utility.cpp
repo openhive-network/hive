@@ -61,7 +61,7 @@ void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )
     // above is not strictly needed - we can handle new delegations during delayed undelegating just fine, however we want to discourage users
     // from using the scheme to temporarily "pump" amount of RC, also if it is not intentional they might be confused about fresh delegations
     // disappearing right after being formed (which might happen if we allow fresh delegations while previous were not yet cleared)
-  int64_t delta_total = 0; // total amount of rc gained/delegated over the accounts
+  share_type delta_total = 0; // total amount of rc gained/delegated over the accounts
 
   for (const account_name_type& to:op.delegatees)
   {
@@ -71,7 +71,7 @@ void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )
     const rc_direct_delegation_object* delegation = _db.find<rc_direct_delegation_object, by_from_to>(
       boost::make_tuple( from_account.get_id(), to_account.get_id() ) );
 
-    int64_t delta = op.max_rc;
+    share_type delta = op.max_rc;
     if( delegation == nullptr ) // delegation is being created
     {
       FC_ASSERT( op.max_rc != 0, "Cannot delegate 0 if you are creating new rc delegation" );
@@ -97,7 +97,7 @@ void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )
         } );
       }
     }
-    _db.rc().update_account_after_rc_delegation( to_account, now, delta );
+    _db.rc().update_account_after_rc_delegation( to_account, now, delta.value );
     delta_total += delta;
   }
 
@@ -111,7 +111,7 @@ void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )
     // Do not give mana back when deleting/reducing rc delegation (note that regular delegations behave differently)
     if( delta_total > 0 )
     {
-      acc.rc_manabar.current_mana -= delta_total;
+      acc.rc_manabar.current_mana -= delta_total.value;
       // since delta_total is not greater than from_delegable_rc which is not greater than current_mana, we know it can't dive into negative
     }
     acc.delegated_rc += delta_total;
