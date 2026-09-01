@@ -354,7 +354,8 @@ namespace hive { namespace chain {
       size_t block_size_including_start_pos = raw_block_size + sizeof(uint64_t);
       std::unique_ptr<char[]> block_with_start_pos(new char[block_size_including_start_pos]);
       memcpy(block_with_start_pos.get(), raw_block_data, raw_block_size);
-      *(uint64_t*)(block_with_start_pos.get() + raw_block_size) = block_start_pos_with_flags;
+      memcpy(block_with_start_pos.get() + raw_block_size, &block_start_pos_with_flags,
+             sizeof(block_start_pos_with_flags));
 
       detail::block_log_impl::write_with_retry(my->block_log_fd, block_with_start_pos.get(), block_size_including_start_pos);
       my->block_log_size += block_size_including_start_pos;
@@ -379,7 +380,8 @@ namespace hive { namespace chain {
       size_t raw_block_size = artifacts.block_serialized_data_size;
       uint64_t block_start_pos = my->block_log_size;
       uint64_t block_start_pos_with_flags = detail::combine_block_start_pos_with_flags(block_start_pos, artifacts.attributes);
-      *(uint64_t*)(block_data_buffer.get() + buffer_offset + raw_block_size) = block_start_pos_with_flags;
+      memcpy(block_data_buffer.get() + buffer_offset + raw_block_size, &block_start_pos_with_flags,
+             sizeof(block_start_pos_with_flags));
 
       size_t block_size_including_start_pos = raw_block_size + sizeof(uint64_t);
       buffer_offset += block_size_including_start_pos;
@@ -889,7 +891,8 @@ namespace hive { namespace chain {
       // read the file offset of the start of the block from the block log
       uint64_t higher_block_position = block_position;
       // read next block pos offset from the block log
-      uint64_t block_position_with_flags = *(uint64_t*)(block_log_ptr + block_position);
+      uint64_t block_position_with_flags = 0;
+      memcpy(&block_position_with_flags, block_log_ptr + block_position, sizeof(block_position_with_flags));
       block_attributes_t attributes;
       std::tie(block_position, attributes) = detail::split_block_start_pos_with_flags(block_position_with_flags);
 
