@@ -97,7 +97,7 @@ void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )
         } );
       }
     }
-    _db.rc().update_account_after_rc_delegation( to_account, now, delta.value );
+    _db.rc().update_account_after_rc_delegation( to_account, now, delta );
     delta_total += delta;
   }
 
@@ -367,12 +367,12 @@ void resource_credits::regenerate_rc_mana( const account_object& account, const 
 }
 
 void resource_credits::update_account_after_rc_delegation( const account_object& account,
-  const fc::time_point_sec now, int64_t delta, bool regenerate_mana ) const
+  const fc::time_point_sec now, share_type delta, bool regenerate_mana ) const
 {
   db.modify< account_object >( account, [&]( account_object& acc )
   {
-    auto max_rc = acc.get_maximum_rc().value;
-    util::manabar_params manabar_params( max_rc, HIVE_RC_REGEN_TIME );
+    auto max_rc = acc.get_maximum_rc();
+    util::manabar_params manabar_params( max_rc.value, HIVE_RC_REGEN_TIME );
     if( regenerate_mana )
     {
       acc.rc_manabar.regenerate_mana< true >( manabar_params, now );
@@ -398,7 +398,7 @@ void resource_credits::update_account_after_rc_delegation( const account_object&
     //rc delegation changes are immediately reflected in current_mana in both directions;
     //if negative delta was not taking away delegated mana it would be easy to pump RC;
     //note that it is different when actual VESTs are involved
-    acc.rc_manabar.current_mana = std::max( acc.rc_manabar.current_mana + delta, int64_t( 0 ) );
+    acc.rc_manabar.current_mana = std::max( share_type(acc.rc_manabar.current_mana) + delta, share_type( 0 ) ).value;
     acc.last_max_rc = max_rc + delta;
     acc.received_rc += delta;
   } );

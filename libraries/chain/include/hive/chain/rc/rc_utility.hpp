@@ -109,7 +109,7 @@ class resource_credits
     void update_account_after_rc_delegation(
       const account_object& account,
       const fc::time_point_sec now,
-      int64_t delta,
+      share_type delta,
       bool regenerate_mana = false ) const;
     // updates RC related data on account after change in vesting
     void update_account_after_vest_change(
