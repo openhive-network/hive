@@ -1,48 +1,23 @@
 #pragma once
 
-#include <hive/chain/database.hpp>
 #include <hive/chain/detail/state/dhf_objects_multiindex.hpp>
-#include <hive/chain/detail/state/account_object.hpp>
 #include <hive/chain/util/remove_guard.hpp>
-
-#include <boost/container/flat_set.hpp>
 
 namespace hive { namespace chain {
 
-using boost::container::flat_set;
+class account_object;
+class database;
 
 class dhf_helper
 {
   public:
     // removes votes cast for proposals by given account (as long as we are within limit), returns if the process was successful
     static bool remove_proposal_votes( const account_object& voter, const proposal_vote_index::index<by_voter_proposal>::type& proposal_votes,
-      database& db, remove_guard& obj_perf )
-    {
-      auto pVoteI = proposal_votes.lower_bound( boost::make_tuple( voter.get_name(), 0 ) );
-      while( pVoteI != proposal_votes.end() && pVoteI->voter == voter.get_name() )
-      {
-        const auto& vote = *pVoteI;
-        ++pVoteI;
-        if( !obj_perf.remove( db, vote ) )
-          return false;
-      }
-      return true;
-    }
+      database& db, remove_guard& obj_perf );
 
     // removes votes cast for given proposal (as long as we are within limit), returns if the process was successful
     static bool remove_proposal_votes( const proposal_object& proposal, const proposal_vote_index::index<by_proposal_voter>::type& proposal_votes,
-      database& db, remove_guard& obj_perf )
-    {
-      auto pVoteI = proposal_votes.lower_bound( boost::make_tuple( proposal.proposal_id, account_name_type() ) );
-      while( pVoteI != proposal_votes.end() && pVoteI->proposal_id == proposal.proposal_id )
-      {
-        const auto& vote = *pVoteI;
-        ++pVoteI;
-        if( !obj_perf.remove( db, vote ) )
-          return false;
-      }
-      return true;
-    }
+      database& db, remove_guard& obj_perf );
 
     // removes given proposal with all related votes (as long as we are within limit), returns if the process was successful
     static bool remove_proposal( const proposal_object& proposal, const proposal_vote_index::index<by_proposal_voter>::type& proposal_votes,
