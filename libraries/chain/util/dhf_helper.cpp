@@ -4,46 +4,4 @@
 
 namespace hive { namespace chain {
 
-void dhf_helper::remove_proposals( database& db, const flat_set<int64_t>& proposal_ids, const account_name_type& proposal_owner )
-{
-  if( proposal_ids.empty() )
-    return;
-
-  auto& byPropIdIdx = db.get_index< proposal_index, by_proposal_id >();
-  auto& byVoterIdx = db.get_index< proposal_vote_index, by_proposal_voter >();
-
-  remove_guard obj_perf( db.get_remove_threshold() );
-
-  auto _iter_pid = proposal_ids.begin();
-  while( _iter_pid != proposal_ids.end() )
-  {
-    auto _pid = *_iter_pid;
-
-    ++_iter_pid;
-
-    auto foundPosI = byPropIdIdx.find( _pid );
-
-    if( foundPosI == byPropIdIdx.end() )
-    {
-      if( db.has_hardfork( HIVE_HARDFORK_1_28_DONT_TRY_REMOVE_NONEXISTENT_PROPOSAL ) ) // 540845f6870b9c1d5a1010b5a75b264f3a304713 tried to remove dead proposal
-        FC_ASSERT( false && "proposal doesn't exist", "Can't remove nonexistent proposal with id: ${pid}", ("pid", _pid) );
-      continue;
-    }
-
-    FC_ASSERT(foundPosI->creator == proposal_owner, "Only proposal owner can remove it...");
-
-    remove_proposal( *foundPosI, byVoterIdx, db, obj_perf );
-    if( obj_perf.done() )
-      break;
-  }
-
-  while( _iter_pid != proposal_ids.end() )
-  {
-    auto foundPosI = byPropIdIdx.find( *_iter_pid );
-    if( foundPosI == byPropIdIdx.end() )
-      FC_ASSERT( false && "nonexistent proposal", "Can't remove nonexistent proposal with id: ${pid}", ("pid", *_iter_pid) );
-    ++_iter_pid;
-  }
-}
-
 } } // hive::chain

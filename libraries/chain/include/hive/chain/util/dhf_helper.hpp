@@ -51,8 +51,6 @@ class dhf_helper
       remove_proposal_votes( proposal, proposal_votes, db, obj_perf );
       return obj_perf.remove( db, proposal );
     }
-
-    static void remove_proposals( database& db, const flat_set<int64_t>& proposal_ids, const account_name_type& proposal_owner );
 };
 
 } } // hive::chain
