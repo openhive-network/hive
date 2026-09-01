@@ -7,12 +7,11 @@
 #include <hive/chain/hive_evaluator.hpp>
 #include <hive/chain/detail/state/account_object_multiindex.hpp>
 #include <hive/chain/detail/state/dhf_objects_multiindex.hpp>
-#include <hive/chain/evaluator_registry.hpp>
 
+#include <hive/chain/evaluator_registry.hpp>
 #include <hive/chain/util/dhf_helper.hpp>
 
 #include <hive/protocol/hive_specialised_exceptions.hpp>
-
 
 namespace hive { namespace chain {
 
@@ -218,46 +217,9 @@ void remove_proposal_evaluator::do_apply(const remove_proposal_operation& op)
     HIVE_CHAIN_HARDFORK_ASSERT( _db.has_hardfork( HIVE_HARDFORK_0_21_PROPOSALS ) && "Premature proposal removal",
       "Proposals functionality not enabled until hardfork ${hf}", ( "hf", HIVE_HARDFORK_0_21_PROPOSALS ) );
 
-    // Remove proposals and related votes...
-    auto& byPropIdIdx = _db.get_index< proposal_index, by_proposal_id >();
-    auto& byVoterIdx = _db.get_index< proposal_vote_index, by_proposal_voter >();
-
-    remove_guard obj_perf( _db.get_remove_threshold() );
-
-    auto _iter_pid = op.proposal_ids.begin();
-    while( _iter_pid != op.proposal_ids.end() )
-    {
-      auto _pid = *_iter_pid;
-
-      ++_iter_pid;
-
-      auto foundPosI = byPropIdIdx.find( _pid );
-
-      if( foundPosI == byPropIdIdx.end() )
-      {
-        if( _db.has_hardfork( HIVE_HARDFORK_1_28_DONT_TRY_REMOVE_NONEXISTENT_PROPOSAL ) ) // 540845f6870b9c1d5a1010b5a75b264f3a304713 tried to remove dead proposal
-          FC_ASSERT( false && "proposal doesn't exist", "Can't remove nonexistent proposal with id: ${pid}", ("pid", _pid) );
-        continue;
-      }
-
-      FC_ASSERT(foundPosI->creator == op.proposal_owner, "Only proposal owner can remove it...");
-
-      dhf_helper::remove_proposal( *foundPosI, byVoterIdx, _db, obj_perf );
-      if( obj_perf.done() )
-        break;
-    }
-
-    while( _iter_pid != op.proposal_ids.end() )
-    {
-      auto foundPosI = byPropIdIdx.find( *_iter_pid );
-      if( foundPosI == byPropIdIdx.end() )
-        FC_ASSERT( false && "nonexistent proposal", "Can't remove nonexistent proposal with id: ${pid}", ("pid", *_iter_pid) );
-      ++_iter_pid;
-    }
-
     /*
-      ...For performance reasons and the fact that proposal votes can accumulate over time but need to be removed along with proposals,
-      process of proposal removal is subject to `common_remove_threshold`. Proposals and votes are physically removed above, however if
+      For performance reasons and the fact that proposal votes can accumulate over time but need to be removed along with proposals,
+      process of proposal removal is subject to `common_remove_threshold`. Proposals and votes are physically removed below, however if
       some remain due to threshold being reached, the rest is marked with `removed` flag, to be actually removed during regular per-block cycles.
       The `end_date` is moved to `head_time - HIVE_PROPOSAL_MAINTENANCE_CLEANUP` so the proposals are ready to be removed immediately
       (see proposal_object::get_end_date_with_delay() - there was a short window when proposal was expired but still "alive" to avoid corner cases)
@@ -267,21 +229,44 @@ void remove_proposal_evaluator::do_apply(const remove_proposal_operation& op)
       When automatic actions will be introduced, this code will disappear.
     */
     auto new_end_date = _db.head_block_time() - fc::seconds( HIVE_PROPOSAL_MAINTENANCE_CLEANUP );
-    for( const auto pid : op.proposal_ids )
+    remove_guard obj_perf( _db.get_remove_threshold() );
+
+    const auto& proposal_idx = _db.get_index< proposal_index, by_proposal_id >();
+    const auto& proposal_vote_idx = _db.get_index< proposal_vote_index, by_proposal_voter >();
+
+    /// Validate all proposal ids and mark them as candidate for removal. Once exception is thrown, property value will be restored by chainbase
+    for( auto proposal_id : op.proposal_ids )
     {
-      const auto& pidx = _db.get_index< proposal_index, by_proposal_id >();
+      auto found_proposal = proposal_idx.find( proposal_id );
 
-      auto found_id = pidx.find( pid );
-      if( found_id == pidx.end() || found_id->removed )
-        continue;
-      
-      _db.modify( *found_id, [new_end_date]( proposal_object& proposal )
+      if( found_proposal == proposal_idx.end() )
       {
-        proposal.removed = true;
-        proposal.end_date = new_end_date;
-      } );
-    }
+        if( _db.has_hardfork( HIVE_HARDFORK_1_28_DONT_TRY_REMOVE_NONEXISTENT_PROPOSAL ) ) // 540845f6870b9c1d5a1010b5a75b264f3a304713 tried to remove dead proposal
+          FC_ASSERT( false && "proposal doesn't exist", "Can't remove nonexistent proposal with id: ${pid}", ("pid", proposal_id) );
+      }
+      else
+      {
+        if( _db.has_hardfork( HIVE_HARDFORK_1_29_VALIDATE_ALL_PROPOSAL_IDS ) )
+        {
+          FC_ASSERT( found_proposal->removed == false && "proposal doesn't exist", "Can't remove nonexistent proposal with id: ${pid}",
+             ("pid", proposal_id) );
+        }
 
+        if( _db.has_hardfork( HIVE_HARDFORK_1_29_VALIDATE_ALL_PROPOSAL_IDS ) || obj_perf.done() == false )
+          FC_ASSERT( found_proposal->creator == op.proposal_owner, "Only proposal owner can remove it..." );
+
+        /// Do not mark again proposal already flagged for removal, e.g. when someone pushed multiple operations referencing the same proposal.
+        /// Try to delete proposal first and mark it for removal only if we reached the threshold.
+        if( dhf_helper::remove_proposal( *found_proposal, proposal_vote_idx, _db, obj_perf ) == false && found_proposal->removed == false )
+        {
+          _db.modify( *found_proposal, [new_end_date]( proposal_object& proposal )
+          {
+            proposal.removed = true;
+            proposal.end_date = new_end_date;
+          } );
+        }
+      }
+    }
   }
   FC_CAPTURE_AND_RETHROW( (op) )
 }

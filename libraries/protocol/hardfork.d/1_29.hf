@@ -26,4 +26,6 @@
 #define HIVE_HARDFORK_1_29_FIX_LIMIT_ORDER_ASSETS (HIVE_HARDFORK_1_29)
 // RC is part of consensus
 #define HIVE_HARDFORK_1_29_RC_IS_CONSENSUS (HIVE_HARDFORK_1_29)
+// validate all proposal ids while processing proposal removal
+#define HIVE_HARDFORK_1_29_VALIDATE_ALL_PROPOSAL_IDS (HIVE_HARDFORK_1_29)
 #endif
