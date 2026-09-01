@@ -219,7 +219,41 @@ void remove_proposal_evaluator::do_apply(const remove_proposal_operation& op)
       "Proposals functionality not enabled until hardfork ${hf}", ( "hf", HIVE_HARDFORK_0_21_PROPOSALS ) );
 
     // Remove proposals and related votes...
-    dhf_helper::remove_proposals( _db, op.proposal_ids, op.proposal_owner );
+    auto& byPropIdIdx = _db.get_index< proposal_index, by_proposal_id >();
+    auto& byVoterIdx = _db.get_index< proposal_vote_index, by_proposal_voter >();
+
+    remove_guard obj_perf( _db.get_remove_threshold() );
+
+    auto _iter_pid = op.proposal_ids.begin();
+    while( _iter_pid != op.proposal_ids.end() )
+    {
+      auto _pid = *_iter_pid;
+
+      ++_iter_pid;
+
+      auto foundPosI = byPropIdIdx.find( _pid );
+
+      if( foundPosI == byPropIdIdx.end() )
+      {
+        if( _db.has_hardfork( HIVE_HARDFORK_1_28_DONT_TRY_REMOVE_NONEXISTENT_PROPOSAL ) ) // 540845f6870b9c1d5a1010b5a75b264f3a304713 tried to remove dead proposal
+          FC_ASSERT( false && "proposal doesn't exist", "Can't remove nonexistent proposal with id: ${pid}", ("pid", _pid) );
+        continue;
+      }
+
+      FC_ASSERT(foundPosI->creator == op.proposal_owner, "Only proposal owner can remove it...");
+
+      dhf_helper::remove_proposal( *foundPosI, byVoterIdx, _db, obj_perf );
+      if( obj_perf.done() )
+        break;
+    }
+
+    while( _iter_pid != op.proposal_ids.end() )
+    {
+      auto foundPosI = byPropIdIdx.find( *_iter_pid );
+      if( foundPosI == byPropIdIdx.end() )
+        FC_ASSERT( false && "nonexistent proposal", "Can't remove nonexistent proposal with id: ${pid}", ("pid", *_iter_pid) );
+      ++_iter_pid;
+    }
 
     /*
       ...For performance reasons and the fact that proposal votes can accumulate over time but need to be removed along with proposals,
