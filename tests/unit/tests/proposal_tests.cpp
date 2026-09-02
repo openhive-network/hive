@@ -3692,36 +3692,41 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_01 )
     }
 
     /*
-      xx oo oo oo xx oo oo oo xx rr
+      xx oo oo oo xx oo oo oo rr rr
 
       xx oo oo oo xx oo oo oo oo rr
-      xx oo oo oo xx oo oo oo oo xx
-      xx oo oo oo xx oo oo oo oo xx
-      xx oo oo oo xx oo oo oo oo xx
-      xx oo oo oo xx oo oo oo oo xx
-      xx oo oo oo xx oo oo oo oo xx
+      xx oo oo oo xx oo oo oo oo rr
+      xx oo oo oo xx oo oo oo oo rr
+      xx oo oo oo xx oo oo oo oo rr
+      xx oo oo oo xx oo oo oo oo rr
+      xx oo oo oo xx oo oo oo oo rr
     */
     {
-      remove_proposal( item_creator.account, {0,4,8,9}, item_creator.active_key );
+      /// proposals 8 & 9 are already marked for removal, so also treated as non-existing ones.
+      HIVE_REQUIRE_ASSERT( remove_proposal( item_creator.account, {0,4,8,9}, item_creator.active_key ),
+        "found_proposal->removed == false && \"proposal doesn't exist\"" );
+
+      remove_proposal( item_creator.account, {0,4}, item_creator.active_key );
+
       auto found_proposals = calc_proposals( proposal_idx, proposals_id );
       auto found_votes = calc_votes( proposal_vote_idx, proposals_id );
       BOOST_REQUIRE( exist_proposal( 9 ) && find_proposal( 9 )->removed );
-      BOOST_REQUIRE_EQUAL( found_proposals, 1 );
-      BOOST_REQUIRE_EQUAL( found_votes, 1 );
+      BOOST_REQUIRE_EQUAL( found_proposals, 2 );
+      BOOST_REQUIRE_EQUAL( found_votes, 6 );
     }
 
     /*
-      oo oo oo oo oo oo oo oo oo xx
+      oo oo oo oo oo oo oo oo xx xx
 
       oo oo oo oo oo oo oo oo oo xx
-      oo oo oo oo oo oo oo oo oo oo
-      oo oo oo oo oo oo oo oo oo oo
-      oo oo oo oo oo oo oo oo oo oo
-      oo oo oo oo oo oo oo oo oo oo
-      oo oo oo oo oo oo oo oo oo oo
+      oo oo oo oo oo oo oo oo oo xx
+      oo oo oo oo oo oo oo oo oo xx
+      oo oo oo oo oo oo oo oo oo xx
+      oo oo oo oo oo oo oo oo oo xx
+      oo oo oo oo oo oo oo oo oo xx
     */
     {
-      //Only the proposal P9 is removed.
+      //Proposals P8 and P9 (flagged as removed) are swept together with remaining P9 votes.
       generate_block();
 
       auto found_proposals = calc_proposals( proposal_idx, proposals_id );
