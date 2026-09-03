@@ -1500,19 +1500,19 @@ pytest = "*"
 
 [[package]]
 name = "pytest-rerunfailures"
-version = "14.0"
+version = "16.6.1"
 description = "pytest plugin to re-run tests to eliminate flaky failures"
 optional = false
-python-versions = ">=3.8"
+python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "pytest-rerunfailures-14.0.tar.gz", hash = "sha256:4a400bcbcd3c7a4ad151ab8afac123d90eca3abe27f98725dc4d9702887d2e92"},
-    {file = "pytest_rerunfailures-14.0-py3-none-any.whl", hash = "sha256:4197bdd2eaeffdbf50b5ea6e7236f47ff0e44d1def8dae08e409f536d84e7b32"},
+    {file = "pytest_rerunfailures-16.6.1-py3-none-any.whl", hash = "sha256:0c38d314a0a7e32795f2dbdeeb2b3d141ecf3d3abe10c8c32dae223d45ac7b3d"},
+    {file = "pytest_rerunfailures-16.6.1.tar.gz", hash = "sha256:20ac38d31f9319c4e8f43fe0d0e9c22755508e8e7987a88de6d7fd93fc6bdabb"},
 ]
 
 [package.dependencies]
 packaging = ">=17.1"
-pytest = ">=7.2"
+pytest = ">=8.2,<8.2.2 || >8.2.2"
 
 [[package]]
 name = "pytest-timeout"
@@ -2268,4 +2268,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.14,<4"
-content-hash = "0d27f40bccde0c4ff27318c9d1973d670f28d08160672b5d0ab59136c4d5e8b2"
+content-hash = "808c967f56275904a51f7aec95519aeb114b2edcb42f8afb20bdcc7ce596dfa1"
