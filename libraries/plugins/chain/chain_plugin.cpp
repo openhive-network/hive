@@ -42,6 +42,7 @@
 #include <chrono>
 #include <memory>
 #include <iostream>
+#include <atomic>
 #include <mutex>
 #include <condition_variable>
 #include <queue>
@@ -181,6 +182,17 @@ class chain_plugin_impl
     // A block further ahead than block_accept_lead_time, but no further than this, is held and
     // pushed once it comes within block_accept_lead_time. Anything beyond this is rejected.
     uint32_t allow_future_time = 5;
+
+    // Number of blocks currently parked in a hold inside check_time_in_block(), and the most that
+    // may be parked at once. Each held block pins an fc task (and its stack) plus the block body
+    // for up to allow_future_time - block_accept_lead_time seconds, so the count must be bounded
+    // or a peer could park an arbitrary amount of memory by flooding us with cheaply fabricated
+    // future-timestamped blocks (they are only validated after the hold). The honest network
+    // essentially never has more than one block in hold at a time (one block per slot, and a hold
+    // at all means its producer is over a second fast), so a small cap loses nothing; a block
+    // arriving with the cap reached is rejected exactly as a too-far-future block is.
+    std::atomic<uint32_t> held_block_count{0};
+    static constexpr uint32_t max_held_blocks = 4;
 
     std::shared_ptr< std::thread >   write_processor_thread;
 
@@ -2193,6 +2205,14 @@ void chain_plugin::check_time_in_block(const hive::chain::signed_block& block)
   const fc::time_point release_time = block_time - my->block_accept_lead_time;
   if (release_time > now)
   {
+    const uint32_t held_count = 1 + my->held_block_count.fetch_add(1, std::memory_order_relaxed);
+    BOOST_SCOPE_EXIT(this_) {
+      this_->my->held_block_count.fetch_sub(1, std::memory_order_relaxed);
+    } BOOST_SCOPE_EXIT_END
+    FC_ASSERT(held_count <= detail::chain_plugin_impl::max_held_blocks,
+              "Refusing to accept block ahead of local clock: ${held_count} blocks are already being held for their timestamps",
+              (held_count));
+
     const fc::microseconds hold_time = release_time - now;
     wlog("Block #${n} by ${w} has timestamp ${t}, ${ahead} ms ahead of local clock; holding it for ${hold} ms before applying",
          ("n", block.block_num())("w", block.witness)("t", block.timestamp)
