@@ -32,6 +32,6 @@
 #define HIVE_HARDFORK_1_29_STAMP_BLOCK_EXTENSION (HIVE_HARDFORK_1_29)
 // prevent overflow during change in downvote mana (issue #858)
 #define HIVE_HARDFORK_1_29_DOWNVOTE_MANA_OVERFLOW (HIVE_HARDFORK_1_29)
-// daily_pay is bounded and the maintenance payment is computed in 128-bit so it cannot overflow/halt the chain
+// daily_pay is bounded so the maintenance payment multiply cannot overflow and halt the chain
 #define HIVE_HARDFORK_1_29_FIX_DHF_DAILY_PAY_OVERFLOW (HIVE_HARDFORK_1_29)
 #endif
