@@ -294,8 +294,12 @@ mirrornet_node_build:
       # Apply published tags onto the pushed multi-arch manifest (no pull needed).
       SRC="registry.gitlab.syncad.com/hive/hive${IMAGE_PATH}:${CI_COMMIT_SHORT_SHA}"
       apply_tag() { docker buildx imagetools create -t "registry.gitlab.syncad.com/hive/hive${IMAGE_PATH}:$1" "$SRC"; }
-      [[ "$CI_COMMIT_BRANCH" == "develop" ]] && apply_tag latest || true
-      [[ "$CI_COMMIT_BRANCH" == "master" ]] && apply_tag stable || true
+      # ${CI_COMMIT_BRANCH:-}: this script runs under `set -u` and the variable is
+      # unset on tag pipelines, where the bare reference aborted the job before
+      # apply_tag "$CI_COMMIT_TAG" ran - every release tag pipeline (1.29.0-rc1,
+      # -rc2) failed here and never published the versioned image.
+      [[ "${CI_COMMIT_BRANCH:-}" == "develop" ]] && apply_tag latest || true
+      [[ "${CI_COMMIT_BRANCH:-}" == "master" ]] && apply_tag stable || true
       if [[ -n "${CI_COMMIT_TAG:-}" && "$CI_COMMIT_REF_PROTECTED" == "true" ]]; then apply_tag "$CI_COMMIT_TAG"; fi
 
 prepare_hived_image_multiarch:
