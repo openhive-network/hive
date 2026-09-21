@@ -3,6 +3,7 @@
 #include <hive/chain/block_log_artifacts.hpp>
 #include <hive/chain/block_storage_interface.hpp>
 #include <hive/chain/detail/block_attributes.hpp>
+#include <hive/chain/util/atomic_shared_ptr.hpp>
 #include <atomic>
 #include <deque>
 
@@ -204,7 +205,7 @@ namespace hive { namespace chain {
     // happen under the writer thread, never concurrently with slot swaps).
     struct atomic_block_log_ptr_t
     {
-      std::atomic< block_log_ptr_t > ptr;
+      atomic_shared_ptr< block_log > ptr;
       atomic_block_log_ptr_t() noexcept = default;
       atomic_block_log_ptr_t( block_log_ptr_t p ) noexcept : ptr( std::move( p ) ) {}
       atomic_block_log_ptr_t( const atomic_block_log_ptr_t& o ) noexcept : ptr( o.ptr.load() ) {}

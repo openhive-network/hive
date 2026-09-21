@@ -1,8 +1,9 @@
 #include <hive/chain/hive_fwd.hpp>
 
+#include <hive/chain/database.hpp>
+
 #include <hive/chain/util/dhf_helper.hpp>
 
-#include <hive/chain/database.hpp>
 #include <hive/chain/detail/state/account_object.hpp>
 
 namespace hive { namespace chain {

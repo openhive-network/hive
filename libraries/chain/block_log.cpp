@@ -6,6 +6,7 @@
 #include <hive/chain/full_block.hpp>
 #include <hive/chain/detail/block_attributes.hpp>
 #include <hive/chain/blockchain_worker_thread_pool.hpp>
+#include <hive/chain/util/atomic_shared_ptr.hpp>
 
 #include <atomic>
 #include <queue>
@@ -97,7 +98,7 @@ namespace hive { namespace chain {
   namespace detail {
     class block_log_impl {
       public:
-        std::atomic< std::shared_ptr< full_block_type > > head;
+        atomic_shared_ptr< full_block_type > head;
 
         // these don't change after opening, don't need locking
         int block_log_fd;
