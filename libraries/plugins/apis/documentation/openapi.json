@@ -3213,7 +3213,6 @@
                                     "created": "2020-03-17T23:30:54",
                                     "curator_payout_value": "0.000 HBD",
                                     "depth": 0,
-                                    "id": 96448339,
                                     "json_metadata": "{\"app\":\"steempeak/2020.03.6\",\"format\":\"markdown\",\"tags\":[\"communityfork\",\"hive\",\"steemcommunity\",\"steem\"],\"users\":[\"Gandalf\",\"hive\",\"djefferys\"],\"links\":[\"https://github.com/openhive-network/hive/releases\",\"https://hive.blog\",\"/@gandalf\",\"/@djefferys\",\"/trending/hiveisalive\",\"https://hive.io/\"],\"image\":[\"https://files.steempeak.com/file/steempeak/hiveio/4WaiXF2y-opengraph3x.png\"],\"description\":\"After weeks of hard teamwork, we're announcing the launch of the new Hive blockchain.\",\"countdown\":\"2020-03-20T14:00:00.000Z\"}",
                                     "last_payout": "2020-03-24T23:30:54",
                                     "last_update": "2020-03-20T02:51:15",
@@ -3316,7 +3315,6 @@
                                         "created": "2021-02-14T10:29:27",
                                         "curator_payout_value": "0.050 HBD",
                                         "depth": 1,
-                                        "id": 101868654,
                                         "json_metadata": "{\"app\":\"hiveblog/0.1\"}",
                                         "last_payout": "2021-02-21T10:29:27",
                                         "last_update": "2021-02-14T10:29:27",
@@ -7303,7 +7301,6 @@
                                 "example": {
                                     "votes": [
                                         {
-                                            "id": 0,
                                             "voter": "",
                                             "author": "",
                                             "permlink": "",
@@ -9371,7 +9368,6 @@
                                 "example": {
                                     "votes": [
                                         {
-                                            "id": 9,
                                             "voter": "dantheman",
                                             "author": "hiveio",
                                             "permlink": "firstpost",
@@ -13838,11 +13834,6 @@
             "active_votes_database_api": {
                 "type": "object",
                 "properties": {
-                    "id": {
-                        "type": "integer",
-                        "example": 12345,
-                        "description": "The ID of the vote."
-                    },
                     "voter": {
                         "type": "string",
                         "example": "hiveio",
@@ -13886,7 +13877,6 @@
                     }
                 },
                 "required": [
-                    "id",
                     "voter",
                     "author",
                     "permlink",
@@ -14528,9 +14518,6 @@
                     "depth": {
                         "type": "integer"
                     },
-                    "id": {
-                        "type": "integer"
-                    },
                     "json_metadata": {
                         "type": "string"
                     },
@@ -14605,7 +14592,6 @@
                     "created",
                     "curator_payout_value",
                     "depth",
-                    "id",
                     "json_metadata",
                     "last_payout",
                     "last_update",
@@ -22624,19 +22610,6 @@
             },
             "post_default": {
                 "allOf": [
-                    {
-                        "type": "object",
-                        "properties": {
-                            "id": {
-                                "type": "integer",
-                                "example": 1,
-                                "description": "Unique identifier for the resource; appears only when post_id is absent."
-                            }
-                        },
-                        "required": [
-                            "id"
-                        ]
-                    },
                     {
                         "$ref": "#/components/schemas/post_template"
                     },
