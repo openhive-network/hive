@@ -1542,7 +1542,7 @@
                     "bridge"
                 ],
                 "summary": "List community roles and labels for each account in the community. (Supported by Hivemind)",
-                "description": "Parameters:\n\n- `community`: A string representing the community category name.\n\n- `last`: A string representing the name of the subscriber for paging purposes (optional).\n\n- `limit`: An integer to limit the number of listed subscribers; default is 100. This parameter is optional.\n",
+                "description": "Parameters:\n\n- `community`: A string representing the community category name.\n\n- `last`: A string representing the name of the subscriber for paging purposes (optional).\n\n- `limit`: An integer to limit the number of listed roles (1-1000); default is 50. This parameter is optional.\n",
                 "operationId": "list_community_roles",
                 "requestBody": {
                     "content": {
@@ -9344,7 +9344,7 @@
                     "database_api"
                 ],
                 "summary": "Returns all votes, starting with the specified voter and/or author and permlink. (Supported by Hivemind)",
-                "description": "Parameters:\n\n- `start`: An array whose structure depends on the `order` parameter.\n  - For `by_comment_voter`: `start` can contain three optional values: `[author, permlink, voter]`. If one is blank, then all three must be blank.\n  - For `by_voter_comment`: `start` can contain three optional values: `[voter, author, permlink]`. If one is blank, then all three must be blank.\n\n- `limit`: An integer up to 1000, specifying the maximum number of results to return.\n\n- `order`: A string indicating the sorting method. Possible values:\n  - `by_comment_voter` \u2014 order by comment voter.\n  - `by_voter_comment` \u2014 order by voter comment.\n\nExamples:\n\n- `start = [\"\", \"\", \"\"]`, `limit = 10`, `order = \"by_comment_voter\"` \u2014 queries the first 10 votes, sorted by comment voter.\n\n- `start = [\"\", \"\", \"\"]`, `limit = 10`, `order = \"by_voter_comment\"` \u2014 queries the first 10 votes, sorted by voter comment.\n\n- `start = [\"xeroc\", \"vanteem-config\", \"\"]`, `limit = 10`, `order = \"by_comment_voter\"` \u2014 queries next 10 votes starting from the post @xeroc/vanteem-config, sorted by comment voter.\n\n- `start = [\"alice\", \"xeroc\", \"vanteem-config\"]`, `limit = 10`, `order = \"by_voter_comment\"` \u2014 queries next 10 votes starting at Alice on the post @xeroc/vanteem-config, sorted by voter comment.\n",
+                "description": "Parameters:\n\n- `start`: An array whose structure depends on the `order` parameter.\n  - For `by_comment_voter`: `start` can contain three optional values: `[author, permlink, voter]`. If one is blank, then all three must be blank.\n  - For `by_voter_comment`: `start` can contain three optional values: `[voter, author, permlink]`. If one is blank, then all three must be blank.\n\n- `limit`: An integer up to 1000, specifying the maximum number of results to return; defaults to 1000. This parameter is optional.\n\n- `order`: A string indicating the sorting method. Possible values:\n  - `by_comment_voter` \u2014 order by comment voter.\n  - `by_voter_comment` \u2014 order by voter comment.\n\nExamples:\n\n- `start = [\"\", \"\", \"\"]`, `limit = 10`, `order = \"by_comment_voter\"` \u2014 queries the first 10 votes, sorted by comment voter.\n\n- `start = [\"\", \"\", \"\"]`, `limit = 10`, `order = \"by_voter_comment\"` \u2014 queries the first 10 votes, sorted by voter comment.\n\n- `start = [\"xeroc\", \"vanteem-config\", \"\"]`, `limit = 10`, `order = \"by_comment_voter\"` \u2014 queries next 10 votes starting from the post @xeroc/vanteem-config, sorted by comment voter.\n\n- `start = [\"alice\", \"xeroc\", \"vanteem-config\"]`, `limit = 10`, `order = \"by_voter_comment\"` \u2014 queries next 10 votes starting at Alice on the post @xeroc/vanteem-config, sorted by voter comment.\n",
                 "operationId": "list_votes",
                 "requestBody": {
                     "content": {
@@ -13595,12 +13595,11 @@
                     "limit": {
                         "type": "integer",
                         "example": 100,
-                        "description": "The maximum number of notifications to return."
+                        "description": "The maximum number of notifications to return (1-100). If omitted, defaults to 100."
                     }
                 },
                 "required": [
-                    "account",
-                    "limit"
+                    "account"
                 ]
             },
             "account_notifications_response": {
@@ -15186,7 +15185,7 @@
             "condenser_get_content": {
                 "type": "object",
                 "properties": {
-                    "account": {
+                    "author": {
                         "type": "string",
                         "example": "hiveio"
                     },
@@ -15200,7 +15199,7 @@
                     }
                 },
                 "required": [
-                    "account",
+                    "author",
                     "permlink"
                 ]
             },
@@ -15210,7 +15209,7 @@
             "condenser_get_content_replies": {
                 "type": "object",
                 "properties": {
-                    "account": {
+                    "author": {
                         "type": "string",
                         "example": "hiveio"
                     },
@@ -15224,7 +15223,7 @@
                     }
                 },
                 "required": [
-                    "account",
+                    "author",
                     "permlink"
                 ]
             },
@@ -15285,7 +15284,7 @@
             "condenser_get_discussions_by_author_before_date": {
                 "type": "object",
                 "properties": {
-                    "account": {
+                    "author": {
                         "type": "string",
                         "example": "hiveio"
                     },
@@ -15312,7 +15311,7 @@
                     }
                 },
                 "required": [
-                    "account"
+                    "author"
                 ]
             },
             "condenser_get_discussions_by_comments": {
@@ -17784,9 +17783,13 @@
                             "description": "An array of strings representing the author and permlink of the comment to query.",
                             "minItems": 2,
                             "maxItems": 2
-                        }
+                        },
+                        "description": "At most 1000 author/permlink pairs."
                     }
-                }
+                },
+                "required": [
+                    "comments"
+                ]
             },
             "find_comments_response": {
                 "type": "object",
@@ -18563,8 +18566,7 @@
                     }
                 },
                 "required": [
-                    "name",
-                    "observer"
+                    "name"
                 ]
             },
             "get_community_response": {
@@ -19830,8 +19832,7 @@
                 },
                 "required": [
                     "author",
-                    "permlink",
-                    "observer"
+                    "permlink"
                 ]
             },
             "get_discussion_response": {
@@ -20333,9 +20334,7 @@
                     }
                 },
                 "required": [
-                    "sort",
-                    "tag",
-                    "observer"
+                    "sort"
                 ]
             },
             "get_ranked_posts_response": {
@@ -20570,7 +20569,8 @@
                     }
                 },
                 "required": [
-                    "account1"
+                    "account1",
+                    "account2"
                 ]
             },
             "get_relationship_between_accounts_response": {
@@ -21296,6 +21296,11 @@
             "list_community_roles": {
                 "type": "object",
                 "properties": {
+                    "community": {
+                        "type": "string",
+                        "example": "hive-123456",
+                        "description": "community category name."
+                    },
                     "last": {
                         "type": "string",
                         "example": "",
@@ -21304,12 +21309,7 @@
                     "limit": {
                         "type": "integer",
                         "example": 100,
-                        "description": "Limit number of listed communities, default: 100"
-                    },
-                    "community": {
-                        "type": "string",
-                        "example": "hive-123456",
-                        "description": "community category name."
+                        "description": "The maximum number of roles to return (1-1000). If omitted, defaults to 50."
                     }
                 },
                 "required": [
@@ -21415,12 +21415,10 @@
                 "properties": {
                     "limit": {
                         "type": "integer",
-                        "example": 10
+                        "example": 10,
+                        "description": "The maximum number of communities to return (1-25). If omitted, defaults to 25."
                     }
-                },
-                "required": [
-                    "limit"
-                ]
+                }
             },
             "list_pop_communities_response": {
                 "type": "array",
@@ -21535,6 +21533,11 @@
             "list_subscribers": {
                 "type": "object",
                 "properties": {
+                    "community": {
+                        "type": "string",
+                        "example": "hive-123456",
+                        "description": "community category name."
+                    },
                     "last": {
                         "type": "string",
                         "example": "",
@@ -21543,12 +21546,7 @@
                     "limit": {
                         "type": "integer",
                         "example": 100,
-                        "description": "Limit number of listed subscribers, default: 100"
-                    },
-                    "community": {
-                        "type": "string",
-                        "example": "hive-123456",
-                        "description": "community category name."
+                        "description": "The maximum number of subscribers to return (1-100). If omitted, defaults to 100."
                     }
                 },
                 "required": [
@@ -21613,7 +21611,36 @@
                 ]
             },
             "list_votes": {
-                "$ref": "#/components/schemas/start_limit_order"
+                "type": "object",
+                "properties": {
+                    "start": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "maxItems": 3,
+                        "example": [
+                            "",
+                            "",
+                            ""
+                        ],
+                        "description": "Starting position: [author, permlink, voter] for by_comment_voter, [voter, author, permlink] for by_voter_comment."
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "example": 10,
+                        "description": "The maximum number of votes to return (1-1000). If omitted, defaults to 1000."
+                    },
+                    "order": {
+                        "type": "string",
+                        "example": "by_comment_voter",
+                        "description": "Either by_comment_voter or by_voter_comment."
+                    }
+                },
+                "required": [
+                    "start",
+                    "order"
+                ]
             },
             "list_votes_response": {
                 "type": "object",
