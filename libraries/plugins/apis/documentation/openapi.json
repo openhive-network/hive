@@ -1240,7 +1240,7 @@
                     "bridge"
                 ],
                 "summary": "Get ranked posts. (Supported by Hivemind)",
-                "description": "Parameters:\n\n- `sort`: A string indicating the sorting method. Supported values:\n  - `trending`\n  - `hot`\n  - `created`\n  - `promoted`\n  - `payout`\n  - `payout_comments`\n  - `muted`\n\n- `tag`: A string representing any valid tag.\n\n- `observer`: A string representing any valid account or an empty string.\n",
+                "description": "Parameters:\n\n- `sort`: A string indicating the sorting method. Supported values:\n  - `trending`\n  - `hot`\n  - `created`\n  - `promoted`\n  - `payout`\n  - `payout_comments`\n  - `muted`\n\n- `start_author`, `start_permlink`: The last post of the previous page, for paging (optional).\n\n- `limit`: The maximum number of posts to retrieve. If omitted, defaults to 20.\n\n- `tag`: A string representing any valid tag (optional).\n\n- `observer`: A string representing any valid account or an empty string (optional).\n\n- `muted_reasons_filter`: An array of muted reason ids (see `bridge.list_muted_reasons_enum`); posts muted for any of them are excluded (optional).\n",
                 "operationId": "get_ranked_posts",
                 "requestBody": {
                     "content": {
@@ -2406,7 +2406,7 @@
                     "condenser_api"
                 ],
                 "summary": "Returns all votes for the given post. (Supported by Hivemind)",
-                "description": "Parameters:\n\n- `author`: A string representing the author of the content.\n\n- `permlink`: A string representing the permlink of the content.\n\nExamples:\n\n- `author = \"hiveio\"`, `permlink = \"firstpost\"` \u2014 queries votes for content with the slug @hiveio/firstpost.\n\n- `author = \"alice\"`, `permlink = \"a-post-by-alice\"` \u2014 queries votes for content with the slug @alice/a-post-by-alice.",
+                "description": "Parameters:\n\n- `author`: A string representing the author of the content.\n\n- `permlink`: A string representing the permlink of the content.\n\n- `observer`: An optional account name; votes cast by accounts muted by this account are left out.\n\nExamples:\n\n- `author = \"hiveio\"`, `permlink = \"firstpost\"` \u2014 queries votes for content with the slug @hiveio/firstpost.\n\n- `author = \"alice\"`, `permlink = \"a-post-by-alice\"` \u2014 queries votes for content with the slug @alice/a-post-by-alice.",
                 "operationId": "condenser_get_active_votes",
                 "requestBody": {
                     "content": {
@@ -5044,7 +5044,7 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/condenser_get_discussions_by_comments"
+                                "$ref": "#/components/schemas/condenser_get_replies_by_last_update"
                             }
                         }
                     },
@@ -7277,7 +7277,7 @@
                     "database_api"
                 ],
                 "summary": "Returns all votes for the given post. (Supported by Hivemind)",
-                "description": "Required (non-empty) parameters: author, permlink.\n\n- `author`: A string representing the author of the content. Examples:\n  - `\"hiveio\"` \u2014 queries votes for content authored by \"hiveio\".\n  - `\"alice\"` \u2014 queries votes for content authored by \"alice\".\n\n- `permlink`: A string representing the permalink of the content. Examples:\n  - `\"announcing-the-launch-of-hive-blockchain\"` \u2014 for the post @hiveio/announcing-the-launch-of-hive-blockchain.\n  - `\"a-post-by-alice\"` \u2014 for the post @alice/a-post-by-alice.\n",
+                "description": "Required (non-empty) parameters: author, permlink.\n\n- `author`: A string representing the author of the content. Examples:\n  - `\"hiveio\"` \u2014 queries votes for content authored by \"hiveio\".\n  - `\"alice\"` \u2014 queries votes for content authored by \"alice\".\n\n- `permlink`: A string representing the permalink of the content. Examples:\n  - `\"announcing-the-launch-of-hive-blockchain\"` \u2014 for the post @hiveio/announcing-the-launch-of-hive-blockchain.\n  - `\"a-post-by-alice\"` \u2014 for the post @alice/a-post-by-alice.\n\n- `observer`: An optional account name; votes cast by accounts muted by this account are left out.\n",
                 "operationId": "find_votes",
                 "requestBody": {
                     "content": {
@@ -9344,7 +9344,7 @@
                     "database_api"
                 ],
                 "summary": "Returns all votes, starting with the specified voter and/or author and permlink. (Supported by Hivemind)",
-                "description": "Parameters:\n\n- `start`: An array whose structure depends on the `order` parameter.\n  - For `by_comment_voter`: `start` can contain three optional values: `[author, permlink, voter]`. If one is blank, then all three must be blank.\n  - For `by_voter_comment`: `start` can contain three optional values: `[voter, author, permlink]`. If one is blank, then all three must be blank.\n\n- `limit`: An integer up to 1000, specifying the maximum number of results to return; defaults to 1000. This parameter is optional.\n\n- `order`: A string indicating the sorting method. Possible values:\n  - `by_comment_voter` \u2014 order by comment voter.\n  - `by_voter_comment` \u2014 order by voter comment.\n\nExamples:\n\n- `start = [\"\", \"\", \"\"]`, `limit = 10`, `order = \"by_comment_voter\"` \u2014 queries the first 10 votes, sorted by comment voter.\n\n- `start = [\"\", \"\", \"\"]`, `limit = 10`, `order = \"by_voter_comment\"` \u2014 queries the first 10 votes, sorted by voter comment.\n\n- `start = [\"xeroc\", \"vanteem-config\", \"\"]`, `limit = 10`, `order = \"by_comment_voter\"` \u2014 queries next 10 votes starting from the post @xeroc/vanteem-config, sorted by comment voter.\n\n- `start = [\"alice\", \"xeroc\", \"vanteem-config\"]`, `limit = 10`, `order = \"by_voter_comment\"` \u2014 queries next 10 votes starting at Alice on the post @xeroc/vanteem-config, sorted by voter comment.\n",
+                "description": "Parameters:\n\n- `start`: An array whose structure depends on the `order` parameter.\n  - For `by_comment_voter`: `start` can contain three optional values: `[author, permlink, voter]`. If one is blank, then all three must be blank.\n  - For `by_voter_comment`: `start` can contain three optional values: `[voter, author, permlink]`. If one is blank, then all three must be blank.\n\n- `limit`: An integer up to 1000, specifying the maximum number of results to return; defaults to 1000. This parameter is optional.\n\n- `order`: A string indicating the sorting method. Possible values:\n  - `by_comment_voter` \u2014 order by comment voter.\n  - `by_voter_comment` \u2014 order by voter comment.\n\n- `observer`: An optional account name; votes cast by accounts muted by this account are left out.\n\nExamples:\n\n- `start = [\"\", \"\", \"\"]`, `limit = 10`, `order = \"by_comment_voter\"` \u2014 queries the first 10 votes, sorted by comment voter.\n\n- `start = [\"\", \"\", \"\"]`, `limit = 10`, `order = \"by_voter_comment\"` \u2014 queries the first 10 votes, sorted by voter comment.\n\n- `start = [\"xeroc\", \"vanteem-config\", \"\"]`, `limit = 10`, `order = \"by_comment_voter\"` \u2014 queries next 10 votes starting from the post @xeroc/vanteem-config, sorted by comment voter.\n\n- `start = [\"alice\", \"xeroc\", \"vanteem-config\"]`, `limit = 10`, `order = \"by_voter_comment\"` \u2014 queries next 10 votes starting at Alice on the post @xeroc/vanteem-config, sorted by voter comment.\n",
                 "operationId": "list_votes",
                 "requestBody": {
                     "content": {
@@ -13592,6 +13592,16 @@
                         "example": "alice",
                         "description": "The name of the account to which the notification is sent."
                     },
+                    "min_score": {
+                        "type": "integer",
+                        "example": 25,
+                        "description": "Minimum score (0-100) of the returned notifications. If omitted, defaults to 25."
+                    },
+                    "last_id": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": "79307422396579840",
+                        "description": "Id of the last notification of the previous page; only older notifications are returned."
+                    },
                     "limit": {
                         "type": "integer",
                         "example": 100,
@@ -14946,7 +14956,7 @@
             },
             "condenser_get_active_votes": {
                 "type": "object",
-                "description": "Named parameter shape. Legacy condenser transport serializes these fields positionally as [author, permlink].",
+                "description": "Named parameter shape. Legacy condenser transport serializes these fields positionally as [author, permlink, observer].",
                 "properties": {
                     "author": {
                         "type": "string",
@@ -14955,6 +14965,11 @@
                     "permlink": {
                         "type": "string",
                         "example": "around-the-hive-reflections"
+                    },
+                    "observer": {
+                        "type": "string",
+                        "example": "alice",
+                        "description": "Optional account name; votes cast by accounts muted by this account are left out."
                     }
                 },
                 "required": [
@@ -15108,6 +15123,10 @@
                     "truncate_body": {
                         "type": "integer",
                         "example": 100
+                    },
+                    "filter_tags": {
+                        "type": "null",
+                        "description": "Not supported: hivemind rejects the request when it is set. Listed only because it precedes observer in the positional form of the arguments."
                     },
                     "observer": {
                         "type": "string",
@@ -15272,6 +15291,10 @@
                         "type": "integer",
                         "example": 0
                     },
+                    "filter_tags": {
+                        "type": "null",
+                        "description": "Not supported: hivemind rejects the request when it is set. Listed only because it precedes observer in the positional form of the arguments."
+                    },
                     "observer": {
                         "type": "string",
                         "example": "bob"
@@ -15315,6 +15338,38 @@
                 ]
             },
             "condenser_get_discussions_by_comments": {
+                "type": "object",
+                "properties": {
+                    "start_author": {
+                        "type": "string",
+                        "example": "steem"
+                    },
+                    "start_permlink": {
+                        "type": "string",
+                        "example": "around-the-hive-reflections"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "example": 10
+                    },
+                    "truncate_body": {
+                        "type": "integer",
+                        "example": 0
+                    },
+                    "filter_tags": {
+                        "type": "null",
+                        "description": "Not supported: hivemind rejects the request when it is set. Listed only because it precedes observer in the positional form of the arguments."
+                    },
+                    "observer": {
+                        "type": "string",
+                        "example": "bob"
+                    }
+                },
+                "required": [
+                    "start_author"
+                ]
+            },
+            "condenser_get_replies_by_last_update": {
                 "type": "object",
                 "properties": {
                     "start_author": {
@@ -18125,6 +18180,11 @@
                         "type": "string",
                         "example": "announcing-the-launch-of-hive-blockchain",
                         "description": "The permlink of the post to query."
+                    },
+                    "observer": {
+                        "type": "string",
+                        "example": "alice",
+                        "description": "Optional account name; votes cast by accounts muted by this account are left out."
                     }
                 },
                 "required": [
@@ -19828,6 +19888,19 @@
                     "observer": {
                         "type": "string",
                         "description": "The observer's account name, used to track who is viewing the discussion."
+                    },
+                    "muted_reasons_filter": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 4
+                        },
+                        "example": [
+                            0,
+                            3
+                        ],
+                        "description": "Excludes posts muted for any of the listed reasons (ids from bridge.list_muted_reasons_enum: 0 MUTED_COMMUNITY_MODERATION, 1 MUTED_COMMUNITY_TYPE, 2 MUTED_PARENT, 3 MUTED_REPUTATION, 4 MUTED_ROLE_COMMUNITY). If omitted or empty, no posts are excluded."
                     }
                 },
                 "required": [
@@ -20322,6 +20395,21 @@
                         "example": "trending",
                         "description": "The sorting method for the posts (e.g., trending, hot, new)."
                     },
+                    "start_author": {
+                        "type": "string",
+                        "example": "",
+                        "description": "Author of the last post of the previous page, for paging; use together with start_permlink."
+                    },
+                    "start_permlink": {
+                        "type": "string",
+                        "example": "",
+                        "description": "Permlink of the last post of the previous page, for paging."
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "example": 20,
+                        "description": "The maximum number of posts to retrieve. If omitted, defaults to 20."
+                    },
                     "tag": {
                         "type": "string",
                         "example": "hive",
@@ -20331,6 +20419,19 @@
                         "type": "string",
                         "example": "user123",
                         "description": "The user observing the posts."
+                    },
+                    "muted_reasons_filter": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 4
+                        },
+                        "example": [
+                            0,
+                            3
+                        ],
+                        "description": "Excludes posts muted for any of the listed reasons (ids from bridge.list_muted_reasons_enum: 0 MUTED_COMMUNITY_MODERATION, 1 MUTED_COMMUNITY_TYPE, 2 MUTED_PARENT, 3 MUTED_REPUTATION, 4 MUTED_ROLE_COMMUNITY). If omitted or empty, no posts are excluded."
                     }
                 },
                 "required": [
@@ -21635,6 +21736,11 @@
                         "type": "string",
                         "example": "by_comment_voter",
                         "description": "Either by_comment_voter or by_voter_comment."
+                    },
+                    "observer": {
+                        "type": "string",
+                        "example": "alice",
+                        "description": "Optional account name; votes cast by accounts muted by this account are left out."
                     }
                 },
                 "required": [
@@ -22669,22 +22775,22 @@
                     "permlink": {
                         "type": "string",
                         "example": "around-the-hive-reflections",
-                        "description": "The timestamp of the last read notification."
+                        "description": "The permlink of the post for which to retrieve notifications."
                     },
                     "min_score": {
                         "type": "integer",
                         "example": 0,
-                        "description": "Minimum score threshold for notifications."
+                        "description": "Minimum score (0-100) of the returned notifications. If omitted, defaults to 25."
                     },
                     "last_id": {
-                        "type": "integer",
-                        "example": 0,
-                        "description": "The ID of the last notification received."
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": "80012902991396864",
+                        "description": "Id of the last notification of the previous page; only older notifications are returned."
                     },
                     "limit": {
                         "type": "integer",
                         "example": 10,
-                        "description": "The maximum number of notifications to retrieve."
+                        "description": "The maximum number of notifications to retrieve (1-100). If omitted, defaults to 100."
                     }
                 },
                 "required": [
