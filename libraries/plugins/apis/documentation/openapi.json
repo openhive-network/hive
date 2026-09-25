@@ -530,7 +530,7 @@
                     "bridge"
                 ],
                 "summary": "Account notifications. (Supported by Hivemind)",
-                "description": "Supported values for the `type` parameter:\n\n- `new_community`: A new community was created.\n- `set_role`: A mod or admin adds a role to an account.\n- `set_props`: Properties are set for a community.\n- `set_label`: A title, badge, or label has been set for an account.\n- `mute_post`: A post has been muted, with a reason.\n- `unmute_post`: A post has been unmuted, with a reason.\n- `pin_post`: A post has been pinned.\n- `unpin_post`: A post has been unpinned.\n- `flag_post`: A post has been flagged by a member, with a reason.\n- `error`: Provides feedback to developers for operations that cannot be interpreted.\n- `subscribe`: An account has subscribed to a community.\n- `reply`: A post has been replied to.\n- `reblog`: A post has been reblogged (shared again).\n- `follow`: An account has followed another account.\n- `mention`: An author mentions an account.\n- `vote`: A voter votes for an author.\n\n*Note:* The score value associated with each operation is based on the originating account rank.\n",
+                "description": "Supported values for the `type` parameter:\n\n- `new_community`: A new community was created.\n- `set_role`: A mod or admin adds a role to an account.\n- `set_props`: Properties are set for a community.\n- `set_label`: A title, badge, or label has been set for an account.\n- `mute_post`: A post has been muted, with a reason.\n- `unmute_post`: A post has been unmuted, with a reason.\n- `pin_post`: A post has been pinned.\n- `unpin_post`: A post has been unpinned.\n- `flag_post`: A post has been flagged by a member, with a reason.\n- `error`: Provides feedback to developers for operations that cannot be interpreted.\n- `subscribe`: An account has subscribed to a community.\n- `reply`: A post has been replied to.\n- `reblog`: A post has been reblogged (shared again).\n- `follow`: An account has followed another account.\n- `mention`: An author mentions an account.\n- `vote`: A voter votes for an author.\n\n*Note:* The score value associated with each operation is based on the originating account rank.\n\nNotifications are returned newest first. When there are no matching notifications, the result is null rather than an empty array.\n",
                 "operationId": "account_notifications",
                 "requestBody": {
                     "content": {
@@ -553,15 +553,15 @@
                                 "example": [
                                     {
                                         "date": "2025-08-04T03:32:51",
-                                        "id": 9024595,
-                                        "msg": "@beggars mentioned you and 1 others",
+                                        "id": "79307422396579840",
+                                        "msg": "@beggars mentioned you and 1 other",
                                         "score": 61,
                                         "type": "mention",
                                         "url": "@beggars/beeline-wallet-cli-mega-updates-plugin-system-themes-and-more"
                                     },
                                     {
                                         "date": "2025-08-02T12:07:48",
-                                        "id": 8905222,
+                                        "id": "79269330600067072",
                                         "msg": "@beggars mentioned you and 9 others",
                                         "score": 61,
                                         "type": "mention",
@@ -729,7 +729,6 @@
                                 },
                                 "example": {
                                     "about": "",
-                                    "avatar_url": "",
                                     "context": {
                                         "role": "guest",
                                         "subscribed": false,
@@ -1517,7 +1516,6 @@
                                         "admins": [
                                             "jeffjagoe"
                                         ],
-                                        "avatar_url": "",
                                         "context": {},
                                         "created_at": "2021-01-27 22:30:54",
                                         "id": 1432837,
@@ -1799,6 +1797,7 @@
                     "bridge"
                 ],
                 "summary": "Gets a post notifications. (Supported by Hivemind)",
+                "description": "Notifications are returned newest first. When there are no matching notifications, the result is null rather than an empty array.\n",
                 "operationId": "post_notifications",
                 "requestBody": {
                     "content": {
@@ -1821,7 +1820,7 @@
                                 "example": [
                                     {
                                         "date": "2025-09-03T13:34:51",
-                                        "id": 11041898,
+                                        "id": "80012902991396864",
                                         "msg": "@ace108 voted on your post ($0.19)",
                                         "score": 50,
                                         "type": "vote",
@@ -1829,7 +1828,7 @@
                                     },
                                     {
                                         "date": "2025-09-03T13:18:57",
-                                        "id": 11041165,
+                                        "id": "80012646903971840",
                                         "msg": "@alpha-omega voted on your post ($0.05)",
                                         "score": 25,
                                         "type": "vote",
@@ -13605,10 +13604,17 @@
                 ]
             },
             "account_notifications_response": {
-                "type": "array",
-                "items": {
-                    "$ref": "#/components/schemas/notification"
-                }
+                "anyOf": [
+                    {
+                        "type": "null"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/notification"
+                        }
+                    }
+                ]
             },
             "account_recovery": {
                 "type": "object",
@@ -14649,12 +14655,8 @@
                         "type": "array",
                         "items": {
                             "type": "string"
-                        }
-                    },
-                    "avatar_url": {
-                        "type": "string",
-                        "format": "uri",
-                        "example": "https://example.com/avatar.jpg"
+                        },
+                        "description": "Names of the community admins; omitted when the community has no admins."
                     },
                     "context": {
                         "$ref": "#/components/schemas/context"
@@ -14707,8 +14709,6 @@
                 },
                 "required": [
                     "about",
-                    "admins",
-                    "avatar_url",
                     "context",
                     "created_at",
                     "id",
@@ -14729,10 +14729,6 @@
                     "about": {
                         "type": "string",
                         "description": "A brief description of the community."
-                    },
-                    "avatar_url": {
-                        "type": "string",
-                        "description": "The URL of the community's avatar image."
                     },
                     "context": {
                         "$ref": "#/components/schemas/context",
@@ -14804,7 +14800,6 @@
                 },
                 "required": [
                     "about",
-                    "avatar_url",
                     "context",
                     "created_at",
                     "description",
@@ -21849,8 +21844,9 @@
                         "description": "The date when the notification was created."
                     },
                     "id": {
-                        "type": "integer",
-                        "description": "The unique identifier for the notification."
+                        "type": "string",
+                        "example": "79307422396579840",
+                        "description": "The unique identifier for the notification. It is a 64-bit, time-ordered value serialized as a string, because JSON parsers may lose precision on integers of this size."
                     },
                     "msg": {
                         "type": "string",
@@ -22672,10 +22668,17 @@
                 ]
             },
             "post_notifications_response": {
-                "type": "array",
-                "items": {
-                    "$ref": "#/components/schemas/notification"
-                }
+                "anyOf": [
+                    {
+                        "type": "null"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/notification"
+                        }
+                    }
+                ]
             },
             "post_voting_power": {
                 "$ref": "#/components/schemas/balance"
