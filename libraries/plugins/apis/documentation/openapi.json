@@ -14273,7 +14273,7 @@
                         "type": "string",
                         "example": "hiveio"
                     },
-                    "reblog_on": {
+                    "reblogged_on": {
                         "type": "string",
                         "format": "date-time",
                         "example": "1970-01-01T00:00:00",
@@ -14288,7 +14288,7 @@
                     "author",
                     "permlink",
                     "entry_id",
-                    "reblog_on",
+                    "reblogged_on",
                     "blog"
                 ]
             },
@@ -22457,15 +22457,9 @@
                         "description": "The body content of the post."
                     },
                     "json_metadata": {
-                        "type": "object",
-                        "example": {
-                            "tags": [
-                                "hive",
-                                "blockchain"
-                            ],
-                            "app": "hive/0.1"
-                        },
-                        "description": "JSON metadata associated with the post, containing additional information like tags and application used."
+                        "type": "string",
+                        "example": "{\"tags\":[\"hive\",\"blockchain\"],\"app\":\"hive/0.1\"}",
+                        "description": "JSON metadata associated with the post, containing additional information like tags and application used, serialized as a JSON string."
                     },
                     "created": {
                         "type": "string",
@@ -22630,6 +22624,19 @@
                     },
                     {
                         "$ref": "#/components/schemas/post_optional"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "net_rshares": {
+                                "$ref": "#/components/schemas/hive_int",
+                                "example": 1000,
+                                "description": "The net rshares (relative shares) of the post; 0 once the post is paid out."
+                            }
+                        },
+                        "required": [
+                            "net_rshares"
+                        ]
                     }
                 ]
             },
