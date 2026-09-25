@@ -14493,10 +14493,7 @@
                         "$ref": "#/components/schemas/hive_int"
                     },
                     "beneficiaries": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/beneficiaries"
-                        }
+                        "$ref": "#/components/schemas/beneficiaries"
                     },
                     "body": {
                         "type": "string"
@@ -22174,10 +22171,7 @@
                         "description": "The URL of the post."
                     },
                     "beneficiaries": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/beneficiaries"
-                        },
+                        "$ref": "#/components/schemas/beneficiaries",
                         "description": "An array of beneficiary objects associated with the post."
                     },
                     "max_accepted_payout": {
@@ -22531,10 +22525,7 @@
                         "description": "The title of the root post."
                     },
                     "beneficiaries": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/beneficiaries"
-                        },
+                        "$ref": "#/components/schemas/beneficiaries",
                         "description": "An array of beneficiary objects associated with the post."
                     },
                     "max_accepted_payout": {
