@@ -59,6 +59,13 @@ _WITNESS_PROPERTIES_FIELDS: Final = (
 )
 
 _KNOWN_DUPLICATE_GROUPS_BY_API: Final[dict[str, tuple[SemanticModelAlias, ...]]] = {
+    "bridge": (
+        SemanticModelAlias(
+            "Notification",
+            ("AccountNotificationsResponseItem", "PostNotificationsResponseItem"),
+            emit_compatibility_aliases=False,
+        ),
+    ),
     "database_api": (
         SemanticModelAlias("Account", ("Account", "Account1"), emit_compatibility_aliases=False),
         SemanticModelAlias("Witness", ("Witness", "Witness1"), emit_compatibility_aliases=False),
