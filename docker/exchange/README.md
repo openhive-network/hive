@@ -17,10 +17,11 @@ procedure, and a fresh volume bootstraps itself.
 
 - Docker Engine with Compose v2.24 or newer.
 - 16 GB of RAM (32 GB recommended).
-- About 1 TB of fast **local** storage such as NVMe. The block log is ~550 GB and
-  growing, the state file ~25 GB, and account history depends on how many accounts
-  you track. Network-attached storage (for example AWS EBS) is too slow for the
-  initial replay; use an instance type with a physically attached NVMe.
+- Fast **local** storage such as NVMe. A node with a block log needs about 1 TB:
+  the block log is ~550 GB and growing, the state file ~5 GB in use (sparse, 8 GB
+  nominal), and account history depends on how many accounts you track. A
+  snapshot-only node needs a few tens of GB. Network-attached storage (for example
+  AWS EBS) is too slow for a replay; use an instance with physically attached NVMe.
 - Outbound internet access for the P2P network and the block log download.
   Accepting inbound connections on TCP 2001 helps the network but is optional.
 
@@ -39,12 +40,31 @@ procedure, and a fresh volume bootstraps itself.
    docker compose logs -f hived
    ```
 
-On the first start the container downloads the block log named by `BLOCK_LOG_URL`
-(~550 GB, resumable, safe to interrupt) into its data volume, then replays it.
-A replay takes one to two days on NVMe and ends with `Done reindexing`; after
-that hived fetches the remaining blocks from the P2P network. Set
-`BLOCK_LOG_URL=` (empty) in `.env` to skip the download and sync everything from
-the P2P network instead, which is much slower.
+The first start bootstraps the node from whichever source `.env` names, and later
+starts leave the data alone, so the command never changes:
+
+- **Block log (default, recommended).** With `BLOCK_LOG_URL` set, the container
+  downloads the block log (~550 GB, resumable, safe to interrupt) into its data
+  volume and replays it. A replay takes one to two days on NVMe and ends with
+  `Done reindexing`; after that hived fetches the remaining blocks from the P2P
+  network. The node then holds every block and can be replayed again later.
+- **Snapshot.** With `SNAPSHOT_URL` set instead, the container downloads a state
+  snapshot (~6 GB), loads it in a couple of minutes, and syncs forward from the
+  snapshot's date at roughly a thousand blocks per second. The published exchange
+  snapshot already contains account history for the major exchange accounts (see
+  the `example-exchange-config.ini` published next to it); it is only useful if
+  yours is among them, because history before the snapshot cannot be recovered
+  without a block log. A snapshot-only node keeps no block log: it serves state,
+  account history and the head block, but `get_block` fails for older blocks with
+  "has been pruned", and it cannot replay. Use a snapshot made by the same hived
+  version you run.
+- **Snapshot and block log.** With both set, the container downloads both, loads
+  the snapshot, and hived replays the block log forward from the snapshot's block
+  on its own. Same download as the block log alone, but the replay shrinks from
+  the whole chain to the months since the snapshot, and the node keeps every block.
+- **Neither.** With both empty the node syncs from genesis over P2P, which takes
+  days and is the slowest option. Add `block-log-split = 0` to `config.ini` to do
+  that without storing a block log.
 
 `docker compose ps` shows the node as `healthy` once its head block is at most
 `HIVED_HEALTHCHECK_MAX_BLOCK_AGE` seconds old. Until then it reports `starting`
@@ -101,7 +121,7 @@ so the directory must be writable by that user: `chown 1000 <dir>`, or add
 the directory's owner instead.
 
 The state file can live in RAM for a faster replay: bind `hived-shm` to a
-directory on a host tmpfs such as `/dev/shm/hived` (allow 30 GB). It survives
+directory on a host tmpfs such as `/dev/shm/hived` (allow 10 GB). It survives
 container restarts but not a host reboot, after which hived replays from the
 block log. Do not use a compose `tmpfs:` mount for it; that is discarded every
 time the container is recreated.
@@ -120,6 +140,18 @@ The same `--force-replay` step is needed after changing the tracked accounts in
 `config.ini`. For a release that needs a replay, consider running the upgrade on a
 second machine and switching over once it has caught up, to avoid downtime.
 
+A snapshot-only node has no block log to replay from. When a release needs a replay,
+or the tracked accounts change, it starts over from a fresh snapshot: stop the
+stack, delete the state volume and the unpacked snapshot, point `SNAPSHOT_URL`
+at a snapshot made by the new version, and start again:
+
+```
+docker compose down
+docker volume rm hived-exchange_hived-shm
+docker compose run --rm --entrypoint rm hived -rf /home/hived/datadir/snapshot
+docker compose up -d
+```
+
 ## Troubleshooting
 
 - `docker compose logs hived` shows hived's output; the same log is written to
@@ -129,6 +161,9 @@ second machine and switching over once it has caught up, to avoid downtime.
 - `unhealthy` with `still syncing` in `docker inspect` output is normal until the
   node has caught up. Raise `HIVED_HEALTHCHECK_MAX_BLOCK_AGE` if your monitoring
   is stricter than the network's block interval warrants.
+- `Block ... has been pruned` from `get_block` means the node was bootstrapped
+  from a snapshot and only holds its head block; use account history calls, or
+  bootstrap from a block log if your integration scans blocks.
 - `docker compose down -v` deletes the volumes, including the block log. Plain
   `docker compose down` keeps them.
 

@@ -15,6 +15,7 @@ services:
     environment:
       SHM_DIR: /home/hived/shm_dir
       BLOCK_LOG_URL: ${BLOCK_LOG_URL:-}
+      SNAPSHOT_URL: ${SNAPSHOT_URL:-}
       HIVED_HEALTHCHECK_MAX_BLOCK_AGE: ${HIVED_HEALTHCHECK_MAX_BLOCK_AGE:-120}
     ports:
       - "${P2P_PORT:-2001}:2001"

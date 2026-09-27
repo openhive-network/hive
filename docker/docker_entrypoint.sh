@@ -128,6 +128,65 @@ bootstrap_block_log() {
   fi
 }
 
+######### Snapshot bootstrap #########
+# SNAPSHOT_URL: URL of a .tgz produced by hived's state_snapshot plugin. On a first
+# start (no state file yet) it is downloaded, unpacked into $DATADIR/snapshot and
+# loaded with --load-snapshot, so a node comes up at the snapshot's block instead of
+# replaying from genesis. Combined with BLOCK_LOG_URL the block log is kept and hived
+# replays it forward from the snapshot's block by itself. Without a block log the
+# node runs memory-only (block-log-split=0): it serves the chain state and account
+# history, but not historical blocks, and it cannot replay later.
+SNAPSHOT_DIR="$DATADIR/snapshot"
+
+# Name of the (single) unpacked snapshot directory under $SNAPSHOT_DIR, if any.
+find_snapshot_name() {
+  local entry
+  for entry in "$SNAPSHOT_DIR"/*/; do
+    [[ -d "$entry" ]] || continue
+    basename "$entry"
+    return 0
+  done
+  return 1
+}
+
+bootstrap_snapshot() {
+  [[ -n "${SNAPSHOT_URL:-}" ]] || return 0
+  local arg
+  if ! has_block_log; then
+    for arg in "${HIVED_ARGS[@]}"; do
+      case "$arg" in
+        --block-log-split*)
+          echo "A snapshot node without a block log needs block-log-split=0, which the entrypoint sets; drop --block-log-split from the arguments. Exiting."
+          exit 1 ;;
+      esac
+    done
+    HIVED_ARGS+=("--block-log-split=0")
+  fi
+  if [[ -f "$SHM_DIR/shared_memory.bin" ]]; then
+    return 0 # state exists: the snapshot was loaded on an earlier start
+  fi
+  for arg in "${HIVED_ARGS[@]}"; do
+    [[ "$arg" == --load-snapshot* ]] && return 0
+  done
+  local archive name
+  archive="$SNAPSHOT_DIR/$(basename "$SNAPSHOT_URL")"
+  mkdir -p "$SNAPSHOT_DIR"
+  if ! name=$(find_snapshot_name); then
+    check_free_space "$SNAPSHOT_URL" "$archive"
+    fetch_file "$SNAPSHOT_URL" "$archive"
+    echo "Unpacking $(basename "$archive") into ${SNAPSHOT_DIR}"
+    tar --extract --gzip --file="$archive" --directory="$SNAPSHOT_DIR"
+    rm -f "$archive"
+    name=$(find_snapshot_name) || true
+  fi
+  if [[ -z "$name" ]]; then
+    echo "No snapshot directory found under ${SNAPSHOT_DIR} after unpacking ${SNAPSHOT_URL}. Exiting."
+    exit 1
+  fi
+  echo "Loading snapshot ${name} (the ${SNAPSHOT_DIR} directory can be deleted once the node is synced)."
+  HIVED_ARGS+=("--load-snapshot=$name")
+}
+
 ######### Replay detection #########
 # hived refuses to start when its state lags the block log (a downloaded or copied-in
 # block log, or a crash between state flushes) unless --replay-blockchain is given,
@@ -154,6 +213,7 @@ HIVED_ARGS+=("$@")
 export HIVED_ARGS
 
 bootstrap_block_log
+bootstrap_snapshot
 maybe_add_replay_arg
 
 run_instance() {
