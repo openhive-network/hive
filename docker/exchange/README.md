@@ -45,9 +45,9 @@ starts leave the data alone, so the command never changes:
 
 - **Block log (default, recommended).** With `BLOCK_LOG_URL` set, the container
   downloads the block log (~550 GB, resumable, safe to interrupt) into its data
-  volume and replays it. A replay takes one to two days on NVMe and ends with
-  `Done reindexing`; after that hived fetches the remaining blocks from the P2P
-  network. The node then holds every block and can be replayed again later.
+  volume and replays it. A replay finishes in well under a day on fast NVMe and
+  ends with `Done reindexing`; after that hived fetches the remaining blocks from
+  the P2P network. The node then holds every block and can be replayed again later.
 - **Snapshot.** With `SNAPSHOT_URL` set instead, the container downloads a state
   snapshot (~6 GB), loads it in a couple of minutes, and syncs forward from the
   snapshot's date at roughly a thousand blocks per second. The published exchange
@@ -62,9 +62,11 @@ starts leave the data alone, so the command never changes:
   the snapshot, and hived replays the block log forward from the snapshot's block
   on its own. Same download as the block log alone, but the replay shrinks from
   the whole chain to the months since the snapshot, and the node keeps every block.
-- **Neither.** With both empty the node syncs from genesis over P2P, which takes
-  days and is the slowest option. Add `block-log-split = 0` to `config.ini` to do
-  that without storing a block log.
+- **Neither.** With both empty the node syncs from genesis over P2P. That is
+  slower than a replay because every block's signatures are verified, on the
+  order of a day on a fast machine, but it needs no download: started today, it
+  is done tomorrow either way. Add `block-log-split = 0` to `config.ini` to do
+  that without storing a block log at all.
 
 `docker compose ps` shows the node as `healthy` once its head block is at most
 `HIVED_HEALTHCHECK_MAX_BLOCK_AGE` seconds old. Until then it reports `starting`
