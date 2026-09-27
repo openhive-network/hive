@@ -1,0 +1,81 @@
+# Exchange node: one hived with account history for the exchange's own accounts,
+# and an optional cli_wallet daemon. Configuration lives in .env and config.ini;
+# see README.md in this directory.
+
+name: hived-exchange
+
+services:
+  hived:
+    image: ${HIVED_IMAGE:-hiveio/hive}:${HIVED_VERSION:?set HIVED_VERSION in .env}
+    restart: unless-stopped
+    init: true
+    # hived flushes its state on shutdown; give it time before docker kills it.
+    stop_grace_period: 3m
+    command: "--config=/home/hived/config.ini ${HIVED_EXTRA_ARGS:-}"
+    environment:
+      SHM_DIR: /home/hived/shm_dir
+      BLOCK_LOG_URL: ${BLOCK_LOG_URL:-}
+      HIVED_HEALTHCHECK_MAX_BLOCK_AGE: ${HIVED_HEALTHCHECK_MAX_BLOCK_AGE:-120}
+    ports:
+      - "${P2P_PORT:-2001}:2001"
+      - "${API_BIND_ADDRESS:-127.0.0.1}:${HTTP_PORT:-8091}:8091"
+      - "${API_BIND_ADDRESS:-127.0.0.1}:${WS_PORT:-8090}:8090"
+    volumes:
+      - hived-data:/home/hived/datadir
+      - hived-shm:/home/hived/shm_dir
+      - ./config.ini:/home/hived/config.ini:ro
+    healthcheck:
+      test: ["CMD", "/home/hived/scripts/hived_healthcheck.sh"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5m
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "5"
+
+  cli_wallet:
+    profiles:
+      - wallet
+    image: ${HIVED_IMAGE:-hiveio/hive}:${HIVED_VERSION:?set HIVED_VERSION in .env}
+    restart: unless-stopped
+    entrypoint: ["/home/hived/bin/cli_wallet"]
+    command:
+      - --server-rpc-endpoint=ws://hived:8090
+      - --retry-server-connection
+      - --wallet-file=/home/hived/datadir/wallet.json
+      - --daemon
+      - --rpc-http-endpoint=0.0.0.0:8093
+      - --rpc-http-allowip=${CLI_WALLET_ALLOW_IP:-0.0.0.0}
+    depends_on:
+      - hived
+    ports:
+      - "${CLI_WALLET_BIND_ADDRESS:-127.0.0.1}:${CLI_WALLET_PORT:-8093}:8093"
+    volumes:
+      # wallet.json lives here, in its own volume; only this service can see it.
+      - wallet:/home/hived/datadir
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+volumes:
+  # Named volumes are managed by docker and need no preparation on the host. To
+  # place one on a specific disk instead (hived needs fast local storage), point it
+  # at an existing directory:
+  #
+  #   hived-data:
+  #     driver_opts:
+  #       type: none
+  #       o: bind
+  #       device: /nvme/hived/datadir
+  #
+  # The state file (hived-shm) can live in RAM for a faster sync by binding it to a
+  # tmpfs directory on the host such as /dev/shm/hived. A compose `tmpfs:` mount is
+  # NOT suitable: it is discarded whenever the container is recreated.
+  hived-data:
+  hived-shm:
+  wallet:
