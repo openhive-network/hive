@@ -18,6 +18,11 @@ if ! response=$(wget --quiet --timeout=5 --tries=1 --output-document=- \
   exit 1
 fi
 
+if [[ "$response" == *'"error"'* ]]; then
+  echo "hived returned an error: $(sed -n 's/.*"message":"\([^"]*\)".*/\1/p' <<<"$response")"
+  exit 1
+fi
+
 head_num=$(sed -n 's/.*"head_block_number":\([0-9]*\).*/\1/p' <<<"$response")
 head_time=$(sed -n 's/.*"time":"\([0-9T:-]*\)".*/\1/p' <<<"$response")
 if [[ -z "$head_num" || -z "$head_time" ]]; then

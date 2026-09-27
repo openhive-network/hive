@@ -75,6 +75,7 @@ The image can also be started by hand. [run_hived_img.sh](scripts/run_hived_img.
 Environment variables understood by the image's entrypoint:
 
 - `BLOCK_LOG_URL`: URL of a monolithic `block_log` to download on the first start when the data directory holds no block log yet (its `.artifacts` sidecar is fetched from `BLOCK_LOG_ARTIFACTS_URL`, default `BLOCK_LOG_URL.artifacts`).
+- `SNAPSHOT_URL`: URL of a `.tgz` state snapshot (as produced by `--dump-snapshot`) to download and load on the first start instead of replaying from genesis. Without a block log it implies `block-log-split=0` (no block log is kept); with `BLOCK_LOG_URL` the block log is kept and replayed forward from the snapshot.
 - `HIVED_AUTO_REPLAY`: the entrypoint adds `--replay-blockchain` whenever a block log is present and no replay mode was requested, so a downloaded or copied-in block log is replayed without further action. Set to `0` to disable.
 - `HIVED_UID`: run hived as this UID, for bind-mounted directories owned by a user other than 1000.
 - `P2P_ENDPOINT`, `WS_ENDPOINT`, `HTTP_ENDPOINT`: listening endpoints inside the container.
