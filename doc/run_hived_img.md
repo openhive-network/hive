@@ -1,3 +1,5 @@
+> **Note:** for a node deployed with Docker Compose, which needs none of the options below, see [docker/exchange](/docker/exchange). This script remains for running the image by hand.
+
 General usage: `run_hived_img.sh <docker_img> [OPTION[=VALUE]]... [<hived_option>]...`
 
 `run_hived_img.sh` can take the following parameters:
