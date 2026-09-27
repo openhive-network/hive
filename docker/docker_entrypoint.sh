@@ -67,9 +67,94 @@ cleanup () {
   echo "Cleanup actions done."
 }
 
+######### Block log bootstrap #########
+BLOCKCHAIN_DIR="$DATADIR/blockchain"
+
+# True when the blockchain directory already holds a block log: the monolithic
+# file or at least one split part.
+has_block_log() {
+  [[ -f "$BLOCKCHAIN_DIR/block_log" ]] && return 0
+  local part
+  for part in "$BLOCKCHAIN_DIR"/block_log_part.*; do
+    [[ -f "$part" ]] && return 0
+  done
+  return 1
+}
+
+# Resumable download of one file. The transfer lands in "<target>.partial" and is
+# renamed only after wget succeeds, so a container restarted mid-download resumes
+# instead of starting hived on a truncated file.
+fetch_file() {
+  local url="$1" target="$2"
+  local partial="${target}.partial"
+  echo "Downloading ${url} -> ${target}"
+  wget --continue --tries=20 --waitretry=30 --read-timeout=60 --progress=dot:giga \
+       --output-document="$partial" "$url" || return 1
+  mv -f "$partial" "$target"
+}
+
+# Refuse to start a download that cannot fit. Skipped when the server sends no size.
+check_free_space() {
+  local url="$1" target="$2"
+  local size have avail
+  size=$(wget --spider --server-response --tries=3 "$url" 2>&1 \
+         | sed -n 's/^ *Content-Length: *\([0-9]*\).*/\1/p' | tail -1) || true
+  [[ -n "$size" ]] || return 0
+  have=$(stat -c %s "${target}.partial" 2>/dev/null || echo 0)
+  avail=$(df --block-size=1 --output=avail "$(dirname "$target")" | tail -1)
+  if (( avail + have < size )); then
+    echo "Not enough free space for ${url}: need $(numfmt --to=iec "$size"), have $(numfmt --to=iec "$((avail + have))"). Exiting."
+    exit 1
+  fi
+}
+
+# BLOCK_LOG_URL: URL of a monolithic block_log to fetch on first start, so a fresh
+# volume bootstraps itself instead of syncing from genesis over P2P. Its .artifacts
+# sidecar is fetched from BLOCK_LOG_ARTIFACTS_URL (default: BLOCK_LOG_URL + ".artifacts");
+# when that is unavailable hived rebuilds it, which takes hours for a full block log.
+# Nothing is downloaded when a block log is already present.
+bootstrap_block_log() {
+  [[ -n "${BLOCK_LOG_URL:-}" ]] || return 0
+  if has_block_log; then
+    echo "BLOCK_LOG_URL is set but ${BLOCKCHAIN_DIR} already holds a block log - not downloading."
+    return 0
+  fi
+  local artifacts_url="${BLOCK_LOG_ARTIFACTS_URL:-${BLOCK_LOG_URL}.artifacts}"
+  check_free_space "$BLOCK_LOG_URL" "$BLOCKCHAIN_DIR/block_log"
+  fetch_file "$BLOCK_LOG_URL" "$BLOCKCHAIN_DIR/block_log"
+  if ! fetch_file "$artifacts_url" "$BLOCKCHAIN_DIR/block_log.artifacts"; then
+    rm -f "$BLOCKCHAIN_DIR/block_log.artifacts.partial"
+    echo "WARNING: could not download ${artifacts_url}; hived will rebuild block_log.artifacts itself."
+  fi
+}
+
+######### Replay detection #########
+# hived refuses to start when its state lags the block log (a downloaded or copied-in
+# block log, or a crash between state flushes) unless --replay-blockchain is given,
+# yet aborts on --replay-blockchain when there is no block log at all. With state up
+# to date the flag is a no-op resume, so add it whenever a block log exists and the
+# caller did not pick a replay mode. HIVED_AUTO_REPLAY=0 turns this off.
+maybe_add_replay_arg() {
+  [[ "${HIVED_AUTO_REPLAY:-1}" == "1" ]] || return 0
+  local arg
+  for arg in "${HIVED_ARGS[@]}"; do
+    case "$arg" in
+      --replay-blockchain*|--force-replay*|--resync-blockchain*|--load-snapshot*)
+        return 0 ;;
+    esac
+  done
+  if has_block_log; then
+    echo "Block log present: adding --replay-blockchain (set HIVED_AUTO_REPLAY=0 to disable)."
+    HIVED_ARGS+=("--replay-blockchain")
+  fi
+}
+
 HIVED_ARGS=()
 HIVED_ARGS+=("$@")
 export HIVED_ARGS
+
+bootstrap_block_log
+maybe_add_replay_arg
 
 run_instance() {
 trap cleanup INT TERM
