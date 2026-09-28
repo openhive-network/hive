@@ -6,7 +6,7 @@
 #
 # Runs two testnet hived containers on a dedicated docker bridge network
 # (IPv4-only - the default for user-defined bridges - so the in-container
-# address-family probe genuinely reports IPv6 as unoriginable).  The sync node
+# per-address route probe genuinely finds no route to IPv6 destinations).  The sync node
 # is seeded with the witness's IPv4 endpoint plus an unreachable IPv6 seed
 # ([2001:db8::5]:2001, documentation prefix).  The first dial of the IPv6 seed
 # always happens (seeds are explicit "add once" requests); what must NOT happen
@@ -189,16 +189,16 @@ fi
 
 # --- Check 3: the skip is deliberate and logged ------------------------------
 
-if grep -q "cannot originate connections to its address family" "${WORKDIR}/sync/logs/p2p/p2p.log" 2>/dev/null; then
-  pass "connect loop logged the family-based skip"
+if grep -q "this host has no route to its address" "${WORKDIR}/sync/logs/p2p/p2p.log" 2>/dev/null; then
+  pass "connect loop logged the no-route skip"
 else
-  fail "no family-skip log line found in sync node's p2p log"
+  fail "no no-route skip log line found in sync node's p2p log"
 fi
 
-if grep -q "address families this node can originate" "${WORKDIR}/sync/logs/p2p/p2p.log" 2>/dev/null; then
-  pass "probe logged the family availability change (IPv6 unavailable in container)"
+if grep -q "peer candidates: this host has no route to them" "${WORKDIR}/sync/logs/p2p/p2p.log" 2>/dev/null; then
+  pass "connect loop reported the unroutable candidates (IPv6 unavailable in container)"
 else
-  fail "no family-availability log line found in sync node's p2p log"
+  fail "no unroutable-candidates summary line found in sync node's p2p log"
 fi
 
 # --- Check 4: IPv4 peer still connected at the end ---------------------------

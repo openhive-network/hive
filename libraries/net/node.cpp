@@ -29,6 +29,7 @@
 #include <iomanip>
 #include <deque>
 #include <unordered_set>
+#include <unordered_map>
 #include <list>
 #include <forward_list>
 #include <iostream>
@@ -470,10 +471,18 @@ namespace graphene { namespace net {
       fc::promise<void>::ptr    _retrigger_connect_loop_promise;
       bool                      _potential_peer_database_updated;
       fc::future<void>          _p2p_network_connect_loop_done;
-      /// cached results of the address-family origination probe (expire so interface changes are picked up)
-      bool                      _can_originate_ipv4 = true;
-      bool                      _can_originate_ipv6 = true;
-      fc::time_point            _address_family_probe_expiration; // default epoch: first use probes
+      /// cached results of the per-address route probe (see can_route_to); entries expire so
+      /// interface/route changes are picked up
+      struct route_probe_result
+      {
+        bool           routable;
+        fc::time_point expiration;
+      };
+      std::unordered_map<fc::ip::address, route_probe_result> _route_probe_cache;
+      /// how many candidates the last connect-loop pass skipped for lack of a route, per family;
+      /// used to log the situation once when it changes rather than on every pass
+      uint32_t                  _unroutable_ipv4_candidates_last_pass = 0;
+      uint32_t                  _unroutable_ipv6_candidates_last_pass = 0;
       // @}
 
       /// used by the task that fetches sync items during synchronization
@@ -636,7 +645,7 @@ namespace graphene { namespace net {
 
       void save_node_configuration();
 
-      bool can_originate_address_family(const fc::ip::address& addr);
+      bool can_route_to(const fc::ip::address& addr);
       void p2p_network_connect_loop();
       void trigger_p2p_network_connect_loop();
 
@@ -1016,15 +1025,20 @@ namespace graphene { namespace net {
       }
     }
 
-    // Tests whether this host can originate connections of the given address family.
-    // A UDP connect() sends no packets; it only performs a kernel route lookup and
-    // source-address selection, so it fails exactly when the host has no usable route
-    // for the family.  The TEST-NET-1 / documentation-prefix targets are never contacted.
-    static bool probe_address_family_originable(bool ipv6)
+    // Tests whether this host has a route to the given address.  A UDP connect() sends no
+    // packets; it only performs a kernel route lookup and source-address selection, so it
+    // fails exactly when the host cannot reach that destination: no interface of its family,
+    // or neither a default route, a connected subnet nor any other route covering it, or an
+    // explicit unreachable/blackhole route.  The lookup is done for the real destination
+    // rather than a fixed placeholder such as TEST-NET-1: a host whose only routes are
+    // connected subnets (a LAN-only testnet, a docker --internal network) can dial its
+    // on-link peers but not a placeholder, and bogon filters commonly blackhole exactly the
+    // placeholder prefixes while leaving real destinations reachable.  Nothing is sent.
+    static bool probe_route_to_address(const fc::ip::address& addr)
     {
       try
       {
-        fc::ip::endpoint probe_target(fc::ip::address(ipv6 ? "2001:db8::1" : "192.0.2.1"), 53);
+        fc::ip::endpoint probe_target(addr, 53); // the port plays no part in the route lookup
         fc::udp_socket probe_socket;
         probe_socket.open_for_endpoint(probe_target);
         probe_socket.connect(probe_target);
@@ -1036,25 +1050,38 @@ namespace graphene { namespace net {
       }
     }
 
-    bool node_impl::can_originate_address_family(const fc::ip::address& addr)
+    bool node_impl::can_route_to(const fc::ip::address& addr)
     {
       VERIFY_CORRECT_THREAD();
       // loopback is reachable through the loopback interface even when the host has no
-      // usable route for the family (e.g. ::1 on a host without global IPv6)
+      // other route for the family (e.g. ::1 on a host without global IPv6)
       if (addr.is_loopback_address())
         return true;
-      if (fc::time_point::now() > _address_family_probe_expiration)
+
+      const fc::time_point now = fc::time_point::now();
+      auto cached = _route_probe_cache.find(addr);
+      if (cached != _route_probe_cache.end() && now < cached->second.expiration)
+        return cached->second.routable;
+
+      // the cache is keyed by candidate addresses, so it can grow no larger than the peer
+      // database plus the endpoints we are asked to firewall-check, but drop expired entries
+      // once it gets large so churn in the peer database doesn't accumulate forever
+      if (_route_probe_cache.size() >= 2 * GRAPHENE_NET_MAX_PEERDB_SIZE)
       {
-        bool could_originate_ipv4 = _can_originate_ipv4;
-        bool could_originate_ipv6 = _can_originate_ipv6;
-        _can_originate_ipv4 = probe_address_family_originable(false);
-        _can_originate_ipv6 = probe_address_family_originable(true);
-        _address_family_probe_expiration = fc::time_point::now() + fc::seconds(60);
-        if (could_originate_ipv4 != _can_originate_ipv4 || could_originate_ipv6 != _can_originate_ipv6)
-          ilog("address families this node can originate connections with: IPv4: ${ipv4}, IPv6: ${ipv6}",
-               ("ipv4", _can_originate_ipv4)("ipv6", _can_originate_ipv6));
+        for (auto iter = _route_probe_cache.begin(); iter != _route_probe_cache.end(); )
+          if (now >= iter->second.expiration)
+            iter = _route_probe_cache.erase(iter);
+          else
+            ++iter;
+        cached = _route_probe_cache.end();
       }
-      return addr.is_ipv6() ? _can_originate_ipv6 : _can_originate_ipv4;
+
+      const bool routable = probe_route_to_address(addr);
+      const bool previously_routable = cached == _route_probe_cache.end() ? true : cached->second.routable;
+      if (routable != previously_routable)
+        dlog("route to ${addr} from this host: ${routable}", ("addr", addr)("routable", routable));
+      _route_probe_cache[addr] = route_probe_result{routable, now + fc::seconds(GRAPHENE_NET_ROUTE_PROBE_CACHE_SEC)};
+      return routable;
     }
 
     void node_impl::p2p_network_connect_loop()
@@ -1097,6 +1124,8 @@ namespace graphene { namespace net {
             // finishes its handshake first is kept and the other is dropped as a
             // duplicate, so dialing order biases dual-stack peers toward IPv6
             // without affecting single-family peers.
+            uint32_t unroutable_ipv4_candidates = 0;
+            uint32_t unroutable_ipv6_candidates = 0;
             for (int family_pass = 0; family_pass < 2 && is_wanting_new_connections(); ++family_pass)
             {
               const bool ipv6_pass = (family_pass == 0);
@@ -1107,11 +1136,13 @@ namespace graphene { namespace net {
                 if (iter->endpoint.get_address().is_ipv6() != ipv6_pass)
                   continue;
                 dlog("potential peer to connect to: ${iter}",("iter",*iter));
-                // skip peers we have no way to reach, but keep their entries: we still store
-                // and advertise them to peers that may be able to use them
-                if (!can_originate_address_family(iter->endpoint.get_address()))
+                // skip peers we have no route to, but keep their entries: we still store and
+                // advertise them to peers that may be able to use them, and the route may appear
+                // later (the probe result is re-checked every GRAPHENE_NET_ROUTE_PROBE_CACHE_SEC)
+                if (!can_route_to(iter->endpoint.get_address()))
                 {
-                  dlog("skipping ${peer}: this node cannot originate connections to its address family", ("peer", iter->endpoint));
+                  dlog("skipping ${peer}: this host has no route to its address", ("peer", iter->endpoint));
+                  (ipv6_pass ? unroutable_ipv6_candidates : unroutable_ipv4_candidates)++;
                   continue;
                 }
                 fc::microseconds delay_until_retry = fc::seconds((iter->number_of_failed_connection_attempts + 1) * _node_configuration.peer_connection_retry_timeout);
@@ -1130,6 +1161,21 @@ namespace graphene { namespace net {
                   initiated_connection_this_pass = true;
                 }
               }
+            }
+
+            // say so (once per change, not per pass) when candidates are being left alone for
+            // lack of a route: with only unroutable candidates a node quietly makes no progress,
+            // and the per-candidate skip above is only logged at debug level
+            if (unroutable_ipv4_candidates != _unroutable_ipv4_candidates_last_pass ||
+                unroutable_ipv6_candidates != _unroutable_ipv6_candidates_last_pass)
+            {
+              if (unroutable_ipv4_candidates || unroutable_ipv6_candidates)
+                ilog("not dialing ${ipv4} IPv4 and ${ipv6} IPv6 peer candidates: this host has no route to them (re-checked every ${secs}s)",
+                     ("ipv4", unroutable_ipv4_candidates)("ipv6", unroutable_ipv6_candidates)("secs", GRAPHENE_NET_ROUTE_PROBE_CACHE_SEC));
+              else
+                ilog("all peer candidates are routable from this host again");
+              _unroutable_ipv4_candidates_last_pass = unroutable_ipv4_candidates;
+              _unroutable_ipv6_candidates_last_pass = unroutable_ipv6_candidates;
             }
 
             if (!initiated_connection_this_pass && !_potential_peer_database_updated)
@@ -4580,11 +4626,11 @@ namespace graphene { namespace net {
       {
         // we're being asked to check another node
         // we can't perform the test if we're currently connected to that node, or if
-        // we can't originate connections of the endpoint's address family (attempting
-        // it anyway would report unable_to_connect, falsely branding them firewalled)
+        // we have no route to the endpoint (attempting it anyway would report
+        // unable_to_connect, falsely branding them firewalled)
         if (is_already_connected_to_id(check_firewall_message_received.node_id) ||
             is_connection_to_endpoint_in_progress(check_firewall_message_received.endpoint_to_check) ||
-            !can_originate_address_family(check_firewall_message_received.endpoint_to_check.get_address()))
+            !can_route_to(check_firewall_message_received.endpoint_to_check.get_address()))
         {
           check_firewall_reply_message reply;
           reply.node_id = check_firewall_message_received.node_id;
