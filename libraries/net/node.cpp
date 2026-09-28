@@ -753,6 +753,7 @@ namespace graphene { namespace net {
         implausible_future   // claims a height so far past our head it can't be a real new block
       };
       block_id_classification classify_advertised_block_id(const item_hash_t& block_id_hash);
+      bool stalled_head_resync_due(peer_connection* peer);
       bool invalid_block_disconnect_breaker_tripped();
       void send_sync_block_to_node_delegate(const std::shared_ptr<full_block_type>& full_block);
       uint32_t get_number_of_handle_message_calls_in_progress();
@@ -3462,8 +3463,17 @@ namespace graphene { namespace net {
               skip_this_item = true;
               break;
             case block_id_classification::implausible_future:
-              wlog("ignoring advertisement of block ${hash} from ${endpoint}: it claims a height implausibly far past our head",
-                   ("hash", item_hash)("endpoint", originating_peer->get_remote_endpoint()));
+              if (stalled_head_resync_due(originating_peer))
+              {
+                wlog("peer ${endpoint} advertised block ${hash} far past our head, and our head has not advanced for "
+                     "${seconds}s: we have probably fallen behind, restarting sync with them",
+                     ("endpoint", originating_peer->get_remote_endpoint())("hash", item_hash)
+                     ("seconds", (fc::time_point::now() - _last_head_advance_time).to_seconds()));
+                start_synchronizing_with_peer(originating_peer->shared_from_this());
+              }
+              else
+                wlog("ignoring advertisement of block ${hash} from ${endpoint}: it claims a height implausibly far past our head",
+                     ("hash", item_hash)("endpoint", originating_peer->get_remote_endpoint()));
               skip_this_item = true;
               break;
             case block_id_classification::fetchable:
@@ -3697,6 +3707,29 @@ namespace graphene { namespace net {
       if (block_num <= _cached_last_irreversible_block_num)
         return block_id_classification::dead_fork;
       return block_id_classification::fetchable;
+    }
+
+    // Decide whether an implausible_future advertisement from this peer should restart sync
+    // with it instead of being dropped.  The far-future filter is right when our head is
+    // moving; when it has been stuck for GRAPHENE_NET_STALLED_HEAD_RESYNC_SEC and a peer is
+    // still telling us about blocks past the grace window, we have most likely fallen behind
+    // (a chain-thread stall of 2+ minutes at 3 s blocks is enough) and the filter would
+    // otherwise drop every advert until a new peer connected.  Rate-limited per peer so a
+    // peer fabricating far-future ids costs us one synopsis exchange per interval at most.
+    bool node_impl::stalled_head_resync_due(peer_connection* peer)
+    {
+      VERIFY_CORRECT_THREAD();
+      if (_cached_head_block_num == 0 || _last_head_advance_time == fc::time_point())
+        return false; // no head observed yet; startup sync handles that
+      const fc::time_point now = fc::time_point::now();
+      if (now - _last_head_advance_time < fc::seconds(GRAPHENE_NET_STALLED_HEAD_RESYNC_SEC))
+        return false; // head is moving (or only momentarily behind), the filter's assumption holds
+      if (peer->we_need_sync_items_from_peer)
+        return false; // a sync with this peer is already under way; let it finish
+      if (now - peer->last_stalled_head_resync_time < fc::seconds(GRAPHENE_NET_STALLED_HEAD_RESYNC_SEC))
+        return false; // already restarted with this peer recently
+      peer->last_stalled_head_resync_time = now;
+      return true;
     }
 
     // Returns true when we have already disconnected so many peers over "invalid" blocks in
