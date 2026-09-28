@@ -55,6 +55,11 @@
 // find replacements
 #define GRAPHENE_NET_BREAKER_STALL_OVERRIDE_SEC                    60
 
+// how long the connect loop trusts a route-lookup result for a peer address before probing
+// again, so that interface/route changes (link coming up, a default route appearing) are
+// picked up without re-probing every candidate on every pass
+#define GRAPHENE_NET_ROUTE_PROBE_CACHE_SEC                         60
+
 /**
  * Define this to enable debugging code in the p2p network interface.
  * This is code that would never be executed in normal operation, but is
