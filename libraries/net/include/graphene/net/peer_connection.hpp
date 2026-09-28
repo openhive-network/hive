@@ -246,6 +246,9 @@ namespace graphene { namespace net
       // breaker was suppressing punitive disconnects.  If the chain later stalls, the
       // inactivity sweep revokes the breaker's deferral and disconnects flagged peers
       bool block_rejected_while_breaker_tripped = false;
+      // the last time we restarted sync with this peer because our head was stalled while
+      // it advertised blocks far past it (see GRAPHENE_NET_STALLED_HEAD_RESYNC_SEC)
+      fc::time_point last_stalled_head_resync_time;
       /// @}
       void reset_id_search_for_peer() { last_requested_block_number_for_peers_on_this_fork = first_id_block_number - 1; }
       /// latency timing data

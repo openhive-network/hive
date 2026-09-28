@@ -60,6 +60,16 @@
 // picked up without re-probing every candidate on every pass
 #define GRAPHENE_NET_ROUTE_PROBE_CACHE_SEC                         60
 
+// the far-future filter above assumes head lag is momentary.  If our head has not advanced
+// for this long while an established peer keeps advertising blocks past the grace window,
+// the likelier explanation is that we fell behind (e.g. the chain thread stalled long enough
+// for the network to get more than GRAPHENE_NET_FUTURE_BLOCK_IDS_GRACE_BLOCKS ahead) than
+// that the peer is fabricating ids.  Since adverts are dropped before they are recorded and
+// sync otherwise only restarts on a new connection, such a node would stay behind until its
+// next new peer.  Instead we restart sync with the advertising peer, at most once per this
+// interval per peer.  Also the minimum spacing between such restarts for one peer.
+#define GRAPHENE_NET_STALLED_HEAD_RESYNC_SEC                       60
+
 /**
  * Define this to enable debugging code in the p2p network interface.
  * This is code that would never be executed in normal operation, but is
