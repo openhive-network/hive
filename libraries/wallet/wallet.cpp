@@ -49,6 +49,7 @@
 #include <boost/multi_index/hashed_index.hpp>
 
 #include <fc/container/deque.hpp>
+#include <fc/filesystem.hpp>
 #include <fc/git_revision.hpp>
 #include <fc/io/fstream.hpp>
 #include <fc/io/json.hpp>
@@ -60,6 +61,7 @@
 #include <fc/crypto/aes.hpp>
 #include <fc/crypto/hex.hpp>
 #include <fc/crypto/rand.hpp>
+#include <fc/crypto/sha256.hpp>
 #include <fc/thread/mutex.hpp>
 #include <fc/thread/scoped_lock.hpp>
 #include <fc/exception/exception.hpp>
@@ -339,6 +341,12 @@ public:
 
   string get_wallet_filename() const { return _wallet_filename; }
 
+  void set_wallet_filename( string wallet_filename )
+  {
+    _wallet_filename = std::move( wallet_filename );
+    remember_wallet_file_state();
+  }
+
   optional<fc::ecc::private_key>  try_get_private_key(const public_key_type& id)const
   {
     auto it = _keys.find(id);
@@ -376,6 +384,21 @@ public:
     return _keys.emplace( wif_pub_key, wif_key ).second;
   }
 
+  // hash of the file's contents; caller must ensure the file exists
+  fc::sha256 compute_wallet_file_hash( const string& wallet_filename ) const
+  {
+    std::string contents;
+    fc::read_file_contents( wallet_filename, contents );
+    return fc::sha256::hash( contents );
+  }
+
+  void remember_wallet_file_state()
+  {
+    _last_known_wallet_file_hash = fc::exists( _wallet_filename )
+      ? fc::optional<fc::sha256>( compute_wallet_file_hash( _wallet_filename ) )
+      : fc::optional<fc::sha256>();
+  }
+
   bool load_wallet_file(string wallet_filename = "")
   {
     // TODO:  Merge imported wallet with existing wallet,
@@ -387,6 +410,10 @@ public:
       return false;
 
     _wallet = fc::json::from_file( wallet_filename, fc::json::format_validation_mode::full ).as< wallet_data >();
+
+    // record baseline for the concurrent-write check in save_wallet_file() (issue #288)
+    if( wallet_filename == _wallet_filename )
+      _last_known_wallet_file_hash = compute_wallet_file_hash( wallet_filename );
 
     return true;
   }
@@ -405,29 +432,51 @@ public:
     if( wallet_filename == "" )
       wallet_filename = _wallet_filename;
 
+    // refuse to overwrite the file if another instance changed it since we loaded it (issue #288)
+    const bool is_primary_wallet_file = ( wallet_filename == _wallet_filename );
+    if( is_primary_wallet_file && fc::exists( wallet_filename ) )
+    {
+      fc::sha256 current_hash = compute_wallet_file_hash( wallet_filename );
+      FC_ASSERT( _last_known_wallet_file_hash.valid() && current_hash == *_last_known_wallet_file_hash,
+        "Wallet file '${fn}' was modified by another process since it was loaded. "
+        "Refusing to save to avoid overwriting those changes and losing keys (issue #288). "
+        "Reload the wallet to pick up the external changes, then re-apply yours.",
+        ("fn", wallet_filename) );
+    }
+
     wlog( "Saving wallet to file ${fn}", ("fn", wallet_filename) );
 
     string data = fc::json::to_pretty_string( _wallet );
+    string tmp_wallet_filename = wallet_filename + ".tmp";
     try
     {
       enable_umask_protection();
-      //
-      // Parentheses on the following declaration fails to compile,
-      // due to the Most Vexing Parse.  Thanks, C++
-      //
-      // http://en.wikipedia.org/wiki/Most_vexing_parse
-      //
-      fc::ofstream outfile{ fc::path( wallet_filename ) };
-      outfile.write( data.c_str(), data.length() );
-      outfile.flush();
-      outfile.close();
+      // write to a temp file then atomically rename, so an interrupted write never corrupts the wallet
+      {
+        // Parentheses on the following declaration fails to compile, due to the
+        // Most Vexing Parse.  Thanks, C++  http://en.wikipedia.org/wiki/Most_vexing_parse
+        fc::ofstream outfile{ fc::path( tmp_wallet_filename ) };
+        outfile.write( data.c_str(), data.length() );
+        outfile.flush();
+        outfile.close();
+      }
+      fc::rename( fc::path( tmp_wallet_filename ), fc::path( wallet_filename ) );
       disable_umask_protection();
     }
     catch(...)
     {
       disable_umask_protection();
+      if( fc::exists( tmp_wallet_filename ) )
+      {
+        try { fc::remove( fc::path( tmp_wallet_filename ) ); }
+        catch(...) {}
+      }
       throw;
     }
+
+    // the file now matches what we wrote; move the baseline forward
+    if( is_primary_wallet_file )
+      _last_known_wallet_file_hash = fc::sha256::hash( data );
   }
 
   annotated_signed_transaction_ex set_voting_proxy(const string& account_to_modify, const string& proxy, bool broadcast /* = false */)
@@ -727,6 +776,7 @@ public:
 
   string                                                    _wallet_filename;
   wallet_data                                               _wallet;
+  fc::optional<fc::sha256>                                  _last_known_wallet_file_hash; // for concurrent-write check (issue #288)
   chain_id_type                                             _hive_chain_id;
   transaction_serialization_type                            _chosen_transaction_serialization;
   map<public_key_type,string>                               _keys;
@@ -950,7 +1000,7 @@ optional<wallet_serializer_wrapper<database_api::api_witness_object>> wallet_api
 wallet_signed_transaction wallet_api::set_voting_proxy(const string& account_to_modify, const string& voting_account, bool broadcast /* = false */)
 { return { my->set_voting_proxy(account_to_modify, voting_account, broadcast) }; }
 
-void wallet_api::set_wallet_filename(string wallet_filename) { my->_wallet_filename = std::move(wallet_filename); }
+void wallet_api::set_wallet_filename(string wallet_filename) { my->set_wallet_filename( std::move(wallet_filename) ); }
 
 wallet_signed_transaction wallet_api::sign_transaction(
   const wallet_serializer_wrapper<transaction>& tx, bool broadcast /* = false */)
