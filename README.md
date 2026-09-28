@@ -68,7 +68,7 @@ docker pull hiveio/hive:1.28.0
 
 Please note that the `latest` tag is not supported; you must explicitly specify the version tag to avoid issues with new versions that require replay.
 
-The recommended way to run the image is the Docker Compose deployment in [docker/exchange](docker/exchange): a `hived` service with account history, an optional `cli_wallet` daemon, a health check, and a data volume that downloads and replays a block log on its first start. It is configured entirely through `compose.yml`, `.env` and `config.ini`; see [docker/exchange/README.md](docker/exchange/README.md).
+The recommended way to run the image is the Docker Compose deployment in [docker/exchange](docker/exchange): a `hived` service with account history, an optional `cli_wallet` daemon, a health check, and a data volume that bootstraps itself on the first start from a published state snapshot or a block log. It is configured entirely through `compose.yml`, `.env` and `config.ini`; see [docker/exchange/README.md](docker/exchange/README.md).
 
 The image can also be started by hand. [run_hived_img.sh](scripts/run_hived_img.sh) wraps `docker run` while emulating direct `hived` usage: `run_hived_img.sh <docker_img> [OPTION[=VALUE]]... [<hived_option>]...`; read [more about using run_hived_img.sh](doc/run_hived_img.md) to explore its usage in various scenarios.
 

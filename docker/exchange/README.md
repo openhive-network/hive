@@ -17,11 +17,12 @@ procedure, and a fresh volume bootstraps itself.
 
 - Docker Engine with Compose v2.24 or newer.
 - 16 GB of RAM (32 GB recommended).
-- Fast **local** storage such as NVMe. A node with a block log needs about 1 TB:
-  the block log is ~550 GB and growing, the state file ~5 GB in use (sparse, 8 GB
-  nominal), and account history depends on how many accounts you track. A
-  snapshot-only node needs a few tens of GB. Network-attached storage (for example
-  AWS EBS) is too slow for a replay; use an instance with physically attached NVMe.
+- Fast **local** storage such as NVMe. A snapshot-only node (the default) needs a
+  few tens of GB: the state file ~5 GB in use (sparse, 8 GB nominal), the
+  unpacked snapshot ~7 GB until deleted, and account history that depends on how
+  many accounts you track. A node with a block log needs about 1 TB, since the
+  block log is ~550 GB and growing. Network-attached storage (for example AWS
+  EBS) is too slow for a replay; use an instance with physically attached NVMe.
 - Outbound internet access for the P2P network and the block log download.
   Accepting inbound connections on TCP 2001 helps the network but is optional.
 
@@ -32,7 +33,8 @@ procedure, and a fresh volume bootstraps itself.
    release may require a replay.
 2. Edit `config.ini`: replace `your-exchange` with your account name. Add one
    `account-history-rocksdb-track-account-range` line per account. This must be
-   right before the first start, because changing it later means replaying.
+   right before the first start, because changing it later means replaying or
+   starting over from a fresh snapshot.
 3. Start the node and follow its log:
 
    ```
@@ -43,21 +45,24 @@ procedure, and a fresh volume bootstraps itself.
 The first start bootstraps the node from whichever source `.env` names, and later
 starts leave the data alone, so the command never changes:
 
-- **Block log (default, recommended).** With `BLOCK_LOG_URL` set, the container
-  downloads the block log (~550 GB, resumable, safe to interrupt) into its data
-  volume and replays it. A replay finishes in well under a day on fast NVMe and
-  ends with `Done reindexing`; after that hived fetches the remaining blocks from
-  the P2P network. The node then holds every block and can be replayed again later.
-- **Snapshot.** With `SNAPSHOT_URL` set instead, the container downloads a state
-  snapshot (~6 GB), loads it in a couple of minutes, and syncs forward from the
-  snapshot's date at roughly a thousand blocks per second. The published exchange
-  snapshot already contains account history for the major exchange accounts (see
-  the `example-exchange-config.ini` published next to it); it is only useful if
-  yours is among them, because history before the snapshot cannot be recovered
-  without a block log. A snapshot-only node keeps no block log: it serves state,
-  account history and the head block, but `get_block` fails for older blocks with
-  "has been pruned", and it cannot replay. Use a snapshot made by the same hived
-  version you run.
+- **Snapshot (default).** With `SNAPSHOT_URL` set, the container downloads a
+  state snapshot (~6 GB), loads it in a couple of minutes, and syncs forward
+  from the snapshot's date at roughly a thousand blocks per second. The
+  published exchange snapshot carries account history for the major exchange
+  accounts up to its block (the list is in the `example-exchange-config.ini`
+  published next to it); from that block on, the node records history for the
+  accounts in your `config.ini`. If your account is not in the snapshot, its
+  history before the snapshot date is missing and cannot be recovered without a
+  block log, but everything after it is recorded. A snapshot-only node keeps no
+  block log: it serves state, account history and the head block, but
+  `get_block` fails for older blocks with "has been pruned", and it cannot
+  replay. Use a snapshot made by the same hived version you run.
+- **Block log.** With `BLOCK_LOG_URL` set instead, the container downloads the
+  block log (~550 GB, resumable, safe to interrupt) into its data volume and
+  replays it. A replay finishes in well under a day on fast NVMe and ends with
+  `Done reindexing`; after that hived fetches the remaining blocks from the P2P
+  network. The node then holds every block, has history for your accounts from
+  genesis, and can be replayed again later.
 - **Snapshot and block log.** With both set, the container downloads both, loads
   the snapshot, and hived replays the block log forward from the snapshot's block
   on its own. Same download as the block log alone, but the replay shrinks from
@@ -67,6 +72,11 @@ starts leave the data alone, so the command never changes:
   order of a day on a fast machine, but it needs no download: started today, it
   is done tomorrow either way. Add `block-log-split = 0` to `config.ini` to do
   that without storing a block log at all.
+
+In every case hived runs with the `config.ini` from this directory. A snapshot
+contains state and account history, not configuration, so the example config
+published next to it is not used; only the plugin set has to match, and the
+shipped `config.ini` matches the published exchange snapshot.
 
 `docker compose ps` shows the node as `healthy` once its head block is at most
 `HIVED_HEALTHCHECK_MAX_BLOCK_AGE` seconds old. Until then it reports `starting`

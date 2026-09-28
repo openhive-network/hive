@@ -20,7 +20,7 @@ docker compose up -d
 docker compose logs -f hived
 ```
 
-On the first start the node downloads a recent block log (~550GB), replays it, and then syncs the rest from the P2P network. Its health check reports `healthy` once it has caught up. Data placement, the wallet, upgrades and troubleshooting are covered in [docker/exchange/README.md](/docker/exchange/README.md).
+On the first start the node downloads the published exchange state snapshot (~6GB), loads it, and syncs the rest from the P2P network, reaching the head in well under an hour; set `BLOCK_LOG_URL` in `.env` instead to download and replay the full block log (~550GB) for a node that keeps every block. Its health check reports `healthy` once it has caught up. Data placement, the wallet, upgrades and troubleshooting are covered in [docker/exchange/README.md](/docker/exchange/README.md).
 
 Pre-built images are published on Docker Hub as `hiveio/hive:<version>`. Always pin a version tag; `latest` is deliberately not published because a new release may require a replay.
 
