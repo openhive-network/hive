@@ -191,19 +191,21 @@ bootstrap_snapshot() {
 # hived refuses to start when its state lags the block log (a downloaded or copied-in
 # block log, or a crash between state flushes) unless --replay-blockchain is given,
 # yet aborts on --replay-blockchain when there is no block log at all. With state up
-# to date the flag is a no-op resume, so add it whenever a block log exists and the
-# caller did not pick a replay mode. HIVED_AUTO_REPLAY=0 turns this off.
+# to date the flag is a no-op resume. HIVED_AUTO_REPLAY=1 adds it whenever a block log
+# exists and the caller did not pick a replay mode. Off by default: a state/block log
+# mismatch then stops hived with an error instead of silently starting a replay. The
+# patterns also catch abbreviations hived accepts, such as --replay.
 maybe_add_replay_arg() {
-  [[ "${HIVED_AUTO_REPLAY:-1}" == "1" ]] || return 0
+  [[ "${HIVED_AUTO_REPLAY:-0}" == "1" ]] || return 0
   local arg
   for arg in "${HIVED_ARGS[@]}"; do
     case "$arg" in
-      --replay-blockchain*|--force-replay*|--resync-blockchain*|--load-snapshot*)
+      --replay*|--force-replay*|--resync*|--load-snapshot*)
         return 0 ;;
     esac
   done
   if has_block_log; then
-    echo "Block log present: adding --replay-blockchain (set HIVED_AUTO_REPLAY=0 to disable)."
+    echo "Block log present: HIVED_AUTO_REPLAY=1, adding --replay-blockchain."
     HIVED_ARGS+=("--replay-blockchain")
   fi
 }
