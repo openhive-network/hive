@@ -482,7 +482,9 @@ chain_test:
 plugin_test_witness:
   extends: .unit_tests_base
   script:
-    - timeout 20m ./hived-testnet-binaries/plugin_test --run_test=witness_tests --log_format=JUNIT --log_sink=plugin_test_witness_results.xml --log_level=error > plugin_test_witness.log 2>&1
+    # -k: if plugin_test ignores/misses SIGTERM (e.g. stuck on a lock held by a wedged thread),
+    # send SIGKILL 1m later instead of running until GitLab's own 1h job timeout with no artifacts.
+    - timeout -k 1m 20m ./hived-testnet-binaries/plugin_test --run_test=witness_tests --log_format=JUNIT --log_sink=plugin_test_witness_results.xml --log_level=error > plugin_test_witness.log 2>&1
   artifacts:
     reports:
       junit: plugin_test_witness_results.xml
@@ -494,7 +496,9 @@ plugin_test_witness:
 plugin_test_api:
   extends: .unit_tests_base
   script:
-    - timeout 10m ./hived-testnet-binaries/plugin_test --run_test=!witness_tests --log_format=JUNIT --log_sink=plugin_test_api_results.xml --log_level=error > plugin_test_api.log 2>&1
+    # -k: same rationale as plugin_test_witness above - bound a wedged process to ~11m instead of
+    # the full 1h job timeout, and let the runner still reach the artifact-upload step.
+    - timeout -k 1m 10m ./hived-testnet-binaries/plugin_test --run_test=!witness_tests --log_format=JUNIT --log_sink=plugin_test_api_results.xml --log_level=error > plugin_test_api.log 2>&1
   artifacts:
     reports:
       junit: plugin_test_api_results.xml
