@@ -169,7 +169,9 @@ void hived_fixture::postponed_init_impl( bool remove_db_files, config_arg_overri
 
       app.startup();
 
-      db->notify_end_of_syncing();
+      // The chain plugin's write_queue thread (started by app.startup()) makes the same call when
+      // p2p is disabled; take the write lock so the two flushes cannot run concurrently.
+      db->with_write_lock( [&]() { db->notify_end_of_syncing(); } );
     } );
 
     FC_ASSERT( _data_dir != fc::path() );
