@@ -204,6 +204,21 @@ public:
     hive::utilities::disconnect_signal(_on_flush_conn);
   }
 
+  /// Runs under the chain write lock: the chain plugin's write thread keeps applying blocks until
+  /// chain_plugin::plugin_shutdown(), which comes after ours. Without the lock a block in progress
+  /// can still be writing into _writeBuffer (e.g. on_irreversible_block -> importOperation) while
+  /// shutdownDb() flushes it, and two concurrent submits of the same WriteBatch corrupt it or
+  /// deadlock inside RocksDB. Holding the lock lets that block finish; disconnecting the signals
+  /// first means no later block can reach this plugin.
+  void shutdown_under_write_lock()
+  {
+    _mainDb.with_write_lock( [&]()
+    {
+      disconnect_signals();
+      shutdownDb();
+    } );
+  }
+
   void printReport(uint32_t blockNo, const char* detailText) const;
   void on_pre_reindex( const hive::chain::reindex_notification& note );
   void on_post_reindex( const hive::chain::reindex_notification& note );
@@ -1463,9 +1478,7 @@ void account_history_rocksdb_plugin::plugin_shutdown()
   /// chain_plugin::plugin_shutdown() -> database::close() -> notify_flush(),
   /// which fires _flush_signal after AH RocksDB has already been finalized.
   /// Note: disconnect_signals() is idempotent, safe to call from both here and ~impl().
-  _my->disconnect_signals();
-
-  _my->shutdownDb();
+  _my->shutdown_under_write_lock();
 }
 
 void account_history_rocksdb_plugin::find_account_history_data(const account_name_type& name, uint64_t start, uint32_t limit,

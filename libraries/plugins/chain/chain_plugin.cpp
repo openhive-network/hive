@@ -497,7 +497,9 @@ void chain_plugin_impl::start_write_processing()
       bool is_syncing = is_p2p_enabled;
       if( !is_syncing )
       {
-        db.notify_end_of_syncing();
+        // Under the write lock: unit-test fixtures also call notify_end_of_syncing() right after
+        // startup, and two unserialized flushes corrupt the external storages' shared WriteBatch.
+        db.with_write_lock( [&]() { db.notify_end_of_syncing(); } );
         //don't switch to live in writer (doesn't make a difference for API calls, but does for queen)
         //default_block_writer->set_is_at_live_sync();
         theApp.notify_status( "entering API mode" );
