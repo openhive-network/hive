@@ -11,6 +11,11 @@
 
 #include <boost/filesystem.hpp>
 
+#include <atomic>
+#include <chrono>
+#include <cstdlib>
+#include <thread>
+
 using namespace hive::chain;
 using namespace hive::protocol;
 using namespace hive::plugins;
@@ -243,6 +248,41 @@ BOOST_FIXTURE_TEST_CASE( ah_rocksdb_files_do_not_track_block_count, witness_fixt
   try
   {
     bool test_passed = false;
+
+    // This test drives real, concurrent block production (colony worker threads + queen +
+    // witness_fixture's realtime witness, all inside this one process) rather than the
+    // single-threaded generate_block() every other plugin_test case uses. wait_for_block() below
+    // has its own wall-clock deadlines, but those only fire if the thread evaluating them is
+    // actually scheduled: a stall anywhere in that pipeline that blocks while holding the chain
+    // lock (colony, queen, or the AH flush path this test exists to exercise) can leave every
+    // reader - including this test's own polling loop and the app's shutdown request below -
+    // waiting forever. That is indistinguishable from a hang to the CI `timeout` wrapper too,
+    // since SIGTERM delivery does not help a thread stuck on a lock. Arm an independent watchdog
+    // that owes nothing to any chain lock, so a stall like that fails fast and loud - with a
+    // partial log (and a core dump where the runner enables them) - instead of wedging plugin_test
+    // for the CI job's full hour.
+    std::atomic<bool> test_finished{ false };
+    std::thread watchdog( [&test_finished]()
+    {
+      const auto deadline = std::chrono::steady_clock::now() + std::chrono::minutes( 6 );
+      while( !test_finished.load( std::memory_order_relaxed ) &&
+        std::chrono::steady_clock::now() < deadline )
+        std::this_thread::sleep_for( std::chrono::milliseconds( 200 ) );
+
+      if( !test_finished.load( std::memory_order_relaxed ) )
+      {
+        elog( "ah_rocksdb_files_do_not_track_block_count did not finish within 6 minutes - "
+          "aborting instead of hanging until the CI job timeout (see comment at this watchdog's "
+          "definition)." );
+        std::abort();
+      }
+    } );
+
+    BOOST_SCOPE_EXIT( &test_finished, &watchdog )
+    {
+      test_finished.store( true, std::memory_order_relaxed );
+      watchdog.join();
+    } BOOST_SCOPE_EXIT_END
 
     BOOST_SCOPE_EXIT( this_ )
     {
