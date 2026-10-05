@@ -1509,7 +1509,6 @@ deploy-wax-spec-production-public-npm:
   extends: .registry_npmjs_org_deploy_package_template
   stage: publish
   variables:
-    NPM_PUBLISH_TOKEN: "$INTERNAL_HIDDEN_PUBLISH_TOKEN"
     NPM_PACKAGE_NAME: "wax-api-jsonrpc"
     SOURCE_DIR: "${PACKAGE_SOURCE_DIR}"
     PACKAGE_TGZ_PATH: "${BUILT_PACKAGE_PATH}"
