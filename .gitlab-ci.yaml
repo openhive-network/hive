@@ -560,16 +560,20 @@ static_linking_check:
     - |
       HIVED_ENDPOINT="${NODE_ADDRESS:-hived-instance:8091}"
       echo "Waiting for hived at ${HIVED_ENDPOINT} to be ready..."
+      # Leave the loop with `break`, never `exit 0`: this snippet is pulled into the job's own
+      # script via !reference, so exiting would end the job before its tests run.
       for i in $(seq 1 60); do
         if curl -sI "${HIVED_ENDPOINT}" >/dev/null 2>&1; then
           echo "Connected to hived on attempt $i"
-          exit 0
+          break
+        fi
+        if [ "$i" -eq 60 ]; then
+          echo "ERROR: hived not ready after 60 retries (2 minutes)"
+          exit 1
         fi
         echo "Waiting for hived... attempt $i/60"
         sleep 2
       done
-      echo "ERROR: hived not ready after 60 retries (2 minutes)"
-      exit 1
 
 .test-block-log-service:
   variables:
