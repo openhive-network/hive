@@ -1,10 +1,14 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import pytest
 from test_tools.exceptions import ErrorInResponseError
 
-import test_tools as tt
 from hive_local_tools import run_for
+
+if TYPE_CHECKING:
+    import test_tools as tt
 
 
 def get_commands(commands_with_arguments):
@@ -13,10 +17,6 @@ def get_commands(commands_with_arguments):
         command = command_with_argument[0]
         commands.append(command)
     return commands
-
-
-def is_mainnet_5m_node(node: tt.InitNode | tt.RemoteNode) -> bool:
-    return bool(isinstance(node, tt.RemoteNode) and node.get_last_block_number() <= 5000000)
 
 
 COMMANDS_WITH_CORRECT_ARGUMENTS = [
@@ -81,11 +81,7 @@ def test_run_command_without_arguments_where_arguments_are_required(
 def test_run_command_with_additional_argument(
     node: tt.InitNode | tt.RemoteNode, should_prepare: bool, wallet_bridge_api_command: str, arguments: tuple
 ) -> None:
-    if is_mainnet_5m_node(node) and wallet_bridge_api_command == "get_reward_fund":
-        with pytest.raises(ErrorInResponseError):
-            getattr(node.api.wallet_bridge, wallet_bridge_api_command)(*arguments, "additional_string_argument")
-    else:
-        getattr(node.api.wallet_bridge, wallet_bridge_api_command)(*arguments, "additional_string_argument")
+    getattr(node.api.wallet_bridge, wallet_bridge_api_command)(*arguments, "additional_string_argument")
 
 
 @pytest.mark.parametrize(
