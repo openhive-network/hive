@@ -9,9 +9,11 @@ stages:
 variables:
   PYTEST_NUMBER_OF_PROCESSES: 8
 
-  # Docker image tags from common-ci-configuration with util-linux for NFS flock support
-  DOCKER_BUILDER_TAG: "3dd346380da7f28cdaf3ef3955559c905d94bd1c"
-  DOCKER_DIND_TAG: "3dd346380da7f28cdaf3ef3955559c905d94bd1c"
+  # Docker image tags from common-ci-configuration. These images are tagged with the commit
+  # they were built from and rebuilt only when their Dockerfiles change: use the newest build
+  # whose Dockerfiles match COMMON_CI_REF (see prepare_data_image_job.yml).
+  DOCKER_BUILDER_TAG: "89e7817b463ec2c48c4bb76da2df63d9749d7b2a"
+  DOCKER_DIND_TAG: "89e7817b463ec2c48c4bb76da2df63d9749d7b2a"
 
   # Fetch strategy reuses workspace between jobs, reducing GitLab server load.
   # Full clone (depth 0) enables efficient incremental fetches - shallow clones
