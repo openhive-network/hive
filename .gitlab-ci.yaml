@@ -1008,6 +1008,8 @@ patterns_tests:
     HIVED_COMMIT: $HIVED_COMMIT # HIVED_COMMIT must be in this section to be passed to service
     COMMON_CI_REF: "92aba08c85b62bccfe83ef5b9b4c6f82d8cb3d9d" # TEMPORARY pin: last-good common-ci commit before !378. Its cache-script rewrite (staging/swap + flock) stalls the shared mainnet_5m datadir restore, so the hived service never opens its ports (300s timeout). Revert to '$COMMON_CI_REF' once common-ci-configuration is fixed.
   needs:
+    - job: hiveio_api_package
+      artifacts: true  # provides WHEEL_BUILD_VERSION via dotenv, installed by the .test_tools_based before_script
     - job: prepare_hived_data
       artifacts: true  # Blocked until prepare_hived_data completes
 
