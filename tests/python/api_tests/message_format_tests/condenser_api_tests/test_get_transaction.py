@@ -20,4 +20,4 @@ def test_get_transaction_in_testnet(node: tt.InitNode, wallet: tt.Wallet) -> Non
 def test_get_transaction_in_mainnet(node: tt.RemoteNode) -> None:
     block = node.api.condenser.get_block(4450001)
     transaction = block.transactions[0]
-    node.api.condenser.get_transaction(transaction["transaction_id"])
+    node.api.condenser.get_transaction(transaction.transaction_id)
