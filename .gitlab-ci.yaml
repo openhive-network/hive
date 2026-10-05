@@ -1084,7 +1084,9 @@ python_pattern_mainnet_tests:
   script:
     # run pattern tests
     - cd $CI_PROJECT_DIR/tests/python/api_tests/python_patterns_tests
-    - export PYTEST_ARGS=(-m mainnet_5m --http-endpoint hived-instance:8091 --ws-endpoint hived-instance:8090 --wallet-path $CI_PROJECT_DIR/$BINARY_CACHE_PATH/cli_wallet)
+    # Use the --option=value form: with "--wallet-path <existing file>" pytest takes the file as a test
+    # path, loads conftest.py from its directory instead of this one, and rejects the options defined here.
+    - export PYTEST_ARGS=(-m mainnet_5m --http-endpoint=hived-instance:8091 --ws-endpoint=hived-instance:8090 --wallet-path=$CI_PROJECT_DIR/$BINARY_CACHE_PATH/cli_wallet)
     - !reference [.run-pytest, script]
 
   artifacts:
