@@ -3,10 +3,15 @@ variables:
   # Don't pin to CI_COMMON_JOB_VERSION as those commit-specific images may not exist
   BEEKEEPY_INITIALIZATION_TIMEOUT: 60  # for test-tools
   BEEKEEPY_CLOSE_TIMEOUT: 60  # for test-tools
+  # The one common-ci-configuration revision used by this pipeline: every script fetched
+  # at runtime (jobs and hived service entrypoints) comes from it. `include: ref` cannot
+  # use variables, so the include below and scripts/ci-helpers/common_includes.yml repeat
+  # the same hash - keep all three in sync.
+  COMMON_CI_REF: "7dffa23eb3612b0e2f049e98260028c0134c0156"
 
 include:
   - project: 'hive/common-ci-configuration'
-    ref: develop
+    ref: 7dffa23eb3612b0e2f049e98260028c0134c0156  # must match COMMON_CI_REF above
     file:
       - '/templates/base.gitlab-ci.yml'
       - '/templates/npm_projects.gitlab-ci.yml'
@@ -43,8 +48,6 @@ include:
     # Re-tag when gap exceeds this threshold (keeps image within downstream search depth)
     RETAG_THRESHOLD: "20"
     SEARCH_DEPTH: "25"
-    # Common-ci-configuration reference for script fetching
-    COMMON_CI_REF: "develop"
     COMMON_CI_URL: "https://gitlab.syncad.com/hive/common-ci-configuration"
   script:
     - |
@@ -271,7 +274,7 @@ include:
       # Fetch cache-manager from common-ci-configuration
       CACHE_MANAGER="/tmp/cache-manager.sh"
       echo "Fetching cache-manager.sh from common-ci-configuration..."
-      curl -fsSL "${CI_SERVER_URL}/hive/common-ci-configuration/-/raw/${COMMON_CI_REF:-develop}/scripts/cache-manager.sh" -o "$CACHE_MANAGER"
+      curl -fsSL "${CI_SERVER_URL}/hive/common-ci-configuration/-/raw/${COMMON_CI_REF}/scripts/cache-manager.sh" -o "$CACHE_MANAGER"
       chmod +x "$CACHE_MANAGER"
 
       CACHE_KEY="${HIVED_COMMIT}"

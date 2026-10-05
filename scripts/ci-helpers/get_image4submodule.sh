@@ -14,7 +14,7 @@ SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 
 # Fetch common-ci-configuration scripts
 CI_SCRIPTS_DIR="${CI_SCRIPTS_DIR:-/tmp/common-ci-scripts}"
-CI_SCRIPTS_REF="${CI_SCRIPTS_REF:-develop}"
+CI_SCRIPTS_REF="${CI_SCRIPTS_REF:-${COMMON_CI_REF:-develop}}"
 CI_SCRIPTS_URL="https://gitlab.syncad.com/hive/common-ci-configuration/-/raw/${CI_SCRIPTS_REF}/scripts/bash"
 
 if [[ ! -f "$CI_SCRIPTS_DIR/find-last-source-commit.sh" ]]; then

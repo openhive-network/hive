@@ -428,7 +428,7 @@ mirrornet_replay_test:
     - |
       # Fetch cache-manager from common-ci-configuration
       CACHE_MANAGER="/tmp/cache-manager.sh"
-      curl -fsSL "https://gitlab.syncad.com/hive/common-ci-configuration/-/raw/develop/scripts/cache-manager.sh" -o "$CACHE_MANAGER"
+      curl -fsSL "https://gitlab.syncad.com/hive/common-ci-configuration/-/raw/${COMMON_CI_REF}/scripts/cache-manager.sh" -o "$CACHE_MANAGER"
       chmod +x "$CACHE_MANAGER"
       "$CACHE_MANAGER" put hive block_log_5m_mirrornet "$MIRRORNET_BLOCKCHAIN_DATA_DIR/blockchain" || echo "Warning: cache-manager put failed"
     - ls -lAh /nfs/ci-cache/hive/
@@ -681,7 +681,7 @@ quick_test_setup:
     GIT_SUBMODULE_STRATEGY: none  # Don't use bundled submodule fetch
   before_script:
     # Fetch submodules script from common-ci-configuration
-    - curl -fsSL "${CI_SERVER_URL}/hive/common-ci-configuration/-/raw/develop/scripts/fetch-submodules.sh" -o /tmp/fetch-submodules.sh
+    - curl -fsSL "${CI_SERVER_URL}/hive/common-ci-configuration/-/raw/${COMMON_CI_REF}/scripts/fetch-submodules.sh" -o /tmp/fetch-submodules.sh
     - chmod +x /tmp/fetch-submodules.sh
     - /tmp/fetch-submodules.sh --parallel tests/python/hive-local-tools/tests_api
     # Then run the standard Python setup from .python_based
