@@ -337,7 +337,7 @@ import hiveio_api
 
 errors: list[str] = []
 
-for api_name in hiveio_api.__all__:
+for api_name in hiveio_api.APIS:
     module_name = f"hiveio_api.{api_name}"
     module = importlib.import_module(module_name)
     for symbol in module.__all__:
@@ -369,12 +369,26 @@ if hived_api is not None:
                 except Exception as exception:
                     errors.append(f"{module_name}.{obj.__name__}.{method_name}: {type(exception).__name__}: {exception}")
 
+# API calls must not load validation models - they are loaded only by an explicit validate_schema call
+import sys
+
+loaded_validation_modules = [name for name in sys.modules if name.startswith("hiveio_api._validation.")]
+if loaded_validation_modules:
+    errors.append(f"Validation models loaded without validate_schema call: {loaded_validation_modules}")
+
+# Validation models of every API must be importable
+for api_name in hiveio_api.APIS:
+    try:
+        importlib.import_module(f"hiveio_api._validation.{api_name}").ENDPOINT_RESULTS
+    except Exception as exception:
+        errors.append(f"hiveio_api._validation.{api_name}: {type(exception).__name__}: {exception}")
+
 if errors:
     raise SystemExit("\n".join(errors))
 PY
 
     local api_list
-    api_list=$(python3 -c "import hiveio_api; print(' '.join(hiveio_api.__all__))")
+    api_list=$(python3 -c "import hiveio_api; print(' '.join(hiveio_api.APIS))")
     log_info "APIs to test: ${api_list}"
 
     for api in ${api_list}; do
