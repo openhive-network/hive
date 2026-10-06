@@ -85,14 +85,20 @@ class _AnnotationCanonicalizer(ast.NodeTransformer):
         return ast.copy_location(ast.Name(id=replacement, ctx=node.ctx), node)
 
 
-def apply_stable_model_aliases(description_file: Path, api: str) -> None:
-    """Apply Hive semantic aliases and move safe shared models to hiveio_api.common."""
+def apply_stable_model_aliases(
+    description_file: Path,
+    api: str,
+    *,
+    common_file: Path | None = None,
+    common_import: str = "hiveio_api.common",
+) -> None:
+    """Apply Hive semantic aliases and move safe shared models to the common module (hiveio_api.common by default)."""
     source = description_file.read_text(encoding="utf-8")
     tree = ast.parse(source, filename=str(description_file))
     classes = {
         node.name: ClassInfo(node.name, node)
         for node in tree.body
-        if isinstance(node, ast.ClassDef) and any(ast.unparse(base) == "Struct" for base in node.bases)
+        if isinstance(node, ast.ClassDef) and node.bases  # every generated model derives from the model base class
     }
 
     groups = _build_groups(api.replace("-", "_"), classes)
@@ -102,8 +108,8 @@ def apply_stable_model_aliases(description_file: Path, api: str) -> None:
     apply_semantic_model_aliases(
         description_file,
         groups,
-        common_file=description_file.parents[1] / "common.py",
-        common_import="hiveio_api.common",
+        common_file=common_file if common_file is not None else description_file.parents[1] / "common.py",
+        common_import=common_import,
     )
 
 
@@ -189,10 +195,17 @@ def _classes_matching(
     expected_fields: tuple[tuple[str, str, str | None], ...],
     replacements: dict[str, str],
 ) -> tuple[str, ...]:
+    """
+    Classes with exactly the expected field names and defaults.
+
+    Field types are not compared - they differ between generated model variants (Hive type aliases in public models,
+    validating types in validation models), while field names of these Hive structures are distinctive enough.
+    """
+    expected = tuple((name, default) for name, _, default in expected_fields)
     return tuple(
         name
         for name, class_info in classes.items()
-        if _field_signature(class_info.node, replacements) == expected_fields
+        if tuple((field, default) for field, _, default in _field_signature(class_info.node, replacements)) == expected
     )
 
 

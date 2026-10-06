@@ -1,11 +1,34 @@
-"""Hive JSON-RPC API client package with lazy-loaded submodules."""
+"""
+Hive JSON-RPC API client package with lazy-loaded submodules.
+
+API calls return plain frozen dataclasses (`HiveModel`) built without any validation. Responses can be validated
+explicitly with `validate_schema(response, "condenser_api.get_accounts")` (or passing the API method itself).
+"""
 
 from __future__ import annotations
 
-from hiveio_api._optional import optional_field
+from typing import Final
+
+from schemas.validation import SchemaError, register_validation_models, validate_schema
+
+from hiveio_api._base import HiveModel, MissingFieldWarning, UnexpectedFieldWarning
 
 __version__ = "0.0.0"
 
+APIS: Final[tuple[str, ...]] = (
+{% for api in apis %}    "{{ api.snake_case }}",
+{% endfor %})
+"""Names of the API subpackages."""
+
 __all__ = [
+    "APIS",
+    "HiveModel",
+    "MissingFieldWarning",
+    "SchemaError",
+    "UnexpectedFieldWarning",
+    "validate_schema",
 {% for api in apis %}    "{{ api.snake_case }}",
 {% endfor %}]
+
+{% for api in apis %}register_validation_models("{{ api.snake_case }}", "hiveio_api._validation.{{ api.snake_case }}", "{{ api.serialization }}")
+{% endfor %}

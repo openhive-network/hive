@@ -6,6 +6,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+from api_generation.common import api_serialization
 from jinja2 import Environment, FileSystemLoader
 
 
@@ -36,13 +37,13 @@ def generate_root_package(
         apis.append({
             "snake_case": snake_case,
             "pascal_case": pascal_case,
+            "serialization": api_serialization(snake_case),
         })
 
     env = Environment(loader=FileSystemLoader(template_directory))
 
     for template_name, output_name in [
         ("__init__.py.j2", "__init__.py"),
-        ("_optional.py.j2", "_optional.py"),
         ("README.md.j2", "README.md"),
     ]:
         template = env.get_template(template_name)

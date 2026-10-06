@@ -6,12 +6,9 @@ import sys
 import textwrap
 from pathlib import Path
 
-import msgspec
-import pytest
 from api_generation.model_aliases import apply_stable_model_aliases
 from generate_api_definitions import extract_class_names_from_file
 from generate_root_package import generate_root_package
-from msgspec import UNSET, Struct, UnsetType
 
 
 def test_block_api_transactions_and_blocks_use_canonical_types(tmp_path: Path) -> None:
@@ -23,8 +20,7 @@ def test_block_api_transactions_and_blocks_use_canonical_types(tmp_path: Path) -
 
             from typing import Any, TypeAlias
 
-            from msgspec import UNSET, Struct, UnsetType
-
+            
             class Extension(Struct):
                 type: str
                 value: str | dict[str, Any]
@@ -276,27 +272,16 @@ def test_rc_api_drops_generated_rc_account_name(tmp_path: Path) -> None:
     assert "RcAccount" in _common_imports_from(description)
 
 
-def test_optional_field_helper_documents_unset_behavior(tmp_path: Path) -> None:
+def test_root_package_registers_validation_models(tmp_path: Path) -> None:
     package_dir = tmp_path / "python_api_package" / "hiveio_api"
     template_dir = Path(__file__).parents[2] / "python_api_package" / "templates"
-    generate_root_package(
-        ["block_api"],
-        tmp_path,
-        template_dir,
-    )
+    generate_root_package(["block_api", "condenser_api"], tmp_path, template_dir)
 
-    optional_module = _load_module(package_dir / "_optional.py", "generated_optional")
-    assert optional_module.optional_field(UNSET) is None
-    assert optional_module.optional_field("value") == "value"
-    assert '    "optional_field",' not in (package_dir / "__init__.py").read_text()
-
-    class Response(Struct):
-        block: str | UnsetType = UNSET
-
-    assert msgspec.json.decode(b"{}", type=Response).block is UNSET
-    assert optional_module.optional_field(msgspec.json.decode(b"{}", type=Response).block) is None
-    with pytest.raises(msgspec.ValidationError):
-        msgspec.json.decode(b'{"block": null}', type=Response)
+    init_source = (package_dir / "__init__.py").read_text()
+    assert not (package_dir / "_optional.py").exists()
+    assert 'register_validation_models("block_api", "hiveio_api._validation.block_api", "hf26")' in init_source
+    assert 'register_validation_models("condenser_api", "hiveio_api._validation.condenser_api", "legacy")' in init_source
+    assert '    "validate_schema",' in init_source
 
 
 def test_exported_description_symbols_ignore_model_fields(tmp_path: Path) -> None:

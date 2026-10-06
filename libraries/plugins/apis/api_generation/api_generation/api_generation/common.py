@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Literal, Final
+from typing import Final, Literal
 
 
 AvailableApis = Literal[
@@ -46,3 +46,8 @@ APIS_WITH_LEGACY_ARGS_SERIALIZATION: Final[list[str]] = [
     "condenser_api",
     "bridge",
 ]
+
+
+def api_serialization(api: str) -> Literal["hf26", "legacy"]:
+    """Serialization used by responses of the API (legacy assets as strings, operations as arrays)."""
+    return "legacy" if api.replace("-", "_") in APIS_WITH_LEGACY_ARGS_SERIALIZATION else "hf26"
