@@ -12961,10 +12961,12 @@
                 "type": "object",
                 "properties": {
                     "id": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer",
                         "description": "Account's identification number."
                     },
                     "name": {
+                        "x-hive-type": "AccountName",
                         "type": "string",
                         "description": "Account's name."
                     },
@@ -12981,6 +12983,7 @@
                         "description": "Posting authority of the account."
                     },
                     "memo_key": {
+                        "x-hive-type": "PublicKey",
                         "type": "string",
                         "description": "The public key used to encrypt the memo."
                     },
@@ -12993,6 +12996,7 @@
                         "description": "Parameter encompasses personalized profile information.  It is a JSON object that can contain any data."
                     },
                     "proxy": {
+                        "x-hive-type": "OptionallyEmptyAccountName",
                         "type": "string",
                         "description": "An account to which the account has designated as its proxy.  The proxy can vote on behalf of the account."
                     },
@@ -13016,18 +13020,22 @@
                         "description": "Information whether made a prove of work.  It is true if the account was created by mining."
                     },
                     "recovery_account": {
+                        "x-hive-type": "OptionallyEmptyAccountName",
                         "type": "string",
                         "description": "An account to which the account has designated as its recovery account.  The recovery account can help recover the account if it is lost."
                     },
                     "reset_account": {
+                        "x-hive-type": "AccountName",
                         "type": "string",
                         "description": "deprecated parameter"
                     },
                     "comment_count": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer",
                         "description": "The number of comments made by the account."
                     },
                     "lifetime_vote_count": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer",
                         "description": "The number of votes made by the account."
                     },
@@ -13072,6 +13080,7 @@
                         "description": "The time when the last interest payment was made on the savings HIVE backed dollar balance"
                     },
                     "savings_withdraw_requests": {
+                        "x-hive-type": "Uint8t",
                         "type": "integer",
                         "description": "The number of savings withdraw requests made by the account."
                     },
@@ -13089,10 +13098,12 @@
                         "description": "The remaining total vesting shares needed to complete withdrawals."
                     },
                     "withdraw_routes": {
+                        "x-hive-type": "Uint16t",
                         "type": "integer",
                         "description": "The number of withdraw routes for the account."
                     },
                     "pending_transfers": {
+                        "x-hive-type": "Uint16t",
                         "type": "integer",
                         "description": "The number of pending transfers for the account."
                     },
@@ -13101,10 +13112,12 @@
                         "description": "The number of pending claimed accounts for the account."
                     },
                     "post_bandwidth": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer",
                         "description": "The post bandwidth of the account."
                     },
                     "post_count": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer",
                         "description": "The number of posts made by the account."
                     },
@@ -13152,6 +13165,7 @@
                         "description": "Indicates if the account is an SMT."
                     },
                     "open_recurrent_transfers": {
+                        "x-hive-type": "Uint16t",
                         "type": "integer",
                         "description": "Number of open recurrent transfers."
                     },
@@ -13167,6 +13181,7 @@
                         "description": "Proxy votes levels."
                     },
                     "witnesses_voted_for": {
+                        "x-hive-type": "Uint16t",
                         "type": "integer",
                         "description": "Number of witnesses voted for by the account."
                     }
@@ -13229,54 +13244,67 @@
                         "type": "object",
                         "properties": {
                             "balance": {
+                                "x-hive-type": "AssetHive",
                                 "$ref": "#/components/schemas/balance",
                                 "description": "The balance of the account.  It is represented as an object with amount, nai, and precision."
                             },
                             "savings_balance": {
+                                "x-hive-type": "AssetHive",
                                 "$ref": "#/components/schemas/balance",
                                 "description": "The savings balance of the account.  It is represented as an object with amount, nai, and precision."
                             },
                             "hbd_balance": {
+                                "x-hive-type": "AssetHbd",
                                 "$ref": "#/components/schemas/balance",
                                 "description": "The HIVE backed dollar balance of the account.  It is represented as an object with amount, nai, and precision."
                             },
                             "savings_hbd_balance": {
+                                "x-hive-type": "AssetHbd",
                                 "$ref": "#/components/schemas/balance",
                                 "description": "The savings HIVE backed dollar balance of the account.  It is represented as an object with amount, nai, and precision."
                             },
                             "reward_hbd_balance": {
+                                "x-hive-type": "AssetHbd",
                                 "$ref": "#/components/schemas/balance",
                                 "description": "The reward HIVE backed dollar balance of the account.  It is represented as an object with amount, nai, and precision."
                             },
                             "reward_hive_balance": {
+                                "x-hive-type": "AssetHive",
                                 "$ref": "#/components/schemas/balance",
                                 "description": "The reward HIVE balance of the account.  It is represented as an object with amount, nai, and precision."
                             },
                             "reward_vesting_balance": {
+                                "x-hive-type": "AssetVests",
                                 "$ref": "#/components/schemas/balance",
                                 "description": "The reward vesting balance of the account.  It is represented as an object with amount, nai, and precision."
                             },
                             "reward_vesting_hive": {
+                                "x-hive-type": "AssetHive",
                                 "$ref": "#/components/schemas/balance",
                                 "description": "The reward vesting HIVE balance of the account.  It is represented as an object with amount, nai, and precision."
                             },
                             "vesting_shares": {
+                                "x-hive-type": "AssetVests",
                                 "$ref": "#/components/schemas/balance",
                                 "description": "The vesting shares of the account.  It is represented as an object with amount, nai, and precision."
                             },
                             "delegated_vesting_shares": {
+                                "x-hive-type": "AssetVests",
                                 "$ref": "#/components/schemas/balance",
                                 "description": "The delegated vesting shares of the account.  It is represented as an object with amount, nai, and precision."
                             },
                             "received_vesting_shares": {
+                                "x-hive-type": "AssetVests",
                                 "$ref": "#/components/schemas/balance",
                                 "description": "The received vesting shares of the account.  It is represented as an object with amount, nai, and precision."
                             },
                             "vesting_withdraw_rate": {
+                                "x-hive-type": "AssetVests",
                                 "$ref": "#/components/schemas/balance",
                                 "description": "The vesting withdraw rate of the account.  It is represented as an object with amount, nai, and precision."
                             },
                             "post_voting_power": {
+                                "x-hive-type": "AssetVests",
                                 "$ref": "#/components/schemas/balance",
                                 "description": "The post voting power of the account.  It is represented as an object with amount, nai, and precision."
                             }
@@ -13311,58 +13339,72 @@
                         "type": "object",
                         "properties": {
                             "balance": {
+                                "x-hive-type": "LegacyAssetHive",
                                 "type": "string",
                                 "description": "The balance of the account.  It is represented as an object with amount, nai, and precision."
                             },
                             "savings_balance": {
+                                "x-hive-type": "LegacyAssetHive",
                                 "type": "string",
                                 "description": "The savings balance of the account.  It is represented as an object with amount, nai, and precision."
                             },
                             "hbd_balance": {
+                                "x-hive-type": "LegacyAssetHbd",
                                 "type": "string",
                                 "description": "The HIVE backed dollar balance of the account.  It is represented as an object with amount, nai, and precision."
                             },
                             "savings_hbd_balance": {
+                                "x-hive-type": "LegacyAssetHbd",
                                 "type": "string",
                                 "description": "The savings HIVE backed dollar balance of the account.  It is represented as an object with amount, nai, and precision."
                             },
                             "reward_hbd_balance": {
+                                "x-hive-type": "LegacyAssetHbd",
                                 "type": "string",
                                 "description": "The reward HIVE backed dollar balance of the account.  It is represented as an object with amount, nai, and precision."
                             },
                             "reward_hive_balance": {
+                                "x-hive-type": "LegacyAssetHive",
                                 "type": "string",
                                 "description": "The reward HIVE balance of the account.  It is represented as an object with amount, nai, and precision."
                             },
                             "reward_vesting_balance": {
+                                "x-hive-type": "LegacyAssetVests",
                                 "type": "string",
                                 "description": "The reward vesting balance of the account.  It is represented as an object with amount, nai, and precision."
                             },
                             "reward_vesting_hive": {
+                                "x-hive-type": "LegacyAssetHive",
                                 "type": "string",
                                 "description": "The reward vesting HIVE balance of the account.  It is represented as an object with amount, nai, and precision."
                             },
                             "vesting_shares": {
+                                "x-hive-type": "LegacyAssetVests",
                                 "type": "string",
                                 "description": "The vesting shares of the account.  It is represented as an object with amount, nai, and precision."
                             },
                             "delegated_vesting_shares": {
+                                "x-hive-type": "LegacyAssetVests",
                                 "type": "string",
                                 "description": "The delegated vesting shares of the account.  It is represented as an object with amount, nai, and precision."
                             },
                             "received_vesting_shares": {
+                                "x-hive-type": "LegacyAssetVests",
                                 "type": "string",
                                 "description": "The received vesting shares of the account.  It is represented as an object with amount, nai, and precision."
                             },
                             "vesting_withdraw_rate": {
+                                "x-hive-type": "LegacyAssetVests",
                                 "type": "string",
                                 "description": "The vesting withdraw rate of the account.  It is represented as an object with amount, nai, and precision."
                             },
                             "post_voting_power": {
+                                "x-hive-type": "LegacyAssetVests",
                                 "type": "string",
                                 "description": "The post voting power of the account.  It is represented as an object with amount, nai, and precision."
                             },
                             "vesting_balance": {
+                                "x-hive-type": "LegacyAssetHive",
                                 "type": "string",
                                 "description": "The vesting balance of the account.  It is represented as an object with amount, nai, and precision."
                             },
@@ -13481,54 +13523,67 @@
                         "type": "object",
                         "properties": {
                             "balance": {
+                                "x-hive-type": "LegacyAssetHive",
                                 "type": "string",
                                 "description": "The balance of the account.  It is represented as an object with amount, nai, and precision."
                             },
                             "savings_balance": {
+                                "x-hive-type": "LegacyAssetHive",
                                 "type": "string",
                                 "description": "The savings balance of the account.  It is represented as an object with amount, nai, and precision."
                             },
                             "hbd_balance": {
+                                "x-hive-type": "LegacyAssetHbd",
                                 "type": "string",
                                 "description": "The HIVE backed dollar balance of the account.  It is represented as an object with amount, nai, and precision."
                             },
                             "savings_hbd_balance": {
+                                "x-hive-type": "LegacyAssetHbd",
                                 "type": "string",
                                 "description": "The savings HIVE backed dollar balance of the account.  It is represented as an object with amount, nai, and precision."
                             },
                             "reward_hbd_balance": {
+                                "x-hive-type": "LegacyAssetHbd",
                                 "type": "string",
                                 "description": "The reward HIVE backed dollar balance of the account.  It is represented as an object with amount, nai, and precision."
                             },
                             "reward_hive_balance": {
+                                "x-hive-type": "LegacyAssetHive",
                                 "type": "string",
                                 "description": "The reward HIVE balance of the account.  It is represented as an object with amount, nai, and precision."
                             },
                             "reward_vesting_balance": {
+                                "x-hive-type": "LegacyAssetVests",
                                 "type": "string",
                                 "description": "The reward vesting balance of the account.  It is represented as an object with amount, nai, and precision."
                             },
                             "reward_vesting_hive": {
+                                "x-hive-type": "LegacyAssetHive",
                                 "type": "string",
                                 "description": "The reward vesting HIVE balance of the account.  It is represented as an object with amount, nai, and precision."
                             },
                             "vesting_shares": {
+                                "x-hive-type": "LegacyAssetVests",
                                 "type": "string",
                                 "description": "The vesting shares of the account.  It is represented as an object with amount, nai, and precision."
                             },
                             "delegated_vesting_shares": {
+                                "x-hive-type": "LegacyAssetVests",
                                 "type": "string",
                                 "description": "The delegated vesting shares of the account.  It is represented as an object with amount, nai, and precision."
                             },
                             "received_vesting_shares": {
+                                "x-hive-type": "LegacyAssetVests",
                                 "type": "string",
                                 "description": "The received vesting shares of the account.  It is represented as an object with amount, nai, and precision."
                             },
                             "vesting_withdraw_rate": {
+                                "x-hive-type": "LegacyAssetVests",
                                 "type": "string",
                                 "description": "The vesting withdraw rate of the account.  It is represented as an object with amount, nai, and precision."
                             },
                             "post_voting_power": {
+                                "x-hive-type": "LegacyAssetVests",
                                 "type": "string",
                                 "description": "The post voting power of the account.  It is represented as an object with amount, nai, and precision."
                             }
@@ -13559,6 +13614,7 @@
                 "items": {
                     "oneOf": [
                         {
+                            "x-hive-type": "Uint32t",
                             "type": "integer"
                         },
                         {
@@ -13629,6 +13685,7 @@
                 "type": "object",
                 "properties": {
                     "account_to_recover": {
+                        "x-hive-type": "AccountName",
                         "type": "string",
                         "example": "tulpa",
                         "description": "The name of the account to recover."
@@ -13640,6 +13697,7 @@
                         "description": "The expiration time of the recovery request."
                     },
                     "id": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer",
                         "example": 9,
                         "description": "The ID of the recovery request."
@@ -13660,6 +13718,7 @@
                 "type": "object",
                 "properties": {
                     "account": {
+                        "x-hive-type": "AccountName",
                         "type": "string",
                         "example": "hiveio"
                     },
@@ -13701,10 +13760,12 @@
                         "type": "object",
                         "properties": {
                             "decay_per_time_unit": {
+                                "x-hive-type": "Uint32t",
                                 "type": "integer",
                                 "example": 347321
                             },
                             "decay_per_time_unit_denom_shift": {
+                                "x-hive-type": "Uint8t",
                                 "type": "integer",
                                 "example": 36
                             }
@@ -13798,6 +13859,7 @@
                 "type": "object",
                 "properties": {
                     "percent": {
+                        "x-hive-type": "Int16t",
                         "type": "integer",
                         "description": "The percentage of the vote."
                     },
@@ -13815,6 +13877,7 @@
                         "description": "The time when the vote was cast."
                     },
                     "voter": {
+                        "x-hive-type": "AccountName",
                         "type": "string",
                         "description": "The name of the voter."
                     },
@@ -13850,16 +13913,19 @@
                 "type": "object",
                 "properties": {
                     "voter": {
+                        "x-hive-type": "AccountName",
                         "type": "string",
                         "example": "hiveio",
                         "description": "The name of the account that cast the vote."
                     },
                     "author": {
+                        "x-hive-type": "AccountName",
                         "type": "string",
                         "example": "hiveio",
                         "description": "The author of the post that was voted on."
                     },
                     "permlink": {
+                        "x-hive-type": "Permlink",
                         "type": "string",
                         "example": "announcing-the-launch-of-hive-blockchain",
                         "description": "The permlink of the post that was voted on."
@@ -13912,6 +13978,7 @@
                 "type": "object",
                 "properties": {
                     "weight_threshold": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer"
                     },
                     "account_auths": {
@@ -13971,10 +14038,12 @@
                 "type": "object",
                 "properties": {
                     "base": {
+                        "x-hive-type": "AnyAsset",
                         "$ref": "#/components/schemas/balance",
                         "description": "The base asset of the price."
                     },
                     "quote": {
+                        "x-hive-type": "AnyAsset",
                         "$ref": "#/components/schemas/balance",
                         "description": "The quote asset of the price."
                     }
@@ -13988,10 +14057,12 @@
                 "type": "object",
                 "properties": {
                     "base": {
+                        "x-hive-type": "LegacyAssetHiveOrHbd",
                         "type": "string",
                         "description": "The base asset of the price."
                     },
                     "quote": {
+                        "x-hive-type": "LegacyAssetHiveOrHbd",
                         "type": "string",
                         "description": "The quote asset of the price."
                     }
@@ -14007,9 +14078,11 @@
                     "type": "object",
                     "properties": {
                         "account": {
+                            "x-hive-type": "AccountName",
                             "type": "string"
                         },
                         "weight": {
+                            "x-hive-type": "Uint16t",
                             "type": "integer"
                         }
                     },
@@ -14090,6 +14163,7 @@
                 "type": "object",
                 "properties": {
                     "previous": {
+                        "x-hive-type": "BlockId",
                         "type": "string",
                         "example": "0000000000000000000000000000000000000000",
                         "description": "The previous block ID."
@@ -14101,11 +14175,13 @@
                         "description": "The timestamp of the block."
                     },
                     "witness": {
+                        "x-hive-type": "AccountName",
                         "type": "string",
                         "example": "",
                         "description": "The witness who produced the block."
                     },
                     "transaction_merkle_root": {
+                        "x-hive-type": "Hex",
                         "type": "string",
                         "example": "0000000000000000000000000000000000000000",
                         "description": "Single hash representing the combined hashes of all transactions in a block."
@@ -14115,16 +14191,19 @@
                         "example": []
                     },
                     "witness_signature": {
+                        "x-hive-type": "Signature",
                         "type": "string",
                         "example": "",
                         "description": "The signature of the witness who produced the block."
                     },
                     "block_id": {
+                        "x-hive-type": "BlockId",
                         "type": "string",
                         "example": "",
                         "description": "The ID of the block."
                     },
                     "signing_key": {
+                        "x-hive-type": "PublicKey",
                         "type": "string",
                         "example": "",
                         "description": "The key used to sign the block."
@@ -14132,6 +14211,7 @@
                     "transaction_ids": {
                         "type": "array",
                         "items": {
+                            "x-hive-type": "TransactionId",
                             "type": "string"
                         },
                         "example": [],
@@ -14203,6 +14283,7 @@
                 "type": "object",
                 "properties": {
                     "previous": {
+                        "x-hive-type": "BlockId",
                         "type": "string",
                         "example": "0000000000000000000000000000000000000000",
                         "description": "The previous block ID."
@@ -14214,11 +14295,13 @@
                         "description": "The timestamp of the block."
                     },
                     "witness": {
+                        "x-hive-type": "AccountName",
                         "type": "string",
                         "example": "",
                         "description": "The witness who produced the block."
                     },
                     "transaction_merkle_root": {
+                        "x-hive-type": "Hex",
                         "type": "string",
                         "example": "0000000000000000000000000000000000000000",
                         "description": "Single hash representing the combined hashes of all transactions in a block."
@@ -14321,6 +14404,7 @@
                 "type": "object",
                 "properties": {
                     "id": {
+                        "x-hive-type": "TransactionId",
                         "type": "string",
                         "example": "0000000000000000000000000000000000000000"
                     },
@@ -14359,12 +14443,15 @@
                         "example": 22841196
                     },
                     "total_payout_value": {
+                        "x-hive-type": "AssetHbd",
                         "$ref": "#/components/schemas/balance"
                     },
                     "curator_payout_value": {
+                        "x-hive-type": "AssetHbd",
                         "$ref": "#/components/schemas/balance"
                     },
                     "max_accepted_payout": {
+                        "x-hive-type": "AssetHbd",
                         "$ref": "#/components/schemas/balance"
                     },
                     "author_rewards": {
@@ -14407,10 +14494,12 @@
                         "example": "1969-12-31T23:59:59"
                     },
                     "percent_hbd": {
+                        "x-hive-type": "Uint16t",
                         "type": "integer",
                         "example": 10000
                     },
                     "reward_weight": {
+                        "x-hive-type": "Uint16t",
                         "type": "integer",
                         "example": 10000
                     },
@@ -14452,14 +14541,17 @@
                 "type": "object",
                 "properties": {
                     "account_creation_fee": {
+                        "x-hive-type": "LegacyAssetHive",
                         "type": "string",
                         "example": "0.100 HIVE"
                     },
                     "maximum_block_size": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer",
                         "example": 131072
                     },
                     "hbd_interest_rate": {
+                        "x-hive-type": "Uint16t",
                         "type": "integer",
                         "example": 1000
                     },
@@ -14468,6 +14560,7 @@
                         "example": 0
                     },
                     "account_subsidy_decay": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer",
                         "example": 0
                     }
@@ -14496,6 +14589,7 @@
                         "type": "boolean"
                     },
                     "author": {
+                        "x-hive-type": "AccountName",
                         "type": "string"
                     },
                     "author_rewards": {
@@ -14525,6 +14619,7 @@
                         "format": "date-time"
                     },
                     "curator_payout_value": {
+                        "x-hive-type": "AssetHbd",
                         "$ref": "#/components/schemas/balance"
                     },
                     "depth": {
@@ -14542,6 +14637,7 @@
                         "format": "date-time"
                     },
                     "max_accepted_payout": {
+                        "x-hive-type": "AssetHbd",
                         "$ref": "#/components/schemas/balance"
                     },
                     "max_cashout_time": {
@@ -14555,30 +14651,36 @@
                         "type": "integer"
                     },
                     "parent_author": {
+                        "x-hive-type": "OptionallyEmptyAccountName",
                         "type": "string"
                     },
                     "parent_permlink": {
+                        "x-hive-type": "Permlink",
                         "type": "string"
                     },
                     "percent_hbd": {
                         "type": "integer"
                     },
                     "permlink": {
+                        "x-hive-type": "Permlink",
                         "type": "string"
                     },
                     "reward_weight": {
                         "type": "integer"
                     },
                     "root_author": {
+                        "x-hive-type": "AccountName",
                         "type": "string"
                     },
                     "root_permlink": {
+                        "x-hive-type": "Permlink",
                         "type": "string"
                     },
                     "title": {
                         "type": "string"
                     },
                     "total_payout_value": {
+                        "x-hive-type": "AssetHbd",
                         "$ref": "#/components/schemas/balance"
                     },
                     "total_vote_weight": {
@@ -14634,10 +14736,12 @@
                 "type": "object",
                 "properties": {
                     "author": {
+                        "x-hive-type": "AccountName",
                         "type": "string",
                         "example": "hbd.funder"
                     },
                     "permlink": {
+                        "x-hive-type": "Permlink",
                         "type": "string",
                         "example": "upvote-this-post-to-fund-hbdstabilizer-qr2j7n"
                     },
@@ -14888,6 +14992,7 @@
                 }
             },
             "condenser_get_account_count_response": {
+                "x-hive-type": "Uint64t",
                 "type": "integer",
                 "example": 123456
             },
@@ -14995,6 +15100,7 @@
             "condenser_get_active_witnesses_response": {
                 "type": "array",
                 "items": {
+                    "x-hive-type": "OptionallyEmptyAccountName",
                     "type": "string"
                 }
             },
@@ -15155,30 +15261,37 @@
                                 "description": "HBD asset symbol and precision."
                             },
                             "HIVE_MIN_CONTENT_REWARD": {
+                                "x-hive-type": "LegacyAssetHive",
                                 "type": "string",
                                 "description": "Minimum content reward."
                             },
                             "HIVE_MIN_CURATE_REWARD": {
+                                "x-hive-type": "LegacyAssetHive",
                                 "type": "string",
                                 "description": "Minimum curation reward."
                             },
                             "HIVE_MINING_REWARD": {
+                                "x-hive-type": "LegacyAssetHive",
                                 "type": "string",
                                 "description": "Minimum mining reward."
                             },
                             "HIVE_MIN_LIQUIDITY_REWARD": {
+                                "x-hive-type": "LegacyAssetHive",
                                 "type": "string",
                                 "description": "Minimum liquidity reward."
                             },
                             "HIVE_MIN_PAYOUT_HBD": {
+                                "x-hive-type": "LegacyAssetHbd",
                                 "type": "string",
                                 "description": "Minimum HBD payout."
                             },
                             "HIVE_MIN_POW_REWARD": {
+                                "x-hive-type": "LegacyAssetHive",
                                 "type": "string",
                                 "description": "Minimum proof-of-work reward."
                             },
                             "HIVE_MIN_PRODUCER_REWARD": {
+                                "x-hive-type": "LegacyAssetHive",
                                 "type": "string",
                                 "description": "Minimum producer reward."
                             }
@@ -15521,6 +15634,7 @@
                 }
             },
             "condenser_get_hardfork_version_response": {
+                "x-hive-type": "HardforkVersion",
                 "type": "string"
             },
             "condenser_get_key_references": {
@@ -15542,6 +15656,7 @@
                 "items": {
                     "type": "array",
                     "items": {
+                        "x-hive-type": "AccountName",
                         "type": "string"
                     }
                 }
@@ -15576,6 +15691,7 @@
             "condenser_get_market_history_buckets_response": {
                 "type": "array",
                 "items": {
+                    "x-hive-type": "Uint32t",
                     "type": "integer"
                 }
             },
@@ -15667,6 +15783,7 @@
             "condenser_get_potential_signatures_response": {
                 "type": "array",
                 "items": {
+                    "x-hive-type": "PublicKey",
                     "type": "string"
                 }
             },
@@ -15755,6 +15872,7 @@
             "condenser_get_required_signatures_response": {
                 "type": "array",
                 "items": {
+                    "x-hive-type": "PublicKey",
                     "type": "string"
                 }
             },
@@ -15841,6 +15959,7 @@
                 }
             },
             "condenser_get_transaction_hex_response": {
+                "x-hive-type": "Hex",
                 "type": "string"
             },
             "condenser_get_trending_tags": {
@@ -15934,6 +16053,7 @@
                 ]
             },
             "condenser_get_witness_count_response": {
+                "x-hive-type": "Uint64t",
                 "type": "integer"
             },
             "condenser_get_witness_schedule_response": {
@@ -16170,6 +16290,7 @@
             "condenser_lookup_accounts_response": {
                 "type": "array",
                 "items": {
+                    "x-hive-type": "AccountName",
                     "type": "string"
                 }
             },
@@ -16195,6 +16316,7 @@
             "condenser_lookup_witness_accounts_response": {
                 "type": "array",
                 "items": {
+                    "x-hive-type": "AccountName",
                     "type": "string"
                 }
             },
@@ -16211,6 +16333,7 @@
                 "type": "object",
                 "properties": {
                     "hf_version": {
+                        "x-hive-type": "HardforkVersion",
                         "type": "string",
                         "example": "1.27.0"
                     },
@@ -16255,20 +16378,24 @@
                         "description": "The date when the conversion will take place."
                     },
                     "id": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer",
                         "example": 40790
                     },
                     "owner": {
+                        "x-hive-type": "AccountName",
                         "type": "string",
                         "example": "hiveio",
                         "description": "The name of the account that owns the request."
                     },
                     "requestid": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer",
                         "example": 1,
                         "description": "The ID of the request."
                     },
                     "amount": {
+                        "x-hive-type": "LegacyAssetHbd",
                         "type": "string",
                         "example": "1000.000 HBD",
                         "description": "Converted amount."
@@ -16335,6 +16462,7 @@
                 "type": "object",
                 "properties": {
                     "blocks": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer",
                         "example": 10
                     }
@@ -16372,6 +16500,7 @@
                 "type": "object",
                 "properties": {
                     "blocks": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer",
                         "example": 10
                     }
@@ -16506,6 +16635,7 @@
                 "type": "object",
                 "properties": {
                     "account": {
+                        "x-hive-type": "AccountName",
                         "type": "string",
                         "example": "hiveio",
                         "description": "The name of the account to decline voting rights."
@@ -16517,6 +16647,7 @@
                         "description": "The date when the voting rights will be declined."
                     },
                     "id": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer",
                         "example": 11,
                         "description": "The ID of the request."
@@ -16573,6 +16704,7 @@
                         "description": "Number of available account creation subsidies, representing how many new accounts can be created with existing budget."
                     },
                     "content_reward_percent": {
+                        "x-hive-type": "Uint16t",
                         "type": "integer",
                         "description": "Percentage of the total reward pool allocated to content creators based on voting."
                     },
@@ -16581,18 +16713,22 @@
                         "description": "The current \"average slot\" number, an indicator of the current position in the consensus schedule."
                     },
                     "current_remove_threshold": {
+                        "x-hive-type": "Int16t",
                         "type": "integer",
                         "description": "The current threshold (in basis points) for account removal or vesting actions."
                     },
                     "current_witness": {
+                        "x-hive-type": "AccountName",
                         "type": "string",
                         "description": "Name of the witness currently producing the block."
                     },
                     "delegation_return_period": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer",
                         "description": "The period (in seconds) after which delegated vesting shares are returned."
                     },
                     "downvote_pool_percent": {
+                        "x-hive-type": "Uint16t",
                         "type": "integer",
                         "description": "The percentage (basis points) of the total voting power allocated to the downvote pool."
                     },
@@ -16601,30 +16737,37 @@
                         "description": "Duration in seconds during which early votes are accepted before the official voting period."
                     },
                     "hbd_interest_rate": {
+                        "x-hive-type": "Uint16t",
                         "type": "integer",
                         "description": "Annual interest rate (in basis points) paid on HBD savings or deposits."
                     },
                     "hbd_print_rate": {
+                        "x-hive-type": "Uint16t",
                         "type": "integer",
                         "description": "Rate (basis points) determining how much HBD is printed or issued based on economic conditions."
                     },
                     "hbd_start_percent": {
+                        "x-hive-type": "Uint16t",
                         "type": "integer",
                         "description": "The minimum percentage at which HBD creation process begins under peg stability mechanisms."
                     },
                     "hbd_stop_percent": {
+                        "x-hive-type": "Uint16t",
                         "type": "integer",
                         "description": "The maximum percentage at which HBD creation halts during the peg stabilization process."
                     },
                     "head_block_id": {
+                        "x-hive-type": "BlockId",
                         "type": "string",
                         "description": "The block ID of the latest block in the chain."
                     },
                     "head_block_number": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer",
                         "description": "The number (height) of the latest block."
                     },
                     "id": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer",
                         "description": "Unique ID for the global properties object."
                     },
@@ -16634,22 +16777,27 @@
                         "description": "Timestamp of the last budget allocation cycle."
                     },
                     "last_irreversible_block_num": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer",
                         "description": "Block number of the last irreversible block (finalized confirmed block)."
                     },
                     "max_consecutive_recurrent_transfer_failures": {
+                        "x-hive-type": "Uint8t",
                         "type": "integer",
                         "description": "Maximum allowed consecutive failures for scheduled recurrent transfers before cancellation."
                     },
                     "max_open_recurrent_transfers": {
+                        "x-hive-type": "Uint16t",
                         "type": "integer",
                         "description": "Maximum number of concurrently active recurrent transfer schedules."
                     },
                     "max_recurrent_transfer_end_date": {
+                        "x-hive-type": "Uint16t",
                         "type": "integer",
                         "description": "The maximum allowed end date (timestamp in days) for recurrent transfer schedules."
                     },
                     "maximum_block_size": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer",
                         "description": "The maximum size (in bytes) allowed for a single block."
                     },
@@ -16658,6 +16806,7 @@
                         "description": "Duration (in seconds) of mid-phase voting window for proposals."
                     },
                     "min_recurrent_transfers_recurrence": {
+                        "x-hive-type": "Uint8t",
                         "type": "integer",
                         "description": "Minimum recurrence interval (in hours) for scheduled recurrent transfers."
                     },
@@ -16672,14 +16821,17 @@
                         "description": "Scheduled time for the overall next blockchain maintenance."
                     },
                     "num_pow_witnesses": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer",
                         "description": "Count of proof-of-work (PoW) witnesses active in the network."
                     },
                     "participation_count": {
+                        "x-hive-type": "Uint8t",
                         "type": "integer",
                         "description": "Number of active participants/stakeholders currently participating in governance or voting processes."
                     },
                     "proposal_fund_percent": {
+                        "x-hive-type": "Uint16t",
                         "type": "integer",
                         "description": "Percentage of the total reward fund allocated for governance proposals, incentive programs, or development funding."
                     },
@@ -16701,10 +16853,12 @@
                         "description": "Total accumulated proof-of-work, which is usually zero or not applicable in pure proof-of-stake systems like HIVE unless PoW is used temporarily."
                     },
                     "vesting_reward_percent": {
+                        "x-hive-type": "Uint16t",
                         "type": "integer",
                         "description": "Percentage (basis points) of reward allocated to vesting."
                     },
                     "vote_power_reserve_rate": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer",
                         "description": "The rate at which vote power reserves are maintained or replenished."
                     }
@@ -16754,38 +16908,47 @@
                         "type": "object",
                         "properties": {
                             "current_hbd_supply": {
+                                "x-hive-type": "AssetHbd",
                                 "$ref": "#/components/schemas/balance",
                                 "description": "The current total supply of Hive-backed dollars (HBD) in circulation."
                             },
                             "current_supply": {
+                                "x-hive-type": "AssetHive",
                                 "$ref": "#/components/schemas/balance",
                                 "description": "The total supply of HIVE tokens currently in circulation."
                             },
                             "dhf_interval_ledger": {
+                                "x-hive-type": "AssetHbd",
                                 "$ref": "#/components/schemas/balance",
                                 "description": "The balance-adjusted ledger amount associated with the Dynamic Hosting Fund (DHF) interval."
                             },
                             "init_hbd_supply": {
+                                "x-hive-type": "AssetHbd",
                                 "$ref": "#/components/schemas/balance",
                                 "description": "The initial amount of HBD supply at network launch or reset."
                             },
                             "pending_rewarded_vesting_hive": {
+                                "x-hive-type": "AssetHive",
                                 "$ref": "#/components/schemas/balance",
                                 "description": "The amount of HIVE tokens pending as vested rewards that will be converted into vesting shares."
                             },
                             "pending_rewarded_vesting_shares": {
+                                "x-hive-type": "AssetVests",
                                 "$ref": "#/components/schemas/balance",
                                 "description": "The amount of vesting shares slated to be awarded as part of pending rewards."
                             },
                             "total_vesting_fund_hive": {
+                                "x-hive-type": "AssetHive",
                                 "$ref": "#/components/schemas/balance",
                                 "description": "Total HIVE allocated to vesting (vesting fund) \u2014 funds set aside for vesting."
                             },
                             "total_vesting_shares": {
+                                "x-hive-type": "AssetVests",
                                 "$ref": "#/components/schemas/balance",
                                 "description": "Total vesting shares issued."
                             },
                             "virtual_supply": {
+                                "x-hive-type": "AssetHive",
                                 "$ref": "#/components/schemas/balance",
                                 "description": "The blockchain's \"virtual\" supply, an internal accounting measure that may slightly differ from actual circulating tokens."
                             }
@@ -16813,38 +16976,47 @@
                         "type": "object",
                         "properties": {
                             "current_hbd_supply": {
+                                "x-hive-type": "LegacyAssetHbd",
                                 "type": "string",
                                 "description": "The current total supply of Hive-backed dollars (HBD) in circulation."
                             },
                             "current_supply": {
+                                "x-hive-type": "LegacyAssetHive",
                                 "type": "string",
                                 "description": "The total supply of HIVE tokens currently in circulation."
                             },
                             "dhf_interval_ledger": {
+                                "x-hive-type": "LegacyAssetHbd",
                                 "type": "string",
                                 "description": "The balance-adjusted ledger amount associated with the Dynamic Hosting Fund (DHF) interval."
                             },
                             "init_hbd_supply": {
+                                "x-hive-type": "LegacyAssetHbd",
                                 "type": "string",
                                 "description": "The initial amount of HBD supply at network launch or reset."
                             },
                             "pending_rewarded_vesting_hive": {
+                                "x-hive-type": "LegacyAssetHive",
                                 "type": "string",
                                 "description": "The amount of HIVE tokens pending as vested rewards that will be converted into vesting shares."
                             },
                             "pending_rewarded_vesting_shares": {
+                                "x-hive-type": "LegacyAssetVests",
                                 "type": "string",
                                 "description": "The amount of vesting shares slated to be awarded as part of pending rewards."
                             },
                             "total_vesting_fund_hive": {
+                                "x-hive-type": "LegacyAssetHive",
                                 "type": "string",
                                 "description": "Total HIVE allocated to vesting (vesting fund) \u2014 funds set aside for vesting."
                             },
                             "total_vesting_shares": {
+                                "x-hive-type": "LegacyAssetVests",
                                 "type": "string",
                                 "description": "Total vesting shares issued."
                             },
                             "virtual_supply": {
+                                "x-hive-type": "LegacyAssetHive",
                                 "type": "string",
                                 "description": "The blockchain's \"virtual\" supply, an internal accounting measure that may slightly differ from actual circulating tokens."
                             }
@@ -16915,6 +17087,7 @@
                 "type": "object",
                 "properties": {
                     "next_block_range_begin": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer",
                         "example": 90000000,
                         "description": "The next block range starting block."
@@ -16948,25 +17121,30 @@
                 "type": "object",
                 "properties": {
                     "id": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer",
                         "example": 143,
                         "description": "The ID of the escrow."
                     },
                     "escrow_id": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer",
                         "example": 12345
                     },
                     "from": {
+                        "x-hive-type": "AccountName",
                         "type": "string",
                         "example": "temp",
                         "description": "The account that created the escrow."
                     },
                     "to": {
+                        "x-hive-type": "AccountName",
                         "type": "string",
                         "example": "guest123",
                         "description": "The account that will receive the escrow."
                     },
                     "agent": {
+                        "x-hive-type": "AccountName",
                         "type": "string",
                         "example": "smitop",
                         "description": "The account that will act as the agent for the escrow."
@@ -17021,14 +17199,17 @@
                         "type": "object",
                         "properties": {
                             "hbd_balance": {
+                                "x-hive-type": "AssetHbd",
                                 "$ref": "#/components/schemas/balance",
                                 "description": "The HBD balance of the escrow."
                             },
                             "hive_balance": {
+                                "x-hive-type": "AssetHive",
                                 "$ref": "#/components/schemas/balance",
                                 "description": "The HIVE balance of the escrow."
                             },
                             "pending_fee": {
+                                "x-hive-type": "AssetHiveOrHbd",
                                 "$ref": "#/components/schemas/balance",
                                 "description": "The pending fee of the escrow."
                             }
@@ -17050,14 +17231,17 @@
                         "type": "object",
                         "properties": {
                             "hbd_balance": {
+                                "x-hive-type": "LegacyAssetHbd",
                                 "type": "string",
                                 "description": "The HBD balance of the escrow."
                             },
                             "hive_balance": {
+                                "x-hive-type": "LegacyAssetHive",
                                 "type": "string",
                                 "description": "The HIVE balance of the escrow."
                             },
                             "pending_fee": {
+                                "x-hive-type": "LegacyAssetHiveOrHbd",
                                 "type": "string",
                                 "description": "The pending fee of the escrow."
                             }
@@ -17448,6 +17632,7 @@
                 "type": "object",
                 "properties": {
                     "account_to_recover": {
+                        "x-hive-type": "AccountName",
                         "type": "string",
                         "example": "",
                         "description": "The name of the account to recover."
@@ -17459,11 +17644,13 @@
                         "description": "Date when the recovery will be effective."
                     },
                     "id": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer",
                         "example": 9,
                         "description": "The ID of the recovery request."
                     },
                     "recovery_account": {
+                        "x-hive-type": "AccountName",
                         "type": "string",
                         "example": "",
                         "description": "The name of the account that will be used to recover the account."
@@ -17566,10 +17753,12 @@
                         "description": "The status of the transaction."
                     },
                     "block_num": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer",
                         "description": "Block containing the transaction, when the transaction has been included in a block."
                     },
                     "rc_cost": {
+                        "x-hive-type": "Int64t",
                         "type": "integer",
                         "description": "Resource-credit cost, when known for an included transaction."
                     }
@@ -17649,15 +17838,18 @@
                         "description": "The date when the conversion will take place."
                     },
                     "id": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer",
                         "example": 40790
                     },
                     "owner": {
+                        "x-hive-type": "AccountName",
                         "type": "string",
                         "example": "hiveio",
                         "description": "The name of the account that owns the request."
                     },
                     "requestid": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer",
                         "example": 1,
                         "description": "The ID of the request."
@@ -17679,9 +17871,11 @@
                         "type": "object",
                         "properties": {
                             "collateral_amount": {
+                                "x-hive-type": "AssetHive",
                                 "$ref": "#/components/schemas/balance"
                             },
                             "converted_amount": {
+                                "x-hive-type": "AssetHbd",
                                 "$ref": "#/components/schemas/balance"
                             }
                         },
@@ -17701,9 +17895,11 @@
                         "type": "object",
                         "properties": {
                             "collateral_amount": {
+                                "x-hive-type": "LegacyAssetHive",
                                 "type": "string"
                             },
                             "converted_amount": {
+                                "x-hive-type": "LegacyAssetHbd",
                                 "type": "string"
                             }
                         },
@@ -17718,6 +17914,7 @@
                 "type": "object",
                 "properties": {
                     "id": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer",
                         "example": 0,
                         "description": "The ID of the feed history."
@@ -17758,6 +17955,7 @@
                 "type": "object",
                 "properties": {
                     "id": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer",
                         "example": 0,
                         "description": "The ID of the feed history."
@@ -18591,6 +18789,7 @@
                     "witnesses": {
                         "type": "array",
                         "items": {
+                            "x-hive-type": "AccountName",
                             "type": "string"
                         },
                         "example": [
@@ -18602,6 +18801,7 @@
                     "future_witnesses": {
                         "type": "array",
                         "items": {
+                            "x-hive-type": "AccountName",
                             "type": "string"
                         },
                         "description": "An array of strings representing the future witnesses. Only present when include_future is true."
@@ -18675,30 +18875,37 @@
                                 "description": "HBD asset symbol and precision."
                             },
                             "HIVE_MIN_CONTENT_REWARD": {
+                                "x-hive-type": "AssetHive",
                                 "$ref": "#/components/schemas/balance",
                                 "description": "Minimum content reward."
                             },
                             "HIVE_MIN_CURATE_REWARD": {
+                                "x-hive-type": "AssetHive",
                                 "$ref": "#/components/schemas/balance",
                                 "description": "Minimum curation reward."
                             },
                             "HIVE_MINING_REWARD": {
+                                "x-hive-type": "AssetHive",
                                 "$ref": "#/components/schemas/balance",
                                 "description": "Minimum mining reward."
                             },
                             "HIVE_MIN_LIQUIDITY_REWARD": {
+                                "x-hive-type": "AssetHive",
                                 "$ref": "#/components/schemas/balance",
                                 "description": "Minimum liquidity reward."
                             },
                             "HIVE_MIN_PAYOUT_HBD": {
+                                "x-hive-type": "AssetHbd",
                                 "$ref": "#/components/schemas/balance",
                                 "description": "Minimum HBD payout."
                             },
                             "HIVE_MIN_POW_REWARD": {
+                                "x-hive-type": "AssetHive",
                                 "$ref": "#/components/schemas/balance",
                                 "description": "Minimum proof-of-work reward."
                             },
                             "HIVE_MIN_PRODUCER_REWARD": {
+                                "x-hive-type": "AssetHive",
                                 "$ref": "#/components/schemas/balance",
                                 "description": "Minimum producer reward."
                             }
@@ -18729,6 +18936,7 @@
                         "description": "Indicates if the node is using an alternate chain ID."
                     },
                     "HIVE_INIT_PRIVATE_KEY": {
+                        "x-hive-type": "Hex",
                         "type": "string",
                         "description": "The initial private key for the blockchain."
                     },
@@ -18806,10 +19014,12 @@
                         "description": "Blockchain asset precision."
                     },
                     "HIVE_BLOCKCHAIN_HARDFORK_VERSION": {
+                        "x-hive-type": "HardforkVersion",
                         "type": "string",
                         "description": "Current hardfork version."
                     },
                     "HIVE_BLOCKCHAIN_VERSION": {
+                        "x-hive-type": "Version",
                         "type": "string",
                         "description": "Current blockchain version."
                     },
@@ -18842,6 +19052,7 @@
                         "description": "Pre-HF17 cashout window in seconds."
                     },
                     "HIVE_CHAIN_ID": {
+                        "x-hive-type": "Sha256",
                         "type": "string",
                         "description": "Unique chain identifier."
                     },
@@ -18954,10 +19165,12 @@
                         "description": "Stopping inflation rate percent."
                     },
                     "HIVE_INIT_MINER_NAME": {
+                        "x-hive-type": "AccountName",
                         "type": "string",
                         "description": "Name of the initial miner."
                     },
                     "HIVE_INIT_PUBLIC_KEY_STR": {
+                        "x-hive-type": "PublicKey",
                         "type": "string",
                         "description": "Initial public key string."
                     },
@@ -19146,6 +19359,7 @@
                         "description": "Minimum comment edit interval (microseconds)."
                     },
                     "HIVE_MINER_ACCOUNT": {
+                        "x-hive-type": "AccountName",
                         "type": "string",
                         "description": "Name of the miner account."
                     },
@@ -19170,6 +19384,7 @@
                         "description": "Minimum transaction size limit (bytes)."
                     },
                     "HIVE_NULL_ACCOUNT": {
+                        "x-hive-type": "AccountName",
                         "type": "string",
                         "description": "Null account name."
                     },
@@ -19210,6 +19425,7 @@
                         "description": "Producer APR percent."
                     },
                     "HIVE_PROXY_TO_SELF_ACCOUNT": {
+                        "x-hive-type": "OptionallyEmptyAccountName",
                         "type": "string",
                         "description": "Proxy to self account name."
                     },
@@ -19250,6 +19466,7 @@
                         "description": "Reverse auction window for HF21 (seconds)."
                     },
                     "HIVE_ROOT_POST_PARENT": {
+                        "x-hive-type": "OptionallyEmptyAccountName",
                         "type": "string",
                         "description": "Root post parent account."
                     },
@@ -19294,6 +19511,7 @@
                         "description": "Block number when vesting starts."
                     },
                     "HIVE_TEMP_ACCOUNT": {
+                        "x-hive-type": "AccountName",
                         "type": "string",
                         "description": "Temporary account name."
                     },
@@ -19430,6 +19648,7 @@
                         "description": "Pending transaction execution limit."
                     },
                     "HIVE_TREASURY_ACCOUNT": {
+                        "x-hive-type": "AccountName",
                         "type": "string",
                         "description": "Treasury account name."
                     },
@@ -19474,6 +19693,7 @@
                         "description": "Daily proposal maintenance period (seconds)."
                     },
                     "HIVE_DEFAULT_HF_9_COMPROMISED_ACCOUNTS_PUBLIC_KEY_STR": {
+                        "x-hive-type": "PublicKey",
                         "type": "string",
                         "description": "Default public key string for HF9 compromised accounts."
                     },
@@ -19514,10 +19734,12 @@
                         "description": "HBD stop percent for HF26."
                     },
                     "HIVE_HF_9_COMPROMISED_ACCOUNTS_PUBLIC_KEY_STR": {
+                        "x-hive-type": "PublicKey",
                         "type": "string",
                         "description": "Public key string for HF9 compromised accounts."
                     },
                     "HIVE_INIT_PUBLIC_KEY": {
+                        "x-hive-type": "PublicKey",
                         "type": "string",
                         "description": "Public key for the initial account."
                     },
@@ -19622,14 +19844,17 @@
                         "description": "Threshold for witness shutdown in seconds."
                     },
                     "NEW_HIVE_TREASURY_ACCOUNT": {
+                        "x-hive-type": "AccountName",
                         "type": "string",
                         "description": "New treasury account name."
                     },
                     "OBSOLETE_TREASURY_ACCOUNT": {
+                        "x-hive-type": "AccountName",
                         "type": "string",
                         "description": "Obsolete treasury account name."
                     },
                     "OLD_CHAIN_ID": {
+                        "x-hive-type": "Sha256",
                         "type": "string",
                         "description": "Old chain ID for compatibility."
                     }
@@ -19863,9 +20088,11 @@
                 "type": "object",
                 "properties": {
                     "base": {
+                        "x-hive-type": "AssetHbd",
                         "$ref": "#/components/schemas/balance"
                     },
                     "quote": {
+                        "x-hive-type": "AssetHive",
                         "$ref": "#/components/schemas/balance"
                     }
                 },
@@ -19944,18 +20171,22 @@
                 "type": "object",
                 "properties": {
                     "current_hardfork_version": {
+                        "x-hive-type": "HardforkVersion",
                         "type": "string",
                         "description": "The version of the hardfork."
                     },
                     "id": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer",
                         "description": "The ID of the hardfork."
                     },
                     "last_hardfork": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer",
                         "description": "The last hardfork number."
                     },
                     "next_hardfork": {
+                        "x-hive-type": "HardforkVersion",
                         "type": "string",
                         "description": "The next hardfork version."
                     },
@@ -20051,6 +20282,7 @@
                         "items": {
                             "type": "array",
                             "items": {
+                                "x-hive-type": "AccountName",
                                 "type": "string"
                             }
                         }
@@ -20104,6 +20336,7 @@
                     "bucket_sizes": {
                         "type": "array",
                         "items": {
+                            "x-hive-type": "Uint32t",
                             "type": "integer"
                         }
                     }
@@ -20309,6 +20542,7 @@
                     "keys": {
                         "type": "array",
                         "items": {
+                            "x-hive-type": "PublicKey",
                             "type": "string"
                         }
                     }
@@ -20460,6 +20694,7 @@
                 "type": "object",
                 "properties": {
                     "count": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer"
                     },
                     "avg_cost_rc": {
@@ -20514,18 +20749,23 @@
                 "type": "object",
                 "properties": {
                     "history_bp": {
+                        "x-hive-type": "Uint16t",
                         "type": "integer"
                     },
                     "tokens_bp": {
+                        "x-hive-type": "Uint16t",
                         "type": "integer"
                     },
                     "market_bp": {
+                        "x-hive-type": "Uint16t",
                         "type": "integer"
                     },
                     "state_bp": {
+                        "x-hive-type": "Uint16t",
                         "type": "integer"
                     },
                     "exec_bp": {
+                        "x-hive-type": "Uint16t",
                         "type": "integer"
                     }
                 },
@@ -20571,6 +20811,7 @@
                         "type": "object",
                         "properties": {
                             "block": {
+                                "x-hive-type": "Uint32t",
                                 "type": "integer"
                             },
                             "budget": {
@@ -20609,10 +20850,12 @@
                             "share": {
                                 "type": "array",
                                 "items": {
+                                    "x-hive-type": "Uint16t",
                                     "type": "integer"
                                 }
                             },
                             "stamp": {
+                                "x-hive-type": "Sha256",
                                 "type": "string"
                             }
                         }
@@ -20626,26 +20869,33 @@
                         "type": "object",
                         "properties": {
                             "comment": {
+                                "x-hive-type": "Uint32t",
                                 "type": "integer"
                             },
                             "transfer": {
+                                "x-hive-type": "Uint32t",
                                 "type": "integer"
                             },
                             "vote": {
+                                "x-hive-type": "Uint32t",
                                 "type": "integer"
                             }
                         }
                     },
                     "count": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer"
                     },
                     "lt10": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer"
                     },
                     "lt20": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer"
                     },
                     "lt5": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer"
                     },
                     "rank": {
@@ -20948,6 +21198,7 @@
                 "type": "object",
                 "properties": {
                     "hex": {
+                        "x-hive-type": "Hex",
                         "type": "string",
                         "example": "00000000000000000000000000"
                     }
@@ -20984,25 +21235,30 @@
                 "type": "object",
                 "properties": {
                     "blockchain_version": {
+                        "x-hive-type": "Version",
                         "type": "string",
                         "example": "0.23.0",
                         "description": "The version of the blockchain."
                     },
                     "hive_revision": {
+                        "x-hive-type": "Hex",
                         "type": "string",
                         "example": "5cda10a488cf77f68549ec6d3a6be9af2ea9351b",
                         "description": "The revision of the Hive codebase."
                     },
                     "fc_revision": {
+                        "x-hive-type": "Hex",
                         "type": "string",
                         "example": "5cda10a488cf77f68549ec6d3a6be9af2ea9351b",
                         "description": "The revision of the fc codebase."
                     },
                     "chain_id": {
+                        "x-hive-type": "Sha256",
                         "type": "string",
                         "example": "beeab0de00000000000000000000000000000000000000000000000000000000"
                     },
                     "haf_revision": {
+                        "x-hive-type": "Hex",
                         "type": "string",
                         "example": "0e2bd7c69cc26928665281435165fd3288940db9"
                     },
@@ -21041,6 +21297,7 @@
                 "type": "object",
                 "properties": {
                     "amount": {
+                        "x-hive-type": "AssetHbd",
                         "$ref": "#/components/schemas/balance"
                     },
                     "conversion_date": {
@@ -21050,14 +21307,17 @@
                         "description": "The date when the conversion will take place."
                     },
                     "id": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer",
                         "example": 433539
                     },
                     "owner": {
+                        "x-hive-type": "AccountName",
                         "type": "string",
                         "example": "demo.com"
                     },
                     "requestid": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer",
                         "example": 3205281453
                     }
@@ -21074,6 +21334,7 @@
                 "$ref": "#/components/schemas/base_and_quote"
             },
             "hive_int": {
+                "x-hive-type": "HiveInt",
                 "oneOf": [
                     {
                         "type": "string"
@@ -21146,6 +21407,7 @@
                 "type": "object",
                 "properties": {
                     "id": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer",
                         "example": 12345
                     },
@@ -21162,11 +21424,13 @@
                         "description": "The expiration time of the order."
                     },
                     "seller": {
+                        "x-hive-type": "AccountName",
                         "type": "string",
                         "example": "",
                         "description": "The account that created the order."
                     },
                     "orderid": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer",
                         "example": 0,
                         "description": "The ID of the order."
@@ -21858,6 +22122,7 @@
                         "description": "Market data for HIVE."
                     },
                     "id": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer",
                         "example": 793307,
                         "description": "The unique identifier for the market history entry."
@@ -21873,6 +22138,7 @@
                         "description": "The opening time of the market history entry."
                     },
                     "seconds": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer",
                         "example": 86400,
                         "description": "The duration in seconds for the market history entry."
@@ -22038,10 +22304,12 @@
                 "type": "object",
                 "properties": {
                     "block": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer",
                         "description": "The block number in which the operation was included."
                     },
                     "op_in_trx": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer",
                         "description": "The index of the operation in the transaction."
                     },
@@ -22051,10 +22319,12 @@
                         "description": "The timestamp when the operation was executed."
                     },
                     "trx_id": {
+                        "x-hive-type": "TransactionId",
                         "type": "string",
                         "description": "The ID of the transaction that contains the operation."
                     },
                     "trx_in_block": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer",
                         "description": "The index of the transaction in the block."
                     },
@@ -22119,6 +22389,7 @@
                 "type": "object",
                 "properties": {
                     "block": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer",
                         "description": "The block number."
                     },
@@ -22150,11 +22421,13 @@
                 "type": "object",
                 "properties": {
                     "account": {
+                        "x-hive-type": "AccountName",
                         "type": "string",
                         "example": "noorkh",
                         "description": "The name of the account."
                     },
                     "id": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer",
                         "example": 765309,
                         "description": "The ID of the owner authority history."
@@ -22921,10 +23194,12 @@
                 "type": "object",
                 "properties": {
                     "id": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer",
                         "example": 0
                     },
                     "voter": {
+                        "x-hive-type": "AccountName",
                         "type": "string",
                         "example": "charlie",
                         "description": "The name of the account that voted on the proposal."
@@ -22975,6 +23250,7 @@
                 "type": "object",
                 "properties": {
                     "id": {
+                        "x-hive-type": "Uint64t",
                         "type": "integer",
                         "example": 12345
                     },
@@ -22983,11 +23259,13 @@
                         "example": "139925218365120"
                     },
                     "creator": {
+                        "x-hive-type": "AccountName",
                         "type": "string",
                         "example": "alice",
                         "description": "The name of the account that created the proposal."
                     },
                     "receiver": {
+                        "x-hive-type": "AccountName",
                         "type": "string",
                         "example": "bob",
                         "description": "The name of the account that will benefit from the proposal."
@@ -23010,6 +23288,7 @@
                         "description": "The subject of the proposal."
                     },
                     "permlink": {
+                        "x-hive-type": "Permlink",
                         "type": "string",
                         "example": "creator-proposal-permlink",
                         "description": "The permlink of the proposal."
@@ -23041,6 +23320,7 @@
                         "type": "object",
                         "properties": {
                             "daily_pay": {
+                                "x-hive-type": "AssetHbd",
                                 "$ref": "#/components/schemas/balance",
                                 "description": "The daily pay amount of the proposal."
                             },
@@ -23066,6 +23346,7 @@
                         "type": "object",
                         "properties": {
                             "daily_pay": {
+                                "x-hive-type": "LegacyAssetHbd",
                                 "type": "string",
                                 "example": "4800.000 HBD",
                                 "description": "The daily pay amount of the proposal."
@@ -23096,6 +23377,7 @@
                 "type": "object",
                 "properties": {
                     "account": {
+                        "x-hive-type": "AccountName",
                         "type": "string",
                         "example": "hiveio",
                         "description": "The name of the account."
@@ -23124,6 +23406,7 @@
                         "type": "object",
                         "properties": {
                             "max_rc_creation_adjustment": {
+                                "x-hive-type": "AssetVests",
                                 "$ref": "#/components/schemas/balance"
                             }
                         },
@@ -23145,6 +23428,7 @@
                         "type": "object",
                         "properties": {
                             "max_rc_creation_adjustment": {
+                                "x-hive-type": "LegacyAssetVests",
                                 "type": "string"
                             }
                         },
@@ -23164,9 +23448,11 @@
                         "$ref": "#/components/schemas/hive_int"
                     },
                     "from": {
+                        "x-hive-type": "AccountName",
                         "type": "string"
                     },
                     "to": {
+                        "x-hive-type": "AccountName",
                         "type": "string"
                     }
                 },
@@ -23201,6 +23487,7 @@
                         "$ref": "#/components/schemas/hive_int"
                     },
                     "shift": {
+                        "x-hive-type": "Uint8t",
                         "type": "integer"
                     }
                 },
@@ -23229,9 +23516,11 @@
                 "type": "object",
                 "properties": {
                     "decay_per_time_unit": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer"
                     },
                     "decay_per_time_unit_denom_shift": {
+                        "x-hive-type": "Uint8t",
                         "type": "integer"
                     }
                 },
@@ -23275,6 +23564,7 @@
                 "type": "object",
                 "properties": {
                     "id": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer",
                         "example": 12345
                     },
@@ -23285,11 +23575,13 @@
                         "description": "The date when the transfer will be triggered."
                     },
                     "from": {
+                        "x-hive-type": "AccountName",
                         "type": "string",
                         "example": "alice",
                         "description": "The name of the account that created the transfer."
                     },
                     "to": {
+                        "x-hive-type": "AccountName",
                         "type": "string",
                         "example": "bob",
                         "description": "The name of the account that will receive the transfer."
@@ -23300,16 +23592,19 @@
                         "description": "The memo message."
                     },
                     "recurrence": {
+                        "x-hive-type": "Uint16t",
                         "type": "integer",
                         "example": 26,
                         "description": "The recurrence period of the transfer in hours."
                     },
                     "consecutive_failures": {
+                        "x-hive-type": "Uint8t",
                         "type": "integer",
                         "example": 0,
                         "description": "The number of consecutive failures of the transfer."
                     },
                     "remaining_executions": {
+                        "x-hive-type": "Uint16t",
                         "type": "integer",
                         "example": 3,
                         "description": "The number of remaining executions of the transfer."
@@ -23335,6 +23630,7 @@
                         "type": "object",
                         "properties": {
                             "amount": {
+                                "x-hive-type": "AssetHiveOrHbd",
                                 "$ref": "#/components/schemas/balance",
                                 "description": "The amount of the transfer."
                             }
@@ -23354,6 +23650,7 @@
                         "type": "object",
                         "properties": {
                             "amount": {
+                                "x-hive-type": "LegacyAssetHiveOrHbd",
                                 "type": "string",
                                 "description": "The amount of the transfer."
                             }
@@ -23383,6 +23680,7 @@
                         "description": "The curation reward curve."
                     },
                     "id": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer",
                         "example": 0
                     },
@@ -23396,10 +23694,12 @@
                         "example": "post"
                     },
                     "percent_content_rewards": {
+                        "x-hive-type": "Uint16t",
                         "type": "integer",
                         "example": 10000
                     },
                     "percent_curation_rewards": {
+                        "x-hive-type": "Uint16t",
                         "type": "integer",
                         "example": 5000
                     },
@@ -23428,6 +23728,7 @@
                         "type": "object",
                         "properties": {
                             "reward_balance": {
+                                "x-hive-type": "AssetHive",
                                 "$ref": "#/components/schemas/balance"
                             }
                         },
@@ -23446,6 +23747,7 @@
                         "type": "object",
                         "properties": {
                             "reward_balance": {
+                                "x-hive-type": "LegacyAssetHive",
                                 "type": "string"
                             }
                         },
@@ -23465,11 +23767,13 @@
                         "description": "The date when the withdrawal will be completed."
                     },
                     "from": {
+                        "x-hive-type": "AccountName",
                         "type": "string",
                         "example": "demo.com",
                         "description": "The name of the account that created the withdrawal."
                     },
                     "id": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer",
                         "example": 213646,
                         "description": "The ID of the withdrawal."
@@ -23480,11 +23784,13 @@
                         "description": "The memo message."
                     },
                     "request_id": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer",
                         "example": 3205148605,
                         "description": "The ID of the request."
                     },
                     "to": {
+                        "x-hive-type": "AccountName",
                         "type": "string",
                         "example": "demo.com",
                         "description": "The name of the account that will receive the withdrawal."
@@ -23508,6 +23814,7 @@
                         "type": "object",
                         "properties": {
                             "amount": {
+                                "x-hive-type": "AssetHiveOrHbd",
                                 "$ref": "#/components/schemas/balance",
                                 "description": "The amount of the withdrawal."
                             }
@@ -23527,6 +23834,7 @@
                         "type": "object",
                         "properties": {
                             "amount": {
+                                "x-hive-type": "LegacyAssetHiveOrHbd",
                                 "type": "string",
                                 "description": "The amount of the withdrawal."
                             }
@@ -23944,9 +24252,11 @@
                         "format": "date-time"
                     },
                     "taker": {
+                        "x-hive-type": "AccountName",
                         "type": "string"
                     },
                     "maker": {
+                        "x-hive-type": "AccountName",
                         "type": "string"
                     }
                 },
@@ -23965,9 +24275,11 @@
                         "type": "object",
                         "properties": {
                             "current_pays": {
+                                "x-hive-type": "AssetHiveOrHbd",
                                 "$ref": "#/components/schemas/balance"
                             },
                             "open_pays": {
+                                "x-hive-type": "AssetHiveOrHbd",
                                 "$ref": "#/components/schemas/balance"
                             }
                         },
@@ -23987,9 +24299,11 @@
                         "type": "object",
                         "properties": {
                             "current_pays": {
+                                "x-hive-type": "LegacyAssetHiveOrHbd",
                                 "type": "string"
                             },
                             "open_pays": {
+                                "x-hive-type": "LegacyAssetHiveOrHbd",
                                 "type": "string"
                             }
                         },
@@ -24004,15 +24318,18 @@
                 "type": "object",
                 "properties": {
                     "block_num": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer",
                         "example": 21401130
                     },
                     "transaction_id": {
+                        "x-hive-type": "TransactionId",
                         "type": "string",
                         "example": "6fde0190a97835ea6d9e651293e90c89911f933c",
                         "description": "The ID of the transaction."
                     },
                     "transaction_num": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer",
                         "example": 25,
                         "description": "The transaction number in the block."
@@ -24028,10 +24345,12 @@
                 "type": "object",
                 "properties": {
                     "ref_block_num": {
+                        "x-hive-type": "Uint16t",
                         "type": "integer",
                         "example": 0
                     },
                     "ref_block_prefix": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer",
                         "example": 0
                     },
@@ -24047,6 +24366,7 @@
                     "signatures": {
                         "type": "array",
                         "items": {
+                            "x-hive-type": "Signature",
                             "type": "string"
                         },
                         "example": []
@@ -24380,16 +24700,19 @@
                 "type": "object",
                 "properties": {
                     "delegator": {
+                        "x-hive-type": "AccountName",
                         "type": "string",
                         "example": "hiveio",
                         "description": "The name of the account that delegated the shares."
                     },
                     "delegatee": {
+                        "x-hive-type": "AccountName",
                         "type": "string",
                         "example": "sharker",
                         "description": "The name of the account that received the delegation."
                     },
                     "id": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer",
                         "example": 2454889,
                         "description": "The ID of the delegation."
@@ -24416,6 +24739,7 @@
                         "type": "object",
                         "properties": {
                             "vesting_shares": {
+                                "x-hive-type": "AssetVests",
                                 "$ref": "#/components/schemas/balance",
                                 "description": "The amount of vesting shares delegated."
                             }
@@ -24435,6 +24759,7 @@
                         "type": "object",
                         "properties": {
                             "vesting_shares": {
+                                "x-hive-type": "LegacyAssetVests",
                                 "type": "string",
                                 "description": "The amount of vesting shares delegated."
                             }
@@ -24449,10 +24774,12 @@
                 "type": "object",
                 "properties": {
                     "id": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer",
                         "example": 12345
                     },
                     "delegator": {
+                        "x-hive-type": "AccountName",
                         "type": "string",
                         "example": "hiveio",
                         "description": "The name of the account that delegated the shares."
@@ -24479,6 +24806,7 @@
                         "type": "object",
                         "properties": {
                             "vesting_shares": {
+                                "x-hive-type": "AssetVests",
                                 "$ref": "#/components/schemas/balance",
                                 "description": "The amount of vesting shares delegated."
                             }
@@ -24498,6 +24826,7 @@
                         "type": "object",
                         "properties": {
                             "vesting_shares": {
+                                "x-hive-type": "LegacyAssetVests",
                                 "type": "string",
                                 "description": "The amount of vesting shares delegated."
                             }
@@ -24512,9 +24841,11 @@
                 "type": "object",
                 "properties": {
                     "hive_volume": {
+                        "x-hive-type": "AssetHive",
                         "$ref": "#/components/schemas/balance"
                     },
                     "hbd_volume": {
+                        "x-hive-type": "AssetHbd",
                         "$ref": "#/components/schemas/balance"
                     }
                 },
@@ -24527,9 +24858,11 @@
                 "type": "object",
                 "properties": {
                     "hive_volume": {
+                        "x-hive-type": "LegacyAssetHive",
                         "type": "string"
                     },
                     "hbd_volume": {
+                        "x-hive-type": "LegacyAssetHbd",
                         "type": "string"
                     }
                 },
@@ -24545,6 +24878,7 @@
                         "$ref": "#/components/schemas/hive_int"
                     },
                     "last_update_time": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer"
                     }
                 },
@@ -24557,16 +24891,19 @@
                 "type": "object",
                 "properties": {
                     "from_account": {
+                        "x-hive-type": "AccountName",
                         "type": "string",
                         "example": "hiveio",
                         "description": "The name of the account that is withdrawing vesting shares."
                     },
                     "to_account": {
+                        "x-hive-type": "AccountName",
                         "type": "string",
                         "example": "ecency",
                         "description": "The name of the receiver of the withdrawal"
                     },
                     "percent": {
+                        "x-hive-type": "Uint16t",
                         "type": "integer",
                         "example": 10000
                     },
@@ -24575,6 +24912,7 @@
                         "example": false
                     },
                     "id": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer",
                         "example": 12345,
                         "description": "The ID of the withdrawal route."
@@ -24606,10 +24944,12 @@
                         "description": "The time when the hardfork time vote was made."
                     },
                     "hardfork_version_vote": {
+                        "x-hive-type": "HardforkVersion",
                         "type": "string",
                         "description": "The version of the hardfork that was voted for."
                     },
                     "id": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer",
                         "description": "Witness's identification number."
                     },
@@ -24627,10 +24967,12 @@
                         "description": "The time when the last HBD exchange update was made."
                     },
                     "last_work": {
+                        "x-hive-type": "Sha256",
                         "type": "string",
                         "description": "The last work done by the witness."
                     },
                     "owner": {
+                        "x-hive-type": "AccountName",
                         "type": "string",
                         "description": "Witness name."
                     },
@@ -24639,18 +24981,22 @@
                         "description": "The proof-of-work worker of the witness."
                     },
                     "running_version": {
+                        "x-hive-type": "Version",
                         "type": "string",
                         "description": "The version of the running witness software."
                     },
                     "signing_key": {
+                        "x-hive-type": "PublicKey",
                         "type": "string",
                         "description": "Witness's signing key."
                     },
                     "total_missed": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer",
                         "description": "The total number of missed blocks by the witness."
                     },
                     "url": {
+                        "x-hive-type": "WitnessUrl",
                         "type": "string"
                     },
                     "virtual_last_update": {
@@ -24742,14 +25088,17 @@
                         "description": "The budget for account subsidies."
                     },
                     "account_subsidy_decay": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer",
                         "description": "The decay rate for account subsidies."
                     },
                     "hbd_interest_rate": {
+                        "x-hive-type": "Uint16t",
                         "type": "integer",
                         "description": "The interest rate for HBD."
                     },
                     "maximum_block_size": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer",
                         "description": "The maximum size of a block."
                     }
@@ -24770,6 +25119,7 @@
                         "type": "object",
                         "properties": {
                             "account_creation_fee": {
+                                "x-hive-type": "AssetHive",
                                 "$ref": "#/components/schemas/balance",
                                 "description": "The fee for creating an account."
                             }
@@ -24789,6 +25139,7 @@
                         "type": "object",
                         "properties": {
                             "account_creation_fee": {
+                                "x-hive-type": "LegacyAssetHive",
                                 "type": "string",
                                 "description": "The fee for creating an account."
                             }
@@ -24811,6 +25162,7 @@
                     "current_shuffled_witnesses": {
                         "type": "array",
                         "items": {
+                            "x-hive-type": "OptionallyEmptyAccountName",
                             "type": "string"
                         },
                         "example": [
@@ -24821,6 +25173,7 @@
                     "future_shuffled_witnesses": {
                         "type": "array",
                         "items": {
+                            "x-hive-type": "OptionallyEmptyAccountName",
                             "type": "string"
                         },
                         "description": "Future shuffled witnesses. Present only when requested."
@@ -24837,30 +25190,37 @@
                         "example": "965626696637118176548648739"
                     },
                     "elected_weight": {
+                        "x-hive-type": "Uint8t",
                         "type": "integer",
                         "example": 1
                     },
                     "hardfork_required_witnesses": {
+                        "x-hive-type": "Uint8t",
                         "type": "integer",
                         "example": 17
                     },
                     "id": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer",
                         "example": 0
                     },
                     "majority_version": {
+                        "x-hive-type": "Version",
                         "type": "string",
                         "example": "1.27.3"
                     },
                     "max_miner_witnesses": {
+                        "x-hive-type": "Uint8t",
                         "type": "integer",
                         "example": 0
                     },
                     "max_runner_witnesses": {
+                        "x-hive-type": "Uint8t",
                         "type": "integer",
                         "example": 1
                     },
                     "max_voted_witnesses": {
+                        "x-hive-type": "Uint8t",
                         "type": "integer",
                         "example": 20
                     },
@@ -24869,22 +25229,27 @@
                         "example": 0
                     },
                     "miner_weight": {
+                        "x-hive-type": "Uint8t",
                         "type": "integer",
                         "example": 1
                     },
                     "next_shuffle_block_num": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer",
                         "example": 96113997
                     },
                     "num_scheduled_witnesses": {
+                        "x-hive-type": "Uint8t",
                         "type": "integer",
                         "example": 21
                     },
                     "timeshare_weight": {
+                        "x-hive-type": "Uint8t",
                         "type": "integer",
                         "example": 5
                     },
                     "witness_pay_normalization_factor": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer",
                         "example": 25
                     }
@@ -24948,15 +25313,18 @@
                 "type": "object",
                 "properties": {
                     "id": {
+                        "x-hive-type": "Uint32t",
                         "type": "integer",
                         "example": 0
                     },
                     "witness": {
+                        "x-hive-type": "AccountName",
                         "type": "string",
                         "example": "witness1",
                         "description": "The name of the witness that was voted for."
                     },
                     "account": {
+                        "x-hive-type": "AccountName",
                         "type": "string",
                         "example": "alice",
                         "description": "The name of the account that voted for the witness."
