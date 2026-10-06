@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 
 from api_generation.common import api_serialization
+from api_generation.tidy import tidy_with_ruff
 from jinja2 import Environment, FileSystemLoader
 
 
@@ -50,6 +51,7 @@ def generate_root_package(
         content = template.render(apis=apis)
         (package_directory / output_name).write_text(content)
 
+    tidy_with_ruff(package_directory / "__init__.py")
     print(f"Generated root package files with {len(apis)} APIs: {[a['snake_case'] for a in apis]}")
 
 

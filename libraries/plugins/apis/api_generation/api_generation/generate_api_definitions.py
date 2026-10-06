@@ -10,6 +10,7 @@ from typing import Any
 from api_generation.generate_client import generate_client
 from api_generation.generate_description import generate_description
 from api_generation.model_variants import PUBLIC, VALIDATION
+from api_generation.tidy import tidy_with_ruff
 from jinja2 import Environment, FileSystemLoader
 
 
@@ -185,6 +186,13 @@ if __name__ == "__main__":
     validation_file = generate_description(api, base_directory, VALIDATION)
     description_symbol_name = f"{api.replace('-', '_')}_description"
     append_endpoint_results(validation_file, description_symbol_name)
+    # before extracting exported symbols, so they match the cleaned-up module
+    tidy_with_ruff(
+        api_description_file,
+        validation_file,
+        PUBLIC.package_directory(base_directory) / "common.py",
+        VALIDATION.package_directory(base_directory) / "common.py",
+    )
 
     print(f"Loading generated API descriptor: {description_symbol_name} from generated file: {api_description_file}")
 
@@ -209,4 +217,5 @@ if __name__ == "__main__":
     )
 
     render_validation_package(base_directory, template_api_path.parent)
+    tidy_with_ruff(api_subpackage_path, VALIDATION.package_directory(base_directory) / "__init__.py")
     print(f"Successfully generated API subpackage: hiveio_api.{api_name_snake_case}")
