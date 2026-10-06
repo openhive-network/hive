@@ -13,7 +13,7 @@ from hive_local_tools import run_for
 def _normalize_to_json(obj):
     """Serialize to JSON and back to get plain dicts for comparison.
 
-    Handles both plain msgspec Structs (hiveio_api responses) and schemas Structs
+    Handles both hiveio_api models (dataclasses) and schemas Structs
     with custom field types like HiveInt that msgspec.json.encode cannot serialize.
     """
     try:

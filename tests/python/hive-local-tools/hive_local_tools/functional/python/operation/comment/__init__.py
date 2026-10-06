@@ -343,7 +343,7 @@ class Comment:
         self.__wallet.api.vote(hater.name, self.author, self.permlink, -10)
 
     def assert_is_comment_sent_or_update(self) -> None:
-        # comment_value from wallet is a dict, op.value from hiveio_api is a msgspec struct
+        # comment_value from wallet is a dict, op.value from hiveio_api is a model built from builtins
         comment_value = self.comment_trx.operations[0].value
         ops_in_block = self.__node.api.account_history.get_ops_in_block(
             block_num=self.comment_trx.block_num, include_reversible=True
@@ -591,7 +591,7 @@ class Vote:
             operations = self.__comment_obj.node.api.account_history.get_ops_in_block(
                 block_num=self.__vote_transaction.block_num, include_reversible=True
             ).ops
-            # vote_operation from wallet is a dict, op.op.value from hiveio_api is a msgspec struct
+            # vote_operation from wallet is a dict, op.op.value from hiveio_api is a dict (free-form operation value)
             found = any(
                 op.op.type == "vote_operation"
                 and op.op.value["voter"] == vote_operation["voter"]
