@@ -346,6 +346,14 @@ for api_name in hiveio_api.APIS:
         except Exception as exception:
             errors.append(f"{module_name}.{symbol}: {type(exception).__name__}: {exception}")
 
+# Public API modules must not load validation models - they are loaded only by an explicit validate_schema call
+# (checked before importing test_tools, whose API annotations use validation models on purpose)
+import sys
+
+loaded_validation_modules = [name for name in sys.modules if name.startswith("hiveio_api._validation.")]
+if loaded_validation_modules:
+    errors.append(f"Validation models loaded without validate_schema call: {loaded_validation_modules}")
+
 try:
     import test_tools.__private.hived.api as hived_api
 except ModuleNotFoundError:
@@ -368,13 +376,6 @@ if hived_api is not None:
                     get_type_hints(method)
                 except Exception as exception:
                     errors.append(f"{module_name}.{obj.__name__}.{method_name}: {type(exception).__name__}: {exception}")
-
-# API calls must not load validation models - they are loaded only by an explicit validate_schema call
-import sys
-
-loaded_validation_modules = [name for name in sys.modules if name.startswith("hiveio_api._validation.")]
-if loaded_validation_modules:
-    errors.append(f"Validation models loaded without validate_schema call: {loaded_validation_modules}")
 
 # Validation models of every API must be importable
 for api_name in hiveio_api.APIS:
