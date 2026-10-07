@@ -18,11 +18,13 @@ AvailableApis = Literal[
     "hive",
     "market_history_api",
     "network_broadcast_api",
+    "network_node_api",
     "rc_api",
     "reputation_api",
     "search_api",
     "tags_api",
     "transaction_status_api",
+    "wallet_bridge_api",
 ]
 
 available_apis: Final[list[AvailableApis]] = [
@@ -40,18 +42,31 @@ available_apis: Final[list[AvailableApis]] = [
     "hive",
     "market_history_api",
     "network_broadcast_api",
+    "network_node_api",
     "rc_api",
     "reputation_api",
     "search_api",
     "tags_api",
     "transaction_status_api",
+    "wallet_bridge_api",
 ]
 APIS_WITH_LEGACY_ARGS_SERIALIZATION: Final[list[str]] = [
     "condenser_api",
     "bridge",
+    "wallet_bridge_api",
 ]
 
 
+APIS_WITH_LEGACY_RESPONSE_SERIALIZATION: Final[list[str]] = [
+    "condenser_api",
+    "bridge",
+]
+"""APIs responding with legacy serialization (assets as strings, operations as arrays).
+
+Positional arguments (APIS_WITH_LEGACY_ARGS_SERIALIZATION) do not imply legacy responses - e.g. wallet_bridge_api.
+"""
+
+
 def api_serialization(api: str) -> Literal["hf26", "legacy"]:
-    """Serialization used by responses of the API (legacy assets as strings, operations as arrays)."""
-    return "legacy" if api.replace("-", "_") in APIS_WITH_LEGACY_ARGS_SERIALIZATION else "hf26"
+    """Serialization used by responses of the API."""
+    return "legacy" if api.replace("-", "_") in APIS_WITH_LEGACY_RESPONSE_SERIALIZATION else "hf26"

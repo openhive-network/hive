@@ -23,11 +23,13 @@ DEFAULT_API_LIST=(
   "hive"
   "market_history_api"
   "network_broadcast_api"
+  "network_node_api"
   "rc_api"
   "reputation_api"
   "search_api"
   "tags_api"
   "transaction_status_api"
+  "wallet_bridge_api"
 )
 
 if [ "$#" -gt 0 ]; then

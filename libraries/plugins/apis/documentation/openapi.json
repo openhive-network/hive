@@ -86,6 +86,14 @@
         {
             "name": "beekeeper_api",
             "description": "Beekeeper is a service that securely stores private keys in encrypted wallets and uses them to sign digests and encrypt/decrypt data. All calls except `create_session` and `get_version` require a session `token` obtained from `create_session`."
+        },
+        {
+            "name": "network_node_api",
+            "description": "Used to inspect and control the node's p2p network connections (node info, connected peers, adding peers, restricting allowed peers)."
+        },
+        {
+            "name": "wallet_bridge_api",
+            "description": "API used by the CLI wallet (and other wallets) to access node data. Combines selected database_api, block_api, account_history_api, account_by_key_api, market_history_api, network_broadcast_api and rc_api calls. Takes positional parameters wrapped in an outer array (`[[arg0, arg1, ...]]`) and returns data in HF26 serialization."
         }
     ],
     "paths": {
@@ -13856,6 +13864,2597 @@
                                 "example": {
                                     "unlocked": true
                                 }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "network_node_api.get_info": {
+            "post": {
+                "tags": [
+                    "network_node_api"
+                ],
+                "summary": "Returns information about the node's p2p networking.",
+                "description": "Returns the listening endpoint, node public key, node id, firewall state and the number of active connections. Returns an empty object if the p2p node is not running.\n\nParameters: none.\n",
+                "operationId": "network_node_get_info",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/network_node_get_info_response"
+                                },
+                                "example": {
+                                    "listening_on": "0.0.0.0:2001",
+                                    "node_public_key": "02a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90",
+                                    "node_id": "03f1e2d3c4b5a69788796a5b4c3d2e1f00f1e2d3c4b5a69788796a5b4c3d2e1f00",
+                                    "firewalled": "unknown",
+                                    "connection_count": 12
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "network_node_api.add_node": {
+            "post": {
+                "tags": [
+                    "network_node_api"
+                ],
+                "summary": "Connects the node to the given peer.",
+                "description": "Parameters:\n\n- `endpoint`: Peer address as `ip:port`. Examples:\n  - `\"198.51.100.17:2001\"` — asks the node to connect to that peer.\n",
+                "operationId": "network_node_add_node",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/network_node_add_node"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/network_node_add_node_response"
+                                },
+                                "example": {}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "network_node_api.set_allowed_peers": {
+            "post": {
+                "tags": [
+                    "network_node_api"
+                ],
+                "summary": "Restricts p2p connections to the given peers.",
+                "description": "Parameters:\n\n- `allowed_peers`: Array of node ids (66-character hex public key data) of peers allowed to connect. Examples:\n  - `[\"03f1e2...\"]` — only the peer with that node id may connect.\n  - `[]` — clears the restriction.\n",
+                "operationId": "network_node_set_allowed_peers",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/network_node_set_allowed_peers"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/network_node_set_allowed_peers_response"
+                                },
+                                "example": {}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "network_node_api.get_connected_peers": {
+            "post": {
+                "tags": [
+                    "network_node_api"
+                ],
+                "summary": "Returns the list of currently connected peers.",
+                "description": "Returns details of each active p2p connection. Returns an empty list if the p2p node is not running.\n\nParameters: none.\n",
+                "operationId": "network_node_get_connected_peers",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/network_node_get_connected_peers_response"
+                                },
+                                "example": {
+                                    "connected_peers": [
+                                        {
+                                            "version": 0,
+                                            "host": "198.51.100.17:2001",
+                                            "info": {
+                                                "addr": "198.51.100.17:2001",
+                                                "addrlocal": "192.0.2.5:47312",
+                                                "services": "00000001",
+                                                "lastsend": 1759834562,
+                                                "lastrecv": 1759834563,
+                                                "bytessent": 1834221,
+                                                "bytesrecv": 95736112,
+                                                "conntime": "2025-10-07T10:12:44",
+                                                "pingtime": "",
+                                                "pingwait": "",
+                                                "version": "",
+                                                "subver": "Hive Node",
+                                                "inbound": false,
+                                                "firewall_status": "unknown",
+                                                "startingheight": "",
+                                                "banscore": "",
+                                                "syncnode": "",
+                                                "fc_git_revision_sha": "4fbad2cd2b4f0d3c6c2e5f2a7f3a1e9b2b8c4d11 (same as ours)",
+                                                "fc_git_revision_unix_timestamp": "2025-09-30T14:21:07",
+                                                "fc_git_revision_age": "7 days ago (same as ours)",
+                                                "platform": "linux",
+                                                "user_agent": "Hive Node",
+                                                "core_protocol_version": 106,
+                                                "current_head_block": "05f5e3a1c2d9b5e8a6b0f1d3e4c5b6a798877665",
+                                                "current_head_block_number": 99999649,
+                                                "current_head_block_time": "2025-10-07T10:56:03"
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "wallet_bridge_api.get_version": {
+            "post": {
+                "tags": [
+                    "wallet_bridge_api"
+                ],
+                "summary": "Returns the versions of blockchain, hive, and FC.",
+                "description": "Parameters: none.",
+                "operationId": "wallet_bridge_get_version",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/wallet_bridge_no_args"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/get_version_response"
+                                },
+                                "example": {
+                                    "blockchain_version": "1.27.11",
+                                    "chain_id": "beeab0de00000000000000000000000000000000000000000000000000000000",
+                                    "fc_revision": "db292750555320d8495fda8f86ac5f8715038184",
+                                    "haf_revision": "0e2bd7c69cc26928665281435165fd3288940db9",
+                                    "hive_revision": "db292750555320d8495fda8f86ac5f8715038184",
+                                    "node_type": "mainnet"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "wallet_bridge_api.get_witness_schedule": {
+            "post": {
+                "tags": [
+                    "wallet_bridge_api"
+                ],
+                "summary": "Returns the current witness schedule.",
+                "description": "Parameters (positional, wrapped in an outer array):\n\n- `include_future` (bool, required): when true, include future shuffled witnesses and pending future changes.\n\nExample: `[[false]]`.",
+                "operationId": "wallet_bridge_get_witness_schedule",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/wallet_bridge_include_future"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/get_witness_schedule_response"
+                                },
+                                "example": {
+                                    "account_subsidy_rd": {
+                                        "budget_per_time_unit": 797,
+                                        "decay_params": {
+                                            "decay_per_time_unit": 347321,
+                                            "decay_per_time_unit_denom_shift": 36
+                                        },
+                                        "max_pool_size": 157691079,
+                                        "min_decay": 0,
+                                        "pool_eq": 157691079,
+                                        "resource_unit": 10000
+                                    },
+                                    "account_subsidy_witness_rd": {
+                                        "budget_per_time_unit": 996,
+                                        "decay_params": {
+                                            "decay_per_time_unit": 7293741,
+                                            "decay_per_time_unit_denom_shift": 36
+                                        },
+                                        "max_pool_size": 9384019,
+                                        "min_decay": 179,
+                                        "pool_eq": 9384019,
+                                        "resource_unit": 10000
+                                    },
+                                    "current_shuffled_witnesses": [
+                                        "threespeak",
+                                        "mahdiyari",
+                                        "yabapmatt",
+                                        "quochuy",
+                                        "themarkymark",
+                                        "guiltyparties",
+                                        "pharesim",
+                                        "arcange",
+                                        "smooth.witness",
+                                        "ausbitbank",
+                                        "abit",
+                                        "ocd-witness",
+                                        "roelandp",
+                                        "therealwolf",
+                                        "deathwing",
+                                        "stoodkev",
+                                        "blocktrades",
+                                        "gtg",
+                                        "emrebeyler",
+                                        "steempeak",
+                                        "good-karma"
+                                    ],
+                                    "current_virtual_time": "965626696637118176548648739",
+                                    "elected_weight": 1,
+                                    "hardfork_required_witnesses": 17,
+                                    "id": 0,
+                                    "majority_version": "1.27.3",
+                                    "max_miner_witnesses": 0,
+                                    "max_runner_witnesses": 1,
+                                    "max_voted_witnesses": 20,
+                                    "median_props": {
+                                        "account_creation_fee": {
+                                            "amount": "3000",
+                                            "nai": "@@000000021",
+                                            "precision": 3
+                                        },
+                                        "account_subsidy_budget": 797,
+                                        "account_subsidy_decay": 347321,
+                                        "hbd_interest_rate": 1500,
+                                        "maximum_block_size": 65536
+                                    },
+                                    "min_witness_account_subsidy_decay": 0,
+                                    "miner_weight": 1,
+                                    "next_shuffle_block_num": 96113997,
+                                    "num_scheduled_witnesses": 21,
+                                    "timeshare_weight": 5,
+                                    "witness_pay_normalization_factor": 25
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "wallet_bridge_api.get_current_median_history_price": {
+            "post": {
+                "tags": [
+                    "wallet_bridge_api"
+                ],
+                "summary": "Returns the current median price of HIVE in HBD (HF26 asset format).",
+                "description": "Parameters: none.",
+                "operationId": "wallet_bridge_get_current_median_history_price",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/wallet_bridge_no_args"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/get_current_price_feed_response"
+                                },
+                                "example": {
+                                    "base": {
+                                        "amount": "1",
+                                        "precision": 3,
+                                        "nai": "@@000000013"
+                                    },
+                                    "quote": {
+                                        "amount": "1",
+                                        "precision": 3,
+                                        "nai": "@@000000021"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "wallet_bridge_api.get_hardfork_version": {
+            "post": {
+                "tags": [
+                    "wallet_bridge_api"
+                ],
+                "summary": "Returns the current hardfork version.",
+                "description": "Parameters: none.",
+                "operationId": "wallet_bridge_get_hardfork_version",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/wallet_bridge_no_args"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/condenser_get_hardfork_version_response"
+                                },
+                                "example": "1.28.0"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "wallet_bridge_api.get_block": {
+            "post": {
+                "tags": [
+                    "wallet_bridge_api"
+                ],
+                "summary": "Returns a block (HF26 serialization).",
+                "description": "Parameters (positional, wrapped in an outer array):\n\n- `block_num` (uint32, required): number of the block.\n\nExample: `[[1]]`. The `block` property is absent when the block does not exist.",
+                "operationId": "wallet_bridge_get_block",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/wallet_bridge_get_block"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/get_block_response"
+                                },
+                                "example": {
+                                    "block": {
+                                        "previous": "0000000000000000000000000000000000000000",
+                                        "timestamp": "2016-03-24T16:05:00",
+                                        "witness": "",
+                                        "transaction_merkle_root": "0000000000000000000000000000000000000000",
+                                        "extensions": [],
+                                        "witness_signature": "",
+                                        "transactions": [],
+                                        "block_id": "",
+                                        "signing_key": "",
+                                        "transaction_ids": []
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "wallet_bridge_api.get_chain_properties": {
+            "post": {
+                "tags": [
+                    "wallet_bridge_api"
+                ],
+                "summary": "Returns the median chain properties voted by witnesses.",
+                "description": "Parameters: none.",
+                "operationId": "wallet_bridge_get_chain_properties",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/wallet_bridge_no_args"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/witness_props_default"
+                                },
+                                "example": {
+                                    "account_creation_fee": {
+                                        "amount": "3000",
+                                        "nai": "@@000000021",
+                                        "precision": 3
+                                    },
+                                    "account_subsidy_budget": 797,
+                                    "account_subsidy_decay": 347321,
+                                    "hbd_interest_rate": 1500,
+                                    "maximum_block_size": 65536
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "wallet_bridge_api.get_ops_in_block": {
+            "post": {
+                "tags": [
+                    "wallet_bridge_api"
+                ],
+                "summary": "Returns operations included in a block.",
+                "description": "Parameters (positional, wrapped in an outer array):\n\n- `block_num` (uint32, required): number of the block.\n- `only_virtual` (bool, required): return only virtual operations.\n\nExample: `[[1, false]]`. Requires account_history_api.",
+                "operationId": "wallet_bridge_get_ops_in_block",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/wallet_bridge_get_ops_in_block"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/get_ops_in_block_response"
+                                },
+                                "example": {
+                                    "ops": [
+                                        {
+                                            "block": 1,
+                                            "op": {
+                                                "type": "account_created_operation",
+                                                "value": {
+                                                    "creator": "miners",
+                                                    "initial_delegation": {
+                                                        "amount": "0",
+                                                        "nai": "@@000000037",
+                                                        "precision": 6
+                                                    },
+                                                    "initial_vesting_shares": {
+                                                        "amount": "0",
+                                                        "nai": "@@000000037",
+                                                        "precision": 6
+                                                    },
+                                                    "new_account_name": "miners"
+                                                }
+                                            },
+                                            "op_in_trx": 1,
+                                            "operation_id": 0,
+                                            "timestamp": "2016-03-24T16:05:00",
+                                            "trx_id": "0000000000000000000000000000000000000000",
+                                            "trx_in_block": 4294967295,
+                                            "virtual_op": true
+                                        },
+                                        {
+                                            "block": 1,
+                                            "op": {
+                                                "type": "producer_reward_operation",
+                                                "value": {
+                                                    "producer": "initminer",
+                                                    "vesting_shares": {
+                                                        "amount": "1000000",
+                                                        "nai": "@@000000037",
+                                                        "precision": 6
+                                                    }
+                                                }
+                                            },
+                                            "op_in_trx": 1,
+                                            "operation_id": 0,
+                                            "timestamp": "2016-03-24T16:05:00",
+                                            "trx_id": "0000000000000000000000000000000000000000",
+                                            "trx_in_block": 4294967295,
+                                            "virtual_op": true
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "wallet_bridge_api.get_feed_history": {
+            "post": {
+                "tags": [
+                    "wallet_bridge_api"
+                ],
+                "summary": "Returns the price feed history.",
+                "description": "Parameters: none.",
+                "operationId": "wallet_bridge_get_feed_history",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/wallet_bridge_no_args"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/get_feed_history_response"
+                                },
+                                "example": {
+                                    "current_max_history": {
+                                        "base": {
+                                            "amount": "269",
+                                            "nai": "@@000000013",
+                                            "precision": 3
+                                        },
+                                        "quote": {
+                                            "amount": "1000",
+                                            "nai": "@@000000021",
+                                            "precision": 3
+                                        }
+                                    },
+                                    "current_median_history": {
+                                        "base": {
+                                            "amount": "258",
+                                            "nai": "@@000000013",
+                                            "precision": 3
+                                        },
+                                        "quote": {
+                                            "amount": "1000",
+                                            "nai": "@@000000021",
+                                            "precision": 3
+                                        }
+                                    },
+                                    "current_min_history": {
+                                        "base": {
+                                            "amount": "248",
+                                            "nai": "@@000000013",
+                                            "precision": 3
+                                        },
+                                        "quote": {
+                                            "amount": "1000",
+                                            "nai": "@@000000021",
+                                            "precision": 3
+                                        }
+                                    },
+                                    "id": 0,
+                                    "market_median_history": {
+                                        "base": {
+                                            "amount": "258",
+                                            "nai": "@@000000013",
+                                            "precision": 3
+                                        },
+                                        "quote": {
+                                            "amount": "1000",
+                                            "nai": "@@000000021",
+                                            "precision": 3
+                                        }
+                                    },
+                                    "price_history": [
+                                        {
+                                            "base": {
+                                                "amount": "263",
+                                                "nai": "@@000000013",
+                                                "precision": 3
+                                            },
+                                            "quote": {
+                                                "amount": "1000",
+                                                "nai": "@@000000021",
+                                                "precision": 3
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "wallet_bridge_api.get_active_witnesses": {
+            "post": {
+                "tags": [
+                    "wallet_bridge_api"
+                ],
+                "summary": "Returns the list of currently active witnesses.",
+                "description": "Parameters (positional, wrapped in an outer array):\n\n- `include_future` (bool, required): also return `future_witnesses`.\n\nExample: `[[false]]`.",
+                "operationId": "wallet_bridge_get_active_witnesses",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/wallet_bridge_include_future"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/get_active_witnesses_response"
+                                },
+                                "example": {
+                                    "witnesses": [
+                                        "lukestokes.mhth",
+                                        "gtg",
+                                        "ausbitbank",
+                                        "clayop",
+                                        "yabapmatt",
+                                        "curie",
+                                        "thecryptodrive",
+                                        "roelandp",
+                                        "followbtcnews",
+                                        "timcliff",
+                                        "smooth.witness",
+                                        "bhuz",
+                                        "aggroed",
+                                        "blocktrades",
+                                        "cervantes",
+                                        "utopian-io",
+                                        "anyx",
+                                        "jesta",
+                                        "drakos",
+                                        "someguy123",
+                                        "good-karma"
+                                    ],
+                                    "future_witnesses": []
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "wallet_bridge_api.get_withdraw_routes": {
+            "post": {
+                "tags": [
+                    "wallet_bridge_api"
+                ],
+                "summary": "Returns vesting withdraw routes of an account.",
+                "description": "Parameters (positional, wrapped in an outer array):\n\n- `account` (string, required): account name.\n- `route_type` (string, required): `outgoing`, `incoming` or `all`.\n\nExample: `[[\"hiveio\", \"all\"]]`.",
+                "operationId": "wallet_bridge_get_withdraw_routes",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/wallet_bridge_get_withdraw_routes"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/wallet_bridge_get_withdraw_routes_response"
+                                },
+                                "example": [
+                                    {
+                                        "auto_vest": true,
+                                        "from_account": "feruz",
+                                        "id": 49677,
+                                        "percent": 100,
+                                        "to_account": "ecency"
+                                    },
+                                    {
+                                        "auto_vest": true,
+                                        "from_account": "esteemapp",
+                                        "id": 49784,
+                                        "percent": 10000,
+                                        "to_account": "ecency"
+                                    },
+                                    {
+                                        "auto_vest": false,
+                                        "from_account": "parker97",
+                                        "id": 49828,
+                                        "percent": 25,
+                                        "to_account": "ecency"
+                                    },
+                                    {
+                                        "auto_vest": false,
+                                        "from_account": "gotinazsum2",
+                                        "id": 50504,
+                                        "percent": 25,
+                                        "to_account": "ecency"
+                                    },
+                                    {
+                                        "auto_vest": true,
+                                        "from_account": "prettiblk1",
+                                        "id": 50524,
+                                        "percent": 1000,
+                                        "to_account": "ecency"
+                                    },
+                                    {
+                                        "auto_vest": false,
+                                        "from_account": "good-karma",
+                                        "id": 52240,
+                                        "percent": 10000,
+                                        "to_account": "ecency"
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "wallet_bridge_api.list_my_accounts": {
+            "post": {
+                "tags": [
+                    "wallet_bridge_api"
+                ],
+                "summary": "Returns accounts whose authorities reference any of the given public keys.",
+                "description": "Parameters (positional, wrapped in an outer array):\n\n- `keys` (array of public keys, required).\n\nExample: `[[[\"STM7wrsg1BZogeK7X3eG4ivxmLaH69FomR8rLkBbepb3z3hm5SbXu\"]]]`. Requires account_by_key_api.",
+                "operationId": "wallet_bridge_list_my_accounts",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/wallet_bridge_list_my_accounts"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/wallet_bridge_get_accounts_response"
+                                },
+                                "example": [
+                                    {
+                                        "active": {
+                                            "account_auths": [
+                                                [
+                                                    "pettycash",
+                                                    1
+                                                ]
+                                            ],
+                                            "key_auths": [
+                                                [
+                                                    "STM69zfrFGnZtU3gWFWpQJ6GhND1nz7TJsKBTjcWfebS1JzBEweQy",
+                                                    1
+                                                ]
+                                            ],
+                                            "weight_threshold": 1
+                                        },
+                                        "balance": {
+                                            "amount": "743363",
+                                            "nai": "@@000000021",
+                                            "precision": 3
+                                        },
+                                        "can_vote": true,
+                                        "comment_count": 0,
+                                        "created": "2020-03-06T12:22:51",
+                                        "curation_rewards": 20,
+                                        "delayed_votes": [],
+                                        "delegated_vesting_shares": {
+                                            "amount": "0",
+                                            "nai": "@@000000037",
+                                            "precision": 6
+                                        },
+                                        "downvote_manabar": {
+                                            "current_mana": 5831078449,
+                                            "last_update_time": 1735711413
+                                        },
+                                        "governance_vote_expiration_ts": "2025-06-08T02:00:30",
+                                        "hbd_balance": {
+                                            "amount": "0",
+                                            "nai": "@@000000013",
+                                            "precision": 3
+                                        },
+                                        "hbd_last_interest_payment": "2020-10-21T02:45:12",
+                                        "hbd_seconds": "0",
+                                        "hbd_seconds_last_update": "2020-10-21T02:45:12",
+                                        "id": 1370484,
+                                        "is_smt": false,
+                                        "json_metadata": "",
+                                        "last_account_recovery": "1970-01-01T00:00:00",
+                                        "last_account_update": "2021-11-09T21:56:27",
+                                        "last_owner_update": "1970-01-01T00:00:00",
+                                        "last_post": "2025-03-20T16:39:33",
+                                        "last_post_edit": "2025-03-20T16:39:33",
+                                        "last_root_post": "2025-03-20T16:39:33",
+                                        "last_vote_time": "2025-01-01T06:03:33",
+                                        "lifetime_vote_count": 0,
+                                        "memo_key": "STM7wrsg1BZogeK7X3eG4ivxmLaH69FomR8rLkBbepb3z3hm5SbXu",
+                                        "mined": false,
+                                        "name": "hiveio",
+                                        "next_vesting_withdrawal": "1969-12-31T23:59:59",
+                                        "open_recurrent_transfers": 0,
+                                        "owner": {
+                                            "account_auths": [],
+                                            "key_auths": [
+                                                [
+                                                    "STM65PUAPA4yC4RgPtGgsPupxT6yJtMhmT5JHFdsT3uoCbR8WJ25s",
+                                                    1
+                                                ]
+                                            ],
+                                            "weight_threshold": 1
+                                        },
+                                        "pending_claimed_accounts": 0,
+                                        "pending_transfers": 0,
+                                        "post_bandwidth": 0,
+                                        "post_count": 80,
+                                        "post_voting_power": {
+                                            "amount": "23324313796",
+                                            "nai": "@@000000037",
+                                            "precision": 6
+                                        },
+                                        "posting": {
+                                            "account_auths": [
+                                                [
+                                                    "threespeak",
+                                                    1
+                                                ],
+                                                [
+                                                    "vimm.app",
+                                                    1
+                                                ]
+                                            ],
+                                            "key_auths": [
+                                                [
+                                                    "STM6vJmrwaX5TjgTS9dPH8KsArso5m91fVodJvv91j7G765wqcNM9",
+                                                    1
+                                                ]
+                                            ],
+                                            "weight_threshold": 1
+                                        },
+                                        "posting_json_metadata": "{\"profile\":{\"pinned\":\"none\",\"version\":2,\"website\":\"hive.io\",\"profile_image\":\"https://files.peakd.com/file/peakd-hive/hiveio/Jp2YHc6Q-hive-logo.png\",\"cover_image\":\"https://files.peakd.com/file/peakd-hive/hiveio/Xe1TcEBi-hive-banner.png\"}}",
+                                        "posting_rewards": 1919844,
+                                        "previous_owner_update": "1970-01-01T00:00:00",
+                                        "proxied_vsf_votes": [
+                                            0,
+                                            0,
+                                            0,
+                                            0
+                                        ],
+                                        "proxy": "",
+                                        "received_vesting_shares": {
+                                            "amount": "0",
+                                            "nai": "@@000000037",
+                                            "precision": 6
+                                        },
+                                        "recovery_account": "steempeak",
+                                        "reset_account": "null",
+                                        "reward_hbd_balance": {
+                                            "amount": "50418",
+                                            "nai": "@@000000013",
+                                            "precision": 3
+                                        },
+                                        "reward_hive_balance": {
+                                            "amount": "0",
+                                            "nai": "@@000000021",
+                                            "precision": 3
+                                        },
+                                        "reward_vesting_balance": {
+                                            "amount": "291242001054",
+                                            "nai": "@@000000037",
+                                            "precision": 6
+                                        },
+                                        "reward_vesting_hive": {
+                                            "amount": "171636",
+                                            "nai": "@@000000021",
+                                            "precision": 3
+                                        },
+                                        "savings_balance": {
+                                            "amount": "0",
+                                            "nai": "@@000000021",
+                                            "precision": 3
+                                        },
+                                        "savings_hbd_balance": {
+                                            "amount": "0",
+                                            "nai": "@@000000013",
+                                            "precision": 3
+                                        },
+                                        "savings_hbd_last_interest_payment": "1970-01-01T00:00:00",
+                                        "savings_hbd_seconds": "0",
+                                        "savings_hbd_seconds_last_update": "1970-01-01T00:00:00",
+                                        "savings_withdraw_requests": 0,
+                                        "to_withdraw": 0,
+                                        "vesting_shares": {
+                                            "amount": "23324313796",
+                                            "nai": "@@000000037",
+                                            "precision": 6
+                                        },
+                                        "vesting_withdraw_rate": {
+                                            "amount": "0",
+                                            "nai": "@@000000037",
+                                            "precision": 6
+                                        },
+                                        "voting_manabar": {
+                                            "current_mana": 22857989494,
+                                            "last_update_time": 1735711413
+                                        },
+                                        "withdraw_routes": 0,
+                                        "withdrawn": 0,
+                                        "witnesses_voted_for": 0
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "wallet_bridge_api.list_accounts": {
+            "post": {
+                "tags": [
+                    "wallet_bridge_api"
+                ],
+                "summary": "Returns account names in alphabetical order, starting at a lower bound.",
+                "description": "Parameters (positional, wrapped in an outer array):\n\n- `start` (string, required): lower bound of account name (may be empty).\n- `limit` (uint32, required): maximum number of names, up to 1000.\n\nExample: `[[\"\", 10]]`.",
+                "operationId": "wallet_bridge_list_accounts",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/wallet_bridge_start_limit"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/wallet_bridge_list_accounts_response"
+                                },
+                                "example": [
+                                    "hiveio",
+                                    "hiveio-test",
+                                    "hiveiodev"
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "wallet_bridge_api.get_dynamic_global_properties": {
+            "post": {
+                "tags": [
+                    "wallet_bridge_api"
+                ],
+                "summary": "Returns the current dynamic global properties.",
+                "description": "Parameters: none.",
+                "operationId": "wallet_bridge_get_dynamic_global_properties",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/wallet_bridge_no_args"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/get_dynamic_global_properties_response"
+                                },
+                                "example": {
+                                    "available_account_subsidies": 15302864,
+                                    "content_reward_percent": 6500,
+                                    "current_aslot": 95900868,
+                                    "current_hbd_supply": {
+                                        "amount": "34414606785",
+                                        "nai": "@@000000013",
+                                        "precision": 3
+                                    },
+                                    "current_remove_threshold": 200,
+                                    "current_supply": {
+                                        "amount": "475506210761",
+                                        "nai": "@@000000021",
+                                        "precision": 3
+                                    },
+                                    "current_witness": "guiltyparties",
+                                    "delegation_return_period": 432000,
+                                    "dhf_interval_ledger": {
+                                        "amount": "79305",
+                                        "nai": "@@000000013",
+                                        "precision": 3
+                                    },
+                                    "downvote_pool_percent": 2500,
+                                    "early_voting_seconds": 86400,
+                                    "hbd_interest_rate": 1500,
+                                    "hbd_print_rate": 10000,
+                                    "hbd_start_percent": 2000,
+                                    "hbd_stop_percent": 2000,
+                                    "head_block_id": "05b38dd884fe0fd7fc4a35ad7c17c36a532d4228",
+                                    "head_block_number": 95653336,
+                                    "id": 0,
+                                    "init_hbd_supply": {
+                                        "amount": "0",
+                                        "nai": "@@000000013",
+                                        "precision": 3
+                                    },
+                                    "last_budget_time": "2025-05-06T12:36:45",
+                                    "last_irreversible_block_num": 95653336,
+                                    "max_consecutive_recurrent_transfer_failures": 10,
+                                    "max_open_recurrent_transfers": 255,
+                                    "max_recurrent_transfer_end_date": 730,
+                                    "maximum_block_size": 65536,
+                                    "mid_voting_seconds": 172800,
+                                    "min_recurrent_transfers_recurrence": 24,
+                                    "next_daily_maintenance_time": "2025-05-06T19:31:33",
+                                    "next_maintenance_time": "2025-05-06T13:36:45",
+                                    "num_pow_witnesses": 172,
+                                    "participation_count": 128,
+                                    "pending_rewarded_vesting_hive": {
+                                        "amount": "562020060",
+                                        "nai": "@@000000021",
+                                        "precision": 3
+                                    },
+                                    "pending_rewarded_vesting_shares": {
+                                        "amount": "1033334375779499",
+                                        "nai": "@@000000037",
+                                        "precision": 6
+                                    },
+                                    "proposal_fund_percent": 1000,
+                                    "recent_slots_filled": "340282366920938463463374607431768211455",
+                                    "reverse_auction_seconds": 0,
+                                    "time": "2025-05-06T13:23:24",
+                                    "total_pow": 514415,
+                                    "total_vesting_fund_hive": {
+                                        "amount": "183947751106",
+                                        "nai": "@@000000021",
+                                        "precision": 3
+                                    },
+                                    "total_vesting_shares": {
+                                        "amount": "308205423661993210",
+                                        "nai": "@@000000037",
+                                        "precision": 6
+                                    },
+                                    "vesting_reward_percent": 1500,
+                                    "virtual_supply": {
+                                        "amount": "615973993556",
+                                        "nai": "@@000000021",
+                                        "precision": 3
+                                    },
+                                    "vote_power_reserve_rate": 10
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "wallet_bridge_api.get_account": {
+            "post": {
+                "tags": [
+                    "wallet_bridge_api"
+                ],
+                "summary": "Returns a single account, or null if it does not exist.",
+                "description": "Parameters (positional, wrapped in an outer array):\n\n- `account` (string, required): account name.\n\nExample: `[[\"hiveio\"]]`.",
+                "operationId": "wallet_bridge_get_account",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/wallet_bridge_account_name"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/wallet_bridge_get_account_response"
+                                },
+                                "example": {
+                                    "active": {
+                                        "account_auths": [
+                                            [
+                                                "pettycash",
+                                                1
+                                            ]
+                                        ],
+                                        "key_auths": [
+                                            [
+                                                "STM69zfrFGnZtU3gWFWpQJ6GhND1nz7TJsKBTjcWfebS1JzBEweQy",
+                                                1
+                                            ]
+                                        ],
+                                        "weight_threshold": 1
+                                    },
+                                    "balance": {
+                                        "amount": "743363",
+                                        "nai": "@@000000021",
+                                        "precision": 3
+                                    },
+                                    "can_vote": true,
+                                    "comment_count": 0,
+                                    "created": "2020-03-06T12:22:51",
+                                    "curation_rewards": 20,
+                                    "delayed_votes": [],
+                                    "delegated_vesting_shares": {
+                                        "amount": "0",
+                                        "nai": "@@000000037",
+                                        "precision": 6
+                                    },
+                                    "downvote_manabar": {
+                                        "current_mana": 5831078449,
+                                        "last_update_time": 1735711413
+                                    },
+                                    "governance_vote_expiration_ts": "2025-06-08T02:00:30",
+                                    "hbd_balance": {
+                                        "amount": "0",
+                                        "nai": "@@000000013",
+                                        "precision": 3
+                                    },
+                                    "hbd_last_interest_payment": "2020-10-21T02:45:12",
+                                    "hbd_seconds": "0",
+                                    "hbd_seconds_last_update": "2020-10-21T02:45:12",
+                                    "id": 1370484,
+                                    "is_smt": false,
+                                    "json_metadata": "",
+                                    "last_account_recovery": "1970-01-01T00:00:00",
+                                    "last_account_update": "2021-11-09T21:56:27",
+                                    "last_owner_update": "1970-01-01T00:00:00",
+                                    "last_post": "2025-03-20T16:39:33",
+                                    "last_post_edit": "2025-03-20T16:39:33",
+                                    "last_root_post": "2025-03-20T16:39:33",
+                                    "last_vote_time": "2025-01-01T06:03:33",
+                                    "lifetime_vote_count": 0,
+                                    "memo_key": "STM7wrsg1BZogeK7X3eG4ivxmLaH69FomR8rLkBbepb3z3hm5SbXu",
+                                    "mined": false,
+                                    "name": "hiveio",
+                                    "next_vesting_withdrawal": "1969-12-31T23:59:59",
+                                    "open_recurrent_transfers": 0,
+                                    "owner": {
+                                        "account_auths": [],
+                                        "key_auths": [
+                                            [
+                                                "STM65PUAPA4yC4RgPtGgsPupxT6yJtMhmT5JHFdsT3uoCbR8WJ25s",
+                                                1
+                                            ]
+                                        ],
+                                        "weight_threshold": 1
+                                    },
+                                    "pending_claimed_accounts": 0,
+                                    "pending_transfers": 0,
+                                    "post_bandwidth": 0,
+                                    "post_count": 80,
+                                    "post_voting_power": {
+                                        "amount": "23324313796",
+                                        "nai": "@@000000037",
+                                        "precision": 6
+                                    },
+                                    "posting": {
+                                        "account_auths": [
+                                            [
+                                                "threespeak",
+                                                1
+                                            ],
+                                            [
+                                                "vimm.app",
+                                                1
+                                            ]
+                                        ],
+                                        "key_auths": [
+                                            [
+                                                "STM6vJmrwaX5TjgTS9dPH8KsArso5m91fVodJvv91j7G765wqcNM9",
+                                                1
+                                            ]
+                                        ],
+                                        "weight_threshold": 1
+                                    },
+                                    "posting_json_metadata": "{\"profile\":{\"pinned\":\"none\",\"version\":2,\"website\":\"hive.io\",\"profile_image\":\"https://files.peakd.com/file/peakd-hive/hiveio/Jp2YHc6Q-hive-logo.png\",\"cover_image\":\"https://files.peakd.com/file/peakd-hive/hiveio/Xe1TcEBi-hive-banner.png\"}}",
+                                    "posting_rewards": 1919844,
+                                    "previous_owner_update": "1970-01-01T00:00:00",
+                                    "proxied_vsf_votes": [
+                                        0,
+                                        0,
+                                        0,
+                                        0
+                                    ],
+                                    "proxy": "",
+                                    "received_vesting_shares": {
+                                        "amount": "0",
+                                        "nai": "@@000000037",
+                                        "precision": 6
+                                    },
+                                    "recovery_account": "steempeak",
+                                    "reset_account": "null",
+                                    "reward_hbd_balance": {
+                                        "amount": "50418",
+                                        "nai": "@@000000013",
+                                        "precision": 3
+                                    },
+                                    "reward_hive_balance": {
+                                        "amount": "0",
+                                        "nai": "@@000000021",
+                                        "precision": 3
+                                    },
+                                    "reward_vesting_balance": {
+                                        "amount": "291242001054",
+                                        "nai": "@@000000037",
+                                        "precision": 6
+                                    },
+                                    "reward_vesting_hive": {
+                                        "amount": "171636",
+                                        "nai": "@@000000021",
+                                        "precision": 3
+                                    },
+                                    "savings_balance": {
+                                        "amount": "0",
+                                        "nai": "@@000000021",
+                                        "precision": 3
+                                    },
+                                    "savings_hbd_balance": {
+                                        "amount": "0",
+                                        "nai": "@@000000013",
+                                        "precision": 3
+                                    },
+                                    "savings_hbd_last_interest_payment": "1970-01-01T00:00:00",
+                                    "savings_hbd_seconds": "0",
+                                    "savings_hbd_seconds_last_update": "1970-01-01T00:00:00",
+                                    "savings_withdraw_requests": 0,
+                                    "to_withdraw": 0,
+                                    "vesting_shares": {
+                                        "amount": "23324313796",
+                                        "nai": "@@000000037",
+                                        "precision": 6
+                                    },
+                                    "vesting_withdraw_rate": {
+                                        "amount": "0",
+                                        "nai": "@@000000037",
+                                        "precision": 6
+                                    },
+                                    "voting_manabar": {
+                                        "current_mana": 22857989494,
+                                        "last_update_time": 1735711413
+                                    },
+                                    "withdraw_routes": 0,
+                                    "withdrawn": 0,
+                                    "witnesses_voted_for": 0
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "wallet_bridge_api.get_accounts": {
+            "post": {
+                "tags": [
+                    "wallet_bridge_api"
+                ],
+                "summary": "Returns existing accounts from the given list of names (missing accounts are skipped).",
+                "description": "Parameters (positional, wrapped in an outer array):\n\n- `accounts` (array of strings, required): account names.\n\nExample: `[[[\"hiveio\", \"gtg\"]]]`.",
+                "operationId": "wallet_bridge_get_accounts",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/wallet_bridge_account_names"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/wallet_bridge_get_accounts_response"
+                                },
+                                "example": [
+                                    {
+                                        "active": {
+                                            "account_auths": [
+                                                [
+                                                    "pettycash",
+                                                    1
+                                                ]
+                                            ],
+                                            "key_auths": [
+                                                [
+                                                    "STM69zfrFGnZtU3gWFWpQJ6GhND1nz7TJsKBTjcWfebS1JzBEweQy",
+                                                    1
+                                                ]
+                                            ],
+                                            "weight_threshold": 1
+                                        },
+                                        "balance": {
+                                            "amount": "743363",
+                                            "nai": "@@000000021",
+                                            "precision": 3
+                                        },
+                                        "can_vote": true,
+                                        "comment_count": 0,
+                                        "created": "2020-03-06T12:22:51",
+                                        "curation_rewards": 20,
+                                        "delayed_votes": [],
+                                        "delegated_vesting_shares": {
+                                            "amount": "0",
+                                            "nai": "@@000000037",
+                                            "precision": 6
+                                        },
+                                        "downvote_manabar": {
+                                            "current_mana": 5831078449,
+                                            "last_update_time": 1735711413
+                                        },
+                                        "governance_vote_expiration_ts": "2025-06-08T02:00:30",
+                                        "hbd_balance": {
+                                            "amount": "0",
+                                            "nai": "@@000000013",
+                                            "precision": 3
+                                        },
+                                        "hbd_last_interest_payment": "2020-10-21T02:45:12",
+                                        "hbd_seconds": "0",
+                                        "hbd_seconds_last_update": "2020-10-21T02:45:12",
+                                        "id": 1370484,
+                                        "is_smt": false,
+                                        "json_metadata": "",
+                                        "last_account_recovery": "1970-01-01T00:00:00",
+                                        "last_account_update": "2021-11-09T21:56:27",
+                                        "last_owner_update": "1970-01-01T00:00:00",
+                                        "last_post": "2025-03-20T16:39:33",
+                                        "last_post_edit": "2025-03-20T16:39:33",
+                                        "last_root_post": "2025-03-20T16:39:33",
+                                        "last_vote_time": "2025-01-01T06:03:33",
+                                        "lifetime_vote_count": 0,
+                                        "memo_key": "STM7wrsg1BZogeK7X3eG4ivxmLaH69FomR8rLkBbepb3z3hm5SbXu",
+                                        "mined": false,
+                                        "name": "hiveio",
+                                        "next_vesting_withdrawal": "1969-12-31T23:59:59",
+                                        "open_recurrent_transfers": 0,
+                                        "owner": {
+                                            "account_auths": [],
+                                            "key_auths": [
+                                                [
+                                                    "STM65PUAPA4yC4RgPtGgsPupxT6yJtMhmT5JHFdsT3uoCbR8WJ25s",
+                                                    1
+                                                ]
+                                            ],
+                                            "weight_threshold": 1
+                                        },
+                                        "pending_claimed_accounts": 0,
+                                        "pending_transfers": 0,
+                                        "post_bandwidth": 0,
+                                        "post_count": 80,
+                                        "post_voting_power": {
+                                            "amount": "23324313796",
+                                            "nai": "@@000000037",
+                                            "precision": 6
+                                        },
+                                        "posting": {
+                                            "account_auths": [
+                                                [
+                                                    "threespeak",
+                                                    1
+                                                ],
+                                                [
+                                                    "vimm.app",
+                                                    1
+                                                ]
+                                            ],
+                                            "key_auths": [
+                                                [
+                                                    "STM6vJmrwaX5TjgTS9dPH8KsArso5m91fVodJvv91j7G765wqcNM9",
+                                                    1
+                                                ]
+                                            ],
+                                            "weight_threshold": 1
+                                        },
+                                        "posting_json_metadata": "{\"profile\":{\"pinned\":\"none\",\"version\":2,\"website\":\"hive.io\",\"profile_image\":\"https://files.peakd.com/file/peakd-hive/hiveio/Jp2YHc6Q-hive-logo.png\",\"cover_image\":\"https://files.peakd.com/file/peakd-hive/hiveio/Xe1TcEBi-hive-banner.png\"}}",
+                                        "posting_rewards": 1919844,
+                                        "previous_owner_update": "1970-01-01T00:00:00",
+                                        "proxied_vsf_votes": [
+                                            0,
+                                            0,
+                                            0,
+                                            0
+                                        ],
+                                        "proxy": "",
+                                        "received_vesting_shares": {
+                                            "amount": "0",
+                                            "nai": "@@000000037",
+                                            "precision": 6
+                                        },
+                                        "recovery_account": "steempeak",
+                                        "reset_account": "null",
+                                        "reward_hbd_balance": {
+                                            "amount": "50418",
+                                            "nai": "@@000000013",
+                                            "precision": 3
+                                        },
+                                        "reward_hive_balance": {
+                                            "amount": "0",
+                                            "nai": "@@000000021",
+                                            "precision": 3
+                                        },
+                                        "reward_vesting_balance": {
+                                            "amount": "291242001054",
+                                            "nai": "@@000000037",
+                                            "precision": 6
+                                        },
+                                        "reward_vesting_hive": {
+                                            "amount": "171636",
+                                            "nai": "@@000000021",
+                                            "precision": 3
+                                        },
+                                        "savings_balance": {
+                                            "amount": "0",
+                                            "nai": "@@000000021",
+                                            "precision": 3
+                                        },
+                                        "savings_hbd_balance": {
+                                            "amount": "0",
+                                            "nai": "@@000000013",
+                                            "precision": 3
+                                        },
+                                        "savings_hbd_last_interest_payment": "1970-01-01T00:00:00",
+                                        "savings_hbd_seconds": "0",
+                                        "savings_hbd_seconds_last_update": "1970-01-01T00:00:00",
+                                        "savings_withdraw_requests": 0,
+                                        "to_withdraw": 0,
+                                        "vesting_shares": {
+                                            "amount": "23324313796",
+                                            "nai": "@@000000037",
+                                            "precision": 6
+                                        },
+                                        "vesting_withdraw_rate": {
+                                            "amount": "0",
+                                            "nai": "@@000000037",
+                                            "precision": 6
+                                        },
+                                        "voting_manabar": {
+                                            "current_mana": 22857989494,
+                                            "last_update_time": 1735711413
+                                        },
+                                        "withdraw_routes": 0,
+                                        "withdrawn": 0,
+                                        "witnesses_voted_for": 0
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "wallet_bridge_api.get_transaction": {
+            "post": {
+                "tags": [
+                    "wallet_bridge_api"
+                ],
+                "summary": "Returns a transaction by its id.",
+                "description": "Parameters (positional, wrapped in an outer array):\n\n- `transaction_id` (string, required): id of the transaction.\n\nExample: `[[\"6fde0190a97835ea6d9e651293e90c89911f933c\"]]`. Requires account_history_api.",
+                "operationId": "wallet_bridge_get_transaction",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/wallet_bridge_transaction_id"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/get_transaction_response"
+                                },
+                                "example": {
+                                    "block_num": 21401130,
+                                    "expiration": "2018-04-09T00:29:06",
+                                    "extensions": [],
+                                    "operations": [
+                                        {
+                                            "type": "claim_reward_balance_operation",
+                                            "value": {
+                                                "account": "social",
+                                                "reward_hbd": {
+                                                    "amount": "0",
+                                                    "nai": "@@000000013",
+                                                    "precision": 3
+                                                },
+                                                "reward_hive": {
+                                                    "amount": "0",
+                                                    "nai": "@@000000021",
+                                                    "precision": 3
+                                                },
+                                                "reward_vests": {
+                                                    "amount": "1",
+                                                    "nai": "@@000000037",
+                                                    "precision": 6
+                                                }
+                                            }
+                                        }
+                                    ],
+                                    "ref_block_num": 36374,
+                                    "ref_block_prefix": 3218139339,
+                                    "signatures": [
+                                        "1b01bdbb0c0d43db821c09ae8a82881c1ce3ba0eca35f23bc06541eca05560742f210a21243e20d04d5c88cb977abf2d75cc088db0fff2ca9fdf2cba753cf69844"
+                                    ],
+                                    "transaction_id": "6fde0190a97835ea6d9e651293e90c89911f933c",
+                                    "transaction_num": 25
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "wallet_bridge_api.list_witnesses": {
+            "post": {
+                "tags": [
+                    "wallet_bridge_api"
+                ],
+                "summary": "Returns witnesses ordered by name, starting at a lower bound.",
+                "description": "Parameters (positional, wrapped in an outer array):\n\n- `start` (string, required): lower bound of witness name (may be empty).\n- `limit` (uint32, required): maximum number of witnesses, up to 1000.\n\nExample: `[[\"\", 10]]`.",
+                "operationId": "wallet_bridge_list_witnesses",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/wallet_bridge_start_limit"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/list_witnesses_response"
+                                },
+                                "example": {
+                                    "witnesses": [
+                                        {
+                                            "available_witness_account_subsidies": 0,
+                                            "created": "2016-04-30T12:27:12",
+                                            "hardfork_time_vote": "2016-03-24T16:00:00",
+                                            "hardfork_version_vote": "0.0.0",
+                                            "hbd_exchange_rate": {
+                                                "base": {
+                                                    "amount": "0",
+                                                    "nai": "@@000000021",
+                                                    "precision": 3
+                                                },
+                                                "quote": {
+                                                    "amount": "0",
+                                                    "nai": "@@000000021",
+                                                    "precision": 3
+                                                }
+                                            },
+                                            "id": 6950,
+                                            "last_aslot": 1063323,
+                                            "last_confirmed_block_num": 1040423,
+                                            "last_hbd_exchange_update": "1970-01-01T00:00:00",
+                                            "last_work": "000000127cb0e335667f30100bc1a061175c2d789f808e0e9ac82ee70fa8e604",
+                                            "owner": "a-0",
+                                            "pow_worker": 0,
+                                            "props": {
+                                                "account_creation_fee": {
+                                                    "amount": "1",
+                                                    "nai": "@@000000021",
+                                                    "precision": 3
+                                                },
+                                                "account_subsidy_budget": 797,
+                                                "account_subsidy_decay": 347321,
+                                                "hbd_interest_rate": 1000,
+                                                "maximum_block_size": 131072
+                                            },
+                                            "running_version": "0.0.0",
+                                            "signing_key": "STM5RrTRNDhhrMaA24SzSeE5AvmUcutb1q1VZp1imnT8p871s3UjN",
+                                            "total_missed": 0,
+                                            "url": "",
+                                            "virtual_last_update": "0",
+                                            "virtual_position": "0",
+                                            "virtual_scheduled_time": "340282366920938463463374607431768211455",
+                                            "votes": 0
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "wallet_bridge_api.get_witness": {
+            "post": {
+                "tags": [
+                    "wallet_bridge_api"
+                ],
+                "summary": "Returns a witness, or null if the account is not a witness.",
+                "description": "Parameters (positional, wrapped in an outer array):\n\n- `witness` (string, required): witness account name.\n\nExample: `[[\"gtg\"]]`.",
+                "operationId": "wallet_bridge_get_witness",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/wallet_bridge_account_name"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/wallet_bridge_get_witness_response"
+                                },
+                                "example": {
+                                    "available_witness_account_subsidies": 0,
+                                    "created": "2016-04-30T12:27:12",
+                                    "hardfork_time_vote": "2016-03-24T16:00:00",
+                                    "hardfork_version_vote": "0.0.0",
+                                    "hbd_exchange_rate": {
+                                        "base": {
+                                            "amount": "0",
+                                            "nai": "@@000000021",
+                                            "precision": 3
+                                        },
+                                        "quote": {
+                                            "amount": "0",
+                                            "nai": "@@000000021",
+                                            "precision": 3
+                                        }
+                                    },
+                                    "id": 6950,
+                                    "last_aslot": 1063323,
+                                    "last_confirmed_block_num": 1040423,
+                                    "last_hbd_exchange_update": "1970-01-01T00:00:00",
+                                    "last_work": "000000127cb0e335667f30100bc1a061175c2d789f808e0e9ac82ee70fa8e604",
+                                    "owner": "a-0",
+                                    "pow_worker": 0,
+                                    "props": {
+                                        "account_creation_fee": {
+                                            "amount": "1",
+                                            "nai": "@@000000021",
+                                            "precision": 3
+                                        },
+                                        "account_subsidy_budget": 797,
+                                        "account_subsidy_decay": 347321,
+                                        "hbd_interest_rate": 1000,
+                                        "maximum_block_size": 131072
+                                    },
+                                    "running_version": "0.0.0",
+                                    "signing_key": "STM5RrTRNDhhrMaA24SzSeE5AvmUcutb1q1VZp1imnT8p871s3UjN",
+                                    "total_missed": 0,
+                                    "url": "",
+                                    "virtual_last_update": "0",
+                                    "virtual_position": "0",
+                                    "virtual_scheduled_time": "340282366920938463463374607431768211455",
+                                    "votes": 0
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "wallet_bridge_api.get_conversion_requests": {
+            "post": {
+                "tags": [
+                    "wallet_bridge_api"
+                ],
+                "summary": "Returns pending HBD to HIVE conversion requests of an account.",
+                "description": "Parameters (positional, wrapped in an outer array):\n\n- `account` (string, required): account name.\n\nExample: `[[\"demo.com\"]]`.",
+                "operationId": "wallet_bridge_get_conversion_requests",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/wallet_bridge_account_name"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/wallet_bridge_get_conversion_requests_response"
+                                },
+                                "example": [
+                                    {
+                                        "amount": {
+                                            "amount": "20",
+                                            "nai": "@@000000013",
+                                            "precision": 3
+                                        },
+                                        "conversion_date": "2024-05-31T23:53:51",
+                                        "id": 433539,
+                                        "owner": "demo.com",
+                                        "requestid": 3205281453
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "wallet_bridge_api.get_collateralized_conversion_requests": {
+            "post": {
+                "tags": [
+                    "wallet_bridge_api"
+                ],
+                "summary": "Returns pending collateralized HIVE to HBD conversion requests of an account.",
+                "description": "Parameters (positional, wrapped in an outer array):\n\n- `account` (string, required): account name.\n\nExample: `[[\"alice\"]]`.",
+                "operationId": "wallet_bridge_get_collateralized_conversion_requests",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/wallet_bridge_account_name"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/wallet_bridge_get_collateralized_conversion_requests_response"
+                                },
+                                "example": [
+                                    {
+                                        "id": 1203,
+                                        "owner": "alice",
+                                        "requestid": 1,
+                                        "collateral_amount": {
+                                            "amount": "200000",
+                                            "precision": 3,
+                                            "nai": "@@000000021"
+                                        },
+                                        "converted_amount": {
+                                            "amount": "47600",
+                                            "precision": 3,
+                                            "nai": "@@000000013"
+                                        },
+                                        "conversion_date": "2025-05-25T09:04:00"
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "wallet_bridge_api.get_order_book": {
+            "post": {
+                "tags": [
+                    "wallet_bridge_api"
+                ],
+                "summary": "Returns the internal market order book.",
+                "description": "Parameters (positional, wrapped in an outer array):\n\n- `limit` (uint32, required): number of bids and of asks, 1-500.\n\nExample: `[[10]]`. Requires market_history_api.",
+                "operationId": "wallet_bridge_get_order_book",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/wallet_bridge_get_order_book"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/market_history_get_order_book_response"
+                                },
+                                "example": {
+                                    "asks": [
+                                        {
+                                            "created": "2025-09-09T12:00:03",
+                                            "hbd": 4577,
+                                            "hive": 21876,
+                                            "order_price": {
+                                                "base": {
+                                                    "amount": "21876",
+                                                    "nai": "@@000000021",
+                                                    "precision": 3
+                                                },
+                                                "quote": {
+                                                    "amount": "4577",
+                                                    "nai": "@@000000013",
+                                                    "precision": 3
+                                                }
+                                            },
+                                            "real_price": "0.20922472115560431"
+                                        }
+                                    ],
+                                    "bids": [
+                                        {
+                                            "created": "2025-09-09T11:44:36",
+                                            "hbd": 2088,
+                                            "hive": 10000,
+                                            "order_price": {
+                                                "base": {
+                                                    "amount": "2088",
+                                                    "nai": "@@000000013",
+                                                    "precision": 3
+                                                },
+                                                "quote": {
+                                                    "amount": "10000",
+                                                    "nai": "@@000000021",
+                                                    "precision": 3
+                                                }
+                                            },
+                                            "real_price": "0.20880000000000001"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "wallet_bridge_api.get_open_orders": {
+            "post": {
+                "tags": [
+                    "wallet_bridge_api"
+                ],
+                "summary": "Returns open limit orders of an account.",
+                "description": "Parameters (positional, wrapped in an outer array):\n\n- `account` (string, required): seller account name.\n\nExample: `[[\"teamsmooth-mm\"]]`.",
+                "operationId": "wallet_bridge_get_open_orders",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/wallet_bridge_account_name"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/wallet_bridge_get_open_orders_response"
+                                },
+                                "example": [
+                                    {
+                                        "id": 3155591,
+                                        "created": "2018-12-05T06:34:21",
+                                        "expiration": "2018-12-15T06:34:20",
+                                        "seller": "teamsmooth-mm",
+                                        "orderid": 2000,
+                                        "for_sale": 197714,
+                                        "sell_price": {
+                                            "base": {
+                                                "amount": "198513",
+                                                "precision": 3,
+                                                "nai": "@@000000021"
+                                            },
+                                            "quote": {
+                                                "amount": "80000",
+                                                "precision": 3,
+                                                "nai": "@@000000013"
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "wallet_bridge_api.get_owner_history": {
+            "post": {
+                "tags": [
+                    "wallet_bridge_api"
+                ],
+                "summary": "Returns the owner authority history of an account.",
+                "description": "Parameters (positional, wrapped in an outer array):\n\n- `account` (string, required): account name.\n\nExample: `[[\"noorkh\"]]`.",
+                "operationId": "wallet_bridge_get_owner_history",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/wallet_bridge_account_name"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/find_owner_histories_response"
+                                },
+                                "example": {
+                                    "owner_auths": [
+                                        {
+                                            "account": "noorkh",
+                                            "id": 765309,
+                                            "last_valid_time": "2024-05-16T11:40:09",
+                                            "previous_owner_authority": {
+                                                "account_auths": [],
+                                                "key_auths": [
+                                                    [
+                                                        "STM6c31ppwyJH4MJycYw5UxdSG6zeLjykgp58GtKV5uf6twZVB5GL",
+                                                        1
+                                                    ]
+                                                ],
+                                                "weight_threshold": 1
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "wallet_bridge_api.get_account_history": {
+            "post": {
+                "tags": [
+                    "wallet_bridge_api"
+                ],
+                "summary": "Returns account history entries as `[index, operation]` pairs.",
+                "description": "Parameters (positional, wrapped in an outer array):\n\n- `account` (string, required): account name.\n- `start` (uint64, required): index of the newest entry to return; `-1` means the latest.\n- `limit` (uint32, required): maximum number of entries, up to 1000.\n\nExample: `[[\"hiveio\", -1, 10]]`. Requires account_history_api.",
+                "operationId": "wallet_bridge_get_account_history",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/wallet_bridge_get_account_history"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/wallet_bridge_get_account_history_response"
+                                },
+                                "example": [
+                                    [
+                                        1000,
+                                        {
+                                            "block": 41745898,
+                                            "op": {
+                                                "type": "effective_comment_vote_operation",
+                                                "value": {
+                                                    "author": "hiveio",
+                                                    "pending_payout": {
+                                                        "amount": "150705",
+                                                        "nai": "@@000000013",
+                                                        "precision": 3
+                                                    },
+                                                    "permlink": "announcing-the-launch-of-hive-blockchain",
+                                                    "rshares": 56243682705,
+                                                    "total_vote_weight": 21629700,
+                                                    "voter": "lecumberre",
+                                                    "weight": 835
+                                                }
+                                            },
+                                            "op_in_trx": 1,
+                                            "operation_id": 0,
+                                            "timestamp": "2020-03-18T01:11:51",
+                                            "trx_id": "7a31d99559a3d93526bd1a05fd9fa0f55b1ebcb8",
+                                            "trx_in_block": 13,
+                                            "virtual_op": true
+                                        }
+                                    ]
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "wallet_bridge_api.list_proposals": {
+            "post": {
+                "tags": [
+                    "wallet_bridge_api"
+                ],
+                "summary": "Returns a list of DHF proposals.",
+                "description": "Parameters (positional, wrapped in an outer array):\n\n- `start` (array or null, required): start key; its elements depend on `order`.\n- `limit` (uint32, required): maximum number of proposals.\n- `order` (string, required): `by_creator`, `by_start_date`, `by_end_date` or `by_total_votes`.\n- `order_direction` (string, required): `ascending` or `descending`.\n- `status` (string, required): `all`, `inactive`, `active`, `expired` or `votable`.\n\nExample: `[[[\"\"], 10, \"by_creator\", \"ascending\", \"all\"]]`.",
+                "operationId": "wallet_bridge_list_proposals",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/wallet_bridge_list_proposals"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/list_proposals_response"
+                                },
+                                "example": {
+                                    "proposals": [
+                                        {
+                                            "id": 0,
+                                            "proposal_id": "1103806595072",
+                                            "creator": "alice",
+                                            "receiver": "bob",
+                                            "start_date": "2019-07-01T00:00:00",
+                                            "end_date": "2019-08-01T23:59:59",
+                                            "daily_pay": {
+                                                "amount": "4800000",
+                                                "precision": 3,
+                                                "nai": "@@000000013"
+                                            },
+                                            "subject": "My Proposal",
+                                            "permlink": "creator-proposal-permlink",
+                                            "total_votes": "77351826710",
+                                            "status": "active"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "wallet_bridge_api.find_proposals": {
+            "post": {
+                "tags": [
+                    "wallet_bridge_api"
+                ],
+                "summary": "Returns DHF proposals with the given ids.",
+                "description": "Parameters (positional, wrapped in an outer array):\n\n- `proposal_ids` (array of int64, required).\n\nExample: `[[[0]]]`.",
+                "operationId": "wallet_bridge_find_proposals",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/wallet_bridge_find_proposals"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/find_proposals_response"
+                                },
+                                "example": {
+                                    "proposals": [
+                                        {
+                                            "id": 0,
+                                            "proposal_id": "139925218365120",
+                                            "creator": "alice",
+                                            "receiver": "bob",
+                                            "start_date": "2019-07-01T00:00:00",
+                                            "end_date": "2019-08-01T23:59:59",
+                                            "daily_pay": {
+                                                "amount": "4800000",
+                                                "precision": 3,
+                                                "nai": "@@000000013"
+                                            },
+                                            "subject": "My Proposal",
+                                            "permlink": "creator-proposal-permlink",
+                                            "total_votes": "77351826710",
+                                            "status": "active"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "wallet_bridge_api.is_known_transaction": {
+            "post": {
+                "tags": [
+                    "wallet_bridge_api"
+                ],
+                "summary": "Returns true if the transaction is known to the node.",
+                "description": "Parameters (positional, wrapped in an outer array):\n\n- `transaction_id` (string, required): id of the transaction.\n\nExample: `[[\"6fde0190a97835ea6d9e651293e90c89911f933c\"]]`.",
+                "operationId": "wallet_bridge_is_known_transaction",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/wallet_bridge_transaction_id"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/wallet_bridge_is_known_transaction_response"
+                                },
+                                "example": false
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "wallet_bridge_api.list_proposal_votes": {
+            "post": {
+                "tags": [
+                    "wallet_bridge_api"
+                ],
+                "summary": "Returns a list of DHF proposal votes.",
+                "description": "Parameters (positional, wrapped in an outer array):\n\n- `start` (array or null, required): start key; its elements depend on `order`.\n- `limit` (uint32, required): maximum number of votes.\n- `order` (string, required): `by_voter_proposal` or `by_proposal_voter`.\n- `order_direction` (string, required): `ascending` or `descending`.\n- `status` (string, required): `all`, `inactive`, `active`, `expired` or `votable`.\n\nExample: `[[[\"\", null], 10, \"by_voter_proposal\", \"ascending\", \"all\"]]`.",
+                "operationId": "wallet_bridge_list_proposal_votes",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/wallet_bridge_list_proposals"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/list_proposal_votes_response"
+                                },
+                                "example": {
+                                    "proposal_votes": [
+                                        {
+                                            "id": 186432,
+                                            "proposal": {
+                                                "creator": "leofinance",
+                                                "daily_pay": {
+                                                    "amount": "695000",
+                                                    "nai": "@@000000013",
+                                                    "precision": 3
+                                                },
+                                                "end_date": "2025-12-31T00:00:00",
+                                                "id": 332,
+                                                "permlink": "proposal-to-grow-hive-through-strategic-partnerships-with-the-largest-crypto-ecosystems-g9v",
+                                                "proposal_id": 332,
+                                                "receiver": "leofinance",
+                                                "start_date": "2025-01-15T00:00:00",
+                                                "status": "active",
+                                                "subject": "Open Source INLEO Technology and Grow Hive Through Strategic Partnerships",
+                                                "total_votes": "49974944128860204"
+                                            },
+                                            "voter": "a-frobenius"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "wallet_bridge_api.get_reward_fund": {
+            "post": {
+                "tags": [
+                    "wallet_bridge_api"
+                ],
+                "summary": "Returns a reward fund by name.",
+                "description": "Parameters (positional, wrapped in an outer array):\n\n- `name` (string, required): reward fund name, e.g. `post`.\n\nExample: `[[\"post\"]]`.",
+                "operationId": "wallet_bridge_get_reward_fund",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/wallet_bridge_account_name"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/reward_funds_default"
+                                },
+                                "example": {
+                                    "author_reward_curve": "linear",
+                                    "content_constant": "2000000000000",
+                                    "curation_reward_curve": "linear",
+                                    "id": 0,
+                                    "last_update": "2025-05-22T12:59:21",
+                                    "name": "post",
+                                    "percent_content_rewards": 10000,
+                                    "percent_curation_rewards": 5000,
+                                    "recent_claims": "711345102753889024",
+                                    "reward_balance": {
+                                        "amount": "969716237",
+                                        "nai": "@@000000021",
+                                        "precision": 3
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "wallet_bridge_api.broadcast_transaction_synchronous": {
+            "post": {
+                "tags": [
+                    "wallet_bridge_api"
+                ],
+                "summary": "Broadcasts a transaction and waits until it is included in a block or expires.",
+                "description": "Parameters (positional, wrapped in an outer array):\n\n- `transaction` (object, required): signed transaction in HF26 or legacy serialization.\n\nExample: `[[{...signed transaction...}]]`.",
+                "operationId": "wallet_bridge_broadcast_transaction_synchronous",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/wallet_bridge_broadcast_transaction"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/broadcast_transaction_synchronous"
+                                },
+                                "example": {
+                                    "id": "3a1f1e0f0d8d1f4b8e6a7c6f2b4c5d9e0a1b2c3d",
+                                    "block_num": 99273601,
+                                    "trx_num": 12,
+                                    "rc_cost": 1234567890,
+                                    "expired": false
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "wallet_bridge_api.broadcast_transaction": {
+            "post": {
+                "tags": [
+                    "wallet_bridge_api"
+                ],
+                "summary": "Broadcasts a transaction without waiting for inclusion in a block.",
+                "description": "Parameters (positional, wrapped in an outer array):\n\n- `transaction` (object, required): signed transaction in HF26 or legacy serialization.\n\nExample: `[[{...signed transaction...}]]`.",
+                "operationId": "wallet_bridge_broadcast_transaction",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/wallet_bridge_broadcast_transaction"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/broadcast_transaction_response"
+                                },
+                                "example": {}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "wallet_bridge_api.find_recurrent_transfers": {
+            "post": {
+                "tags": [
+                    "wallet_bridge_api"
+                ],
+                "summary": "Returns recurrent transfers created by an account.",
+                "description": "Parameters (positional, wrapped in an outer array):\n\n- `from` (string, required): account name.\n\nExample: `[[\"alice\"]]`.",
+                "operationId": "wallet_bridge_find_recurrent_transfers",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/wallet_bridge_account_name"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/wallet_bridge_find_recurrent_transfers_response"
+                                },
+                                "example": [
+                                    {
+                                        "id": 3,
+                                        "trigger_date": "2021-07-02T18:11:51",
+                                        "from": "alice",
+                                        "to": "bob",
+                                        "amount": {
+                                            "amount": "1000",
+                                            "precision": 3,
+                                            "nai": "@@000000021"
+                                        },
+                                        "memo": "Payroll",
+                                        "recurrence": 26,
+                                        "consecutive_failures": 0,
+                                        "remaining_executions": 3
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "wallet_bridge_api.find_rc_accounts": {
+            "post": {
+                "tags": [
+                    "wallet_bridge_api"
+                ],
+                "summary": "Returns resource credit data of the given accounts.",
+                "description": "Parameters (positional, wrapped in an outer array):\n\n- `accounts` (array of strings, required): account names.\n\nExample: `[[[\"hiveio\", \"gtg\"]]]`. Requires rc_api.",
+                "operationId": "wallet_bridge_find_rc_accounts",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/wallet_bridge_account_names"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/wallet_bridge_rc_accounts_response"
+                                },
+                                "example": [
+                                    {
+                                        "account": "a--------------0",
+                                        "delegated_rc": 0,
+                                        "max_rc": 19427802746,
+                                        "max_rc_creation_adjustment": {
+                                            "amount": "5048581174",
+                                            "nai": "@@000000037",
+                                            "precision": 6
+                                        },
+                                        "rc_manabar": {
+                                            "current_mana": 19427802746,
+                                            "last_update_time": 1752099597
+                                        },
+                                        "received_delegated_rc": 2712580380
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "wallet_bridge_api.list_rc_accounts": {
+            "post": {
+                "tags": [
+                    "wallet_bridge_api"
+                ],
+                "summary": "Returns resource credit data of accounts ordered by name.",
+                "description": "Parameters (positional, wrapped in an outer array):\n\n- `start` (string, required): lower bound of account name (may be empty).\n- `limit` (uint32, required): maximum number of accounts, 1-1000.\n\nExample: `[[\"\", 10]]`. Requires rc_api.",
+                "operationId": "wallet_bridge_list_rc_accounts",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/wallet_bridge_start_limit"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/wallet_bridge_rc_accounts_response"
+                                },
+                                "example": [
+                                    {
+                                        "account": "a--------------0",
+                                        "delegated_rc": 0,
+                                        "max_rc": 19427802746,
+                                        "max_rc_creation_adjustment": {
+                                            "amount": "5048581174",
+                                            "nai": "@@000000037",
+                                            "precision": 6
+                                        },
+                                        "rc_manabar": {
+                                            "current_mana": 19427802746,
+                                            "last_update_time": 1752099597
+                                        },
+                                        "received_delegated_rc": 2712580380
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "wallet_bridge_api.list_rc_direct_delegations": {
+            "post": {
+                "tags": [
+                    "wallet_bridge_api"
+                ],
+                "summary": "Returns direct RC delegations made by an account.",
+                "description": "Parameters (positional, wrapped in an outer array):\n\n- `start` (array, required): `[from, to]`; `to` may be empty to start from the first delegatee.\n- `limit` (uint32, required): maximum number of delegations, 1-1000.\n\nExample: `[[[\"gtg\", \"\"], 10]]`. Requires rc_api.",
+                "operationId": "wallet_bridge_list_rc_direct_delegations",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/wallet_bridge_list_rc_direct_delegations"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/wallet_bridge_list_rc_direct_delegations_response"
+                                },
+                                "example": [
+                                    {
+                                        "delegated_rc": 5000000000,
+                                        "from": "gtg",
+                                        "to": "guest4test1"
+                                    }
+                                ]
                             }
                         }
                     }
@@ -27733,6 +30332,724 @@
                 "required": [
                     "unlocked"
                 ]
+            },
+            "network_node_endpoint": {
+                "type": "string",
+                "description": "fc::ip::endpoint serialized as `ip:port` (IPv6 as `[ip]:port`).",
+                "example": "198.51.100.17:2001"
+            },
+            "network_node_id": {
+                "type": "string",
+                "minLength": 66,
+                "maxLength": 66,
+                "pattern": "^[0-9a-f]{66}$",
+                "x-hive-type": "Hex",
+                "description": "33-byte compressed secp256k1 public key data (graphene::net::node_id_t = fc::ecc::public_key_data), serialized as a lowercase hex string (66 characters)."
+            },
+            "network_node_add_node": {
+                "type": "object",
+                "properties": {
+                    "endpoint": {
+                        "$ref": "#/components/schemas/network_node_endpoint",
+                        "description": "Address of the peer to connect to, `ip:port`. Hostnames are not accepted (fc::ip::endpoint::from_string parses a numeric address)."
+                    }
+                },
+                "required": [
+                    "endpoint"
+                ]
+            },
+            "network_node_add_node_response": {
+                "type": "object",
+                "description": "Empty object (json_rpc void_type)."
+            },
+            "network_node_set_allowed_peers": {
+                "type": "object",
+                "properties": {
+                    "allowed_peers": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/network_node_id"
+                        },
+                        "description": "Node ids (hex public key data) of peers that are allowed to connect. An empty array removes the restriction.",
+                        "example": [
+                            "03f1e2d3c4b5a69788796a5b4c3d2e1f00f1e2d3c4b5a69788796a5b4c3d2e1f00"
+                        ]
+                    }
+                },
+                "required": [
+                    "allowed_peers"
+                ]
+            },
+            "network_node_set_allowed_peers_response": {
+                "type": "object",
+                "description": "Empty object (json_rpc void_type)."
+            },
+            "network_node_get_info_response": {
+                "type": "object",
+                "description": "Free-form fc::variant_object built by node_impl::network_get_info() plus `connection_count` added by p2p_plugin::get_info(). Empty object when the p2p node is not running.",
+                "properties": {
+                    "listening_on": {
+                        "$ref": "#/components/schemas/network_node_endpoint",
+                        "description": "Actual endpoint the node listens on (`ip:port`)."
+                    },
+                    "node_public_key": {
+                        "$ref": "#/components/schemas/network_node_id",
+                        "description": "Node's public key used for p2p identification (hex)."
+                    },
+                    "node_id": {
+                        "$ref": "#/components/schemas/network_node_id",
+                        "description": "Node id announced to peers (hex)."
+                    },
+                    "firewalled": {
+                        "type": "string",
+                        "enum": [
+                            "unknown",
+                            "firewalled",
+                            "not_firewalled"
+                        ],
+                        "description": "Whether this node is believed to be behind a firewall."
+                    },
+                    "connection_count": {
+                        "type": "integer",
+                        "x-hive-type": "Uint32t",
+                        "description": "Number of active peer connections."
+                    }
+                },
+                "additionalProperties": true
+            },
+            "network_node_peer_info": {
+                "type": "object",
+                "description": "Free-form fc::variant_object with per-peer details built by node_impl::get_connected_peers(). Fields `fc_git_revision_*` and `platform` are present only when the peer reported them.",
+                "properties": {
+                    "addr": {
+                        "type": "string",
+                        "description": "Remote endpoint `ip:port`, or empty string when unknown."
+                    },
+                    "addrlocal": {
+                        "type": "string",
+                        "description": "Local endpoint of this connection `ip:port`."
+                    },
+                    "services": {
+                        "type": "string",
+                        "description": "Always `00000001`."
+                    },
+                    "lastsend": {
+                        "type": "integer",
+                        "x-hive-type": "Uint32t",
+                        "description": "Time of last message sent, seconds since epoch."
+                    },
+                    "lastrecv": {
+                        "type": "integer",
+                        "x-hive-type": "Uint32t",
+                        "description": "Time of last message received, seconds since epoch."
+                    },
+                    "bytessent": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "description": "Total bytes sent (uint64)."
+                    },
+                    "bytesrecv": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "description": "Total bytes received (uint64)."
+                    },
+                    "conntime": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Connection time (fc::time_point, serialized via time_point_sec as `YYYY-MM-DDTHH:MM:SS`)."
+                    },
+                    "pingtime": {
+                        "type": "string",
+                        "description": "Placeholder, always empty string."
+                    },
+                    "pingwait": {
+                        "type": "string",
+                        "description": "Placeholder, always empty string."
+                    },
+                    "version": {
+                        "type": "string",
+                        "description": "Placeholder, always empty string."
+                    },
+                    "subver": {
+                        "type": "string",
+                        "description": "Peer user agent."
+                    },
+                    "inbound": {
+                        "type": "boolean",
+                        "description": "True if the peer connected to us."
+                    },
+                    "firewall_status": {
+                        "type": "string",
+                        "enum": [
+                            "unknown",
+                            "firewalled",
+                            "not_firewalled"
+                        ],
+                        "description": "Whether the peer is believed to be firewalled."
+                    },
+                    "startingheight": {
+                        "type": "string",
+                        "description": "Placeholder, always empty string."
+                    },
+                    "banscore": {
+                        "type": "string",
+                        "description": "Placeholder, always empty string."
+                    },
+                    "syncnode": {
+                        "type": "string",
+                        "description": "Placeholder, always empty string."
+                    },
+                    "fc_git_revision_sha": {
+                        "type": "string",
+                        "description": "Peer's fc git revision followed by ` (same as ours)` or ` (different from ours)`."
+                    },
+                    "fc_git_revision_unix_timestamp": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Peer's fc git revision timestamp (time_point_sec)."
+                    },
+                    "fc_git_revision_age": {
+                        "type": "string",
+                        "description": "Human-readable relative age of peer's revision with comparison suffix, e.g. `7 days ago (older than ours)`."
+                    },
+                    "platform": {
+                        "type": "string",
+                        "description": "Peer platform, e.g. `linux`."
+                    },
+                    "user_agent": {
+                        "type": "string",
+                        "description": "Peer user agent."
+                    },
+                    "core_protocol_version": {
+                        "type": "integer",
+                        "x-hive-type": "Uint32t",
+                        "description": "Peer core protocol version."
+                    },
+                    "current_head_block": {
+                        "type": "string",
+                        "x-hive-type": "BlockId",
+                        "description": "Approximate id of the last block the peer is known to have (ripemd160 hex)."
+                    },
+                    "current_head_block_number": {
+                        "type": "integer",
+                        "x-hive-type": "Uint32t",
+                        "description": "Block number derived from `current_head_block`."
+                    },
+                    "current_head_block_time": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Timestamp of the last block the peer is known to have (time_point_sec)."
+                    }
+                },
+                "additionalProperties": true
+            },
+            "network_node_peer_status": {
+                "type": "object",
+                "description": "hive::plugins::p2p::api_peer_status.",
+                "properties": {
+                    "version": {
+                        "type": "integer",
+                        "x-hive-type": "Uint32t",
+                        "description": "Always 0 in current implementation."
+                    },
+                    "host": {
+                        "$ref": "#/components/schemas/network_node_endpoint",
+                        "description": "Remote endpoint of the peer (`0.0.0.0:0` when unknown)."
+                    },
+                    "info": {
+                        "$ref": "#/components/schemas/network_node_peer_info"
+                    }
+                },
+                "required": [
+                    "version",
+                    "host",
+                    "info"
+                ]
+            },
+            "network_node_get_connected_peers_response": {
+                "type": "object",
+                "properties": {
+                    "connected_peers": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/network_node_peer_status"
+                        }
+                    }
+                },
+                "required": [
+                    "connected_peers"
+                ]
+            },
+            "wallet_bridge_no_args": {
+                "type": "array",
+                "description": "The method takes no arguments; `params` is not inspected by the node. By convention an array holding one empty array (`[[]]`) is sent.",
+                "example": [
+                    []
+                ]
+            },
+            "wallet_bridge_include_future": {
+                "type": "array",
+                "description": "Positional arguments wrapped in an outer array: `[[include_future]]`. `include_future` (bool, required) - include future witness schedule data.",
+                "minItems": 1,
+                "items": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "type": "boolean"
+                    }
+                },
+                "example": [
+                    [
+                        false
+                    ]
+                ]
+            },
+            "wallet_bridge_get_block": {
+                "type": "array",
+                "description": "Positional arguments wrapped in an outer array: `[[block_num]]`. `block_num` (uint32, required) - number of the block to return.",
+                "minItems": 1,
+                "items": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "type": "integer",
+                        "x-hive-type": "Uint32t"
+                    }
+                },
+                "example": [
+                    [
+                        1
+                    ]
+                ]
+            },
+            "wallet_bridge_get_ops_in_block": {
+                "type": "array",
+                "description": "Positional arguments wrapped in an outer array: `[[block_num, only_virtual]]`. `block_num` (uint32, required); `only_virtual` (bool, required) - return only virtual operations.",
+                "minItems": 1,
+                "items": {
+                    "type": "array",
+                    "minItems": 2,
+                    "items": {
+                        "oneOf": [
+                            {
+                                "type": "integer",
+                                "x-hive-type": "Uint32t"
+                            },
+                            {
+                                "type": "boolean"
+                            }
+                        ]
+                    }
+                },
+                "example": [
+                    [
+                        1,
+                        false
+                    ]
+                ]
+            },
+            "wallet_bridge_get_withdraw_routes": {
+                "type": "array",
+                "description": "Positional arguments wrapped in an outer array: `[[account, route_type]]`. `account` (account name, required); `route_type` (`incoming` | `outgoing` | `all`, required).",
+                "minItems": 1,
+                "items": {
+                    "type": "array",
+                    "minItems": 2,
+                    "items": {
+                        "oneOf": [
+                            {
+                                "type": "string",
+                                "x-hive-type": "AccountName"
+                            },
+                            {
+                                "type": "string",
+                                "enum": [
+                                    "incoming",
+                                    "outgoing",
+                                    "all"
+                                ]
+                            }
+                        ]
+                    }
+                },
+                "example": [
+                    [
+                        "hiveio",
+                        "all"
+                    ]
+                ]
+            },
+            "wallet_bridge_list_my_accounts": {
+                "type": "array",
+                "description": "Positional arguments wrapped in an outer array: `[[keys]]`. `keys` (array of public keys, required) - accounts referencing any of these keys in their authorities are returned.",
+                "minItems": 1,
+                "items": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "x-hive-type": "PublicKey"
+                        }
+                    }
+                },
+                "example": [
+                    [
+                        [
+                            "STM7wrsg1BZogeK7X3eG4ivxmLaH69FomR8rLkBbepb3z3hm5SbXu"
+                        ]
+                    ]
+                ]
+            },
+            "wallet_bridge_start_limit": {
+                "type": "array",
+                "description": "Positional arguments wrapped in an outer array: `[[start, limit]]`. `start` (account name lower bound, may be empty, required); `limit` (uint32, required, max 1000).",
+                "minItems": 1,
+                "items": {
+                    "type": "array",
+                    "minItems": 2,
+                    "items": {
+                        "oneOf": [
+                            {
+                                "type": "string",
+                                "x-hive-type": "OptionallyEmptyAccountName"
+                            },
+                            {
+                                "type": "integer",
+                                "x-hive-type": "Uint32t"
+                            }
+                        ]
+                    }
+                },
+                "example": [
+                    [
+                        "",
+                        10
+                    ]
+                ]
+            },
+            "wallet_bridge_account_name": {
+                "type": "array",
+                "description": "Positional arguments wrapped in an outer array: `[[account]]`. `account` (account name, required).",
+                "minItems": 1,
+                "items": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "type": "string",
+                        "x-hive-type": "AccountName"
+                    }
+                },
+                "example": [
+                    [
+                        "hiveio"
+                    ]
+                ]
+            },
+            "wallet_bridge_account_names": {
+                "type": "array",
+                "description": "Positional arguments wrapped in an outer array: `[[accounts]]`. `accounts` (array of account names, required).",
+                "minItems": 1,
+                "items": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "x-hive-type": "AccountName"
+                        }
+                    }
+                },
+                "example": [
+                    [
+                        [
+                            "hiveio",
+                            "gtg"
+                        ]
+                    ]
+                ]
+            },
+            "wallet_bridge_transaction_id": {
+                "type": "array",
+                "description": "Positional arguments wrapped in an outer array: `[[transaction_id]]`. `transaction_id` (40-character hex string, required).",
+                "minItems": 1,
+                "items": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "type": "string",
+                        "x-hive-type": "TransactionId"
+                    }
+                },
+                "example": [
+                    [
+                        "6fde0190a97835ea6d9e651293e90c89911f933c"
+                    ]
+                ]
+            },
+            "wallet_bridge_get_order_book": {
+                "type": "array",
+                "description": "Positional arguments wrapped in an outer array: `[[limit]]`. `limit` (uint32, required, 1-500) - number of bids and of asks to return.",
+                "minItems": 1,
+                "items": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "type": "integer",
+                        "x-hive-type": "Uint32t"
+                    }
+                },
+                "example": [
+                    [
+                        10
+                    ]
+                ]
+            },
+            "wallet_bridge_get_account_history": {
+                "type": "array",
+                "description": "Positional arguments wrapped in an outer array: `[[account, start, limit]]`. `account` (account name, required); `start` (uint64, required; `-1` means the newest entry); `limit` (uint32, required, max 1000).",
+                "minItems": 1,
+                "items": {
+                    "type": "array",
+                    "minItems": 3,
+                    "items": {
+                        "oneOf": [
+                            {
+                                "type": "string",
+                                "x-hive-type": "AccountName"
+                            },
+                            {
+                                "$ref": "#/components/schemas/hive_int"
+                            }
+                        ]
+                    }
+                },
+                "example": [
+                    [
+                        "hiveio",
+                        -1,
+                        10
+                    ]
+                ]
+            },
+            "wallet_bridge_list_proposals": {
+                "type": "array",
+                "description": "Positional arguments wrapped in an outer array: `[[start, limit, order, order_direction, status]]`. `start` (array or null; for proposals its first element is a creator name, start/end date or total votes depending on `order`; for votes it is `[voter, proposal_id]` (by_voter_proposal) or `[proposal_id, voter]` (by_proposal_voter), elements may be null), `limit` (uint32), `order` (`by_creator` | `by_start_date` | `by_end_date` | `by_total_votes` for proposals; `by_voter_proposal` | `by_proposal_voter` for votes), `order_direction` (`ascending` | `descending`), `status` (`all` | `inactive` | `active` | `expired` | `votable`). All five are required.",
+                "minItems": 1,
+                "items": {
+                    "type": "array",
+                    "minItems": 5,
+                    "items": {
+                        "oneOf": [
+                            {
+                                "type": "array",
+                                "description": "start key (shape depends on order)"
+                            },
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    }
+                },
+                "example": [
+                    [
+                        [
+                            ""
+                        ],
+                        10,
+                        "by_creator",
+                        "ascending",
+                        "all"
+                    ]
+                ]
+            },
+            "wallet_bridge_find_proposals": {
+                "type": "array",
+                "description": "Positional arguments wrapped in an outer array: `[[proposal_ids]]`. `proposal_ids` (array of int64 proposal ids, required).",
+                "minItems": 1,
+                "items": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/hive_int"
+                        }
+                    }
+                },
+                "example": [
+                    [
+                        [
+                            0
+                        ]
+                    ]
+                ]
+            },
+            "wallet_bridge_broadcast_transaction": {
+                "type": "array",
+                "description": "Positional arguments wrapped in an outer array: `[[transaction]]`. `transaction` (signed transaction, required). HF26 serialization is tried first; on failure the node retries parsing it in legacy serialization.",
+                "minItems": 1,
+                "items": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "$ref": "#/components/schemas/transaction_short"
+                    }
+                },
+                "example": [
+                    [
+                        {
+                            "ref_block_num": 34559,
+                            "ref_block_prefix": 1271090586,
+                            "expiration": "2025-09-09T12:30:00",
+                            "operations": [
+                                {
+                                    "type": "transfer_operation",
+                                    "value": {
+                                        "from": "alice",
+                                        "to": "bob",
+                                        "amount": {
+                                            "amount": "1000",
+                                            "precision": 3,
+                                            "nai": "@@000000021"
+                                        },
+                                        "memo": ""
+                                    }
+                                }
+                            ],
+                            "extensions": [],
+                            "signatures": [
+                                "1f7a1b6e5b4a0f3d0e3a2bd1f1c8c0d3e1d26f8d3a3e5a4c2b2f2a0e6d0c1b2a3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c"
+                            ]
+                        }
+                    ]
+                ]
+            },
+            "wallet_bridge_list_rc_direct_delegations": {
+                "type": "array",
+                "description": "Positional arguments wrapped in an outer array: `[[start, limit]]`. `start` (`[from, to]` pair of account names; `to` may be empty, required); `limit` (uint32, required, 1-1000).",
+                "minItems": 1,
+                "items": {
+                    "type": "array",
+                    "minItems": 2,
+                    "items": {
+                        "oneOf": [
+                            {
+                                "type": "array",
+                                "items": {
+                                    "type": "string",
+                                    "x-hive-type": "OptionallyEmptyAccountName"
+                                },
+                                "minItems": 2,
+                                "maxItems": 2
+                            },
+                            {
+                                "type": "integer",
+                                "x-hive-type": "Uint32t"
+                            }
+                        ]
+                    }
+                },
+                "example": [
+                    [
+                        [
+                            "gtg",
+                            ""
+                        ],
+                        10
+                    ]
+                ]
+            },
+            "wallet_bridge_get_withdraw_routes_response": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/withdraw_vesting_routes"
+                }
+            },
+            "wallet_bridge_get_accounts_response": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/account_default"
+                }
+            },
+            "wallet_bridge_list_accounts_response": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "x-hive-type": "AccountName"
+                },
+                "uniqueItems": true
+            },
+            "wallet_bridge_get_account_response": {
+                "oneOf": [
+                    {
+                        "$ref": "#/components/schemas/account_default"
+                    },
+                    {
+                        "type": "null"
+                    }
+                ]
+            },
+            "wallet_bridge_get_witness_response": {
+                "oneOf": [
+                    {
+                        "$ref": "#/components/schemas/witness_default"
+                    },
+                    {
+                        "type": "null"
+                    }
+                ]
+            },
+            "wallet_bridge_get_conversion_requests_response": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/hbd_conversion"
+                }
+            },
+            "wallet_bridge_get_collateralized_conversion_requests_response": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/collateralized_conversion_requests_default"
+                }
+            },
+            "wallet_bridge_get_open_orders_response": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/limit_order_default"
+                }
+            },
+            "wallet_bridge_get_account_history_response": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/account_history_array"
+                }
+            },
+            "wallet_bridge_is_known_transaction_response": {
+                "type": "boolean"
+            },
+            "wallet_bridge_find_recurrent_transfers_response": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/recurrent_transfer_default"
+                }
+            },
+            "wallet_bridge_rc_accounts_response": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/rc_account_default"
+                }
+            },
+            "wallet_bridge_list_rc_direct_delegations_response": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/rc_account_delegation"
+                }
             }
         }
     },
