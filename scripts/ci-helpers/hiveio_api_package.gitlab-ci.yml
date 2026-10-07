@@ -34,6 +34,8 @@
 #   HIVE_PROJECT_ROOT           Root directory of the Hive project (default: "${CI_PROJECT_DIR}")
 #   SKIP_WHEEL_DEPLOY           Set to "true" to skip deployment to GitLab PyPI registry
 #   SKIP_REGISTRY_CHECK         Set to "true" to skip registry check (always build)
+#   SKIP_PACKAGE_TESTS          Set to "true" to skip package tests (e.g. to bootstrap a hiveio-api build needed by
+#                               dependencies of DEPENDENCY_SOURCE_DIR when they are released together)
 #   PACKAGE_REGISTRY_PROJECT_ID Project ID for package registry (default: CI_PROJECT_ID)
 #                               Use this when running in a downstream project to publish
 #                               to the upstream (hive) project's registry
@@ -51,6 +53,7 @@
     DEPENDENCY_SOURCE_DIR: "${HIVE_PROJECT_ROOT}/tests/python/hive-local-tools"
     SKIP_WHEEL_DEPLOY: ""
     SKIP_REGISTRY_CHECK: ""
+    SKIP_PACKAGE_TESTS: ""
   stage: build
   script:
     - |
@@ -62,6 +65,7 @@
       )
       [[ "${SKIP_WHEEL_DEPLOY}" == "true" ]] && SCRIPT_ARGS+=("--skip-deploy")
       [[ "${SKIP_REGISTRY_CHECK}" == "true" ]] && SCRIPT_ARGS+=("--skip-registry-check")
+      [[ "${SKIP_PACKAGE_TESTS}" == "true" ]] && SCRIPT_ARGS+=("--skip-tests")
       "${HIVE_PROJECT_ROOT}/scripts/ci-helpers/hiveio_api_package.sh" "${SCRIPT_ARGS[@]}"
   # Disable after_script from .build_wheel_template — it would overwrite build_wheel.env
   # created by hiveio_api_package.sh (the base template uses PYPROJECT_DIR=api_generation/
