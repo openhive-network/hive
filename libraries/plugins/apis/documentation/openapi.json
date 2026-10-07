@@ -2097,7 +2097,8 @@
                                         "memo": "Payroll",
                                         "recurrence": 26,
                                         "consecutive_failures": 0,
-                                        "remaining_executions": 3
+                                        "remaining_executions": 3,
+                                        "pair_id": 0
                                     }
                                 ]
                             }
@@ -7135,7 +7136,8 @@
                                             "memo": "Payroll",
                                             "recurrence": 26,
                                             "consecutive_failures": 0,
-                                            "remaining_executions": 3
+                                            "remaining_executions": 3,
+                                            "pair_id": 0
                                         }
                                     ]
                                 }
@@ -16360,7 +16362,8 @@
                                         "memo": "Payroll",
                                         "recurrence": 26,
                                         "consecutive_failures": 0,
-                                        "remaining_executions": 3
+                                        "remaining_executions": 3,
+                                        "pair_id": 0
                                     }
                                 ]
                             }
@@ -27204,6 +27207,12 @@
                         "type": "integer",
                         "example": 3,
                         "description": "The number of remaining executions of the transfer."
+                    },
+                    "pair_id": {
+                        "x-hive-type": "Uint8t",
+                        "type": "integer",
+                        "example": 0,
+                        "description": "Pair id from the recurrent_transfer_pair_id extension, distinguishing recurrent transfers between the same accounts (0 when not specified)."
                     }
                 },
                 "required": [
@@ -27214,7 +27223,8 @@
                     "memo",
                     "recurrence",
                     "consecutive_failures",
-                    "remaining_executions"
+                    "remaining_executions",
+                    "pair_id"
                 ]
             },
             "recurrent_transfer_default": {
