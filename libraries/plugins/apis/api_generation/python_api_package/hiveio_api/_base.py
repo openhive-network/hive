@@ -22,7 +22,6 @@ import types
 import warnings
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
-from functools import cache
 from typing import Any, Self, Union, get_args, get_origin, get_type_hints
 
 __all__ = [
@@ -121,8 +120,17 @@ def _build(model: type[Any], data: Mapping[str, Any], warn: bool) -> Any:
     return instance
 
 
-@cache
+_model_plans: dict[type[Any], _ModelPlan] = {}
+
+
 def _model_plan(model: type[Any]) -> _ModelPlan:
+    """Plan of building the model, computed once per model class."""
+    if (plan := _model_plans.get(model)) is None:
+        plan = _model_plans[model] = _create_model_plan(model)
+    return plan
+
+
+def _create_model_plan(model: type[Any]) -> _ModelPlan:
     hints = get_type_hints(model)
     names = {field_.name for field_ in dataclasses.fields(model)}
     field_plans = tuple(
@@ -162,11 +170,13 @@ def _converter_for(annotation: Any) -> _Converter | None:
     if origin in (Union, types.UnionType):
         return _union_converter(args)
 
-    if origin is list and args and (item := _converter_for(args[0])) is not None:
-        return lambda value, warn: [item(i, warn) for i in value] if isinstance(value, list) else value
+    if origin is list and args and (item_converter := _converter_for(args[0])) is not None:
+        return lambda value, warn: [item_converter(i, warn) for i in value] if isinstance(value, list) else value
 
-    if origin is dict and len(args) == 2 and (item := _converter_for(args[1])) is not None:
-        return lambda value, warn: {k: item(v, warn) for k, v in value.items()} if isinstance(value, dict) else value
+    if origin is dict and len(args) == 2 and (value_converter := _converter_for(args[1])) is not None:
+        return lambda value, warn: (
+            {k: value_converter(v, warn) for k, v in value.items()} if isinstance(value, dict) else value
+        )
 
     return None
 
