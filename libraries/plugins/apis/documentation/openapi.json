@@ -9902,7 +9902,50 @@
                                 "schema": {
                                     "$ref": "#/components/schemas/debug_get_head_block_response"
                                 },
-                                "example": null
+                                "example": {
+                                            "block": {
+                                                "previous": "01468f2967b0b5a3c1cc9b13f5c3a1e2c9d9b1a4",
+                                                "timestamp": "2018-04-09T00:28:09",
+                                                "witness": "initminer",
+                                                "transaction_merkle_root": "6fde0190a97835ea6d9e651293e90c89911f933c",
+                                                "extensions": [],
+                                                "witness_signature": "1f5c3f0b3a6d2e6f0c3e8b1f6a7d9e2c4b5a69788d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f",
+                                                "transactions": [
+                                                    {
+                                                        "ref_block_num": 36374,
+                                                        "ref_block_prefix": 3218139339,
+                                                        "expiration": "2018-04-09T00:29:06",
+                                                        "operations": [
+                                                            {
+                                                                "type": "claim_reward_balance_operation",
+                                                                "value": {
+                                                                    "account": "social",
+                                                                    "reward_hive": {
+                                                                        "amount": "0",
+                                                                        "precision": 3,
+                                                                        "nai": "@@000000021"
+                                                                    },
+                                                                    "reward_hbd": {
+                                                                        "amount": "0",
+                                                                        "precision": 3,
+                                                                        "nai": "@@000000013"
+                                                                    },
+                                                                    "reward_vests": {
+                                                                        "amount": "1",
+                                                                        "precision": 6,
+                                                                        "nai": "@@000000037"
+                                                                    }
+                                                                }
+                                                            }
+                                                        ],
+                                                        "extensions": [],
+                                                        "signatures": [
+                                                            "1b01bdbb0c0d43db821c09ae8a82881c1ce3ba0eca35f23bc06541eca05560742f210a21243e20d04d5c88cb977abf2d75cc088db0fff2ca9fdf2cba753cf69844"
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        }
                             }
                         }
                     }
@@ -10051,7 +10094,9 @@
                                 "schema": {
                                     "$ref": "#/components/schemas/debug_has_hardfork_response"
                                 },
-                                "example": false
+                                "example": {
+                                            "has_hardfork": false
+                                        }
                             }
                         }
                     }
@@ -16460,6 +16505,42 @@
                     }
                 }
             }
+        },
+        "debug_node_api.debug_fail_transaction": {
+            "post": {
+                "tags": [
+                    "debug_node_api"
+                ],
+                "summary": "Makes the given transaction fail when it is applied as part of an already produced block.",
+                "description": "Registers a debug hook bound to the transaction ID; the hook throws an artificial exception when the transaction is applied outside of block validation (e.g. when the node reapplies it while applying a block it already produced).",
+                "operationId": "debug_fail_transaction",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/debug_node_fail_transaction"
+                            },
+                            "example": {
+                                "tx_id": "6fde0190a97835ea6d9e651293e90c89911f933c"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/debug_node_fail_transaction_response"
+                                },
+                                "example": {}
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
     "components": {
@@ -19952,10 +20033,10 @@
                 "type": "object",
                 "properties": {
                     "debug_key": {
-                        "type": "string",
-                        "example": "initminer",
-                        "description": "The name of the witness account that will generate the blocks."
-                    },
+                                    "type": "string",
+                                    "example": "5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n",
+                                    "description": "WIF private key used to sign the generated blocks (e.g. the initminer key on a testnet). Empty string means no key."
+                                },
                     "count": {
                         "type": "integer",
                         "example": 10,
@@ -19994,10 +20075,10 @@
                 "type": "object",
                 "properties": {
                     "debug_key": {
-                        "type": "string",
-                        "example": "initminer",
-                        "description": "The name of the witness account that will generate the blocks."
-                    },
+                                    "type": "string",
+                                    "example": "5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n",
+                                    "description": "WIF private key used to sign the generated blocks (e.g. the initminer key on a testnet). Empty string means no key."
+                                },
                     "head_block_time": {
                         "type": "string",
                         "format": "date-time",
@@ -20006,7 +20087,7 @@
                     },
                     "generate_sparsely": {
                         "type": "boolean",
-                        "example": 10
+                        "example": true
                     }
                 },
                 "required": [
@@ -20035,18 +20116,14 @@
                 "$ref": "#/components/schemas/get_hardfork_properties_response"
             },
             "debug_get_head_block_response": {
-                "anyOf": [
-                    {
-                        "type": "null"
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/transaction_short"
-                        }
-                    }
-                ]
-            },
+                                                "type": "object",
+                                                "properties": {
+                                                    "block": {
+                                                        "$ref": "#/components/schemas/debug_node_signed_block",
+                                                        "description": "Current head block (absent only if no block is available)."
+                                                    }
+                                                }
+                                            },
             "debug_get_json_schema_response": {
                 "type": "object",
                 "properties": {
@@ -20111,17 +20188,17 @@
                     "vest_price": {
                         "$ref": "#/components/schemas/base_and_quote",
                         "example": {
-                            "base": {
-                                "amount": "100000",
-                                "nai": "@@000000021",
-                                "precision": 3
-                            },
-                            "quote": {
-                                "amount": "27009",
-                                "nai": "@@000000013",
-                                "precision": 3
-                            }
-                        }
+                                    "base": {
+                                        "amount": "1000000000",
+                                        "precision": 6,
+                                        "nai": "@@000000037"
+                                    },
+                                    "quote": {
+                                        "amount": "500000",
+                                        "precision": 3,
+                                        "nai": "@@000000021"
+                                    }
+                                }
                     },
                     "hook_to_tx": {
                         "type": "string",
@@ -31050,6 +31127,52 @@
                 "items": {
                     "$ref": "#/components/schemas/rc_account_delegation"
                 }
+            },
+            "debug_node_signed_block": {
+                "description": "protocol::signed_block in HF26 serialization (signed_block_header + transactions). Unlike block_api's api_signed_block_object (block_default), it has no block_id, signing_key nor transaction_ids.",
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/block_header"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "witness_signature": {
+                                "x-hive-type": "Signature",
+                                "type": "string",
+                                "description": "The signature of the witness who produced the block."
+                            },
+                            "transactions": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/transaction_short"
+                                },
+                                "description": "Signed transactions included in the block."
+                            }
+                        },
+                        "required": [
+                            "witness_signature",
+                            "transactions"
+                        ]
+                    }
+                ]
+            },
+            "debug_node_fail_transaction": {
+                "type": "object",
+                "properties": {
+                    "tx_id": {
+                        "x-hive-type": "TransactionId",
+                        "type": "string",
+                        "example": "6fde0190a97835ea6d9e651293e90c89911f933c",
+                        "description": "ID of the transaction that should fail with an artificial exception when it is reapplied as part of an already produced block."
+                    }
+                },
+                "required": [
+                    "tx_id"
+                ]
+            },
+            "debug_node_fail_transaction_response": {
+                "type": "object"
             }
         }
     },
