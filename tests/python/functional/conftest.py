@@ -24,8 +24,11 @@ def pytest_configure(config) -> None:
         # Import ALL API modules to trigger annotation resolution
         # This forces all typing annotations to be resolved in the main thread
         # before any xdist workers start making concurrent API calls
+        import hiveio_api._validation.network_node_api
+        import hiveio_api._validation.wallet_bridge_api
         import hiveio_api.account_by_key_api
         import hiveio_api.account_history_api
+        import hiveio_api.app_status_api  # Used by beekeepy.__discover_ports()
         import hiveio_api.block_api
         import hiveio_api.condenser_api
         import hiveio_api.database_api
@@ -37,10 +40,6 @@ def pytest_configure(config) -> None:
         import hiveio_api.rc_api
         import hiveio_api.reputation_api  # noqa: F401
 
-        import schemas.apis.app_status_api  # Used by beekeepy.__discover_ports()
-        import schemas.apis.network_node_api
-        import schemas.apis.test_api
-        import schemas.apis.wallet_bridge_api
         import schemas.fields.basic
         import schemas.fields.hex
         import schemas.operations
