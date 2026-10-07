@@ -363,3 +363,46 @@ def _load_module(path: Path, module_name: str):
     sys.modules[module_name] = module
     spec.loader.exec_module(module)
     return module
+
+
+def test_legacy_variants_do_not_share_canonical_models(tmp_path: Path) -> None:
+    description = _description_path(tmp_path, "condenser_api")
+    description.write_text(
+        textwrap.dedent(
+            """
+            from __future__ import annotations
+
+            from dataclasses import dataclass
+
+            from hiveio_api._base import HiveModel
+            from schemas.fields.base_type_mappings import AssetHiveOrHbd, LegacyAssetHiveOrHbd
+
+            @dataclass(frozen=True, kw_only=True)
+            class CurrentMedianHistory(HiveModel):
+                base: LegacyAssetHiveOrHbd
+                quote: LegacyAssetHiveOrHbd
+
+            @dataclass(frozen=True, kw_only=True)
+            class CurrentMinHistory(HiveModel):
+                base: LegacyAssetHiveOrHbd
+                quote: LegacyAssetHiveOrHbd
+
+            @dataclass(frozen=True, kw_only=True)
+            class HbdExchangeRate(HiveModel):
+                base: AssetHiveOrHbd
+                quote: AssetHiveOrHbd
+
+            @dataclass(frozen=True, kw_only=True)
+            class SellPrice(HiveModel):
+                base: AssetHiveOrHbd
+                quote: AssetHiveOrHbd
+            """
+        )
+    )
+
+    apply_stable_model_aliases(description, "condenser_api")
+
+    classes = _classes_from(description)
+    assert {"CurrentMedianHistory", "CurrentMinHistory"} <= set(classes)
+    common_classes = _classes_from(_common_path(description))
+    assert _field_annotation(common_classes["PricePair"], "base") == "AssetHiveOrHbd"
