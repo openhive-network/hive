@@ -11,6 +11,8 @@ API_GENERATION_PACKAGE_DIR="${BASE_DIR}/api_generation"
 DEFAULT_API_LIST=(
   "account_by_key_api"
   "account_history_api"
+  "app_status_api"
+  "beekeeper_api"
   "block_api"
   "bridge"
   "condenser_api"

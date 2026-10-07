@@ -78,6 +78,14 @@
         {
             "name": "transaction_status_api",
             "description": "This API is intended to evaluate a transaction status after calling condenser_api.broadcast_transaction."
+        },
+        {
+            "name": "app_status_api",
+            "description": "Used to query the status of the application (hived or beekeeper): reported status changes, listening endpoints, fork switches and statistics records.\nThese AppBase API methods are still under development and subject to change."
+        },
+        {
+            "name": "beekeeper_api",
+            "description": "Beekeeper is a service that securely stores private keys in encrypted wallets and uses them to sign digests and encrypt/decrypt data. All calls except `create_session` and `get_version` require a session `token` obtained from `create_session`."
         }
     ],
     "paths": {
@@ -12941,6 +12949,918 @@
                     }
                 }
             }
+        },
+        "app_status_api.get_app_status": {
+            "post": {
+                "tags": [
+                    "app_status_api"
+                ],
+                "summary": "Returns the current status of the application.",
+                "description": "Returns statuses, listening endpoints (webservers), fork switches and information records collected by the application since it started. Served by both hived and beekeeper (beekeeper never reports records nor forks).\n\nParameters: none.\n",
+                "operationId": "get_app_status",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/app_status_get_app_status_response"
+                                },
+                                "example": {
+                                    "last_update": "2026-10-07T09:30:03",
+                                    "records": {
+                                        "Block stats": {
+                                            "block_stats": {
+                                                "num": 99000001,
+                                                "lib": 99000000,
+                                                "type": "p2p",
+                                                "id": "05e69ec1f2b6e2c0a1d0c1b0d0e4a1b2c3d4e5f6",
+                                                "ts": "2026-10-07T09:30:03",
+                                                "bp": "blocktrades",
+                                                "txs": 42,
+                                                "size": 15234,
+                                                "offset": 312456,
+                                                "before": {
+                                                    "inc": 40,
+                                                    "ok": 39
+                                                },
+                                                "after": {
+                                                    "exp": 0,
+                                                    "fail": 0,
+                                                    "appl": 1,
+                                                    "post": 0,
+                                                    "drop": 0
+                                                },
+                                                "exec": {
+                                                    "offset": 103211,
+                                                    "pre": 45,
+                                                    "work": 209200,
+                                                    "post": 1203,
+                                                    "all": 210448
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "statuses": [
+                                        {
+                                            "timestamp": "2026-10-07T08:00:01",
+                                            "status": "signals attached"
+                                        },
+                                        {
+                                            "timestamp": "2026-10-07T08:00:01",
+                                            "status": "starting"
+                                        },
+                                        {
+                                            "timestamp": "2026-10-07T08:00:05",
+                                            "status": "syncing"
+                                        },
+                                        {
+                                            "timestamp": "2026-10-07T08:00:06",
+                                            "status": "P2P started"
+                                        },
+                                        {
+                                            "timestamp": "2026-10-07T09:12:44",
+                                            "status": "entering live mode"
+                                        },
+                                        {
+                                            "timestamp": "2026-10-07T09:12:45",
+                                            "status": "finished syncing"
+                                        },
+                                        {
+                                            "timestamp": "2026-10-07T09:12:45",
+                                            "status": "chain API ready"
+                                        }
+                                    ],
+                                    "webservers": {
+                                        "P2P": {
+                                            "timestamp": "2026-10-07T08:00:06",
+                                            "address": "0.0.0.0",
+                                            "port": 2001
+                                        },
+                                        "HTTP": {
+                                            "timestamp": "2026-10-07T09:12:45",
+                                            "address": "0.0.0.0",
+                                            "port": 8091
+                                        },
+                                        "WS": {
+                                            "timestamp": "2026-10-07T09:12:45",
+                                            "address": "0.0.0.0",
+                                            "port": 8090
+                                        }
+                                    },
+                                    "forks": [
+                                        {
+                                            "timestamp": "2026-10-07T09:20:12",
+                                            "new_head_block_num": 98999801,
+                                            "new_head_block_id": "05e69df9a7c3e1b2d4f60718293a4b5c6d7e8f90"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "beekeeper_api.create": {
+            "post": {
+                "tags": [
+                    "beekeeper_api"
+                ],
+                "summary": "Creates a new wallet.",
+                "description": "A new wallet is created (in file `<wallet-dir>/<wallet_name>.wallet` unless `is_temporary` is set). The new wallet is opened and unlocked in the current session. Fails if a wallet with the same name already exists or the name contains characters other than alphanumerics and `._-@`.\n\nParameters:\n\n- `token`: Session token returned by `beekeeper_api.create_session`.\n- `wallet_name`: Name of the wallet to create. Only alphanumeric characters and `._-@` are allowed.\n- `password`: Optional password for the new wallet. If omitted (or empty), a password is generated and returned.\n- `is_temporary`: Optional, default `false`. If `true` the wallet is kept only in memory and never written to disk.\n",
+                "operationId": "beekeeper_create",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/beekeeper_create"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/beekeeper_create_response"
+                                },
+                                "example": {
+                                    "password": "PW5J87GVhYjo3XWpmB6XZCX2t3pdPFRzYhYRfLM5QP9P9HCnhmQ4G"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "beekeeper_api.open": {
+            "post": {
+                "tags": [
+                    "beekeeper_api"
+                ],
+                "summary": "Opens an existing wallet.",
+                "description": "Opens an existing wallet and attaches it to the current session. Opening does not unlock the wallet.\n\nParameters:\n\n- `token`: Session token returned by `beekeeper_api.create_session`.\n- `wallet_name`: Name of the wallet to open.\n",
+                "operationId": "beekeeper_open",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/beekeeper_open"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/beekeeper_open_response"
+                                },
+                                "example": {}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "beekeeper_api.close": {
+            "post": {
+                "tags": [
+                    "beekeeper_api"
+                ],
+                "summary": "Closes a wallet.",
+                "description": "Closes the wallet (closing implicitly locks it) and detaches it from all sessions.\n\nParameters:\n\n- `token`: Session token returned by `beekeeper_api.create_session`.\n- `wallet_name`: Name of the wallet to close.\n",
+                "operationId": "beekeeper_close",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/beekeeper_close"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/beekeeper_close_response"
+                                },
+                                "example": {}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "beekeeper_api.set_timeout": {
+            "post": {
+                "tags": [
+                    "beekeeper_api"
+                ],
+                "summary": "Sets the inactivity timeout.",
+                "description": "Sets the timeout after which all wallets are locked if there is no activity. Each call restarts the countdown. Note: the timeout is global for the beekeeper instance, not per session.\n\nParameters:\n\n- `token`: Session token returned by `beekeeper_api.create_session`.\n- `seconds`: Number of seconds of inactivity after which all wallets are locked (`0` disables the timeout).\n",
+                "operationId": "beekeeper_set_timeout",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/beekeeper_set_timeout"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/beekeeper_set_timeout_response"
+                                },
+                                "example": {}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "beekeeper_api.lock_all": {
+            "post": {
+                "tags": [
+                    "beekeeper_api"
+                ],
+                "summary": "Locks all wallets.",
+                "description": "Locks all unlocked wallets. Wallets stay opened.\n\nParameters:\n\n- `token`: Session token returned by `beekeeper_api.create_session`.\n",
+                "operationId": "beekeeper_lock_all",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/beekeeper_lock_all"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/beekeeper_lock_all_response"
+                                },
+                                "example": {}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "beekeeper_api.lock": {
+            "post": {
+                "tags": [
+                    "beekeeper_api"
+                ],
+                "summary": "Locks a wallet.",
+                "description": "Locks the given wallet; its private keys become unavailable until it is unlocked again. Fails if the wallet is not opened in the current session or is already locked.\n\nParameters:\n\n- `token`: Session token returned by `beekeeper_api.create_session`.\n- `wallet_name`: Name of the wallet to lock.\n",
+                "operationId": "beekeeper_lock",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/beekeeper_lock"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/beekeeper_lock_response"
+                                },
+                                "example": {}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "beekeeper_api.unlock": {
+            "post": {
+                "tags": [
+                    "beekeeper_api"
+                ],
+                "summary": "Unlocks a wallet.",
+                "description": "Unlocks the given wallet so its private keys can be used (e.g. for signing). Unlocking implicitly opens the wallet. Every failed attempt enables a delay (`unlock-interval`, protection against brute force).\n\nParameters:\n\n- `token`: Session token returned by `beekeeper_api.create_session`.\n- `wallet_name`: Name of the wallet to unlock.\n- `password`: Plaintext password of the wallet.\n",
+                "operationId": "beekeeper_unlock",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/beekeeper_unlock"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/beekeeper_unlock_response"
+                                },
+                                "example": {}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "beekeeper_api.import_key": {
+            "post": {
+                "tags": [
+                    "beekeeper_api"
+                ],
+                "summary": "Imports a private key into a wallet.",
+                "description": "Imports a WIF private key into the given (unlocked) wallet and returns the corresponding public key.\n\nParameters:\n\n- `token`: Session token returned by `beekeeper_api.create_session`.\n- `wallet_name`: Name of the wallet to import the key into.\n- `wif_key`: Private key in WIF format.\n",
+                "operationId": "beekeeper_import_key",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/beekeeper_import_key"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/beekeeper_import_key_response"
+                                },
+                                "example": {
+                                    "public_key": "STM6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "beekeeper_api.import_keys": {
+            "post": {
+                "tags": [
+                    "beekeeper_api"
+                ],
+                "summary": "Imports many private keys into a wallet.",
+                "description": "Imports a list of WIF private keys into the given (unlocked) wallet and returns the corresponding public keys (in the same order).\n\nParameters:\n\n- `token`: Session token returned by `beekeeper_api.create_session`.\n- `wallet_name`: Name of the wallet to import the keys into.\n- `wif_keys`: Array of private keys in WIF format.\n",
+                "operationId": "beekeeper_import_keys",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/beekeeper_import_keys"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/beekeeper_import_keys_response"
+                                },
+                                "example": {
+                                    "public_keys": [
+                                        "STM6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "beekeeper_api.remove_key": {
+            "post": {
+                "tags": [
+                    "beekeeper_api"
+                ],
+                "summary": "Removes a private key from a wallet.",
+                "description": "Removes the private key matching the given public key from the wallet. It is highly recommended to back the key up first; this operation cannot be reverted.\n\nParameters:\n\n- `token`: Session token returned by `beekeeper_api.create_session`.\n- `wallet_name`: Name of the wallet to remove the key from.\n- `public_key`: Public key (with `STM` prefix) of the private key to remove.\n",
+                "operationId": "beekeeper_remove_key",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/beekeeper_remove_key"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/beekeeper_remove_key_response"
+                                },
+                                "example": {}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "beekeeper_api.list_wallets": {
+            "post": {
+                "tags": [
+                    "beekeeper_api"
+                ],
+                "summary": "Lists wallets opened in the session.",
+                "description": "Lists all wallets opened in the current session together with their lock status.\n\nParameters:\n\n- `token`: Session token returned by `beekeeper_api.create_session`.\n",
+                "operationId": "beekeeper_list_wallets",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/beekeeper_list_wallets"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/beekeeper_list_wallets_response"
+                                },
+                                "example": {
+                                    "wallets": [
+                                        {
+                                            "name": "my_second_wallet",
+                                            "unlocked": true
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "beekeeper_api.list_created_wallets": {
+            "post": {
+                "tags": [
+                    "beekeeper_api"
+                ],
+                "summary": "Lists all wallets stored in the wallet directory.",
+                "description": "Lists all wallets stored in the wallet directory, regardless of whether they are opened. `unlocked` is `true` only for wallets opened and unlocked in the current session.\n\nParameters:\n\n- `token`: Session token returned by `beekeeper_api.create_session`.\n",
+                "operationId": "beekeeper_list_created_wallets",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/beekeeper_list_created_wallets"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/beekeeper_list_created_wallets_response"
+                                },
+                                "example": {
+                                    "wallets": [
+                                        {
+                                            "name": "my_first_wallet",
+                                            "unlocked": false
+                                        },
+                                        {
+                                            "name": "my_second_wallet",
+                                            "unlocked": true
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "beekeeper_api.get_public_keys": {
+            "post": {
+                "tags": [
+                    "beekeeper_api"
+                ],
+                "summary": "Lists public keys.",
+                "description": "Lists public keys from the given wallet, or from all unlocked wallets of the current session if `wallet_name` is not given. Fails if the given wallet is locked or there is no unlocked wallet.\n\nParameters:\n\n- `token`: Session token returned by `beekeeper_api.create_session`.\n- `wallet_name`: Optional. Name of the wallet to list keys from; if omitted, all unlocked wallets of the session are searched.\n",
+                "operationId": "beekeeper_get_public_keys",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/beekeeper_get_public_keys"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/beekeeper_get_public_keys_response"
+                                },
+                                "example": {
+                                    "keys": [
+                                        {
+                                            "public_key": "STM6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "beekeeper_api.sign_digest": {
+            "post": {
+                "tags": [
+                    "beekeeper_api"
+                ],
+                "summary": "Signs a digest.",
+                "description": "Signs a digest (e.g. a transaction `sig_digest`) using the private key corresponding to the given public key.\n\nParameters:\n\n- `token`: Session token returned by `beekeeper_api.create_session`.\n- `sig_digest`: Digest to sign as 64 hex characters (32 bytes).\n- `public_key`: Public key (with `STM` prefix) whose private key is used for signing.\n- `wallet_name`: Optional. Wallet where the private key is stored; if omitted, all unlocked wallets of the session are searched.\n",
+                "operationId": "beekeeper_sign_digest",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/beekeeper_sign_digest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/beekeeper_sign_digest_response"
+                                },
+                                "example": {
+                                    "signature": "1f74012018d7c6ee846e0b51f8ab42884f91ccf5c76327ce1282ec79290138e2691ec51c57c80f3b594ea587262244ac8ffecfa6efff4a4e15bed1fa6e46b6423a"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "beekeeper_api.get_info": {
+            "post": {
+                "tags": [
+                    "beekeeper_api"
+                ],
+                "summary": "Returns the current time and the timeout time.",
+                "description": "Returns the current time and the time when wallets will be locked due to inactivity. When the timeout is disabled `timeout_time` is `9999-12-31T23:59:59`.\n\nParameters:\n\n- `token`: Session token returned by `beekeeper_api.create_session`.\n",
+                "operationId": "beekeeper_get_info",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/beekeeper_get_info"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/beekeeper_get_info_response"
+                                },
+                                "example": {
+                                    "now": "2024-04-11T11:36:12",
+                                    "timeout_time": "2024-04-11T11:51:12"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "beekeeper_api.create_session": {
+            "post": {
+                "tags": [
+                    "beekeeper_api"
+                ],
+                "summary": "Creates a session.",
+                "description": "Creates a new session and returns its token, which is required by almost all other endpoints. At most 64 concurrent sessions are allowed.\n\nParameters:\n\n- `salt`: Optional. Additional random input for token generation (currently ignored).\n",
+                "operationId": "beekeeper_create_session",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/beekeeper_create_session"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/beekeeper_create_session_response"
+                                },
+                                "example": {
+                                    "token": "c8e3a065a469f3d88de46c69c46b2bfc8fe0aa5f1414748788c4a1c9a6a0f913"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "beekeeper_api.close_session": {
+            "post": {
+                "tags": [
+                    "beekeeper_api"
+                ],
+                "summary": "Closes a session.",
+                "description": "Closes the session. When the last session is closed, the beekeeper shuts down.\n\nParameters:\n\n- `token`: Session token returned by `beekeeper_api.create_session`.\n",
+                "operationId": "beekeeper_close_session",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/beekeeper_close_session"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/beekeeper_close_session_response"
+                                },
+                                "example": {}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "beekeeper_api.has_matching_private_key": {
+            "post": {
+                "tags": [
+                    "beekeeper_api"
+                ],
+                "summary": "Checks if a wallet has a private key for a public key.",
+                "description": "Tests whether the given wallet contains a private key corresponding to the given public key.\n\nParameters:\n\n- `token`: Session token returned by `beekeeper_api.create_session`.\n- `wallet_name`: Name of the wallet.\n- `public_key`: Public key (with `STM` prefix) to check.\n",
+                "operationId": "beekeeper_has_matching_private_key",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/beekeeper_has_matching_private_key"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/beekeeper_has_matching_private_key_response"
+                                },
+                                "example": {
+                                    "exists": true
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "beekeeper_api.encrypt_data": {
+            "post": {
+                "tags": [
+                    "beekeeper_api"
+                ],
+                "summary": "Encrypts data.",
+                "description": "Encrypts `content` with a shared secret (ECDH) derived from the private key of `from_public_key` (which must be in the wallet) and `to_public_key`.\n\nParameters:\n\n- `token`: Session token returned by `beekeeper_api.create_session`.\n- `wallet_name`: Name of the wallet containing the private key of `from_public_key`.\n- `from_public_key`: Public key of the sender (its private key must be in the wallet).\n- `to_public_key`: Public key of the receiver.\n- `content`: Data to encrypt.\n- `nonce`: Optional nonce; if omitted or `0`, the current time is used.\n",
+                "operationId": "beekeeper_encrypt_data",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/beekeeper_encrypt_data"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/beekeeper_encrypt_data_response"
+                                },
+                                "example": {
+                                    "encrypted_content": "5i27iXeZofCsqdT2dDUf274JBt8TMAjYMBpfCygv5sU2cKHhHQWmLn9XRoVyQ2"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "beekeeper_api.decrypt_data": {
+            "post": {
+                "tags": [
+                    "beekeeper_api"
+                ],
+                "summary": "Decrypts data.",
+                "description": "Decrypts `encrypted_content`. The wallet must contain the private key of either `to_public_key` or `from_public_key`.\n\nParameters:\n\n- `token`: Session token returned by `beekeeper_api.create_session`.\n- `wallet_name`: Name of the wallet containing the private key of `to_public_key` or `from_public_key`.\n- `from_public_key`: Public key of the sender.\n- `to_public_key`: Public key of the receiver.\n- `encrypted_content`: Encrypted data as returned by `encrypt_data`.\n",
+                "operationId": "beekeeper_decrypt_data",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/beekeeper_decrypt_data"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/beekeeper_decrypt_data_response"
+                                },
+                                "example": {
+                                    "decrypted_content": "banana-cherry-plum"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "beekeeper_api.get_version": {
+            "post": {
+                "tags": [
+                    "beekeeper_api"
+                ],
+                "summary": "Returns the beekeeper version.",
+                "description": "Returns the git revision the beekeeper was built from. Does not require a session token.\n\nParameters: none.\n",
+                "operationId": "beekeeper_get_version",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/beekeeper_get_version_response"
+                                },
+                                "example": {
+                                    "version": "d2abc7e9318fce5a10c73cda8beb57f46fe37247"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "beekeeper_api.has_wallet": {
+            "post": {
+                "tags": [
+                    "beekeeper_api"
+                ],
+                "summary": "Checks if a wallet exists.",
+                "description": "Tests whether a wallet with the given name exists (opened or stored in the wallet directory).\n\nParameters:\n\n- `token`: Session token returned by `beekeeper_api.create_session`.\n- `wallet_name`: Name of the wallet.\n",
+                "operationId": "beekeeper_has_wallet",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/beekeeper_has_wallet"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/beekeeper_has_wallet_response"
+                                },
+                                "example": {
+                                    "exists": true
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "beekeeper_api.is_wallet_unlocked": {
+            "post": {
+                "tags": [
+                    "beekeeper_api"
+                ],
+                "summary": "Checks if a wallet is unlocked.",
+                "description": "Returns whether the given wallet is unlocked in the current session (`false` if it is not opened in the session).\n\nParameters:\n\n- `token`: Session token returned by `beekeeper_api.create_session`.\n- `wallet_name`: Name of the wallet.\n",
+                "operationId": "beekeeper_is_wallet_unlocked",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/beekeeper_is_wallet_unlocked"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/beekeeper_is_wallet_unlocked_response"
+                                },
+                                "example": {
+                                    "unlocked": true
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
     "components": {
@@ -25359,6 +26279,1459 @@
                 },
                 "required": [
                     "extensions"
+                ]
+            },
+            "app_status_status_item": {
+                "type": "object",
+                "description": "Single application status change (hive::utilities::status_item).",
+                "properties": {
+                    "timestamp": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Moment the status was reported (fc::time_point_sec)."
+                    },
+                    "status": {
+                        "type": "string",
+                        "description": "Status name. Known values reported by hived: \"starting\", \"signals attached\", \"interrupted\", \"chain API ready\", \"syncing\", \"entering API mode\", \"entering live mode\", \"finished syncing\", \"replaying\", \"finished replaying\", \"exitting with open database error\", \"dumping snapshot\", \"finished dumping snapshot\", \"loading snapshot\", \"finished loading snapshot\", \"P2P started\", \"P2P stopped\". Known values reported by beekeeper: \"beekeeper is starting\", \"opening beekeeper failed\", \"beekeeper is ready\". Error messages (e.g. \"Unable to find plugin: <name>\") are also reported as statuses, so the value is free-form.",
+                        "example": "entering live mode"
+                    }
+                },
+                "required": [
+                    "timestamp",
+                    "status"
+                ]
+            },
+            "app_status_webserver_item": {
+                "type": "object",
+                "description": "Endpoint an application server is listening on (hive::utilities::webserver_item; the server type is the map key, not serialized).",
+                "properties": {
+                    "timestamp": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Moment the endpoint was reported (fc::time_point_sec)."
+                    },
+                    "address": {
+                        "type": "string",
+                        "description": "Listening IP address (IPv4 or IPv6, without brackets).",
+                        "example": "0.0.0.0"
+                    },
+                    "port": {
+                        "x-hive-type": "Uint16t",
+                        "type": "integer",
+                        "description": "Listening port.",
+                        "example": 8090
+                    }
+                },
+                "required": [
+                    "timestamp",
+                    "address",
+                    "port"
+                ]
+            },
+            "app_status_webservers": {
+                "type": "object",
+                "description": "Map of server type to its listening endpoint. hived reports \"HTTP\", \"WS\" (webserver plugin) and \"P2P\" (p2p plugin); beekeeper reports only \"HTTP\"/\"WS\". Entries appear only once the corresponding server started.",
+                "properties": {
+                    "HTTP": {
+                        "$ref": "#/components/schemas/app_status_webserver_item"
+                    },
+                    "WS": {
+                        "$ref": "#/components/schemas/app_status_webserver_item"
+                    },
+                    "P2P": {
+                        "$ref": "#/components/schemas/app_status_webserver_item"
+                    }
+                },
+                "additionalProperties": {
+                    "$ref": "#/components/schemas/app_status_webserver_item"
+                }
+            },
+            "app_status_fork_item": {
+                "type": "object",
+                "description": "Fork switch event (hive::utilities::fork_item). Only hived reports these.",
+                "properties": {
+                    "timestamp": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Moment the fork switch was reported (fc::time_point_sec)."
+                    },
+                    "new_head_block_num": {
+                        "x-hive-type": "Uint32t",
+                        "type": "integer",
+                        "description": "Block number of the new head block."
+                    },
+                    "new_head_block_id": {
+                        "x-hive-type": "BlockId",
+                        "type": "string",
+                        "description": "Block id of the new head block."
+                    }
+                },
+                "required": [
+                    "timestamp",
+                    "new_head_block_num",
+                    "new_head_block_id"
+                ]
+            },
+            "app_status_block_stats_before": {
+                "type": "object",
+                "description": "Statistics about transactions handled between previous block and this block.",
+                "properties": {
+                    "inc": {
+                        "x-hive-type": "Uint32t",
+                        "type": "integer",
+                        "description": "Number of transactions that came from API/P2P since the previous block."
+                    },
+                    "ok": {
+                        "x-hive-type": "Uint32t",
+                        "type": "integer",
+                        "description": "Number of incoming transactions accepted to pending."
+                    },
+                    "auth": {
+                        "x-hive-type": "Uint32t",
+                        "type": "integer",
+                        "description": "Number of incoming transactions that failed authorization (FULL report only)."
+                    },
+                    "rc": {
+                        "x-hive-type": "Uint32t",
+                        "type": "integer",
+                        "description": "Number of incoming transactions that failed due to lack of RC (FULL report only)."
+                    }
+                },
+                "required": [
+                    "inc",
+                    "ok"
+                ]
+            },
+            "app_status_block_stats_after": {
+                "type": "object",
+                "description": "Statistics about pending transactions after block processing.",
+                "properties": {
+                    "exp": {
+                        "x-hive-type": "Uint32t",
+                        "type": "integer",
+                        "description": "Number of pending transactions that expired."
+                    },
+                    "fail": {
+                        "x-hive-type": "Uint32t",
+                        "type": "integer",
+                        "description": "Number of pending transactions that became invalid."
+                    },
+                    "appl": {
+                        "x-hive-type": "Uint32t",
+                        "type": "integer",
+                        "description": "Number of pending transactions successfully reapplied."
+                    },
+                    "post": {
+                        "x-hive-type": "Uint32t",
+                        "type": "integer",
+                        "description": "Number of pending transactions postponed without reapplication."
+                    },
+                    "drop": {
+                        "x-hive-type": "Uint32t",
+                        "type": "integer",
+                        "description": "Number of transactions dropped due to exceeded mempool size limit."
+                    },
+                    "size": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "description": "Size of mempool in bytes left after handling pending transactions (size_t; FULL report only)."
+                    }
+                },
+                "required": [
+                    "exp",
+                    "fail",
+                    "appl",
+                    "post",
+                    "drop"
+                ]
+            },
+            "app_status_block_stats_exec": {
+                "type": "object",
+                "description": "Timings of block processing, all in microseconds (fc::microseconds serialized as integer count).",
+                "properties": {
+                    "offset": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "description": "Offset from block timestamp to the moment block was queued for processing [us]."
+                    },
+                    "pre": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "description": "Time spent waiting in the queue [us]."
+                    },
+                    "work": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "description": "Time of main work on the block before it was passed for broadcast [us]."
+                    },
+                    "post": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "description": "Time of remaining work after broadcast, including reapplication of pending transactions [us]."
+                    },
+                    "all": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "description": "Total time [us]."
+                    }
+                },
+                "required": [
+                    "offset",
+                    "pre",
+                    "work",
+                    "post",
+                    "all"
+                ]
+            },
+            "app_status_block_stats": {
+                "type": "object",
+                "description": "Block processing report (block_flow_control::get_report). MINIMAL report contains only num, lib, type, txs, size and offset; REGULAR and FULL add the remaining fields.",
+                "properties": {
+                    "num": {
+                        "x-hive-type": "Uint32t",
+                        "type": "integer",
+                        "description": "Block number."
+                    },
+                    "lib": {
+                        "x-hive-type": "Uint32t",
+                        "type": "integer",
+                        "description": "Last irreversible block number."
+                    },
+                    "type": {
+                        "type": "string",
+                        "description": "Block processing type: broken, forked, ignored, gen, p2p, sync, old, pacemaker, pacemaker-sync, queen, debug.",
+                        "example": "p2p"
+                    },
+                    "id": {
+                        "x-hive-type": "BlockId",
+                        "type": "string",
+                        "description": "Block id."
+                    },
+                    "ts": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Block timestamp."
+                    },
+                    "bp": {
+                        "x-hive-type": "AccountName",
+                        "type": "string",
+                        "description": "Block producer."
+                    },
+                    "txs": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "description": "Number of transactions in the block (size_t)."
+                    },
+                    "size": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "description": "Uncompressed block size in bytes (size_t)."
+                    },
+                    "offset": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "description": "Offset from block timestamp of the completion of main work on the block [us]."
+                    },
+                    "before": {
+                        "$ref": "#/components/schemas/app_status_block_stats_before"
+                    },
+                    "after": {
+                        "$ref": "#/components/schemas/app_status_block_stats_after"
+                    },
+                    "exec": {
+                        "$ref": "#/components/schemas/app_status_block_stats_exec"
+                    }
+                },
+                "required": [
+                    "num",
+                    "lib",
+                    "type",
+                    "txs",
+                    "size",
+                    "offset"
+                ]
+            },
+            "app_status_block_stats_record": {
+                "type": "object",
+                "description": "Record stored under \"Block stats\" name.",
+                "properties": {
+                    "block_stats": {
+                        "$ref": "#/components/schemas/app_status_block_stats"
+                    }
+                },
+                "required": [
+                    "block_stats"
+                ]
+            },
+            "app_status_rc_resource_array": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/hive_int"
+                },
+                "minItems": 5,
+                "maxItems": 5,
+                "description": "Values per RC resource in order: history_bytes, new_accounts, market_bytes, state_bytes, execution_time (fc::int_array<int64_t,5>)."
+            },
+            "app_status_rc_op_stats": {
+                "type": "object",
+                "description": "Statistics for transactions with a single operation of given type (or multiop transactions). REGULAR report has avg_cost, FULL report has cost and usage.",
+                "properties": {
+                    "count": {
+                        "x-hive-type": "Uint32t",
+                        "type": "integer",
+                        "description": "Number of transactions taken into account."
+                    },
+                    "avg_cost": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "description": "Average RC cost of such transaction (REGULAR report)."
+                    },
+                    "cost": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/app_status_rc_resource_array"
+                            }
+                        ],
+                        "description": "Total RC cost per resource (FULL report)."
+                    },
+                    "usage": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/app_status_rc_resource_array"
+                            }
+                        ],
+                        "description": "Total resource usage per resource (FULL report)."
+                    }
+                },
+                "required": [
+                    "count"
+                ]
+            },
+            "app_status_rc_cant_afford": {
+                "type": "object",
+                "description": "Number of times payers could not afford the given operation afterwards.",
+                "properties": {
+                    "vote": {
+                        "x-hive-type": "Uint32t",
+                        "type": "integer",
+                        "description": "Could not afford vote."
+                    },
+                    "comment": {
+                        "x-hive-type": "Uint32t",
+                        "type": "integer",
+                        "description": "Could not afford comment."
+                    },
+                    "transfer": {
+                        "x-hive-type": "Uint32t",
+                        "type": "integer",
+                        "description": "Could not afford transfer."
+                    }
+                },
+                "required": [
+                    "vote",
+                    "comment",
+                    "transfer"
+                ]
+            },
+            "app_status_rc_payer_stats": {
+                "type": "object",
+                "description": "Statistics for payers of given RC wealth rank. lt5/lt10/lt20/cant_afford are present only when non-zero.",
+                "properties": {
+                    "rank": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 7,
+                        "description": "RC wealth rank (0 - free ... 7 - leviathan)."
+                    },
+                    "count": {
+                        "x-hive-type": "Uint32t",
+                        "type": "integer",
+                        "description": "Number of transactions paid by payers of this rank."
+                    },
+                    "cost": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/app_status_rc_resource_array"
+                            }
+                        ],
+                        "description": "Total RC cost per resource (FULL report)."
+                    },
+                    "usage": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/app_status_rc_resource_array"
+                            }
+                        ],
+                        "description": "Total resource usage per resource (FULL report)."
+                    },
+                    "lt5": {
+                        "x-hive-type": "Uint32t",
+                        "type": "integer",
+                        "description": "Number of times payer had less than 5% of max RC after transaction."
+                    },
+                    "lt10": {
+                        "x-hive-type": "Uint32t",
+                        "type": "integer",
+                        "description": "Number of times payer had less than 10% of max RC after transaction."
+                    },
+                    "lt20": {
+                        "x-hive-type": "Uint32t",
+                        "type": "integer",
+                        "description": "Number of times payer had less than 20% of max RC after transaction."
+                    },
+                    "cant_afford": {
+                        "$ref": "#/components/schemas/app_status_rc_cant_afford"
+                    }
+                },
+                "required": [
+                    "rank",
+                    "count"
+                ]
+            },
+            "app_status_rc_stats": {
+                "type": "object",
+                "description": "Daily RC statistics report (resource_credits::get_report). MINIMAL report lacks ops and payers.",
+                "properties": {
+                    "block": {
+                        "x-hive-type": "Uint32t",
+                        "type": "integer",
+                        "description": "Starting block of the period covered by the report."
+                    },
+                    "stamp": {
+                        "x-hive-type": "Sha256",
+                        "type": "string",
+                        "description": "Hash of RC state for the period (restartable_sha256 hexdigest)."
+                    },
+                    "regen": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "description": "Global RC regeneration at starting block."
+                    },
+                    "budget": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/app_status_rc_resource_array"
+                            }
+                        ],
+                        "description": "Block budget for each resource."
+                    },
+                    "pool": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/app_status_rc_resource_array"
+                            }
+                        ],
+                        "description": "Content of each resource pool at starting block."
+                    },
+                    "share": {
+                        "type": "array",
+                        "minItems": 5,
+                        "maxItems": 5,
+                        "items": {
+                            "x-hive-type": "Uint16t",
+                            "type": "integer"
+                        },
+                        "description": "Resource popularity share (basis points) at starting block."
+                    },
+                    "vote": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "description": "Average cost of vote."
+                    },
+                    "comment": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "description": "Average cost of comment."
+                    },
+                    "transfer": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "description": "Average cost of transfer."
+                    },
+                    "ops": {
+                        "type": "object",
+                        "description": "Map of operation name (e.g. \"vote_operation\", or \"multiop\") to its statistics.",
+                        "additionalProperties": {
+                            "$ref": "#/components/schemas/app_status_rc_op_stats"
+                        }
+                    },
+                    "payers": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/app_status_rc_payer_stats"
+                        },
+                        "description": "Statistics per payer rank (ranks with zero count are skipped)."
+                    }
+                },
+                "required": [
+                    "block",
+                    "stamp",
+                    "regen",
+                    "budget",
+                    "pool",
+                    "share",
+                    "vote",
+                    "comment",
+                    "transfer"
+                ]
+            },
+            "app_status_rc_stats_record": {
+                "type": "object",
+                "description": "Record stored under \"RC stats\" name.",
+                "properties": {
+                    "rc_stats": {
+                        "$ref": "#/components/schemas/app_status_rc_stats"
+                    }
+                },
+                "required": [
+                    "rc_stats"
+                ]
+            },
+            "app_status_benchmark_counter": {
+                "type": "object",
+                "properties": {
+                    "count": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "description": "Number of events (uint64)."
+                    },
+                    "time_ns": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "description": "Cumulative time in nanoseconds (uint64)."
+                    }
+                },
+                "required": [
+                    "count",
+                    "time_ns"
+                ]
+            },
+            "app_status_benchmark_comment_archive_stats": {
+                "type": "object",
+                "description": "Comment archive access statistics.",
+                "properties": {
+                    "comment_accessed_from_index": {
+                        "$ref": "#/components/schemas/app_status_benchmark_counter"
+                    },
+                    "comment_accessed_from_archive": {
+                        "$ref": "#/components/schemas/app_status_benchmark_counter"
+                    },
+                    "comment_not_found": {
+                        "$ref": "#/components/schemas/app_status_benchmark_counter"
+                    },
+                    "comment_cashout_processing": {
+                        "$ref": "#/components/schemas/app_status_benchmark_counter"
+                    },
+                    "comment_lib_processing": {
+                        "$ref": "#/components/schemas/app_status_benchmark_counter"
+                    }
+                },
+                "required": [
+                    "comment_accessed_from_index",
+                    "comment_accessed_from_archive",
+                    "comment_not_found",
+                    "comment_cashout_processing",
+                    "comment_lib_processing"
+                ]
+            },
+            "app_status_benchmark_index_memory_details": {
+                "type": "object",
+                "description": "Memory usage of a single multiindex.",
+                "properties": {
+                    "index_name": {
+                        "type": "string"
+                    },
+                    "index_size": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "description": "Number of items (size_t)."
+                    },
+                    "item_sizeof": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "description": "Size of single item in bytes (size_t)."
+                    },
+                    "item_additional_allocation": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "description": "Additional dynamic allocations held in items (size_t)."
+                    },
+                    "additional_container_allocation": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "description": "Memory used by container internal structures (size_t)."
+                    },
+                    "total_index_mem_usage": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "description": "Total memory usage of the index (size_t)."
+                    }
+                },
+                "required": [
+                    "index_name",
+                    "index_size",
+                    "item_sizeof",
+                    "item_additional_allocation",
+                    "additional_container_allocation",
+                    "total_index_mem_usage"
+                ]
+            },
+            "app_status_benchmark_measurement": {
+                "type": "object",
+                "description": "Performance measurement (hive::utilities::benchmark_dumper::measurement).",
+                "properties": {
+                    "block_number": {
+                        "x-hive-type": "Uint32t",
+                        "type": "integer",
+                        "description": "Block number at which measurement was taken."
+                    },
+                    "real_ms": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "description": "Real time elapsed since previous measurement [ms] (int64)."
+                    },
+                    "cpu_ms": {
+                        "type": "integer",
+                        "description": "CPU time elapsed since previous measurement [ms] (int32)."
+                    },
+                    "current_mem": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "description": "Current virtual memory usage [kB] (uint64)."
+                    },
+                    "peak_mem": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "description": "Peak virtual memory usage [kB] (uint64)."
+                    },
+                    "shm_free": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "description": "Free space in shared memory file [kB] (uint64)."
+                    },
+                    "comment_archive_stats": {
+                        "$ref": "#/components/schemas/app_status_benchmark_comment_archive_stats"
+                    },
+                    "index_memory_details_cntr": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/app_status_benchmark_index_memory_details"
+                        }
+                    }
+                },
+                "required": [
+                    "block_number",
+                    "real_ms",
+                    "cpu_ms",
+                    "current_mem",
+                    "peak_mem",
+                    "shm_free",
+                    "comment_archive_stats",
+                    "index_memory_details_cntr"
+                ]
+            },
+            "app_status_benchmark_record": {
+                "type": "object",
+                "description": "Record stored under \"hived_benchmark\" name.",
+                "properties": {
+                    "multiindex_stats": {
+                        "$ref": "#/components/schemas/app_status_benchmark_measurement"
+                    }
+                },
+                "required": [
+                    "multiindex_stats"
+                ]
+            },
+            "app_status_records": {
+                "type": "object",
+                "description": "Map of information record name to its latest key/value record (application::notify_information). hived reports \"Block stats\" (block-stats-report-output NOTIFY/BOTH), \"RC stats\" (rc-stats-report-output NOTIFY/BOTH) and \"hived_benchmark\" (--dump-memory-details/benchmark interval). beekeeper reports none.",
+                "properties": {
+                    "Block stats": {
+                        "$ref": "#/components/schemas/app_status_block_stats_record"
+                    },
+                    "RC stats": {
+                        "$ref": "#/components/schemas/app_status_rc_stats_record"
+                    },
+                    "hived_benchmark": {
+                        "$ref": "#/components/schemas/app_status_benchmark_record"
+                    }
+                },
+                "additionalProperties": {
+                    "type": "object"
+                }
+            },
+            "app_status_get_app_status_response": {
+                "type": "object",
+                "description": "Collected application status (hive::utilities::statuses). Served by both hived and beekeeper.",
+                "properties": {
+                    "last_update": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Timestamp of the most recent update of any collected item."
+                    },
+                    "records": {
+                        "$ref": "#/components/schemas/app_status_records"
+                    },
+                    "statuses": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/app_status_status_item"
+                        },
+                        "description": "History of status changes, in order of reporting."
+                    },
+                    "webservers": {
+                        "$ref": "#/components/schemas/app_status_webservers"
+                    },
+                    "forks": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/app_status_fork_item"
+                        },
+                        "description": "History of fork switches (hived only; empty for beekeeper)."
+                    }
+                },
+                "required": [
+                    "last_update",
+                    "records",
+                    "statuses",
+                    "webservers",
+                    "forks"
+                ]
+            },
+            "beekeeper_wallet_details": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "Name of the wallet (file name without the `.wallet` extension).",
+                        "example": "my_second_wallet"
+                    },
+                    "unlocked": {
+                        "type": "boolean",
+                        "description": "`true` if the wallet is unlocked in the current session, otherwise `false`.",
+                        "example": true
+                    }
+                },
+                "required": [
+                    "name",
+                    "unlocked"
+                ]
+            },
+            "beekeeper_public_key_details": {
+                "type": "object",
+                "properties": {
+                    "public_key": {
+                        "type": "string",
+                        "x-hive-type": "PublicKey",
+                        "description": "Public key (with `STM` prefix) of a private key stored in a wallet.",
+                        "example": "STM6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4"
+                    }
+                },
+                "required": [
+                    "public_key"
+                ]
+            },
+            "beekeeper_create": {
+                "type": "object",
+                "properties": {
+                    "token": {
+                        "type": "string",
+                        "description": "Session token returned by `beekeeper_api.create_session`.",
+                        "example": "c8e3a065a469f3d88de46c69c46b2bfc8fe0aa5f1414748788c4a1c9a6a0f913"
+                    },
+                    "wallet_name": {
+                        "type": "string",
+                        "description": "Name of the wallet to create. Only alphanumeric characters and `._-@` are allowed.",
+                        "example": "my_second_wallet"
+                    },
+                    "password": {
+                        "type": "string",
+                        "description": "Password for the new wallet. If omitted or empty, a random password is generated.",
+                        "example": "this_my_password"
+                    },
+                    "is_temporary": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "If `true` the wallet exists only in memory, otherwise it is saved into a file.",
+                        "example": false
+                    }
+                },
+                "required": [
+                    "token",
+                    "wallet_name"
+                ]
+            },
+            "beekeeper_create_response": {
+                "type": "object",
+                "properties": {
+                    "password": {
+                        "type": "string",
+                        "description": "Plaintext password needed to unlock the wallet. The caller is responsible for storing it.",
+                        "example": "PW5J87GVhYjo3XWpmB6XZCX2t3pdPFRzYhYRfLM5QP9P9HCnhmQ4G"
+                    }
+                },
+                "required": [
+                    "password"
+                ]
+            },
+            "beekeeper_open": {
+                "type": "object",
+                "properties": {
+                    "token": {
+                        "type": "string",
+                        "description": "Session token returned by `beekeeper_api.create_session`.",
+                        "example": "c8e3a065a469f3d88de46c69c46b2bfc8fe0aa5f1414748788c4a1c9a6a0f913"
+                    },
+                    "wallet_name": {
+                        "type": "string",
+                        "description": "Name of the wallet to open.",
+                        "example": "my_second_wallet"
+                    }
+                },
+                "required": [
+                    "token",
+                    "wallet_name"
+                ]
+            },
+            "beekeeper_open_response": {
+                "type": "object"
+            },
+            "beekeeper_close": {
+                "type": "object",
+                "properties": {
+                    "token": {
+                        "type": "string",
+                        "description": "Session token returned by `beekeeper_api.create_session`.",
+                        "example": "c8e3a065a469f3d88de46c69c46b2bfc8fe0aa5f1414748788c4a1c9a6a0f913"
+                    },
+                    "wallet_name": {
+                        "type": "string",
+                        "description": "Name of the wallet to close.",
+                        "example": "my_second_wallet"
+                    }
+                },
+                "required": [
+                    "token",
+                    "wallet_name"
+                ]
+            },
+            "beekeeper_close_response": {
+                "type": "object"
+            },
+            "beekeeper_set_timeout": {
+                "type": "object",
+                "properties": {
+                    "token": {
+                        "type": "string",
+                        "description": "Session token returned by `beekeeper_api.create_session`.",
+                        "example": "c8e3a065a469f3d88de46c69c46b2bfc8fe0aa5f1414748788c4a1c9a6a0f913"
+                    },
+                    "seconds": {
+                        "type": "integer",
+                        "x-hive-type": "Uint32t",
+                        "description": "Number of seconds of inactivity after which `lock_all` is performed. `0` disables the timeout.",
+                        "example": 3600
+                    }
+                },
+                "required": [
+                    "token",
+                    "seconds"
+                ]
+            },
+            "beekeeper_set_timeout_response": {
+                "type": "object"
+            },
+            "beekeeper_lock_all": {
+                "type": "object",
+                "properties": {
+                    "token": {
+                        "type": "string",
+                        "description": "Session token returned by `beekeeper_api.create_session`.",
+                        "example": "c8e3a065a469f3d88de46c69c46b2bfc8fe0aa5f1414748788c4a1c9a6a0f913"
+                    }
+                },
+                "required": [
+                    "token"
+                ]
+            },
+            "beekeeper_lock_all_response": {
+                "type": "object"
+            },
+            "beekeeper_lock": {
+                "type": "object",
+                "properties": {
+                    "token": {
+                        "type": "string",
+                        "description": "Session token returned by `beekeeper_api.create_session`.",
+                        "example": "c8e3a065a469f3d88de46c69c46b2bfc8fe0aa5f1414748788c4a1c9a6a0f913"
+                    },
+                    "wallet_name": {
+                        "type": "string",
+                        "description": "Name of the wallet to lock.",
+                        "example": "my_second_wallet"
+                    }
+                },
+                "required": [
+                    "token",
+                    "wallet_name"
+                ]
+            },
+            "beekeeper_lock_response": {
+                "type": "object"
+            },
+            "beekeeper_unlock": {
+                "type": "object",
+                "properties": {
+                    "token": {
+                        "type": "string",
+                        "description": "Session token returned by `beekeeper_api.create_session`.",
+                        "example": "c8e3a065a469f3d88de46c69c46b2bfc8fe0aa5f1414748788c4a1c9a6a0f913"
+                    },
+                    "wallet_name": {
+                        "type": "string",
+                        "description": "Name of the wallet to unlock.",
+                        "example": "my_second_wallet"
+                    },
+                    "password": {
+                        "type": "string",
+                        "description": "Plaintext password of the wallet.",
+                        "example": "PW5JViFn5gd4rt6ohk7DQMgHzQN6Z9FuMRfKoE5Ysk25mkjy5AY1b"
+                    }
+                },
+                "required": [
+                    "token",
+                    "wallet_name",
+                    "password"
+                ]
+            },
+            "beekeeper_unlock_response": {
+                "type": "object"
+            },
+            "beekeeper_import_key": {
+                "type": "object",
+                "properties": {
+                    "token": {
+                        "type": "string",
+                        "description": "Session token returned by `beekeeper_api.create_session`.",
+                        "example": "c8e3a065a469f3d88de46c69c46b2bfc8fe0aa5f1414748788c4a1c9a6a0f913"
+                    },
+                    "wallet_name": {
+                        "type": "string",
+                        "description": "Name of the wallet to import the key into.",
+                        "example": "my_second_wallet"
+                    },
+                    "wif_key": {
+                        "type": "string",
+                        "description": "Private key in WIF format.",
+                        "example": "5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n"
+                    }
+                },
+                "required": [
+                    "token",
+                    "wallet_name",
+                    "wif_key"
+                ]
+            },
+            "beekeeper_import_key_response": {
+                "type": "object",
+                "properties": {
+                    "public_key": {
+                        "type": "string",
+                        "x-hive-type": "PublicKey",
+                        "description": "Public key corresponding to the imported private key.",
+                        "example": "STM6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4"
+                    }
+                },
+                "required": [
+                    "public_key"
+                ]
+            },
+            "beekeeper_import_keys": {
+                "type": "object",
+                "properties": {
+                    "token": {
+                        "type": "string",
+                        "description": "Session token returned by `beekeeper_api.create_session`.",
+                        "example": "c8e3a065a469f3d88de46c69c46b2bfc8fe0aa5f1414748788c4a1c9a6a0f913"
+                    },
+                    "wallet_name": {
+                        "type": "string",
+                        "description": "Name of the wallet to import the keys into.",
+                        "example": "my_second_wallet"
+                    },
+                    "wif_keys": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "Private keys in WIF format.",
+                        "example": [
+                            "5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n"
+                        ]
+                    }
+                },
+                "required": [
+                    "token",
+                    "wallet_name",
+                    "wif_keys"
+                ]
+            },
+            "beekeeper_import_keys_response": {
+                "type": "object",
+                "properties": {
+                    "public_keys": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "x-hive-type": "PublicKey"
+                        },
+                        "description": "Public keys corresponding to the imported private keys.",
+                        "example": [
+                            "STM6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4"
+                        ]
+                    }
+                },
+                "required": [
+                    "public_keys"
+                ]
+            },
+            "beekeeper_remove_key": {
+                "type": "object",
+                "properties": {
+                    "token": {
+                        "type": "string",
+                        "description": "Session token returned by `beekeeper_api.create_session`.",
+                        "example": "c8e3a065a469f3d88de46c69c46b2bfc8fe0aa5f1414748788c4a1c9a6a0f913"
+                    },
+                    "wallet_name": {
+                        "type": "string",
+                        "description": "Name of the wallet to remove the key from.",
+                        "example": "my_second_wallet"
+                    },
+                    "public_key": {
+                        "type": "string",
+                        "x-hive-type": "PublicKey",
+                        "description": "Public key (with `STM` prefix) of the private key to remove.",
+                        "example": "STM6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4"
+                    }
+                },
+                "required": [
+                    "token",
+                    "wallet_name",
+                    "public_key"
+                ]
+            },
+            "beekeeper_remove_key_response": {
+                "type": "object"
+            },
+            "beekeeper_list_wallets": {
+                "type": "object",
+                "properties": {
+                    "token": {
+                        "type": "string",
+                        "description": "Session token returned by `beekeeper_api.create_session`.",
+                        "example": "c8e3a065a469f3d88de46c69c46b2bfc8fe0aa5f1414748788c4a1c9a6a0f913"
+                    }
+                },
+                "required": [
+                    "token"
+                ]
+            },
+            "beekeeper_list_wallets_response": {
+                "type": "object",
+                "properties": {
+                    "wallets": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/beekeeper_wallet_details"
+                        },
+                        "description": "List of wallets."
+                    }
+                },
+                "required": [
+                    "wallets"
+                ]
+            },
+            "beekeeper_list_created_wallets": {
+                "type": "object",
+                "properties": {
+                    "token": {
+                        "type": "string",
+                        "description": "Session token returned by `beekeeper_api.create_session`.",
+                        "example": "c8e3a065a469f3d88de46c69c46b2bfc8fe0aa5f1414748788c4a1c9a6a0f913"
+                    }
+                },
+                "required": [
+                    "token"
+                ]
+            },
+            "beekeeper_list_created_wallets_response": {
+                "type": "object",
+                "properties": {
+                    "wallets": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/beekeeper_wallet_details"
+                        },
+                        "description": "List of wallets."
+                    }
+                },
+                "required": [
+                    "wallets"
+                ]
+            },
+            "beekeeper_get_public_keys": {
+                "type": "object",
+                "properties": {
+                    "token": {
+                        "type": "string",
+                        "description": "Session token returned by `beekeeper_api.create_session`.",
+                        "example": "c8e3a065a469f3d88de46c69c46b2bfc8fe0aa5f1414748788c4a1c9a6a0f913"
+                    },
+                    "wallet_name": {
+                        "type": "string",
+                        "description": "Name of the wallet to list keys from. If omitted, keys from all unlocked wallets are listed.",
+                        "example": "my_second_wallet"
+                    }
+                },
+                "required": [
+                    "token"
+                ]
+            },
+            "beekeeper_get_public_keys_response": {
+                "type": "object",
+                "properties": {
+                    "keys": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/beekeeper_public_key_details"
+                        },
+                        "description": "Public keys (sorted)."
+                    }
+                },
+                "required": [
+                    "keys"
+                ]
+            },
+            "beekeeper_sign_digest": {
+                "type": "object",
+                "properties": {
+                    "token": {
+                        "type": "string",
+                        "description": "Session token returned by `beekeeper_api.create_session`.",
+                        "example": "c8e3a065a469f3d88de46c69c46b2bfc8fe0aa5f1414748788c4a1c9a6a0f913"
+                    },
+                    "sig_digest": {
+                        "type": "string",
+                        "x-hive-type": "Sha256",
+                        "description": "Digest to sign, 64 hex characters.",
+                        "example": "9b29ba0710af3918e81d7b935556d7ab205d8a8f5ca2e2427535980c2e8bdaff"
+                    },
+                    "public_key": {
+                        "type": "string",
+                        "x-hive-type": "PublicKey",
+                        "description": "Public key (with `STM` prefix) whose private key is used for signing.",
+                        "example": "STM6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4"
+                    },
+                    "wallet_name": {
+                        "type": "string",
+                        "description": "Wallet where the private key is stored. If omitted, all unlocked wallets of the session are searched.",
+                        "example": "my_second_wallet"
+                    }
+                },
+                "required": [
+                    "token",
+                    "sig_digest",
+                    "public_key"
+                ]
+            },
+            "beekeeper_sign_digest_response": {
+                "type": "object",
+                "properties": {
+                    "signature": {
+                        "type": "string",
+                        "x-hive-type": "Signature",
+                        "description": "Compact signature (65 bytes, hex encoded).",
+                        "example": "1f74012018d7c6ee846e0b51f8ab42884f91ccf5c76327ce1282ec79290138e2691ec51c57c80f3b594ea587262244ac8ffecfa6efff4a4e15bed1fa6e46b6423a"
+                    }
+                },
+                "required": [
+                    "signature"
+                ]
+            },
+            "beekeeper_get_info": {
+                "type": "object",
+                "properties": {
+                    "token": {
+                        "type": "string",
+                        "description": "Session token returned by `beekeeper_api.create_session`.",
+                        "example": "c8e3a065a469f3d88de46c69c46b2bfc8fe0aa5f1414748788c4a1c9a6a0f913"
+                    }
+                },
+                "required": [
+                    "token"
+                ]
+            },
+            "beekeeper_get_info_response": {
+                "type": "object",
+                "properties": {
+                    "now": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Current time (UTC).",
+                        "example": "2024-04-11T11:36:12"
+                    },
+                    "timeout_time": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Time (UTC) when all wallets will be locked due to inactivity.",
+                        "example": "2024-04-11T11:51:12"
+                    }
+                },
+                "required": [
+                    "now",
+                    "timeout_time"
+                ]
+            },
+            "beekeeper_create_session": {
+                "type": "object",
+                "properties": {
+                    "salt": {
+                        "type": "string",
+                        "description": "Additional random input for token generation (currently ignored by the implementation).",
+                        "example": "avocado-12345"
+                    }
+                }
+            },
+            "beekeeper_create_session_response": {
+                "type": "object",
+                "properties": {
+                    "token": {
+                        "type": "string",
+                        "description": "Token of the newly created session (64 hex characters).",
+                        "example": "c8e3a065a469f3d88de46c69c46b2bfc8fe0aa5f1414748788c4a1c9a6a0f913"
+                    }
+                },
+                "required": [
+                    "token"
+                ]
+            },
+            "beekeeper_close_session": {
+                "type": "object",
+                "properties": {
+                    "token": {
+                        "type": "string",
+                        "description": "Session token returned by `beekeeper_api.create_session`.",
+                        "example": "c8e3a065a469f3d88de46c69c46b2bfc8fe0aa5f1414748788c4a1c9a6a0f913"
+                    }
+                },
+                "required": [
+                    "token"
+                ]
+            },
+            "beekeeper_close_session_response": {
+                "type": "object"
+            },
+            "beekeeper_has_matching_private_key": {
+                "type": "object",
+                "properties": {
+                    "token": {
+                        "type": "string",
+                        "description": "Session token returned by `beekeeper_api.create_session`.",
+                        "example": "c8e3a065a469f3d88de46c69c46b2bfc8fe0aa5f1414748788c4a1c9a6a0f913"
+                    },
+                    "wallet_name": {
+                        "type": "string",
+                        "description": "Name of the wallet.",
+                        "example": "my_second_wallet"
+                    },
+                    "public_key": {
+                        "type": "string",
+                        "x-hive-type": "PublicKey",
+                        "description": "Public key (with `STM` prefix) to check.",
+                        "example": "STM6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4"
+                    }
+                },
+                "required": [
+                    "token",
+                    "wallet_name",
+                    "public_key"
+                ]
+            },
+            "beekeeper_has_matching_private_key_response": {
+                "type": "object",
+                "properties": {
+                    "exists": {
+                        "type": "boolean",
+                        "description": "`true` if a matching private key exists in the wallet.",
+                        "example": true
+                    }
+                },
+                "required": [
+                    "exists"
+                ]
+            },
+            "beekeeper_encrypt_data": {
+                "type": "object",
+                "properties": {
+                    "token": {
+                        "type": "string",
+                        "description": "Session token returned by `beekeeper_api.create_session`.",
+                        "example": "c8e3a065a469f3d88de46c69c46b2bfc8fe0aa5f1414748788c4a1c9a6a0f913"
+                    },
+                    "wallet_name": {
+                        "type": "string",
+                        "description": "Name of the wallet containing the private key of `from_public_key`.",
+                        "example": "my_second_wallet"
+                    },
+                    "from_public_key": {
+                        "type": "string",
+                        "x-hive-type": "PublicKey",
+                        "description": "Public key of the sender; its private key must be stored in the wallet.",
+                        "example": "STM6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4"
+                    },
+                    "to_public_key": {
+                        "type": "string",
+                        "x-hive-type": "PublicKey",
+                        "description": "Public key of the receiver.",
+                        "example": "STM6oR6ckA4TejTWTjatUdbcS98AKETc3rcnQ9dWxmeNiKDzfhBZa"
+                    },
+                    "content": {
+                        "type": "string",
+                        "description": "Data to encrypt.",
+                        "example": "banana-cherry-plum"
+                    },
+                    "nonce": {
+                        "type": "integer",
+                        "x-hive-type": "Uint32t",
+                        "description": "Nonce used for encryption. If omitted (or `0`), the current time in microseconds is used.",
+                        "example": 1234567
+                    }
+                },
+                "required": [
+                    "token",
+                    "wallet_name",
+                    "from_public_key",
+                    "to_public_key",
+                    "content"
+                ]
+            },
+            "beekeeper_encrypt_data_response": {
+                "type": "object",
+                "properties": {
+                    "encrypted_content": {
+                        "type": "string",
+                        "description": "Encrypted data (base58 encoded).",
+                        "example": "5i27iXeZofCsqdT2dDUf274JBt8TMAjYMBpfCygv5sU2cKHhHQWmLn9XRoVyQ2"
+                    }
+                },
+                "required": [
+                    "encrypted_content"
+                ]
+            },
+            "beekeeper_decrypt_data": {
+                "type": "object",
+                "properties": {
+                    "token": {
+                        "type": "string",
+                        "description": "Session token returned by `beekeeper_api.create_session`.",
+                        "example": "c8e3a065a469f3d88de46c69c46b2bfc8fe0aa5f1414748788c4a1c9a6a0f913"
+                    },
+                    "wallet_name": {
+                        "type": "string",
+                        "description": "Name of the wallet containing the private key of `to_public_key` or `from_public_key`.",
+                        "example": "my_second_wallet"
+                    },
+                    "from_public_key": {
+                        "type": "string",
+                        "x-hive-type": "PublicKey",
+                        "description": "Public key of the sender.",
+                        "example": "STM6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4"
+                    },
+                    "to_public_key": {
+                        "type": "string",
+                        "x-hive-type": "PublicKey",
+                        "description": "Public key of the receiver.",
+                        "example": "STM6oR6ckA4TejTWTjatUdbcS98AKETc3rcnQ9dWxmeNiKDzfhBZa"
+                    },
+                    "encrypted_content": {
+                        "type": "string",
+                        "description": "Encrypted data (base58 encoded) as returned by `encrypt_data`.",
+                        "example": "5i27iXeZofCsqdT2dDUf274JBt8TMAjYMBpfCygv5sU2cKHhHQWmLn9XRoVyQ2"
+                    }
+                },
+                "required": [
+                    "token",
+                    "wallet_name",
+                    "from_public_key",
+                    "to_public_key",
+                    "encrypted_content"
+                ]
+            },
+            "beekeeper_decrypt_data_response": {
+                "type": "object",
+                "properties": {
+                    "decrypted_content": {
+                        "type": "string",
+                        "description": "Decrypted data.",
+                        "example": "banana-cherry-plum"
+                    }
+                },
+                "required": [
+                    "decrypted_content"
+                ]
+            },
+            "beekeeper_get_version_response": {
+                "type": "object",
+                "properties": {
+                    "version": {
+                        "type": "string",
+                        "x-hive-type": "Hex",
+                        "description": "Git revision (commit hash) of the build.",
+                        "example": "d2abc7e9318fce5a10c73cda8beb57f46fe37247"
+                    }
+                },
+                "required": [
+                    "version"
+                ]
+            },
+            "beekeeper_has_wallet": {
+                "type": "object",
+                "properties": {
+                    "token": {
+                        "type": "string",
+                        "description": "Session token returned by `beekeeper_api.create_session`.",
+                        "example": "c8e3a065a469f3d88de46c69c46b2bfc8fe0aa5f1414748788c4a1c9a6a0f913"
+                    },
+                    "wallet_name": {
+                        "type": "string",
+                        "description": "Name of the wallet.",
+                        "example": "my_second_wallet"
+                    }
+                },
+                "required": [
+                    "token",
+                    "wallet_name"
+                ]
+            },
+            "beekeeper_has_wallet_response": {
+                "type": "object",
+                "properties": {
+                    "exists": {
+                        "type": "boolean",
+                        "description": "`true` if the wallet exists.",
+                        "example": true
+                    }
+                },
+                "required": [
+                    "exists"
+                ]
+            },
+            "beekeeper_is_wallet_unlocked": {
+                "type": "object",
+                "properties": {
+                    "token": {
+                        "type": "string",
+                        "description": "Session token returned by `beekeeper_api.create_session`.",
+                        "example": "c8e3a065a469f3d88de46c69c46b2bfc8fe0aa5f1414748788c4a1c9a6a0f913"
+                    },
+                    "wallet_name": {
+                        "type": "string",
+                        "description": "Name of the wallet.",
+                        "example": "my_second_wallet"
+                    }
+                },
+                "required": [
+                    "token",
+                    "wallet_name"
+                ]
+            },
+            "beekeeper_is_wallet_unlocked_response": {
+                "type": "object",
+                "properties": {
+                    "unlocked": {
+                        "type": "boolean",
+                        "description": "`true` if the wallet is unlocked in the current session.",
+                        "example": true
+                    }
+                },
+                "required": [
+                    "unlocked"
                 ]
             }
         }

@@ -6,6 +6,8 @@ from typing import Final, Literal
 AvailableApis = Literal[
     "account_by_key_api",
     "account_history_api",
+    "app_status_api",
+    "beekeeper_api",
     "block_api",
     "bridge",
     "condenser_api",
@@ -26,6 +28,8 @@ AvailableApis = Literal[
 available_apis: Final[list[AvailableApis]] = [
     "account_by_key_api",
     "account_history_api",
+    "app_status_api",
+    "beekeeper_api",
     "block_api",
     "bridge",
     "condenser_api",
