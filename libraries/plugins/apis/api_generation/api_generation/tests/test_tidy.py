@@ -34,3 +34,20 @@ def test_tidy_removes_unused_and_sorts_imports(tmp_path: Path) -> None:
     source = module.read_text()
     assert "from os import path" not in source
     assert source.index("from dataclasses import dataclass") < source.index("from typing import Any, TypeAlias")
+
+
+def test_tidy_sorts_dunder_all_and_strips_trailing_whitespace_in_docstrings(tmp_path: Path) -> None:
+    # ARRANGE
+    module = tmp_path / "generated.py"
+    module.write_text(
+        'from __future__ import annotations\n\n__all__ = ["b", "a"]\n\na = 1\nb = 2\n\n\nclass Model:\n'
+        '    """\n    Description from openapi.json   \n    """\n'
+    )
+
+    # ACT
+    tidy_with_ruff(module)
+
+    # ASSERT
+    source = module.read_text()
+    assert '__all__ = ["a", "b"]' in source
+    assert "openapi.json\n" in source

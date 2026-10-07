@@ -1,4 +1,4 @@
-"""Clean up generated code: remove unused imports, sort imports and format with ruff."""
+"""Clean up generated code with ruff: unused imports, import and `__all__` sorting, trailing whitespace, formatting."""
 
 from __future__ import annotations
 
@@ -10,13 +10,18 @@ from ruff.__main__ import find_ruff_bin  # type: ignore[import-untyped]
 if TYPE_CHECKING:
     from pathlib import Path
 
-LINT_RULES: Final[str] = "F401,I"
-"""Unused imports and import sorting."""
+LINT_RULES: Final[str] = "F401,I,RUF022,W291"
+"""
+Unused imports, import sorting, sorting of `__all__` and trailing whitespace (e.g. in docstrings from openapi.json).
+
+Fixes of W291 inside docstrings are classified by ruff as unsafe, hence `--unsafe-fixes` - it applies only to the
+rules selected here.
+"""
 
 
 def tidy_with_ruff(*paths: Path) -> None:
     """
-    Remove unused imports, sort imports and format the given files / directories in place.
+    Fix `LINT_RULES` violations and format the given files / directories in place.
 
     The ruff configuration of the repository (hive/pyproject.toml) applies, so the result matches what linters and
     editors report. Generated files are git-ignored, hence `--no-respect-gitignore`.
@@ -27,7 +32,18 @@ def tidy_with_ruff(*paths: Path) -> None:
 
     ruff = find_ruff_bin()
     subprocess.run(
-        [ruff, "check", "--fix", "--exit-zero", "--quiet", "--no-respect-gitignore", "--select", LINT_RULES, *targets],
+        [
+            ruff,
+            "check",
+            "--fix",
+            "--unsafe-fixes",
+            "--exit-zero",
+            "--quiet",
+            "--no-respect-gitignore",
+            "--select",
+            LINT_RULES,
+            *targets,
+        ],
         check=True,
     )
     subprocess.run([ruff, "format", "--quiet", "--no-respect-gitignore", *targets], check=True)
