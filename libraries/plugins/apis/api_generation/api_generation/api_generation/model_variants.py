@@ -60,7 +60,10 @@ def _custom_types(types: dict[str, str], *, skip_in_unions: bool = False) -> Cus
 
 PUBLIC: Final[ModelVariant] = ModelVariant(
     name="public",
-    model_options=ModelOptions(model_type="dataclass", base_class=PUBLIC_BASE_CLASS, frozen=True, kw_only=True),
+    # enums as Literal - values of public models are plain builtins (no conversion when built from JSON)
+    model_options=ModelOptions(
+        model_type="dataclass", base_class=PUBLIC_BASE_CLASS, frozen=True, kw_only=True, enum_as_literal=True
+    ),
     custom_types=_custom_types({name: f"{base_type_mappings.__name__}.{name}" for name in BASE_TYPE_MAPPINGS}),
     package="hiveio_api",
     public=True,
@@ -68,7 +71,9 @@ PUBLIC: Final[ModelVariant] = ModelVariant(
 
 VALIDATION: Final[ModelVariant] = ModelVariant(
     name="validation",
-    model_options=ModelOptions(model_type="msgspec", base_class=VALIDATION_BASE_CLASS, kw_only=True),
+    model_options=ModelOptions(
+        model_type="msgspec", base_class=VALIDATION_BASE_CLASS, kw_only=True, enum_as_literal=True
+    ),
     # msgspec does not support unions of custom types with other types - such members keep their builtin type
     custom_types=_custom_types(dict(BASE_TYPE_MAPPINGS), skip_in_unions=True),
     package="hiveio_api._validation",
