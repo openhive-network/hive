@@ -56,5 +56,9 @@ def test_is_get_impacted_accounts_operation_collect_accounts_from_the_comment_pa
     alice_account_history = wallet.api.get_account_history("alice", -1, 100)
     initminer_account_history = wallet.api.get_account_history("initminer", -1, 100)
 
-    assert "CommentOptionsOperation" in str(alice_account_history)  # String version of history not contain type_ field
-    assert "CommentOptionsOperation" in str(initminer_account_history)
+    assert "comment_options_operation" in get_operation_types(alice_account_history)
+    assert "comment_options_operation" in get_operation_types(initminer_account_history)
+
+
+def get_operation_types(account_history: list) -> list[str]:
+    return [entry.op.type for _, entry in account_history]
