@@ -6,7 +6,7 @@
 #   1. Determines package version from git state (no generation needed)
 #   2. Checks if the package version already exists in GitLab PyPI registry
 #   3. If exists: creates env file and exits (skips generation/build entirely)
-#   4. If not: generates package, builds wheel, runs tests, and deploys to registry
+#   4. If not: generates package, runs generator tests, builds wheel, runs package tests, and deploys to registry
 #
 # The build_wheel.env artifact is always created with the resolved version.
 # When the version exists in the registry, generation and build are skipped entirely.
@@ -21,7 +21,7 @@
 #   --package-registry-project-id=ID  Project ID for package registry (default: CI_PROJECT_ID)
 #   --skip-registry-check         Skip checking if package exists in registry (always build)
 #   --skip-deploy                 Skip deployment to GitLab PyPI registry
-#   --skip-tests                  Skip running tests (example verification)
+#   --skip-tests                  Skip running package tests (example verification; generator tests always run)
 #   --apis=<list>                 Space-separated list of APIs to generate (default: all)
 #   --flatten-openapi             Flatten OpenAPI definitions before generation
 #   --env-var-name=<name>         Environment variable name in build_wheel.env (default: WHEEL_BUILD_VERSION)
@@ -213,6 +213,16 @@ generate_package() {
     fi
 
     log_success "Package generated successfully"
+}
+
+# Runs tests of the generator and of the generated package (api_generation/tests).
+# Not affected by --skip-tests: they need only the generator environment, not DEPENDENCY_SOURCE_DIR.
+run_generator_tests() {
+    log_info "Running generator tests..."
+    cd "${GENERATOR_PYPROJECT_DIR}"
+    # missing generated package fails the tests instead of skipping them
+    HIVEIO_API_REQUIRE_GENERATED_PACKAGE=1 poetry -C "${GENERATOR_PYPROJECT_DIR}" run python -m pytest tests
+    log_success "Generator tests passed"
 }
 
 # Returns the version string from the generated package's pyproject.toml.
@@ -506,6 +516,7 @@ main() {
 
     # Step 3: Package not in registry — generate, build, test, deploy
     generate_package
+    run_generator_tests
     build_test_and_deploy
 
     # Step 4: Create env file

@@ -17,7 +17,7 @@
 #   1. Determines package version from git state (no generation needed)
 #   2. Checks if the package version already exists in GitLab PyPI registry
 #   3. If exists: creates env file and exits (skips generation/build entirely)
-#   4. If not: generates package, builds wheel, runs tests, and deploys to registry
+#   4. If not: generates package, runs generator tests, builds wheel, runs package tests, and deploys to registry
 #
 # Downstream test jobs install hiveio-api from registry using WHEEL_BUILD_VERSION.
 #

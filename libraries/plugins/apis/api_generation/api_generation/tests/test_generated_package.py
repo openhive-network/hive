@@ -1,7 +1,8 @@
 """
 Checks of the generated hiveio_api package.
 
-Requires the package to be generated first (generate_api_packages.sh), skipped otherwise.
+Requires the package to be generated first (generate_api_packages.sh), skipped otherwise - unless
+`HIVEIO_API_REQUIRE_GENERATED_PACKAGE` is set (CI), then the tests fail.
 """
 
 from __future__ import annotations
@@ -9,10 +10,11 @@ from __future__ import annotations
 import ast
 import importlib
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, get_type_hints
 
 import pytest
 
@@ -21,7 +23,8 @@ PACKAGE_DIR = PACKAGE_ROOT / "hiveio_api"
 OPENAPI = Path(__file__).parents[3] / "documentation" / "openapi.json"
 
 pytestmark = pytest.mark.skipif(
-    not (PACKAGE_DIR / "database_api" / "database_api_description.py").exists(),
+    not (PACKAGE_DIR / "database_api" / "database_api_description.py").exists()
+    and not os.environ.get("HIVEIO_API_REQUIRE_GENERATED_PACKAGE"),
     reason="hiveio_api package is not generated",
 )
 
@@ -32,9 +35,18 @@ def _package_on_path() -> None:
         sys.path.insert(0, str(PACKAGE_ROOT))
 
 
+def _response_content(spec: dict[str, Any], endpoint: str) -> dict[str, Any]:
+    content: dict[str, Any] = spec["paths"][endpoint]["post"]["responses"]["200"]["content"]["application/json"]
+    return content
+
+
 def example_of(endpoint: str) -> Any:
+    return _response_content(json.loads(OPENAPI.read_text()), endpoint)["example"]
+
+
+def endpoints_with_examples() -> list[str]:
     spec = json.loads(OPENAPI.read_text())
-    return spec["paths"][endpoint]["post"]["responses"]["200"]["content"]["application/json"]["example"]
+    return sorted(endpoint for endpoint in spec["paths"] if "example" in _response_content(spec, endpoint))
 
 
 def imported_modules(path: Path) -> set[str]:
@@ -95,25 +107,44 @@ def test_importing_and_decoding_does_not_load_validation_models() -> None:
     assert result.stdout.strip() == "[]"
 
 
-@pytest.mark.parametrize(
-    "endpoint",
-    [
-        "database_api.find_accounts",
-        "database_api.get_dynamic_global_properties",
-        "condenser_api.get_dynamic_global_properties",
-        "database_api.find_witnesses",
-        "block_api.get_block_range",
-        "account_history_api.get_account_history",
-        "condenser_api.get_block",
-        "condenser_api.get_witness_by_account",
-    ],
-)
+@pytest.mark.parametrize("endpoint", endpoints_with_examples())
 def test_examples_from_openapi_are_valid(endpoint: str) -> None:
     # ARRANGE
     import hiveio_api
 
     # ACT
     errors = hiveio_api.validate_schema(example_of(endpoint), endpoint)
+
+    # ASSERT
+    assert errors == []
+
+
+def _client_class(api: str) -> type[Any]:
+    module = importlib.import_module(f"hiveio_api.{api}.{api}_client")
+    return next(
+        obj
+        for obj in vars(module).values()
+        if isinstance(obj, type) and obj.__module__ == module.__name__ and hasattr(obj, "__validation_module__")
+    )
+
+
+@pytest.mark.parametrize("endpoint", endpoints_with_examples())
+def test_examples_built_as_public_models_stay_valid(endpoint: str) -> None:
+    """Public models keep everything needed to restore the response (e.g. keys which are not identifiers)."""
+    # ARRANGE
+    import hiveio_api
+
+    from schemas.jsonrpc import JSONRPCResult, get_response_model
+
+    api, _, method_name = endpoint.rpartition(".")
+    client = _client_class(api)
+    method = getattr(client, method_name)
+    raw_response = json.dumps({"id": 0, "jsonrpc": "2.0", "result": example_of(endpoint)})
+    response = get_response_model(get_type_hints(method)["return"], raw_response, client.__serialization__)
+    assert isinstance(response, JSONRPCResult)
+
+    # ACT
+    errors = hiveio_api.validate_schema(response.result, method)
 
     # ASSERT
     assert errors == []
