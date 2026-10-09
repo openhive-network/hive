@@ -8,6 +8,9 @@ Deserialization (`from_builtins`) never validates anything:
   (`model.some_new_field`), they are just unknown to type checkers / IDE,
 - required fields missing in the data are set to `None` (optional ones get their default).
 
+Fields renamed in Python (e.g. `Block stats` -> `Block_stats`, `from` -> `from_`) keep their JSON key in
+`field(metadata={"alias": ...})`.
+
 Both situations are reported with warnings (`UnexpectedFieldWarning`, `MissingFieldWarning`), which can be
 disabled per call (`warn=False`) or with the standard `warnings` filters.
 
@@ -22,7 +25,7 @@ import types
 import warnings
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
-from typing import Any, Self, Union, get_args, get_origin, get_type_hints
+from typing import Any, Final, Self, Union, get_args, get_origin, get_type_hints
 
 __all__ = [
     "HiveModel",
@@ -41,8 +44,19 @@ class MissingFieldWarning(UserWarning):
     """Field declared in the model is missing in the data."""
 
 
+_ALIAS_METADATA_KEY: Final[str] = "alias"
+_MISSING_KEYS_ATTRIBUTE: Final[str] = "_hive_model_missing_keys"
+"""Holds JSON keys of declared fields which were missing in the data the model was built from."""
+
+
 @dataclass(frozen=True, kw_only=True)
 class HiveModel:
+    """
+    Base class of generated public API models - frozen dataclasses built from builtins without validation.
+
+    Use `from_builtins` to build a model from parsed JSON and `json` to serialize it back.
+    """
+
     @classmethod
     def from_builtins(cls, data: Mapping[str, Any], *, warn: bool = True) -> Self:
         """
@@ -61,7 +75,10 @@ class HiveModel:
         """
         Serialize the model (including fields not declared in the model) to JSON.
 
-        Optional fields holding `None` are omitted, so missing optional fields are not turned into `null`.
+        A model built by `from_builtins` is serialized with exactly the keys present in the source data (fields
+        missing in the data are omitted, explicit `null` values are kept), so validation of the JSON gives the same
+        result as validation of the source data. For models created directly, optional fields holding `None` are
+        omitted.
         """
         return json.dumps(_to_builtins(self))
 
@@ -79,17 +96,16 @@ class _FieldPlan:
 class _ModelPlan:
     fields: tuple[_FieldPlan, ...]
     attribute_by_key: Mapping[str, str]
+    key_by_attribute: Mapping[str, str]
     reserved: frozenset[str]
-
-    @property
-    def omitted_when_none(self) -> frozenset[str]:
-        return frozenset(plan.attribute for plan in self.fields if not plan.required and plan.default is None)
+    omitted_when_none: frozenset[str]
 
 
 def _build(model: type[Any], data: Mapping[str, Any], warn: bool) -> Any:
     plan = _model_plan(model)
     instance = object.__new__(model)
     present_keys = set(data)
+    missing_keys: list[str] = []
 
     for field_plan in plan.fields:
         if field_plan.key in data:
@@ -99,6 +115,7 @@ def _build(model: type[Any], data: Mapping[str, Any], warn: bool) -> Any:
             present_keys.discard(field_plan.key)
         else:
             value = field_plan.default
+            missing_keys.append(field_plan.key)
             if warn and field_plan.required:
                 warnings.warn(
                     f"{model.__qualname__}: field `{field_plan.key}` is missing in the data, set to None",
@@ -117,6 +134,7 @@ def _build(model: type[Any], data: Mapping[str, Any], warn: bool) -> Any:
         attribute = f"{key}_" if key in plan.reserved else key
         object.__setattr__(instance, attribute, data[key])
 
+    object.__setattr__(instance, _MISSING_KEYS_ATTRIBUTE, frozenset(missing_keys))
     return instance
 
 
@@ -132,28 +150,32 @@ def _model_plan(model: type[Any]) -> _ModelPlan:
 
 def _create_model_plan(model: type[Any]) -> _ModelPlan:
     hints = get_type_hints(model)
-    names = {field_.name for field_ in dataclasses.fields(model)}
     field_plans = tuple(
         _FieldPlan(
             attribute=field_.name,
-            key=_key_for_attribute(field_.name, names),
+            key=field_.metadata.get(_ALIAS_METADATA_KEY, field_.name),
             converter=_converter_for(hints[field_.name]),
             required=field_.default is dataclasses.MISSING and field_.default_factory is dataclasses.MISSING,
             default=None if field_.default is dataclasses.MISSING else field_.default,
         )
         for field_ in dataclasses.fields(model)
     )
+    names = {plan.attribute for plan in field_plans}
     reserved = frozenset(name for name in dir(model) if not name.startswith("__")) | names
     return _ModelPlan(
         fields=field_plans,
         attribute_by_key={plan.key: plan.attribute for plan in field_plans},
+        key_by_attribute={plan.attribute: plan.key for plan in field_plans},
         reserved=reserved,
+        omitted_when_none=frozenset(
+            plan.attribute for plan in field_plans if not plan.required and plan.default is None
+        ),
     )
 
 
-def _key_for_attribute(attribute: str, names: set[str]) -> str:
-    """Generated models rename fields clashing with python keywords/attributes by appending `_` (`from` -> `from_`)."""
-    if attribute.endswith("_") and attribute[:-1] and attribute[:-1] not in names:
+def _key_of_undeclared_attribute(attribute: str, plan: _ModelPlan) -> str:
+    """Undeclared keys clashing with model attributes are stored with `_` appended (see `_build`)."""
+    if attribute.endswith("_") and attribute[:-1] in plan.reserved:
         return attribute[:-1]
     return attribute
 
@@ -208,16 +230,28 @@ def _best_matching_model(models: list[type[Any]], value: Mapping[str, Any]) -> t
 
 def _to_builtins(value: Any) -> Any:
     if dataclasses.is_dataclass(value) and not isinstance(value, type):
-        plan = _model_plan(type(value))
-        names = {field_plan.attribute for field_plan in plan.fields}
-        omitted_when_none = plan.omitted_when_none
-        return {
-            _key_for_attribute(name, names): _to_builtins(item)
-            for name, item in vars(value).items()
-            if not (item is None and name in omitted_when_none)
-        }
+        return _model_to_builtins(value)
     if isinstance(value, list | tuple):
         return [_to_builtins(item) for item in value]
     if isinstance(value, dict):
         return {key: _to_builtins(item) for key, item in value.items()}
     return value
+
+
+def _model_to_builtins(model: Any) -> dict[str, Any]:
+    plan = _model_plan(type(model))
+    missing_keys: frozenset[str] | None = getattr(model, _MISSING_KEYS_ATTRIBUTE, None)
+    result: dict[str, Any] = {}
+    for attribute, item in vars(model).items():
+        if attribute == _MISSING_KEYS_ATTRIBUTE:
+            continue
+        key = plan.key_by_attribute.get(attribute)
+        if key is None:
+            result[_key_of_undeclared_attribute(attribute, plan)] = _to_builtins(item)
+            continue
+        omitted = (
+            key in missing_keys if missing_keys is not None else item is None and attribute in plan.omitted_when_none
+        )
+        if not omitted:
+            result[key] = _to_builtins(item)
+    return result

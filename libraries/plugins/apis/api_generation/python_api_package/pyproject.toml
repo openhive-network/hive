@@ -32,7 +32,7 @@ poetry-dynamic-versioning = { version = "1.9.1", extras = ["plugin"] }
 
 [tool.poetry.dependencies]
 python = ">=3.12,<4"
-hiveio-schemas = {version = "1.28.2.dev20261007135615", source = "gitlab-hive"}  # NOTE: Also update api_generation/pyproject.toml when changing this version
+hiveio-schemas = {version = "1.28.2.dev20261009130646", source = "gitlab-hive"}  # NOTE: Also update api_generation/pyproject.toml when changing this version
 
 [tool.poetry-dynamic-versioning]
 enable = true

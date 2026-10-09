@@ -5,7 +5,7 @@ import importlib.util
 import json
 import sys
 import warnings
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -40,12 +40,13 @@ class Vote(HiveModel):
 @dataclass(frozen=True, kw_only=True)
 class Post(HiveModel):
     author: str
-    from_: str
+    from_: str = field(metadata={"alias": "from"})
     payout: NaiAsset
     votes: list[Vote]
     votes_by_voter: dict[str, Vote]
     parent: Vote | None = None
     title: str | None = None
+    block_stats: Vote | None = field(default=None, metadata={"alias": "Block stats"})
 
 
 def post_data(**overrides: Any) -> dict[str, Any]:
@@ -72,6 +73,18 @@ def test_builds_nested_models_without_warnings() -> None:
     assert post.votes_by_voter["carol"] == Vote(voter="carol", weight=100)
     assert post.parent == Vote(voter="dave", weight=1)
     assert post.title is None
+
+
+def test_fields_with_aliases_are_built_from_original_keys() -> None:
+    # ACT
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        post = Post.from_builtins(post_data(**{"Block stats": {"voter": "erin", "weight": 2}}))
+
+    # ASSERT
+    assert post.from_ == "bob"
+    assert post.block_stats == Vote(voter="erin", weight=2)
+    assert json.loads(post.json())["Block stats"] == {"voter": "erin", "weight": 2}
 
 
 def test_undeclared_fields_are_available_as_attributes() -> None:
@@ -135,6 +148,41 @@ def test_json_round_trip_keeps_original_shape() -> None:
 
     # ASSERT
     assert json.loads(post.json()) == data
+
+
+def test_json_keeps_explicit_nulls_and_omits_missing_fields() -> None:
+    # ARRANGE
+    data = post_data(title=None, parent=None)
+    del data["author"]
+
+    # ACT
+    post = Post.from_builtins(data, warn=False)
+
+    # ASSERT
+    assert json.loads(post.json()) == data
+
+
+def test_json_of_directly_created_model_omits_none_optionals() -> None:
+    # ARRANGE
+    post = Post(
+        author="alice",
+        from_="bob",
+        payout=NaiAsset(amount="1", precision=3, nai="@@000000021"),
+        votes=[],
+        votes_by_voter={},
+    )
+
+    # ACT
+    result = json.loads(post.json())
+
+    # ASSERT
+    assert result == {
+        "author": "alice",
+        "from": "bob",
+        "payout": {"amount": "1", "precision": 3, "nai": "@@000000021"},
+        "votes": [],
+        "votes_by_voter": {},
+    }
 
 
 def test_models_are_frozen() -> None:
