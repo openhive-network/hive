@@ -125,7 +125,9 @@
                                 },
                                 "example": {
                                     "accounts": [
-                                        "hiveio"
+                                        [
+                                            "hiveio"
+                                        ]
                                     ]
                                 }
                             }
@@ -448,13 +450,13 @@
                                     "block": {
                                         "previous": "0000000000000000000000000000000000000000",
                                         "timestamp": "2016-03-24T16:05:00",
-                                        "witness": "",
+                                        "witness": "initminer",
                                         "transaction_merkle_root": "0000000000000000000000000000000000000000",
                                         "extensions": [],
-                                        "witness_signature": "",
+                                        "witness_signature": "204f8ad56a8f5cf722a02b035a61b500aa59b9519b2c33c77a80c0a714680a5a5a7a340d909d19996613c5e4ae92146b9add8a7a663eef37d837ef881477313043",
                                         "transactions": [],
-                                        "block_id": "",
-                                        "signing_key": "",
+                                        "block_id": "0000000109833ce528d5bbfb3f6225b39ee10086",
+                                        "signing_key": "STM8GC13uCZbP44HzMLV6zPZGwVQ8Nt4Kji8PapsPiNq1BK153XTX",
                                         "transaction_ids": []
                                     }
                                 }
@@ -494,7 +496,7 @@
                                     "header": {
                                         "previous": "0000000000000000000000000000000000000000",
                                         "timestamp": "2016-03-24T16:05:00",
-                                        "witness": "",
+                                        "witness": "initminer",
                                         "transaction_merkle_root": "0000000000000000000000000000000000000000",
                                         "extensions": []
                                     }
@@ -1997,8 +1999,7 @@
                                         "daily_pay": "4800.000 HBD",
                                         "subject": "My Proposal",
                                         "permlink": "creator-proposal-permlink",
-                                        "total_votes": "77351826710",
-                                        "status": "active"
+                                        "total_votes": "77351826710"
                                     }
                                 ]
                             }
@@ -3159,6 +3160,9 @@
                                     "HIVE_WITNESS_SUBSIDY_BUDGET_PERCENT": 12500,
                                     "HIVE_WITNESS_SUBSIDY_DECAY_PERCENT": 210000,
                                     "IS_TEST_NET": false,
+                                    "NEW_HIVE_TREASURY_ACCOUNT": "hive.fund",
+                                    "OBSOLETE_TREASURY_ACCOUNT": "steem.dao",
+                                    "OLD_CHAIN_ID": "0000000000000000000000000000000000000000000000000000000000000000",
                                     "VESTS_SYMBOL": "VESTS"
                                 }
                             }
@@ -4210,10 +4214,10 @@
                                 },
                                 "example": [
                                     {
-                                        "id": 0,
-                                        "delegator": "",
-                                        "vesting_shares": "0.000000 VESTS",
-                                        "expiration": "1970-01-01T00:00:00"
+                                        "id": 1,
+                                        "delegator": "alice",
+                                        "vesting_shares": "1000.000000 VESTS",
+                                        "expiration": "2016-09-07T14:21:12"
                                     }
                                 ]
                             }
@@ -4731,23 +4735,32 @@
                                 "schema": {
                                     "$ref": "#/components/schemas/condenser_get_order_book_response"
                                 },
-                                "example": [
-                                    {
-                                        "block": 1,
-                                        "op": [
-                                            "producer_reward",
-                                            {
-                                                "producer": "initminer",
-                                                "vesting_shares": "1.000000 VESTS"
-                                            }
-                                        ],
-                                        "op_in_trx": 1,
-                                        "timestamp": "2016-03-24T16:05:00",
-                                        "trx_id": "0000000000000000000000000000000000000000",
-                                        "trx_in_block": 4294967295,
-                                        "virtual_op": true
-                                    }
-                                ]
+                                "example": {
+                                    "bids": [
+                                        {
+                                            "order_price": {
+                                                "base": "2.088 HBD",
+                                                "quote": "10.000 HIVE"
+                                            },
+                                            "real_price": "0.20880000000000001",
+                                            "hive": 10000,
+                                            "hbd": 2088,
+                                            "created": "2025-09-09T11:44:36"
+                                        }
+                                    ],
+                                    "asks": [
+                                        {
+                                            "order_price": {
+                                                "base": "21.876 HIVE",
+                                                "quote": "4.577 HBD"
+                                            },
+                                            "real_price": "0.20922472115560431",
+                                            "hive": 21876,
+                                            "hbd": 4577,
+                                            "created": "2025-09-09T12:00:03"
+                                        }
+                                    ]
+                                }
                             }
                         }
                     }
@@ -4904,7 +4917,9 @@
                                 "schema": {
                                     "$ref": "#/components/schemas/condenser_get_potential_signatures_response"
                                 },
-                                "example": {}
+                                "example": [
+                                    "STM8GC13uCZbP44HzMLV6zPZGwVQ8Nt4Kji8PapsPiNq1BK153XTX"
+                                ]
                             }
                         }
                     }
@@ -5598,7 +5613,7 @@
                                 },
                                 "example": {
                                     "hive_volume": "0.000 HIVE",
-                                    "hbd_volume": "0.000 HIVE"
+                                    "hbd_volume": "0.000 HBD"
                                 }
                             }
                         }
@@ -6964,20 +6979,20 @@
                                 "example": {
                                     "orders": [
                                         {
-                                            "id": 0,
+                                            "id": 1,
                                             "created": "2019-12-14T04:05:39",
                                             "expiration": "2019-12-15T05:05:21",
-                                            "seller": "",
-                                            "orderid": 0,
-                                            "for_sale": 0,
+                                            "seller": "alice",
+                                            "orderid": 1,
+                                            "for_sale": 1000,
                                             "sell_price": {
                                                 "base": {
-                                                    "amount": "0",
+                                                    "amount": "1000",
                                                     "precision": 3,
                                                     "nai": "@@000000013"
                                                 },
                                                 "quote": {
-                                                    "amount": "0",
+                                                    "amount": "4000",
                                                     "precision": 3,
                                                     "nai": "@@000000021"
                                                 }
@@ -7318,14 +7333,14 @@
                                 "example": {
                                     "votes": [
                                         {
-                                            "voter": "",
-                                            "author": "",
-                                            "permlink": "",
-                                            "weight": "0",
-                                            "rshares": 0,
-                                            "vote_percent": 0,
-                                            "last_update": "2016-04-07T19:15:36",
-                                            "num_changes": -1
+                                            "voter": "tombstone",
+                                            "author": "hiveio",
+                                            "permlink": "around-the-hive-reflections",
+                                            "weight": 35014,
+                                            "rshares": 651445742025,
+                                            "vote_percent": 3000,
+                                            "last_update": "2021-02-14T08:19:24",
+                                            "num_changes": 0
                                         }
                                     ]
                                 }
@@ -7604,7 +7619,6 @@
                                                 "abs_rshares": "594467432989642",
                                                 "vote_rshares": "583007369825359",
                                                 "net_votes": 378,
-                                                "active": "2021-04-06T15:29:03",
                                                 "last_payout": "1970-01-01T00:00:00",
                                                 "cashout_time": "2021-04-12T02:07:00",
                                                 "max_cashout_time": "1969-12-31T23:59:59",
@@ -7612,7 +7626,8 @@
                                                 "reward_weight": 10000,
                                                 "allow_replies": false,
                                                 "allow_votes": true,
-                                                "allow_curation_rewards": true
+                                                "allow_curation_rewards": true,
+                                                "was_voted_on": true
                                             }
                                         }
                                     ]
@@ -7639,107 +7654,152 @@
                                     "$ref": "#/components/schemas/get_config_response"
                                 },
                                 "example": {
-                                    "IS_TEST_NET": true,
-                                    "TESTNET_BLOCK_LIMIT": 3000000,
+                                    "HIVE_CHAIN_ID": "beeab0de00000000000000000000000000000000000000000000000000000000",
+                                    "HIVE_TREASURY_ACCOUNT": "hive.fund",
+                                    "VESTS_SYMBOL": {
+                                        "nai": "@@000000037",
+                                        "decimals": 6
+                                    },
+                                    "HIVE_SYMBOL": {
+                                        "nai": "@@000000021",
+                                        "decimals": 3
+                                    },
                                     "HBD_SYMBOL": {
                                         "nai": "@@000000013",
                                         "decimals": 3
                                     },
-                                    "HIVE_INITIAL_VOTE_POWER_RATE": 40,
-                                    "HIVE_REDUCED_VOTE_POWER_RATE": 10,
-                                    "HIVE_100_PERCENT": 10000,
-                                    "HIVE_1_PERCENT": 100,
-                                    "HIVE_ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD": 12000000,
-                                    "HIVE_ADDRESS_PREFIX": "TST",
-                                    "HIVE_APR_PERCENT_MULTIPLY_PER_BLOCK": "102035135585887",
-                                    "HIVE_APR_PERCENT_MULTIPLY_PER_HOUR": "119577151364285",
-                                    "HIVE_APR_PERCENT_MULTIPLY_PER_ROUND": "133921203762304",
-                                    "HIVE_APR_PERCENT_SHIFT_PER_BLOCK": 87,
-                                    "HIVE_APR_PERCENT_SHIFT_PER_HOUR": 77,
-                                    "HIVE_APR_PERCENT_SHIFT_PER_ROUND": 83,
-                                    "HIVE_BENEFICIARY_LIMIT": 128,
-                                    "HIVE_BLOCKCHAIN_PRECISION": 1000,
-                                    "HIVE_BLOCKCHAIN_HARDFORK_VERSION": "0.23.0",
-                                    "HIVE_BLOCKCHAIN_VERSION": "0.23.0",
+                                    "IS_TEST_NET": false,
+                                    "HIVE_DEFAULT_HF_9_COMPROMISED_ACCOUNTS_PUBLIC_KEY_STR": "STM7sw22HqsXbz7D2CmJfmMwt9rimtk518dRzsR1f8Cgw52dQR1pR",
+                                    "HIVE_INIT_PUBLIC_KEY_STR": "STM8GC13uCZbP44HzMLV6zPZGwVQ8Nt4Kji8PapsPiNq1BK153XTX",
+                                    "HIVE_HF_9_COMPROMISED_ACCOUNTS_PUBLIC_KEY_STR": "STM7sw22HqsXbz7D2CmJfmMwt9rimtk518dRzsR1f8Cgw52dQR1pR",
+                                    "HIVE_MIN_ROOT_COMMENT_INTERVAL": 300000000,
+                                    "HIVE_MIN_REPLY_INTERVAL": 3000000,
+                                    "HIVE_MIN_COMMENT_EDIT_INTERVAL": 3000000,
+                                    "HIVE_INIT_SUPPLY": 0,
+                                    "HIVE_HBD_INIT_SUPPLY": 0,
+                                    "HIVE_INIT_PUBLIC_KEY": "STM8GC13uCZbP44HzMLV6zPZGwVQ8Nt4Kji8PapsPiNq1BK153XTX",
                                     "HIVE_BLOCK_INTERVAL": 3,
+                                    "HIVE_BLOCKS_PER_YEAR": 10512000,
                                     "HIVE_BLOCKS_PER_DAY": 28800,
                                     "HIVE_BLOCKS_PER_HOUR": 1200,
-                                    "HIVE_BLOCKS_PER_YEAR": 10512000,
-                                    "HIVE_CASHOUT_WINDOW_SECONDS": 3600,
-                                    "HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF12": 3600,
-                                    "HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF17": 3600,
-                                    "HIVE_CHAIN_ID": "18dcf0a285365fc58b71f18b3d3fec954aa0c141c44e4e5cb4cf777b9eab274e",
-                                    "HIVE_COMMENT_TITLE_LIMIT": 256,
-                                    "HIVE_CONTENT_APR_PERCENT": 3875,
-                                    "HIVE_CONTENT_CONSTANT_HF0": "2000000000000",
-                                    "HIVE_CONTENT_CONSTANT_HF21": "2000000000000",
-                                    "HIVE_CONTENT_REWARD_PERCENT_HF16": 7500,
-                                    "HIVE_CONTENT_REWARD_PERCENT_HF21": 6500,
-                                    "HIVE_CONVERSION_DELAY": "302400000000",
-                                    "HIVE_CONVERSION_DELAY_PRE_HF_16": "604800000000",
-                                    "HIVE_CREATE_ACCOUNT_DELEGATION_RATIO": 5,
-                                    "HIVE_CREATE_ACCOUNT_DELEGATION_TIME": "2592000000000",
-                                    "HIVE_CREATE_ACCOUNT_WITH_HIVE_MODIFIER": 30,
-                                    "HIVE_CURATE_APR_PERCENT": 3875,
-                                    "HIVE_CUSTOM_OP_DATA_MAX_LENGTH": 8192,
-                                    "HIVE_CUSTOM_OP_ID_MAX_LENGTH": 32,
-                                    "HIVE_DEFAULT_HBD_INTEREST_RATE": 1000,
-                                    "HIVE_DOWNVOTE_POOL_PERCENT_HF21": 2500,
-                                    "HIVE_EQUIHASH_K": 6,
-                                    "HIVE_EQUIHASH_N": 140,
-                                    "HIVE_FEED_HISTORY_WINDOW": 84,
-                                    "HIVE_FEED_HISTORY_WINDOW_PRE_HF_16": 168,
+                                    "HIVE_START_VESTING_BLOCK": 201600,
+                                    "HIVE_MAX_WITNESSES": 21,
+                                    "HIVE_BLOCKCHAIN_VERSION": "1.28.8",
+                                    "OLD_CHAIN_ID": "0000000000000000000000000000000000000000000000000000000000000000",
+                                    "HIVE_GENESIS_TIME": "2016-03-24T16:00:00",
+                                    "HIVE_MINING_TIME": "2016-03-24T17:00:00",
+                                    "HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF12": 86400,
+                                    "HIVE_CASHOUT_WINDOW_SECONDS_PRE_HF17": 43200,
+                                    "HIVE_CASHOUT_WINDOW_SECONDS": 604800,
+                                    "HIVE_SECOND_CASHOUT_WINDOW": 2592000,
+                                    "HIVE_MAX_CASHOUT_WINDOW_SECONDS": 1209600,
+                                    "HIVE_UPVOTE_LOCKOUT_HF7": 60000000,
+                                    "HIVE_UPVOTE_LOCKOUT_SECONDS": 43200,
+                                    "HIVE_UPVOTE_LOCKOUT_HF17": 43200000000,
+                                    "HIVE_OWNER_AUTH_RECOVERY_PERIOD": 2592000000000,
+                                    "HIVE_ACCOUNT_RECOVERY_REQUEST_EXPIRATION_PERIOD": 86400000000,
+                                    "HIVE_OWNER_UPDATE_LIMIT": 3600000000,
+                                    "HIVE_OWNER_AUTH_HISTORY_TRACKING_START_BLOCK_NUM": 3186477,
+                                    "HIVE_PROPOSAL_MAINTENANCE_PERIOD": 3600,
+                                    "HIVE_PROPOSAL_MAINTENANCE_CLEANUP": 86400,
+                                    "HIVE_DAILY_PROPOSAL_MAINTENANCE_PERIOD": 86400,
+                                    "HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD": 31536000000000,
+                                    "HIVE_WITNESS_SHUTDOWN_THRESHOLD": 28800,
+                                    "HIVE_GLOBAL_REMOVE_THRESHOLD": 200,
+                                    "HIVE_START_MINER_VOTING_BLOCK": 864000,
+                                    "HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS": 2592000,
+                                    "HIVE_DELAYED_VOTING_INTERVAL_SECONDS": 86400,
+                                    "HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF25": 0,
+                                    "HIVE_EARLY_VOTING_SECONDS_HF25": 86400,
+                                    "HIVE_MID_VOTING_SECONDS_HF25": 172800,
                                     "HIVE_FEED_INTERVAL_BLOCKS": 1200,
-                                    "HIVE_GENESIS_TIME": "2016-01-01T00:00:00",
+                                    "HIVE_FEED_HISTORY_WINDOW_PRE_HF_16": 168,
+                                    "HIVE_FEED_HISTORY_WINDOW": 84,
+                                    "HIVE_MAX_FEED_AGE_SECONDS": 604800,
+                                    "HIVE_MIN_FEEDS": 7,
+                                    "HIVE_CONVERSION_DELAY_PRE_HF_16": 604800000000,
+                                    "HIVE_CONVERSION_DELAY": 302400000000,
+                                    "HIVE_COLLATERALIZED_CONVERSION_DELAY": 302400000000,
+                                    "HIVE_CONVERSION_COLLATERAL_RATIO": 20000,
+                                    "HIVE_COLLATERALIZED_CONVERSION_FEE": 500,
+                                    "HIVE_SAVINGS_WITHDRAW_TIME": 259200000000,
+                                    "HIVE_SAVINGS_WITHDRAW_REQUEST_LIMIT": 100,
+                                    "HIVE_MAX_RECURRENT_TRANSFER_END_DATE": 730,
+                                    "HIVE_MAX_RECURRENT_TRANSFERS_PER_BLOCK": 1000,
+                                    "HIVE_MIN_RECURRENT_TRANSFERS_RECURRENCE": 24,
+                                    "HIVE_BLOCKCHAIN_HARDFORK_VERSION": "1.28.0",
+                                    "HIVE_ADDRESS_PREFIX": "STM",
+                                    "HIVE_100_PERCENT": 10000,
+                                    "HIVE_1_PERCENT": 100,
+                                    "HIVE_1_BASIS_POINT": 1,
+                                    "HIVE_INIT_MINER_NAME": "initminer",
+                                    "HIVE_NUM_INIT_MINERS": 1,
+                                    "HIVE_INIT_TIME": "1970-01-01T00:00:00",
+                                    "HIVE_MAX_VOTED_WITNESSES_HF0": 19,
+                                    "HIVE_MAX_MINER_WITNESSES_HF0": 1,
+                                    "HIVE_MAX_RUNNER_WITNESSES_HF0": 1,
+                                    "HIVE_MAX_VOTED_WITNESSES_HF17": 20,
+                                    "HIVE_MAX_MINER_WITNESSES_HF17": 0,
+                                    "HIVE_MAX_RUNNER_WITNESSES_HF17": 1,
                                     "HIVE_HARDFORK_REQUIRED_WITNESSES": 17,
-                                    "HIVE_HF21_CONVERGENT_LINEAR_RECENT_CLAIMS": "503600561838938636",
-                                    "HIVE_INFLATION_NARROWING_PERIOD": 250000,
+                                    "HIVE_MAX_TIME_UNTIL_EXPIRATION": 3600,
+                                    "HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION": 86400,
+                                    "HIVE_MAX_MEMO_SIZE": 2048,
+                                    "HIVE_MAX_PROXY_RECURSION_DEPTH": 4,
+                                    "HIVE_VESTING_WITHDRAW_INTERVALS_PRE_HF_16": 104,
+                                    "HIVE_VESTING_WITHDRAW_INTERVALS": 13,
+                                    "HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS": 604800,
+                                    "HIVE_MAX_WITHDRAW_ROUTES": 10,
+                                    "HIVE_MAX_PENDING_TRANSFERS": 255,
+                                    "HIVE_MAX_OPEN_RECURRENT_TRANSFERS": 255,
+                                    "HIVE_MAX_CONSECUTIVE_RECURRENT_TRANSFER_FAILURES": 10,
+                                    "HIVE_VOTING_MANA_REGENERATION_SECONDS": 432000,
+                                    "HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF6": 1800,
+                                    "HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF20": 900,
+                                    "HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF21": 300,
+                                    "HIVE_VOTE_DUST_THRESHOLD": 50000000,
+                                    "HIVE_DOWNVOTE_POOL_PERCENT_HF21": 2500,
+                                    "HIVE_POST_AVERAGE_WINDOW": 86400,
+                                    "HIVE_POST_WEIGHT_CONSTANT": 1600000000,
+                                    "HIVE_MAX_ACCOUNT_WITNESS_VOTES": 30,
+                                    "HIVE_DEFAULT_HBD_INTEREST_RATE": 1000,
                                     "HIVE_INFLATION_RATE_START_PERCENT": 978,
                                     "HIVE_INFLATION_RATE_STOP_PERCENT": 95,
-                                    "HIVE_INIT_MINER_NAME": "initminer",
-                                    "HIVE_INIT_PUBLIC_KEY_STR": "TST6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4",
-                                    "HIVE_INIT_SUPPLY": "250000000000",
-                                    "HIVE_HBD_INIT_SUPPLY": "7000000000",
-                                    "HIVE_INIT_TIME": "1970-01-01T00:00:00",
-                                    "HIVE_IRREVERSIBLE_THRESHOLD": 7500,
-                                    "HIVE_LIQUIDITY_APR_PERCENT": 750,
-                                    "HIVE_LIQUIDITY_REWARD_BLOCKS": 1200,
-                                    "HIVE_LIQUIDITY_REWARD_PERIOD_SEC": 3600,
-                                    "HIVE_LIQUIDITY_TIMEOUT_SEC": "604800000000",
-                                    "HIVE_MAX_ACCOUNT_CREATION_FEE": 1000000000,
-                                    "HIVE_MAX_ACCOUNT_NAME_LENGTH": 16,
-                                    "HIVE_MAX_ACCOUNT_WITNESS_VOTES": 30,
-                                    "HIVE_MAX_AUTHORITY_MEMBERSHIP": 40,
-                                    "HIVE_MAX_BLOCK_SIZE": 393216000,
-                                    "HIVE_MAX_CASHOUT_WINDOW_SECONDS": 86400,
-                                    "HIVE_MAX_COMMENT_DEPTH": 65535,
-                                    "HIVE_MAX_COMMENT_DEPTH_PRE_HF17": 6,
-                                    "HIVE_MAX_FEED_AGE_SECONDS": 604800,
-                                    "HIVE_MAX_MEMO_SIZE": 2048,
-                                    "HIVE_MAX_WITNESSES": 21,
-                                    "HIVE_MAX_MINER_WITNESSES_HF0": 1,
-                                    "HIVE_MAX_MINER_WITNESSES_HF17": 0,
-                                    "HIVE_MAX_PERMLINK_LENGTH": 256,
-                                    "HIVE_MAX_PROXY_RECURSION_DEPTH": 4,
+                                    "HIVE_INFLATION_NARROWING_PERIOD": 250000,
+                                    "HIVE_CONTENT_REWARD_PERCENT_HF16": 7500,
+                                    "HIVE_VESTING_FUND_PERCENT_HF16": 1500,
+                                    "HIVE_PROPOSAL_FUND_PERCENT_HF0": 0,
+                                    "HIVE_CONTENT_REWARD_PERCENT_HF21": 6500,
+                                    "HIVE_PROPOSAL_FUND_PERCENT_HF21": 1000,
+                                    "HIVE_HF21_CONVERGENT_LINEAR_RECENT_CLAIMS": "503600561838938636",
+                                    "HIVE_CONTENT_CONSTANT_HF21": "2000000000000",
+                                    "HIVE_MINER_PAY_PERCENT": 100,
                                     "HIVE_MAX_RATION_DECAY_RATE": 1000000,
-                                    "HIVE_MAX_RUNNER_WITNESSES_HF0": 1,
-                                    "HIVE_MAX_RUNNER_WITNESSES_HF17": 1,
-                                    "HIVE_MAX_SATOSHIS": "4611686018427387903",
-                                    "HIVE_MAX_SHARE_SUPPLY": "1000000000000000",
-                                    "HIVE_MAX_SIG_CHECK_DEPTH": 2,
-                                    "HIVE_MAX_SIG_CHECK_ACCOUNTS": 125,
-                                    "HIVE_MAX_TIME_UNTIL_EXPIRATION": 3600,
-                                    "HIVE_MAX_TRANSACTION_SIZE": 65536,
-                                    "HIVE_MAX_UNDO_HISTORY": 10000,
-                                    "HIVE_MAX_URL_LENGTH": 127,
-                                    "HIVE_MAX_VOTED_WITNESSES_HF0": 19,
-                                    "HIVE_MAX_VOTED_WITNESSES_HF17": 20,
-                                    "HIVE_MAX_WITHDRAW_ROUTES": 10,
-                                    "HIVE_MAX_WITNESS_URL_LENGTH": 2048,
-                                    "HIVE_MIN_ACCOUNT_CREATION_FEE": 0,
-                                    "HIVE_MIN_ACCOUNT_NAME_LENGTH": 3,
-                                    "HIVE_MIN_BLOCK_SIZE_LIMIT": 65536,
-                                    "HIVE_MIN_BLOCK_SIZE": 115,
+                                    "HIVE_MAX_COMMENT_DEPTH_PRE_HF17": 6,
+                                    "HIVE_MAX_COMMENT_DEPTH": 65535,
+                                    "HIVE_SOFT_MAX_COMMENT_DEPTH": 255,
+                                    "HIVE_MAX_COMMENT_BENEFICIARIES": 8,
+                                    "HIVE_MIN_ACCOUNT_CREATION_FEE": 1,
+                                    "HIVE_MAX_ACCOUNT_CREATION_FEE": 1000000000,
+                                    "HIVE_CREATE_ACCOUNT_WITH_HIVE_MODIFIER": 30,
+                                    "HIVE_CREATE_ACCOUNT_DELEGATION_RATIO": 5,
+                                    "HIVE_CREATE_ACCOUNT_DELEGATION_TIME": 2592000000000,
+                                    "HIVE_MINING_REWARD": {
+                                        "amount": "1000",
+                                        "precision": 3,
+                                        "nai": "@@000000021"
+                                    },
+                                    "HIVE_EQUIHASH_N": 140,
+                                    "HIVE_EQUIHASH_K": 6,
+                                    "HIVE_LIQUIDITY_TIMEOUT_SEC": 604800000000,
+                                    "HIVE_MIN_LIQUIDITY_REWARD_PERIOD_SEC": 60000000,
+                                    "HIVE_LIQUIDITY_REWARD_PERIOD_SEC": 3600,
+                                    "HIVE_LIQUIDITY_REWARD_BLOCKS": 1200,
+                                    "HIVE_MIN_LIQUIDITY_REWARD": {
+                                        "amount": "1200000",
+                                        "precision": 3,
+                                        "nai": "@@000000021"
+                                    },
                                     "HIVE_MIN_CONTENT_REWARD": {
                                         "amount": "1000",
                                         "precision": 3,
@@ -7750,100 +7810,77 @@
                                         "precision": 3,
                                         "nai": "@@000000021"
                                     },
-                                    "HIVE_MIN_PERMLINK_LENGTH": 0,
-                                    "HIVE_MIN_REPLY_INTERVAL": 3000000,
-                                    "HIVE_MIN_ROOT_COMMENT_INTERVAL": 300000000,
-                                    "HIVE_MIN_COMMENT_EDIT_INTERVAL": 3000000,
-                                    "HIVE_MINER_ACCOUNT": "miners",
-                                    "HIVE_MINER_PAY_PERCENT": 100,
-                                    "HIVE_MIN_FEEDS": 7,
-                                    "HIVE_MINING_REWARD": {
+                                    "HIVE_MIN_PRODUCER_REWARD": {
                                         "amount": "1000",
                                         "precision": 3,
                                         "nai": "@@000000021"
-                                    },
-                                    "HIVE_MINING_TIME": "2016-01-01T00:00:00",
-                                    "HIVE_MIN_LIQUIDITY_REWARD": {
-                                        "amount": "1200000",
-                                        "precision": 3,
-                                        "nai": "@@000000021"
-                                    },
-                                    "HIVE_MIN_LIQUIDITY_REWARD_PERIOD_SEC": 60000000,
-                                    "HIVE_MIN_PAYOUT_HBD": {
-                                        "amount": "20",
-                                        "precision": 3,
-                                        "nai": "@@000000013"
                                     },
                                     "HIVE_MIN_POW_REWARD": {
                                         "amount": "1000",
                                         "precision": 3,
                                         "nai": "@@000000021"
                                     },
-                                    "HIVE_MIN_PRODUCER_REWARD": {
-                                        "amount": "1000",
-                                        "precision": 3,
-                                        "nai": "@@000000021"
-                                    },
-                                    "HIVE_MIN_TRANSACTION_SIZE_LIMIT": 1024,
-                                    "HIVE_NULL_ACCOUNT": "null",
-                                    "HIVE_NUM_INIT_MINERS": 1,
-                                    "HIVE_OWNER_AUTH_HISTORY_TRACKING_START_BLOCK_NUM": 1,
-                                    "HIVE_OWNER_AUTH_RECOVERY_PERIOD": 60000000,
-                                    "HIVE_OWNER_UPDATE_LIMIT": 0,
-                                    "HIVE_POST_AVERAGE_WINDOW": 86400,
                                     "HIVE_POST_REWARD_FUND_NAME": "post",
-                                    "HIVE_POST_WEIGHT_CONSTANT": 1600000000,
-                                    "HIVE_POW_APR_PERCENT": 750,
+                                    "HIVE_RECENT_RSHARES_DECAY_TIME_HF17": 2592000000000,
+                                    "HIVE_RECENT_RSHARES_DECAY_TIME_HF19": 1296000000000,
+                                    "HIVE_CONTENT_CONSTANT_HF0": "2000000000000",
+                                    "HIVE_APR_PERCENT_MULTIPLY_PER_BLOCK": 102035135585887,
+                                    "HIVE_APR_PERCENT_SHIFT_PER_BLOCK": 87,
+                                    "HIVE_APR_PERCENT_MULTIPLY_PER_ROUND": 133921203762304,
+                                    "HIVE_APR_PERCENT_SHIFT_PER_ROUND": 83,
+                                    "HIVE_APR_PERCENT_MULTIPLY_PER_HOUR": 119577151364285,
+                                    "HIVE_APR_PERCENT_SHIFT_PER_HOUR": 77,
+                                    "HIVE_CURATE_APR_PERCENT": 3875,
+                                    "HIVE_CONTENT_APR_PERCENT": 3875,
+                                    "HIVE_LIQUIDITY_APR_PERCENT": 750,
                                     "HIVE_PRODUCER_APR_PERCENT": 750,
-                                    "HIVE_PROXY_TO_SELF_ACCOUNT": "",
-                                    "HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC": 2592000,
-                                    "HIVE_SECONDS_PER_YEAR": 31536000,
-                                    "HIVE_PROPOSAL_FUND_PERCENT_HF0": 0,
-                                    "HIVE_PROPOSAL_FUND_PERCENT_HF21": 1000,
-                                    "HIVE_RECENT_RSHARES_DECAY_TIME_HF19": "1296000000000",
-                                    "HIVE_RECENT_RSHARES_DECAY_TIME_HF17": "2592000000000",
-                                    "HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF6": 1800,
-                                    "HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF20": 900,
-                                    "HIVE_REVERSE_AUCTION_WINDOW_SECONDS_HF21": 300,
-                                    "HIVE_ROOT_POST_PARENT": "",
-                                    "HIVE_SAVINGS_WITHDRAW_REQUEST_LIMIT": 100,
-                                    "HIVE_SAVINGS_WITHDRAW_TIME": 259200000000,
+                                    "HIVE_POW_APR_PERCENT": 750,
+                                    "HIVE_MIN_PAYOUT_HBD": {
+                                        "amount": "20",
+                                        "precision": 3,
+                                        "nai": "@@000000013"
+                                    },
                                     "HIVE_HBD_START_PERCENT_HF14": 200,
-                                    "HIVE_HBD_START_PERCENT_HF20": 900,
                                     "HIVE_HBD_STOP_PERCENT_HF14": 500,
+                                    "HIVE_HBD_START_PERCENT_HF20": 900,
                                     "HIVE_HBD_STOP_PERCENT_HF20": 1000,
-                                    "HIVE_SECOND_CASHOUT_WINDOW": 259200,
-                                    "HIVE_SOFT_MAX_COMMENT_DEPTH": 255,
-                                    "HIVE_START_MINER_VOTING_BLOCK": 864000,
-                                    "HIVE_START_VESTING_BLOCK": 201600,
-                                    "HIVE_TEMP_ACCOUNT": "temp",
-                                    "HIVE_UPVOTE_LOCKOUT_HF7": 60000000,
-                                    "HIVE_UPVOTE_LOCKOUT_HF17": 300000000,
-                                    "HIVE_UPVOTE_LOCKOUT_SECONDS": 300,
-                                    "HIVE_VESTING_FUND_PERCENT_HF16": 1500,
-                                    "HIVE_VESTING_WITHDRAW_INTERVALS": 13,
-                                    "HIVE_VESTING_WITHDRAW_INTERVALS_PRE_HF_16": 104,
-                                    "HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS": 604800,
-                                    "HIVE_VOTE_DUST_THRESHOLD": 50000000,
-                                    "HIVE_VOTING_MANA_REGENERATION_SECONDS": 432000,
-                                    "HIVE_SYMBOL": {
-                                        "nai": "@@000000021",
-                                        "decimals": 3
-                                    },
-                                    "VESTS_SYMBOL": {
-                                        "nai": "@@000000037",
-                                        "decimals": 6
-                                    },
+                                    "HIVE_HBD_START_PERCENT_HF26": 2000,
+                                    "HIVE_HBD_STOP_PERCENT_HF26": 2000,
+                                    "HIVE_HBD_HARD_LIMIT_PRE_HF26": 1000,
+                                    "HIVE_HBD_HARD_LIMIT": 3000,
+                                    "HIVE_MIN_ACCOUNT_NAME_LENGTH": 3,
+                                    "HIVE_MAX_ACCOUNT_NAME_LENGTH": 16,
+                                    "HIVE_MIN_PERMLINK_LENGTH": 0,
+                                    "HIVE_MAX_PERMLINK_LENGTH": 256,
+                                    "HIVE_MAX_WITNESS_URL_LENGTH": 2048,
+                                    "HIVE_MAX_SHARE_SUPPLY": 1000000000000000,
+                                    "HIVE_MAX_SATOSHIS": "4611686018427387903",
+                                    "HIVE_MAX_SIG_CHECK_DEPTH": 2,
+                                    "HIVE_MAX_SIG_CHECK_ACCOUNTS": 125,
+                                    "HIVE_MIN_TRANSACTION_SIZE_LIMIT": 1024,
+                                    "HIVE_SECONDS_PER_YEAR": 31536000,
+                                    "HIVE_HBD_INTEREST_COMPOUND_INTERVAL_SEC": 2592000,
+                                    "HIVE_MAX_TRANSACTION_SIZE": 65536,
+                                    "HIVE_MIN_BLOCK_SIZE_LIMIT": 65536,
+                                    "HIVE_MAX_BLOCK_SIZE": 2097152,
+                                    "HIVE_MIN_BLOCK_SIZE": 115,
+                                    "HIVE_MAX_UNDO_HISTORY": 10000,
+                                    "HIVE_BLOCKCHAIN_PRECISION": 1000,
+                                    "HIVE_MAX_AUTHORITY_MEMBERSHIP": 40,
+                                    "HIVE_MAX_URL_LENGTH": 127,
+                                    "HIVE_IRREVERSIBLE_THRESHOLD": 7500,
                                     "HIVE_VIRTUAL_SCHEDULE_LAP_LENGTH": "18446744073709551615",
                                     "HIVE_VIRTUAL_SCHEDULE_LAP_LENGTH2": "340282366920938463463374607431768211455",
+                                    "HIVE_INITIAL_VOTE_POWER_RATE": 40,
+                                    "HIVE_REDUCED_VOTE_POWER_RATE": 10,
                                     "HIVE_MAX_LIMIT_ORDER_EXPIRATION": 2419200,
-                                    "HIVE_DELEGATION_RETURN_PERIOD_HF0": 3600,
+                                    "HIVE_DELEGATION_RETURN_PERIOD_HF0": 604800,
                                     "HIVE_DELEGATION_RETURN_PERIOD_HF20": 432000,
                                     "HIVE_RD_MIN_DECAY_BITS": 6,
                                     "HIVE_RD_MAX_DECAY_BITS": 32,
                                     "HIVE_RD_DECAY_DENOM_SHIFT": 36,
                                     "HIVE_RD_MAX_POOL_BITS": 64,
-                                    "HIVE_RD_MAX_BUDGET_1": "17179869183",
+                                    "HIVE_RD_MAX_BUDGET_1": 17179869183,
                                     "HIVE_RD_MAX_BUDGET_2": 268435455,
                                     "HIVE_RD_MAX_BUDGET_3": 2147483647,
                                     "HIVE_RD_MAX_BUDGET": 268435455,
@@ -7858,12 +7895,35 @@
                                     "HIVE_DECAY_BACKSTOP_PERCENT": 9000,
                                     "HIVE_BLOCK_GENERATION_POSTPONED_TX_LIMIT": 5,
                                     "HIVE_PENDING_TRANSACTION_EXECUTION_LIMIT": 200000,
-                                    "HIVE_TREASURY_ACCOUNT": "hive.fund",
+                                    "HIVE_CUSTOM_OP_ID_MAX_LENGTH": 32,
+                                    "HIVE_CUSTOM_OP_DATA_MAX_LENGTH": 8192,
+                                    "HIVE_BENEFICIARY_LIMIT": 128,
+                                    "HIVE_COMMENT_TITLE_LIMIT": 256,
+                                    "HIVE_ONE_DAY_SECONDS": 86400,
+                                    "HIVE_UP_TO_DATE_MARGIN__FAST_CONFIRM": 60000000,
+                                    "HIVE_UP_TO_DATE_MARGIN__BLOCK_STATS": 20000000,
+                                    "HIVE_UP_TO_DATE_MARGIN__PENDING_TXS": 20000000,
+                                    "HIVE_MINER_ACCOUNT": "miners",
+                                    "HIVE_NULL_ACCOUNT": "null",
+                                    "HIVE_TEMP_ACCOUNT": "temp",
+                                    "HIVE_PROXY_TO_SELF_ACCOUNT": "",
+                                    "HIVE_ROOT_POST_PARENT": "",
+                                    "OBSOLETE_TREASURY_ACCOUNT": "steem.dao",
+                                    "NEW_HIVE_TREASURY_ACCOUNT": "hive.fund",
                                     "HIVE_TREASURY_FEE": 10000,
-                                    "HIVE_PROPOSAL_MAINTENANCE_PERIOD": 3600,
-                                    "HIVE_PROPOSAL_MAINTENANCE_CLEANUP": 86400,
                                     "HIVE_PROPOSAL_SUBJECT_MAX_LENGTH": 80,
-                                    "HIVE_PROPOSAL_MAX_IDS_NUMBER": 5
+                                    "HIVE_PROPOSAL_MAX_IDS_NUMBER": 5,
+                                    "HIVE_PROPOSAL_FEE_INCREASE_DAYS": 60,
+                                    "HIVE_PROPOSAL_FEE_INCREASE_DAYS_SEC": 5184000,
+                                    "HIVE_PROPOSAL_FEE_INCREASE_AMOUNT": 1000,
+                                    "HIVE_PROPOSAL_CONVERSION_RATE": 5,
+                                    "HIVE_CUSTOM_OP_BLOCK_LIMIT": 5,
+                                    "HIVE_RC_REGEN_TIME": 432000,
+                                    "HIVE_RC_BUCKET_TIME_LENGTH": 3600,
+                                    "HIVE_RC_WINDOW_BUCKET_COUNT": 24,
+                                    "HIVE_RC_STATS_REPORT_FREQUENCY": 28800,
+                                    "HIVE_RC_HISTORICAL_ACCOUNT_CREATION_ADJUSTMENT": 2020748973,
+                                    "HIVE_RC_MAX_ACCOUNTS_PER_DELEGATION_OP": 100
                                 }
                             }
                         }
@@ -11281,17 +11341,19 @@
                                 "example": {
                                     "rc_accounts": [
                                         {
-                                            "account": "",
+                                            "account": "hiveio",
                                             "rc_manabar": {
-                                                "current_mana": "0",
-                                                "last_update_time": 0
+                                                "current_mana": 318262827993,
+                                                "last_update_time": 1767246366
                                             },
                                             "max_rc_creation_adjustment": {
-                                                "amount": "0",
+                                                "amount": "5879302741",
                                                 "precision": 6,
                                                 "nai": "@@000000037"
                                             },
-                                            "max_rc": "0"
+                                            "max_rc": 320445617591,
+                                            "delegated_rc": 0,
+                                            "received_delegated_rc": 0
                                         }
                                     ]
                                 }
@@ -11326,7 +11388,31 @@
                                 "schema": {
                                     "$ref": "#/components/schemas/get_rc_operation_stats_response"
                                 },
-                                "example": {}
+                                "example": {
+                                    "count": 189656,
+                                    "avg_cost_rc": 102058900,
+                                    "resource_cost": {
+                                        "history_rc": 72117498,
+                                        "tokens_rc": 0,
+                                        "market_rc": 0,
+                                        "state_rc": 3740539,
+                                        "exec_rc": 26200862
+                                    },
+                                    "resource_cost_share": {
+                                        "history_bp": 7066,
+                                        "tokens_bp": 0,
+                                        "market_bp": 0,
+                                        "state_bp": 366,
+                                        "exec_bp": 2567
+                                    },
+                                    "resource_usage": {
+                                        "history_bytes": 142,
+                                        "tokens": "0.0000",
+                                        "market_bytes": 0,
+                                        "state_hbytes": 24320,
+                                        "exec_ns": 119099
+                                    }
+                                }
                             }
                         }
                     }
@@ -11590,196 +11676,194 @@
                                     "$ref": "#/components/schemas/get_resource_params_response"
                                 },
                                 "example": {
-                                    "rc_accounts": {
-                                        "resource_names": [
-                                            "resource_history_bytes",
-                                            "resource_new_accounts",
-                                            "resource_market_bytes",
-                                            "resource_state_bytes",
-                                            "resource_execution_time"
-                                        ],
-                                        "resource_params": {
-                                            "resource_execution_time": {
-                                                "price_curve_params": {
-                                                    "coeff_a": "14969827235074865152",
-                                                    "coeff_b": 541062725,
-                                                    "shift": 59
-                                                },
-                                                "resource_dynamics_params": {
-                                                    "budget_per_time_unit": 40000000,
-                                                    "decay_params": {
-                                                        "decay_per_time_unit": 2539677724,
-                                                        "decay_per_time_unit_denom_shift": 42
-                                                    },
-                                                    "max_pool_size": 138512057687,
-                                                    "min_decay": 0,
-                                                    "pool_eq": 69256028844,
-                                                    "resource_unit": 1
-                                                }
+                                    "resource_names": [
+                                        "resource_history_bytes",
+                                        "resource_new_accounts",
+                                        "resource_market_bytes",
+                                        "resource_state_bytes",
+                                        "resource_execution_time"
+                                    ],
+                                    "resource_params": {
+                                        "resource_execution_time": {
+                                            "price_curve_params": {
+                                                "coeff_a": "14969827235074865152",
+                                                "coeff_b": 541062725,
+                                                "shift": 59
                                             },
-                                            "resource_history_bytes": {
-                                                "price_curve_params": {
-                                                    "coeff_a": "10525659774662010880",
-                                                    "coeff_b": 211332338,
-                                                    "shift": 50
+                                            "resource_dynamics_params": {
+                                                "budget_per_time_unit": 40000000,
+                                                "decay_params": {
+                                                    "decay_per_time_unit": 2539677724,
+                                                    "decay_per_time_unit_denom_shift": 42
                                                 },
-                                                "resource_dynamics_params": {
-                                                    "budget_per_time_unit": 43403,
-                                                    "decay_params": {
-                                                        "decay_per_time_unit": 3613026481,
-                                                        "decay_per_time_unit_denom_shift": 51
-                                                    },
-                                                    "max_pool_size": 54101078501,
-                                                    "min_decay": 0,
-                                                    "pool_eq": 27050539251,
-                                                    "resource_unit": 1
-                                                }
-                                            },
-                                            "resource_market_bytes": {
-                                                "price_curve_params": {
-                                                    "coeff_a": "14969827235074865152",
-                                                    "coeff_b": 15654337,
-                                                    "shift": 55
-                                                },
-                                                "resource_dynamics_params": {
-                                                    "budget_per_time_unit": 72338,
-                                                    "decay_params": {
-                                                        "decay_per_time_unit": 2540365427,
-                                                        "decay_per_time_unit_denom_shift": 46
-                                                    },
-                                                    "max_pool_size": 4007510337,
-                                                    "min_decay": 0,
-                                                    "pool_eq": 2003755169,
-                                                    "resource_unit": 10
-                                                }
-                                            },
-                                            "resource_new_accounts": {
-                                                "price_curve_params": {
-                                                    "coeff_a": "16484671763857882971",
-                                                    "coeff_b": 1231961,
-                                                    "shift": 51
-                                                },
-                                                "resource_dynamics_params": {
-                                                    "budget_per_time_unit": 797,
-                                                    "decay_params": {
-                                                        "decay_per_time_unit": 347321,
-                                                        "decay_per_time_unit_denom_shift": 36
-                                                    },
-                                                    "max_pool_size": 157691079,
-                                                    "min_decay": 0,
-                                                    "pool_eq": 157691079,
-                                                    "resource_unit": 10000
-                                                }
-                                            },
-                                            "resource_state_bytes": {
-                                                "price_curve_params": {
-                                                    "coeff_a": "10525659774662010880",
-                                                    "coeff_b": 212030656091,
-                                                    "shift": 50
-                                                },
-                                                "resource_dynamics_params": {
-                                                    "budget_per_time_unit": 43546196,
-                                                    "decay_params": {
-                                                        "decay_per_time_unit": 3613026481,
-                                                        "decay_per_time_unit_denom_shift": 51
-                                                    },
-                                                    "max_pool_size": 54279847959383,
-                                                    "min_decay": 0,
-                                                    "pool_eq": 27139923979692,
-                                                    "resource_unit": 1
-                                                }
+                                                "max_pool_size": 138512057687,
+                                                "min_decay": 0,
+                                                "pool_eq": 69256028844,
+                                                "resource_unit": 1
                                             }
                                         },
-                                        "size_info": {
-                                            "resource_execution_time": {
-                                                "account_create_time": 38710,
-                                                "account_create_with_delegation_time": 40591,
-                                                "account_update2_time": 13648,
-                                                "account_update_time": 13322,
-                                                "account_witness_proxy_time": 58126,
-                                                "account_witness_vote_time": 14741,
-                                                "cancel_transfer_from_savings_time": 3154,
-                                                "change_recovery_account_time": 10470,
-                                                "claim_account_time": 8781,
-                                                "claim_reward_balance_time": 27561,
-                                                "collateralized_convert_time": 23663,
-                                                "comment_options_time": 6202,
-                                                "comment_time": 66178,
-                                                "convert_time": 20563,
-                                                "create_claimed_account_time": 58415,
-                                                "create_proposal_time": 32988,
-                                                "custom_binary_time": 100000,
-                                                "custom_json_time": 1509,
-                                                "custom_time": 674,
-                                                "decline_voting_rights_time": 29091,
-                                                "delegate_rc_time": 75000,
-                                                "delegate_vesting_shares_time": 16727,
-                                                "delete_comment_time": 18050,
-                                                "escrow_approve_time": 9663,
-                                                "escrow_dispute_time": 6574,
-                                                "escrow_release_time": 15340,
-                                                "escrow_transfer_time": 19586,
-                                                "feed_publish_time": 3059,
-                                                "limit_order_cancel_time": 6739,
-                                                "limit_order_create2_time": 24391,
-                                                "limit_order_create_time": 14703,
-                                                "pow2_time": 103827,
-                                                "pow_time": 201001,
-                                                "recover_account_time": 18955,
-                                                "recurrent_transfer_base_time": 13908,
-                                                "recurrent_transfer_processing_time": 14347,
-                                                "remove_proposal_time": 135428,
-                                                "request_account_recovery_time": 7947,
-                                                "set_withdraw_vesting_route_time": 10257,
-                                                "transaction_time": 6622,
-                                                "transfer_from_savings_time": 17550,
-                                                "transfer_time": 5999,
-                                                "transfer_to_savings_time": 6523,
-                                                "transfer_to_vesting_time": 42245,
-                                                "update_proposal_time": 16781,
-                                                "update_proposal_votes_time": 17304,
-                                                "verify_authority_time": 94165,
-                                                "vote_time": 18312,
-                                                "withdraw_vesting_time": 221526,
-                                                "witness_set_properties_time": 9450,
-                                                "witness_update_time": 4237
+                                        "resource_history_bytes": {
+                                            "price_curve_params": {
+                                                "coeff_a": "10525659774662010880",
+                                                "coeff_b": 211332338,
+                                                "shift": 50
                                             },
-                                            "resource_state_bytes": {
-                                                "LASTING_STATE_BYTE": 21900,
-                                                "PERSISTENT_STATE_BYTE": 43800,
-                                                "TEMPORARY_STATE_BYTE": 1,
-                                                "account_create_base_size": 46953600,
-                                                "account_witness_vote_size": 1191360,
-                                                "authority_account_member_size": 1051200,
-                                                "authority_key_member_size": 1576800,
-                                                "change_recovery_account_size": 97920,
-                                                "collateralized_convert_size": 10752,
-                                                "comment_base_size": 4237056,
-                                                "comment_beneficiaries_member_size": 1344,
-                                                "comment_permlink_char_size": 168,
-                                                "convert_size": 10080,
-                                                "create_proposal_base_size": 336,
-                                                "create_proposal_subject_permlink_char_size": 1,
-                                                "decline_voting_rights_size": 92160,
-                                                "delegate_rc_base_size": 1927200,
-                                                "delegate_vesting_shares_size": 1927200,
-                                                "escrow_transfer_size": 4730400,
-                                                "limit_order_create_size": 139776,
-                                                "owner_authority_history_object_size": 120960,
-                                                "recurrent_transfer_base_size": 200,
-                                                "recurrent_transfer_memo_char_size": 1,
-                                                "request_account_recovery_size": 4608,
-                                                "set_withdraw_vesting_route_size": 3153600,
-                                                "transaction_base_size": 128,
-                                                "transfer_from_savings_size": 16704,
-                                                "transfer_to_vesting_size": 11520,
-                                                "update_proposal_votes_member_size": 1121280,
-                                                "vesting_delegation_expiration_object_size": 14400,
-                                                "vesting_delegation_object_size": 1927200,
-                                                "vote_size": 24192,
-                                                "witness_update_base_size": 23827200,
-                                                "witness_update_url_char_size": 43800
+                                            "resource_dynamics_params": {
+                                                "budget_per_time_unit": 43403,
+                                                "decay_params": {
+                                                    "decay_per_time_unit": 3613026481,
+                                                    "decay_per_time_unit_denom_shift": 51
+                                                },
+                                                "max_pool_size": 54101078501,
+                                                "min_decay": 0,
+                                                "pool_eq": 27050539251,
+                                                "resource_unit": 1
                                             }
+                                        },
+                                        "resource_market_bytes": {
+                                            "price_curve_params": {
+                                                "coeff_a": "14969827235074865152",
+                                                "coeff_b": 15654337,
+                                                "shift": 55
+                                            },
+                                            "resource_dynamics_params": {
+                                                "budget_per_time_unit": 72338,
+                                                "decay_params": {
+                                                    "decay_per_time_unit": 2540365427,
+                                                    "decay_per_time_unit_denom_shift": 46
+                                                },
+                                                "max_pool_size": 4007510337,
+                                                "min_decay": 0,
+                                                "pool_eq": 2003755169,
+                                                "resource_unit": 10
+                                            }
+                                        },
+                                        "resource_new_accounts": {
+                                            "price_curve_params": {
+                                                "coeff_a": "16484671763857882971",
+                                                "coeff_b": 1231961,
+                                                "shift": 51
+                                            },
+                                            "resource_dynamics_params": {
+                                                "budget_per_time_unit": 797,
+                                                "decay_params": {
+                                                    "decay_per_time_unit": 347321,
+                                                    "decay_per_time_unit_denom_shift": 36
+                                                },
+                                                "max_pool_size": 157691079,
+                                                "min_decay": 0,
+                                                "pool_eq": 157691079,
+                                                "resource_unit": 10000
+                                            }
+                                        },
+                                        "resource_state_bytes": {
+                                            "price_curve_params": {
+                                                "coeff_a": "10525659774662010880",
+                                                "coeff_b": 212030656091,
+                                                "shift": 50
+                                            },
+                                            "resource_dynamics_params": {
+                                                "budget_per_time_unit": 43546196,
+                                                "decay_params": {
+                                                    "decay_per_time_unit": 3613026481,
+                                                    "decay_per_time_unit_denom_shift": 51
+                                                },
+                                                "max_pool_size": 54279847959383,
+                                                "min_decay": 0,
+                                                "pool_eq": 27139923979692,
+                                                "resource_unit": 1
+                                            }
+                                        }
+                                    },
+                                    "size_info": {
+                                        "resource_execution_time": {
+                                            "account_create_time": 38710,
+                                            "account_create_with_delegation_time": 40591,
+                                            "account_update2_time": 13648,
+                                            "account_update_time": 13322,
+                                            "account_witness_proxy_time": 58126,
+                                            "account_witness_vote_time": 14741,
+                                            "cancel_transfer_from_savings_time": 3154,
+                                            "change_recovery_account_time": 10470,
+                                            "claim_account_time": 8781,
+                                            "claim_reward_balance_time": 27561,
+                                            "collateralized_convert_time": 23663,
+                                            "comment_options_time": 6202,
+                                            "comment_time": 66178,
+                                            "convert_time": 20563,
+                                            "create_claimed_account_time": 58415,
+                                            "create_proposal_time": 32988,
+                                            "custom_binary_time": 100000,
+                                            "custom_json_time": 1509,
+                                            "custom_time": 674,
+                                            "decline_voting_rights_time": 29091,
+                                            "delegate_rc_time": 75000,
+                                            "delegate_vesting_shares_time": 16727,
+                                            "delete_comment_time": 18050,
+                                            "escrow_approve_time": 9663,
+                                            "escrow_dispute_time": 6574,
+                                            "escrow_release_time": 15340,
+                                            "escrow_transfer_time": 19586,
+                                            "feed_publish_time": 3059,
+                                            "limit_order_cancel_time": 6739,
+                                            "limit_order_create2_time": 24391,
+                                            "limit_order_create_time": 14703,
+                                            "pow2_time": 103827,
+                                            "pow_time": 201001,
+                                            "recover_account_time": 18955,
+                                            "recurrent_transfer_base_time": 13908,
+                                            "recurrent_transfer_processing_time": 14347,
+                                            "remove_proposal_time": 135428,
+                                            "request_account_recovery_time": 7947,
+                                            "set_withdraw_vesting_route_time": 10257,
+                                            "transaction_time": 6622,
+                                            "transfer_from_savings_time": 17550,
+                                            "transfer_time": 5999,
+                                            "transfer_to_savings_time": 6523,
+                                            "transfer_to_vesting_time": 42245,
+                                            "update_proposal_time": 16781,
+                                            "update_proposal_votes_time": 17304,
+                                            "verify_authority_time": 94165,
+                                            "vote_time": 18312,
+                                            "withdraw_vesting_time": 221526,
+                                            "witness_set_properties_time": 9450,
+                                            "witness_update_time": 4237
+                                        },
+                                        "resource_state_bytes": {
+                                            "LASTING_STATE_BYTE": 21900,
+                                            "PERSISTENT_STATE_BYTE": 43800,
+                                            "TEMPORARY_STATE_BYTE": 1,
+                                            "account_create_base_size": 46953600,
+                                            "account_witness_vote_size": 1191360,
+                                            "authority_account_member_size": 1051200,
+                                            "authority_key_member_size": 1576800,
+                                            "change_recovery_account_size": 97920,
+                                            "collateralized_convert_size": 10752,
+                                            "comment_base_size": 4237056,
+                                            "comment_beneficiaries_member_size": 1344,
+                                            "comment_permlink_char_size": 168,
+                                            "convert_size": 10080,
+                                            "create_proposal_base_size": 336,
+                                            "create_proposal_subject_permlink_char_size": 1,
+                                            "decline_voting_rights_size": 92160,
+                                            "delegate_rc_base_size": 1927200,
+                                            "delegate_vesting_shares_size": 1927200,
+                                            "escrow_transfer_size": 4730400,
+                                            "limit_order_create_size": 139776,
+                                            "owner_authority_history_object_size": 120960,
+                                            "recurrent_transfer_base_size": 200,
+                                            "recurrent_transfer_memo_char_size": 1,
+                                            "request_account_recovery_size": 4608,
+                                            "set_withdraw_vesting_route_size": 3153600,
+                                            "transaction_base_size": 128,
+                                            "transfer_from_savings_size": 16704,
+                                            "transfer_to_vesting_size": 11520,
+                                            "update_proposal_votes_member_size": 1121280,
+                                            "vesting_delegation_expiration_object_size": 14400,
+                                            "vesting_delegation_object_size": 1927200,
+                                            "vote_size": 24192,
+                                            "witness_update_base_size": 23827200,
+                                            "witness_update_url_char_size": 43800
                                         }
                                     }
                                 }
@@ -14321,13 +14405,13 @@
                                     "block": {
                                         "previous": "0000000000000000000000000000000000000000",
                                         "timestamp": "2016-03-24T16:05:00",
-                                        "witness": "",
+                                        "witness": "initminer",
                                         "transaction_merkle_root": "0000000000000000000000000000000000000000",
                                         "extensions": [],
-                                        "witness_signature": "",
+                                        "witness_signature": "204f8ad56a8f5cf722a02b035a61b500aa59b9519b2c33c77a80c0a714680a5a5a7a340d909d19996613c5e4ae92146b9add8a7a663eef37d837ef881477313043",
                                         "transactions": [],
-                                        "block_id": "",
-                                        "signing_key": "",
+                                        "block_id": "0000000109833ce528d5bbfb3f6225b39ee10086",
+                                        "signing_key": "STM8GC13uCZbP44HzMLV6zPZGwVQ8Nt4Kji8PapsPiNq1BK153XTX",
                                         "transaction_ids": []
                                     }
                                 }
@@ -17006,6 +17090,11 @@
                                 "type": "string",
                                 "description": "The post voting power of the account.  It is represented as an object with amount, nai, and precision."
                             },
+                            "voting_power": {
+                                "x-hive-type": "Uint16t",
+                                "type": "integer",
+                                "description": "The current voting power of the account (computed from the voting manabar, in basis points)."
+                            },
                             "vesting_balance": {
                                 "x-hive-type": "LegacyAssetHive",
                                 "type": "string",
@@ -17035,6 +17124,14 @@
                                 "$ref": "#/components/schemas/account_history_array_condenser_api",
                                 "description": "Historical operations"
                             },
+                            "witness_votes": {
+                                "type": "array",
+                                "items": {
+                                    "x-hive-type": "AccountName",
+                                    "type": "string"
+                                },
+                                "description": "Names of the witnesses the account votes for."
+                            },
                             "tags_usage": {
                                 "type": "array",
                                 "items": {
@@ -17062,6 +17159,7 @@
                             "received_vesting_shares",
                             "vesting_withdraw_rate",
                             "post_voting_power",
+                            "voting_power",
                             "vesting_balance",
                             "reputation",
                             "transfer_history",
@@ -17069,6 +17167,7 @@
                             "post_history",
                             "vote_history",
                             "other_history",
+                            "witness_votes",
                             "tags_usage",
                             "guest_bloggers"
                         ]
@@ -17189,6 +17288,11 @@
                                 "x-hive-type": "LegacyAssetVests",
                                 "type": "string",
                                 "description": "The post voting power of the account.  It is represented as an object with amount, nai, and precision."
+                            },
+                            "voting_power": {
+                                "x-hive-type": "Uint16t",
+                                "type": "integer",
+                                "description": "The current voting power of the account (computed from the voting manabar, in basis points)."
                             }
                         },
                         "required": [
@@ -17204,7 +17308,8 @@
                             "delegated_vesting_shares",
                             "received_vesting_shares",
                             "vesting_withdraw_rate",
-                            "post_voting_power"
+                            "post_voting_power",
+                            "voting_power"
                         ]
                     },
                     {
@@ -18117,6 +18222,11 @@
                     "allow_curation_rewards": {
                         "type": "boolean",
                         "example": true
+                    },
+                    "was_voted_on": {
+                        "type": "boolean",
+                        "example": true,
+                        "description": "Whether the comment received any votes."
                     }
                 },
                 "required": [
@@ -18137,7 +18247,8 @@
                     "reward_weight",
                     "allow_replies",
                     "allow_votes",
-                    "allow_curation_rewards"
+                    "allow_curation_rewards",
+                    "was_voted_on"
                 ]
             },
             "chain_properties": {
@@ -18376,8 +18487,7 @@
                     },
                     "created_at": {
                         "type": "string",
-                        "format": "date-time",
-                        "example": "2021-01-27T22:30:54Z"
+                        "example": "2021-01-27 22:30:54"
                     },
                     "id": {
                         "type": "integer",
@@ -18449,7 +18559,6 @@
                     },
                     "created_at": {
                         "type": "string",
-                        "format": "date-time",
                         "description": "The date and time when the community was created."
                     },
                     "description": {
@@ -20022,7 +20131,6 @@
                     },
                     "db_head_time": {
                         "type": "string",
-                        "format": "date-time",
                         "example": "2016-09-15 19:48:33",
                         "description": "The timestamp of the current head block in the database."
                     }
@@ -22703,6 +22811,10 @@
                         "type": "integer",
                         "description": "Curation reward APR percent."
                     },
+                    "HIVE_CUSTOM_OP_BLOCK_LIMIT": {
+                        "type": "integer",
+                        "description": "Maximum number of custom operations an account can include in a single block (reported by nodes since 1.27.12)."
+                    },
                     "HIVE_CUSTOM_OP_DATA_MAX_LENGTH": {
                         "type": "integer",
                         "description": "Max length for custom operation data."
@@ -23456,10 +23568,13 @@
                         "x-hive-type": "Sha256",
                         "type": "string",
                         "description": "Old chain ID for compatibility."
+                    },
+                    "TESTNET_BLOCK_LIMIT": {
+                        "type": "integer",
+                        "description": "Block limit of old testnet builds (removed from newer nodes)."
                     }
                 },
                 "required": [
-                    "TESTNET_BLOCK_LIMIT",
                     "HIVE_INITIAL_VOTE_POWER_RATE",
                     "HIVE_REDUCED_VOTE_POWER_RATE",
                     "HIVE_100_PERCENT",
@@ -23735,7 +23850,11 @@
                 ]
             },
             "get_discussion_response": {
-                "type": "object"
+                "type": "object",
+                "description": "Map of \"author/permlink\" of every post in the discussion tree to the post.",
+                "additionalProperties": {
+                    "$ref": "#/components/schemas/post_bridge_api"
+                }
             },
             "get_dynamic_global_properties_response": {
                 "$ref": "#/components/schemas/dynamic_global_properties_default"
@@ -23821,7 +23940,6 @@
                     },
                     "database_patch_date": {
                         "type": "string",
-                        "format": "date-time",
                         "description": "The date when the database was last patched."
                     },
                     "database_patched_to_revision": {
@@ -24399,8 +24517,8 @@
                     "history_bytes",
                     "tokens",
                     "market_bytes",
-                    "state_bp",
-                    "exec_bp"
+                    "state_hbytes",
+                    "exec_ns"
                 ]
             },
             "get_rc_stats_response": {
@@ -25338,7 +25456,11 @@
                 ]
             },
             "list_muted_reasons_enum_response": {
-                "type": "object"
+                "type": "object",
+                "description": "Map of muted reason name to its numeric value.",
+                "additionalProperties": {
+                    "type": "integer"
+                }
             },
             "list_limit_orders": {
                 "$ref": "#/components/schemas/start_limit_order"
@@ -26836,7 +26958,7 @@
                         "type": "object",
                         "properties": {
                             "proposal": {
-                                "$ref": "#/components/schemas/proposals_condenser_api"
+                                "$ref": "#/components/schemas/proposal_vote_proposal_condenser_api"
                             }
                         },
                         "required": [
@@ -26953,6 +27075,27 @@
                         },
                         "required": [
                             "daily_pay"
+                        ]
+                    }
+                ]
+            },
+            "proposal_vote_proposal_condenser_api": {
+                "description": "database_api::api_proposal_object in legacy serialization, as nested in condenser_api.list_proposal_votes results. Unlike condenser_api::api_proposal_object it contains the proposal status.",
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/proposals_condenser_api"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "status": {
+                                "type": "string",
+                                "example": "active",
+                                "description": "The status of the proposal."
+                            }
+                        },
+                        "required": [
+                            "status"
                         ]
                     }
                 ]
@@ -28147,8 +28290,7 @@
                 "type": "object",
                 "properties": {
                     "lastread": {
-                        "type": "string",
-                        "format": "date-time"
+                        "type": "string"
                     },
                     "unread": {
                         "type": "integer",
