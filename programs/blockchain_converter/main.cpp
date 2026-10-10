@@ -12,6 +12,7 @@
 #include <hive/protocol/config.hpp>
 
 #include <fc/exception/exception.hpp>
+#include <fc/locale.hpp>
 
 #include "plugins/block_log_conversion/block_log_conversion_plugin.hpp"
 #include "plugins/node_based_conversion/node_based_conversion_plugin.hpp"
@@ -39,6 +40,8 @@ std::string& version_string()
 
 int main( int argc, char** argv )
 {
+  fc::sanitize_locale_environment();
+
   try
   {
     appbase::application bc_converter_app;

@@ -7,9 +7,12 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <fc/locale.hpp>
 
 int main( int argc, char** argv, char** envp )
 {
+  fc::sanitize_locale_environment();
+
   if( argc != 3 )
   {
     std::cerr << "syntax:  cat-parts DIR OUTFILE" << std::endl;

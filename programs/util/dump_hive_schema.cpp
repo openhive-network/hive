@@ -31,6 +31,7 @@
 #include <hive/chain/database.hpp>
 #include <hive/chain/index.hpp>
 #include <hive/chain/blockchain_worker_thread_pool.hpp>
+#include <fc/locale.hpp>
 
 using hive::schema::abstract_schema;
 
@@ -87,6 +88,8 @@ FC_REFLECT( hive_schema, (schema_map)(chain_object_types) )
 
 int main( int argc, char** argv, char** envp )
 {
+  fc::sanitize_locale_environment();
+
   appbase::application app;
   hive::chain::blockchain_worker_thread_pool thread_pool = hive::chain::blockchain_worker_thread_pool( app );
 

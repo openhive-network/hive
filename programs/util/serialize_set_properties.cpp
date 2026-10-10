@@ -2,6 +2,7 @@
 #include <hive/protocol/operations.hpp>
 
 #include <fc/io/json.hpp>
+#include <fc/locale.hpp>
 
 #include <boost/algorithm/string.hpp>
 
@@ -70,6 +71,8 @@ class serialize_member_visitor
 
 int main( int argc, char** argv, char** envp )
 {
+  fc::sanitize_locale_environment();
+
   // Serialize the witness_set_properties_operation
   // Take a sequence of witness_properties, one per line
   while( std::cin )

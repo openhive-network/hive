@@ -7,6 +7,7 @@
 
 #include <hive/protocol/block.hpp>
 #include <fc/io/raw.hpp>
+#include <fc/locale.hpp>
 
 void dump_head(const hive::chain::block_log& log)
 {
@@ -19,6 +20,8 @@ void dump_head(const hive::chain::block_log& log)
 
 int main( int argc, char** argv, char** envp )
 {
+  fc::sanitize_locale_environment();
+
   try
   {
     appbase::application theApp;

@@ -38,6 +38,7 @@
 #include <hive/chain/detail/state/reward_fund_object.hpp>
 #include <hive/chain/detail/state/recurrent_transfer_object.hpp>
 #include <fc/smart_ref_impl.hpp>
+#include <fc/locale.hpp>
 #include <iostream>
 
 using namespace hive::chain;
@@ -380,6 +381,8 @@ struct serializer
 
 int main( int argc, char** argv )
 {
+  fc::sanitize_locale_environment();
+
   try {
     std::cout << "ChainTypes.operations=\n";
     for( int i = 0; i < operation::count(); ++i )

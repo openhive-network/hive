@@ -7,6 +7,7 @@
 #include <fc/io/json.hpp>
 #include <fc/reflect/reflect.hpp>
 #include <fc/variant.hpp>
+#include <fc/locale.hpp>
 
 #include <hive/protocol/types.hpp>
 #include <hive/protocol/authority.hpp>
@@ -94,6 +95,8 @@ FC_REFLECT( book, (name)(author)(pages)(prize)(deq)(auth) )
 
 int main(int argc, char** argv, char** envp)
 {
+  fc::sanitize_locale_environment();
+
   try {
 
   bip::managed_mapped_file seg( bip::open_or_create,"./book_container.db", 1024*100);

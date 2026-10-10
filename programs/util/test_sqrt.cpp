@@ -7,6 +7,7 @@
 #include <boost/multiprecision/integer.hpp>
 
 #include <fc/uint128.hpp>
+#include <fc/locale.hpp>
 
 using fc::uint128_t;
 
@@ -25,6 +26,8 @@ uint64_t maybe_sqrt( uint64_t x )
 
 int main( int argc, char** argv, char** envp )
 {
+  fc::sanitize_locale_environment();
+
   uint128_t x = 0;
   while( true )
   {

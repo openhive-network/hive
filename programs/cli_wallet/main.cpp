@@ -60,6 +60,7 @@
 #include <fc/log/file_appender.hpp>
 #include <fc/log/logger.hpp>
 #include <fc/log/logger_config.hpp>
+#include <fc/locale.hpp>
 
 #ifdef WIN32
 # include <signal.h>
@@ -90,6 +91,8 @@ namespace
 
 int main( int argc, char** argv )
 {
+  fc::sanitize_locale_environment();
+
   try {
     const char* raw_password_from_environment = std::getenv("HIVE_WALLET_PASSWORD");
     std::string unlock_password_from_environment = raw_password_from_environment ? raw_password_from_environment : "";

@@ -26,6 +26,7 @@
 #include <fc/smart_ref_impl.hpp>
 #include <fc/variant.hpp>
 #include <fc/variant_object.hpp>
+#include <fc/locale.hpp>
 
 #include <hive/protocol/protocol.hpp>
 
@@ -66,6 +67,8 @@ struct size_check_type_visitor
 
 int main( int argc, char** argv )
 {
+  fc::sanitize_locale_environment();
+
   try
   {
     std::vector<uint64_t> witnesses; witnesses.resize(50);

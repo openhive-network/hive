@@ -10,6 +10,7 @@
 #include <fc/io/varint.hpp>
 #include <fc/string.hpp>
 #include <fc/uint128.hpp>
+#include <fc/locale.hpp>
 
 #include <iostream>
 #include <string>
@@ -351,6 +352,8 @@ void chop(std::string& s, char prefix)
 
 int main()
 {
+  fc::sanitize_locale_environment();
+
   std::string hex;
   std::string bytes;
   for (;std::cin >> hex;) {

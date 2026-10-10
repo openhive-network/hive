@@ -1,7 +1,10 @@
 #include <cstdio>
+#include <fc/locale.hpp>
 
 int main( int argc, char** argv, char** envp )
 {
+  fc::sanitize_locale_environment();
+
   std::puts("The truncate_block_log tool has been removed, as it wasn't compatible");
   std::puts("with block log compression");
   std::puts("");

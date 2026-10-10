@@ -32,6 +32,7 @@ struct votable_asset_info_v1;
 #include <hive/chain/detail/state/decline_voting_rights_request_object.hpp>
 #include <hive/chain/detail/state/reward_fund_object.hpp>
 #include <hive/chain/detail/state/recurrent_transfer_object.hpp>
+#include <fc/locale.hpp>
 
 using namespace hive::schema;
 
@@ -69,6 +70,8 @@ void process( std::shared_ptr< abstract_schema > s )
 
 int main( int argc, char** argv, char** envp )
 {
+  fc::sanitize_locale_environment();
+
   std::vector< std::shared_ptr< abstract_schema > > schemas;
 
   schemas.push_back( get_schema_for_type< mystruct >() );

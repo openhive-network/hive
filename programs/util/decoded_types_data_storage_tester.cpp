@@ -34,6 +34,7 @@
 #include <unordered_map>
 #include <chrono>
 #include <fc/io/json.hpp>
+#include <fc/locale.hpp>
 
 void do_job()
 {
@@ -109,6 +110,8 @@ void do_job()
 
 int main( int argc, char** argv )
 {
+  fc::sanitize_locale_environment();
+
   do_job();
   return 0;
 }
