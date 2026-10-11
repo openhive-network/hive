@@ -22,6 +22,7 @@
 #include <functional>
 #include <iterator>
 #include <map>
+#include <string_view>
 
 using namespace hive::chain;
 using namespace hive::protocol;
@@ -119,6 +120,33 @@ void make_layout_only_snapshot( const fc::path& manifest_dir )
     put_manifest_entry( manifest_db, column_families, "IRREVERSIBLE_STATE", "SNAPSHOT_VERSION", "2.3" );
     BOOST_REQUIRE( manifest_db.Delete( ::rocksdb::WriteOptions(), column_families.at( "STATE_DEFINITIONS_DATA" ), "STATE_SERIALIZATION_DATA" ).ok() );
   } );
+}
+
+void set_state_serialization_descriptor_version_in_snapshot( const fc::path& manifest_dir, const std::string& version )
+{
+  modify_snapshot_manifest( manifest_dir, [&]( ::rocksdb::DB& manifest_db, const manifest_column_families_t& column_families )
+  {
+    put_manifest_entry( manifest_db, column_families, "STATE_DEFINITIONS_DATA", "STATE_SERIALIZATION_DESCRIPTOR_VERSION", version );
+  } );
+}
+
+/// Position of a template value argument spelled as by a demangler - with a literal suffix (`33ul') or a cast (`(char)1'), npos if there is none.
+size_t find_demangler_spelling( const std::string& names )
+{
+  for( size_t pos = 0; pos < names.size(); ++pos )
+  {
+    if( names[ pos ] == '(' )
+      return pos;
+    if( names[ pos ] < '0' || names[ pos ] > '9' )
+      continue;
+
+    size_t end = pos + 1;
+    while( end < names.size() && std::string_view( "uUlL" ).find( names[ end ] ) != std::string_view::npos )
+      ++end;
+    if( end > pos + 1 && end < names.size() && ( names[ end ] == ',' || names[ end ] == '>' ) )
+      return pos;
+  }
+  return std::string::npos;
 }
 
 std::string read_state_serialization_from_snapshot( const fc::path& manifest_dir )
@@ -360,9 +388,13 @@ BOOST_AUTO_TEST_CASE( snapshot_state_serialization_uses_canonical_names )
     const std::string state_serialization =
       read_state_serialization_from_snapshot( hive::utilities::temp_directory_path() / snapshot_root_dir / "snap" / "snapshot-manifest" );
 
-    // nothing specific to Boost version, standard library or platform
-    for( const std::string& fragment : { "allocator", "segment_manager", "std::less", "unsigned long", "long long", "__cxx11", " const" } )
+    // nothing specific to Boost version, standard library, demangler or platform
+    for( const std::string& fragment : { "allocator", "segment_manager", "std::less", "unsigned long", "long long", "__cxx11", " const", "long double" } )
       BOOST_CHECK_MESSAGE( state_serialization.find( fragment ) == std::string::npos, "State serialization contains: " << fragment );
+    // template value arguments as spelled by a demangler: with literal suffixes (`33ul') or casts (`(char)1')
+    const size_t demangler_spelling = find_demangler_spelling( state_serialization );
+    BOOST_CHECK_MESSAGE( demangler_spelling == std::string::npos,
+      "State serialization contains: " << state_serialization.substr( demangler_spelling == std::string::npos ? 0 : demangler_spelling, 20 ) );
 
     const auto types = fc::json::from_string( state_serialization, fc::json::format_validation_mode::full ).as< std::vector< util::serialized_type_data > >();
     const auto feed_history = std::find_if( types.begin(), types.end(),
@@ -374,6 +406,47 @@ BOOST_AUTO_TEST_CASE( snapshot_state_serialization_uses_canonical_names )
       []( const util::serialized_type_data::entry& member ) { return member.name == "price_history"; } );
     BOOST_REQUIRE( price_history != feed_history->entries.end() );
     BOOST_CHECK_EQUAL( price_history->value, "boost::container::deque<" + util::canonical_type_name< HBD_price >() + ">" );
+    BOOST_CHECK_EQUAL( util::canonical_type_name< HBD_price >(),
+      "hive::protocol::tiny_price<" + std::to_string( HIVE_ASSET_NUM_HBD ) + ", " + std::to_string( HIVE_ASSET_NUM_HIVE ) + ">" );
+
+    // leaf types are described by their encoding
+    const auto feed_history_id = std::find_if( types.begin(), types.end(),
+      []( const util::serialized_type_data& type ) { return type.name == "chainbase::oid<hive::chain::feed_history_object>"; } );
+    BOOST_REQUIRE( feed_history_id != types.end() );
+    BOOST_CHECK_EQUAL( feed_history_id->kind, "leaf" );
+    const util::serialized_type_data::entries_vector_t id_encoding{ { "encoding", "uint32_t" } };
+    BOOST_CHECK( feed_history_id->entries == id_encoding );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( snapshot_with_other_descriptor_version_is_refused )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "--- Testing: snapshot_with_other_descriptor_version_is_refused" );
+
+    const std::string snapshot_root_dir = "snapshot_with_other_descriptor_version_is_refused";
+    clear_snapshot( snapshot_root_dir );
+
+    postponed_init();
+    generate_block();
+    dump_snapshot( snapshot_root_dir );
+
+    const std::string current_version = std::to_string( util::STATE_SERIALIZATION_DESCRIPTOR_VERSION );
+    const std::string other_version = std::to_string( util::STATE_SERIALIZATION_DESCRIPTOR_VERSION + 1 );
+    const fc::path manifest_dir = hive::utilities::temp_directory_path() / snapshot_root_dir / "snap" / "snapshot-manifest";
+    set_state_serialization_descriptor_version_in_snapshot( manifest_dir, other_version );
+    // descriptors of other rules differ too - the version is compared before them
+    alter_state_serialization_in_snapshot( manifest_dir );
+
+    BOOST_CHECK_EXCEPTION( load_snapshot( snapshot_root_dir ), fc::assert_exception,
+      [&]( const fc::assert_exception& e )
+      {
+        const std::string details = e.to_detail_string();
+        return details.find( "State serialization descriptor version mismatch - snapshot describes its state with version " + other_version +
+                             ", this build with version " + current_version ) != std::string::npos;
+      } );
   }
   FC_LOG_AND_RETHROW()
 }

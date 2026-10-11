@@ -896,11 +896,18 @@ class state_snapshot_plugin::impl final : protected chain::state_snapshot_provid
     virtual void verify_explicit_snapshot_load_requests() override;
 
     private:
+      struct state_serialization_data
+      {
+        /// STATE_SERIALIZATION_DESCRIPTOR_VERSION of the build which produced the descriptors.
+        std::string descriptor_version;
+        std::string descriptors;
+      };
+
       struct snapshot_compatibility_data
       {
         std::string state_definitions;
         /// Not present in snapshots of LAYOUT_ONLY_SNAPSHOT_FORMAT_VERSION.
-        std::optional<std::string> state_serialization;
+        std::optional<state_serialization_data> state_serialization;
         std::string blockchain_configuration;
         std::string plugins;
       };
@@ -1163,6 +1170,21 @@ void state_snapshot_plugin::impl::store_snapshot_manifest(const bfs::path& actua
     {
       elog("Cannot write an index manifest entry to output file: `${p}'. Error details: `${e}'.", ("p", manifestDbPath.string())("e", status.ToString()));
       ilog("Failing key value: \"STATE_SERIALIZATION_DATA\"");
+
+      throw std::exception();
+    }
+  }
+
+  {
+    const std::string version = std::to_string(hive::chain::util::STATE_SERIALIZATION_DESCRIPTOR_VERSION);
+    Slice key("STATE_SERIALIZATION_DESCRIPTOR_VERSION");
+    Slice value(version);
+    auto status = db->Put(writeOptions, StateDefinitionsDataCF, key, value);
+
+    if(status.ok() == false)
+    {
+      elog("Cannot write an index manifest entry to output file: `${p}'. Error details: `${e}'.", ("p", manifestDbPath.string())("e", status.ToString()));
+      ilog("Failing key value: \"STATE_SERIALIZATION_DESCRIPTOR_VERSION\"");
 
       throw std::exception();
     }
@@ -1451,8 +1473,10 @@ state_snapshot_plugin::impl::load_snapshot_compatibility_data(const bfs::path& a
   for(size_t i = 0; i < entries.size(); ++i)
     statuses.emplace_back(manifestDb->Get(ReadOptions(), cfHandles[i + 1], entries[i].second, &values[i]));
 
-  std::string stateSerialization;
-  const ::rocksdb::Status stateSerializationStatus = manifestDb->Get(ReadOptions(), cfHandles[2], "STATE_SERIALIZATION_DATA", &stateSerialization);
+  state_serialization_data stateSerialization;
+  const ::rocksdb::Status stateSerializationStatus = manifestDb->Get(ReadOptions(), cfHandles[2], "STATE_SERIALIZATION_DATA", &stateSerialization.descriptors);
+  const ::rocksdb::Status descriptorVersionStatus =
+    manifestDb->Get(ReadOptions(), cfHandles[2], "STATE_SERIALIZATION_DESCRIPTOR_VERSION", &stateSerialization.descriptor_version);
 
   for(auto* cfh : cfHandles)
   {
@@ -1473,6 +1497,8 @@ state_snapshot_plugin::impl::load_snapshot_compatibility_data(const bfs::path& a
     ("f", values[0])("e", SNAPSHOT_FORMAT_VERSION)("l", LAYOUT_ONLY_SNAPSHOT_FORMAT_VERSION));
   FC_ASSERT(stateSerializationStatus.ok(), "No entry for STATE_SERIALIZATION_DATA in snapshot of version ${v}. Error details: `${e}'.",
     ("v", values[0])("e", stateSerializationStatus.ToString()));
+  FC_ASSERT(descriptorVersionStatus.ok(), "No entry for STATE_SERIALIZATION_DESCRIPTOR_VERSION in snapshot of version ${v}. Error details: `${e}'.",
+    ("v", values[0])("e", descriptorVersionStatus.ToString()));
 
   return { std::move(values[1]), std::move(stateSerialization), std::move(values[2]), std::move(values[3]) };
 }
@@ -1516,7 +1542,14 @@ void state_snapshot_plugin::impl::verify_snapshot_is_loadable(const bfs::path& a
 
   // Snapshot data is (de)serialized field by field, so only its serialization has to match - not memory layout of the objects.
   if(snapshotData.state_serialization)
-    _mainDb.verify_match_of_state_objects_serialization(*snapshotData.state_serialization);
+  {
+    // Descriptors produced by other rules are not comparable with the current ones.
+    const std::string currentDescriptorVersion = std::to_string(hive::chain::util::STATE_SERIALIZATION_DESCRIPTOR_VERSION);
+    FC_ASSERT(snapshotData.state_serialization->descriptor_version == currentDescriptorVersion,
+      "State serialization descriptor version mismatch - snapshot describes its state with version ${f}, this build with version ${c}. The snapshot must be regenerated.",
+      ("f", snapshotData.state_serialization->descriptor_version)("c", currentDescriptorVersion));
+    _mainDb.verify_match_of_state_objects_serialization(snapshotData.state_serialization->descriptors);
+  }
   else
     _mainDb.verify_match_of_state_objects_definitions(snapshotData.state_definitions);
   wlog("Snapshot state definitions matches current app version.");
