@@ -890,8 +890,16 @@ class state_snapshot_plugin::impl final : protected chain::state_snapshot_provid
     /// chain::state_snapshot_provider implementation:
     virtual void process_explicit_snapshot_dump_requests(const hive::chain::open_args& openArgs) override;
     virtual void process_explicit_snapshot_load_requests(const hive::chain::open_args& openArgs) override;
+    virtual void verify_explicit_snapshot_load_requests() override;
 
     private:
+      struct snapshot_compatibility_data
+      {
+        std::string state_definitions;
+        std::string blockchain_configuration;
+        std::string plugins;
+      };
+
       void collectOptions(const bpo::variables_map& options);
       std::string generate_name() const;
       void safe_spawn_snapshot_dump(const chainbase::abstract_index* idx, index_dump_writer* writer);
@@ -901,6 +909,11 @@ class state_snapshot_plugin::impl final : protected chain::state_snapshot_provid
 
       std::tuple<snapshot_manifest, plugin_external_data_index, std::string, std::string, std::string, uint32_t>
       load_snapshot_manifest(const bfs::path& actualStoragePath, std::shared_ptr<hive::chain::full_block_type>& lib);
+      /// Reads the parts of the snapshot manifest needed to decide whether the snapshot can be loaded. Does not need an open database.
+      snapshot_compatibility_data load_snapshot_compatibility_data(const bfs::path& actualStoragePath) const;
+      void compare_snapshot_plugins(const std::string& plugins_in_snapshot) const;
+      void verify_snapshot_is_loadable(const bfs::path& actualStoragePath);
+      bfs::path get_snapshot_path(const std::string& snapshotName) const;
       void load_snapshot_external_data(const plugin_external_data_index& idx);
 
       void load_snapshot_impl(const std::string& snapshotName, const hive::chain::open_args& openArgs);
@@ -1400,6 +1413,100 @@ state_snapshot_plugin::impl::load_snapshot_manifest(const bfs::path& actualStora
   return std::make_tuple(retVal, extDataIdx, std::move(state_definitions_data), std::move(blockchain_configuration), std::move(plugins), libn);
 }
 
+state_snapshot_plugin::impl::snapshot_compatibility_data
+state_snapshot_plugin::impl::load_snapshot_compatibility_data(const bfs::path& actualStoragePath) const
+{
+  bfs::path manifestDbPath(actualStoragePath);
+  manifestDbPath /= "snapshot-manifest";
+
+  hive::chain::raise_fd_limit();
+  ::rocksdb::Options dbOptions;
+  dbOptions.create_if_missing = false;
+
+  /// Read-only mode allows to open just the needed subset of column families.
+  const std::vector<std::pair<std::string, std::string>> entries = {
+    { "IRREVERSIBLE_STATE", "SNAPSHOT_VERSION" },
+    { "STATE_DEFINITIONS_DATA", "STATE_DEFINITIONS_DATA" },
+    { "BLOCKCHAIN_CONFIGURATION", "BLOCKCHAIN_CONFIGURATION" },
+    { "PLUGINS", "PLUGINS" }
+  };
+
+  std::vector<::rocksdb::ColumnFamilyDescriptor> cfDescriptors;
+  cfDescriptors.emplace_back(::rocksdb::kDefaultColumnFamilyName, ::rocksdb::ColumnFamilyOptions());
+  for(const auto& [columnFamily, key] : entries)
+    cfDescriptors.emplace_back(columnFamily, ::rocksdb::ColumnFamilyOptions());
+
+  std::vector<::rocksdb::ColumnFamilyHandle*> cfHandles;
+  ::rocksdb::DB* manifestDb = nullptr;
+  auto status = ::rocksdb::DB::OpenForReadOnly(dbOptions, manifestDbPath.string(), cfDescriptors, &cfHandles, &manifestDb);
+  std::unique_ptr<::rocksdb::DB> manifestDbPtr(manifestDb);
+  FC_ASSERT(status.ok(), "Cannot open snapshot manifest-db at path: `${p}'. Error details: `${e}'.", ("p", manifestDbPath.string())("e", status.ToString()));
+
+  std::vector<std::string> values(entries.size());
+  std::vector<::rocksdb::Status> statuses;
+  for(size_t i = 0; i < entries.size(); ++i)
+    statuses.emplace_back(manifestDb->Get(ReadOptions(), cfHandles[i + 1], entries[i].second, &values[i]));
+
+  for(auto* cfh : cfHandles)
+  {
+    status = manifestDb->DestroyColumnFamilyHandle(cfh);
+    if(status.ok() == false)
+      elog("Cannot destroy column family handle...'. Error details: `${e}'.", ("e", status.ToString()));
+  }
+  manifestDb->Close();
+
+  for(size_t i = 0; i < entries.size(); ++i)
+    FC_ASSERT(statuses[i].ok(), "No entry for ${k}. Probably used old snapshot format (must be regenerated). Error details: `${e}'.",
+      ("k", entries[i].second)("e", statuses[i].ToString()));
+
+  FC_ASSERT(values[0] == SNAPSHOT_FORMAT_VERSION, "Snapshot version mismatch - ${f} found, ${e} expected.", ("f", values[0])("e", SNAPSHOT_FORMAT_VERSION));
+
+  return { std::move(values[1]), std::move(values[2]), std::move(values[3]) };
+}
+
+void state_snapshot_plugin::impl::compare_snapshot_plugins(const std::string& plugins_in_snapshot) const
+{
+  fc::variants plugins_in_snapshot_vector = fc::json::from_string(plugins_in_snapshot, fc::json::format_validation_mode::full).get_array();
+  std::set<std::string> current_plugins = _self.get_app().get_plugins_names();
+  bool snapshot_has_more_plugins = false;
+
+  for (const auto& plugin_from_snapshot_as_variant : plugins_in_snapshot_vector)
+  {
+    const std::string plugin_from_snapshot = plugin_from_snapshot_as_variant.as_string();
+    if (current_plugins.count(plugin_from_snapshot))
+      current_plugins.erase(plugin_from_snapshot);
+    else
+      snapshot_has_more_plugins = true;
+  }
+
+  if (snapshot_has_more_plugins)
+    wlog("Snapshot has more plugins than current hived configuration. Snapshot plugins: ${plugins_in_snapshot}, hived plugins: ${hived_plugins}", (plugins_in_snapshot)("hived_plugins", _self.get_app().get_plugins_names()));
+  else if (!current_plugins.empty())
+    wlog("Snapshot misses plugins: ${current_plugins}. Snapshot plugins: ${plugins_in_snapshot}, hived plugins: ${hived_plugins}", (current_plugins)(plugins_in_snapshot)("hived_plugins", _self.get_app().get_plugins_names()));
+}
+
+bfs::path state_snapshot_plugin::impl::get_snapshot_path(const std::string& snapshotName) const
+{
+  return (_storagePath / snapshotName).lexically_normal();
+}
+
+void state_snapshot_plugin::impl::verify_snapshot_is_loadable(const bfs::path& actualStoragePath)
+{
+  FC_ASSERT(bfs::exists(actualStoragePath), "Snapshot `${n}' does not exist in the snapshot directory: `${d}' or is inaccessible.",
+    ("n", actualStoragePath.filename().string())("d", _storagePath.string()));
+
+  ilog("Verifying that snapshot in the location: `${p}' can be loaded", ("p", actualStoragePath.string()));
+
+  const snapshot_compatibility_data snapshotData = load_snapshot_compatibility_data(actualStoragePath);
+
+  compare_snapshot_plugins(snapshotData.plugins);
+
+  _mainDb.verify_match_of_state_objects_definitions(snapshotData.state_definitions);
+  wlog("Snapshot state definitions matches current app version.");
+
+  _mainDb.verify_match_of_blockchain_configuration(snapshotData.blockchain_configuration);
+}
+
 void state_snapshot_plugin::impl::load_snapshot_external_data(const plugin_external_data_index& idx)
   {
   snapshot_load_supplement_helper load_helper(idx);
@@ -1560,14 +1667,7 @@ void state_snapshot_plugin::impl::prepare_snapshot(const std::string& snapshotNa
 
 void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshotName, const hive::chain::open_args& openArgs)
   {
-  bfs::path actualStoragePath = _storagePath / snapshotName;
-  actualStoragePath = actualStoragePath.lexically_normal();
-
-  if(bfs::exists(actualStoragePath) == false)
-    {
-    elog("Snapshot `${n}' does not exist in the snapshot directory: `${d}' or is inaccessible.", ("n", snapshotName)("d", _storagePath.string()));
-    return;
-    }
+  const bfs::path actualStoragePath = get_snapshot_path(snapshotName);
 
   ilog("Trying to access snapshot in the location: `${p}'", ("p", actualStoragePath.string()));
 
@@ -1577,31 +1677,10 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
   std::shared_ptr<hive::chain::full_block_type> lib;
   auto snapshotManifest = load_snapshot_manifest(actualStoragePath, lib);
 
-  {
-    const std::string& plugins_in_snapshot = std::get<4>(snapshotManifest);
-    fc::variants plugins_in_snapshot_vector = fc::json::from_string(plugins_in_snapshot, fc::json::format_validation_mode::full).get_array();
-    std::set<std::string> current_plugins = _self.get_app().get_plugins_names();
-    bool snapshot_has_more_plugins = false;
-
-    for (const auto& plugin_from_snapshot_as_variant : plugins_in_snapshot_vector)
-    {
-      const std::string plugin_from_snapshot = plugin_from_snapshot_as_variant.as_string();
-      if (current_plugins.count(plugin_from_snapshot))
-        current_plugins.erase(plugin_from_snapshot);
-      else
-        snapshot_has_more_plugins = true;
-    }
-
-    if (snapshot_has_more_plugins)
-      wlog("Snapshot has more plugins than current hived configuration. Snapshot plugins: ${plugins_in_snapshot}, hived plugins: ${hived_plugins}", (plugins_in_snapshot)("hived_plugins", _self.get_app().get_plugins_names()));
-    else if (!current_plugins.empty())
-      wlog("Snapshot misses plugins: ${current_plugins}. Snapshot plugins: ${plugins_in_snapshot}, hived plugins: ${hived_plugins}", (current_plugins)(plugins_in_snapshot)("hived_plugins", _self.get_app().get_plugins_names()));
-  }
-
   const std::string& loaded_decoded_type_data = std::get<2>(snapshotManifest);
   const std::string& full_loaded_blockchain_configuration_json = std::get<3>(snapshotManifest);
 
-  wlog("Snapshot state definitions matches current app version - wiping DB.");
+  wlog("Wiping DB to load the snapshot.");
   _mainDb.close();
   _mainDb.wipe(openArgs.shared_mem_dir);
   _mainDb.pre_open(openArgs);
@@ -1688,6 +1767,7 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
   ilog("Validate_invariants finished...");
 
   _mainDb.set_snapshot_loaded();
+  ilog("State snapshot loaded successfully.");
   }
 
 void state_snapshot_plugin::impl::load_snapshot(const std::string& snapshotName, const hive::chain::open_args& openArgs)
@@ -1707,6 +1787,12 @@ void state_snapshot_plugin::impl::process_explicit_snapshot_dump_requests(const 
       prepare_snapshot(_snapshot_dump_name);
       _self.get_app().notify_status("finished dumping snapshot");
     }
+  }
+
+void state_snapshot_plugin::impl::verify_explicit_snapshot_load_requests()
+  {
+    if(_do_immediate_load)
+      verify_snapshot_is_loadable(get_snapshot_path(_snapshot_load_name));
   }
 
 void state_snapshot_plugin::impl::process_explicit_snapshot_load_requests(const hive::chain::open_args& openArgs)

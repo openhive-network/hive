@@ -247,6 +247,7 @@ namespace chain {
 
       void verify_match_of_state_objects_definitions_from_shm();
       void verify_match_of_blockchain_configuration();
+      void verify_match_of_blockchain_configuration( const std::string& treasury_name, const std::string& stored_blockchain_config_json ) const;
 
     public:
       /// Allows to load all required initial data from persistent storage held in shared memory file. Must be used directly after opening a database, but also after loading a snapshot.
@@ -641,6 +642,22 @@ namespace chain {
       // For snapshot plugin. Decoded types data hold by database will be erased after using.
       std::string get_current_decoded_types_data_json();
 
+      /**
+        * Compares state definitions (e.g. from a snapshot manifest) with the ones of this binary and its plugins.
+        * Does not need an open database and does not touch the shared memory file.
+        * Throws shm_state_definitions_mismatch_exception when the definitions differ.
+        */
+      void verify_match_of_state_objects_definitions( const std::string& decoded_state_objects_data );
+      /**
+        * Compares blockchain configuration (e.g. from a snapshot manifest) with the one a newly created state
+        * of this binary would have. Does not need an open database.
+        * Throws blockchain_config_mismatch_exception when the configurations differ.
+        */
+      void verify_match_of_blockchain_configuration( const std::string& stored_blockchain_config_json ) const;
+
+      /// True while indexes are initialized only to collect definitions of their types (no index is created).
+      bool is_collecting_state_definitions_only() const { return _collecting_state_definitions_only; }
+
       void init_schema();
       void init_genesis();
 
@@ -856,6 +873,7 @@ namespace chain {
       uint16_t                      _shared_file_scale_rate = 0;
 
       bool                          snapshot_loaded = false;
+      bool                          _collecting_state_definitions_only = false;
 
       std::optional<time_point_sec> _current_timestamp;
 

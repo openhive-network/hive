@@ -23,6 +23,8 @@
 
 #include <appbase/plugin.hpp>
 
+#include <boost/scope_exit.hpp>
+
 #include "database_impl.hpp"
 
 namespace hive { namespace chain {
@@ -86,18 +88,50 @@ void database::verify_match_of_state_objects_definitions_from_shm()
   _my->delete_decoded_types_data_storage();
 }
 
+void database::verify_match_of_state_objects_definitions( const std::string& decoded_state_objects_data )
+{
+  FC_ASSERT( !_my->_decoded_types_data_storage, "State definitions are being collected already" );
+
+  _my->create_new_decoded_types_data_storage();
+  _collecting_state_definitions_only = true;
+  BOOST_SCOPE_EXIT( this_ )
+  {
+    this_->_collecting_state_definitions_only = false;
+    this_->_my->_decoded_types_data_storage.reset();
+  } BOOST_SCOPE_EXIT_END
+
+  _my->_decoded_types_data_storage->register_new_type<irreversible_block_data_type>();
+  initialize_indexes();
+  util::verify_match_of_state_definitions( *( _my->_decoded_types_data_storage ), decoded_state_objects_data );
+}
+
 void database::verify_match_of_blockchain_configuration()
 {
-  fc::mutable_variant_object current_blockchain_config = protocol::get_config(get_treasury_name(), get_chain_id());
-  fc::variant full_current_blockchain_config_as_variant;
-  fc::to_variant(current_blockchain_config, full_current_blockchain_config_as_variant);
-  const std::string full_current_blockchain_config_as_json_string = fc::json::to_string(full_current_blockchain_config_as_variant);
-
   const std::string full_stored_blockchain_config_json = get_blockchain_config_from_shm();
 
   if (full_stored_blockchain_config_json.empty())
-    set_blockchain_config(full_current_blockchain_config_as_json_string);
-  else if (full_stored_blockchain_config_json != full_current_blockchain_config_as_json_string)
+  {
+    fc::variant full_current_blockchain_config_as_variant;
+    fc::to_variant(protocol::get_config(get_treasury_name(), get_chain_id()), full_current_blockchain_config_as_variant);
+    set_blockchain_config(fc::json::to_string(full_current_blockchain_config_as_variant));
+  }
+  else
+    verify_match_of_blockchain_configuration(get_treasury_name(), full_stored_blockchain_config_json);
+}
+
+void database::verify_match_of_blockchain_configuration( const std::string& stored_blockchain_config_json ) const
+{
+  // newly created state is at hardfork 0; the treasury name is excluded from the comparison anyway
+  verify_match_of_blockchain_configuration( get_treasury_name( 0 ), stored_blockchain_config_json );
+}
+
+void database::verify_match_of_blockchain_configuration( const std::string& treasury_name, const std::string& full_stored_blockchain_config_json ) const
+{
+  fc::mutable_variant_object current_blockchain_config = protocol::get_config(treasury_name, get_chain_id());
+  fc::variant full_current_blockchain_config_as_variant;
+  fc::to_variant(current_blockchain_config, full_current_blockchain_config_as_variant);
+
+  if (full_stored_blockchain_config_json != fc::json::to_string(full_current_blockchain_config_as_variant))
     util::verify_match_of_blockchain_configuration(current_blockchain_config, full_current_blockchain_config_as_variant, full_stored_blockchain_config_json);
 }
 
