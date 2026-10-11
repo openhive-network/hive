@@ -25,14 +25,8 @@ binary's own junit report.
 | Slot | Steps |
 |---|---|
 | quick | build, chain-smoke, plugin-api |
-| full, baseline | two suites: build, chain-tests / build, plugin-api |
-| canary | build, chain-smoke, plugin-tests |
-
-Walls decide the split. A `full` slot's suites each get a fixed 900 s wall (a
-single-suite `full` gets one sized from history, which started at ~8 minutes and
-killed the first workflow), and `plugin_test`'s `witness_tests` is one ~15 minute
-suite, so it runs only in `canary`, the promote gate, whose declared wall is capped at
-1500 s.
+| full, baseline | two suites: build, chain-tests / build, plugin-tests (declared 1800 s wall) |
+| canary | build, chain-smoke, plugin-api |
 
 `plugin_test` suites are not run singly: `snapshots_tests` fails when run without the
 suites before it (it passes in the full `!witness_tests` order, as in CI).

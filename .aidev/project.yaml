@@ -61,10 +61,9 @@ verification:
     artifacts: ["test-results/quick/"]
     timeout: 3600
   full:
-    # Two suites, each under a fixed 900 s wall (a single suite's wall is sized
-    # from history and started at ~8 min). Each suite builds; the build is cached.
-    # plugin_test's witness_tests (~15 min, one suite) fit no full-slot wall, so
-    # they run in `canary`, the promote gate.
+    # Two suites, each building first (the build is cached). The plugin suite
+    # includes witness_tests (~15 min, one Boost suite), so it declares a wider
+    # wall than the 900 s default (aidev#15546).
     suites:
       - name: chain
         adapter: command
@@ -72,13 +71,12 @@ verification:
         artifacts: ["test-results/full-chain/"]
       - name: plugin
         adapter: command
-        args: [".aidev/run-checks.sh", "full-plugin", "build", "plugin-api"]
+        args: [".aidev/run-checks.sh", "full-plugin", "build", "plugin-tests"]
         artifacts: ["test-results/full-plugin/"]
+        timeout: 1800
   baseline:
-    # Two suites, each under a fixed 900 s wall (a single suite's wall is sized
-    # from history and started at ~8 min). Each suite builds; the build is cached.
-    # plugin_test's witness_tests (~15 min, one suite) fit no full-slot wall, so
-    # they run in `canary`, the promote gate.
+    # The same two suites as `full`, run on the base; this slot's wall is sized
+    # from its phase budget, so it takes no `timeout`.
     suites:
       - name: chain
         adapter: command
@@ -86,14 +84,13 @@ verification:
         artifacts: ["test-results/baseline-chain/"]
       - name: plugin
         adapter: command
-        args: [".aidev/run-checks.sh", "baseline-plugin", "build", "plugin-api"]
+        args: [".aidev/run-checks.sh", "baseline-plugin", "build", "plugin-tests"]
         artifacts: ["test-results/baseline-plugin/"]
-  # The promote gate: all of plugin_test, including witness_tests (~15 min). The
-  # wall is capped at 1500 s (deploy timeout less its reserve), so the whole
-  # chain_test (in every workflow's `full`) is not repeated here.
+  # The promote gate: the merged candidate builds and its quick tests pass;
+  # every workflow's `full` already ran all of chain_test and plugin_test.
   canary:
     adapter: command
-    args: [".aidev/run-checks.sh", "canary", "build", "chain-smoke", "plugin-tests"]
+    args: [".aidev/run-checks.sh", "canary", "build", "chain-smoke", "plugin-api"]
     artifacts: ["test-results/canary/"]
     timeout: 1500
   # No C++ coverage build: AIDEV runs `coverage` only in the post-implementation
