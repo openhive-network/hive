@@ -59,7 +59,7 @@ verification:
     adapter: command
     args: [".aidev/run-checks.sh", "quick", "build", "chain-smoke", "plugin-api"]
     artifacts: ["test-results/quick/"]
-    timeout: 3600
+    timeout: 900  # the quick cap; the slot takes ~5-8 min
   full:
     # Two suites, each building first (the build is cached). The plugin suite
     # includes witness_tests (~15 min, one Boost suite), so it declares a wider
