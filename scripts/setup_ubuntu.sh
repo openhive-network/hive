@@ -86,7 +86,10 @@ install_all_dev_packages() {
   local python314_packages=""
   # Package renames on 26.04: libxml2 -> libxml2-16; python3-lib2to3 dropped
   # (lib2to3 was removed from Python 3.13+).
-  local compat_packages="libxml2-16"
+  # 26.04's OpenSSL 3.5 is built with zstd and the jitterentropy seed source,
+  # so linking its static libcrypto.a (as hived does) also needs -lzstd and
+  # the static libjitterentropy.a (Libs.private in libcrypto.pc).
+  local compat_packages="libxml2-16 libzstd-dev libjitterentropy3-dev"
   if [ "$ubuntu_major" -lt 26 ]; then
     compat_packages="libxml2 python3-lib2to3"
     if ! apt-cache policy python3.14 2>/dev/null | grep -q "Candidate:"; then
