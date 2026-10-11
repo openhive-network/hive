@@ -1,0 +1,15 @@
+# The one service the checks' stack starts: a relay to CI's sccache Redis
+# (SCCACHE_REDIS in .gitlab-ci.yaml), so a check reaches the compiler cache as
+# redis://sccache:6379 from the stack network. Without a stack the check container
+# runs on `--network none` and every build would be cold (30-60 min).
+# run-checks.sh probes the relay and builds without the shared cache when CI's
+# Redis is unreachable from this host.
+services:
+  sccache:
+    image: alpine/socat:1.8.0.3
+    command: ["-d", "TCP-LISTEN:6379,fork,reuseaddr", "TCP:192.168.50.109:6379"]
+    healthcheck:
+      test: ["CMD-SHELL", "pidof socat"]
+      interval: 2s
+      timeout: 2s
+      retries: 15

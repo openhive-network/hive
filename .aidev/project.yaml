@@ -1,0 +1,78 @@
+# Profile for hive/hive, written by `aidev project scaffold` (#13561).
+#
+# Schema reference: docs/architecture/project-profile.md
+# Onboarding procedure: the `onboard-external-project` skill.
+# Guide: docs/operations/onboarding-an-external-project.md
+#
+# The generator writes a starting point, not a governed answer: every
+# binding below is the command a maintainer said this project runs, and it
+# is reviewed and edited like any other declaration.
+version: 2
+project: hive
+
+gitlab:
+  host: "gitlab.syncad.com"
+  path: "hive/hive"
+  id: 198
+
+# AIDEV integrates into its own branch; people merge it into develop through
+# merge requests (as in hive/haf), so `stable` is omitted and `aidev release`
+# never moves develop or master.
+branches:
+  integration: "aidev/integration"
+
+# How this project's suites execute (#13892): one kind, stated once.
+environment:
+  kind: "container"
+  image: "registry.gitlab.syncad.com/hive/hive/aidev-tests@sha256:1504e70e4503f16724179bd0aacd7a4d37e8485078e145a1248f5b662aef4190"
+  inputs: [".aidev/runtime/Dockerfile"]
+
+issues:
+  intake_label: todo
+  taxonomy: ".aidev/labels.yaml"
+  decompose:
+    # `never` is where an external project starts: nothing marks work
+    # approved on this project's behalf until there is a track record.
+    auto_todo: never
+  # Reports about this project's work are filed against this project.
+  watcher_reports: self
+
+# Every check compiles the candidate (hived is C++; nothing runs without a
+# build), so each slot starts with `build`, which shares CI's sccache Redis
+# through this one-service stack. See .aidev/README.md.
+sandbox:
+  compose: ".aidev/sccache-relay.compose.yml"
+  services: [sccache]
+  resource_class: light
+  readiness_timeout: 60
+
+# Verification slots. Each binding is what this project genuinely runs for
+# that slot — never one selection repeated under seven names, which makes
+# seven gates report on the same evidence while claiming to check seven
+# different things.
+#
+# Unbound for now: `coverage` (no C++ coverage build), `static` (CI's only static check is pre-commit over the
+# Python test tools), `system`, and the Python functional tests (test-tools,
+# the 5M block-log fixtures and the fork/colony jobs stay in GitLab CI).
+verification:
+  quick:
+    adapter: command
+    args: [".aidev/run-checks.sh", "quick", "build", "chain-smoke", "plugin-api"]
+    artifacts: ["test-results/quick/"]
+    timeout: 3600
+  full:
+    adapter: command
+    args: [".aidev/run-checks.sh", "full", "build", "chain-tests", "plugin-tests"]
+    artifacts: ["test-results/full/"]
+  baseline:
+    adapter: command
+    args: [".aidev/run-checks.sh", "baseline", "build", "chain-tests", "plugin-tests"]
+    artifacts: ["test-results/baseline/"]
+  canary:
+    adapter: command
+    args: [".aidev/run-checks.sh", "canary", "build", "chain-tests", "plugin-api"]
+    artifacts: ["test-results/canary/"]
+    timeout: 3600
+
+# Capability grants for target-side code. Empty until this project needs one.
+capabilities: []

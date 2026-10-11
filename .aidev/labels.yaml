@@ -1,0 +1,50 @@
+# Issue-label taxonomy for hive/hive, written by
+# `aidev project scaffold` (#13561). Deliberately the minimum the intake
+# needs: aidev's own taxonomy encodes aidev's workflow, and imposing it on a
+# project that has not asked for it is exactly the artifact onboarding tries
+# not to push.
+#
+# `authority` is required on every label and has no default — see
+# docs/architecture/issue-taxonomy.md for the three values.
+version: 1
+
+labels:
+  - name: implement
+    group: type
+    color: "#1f75cb"
+    description: "Implementation task (code change). implement + todo = approved for submit."
+    authority: executive
+  - name: bug
+    group: type
+    color: "#dd2b0e"
+    description: "Defect in existing behaviour."
+    authority: executive
+  - name: feature
+    group: type
+    color: "#108548"
+    description: "New capability."
+    authority: executive
+  - name: todo
+    group: status
+    color: "#ff9500"
+    description: "Approved for automated work. The intake label this project's profile names."
+    authority: executive
+  - name: in-progress
+    group: status
+    color: "#c17d10"
+    description: "A workflow is running against this issue."
+    authority: machine
+  - name: blocked
+    group: status
+    color: "#8b0000"
+    description: "Dispatch is withheld by an unsatisfied dependency trailer."
+    authority: machine
+  - name: ai-filed
+    group: provenance
+    color: "#666666"
+    description: "Filed by automation rather than by a person."
+    authority: descriptive
+
+exclusive_groups:
+  - name: status
+    labels: [todo, in-progress]

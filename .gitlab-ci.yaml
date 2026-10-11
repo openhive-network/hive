@@ -60,6 +60,19 @@ variables:
   TEST_WITH_LATEST_DEPENDENCIES: "false"
   STATIC_ANALYSIS_WITH_LATEST_DEPENDENCIES: "false"
 
+# AIDEV branches don't run CI: AIDEV's own gates verify ai/* and session/*
+# work, and pushes to aidev/integration run CI only when started from the web
+# or the API (to qualify an aidev/integration -> develop MR). See .aidev/README.md.
+# This replaces the workflow: rules of the Branch-Pipelines template below.
+workflow:
+  rules:
+    - if: $CI_COMMIT_BRANCH =~ /^(ai|session)\//
+      when: never
+    - if: $CI_COMMIT_BRANCH == "aidev/integration" && $CI_PIPELINE_SOURCE !~ /^(web|api)$/
+      when: never
+    - if: $CI_COMMIT_TAG
+    - if: $CI_COMMIT_BRANCH
+
 include:
   - template: Workflows/Branch-Pipelines.gitlab-ci.yml
   # needed to point TEST_IMAGE_TAG
