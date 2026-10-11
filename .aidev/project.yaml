@@ -51,7 +51,7 @@ sandbox:
 # seven gates report on the same evidence while claiming to check seven
 # different things.
 #
-# Unbound for now: `coverage` (no C++ coverage build), `static` (CI's only static check is pre-commit over the
+# Unbound for now: `static` (CI's only static check is pre-commit over the
 # Python test tools), `system`, and the Python functional tests (test-tools,
 # the 5M block-log fixtures and the fork/colony jobs stay in GitLab CI).
 verification:
@@ -73,6 +73,12 @@ verification:
     args: [".aidev/run-checks.sh", "canary", "build", "chain-tests", "plugin-api"]
     artifacts: ["test-results/canary/"]
     timeout: 3600
+  # No C++ coverage build: AIDEV runs `coverage` only in the post-implementation
+  # scan, where it checks that the candidate builds and its quick tests pass.
+  coverage:
+    adapter: command
+    args: [".aidev/run-checks.sh", "coverage", "build", "chain-smoke", "plugin-api"]
+    artifacts: ["test-results/coverage/"]
 
 # Capability grants for target-side code. Empty until this project needs one.
 capabilities: []
