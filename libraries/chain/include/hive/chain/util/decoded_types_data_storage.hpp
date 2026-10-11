@@ -57,6 +57,198 @@ struct decoded_type_data
   bool reflected;
 };
 
+/*
+  Describes how a state type is serialized by fc::raw (snapshot format), independently of its memory layout:
+  no sizeof, alignof or offsets, and type names are canonical (see canonical_type_name).
+  Meaning of entries depends on kind:
+  - "struct" - reflected members in declaration order: member name, canonical member type,
+  - "enum" - enum values: value name, numeric value,
+  - "static_variant" - alternatives in order: index, canonical alternative type,
+  - "container" - first entry {"container", container kind}, then element types ("element", or "key" and "mapped" for maps).
+*/
+struct serialized_type_data
+{
+  struct entry
+  {
+    std::string name;
+    std::string value;
+
+    bool operator==(const entry& other) const { return name == other.name && value == other.value; }
+  };
+
+  using entries_vector_t = std::vector<entry>;
+
+  std::string name;
+  std::string kind;
+  entries_vector_t entries;
+
+  bool operator==(const serialized_type_data& other) const { return name == other.name && kind == other.kind && entries == other.entries; }
+};
+
+namespace canonical_names
+{
+  /* Replaces standard library implementation namespaces (std::__cxx11::, std::__1::) with std::. */
+  std::string normalize_type_name(std::string type_name);
+  /* Name of the template of a demangled template instance name, i.e. without its trailing argument list. */
+  std::string template_name(const std::string& demangled_type_name);
+}
+
+/*
+  Name of T which is the same for the same source regardless of Boost version, standard library and platform:
+  allocator and segment manager template arguments are skipped, containers (see container_description) are named by their kind and
+  element types only - without comparator and options, and integer types are named by their width.
+*/
+template <typename T>
+std::string canonical_type_name();
+
+namespace canonical_names
+{
+  template <typename T, typename = std::void_t<>>
+  struct is_allocation_argument : std::false_type {};
+
+  /* Allocators and segment managers - they only define where data is held, not what is serialized. */
+  template <typename T>
+  struct is_allocation_argument<T, std::void_t<decltype(std::declval<T&>().allocate(std::size_t{}))>> : std::true_type {};
+
+  template <typename T>
+  struct container_description : std::false_type {};
+
+  template <typename T, typename... Rest>
+  struct container_description<boost::container::vector<T, Rest...>> : std::true_type
+  {
+    static constexpr const char* kind = "boost::container::vector";
+    static serialized_type_data::entries_vector_t elements() { return {{"element", canonical_type_name<T>()}}; }
+  };
+
+  template <typename T, typename... Rest>
+  struct container_description<boost::container::deque<T, Rest...>> : std::true_type
+  {
+    static constexpr const char* kind = "boost::container::deque";
+    static serialized_type_data::entries_vector_t elements() { return {{"element", canonical_type_name<T>()}}; }
+  };
+
+  template <typename T, typename... Rest>
+  struct container_description<boost::container::flat_set<T, Rest...>> : std::true_type
+  {
+    static constexpr const char* kind = "boost::container::flat_set";
+    static serialized_type_data::entries_vector_t elements() { return {{"element", canonical_type_name<T>()}}; }
+  };
+
+  template <typename K, typename V, typename... Rest>
+  struct container_description<boost::container::flat_map<K, V, Rest...>> : std::true_type
+  {
+    static constexpr const char* kind = "boost::container::flat_map";
+    static serialized_type_data::entries_vector_t elements() { return {{"key", canonical_type_name<K>()}, {"mapped", canonical_type_name<V>()}}; }
+  };
+
+  template <typename C, typename... Rest>
+  struct container_description<boost::container::basic_string<C, Rest...>> : std::true_type
+  {
+    static constexpr const char* kind = "boost::container::basic_string";
+    static serialized_type_data::entries_vector_t elements() { return {{"element", canonical_type_name<C>()}}; }
+  };
+
+  template <typename T, typename... Rest>
+  struct container_description<boost::multi_index::multi_index_container<T, Rest...>> : std::true_type
+  {
+    static constexpr const char* kind = "boost::multi_index::multi_index_container";
+    static serialized_type_data::entries_vector_t elements() { return {{"element", canonical_type_name<T>()}}; }
+  };
+
+  template <typename T, typename... Rest>
+  struct container_description<std::vector<T, Rest...>> : std::true_type
+  {
+    static constexpr const char* kind = "std::vector";
+    static serialized_type_data::entries_vector_t elements() { return {{"element", canonical_type_name<T>()}}; }
+  };
+
+  template <typename C, typename... Rest>
+  struct container_description<std::basic_string<C, Rest...>> : std::true_type
+  {
+    static constexpr const char* kind = "std::basic_string";
+    static serialized_type_data::entries_vector_t elements() { return {{"element", canonical_type_name<C>()}}; }
+  };
+
+  template <typename T>
+  struct fixed_size_array : std::false_type {};
+
+  template <typename T, size_t N>
+  struct fixed_size_array<fc::array<T, N>> : std::true_type
+  {
+    static constexpr const char* kind = "fc::array";
+    using element_type = T;
+    static constexpr size_t size = N;
+  };
+
+  template <typename T, size_t N>
+  struct fixed_size_array<fc::int_array<T, N>> : std::true_type
+  {
+    static constexpr const char* kind = "fc::int_array";
+    using element_type = T;
+    static constexpr size_t size = N;
+  };
+
+  template <typename Arg>
+  void append_template_argument_name(std::vector<std::string>& names)
+  {
+    if constexpr (!is_allocation_argument<Arg>::value)
+      names.push_back(canonical_type_name<Arg>());
+  }
+
+  template <typename T>
+  struct template_arguments : std::false_type {};
+
+  template <template <typename...> typename T, typename... Args>
+  struct template_arguments<T<Args...>> : std::true_type
+  {
+    static std::vector<std::string> names()
+    {
+      std::vector<std::string> result;
+      ( append_template_argument_name<Args>(result), ... );
+      return result;
+    }
+  };
+
+  std::string join_template_arguments(const std::string& template_name, const std::vector<std::string>& arguments);
+
+  template <typename T>
+  std::vector<std::string> element_type_names()
+  {
+    std::vector<std::string> names;
+    for (const auto& element : container_description<T>::elements())
+      names.push_back(element.value);
+    return names;
+  }
+}
+
+template <typename T>
+std::string canonical_type_name()
+{
+  using namespace canonical_names;
+
+  if constexpr (!std::is_same_v<T, std::remove_cv_t<T>>)
+    return canonical_type_name<std::remove_cv_t<T>>();
+  else if constexpr (std::is_same_v<T, bool>)
+    return "bool";
+  else if constexpr (std::is_same_v<T, char>)
+    return "char";
+  else if constexpr (std::is_same_v<T, __int128_t>)
+    return "int128_t";
+  else if constexpr (std::is_same_v<T, __uint128_t>)
+    return "uint128_t";
+  else if constexpr (std::is_integral_v<T>)
+    return std::string(std::is_signed_v<T> ? "int" : "uint") + std::to_string(sizeof(T) * 8) + "_t";
+  else if constexpr (container_description<T>::value)
+    return join_template_arguments(container_description<T>::kind, element_type_names<T>());
+  else if constexpr (fixed_size_array<T>::value)
+    return join_template_arguments(fixed_size_array<T>::kind,
+      {canonical_type_name<typename fixed_size_array<T>::element_type>(), std::to_string(fixed_size_array<T>::size)});
+  else if constexpr (template_arguments<T>::value)
+    return join_template_arguments(template_name(boost::core::demangle(typeid(T).name())), template_arguments<T>::names());
+  else
+    return normalize_type_name(boost::core::demangle(typeid(T).name()));
+}
+
 namespace decoders
 {
   /* Main decoder - distinguish which type is reflected or not. Begins decoding process. */
@@ -83,6 +275,7 @@ class decoded_types_data_storage final
   private:
     bool add_type_to_decoded_types_set(const std::string_view type_id);
     void add_decoded_type_data_to_map(decoded_type_data&& decoded_type);
+    void add_serialized_type_data_to_map(serialized_type_data&& serialized_type);
 
     template <typename T, bool> friend class decoders::main_decoder;
     template <typename ...Args> friend class decoders::non_reflected_types::specific_type_decoder;
@@ -90,6 +283,8 @@ class decoded_types_data_storage final
   public:
     // stores data about decoded types.
     using decoded_types_map_t = std::map<std::string, decoded_type_data>;
+    // stores serialization descriptors of decoded types, by canonical type name.
+    using serialized_types_map_t = std::map<std::string, serialized_type_data>;
     decoded_types_data_storage() = default;
     decoded_types_data_storage(const std::string& decoded_types_data_json);
     ~decoded_types_data_storage();
@@ -118,7 +313,20 @@ class decoded_types_data_storage final
       return get_decoded_type_data<T>().checksum;
     }
 
+    template <typename T>
+    const serialized_type_data& get_serialized_type_data() const
+    {
+      const std::string name = canonical_type_name<T>();
+      auto it = serialized_types_data_map.find(name);
+
+      if (it == serialized_types_data_map.end())
+        FC_THROW_EXCEPTION( fc::key_not_found_exception, "Could not find serialized type data. Type: ${name} .", (name) );
+
+      return it->second;
+    }
+
     const decoded_types_map_t& get_decoded_types_data_map() const { return decoded_types_data_map; }
+    const serialized_types_map_t& get_serialized_types_data_map() const { return serialized_types_data_map; }
 
     // if json string is specified, generate pretty string with info from it, otherwise generate output from map with current decoded types data.
     std::string generate_decoded_types_data_pretty_string(const std::string& decoded_types_data_json = std::string()) const;
@@ -127,10 +335,17 @@ class decoded_types_data_storage final
     // state_definitions_verification_result - comparing result, in case of mismatch_throw_error - exception should be thrown , string - details of detected differences.
     std::pair<state_definitions_verification_result, std::string> check_if_decoded_types_data_json_matches_with_current_decoded_data(const std::string& decoded_types_data_json) const;
 
+    std::string generate_serialized_types_data_json_string() const;
+    // like generate_decoded_types_data_pretty_string, for serialization descriptors.
+    std::string generate_serialized_types_data_pretty_string(const std::string& serialized_types_data_json = std::string()) const;
+    // Like check_if_decoded_types_data_json_matches_with_current_decoded_data, but compares serialization descriptors. Details name the first differing entry of each differing type.
+    std::pair<state_definitions_verification_result, std::string> check_if_serialized_types_data_json_matches_with_current_serialized_data(const std::string& serialized_types_data_json) const;
+
   private:
     using decoding_types_set_t = std::unordered_set<std::string>;
     decoding_types_set_t decoded_types_set; // Set is used to kept info about types which are decoded or DURING decoding process.
     decoded_types_map_t decoded_types_data_map; //Storing info about decoded types.
+    serialized_types_map_t serialized_types_data_map;
 };
 
 namespace decoders
@@ -213,6 +428,7 @@ namespace decoders
         encoder.write(field_name.data(), field_name.size());
         encoder.write(member_offset_str.data(), member_offset_str.size());
         members.push_back({.type = boost::core::demangle(typeid(Member).name()), .name = field_name, .offset = member_offset});
+        serialized_members.push_back({.name = field_name, .value = canonical_type_name<Member>()});
       }
 
       decoded_type_data get_decoded_type_data()
@@ -220,9 +436,15 @@ namespace decoders
         return decoded_type_data(encoder.result().str(), boost::core::demangle(typeid(T).name()), type_size_of, type_align_of, std::move(members));
       }
 
+      serialized_type_data get_serialized_type_data()
+      {
+        return serialized_type_data{.name = canonical_type_name<T>(), .kind = "struct", .entries = std::move(serialized_members)};
+      }
+
     private:
       mutable fc::ripemd160::encoder encoder;
       mutable decoded_type_data::members_vector_t members;
+      mutable serialized_type_data::entries_vector_t serialized_members;
       decoded_types_data_storage& dtds;
       size_t type_size_of;
       size_t type_align_of;
@@ -245,6 +467,7 @@ namespace decoders
         encoder.write(value_name.data(), value_name.size());
         encoder.write(value_in_string.data(), value_in_string.size());
         enum_values.push_back({value_name, value});
+        serialized_values.push_back({.name = value_name, .value = value_in_string});
       }
 
       decoded_type_data get_decoded_type_data()
@@ -252,9 +475,15 @@ namespace decoders
         return decoded_type_data(encoder.result().str(), boost::core::demangle(typeid(T).name()), std::move(enum_values));
       }
 
+      serialized_type_data get_serialized_type_data()
+      {
+        return serialized_type_data{.name = canonical_type_name<T>(), .kind = "enum", .entries = std::move(serialized_values)};
+      }
+
     private:
       mutable fc::ripemd160::encoder encoder;
       mutable decoded_type_data::enum_values_vector_t enum_values;
+      mutable serialized_type_data::entries_vector_t serialized_values;
     };
 
   /* Throws a compilation error in case of instantiation. */
@@ -266,6 +495,15 @@ namespace decoders
 
   template<template<typename...> class Ref, typename... Args>
   struct is_specialization<Ref<Args...>, Ref> : std::true_type {};
+
+  template <typename T>
+  serialized_type_data describe_container()
+  {
+    serialized_type_data::entries_vector_t entries{{"container", canonical_names::container_description<T>::kind}};
+    for (auto& element : canonical_names::container_description<T>::elements())
+      entries.push_back(std::move(element));
+    return serialized_type_data{.name = canonical_type_name<T>(), .kind = "container", .entries = std::move(entries)};
+  }
 
   /* Allows to check if non reflected type is decodable by specific decoder. */
   template <typename T, typename = std::void_t<>>
@@ -289,12 +527,14 @@ namespace decoders
         visitor_enum_decoder<T> visitor;
         fc::reflector<T>::visit(visitor);
         dtds.add_decoded_type_data_to_map(std::move(visitor.get_decoded_type_data()));
+        dtds.add_serialized_type_data_to_map(visitor.get_serialized_type_data());
       }
       else
       {
         visitor_type_decoder<T> visitor(dtds);
         fc::reflector<T>::visit(visitor);
         dtds.add_decoded_type_data_to_map(std::move(visitor.get_decoded_type_data()));
+        dtds.add_serialized_type_data_to_map(visitor.get_serialized_type_data());
       }
     }
   };
@@ -324,11 +564,16 @@ namespace decoders
         if (dtds.add_type_to_decoded_types_set(index_type_id))
         {
           dtds.add_decoded_type_data_to_map(std::move(decoded_type_data(calculate_checksum_from_string(index_type_id), boost::core::demangle(index_type_id.c_str()), sizeof(T), alignof(T))));
+          dtds.add_serialized_type_data_to_map(describe_container<T>());
           main_decoder<typename T::value_type> decoder;
           decoder.decode(dtds);
         }
       }
-      /* Boost types. We control boost types via checking boost version, so only check if typeid of these types match (it will change in case of any template parameters change). */
+      /*
+        Boost types. Their layout is described only by typeid, sizeof and alignof - Boost version is not checked, and a new Boost version can change
+        layout of a container without changing its typeid (e.g. boost::container::deque in Boost 1.90). Their serialization is described by container kind
+        and element types.
+      */
       else if constexpr (is_specialization<T, boost::interprocess::allocator>::value ||
                          is_specialization<T, boost::container::basic_string>::value ||
                          is_specialization<T, boost::container::flat_map>::value ||
@@ -339,7 +584,11 @@ namespace decoders
         const std::string boost_type_id = typeid(T).name();
 
         if (dtds.add_type_to_decoded_types_set(boost_type_id))
+        {
           dtds.add_decoded_type_data_to_map(std::move(decoded_type_data(calculate_checksum_from_string(boost_type_id), boost::core::demangle(boost_type_id.c_str()), sizeof(T), alignof(T))));
+          if constexpr (canonical_names::container_description<T>::value)
+            dtds.add_serialized_type_data_to_map(describe_container<T>());
+        }
       }
       /* Type should be hashable if it's not handled by one of above ifs. */
       else if constexpr (is_specific_type_decodable<T>::value)
@@ -534,6 +783,10 @@ namespace decoders
         }
 
         dtds.add_decoded_type_data_to_map(std::move(decoded_type_data(calculate_checksum_from_string(ss.str()), boost::core::demangle(type_id.c_str()), sizeof(fc::static_variant<Args...>), alignof(fc::static_variant<Args...>))));
+
+        serialized_type_data::entries_vector_t alternatives;
+        ( alternatives.push_back({.name = std::to_string(alternatives.size()), .value = canonical_type_name<Args>()}), ... );
+        dtds.add_serialized_type_data_to_map(serialized_type_data{.name = canonical_type_name<fc::static_variant<Args...>>(), .kind = "static_variant", .entries = std::move(alternatives)});
       }
     };
 
@@ -608,3 +861,5 @@ namespace decoders
 
 FC_REFLECT(hive::chain::util::decoded_type_data::member_data, (type)(name)(offset))
 FC_REFLECT(hive::chain::util::decoded_type_data, (name)(size_of)(align_of)(checksum)(reflected)(members)(enum_values))
+FC_REFLECT(hive::chain::util::serialized_type_data::entry, (name)(value))
+FC_REFLECT(hive::chain::util::serialized_type_data, (name)(kind)(entries))

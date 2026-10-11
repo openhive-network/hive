@@ -2,6 +2,8 @@
 
 #include <hive/protocol/types.hpp>
 
+#include <algorithm>
+
 namespace hive { namespace chain { namespace util {
 
 const std::string HIVE_VOID_T = boost::core::demangle(typeid(hive::void_t).name());
@@ -12,6 +14,53 @@ std::string calculate_checksum_from_string(const std::string_view str)
   encoder.write(str.data(), str.size());
   return encoder.result().str();
 }
+
+namespace canonical_names
+{
+
+std::string normalize_type_name(std::string type_name)
+{
+  for (const std::string_view implementation_namespace : {"std::__cxx11::", "std::__1::"})
+  {
+    for (size_t pos = type_name.find(implementation_namespace); pos != std::string::npos; pos = type_name.find(implementation_namespace, pos))
+      type_name.replace(pos, implementation_namespace.size(), "std::");
+  }
+
+  return type_name;
+}
+
+std::string template_name(const std::string& demangled_type_name)
+{
+  if (demangled_type_name.empty() || demangled_type_name.back() != '>')
+    return normalize_type_name(demangled_type_name);
+
+  size_t depth = 0;
+  for (size_t pos = demangled_type_name.size(); pos-- > 0;)
+  {
+    if (demangled_type_name[pos] == '>')
+      ++depth;
+    else if (demangled_type_name[pos] == '<' && --depth == 0)
+      return normalize_type_name(demangled_type_name.substr(0, pos));
+  }
+
+  FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Unbalanced template argument list in type name: ${demangled_type_name}", (demangled_type_name) );
+}
+
+std::string join_template_arguments(const std::string& template_name, const std::vector<std::string>& arguments)
+{
+  std::string result = template_name + "<";
+
+  for (size_t i = 0; i < arguments.size(); ++i)
+  {
+    if (i)
+      result += ", ";
+    result += arguments[i];
+  }
+
+  return result + ">";
+}
+
+} // canonical_names
 
 decoded_type_data::decoded_type_data(const std::string_view _checksum, const std::string_view _type_name, const size_t _type_size, const size_t type_align)
   : size_of(_type_size), align_of(type_align), name(_type_name), checksum(_checksum)
@@ -107,6 +156,11 @@ void decoded_types_data_storage::add_decoded_type_data_to_map(decoded_type_data&
   decoded_types_data_map.try_emplace(decoded_type.name, std::move(decoded_type));
 }
 
+void decoded_types_data_storage::add_serialized_type_data_to_map(serialized_type_data&& serialized_type)
+{
+  serialized_types_data_map.try_emplace(serialized_type.name, std::move(serialized_type));
+}
+
 std::string decoded_types_data_storage::generate_decoded_types_data_json_string() const
 {
   std::vector<decoded_type_data> decoded_types_vector;
@@ -149,19 +203,25 @@ decoded_types_data_storage::decoded_types_map_t generate_data_map_from_json(cons
   return decoded_types_map;
 }
 
+namespace
+{
+
+template <typename TypesMap>
+std::string generate_pretty_string_from_map(const TypesMap& types_map)
+{
+  std::stringstream ss;
+  ss << "\nNumber of objects in map: " << types_map.size() << "\n\n";
+
+  for (const auto& [key, type_data] : types_map)
+    ss << fc::json::to_pretty_string(type_data) << "\n\n";
+
+  return ss.str();
+}
+
+} // namespace
+
 std::string decoded_types_data_storage::generate_decoded_types_data_pretty_string(const std::string& decoded_types_data_json) const
 {
-  auto generate_pretty_string_from_map = [](const auto& decoded_types_map) -> std::string
-  {
-    std::stringstream ss;
-    ss << "\nNumber of objects in map: " << decoded_types_map.size() << "\n\n";
-
-    for (const auto& [key, decoded_type] : decoded_types_map)
-      ss << fc::json::to_pretty_string(decoded_type) << "\n\n";
-
-    return ss.str();
-  };
-
   if (decoded_types_data_json.empty())
     return generate_pretty_string_from_map(decoded_types_data_map);
   else
@@ -219,6 +279,128 @@ std::pair<state_definitions_verification_result, std::string> decoded_types_data
   }
 
   return std::pair<state_definitions_verification_result, std::string>(comparision_result, error_ss.str());
+}
+
+std::string decoded_types_data_storage::generate_serialized_types_data_json_string() const
+{
+  std::vector<serialized_type_data> serialized_types_vector;
+  serialized_types_vector.reserve(serialized_types_data_map.size());
+
+  for (const auto& [key, serialized_type] : serialized_types_data_map)
+    serialized_types_vector.push_back(serialized_type);
+
+  return fc::json::to_string(serialized_types_vector);
+}
+
+namespace
+{
+
+decoded_types_data_storage::serialized_types_map_t generate_serialized_data_map_from_json(const std::string& serialized_types_data_json)
+{
+  if (serialized_types_data_json.empty())
+    FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Json with serialized types data cannot be empty.");
+
+  std::vector<serialized_type_data> serialized_types_vector;
+
+  try
+  {
+    fc::from_variant(fc::json::from_string(serialized_types_data_json, fc::json::format_validation_mode::full), serialized_types_vector);
+  }
+  FC_RETHROW_EXCEPTIONS(error, "Json with serialized types data is invalid: ${serialized_types_data_json}", (serialized_types_data_json))
+
+  decoded_types_data_storage::serialized_types_map_t serialized_types_map;
+
+  for (serialized_type_data& serialized_type : serialized_types_vector)
+  {
+    if (serialized_type.name.empty() || serialized_type.kind.empty())
+      FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Json with serialized types data misses name or kind of a type. ${serialized_types_data_json}", (serialized_types_data_json));
+
+    std::string name = serialized_type.name;
+    serialized_types_map.try_emplace(std::move(name), std::move(serialized_type));
+  }
+
+  return serialized_types_map;
+}
+
+std::string describe_entry(const serialized_type_data::entries_vector_t& entries, const size_t index)
+{
+  if (index >= entries.size())
+    return "nothing";
+
+  return "`" + entries[index].name + ": " + entries[index].value + "'";
+}
+
+/* Describes the first difference between two descriptors of the same type. */
+std::string describe_first_difference(const serialized_type_data& current, const serialized_type_data& loaded)
+{
+  std::stringstream ss;
+  ss << "Type: " << current.name << " is serialized differently";
+
+  if (current.kind != loaded.kind)
+  {
+    ss << " - it is a " << current.kind << " in current version, but a " << loaded.kind << " in loaded data.";
+    return ss.str();
+  }
+
+  for (size_t i = 0; i < std::max(current.entries.size(), loaded.entries.size()); ++i)
+  {
+    if (i >= current.entries.size() || i >= loaded.entries.size() || !(current.entries[i] == loaded.entries[i]))
+    {
+      ss << " - " << current.kind << " entry #" << i << " is " << describe_entry(current.entries, i)
+         << " in current version, but " << describe_entry(loaded.entries, i) << " in loaded data.";
+      return ss.str();
+    }
+  }
+
+  return ss.str();
+}
+
+} // namespace
+
+std::string decoded_types_data_storage::generate_serialized_types_data_pretty_string(const std::string& serialized_types_data_json) const
+{
+  if (serialized_types_data_json.empty())
+    return generate_pretty_string_from_map(serialized_types_data_map);
+  else
+    return generate_pretty_string_from_map(generate_serialized_data_map_from_json(serialized_types_data_json));
+}
+
+std::pair<state_definitions_verification_result, std::string> decoded_types_data_storage::check_if_serialized_types_data_json_matches_with_current_serialized_data(const std::string& serialized_types_data_json) const
+{
+  auto loaded_serialized_types_map = generate_serialized_data_map_from_json(serialized_types_data_json);
+  state_definitions_verification_result comparison_result = state_definitions_verification_result::state_definitions_matches;
+  std::stringstream error_ss;
+
+  for (const auto& [name, current_type] : serialized_types_data_map)
+  {
+    const auto loaded_it = loaded_serialized_types_map.find(name);
+
+    if (loaded_it == loaded_serialized_types_map.end())
+    {
+      comparison_result = state_definitions_verification_result::mismatch_throw_error;
+      error_ss << "Type is in current serialized types map but not in loaded serialized types map: " << name << "\n";
+      continue;
+    }
+
+    if (!(current_type == loaded_it->second))
+    {
+      comparison_result = state_definitions_verification_result::mismatch_throw_error;
+      error_ss << describe_first_difference(current_type, loaded_it->second) << "\n";
+    }
+
+    loaded_serialized_types_map.erase(loaded_it);
+  }
+
+  for (const auto& [name, loaded_type] : loaded_serialized_types_map)
+  {
+    // Log warning - there are more definitions in loaded data than in current hived.
+    if (comparison_result == state_definitions_verification_result::state_definitions_matches)
+      comparison_result = state_definitions_verification_result::mismatch_log_warning;
+
+    error_ss << "Type is in loaded serialized types map but not in current serialized types map: " << name << "\n";
+  }
+
+  return std::pair<state_definitions_verification_result, std::string>(comparison_result, error_ss.str());
 }
 
 decoded_types_data_storage::decoded_types_data_storage(const std::string& decoded_types_data_json)

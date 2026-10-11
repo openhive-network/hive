@@ -100,6 +100,7 @@ namespace chain {
 
   namespace util {
     class advanced_benchmark_dumper;
+    class decoded_types_data_storage;
   }
 
   struct reindex_notification;
@@ -246,6 +247,8 @@ namespace chain {
       void begin_type_register_process(util::abstract_type_registrar& r);
 
       void verify_match_of_state_objects_definitions_from_shm();
+      /// Decodes definitions of all state types of this binary and its plugins, without creating any index.
+      std::unique_ptr<util::decoded_types_data_storage> collect_current_state_definitions();
       void verify_match_of_blockchain_configuration();
       void verify_match_of_blockchain_configuration( const std::string& treasury_name, const std::string& stored_blockchain_config_json ) const;
 
@@ -648,6 +651,14 @@ namespace chain {
         * Throws shm_state_definitions_mismatch_exception when the definitions differ.
         */
       void verify_match_of_state_objects_definitions( const std::string& decoded_state_objects_data );
+      /**
+        * Like verify_match_of_state_objects_definitions, but compares how state objects are serialized (e.g. in a snapshot)
+        * instead of their memory layout, so data from a build using other Boost version, standard library or platform is accepted.
+        * Throws shm_state_definitions_mismatch_exception naming the first differing member of each differing type.
+        */
+      void verify_match_of_state_objects_serialization( const std::string& serialized_state_objects_data );
+      /// Serialization descriptors of state objects of this binary and its plugins (see verify_match_of_state_objects_serialization).
+      std::string get_current_state_objects_serialization_data();
       /**
         * Compares blockchain configuration (e.g. from a snapshot manifest) with the one a newly created state
         * of this binary would have. Does not need an open database.

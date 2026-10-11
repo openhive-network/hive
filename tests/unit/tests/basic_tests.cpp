@@ -131,6 +131,78 @@ namespace fc
 template<> struct get_typename<__test_for_alignment> { static const char* name() { return "__test_for_alignment"; } };
 }
 
+/* Types used to check serialization descriptors. Namespace `v1` holds the reference version of `record`, the others hold its changed versions. */
+namespace serialization_test
+{
+  template <typename Container>
+  struct holder
+  {
+    Container items;
+    uint64_t count = 0;
+  };
+
+  struct alt_a { uint8_t a = 0; };
+  struct alt_b { uint16_t b = 0; };
+
+  namespace v1
+  {
+    enum kind { first = 0, second = 1 };
+    struct record { uint32_t id = 0; uint64_t amount = 0; kind k = first; fc::static_variant<alt_a, alt_b> payload; };
+  }
+  namespace added
+  {
+    struct record { uint32_t id = 0; uint64_t amount = 0; v1::kind k = v1::first; fc::static_variant<alt_a, alt_b> payload; uint8_t extra = 0; };
+  }
+  namespace removed
+  {
+    struct record { uint32_t id = 0; v1::kind k = v1::first; fc::static_variant<alt_a, alt_b> payload; };
+  }
+  namespace reordered
+  {
+    struct record { uint64_t amount = 0; uint32_t id = 0; v1::kind k = v1::first; fc::static_variant<alt_a, alt_b> payload; };
+  }
+  namespace retyped
+  {
+    struct record { uint32_t id = 0; uint32_t amount = 0; v1::kind k = v1::first; fc::static_variant<alt_a, alt_b> payload; };
+  }
+  namespace renumbered
+  {
+    enum kind { first = 1, second = 0 };
+    struct record { uint32_t id = 0; uint64_t amount = 0; kind k = first; fc::static_variant<alt_a, alt_b> payload; };
+  }
+  namespace variant_reordered
+  {
+    struct record { uint32_t id = 0; uint64_t amount = 0; v1::kind k = v1::first; fc::static_variant<alt_b, alt_a> payload; };
+  }
+
+  /* Serialization descriptors of `record` from namespace `version`, presented as if they described serialization_test::v1::record. */
+  template <typename Record>
+  std::string serialized_data_json_as_v1(const std::string& version)
+  {
+    hive::chain::util::decoded_types_data_storage dtds;
+    dtds.register_new_type<Record>();
+    std::string json = dtds.generate_serialized_types_data_json_string();
+    const std::string from = "serialization_test::" + version + "::";
+    const std::string to = "serialization_test::v1::";
+    for (size_t pos = json.find(from); pos != std::string::npos; pos = json.find(from, pos + to.size()))
+      json.replace(pos, from.size(), to);
+    return json;
+  }
+}
+
+FC_REFLECT_TEMPLATE( (typename Container), serialization_test::holder<Container>, (items)(count) )
+FC_REFLECT( serialization_test::alt_a, (a) )
+FC_REFLECT( serialization_test::alt_b, (b) )
+FC_REFLECT_ENUM( serialization_test::v1::kind, (first)(second) )
+FC_REFLECT( serialization_test::v1::record, (id)(amount)(k)(payload) )
+FC_REFLECT( serialization_test::added::record, (id)(amount)(k)(payload)(extra) )
+FC_REFLECT( serialization_test::removed::record, (id)(k)(payload) )
+FC_REFLECT( serialization_test::reordered::record, (amount)(id)(k)(payload) )
+FC_REFLECT( serialization_test::retyped::record, (id)(amount)(k)(payload) )
+FC_REFLECT_ENUM( serialization_test::renumbered::kind, (first)(second) )
+FC_REFLECT( serialization_test::renumbered::record, (id)(amount)(k)(payload) )
+FC_REFLECT( serialization_test::variant_reordered::record, (id)(amount)(k)(payload) )
+
 BOOST_FIXTURE_TEST_SUITE( basic_tests, clean_database_fixture )
 
 BOOST_AUTO_TEST_CASE( fixed_string_verification )
@@ -1049,6 +1121,12 @@ BOOST_AUTO_TEST_CASE( decoding_types_mechanism_test )
       BOOST_CHECK_EQUAL(enum_values_for_type[i].first, specific_enum_values_pattern[i].first);
       BOOST_CHECK_EQUAL(enum_values_for_type[i].second, specific_enum_values_pattern[i].second);
     }
+
+    const hive::chain::util::serialized_type_data& serialized_enum_data = dtds.get_serialized_type_data<hive::chain::witness_object::witness_schedule_type>();
+    BOOST_CHECK_EQUAL( serialized_enum_data.name, "hive::chain::witness_object::witness_schedule_type" );
+    BOOST_CHECK_EQUAL( serialized_enum_data.kind, "enum" );
+    const hive::chain::util::serialized_type_data::entries_vector_t serialized_enum_entries_pattern{{"elected", "0"}, {"timeshare", "1"}, {"miner", "2"}, {"none", "3"}};
+    BOOST_CHECK( serialized_enum_data.entries == serialized_enum_entries_pattern );
   }
 
   /*
@@ -1072,6 +1150,14 @@ BOOST_AUTO_TEST_CASE( decoding_types_mechanism_test )
     BOOST_CHECK_EQUAL( decoded_boost_type.name, "boost::container::flat_map<int, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::less<int>, void>");
     BOOST_CHECK( !decoded_boost_type.members );
     BOOST_CHECK( !decoded_boost_type.enum_values );
+
+    /* Serialization of a container is described by its kind and element types only - without comparator and allocator. */
+    const hive::chain::util::serialized_type_data& serialized_boost_type = dtds.get_serialized_type_data<boost::container::flat_map<int, std::string>>();
+    BOOST_CHECK_EQUAL( serialized_boost_type.name, "boost::container::flat_map<int32_t, std::basic_string<char>>" );
+    BOOST_CHECK_EQUAL( serialized_boost_type.kind, "container" );
+    const hive::chain::util::serialized_type_data::entries_vector_t serialized_boost_entries_pattern{
+      {"container", "boost::container::flat_map"}, {"key", "int32_t"}, {"mapped", "std::basic_string<char>"}};
+    BOOST_CHECK( serialized_boost_type.entries == serialized_boost_entries_pattern );
   }
 
   /*
@@ -1111,6 +1197,22 @@ BOOST_AUTO_TEST_CASE( decoding_types_mechanism_test )
 
     const hive::chain::util::decoded_type_data& decoded_index_data = dtds.get_decoded_type_data<hive::chain::decline_voting_rights_request_index>();
     BOOST_CHECK( !decoded_index_data.reflected );
+
+    const hive::chain::util::serialized_type_data& serialized_type_data = dtds.get_serialized_type_data<hive::chain::decline_voting_rights_request_object>();
+    BOOST_CHECK_EQUAL( serialized_type_data.kind, "struct" );
+    const hive::chain::util::serialized_type_data::entries_vector_t serialized_members_pattern{
+      {"id", "chainbase::oid<hive::chain::decline_voting_rights_request_object>"},
+      {"account", "hive::protocol::fixed_string_impl<fc::erpair<uint64_t, uint64_t>>"},
+      {"effective_date", "fc::time_point_sec"}};
+    BOOST_CHECK( serialized_type_data.entries == serialized_members_pattern );
+
+    /* Index specification and allocator of the index are not part of its serialization. */
+    const hive::chain::util::serialized_type_data& serialized_index_data = dtds.get_serialized_type_data<hive::chain::decline_voting_rights_request_index>();
+    BOOST_CHECK_EQUAL( serialized_index_data.name, "boost::multi_index::multi_index_container<hive::chain::decline_voting_rights_request_object>" );
+    BOOST_CHECK_EQUAL( serialized_index_data.kind, "container" );
+    const hive::chain::util::serialized_type_data::entries_vector_t serialized_index_pattern{
+      {"container", "boost::multi_index::multi_index_container"}, {"element", "hive::chain::decline_voting_rights_request_object"}};
+    BOOST_CHECK( serialized_index_data.entries == serialized_index_pattern );
 
     const hive::chain::util::decoded_type_data& decoded_type_data_tps = dtds.get_decoded_type_data<fc::time_point_sec>();
     BOOST_CHECK( !decoded_type_data_tps.reflected );
@@ -1165,6 +1267,9 @@ BOOST_AUTO_TEST_CASE( decoding_types_mechanism_test )
     const hive::chain::util::decoded_type_data& decoded_fc_array = dtds.get_decoded_type_data<fc::array<char,33>>();
     BOOST_CHECK( !decoded_fc_array.reflected );
 
+    const hive::chain::util::serialized_type_data::entries_vector_t serialized_public_key_pattern{{"key_data", "fc::array<char, 33>"}};
+    BOOST_CHECK( dtds.get_serialized_type_data<hive::protocol::public_key_type>().entries == serialized_public_key_pattern );
+
     const hive::chain::util::decoded_type_data& decoded_account_object = dtds.get_decoded_type_data<hive::chain::account_object>();
     BOOST_CHECK( decoded_account_object.reflected );
     BOOST_CHECK( !decoded_account_object.enum_values );
@@ -1180,6 +1285,15 @@ BOOST_AUTO_TEST_CASE( decoding_types_mechanism_test )
   BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 33 );
   BOOST_CHECK_NO_THROW((dtds.register_new_type<fc::static_variant<fc::erpair<fc::sha256, long>, fc::erpair<double, long double>, fc::erpair<float, long>>>()));
   BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 38 );
+  {
+    /* Alternatives of a static_variant in order; `long` is named by its width. */
+    const hive::chain::util::serialized_type_data& serialized_variant = dtds.get_serialized_type_data<fc::static_variant<fc::erpair<fc::sha256, long>, fc::erpair<double, long double>, fc::erpair<float, long>>>();
+    BOOST_CHECK_EQUAL( serialized_variant.name, "fc::static_variant<fc::erpair<fc::sha256, int64_t>, fc::erpair<double, long double>, fc::erpair<float, int64_t>>" );
+    BOOST_CHECK_EQUAL( serialized_variant.kind, "static_variant" );
+    const hive::chain::util::serialized_type_data::entries_vector_t serialized_variant_pattern{
+      {"0", "fc::erpair<fc::sha256, int64_t>"}, {"1", "fc::erpair<double, long double>"}, {"2", "fc::erpair<float, int64_t>"}};
+    BOOST_CHECK( serialized_variant.entries == serialized_variant_pattern );
+  }
   BOOST_CHECK_NO_THROW(dtds.register_new_type<fc::sha256>());
   BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 38 );
   {
@@ -1452,6 +1566,130 @@ BOOST_AUTO_TEST_CASE( decoded_type_data_json_operations )
     BOOST_CHECK_THROW(dtds.check_if_decoded_types_data_json_matches_with_current_decoded_data("asdf"), fc::parse_error_exception);
     BOOST_CHECK_THROW(dtds.check_if_decoded_types_data_json_matches_with_current_decoded_data(""), fc::invalid_arg_exception);
   }
+  {
+    // 8. Serialization descriptors json - only reflected types are described, by canonical names and without layout.
+    const std::string current_serialized_types_data_in_json = dtds.generate_serialized_types_data_json_string();
+    const std::string json_pattern = "["
+      "{\"name\":\"hive::chain::decline_voting_rights_request_object\",\"kind\":\"struct\",\"entries\":["
+        "{\"name\":\"id\",\"value\":\"chainbase::oid<hive::chain::decline_voting_rights_request_object>\"},"
+        "{\"name\":\"account\",\"value\":\"hive::protocol::fixed_string_impl<fc::erpair<uint64_t, uint64_t>>\"},"
+        "{\"name\":\"effective_date\",\"value\":\"fc::time_point_sec\"}]},"
+      "{\"name\":\"hive::chain::witness_object::witness_schedule_type\",\"kind\":\"enum\",\"entries\":["
+        "{\"name\":\"elected\",\"value\":\"0\"},{\"name\":\"timeshare\",\"value\":\"1\"},{\"name\":\"miner\",\"value\":\"2\"},{\"name\":\"none\",\"value\":\"3\"}]}"
+      "]";
+
+    BOOST_CHECK_EQUAL(current_serialized_types_data_in_json, json_pattern);
+    const auto response = dtds.check_if_serialized_types_data_json_matches_with_current_serialized_data(current_serialized_types_data_in_json);
+    BOOST_CHECK(response.first == hive::chain::util::state_definitions_verification_result::state_definitions_matches);
+    BOOST_CHECK(response.second.empty());
+  }
+  {
+    // 9. Serialization descriptors json with a retyped member and an extra type - error names the type and its first differing member.
+    const std::string wrong_json_pattern = "["
+      "{\"name\":\"hive::chain::decline_voting_rights_request_object\",\"kind\":\"struct\",\"entries\":["
+        "{\"name\":\"id\",\"value\":\"chainbase::oid<hive::chain::decline_voting_rights_request_object>\"},"
+        "{\"name\":\"account\",\"value\":\"hive::protocol::fixed_string_impl<fc::erpair<uint64_t, uint64_t>>\"},"
+        "{\"name\":\"effective_date\",\"value\":\"uint32_t\"}]},"
+      "{\"name\":\"hive::chain::witness_object::witness_schedule_type\",\"kind\":\"enum\",\"entries\":["
+        "{\"name\":\"elected\",\"value\":\"0\"},{\"name\":\"timeshare\",\"value\":\"1\"},{\"name\":\"miner\",\"value\":\"2\"},{\"name\":\"none\",\"value\":\"3\"}]},"
+      "{\"name\":\"hive::protocol::votable_asset_info_v1\",\"kind\":\"struct\",\"entries\":[]}"
+      "]";
+    const auto response = dtds.check_if_serialized_types_data_json_matches_with_current_serialized_data(wrong_json_pattern);
+    BOOST_CHECK(response.first == hive::chain::util::state_definitions_verification_result::mismatch_throw_error);
+
+    const std::string response_pattern =
+    "Type: hive::chain::decline_voting_rights_request_object is serialized differently - struct entry #2 is `effective_date: fc::time_point_sec' in current version, but `effective_date: uint32_t' in loaded data.\n"
+    "Type is in loaded serialized types map but not in current serialized types map: hive::protocol::votable_asset_info_v1\n";
+    BOOST_CHECK_EQUAL(response.second, response_pattern);
+  }
+  {
+    // 10. Wrong serialization descriptors json.
+    BOOST_CHECK_THROW(dtds.check_if_serialized_types_data_json_matches_with_current_serialized_data("asdf"), fc::parse_error_exception);
+    BOOST_CHECK_THROW(dtds.check_if_serialized_types_data_json_matches_with_current_serialized_data(""), fc::invalid_arg_exception);
+    BOOST_CHECK_THROW(dtds.check_if_serialized_types_data_json_matches_with_current_serialized_data("[{\"name\":\"zxcv\",\"entries\":[]}]"), fc::invalid_arg_exception);
+  }
+}
+
+BOOST_AUTO_TEST_CASE( canonical_type_names )
+{
+  using hive::chain::util::canonical_type_name;
+  using shm_allocator = boost::interprocess::allocator<uint32_t, boost::interprocess::managed_mapped_file::segment_manager>;
+
+  BOOST_CHECK_EQUAL( canonical_type_name<long>(), canonical_type_name<long long>() );
+  BOOST_CHECK_EQUAL( canonical_type_name<int64_t>(), "int64_t" );
+  BOOST_CHECK_EQUAL( canonical_type_name<unsigned char>(), "uint8_t" );
+  BOOST_CHECK_EQUAL( canonical_type_name<fc::uint128_t>(), "uint128_t" );
+  BOOST_CHECK_EQUAL( canonical_type_name<hive::protocol::share_type>(), "fc::safe<int64_t>" );
+  BOOST_CHECK_EQUAL( canonical_type_name<std::string>(), "std::basic_string<char>" );
+  BOOST_CHECK_EQUAL( canonical_type_name<boost::container::deque<uint32_t>>(), "boost::container::deque<uint32_t>" );
+  BOOST_CHECK_EQUAL( (canonical_type_name<boost::container::deque<uint32_t, shm_allocator>>()), "boost::container::deque<uint32_t>" );
+  BOOST_CHECK_EQUAL( canonical_type_name<chainbase::t_deque<uint32_t>>(), "boost::container::deque<uint32_t>" );
+  BOOST_CHECK_EQUAL( (canonical_type_name<std::pair<long, chainbase::t_vector<uint32_t>>>()), "std::pair<int64_t, boost::container::vector<uint32_t>>" );
+  /* Allocator argument of other templates is skipped too. */
+  BOOST_CHECK_EQUAL( canonical_type_name<serialization_test::holder<shm_allocator>>(), "serialization_test::holder<>" );
+}
+
+BOOST_AUTO_TEST_CASE( serialization_descriptor_ignores_memory_layout )
+{
+  /* The same type in two builds whose container differs only in allocator (and so in sizeof) - like boost::container::deque in different Boost versions. */
+  using shm_allocator = boost::interprocess::allocator<uint32_t, boost::interprocess::managed_mapped_file::segment_manager>;
+  using heap_holder = serialization_test::holder<boost::container::deque<uint32_t>>;
+  using shm_holder = serialization_test::holder<boost::container::deque<uint32_t, shm_allocator>>;
+
+  hive::chain::util::decoded_types_data_storage heap_dtds;
+  heap_dtds.register_new_type<heap_holder>();
+  hive::chain::util::decoded_types_data_storage shm_dtds;
+  shm_dtds.register_new_type<shm_holder>();
+
+  /* Memory layout differs ... */
+  const auto layout_response = heap_dtds.check_if_decoded_types_data_json_matches_with_current_decoded_data(shm_dtds.generate_decoded_types_data_json_string());
+  BOOST_CHECK(layout_response.first == hive::chain::util::state_definitions_verification_result::mismatch_throw_error);
+
+  /* ... but serialization is the same. */
+  BOOST_CHECK_EQUAL( heap_dtds.generate_serialized_types_data_json_string(), shm_dtds.generate_serialized_types_data_json_string() );
+  const auto serialization_response = heap_dtds.check_if_serialized_types_data_json_matches_with_current_serialized_data(shm_dtds.generate_serialized_types_data_json_string());
+  BOOST_CHECK(serialization_response.first == hive::chain::util::state_definitions_verification_result::state_definitions_matches);
+  BOOST_CHECK(serialization_response.second.empty());
+
+  const hive::chain::util::serialized_type_data& serialized_holder = shm_dtds.get_serialized_type_data<shm_holder>();
+  BOOST_CHECK_EQUAL( serialized_holder.name, "serialization_test::holder<boost::container::deque<uint32_t>>" );
+  const hive::chain::util::serialized_type_data::entries_vector_t serialized_holder_pattern{{"items", "boost::container::deque<uint32_t>"}, {"count", "uint64_t"}};
+  BOOST_CHECK( serialized_holder.entries == serialized_holder_pattern );
+}
+
+BOOST_AUTO_TEST_CASE( serialization_descriptor_detects_format_changes )
+{
+  using namespace serialization_test;
+  using hive::chain::util::state_definitions_verification_result;
+
+  hive::chain::util::decoded_types_data_storage dtds;
+  dtds.register_new_type<v1::record>();
+
+  {
+    const auto response = dtds.check_if_serialized_types_data_json_matches_with_current_serialized_data(serialized_data_json_as_v1<v1::record>("v1"));
+    BOOST_CHECK(response.first == state_definitions_verification_result::state_definitions_matches);
+  }
+
+  const auto check_refused = [&dtds](const std::string& loaded_json, const std::string& expected_detail)
+  {
+    const auto response = dtds.check_if_serialized_types_data_json_matches_with_current_serialized_data(loaded_json);
+    BOOST_CHECK(response.first == state_definitions_verification_result::mismatch_throw_error);
+    BOOST_CHECK_MESSAGE(response.second.find(expected_detail) != std::string::npos, "Details: " << response.second << " do not contain: " << expected_detail);
+  };
+
+  check_refused(serialized_data_json_as_v1<added::record>("added"),
+    "Type: serialization_test::v1::record is serialized differently - struct entry #4 is nothing in current version, but `extra: uint8_t' in loaded data.");
+  check_refused(serialized_data_json_as_v1<removed::record>("removed"),
+    "Type: serialization_test::v1::record is serialized differently - struct entry #1 is `amount: uint64_t' in current version, but `k: serialization_test::v1::kind' in loaded data.");
+  check_refused(serialized_data_json_as_v1<reordered::record>("reordered"),
+    "Type: serialization_test::v1::record is serialized differently - struct entry #0 is `id: uint32_t' in current version, but `amount: uint64_t' in loaded data.");
+  check_refused(serialized_data_json_as_v1<retyped::record>("retyped"),
+    "Type: serialization_test::v1::record is serialized differently - struct entry #1 is `amount: uint64_t' in current version, but `amount: uint32_t' in loaded data.");
+  check_refused(serialized_data_json_as_v1<renumbered::record>("renumbered"),
+    "Type: serialization_test::v1::kind is serialized differently - enum entry #0 is `first: 0' in current version, but `first: 1' in loaded data.");
+  check_refused(serialized_data_json_as_v1<variant_reordered::record>("variant_reordered"),
+    "Type: serialization_test::v1::record is serialized differently - struct entry #3 is `payload: fc::static_variant<serialization_test::alt_a, serialization_test::alt_b>' in current version, "
+    "but `payload: fc::static_variant<serialization_test::alt_b, serialization_test::alt_a>' in loaded data.");
 }
 
 BOOST_AUTO_TEST_CASE( additional_allocations )

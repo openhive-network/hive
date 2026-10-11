@@ -88,7 +88,7 @@ void database::verify_match_of_state_objects_definitions_from_shm()
   _my->delete_decoded_types_data_storage();
 }
 
-void database::verify_match_of_state_objects_definitions( const std::string& decoded_state_objects_data )
+std::unique_ptr<util::decoded_types_data_storage> database::collect_current_state_definitions()
 {
   FC_ASSERT( !_my->_decoded_types_data_storage, "State definitions are being collected already" );
 
@@ -102,7 +102,22 @@ void database::verify_match_of_state_objects_definitions( const std::string& dec
 
   _my->_decoded_types_data_storage->register_new_type<irreversible_block_data_type>();
   initialize_indexes();
-  util::verify_match_of_state_definitions( *( _my->_decoded_types_data_storage ), decoded_state_objects_data );
+  return std::move( _my->_decoded_types_data_storage );
+}
+
+void database::verify_match_of_state_objects_definitions( const std::string& decoded_state_objects_data )
+{
+  util::verify_match_of_state_definitions( *collect_current_state_definitions(), decoded_state_objects_data );
+}
+
+void database::verify_match_of_state_objects_serialization( const std::string& serialized_state_objects_data )
+{
+  util::verify_match_of_state_serialization( *collect_current_state_definitions(), serialized_state_objects_data );
+}
+
+std::string database::get_current_state_objects_serialization_data()
+{
+  return collect_current_state_definitions()->generate_serialized_types_data_json_string();
 }
 
 void database::verify_match_of_blockchain_configuration()
