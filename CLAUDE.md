@@ -10,21 +10,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **Language**: C++ (C++17 standard) with Python test infrastructure
 **Build System**: CMake + Ninja
 
-## Workflow Compliance
+## Working under AIDEV
 
-All contributions must follow the established workflow rules. Claude Code sessions must adhere to these documents:
+Most changes here are made by AIDEV workflows (`.aidev/`). A workflow implements exactly one issue on the branch it was given, and its gates build and test the change, so:
 
-| Document | Purpose | Required |
-|----------|---------|----------|
-| [GENERAL_CLAUDE_WORKFLOW.md](GENERAL_CLAUDE_WORKFLOW.md) | Claude-specific workflow rules (GitLab interactions, context management, MR handling, pipeline monitoring) | **Yes** |
-| [doc/git-guidelines.md](doc/git-guidelines.md) | Project git workflow (branching, MRs, code review, local builds) | **Yes** |
-| [CONTRIBUTING.md](CONTRIBUTING.md) | Contribution guidelines (bug reports, enhancements, PR process) | **Yes** |
-
-**Key requirements:**
-- Build and test locally **before pushing** changes
-- Monitor pipeline after push; fix failures promptly
-- Keep commits atomic; use fixup commits for review feedback
-- Follow fast-forward merge strategy (rebase before merge)
+- Don't open merge requests, monitor CI pipelines, switch branches, rebase or force-push. AIDEV integrates into `aidev/integration`; maintainers merge that into `develop`.
+- Don't pick up other issues. If you find an unrelated defect, describe it in your result instead of fixing it here.
+- Build and run the relevant unit tests yourself before finishing (see below); the gates repeat them.
+- A change that alters a state object (anything stored in `shared_memory.bin`) invalidates existing node state: say so in the commit message ("Invalidates chain state") so maintainers can label and tag it.
 
 ## Build Commands
 
@@ -425,7 +418,7 @@ Note: changes under `tests/unit/**` are deliberately classified as source change
 
 **C++:**
 - C++17 standard required
-- Follow existing code conventions (see `doc/git-guidelines.md`)
+- Follow existing code conventions
 - Use Boost.Test for unit tests
 - No specific formatter enforced (match existing style)
 
@@ -470,13 +463,7 @@ When updating CI configuration (e.g., ci-base-image version), ensure `scripts/ci
 
 ### Test-Tools Dependency
 
-When making changes requiring test-tools updates:
-1. Create MR in test-tools repository first
-2. Update hive's test-tools submodule to point to your test-tools MR
-3. Both CIs must pass before merge
-4. Mention test-tools dependency in hive MR description
-
-See CONTRIBUTING.md for details.
+`tests/python/hive-local-tools` (test-tools) is a separate repository. A change that needs a test-tools change cannot be completed here: say what test-tools needs in your result.
 
 ### Block Log Paths
 
