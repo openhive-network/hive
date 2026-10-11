@@ -1,6 +1,7 @@
 #ifdef IS_TEST_NET
 #include <boost/test/unit_test.hpp>
 
+#include <hive/chain/database_exceptions.hpp>
 #include <hive/chain/detail/state/account_object.hpp>
 
 #include <hive/plugins/state_snapshot/state_snapshot_plugin.hpp>
@@ -8,8 +9,83 @@
 #include "../db_fixture/snapshots_fixture.hpp"
 #include "../db_fixture/hived_fixture.hpp"
 
+#include <fc/io/json.hpp>
+
+#include <rocksdb/db.h>
+
+#include <algorithm>
+#include <fstream>
+#include <iterator>
+#include <map>
+
 using namespace hive::chain;
 using namespace hive::protocol;
+
+namespace {
+
+/// Replaces checksum of one type in state definitions stored in snapshot manifest; returns name of that type.
+std::string corrupt_state_definitions_in_snapshot( const fc::path& manifest_dir )
+{
+  std::vector< std::string > cf_names;
+  auto status = ::rocksdb::DB::ListColumnFamilies( ::rocksdb::DBOptions(), manifest_dir.string(), &cf_names );
+  BOOST_REQUIRE( status.ok() );
+
+  std::vector< ::rocksdb::ColumnFamilyDescriptor > cf_descriptors;
+  for( const auto& name : cf_names )
+    cf_descriptors.emplace_back( name, ::rocksdb::ColumnFamilyOptions() );
+
+  std::vector< ::rocksdb::ColumnFamilyHandle* > cf_handles;
+  ::rocksdb::DB* raw_db = nullptr;
+  status = ::rocksdb::DB::Open( ::rocksdb::Options(), manifest_dir.string(), cf_descriptors, &cf_handles, &raw_db );
+  BOOST_REQUIRE( status.ok() );
+  std::unique_ptr< ::rocksdb::DB > manifest_db( raw_db );
+
+  const auto cf_it = std::find( cf_names.begin(), cf_names.end(), "STATE_DEFINITIONS_DATA" );
+  BOOST_REQUIRE( cf_it != cf_names.end() );
+  ::rocksdb::ColumnFamilyHandle* state_definitions_cf = cf_handles[ std::distance( cf_names.begin(), cf_it ) ];
+
+  std::string state_definitions;
+  status = manifest_db->Get( ::rocksdb::ReadOptions(), state_definitions_cf, "STATE_DEFINITIONS_DATA", &state_definitions );
+  BOOST_REQUIRE( status.ok() );
+
+  fc::variants types = fc::json::from_string( state_definitions, fc::json::format_validation_mode::full ).get_array();
+  BOOST_REQUIRE( !types.empty() );
+  fc::mutable_variant_object corrupted_type( types.front().get_object() );
+  const std::string type_name = corrupted_type[ "name" ].as_string();
+  const std::string checksum = corrupted_type[ "checksum" ].as_string();
+  corrupted_type[ "checksum" ] = std::string( checksum.rbegin(), checksum.rend() ) + "0";
+  types.front() = fc::variant( corrupted_type );
+
+  status = manifest_db->Put( ::rocksdb::WriteOptions(), state_definitions_cf, "STATE_DEFINITIONS_DATA", fc::json::to_string( types ) );
+  BOOST_REQUIRE( status.ok() );
+
+  for( auto* handle : cf_handles )
+    BOOST_REQUIRE( manifest_db->DestroyColumnFamilyHandle( handle ).ok() );
+  BOOST_REQUIRE( manifest_db->Close().ok() );
+  return type_name;
+}
+
+std::string read_file( const fc::path& path )
+{
+  std::ifstream file( path.string(), std::ios::binary );
+  BOOST_REQUIRE( file.good() );
+  return std::string( std::istreambuf_iterator< char >( file ), std::istreambuf_iterator< char >() );
+}
+
+/// Contents of all files in the state directory (shared memory file, comment archive and other storages), keyed by path.
+std::map< std::string, std::string > read_state_files( const fc::path& shared_memory_dir )
+{
+  BOOST_REQUIRE( fc::exists( shared_memory_dir / "shared_memory.bin" ) );
+  BOOST_REQUIRE( fc::exists( shared_memory_dir / "comments-rocksdb-storage" ) );
+
+  std::map< std::string, std::string > files;
+  for( fc::recursive_directory_iterator it( shared_memory_dir ), end; it != end; ++it )
+    if( fc::is_regular_file( *it ) )
+      files[ ( *it ).string() ] = read_file( *it );
+  return files;
+}
+
+} // namespace
 
 BOOST_FIXTURE_TEST_SUITE( snapshots_tests, snapshots_fixture )
 
@@ -77,6 +153,50 @@ BOOST_AUTO_TEST_CASE( additional_allocation_after_snapshot_load )
       BOOST_REQUIRE_GT(index.get_item_additional_allocation(), 0);
     }
 
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( load_with_mismatched_state_definitions_keeps_state )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "--- Testing: load_with_mismatched_state_definitions_keeps_state" );
+
+    const std::string snapshot_root_dir = "load_with_mismatched_state_definitions_keeps_state";
+    const hived_fixture::config_arg_override_t small_shm = {
+      hived_fixture::config_line_t({ "shared-file-size",
+        { std::to_string(1024 * 1024 * hived_fixture::shared_file_size_small) } }
+      )
+    };
+
+    clear_snapshot( snapshot_root_dir );
+    postponed_init( small_shm );
+    generate_blocks( 5 );
+
+    dump_snapshot( snapshot_root_dir );
+    generate_blocks( 3 );
+    const uint32_t last_irreversible_block_num = db()->get_last_irreversible_block_num();
+    const fc::path data_dir = hive::utilities::temp_directory_path();
+    // closes the node, so its state files are complete
+    reset_fixture( false );
+
+    const fc::path shared_memory_dir = data_dir / "blockchain";
+    const std::string corrupted_type = corrupt_state_definitions_in_snapshot( data_dir / snapshot_root_dir / "snap" / "snapshot-manifest" );
+    const auto state_files_before = read_state_files( shared_memory_dir );
+
+    BOOST_CHECK_EXCEPTION( load_snapshot( snapshot_root_dir ), shm_state_definitions_mismatch_exception,
+      [&]( const shm_state_definitions_mismatch_exception& e )
+      {
+        return e.to_detail_string().find( corrupted_type ) != std::string::npos;
+      } );
+
+    reset_fixture( false );
+    BOOST_REQUIRE( state_files_before == read_state_files( shared_memory_dir ) );
+
+    // the node still opens the state it had before the refused load (opening rewinds it to its irreversible block)
+    postponed_init( small_shm );
+    BOOST_REQUIRE_EQUAL( db()->head_block_num(), last_irreversible_block_num );
   }
   FC_LOG_AND_RETHROW()
 }

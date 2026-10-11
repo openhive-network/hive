@@ -23,6 +23,8 @@
 
 #include <appbase/plugin.hpp>
 
+#include <boost/scope_exit.hpp>
+
 #include "database_impl.hpp"
 
 namespace hive { namespace chain {
@@ -84,6 +86,22 @@ void database::verify_match_of_state_objects_definitions_from_shm()
     util::verify_match_of_state_definitions(*(_my->_decoded_types_data_storage), shm_decoded_state_objects_data);
 
   _my->delete_decoded_types_data_storage();
+}
+
+void database::verify_match_of_state_objects_definitions( const std::string& decoded_state_objects_data )
+{
+  FC_ASSERT( !_my->_decoded_types_data_storage, "State definitions are being collected already" );
+  _my->create_new_decoded_types_data_storage();
+  _registering_types_only = true;
+  BOOST_SCOPE_EXIT( this_ )
+  {
+    this_->_registering_types_only = false;
+    this_->_my->_decoded_types_data_storage.reset();
+  } BOOST_SCOPE_EXIT_END
+
+  _my->_decoded_types_data_storage->register_new_type<irreversible_block_data_type>();
+  initialize_indexes();
+  util::verify_match_of_state_definitions( *( _my->_decoded_types_data_storage ), decoded_state_objects_data );
 }
 
 void database::verify_match_of_blockchain_configuration()

@@ -641,6 +641,17 @@ namespace chain {
       // For snapshot plugin. Decoded types data hold by database will be erased after using.
       std::string get_current_decoded_types_data_json();
 
+      /**
+        * Compares given state definitions (e.g. from a snapshot manifest) with the definitions of this binary
+        * and its plugins. Does not need the database to be open and does not touch the shared memory file.
+        * Throws shm_state_definitions_mismatch_exception when definitions differ (only logs a warning for
+        * differences that are allowed).
+        */
+      void verify_match_of_state_objects_definitions( const std::string& decoded_state_objects_data );
+
+      /// True while indexes are being initialized only to collect definitions of their types.
+      bool is_registering_types_only() const { return _registering_types_only; }
+
       void init_schema();
       void init_genesis();
 
@@ -856,6 +867,7 @@ namespace chain {
       uint16_t                      _shared_file_scale_rate = 0;
 
       bool                          snapshot_loaded = false;
+      bool                          _registering_types_only = false;
 
       std::optional<time_point_sec> _current_timestamp;
 

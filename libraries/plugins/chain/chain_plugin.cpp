@@ -944,6 +944,12 @@ void chain_plugin_impl::open()
 
   try
   {
+    if( load_snapshot )
+    {
+      FC_ASSERT( snapshot_provider != nullptr, "Snapshot loading requested, but no snapshot provider is registered" );
+      snapshot_provider->verify_explicit_snapshot_load_requests();
+    }
+
     if(resync)
     {
       wlog("resync requested: deleting block log and shared memory");

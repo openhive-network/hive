@@ -849,6 +849,17 @@ size_t index_dump_reader::getCurrentlyProcessedId() const
   return currentWorker->getProcessedId();
   }
 
+/// Reads the value of a manifest column family which holds a single entry keyed by the family name.
+std::string read_single_manifest_entry(DB* manifestDb, ::rocksdb::ColumnFamilyHandle* cfHandle, const std::string& name)
+  {
+  ReadOptions rOptions;
+  std::unique_ptr<::rocksdb::Iterator> iterator(manifestDb->NewIterator(rOptions, cfHandle));
+  iterator->SeekToFirst();
+  FC_ASSERT(iterator->Valid(), "No entry for ${n}. Probably used old snapshot format (must be regenerated).", ("n", name));
+  FC_ASSERT(iterator->key().ToString() == name, "Broken snapshot - no entry for ${n}", ("n", name));
+  return iterator->value().ToString();
+  }
+
 } /// namespace anonymous
 
 class state_snapshot_plugin::impl final : protected chain::state_snapshot_provider
@@ -890,6 +901,7 @@ class state_snapshot_plugin::impl final : protected chain::state_snapshot_provid
     /// chain::state_snapshot_provider implementation:
     virtual void process_explicit_snapshot_dump_requests(const hive::chain::open_args& openArgs) override;
     virtual void process_explicit_snapshot_load_requests(const hive::chain::open_args& openArgs) override;
+    virtual void verify_explicit_snapshot_load_requests() override;
 
     private:
       void collectOptions(const bpo::variables_map& options);
@@ -901,6 +913,10 @@ class state_snapshot_plugin::impl final : protected chain::state_snapshot_provid
 
       std::tuple<snapshot_manifest, plugin_external_data_index, std::string, std::string, std::string, uint32_t>
       load_snapshot_manifest(const bfs::path& actualStoragePath, std::shared_ptr<hive::chain::full_block_type>& lib);
+      /// Returns state definitions and plugin names stored in the snapshot manifest. Does not need the database to be open.
+      std::pair<std::string, std::string> load_snapshot_compatibility_data(const bfs::path& actualStoragePath) const;
+      void verify_snapshot_is_loadable(const bfs::path& actualStoragePath) const;
+      bfs::path get_snapshot_path(const std::string& snapshotName) const;
       void load_snapshot_external_data(const plugin_external_data_index& idx);
 
       void load_snapshot_impl(const std::string& snapshotName, const hive::chain::open_args& openArgs);
@@ -1335,55 +1351,9 @@ state_snapshot_plugin::impl::load_snapshot_manifest(const bfs::path& actualStora
     FC_ASSERT(irreversibleStateIterator->Valid() == false, "Unexpected entries specifying irreversible block ?");
   }
 
-  std::string state_definitions_data;
-
-  {
-    ::rocksdb::ReadOptions rOptions;
-
-    std::unique_ptr<::rocksdb::Iterator> stateDefinitionsDataIterator(manifestDb->NewIterator(rOptions, cfHandles[4]));
-    stateDefinitionsDataIterator->SeekToFirst();
-    FC_ASSERT(stateDefinitionsDataIterator->Valid(), "No entry for STATE_DEFINITIONS_DATA. Probably used old snapshot format (must be regenerated).");
-
-    Slice keySlice = stateDefinitionsDataIterator->key();
-    auto valueSlice = stateDefinitionsDataIterator->value();
-
-    std::string keyName = keySlice.ToString();
-    FC_ASSERT(keyName == "STATE_DEFINITIONS_DATA", "Broken snapshot - no entry for STATE_DEFINITIONS_DATA");
-    state_definitions_data = valueSlice.ToString();
-  }
-
-  std::string blockchain_configuration;
-
-  {
-    ::rocksdb::ReadOptions rOptions;
-
-    std::unique_ptr<::rocksdb::Iterator> blockchainConfigurationDataIterator(manifestDb->NewIterator(rOptions, cfHandles[5]));
-    blockchainConfigurationDataIterator->SeekToFirst();
-    FC_ASSERT(blockchainConfigurationDataIterator->Valid(), "No entry for BLOCKCHAIN_CONFIGURATION. Probably used old snapshot format (must be regenerated).");
-
-    Slice keySlice = blockchainConfigurationDataIterator->key();
-    auto valueSlice = blockchainConfigurationDataIterator->value();
-
-    std::string keyName = keySlice.ToString();
-    FC_ASSERT(keyName == "BLOCKCHAIN_CONFIGURATION", "Broken snapshot - no entry for BLOCKCHAIN_CONFIGURATION");
-    blockchain_configuration = valueSlice.ToString();
-  }
-
-  std::string plugins;
-  {
-    ::rocksdb::ReadOptions rOptions;
-
-    std::unique_ptr<::rocksdb::Iterator> pluginsDataIterator(manifestDb->NewIterator(rOptions, cfHandles[6]));
-    pluginsDataIterator->SeekToFirst();
-    FC_ASSERT(pluginsDataIterator->Valid(), "No entry for PLUGINS. Probably used old snapshot format (must be regenerated).");
-
-    Slice keySlice = pluginsDataIterator->key();
-    auto valueSlice = pluginsDataIterator->value();
-
-    std::string keyName = keySlice.ToString();
-    FC_ASSERT(keyName == "PLUGINS", "Broken snapshot - no entry for PLUGINS");
-    plugins = valueSlice.ToString();
-  }
+  std::string state_definitions_data = read_single_manifest_entry(manifestDb, cfHandles[4], "STATE_DEFINITIONS_DATA");
+  std::string blockchain_configuration = read_single_manifest_entry(manifestDb, cfHandles[5], "BLOCKCHAIN_CONFIGURATION");
+  std::string plugins = read_single_manifest_entry(manifestDb, cfHandles[6], "PLUGINS");
 
   for(auto* cfh : cfHandles)
   {
@@ -1398,6 +1368,90 @@ state_snapshot_plugin::impl::load_snapshot_manifest(const bfs::path& actualStora
   manifestDbPtr.release();
 
   return std::make_tuple(retVal, extDataIdx, std::move(state_definitions_data), std::move(blockchain_configuration), std::move(plugins), libn);
+}
+
+std::pair<std::string, std::string>
+state_snapshot_plugin::impl::load_snapshot_compatibility_data(const bfs::path& actualStoragePath) const
+{
+  bfs::path manifestDbPath(actualStoragePath);
+  manifestDbPath /= "snapshot-manifest";
+
+  hive::chain::raise_fd_limit();
+  ::rocksdb::Options dbOptions;
+  dbOptions.create_if_missing = false;
+
+  /// Read-only mode allows to open just the needed subset of column families.
+  std::vector<::rocksdb::ColumnFamilyDescriptor> cfDescriptors;
+  cfDescriptors.emplace_back(::rocksdb::kDefaultColumnFamilyName, ::rocksdb::ColumnFamilyOptions());
+  cfDescriptors.emplace_back("STATE_DEFINITIONS_DATA", ::rocksdb::ColumnFamilyOptions());
+  cfDescriptors.emplace_back("PLUGINS", ::rocksdb::ColumnFamilyOptions());
+
+  std::vector<::rocksdb::ColumnFamilyHandle*> cfHandles;
+  ::rocksdb::DB* manifestDb = nullptr;
+  auto status = ::rocksdb::DB::OpenForReadOnly(dbOptions, manifestDbPath.string(), cfDescriptors, &cfHandles, &manifestDb);
+  std::unique_ptr<::rocksdb::DB> manifestDbPtr(manifestDb);
+  FC_ASSERT(status.ok(), "Cannot open snapshot manifest-db at path: `${p}'. Error details: `${e}'.", ("p", manifestDbPath.string())("e", status.ToString()));
+
+  std::pair<std::string, std::string> result;
+  try
+  {
+    result.first = read_single_manifest_entry(manifestDb, cfHandles[1], "STATE_DEFINITIONS_DATA");
+    result.second = read_single_manifest_entry(manifestDb, cfHandles[2], "PLUGINS");
+  }
+  catch(const fc::exception&)
+  {
+    for(auto* cfh : cfHandles)
+      manifestDb->DestroyColumnFamilyHandle(cfh);
+    throw;
+  }
+
+  for(auto* cfh : cfHandles)
+  {
+    status = manifestDb->DestroyColumnFamilyHandle(cfh);
+    if(status.ok() == false)
+      elog("Cannot destroy column family handle...'. Error details: `${e}'.", ("e", status.ToString()));
+  }
+
+  manifestDb->Close();
+  return result;
+}
+
+bfs::path state_snapshot_plugin::impl::get_snapshot_path(const std::string& snapshotName) const
+{
+  return (_storagePath / snapshotName).lexically_normal();
+}
+
+void state_snapshot_plugin::impl::verify_snapshot_is_loadable(const bfs::path& actualStoragePath) const
+{
+  FC_ASSERT(bfs::exists(actualStoragePath), "Snapshot `${p}' does not exist in the snapshot directory: `${d}' or is inaccessible.",
+    ("p", actualStoragePath.filename().string())("d", _storagePath.string()));
+
+  ilog("Verifying that snapshot in the location: `${p}' can be loaded", ("p", actualStoragePath.string()));
+
+  const auto [state_definitions_in_snapshot, plugins_in_snapshot] = load_snapshot_compatibility_data(actualStoragePath);
+
+  {
+    fc::variants plugins_in_snapshot_vector = fc::json::from_string(plugins_in_snapshot, fc::json::format_validation_mode::full).get_array();
+    std::set<std::string> current_plugins = _self.get_app().get_plugins_names();
+    bool snapshot_has_more_plugins = false;
+
+    for (const auto& plugin_from_snapshot_as_variant : plugins_in_snapshot_vector)
+    {
+      const std::string plugin_from_snapshot = plugin_from_snapshot_as_variant.as_string();
+      if (current_plugins.count(plugin_from_snapshot))
+        current_plugins.erase(plugin_from_snapshot);
+      else
+        snapshot_has_more_plugins = true;
+    }
+
+    if (snapshot_has_more_plugins)
+      wlog("Snapshot has more plugins than current hived configuration. Snapshot plugins: ${plugins_in_snapshot}, hived plugins: ${hived_plugins}", ("plugins_in_snapshot", plugins_in_snapshot)("hived_plugins", _self.get_app().get_plugins_names()));
+    else if (!current_plugins.empty())
+      wlog("Snapshot misses plugins: ${current_plugins}. Snapshot plugins: ${plugins_in_snapshot}, hived plugins: ${hived_plugins}", (current_plugins)("plugins_in_snapshot", plugins_in_snapshot)("hived_plugins", _self.get_app().get_plugins_names()));
+  }
+
+  _mainDb.verify_match_of_state_objects_definitions(state_definitions_in_snapshot);
+  wlog("Snapshot state definitions matches current app version.");
 }
 
 void state_snapshot_plugin::impl::load_snapshot_external_data(const plugin_external_data_index& idx)
@@ -1560,14 +1614,9 @@ void state_snapshot_plugin::impl::prepare_snapshot(const std::string& snapshotNa
 
 void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshotName, const hive::chain::open_args& openArgs)
   {
-  bfs::path actualStoragePath = _storagePath / snapshotName;
-  actualStoragePath = actualStoragePath.lexically_normal();
+  const bfs::path actualStoragePath = get_snapshot_path(snapshotName);
 
-  if(bfs::exists(actualStoragePath) == false)
-    {
-    elog("Snapshot `${n}' does not exist in the snapshot directory: `${d}' or is inaccessible.", ("n", snapshotName)("d", _storagePath.string()));
-    return;
-    }
+  verify_snapshot_is_loadable(actualStoragePath);
 
   ilog("Trying to access snapshot in the location: `${p}'", ("p", actualStoragePath.string()));
 
@@ -1577,31 +1626,10 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
   std::shared_ptr<hive::chain::full_block_type> lib;
   auto snapshotManifest = load_snapshot_manifest(actualStoragePath, lib);
 
-  {
-    const std::string& plugins_in_snapshot = std::get<4>(snapshotManifest);
-    fc::variants plugins_in_snapshot_vector = fc::json::from_string(plugins_in_snapshot, fc::json::format_validation_mode::full).get_array();
-    std::set<std::string> current_plugins = _self.get_app().get_plugins_names();
-    bool snapshot_has_more_plugins = false;
-
-    for (const auto& plugin_from_snapshot_as_variant : plugins_in_snapshot_vector)
-    {
-      const std::string plugin_from_snapshot = plugin_from_snapshot_as_variant.as_string();
-      if (current_plugins.count(plugin_from_snapshot))
-        current_plugins.erase(plugin_from_snapshot);
-      else
-        snapshot_has_more_plugins = true;
-    }
-
-    if (snapshot_has_more_plugins)
-      wlog("Snapshot has more plugins than current hived configuration. Snapshot plugins: ${plugins_in_snapshot}, hived plugins: ${hived_plugins}", (plugins_in_snapshot)("hived_plugins", _self.get_app().get_plugins_names()));
-    else if (!current_plugins.empty())
-      wlog("Snapshot misses plugins: ${current_plugins}. Snapshot plugins: ${plugins_in_snapshot}, hived plugins: ${hived_plugins}", (current_plugins)(plugins_in_snapshot)("hived_plugins", _self.get_app().get_plugins_names()));
-  }
-
   const std::string& loaded_decoded_type_data = std::get<2>(snapshotManifest);
   const std::string& full_loaded_blockchain_configuration_json = std::get<3>(snapshotManifest);
 
-  wlog("Snapshot state definitions matches current app version - wiping DB.");
+  wlog("Wiping DB to load the snapshot.");
   _mainDb.close();
   _mainDb.wipe(openArgs.shared_mem_dir);
   _mainDb.pre_open(openArgs);
@@ -1688,6 +1716,7 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
   ilog("Validate_invariants finished...");
 
   _mainDb.set_snapshot_loaded();
+  ilog("State snapshot loaded successfully.");
   }
 
 void state_snapshot_plugin::impl::load_snapshot(const std::string& snapshotName, const hive::chain::open_args& openArgs)
@@ -1707,6 +1736,12 @@ void state_snapshot_plugin::impl::process_explicit_snapshot_dump_requests(const 
       prepare_snapshot(_snapshot_dump_name);
       _self.get_app().notify_status("finished dumping snapshot");
     }
+  }
+
+void state_snapshot_plugin::impl::verify_explicit_snapshot_load_requests()
+  {
+    if(_do_immediate_load)
+      verify_snapshot_is_loadable(get_snapshot_path(_snapshot_load_name));
   }
 
 void state_snapshot_plugin::impl::process_explicit_snapshot_load_requests(const hive::chain::open_args& openArgs)

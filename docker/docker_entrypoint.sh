@@ -129,14 +129,19 @@ bootstrap_block_log() {
 }
 
 ######### Snapshot bootstrap #########
-# SNAPSHOT_URL: URL of a .tgz produced by hived's state_snapshot plugin. On a first
-# start (no state file yet) it is downloaded, unpacked into $DATADIR/snapshot and
-# loaded with --load-snapshot, so a node comes up at the snapshot's block instead of
-# replaying from genesis. Combined with BLOCK_LOG_URL the block log is kept and hived
+# SNAPSHOT_URL: URL of a .tgz produced by hived's state_snapshot plugin. Until hived
+# has loaded it once, it is downloaded, unpacked into $DATADIR/snapshot and loaded
+# with --load-snapshot, so a node comes up at the snapshot's block instead of
+# replaying from genesis. A completed load is recorded in $SNAPSHOT_LOADED_MARKER;
+# a start after a refused or interrupted load retries it. Combined with BLOCK_LOG_URL the block log is kept and hived
 # replays it forward from the snapshot's block by itself. Without a block log the
 # node runs memory-only (block-log-split=0): it serves the chain state and account
 # history, but not historical blocks, and it cannot replay later.
 SNAPSHOT_DIR="$DATADIR/snapshot"
+SNAPSHOT_LOADED_MARKER="$DATADIR/.snapshot_loaded"
+# Logged by hived once a snapshot is completely loaded into its state.
+SNAPSHOT_LOADED_MESSAGE="State snapshot loaded successfully."
+SNAPSHOT_LOAD_REQUESTED=0
 
 # Name of the (single) unpacked snapshot directory under $SNAPSHOT_DIR, if any.
 find_snapshot_name() {
@@ -162,8 +167,14 @@ bootstrap_snapshot() {
     done
     HIVED_ARGS+=("--block-log-split=0")
   fi
-  if [[ -f "$SHM_DIR/shared_memory.bin" ]]; then
-    return 0 # state exists: the snapshot was loaded on an earlier start
+  if [[ -f "$SNAPSHOT_LOADED_MARKER" ]]; then
+    return 0
+  fi
+  if [[ -f "$SHM_DIR/shared_memory.bin" ]] && ! find_snapshot_name >/dev/null; then
+    # State from a load recorded by an older entrypoint, whose snapshot directory has
+    # since been deleted: a refused load always leaves that directory in place.
+    touch "$SNAPSHOT_LOADED_MARKER"
+    return 0
   fi
   for arg in "${HIVED_ARGS[@]}"; do
     [[ "$arg" == --load-snapshot* ]] && return 0
@@ -185,6 +196,24 @@ bootstrap_snapshot() {
   fi
   echo "Loading snapshot ${name} (the ${SNAPSHOT_DIR} directory can be deleted once the node is synced)."
   HIVED_ARGS+=("--load-snapshot=$name")
+  SNAPSHOT_LOAD_REQUESTED=1
+}
+
+# Writes $SNAPSHOT_LOADED_MARKER once hived logs a completed snapshot load, then
+# returns; returns without it when the job given as $1 ends first.
+record_snapshot_load() {
+  local job_pid="$1"
+  while kill -0 "$job_pid" 2>/dev/null; do
+    if grep -qF "$SNAPSHOT_LOADED_MESSAGE" "$DATADIR/hived.log" 2>/dev/null; then
+      touch "$SNAPSHOT_LOADED_MARKER"
+      echo "Snapshot load completed, recorded in ${SNAPSHOT_LOADED_MARKER}."
+      return 0
+    fi
+    sleep 5
+  done
+  if grep -qF "$SNAPSHOT_LOADED_MESSAGE" "$DATADIR/hived.log" 2>/dev/null; then
+    touch "$SNAPSHOT_LOADED_MARKER"
+  fi
 }
 
 ######### Replay detection #########
@@ -234,6 +263,11 @@ P2P_ENDPOINT="${P2P_ENDPOINT:-0.0.0.0:${P2P_PORT}}"
 WS_ENDPOINT="${WS_ENDPOINT:-0.0.0.0:${WS_PORT}}"
 HTTP_ENDPOINT="${HTTP_ENDPOINT:-0.0.0.0:${HTTP_PORT}}"
 
+# A log left by an earlier start must not be taken for this start's snapshot load.
+if [[ "$SNAPSHOT_LOAD_REQUESTED" == "1" ]]; then
+  rm -f "$DATADIR/hived.log"
+fi
+
 {
 /bin/bash << EOF
 echo "Attempting to execute hived using additional command line arguments: ${HIVED_ARGS[*]}"
@@ -249,6 +283,10 @@ EOF
 } &
 
 job_pid=$!
+
+if [[ "$SNAPSHOT_LOAD_REQUESTED" == "1" ]]; then
+  record_snapshot_load "$job_pid" &
+fi
 
 jobs -l
 

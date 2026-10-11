@@ -37,10 +37,13 @@ struct index_info_impl
 template< typename MultiIndexType >
 void _add_index_impl( database& db )
 {
-  db.add_index< MultiIndexType >();
-  std::shared_ptr< chainbase::index_extension > ext =
-    std::make_shared< index_info_impl< MultiIndexType > >();
-  db.add_index_extension< MultiIndexType >( ext );
+  if( !db.is_registering_types_only() )
+  {
+    db.add_index< MultiIndexType >();
+    std::shared_ptr< chainbase::index_extension > ext =
+      std::make_shared< index_info_impl< MultiIndexType > >();
+    db.add_index_extension< MultiIndexType >( ext );
+  }
   db.register_new_type<MultiIndexType>();
 }
 
