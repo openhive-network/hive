@@ -6,13 +6,15 @@
 #include <fc/exception/exception.hpp>
 
 #include <fstream>
+#include <functional>
 
 namespace hive { namespace chain { namespace util {
 
-void verify_match_of_state_definitions(const chain::util::decoded_types_data_storage& dtds, const std::string& decoded_state_objects_data)
-{
-  auto result = dtds.check_if_decoded_types_data_json_matches_with_current_decoded_data(decoded_state_objects_data);
+namespace {
 
+void report_state_definitions_mismatch(const std::pair<state_definitions_verification_result, std::string>& result,
+                                       const std::function<std::string()>& generate_loaded_details, const std::function<std::string()>& generate_current_details)
+{
   if (result.first != state_definitions_verification_result::state_definitions_matches)
   {
     std::fstream loaded_decoded_types_details, current_decoded_types_details;
@@ -21,13 +23,13 @@ void verify_match_of_state_definitions(const chain::util::decoded_types_data_sto
 
     loaded_decoded_types_details.open(loaded_data_filename, std::ios::out | std::ios::trunc);
     if (loaded_decoded_types_details.good())
-      loaded_decoded_types_details << dtds.generate_decoded_types_data_pretty_string(decoded_state_objects_data);
+      loaded_decoded_types_details << generate_loaded_details();
     loaded_decoded_types_details.flush();
     loaded_decoded_types_details.close();
 
     current_decoded_types_details.open(current_data_filename, std::ios::out | std::ios::trunc);
     if (current_decoded_types_details.good())
-      current_decoded_types_details << dtds.generate_decoded_types_data_pretty_string();
+      current_decoded_types_details << generate_current_details();
     current_decoded_types_details.flush();
     current_decoded_types_details.close();
 
@@ -41,6 +43,22 @@ void verify_match_of_state_definitions(const chain::util::decoded_types_data_sto
             "\nFull data about decoded state objects are in files: ${current_data_filename}, ${loaded_data_filename}",
             ("details", result.second)(current_data_filename)(loaded_data_filename));
   }
+}
+
+} // namespace
+
+void verify_match_of_state_definitions(const chain::util::decoded_types_data_storage& dtds, const std::string& decoded_state_objects_data)
+{
+  report_state_definitions_mismatch(dtds.check_if_decoded_types_data_json_matches_with_current_decoded_data(decoded_state_objects_data),
+    [&]() { return dtds.generate_decoded_types_data_pretty_string(decoded_state_objects_data); },
+    [&]() { return dtds.generate_decoded_types_data_pretty_string(); });
+}
+
+void verify_match_of_state_serialization(const chain::util::decoded_types_data_storage& dtds, const std::string& serialized_state_objects_data)
+{
+  report_state_definitions_mismatch(dtds.check_if_serialized_types_data_json_matches_with_current_serialized_data(serialized_state_objects_data),
+    [&]() { return dtds.generate_serialized_types_data_pretty_string(serialized_state_objects_data); },
+    [&]() { return dtds.generate_serialized_types_data_pretty_string(); });
 }
 
 void verify_match_of_blockchain_configuration(fc::mutable_variant_object current_blockchain_config, const fc::variant &full_current_blockchain_config_as_variant, const std::string &full_stored_blockchain_config_json)

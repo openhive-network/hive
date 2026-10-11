@@ -44,6 +44,7 @@
 #include <boost/asio.hpp>
 
 #include <limits>
+#include <optional>
 #include <string>
 #include <typeindex>
 #include <typeinfo>
@@ -51,7 +52,9 @@
 namespace bpo = boost::program_options;
 using work_guard_type = boost::asio::executor_work_guard<boost::asio::io_context::executor_type>;
 
-#define SNAPSHOT_FORMAT_VERSION "2.3"
+#define SNAPSHOT_FORMAT_VERSION "2.4"
+/// Format whose manifest describes state objects only by their memory layout (STATE_DEFINITIONS_DATA), without STATE_SERIALIZATION_DATA.
+#define LAYOUT_ONLY_SNAPSHOT_FORMAT_VERSION "2.3"
 
 namespace {
 
@@ -896,6 +899,8 @@ class state_snapshot_plugin::impl final : protected chain::state_snapshot_provid
       struct snapshot_compatibility_data
       {
         std::string state_definitions;
+        /// Not present in snapshots of LAYOUT_ONLY_SNAPSHOT_FORMAT_VERSION.
+        std::optional<std::string> state_serialization;
         std::string blockchain_configuration;
         std::string plugins;
       };
@@ -907,7 +912,7 @@ class state_snapshot_plugin::impl final : protected chain::state_snapshot_provid
       void store_snapshot_manifest(const bfs::path& actualStoragePath, const std::vector<std::unique_ptr<index_dump_writer>>& builtWriters,
         const snapshot_dump_supplement_helper& dumpHelper) const;
 
-      std::tuple<snapshot_manifest, plugin_external_data_index, std::string, std::string, std::string, uint32_t>
+      std::tuple<snapshot_manifest, plugin_external_data_index, std::string, std::string, uint32_t>
       load_snapshot_manifest(const bfs::path& actualStoragePath, std::shared_ptr<hive::chain::full_block_type>& lib);
       /// Reads the parts of the snapshot manifest needed to decide whether the snapshot can be loaded. Does not need an open database.
       snapshot_compatibility_data load_snapshot_compatibility_data(const bfs::path& actualStoragePath) const;
@@ -1149,6 +1154,21 @@ void state_snapshot_plugin::impl::store_snapshot_manifest(const bfs::path& actua
   }
 
   {
+    const std::string json = _mainDb.get_current_state_objects_serialization_data();
+    Slice key("STATE_SERIALIZATION_DATA");
+    Slice value(json);
+    auto status = db->Put(writeOptions, StateDefinitionsDataCF, key, value);
+
+    if(status.ok() == false)
+    {
+      elog("Cannot write an index manifest entry to output file: `${p}'. Error details: `${e}'.", ("p", manifestDbPath.string())("e", status.ToString()));
+      ilog("Failing key value: \"STATE_SERIALIZATION_DATA\"");
+
+      throw std::exception();
+    }
+  }
+
+  {
     const std::string json = _mainDb.get_blockchain_config_from_shm();
     Slice key("BLOCKCHAIN_CONFIGURATION");
     Slice value(json);
@@ -1181,7 +1201,7 @@ void state_snapshot_plugin::impl::store_snapshot_manifest(const bfs::path& actua
   db.close();
   }
 
-std::tuple<snapshot_manifest, plugin_external_data_index, std::string, std::string, std::string, uint32_t>
+std::tuple<snapshot_manifest, plugin_external_data_index, std::string, std::string, uint32_t>
 state_snapshot_plugin::impl::load_snapshot_manifest(const bfs::path& actualStoragePath, std::shared_ptr<hive::chain::full_block_type>& lib)
 {
   bfs::path manifestDbPath(actualStoragePath);
@@ -1341,28 +1361,12 @@ state_snapshot_plugin::impl::load_snapshot_manifest(const bfs::path& actualStora
     FC_ASSERT(keyName == "SNAPSHOT_VERSION", "Broken snapshot - no entry for SNAPSHOT_VERSION, ${k} found.", ("k", keyName));
 
     std::string versionValue = valueSlice.ToString();
-    FC_ASSERT(versionValue == SNAPSHOT_FORMAT_VERSION, "Snapshot version mismatch - ${f} found, ${e} expected.", ("f", versionValue)("e", SNAPSHOT_FORMAT_VERSION));
+    FC_ASSERT(versionValue == SNAPSHOT_FORMAT_VERSION || versionValue == LAYOUT_ONLY_SNAPSHOT_FORMAT_VERSION,
+      "Snapshot version mismatch - ${f} found, ${e} or ${l} expected.", ("f", versionValue)("e", SNAPSHOT_FORMAT_VERSION)("l", LAYOUT_ONLY_SNAPSHOT_FORMAT_VERSION));
 
     irreversibleStateIterator->Next();
 
     FC_ASSERT(irreversibleStateIterator->Valid() == false, "Unexpected entries specifying irreversible block ?");
-  }
-
-  std::string state_definitions_data;
-
-  {
-    ::rocksdb::ReadOptions rOptions;
-
-    std::unique_ptr<::rocksdb::Iterator> stateDefinitionsDataIterator(manifestDb->NewIterator(rOptions, cfHandles[4]));
-    stateDefinitionsDataIterator->SeekToFirst();
-    FC_ASSERT(stateDefinitionsDataIterator->Valid(), "No entry for STATE_DEFINITIONS_DATA. Probably used old snapshot format (must be regenerated).");
-
-    Slice keySlice = stateDefinitionsDataIterator->key();
-    auto valueSlice = stateDefinitionsDataIterator->value();
-
-    std::string keyName = keySlice.ToString();
-    FC_ASSERT(keyName == "STATE_DEFINITIONS_DATA", "Broken snapshot - no entry for STATE_DEFINITIONS_DATA");
-    state_definitions_data = valueSlice.ToString();
   }
 
   std::string blockchain_configuration;
@@ -1410,7 +1414,7 @@ state_snapshot_plugin::impl::load_snapshot_manifest(const bfs::path& actualStora
   manifestDb->Close();
   manifestDbPtr.release();
 
-  return std::make_tuple(retVal, extDataIdx, std::move(state_definitions_data), std::move(blockchain_configuration), std::move(plugins), libn);
+  return std::make_tuple(retVal, extDataIdx, std::move(blockchain_configuration), std::move(plugins), libn);
 }
 
 state_snapshot_plugin::impl::snapshot_compatibility_data
@@ -1447,6 +1451,9 @@ state_snapshot_plugin::impl::load_snapshot_compatibility_data(const bfs::path& a
   for(size_t i = 0; i < entries.size(); ++i)
     statuses.emplace_back(manifestDb->Get(ReadOptions(), cfHandles[i + 1], entries[i].second, &values[i]));
 
+  std::string stateSerialization;
+  const ::rocksdb::Status stateSerializationStatus = manifestDb->Get(ReadOptions(), cfHandles[2], "STATE_SERIALIZATION_DATA", &stateSerialization);
+
   for(auto* cfh : cfHandles)
   {
     status = manifestDb->DestroyColumnFamilyHandle(cfh);
@@ -1459,9 +1466,15 @@ state_snapshot_plugin::impl::load_snapshot_compatibility_data(const bfs::path& a
     FC_ASSERT(statuses[i].ok(), "No entry for ${k}. Probably used old snapshot format (must be regenerated). Error details: `${e}'.",
       ("k", entries[i].second)("e", statuses[i].ToString()));
 
-  FC_ASSERT(values[0] == SNAPSHOT_FORMAT_VERSION, "Snapshot version mismatch - ${f} found, ${e} expected.", ("f", values[0])("e", SNAPSHOT_FORMAT_VERSION));
+  if(values[0] == LAYOUT_ONLY_SNAPSHOT_FORMAT_VERSION)
+    return { std::move(values[1]), std::nullopt, std::move(values[2]), std::move(values[3]) };
 
-  return { std::move(values[1]), std::move(values[2]), std::move(values[3]) };
+  FC_ASSERT(values[0] == SNAPSHOT_FORMAT_VERSION, "Snapshot version mismatch - ${f} found, ${e} or ${l} expected.",
+    ("f", values[0])("e", SNAPSHOT_FORMAT_VERSION)("l", LAYOUT_ONLY_SNAPSHOT_FORMAT_VERSION));
+  FC_ASSERT(stateSerializationStatus.ok(), "No entry for STATE_SERIALIZATION_DATA in snapshot of version ${v}. Error details: `${e}'.",
+    ("v", values[0])("e", stateSerializationStatus.ToString()));
+
+  return { std::move(values[1]), std::move(stateSerialization), std::move(values[2]), std::move(values[3]) };
 }
 
 void state_snapshot_plugin::impl::compare_snapshot_plugins(const std::string& plugins_in_snapshot) const
@@ -1501,7 +1514,11 @@ void state_snapshot_plugin::impl::verify_snapshot_is_loadable(const bfs::path& a
 
   compare_snapshot_plugins(snapshotData.plugins);
 
-  _mainDb.verify_match_of_state_objects_definitions(snapshotData.state_definitions);
+  // Snapshot data is (de)serialized field by field, so only its serialization has to match - not memory layout of the objects.
+  if(snapshotData.state_serialization)
+    _mainDb.verify_match_of_state_objects_serialization(*snapshotData.state_serialization);
+  else
+    _mainDb.verify_match_of_state_objects_definitions(snapshotData.state_definitions);
   wlog("Snapshot state definitions matches current app version.");
 
   _mainDb.verify_match_of_blockchain_configuration(snapshotData.blockchain_configuration);
@@ -1677,15 +1694,14 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
   std::shared_ptr<hive::chain::full_block_type> lib;
   auto snapshotManifest = load_snapshot_manifest(actualStoragePath, lib);
 
-  const std::string& loaded_decoded_type_data = std::get<2>(snapshotManifest);
-  const std::string& full_loaded_blockchain_configuration_json = std::get<3>(snapshotManifest);
+  const std::string& full_loaded_blockchain_configuration_json = std::get<2>(snapshotManifest);
 
   wlog("Wiping DB to load the snapshot.");
   _mainDb.close();
   _mainDb.wipe(openArgs.shared_mem_dir);
   _mainDb.pre_open(openArgs);
-  dlog("Updating DB decoded state objects data and blockchain config with data from snapshot.");
-  _mainDb.set_decoded_state_objects_data(loaded_decoded_type_data);
+  dlog("Updating DB blockchain config with data from snapshot.");
+  // Decoded state objects data is not taken from the snapshot: objects are built by this binary, so open() stamps the state with its own definitions.
   _mainDb.set_blockchain_config(full_loaded_blockchain_configuration_json);
   _mainDb.open(openArgs);
 
@@ -1728,7 +1744,7 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
     }
   }
 
-  auto last_irr_block = std::get<5>( snapshotManifest );
+  auto last_irr_block = std::get<4>( snapshotManifest );
 
   _mainDb.set_last_irreversible_block_num( last_irr_block );
   if( lib )
