@@ -46,6 +46,14 @@ std::string template_name(const std::string& demangled_type_name)
   FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Unbalanced template argument list in type name: ${demangled_type_name}", (demangled_type_name) );
 }
 
+std::string non_template_type_name(const std::string& demangled_type_name)
+{
+  if (demangled_type_name.find('<') != std::string::npos)
+    FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Template arguments of ${demangled_type_name} have to be named canonically - by canonical_names::value_template_arguments", (demangled_type_name) );
+
+  return normalize_type_name(demangled_type_name);
+}
+
 std::string join_template_arguments(const std::string& template_name, const std::vector<std::string>& arguments)
 {
   std::string result = template_name + "<";

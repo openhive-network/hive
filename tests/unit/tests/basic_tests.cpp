@@ -175,6 +175,49 @@ namespace serialization_test
     struct record { uint32_t id = 0; uint64_t amount = 0; v1::kind k = v1::first; fc::static_variant<alt_b, alt_a> payload; };
   }
 
+  /* Models of chainbase::oid differing in the width of the id. */
+  namespace v1
+  {
+    template <typename T> class oid { uint32_t _id = 0; public: uint32_t get_value() const { return _id; } };
+    struct identified { oid<identified> id; };
+  }
+  namespace wide_id
+  {
+    template <typename T> class oid { uint64_t _id = 0; public: uint64_t get_value() const { return _id; } };
+    struct identified { oid<identified> id; };
+  }
+
+  /* Size of a value packed with the given leaf encoding (see canonical_names::leaf_encoding); for strings - of the longest one. */
+  size_t packed_size_of_leaf_encoding(const hive::chain::util::serialized_type_data::entries_vector_t& encoding)
+  {
+    BOOST_REQUIRE( !encoding.empty() );
+    BOOST_REQUIRE_EQUAL( encoding[0].name, "encoding" );
+    const std::string& kind = encoding[0].value;
+
+    if (kind == "bytes" || kind == "string")
+    {
+      BOOST_REQUIRE_EQUAL( encoding.size(), 2u );
+      BOOST_REQUIRE_EQUAL( encoding[1].name, kind == "bytes" ? "size" : "max_length" );
+      const size_t length = std::stoul(encoding[1].value);
+      return kind == "bytes" ? length : fc::raw::pack_size(std::string(length, 'x'));
+    }
+
+    BOOST_REQUIRE_EQUAL( encoding.size(), 1u );
+    static const std::map<std::string, size_t> integer_sizes{
+      {"int8_t", 1}, {"uint8_t", 1}, {"int16_t", 2}, {"uint16_t", 2}, {"int32_t", 4}, {"uint32_t", 4}, {"int64_t", 8}, {"uint64_t", 8}};
+    const auto integer_size = integer_sizes.find(kind);
+    BOOST_REQUIRE_MESSAGE( integer_size != integer_sizes.end(), "Unknown leaf encoding: " << kind );
+    return integer_size->second;
+  }
+
+  template <typename T>
+  void check_leaf_encoding_matches_packed_size(const T& longest_value)
+  {
+    const size_t described_size = packed_size_of_leaf_encoding(hive::chain::util::canonical_names::leaf_encoding<T>::encoding());
+    BOOST_CHECK_MESSAGE( fc::raw::pack_size(longest_value) == described_size,
+      hive::chain::util::canonical_type_name<T>() << " is packed to " << fc::raw::pack_size(longest_value) << " bytes, but its encoding describes " << described_size );
+  }
+
   /* Serialization descriptors of `record` from namespace `version`, presented as if they described serialization_test::v1::record. */
   template <typename Record>
   std::string serialized_data_json_as_v1(const std::string& version)
@@ -202,6 +245,25 @@ FC_REFLECT( serialization_test::retyped::record, (id)(amount)(k)(payload) )
 FC_REFLECT_ENUM( serialization_test::renumbered::kind, (first)(second) )
 FC_REFLECT( serialization_test::renumbered::record, (id)(amount)(k)(payload) )
 FC_REFLECT( serialization_test::variant_reordered::record, (id)(amount)(k)(payload) )
+FC_REFLECT( serialization_test::v1::identified, (id) )
+FC_REFLECT( serialization_test::wide_id::identified, (id) )
+
+namespace hive { namespace chain { namespace util {
+  namespace canonical_names
+  {
+    template <typename T>
+    struct leaf_encoding<serialization_test::v1::oid<T>> : object_id_encoding<serialization_test::v1::oid<T>> {};
+    template <typename T>
+    struct leaf_encoding<serialization_test::wide_id::oid<T>> : object_id_encoding<serialization_test::wide_id::oid<T>> {};
+  }
+  namespace decoders { namespace non_reflected_types
+  {
+    template <typename T>
+    struct specific_type_decoder<serialization_test::v1::oid<T>> { void decode(decoded_types_data_storage&) const {} };
+    template <typename T>
+    struct specific_type_decoder<serialization_test::wide_id::oid<T>> { void decode(decoded_types_data_storage&) const {} };
+  } }
+} } }
 
 BOOST_FIXTURE_TEST_SUITE( basic_tests, clean_database_fixture )
 
@@ -1202,7 +1264,7 @@ BOOST_AUTO_TEST_CASE( decoding_types_mechanism_test )
     BOOST_CHECK_EQUAL( serialized_type_data.kind, "struct" );
     const hive::chain::util::serialized_type_data::entries_vector_t serialized_members_pattern{
       {"id", "chainbase::oid<hive::chain::decline_voting_rights_request_object>"},
-      {"account", "hive::protocol::fixed_string_impl<fc::erpair<uint64_t, uint64_t>>"},
+      {"account", "hive::protocol::fixed_string<16>"},
       {"effective_date", "fc::time_point_sec"}};
     BOOST_CHECK( serialized_type_data.entries == serialized_members_pattern );
 
@@ -1286,12 +1348,12 @@ BOOST_AUTO_TEST_CASE( decoding_types_mechanism_test )
   BOOST_CHECK_NO_THROW((dtds.register_new_type<fc::static_variant<fc::erpair<fc::sha256, long>, fc::erpair<double, long double>, fc::erpair<float, long>>>()));
   BOOST_CHECK_EQUAL( dtds.get_decoded_types_data_map().size(), 38 );
   {
-    /* Alternatives of a static_variant in order; `long` is named by its width. */
+    /* Alternatives of a static_variant in order; `long` and floating point types are named by their width. */
     const hive::chain::util::serialized_type_data& serialized_variant = dtds.get_serialized_type_data<fc::static_variant<fc::erpair<fc::sha256, long>, fc::erpair<double, long double>, fc::erpair<float, long>>>();
-    BOOST_CHECK_EQUAL( serialized_variant.name, "fc::static_variant<fc::erpair<fc::sha256, int64_t>, fc::erpair<double, long double>, fc::erpair<float, int64_t>>" );
+    BOOST_CHECK_EQUAL( serialized_variant.name, "fc::static_variant<fc::erpair<fc::sha256, int64_t>, fc::erpair<float64_t, float128_t>, fc::erpair<float32_t, int64_t>>" );
     BOOST_CHECK_EQUAL( serialized_variant.kind, "static_variant" );
     const hive::chain::util::serialized_type_data::entries_vector_t serialized_variant_pattern{
-      {"0", "fc::erpair<fc::sha256, int64_t>"}, {"1", "fc::erpair<double, long double>"}, {"2", "fc::erpair<float, int64_t>"}};
+      {"0", "fc::erpair<fc::sha256, int64_t>"}, {"1", "fc::erpair<float64_t, float128_t>"}, {"2", "fc::erpair<float32_t, int64_t>"}};
     BOOST_CHECK( serialized_variant.entries == serialized_variant_pattern );
   }
   BOOST_CHECK_NO_THROW(dtds.register_new_type<fc::sha256>());
@@ -1567,15 +1629,18 @@ BOOST_AUTO_TEST_CASE( decoded_type_data_json_operations )
     BOOST_CHECK_THROW(dtds.check_if_decoded_types_data_json_matches_with_current_decoded_data(""), fc::invalid_arg_exception);
   }
   {
-    // 8. Serialization descriptors json - only reflected types are described, by canonical names and without layout.
+    // 8. Serialization descriptors json - reflected types and leaf types are described, by canonical names and without layout.
     const std::string current_serialized_types_data_in_json = dtds.generate_serialized_types_data_json_string();
     const std::string json_pattern = "["
+      "{\"name\":\"chainbase::oid<hive::chain::decline_voting_rights_request_object>\",\"kind\":\"leaf\",\"entries\":[{\"name\":\"encoding\",\"value\":\"uint32_t\"}]},"
+      "{\"name\":\"fc::time_point_sec\",\"kind\":\"leaf\",\"entries\":[{\"name\":\"encoding\",\"value\":\"uint32_t\"}]},"
       "{\"name\":\"hive::chain::decline_voting_rights_request_object\",\"kind\":\"struct\",\"entries\":["
         "{\"name\":\"id\",\"value\":\"chainbase::oid<hive::chain::decline_voting_rights_request_object>\"},"
-        "{\"name\":\"account\",\"value\":\"hive::protocol::fixed_string_impl<fc::erpair<uint64_t, uint64_t>>\"},"
+        "{\"name\":\"account\",\"value\":\"hive::protocol::fixed_string<16>\"},"
         "{\"name\":\"effective_date\",\"value\":\"fc::time_point_sec\"}]},"
       "{\"name\":\"hive::chain::witness_object::witness_schedule_type\",\"kind\":\"enum\",\"entries\":["
-        "{\"name\":\"elected\",\"value\":\"0\"},{\"name\":\"timeshare\",\"value\":\"1\"},{\"name\":\"miner\",\"value\":\"2\"},{\"name\":\"none\",\"value\":\"3\"}]}"
+        "{\"name\":\"elected\",\"value\":\"0\"},{\"name\":\"timeshare\",\"value\":\"1\"},{\"name\":\"miner\",\"value\":\"2\"},{\"name\":\"none\",\"value\":\"3\"}]},"
+      "{\"name\":\"hive::protocol::fixed_string<16>\",\"kind\":\"leaf\",\"entries\":[{\"name\":\"encoding\",\"value\":\"string\"},{\"name\":\"max_length\",\"value\":\"16\"}]}"
       "]";
 
     BOOST_CHECK_EQUAL(current_serialized_types_data_in_json, json_pattern);
@@ -1586,12 +1651,15 @@ BOOST_AUTO_TEST_CASE( decoded_type_data_json_operations )
   {
     // 9. Serialization descriptors json with a retyped member and an extra type - error names the type and its first differing member.
     const std::string wrong_json_pattern = "["
+      "{\"name\":\"chainbase::oid<hive::chain::decline_voting_rights_request_object>\",\"kind\":\"leaf\",\"entries\":[{\"name\":\"encoding\",\"value\":\"uint32_t\"}]},"
+      "{\"name\":\"fc::time_point_sec\",\"kind\":\"leaf\",\"entries\":[{\"name\":\"encoding\",\"value\":\"uint32_t\"}]},"
       "{\"name\":\"hive::chain::decline_voting_rights_request_object\",\"kind\":\"struct\",\"entries\":["
         "{\"name\":\"id\",\"value\":\"chainbase::oid<hive::chain::decline_voting_rights_request_object>\"},"
-        "{\"name\":\"account\",\"value\":\"hive::protocol::fixed_string_impl<fc::erpair<uint64_t, uint64_t>>\"},"
+        "{\"name\":\"account\",\"value\":\"hive::protocol::fixed_string<16>\"},"
         "{\"name\":\"effective_date\",\"value\":\"uint32_t\"}]},"
       "{\"name\":\"hive::chain::witness_object::witness_schedule_type\",\"kind\":\"enum\",\"entries\":["
         "{\"name\":\"elected\",\"value\":\"0\"},{\"name\":\"timeshare\",\"value\":\"1\"},{\"name\":\"miner\",\"value\":\"2\"},{\"name\":\"none\",\"value\":\"3\"}]},"
+      "{\"name\":\"hive::protocol::fixed_string<16>\",\"kind\":\"leaf\",\"entries\":[{\"name\":\"encoding\",\"value\":\"string\"},{\"name\":\"max_length\",\"value\":\"16\"}]},"
       "{\"name\":\"hive::protocol::votable_asset_info_v1\",\"kind\":\"struct\",\"entries\":[]}"
       "]";
     const auto response = dtds.check_if_serialized_types_data_json_matches_with_current_serialized_data(wrong_json_pattern);
@@ -1627,6 +1695,9 @@ BOOST_AUTO_TEST_CASE( canonical_type_names )
   BOOST_CHECK_EQUAL( (canonical_type_name<std::pair<long, chainbase::t_vector<uint32_t>>>()), "std::pair<int64_t, boost::container::vector<uint32_t>>" );
   /* Allocator argument of other templates is skipped too. */
   BOOST_CHECK_EQUAL( canonical_type_name<serialization_test::holder<shm_allocator>>(), "serialization_test::holder<>" );
+  /* Value template arguments in decimal, without literal suffixes. */
+  BOOST_CHECK_EQUAL( canonical_type_name<hive::chain::HBD_balance>(), "hive::chain::tiny_balance<" + std::to_string( HIVE_ASSET_NUM_HBD ) + ">" );
+  BOOST_CHECK_EQUAL( (canonical_type_name<fc::array<char, 33>>()), "fc::array<char, 33>" );
 }
 
 BOOST_AUTO_TEST_CASE( serialization_descriptor_ignores_memory_layout )
@@ -1690,6 +1761,92 @@ BOOST_AUTO_TEST_CASE( serialization_descriptor_detects_format_changes )
   check_refused(serialized_data_json_as_v1<variant_reordered::record>("variant_reordered"),
     "Type: serialization_test::v1::record is serialized differently - struct entry #3 is `payload: fc::static_variant<serialization_test::alt_a, serialization_test::alt_b>' in current version, "
     "but `payload: fc::static_variant<serialization_test::alt_b, serialization_test::alt_a>' in loaded data.");
+}
+
+BOOST_AUTO_TEST_CASE( serialization_descriptor_detects_id_width_change )
+{
+  using namespace serialization_test;
+  using namespace hive::chain::util;
+
+  /* chainbase::oid is described like its models below. */
+  static_assert( std::is_base_of_v<canonical_names::object_id_encoding<chainbase::oid<hive::chain::account_object>>,
+                                   canonical_names::leaf_encoding<chainbase::oid<hive::chain::account_object>>> );
+  const serialized_type_data::entries_vector_t oid_encoding{{"encoding", "uint32_t"}};
+  BOOST_CHECK( canonical_names::leaf_encoding<chainbase::oid<hive::chain::account_object>>::encoding() == oid_encoding );
+
+  decoded_types_data_storage dtds;
+  dtds.register_new_type<v1::identified>();
+  BOOST_CHECK( dtds.check_if_serialized_types_data_json_matches_with_current_serialized_data(serialized_data_json_as_v1<v1::identified>("v1")).first ==
+               state_definitions_verification_result::state_definitions_matches );
+
+  const auto response = dtds.check_if_serialized_types_data_json_matches_with_current_serialized_data(serialized_data_json_as_v1<wide_id::identified>("wide_id"));
+  BOOST_CHECK( response.first == state_definitions_verification_result::mismatch_throw_error );
+  BOOST_CHECK_EQUAL( response.second,
+    "Type: serialization_test::v1::oid<serialization_test::v1::identified> is serialized differently - leaf entry #0 is `encoding: uint32_t' in current version, "
+    "but `encoding: uint64_t' in loaded data.\n" );
+}
+
+BOOST_AUTO_TEST_CASE( leaf_encodings_match_packed_size )
+{
+  using namespace serialization_test;
+
+  check_leaf_encoding_matches_packed_size( chainbase::oid<hive::chain::account_object>( 0 ) );
+  check_leaf_encoding_matches_packed_size( chainbase::oid_ref<hive::chain::account_object>() );
+  check_leaf_encoding_matches_packed_size( fc::time_point_sec() );
+  check_leaf_encoding_matches_packed_size( fc::sha256() );
+  check_leaf_encoding_matches_packed_size( fc::ripemd160() );
+  check_leaf_encoding_matches_packed_size( hive::protocol::fixed_string<16>( std::string( 16, 'x' ) ) );
+  check_leaf_encoding_matches_packed_size( hive::protocol::fixed_string<24>( std::string( 24, 'x' ) ) );
+  check_leaf_encoding_matches_packed_size( hive::protocol::fixed_string<32>( std::string( 32, 'x' ) ) );
+}
+
+BOOST_AUTO_TEST_CASE( serialization_descriptor_golden )
+{
+  using namespace hive::chain;
+
+  util::decoded_types_data_storage dtds;
+  dtds.register_new_type<feed_history_object>();
+  dtds.register_new_type<witness_object>();
+  dtds.register_new_type<fc::sha256>();
+  dtds.register_new_type<hive::protocol::future_extensions>();
+
+  const std::vector<util::serialized_type_data> descriptors{
+    dtds.get_serialized_type_data<feed_history_object>(),
+    dtds.get_serialized_type_data<chainbase::oid<feed_history_object>>(),
+    dtds.get_serialized_type_data<hive::protocol::HBD_price>(),
+    dtds.get_serialized_type_data<hive::protocol::HBD_asset>(),
+    dtds.get_serialized_type_data<hive::protocol::share_type>(),
+    dtds.get_serialized_type_data<feed_history_object::t_price_history>(),
+    dtds.get_serialized_type_data<witness_object::witness_schedule_type>(),
+    dtds.get_serialized_type_data<fc::sha256>(),
+    dtds.get_serialized_type_data<hive::protocol::fixed_string<16>>(),
+    dtds.get_serialized_type_data<fc::time_point_sec>(),
+    dtds.get_serialized_type_data<hive::protocol::future_extensions>() };
+
+  const std::string golden =
+    "["
+    "{\"name\":\"hive::chain::feed_history_object\",\"kind\":\"struct\",\"entries\":[{\"name\":\"id\",\"value\":\"chainbase::oid<hive::chain::feed_history_object>\"},{\"name\":\"current_median_history\",\"value\":\"hive::protocol::tiny_price<3200000003, 3200000035>\"},{\"name\":\"market_median_history\",\"value\":\"hive::protocol::tiny_price<3200000003, 3200000035>\"},{\"name\":\"current_min_history\",\"value\":\"hive::protocol::tiny_price<3200000003, 3200000035>\"},{\"name\":\"current_max_history\",\"value\":\"hive::protocol::tiny_price<3200000003, 3200000035>\"},{\"name\":\"price_history\",\"value\":\"boost::container::deque<hive::protocol::tiny_price<3200000003, 3200000035>>\"}]},"
+    "{\"name\":\"chainbase::oid<hive::chain::feed_history_object>\",\"kind\":\"leaf\",\"entries\":[{\"name\":\"encoding\",\"value\":\"uint32_t\"}]},"
+    "{\"name\":\"hive::protocol::tiny_price<3200000003, 3200000035>\",\"kind\":\"struct\",\"entries\":[{\"name\":\"base\",\"value\":\"hive::protocol::tiny_asset<3200000003>\"},{\"name\":\"quote\",\"value\":\"hive::protocol::tiny_asset<3200000035>\"}]},"
+    "{\"name\":\"hive::protocol::tiny_asset<3200000003>\",\"kind\":\"struct\",\"entries\":[{\"name\":\"amount\",\"value\":\"fc::safe<int64_t>\"}]},"
+    "{\"name\":\"fc::safe<int64_t>\",\"kind\":\"struct\",\"entries\":[{\"name\":\"value\",\"value\":\"int64_t\"}]},"
+    "{\"name\":\"boost::container::deque<hive::protocol::tiny_price<3200000003, 3200000035>>\",\"kind\":\"container\",\"entries\":[{\"name\":\"container\",\"value\":\"boost::container::deque\"},{\"name\":\"element\",\"value\":\"hive::protocol::tiny_price<3200000003, 3200000035>\"}]},"
+    "{\"name\":\"hive::chain::witness_object::witness_schedule_type\",\"kind\":\"enum\",\"entries\":[{\"name\":\"elected\",\"value\":\"0\"},{\"name\":\"timeshare\",\"value\":\"1\"},{\"name\":\"miner\",\"value\":\"2\"},{\"name\":\"none\",\"value\":\"3\"}]},"
+    "{\"name\":\"fc::sha256\",\"kind\":\"leaf\",\"entries\":[{\"name\":\"encoding\",\"value\":\"bytes\"},{\"name\":\"size\",\"value\":\"32\"}]},"
+    "{\"name\":\"hive::protocol::fixed_string<16>\",\"kind\":\"leaf\",\"entries\":[{\"name\":\"encoding\",\"value\":\"string\"},{\"name\":\"max_length\",\"value\":\"16\"}]},"
+    "{\"name\":\"fc::time_point_sec\",\"kind\":\"leaf\",\"entries\":[{\"name\":\"encoding\",\"value\":\"uint32_t\"}]},"
+    "{\"name\":\"fc::static_variant<hive::void_t>\",\"kind\":\"static_variant\",\"entries\":[{\"name\":\"0\",\"value\":\"hive::void_t\"}]}"
+    "]";
+  BOOST_CHECK_EQUAL( fc::json::to_string( descriptors ), golden );
+
+  /*
+    Changed descriptor generation needs a new golden value and, with it, a new entry here, whose version STATE_SERIALIZATION_DESCRIPTOR_VERSION is set to.
+    Existing entries are never changed.
+  */
+  const std::vector<std::pair<uint32_t, std::string>> descriptor_versions{
+    { 1, "5e5712f82636d7fd91b4d7c11459945f5e27d52b" } };
+  BOOST_CHECK_EQUAL( util::STATE_SERIALIZATION_DESCRIPTOR_VERSION, descriptor_versions.back().first );
+  BOOST_CHECK_EQUAL( util::calculate_checksum_from_string( golden ), descriptor_versions.back().second );
 }
 
 BOOST_AUTO_TEST_CASE( additional_allocations )

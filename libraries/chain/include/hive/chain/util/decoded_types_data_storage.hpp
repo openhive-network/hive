@@ -9,6 +9,7 @@
 #include <fc/io/json.hpp>
 #include <fc/reflect/reflect.hpp>
 #include <fc/static_variant.hpp>
+#include <fc/time.hpp>
 
 #include <hive/protocol/fixed_string.hpp>
 
@@ -64,7 +65,8 @@ struct decoded_type_data
   - "struct" - reflected members in declaration order: member name, canonical member type,
   - "enum" - enum values: value name, numeric value,
   - "static_variant" - alternatives in order: index, canonical alternative type,
-  - "container" - first entry {"container", container kind}, then element types ("element", or "key" and "mapped" for maps).
+  - "container" - first entry {"container", container kind}, then element types ("element", or "key" and "mapped" for maps),
+  - "leaf" - encoding of a non-reflected type which is not composed of other types (see canonical_names::leaf_encoding).
 */
 struct serialized_type_data
 {
@@ -85,18 +87,29 @@ struct serialized_type_data
   bool operator==(const serialized_type_data& other) const { return name == other.name && kind == other.kind && entries == other.entries; }
 };
 
+/*
+  Version of the rules producing serialized_type_data: canonical names, leaf encodings and entries of each kind. Descriptors are comparable only
+  when produced by the same rules, so the version is stored with them (e.g. in a snapshot) and compared first.
+  Has to be increased with every change of these rules (the golden descriptor test in basic_tests fails until it is).
+*/
+constexpr uint32_t STATE_SERIALIZATION_DESCRIPTOR_VERSION = 1;
+
 namespace canonical_names
 {
   /* Replaces standard library implementation namespaces (std::__cxx11::, std::__1::) with std::. */
   std::string normalize_type_name(std::string type_name);
   /* Name of the template of a demangled template instance name, i.e. without its trailing argument list. */
   std::string template_name(const std::string& demangled_type_name);
+  /* Normalized name of a reflected non-template type. Throws if the name has template arguments, as their spelling depends on the demangler. */
+  std::string non_template_type_name(const std::string& demangled_type_name);
 }
 
 /*
-  Name of T which is the same for the same source regardless of Boost version, standard library and platform:
+  Name of T which is the same for the same source regardless of Boost version, standard library, demangler and platform:
   allocator and segment manager template arguments are skipped, containers (see container_description) are named by their kind and
-  element types only - without comparator and options, and integer types are named by their width.
+  element types only - without comparator and options, integer and floating point types are named by their width, value template arguments
+  are written in decimal and leaf types (see leaf_encoding) are named explicitly.
+  Every non-reflected type has to be a container, a fixed size array, a composite_template or a leaf - otherwise it doesn't compile.
 */
 template <typename T>
 std::string canonical_type_name();
@@ -209,7 +222,109 @@ namespace canonical_names
     }
   };
 
+  /* Templates with value parameters (e.g. asset symbols of tiny_asset, tiny_price, tiny_balance) - their arguments in decimal. */
+  template <typename T>
+  struct value_template_arguments : std::false_type {};
+
+  template <template <uint32_t> typename T, uint32_t A>
+  struct value_template_arguments<T<A>> : std::true_type
+  {
+    static std::vector<std::string> names() { return {std::to_string(A)}; }
+  };
+
+  template <template <uint32_t, uint32_t> typename T, uint32_t A, uint32_t B>
+  struct value_template_arguments<T<A, B>> : std::true_type
+  {
+    static std::vector<std::string> names() { return {std::to_string(A), std::to_string(B)}; }
+  };
+
+  /* Non-reflected templates serialized as their arguments, one after another (static_variant has its own descriptor). */
+  template <typename T>
+  struct composite_template : std::false_type {};
+
+  template <typename A, typename B>
+  struct composite_template<std::pair<A, B>> : std::true_type {};
+
+  template <typename A, typename B>
+  struct composite_template<fc::erpair<A, B>> : std::true_type {};
+
+  template <typename T>
+  struct composite_template<std::optional<T>> : std::true_type {};
+
+  template <typename... Args>
+  struct composite_template<fc::static_variant<Args...>> : std::true_type {};
+
   std::string join_template_arguments(const std::string& template_name, const std::vector<std::string>& arguments);
+
+  template <typename T>
+  std::string template_instance_name(const std::vector<std::string>& arguments)
+  {
+    return join_template_arguments(template_name(boost::core::demangle(typeid(T).name())), arguments);
+  }
+
+  /*
+    Serialized encoding of a non-reflected type which is neither a container, a fixed size array nor a composite_template. Every such type reachable
+    from a state object needs a specialization with name() - its canonical name, and encoding() - entries describing what fc::raw writes for it:
+    - {"encoding", <canonical integer type>} - an integer of that width,
+    - {"encoding", "bytes"}, {"size", N} - N raw bytes,
+    - {"encoding", "string"}, {"max_length", N} - a length prefixed string of at most N characters.
+  */
+  template <typename T>
+  struct leaf_encoding : std::false_type {};
+
+  /* Object ids are written as their value. */
+  template <typename Id>
+  struct object_id_encoding : std::true_type
+  {
+    static std::string name() { return template_instance_name<Id>(template_arguments<Id>::names()); }
+    static serialized_type_data::entries_vector_t encoding()
+    {
+      return {{"encoding", canonical_type_name<decltype(std::declval<const Id&>().get_value())>()}};
+    }
+  };
+
+  template <typename T>
+  struct leaf_encoding<chainbase::oid<T>> : object_id_encoding<chainbase::oid<T>> {};
+
+  template <typename T>
+  struct leaf_encoding<chainbase::oid_ref<T>> : object_id_encoding<chainbase::oid_ref<T>> {};
+
+  template <>
+  struct leaf_encoding<fc::time_point_sec> : std::true_type
+  {
+    static std::string name() { return "fc::time_point_sec"; }
+    static serialized_type_data::entries_vector_t encoding()
+    {
+      return {{"encoding", canonical_type_name<decltype(std::declval<const fc::time_point_sec&>().sec_since_epoch())>()}};
+    }
+  };
+
+  /* Hashes are written as raw bytes of their value. */
+  template <typename Hash>
+  struct hash_encoding : std::true_type
+  {
+    static serialized_type_data::entries_vector_t encoding() { return {{"encoding", "bytes"}, {"size", std::to_string(sizeof(Hash::_hash))}}; }
+  };
+
+  template <>
+  struct leaf_encoding<fc::sha256> : hash_encoding<fc::sha256>
+  {
+    static std::string name() { return "fc::sha256"; }
+  };
+
+  template <>
+  struct leaf_encoding<fc::ripemd160> : hash_encoding<fc::ripemd160>
+  {
+    static std::string name() { return "fc::ripemd160"; }
+  };
+
+  /* Fixed strings are written as strings - their storage only limits the length. */
+  template <typename Storage>
+  struct leaf_encoding<hive::protocol::fixed_string_impl<Storage>> : std::true_type
+  {
+    static std::string name() { return "hive::protocol::fixed_string<" + std::to_string(sizeof(Storage)) + ">"; }
+    static serialized_type_data::entries_vector_t encoding() { return {{"encoding", "string"}, {"max_length", std::to_string(sizeof(Storage))}}; }
+  };
 
   template <typename T>
   std::vector<std::string> element_type_names()
@@ -238,15 +353,28 @@ std::string canonical_type_name()
     return "uint128_t";
   else if constexpr (std::is_integral_v<T>)
     return std::string(std::is_signed_v<T> ? "int" : "uint") + std::to_string(sizeof(T) * 8) + "_t";
+  else if constexpr (std::is_floating_point_v<T>)
+    return "float" + std::to_string(sizeof(T) * 8) + "_t";
   else if constexpr (container_description<T>::value)
     return join_template_arguments(container_description<T>::kind, element_type_names<T>());
   else if constexpr (fixed_size_array<T>::value)
     return join_template_arguments(fixed_size_array<T>::kind,
       {canonical_type_name<typename fixed_size_array<T>::element_type>(), std::to_string(fixed_size_array<T>::size)});
+  else if constexpr (leaf_encoding<T>::value)
+    return leaf_encoding<T>::name();
+  else if constexpr (value_template_arguments<T>::value)
+    return template_instance_name<T>(value_template_arguments<T>::names());
   else if constexpr (template_arguments<T>::value)
-    return join_template_arguments(template_name(boost::core::demangle(typeid(T).name())), template_arguments<T>::names());
+  {
+    static_assert(fc::reflector<T>::is_defined::value || composite_template<T>::value,
+      "Serialized encoding of a non-reflected template has to be described by canonical_names::leaf_encoding or composite_template");
+    return template_instance_name<T>(template_arguments<T>::names());
+  }
   else
-    return normalize_type_name(boost::core::demangle(typeid(T).name()));
+  {
+    static_assert(fc::reflector<T>::is_defined::value, "Serialized encoding of a non-reflected type has to be described by canonical_names::leaf_encoding");
+    return non_template_type_name(boost::core::demangle(typeid(T).name()));
+  }
 }
 
 namespace decoders
@@ -505,6 +633,12 @@ namespace decoders
     return serialized_type_data{.name = canonical_type_name<T>(), .kind = "container", .entries = std::move(entries)};
   }
 
+  template <typename T>
+  serialized_type_data describe_leaf()
+  {
+    return serialized_type_data{.name = canonical_type_name<T>(), .kind = "leaf", .entries = canonical_names::leaf_encoding<T>::encoding()};
+  }
+
   /* Allows to check if non reflected type is decodable by specific decoder. */
   template <typename T, typename = std::void_t<>>
   struct is_specific_type_decodable : std::false_type {};
@@ -597,6 +731,8 @@ namespace decoders
         {
           non_reflected_types::specific_type_decoder<T> decoder;
           decoder.decode(dtds);
+          if constexpr (canonical_names::leaf_encoding<T>::value)
+            dtds.add_serialized_type_data_to_map(describe_leaf<T>());
         }
       }
       /* If we cannot decode type, compilation error should occur. */
