@@ -29,6 +29,10 @@ class state_snapshot_provider
     */
     virtual void process_explicit_snapshot_dump_requests(const hive::chain::open_args& openArgs) = 0;
     virtual void process_explicit_snapshot_load_requests(const hive::chain::open_args& openArgs) = 0;
+    /** Checks that the snapshot requested at application command line can be loaded, without touching the node's state.
+        Must be called before the state is wiped for the load; throws when the load would be refused.
+    */
+    virtual void verify_explicit_snapshot_load_requests() = 0;
 
   protected:
     virtual ~state_snapshot_provider() = default;
