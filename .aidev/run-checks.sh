@@ -99,7 +99,7 @@ sccache_backend() {
     fi
 }
 
-build() {
+build() (  # a subshell: the `cd` below must not move the steps that follow
     sccache_backend
     local m
     for m in libraries/fc libraries/appbase libraries/vendor/rocksdb libraries/vendor/zstd \
@@ -113,7 +113,7 @@ build() {
     ninja -j "${HIVE_BUILD_JOBS:-$(nproc)}" chain_test plugin_test || rc=$?
     sccache --show-stats || true
     return "$rc"
-}
+)
 
 bin() {  # NAME: the built test binary
     find "$bld/tests" -name "$1" -type f -perm -u+x -print -quit 2>/dev/null
