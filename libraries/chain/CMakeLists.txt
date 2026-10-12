@@ -74,6 +74,7 @@ set( SOURCES
              util/dhf_processor.cpp
              util/dhf_helper.cpp
              util/delayed_voting.cpp
+             util/manabar.cpp
              util/owner_update_limit_mgr.cpp
              util/operation_extractor.cpp
              util/data_filter.cpp

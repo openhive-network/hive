@@ -102,6 +102,15 @@ struct manabar
 };
 
 /**
+  * Fills params of downvote manabar for account with given effective_vests and returns amount of mana that needs
+  * to be used on that manabar (after its regeneration) to reflect change of vests by new_mana (can be negative).
+  * downvote_pool_percent and head_block_number come from dynamic global properties, prevent_downvote_overflow
+  * - see update_manabar.
+  */
+int64_t calculate_downvote_manabar( manabar_params& params, int64_t effective_vests, int64_t new_mana,
+  uint16_t downvote_pool_percent, uint32_t head_block_number, bool prevent_downvote_overflow );
+
+/**
   * Regenerates voting and downvote manabars and adds new_mana to them (new_mana can be negative).
   * prevent_downvote_overflow should reflect HIVE_HARDFORK_1_29_DOWNVOTE_MANA_OVERFLOW (issue #858) -
   * before that hardfork scaling of new_mana for downvote manabar was done on int64_t and could overflow.
@@ -120,47 +129,9 @@ void update_manabar( const PropType& gpo, AccountType& account, int64_t new_mana
   if( gpo.get_downvote_pool_percent() )
   {
     manabar_params params;
-    params.regen_time = HIVE_VOTING_MANA_REGENERATION_SECONDS;
-
-#if defined(IS_TEST_NET) || defined(HIVE_CONVERTER_ICEBERG_PLUGIN_ENABLED)
-    if( true )
-#else //mainnet and regular mirrornet
-    if( gpo.get_head_block_number() > HIVE_HF_21_STALL_BLOCK )
-#endif
-    {
-      params.max_mana = fc::uint128_to_int64( ( uint128_t( effective_vests ) * gpo.get_downvote_pool_percent() ) / HIVE_100_PERCENT );
-    }
-    else
-    {
-      uint128_t numerator = uint128_t( effective_vests ) * gpo.get_downvote_pool_percent();
-      if( fc::uint128_high_bits(numerator) != 0 )
-        dlog( "NOTIFYALERT! max mana overflow made it in to the chain at block ${b}", ( "b", gpo.get_head_block_number() ) );
-
-      params.max_mana = ( effective_vests * gpo.get_downvote_pool_percent() ) / HIVE_100_PERCENT;
-    }
-
+    int64_t mana_used = calculate_downvote_manabar( params, effective_vests, new_mana,
+      gpo.get_downvote_pool_percent(), gpo.get_head_block_number(), prevent_downvote_overflow );
     account.downvote_manabar.regenerate_mana( params, gpo.get_head_block_time() );
-
-    // magnitude of new_mana (computed on unsigned to be safe also for INT64_MIN)
-    uint64_t abs_new_mana = new_mana < 0 ? uint64_t( 0 ) - uint64_t( new_mana ) : uint64_t( new_mana );
-    uint128_t numerator = uint128_t( abs_new_mana ) * gpo.get_downvote_pool_percent();
-    int64_t mana_used = 0;
-    if( prevent_downvote_overflow )
-    {
-      // downvote_pool_percent <= HIVE_100_PERCENT so the result always fits in int64_t
-      int64_t scaled = fc::uint128_to_int64( numerator / HIVE_100_PERCENT );
-      mana_used = new_mana < 0 ? scaled : -scaled;
-    }
-    else
-    {
-      if( fc::uint128_high_bits(numerator) != 0 ||
-        fc::uint128_low_bits(numerator) > static_cast<uint64_t>( std::numeric_limits< int64_t >::max() ) )
-        dlog( "NOTIFYALERT! downvote mana overflow made it in to the chain at block ${b}", ( "b", gpo.get_head_block_number() ) );
-
-      // historical behavior - wrap around like two's complement int64_t multiplication would (but without UB)
-      int64_t product = static_cast<int64_t>( ( uint64_t( 0 ) - uint64_t( new_mana ) ) * uint64_t( gpo.get_downvote_pool_percent() ) );
-      mana_used = product / HIVE_100_PERCENT;
-    }
     account.downvote_manabar.use_mana( mana_used );
   }
   } FC_CAPTURE_LOG_AND_RETHROW( (account)(effective_vests) )
