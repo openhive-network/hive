@@ -57,6 +57,15 @@ starts leave the data alone, so the command never changes:
   block log: it serves state, account history and the head block, but
   `get_block` fails for older blocks with "has been pruned", and it cannot
   replay. Use a snapshot made by the same hived version you run.
+
+  hived loads the snapshot only when there is no complete state: on a fresh
+  volume, or when an earlier load was interrupted (a container killed mid-load
+  loads it again on the next start). Once the state exists, restarts and
+  `docker compose up` leave it alone and nothing is downloaded again, so the
+  unpacked snapshot (`/home/hived/datadir/snapshot`) can be deleted after the
+  first start. hived records an unfinished load in
+  `snapshot_load_pending.json` next to its state file; the file disappears
+  once the node has caught up with its block log.
 - **Block log.** With `BLOCK_LOG_URL` set instead, the container downloads the
   block log (~550 GB, resumable, safe to interrupt) into its data volume and
   replays it. A replay finishes in well under a day on fast NVMe and ends with
@@ -146,7 +155,14 @@ time the container is recreated.
 3. If the release notes say the version needs a replay, set
    `HIVED_EXTRA_ARGS=--force-replay` in `.env` before step 2 and clear it after
    the node is back. This discards the state and account history and rebuilds
-   both from the block log already on disk; nothing is downloaded again.
+   both from the block log already on disk; nothing is downloaded again, and
+   no snapshot is loaded even when `SNAPSHOT_URL` is set.
+
+An upgrade never reloads the snapshot on its own: the state is complete, so it
+is kept. If the new version cannot open it, hived refuses to start without
+touching it and exits with code 78 (see Troubleshooting); replay with
+`--force-replay` as in step 3, or, on a snapshot-only node, start over from a
+fresh snapshot as described below.
 
 The same `--force-replay` step is needed after changing the tracked accounts in
 `config.ini`. For a release that needs a replay, consider running the upgrade on a
@@ -170,6 +186,14 @@ docker compose up -d
   `hived.log` inside the data volume.
 - A container that keeps restarting has a startup error in its log, most often a
   mistake in `config.ini`.
+- Exit code 78 (`docker compose ps -a` or `docker inspect`) means hived refused
+  to start for a reason a restart cannot fix, and changed nothing: the snapshot
+  was refused by this hived version, the state cannot be opened by it, the state
+  and block log disagree, or the options contradict each other. The log names
+  the cause and the option that fixes it, usually `--force-replay` (a node with a
+  block log) or a fresh snapshot (a snapshot-only node). `restart: unless-stopped`
+  restarts it regardless, so it keeps refusing until you act; stop it with
+  `docker compose stop hived` meanwhile.
 - `unhealthy` with `still syncing` in `docker inspect` output is normal until the
   node has caught up. Raise `HIVED_HEALTHCHECK_MAX_BLOCK_AGE` if your monitoring
   is stricter than the network's block interval warrants.

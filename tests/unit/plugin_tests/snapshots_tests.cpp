@@ -6,6 +6,7 @@
 #include <hive/chain/detail/state/feed_history_object.hpp>
 #include <hive/chain/util/decoded_types_data_storage.hpp>
 
+#include <hive/plugins/chain/snapshot_load_marker.hpp>
 #include <hive/plugins/state_snapshot/state_snapshot_plugin.hpp>
 
 #include "../db_fixture/snapshots_fixture.hpp"
@@ -26,6 +27,7 @@
 
 using namespace hive::chain;
 using namespace hive::protocol;
+using hive::plugins::chain::snapshot_load_marker;
 
 namespace {
 
@@ -196,6 +198,47 @@ std::map< std::string, fc::sha256 > hash_state_files( const fc::path& state_dir 
     hashes[ ( *it ).string() ] = fc::sha256::hash( content );
   }
   return hashes;
+}
+
+const hived_fixture::config_line_t load_snapshot_if_no_state{ "load-snapshot-if-no-state", { "snap" } };
+
+fc::path state_dir()
+{
+  return hive::utilities::temp_directory_path() / "blockchain";
+}
+
+std::optional< snapshot_load_marker::pending_load > read_snapshot_load_marker()
+{
+  return snapshot_load_marker( state_dir() ).read();
+}
+
+/// Restarts the node with the state_snapshot plugin reading snapshots from `snapshot_root_dir`, and with the given options.
+void restart_with_snapshot_plugin( snapshots_fixture& fixture, const std::string& snapshot_root_dir, hived_fixture::config_arg_override_t options )
+{
+  fixture.reset_fixture( false );
+  options.push_back( hived_fixture::config_line_t( { "plugin", { "state_snapshot" } } ) );
+  options.push_back( hived_fixture::config_line_t( { "snapshot-root-dir", { snapshot_root_dir } } ) );
+  hive::plugins::state_snapshot::state_snapshot_plugin* plugin = nullptr;
+  fixture.postponed_init( options, &plugin );
+}
+
+/// Restarts the node without any load option and returns its head block, which is then also the head of the block log.
+uint32_t restart_and_get_head_block_num( snapshots_fixture& fixture )
+{
+  fixture.reset_fixture( false );
+  fixture.postponed_init();
+  return fixture.db()->head_block_num();
+}
+
+/// Checks that `start` throws an fc::exception whose details contain all `fragments`, and that hived takes it for a refusal a restart cannot fix.
+void check_startup_refused( snapshots_fixture& fixture, const std::function< void() >& start, const std::vector< std::string >& fragments )
+{
+  BOOST_CHECK_EXCEPTION( start(), fc::exception, [&]( const fc::exception& e )
+  {
+    const std::string details = e.to_detail_string();
+    return std::all_of( fragments.begin(), fragments.end(), [&]( const std::string& fragment ) { return details.find( fragment ) != std::string::npos; } );
+  } );
+  BOOST_CHECK( fixture.get_chain_plugin().startup_refused() );
 }
 
 } // namespace
@@ -447,6 +490,174 @@ BOOST_AUTO_TEST_CASE( snapshot_with_other_descriptor_version_is_refused )
         return details.find( "State serialization descriptor version mismatch - snapshot describes its state with version " + other_version +
                              ", this build with version " + current_version ) != std::string::npos;
       } );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( load_snapshot_if_no_state_loads_only_without_state )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "--- Testing: load_snapshot_if_no_state_loads_only_without_state" );
+
+    const std::string snapshot_root_dir = "load_snapshot_if_no_state_loads_only_without_state";
+    clear_snapshot( snapshot_root_dir );
+
+    start_node_with_all_witnesses( *this );
+    dump_snapshot( snapshot_root_dir );
+    const uint32_t snapshot_head_block_num = db()->head_block_num();
+    // with all witnesses active blocks become irreversible, and reach the block log, about 15 blocks later
+    generate_blocks( 2 * HIVE_MAX_WITNESSES );
+    const uint32_t head_block_num = restart_and_get_head_block_num( *this );
+    BOOST_REQUIRE_GT( head_block_num, snapshot_head_block_num );
+
+    // a complete state is neither wiped nor replaced
+    restart_with_snapshot_plugin( *this, snapshot_root_dir, { load_snapshot_if_no_state } );
+    BOOST_CHECK( !db()->get_snapshot_loaded() );
+    BOOST_CHECK_EQUAL( db()->head_block_num(), head_block_num );
+    BOOST_CHECK( !read_snapshot_load_marker() );
+
+    // without a state the snapshot is loaded, and the block log replayed forward to its head
+    reset_fixture( false );
+    BOOST_REQUIRE( fc::remove( state_dir() / "shared_memory.bin" ) );
+    restart_with_snapshot_plugin( *this, snapshot_root_dir, { load_snapshot_if_no_state } );
+    BOOST_CHECK( db()->get_snapshot_loaded() );
+    BOOST_CHECK_EQUAL( db()->head_block_num(), head_block_num );
+    BOOST_CHECK( !read_snapshot_load_marker() );
+
+    // the snapshot is not even looked at when the state is complete
+    clear_snapshot( snapshot_root_dir );
+    restart_with_snapshot_plugin( *this, snapshot_root_dir, { load_snapshot_if_no_state } );
+    BOOST_CHECK( !db()->get_snapshot_loaded() );
+    BOOST_CHECK_EQUAL( db()->head_block_num(), head_block_num );
+    generate_block();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( interrupted_snapshot_load_is_loaded_again )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "--- Testing: interrupted_snapshot_load_is_loaded_again" );
+
+    const std::string snapshot_root_dir = "interrupted_snapshot_load_is_loaded_again";
+    clear_snapshot( snapshot_root_dir );
+
+    start_node_with_all_witnesses( *this );
+    dump_snapshot( snapshot_root_dir );
+    const uint32_t head_block_num = restart_and_get_head_block_num( *this );
+    reset_fixture( false );
+
+    // as left by a load killed while its indices were being loaded
+    snapshot_load_marker( state_dir() ).write( snapshot_load_marker::load_stage::loading, "snap" );
+
+    const std::vector< hived_fixture::config_arg_override_t > starts_without_load =
+      { {}, { hived_fixture::config_line_t( { "replay-blockchain", { "" } } ) } };
+    for( const auto& options : starts_without_load )
+    {
+      reset_fixture( false );
+      check_startup_refused( *this, [&]() { postponed_init( options ); },
+        { "The load of snapshot `snap' did not complete", "--load-snapshot-if-no-state", "--force-replay" } );
+      reset_fixture( false );
+      BOOST_REQUIRE( read_snapshot_load_marker() );
+    }
+
+    restart_with_snapshot_plugin( *this, snapshot_root_dir, { load_snapshot_if_no_state } );
+    BOOST_CHECK( db()->get_snapshot_loaded() );
+    BOOST_CHECK_EQUAL( db()->head_block_num(), head_block_num );
+    BOOST_CHECK( !read_snapshot_load_marker() );
+    generate_block();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( interrupted_replay_after_snapshot_load_is_resumed )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "--- Testing: interrupted_replay_after_snapshot_load_is_resumed" );
+
+    const std::string snapshot_root_dir = "interrupted_replay_after_snapshot_load_is_resumed";
+    clear_snapshot( snapshot_root_dir );
+
+    start_node_with_all_witnesses( *this );
+    dump_snapshot( snapshot_root_dir );
+    const uint32_t snapshot_head_block_num = db()->head_block_num();
+    // with all witnesses active blocks become irreversible, and reach the block log, about 15 blocks later
+    generate_blocks( 2 * HIVE_MAX_WITNESSES );
+    const uint32_t head_block_num = restart_and_get_head_block_num( *this );
+    const uint32_t stop_block_num = snapshot_head_block_num + 2;
+    BOOST_REQUIRE_GT( head_block_num, stop_block_num );
+
+    reset_fixture( false );
+    BOOST_REQUIRE( fc::remove( state_dir() / "shared_memory.bin" ) );
+    restart_with_snapshot_plugin( *this, snapshot_root_dir,
+      { load_snapshot_if_no_state, hived_fixture::config_line_t( { "stop-at-block", { std::to_string( stop_block_num ) } } ) } );
+    BOOST_REQUIRE_EQUAL( db()->head_block_num(), stop_block_num );
+    const auto marker = read_snapshot_load_marker();
+    BOOST_REQUIRE( marker );
+    BOOST_CHECK( marker->stage == snapshot_load_marker::load_stage::replaying );
+    BOOST_CHECK_EQUAL( marker->snapshot, "snap" );
+
+    // the replay is resumed, not the snapshot loaded again: it is gone
+    clear_snapshot( snapshot_root_dir );
+    restart_with_snapshot_plugin( *this, snapshot_root_dir, { load_snapshot_if_no_state } );
+    BOOST_CHECK_EQUAL( db()->head_block_num(), head_block_num );
+    BOOST_CHECK( !read_snapshot_load_marker() );
+
+    // and a normal start finds a complete state
+    BOOST_CHECK_EQUAL( restart_and_get_head_block_num( *this ), head_block_num );
+    generate_block();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( startup_refusals_keep_state )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "--- Testing: startup_refusals_keep_state" );
+
+    const std::string snapshot_root_dir = "startup_refusals_keep_state";
+    clear_snapshot( snapshot_root_dir );
+
+    start_node_with_all_witnesses( *this );
+    dump_snapshot( snapshot_root_dir );
+    const uint32_t snapshot_head_block_num = db()->head_block_num();
+    generate_blocks( 2 * HIVE_MAX_WITNESSES );
+    reset_fixture( false );
+    const auto state_files_before = hash_state_files( state_dir() );
+
+    for( const std::string rebuild_option : { "force-replay", "resync-blockchain" } )
+    {
+      check_startup_refused( *this,
+        [&]() { restart_with_snapshot_plugin( *this, snapshot_root_dir, { load_snapshot_if_no_state, hived_fixture::config_line_t( { rebuild_option, { "" } } ) } ); },
+        { "--load-snapshot-if-no-state cannot be combined" } );
+      reset_fixture( false );
+      BOOST_REQUIRE( state_files_before == hash_state_files( state_dir() ) );
+    }
+
+    // a state behind the block log, as an interrupted replay after a load left it before the marker existed, is refused by throwing
+    restart_with_snapshot_plugin( *this, snapshot_root_dir, { hived_fixture::config_line_t( { "load-snapshot", { "snap" } } ),
+      hived_fixture::config_line_t( { "stop-at-block", { std::to_string( snapshot_head_block_num + 1 ) } } ) } );
+    BOOST_REQUIRE_EQUAL( db()->head_block_num(), snapshot_head_block_num + 1 );
+    reset_fixture( false );
+    snapshot_load_marker( state_dir() ).clear();
+    check_startup_refused( *this, [&]() { postponed_init(); }, { "Headblock and statefile are inconsistent" } );
+    reset_fixture( false );
+
+    // a snapshot refused by its checks is refused on every start, before anything is wiped
+    alter_state_serialization_in_snapshot( hive::utilities::temp_directory_path() / snapshot_root_dir / "snap" / "snapshot-manifest" );
+    snapshot_load_marker( state_dir() ).write( snapshot_load_marker::load_stage::loading, "snap" );
+    const auto state_files_with_marker = hash_state_files( state_dir() );
+    for( int i = 0; i < 2; ++i )
+    {
+      BOOST_CHECK_THROW( restart_with_snapshot_plugin( *this, snapshot_root_dir, { load_snapshot_if_no_state } ), shm_state_definitions_mismatch_exception );
+      BOOST_CHECK( get_chain_plugin().startup_refused() );
+      reset_fixture( false );
+      BOOST_REQUIRE( state_files_with_marker == hash_state_files( state_dir() ) );
+    }
   }
   FC_LOG_AND_RETHROW()
 }

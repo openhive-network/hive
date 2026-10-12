@@ -1,6 +1,7 @@
 file(GLOB HEADERS "include/hive/plugins/chain/*.hpp")
 add_library( chain_plugin
              chain_plugin.cpp
+             snapshot_load_marker.cpp
              ${HEADERS} )
 
 target_link_libraries( chain_plugin hive_chain appbase hive_utilities statsd_plugin webserver_plugin json_rpc_plugin )

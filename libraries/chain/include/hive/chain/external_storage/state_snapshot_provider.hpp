@@ -1,5 +1,9 @@
 #pragma once
 
+#include <cstdint>
+#include <optional>
+#include <string>
+
 namespace appbase
 {
 class abstract_plugin;
@@ -28,11 +32,17 @@ class state_snapshot_provider
     /** Allows to process explicit snapshot requests specified at application command line.
     */
     virtual void process_explicit_snapshot_dump_requests(const hive::chain::open_args& openArgs) = 0;
-    virtual void process_explicit_snapshot_load_requests(const hive::chain::open_args& openArgs) = 0;
-    /** Checks that the snapshot requested at application command line can be loaded, without touching the node's state.
+    /** Replaces the node's state with the given snapshot (a directory name under the snapshot root directory).
+    */
+    virtual void process_snapshot_load_request(const std::string& snapshotName, const hive::chain::open_args& openArgs) = 0;
+    /** Checks that the given snapshot can be loaded, without touching the node's state.
         Must be called before the state is wiped for the load; throws when the load would be refused.
     */
-    virtual void verify_explicit_snapshot_load_requests() = 0;
+    virtual void verify_snapshot_load_request(const std::string& snapshotName) = 0;
+    /** Last irreversible block of the given snapshot, read from its manifest; nothing when the snapshot does not exist.
+        Throws when the snapshot exists but its manifest cannot be read.
+    */
+    virtual std::optional<uint32_t> find_snapshot_irreversible_block_num(const std::string& snapshotName) const = 0;
 
   protected:
     virtual ~state_snapshot_provider() = default;

@@ -17,6 +17,7 @@
 #include <hive/chain/external_storage/state_snapshot_provider.hpp>
 
 #include <hive/plugins/chain/abstract_block_producer.hpp>
+#include <hive/plugins/chain/snapshot_load_marker.hpp>
 
 #include <hive/plugins/statsd/utility.hpp>
 
@@ -112,12 +113,16 @@ class chain_plugin_impl
     bool start_replay_processing( std::shared_ptr< block_write_i > reindex_block_writer,
                                   hive::chain::blockchain_worker_thread_pool& thread_pool );
 
+    void decide_snapshot_load();
     void initial_settings();
     void open();
     bool replay_blockchain( const block_read_i& block_reader, hive::chain::blockchain_worker_thread_pool& thread_pool );
     void process_snapshot_dump_request();
     void process_snapshot_load_request();
-    bool check_data_consistency( const block_read_i& block_reader );
+    void log_newer_snapshot() const;
+    void finish_snapshot_load();
+    void check_data_consistency( const block_read_i& block_reader );
+    [[noreturn]] void refuse_startup( const std::string& reason );
 
     void prepare_work( bool started );
     void work();
@@ -162,6 +167,12 @@ class chain_plugin_impl
     bool                             enable_block_log_compression = true;
     bool                             enable_block_log_auto_fixing = true;
     bool                             load_snapshot = false;
+    std::string                      load_snapshot_name; // --load-snapshot
+    std::string                      load_snapshot_if_no_state_name; // --load-snapshot-if-no-state
+    std::string                      snapshot_to_load; // set by decide_snapshot_load() when load_snapshot is true
+    std::optional< snapshot_load_marker::pending_load > pending_snapshot_load; // as found at startup
+    bool                             resume_replay_after_snapshot_load = false;
+    bool                             startup_refused = false;
     bool                             dump_snapshot = false;
     int                              block_log_compression_level = 15;
     flat_map<uint32_t,block_id_type> checkpoints;
@@ -885,18 +896,16 @@ void chain_plugin_impl::initial_settings()
   db_open_args.database_cfg = database_config;
   db_open_args.replay_in_memory = replay_in_memory;
   db_open_args.replay_memory_indices = replay_memory_indices;
-  db_open_args.load_snapshot = load_snapshot;
 
   bl_open_args.data_dir = db_open_args.data_dir;
   bl_open_args.enable_block_log_compression = enable_block_log_compression;
   bl_open_args.enable_block_log_auto_fixing = enable_block_log_auto_fixing;
   bl_open_args.block_log_compression_level = block_log_compression_level;
-  bl_open_args.load_snapshot = load_snapshot;
   bl_open_args.replay = replay;
   bl_open_args.force_replay = force_replay;
 }
 
-bool chain_plugin_impl::check_data_consistency( const block_read_i& block_reader )
+void chain_plugin_impl::check_data_consistency( const block_read_i& block_reader )
 {
   uint64_t head_block_num_origin = 0;
   uint64_t head_block_num_state = 0;
@@ -906,24 +915,76 @@ bool chain_plugin_impl::check_data_consistency( const block_read_i& block_reader
 
   if( !_is_reindex_complete )
   {
+    const std::string heads = " { \"block_log-head\": " + std::to_string( head_block_num_origin ) +
+      ", \"state-head\": " + std::to_string( head_block_num_state ) + " }";
     if( head_block_num_state > head_block_num_origin )
-    {
-      theApp.generate_interrupt_request();
-      return false;
-    }
+      refuse_startup( "Error: The state is ahead of the block log. Aborting hived!" + heads );
     if( db.get_snapshot_loaded() )
     {
       wlog( "Replaying has to be forced, after snapshot's loading. { \"block_log-head\": ${b1}, \"state-head\": ${b2} }", ( "b1", head_block_num_origin )( "b2", head_block_num_state ) );
     }
     else
     {
-      elog( "Error: Headblock and statefile are inconsistent, need to start hived with --replay-blockchain. Aborting hived! { \"block_log-head\": ${b1}, \"state-head\": ${b2} }", ( "b1", head_block_num_origin )( "b2", head_block_num_state ) );
-      theApp.generate_interrupt_request();
-      return false;
+      refuse_startup( "Error: Headblock and statefile are inconsistent, need to start hived with --replay-blockchain. Aborting hived!" + heads );
     }
   }
+}
 
-  return true;
+void chain_plugin_impl::refuse_startup( const std::string& reason )
+{
+  startup_refused = true;
+  FC_THROW( "${reason}", ( reason ) );
+}
+
+void chain_plugin_impl::decide_snapshot_load()
+{
+  const bool load_if_no_state = !load_snapshot_if_no_state_name.empty();
+  if( load_if_no_state && ( force_replay || resync || !load_snapshot_name.empty() ) )
+    refuse_startup( "--load-snapshot-if-no-state cannot be combined with --force-replay, --resync-blockchain or --load-snapshot." );
+
+  pending_snapshot_load = snapshot_load_marker( shared_memory_dir ).read();
+  const bool load_unfinished = pending_snapshot_load && pending_snapshot_load->stage == snapshot_load_marker::load_stage::loading;
+
+  if( !load_snapshot_name.empty() )
+  {
+    snapshot_to_load = load_snapshot_name;
+  }
+  else if( load_if_no_state )
+  {
+    if( !bfs::exists( shared_memory_dir / "shared_memory.bin" ) )
+    {
+      ilog( "No state found, loading snapshot `${s}'.", ( "s", load_snapshot_if_no_state_name ) );
+      snapshot_to_load = load_snapshot_if_no_state_name;
+    }
+    else if( load_unfinished )
+    {
+      ilog( "The load of snapshot `${p}' did not complete, loading snapshot `${s}'.",
+        ( "p", pending_snapshot_load->snapshot )( "s", load_snapshot_if_no_state_name ) );
+      snapshot_to_load = load_snapshot_if_no_state_name;
+    }
+    else if( pending_snapshot_load )
+    {
+      ilog( "Snapshot `${p}' is loaded already, snapshot `${s}' is not loaded.",
+        ( "p", pending_snapshot_load->snapshot )( "s", load_snapshot_if_no_state_name ) );
+    }
+    else
+    {
+      ilog( "Complete state found, snapshot `${s}' is not loaded.", ( "s", load_snapshot_if_no_state_name ) );
+    }
+  }
+  load_snapshot = !snapshot_to_load.empty();
+  db_open_args.load_snapshot = load_snapshot;
+  bl_open_args.load_snapshot = load_snapshot;
+
+  if( pending_snapshot_load && !load_snapshot && !force_replay && !resync )
+  {
+    if( load_unfinished )
+      refuse_startup( "The load of snapshot `" + pending_snapshot_load->snapshot + "' did not complete, so the state is unusable. "
+        "Start hived with --load-snapshot-if-no-state=<snapshot> to load a snapshot again, or with --force-replay to rebuild the state from the block log." );
+    ilog( "Snapshot `${s}' was loaded, but the replay of the block log forward from its block did not complete; resuming it.",
+      ( "s", pending_snapshot_load->snapshot ) );
+    resume_replay_after_snapshot_load = true;
+  }
 }
 
 void chain_plugin_impl::open()
@@ -947,7 +1008,16 @@ void chain_plugin_impl::open()
     if( load_snapshot )
     {
       FC_ASSERT( snapshot_provider != nullptr, "Snapshot loading requested, but no snapshot provider is registered" );
-      snapshot_provider->verify_explicit_snapshot_load_requests();
+      try
+      {
+        snapshot_provider->verify_snapshot_load_request( snapshot_to_load );
+      }
+      catch( const fc::exception& )
+      {
+        startup_refused = true;
+        elog( "Snapshot `${s}' cannot be loaded; the state is left as it is.", ( "s", snapshot_to_load ) );
+        throw;
+      }
     }
 
     if(resync)
@@ -958,15 +1028,47 @@ void chain_plugin_impl::open()
       block_storage->wipe_storage_files( theApp.data_dir() / "blockchain" );
     }
 
-    if( force_replay || load_snapshot || resync )
+    const snapshot_load_marker marker( shared_memory_dir );
+    // Written before the first wipe, so that an interrupted load is never taken for a complete state.
+    if( load_snapshot )
+      marker.write( snapshot_load_marker::load_stage::loading, snapshot_to_load );
+
+    const bool wipe_state = force_replay || load_snapshot || resync;
+    if( wipe_state )
       db.wipe( shared_memory_dir );
+
+    if( ( force_replay || resync ) && !load_snapshot )
+      marker.clear();
 
     db.pre_open( db_open_args );
     db.with_write_lock([&]()
     {
       block_storage->open_and_init( bl_open_args, true/*read_only*/, true/*allow_artifacts_regeneration*/, &db );
     });
-    db.open( db_open_args );
+    const auto refuse_unopenable_state = [&]()
+    {
+      startup_refused = true;
+      const std::string snapshot = load_snapshot_if_no_state_name.empty() ? "<snapshot>" : load_snapshot_if_no_state_name;
+      elog( "The existing state cannot be opened by this version of hived, and it is not wiped automatically. "
+        "Start hived with --load-snapshot=${s} to replace it with a snapshot, or with --force-replay to rebuild it from the block log.",
+        ( "s", snapshot ) );
+    };
+    try
+    {
+      db.open( db_open_args );
+    }
+    catch( const shm_state_definitions_mismatch_exception& )
+    {
+      if( !wipe_state )
+        refuse_unopenable_state();
+      throw;
+    }
+    catch( const blockchain_config_mismatch_exception& )
+    {
+      if( !wipe_state )
+        refuse_unopenable_state();
+      throw;
+    }
 
     setup_benchmark_dumper();
     if( dump_memory_details )
@@ -1387,8 +1489,42 @@ void chain_plugin_impl::process_snapshot_dump_request()
 
 void chain_plugin_impl::process_snapshot_load_request()
 {
-  if( snapshot_provider != nullptr )
-    snapshot_provider->process_explicit_snapshot_load_requests( db_open_args );
+  snapshot_provider->process_snapshot_load_request( snapshot_to_load, db_open_args );
+  snapshot_load_marker( shared_memory_dir ).write( snapshot_load_marker::load_stage::replaying, snapshot_to_load );
+}
+
+void chain_plugin_impl::log_newer_snapshot() const
+{
+  if( snapshot_provider == nullptr )
+    return;
+  try
+  {
+    const auto snapshot_lib = snapshot_provider->find_snapshot_irreversible_block_num( load_snapshot_if_no_state_name );
+    if( snapshot_lib && *snapshot_lib > db.head_block_num() )
+      ilog( "Snapshot `${s}' (irreversible block ${b}) is newer than the state (head block ${h}). It is not loaded because the state is complete; "
+        "load it with --load-snapshot to replace the state.",
+        ( "s", load_snapshot_if_no_state_name )( "b", *snapshot_lib )( "h", db.head_block_num() ) );
+  }
+  catch( const fc::exception& e )
+  {
+    // The snapshot is not used, so a broken one must not stop a node with a complete state.
+    wlog( "Cannot read snapshot `${s}' to compare it with the state: ${e}", ( "s", load_snapshot_if_no_state_name )( "e", e.to_string() ) );
+  }
+}
+
+void chain_plugin_impl::finish_snapshot_load()
+{
+  if( !load_snapshot && !resume_replay_after_snapshot_load )
+    return;
+  if( is_reindex_complete( nullptr, nullptr, default_block_writer->get_block_reader() ) )
+  {
+    snapshot_load_marker( shared_memory_dir ).clear();
+    ilog( "Snapshot load completed: the state is at the head of the block log." );
+  }
+  else
+  {
+    ilog( "The replay of the block log after the snapshot load did not reach its head; the next start resumes it." );
+  }
 }
 
 void chain_plugin_impl::prepare_work( bool started )
@@ -1656,8 +1792,10 @@ void chain_plugin::plugin_initialize(const variables_map& options)
     my->stop_replay_at = my->stop_at_block;
   }
 
-  if (options.count("load-snapshot"))
-    my->load_snapshot = true;
+  if( options.count( "load-snapshot" ) )
+    my->load_snapshot_name = options.at( "load-snapshot" ).as< std::string >();
+  if( options.count( "load-snapshot-if-no-state" ) )
+    my->load_snapshot_if_no_state_name = options.at( "load-snapshot-if-no-state" ).as< std::string >();
 
   if (options.count("dump-snapshot"))
     my->dump_snapshot = true;
@@ -1884,7 +2022,9 @@ void chain_plugin::plugin_startup()
 {
   ilog("Chain plugin initialization...");
 
+  // After initial_settings(), so that a refusal leaves the database in a state it can be shut down from.
   my->initial_settings();
+  my->decide_snapshot_load();
 
   ilog("Database opening...");
   my->open();
@@ -1899,16 +2039,22 @@ void chain_plugin::plugin_startup()
     ilog("Looking for load snapshot processing requests...");
     my->process_snapshot_load_request();
   }
+  else if( my->resume_replay_after_snapshot_load )
+  {
+    my->db.set_snapshot_loaded();
+  }
+  else if( !my->load_snapshot_if_no_state_name.empty() )
+  {
+    my->log_newer_snapshot();
+  }
 
   if( not my->replay )
   {
     ilog( "Consistency data checking..." );
-    if( my->check_data_consistency( my->default_block_writer->get_block_reader() ) )
-    {
-      start = true;
-      if( my->db.get_snapshot_loaded() )
-        force_replay_after_snapshot_loading = true; //Replaying is forced, because after snapshot loading, node should work in synchronization mode.
-    }
+    my->check_data_consistency( my->default_block_writer->get_block_reader() );
+    start = true;
+    if( my->db.get_snapshot_loaded() )
+      force_replay_after_snapshot_loading = true; //Replaying is forced, because after snapshot loading, node should work in synchronization mode.
   }
 
   if( !my->checkpoints.empty() )
@@ -1925,6 +2071,8 @@ void chain_plugin::plugin_startup()
     ilog( "Replaying..." );
     start = !my->start_replay_processing( reindex_block_writer, get_thread_pool() );
   }
+
+  my->finish_snapshot_load();
 
   if (my->dump_snapshot)
   {
@@ -1986,6 +2134,11 @@ void chain_plugin::plugin_shutdown()
 void chain_plugin::register_snapshot_provider(state_snapshot_provider& provider)
 {
   my->register_snapshot_provider(provider);
+}
+
+bool chain_plugin::startup_refused() const
+{
+  return my->startup_refused;
 }
 
 void chain_plugin::report_state_options( const string& plugin_name, const fc::variant_object& opts )
