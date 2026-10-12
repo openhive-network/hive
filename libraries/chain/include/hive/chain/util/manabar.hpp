@@ -101,8 +101,13 @@ struct manabar
   }
 };
 
+/**
+  * Regenerates voting and downvote manabars and adds new_mana to them (new_mana can be negative).
+  * prevent_downvote_overflow should reflect HIVE_HARDFORK_1_29_DOWNVOTE_MANA_OVERFLOW (issue #858) -
+  * before that hardfork scaling of new_mana for downvote manabar was done on int64_t and could overflow.
+  */
 template< typename PropType, typename AccountType >
-void update_manabar( const PropType& gpo, AccountType& account, int64_t new_mana = 0 )
+void update_manabar( const PropType& gpo, AccountType& account, int64_t new_mana, bool prevent_downvote_overflow )
 {
   auto effective_vests = account.get_effective_vesting_shares().get_amount();
   try {
@@ -135,9 +140,37 @@ void update_manabar( const PropType& gpo, AccountType& account, int64_t new_mana
     }
 
     account.downvote_manabar.regenerate_mana( params, gpo.get_head_block_time() );
-    account.downvote_manabar.use_mana( ( -new_mana * gpo.get_downvote_pool_percent() ) / HIVE_100_PERCENT );
+
+    // magnitude of new_mana (computed on unsigned to be safe also for INT64_MIN)
+    uint64_t abs_new_mana = new_mana < 0 ? uint64_t( 0 ) - uint64_t( new_mana ) : uint64_t( new_mana );
+    uint128_t numerator = uint128_t( abs_new_mana ) * gpo.get_downvote_pool_percent();
+    int64_t mana_used = 0;
+    if( prevent_downvote_overflow )
+    {
+      // downvote_pool_percent <= HIVE_100_PERCENT so the result always fits in int64_t
+      int64_t scaled = fc::uint128_to_int64( numerator / HIVE_100_PERCENT );
+      mana_used = new_mana < 0 ? scaled : -scaled;
+    }
+    else
+    {
+      if( fc::uint128_high_bits(numerator) != 0 ||
+        fc::uint128_low_bits(numerator) > static_cast<uint64_t>( std::numeric_limits< int64_t >::max() ) )
+        dlog( "NOTIFYALERT! downvote mana overflow made it in to the chain at block ${b}", ( "b", gpo.get_head_block_number() ) );
+
+      // historical behavior - wrap around like two's complement int64_t multiplication would (but without UB)
+      int64_t product = static_cast<int64_t>( ( uint64_t( 0 ) - uint64_t( new_mana ) ) * uint64_t( gpo.get_downvote_pool_percent() ) );
+      mana_used = product / HIVE_100_PERCENT;
+    }
+    account.downvote_manabar.use_mana( mana_used );
   }
   } FC_CAPTURE_LOG_AND_RETHROW( (account)(effective_vests) )
+}
+
+template< typename PropType, typename AccountType >
+void update_manabar( const PropType& gpo, AccountType& account )
+{
+  // no new mana means no risk of overflow
+  update_manabar( gpo, account, 0, true );
 }
 
 } } } // hive::chain::util

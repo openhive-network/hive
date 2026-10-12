@@ -30,4 +30,6 @@
 #define HIVE_HARDFORK_1_29_VALIDATE_ALL_PROPOSAL_IDS (HIVE_HARDFORK_1_29)
 // activate block extension for storing extra merkle root made from arbitrary hashes of internal state or automated actions
 #define HIVE_HARDFORK_1_29_STAMP_BLOCK_EXTENSION (HIVE_HARDFORK_1_29)
+// prevent overflow during change in downvote mana (issue #858)
+#define HIVE_HARDFORK_1_29_DOWNVOTE_MANA_OVERFLOW (HIVE_HARDFORK_1_29)
 #endif

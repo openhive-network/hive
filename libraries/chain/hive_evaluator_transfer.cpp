@@ -701,7 +701,7 @@ void claim_reward_balance_evaluator::do_apply( const claim_reward_balance_operat
   _db.modify( acnt, [&]( account_object& a )
   {
     if( _db.has_hardfork( HIVE_HARDFORK_0_20 ) )
-      util::update_manabar( dgpo, a, op_reward_vests.amount.value );
+      util::update_manabar( dgpo, a, op_reward_vests.amount.value, _db.has_hardfork( HIVE_HARDFORK_1_29_DOWNVOTE_MANA_OVERFLOW ) );
     a.access_vesting().transfer_from( a.access_vest_rewards(), op_reward_vests );
     reward_vesting_hive_balance.transfer_from( a.access_vest_rewards_as_hive(), reward_vesting_hive_to_move );
   } );
@@ -835,7 +835,7 @@ void delegate_vesting_shares_evaluator::do_apply( const delegate_vesting_shares_
     {
       if( _db.has_hardfork( HIVE_HARDFORK_0_20__2539 ) )
       {
-        util::update_manabar( gpo, a, op_vesting_shares.amount.value );
+        util::update_manabar( gpo, a, op_vesting_shares.amount.value, _db.has_hardfork( HIVE_HARDFORK_1_29_DOWNVOTE_MANA_OVERFLOW ) );
       }
 
       a.access_received_vesting() += op_vesting_shares;
@@ -874,7 +874,7 @@ void delegate_vesting_shares_evaluator::do_apply( const delegate_vesting_shares_
     {
       if( _db.has_hardfork( HIVE_HARDFORK_0_20__2539 ) )
       {
-        util::update_manabar( gpo, a, delta.amount.value );
+        util::update_manabar( gpo, a, delta.amount.value, _db.has_hardfork( HIVE_HARDFORK_1_29_DOWNVOTE_MANA_OVERFLOW ) );
       }
 
       a.access_received_vesting() += delta;
