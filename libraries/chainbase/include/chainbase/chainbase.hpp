@@ -958,6 +958,13 @@ namespace chainbase {
       void wipe_indexes();
 
     public:
+      enum open_flags : uint32_t
+      {
+        /// Opens an existing storage without writing to its files: the mapping is copy-on-write, so any
+        /// in-memory modification stays private to the process. The file lock is still taken.
+        read_only_storage = 1
+      };
+
       void open( const bfs::path& dir, uint32_t flags = 0, size_t shared_file_size = 0, const boost::any& database_cfg = nullptr, const helpers::environment_extension_resources* environment_extension = nullptr );
       void close();
       void flush();

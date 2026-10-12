@@ -1,3 +1,5 @@
+#include <hive/chain/hive_fwd.hpp>
+
 #include <boost/algorithm/string.hpp>
 #include <boost/asio.hpp>
 #include <boost/filesystem.hpp>
@@ -7,11 +9,16 @@
 #include <fc/log/console_appender.hpp>
 #include <fc/exception/exception.hpp>
 #include <fc/filesystem.hpp>
+#include <fc/io/json.hpp>
+#include <fc/variant_object.hpp>
 
 #include <chainbase/chainbase.hpp>
 
 #include <hive/chain/util/decoded_types_data_storage.hpp>
+#include <hive/chain/util/type_registrar.hpp>
 
+#include <hive/chain/database_exceptions.hpp>
+#include <hive/chain/irreversible_block_data.hpp>
 #include <hive/chain/irreversible_block_data_fwd.hpp>
 
 #include <hive/chain/detail/state/account_object.hpp>
@@ -55,9 +62,12 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <set>
 
 namespace shared_memory_file_util
 {
+  using work_guard_type = boost::asio::executor_work_guard<boost::asio::io_context::executor_type>;
+
   /* Tools for dumping a snapshot from shared memory file */
 
   class dumping_worker;
@@ -206,19 +216,19 @@ namespace shared_memory_file_util
     const size_t num_threads = allow_concurrency ? std::min(workers.size(), static_cast<size_t>(16)) : 1;
     if (num_threads > 1)
     {
-      boost::asio::io_service io_service;
+      boost::asio::io_context io_context;
       boost::thread_group threadpool;
-      std::unique_ptr<boost::asio::io_service::work> work = std::make_unique<boost::asio::io_service::work>(io_service);
+      std::unique_ptr<work_guard_type> work = std::make_unique<work_guard_type>(io_context.get_executor());
 
       for (unsigned int i = 0; i < num_threads; ++i)
-        threadpool.create_thread(boost::bind(&boost::asio::io_service::run, &io_service));
+        threadpool.create_thread(boost::bind(&boost::asio::io_context::run, &io_context));
 
       for (size_t i = 0; i < snapshot_writer_workers.size(); ++i)
       {
         dumping_worker *w = snapshot_writer_workers[i].get();
         FC_ASSERT(w == workers[i]);
 
-        io_service.post(boost::bind(&dumping_worker::perform_dump, w));
+        boost::asio::post(io_context, boost::bind(&dumping_worker::perform_dump, w));
       }
 
       dlog("Waiting for dumping-workers jobs completion");
@@ -262,7 +272,10 @@ namespace shared_memory_file_util
     const bool list_indices;
     const bool dump_indices;
     const uint8_t dump_threads;
+    // definitions of the state objects this tool reads, checked against the ones stored in the shared memory file
+    hive::chain::util::decoded_types_data_storage read_types;
 
+    void verify_read_types_match_state() const;
     void read_decoded_state_objects_data() const;
     void read_shared_memory_file_details();
     void initialize_indices();
@@ -279,6 +292,8 @@ namespace shared_memory_file_util
       try
       {
         db.add_index<T>();
+        hive::chain::util::type_registrar<T> registrar;
+        static_cast<hive::chain::util::abstract_type_registrar&>(registrar).register_type(read_types);
         const std::string index_name = boost::core::demangle(typeid(T).name());
         // ilog("Index: ${index} is in the shared memory file", ("index", index_name));
         return index_name;
@@ -315,7 +330,7 @@ namespace shared_memory_file_util
 
     dlog("Opening shared memory file from directory: ${path_to_dir}", ("path_to_dir", _path_to_shared_memory_file_dir.generic_string()));
 
-    db.open(_path_to_shared_memory_file_dir);
+    db.open(boost::filesystem::absolute(_path_to_shared_memory_file_dir), chainbase::database::read_only_storage);
   }
 
   App::~App()
@@ -411,7 +426,38 @@ namespace shared_memory_file_util
     save_index_name(add_index_to_db<hive::plugins::transaction_status::transaction_status_block_index>());
     save_index_name(add_index_to_db<hive::plugins::metadata::account_metadata_index>());
 
+    verify_read_types_match_state();
     log_result("Detected " + std::to_string(index_counter) + " indices:\n" + detected_indices_stream.str(), std::to_string(index_counter) + " detected indices", "detected_indices.log");
+  }
+
+  void App::verify_read_types_match_state() const
+  {
+    // Only the types read here are registered, so the state holding more of them is expected: each registered type
+    // has to be found in the state with the same checksum. A type is looked up by name, then by checksum, because
+    // when demangling fails the state stores an index type under its mangled name; the checksum of an index type is
+    // computed from the mangled name, so it identifies the type regardless of how the name was spelled.
+    const hive::chain::util::decoded_types_data_storage stored_types(db.get_decoded_state_objects_data_from_shm());
+    const auto& stored_map = stored_types.get_decoded_types_data_map();
+    std::set<std::string> stored_checksums;
+    for (const auto& [name, stored_type] : stored_map)
+      stored_checksums.insert(stored_type.checksum);
+
+    std::stringstream mismatches;
+    for (const auto& [name, read_type] : read_types.get_decoded_types_data_map())
+    {
+      const auto stored = stored_map.find(name);
+      if (stored != stored_map.end())
+      {
+        if (stored->second.checksum != read_type.checksum)
+          mismatches << "Type: " << name << " has checksum: " << read_type.checksum << ", which differs from the stored one: " << stored->second.checksum << "\n";
+      }
+      else if (!stored_checksums.count(read_type.checksum))
+        mismatches << "Type is not in shared memory file: " << name << "\n";
+    }
+
+    if (!mismatches.str().empty())
+      FC_THROW_EXCEPTION(hive::chain::shm_state_definitions_mismatch_exception,
+                         "State objects definitions in shared memory file do not match this build. Details:\n${details}", ("details", mismatches.str()));
   }
 
   void App::read_decoded_state_objects_data() const
@@ -422,22 +468,37 @@ namespace shared_memory_file_util
 
   void App::read_shared_memory_file_details()
   {
-    std::stringstream ss;
-    ss << db.get_environment_details() << "\n";
-    ss << hive::chain::get_irreversible_block_details(db) << "\n";
-    log_result(ss.str(), "shm details", "shared_memory_file_details.log");
+    if (!db.has_index<hive::chain::dynamic_global_property_index>())
+      add_index_to_db<hive::chain::dynamic_global_property_index>();
+    read_types.register_new_type<hive::chain::irreversible_block_data_type>();
+    verify_read_types_match_state();
+
+    const auto& dgpo_idx = db.get_index<hive::chain::dynamic_global_property_index, chainbase::by_id>();
+    FC_ASSERT(!dgpo_idx.empty(), "Dynamic global properties object not found in shared memory file");
+    const hive::chain::dynamic_global_property_object& dgpo = *dgpo_idx.begin();
+
+    fc::mutable_variant_object head_block;
+    head_block("number", dgpo.get_head_block_number());
+    head_block("id", dgpo.get_head_block_id());
+    head_block("time", dgpo.get_head_block_time());
+
+    fc::mutable_variant_object details;
+    details("environment", fc::json::from_string(db.get_environment_details(), fc::json::format_validation_mode::full));
+    details("head_block", head_block);
+    details("last_irreversible_block", fc::json::from_string(hive::chain::get_irreversible_block_details(db), fc::json::format_validation_mode::full));
+    log_result(fc::json::to_pretty_string(fc::variant(details)), "shm details", "shared_memory_file_details.log");
   }
 
   void App::perform_dump_indices()
   {
-    boost::asio::io_service io_service;
+    boost::asio::io_context io_context;
     boost::thread_group threadpool;
-    std::unique_ptr<boost::asio::io_service::work> work = std::make_unique<boost::asio::io_service::work>(io_service);
+    std::unique_ptr<work_guard_type> work = std::make_unique<work_guard_type>(io_context.get_executor());
 
     const bool parallel_dumping = dump_threads > 1;
 
     for (unsigned int i = 0; parallel_dumping && i < dump_threads; ++i)
-      threadpool.create_thread(boost::bind(&boost::asio::io_service::run, &io_service));
+      threadpool.create_thread(boost::bind(&boost::asio::io_context::run, &io_context));
 
     std::vector<std::unique_ptr<index_dump_writer>> writers;
     const auto indices = db.get_abstract_index_cntr();
@@ -455,7 +516,7 @@ namespace shared_memory_file_util
       index_dump_writer *writer = writers.back().get();
 
       if (parallel_dumping)
-        io_service.post(boost::bind<void>(run_dump_snapshot_process, idx, writer));
+        boost::asio::post(io_context, boost::bind<void>(run_dump_snapshot_process, idx, writer));
       else
         idx->dump_snapshot(*writer);
     }
@@ -513,13 +574,13 @@ int main(int argc, char **argv)
 {
   boost::program_options::options_description shared_memory_file_util_options("Shared memory file util options");
   shared_memory_file_util_options.add_options()("input,i", boost::program_options::value<boost::filesystem::path>()->value_name("directory")->required(), "Path to directory with contains shared memory file: 'shared_memory.bin'");
-  shared_memory_file_util_options.add_options()("output,o", boost::program_options::value<boost::filesystem::path>()->value_name("directory")->required(), "Path to directory where all requested data from shared memory file will be saved.");
+  shared_memory_file_util_options.add_options()("output,o", boost::program_options::value<boost::filesystem::path>()->value_name("directory"), "Path to directory where all requested data from shared memory file will be saved. Required by get-all-data and dump-indices; without it the other results are printed to stdout.");
   shared_memory_file_util_options.add_options()("help,h", "Print usage instructions");
   shared_memory_file_util_options.add_options()("debug", "Show debug logs");
   shared_memory_file_util_options.add_options()("get-all-data", "Extracts all possible data from shared memory file (ignores rest options except dump-threads)");
   shared_memory_file_util_options.add_options()("get-state-objects-data", "Extracts decoded state objects data from shared memory file");
   shared_memory_file_util_options.add_options()("get-blockchain-config", "Extracts blockchain configuration from shared memory file");
-  shared_memory_file_util_options.add_options()("get-details", "Extracts data about versions, irreversible block and so on.");
+  shared_memory_file_util_options.add_options()("get-details", "Extracts data about versions, head block, last irreversible block and so on, as JSON.");
   shared_memory_file_util_options.add_options()("list-plugins", "Extracts plugins list from shared memory file");
   shared_memory_file_util_options.add_options()("list-indices", "List all indices detected in shared memory file");
   shared_memory_file_util_options.add_options()("dump-indices", "Dump data from all indices into files.");
