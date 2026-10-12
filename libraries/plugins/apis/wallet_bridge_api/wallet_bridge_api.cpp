@@ -5,7 +5,6 @@
 #include <hive/plugins/block_api/block_api.hpp>
 #include <hive/plugins/market_history_api/market_history_api.hpp>
 #include <hive/plugins/network_broadcast_api/network_broadcast_api.hpp>
-#include <hive/plugins/p2p/p2p_plugin.hpp>
 #include <hive/plugins/wallet_bridge_api/wallet_bridge_api.hpp>
 #include <hive/plugins/wallet_bridge_api/wallet_bridge_api_plugin.hpp>
 #include <hive/plugins/rc_api/rc_api.hpp>
@@ -15,11 +14,8 @@
 #include <hive/chain/detail/state/limit_order_object_multiindex.hpp>
 #include <hive/chain/detail/state/reward_fund_object_multiindex.hpp>
 #include <hive/chain/detail/state/recurrent_transfer_object_multiindex.hpp>
-#include <hive/chain/notifications.hpp>
 
 namespace hive { namespace plugins { namespace wallet_bridge_api {
-
-typedef std::function< void( const broadcast_transaction_synchronous_return& ) > confirmation_callback;
 
 using mode_guard = hive::protocol::serialization_mode_controller::mode_guard;
 
@@ -28,8 +24,6 @@ class wallet_bridge_api_impl
   public:
     wallet_bridge_api_impl( appbase::application& app );
     ~wallet_bridge_api_impl();
-
-    void on_post_apply_block( const chain::block_notification& note );
 
     DECLARE_API_IMPL(
         (get_version)
@@ -79,11 +73,6 @@ class wallet_bridge_api_impl
     std::shared_ptr< network_broadcast_api::network_broadcast_api>  _network_broadcast_api;
     std::shared_ptr< rc::rc_api>                                    _rc_api;
     const metadata::metadata_plugin*                                _metadata_plugin = nullptr;
-    p2p::p2p_plugin*                                                _p2p = nullptr;
-    map< protocol::transaction_id_type, confirmation_callback >     _callbacks;
-    map< time_point_sec, vector< protocol::transaction_id_type > >  _callback_expirations;
-    chain::database::signal_connection_ptr                          _on_post_apply_block_conn;
-    boost::mutex                                                    _mtx;
 
   private:
 
@@ -163,13 +152,6 @@ void wallet_bridge_api::api_startup()
   //=====
   my->_metadata_plugin = theApp.find_plugin< metadata::metadata_plugin >();
 
-  //=====
-  auto p2p = theApp.find_plugin< p2p::p2p_plugin >();
-  if (p2p && my->_chain.is_p2p_enabled())
-    my->_p2p = p2p;
-  else
-    not_enabled_plugins += "p2p_plugin";
-
   if (not_enabled_plugins.empty())
     ilog("Wallet bridge api initialized");
   else
@@ -180,10 +162,7 @@ wallet_bridge_api_impl::wallet_bridge_api_impl( appbase::application& app ):
                 _chain(app.get_plugin< hive::plugins::chain::chain_plugin >()),
                 _db( _chain.db() ),
                 theApp( app )
-{
-  _on_post_apply_block_conn = _db.add_post_apply_block_handler([&]( const chain::block_notification& note ){ on_post_apply_block( note ); },
-  theApp.get_plugin< hive::plugins::wallet_bridge_api::wallet_bridge_api_plugin >(), 0 );
-}
+{}
 
 wallet_bridge_api_impl::~wallet_bridge_api_impl() {}
 
@@ -193,53 +172,6 @@ void wallet_bridge_api_impl::verify_args( const variant& v, size_t length_requir
   FC_ASSERT( v.get_array().size() >= length_required, "Array is of invalid size: ${size}. Required: ${req}",
     ("size", v.get_array().size())("req",length_required) );
 }
-
-void wallet_bridge_api_impl::on_post_apply_block( const chain::block_notification& note )
-{ try {
-  boost::lock_guard< boost::mutex > guard( _mtx );
-  int32_t block_num = int32_t(note.block_num);
-  if( _callbacks.size() )
-  {
-    size_t trx_num = 0;
-    for( const auto& trx : note.full_block->get_full_transactions() )
-    {
-      const auto& id = trx->get_transaction_id();
-      int64_t cost = trx->get_rc_cost();
-      auto itr = _callbacks.find( id );
-      if( itr != _callbacks.end() )
-      {
-        itr->second( broadcast_transaction_synchronous_return( { id, block_num, int32_t( trx_num ), cost, false } ) );
-        _callbacks.erase( itr );
-      }
-      ++trx_num;
-    }
-  }
-
-  /// clear all expirations
-  auto block_ts = note.get_block_timestamp();
-  while( true )
-  {
-    auto exp_it = _callback_expirations.begin();
-    if( exp_it == _callback_expirations.end() )
-      break;
-    if( exp_it->first >= block_ts )
-      break;
-    for( const protocol::transaction_id_type& txid : exp_it->second )
-    {
-      auto cb_it = _callbacks.find( txid );
-      // If it's empty, that means the transaction has been confirmed and has been deleted by the above check.
-      if( cb_it == _callbacks.end() )
-        continue;
-
-      confirmation_callback callback = cb_it->second;
-      protocol::transaction_id_type txid_byval = txid;    // can't pass in by reference as it's going to be deleted
-      callback( broadcast_transaction_synchronous_return( { txid_byval, block_num, -1, fc::optional<int64_t>(), true }) );
-
-      _callbacks.erase( cb_it );
-    }
-    _callback_expirations.erase( exp_it );
-  }
-} FC_LOG_AND_RETHROW() }
 
 /* API IMPLEMENTATION
   Arguments to every method are passed via variant.
@@ -688,80 +620,7 @@ DEFINE_API_IMPL( wallet_bridge_api_impl, broadcast_transaction_synchronous )
   const auto arguments = args.get_array().at(0);
   verify_args( arguments, 1 );
 
-  /* this method is from condenser_api -> broadcast_transaction_synchronous. */
-  auto tx = get_trx( arguments );
-  boost::promise< broadcast_transaction_synchronous_return > p;
-  auto f = p.get_future();
-  hive::chain::full_transaction_ptr full_transaction;
-
-  auto set_remove_callback = [&]( bool fail )
-  {
-    //(possible?) case when determine_encoding_and_accept_transaction throws before filling result
-    if( !full_transaction )
-      return;
-
-    const auto& txid = full_transaction->get_transaction_id();
-    boost::lock_guard< boost::mutex > guard( _mtx );
-    auto c_itr = _callbacks.find( txid );
-
-    if( fail ) //remove callback
-    {
-      // The callback may have been cleared in the meantine, so we need to check for existence.
-      if( c_itr != _callbacks.end() ) _callbacks.erase( c_itr );
-      // We do not need to clean up _callback_expirations because on_post_apply_block handles this case.
-      full_transaction.reset();
-    }
-    else
-    {
-      FC_ASSERT( c_itr == _callbacks.end(), "Transaction is a duplicate" );
-      _callbacks[ txid ] = [&p]( const broadcast_transaction_synchronous_return& r )
-      {
-        p.set_value( r );
-      };
-      _callback_expirations[ tx.expiration ].push_back( txid );
-    }
-  };
-
-  try
-  {
-    /* It may look strange to call these without the lock and then lock again in the case of an exception,
-     * but it is correct and avoids deadlock. accept_transaction is trained along with all other writes, including
-     * pushing blocks. Pushing blocks do not originate from this code path and will never have this lock.
-     * However, it will trigger the on_post_apply_block callback and then attempt to acquire the lock. In this case,
-     * this thread will be waiting on accept_block so it can write and the block thread will be waiting on this
-     * thread for the lock.
-     */
-    _chain.determine_encoding_and_accept_transaction( full_transaction, tx, set_remove_callback );
-    if( _p2p ) // can be used to feed solo test node
-      _p2p->broadcast_transaction( full_transaction );
-  }
-  catch( fc::exception& e )
-  {
-    set_remove_callback( true );
-    throw;
-  }
-  catch( ... )
-  {
-    set_remove_callback( true );
-    throw fc::unhandled_exception(
-      FC_LOG_MESSAGE( warn, "Unknown error occured when pushing transaction" ),
-      std::current_exception() );
-  }
-
-  const boost::chrono::milliseconds _wait_time = boost::chrono::milliseconds( 100 );
-  do
-  {
-    if( theApp.is_interrupt_request() )
-    {
-      return broadcast_transaction_synchronous_return();
-    }
-
-    if( !f.valid() )
-      break;
-
-  } while ( f.wait_for( _wait_time ) != boost::future_status::ready );
-
-  return f.get();
+  return _network_broadcast_api->broadcast_transaction_synchronous( get_trx( arguments ) );
 }
 
 DEFINE_API_IMPL( wallet_bridge_api_impl, broadcast_transaction )

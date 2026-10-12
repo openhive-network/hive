@@ -11,6 +11,7 @@ namespace hive { namespace chain {
 #include <hive/plugins/block_api/block_api.hpp>
 #include <hive/plugins/database_api/database_api.hpp>
 #include <hive/plugins/market_history_api/market_history_api.hpp>
+#include <hive/plugins/network_broadcast_api/network_broadcast_api.hpp>
 #include <hive/plugins/rc_api/rc_api.hpp>
 
 namespace hive { namespace plugins { namespace wallet_bridge_api {
@@ -188,14 +189,7 @@ typedef database_api::api_reward_fund_object  get_reward_fund_return;
 
 /* broadcast_transaction_synchronous */
 typedef variant broadcast_transaction_synchronous_args;
-struct broadcast_transaction_synchronous_return
-{
-  protocol::transaction_id_type   id;
-  int32_t                         block_num = 0;
-  int32_t                         trx_num = 0;
-  fc::optional< int64_t >         rc_cost;
-  bool                            expired = false;
-};
+typedef network_broadcast_api::broadcast_transaction_synchronous_return broadcast_transaction_synchronous_return;
 
 /* broadcast_transaction */
 typedef variant broadcast_transaction_args;
@@ -218,8 +212,6 @@ typedef variant                                               list_rc_direct_del
 typedef vector< rc::rc_direct_delegation_api_object >         list_rc_direct_delegations_return;
 
 } } } // hive::plugins::wallet_bridge_api
-
-FC_REFLECT( hive::plugins::wallet_bridge_api::broadcast_transaction_synchronous_return, (id)(block_num)(trx_num)(rc_cost)(expired))
 
 FC_REFLECT( hive::plugins::wallet_bridge_api::find_withdraw_vesting_json_route, (from)(to)(percent)(auto_vest))
 

@@ -772,23 +772,7 @@ typedef database_api::get_version_return get_version_return;
 typedef map< uint32_t, hive::protocol::serializer_wrapper<api_operation_object> > get_account_history_return_type;
 
 typedef vector< variant > broadcast_transaction_synchronous_args;
-
-struct broadcast_transaction_synchronous_return
-{
-  broadcast_transaction_synchronous_return() {}
-  broadcast_transaction_synchronous_return( transaction_id_type txid, int32_t bn, int32_t tn, int64_t cost, bool ex )
-  : id(txid), block_num(bn), trx_num(tn), expired(ex)
-  {
-    if( cost >= 0 )
-      rc_cost = cost;
-  }
-
-  transaction_id_type     id;
-  int32_t                 block_num = 0;
-  int32_t                 trx_num   = 0;
-  fc::optional< int64_t > rc_cost;
-  bool                    expired   = false;
-};
+typedef network_broadcast_api::broadcast_transaction_synchronous_return broadcast_transaction_synchronous_return;
 
 struct ticker
 {
@@ -1192,9 +1176,6 @@ FC_REFLECT( hive::plugins::condenser_api::api_proposal_object,
 
 FC_REFLECT( hive::plugins::condenser_api::scheduled_hardfork,
         (hf_version)(live_time) )
-
-FC_REFLECT( hive::plugins::condenser_api::broadcast_transaction_synchronous_return,
-        (id)(block_num)(trx_num)(rc_cost)(expired) )
 
 FC_REFLECT( hive::plugins::condenser_api::ticker,
         (latest)(lowest_ask)(highest_bid)(percent_change)(hive_volume)(hbd_volume) )
