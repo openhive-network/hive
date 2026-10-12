@@ -10,14 +10,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **Language**: C++ (C++17 standard) with Python test infrastructure
 **Build System**: CMake + Ninja
 
-## Working under AIDEV
+## AIDEV
 
-Most changes here are made by AIDEV workflows (`.aidev/`). A workflow implements exactly one issue on the branch it was given, and its gates build and test the change, so:
+Changes reach `develop` by either of two paths:
 
-- Don't open merge requests, monitor CI pipelines, switch branches, rebase or force-push. AIDEV integrates into `aidev/integration`; maintainers merge that into `develop`.
+- **Regular development**: branch from `develop` and open a merge request as usual; CI runs on it.
+- **AIDEV**: AIDEV workflows (`.aidev/`) implement issues on `ai/*` and `session/*` branches and integrate them into `aidev/integration`; maintainers merge that into `develop` through a merge request (see `.aidev/README.md`).
+
+When you are running as an AIDEV workflow:
+
+- Don't open merge requests, monitor CI pipelines, switch branches, rebase or force-push; AIDEV integrates the result.
 - Don't pick up other issues. If you find an unrelated defect, describe it in your result instead of fixing it here.
 - Build and run the relevant unit tests yourself before finishing (see below); the gates repeat them.
-- A change that alters a state object (anything stored in `shared_memory.bin`) invalidates existing node state: say so in the commit message ("Invalidates chain state") so maintainers can label and tag it.
+
+On either path, a change that alters a state object (anything stored in `shared_memory.bin`) invalidates existing node state: say so in the commit message ("Invalidates chain state") so maintainers can label and tag it.
 
 ## Build Commands
 
