@@ -892,8 +892,9 @@ class state_snapshot_plugin::impl final : protected chain::state_snapshot_provid
   protected:
     /// chain::state_snapshot_provider implementation:
     virtual void process_explicit_snapshot_dump_requests(const hive::chain::open_args& openArgs) override;
-    virtual void process_explicit_snapshot_load_requests(const hive::chain::open_args& openArgs) override;
-    virtual void verify_explicit_snapshot_load_requests() override;
+    virtual void process_snapshot_load_request(const std::string& snapshotName, const hive::chain::open_args& openArgs) override;
+    virtual void verify_snapshot_load_request(const std::string& snapshotName) override;
+    virtual std::optional<uint32_t> find_snapshot_irreversible_block_num(const std::string& snapshotName) const override;
 
     private:
       struct state_serialization_data
@@ -935,10 +936,8 @@ class state_snapshot_plugin::impl final : protected chain::state_snapshot_provid
       database&               _mainDb;
       bfs::path               _storagePath;
       std::unique_ptr<DB>     _storage;
-      std::string             _snapshot_load_name;
       std::string             _snapshot_dump_name;
       uint32_t                _num_threads = 0;
-      bool                    _do_immediate_load = false;
       bool                    _do_immediate_dump = false;
       std::exception_ptr      _exception;
       std::atomic_bool        _is_error{false};
@@ -960,16 +959,14 @@ void state_snapshot_plugin::impl::collectOptions(const bpo::variables_map& optio
 
   _storagePath = snapshotPath;
 
-  _do_immediate_load = options.count("load-snapshot");
-  if(_do_immediate_load)
-    _snapshot_load_name = options.at("load-snapshot").as<std::string>();
-
   _do_immediate_dump = options.count("dump-snapshot");
   if(_do_immediate_dump)
+  {
     _snapshot_dump_name = options.at("dump-snapshot").as<std::string>();
-
-  if(_do_immediate_load && _do_immediate_dump)
-    FC_ASSERT(_snapshot_load_name != _snapshot_dump_name, "Load and dump snapshot names must differ.");
+    for(const char* loadOption : { "load-snapshot", "load-snapshot-if-no-state" })
+      if(options.count(loadOption))
+        FC_ASSERT(options.at(loadOption).as<std::string>() != _snapshot_dump_name, "Load and dump snapshot names must differ.");
+  }
 
   if (options.count("process-snapshot-threads-num"))
   {
@@ -1838,20 +1835,45 @@ void state_snapshot_plugin::impl::process_explicit_snapshot_dump_requests(const 
     }
   }
 
-void state_snapshot_plugin::impl::verify_explicit_snapshot_load_requests()
+void state_snapshot_plugin::impl::verify_snapshot_load_request(const std::string& snapshotName)
   {
-    if(_do_immediate_load)
-      verify_snapshot_is_loadable(get_snapshot_path(_snapshot_load_name));
+    verify_snapshot_is_loadable(get_snapshot_path(snapshotName));
   }
 
-void state_snapshot_plugin::impl::process_explicit_snapshot_load_requests(const hive::chain::open_args& openArgs)
+void state_snapshot_plugin::impl::process_snapshot_load_request(const std::string& snapshotName, const hive::chain::open_args& openArgs)
   {
-    if(_do_immediate_load)
-    {
-      _self.get_app().notify_status("loading snapshot");
-      load_snapshot(_snapshot_load_name, openArgs);
-      _self.get_app().notify_status("finished loading snapshot");
-    }
+    _self.get_app().notify_status("loading snapshot");
+    load_snapshot(snapshotName, openArgs);
+    _self.get_app().notify_status("finished loading snapshot");
+  }
+
+std::optional<uint32_t> state_snapshot_plugin::impl::find_snapshot_irreversible_block_num(const std::string& snapshotName) const
+  {
+    const bfs::path manifestDbPath = get_snapshot_path(snapshotName) / "snapshot-manifest";
+    if(bfs::exists(manifestDbPath) == false)
+      return std::nullopt;
+
+    std::vector<::rocksdb::ColumnFamilyDescriptor> cfDescriptors;
+    cfDescriptors.emplace_back(::rocksdb::kDefaultColumnFamilyName, ::rocksdb::ColumnFamilyOptions());
+    cfDescriptors.emplace_back("IRREVERSIBLE_STATE", ::rocksdb::ColumnFamilyOptions());
+
+    std::vector<::rocksdb::ColumnFamilyHandle*> cfHandles;
+    ::rocksdb::DB* manifestDb = nullptr;
+    auto status = ::rocksdb::DB::OpenForReadOnly(::rocksdb::Options(), manifestDbPath.string(), cfDescriptors, &cfHandles, &manifestDb);
+    std::unique_ptr<::rocksdb::DB> manifestDbPtr(manifestDb);
+    FC_ASSERT(status.ok(), "Cannot open snapshot manifest-db at path: `${p}'. Error details: `${e}'.", ("p", manifestDbPath.string())("e", status.ToString()));
+
+    std::string value;
+    const ::rocksdb::Status getStatus = manifestDb->Get(ReadOptions(), cfHandles[1], "LAST_IRREVERSIBLE_BLOCK", &value);
+    for(auto* cfh : cfHandles)
+      manifestDb->DestroyColumnFamilyHandle(cfh);
+    manifestDb->Close();
+    FC_ASSERT(getStatus.ok(), "No entry for LAST_IRREVERSIBLE_BLOCK. Error details: `${e}'.", ("e", getStatus.ToString()));
+
+    // The block number is the first member of the serialized irreversible_block_data_type.
+    uint32_t libNum = 0;
+    chainbase::serialization::unpack_from_buffer(libNum, value);
+    return libNum;
   }
 
 state_snapshot_plugin::state_snapshot_plugin()
@@ -1873,6 +1895,10 @@ void state_snapshot_plugin::set_program_options(
   command_line_options.add_options()
     ("load-snapshot", bpo::value<std::string>(),
       "Allows to force immediate snapshot import at plugin startup. All data in state storage are overwritten")
+    ("load-snapshot-if-no-state", bpo::value<std::string>(),
+      std::string("Loads snapshot X unless a complete state already exists; an unfinished load counts as no state. "
+      "When hived refuses to start for a reason a restart cannot fix (snapshot refused, state it cannot open, "
+      "inconsistent state, invalid options) it exits with code " + std::to_string(hive::plugins::chain::STARTUP_REFUSED_EXIT_CODE) + ".").c_str())
     ("dump-snapshot", bpo::value<std::string>(),
       "Allows to force immediate snapshot dump at plugin startup. All data in the snaphsot storage are overwritten")
     ("process-snapshot-threads-num", bpo::value<unsigned>(),

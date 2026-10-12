@@ -164,7 +164,19 @@ int main( int argc, char** argv )
 
     if( theApp.is_interrupt_request() ) return 0;
 
-    theApp.startup();
+    try
+    {
+      theApp.startup();
+    }
+    catch( const fc::exception& e )
+    {
+      if( !theApp.get_plugin<hive::plugins::chain::chain_plugin>().startup_refused() )
+        throw;
+      elog( e.to_detail_string() );
+      elog( "hived refused to start; a restart will not change that. Exiting with code ${c}.",
+        ( "c", hive::plugins::chain::STARTUP_REFUSED_EXIT_CODE ) );
+      return hive::plugins::chain::STARTUP_REFUSED_EXIT_CODE;
+    }
     theApp.notify_status("chain API ready");
 
     if( theApp.is_interrupt_request() ) return 0;

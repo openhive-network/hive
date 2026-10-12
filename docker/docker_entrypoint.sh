@@ -129,20 +129,23 @@ bootstrap_block_log() {
 }
 
 ######### Snapshot bootstrap #########
-# SNAPSHOT_URL: URL of a .tgz produced by hived's state_snapshot plugin. Until hived
-# has loaded it into the state, it is downloaded, unpacked into $DATADIR/snapshot and
-# loaded with --load-snapshot, so a node comes up at the snapshot's block instead of
-# replaying from genesis. A completed load is recorded in $SNAPSHOT_LOADED_MARKER; a
-# start after a refused or interrupted load retries it, and a start without a state
-# file loads the snapshot again. Combined with BLOCK_LOG_URL the block log is kept and hived
-# replays it forward from the snapshot's block by itself. Without a block log the
-# node runs memory-only (block-log-split=0): it serves the chain state and account
-# history, but not historical blocks, and it cannot replay later.
+# SNAPSHOT_URL: URL of a .tgz produced by hived's state_snapshot plugin, so a node
+# comes up at the snapshot's block instead of replaying from genesis. Whenever an
+# unpacked snapshot directory exists under $SNAPSHOT_DIR, hived gets
+# --load-snapshot-if-no-state and decides by itself: it loads the snapshot only when
+# there is no complete state (no state file, or a load that did not finish) and
+# leaves a complete state alone. The entrypoint keeps no load state of its own; it
+# downloads and unpacks the snapshot only when hived would load it, so the snapshot
+# directory can be deleted once the node is up. Combined with BLOCK_LOG_URL the
+# block log is kept and hived replays it forward from the snapshot's block by
+# itself. Without a block log the node runs memory-only (block-log-split=0): it
+# serves the chain state and account history, but not historical blocks, and it
+# cannot replay later.
 SNAPSHOT_DIR="$DATADIR/snapshot"
-SNAPSHOT_LOADED_MARKER="$DATADIR/.snapshot_loaded"
-# Logged by hived once a snapshot is completely loaded into its state.
-SNAPSHOT_LOADED_MESSAGE="State snapshot loaded successfully."
-SNAPSHOT_LOAD_REQUESTED=0
+# Written by hived next to its state file while a snapshot load is unfinished:
+# {"stage":"loading"|"replaying","snapshot":"<name>"}. Only "loading" needs the
+# snapshot again; hived resumes a "replaying" one from the block log.
+SNAPSHOT_LOAD_MARKER="$SHM_DIR/snapshot_load_pending.json"
 
 # Name of the (single) unpacked snapshot directory under $SNAPSHOT_DIR, if any.
 find_snapshot_name() {
@@ -155,7 +158,18 @@ find_snapshot_name() {
   return 1
 }
 
+# True when hived would load a snapshot given --load-snapshot-if-no-state. hived
+# takes a marker it cannot read for an unfinished load, so only "replaying" counts
+# as a finished one here.
+state_needs_snapshot() {
+  [[ -f "$SHM_DIR/shared_memory.bin" ]] || return 0
+  [[ -f "$SNAPSHOT_LOAD_MARKER" ]] || return 1
+  ! grep -qF '"stage":"replaying"' "$SNAPSHOT_LOAD_MARKER"
+}
+
 bootstrap_snapshot() {
+  # Load record of an earlier entrypoint, replaced by hived's own marker.
+  rm -f "$DATADIR/.snapshot_loaded"
   [[ -n "${SNAPSHOT_URL:-}" ]] || return 0
   local arg
   if ! has_block_log; then
@@ -168,55 +182,33 @@ bootstrap_snapshot() {
     done
     HIVED_ARGS+=("--block-log-split=0")
   fi
-  if [[ -f "$SHM_DIR/shared_memory.bin" ]]; then
-    [[ -f "$SNAPSHOT_LOADED_MARKER" ]] && return 0
-    if ! find_snapshot_name >/dev/null; then
-      # State left by an older entrypoint, which wrote no marker, after a load whose
-      # snapshot directory was deleted since: a refused load keeps that directory.
-      touch "$SNAPSHOT_LOADED_MARKER"
-      return 0
-    fi
-  else
-    rm -f "$SNAPSHOT_LOADED_MARKER" # the state the marker was written for is gone
-  fi
+  # These rebuild or replace the state themselves, so no snapshot is added. Exact
+  # names: --load-snapshot must not be mistaken for --load-snapshot-if-no-state.
   for arg in "${HIVED_ARGS[@]}"; do
-    [[ "$arg" == --load-snapshot* ]] && return 0
+    case "$arg" in
+      --force-replay|--resync-blockchain|--load-snapshot|--load-snapshot=*|--load-snapshot-if-no-state|--load-snapshot-if-no-state=*)
+        return 0 ;;
+    esac
   done
-  local archive name
-  archive="$SNAPSHOT_DIR/$(basename "$SNAPSHOT_URL")"
-  mkdir -p "$SNAPSHOT_DIR"
-  if ! name=$(find_snapshot_name); then
+  local name=""
+  name=$(find_snapshot_name) || true
+  if [[ -z "$name" ]] && state_needs_snapshot; then
+    local archive
+    archive="$SNAPSHOT_DIR/$(basename "$SNAPSHOT_URL")"
+    mkdir -p "$SNAPSHOT_DIR"
     check_free_space "$SNAPSHOT_URL" "$archive"
     fetch_file "$SNAPSHOT_URL" "$archive"
     echo "Unpacking $(basename "$archive") into ${SNAPSHOT_DIR}"
     tar --extract --gzip --file="$archive" --directory="$SNAPSHOT_DIR"
     rm -f "$archive"
-    name=$(find_snapshot_name) || true
-  fi
-  if [[ -z "$name" ]]; then
-    echo "No snapshot directory found under ${SNAPSHOT_DIR} after unpacking ${SNAPSHOT_URL}. Exiting."
-    exit 1
-  fi
-  echo "Loading snapshot ${name} (the ${SNAPSHOT_DIR} directory can be deleted once the node is synced)."
-  HIVED_ARGS+=("--load-snapshot=$name")
-  SNAPSHOT_LOAD_REQUESTED=1
-}
-
-# Writes $SNAPSHOT_LOADED_MARKER as soon as hived logs a completed snapshot load.
-# Returns without writing it when the hived job (pid in $1) ends before that.
-record_snapshot_load() {
-  local job_pid="$1"
-  while kill -0 "$job_pid" 2>/dev/null; do
-    if grep -qF "$SNAPSHOT_LOADED_MESSAGE" "$DATADIR/hived.log" 2>/dev/null; then
-      touch "$SNAPSHOT_LOADED_MARKER"
-      echo "Snapshot load completed, recorded in ${SNAPSHOT_LOADED_MARKER}."
-      return 0
+    if ! name=$(find_snapshot_name); then
+      echo "No snapshot directory found under ${SNAPSHOT_DIR} after unpacking ${SNAPSHOT_URL}. Exiting."
+      exit 1
     fi
-    sleep 5
-  done
-  if grep -qF "$SNAPSHOT_LOADED_MESSAGE" "$DATADIR/hived.log" 2>/dev/null; then
-    touch "$SNAPSHOT_LOADED_MARKER"
   fi
+  [[ -n "$name" ]] || return 0
+  echo "Passing snapshot ${name} to hived, which loads it only when there is no complete state (the ${SNAPSHOT_DIR} directory can be deleted once the node is up)."
+  HIVED_ARGS+=("--load-snapshot-if-no-state=$name")
 }
 
 ######### Replay detection #########
@@ -226,13 +218,14 @@ record_snapshot_load() {
 # to date the flag is a no-op resume. HIVED_AUTO_REPLAY=1 adds it whenever a block log
 # exists and the caller did not pick a replay mode. Off by default: a state/block log
 # mismatch then stops hived with an error instead of silently starting a replay. The
-# patterns also catch abbreviations hived accepts, such as --replay.
+# patterns also catch abbreviations hived accepts, such as --replay. Plain
+# --load-snapshot is matched exactly: --load-snapshot-if-no-state allows a replay.
 maybe_add_replay_arg() {
   [[ "${HIVED_AUTO_REPLAY:-0}" == "1" ]] || return 0
   local arg
   for arg in "${HIVED_ARGS[@]}"; do
     case "$arg" in
-      --replay*|--force-replay*|--resync*|--load-snapshot*)
+      --replay*|--force-replay*|--resync*|--load-snapshot|--load-snapshot=*)
         return 0 ;;
     esac
   done
@@ -266,11 +259,6 @@ P2P_ENDPOINT="${P2P_ENDPOINT:-0.0.0.0:${P2P_PORT}}"
 WS_ENDPOINT="${WS_ENDPOINT:-0.0.0.0:${WS_PORT}}"
 HTTP_ENDPOINT="${HTTP_ENDPOINT:-0.0.0.0:${HTTP_PORT}}"
 
-# The log of an earlier start must not be taken for this start's snapshot load.
-if [[ "$SNAPSHOT_LOAD_REQUESTED" == "1" ]]; then
-  rm -f "$DATADIR/hived.log"
-fi
-
 {
 /bin/bash << EOF
 echo "Attempting to execute hived using additional command line arguments: ${HIVED_ARGS[*]}"
@@ -287,23 +275,19 @@ EOF
 
 job_pid=$!
 
-local recorder_pid=""
-if [[ "$SNAPSHOT_LOAD_REQUESTED" == "1" ]]; then
-  record_snapshot_load "$job_pid" &
-  recorder_pid=$!
-fi
-
 jobs -l
 
 echo "waiting for job finish: $job_pid."
 local status=0
 wait $job_pid || status=$?
-[[ -z "$recorder_pid" ]] || wait "$recorder_pid" || true
 
 if [ $status -eq 130 ];
 then
   echo "Ignoring SIGINT exit code: $status."
   status=0 #ignore exitcode caught by handling SIGINT
+elif [ $status -eq 78 ];
+then
+  echo "hived refused to start for a reason a restart cannot fix (exit code 78); see the log above."
 fi
 
 echo "Hived process finished execution: return status: ${status}."
@@ -311,8 +295,8 @@ echo "Hived process finished execution: return status: ${status}."
 return ${status}
 }
 
-run_instance
-status=$?
+status=0
+run_instance || status=$?
 
 echo "Exiting docker entrypoint with status: ${status}..."
 exit $status

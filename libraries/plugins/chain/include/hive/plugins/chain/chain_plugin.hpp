@@ -21,6 +21,11 @@ namespace hive { namespace plugins { namespace chain {
 
 class state_snapshot_provider;
 
+/** Exit code of hived when it refuses to start for a reason a restart cannot fix (see chain_plugin::startup_refused()),
+    so that an orchestrator can stop restarting it. Not 2: appbase returns 1-4 for command line errors.
+*/
+constexpr int STARTUP_REFUSED_EXIT_CODE = 78;
+
 namespace detail
 { 
   class chain_plugin_impl;
@@ -57,6 +62,9 @@ public:
   virtual void plugin_finalize_startup() override;
 
   void register_snapshot_provider(state_snapshot_provider& provider);
+
+  /// True when plugin_startup() threw because hived must not start in this situation and a restart would not change it.
+  bool startup_refused() const;
 
   void report_state_options( const string& plugin_name, const fc::variant_object& opts );
 
