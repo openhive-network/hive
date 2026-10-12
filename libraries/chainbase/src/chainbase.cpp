@@ -67,7 +67,10 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
         retVal += ", \"apple\":" + std::to_string(apple);
         retVal += ", \"windows\":" + std::to_string(windows);
 
-        retVal += ", " + std::string( version_info.c_str() );
+        // version_info holds a JSON object ({"version":{...}}); inline its members to keep the result valid JSON
+        const std::string version( version_info.c_str() );
+        if( version.size() > 2 && version.front() == '{' && version.back() == '}' )
+          retVal += ", " + version.substr( 1, version.size() - 2 );
         retVal += ", " + dump( plugins );
         retVal += "}";
 
@@ -203,12 +206,17 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
   void database::open( const bfs::path& dir, uint32_t flags, size_t shared_file_size, const boost::any& database_cfg, const helpers::environment_extension_resources* environment_extension )
   {
     assert( dir.is_absolute() );
-    bfs::create_directories( dir );
+    const bool read_only = flags & read_only_storage;
+    if( !read_only )
+      bfs::create_directories( dir );
     if( _data_dir != dir ) close();
 
     _data_dir = dir;
     _database_cfg = database_cfg;
     auto abs_path = bfs::absolute( dir / "shared_memory.bin" );
+
+    if( read_only && !bfs::exists( abs_path ) )
+      BOOST_THROW_EXCEPTION( std::runtime_error( "Shared memory file " + abs_path.generic_string() + " does not exist" ) );
 
     auto _size_checker = [&dir]( size_t size )
     {
@@ -221,7 +229,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
     if( bfs::exists( abs_path ) )
     {
       _file_size = bfs::file_size( abs_path );
-      if( shared_file_size > _file_size )
+      if( !read_only && shared_file_size > _file_size )
       {
         _size_checker( shared_file_size - _file_size );
         if( !bip::managed_mapped_file::grow( abs_path.generic_string().c_str(), shared_file_size - _file_size ) )
@@ -245,9 +253,14 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
       }
 #endif
 
-      _segment.reset( new bip::managed_mapped_file( bip::open_only,
-                                      abs_path.generic_string().c_str()
-                                      ) );
+      if( read_only )
+        _segment.reset( new bip::managed_mapped_file( bip::open_copy_on_write,
+                                        abs_path.generic_string().c_str()
+                                        ) );
+      else
+        _segment.reset( new bip::managed_mapped_file( bip::open_only,
+                                        abs_path.generic_string().c_str()
+                                        ) );
 
       auto env = _segment->find< environment_check >( "environment" );
       environment_check eCheck( allocator< environment_check >( _segment->get_segment_manager() ) );
