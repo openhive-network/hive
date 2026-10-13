@@ -143,8 +143,8 @@ DEFINE_API_IMPL( database_api_impl, verify_signatures )
       _db.has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
       { args },
       sig_keys,
-      [this]( const string& name ) { return _db.get< chain::account_authority_object, chain::by_account >( name ).get_owner().to_authority(); },
       [this]( const string& name ) { return _db.get< chain::account_authority_object, chain::by_account >( name ).get_active().to_authority(); },
+      [this]( const string& name ) { return _db.get< chain::account_authority_object, chain::by_account >( name ).get_owner().to_authority(); },
       [this]( const string& name ) { return _db.get< chain::account_authority_object, chain::by_account >( name ).get_posting().to_authority(); },
       [this]( string witness_name ){ return _db.get_witness(witness_name).signing_key; }, // note: reflect any changes here in database::apply_transaction
       HIVE_MAX_SIG_CHECK_DEPTH );
