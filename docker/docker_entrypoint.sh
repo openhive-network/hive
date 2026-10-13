@@ -270,8 +270,14 @@ state_in_use() {
   grep -qF "in use by another process" <<< "$output"
 }
 
+# Each argument reaches hived whole, spaces included. Earlier versions of this script
+# parsed the arguments a second time, so callers wrote JSON values with escaped quotes
+# (--account-history-rocksdb-track-account-range=[\"a\",\"a\"]); turning \" into "
+# keeps such arguments working, and leaves the plain form (["a","a"]) unchanged.
 HIVED_ARGS=()
-HIVED_ARGS+=("$@")
+for arg in "$@"; do
+  HIVED_ARGS+=("${arg//\\\"/\"}")
+done
 export HIVED_ARGS
 
 if [[ "$BOOTSTRAP_ONLY" == "1" ]] && state_in_use; then

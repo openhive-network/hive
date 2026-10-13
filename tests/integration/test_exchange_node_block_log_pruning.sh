@@ -199,7 +199,7 @@ echo "✓ head_block_number is $TARGET_SYNC_BLOCK (synced to stop-at-block limit
 # Test 2: Verify test block is accessible (within non-pruned range)
 echo "Verifying block $TEST_BLOCK is accessible (within kept part range)..."
 BLOCK_RESPONSE=$(docker exec load-snapshot-instance wget -O - -q --timeout=30 --post-data="{\"jsonrpc\": \"2.0\",\"method\": \"block_api.get_block\",\"params\":{\"block_num\":$TEST_BLOCK},\"id\": 1}" localhost:8091)
-if ! echo "$BLOCK_RESPONSE" | grep -q '"block_id"'; then
+if ! grep -q '"block_id"' <<< "$BLOCK_RESPONSE"; then
   echo "ERROR: Failed to get block $TEST_BLOCK via API"
   stop_instance "load-snapshot-instance"
   exit 1

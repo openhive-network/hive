@@ -239,6 +239,16 @@ If you ran the node with `run_hived_img.sh` or
 that was separate), and copy your tracked-account lines into `config.ini`. The
 `config.ini` that lives inside the old data directory is no longer read.
 
+The image's entrypoint passes each of its arguments to hived as one argument,
+spaces included, without parsing it again. Older images parsed the arguments a
+second time, so scripts escaped the quotes in JSON values:
+`--account-history-rocksdb-track-account-range=[\"your-exchange\",\"your-exchange\"]`.
+The entrypoint still turns every `\"` in an argument into `"`, so such scripts keep
+working; new ones should pass the plain value,
+`--account-history-rocksdb-track-account-range=["your-exchange","your-exchange"]`
+(quoted for the shell that runs the script). In `config.ini`, values are written
+without escapes either way.
+
 The scripts left the block log in the split layout that hived now uses by
 default. This directory's `config.ini` sets `block-log-split = -1` because the
 published block log is a single file; when migrating a split block log, remove
