@@ -29,6 +29,7 @@
 #include <array>
 #include <atomic>
 #include <fstream>
+#include <functional>
 #include <iostream>
 #include <memory>
 #include <stdexcept>
@@ -979,6 +980,11 @@ namespace chainbase {
       void resize( size_t new_shared_file_size );
       void set_require_locking( bool enable_require_locking );
 
+      /// Publishes a newly created state file under its final name as link() does, returning 0 or an errno value.
+      /// Replaceable so that tests can simulate a filesystem without hard links.
+      using link_file_function = std::function< int( const bfs::path& existing, const bfs::path& new_name ) >;
+      void set_link_file_function( link_file_function link_file ) { _link_file = std::move( link_file ); }
+
 #ifdef CHAINBASE_CHECK_LOCKING
       void require_lock_fail( const char* method, const char* lock_type, const char* tname )const;
 
@@ -1392,6 +1398,8 @@ namespace chainbase {
       unique_ptr<bip::managed_mapped_file>                        _meta;
       /// Held from the first open of the storage for writing until it is closed, across resize.
       std::shared_ptr<state_file_lock>                            _state_file_lock;
+      /// Empty for link() itself.
+      link_file_function                                          _link_file;
 
       /**
         * This is a sparse list of known indicies kept to accelerate creation of undo sessions

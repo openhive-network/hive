@@ -56,11 +56,14 @@ The script's `aidev_timeout_ms <action> <default_ms>` gives the action's `timeou
 if it has one, else `default_ms × scale`, never less than `default_ms`; without the
 file, or with one it cannot read, `default_ms`, so CI and runs by hand behave as
 before. An action is `<binary>:<unit>`, the unit as passed to `--run_test`
-(`chain_test:basic_tests`, `plugin_test:!witness_tests`). Each unit that ends on its
-own, passed or failed, appends
+(`chain_test:basic_tests`, `plugin_test:!witness_tests`). Each unit that completes,
+passed (exit 0) or failed its assertions (201), appends
 `{"action": …, "duration_ms": …, "default_ms": …}` to `AIDEV_TIMEOUTS_OBSERVATIONS`,
-from which aidev models the next run's timeouts; a unit killed at its timeout or by
-a signal appends nothing, because its duration only says it took longer.
+from which aidev models the next run's timeouts. A unit killed at its timeout or by
+a signal, or one that ended in an uncaught exception or a crash Boost.Test caught
+(200), appends nothing, because its duration says nothing of how long the unit
+takes. A unit killed at its timeout is a failed testcase, named after the unit, in
+the binary's JUnit results.
 `aidev project preflight` reports `adaptive test timeouts: enabled` in its slots row.
 
 Not covered yet: the Python functional tests (test-tools; several need the 5M
