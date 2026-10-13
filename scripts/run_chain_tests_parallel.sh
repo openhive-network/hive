@@ -2,7 +2,7 @@
 # Run a Boost test binary's suites (chain_test by default) in parallel (same behavior as CI)
 #
 # Usage:
-#   ./scripts/run_chain_tests_parallel.sh [path/to/test_binary] [parallelism] [units_file]
+#   ./scripts/run_chain_tests_parallel.sh [path/to/test_binary] [parallelism] [units_file] [unit_timeout]
 #
 # Each line of units_file is one --run_test= argument run as its own process
 # (e.g. "witness_tests/witness_basic_test" or "!witness_tests"), in file order.
@@ -10,11 +10,19 @@
 # after the binary (chain_test_results.xml, plugin_test_results.xml, ...) and
 # written next to it.
 #
+# parallelism is a number, or a file holding one that is read again each time
+# a unit ends (GNU parallel's procfile), so a caller can change it mid-run.
+#
+# Each unit is killed after unit_timeout seconds (default 600). Under AIDEV
+# with adaptive timeouts, AIDEV_TIMEOUTS_FILE may widen that per unit (never
+# shorten it), and each unit that ends on its own is appended to
+# AIDEV_TIMEOUTS_OBSERVATIONS; see .aidev/README.md.
+#
 # Examples:
 #   ./scripts/run_chain_tests_parallel.sh                           # Auto-detect in build/
 #   ./scripts/run_chain_tests_parallel.sh build/tests/unit/chain_test
 #   ./scripts/run_chain_tests_parallel.sh build/tests/unit/chain_test 8
-#   ./scripts/run_chain_tests_parallel.sh build/tests/unit/plugin_test 4 plugin_units.txt
+#   ./scripts/run_chain_tests_parallel.sh build/tests/unit/plugin_test 4 plugin_units.txt 900
 #
 # Requires GNU parallel: apt-get install parallel
 
@@ -55,9 +63,58 @@ interrupt_handler() {
 trap interrupt_handler INT TERM
 trap cleanup EXIT
 
+# The timeout in milliseconds of action NAME, whose own default is DEFAULT_MS:
+# its entry in AIDEV_TIMEOUTS_FILE, else DEFAULT_MS times the file's load scale,
+# never less than DEFAULT_MS. Without a readable file, DEFAULT_MS.
+aidev_timeout_ms() {  # NAME DEFAULT_MS
+    if [ ! -r "${AIDEV_TIMEOUTS_FILE:-}" ]; then
+        echo "$2"
+        return
+    fi
+    python3 -c '
+import json, math, sys
+name, default = sys.argv[2], int(sys.argv[3])
+try:
+    with open(sys.argv[1]) as f:
+        doc = json.load(f)
+    action = doc.get("actions", {}).get(name)
+    ms = action["timeout_ms"] if action else default * doc.get("scale", 1)
+    print(max(default, math.ceil(ms)))
+except (OSError, ValueError, TypeError, KeyError, AttributeError):
+    print(default)
+' "$AIDEV_TIMEOUTS_FILE" "$1" "$2" 2>/dev/null || echo "$2"
+}
+
+# Run one unit under its own timeout. A unit that ended on its own (passed, or
+# failed its assertions) is an observation; a killed one is not, since its
+# duration says only that it took longer.
+run_unit() {  # SEQ UNIT TIMEOUT_SECONDS
+    local start ret took_ms
+    start=$(date +%s%3N)
+    HIVE_TEMPDIR="$CHAIN_TEST_TMPDIR/$1" timeout -k 30 "$3" "$CHAIN_TEST_ABS" --run_test="$2" \
+        --log_format=JUNIT --log_sink="${NAME}_$1.xml" --log_level=error > "${NAME}_$1.log" 2>&1
+    ret=$?
+    took_ms=$(( $(date +%s%3N) - start ))
+    if [ "$ret" -eq 124 ] || [ "$ret" -eq 137 ]; then
+        echo "Unit $2 killed at its timeout of $3s"
+    else
+        echo "Unit $2 exited with code $ret"
+    fi
+    # 124-127: killed at the timeout or never ran; 128-199: killed by a signal.
+    # Boost.Test's own failures are 200 and 201.
+    case "$ret" in
+        12[4-9]|1[3-9][0-9]) ;;
+        *) [ -z "${AIDEV_TIMEOUTS_OBSERVATIONS:-}" ] ||
+            printf '{"action": "%s:%s", "duration_ms": %d, "default_ms": %d}\n' \
+                "$NAME" "$2" "$took_ms" "$UNIT_DEFAULT_MS" >> "$AIDEV_TIMEOUTS_OBSERVATIONS" ;;
+    esac
+    return "$ret"
+}
+
 CHAIN_TEST="${1:-}"
 PARALLELISM="${2:-6}"
 UNITS_FILE="${3:-}"
+UNIT_DEFAULT_MS=$(( ${4:-600} * 1000 ))
 
 # Auto-detect chain_test if not provided
 if [ -z "$CHAIN_TEST" ]; then
@@ -126,14 +183,21 @@ echo ""
 CHAIN_TEST_ABS=$(readlink -f "$CHAIN_TEST")
 OUTPUT_DIR_ABS=$(readlink -f "$OUTPUT_DIR")
 
+[ -r "${AIDEV_TIMEOUTS_FILE:-}" ] && echo "Adaptive timeouts: $AIDEV_TIMEOUTS_FILE"
+while IFS= read -r unit; do
+    ms=$(aidev_timeout_ms "$NAME:$unit" "$UNIT_DEFAULT_MS")
+    printf '%s\t%s\n' "$unit" $(( (ms + 999) / 1000 ))
+done < "$OUTPUT_DIR_ABS/${NAME}_list.txt" > "$CHAIN_TEST_TMPDIR/${NAME}_timeouts.tsv"
+
 # Disable exit-on-error for log collection
 set +e
 
 cd "$CHAIN_TEST_TMPDIR"
 # Data directories are per job number: unit names may hold '/' or '!'.
-parallel -j "$PARALLELISM" --joblog "${NAME}_parallel.log" --timeout 600 --termseq TERM,200,KILL,25 \
-    "HIVE_TEMPDIR='$CHAIN_TEST_TMPDIR'/{#} '$CHAIN_TEST_ABS' --run_test={} --log_format=JUNIT --log_sink=${NAME}_{#}.xml --log_level=error > ${NAME}_{#}.log 2>&1; ret=\$?; echo Unit {} exited with code \$ret; exit \$ret" \
-    < "$OUTPUT_DIR_ABS/${NAME}_list.txt" &
+export -f run_unit
+export CHAIN_TEST_TMPDIR CHAIN_TEST_ABS NAME UNIT_DEFAULT_MS
+parallel -j "$PARALLELISM" --joblog "${NAME}_parallel.log" --termseq TERM,200,KILL,25 --colsep '\t' \
+    run_unit {#} {1} {2} < "$CHAIN_TEST_TMPDIR/${NAME}_timeouts.tsv" &
 PARALLEL_PID=$!
 wait $PARALLEL_PID || true
 
@@ -187,8 +251,8 @@ else
     echo ""
     echo "Failed units:"
     awk 'NR>1 && $7!=0 {
-        cmd=$0; sub(/.*--run_test=/, "", cmd); sub(/ .*/, "", cmd);
-        print "  - " cmd " (exit code: " $7 ")"
+        unit=$11; gsub(/[\\\047]/, "", unit);
+        print "  - " unit " (exit code: " $7 ")"
     }' "${NAME}_parallel.log"
     echo ""
     echo "Results in: $OUTPUT_DIR"

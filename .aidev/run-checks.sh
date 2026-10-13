@@ -7,7 +7,8 @@
 #   .aidev/run-checks.sh <suite> <step>[,<step>...]...
 #
 # Steps run in order; steps joined by commas run at the same time, sharing the
-# HIVE_TEST_JOBS test processes (default: min(8, nproc)) evenly between them.
+# HIVE_TEST_JOBS test processes (default: min(8, nproc)) evenly between them;
+# when one of them ends, its share goes to those still running.
 #
 #   - build           configure and build the testnet chain_test and plugin_test,
 #                     exactly as CI's testnet_node_build compiles them
@@ -26,6 +27,9 @@
 #
 # Reports go to test-results/<suite>/: junit.xml (one case per step) plus each
 # test binary's own junit report, and timings.tsv, each step's wall time.
+#
+# Each test unit runs under its own timeout (scripts/run_chain_tests_parallel.sh),
+# widened under AIDEV's adaptive timeouts; see .aidev/README.md.
 set -uo pipefail
 cd "$(dirname "$0")/.." || exit 1
 
@@ -36,6 +40,35 @@ cases="$out/cases.tsv"; : > "$cases"
 timings="$out/timings.tsv"; printf 'step\tseconds\texit\n' > "$timings"
 cpus="$(nproc)"
 test_jobs="${HIVE_TEST_JOBS:-$(( cpus < 8 ? cpus : 8 ))}"
+# What a step's tests run in parallel: a number, or a file holding one that
+# concurrently() rewrites as the steps beside it end.
+test_slots="$test_jobs"
+
+descendants() {  # PID: every process under it, except the one asking
+    local child
+    for child in $(pgrep -P "$1"); do
+        [ "$child" = "$BASHPID" ] && continue
+        echo "$child"
+        descendants "$child"
+    done
+}
+
+# The slot wall terminates only this script: take the steps running in the
+# background, and the tests they started, down with it.
+stop_steps() {
+    trap - INT TERM EXIT
+    local pids; pids="$(descendants $$)"
+    [ -n "$pids" ] || return 0
+    echo "stopping the running steps" >&2
+    # shellcheck disable=SC2086
+    kill -TERM $pids 2>/dev/null; sleep 2
+    # shellcheck disable=SC2086
+    kill -KILL $pids 2>/dev/null
+    return 0
+}
+trap 'stop_steps; exit 130' INT
+trap 'stop_steps; exit 143' TERM
+trap stop_steps EXIT
 
 # fc's and utilities' CMake read each `.git` file's relative `gitdir:` and join it
 # to the path they were given without resolving symlinks, so from $src a checkout
@@ -141,7 +174,7 @@ chain_tests() {
     local exe; exe="$(bin chain_test)"
     [ -n "$exe" ] || { echo "no built chain_test under $bld/tests"; return 1; }
     local rc=0
-    scripts/run_chain_tests_parallel.sh "$exe" "$test_jobs" || rc=$?
+    scripts/run_chain_tests_parallel.sh "$exe" "$test_slots" || rc=$?
     cp "$(dirname "$exe")"/chain_test_results.xml "$out/chain-tests.xml" 2>/dev/null || true
     return "$rc"
 }
@@ -150,7 +183,8 @@ chain_tests() {
 # process, because snapshots_tests fails without the suites before it; each
 # witness_tests case (real-time block production, each in its own HIVE_TEMPDIR,
 # p2p on no fixed port) is its own. colony_basic_test alone takes ~7.5 min, the
-# rest together less, so it starts first and bounds the step.
+# rest together less, so it starts first and bounds the step. Its units' timeout
+# floor is 900 s: chain_test's 600 s leaves colony_basic_test too little headroom.
 plugin_units() {  # BINARY
     "$1" --list_content 2>&1 | awk -v first=colony_basic_test '
         /^[^ ]/ { suite = $1; sub(/[*:].*/, "", suite)
@@ -166,7 +200,7 @@ plugin_tests() {
     [ -n "$exe" ] || { echo "no built plugin_test under $bld/tests"; return 1; }
     local units="$out/plugin-tests-units.txt" rc=0
     plugin_units "$exe" > "$units" || return 1
-    scripts/run_chain_tests_parallel.sh "$exe" "$test_jobs" "$units" || rc=$?
+    scripts/run_chain_tests_parallel.sh "$exe" "$test_slots" "$units" 900 || rc=$?
     cp "$(dirname "$exe")"/plugin_test_results.xml "$out/plugin-tests.xml" 2>/dev/null || true
     return "$rc"
 }
@@ -181,14 +215,41 @@ run() {  # STEP
     esac
 }
 
-concurrently() {  # STEP...: each with its share of $test_jobs
-    local share=$(( test_jobs / $# )) s pid rc=0 pids=()
-    [ "$share" -ge 1 ] || share=1
+share_slots() {  # DIR STEP...: $test_jobs split between the steps, one file each
+    local dir="$1" share extra n s; shift
+    [ "$#" -gt 0 ] || return 0
+    share=$(( test_jobs / $# )); extra=$(( test_jobs % $# ))
     for s in "$@"; do
-        ( test_jobs=$share; run "$s" ) &
-        pids+=("$!")
+        n=$(( share + (extra > 0) )); [ "$n" -ge 1 ] || n=1
+        extra=$(( extra > 0 ? extra - 1 : 0 ))
+        echo "$n" > "$dir/$s.new" && mv "$dir/$s.new" "$dir/$s"
     done
-    for pid in "${pids[@]}"; do wait "$pid" || rc=1; done
+}
+
+# Polls rather than `wait -n`: bash 4.4's `wait -n` waits only for a job that
+# ends after it is called, so a step that ended just before would keep its share.
+concurrently() {  # STEP...: sharing $test_jobs, a step's share handed on when it ends
+    local slots s pid rc=0 running ended
+    local -A step_of=()
+    slots="$(mktemp -d)" || return 1
+    share_slots "$slots" "$@"
+    for s in "$@"; do
+        ( test_slots="$slots/$s"; run "$s" ) &
+        step_of[$!]="$s"
+    done
+    while [ "${#step_of[@]}" -gt 0 ]; do
+        sleep 1
+        running=" $(jobs -pr | tr '\n' ' ') " ended=0
+        for pid in "${!step_of[@]}"; do
+            [[ "$running" == *" $pid "* ]] && continue
+            wait "$pid" || rc=1
+            unset "step_of[$pid]"; ended=1
+        done
+        [ "$ended" -eq 1 ] && [ "${#step_of[@]}" -gt 0 ] || continue
+        share_slots "$slots" "${step_of[@]}"
+        for s in "${step_of[@]}"; do echo "== $s: now $(cat "$slots/$s") test processes" >&2; done
+    done
+    rm -rf "$slots"
     return "$rc"
 }
 

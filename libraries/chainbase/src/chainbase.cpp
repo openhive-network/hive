@@ -4,6 +4,7 @@
 #include <iostream>
 #include <fc/log/logger.hpp>
 #include <fc/io/json.hpp>
+#include <fc/scoped_exit.hpp>
 
 #include <cerrno>
 #include <cstring>
@@ -321,7 +322,9 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
   class database::state_file_lock
   {
     public:
-      explicit state_file_lock( const bfs::path& path );
+      explicit state_file_lock( const bfs::path& path ) : state_file_lock( path, path ) {}
+      /// Locks the file at open_path, which is about to be known as path.
+      state_file_lock( const bfs::path& open_path, const bfs::path& path );
       ~state_file_lock() { ::close( _fd ); }
 
       state_file_lock( const state_file_lock& ) = delete;
@@ -334,13 +337,13 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
       int       _fd = -1;
   };
 
-  database::state_file_lock::state_file_lock( const bfs::path& path ) : _path( path )
+  database::state_file_lock::state_file_lock( const bfs::path& open_path, const bfs::path& path ) : _path( path )
   {
-    _fd = ::open( path.generic_string().c_str(), O_RDWR | O_CLOEXEC );
+    _fd = ::open( open_path.generic_string().c_str(), O_RDWR | O_CLOEXEC );
     if( _fd < 0 )
     {
       const int error = errno;
-      BOOST_THROW_EXCEPTION( std::runtime_error( "could not open the shared memory file " + path.generic_string() + ": " + std::strerror( error ) ) );
+      BOOST_THROW_EXCEPTION( std::runtime_error( "could not open the shared memory file " + open_path.generic_string() + ": " + std::strerror( error ) ) );
     }
 
     struct flock lock = {};
@@ -361,6 +364,26 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
       bfs::create_directories( dir );
     if( _data_dir != dir ) close();
 
+    try
+    {
+      open_storage( dir, read_only, shared_file_size, database_cfg, environment_extension );
+    }
+    catch( ... )
+    {
+      // A refused open must not keep the file locked or mapped, or the next open of it in this process is refused.
+      _segment.reset();
+      _read_only_mapping.reset();
+      _segment_manager = nullptr;
+      _state_file_lock.reset();
+      _data_dir = bfs::path();
+      wipe_indexes();
+      _is_open = false;
+      throw;
+    }
+  }
+
+  void database::open_storage( const bfs::path& dir, bool read_only, size_t shared_file_size, const boost::any& database_cfg, const helpers::environment_extension_resources* environment_extension )
+  {
     _data_dir = dir;
     _database_cfg = database_cfg;
     auto abs_path = bfs::absolute( dir / "shared_memory.bin" );
@@ -447,12 +470,30 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
     } else {
       _size_checker( shared_file_size );
       _file_size = shared_file_size;
+      // Boost.Interprocess cannot create a segment in a file that already exists, so the segment is created and locked
+      // under a name of this process alone and only then linked in place: another process never finds
+      // shared_memory.bin unlocked or without its environment. link() refuses an existing name, so a process that
+      // loses the race falls back to opening the winner's file, and is refused by its lock.
+      const bfs::path new_path = abs_path.generic_string() + "." + std::to_string( ::getpid() ) + ".new";
+      bfs::remove( new_path );
+      const auto remove_new_path = fc::make_scoped_exit( [&new_path]() { boost::system::error_code ignored; bfs::remove( new_path, ignored ); } );
       _segment.reset( new bip::managed_mapped_file( bip::create_only,
-                                      abs_path.generic_string().c_str(), shared_file_size
+                                      new_path.generic_string().c_str(), shared_file_size
                                       ) );
-      lock_for_writing();
+      auto new_lock = std::make_shared< state_file_lock >( new_path, abs_path );
       _segment_manager = _segment->get_segment_manager();
       _segment_manager->find_or_construct< environment_check >( "environment" )( allocator< environment_check >( _segment_manager ) );
+      if( ::link( new_path.generic_string().c_str(), abs_path.generic_string().c_str() ) != 0 )
+      {
+        const int error = errno;
+        _segment.reset();
+        _segment_manager = nullptr;
+        if( error != EEXIST )
+          BOOST_THROW_EXCEPTION( std::runtime_error( "could not create the shared memory file " + abs_path.generic_string() + ": " + std::strerror( error ) ) );
+        open_storage( dir, read_only, shared_file_size, database_cfg, environment_extension );
+        return;
+      }
+      _state_file_lock = std::move( new_lock );
       ilog( "Creating storage at ${abs_path}', size: ${shared_file_size}", ( "abs_path",abs_path.generic_string() )(shared_file_size) );
     }
 

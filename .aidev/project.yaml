@@ -88,5 +88,11 @@ verification:
     args: [".aidev/run-checks.sh", "coverage", "build", "chain-smoke", "plugin-api"]
     artifacts: ["test-results/coverage/"]
 
+# Adaptive per-unit test timeouts (docs/operations/adaptive-timeouts.md in aidev):
+# aidev hands each suite AIDEV_TIMEOUTS_FILE and collects AIDEV_TIMEOUTS_OBSERVATIONS;
+# scripts/run_chain_tests_parallel.sh reads and writes them. See .aidev/README.md.
+timeouts:
+  enabled: true
+
 # Capability grants for target-side code. Empty until this project needs one.
 capabilities: []
