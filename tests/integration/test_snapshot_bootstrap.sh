@@ -136,8 +136,8 @@ expect_no_log() { ! grep -qF -- "$1" "$WORK_DIR/$CASE.log" || fail "$CASE: unexp
 expect_no_marker() { [[ ! -e "$WORK_DIR/$1/$MARKER" ]] || fail "$CASE: hived's marker left: $(cat "$WORK_DIR/$1/$MARKER")"; }
 # The arguments the entrypoint passes to hived, as it logs them.
 hived_args() { grep -F -- "Attempting to execute hived using additional command line arguments:" "$WORK_DIR/$CASE.log" || true; }
-expect_args() { hived_args | grep -qF -- "$1" || fail "$CASE: no '$1' among hived's arguments"; }
-expect_no_args() { ! hived_args | grep -qF -- "$1" || fail "$CASE: '$1' among hived's arguments"; }
+expect_args() { grep -qF -- "$1" < <(hived_args) || fail "$CASE: no '$1' among hived's arguments"; }
+expect_no_args() { ! grep -qF -- "$1" < <(hived_args) || fail "$CASE: '$1' among hived's arguments"; }
 
 # expect_details PENDING: the details printed by the tool are valid JSON, with a head block, a LIB not above it, and
 # snapshot_load_pending equal to PENDING (JSON).
@@ -346,10 +346,10 @@ expect_log "do not match this build"
 docker run -d --name "$PRODUCER" --network "$NETWORK" --volume "$WORK_DIR/source:/home/hived/datadir" "$IMAGE" \
   --shared-file-full-threshold=1 --shared-file-scale-rate=100 > /dev/null
 for _ in $(seq 60); do
-  docker logs "$PRODUCER" 2>&1 | grep -qF "Generated block" && break
+  grep -qF "Generated block" < <(docker logs "$PRODUCER" 2>&1) && break
   sleep 1
 done
-docker logs "$PRODUCER" 2>&1 | grep -qF "Generated block" || fail "the producer does not produce blocks"
+grep -qF "Generated block" < <(docker logs "$PRODUCER" 2>&1) || fail "the producer does not produce blocks"
 
 resizes() { docker logs "$PRODUCER" 2>&1 | grep -cF "Memory is almost full, increasing" || true; }
 
@@ -433,7 +433,7 @@ expect_log "Snapshot load completed"
 node=$(service_container hived)
 [[ -n "$node" ]] || fail "$CASE: no hived container"
 for _ in $(seq 60); do
-  docker logs "$node" 2>&1 | grep -qF "Started on blockchain with" && break
+  grep -qF "Started on blockchain with" < <(docker logs "$node" 2>&1) && break
   sleep 1
 done
 docker logs "$node" > "$WORK_DIR/${CASE}-hived.log" 2>&1

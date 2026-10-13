@@ -144,7 +144,8 @@ process_option_file() {
   for o in "${READ_OPTIONS[@]}"; do
     [[ $o =~ ^#.* ]] && continue
 #    echo "Processing a file option: $o"
-    process_option "$o"
+    # Option files written for the image's old second shell parse escape quotes as \"; hived needs them plain.
+    process_option "${o//\\\"/\"}"
   done
 }
 

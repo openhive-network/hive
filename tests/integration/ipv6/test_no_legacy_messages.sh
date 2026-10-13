@@ -99,7 +99,7 @@ api_call() {
 wait_for_api() {
   local port="$1" max_wait="${2:-90}" elapsed=0
   while [ $elapsed -lt "$max_wait" ]; do
-    if api_call "$port" "database_api.get_dynamic_global_properties" | grep -q head_block_number; then
+    if grep -q head_block_number < <(api_call "$port" "database_api.get_dynamic_global_properties"); then
       return 0
     fi
     sleep 3
@@ -138,7 +138,7 @@ wait_for_api "$SYNC_HTTP" || { fail "sync node API not ready"; exit 1; }
 info "Waiting for the P2P connection over ::1"
 CONNECTED=""
 for _ in $(seq 1 30); do
-  if get_peer_addresses "$WITNESS_HTTP" | grep -q "::1"; then
+  if grep -q "::1" < <(get_peer_addresses "$WITNESS_HTTP"); then
     CONNECTED=yes
     break
   fi

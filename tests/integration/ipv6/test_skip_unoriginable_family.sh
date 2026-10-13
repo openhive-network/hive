@@ -105,7 +105,7 @@ api_call() {
 wait_for_api() {
   local host="$1" max_wait="${2:-90}" elapsed=0
   while [ $elapsed -lt "$max_wait" ]; do
-    if api_call "$host" "database_api.get_dynamic_global_properties" | grep -q head_block_number; then
+    if grep -q head_block_number < <(api_call "$host" "database_api.get_dynamic_global_properties"); then
       return 0
     fi
     sleep 3
