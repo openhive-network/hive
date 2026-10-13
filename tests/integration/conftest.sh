@@ -92,7 +92,7 @@ wait_for_chain_api_ready() {
       --post-data='{"jsonrpc":"2.0","method":"app_status_api.get_app_status","id":1}' \
       localhost:8091 2>/dev/null || echo "")
 
-    if [ -n "$app_status" ] && echo "$app_status" | grep -q 'chain API ready'; then
+    if [ -n "$app_status" ] && grep -q 'chain API ready' <<< "$app_status"; then
       echo "Chain API ready after ${elapsed}s" >&2
       return 0
     fi

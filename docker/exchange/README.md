@@ -173,6 +173,9 @@ touching it and exits with code 78 (see Troubleshooting); replay with
 `--force-replay` as in step 3, or, on a snapshot-only node, start over from a
 fresh snapshot as described below.
 
+Arguments given directly to the image are passed to hived as written, with no
+second shell parse, so do not escape quotes in them (`["a","a"]`, not `[\"a\",\"a\"]`).
+
 The same `--force-replay` step is needed after changing the tracked accounts in
 `config.ini`. For a release that needs a replay, consider running the upgrade on a
 second machine and switching over once it has caught up, to avoid downtime.
