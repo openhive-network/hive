@@ -19,7 +19,6 @@
 
 #include <hive/chain/util/reward.hpp>
 #include <hive/chain/util/uint256.hpp>
-#include <hive/chain/notifications.hpp>
 #include <hive/chain/detail/state/account_object_multiindex.hpp>
 #include <hive/chain/detail/state/hardfork_property_object_multiindex.hpp>
 #include <hive/chain/detail/state/comment_object_multiindex.hpp>
@@ -34,9 +33,6 @@
 
 #include <boost/range/iterator_range.hpp>
 #include <boost/algorithm/string.hpp>
-
-#include <boost/thread/future.hpp>
-#include <boost/thread/lock_guard.hpp>
 
 #define CHECK_ARG_SIZE( s ) \
   FC_ASSERT( args.size() == s, "Expected #s argument(s), was ${n}", ("n", args.size()) );
@@ -61,8 +57,6 @@ api_chain_properties::api_chain_properties( const hive::chain::chain_properties&
 
 namespace detail
 {
-  typedef std::function< void( const broadcast_transaction_synchronous_return& ) > confirmation_callback;
-
   class condenser_api_impl
   {
     private:
@@ -84,12 +78,7 @@ namespace detail
         legacy_substitutes( create_legacy_substitutes() ),
         _chain( app.get_plugin< hive::plugins::chain::chain_plugin >() ),
         _db( _chain.db() )
-      {
-        _on_post_apply_block_conn = _db.add_post_apply_block_handler(
-          [&]( const block_notification& note ){ on_post_apply_block( note ); },
-          app.get_plugin< hive::plugins::condenser_api::condenser_api_plugin >(),
-          0 );
-      }
+      {}
 
       DECLARE_API_IMPL(
         (get_version)
@@ -156,8 +145,6 @@ namespace detail
         (list_rc_direct_delegations)
       )
 
-      void on_post_apply_block( const block_notification& note );
-
       hive::plugins::chain::chain_plugin&                              _chain;
 
       chain::database&                                                  _db;
@@ -172,11 +159,6 @@ namespace detail
       std::shared_ptr< market_history::market_history_api >             _market_history_api;
       std::shared_ptr< rc::rc_api >                                     _rc_api;
       const metadata::metadata_plugin*                                   _metadata_plugin = nullptr;
-      map< transaction_id_type, confirmation_callback >                 _callbacks;
-      map< time_point_sec, vector< transaction_id_type > >              _callback_expirations;
-      chain::database::signal_connection_ptr                            _on_post_apply_block_conn;
-
-      boost::mutex                                                      _mtx;
   };
 
   condenser_api_impl::legacy_substitutes_type condenser_api_impl::create_legacy_substitutes()
@@ -863,71 +845,12 @@ namespace detail
     FC_ASSERT( _network_broadcast_api, "network_broadcast_api_plugin not enabled." );
     FC_ASSERT( _p2p != nullptr, "p2p_plugin not enabled." );
 
-    fc::time_point api_start_time = fc::time_point::now();
-    annotated_signed_transaction trx = force_legacy_serialization< annotated_signed_transaction >( args.at(0) );
-    boost::promise< broadcast_transaction_synchronous_return > p;
-    fc::time_point callback_setup_time;
-    full_transaction_ptr full_transaction;
-
-    auto set_remove_callback = [&]( bool fail )
-    {
-      //(possible?) case when determine_encoding_and_accept_transaction throws before filling result
-      if( !full_transaction )
-        return;
-
-      const auto& txid = full_transaction->get_transaction_id();
-      boost::lock_guard< boost::mutex > guard( _mtx );
-      auto c_itr = _callbacks.find( txid );
-
-      if( fail ) //remove callback
-      {
-        // The callback may have been cleared in the meantime, so we need to check for existence.
-        if( c_itr != _callbacks.end() ) _callbacks.erase( c_itr );
-        // We do not need to clean up _callback_expirations because on_post_apply_block handles this case.
-        full_transaction.reset();
-      }
-      else //setup callback
-      {
-        FC_ASSERT( c_itr == _callbacks.end(), "Transaction is a duplicate" );
-        _callbacks[ txid ] = [&p]( const broadcast_transaction_synchronous_return& r )
-        {
-          p.set_value( r );
-        };
-        _callback_expirations[ trx.expiration ].push_back( txid );
-        LOG_DELAY( api_start_time, fc::seconds( 1 ), "Excessive delay to setup callback" );
-        if( callback_setup_time == fc::time_point() )
-          callback_setup_time = fc::time_point::now();
-      }
-    };
-
-    try
-    {
-      /* It may look strange to call these without the lock and then lock again in the case of an exception,
-       * but it is correct and avoids deadlock. accept_transaction is trained along with all other writes, including
-       * pushing blocks. Pushing blocks do not originate from this code path and will never have this lock.
-       * However, it will trigger the on_post_apply_block callback and then attempt to acquire the lock. In this case,
-       * this thread will be waiting on accept_block so it can write and the block thread will be waiting on this
-       * thread for the lock.
-       */
-      _chain.determine_encoding_and_accept_transaction( full_transaction, trx, set_remove_callback );
-      _p2p->broadcast_transaction(full_transaction);
-    }
-    catch( fc::exception& e )
-    {
-      if (callback_setup_time != fc::time_point())
-        LOG_DELAY_EX(callback_setup_time, fc::seconds(1), "Excessive delay to validate & broadcast trx ${e}", (e) );
-      set_remove_callback( true );
-      throw;
-    }
-    catch( ... )
-    {
-      ulog("unknown exception thrown while processing trx: ${trx}",(trx));
-      set_remove_callback( true );
-      throw fc::unhandled_exception( FC_LOG_MESSAGE( warn, "Unknown error occured when pushing transaction" ), std::current_exception() );
-    }
-
-    LOG_DELAY(callback_setup_time, fc::seconds(1), "Excessive delay to validate & broadcast trx");
-    return p.get_future().get();
+    auto result = _network_broadcast_api->broadcast_transaction_synchronous(
+      force_legacy_serialization< annotated_signed_transaction >( args.at(0) ) );
+    // a transaction without a known RC cost has -1 there; condenser_api leaves the cost out, wallet_bridge_api does not
+    if( result.rc_cost.valid() && *result.rc_cost < 0 )
+      result.rc_cost.reset();
+    return result;
   }
 
   DEFINE_API_IMPL( condenser_api_impl, get_account_reputations )
@@ -1081,53 +1004,6 @@ namespace detail
       transaction_serialization_type::legacy
     };
   }
-
-  void condenser_api_impl::on_post_apply_block( const block_notification& note )
-  { try {
-    boost::lock_guard< boost::mutex > guard( _mtx );
-    int32_t block_num = int32_t(note.block_num);
-    if( _callbacks.size() )
-    {
-      size_t trx_num = 0;
-      for( const auto& trx : note.full_block->get_full_transactions() )
-      {
-        const auto& id = trx->get_transaction_id();
-        int64_t cost = trx->get_rc_cost();
-        auto itr = _callbacks.find( id );
-        if( itr != _callbacks.end() )
-        {
-          itr->second( broadcast_transaction_synchronous_return( id, block_num, int32_t( trx_num ), cost, false ) );
-          _callbacks.erase( itr );
-        }
-        ++trx_num;
-      }
-    }
-
-    /// clear all expirations
-    auto block_ts = note.get_block_timestamp();
-    while( true )
-    {
-      auto exp_it = _callback_expirations.begin();
-      if( exp_it == _callback_expirations.end() )
-        break;
-      if( exp_it->first >= block_ts )
-        break;
-      for( const transaction_id_type& txid : exp_it->second )
-      {
-        auto cb_it = _callbacks.find( txid );
-        // If it's empty, that means the transaction has been confirmed and has been deleted by the above check.
-        if( cb_it == _callbacks.end() )
-          continue;
-
-        confirmation_callback callback = cb_it->second;
-        transaction_id_type txid_byval = txid;    // can't pass in by reference as it's going to be deleted
-        callback( broadcast_transaction_synchronous_return( txid_byval, block_num, -1, -1, true ) );
-
-        _callbacks.erase( cb_it );
-      }
-      _callback_expirations.erase( exp_it );
-    }
-  } FC_LOG_AND_RETHROW() }
 
   DEFINE_API_IMPL( condenser_api_impl, find_rc_accounts )
   {

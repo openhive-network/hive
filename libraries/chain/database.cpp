@@ -1037,7 +1037,7 @@ VEST_asset database::adjust_account_vesting_balance(const account_object& to_acc
       else
       {
         if( has_hardfork( HIVE_HARDFORK_0_20 ) )
-          util::update_manabar( cprops, a, new_vesting.get_amount() );
+          util::update_manabar( cprops, a, new_vesting.get_amount(), has_hardfork( HIVE_HARDFORK_1_29_DOWNVOTE_MANA_OVERFLOW ) );
         a.access_vesting().transfer_from( new_vest_balance );
       }
     } );
@@ -3169,7 +3169,7 @@ void database::clear_expired_delegations()
     modify( delegator, [&]( account_object& a )
     {
       if( has_hardfork( HIVE_HARDFORK_0_20 ) )
-        util::update_manabar( gpo, a, itr->get_vesting().amount.value );
+        util::update_manabar( gpo, a, itr->get_vesting().amount.value, has_hardfork( HIVE_HARDFORK_1_29_DOWNVOTE_MANA_OVERFLOW ) );
       a.access_delegated_vesting() -= itr->get_vesting();
     } );
     if( has_hardfork( HIVE_HARDFORK_0_20 ) )
