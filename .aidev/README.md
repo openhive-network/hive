@@ -14,7 +14,11 @@ through merge requests (as in hive/haf), **keeping the source branch**
 `test-results/<suite>/junit.xml`, one test case per step, plus each test
 binary's own junit report and `timings.tsv`, each step's wall time (also printed
 at the end of the output). Steps joined by commas run at the same time and share
-`HIVE_TEST_JOBS` test processes (default: min(8, nproc)) evenly.
+`HIVE_TEST_JOBS` test processes (default: min(8, nproc)) evenly; when one ends, the
+others take over its share (the step's `run_chain_tests_parallel.sh` reads its
+parallelism from a file GNU parallel re-reads as each unit ends), and the log says
+`== <step>: now N test processes`. On INT or TERM (the slot wall) the script stops
+every step still running and the test processes under it.
 
 | Step | What |
 |---|---|
@@ -34,6 +38,30 @@ at the end of the output). Steps joined by commas run at the same time and share
 when run without the suites before it (it passes in the full `!witness_tests` order, as in CI).
 `witness_tests` cases are: each gets its own data directory (`HIVE_TEMPDIR`) and its p2p
 node listens on no fixed port.
+
+## Test unit timeouts
+
+`scripts/run_chain_tests_parallel.sh` runs each unit under its own `timeout -k 30`:
+600 s for a `chain_test` unit, 900 s for a `plugin_test` one (`colony_basic_test`
+takes ~450 s on a quiet host). These are floors. The profile opts into AIDEV's
+adaptive timeouts (`timeouts: {enabled: true}`; aidev's
+`docs/operations/adaptive-timeouts.md`), so before each suite aidev writes
+`AIDEV_TIMEOUTS_FILE`:
+
+```json
+{"version": 1, "scale": 1.4, "actions": {"plugin_test:witness_tests/colony_basic_test": {"timeout_ms": 1260000}}}
+```
+
+The script's `aidev_timeout_ms <action> <default_ms>` gives the action's `timeout_ms`
+if it has one, else `default_ms × scale`, never less than `default_ms`; without the
+file, or with one it cannot read, `default_ms`, so CI and runs by hand behave as
+before. An action is `<binary>:<unit>`, the unit as passed to `--run_test`
+(`chain_test:basic_tests`, `plugin_test:!witness_tests`). Each unit that ends on its
+own, passed or failed, appends
+`{"action": …, "duration_ms": …, "default_ms": …}` to `AIDEV_TIMEOUTS_OBSERVATIONS`,
+from which aidev models the next run's timeouts; a unit killed at its timeout or by
+a signal appends nothing, because its duration only says it took longer.
+`aidev project preflight` reports `adaptive test timeouts: enabled` in its slots row.
 
 Not covered yet: the Python functional tests (test-tools; several need the 5M
 block-log fixtures), fork/colony/mirrornet jobs, replay, and `static`. They stay in

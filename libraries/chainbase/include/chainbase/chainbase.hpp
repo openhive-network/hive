@@ -1383,6 +1383,8 @@ namespace chainbase {
       class read_only_mapping;
       class state_file_lock;
 
+      void open_storage( const bfs::path& dir, bool read_only, size_t shared_file_size, const boost::any& database_cfg, const helpers::environment_extension_resources* environment_extension );
+
       unique_ptr<bip::managed_mapped_file>                        _segment;
       /// The storage opened with read_only_storage, in place of _segment.
       std::shared_ptr<read_only_mapping>                          _read_only_mapping;
