@@ -56,13 +56,14 @@ The script's `aidev_timeout_ms <action> <default_ms>` gives the action's `timeou
 if it has one, else `default_ms × scale`, never less than `default_ms`; without the
 file, or with one it cannot read, `default_ms`, so CI and runs by hand behave as
 before. An action is `<binary>:<unit>`, the unit as passed to `--run_test`
-(`chain_test:basic_tests`, `plugin_test:!witness_tests`). Each unit that completes,
-passed (exit 0) or failed its assertions (201), appends
+(`chain_test:basic_tests`, `plugin_test:!witness_tests`). Each unit that completes
+without a crash, passed (exit 0) or failed only its checks (201 with no `<error>`
+entry in its JUnit log), appends
 `{"action": …, "duration_ms": …, "default_ms": …}` to `AIDEV_TIMEOUTS_OBSERVATIONS`,
 from which aidev models the next run's timeouts. A unit killed at its timeout or by
-a signal, or one that ended in an uncaught exception or a crash Boost.Test caught
-(200), appends nothing, because its duration says nothing of how long the unit
-takes. A unit killed at its timeout is a failed testcase, named after the unit, in
+a signal, one with an exception, a fatal error or a crash Boost.Test caught (201
+with an `<error>` entry), or one whose setup failed (200), appends nothing, because
+its duration says nothing of how long the unit takes. A unit killed at its timeout is a failed testcase, named after the unit, in
 the binary's JUnit results.
 `aidev project preflight` reports `adaptive test timeouts: enabled` in its slots row.
 

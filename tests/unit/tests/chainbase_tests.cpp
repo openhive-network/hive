@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <cerrno>
+#include <ctime>
 #include <fstream>
 #include <string>
 #include <vector>
@@ -56,6 +57,17 @@ pid_t dead_pid()
 std::string new_state_file_name( pid_t pid )
 {
   return "shared_memory.bin." + std::to_string( pid ) + ".new";
+}
+
+void write_file( const chainbase::bfs::path& path, std::time_t modified )
+{
+  std::ofstream( path.string() ).put( 'x' );
+  chainbase::bfs::last_write_time( path, modified );
+}
+
+int link_file( const chainbase::bfs::path& existing, const chainbase::bfs::path& new_name )
+{
+  return ::link( existing.string().c_str(), new_name.string().c_str() ) == 0 ? 0 : errno;
 }
 
 struct wipeable_database : chainbase::database
@@ -126,11 +138,12 @@ BOOST_AUTO_TEST_CASE( stray_new_state_files_are_removed )
 {
   fc::temp_directory dir( hive::utilities::temp_directory_path() );
   const auto state_dir = shared_memory_dir( dir );
-  const auto stray = new_state_file_name( dead_pid() );
-  // a creation in progress in another live process
-  const auto in_progress = new_state_file_name( ::getppid() );
-  std::ofstream( ( state_dir / stray ).string() ).put( 'x' );
-  std::ofstream( ( state_dir / in_progress ).string() ).put( 'x' );
+  const std::time_t now = std::time( nullptr );
+  const std::string stray = "shared_memory.bin.0123456789abcdef0123456789abcdef.new";
+  // a creation in progress in another PID namespace, whose PID looks dead here
+  const auto in_progress = new_state_file_name( dead_pid() );
+  write_file( state_dir / stray, now - 120 );
+  write_file( state_dir / in_progress, now );
 
   wipeable_database db;
   db.open( state_dir, 0, STATE_FILE_SIZE );
@@ -138,9 +151,74 @@ BOOST_AUTO_TEST_CASE( stray_new_state_files_are_removed )
   BOOST_CHECK( has_file( state_dir, in_progress ) );
   db.close();
 
-  std::ofstream( ( state_dir / stray ).string() ).put( 'x' );
+  write_file( state_dir / stray, now - 120 );
   db.wipe( state_dir );
   BOOST_CHECK( file_names( state_dir ) == std::vector< std::string >{ in_progress } );
+}
+
+BOOST_AUTO_TEST_CASE( concurrent_creations_of_one_process_do_not_share_a_new_state_file )
+{
+  fc::temp_directory dir( hive::utilities::temp_directory_path() );
+  const auto state_dir = shared_memory_dir( dir );
+  const auto refused_for_lock = refused_with( "could not gain write access" );
+
+  // Both creators run in this process, so they have the same PID; the second one runs to completion while the first
+  // is about to link its file in place.
+  chainbase::database first;
+  chainbase::database second;
+  chainbase::bfs::path first_new_path;
+  chainbase::bfs::path second_new_path;
+  bool first_new_path_intact = false;
+  second.set_link_file_function( [&]( const chainbase::bfs::path& existing, const chainbase::bfs::path& new_name )
+  {
+    second_new_path = existing;
+    first_new_path_intact = chainbase::bfs::exists( first_new_path );
+    return link_file( existing, new_name );
+  } );
+  bool second_created = false;
+  first.set_link_file_function( [&]( const chainbase::bfs::path& existing, const chainbase::bfs::path& new_name )
+  {
+    if( first_new_path.empty() )
+    {
+      first_new_path = existing;
+      second.open( state_dir, 0, STATE_FILE_SIZE );
+      second_created = true;
+    }
+    return link_file( existing, new_name );
+  } );
+  BOOST_CHECK_EXCEPTION( first.open( state_dir, 0, STATE_FILE_SIZE ), std::runtime_error, refused_for_lock );
+
+  BOOST_REQUIRE( second_created );
+  BOOST_CHECK( first_new_path != second_new_path );
+  BOOST_CHECK( first_new_path_intact );
+  BOOST_CHECK( file_names( state_dir ) == std::vector< std::string >{ "shared_memory.bin" } );
+  second.close();
+  // the state file second created, with its environment
+  BOOST_CHECK_NO_THROW( first.open( state_dir, 0, STATE_FILE_SIZE ) );
+  first.close();
+}
+
+BOOST_AUTO_TEST_CASE( state_file_creation_is_repeated_when_its_new_state_file_is_removed )
+{
+  fc::temp_directory dir( hive::utilities::temp_directory_path() );
+  const auto state_dir = shared_memory_dir( dir );
+
+  chainbase::database creator;
+  std::vector< chainbase::bfs::path > new_paths;
+  creator.set_link_file_function( [&new_paths]( const chainbase::bfs::path& existing, const chainbase::bfs::path& new_name )
+  {
+    new_paths.push_back( existing );
+    if( new_paths.size() == 1 )
+      chainbase::bfs::remove( existing );
+    return link_file( existing, new_name );
+  } );
+  creator.open( state_dir, 0, STATE_FILE_SIZE );
+  BOOST_CHECK_EQUAL( new_paths.size(), 2u );
+  BOOST_CHECK( file_names( state_dir ) == std::vector< std::string >{ "shared_memory.bin" } );
+
+  chainbase::database other;
+  BOOST_CHECK_EXCEPTION( other.open( state_dir, 0, STATE_FILE_SIZE ), std::runtime_error, refused_with( "could not gain write access" ) );
+  creator.close();
 }
 
 BOOST_AUTO_TEST_SUITE_END()
