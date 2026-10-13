@@ -26,8 +26,10 @@ set -euo pipefail
 #  10. HIVED_BOOTSTRAP_ONLY=1 loads and exits, HIVED_SKIP_BOOTSTRAP=1 runs without
 #      a snapshot option; a bootstrap against a running node exits 0 at once
 #  11. shared_memory_file_util: valid details with head, LIB and hived's marker,
-#      state files left byte-identical, a running node refused at once (repeatedly),
-#      a state with other definitions refused
+#      state files left byte-identical, a running node refused at once (repeatedly,
+#      also while the node grows its state file), a state with other definitions refused
+#  12. docker/exchange/compose.yml: a refused snapshot leaves hived-bootstrap exited
+#      with 78 and hived never started; a good snapshot starts hived
 #
 # The snapshot is served by a container on a network of its own, so the test also
 # runs against a Docker daemon on another host (docker-in-docker in CI); the work
@@ -36,6 +38,7 @@ set -euo pipefail
 # Usage: test_snapshot_bootstrap.sh <testnet hived image> <work dir>
 #   PYTHON_IMAGE: an image with python3, to serve the snapshot and check JSON
 #   TOOL_RUNS: how many times shared_memory_file_util is run against a running node
+#   MIN_RESIZES: how many times the running node must have grown its state file meanwhile
 ################################################################################
 
 if [ "$#" -lt 2 ]; then
@@ -47,6 +50,7 @@ IMAGE=$1
 WORK_DIR=$(realpath -m "$2")
 PYTHON_IMAGE=${PYTHON_IMAGE:-python:3.12-alpine}
 TOOL_RUNS=${TOOL_RUNS:-200}
+MIN_RESIZES=${MIN_RESIZES:-5}
 
 SNAPSHOT_NAME=snap
 SNAPSHOT_BLOCK=30
@@ -60,11 +64,21 @@ PRODUCER=snapshot-bootstrap-producer
 SNAPSHOT_URL="http://${HTTP_SERVER}:8000/${SNAPSHOT_NAME}.tgz"
 MARKER=blockchain/snapshot_load_pending.json
 TOOL=/home/hived/bin/shared_memory_file_util
+COMPOSE_DIR="$WORK_DIR/compose"
+COMPOSE_PROJECT=snapshot-bootstrap-compose
+COMPOSE_IMAGE=snapshot-bootstrap-compose
+SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
 rm -rf "$WORK_DIR"
 mkdir -p "$WORK_DIR/www"
 
+compose() {
+  docker compose --project-name "$COMPOSE_PROJECT" --project-directory "$COMPOSE_DIR" \
+    --file "$COMPOSE_DIR/compose.yml" --file "$COMPOSE_DIR/compose.test.yml" "$@"
+}
+
 cleanup() {
+  [[ ! -f "$COMPOSE_DIR/compose.test.yml" ]] || compose down --volumes > /dev/null 2>&1 || true
   docker rm -f "$HTTP_SERVER" "$PRODUCER" > /dev/null 2>&1 || true
   docker network rm "$NETWORK" > /dev/null 2>&1 || true
 }
@@ -328,26 +342,103 @@ tool "$CASE" altered --get-details
 expect_log "do not match this build"
 
 # A node producing blocks holds the state: the tool is refused at once, never left waiting on a mutex in the state.
-docker run -d --name "$PRODUCER" --network "$NETWORK" --volume "$WORK_DIR/source:/home/hived/datadir" "$IMAGE" > /dev/null
+# The node grows its state file after every block, reopening it each time, and keeps the state locked meanwhile.
+docker run -d --name "$PRODUCER" --network "$NETWORK" --volume "$WORK_DIR/source:/home/hived/datadir" "$IMAGE" \
+  --shared-file-full-threshold=1 --shared-file-scale-rate=100 > /dev/null
 for _ in $(seq 60); do
   docker logs "$PRODUCER" 2>&1 | grep -qF "Generated block" && break
   sleep 1
 done
 docker logs "$PRODUCER" 2>&1 | grep -qF "Generated block" || fail "the producer does not produce blocks"
 
+resizes() { docker logs "$PRODUCER" 2>&1 | grep -cF "Memory is almost full, increasing" || true; }
+
 CASE=tool-running-node
-echo "=== ${CASE}: ${TOOL_RUNS} runs"
-for i in $(seq "$TOOL_RUNS"); do
+echo "=== ${CASE}: at least ${TOOL_RUNS} runs and ${MIN_RESIZES} resizes of the node's state"
+i=0
+deadline=$((SECONDS + 300))
+while (( i < TOOL_RUNS || $(resizes) < MIN_RESIZES )); do
+  (( SECONDS < deadline )) || fail "$CASE: the node grew its state $(resizes) times in 300s, expected ${MIN_RESIZES}"
+  i=$((i + 1))
   RC=0
   timeout 30 docker exec "$PRODUCER" "$TOOL" --input /home/hived/datadir/blockchain --get-details > /dev/null 2> "$WORK_DIR/$CASE.log" || RC=$?
   [[ "$RC" -ne 124 ]] || fail "$CASE: run $i hangs"
   [[ "$RC" -ne 0 ]] || fail "$CASE: run $i read the state of a running node"
   expect_log "in use by another process"
 done
+echo "${i} runs, $(resizes) resizes"
+docker logs "$PRODUCER" > "$WORK_DIR/producer.log" 2>&1
+[[ "$(docker inspect --format '{{.State.Running}}' "$PRODUCER")" == "true" ]] || fail "$CASE: the node stopped (see $WORK_DIR/producer.log)"
+! grep -qF "could not gain write access" "$WORK_DIR/producer.log" || fail "$CASE: the node lost its state while growing it"
 
 CASE=bootstrap-only-on-running-node; run "$CASE" source --env HIVED_BOOTSTRAP_ONLY=1 --
 expect_rc 0
 expect_log "a running hived holds the state"
 docker stop "$PRODUCER" > /dev/null
+
+######### docker compose #########
+docker compose version > /dev/null || fail "docker compose is not available"
+mkdir -p "$COMPOSE_DIR"
+cp "$SCRIPT_DIR/../../docker/exchange/compose.yml" "$COMPOSE_DIR/"
+printf '%s\n' "plugin = state_snapshot" "shared-file-size = 128M" > "$COMPOSE_DIR/config.ini"
+chmod a+r "$COMPOSE_DIR/config.ini"
+# The services reach the snapshot server, and publish no ports on this host.
+cat > "$COMPOSE_DIR/compose.test.yml" <<COMPOSE
+networks:
+  snapshot:
+    name: ${NETWORK}
+    external: true
+services:
+  hived-bootstrap:
+    networks: [default, snapshot]
+  hived:
+    networks: [default, snapshot]
+    ports: !reset []
+COMPOSE
+docker tag "$IMAGE" "$COMPOSE_IMAGE:test"
+# A snapshot directory with no snapshot in it: hived refuses to load it.
+mkdir -p "$WORK_DIR/www-broken/broken"
+echo "not a snapshot" > "$WORK_DIR/www-broken/broken/README"
+tar --create --gzip --file="$WORK_DIR/www/broken.tgz" --directory="$WORK_DIR/www-broken" broken
+chmod -R a+rX "$WORK_DIR/www"
+
+# compose_up CASE SNAPSHOT_URL: `docker compose up -d` on fresh volumes; its output and the bootstrap's log go to
+# $WORK_DIR/CASE.log and its exit code to $RC.
+compose_up() {
+  local case_name="$1"
+  echo "=== ${case_name}"
+  compose down --volumes > /dev/null 2>&1 || true
+  printf '%s\n' "HIVED_IMAGE=${COMPOSE_IMAGE}" "HIVED_VERSION=test" "SNAPSHOT_URL=$2" > "$COMPOSE_DIR/.env"
+  RC=0
+  compose up -d > "$WORK_DIR/${case_name}.log" 2>&1 || RC=$?
+  compose logs hived-bootstrap >> "$WORK_DIR/${case_name}.log" 2>&1 || true
+  echo "exit code: $RC"
+}
+# The container of a compose service, empty when it was never created.
+service_container() { compose ps --all --quiet "$1"; }
+
+CASE=compose-refused-snapshot; compose_up "$CASE" "http://${HTTP_SERVER}:8000/broken.tgz"
+[[ "$RC" -ne 0 ]] || fail "$CASE: docker compose up succeeded"
+expect_log "cannot be loaded"
+bootstrap=$(service_container hived-bootstrap)
+[[ -n "$bootstrap" ]] || fail "$CASE: no hived-bootstrap container"
+bootstrap_rc=$(docker inspect --format '{{.State.ExitCode}}' "$bootstrap")
+[[ "$bootstrap_rc" -eq "$REFUSED_EXIT_CODE" ]] || fail "$CASE: hived-bootstrap exit code $bootstrap_rc, expected $REFUSED_EXIT_CODE"
+node=$(service_container hived)
+[[ -z "$node" || "$(docker inspect --format '{{.State.StartedAt}}' "$node")" == 0001-01-01T00:00:00* ]] || fail "$CASE: hived was started"
+
+CASE=compose-snapshot; compose_up "$CASE" "$SNAPSHOT_URL"
+expect_rc 0
+expect_log "Snapshot load completed"
+node=$(service_container hived)
+[[ -n "$node" ]] || fail "$CASE: no hived container"
+for _ in $(seq 60); do
+  docker logs "$node" 2>&1 | grep -qF "Started on blockchain with" && break
+  sleep 1
+done
+docker logs "$node" > "$WORK_DIR/${CASE}-hived.log" 2>&1
+grep -qF "Started on blockchain with" "$WORK_DIR/${CASE}-hived.log" || fail "$CASE: hived did not start (see $WORK_DIR/${CASE}-hived.log)"
+[[ "$(docker inspect --format '{{.State.Running}}' "$node")" == "true" ]] || fail "$CASE: hived is not running"
+compose down --volumes > /dev/null 2>&1
 
 echo "Test passed!"

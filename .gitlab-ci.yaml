@@ -1835,7 +1835,10 @@ snapshot_bootstrap_tests:
   needs:
     - job: testnet_node_build
       artifacts: true
-      optional: true  # Not needed if build was skipped
+      optional: true  # Not run when only tests changed
+    - job: quick_test_setup
+      artifacts: true
+      optional: true  # Gives the cached testnet image when only tests changed
   variables:
     WORK_DIR: "$CI_PROJECT_DIR/data_generated_during_snapshot_bootstrap_test"
   script:
