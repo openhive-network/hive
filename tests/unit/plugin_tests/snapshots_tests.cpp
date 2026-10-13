@@ -4,6 +4,7 @@
 #include <hive/chain/database_exceptions.hpp>
 #include <hive/chain/detail/state/account_object.hpp>
 #include <hive/chain/detail/state/feed_history_object.hpp>
+#include <hive/chain/irreversible_block_data_fwd.hpp>
 #include <hive/chain/util/decoded_types_data_storage.hpp>
 
 #include <hive/plugins/chain/snapshot_load_marker.hpp>
@@ -658,6 +659,75 @@ BOOST_AUTO_TEST_CASE( startup_refusals_keep_state )
       reset_fixture( false );
       BOOST_REQUIRE( state_files_with_marker == hash_state_files( state_dir() ) );
     }
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( unusable_snapshot_load_marker_is_refused )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "--- Testing: unusable_snapshot_load_marker_is_refused" );
+
+    start_node_with_all_witnesses( *this );
+    reset_fixture( false );
+
+    // a marker that cannot be read is named as such, not as the load of an unnamed snapshot
+    {
+      std::ofstream empty_marker( snapshot_load_marker( state_dir() ).path().string(), std::ios::trunc );
+    }
+    check_startup_refused( *this, [&]() { postponed_init(); },
+      { std::string( snapshot_load_marker::FILE_NAME ) + ", which is empty or cannot be read, did not complete", "--force-replay" } );
+    reset_fixture( false );
+
+    // the replay owed after a load has no state to resume on: refused instead of replaying from genesis
+    snapshot_load_marker( state_dir() ).write( snapshot_load_marker::load_stage::replaying, "snap" );
+    BOOST_REQUIRE( fc::remove( state_dir() / "shared_memory.bin" ) );
+    check_startup_refused( *this, [&]() { postponed_init(); },
+      { "The load of snapshot `snap' was left to replay", "no state to resume it on", "--load-snapshot-if-no-state", "--force-replay" } );
+    reset_fixture( false );
+    BOOST_CHECK( !fc::exists( state_dir() / "shared_memory.bin" ) );
+    const auto marker = read_snapshot_load_marker();
+    BOOST_REQUIRE( marker );
+    BOOST_CHECK( marker->stage == snapshot_load_marker::load_stage::replaying );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( read_only_storage_is_refused_in_use_and_leaves_state_untouched )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "--- Testing: read_only_storage_is_refused_in_use_and_leaves_state_untouched" );
+
+    start_node_with_all_witnesses( *this );
+    const uint32_t last_irreversible_block_num = db()->get_last_irreversible_block_num();
+    const auto open_read_only = []( chainbase::database& storage ) { storage.open( state_dir(), chainbase::database::read_only_storage ); };
+
+    // the running node holds the state, so the reader is refused at once instead of waiting on the segment
+    {
+      chainbase::database reader;
+      BOOST_CHECK_EXCEPTION( open_read_only( reader ), std::runtime_error, []( const std::runtime_error& e )
+      {
+        return std::string( e.what() ).find( "in use by another process" ) != std::string::npos;
+      } );
+    }
+
+    reset_fixture( false );
+    const auto state_files_before = hash_state_files( state_dir() );
+    {
+      chainbase::database reader;
+      open_read_only( reader );
+      const fc::variant details = fc::json::from_string( get_irreversible_block_details( reader ), fc::json::format_validation_mode::full );
+      BOOST_CHECK_EQUAL( details[ "_irreversible_block_num" ].as< uint32_t >(), last_irreversible_block_num );
+      reader.close();
+    }
+    BOOST_CHECK( state_files_before == hash_state_files( state_dir() ) );
+
+    // the reader released the state, so a node takes it again
+    reset_fixture( false );
+    postponed_init();
+    generate_block();
   }
   FC_LOG_AND_RETHROW()
 }

@@ -6,6 +6,11 @@
 
 #include <boost/filesystem/operations.hpp>
 
+#include <fcntl.h>
+#include <unistd.h>
+
+#include <cerrno>
+#include <cstring>
 #include <fstream>
 #include <iterator>
 
@@ -17,6 +22,17 @@ namespace {
 
 const char* const LOADING = "loading";
 const char* const REPLAYING = "replaying";
+
+/// Flushes a file, or a directory's entries, to the disk.
+void sync_to_disk( const bfs::path& path )
+{
+  const int fd = ::open( path.string().c_str(), O_RDONLY | O_CLOEXEC );
+  FC_ASSERT( fd >= 0, "Cannot open ${p}: ${e}", ( "p", path.string() )( "e", std::strerror( errno ) ) );
+  const int result = ::fsync( fd );
+  const int error = errno;
+  ::close( fd );
+  FC_ASSERT( result == 0, "Cannot flush ${p} to the disk: ${e}", ( "p", path.string() )( "e", std::strerror( error ) ) );
+}
 
 } // namespace
 
@@ -59,7 +75,10 @@ void snapshot_load_marker::write( load_stage stage, const std::string& snapshot 
     file.flush();
     FC_ASSERT( file.good(), "Cannot write snapshot load marker ${p}", ( "p", temp_path.string() ) );
   }
+  // Without both a power loss could leave no marker, or an empty one, next to a partial state.
+  sync_to_disk( temp_path );
   bfs::rename( temp_path, _path );
+  sync_to_disk( _path.parent_path() );
 }
 
 void snapshot_load_marker::clear() const

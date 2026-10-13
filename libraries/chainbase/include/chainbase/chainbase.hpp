@@ -30,6 +30,7 @@
 #include <atomic>
 #include <fstream>
 #include <iostream>
+#include <memory>
 #include <stdexcept>
 #include <typeindex>
 #include <typeinfo>
@@ -960,8 +961,10 @@ namespace chainbase {
     public:
       enum open_flags : uint32_t
       {
-        /// Opens an existing storage without writing to its files: the mapping is copy-on-write, so any
-        /// in-memory modification stays private to the process. The file lock is still taken.
+        /// Opens an existing storage without writing to its files. The file is locked for reading before it is mapped,
+        /// so a storage in use by another process is refused at once, and the mapping is private and read-only except
+        /// for the segment manager's header, so it does not commit memory for the whole file. Indexes missing from
+        /// the storage cannot be created.
         read_only_storage = 1
       };
 
@@ -1073,7 +1076,7 @@ namespace chainbase {
 #pragma GCC diagnostic ignored "-Wnonnull"
       auto get_segment_manager() -> decltype( ((bip::managed_mapped_file*)nullptr)->get_segment_manager())
       {
-        return _segment->get_segment_manager();
+        return _segment_manager;
       }
 #pragma GCC diagnostic pop
 
@@ -1090,7 +1093,7 @@ namespace chainbase {
 
       size_t get_free_memory()const
       {
-        return _segment->get_segment_manager()->get_free_memory();
+        return _segment_manager->get_free_memory();
       }
 
       size_t get_max_memory()const
@@ -1348,13 +1351,15 @@ namespace chainbase {
           CHAINBASE_THROW_EXCEPTION( std::logic_error( type_name + "::type_id is already in use" ) );
         }
         index_type* idx_ptr =  nullptr;
-        auto _found = _segment->find< index_type >( type_name.c_str() );
+        auto _found = _segment_manager->find< index_type >( type_name.c_str() );
         if( !_found.first )
         {
+          if( _read_only_mapping )
+            CHAINBASE_THROW_EXCEPTION( std::logic_error( "Index is not in the storage opened read-only: " + type_name ) );
           _at_least_one_index_is_created_now = true;
           if( _at_least_one_index_is_created_now && _at_least_one_index_was_created_earlier )
             CHAINBASE_THROW_EXCEPTION( std::logic_error( "Inconsistency occurs. A new index is created, but other indexes are found in `shared_memory_file` file. A replay is needed. Problem with: " + type_name ) );
-          idx_ptr = _segment->construct< index_type >( type_name.c_str() )( index_alloc( _segment->get_segment_manager() ) );
+          idx_ptr = _segment_manager->construct< index_type >( type_name.c_str() )( index_alloc( _segment_manager ) );
         }
         else
         {
@@ -1375,7 +1380,12 @@ namespace chainbase {
 
       read_write_mutex                                            _rw_lock;
 
+      class read_only_mapping;
+
       unique_ptr<bip::managed_mapped_file>                        _segment;
+      /// The storage opened with read_only_storage, in place of _segment.
+      std::shared_ptr<read_only_mapping>                          _read_only_mapping;
+      bip::managed_mapped_file::segment_manager*                  _segment_manager = nullptr;
       unique_ptr<bip::managed_mapped_file>                        _meta;
       bip::file_lock                                              _flock;
 

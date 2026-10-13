@@ -50,6 +50,7 @@
 #include <hive/chain/detail/state/witness_objects_multiindex.hpp>
 #include <hive/chain/rc/rc_objects_multiindex.hpp>
 
+#include <hive/plugins/chain/snapshot_load_marker.hpp>
 #include <hive/plugins/account_by_key/account_by_key_objects_multiindex.hpp>
 #include <hive/plugins/account_history_rocksdb/account_history_rocksdb_objects_multiindex.hpp>
 #include <hive/plugins/block_log_info/block_log_info_objects_multiindex.hpp>
@@ -62,6 +63,7 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <iterator>
 #include <set>
 
 namespace shared_memory_file_util
@@ -263,6 +265,7 @@ namespace shared_memory_file_util
 
   private:
     chainbase::database db;
+    const boost::filesystem::path shared_memory_file_dir;
     const fc::path output_dir;
     const bool extract_all_data;
     const bool extract_decoded_state_objects_data;
@@ -278,6 +281,7 @@ namespace shared_memory_file_util
     void verify_read_types_match_state() const;
     void read_decoded_state_objects_data() const;
     void read_shared_memory_file_details();
+    fc::variant read_snapshot_load_marker() const;
     void initialize_indices();
     void perform_dump_indices();
     void read_blockchain_config() const;
@@ -310,7 +314,7 @@ namespace shared_memory_file_util
   App::App(const boost::filesystem::path &_path_to_shared_memory_file_dir, const boost::filesystem::path &_output_dir, const bool _get_all_data,
         const bool _get_decoded_state_objects_data, const bool _get_details, const bool _get_blockchain_config, const bool _list_plugins,
         const bool _list_indices, const bool _dump_indices, const uint8_t _dump_threads)
-      : output_dir(_output_dir), extract_all_data(_get_all_data), extract_decoded_state_objects_data(_get_decoded_state_objects_data),
+      : shared_memory_file_dir(_path_to_shared_memory_file_dir), output_dir(_output_dir), extract_all_data(_get_all_data), extract_decoded_state_objects_data(_get_decoded_state_objects_data),
         extract_shm_details(_get_details), extract_blockchain_config(_get_blockchain_config), list_plugins(_list_plugins),
         list_indices(_list_indices), dump_indices(_dump_indices), dump_threads(_dump_threads)
   {
@@ -486,7 +490,24 @@ namespace shared_memory_file_util
     details("environment", fc::json::from_string(db.get_environment_details(), fc::json::format_validation_mode::full));
     details("head_block", head_block);
     details("last_irreversible_block", fc::json::from_string(hive::chain::get_irreversible_block_details(db), fc::json::format_validation_mode::full));
+    details("snapshot_load_pending", read_snapshot_load_marker());
     log_result(fc::json::to_pretty_string(fc::variant(details)), "shm details", "shared_memory_file_details.log");
+  }
+
+  fc::variant App::read_snapshot_load_marker() const
+  {
+    // hived's record of a snapshot load or forward replay that did not finish: head and LIB of such a state are not final.
+    const hive::plugins::chain::snapshot_load_marker marker(shared_memory_file_dir);
+    if (!boost::filesystem::exists(marker.path()))
+      return fc::variant();
+
+    std::ifstream file(marker.path().string());
+    std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+    boost::algorithm::trim(content);
+    // hived takes a marker it cannot parse for an unfinished load too, so such content is reported as it is.
+    if (fc::json::is_valid(content, fc::json::format_validation_mode::full))
+      return fc::json::from_string(content, fc::json::format_validation_mode::full);
+    return fc::variant(content);
   }
 
   void App::perform_dump_indices()
@@ -580,7 +601,7 @@ int main(int argc, char **argv)
   shared_memory_file_util_options.add_options()("get-all-data", "Extracts all possible data from shared memory file (ignores rest options except dump-threads)");
   shared_memory_file_util_options.add_options()("get-state-objects-data", "Extracts decoded state objects data from shared memory file");
   shared_memory_file_util_options.add_options()("get-blockchain-config", "Extracts blockchain configuration from shared memory file");
-  shared_memory_file_util_options.add_options()("get-details", "Extracts data about versions, head block, last irreversible block and so on, as JSON.");
+  shared_memory_file_util_options.add_options()("get-details", "Extracts data about versions, head block, last irreversible block and so on, as JSON. snapshot_load_pending holds hived's record of a snapshot load or replay that did not finish (null when there is none).");
   shared_memory_file_util_options.add_options()("list-plugins", "Extracts plugins list from shared memory file");
   shared_memory_file_util_options.add_options()("list-indices", "List all indices detected in shared memory file");
   shared_memory_file_util_options.add_options()("dump-indices", "Dump data from all indices into files.");

@@ -35,7 +35,7 @@ public:
 
   /// Nothing when no load is pending. A marker that cannot be parsed counts as an unfinished load.
   std::optional< pending_load > read() const;
-  /// Replaces the marker atomically, so a crash leaves either the previous or the new content.
+  /// Replaces the marker atomically and durably, so a crash or a power loss leaves either the previous or the new content.
   void write( load_stage stage, const std::string& snapshot ) const;
   void clear() const;
 
