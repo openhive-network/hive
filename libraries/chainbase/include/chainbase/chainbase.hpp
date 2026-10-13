@@ -1381,13 +1381,15 @@ namespace chainbase {
       read_write_mutex                                            _rw_lock;
 
       class read_only_mapping;
+      class state_file_lock;
 
       unique_ptr<bip::managed_mapped_file>                        _segment;
       /// The storage opened with read_only_storage, in place of _segment.
       std::shared_ptr<read_only_mapping>                          _read_only_mapping;
       bip::managed_mapped_file::segment_manager*                  _segment_manager = nullptr;
       unique_ptr<bip::managed_mapped_file>                        _meta;
-      bip::file_lock                                              _flock;
+      /// Held from the first open of the storage for writing until it is closed, across resize.
+      std::shared_ptr<state_file_lock>                            _state_file_lock;
 
       /**
         * This is a sparse list of known indicies kept to accelerate creation of undo sessions
