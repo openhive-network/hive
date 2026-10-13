@@ -25,13 +25,7 @@ When you are running as an AIDEV workflow:
 
 On either path, a change that alters a state object (anything stored in `shared_memory.bin`) invalidates existing node state: say so in the commit message ("Invalidates chain state") so maintainers can label and tag it.
 
-On either path, the history that reaches `develop` follows `doc/git-guidelines.md`. `develop` is merged fast-forward only, so every commit of the merged branch lands in `develop` as it is:
-
-- Linear history rebased on `origin/develop`: no merge commits.
-- Cleaned up before the merge (fixup commits, interactive rebase): no fixup, WIP or empty commits, and no tool bookkeeping in commits (workflow or promote IDs, generated file lists); that belongs in the MR description.
-- No unrelated changes in one commit, and every commit understandable from its message and diff alone: the subject says what the commit changes (e.g. "Compare snapshot state by serialization descriptors instead of memory layout"), not the issue title or the bug it fixes; the body says why and references the issue.
-
-An `aidev/integration` → `develop` MR needs this cleanup before it is merged. If `aidev/integration` has to stay append-only, open the MR from a cleaned-up copy of it.
+Regular (non-AIDEV) merge requests follow `doc/git-guidelines.md`. On the AIDEV path, history and commit messages are produced by AIDEV itself.
 
 ## Build Commands
 
