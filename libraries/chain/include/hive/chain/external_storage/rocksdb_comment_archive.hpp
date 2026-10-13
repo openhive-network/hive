@@ -42,6 +42,7 @@ class rocksdb_comment_archive : public comments_handler
     void wipe() override;
 
     void on_end_of_syncing() override;
+    void on_segment_remapped() override{ /*nothing to do here*/};
 };
 
 } }

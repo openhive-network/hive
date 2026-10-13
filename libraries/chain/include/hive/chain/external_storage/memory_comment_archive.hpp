@@ -95,6 +95,7 @@ class memory_comment_archive final : public comments_handler
     virtual void wipe() override;
 
     void on_end_of_syncing() override{ /*nothing to do here*/};
+    void on_segment_remapped() override;
 };
 
 } }

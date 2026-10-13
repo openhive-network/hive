@@ -650,6 +650,11 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
 
   void database::resize( size_t new_shared_file_size )
   {
+    // The index wrappers are rebuilt over the new mapping, but their extensions live outside the segment.
+    std::vector< std::pair< uint32_t, index_extensions > > extensions;
+    for( const abstract_index* idx : _index_list )
+      extensions.emplace_back( idx->type_id(), idx->get_index_extensions() );
+
     _segment.reset();
     _meta.reset();
 
@@ -661,6 +666,12 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
     {
       index_type->add_index( *this );
     }
+
+    for( auto& [ type_id, exts ] : extensions )
+      for( auto& ext : exts )
+        _index_map[ type_id ]->add_index_extension( ext );
+
+    on_segment_remapped();
   }
 
   void database::set_require_locking( bool enable_require_locking )

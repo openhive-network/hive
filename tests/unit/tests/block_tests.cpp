@@ -32,6 +32,8 @@
 #include <hive/chain/hive_fwd.hpp>
 #include <hive/chain/database_exceptions.hpp>
 #include <hive/chain/sync_block_writer.hpp>
+#include <hive/chain/index.hpp>
+#include <hive/chain/irreversible_block_data.hpp>
 
 #include <hive/protocol/exceptions.hpp>
 
@@ -1890,6 +1892,105 @@ BOOST_AUTO_TEST_CASE( block_flow_control_p2p )
     // check if all nodes are on the same fork
     BOOST_CHECK_EQUAL( db_.head_block_id(), db_bp1.head_block_id() );
     BOOST_CHECK_EQUAL( db_.head_block_id(), db_bp2.head_block_id() );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( state_file_grows_during_block_processing )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing growth of the state file after every produced and every applied block" );
+
+    // a threshold of 0.01% grows the state file by 1% after every block
+    auto growing_state_file_config = []( const std::string& data_dir )
+    {
+      return hived_fixture::config_arg_override_t{
+        hived_fixture::config_line_t( { "shared-file-dir", { data_dir } } ),
+        hived_fixture::config_line_t( { "shared-file-size", { std::to_string( 1024 * 1024 * hived_fixture::shared_file_size_small ) } } ),
+        hived_fixture::config_line_t( { "shared-file-full-threshold", { "1" } } ),
+        hived_fixture::config_line_t( { "shared-file-scale-rate", { "100" } } )
+      };
+    };
+
+    fc::temp_directory data_dir_bp( hive::utilities::temp_directory_path() );
+    hived_fixture fixture_bp( true /*remove_db_files*/, true /*disable_p2p*/, data_dir_bp.path().string() );
+    fixture_bp.postponed_init( growing_state_file_config( data_dir_bp.path().string() ) );
+    database& db_bp = *fixture_bp.db;
+    hive::plugins::chain::chain_plugin& chain_plugin_bp = fixture_bp.get_chain_plugin();
+    witness::block_producer bp( chain_plugin_bp );
+
+    fc::temp_directory data_dir_( hive::utilities::temp_directory_path() );
+    hived_fixture fixture_( true /*remove_db_files*/, true /*disable_p2p*/, data_dir_.path().string() );
+    fixture_.set_logging_config( fixture_bp.get_logging_config() );
+    fixture_.postponed_init( growing_state_file_config( data_dir_.path().string() ) );
+    database& db_ = *fixture_.db;
+    hive::plugins::chain::chain_plugin& chain_plugin_ = fixture_.get_chain_plugin();
+
+    auto init_account_priv_key = fc::ecc::private_key::regenerate( fc::sha256::hash( string( "init_key" ) ) );
+    // pending transactions are popped before and restored after every block, around the growth of the state file
+    auto push_pending_transaction = [&]( hive::plugins::chain::chain_plugin& cp, const std::string& id )
+    {
+      custom_json_operation op;
+      op.required_posting_auths.emplace( HIVE_INIT_MINER_NAME );
+      op.id = id;
+      op.json = "{}";
+      signed_transaction tx;
+      tx.set_reference_block( cp.db().head_block_id() );
+      tx.set_expiration( cp.db().head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+      tx.operations.push_back( op );
+      PUSH_TX( cp, tx, init_account_priv_key, database::skip_nothing );
+    };
+
+    auto count_index_extensions = []( const database& db )
+    {
+      size_t count = 0;
+      db.for_each_index_extension< hive::chain::index_info >( [&]( std::shared_ptr< hive::chain::index_info > ) { ++count; } );
+      return count;
+    };
+    const size_t index_extensions = count_index_extensions( db_bp );
+    BOOST_REQUIRE_GT( index_extensions, 0u );
+    BOOST_REQUIRE_EQUAL( count_index_extensions( db_ ), index_extensions );
+
+    // transactions pushed on top of the genesis state are not included in the first block
+    PUSH_BLOCK( chain_plugin_, GENERATE_BLOCK( bp, db_bp.get_slot_time( 1 ), db_bp.get_scheduled_witness( 1 ),
+      init_account_priv_key, database::skip_nothing ) );
+
+    // stays pending, never included by the producer
+    push_pending_transaction( chain_plugin_, "pending" );
+
+    const uint32_t first_block_num = db_bp.head_block_num() + 1;
+    for( int i = 0; i < 20; ++i )
+    {
+      const size_t bp_size = db_bp.get_max_memory();
+      const size_t size = db_.get_max_memory();
+
+      push_pending_transaction( chain_plugin_bp, "produced" + std::to_string( i ) );
+
+      auto block = GENERATE_BLOCK( bp, db_bp.get_slot_time( 1 ), db_bp.get_scheduled_witness( 1 ),
+        init_account_priv_key, database::skip_nothing );
+      BOOST_REQUIRE_EQUAL( block->get_block_num(), first_block_num + i );
+      BOOST_REQUIRE_EQUAL( block->get_full_transactions().size(), 1u );
+      BOOST_REQUIRE_GT( db_bp.get_max_memory(), bp_size );
+
+      PUSH_BLOCK( chain_plugin_, block );
+      BOOST_REQUIRE_EQUAL( db_.head_block_id(), block->get_block_id() );
+      BOOST_REQUIRE_GT( db_.get_max_memory(), size );
+      BOOST_REQUIRE_EQUAL( db_._pending_tx.size(), 1u );
+    }
+
+    for( database* db : { &db_bp, &db_ } )
+    {
+      // the cached irreversible block data has to be the one in the current mapping of the state file
+      const auto* irreversible = db->get_segment_manager()->find< irreversible_block_data_type >( "irreversible" ).first;
+      BOOST_REQUIRE( irreversible != nullptr );
+      BOOST_CHECK_EQUAL( db->get_last_irreversible_object(), irreversible );
+      BOOST_CHECK_EQUAL( db->get_last_irreversible_block_num(), irreversible->_irreversible_block_num );
+      BOOST_CHECK_EQUAL( count_index_extensions( *db ), index_extensions );
+    }
+    BOOST_CHECK_EQUAL( db_.get_last_irreversible_block_num(), db_bp.get_last_irreversible_block_num() );
+    fixture_bp.validate_database();
+    fixture_.validate_database();
   }
   FC_LOG_AND_RETHROW()
 }
