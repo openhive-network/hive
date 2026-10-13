@@ -2052,9 +2052,7 @@ block_id_type database::head_block_id()const
 
 uint32_t database::get_last_irreversible_block_num() const
 {
-  //ilog("getting irreversible_block_num irreversible is ${l}", ("l", last_irreversible_object->_irreversible_block_num));
-  //ilog("getting irreversible_block_num head is ${l}", ("l", head_block_num()));
-  return last_irreversible_object->_irreversible_block_num;
+  return _my->_last_irreversible_block_num.load( std::memory_order_acquire );
 }
 
 void database::set_last_irreversible_block_num(uint32_t block_num)
@@ -2064,6 +2062,7 @@ void database::set_last_irreversible_block_num(uint32_t block_num)
     ("o", last_irreversible_object->_irreversible_block_num)("n", block_num));
 
   last_irreversible_object->_irreversible_block_num = block_num;
+  _my->_last_irreversible_block_num.store( block_num, std::memory_order_release );
   //dlog("setting irreversible_block_num new ${l}", ("l", last_irreversible_object->irreversible_block_num));
 }
 

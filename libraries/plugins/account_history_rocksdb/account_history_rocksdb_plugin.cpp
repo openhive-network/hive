@@ -674,7 +674,8 @@ uint32_t account_history_rocksdb_plugin::impl::find_reversible_account_history_d
     uint32_t rangeBegin = _provider->get_lib();
     if( BOOST_UNLIKELY( rangeBegin == 0) )
       rangeBegin = 1;
-    uint32_t rangeEnd = _mainDb.head_block_num() + 1;
+    // the API calling this is lockless, and the state file may be resized meanwhile
+    uint32_t rangeEnd = _mainDb.with_read_lock( [this]() { return _mainDb.head_block_num(); } ) + 1;
 
     const auto reversibleOps = collectReversibleOps(&rangeBegin, &rangeEnd, &collectedIrreversibleBlock);
 

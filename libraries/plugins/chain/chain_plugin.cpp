@@ -1422,6 +1422,8 @@ uint32_t chain_plugin_impl::reindex_internal( const open_args& args,
 
     db.apply_block(full_block, skip_flags);
     last_applied_block = full_block;
+    // as in push_block, between blocks: replay applies them outside any undo session
+    db.check_free_memory( false, current_block_num );
 
     return !theApp.is_interrupt_request();
   };

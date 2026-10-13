@@ -979,6 +979,8 @@ namespace chainbase {
       void wipe( const bfs::path& dir );
 
     public:
+      /// Grows the storage and maps it again. The old mapping is gone before the new one is made, so a failure to
+      /// map the storage again aborts the process after logging its cause: nothing could run on the storage any more.
       void resize( size_t new_shared_file_size );
       void set_require_locking( bool enable_require_locking );
 
@@ -986,6 +988,11 @@ namespace chainbase {
       /// Replaceable so that tests can simulate a filesystem without hard links.
       using link_file_function = std::function< int( const bfs::path& existing, const bfs::path& new_name ) >;
       void set_link_file_function( link_file_function link_file ) { _link_file = std::move( link_file ); }
+
+      /// Drops the pages of a state file from the page cache before open maps it for writing, as
+      /// posix_fadvise( POSIX_FADV_DONTNEED ) does. Replaceable so that tests can observe when it happens.
+      using evict_page_cache_function = std::function< void( const bfs::path& state_file ) >;
+      void set_evict_page_cache_function( evict_page_cache_function evict_page_cache ) { _evict_page_cache = std::move( evict_page_cache ); }
 
 #ifdef CHAINBASE_CHECK_LOCKING
       void require_lock_fail( const char* method, const char* lock_type, const char* tname )const;
@@ -1395,7 +1402,7 @@ namespace chainbase {
       class read_only_mapping;
       class state_file_lock;
 
-      void open_storage( const bfs::path& dir, bool read_only, size_t shared_file_size, const boost::any& database_cfg, const helpers::environment_extension_resources* environment_extension );
+      void open_storage( const bfs::path& dir, bool read_only, bool evict_page_cache, size_t shared_file_size, const boost::any& database_cfg, const helpers::environment_extension_resources* environment_extension );
 
       unique_ptr<bip::managed_mapped_file>                        _segment;
       /// The storage opened with read_only_storage, in place of _segment.
@@ -1406,6 +1413,8 @@ namespace chainbase {
       std::shared_ptr<state_file_lock>                            _state_file_lock;
       /// Empty for link() itself.
       link_file_function                                          _link_file;
+      /// Empty for posix_fadvise() itself.
+      evict_page_cache_function                                   _evict_page_cache;
 
       /**
         * This is a sparse list of known indicies kept to accelerate creation of undo sessions
