@@ -5,12 +5,14 @@
 #include <fc/log/logger.hpp>
 #include <fc/io/json.hpp>
 
+#include <cerrno>
+#include <cstring>
 #include <filesystem>
 
-#ifdef __linux__
 #include <fcntl.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
 #include <unistd.h>
-#endif
 
 namespace chainbase {
 
@@ -203,6 +205,117 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
       bool                    created_storage = true;
   };
 
+  namespace
+  {
+    template< class CharType, class MemoryAlgorithm, template< class > class IndexType, std::size_t Offset >
+    constexpr std::size_t segment_manager_offset( const bip::ipcdetail::basic_managed_memory_impl< CharType, MemoryAlgorithm, IndexType, Offset >* )
+    {
+      return Offset;
+    }
+
+    /// Where bip::managed_mapped_file places its segment manager in the file; the bytes before it hold the segment's state word.
+    constexpr std::size_t SEGMENT_MANAGER_OFFSET = segment_manager_offset( static_cast< const bip::managed_mapped_file* >( nullptr ) );
+    /// The segment's state word of a fully created bip::managed_mapped_file (its InitializedSegment).
+    constexpr uint32_t INITIALIZED_SEGMENT = 2;
+
+#ifdef F_OFD_SETLK
+    // Unlike the record lock of bip::file_lock, it is not dropped when the process closes another descriptor of the file.
+    constexpr int TRY_LOCK_COMMAND = F_OFD_SETLK;
+#else
+    constexpr int TRY_LOCK_COMMAND = F_SETLK;
+#endif
+  }
+
+  /// shared_memory.bin mapped privately and read-only, for as long as the file is locked for reading. Only the pages of
+  /// the segment manager are writable, because Boost.Interprocess takes the segment's mutex even to find an object;
+  /// read-only private pages are not charged against the memory commit limit, so this works on a state larger than
+  /// RAM and swap, and with vm.overcommit_memory=2. A write anywhere else crashes instead of reaching the file.
+  class database::read_only_mapping
+  {
+    public:
+      explicit read_only_mapping( const bfs::path& path );
+      ~read_only_mapping() { release(); }
+
+      read_only_mapping( const read_only_mapping& ) = delete;
+      read_only_mapping& operator=( const read_only_mapping& ) = delete;
+
+      bip::managed_mapped_file::segment_manager* get_segment_manager() const
+      {
+        return reinterpret_cast< bip::managed_mapped_file::segment_manager* >( static_cast< char* >( _address ) + SEGMENT_MANAGER_OFFSET );
+      }
+
+    private:
+      [[noreturn]] void fail( const std::string& message );
+      /// Fails with the error of the system call that has just failed.
+      [[noreturn]] void fail_on_error( const std::string& message );
+      void release();
+
+      int     _fd = -1;
+      void*   _address = MAP_FAILED;
+      size_t  _size = 0;
+  };
+
+  database::read_only_mapping::read_only_mapping( const bfs::path& path )
+  {
+    const std::string file = path.generic_string();
+    _fd = ::open( file.c_str(), O_RDONLY | O_CLOEXEC );
+    if( _fd < 0 )
+      fail_on_error( "could not open the shared memory file " + file );
+
+    // Taken before the file is mapped: the segment's mutexes live in the file, so a copy of a page where a running
+    // node holds one of them would stay locked forever.
+    struct flock lock = {};
+    lock.l_type = F_RDLCK;
+    lock.l_whence = SEEK_SET;
+    if( ::fcntl( _fd, TRY_LOCK_COMMAND, &lock ) != 0 )
+      fail_on_error( "could not gain read access to the shared memory file, it is in use by another process" );
+
+    struct stat file_stat;
+    if( ::fstat( _fd, &file_stat ) != 0 )
+      fail_on_error( "could not read the size of the shared memory file" );
+    _size = file_stat.st_size;
+
+    const size_t page_size = ::sysconf( _SC_PAGESIZE );
+    const size_t writable_size = ( SEGMENT_MANAGER_OFFSET + sizeof( bip::managed_mapped_file::segment_manager ) + page_size - 1 ) / page_size * page_size;
+    if( _size < writable_size )
+      fail( "the shared memory file is too small to hold a storage" );
+
+#ifdef __linux__
+    // See database::open
+    posix_fadvise( _fd, 0, 0, POSIX_FADV_DONTNEED );
+#endif
+
+    _address = ::mmap( nullptr, _size, PROT_READ, MAP_PRIVATE, _fd, 0 );
+    if( _address == MAP_FAILED )
+      fail_on_error( "could not map the shared memory file" );
+    if( *static_cast< const uint32_t* >( _address ) != INITIALIZED_SEGMENT )
+      fail( "the shared memory file holds no complete storage" );
+    if( ::mprotect( _address, writable_size, PROT_READ | PROT_WRITE ) != 0 )
+      fail_on_error( "could not map the segment manager of the shared memory file" );
+  }
+
+  void database::read_only_mapping::fail( const std::string& message )
+  {
+    release();
+    BOOST_THROW_EXCEPTION( std::runtime_error( message ) );
+  }
+
+  void database::read_only_mapping::fail_on_error( const std::string& message )
+  {
+    const int error = errno;
+    fail( message + ": " + std::strerror( error ) );
+  }
+
+  void database::read_only_mapping::release()
+  {
+    if( _address != MAP_FAILED )
+      ::munmap( _address, _size );
+    _address = MAP_FAILED;
+    if( _fd >= 0 )
+      ::close( _fd );
+    _fd = -1;
+  }
+
   void database::open( const bfs::path& dir, uint32_t flags, size_t shared_file_size, const boost::any& database_cfg, const helpers::environment_extension_resources* environment_extension )
   {
     assert( dir.is_absolute() );
@@ -238,32 +351,36 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
         _file_size = shared_file_size;
       }
 
-#ifdef __linux__
-      // Evict any stale pages from the Linux page cache before mmap.
-      // After a ZFS/LVM snapshot rollback, the page cache may still contain
-      // pre-rollback data. Without this, mmap can return stale pages instead
-      // of reading the rolled-back data from disk.
+      if( read_only )
       {
-        int fd = ::open( abs_path.generic_string().c_str(), O_RDONLY );
-        if( fd >= 0 )
-        {
-          posix_fadvise( fd, 0, 0, POSIX_FADV_DONTNEED );
-          ::close( fd );
-        }
+        _read_only_mapping = std::make_shared< read_only_mapping >( abs_path );
+        _segment_manager = _read_only_mapping->get_segment_manager();
       }
+      else
+      {
+#ifdef __linux__
+        // Evict any stale pages from the Linux page cache before mmap.
+        // After a ZFS/LVM snapshot rollback, the page cache may still contain
+        // pre-rollback data. Without this, mmap can return stale pages instead
+        // of reading the rolled-back data from disk.
+        {
+          int fd = ::open( abs_path.generic_string().c_str(), O_RDONLY );
+          if( fd >= 0 )
+          {
+            posix_fadvise( fd, 0, 0, POSIX_FADV_DONTNEED );
+            ::close( fd );
+          }
+        }
 #endif
 
-      if( read_only )
-        _segment.reset( new bip::managed_mapped_file( bip::open_copy_on_write,
-                                        abs_path.generic_string().c_str()
-                                        ) );
-      else
         _segment.reset( new bip::managed_mapped_file( bip::open_only,
                                         abs_path.generic_string().c_str()
                                         ) );
+        _segment_manager = _segment->get_segment_manager();
+      }
 
-      auto env = _segment->find< environment_check >( "environment" );
-      environment_check eCheck( allocator< environment_check >( _segment->get_segment_manager() ) );
+      auto env = _segment_manager->find< environment_check >( "environment" );
+      environment_check eCheck{ allocator< environment_check >( _segment_manager ) };
       if( !env.first || !( *env.first == eCheck) ) {
         if(!env.first)
           BOOST_THROW_EXCEPTION( std::runtime_error( "Unable to find environment data saved in persistent storage. Probably database created by a different compiler, build, or operating system" ) );
@@ -273,7 +390,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
         BOOST_THROW_EXCEPTION(std::runtime_error("Different persistent & runtime environments. Persistent: `" + dp + "'. Runtime: `"+ dr + "'.Probably database created by a different compiler, build, or operating system"));
       }
 
-      if (env.first->created_storage)
+      if( env.first->created_storage && !read_only )
         env.first->created_storage = false;
 
       ilog( "Compiler and build environment read from persistent storage: `${storage}'", ( "storage", env.first->dump() ) );
@@ -283,21 +400,24 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
       _segment.reset( new bip::managed_mapped_file( bip::create_only,
                                       abs_path.generic_string().c_str(), shared_file_size
                                       ) );
-      _segment->find_or_construct< environment_check >( "environment" )( allocator< environment_check >( _segment->get_segment_manager() ) );
+      _segment_manager = _segment->get_segment_manager();
+      _segment_manager->find_or_construct< environment_check >( "environment" )( allocator< environment_check >( _segment_manager ) );
       ilog( "Creating storage at ${abs_path}', size: ${shared_file_size}", ( "abs_path",abs_path.generic_string() )(shared_file_size) );
     }
 
-    auto env = _segment->find< environment_check >( "environment" );
+    auto env = _segment_manager->find< environment_check >( "environment" );
     if( environment_extension )
     {
       env.first->test_version(*environment_extension);
       env.first->test_set_plugins(*environment_extension);
     }
 
-
-    _flock = bip::file_lock( abs_path.generic_string().c_str() );
-    if( !_flock.try_lock() )
-      BOOST_THROW_EXCEPTION( std::runtime_error( "could not gain write access to the shared memory file" ) );
+    if( !read_only )
+    {
+      _flock = bip::file_lock( abs_path.generic_string().c_str() );
+      if( !_flock.try_lock() )
+        BOOST_THROW_EXCEPTION( std::runtime_error( "could not gain write access to the shared memory file" ) );
+    }
 
     _is_open = true;
   }
@@ -314,6 +434,8 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
     if( _is_open )
     {
       _segment.reset();
+      _read_only_mapping.reset();
+      _segment_manager = nullptr;
       _meta.reset();
       _data_dir = bfs::path();
 
@@ -336,6 +458,8 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
   {
     assert( !_is_open );
     _segment.reset();
+    _read_only_mapping.reset();
+    _segment_manager = nullptr;
     _meta.reset();
     const bfs::path shared_memory_bin_path(dir / "shared_memory.bin");
     const bfs::path shared_memory_meta_path(dir / "shared_memory.meta");
@@ -420,7 +544,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
   void database::set_decoded_state_objects_data(const std::string& json)
   {
     assert(_is_open);
-    environment_check* const env = _segment->find< environment_check >( "environment" ).first;
+    environment_check* const env = _segment_manager->find< environment_check >( "environment" ).first;
     assert(env);
 
     if (!env->created_storage)
@@ -432,7 +556,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
   std::string database::get_decoded_state_objects_data_from_shm() const
   {
     assert(_is_open);
-    const environment_check* const env = _segment->find< environment_check >( "environment" ).first;
+    const environment_check* const env = _segment_manager->find< environment_check >( "environment" ).first;
     assert(env);
     return std::string(env->decoded_state_objects_data_json.c_str());
   }
@@ -441,7 +565,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
   {
     /* Blockchain config can change for example via hardfork*/
     assert(_is_open);
-    environment_check* const env = _segment->find< environment_check >( "environment" ).first;
+    environment_check* const env = _segment_manager->find< environment_check >( "environment" ).first;
     assert(env);
     ilog("Updating blockchain configuration stored in DB to: \n${json}", (json));
     env->blockchain_config_json = json.c_str();
@@ -450,7 +574,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
   std::string database::get_blockchain_config_from_shm() const
   {
     assert(_is_open);
-    const environment_check* const env = _segment->find< environment_check >( "environment" ).first;
+    const environment_check* const env = _segment_manager->find< environment_check >( "environment" ).first;
     assert(env);
     return std::string(env->blockchain_config_json.c_str());
   }
@@ -458,7 +582,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
   std::string database:: get_plugins_from_shm() const
   {
     assert(_is_open);
-    const environment_check* const env = _segment->find< environment_check >( "environment" ).first;
+    const environment_check* const env = _segment_manager->find< environment_check >( "environment" ).first;
     assert(env);
     std::vector<std::string> db_plugins;
     db_plugins.reserve(env->plugins.size());
@@ -474,7 +598,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
   std::string database::get_environment_details() const
   {
     assert(_is_open);
-    const environment_check* const env = _segment->find< environment_check >( "environment" ).first;
+    const environment_check* const env = _segment_manager->find< environment_check >( "environment" ).first;
     return env->dump();
   }
 }  // namespace chainbase

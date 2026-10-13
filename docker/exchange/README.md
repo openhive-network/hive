@@ -35,12 +35,20 @@ procedure, and a fresh volume bootstraps itself.
    `account-history-rocksdb-track-account-range` line per account. This must be
    right before the first start, because changing it later means replaying or
    starting over from a fresh snapshot.
-3. Start the node and follow its log:
+3. Start the node, and follow its log from another terminal:
 
    ```
    docker compose up -d
-   docker compose logs -f hived
+   docker compose logs -f hived-bootstrap hived
    ```
+
+Two services share the data. `hived-bootstrap` brings the state up to date and
+exits; `hived` starts once it has exited successfully, and runs the node. So the
+first `docker compose up -d` returns only when the bootstrap is done: minutes for
+a snapshot, up to a day for a block log replay. If it is interrupted, run it again;
+it waits for the bootstrap still running, or resumes an interrupted download. Each
+later `docker compose up -d` runs the bootstrap again, which finds the state
+complete (or held by the running node) and exits within seconds.
 
 The first start bootstraps the node from whichever source `.env` names, and later
 starts leave the data alone, so the command never changes:
@@ -154,7 +162,8 @@ time the container is recreated.
    (it has three minutes to flush its state) and recreated on the new image.
 3. If the release notes say the version needs a replay, set
    `HIVED_EXTRA_ARGS=--force-replay` in `.env` before step 2 and clear it after
-   the node is back. This discards the state and account history and rebuilds
+   the node is back. Only `hived-bootstrap` gets `HIVED_EXTRA_ARGS`, so the replay
+   runs once, before the node starts. This discards the state and account history and rebuilds
    both from the block log already on disk; nothing is downloaded again, and
    no snapshot is loaded even when `SNAPSHOT_URL` is set.
 
@@ -176,24 +185,43 @@ at a snapshot made by the new version, and start again:
 ```
 docker compose down
 docker volume rm hived-exchange_hived-shm
-docker compose run --rm --entrypoint rm hived -rf /home/hived/datadir/snapshot
+docker compose run --rm --entrypoint rm hived-bootstrap -rf /home/hived/datadir/snapshot
 docker compose up -d
 ```
 
 ## Troubleshooting
 
-- `docker compose logs hived` shows hived's output; the same log is written to
-  `hived.log` inside the data volume.
+- `docker compose logs hived-bootstrap` and `docker compose logs hived` show
+  hived's output; the same log is written to `hived.log` inside the data volume.
 - A container that keeps restarting has a startup error in its log, most often a
   mistake in `config.ini`.
-- Exit code 78 (`docker compose ps -a` or `docker inspect`) means hived refused
-  to start for a reason a restart cannot fix, and changed nothing: the snapshot
-  was refused by this hived version, the state cannot be opened by it, the state
-  and block log disagree, or the options contradict each other. The log names
-  the cause and the option that fixes it, usually `--force-replay` (a node with a
-  block log) or a fresh snapshot (a snapshot-only node). `restart: unless-stopped`
-  restarts it regardless, so it keeps refusing until you act; stop it with
-  `docker compose stop hived` meanwhile.
+- Exit code 78 means hived refused to start for a reason a restart cannot fix,
+  and changed nothing: the snapshot was refused by this hived version, the state
+  cannot be opened by it, the state and block log disagree, or the options
+  contradict each other. A refusal stops the bootstrap: `docker compose up`
+  reports that `hived-bootstrap` did not complete successfully, `hived` is not
+  started, and nothing restarts. `docker compose logs hived-bootstrap` names the
+  cause and the option that fixes it, usually `--force-replay` (a node with a
+  block log) or a fresh snapshot (a snapshot-only node). Fix it, then run
+  `docker compose up -d` again.
+- A refused snapshot stays refused: hived loads the unpacked snapshot already in
+  the data volume on every attempt and does not download it again. The same goes
+  for one left half unpacked by an interrupted start. Delete it, so that the next
+  start downloads `SNAPSHOT_URL` again (point it at a snapshot made by your hived
+  version first):
+
+  ```
+  docker compose run --rm --entrypoint rm hived-bootstrap -rf /home/hived/datadir/snapshot
+  docker compose up -d
+  ```
+
+- Known limitations. A restart of the host or of the Docker daemon restarts
+  `hived` directly, without the bootstrap; if hived refuses to start at that
+  point, `restart: unless-stopped` restarts it into the same refusal until you
+  act: stop it with `docker compose stop hived` and run `docker compose up -d`
+  once the cause is fixed. A bootstrap killed for lack of memory exits with code
+  137, not 78, and its log does not say why; give the machine more memory and run
+  `docker compose up -d` again, which loads the snapshot again from the start.
 - `unhealthy` with `still syncing` in `docker inspect` output is normal until the
   node has caught up. Raise `HIVED_HEALTHCHECK_MAX_BLOCK_AGE` if your monitoring
   is stricter than the network's block interval warrants.

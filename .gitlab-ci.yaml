@@ -1823,3 +1823,29 @@ exchange_node_block_log_pruning_test:
   - when: on_success
   tags:
     - public-runner-docker
+
+# The docker entrypoint's snapshot bootstrap, its refusals (exit code 78) and
+# shared_memory_file_util, run against the testnet image.
+snapshot_bootstrap_tests:
+  extends:
+    - .docker_image_builder_job
+    - .skip_test_on_docs_only_with_quick_test
+  stage: test
+  timeout: 40m
+  needs:
+    - job: testnet_node_build
+      artifacts: true
+      optional: true  # Not needed if build was skipped
+  variables:
+    WORK_DIR: "$CI_PROJECT_DIR/data_generated_during_snapshot_bootstrap_test"
+  script:
+    - test -n "$HIVED_IMAGE_NAME"
+    - docker pull "$HIVED_IMAGE_NAME"
+    - timeout 35m ./tests/integration/test_snapshot_bootstrap.sh "$HIVED_IMAGE_NAME" "$WORK_DIR"
+  artifacts:
+    paths:
+      - $CI_PROJECT_DIR/data_generated_during_snapshot_bootstrap_test/*.log
+    when: always
+    expire_in: 1 week
+  tags:
+    - public-runner-docker

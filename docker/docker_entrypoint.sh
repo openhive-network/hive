@@ -67,6 +67,39 @@ cleanup () {
   echo "Cleanup actions done."
 }
 
+######### Bootstrap modes #########
+# By default one container brings the state up to date (downloads, snapshot load,
+# replay) and then runs the node. An orchestrator that must not restart a refusal
+# can split this in two containers on the same volumes:
+#   HIVED_BOOTSTRAP_ONLY=1: bootstrap, run hived with --exit-before-sync and exit
+#     with its exit code; exits 0 at once when a running hived holds the state.
+#   HIVED_SKIP_BOOTSTRAP=1: run the node without downloading or loading anything.
+BOOTSTRAP_ONLY="${HIVED_BOOTSTRAP_ONLY:-0}"
+SKIP_BOOTSTRAP="${HIVED_SKIP_BOOTSTRAP:-0}"
+if [[ "$BOOTSTRAP_ONLY" == "1" && "$SKIP_BOOTSTRAP" == "1" ]]; then
+  echo "HIVED_BOOTSTRAP_ONLY and HIVED_SKIP_BOOTSTRAP cannot both be set. Exiting."
+  exit 1
+fi
+
+# True when ARG names OPTION as hived reads it: the full name or an abbreviation
+# (hived accepts any unambiguous prefix, and refuses to start on an ambiguous one),
+# with or without "=value".
+names_option() {
+  local name="${1%%=*}" option="$2"
+  [[ "$name" == --?* && "$option" == "$name"* ]]
+}
+
+# True when any of the hived arguments names one of the OPTIONs.
+has_option() {
+  local arg option
+  for arg in "${HIVED_ARGS[@]}"; do
+    for option in "$@"; do
+      names_option "$arg" "$option" && return 0
+    done
+  done
+  return 1
+}
+
 ######### Block log bootstrap #########
 BLOCKCHAIN_DIR="$DATADIR/blockchain"
 
@@ -167,29 +200,26 @@ state_needs_snapshot() {
   ! grep -qF '"stage":"replaying"' "$SNAPSHOT_LOAD_MARKER"
 }
 
+# A node bootstrapped from a snapshot alone keeps no block log, whether or not this
+# start bootstraps.
+add_snapshot_node_args() {
+  [[ -n "${SNAPSHOT_URL:-}" ]] || return 0
+  has_block_log && return 0
+  if has_option --block-log-split; then
+    echo "A snapshot node without a block log needs block-log-split=0, which the entrypoint sets; drop --block-log-split from the arguments. Exiting."
+    exit 1
+  fi
+  HIVED_ARGS+=("--block-log-split=0")
+}
+
 bootstrap_snapshot() {
   # Load record of an earlier entrypoint, replaced by hived's own marker.
   rm -f "$DATADIR/.snapshot_loaded"
   [[ -n "${SNAPSHOT_URL:-}" ]] || return 0
-  local arg
-  if ! has_block_log; then
-    for arg in "${HIVED_ARGS[@]}"; do
-      case "$arg" in
-        --block-log-split*)
-          echo "A snapshot node without a block log needs block-log-split=0, which the entrypoint sets; drop --block-log-split from the arguments. Exiting."
-          exit 1 ;;
-      esac
-    done
-    HIVED_ARGS+=("--block-log-split=0")
+  # These rebuild or replace the state themselves, so no snapshot is added.
+  if has_option --force-replay --resync-blockchain --load-snapshot --load-snapshot-if-no-state; then
+    return 0
   fi
-  # These rebuild or replace the state themselves, so no snapshot is added. Exact
-  # names: --load-snapshot must not be mistaken for --load-snapshot-if-no-state.
-  for arg in "${HIVED_ARGS[@]}"; do
-    case "$arg" in
-      --force-replay|--resync-blockchain|--load-snapshot|--load-snapshot=*|--load-snapshot-if-no-state|--load-snapshot-if-no-state=*)
-        return 0 ;;
-    esac
-  done
   local name=""
   name=$(find_snapshot_name) || true
   if [[ -z "$name" ]] && state_needs_snapshot; then
@@ -218,30 +248,48 @@ bootstrap_snapshot() {
 # to date the flag is a no-op resume. HIVED_AUTO_REPLAY=1 adds it whenever a block log
 # exists and the caller did not pick a replay mode. Off by default: a state/block log
 # mismatch then stops hived with an error instead of silently starting a replay. The
-# patterns also catch abbreviations hived accepts, such as --replay. Plain
-# --load-snapshot is matched exactly: --load-snapshot-if-no-state allows a replay.
+# options are also recognised by the abbreviations hived accepts, such as --replay.
+# --load-snapshot-if-no-state is not --load-snapshot: it allows a replay.
 maybe_add_replay_arg() {
   [[ "${HIVED_AUTO_REPLAY:-0}" == "1" ]] || return 0
-  local arg
-  for arg in "${HIVED_ARGS[@]}"; do
-    case "$arg" in
-      --replay*|--force-replay*|--resync*|--load-snapshot|--load-snapshot=*)
-        return 0 ;;
-    esac
-  done
+  if has_option --replay-blockchain --force-replay --resync-blockchain --load-snapshot; then
+    return 0
+  fi
   if has_block_log; then
     echo "Block log present: HIVED_AUTO_REPLAY=1, adding --replay-blockchain."
     HIVED_ARGS+=("--replay-blockchain")
   fi
 }
 
+# True when a running hived holds the state: shared_memory_file_util is refused
+# the lock that hived keeps for as long as it runs.
+state_in_use() {
+  [[ -f "$SHM_DIR/shared_memory.bin" ]] || return 1
+  local output
+  output=$(/home/hived/bin/shared_memory_file_util --input "$SHM_DIR" --list-plugins 2>&1) && return 1
+  grep -qF "in use by another process" <<< "$output"
+}
+
 HIVED_ARGS=()
 HIVED_ARGS+=("$@")
 export HIVED_ARGS
 
-bootstrap_block_log
-bootstrap_snapshot
+if [[ "$BOOTSTRAP_ONLY" == "1" ]] && state_in_use; then
+  echo "HIVED_BOOTSTRAP_ONLY=1: a running hived holds the state, so there is nothing to bootstrap."
+  exit 0
+fi
+
+if [[ "$SKIP_BOOTSTRAP" != "1" ]]; then
+  bootstrap_block_log
+fi
+add_snapshot_node_args
+if [[ "$SKIP_BOOTSTRAP" != "1" ]]; then
+  bootstrap_snapshot
+fi
 maybe_add_replay_arg
+if [[ "$BOOTSTRAP_ONLY" == "1" ]] && ! has_option --exit-before-sync; then
+  HIVED_ARGS+=("--exit-before-sync")
+fi
 
 run_instance() {
 trap cleanup INT TERM
@@ -259,18 +307,16 @@ P2P_ENDPOINT="${P2P_ENDPOINT:-0.0.0.0:${P2P_PORT}}"
 WS_ENDPOINT="${WS_ENDPOINT:-0.0.0.0:${WS_PORT}}"
 HTTP_ENDPOINT="${HTTP_ENDPOINT:-0.0.0.0:${HTTP_PORT}}"
 
+# The arguments are passed as they are, never re-parsed by a shell: a snapshot name
+# or an option value may hold spaces or shell syntax. hived's exit code is passed on
+# explicitly: run_instance runs in a `||` list, where set -e has no effect.
 {
-/bin/bash << EOF
-echo "Attempting to execute hived using additional command line arguments: ${HIVED_ARGS[*]}"
-set -euo pipefail
-
 /home/hived/bin/hived --webserver-ws-endpoint="${WS_ENDPOINT}" --webserver-http-endpoint="${HTTP_ENDPOINT}" --p2p-endpoint="${P2P_ENDPOINT}" \
-  --data-dir="$DATADIR" --shared-file-dir="$SHM_DIR"  \
-  ${HIVED_ARGS[@]} 2>&1 | tee -i "$DATADIR/hived.log"
-hived_return_code="\$?"
-echo "\$hived_return_code Hived process finished execution."
-EOF
-
+  --data-dir="$DATADIR" --shared-file-dir="$SHM_DIR" \
+  "${HIVED_ARGS[@]}" 2>&1 | tee -i "$DATADIR/hived.log"
+hived_return_code=${PIPESTATUS[0]}
+echo "$hived_return_code Hived process finished execution."
+exit "$hived_return_code"
 } &
 
 job_pid=$!

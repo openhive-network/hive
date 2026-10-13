@@ -936,6 +936,18 @@ void chain_plugin_impl::refuse_startup( const std::string& reason )
   FC_THROW( "${reason}", ( reason ) );
 }
 
+namespace {
+
+/// The subject of a message about the load recorded in the marker, which may not even name its snapshot.
+std::string describe_pending_load( const snapshot_load_marker::pending_load& load, const bfs::path& shared_memory_dir )
+{
+  if( load.snapshot.empty() )
+    return "The snapshot load recorded in " + snapshot_load_marker( shared_memory_dir ).path().string() + ", which is empty or cannot be read,";
+  return "The load of snapshot `" + load.snapshot + "'";
+}
+
+} // namespace
+
 void chain_plugin_impl::decide_snapshot_load()
 {
   const bool load_if_no_state = !load_snapshot_if_no_state_name.empty();
@@ -958,8 +970,8 @@ void chain_plugin_impl::decide_snapshot_load()
     }
     else if( load_unfinished )
     {
-      ilog( "The load of snapshot `${p}' did not complete, loading snapshot `${s}'.",
-        ( "p", pending_snapshot_load->snapshot )( "s", load_snapshot_if_no_state_name ) );
+      ilog( "${p} did not complete, loading snapshot `${s}'.",
+        ( "p", describe_pending_load( *pending_snapshot_load, shared_memory_dir ) )( "s", load_snapshot_if_no_state_name ) );
       snapshot_to_load = load_snapshot_if_no_state_name;
     }
     else if( pending_snapshot_load )
@@ -978,8 +990,13 @@ void chain_plugin_impl::decide_snapshot_load()
 
   if( pending_snapshot_load && !load_snapshot && !force_replay && !resync )
   {
+    const std::string pending_load = describe_pending_load( *pending_snapshot_load, shared_memory_dir );
     if( load_unfinished )
-      refuse_startup( "The load of snapshot `" + pending_snapshot_load->snapshot + "' did not complete, so the state is unusable. "
+      refuse_startup( pending_load + " did not complete, so the state is unusable. "
+        "Start hived with --load-snapshot-if-no-state=<snapshot> to load a snapshot again, or with --force-replay to rebuild the state from the block log." );
+    // A resumed replay would start from genesis instead of the snapshot's block.
+    if( !bfs::exists( shared_memory_dir / "shared_memory.bin" ) )
+      refuse_startup( pending_load + " was left to replay the block log forward from the snapshot's block, but there is no state to resume it on. "
         "Start hived with --load-snapshot-if-no-state=<snapshot> to load a snapshot again, or with --force-replay to rebuild the state from the block log." );
     ilog( "Snapshot `${s}' was loaded, but the replay of the block log forward from its block did not complete; resuming it.",
       ( "s", pending_snapshot_load->snapshot ) );

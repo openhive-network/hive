@@ -4,40 +4,65 @@
 
 name: hived-exchange
 
+# Shared by hived-bootstrap and hived: both run the same image on the same data.
+x-hived: &hived
+  image: ${HIVED_IMAGE:-hiveio/hive}:${HIVED_VERSION:?set HIVED_VERSION in .env}
+  init: true
+  # hived flushes its state on shutdown; give it time before docker kills it.
+  stop_grace_period: 3m
+  volumes:
+    - hived-data:/home/hived/datadir
+    - hived-shm:/home/hived/shm_dir
+    - ./config.ini:/home/hived/config.ini:ro
+  logging:
+    driver: json-file
+    options:
+      max-size: "100m"
+      max-file: "5"
+
+x-hived-environment: &hived-environment
+  SHM_DIR: /home/hived/shm_dir
+  BLOCK_LOG_URL: ${BLOCK_LOG_URL:-}
+  SNAPSHOT_URL: ${SNAPSHOT_URL:-}
+  # Replay a downloaded or copied-in block log without further action.
+  HIVED_AUTO_REPLAY: ${HIVED_AUTO_REPLAY:-1}
+
 services:
-  hived:
-    image: ${HIVED_IMAGE:-hiveio/hive}:${HIVED_VERSION:?set HIVED_VERSION in .env}
-    restart: unless-stopped
-    init: true
-    # hived flushes its state on shutdown; give it time before docker kills it.
-    stop_grace_period: 3m
+  # Brings the state up to date (downloads, snapshot load, replay, HIVED_EXTRA_ARGS)
+  # and exits. It is never restarted: when hived refuses to start (exit code 78) it
+  # stays exited with that code and hived is not started, instead of restarting into
+  # the same refusal forever.
+  hived-bootstrap:
+    <<: *hived
+    restart: "no"
     command: "--config=/home/hived/config.ini ${HIVED_EXTRA_ARGS:-}"
     environment:
-      SHM_DIR: /home/hived/shm_dir
-      BLOCK_LOG_URL: ${BLOCK_LOG_URL:-}
-      SNAPSHOT_URL: ${SNAPSHOT_URL:-}
-      # Replay a downloaded or copied-in block log without further action.
-      HIVED_AUTO_REPLAY: ${HIVED_AUTO_REPLAY:-1}
+      <<: *hived-environment
+      HIVED_BOOTSTRAP_ONLY: "1"
+
+  hived:
+    <<: *hived
+    restart: unless-stopped
+    command: "--config=/home/hived/config.ini"
+    environment:
+      <<: *hived-environment
+      HIVED_SKIP_BOOTSTRAP: "1"
       HIVED_HEALTHCHECK_MAX_BLOCK_AGE: ${HIVED_HEALTHCHECK_MAX_BLOCK_AGE:-120}
+    depends_on:
+      hived-bootstrap:
+        condition: service_completed_successfully
+        # hived is stopped while a recreated bootstrap (a new image or .env) runs.
+        restart: true
     ports:
       - "${P2P_PORT:-2001}:2001"
       - "${API_BIND_ADDRESS:-127.0.0.1}:${HTTP_PORT:-8091}:8091"
       - "${API_BIND_ADDRESS:-127.0.0.1}:${WS_PORT:-8090}:8090"
-    volumes:
-      - hived-data:/home/hived/datadir
-      - hived-shm:/home/hived/shm_dir
-      - ./config.ini:/home/hived/config.ini:ro
     healthcheck:
       test: ["CMD", "/home/hived/scripts/hived_healthcheck.sh"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 5m
-    logging:
-      driver: json-file
-      options:
-        max-size: "100m"
-        max-file: "5"
 
   cli_wallet:
     profiles:
