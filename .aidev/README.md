@@ -10,9 +10,11 @@ through merge requests (as in hive/haf), **keeping the source branch**
 
 ## Suites
 
-`.aidev/run-checks.sh <suite> <step>...` runs the named steps and writes
+`.aidev/run-checks.sh <suite> <step>[,<step>...]...` runs the named steps and writes
 `test-results/<suite>/junit.xml`, one test case per step, plus each test
-binary's own junit report.
+binary's own junit report and `timings.tsv`, each step's wall time (also printed
+at the end of the output). Steps joined by commas run at the same time and share
+`HIVE_TEST_JOBS` test processes (default: min(8, nproc)) evenly.
 
 | Step | What |
 |---|---|
@@ -20,16 +22,18 @@ binary's own junit report.
 | `chain-smoke` | `chain_test --run_test=basic_tests` (includes the state-definition tests) |
 | `chain-tests` | every `chain_test` suite in parallel (`scripts/run_chain_tests_parallel.sh`, CI's `chain_test`) |
 | `plugin-api` | `plugin_test` without `witness_tests` (CI's `plugin_test_api`) |
-| `plugin-tests` | all of `plugin_test` (CI's `plugin_test_api` + `plugin_test_witness`) |
+| `plugin-tests` | all of `plugin_test` (CI's `plugin_test_api` + `plugin_test_witness`) in parallel: the suites other than `witness_tests` as one process, each `witness_tests` case as its own |
 
 | Slot | Steps |
 |---|---|
 | quick | build, chain-smoke, plugin-api |
-| full, baseline | two suites: build, chain-tests / build, plugin-tests (declared 1800 s wall) |
+| full, baseline | build, then chain-tests and plugin-tests at the same time |
 | canary | build, chain-smoke, plugin-api |
 
-`plugin_test` suites are not run singly: `snapshots_tests` fails when run without the
-suites before it (it passes in the full `!witness_tests` order, as in CI).
+`plugin_test` suites other than `witness_tests` are not run singly: `snapshots_tests` fails
+when run without the suites before it (it passes in the full `!witness_tests` order, as in CI).
+`witness_tests` cases are: each gets its own data directory (`HIVE_TEMPDIR`) and its p2p
+node listens on no fixed port.
 
 Not covered yet: the Python functional tests (test-tools; several need the 5M
 block-log fixtures), fork/colony/mirrornet jobs, replay, and `static`. They stay in
