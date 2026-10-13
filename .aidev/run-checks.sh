@@ -44,26 +44,25 @@ test_jobs="${HIVE_TEST_JOBS:-$(( cpus < 8 ? cpus : 8 ))}"
 # concurrently() rewrites as the steps beside it end.
 test_slots="$test_jobs"
 
-descendants() {  # PID: every process under it, except the one asking
-    local child
-    for child in $(pgrep -P "$1"); do
-        [ "$child" = "$BASHPID" ] && continue
-        echo "$child"
-        descendants "$child"
-    done
-}
+# The steps concurrently() runs, by PID, each also the ID of the session it
+# leads, and the directory of their parallelism files.
+declare -A step_of=()
+slots=""
 
 # The slot wall terminates only this script: take the steps running in the
-# background, and the tests they started, down with it.
+# background, and the tests they started, down with it. A step is killed by its
+# session, not its process group: GNU parallel and timeout give their jobs
+# groups of their own, and whatever a step starts after the TERM is still in it.
 stop_steps() {
     trap - INT TERM EXIT
-    local pids; pids="$(descendants $$)"
-    [ -n "$pids" ] || return 0
-    echo "stopping the running steps" >&2
-    # shellcheck disable=SC2086
-    kill -TERM $pids 2>/dev/null; sleep 2
-    # shellcheck disable=SC2086
-    kill -KILL $pids 2>/dev/null
+    local sid
+    if [ "${#step_of[@]}" -gt 0 ]; then
+        echo "stopping the running steps" >&2
+        for sid in "${!step_of[@]}"; do pkill -TERM -s "$sid"; done
+        sleep 2
+        for sid in "${!step_of[@]}"; do pkill -KILL -s "$sid"; done
+    fi
+    [ -z "$slots" ] || rm -rf "$slots"
     return 0
 }
 trap 'stop_steps; exit 130' INT
@@ -228,13 +227,17 @@ share_slots() {  # DIR STEP...: $test_jobs split between the steps, one file eac
 
 # Polls rather than `wait -n`: bash 4.4's `wait -n` waits only for a job that
 # ends after it is called, so a step that ended just before would keep its share.
+# Each step runs in a session of its own, so a fresh bash given this script's
+# functions and settings; a background job of a script leads no process group,
+# so setsid makes the job itself the session leader, without forking.
 concurrently() {  # STEP...: sharing $test_jobs, a step's share handed on when it ends
-    local slots s pid rc=0 running ended
-    local -A step_of=()
+    local s pid rc=0 running ended
+    step_of=()
     slots="$(mktemp -d)" || return 1
     share_slots "$slots" "$@"
     for s in "$@"; do
-        ( test_slots="$slots/$s"; run "$s" ) &
+        setsid "$BASH" -c "set -uo pipefail; $(declare -p out cases timings src bld); $(declare -f)"'
+            test_slots="$1"; run "$2"' step "$slots/$s" "$s" < /dev/null &
         step_of[$!]="$s"
     done
     while [ "${#step_of[@]}" -gt 0 ]; do
@@ -249,7 +252,7 @@ concurrently() {  # STEP...: sharing $test_jobs, a step's share handed on when i
         share_slots "$slots" "${step_of[@]}"
         for s in "${step_of[@]}"; do echo "== $s: now $(cat "$slots/$s") test processes" >&2; done
     done
-    rm -rf "$slots"
+    rm -rf "$slots"; slots=""
     return "$rc"
 }
 

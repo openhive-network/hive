@@ -7,8 +7,12 @@
 #include <fc/scoped_exit.hpp>
 
 #include <cerrno>
+#include <charconv>
+#include <csignal>
 #include <cstring>
+#include <ctime>
 #include <filesystem>
+#include <mutex>
 
 #include <fcntl.h>
 #include <sys/mman.h>
@@ -225,6 +229,53 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
 #else
     constexpr int TRY_LOCK_COMMAND = F_SETLK;
 #endif
+
+    const std::string NEW_STATE_FILE_PREFIX = "shared_memory.bin.";
+    const std::string NEW_STATE_FILE_SUFFIX = ".new";
+    /// Creating a state file takes well under this, so an older shared_memory.bin.<pid>.new is stray even when a
+    /// process of that PID is alive (a reused PID, or one in another PID namespace sharing the directory).
+    constexpr std::time_t NEW_STATE_FILE_MAX_AGE = 60;
+
+    bool is_alive( pid_t pid )
+    {
+      return ::kill( pid, 0 ) == 0 || errno == EPERM;
+    }
+
+    /// Removes the shared_memory.bin.<pid>.new files left in dir by processes that died while creating the state file.
+    void remove_stray_new_state_files( const bfs::path& dir )
+    {
+      std::vector< bfs::path > stray;
+      boost::system::error_code iteration_error;
+      for( bfs::directory_iterator it( dir, iteration_error ), end; !iteration_error && it != end; it.increment( iteration_error ) )
+      {
+        const std::string name = it->path().filename().string();
+        if( name.size() <= NEW_STATE_FILE_PREFIX.size() + NEW_STATE_FILE_SUFFIX.size() ||
+            name.compare( 0, NEW_STATE_FILE_PREFIX.size(), NEW_STATE_FILE_PREFIX ) != 0 ||
+            name.compare( name.size() - NEW_STATE_FILE_SUFFIX.size(), NEW_STATE_FILE_SUFFIX.size(), NEW_STATE_FILE_SUFFIX ) != 0 )
+          continue;
+        const char* const pid_begin = name.data() + NEW_STATE_FILE_PREFIX.size();
+        const char* const pid_end = name.data() + name.size() - NEW_STATE_FILE_SUFFIX.size();
+        pid_t pid = 0;
+        const auto parsed = std::from_chars( pid_begin, pid_end, pid );
+        if( parsed.ec != std::errc() || parsed.ptr != pid_end || pid <= 0 )
+          continue;
+        boost::system::error_code time_error;
+        const std::time_t modified = bfs::last_write_time( it->path(), time_error );
+        const bool too_old = !time_error && std::time( nullptr ) - modified > NEW_STATE_FILE_MAX_AGE;
+        if( too_old || !is_alive( pid ) )
+          stray.push_back( it->path() );
+      }
+
+      for( const auto& path : stray )
+      {
+        boost::system::error_code error;
+        bfs::remove( path, error );
+        if( error )
+          wlog( "Could not remove the stray ${path} of an interrupted creation: ${error}", ( "path", path.generic_string() )( "error", error.message() ) );
+        else
+          ilog( "Removed the stray ${path} of an interrupted creation", ( "path", path.generic_string() ) );
+      }
+    }
   }
 
   /// shared_memory.bin mapped privately and read-only, for as long as the file is locked for reading. Only the pages of
@@ -361,7 +412,10 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
     assert( dir.is_absolute() );
     const bool read_only = flags & read_only_storage;
     if( !read_only )
+    {
       bfs::create_directories( dir );
+      remove_stray_new_state_files( dir );
+    }
     if( _data_dir != dir ) close();
 
     try
@@ -474,26 +528,60 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
       // under a name of this process alone and only then linked in place: another process never finds
       // shared_memory.bin unlocked or without its environment. link() refuses an existing name, so a process that
       // loses the race falls back to opening the winner's file, and is refused by its lock.
-      const bfs::path new_path = abs_path.generic_string() + "." + std::to_string( ::getpid() ) + ".new";
+      const bfs::path new_path = abs_path.generic_string() + "." + std::to_string( ::getpid() ) + NEW_STATE_FILE_SUFFIX;
       bfs::remove( new_path );
-      const auto remove_new_path = fc::make_scoped_exit( [&new_path]() { boost::system::error_code ignored; bfs::remove( new_path, ignored ); } );
-      _segment.reset( new bip::managed_mapped_file( bip::create_only,
-                                      new_path.generic_string().c_str(), shared_file_size
-                                      ) );
-      auto new_lock = std::make_shared< state_file_lock >( new_path, abs_path );
-      _segment_manager = _segment->get_segment_manager();
-      _segment_manager->find_or_construct< environment_check >( "environment" )( allocator< environment_check >( _segment_manager ) );
-      if( ::link( new_path.generic_string().c_str(), abs_path.generic_string().c_str() ) != 0 )
+      int link_error = 0;
       {
-        const int error = errno;
-        _segment.reset();
-        _segment_manager = nullptr;
-        if( error != EEXIST )
-          BOOST_THROW_EXCEPTION( std::runtime_error( "could not create the shared memory file " + abs_path.generic_string() + ": " + std::strerror( error ) ) );
+        const auto remove_new_path = fc::make_scoped_exit( [&new_path]() { boost::system::error_code ignored; bfs::remove( new_path, ignored ); } );
+        _segment.reset( new bip::managed_mapped_file( bip::create_only,
+                                        new_path.generic_string().c_str(), shared_file_size
+                                        ) );
+        auto new_lock = std::make_shared< state_file_lock >( new_path, abs_path );
+        _segment_manager = _segment->get_segment_manager();
+        _segment_manager->find_or_construct< environment_check >( "environment" )( allocator< environment_check >( _segment_manager ) );
+        if( _link_file )
+          link_error = _link_file( new_path, abs_path );
+        else if( ::link( new_path.generic_string().c_str(), abs_path.generic_string().c_str() ) != 0 )
+          link_error = errno;
+        if( link_error == 0 )
+          _state_file_lock = std::move( new_lock );
+        else
+        {
+          _segment.reset();
+          _segment_manager = nullptr;
+        }
+      }
+      if( link_error == EEXIST )
+      {
         open_storage( dir, read_only, shared_file_size, database_cfg, environment_extension );
         return;
       }
-      _state_file_lock = std::move( new_lock );
+      if( link_error != 0 )
+      {
+        static std::once_flag hard_links_unavailable;
+        std::call_once( hard_links_unavailable, [&]()
+        {
+          wlog( "Hard links are unavailable under ${dir} (${error}): state files are created in place, so a process "
+                "opening one at that moment may find it without its lock", ( "dir", dir.generic_string() )( "error", std::strerror( link_error ) ) );
+        } );
+        // The pre-link creation: the lock is taken before the environment is written, but after the file appears.
+        try
+        {
+          _segment.reset( new bip::managed_mapped_file( bip::create_only,
+                                          abs_path.generic_string().c_str(), shared_file_size
+                                          ) );
+        }
+        catch( const bip::interprocess_exception& e )
+        {
+          if( e.get_error_code() != bip::already_exists_error )
+            throw;
+          open_storage( dir, read_only, shared_file_size, database_cfg, environment_extension );
+          return;
+        }
+        lock_for_writing();
+        _segment_manager = _segment->get_segment_manager();
+        _segment_manager->find_or_construct< environment_check >( "environment" )( allocator< environment_check >( _segment_manager ) );
+      }
       ilog( "Creating storage at ${abs_path}', size: ${shared_file_size}", ( "abs_path",abs_path.generic_string() )(shared_file_size) );
     }
 
@@ -552,6 +640,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
     const bfs::path shared_memory_meta_path(dir / "shared_memory.meta");
     bfs::remove_all( shared_memory_bin_path );
     bfs::remove_all( shared_memory_meta_path );
+    remove_stray_new_state_files( dir );
     std::string log("Requested to clear shared memory data. Removed files:\n- " + shared_memory_bin_path.string() + "\n- " + shared_memory_meta_path.string() + "\n");
     ilog( log );
     _data_dir = bfs::path();
