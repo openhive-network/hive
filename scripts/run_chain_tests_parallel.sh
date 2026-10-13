@@ -15,9 +15,10 @@
 #
 # Each unit is killed after unit_timeout seconds (default 600). Under AIDEV
 # with adaptive timeouts, AIDEV_TIMEOUTS_FILE may widen that per unit (never
-# shorten it), and each unit that completes (passes, or fails its assertions)
-# is appended to AIDEV_TIMEOUTS_OBSERVATIONS; see .aidev/README.md. A unit
-# killed at its timeout is a failed testcase in the results.
+# shorten it), and each unit that completes without a crash (passes, or fails
+# only its checks) is appended to AIDEV_TIMEOUTS_OBSERVATIONS; see
+# .aidev/README.md. A unit killed at its timeout is a failed testcase in the
+# results.
 #
 # Examples:
 #   ./scripts/run_chain_tests_parallel.sh                           # Auto-detect in build/
@@ -86,8 +87,8 @@ except (OSError, ValueError, TypeError, KeyError, AttributeError):
 ' "$AIDEV_TIMEOUTS_FILE" "$1" "$2" 2>/dev/null || echo "$2"
 }
 
-xml_escape() {  # stdin to stdout, also dropping the control characters XML forbids
-    tr -d '\000-\010\013\014\016-\037' |
+xml_escape() {  # stdin to stdout, also dropping invalid UTF-8 and the control characters XML forbids
+    iconv -c -f UTF-8 -t UTF-8 | tr -d '\000-\010\013\014\016-\037' |
         sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' -e 's/"/\&quot;/g'
 }
 
@@ -103,9 +104,17 @@ timed_out_report() {  # UNIT TIMEOUT_SECONDS TOOK_MS LOG
     printf '</failure></testcase>\n</testsuite>\n'
 }
 
-# Run one unit under its own timeout. A unit that completed (passed, or failed
-# its assertions) is an observation; one that was killed, crashed or threw is
-# not, since its duration says nothing of how long the unit takes.
+# Whether the JUnit log of a unit that exited 201 shows no crash: Boost.Test
+# writes an exception, a caught signal or a fatal error as an <error> entry, and
+# a failed check as a <failure>.
+completed_without_crash() {  # JUNIT_LOG
+    [ -s "$1" ] && ! grep -qE '<error[[:space:]>/]|"(fatal error|unexpected exception|uncaught exception|system error|system fatal error)"' "$1"
+}
+
+# Run one unit under its own timeout. A unit that completed without a crash
+# (passed, or failed only its checks) is an observation; one that was
+# killed, crashed or threw is not, since its duration says nothing of how long
+# the unit takes.
 run_unit() {  # SEQ UNIT TIMEOUT_SECONDS
     local start ret took_ms
     start=$(date +%s%3N)
@@ -120,13 +129,14 @@ run_unit() {  # SEQ UNIT TIMEOUT_SECONDS
     else
         echo "Unit $2 exited with code $ret"
     fi
-    # Boost.Test exits 0 when the unit passed and 201 when its assertions
-    # failed; 200 is an uncaught exception or a crash it caught.
-    case "$ret" in
-        0|201) [ -z "${AIDEV_TIMEOUTS_OBSERVATIONS:-}" ] ||
-            printf '{"action": "%s:%s", "duration_ms": %d, "default_ms": %d}\n' \
-                "$NAME" "$2" "$took_ms" "$UNIT_DEFAULT_MS" >> "$AIDEV_TIMEOUTS_OBSERVATIONS" ;;
-    esac
+    # Boost.Test exits 0 when the unit passed and 201 when a test case failed,
+    # which includes an exception or a crash it caught inside the test case; 200
+    # is a failed setup or fixture, or a filter matching no test.
+    if [ -n "${AIDEV_TIMEOUTS_OBSERVATIONS:-}" ] &&
+        { [ "$ret" -eq 0 ] || { [ "$ret" -eq 201 ] && completed_without_crash "${NAME}_$1.xml"; }; }; then
+        printf '{"action": "%s:%s", "duration_ms": %d, "default_ms": %d}\n' \
+            "$NAME" "$2" "$took_ms" "$UNIT_DEFAULT_MS" >> "$AIDEV_TIMEOUTS_OBSERVATIONS"
+    fi
     return "$ret"
 }
 
@@ -213,7 +223,7 @@ set +e
 
 cd "$CHAIN_TEST_TMPDIR"
 # Data directories are per job number: unit names may hold '/' or '!'.
-export -f run_unit timed_out_report xml_escape
+export -f run_unit completed_without_crash timed_out_report xml_escape
 export CHAIN_TEST_TMPDIR CHAIN_TEST_ABS NAME UNIT_DEFAULT_MS
 parallel -j "$PARALLELISM" --joblog "${NAME}_parallel.log" --termseq TERM,200,KILL,25 --colsep '\t' \
     run_unit {#} {1} {2} < "$CHAIN_TEST_TMPDIR/${NAME}_timeouts.tsv" &

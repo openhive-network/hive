@@ -7,12 +7,12 @@
 #include <fc/scoped_exit.hpp>
 
 #include <cerrno>
-#include <charconv>
-#include <csignal>
+#include <cstdio>
 #include <cstring>
 #include <ctime>
 #include <filesystem>
 #include <mutex>
+#include <random>
 
 #include <fcntl.h>
 #include <sys/mman.h>
@@ -232,16 +232,22 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
 
     const std::string NEW_STATE_FILE_PREFIX = "shared_memory.bin.";
     const std::string NEW_STATE_FILE_SUFFIX = ".new";
-    /// Creating a state file takes well under this, so an older shared_memory.bin.<pid>.new is stray even when a
-    /// process of that PID is alive (a reused PID, or one in another PID namespace sharing the directory).
+    /// Creating a state file takes well under this, so an older shared_memory.bin.*.new is stray. Age is the only
+    /// evidence: the creator may be in another PID namespace sharing the directory.
     constexpr std::time_t NEW_STATE_FILE_MAX_AGE = 60;
 
-    bool is_alive( pid_t pid )
+    /// shared_memory.bin.<random 128-bit hex>.new next to state_path: unique across processes and containers, where
+    /// a PID is not.
+    bfs::path new_state_file_path( const bfs::path& state_path )
     {
-      return ::kill( pid, 0 ) == 0 || errno == EPERM;
+      std::random_device random;
+      char hex[ 33 ];
+      for( int i = 0; i < 4; ++i )
+        std::snprintf( hex + 8 * i, 9, "%08x", static_cast< unsigned >( random() ) );
+      return state_path.parent_path() / ( NEW_STATE_FILE_PREFIX + hex + NEW_STATE_FILE_SUFFIX );
     }
 
-    /// Removes the shared_memory.bin.<pid>.new files left in dir by processes that died while creating the state file.
+    /// Removes the shared_memory.bin.*.new files in dir left by creations interrupted over a minute ago.
     void remove_stray_new_state_files( const bfs::path& dir )
     {
       std::vector< bfs::path > stray;
@@ -253,16 +259,9 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
             name.compare( 0, NEW_STATE_FILE_PREFIX.size(), NEW_STATE_FILE_PREFIX ) != 0 ||
             name.compare( name.size() - NEW_STATE_FILE_SUFFIX.size(), NEW_STATE_FILE_SUFFIX.size(), NEW_STATE_FILE_SUFFIX ) != 0 )
           continue;
-        const char* const pid_begin = name.data() + NEW_STATE_FILE_PREFIX.size();
-        const char* const pid_end = name.data() + name.size() - NEW_STATE_FILE_SUFFIX.size();
-        pid_t pid = 0;
-        const auto parsed = std::from_chars( pid_begin, pid_end, pid );
-        if( parsed.ec != std::errc() || parsed.ptr != pid_end || pid <= 0 )
-          continue;
         boost::system::error_code time_error;
         const std::time_t modified = bfs::last_write_time( it->path(), time_error );
-        const bool too_old = !time_error && std::time( nullptr ) - modified > NEW_STATE_FILE_MAX_AGE;
-        if( too_old || !is_alive( pid ) )
+        if( !time_error && std::time( nullptr ) - modified > NEW_STATE_FILE_MAX_AGE )
           stray.push_back( it->path() );
       }
 
@@ -525,11 +524,11 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
       _size_checker( shared_file_size );
       _file_size = shared_file_size;
       // Boost.Interprocess cannot create a segment in a file that already exists, so the segment is created and locked
-      // under a name of this process alone and only then linked in place: another process never finds
+      // under a name of this creation alone and only then linked in place: another process never finds
       // shared_memory.bin unlocked or without its environment. link() refuses an existing name, so a process that
-      // loses the race falls back to opening the winner's file, and is refused by its lock.
-      const bfs::path new_path = abs_path.generic_string() + "." + std::to_string( ::getpid() ) + NEW_STATE_FILE_SUFFIX;
-      bfs::remove( new_path );
+      // loses the race falls back to opening the winner's file, and is refused by its lock. create_only opens with
+      // O_CREAT|O_EXCL, so two creations never share the private file.
+      const bfs::path new_path = new_state_file_path( abs_path );
       int link_error = 0;
       {
         const auto remove_new_path = fc::make_scoped_exit( [&new_path]() { boost::system::error_code ignored; bfs::remove( new_path, ignored ); } );
@@ -551,7 +550,9 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
           _segment_manager = nullptr;
         }
       }
-      if( link_error == EEXIST )
+      if( link_error == ENOENT )
+        wlog( "${path} was removed while it was being created, creating the state file again", ( "path", new_path.generic_string() ) );
+      if( link_error == EEXIST || link_error == ENOENT )
       {
         open_storage( dir, read_only, shared_file_size, database_cfg, environment_extension );
         return;
