@@ -8,6 +8,7 @@
 
 #include <cerrno>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <ctime>
 #include <filesystem>
@@ -275,6 +276,28 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
           ilog( "Removed the stray ${path} of an interrupted creation", ( "path", path.generic_string() ) );
       }
     }
+
+    void evict_from_page_cache( const bfs::path& state_file )
+    {
+#ifdef __linux__
+      int fd = ::open( state_file.generic_string().c_str(), O_RDONLY );
+      if( fd >= 0 )
+      {
+        posix_fadvise( fd, 0, 0, POSIX_FADV_DONTNEED );
+        ::close( fd );
+      }
+#endif
+    }
+
+    /// Unwinding is not an option once the storage is unmapped: every scope above, and every other thread, may hold
+    /// references into it, and shutting down cleanly writes to it.
+    [[noreturn]] void abort_unmapped( const bfs::path& dir, size_t shared_file_size, const std::string& cause )
+    {
+      elog( "FATAL: could not map the shared memory file in ${dir} again after growing it to ${size} bytes, so the node "
+            "cannot continue without its state and is stopping. Cause: ${cause}",
+            ( "dir", dir.generic_string() )( "size", shared_file_size )( cause ) );
+      std::abort();
+    }
   }
 
   /// shared_memory.bin mapped privately and read-only, for as long as the file is locked for reading. Only the pages of
@@ -419,7 +442,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
 
     try
     {
-      open_storage( dir, read_only, shared_file_size, database_cfg, environment_extension );
+      open_storage( dir, read_only, true /*evict_page_cache*/, shared_file_size, database_cfg, environment_extension );
     }
     catch( ... )
     {
@@ -435,7 +458,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
     }
   }
 
-  void database::open_storage( const bfs::path& dir, bool read_only, size_t shared_file_size, const boost::any& database_cfg, const helpers::environment_extension_resources* environment_extension )
+  void database::open_storage( const bfs::path& dir, bool read_only, bool evict_page_cache, size_t shared_file_size, const boost::any& database_cfg, const helpers::environment_extension_resources* environment_extension )
   {
     _data_dir = dir;
     _database_cfg = database_cfg;
@@ -484,20 +507,18 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
       }
       else
       {
-#ifdef __linux__
         // Evict any stale pages from the Linux page cache before mmap.
         // After a ZFS/LVM snapshot rollback, the page cache may still contain
         // pre-rollback data. Without this, mmap can return stale pages instead
-        // of reading the rolled-back data from disk.
+        // of reading the rolled-back data from disk. A resize maps the file this process has just used, so it
+        // keeps the pages: evicting them would stall a large node on page faults after every resize.
+        if( evict_page_cache )
         {
-          int fd = ::open( abs_path.generic_string().c_str(), O_RDONLY );
-          if( fd >= 0 )
-          {
-            posix_fadvise( fd, 0, 0, POSIX_FADV_DONTNEED );
-            ::close( fd );
-          }
+          if( _evict_page_cache )
+            _evict_page_cache( abs_path );
+          else
+            evict_from_page_cache( abs_path );
         }
-#endif
 
         _segment.reset( new bip::managed_mapped_file( bip::open_only,
                                         abs_path.generic_string().c_str()
@@ -554,7 +575,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
         wlog( "${path} was removed while it was being created, creating the state file again", ( "path", new_path.generic_string() ) );
       if( link_error == EEXIST || link_error == ENOENT )
       {
-        open_storage( dir, read_only, shared_file_size, database_cfg, environment_extension );
+        open_storage( dir, read_only, evict_page_cache, shared_file_size, database_cfg, environment_extension );
         return;
       }
       if( link_error != 0 )
@@ -576,7 +597,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
         {
           if( e.get_error_code() != bip::already_exists_error )
             throw;
-          open_storage( dir, read_only, shared_file_size, database_cfg, environment_extension );
+          open_storage( dir, read_only, evict_page_cache, shared_file_size, database_cfg, environment_extension );
           return;
         }
         lock_for_writing();
@@ -658,7 +679,18 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
     _segment.reset();
     _meta.reset();
 
-    open( _data_dir, 0, new_shared_file_size );
+    try
+    {
+      open_storage( _data_dir, false /*read_only*/, false /*evict_page_cache*/, new_shared_file_size, _database_cfg, nullptr );
+    }
+    catch( const std::exception& e )
+    {
+      abort_unmapped( _data_dir, new_shared_file_size, e.what() );
+    }
+    catch( ... )
+    {
+      abort_unmapped( _data_dir, new_shared_file_size, "unknown exception" );
+    }
 
     wipe_indexes();
 

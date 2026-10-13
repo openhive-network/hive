@@ -5,9 +5,12 @@
 #include <hive/utilities/tempdir.hpp>
 
 #include <fc/filesystem.hpp>
+#include <fc/log/logger_config.hpp>
 
 #include <algorithm>
 #include <cerrno>
+#include <csignal>
+#include <cstdint>
 #include <ctime>
 #include <fstream>
 #include <string>
@@ -219,6 +222,83 @@ BOOST_AUTO_TEST_CASE( state_file_creation_is_repeated_when_its_new_state_file_is
   chainbase::database other;
   BOOST_CHECK_EXCEPTION( other.open( state_dir, 0, STATE_FILE_SIZE ), std::runtime_error, refused_with( "could not gain write access" ) );
   creator.close();
+}
+
+BOOST_AUTO_TEST_CASE( resize_keeps_the_state_file_in_the_page_cache )
+{
+  fc::temp_directory dir( hive::utilities::temp_directory_path() );
+  const auto state_dir = shared_memory_dir( dir );
+  {
+    chainbase::database creator;
+    creator.open( state_dir, 0, STATE_FILE_SIZE );
+    creator.close();
+  }
+
+  chainbase::database db;
+  std::vector< chainbase::bfs::path > evicted;
+  db.set_evict_page_cache_function( [&evicted]( const chainbase::bfs::path& state_file ) { evicted.push_back( state_file ); } );
+  db.open( state_dir, 0, STATE_FILE_SIZE );
+  BOOST_REQUIRE_EQUAL( evicted.size(), 1u );
+  BOOST_CHECK( evicted.front() == chainbase::bfs::absolute( state_dir / "shared_memory.bin" ) );
+
+  db.resize( 2 * STATE_FILE_SIZE );
+  db.resize( 3 * STATE_FILE_SIZE );
+  BOOST_CHECK_EQUAL( db.get_max_memory(), 3 * STATE_FILE_SIZE );
+  BOOST_CHECK_EQUAL( evicted.size(), 1u );
+  db.close();
+}
+
+BOOST_AUTO_TEST_CASE( failed_resize_aborts_with_its_cause )
+{
+  fc::temp_directory dir( hive::utilities::temp_directory_path() );
+  const auto state_dir = shared_memory_dir( dir );
+
+  int output[ 2 ];
+  BOOST_REQUIRE_EQUAL( ::pipe( output ), 0 );
+  const pid_t pid = ::fork();
+  BOOST_REQUIRE( pid >= 0 );
+  if( pid == 0 )
+  {
+    // the test framework's handlers would report the signals and carry on running the tests in this process
+    ::signal( SIGABRT, SIG_DFL );
+    ::signal( SIGALRM, SIG_DFL );
+    // bounded, so that a hang fails the test instead of stalling it
+    ::alarm( 60 );
+    ::dup2( output[ 1 ], STDERR_FILENO );
+    ::close( output[ 0 ] );
+    ::close( output[ 1 ] );
+    try
+    {
+      fc::configure_logging( fc::logging_config::default_config() );
+      chainbase::database db;
+      db.open( state_dir, 0, STATE_FILE_SIZE );
+      // more than any filesystem has free
+      db.resize( size_t( 1 ) << 62 );
+    }
+    catch( ... )
+    {
+      ::_exit( 2 );
+    }
+    ::_exit( 0 );
+  }
+  ::close( output[ 1 ] );
+  std::string logged;
+  char buffer[ 4096 ];
+  for( ssize_t n; ( n = ::read( output[ 0 ], buffer, sizeof( buffer ) ) ) != 0; )
+  {
+    if( n < 0 && errno == EINTR )
+      continue;
+    BOOST_REQUIRE( n > 0 );
+    logged.append( buffer, n );
+  }
+  ::close( output[ 0 ] );
+  int status = 0;
+  BOOST_REQUIRE_EQUAL( ::waitpid( pid, &status, 0 ), pid );
+
+  BOOST_TEST_MESSAGE( logged );
+  BOOST_CHECK( WIFSIGNALED( status ) && WTERMSIG( status ) == SIGABRT );
+  BOOST_CHECK( logged.find( "FATAL: could not map the shared memory file" ) != std::string::npos );
+  BOOST_CHECK( logged.find( "Free space available is less than declared size" ) != std::string::npos );
 }
 
 BOOST_AUTO_TEST_SUITE_END()

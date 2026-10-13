@@ -72,6 +72,7 @@ void database::initialize_irreversible_storage()
   last_irreversible_object = s->find_or_construct<irreversible_block_data_type>( "irreversible" )(
     allocator< irreversible_block_data_type >( s )
   );
+  _my->_last_irreversible_block_num.store( last_irreversible_object->_irreversible_block_num, std::memory_order_release );
 
   cached_lib = last_irreversible_object->_irreversible_block_data.create_full_block();
 }

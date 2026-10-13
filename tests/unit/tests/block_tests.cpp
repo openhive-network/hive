@@ -50,6 +50,7 @@
 #include <hive/chain/detail/state/reward_fund_object.hpp>
 #include <hive/chain/detail/state/recurrent_transfer_object.hpp>
 
+#include <hive/chain/external_storage/memory_comment_archive.hpp>
 #include <hive/chain/external_storage/placeholder_comment_archive.hpp>
 #include <hive/chain/detail/state/comment_object.hpp>
 #include <hive/chain/detail/state/witness_objects.hpp>
@@ -83,6 +84,10 @@
 #include <hive/utilities/database_configuration.hpp>
 
 #include <fc/crypto/digest.hpp>
+#include <fc/scoped_exit.hpp>
+
+#include <atomic>
+#include <thread>
 
 #include "../db_fixture/clean_database_fixture.hpp"
 
@@ -1896,26 +1901,27 @@ BOOST_AUTO_TEST_CASE( block_flow_control_p2p )
   FC_LOG_AND_RETHROW()
 }
 
-BOOST_AUTO_TEST_CASE( state_file_grows_during_block_processing )
+// a threshold of 0.01% grows the state file by 1% after every block
+static hived_fixture::config_arg_override_t growing_state_file_config( const std::string& data_dir, const std::string& comment_archive )
+{
+  return hived_fixture::config_arg_override_t{
+    hived_fixture::config_line_t( { "shared-file-dir", { data_dir } } ),
+    hived_fixture::config_line_t( { "shared-file-size", { std::to_string( 1024 * 1024 * hived_fixture::shared_file_size_small ) } } ),
+    hived_fixture::config_line_t( { "shared-file-full-threshold", { "1" } } ),
+    hived_fixture::config_line_t( { "shared-file-scale-rate", { "100" } } ),
+    hived_fixture::config_line_t( { "comment-archive", { comment_archive } } )
+  };
+}
+
+static void check_state_file_growth_during_block_processing( const std::string& comment_archive )
 {
   try
   {
-    BOOST_TEST_MESSAGE( "Testing growth of the state file after every produced and every applied block" );
-
-    // a threshold of 0.01% grows the state file by 1% after every block
-    auto growing_state_file_config = []( const std::string& data_dir )
-    {
-      return hived_fixture::config_arg_override_t{
-        hived_fixture::config_line_t( { "shared-file-dir", { data_dir } } ),
-        hived_fixture::config_line_t( { "shared-file-size", { std::to_string( 1024 * 1024 * hived_fixture::shared_file_size_small ) } } ),
-        hived_fixture::config_line_t( { "shared-file-full-threshold", { "1" } } ),
-        hived_fixture::config_line_t( { "shared-file-scale-rate", { "100" } } )
-      };
-    };
+    BOOST_TEST_MESSAGE( "Testing growth of the state file after every produced and every applied block, comment-archive=" + comment_archive );
 
     fc::temp_directory data_dir_bp( hive::utilities::temp_directory_path() );
     hived_fixture fixture_bp( true /*remove_db_files*/, true /*disable_p2p*/, data_dir_bp.path().string() );
-    fixture_bp.postponed_init( growing_state_file_config( data_dir_bp.path().string() ) );
+    fixture_bp.postponed_init( growing_state_file_config( data_dir_bp.path().string(), comment_archive ) );
     database& db_bp = *fixture_bp.db;
     hive::plugins::chain::chain_plugin& chain_plugin_bp = fixture_bp.get_chain_plugin();
     witness::block_producer bp( chain_plugin_bp );
@@ -1923,7 +1929,7 @@ BOOST_AUTO_TEST_CASE( state_file_grows_during_block_processing )
     fc::temp_directory data_dir_( hive::utilities::temp_directory_path() );
     hived_fixture fixture_( true /*remove_db_files*/, true /*disable_p2p*/, data_dir_.path().string() );
     fixture_.set_logging_config( fixture_bp.get_logging_config() );
-    fixture_.postponed_init( growing_state_file_config( data_dir_.path().string() ) );
+    fixture_.postponed_init( growing_state_file_config( data_dir_.path().string(), comment_archive ) );
     database& db_ = *fixture_.db;
     hive::plugins::chain::chain_plugin& chain_plugin_ = fixture_.get_chain_plugin();
 
@@ -1960,7 +1966,8 @@ BOOST_AUTO_TEST_CASE( state_file_grows_during_block_processing )
     push_pending_transaction( chain_plugin_, "pending" );
 
     const uint32_t first_block_num = db_bp.head_block_num() + 1;
-    for( int i = 0; i < 20; ++i )
+    // enough blocks for the irreversible block to move on after the state file has grown
+    for( int i = 0; i < 30; ++i )
     {
       const size_t bp_size = db_bp.get_max_memory();
       const size_t size = db_.get_max_memory();
@@ -1987,10 +1994,108 @@ BOOST_AUTO_TEST_CASE( state_file_grows_during_block_processing )
       BOOST_CHECK_EQUAL( db->get_last_irreversible_object(), irreversible );
       BOOST_CHECK_EQUAL( db->get_last_irreversible_block_num(), irreversible->_irreversible_block_num );
       BOOST_CHECK_EQUAL( count_index_extensions( *db ), index_extensions );
+      BOOST_CHECK_GE( db->get_last_irreversible_block_num(), first_block_num );
+      if( comment_archive == "MEMORY" )
+      {
+        // written on every irreversible block, so it only matches if the archive followed the state file to its current mapping
+        const auto* archive = db->get_segment_manager()->find< memory_comment_archive::archive_object_type >( "memory_comment_archive" ).first;
+        BOOST_REQUIRE( archive != nullptr );
+        BOOST_CHECK_EQUAL( archive->last_irreversible_block_num, db->get_last_irreversible_block_num() );
+      }
     }
     BOOST_CHECK_EQUAL( db_.get_last_irreversible_block_num(), db_bp.get_last_irreversible_block_num() );
     fixture_bp.validate_database();
     fixture_.validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( state_file_grows_during_block_processing )
+{
+  check_state_file_growth_during_block_processing( "ROCKSDB" );
+}
+
+BOOST_AUTO_TEST_CASE( state_file_grows_during_block_processing_with_memory_comment_archive )
+{
+  check_state_file_growth_during_block_processing( "MEMORY" );
+}
+
+BOOST_AUTO_TEST_CASE( state_file_grows_during_replay )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing growth of the state file after every replayed block" );
+
+    fc::temp_directory data_dir( hive::utilities::temp_directory_path() );
+    const uint32_t block_count = 30;
+    {
+      hived_fixture fixture( true /*remove_db_files*/, true /*disable_p2p*/, data_dir.path().string() );
+      fixture.postponed_init( { hived_fixture::config_line_t( { "shared-file-dir", { data_dir.path().string() } } ) } );
+      for( uint32_t i = 0; i < block_count; ++i )
+        fixture.generate_block();
+      BOOST_REQUIRE_EQUAL( fixture.db->head_block_num(), block_count );
+      BOOST_REQUIRE_EQUAL( fixture.db->get_max_memory(), 1024 * 1024 * hived_fixture::shared_file_size_small );
+    }
+
+    hived_fixture fixture( false /*remove_db_files*/, true /*disable_p2p*/, data_dir.path().string() );
+    auto config = growing_state_file_config( data_dir.path().string(), "ROCKSDB" );
+    config.emplace_back( hived_fixture::config_line_t( { "force-replay", { "" } } ) );
+    fixture.postponed_init( config );
+    BOOST_CHECK_EQUAL( fixture.db->head_block_num(), block_count );
+    // grown by 1% after each replayed block, compounded
+    BOOST_CHECK_GT( fixture.db->get_max_memory(), size_t( 1024 * 1024 * hived_fixture::shared_file_size_small ) * 125 / 100 );
+    BOOST_CHECK_EQUAL( fixture.db->get_last_irreversible_block_num(), fixture.db->get_last_irreversible_object()->_irreversible_block_num );
+    fixture.validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( irreversible_block_num_is_readable_without_lock_during_resize )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing reads of the irreversible block number from another thread while the state file grows" );
+
+    fc::temp_directory data_dir( hive::utilities::temp_directory_path() );
+    hived_fixture fixture( true /*remove_db_files*/, true /*disable_p2p*/, data_dir.path().string() );
+    fixture.postponed_init( growing_state_file_config( data_dir.path().string(), "ROCKSDB" ) );
+    database& db = *fixture.db;
+    witness::block_producer bp( fixture.get_chain_plugin() );
+    auto init_account_priv_key = fc::ecc::private_key::regenerate( fc::sha256::hash( string( "init_key" ) ) );
+
+    // as the p2p thread does, with no lock: Boost.Test assertions are not thread safe, so the reader only records
+    std::atomic< bool > stop_reading = { false };
+    std::atomic< bool > went_backwards = { false };
+    std::atomic< uint64_t > reads = { 0 };
+    std::thread reader( [&]()
+    {
+      uint32_t previous = 0;
+      while( !stop_reading.load() )
+      {
+        const uint32_t lib = db.get_last_irreversible_block_num();
+        if( lib < previous )
+          went_backwards = true;
+        previous = lib;
+        ++reads;
+      }
+    } );
+    const auto join_reader = fc::make_scoped_exit( [&]() { stop_reading = true; reader.join(); } );
+
+    const uint32_t initial_lib = db.get_last_irreversible_block_num();
+    int resizes = 0;
+    for( int i = 0; i < 60; ++i )
+    {
+      const size_t size = db.get_max_memory();
+      GENERATE_BLOCK( bp, db.get_slot_time( 1 ), db.get_scheduled_witness( 1 ), init_account_priv_key, database::skip_nothing );
+      if( db.get_max_memory() > size )
+        ++resizes;
+    }
+
+    BOOST_CHECK_GE( resizes, 50 );
+    BOOST_CHECK_GT( reads.load(), 0u );
+    BOOST_CHECK( !went_backwards.load() );
+    BOOST_CHECK_GT( db.get_last_irreversible_block_num(), initial_lib );
+    BOOST_CHECK_EQUAL( db.get_last_irreversible_block_num(), db.get_last_irreversible_object()->_irreversible_block_num );
   }
   FC_LOG_AND_RETHROW()
 }

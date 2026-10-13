@@ -42,6 +42,10 @@ class database_impl
     std::atomic<uint32_t>                             _last_pushed_block_number = {0};
     std::atomic<uint32_t>                             _last_pushed_block_time = {0}; // the value from a time_point_sec
 
+    // a copy of the irreversible block number from the state file, read without a lock by the p2p thread, which
+    // may run while the state file is being resized and is not mapped
+    std::atomic<uint32_t>                             _last_irreversible_block_num = {0};
+
     // Signals for plugin notifications
     fc::signal<void(const operation_notification&)>       _pre_apply_operation_signal;
     /**
