@@ -11,7 +11,9 @@
 # when one of them ends, its share goes to those still running.
 #
 #   - build           configure and build the testnet chain_test and plugin_test,
-#                     exactly as CI's testnet_node_build compiles them
+#                     exactly as CI's testnet_node_build compiles them, and
+#                     assertion_id_verifier, which fails when two FC_ASSERT
+#                     conditions in protocol or chain sources share an assertion ID
 #   - chain-smoke     chain_test basic_tests
 #   - chain-tests     every chain_test suite, in parallel (scripts/run_chain_tests_parallel.sh)
 #   - plugin-api      plugin_test without witness_tests (CI's plugin_test_api)
@@ -153,11 +155,33 @@ build() (  # a subshell: the `cd` below must not move the steps that follow
     mkdir -p "$bld" && cd "$bld" || return 1
     cmake -DCMAKE_BUILD_TYPE=Release -GNinja \
         -DBUILD_HIVE_TESTNET=ON -DHIVE_CONVERTER_BUILD=OFF -DHIVE_LINT=OFF "$src" || return 1
-    local rc=0
-    ninja -j "${HIVE_BUILD_JOBS:-$(nproc)}" chain_test plugin_test || rc=$?
+    local rc=0 started="$bld/.ninja-started"
+    touch "$started" || return 1
+    ninja -j "${HIVE_BUILD_JOBS:-$(nproc)}" chain_test plugin_test assertion_id_verifier || rc=$?
     sccache --show-stats || true
+    [ "$rc" -eq 0 ] || duplicate_assertion_ids "$bld/generated_assert_id" "$started"
     return "$rc"
 )
+
+# The generated headers define one `uint64_t assertion_<hash>` per FC_ASSERT,
+# commented with its source file and condition; the hash is of the condition
+# text, so two asserts with the same condition redefine one name. Printed last,
+# so the step's log tail names them whatever else the build printed. Only headers
+# this build generated count: an older one may describe sources since fixed.
+duplicate_assertion_ids() {  # GENERATED_ASSERT_ID_DIR SINCE_FILE
+    local h headers=()
+    for h in "$1"/*_assertion_hashes_verifier.hpp; do
+        [ "$h" -nt "$2" ] && headers+=("$h")
+    done
+    [ "${#headers[@]}" -gt 0 ] || return 0
+    awk '
+        match($0, /assertion_[0-9]+ =/) {
+            id = substr($0, RSTART, RLENGTH - 2)
+            n[id]++; where[id] = where[id] sprintf("\n  %s:%d: %s", FILENAME, FNR, $0)
+        }
+        END { for (id in n) if (n[id] > 1)
+                  printf "duplicate assertion ID %s: FC_ASSERT conditions must differ (the ID hashes the condition text)%s\n", id, where[id] }' "${headers[@]}" >&2
+}
 
 bin() {  # NAME: the built test binary
     find "$bld/tests" -name "$1" -type f -perm -u+x -print -quit 2>/dev/null
