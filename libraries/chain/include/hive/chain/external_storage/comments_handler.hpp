@@ -29,6 +29,8 @@ class comments_handler : public external_storage_snapshot
     virtual void wipe() = 0;
 
     virtual void on_end_of_syncing() = 0;
+    /// The state storage was mapped again, possibly at another address.
+    virtual void on_segment_remapped() = 0;
 
     static hive::utilities::benchmark_dumper::comment_archive_details_t stats; // note: times should be measured in nanoseconds
 };

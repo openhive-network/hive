@@ -757,6 +757,8 @@ namespace chain {
       struct irreversible_block_data_type *last_irreversible_object = nullptr;
       std::shared_ptr<full_block_type> cached_lib;
 
+      void on_segment_remapped() override;
+
       std::optional< std::pair< chainbase::database::undo_session_guard, chainbase::database::undo_session_guard >> _pending_tx_session;
 
       void _apply_block(const std::shared_ptr<full_block_type>& full_block, const block_flow_control* block_ctrl = nullptr );

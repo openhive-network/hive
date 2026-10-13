@@ -969,6 +969,8 @@ namespace chainbase {
         read_only_storage = 1
       };
 
+      virtual ~database() = default;
+
       void open( const bfs::path& dir, uint32_t flags = 0, size_t shared_file_size = 0, const boost::any& database_cfg = nullptr, const helpers::environment_extension_resources* environment_extension = nullptr );
       void close();
       void flush();
@@ -1343,6 +1345,10 @@ namespace chainbase {
     protected:
       bool get_is_open() const
         { return _is_open; }
+
+      /// Called by resize once the storage is mapped again, possibly at another address: pointers and references
+      /// into the segment held outside the index containers must be acquired again here.
+      virtual void on_segment_remapped() {}
 
     private:
       template<typename MultiIndexType>

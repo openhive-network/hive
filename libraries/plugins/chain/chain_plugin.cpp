@@ -1236,10 +1236,12 @@ bool chain_plugin_impl::push_block( const block_flow_control& block_ctrl, uint32
       // offending peer inside a closing_connection_message, and a full block nests deeper than
       // the serializer's recursion limit, making the message undecodable by the receiver
       FC_CAPTURE_AND_RETHROW( (block_num)(block_id) )
-
-      db.check_free_memory( false, full_block->get_block_num() );
     });
   });
+
+  // Growing the state file maps it again, so it waits until the block and the pending transactions restored after it
+  // are fully processed and no scope above holds references into the old mapping.
+  db.check_free_memory( false, block_num );
 
   //fc::time_point end_time = fc::time_point::now();
   //fc::microseconds dt = end_time - begin_time;

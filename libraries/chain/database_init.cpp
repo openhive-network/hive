@@ -2,6 +2,7 @@
 
 #include <hive/chain/database.hpp>
 #include <hive/chain/irreversible_block_data.hpp>
+#include <hive/chain/external_storage/comments_handler.hpp>
 #include <hive/chain/notifications.hpp>
 #include <hive/chain/rc/rc_utility.hpp>
 #include <hive/chain/hive_evaluator.hpp>
@@ -73,6 +74,14 @@ void database::initialize_irreversible_storage()
   );
 
   cached_lib = last_irreversible_object->_irreversible_block_data.create_full_block();
+}
+
+void database::on_segment_remapped()
+{
+  last_irreversible_object = get_segment_manager()->find<irreversible_block_data_type>( "irreversible" ).first;
+  FC_ASSERT( last_irreversible_object, "Irreversible block data is missing from the remapped storage" );
+  if( _comments_handler )
+    _comments_handler->on_segment_remapped();
 }
 
 void database::verify_match_of_state_objects_definitions_from_shm()

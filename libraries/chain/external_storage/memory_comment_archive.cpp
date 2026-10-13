@@ -101,6 +101,12 @@ void memory_comment_archive::open()
     // did you change comment-archive config option? if so, you need to replay
 }
 
+void memory_comment_archive::on_segment_remapped()
+{
+  archive = db.get_segment_manager()->find<archive_object_type>( "memory_comment_archive" ).first;
+  FC_ASSERT( archive, "Comment archive is missing from the remapped storage" );
+}
+
 void memory_comment_archive::close()
 {
   // since storage is part of SHM, database::close is enough, nothing extra to do here
