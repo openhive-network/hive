@@ -142,6 +142,9 @@ process_option_file() {
   mapfile -t <"$option_file" READ_OPTIONS
 #  echo "Read options: ${READ_OPTIONS[@]}"
   for o in "${READ_OPTIONS[@]}"; do
+    o="${o#"${o%%[![:space:]]*}"}"
+    o="${o%"${o##*[![:space:]]}"}"
+    [[ -z $o ]] && continue
     [[ $o =~ ^#.* ]] && continue
 #    echo "Processing a file option: $o"
     # Option files written for the image's old second shell parse escape quotes as \"; hived needs them plain.
