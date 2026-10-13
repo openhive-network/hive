@@ -67,15 +67,11 @@ BOOST_AUTO_TEST_CASE( open_and_create ) {
 
     db.open( temp, 0, 1024*1024*8 );
 
-    chainbase::database db2; /// open an already created db
-    db2.open( temp );
-    BOOST_CHECK_THROW( db2.add_index< book_index >(), std::runtime_error ); /// index does not exist in read only database
+    chainbase::database db2; /// the storage is locked for writing by db, also within this process
+    BOOST_CHECK_THROW( db2.open( temp ), std::runtime_error );
 
     db.add_index< book_index >();
     BOOST_CHECK_THROW( db.add_index<book_index>(), std::logic_error ); /// cannot add same index twice
-
-
-    db2.add_index< book_index >(); /// index should exist now
 
 
     BOOST_TEST_MESSAGE( "Creating book" );
@@ -83,11 +79,6 @@ BOOST_AUTO_TEST_CASE( open_and_create ) {
         b.a = 3;
         b.b = 4;
     } );
-    const auto& copy_new_book = db2.get( book::id_type(0) );
-    BOOST_REQUIRE( &new_book != &copy_new_book ); ///< these are mapped to different address ranges
-
-    BOOST_REQUIRE_EQUAL( new_book.a, copy_new_book.a );
-    BOOST_REQUIRE_EQUAL( new_book.b, copy_new_book.b );
 
     db.modify( new_book, [&]( book& b ) {
         b.a = 5;
@@ -95,9 +86,6 @@ BOOST_AUTO_TEST_CASE( open_and_create ) {
     });
     BOOST_REQUIRE_EQUAL( new_book.a, 5 );
     BOOST_REQUIRE_EQUAL( new_book.b, 6 );
-
-    BOOST_REQUIRE_EQUAL( new_book.a, copy_new_book.a );
-    BOOST_REQUIRE_EQUAL( new_book.b, copy_new_book.b );
 
     {
         auto session = db.start_undo_session();
@@ -124,7 +112,7 @@ BOOST_AUTO_TEST_CASE( open_and_create ) {
       BOOST_REQUIRE_EQUAL( book2.a, 9 );
       BOOST_REQUIRE_EQUAL( book2.b, 10 );
     }
-    BOOST_CHECK_THROW( db2.get( book::id_type(1) ), std::out_of_range );
+    BOOST_CHECK_THROW( db.get( book::id_type(1) ), std::out_of_range );
     BOOST_REQUIRE_EQUAL( new_book.a, 5 );
     BOOST_REQUIRE_EQUAL( new_book.b, 6 );
 
@@ -145,9 +133,6 @@ BOOST_AUTO_TEST_CASE( open_and_create ) {
     db.undo();
     BOOST_REQUIRE_EQUAL( new_book.a, 5 );
     BOOST_REQUIRE_EQUAL( new_book.b, 6 );
-
-    BOOST_REQUIRE_EQUAL( new_book.a, copy_new_book.a );
-    BOOST_REQUIRE_EQUAL( new_book.b, copy_new_book.b );
   } catch ( ... ) {
     bfs::remove_all( temp );
     throw;

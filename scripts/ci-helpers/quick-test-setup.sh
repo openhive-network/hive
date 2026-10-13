@@ -172,6 +172,8 @@ BINARY_COMMIT=$(resolve_binary_commit)
 # Export resolved commit for downstream jobs
 if [[ -n "${CI_PROJECT_DIR:-}" ]]; then
     echo "QUICK_TEST_RESOLVED_COMMIT=$BINARY_COMMIT" > "${CI_PROJECT_DIR}/quick_test.env"
+    # The image the binaries come from, for jobs that run the testnet image instead of its binaries
+    echo "HIVED_IMAGE_NAME=${REGISTRY}/testnet:${BINARY_COMMIT}" >> "${CI_PROJECT_DIR}/quick_test.env"
     echo ""
     echo "Resolved commit exported to quick_test.env: $BINARY_COMMIT"
 fi

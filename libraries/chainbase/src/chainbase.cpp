@@ -316,6 +316,43 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
     _fd = -1;
   }
 
+  /// shared_memory.bin locked for writing for as long as the database uses it. The lock belongs to its own descriptor,
+  /// so it survives the descriptors of the file that growing and mapping it open and close.
+  class database::state_file_lock
+  {
+    public:
+      explicit state_file_lock( const bfs::path& path );
+      ~state_file_lock() { ::close( _fd ); }
+
+      state_file_lock( const state_file_lock& ) = delete;
+      state_file_lock& operator=( const state_file_lock& ) = delete;
+
+      const bfs::path& get_path() const { return _path; }
+
+    private:
+      bfs::path _path;
+      int       _fd = -1;
+  };
+
+  database::state_file_lock::state_file_lock( const bfs::path& path ) : _path( path )
+  {
+    _fd = ::open( path.generic_string().c_str(), O_RDWR | O_CLOEXEC );
+    if( _fd < 0 )
+    {
+      const int error = errno;
+      BOOST_THROW_EXCEPTION( std::runtime_error( "could not open the shared memory file " + path.generic_string() + ": " + std::strerror( error ) ) );
+    }
+
+    struct flock lock = {};
+    lock.l_type = F_WRLCK;
+    lock.l_whence = SEEK_SET;
+    if( ::fcntl( _fd, TRY_LOCK_COMMAND, &lock ) != 0 )
+    {
+      ::close( _fd );
+      BOOST_THROW_EXCEPTION( std::runtime_error( "could not gain write access to the shared memory file" ) );
+    }
+  }
+
   void database::open( const bfs::path& dir, uint32_t flags, size_t shared_file_size, const boost::any& database_cfg, const helpers::environment_extension_resources* environment_extension )
   {
     assert( dir.is_absolute() );
@@ -339,8 +376,21 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
         BOOST_THROW_EXCEPTION( std::runtime_error( "Unable to create shared memory file. Free space available is less than declared size of shared memory file." ) );
     };
 
+    // Kept across a reopen of the same file by resize, so the file is never left unlocked while the node uses it.
+    const auto lock_for_writing = [&]()
+    {
+      if( !_state_file_lock || _state_file_lock->get_path() != abs_path )
+      {
+        _state_file_lock.reset();
+        _state_file_lock = std::make_shared< state_file_lock >( abs_path );
+      }
+    };
+
     if( bfs::exists( abs_path ) )
     {
+      if( !read_only )
+        lock_for_writing();
+
       _file_size = bfs::file_size( abs_path );
       if( !read_only && shared_file_size > _file_size )
       {
@@ -400,6 +450,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
       _segment.reset( new bip::managed_mapped_file( bip::create_only,
                                       abs_path.generic_string().c_str(), shared_file_size
                                       ) );
+      lock_for_writing();
       _segment_manager = _segment->get_segment_manager();
       _segment_manager->find_or_construct< environment_check >( "environment" )( allocator< environment_check >( _segment_manager ) );
       ilog( "Creating storage at ${abs_path}', size: ${shared_file_size}", ( "abs_path",abs_path.generic_string() )(shared_file_size) );
@@ -410,13 +461,6 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
     {
       env.first->test_version(*environment_extension);
       env.first->test_set_plugins(*environment_extension);
-    }
-
-    if( !read_only )
-    {
-      _flock = bip::file_lock( abs_path.generic_string().c_str() );
-      if( !_flock.try_lock() )
-        BOOST_THROW_EXCEPTION( std::runtime_error( "could not gain write access to the shared memory file" ) );
     }
 
     _is_open = true;
@@ -437,6 +481,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
       _read_only_mapping.reset();
       _segment_manager = nullptr;
       _meta.reset();
+      _state_file_lock.reset();
       _data_dir = bfs::path();
 
       wipe_indexes();
@@ -461,6 +506,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
     _read_only_mapping.reset();
     _segment_manager = nullptr;
     _meta.reset();
+    _state_file_lock.reset();
     const bfs::path shared_memory_bin_path(dir / "shared_memory.bin");
     const bfs::path shared_memory_meta_path(dir / "shared_memory.meta");
     bfs::remove_all( shared_memory_bin_path );
