@@ -27,17 +27,53 @@ every step still running and the test processes under it.
 | `chain-tests` | every `chain_test` suite in parallel (`scripts/run_chain_tests_parallel.sh`, CI's `chain_test`) |
 | `plugin-api` | `plugin_test` without `witness_tests` (CI's `plugin_test_api`) |
 | `plugin-tests` | all of `plugin_test` (CI's `plugin_test_api` + `plugin_test_witness`) in parallel: the suites other than `witness_tests` as one process, each `witness_tests` case as its own |
+| `integration` | the `tests/integration` scripts the diff selects, each against a hived image built from the checkout (below) |
+| `hived-testnet`, `hived-mainnet` | `hived`, `cli_wallet` and `shared_memory_file_util` with CI's arguments, into `<report dir>/bin` (what `integration` builds an image from) |
 
 | Slot | Steps |
 |---|---|
 | quick | build, chain-smoke, plugin-api |
-| full, baseline | build, then chain-tests and plugin-tests at the same time |
+| full | suite `default`: build, then chain-tests and plugin-tests at the same time; suite `integration` (`docker: true`): integration |
+| baseline | build, then chain-tests and plugin-tests at the same time |
 | canary | build, chain-smoke, plugin-api |
 
 `plugin_test` suites other than `witness_tests` are not run singly: `snapshots_tests` fails
 when run without the suites before it (it passes in the full `!witness_tests` order, as in CI).
 `witness_tests` cases are: each gets its own data directory (`HIVE_TEMPDIR`) and its p2p
 node listens on no fixed port.
+
+## Integration scripts
+
+The docker-based scripts in `tests/integration/` run in GitLab CI, and in the
+`full` slot's `integration` suite when the diff reaches them. `integration_table`
+in `run-checks.sh` maps changed paths to scripts: `docker/`, the `Dockerfile` and
+the scripts the image and the exchange instance use select
+`test_snapshot_bootstrap.sh` and `test_exchange_node_block_log_pruning.sh`;
+`libraries/chainbase/`, and a change to `database.cpp`/`database.hpp` whose
+lines or enclosing function name `open`/`resize`, select `test_snapshot_bootstrap.sh`;
+a changed `tests/integration/test_*.sh` selects itself. The diff is taken from
+`AIDEV_BASE_REF` or `AIDEV_IMPLEMENT_BASE_SHA`, else from the merge base with
+`origin/aidev/integration`.
+
+The suite is `docker: true`, so AIDEV runs it host-side with the docker socket,
+and skips it as `docker_capability_unavailable` on a host without docker. The step
+itself records a skipped case, with the reason, when the diff selects nothing (no
+time spent), when no diff base resolves, when there is no daemon or compose
+plugin, and when the checkout is not on a filesystem the daemon's host mounts. A
+selected script it cannot run (one needing CI's block-log fixtures) is a skipped
+case too.
+
+For each network a selected script needs (testnet for the snapshot bootstrap,
+mainnet for the exchange node), the step builds the binaries in the checks' image
+with CI's paths and cmake arguments, so on CI's compiler cache (a minute or two),
+then the `Dockerfile`'s `instance` stage around them (its `build` stage replaced
+through `--build-context`). The scripts run side by side in the checks' image plus
+this host's compose plugin, with the checkout at its host path, because they
+bind-mount their work directories; one run per script per host at a time (their
+container names are fixed), held by a `hive-integration-lock-<script>` docker
+network. `test-results/full-integration/` gets one junit case per image and per
+script, named `integration-<script>`, and each script's `*.log` files; the rest of
+its work directory is deleted.
 
 ## Test unit timeouts
 
@@ -68,8 +104,8 @@ the binary's JUnit results.
 `aidev project preflight` reports `adaptive test timeouts: enabled` in its slots row.
 
 Not covered yet: the Python functional tests (test-tools; several need the 5M
-block-log fixtures), fork/colony/mirrornet jobs, replay, and `static`. They stay in
-GitLab CI.
+block-log fixtures), fork/colony/mirrornet jobs, replay, the integration scripts
+that need CI's fixtures, and `static`. They stay in GitLab CI.
 
 ## The compiler cache
 
