@@ -7,30 +7,26 @@ from typing import TYPE_CHECKING, Any, Literal
 
 from beekeepy.exceptions import ErrorInResponseError
 from hiveio_api.database_api.database_api_description import Account as AccountItemFundament
+from hiveio_api.operations import (
+    AccountCreatedOperation,
+    FillConvertRequestOperation,
+    FillTransferFromSavingsOperation,
+)
+from hiveio_api.operations import (
+    TransferToVestingCompletedOperation as TransferToVestingCompletedOperation,
+)
 
 import test_tools as tt
 import wax
 from hive_local_tools.constants import (
     HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS,
 )
-from schemas.fields.compound import Manabar
-from schemas.filter import (
-    build_vop_filter,
-)
-from schemas.operations.virtual.account_created_operation import AccountCreatedOperation
-from schemas.operations.virtual.fill_transfer_from_savings_operation import FillTransferFromSavingsOperation
-from schemas.operations.virtual.transfer_to_vesting_completed_operation import (
-    TransferToVestingCompletedOperation as TransferToVestingCompletedOperation,
-)
+from schemas._preconfigured_base_model import PreconfiguredBaseModel
+from schemas.fields.hive_int import HiveInt  # noqa: TCH001  # runtime type of a msgspec model below
 
 if TYPE_CHECKING:
     from hiveio_api.account_history_api.account_history_api_description import EnumVirtualOpsResponse
-
-    from schemas.fields.hive_int import HiveInt
-    from schemas.operations import Hf26Operations
-    from schemas.virtual_operation import (
-        VirtualOperation as SchemaVirtualOperation,
-    )
+    from hiveio_api.operations import Hf26OperationValue
 
 
 @dataclass
@@ -299,8 +295,8 @@ class _RcManabar(_BaseManabar):
     def assert_rc_current_mana_is_reduced(self, transaction: dict, additional_rc_cost: int = 0) -> None:
         err = f"The account {self._name} did not incur the operation cost."
         if transaction:
-            operation_rc_cost = transaction["rc_cost"] + additional_rc_cost
-            previous_block_timestamp = get_previous_block_timestamp(self._node, transaction["block_num"])
+            operation_rc_cost = transaction.rc_cost + additional_rc_cost
+            previous_block_timestamp = get_previous_block_timestamp(self._node, transaction.block_num)
             mana_before_operation = self.calculate_current_value(previous_block_timestamp)
             assert mana_before_operation == get_rc_current_mana(self._node, self._name) + operation_rc_cost, err
         else:
@@ -341,7 +337,7 @@ class _VoteManabarBase(_BaseManabar):
         err = f"The account {self._name} did not incur the operation cost."
         vote_current_mana = self._get_specific_current_mana()
         if transaction:
-            previous_block_timestamp = get_previous_block_timestamp(self._node, transaction["block_num"])
+            previous_block_timestamp = get_previous_block_timestamp(self._node, transaction.block_num)
             mana_before_operation = self.calculate_current_value(previous_block_timestamp)
             assert vote_current_mana < mana_before_operation, err
         else:
@@ -365,7 +361,7 @@ class _DownvoteManabar(_VoteManabarBase):
 
 def check_if_fill_transfer_from_savings_vop_was_generated(node: tt.InitNode, memo: str) -> bool:
     payout_vops = get_virtual_operations(node, FillTransferFromSavingsOperation)
-    return any(vop.op.value["memo"] == memo for vop in payout_vops)
+    return any(vop.op.value.memo == memo for vop in payout_vops)
 
 
 def create_account_with_different_keys(wallet: tt.Wallet, account_name: str, creator: str) -> None:
@@ -389,7 +385,7 @@ def create_account_with_different_keys(wallet: tt.Wallet, account_name: str, cre
 
 
 def create_transaction_with_any_operation(
-    wallet: tt.Wallet, operations: list[Hf26Operations], broadcast: bool = True
+    wallet: tt.Wallet, operations: list[Hf26OperationValue], broadcast: bool = True
 ) -> dict[str, Any]:
     return wallet.send(operations=operations, broadcast=broadcast, blocking=True)
 
@@ -493,9 +489,14 @@ def convert_hive_to_vest_range(hive_amount: tt.Asset.TestT, price: float, tolera
     return tt.Asset.Range(vests, tolerance=tolerance)
 
 
+def build_vop_filter(*vops: type[Hf26OperationValue]) -> int:
+    """Filter of `enum_virtual_ops` - a bit of a virtual operation is its position among them (from fill_convert_request)."""
+    return sum(1 << (vop.operation_id - FillConvertRequestOperation.operation_id) for vop in vops)
+
+
 def get_virtual_operations(
     node: tt.InitNode,
-    *vops: type[SchemaVirtualOperation],
+    *vops: type[Hf26OperationValue],
     skip_price_stabilization: bool = True,
     start_block: int | None = None,
     end_block: int = 2000,
@@ -517,7 +518,7 @@ def get_virtual_operations(
     if skip_price_stabilization:
         for vop_number, vop in enumerate(result.ops):
             if vop.op.type == "transfer_to_vesting_completed_operation" and convert_to_asset(
-                vop.op.value["hive_vested"]
+                vop.op.value.hive_vested
             ) == tt.Asset.Test(10_000_000):
                 result.ops.pop(vop_number)  # noqa: B909
     return result.ops
@@ -528,7 +529,7 @@ def get_rc_max_mana(node: tt.InitNode, account_name: str) -> int:
 
 
 def get_transaction_timestamp(node: tt.InitNode, transaction) -> datetime:
-    timestamp = node.api.block.get_block(block_num=transaction["block_num"]).block.timestamp
+    timestamp = node.api.block.get_block(block_num=transaction.block_num).block.timestamp
     return tt.Time.parse(timestamp, time_zone=timezone.utc)
 
 
@@ -545,7 +546,9 @@ def jump_to_date(node: tt.InitNode, time_control: datetime, wait_for_irreversibl
     node.restart(time_control=tt.StartTimeControl(start_time=time_control))
 
 
-class ExtendedManabar(Manabar):
+class ExtendedManabar(PreconfiguredBaseModel):
+    current_mana: HiveInt
+    last_update_time: HiveInt
     maximum: HiveInt
 
 
@@ -579,7 +582,7 @@ def get_vote_manabar(
     max_mana = int(response.post_voting_power.amount)
     return ExtendedManabar(
         current_mana=int(getattr(response, bar_type).current_mana),
-        last_update_time=getattr(response, bar_type).last_update_time,
+        last_update_time=int(getattr(response, bar_type).last_update_time),
         maximum=max_mana if bar_type == "voting_manabar" else int(0.25 * max_mana),
     )
 
@@ -639,7 +642,7 @@ def assert_account_was_created(node: tt.AnyNode, account_name: str) -> None:
     account_created_operations = get_virtual_operations(node, AccountCreatedOperation)
     created_accounts = []
     for operation in account_created_operations:
-        created_accounts.append(operation.op.value["new_account_name"])
+        created_accounts.append(operation.op.value.new_account_name)
 
     assert account_name in created_accounts, f"Account named {account_name} was not created"
 

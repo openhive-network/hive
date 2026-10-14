@@ -31,7 +31,7 @@ class SetWithdrawVestingRoute(Operation):
             self._from, self._to, self._percent, self._auto_vest
         )
         self._timestamp = get_transaction_timestamp(node, self._transaction)
-        self._rc_cost = self._transaction["rc_cost"]
+        self._rc_cost = self._transaction.rc_cost
 
     @property
     def timestamp(self) -> datetime:

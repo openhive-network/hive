@@ -2,13 +2,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from hiveio_api.operations import EscrowApprovedOperation, EscrowRejectedOperation
+
 from hive_local_tools.functional.python.operation import Account, Operation, get_virtual_operations
-from schemas.operations.virtual.escrow_approved_operation import EscrowApprovedOperation
-from schemas.operations.virtual.escrow_rejected_operation import EscrowRejectedOperation
 
 if TYPE_CHECKING:
+    from hiveio_api.operations import Hf26Transaction
+
     import test_tools as tt
-    from schemas.transaction import Transaction
 
 
 class EscrowTransfer(Operation):
@@ -38,7 +39,7 @@ class EscrowTransfer(Operation):
     def to_account(self) -> Account:
         return self._to_account
 
-    def approve(self, who: Account, approve: bool, escrow_id: int = 0, broadcast: bool = True) -> Transaction:
+    def approve(self, who: Account, approve: bool, escrow_id: int = 0, broadcast: bool = True) -> Hf26Transaction:
         return self._wallet.api.escrow_approve(
             self._from_account.name, self._to_account.name, self._agent.name, who.name, escrow_id, approve, broadcast
         )
@@ -68,7 +69,7 @@ class EscrowTransfer(Operation):
             broadcast,
         )
 
-    def dispute(self, who: Account, escrow_id: int = 0, broadcast: bool = True) -> Transaction:
+    def dispute(self, who: Account, escrow_id: int = 0, broadcast: bool = True) -> Hf26Transaction:
         return self._wallet.api.escrow_dispute(
             self._from_account.name, self._to_account.name, self._agent.name, who.name, escrow_id, broadcast
         )
@@ -81,7 +82,7 @@ class EscrowTransfer(Operation):
         hive_amount: tt.Asset.TestT,
         escrow_id: int = 0,
         broadcast: bool = True,
-    ) -> Transaction:
+    ) -> Hf26Transaction:
         return self._wallet.api.escrow_release(
             self._from_account.name,
             self._to_account.name,

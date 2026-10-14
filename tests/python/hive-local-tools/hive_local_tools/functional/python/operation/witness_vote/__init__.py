@@ -15,7 +15,7 @@ class WitnessVote(Operation):
         self._witness: str = witness
         self._transaction: dict = self._wallet.api.vote_for_witness(self._voter, self._witness, approve)
         self._timestamp: datetime = get_transaction_timestamp(node, self._transaction)
-        self._rc_cost: int = self._transaction["rc_cost"]
+        self._rc_cost: int = self._transaction.rc_cost
         self.assert_minimal_operation_rc_cost()
 
     @property

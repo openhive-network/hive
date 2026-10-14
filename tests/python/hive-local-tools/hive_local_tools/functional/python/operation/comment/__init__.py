@@ -4,11 +4,23 @@ from copy import deepcopy
 from typing import TYPE_CHECKING, Any, Literal
 
 from beekeepy.exceptions import ErrorInResponseError
+from hiveio_api.operations import (
+    AuthorRewardOperation,
+    BeneficiaryRouteType,
+    CommentBenefactorRewardOperation,
+    CommentOptionsOperation,
+    CommentPayoutBeneficiaries,
+    CurationRewardOperation,
+    DeleteCommentOperation,
+    EffectiveCommentVoteOperation,
+    Hf26CommentPayoutBeneficiaries,
+)
 
 import test_tools as tt
 import wax
 from hive_local_tools.functional.python.operation import (
     Account,
+    convert_to_asset,
     create_transaction_with_any_operation,
     get_previous_block_timestamp,
     get_rc_current_mana,
@@ -20,53 +32,11 @@ from hive_local_tools.functional.python.operation import (
     get_transaction_timestamp as get_transaction_timestamp,
 )
 from schemas.fields.assets import AssetHive
-from schemas.operations import (
-    CommentOptionsOperation,
-    DeleteCommentOperation,
-)
-from schemas.operations.virtual.author_reward_operation import AuthorRewardOperation
-from schemas.operations.virtual.comment_benefactor_reward_operation import CommentBenefactorRewardOperation
-from schemas.operations.virtual.curation_reward_operation import CurationRewardOperation
-from schemas.operations.virtual.effective_comment_vote_operation import EffectiveCommentVoteOperation
-from schemas.transaction import TransactionLegacy
+from test_tools.__private.wallet.constants import as_nai_asset
 
 if TYPE_CHECKING:
     from schemas.fields.hive_int import HiveInt
-    from schemas.operations.representation_types import (
-        LegacyRepresentationClaimRewardBalanceOperation,
-        LegacyRepresentationCommentOperation,
-        LegacyRepresentationCommentOptionsOperation,
-        LegacyRepresentationDeleteCommentOperation,
-        LegacyRepresentationVoteOperation,
-    )
-
-
-class ClaimRewardBalanceTransaction(TransactionLegacy):
-    operations: list[LegacyRepresentationClaimRewardBalanceOperation]
-    rc_cost: int
-
-
-class CommentTransaction(TransactionLegacy):
-    operations: (
-        tuple[LegacyRepresentationCommentOperation]
-        | tuple[LegacyRepresentationCommentOperation, LegacyRepresentationCommentOptionsOperation]
-    )
-    rc_cost: int = 0
-
-
-class DeleteCommentTransaction(TransactionLegacy):
-    operations: tuple[LegacyRepresentationDeleteCommentOperation]
-    rc_cost: int
-
-
-class VoteTransaction(TransactionLegacy):
-    operations: tuple[LegacyRepresentationVoteOperation]
-    rc_cost: int
-
-
-class CommentOptionsTransaction(TransactionLegacy):
-    operations: tuple[LegacyRepresentationCommentOptionsOperation]
-    rc_cost: int = 0
+    from test_tools.__private.wallet.constants import WalletResponse
 
 
 def get_reward_operations(node, mode: Literal["author", "curation", "comment_benefactor"]):
@@ -153,8 +123,8 @@ class Comment:
         self.__parent = parent
         self.__permlink = permlink or f"main-permlink-{self.author}"
         self.__children: list[Comment] = [child] if child is not None else []
-        self.__comment_transaction: CommentTransaction | None = None
-        self.__comment_option_transaction: CommentOptionsTransaction = None
+        self.__comment_transaction: WalletResponse | None = None
+        self.__comment_option_transaction: WalletResponse = None
         self.__deleted: bool = False
         self.__beneficiaries: list[dict] = []
         self.__benefactors: list[str] = []
@@ -182,7 +152,7 @@ class Comment:
         return self.__permlink
 
     @property
-    def comment_trx(self) -> CommentTransaction:
+    def comment_trx(self) -> WalletResponse:
         assert self.comment_exists()
         return self.__comment_transaction
 
@@ -343,7 +313,6 @@ class Comment:
         self.__wallet.api.vote(hater.name, self.author, self.permlink, -10)
 
     def assert_is_comment_sent_or_update(self) -> None:
-        # comment_value from wallet is a dict, op.value from hiveio_api is a msgspec struct
         comment_value = self.comment_trx.operations[0].value
         ops_in_block = self.__node.api.account_history.get_ops_in_block(
             block_num=self.comment_trx.block_num, include_reversible=True
@@ -351,8 +320,8 @@ class Comment:
         for operation in ops_in_block.ops:
             if (
                 operation.op.type == "comment_operation"
-                and operation.op.value["author"] == comment_value["author"]
-                and operation.op.value["permlink"] == comment_value["permlink"]
+                and operation.op.value.author == comment_value.author
+                and operation.op.value.permlink == comment_value.permlink
             ):
                 return
         raise AssertionError
@@ -391,7 +360,7 @@ class Comment:
         else:
             raise ValueError(f"Unexpected value for 'mode': '{mode}'")
 
-    def __options(self, broadcast: bool = True, **comment_options: Any) -> CommentOptionsTransaction:
+    def __options(self, broadcast: bool = True, **comment_options: Any) -> WalletResponse:
         """
         Private function for modifying a comment options.
 
@@ -403,21 +372,24 @@ class Comment:
             for beneficiary in self.__comment_options["beneficiaries"]:
                 beneficiary["weight"] = beneficiary["weight"] * 100
 
+            beneficiaries = [
+                BeneficiaryRouteType(**beneficiary) for beneficiary in self.__comment_options["beneficiaries"]
+            ]
             self.__comment_options["extensions"] = [
-                {
-                    "type": "comment_payout_beneficiaries",
-                    "value": {"beneficiaries": self.__comment_options["beneficiaries"]},
-                }
+                Hf26CommentPayoutBeneficiaries(value=CommentPayoutBeneficiaries(beneficiaries=beneficiaries))
             ]
             self.__comment_options.pop("beneficiaries")
 
         if "percent_hbd" in self.__comment_options:
             self.__comment_options["percent_hbd"] = self.__comment_options["percent_hbd"] * 100
 
+        options = dict(self.__comment_options)
+        if "max_accepted_payout" in options:
+            options["max_accepted_payout"] = as_nai_asset(options["max_accepted_payout"])
         comment_options_operation = CommentOptionsOperation(
             author=self.__author.name,
             permlink=self.__permlink,
-            **self.__comment_options,
+            **options,
         )
 
         return create_transaction_with_any_operation(self.__wallet, [comment_options_operation], broadcast)
@@ -464,7 +436,7 @@ class Comment:
 
     def assert_author_reward_virtual_operation(self, mode: Literal["generated", "not_generated"]) -> None:
         author_reward_operations = get_reward_operations(self.__node, "author")
-        author_and_permlink = [(value["author"], value["permlink"]) for value in author_reward_operations]
+        author_and_permlink = [(value.author, value.permlink) for value in author_reward_operations]
         if mode == "generated":
             assert (
                 self.author,
@@ -481,9 +453,7 @@ class Comment:
     def assert_comment_benefactors_reward_virtual_operations(self, mode: Literal["generated", "not_generated"]) -> None:
         comment_benefactors_operations = get_reward_operations(self.__node, "comment_benefactor")
         for beneficiary in self.__beneficiaries:
-            benefactor_and_permlink = [
-                (value["benefactor"], value["permlink"]) for value in comment_benefactors_operations
-            ]
+            benefactor_and_permlink = [(value.benefactor, value.permlink) for value in comment_benefactors_operations]
             if mode == "generated":
                 assert (
                     (
@@ -515,11 +485,9 @@ class Comment:
 
         reward_operations = get_reward_operations(self.__node, reward_type)
         for value in reward_operations:
-            condition = (
-                (value["author"] == self.author) if reward_type == "author" else (value["benefactor"] == benefactor)
-            )
-            if condition and value["permlink"] == self.permlink:
-                return tt.Asset.from_nai(value[mode])
+            condition = (value.author == self.author) if reward_type == "author" else (value.benefactor == benefactor)
+            if condition and value.permlink == self.permlink:
+                return convert_to_asset(getattr(value, mode))
         raise ValueError(f"Comment not have generated {reward_type}_reward_operation")
 
     def assert_resource_percentage_in_reward(
@@ -562,7 +530,7 @@ class Vote:
     def __init__(self, comment_obj: Comment, voter: Literal["random", "same_as_comment"] | CommentAccount):
         self.__comment_obj = comment_obj
         self.__voter = voter
-        self.__vote_transaction: VoteTransaction | None = None
+        self.__vote_transaction: WalletResponse | None = None
         if isinstance(voter, Account):
             self.__voter_obj = voter
         else:
@@ -591,13 +559,12 @@ class Vote:
             operations = self.__comment_obj.node.api.account_history.get_ops_in_block(
                 block_num=self.__vote_transaction.block_num, include_reversible=True
             ).ops
-            # vote_operation from wallet is a dict, op.op.value from hiveio_api is a msgspec struct
             found = any(
                 op.op.type == "vote_operation"
-                and op.op.value["voter"] == vote_operation["voter"]
-                and op.op.value["author"] == vote_operation["author"]
-                and op.op.value["permlink"] == vote_operation["permlink"]
-                and op.op.value["weight"] == vote_operation["weight"]
+                and op.op.value.voter == vote_operation.voter
+                and op.op.value.author == vote_operation.author
+                and op.op.value.permlink == vote_operation.permlink
+                and op.op.value.weight == vote_operation.weight
                 for op in operations
             )
             assert found, "Vote_operation not generated, but it should have been"
@@ -630,7 +597,7 @@ class Vote:
         self.__comment_obj.node.wait_number_of_blocks(1)
         vops = get_virtual_operations(self.__comment_obj.node, EffectiveCommentVoteOperation)
         effective_comment_vote_operations = [vop.op.value for vop in vops]
-        voter_and_comment_permlink = [(vop["voter"], vop["permlink"]) for vop in effective_comment_vote_operations]
+        voter_and_comment_permlink = [(vop.voter, vop.permlink) for vop in effective_comment_vote_operations]
         if mode == "generated":
             assert (
                 self.__voter_obj.name,
@@ -669,7 +636,7 @@ class Vote:
 
     def assert_curation_reward_virtual_operation(self, mode: Literal["generated", "not_generated"]) -> None:
         curation_reward_operations = get_reward_operations(self.__comment_obj.node, "curation")
-        curator_and_comment_permlink = [(value["curator"], value["permlink"]) for value in curation_reward_operations]
+        curator_and_comment_permlink = [(value.curator, value.permlink) for value in curation_reward_operations]
         if mode == "generated":
             assert (
                 self.__voter.name,
@@ -687,8 +654,8 @@ class Vote:
         """Curation reward is always paid in HP"""
         curation_reward_operations = get_reward_operations(self.__comment_obj.node, "curation")
         for value in curation_reward_operations:
-            if value["curator"] == self.__voter.name and value["permlink"] == self.__comment_obj.permlink:
-                return tt.Asset.from_nai(value["reward"])
+            if value.curator == self.__voter.name and value.permlink == self.__comment_obj.permlink:
+                return convert_to_asset(value.reward)
         raise ValueError("Vote not have generated curation_reward_operation")
 
 
@@ -697,7 +664,7 @@ class CommentAccount(Account):
         super().__init__(_name=name, _node=node, _wallet=wallet)
 
     @property
-    def claim_reward_balance_trx(self) -> ClaimRewardBalanceTransaction:
+    def claim_reward_balance_trx(self) -> WalletResponse:
         return self.__claim_reward_transaction
 
     def __get_rewards_from_reward_operation(
@@ -708,11 +675,13 @@ class CommentAccount(Account):
     ) -> list:
         reward_operations = get_reward_operations(node, mode)
         if mode == "author" and reward_type is not None:
-            return [tt.Asset.from_nai(vop[reward_type]) for vop in reward_operations if vop["author"] == self.name]
+            return [convert_to_asset(getattr(vop, reward_type)) for vop in reward_operations if vop.author == self.name]
         if mode == "comment_benefactor" and reward_type is not None:
-            return [tt.Asset.from_nai(vop[reward_type]) for vop in reward_operations if vop["benefactor"] == self.name]
+            return [
+                convert_to_asset(getattr(vop, reward_type)) for vop in reward_operations if vop.benefactor == self.name
+            ]
         if mode == "curation" and reward_type == "vesting_payout":
-            return [tt.Asset.from_nai(vop["reward"]) for vop in reward_operations if vop["curator"] == self.name]
+            return [convert_to_asset(vop.reward) for vop in reward_operations if vop.curator == self.name]
         raise ValueError(f"Wrong argument combination: 'mode': '{mode} and 'reward_type': {reward_type}")
 
     def assert_reward_balance(self, node: tt.Anynode, mode: Literal["hbd", "vesting"]) -> None:
@@ -753,7 +722,7 @@ class CommentAccount(Account):
 
     def assert_curation_reward_virtual_operation(self, mode: Literal["generated", "not_generated"]) -> None:
         curation_reward_operations = get_reward_operations(self.node, "curation")
-        curator = [value["curator"] for value in curation_reward_operations]
+        curator = [value.curator for value in curation_reward_operations]
         if mode == "generated":
             assert self.name in curator, "Curation_reward_operation not generated, but it should have been"
         elif mode == "not_generated":
@@ -777,15 +746,13 @@ class CommentAccount(Account):
         )
 
     def assert_is_rc_mana_decreased_after_claiming_available_rewards(self) -> None:
-        claim_reward_rc_cost = self.__claim_reward_transaction["rc_cost"]
-        incoming_rc = self.__claim_reward_transaction.operations[0].value.reward_vests.as_nai()
+        claim_reward_rc_cost = self.__claim_reward_transaction.rc_cost
+        incoming_rc = self.__claim_reward_transaction.operations[0].value.reward_vests
         err = f"The account {self._name} did not incur the operation cost."
-        previous_block_timestamp = get_previous_block_timestamp(
-            self._node, self.__claim_reward_transaction["block_num"]
-        )
+        previous_block_timestamp = get_previous_block_timestamp(self._node, self.__claim_reward_transaction.block_num)
         mana_before_operation = self.rc_manabar.calculate_current_value(previous_block_timestamp)
         assert mana_before_operation == get_rc_current_mana(self._node, self._name) + claim_reward_rc_cost - int(
-            incoming_rc["amount"]
+            incoming_rc.amount
         ), err
 
     def get_reward_balance(self, mode: Literal["reward_hbd", "reward_hive", "reward_vests"]) -> tt.Asset.AnyT:
@@ -809,7 +776,7 @@ class CommentAccount(Account):
     def assert_balance_after_claiming_available_rewards(self) -> None:
         for asset, reward_asset in ("hbd", "reward_hbd"), ("hive", "reward_hive"), ("vest", "reward_vests"):
             reward_asset = getattr(self.__claim_reward_transaction.operations[0].value, reward_asset)
-            assert getattr(self, asset) + reward_asset.as_nai() == self._get_balance(
+            assert getattr(self, asset) + convert_to_asset(reward_asset) == self._get_balance(
                 asset
             ), f"{asset} balance have incorrect value after claim balance"
 
@@ -820,8 +787,8 @@ class CommentAccount(Account):
             ("reward_vests", "reward_vests"),
         ):
             reward_asset = getattr(self.__claim_reward_transaction.operations[0].value, reward_asset)
-            assert (
-                getattr(self, asset) == self.get_reward_balance(asset) + reward_asset.as_nai()
+            assert getattr(self, asset) == self.get_reward_balance(asset) + convert_to_asset(
+                reward_asset
             ), f"{asset} balance have incorrect value after claim balance"
 
     def assert_governance_vote_power_increase_after_claiming_available_rewards(self) -> None:

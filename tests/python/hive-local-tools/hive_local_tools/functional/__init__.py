@@ -7,10 +7,7 @@ from functools import partial
 from typing import TYPE_CHECKING
 
 import test_tools as tt
-from schemas.fields.hive_int import HiveInt
-from schemas.jsonrpc import get_response_model
-from schemas.operation import Operation
-from test_tools.__private.wallet.constants import SimpleTransaction, SimpleTransactionLegacy
+from test_tools.__private.wallet.constants import SimpleTransaction
 from wax import get_tapos_data
 
 if TYPE_CHECKING:
@@ -25,23 +22,17 @@ def _warmup_msgspec_decoders() -> None:
     (ForwardRef creation) which are not thread-safe. When multiple threads
     simultaneously create decoders for the first time, a segfault can occur.
 
-    This function triggers decoder initialization for common response types
+    This function imports the modules defining common response types (resolving their annotations)
     before any threads are spawned, ensuring thread-safe operation.
     """
     with contextlib.suppress(Exception):
         # Import and access API types to trigger annotation resolution
         # This ensures msgspec decoders are initialized before parallel operations
-        import hiveio_api.database_api  # noqa: F401
-
-        import schemas.apis.app_status_api  # Used by beekeepy.__discover_ports()
-        import schemas.apis.network_node_api
-        import schemas.apis.wallet_bridge_api
-        import schemas.transaction  # noqa: F401
-
-        # Warm up the decoder cache by parsing sample responses
-        get_response_model(str, '{"jsonrpc":"2.0","id":0,"result":"warmup"}', "hf26")
-        get_response_model(dict, '{"jsonrpc":"2.0","id":0,"result":{}}', "hf26")
-        get_response_model(list, '{"jsonrpc":"2.0","id":0,"result":[]}', "hf26")
+        import hiveio_api._validation.network_node_api
+        import hiveio_api._validation.wallet_bridge_api
+        import hiveio_api.app_status_api  # Used by beekeepy.__discover_ports()
+        import hiveio_api.database_api
+        import hiveio_api.operations  # noqa: F401
 
 
 def wait_for_current_hardfork(node: tt.InitNode, current_hardfork_number: int) -> None:
@@ -100,7 +91,7 @@ def connect_nodes(first_node: tt.AnyNode, second_node: tt.AnyNode) -> None:
 
 
 def __generate_and_broadcast_transaction(
-    wallet: tt.Wallet | tt.OldWallet, node: tt.InitNode, func: Callable, account_names: list[str], **kwargs
+    wallet: tt.Wallet, node: tt.InitNode, func: Callable, account_names: list[str], **kwargs
 ) -> None:
     gdpo = node.api.database.get_dynamic_global_properties()
     block_id = gdpo.head_block_id
@@ -111,25 +102,14 @@ def __generate_and_broadcast_transaction(
     assert ref_block_num >= 0, f"ref_block_num value `{ref_block_num}` is invalid`"
     assert ref_block_prefix > 0, f"ref_block_prefix value `{ref_block_prefix}` is invalid`"
 
-    default_transaction_data = {
-        "ref_block_num": HiveInt(ref_block_num),
-        "ref_block_prefix": HiveInt(ref_block_prefix),
-        "expiration": (tt.Time.parse(gdpo.time, time_zone=None) if isinstance(gdpo.time, str) else gdpo.time)
-        + timedelta(seconds=1800),
-        "extensions": [],
-        "signatures": [],
-        "operations": [],
-    }
-
-    if isinstance(wallet, tt.OldWallet):
-        transaction = SimpleTransactionLegacy(
-            **default_transaction_data,
-            block_num=gdpo.head_block_number,
-            transaction_id="0" * 40,
-            transaction_num=0,
-        )
-    else:
-        transaction = SimpleTransaction(**default_transaction_data)
+    transaction = SimpleTransaction(
+        ref_block_num=ref_block_num,
+        ref_block_prefix=ref_block_prefix,
+        expiration=tt.Time.serialize(tt.Time.parse(gdpo.time, time_zone=None) + timedelta(seconds=1800)),
+        extensions=[],
+        signatures=[],
+        operations=[],
+    )
 
     is_batch_mode = "executions" in kwargs and "recurrence" in kwargs
 
@@ -145,7 +125,7 @@ def __generate_and_broadcast_transaction(
             transaction.operations.clear()
         else:
             ret = func(name, **kwargs)
-            if isinstance(ret, Operation):
+            if not isinstance(ret, list | tuple):
                 transaction.add_operation(ret)
             else:
                 [transaction.add_operation(op) for op in ret]

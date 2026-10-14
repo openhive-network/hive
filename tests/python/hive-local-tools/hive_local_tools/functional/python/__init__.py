@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Literal
 
-from schemas.fields.compound import Authority
+from hiveio_api.operations import Authority
 
 if TYPE_CHECKING:
     import test_tools as tt
@@ -16,7 +16,7 @@ def get_authority(
 
 
 def basic_authority(key: PublicKey) -> Authority:
-    return Authority(weight_threshold=1, account_auths=[], key_auths=[[key, 1]])
+    return Authority(weight_threshold=1, account_auths=[], key_auths=[(key, 1)])
 
 
 def generate_block(node: tt.InitNode, number: int, miss_blocks: int = 0) -> None:

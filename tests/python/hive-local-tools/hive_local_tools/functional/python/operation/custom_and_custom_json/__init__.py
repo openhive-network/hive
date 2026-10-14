@@ -1,14 +1,14 @@
 from __future__ import annotations
 
+from hiveio_api.operations import CustomJsonOperation, CustomOperation
+
 from hive_local_tools.functional.python.operation import Operation, create_transaction_with_any_operation
-from schemas.operations.custom_json_operation import CustomJsonOperation
-from schemas.operations.custom_operation import CustomOperation
 
 
 class Custom(Operation):
     def generate_transaction(self, required_auths: list[str], id_: int, data: str) -> dict:
         return create_transaction_with_any_operation(
-            self._wallet, [CustomOperation(required_auths=required_auths, id_=id_, data=data)], broadcast=False
+            self._wallet, [CustomOperation(required_auths=required_auths, id=id_, data=data)], broadcast=False
         )
 
     def sign_transaction(self, transaction: dict, broadcast: bool = True) -> dict:
@@ -25,7 +25,7 @@ class CustomJson(Operation):
                 CustomJsonOperation(
                     required_auths=required_auths,
                     required_posting_auths=required_posting_auths,
-                    id_=str(id_),
+                    id=str(id_),
                     json_=json_,
                 )
             ],

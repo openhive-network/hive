@@ -3,6 +3,8 @@ from __future__ import annotations
 from datetime import timezone
 from typing import TYPE_CHECKING
 
+from hiveio_api.operations import FillVestingWithdrawOperation
+
 import test_tools as tt
 from hive_local_tools.constants import VESTING_WITHDRAW_INTERVALS
 from hive_local_tools.functional.python.operation import (
@@ -12,7 +14,6 @@ from hive_local_tools.functional.python.operation import (
     get_vesting_price,
     get_virtual_operations,
 )
-from schemas.operations.virtual import FillVestingWithdrawOperation
 
 if TYPE_CHECKING:
     from datetime import datetime
@@ -27,7 +28,7 @@ class PowerDown(Operation):
         self._total_power_down_vesting_shares = vesting_shares
         self._transaction = self._wallet.api.withdraw_vesting(self._name, self._total_power_down_vesting_shares)
         self._timestamp = get_transaction_timestamp(node, self._transaction)
-        self._rc_cost = self._transaction["rc_cost"]
+        self._rc_cost = self._transaction.rc_cost
         self._vests_to_power_down = self._transaction.operations[0].value.vesting_shares
 
         self._weekly_vest_reduction = tt.Asset.Vest(

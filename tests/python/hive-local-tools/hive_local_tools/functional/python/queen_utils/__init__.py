@@ -2,16 +2,18 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import test_tools as tt
-from schemas.fields.basic import AccountName, PublicKey
-from schemas.fields.compound import Authority
-from schemas.operations import (
+from hiveio_api.operations import (
     AccountCreateOperation,
+    Authority,
     DelegateVestingSharesOperation,
     RecurrentTransferOperation,
     TransferOperation,
     TransferToVestingOperation,
 )
+
+import test_tools as tt
+from schemas.fields.basic import AccountName, PublicKey
+from test_tools.__private.wallet.constants import as_nai_asset
 
 if TYPE_CHECKING:
     from schemas.fields.assets import AssetHbd, AssetHive
@@ -23,7 +25,7 @@ def __create_account(name: str) -> AccountCreateOperation:
         creator=AccountName("initminer"),
         new_account_name=AccountName(name),
         json_metadata="{}",
-        fee=tt.Asset.Test(0.001),
+        fee=as_nai_asset(tt.Asset.Test(0.001)),
         owner=Authority(weight_threshold=1, account_auths=[], key_auths=[(key, 1)]),
         active=Authority(weight_threshold=1, account_auths=[], key_auths=[(key, 1)]),
         posting=Authority(weight_threshold=1, account_auths=[], key_auths=[(key, 1)]),
@@ -37,7 +39,7 @@ def __recurrent_transfer(
     return RecurrentTransferOperation(
         from_=sender,
         to=receiver,
-        amount=amount,
+        amount=as_nai_asset(amount),
         memo=f"rec_transfer-{sender}",
         recurrence=recurrence,
         executions=executions,
@@ -48,7 +50,7 @@ def __transfer(account: str, transfer_asset: AssetHive | AssetHbd) -> TransferOp
     return TransferOperation(
         from_="initminer",
         to=account,
-        amount=transfer_asset,
+        amount=as_nai_asset(transfer_asset),
         memo=f"supply_transfer-{account}",
     )
 
@@ -57,7 +59,7 @@ def __transfer_to_vesting(account: str, transfer_asset: AssetHive) -> TransferTo
     return TransferToVestingOperation(
         from_="initminer",
         to=account,
-        amount=transfer_asset,
+        amount=as_nai_asset(transfer_asset),
     )
 
 
@@ -65,5 +67,5 @@ def __vesting_delegate(account: str, vests_amount: tt.Asset.Vest) -> DelegateVes
     return DelegateVestingSharesOperation(
         delegator="initminer",
         delegatee=account,
-        vesting_shares=vests_amount,
+        vesting_shares=as_nai_asset(vests_amount),
     )

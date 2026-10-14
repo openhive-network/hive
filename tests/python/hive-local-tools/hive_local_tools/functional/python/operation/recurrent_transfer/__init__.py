@@ -4,6 +4,8 @@ import copy
 from datetime import timezone
 from typing import TYPE_CHECKING
 
+from hiveio_api.operations import FailedRecurrentTransferOperation, FillRecurrentTransferOperation
+
 import test_tools as tt
 from hive_local_tools.functional.python.operation import (
     Account,
@@ -12,7 +14,6 @@ from hive_local_tools.functional.python.operation import (
     get_transaction_timestamp,
     get_virtual_operations,
 )
-from schemas.operations.virtual import FailedRecurrentTransferOperation, FillRecurrentTransferOperation
 
 if TYPE_CHECKING:
     from datetime import datetime
@@ -93,7 +94,7 @@ class RecurrentTransfer:
         self._current_schedule: list[datetime] = self.__get_transfer_schedule(self._timestamp)
         self._executions_schedules: list = [self._current_schedule]
         self._last_execution_time: datetime = self._timestamp
-        self._rc_cost: int = self._transaction["rc_cost"]
+        self._rc_cost: int = self._transaction.rc_cost
         self.__assert_minimal_operation_rc_cost()
 
     @property
@@ -187,7 +188,7 @@ class RecurrentTransfer:
             **self._pair_id_argument,
         )
         self._timestamp = get_transaction_timestamp(self._node, self._transaction)
-        self._rc_cost = self._transaction["rc_cost"]
+        self._rc_cost = self._transaction.rc_cost
         self.__assert_minimal_operation_rc_cost()
 
         if new_recurrence_time and not new_executions_number:

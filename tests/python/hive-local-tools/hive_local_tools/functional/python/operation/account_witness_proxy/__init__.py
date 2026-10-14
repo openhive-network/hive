@@ -16,7 +16,7 @@ class AccountWitnessProxy(Operation):
         self._proxy: str = proxy
         self._account_to_modify: str = account_to_modify
         self._transaction: dict = self._wallet.api.set_voting_proxy(self._account_to_modify, self._proxy)
-        self._rc_cost: int = self._transaction["rc_cost"]
+        self._rc_cost: int = self._transaction.rc_cost
 
     @property
     def timestamp(self) -> datetime:

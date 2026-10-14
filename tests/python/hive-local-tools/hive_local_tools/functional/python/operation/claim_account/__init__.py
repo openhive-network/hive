@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from hiveio_api.operations import CreateClaimedAccountOperation
+
 import test_tools as tt
 from hive_local_tools.functional.python import basic_authority
 from hive_local_tools.functional.python.operation import (
@@ -9,7 +11,6 @@ from hive_local_tools.functional.python.operation import (
     create_transaction_with_any_operation,
     get_transaction_timestamp,
 )
-from schemas.operations.create_claimed_account_operation import CreateClaimedAccountOperation
 
 if TYPE_CHECKING:
     from datetime import datetime
@@ -23,7 +24,7 @@ class ClaimAccountToken(Operation):
         self._creator: str = creator
         self._fee: tt.Asset.TestT = fee
         self._transaction: dict = self._wallet.api.claim_account_creation(self._creator, self._fee)
-        self._rc_cost: int = self._transaction["rc_cost"]
+        self._rc_cost: int = self._transaction.rc_cost
 
     @property
     def creator(self) -> str:
@@ -44,7 +45,7 @@ class CreateClaimedAccount(Operation):
     ) -> None:
         super().__init__(node, wallet)
         self._transaction = self.generate_transaction(creator, new_account_name)
-        self._rc_cost: int = self._transaction["rc_cost"]
+        self._rc_cost: int = self._transaction.rc_cost
 
     def generate_transaction(self, creator: AccountName, new_account_name: AccountName) -> dict:
         public_key = tt.Account(new_account_name).public_key
