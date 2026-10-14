@@ -114,7 +114,7 @@ void block_producer::add_state_stamp( chain::signed_block_header& pending_block_
 {
   using namespace hive::protocol;
 
-  // the state_stamp_data_object only exists once HF29 is active
+  // the extension is not allowed before HF29 - until then published stamps just keep accumulating
   if( !_db.has_hardfork( HIVE_HARDFORK_1_29_STAMP_BLOCK_EXTENSION ) )
     return;
 

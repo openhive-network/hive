@@ -153,11 +153,62 @@ struct once_stamp_publisher : appbase::plugin< once_stamp_publisher >
   }
 };
 
+// Stand-in consumer that publishes regardless of hardfork: digests passed to queue() are published,
+// in the same order, during the next applied block. Lets a test stamp state at chosen blocks before HF29.
+struct queued_stamp_publisher : appbase::plugin< queued_stamp_publisher >
+{
+  database& _db;
+  database::signal_connection_ptr _conn;
+  std::vector< digest_type > _queue;
+
+  queued_stamp_publisher( database& db ) : _db( db )
+  {
+    _conn = _db.add_post_apply_block_handler(
+      [this]( const block_notification& ) { on_block(); }, *this, 0 );
+  }
+  virtual ~queued_stamp_publisher() { hive::utilities::disconnect_signal( _conn ); }
+
+  static const std::string& name() { static std::string name = "queued_stamp_publisher"; return name; }
+  virtual void set_program_options( appbase::options_description&, appbase::options_description& ) override {}
+  virtual void plugin_for_each_dependency( plugin_processor&& ) override {}
+  virtual void plugin_initialize( const appbase::variables_map& ) override {}
+  virtual void plugin_startup() override {}
+  virtual void plugin_shutdown() override {}
+
+  void queue( const std::vector< digest_type >& digests )
+  {
+    _queue.insert( _queue.end(), digests.begin(), digests.end() );
+  }
+
+  void on_block()
+  {
+    if( _queue.empty() )
+      return;
+    _db.modify( _db.get_state_stamp_data(), [&]( state_stamp_data_object& o )
+    {
+      for( const auto& d : _queue )
+        o.publish( d );
+    } );
+    _queue.clear();
+  }
+};
+
 // starts one hardfork before HF29 so tests can first observe pre-HF29 behavior, then activate HF29
 struct state_stamp_fixture : public clean_database_fixture
 {
   state_stamp_fixture() : clean_database_fixture( shared_file_size_big, HIVE_HARDFORK_1_28 ) {}
   virtual ~state_stamp_fixture() {}
+
+  // returns the state stamp carried by block `num`, or none if there is no such extension
+  fc::optional< checksum_type > stamp_in_block( uint32_t num )
+  {
+    auto fb = get_chain_plugin().block_reader().get_block_by_number( num );
+    BOOST_REQUIRE( fb );
+    for( const auto& e : fb->get_block().extensions )
+      if( e.which() == block_header_extensions::tag< state_stamp >::value )
+        return e.get< state_stamp >().merkle_root;
+    return fc::optional< checksum_type >();
+  }
 };
 
 } // namespace
@@ -173,19 +224,6 @@ BOOST_AUTO_TEST_CASE( state_stamp_positive )
 
     ACTORS( HIVE_asset( 100'000 ), (alice)(bob)(carol)(dave)(erin)(fred)(greg)(helen)(ivan)(jane)(kevin)(laura) );
     generate_block();
-
-    const block_read_i& block_reader = get_chain_plugin().block_reader();
-
-    // returns the state stamp carried by block `num`, or none if there is no such extension
-    auto stamp_in_block = [&]( uint32_t num ) -> fc::optional< checksum_type >
-    {
-      auto fb = block_reader.get_block_by_number( num );
-      BOOST_REQUIRE( fb );
-      for( const auto& e : fb->get_block().extensions )
-        if( e.which() == block_header_extensions::tag< state_stamp >::value )
-          return e.get< state_stamp >().merkle_root;
-      return fc::optional< checksum_type >();
-    };
 
     // ---- phase 1: before HF29, activity must NOT yield any extension ----
     post_comment( "alice", "a1", "t", "b", "parent", alice_post_key );
@@ -268,6 +306,63 @@ BOOST_AUTO_TEST_CASE( state_stamp_positive )
 
     // back to empty
     produce_and_check();
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( state_stamp_published_before_hf29 )
+{
+  try
+  {
+    // fixture starts at HF28, but the state stamp object exists since genesis, so stamps can already be
+    // published; blocks can't carry them before HF29 though, so they keep accumulating until the first
+    // block after HF29 activation commits all of them at once
+    BOOST_REQUIRE( !db->has_hardfork( HIVE_HARDFORK_1_29_STAMP_BLOCK_EXTENSION ) );
+    BOOST_REQUIRE( db->get_state_stamp_data().is_empty() );
+
+    queued_stamp_publisher publisher( *db );
+    const digest_type first = digest_type::hash( std::string( "first" ) );
+    const digest_type second = digest_type::hash( std::string( "second" ) );
+    const digest_type third = digest_type::hash( std::string( "third" ) );
+
+    // ---- before HF29: published stamps are kept, but no block carries them ----
+    publisher.queue( { first } );
+    generate_block();
+    BOOST_REQUIRE( !stamp_in_block( db->head_block_num() ).valid() );
+    BOOST_REQUIRE( db->get_state_stamp_data().finalize() == calculate_merkle_root( { first } ) );
+
+    // after HF29 this block would have to carry the stamp published in the previous block; before HF29
+    // it can't, and the stamp is not consumed
+    generate_block();
+    BOOST_REQUIRE( !stamp_in_block( db->head_block_num() ).valid() );
+    BOOST_REQUIRE( db->get_state_stamp_data().finalize() == calculate_merkle_root( { first } ) );
+
+    // new stamps join the ones collected so far
+    publisher.queue( { second, third } );
+    generate_block();
+    BOOST_REQUIRE( !stamp_in_block( db->head_block_num() ).valid() );
+    generate_block();
+    BOOST_REQUIRE( !stamp_in_block( db->head_block_num() ).valid() );
+    BOOST_REQUIRE( db->get_state_stamp_data().finalize() == calculate_merkle_root( { first, second, third } ) );
+
+    // ---- activate HF29 ----
+    // inject_hardfork() produces one more block before HF29, then the first block after it
+    inject_hardfork( HIVE_HARDFORK_1_29 );
+    BOOST_REQUIRE( db->has_hardfork( HIVE_HARDFORK_1_29_STAMP_BLOCK_EXTENSION ) );
+    BOOST_REQUIRE( !stamp_in_block( db->head_block_num() - 1 ).valid() );
+
+    // the first block after HF29 activation commits everything published before it (in publication
+    // order) and consumes the collection
+    auto stamp = stamp_in_block( db->head_block_num() );
+    BOOST_REQUIRE( stamp.valid() );
+    BOOST_REQUIRE( *stamp == calculate_merkle_root( { first, second, third } ) );
+    BOOST_REQUIRE( db->get_state_stamp_data().is_empty() );
+
+    // nothing new was published, so the next block carries no stamp
+    generate_block();
+    BOOST_REQUIRE( !stamp_in_block( db->head_block_num() ).valid() );
 
     validate_database();
   }
