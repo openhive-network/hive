@@ -27,13 +27,13 @@ every step still running and the test processes under it.
 | `chain-tests` | every `chain_test` suite in parallel (`scripts/run_chain_tests_parallel.sh`, CI's `chain_test`) |
 | `plugin-api` | `plugin_test` without `witness_tests` (CI's `plugin_test_api`) |
 | `plugin-tests` | all of `plugin_test` (CI's `plugin_test_api` + `plugin_test_witness`) in parallel: the suites other than `witness_tests` as one process, each `witness_tests` case as its own |
-| `integration` | the `tests/integration` scripts the diff selects, each against a hived image built from the checkout (below) |
+| `integration` | off unless `HIVE_AIDEV_INTEGRATION=1`; the `tests/integration` scripts the diff selects, each against a hived image built from the checkout (below) |
 | `hived-testnet`, `hived-mainnet` | `hived`, `cli_wallet` and `shared_memory_file_util` with CI's arguments, into `<report dir>/bin` (what `integration` builds an image from) |
 
 | Slot | Steps |
 |---|---|
 | quick | build, chain-smoke, plugin-api |
-| full | suite `default`: build, then chain-tests and plugin-tests at the same time; suite `integration` (`docker: true`): integration |
+| full | suite `default`: build, then chain-tests and plugin-tests at the same time; suite `integration`: integration (off; below) |
 | baseline | build, then chain-tests and plugin-tests at the same time |
 | canary | build, chain-smoke, plugin-api |
 
@@ -45,31 +45,98 @@ node listens on no fixed port.
 ## Integration scripts
 
 The docker-based scripts in `tests/integration/` run in GitLab CI, and in the
-`full` slot's `integration` suite when the diff reaches them. `integration_table`
-in `run-checks.sh` maps changed paths to scripts: `docker/`, the `Dockerfile` and
-the scripts the image and the exchange instance use select
-`test_snapshot_bootstrap.sh` and `test_exchange_node_block_log_pruning.sh`;
-`libraries/chainbase/`, and a change to `database.cpp`/`database.hpp` whose
-lines or enclosing function name `open`/`resize`, select `test_snapshot_bootstrap.sh`;
-a changed `tests/integration/test_*.sh` selects itself. The diff is taken from
-`AIDEV_BASE_REF` or `AIDEV_IMPLEMENT_BASE_SHA`, else from the merge base with
-`origin/aidev/integration`.
+`full` slot's `integration` suite when the diff reaches them and the step is on.
+The step lives in `.aidev/integration.sh`; `.aidev/tests/integration_test.sh`
+tests its decisions (host paths over mountinfo fixtures, the time budget, the
+build plan, the Dockerfile-stage check, the diff base) without docker.
 
-The suite is `docker: true`, so AIDEV runs it host-side with the docker socket,
-and skips it as `docker_capability_unavailable` on a host without docker. The step
-itself records a skipped case, with the reason, when the diff selects nothing (no
-time spent), when no diff base resolves, when there is no daemon or compose
-plugin, and when the checkout is not on a filesystem the daemon's host mounts. A
-selected script it cannot run (one needing CI's block-log fixtures) is a skipped
-case too.
+### Off by default; turning it on
+
+The step does nothing unless `HIVE_AIDEV_INTEGRATION=1`: it records one skipped
+case, `off`. As landed, the suite declares `HIVE_AIDEV_INTEGRATION: "0"` and no
+`docker: true`, so it runs in the checks' container for a second and AIDEV
+reserves no docker slot for it. To turn it on, in `project.yaml`'s `integration`
+suite:
+
+```yaml
+        env: {HIVE_AIDEV_INTEGRATION: "1", HIVE_INTEGRATION_BUDGET: "1200"}
+        docker: true
+```
+
+`docker: true` is a protected sandbox setting, so it takes effect once a
+maintainer approves it. It is a separate line because AIDEV admits a `docker:
+true` suite into a dev docker slot (`sandbox.dev`'s memory, 5.5g when undeclared;
+waiting up to 900 s on a busy host) before the suite's command runs, so before the
+step can find that the diff selects nothing. Until AIDEV can run a selection
+before admitting the scope, or take a suite's own memory demand without a
+`sandbox.dev` live stack (which needs a compose file of its own), every `full`
+run with the step on holds a slot.
+
+To run it once by hand, on a host with docker:
+`HIVE_AIDEV_INTEGRATION=1 .aidev/run-checks.sh full-integration integration`.
+
+### Selection
+
+`integration_table` maps changed paths to scripts: `docker/`, the `Dockerfile`,
+the scripts the image and its runtime stages use select
+`test_snapshot_bootstrap.sh` and `test_exchange_node_block_log_pruning.sh`; the
+exchange instance's scripts select the latter; `libraries/chainbase/`, and a
+change to `database.cpp`/`database.hpp` whose lines or enclosing function name
+`open`/`resize`, select `test_snapshot_bootstrap.sh`; a changed
+`tests/integration/test_*.sh` selects itself. The diff is taken from
+`AIDEV_BASE_REF` (the gate's base, which AIDEV sets for this project's suites),
+else `AIDEV_IMPLEMENT_BASE_SHA`, else the merge base with
+`origin/aidev/integration`; the step prints which, as
+`diff base: AIDEV_BASE_REF=<sha>`.
+
+### Skips
+
+A skip records a skipped case naming its reason and never fails the slot:
+
+| Reason | When |
+|---|---|
+| `off` | `HIVE_AIDEV_INTEGRATION` is not 1 |
+| no diff base / selects no script | nothing to run (no time spent) |
+| `docker_capability_unavailable` | no docker daemon reachable |
+| `docker_compose_unavailable` | no compose plugin on this host |
+| `sccache_unreachable` | CI's sccache Redis does not answer and the time left cannot fit cold builds (`HIVE_INTEGRATION_COLD_BUILD_SECONDS`, 2700 s per image) |
+| `out_of_time` | the time left cannot fit the builds (300 s each on the cache) and a script, or an image build or a script reached the deadline |
+| `docker_paths_unshared` | the checkout's path on the daemon's host cannot be resolved, or a container given it does not see the checkout |
+| `instance_base_unpublished` | the registry's `minimal-runtime:${CI_IMAGE_TAG}` cannot be pulled |
+| needs fixtures only CI has | a selected script other than the two above |
+
+### Time
+
+AIDEV hands a suite no deadline, so the step keeps its own: it ends by the
+earlier of `HIVE_INTEGRATION_BUDGET` (1200 s, the suite's `timeout`) from its
+start and `HIVE_INTEGRATION_ACTIVITY_SECONDS` (2400 s, `run_full_tests`'
+start-to-close) from when the slot's first suite started (its
+`test-results/full/started-at`), less `HIVE_INTEGRATION_MARGIN` (300 s). Each
+script gets CI's timeout (2100 s, 1800 s) or what is left, whichever is shorter,
+and is not started with less than it needs at least (300 s, 600 s). A script
+stopped at CI's timeout fails; one stopped at the deadline is `out_of_time`.
+
+### Images
 
 For each network a selected script needs (testnet for the snapshot bootstrap,
-mainnet for the exchange node), the step builds the binaries in the checks' image
-with CI's paths and cmake arguments, so on CI's compiler cache (a minute or two),
-then the `Dockerfile`'s `instance` stage around them (its `build` stage replaced
-through `--build-context`). The scripts run side by side in the checks' image plus
-this host's compose plugin, with the checkout at its host path, because they
-bind-mount their work directories; one run per script per host at a time (their
+mainnet for the exchange node), the step builds the binaries in the checks'
+image with CI's paths and cmake arguments on the host's network, where sccache
+uses CI's Redis if it answers and a local cache otherwise; then the
+`Dockerfile`'s `instance` stage around them (its `build` stage replaced through
+`--build-context`). Its base is the registry's `minimal-runtime:${CI_IMAGE_TAG}`,
+unless the diff changes a line above the `build` stage or a file the runtime
+stages add (`scripts/setup_ubuntu.sh`, `scripts/openssl.conf`): then the
+`minimal-runtime` stage is built from the change.
+
+### Paths and runs
+
+The scripts bind-mount their work directories, and a worker's paths are not the
+daemon host's. The step reads the daemon's mount table (through a container in
+the host's PID namespace), maps the checkout from its own mount (the longest
+mount point holding it: device and path within it) to the host's mount of that
+device, and checks that a container given the result sees the checkout. The
+scripts run side by side in the checks' image plus this host's compose plugin,
+with the checkout at its host path; one run per script per host at a time (their
 container names are fixed), held by a `hive-integration-lock-<script>` docker
 network. `test-results/full-integration/` gets one junit case per image and per
 script, named `integration-<script>`, and each script's `*.log` files; the rest of
