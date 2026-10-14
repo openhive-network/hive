@@ -141,6 +141,9 @@ build_*/
 /out/isenseconfig/Linux-Release
 node_modules
 build_wheel.env
+# binaries exported by CI build jobs (artifacts) - as untracked files they would make versions of Python packages
+# built next to them dirty
+/hived-*binaries/
 
 # various log and benchmark files
 advanced_benchmark.json

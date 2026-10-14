@@ -6,7 +6,7 @@
 #   1. Determines package version from git state (no generation needed)
 #   2. Checks if the package version already exists in GitLab PyPI registry
 #   3. If exists: creates env file and exits (skips generation/build entirely)
-#   4. If not: generates package, builds wheel, runs tests, and deploys to registry
+#   4. If not: generates package, runs generator tests, builds wheel, runs package tests, and deploys to registry
 #
 # The build_wheel.env artifact is always created with the resolved version.
 # When the version exists in the registry, generation and build are skipped entirely.
@@ -21,7 +21,9 @@
 #   --package-registry-project-id=ID  Project ID for package registry (default: CI_PROJECT_ID)
 #   --skip-registry-check         Skip checking if package exists in registry (always build)
 #   --skip-deploy                 Skip deployment to GitLab PyPI registry
-#   --skip-tests                  Skip running tests (example verification)
+#   --skip-tests                  Skip running package tests (example verification; generator tests always run)
+#   --operations-description=PATH Description of operations from the build of hived (operations_description.json),
+#                                 required when the package is generated
 #   --apis=<list>                 Space-separated list of APIs to generate (default: all)
 #   --flatten-openapi             Flatten OpenAPI definitions before generation
 #   --env-var-name=<name>         Environment variable name in build_wheel.env (default: WHEEL_BUILD_VERSION)
@@ -69,6 +71,7 @@ OPT_SKIP_DEPLOY=""
 OPT_SKIP_TESTS=""
 OPT_SKIP_REGISTRY_CHECK=""
 OPT_APIS=""
+OPT_OPERATIONS_DESCRIPTION=""
 OPT_FLATTEN_OPENAPI=""
 OPT_ENV_VAR_NAME="WHEEL_BUILD_VERSION"
 
@@ -111,6 +114,8 @@ parse_args() {
                 OPT_SKIP_REGISTRY_CHECK="true"; shift ;;
             --apis=*)
                 OPT_APIS="${1#*=}"; shift ;;
+            --operations-description=*)
+                OPT_OPERATIONS_DESCRIPTION="${1#*=}"; shift ;;
             --flatten-openapi)
                 OPT_FLATTEN_OPENAPI="true"; shift ;;
             --env-var-name=*)
@@ -200,9 +205,9 @@ generate_package() {
             fi
         done
         # shellcheck disable=SC2086
-        "${API_GENERATION_DIR}/generate_api_packages.sh" ${OPT_APIS}
+        "${API_GENERATION_DIR}/generate_api_packages.sh" "--operations-description=${OPT_OPERATIONS_DESCRIPTION}" ${OPT_APIS}
     else
-        "${API_GENERATION_DIR}/generate_api_packages.sh"
+        "${API_GENERATION_DIR}/generate_api_packages.sh" "--operations-description=${OPT_OPERATIONS_DESCRIPTION}"
     fi
 
     if [[ -n "${OPT_FLATTEN_OPENAPI}" ]]; then
@@ -213,6 +218,16 @@ generate_package() {
     fi
 
     log_success "Package generated successfully"
+}
+
+# Runs tests of the generator and of the generated package (api_generation/tests).
+# Not affected by --skip-tests: they need only the generator environment, not DEPENDENCY_SOURCE_DIR.
+run_generator_tests() {
+    log_info "Running generator tests..."
+    cd "${GENERATOR_PYPROJECT_DIR}"
+    # missing generated package fails the tests instead of skipping them
+    HIVEIO_API_REQUIRE_GENERATED_PACKAGE=1 poetry -C "${GENERATOR_PYPROJECT_DIR}" run python -m pytest tests
+    log_success "Generator tests passed"
 }
 
 # Returns the version string from the generated package's pyproject.toml.
@@ -337,7 +352,7 @@ import hiveio_api
 
 errors: list[str] = []
 
-for api_name in hiveio_api.__all__:
+for api_name in hiveio_api.APIS:
     module_name = f"hiveio_api.{api_name}"
     module = importlib.import_module(module_name)
     for symbol in module.__all__:
@@ -345,6 +360,14 @@ for api_name in hiveio_api.__all__:
             getattr(module, symbol)
         except Exception as exception:
             errors.append(f"{module_name}.{symbol}: {type(exception).__name__}: {exception}")
+
+# Public API modules must not load validation models - they are loaded only by an explicit validate_schema call
+# (checked before importing test_tools, whose API annotations use validation models on purpose)
+import sys
+
+loaded_validation_modules = [name for name in sys.modules if name.startswith("hiveio_api._validation.")]
+if loaded_validation_modules:
+    errors.append(f"Validation models loaded without validate_schema call: {loaded_validation_modules}")
 
 try:
     import test_tools.__private.hived.api as hived_api
@@ -369,12 +392,19 @@ if hived_api is not None:
                 except Exception as exception:
                     errors.append(f"{module_name}.{obj.__name__}.{method_name}: {type(exception).__name__}: {exception}")
 
+# Validation models of every API must be importable
+for api_name in hiveio_api.APIS:
+    try:
+        importlib.import_module(f"hiveio_api._validation.{api_name}").ENDPOINT_RESULTS
+    except Exception as exception:
+        errors.append(f"hiveio_api._validation.{api_name}: {type(exception).__name__}: {exception}")
+
 if errors:
     raise SystemExit("\n".join(errors))
 PY
 
     local api_list
-    api_list=$(python3 -c "import hiveio_api; print(' '.join(hiveio_api.__all__))")
+    api_list=$(python3 -c "import hiveio_api; print(' '.join(hiveio_api.APIS))")
     log_info "APIs to test: ${api_list}"
 
     for api in ${api_list}; do
@@ -491,6 +521,7 @@ main() {
 
     # Step 3: Package not in registry — generate, build, test, deploy
     generate_package
+    run_generator_tests
     build_test_and_deploy
 
     # Step 4: Create env file
