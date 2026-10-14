@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import dataclasses
 import operator
 import time
 
@@ -7,6 +8,8 @@ import pytest
 
 import test_tools as tt
 from hive_local_tools import run_for
+from hive_local_tools.functional.python.operation import convert_to_asset
+from schemas.fields.base_type_mappings import NaiAsset
 
 
 @pytest.fixture
@@ -100,11 +103,11 @@ def assert_cleared_resources_in_hardfork_hive_operation(node: tt.InitNode, accou
         ).history
     ]
 
-    asset_keys = list(tt.Asset.Hbd(1.0).as_nai().keys())
     for op in hardfork_hive_virtual_operations:
-        for value in op.values():
-            if isinstance(value, dict) and list(value.keys()) == asset_keys:
-                asset = tt.Asset.from_(value)
+        for field in dataclasses.fields(op):
+            value = getattr(op, field.name)
+            if isinstance(value, NaiAsset):
+                asset = convert_to_asset(value)
                 if isinstance(asset, tt.Asset.TestT):
                     assert asset > tt.Asset.Test(0)
                 if isinstance(asset, tt.Asset.VestT):

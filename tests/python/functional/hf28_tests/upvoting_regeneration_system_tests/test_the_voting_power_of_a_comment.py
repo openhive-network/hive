@@ -4,9 +4,9 @@ import operator
 from typing import TYPE_CHECKING
 
 import pytest
-from test_tools.exceptions import ErrorInResponseError
 
 import test_tools as tt
+from test_tools.exceptions import ErrorInResponseError
 
 from .block_log.generate_block_log import NUMBER_OF_REPLIES_TO_POST
 
@@ -150,7 +150,7 @@ def logging_comment_manabar(node: tt.InitNode, name: str) -> None:
 
 def get_rshares_history(node: tt.InitNode) -> list[int]:
     return [
-        o[1].op.value["rshares"]
+        o[1].op.value.rshares
         for o in node.api.account_history.get_account_history(
             account="alice",
             include_reversible=True,

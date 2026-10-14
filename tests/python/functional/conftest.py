@@ -24,8 +24,11 @@ def pytest_configure(config) -> None:
         # Import ALL API modules to trigger annotation resolution
         # This forces all typing annotations to be resolved in the main thread
         # before any xdist workers start making concurrent API calls
+        import hiveio_api._validation.network_node_api
+        import hiveio_api._validation.wallet_bridge_api
         import hiveio_api.account_by_key_api
         import hiveio_api.account_history_api
+        import hiveio_api.app_status_api  # Used by beekeepy.__discover_ports()
         import hiveio_api.block_api
         import hiveio_api.condenser_api
         import hiveio_api.database_api
@@ -34,28 +37,12 @@ def pytest_configure(config) -> None:
         import hiveio_api.jsonrpc
         import hiveio_api.market_history_api
         import hiveio_api.network_broadcast_api
+        import hiveio_api.operations
         import hiveio_api.rc_api
         import hiveio_api.reputation_api  # noqa: F401
 
-        import schemas.apis.app_status_api  # Used by beekeepy.__discover_ports()
-        import schemas.apis.network_node_api
-        import schemas.apis.test_api
-        import schemas.apis.wallet_bridge_api
         import schemas.fields.basic
-        import schemas.fields.hex
-        import schemas.operations
-        import schemas.transaction  # noqa: F401
-        from schemas import decoders
-        from schemas.jsonrpc import get_response_model
-
-        # Pre-build all decoders to avoid lazy initialization during tests
-        for hf in ["hf26"]:
-            decoders.get_hf26_decoder.cache_clear()  # Clear any existing cache
-            get_response_model(str, '{"jsonrpc":"2.0","id":0,"result":"warmup"}', hf)
-            get_response_model(dict, '{"jsonrpc":"2.0","id":0,"result":{}}', hf)
-            get_response_model(list, '{"jsonrpc":"2.0","id":0,"result":[]}', hf)
-            get_response_model(int, '{"jsonrpc":"2.0","id":0,"result":0}', hf)
-            get_response_model(bool, '{"jsonrpc":"2.0","id":0,"result":true}', hf)
+        import schemas.fields.hex  # noqa: F401
 
 
 def pytest_sessionstart() -> None:

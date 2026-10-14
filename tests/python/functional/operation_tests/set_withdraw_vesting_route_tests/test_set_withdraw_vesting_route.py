@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Callable
 
 import pytest
+from hiveio_api.operations import FillVestingWithdrawOperation
 
 import test_tools as tt
 from hive_local_tools import run_for
@@ -20,7 +21,6 @@ from hive_local_tools.functional.python.operation.withdrawe_vesting import (
     PowerDown,
     PowerDownAccount,
 )
-from schemas.operations.virtual import FillVestingWithdrawOperation
 
 INIT_WITHDRAW_VESTING_ROUTE_PARAMETERS = [
     [VestingRouteParameters(receiver="user-b0", percent=HIVE_100_PERCENT, auto_vest=False)],

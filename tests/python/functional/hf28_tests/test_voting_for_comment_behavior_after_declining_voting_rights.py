@@ -3,18 +3,14 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pytest
-from test_tools.exceptions import ErrorInResponseError
+from hiveio_api.operations import CurationRewardOperation, DeclinedVotingRightsOperation, EffectiveCommentVoteOperation
 
 import test_tools as tt
 from hive_local_tools import run_for
 from hive_local_tools.constants import TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS
 from hive_local_tools.functional.python.hf28 import post_comment
 from hive_local_tools.functional.python.operation import Account, get_virtual_operations
-from schemas.operations.virtual import (
-    CurationRewardOperation,
-    DeclinedVotingRightsOperation,
-    EffectiveCommentVoteOperation,
-)
+from test_tools.exceptions import ErrorInResponseError
 
 if TYPE_CHECKING:
     from hiveio_api.account_history_api.account_history_api_description import EnumVirtualOpsResponse
@@ -106,7 +102,7 @@ def test_vote_for_comment_when_decline_voting_rights_is_being_executed(
     alice.rc_manabar.update()
     assert len(node.api.database.find_decline_voting_rights_requests(accounts=["alice"]).requests) == 1
 
-    node.wait_for_block_with_number(transaction["block_num"] + (TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS // 2))
+    node.wait_for_block_with_number(transaction.block_num + (TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS // 2))
     transaction = wallet.api.vote("alice", "creator-0", "comment-of-creator-0", 100)
     alice.rc_manabar.assert_rc_current_mana_is_reduced(transaction)
     assert len(get_virtual_operations(node, EffectiveCommentVoteOperation)) == 1
@@ -114,7 +110,7 @@ def test_vote_for_comment_when_decline_voting_rights_is_being_executed(
     alice.update_account_info()
     assert old_voting_power_value > alice.vote_manabar.current_mana, "voting power wasn't decreasted after casting vote"
 
-    node.wait_for_block_with_number(transaction["block_num"] + TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS)
+    node.wait_for_block_with_number(transaction.block_num + TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS)
     assert (
         node.api.database.get_comment_pending_payouts(comments=[["creator-0", "comment-of-creator-0"]])
         .cashout_infos[0]

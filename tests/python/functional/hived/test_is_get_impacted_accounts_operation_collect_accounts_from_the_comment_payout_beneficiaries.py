@@ -1,5 +1,4 @@
 from __future__ import annotations
-import json
 
 import test_tools as tt
 from hive_local_tools import run_for
@@ -50,11 +49,15 @@ def test_is_get_impacted_accounts_operation_collect_accounts_from_the_comment_pa
         "signatures": [],
     }
 
-    wallet.api.sign_transaction(SimpleTransaction.parse_raw(json.dumps(transaction)))
+    wallet.api.sign_transaction(SimpleTransaction.from_builtins(transaction))
     node.wait_for_irreversible_block()
 
     alice_account_history = wallet.api.get_account_history("alice", -1, 100)
     initminer_account_history = wallet.api.get_account_history("initminer", -1, 100)
 
-    assert "CommentOptionsOperation" in str(alice_account_history)  # String version of history not contain type_ field
-    assert "CommentOptionsOperation" in str(initminer_account_history)
+    assert "comment_options_operation" in get_operation_types(alice_account_history)
+    assert "comment_options_operation" in get_operation_types(initminer_account_history)
+
+
+def get_operation_types(account_history: list) -> list[str]:
+    return [entry.op.type for _, entry in account_history]

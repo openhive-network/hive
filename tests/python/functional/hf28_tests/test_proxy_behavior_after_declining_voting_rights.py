@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import pytest
-from test_tools.exceptions import ErrorInResponseError
+from hiveio_api.operations import DeclinedVotingRightsOperation, ProxyClearedOperation
 
 import test_tools as tt
 from hive_local_tools import run_for
 from hive_local_tools.constants import TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS
 from hive_local_tools.functional.python.operation import Account, get_virtual_operations
-from schemas.operations.virtual import DeclinedVotingRightsOperation, ProxyClearedOperation
+from test_tools.exceptions import ErrorInResponseError
 
 
 @run_for("testnet")
@@ -79,11 +79,11 @@ def test_set_proxy_when_decline_voting_rights_is_in_progress(
     voter.rc_manabar.update()
     assert len(node.api.database.find_decline_voting_rights_requests(accounts=[voter.name]).requests) == 1
 
-    node.wait_for_block_with_number(transaction["block_num"] + (TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS // 2))
+    node.wait_for_block_with_number(transaction.block_num + (TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS // 2))
 
     transaction = wallet.api.set_voting_proxy(voter.name, proxy.name)
     voter.rc_manabar.assert_rc_current_mana_is_reduced(transaction)
-    node.wait_for_block_with_number(transaction["block_num"] + TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS)
+    node.wait_for_block_with_number(transaction.block_num + TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS)
 
     assert node.api.database.find_accounts(accounts=[voter.name]).accounts[0].can_vote is False
     assert len(node.api.database.find_decline_voting_rights_requests(accounts=[voter.name]).requests) == 0

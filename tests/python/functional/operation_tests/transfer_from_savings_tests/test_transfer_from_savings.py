@@ -3,13 +3,13 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pytest
+from hiveio_api.operations import FillTransferFromSavingsOperation
 
 import test_tools as tt
 from hive_local_tools.functional.python.operation import (
     check_if_fill_transfer_from_savings_vop_was_generated,
     get_virtual_operations,
 )
-from schemas.operations.virtual import FillTransferFromSavingsOperation
 
 if TYPE_CHECKING:
     from python.functional.operation_tests.conftest import TransferAccount

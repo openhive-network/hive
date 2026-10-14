@@ -24,7 +24,7 @@ def prepare_block_log_with_witnesses(output_block_log_directory: Path) -> None:
     while node.get_last_block_number() < number_of_blocks:
         actual_block = node.get_last_block_number() + 1
         transaction = wallet.api.create_account("initminer", f"account{actual_block}", "{}")
-        transaction_ids.append({"block_num": transaction["block_num"], "transaction_id": transaction["transaction_id"]})
+        transaction_ids.append({"block_num": transaction.block_num, "transaction_id": transaction.transaction_id})
         tt.logger.info(actual_block)
     with open(output_block_log_directory / "transactions_ids.json", "w", encoding="utf-8") as json_file:
         json.dump(transaction_ids, json_file)

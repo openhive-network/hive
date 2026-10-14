@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import dataclasses
+
 import pytest
 from test_tools.exceptions import ErrorInResponseError
 
@@ -50,9 +52,8 @@ def test_remove_account_recovery_request(node: tt.InitNode) -> None:
     authority = basic_authority(recovery_account_key)
     wallet.api.request_account_recovery("initminer", "alice", authority)
 
-    authority = basic_authority(recovery_account_key)
     # to remove existing recovery request, recovery_agent broadcast request_account_operation with weight_threshold = 0
-    authority["weight_threshold"] = 0
+    authority = dataclasses.replace(basic_authority(recovery_account_key), weight_threshold=0)
 
     wallet.api.request_account_recovery("initminer", "alice", authority)
     assert len(node.api.database.find_account_recovery_requests(accounts=["alice"]).requests) == 0

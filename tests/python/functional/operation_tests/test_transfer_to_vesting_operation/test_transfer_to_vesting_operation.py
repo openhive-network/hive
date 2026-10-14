@@ -4,6 +4,7 @@ from datetime import timedelta
 from typing import TYPE_CHECKING
 
 import pytest
+from hiveio_api.operations import DelayedVotingOperation, TransferToVestingCompletedOperation
 
 import test_tools as tt
 from hive_local_tools.constants import (
@@ -21,18 +22,9 @@ from hive_local_tools.functional.python.operation import (
     get_virtual_operations,
     jump_to_date,
 )
-from schemas.operations.virtual.delayed_voting_operation import DelayedVotingOperation
-from schemas.operations.virtual.transfer_to_vesting_completed_operation import TransferToVestingCompletedOperation
 
 if TYPE_CHECKING:
-    from schemas.virtual_operation import (
-        VirtualOperation as SchemaVirtualOperation,
-    )
-
-if TYPE_CHECKING:
-    from schemas.virtual_operation import (
-        VirtualOperation as SchemaVirtualOperation,
-    )
+    from hiveio_api.operations import Hf26OperationValue
 
 
 @pytest.mark.parametrize(
@@ -214,7 +206,7 @@ def __assert_hive_power_balance_is_increased(node: tt.InitNode, account: str, am
 
 
 def __assert_minimal_operation_rc_cost(transaction) -> None:
-    assert transaction["rc_cost"] > 0, "RC cost is less than or equal to zero."
+    assert transaction.rc_cost > 0, "RC cost is less than or equal to zero."
 
 
 def __assert_power_up_exchange_rate(
@@ -229,7 +221,7 @@ def __assert_rc_max_mana_is_increased(node: tt.InitNode, account: str, initial_r
 
 
 def __assert_virtual_operation_was_generated(
-    node: tt.InitNode, virtual_operation: type[SchemaVirtualOperation], expected_number_of_virtual_operations: int
+    node: tt.InitNode, virtual_operation: type[Hf26OperationValue], expected_number_of_virtual_operations: int
 ) -> None:
     err = f"The virtual operation: {virtual_operation.get_name()} is not generated."
     assert len(get_virtual_operations(node, virtual_operation)) == expected_number_of_virtual_operations, err

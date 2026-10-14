@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 @run_for("testnet")
 def test_is_known_transaction_in_testnet(node: tt.InitNode, wallet: tt.Wallet) -> None:
     transaction = wallet.api.create_account("initminer", "alice", "{}")
-    node.api.condenser.is_known_transaction(transaction["transaction_id"])
+    node.api.condenser.is_known_transaction(transaction.transaction_id)
 
 
 @run_for("mainnet_5m", "live_mainnet")

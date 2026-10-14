@@ -14,12 +14,13 @@ Related to https://gitlab.syncad.com/hive/hive/-/issues/856
 from __future__ import annotations
 
 import pytest
-from test_tools.exceptions import ErrorInResponseError
+from hiveio_api.operations import AccountCreateOperation
 
 import test_tools as tt
 from hive_local_tools.functional.python import basic_authority
 from hive_local_tools.functional.python.operation import create_transaction_with_any_operation
-from schemas.operations.account_create_operation import AccountCreateOperation
+from test_tools.__private.wallet.constants import as_nai_asset
+from test_tools.exceptions import ErrorInResponseError
 
 # Value configured by the `prepared_node` fixture (see operation_tests/conftest.py).
 ACCOUNT_CREATION_FEE = tt.Asset.Test(3)
@@ -30,7 +31,7 @@ def _account_create_operation(creator: str, new_account_name: str, fee: tt.Asset
     return AccountCreateOperation(
         creator=creator,
         new_account_name=new_account_name,
-        fee=fee,
+        fee=as_nai_asset(fee),
         owner=basic_authority(key),
         active=basic_authority(key),
         posting=basic_authority(key),

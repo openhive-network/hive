@@ -3,13 +3,13 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pytest
-from test_tools.exceptions import ErrorInResponseError
+from hiveio_api.operations import DeclinedVotingRightsOperation
 
 from hive_local_tools import run_for
 from hive_local_tools.constants import TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS
 from hive_local_tools.functional.python.hf28 import create_proposal
 from hive_local_tools.functional.python.operation import Account, get_virtual_operations
-from schemas.operations.virtual import DeclinedVotingRightsOperation
+from test_tools.exceptions import ErrorInResponseError
 
 if TYPE_CHECKING:
     import test_tools as tt
@@ -74,10 +74,10 @@ def test_vote_for_proposal_when_decline_voting_rights_request_is_being_executed(
     voter.rc_manabar.update()
     assert len(node.api.database.find_decline_voting_rights_requests(accounts=[voter.name]).requests) == 1
 
-    node.wait_for_block_with_number(transaction["block_num"] + (TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS // 2))
+    node.wait_for_block_with_number(transaction.block_num + (TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS // 2))
     transaction = wallet.api.update_proposal_votes(voter.name, [0], True)
     voter.rc_manabar.assert_rc_current_mana_is_reduced(transaction)
-    node.wait_for_block_with_number(transaction["block_num"] + TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS)
+    node.wait_for_block_with_number(transaction.block_num + TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS)
 
     assert len(node.api.condenser.list_proposal_votes([""], 1000, "by_voter_proposal", "ascending", "all")) == 0
 

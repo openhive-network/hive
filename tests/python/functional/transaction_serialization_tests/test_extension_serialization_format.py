@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 import pytest
 
 import test_tools as tt
@@ -81,7 +83,7 @@ def test_update_proposal_operation(node, api, expected_extension):
     operation = wallet.api.update_proposal(
         0, "alice", tt.Asset.Tbd(10), "subject-1", "permlink", PROPOSAL_END_DATE_AFTER_UPDATE
     )
-    block_num = operation["block_num"]
+    block_num = operation.block_num
     extension = get_extension_from_operation(node, api, block_num)
 
     assert extension == expected_extension
@@ -90,12 +92,12 @@ def test_update_proposal_operation(node, api, expected_extension):
 def get_extension_from_operation(node, api: str, block_num: int):
     if api == "block":
         block = getattr(node.api, api).get_block(block_num=block_num)
-        operation = block.block.transactions[0].operations[0]
-        return operation.value["extensions"][0]
+        operation = block.block.transactions[0].operations[0].value
+        return json.loads(operation.json())["extensions"][0]
 
     if api == "condenser":
         block = getattr(node.api, api).get_block(block_num)
         operation = block.transactions[0].operations[0][1]
-        return operation["extensions"][0]
+        return json.loads(operation.json())["extensions"][0]
 
     raise RuntimeError("Shouldn't be ever reached")

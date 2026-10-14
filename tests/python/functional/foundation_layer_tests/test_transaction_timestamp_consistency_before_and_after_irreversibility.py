@@ -4,8 +4,8 @@ import test_tools as tt
 from hive_local_tools import run_for
 from hive_local_tools.constants import filters_enum_virtual_ops
 from hive_local_tools.functional import connect_nodes
+from hive_local_tools.functional.python.operation import convert_to_asset
 from schemas.fields.basic import AccountName
-from schemas.operations.virtual.producer_reward_operation import ProducerRewardOperation
 
 
 @run_for("testnet", enable_plugins=["account_history_api"])
@@ -55,5 +55,5 @@ def test_account_history_data_consistency_on_replayed_and_full_pruned_node(
     assert api_node.get_last_block_number() == node.get_last_block_number()
     assert len(vops) == node.get_last_block_number()
     vop_value = vops[check_at_block - 5].op.value
-    assert vop_value["producer"] == "initminer"
-    assert tt.Asset.from_nai(vop_value["vesting_shares"]) == tt.Asset.Vest(0.140274)
+    assert vop_value.producer == "initminer"
+    assert convert_to_asset(vop_value.vesting_shares) == tt.Asset.Vest(0.140274)

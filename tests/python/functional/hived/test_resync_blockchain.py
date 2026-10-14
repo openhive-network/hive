@@ -4,9 +4,6 @@ import pytest
 from test_tools.exceptions import FailedToStartExecutableError
 
 import test_tools as tt
-# UNSET is a sentinel value used by hiveio_api (msgspec) for optional fields
-# not present in the API response — distinct from None which means "field present, value null".
-from schemas.convert import UNSET
 
 
 @pytest.mark.parametrize(
@@ -59,9 +56,8 @@ def test_clears_state_with_resync_blockchain_option(
     # After resync, the node started from scratch and generates blocks from block 0
     # The original block_num should not be available
     block_last_after = node.api.block.get_block(block_num=block_num)
-    assert (
-        block_last_after.block is None or block_last_after.block is UNSET
-    ), f"Block {block_num} should not exist after resync (block_log was deleted)"
+    # hiveio_api models set optional fields missing in the response to None
+    assert block_last_after.block is None, f"Block {block_num} should not exist after resync (block_log was deleted)"
 
     # Verify we're actually at block 10 (or close to it)
     head_block_num = node.get_last_block_number()

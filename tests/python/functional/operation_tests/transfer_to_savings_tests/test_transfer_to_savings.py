@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 import test_tools as tt
+from hive_local_tools.functional.python.operation import convert_to_asset
 
 if TYPE_CHECKING:
     from python.functional.operation_tests.conftest import TransferAccount
@@ -61,11 +62,10 @@ def test_transfer_to_savings_account(
 
     if currency(0).nai() == "@@000000013":  # Now token is available ony from object, not class.
         assert len(interests) == 1, "interest_operation wasn't generated."
+        interest = convert_to_asset(interests[0].op.value.interest)
         assert (
             receiver_savings_balance_before_transfer
-            == receiver_savings_balance_after_transfer
-            - currency(amount=2000)
-            - tt.Asset.from_nai(interests[0].op.value["interest"])
+            == receiver_savings_balance_after_transfer - currency(amount=2000) - interest
         ), "Receiver savings balance wasn't increased by transfers and one interest."
     else:
         assert len(interests) == 0, "interest_operation was generated (it shouldn't be)"

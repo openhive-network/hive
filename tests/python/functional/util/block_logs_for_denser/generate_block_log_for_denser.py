@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytz
 from denser_block_log_config import ACCOUNT_DETAILS, COMMUNITY_DETAILS
+from hiveio_api.operations import CustomJsonOperation
 
 import test_tools as tt
 from hive_local_tools.constants import (
@@ -17,7 +18,6 @@ from hive_local_tools.functional.python.block_log_generation import parse_block_
 from hive_local_tools.functional.python.operation import (
     create_transaction_with_any_operation,
 )
-from schemas.operations.custom_json_operation import CustomJsonOperation
 
 
 def generate_blocklog_for_denser(input_block_log_directory: Path) -> None:
@@ -235,7 +235,7 @@ class Community:
                 CustomJsonOperation(
                     required_auths=required_auths if required_auths else [],
                     required_posting_auths=required_posting_auths if required_posting_auths else [],
-                    id_="community",
+                    id="community",
                     json_=str(json),
                 )
             ],

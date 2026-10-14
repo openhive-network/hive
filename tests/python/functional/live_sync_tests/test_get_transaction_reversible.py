@@ -20,7 +20,7 @@ def test_get_transaction_reversible():
     irreversible = api_node.api.database.get_dynamic_global_properties().last_irreversible_block_num
 
     # VERIFY
-    assert irreversible < trx["block_num"]
+    assert irreversible < trx.block_num
 
-    response = api_node.api.account_history.get_transaction(id=trx["transaction_id"], include_reversible=True)
-    assert response.transaction_id == trx["transaction_id"]
+    response = api_node.api.account_history.get_transaction(id=trx.transaction_id, include_reversible=True)
+    assert response.transaction_id == trx.transaction_id

@@ -15,10 +15,10 @@ def test_transaction_status(node: tt.ApiNode, wallet: tt.Wallet) -> None:
     node.wait_for_irreversible_block()
     reversible_transaction = wallet.api.create_account("initminer", "bob", "{}")
 
-    assert_transaction_status(node, irreversible_transaction["transaction_id"], "within_irreversible_block")
-    assert_transaction_status(node, reversible_transaction["transaction_id"], "within_reversible_block")
+    assert_transaction_status(node, irreversible_transaction.transaction_id, "within_irreversible_block")
+    assert_transaction_status(node, reversible_transaction.transaction_id, "within_reversible_block")
 
     node.restart()
 
-    assert_transaction_status(node, irreversible_transaction["transaction_id"], "within_irreversible_block")
-    assert_transaction_status(node, reversible_transaction["transaction_id"], "unknown")
+    assert_transaction_status(node, irreversible_transaction.transaction_id, "within_irreversible_block")
+    assert_transaction_status(node, reversible_transaction.transaction_id, "unknown")

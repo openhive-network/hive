@@ -20,10 +20,10 @@ def test_get_ops_in_block_reversible():
     irreversible = api_node.api.database.get_dynamic_global_properties().last_irreversible_block_num
 
     # VERIFY
-    assert irreversible < trx["block_num"]
+    assert irreversible < trx.block_num
 
     response = api_node.api.account_history.get_ops_in_block(
-        block_num=trx["block_num"], only_virtual=False, include_reversible=True
+        block_num=trx.block_num, only_virtual=False, include_reversible=True
     )
     op_types = [op.op.type for op in response.ops]
 

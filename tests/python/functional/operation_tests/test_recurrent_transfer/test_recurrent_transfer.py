@@ -7,7 +7,7 @@ from __future__ import annotations
 from datetime import timezone
 
 import pytest
-from test_tools.exceptions import ErrorInResponseError
+from hiveio_api.operations import FailedRecurrentTransferOperation
 
 import test_tools as tt
 from hive_local_tools.constants import (
@@ -17,7 +17,7 @@ from hive_local_tools.constants import (
 )
 from hive_local_tools.functional.python.operation import get_virtual_operations
 from hive_local_tools.functional.python.operation.recurrent_transfer import RecurrentTransfer, RecurrentTransferAccount
-from schemas.operations.virtual import FailedRecurrentTransferOperation
+from test_tools.exceptions import ErrorInResponseError
 
 
 @pytest.mark.testnet

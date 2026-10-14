@@ -15,7 +15,7 @@ def test_default_args_value(node: tt.InitNode) -> None:
 @run_for("testnet", enable_plugins=["account_history_api"])
 def test_filter_virtual_ops(node: tt.InitNode, only_virtual: bool, number_of_ops: int) -> None:
     wallet = tt.Wallet(attach_to=node)
-    block_number = wallet.create_account("alice")["block_num"]
+    block_number = wallet.create_account("alice").block_num
     response = node.api.account_history.get_ops_in_block(
         block_num=block_number, only_virtual=only_virtual, include_reversible=True
     )

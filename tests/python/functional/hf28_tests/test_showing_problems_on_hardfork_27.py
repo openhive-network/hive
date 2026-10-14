@@ -7,13 +7,13 @@ from __future__ import annotations
 import time
 
 import pytest
-from test_tools.exceptions import ErrorInResponseError
 
 import test_tools as tt
 from hive_local_tools import run_for
 from hive_local_tools.constants import TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS
 from hive_local_tools.functional.python.hf28 import create_proposal
 from hive_local_tools.functional.python.hf28.constants import VOTER_ACCOUNT
+from test_tools.exceptions import ErrorInResponseError
 
 
 @run_for("testnet")
@@ -104,7 +104,7 @@ def test_vote_for_proposal_when_decline_voting_rights_request_is_being_executed_
     create_proposal(wallet)
 
     # decline voting rights -> vote for proposal (before approving the waiver of voting rights) -> wait remaining time
-    head_block_number = wallet.api.decline_voting_rights(VOTER_ACCOUNT, True)["block_num"]
+    head_block_number = wallet.api.decline_voting_rights(VOTER_ACCOUNT, True).block_num
     node.wait_for_block_with_number(head_block_number + (TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS // 2))
     wallet.api.update_proposal_votes(VOTER_ACCOUNT, [0], True)
     node.wait_for_block_with_number(head_block_number + TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS)

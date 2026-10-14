@@ -7,6 +7,19 @@ from datetime import timedelta
 from pathlib import Path
 from typing import Final, Literal
 
+from hiveio_api.operations import (
+    AccountCreateOperationLegacy,
+    Authority,
+    CommentOperation,
+    DelegateVestingSharesOperationLegacy,
+    LegacyAccountCreateOperation,
+    LegacyCommentOperation,
+    LegacyDelegateVestingSharesOperation,
+    LegacyTransferOperation,
+    LegacyTransferToVestingOperation,
+    TransferOperationLegacy,
+    TransferToVestingOperationLegacy,
+)
 from loguru import logger
 
 import test_tools as tt
@@ -16,13 +29,7 @@ from hive_local_tools.functional.python.block_log_generation import parse_block_
 from hive_local_tools.functional.python.datagen.recurrent_transfer import execute_function_in_threads
 from hive_local_tools.functional.python.operation import get_vesting_price
 from schemas.fields.basic import AccountName
-from schemas.fields.compound import Authority
 from schemas.fields.hive_int import HiveInt
-from schemas.operations.account_create_operation import AccountCreateOperation
-from schemas.operations.comment_operation import CommentOperation
-from schemas.operations.delegate_vesting_shares_operation import DelegateVestingSharesOperation
-from schemas.operations.transfer_operation import TransferOperation
-from schemas.operations.transfer_to_vesting_operation import TransferToVestingOperation
 from schemas.policies import DisableSwapTypesPolicy, set_policies
 from test_tools.__private.wallet.constants import SimpleTransactionLegacy
 from wax import get_tapos_data
@@ -251,8 +258,13 @@ def prepare_block_log(
     tt.logger.info(f"Save block log file to {output_block_log_directory}")
 
 
-def __invest(account: str, _) -> tuple[TransferToVestingOperation]:
-    return (TransferToVestingOperation(from_=account, to=account, amount=INVEST_PER_ACCOUNT),)
+def __invest(account: str, _) -> tuple[LegacyTransferToVestingOperation]:
+    return (
+        (
+            "transfer_to_vesting",
+            TransferToVestingOperationLegacy(from_=account, to=account, amount=INVEST_PER_ACCOUNT.as_legacy()),
+        ),
+    )
 
 
 def generate_authority(
@@ -273,7 +285,7 @@ def generate_authority(
                 )
                 + "\n\n"
             )
-            file.write(json.dumps(auth, default=lambda obj: dict(obj), indent=2))
+            file.write(json.dumps(auth, default=lambda obj: json.loads(obj.json()), indent=2))
 
     match authority_type:
         case "open_sign":
@@ -337,20 +349,23 @@ def generate_authority(
             return authority
 
 
-def __create_signer(account: str, _: None) -> tuple[AccountCreateOperation]:
+def __create_signer(account: str, _: None) -> tuple[LegacyAccountCreateOperation]:
     keys = [(tt.PublicKey(account, secret=f"secret-{num}"), HiveInt(1)) for num in range(40)]
     signer_authority = Authority(weight_threshold=HiveInt(40), account_auths=[], key_auths=keys)
 
     return (
-        AccountCreateOperation(
-            fee=INITIAL_ACCOUNT_CREATION_FEE,
-            creator=AccountName("initminer"),
-            new_account_name=AccountName(account),
-            owner=signer_authority,
-            active=signer_authority,
-            posting=signer_authority,
-            memo_key=tt.PublicKey(account, secret="secret"),
-            json_metadata="",
+        (
+            "account_create",
+            AccountCreateOperationLegacy(
+                fee=INITIAL_ACCOUNT_CREATION_FEE.as_legacy(),
+                creator=AccountName("initminer"),
+                new_account_name=AccountName(account),
+                owner=signer_authority,
+                active=signer_authority,
+                posting=signer_authority,
+                memo_key=tt.PublicKey(account, secret="secret"),
+                json_metadata="",
+            ),
         ),
     )
 
@@ -358,52 +373,67 @@ def __create_signer(account: str, _: None) -> tuple[AccountCreateOperation]:
 def __create_and_fund_account(
     account: str, authority: dict
 ) -> tuple[
-    AccountCreateOperation,
-    TransferOperation,
-    TransferOperation,
-    DelegateVestingSharesOperation,
+    LegacyAccountCreateOperation,
+    LegacyTransferOperation,
+    LegacyTransferOperation,
+    LegacyDelegateVestingSharesOperation,
 ]:
     return (
-        AccountCreateOperation(
-            fee=INITIAL_ACCOUNT_CREATION_FEE,
-            creator=AccountName("initminer"),
-            new_account_name=AccountName(account),
-            owner=authority["owner"],
-            active=authority["active"],
-            posting=authority["posting"],
-            memo_key=authority["memo"],
-            json_metadata="",
+        (
+            "account_create",
+            AccountCreateOperationLegacy(
+                fee=INITIAL_ACCOUNT_CREATION_FEE.as_legacy(),
+                creator=AccountName("initminer"),
+                new_account_name=AccountName(account),
+                owner=authority["owner"],
+                active=authority["active"],
+                posting=authority["posting"],
+                memo_key=authority["memo"],
+                json_metadata="",
+            ),
         ),
-        TransferOperation(
-            from_=AccountName("initminer"),
-            to=AccountName(account),
-            amount=(HIVE_PER_ACCOUNT - tt.Asset.Test(2)),
-            memo=f"hive_transfer-{account}",
+        (
+            "transfer",
+            TransferOperationLegacy(
+                from_=AccountName("initminer"),
+                to=AccountName(account),
+                amount=(HIVE_PER_ACCOUNT - tt.Asset.Test(2)).as_legacy(),
+                memo=f"hive_transfer-{account}",
+            ),
         ),
-        TransferOperation(
-            from_=AccountName("initminer"),
-            to=AccountName(account),
-            amount=TBD_PER_ACCOUNT,
-            memo=f"hbd_transfer-{account}",
+        (
+            "transfer",
+            TransferOperationLegacy(
+                from_=AccountName("initminer"),
+                to=AccountName(account),
+                amount=TBD_PER_ACCOUNT.as_legacy(),
+                memo=f"hbd_transfer-{account}",
+            ),
         ),
-        DelegateVestingSharesOperation(
-            delegatee=AccountName(account),
-            delegator=AccountName("initminer"),
-            vesting_shares=DELEGATION_PER_ACCOUNT,
+        (
+            "delegate_vesting_shares",
+            DelegateVestingSharesOperationLegacy(
+                delegatee=AccountName(account),
+                delegator=AccountName("initminer"),
+                vesting_shares=DELEGATION_PER_ACCOUNT.as_legacy(),
+            ),
         ),
     )
 
 
-def __create_post(account_name: str, _: None) -> tuple[CommentOperation]:
+def __create_post(account_name: str, _: None) -> tuple[LegacyCommentOperation]:
     return (
-        CommentOperation(
-            author=AccountName(account_name),
-            body=generate_random_text(min_length=100, max_length=500),
-            json_metadata="{}",
-            parent_author="",
-            parent_permlink=f"category-{account_name}",
-            permlink=f"permlink-{account_name.split('-')[1]}",
-            title=f"title-{account_name}",
+        (
+            "comment",
+            CommentOperation(
+                author=AccountName(account_name),
+                body=generate_random_text(min_length=100, max_length=500),
+                json_metadata="{}",
+                parent_author="",
+                parent_permlink=f"category-{account_name}",
+                permlink=f"permlink-{account_name.split('-')[1]}",
+                title=f"title-{account_name}",
+            ),
         ),
     )
 
@@ -424,10 +454,9 @@ def __generate_and_broadcast_transaction(
     assert ref_block_prefix > 0, f"ref_block_prefix value `{ref_block_prefix}` is invalid`"
 
     transaction = SimpleTransactionLegacy(
-        ref_block_num=HiveInt(ref_block_num),
-        ref_block_prefix=HiveInt(ref_block_prefix),
-        expiration=(tt.Time.parse(gdpo.time, time_zone=None) if isinstance(gdpo.time, str) else gdpo.time)
-        + timedelta(seconds=1800),
+        ref_block_num=ref_block_num,
+        ref_block_prefix=ref_block_prefix,
+        expiration=tt.Time.serialize(tt.Time.parse(gdpo.time, time_zone=None) + timedelta(seconds=1800)),
         extensions=[],
         signatures=[],
         operations=[],

@@ -8,7 +8,7 @@ from hive_local_tools import run_for
 def test_is_known_transaction_in_testnet(node: tt.InitNode) -> None:
     wallet = tt.Wallet(attach_to=node)
     transaction = wallet.api.create_account("initminer", "alice", "{}")
-    node.api.database.is_known_transaction(id=transaction["transaction_id"])
+    node.api.database.is_known_transaction(id=transaction.transaction_id)
 
 
 @run_for("mainnet_5m", "live_mainnet")

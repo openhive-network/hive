@@ -24,7 +24,7 @@ def test_get_account_history_reversible():
     tt.logger.info(f"irreversible {irreversible}")
 
     # VERIFY
-    assert irreversible < trx["block_num"]
+    assert irreversible < trx.block_num
 
     response = api_node.api.account_history.get_account_history(
         account="alice", start=-1, limit=1000, include_reversible=True
@@ -34,7 +34,7 @@ def test_get_account_history_reversible():
     assert "transfer_to_vesting_operation" in op_types
     assert "transfer_to_vesting_completed_operation" in op_types
 
-    while irreversible < trx["block_num"]:
+    while irreversible < trx.block_num:
         api_node.wait_number_of_blocks(1)
         irreversible = api_node.api.database.get_dynamic_global_properties().last_irreversible_block_num
 

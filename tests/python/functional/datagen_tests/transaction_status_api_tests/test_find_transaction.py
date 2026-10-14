@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 def test_find_existing_transaction(node: tt.ApiNode, wallet: tt.Wallet) -> None:
     wallet.api.set_transaction_expiration(90)
     transaction = wallet.api.create_account("initminer", "alice", "{}", broadcast=False)
-    transaction_id = transaction["transaction_id"]
+    transaction_id = transaction.transaction_id
     node.api.network_broadcast.broadcast_transaction(trx=transaction)
 
     assert node.api.transaction_status.find_transaction(transaction_id=transaction_id).status == "within_mempool"

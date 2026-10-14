@@ -9,19 +9,18 @@ from datetime import timezone
 from pathlib import Path
 from typing import Final
 
+from hiveio_api.operations import AccountCreateOperation, Authority, TransferToVestingOperation, VoteOperation
+
 import test_tools as tt
-from test_tools import complex_networks as ttcn
 from hive_local_tools.functional import __generate_and_broadcast_transaction
 from hive_local_tools.functional.python import generate_block
 from hive_local_tools.functional.python.block_log_generation import parse_block_log_generator_args
 from hive_local_tools.functional.python.datagen.recurrent_transfer import execute_function_in_threads
 from schemas.fields.assets import AssetHive
 from schemas.fields.basic import AccountName, PublicKey
-from schemas.fields.compound import Authority
-from schemas.operations.account_create_operation import AccountCreateOperation
-from schemas.operations.transfer_to_vesting_operation import TransferToVestingOperation
-from schemas.operations.vote_operation import VoteOperation
 from schemas.policies import DisableSwapTypesPolicy, set_policies
+from test_tools import complex_networks as ttcn
+from test_tools.__private.wallet.constants import as_nai_asset
 
 AMOUNT_OF_ALL_COMMENTS: Final[int] = 60
 AMOUNT_OF_ALL_VOTERS: Final[int] = 50_000
@@ -242,16 +241,16 @@ def __create_voter(voter: str) -> AccountCreateOperation:
         creator=AccountName("initminer"),
         new_account_name=AccountName(voter),
         json_metadata="{}",
-        fee=AssetHive(amount=3000),
-        owner=Authority(weight_threshold=1, account_auths=[], key_auths=[[key, 1]]),
-        active=Authority(weight_threshold=1, account_auths=[], key_auths=[[key, 1]]),
-        posting=Authority(weight_threshold=1, account_auths=[], key_auths=[[key, 1]]),
+        fee=as_nai_asset(AssetHive(amount=3000)),
+        owner=Authority(weight_threshold=1, account_auths=[], key_auths=[(key, 1)]),
+        active=Authority(weight_threshold=1, account_auths=[], key_auths=[(key, 1)]),
+        posting=Authority(weight_threshold=1, account_auths=[], key_auths=[(key, 1)]),
         memo_key=PublicKey(key),
     )
 
 
 def __fund_voter(voter: str) -> TransferToVestingOperation:
-    return TransferToVestingOperation(from_="initminer", to=voter, amount=AssetHive(amount=10))
+    return TransferToVestingOperation(from_="initminer", to=voter, amount=as_nai_asset(AssetHive(amount=10)))
 
 
 def delegate_rc_to_payers(node: tt.InitNode, wallet: tt.Wallet, voters: list[str], accounts_per_chunks: int) -> None:

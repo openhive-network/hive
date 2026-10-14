@@ -5,6 +5,18 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Literal
 
 import pytest
+from hiveio_api.operations import (
+    AccountUpdate2Operation,
+    AccountUpdateOperation,
+    Authority,
+    CollateralizedConvertImmediateConversionOperation,
+    FillCollateralizedConvertRequestOperation,
+    FillConvertRequestOperation,
+    LimitOrderCreate2Operation,
+    Price,
+    WitnessBlockApproveOperation,
+    WitnessSetPropertiesOperation,
+)
 
 import test_tools as tt
 import wax
@@ -15,37 +27,17 @@ from hive_local_tools.constants import (
 )
 from hive_local_tools.functional.python.operation import (
     Account,
+    convert_to_asset,
     create_transaction_with_any_operation,
     get_current_median_history_price,
     get_virtual_operations,
 )
-from schemas.fields.compound import Authority, HbdExchangeRate
-from schemas.operations.account_update2_operation import AccountUpdate2Operation
-from schemas.operations.account_update_operation import AccountUpdateOperation
-from schemas.operations.limit_order_create2_operation import (
-    LimitOrderCreate2Operation,
-)
-from schemas.operations.virtual.collateralized_convert_immediate_conversion_operation import (
-    CollateralizedConvertImmediateConversionOperation,
-)
-from schemas.operations.virtual.fill_collateralized_convert_request_operation import (
-    FillCollateralizedConvertRequestOperation,
-)
-from schemas.operations.virtual.fill_convert_request_operation import (
-    FillConvertRequestOperation,
-)
-from schemas.operations.witness_block_approve_operation import (
-    WitnessBlockApproveOperation,
-)
-from schemas.operations.witness_set_properties_operation import (
-    WitnessSetPropertiesOperation,
-)
+from test_tools.__private.wallet.constants import as_nai_asset
 
 if TYPE_CHECKING:
+    from hiveio_api.operations import Hf26OperationValue
+
     from schemas.fields.basic import PublicKey
-    from schemas.virtual_operation import (
-        VirtualOperation as SchemaVirtualOperation,
-    )
 
 
 class UnknownKeyAuthsFormatError(Exception):
@@ -68,12 +60,12 @@ class ConvertAccount(Account):
 
     def assert_collateralized_conversion_requests(self, trx: dict, state: Literal["create", "delete"]) -> None:
         # extract requestid from transaction
-        operations_from_transaction = trx["operations"]
+        operations_from_transaction = trx.operations
         requestid = None
 
         for operation in operations_from_transaction:
-            if operation[0] == "collateralized_convert_operation":
-                requestid = operation[1]["requestid"]
+            if operation.type == "collateralized_convert_operation":
+                requestid = operation.value.requestid
 
         assert requestid is not None, "Provided transaction doesn't contain collateralized convert operation."
 
@@ -108,7 +100,7 @@ class ConvertAccount(Account):
         vops = self.__get_vops_from_more_than_2000_blocks(FillConvertRequestOperation)
         assert len(vops) == expected_amount, "fill_convert_request virtual operation wasn't generated"
 
-    def __get_vops_from_more_than_2000_blocks(self, vop: type[SchemaVirtualOperation]) -> list:
+    def __get_vops_from_more_than_2000_blocks(self, vop: type[Hf26OperationValue]) -> list:
         collected_vops = []
         last_block_number = self._node.get_last_block_number()
         end_block = 2000
@@ -188,14 +180,14 @@ class ConvertAccount(Account):
         # This avoids floating-point precision issues and feed history timing races.
         # Falls back to calculation if vop not yet available (transaction not yet in block).
         vops = self.__get_vops_from_more_than_2000_blocks(CollateralizedConvertImmediateConversionOperation)
-        matching_vops = [vop for vop in vops if vop.op.value["owner"] == self._name]
+        matching_vops = [vop for vop in vops if vop.op.value.owner == self._name]
 
         # Count how many vops we've already processed to find new ones
         expected_vop_count = len(self._added_hbds_by_convert) + 1
 
         if len(matching_vops) >= expected_vop_count:
             # Use the virtual operation value (most accurate)
-            actual_hbd_out = tt.Asset.from_nai(matching_vops[expected_vop_count - 1].op.value["hbd_out"])
+            actual_hbd_out = convert_to_asset(matching_vops[expected_vop_count - 1].op.value.hbd_out)
             expected_hbds = hbds_before_operation + actual_hbd_out
             hbd_tolerance = tt.Asset.Tbd(0.001)
         else:
@@ -217,11 +209,11 @@ class ConvertAccount(Account):
     def extract_amount_from_convert_operation(
         transaction: dict,
     ) -> tt.Asset.HiveT | tt.Asset.TbdT:
-        ops_in_transaction = transaction["operations"]
+        ops_in_transaction = transaction.operations
         # get amount to convert from transaction
         for operation in ops_in_transaction:
-            if operation[0] == "convert_operation" or operation[0] == "collateralized_convert_operation":
-                return operation[1]["amount"]
+            if operation.type in ("convert_operation", "collateralized_convert_operation"):
+                return convert_to_asset(operation.value.amount)
         raise AssertionError("Convert or collateralized_convert operation wasn't found in given transaction.")
 
 
@@ -277,13 +269,13 @@ class EscrowAccount(Account):
 
     @staticmethod
     def __extract_escrow_values_from_transaction(trx: dict) -> tuple | None:
-        ops = trx["operations"]
+        ops = trx.operations
         for op in ops:
-            if op[0] == "escrow_transfer_operation" or op[0] == "escrow_release_operation":
-                trx_value = op[1]
-                fee = trx_value["fee"] if op[0] == "escrow_transfer_operation" else tt.Asset.Tbd(0)
-                hbd_amount = trx_value["hbd_amount"]
-                hive_amount = trx_value["hive_amount"]
+            if op.type in ("escrow_transfer_operation", "escrow_release_operation"):
+                trx_value = op.value
+                fee = convert_to_asset(trx_value.fee) if op.type == "escrow_transfer_operation" else tt.Asset.Tbd(0)
+                hbd_amount = convert_to_asset(trx_value.hbd_amount)
+                hive_amount = convert_to_asset(trx_value.hive_amount)
                 return fee, hbd_amount, hive_amount
 
         return None
@@ -387,10 +379,10 @@ class LimitOrderAccount(Account):
                 LimitOrderCreate2Operation(
                     owner=self._name,
                     orderid=order_id,
-                    amount_to_sell=base(amount_to_sell).as_nai(),
-                    exchange_rate=HbdExchangeRate(
-                        base=base(amount_to_sell).as_nai(),
-                        quote=quote(min_to_receive).as_nai(),
+                    amount_to_sell=as_nai_asset(base(amount_to_sell)),
+                    exchange_rate=Price(
+                        base=as_nai_asset(base(amount_to_sell)),
+                        quote=as_nai_asset(quote(min_to_receive)),
                     ),
                     fill_or_kill=fill_or_kill,
                     expiration=expiration_time,
@@ -662,6 +654,9 @@ class UpdateAccount(Account):
             to_pass.pop("posting_json_metadata")
         if memo_key is None and posting_json_metadata == "":
             to_pass["memo_key"] = self._wallet.api.get_account(self.name).memo_key
+        for authority in ("owner", "active", "posting"):
+            if isinstance(to_pass.get(authority), dict):
+                to_pass[authority] = Authority(**to_pass[authority])
         operation = AccountUpdate2Operation if use_account_update2 else AccountUpdateOperation
         return create_transaction_with_any_operation(self._wallet, [operation(account=self.name, **to_pass)])
 
@@ -681,7 +676,7 @@ class UpdateAccount(Account):
         """
         if json_meta is not None:
             transaction = self._wallet.api.update_account_meta(self._name, json_meta, broadcast=True)
-            tt.logger.info(f"json meta RC COST {transaction['rc_cost']}")
+            tt.logger.info(f"json meta RC COST {transaction.rc_cost}")
             return transaction
         assert key_type in (
             "owner",
@@ -691,13 +686,13 @@ class UpdateAccount(Account):
         ), "Wrong authority type."
         if key_type == "memo":
             transaction = self._wallet.api.update_account_memo_key(self._name, key, broadcast=True)
-            tt.logger.info(f"change memo RC COST {transaction['rc_cost']}")
+            tt.logger.info(f"change memo RC COST {transaction.rc_cost}")
             return transaction
         self.update_account_info()
         current_key = getattr(self._acc_info, key_type).key_auths[0][0]
         # add new / update weight of existing key
         transaction = self._wallet.api.update_account_auth_key(self._name, key_type, key, weight, broadcast=True)
-        tt.logger.info(f"add new / update weight of existing key RC COST {transaction['rc_cost']}")
+        tt.logger.info(f"add new / update weight of existing key RC COST {transaction.rc_cost}")
         if current_key != key:
             # generate private key corresponding given public key
             new_private = tt.Account(
@@ -706,7 +701,7 @@ class UpdateAccount(Account):
             ).private_key
             # delete old one - make weight equal to zero
             transaction = self._wallet.api.update_account_auth_key(self._name, key_type, current_key, 0, broadcast=True)
-            tt.logger.info(f"delete old key RC COST {transaction['rc_cost']}")
+            tt.logger.info(f"delete old key RC COST {transaction.rc_cost}")
             self._wallet.api.import_key(new_private)
             return transaction
         return transaction
@@ -722,10 +717,10 @@ class WitnessAccount(Account):
 
     def assert_if_feed_publish_operation_was_generated(self, transaction: dict) -> None:
         operations = self._node.api.account_history.get_transaction(
-            id=transaction["transaction_id"], include_reversible=True
+            id=transaction.transaction_id, include_reversible=True
         ).operations
         for operation in operations:
-            if operation.type == "feed_publish_operation" and operation.value["publisher"] == self._name:
+            if operation.type == "feed_publish_operation" and operation.value.publisher == self._name:
                 return
         raise AssertionError("Feed_publish operation wasn't found.")
 
@@ -776,7 +771,7 @@ class WitnessAccount(Account):
             raise AssertionError("Witness isn't listed in list_witnesses, but it should be.")
 
     def feed_publish(self, *, base: int, quote: int, broadcast: bool = True) -> dict:
-        exchange_rate = HbdExchangeRate(base=tt.Asset.Tbd(base), quote=tt.Asset.Test(quote))
+        exchange_rate = {"base": tt.Asset.Tbd(base), "quote": tt.Asset.Test(quote)}
         return self._wallet.api.publish_feed(self._name, exchange_rate, broadcast=broadcast)
 
     def resign_from_witness_role(self) -> dict:
@@ -844,7 +839,7 @@ class WitnessAccount(Account):
         serialized_props = wax.serialize_witness_set_properties(
             wax.python_witness_set_properties_data(**props_to_serialize)
         )
-        serialized_props = [[key, value] for key, value in serialized_props.items()]
+        serialized_props = list(serialized_props.items())
 
         return create_transaction_with_any_operation(
             wallet=self._wallet,

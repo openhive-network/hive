@@ -3,12 +3,12 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pytest
-from test_tools.exceptions import ErrorInResponseError
+from hiveio_api.operations import DeclinedVotingRightsOperation
 
 from hive_local_tools import run_for
 from hive_local_tools.constants import OWNER_AUTH_RECOVERY_PERIOD, TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS
 from hive_local_tools.functional.python.operation import Account, get_virtual_operations
-from schemas.operations.virtual import DeclinedVotingRightsOperation
+from test_tools.exceptions import ErrorInResponseError
 
 if TYPE_CHECKING:
     import test_tools as tt
@@ -19,7 +19,7 @@ def test_decline_voting_rights(prepare_environment: tuple[tt.InitNode, tt.Wallet
     node, wallet = prepare_environment
 
     transaction = wallet.api.decline_voting_rights(voter.name, True)
-    assert transaction["rc_cost"] > 0, "Rc cost of operation should be greater than 0."
+    assert transaction.rc_cost > 0, "Rc cost of operation should be greater than 0."
     voter.rc_manabar.assert_rc_current_mana_is_reduced(transaction)
 
     assert len(node.api.database.find_decline_voting_rights_requests(accounts=[voter.name]).requests) == 1

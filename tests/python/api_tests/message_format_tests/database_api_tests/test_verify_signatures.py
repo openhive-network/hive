@@ -20,7 +20,7 @@ def test_verify_signatures_in_testnet(node: tt.InitNode) -> None:
 
     node.api.database.verify_signatures(
         hash=sig_digest.result,
-        signatures=transaction["signatures"],
+        signatures=transaction.signatures,
         required_owner=[],
         required_active=["initminer"],
         required_posting=[],

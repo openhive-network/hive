@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+import json
+
 import pytest
+from hiveio_api.operations import Hf26Transaction
 
 import test_tools as tt
-
 from test_tools.exceptions import ErrorInResponseError
-from schemas.transaction import Transaction
 from wax.complex_operations.account_update import AccountAuthorityUpdateOperation
 
 
@@ -23,7 +24,7 @@ async def test_change_owner_authority_sign_with_owner_key(node, alice_wallet, ch
     owner_role.replace(owner.public_key, 1, new_owner.public_key)
 
     trx.push_operation(account_update)
-    alice_wallet.api.sign_transaction(Transaction.parse_raw(trx.to_api_json()), broadcast=True)
+    alice_wallet.api.sign_transaction(Hf26Transaction.from_builtins(json.loads(trx.to_api_json())), broadcast=True)
 
     response = node.api.database.find_accounts(accounts=["alice"]).accounts
     assert response[0].owner.key_auths[0][0] == new_owner.public_key
@@ -42,7 +43,7 @@ async def test_change_active_authority_sign_with_active_key(node, alice_wallet, 
     active_role.replace(active.public_key, 1, new_active.public_key)
 
     trx.push_operation(account_update)
-    alice_wallet.api.sign_transaction(Transaction.parse_raw(trx.to_api_json()), broadcast=True)
+    alice_wallet.api.sign_transaction(Hf26Transaction.from_builtins(json.loads(trx.to_api_json())), broadcast=True)
 
     response = node.api.database.find_accounts(accounts=["alice"]).accounts
     assert response[0].active.key_auths[0][0] == new_active.public_key
@@ -65,7 +66,7 @@ async def test_change_active_and_owner_authority_sign_with_owner_key(node, alice
     active_role.replace(active.public_key, 1, new_active.public_key)
 
     trx.push_operation(account_update)
-    alice_wallet.api.sign_transaction(Transaction.parse_raw(trx.to_api_json()), broadcast=True)
+    alice_wallet.api.sign_transaction(Hf26Transaction.from_builtins(json.loads(trx.to_api_json())), broadcast=True)
 
     response = node.api.database.find_accounts(accounts=["alice"]).accounts
     assert response[0].owner.key_auths[0][0] == new_owner.public_key
@@ -86,7 +87,7 @@ async def test_change_active_authority_sign_with_owner_key_negative(node, alice_
     trx.push_operation(account_update)
 
     with pytest.raises(ErrorInResponseError) as e:
-        alice_wallet.api.sign_transaction(Transaction.parse_raw(trx.to_api_json()), broadcast=True)
+        alice_wallet.api.sign_transaction(Hf26Transaction.from_builtins(json.loads(trx.to_api_json())), broadcast=True)
     assert "missing required active authority" in str(e.value)
 
 
@@ -116,7 +117,7 @@ async def test_modify_single_key_in_account_with_identical_keys(node, alice_wall
     posting_role.replace(universal_key.public_key, 1, new_posting.public_key)
 
     trx.push_operation(account_update)
-    alice_wallet.api.sign_transaction(Transaction.parse_raw(trx.to_api_json()), broadcast=True)
+    alice_wallet.api.sign_transaction(Hf26Transaction.from_builtins(json.loads(trx.to_api_json())), broadcast=True)
 
     response = node.api.database.find_accounts(accounts=["bob"]).accounts
     assert response[0].posting.key_auths[0][0] == new_posting.public_key

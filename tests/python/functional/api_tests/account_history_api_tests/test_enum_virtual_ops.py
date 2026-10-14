@@ -3,10 +3,10 @@ from __future__ import annotations
 import itertools
 
 import pytest
-from test_tools.exceptions import ErrorInResponseError
 
 import test_tools as tt
 from hive_local_tools import run_for
+from test_tools.exceptions import ErrorInResponseError
 
 
 def send_transfers_to_vesting_from_initminer_to_alice(wallet: tt.Wallet, *, amount: int) -> None:
@@ -66,7 +66,7 @@ def test_find_newly_created_virtual_op(node: tt.InitNode) -> None:
         filter=0x8000000,
     )
     assert len(response.ops) == 1
-    assert response.ops[0].trx_id == transaction["transaction_id"]
+    assert response.ops[0].trx_id == transaction.transaction_id
 
 
 @run_for("testnet", enable_plugins=["account_history_api"])

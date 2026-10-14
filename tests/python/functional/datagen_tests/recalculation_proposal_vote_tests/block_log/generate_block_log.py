@@ -5,23 +5,26 @@ from datetime import datetime
 from pathlib import Path
 from typing import Final
 
+from hiveio_api.operations import (
+    AccountCreateOperation,
+    Authority,
+    CommentOperation,
+    CreateProposalOperation,
+    TransferOperation,
+    TransferToVestingOperation,
+    UpdateProposalVotesOperation,
+)
+
 import test_tools as tt
 from hive_local_tools.constants import HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD
 from hive_local_tools.functional import __generate_and_broadcast_transaction
 from hive_local_tools.functional.python import generate_block
 from hive_local_tools.functional.python.block_log_generation import parse_block_log_generator_args
 from hive_local_tools.functional.python.datagen.recurrent_transfer import execute_function_in_threads
-from schemas.fields.assets import AssetHbd
-from schemas.fields.assets import AssetHive
+from schemas.fields.assets import AssetHbd, AssetHive
 from schemas.fields.basic import AccountName, PublicKey
-from schemas.fields.compound import Authority
-from schemas.operations.account_create_operation import AccountCreateOperation
-from schemas.operations.comment_operation import CommentOperation
-from schemas.operations.create_proposal_operation import CreateProposalOperation
-from schemas.operations.transfer_operation import TransferOperation
-from schemas.operations.transfer_to_vesting_operation import TransferToVestingOperation
-from schemas.operations.update_proposal_votes_operation import UpdateProposalVotesOperation
 from schemas.policies import DisableSwapTypesPolicy, set_policies
+from test_tools.__private.wallet.constants import as_nai_asset
 
 NUMBER_OF_VOTING_ACCOUNTS: Final[int] = 12_000
 NUMBER_OF_PROPOSALS = 12_000
@@ -261,10 +264,10 @@ def __create_voter(voter: str) -> AccountCreateOperation:
         creator=AccountName("initminer"),
         new_account_name=AccountName(voter),
         json_metadata="{}",
-        fee=tt.Asset.Test(10000),
-        owner=Authority(weight_threshold=1, account_auths=[], key_auths=[[key, 1]]),
-        active=Authority(weight_threshold=1, account_auths=[], key_auths=[[key, 1]]),
-        posting=Authority(weight_threshold=1, account_auths=[], key_auths=[[key, 1]]),
+        fee=as_nai_asset(tt.Asset.Test(10000)),
+        owner=Authority(weight_threshold=1, account_auths=[], key_auths=[(key, 1)]),
+        active=Authority(weight_threshold=1, account_auths=[], key_auths=[(key, 1)]),
+        posting=Authority(weight_threshold=1, account_auths=[], key_auths=[(key, 1)]),
         memo_key=PublicKey(key),
     )
 
@@ -308,7 +311,7 @@ def __generate_and_broadcast_vote(wallet: tt.Wallet, approve: bool, reverse: boo
 def __proposal_operation(account: str) -> CreateProposalOperation:
     return CreateProposalOperation(
         creator=AccountName(account),
-        daily_pay=tt.Asset.Tbd(5),
+        daily_pay=as_nai_asset(tt.Asset.Tbd(5)),
         receiver=AccountName(account),
         start_date=tt.Time.from_now(seconds=HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD),
         end_date=tt.Time.from_now(seconds=HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD + 60 * 60 * 24 * 2),
@@ -317,18 +320,20 @@ def __proposal_operation(account: str) -> CreateProposalOperation:
     )
 
 
-def __transfer_account(voter: str) -> TransferToVestingOperation:
+def __transfer_account(voter: str) -> TransferOperation:
     return TransferOperation(
         from_="initminer",
         to=voter,
-        amount=AssetHbd(amount=10000),
+        amount=as_nai_asset(AssetHbd(amount=10000)),
         memo=f"supply_hbd_transfer-{voter}",
     )
 
 
 def __vest_account(voter: str) -> TransferToVestingOperation:
     account_number = int(voter.split("-")[1])
-    return TransferToVestingOperation(from_="initminer", to=voter, amount=AssetHive(amount=(100000 + account_number)))
+    return TransferToVestingOperation(
+        from_="initminer", to=voter, amount=as_nai_asset(AssetHive(amount=(100000 + account_number)))
+    )
 
 
 if __name__ == "__main__":

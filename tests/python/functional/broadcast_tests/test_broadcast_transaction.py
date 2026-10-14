@@ -19,7 +19,7 @@ def test_broadcast_account_creating_with_correct_values(node, wallet, max_block_
     node.wait_number_of_blocks(1)
 
     assert transaction != node.api.account_history.get_transaction(
-        id=transaction["transaction_id"], include_reversible=True
+        id=transaction.transaction_id, include_reversible=True
     )
     assert wallet.api.get_account("alice")
 
@@ -34,7 +34,7 @@ def test_broadcast_account_creating_with_incorrect_value(node, wallet):
     node.wait_number_of_blocks(1)
 
     with pytest.raises(ErrorInResponseError):
-        node.api.account_history.get_transaction(id=transaction["transaction_id"], include_reversible=True)
+        node.api.account_history.get_transaction(id=transaction.transaction_id, include_reversible=True)
 
     with pytest.raises(tt.exceptions.AccountNotExistError):
         wallet.api.get_account(f"alice{i}")

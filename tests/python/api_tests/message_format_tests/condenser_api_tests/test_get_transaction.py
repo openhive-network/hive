@@ -13,7 +13,7 @@ def test_get_transaction_in_testnet(node: tt.InitNode, wallet: tt.Wallet) -> Non
     transaction = wallet.api.create_account("initminer", "alice", "{}")
 
     node.wait_for_irreversible_block()
-    node.api.condenser.get_transaction(transaction["transaction_id"])
+    node.api.condenser.get_transaction(transaction.transaction_id)
 
 
 @run_for("mainnet_5m", "live_mainnet")

@@ -13,7 +13,7 @@ def test_find_transaction_with_extended_expiration(prepare_environment: tuple[tt
     node, wallet = prepare_environment
     wallet.api.set_transaction_expiration(2 * 3600)
     transaction = wallet.api.create_account("initminer", "alice", "{}", broadcast=False)
-    transaction_id = transaction["transaction_id"]
+    transaction_id = transaction.transaction_id
     node.api.network_broadcast.broadcast_transaction(trx=transaction)
 
     node.wait_number_of_blocks(1)

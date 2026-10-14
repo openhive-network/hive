@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import pytest
-from test_tools.exceptions import ErrorInResponseError
 
 import test_tools as tt
+from test_tools.exceptions import ErrorInResponseError
 
 # RC amounts have to clear the chain's min_delegation - (account_creation_fee / 3) * vesting_share_price, see
 # libraries/chain/rc/rc_utility.cpp - which is around 3600 RC on a default testnet. They are kept well above
@@ -140,7 +140,7 @@ def test_wrong_sign_in_transaction(wallet: tt.Wallet) -> None:
     wallet.api.transfer_to_vesting("initminer", accounts[0], tt.Asset.Test(100))
 
     operation = wallet.api.delegate_rc(accounts[0], [accounts[1]], DELEGATION, broadcast=False)
-    operation["operations"][0][1]["required_posting_auths"][0] = accounts[1]
+    operation.operations[0].value.required_posting_auths[0] = accounts[1]
 
     with pytest.raises(ErrorInResponseError):
         wallet.api.sign_transaction(operation)

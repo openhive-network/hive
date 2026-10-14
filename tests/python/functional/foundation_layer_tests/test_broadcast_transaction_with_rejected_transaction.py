@@ -3,28 +3,30 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Callable
 
 import pytest
-from test_tools.exceptions import ErrorInResponseError
 
 import test_tools as tt
 from hive_local_tools import run_for
+from test_tools.exceptions import ErrorInResponseError
 
 if TYPE_CHECKING:
-    from schemas.transaction import Transaction
+    from hiveio_api.operations import Hf26Transaction
 
 ACCOUNT = "alice"
 
 
-def broadcast_transaction_with_condenser_api(node: tt.InitNode | tt.RemoteNode, transaction: Transaction) -> None:
+def broadcast_transaction_with_condenser_api(node: tt.InitNode | tt.RemoteNode, transaction: Hf26Transaction) -> None:
     node.api.condenser.broadcast_transaction(transaction)
 
 
 def broadcast_transaction_with_network_broadcast_api(
-    node: tt.InitNode | tt.RemoteNode, transaction: Transaction
+    node: tt.InitNode | tt.RemoteNode, transaction: Hf26Transaction
 ) -> None:
     node.api.network_broadcast.broadcast_transaction(trx=transaction)
 
 
-def broadcast_transaction_with_wallet_bridge_api(node: tt.InitNode | tt.RemoteNode, transaction: Transaction) -> None:
+def broadcast_transaction_with_wallet_bridge_api(
+    node: tt.InitNode | tt.RemoteNode, transaction: Hf26Transaction
+) -> None:
     node.api.wallet_bridge.broadcast_transaction(transaction)
 
 
@@ -39,7 +41,7 @@ def broadcast_transaction_with_wallet_bridge_api(node: tt.InitNode | tt.RemoteNo
 @run_for("testnet")
 def test_broadcast_transaction_with_rejected_transaction(
     node: tt.InitNode | tt.RemoteNode,
-    broadcast: Callable[[tt.InitNode | tt.RemoteNode, Transaction], None],
+    broadcast: Callable[[tt.InitNode | tt.RemoteNode, Hf26Transaction], None],
 ) -> None:
     wallet = tt.Wallet(attach_to=node)
     wallet.api.create_account("initminer", ACCOUNT, "{}")
