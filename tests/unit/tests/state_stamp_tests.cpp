@@ -369,6 +369,47 @@ BOOST_AUTO_TEST_CASE( state_stamp_published_before_hf29 )
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( rc_stamp_published_with_report )
+{
+  try
+  {
+    // RC publishes its stamp when it closes stats for the report (every HIVE_RC_STATS_REPORT_FREQUENCY
+    // blocks), also before HF29; the value itself is not checked here - the mechanism tests cover that
+    auto next_report_block = [&]()
+    {
+      return ( db->head_block_num() / HIVE_RC_STATS_REPORT_FREQUENCY + 1 ) * HIVE_RC_STATS_REPORT_FREQUENCY;
+    };
+
+    // ---- before HF29: the report publishes the stamp, but no block carries it ----
+    BOOST_REQUIRE( !db->has_hardfork( HIVE_HARDFORK_1_29_STAMP_BLOCK_EXTENSION ) );
+    uint32_t report_block = next_report_block();
+    generate_until_block( report_block - 1 );
+    BOOST_REQUIRE( db->get_state_stamp_data().is_empty() );
+    generate_block();
+    BOOST_REQUIRE( !db->get_state_stamp_data().is_empty() );
+    generate_block();
+    BOOST_REQUIRE( !stamp_in_block( db->head_block_num() ).valid() );
+
+    // ---- activate HF29: the first block after it carries RC stamp published before HF29 ----
+    inject_hardfork( HIVE_HARDFORK_1_29 );
+    BOOST_REQUIRE( db->has_hardfork( HIVE_HARDFORK_1_29_STAMP_BLOCK_EXTENSION ) );
+    BOOST_REQUIRE( stamp_in_block( db->head_block_num() ).valid() );
+    BOOST_REQUIRE( db->get_state_stamp_data().is_empty() );
+
+    // ---- after HF29: the block that follows the report carries the stamp ----
+    report_block = next_report_block();
+    generate_until_block( report_block );
+    BOOST_REQUIRE( !stamp_in_block( report_block ).valid() );
+    BOOST_REQUIRE( !db->get_state_stamp_data().is_empty() );
+    generate_block();
+    BOOST_REQUIRE( stamp_in_block( db->head_block_num() ).valid() );
+    BOOST_REQUIRE( db->get_state_stamp_data().is_empty() );
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 // Negative tests: hand-craft an otherwise-valid block whose state stamp extension disagrees with the

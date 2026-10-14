@@ -2,6 +2,7 @@
 #include <hive/chain/rc/rc_objects_multiindex.hpp>
 #include <hive/chain/rc/rc_curve.hpp>
 #include <hive/chain/detail/state/account_object_multiindex.hpp>
+#include <hive/chain/detail/state/state_stamp_data_object_multiindex.hpp>
 #include <hive/chain/database.hpp>
 #include <hive/chain/full_transaction.hpp>
 #include <hive/chain/database_exceptions.hpp>
@@ -705,6 +706,12 @@ void resource_credits::handle_auto_report( uint32_t block_num, int64_t global_re
   db.modify( new_stats_obj, [&]( rc_stats_object& new_stats )
   {
     new_stats.finalize_stats();
+  } );
+  // publish closed stamp as part of consensus - regardless of report settings and also before HF29
+  // (stamps from before HF29 are all committed by the first block after it)
+  db.modify( db.get_state_stamp_data(), [&]( state_stamp_data_object& ssdo )
+  {
+    ssdo.publish( new_stats_obj.get_stamp_digest() );
   } );
   if( auto_report_type != report_type::NONE && new_stats_obj.get_starting_block() )
   {

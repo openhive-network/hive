@@ -148,6 +148,8 @@ public:
   uint32_t get_starting_block() const { return block_num; }
   //rolling hash of payer RC mana values
   std::string get_stamp() const { return stamp.hexdigest(); }
+  //same as above, but in binary form (to be published as state stamp)
+  fc::sha256 get_stamp_digest() const { return stamp.to_sha256(); }
   //global regeneration rate at starting block
   int64_t get_global_regen() const { return regen; }
   //budget at starting block
