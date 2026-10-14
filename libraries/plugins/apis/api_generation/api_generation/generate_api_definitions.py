@@ -9,6 +9,8 @@ from typing import Any
 
 from api_generation.generate_client import generate_client
 from api_generation.generate_description import generate_description
+from api_generation.model_variants import PUBLIC, VALIDATION
+from api_generation.tidy import tidy_with_ruff
 from jinja2 import Environment, FileSystemLoader
 
 
@@ -150,6 +152,26 @@ def render_package_templates(
         (api_subpackage_path / output_name).write_text(content)
 
 
+def append_endpoint_results(validation_file: Path, description_symbol_name: str) -> None:
+    """Expose `ENDPOINT_RESULTS` (method -> (result model, is array)) used by `hiveio_api.validate_schema`."""
+    with validation_file.open("a", encoding="utf-8") as file:
+        file.write(
+            "\n\nENDPOINT_RESULTS = {\n"
+            "    method: (description[\"result\"], bool(description.get(\"response_array\", False)))\n"
+            f"    for api_endpoints in {description_symbol_name}.values()\n"
+            "    for method, description in api_endpoints.items()\n"
+            "}\n"
+        )
+
+
+def render_validation_package(base_directory: Path, template_directory: Path) -> None:
+    """Render `hiveio_api/_validation/__init__.py` - the package only holds lazily imported modules."""
+    env = Environment(loader=FileSystemLoader(template_directory))
+    package_directory = VALIDATION.package_directory(base_directory)
+    package_directory.mkdir(parents=True, exist_ok=True)
+    (package_directory / "__init__.py").write_text(env.get_template("_validation/__init__.py.j2").render())
+
+
 if __name__ == "__main__":
     if len(sys.argv) != 3:
         raise ValueError("Usage: python generate_api_definitions.py <api_name> <base_directory>")
@@ -160,8 +182,17 @@ if __name__ == "__main__":
     template_api_path = base_directory / "python_api_package" / "templates" / "api"
     create_api_directory_structure(api, base_directory, template_api_path)
 
-    api_description_file = generate_description(api, base_directory)
+    api_description_file = generate_description(api, base_directory, PUBLIC)
+    validation_file = generate_description(api, base_directory, VALIDATION)
     description_symbol_name = f"{api.replace('-', '_')}_description"
+    append_endpoint_results(validation_file, description_symbol_name)
+    # before extracting exported symbols, so they match the cleaned-up module
+    tidy_with_ruff(
+        api_description_file,
+        validation_file,
+        PUBLIC.package_directory(base_directory) / "common.py",
+        VALIDATION.package_directory(base_directory) / "common.py",
+    )
 
     print(f"Loading generated API descriptor: {description_symbol_name} from generated file: {api_description_file}")
 
@@ -185,4 +216,6 @@ if __name__ == "__main__":
         template_api_path,
     )
 
+    render_validation_package(base_directory, template_api_path.parent)
+    tidy_with_ruff(api_subpackage_path, VALIDATION.package_directory(base_directory) / "__init__.py")
     print(f"Successfully generated API subpackage: hiveio_api.{api_name_snake_case}")
