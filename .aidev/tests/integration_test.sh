@@ -136,4 +136,36 @@ expect "diff base from the workflow" "AIDEV_IMPLEMENT_BASE_SHA=$base" \
 AIDEV_BASE_REF=nonexistent AIDEV_IMPLEMENT_BASE_SHA= diff_base > /dev/null
 expect "no base resolves" 1 "$?"
 
+# --- integration-select.sh, run from the scratch repository -------------------
+cp "$here/integration.sh" "$here/integration-select.sh" .aidev/
+mkdir -p libraries/chain docker tests/integration
+echo evaluator > libraries/chain/evaluator.cpp
+git add -A && git commit -qm select-base
+select_base="$(git rev-parse HEAD)"
+run_select() {  # SELECT_ENV...: "EXIT|LAST LINE"
+    local output rc
+    output="$(env AIDEV_BASE_REF="$select_base" AIDEV_IMPLEMENT_BASE_SHA= HIVE_AIDEV_INTEGRATION=1 "$@" \
+        .aidev/integration-select.sh 2>&1)"; rc=$?
+    echo "$rc|${output##*$'\n'}"
+}
+result="$(run_select HIVE_AIDEV_INTEGRATION=0)"
+expect "select: off" "77|off" "${result%%:*}"
+result="$(run_select AIDEV_BASE_REF=nonexistent)"
+expect "select: no diff base" "77|no diff base" "${result%%:*}"
+echo changed >> libraries/chain/evaluator.cpp
+result="$(run_select)"
+expect "select: an evaluator change selects nothing" \
+    "77|the diff from AIDEV_BASE_REF=$select_base selects no tests/integration script" "$result"
+git checkout -q libraries
+echo ci-only > tests/integration/test_ci_only.sh
+result="$(run_select)"
+expect "select: only a script needing CI's fixtures" \
+    "77|the diff from AIDEV_BASE_REF=$select_base selects only scripts needing fixtures only CI has: test_ci_only.sh" \
+    "$result"
+echo image > docker/x.sh
+result="$(run_select)"
+expect "select: docker/ selects both scripts" \
+    "0|selected: test_exchange_node_block_log_pruning.sh test_snapshot_bootstrap.sh" "$result"
+expect "select: writes no test results" "" "$(git status --porcelain --ignored -- test-results)"
+
 [ "$failures" -eq 0 ] && echo "all passed" || { echo "$failures failed"; exit 1; }

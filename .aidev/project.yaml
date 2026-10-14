@@ -70,17 +70,19 @@ verification:
         args: [".aidev/run-checks.sh", "full", "build", "chain-tests,plugin-tests"]
         artifacts: ["test-results/full/"]
         timeout: 1500
-      # The tests/integration scripts the diff selects (.aidev/integration.sh).
-      # Off: the step records one skipped case. Switching it on is `docker: true`
-      # (AIDEV reserves a docker slot for such a suite before it runs, selected
-      # or not) and HIVE_AIDEV_INTEGRATION "1"; see .aidev/README.md. The step
-      # ends itself by HIVE_INTEGRATION_BUDGET, within this suite's timeout,
-      # and by what is left of the activity's 40 min.
+      # The tests/integration scripts the diff selects (.aidev/integration.sh),
+      # beside `default`. Its select skips it, before AIDEV admits it into a
+      # docker slot, when the diff selects no script it can run here; see
+      # .aidev/README.md. The step ends itself by HIVE_INTEGRATION_BUDGET,
+      # within this suite's timeout, and by what is left of the activity's 40 min.
       - name: integration
         adapter: command
         args: [".aidev/run-checks.sh", "full-integration", "integration"]
         artifacts: ["test-results/full-integration/"]
-        env: {HIVE_AIDEV_INTEGRATION: "0", HIVE_INTEGRATION_BUDGET: "1200"}
+        env: {HIVE_AIDEV_INTEGRATION: "1", HIVE_INTEGRATION_BUDGET: "1200"}
+        select: [".aidev/integration-select.sh"]
+        concurrent: true
+        docker: true
         stack: false
         timeout: 1200
   baseline:
