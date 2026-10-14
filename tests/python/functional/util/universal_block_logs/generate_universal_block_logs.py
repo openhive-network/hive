@@ -91,6 +91,9 @@ def prepare_block_log(
         )
 
     current_hardfork_number = int(node.get_version()["version"]["blockchain_version"].split(".")[1])
+    # The block log activates the current hardfork, so it depends on consensus rules of that hardfork (e.g. since
+    # HF29 blocks carry state stamps, including RC stamps). CI reuses generated block logs as long as checksum of
+    # this file does not change, so when such rules change, this file has to be modified to force regeneration.
 
     activate_current_hf = {"open_sign": 450, "single_sign": 570, "multi_sign": 1200, "maximum_sign": 100}
     five_days_in_blocks = 5 * 24 * 60 * 60 // 3
