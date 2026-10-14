@@ -45,34 +45,36 @@ node listens on no fixed port.
 ## Integration scripts
 
 The docker-based scripts in `tests/integration/` run in GitLab CI, and in the
-`full` slot's `integration` suite when the diff reaches them and the step is on.
-The step lives in `.aidev/integration.sh`; `.aidev/tests/integration_test.sh`
-tests its decisions (host paths over mountinfo fixtures, the time budget, the
-build plan, the Dockerfile-stage check, the diff base) without docker.
+`full` slot's `integration` suite when the diff reaches them. The step lives in
+`.aidev/integration.sh`; `.aidev/tests/integration_test.sh` tests its decisions
+(host paths over mountinfo fixtures, the time budget, the build plan, the
+Dockerfile-stage check, the diff base) and the selector's without docker.
 
-### Off by default; turning it on
+### On, selected before admission, beside `default`
 
-The step does nothing unless `HIVE_AIDEV_INTEGRATION=1`: it records one skipped
-case, `off`. As landed, the suite declares `HIVE_AIDEV_INTEGRATION: "0"` and no
-`docker: true`, so it runs in the checks' container for a second and AIDEV
-reserves no docker slot for it. To turn it on, in `project.yaml`'s `integration`
-suite:
+The suite declares `HIVE_AIDEV_INTEGRATION: "1"` and `docker: true` (a protected
+sandbox setting, in effect once a maintainer approves it). With
+`HIVE_AIDEV_INTEGRATION` not 1 the step does nothing but record one skipped
+case, `off`.
 
-```yaml
-        env: {HIVE_AIDEV_INTEGRATION: "1", HIVE_INTEGRATION_BUDGET: "1200"}
-        docker: true
-```
+AIDEV admits a `docker: true` suite into a dev docker slot (`sandbox.dev`'s
+memory, 5.5 GB when undeclared; waiting up to 900 s on a busy host) before its
+command runs. So the suite's `select`, `.aidev/integration-select.sh`, runs
+first, host-side in AIDEV's worker (bash, git and coreutils/grep/sed only,
+nothing built or written): it exits 77, the suite skipped with its last line as
+the reason, when the step is off, when there is no diff base, or when the diff
+selects no script the step can run here (one needing CI-only fixtures does not
+count); else 0, printing the scripts. Most diffs select none and so wait for no
+docker slot.
 
-`docker: true` is a protected sandbox setting, so it takes effect once a
-maintainer approves it. It is a separate line because AIDEV admits a `docker:
-true` suite into a dev docker slot (`sandbox.dev`'s memory, 5.5g when undeclared;
-waiting up to 900 s on a busy host) before the suite's command runs, so before the
-step can find that the diff selects nothing. Until AIDEV can run a selection
-before admitting the scope, or take a suite's own memory demand without a
-`sandbox.dev` live stack (which needs a compose file of its own), every `full`
-run with the step on holds a slot.
+The suite is `concurrent: true`: when selected, it runs beside `default`'s
+build, chain_test and plugin_test instead of after them. Its own hived images
+build (`ninja -j nproc`) in a separate container while `default` builds, so the
+two compiles share the CPU; the scripts mostly wait on docker and block
+production and overlap well. `HIVE_BUILD_JOBS` is left uncapped.
 
-To run it once by hand, on a host with docker:
+To run the selector by hand: `HIVE_AIDEV_INTEGRATION=1 .aidev/integration-select.sh`;
+the step, on a host with docker:
 `HIVE_AIDEV_INTEGRATION=1 .aidev/run-checks.sh full-integration integration`.
 
 ### Selection
@@ -111,7 +113,10 @@ AIDEV hands a suite no deadline, so the step keeps its own: it ends by the
 earlier of `HIVE_INTEGRATION_BUDGET` (1200 s, the suite's `timeout`) from its
 start and `HIVE_INTEGRATION_ACTIVITY_SECONDS` (2400 s, `run_full_tests`'
 start-to-close) from when the slot's first suite started (its
-`test-results/full/started-at`), less `HIVE_INTEGRATION_MARGIN` (300 s). Each
+`test-results/full/started-at`; `default` starts with this suite, so when it has
+not written that file yet the step's own start stands in, and an earlier run's
+file still there can only make the deadline earlier), less
+`HIVE_INTEGRATION_MARGIN` (300 s). Each
 script gets CI's timeout (2100 s, 1800 s) or what is left, whichever is shorter,
 and is not started with less than it needs at least (300 s, 600 s). A script
 stopped at CI's timeout fails; one stopped at the deadline is `out_of_time`.
