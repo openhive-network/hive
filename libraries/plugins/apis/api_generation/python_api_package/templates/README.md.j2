@@ -38,6 +38,54 @@ from hiveio_api.database_api import DatabaseApi
 from hiveio_api import database_api
 ```
 
+### Operations
+
+Operations in responses are typed - `hiveio_api.operations` holds their models, generated from the description of
+operations produced by the build of hived (`operations_description.json`):
+
+- `Hf26Operation` - union of `Hf26TransferOperation`, ... (`{"type": "transfer_operation", "value": ...}`, assets in
+  NAI form), values are `TransferOperation`, ...,
+- `LegacyOperation` - union of `LegacyTransferOperation`, ... - tuples (`("transfer", ...)`, assets in legacy form),
+  values are `TransferOperationLegacy`, ... (the same models when an operation has no assets),
+- `Hf26OperationValue` / `LegacyOperationValue` - unions of the values alone (`TransferOperation`, ...),
+- `Hf26Transaction` / `LegacyTransaction` - transactions with operations of the form (e.g. parameters of
+  `network_broadcast_api.broadcast_transaction` / `condenser_api.broadcast_transaction`).
+
+A new operation is created from its value - the type of the HF26 form is given by default:
+
+```python
+from hiveio_api.operations import Hf26TransferOperation, TransferOperation
+from schemas.fields.base_type_mappings import NaiAsset
+
+operation = Hf26TransferOperation(
+    value=TransferOperation(
+        from_="alice", to="bob", amount=NaiAsset(amount="1000", precision=3, nai="@@000000021"), memo=""
+    )
+)
+```
+
+```python
+from hiveio_api.operations import Hf26TransferOperation
+
+for operation in block.transactions[0].operations:
+    if isinstance(operation, Hf26TransferOperation):
+        print(operation.value.from_, operation.value.amount)
+```
+
+Operations are identified by their names in the notation of hived, not by names of classes: `type` of the HF26 form
+(`"transfer_operation"`, also of validation models), the first item of the legacy form (`"transfer"`). Values give
+both - `TransferOperation.get_name()` is `"transfer"`, `TransferOperation.get_name_with_suffix()` is
+`"transfer_operation"`:
+
+```python
+transfers = [operation for operation in operations if operation.type == TransferOperation.get_name_with_suffix()]
+```
+
+Models passed as parameters (e.g. `Hf26Transaction.from_builtins(...)` to `broadcast_transaction`) are sent with the keys of the
+API (`from_` as `from`) and exactly the keys of the data they were built from.
+
+Validation models of operations (Hive types, used by `validate_schema`) are in `hiveio_api._validation.operations`.
+
 ### Running Examples
 
 Each API includes an example that can be run as a module:
