@@ -1,4 +1,5 @@
 #pragma once
+#include <hive/protocol/annotations.hpp>
 #include <hive/protocol/base.hpp>
 #include <hive/protocol/operation_util.hpp>
 #include <hive/protocol/asset.hpp>
@@ -178,7 +179,9 @@ namespace fc
 FC_REFLECT_TYPENAME( hive::protocol::update_proposal_extension )
 
 FC_REFLECT( hive::protocol::create_proposal_operation, (creator)(receiver)(start_date)(end_date)(daily_pay)(subject)(permlink)(extensions) )
+HIVE_ANNOTATE_ASSET_SYMBOLS( hive::protocol::create_proposal_operation, (daily_pay, HBD) )
 FC_REFLECT( hive::protocol::update_proposal_operation, (proposal_id)(creator)(daily_pay)(subject)(permlink)(extensions))
+HIVE_ANNOTATE_ASSET_SYMBOLS( hive::protocol::update_proposal_operation, (daily_pay, HBD) )
 FC_REFLECT( hive::protocol::update_proposal_votes_operation, (voter)(proposal_ids)(approve)(extensions) )
 FC_REFLECT( hive::protocol::remove_proposal_operation, (proposal_owner)(proposal_ids)(extensions) )
 FC_REFLECT( hive::protocol::update_proposal_end_date, (end_date) )

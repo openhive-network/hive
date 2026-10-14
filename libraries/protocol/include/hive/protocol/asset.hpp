@@ -1,4 +1,5 @@
 #pragma once
+#include <hive/protocol/annotations.hpp>
 #include <hive/protocol/hive_specialised_exceptions.hpp>
 #include <hive/protocol/types.hpp>
 #include <hive/protocol/asset_symbol.hpp>
@@ -420,6 +421,7 @@ namespace fc {
 FC_REFLECT( hive::protocol::asset, (amount)(symbol) )
 FC_REFLECT( hive::protocol::legacy_asset, (amount)(symbol) )
 FC_REFLECT( hive::protocol::price, (base)(quote) )
+HIVE_ANNOTATE_ASSET_SYMBOLS( hive::protocol::price, (base, HIVE | HBD)(quote, HIVE | HBD) )
 
 FC_REFLECT( hive::protocol::HBD_asset, (amount) )
 FC_REFLECT( hive::protocol::HIVE_asset, (amount) )

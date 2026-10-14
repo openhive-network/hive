@@ -1,4 +1,5 @@
 #pragma once
+#include <hive/protocol/annotations.hpp>
 #include <hive/protocol/hive_specialised_exceptions.hpp>
 #include <hive/protocol/base.hpp>
 #include <hive/protocol/block_header.hpp>
@@ -1116,7 +1117,9 @@ namespace fc
 }
 
 FC_REFLECT( hive::protocol::transfer_to_savings_operation, (from)(to)(amount)(memo) )
+HIVE_ANNOTATE_ASSET_SYMBOLS( hive::protocol::transfer_to_savings_operation, (amount, HIVE | HBD) )
 FC_REFLECT( hive::protocol::transfer_from_savings_operation, (from)(request_id)(to)(amount)(memo) )
+HIVE_ANNOTATE_ASSET_SYMBOLS( hive::protocol::transfer_from_savings_operation, (amount, HIVE | HBD) )
 FC_REFLECT( hive::protocol::cancel_transfer_from_savings_operation, (from)(request_id) )
 
 FC_REFLECT( hive::protocol::reset_account_operation, (reset_account)(account_to_reset)(new_owner_authority) )
@@ -1124,7 +1127,9 @@ FC_REFLECT( hive::protocol::set_reset_account_operation, (account)(current_reset
 
 
 FC_REFLECT( hive::protocol::convert_operation, (owner)(requestid)(amount) )
+HIVE_ANNOTATE_ASSET_SYMBOLS( hive::protocol::convert_operation, (amount, HBD) )
 FC_REFLECT( hive::protocol::collateralized_convert_operation, (owner)(requestid)(amount) )
+HIVE_ANNOTATE_ASSET_SYMBOLS( hive::protocol::collateralized_convert_operation, (amount, HIVE) )
 FC_REFLECT( hive::protocol::feed_publish_operation, (publisher)(exchange_rate) )
 FC_REFLECT( hive::protocol::pow, (worker)(input)(signature)(work) )
 FC_REFLECT( hive::protocol::pow2, (input)(pow_summary) )
@@ -1149,6 +1154,7 @@ FC_REFLECT( hive::protocol::account_create_operation,
         (posting)
         (memo_key)
         (json_metadata) )
+HIVE_ANNOTATE_ASSET_SYMBOLS( hive::protocol::account_create_operation, (fee, HIVE) )
 
 FC_REFLECT( hive::protocol::account_create_with_delegation_operation,
         (fee)
@@ -1161,6 +1167,7 @@ FC_REFLECT( hive::protocol::account_create_with_delegation_operation,
         (memo_key)
         (json_metadata)
         (extensions) )
+HIVE_ANNOTATE_ASSET_SYMBOLS( hive::protocol::account_create_with_delegation_operation, (fee, HIVE)(delegation, VESTS) )
 
 FC_REFLECT( hive::protocol::account_update_operation,
         (account)
@@ -1181,20 +1188,29 @@ FC_REFLECT( hive::protocol::account_update2_operation,
         (extensions) )
 
 FC_REFLECT( hive::protocol::transfer_operation, (from)(to)(amount)(memo) )
+HIVE_ANNOTATE_ASSET_SYMBOLS( hive::protocol::transfer_operation, (amount, HIVE | HBD) )
 FC_REFLECT( hive::protocol::transfer_to_vesting_operation, (from)(to)(amount) )
+HIVE_ANNOTATE_ASSET_SYMBOLS( hive::protocol::transfer_to_vesting_operation, (amount, HIVE) )
+HIVE_ANNOTATE_OPTIONALLY_EMPTY_IMPLICITLY( hive::protocol::transfer_to_vesting_operation, (to) )
 FC_REFLECT( hive::protocol::withdraw_vesting_operation, (account)(vesting_shares) )
+HIVE_ANNOTATE_ASSET_SYMBOLS( hive::protocol::withdraw_vesting_operation, (vesting_shares, VESTS) )
 FC_REFLECT( hive::protocol::set_withdraw_vesting_route_operation, (from_account)(to_account)(percent)(auto_vest) )
 FC_REFLECT( hive::protocol::witness_update_operation, (owner)(url)(block_signing_key)(props)(fee) )
+HIVE_ANNOTATE_ASSET_SYMBOLS( hive::protocol::witness_update_operation, (fee, HIVE) )
 FC_REFLECT( hive::protocol::witness_set_properties_operation, (owner)(props)(extensions) )
 FC_REFLECT( hive::protocol::account_witness_vote_operation, (account)(witness)(approve) )
 FC_REFLECT( hive::protocol::account_witness_proxy_operation, (account)(proxy) )
+HIVE_ANNOTATE_OPTIONALLY_EMPTY_IMPLICITLY( hive::protocol::account_witness_proxy_operation, (proxy) )
 FC_REFLECT( hive::protocol::comment_operation, (parent_author)(parent_permlink)(author)(permlink)(title)(body)(json_metadata) )
+HIVE_ANNOTATE_OPTIONALLY_EMPTY_IMPLICITLY( hive::protocol::comment_operation, (parent_author) )
 FC_REFLECT( hive::protocol::vote_operation, (voter)(author)(permlink)(weight) )
 FC_REFLECT( hive::protocol::custom_operation, (required_auths)(id)(data) )
 FC_REFLECT( hive::protocol::custom_json_operation, (required_auths)(required_posting_auths)(id)(json) )
 FC_REFLECT( hive::protocol::custom_binary_operation, (required_owner_auths)(required_active_auths)(required_posting_auths)(required_auths)(id)(data) )
 FC_REFLECT( hive::protocol::limit_order_create_operation, (owner)(orderid)(amount_to_sell)(min_to_receive)(fill_or_kill)(expiration) )
+HIVE_ANNOTATE_ASSET_SYMBOLS( hive::protocol::limit_order_create_operation, (amount_to_sell, HIVE | HBD)(min_to_receive, HIVE | HBD) )
 FC_REFLECT( hive::protocol::limit_order_create2_operation, (owner)(orderid)(amount_to_sell)(exchange_rate)(fill_or_kill)(expiration) )
+HIVE_ANNOTATE_ASSET_SYMBOLS( hive::protocol::limit_order_create2_operation, (amount_to_sell, HIVE | HBD) )
 FC_REFLECT( hive::protocol::limit_order_cancel_operation, (owner)(orderid) )
 
 FC_REFLECT( hive::protocol::delete_comment_operation, (author)(permlink) );
@@ -1203,20 +1219,27 @@ FC_REFLECT( hive::protocol::comment_payout_beneficiaries, (beneficiaries) )
 
 FC_REFLECT_TYPENAME( hive::protocol::comment_options_extension )
 FC_REFLECT( hive::protocol::comment_options_operation, (author)(permlink)(max_accepted_payout)(percent_hbd)(allow_votes)(allow_curation_rewards)(extensions) )
+HIVE_ANNOTATE_ASSET_SYMBOLS( hive::protocol::comment_options_operation, (max_accepted_payout, HBD) )
 
 FC_REFLECT( hive::protocol::escrow_transfer_operation, (from)(to)(hbd_amount)(hive_amount)(escrow_id)(agent)(fee)(json_meta)(ratification_deadline)(escrow_expiration) );
+HIVE_ANNOTATE_ASSET_SYMBOLS( hive::protocol::escrow_transfer_operation, (hbd_amount, HBD)(hive_amount, HIVE)(fee, HIVE | HBD) )
 FC_REFLECT( hive::protocol::escrow_approve_operation, (from)(to)(agent)(who)(escrow_id)(approve) );
 FC_REFLECT( hive::protocol::escrow_dispute_operation, (from)(to)(agent)(who)(escrow_id) );
 FC_REFLECT( hive::protocol::escrow_release_operation, (from)(to)(agent)(who)(receiver)(escrow_id)(hbd_amount)(hive_amount) );
+HIVE_ANNOTATE_ASSET_SYMBOLS( hive::protocol::escrow_release_operation, (hbd_amount, HBD)(hive_amount, HIVE) )
 FC_REFLECT( hive::protocol::claim_account_operation, (creator)(fee)(extensions) );
+HIVE_ANNOTATE_ASSET_SYMBOLS( hive::protocol::claim_account_operation, (fee, HIVE) )
 FC_REFLECT( hive::protocol::create_claimed_account_operation, (creator)(new_account_name)(owner)(active)(posting)(memo_key)(json_metadata)(extensions) );
 FC_REFLECT( hive::protocol::request_account_recovery_operation, (recovery_account)(account_to_recover)(new_owner_authority)(extensions) );
 FC_REFLECT( hive::protocol::recover_account_operation, (account_to_recover)(new_owner_authority)(recent_owner_authority)(extensions) );
 FC_REFLECT( hive::protocol::change_recovery_account_operation, (account_to_recover)(new_recovery_account)(extensions) );
 FC_REFLECT( hive::protocol::decline_voting_rights_operation, (account)(decline) );
 FC_REFLECT( hive::protocol::claim_reward_balance_operation, (account)(reward_hive)(reward_hbd)(reward_vests) );
+HIVE_ANNOTATE_ASSET_SYMBOLS( hive::protocol::claim_reward_balance_operation, (reward_hive, HIVE)(reward_hbd, HBD)(reward_vests, VESTS) )
 FC_REFLECT( hive::protocol::delegate_vesting_shares_operation, (delegator)(delegatee)(vesting_shares) );
+HIVE_ANNOTATE_ASSET_SYMBOLS( hive::protocol::delegate_vesting_shares_operation, (vesting_shares, VESTS) )
 FC_REFLECT( hive::protocol::recurrent_transfer_operation, (from)(to)(amount)(memo)(recurrence)(executions)(extensions) );
+HIVE_ANNOTATE_ASSET_SYMBOLS( hive::protocol::recurrent_transfer_operation, (amount, HIVE | HBD) )
 FC_REFLECT_TYPENAME( hive::protocol::recurrent_transfer_extension )
 FC_REFLECT( hive::protocol::witness_block_approve_operation, (witness)(block_id) );
 
