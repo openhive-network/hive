@@ -1,3 +1,14 @@
 *
 !.gitignore
 !py.typed
+!_base.py
+!_errors.py
+!_schema_validation.py
+# hand-written runtime modules (API base classes, communication models, utilities)
+!_apis/
+!_apis/**
+!_communication/
+!_communication/**
+!_utilities/
+!_utilities/**
+**/__pycache__/

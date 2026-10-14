@@ -1,11 +1,50 @@
-"""Hive JSON-RPC API client package with lazy-loaded submodules."""
+"""
+Hive JSON-RPC API client package with lazy-loaded submodules.
+
+API calls return plain frozen dataclasses (`HiveModel`) built without any validation. Responses can be validated
+explicitly with `validate_schema(response, "condenser_api.get_accounts")` (or passing the API method itself).
+"""
 
 from __future__ import annotations
 
-from hiveio_api._optional import optional_field
+from typing import TYPE_CHECKING, Final
+
+from hiveio_api._base import HiveModel, MissingFieldWarning, UnexpectedFieldWarning
+from hiveio_api._errors import HiveioApiBaseError, UnknownEndpointError, UnsupportedTypeError
+from hiveio_api._schema_validation import register_validation_models, validate_schema
+
+if TYPE_CHECKING:
+    from schemas.validation import SchemaError
 
 __version__ = "0.0.0"
 
+APIS: Final[tuple[str, ...]] = (
+{% for api in apis %}    "{{ api.snake_case }}",
+{% endfor %})
+"""Names of the API subpackages."""
+
 __all__ = [
+    "APIS",
+    "HiveModel",
+    "HiveioApiBaseError",
+    "MissingFieldWarning",
+    "SchemaError",
+    "UnexpectedFieldWarning",
+    "UnknownEndpointError",
+    "UnsupportedTypeError",
+    "register_validation_models",
+    "validate_schema",
 {% for api in apis %}    "{{ api.snake_case }}",
 {% endfor %}]
+
+
+def __getattr__(name: str) -> type[SchemaError]:
+    if name == "SchemaError":  # validation machinery (msgspec, Hive types) is imported only when used
+        from schemas.validation import SchemaError
+
+        return SchemaError
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+{% for api in apis %}register_validation_models("{{ api.snake_case }}", "hiveio_api._validation.{{ api.snake_case }}")
+{% endfor %}
