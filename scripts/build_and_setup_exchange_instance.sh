@@ -235,7 +235,9 @@ image_exists=0
 ACTUAL_TAG="${HIVED_IMAGE_TAG##*:}"
 img_name=$( build_image_name "${ACTUAL_TAG}" "${REGISTRY}" "${HIVED_IMAGE_NAME}" )
 
-docker_image_exists "${img_name}" image_exists
+# A local image first: one built here (or pulled) need not be in the registry.
+docker_image_exists "${img_name}" image_exists 0
+[ "$image_exists" -eq 1 ] || docker_image_exists "${img_name}" image_exists
 
 if [ "$image_exists" -eq 1 ];
 then

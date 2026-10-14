@@ -61,13 +61,26 @@ verification:
     artifacts: ["test-results/quick/"]
     timeout: 900  # the quick cap; the slot takes ~5-8 min
   full:
-    # One build, then chain_test and plugin_test at the same time, each split
-    # into parallel processes sharing HIVE_TEST_JOBS (run-checks.sh); witness_tests
-    # (~15 min serially, aidev#15546) runs one process per case.
-    adapter: command
-    args: [".aidev/run-checks.sh", "full", "build", "chain-tests,plugin-tests"]
-    artifacts: ["test-results/full/"]
-    timeout: 1500
+    suites:
+      # One build, then chain_test and plugin_test at the same time, each split
+      # into parallel processes sharing HIVE_TEST_JOBS (run-checks.sh); witness_tests
+      # (~15 min serially, aidev#15546) runs one process per case.
+      - name: default
+        adapter: command
+        args: [".aidev/run-checks.sh", "full", "build", "chain-tests,plugin-tests"]
+        artifacts: ["test-results/full/"]
+        timeout: 1500
+      # The tests/integration scripts the diff selects (run-checks.sh's
+      # integration_table), host-side because they drive docker; a diff that
+      # selects none costs nothing. On a host without docker AIDEV skips the
+      # suite as docker_capability_unavailable.
+      - name: integration
+        adapter: command
+        args: [".aidev/run-checks.sh", "full-integration", "integration"]
+        artifacts: ["test-results/full-integration/"]
+        docker: true
+        stack: false
+        timeout: 3600
   baseline:
     # The same suite as `full`, run on the base; this slot's wall is sized from
     # its phase budget, so it takes no `timeout`.
