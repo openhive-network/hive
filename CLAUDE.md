@@ -63,6 +63,7 @@ mkdir workdir && cd workdir
 # Options:
 #   --network-type=mainnet|testnet|mirrornet
 #   --export-binaries=PATH (extract binaries from image)
+#   --cache-to-registry (write the buildx cache to the registry; implied under CI)
 
 # Run image
 ../hive/scripts/run_hived_img.sh <image:tag> --name=hived-instance --data-dir=<path>
