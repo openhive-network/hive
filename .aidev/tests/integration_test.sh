@@ -164,8 +164,8 @@ expect "select: only a script needing CI's fixtures" \
     "$result"
 echo image > docker/x.sh
 result="$(run_select)"
-expect "select: docker/ selects both scripts" \
-    "0|selected: test_exchange_node_block_log_pruning.sh test_snapshot_bootstrap.sh" "$result"
+expect "select: docker/ selects the image's scripts" \
+    "0|selected: test_exchange_node_block_log_pruning.sh test_hived_uid.sh test_snapshot_bootstrap.sh" "$result"
 expect "select: writes no test results" "" "$(git status --porcelain --ignored -- test-results)"
 
 [ "$failures" -eq 0 ] && echo "all passed" || { echo "$failures failed"; exit 1; }

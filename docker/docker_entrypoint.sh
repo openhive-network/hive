@@ -2,11 +2,29 @@
 
 set -euo pipefail
 
-# Optional UID override: if HIVED_UID is set, remap the hived user to that UID.
-# This is only needed when bind-mounting volumes owned by a non-1000 UID.
-if [[ -n "${HIVED_UID:-}" ]] && [[ "${HIVED_UID}" =~ ^[0-9]+$ ]] && [[ "${HIVED_UID}" -ne 0 ]] && [[ "${HIVED_UID}" -ne "$(id -u)" ]]; then
-  echo "Remapping hived UID to ${HIVED_UID}"
-  sudo -n usermod -o -u "${HIVED_UID}" hived
+# HIVED_UID: run hived as this UID, for bind-mounted directories owned by a user
+# other than the image's hived (UID 1000). The entrypoint starts as hived, and a
+# changed passwd entry does not change the UID of a running process, so it runs
+# itself again as the remapped user. Both steps run in one root shell: sudo (sudo-rs
+# in the image) cannot be started by a UID that no longer has a passwd entry, and
+# it resets the environment, which is therefore passed on explicitly. usermod also
+# hands the files under /home/hived owned by the old UID to the new one.
+if [[ -n "${HIVED_UID:-}" ]]; then
+  if ! [[ "$HIVED_UID" =~ ^[1-9][0-9]{0,9}$ ]]; then
+    echo "HIVED_UID must be a non-zero numeric UID without leading zeros, got '${HIVED_UID}'. Exiting."
+    exit 1
+  fi
+  if [[ "$HIVED_UID" -ne "$(id -u)" ]]; then
+    if [[ -n "${HIVED_UID_REMAPPED:-}" ]]; then
+      echo "Running as UID $(id -u) after remapping hived to HIVED_UID=${HIVED_UID}. Exiting."
+      exit 1
+    fi
+    echo "Remapping hived UID to ${HIVED_UID}"
+    mapfile -d '' -t environment < <(env -0)
+    exec sudo -n /usr/bin/env -i "${environment[@]}" HIVED_UID_REMAPPED=1 /bin/bash -c \
+      'usermod -o -u "$HIVED_UID" hived && exec setpriv --reuid=hived --regid=users --init-groups -- "$@"' \
+      _ "$0" "$@"
+  fi
 fi
 
 SCRIPTDIR="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"

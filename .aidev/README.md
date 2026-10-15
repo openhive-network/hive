@@ -81,7 +81,9 @@ the step, on a host with docker:
 
 `integration_table` maps changed paths to scripts: `docker/`, the `Dockerfile`,
 the scripts the image and its runtime stages use select
-`test_snapshot_bootstrap.sh` and `test_exchange_node_block_log_pruning.sh`; the
+`test_snapshot_bootstrap.sh` and `test_exchange_node_block_log_pruning.sh`;
+`docker/`, the `Dockerfile` and the runtime stages' scripts also select
+`test_hived_uid.sh`; the
 exchange instance's scripts select the latter; `libraries/chainbase/`, and a
 change to `database.cpp`/`database.hpp` whose lines or enclosing function name
 `open`/`resize`, select `test_snapshot_bootstrap.sh`; a changed

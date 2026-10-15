@@ -146,8 +146,8 @@ managed by Docker, so nothing has to be created or chowned on the host.
 To keep a volume on a particular disk, point it at an existing directory in
 `compose.yml` (the commented example under `volumes:`). hived runs as UID 1000,
 so the directory must be writable by that user: `chown 1000 <dir>`, or add
-`HIVED_UID: <owner uid>` to the `hived` service's `environment:` to run hived as
-the directory's owner instead.
+`HIVED_UID: <owner uid>` (for directories you own, the output of `id -u`) to the
+`hived` service's `environment:` to run hived as the directory's owner instead.
 
 The state file can live in RAM for a faster replay: bind `hived-shm` to a
 directory on a host tmpfs such as `/dev/shm/hived` (allow 10 GB). It survives
