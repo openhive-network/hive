@@ -1,0 +1,20 @@
+#ifndef HIVE_HARDFORK_1_30
+#define HIVE_HARDFORK_1_30 30
+
+// Far-future default so HF30 never auto-activates on testnets that don't explicitly
+// schedule it. Tests that exercise HF30 behavior must either (a) include HF30 in their
+// alternate-chain-spec hardfork_schedule, or (b) use inject_hardfork() to activate it.
+// 4102444800 = 2100-01-01T00:00:00Z
+#define HIVE_HARDFORK_1_30_DEFAULT_TIME 4102444800L
+
+#ifdef USE_ALTERNATE_CHAIN_ID
+#define HIVE_HARDFORK_1_30_TIME (hive::protocol::testnet_blockchain_configuration::configuration_data.get_hf_time(HIVE_HARDFORK_1_30, HIVE_HARDFORK_1_30_DEFAULT_TIME))
+#else
+#define HIVE_HARDFORK_1_30_TIME HIVE_HARDFORK_1_30_DEFAULT_TIME
+#endif
+
+#define HIVE_HARDFORK_1_30_VERSION hive::protocol::hardfork_version( 1, 30 )
+
+// scale DHF proposal payouts by hbd_print_rate during HBD debt stress
+#define HIVE_HARDFORK_1_30_SCALE_DHF_PAYOUT_BY_HBD_PRINT_RATE (HIVE_HARDFORK_1_30)
+#endif
