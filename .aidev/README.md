@@ -37,6 +37,21 @@ every step still running and the test processes under it.
 | baseline | build, then chain-tests and plugin-tests at the same time |
 | canary | build, chain-smoke, plugin-api |
 
+Each suite of `full` and `baseline` declares `memory:`, what AIDEV reserves on the
+host for one run until it has measured the suite's own runs (the suite's container
+is capped a headroom above it, 1.25× by default): `full`'s `default` and `baseline`
+40g, `full`'s `integration` 12g (52g together). `quick`, `canary` and `coverage`
+declare none. Source: over 14 `run_full_tests` runs
+(2026-10-13/14, before the integration suite was on), the pull host's free memory
+fell by 6-14 GB on steem-11 (32 threads) and up to 35 GB on steem-3 and steem-5
+(48 threads), host-wide samples ~30 s apart. The peak is the build, `ninja -j nproc`
+uncapped, so it grows with the host's threads. `integration` was not measured: it
+is estimated as one hived build at a time (`hived-testnet`, `hived-mainnet`, mostly
+compiler-cache hits, then the hived link) and then the scripts' nodes (a 5.1M-block
+mainnet sync, testnet nodes at 128M `shared-file-size`). Its builds and nodes are
+the host daemon's containers, outside the suite's, so AIDEV never measures them
+and this figure stays its price.
+
 `plugin_test` suites other than `witness_tests` are not run singly: `snapshots_tests` fails
 when run without the suites before it (it passes in the full `!witness_tests` order, as in CI).
 `witness_tests` cases are: each gets its own data directory (`HIVE_TEMPDIR`) and its p2p
