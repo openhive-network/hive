@@ -354,6 +354,12 @@ BOOST_AUTO_TEST_CASE( mh_test )
     HIVE_REQUIRE_ASSERT( mh_api->get_market_history( { 15, db->head_block_time(), db->head_block_time() - 86400 } ), "args.start <= args.end" );
     HIVE_REQUIRE_ASSERT( mh_api->get_trade_history( { db->head_block_time(), db->head_block_time() - 86400, 1000 } ), "args.start <= args.end" );
     BOOST_REQUIRE_EQUAL( mh_api->get_market_history( { 15, time_a, time_a } ).buckets.size(), 0 );
+
+    BOOST_TEST_MESSAGE( "Testing: untracked bucket size is rejected" );
+    for( uint32_t bucket_seconds : { 0u, 1u, 14u, 59u, 61u, 3599u, 86405u } )
+      HIVE_REQUIRE_ASSERT( mh_api->get_market_history( { bucket_seconds, db->head_block_time() - 86400, db->head_block_time() } ), "bucket_sizes.count( args.bucket_seconds )" );
+    for( uint32_t bucket_seconds : mh_api->get_market_history_buckets( {} ).bucket_sizes )
+      mh_api->get_market_history( { bucket_seconds, db->head_block_time() - 86400, db->head_block_time() } );
   }
   FC_LOG_AND_RETHROW()
 }

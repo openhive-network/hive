@@ -165,6 +165,9 @@ DEFINE_API_IMPL( market_history_api_impl, get_recent_trades )
 DEFINE_API_IMPL( market_history_api_impl, get_market_history )
 {
   FC_ASSERT( args.start <= args.end, "start (${start}) must not be later than end (${end})", ("start", args.start)("end", args.end) );
+  const auto& bucket_sizes = theApp.get_plugin< hive::plugins::market_history::market_history_plugin >().get_tracked_buckets();
+  FC_ASSERT( bucket_sizes.count( args.bucket_seconds ), "bucket_seconds (${b}) must be one of tracked bucket sizes: ${sizes}",
+    ("b", args.bucket_seconds)("sizes", bucket_sizes) );
   const auto& bucket_idx = _db.get_index< bucket_index, by_bucket >();
   auto itr = bucket_idx.lower_bound( boost::make_tuple( args.bucket_seconds, args.start ) );
 
