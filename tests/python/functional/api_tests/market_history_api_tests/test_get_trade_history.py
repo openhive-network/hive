@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import pytest
-from test_tools.exceptions import ErrorInResponseError
 
 import test_tools as tt
 from hive_local_tools import run_for
 from hive_local_tools.functional.python.operation import convert_to_asset
+from test_tools.exceptions import ErrorInResponseError
 
 
 @run_for("testnet", enable_plugins=["market_history_api"])
