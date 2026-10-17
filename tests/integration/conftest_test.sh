@@ -111,6 +111,24 @@ expect "a head block rising short of the target fails at the cap" 124 "$rc"
 expect "  as the ceiling" yes "$(has "reached the ceiling")"
 unset -f get_container_head_block
 
+# busybox answers nothing on localhost:8091: the real reader finds no head block.
+c="$(stub api-silent-syncing 'i=0; while :; do i=$((i + 10000)); echo "Syncing Blockchain --- Got block: #$i time: x"; sleep 2; done')"
+measure wait_for_container_block "$c" 100000000 "Sync progress" 12
+expect "a silent API with a rising sync log is not stalled" 124 "$rc"
+expect "  but runs to the cap" yes "$(has "reached the ceiling")"
+expect "  naming the log as the progress" yes "$(has "last progress: log block")"
+
+c="$(stub api-silent-stopped 'echo "Syncing Blockchain --- Got block: #500 time: x"; echo "   600 of 5000000 blocks"; sleep 1000')"
+measure wait_for_container_block "$c" 100000 "Sync progress"
+expect "a silent API with a log no longer rising fails" 1 "$rc"
+expect "  as stalled" yes "$(has "stalled")"
+expect "  at the log's highest block" yes "$(has "last progress: log block 600;")"
+expect_between "  within the stall window plus a poll" 6 8 "$took"
+
+c="$(stub api-silent-past 'echo "Syncing Blockchain --- Got block: #300 time: x"; sleep 1000')"
+measure wait_for_container_block "$c" 200 "Sync progress"
+expect "a log past the target without the API's confirmation does not pass" 1 "$rc"
+
 # --- wait_for_chain_api_ready ----------------------------------------------------
 c="$(stub api-silent 'sleep 1000')"
 measure wait_for_chain_api_ready "$c"
