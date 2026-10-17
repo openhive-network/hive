@@ -36,3 +36,12 @@ def test_get_operations_in_block_with_and_without_reversible(
 @run_for("testnet", enable_plugins=["account_history_api"])
 def test_get_ops_in_non_existent_block(node: tt.InitNode) -> None:
     node.api.account_history.get_ops_in_block(block_num=-1)
+
+
+@pytest.mark.parametrize("include_reversible", [True, False])
+@run_for("testnet", enable_plugins=["account_history_api"])
+def test_get_ops_in_block_with_maximum_block_number(node: tt.InitNode, include_reversible: bool) -> None:
+    response = node.api.account_history.get_ops_in_block(
+        block_num=2**32 - 1, only_virtual=True, include_reversible=include_reversible
+    )
+    assert len(response.ops) == 0
