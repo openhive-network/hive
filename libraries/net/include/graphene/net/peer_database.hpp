@@ -109,6 +109,12 @@ namespace graphene { namespace net {
     potential_peer_record lookup_or_create_entry_for_endpoint(const fc::ip::endpoint& endpointToLookup);
     fc::optional<potential_peer_record> lookup_entry_for_endpoint(const fc::ip::endpoint& endpointToLookup);
 
+    /// Remembers an endpoint of this node itself.  Its entry is removed now, later inserts of it are
+    /// dropped, and it is neither loaded from nor written to the database file.
+    /// Returns true if the endpoint was not already known.
+    bool add_own_endpoint(const fc::ip::endpoint& own_endpoint);
+    bool is_own_endpoint(const fc::ip::endpoint& endpoint) const;
+
     typedef detail::peer_database_iterator iterator;
     iterator begin() const;
     iterator end() const;

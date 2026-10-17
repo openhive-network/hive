@@ -31,6 +31,8 @@
 #include <boost/multi_index/mem_fun.hpp>
 #include <boost/multi_index/tag.hpp>
 
+#include <unordered_set>
+
 #include <fc/io/raw.hpp>
 #include <fc/io/raw_variant.hpp>
 #include <fc/log/logger.hpp>
@@ -92,6 +94,7 @@ namespace graphene { namespace net {
 
     private:
       potential_peer_set _potential_peer_set;
+      std::unordered_set<fc::ip::endpoint> _own_endpoints;
       fc::path _peer_database_filename;
 
       fc::future<void> _delayed_write_task;
@@ -106,6 +109,8 @@ namespace graphene { namespace net {
       void update_entry(const potential_peer_record& updatedRecord);
       potential_peer_record lookup_or_create_entry_for_endpoint(const fc::ip::endpoint& endpointToLookup);
       fc::optional<potential_peer_record> lookup_entry_for_endpoint(const fc::ip::endpoint& endpointToLookup);
+      bool add_own_endpoint(const fc::ip::endpoint& own_endpoint);
+      bool is_own_endpoint(const fc::ip::endpoint& endpoint) const;
 
       peer_database::iterator begin() const;
       peer_database::iterator end() const;
@@ -139,7 +144,12 @@ namespace graphene { namespace net {
           {
             try
             {
-              _potential_peer_set.insert(peer_record.as<potential_peer_record>());
+              potential_peer_record record = peer_record.as<potential_peer_record>();
+              // older versions stored the node's own addresses, which it would then keep dialing
+              if (is_own_endpoint(record.endpoint))
+                dlog("dropping own endpoint ${endpoint} from peer database", ("endpoint", record.endpoint));
+              else
+                _potential_peer_set.insert(record);
             }
             catch (const fc::exception& e)
             {
@@ -230,6 +240,8 @@ namespace graphene { namespace net {
 
     void peer_database_impl::update_entry(const potential_peer_record& updatedRecord)
     {
+      if (is_own_endpoint(updatedRecord.endpoint))
+        return;
       auto iter = _potential_peer_set.get<endpoint_index>().find(updatedRecord.endpoint);
       if (iter != _potential_peer_set.get<endpoint_index>().end())
         _potential_peer_set.get<endpoint_index>().modify(iter, [&updatedRecord](potential_peer_record& record) { record = updatedRecord; });
@@ -252,6 +264,25 @@ namespace graphene { namespace net {
       if (iter != _potential_peer_set.get<endpoint_index>().end())
         return *iter;
       return fc::optional<potential_peer_record>();
+    }
+
+    bool peer_database_impl::add_own_endpoint(const fc::ip::endpoint& own_endpoint)
+    {
+      if (!_own_endpoints.insert(own_endpoint).second)
+        return false;
+      auto& endpoint_idx = _potential_peer_set.get<endpoint_index>();
+      auto iter = endpoint_idx.find(own_endpoint);
+      if (iter != endpoint_idx.end())
+      {
+        endpoint_idx.erase(iter);
+        schedule_write();
+      }
+      return true;
+    }
+
+    bool peer_database_impl::is_own_endpoint(const fc::ip::endpoint& endpoint) const
+    {
+      return _own_endpoints.find(endpoint) != _own_endpoints.end();
     }
 
     peer_database::iterator peer_database_impl::begin() const
@@ -340,6 +371,16 @@ namespace graphene { namespace net {
   fc::optional<potential_peer_record> peer_database::lookup_entry_for_endpoint(const fc::ip::endpoint& endpoint_to_lookup)
   {
     return my->lookup_entry_for_endpoint(endpoint_to_lookup);
+  }
+
+  bool peer_database::add_own_endpoint(const fc::ip::endpoint& own_endpoint)
+  {
+    return my->add_own_endpoint(own_endpoint);
+  }
+
+  bool peer_database::is_own_endpoint(const fc::ip::endpoint& endpoint) const
+  {
+    return my->is_own_endpoint(endpoint);
   }
 
   peer_database::iterator peer_database::begin() const
