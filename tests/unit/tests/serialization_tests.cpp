@@ -537,6 +537,57 @@ BOOST_AUTO_TEST_CASE( comment_options_extension_test )
   FC_LOG_AND_RETHROW();
 }
 
+BOOST_AUTO_TEST_CASE( recurrent_transfer_extension_test )
+{
+  try
+  {
+    recurrent_transfer_extension rte_legacy, rte_legacy_object, rte_new;
+
+    BOOST_CHECK_NO_THROW(
+      rte_legacy = serialize_with_legacy< recurrent_transfer_extension >(
+        "[1,{\"pair_id\":3}]", // condenser_api output
+        hive::protocol::transaction_serialization_type::legacy
+      );
+    );
+
+    BOOST_CHECK_NO_THROW(
+      rte_legacy_object = serialize_with_legacy< recurrent_transfer_extension >(
+        "{\"type\":1,\"value\":{\"pair_id\":3}}", // accepted by condenser_api.broadcast_transaction
+        hive::protocol::transaction_serialization_type::legacy
+      );
+    );
+
+    BOOST_CHECK_NO_THROW(
+      rte_new = serialize_with_legacy< recurrent_transfer_extension >(
+        "{\"type\":\"recurrent_transfer_pair_id\",\"value\":{\"pair_id\":3}}", // block_api output
+        hive::protocol::transaction_serialization_type::hf26
+      );
+    );
+
+    BOOST_REQUIRE_EQUAL( rte_new.get< recurrent_transfer_pair_id >().pair_id, 3 );
+    test_static_variant_same( rte_legacy, rte_new );
+    test_static_variant_same( rte_legacy_object, rte_new );
+
+    // An operation emitted in legacy format must be accepted back in legacy format
+    recurrent_transfer_operation op;
+    op.from = "alice";
+    op.to = "bob";
+    op.amount = ASSET( "0.002 TESTS" );
+    op.memo = "test";
+    op.recurrence = 24;
+    op.executions = 2;
+    op.extensions.insert( rte_new );
+
+    serialization_mode_controller::mode_guard guard( hive::protocol::transaction_serialization_type::legacy );
+    operation legacy_op = op;
+    const std::string legacy_json = fc::json::to_string( legacy_op );
+    BOOST_REQUIRE( legacy_json.find( "[[1,{\"pair_id\":3}]]" ) != std::string::npos );
+    operation parsed = fc::json::from_string( legacy_json, fc::json::format_validation_mode::full ).as< operation >();
+    BOOST_REQUIRE( fc::sha256::hash( parsed.get< recurrent_transfer_operation >() ) == fc::sha256::hash( op ) );
+  }
+  FC_LOG_AND_RETHROW();
+}
+
 BOOST_AUTO_TEST_CASE( pow2_work_test )
 {
   try
