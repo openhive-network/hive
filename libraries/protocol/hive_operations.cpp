@@ -11,6 +11,7 @@
 
 #include <chrono>
 #include <locale>
+#include <algorithm>
 
 namespace hive { namespace protocol {
   namespace
@@ -246,6 +247,61 @@ namespace hive { namespace protocol {
     validate_asset_greater_than_zero(amount, "Cannot transfer a negative amount (aka: stealing)");
     validate_string_max_size(memo, HIVE_MAX_MEMO_SIZE - 1, "Transfer memo is too large");
     validate_is_utf8(memo, "Transfer memo is not UTF8");
+  } FC_CAPTURE_AND_RETHROW( (*this) ) }
+
+  void create_scoped_authority_operation::validate() const
+  { try {
+    validate_account_name( grantor );
+    validate_account_name( actor );
+    HIVE_PROTOCOL_NUMBER_ASSERT( grant_id != 0, "Scoped authority grant id must be nonzero" );
+    HIVE_PROTOCOL_ASSET_ASSERT( max_per_transfer.symbol == HIVE_SYMBOL || max_per_transfer.symbol == HBD_SYMBOL,
+      "Scoped authorities support only HIVE and HBD" );
+    validate_asset_type( max_per_period, max_per_transfer.symbol, "Scoped period limit symbol mismatch" );
+    validate_asset_type( max_lifetime, max_per_transfer.symbol, "Scoped lifetime limit symbol mismatch" );
+    validate_asset_greater_than_zero( max_per_transfer, "Scoped per-transfer limit must be positive" );
+    validate_asset_greater_than_zero( max_per_period, "Scoped period limit must be positive" );
+    validate_asset_greater_than_zero( max_lifetime, "Scoped lifetime limit must be positive" );
+    HIVE_PROTOCOL_ASSET_ASSERT( max_per_transfer.amount <= max_per_period.amount &&
+      max_per_transfer.amount <= max_lifetime.amount && max_per_period.amount <= max_lifetime.amount,
+      "Scoped limits must satisfy transfer <= period <= lifetime" );
+    HIVE_PROTOCOL_ASSET_ASSERT( max_lifetime.amount.value <= HIVE_MAX_SHARE_SUPPLY,
+      "Scoped lifetime limit exceeds the maximum share supply" );
+    HIVE_PROTOCOL_NUMBER_ASSERT( period_seconds > 0 && period_seconds <= HIVE_MAX_SCOPED_AUTHORITY_PERIOD_SECONDS,
+      "Scoped period duration is out of range" );
+    HIVE_PROTOCOL_NUMBER_ASSERT( expires_at > valid_from, "Scoped expiration must be after valid_from" );
+    const uint32_t duration = expires_at.sec_since_epoch() - valid_from.sec_since_epoch();
+    HIVE_PROTOCOL_NUMBER_ASSERT( duration <= HIVE_MAX_SCOPED_AUTHORITY_DURATION_SECONDS,
+      "Scoped authority duration exceeds one year" );
+    HIVE_PROTOCOL_NUMBER_ASSERT( period_seconds <= duration,
+      "Scoped period duration must not exceed grant lifetime" );
+    HIVE_PROTOCOL_NUMBER_ASSERT( allowed_recipients.size() <= HIVE_MAX_SCOPED_AUTHORITY_RECIPIENTS,
+      "Scoped recipient allowlist exceeds limit" );
+    for( size_t i = 0; i < allowed_recipients.size(); ++i )
+    {
+      validate_account_name( allowed_recipients[i] );
+      if( i > 0 )
+        HIVE_PROTOCOL_ACCOUNT_NAME_ASSERT( allowed_recipients[i - 1] < allowed_recipients[i],
+          "Scoped recipient allowlist must be strictly sorted and contain no duplicates" );
+    }
+  } FC_CAPTURE_AND_RETHROW( (*this) ) }
+
+  void revoke_scoped_authority_operation::validate() const
+  {
+    validate_account_name( grantor );
+    HIVE_PROTOCOL_NUMBER_ASSERT( grant_id != 0, "Scoped authority grant id must be nonzero" );
+  }
+
+  void scoped_transfer_operation::validate() const
+  { try {
+    validate_account_name( grantor );
+    validate_account_name( actor );
+    validate_account_name( to );
+    HIVE_PROTOCOL_NUMBER_ASSERT( grant_id != 0, "Scoped authority grant id must be nonzero" );
+    HIVE_PROTOCOL_ASSET_ASSERT( amount.symbol == HIVE_SYMBOL || amount.symbol == HBD_SYMBOL,
+      "Scoped transfers support only HIVE and HBD" );
+    validate_asset_greater_than_zero( amount, "Scoped transfer amount must be positive" );
+    validate_string_max_size( memo, HIVE_MAX_MEMO_SIZE - 1, "Scoped transfer memo is too large" );
+    validate_is_utf8( memo, "Scoped transfer memo is not UTF8" );
   } FC_CAPTURE_AND_RETHROW( (*this) ) }
 
   void transfer_to_vesting_operation::validate() const

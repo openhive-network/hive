@@ -1,16 +1,16 @@
 # Scoped Authorities Hardfork Integration
 
-**Status: no hardfork integration is implemented.**
+**Status: development-only HF30 gating is implemented for alternate-chain builds. Mainnet operation application remains unconditionally rejected. This is not a proposal to activate HF30 on mainnet.**
 
 ## Activation strategy
 
-Do not attach this feature to HF29: this source already defines HF29 behavior for alternate-chain builds. Mainnet's configured maximum is HF28. A future hardfork number, version, time, witness-vote policy, and testnet schedule must be assigned by maintainers. This branch must not cause automatic mainnet activation.
+Do not attach this feature to HF29: this source already defines HF29 behavior for alternate-chain builds. Mainnet's configured maximum is HF28. The prototype adds HF30 behind alternate-chain configuration with a far-future fallback time; maintainers must review or replace that test schedule before use. Mainnet builds do not add HF30 to their active maximum and the evaluator rejects the operations.
 
-New operations must preserve every existing operation's binary tag. The existing variant lists 50 regular operations and then virtual operations; insertion before virtual operations shifts historic virtual tags. A reviewed compatibility mechanism is a prerequisite. Add preactivation rejection and activation-boundary tests, and keep grant state empty before activation.
+The three operations are appended after all historic variant tags, leaving every historic numeric tag unchanged. Current tags are 93, 94, and 95; `is_virtual_operation` returns false for each. Unit tests pin the first/last historic virtual tags and all new tags. A future upstream hardfork still needs activation-boundary and preactivation-rejection tests in both alternate-chain and mainnet configurations.
 
 ## Upgrade, replay, and snapshots
 
-All nodes must run the same implementation before witnesses schedule activation. Replay from genesis must produce identical state and blocks. Snapshot loaders must register and restore the new Chainbase index consistently. If the chosen Chainbase object layout is incompatible with older snapshots, require a documented replay or snapshot-version migration before upgrade. No snapshot compatibility result is currently established.
+The Chainbase index is registered with normal database object indexes and the feature test suite has exercised block pop rollback. A process restart and replay with non-empty grant state, snapshot restoration, and deterministic full replay have not been verified. Changing the RC stats object layout also requires compatibility review for existing state snapshots; production rollout must require a clean replay or a specifically tested migration.
 
 ## Deployment checklist
 

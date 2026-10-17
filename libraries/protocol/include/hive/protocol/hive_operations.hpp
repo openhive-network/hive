@@ -1038,6 +1038,46 @@ namespace hive { namespace protocol {
       uint8_t get_pair_id( bool* explicitValue = nullptr ) const;
   };
 
+  /** Immutable grant for one actor to make direct liquid transfers. */
+  struct create_scoped_authority_operation : public base_operation
+  {
+    account_name_type grantor;
+    account_name_type actor;
+    uint32_t grant_id = 0; // unique forever for this grantor, including after revoke/expiry
+    asset max_per_transfer;
+    asset max_per_period;
+    asset max_lifetime;
+    uint32_t period_seconds = 0;
+    time_point_sec valid_from;
+    time_point_sec expires_at;
+    vector< account_name_type > allowed_recipients; // empty means unrestricted
+
+    void validate() const;
+    void get_required_active_authorities( flat_set<account_name_type>& a ) const { a.insert( grantor ); }
+  };
+
+  struct revoke_scoped_authority_operation : public base_operation
+  {
+    account_name_type grantor;
+    uint32_t grant_id = 0;
+
+    void validate() const;
+    void get_required_active_authorities( flat_set<account_name_type>& a ) const { a.insert( grantor ); }
+  };
+
+  struct scoped_transfer_operation : public base_operation
+  {
+    account_name_type grantor;
+    account_name_type actor;
+    account_name_type to;
+    uint32_t grant_id = 0;
+    asset amount;
+    string memo;
+
+    void validate() const;
+    void get_required_active_authorities( flat_set<account_name_type>& a ) const { a.insert( actor ); }
+  };
+
   struct witness_block_approve_operation : public base_operation
   {
     account_name_type witness;
@@ -1217,6 +1257,10 @@ FC_REFLECT( hive::protocol::decline_voting_rights_operation, (account)(decline) 
 FC_REFLECT( hive::protocol::claim_reward_balance_operation, (account)(reward_hive)(reward_hbd)(reward_vests) );
 FC_REFLECT( hive::protocol::delegate_vesting_shares_operation, (delegator)(delegatee)(vesting_shares) );
 FC_REFLECT( hive::protocol::recurrent_transfer_operation, (from)(to)(amount)(memo)(recurrence)(executions)(extensions) );
+FC_REFLECT( hive::protocol::create_scoped_authority_operation,
+  (grantor)(actor)(grant_id)(max_per_transfer)(max_per_period)(max_lifetime)(period_seconds)(valid_from)(expires_at)(allowed_recipients) )
+FC_REFLECT( hive::protocol::revoke_scoped_authority_operation, (grantor)(grant_id) )
+FC_REFLECT( hive::protocol::scoped_transfer_operation, (grantor)(actor)(to)(grant_id)(amount)(memo) )
 FC_REFLECT_TYPENAME( hive::protocol::recurrent_transfer_extension )
 FC_REFLECT( hive::protocol::witness_block_approve_operation, (witness)(block_id) );
 

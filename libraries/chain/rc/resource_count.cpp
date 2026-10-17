@@ -526,6 +526,25 @@ struct count_operation_visitor
     market_op_count++;
   }
 
+  void operator()( const create_scoped_authority_operation& op ) const
+  {
+    // Grants are persistent state. Charge a deterministic conservative serialized-size estimate
+    // multiplied by the existing persistent-state byte weight, plus regular transaction execution.
+    state_bytes_count += _w.PERSISTENT_STATE_BYTE *
+      ( HIVE_SCOPED_AUTHORITY_RC_FIXED_BYTES + HIVE_MAX_ACCOUNT_NAME_LENGTH * op.allowed_recipients.size() );
+    execution_time_count += _e.transfer_time;
+  }
+
+  void operator()( const revoke_scoped_authority_operation& ) const
+  {
+    execution_time_count += _e.transfer_time;
+  }
+
+  void operator()( const scoped_transfer_operation& ) const
+  {
+    execution_time_count += _e.transfer_time;
+  }
+
   void operator()( const witness_block_approve_operation& op )const
   {
   }

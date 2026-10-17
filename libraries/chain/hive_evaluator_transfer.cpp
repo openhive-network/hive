@@ -15,6 +15,7 @@
 #include <hive/chain/detail/state/savings_withdraw_object_multiindex.hpp>
 #include <hive/chain/detail/state/withdraw_vesting_route_object_multiindex.hpp>
 #include <hive/chain/detail/state/recurrent_transfer_object_multiindex.hpp>
+#include <hive/chain/detail/state/scoped_authority_object_multiindex.hpp>
 #include <hive/chain/detail/state/witness_objects.hpp>
 #include <hive/chain/detail/state/global_property_object_multiindex.hpp>
 #include <hive/chain/evaluator_registry.hpp>
@@ -48,6 +49,9 @@ HIVE_DEFINE_EVALUATOR( cancel_transfer_from_savings )
 HIVE_DEFINE_EVALUATOR( claim_reward_balance )
 HIVE_DEFINE_EVALUATOR( delegate_vesting_shares )
 HIVE_DEFINE_EVALUATOR( recurrent_transfer )
+HIVE_DEFINE_EVALUATOR( create_scoped_authority )
+HIVE_DEFINE_EVALUATOR( revoke_scoped_authority )
+HIVE_DEFINE_EVALUATOR( scoped_transfer )
 
 void register_transfer_evaluators( evaluator_registry<operation>& registry )
 {
@@ -70,6 +74,121 @@ void register_transfer_evaluators( evaluator_registry<operation>& registry )
   registry.register_evaluator< claim_reward_balance_evaluator           >();
   registry.register_evaluator< delegate_vesting_shares_evaluator        >();
   registry.register_evaluator< recurrent_transfer_evaluator             >();
+  registry.register_evaluator< create_scoped_authority_evaluator        >();
+  registry.register_evaluator< revoke_scoped_authority_evaluator        >();
+  registry.register_evaluator< scoped_transfer_evaluator                >();
+}
+
+namespace {
+  void assert_scoped_authorities_enabled( database& db )
+  {
+#ifdef USE_ALTERNATE_CHAIN_ID
+    HIVE_CHAIN_HARDFORK_ASSERT( db.has_hardfork( HIVE_HARDFORK_SCOPED_AUTHORITIES ),
+      "Scoped authorities are not enabled until the development hardfork" );
+#else
+    HIVE_CHAIN_HARDFORK_ASSERT( false, "Scoped authorities are disabled in mainnet builds" );
+#endif
+  }
+}
+
+void create_scoped_authority_evaluator::do_apply( const create_scoped_authority_operation& o )
+{
+  assert_scoped_authorities_enabled( _db );
+  const auto& grantor = _db.get_account( o.grantor );
+  _db.get_account( o.actor );
+  // A pending transaction is evaluated against the current head and then replayed
+  // when included in a later block. Its requested start can therefore be before
+  // the inclusion block timestamp. The grant does not exist before this operation
+  // executes, so accepting an earlier valid_from cannot make it usable retroactively.
+  HIVE_CHAIN_TIME_ASSERT( o.expires_at > _db.head_block_time(), o.expires_at,
+    "Scoped authority expiration must be in the future" );
+
+  const auto& grants = _db.get_index< scoped_authority_index, by_grantor_id >();
+  auto itr = grants.lower_bound( boost::make_tuple( o.grantor, uint32_t( 0 ) ) );
+  uint32_t count = 0;
+  while( itr != grants.end() && itr->grantor == o.grantor )
+  {
+    HIVE_CHAIN_STATE_ASSERT( itr->grant_id != o.grant_id, o.grant_id,
+      "Scoped authority grant ID cannot be reused" );
+    ++count;
+    ++itr;
+  }
+  HIVE_CHAIN_LIMIT_ASSERT( count < HIVE_MAX_SCOPED_AUTHORITIES_PER_GRANTOR, count,
+    "Grantor has reached the lifetime scoped-authority limit" );
+
+  _db.create< scoped_authority_object >( o.grantor, o.actor, o.grant_id,
+    o.max_per_transfer, o.max_per_period, o.max_lifetime, o.period_seconds,
+    o.valid_from, o.expires_at, o.allowed_recipients );
+  (void)grantor;
+}
+
+void revoke_scoped_authority_evaluator::do_apply( const revoke_scoped_authority_operation& o )
+{
+  assert_scoped_authorities_enabled( _db );
+  const auto& grant = _db.get< scoped_authority_object, by_grantor_id >(
+    boost::make_tuple( o.grantor, o.grant_id ) );
+  HIVE_CHAIN_STATE_ASSERT( !grant.revoked, o.grant_id, "Scoped authority is already revoked" );
+  _db.modify( grant, []( scoped_authority_object& mutable_grant ) { mutable_grant.revoked = true; } );
+  const auto& updated_grant = _db.get< scoped_authority_object, by_grantor_id >(
+    boost::make_tuple( o.grantor, o.grant_id ) );
+  HIVE_CHAIN_STATE_ASSERT( updated_grant.revoked, o.grant_id, "Scoped authority revocation did not persist" );
+}
+
+void scoped_transfer_evaluator::do_apply( const scoped_transfer_operation& o )
+{
+  assert_scoped_authorities_enabled( _db );
+  const auto& grantor = _db.get_account( o.grantor );
+  const auto& recipient = _db.get_account( o.to );
+  _db.get_account( o.actor );
+  const auto& grant = _db.get< scoped_authority_object, by_grantor_id >(
+    boost::make_tuple( o.grantor, o.grant_id ) );
+
+  HIVE_CHAIN_PERMISSION_ASSERT( !grant.revoked, o.grant_id, "Scoped authority has been revoked" );
+  HIVE_CHAIN_PERMISSION_ASSERT( grant.actor == o.actor, o.actor, "Actor does not match scoped authority" );
+  HIVE_CHAIN_PERMISSION_ASSERT( grant.max_per_transfer.symbol == o.amount.symbol,
+    o.amount.symbol, "Transfer asset is not permitted by scoped authority" );
+  const auto now = _db.head_block_time();
+  HIVE_CHAIN_TIME_ASSERT( now >= grant.valid_from, now, "Scoped authority is not valid yet" );
+  HIVE_CHAIN_TIME_ASSERT( now < grant.expires_at, now, "Scoped authority has expired" );
+  if( !grant.allowed_recipients.empty() )
+    HIVE_CHAIN_PERMISSION_ASSERT( std::binary_search( grant.allowed_recipients.begin(), grant.allowed_recipients.end(), o.to ),
+      o.to, "Recipient is not allowed by scoped authority" );
+  HIVE_CHAIN_ASSET_ASSERT( o.amount.amount <= grant.max_per_transfer.amount,
+    o.amount, "Transfer exceeds scoped per-transfer limit" );
+
+  const uint64_t elapsed = uint64_t( now.sec_since_epoch() ) - grant.valid_from.sec_since_epoch();
+  const uint64_t period_index = elapsed / grant.period_seconds;
+  const int64_t amount = o.amount.amount.value;
+  HIVE_CHAIN_STATE_ASSERT( grant.lifetime_spent.amount.value >= 0 &&
+    grant.lifetime_spent.amount.value <= grant.max_lifetime.amount.value, grant.lifetime_spent,
+    "Invalid scoped lifetime counter" );
+  HIVE_CHAIN_ASSET_ASSERT( amount <= grant.max_lifetime.amount.value - grant.lifetime_spent.amount.value,
+    o.amount, "Transfer exceeds scoped lifetime limit" );
+  const int64_t period_spent = period_index == grant.current_period_index ? grant.period_spent.amount.value : 0;
+  HIVE_CHAIN_STATE_ASSERT( period_spent >= 0 && period_spent <= grant.max_per_period.amount.value,
+    grant.period_spent, "Invalid scoped period counter" );
+  HIVE_CHAIN_ASSET_ASSERT( amount <= grant.max_per_period.amount.value - period_spent,
+    o.amount, "Transfer exceeds scoped period limit" );
+
+  // Keep existing liquid-transfer balance handling and reject HIVE treasury conversions here:
+  // scoped transfers are direct asset transfers and never invoke conversion behavior.
+  if( _db.has_hardfork( HIVE_HARDFORK_0_21__3343 ) )
+    HIVE_CHAIN_TREASURY_ASSERT( o.amount.symbol == HBD_SYMBOL || !_db.is_treasury( o.to ), o.to,
+      "Cannot scoped-transfer HIVE to the treasury" );
+
+  temp_balance transfer( o.amount.symbol );
+  _db.adjust_balance( grantor, transfer, -o.amount );
+  _db.adjust_balance( recipient, transfer, o.amount );
+  _db.modify( grant, [&]( scoped_authority_object& mutable_grant )
+  {
+    if( period_index != mutable_grant.current_period_index )
+    {
+      mutable_grant.current_period_index = period_index;
+      mutable_grant.period_spent = asset( 0, mutable_grant.max_per_period.symbol );
+    }
+    mutable_grant.period_spent.amount += o.amount.amount;
+    mutable_grant.lifetime_spent.amount += o.amount.amount;
+  } );
 }
 
 void escrow_transfer_evaluator::do_apply( const escrow_transfer_operation& o )

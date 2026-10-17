@@ -8,6 +8,7 @@
 #include <hive/chain/detail/state/decline_voting_rights_request_object_multiindex.hpp>
 #include <hive/chain/detail/state/limit_order_object_multiindex.hpp>
 #include <hive/chain/detail/state/recurrent_transfer_object_multiindex.hpp>
+#include <hive/chain/detail/state/scoped_authority_object_multiindex.hpp>
 
 namespace hive { namespace plugins { namespace database_api {
 
@@ -750,6 +751,49 @@ DEFINE_API_IMPL( database_api_impl, find_recurrent_transfers ) {
     ++itr;
   }
 
+  return result;
+}
+
+DEFINE_API_IMPL( database_api_impl, get_scoped_authorities ) {
+  get_scoped_authorities_return result;
+  const auto* grantor = _db.find_account( args.grantor );
+  FC_ASSERT( grantor != nullptr, "Given 'grantor' account does not exist." );
+  const auto& idx = _db.get_index< chain::scoped_authority_index, chain::by_grantor_id >();
+  auto itr = idx.lower_bound( boost::make_tuple( args.grantor, uint32_t( 0 ) ) );
+  const auto now = _db.head_block_time();
+  while( itr != idx.end() && itr->grantor == args.grantor )
+  {
+    api_scoped_authority_object item;
+    item.grantor = itr->grantor;
+    item.actor = itr->actor;
+    item.grant_id = itr->grant_id;
+    item.max_per_transfer = itr->max_per_transfer;
+    item.max_per_period = itr->max_per_period;
+    item.max_lifetime = itr->max_lifetime;
+    item.period_spent = itr->period_spent;
+    item.lifetime_spent = itr->lifetime_spent;
+    item.period_seconds = itr->period_seconds;
+    item.valid_from = itr->valid_from;
+    item.expires_at = itr->expires_at;
+    item.revoked = itr->revoked;
+    item.active = !itr->revoked && now >= itr->valid_from && now < itr->expires_at;
+    item.current_period_index = itr->current_period_index;
+    if( now >= itr->valid_from )
+    {
+      const uint64_t period = uint64_t( now.sec_since_epoch() - itr->valid_from.sec_since_epoch() ) / itr->period_seconds;
+      const int64_t spent = period == itr->current_period_index ? itr->period_spent.amount.value : 0;
+      item.current_period_index = period;
+      item.remaining_period = asset( itr->max_per_period.amount.value - spent, itr->max_per_period.symbol );
+    }
+    else
+      item.remaining_period = itr->max_per_period;
+    item.remaining_lifetime = asset(
+      itr->max_lifetime.amount.value - itr->lifetime_spent.amount.value, itr->max_lifetime.symbol );
+    for( const auto& recipient : itr->allowed_recipients )
+      item.allowed_recipients.emplace_back( recipient );
+    result.grants.emplace_back( std::move( item ) );
+    ++itr;
+  }
   return result;
 }
 

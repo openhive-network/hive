@@ -31,6 +31,7 @@ set( SOURCES
              database_rc_core.cpp
              database_rc_delegation.cpp
              database_state_stamp.cpp
+             database_scoped_authority.cpp
 
              full_block.cpp
              full_transaction.cpp

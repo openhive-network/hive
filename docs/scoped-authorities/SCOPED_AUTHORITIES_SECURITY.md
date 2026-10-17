@@ -1,6 +1,6 @@
 # Scoped Authorities Security Review
 
-**Status: design threat model only. No implementation has been audited or tested.**
+**Status: threat model for a development-only prototype. Focused and full C++ tests pass, but this source has not received an independent security audit.**
 
 ## Threat model and boundaries
 

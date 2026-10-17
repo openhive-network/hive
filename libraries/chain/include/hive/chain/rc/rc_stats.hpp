@@ -9,7 +9,11 @@
 
 namespace hive { namespace chain {
 
-constexpr auto HIVE_RC_NUM_OPERATIONS = hive::protocol::operation::tag< hive::protocol::fill_convert_request_operation >::value;
+// Keep one stats slot for every serialized operation, plus the existing
+// multi-operation transaction bucket at index operation::count(). New
+// consensus operations are appended after historical virtual operation tags.
+constexpr auto HIVE_RC_NUM_OPERATIONS =
+  hive::protocol::operation::tag< hive::protocol::scoped_transfer_operation >::value;
 constexpr auto HIVE_RC_NUM_PAYER_RANKS = 8;
 
 // statistics for transaction with single operation (or multiop transaction)
