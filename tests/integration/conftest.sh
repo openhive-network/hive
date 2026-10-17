@@ -111,6 +111,13 @@ _log_bytes() {  # FILE FROM TO: bytes FROM+1..TO of FILE
   tail -c "+$(( $2 + 1 ))" "$1" | head -c "$(( $3 - $2 ))"
 }
 
+# The highest block number the sync (`Got block: #N`) and replay (`N of M blocks`)
+# lines on stdin carry; empty when there is none.
+_highest_logged_block() {
+  grep -oE 'Got block: #[0-9]+|[0-9]+ of [0-9]+ blocks' \
+    | grep -oE '^[^0-9]*[0-9]+' | grep -oE '[0-9]+$' | sort -n | tail -1
+}
+
 # monitor_container's probe: prints the container's new log output; the progress
 # is the highest block number its sync and replay lines carry, or before the first
 # one, the log's size. Done when the container is no longer running.
@@ -123,8 +130,7 @@ _container_progress() {
   size=$(stat -c %s "$log")
   if [ "$size" -gt "$offset" ]; then
     _log_bytes "$log" "$offset" "$size"
-    b=$(_log_bytes "$log" "$offset" "$size" | grep -oE 'Got block: #[0-9]+|[0-9]+ of [0-9]+ blocks' \
-      | grep -oE '^[^0-9]*[0-9]+' | grep -oE '[0-9]+$' | sort -n | tail -1)
+    b=$(_log_bytes "$log" "$offset" "$size" | _highest_logged_block)
     [ -n "$b" ] && { [ -z "$block" ] || [ "$b" -gt "$block" ]; } && block=$b
     offset=$size
   fi
@@ -233,27 +239,38 @@ get_container_head_block() {
   fi
 }
 
+# wait_for_container_block's probe: the progress is the highest block either
+# database_api's head block or, while that does not answer (as when hived applies
+# synced blocks), the container's sync and replay log lines have shown. Done only
+# when database_api's head block reaches the target.
 _head_block_progress() {
+  local b now
   head_block=$(get_container_head_block "$container")
 
-  if [ -z "$head_block" ]; then
-    echo "$message: waiting for database_api to respond..." >&2
-    return 1
+  if [ -n "$head_block" ]; then
+    echo "$message: head_block_number = $head_block / $target_block" >&2
+    [ "$head_block" -ge "$target_block" ] && return 0
+    [ -z "$highest" ] || [ "$head_block" -gt "$highest" ] && { highest=$head_block; source="head block"; }
+  else
+    now=$(date +%s)
+    b=$(docker logs ${log_since:+--since "$log_since"} "$container" 2>&1 | _highest_logged_block)
+    log_since=$now
+    [ -n "$b" ] && { [ -z "$highest" ] || [ "$b" -gt "$highest" ]; } && { highest=$b; source="log block"; }
+    echo "$message: waiting for database_api to respond (${source:-no block} ${highest:-yet} / $target_block)..." >&2
   fi
-  echo "$message: head_block_number = $head_block / $target_block" >&2
-  [ "$head_block" -ge "$target_block" ] && return 0
-  _mark="head block $head_block"
+  [ -n "$highest" ] && _mark="$source $highest"
   return 1
 }
 
 # Wait for container to reach target block: prints the head block reached, or an
-# empty line and returns _await_progress's status when head_block_number stalls or
-# the ceiling comes. SECONDS, if given, caps the ceiling.
+# empty line and returns _await_progress's status when the block it is at (see
+# _head_block_progress) stalls or the ceiling comes. SECONDS, if given, caps the
+# ceiling.
 wait_for_container_block() {  # CONTAINER TARGET_BLOCK MESSAGE [SECONDS]
   local container=$1
   local target_block=$2
   local message=$3
-  local head_block="" rc=0
+  local head_block="" highest="" source="" log_since="" rc=0
 
   _await_progress "$message ('$container' to block $target_block)" "${4:-}" _head_block_progress || rc=$?
   if [ "$rc" -ne 0 ]; then
