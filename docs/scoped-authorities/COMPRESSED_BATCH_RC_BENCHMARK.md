@@ -2,7 +2,7 @@
 
 ## Result scope
 
-These are measurements from the experimental HF30 C++ chain fixture, not from a public Hive network. Every row's transactions were submitted to the fixture, included in a produced block, and checked against confirmed balances. The benchmark also verifies that each confirmed transaction's RC cost is the same value recorded at submission and that scoped lifetime counters equal their inputs. It uses HBD, matching memo bytes within each shape, identical source/output flows, and the fixture's active RC parameters and pools.
+These are measurements from the experimental HF30/HF31 C++ chain fixture, not from a public Hive network. Every row's transactions were submitted to the fixture, included in a produced block, and checked against confirmed balances. The benchmark also verifies that each confirmed transaction's RC cost is the same value recorded at submission and that scoped lifetime counters equal their inputs. It uses HBD, matching memo bytes within each shape, identical source/output flows, and the fixture's active RC parameters and pools.
 
 `compressed_batch_rc_benchmark.csv` is the raw result. It includes all five RC usage-vector dimensions, submitted transaction RC costs, same-pool normalized costs, scoped grant setup costs, signatures, elapsed push time, process peak RSS, and balance-adjustment call counts.
 
@@ -13,11 +13,11 @@ A = independent standard transfer transactions. B = one signed transaction with 
 | Inputs → outputs | A/B/C/D bytes | A/B/C/D signatures | C byte savings vs A / B | D byte savings vs A / B | A/B/C/D confirmed RC | C RC savings vs A / B | D RC savings vs A / B |
 |---|---:|---:|---:|---:|---:|---:|---:|
 | 1 → 3 | 396 / 240 / 175 / 185 | 3 / 1 / 1 / 1 | 55.81% / 27.08% | 53.28% / 22.92% | 17,633,292 / 10,290,824 / 7,688,842 / 8,117,435 | 56.40% / 25.28% | 53.97% / 21.12% |
-| 1 → 10 | 1,330 / 628 / 315 / 325 | 10 / 1 / 1 / 1 | 76.32% / 49.84% | 75.56% / 48.25% | 63,095,010 / 27,966,052 / 14,438,791 / 14,896,680 | 77.12% / 48.37% | 76.39% / 46.73% |
-| 1 → 100 | 13,400 / 5,678 / 2,115 / 2,125 | 100 / 1 / 1 / 1 | 84.22% / 62.75% | 84.14% / 62.57% | 738,773,100 / 292,174,541 / 110,814,161 / 111,349,014 | 85.00% / 62.07% | 84.93% / 61.89% |
-| 3 → 2 | 396 / 370 / 333 / 213 | 3 / 3 / 3 / 1 | 15.91% / 10.00% | 46.21% / 42.43% | 48,955,740 / 45,593,473 / 41,276,340 / 26,139,848 | 15.69% / 9.47% | 46.61% / 42.67% |
-| 10 → 10 | 1,340 / 1,223 / 1,116 / 541 | 10 / 10 / 10 / 1 | 16.72% / 8.75% | 59.63% / 55.76% | 169,692,960 / 154,205,245 / 141,540,778 / 67,360,472 | 16.59% / 8.21% | 60.30% / 56.32% |
-| 100 → 100 | 13,600 / 12,313 / 10,926 / 4,501 | 100 / 100 / 100 / 1 | 19.66% / 11.26% | 66.90% / 63.45% | 1,850,881,200 / 1,668,368,778 / 1,490,469,862 / 599,713,861 | 19.47% / 10.66% | 67.60% / 64.05% |
+| 1 → 10 | 1,330 / 628 / 315 / 325 | 10 / 1 / 1 / 1 | 76.32% / 49.84% | 75.56% / 48.25% | 63,095,400 / 27,966,102 / 14,438,850 / 14,896,740 | 77.12% / 48.37% | 76.39% / 46.73% |
+| 1 → 100 | 13,400 / 5,678 / 2,115 / 2,125 | 100 / 1 / 1 / 1 | 84.22% / 62.75% | 84.14% / 62.57% | 738,792,000 / 292,175,279 / 110,815,281 / 111,350,145 | 85.00% / 62.07% | 84.93% / 61.89% |
+| 3 → 2 | 396 / 370 / 333 / 213 | 3 / 3 / 3 / 1 | 15.91% / 10.00% | 46.21% / 42.43% | 48,956,640 / 45,594,342 / 41,277,264 / 26,140,254 | 15.69% / 9.47% | 46.61% / 42.67% |
+| 10 → 10 | 1,340 / 1,223 / 1,116 / 541 | 10 / 10 / 10 / 1 | 16.72% / 8.75% | 59.63% / 55.76% | 169,698,870 / 154,210,880 / 141,546,906 / 67,361,866 | 16.59% / 8.21% | 60.31% / 56.32% |
+| 100 → 100 | 13,600 / 12,313 / 10,926 / 4,501 | 100 / 100 / 100 / 1 | 19.66% / 11.26% | 66.90% / 63.45% | 1,851,013,800 / 1,668,494,261 / 1,490,607,397 / 599,733,022 | 19.47% / 10.66% | 67.60% / 64.06% |
 
 Compressed payloads retain the required signatures: active batches need one authority signature per source; scoped batches need the actor signature. The reduction is largest when one input funds many outputs and when a scoped batch replaces many source signatures. For small fan-in/fan-out, B's standard transaction can already share transaction overhead, so the extra compression yields smaller savings.
 
@@ -45,6 +45,8 @@ The large 100-input setup amount includes 100 separately created grants. In a re
 ## RC accounting changes covered
 
 Ordinary `transfer_operation` pays market-byte RC. Scoped direct transfers and compressed batches now do the same. Compressed batches charge execution weight for each input and output; every scoped input adds another transfer execution weight for reading and updating its persistent grant counter. A scoped batch selects its delegated actor as RC payer, including when active-authority inputs are mixed in. Pure active batches deterministically select the first sorted source as payer.
+
+Under HF31, scoped-grant creation additionally pays an execution weight for each retained grant row that its evaluator must scan, including earlier creations in the same transaction, and charges the 64-byte high-water metadata estimate once per grantor when that object is first created. This keeps the 100-row maximum priced without charging an empty account for work it does not cause. The benchmark's grantors begin with no retained rows. Its post-refinement run is preserved in `compressed_batch_rc_benchmark_after_hf31.csv`; resource vectors are unchanged, while confirmed RC values vary slightly between runs as the measured pool conditions evolve. Use each CSV's `same_pool_rc_cost` for within-run comparisons. Rerun instructions below write a new CSV without modifying either checked-in measurement.
 
 New operation tags remain outside the historical regular-operation range and are mapped to the existing `multiop` RC statistics bucket. This bucket is aggregate reporting only: the per-transaction RC calculation uses each operation's own resource vector and is not replaced by the bucket average. Keeping the bucket avoids changing the persistent `rc_stats_object` size/checksum. The tradeoff is that the RC stats API does not expose a distinct average for each experimental operation.
 

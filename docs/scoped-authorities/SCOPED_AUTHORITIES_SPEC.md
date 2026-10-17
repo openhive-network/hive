@@ -1,6 +1,6 @@
 # Scoped Authorities Protocol Specification
 
-**Status: a development-only consensus prototype is implemented. The schemas and limits below describe the current source; broader testnet, snapshot/replay, and external security validation remain incomplete.**
+**Status: the development-only consensus prototype includes scoped grants, compressed batches, and an experimental grant-lifecycle hardfork. Unit coverage includes lifecycle behavior; deployment remains subject to runtime, snapshot/replay, and external security validation.**
 
 ## Goals and non-goals
 
@@ -10,11 +10,11 @@ Version one excludes savings, recurrent transfers, escrow, vesting, conversions,
 
 ## Protocol design
 
-Three regular operations are implemented: `create_scoped_authority_operation`, `revoke_scoped_authority_operation`, and `scoped_transfer_operation`. No update operation is provided. Changing limits requires revoking the old grant and creating a new grant with a distinct grant identifier; each grant has independent counters.
+Four regular operations are implemented: `create_scoped_authority_operation`, `revoke_scoped_authority_operation`, `scoped_transfer_operation`, and `compressed_batch_transfer_operation`. No update operation is provided. Changing limits requires revoking the old grant and creating a new grant with a higher grant identifier; each grant has independent counters.
 
 Creation and revocation require the grantor's **active** authority. This matches the authority used for liquid transfers and allows recovery through normal owner-to-active authority upgrade semantics. Owner authorization can satisfy an active requirement under current transaction verification rules; the owner key is not separately required. Scoped transfer requires the actor's normal active account authority, never the grantor's authority. It has no `account_auths` mechanism and is not added to authority recursion or signature verification shortcuts.
 
-The grant record contains the grantor and actor account names, caller-selected `uint32_t` grant ID, asset-specific per-transfer/lifetime/period amounts, period seconds, valid-from and expiration timestamps, sorted recipient account names (empty means unrestricted), lifetime spent, current period index and period spent, and a revoked bit. A unique index on `(grantor, grant_id)` and lookup index on `(actor, grantor, grant_id)` support deterministic access. IDs cannot be reused while the tombstone exists. Creation is bounded at 100 grants per grantor; recipient lists are bounded at 32 accounts.
+The grant record contains the grantor and actor account names, caller-supplied `uint32_t` grant ID, asset-specific per-transfer/lifetime/period amounts, period seconds, valid-from and expiration timestamps, sorted recipient account names (empty means unrestricted), lifetime spent, current period index and period spent, and a revoked bit. A unique index on `(grantor, grant_id)` and lookup index on `(actor, grantor, grant_id)` support deterministic access. Under HF30, the original rule limits retained grant records to 100 and does not require increasing IDs. Under alternate-chain-only HF31, each grantor has one persistent high-water ID record; accepted IDs must strictly increase, may be skipped, and cannot wrap or be reused. A legacy grantor's high-water mark is initialized from its highest retained grant ID before pruning. Each grantor can have at most 100 active or future-dated grants; revoked and expired rows are pruned during later grant creation. Since the HF30 retained-record cap bounds the scan, creation visits at most 100 rows and never removes a usable grant. Recipient lists are bounded at 32 accounts.
 
 ## Operation schemas (JSON shape)
 
@@ -42,13 +42,13 @@ All amounts use positive canonical `asset` integer units. For every successful s
 
 The valid interval is half-open: `valid_from <= head_block_time < expires_at`. The fixed period index is `(head_block_time - valid_from) / period_seconds`; the period counter logically starts at zero when the index changes. Time is consensus block time. Lifetime spent never resets. Multiple operations in one transaction, multiple transactions in one block, and multiple grants use their own persistent counters in operation order.
 
-Exact-expiration transfers fail. Expired and revoked objects remain stored as tombstones so IDs cannot be reused and API status is inspectable; per-account grant caps bound persistent state. Tombstone pruning is not part of v1.
+Exact-expiration transfers fail. Under HF31, grant creation deterministically removes that grantor's revoked rows and rows where `expires_at <= head_block_time`. Cleanup is lazy, bounded by the retained-record limit, and runs in the creating transaction's undo session. The high-water metadata survives deletion, including deletion of the grantor's last grant. Queries omit pruned records and return `last_issued_grant_id`; historical operations remain in transaction and account history. Creation RC includes a scan weight for each retained row and charges the metadata estimate only on first creation for that grantor.
 
 ## Hardfork and compatibility
 
-This checkout contains HF28 as its mainnet maximum (`HIVE_NUM_HARDFORKS` is 28 outside alternate-chain builds); HF29 is defined for alternate-chain builds. The prototype gates operations behind development HF30 for alternate-chain builds and rejects them unconditionally in mainnet builds. HF30 is not activated on mainnet by this branch.
+This checkout contains HF28 as its mainnet maximum (`HIVE_NUM_HARDFORKS` is 28 outside alternate-chain builds). The scoped operations are enabled by alternate-chain HF30; changed lifecycle semantics are separately gated by alternate-chain HF31 so historical HF30 transactions retain their original validation. Neither experimental activation is available on mainnet.
 
-Existing regular operation tags are 0–49 and existing virtual-operation tags are 50–92. The new regular operations are appended with tags 93–95, and tests check that they are non-virtual and that existing transfer, recurrent-transfer, and virtual-operation tags remain fixed. A complete binary golden/replay compatibility suite is still needed. Before HF30 all scoped operations are rejected. The new index is registered normally; populated state migration and snapshot compatibility have not been demonstrated.
+Existing regular operation tags are 0–49 and existing virtual-operation tags are 50–92. The four new regular operations are appended with tags 93–96. The normal-variant unit test checks these tags and non-virtual classification. The normal variant has a legacy-transfer binary golden fixture. The skip-VOPS `hive_protocol` target and executable tag check pass, but the full node cannot build with that macro because existing chain paths construct virtual operations omitted from the variant; an alternate-variant serialization round trip remains unverified. Before HF30 scoped operations are rejected. HF31 initializes issuance metadata lazily on the first grant creation and does not rewrite existing rows at activation.
 
 ## Security invariants
 
@@ -59,3 +59,4 @@ Existing regular operation tags are 0–49 and existing virtual-operation tags a
 5. Existing transfer and other operations remain governed by their existing authority paths.
 6. No client clock, oracle, background worker, or off-chain state affects acceptance.
 7. Expiration, revocation, and usage are based on deterministic state and block order.
+8. HF31 pruning removes only revoked or expired records; the permanent per-grantor high-water mark prevents identifier reuse.

@@ -7,8 +7,12 @@
 #include <hive/protocol/hive_custom_operations.hpp>
 
 #include <hive/chain/detail/state/account_object_multiindex.hpp>
+#include <hive/chain/detail/state/scoped_authority_object_multiindex.hpp>
 #include <hive/chain/database.hpp>
 #include <hive/chain/detail/state/witness_objects_multiindex.hpp>
+
+#include <map>
+#include <set>
 
 namespace hive { namespace chain {
 
@@ -181,9 +185,13 @@ struct count_operation_visitor
   const state_object_size_info& _w;
   const operation_exec_info& _e;
   const fc::time_point_sec _now;
+  const database* _db;
+  mutable std::map< account_name_type, uint32_t > _grant_counts;
+  mutable std::set< account_name_type > _metadata_charged;
 
-  count_operation_visitor( const state_object_size_info& w, const operation_exec_info& e, const fc::time_point_sec now )
-    : _w(w), _e(e), _now(now) {}
+  count_operation_visitor( const state_object_size_info& w, const operation_exec_info& e,
+    const fc::time_point_sec now, const database* db = nullptr )
+    : _w(w), _e(e), _now(now), _db(db) {}
 
   int64_t get_authority_dynamic_size( const authority& auth )const
   {
@@ -533,6 +541,33 @@ struct count_operation_visitor
     state_bytes_count += _w.PERSISTENT_STATE_BYTE *
       ( HIVE_SCOPED_AUTHORITY_RC_FIXED_BYTES + HIVE_MAX_ACCOUNT_NAME_LENGTH * op.allowed_recipients.size() );
     execution_time_count += _e.transfer_time;
+    if( _db != nullptr && _db->has_hardfork( HIVE_HARDFORK_SCOPED_AUTHORITY_LIFECYCLE ) )
+    {
+      auto count_itr = _grant_counts.find( op.grantor );
+      if( count_itr == _grant_counts.end() )
+      {
+        uint32_t count = 0;
+        const auto& grants = _db->get_index< scoped_authority_index, by_grantor_id >();
+        auto itr = grants.lower_bound( boost::make_tuple( op.grantor, uint32_t( 0 ) ) );
+        while( itr != grants.end() && itr->grantor == op.grantor )
+        {
+          ++count;
+          ++itr;
+        }
+        count_itr = _grant_counts.emplace( op.grantor, count ).first;
+      }
+      // Grant creation scans each retained row once; later creations in the same
+      // transaction are charged for the rows created by earlier operations too.
+      execution_time_count += _e.transfer_time * count_itr->second;
+      ++count_itr->second;
+
+      const auto& metadata = _db->get_index< scoped_authority_grantor_metadata_index, by_scoped_grantor >();
+      if( metadata.find( op.grantor ) == metadata.end() && _metadata_charged.insert( op.grantor ).second )
+      {
+        // Only the first grant creates the persistent ID high-water record.
+        state_bytes_count += _w.PERSISTENT_STATE_BYTE * HIVE_SCOPED_AUTHORITY_RC_METADATA_BYTES;
+      }
+    }
   }
 
   void operator()( const revoke_scoped_authority_operation& ) const
@@ -607,23 +642,25 @@ void count_resources(
   const signed_transaction& tx,
   const size_t size,
   count_resources_result& result,
-  const fc::time_point_sec now
+  const fc::time_point_sec now,
+  const database& db
 )
 {
-  resource_credits::count_resources( tx, size, result, now );
+  resource_credits::count_resources( tx, size, result, now, db );
 }
 
 void resource_credits::count_resources(
   const signed_transaction& tx,
   const size_t size,
   count_resources_result& result,
-  const fc::time_point_sec now
+  const fc::time_point_sec now,
+  const database& db
   )
 {
   static const state_object_size_info size_info;
   static const operation_exec_info exec_info;
   const int64_t tx_size = int64_t( size );
-  count_operation_visitor vtor( size_info, exec_info, now );
+  count_operation_visitor vtor( size_info, exec_info, now, &db );
 
   for( const operation& op : tx.operations )
   {

@@ -758,11 +758,17 @@ DEFINE_API_IMPL( database_api_impl, get_scoped_authorities ) {
   get_scoped_authorities_return result;
   const auto* grantor = _db.find_account( args.grantor );
   FC_ASSERT( grantor != nullptr, "Given 'grantor' account does not exist." );
+  const auto& metadata = _db.get_index< chain::scoped_authority_grantor_metadata_index,
+    chain::by_scoped_grantor >();
+  auto metadata_itr = metadata.find( args.grantor );
+  if( metadata_itr != metadata.end() )
+    result.last_issued_grant_id = metadata_itr->last_grant_id;
   const auto& idx = _db.get_index< chain::scoped_authority_index, chain::by_grantor_id >();
   auto itr = idx.lower_bound( boost::make_tuple( args.grantor, uint32_t( 0 ) ) );
   const auto now = _db.head_block_time();
   while( itr != idx.end() && itr->grantor == args.grantor )
   {
+    result.last_issued_grant_id = std::max( result.last_issued_grant_id, itr->grant_id );
     api_scoped_authority_object item;
     item.grantor = itr->grantor;
     item.actor = itr->actor;

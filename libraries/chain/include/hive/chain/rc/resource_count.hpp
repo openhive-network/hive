@@ -48,7 +48,8 @@ void count_resources(
   const hive::protocol::signed_transaction& tx,
   const size_t size,
   count_resources_result& result,
-  const fc::time_point_sec now );
+  const fc::time_point_sec now,
+  const database& db );
 
 // scans single nonstandard operation for used extra resources (implemented for rc_custom_operation)
 template< typename OpType >

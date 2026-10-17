@@ -66,7 +66,7 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 
 #ifdef IS_TEST_NET
 
-#define HIVE_BLOCKCHAIN_VERSION             ( version(1, 30, 0) )
+#define HIVE_BLOCKCHAIN_VERSION             ( version(1, 31, 0) )
 
 #define OLD_CHAIN_ID                          (fc::sha256::hash("testnet"))
 #define HIVE_CHAIN_ID                         (fc::sha256::hash("testnet"))
@@ -131,7 +131,7 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 
 #ifdef USE_ALTERNATE_CHAIN_ID
   /// Mirrornet
-  #define HIVE_BLOCKCHAIN_VERSION               ( version(1, 30, 0) )
+  #define HIVE_BLOCKCHAIN_VERSION               ( version(1, 31, 0) )
   #define OLD_CHAIN_ID                          fc::sha256()
   #define HIVE_CHAIN_ID                         fc::sha256("4200000000000000000000000000000000000000000000000000000000000000")
 #else
@@ -361,6 +361,7 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_MAX_COMPRESSED_BATCH_TRANSFER_INPUTS 100
 #define HIVE_MAX_COMPRESSED_BATCH_TRANSFER_OUTPUTS 100
 #define HIVE_SCOPED_AUTHORITY_RC_FIXED_BYTES 512
+#define HIVE_SCOPED_AUTHORITY_RC_METADATA_BYTES 64
 #define HIVE_MAX_SATOSHIS                     int64_t(4611686018427387903ll)
 #define HIVE_MAX_SIG_CHECK_DEPTH              2
 #define HIVE_MAX_SIG_CHECK_ACCOUNTS           125

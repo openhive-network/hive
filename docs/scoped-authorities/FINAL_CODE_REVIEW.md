@@ -10,76 +10,83 @@ The review found two needless evaluator steps and three extra trailing blank lin
 
 Reference: `upstream/develop` (`9d600761564865ac9b4accb3ec59f204c5ee4797`). Implementation HEAD before this review: `222ee085f05b555970aae7e29058cd4603cb590a`.
 
-| Measure | Before cleanup | After cleanup and this report |
+| Measure | Before HF31 lifecycle change | Final HF31 working tree |
 |---|---:|---:|
-| Commits ahead of upstream | 7 | 8 after review commit |
-| Changed files | 40 | 41 |
-| New files | 15 | 16 |
+| Commits ahead of upstream | 8 | 9 after local verification commit |
+| Changed files | 41 | 47 |
+| New files | 16 | 19 |
+| Modified files | 25 | 28 |
 | Deleted files | 0 | 0 |
-| Added lines | 2,346 | 2,556 |
-| Deleted lines | 30 | 30 |
-| Net lines | 2,316 | 2,526 |
-| Production C++ source additions | 528 | 532 |
-| Header additions | 252 | 252 |
-| Test additions | 1,037 | 1,037 |
-| Markdown documentation additions | 486 | 692 (includes this 209-line review) |
-| Benchmark CSV additions | 25 | 25 |
-| Documentation/data total | 511 | 717 |
+| Added lines | 2,556 | 2,998 |
+| Deleted lines | 30 | 39 |
+| Net lines | 2,526 | 2,959 |
+| Production C++ source additions | 532 | 646 |
+| Header additions | 252 | 316 |
+| Test additions | 1,037 | 1,214 |
+| Markdown additions | 692 | 738 |
+| Benchmark CSV additions | 25 | 50 |
+| Other build/config additions | 18 | 34 |
 | New regular protocol operations | 4 | 4 |
-| New persistent consensus object types | 1 | 1 |
-| New scoped-authority test cases | 24 declared | 24 declared (one opt-in RC benchmark is disabled in ordinary suite runs) |
+| New persistent consensus object types | 1 | 2 |
+| Scoped-authority test cases | 24 at prior review | 29 (including one opt-in RC benchmark) |
 
-Before-cleanup counts are from `git diff --numstat upstream/develop...HEAD`, not estimates. After cleanup, excluding this new review, the implementation diff is +2,347/−30 lines (net +2,317); the full final diff including this 207-line report is +2,554/−30 (net +2,524). The per-file inventory below is generated from the final diff. Build trees are ignored and are not counted. The benchmark CSV is tracked documentation data, not a generated build artifact.
+The before-HF31 values are the exact diff at the reviewed HF30 boundary; final values are the staged `git diff --numstat upstream/develop` totals. The final diff includes this review and tracked raw benchmark CSVs; ignored build trees and untracked test output are excluded. The per-file inventory is generated from that same diff.
 
 ### Per-file inventory
 
-`+` and `−` are exact textual line counts versus upstream; the purpose and security rating classify the file’s role in this change.
+`+`/`−` counts below are regenerated from the staged diff against `upstream/develop`; build products and untracked test artifacts are excluded.
 
 | File path | Added lines | Deleted lines | Purpose | Security importance |
 |---|---:|---:|---|---|
-| `docs/scoped-authorities/COMPRESSED_BATCH_RC_BENCHMARK.md` | 75 | 0 | RC benchmark method, resource accounting, results and reproduction command | Low |
+| `docs/scoped-authorities/COMPRESSED_BATCH_RC_BENCHMARK.md` | 77 | 0 | RC benchmark method, resource accounting, results and reproduction command | Low |
 | `docs/scoped-authorities/COMPRESSED_BATCH_TRANSFER.md` | 34 | 0 | Batch wire behavior, limits, validation and API examples | Low |
-| `docs/scoped-authorities/FINAL_CODE_REVIEW.md` | 209 | 0 | Complete inventory, walkthrough, audit findings and evidence | Low |
+| `docs/scoped-authorities/FINAL_CODE_REVIEW.md` | 239 | 0 | Complete inventory, walkthrough, audit findings and evidence | Low |
 | `docs/scoped-authorities/HF30_UPSTREAM_PROTOCOL_PROPOSAL.md` | 56 | 0 | Experimental protocol proposal and upstream review requirements | Low |
 | `docs/scoped-authorities/SCOPED_AUTHORITIES_API.md` | 71 | 0 | Grant create, inspect, transfer and revoke request examples | Low |
 | `docs/scoped-authorities/SCOPED_AUTHORITIES_CHANGELOG.md` | 39 | 0 | Feature file inventory and implementation history | Low |
 | `docs/scoped-authorities/SCOPED_AUTHORITIES_HARDFORK.md` | 24 | 0 | Alternate-chain HF30 activation and deployment compatibility notes | Low |
 | `docs/scoped-authorities/SCOPED_AUTHORITIES_SECURITY.md` | 47 | 0 | Threat model, privilege boundaries and known security limitations | Low |
-| `docs/scoped-authorities/SCOPED_AUTHORITIES_SPEC.md` | 61 | 0 | Scoped grant schema, operations, semantics and protocol constraints | Low |
-| `docs/scoped-authorities/SCOPED_AUTHORITIES_TESTING.md` | 76 | 0 | Build, test, local node and known validation evidence | Low |
+| `docs/scoped-authorities/SCOPED_AUTHORITIES_SPEC.md` | 62 | 0 | Scoped grant schema, operations, semantics and protocol constraints | Low |
+| `docs/scoped-authorities/SCOPED_AUTHORITIES_TESTING.md` | 89 | 0 | Build, test, local node and known validation evidence | Low |
 | `docs/scoped-authorities/compressed_batch_rc_benchmark.csv` | 25 | 0 | Raw per-shape/per-mode RC and serialized-size measurements | Low |
+| `docs/scoped-authorities/compressed_batch_rc_benchmark_after_hf31.csv` | 25 | 0 | Raw post-HF31 RC benchmark results | Low |
 | `libraries/chain/CMakeLists.txt` | 1 | 0 | Compile and register new consensus state index | High |
-| `libraries/chain/database_hardfork.cpp` | 8 | 0 | Development-only HF30 configuration and activation | Critical |
-| `libraries/chain/database_scoped_authority.cpp` | 20 | 0 | Register and instantiate the Chainbase grant index | Critical |
-| `libraries/chain/hive_evaluator_transfer.cpp` | 235 | 0 | Consensus grant/revoke/transfer/batch validation and state changes | Critical |
+| `libraries/chain/database_hardfork.cpp` | 16 | 0 | Development-only HF30 configuration and activation | Critical |
+| `libraries/chain/database_scoped_authority.cpp` | 26 | 0 | Register and instantiate the Chainbase grant index | Critical |
+| `libraries/chain/hive_evaluator_transfer.cpp` | 285 | 0 | Consensus grant/revoke/transfer/batch validation and state changes | Critical |
+| `libraries/chain/include/hive/chain/detail/state/scoped_authority_grantor_metadata_object.hpp` | 31 | 0 | Persistent per-grantor grant-ID high-water metadata | Critical |
 | `libraries/chain/include/hive/chain/detail/state/scoped_authority_object.hpp` | 59 | 0 | Persistent grant record and deterministic indexes | Critical |
-| `libraries/chain/include/hive/chain/detail/state/scoped_authority_object_multiindex.hpp` | 32 | 0 | Persistent grant record and deterministic indexes | Critical |
-| `libraries/chain/include/hive/chain/hive_object_types.hpp` | 5 | 0 | Protocol integration | Medium |
+| `libraries/chain/include/hive/chain/detail/state/scoped_authority_object_multiindex.hpp` | 55 | 0 | Persistent grant record and deterministic indexes | Critical |
+| `libraries/chain/include/hive/chain/hive_object_types.hpp` | 9 | 0 | Protocol integration | Medium |
 | `libraries/chain/include/hive/chain/rc/rc_stats.hpp` | 10 | 1 | Keep operation statistics within the stable RC stats layout | High |
+| `libraries/chain/include/hive/chain/rc/rc_utility.hpp` | 2 | 1 | HF31 grant lifecycle implementation and verification | High |
+| `libraries/chain/include/hive/chain/rc/resource_count.hpp` | 2 | 1 | HF31 grant lifecycle implementation and verification | High |
 | `libraries/chain/index.cpp` | 2 | 0 | Compile and register new consensus state index | High |
 | `libraries/chain/rc/rc_objects.cpp` | 11 | 2 | Keep operation statistics within the stable RC stats layout | High |
-| `libraries/chain/rc/resource_count.cpp` | 34 | 0 | Per-operation RC resource accounting | High |
+| `libraries/chain/rc/rc_utility.cpp` | 1 | 1 | HF31 grant lifecycle implementation and verification | High |
+| `libraries/chain/rc/resource_count.cpp` | 77 | 6 | Per-operation RC resource accounting | High |
 | `libraries/chain/rc/resource_user.cpp` | 12 | 0 | Select RC payer for active/scoped batches | High |
 | `libraries/plugins/apis/account_history_api/account_history_api.cpp` | 2 | 0 | Index and filter new operation types in account history | Medium |
 | `libraries/plugins/apis/account_history_api/include/hive/plugins/account_history_api/account_history_api.hpp` | 4 | 0 | Index and filter new operation types in account history | Medium |
 | `libraries/plugins/apis/database_api/database_api.cpp` | 1 | 0 | Register and serialize grant inspection API structures | Medium |
-| `libraries/plugins/apis/database_api/database_api_financial.cpp` | 44 | 0 | Read-only grant inspection API implementation | Medium |
+| `libraries/plugins/apis/database_api/database_api_financial.cpp` | 50 | 0 | Read-only grant inspection API implementation | Medium |
 | `libraries/plugins/apis/database_api/include/hive/plugins/database_api/database_api.hpp` | 1 | 0 | Register and serialize grant inspection API structures | Medium |
-| `libraries/plugins/apis/database_api/include/hive/plugins/database_api/database_api_args.hpp` | 12 | 0 | Register and serialize grant inspection API structures | Medium |
+| `libraries/plugins/apis/database_api/include/hive/plugins/database_api/database_api_args.hpp` | 13 | 0 | Register and serialize grant inspection API structures | Medium |
 | `libraries/plugins/apis/database_api/include/hive/plugins/database_api/database_api_impl.hpp` | 1 | 0 | Register and serialize grant inspection API structures | Medium |
 | `libraries/plugins/apis/database_api/include/hive/plugins/database_api/database_api_objects.hpp` | 25 | 0 | Register and serialize grant inspection API structures | Medium |
 | `libraries/protocol/forward_impacted.cpp` | 49 | 0 | Affected-account and impacted-balance visitor integration | High |
 | `libraries/protocol/hardfork.d/0-preamble.hf` | 1 | 1 | Development-only HF30 configuration and activation | Critical |
 | `libraries/protocol/hardfork.d/1_30.hf` | 16 | 0 | Development-only HF30 configuration and activation | Critical |
+| `libraries/protocol/hardfork.d/1_31.hf` | 16 | 0 | Alternate-chain-only grant lifecycle hardfork definition | Critical |
 | `libraries/protocol/hive_operations.cpp` | 114 | 0 | Protocol field validation, ordering and conservation checks | Critical |
-| `libraries/protocol/include/hive/protocol/config.hpp` | 11 | 2 | Development-only HF30 configuration and activation | Critical |
+| `libraries/protocol/include/hive/protocol/config.hpp` | 12 | 2 | Development-only HF30 configuration and activation | Critical |
 | `libraries/protocol/include/hive/protocol/hive_operations.hpp` | 85 | 0 | Protocol operation schema, authority declaration, reflection and stable tags | Critical |
 | `libraries/protocol/include/hive/protocol/operations.hpp` | 7 | 0 | Protocol operation schema, authority declaration, reflection and stable tags | Critical |
 | `tests/unit/plugin_tests/condenser_api_account_history_tests.cpp` | 12 | 12 | Update plugin golden output for operation encoding/fixture output | Medium |
 | `tests/unit/plugin_tests/condenser_api_ops_in_block_tests.cpp` | 12 | 12 | Update plugin golden output for operation encoding/fixture output | Medium |
-| `tests/unit/tests/scoped_authority_tests.cpp` | 1013 | 0 | Consensus tests for grants, limits, batches, rollback, tags and RC | High |
+| `tests/unit/tests/scoped_authority_tests.cpp` | 1190 | 0 | Consensus tests for grants, limits, batches, rollback, tags and RC | High |
 
-The largest additions are `tests/unit/tests/scoped_authority_tests.cpp` (1,013 lines), `libraries/chain/hive_evaluator_transfer.cpp` (239 lines), `libraries/protocol/hive_operations.cpp` (114 lines), and `libraries/protocol/include/hive/protocol/hive_operations.hpp` (85 lines). The test file is large because it contains consensus fixtures and adversarial cases; it merits continued decomposition only if upstream reviewers find that it impedes navigation.
+The largest net additions are `tests/unit/tests/scoped_authority_tests.cpp` (1190 lines), `libraries/chain/hive_evaluator_transfer.cpp` (285 lines), `docs/scoped-authorities/FINAL_CODE_REVIEW.md` (239 lines), `libraries/protocol/hive_operations.cpp` (114 lines). The evaluator and tests are consensus-sensitive and should remain easy to navigate; further decomposition should be considered only if it improves reviewability.
 
 ## Plain-English walkthrough
 
@@ -93,7 +100,7 @@ A compressed batch is one transaction that names several source accounts and sev
 
 `create_scoped_authority_operation` is defined and reflected in `libraries/protocol/include/hive/protocol/hive_operations.hpp`; its limits, symbols, timestamps, duration, and canonical sorted recipient list are checked in `libraries/protocol/hive_operations.cpp::create_scoped_authority_operation::validate`.
 
-Its required active authority is the grantor. `create_scoped_authority_evaluator::do_apply` in `libraries/chain/hive_evaluator_transfer.cpp` confirms that both accounts exist, enforces the grantor’s 100-record cap and never-reused grant ID, checks future expiration, and creates the Chainbase object. A grant can be created only after the development HF gate on alternate-chain builds; production-configured evaluator builds reject it.
+Its required active authority is the grantor. `create_scoped_authority_evaluator::do_apply` in `libraries/chain/hive_evaluator_transfer.cpp` confirms that both accounts exist, enforces the grantor's record limit and grant-ID rule, checks future expiration, and creates the Chainbase object. HF30 preserves its original 100-retained-record rule; HF31 applies the 100-live-grant cap, prunes revoked/expired rows, and uses persistent high-water IDs. A grant can be created only after the development HF gate on alternate-chain builds; production-configured evaluator builds reject it.
 
 ### Authenticate and transfer
 
@@ -169,10 +176,10 @@ RC savings arise from fewer transaction envelopes/signatures and fewer repeated 
 - **Operation tags:** four operations are appended after all existing regular and virtual alternatives. Existing alternatives are not reordered. They derive from `base_operation`; `is_virtual_operation` calls the operation’s `is_virtual()` implementation rather than assuming tag position. The tagged test pins legacy values, scoped tags, and non-virtual classification. `HIVE_PROTOCOL_SKIP_VOPS` omits the existing VOP alternatives in that build as before; new tags are appended in that configuration too. Cross-build binary protocols still depend on matching Hive serialization/build configuration as they did before.
 - **Mainnet isolation:** HF30 is included only in the alternate-chain hardfork count; mainnet remains at HF28. Scoped evaluator guards compile to an unconditional hardfork assertion in non-alternate builds. This is an implementation safeguard, not proof from a live production node; do not connect experimental software to mainnet or enable the feature without an assigned approved hardfork.
 - **Authority:** grant create/revoke require grantor active authority; scoped transfer requires actor active authority; ordinary batch inputs require every source active authority. Standard Hive key/account recursion remains in force. No grantor active authority is added for scoped operations.
-- **State/rollback:** grant IDs are unique for the grantor’s retained record lifetime; records are not pruned; total record count per grantor is bounded. Mutations use normal Chainbase create/modify and transaction undo. No scheduler or local clock is used.
+- **State/rollback:** HF30 grant IDs are unique while their rows are retained and rows are not pruned. HF31 records are pruned only when revoked or expired, and the high-water ID metadata persists permanently. Mutations use normal Chainbase create/modify/remove and transaction undo. No scheduler or local clock is used.
 - **Arithmetic/periods:** protocol bounds and remaining-limit subtraction precede additions; period rollover is lazy and timestamp-derived. The state invariant checks protect against malformed persisted counters. Fixed-window anchoring makes the first period begin at `valid_from`.
 - **Batch attribution:** the ordered allocation is explicit and tested for restricted/unrestricted mixtures, separate grants, split recipients, and ordering. Overlap is rejected. The design is auditable but should receive focused independent review because recipient authorization depends on this rule.
-- **RC:** usage is charged per entry, but execution weights are estimates and require protocol economics review. RC operation-stat aggregation uses the historic multiop slot to avoid changing persistent `rc_stats_object` array size; per-operation values are not visible as their own bucket. Validate upstream reporting expectations.
+- **RC:** usage is charged per batch input/output and scoped grant access. HF31 grant creation is charged for retained rows scanned plus first-time metadata creation. These weights remain estimates and require protocol economics review. RC operation-stat aggregation uses the historic multiop slot to avoid changing persistent `rc_stats_object` array size; per-operation values are not visible as their own bucket. Validate upstream reporting expectations.
 - **API/history:** read-only grant API enumerates at most the per-grantor cap; the history bit filters add high-order enum bits, which consumers must preserve as 64-bit values. Existing plugin golden fixtures change transaction IDs and PoW fields because the alternate-chain test configuration advances its chain version to 1.30; this reflects development-chain block generation, not a reordering of historical transaction operation tags. The refreshed plugin suite will validate the checked-in fixture values.
 - **Replay/snapshot:** the object is a new Chainbase type appended to the object type enum and requires nodes to use the modified binary for state that contains grants. Earlier evidence covered a one-grant snapshot and replay, not a complete production migration. The object-size change is expected for the new object type; this does not establish compatibility with old binaries or snapshots that contain grants.
 - **Resource bounds:** max grants 100 per grantor, 32 recipients per grant, and 100 batch inputs/outputs bound database and evaluator work. Batch validation uses sorted vectors and linear attribution/overlap walks. Account history and normal transaction payload limits still apply.
@@ -204,6 +211,29 @@ All results below were executed after the source cleanup on this checkout.
 
 ## Diff summary and upstream readiness
 
-The final exact diff against upstream is 41 files, 16 added and 25 modified, +2,556/−30 lines (net +2,526). The diff contains 784 production C++ source/header additions and five deletions, 1,037 test additions and 24 deletions, 692 Markdown documentation lines and 25 benchmark CSV lines, and 18 other build/hardfork/config additions with one deletion. Seven commits were present before cleanup; this review adds one local commit and does not push it.
+The final exact HF31 diff against upstream is 47 files (19 added, 28 modified, none deleted), +2,998/−39 lines (net +2,959). It contains 646 production `.cpp` additions/9 deletions, 316 header additions/5 deletions, 1,214 test additions/24 deletions, 738 Markdown lines, 50 CSV lines, and 34 other build/config additions/1 deletion. Eight commits precede this lifecycle fix; one local commit will make nine. No remote push is made.
 
 Recommendation: suitable for upstream technical discussion as an experimental proposal, not for merge or activation. Before proposing production consensus activation, Hive maintainers should review operation-tag strategy, persisted object/snapshot migration, RC weights and payer economics, grant growth policy, and recipient attribution. Independent security audit, populated multi-grant snapshot/replay testing, mainnet-runtime rejection testing, separate `HIVE_PROTOCOL_SKIP_VOPS` build coverage, fresh signed-RPC/two-node verification, and an agreed future hardfork plan remain prerequisites.
+
+## HF31 grant lifecycle hardening update
+
+This section records the follow-up change after the earlier code review; the current statistics and post-HF31 test results are summarized at the end of this document.
+
+HF30's 100-row retained-record limit created a lifetime exhaustion bug: deleting nothing meant each revoked or expired grant permanently consumed a slot. HF31 fixes that on alternate chains while preserving HF30 replay rules. Each grantor now has one Chainbase metadata row containing the highest issued `uint32_t` grant ID. New IDs must be strictly greater, may skip values, never wrap, and cannot be reused after pruning. The maximum ID can be used once; afterward no further grant ID is representable. The first HF31 grant creation by a legacy grantor derives the high-water value from the maximum of its at-most-100 retained HF30 rows before cleaning them.
+
+On a later grant creation, the evaluator scans only that grantor's bounded retained rows and removes rows already revoked or with `expires_at <= head_block_time`. It never removes an active grant. The 100-record legacy cap bounds migration and cleanup work, and the new rule caps usable retained grants at 100. Index deletion, metadata creation/update, grant creation, balance/counter changes, and failures all use Chainbase transaction undo. Pruned rows disappear from the inspection API; the API reports `last_issued_grant_id`, while transaction and account-history records remain.
+
+The first RC revision charged every creation for the maximum possible 100-row scan. Focused testing showed that this made even an empty grantor's first creation exceed the default fixture account's RC. The final accounting instead charges one execution weight per existing retained row, adds earlier create operations in the same transaction to that count, and charges the 64-byte metadata estimate once per grantor when first created. Pruning may reduce later actual scans within a transaction, so later creation costs can conservatively overestimate work; they do not underprice it. The focused test suite and full chain suite pass with these prices. The post-refinement confirmed-block CSV is `compressed_batch_rc_benchmark_after_hf31.csv`; transfer rows match the prior benchmark for its fresh grantors.
+
+Final lifecycle verification for this change: `ninja -C build-baseline -j2 chain_test` succeeded; the focused suite passed 29 cases and 745 assertions; the full suite passed 526 cases and 1,835,530 assertions with one opt-in case skipped; the separate compressed-batch RC benchmark passed 904 assertions. Tests cover creation of 100 grants, rejection at 101, replacement after revocation, pruning after expiry, failed-transaction and block-pop rollback, historical-ID migration, rejected ID reuse, and maximum-ID exhaustion. Both HIVE and HBD appear among the live grants. These are C++ fixture results; they do not constitute fresh populated snapshot/replay or signed-RPC tests for metadata state.
+
+The latest alternate-chain `chain_test` binary was rebuilt and run: 526 of 527 cases passed, one opt-in case was skipped, and all 1,835,530 assertions passed; the focused scoped suite passed 29 cases and 745 assertions. The full plugin suite passed 102/102 cases and 7,134/7,134 assertions. The configuration filter passed 3/3 cases and 51/51 assertions. The standalone RC benchmark passed 904/904 assertions and its 24 deterministic rows matched the checked-in HF31 CSV for serialized sizes, signatures, resource vectors, RC charges, grant setup, and balance writes. Production-configured runtime rejection, a separate `HIVE_PROTOCOL_SKIP_VOPS` build, and populated multi-grant snapshot/replay after HF31 remain unverified.
+
+
+## HF31 verification addendum
+
+The final lifecycle change is confined to alternate-chain HF31. HF30 behavior is retained for replay: retained-record cap and arbitrary non-reused-while-present IDs. HF31 creates one permanent grantor metadata row, lazily seeds it from the maximum legacy grant ID, then requires increasing IDs. Grant ID zero is not available for a newly issued HF31 grant; `UINT32_MAX` is valid once and permanently exhausts that grantor's ID space. On grant creation only, up to 100 retained rows are inspected; revoked or already-expired records are removed, and no live record is pruned. The resulting metadata survives removal of the grantor's last grant. Failed transaction and block pop restore both the removed rows and high-water metadata through normal Chainbase undo.
+
+`resource_count.cpp` accounts execution cost for the bounded rows scanned and earlier grant creations in the same transaction; it adds an estimated 64-byte persistent-state cost when creating metadata for the first time. This is conservative when earlier creates in a transaction prune rows. It is still a protocol pricing estimate, not a measured CPU-to-RC conversion.
+
+Post-HF31 verification: `ninja -C build-baseline -j2 chain_test` succeeded; the focused suite passed 29/29 with 745 assertions; the full suite passed 526 cases with 1,835,530/1,835,530 assertions and one opt-in case skipped; plugin tests passed 102/102 with 7,134 assertions; config tests passed 3/3 with 51 assertions; the opt-in RC benchmark passed 904/904 assertions. Existing populated snapshot, replay, signed-RPC, and two-node evidence predates the new metadata object and must not be treated as HF31 lifecycle verification. The skip-VOPS protocol library compiled and a runtime tag-check executable passed (historical transfer 2, new operations 50–53). Full-chain compilation under that macro fails in existing VOP-producing chain code because those operation types are absent from the variant; no skip-VOPS node binary or serialization round trip is claimed. Runtime operation rejection in the production configuration remains unverified.

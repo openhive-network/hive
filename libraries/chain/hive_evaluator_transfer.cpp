@@ -106,21 +106,71 @@ void create_scoped_authority_evaluator::do_apply( const create_scoped_authority_
     "Scoped authority expiration must be in the future" );
 
   const auto& grants = _db.get_index< scoped_authority_index, by_grantor_id >();
+  if( !_db.has_hardfork( HIVE_HARDFORK_SCOPED_AUTHORITY_LIFECYCLE ) )
+  {
+    // Preserve the original HF30 rules for replaying blocks produced before the
+    // lifecycle hardfork, including the lifetime cap and arbitrary grant IDs.
+    auto itr = grants.lower_bound( boost::make_tuple( o.grantor, uint32_t( 0 ) ) );
+    uint32_t count = 0;
+    while( itr != grants.end() && itr->grantor == o.grantor )
+    {
+      HIVE_CHAIN_STATE_ASSERT( itr->grant_id != o.grant_id, o.grant_id,
+        "Scoped authority grant ID cannot be reused" );
+      ++count;
+      ++itr;
+    }
+    HIVE_CHAIN_LIMIT_ASSERT( count < HIVE_MAX_SCOPED_AUTHORITIES_PER_GRANTOR, count,
+      "Grantor has reached the HF30 scoped-authority record limit" );
+    _db.create< scoped_authority_object >( o.grantor, o.actor, o.grant_id,
+      o.max_per_transfer, o.max_per_period, o.max_lifetime, o.period_seconds,
+      o.valid_from, o.expires_at, o.allowed_recipients );
+    return;
+  }
+
+  const auto& metadata_index = _db.get_index< scoped_authority_grantor_metadata_index, by_scoped_grantor >();
+  auto metadata_itr = metadata_index.find( o.grantor );
+  const bool migrate_metadata = metadata_itr == metadata_index.end();
+  uint32_t last_grant_id = migrate_metadata ? 0 : metadata_itr->last_grant_id;
+  if( !migrate_metadata )
+    HIVE_CHAIN_STATE_ASSERT( o.grant_id > last_grant_id, o.grant_id,
+      "Scoped authority grant IDs must increase and cannot be reused" );
+
+  uint32_t live_count = 0;
+  uint32_t scanned = 0;
   auto itr = grants.lower_bound( boost::make_tuple( o.grantor, uint32_t( 0 ) ) );
-  uint32_t count = 0;
   while( itr != grants.end() && itr->grantor == o.grantor )
   {
-    HIVE_CHAIN_STATE_ASSERT( itr->grant_id != o.grant_id, o.grant_id,
-      "Scoped authority grant ID cannot be reused" );
-    ++count;
-    ++itr;
+    HIVE_CHAIN_STATE_ASSERT( scanned < HIVE_MAX_SCOPED_AUTHORITIES_PER_GRANTOR, scanned,
+      "Scoped authority state exceeds the per-grantor record bound" );
+    ++scanned;
+    if( migrate_metadata )
+      last_grant_id = std::max( last_grant_id, itr->grant_id );
+    if( itr->revoked || itr->expires_at <= _db.head_block_time() )
+    {
+      const auto& obsolete = *itr++;
+      _db.remove( obsolete );
+    }
+    else
+    {
+      ++live_count;
+      ++itr;
+    }
   }
-  HIVE_CHAIN_LIMIT_ASSERT( count < HIVE_MAX_SCOPED_AUTHORITIES_PER_GRANTOR, count,
-    "Grantor has reached the lifetime scoped-authority limit" );
+  const scoped_authority_grantor_metadata_object* metadata = migrate_metadata
+    ? &_db.create< scoped_authority_grantor_metadata_object >( o.grantor, last_grant_id )
+    : &*metadata_itr;
+  HIVE_CHAIN_STATE_ASSERT( o.grant_id > last_grant_id, o.grant_id,
+    "Scoped authority grant IDs must increase and cannot be reused" );
+  HIVE_CHAIN_LIMIT_ASSERT( live_count < HIVE_MAX_SCOPED_AUTHORITIES_PER_GRANTOR, live_count,
+    "Grantor has reached the live scoped-authority limit" );
 
   _db.create< scoped_authority_object >( o.grantor, o.actor, o.grant_id,
     o.max_per_transfer, o.max_per_period, o.max_lifetime, o.period_seconds,
     o.valid_from, o.expires_at, o.allowed_recipients );
+  _db.modify( *metadata, [&]( scoped_authority_grantor_metadata_object& mutable_metadata )
+  {
+    mutable_metadata.last_grant_id = o.grant_id;
+  } );
 }
 
 void revoke_scoped_authority_evaluator::do_apply( const revoke_scoped_authority_operation& o )

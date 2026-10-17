@@ -16,7 +16,7 @@ Creation/revocation use grantor active authority. Scoped transfer uses actor act
 | Several operations in a transaction/block | Evaluators mutate the same grant object in deterministic operation order; undo session covers all writes |
 | Several grants or actors | Counters keyed by grant object; no actor-level shared counter or unintended aggregation |
 | Forged ID / another grantor | Lookup by grantor and ID; actor and grantor fields compared against stored record |
-| Revocation / expiry reuse | Tombstone remains revoked; half-open time interval evaluated on every use |
+| Revocation / expiry reuse | Every use checks status/time; HF31 cleanup removes unusable rows while permanent high-water metadata blocks ID reuse |
 | Overflow, negative/zero amount, precision mismatch | Positive canonical asset validation and checked integer additions |
 | Boundary timestamp | `valid_from <= block_time < expires_at`; fixed period index anchored at valid_from |
 | Alternate operation path | Dedicated op only; no implicit grant support in transfer, savings, recurrent, vesting, escrow, market, or conversion evaluators |
@@ -36,7 +36,7 @@ Creation/revocation use grantor active authority. Scoped transfer uses actor act
 
 The byte encoding reuses Hive's FC binary serializer with one shared symbol and memo; account names remain explicit. It does not use a custom decoder, Chainbase object IDs, or noncanonical references. The 100-output signed-size comparison showed 53.35% fewer bytes than 100 standard transfer operations; the broader confirmed-block byte and RC results are in [COMPRESSED_BATCH_RC_BENCHMARK.md](COMPRESSED_BATCH_RC_BENCHMARK.md). RC execution weight charges every input and output; scoped inputs also carry an additional transfer weight for grant state access, and signature costs remain the existing protocol costs.
 
-Grant IDs cannot be recycled while the grant record is retained: revoke marks the record and does not erase it. The implementation currently retains expired and revoked records, so each grantor can create at most 100 grants over its lifetime. Deterministic pruning and safe ID reuse are not implemented; introducing either requires tombstones or a non-reusable allocation scheme.
+HF30 preserves the original experimental retained-record rule. HF31 replaces it with a 100-live-grant cap and lazy pruning during grant creation. A per-grantor metadata object stores the highest issued `uint32_t` ID; new IDs must be higher, and the metadata is never pruned. Existing HF30 state migrates lazily by scanning its at-most-100 retained rows before cleanup. `UINT32_MAX` may be issued once and then permanently exhausts that grantor's ID space. Failed transactions and block pops restore deleted rows and metadata through Chainbase undo. The API omits pruned rows but reports the last issued ID.
 
 RC transaction cost is charged to the transaction submitter through the existing Hive accounting. The confirmed-block benchmark compares resource vectors and RC costs against separate transfers and a multi-transfer transaction. Grant-creation cost is reported separately and is large enough that a one-use scoped grant is not RC efficient end to end. The measurements are fixture-specific and are not a production RC guarantee.
 

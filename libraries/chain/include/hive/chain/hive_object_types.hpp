@@ -91,6 +91,7 @@ enum object_type
   state_stamp_data_object_type,
   // Appended to preserve all existing Chainbase object type IDs.
   scoped_authority_object_type,
+  scoped_authority_grantor_metadata_object_type,
 };
 
 class dynamic_global_property_object;
@@ -135,6 +136,7 @@ class rc_expired_delegation_object;
 
 class state_stamp_data_object;
 class scoped_authority_object;
+class scoped_authority_grantor_metadata_object;
 
 typedef oid_ref< dynamic_global_property_object         > dynamic_global_property_id_type;
 typedef oid_ref< account_object                         > account_id_type;
@@ -179,6 +181,7 @@ typedef oid_ref< rc_expired_delegation_object           > rc_expired_delegtion_i
 
 typedef oid_ref< state_stamp_data_object                > state_stamp_data_id_type;
 typedef oid_ref< scoped_authority_object                > scoped_authority_id_type;
+typedef oid_ref< scoped_authority_grantor_metadata_object > scoped_authority_grantor_metadata_id_type;
 
 } } //hive::chain
 
@@ -324,6 +327,7 @@ FC_REFLECT_ENUM( hive::chain::object_type,
             (rc_expired_delegation_object_type)
             (state_stamp_data_object_type)
             (scoped_authority_object_type)
+            (scoped_authority_grantor_metadata_object_type)
           )
 
 FC_REFLECT_TYPENAME( hive::chain::shared_string )

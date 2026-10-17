@@ -845,7 +845,7 @@ void resource_credits::finalize_transaction( const full_transaction_type& full_t
   // note: tx_info.usage might already contain state discount for selected operations and extra usage for custom ops
   // note: while we could calculate most of used resources before transaction is executed, doing so for
   // custom operations would be troublesome
-  count_resources( tx, full_tx.get_transaction_size(), tx_info.usage, db.head_block_time() );
+  count_resources( tx, full_tx.get_transaction_size(), tx_info.usage, db.head_block_time(), db );
 
   // How many RC does this transaction cost?
   int64_t total_cost = compute_cost( &tx_info );

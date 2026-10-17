@@ -13,7 +13,6 @@
 #include "../db_fixture/clean_database_fixture.hpp"
 
 #include <chrono>
-#include <cstdio>
 #include <cstdlib>
 #include <fstream>
 #include <limits>
@@ -47,6 +46,11 @@ create_scoped_authority_operation make_hbd_grant( const database& db, const std:
 const scoped_authority_object& find_grant( database& db, const account_name_type& grantor, uint32_t grant_id )
 {
   return db.get< scoped_authority_object, by_grantor_id >( boost::make_tuple( grantor, grant_id ) );
+}
+
+const scoped_authority_grantor_metadata_object& find_grant_metadata( database& db, const account_name_type& grantor )
+{
+  return db.get< scoped_authority_grantor_metadata_object, by_scoped_grantor >( grantor );
 }
 
 template< typename F > bool throws_consensus_error( F&& action )
@@ -97,6 +101,171 @@ BOOST_AUTO_TEST_CASE( scoped_create_and_transfer_updates_persistent_counters )
   BOOST_REQUIRE_EQUAL( grant.period_spent, HBD_asset( 5000 ).to_asset() );
   BOOST_REQUIRE_EQUAL( db->get_account( "merchant" ).get_hbd_balance(), HBD_asset( 5000 ) );
   BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).get_hbd_balance(), HBD_asset( 95000 ) );
+}
+
+BOOST_AUTO_TEST_CASE( scoped_grant_cap_tracks_live_records_and_ids_never_repeat )
+{
+  ACTORS( DEFAULT_VESTING, (alice)(bob) );
+  issue_funds( "alice", HIVE_asset( 100000000 ) );
+  vest( "alice", HIVE_asset( 100000000 ) );
+  resource_count_type first_create_usage;
+  resource_count_type full_set_create_usage;
+  for( uint32_t id = 1; id <= HIVE_MAX_SCOPED_AUTHORITIES_PER_GRANTOR; ++id )
+  {
+    auto grant = make_hbd_grant( *db, {}, id, 100, 1000, 10000, 60, 3600 );
+    if( id > 50 )
+    {
+      grant.max_per_transfer = HIVE_asset( 100 ).to_asset();
+      grant.max_per_period = HIVE_asset( 1000 ).to_asset();
+      grant.max_lifetime = HIVE_asset( 10000 ).to_asset();
+    }
+    const auto tx = push_transaction( grant, alice_private_key );
+    resource_count_type usage;
+    count_resources( tx->get_transaction(), tx->get_transaction_size(), usage, db->head_block_time(), *db );
+    if( id == 1 ) first_create_usage = usage;
+    if( id == HIVE_MAX_SCOPED_AUTHORITIES_PER_GRANTOR ) full_set_create_usage = usage;
+    generate_blocks( 1 );
+  }
+  BOOST_REQUIRE_GT( full_set_create_usage[resource_execution_time], first_create_usage[resource_execution_time] );
+  BOOST_REQUIRE_EQUAL( db->count< scoped_authority_object >(), HIVE_MAX_SCOPED_AUTHORITIES_PER_GRANTOR );
+  BOOST_REQUIRE_EQUAL( find_grant_metadata( *db, "alice" ).last_grant_id, 100u );
+
+  issue_funds( "alice", HIVE_asset( 1 ) );
+  scoped_transfer_operation spend;
+  spend.grantor = "alice";
+  spend.actor = "bob";
+  spend.to = "bob";
+  spend.grant_id = 100;
+  spend.amount = HIVE_asset( 100 ).to_asset();
+  spend.memo = "lifecycle counter preservation";
+  push_transaction( spend, bob_private_key );
+  BOOST_REQUIRE_EQUAL( find_grant( *db, "alice", 100 ).lifetime_spent, HIVE_asset( 100 ).to_asset() );
+
+  HIVE_REQUIRE_THROW( push_transaction(
+    make_hbd_grant( *db, {}, 101, 100, 1000, 10000, 60, 3600 ), alice_private_key ), fc::exception );
+
+  signed_transaction revoke_tx;
+  revoke_tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+  for( uint32_t id = 1; id <= 50; ++id )
+  {
+    revoke_scoped_authority_operation revoke;
+    revoke.grantor = "alice";
+    revoke.grant_id = id;
+    revoke_tx.operations.emplace_back( revoke );
+  }
+  push_transaction( revoke_tx, alice_private_key );
+  generate_blocks( 1 );
+
+  signed_transaction replace_tx;
+  replace_tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+  for( uint32_t id = 101; id <= 150; ++id )
+    replace_tx.operations.emplace_back( make_hbd_grant( *db, {}, id, 100, 1000, 10000, 60, 3600 ) );
+  push_transaction( replace_tx, alice_private_key );
+  generate_blocks( 1 );
+
+  BOOST_REQUIRE_EQUAL( db->count< scoped_authority_object >(), HIVE_MAX_SCOPED_AUTHORITIES_PER_GRANTOR );
+  BOOST_REQUIRE_EQUAL( find_grant_metadata( *db, "alice" ).last_grant_id, 150u );
+  BOOST_REQUIRE(( db->find< scoped_authority_object, by_grantor_id >(
+    boost::make_tuple( "alice", 1u ) ) == nullptr ));
+  BOOST_REQUIRE(( db->find< scoped_authority_object, by_grantor_id >(
+    boost::make_tuple( "alice", 100u ) ) != nullptr ));
+  BOOST_REQUIRE_EQUAL( find_grant( *db, "alice", 100 ).lifetime_spent, HIVE_asset( 100 ).to_asset() );
+  HIVE_REQUIRE_THROW( push_transaction(
+    make_hbd_grant( *db, {}, 1, 100, 1000, 10000, 60, 3600 ), alice_private_key ), fc::exception );
+}
+
+BOOST_AUTO_TEST_CASE( scoped_expired_grants_are_pruned_and_cleanup_rolls_back )
+{
+  ACTORS( DEFAULT_VESTING, (alice)(bob) );
+  issue_funds( "alice", HIVE_asset( 100000000 ) );
+  vest( "alice", HIVE_asset( 100000000 ) );
+  for( uint32_t id = 1; id <= HIVE_MAX_SCOPED_AUTHORITIES_PER_GRANTOR; ++id )
+  {
+    auto grant = make_hbd_grant( *db, {}, id, 100, 1000, 10000, 60, 600 );
+    if( id > 50 )
+    {
+      grant.max_per_transfer = HIVE_asset( 100 ).to_asset();
+      grant.max_per_period = HIVE_asset( 1000 ).to_asset();
+      grant.max_lifetime = HIVE_asset( 10000 ).to_asset();
+    }
+    push_transaction( grant, alice_private_key );
+    generate_blocks( 1 );
+  }
+
+  const auto expires_at = find_grant( *db, "alice", HIVE_MAX_SCOPED_AUTHORITIES_PER_GRANTOR ).expires_at;
+  const auto blocks_to_expiry = ( expires_at - db->head_block_time() ).to_seconds() / HIVE_BLOCK_INTERVAL;
+  for( int32_t i = 0; i < blocks_to_expiry; ++i )
+    generate_block_from_pending();
+  BOOST_REQUIRE_EQUAL( db->head_block_time(), expires_at );
+
+  const auto replacement = make_hbd_grant( *db, {}, 101, 100, 1000, 10000, 60, 60 );
+  signed_transaction failing_tx;
+  failing_tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+  failing_tx.operations.emplace_back( replacement );
+  revoke_scoped_authority_operation missing_revoke;
+  missing_revoke.grantor = "alice";
+  missing_revoke.grant_id = 999;
+  failing_tx.operations.emplace_back( missing_revoke );
+  HIVE_REQUIRE_THROW( push_transaction( failing_tx, alice_private_key ), fc::exception );
+  BOOST_REQUIRE_EQUAL( db->count< scoped_authority_object >(), HIVE_MAX_SCOPED_AUTHORITIES_PER_GRANTOR );
+  BOOST_REQUIRE_EQUAL( find_grant_metadata( *db, "alice" ).last_grant_id, 100u );
+  BOOST_REQUIRE(( db->find< scoped_authority_object, by_grantor_id >(
+    boost::make_tuple( "alice", 1u ) ) != nullptr ));
+
+  const auto cleanup_tx = push_transaction( replacement, alice_private_key );
+  BOOST_REQUIRE_GT( cleanup_tx->get_rc_cost(), 0 );
+  BOOST_REQUIRE_EQUAL( db->count< scoped_authority_object >(), 1u );
+  BOOST_REQUIRE(( db->find< scoped_authority_object, by_grantor_id >(
+    boost::make_tuple( "alice", 1u ) ) == nullptr ));
+  BOOST_REQUIRE(( db->find< scoped_authority_object, by_scoped_actor >(
+    boost::make_tuple( "bob", "alice", 1u ) ) == nullptr ));
+  HIVE_REQUIRE_THROW( push_transaction( make_transfer( "bob", 1, 1 ), bob_private_key ), fc::exception );
+  BOOST_REQUIRE_EQUAL( find_grant( *db, "alice", 101 ).lifetime_spent, HBD_asset( 0 ).to_asset() );
+  generate_blocks( 1 );
+  db->pop_block();
+  BOOST_REQUIRE_EQUAL( db->count< scoped_authority_object >(), HIVE_MAX_SCOPED_AUTHORITIES_PER_GRANTOR );
+  BOOST_REQUIRE(( db->find< scoped_authority_object, by_grantor_id >(
+    boost::make_tuple( "alice", 1u ) ) != nullptr ));
+  BOOST_REQUIRE_EQUAL( find_grant_metadata( *db, "alice" ).last_grant_id, 100u );
+  BOOST_REQUIRE(( db->find< scoped_authority_object, by_grantor_id >(
+    boost::make_tuple( "alice", 101u ) ) == nullptr ));
+
+  push_transaction( replacement, alice_private_key );
+  generate_blocks( 1 );
+  BOOST_REQUIRE_EQUAL( db->count< scoped_authority_object >(), 1u );
+  BOOST_REQUIRE_EQUAL( find_grant_metadata( *db, "alice" ).last_grant_id, 101u );
+  BOOST_REQUIRE(( db->find< scoped_authority_object, by_grantor_id >(
+    boost::make_tuple( "alice", 1u ) ) == nullptr ));
+}
+
+BOOST_AUTO_TEST_CASE( scoped_grant_id_maximum_is_accepted_once_without_wraparound )
+{
+  ACTORS( DEFAULT_VESTING, (alice)(bob) );
+  const auto max_id = std::numeric_limits<uint32_t>::max();
+  push_transaction( make_hbd_grant( *db, {}, max_id, 100, 1000, 10000, 60, 3600 ), alice_private_key );
+  BOOST_REQUIRE_EQUAL( find_grant_metadata( *db, "alice" ).last_grant_id, max_id );
+  HIVE_REQUIRE_THROW( push_transaction(
+    make_hbd_grant( *db, {}, 1, 100, 1000, 10000, 60, 3600 ), alice_private_key ), fc::exception );
+  BOOST_REQUIRE_EQUAL( db->count< scoped_authority_object >(), 1u );
+}
+
+BOOST_AUTO_TEST_CASE( scoped_grant_metadata_migrates_existing_ids_before_pruning )
+{
+  ACTORS( DEFAULT_VESTING, (alice)(bob) );
+  const auto valid_from = db->head_block_time() - fc::seconds( 60 );
+  const auto expired_at = db->head_block_time();
+  const std::vector< account_name_type > no_recipients;
+  for( uint32_t id : { 7u, 3u } )
+    db->create< scoped_authority_object >( "alice", "bob", id,
+      HBD_asset( 100 ).to_asset(), HBD_asset( 1000 ).to_asset(), HBD_asset( 10000 ).to_asset(),
+      60, valid_from, expired_at, no_recipients );
+
+  push_transaction( make_hbd_grant( *db, {}, 8, 100, 1000, 10000, 60, 60 ), alice_private_key );
+  BOOST_REQUIRE_EQUAL( find_grant_metadata( *db, "alice" ).last_grant_id, 8u );
+  BOOST_REQUIRE(( db->find< scoped_authority_object, by_grantor_id >(
+    boost::make_tuple( "alice", 7u ) ) == nullptr ));
+  HIVE_REQUIRE_THROW( push_transaction(
+    make_hbd_grant( *db, {}, 3, 100, 1000, 10000, 60, 60 ), alice_private_key ), fc::exception );
 }
 
 BOOST_AUTO_TEST_CASE( scoped_per_transfer_period_and_lifetime_limits_are_enforced )
@@ -603,11 +772,13 @@ BOOST_AUTO_TEST_CASE( compressed_batch_operation_keeps_legacy_tags_and_has_corre
   BOOST_REQUIRE_EQUAL( operation::tag< fill_convert_request_operation >::value, 50 );
   BOOST_REQUIRE_EQUAL( operation::tag< declined_voting_rights_operation >::value, 92 );
   BOOST_REQUIRE_EQUAL( operation::tag< create_scoped_authority_operation >::value, 93 );
+  BOOST_REQUIRE_EQUAL( operation::tag< revoke_scoped_authority_operation >::value, 94 );
   BOOST_REQUIRE_EQUAL( operation::tag< scoped_transfer_operation >::value, 95 );
   BOOST_REQUIRE_EQUAL( operation::tag< compressed_batch_transfer_operation >::value, 96 );
 #else
   BOOST_REQUIRE_EQUAL( operation::tag< transfer_operation >::value, 2 );
   BOOST_REQUIRE_EQUAL( operation::tag< create_scoped_authority_operation >::value, 50 );
+  BOOST_REQUIRE_EQUAL( operation::tag< revoke_scoped_authority_operation >::value, 51 );
   BOOST_REQUIRE_EQUAL( operation::tag< scoped_transfer_operation >::value, 52 );
   BOOST_REQUIRE_EQUAL( operation::tag< compressed_batch_transfer_operation >::value, 53 );
 #endif
@@ -637,6 +808,19 @@ BOOST_AUTO_TEST_CASE( compressed_batch_operation_keeps_legacy_tags_and_has_corre
   BOOST_REQUIRE( impacted.count( "carol" ) == 1 );
   const auto balance_impacts = hive::app::operation_get_impacted_balances( packed_direct, true );
   BOOST_REQUIRE_EQUAL( balance_impacts.size(), 3u );
+}
+
+BOOST_AUTO_TEST_CASE( legacy_transfer_operation_binary_fixture_is_unchanged )
+{
+  transfer_operation transfer;
+  transfer.from = "alice";
+  transfer.to = "bob";
+  transfer.amount = HBD_asset( 1234 ).to_asset();
+  transfer.memo = "legacy";
+  const auto packed = fc::raw::pack_to_vector( operation( transfer ) );
+  BOOST_REQUIRE_EQUAL( packed.front(), 2 );
+  BOOST_REQUIRE_EQUAL( fc::to_hex( packed.data(), packed.size() ),
+    "0205616c69636503626f62d2040000000000000354424400000000066c6567616379" );
 }
 
 BOOST_AUTO_TEST_CASE( compressed_batch_100_by_100_bound_is_validated )
@@ -757,7 +941,6 @@ BOOST_AUTO_TEST_CASE( compressed_batch_rc_benchmark, *boost::unit_test::disabled
   uint32_t grant_id = 10;
   for( const auto& s : shapes )
   {
-    std::fprintf( stderr, "RC benchmark shape %s begin\n", s.name );
     BOOST_TEST_MESSAGE( "Starting RC benchmark shape " << s.name );
     generate_blocks( 1 ); // Keep debug-node artificial transactions bounded per block.
     std::vector< HBD_asset > destination_balances_before;
@@ -784,7 +967,6 @@ BOOST_AUTO_TEST_CASE( compressed_batch_rc_benchmark, *boost::unit_test::disabled
         BOOST_FAIL( "Funding RC benchmark source index " << i << " failed: " << e.to_detail_string() );
       }
     }
-    std::fprintf( stderr, "RC benchmark funded %s\n", s.name );
 
     std::vector< std::tuple< uint32_t, uint32_t, int64_t > > edges;
     uint32_t output_index = 0;
@@ -870,7 +1052,7 @@ BOOST_AUTO_TEST_CASE( compressed_batch_rc_benchmark, *boost::unit_test::disabled
         BOOST_FAIL( "Separate RC benchmark transfer failed: " << e.to_detail_string() );
       }
       separate_elapsed += std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::steady_clock::now() - start ).count();
-      count_resources( full_tx->get_transaction(), full_tx->get_transaction_size(), separate_usage, db->head_block_time() );
+      count_resources( full_tx->get_transaction(), full_tx->get_transaction_size(), separate_usage, db->head_block_time(), *db );
       separate_rc += full_tx->get_rc_cost();
       separate_transactions.push_back( full_tx );
       separate_bytes += full_tx->get_transaction_size();
@@ -878,7 +1060,6 @@ BOOST_AUTO_TEST_CASE( compressed_batch_rc_benchmark, *boost::unit_test::disabled
     }
     emit_row( "separate", edges.size(), separate_bytes, separate_signatures, separate_usage,
       separate_rc, 0, separate_elapsed, edges.size() * 2 );
-    std::fprintf( stderr, "RC benchmark separate complete %s\n", s.name );
 
     // B: one transaction containing the same ordinary transfer operations.
     signed_transaction standard_tx;
@@ -900,10 +1081,9 @@ BOOST_AUTO_TEST_CASE( compressed_batch_rc_benchmark, *boost::unit_test::disabled
     std::vector< full_transaction_ptr > standard_transactions{ standard_full_tx };
     const int64_t standard_elapsed = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::steady_clock::now() - start ).count();
     resource_count_type standard_usage;
-    count_resources( standard_full_tx->get_transaction(), standard_full_tx->get_transaction_size(), standard_usage, db->head_block_time() );
+    count_resources( standard_full_tx->get_transaction(), standard_full_tx->get_transaction_size(), standard_usage, db->head_block_time(), *db );
     emit_row( "multi_transfer", 1, standard_full_tx->get_transaction_size(), standard_full_tx->get_transaction().signatures.size(),
       standard_usage, standard_full_tx->get_rc_cost(), 0, standard_elapsed, edges.size() * 2 );
-    std::fprintf( stderr, "RC benchmark multi-op complete %s\n", s.name );
 
     // C1: compressed operation with direct active-authority inputs.
     compressed_batch_transfer_operation direct_batch;
@@ -920,12 +1100,11 @@ BOOST_AUTO_TEST_CASE( compressed_batch_rc_benchmark, *boost::unit_test::disabled
     std::vector< full_transaction_ptr > direct_transactions{ direct_full_tx };
     const int64_t direct_elapsed = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::steady_clock::now() - start ).count();
     resource_count_type direct_usage;
-    count_resources( direct_full_tx->get_transaction(), direct_full_tx->get_transaction_size(), direct_usage, db->head_block_time() );
+    count_resources( direct_full_tx->get_transaction(), direct_full_tx->get_transaction_size(), direct_usage, db->head_block_time(), *db );
     BOOST_REQUIRE_EQUAL( direct_usage[resource_history_bytes], direct_full_tx->get_transaction_size() );
     BOOST_REQUIRE_EQUAL( direct_usage[resource_market_bytes], direct_full_tx->get_transaction_size() );
     emit_row( "compressed_active", 1, direct_full_tx->get_transaction_size(), direct_full_tx->get_transaction().signatures.size(),
       direct_usage, direct_full_tx->get_rc_cost(), 0, direct_elapsed, s.inputs + s.outputs );
-    std::fprintf( stderr, "RC benchmark active batch complete %s\n", s.name );
     csv.flush();
 
     // C2: same value flow funded by independent scoped grants; the actor signs.
@@ -933,7 +1112,6 @@ BOOST_AUTO_TEST_CASE( compressed_batch_rc_benchmark, *boost::unit_test::disabled
     std::vector< full_transaction_ptr > grant_transactions;
     for( uint32_t i = 0; i < s.inputs; ++i )
     {
-      std::fprintf( stderr, "RC benchmark grant index %u id %u\n", i, grant_id );
       BOOST_TEST_MESSAGE( "Creating scoped RC benchmark grant " << source_names[i] << ":" << grant_id );
       create_scoped_authority_operation grant;
       grant.grantor = source_names[i];
@@ -962,14 +1140,13 @@ BOOST_AUTO_TEST_CASE( compressed_batch_rc_benchmark, *boost::unit_test::disabled
     signed_transaction scoped_tx;
     scoped_tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     scoped_tx.operations.emplace_back( scoped_batch );
-    std::fprintf( stderr, "RC benchmark scoped batch %s\n", s.name );
     BOOST_TEST_MESSAGE( "Submitting scoped RC benchmark batch " << s.name );
     start = std::chrono::steady_clock::now();
     auto scoped_full_tx = push_transaction_ex( scoped_tx, std::vector<fc::ecc::private_key>{ actor_key } );
     std::vector< full_transaction_ptr > scoped_transactions{ scoped_full_tx };
     const int64_t scoped_elapsed = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::steady_clock::now() - start ).count();
     resource_count_type scoped_usage;
-    count_resources( scoped_full_tx->get_transaction(), scoped_full_tx->get_transaction_size(), scoped_usage, db->head_block_time() );
+    count_resources( scoped_full_tx->get_transaction(), scoped_full_tx->get_transaction_size(), scoped_usage, db->head_block_time(), *db );
     BOOST_REQUIRE_EQUAL( scoped_usage[resource_history_bytes], scoped_full_tx->get_transaction_size() );
     BOOST_REQUIRE_EQUAL( scoped_usage[resource_market_bytes], scoped_full_tx->get_transaction_size() );
     emit_row( "compressed_scoped", 1, scoped_full_tx->get_transaction_size(), scoped_full_tx->get_transaction().signatures.size(),

@@ -1,16 +1,16 @@
 # Scoped Authorities Hardfork Integration
 
-**Status: development-only HF30 gating is implemented for alternate-chain builds. Mainnet operation application remains unconditionally rejected. This is not a proposal to activate HF30 on mainnet.**
+**Status: alternate-chain HF30 enables the experimental operations and HF31 enables grant lifecycle changes. Both are development-only; mainnet remains capped at HF28 and rejects the operations.**
 
 ## Activation strategy
 
-Do not attach this feature to HF29: this source already defines HF29 behavior for alternate-chain builds. Mainnet's configured maximum is HF28. The prototype adds HF30 behind alternate-chain configuration with a far-future fallback time; maintainers must review or replace that test schedule before use. Mainnet builds do not add HF30 to their active maximum and the evaluator rejects the operations.
+Do not attach the feature to HF29: this source already defines HF29 behavior for alternate-chain builds. Mainnet's configured maximum is HF28. HF30 enables the scoped and batch operations; HF31 changes grant lifecycle behavior while keeping HF30 replay semantics intact. Both use alternate-chain configuration and a far-future fallback schedule. Mainnet builds do not add either hardfork to their active maximum; non-alternate evaluator paths contain unconditional rejection guards. A post-HF31 runtime submission test has not been performed.
 
-The three operations are appended after all historic variant tags, leaving every historic numeric tag unchanged. Current tags are 93, 94, and 95; `is_virtual_operation` returns false for each. Unit tests pin the first/last historic virtual tags and all new tags. A future upstream hardfork still needs activation-boundary and preactivation-rejection tests in both alternate-chain and mainnet configurations.
+Four signed operations are appended after all historic variant tags, leaving every historic numeric tag unchanged. Current full-variant tags are 93–96; the `HIVE_PROTOCOL_SKIP_VOPS` variant is expected to assign 50–53. `is_virtual_operation` returns false for the new operations. Unit tests pin existing and new tags in the ordinary build. HF30 enables the operations on alternate chains; alternate-chain-only HF31 adds grant cleanup and monotonic ID rules while preserving historical HF30 behavior. The skip-VOPS protocol-only target and executable tag check pass; full-chain builds fail at existing virtual-operation call sites, and alternate-variant serialization round-trip plus mainnet runtime rejection remain upstream validation requirements.
 
 ## Upgrade, replay, and snapshots
 
-The Chainbase index is registered with normal database object indexes and the feature test suite has exercised block pop rollback. A process restart and replay with non-empty grant state, snapshot restoration, and deterministic full replay have not been verified. Changing the RC stats object layout also requires compatibility review for existing state snapshots; production rollout must require a clean replay or a specifically tested migration.
+The Chainbase grant and grantor-metadata indexes are registered with normal database indexes. The lifecycle implementation lazily derives metadata from up to 100 retained HF30 grants, then cleans obsolete grants transactionally. Existing snapshot/replay evidence predates this new metadata type; populated HF31 snapshot restore and replay must be verified before upstream deployment. The RC statistics object layout remains unchanged.
 
 ## Deployment checklist
 
