@@ -43,6 +43,10 @@ set -xeuo pipefail
 #             ↑
 #         TEST_BLOCK = 4.1M (should be accessible via API)
 #
+# Each step fails when the node stops making progress or at the time the run has
+# left (conftest.sh's _await_progress; the script then exits 124, as at a timeout),
+# and logs `step <name>: <s>s`.
+#
 # Verifications:
 #   1. Node syncs to target block (5.1M)
 #   2. Block in kept range (4.1M) is accessible via API
@@ -138,7 +142,7 @@ HIVED_IMAGE_TAG="${HIVED_IMAGE_NAME##*:}"
   --checkpoint="[\"${CHECKPOINT_BLOCK}\",\"${CHECKPOINT_BLOCK_ID}\"]" \
   --plugin=app_status_api \
   "$@"
-monitor_container "sync-instance" 600  # 10 minutes timeout
+run_step sync monitor_container "sync-instance"
 
 # STEP 2: Dump snapshot at 1.1M (saves chainbase state to skip replay in STEP 3)
 "$SCRIPTS_PATH/run_hived_img.sh" \
@@ -151,7 +155,7 @@ monitor_container "sync-instance" 600  # 10 minutes timeout
   --detach \
   --preserve-container \
   --plugin=app_status_api
-monitor_container "dump-snapshot-instance" 600  # 10 minutes timeout
+run_step dump-snapshot monitor_container "dump-snapshot-instance"
 
 # STEP 3: Load snapshot + sync 1.1M→5.1M with pruning (split=1 deletes parts 0001-0004, keeps 0005-0006)
 echo "Starting load snapshot with pruned block log..."
@@ -167,21 +171,21 @@ echo "Starting load snapshot with pruned block log..."
   --plugin=app_status_api
 
 # Phase 1: Wait for chain API to become ready
-wait_for_chain_api_ready "load-snapshot-instance" 1200 || {
+run_step load-snapshot wait_for_chain_api_ready "load-snapshot-instance" || {
+  rc=$?
   echo "ERROR: Chain API did not become ready"
   stop_instance "load-snapshot-instance"
-  exit 1
+  exit "$rc"
 }
 
 # Phase 2: Wait for sync to target block
 echo "Waiting for load-snapshot-instance to reach block $TARGET_SYNC_BLOCK..."
-HEAD_BLOCK=$(wait_for_container_block "load-snapshot-instance" $TARGET_SYNC_BLOCK "Sync progress" 1200)
-
-if [ -z "$HEAD_BLOCK" ]; then
-  echo "ERROR: Node did not sync to block $TARGET_SYNC_BLOCK (timeout exceeded)"
+HEAD_BLOCK=$(run_step sync-to-target wait_for_container_block "load-snapshot-instance" $TARGET_SYNC_BLOCK "Sync progress") || {
+  rc=$?
+  echo "ERROR: Node did not sync to block $TARGET_SYNC_BLOCK"
   stop_instance "load-snapshot-instance"
-  exit 1
-fi
+  exit "$rc"
+}
 
 echo "Sync completed! Reached block $HEAD_BLOCK"
 
