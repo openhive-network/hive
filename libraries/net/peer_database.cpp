@@ -158,7 +158,8 @@ namespace graphene { namespace net {
         }
         catch (const fc::exception& e)
         {
-          elog("error opening peer database file ${peer_database_filename}, starting with a clean database", ("peer_database_filename", _peer_database_filename));
+          elog("error opening peer database file ${peer_database_filename}, starting with a clean database: ${e}",
+               ("peer_database_filename", _peer_database_filename)("e", e.to_string()));
         }
       }
     }

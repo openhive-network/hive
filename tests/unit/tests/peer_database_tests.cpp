@@ -5,11 +5,70 @@
 #include <hive/utilities/tempdir.hpp>
 
 #include <fc/filesystem.hpp>
+#include <fc/log/appender.hpp>
+#include <fc/log/logger.hpp>
+
+#include <boost/algorithm/string/predicate.hpp>
 
 #include <fstream>
+#include <string>
+#include <vector>
 
 using graphene::net::peer_database;
 using fc::ip::endpoint;
+
+namespace {
+
+class capturing_appender : public fc::appender
+{
+public:
+  std::vector<std::string> messages;
+
+  void log( const fc::log_message& m ) override { messages.push_back( m.get_message() ); }
+};
+
+/// Collects what peer_database logs while in scope, so a test can check what an operator would see.
+class log_capture
+{
+public:
+  log_capture() : _logger( fc::logger::get() ), _previous_level( _logger.get_log_level() ), _appender( new capturing_appender )
+  {
+    _logger.set_log_level( fc::log_level::all );
+    _logger.add_appender( _appender );
+  }
+
+  ~log_capture()
+  {
+    _logger.remove_appender( _appender );
+    _logger.set_log_level( _previous_level );
+  }
+
+  const std::vector<std::string>& messages() const { return static_cast<const capturing_appender&>( *_appender ).messages; }
+
+  std::vector<std::string> messages_containing( const std::string& text ) const
+  {
+    std::vector<std::string> result;
+    for( const std::string& m : messages() )
+      if( boost::algorithm::contains( m, text ) )
+        result.push_back( m );
+    return result;
+  }
+
+private:
+  fc::logger _logger;
+  fc::log_level _previous_level;
+  fc::shared_ptr<fc::appender> _appender;
+};
+
+const char* const clean_database_text = "starting with a clean database";
+
+void write_file( const fc::path& file, const std::string& content )
+{
+  std::ofstream out( file.string() );
+  out << content;
+}
+
+} // namespace
 
 BOOST_AUTO_TEST_SUITE( peer_database_tests )
 
@@ -28,10 +87,16 @@ BOOST_AUTO_TEST_CASE( unreadable_record_does_not_discard_the_others )
     ])";
   }
 
+  log_capture log;
   peer_database db;
   db.open( peers_file );
 
   BOOST_REQUIRE_EQUAL( db.size(), 2u );
+
+  BOOST_REQUIRE( log.messages_containing( clean_database_text ).empty() );
+  const auto skipped = log.messages_containing( "skipping unreadable record" );
+  BOOST_REQUIRE_EQUAL( skipped.size(), 1u );
+  BOOST_REQUIRE( boost::algorithm::contains( skipped.front(), "not-an-endpoint" ) );
 
   const auto ipv4 = db.lookup_entry_for_endpoint( endpoint::from_string( "192.168.1.10:2001" ) );
   BOOST_REQUIRE( ipv4.valid() );
@@ -40,6 +105,45 @@ BOOST_AUTO_TEST_CASE( unreadable_record_does_not_discard_the_others )
   const auto ipv6 = db.lookup_entry_for_endpoint( endpoint::from_string( "[2607:5300:203:1::1]:2001" ) );
   BOOST_REQUIRE( ipv6.valid() );
   BOOST_REQUIRE( ipv6->last_seen_time == fc::time_point_sec::from_iso_string( "2026-01-02T00:00:00" ) );
+}
+
+/// When peers.json cannot be read as a whole the node starts with an empty database, and the log line
+/// must say which file it was and why, so a truncated file can be told apart from other failures.
+BOOST_AUTO_TEST_CASE( truncated_file_logs_the_parse_error )
+{
+  fc::temp_directory dir( hive::utilities::temp_directory_path() );
+  const fc::path peers_file = dir.path() / "peers.json";
+  write_file( peers_file, R"([
+      {"endpoint":"192.168.1.10:2001","last_seen_time":"2026-01-01T00:00:00","last_connection_disposition":"last_conn)" );
+
+  log_capture log;
+  peer_database db;
+  db.open( peers_file );
+
+  BOOST_REQUIRE_EQUAL( db.size(), 0u );
+  const auto errors = log.messages_containing( clean_database_text );
+  BOOST_REQUIRE_EQUAL( errors.size(), 1u );
+  BOOST_TEST_MESSAGE( errors.front() );
+  BOOST_REQUIRE( boost::algorithm::contains( errors.front(), peers_file.generic_string() ) );
+  BOOST_REQUIRE( boost::algorithm::contains( errors.front(), "EOF" ) );
+}
+
+BOOST_AUTO_TEST_CASE( non_array_file_logs_the_type_error )
+{
+  fc::temp_directory dir( hive::utilities::temp_directory_path() );
+  const fc::path peers_file = dir.path() / "peers.json";
+  write_file( peers_file, R"({"endpoint":"192.168.1.10:2001"})" );
+
+  log_capture log;
+  peer_database db;
+  db.open( peers_file );
+
+  BOOST_REQUIRE_EQUAL( db.size(), 0u );
+  const auto errors = log.messages_containing( clean_database_text );
+  BOOST_REQUIRE_EQUAL( errors.size(), 1u );
+  BOOST_TEST_MESSAGE( errors.front() );
+  BOOST_REQUIRE( boost::algorithm::contains( errors.front(), peers_file.generic_string() ) );
+  BOOST_REQUIRE( boost::algorithm::contains( errors.front(), "Invalid cast from object_type to Array" ) );
 }
 
 BOOST_AUTO_TEST_SUITE_END()
