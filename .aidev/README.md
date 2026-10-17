@@ -77,12 +77,15 @@ case, `off`.
 AIDEV admits a `docker: true` suite into a dev docker slot (`sandbox.dev`'s
 memory, 5.5 GB when undeclared; waiting up to 900 s on a busy host) before its
 command runs. So the suite's `select`, `.aidev/integration-select.sh`, runs
-first, host-side in AIDEV's worker (bash, git and coreutils/grep/sed only,
-nothing built or written): it exits 77, the suite skipped with its last line as
-the reason, when the step is off, when there is no diff base, or when the diff
-selects no script the step can run here (one needing CI-only fixtures does not
-count); else 0, printing the scripts. Most diffs select none and so wait for no
-docker slot.
+first, host-side in AIDEV's worker (bash, git, coreutils/grep/sed and the
+docker CLI only, no container started, nothing built or written): it exits 77,
+the suite skipped with its last line as the reason, when the step is off, when
+there is no diff base, or when the diff selects no script the step can run here
+(one needing CI-only fixtures does not count); and, as
+`skipped: <reason> (selected: <scripts>)`, when no docker daemon answers, there
+is no compose plugin, or the time plan (below) does not fit the suite's
+`HIVE_INTEGRATION_BUDGET`. Else 0, printing the plan and the scripts. Most diffs
+select none and so wait for no docker slot.
 
 The suite is `concurrent: true`: when selected, it runs beside `default`'s
 build, chain_test and plugin_test instead of after them. Its own hived images
@@ -128,7 +131,13 @@ else `AIDEV_IMPLEMENT_BASE_SHA`, else the merge base with
 
 ### Skips
 
-A skip records a skipped case naming its reason and never fails the slot:
+A skip records a skipped case naming its reason and never fails the slot. The
+step repeats select's checks when it runs; when it ends having run none of the
+selected scripts (and none failed), the suite exits 77, its last line `skipped: `
+and the skipped cases' reasons, so it is never reported passed for running
+nothing (`run-checks.sh` exits 77 for any suite whose steps were all skipped).
+When some scripts ran, they decide the verdict; every skipped case's reason is
+listed at the end of the output either way.
 
 | Reason | When |
 |---|---|
@@ -136,8 +145,8 @@ A skip records a skipped case naming its reason and never fails the slot:
 | no diff base / selects no script | nothing to run (no time spent) |
 | `docker_capability_unavailable` | no docker daemon reachable |
 | `docker_compose_unavailable` | no compose plugin on this host |
-| `sccache_unreachable` | CI's sccache Redis does not answer and the time left cannot fit cold builds (`HIVE_INTEGRATION_COLD_BUILD_SECONDS`, 2700 s per image) |
-| `out_of_time` | the time left cannot fit the builds (300 s each on the cache) and a script, or an image build or a script reached the deadline |
+| `sccache_unreachable` | CI's sccache Redis does not answer and the time left cannot fit the cold builds as measured on this host and a script |
+| `out_of_time` | the time left of the budget cannot fit the builds as measured on this host and a script, or an image build or a script reached the deadline |
 | `docker_paths_unshared` | the checkout's path on the daemon's host cannot be resolved, or a container given it does not see the checkout |
 | `instance_base_unpublished` | the registry's `minimal-runtime:${CI_IMAGE_TAG}` cannot be pulled |
 | needs fixtures only CI has | a selected script other than the two above |
@@ -161,6 +170,17 @@ steps' ceiling (less 60 s), ending with `timeout`'s status, 124, when a step
 reaches it; a step also fails once it makes no progress for
 `HIVE_INTEGRATION_STALL_SECONDS` (300 s). `tests/integration/conftest_test.sh`
 tests those helpers against stub containers.
+
+The plan (select's and the step's, printed as `plan: ...`) adds up, for each
+image, what its step (`integration-image-<network>`) last took on this host with
+the compiler cache as it is now (warm or cold), and the shortest selected
+script's least time. The step keeps that measurement on the docker daemon, as
+the name of a volume labelled `hive.integration.build=<network>-<cache>`
+(`hive-integration-build-testnet-warm-412`), because the run's checkout and
+results go with it: a build's time when it builds; when the deadline cuts it
+off, that it takes longer than it ran (`...-gt900`), unless a longer build was
+already measured. A build not measured on this host yet is planned at nothing,
+so the run tries it and measures it, bounded by its deadline.
 
 ### Images
 

@@ -12,9 +12,6 @@
 export HIVE_INTEGRATION_BUDGET="${HIVE_INTEGRATION_BUDGET:-1200}"
 export HIVE_INTEGRATION_ACTIVITY_SECONDS="${HIVE_INTEGRATION_ACTIVITY_SECONDS:-2400}"
 export HIVE_INTEGRATION_MARGIN="${HIVE_INTEGRATION_MARGIN:-300}"
-# What one image's build is planned at: on CI's compiler cache, and cold (30-60 min).
-export HIVE_INTEGRATION_WARM_BUILD_SECONDS="${HIVE_INTEGRATION_WARM_BUILD_SECONDS:-300}"
-export HIVE_INTEGRATION_COLD_BUILD_SECONDS="${HIVE_INTEGRATION_COLD_BUILD_SECONDS:-2700}"
 
 # A changed path starting with PATH selects SCRIPTS; with a LINES regex other than
 # `.`, only when one of the path's changed lines or hunk headers matches it. A
@@ -146,18 +143,59 @@ integration_deadline() {  # NOW STEP_STARTED SLOT_STARTED|""
     echo $(( by - HIVE_INTEGRATION_MARGIN ))
 }
 
-# Whether IMAGES image builds and then the shortest script fit in REMAINING
-# seconds, the builds planned warm or cold by whether CI's compiler cache answers;
-# when they don't, prints the skip reason.
-integration_plan() {  # REMAINING IMAGES CACHE(warm|cold) SCRIPT_MIN_SECONDS
-    local per need
-    per=$([ "$3" = warm ] && echo "$HIVE_INTEGRATION_WARM_BUILD_SECONDS" || echo "$HIVE_INTEGRATION_COLD_BUILD_SECONDS")
-    need=$(( $2 * per + $4 ))
-    [ "$1" -ge "$need" ] && return 0
-    if [ "$3" = warm ]; then
-        echo "out_of_time: ${1}s left, $2 image build(s) and a script need ${need}s"
+# What NET's image build (its step, integration-image-NET) last took on this host
+# with the compiler cache CACHE (warm|cold): seconds, `>N` when it was cut off
+# after N s, or nothing when none was measured. Kept on the docker daemon, in the
+# name of a volume labelled with NET and CACHE, because a run's checkout and its
+# test results go with the run.
+build_seconds() {  # NET CACHE
+    local v
+    v="$(docker volume ls -q --filter "label=hive.integration.build=$1-$2" 2>/dev/null | head -1)"
+    v="${v##*-}"; v="${v/#gt/>}"
+    [[ "$v" =~ ^\>?[0-9]+$ ]] && echo "$v"
+}
+
+# Records an image step's ending: its time when it built (RC 0); when it was
+# skipped, cut off by the deadline, that it takes longer, unless a build already
+# measured here took at least as long.
+record_build_seconds() {  # NET CACHE RC SECONDS
+    local v prev
+    case "$3" in
+        0) v="$4" ;;
+        "$step_skipped") prev="$(build_seconds "$1" "$2")"
+            [ "$4" -gt 0 ] || return 0
+            [ -n "$prev" ] && [ "${prev#>}" -ge "$4" ] && return 0
+            v="gt$4" ;;
+        *) return 0 ;;
+    esac
+    docker volume ls -q --filter "label=hive.integration.build=$1-$2" | xargs -r docker volume rm > /dev/null 2>&1
+    docker volume create --label "hive.integration.build=$1-$2" --label "hive.integration.measured=$(date +%s)" \
+        "hive-integration-build-$1-$2-$v" > /dev/null 2>&1 \
+        || echo "== integration: cannot record the $1 image's build time ($v) on this host" >&2
+}
+
+# Whether the image builds NET=ESTIMATE... (build_seconds with the compiler cache
+# CACHE) and then the shortest script fit in REMAINING seconds of BUDGET. A build
+# not measured here yet is planned at nothing: this run measures it, and its
+# deadline ends it. Prints the plan's inputs, then, when it does not fit, the skip
+# reason: `sccache_unreachable` when cold builds are what does not fit.
+integration_plan() {  # REMAINING BUDGET CACHE SCRIPT_MIN_SECONDS NET=ESTIMATE...
+    local left="$1" budget="$2" cache="$3" script="$4" need="$4" builds=0 e net v inputs=""
+    shift 4
+    for e; do
+        net="${e%%=*}" v="${e#*=}"
+        case "$v" in
+            "") inputs+="$net image unmeasured, " ;;
+            ">"*) inputs+="$net image more than ${v#>}s, "; need=$(( need + ${v#>} )); builds=$(( builds + 1 )) ;;
+            *) inputs+="$net image ${v}s, "; need=$(( need + v )); builds=$(( builds + 1 )) ;;
+        esac
+    done
+    echo "plan: ${inputs}the shortest script ${script}s, as measured on this host with the compiler cache $cache: ${need}s needed, ${left}s left of the ${budget}s budget"
+    [ "$left" -ge "$need" ] && return 0
+    if [ "$cache" = cold ] && [ "$builds" -gt 0 ]; then
+        echo "sccache_unreachable: no compiler cache answers, and ${left}s left of the ${budget}s budget cannot fit $builds cold image build(s) and a script (${need}s)"
     else
-        echo "sccache_unreachable: no compiler cache answers, and ${1}s left cannot fit $2 cold image build(s) and a script (${need}s)"
+        echo "out_of_time: ${left}s left of the ${budget}s budget (HIVE_INTEGRATION_BUDGET), $# image build(s) and a script need ${need}s"
     fi
     return 1
 }
@@ -173,6 +211,37 @@ redis_answers() {  # redis://HOST:PORT: whether it answers PING within 3 s
 ci_sccache_redis() {
     [ -n "${HIVE_SCCACHE_REDIS:-}" ] && { echo "$HIVE_SCCACHE_REDIS"; return; }
     sed -n 's/^ *SCCACHE_REDIS: *"\(.*\)"$/\1/p' .gitlab-ci.yaml | head -1
+}
+
+compiler_cache() {  # warm when CI's Redis answers, else cold
+    redis_answers "$(ci_sccache_redis)" && echo warm || echo cold
+}
+
+compose_plugin() {
+    local d
+    for d in "${DOCKER_CONFIG:-$HOME/.docker}/cli-plugins" /usr/local/lib/docker/cli-plugins \
+        /usr/local/libexec/docker/cli-plugins /usr/lib/docker/cli-plugins /usr/libexec/docker/cli-plugins; do
+        [ -x "$d/docker-compose" ] && { echo "$d/docker-compose"; return 0; }
+    done
+    return 1
+}
+
+# Whether this host can run SCRIPTS, LEFT seconds before the deadline: a docker
+# daemon, the compose plugin, and the time plan with the compiler cache CACHE.
+# Prints what it found, the skip reason last when it cannot.
+integration_preconditions() {  # LEFT CACHE SCRIPT...
+    local left="$1" cache="$2" s net needs min=0 estimates=()
+    shift 2
+    declare -A nets=()
+    docker info > /dev/null 2>&1 || { echo "docker_capability_unavailable: no docker daemon reachable here"; return 1; }
+    compose_plugin > /dev/null || { echo "docker_compose_unavailable: no docker compose plugin here"; return 1; }
+    echo "compiler cache: $cache ($(ci_sccache_redis))"
+    for s; do
+        read -r net _ needs <<< "$(integration_script_needs "$s")"; nets[$net]=1
+        [ "$min" -ne 0 ] && [ "$min" -le "$needs" ] || min="$needs"
+    done
+    for net in "${!nets[@]}"; do estimates+=("$net=$(build_seconds "$net" "$cache")"); done
+    integration_plan "$left" "$HIVE_INTEGRATION_BUDGET" "$cache" "$min" "${estimates[@]}"
 }
 
 # --- the step: these use run-checks.sh's $out, $cases and step ----------------
@@ -236,15 +305,6 @@ integration_lock() {  # SCRIPT
             sleep 15
         fi
     done
-}
-
-compose_plugin() {
-    local d
-    for d in "${DOCKER_CONFIG:-$HOME/.docker}/cli-plugins" /usr/local/lib/docker/cli-plugins \
-        /usr/local/libexec/docker/cli-plugins /usr/lib/docker/cli-plugins /usr/libexec/docker/cli-plugins; do
-        [ -x "$d/docker-compose" ] && { echo "$d/docker-compose"; return 0; }
-    done
-    return 1
 }
 
 # The image the scripts run in: the checks' image (bash, the docker CLI, wget,
@@ -361,12 +421,14 @@ integration_cleanup() {
     docker image rm -f "${ids[@]}" > /dev/null 2>&1 || true
 }
 
+# Returns step_skipped when it ran none of the selected scripts (and none failed),
+# so the suite reports skipped rather than passed.
 integration() {
-    local started base base_sha selected s needs net runtime runner cache inline=0 slot_started pid rc
-    local scripts=() pids=() min_script=0 failed=0
+    local started base base_sha selected s needs net runtime runner cache inline=0 slot_started pid rc t0 pre
+    local scripts=() pids=() failed=0 ran=0
     if [ "${HIVE_AIDEV_INTEGRATION:-0}" != 1 ]; then
         skip_case integration "off: HIVE_AIDEV_INTEGRATION is not 1 (.aidev/README.md, Integration scripts)"
-        return 0
+        return "$step_skipped"
     fi
     started="$(date +%s)"
     slot_started="$(cat "${out%-integration}/started-at" 2>/dev/null)"
@@ -375,40 +437,31 @@ integration() {
     echo "== integration: deadline in $(remaining)s (budget ${HIVE_INTEGRATION_BUDGET}s, slot started $([ -n "$slot_started" ] && echo "$(( started - slot_started ))s ago" || echo here))" >&2
     if ! base="$(diff_base)"; then
         skip_case integration "no diff base: none of AIDEV_BASE_REF, AIDEV_IMPLEMENT_BASE_SHA or a merge base with the integration branch resolves"
-        return 0
+        return "$step_skipped"
     fi
     base_sha="${base#*=}"
     echo "== integration: diff base: $base" >&2
     selected="$(integration_selection "$base_sha" | sort -u)"
     if [ -z "$selected" ]; then
         skip_case integration "the diff from $base selects no tests/integration script"
-        return 0
+        return "$step_skipped"
     fi
     declare -A images=()
     for s in $selected; do
         if needs="$(integration_script_needs "$s")"; then
-            scripts+=("$s"); read -r net _ needs <<< "$needs"; images[$net]=1
-            [ "$min_script" -ne 0 ] && [ "$min_script" -le "$needs" ] || min_script="$needs"
+            scripts+=("$s"); read -r net _ <<< "$needs"; images[$net]=1
         else
             skip_case "integration-${s%.sh}" "needs fixtures only CI has; run in GitLab CI"
         fi
     done
-    [ "${#scripts[@]}" -gt 0 ] || return 0
-    if ! docker info > /dev/null 2>&1; then
-        skip_case integration "docker_capability_unavailable: no docker daemon reachable here (selected: ${selected//$'\n'/ })"
-        return 0
+    [ "${#scripts[@]}" -gt 0 ] || return "$step_skipped"
+    cache="$(compiler_cache)"
+    if ! pre="$(integration_preconditions "$(remaining)" "$cache" "${scripts[@]}")"; then
+        [ "$pre" = "${pre##*$'\n'}" ] || sed 's/^/== integration: /' <<< "${pre%$'\n'*}" >&2
+        skip_case integration "${pre##*$'\n'} (selected: ${selected//$'\n'/ })"
+        return "$step_skipped"
     fi
-    if ! compose_plugin > /dev/null; then
-        skip_case integration "docker_compose_unavailable: no docker compose plugin here (selected: ${selected//$'\n'/ })"
-        return 0
-    fi
-    cache=cold
-    redis_answers "$(ci_sccache_redis)" && cache=warm
-    echo "== integration: compiler cache $cache ($(ci_sccache_redis))" >&2
-    if ! s="$(integration_plan "$(remaining)" "${#images[@]}" "$cache" "$min_script")"; then
-        skip_case integration "$s (selected: ${selected//$'\n'/ })"
-        return 0
-    fi
+    sed 's/^/== integration: /' <<< "$pre" >&2
     # Every container the step starts on the host's daemon, which AIDEV does not
     # see as the suite's, goes through the shim (and so do the scripts', in the runner).
     PATH="$PWD/.aidev/docker-shim:$PATH"
@@ -417,7 +470,7 @@ integration() {
     if ! read_host_mountinfo "$runtime" || ! host_sees "$PWD" .aidev/run-checks.sh "$runtime" \
             || ! host_sees "$(git rev-parse --git-common-dir)" HEAD "$runtime"; then
         skip_case integration "docker_paths_unshared: the checkout's path on the docker daemon's host cannot be resolved from the mount tables (selected: ${selected//$'\n'/ })"
-        return 0
+        return "$step_skipped"
     fi
     if instance_base_changed "$base_sha"; then
         inline=1
@@ -426,7 +479,7 @@ integration() {
         s="$(sed -n 's/^ARG CI_REGISTRY_IMAGE=//p' Dockerfile)minimal-runtime:$(sed -n 's/^ARG CI_IMAGE_TAG=//p' Dockerfile)"
         if ! docker image inspect "$s" > /dev/null 2>&1 && ! docker pull -q "$s" > /dev/null 2>&1; then
             skip_case integration "instance_base_unpublished: $s cannot be pulled (selected: ${selected//$'\n'/ })"
-            return 0
+            return "$step_skipped"
         fi
         echo "== integration: image base: $s" >&2
     fi
@@ -444,8 +497,9 @@ integration() {
     for net in "${!images[@]}"; do
         images[$net]="registry.gitlab.syncad.com/hive/hive$([ "$net" = testnet ] && echo /testnet):$integration_prefix"
         integration_images+=("${images[$net]}")
-        rc=0
+        rc=0 t0="$(date +%s)"
         step "integration-image-$net" hived_image "$net" "$runtime" "${images[$net]}" "$inline" || rc=$?
+        record_build_seconds "$net" "$cache" "$rc" $(( $(date +%s) - t0 ))
         [ "$rc" -eq 0 ] && continue
         for s in "${scripts[@]}"; do
             [ "$(integration_script_needs "$s" | cut -d' ' -f1)" = "$net" ] \
@@ -463,7 +517,10 @@ integration() {
     done
     for pid in "${pids[@]}"; do
         wait "$pid"; rc=$?
-        [ "$rc" -eq 0 ] || [ "$rc" -eq "$step_skipped" ] || failed=1
+        [ "$rc" -eq "$step_skipped" ] && continue
+        ran=1
+        [ "$rc" -eq 0 ] || failed=1
     done
+    [ "$failed" -eq 0 ] && [ "$ran" -eq 0 ] && return "$step_skipped"
     return "$failed"
 }
