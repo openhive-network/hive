@@ -101,10 +101,10 @@ in their runner, call docker through `.aidev/docker-shim/docker`: with
 `aidev.env-container.owner` with that owner, and `--oom-score-adj 900`, and every
 image they build the label, which its containers inherit. `docker compose` starts
 its containers through the daemon's API, not `docker run`: the services of
-`test_snapshot_bootstrap.sh` carry the label only through their image, and keep
-the default OOM score. The binaries'
-build container is capped at `AIDEV_ENV_CONTAINER_MEMORY_BYTES` when set, and
-gets `HIVE_BUILD_JOBS`. Without these variables nothing changes.
+`test_snapshot_bootstrap.sh` get the label and OOM score from its generated
+`compose.test.yml` instead. The binaries' build container is capped at
+`AIDEV_ENV_CONTAINER_MEMORY_BYTES` when set, memory and swap together
+(`--memory-swap` equal to `--memory`), and gets `HIVE_BUILD_JOBS`. Without these variables nothing changes.
 
 To run the selector by hand: `HIVE_AIDEV_INTEGRATION=1 .aidev/integration-select.sh`;
 the step, on a host with docker:
