@@ -952,8 +952,8 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
   BOOST_CHECK_EQUAL( sizeof( rc_resource_param_index::MULTIINDEX_NODE_TYPE ), 400u );
   BOOST_CHECK_EQUAL( sizeof( rc_pool_object ), 176u );
   BOOST_CHECK_EQUAL( sizeof( rc_pool_index::MULTIINDEX_NODE_TYPE ), 208u );
-  BOOST_CHECK_EQUAL( sizeof( rc_stats_object ), 9592u ); //two objects
-  BOOST_CHECK_EQUAL( sizeof( rc_stats_index::MULTIINDEX_NODE_TYPE ), 9624u );
+  BOOST_CHECK_EQUAL( sizeof( rc_stats_object ), 5632u ); //two objects
+  BOOST_CHECK_EQUAL( sizeof( rc_stats_index::MULTIINDEX_NODE_TYPE ), 5664u );
   BOOST_CHECK_EQUAL( sizeof( rc_usage_bucket_object ), 48u ); //always HIVE_RC_WINDOW_BUCKET_COUNT objects
   BOOST_CHECK_EQUAL( sizeof( rc_usage_bucket_index::MULTIINDEX_NODE_TYPE ), 112u );
 
@@ -1952,7 +1952,7 @@ BOOST_AUTO_TEST_CASE( chain_object_checksum )
 
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::comment_cashout_object>(dtds), "38b356fdf295b2a709ac9d77b94fbe0fcd3c9267" );
   BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::dynamic_global_property_object>(dtds), "4f0a890f53fd55b8ae173cfa9e23fea4e54b2453" );
-  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::rc_stats_object>(dtds), "ad8fd1516ce790f7620bd5ca772866c8dbdb9a1c" );
+  BOOST_CHECK_EQUAL( get_decoded_type_checksum<hive::chain::rc_stats_object>(dtds), "5ecebd9e709ff9f511dc2600e72c071e022223ca" );
 
 }
 

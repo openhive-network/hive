@@ -52,6 +52,7 @@ HIVE_DEFINE_EVALUATOR( recurrent_transfer )
 HIVE_DEFINE_EVALUATOR( create_scoped_authority )
 HIVE_DEFINE_EVALUATOR( revoke_scoped_authority )
 HIVE_DEFINE_EVALUATOR( scoped_transfer )
+HIVE_DEFINE_EVALUATOR( compressed_batch_transfer )
 
 void register_transfer_evaluators( evaluator_registry<operation>& registry )
 {
@@ -77,6 +78,7 @@ void register_transfer_evaluators( evaluator_registry<operation>& registry )
   registry.register_evaluator< create_scoped_authority_evaluator        >();
   registry.register_evaluator< revoke_scoped_authority_evaluator        >();
   registry.register_evaluator< scoped_transfer_evaluator                >();
+  registry.register_evaluator< compressed_batch_transfer_evaluator      >();
 }
 
 namespace {
@@ -189,6 +191,124 @@ void scoped_transfer_evaluator::do_apply( const scoped_transfer_operation& o )
     mutable_grant.period_spent.amount += o.amount.amount;
     mutable_grant.lifetime_spent.amount += o.amount.amount;
   } );
+}
+
+void compressed_batch_transfer_evaluator::do_apply( const compressed_batch_transfer_operation& o )
+{
+#ifdef USE_ALTERNATE_CHAIN_ID
+  HIVE_CHAIN_HARDFORK_ASSERT( _db.has_hardfork( HIVE_HARDFORK_SCOPED_AUTHORITIES ),
+    "Compressed batch transfers are not enabled until the development hardfork" );
+#else
+  HIVE_CHAIN_HARDFORK_ASSERT( false, "Compressed batch transfers are disabled in mainnet builds" );
+#endif
+  std::vector< const account_object* > sources;
+  std::vector< const account_object* > recipients;
+  std::vector< const scoped_authority_object* > grants( o.inputs.size(), nullptr );
+  std::vector< uint64_t > period_indices( o.inputs.size(), 0 );
+  std::vector< int64_t > output_remaining;
+  sources.reserve( o.inputs.size() );
+  recipients.reserve( o.outputs.size() );
+  output_remaining.reserve( o.outputs.size() );
+  const auto now = _db.head_block_time();
+  bool uses_scoped_grant = false;
+  for( size_t i = 0; i < o.inputs.size(); ++i )
+  {
+    const auto& input = o.inputs[i];
+    const auto& source = _db.get_account( input.from );
+    if( input.grant_id == 0 )
+    {
+      const asset requested( input.amount, o.symbol );
+      HIVE_CHAIN_ASSET_ASSERT( _db.get_balance( source, o.symbol ).amount >= requested.amount,
+        requested, "Insufficient balance for compressed batch input" );
+    }
+    else
+    {
+      uses_scoped_grant = true;
+      const auto& grant = _db.get< scoped_authority_object, by_grantor_id >(
+        boost::make_tuple( input.from, input.grant_id ) );
+      HIVE_CHAIN_PERMISSION_ASSERT( !grant.revoked, input.grant_id, "Scoped batch input grant has been revoked" );
+      HIVE_CHAIN_PERMISSION_ASSERT( grant.actor == o.actor, o.actor, "Actor does not match scoped batch input grant" );
+      HIVE_CHAIN_PERMISSION_ASSERT( grant.max_per_transfer.symbol == o.symbol,
+        o.symbol, "Batch asset is not permitted by scoped authority" );
+      HIVE_CHAIN_TIME_ASSERT( now >= grant.valid_from, now, "Scoped batch grant is not valid yet" );
+      HIVE_CHAIN_TIME_ASSERT( now < grant.expires_at, now, "Scoped batch grant has expired" );
+      HIVE_CHAIN_ASSET_ASSERT( input.amount <= grant.max_per_transfer.amount.value,
+        input.amount, "Scoped batch input exceeds per-transfer limit" );
+      const uint64_t elapsed = uint64_t( now.sec_since_epoch() ) - grant.valid_from.sec_since_epoch();
+      const uint64_t period_index = elapsed / grant.period_seconds;
+      const int64_t period_spent = period_index == grant.current_period_index ? grant.period_spent.amount.value : 0;
+      HIVE_CHAIN_STATE_ASSERT( grant.lifetime_spent.amount.value >= 0 &&
+        grant.lifetime_spent.amount.value <= grant.max_lifetime.amount.value,
+        grant.lifetime_spent, "Invalid scoped batch lifetime counter" );
+      HIVE_CHAIN_ASSET_ASSERT( input.amount <= grant.max_lifetime.amount.value - grant.lifetime_spent.amount.value,
+        input.amount, "Scoped batch input exceeds lifetime limit" );
+      HIVE_CHAIN_STATE_ASSERT( period_spent >= 0 && period_spent <= grant.max_per_period.amount.value,
+        grant.period_spent, "Invalid scoped batch period counter" );
+      HIVE_CHAIN_ASSET_ASSERT( input.amount <= grant.max_per_period.amount.value - period_spent,
+        input.amount, "Scoped batch input exceeds period limit" );
+      const asset requested( input.amount, o.symbol );
+      HIVE_CHAIN_ASSET_ASSERT( _db.get_balance( source, o.symbol ).amount >= requested.amount,
+        requested, "Insufficient grantor balance for scoped batch input" );
+      grants[i] = &grant;
+      period_indices[i] = period_index;
+    }
+    sources.push_back( &source );
+  }
+  HIVE_CHAIN_PERMISSION_ASSERT( !uses_scoped_grant || o.actor != account_name_type(), o.actor,
+    "Scoped batch transfers require an authorized actor" );
+  for( const auto& output : o.outputs )
+  {
+    const auto& recipient = _db.get_account( output.to );
+    if( _db.has_hardfork( HIVE_HARDFORK_0_21__3343 ) )
+      HIVE_CHAIN_TREASURY_ASSERT( o.symbol == HBD_SYMBOL || !_db.is_treasury( output.to ), output.to,
+        "Cannot compressed-batch-transfer HIVE to the treasury" );
+    recipients.push_back( &recipient );
+    output_remaining.push_back( output.amount );
+  }
+
+  // Canonical attribution: sorted sources consume sorted outputs in order.
+  // This makes recipient restrictions meaningful even though balances are
+  // settled atomically as a pooled batch.
+  size_t output_index = 0;
+  for( size_t input_index = 0; input_index < o.inputs.size(); ++input_index )
+  {
+    int64_t remaining = o.inputs[input_index].amount;
+    while( remaining > 0 )
+    {
+      HIVE_CHAIN_STATE_ASSERT( output_index < output_remaining.size(), output_index,
+        "Compressed batch attribution exceeded output vector" );
+      const int64_t portion = std::min( remaining, output_remaining[output_index] );
+      if( grants[input_index] != nullptr )
+      {
+        const auto& allowlist = grants[input_index]->allowed_recipients;
+        HIVE_CHAIN_PERMISSION_ASSERT( allowlist.empty() ||
+          std::binary_search( allowlist.begin(), allowlist.end(), o.outputs[output_index].to ),
+          o.outputs[output_index].to, "Scoped batch grant does not allow an attributed recipient" );
+      }
+      remaining -= portion;
+      output_remaining[output_index] -= portion;
+      if( output_remaining[output_index] == 0 ) ++output_index;
+    }
+  }
+
+  temp_balance funds( o.symbol );
+  for( size_t i = 0; i < o.inputs.size(); ++i )
+    _db.adjust_balance( *sources[i], funds, asset( -o.inputs[i].amount, o.symbol ) );
+  for( size_t i = 0; i < o.outputs.size(); ++i )
+    _db.adjust_balance( *recipients[i], funds, asset( o.outputs[i].amount, o.symbol ) );
+
+  for( size_t i = 0; i < grants.size(); ++i )
+    if( grants[i] != nullptr )
+      _db.modify( *grants[i], [&]( scoped_authority_object& mutable_grant )
+      {
+        if( period_indices[i] != mutable_grant.current_period_index )
+        {
+          mutable_grant.current_period_index = period_indices[i];
+          mutable_grant.period_spent = asset( 0, mutable_grant.max_per_period.symbol );
+        }
+        mutable_grant.period_spent.amount += share_type( o.inputs[i].amount );
+        mutable_grant.lifetime_spent.amount += share_type( o.inputs[i].amount );
+      } );
 }
 
 void escrow_transfer_evaluator::do_apply( const escrow_transfer_operation& o )

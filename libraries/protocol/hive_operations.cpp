@@ -304,6 +304,64 @@ namespace hive { namespace protocol {
     validate_is_utf8( memo, "Scoped transfer memo is not UTF8" );
   } FC_CAPTURE_AND_RETHROW( (*this) ) }
 
+  void compressed_batch_transfer_operation::validate() const
+  { try {
+    HIVE_PROTOCOL_ASSET_ASSERT( symbol == HIVE_SYMBOL || symbol == HBD_SYMBOL,
+      "Compressed batch transfers support only HIVE and HBD" );
+    HIVE_PROTOCOL_NUMBER_ASSERT( !inputs.empty() && inputs.size() <= HIVE_MAX_COMPRESSED_BATCH_TRANSFER_INPUTS,
+      "Compressed batch input count is out of range" );
+    HIVE_PROTOCOL_NUMBER_ASSERT( !outputs.empty() && outputs.size() <= HIVE_MAX_COMPRESSED_BATCH_TRANSFER_OUTPUTS,
+      "Compressed batch output count is out of range" );
+    int64_t input_sum = 0;
+    bool uses_scoped_grant = false;
+    for( size_t i = 0; i < inputs.size(); ++i )
+    {
+      validate_account_name( inputs[i].from );
+      uses_scoped_grant = uses_scoped_grant || inputs[i].grant_id != 0;
+      HIVE_PROTOCOL_NUMBER_ASSERT( inputs[i].amount > 0 && inputs[i].amount <= HIVE_MAX_SHARE_SUPPLY,
+        "Compressed batch input amount must be positive and in range" );
+      HIVE_PROTOCOL_NUMBER_ASSERT( inputs[i].amount <= HIVE_MAX_SHARE_SUPPLY - input_sum,
+        "Compressed batch input total exceeds maximum share supply" );
+      input_sum += inputs[i].amount;
+      if( i > 0 )
+        HIVE_PROTOCOL_ACCOUNT_NAME_ASSERT( inputs[i - 1].from < inputs[i].from,
+          "Compressed batch inputs must be strictly sorted and unique" );
+    }
+    int64_t output_sum = 0;
+    for( size_t i = 0; i < outputs.size(); ++i )
+    {
+      validate_account_name( outputs[i].to );
+      HIVE_PROTOCOL_NUMBER_ASSERT( outputs[i].amount > 0 && outputs[i].amount <= HIVE_MAX_SHARE_SUPPLY,
+        "Compressed batch output amount must be positive and in range" );
+      HIVE_PROTOCOL_NUMBER_ASSERT( outputs[i].amount <= HIVE_MAX_SHARE_SUPPLY - output_sum,
+        "Compressed batch output total exceeds maximum share supply" );
+      output_sum += outputs[i].amount;
+      if( i > 0 )
+        HIVE_PROTOCOL_ACCOUNT_NAME_ASSERT( outputs[i - 1].to < outputs[i].to,
+          "Compressed batch outputs must be strictly sorted and unique" );
+    }
+    HIVE_PROTOCOL_ASSET_ASSERT( input_sum == output_sum,
+      "Compressed batch inputs and outputs must balance exactly" );
+    if( uses_scoped_grant ) validate_account_name( actor );
+    else HIVE_PROTOCOL_ACCOUNT_NAME_ASSERT( actor == account_name_type(),
+      "Batch actor must be omitted when no scoped grant is used" );
+    // Both sides are strictly sorted, so reject source/destination overlap in
+    // linear time rather than comparing every pair (which would do 10,000
+    // string comparisons for the maximum-size operation).
+    size_t input_index = 0;
+    size_t output_index = 0;
+    while( input_index < inputs.size() && output_index < outputs.size() )
+    {
+      if( inputs[input_index].from == outputs[output_index].to )
+        HIVE_PROTOCOL_ACCOUNT_NAME_ASSERT( false,
+          "Compressed batch source cannot also be a destination" );
+      if( inputs[input_index].from < outputs[output_index].to ) ++input_index;
+      else ++output_index;
+    }
+    validate_string_max_size( memo, HIVE_MAX_MEMO_SIZE - 1, "Compressed batch memo is too large" );
+    validate_is_utf8( memo, "Compressed batch memo is not UTF8" );
+  } FC_CAPTURE_AND_RETHROW( (*this) ) }
+
   void transfer_to_vesting_operation::validate() const
   {
     validate_account_name( from );

@@ -127,7 +127,8 @@ namespace hive { namespace protocol {
         // These use base_operation and remain non-virtual despite being appended here.
         create_scoped_authority_operation,
         revoke_scoped_authority_operation,
-        scoped_transfer_operation
+        scoped_transfer_operation,
+        compressed_batch_transfer_operation
       > operation;
 
   /*void operation_get_required_authorities( const operation& op,

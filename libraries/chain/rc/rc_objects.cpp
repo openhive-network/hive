@@ -33,7 +33,16 @@ void rc_stats_object::add_stats( const rc_transaction_info& tx_info )
 
   int _op_idx = op_stats.size() - 1; //multiop transaction by default
   if( tx_info.op.valid() )
-    _op_idx = tx_info.op.value();
+  {
+    const int op_tag = tx_info.op.value();
+    // New signed operations are appended after the historical virtual-op
+    // range to preserve serialized operation IDs. Their numeric tags are
+    // deliberately not used as persistent array indexes: doing so would make
+    // the rc_stats_object grow whenever an operation is appended and would
+    // break shared-memory/snapshot layout. Keep their costs in the stable
+    // multiop bucket, as we do for transactions containing multiple ops.
+    _op_idx = op_tag < HIVE_RC_NUM_OPERATIONS ? op_tag : HIVE_RC_NUM_OPERATIONS;
+  }
   rc_op_stats& _op_stats = op_stats[ _op_idx ];
 
   _op_stats.count += 1;

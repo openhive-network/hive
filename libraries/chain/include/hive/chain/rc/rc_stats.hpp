@@ -9,11 +9,16 @@
 
 namespace hive { namespace chain {
 
-// Keep one stats slot for every serialized operation, plus the existing
-// multi-operation transaction bucket at index operation::count(). New
-// consensus operations are appended after historical virtual operation tags.
+// RC statistics are allocated for regular transaction operations only. The
+// first virtual-operation tag remains the stable multiop bucket. New signed
+// operations appended after historical VOP tags must be mapped into that
+// bucket rather than expanding this persistent Chainbase object by tag value.
 constexpr auto HIVE_RC_NUM_OPERATIONS =
-  hive::protocol::operation::tag< hive::protocol::scoped_transfer_operation >::value;
+#ifdef HIVE_PROTOCOL_SKIP_VOPS
+  hive::protocol::operation::tag< hive::protocol::create_scoped_authority_operation >::value;
+#else
+  hive::protocol::operation::tag< hive::protocol::fill_convert_request_operation >::value;
+#endif
 constexpr auto HIVE_RC_NUM_PAYER_RANKS = 8;
 
 // statistics for transaction with single operation (or multiop transaction)

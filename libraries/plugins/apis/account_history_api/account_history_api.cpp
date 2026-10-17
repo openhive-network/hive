@@ -113,6 +113,7 @@ struct operation_filtering_visitor
   (producer_missed_operation)(proposal_fee_operation)(collateralized_convert_immediate_conversion_operation)
   (escrow_approved_operation)(escrow_rejected_operation)(proxy_cleared_operation)(declined_voting_rights_operation)
   (create_scoped_authority_operation)(revoke_scoped_authority_operation)(scoped_transfer_operation)
+  (compressed_batch_transfer_operation)
   )
 
 private:

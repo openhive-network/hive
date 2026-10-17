@@ -545,6 +545,13 @@ struct count_operation_visitor
     execution_time_count += _e.transfer_time;
   }
 
+  void operator()( const compressed_batch_transfer_operation& op ) const
+  {
+    // Charge each account lookup and balance mutation; transaction-size RC also
+    // accounts for the serialized account names, amounts, memo and signature.
+    execution_time_count += _e.transfer_time * ( op.inputs.size() + op.outputs.size() );
+  }
+
   void operator()( const witness_block_approve_operation& op )const
   {
   }

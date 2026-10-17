@@ -26,13 +26,23 @@ Creation/revocation use grantor active authority. Scoped transfer uses actor act
 | Serialization compatibility | Preserve every old regular and virtual operation tag; binary compatibility fixtures |
 | Legacy authorization regression | Existing authority and transfer test suites unchanged and passing |
 
-Grant IDs must not be recycled; otherwise a stale signed transfer could unexpectedly target a replacement policy. A monotonically allocated ID or unique non-reusable identifier is required. If grantor chooses IDs, an ever-created-ID index/tombstone is necessary to prevent reuse.
+## Compressed batch transfer invariants
 
-RC for grant creation and transfer should follow existing transaction submitter accounting. The scoped actor pays for its transaction; grantor pays only for its own create/revoke transactions. This must be confirmed against post-HF29 consensus RC paths in the implementation.
+- Every direct input requires its own source active authority. Every scoped input uses the common actor's ordinary active authority plus the referenced grant; one actor signature cannot authorize a direct debit from an unrelated account.
+- Input/output vectors are strictly sorted, unique, positive, bounded to 100 entries each, and balance exactly in one canonical asset. Source/destination overlap is rejected with a sorted linear merge check.
+- Sorted source amounts are attributed in order to sorted destinations. Every destination portion attributed to a restricted input must satisfy that grant's allowlist. This rule prevents pooled inputs from laundering a restricted source into an unapproved recipient.
+- All source balances, grant status, per-transfer/period/lifetime limits, and allowlists are validated before settlement. Balance and counter writes use the transaction undo session; block pop and transaction failure restore the state.
+- A source appears at most once in an operation. A grant's one input amount is one per-transfer spend even when it funds several outputs, preventing output splitting from bypassing `max_per_transfer`.
+
+The byte encoding reuses Hive's FC binary serializer with one shared symbol and memo; account names remain explicit. It does not use a custom decoder, Chainbase object IDs, or noncanonical references. The 100-output signed-size comparison showed 53.35% fewer bytes than 100 standard transfer operations, but broad shape and RC-cost benchmarks are still required. RC execution weight charges every input and output; repeated authority/signature costs remain the existing protocol costs.
+
+Grant IDs cannot be recycled while the grant record is retained: revoke marks the record and does not erase it. The implementation currently retains expired and revoked records, so each grantor can create at most 100 grants over its lifetime. Deterministic pruning and safe ID reuse are not implemented; introducing either requires tombstones or a non-reusable allocation scheme.
+
+RC transaction cost is charged to the transaction submitter through the existing Hive accounting. The batch operation adds execution weight per input and output, on top of serialized transaction size and signature costs. The observed local demo RC values are not an apples-to-apples benchmark; broad RC resource-vector comparisons remain open.
 
 ## Limitations and audit needs
 
-This design does not prevent the owner from spending funds normally, does not reserve balances, and cannot guarantee a transfer will succeed if the grantor balance is insufficient. Fixed periods can permit spending up to the configured amount on both sides of a period boundary. It excludes savings, delayed/recurrent transfer, escrow, and other financial paths.
+This design does not prevent the owner from spending funds normally, does not reserve balances, and cannot guarantee a transfer will succeed if the grantor balance is insufficient. Fixed periods can permit spending up to the configured amount on both sides of a period boundary. It excludes savings, delayed/recurrent transfer, escrow, and other financial paths. Batch-specific source-to-recipient attribution adds protocol complexity and needs independent review, especially for mixed direct/scoped inputs and multiple grant use in one transaction.
 
 Before any public hardfork proposal, independently audit integer bounds, authority semantics across mixed signatures, binary serialization, resource accounting, Chainbase rollback and snapshot behavior, API exposure, fork/replay determinism, and all supported node upgrade paths. This document is not an external security audit.
 

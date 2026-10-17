@@ -1078,6 +1078,44 @@ namespace hive { namespace protocol {
     void get_required_active_authorities( flat_set<account_name_type>& a ) const { a.insert( actor ); }
   };
 
+  /** Atomic single-asset account batch transfer. Input and output vectors are
+   * strictly sorted by account name; every input account supplies active
+   * authority. Amounts are raw canonical asset units and the symbol is shared.
+   */
+  struct compressed_batch_transfer_input
+  {
+    account_name_type from;
+    int64_t amount = 0;
+    uint32_t grant_id = 0; // zero: source active authority; nonzero: grant-authorized input
+  };
+
+  struct compressed_batch_transfer_output
+  {
+    account_name_type to;
+    int64_t amount = 0;
+  };
+
+  struct compressed_batch_transfer_operation : public base_operation
+  {
+    account_name_type actor; // required only when at least one input uses a scoped grant
+    asset_symbol_type symbol;
+    vector< compressed_batch_transfer_input > inputs;
+    vector< compressed_batch_transfer_output > outputs;
+    string memo;
+
+    void validate() const;
+    void get_required_active_authorities( flat_set<account_name_type>& a ) const
+    {
+      bool uses_scoped_grant = false;
+      for( const auto& input : inputs )
+      {
+        if( input.grant_id == 0 ) a.insert( input.from );
+        else uses_scoped_grant = true;
+      }
+      if( uses_scoped_grant ) a.insert( actor );
+    }
+  };
+
   struct witness_block_approve_operation : public base_operation
   {
     account_name_type witness;
@@ -1261,6 +1299,9 @@ FC_REFLECT( hive::protocol::create_scoped_authority_operation,
   (grantor)(actor)(grant_id)(max_per_transfer)(max_per_period)(max_lifetime)(period_seconds)(valid_from)(expires_at)(allowed_recipients) )
 FC_REFLECT( hive::protocol::revoke_scoped_authority_operation, (grantor)(grant_id) )
 FC_REFLECT( hive::protocol::scoped_transfer_operation, (grantor)(actor)(to)(grant_id)(amount)(memo) )
+FC_REFLECT( hive::protocol::compressed_batch_transfer_input, (from)(amount)(grant_id) )
+FC_REFLECT( hive::protocol::compressed_batch_transfer_output, (to)(amount) )
+FC_REFLECT( hive::protocol::compressed_batch_transfer_operation, (actor)(symbol)(inputs)(outputs)(memo) )
 FC_REFLECT_TYPENAME( hive::protocol::recurrent_transfer_extension )
 FC_REFLECT( hive::protocol::witness_block_approve_operation, (witness)(block_id) );
 

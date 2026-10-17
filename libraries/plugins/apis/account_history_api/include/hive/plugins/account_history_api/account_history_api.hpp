@@ -203,6 +203,7 @@ enum class get_account_history_op_filter_high : uint64_t
   create_scoped_authority_operation                     = 0x00000000'20000000ull,
   revoke_scoped_authority_operation                     = 0x00000000'40000000ull,
   scoped_transfer_operation                             = 0x00000000'80000000ull,
+  compressed_batch_transfer_operation                    = 0x00000001'00000000ull,
   // Add new operations here or reuse (set_)reset_account_operation values in operation_filter_low
 };
 
