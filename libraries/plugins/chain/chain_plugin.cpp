@@ -480,7 +480,10 @@ void chain_plugin_impl::start_write_processing()
         {
           if( this_->last_pushed_block_was_before_checkpoint )
           {
-            wlog( "main writer loop interrupted before last checkpoint was crossed and normal validation restored" );
+            if( this_->db.head_block_num() >= this_->checkpoints.rbegin()->first )
+              ilog( "Final checkpoint reached, normal block validation restored on exit." );
+            else
+              wlog( "main writer loop interrupted before last checkpoint was crossed and normal validation restored" );
             this_->last_pushed_block_was_before_checkpoint = false;
             this_->db.set_revision( this_->db.head_block_num() );
           }
