@@ -543,6 +543,7 @@ struct count_operation_visitor
   void operator()( const scoped_transfer_operation& ) const
   {
     execution_time_count += _e.transfer_time;
+    market_op_count++;
   }
 
   void operator()( const compressed_batch_transfer_operation& op ) const
@@ -550,6 +551,13 @@ struct count_operation_visitor
     // Charge each account lookup and balance mutation; transaction-size RC also
     // accounts for the serialized account names, amounts, memo and signature.
     execution_time_count += _e.transfer_time * ( op.inputs.size() + op.outputs.size() );
+    // Like ordinary transfer_operation, HIVE/HBD transfers pay the market-byte
+    // component. Scoped inputs additionally read and update persistent grant
+    // counters, so price one extra state interaction for each such input.
+    market_op_count++;
+    for( const auto& input : op.inputs )
+      if( input.grant_id != 0 )
+        execution_time_count += _e.transfer_time;
   }
 
   void operator()( const witness_block_approve_operation& op )const

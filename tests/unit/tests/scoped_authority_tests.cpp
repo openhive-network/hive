@@ -2,10 +2,22 @@
 #include <boost/test/unit_test.hpp>
 
 #include <hive/chain/detail/state/scoped_authority_object_multiindex.hpp>
+#include <hive/chain/rc/resource_count.hpp>
+#include <hive/chain/rc/rc_objects.hpp>
+#include <hive/chain/rc/rc_objects_multiindex.hpp>
+#include <hive/chain/rc/rc_utility.hpp>
+#include <hive/chain/rc/resource_user.hpp>
 #include <hive/protocol/hardfork.hpp>
 #include <hive/protocol/forward_impacted.hpp>
 
 #include "../db_fixture/clean_database_fixture.hpp"
+
+#include <chrono>
+#include <cstdio>
+#include <cstdlib>
+#include <fstream>
+#include <limits>
+#include <sys/resource.h>
 
 using namespace hive;
 using namespace hive::chain;
@@ -343,10 +355,20 @@ BOOST_AUTO_TEST_CASE( compressed_batch_transfer_bounds_and_canonical_order_are_v
   HIVE_REQUIRE_THROW( duplicate_inputs.validate(), fc::exception );
   auto unsorted = make_batch( { { "bob", 1 }, { "alice", 1 } }, { { "merchant", 2 } } );
   HIVE_REQUIRE_THROW( unsorted.validate(), fc::exception );
+  auto unsorted_outputs = make_batch( { { "alice", 2 } }, { { "outside", 1 }, { "merchant", 1 } } );
+  HIVE_REQUIRE_THROW( unsorted_outputs.validate(), fc::exception );
+  auto duplicate_grant_source = make_batch( { { "alice", 1, 7 }, { "alice", 1, 8 } }, { { "merchant", 2 } } );
+  HIVE_REQUIRE_THROW( duplicate_grant_source.validate(), fc::exception );
   auto self_destination = make_batch( { { "alice", 1 } }, { { "alice", 1 } } );
   HIVE_REQUIRE_THROW( self_destination.validate(), fc::exception );
   auto zero = make_batch( { { "alice", 0 } }, { { "merchant", 0 } } );
   HIVE_REQUIRE_THROW( zero.validate(), fc::exception );
+  auto overflow = make_batch( { { "alice", std::numeric_limits<int64_t>::max() } },
+    { { "merchant", std::numeric_limits<int64_t>::max() } } );
+  HIVE_REQUIRE_THROW( overflow.validate(), fc::exception );
+  auto sum_overflow = make_batch( { { "alice", HIVE_MAX_SHARE_SUPPLY }, { "bob", 1 } },
+    { { "merchant", HIVE_MAX_SHARE_SUPPLY }, { "other", 1 } } );
+  HIVE_REQUIRE_THROW( sum_overflow.validate(), fc::exception );
   auto wrong_symbol = make_batch( { { "alice", 1 } }, { { "merchant", 1 } } );
   wrong_symbol.symbol = VESTS_SYMBOL;
   HIVE_REQUIRE_THROW( wrong_symbol.validate(), fc::exception );
@@ -422,6 +444,119 @@ BOOST_AUTO_TEST_CASE( compressed_batch_keeps_multiple_scoped_grant_counters_isol
   BOOST_REQUIRE( find_grant( *db, "alice", 1 ).lifetime_spent.amount.value == 3000 );
   BOOST_REQUIRE( find_grant( *db, "carol", 2 ).lifetime_spent.amount.value == 4000 );
   BOOST_REQUIRE( db->get_account( "merchant" ).get_hbd_balance().amount.value == 7000 );
+}
+
+BOOST_AUTO_TEST_CASE( compressed_batch_attributes_distinct_allowlists_without_cross_routing )
+{
+  ACTORS( DEFAULT_VESTING, (alice)(bob)(carol)(merchant)(outside) );
+  issue_funds( "alice", HBD_asset( 10000 ) );
+  issue_funds( "carol", HBD_asset( 10000 ) );
+
+  auto alice_grant = make_hbd_grant( *db, { "merchant" }, 21, 5000, 10000, 10000 );
+  auto carol_grant = make_hbd_grant( *db, { "outside" }, 22, 5000, 10000, 10000 );
+  carol_grant.grantor = "carol";
+  push_transaction( alice_grant, alice_private_key );
+  push_transaction( carol_grant, carol_private_key );
+
+  auto permitted = make_batch( { { "alice", 4000, 21 }, { "carol", 4000, 22 } },
+    { { "merchant", 4000 }, { "outside", 4000 } } );
+  permitted.actor = "bob";
+  push_transaction( permitted, bob_private_key );
+  generate_blocks( 1 );
+  BOOST_REQUIRE_EQUAL( db->get_account( "merchant" ).get_hbd_balance(), HBD_asset( 4000 ) );
+  BOOST_REQUIRE_EQUAL( db->get_account( "outside" ).get_hbd_balance(), HBD_asset( 4000 ) );
+  BOOST_REQUIRE_EQUAL( find_grant( *db, "alice", 21 ).lifetime_spent, HBD_asset( 4000 ).to_asset() );
+  BOOST_REQUIRE_EQUAL( find_grant( *db, "carol", 22 ).lifetime_spent, HBD_asset( 4000 ).to_asset() );
+
+  // Shrinking Alice's contribution makes Carol's deterministic allocation
+  // cross the merchant output boundary, which her outside-only grant forbids.
+  auto cross_routed = make_batch( { { "alice", 3000, 21 }, { "carol", 5000, 22 } },
+    { { "merchant", 4000 }, { "outside", 4000 } } );
+  cross_routed.actor = "bob";
+  HIVE_REQUIRE_THROW( push_transaction( cross_routed, bob_private_key ), fc::exception );
+  BOOST_REQUIRE_EQUAL( find_grant( *db, "alice", 21 ).lifetime_spent, HBD_asset( 4000 ).to_asset() );
+  BOOST_REQUIRE_EQUAL( find_grant( *db, "carol", 22 ).lifetime_spent, HBD_asset( 4000 ).to_asset() );
+  BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).get_hbd_balance(), HBD_asset( 6000 ) );
+  BOOST_REQUIRE_EQUAL( db->get_account( "carol" ).get_hbd_balance(), HBD_asset( 6000 ) );
+}
+
+BOOST_AUTO_TEST_CASE( compressed_batch_allows_active_funds_beside_a_restricted_input )
+{
+  ACTORS( HIVE_asset( 10000 ), (alice)(bob)(carol)(merchant)(outside) );
+  issue_funds( "alice", HBD_asset( 10000 ) );
+  issue_funds( "bob", HBD_asset( 10000 ) );
+  auto grant = make_hbd_grant( *db, { "merchant" }, 31, 5000, 5000, 5000 );
+  grant.actor = "carol";
+  push_transaction( grant, alice_private_key );
+
+  auto mixed = make_batch( { { "alice", 3000, 31 }, { "bob", 5000, 0 } },
+    { { "merchant", 3000 }, { "outside", 5000 } } );
+  mixed.actor = "carol";
+  signed_transaction mixed_tx;
+  mixed_tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+  mixed_tx.operations.emplace_back( mixed );
+  try
+  {
+    push_transaction( mixed_tx, std::vector<fc::ecc::private_key>{ carol_private_key, bob_private_key } );
+    generate_blocks( 1 );
+  }
+  catch( const fc::exception& e )
+  {
+    BOOST_FAIL( "Mixed active/scoped batch failed: " << e.to_detail_string() );
+  }
+  BOOST_REQUIRE_EQUAL( find_grant( *db, "alice", 31 ).lifetime_spent, HBD_asset( 3000 ).to_asset() );
+  BOOST_REQUIRE_EQUAL( db->get_account( "merchant" ).get_hbd_balance(), HBD_asset( 3000 ) );
+  BOOST_REQUIRE_EQUAL( db->get_account( "outside" ).get_hbd_balance(), HBD_asset( 5000 ) );
+
+  auto laundering = make_batch( { { "alice", 2000, 31 } },
+    { { "merchant", 1000 }, { "outside", 1000 } } );
+  laundering.actor = "carol";
+  HIVE_REQUIRE_THROW( push_transaction( laundering, carol_private_key ), fc::exception );
+  BOOST_REQUIRE_EQUAL( find_grant( *db, "alice", 31 ).lifetime_spent, HBD_asset( 3000 ).to_asset() );
+}
+
+BOOST_AUTO_TEST_CASE( compressed_batches_keep_two_grants_from_one_account_independent )
+{
+  ACTORS( HIVE_asset( 10000 ), (alice)(bob)(merchant)(other) );
+  issue_funds( "alice", HBD_asset( 10000 ) );
+  push_transaction( make_hbd_grant( *db, { "merchant" }, 41, 2000, 2000, 2000 ), alice_private_key );
+  push_transaction( make_hbd_grant( *db, { "other" }, 42, 2000, 2000, 2000 ), alice_private_key );
+
+  signed_transaction tx;
+  tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+  auto first = make_batch( { { "alice", 1000, 41 } }, { { "merchant", 1000 } } );
+  first.actor = "bob";
+  auto second = make_batch( { { "alice", 1000, 42 } }, { { "other", 1000 } } );
+  second.actor = "bob";
+  tx.operations.emplace_back( first );
+  tx.operations.emplace_back( second );
+  push_transaction( tx, bob_private_key );
+  generate_blocks( 1 );
+
+  BOOST_REQUIRE_EQUAL( find_grant( *db, "alice", 41 ).lifetime_spent, HBD_asset( 1000 ).to_asset() );
+  BOOST_REQUIRE_EQUAL( find_grant( *db, "alice", 42 ).lifetime_spent, HBD_asset( 1000 ).to_asset() );
+  BOOST_REQUIRE_EQUAL( db->get_account( "merchant" ).get_hbd_balance(), HBD_asset( 1000 ) );
+  BOOST_REQUIRE_EQUAL( db->get_account( "other" ).get_hbd_balance(), HBD_asset( 1000 ) );
+}
+
+BOOST_AUTO_TEST_CASE( scoped_batch_resource_cost_is_paid_by_actor )
+{
+  compressed_batch_transfer_operation active_batch;
+  active_batch.symbol = HBD_SYMBOL;
+  active_batch.inputs = { { "alice", 1000, 0 }, { "bob", 1000, 0 } };
+  active_batch.outputs = { { "merchant", 2000 } };
+  signed_transaction active_tx;
+  active_tx.operations.emplace_back( active_batch );
+  BOOST_REQUIRE_EQUAL( get_resource_user( active_tx ), account_name_type( "alice" ) );
+
+  compressed_batch_transfer_operation scoped_batch;
+  scoped_batch.actor = "hivedebit";
+  scoped_batch.symbol = HBD_SYMBOL;
+  scoped_batch.inputs = { { "alice", 1000, 7 }, { "bob", 1000, 0 } };
+  scoped_batch.outputs = { { "merchant", 2000 } };
+  signed_transaction scoped_tx;
+  scoped_tx.operations.emplace_back( scoped_batch );
+  BOOST_REQUIRE_EQUAL( get_resource_user( scoped_tx ), account_name_type( "hivedebit" ) );
 }
 
 BOOST_AUTO_TEST_CASE( compressed_batch_wire_size_is_smaller_than_equivalent_standard_transfers )
@@ -570,6 +705,308 @@ BOOST_AUTO_TEST_CASE( legacy_transfer_and_historical_operation_tags_are_unchange
   BOOST_REQUIRE( !is_virtual_operation( operation( create_scoped_authority_operation() ) ) );
   BOOST_REQUIRE( !is_virtual_operation( operation( revoke_scoped_authority_operation() ) ) );
   BOOST_REQUIRE( !is_virtual_operation( operation( scoped_transfer_operation() ) ) );
+}
+
+BOOST_AUTO_TEST_CASE( compressed_batch_rc_benchmark, *boost::unit_test::disabled() )
+{
+  // Opt-in benchmark. Run with --run_test=scoped_authority_tests/compressed_batch_rc_benchmark
+  // and HIVE_RC_BENCHMARK_CSV=...; excluded from normal consensus-suite execution.
+  const char* csv_path = std::getenv( "HIVE_RC_BENCHMARK_CSV" );
+  if( csv_path == nullptr )
+  {
+    BOOST_TEST_MESSAGE( "Set HIVE_RC_BENCHMARK_CSV to run the opt-in RC benchmark" );
+    return;
+  }
+
+  constexpr uint32_t max_accounts = 100;
+  const fc::ecc::private_key actor_key = generate_private_key( "batch_rc_benchmark_actor" );
+  std::vector< fc::ecc::private_key > source_keys;
+  std::vector< account_name_type > source_names;
+  std::vector< account_name_type > destination_names;
+  source_keys.reserve( max_accounts );
+  source_names.reserve( max_accounts );
+  destination_names.reserve( max_accounts );
+
+  for( uint32_t i = 0; i < max_accounts; ++i )
+  {
+    std::string suffix = std::to_string( i );
+    while( suffix.size() < 3 ) suffix.insert( suffix.begin(), '0' );
+    const std::string source = "benchsrc" + suffix;
+    const std::string destination = "benchdst" + suffix;
+    source_keys.push_back( generate_private_key( source ) );
+    // Grant creation has a substantial persistent-state RC cost. Give every
+    // independent benchmark actor enough development vesting to fund it.
+    account_create( source, source_keys.back().get_public_key(), source_keys.back().get_public_key(), HIVE_asset( 1000000 ) );
+    account_create( destination, init_account_pub_key, init_account_pub_key, NO_VESTING );
+    source_names.emplace_back( source );
+    destination_names.emplace_back( destination );
+  }
+  account_create( "benchdebit", actor_key.get_public_key(), actor_key.get_public_key(), HIVE_asset( 100000 ) );
+  generate_blocks( 1 ); // Commit account-creation work and reset the debug-update transaction quota.
+
+  std::ofstream csv( csv_path );
+  BOOST_REQUIRE_MESSAGE( csv.good(), "Unable to open RC benchmark CSV output" );
+  csv << "shape,mode,inputs,outputs,transactions,serialized_bytes,signatures,history_bytes,new_accounts,market_bytes,state_bytes,execution_units,rc_charged,same_pool_rc_cost,grant_setup_rc,execution_us,max_rss_kb,balance_writes\n";
+
+  struct shape { uint32_t inputs; uint32_t outputs; const char* name; };
+  const std::vector< shape > shapes = {
+    { 1, 3, "1x3" }, { 1, 10, "1x10" }, { 1, 100, "1x100" },
+    { 3, 2, "3x2" }, { 10, 10, "10x10" }, { 100, 100, "100x100" }
+  };
+
+  uint32_t grant_id = 10;
+  for( const auto& s : shapes )
+  {
+    std::fprintf( stderr, "RC benchmark shape %s begin\n", s.name );
+    BOOST_TEST_MESSAGE( "Starting RC benchmark shape " << s.name );
+    generate_blocks( 1 ); // Keep debug-node artificial transactions bounded per block.
+    std::vector< HBD_asset > destination_balances_before;
+    for( uint32_t i = 0; i < s.outputs; ++i )
+      destination_balances_before.emplace_back( db->get_account( destination_names[i] ).get_hbd_balance() );
+    std::vector< int64_t > source_balances_before;
+    for( uint32_t i = 0; i < s.inputs; ++i )
+      source_balances_before.push_back( db->get_account( source_names[i] ).get_hbd_balance().amount.value );
+    const int64_t output_unit = 1000;
+    std::vector< int64_t > input_amounts( s.inputs, output_unit );
+    std::vector< int64_t > output_amounts( s.outputs, output_unit );
+    if( s.inputs == 1 ) input_amounts[0] = int64_t( s.outputs ) * output_unit;
+    if( s.inputs == 3 && s.outputs == 2 ) output_amounts[1] = 2 * output_unit;
+    if( s.inputs > 1 && s.outputs == 1 ) output_amounts[0] = int64_t( s.inputs ) * output_unit;
+
+    for( uint32_t i = 0; i < s.inputs; ++i )
+    {
+      try
+      {
+        issue_funds( source_names[i], HBD_asset( input_amounts[i] * 4 ) );
+      }
+      catch( const fc::exception& e )
+      {
+        BOOST_FAIL( "Funding RC benchmark source index " << i << " failed: " << e.to_detail_string() );
+      }
+    }
+    std::fprintf( stderr, "RC benchmark funded %s\n", s.name );
+
+    std::vector< std::tuple< uint32_t, uint32_t, int64_t > > edges;
+    uint32_t output_index = 0;
+    auto remaining_outputs = output_amounts;
+    for( uint32_t input_index = 0; input_index < s.inputs; ++input_index )
+    {
+      int64_t remaining = input_amounts[input_index];
+      while( remaining > 0 )
+      {
+        const int64_t portion = std::min( remaining, remaining_outputs[output_index] );
+        edges.emplace_back( input_index, output_index, portion );
+        remaining -= portion;
+        remaining_outputs[output_index] -= portion;
+        if( remaining_outputs[output_index] == 0 ) ++output_index;
+      }
+    }
+
+    // Keep memo bytes identical across all three representations so measured
+    // size/RC differences come from transaction and operation encoding only.
+    std::vector< std::string > edge_memos;
+    edge_memos.reserve( edges.size() );
+    for( size_t i = 0; i < edges.size(); ++i )
+    {
+      std::string edge_id = std::to_string( i );
+      while( edge_id.size() < 3 ) edge_id.insert( edge_id.begin(), '0' );
+      edge_memos.emplace_back( std::string( "rcbm-" ) + s.name + "-" + edge_id );
+    }
+
+    const auto& dgpo = db->get_dynamic_global_properties();
+    const int64_t rc_regen = dgpo.get_total_vesting_shares().amount.value / ( HIVE_RC_REGEN_TIME / HIVE_BLOCK_INTERVAL );
+    const auto& params = db->get< rc_resource_param_object, by_id >( rc_resource_param_id_type() );
+    const auto& pool = db->get< rc_pool_object, by_id >( rc_pool_id_type() );
+    auto same_pool_cost = [&]( const resource_count_type& usage )
+    {
+      int64_t cost = 0;
+      for( size_t i = 0; i < HIVE_RC_NUM_RESOURCE_TYPES; ++i )
+      {
+        const auto& resource = params.resource_param_array[i];
+        const int64_t pool_regen_share = fc::uint128_to_int64(
+          ( uint128_t( rc_regen ) * pool.get_weight( i ) ) / pool.get_weight_divisor() );
+        if( pool_regen_share <= 0 ) continue;
+        const int64_t units = usage[i] * int64_t( resource.resource_dynamics_params.resource_unit );
+        cost += resource_credits::compute_cost( resource.price_curve_params, pool.get_pool( i ), units, pool_regen_share );
+      }
+      return cost;
+    };
+    auto emit_row = [&]( const char* mode, uint64_t transactions, uint64_t bytes, uint64_t signatures,
+                         const resource_count_type& usage, int64_t rc_cost, int64_t setup_rc, int64_t elapsed_us, uint64_t writes )
+    {
+      rusage memory{};
+      getrusage( RUSAGE_SELF, &memory );
+      csv << s.name << ',' << mode << ',' << s.inputs << ',' << s.outputs << ',' << transactions << ','
+          << bytes << ',' << signatures << ',' << usage[resource_history_bytes] << ','
+          << usage[resource_new_accounts] << ',' << usage[resource_market_bytes] << ','
+          << usage[resource_state_bytes] << ',' << usage[resource_execution_time] << ','
+          << rc_cost << ',' << same_pool_cost( usage ) << ',' << setup_rc << ','
+          << elapsed_us << ',' << memory.ru_maxrss << ',' << writes << '\n';
+    };
+
+    // A: isolated transactions, each with one source signature. Sum the exact
+    // cost and resource vector returned/derived for every signed transaction.
+    resource_count_type separate_usage;
+    int64_t separate_rc = 0;
+    std::vector< full_transaction_ptr > separate_transactions;
+    uint64_t separate_bytes = 0, separate_signatures = 0;
+    int64_t separate_elapsed = 0;
+    size_t edge_index = 0;
+    for( const auto& edge : edges )
+    {
+      transfer_operation transfer;
+      transfer.from = source_names[std::get<0>( edge )];
+      transfer.to = destination_names[std::get<1>( edge )];
+      transfer.amount = HBD_asset( std::get<2>( edge ) ).to_asset();
+      transfer.memo = edge_memos[edge_index++];
+      const auto start = std::chrono::steady_clock::now();
+      full_transaction_ptr full_tx;
+      try
+      {
+        full_tx = push_transaction( transfer, source_keys[std::get<0>( edge )] );
+      }
+      catch( const fc::exception& e )
+      {
+        BOOST_FAIL( "Separate RC benchmark transfer failed: " << e.to_detail_string() );
+      }
+      separate_elapsed += std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::steady_clock::now() - start ).count();
+      count_resources( full_tx->get_transaction(), full_tx->get_transaction_size(), separate_usage, db->head_block_time() );
+      separate_rc += full_tx->get_rc_cost();
+      separate_transactions.push_back( full_tx );
+      separate_bytes += full_tx->get_transaction_size();
+      separate_signatures += full_tx->get_transaction().signatures.size();
+    }
+    emit_row( "separate", edges.size(), separate_bytes, separate_signatures, separate_usage,
+      separate_rc, 0, separate_elapsed, edges.size() * 2 );
+    std::fprintf( stderr, "RC benchmark separate complete %s\n", s.name );
+
+    // B: one transaction containing the same ordinary transfer operations.
+    signed_transaction standard_tx;
+    standard_tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    edge_index = 0;
+    for( const auto& edge : edges )
+    {
+      transfer_operation transfer;
+      transfer.from = source_names[std::get<0>( edge )];
+      transfer.to = destination_names[std::get<1>( edge )];
+      transfer.amount = HBD_asset( std::get<2>( edge ) ).to_asset();
+      transfer.memo = edge_memos[edge_index++];
+      standard_tx.operations.emplace_back( transfer );
+    }
+    std::vector< fc::ecc::private_key > standard_keys;
+    for( uint32_t i = 0; i < s.inputs; ++i ) standard_keys.push_back( source_keys[i] );
+    auto start = std::chrono::steady_clock::now();
+    auto standard_full_tx = push_transaction_ex( standard_tx, standard_keys );
+    std::vector< full_transaction_ptr > standard_transactions{ standard_full_tx };
+    const int64_t standard_elapsed = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::steady_clock::now() - start ).count();
+    resource_count_type standard_usage;
+    count_resources( standard_full_tx->get_transaction(), standard_full_tx->get_transaction_size(), standard_usage, db->head_block_time() );
+    emit_row( "multi_transfer", 1, standard_full_tx->get_transaction_size(), standard_full_tx->get_transaction().signatures.size(),
+      standard_usage, standard_full_tx->get_rc_cost(), 0, standard_elapsed, edges.size() * 2 );
+    std::fprintf( stderr, "RC benchmark multi-op complete %s\n", s.name );
+
+    // C1: compressed operation with direct active-authority inputs.
+    compressed_batch_transfer_operation direct_batch;
+    direct_batch.symbol = HBD_SYMBOL;
+    for( uint32_t i = 0; i < s.inputs; ++i )
+      direct_batch.inputs.push_back( { source_names[i], input_amounts[i], 0 } );
+    for( uint32_t i = 0; i < s.outputs; ++i )
+      direct_batch.outputs.push_back( { destination_names[i], output_amounts[i] } );
+    signed_transaction direct_tx;
+    direct_tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    direct_tx.operations.emplace_back( direct_batch );
+    start = std::chrono::steady_clock::now();
+    auto direct_full_tx = push_transaction_ex( direct_tx, standard_keys );
+    std::vector< full_transaction_ptr > direct_transactions{ direct_full_tx };
+    const int64_t direct_elapsed = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::steady_clock::now() - start ).count();
+    resource_count_type direct_usage;
+    count_resources( direct_full_tx->get_transaction(), direct_full_tx->get_transaction_size(), direct_usage, db->head_block_time() );
+    BOOST_REQUIRE_EQUAL( direct_usage[resource_history_bytes], direct_full_tx->get_transaction_size() );
+    BOOST_REQUIRE_EQUAL( direct_usage[resource_market_bytes], direct_full_tx->get_transaction_size() );
+    emit_row( "compressed_active", 1, direct_full_tx->get_transaction_size(), direct_full_tx->get_transaction().signatures.size(),
+      direct_usage, direct_full_tx->get_rc_cost(), 0, direct_elapsed, s.inputs + s.outputs );
+    std::fprintf( stderr, "RC benchmark active batch complete %s\n", s.name );
+    csv.flush();
+
+    // C2: same value flow funded by independent scoped grants; the actor signs.
+    int64_t grant_setup_rc = 0;
+    std::vector< full_transaction_ptr > grant_transactions;
+    for( uint32_t i = 0; i < s.inputs; ++i )
+    {
+      std::fprintf( stderr, "RC benchmark grant index %u id %u\n", i, grant_id );
+      BOOST_TEST_MESSAGE( "Creating scoped RC benchmark grant " << source_names[i] << ":" << grant_id );
+      create_scoped_authority_operation grant;
+      grant.grantor = source_names[i];
+      grant.actor = "benchdebit";
+      grant.grant_id = grant_id;
+      grant.max_per_transfer = HBD_asset( input_amounts[i] ).to_asset();
+      grant.max_per_period = grant.max_per_transfer;
+      grant.max_lifetime = grant.max_per_transfer;
+      grant.period_seconds = 3600;
+      grant.valid_from = db->head_block_time();
+      grant.expires_at = grant.valid_from + fc::seconds( 86400 );
+      try
+      {
+        auto grant_tx = push_transaction( grant, source_keys[i] );
+        grant_setup_rc += grant_tx->get_rc_cost();
+        grant_transactions.push_back( grant_tx );
+      }
+      catch( const fc::exception& e )
+      {
+        BOOST_FAIL( "Creating scoped RC benchmark grant failed: " << e.to_detail_string() );
+      }
+    }
+    compressed_batch_transfer_operation scoped_batch = direct_batch;
+    scoped_batch.actor = "benchdebit";
+    for( auto& input : scoped_batch.inputs ) input.grant_id = grant_id;
+    signed_transaction scoped_tx;
+    scoped_tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    scoped_tx.operations.emplace_back( scoped_batch );
+    std::fprintf( stderr, "RC benchmark scoped batch %s\n", s.name );
+    BOOST_TEST_MESSAGE( "Submitting scoped RC benchmark batch " << s.name );
+    start = std::chrono::steady_clock::now();
+    auto scoped_full_tx = push_transaction_ex( scoped_tx, std::vector<fc::ecc::private_key>{ actor_key } );
+    std::vector< full_transaction_ptr > scoped_transactions{ scoped_full_tx };
+    const int64_t scoped_elapsed = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::steady_clock::now() - start ).count();
+    resource_count_type scoped_usage;
+    count_resources( scoped_full_tx->get_transaction(), scoped_full_tx->get_transaction_size(), scoped_usage, db->head_block_time() );
+    BOOST_REQUIRE_EQUAL( scoped_usage[resource_history_bytes], scoped_full_tx->get_transaction_size() );
+    BOOST_REQUIRE_EQUAL( scoped_usage[resource_market_bytes], scoped_full_tx->get_transaction_size() );
+    emit_row( "compressed_scoped", 1, scoped_full_tx->get_transaction_size(), scoped_full_tx->get_transaction().signatures.size(),
+      scoped_usage, scoped_full_tx->get_rc_cost(), grant_setup_rc, scoped_elapsed, s.inputs + s.outputs );
+
+    // Confirm all four transfer representations in one produced block, then
+    // verify their RC charges and exact source/output state against the actual
+    // confirmed block application.
+    const uint32_t previous_head = db->head_block_num();
+    generate_blocks( 1 );
+    BOOST_REQUIRE_EQUAL( db->head_block_num(), previous_head + 1 );
+    auto confirmed_cost = []( const std::vector< full_transaction_ptr >& transactions )
+    {
+      int64_t total = 0;
+      for( const auto& tx : transactions )
+      {
+        BOOST_REQUIRE( tx->get_rc_cost() >= 0 );
+        total += tx->get_rc_cost();
+      }
+      return total;
+    };
+    BOOST_REQUIRE_EQUAL( confirmed_cost( separate_transactions ), separate_rc );
+    BOOST_REQUIRE_EQUAL( confirmed_cost( standard_transactions ), standard_full_tx->get_rc_cost() );
+    BOOST_REQUIRE_EQUAL( confirmed_cost( direct_transactions ), direct_full_tx->get_rc_cost() );
+    BOOST_REQUIRE_EQUAL( confirmed_cost( scoped_transactions ), scoped_full_tx->get_rc_cost() );
+    BOOST_REQUIRE_EQUAL( confirmed_cost( grant_transactions ), grant_setup_rc );
+    for( uint32_t i = 0; i < s.inputs; ++i )
+      BOOST_REQUIRE_EQUAL( find_grant( *db, source_names[i], grant_id ).lifetime_spent.amount.value, input_amounts[i] );
+    for( uint32_t i = 0; i < s.inputs; ++i )
+      BOOST_REQUIRE_EQUAL( db->get_account( source_names[i] ).get_hbd_balance().amount.value, source_balances_before[i] );
+    for( uint32_t i = 0; i < s.outputs; ++i )
+      BOOST_REQUIRE_EQUAL( db->get_account( destination_names[i] ).get_hbd_balance(),
+        destination_balances_before[i] + HBD_asset( output_amounts[i] * 4 ) );
+    ++grant_id;
+  }
+  csv.flush();
+  BOOST_REQUIRE( csv.good() );
 }
 
 BOOST_AUTO_TEST_SUITE_END()
