@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# The docker CLI of the integration step and of the scripts it runs, ahead of the
+# real one on PATH (.aidev/integration.sh). With AIDEV_ENV_CONTAINER_OWNER set,
+# every container `run` or `create` starts and every image `build` makes carries
+# AIDEV's owner label, which AIDEV reaps a killed run's containers by (a container
+# inherits its image's labels), and every container an OOM score that has the
+# kernel kill it before the run coordinating it. Anything else passes unchanged.
+self="$(realpath "$0")"
+real=""
+IFS=: read -ra dirs <<< "$PATH"
+for d in "${dirs[@]}"; do
+    if [ -x "$d/docker" ] && [ "$(realpath "$d/docker")" != "$self" ]; then real="$d/docker"; break; fi
+done
+[ -n "$real" ] || { echo "$self: no other docker on PATH" >&2; exit 127; }
+if [ -n "${AIDEV_ENV_CONTAINER_OWNER:-}" ]; then
+    case "${1:-}" in
+        run|create) exec "$real" "$1" --label "aidev.env-container.owner=$AIDEV_ENV_CONTAINER_OWNER" --oom-score-adj 900 "${@:2}" ;;
+        build) exec "$real" build --label "aidev.env-container.owner=$AIDEV_ENV_CONTAINER_OWNER" "${@:2}" ;;
+    esac
+fi
+exec "$real" "$@"

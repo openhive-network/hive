@@ -94,6 +94,18 @@ container's cgroup limit less its usage, else the host's `MemAvailable`, and
 overrides the count (`.aidev/build-jobs.sh`, tested by
 `.aidev/tests/build_jobs_test.sh`).
 
+AIDEV caps, deprioritises and reaps only the suite's own container; the step's
+builds and the scripts' nodes are the host daemon's. So the step, and the scripts
+in their runner, call docker through `.aidev/docker-shim/docker`: with
+`AIDEV_ENV_CONTAINER_OWNER` set, every container they start carries the label
+`aidev.env-container.owner` with that owner, and `--oom-score-adj 900`, and every
+image they build the label, which its containers inherit. `docker compose` starts
+its containers through the daemon's API, not `docker run`: the services of
+`test_snapshot_bootstrap.sh` carry the label only through their image, and keep
+the default OOM score. The binaries'
+build container is capped at `AIDEV_ENV_CONTAINER_MEMORY_BYTES` when set, and
+gets `HIVE_BUILD_JOBS`. Without these variables nothing changes.
+
 To run the selector by hand: `HIVE_AIDEV_INTEGRATION=1 .aidev/integration-select.sh`;
 the step, on a host with docker:
 `HIVE_AIDEV_INTEGRATION=1 .aidev/run-checks.sh full-integration integration`.

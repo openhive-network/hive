@@ -247,11 +247,13 @@ compose_plugin() {
 }
 
 # The image the scripts run in: the checks' image (bash, the docker CLI, wget,
-# curl) with this host's compose plugin, which test_snapshot_bootstrap.sh uses.
+# curl) with this host's compose plugin, which test_snapshot_bootstrap.sh uses,
+# and the step's docker shim ahead of the docker CLI.
 integration_runner_image() {  # RUNTIME_IMAGE TAG
     local stage="$out/runner"
-    mkdir -p "$stage" && cp "$(compose_plugin)" "$stage/docker-compose" || return 1
-    printf 'FROM %s\nCOPY docker-compose /usr/libexec/docker/cli-plugins/docker-compose\n' "$1" > "$stage/Dockerfile"
+    mkdir -p "$stage" && cp "$(compose_plugin)" "$stage/docker-compose" && cp .aidev/docker-shim/docker "$stage/" || return 1
+    printf 'FROM %s\nCOPY docker-compose /usr/libexec/docker/cli-plugins/docker-compose\nCOPY docker /opt/aidev/bin/docker\nENV PATH=/opt/aidev/bin:$PATH\n' \
+        "$1" > "$stage/Dockerfile"
     docker build -q -t "$2" "$stage"
 }
 
@@ -263,12 +265,14 @@ integration_runner_image() {  # RUNTIME_IMAGE TAG
 # or, when the change touches the runtime stages (INLINE_BASE=1), on that stage
 # built from the checkout. The build runs as root: link_gitdirs may have to create
 # a submodule's git path outside /home/hived, and so trust a checkout it does not
-# own. Its report is handed back to this user.
+# own. Its report is handed back to this user. It is capped at the suite's own
+# container's memory (AIDEV_ENV_CONTAINER_MEMORY_BYTES), when AIDEV gives one.
 hived_image() {  # NETWORK RUNTIME_IMAGE TAG INLINE_BASE
-    local net="$1" built="$out-hived-$1" stage="$out/image-$1" git_dir rc=0 base_arg=()
+    local net="$1" built="$out-hived-$1" stage="$out/image-$1" git_dir rc=0 base_arg=() cap=()
     git_dir="$(realpath "$(git rev-parse --git-common-dir)")"
+    [ -n "${AIDEV_ENV_CONTAINER_MEMORY_BYTES:-}" ] && cap=(--memory "$AIDEV_ENV_CONTAINER_MEMORY_BYTES")
     [ "$(remaining)" -gt 0 ] || { out_of_time "the $net binaries' build"; return; }
-    docker run --rm --name "$integration_prefix-build-$net" --network host --user 0 \
+    docker run --rm --name "$integration_prefix-build-$net" --network host --user 0 "${cap[@]}" \
         -v "$(on_host "$git_dir"):$git_dir" -v "$(on_host "$PWD"):$PWD" -w "$PWD" \
         -e HIVE_SCCACHE_REDIS="$(ci_sccache_redis)" \
         -e GIT_CONFIG_COUNT=1 -e GIT_CONFIG_KEY_0=safe.directory -e GIT_CONFIG_VALUE_0='*' \
@@ -310,7 +314,7 @@ integration_script() {  # SCRIPT IMAGE SECONDS MIN_SECONDS RUNNER_IMAGE
     echo "$1: ${seconds}s (CI gives it $3s)"
     docker run --rm --name "$integration_prefix-${1%.sh}" --network host --user 0 \
         -v /var/run/docker.sock:/var/run/docker.sock -v "$checkout:$checkout" -w "$host" \
-        "$5" timeout -k 30 "$seconds" "$checkout/tests/integration/$1" "$2" "$host/work" || rc=$?
+        -e AIDEV_ENV_CONTAINER_OWNER "$5" timeout -k 30 "$seconds" "$checkout/tests/integration/$1" "$2" "$host/work" || rc=$?
     docker run --rm --user 0 -v "$host:$host" --entrypoint bash "$5" -c \
         'find "$1" -type f ! -name "*.log" -delete; find "$1" -mindepth 1 -depth -type d -empty -delete; chown -R "$2" "$1"' \
         _ "$host" "$(id -u):$(id -g)" || true
@@ -383,6 +387,9 @@ integration() {
         skip_case integration "$s (selected: ${selected//$'\n'/ })"
         return 0
     fi
+    # Every container the step starts on the host's daemon, which AIDEV does not
+    # see as the suite's, goes through the shim (and so do the scripts', in the runner).
+    PATH="$PWD/.aidev/docker-shim:$PATH"
     runtime="$(grep -o 'registry[^"]*aidev-tests@sha256:[0-9a-f]*' .aidev/project.yaml)"
     docker image inspect "$runtime" > /dev/null 2>&1 || docker pull -q "$runtime" > /dev/null || return 1
     if ! read_host_mountinfo "$runtime" || ! host_sees "$PWD" .aidev/run-checks.sh "$runtime" \

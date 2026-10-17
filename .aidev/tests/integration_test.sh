@@ -101,6 +101,24 @@ expect "no cache, but time for a cold build" 0 "$?"
 redis_answers redis://127.0.0.1:1
 expect "nothing listening is no cache" 1 "$?"
 
+# --- docker-shim/docker, ahead of a docker that prints its arguments ----------
+mkdir -p "$scratch/cli"
+printf '#!/usr/bin/env bash\nprintf "[%%s]" "$@"\n' > "$scratch/cli/docker"
+chmod +x "$scratch/cli/docker"
+shim() {  # OWNER ARGS...: what the docker behind the shim is called with
+    local owner="$1"; shift
+    env AIDEV_ENV_CONTAINER_OWNER="$owner" PATH="$here/docker-shim:$scratch/cli:$PATH" docker "$@"
+}
+expect "shim: run, owned" "[run][--label][aidev.env-container.owner=w 1][--oom-score-adj][900][--rm][img][a b]" \
+    "$(shim "w 1" run --rm img "a b")"
+expect "shim: create, owned" "[create][--label][aidev.env-container.owner=w][--oom-score-adj][900][img]" \
+    "$(shim w create img)"
+expect "shim: build, owned" "[build][--label][aidev.env-container.owner=w][-q][-t][t][.]" "$(shim w build -q -t t .)"
+expect "shim: other commands, owned" "[ps][-aq][--filter][name=run]" "$(shim w ps -aq --filter name=run)"
+expect "shim: run, no owner" "[run][--rm][img]" "$(shim "" run --rm img)"
+expect "shim: build, no owner" "[build][-q][.]" "$(shim "" build -q .)"
+expect "shim: no docker behind it" 127 "$(PATH="$here/docker-shim:/nonexistent" "$here/docker-shim/docker" ps 2> /dev/null; echo $?)"
+
 # --- instance_base_changed and diff_base, in a scratch repository -------------
 repo="$scratch/repo"
 git init -q "$repo" && cd "$repo" || exit 1
