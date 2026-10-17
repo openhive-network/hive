@@ -22,12 +22,12 @@ export HIVE_INTEGRATION_COLD_BUILD_SECONDS="${HIVE_INTEGRATION_COLD_BUILD_SECOND
 integration_table() {
     cat <<'TABLE'
 # PATH                                           LINES                      SCRIPTS
-docker/                                          .                          test_snapshot_bootstrap.sh test_exchange_node_block_log_pruning.sh
-Dockerfile                                       .                          test_snapshot_bootstrap.sh test_exchange_node_block_log_pruning.sh
+docker/                                          .                          test_snapshot_bootstrap.sh test_exchange_node_block_log_pruning.sh test_hived_uid.sh
+Dockerfile                                       .                          test_snapshot_bootstrap.sh test_exchange_node_block_log_pruning.sh test_hived_uid.sh
 scripts/common.sh                                .                          test_snapshot_bootstrap.sh test_exchange_node_block_log_pruning.sh
 scripts/run_hived_img.sh                         .                          test_snapshot_bootstrap.sh test_exchange_node_block_log_pruning.sh
 scripts/hived_healthcheck.sh                     .                          test_snapshot_bootstrap.sh test_exchange_node_block_log_pruning.sh
-scripts/setup_ubuntu.sh                          .                          test_snapshot_bootstrap.sh test_exchange_node_block_log_pruning.sh
+scripts/setup_ubuntu.sh                          .                          test_snapshot_bootstrap.sh test_exchange_node_block_log_pruning.sh test_hived_uid.sh
 scripts/openssl.conf                             .                          test_snapshot_bootstrap.sh test_exchange_node_block_log_pruning.sh
 scripts/exchange_instance.conf                   .                          test_exchange_node_block_log_pruning.sh
 scripts/build_and_setup_exchange_instance.sh     .                          test_exchange_node_block_log_pruning.sh
@@ -40,13 +40,14 @@ TABLE
 }
 
 # What a script runs against, how long CI gives it, and the least time worth
-# starting it with: CI's snapshot_bootstrap_tests and
+# starting it with: CI's snapshot_bootstrap_tests, hived_uid_test and
 # exchange_node_block_log_pruning_test, each `<script> <hived image> <work dir>`.
 # A script not named here needs fixtures only CI has.
 integration_script_needs() {  # SCRIPT: NETWORK SECONDS MIN_SECONDS
     case "$1" in
         test_snapshot_bootstrap.sh) echo testnet 2100 300 ;;
         test_exchange_node_block_log_pruning.sh) echo mainnet 1800 600 ;;
+        test_hived_uid.sh) echo testnet 600 120 ;;
         *) return 1 ;;
     esac
 }
