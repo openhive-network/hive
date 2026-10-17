@@ -132,8 +132,21 @@ namespace graphene { namespace net {
         try
         {
           _potential_peer_set.clear();
-          std::vector<potential_peer_record> peer_records = fc::json::from_file(_peer_database_filename, fc::json::format_validation_mode::full).as<std::vector<potential_peer_record> >();
-          std::copy(peer_records.begin(), peer_records.end(), std::inserter(_potential_peer_set, _potential_peer_set.end()));
+          const fc::variants peer_records = fc::json::from_file(_peer_database_filename, fc::json::format_validation_mode::full).get_array();
+          // records are converted one by one so that a single unreadable entry (e.g. an endpoint format
+          // this build doesn't understand) costs only that entry, not the whole database
+          for (const fc::variant& peer_record : peer_records)
+          {
+            try
+            {
+              _potential_peer_set.insert(peer_record.as<potential_peer_record>());
+            }
+            catch (const fc::exception& e)
+            {
+              wlog("skipping unreadable record ${peer_record} in peer database file ${peer_database_filename}: ${e}",
+                   (peer_record)("peer_database_filename", _peer_database_filename)("e", e.to_string()));
+            }
+          }
 
           if (_potential_peer_set.size() > GRAPHENE_NET_MAX_PEERDB_SIZE)
           {

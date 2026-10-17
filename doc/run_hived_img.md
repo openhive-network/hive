@@ -24,6 +24,12 @@ Options to specify working directories for the node (the script will pass the ap
 `--data-dir=DIRECTORY_PATH` - specifies the blockchain data directory. See deployment scenarios described below for details on how to prepare this directory<br>
 `--shared-file-dir=DIRECTORY_PATH` - specifies the directory where dockerized hived will store its state file (shared_memory.bin). For best performance results, it should be located on a ram-disk (e.g. a subdirectory created under /dev/shm).
 
+hived in the image runs as user `hived` (UID 1000), so both directories must be writable by that UID. When they are owned by another user, there is no need to `chown 1000` them or make them world-writable: pass that user's UID in `HIVED_UID` and hived runs as it instead, e.g. for directories owned by the user starting the node:
+
+    run_hived_img.sh my-local-image --docker-option="--env HIVED_UID=$(id -u)" --name=hived-instance --data-dir=/home/hived/datadir --shared-file-dir=/dev/shm/hived/consensus_node
+
+(or `-e HIVED_UID=$(id -u)` with a plain `docker run`). The entrypoint remaps the container's `hived` account to that UID, which also takes over the image's files under `/home/hived` and anything in the mounted directories still owned by UID 1000, and then starts hived as it. `HIVED_UID` must be a non-zero number; anything else stops the container with an error.
+
 ### Examining the hived log file
 
 The newly created container (and hived process) will create a log file (hived.log) located in the blockchain data directory (e.g. /home/hived/datadir/hived.log).

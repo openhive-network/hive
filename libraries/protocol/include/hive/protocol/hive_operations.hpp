@@ -1105,6 +1105,23 @@ namespace fc
 
   using hive::protocol::recurrent_transfer_extension;
   template<>
+  struct serialization_functor< recurrent_transfer_extension >
+  {
+    bool operator()( const fc::variant& v, recurrent_transfer_extension& s ) const
+    {
+      // Legacy output is [tag, value], but the {type, value} form has always been
+      // accepted in legacy mode as well, so only arrays take the legacy path.
+      if( hive::protocol::serialization_mode_controller::legacy_enabled() &&
+          v.is_array() )
+      {
+        return extended_serialization_functor< recurrent_transfer_extension >().serialize( v, s );
+      }
+      else
+        return false;
+    }
+  };
+
+  template<>
   struct variant_creator_functor< recurrent_transfer_extension >
   {
     template<typename T>

@@ -272,6 +272,23 @@ BOOST_AUTO_TEST_CASE( owner_update_limit )
   }
 }
 
+BOOST_AUTO_TEST_CASE( owner_update_limit_messages )
+{
+  BOOST_TEST_MESSAGE( "Owner update and account recovery limit messages state the actual HIVE_OWNER_UPDATE_LIMIT" );
+
+  BOOST_REQUIRE_EQUAL( owner_update_limit_mgr::describe_limit( fc::minutes(60) ), "an hour" );
+  BOOST_REQUIRE_EQUAL( owner_update_limit_mgr::describe_limit( fc::hours(2) ), "per 2 hours" );
+  BOOST_REQUIRE_EQUAL( owner_update_limit_mgr::describe_limit( fc::seconds(60) ), "a minute" );
+  BOOST_REQUIRE_EQUAL( owner_update_limit_mgr::describe_limit( fc::seconds(90) ), "per 90 seconds" );
+  BOOST_REQUIRE_EQUAL( owner_update_limit_mgr::describe_limit( fc::seconds(120) ), "per 2 minutes" );
+  BOOST_REQUIRE_EQUAL( owner_update_limit_mgr::describe_limit( fc::seconds(6) ), "per 6 seconds" );
+
+  BOOST_REQUIRE_EQUAL( HIVE_OWNER_UPDATE_LIMIT.to_seconds(), 6 );
+  BOOST_REQUIRE_EQUAL( owner_update_limit_mgr::msg( false ), "Owner authority can only be updated once per 6 seconds." );
+  BOOST_REQUIRE_EQUAL( owner_update_limit_mgr::msg( true ), "Owner authority can only be updated twice per 6 seconds." );
+  BOOST_REQUIRE_EQUAL( owner_update_limit_mgr::recovery_msg(), "Account can only be recovered once per 6 seconds." );
+}
+
 BOOST_AUTO_TEST_CASE( pack_transaction_basic )
 {
   try
