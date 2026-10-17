@@ -139,12 +139,20 @@ BOOST_AUTO_TEST_CASE( scoped_allowlist_revocation_and_expiration_are_consensus_e
   if( !revoked_after_hundred_blocks || db->head_block_num() != revoke_block_num + 99 )
     BOOST_FAIL( "Revocation did not persist through one hundred confirmed blocks" );
   const long long revoked_lifetime_spent = static_cast< long long >( find_grant( *db, "alice", 1 ).lifetime_spent.amount.value );
+  const long long revoked_period_spent = static_cast< long long >( find_grant( *db, "alice", 1 ).period_spent.amount.value );
+  const HBD_asset alice_balance_before_rejected_transfer = db->get_account( "alice" ).get_hbd_balance();
+  const HBD_asset merchant_balance_before_rejected_transfer = db->get_account( "merchant" ).get_hbd_balance();
   if( !throws_consensus_error( [&] { push_transaction( make_transfer( "merchant", 2 ), bob_private_key ); } ) )
     BOOST_FAIL( "Transfer using revoked grant was accepted" );
   const long long revoked_lifetime_after = static_cast< long long >( find_grant( *db, "alice", 1 ).lifetime_spent.amount.value );
+  const long long revoked_period_after = static_cast< long long >( find_grant( *db, "alice", 1 ).period_spent.amount.value );
   if( revoked_lifetime_after != revoked_lifetime_spent )
     BOOST_FAIL( "Rejected revoked transfer changed lifetime spending from " + std::to_string( revoked_lifetime_spent ) +
       " to " + std::to_string( revoked_lifetime_after ) );
+  if( revoked_period_after != revoked_period_spent )
+    BOOST_FAIL( "Rejected revoked transfer changed period spending" );
+  BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).get_hbd_balance(), alice_balance_before_rejected_transfer );
+  BOOST_REQUIRE_EQUAL( db->get_account( "merchant" ).get_hbd_balance(), merchant_balance_before_rejected_transfer );
 
 }
 
@@ -212,6 +220,51 @@ BOOST_AUTO_TEST_CASE( scoped_transfer_requires_actor_authority_and_transaction_r
 
   const auto& grant = find_grant( *db, "alice", 1 );
   BOOST_REQUIRE_EQUAL( grant.lifetime_spent, HBD_asset( 0 ).to_asset() );
+  BOOST_REQUIRE_EQUAL( grant.period_spent, HBD_asset( 0 ).to_asset() );
+  BOOST_REQUIRE_EQUAL( db->get_account( "merchant" ).get_hbd_balance(), HBD_asset( 0 ) );
+  BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).get_hbd_balance(), HBD_asset( 100000 ) );
+}
+
+BOOST_AUTO_TEST_CASE( scoped_grants_are_isolated_across_transactions_in_one_block )
+{
+  ACTORS( DEFAULT_VESTING, (alice)(bob)(merchant) );
+  vest( "alice", HIVE_asset( 100000 ) );
+  issue_funds( "alice", HBD_asset( 100000 ) );
+  push_transaction( make_hbd_grant( *db, {}, 1, 5000, 5000, 10000 ), alice_private_key );
+  push_transaction( make_hbd_grant( *db, {}, 2, 5000, 5000, 10000 ), alice_private_key );
+  generate_blocks( 1 );
+
+  push_transaction( make_transfer( "merchant", 2000, 1 ), bob_private_key );
+  push_transaction( make_transfer( "merchant", 3000, 1 ), bob_private_key );
+  push_transaction( make_transfer( "merchant", 1000, 2 ), bob_private_key );
+  generate_blocks( 1 );
+
+  BOOST_REQUIRE_EQUAL( find_grant( *db, "alice", 1 ).lifetime_spent, HBD_asset( 5000 ).to_asset() );
+  BOOST_REQUIRE_EQUAL( find_grant( *db, "alice", 1 ).period_spent, HBD_asset( 5000 ).to_asset() );
+  BOOST_REQUIRE_EQUAL( find_grant( *db, "alice", 2 ).lifetime_spent, HBD_asset( 1000 ).to_asset() );
+  BOOST_REQUIRE_EQUAL( find_grant( *db, "alice", 2 ).period_spent, HBD_asset( 1000 ).to_asset() );
+  BOOST_REQUIRE_EQUAL( db->get_account( "merchant" ).get_hbd_balance(), HBD_asset( 6000 ) );
+}
+
+BOOST_AUTO_TEST_CASE( scoped_transfer_rejects_forged_grant_wrong_asset_and_authority_changes )
+{
+  ACTORS( DEFAULT_VESTING, (alice)(bob)(merchant) );
+  issue_funds( "alice", HBD_asset( 100000 ) );
+  push_transaction( make_hbd_grant( *db ), alice_private_key );
+
+  auto wrong_asset = make_transfer( "merchant", 1000 );
+  wrong_asset.amount = HIVE_asset( 1000 ).to_asset();
+  HIVE_REQUIRE_THROW( push_transaction( wrong_asset, bob_private_key ), fc::exception );
+  HIVE_REQUIRE_THROW( push_transaction( make_transfer( "merchant", 1000, 999 ), bob_private_key ), fc::exception );
+
+  account_update_operation update;
+  update.account = "alice";
+  update.active = authority( 1, bob_private_key.get_public_key(), 1 );
+  update.memo_key = bob_private_key.get_public_key();
+  HIVE_REQUIRE_THROW( push_transaction( update, bob_private_key ), fc::exception );
+
+  BOOST_REQUIRE_EQUAL( find_grant( *db, "alice", 1 ).lifetime_spent, HBD_asset( 0 ).to_asset() );
+  BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).get_hbd_balance(), HBD_asset( 100000 ) );
   BOOST_REQUIRE_EQUAL( db->get_account( "merchant" ).get_hbd_balance(), HBD_asset( 0 ) );
 }
 
