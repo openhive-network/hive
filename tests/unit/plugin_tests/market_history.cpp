@@ -349,6 +349,11 @@ BOOST_AUTO_TEST_CASE( mh_test )
     check_bucket( buckets[0], 15, time_a, 5000, 21000, 5000, 21000, 68000, 2500, 9264, 2500, 9264, 31764 );
     check_bucket( buckets[1], 15, time_a + ( 7 * 15 ), 47001, 27999, 47001, 27999, 75000, 20736, 9333, 20736, 9333, 30069 );
     check_bucket( buckets[2], 15, time_a + ( 13 * 15 ), 75000, 75000, 75000, 75000, 75000, 25000, 25000, 25000, 25000, 25000 );
+
+    BOOST_TEST_MESSAGE( "Testing: start later than end is rejected" );
+    HIVE_REQUIRE_ASSERT( mh_api->get_market_history( { 15, db->head_block_time(), db->head_block_time() - 86400 } ), "args.start <= args.end" );
+    HIVE_REQUIRE_ASSERT( mh_api->get_trade_history( { db->head_block_time(), db->head_block_time() - 86400, 1000 } ), "args.start <= args.end" );
+    BOOST_REQUIRE_EQUAL( mh_api->get_market_history( { 15, time_a, time_a } ).buckets.size(), 0 );
   }
   FC_LOG_AND_RETHROW()
 }
