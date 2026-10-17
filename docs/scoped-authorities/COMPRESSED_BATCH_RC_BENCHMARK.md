@@ -27,6 +27,21 @@ The CSV's `grant_setup_rc` field measures confirmed creation of the grants used 
 
 The benchmark gives source accounts high development-only vesting so they can fund the transfer and grant-creation costs. This changes absolute RC regeneration versus a normal account mix but does not change the matched per-shape comparison: the same pool parameters and weights price all modes in each shape.
 
+### Approximate RC break-even for grant setup
+
+For each shape, `ceil(grant_setup_rc / (baseline_rc - scoped_batch_rc))` estimates how many same-shaped scoped batches would repay the grant creation RC. The result is shown in batches, not individual outputs. It assumes the same pool pricing for every use and ignores expiry, periodic allowance limits, and changes to account RC regeneration.
+
+| Inputs → outputs | Batches vs separate transactions | Batches vs standard multi-transfer transaction |
+|---|---:|---:|
+| 1 → 3 | 1,981 | 8,671 |
+| 1 → 10 | 391 | 1,441 |
+| 1 → 100 | 30 | 104 |
+| 3 → 2 | 2,431 | 2,852 |
+| 10 → 10 | 1,806 | 2,128 |
+| 100 → 100 | 1,473 | 1,725 |
+
+The large 100-input setup amount includes 100 separately created grants. In a real deployment the number and duration of grants, the cadence of use, and each actor/source RC pool determine whether the setup cost can be amortized. This estimate does not assert that 100 transfers have the cost of one transfer; each batch is priced for all its inputs and outputs.
+
 ## RC accounting changes covered
 
 Ordinary `transfer_operation` pays market-byte RC. Scoped direct transfers and compressed batches now do the same. Compressed batches charge execution weight for each input and output; every scoped input adds another transfer execution weight for reading and updating its persistent grant counter. A scoped batch selects its delegated actor as RC payer, including when active-authority inputs are mixed in. Pure active batches deterministically select the first sorted source as payer.
@@ -39,7 +54,7 @@ New operation tags remain outside the historical regular-operation range and are
 - A/B/C/D use identical memo contents for corresponding transfers within a shape; memo strings are unique across shapes to avoid duplicate transaction IDs.
 - `same_pool_rc_cost` applies Hive's RC pricing curve to the measured resource vector using the pool/weight/regen parameters captured at the start of that shape. The `rc_charged` column is read back after block inclusion.
 - `execution_us` is wall-clock time around transaction push/signature validation in this fixture, not an isolated evaluator microbenchmark. It is a single run, not a statistically controlled latency benchmark.
-- `max_rss_kb` is the process high-water RSS at the row, not attributable per-transaction memory. The verified run ranged from 95,240 to 96,844 KiB (about 93.0 to 94.6 MiB).
+- `max_rss_kb` is the process high-water RSS at the row, not attributable per-transaction memory. The verified run ranged from 97,168 to 98,672 KiB (about 94.9 to 96.4 MiB).
 - `balance_writes` counts evaluator balance-adjustment calls: two per ordinary transfer, or one per input and output for a batch. It is not a count of physical disk writes.
 - Grant creation is confirmed with each shape's transfer rows; all transfer variants for a shape are included together in a block so their RC values share that block's pre-update pool conditions.
 
