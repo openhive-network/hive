@@ -74,18 +74,25 @@ verification:
       # The tests/integration scripts the diff selects (.aidev/integration.sh),
       # beside `default`. Its select skips it, before AIDEV admits it into a
       # docker slot, when the diff selects no script it can run here; see
-      # .aidev/README.md. The step ends itself by HIVE_INTEGRATION_BUDGET,
-      # within this suite's timeout, and by what is left of the activity's 40 min.
+      # .aidev/README.md. The step ends itself by HIVE_INTEGRATION_BUDGET (this
+      # suite's timeout; keep the two equal) and by what is left of the activity's.
+      # The timeout is the most a suite gets: aidev's run_full_tests activity has
+      # 40 min (2400 s, its retry_policy.yaml), and a suite's wall stops 300 s
+      # short of it, so 2100 s. `default` (~10 min, capped at 1500 s) runs beside
+      # this one, not before it, so the slot takes the longer of the two, within
+      # the 2400 s. That fits one image and its scripts (mainnet 650-760 s and the
+      # exchange script's 600 s); when both images and every selected script do
+      # not fit, the plan defers the scripts that do not, by name.
       - name: integration
         adapter: command
         args: [".aidev/run-checks.sh", "full-integration", "integration"]
         artifacts: ["test-results/full-integration/"]
-        env: {HIVE_AIDEV_INTEGRATION: "1", HIVE_INTEGRATION_BUDGET: "1200"}
+        env: {HIVE_AIDEV_INTEGRATION: "1", HIVE_INTEGRATION_BUDGET: "2100"}
         select: [".aidev/integration-select.sh"]
         concurrent: true
         docker: true
         stack: false
-        timeout: 1200
+        timeout: 2100
         memory: 12g
   baseline:
     # The same suite as `full`, run on the base; this slot's wall is sized from

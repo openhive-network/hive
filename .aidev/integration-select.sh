@@ -3,9 +3,10 @@
 # run a script here, decided before AIDEV admits the suite into a docker slot.
 # Exits 0 when the diff selects a script integration_script_needs can run and this
 # host can run it (integration_preconditions: a docker daemon, the compose plugin
-# and the time plan over HIVE_INTEGRATION_BUDGET), printing them; else 77, its last
-# line the reason. It runs in AIDEV's worker, outside the checks' image: bash, git,
-# coreutils/grep/sed and the docker CLI only; no build, no container, and nothing
+# and the time plan over HIVE_INTEGRATION_BUDGET), printing them, the scripts the
+# plan defers and last the ones it runs; else 77, its last line the reason. It
+# runs in AIDEV's worker, outside the checks' image: bash, git, coreutils/grep/sed
+# and the docker CLI only; no build, no container, and nothing
 # written under test-results/.
 set -uo pipefail
 cd "$(dirname "$0")/.." || exit 1
@@ -33,5 +34,5 @@ done
 now="$(date +%s)"
 pre="$(integration_preconditions $(( $(integration_deadline "$now" "$now" "") - now )) "$(compiler_cache)" "${runnable[@]}")" \
     || { [ "$pre" = "${pre##*$'\n'}" ] || echo "${pre%$'\n'*}"; skip "skipped: ${pre##*$'\n'} (selected: ${runnable[*]})"; }
-echo "$pre"
-echo "selected: ${runnable[*]}"
+echo "${pre%$'\n'*}"
+echo "selected: ${pre##*$'\n'run: }"
