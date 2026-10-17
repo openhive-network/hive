@@ -28,6 +28,9 @@
 #                     hived and the tools its image carries, into <report dir>/bin
 #                     (what `integration` runs in the checks' image to build an image)
 #
+# The build's ninja runs as many jobs as the memory left to it allows, 2 GB each
+# (.aidev/build-jobs.sh); HIVE_BUILD_JOBS overrides that.
+#
 # Compiler cache: the build runs from /home/hived/source into /home/hived/build
 # with CI's cmake arguments, because sccache keys include absolute paths, so the
 # checks hit what CI's builds put in its Redis cache (reached through the stack's
@@ -119,6 +122,8 @@ if ! { [ -w /home/hived ] && [ ! -e "$src" ] && mirror_source && link_gitdirs; }
     src="$PWD"; bld="$PWD/build"
 fi
 
+# shellcheck source=.aidev/build-jobs.sh
+. .aidev/build-jobs.sh
 # shellcheck source=.aidev/integration.sh
 . .aidev/integration.sh
 
@@ -186,7 +191,7 @@ build() (  # a subshell: the `cd` below must not move the steps that follow
     configure ON || return 1
     local rc=0 started="$bld/.ninja-started"
     touch "$started" || return 1
-    ninja -j "${HIVE_BUILD_JOBS:-$(nproc)}" chain_test plugin_test assertion_id_verifier || rc=$?
+    build_ninja chain_test plugin_test assertion_id_verifier || rc=$?
     sccache --show-stats || true
     [ "$rc" -eq 0 ] || duplicate_assertion_ids "$bld/generated_assert_id" "$started"
     return "$rc"
@@ -217,7 +222,7 @@ duplicate_assertion_ids() {  # GENERATED_ASSERT_ID_DIR SINCE_FILE
 hived_binaries() (  # TESTNET (ON|OFF)
     sccache_backend
     configure "$1" || return 1
-    ninja -j "${HIVE_BUILD_JOBS:-$(nproc)}" hived cli_wallet shared_memory_file_util || return 1
+    build_ninja hived cli_wallet shared_memory_file_util || return 1
     sccache --show-stats || true
     mkdir -p "$out/bin" && cp programs/hived/hived programs/cli_wallet/cli_wallet \
         programs/util/shared_memory_file_util "$out/bin/"

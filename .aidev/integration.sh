@@ -271,7 +271,7 @@ hived_image() {  # NETWORK RUNTIME_IMAGE TAG INLINE_BASE
         -v "$(on_host "$git_dir"):$git_dir" -v "$(on_host "$PWD"):$PWD" -w "$PWD" \
         -e HIVE_SCCACHE_REDIS="$(ci_sccache_redis)" \
         -e GIT_CONFIG_COUNT=1 -e GIT_CONFIG_KEY_0=safe.directory -e GIT_CONFIG_VALUE_0='*' \
-        -e HIVE_BUILD_JOBS "$2" timeout -k 30 "$(remaining)" \
+        -e HIVE_BUILD_JOBS -e HIVE_BUILD_JOB_MEMORY_MB "$2" timeout -k 30 "$(remaining)" \
         bash -c '.aidev/run-checks.sh "$1" "$2"; rc=$?; chown -R "$3" "test-results/$1"; exit "$rc"' \
         _ "${built##*/}" "hived-$net" "$(id -u):$(id -g)" || rc=$?
     timed_out "$rc" && { out_of_time "the $net binaries' build"; return; }
