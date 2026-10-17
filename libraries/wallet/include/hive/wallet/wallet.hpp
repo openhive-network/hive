@@ -1411,7 +1411,7 @@ class wallet_api
     wallet_signed_transaction delegate_rc(
           const account_name_type& from,
           const flat_set<account_name_type>& delegatees,
-          int64_t max_rc,
+          fc::variant max_rc,
           bool broadcast );
 
 

@@ -24,6 +24,11 @@ typedef fc::static_variant<
 
 } } // hive::protocol
 
+namespace fc
+{
+  void from_variant( const fc::variant& var, hive::protocol::delegate_rc_operation& vo );
+}
+
 
 FC_REFLECT( hive::protocol::delegate_rc_operation,
   (from)

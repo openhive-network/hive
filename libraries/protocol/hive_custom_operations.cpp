@@ -6,6 +6,10 @@
 
 #include <hive/protocol/hive_specialised_exceptions.hpp>
 
+#include <fc/reflect/variant.hpp>
+
+#include <limits>
+
 
 namespace hive { namespace protocol {
 
@@ -32,3 +36,24 @@ void delegate_rc_operation::validate()const
 }
 
 } } // hive::protocol
+
+namespace fc
+{
+
+// generic int64_t conversion silently wraps unsigned values above int64 range into negative ones
+void from_variant( const fc::variant& var, hive::protocol::delegate_rc_operation& vo )
+{
+  const variant_object& v_object = var.get_object();
+  auto itr = v_object.find( "max_rc" );
+  if( itr != v_object.end() )
+  {
+    const variant& max_rc = itr->value();
+    const uint64_t max_int64 = static_cast< uint64_t >( std::numeric_limits< int64_t >::max() );
+    HIVE_PROTOCOL_NUMBER_ASSERT( !max_rc.is_uint64() || max_rc.as_uint64() <= max_int64,
+      "amount of rc delegated cannot exceed ${max}", ("max", max_int64)("subject", max_rc) );
+  }
+  fc::reflector< hive::protocol::delegate_rc_operation >::visit(
+    from_variant_visitor< hive::protocol::delegate_rc_operation >( v_object, vo ) );
+}
+
+} // fc

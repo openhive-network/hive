@@ -119,8 +119,9 @@ def test_out_of_int64_rc_delegation(wallet: tt.Wallet) -> None:
 
     wallet.api.transfer_to_vesting("initminer", accounts[0], tt.Asset.Test(2000))
 
-    with pytest.raises(ErrorInResponseError):
+    with pytest.raises(ErrorInResponseError) as exception:
         wallet.api.delegate_rc(accounts[0], [accounts[1]], 9223372036854775808)
+    assert "amount of rc delegated cannot exceed 9223372036854775807" in str(exception.value)
 
 
 def test_reject_of_delegation_of_delegated_rc(wallet: tt.Wallet) -> None:

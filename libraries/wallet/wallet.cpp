@@ -2677,16 +2677,17 @@ wallet_serializer_wrapper<vector< database_api::api_recurrent_transfer_object >>
 wallet_signed_transaction wallet_api::delegate_rc(
             const account_name_type& from,
             const flat_set<account_name_type>& delegatees,
-            int64_t max_rc,
+            fc::variant max_rc,
             bool broadcast )
 {
   using namespace plugins::rc;
   FC_ASSERT( !is_locked() );
 
-  delegate_rc_operation dro;
-  dro.from    = from;
-  dro.delegatees = delegatees;
-  dro.max_rc  = max_rc;
+  // conversion through delegate_rc_operation rejects max_rc outside of int64 range instead of wrapping it
+  delegate_rc_operation dro = fc::variant( fc::mutable_variant_object()
+    ( "from", from )
+    ( "delegatees", delegatees )
+    ( "max_rc", std::move( max_rc ) ) ).as< delegate_rc_operation >();
 
   custom_json_operation op;
   op.json = fc::json::to_string( hive::protocol::rc_custom_operation( dro ) );
