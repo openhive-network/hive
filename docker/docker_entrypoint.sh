@@ -2,11 +2,28 @@
 
 set -euo pipefail
 
-# Optional UID override: if HIVED_UID is set, remap the hived user to that UID.
-# This is only needed when bind-mounting volumes owned by a non-1000 UID.
-if [[ -n "${HIVED_UID:-}" ]] && [[ "${HIVED_UID}" =~ ^[0-9]+$ ]] && [[ "${HIVED_UID}" -ne 0 ]] && [[ "${HIVED_UID}" -ne "$(id -u)" ]]; then
-  echo "Remapping hived UID to ${HIVED_UID}"
-  sudo -n usermod -o -u "${HIVED_UID}" hived
+# Optional UID override: if HIVED_UID is set, the hived account is remapped to that
+# UID and the entrypoint runs again as it, so hived can use bind-mounted volumes owned
+# by a UID other than 1000. Remapping the account does not change the UID of a running
+# process, and sudo refuses a process whose UID the account no longer has, so the
+# entrypoint first runs itself again as root, remaps the account (usermod also hands
+# over the files in /home/hived) and drops to it. sudo resets the environment, so it
+# is passed on explicitly. On a restart the container already starts as the new UID.
+if [[ -n "${HIVED_UID:-}" ]]; then
+  if [[ ! "${HIVED_UID}" =~ ^[0-9]+$ ]] || (( 10#${HIVED_UID} == 0 )); then
+    echo "HIVED_UID must be a non-zero numeric UID, not '${HIVED_UID}'. Exiting."
+    exit 1
+  fi
+  hived_uid=$(( 10#${HIVED_UID} ))
+  if (( hived_uid != $(id -u) )); then
+    if (( $(id -u) != 0 )); then
+      mapfile -d '' -t environment < <(env -0)
+      exec sudo -n -- /usr/bin/env -i "${environment[@]}" "$0" "$@"
+    fi
+    echo "Remapping hived UID to ${hived_uid}"
+    usermod -o -u "${hived_uid}" hived
+    exec setpriv --reuid=hived --regid=users --init-groups -- "$0" "$@"
+  fi
 fi
 
 SCRIPTDIR="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
