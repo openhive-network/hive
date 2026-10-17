@@ -2624,6 +2624,17 @@ namespace graphene { namespace net {
           move_peer_to_closing_list(originating_peer->shared_from_this());
           originating_peer->close_connection();
         }
+        else if (connection_rejected_message_received.reason_code == rejection_reason_code::already_connected)
+        {
+          // the peer is up and we already hold a connection to it through another address, so this
+          // says nothing about the dialed address and must not grow its retry backoff.  A seed whose
+          // host name resolves to both an IPv4 and an IPv6 address has one database entry per
+          // address and both are dialed, so one such rejection per startup is expected; recording it
+          // as a failure would push the losing family further back on every restart.  The entry
+          // keeps the handshaking disposition connect_to_task gave it, i.e. a flat retry delay
+          dlog("not counting the already_connected rejection from ${peer} against its retry backoff",
+               ("peer", originating_peer->get_remote_endpoint()));
+        }
         else
         {
           // update our database to record that we were rejected so we won't try to connect again for a while
