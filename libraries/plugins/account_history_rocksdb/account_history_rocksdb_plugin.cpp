@@ -737,6 +737,11 @@ bool account_history_rocksdb_plugin::impl::find_operation_object(size_t opId, ro
 void account_history_rocksdb_plugin::impl::find_operations_by_block(size_t blockNum, bool include_reversible,
   std::function<void(const rocksdb_operation_object&)> processor) const
 {
+  // Block numbers are 32-bit and the head can never reach the maximum value, so such a block holds
+  // no operations; returning here also keeps the exclusive range end below from wrapping to 0.
+  if(blockNum >= std::numeric_limits<uint32_t>::max())
+    return;
+
   if(include_reversible)
   {
     uint32_t collectedIrreversibleBlock = 0;
