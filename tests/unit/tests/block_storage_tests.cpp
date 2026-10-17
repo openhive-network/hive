@@ -1367,6 +1367,59 @@ BOOST_AUTO_TEST_CASE( snapshot_replay_pruned_to_pruned )
   }
 }
 
+// Loads snapshot over 5 full parts of unpruned log, then makes the node create 6th part
+// and checks which part files are left on disk.
+void post_snapshot_rollover_prunes_parts( int target_block_storage, uint32_t lowest_kept_part_number )
+{
+  const uint32_t extended_block_count = 5*BLOCKS_IN_SPLIT_BLOCK_LOG_FILE;
+  const uint32_t head_part_number = 6;
+
+  auto no_processing = [](const fc::path& data_dir){};
+
+  auto post_load_processor = [&](hived_fixture& fixture){
+    BOOST_REQUIRE_EQUAL( extended_block_count, fixture.db->get_last_irreversible_block_num() );
+
+    // Push the log a few blocks into a new (6th) part.
+    for( int i = 0; i < 5; ++i )
+      fixture.generate_block();
+    BOOST_REQUIRE_EQUAL( extended_block_count +5, fixture.db->get_last_irreversible_block_num() );
+
+    fc::path data_dir = fixture.get_data_dir();
+    for( uint32_t part_number = 1; part_number <= head_part_number; ++part_number )
+    {
+      const bool expected = part_number >= lowest_kept_part_number;
+      BOOST_CHECK_MESSAGE( fc::exists( get_block_log_part_path( data_dir, part_number ) ) == expected,
+        "Part " << part_number << ( expected ? " missing" : " not pruned" ) );
+      BOOST_CHECK_MESSAGE( fc::exists( get_block_log_part_path( data_dir, part_number ) +
+        block_log_file_name_info::_artifacts_extension ) == expected,
+        "Artifacts of part " << part_number << ( expected ? " missing" : " not pruned" ) );
+    }
+    BOOST_REQUIRE( fixture.get_chain_plugin().block_reader().get_block_by_number( extended_block_count +5 ) );
+  };
+
+  post_snapshot_replay_block_storage_switch( MAX_FILES_OF_SPLIT_BLOCK_LOG /*initial_block_storage*/,
+                                             target_block_storage,
+                                             no_processing,
+                                             no_processing,
+                                             post_load_processor,
+                                             extended_block_count );
+}
+
+BOOST_AUTO_TEST_CASE( snapshot_rollover_prunes_parts_left_before_load )
+{
+  try {
+    ilog( "Verify that first part rollover after snapshot load prunes all parts older than configured." );
+
+    post_snapshot_rollover_prunes_parts( 1 /*target_block_storage*/, 5 /*lowest_kept_part_number*/ );
+    post_snapshot_rollover_prunes_parts( 2 /*target_block_storage*/, 4 /*lowest_kept_part_number*/ );
+    post_snapshot_rollover_prunes_parts( MAX_FILES_OF_SPLIT_BLOCK_LOG /*target_block_storage*/,
+                                         1 /*lowest_kept_part_number*/ );
+  } catch (fc::exception& e) {
+    edump((e.to_detail_string()));
+    throw;
+  }
+}
+
 /**
  * Tests for the allow_artifacts_regeneration parameter added to block_log open chain.
  * See: https://gitlab.syncad.com/hive/hive/-/issues/817

@@ -191,6 +191,8 @@ namespace hive { namespace chain {
     }
 
     void dispose_garbage( bool closing_time );
+    /// Wipes every part file numbered below given one, whether opened by this run or not.
+    void prune_parts_below( uint32_t lowest_kept_part_number );
 
   private:
     appbase::application&             _app;
