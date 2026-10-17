@@ -15,7 +15,9 @@
 #include <fc/reflect/variant.hpp>
 #include <fc/uint128.hpp>
 
+#include <algorithm>
 #include <fstream>
+#include <limits>
 
 namespace hive { namespace chain {
 
@@ -62,6 +64,9 @@ void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )
     // from using the scheme to temporarily "pump" amount of RC, also if it is not intentional they might be confused about fresh delegations
     // disappearing right after being formed (which might happen if we allow fresh delegations while previous were not yet cleared)
   share_type delta_total = 0; // total amount of rc gained/delegated over the accounts
+  // Get the minimum between the current RC and the maximum delegable RC, so that eve can't f.e. re-delegate delegated RC
+  int64_t from_delegable_rc = std::min( from_account.get_maximum_rc( true ).value, from_account.rc_manabar.current_mana );
+  const int64_t max_int64 = std::numeric_limits< int64_t >::max();
 
   for (const account_name_type& to:op.delegatees)
   {
@@ -97,12 +102,26 @@ void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )
         } );
       }
     }
+    // Below asserts fail exactly where safe<int64_t> additions of delta would overflow (in
+    // update_account_after_rc_delegation and in delta_total), so they only replace the bare overflow message.
+    if( delta > 0 )
+    {
+      const int64_t to_rc_peak = std::max( { to_account.rc_manabar.current_mana, to_account.get_maximum_rc().value,
+        to_account.get_received_rc().value } );
+      FC_ASSERT( to_rc_peak <= 0 || delta.value <= max_int64 - to_rc_peak,
+        "Account ${a} cannot delegate ${n} RC to ${to}: it exceeds the maximum of ${limit} RC that ${to} can receive "
+        "(${a} has ${h} RC available to delegate)",
+        ( "a", op.from )( "n", op.max_rc )( "to", to )( "limit", op.max_rc - ( delta.value - ( max_int64 - to_rc_peak ) ) )
+        ( "h", from_delegable_rc ) );
+      FC_ASSERT( delta_total.value <= max_int64 - delta.value,
+        "Account ${a} cannot delegate ${n} RC to each of ${c} accounts: the total exceeds the maximum of ${max} RC "
+        "(${a} has ${h} RC available to delegate)",
+        ( "a", op.from )( "n", op.max_rc )( "c", op.delegatees.size() )( "max", max_int64 )( "h", from_delegable_rc ) );
+    }
     _db.rc().update_account_after_rc_delegation( to_account, now, delta );
     delta_total += delta;
   }
 
-  // Get the minimum between the current RC and the maximum delegable RC, so that eve can't f.e. re-delegate delegated RC
-  int64_t from_delegable_rc = std::min( from_account.get_maximum_rc( true ).value, from_account.rc_manabar.current_mana );
   // We do this assert at the end instead of in the loop because depending on the ordering of the accounts the delta can start off as from_delegable_rc < delta_total and then be valid as some delegations may get modified to take less rc
   FC_ASSERT( from_delegable_rc >= delta_total, "Account ${a} has insufficient RC (have ${h}, needs ${n})", ( "a", op.from )( "h", from_delegable_rc )( "n", delta_total ) );
 
