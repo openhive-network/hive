@@ -285,7 +285,7 @@ def test_update_owner_authority_two_and_three_times_within_one_hour(
                 alice.update_account(owner=new_auth, use_account_update2=use_account_update2)
             alice.assert_if_rc_current_mana_was_unchanged()
             error_response = str(exception.value)
-            assert "Owner authority can only be updated twice an hour" in error_response
+            assert "Owner authority can only be updated twice per 6 seconds" in error_response
         else:
             transaction = alice.update_account(owner=new_auth, use_account_update2=use_account_update2)
             alice.assert_if_rc_current_mana_was_reduced(transaction)
