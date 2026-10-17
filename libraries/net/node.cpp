@@ -2348,6 +2348,12 @@ namespace graphene { namespace net {
         // either it's not there or it's not a valid session id.  either way, ignore.
       }
       bool already_connected_to_this_peer = is_already_connected_to_id(peer_node_id);
+      if (already_connected_to_this_peer && !rejects_duplicate_hello(_node_id, peer_node_id))
+      {
+        dlog("already connected to node ${id}, but its node id is lower, so it chooses which connection survives",
+             ("id", peer_node_id));
+        already_connected_to_this_peer = false;
+      }
 
       // validate the node id
       fc::sha256::encoder shared_secret_encoder;
@@ -6884,5 +6890,10 @@ namespace graphene { namespace net {
 #undef INVOKE_AND_COLLECT_STATISTICS
 
   } // end namespace detail
+
+  bool rejects_duplicate_hello(const node_id_t& my_node_id, const node_id_t& peer_node_id)
+  {
+    return !(peer_node_id < my_node_id);
+  }
 
 } } // end namespace graphene::net

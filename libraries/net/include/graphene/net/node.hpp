@@ -346,6 +346,18 @@ namespace graphene { namespace net {
    typedef std::shared_ptr<node> node_ptr;
    typedef std::shared_ptr<simulated_network> simulated_network_ptr;
 
+  /**
+   * Whether a hello from @p peer_node_id must be rejected as a duplicate when this node, @p my_node_id,
+   * already holds another connection to that node id (or the id is our own).
+   *
+   * Of two nodes that open several connections to each other at once (a dual-stack seed dialed on
+   * both address families, or both nodes dialing each other), only the one with the lower node id
+   * rejects duplicates, keeping whichever connection's hello reached it first.  The other node
+   * accepts every hello from it and lets those rejections close the extra connections, so both
+   * nodes keep the same connection and at least one always survives.
+   */
+  bool rejects_duplicate_hello(const node_id_t& my_node_id, const node_id_t& peer_node_id);
+
 } } // graphene::net
 
 FC_REFLECT(graphene::net::message_propagation_data, (received_time)(validated_time)(originating_peer));
