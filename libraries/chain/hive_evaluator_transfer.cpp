@@ -96,7 +96,7 @@ namespace {
 void create_scoped_authority_evaluator::do_apply( const create_scoped_authority_operation& o )
 {
   assert_scoped_authorities_enabled( _db );
-  const auto& grantor = _db.get_account( o.grantor );
+  _db.get_account( o.grantor );
   _db.get_account( o.actor );
   // A pending transaction is evaluated against the current head and then replayed
   // when included in a later block. Its requested start can therefore be before
@@ -121,7 +121,6 @@ void create_scoped_authority_evaluator::do_apply( const create_scoped_authority_
   _db.create< scoped_authority_object >( o.grantor, o.actor, o.grant_id,
     o.max_per_transfer, o.max_per_period, o.max_lifetime, o.period_seconds,
     o.valid_from, o.expires_at, o.allowed_recipients );
-  (void)grantor;
 }
 
 void revoke_scoped_authority_evaluator::do_apply( const revoke_scoped_authority_operation& o )
@@ -131,9 +130,6 @@ void revoke_scoped_authority_evaluator::do_apply( const revoke_scoped_authority_
     boost::make_tuple( o.grantor, o.grant_id ) );
   HIVE_CHAIN_STATE_ASSERT( !grant.revoked, o.grant_id, "Scoped authority is already revoked" );
   _db.modify( grant, []( scoped_authority_object& mutable_grant ) { mutable_grant.revoked = true; } );
-  const auto& updated_grant = _db.get< scoped_authority_object, by_grantor_id >(
-    boost::make_tuple( o.grantor, o.grant_id ) );
-  HIVE_CHAIN_STATE_ASSERT( updated_grant.revoked, o.grant_id, "Scoped authority revocation did not persist" );
 }
 
 void scoped_transfer_evaluator::do_apply( const scoped_transfer_operation& o )

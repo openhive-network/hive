@@ -59,4 +59,3 @@ Existing regular operation tags are 0–49 and existing virtual-operation tags a
 5. Existing transfer and other operations remain governed by their existing authority paths.
 6. No client clock, oracle, background worker, or off-chain state affects acceptance.
 7. Expiration, revocation, and usage are based on deterministic state and block order.
-

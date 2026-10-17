@@ -69,4 +69,3 @@ The grant operation value was:
 ```
 
 The corresponding Bob-signed transfer was `{"grantor":"alice","actor":"bob","to":"merchant","grant_id":1,"amount":"1.000 TBD","memo":"signed local demo"}`. The generic wallet signer used the development wallet's Bob active key; Alice's active key was not present in that transaction. Use disposable development/testnet keys only. The demo wallet's startup command, chain ID, genesis spec, and witness command are recorded in `SCOPED_AUTHORITIES_TESTING.md`.
-

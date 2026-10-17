@@ -45,4 +45,3 @@ RC transaction cost is charged to the transaction submitter through the existing
 This design does not prevent the owner from spending funds normally, does not reserve balances, and cannot guarantee a transfer will succeed if the grantor balance is insufficient. Fixed periods can permit spending up to the configured amount on both sides of a period boundary. It excludes savings, delayed/recurrent transfer, escrow, and other financial paths. Batch-specific source-to-recipient attribution adds protocol complexity and needs independent review, especially for mixed direct/scoped inputs and multiple grant use in one transaction.
 
 Before any public hardfork proposal, independently audit integer bounds, authority semantics across mixed signatures, binary serialization, resource accounting, Chainbase rollback and snapshot behavior, API exposure, fork/replay determinism, and all supported node upgrade paths. This document is not an external security audit.
-
