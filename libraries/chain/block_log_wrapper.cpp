@@ -6,7 +6,21 @@
 #include <hive/chain/split_block_log.hpp>
 //#include <regex>
 
+#include <algorithm>
+
 namespace hive { namespace chain {
+
+namespace {
+
+void remove_artifacts_of( const fc::path& block_file )
+{
+  fc::path artifacts_file( block_file.generic_string() +
+                           block_log_file_name_info::_artifacts_extension.c_str() );
+  if( exists( artifacts_file ) )
+    fc::remove( artifacts_file );
+}
+
+} // namespace
 
 /*static*/ std::shared_ptr< block_log_wrapper > block_log_wrapper::create_opened_wrapper(
   const fc::path& the_path, appbase::application& app,
@@ -770,20 +784,13 @@ void block_log_wrapper::wipe_storage_files( const fc::path& dir )
   if( not exists( dir ) )
     return;
 
-  auto remove_artifacts = [&]( const fc::path& block_file ) {
-    fc::path artifacts_file( block_file.generic_string() +
-                             block_log_file_name_info::_artifacts_extension.c_str() );
-    if( exists( artifacts_file ) )
-      fc::remove( artifacts_file );
-  };
-
   if( _block_log_split == LEGACY_SINGLE_FILE_BLOCK_LOG )
   {
     fc::path legacy_file( dir / block_log_file_name_info::_legacy_file_name );
     if( exists( legacy_file ) )
       fc::remove( legacy_file );
 
-    remove_artifacts( legacy_file );
+    remove_artifacts_of( legacy_file );
     return;
   }
 
@@ -795,7 +802,7 @@ void block_log_wrapper::wipe_storage_files( const fc::path& dir )
         block_log_file_name_info::is_part_file( *it ) > 0 )
     {
       fc::remove( *it );
-      remove_artifacts( *it );
+      remove_artifacts_of( *it );
     }
   }
 }
@@ -827,24 +834,46 @@ void block_log_wrapper::internal_append( uint32_t first_block_num, size_t block_
     // Top log must keep valid head block. Append first, add on top later.
     do_appending( new_part_log );
     _logs.push_back( new_part_log );
-    // Shall we delete old file (rotation)?
+    // Shall we delete old file(s) (rotation)?
     // Note that initial part number is 1, new one must be at least 2.
     if( _block_log_split > 0 &&
         block_part_number -1 > (unsigned int)_block_log_split )
-      {
-        uint32_t removed_part_number = block_part_number -1 -(unsigned int)_block_log_split; // is > 0
-        atomic_block_log_ptr_t& log_ref = _logs[ removed_part_number -1 ];
-        block_log_ptr_t removed_log = log_ref.ptr.exchange( block_log_ptr_t() );
-        // Set log to be closed, destroyed & have its files wiped when it's safe to do so.
-        _garbage_collection.push_back( removed_log );
-        // Try garbage collection.
-        dispose_garbage( false/*closing_time*/ );
-      }
+      prune_parts_below( block_part_number - (unsigned int)_block_log_split ); // is > 1
   }
   else // Simply append to existing file.
   {
     do_appending( get_head_log() );
   }
+}
+
+void block_log_wrapper::prune_parts_below( uint32_t lowest_kept_part_number )
+{
+  // Scan the directory instead of _logs alone, because part files below the tail opened
+  // at startup (e.g. left there before snapshot load) are never opened, but must go as well.
+  part_file_names_t part_file_names;
+  look_for_part_files( part_file_names );
+  for( const auto& part : part_file_names )
+  {
+    if( part.part_number >= lowest_kept_part_number )
+      break;
+
+    block_log_ptr_t removed_log = _logs[ part.part_number -1 ].ptr.exchange( block_log_ptr_t() );
+    if( removed_log )
+    {
+      // Set log to be closed, destroyed & have its files wiped when it's safe to do so.
+      _garbage_collection.push_back( removed_log );
+    }
+    else if( std::none_of( _garbage_collection.cbegin(), _garbage_collection.cend(),
+                           [&]( const block_log_ptr_t& g ){ return g && g->get_log_file() == part.part_file; } ) )
+    {
+      // Not opened, so nobody can be using it - wipe its files right away.
+      ilog( "Removing unopened block log part file ${f}", ("f", part.part_file) );
+      fc::remove( part.part_file );
+      remove_artifacts_of( part.part_file );
+    }
+  }
+  // Try garbage collection.
+  dispose_garbage( false/*closing_time*/ );
 }
 
 uint32_t block_log_wrapper::get_actual_tail_block_num() const
