@@ -62,7 +62,7 @@ add_executable(chain_test ${UNIT_TESTS})
 set_target_properties(chain_test PROPERTIES ENABLE_EXPORTS true)
 target_link_libraries(chain_test
    db_fixture chainbase hive_chain hive_protocol
-   account_history_rocksdb_plugin market_history_plugin witness_plugin debug_node_plugin
+   account_history_rocksdb_plugin market_history_plugin witness_plugin debug_node_plugin graphene_net
    fc ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY} ${PLATFORM_SPECIFIC_LIBS})
 
 # Run chain_test suites in parallel using GNU parallel
