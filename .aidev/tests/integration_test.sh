@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # Tests of .aidev/integration.sh's decisions that need no docker: host path
 # translation over mountinfo fixtures, the time budget, the build plan, the
-# Dockerfile-stage check and the diff base. Run from anywhere:
+# Dockerfile-stage check and the diff base; and, where a docker daemon and the
+# checks' image are at hand, that the image build's output in the checkout is
+# this user's however its container ends. Run from anywhere:
 #
 #   .aidev/tests/integration_test.sh
 set -uo pipefail
@@ -196,5 +198,68 @@ expect "select: setup_ubuntu.sh selects the image's scripts" \
     "0|selected: test_exchange_node_block_log_pruning.sh test_hived_uid.sh test_snapshot_bootstrap.sh" "$result"
 git checkout -q scripts
 expect "select: writes no test results" "" "$(git status --porcelain --ignored -- test-results)"
+
+# --- hived_image's ownership hand-back, against a stub run-checks.sh -----------
+# The scratch checkout lives in the real one's test-results/, which the daemon
+# sees (host_path); a temporary directory may be this container's own.
+runtime="$(grep -o 'registry[^"]*aidev-tests@sha256:[0-9a-f]*' "$here/project.yaml")"
+if ! docker info > /dev/null 2>&1 || ! docker image inspect "$runtime" > /dev/null 2>&1; then
+    echo "skip hived_image ownership: no docker daemon, or no $runtime here"
+else
+    checkout="$(mktemp -d "$here/../test-results/integration-test-XXXXXX")"
+    checkout_on_host=""
+    trap 'rm -rf "$scratch"; rm -rf "$checkout" 2> /dev/null || { [ -n "$checkout_on_host" ] && docker run --rm --user 0 \
+        -v "$checkout_on_host:/c" --entrypoint bash "$runtime" -c "rm -rf /c/* /c/.[!.]*"; rm -rf "$checkout"; }' EXIT
+    cd "$checkout" && git init -q . || exit 1
+    mkdir -p .aidev
+    cat > .aidev/run-checks.sh <<'STUB'
+#!/usr/bin/env bash
+# What the build leaves, then the way the stub was told to end: .aidev/stub-end.
+mkdir -p "test-results/$1/bin" && echo hived > "test-results/$1/bin/hived"
+case "$(cat .aidev/stub-end)" in
+    fail) echo "[609/609] failed" > "test-results/$1/$2.log"; exit 1 ;;
+    grow) while :; do echo "[607/609]" >> "test-results/$1/$2.log"; sleep 0.2; done ;;
+    oom) echo "[607/609]" > "test-results/$1/$2.log"; x="$(head -c 1000000000 /dev/zero | tr '\0' x)" ;;
+esac
+STUB
+    chmod +x .aidev/run-checks.sh
+    touch .gitlab-ci.yaml
+    out="$PWD/test-results/full-integration" step_skipped=77 integration_prefix="hive-integration-test-$$"
+    mkdir -p "$out"
+    if ! read_host_mountinfo "$runtime" || ! host_sees "$PWD" .aidev/run-checks.sh "$runtime"; then
+        echo "skip hived_image ownership: the checkout's path on the docker daemon's host does not resolve"
+    else
+        checkout_on_host="$(on_host "$PWD")"
+        built="$PWD/test-results/full-integration-hived-testnet"
+        not_mine() { find "$PWD/test-results" ! -uid "$(id -u)" | head -3 | tr '\n' ' '; }
+        build_ending() {  # END DEADLINE_SECONDS: hived_image's exit, the build container ended by END
+            echo "$1" > .aidev/stub-end
+            rm -rf "$built"
+            integration_deadline_at=$(( $(date +%s) + $2 ))
+            hived_image testnet "$runtime" unused-tag 0 > "$scratch/hived_image.log" 2>&1
+        }
+
+        build_ending fail 600; rc=$?
+        expect "a failed build: its exit" 1 "$rc"
+        expect "a failed build: its output kept" "bin/hived hived-testnet.log" \
+            "$(cd "$built" && find . -type f | sed 's|^\./||' | sort | tr '\n' ' ' | sed 's/ $//')"
+        expect "a failed build: nothing left to another user" "" "$(not_mine)"
+
+        build_ending grow 600 & pid=$!
+        for _ in $(seq 100); do [ "$(wc -l 2> /dev/null < "$built/hived-testnet.log" || echo 0)" -ge 3 ] && break; sleep 0.5; done
+        docker kill "$integration_prefix-build-testnet" > /dev/null
+        wait "$pid"; rc=$?
+        expect "a build killed mid-build: its exit" 137 "$rc"
+        expect "a build killed mid-build: nothing left to another user" "" "$(not_mine)"
+
+        build_ending grow 5; rc=$?
+        expect "a build cut off by its timeout: skipped" 77 "$rc"
+        expect "a build cut off by its timeout: nothing left to another user" "" "$(not_mine)"
+
+        AIDEV_ENV_CONTAINER_MEMORY_BYTES=$(( 128 * 1024 * 1024 )) build_ending oom 600; rc=$?
+        expect "a build OOM-killed at its cap: its exit" 137 "$rc"
+        expect "a build OOM-killed at its cap: nothing left to another user" "" "$(not_mine)"
+    fi
+fi
 
 [ "$failures" -eq 0 ] && echo "all passed" || { echo "$failures failed"; exit 1; }

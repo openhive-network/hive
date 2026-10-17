@@ -63,7 +63,9 @@ The docker-based scripts in `tests/integration/` run in GitLab CI, and in the
 `full` slot's `integration` suite when the diff reaches them. The step lives in
 `.aidev/integration.sh`; `.aidev/tests/integration_test.sh` tests its decisions
 (host paths over mountinfo fixtures, the time budget, the build plan, the
-Dockerfile-stage check, the diff base) and the selector's without docker.
+Dockerfile-stage check, the diff base) and the selector's without docker, and,
+where a docker daemon and the checks' image are at hand, that the image build's
+output is handed back to the invoking user however its container ends.
 
 ### On, selected before admission, beside `default`
 

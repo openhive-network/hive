@@ -258,6 +258,19 @@ integration_runner_image() {  # RUNTIME_IMAGE TAG
     docker build -q -t "$2" "$stage"
 }
 
+# Gives this user back what the step's root containers left in the checkout:
+# everything under each DIR, and whatever else in the checkout root owns. From a
+# fresh container, after the one that wrote them has ended however it ended: one
+# killed, stopped by its timeout or OOM-killed runs nothing of its own afterwards.
+hand_back() {  # RUNTIME_IMAGE [DIR...]
+    local image="$1" checkout; shift
+    checkout="$(on_host "$PWD")" || return 1
+    docker run --rm --user 0 -v "$checkout:$PWD" --entrypoint bash "$image" -c '
+        owner="$1" checkout="$2"; shift 2
+        for d; do [ ! -e "$d" ] || chown -R "$owner" "$d" || exit 1; done
+        find "$checkout" -xdev -uid 0 -exec chown -h "$owner" {} +' _ "$(id -u):$(id -g)" "$PWD" "$@"
+}
+
 # NETWORK's binaries built in the checks' own image, with CI's paths and
 # arguments and the checkout and its git directory at the paths they have here;
 # sccache there probes CI's Redis (HIVE_SCCACHE_REDIS) and else builds cold. Then
@@ -266,9 +279,9 @@ integration_runner_image() {  # RUNTIME_IMAGE TAG
 # or, when the change touches the runtime stages (INLINE_BASE=1), on that stage
 # built from the checkout. The build runs as root: link_gitdirs may have to create
 # a submodule's git path outside /home/hived, and so trust a checkout it does not
-# own. Its report is handed back to this user. It is capped at the suite's own
-# container's memory (AIDEV_ENV_CONTAINER_MEMORY_BYTES), when AIDEV gives one, with
-# no swap beyond it, as AIDEV caps its own containers.
+# own. What it writes is handed back to this user afterwards (hand_back). It is
+# capped at the suite's own container's memory (AIDEV_ENV_CONTAINER_MEMORY_BYTES),
+# when AIDEV gives one, with no swap beyond it, as AIDEV caps its own containers.
 hived_image() {  # NETWORK RUNTIME_IMAGE TAG INLINE_BASE
     local net="$1" built="$out-hived-$1" stage="$out/image-$1" git_dir rc=0 base_arg=() cap=()
     git_dir="$(realpath "$(git rev-parse --git-common-dir)")"
@@ -279,8 +292,11 @@ hived_image() {  # NETWORK RUNTIME_IMAGE TAG INLINE_BASE
         -e HIVE_SCCACHE_REDIS="$(ci_sccache_redis)" \
         -e GIT_CONFIG_COUNT=1 -e GIT_CONFIG_KEY_0=safe.directory -e GIT_CONFIG_VALUE_0='*' \
         -e HIVE_BUILD_JOBS -e HIVE_BUILD_JOB_MEMORY_MB "$2" timeout -k 30 "$(remaining)" \
-        bash -c '.aidev/run-checks.sh "$1" "$2"; rc=$?; chown -R "$3" "test-results/$1"; exit "$rc"' \
-        _ "${built##*/}" "hived-$net" "$(id -u):$(id -g)" || rc=$?
+        .aidev/run-checks.sh "${built##*/}" "hived-$net" || rc=$?
+    if ! hand_back "$2"; then
+        echo "cannot hand the build's output in $PWD back to uid $(id -u)"
+        [ "$rc" -ne 0 ] || rc=1
+    fi
     timed_out "$rc" && { out_of_time "the $net binaries' build"; return; }
     [ "$rc" -eq 0 ] || return "$rc"
     rm -rf "$stage"
@@ -330,8 +346,8 @@ integration_script() {  # SCRIPT IMAGE SECONDS MIN_SECONDS RUNNER_IMAGE
 }
 
 # The run's containers, those the scripts left under their fixed names among them
-# (each runs one of this run's images), then its locks, then its images: by ID, so
-# the tags a script gave them go too.
+# (each runs one of this run's images), then what they left in the checkout, then
+# its locks, then its images: by ID, so the tags a script gave them go too.
 integration_cleanup() {
     local image ids=()
     docker ps -aq --filter "name=^$integration_prefix-" | xargs -r docker rm -f > /dev/null 2>&1
@@ -339,6 +355,8 @@ integration_cleanup() {
         docker ps -aq --filter "ancestor=$image" | xargs -r docker rm -f > /dev/null 2>&1
         ids+=("$(docker image inspect -f '{{.Id}}' "$image" 2>/dev/null)")
     done
+    hand_back "$integration_runtime" "$out" > /dev/null 2>&1 \
+        || echo "== integration: cannot hand $PWD back to uid $(id -u)" >&2
     docker network ls -q --filter "label=hive.integration.owner=$integration_prefix" | xargs -r docker network rm > /dev/null 2>&1
     docker image rm -f "${ids[@]}" > /dev/null 2>&1 || true
 }
@@ -415,6 +433,7 @@ integration() {
     echo "== integration: ${scripts[*]}" >&2
     integration_prefix="hive-integration-$(od -An -N4 -tx1 /dev/urandom | tr -d ' \n')"
     runner="$integration_prefix-runner:latest"
+    integration_runtime="$runtime"
     integration_images=("$runner")
     # buildx keeps its state in ~/.docker, which a sandboxed worker may not write.
     export BUILDX_CONFIG="$out/.buildx"
