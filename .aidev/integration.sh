@@ -266,12 +266,30 @@ out_of_time() {  # WHAT
     return "$step_skipped"
 }
 
-# The daemon's mount table (else its host's init's), read by a container in the
-# host's PID namespace.
+# The mountinfo of the host's docker daemon under PROC_ROOT: the dockerd init
+# started (parent PID 1), else the only dockerd, else init's own. A host may also
+# run nested daemons (docker-in-docker), whose mount tables lack the host's
+# filesystems; /proc's listing order says nothing about which daemon is which.
+host_daemon_mountinfo() {  # PROC_ROOT
+    local p stat ppid daemons=() by_init=()
+    for p in "$1"/[0-9]*; do
+        [ "$(cat "$p/comm" 2>/dev/null)" = dockerd ] || continue
+        daemons+=("$p")
+        stat="$(cat "$p/stat" 2>/dev/null)" || continue
+        read -r _ ppid _ <<< "${stat##*) }"
+        [ "$ppid" = 1 ] && by_init+=("$p")
+    done
+    if [ "${#by_init[@]}" -eq 1 ]; then echo "${by_init[0]}/mountinfo"
+    elif [ "${#daemons[@]}" -eq 1 ]; then echo "${daemons[0]}/mountinfo"
+    else echo "$1/1/mountinfo"
+    fi
+}
+
+# The host daemon's mount table, read by a container in the host's PID namespace.
 read_host_mountinfo() {  # RUNTIME_IMAGE
-    docker run --rm --pid host --entrypoint bash "$1" -c '
-        for p in /proc/[0-9]*; do [ "$(cat "$p/comm" 2>/dev/null)" = dockerd ] && exec cat "$p/mountinfo"; done
-        exec cat /proc/1/mountinfo' > "$out/host-mountinfo" 2>/dev/null && [ -s "$out/host-mountinfo" ]
+    docker run --rm --pid host --entrypoint bash "$1" -c \
+        "$(declare -f host_daemon_mountinfo)"'; exec cat "$(host_daemon_mountinfo /proc)"' \
+        > "$out/host-mountinfo" 2>/dev/null && [ -s "$out/host-mountinfo" ]
 }
 
 on_host() {  # PATH

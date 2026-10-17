@@ -78,6 +78,27 @@ EOF
 expect "escaped spaces" "/home/dan/my hive/x" \
     "$(host_path "/work dir/x" "$worker_space" "$host_split_home")"
 
+# --- host_daemon_mountinfo ----------------------------------------------------
+fake_proc() {  # NAME PID:COMM:PPID...: a /proc with those processes
+    local root="$scratch/$1" e pid comm ppid
+    shift
+    for e; do
+        IFS=: read -r pid comm ppid <<< "$e"
+        mkdir -p "$root/$pid"
+        echo "$comm" > "$root/$pid/comm"
+        echo "$pid ($comm) S $ppid $pid $pid 0 -1" > "$root/$pid/stat"
+    done
+    echo "$root"
+}
+proc="$(fake_proc proc-nested 1:systemd:0 1616537:dockerd:1616500 1616500:containerd-shim:1 339358:dockerd:1)"
+expect "a nested dockerd listed first: the one init started" "$proc/339358/mountinfo" "$(host_daemon_mountinfo "$proc")"
+proc="$(fake_proc proc-single 1:systemd:0 4242:dockerd:4200 4200:sh:1)"
+expect "one dockerd, not started by init: that one" "$proc/4242/mountinfo" "$(host_daemon_mountinfo "$proc")"
+proc="$(fake_proc proc-ambiguous 1:systemd:0 500:dockerd:400 600:dockerd:450)"
+expect "several dockerds, none started by init: init's table" "$proc/1/mountinfo" "$(host_daemon_mountinfo "$proc")"
+proc="$(fake_proc proc-none 1:systemd:0 77:bash:1)"
+expect "no dockerd: init's table" "$proc/1/mountinfo" "$(host_daemon_mountinfo "$proc")"
+
 # --- integration_deadline ----------------------------------------------------
 HIVE_INTEGRATION_BUDGET=1200 HIVE_INTEGRATION_ACTIVITY_SECONDS=2400 HIVE_INTEGRATION_MARGIN=300
 expect "no slot start: the step's own budget" $((10000 + 1200 - 300)) "$(integration_deadline 10000 10000 "")"
