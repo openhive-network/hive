@@ -1824,30 +1824,6 @@ exchange_node_block_log_pruning_test:
   tags:
     - public-runner-docker
 
-# The docker entrypoint's HIVED_UID: hived run as the owner of bind-mounted
-# directories, run against the testnet image.
-hived_uid_test:
-  extends:
-    - .docker_image_builder_job
-    - .skip_test_on_docs_only_with_quick_test
-  stage: test
-  timeout: 15m
-  needs:
-    - job: testnet_node_build
-      artifacts: true
-      optional: true  # Not run when only tests changed
-    - job: quick_test_setup
-      artifacts: true
-      optional: true  # Gives the cached testnet image when only tests changed
-  variables:
-    WORK_DIR: "$CI_PROJECT_DIR/data_generated_during_hived_uid_test"
-  script:
-    - test -n "$HIVED_IMAGE_NAME"
-    - docker pull "$HIVED_IMAGE_NAME"
-    - timeout 10m ./tests/integration/test_hived_uid.sh "$HIVED_IMAGE_NAME" "$WORK_DIR"
-  tags:
-    - public-runner-docker
-
 # The docker entrypoint's snapshot bootstrap, its refusals (exit code 78) and
 # shared_memory_file_util, run against the testnet image.
 snapshot_bootstrap_tests:

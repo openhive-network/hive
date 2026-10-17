@@ -12,11 +12,15 @@ set -euo pipefail
 # files, no sync is needed:
 #
 #   1. HIVED_UID set, datadir and shm_dir bind-mounted from directories owned by
-#      that UID with mode 755: hived runs as that UID and creates blockchain/ and
-#      shared_memory.bin; the container stops cleanly and starts again as that UID
+#      that UID with mode 755, plus a read-only config.ini owned by UID 1000 under
+#      /home/hived: hived runs as that UID and creates blockchain/ and
+#      shared_memory.bin; the container stops cleanly and starts again as that UID;
+#      no file that was there before changes owner on the host
 #   2. the same mounts without HIVED_UID: refused at datadir creation
 #   3. no HIVED_UID, the image's own volumes: hived runs as 1000 as before
 #   4. an invalid HIVED_UID (0, not numeric) is refused with a message
+#   5. HIVED_UID set, datadir owned by UID 1000 (not writable by HIVED_UID): refused
+#      with a message naming the directory and its owner; no owner changes
 #
 # The bind-mounted directories are created through a container, so the test also
 # runs against a Docker daemon on another host (docker-in-docker in CI); the work
@@ -60,10 +64,26 @@ fail() {
 mkdir -p "$WORK_DIR"
 cleanup
 
-# Fresh datadir and shm_dir owned by OWNER_UID, mode 755.
+# Fresh datadir and shm_dir owned by DIR_UID (default OWNER_UID), mode 755, a file
+# owned by DEFAULT_UID in the datadir, and a config.ini owned by DEFAULT_UID.
 prepare_mounts() {
+  local dir_uid="${1:-$OWNER_UID}"
   as_root "rm -rf /work/mounts && mkdir -p /work/mounts/datadir /work/mounts/shm_dir \
-    && chown -R ${OWNER_UID}:${OWNER_UID} /work/mounts && chmod 755 /work/mounts/datadir /work/mounts/shm_dir"
+    && chown -R ${dir_uid}:${dir_uid} /work/mounts && chmod 755 /work/mounts/datadir /work/mounts/shm_dir \
+    && echo foreign > /work/mounts/datadir/foreign_file && chown ${DEFAULT_UID} /work/mounts/datadir/foreign_file \
+    && echo '# test' > /work/mounts/config.ini && chown ${DEFAULT_UID} /work/mounts/config.ini \
+    && chmod 644 /work/mounts/datadir/foreign_file /work/mounts/config.ini"
+}
+
+# Host-side owner of each file prepare_mounts created.
+prepared_owners() {
+  as_root "cd /work/mounts && stat -c '%n %u' datadir shm_dir datadir/foreign_file config.ini"
+}
+
+expect_owners_unchanged() {
+  local before="$1" after
+  after=$(prepared_owners)
+  [[ "$after" == "$before" ]] || fail "owners changed on the host: before '${before}', after '${after}'"
 }
 
 MOUNT_ARGS=(
@@ -71,6 +91,7 @@ MOUNT_ARGS=(
   -v "$WORK_DIR/mounts/shm_dir:/home/hived/shm_dir"
   -e SHM_DIR=/home/hived/shm_dir
 )
+CONFIG_MOUNT_ARGS=(-v "$WORK_DIR/mounts/config.ini:/home/hived/config.ini:ro")
 
 # Waits until hived has created its state file in SHM_DIR (inside the container).
 wait_for_state_file() {
@@ -97,21 +118,24 @@ stop_cleanly() {
   [[ "$code" == 0 ]] || fail "container exited with ${code} on stop"
 }
 
-echo "=== 1. HIVED_UID=${OWNER_UID}, bind mounts owned by ${OWNER_UID} (mode 755) ==="
+echo "=== 1. HIVED_UID=${OWNER_UID}, bind mounts owned by ${OWNER_UID} (mode 755), read-only config.ini owned by ${DEFAULT_UID} ==="
 prepare_mounts
-docker run -d --name "$CONTAINER" -e HIVED_UID="$OWNER_UID" "${MOUNT_ARGS[@]}" "$IMAGE" >/dev/null
+owners_before=$(prepared_owners)
+docker run -d --name "$CONTAINER" -e HIVED_UID="$OWNER_UID" "${MOUNT_ARGS[@]}" "${CONFIG_MOUNT_ARGS[@]}" "$IMAGE" >/dev/null
 wait_for_state_file /home/hived/shm_dir
 expect_hived_uid "$OWNER_UID"
 docker exec "$CONTAINER" test -d /home/hived/datadir/blockchain || fail "no blockchain/ in the datadir"
 stop_cleanly
 owners=$(as_root "stat -c %u /work/mounts/datadir/blockchain /work/mounts/shm_dir/shared_memory.bin" | sort -u)
 [[ "$owners" == "$OWNER_UID" ]] || fail "hived's files are owned by '${owners}', expected ${OWNER_UID}"
+expect_owners_unchanged "$owners_before"
 
 echo "=== 1b. the same container started again ==="
 docker start "$CONTAINER" >/dev/null
 wait_for_state_file /home/hived/shm_dir
 expect_hived_uid "$OWNER_UID"
 stop_cleanly
+expect_owners_unchanged "$owners_before"
 docker rm "$CONTAINER" >/dev/null
 
 echo "=== 2. no HIVED_UID, the same bind mounts ==="
@@ -140,5 +164,18 @@ for uid in 0 abc; do
   grep -qF "HIVED_UID must be a non-zero numeric UID, not '${uid}'" <<< "$output" \
     || fail "HIVED_UID=${uid} was refused without the expected message"
 done
+
+echo "=== 5. HIVED_UID=${OWNER_UID}, datadir owned by ${DEFAULT_UID} (mode 755) ==="
+prepare_mounts "$DEFAULT_UID"
+owners_before=$(prepared_owners)
+status=0
+docker run --name "$CONTAINER" -e HIVED_UID="$OWNER_UID" "${MOUNT_ARGS[@]}" "${CONFIG_MOUNT_ARGS[@]}" "$IMAGE" \
+  > "$WORK_DIR/unwritable.log" 2>&1 || status=$?
+cat "$WORK_DIR/unwritable.log"
+(( status != 0 )) || fail "the container started with HIVED_UID on a datadir it cannot write"
+grep -qF "DATADIR /home/hived/datadir is not writable by HIVED_UID ${OWNER_UID}: it is owned by UID ${DEFAULT_UID}" \
+  "$WORK_DIR/unwritable.log" || fail "refused without naming the datadir and its owner"
+expect_owners_unchanged "$owners_before"
+docker rm "$CONTAINER" >/dev/null
 
 echo "All HIVED_UID cases passed."
