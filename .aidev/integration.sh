@@ -300,7 +300,9 @@ hived_image() {  # NETWORK RUNTIME_IMAGE TAG INLINE_BASE
 # user; afterwards only the logs stay, owned by this user. The lock is released by
 # integration_cleanup, once the containers the script left are gone. The script
 # gets CI's timeout or what is left before the deadline, whichever is shorter: a
-# script stopped by CI's is a failure, one stopped by the deadline is skipped.
+# script stopped by CI's is a failure, one stopped by the deadline is skipped. The
+# script is told when it is stopped (HIVE_INTEGRATION_DEADLINE, an epoch second),
+# never later than the deadline, so its steps end before it is.
 integration_script() {  # SCRIPT IMAGE SECONDS MIN_SECONDS RUNNER_IMAGE
     local dir="$out/${1%.sh}" host checkout rc=0 seconds="$3" left
     mkdir -p "$dir" && host="$(on_host "$dir")" && checkout="$(on_host "$PWD")" || return 1
@@ -314,7 +316,7 @@ integration_script() {  # SCRIPT IMAGE SECONDS MIN_SECONDS RUNNER_IMAGE
     echo "$1: ${seconds}s (CI gives it $3s)"
     docker run --rm --name "$integration_prefix-${1%.sh}" --network host --user 0 \
         -v /var/run/docker.sock:/var/run/docker.sock -v "$checkout:$checkout" -w "$host" \
-        -e AIDEV_ENV_CONTAINER_OWNER "$5" timeout -k 30 "$seconds" "$checkout/tests/integration/$1" "$2" "$host/work" || rc=$?
+        -e AIDEV_ENV_CONTAINER_OWNER -e HIVE_INTEGRATION_DEADLINE="$(( $(date +%s) + seconds ))" "$5" timeout -k 30 "$seconds" "$checkout/tests/integration/$1" "$2" "$host/work" || rc=$?
     docker run --rm --user 0 -v "$host:$host" --entrypoint bash "$5" -c \
         'find "$1" -type f ! -name "*.log" -delete; find "$1" -mindepth 1 -depth -type d -empty -delete; chown -R "$2" "$1"' \
         _ "$host" "$(id -u):$(id -g)" || true

@@ -153,6 +153,12 @@ file still there can only make the deadline earlier), less
 script gets CI's timeout (2100 s, 1800 s) or what is left, whichever is shorter,
 and is not started with less than it needs at least (300 s, 600 s). A script
 stopped at CI's timeout fails; one stopped at the deadline is `out_of_time`.
+The script is given the epoch second it is stopped at as
+`HIVE_INTEGRATION_DEADLINE`, which `tests/integration/conftest.sh` takes as its
+steps' ceiling (less 60 s), ending with `timeout`'s status, 124, when a step
+reaches it; a step also fails once it makes no progress for
+`HIVE_INTEGRATION_STALL_SECONDS` (300 s). `tests/integration/conftest_test.sh`
+tests those helpers against stub containers.
 
 ### Images
 
