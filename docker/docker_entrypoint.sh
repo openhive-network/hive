@@ -310,7 +310,7 @@ fi
 
 run_instance() {
 trap cleanup INT TERM
-trap cleanup EXIT
+trap 'cleanup; wait_for_log_tee' EXIT
 
 echo "Attempting to execute hived using additional command line arguments: ${HIVED_ARGS[*]}"
 
