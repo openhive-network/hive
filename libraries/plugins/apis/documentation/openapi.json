@@ -13,15 +13,15 @@
     "tags": [
         {
             "name": "account_by_key_api",
-            "description": "Used to lookup account information based on a key.\nThese AppBase API methods are still under development and subject to change."
+            "description": "Used to lookup account information based on a key."
         },
         {
             "name": "account_history_api",
-            "description": "Used to lookup account history information.\nThese AppBase API methods are still under development and subject to change."
+            "description": "Used to lookup account history information."
         },
         {
             "name": "block_api",
-            "description": "Used to query values related to the block plugin.\nThese AppBase API methods are still under development and subject to change."
+            "description": "Used to query values related to the block plugin."
         },
         {
             "name": "bridge",
@@ -41,7 +41,7 @@
         },
         {
             "name": "follow_api",
-            "description": "Used to lookup information related to reputation and account follow operations.\nThese AppBase API methods are still under development and subject to change."
+            "description": "Used to lookup information related to reputation and account follow operations."
         },
         {
             "name": "jsonrpc",
@@ -53,11 +53,11 @@
         },
         {
             "name": "market_history_api",
-            "description": "Used to lookup market history information.\nThese AppBase API methods are still under development and subject to change."
+            "description": "Used to lookup market history information."
         },
         {
             "name": "network_broadcast_api",
-            "description": "Used to broadcast transactions and blocks.\nThese AppBase API methods are still under development and subject to change."
+            "description": "Used to broadcast transactions and blocks."
         },
         {
             "name": "rc_api",
@@ -73,7 +73,7 @@
         },
         {
             "name": "tags_api",
-            "description": "Used to lookup information about tags, posts, and discussions.\nThese AppBase API methods are still under development and subject to change."
+            "description": "Used to lookup information about tags, posts, and discussions."
         },
         {
             "name": "transaction_status_api",
