@@ -84,7 +84,8 @@ there is no diff base, or when the diff selects no script the step can run here
 (one needing CI-only fixtures does not count); and, as
 `skipped: <reason> (selected: <scripts>)`, when no docker daemon answers, there
 is no compose plugin, or the time plan (below) does not fit the suite's
-`HIVE_INTEGRATION_BUDGET`. Else 0, printing the plan and the scripts. Most diffs
+`HIVE_INTEGRATION_BUDGET` for any of them. Else 0, printing the plan, the
+scripts it defers and the ones it runs. Most diffs
 select none and so wait for no docker slot.
 
 The suite is `concurrent: true`: when selected, it runs beside `default`'s
@@ -154,7 +155,8 @@ listed at the end of the output either way.
 ### Time
 
 AIDEV hands a suite no deadline, so the step keeps its own: it ends by the
-earlier of `HIVE_INTEGRATION_BUDGET` (1200 s, the suite's `timeout`) from its
+earlier of `HIVE_INTEGRATION_BUDGET` (2100 s, the suite's `timeout`: the
+40 min `run_full_tests` activity less the 300 s a suite's wall keeps for it) from its
 start and `HIVE_INTEGRATION_ACTIVITY_SECONDS` (2400 s, `run_full_tests`'
 start-to-close) from when the slot's first suite started (its
 `test-results/full/started-at`; `default` starts with this suite, so when it has
@@ -171,10 +173,16 @@ reaches it; a step also fails once it makes no progress for
 `HIVE_INTEGRATION_STALL_SECONDS` (300 s). `tests/integration/conftest_test.sh`
 tests those helpers against stub containers.
 
-The plan (select's and the step's, printed as `plan: ...`) adds up, for each
+The plan (select's and the step's, printed as `plan: ...`) takes, for each
 image, what its step (`integration-image-<network>`) last took on this host with
-the compiler cache as it is now (warm or cold), and the shortest selected
-script's least time. The step keeps that measurement on the docker daemon, as
+the compiler cache as it is now (warm or cold), and each selected script's least
+time. The images build one after another and the scripts then run side by side,
+so a plan fits when its builds and its longest least time do. Scripts join the
+plan the cheapest first: one whose image is already planned before one adding a
+build, then the one the plan ends soonest with. A script that does not fit is
+deferred, reported as the skipped case `integration-<script>` with
+`deferred: out_of_time: ...`, and its image is not built; when none fits the
+suite is skipped. The step keeps that measurement on the docker daemon, as
 the name of a volume labelled `hive.integration.build=<network>-<cache>`
 (`hive-integration-build-testnet-warm-412`), because the run's checkout and
 results go with it: a build's time when it builds; when the deadline cuts it

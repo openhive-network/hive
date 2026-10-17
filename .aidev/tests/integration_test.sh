@@ -112,26 +112,38 @@ expect "a slot start in the future is ignored" $((10000 + 1200 - 300)) \
     "$(integration_deadline 10000 10000 20000)"
 
 # --- integration_plan --------------------------------------------------------
-integration_plan 900 1200 warm 300 testnet=500 > /dev/null
-expect "a measured build and a script fit" 0 "$?"
+exchange=test_exchange_node_block_log_pruning.sh snapshot=test_snapshot_bootstrap.sh uid=test_hived_uid.sh
 expect "the plan names its inputs" \
-    "plan: testnet image 500s, mainnet image unmeasured, the shortest script 300s, as measured on this host with the compiler cache warm: 800s needed, 900s left of the 1200s budget" \
-    "$(integration_plan 900 1200 warm 300 testnet=500 mainnet= | head -1)"
-reason="$(integration_plan 900 1200 cold 300 testnet=800 mainnet=700 | tail -1)"
-expect "no cache and too little time for the cold builds measured here: skipped, naming sccache" \
-    "sccache_unreachable: no compiler cache answers, and 900s left of the 1200s budget cannot fit 2 cold image build(s) and a script (1800s)" \
-    "$reason"
-reason="$(integration_plan 700 1000 warm 300 testnet=500 mainnet=200 | tail -1)"
-expect "warm, but too little time: out of time, naming the budget and the need" \
-    "out_of_time: 700s left of the 1000s budget (HIVE_INTEGRATION_BUDGET), 2 image build(s) and a script need 1000s" "$reason"
-integration_plan 900 1200 cold 300 testnet= mainnet= > /dev/null
-expect "builds not measured here are tried, however cold" 0 "$?"
-reason="$(integration_plan 100 400 cold 120 testnet= | tail -1)"
+    "plan: testnet image 500s, mainnet image unmeasured, $uid at least 120s, $exchange at least 600s, as measured on this host with the compiler cache warm: 900s left of the 1200s budget" \
+    "$(integration_plan 900 1200 warm "$uid $exchange" testnet=500 mainnet= | head -1)"
+expect "the exchange script alone fits the suite's budget after a warm mainnet build" "run: $exchange|0" \
+    "$(out="$(integration_plan 1800 2100 warm "$exchange" mainnet=758)"; echo "${out##*$'\n'}|$?")"
+expect "the exchange script alone does not fit 900 s after a warm mainnet build" \
+    "out_of_time: 900s left of the 1200s budget (HIVE_INTEGRATION_BUDGET), the cheapest script, $exchange, and its mainnet image's build need 1253s|1" \
+    "$(out="$(integration_plan 900 1200 warm "$exchange" mainnet=653)"; echo "${out##*$'\n'}|$?")"
+plan="$(integration_plan 1800 2100 warm "$exchange $snapshot $uid" testnet=849 mainnet=758)"
+expect "both images do not fit: the testnet scripts run, uid first" "run: $uid $snapshot" "${plan##*$'\n'}"
+expect "both images do not fit: the exchange script deferred, named, with its need" \
+    "deferred: $exchange: out_of_time: it needs 2207s after the builds planned ahead of it, 1800s left of the 2100s budget (HIVE_INTEGRATION_BUDGET)" \
+    "$(grep '^deferred: ' <<< "$plan")"
+expect "a script on a planned image before one adding a build" "run: $uid $snapshot $exchange" \
+    "$(integration_plan 1300 2100 warm "$exchange $snapshot $uid" testnet=500 mainnet=100 | tail -1)"
+plan="$(integration_plan 900 1200 warm "$snapshot $exchange" testnet=500 mainnet=100)"
+expect "a build that would starve the planned script defers its script" "run: $exchange" "${plan##*$'\n'}"
+expect "a build that would starve the planned script: the reason" \
+    "deferred: $snapshot: out_of_time: its testnet image's build (500s) would leave 300s, less than the 600s a planned script needs, 900s left of the 1200s budget (HIVE_INTEGRATION_BUDGET)" \
+    "$(grep '^deferred: ' <<< "$plan")"
+expect "no cache and too little time for the cold build measured here: skipped, naming sccache" \
+    "sccache_unreachable: no compiler cache answers, and 900s left of the 1200s budget cannot fit the cheapest script, $uid, after its cold testnet image's build (920s)" \
+    "$(integration_plan 900 1200 cold "$exchange $uid" testnet=800 mainnet=700 | tail -1)"
+expect "builds not measured here are tried, however cold" "run: $uid $snapshot $exchange" \
+    "$(integration_plan 900 1200 cold "$exchange $snapshot $uid" testnet= mainnet= | tail -1)"
 expect "too little time for the script alone: out of time, not sccache" \
-    "out_of_time: 100s left of the 400s budget (HIVE_INTEGRATION_BUDGET), 1 image build(s) and a script need 120s" "$reason"
-integration_plan 900 1200 warm 300 testnet='>600' > /dev/null
+    "out_of_time: 100s left of the 400s budget (HIVE_INTEGRATION_BUDGET), the cheapest script, $uid, and its testnet image's build need 120s" \
+    "$(integration_plan 100 400 cold "$uid" testnet= | tail -1)"
+integration_plan 900 1200 warm "$uid" testnet='>600' > /dev/null
 expect "a build cut off here after less than the time left is tried again" 0 "$?"
-integration_plan 900 1200 warm 300 testnet='>800' > /dev/null
+integration_plan 900 1200 warm "$uid" testnet='>800' > /dev/null
 expect "a build cut off here after more than the time left is not" 1 "$?"
 redis_answers redis://127.0.0.1:1
 expect "nothing listening is no cache" 1 "$?"
@@ -183,10 +195,10 @@ expect "preconditions: docker unreachable" "docker_capability_unavailable: no do
 expect "preconditions: no compose plugin" "docker_compose_unavailable: no docker compose plugin here|1" \
     "$(preconditions 'compose_plugin() { return 1; }')"
 expect "preconditions: they hold, the plan last" \
-    "plan: testnet image unmeasured, the shortest script 120s, as measured on this host with the compiler cache cold: 120s needed, 900s left of the 1200s budget|0" \
+    "run: test_hived_uid.sh|0" \
     "$(preconditions :)"
 expect "preconditions: the time measured here" \
-    "sccache_unreachable: no compiler cache answers, and 900s left of the 1200s budget cannot fit 1 cold image build(s) and a script (1120s)|1" \
+    "sccache_unreachable: no compiler cache answers, and 900s left of the 1200s budget cannot fit the cheapest script, test_hived_uid.sh, after its cold testnet image's build (1120s)|1" \
     "$(preconditions : STUB_BUILD_VOLUME=hive-integration-build-testnet-cold-1000)"
 
 # --- docker-shim/docker, ahead of a docker that prints its arguments ----------
@@ -274,29 +286,43 @@ expect "select: only a script needing CI's fixtures" \
 echo image > docker/x.sh
 result="$(run_select)"
 expect "select: docker/ selects the image's scripts" \
-    "0|selected: test_exchange_node_block_log_pruning.sh test_hived_uid.sh test_snapshot_bootstrap.sh" "$result"
+    "0|selected: test_hived_uid.sh test_snapshot_bootstrap.sh test_exchange_node_block_log_pruning.sh" "$result"
 rm docker/x.sh
 echo "# instance" >> Dockerfile
 result="$(run_select)"
 expect "select: Dockerfile selects the image's scripts" \
-    "0|selected: test_exchange_node_block_log_pruning.sh test_hived_uid.sh test_snapshot_bootstrap.sh" "$result"
+    "0|selected: test_hived_uid.sh test_snapshot_bootstrap.sh test_exchange_node_block_log_pruning.sh" "$result"
 git checkout -q Dockerfile
 echo more >> scripts/setup_ubuntu.sh
 result="$(run_select)"
 expect "select: setup_ubuntu.sh selects the image's scripts" \
-    "0|selected: test_exchange_node_block_log_pruning.sh test_hived_uid.sh test_snapshot_bootstrap.sh" "$result"
+    "0|selected: test_hived_uid.sh test_snapshot_bootstrap.sh test_exchange_node_block_log_pruning.sh" "$result"
 git checkout -q scripts
+echo "# exchange" > tests/integration/conftest.sh
+result="$(run_select HIVE_INTEGRATION_BUDGET=2100 STUB_BUILD_VOLUME=hive-integration-build-mainnet-cold-758)"
+expect "select: the exchange script after a measured mainnet build, in the suite's budget" \
+    "0|selected: test_exchange_node_block_log_pruning.sh" "$result"
+echo image > docker/x.sh
+output="$(env AIDEV_BASE_REF="$select_base" AIDEV_IMPLEMENT_BASE_SHA= HIVE_AIDEV_INTEGRATION=1 PATH="$stub_path" \
+    DOCKER_CONFIG="$scratch/dockercfg" HIVE_SCCACHE_REDIS=redis://127.0.0.1:1 HIVE_INTEGRATION_BUDGET=2100 \
+    STUB_BUILD_VOLUME=hive-integration-build-testnet-cold-800 .aidev/integration-select.sh 2>&1)"
+expect "select: the scripts that fit, when not all do" \
+    "0|selected: test_hived_uid.sh test_snapshot_bootstrap.sh" "$?|${output##*$'\n'}"
+expect "select: the deferred script named" \
+    "deferred: test_exchange_node_block_log_pruning.sh: out_of_time: it needs 2200s after the builds planned ahead of it, 1800s left of the 2100s budget (HIVE_INTEGRATION_BUDGET)" \
+    "$(grep '^deferred: ' <<< "$output")"
+rm docker/x.sh tests/integration/conftest.sh
 echo uid >> tests/integration/test_hived_uid.sh
 result="$(run_select STUB_DOCKER_INFO=1)"
 expect "select: no docker daemon" \
     "77|skipped: docker_capability_unavailable: no docker daemon reachable here (selected: test_hived_uid.sh)" "$result"
 result="$(run_select HIVE_INTEGRATION_BUDGET=400)"
 expect "select: a budget too small for the script" \
-    "77|skipped: out_of_time: 100s left of the 400s budget (HIVE_INTEGRATION_BUDGET), 1 image build(s) and a script need 120s (selected: test_hived_uid.sh)" \
+    "77|skipped: out_of_time: 100s left of the 400s budget (HIVE_INTEGRATION_BUDGET), the cheapest script, test_hived_uid.sh, and its testnet image's build need 120s (selected: test_hived_uid.sh)" \
     "$result"
 result="$(run_select STUB_BUILD_VOLUME=hive-integration-build-testnet-cold-1000)"
 expect "select: a cold build measured here longer than the budget" \
-    "77|skipped: sccache_unreachable: no compiler cache answers, and 900s left of the 1200s budget cannot fit 1 cold image build(s) and a script (1120s) (selected: test_hived_uid.sh)" \
+    "77|skipped: sccache_unreachable: no compiler cache answers, and 900s left of the 1200s budget cannot fit the cheapest script, test_hived_uid.sh, after its cold testnet image's build (1120s) (selected: test_hived_uid.sh)" \
     "$result"
 result="$(run_select)"
 expect "select: test_hived_uid.sh, on a host that can run it" "0|selected: test_hived_uid.sh" "$result"

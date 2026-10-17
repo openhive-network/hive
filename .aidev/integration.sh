@@ -9,7 +9,7 @@
 # start-to-close (aidev's run_full_tests) from when the slot's first suite started,
 # less a margin for what aidev does before and after the suites. aidev hands a suite
 # no deadline, so the step keeps its own. Exported: each step runs in a fresh bash.
-export HIVE_INTEGRATION_BUDGET="${HIVE_INTEGRATION_BUDGET:-1200}"
+export HIVE_INTEGRATION_BUDGET="${HIVE_INTEGRATION_BUDGET:-2100}"
 export HIVE_INTEGRATION_ACTIVITY_SECONDS="${HIVE_INTEGRATION_ACTIVITY_SECONDS:-2400}"
 export HIVE_INTEGRATION_MARGIN="${HIVE_INTEGRATION_MARGIN:-300}"
 
@@ -174,28 +174,80 @@ record_build_seconds() {  # NET CACHE RC SECONDS
         || echo "== integration: cannot record the $1 image's build time ($v) on this host" >&2
 }
 
-# Whether the image builds NET=ESTIMATE... (build_seconds with the compiler cache
-# CACHE) and then the shortest script fit in REMAINING seconds of BUDGET. A build
-# not measured here yet is planned at nothing: this run measures it, and its
-# deadline ends it. Prints the plan's inputs, then, when it does not fit, the skip
-# reason: `sccache_unreachable` when cold builds are what does not fit.
-integration_plan() {  # REMAINING BUDGET CACHE SCRIPT_MIN_SECONDS NET=ESTIMATE...
-    local left="$1" budget="$2" cache="$3" script="$4" need="$4" builds=0 e net v inputs=""
+# Which of SCRIPTS fit in REMAINING seconds of BUDGET with the image builds they
+# need, NET=ESTIMATE... (build_seconds with the compiler cache CACHE). The images
+# are built one after another and the scripts then run side by side, so a plan
+# fits when its builds and then its longest least time (integration_script_needs)
+# do. Scripts join it the cheapest first: one whose image is planned already
+# before one adding a build, then the one the plan ends soonest with; a script
+# that does not fit is deferred. A build not measured here yet is planned at
+# nothing: this run measures it, and its deadline ends it. Prints the plan's
+# inputs, a `deferred: SCRIPT: REASON` line for each script deferred, and last
+# `run: SCRIPT...`; when none fits, the skip reason last instead:
+# `sccache_unreachable` when a cold build is what does not fit.
+integration_plan() {  # REMAINING BUDGET CACHE "SCRIPT..." NET=ESTIMATE...
+    local left="$1" budget="$2" cache="$3" e net v s min t added key best best_key inputs=""
+    local total=0 longest=0 planned=() rest=() pending=()
+    local -A est=() measured=() chosen=()
+    read -ra pending <<< "$4"
     shift 4
     for e; do
         net="${e%%=*}" v="${e#*=}"
         case "$v" in
-            "") inputs+="$net image unmeasured, " ;;
-            ">"*) inputs+="$net image more than ${v#>}s, "; need=$(( need + ${v#>} )); builds=$(( builds + 1 )) ;;
-            *) inputs+="$net image ${v}s, "; need=$(( need + v )); builds=$(( builds + 1 )) ;;
+            "") inputs+="$net image unmeasured, "; est[$net]=0 ;;
+            ">"*) inputs+="$net image more than ${v#>}s, "; est[$net]="${v#>}"; measured[$net]=1 ;;
+            *) inputs+="$net image ${v}s, "; est[$net]="$v"; measured[$net]=1 ;;
         esac
     done
-    echo "plan: ${inputs}the shortest script ${script}s, as measured on this host with the compiler cache $cache: ${need}s needed, ${left}s left of the ${budget}s budget"
-    [ "$left" -ge "$need" ] && return 0
-    if [ "$cache" = cold ] && [ "$builds" -gt 0 ]; then
-        echo "sccache_unreachable: no compiler cache answers, and ${left}s left of the ${budget}s budget cannot fit $builds cold image build(s) and a script (${need}s)"
+    for s in "${pending[@]}"; do inputs+="$s at least $(integration_script_needs "$s" | cut -d' ' -f3)s, "; done
+    echo "plan: ${inputs}as measured on this host with the compiler cache $cache: ${left}s left of the ${budget}s budget"
+    while :; do
+        best="" best_key=""
+        for s in "${pending[@]}"; do
+            read -r net _ min <<< "$(integration_script_needs "$s")"
+            added=1; [ -n "${chosen[$net]:-}" ] && added=0
+            t=$(( total + added * ${est[$net]:-0} + (min > longest ? min : longest) ))
+            [ "$t" -le "$left" ] || continue
+            key="$(printf '%d %010d' "$added" "$t")"
+            if [ -z "$best" ] || [[ "$key" < "$best_key" ]]; then best="$s" best_key="$key"; fi
+        done
+        [ -n "$best" ] || break
+        read -r net _ min <<< "$(integration_script_needs "$best")"
+        [ -n "${chosen[$net]:-}" ] || total=$(( total + ${est[$net]:-0} ))
+        chosen[$net]=1
+        [ "$min" -gt "$longest" ] && longest="$min"
+        planned+=("$best") rest=()
+        for s in "${pending[@]}"; do [ "$s" = "$best" ] || rest+=("$s"); done
+        pending=("${rest[@]}")
+    done
+    if [ "${#planned[@]}" -gt 0 ]; then
+        for s in "${pending[@]}"; do
+            read -r net _ min <<< "$(integration_script_needs "$s")"
+            if [ -n "${chosen[$net]:-}" ]; then
+                t=$(( total + min ))
+            else
+                t=$(( total + ${est[$net]:-0} + min ))
+            fi
+            if [ "$t" -gt "$left" ]; then
+                echo "deferred: $s: out_of_time: it needs ${t}s after the builds planned ahead of it, ${left}s left of the ${budget}s budget (HIVE_INTEGRATION_BUDGET)"
+            else
+                echo "deferred: $s: out_of_time: its $net image's build (${est[$net]}s) would leave $(( left - t + min ))s, less than the ${longest}s a planned script needs, ${left}s left of the ${budget}s budget (HIVE_INTEGRATION_BUDGET)"
+            fi
+        done
+        echo "run: ${planned[*]}"
+        return 0
+    fi
+    best="" best_key=""
+    for s in "${pending[@]}"; do
+        read -r net _ min <<< "$(integration_script_needs "$s")"
+        t=$(( ${est[$net]:-0} + min ))
+        if [ -z "$best" ] || [ "$t" -lt "$best_key" ]; then best="$s" best_key="$t"; fi
+    done
+    read -r net _ <<< "$(integration_script_needs "$best")"
+    if [ "$cache" = cold ] && [ -n "${measured[$net]:-}" ]; then
+        echo "sccache_unreachable: no compiler cache answers, and ${left}s left of the ${budget}s budget cannot fit the cheapest script, $best, after its cold $net image's build (${best_key}s)"
     else
-        echo "out_of_time: ${left}s left of the ${budget}s budget (HIVE_INTEGRATION_BUDGET), $# image build(s) and a script need ${need}s"
+        echo "out_of_time: ${left}s left of the ${budget}s budget (HIVE_INTEGRATION_BUDGET), the cheapest script, $best, and its $net image's build need ${best_key}s"
     fi
     return 1
 }
@@ -228,20 +280,20 @@ compose_plugin() {
 
 # Whether this host can run SCRIPTS, LEFT seconds before the deadline: a docker
 # daemon, the compose plugin, and the time plan with the compiler cache CACHE.
-# Prints what it found, the skip reason last when it cannot.
+# Prints what it found and the plan (integration_plan), the skip reason last when
+# it cannot.
 integration_preconditions() {  # LEFT CACHE SCRIPT...
-    local left="$1" cache="$2" s net needs min=0 estimates=()
+    local left="$1" cache="$2" s net estimates=()
     shift 2
     declare -A nets=()
     docker info > /dev/null 2>&1 || { echo "docker_capability_unavailable: no docker daemon reachable here"; return 1; }
     compose_plugin > /dev/null || { echo "docker_compose_unavailable: no docker compose plugin here"; return 1; }
     echo "compiler cache: $cache ($(ci_sccache_redis))"
     for s; do
-        read -r net _ needs <<< "$(integration_script_needs "$s")"; nets[$net]=1
-        [ "$min" -ne 0 ] && [ "$min" -le "$needs" ] || min="$needs"
+        read -r net _ <<< "$(integration_script_needs "$s")"; nets[$net]=1
     done
     for net in "${!nets[@]}"; do estimates+=("$net=$(build_seconds "$net" "$cache")"); done
-    integration_plan "$left" "$HIVE_INTEGRATION_BUDGET" "$cache" "$min" "${estimates[@]}"
+    integration_plan "$left" "$HIVE_INTEGRATION_BUDGET" "$cache" "$*" "${estimates[@]}"
 }
 
 # --- the step: these use run-checks.sh's $out, $cases and step ----------------
@@ -464,10 +516,9 @@ integration() {
         skip_case integration "the diff from $base selects no tests/integration script"
         return "$step_skipped"
     fi
-    declare -A images=()
     for s in $selected; do
-        if needs="$(integration_script_needs "$s")"; then
-            scripts+=("$s"); read -r net _ <<< "$needs"; images[$net]=1
+        if integration_script_needs "$s" > /dev/null; then
+            scripts+=("$s")
         else
             skip_case "integration-${s%.sh}" "needs fixtures only CI has; run in GitLab CI"
         fi
@@ -479,7 +530,15 @@ integration() {
         skip_case integration "${pre##*$'\n'} (selected: ${selected//$'\n'/ })"
         return "$step_skipped"
     fi
-    sed 's/^/== integration: /' <<< "$pre" >&2
+    sed 's/^/== integration: /' <<< "${pre%$'\n'*}" >&2
+    while IFS= read -r s; do
+        skip_case "integration-${s%%:*}" "deferred: ${s#*: }"
+    done < <(sed -n 's/^deferred: \([^:]*\)\.sh: /\1: /p' <<< "$pre")
+    read -ra scripts <<< "${pre##*$'\n'run: }"
+    declare -A images=()
+    for s in "${scripts[@]}"; do
+        read -r net _ <<< "$(integration_script_needs "$s")"; images[$net]=1
+    done
     # Every container the step starts on the host's daemon, which AIDEV does not
     # see as the suite's, goes through the shim (and so do the scripts', in the runner).
     PATH="$PWD/.aidev/docker-shim:$PATH"
