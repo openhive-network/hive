@@ -84,9 +84,15 @@ docker slot.
 
 The suite is `concurrent: true`: when selected, it runs beside `default`'s
 build, chain_test and plugin_test instead of after them. Its own hived images
-build (`ninja -j nproc`) in a separate container while `default` builds, so the
-two compiles share the CPU; the scripts mostly wait on docker and block
-production and overlap well. `HIVE_BUILD_JOBS` is left uncapped.
+build in a separate container while `default` builds, so the two compiles share
+the CPU; the scripts mostly wait on docker and block production and overlap well.
+
+Each build's ninja runs `min(nproc, usable memory / HIVE_BUILD_JOB_MEMORY_MB)`
+jobs (at least 1; 2048 MB per job by default), the usable memory being the
+container's cgroup limit less its usage, else the host's `MemAvailable`, and
+`-l nproc`; the step's log says `build: N jobs (...)`. `HIVE_BUILD_JOBS`
+overrides the count (`.aidev/build-jobs.sh`, tested by
+`.aidev/tests/build_jobs_test.sh`).
 
 To run the selector by hand: `HIVE_AIDEV_INTEGRATION=1 .aidev/integration-select.sh`;
 the step, on a host with docker:
