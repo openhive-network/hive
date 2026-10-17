@@ -40,8 +40,9 @@ TABLE
 }
 
 # What a script runs against, how long CI gives it, and the least time worth
-# starting it with: CI's snapshot_bootstrap_tests, hived_uid_test and
-# exchange_node_block_log_pruning_test, each `<script> <hived image> <work dir>`.
+# starting it with: CI's snapshot_bootstrap_tests and
+# exchange_node_block_log_pruning_test, and test_hived_uid.sh (run only here), each
+# `<script> <hived image> <work dir>`.
 # A script not named here needs fixtures only CI has.
 integration_script_needs() {  # SCRIPT: NETWORK SECONDS MIN_SECONDS
     case "$1" in
