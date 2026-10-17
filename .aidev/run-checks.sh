@@ -297,13 +297,14 @@ share_slots() {  # DIR STEP...: $test_jobs split between the steps, one file eac
     done
 }
 
+# Returns step_skipped when every step was skipped, else 1 when one failed.
 # Polls rather than `wait -n`: bash 4.4's `wait -n` waits only for a job that
 # ends after it is called, so a step that ended just before would keep its share.
 # Each step runs in a session of its own, so a fresh bash given this script's
 # functions and settings; a background job of a script leads no process group,
 # so setsid makes the job itself the session leader, without forking.
 concurrently() {  # STEP...: sharing $test_jobs, a step's share handed on when it ends
-    local s pid rc=0 running ended
+    local s pid rc=0 ran=0 step_rc running ended
     step_of=()
     slots="$(mktemp -d)" || return 1
     share_slots "$slots" "$@"
@@ -317,7 +318,9 @@ concurrently() {  # STEP...: sharing $test_jobs, a step's share handed on when i
         running=" $(jobs -pr | tr '\n' ' ') " ended=0
         for pid in "${!step_of[@]}"; do
             [[ "$running" == *" $pid "* ]] && continue
-            wait "$pid" || rc=1
+            wait "$pid"; step_rc=$?
+            [ "$step_rc" -eq "$step_skipped" ] || ran=1
+            [ "$step_rc" -eq 0 ] || [ "$step_rc" -eq "$step_skipped" ] || rc=1
             unset "step_of[$pid]"; ended=1
         done
         [ "$ended" -eq 1 ] && [ "${#step_of[@]}" -gt 0 ] || continue
@@ -325,6 +328,7 @@ concurrently() {  # STEP...: sharing $test_jobs, a step's share handed on when i
         for s in "${step_of[@]}"; do echo "== $s: now $(cat "$slots/$s") test processes" >&2; done
     done
     rm -rf "$slots"; slots=""
+    [ "$ran" -eq 1 ] || return "$step_skipped"
     return "$rc"
 }
 
@@ -338,12 +342,21 @@ for group in "$@"; do
     done
 done
 
+# A suite whose steps were all skipped ran nothing: it exits step_skipped, its
+# last line `skipped: ` and the skipped cases' reasons, rather than passing.
+ran=0
 for group in "$@"; do
     IFS=, read -ra group_steps <<< "$group"
-    concurrently "${group_steps[@]}" || status=1
+    concurrently "${group_steps[@]}"; rc=$?
+    [ "$rc" -eq "$step_skipped" ] || ran=1
+    [ "$rc" -eq 0 ] || [ "$rc" -eq "$step_skipped" ] || status=1
 done
+[ "$ran" -eq 1 ] || status="$step_skipped"
 printf 'total\t%s\t%s\n' "$SECONDS" "$status" >> "$timings"
 echo "== wall time per step (seconds):" >&2
 cat "$timings" >&2
+skipped="$(awk -F'\t' '$1 == "case" && $3 == "skip" { printf "%s%s: %s", sep, $2, $5; sep = "; " }' "$cases")"
+[ -z "$skipped" ] || { echo "== skipped:"; awk -F'\t' '$1 == "case" && $3 == "skip" { print "  " $2 ": " $5 }' "$cases"; } >&2
 python3 .aidev/junit_cases.py "$out/junit.xml" "$suite" "$cases"
+[ "$status" -ne "$step_skipped" ] || echo "skipped: $skipped"
 exit "$status"
