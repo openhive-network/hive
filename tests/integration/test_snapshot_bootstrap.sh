@@ -382,11 +382,7 @@ mkdir -p "$COMPOSE_DIR"
 cp "$SCRIPT_DIR/../../docker/exchange/compose.yml" "$COMPOSE_DIR/"
 printf '%s\n' "plugin = state_snapshot" "shared-file-size = 128M" > "$COMPOSE_DIR/config.ini"
 chmod a+r "$COMPOSE_DIR/config.ini"
-# The services reach the snapshot server, and publish no ports on this host. Under AIDEV they carry its owner label
-# and OOM score, as .aidev/docker-shim/docker gives the containers `docker run` starts.
-service_options=""
-[[ -z "${AIDEV_ENV_CONTAINER_OWNER:-}" ]] \
-  || service_options=$'\n    labels: ["aidev.env-container.owner=${AIDEV_ENV_CONTAINER_OWNER}"]\n    oom_score_adj: 900'
+# The services reach the snapshot server, and publish no ports on this host.
 cat > "$COMPOSE_DIR/compose.test.yml" <<COMPOSE
 networks:
   snapshot:
@@ -394,10 +390,10 @@ networks:
     external: true
 services:
   hived-bootstrap:
-    networks: [default, snapshot]${service_options}
+    networks: [default, snapshot]
   hived:
     networks: [default, snapshot]
-    ports: !reset []${service_options}
+    ports: !reset []
 COMPOSE
 docker tag "$IMAGE" "$COMPOSE_IMAGE:test"
 # A snapshot directory with no snapshot in it: hived refuses to load it.
