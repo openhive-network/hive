@@ -130,6 +130,7 @@ DEFINE_API_IMPL( market_history_api_impl, get_order_book )
 DEFINE_API_IMPL( market_history_api_impl, get_trade_history )
 {
   FC_ASSERT( 0 < args.limit && args.limit <= 1000 );
+  FC_ASSERT( args.start <= args.end, "start (${start}) must not be later than end (${end})", ("start", args.start)("end", args.end) );
   const auto& trade_idx = _db.get_index< order_history_index, by_time >();
   auto itr = trade_idx.lower_bound( args.start );
 
@@ -163,6 +164,7 @@ DEFINE_API_IMPL( market_history_api_impl, get_recent_trades )
 
 DEFINE_API_IMPL( market_history_api_impl, get_market_history )
 {
+  FC_ASSERT( args.start <= args.end, "start (${start}) must not be later than end (${end})", ("start", args.start)("end", args.end) );
   const auto& bucket_idx = _db.get_index< bucket_index, by_bucket >();
   auto itr = bucket_idx.lower_bound( boost::make_tuple( args.bucket_seconds, args.start ) );
 
