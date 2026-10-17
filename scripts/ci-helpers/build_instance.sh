@@ -19,6 +19,7 @@ HIVE_CONVERTER_BUILD=OFF
 
 EXPORT_PATH=""
 PLATFORMS=""
+CACHE_TO_REGISTRY="${CI:+true}"
 
 print_help () {
 cat <<-EOF
@@ -33,10 +34,15 @@ cat <<-EOF
                                 be loaded into the local docker daemon, so the result is pushed to the
                                 registry instead of being --load'ed. Omit for a single-arch local build.
       --export-binaries=PATH    Allows to specify a path where binaries shall be exported from built image.
+      --cache-to-registry       Write the buildx layer cache to <registry_url>/cache (--cache-to), which
+                                needs write access to the registry. This is the default when CI is set
+                                (GitLab sets CI=true); otherwise the cache is only read (--cache-from),
+                                and a registry that cannot be reached or read just means no cache.
       --help|-h|-?              Display this help screen and exit
 
   ENVIRONMENT VARIABLES:
       USE_BUILDX                Set to 'false' to disable BuildKit registry caching (default: true)
+      CI                        When set, the buildx cache is written to the registry as with --cache-to-registry
       SCCACHE_REDIS             Redis URL for sccache distributed compilation caching
       POSTGRES_VERSION          PostgreSQL major version to build against (e.g., 17, 18). Passed as Docker build-arg.
 EOF
@@ -74,6 +80,9 @@ while [ $# -gt 0 ]; do
     --export-binaries=*)
         arg="${1#*=}"
         EXPORT_PATH="$arg"
+        ;;
+    --cache-to-registry)
+        CACHE_TO_REGISTRY=true
         ;;
     --help|-h|-?)
         print_help
@@ -168,7 +177,11 @@ fi
 # Pull from both old refs (build + instance) for smooth transition, write to single ref with mode=max
 CACHE_FROM_BUILD="type=registry,ref=${CACHE_REPO}:${CACHE_KEY}"
 CACHE_FROM_INSTANCE="type=registry,ref=${CACHE_REPO}:${CACHE_KEY}-instance"
-CACHE_TO="type=registry,ref=${CACHE_REPO}:${CACHE_KEY},mode=max,compression=zstd,force-compression=false"
+# Writing the cache needs registry write access, which a local build usually lacks.
+CACHE_TO_ARGS=()
+if [[ -n "$CACHE_TO_REGISTRY" ]]; then
+  CACHE_TO_ARGS=( --cache-to="type=registry,ref=${CACHE_REPO}:${CACHE_KEY},mode=max,compression=zstd,force-compression=false" )
+fi
 
 # Multiarch support.
 # When --platforms is given (e.g. "linux/amd64,linux/arm64") a multi-arch manifest is built. The
@@ -194,11 +207,11 @@ echo -e "Building Docker instance image (includes build stage)...\n"
 # BuildKit resolves the build stage from the Dockerfile directly (no registry round-trip).
 # mode=max caches all layers from all stages for future builds.
 if docker buildx version &>/dev/null && [[ "${USE_BUILDX:-true}" != "false" ]]; then
-    echo "Using docker buildx with registry caching (cache key: ${CACHE_KEY})..."
+    echo "Using docker buildx with registry caching (cache key: ${CACHE_KEY}, writing it: ${CACHE_TO_REGISTRY:-false})..."
     docker buildx build --provenance=false --progress=plain --target=instance \
       --cache-from="$CACHE_FROM_BUILD" \
       --cache-from="$CACHE_FROM_INSTANCE" \
-      --cache-to="$CACHE_TO" \
+      "${CACHE_TO_ARGS[@]}" \
       --build-arg CI_REGISTRY_IMAGE="$REGISTRY/" \
       --build-arg BUILD_HIVE_TESTNET=$BUILD_HIVE_TESTNET \
       --build-arg HIVE_CONVERTER_BUILD=$HIVE_CONVERTER_BUILD \
