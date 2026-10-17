@@ -86,6 +86,44 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_validate )
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( delegate_rc_operation_max_rc_out_of_int64_range )
+{
+  try
+  {
+    const char* out_of_range_assert = "!max_rc.is_uint64() || max_rc.as_uint64() <= max_int64";
+    auto from_json = []( const std::string& max_rc )
+    {
+      return fc::json::from_string( "{\"from\":\"alice\",\"delegatees\":[\"bob\"],\"max_rc\":" + max_rc + "}", fc::json::format_validation_mode::full ).as< delegate_rc_operation >();
+    };
+
+    BOOST_REQUIRE_EQUAL( from_json( "9223372036854775807" ).max_rc, std::numeric_limits< int64_t >::max() );
+    BOOST_REQUIRE_EQUAL( from_json( "-9223372036854775808" ).max_rc, std::numeric_limits< int64_t >::min() );
+    BOOST_REQUIRE_EQUAL( from_json( "\"10\"" ).max_rc, 10 );
+    HIVE_REQUIRE_ASSERT( from_json( "9223372036854775808" ), out_of_range_assert );
+    HIVE_REQUIRE_ASSERT( from_json( "18446744073709551615" ), out_of_range_assert );
+
+    ACTORS( DEFAULT_VESTING, (alice)(bob) );
+    generate_block();
+
+    delegate_rc_operation op;
+    op.from = "alice";
+    op.delegatees = { "bob" };
+    op.max_rc = 1;
+    std::string json = fc::json::to_string( hive::protocol::rc_custom_operation( op ) );
+    const std::string max_rc_field = "\"max_rc\":1";
+    auto pos = json.find( max_rc_field );
+    BOOST_REQUIRE( pos != std::string::npos );
+    json.replace( pos, max_rc_field.size(), "\"max_rc\":9223372036854775808" );
+
+    custom_json_operation custom_op;
+    custom_op.required_posting_auths.insert( "alice" );
+    custom_op.id = HIVE_RC_CUSTOM_OPERATION_ID;
+    custom_op.json = json;
+    HIVE_REQUIRE_ASSERT( push_transaction( custom_op, alice_post_key ), out_of_range_assert );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_CASE( delegate_rc_operation_apply_single )
 {
   try
