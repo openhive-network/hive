@@ -266,11 +266,12 @@ integration_runner_image() {  # RUNTIME_IMAGE TAG
 # built from the checkout. The build runs as root: link_gitdirs may have to create
 # a submodule's git path outside /home/hived, and so trust a checkout it does not
 # own. Its report is handed back to this user. It is capped at the suite's own
-# container's memory (AIDEV_ENV_CONTAINER_MEMORY_BYTES), when AIDEV gives one.
+# container's memory (AIDEV_ENV_CONTAINER_MEMORY_BYTES), when AIDEV gives one, with
+# no swap beyond it, as AIDEV caps its own containers.
 hived_image() {  # NETWORK RUNTIME_IMAGE TAG INLINE_BASE
     local net="$1" built="$out-hived-$1" stage="$out/image-$1" git_dir rc=0 base_arg=() cap=()
     git_dir="$(realpath "$(git rev-parse --git-common-dir)")"
-    [ -n "${AIDEV_ENV_CONTAINER_MEMORY_BYTES:-}" ] && cap=(--memory "$AIDEV_ENV_CONTAINER_MEMORY_BYTES")
+    [ -n "${AIDEV_ENV_CONTAINER_MEMORY_BYTES:-}" ] && cap=(--memory "$AIDEV_ENV_CONTAINER_MEMORY_BYTES" --memory-swap "$AIDEV_ENV_CONTAINER_MEMORY_BYTES")
     [ "$(remaining)" -gt 0 ] || { out_of_time "the $net binaries' build"; return; }
     docker run --rm --name "$integration_prefix-build-$net" --network host --user 0 "${cap[@]}" \
         -v "$(on_host "$git_dir"):$git_dir" -v "$(on_host "$PWD"):$PWD" -w "$PWD" \
