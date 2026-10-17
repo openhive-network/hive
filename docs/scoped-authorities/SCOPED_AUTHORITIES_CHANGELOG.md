@@ -15,5 +15,5 @@
 - Added eight consensus tests, including actual block confirmation, 100-block revocation persistence, exact expiration timestamp enforcement, failed multi-operation transaction rollback, and revoke block-pop rollback. The most recent complete chain run passed all 506 cases and 1,834,936 assertions. The latest focused run passed 8 cases and 139 assertions.
 - Updated the `rc_stats_object` size and decoded checksum expectations to account for RC slots indexed through the appended operation tags.
 - Local RPC smoke test returned an empty grant list before and after restarting the development node. A populated grant restart, signed RPC transfer demo, snapshot restore, full replay determinism, Python integration suite, and external audit remain outstanding. The Python tools package is pinned to a private Hive package registry and could not be resolved in this environment.
-- No commit or remote push has been made as of this changelog entry.
+- The verified implementation is committed locally; no remote push has been made.
 
