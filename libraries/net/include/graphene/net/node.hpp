@@ -358,6 +358,13 @@ namespace graphene { namespace net {
    */
   bool rejects_duplicate_hello(const node_id_t& my_node_id, const node_id_t& peer_node_id);
 
+  /**
+   * Whether a connection_rejected_message with @p reason_code means the rejecting peer failed us.
+   * already_connected and connected_to_self do not: the peer is up and answered, the connection
+   * was merely redundant.
+   */
+  bool rejection_is_failure(rejection_reason_code reason_code);
+
 } } // graphene::net
 
 FC_REFLECT(graphene::net::message_propagation_data, (received_time)(validated_time)(originating_peer));

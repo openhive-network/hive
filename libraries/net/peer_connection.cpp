@@ -404,11 +404,14 @@ namespace graphene { namespace net
       _message_connection.close_connection();
     }
 
-    void peer_connection::record_connection_closed_error(const fc::exception& reason)
+    void peer_connection::record_connection_closed_error(const fc::exception& reason, bool is_failure)
     {
       VERIFY_CORRECT_THREAD();
       if (!connection_closed_error)
+      {
         connection_closed_error = reason;
+        connection_closed_by_failure = is_failure;
+      }
     }
 
     fc::exception peer_connection::get_connection_closed_reason() const
@@ -416,6 +419,13 @@ namespace graphene { namespace net
       if (connection_closed_error)
         return *connection_closed_error;
       return fc::exception(FC_LOG_MESSAGE(info, "lost connection to peer"));
+    }
+
+    void peer_connection::record_connection_closed_in(potential_peer_record& record) const
+    {
+      record.last_error = get_connection_closed_reason();
+      if (connection_closed_by_failure)
+        record.last_failed_time = fc::time_point::now();
     }
 
     void peer_connection::destroy_connection(const char* caller)
