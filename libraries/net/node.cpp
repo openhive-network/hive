@@ -51,6 +51,7 @@
 #include <boost/range/algorithm/find.hpp>
 #include <boost/range/numeric.hpp>
 #include <boost/scope_exit.hpp>
+#include <boost/system/error_code.hpp>
 
 #include <boost/accumulators/accumulators.hpp>
 #include <boost/accumulators/statistics/stats.hpp>
@@ -1234,10 +1235,7 @@ namespace graphene { namespace net {
                 }
 
                 if (!is_connection_to_endpoint_in_progress(iter->endpoint) &&
-                    ((iter->last_connection_disposition != last_connection_failed &&
-                      iter->last_connection_disposition != last_connection_rejected &&
-                      iter->last_connection_disposition != last_connection_handshaking_failed) ||
-                     (fc::time_point::now() - iter->last_connection_attempt_time) > delay_until_retry))
+                    is_due_for_connection_attempt(*iter, delay_until_retry, fc::time_point::now()))
                 {
                   connect_to_endpoint(iter->endpoint);
                   initiated_connection_this_pass = true;
@@ -5468,6 +5466,7 @@ namespace graphene { namespace net {
       }
 
       fc::oexception connect_failed_exception;
+      fc::optional<fc::ip::endpoint> local_endpoint;
 
       try
       {
@@ -5479,7 +5478,6 @@ namespace graphene { namespace net {
         // wildcard address, substitute the wildcard of the remote's family while keeping
         // the port; when we listen on a specific address, only bind it if the families
         // match, otherwise let the OS choose the local endpoint.
-        fc::optional<fc::ip::endpoint> local_endpoint;
         if (_actual_listening_endpoint.port() != 0)
         {
           static const fc::ip::address ipv4_any;                       // 0.0.0.0
@@ -5511,7 +5509,16 @@ namespace graphene { namespace net {
         connect_failed_exception = except;
       }
 
-      if (connect_failed_exception && !new_peer->performing_firewall_check())
+      if (connect_failed_exception && !new_peer->performing_firewall_check() &&
+          local_endpoint && is_local_endpoint_in_use_error(*connect_failed_exception))
+      {
+        // our previous connection to this endpoint still holds the address/port pair in the kernel
+        // (e.g. TIME_WAIT after we closed it); the peer did nothing wrong, so its record keeps its
+        // failure history and the connect loop simply tries again on a later pass
+        ilog("could not connect to ${peer} from ${local}: our previous connection to it still holds that address pair, will retry",
+             ("peer", remote_endpoint)("local", *local_endpoint));
+      }
+      else if (connect_failed_exception && !new_peer->performing_firewall_check())
       {
         // connection failed.  record that in our database
         potential_peer_record updated_peer_record = _potential_peer_db.lookup_or_create_entry_for_endpoint(remote_endpoint);
@@ -5874,19 +5881,8 @@ namespace graphene { namespace net {
     peer_connection_ptr node_impl::get_connection_to_endpoint( const fc::ip::endpoint& remote_endpoint )
     {
       VERIFY_CORRECT_THREAD();
-      for( const peer_connection_ptr& active_peer : _active_connections )
-      {
-        fc::optional<fc::ip::endpoint> endpoint_for_this_peer( active_peer->get_remote_endpoint() );
-        if( endpoint_for_this_peer && *endpoint_for_this_peer == remote_endpoint )
-          return active_peer;
-      }
-      for( const peer_connection_ptr& handshaking_peer : _handshaking_connections )
-      {
-        fc::optional<fc::ip::endpoint> endpoint_for_this_peer( handshaking_peer->get_remote_endpoint() );
-        if( endpoint_for_this_peer && *endpoint_for_this_peer == remote_endpoint )
-          return handshaking_peer;
-      }
-      return peer_connection_ptr();
+      return find_unclosed_connection_to_endpoint( remote_endpoint, _active_connections, _handshaking_connections,
+                                                   _closing_connections, _terminating_connections );
     }
 
     bool node_impl::is_connection_to_endpoint_in_progress( const fc::ip::endpoint& remote_endpoint )
@@ -7006,6 +7002,52 @@ namespace graphene { namespace net {
   {
     return reason_code != rejection_reason_code::already_connected &&
            reason_code != rejection_reason_code::connected_to_self;
+  }
+
+  peer_connection_ptr find_unclosed_connection_to_endpoint(const fc::ip::endpoint& remote_endpoint,
+                                                           const std::unordered_set<peer_connection_ptr>& active_connections,
+                                                           const std::unordered_set<peer_connection_ptr>& handshaking_connections,
+                                                           const std::unordered_set<peer_connection_ptr>& closing_connections,
+                                                           const std::unordered_set<peer_connection_ptr>& terminating_connections)
+  {
+    for (const std::unordered_set<peer_connection_ptr>* connections :
+         { &active_connections, &handshaking_connections, &closing_connections, &terminating_connections })
+      for (const peer_connection_ptr& peer : *connections)
+      {
+        fc::optional<fc::ip::endpoint> endpoint_for_this_peer(peer->get_remote_endpoint());
+        if (endpoint_for_this_peer && *endpoint_for_this_peer == remote_endpoint)
+          return peer;
+      }
+    return peer_connection_ptr();
+  }
+
+  bool is_due_for_connection_attempt(const potential_peer_record& record, fc::microseconds delay_until_retry,
+                                     fc::time_point now)
+  {
+    return (record.last_connection_disposition != last_connection_failed &&
+            record.last_connection_disposition != last_connection_rejected &&
+            record.last_connection_disposition != last_connection_handshaking_failed) ||
+           (now - record.last_connection_attempt_time) > delay_until_retry;
+  }
+
+  bool is_local_endpoint_in_use_error(const fc::exception& connect_error)
+  {
+    // fc::asio reports a failed connect as the text of boost::system::system_error, e.g.
+    // "Cannot assign requested address [system:99 at .../reactive_socket_connect_op.hpp:...]";
+    // the error code itself does not survive, so recognize its message and "[category:value"
+    const boost::system::error_code in_use(EADDRNOTAVAIL, boost::system::system_category());
+    const std::string expected = in_use.message() + " [" + in_use.to_string();
+    for (const fc::log_message& message : connect_error.get_log())
+    {
+      const fc::variant_object& data = message.get_data();
+      if (!data.contains("message") || !data["message"].is_string())
+        continue;
+      const std::string& text = data["message"].get_string();
+      if (text.compare(0, expected.size(), expected) == 0 &&
+          (text.size() == expected.size() || text[expected.size()] == ']' || text[expected.size()] == ' '))
+        return true;
+    }
+    return false;
   }
 
 } } // end namespace graphene::net
