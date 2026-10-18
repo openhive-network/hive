@@ -6184,8 +6184,8 @@
                 "tags": [
                     "condenser_api"
                 ],
-                "summary": "Looks up account names.",
-                "description": "Parameters:\n\n- `accounts`: An array of strings representing account names.\n- `delayed_votes_active`: A boolean indicating whether to filter for active delayed votes.\n\nThis parameter set allows querying for multiple accounts with an optional filter on the status of delayed votes.",
+                "summary": "Returns full account objects for the given account names.",
+                "description": "Parameters:\n\n- `accounts`: An array of account names.\n- `delayed_votes_active` (optional, default `true`): When `true`, each account object includes its `delayed_votes` array; when `false`, that field is omitted.\n\nReturns one full account object per requested name, in request order, or `null` for a name that does not exist.\n\nDespite its name, this method returns account objects, not names. To list account names, use `condenser_api.lookup_accounts`.",
                 "operationId": "condenser_lookup_account_names",
                 "requestBody": {
                     "content": {
@@ -6332,8 +6332,8 @@
                 "tags": [
                     "condenser_api"
                 ],
-                "summary": "Looks up accounts starting with name.",
-                "description": "Parameters:\n\n- `lower_bound_name`: A string indicating the starting account name for the query.\n- `limit`: An integer up to 1000 specifying the maximum number of accounts to retrieve.\n\nExample:\n- `lower_bound_name = \"a\"`, `limit = 10` \u2014 Queries up to 10 accounts that start with \"a\".",
+                "summary": "Lists account names in order, starting from a lower bound.",
+                "description": "Parameters (both required):\n\n- `lower_bound_name`: The account name to start from.\n- `limit`: The maximum number of names to return, up to 1000.\n\nReturns account names only, not account objects. For account objects, use `condenser_api.lookup_account_names`.\n\nThis is a range scan, not a prefix search: results start at the first account name greater than or equal to `lower_bound_name` and continue in name order, so they can include names that do not start with `lower_bound_name`.\n\nExample:\n- `lower_bound_name = \"a\"`, `limit = 10` \u2014 returns the first 10 account names greater than or equal to \"a\".",
                 "operationId": "condenser_lookup_accounts",
                 "requestBody": {
                     "content": {
@@ -6354,7 +6354,16 @@
                                     "$ref": "#/components/schemas/condenser_lookup_accounts_response"
                                 },
                                 "example": [
-                                    "a--------------0"
+                                    "hiveio",
+                                    "hiveiohive",
+                                    "hiveiopool",
+                                    "hiveiost",
+                                    "hiveiotestnet",
+                                    "hiveiowallet",
+                                    "hiveiq",
+                                    "hiveisalive",
+                                    "hiveisamazing",
+                                    "hiveiscool"
                                 ]
                             }
                         }
@@ -6367,8 +6376,8 @@
                 "tags": [
                     "condenser_api"
                 ],
-                "summary": "Looks up witness accounts starting with name.",
-                "description": "Parameters:\n\n- `lower_bound_name`: A string indicating the starting account name for the query.\n- `limit`: An integer up to 1000 specifying the maximum number of accounts to retrieve.\n\nExample:\n- `lower_bound_name = \"a\"`, `limit = 10` \u2014 Queries up to 10 accounts that start with \"a\".",
+                "summary": "Lists witness account names in order, starting from a lower bound.",
+                "description": "Parameters (both required):\n\n- `lower_bound_name`: The witness account name to start from.\n- `limit`: The maximum number of names to return, from 1 to 1000.\n\nReturns the account names of registered witnesses only, not witness or account objects. For witness objects, use `condenser_api.get_witnesses_by_vote` or `database_api.list_witnesses`.\n\nThis is a range scan, not a prefix search: results start at the first witness name greater than or equal to `lower_bound_name` and continue in name order, so they can include names that do not start with `lower_bound_name`.\n\nExample:\n- `lower_bound_name = \"a\"`, `limit = 10` \u2014 returns the first 10 witness names greater than or equal to \"a\".",
                 "operationId": "condenser_lookup_witness_accounts",
                 "requestBody": {
                     "content": {
@@ -6389,7 +6398,16 @@
                                     "$ref": "#/components/schemas/condenser_lookup_witness_accounts_response"
                                 },
                                 "example": [
-                                    "a--------------0"
+                                    "hms818",
+                                    "hodge",
+                                    "hodl",
+                                    "hodorwylis",
+                                    "hoe",
+                                    "hokage",
+                                    "hoke",
+                                    "holdem",
+                                    "holden",
+                                    "holger80"
                                 ]
                             }
                         }
@@ -16160,7 +16178,7 @@
                         }
                     ]
                 },
-                "minItems": 1,
+                "minItems": 2,
                 "maxItems": 2,
                 "example": [
                     "hiveio",
@@ -16185,7 +16203,7 @@
                         }
                     ]
                 },
-                "minItems": 1,
+                "minItems": 2,
                 "maxItems": 2,
                 "example": [
                     "hiveio",
