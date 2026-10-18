@@ -15,9 +15,11 @@ set -euo pipefail
 #      that UID with mode 755, plus a read-only config.ini owned by UID 1000 under
 #      /home/hived: hived runs as that UID and creates blockchain/ and
 #      shared_memory.bin; the container stops cleanly and starts again as that UID;
-#      no file that was there before changes owner on the host
+#      no file that was there before changes owner on the host; an orphan does not
+#      stay a zombie
 #   2. the same mounts without HIVED_UID: refused at datadir creation
-#   3. no HIVED_UID, the image's own volumes: hived runs as 1000 as before
+#   3. no HIVED_UID, the image's own volumes: hived runs as 1000 as before; an
+#      orphan does not stay a zombie
 #   4. an invalid HIVED_UID (0, not numeric) is refused with a message
 #   5. HIVED_UID set, datadir owned by UID 1000 (not writable by HIVED_UID): refused
 #      with a message naming the directory and its owner; no owner changes
@@ -111,6 +113,15 @@ expect_hived_uid() {
   echo "hived runs as UID ${actual}"
 }
 
+# An orphan is reparented to PID 1, which has to reap it.
+expect_orphans_reaped() {
+  local zombies
+  docker exec "$CONTAINER" bash -c 'sleep 1 & exit 0'
+  sleep 3
+  zombies=$(docker exec "$CONTAINER" ps -eo pid=,stat=,args= | awk '$2 ~ /^Z/')
+  [[ -z "$zombies" ]] || fail "zombie processes in the container: ${zombies}"
+}
+
 stop_cleanly() {
   docker stop -t 120 "$CONTAINER" >/dev/null
   local code
@@ -125,6 +136,7 @@ docker run -d --name "$CONTAINER" -e HIVED_UID="$OWNER_UID" "${MOUNT_ARGS[@]}" "
 wait_for_state_file /home/hived/shm_dir
 expect_hived_uid "$OWNER_UID"
 docker exec "$CONTAINER" test -d /home/hived/datadir/blockchain || fail "no blockchain/ in the datadir"
+expect_orphans_reaped
 stop_cleanly
 owners=$(as_root "stat -c %u /work/mounts/datadir/blockchain /work/mounts/shm_dir/shared_memory.bin" | sort -u)
 [[ "$owners" == "$OWNER_UID" ]] || fail "hived's files are owned by '${owners}', expected ${OWNER_UID}"
@@ -152,6 +164,7 @@ echo "=== 3. no HIVED_UID, the image's own volumes ==="
 docker run -d --name "$CONTAINER" "$IMAGE" >/dev/null
 wait_for_state_file /home/hived/datadir/blockchain
 expect_hived_uid "$DEFAULT_UID"
+expect_orphans_reaped
 stop_cleanly
 docker rm -v "$CONTAINER" >/dev/null
 

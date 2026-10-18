@@ -49,7 +49,23 @@ if [[ -n "${HIVED_UID:-}" ]]; then
   if (( hived_uid != $(id -u) )); then
     if (( $(id -u) != 0 )); then
       mapfile -d '' -t environment < <(env -0)
-      exec sudo -n -- /usr/bin/env -i "${environment[@]}" "$0" "$@"
+      # sudo runs its command as a child and reaps only that, so it is not exec'd: as
+      # PID 1 it would leave every orphan in the container a zombie. This shell stays
+      # PID 1 (bash reaps any child) and passes the stop signals on to sudo, which
+      # relays them to the entrypoint. Job control is on because without it bash starts
+      # a background command with SIGINT ignored, and the entrypoint could not trap it.
+      set -m
+      sudo -n -- /usr/bin/env -i "${environment[@]}" "$0" "$@" &
+      sudo_pid=$!
+      trap 'kill -INT "$sudo_pid" 2>/dev/null || true' INT
+      trap 'kill -TERM "$sudo_pid" 2>/dev/null || true' TERM
+      while :; do
+        status=0
+        wait "$sudo_pid" || status=$?
+        # A trapped signal ends wait early with a status above 128.
+        (( status > 128 )) && kill -0 "$sudo_pid" 2>/dev/null || break
+      done
+      exit "$status"
     fi
     echo "Remapping hived UID to ${hived_uid}"
     remap_hived_uid "$hived_uid"
