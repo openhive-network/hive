@@ -1755,6 +1755,7 @@ namespace graphene { namespace net {
                                                                                      ("status", handshaking_peer->negotiation_status)
                                                                                      ("sent", handshaking_peer->get_total_bytes_sent())
                                                                                      ("received", handshaking_peer->get_total_bytes_received())));
+            handshaking_peer->connection_closed_by_failure = true;
             peers_to_disconnect_forcibly.push_back(handshaking_peer);
           }
 
@@ -1796,6 +1797,7 @@ namespace graphene { namespace net {
 
               active_peer->connection_closed_error = fc::exception(FC_LOG_MESSAGE(warn, "Disconnecting peer because they haven't made any progress on my remaining ${count} sync item requests", 
                                                                                   ("count", active_peer->sync_items_requested_from_peer.size())));
+              active_peer->connection_closed_by_failure = true;
               disconnect_due_to_request_timeout = true;
             }
             if (!disconnect_due_to_request_timeout &&
@@ -1809,6 +1811,7 @@ namespace graphene { namespace net {
                       ("peer", active_peer->get_remote_endpoint())
                       ("synopsis", active_peer->item_ids_requested_from_peer->get<0>()));
                 active_peer->connection_closed_error = fc::exception(FC_LOG_MESSAGE(warn, "Disconnecting peer because they didn't respond to my request for sync item ids after my synopsis"));
+                active_peer->connection_closed_by_failure = true;
                 disconnect_due_to_request_timeout = true;
               }
             if (!disconnect_due_to_request_timeout)
@@ -1820,6 +1823,7 @@ namespace graphene { namespace net {
                   wlog("Disconnecting peer ${peer} because they didn't respond to my request for item ${id}",
                         ("peer", active_peer->get_remote_endpoint())("id", item_and_time.first.item_hash));
                   active_peer->connection_closed_error = fc::exception(FC_LOG_MESSAGE(warn, "Disconnecting peer because they didn't respond to my request for item ${id}", ("id", item_and_time.first.item_hash)));
+                  active_peer->connection_closed_by_failure = true;
                   disconnect_due_to_request_timeout = true;
                   break;
                 }
@@ -2709,7 +2713,8 @@ namespace graphene { namespace net {
              ("reason", connection_rejected_message_received.reason_string));
         originating_peer->record_connection_closed_error(fc::exception(FC_LOG_MESSAGE(info, "Peer rejected our connection, reason: ${reason} (${code})",
                                                                                       ("reason", connection_rejected_message_received.reason_string)
-                                                                                      ("code", connection_rejected_message_received.reason_code))));
+                                                                                      ("code", connection_rejected_message_received.reason_code))),
+                                                         rejection_is_failure(connection_rejected_message_received.reason_code));
 
         // the rejecting peer reports the endpoint it sees us connecting from; outbound connections
         // are bound to our listening port, so when the port matches that is an address peers know us by
@@ -3670,7 +3675,7 @@ namespace graphene { namespace net {
                                                     ( "error", closing_connection_message_received.error ) ));
         _delegate->error_encountered( message.str(),
                                       detailed_error );
-        originating_peer->record_connection_closed_error( detailed_error );
+        originating_peer->record_connection_closed_error( detailed_error, true );
       }
       else
       {
@@ -3678,7 +3683,8 @@ namespace graphene { namespace net {
              ( "peer", originating_peer->get_remote_endpoint() )
              ( "msg", closing_connection_message_received.reason_for_closing ) );
         originating_peer->record_connection_closed_error( fc::exception( FC_LOG_MESSAGE( info, "Peer disconnected us: ${msg}",
-                                                                                           ( "msg", closing_connection_message_received.reason_for_closing ) ) ) );
+                                                                                           ( "msg", closing_connection_message_received.reason_for_closing ) ) ),
+                                                          false );
       }
       if( originating_peer->we_have_requested_close )
         originating_peer->close_connection();
@@ -3700,8 +3706,7 @@ namespace graphene { namespace net {
         fc::optional<potential_peer_record> updated_peer_record = _potential_peer_db.lookup_entry_for_endpoint(*endpoint_for_db);
         if (updated_peer_record)
         {
-          updated_peer_record->last_error = originating_peer->get_connection_closed_reason();
-          updated_peer_record->last_failed_time = fc::time_point::now();
+          originating_peer->record_connection_closed_in(*updated_peer_record);
           _potential_peer_db.update_entry(*updated_peer_record);
         }
       }
@@ -6179,7 +6184,7 @@ namespace graphene { namespace net {
       move_peer_to_closing_list(peer_to_disconnect->shared_from_this());
 
       const fc::exception disconnect_reason = error ? *error : fc::exception(FC_LOG_MESSAGE(info, reason_for_disconnect.c_str()));
-      peer_to_disconnect->record_connection_closed_error(disconnect_reason);
+      peer_to_disconnect->record_connection_closed_error(disconnect_reason, caused_by_error);
 
       if (peer_to_disconnect->they_have_requested_close)
       {
@@ -6995,6 +7000,12 @@ namespace graphene { namespace net {
   bool rejects_duplicate_hello(const node_id_t& my_node_id, const node_id_t& peer_node_id)
   {
     return !(peer_node_id < my_node_id);
+  }
+
+  bool rejection_is_failure(rejection_reason_code reason_code)
+  {
+    return reason_code != rejection_reason_code::already_connected &&
+           reason_code != rejection_reason_code::connected_to_self;
   }
 
 } } // end namespace graphene::net
