@@ -3700,12 +3700,7 @@ namespace graphene { namespace net {
         fc::optional<potential_peer_record> updated_peer_record = _potential_peer_db.lookup_entry_for_endpoint(*endpoint_for_db);
         if (updated_peer_record)
         {
-          // if we closed the connection (due to timeout or handshake failure), we should have recorded an
-          // error message to store in the peer database when we closed the connection
-          if (originating_peer->connection_closed_error)
-            updated_peer_record->last_error = *originating_peer->connection_closed_error;
-          else //we didn't close the connection
-            updated_peer_record->last_error = fc::exception(FC_LOG_MESSAGE(info, "lost connection to peer"));
+          updated_peer_record->last_error = originating_peer->get_connection_closed_reason();
           updated_peer_record->last_failed_time = fc::time_point::now();
           _potential_peer_db.update_entry(*updated_peer_record);
         }
@@ -6183,6 +6178,9 @@ namespace graphene { namespace net {
       VERIFY_CORRECT_THREAD();
       move_peer_to_closing_list(peer_to_disconnect->shared_from_this());
 
+      const fc::exception disconnect_reason = error ? *error : fc::exception(FC_LOG_MESSAGE(info, reason_for_disconnect.c_str()));
+      peer_to_disconnect->record_connection_closed_error(disconnect_reason);
+
       if (peer_to_disconnect->they_have_requested_close)
       {
         // the peer has already told us that it's ready to close the connection, so just close the connection
@@ -6198,10 +6196,7 @@ namespace graphene { namespace net {
           if (updated_peer_record)
           {
             updated_peer_record->last_seen_time = fc::time_point::now();
-            if (error)
-              updated_peer_record->last_error = error;
-            else
-              updated_peer_record->last_error = fc::exception(FC_LOG_MESSAGE(info, reason_for_disconnect.c_str()));
+            updated_peer_record->last_error = disconnect_reason;
             if (caused_by_error)
               updated_peer_record->last_failed_time = fc::time_point::now();
             _potential_peer_db.update_entry(*updated_peer_record);

@@ -411,6 +411,13 @@ namespace graphene { namespace net
         connection_closed_error = reason;
     }
 
+    fc::exception peer_connection::get_connection_closed_reason() const
+    {
+      if (connection_closed_error)
+        return *connection_closed_error;
+      return fc::exception(FC_LOG_MESSAGE(info, "lost connection to peer"));
+    }
+
     void peer_connection::destroy_connection(const char* caller)
     {
       VERIFY_CORRECT_THREAD();

@@ -318,6 +318,8 @@ namespace graphene { namespace net
       /// Records why the connection is closing unless a reason is already recorded; the first
       /// reason (a rejection, or whichever side asked to close first) is the one worth keeping
       void record_connection_closed_error(const fc::exception& reason);
+      /// The recorded closing reason, or "lost connection to peer" when neither side gave one
+      fc::exception get_connection_closed_reason() const;
 
       uint64_t get_total_bytes_sent() const;
       uint64_t get_total_bytes_received() const;
