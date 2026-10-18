@@ -5,6 +5,7 @@
 
 #include <fc/io/json.hpp>
 #include <fc/variant_object.hpp>
+#include <fc/locale.hpp>
 
 #include <iostream>
 #include <vector>
@@ -62,6 +63,8 @@ Some possible sources of inaccuracy, the direction and estimated relative sizes 
 
 int main( int argc, char** argv, char** envp )
 {
+  fc::sanitize_locale_environment();
+
   std::vector< share_type > reward_delta;
   std::vector< share_type > reward_total;
 

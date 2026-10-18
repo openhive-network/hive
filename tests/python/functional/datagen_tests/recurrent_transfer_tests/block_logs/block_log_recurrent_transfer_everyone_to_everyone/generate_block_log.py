@@ -57,6 +57,9 @@ def prepare_block_log(output_block_log_directory: Path) -> None:
         node.config.witness.append(witness)
 
     current_hardfork_number = int(node.get_version()["version"]["blockchain_version"].split(".")[1])
+    # The block log activates the current hardfork, so it depends on consensus rules of that hardfork (e.g. since
+    # HF29 blocks carry state stamps, including RC stamps). CI reuses generated block logs as long as checksum of
+    # this file does not change, so when such rules change, this file has to be modified to force regeneration.
 
     tt.logger.disable("helpy")
     tt.logger.disable("test_tools")

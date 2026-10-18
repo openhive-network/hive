@@ -111,10 +111,15 @@ RUN <<-EOF
     CROSS_ARGS+=( --cross-root="${CROSS_ROOT}" )
   fi
 
+  # Precompiled headers are disabled: a fresh container has no sccache preprocessor-mode manifests, so sccache
+  # keys the PCH by preprocessed output and serves a stale .gch after a comment-only change in a #pragma once
+  # header it contains (e.g. fc/filesystem.hpp) - GCC then sees the changed header as a different file and
+  # includes it again, failing with "redefinition of class ..." in every hive_chain file that is not a cache hit.
   ./source/${HIVE_SUBDIR}/scripts/build.sh --source-dir="./source/${HIVE_SUBDIR}" --binary-dir="./build" \
   --cmake-arg="-DBUILD_HIVE_TESTNET=${BUILD_HIVE_TESTNET}" \
   --cmake-arg="-DHIVE_CONVERTER_BUILD=${HIVE_CONVERTER_BUILD}" \
   --cmake-arg="-DHIVE_LINT=${HIVE_LINT}" \
+  --cmake-arg="-DCMAKE_DISABLE_PRECOMPILE_HEADERS=ON" \
   "${CROSS_ARGS[@]}" \
   --flat-binary-directory="${INSTALLATION_DIR}" \
   --clean-after-build

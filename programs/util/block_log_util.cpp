@@ -7,6 +7,7 @@
 #include <fc/io/json.hpp>
 #include <fc/filesystem.hpp>
 #include <fc/thread/thread.hpp>
+#include <fc/locale.hpp>
 #include <hive/chain/block_log.hpp>
 #include <hive/chain/block_log_wrapper.hpp>
 #include <hive/chain/detail/block_attributes.hpp>
@@ -1353,6 +1354,10 @@ ExitCode merge_block_logs(const fc::path &input_block_log_dir, const fc::path &o
 
 int main(int argc, char **argv)
 {
+  // First, before any thread starts. What it changed is reported once logging is configured: to the log file,
+  // and to stderr unless --json is used (with --json, every error and most results are JSON on stderr).
+  const std::string locale_fallback = fc::sanitize_locale_environment( false );
+
   boost::program_options::options_description minor_options("Minor options");
   minor_options.add_options()("jobs,j", boost::program_options::value<unsigned>()->default_value(4), "The number of worker threads to spawn. (max 16)");
   minor_options.add_options()("help,h", "Print usage instructions");
@@ -1515,6 +1520,13 @@ int main(int argc, char **argv)
 
     const bool json_output = options_map.count("json") ? true : false;
     options_map.erase("json");
+
+    if( !locale_fallback.empty() )
+    {
+      wlog( "${message}", ( "message", locale_fallback ) );
+      if( !json_output )
+        std::cerr << "Warning: " << locale_fallback << "\n";
+    }
 
     const unsigned threads_num = options_map["jobs"].as<unsigned>();
     if (threads_num > 16)

@@ -1,3 +1,8 @@
+// boost::hash_value for fc::ripemd160 (needed by hashed index of archived comments) is declared in namespace
+// boost, so it is only found when declared before boost hash headers, which database.hpp already pulls in
+// (hive_chain precompiled header hides that, but the file has to compile also without PCH)
+#include <fc/crypto/ripemd160.hpp>
+
 #include <hive/chain/database.hpp>
 #include <hive/chain/detail/state/comment_object_multiindex.hpp>
 

@@ -7,6 +7,7 @@
 #include <fc/io/json.hpp>
 #include <fc/reflect/reflect.hpp>
 #include <fc/variant.hpp>
+#include <fc/locale.hpp>
 
 #include <hive/protocol/types.hpp>
 
@@ -28,6 +29,8 @@ FC_REFLECT( signing_result, (dig)(key)(sig) )
 
 int main(int argc, char** argv, char** envp)
 {
+  fc::sanitize_locale_environment();
+
   // hash key pairs on stdin
   std::string chain_id, hash, wif;
   while( std::cin )

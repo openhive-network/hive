@@ -2,6 +2,7 @@
 #include <hive/protocol/fixed_string.hpp>
 
 #include <fc/io/raw.hpp>
+#include <fc/locale.hpp>
 
 #include <iostream>
 #include <sstream>
@@ -87,6 +88,8 @@ void check_pack( const std::string& s, const hive::protocol::fixed_string_impl< 
 
 int main( int argc, char** argv, char** envp )
 {
+  fc::sanitize_locale_environment();
+
   std::vector< std::string > all_strings;
   std::vector< hive::protocol::fixed_string< 16 > > all_fixed_string_16s;
   std::vector< std::vector< uint32_t > > sim_index;

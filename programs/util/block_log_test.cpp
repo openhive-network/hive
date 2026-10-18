@@ -3,6 +3,7 @@
 #include <fc/log/logger.hpp>
 #include <fc/crypto/hex.hpp>
 #include <fc/filesystem.hpp>
+#include <fc/locale.hpp>
 #include <hive/chain/block_log.hpp>
 #include <hive/chain/full_block.hpp>
 #include <hive/chain/block_log_artifacts.hpp>
@@ -40,6 +41,8 @@ void generate_from_scratch(const fc::path& block_log_path, appbase::application&
 
 int main(int argc, char** argv)
 {
+  fc::sanitize_locale_environment();
+
   try
   {
     appbase::application theApp;

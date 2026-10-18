@@ -15,6 +15,7 @@
 #include <hive/chain/detail/state/block_summary_object_multiindex.hpp>
 #include <hive/chain/detail/state/feed_history_object_multiindex.hpp>
 #include <hive/chain/detail/state/reward_fund_object_multiindex.hpp>
+#include <hive/chain/detail/state/state_stamp_data_object_multiindex.hpp>
 #include <hive/chain/detail/state/witness_objects_multiindex.hpp>
 
 #include <hive/chain/util/rd_setup.hpp>
@@ -389,6 +390,10 @@ void database::init_genesis()
       util::rd_setup_dynamics_params( account_subsidy_user_params, account_subsidy_system_params, wso.account_subsidy_rd );
       util::rd_setup_dynamics_params( account_subsidy_per_witness_user_params, account_subsidy_system_params, wso.account_subsidy_witness_rd );
     } );
+
+    // Create collector of state stamps - stamps can be published from the start, but blocks can only
+    // carry them since HF29, so the first block after HF29 commits everything published before it
+    create< state_stamp_data_object >();
   }
   FC_CAPTURE_AND_RETHROW()
 }

@@ -21,6 +21,7 @@
 #include <fc/interprocess/signals.hpp>
 #include <fc/git_revision.hpp>
 #include <fc/stacktrace.hpp>
+#include <fc/locale.hpp>
 
 #include <boost/exception/diagnostic_information.hpp>
 #include <boost/program_options.hpp>
@@ -81,6 +82,9 @@ void info(const hive::protocol::chain_id_type& chainId)
 
 int main( int argc, char** argv )
 {
+  // First, before any thread starts. hived writes what it changed to its log once logging is configured.
+  const std::string locale_fallback = fc::sanitize_locale_environment( false );
+
   try
   {
     appbase::application theApp;
@@ -139,6 +143,9 @@ int main( int argc, char** argv )
     _started_loop = true;
 
     theApp.load_logging_config();
+
+    if( !locale_fallback.empty() )
+      wlog( "${message}", ( "message", locale_fallback ) );
 
     try
     {

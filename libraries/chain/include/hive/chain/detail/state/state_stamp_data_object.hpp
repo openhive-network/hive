@@ -17,12 +17,20 @@ using hive::protocol::checksum_type;
   * @brief Singleton collecting digests ("stamps") of arbitrary consensus state.
   *
   * Any part of the node can @ref publish a digest of some piece of consensus state during block
-  * processing. All digests accumulated between blocks are combined by @ref finalize into a single
-  * merkle root that (since HF29) the block producer writes into a block header extension. Every node
-  * recomputes the same root while applying the block and rejects the block on mismatch - this way any
-  * node that diverged on the stamped state is quickly forced out of consensus. After the block is
-  * accepted the collection is @ref reset, so each block covers only the stamps produced since the
-  * previous one.
+  * processing. All digests accumulated since the previous stamp-carrying block are combined by
+  * @ref finalize into a single merkle root that the block producer writes into a block header
+  * extension. Every node recomputes the same root while applying the block and rejects the block on
+  * mismatch - this way any node that diverged on the stamped state is quickly forced out of consensus.
+  * After the block is accepted the collection is @ref reset, so each such block covers only the stamps
+  * published since the previous one.
+  *
+  * The object exists since genesis, but blocks can carry the extension only since HF29. Stamps
+  * published before HF29 are therefore never reset - they keep accumulating and the first block after
+  * HF29 activation commits all of them at once, making also the state from before HF29 an immutable
+  * part of consensus. It also means that once stamps are committed (even those from before HF29), the
+  * code publishing them has to keep producing the same digests in the same order - any new or changed
+  * stamp needs to be guarded by the hardfork that introduces it, otherwise replay would fail on the
+  * blocks that committed the old ones.
   *
   * The mechanism is intentionally generic; its first user is RC (publishing the rolling hash of payer
   * RC mana), but it can later pin down other internal, otherwise-virtual state (e.g. transfers from

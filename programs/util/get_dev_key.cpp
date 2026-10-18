@@ -27,6 +27,7 @@
 
 #include <fc/crypto/elliptic.hpp>
 #include <fc/io/json.hpp>
+#include <fc/locale.hpp>
 
 #include <hive/protocol/types.hpp>
 
@@ -38,6 +39,8 @@ using namespace std;
 
 int main( int argc, char** argv )
 {
+  fc::sanitize_locale_environment();
+
   try
   {
     std::string dev_key_prefix;

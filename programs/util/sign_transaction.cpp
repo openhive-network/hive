@@ -7,6 +7,7 @@
 #include <fc/io/json.hpp>
 #include <fc/reflect/reflect.hpp>
 #include <fc/variant.hpp>
+#include <fc/locale.hpp>
 
 #include <hive/chain/full_transaction.hpp>
 
@@ -45,6 +46,8 @@ FC_REFLECT( error_result, (error) )
 
 int main(int argc, char** argv, char** envp)
 {
+  fc::sanitize_locale_environment();
+
   fc::sha256 chainId;
 
   chainId = HIVE_CHAIN_ID;

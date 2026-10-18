@@ -3,6 +3,7 @@
 #include <fc/log/logger.hpp>
 #include <fc/crypto/hex.hpp>
 #include <fc/filesystem.hpp>
+#include <fc/locale.hpp>
 #include <hive/chain/block_log.hpp>
 #include <hive/chain/block_log_compression.hpp>
 #include <hive/chain/block_log_wrapper.hpp>
@@ -421,6 +422,8 @@ void do_job(const fc::path& input_block_log_path, const fc::path& output_block_l
 
 int main(int argc, char** argv)
 {
+  fc::sanitize_locale_environment();
+
   try
   {
     appbase::application theApp;

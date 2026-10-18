@@ -566,6 +566,95 @@ BOOST_AUTO_TEST_CASE( verify_account_authority_test )
 
 } FC_LOG_AND_RETHROW() }
 
+BOOST_AUTO_TEST_CASE( verify_signatures_test )
+{ try {
+  auto fee = db->get_witness_schedule_object().median_props.account_creation_fee;
+
+  auto alice_owner = generate_private_key( "alice_owner" );
+  auto alice_active = generate_private_key( "alice_active" );
+  auto alice_posting = generate_private_key( "alice_posting" );
+  {
+    account_create_operation op;
+    op.creator = HIVE_INIT_MINER_NAME;
+    op.fee = fee.to_asset();
+    op.new_account_name = "alice";
+    op.owner = authority( 1, alice_owner.get_public_key(), 1 );
+    op.active = authority( 1, alice_active.get_public_key(), 1 );
+    op.posting = authority( 1, alice_posting.get_public_key(), 1 );
+    op.memo_key = generate_private_key( "alice_memo" ).get_public_key();
+    push_transaction( op, init_account_priv_key );
+  }
+  generate_block();
+  {
+    // the same authority in every role, pointing only to alice
+    account_create_operation op;
+    op.creator = HIVE_INIT_MINER_NAME;
+    op.fee = fee.to_asset();
+    op.new_account_name = "bob";
+    op.owner = authority( 1, "alice", 1 );
+    op.active = authority( 1, "alice", 1 );
+    op.posting = authority( 1, "alice", 1 );
+    op.memo_key = generate_private_key( "bob_memo" ).get_public_key();
+    push_transaction( op, init_account_priv_key );
+  }
+  generate_block();
+
+  using namespace hive::plugins::database_api;
+
+  const auto digest = fc::sha256::hash( std::string( "verify_signatures_test" ) );
+  auto OK = [&]( verify_signatures_args args, const fc::ecc::private_key& signer )
+  {
+    args.hash = digest;
+    args.signatures = { signer.sign_compact( digest ) };
+    BOOST_CHECK( database_api->verify_signatures( args ).valid );
+  };
+  auto FAIL = [&]( verify_signatures_args args, const fc::ecc::private_key& signer )
+  {
+    args.hash = digest;
+    args.signatures = { signer.sign_compact( digest ) };
+    BOOST_CHECK( not database_api->verify_signatures( args ).valid );
+  };
+
+  BOOST_TEST_MESSAGE( "Testing database_api::verify_signatures on account with different key in each role" );
+
+  verify_signatures_args need_owner, need_active, need_posting;
+  need_owner.required_owner = { "alice" };
+  need_active.required_active = { "alice" };
+  need_posting.required_posting = { "alice" };
+
+  // each role is satisfied only by its own key
+  OK( need_owner, alice_owner );
+  FAIL( need_owner, alice_active );
+  FAIL( need_owner, alice_posting );
+
+  FAIL( need_active, alice_owner );
+  OK( need_active, alice_active );
+  FAIL( need_active, alice_posting );
+
+  FAIL( need_posting, alice_owner );
+  FAIL( need_posting, alice_active );
+  OK( need_posting, alice_posting );
+
+  BOOST_TEST_MESSAGE( "Testing database_api::verify_signatures on authorities that point to other accounts" );
+
+  // account listed in account_auths of 'other' authority is checked against its active authority
+  verify_signatures_args need_other;
+  need_other.required_other = { authority( 1, "alice", 1 ) };
+  FAIL( need_other, alice_owner );
+  OK( need_other, alice_active );
+  FAIL( need_other, alice_posting );
+
+  // the same for owner and active authority of bob, even though they are identical
+  verify_signatures_args need_bob_owner, need_bob_active;
+  need_bob_owner.required_owner = { "bob" };
+  need_bob_active.required_active = { "bob" };
+  FAIL( need_bob_owner, alice_owner );
+  OK( need_bob_owner, alice_active );
+  FAIL( need_bob_active, alice_owner );
+  OK( need_bob_active, alice_active );
+
+} FC_LOG_AND_RETHROW() }
+
 BOOST_AUTO_TEST_SUITE_END()
 
 BOOST_FIXTURE_TEST_SUITE( database_api_tests_27, database_api_fixture_27 );

@@ -11,6 +11,7 @@
 #include <fc/filesystem.hpp>
 #include <fc/io/json.hpp>
 #include <fc/variant_object.hpp>
+#include <fc/locale.hpp>
 
 #include <chainbase/chainbase.hpp>
 
@@ -593,6 +594,8 @@ namespace shared_memory_file_util
 
 int main(int argc, char **argv)
 {
+  fc::sanitize_locale_environment();
+
   boost::program_options::options_description shared_memory_file_util_options("Shared memory file util options");
   shared_memory_file_util_options.add_options()("input,i", boost::program_options::value<boost::filesystem::path>()->value_name("directory")->required(), "Path to directory with contains shared memory file: 'shared_memory.bin'");
   shared_memory_file_util_options.add_options()("output,o", boost::program_options::value<boost::filesystem::path>()->value_name("directory"), "Path to directory where all requested data from shared memory file will be saved. Required by get-all-data and dump-indices; without it the other results are printed to stdout.");
