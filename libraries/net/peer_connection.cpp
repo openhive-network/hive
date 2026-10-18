@@ -404,6 +404,13 @@ namespace graphene { namespace net
       _message_connection.close_connection();
     }
 
+    void peer_connection::record_connection_closed_error(const fc::exception& reason)
+    {
+      VERIFY_CORRECT_THREAD();
+      if (!connection_closed_error)
+        connection_closed_error = reason;
+    }
+
     void peer_connection::destroy_connection(const char* caller)
     {
       VERIFY_CORRECT_THREAD();
