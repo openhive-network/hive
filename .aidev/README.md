@@ -29,18 +29,20 @@ every step still running and the test processes under it.
 | `plugin-tests` | all of `plugin_test` (CI's `plugin_test_api` + `plugin_test_witness`) in parallel: the suites other than `witness_tests` as one process, each `witness_tests` case as its own |
 | `integration` | off unless `HIVE_AIDEV_INTEGRATION=1`; the `tests/integration` scripts the diff selects, each against a hived image built from the checkout (below) |
 | `hived-testnet`, `hived-mainnet` | `hived`, `cli_wallet` and `shared_memory_file_util` with CI's arguments, into `<report dir>/bin` (what `integration` builds an image from) |
+| `wallet-patterns` | the cli_wallet Python pattern tests (CI's `python_pattern_testnet_tests`) against the testnet `hived`, `cli_wallet` and `get_dev_key` it builds as `hived-testnet` does (below) |
 
 | Slot | Steps |
 |---|---|
 | quick | build, chain-smoke, plugin-api |
-| full | suite `default`: build, then chain-tests and plugin-tests at the same time; suite `integration`: integration (off; below) |
+| full | suite `default`: build, then chain-tests and plugin-tests at the same time; suite `integration`: integration (off; below); suite `wallet_patterns`: wallet-patterns, when the diff reaches the wallet (below) |
 | baseline | build, then chain-tests and plugin-tests at the same time |
 | canary | build, chain-smoke, plugin-api |
 
 Each suite of `full` and `baseline` declares `memory:`, what AIDEV reserves on the
 host for one run until it has measured the suite's own runs (the suite's container
 is capped a headroom above it, 1.25× by default): `full`'s `default` and `baseline`
-40g, `full`'s `integration` 12g (52g together). `quick`, `canary` and `coverage`
+40g, `full`'s `integration` 12g (52g together), `full`'s `wallet_patterns` 16g (after
+`default`, never beside it). `quick`, `canary` and `coverage`
 declare none. Source: over 14 `run_full_tests` runs
 (2026-10-13/14, before the integration suite was on), the pull host's free memory
 fell by 6-14 GB on steem-11 (32 threads) and up to 35 GB on steem-3 and steem-5
@@ -56,6 +58,50 @@ and this figure stays its price.
 when run without the suites before it (it passes in the full `!witness_tests` order, as in CI).
 `witness_tests` cases are: each gets its own data directory (`HIVE_TEMPDIR`) and its p2p
 node listens on no fixed port.
+
+## Wallet pattern tests
+
+`tests/python/api_tests/python_patterns_tests/cli_wallet_tests` compares the
+cli_wallet's `help`, `gethelp` and command outputs with stored patterns, so a
+change to the wallet's API surface that leaves them behind fails there. The
+`full` slot's `wallet_patterns` suite runs them as CI's
+`python_pattern_testnet_tests` does: pytest with `-m "not testnet and not
+mainnet_5m and not live_mainnet"`, 600 s per test and 720 s in all, one xdist
+worker per `HIVE_TEST_JOBS`, junit in
+`test-results/full-wallet-patterns/wallet-patterns.xml`.
+
+- **Selected by the diff.** Its `select`, `.aidev/wallet-patterns-select.sh`, runs
+  host-side before the suite (as `integration-select.sh` does, with the same diff
+  base) and exits 77, the suite skipped and adding no time, unless the diff changes
+  `libraries/wallet/`, `programs/cli_wallet/`, `libraries/protocol/` (the operation
+  shapes the wallet prints) or the patterns; else it prints the paths that selected
+  it. `.aidev/tests/wallet_patterns_select_test.sh` tests it in a scratch repository.
+- **Its own build.** A suite's container keeps nothing of another's, so the step
+  builds `hived`, `cli_wallet` and `get_dev_key` (the `hived-testnet` targets and
+  the key tool, with CI's testnet cmake arguments and the same `/home/hived` paths)
+  and finds `default`'s objects in the compiler cache (380 of 429 compiles hit on
+  steem-5: ~4 min, then ~1 min of tests). It needs the stack's relay for that
+  cache, so it runs after `default` rather than `concurrent`ly; its 900 s timeout
+  and `default`'s 1500 s share `run_full_tests`' 2400 s.
+- **The test-tools environment is the image's.** The suite has no network, so
+  `.aidev/runtime/Dockerfile` installs, into `/opt/test-tools-venv`, the packages
+  `tests/python/hive-local-tools/poetry.lock` pins for this run (test-tools, wax,
+  beekeepy, hiveio-api, pytest and its plugins); `hive_local_tools` and `tests_api`
+  come from the checkout through `PYTHONPATH`. Bump those pins with the lock
+  (`poetry.lock` is not an image input, so a lock move rebuilds nothing by
+  itself). CI also installs the `hiveio-api` wheel built from the commit; the
+  image has the lock's. Where `$HIVE_TEST_TOOLS_VENV/bin/python3`
+  (`/opt/test-tools-venv` by default) cannot import test-tools, pytest-xdist and
+  pytest-timeout, the step builds nothing and is skipped as
+  `test_tools_unavailable`, its log the import error, and the suite exits 77.
+- **Out of the checkout.** test-tools writes each module's nodes and wallets in a
+  `generated_during_*` directory beside it, so the step copies the tests (with
+  `tests/python`'s `pytest.ini` and `conftest.py`) to
+  `test-results/full-wallet-patterns/wallet-patterns/` and runs them there; the
+  nodes' logs stay in that copy.
+
+To run it by hand, in the checks' image as in "The compiler cache" below:
+`.aidev/run-checks.sh full-wallet-patterns wallet-patterns`.
 
 ## Integration scripts
 
@@ -244,8 +290,8 @@ its duration says nothing of how long the unit takes. A unit killed at its timeo
 the binary's JUnit results.
 `aidev project preflight` reports `adaptive test timeouts: enabled` in its slots row.
 
-Not covered yet: the Python functional tests (test-tools; several need the 5M
-block-log fixtures), fork/colony/mirrornet jobs, replay, the integration scripts
+Not covered yet: the Python functional tests other than the cli_wallet pattern
+tests (test-tools; several need the 5M block-log fixtures), fork/colony/mirrornet jobs, replay, the integration scripts
 that need CI's fixtures, and `static`. They stay in GitLab CI.
 
 ## The compiler cache

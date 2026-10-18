@@ -27,6 +27,9 @@
 #   - hived-testnet, hived-mainnet
 #                     hived and the tools its image carries, into <report dir>/bin
 #                     (what `integration` runs in the checks' image to build an image)
+#   - wallet-patterns the cli_wallet Python pattern tests (CI's python_pattern_testnet_tests)
+#                     against a testnet hived and cli_wallet it builds, in the image's
+#                     test-tools environment; skipped when that environment is missing
 #
 # The build's ninja runs as many jobs as the memory left to it allows, 2 GB each
 # (.aidev/build-jobs.sh); HIVE_BUILD_JOBS overrides that.
@@ -218,14 +221,43 @@ duplicate_assertion_ids() {  # GENERATED_ASSERT_ID_DIR SINCE_FILE
 }
 
 # The binaries the Dockerfile's build stage installs that an integration script
-# or the image's entrypoint runs, as the instance stage takes them: <report dir>/bin.
-hived_binaries() (  # TESTNET (ON|OFF)
+# or the image's entrypoint runs, as the instance stage takes them, and any other
+# programs/util tools named: <report dir>/bin.
+hived_binaries() (  # TESTNET (ON|OFF) [UTIL...]
+    local utils=(shared_memory_file_util "${@:2}")
     sccache_backend
     configure "$1" || return 1
-    build_ninja hived cli_wallet shared_memory_file_util || return 1
+    build_ninja hived cli_wallet "${utils[@]}" || return 1
     sccache --show-stats || true
     mkdir -p "$out/bin" && cp programs/hived/hived programs/cli_wallet/cli_wallet \
-        programs/util/shared_memory_file_util "$out/bin/"
+        "${utils[@]/#/programs/util/}" "$out/bin/"
+)
+
+# CI's python_pattern_testnet_tests over cli_wallet_tests, with its per-test and
+# overall timeouts. The tests run from a copy of what pytest reads of tests/python
+# (its pytest.ini and conftest.py), since test-tools writes each module's nodes and
+# wallets beside it, and importing it writes ./generated; the copy stays in the
+# report directory. The test-tools environment is the image's
+# (.aidev/runtime/Dockerfile), HIVE_TEST_TOOLS_VENV overriding it.
+wallet_patterns() (  # a subshell, as build's: it moves into the copy
+    local py="${HIVE_TEST_TOOLS_VENV:-/opt/test-tools-venv}/bin/python3" missing jobs
+    local dir=tests/python/api_tests/python_patterns_tests work="$out/wallet-patterns" tools="$PWD/tests/python/hive-local-tools"
+    export PYTHONDONTWRITEBYTECODE=1
+    mkdir -p "$work" && cp -r --parents tests/python/__init__.py tests/python/conftest.py tests/python/pytest.ini \
+        tests/python/api_tests/__init__.py "$dir" "$work/" || return 1
+    if ! missing="$(cd "$work/$dir" && "$py" -c 'import test_tools, pytest, xdist, pytest_timeout' 2>&1)"; then
+        echo "$missing"
+        echo "test_tools_unavailable: $py cannot import test-tools and its pytest plugins (.aidev/runtime/Dockerfile)"
+        return "$step_skipped"
+    fi
+    hived_binaries ON get_dev_key || return 1
+    jobs="$test_slots"; [ -f "$jobs" ] && jobs="$(cat "$jobs")"
+    cd "$work/$dir" || return 1
+    HIVED_PATH="$out/bin/hived" CLI_WALLET_PATH="$out/bin/cli_wallet" GET_DEV_KEY_PATH="$out/bin/get_dev_key" \
+        TEST_TOOLS_NODE_DEFAULT_WAIT_FOR_LIVE_TIMEOUT=60 \
+        PYTHONPATH="$tools:$tools/tests_api${PYTHONPATH:+:$PYTHONPATH}" \
+        timeout 720 "$py" -m pytest --timeout=600 -n "$jobs" --junitxml="$out/wallet-patterns.xml" \
+        -m "not testnet and not mainnet_5m and not live_mainnet" cli_wallet_tests
 )
 
 bin() {  # NAME: the built test binary
@@ -283,6 +315,7 @@ run() {  # STEP
         integration) integration ;;
         hived-testnet) step hived-testnet hived_binaries ON ;;
         hived-mainnet) step hived-mainnet hived_binaries OFF ;;
+        wallet-patterns) step wallet-patterns wallet_patterns ;;
     esac
 }
 
@@ -336,7 +369,7 @@ for group in "$@"; do
     IFS=, read -ra group_steps <<< "$group"
     for s in "${group_steps[@]}"; do
         case "$s" in
-            build|chain-smoke|chain-tests|plugin-api|plugin-tests|integration|hived-testnet|hived-mainnet) ;;
+            build|chain-smoke|chain-tests|plugin-api|plugin-tests|integration|hived-testnet|hived-mainnet|wallet-patterns) ;;
             *) echo "unknown step: $s" >&2; exit 2 ;;
         esac
     done
