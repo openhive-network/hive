@@ -8,9 +8,15 @@
 
 #include <fc/filesystem.hpp>
 
+#include <boost/asio/error.hpp>
+#include <boost/system/system_error.hpp>
+
+#include <cerrno>
 #include <string>
+#include <unordered_set>
 
 using graphene::net::peer_connection;
+using graphene::net::peer_connection_ptr;
 using graphene::net::peer_database;
 using graphene::net::potential_peer_record;
 using graphene::net::rejection_reason_code;
@@ -24,6 +30,14 @@ potential_peer_record record_after_close( const peer_connection& peer )
   potential_peer_record record( endpoint::from_string( "172.30.66.20:2001" ) );
   peer.record_connection_closed_in( record );
   return record;
+}
+
+/// A connect failure as fc::asio reports it: the text of the boost::system::system_error.
+fc::exception connect_error( int error_value )
+{
+  static constexpr boost::source_location location = BOOST_CURRENT_LOCATION;
+  const boost::system::error_code ec( error_value, boost::system::system_category(), &location );
+  return fc::exception( FC_LOG_MESSAGE( error, "${message} ", ( "message", boost::system::system_error( ec ).what() ) ) );
 }
 
 } // namespace
@@ -195,6 +209,76 @@ BOOST_AUTO_TEST_CASE( gracefully_closed_peer_ranks_ahead_of_failed_peer )
   BOOST_REQUIRE_EQUAL( db.size(), 2u );
   BOOST_CHECK( db.begin()->endpoint == graceful_endpoint );
   db.close();
+}
+
+/// A connection we are still closing (or terminating) holds the endpoint as much as an active one does.
+BOOST_AUTO_TEST_CASE( closing_and_terminating_connections_count_as_unclosed )
+{
+  const endpoint peer_endpoint = endpoint::from_string( "172.30.66.30:2001" );
+  const std::unordered_set<peer_connection_ptr> none;
+
+  auto closing_peer = peer_connection::make_shared( nullptr );
+  closing_peer->set_remote_endpoint( peer_endpoint );
+  const std::unordered_set<peer_connection_ptr> closing{ closing_peer };
+  BOOST_CHECK( graphene::net::find_unclosed_connection_to_endpoint( peer_endpoint, none, none, closing, none ) == closing_peer );
+
+  auto terminating_peer = peer_connection::make_shared( nullptr );
+  terminating_peer->set_remote_endpoint( peer_endpoint );
+  const std::unordered_set<peer_connection_ptr> terminating{ terminating_peer };
+  BOOST_CHECK( graphene::net::find_unclosed_connection_to_endpoint( peer_endpoint, none, none, none, terminating ) == terminating_peer );
+
+  BOOST_CHECK( !graphene::net::find_unclosed_connection_to_endpoint( endpoint::from_string( "[fd5e:6::30]:2001" ),
+                                                                     none, none, closing, terminating ) );
+  BOOST_CHECK( !graphene::net::find_unclosed_connection_to_endpoint( peer_endpoint, none, none, none, none ) );
+}
+
+/// Right after we disconnect a peer for inactivity its record says it is due to be dialed again;
+/// what keeps the connect loop off it is the connection that is still closing.
+BOOST_AUTO_TEST_CASE( connect_loop_does_not_dial_endpoint_still_closing )
+{
+  const endpoint peer_endpoint = endpoint::from_string( "172.30.66.30:2001" );
+  const fc::time_point now = fc::time_point::now();
+  const fc::microseconds delay_until_retry = fc::seconds( 30 );
+
+  potential_peer_record record( peer_endpoint );
+  record.last_connection_disposition = graphene::net::last_connection_succeeded;
+  record.last_connection_attempt_time = now - fc::seconds( 5 );
+  auto closing_peer = peer_connection::make_shared( nullptr );
+  closing_peer->set_remote_endpoint( peer_endpoint );
+  closing_peer->record_connection_closed_error( fc::exception( FC_LOG_MESSAGE( warn, "Disconnecting due to inactivity" ) ), false );
+  closing_peer->record_connection_closed_in( record );
+  BOOST_REQUIRE( graphene::net::is_due_for_connection_attempt( record, delay_until_retry, now ) );
+
+  const std::unordered_set<peer_connection_ptr> none;
+  const std::unordered_set<peer_connection_ptr> closing{ closing_peer };
+  const bool dialed = !graphene::net::find_unclosed_connection_to_endpoint( peer_endpoint, none, none, closing, none ) &&
+                      graphene::net::is_due_for_connection_attempt( record, delay_until_retry, now );
+  BOOST_CHECK( !dialed );
+
+  const bool dialed_after_close = !graphene::net::find_unclosed_connection_to_endpoint( peer_endpoint, none, none, none, none ) &&
+                                  graphene::net::is_due_for_connection_attempt( record, delay_until_retry, now );
+  BOOST_CHECK( dialed_after_close );
+}
+
+/// A peer whose last connection failed still waits out its retry delay.
+BOOST_AUTO_TEST_CASE( failed_peer_waits_for_retry_delay )
+{
+  const fc::time_point now = fc::time_point::now();
+  potential_peer_record record( endpoint::from_string( "172.30.66.30:2001" ) );
+  record.last_connection_disposition = graphene::net::last_connection_failed;
+  record.last_connection_attempt_time = now - fc::seconds( 10 );
+
+  BOOST_CHECK( !graphene::net::is_due_for_connection_attempt( record, fc::seconds( 30 ), now ) );
+  BOOST_CHECK( graphene::net::is_due_for_connection_attempt( record, fc::seconds( 5 ), now ) );
+}
+
+/// EADDRNOTAVAIL from connect is told apart from the errors that do mean the peer failed.
+BOOST_AUTO_TEST_CASE( local_endpoint_in_use_error_classification )
+{
+  BOOST_CHECK( graphene::net::is_local_endpoint_in_use_error( connect_error( EADDRNOTAVAIL ) ) );
+  BOOST_CHECK( !graphene::net::is_local_endpoint_in_use_error( connect_error( boost::asio::error::connection_refused ) ) );
+  BOOST_CHECK( !graphene::net::is_local_endpoint_in_use_error( connect_error( boost::asio::error::timed_out ) ) );
+  BOOST_CHECK( !graphene::net::is_local_endpoint_in_use_error( fc::exception( FC_LOG_MESSAGE( warn, "lost connection to peer" ) ) ) );
 }
 
 BOOST_AUTO_TEST_SUITE_END()
