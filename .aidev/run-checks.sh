@@ -35,10 +35,11 @@
 # (.aidev/build-jobs.sh); HIVE_BUILD_JOBS overrides that.
 #
 # Compiler cache: the build runs from /home/hived/source into /home/hived/build
-# with CI's cmake arguments, because sccache keys include absolute paths, so the
-# checks hit what CI's builds put in its Redis cache (reached through the stack's
-# `sccache` relay, .aidev/sccache-relay.compose.yml). When the relay or Redis is
-# unreachable, sccache uses a local cache and the build is cold.
+# with the cmake arguments of the Dockerfile's build stage, because sccache keys
+# include absolute paths, so the checks hit what CI's builds put in its Redis
+# cache (reached through the stack's `sccache` relay,
+# .aidev/sccache-relay.compose.yml). When the relay or Redis is unreachable,
+# sccache uses a local cache and the build is cold.
 #
 # Reports go to test-results/<suite>/: junit.xml (one case per step) plus each
 # test binary's own junit report, and timings.tsv, each step's wall time.
@@ -182,11 +183,15 @@ submodules_checked_out() {
     done
 }
 
-configure() {  # TESTNET (ON|OFF): CI's cmake arguments, so sccache shares CI's cache
+# TESTNET (ON|OFF). The arguments match the build stage of the Dockerfile (keep them in
+# sync), so sccache shares CI's cache; precompiled headers are off there for the reason
+# its comment gives, a stale .gch failing the build with "redefinition of class".
+configure() {
     submodules_checked_out || return 1
     mkdir -p "$bld" && cd "$bld" || return 1
     cmake -DCMAKE_BUILD_TYPE=Release -GNinja \
-        -DBUILD_HIVE_TESTNET="$1" -DHIVE_CONVERTER_BUILD=OFF -DHIVE_LINT=OFF "$src"
+        -DBUILD_HIVE_TESTNET="$1" -DHIVE_CONVERTER_BUILD=OFF -DHIVE_LINT=OFF \
+        -DCMAKE_DISABLE_PRECOMPILE_HEADERS=ON "$src"
 }
 
 build() (  # a subshell: the `cd` below must not move the steps that follow

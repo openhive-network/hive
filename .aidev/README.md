@@ -304,7 +304,8 @@ CI's sccache Redis (`SCCACHE_REDIS` in `.gitlab-ci.yaml`):
   Redis;
 - sccache keys include absolute paths, so `run-checks.sh` builds from
   `/home/hived/source` into `/home/hived/build`, with the cmake arguments of CI's
-  `testnet_node_build`, in CI's own build image. A check then hits what CI
+  `testnet_node_build` (the `Dockerfile`'s build stage, precompiled headers off),
+  in CI's own build image. A check then hits what CI
   compiled, and CI hits what a check compiled (466 of 468 compiles on the first
   local run; build 2-3 minutes). `/home/hived/source` is a container-local mirror
   of the checkout: links to its entries, plus a `.git` holding HEAD as a detached
