@@ -20,6 +20,7 @@ gitlab:
 # never moves develop or master.
 branches:
   integration: "aidev/integration"
+  handoff: "develop"
 
 # How this project's suites execute (#13892): one kind, stated once.
 environment:
