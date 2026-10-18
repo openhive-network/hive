@@ -2707,6 +2707,9 @@ namespace graphene { namespace net {
         ilog("Received a rejection from ${peer} in response to my \"hello\", reason: \"${reason}\"",
              ("peer", originating_peer->get_remote_endpoint())
              ("reason", connection_rejected_message_received.reason_string));
+        originating_peer->record_connection_closed_error(fc::exception(FC_LOG_MESSAGE(info, "Peer rejected our connection, reason: ${reason} (${code})",
+                                                                                      ("reason", connection_rejected_message_received.reason_string)
+                                                                                      ("code", connection_rejected_message_received.reason_code))));
 
         // the rejecting peer reports the endpoint it sees us connecting from; outbound connections
         // are bound to our listening port, so when the port matches that is an address peers know us by
@@ -3667,12 +3670,15 @@ namespace graphene { namespace net {
                                                     ( "error", closing_connection_message_received.error ) ));
         _delegate->error_encountered( message.str(),
                                       detailed_error );
+        originating_peer->record_connection_closed_error( detailed_error );
       }
       else
       {
         wlog( "Peer ${peer} is disconnecting us because: ${msg}",
              ( "peer", originating_peer->get_remote_endpoint() )
              ( "msg", closing_connection_message_received.reason_for_closing ) );
+        originating_peer->record_connection_closed_error( fc::exception( FC_LOG_MESSAGE( info, "Peer disconnected us: ${msg}",
+                                                                                           ( "msg", closing_connection_message_received.reason_for_closing ) ) ) );
       }
       if( originating_peer->we_have_requested_close )
         originating_peer->close_connection();

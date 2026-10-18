@@ -315,6 +315,9 @@ namespace graphene { namespace net
       void send_item(const item_id& item_to_send);
       void close_connection();
       void destroy_connection(const char* caller);
+      /// Records why the connection is closing unless a reason is already recorded; the first
+      /// reason (a rejection, or whichever side asked to close first) is the one worth keeping
+      void record_connection_closed_error(const fc::exception& reason);
 
       uint64_t get_total_bytes_sent() const;
       uint64_t get_total_bytes_received() const;
